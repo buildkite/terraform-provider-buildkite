@@ -6,7 +6,7 @@ go:
   - '1.12'
 
 script:
-  - go fmt $(go list ./...)
+  - '[ -z "$(go fmt $(go list ./...))" ]'
   - go vet $(go list ./...)
   - go test $(go list ./...)
 
