@@ -24,5 +24,13 @@ func Provider() terraform.ResourceProvider {
 				Type:        schema.TypeString,
 			},
 		},
+		ConfigureFunc: providerConfigure,
 	}
+}
+
+func providerConfigure(d *schema.ResourceData) (interface{}, error) {
+	orgName := d.Get("organization").(string)
+	apiToken := d.Get("api_token").(string)
+
+	return NewClient(orgName, apiToken), nil
 }
