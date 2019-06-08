@@ -6,9 +6,9 @@ go:
   - '1.12'
 
 script:
-  - go fmt
-  - go vet
-  - go test
+  - go fmt $(go list ./...)
+  - go vet $(go list ./...)
+  - go test $(go list ./...)
 
 env:
   - GO111MODULE=on
