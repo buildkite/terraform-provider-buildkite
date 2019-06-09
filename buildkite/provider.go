@@ -8,7 +8,7 @@ import (
 func Provider() terraform.ResourceProvider {
 	return &schema.Provider{
 		ResourcesMap: map[string]*schema.Resource{
-			"agent_token": resourceAgentToken(),
+			"buildkite_agent_token": resourceAgentToken(),
 		},
 		Schema: map[string]*schema.Schema{
 			"organization": &schema.Schema{
