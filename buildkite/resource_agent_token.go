@@ -47,16 +47,7 @@ func resourceAgentToken() *schema.Resource {
 
 func CreateToken(d *schema.ResourceData, m interface{}) error {
 	client := m.(*Client)
-	// this needs the org id (not slug) to create a token so we need to get that first
-	var query struct {
-		Organization struct {
-			ID graphql.ID
-		} `graphql:"organization(slug: $slug)"`
-	}
-	queryVars := map[string]interface{}{
-		"slug": client.organization,
-	}
-	err := client.graphql.Query(context.Background(), &query, queryVars)
+	id, err := GetOrganizationID(client.organization, client.graphql)
 	if err != nil {
 		return err
 	}
@@ -70,7 +61,7 @@ func CreateToken(d *schema.ResourceData, m interface{}) error {
 	}
 
 	vars := map[string]interface{}{
-		"org":  query.Organization.ID,
+		"org":  id,
 		"desc": graphql.String(d.Get("description").(string)),
 	}
 
@@ -88,7 +79,6 @@ func ReadToken(d *schema.ResourceData, m interface{}) error {
 	client := m.(*Client)
 	var query struct {
 		Node struct {
-			Id         graphql.ID
 			AgentToken AgentTokenNode `graphql:"... on AgentToken"`
 		} `graphql:"node(id: $id)"`
 	}
@@ -118,10 +108,8 @@ func DeleteToken(d *schema.ResourceData, m interface{}) error {
 		} `graphql:"agentTokenRevoke(input: {id: $id, reason: $reason})"`
 	}
 
-	id := d.Id()
-
 	vars := map[string]interface{}{
-		"id":     graphql.ID(id),
+		"id":     graphql.ID(d.Id()),
 		"reason": graphql.String("Revoked by Terraform"),
 	}
 
