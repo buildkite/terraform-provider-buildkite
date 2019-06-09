@@ -3,8 +3,6 @@ package buildkite
 import (
 	"context"
 	"errors"
-	"fmt"
-	"strings"
 
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/shurcooL/graphql"
@@ -89,24 +87,25 @@ func CreateToken(d *schema.ResourceData, m interface{}) error {
 func ReadToken(d *schema.ResourceData, m interface{}) error {
 	client := m.(*Client)
 	var query struct {
-		AgentToken AgentTokenNode `graphql:"agentToken(slug: $slug)"`
+		Node struct {
+			Id         graphql.ID
+			AgentToken AgentTokenNode `graphql:"... on AgentToken"`
+		} `graphql:"node(id: $id)"`
 	}
 
-	_, uuid := splitTerraformID(d.Id())
-
 	vars := map[string]interface{}{
-		"slug": fmt.Sprintf("%s/%s", client.organization, uuid),
+		"id": d.Id(),
 	}
 
 	err := client.graphql.Query(context.Background(), &query, vars)
 	if err != nil {
 		return err
 	}
-	if query.AgentToken.RevokedAt != "" {
+	if query.Node.AgentToken.RevokedAt != "" {
 		return errors.New("Cannot import revoked token")
 	}
 
-	updateAgentToken(d, &query.AgentToken)
+	updateAgentToken(d, &query.Node.AgentToken)
 
 	return nil
 }
@@ -119,7 +118,7 @@ func DeleteToken(d *schema.ResourceData, m interface{}) error {
 		} `graphql:"agentTokenRevoke(input: {id: $id, reason: $reason})"`
 	}
 
-	id, _ := splitTerraformID(d.Id())
+	id := d.Id()
 
 	vars := map[string]interface{}{
 		"id":     graphql.ID(id),
@@ -134,17 +133,8 @@ func DeleteToken(d *schema.ResourceData, m interface{}) error {
 	return nil
 }
 
-func getTerraformID(t *AgentTokenNode) string {
-	return fmt.Sprintf("%s%s%s", t.Id, idSeparator, t.Uuid)
-}
-
-func splitTerraformID(id string) (string, string) {
-	split := strings.Split(id, idSeparator)
-	return split[0], split[1]
-}
-
 func updateAgentToken(d *schema.ResourceData, t *AgentTokenNode) {
-	d.SetId(getTerraformID(t))
+	d.SetId(string(t.Id))
 	d.Set("uuid", string(t.Uuid))
 	d.Set("description", string(t.Description))
 	d.Set("token", string(t.Token))
