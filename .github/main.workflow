@@ -12,7 +12,7 @@ action "Release darwin/amd64" {
   secrets = ["GITHUB_TOKEN"]
   env = {
     GOOS = "darwin"
-    GOARCH = "amd64\n"
+    GOARCH = "amd64"
   }
 }
 
