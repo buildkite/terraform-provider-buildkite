@@ -1,6 +1,10 @@
 workflow "Build release" {
   on = "release"
-  resolves = ["Release darwin/amd64", "ngs/go-release.action@v1.0.1", "ngs/go-release.action@v1.0.1-1"]
+  resolves = [
+    "Release darwin/amd64",
+    "Release windows/amd64",
+    "Release linux/amd64",
+  ]
 }
 
 action "Release darwin/amd64" {
@@ -12,7 +16,7 @@ action "Release darwin/amd64" {
   }
 }
 
-action "ngs/go-release.action@v1.0.1" {
+action "Release windows/amd64" {
   uses = "ngs/go-release.action@v1.0.1"
   secrets = ["GITHUB_TOKEN"]
   env = {
@@ -21,7 +25,7 @@ action "ngs/go-release.action@v1.0.1" {
   }
 }
 
-action "ngs/go-release.action@v1.0.1-1" {
+action "Release linux/amd64" {
   uses = "ngs/go-release.action@v1.0.1"
   secrets = ["GITHUB_TOKEN"]
   env = {
