@@ -11,8 +11,9 @@ action "Release darwin/amd64" {
   uses = "ngs/go-release.action@v1.0.1"
   secrets = ["GITHUB_TOKEN"]
   env = {
-    GOOS = "darwin"
+    GO111MODULE = "on"
     GOARCH = "amd64"
+    GOOS = "darwin"
   }
 }
 
@@ -20,8 +21,9 @@ action "Release windows/amd64" {
   uses = "ngs/go-release.action@v1.0.1"
   secrets = ["GITHUB_TOKEN"]
   env = {
-    GOOS = "windows"
+    GO111MODULE = "on"
     GOARCH = "amd64"
+    GOOS = "windows"
   }
 }
 
@@ -29,7 +31,8 @@ action "Release linux/amd64" {
   uses = "ngs/go-release.action@v1.0.1"
   secrets = ["GITHUB_TOKEN"]
   env = {
-    GOOS = "linux"
+    GO111MODULE = "on"
     GOARCH = "amd64"
+    GOOS = "linux"
   }
 }
