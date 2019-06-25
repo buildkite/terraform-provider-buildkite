@@ -8,7 +8,7 @@ workflow "Build release" {
 }
 
 action "Release darwin/amd64" {
-  uses = "ngs/go-release.action@v1.0.1"
+  uses = "jradtilbrook/go-release.action@v1.0.1-dev"
   secrets = ["GITHUB_TOKEN"]
   env = {
     GO111MODULE = "on"
@@ -18,7 +18,7 @@ action "Release darwin/amd64" {
 }
 
 action "Release windows/amd64" {
-  uses = "ngs/go-release.action@v1.0.1"
+  uses = "jradtilbrook/go-release.action@v1.0.1-dev"
   secrets = ["GITHUB_TOKEN"]
   env = {
     GO111MODULE = "on"
@@ -28,7 +28,7 @@ action "Release windows/amd64" {
 }
 
 action "Release linux/amd64" {
-  uses = "ngs/go-release.action@v1.0.1"
+  uses = "jradtilbrook/go-release.action@v1.0.1-dev"
   secrets = ["GITHUB_TOKEN"]
   env = {
     GO111MODULE = "on"
