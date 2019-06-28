@@ -17,3 +17,8 @@ cache:
   directories:
     - $HOME/.cache/go-build
     - $HOME/gopath/pkg/mod
+
+notifications:
+  email:
+    on_success: change
+    on_failure: always
