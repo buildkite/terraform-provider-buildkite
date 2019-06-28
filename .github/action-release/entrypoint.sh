@@ -11,9 +11,9 @@ if [ "$GOOS" = "windows" ]; then
 fi
 
 # version the binary
-TAG_NAME="$(cat $GITHUB_EVENT_PATH | jq -r .release.tag_name)"
+TAG_NAME="$(jq -r .release.tag_name < $GITHUB_EVENT_PATH)"
 NAME="terraform-provider-buildkite_${TAG_NAME}${EXT}"
-UPLOAD_URL="$(cat $GITHUB_EVENT_PATH | jq -r .release.upload_url)"
+UPLOAD_URL="$(jq -r .release.upload_url < $GITHUB_EVENT_PATH)"
 UPLOAD_URL=${UPLOAD_URL/\{?name,label\}/} # remove portion of url
 mv terraform-provider-buildkite${EXT} "${NAME}"
 
