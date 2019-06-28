@@ -1,5 +1,5 @@
 workflow "temp" {
-  on "push"
+  on = "push"
   resolves = [
     "internal release",
   ]
@@ -7,7 +7,7 @@ workflow "temp" {
 
 action "internal release" {
   uses = "./.github/action-release/"
-  "secrets" = ["GITHUB_TOKEN"]
+  secrets = ["GITHUB_TOKEN"]
   env = {
     GOARCH = "amd64"
     GOOS = "linux"
