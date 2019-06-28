@@ -19,7 +19,7 @@ mv terraform-provider-buildkite${EXT} "${NAME}"
 
 # archive it
 tar cvfz tmp.tar.gz "${NAME}"
-CHECKSUM=$(sha265sum tmp.tar.gz | cut -d' '-f 1)
+CHECKSUM=$(sha256sum tmp.tar.gz | cut -d' '-f 1)
 
 # upload archive and sha to github release
 curl -X POST -H 'Content-Type: application/gzip' -H "Authorization: Bearer ${GITHUB_TOKEN}" --data-binary @tmp.tar.gz "${UPLOAD_URL}?name=${NAME}_${GOOS}_${GOARCH}.tar.gz"
