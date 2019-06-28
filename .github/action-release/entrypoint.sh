@@ -4,8 +4,6 @@ set -eux
 # get dependencies and build
 go get -v ./...
 go build
-ls
-./terraform-provider-buildkite
 
 EXT=''
 if [ $GOOS == 'windows' ]; then
@@ -15,10 +13,12 @@ fi
 # version the binary
 TAG_NAME="$(cat $GITHUB_EVENT_PATH | jq -r .release.tag_name)"
 NAME="terraform-provider-buildkite_${TAG_NAME}${EXT}"
+UPLOAD_URL="$(cat $GITHUB_EVENT_PATH | jq -r .release.upload_url)"
+UPLOAD_URL=${UPLOAD_URL/\{?name,label\}/} # remove portion of url
 mv terraform-provider-buildkite${EXT} "${NAME}"
 
 # archive it
-tar cvfz tmp.tar.gz terraform-provider-buildkite
+tar cvfz tmp.tar.gz "${NAME}"
 CHECKSUM=$(sha265sum tmp.tar.gz | cut -d' '-f 1)
 
 # upload archive and sha to github release
