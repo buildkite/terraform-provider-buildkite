@@ -11,5 +11,7 @@ LABEL "maintainer"="Jarryd Tilbrook <jradtilbrook@gmail.com>"
 
 ENV GO111MODULE=on
 
+RUN apt update && apt install jq
+
 ADD entrypoint.sh /entrypoint.sh
 ENTRYPOINT ["/entrypoint.sh"]

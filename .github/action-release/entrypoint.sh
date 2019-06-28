@@ -6,7 +6,7 @@ go get -v ./...
 go build
 
 EXT=''
-if [ $GOOS == 'windows' ]; then
+if [ "$GOOS" = "windows" ]; then
     EXT='.exe'
 fi
 
