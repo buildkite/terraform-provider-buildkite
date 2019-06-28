@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 set -eux
 
 # get dependencies and build
@@ -14,7 +14,7 @@ fi
 TAG_NAME="$(jq -r .release.tag_name < $GITHUB_EVENT_PATH)"
 NAME="terraform-provider-buildkite_${TAG_NAME}${EXT}"
 UPLOAD_URL="$(jq -r .release.upload_url < $GITHUB_EVENT_PATH)"
-UPLOAD_URL=${UPLOAD_URL/\{?name,label\}/} # remove portion of url
+UPLOAD_URL="${UPLOAD_URL/\{?name,label\}/}" # remove portion of url
 mv terraform-provider-buildkite${EXT} "${NAME}"
 
 # archive it
