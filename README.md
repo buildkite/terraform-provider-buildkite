@@ -28,6 +28,12 @@ provider "buildkite" {
 resource "buildkite_agent_token" "token" {
     description = "default agent token"
 }
+
+# create a pipeline with default upload step
+resource "buildkite_pipeline" "repo1" {
+    name = "repo1"
+    repository_url = "git@github.com:org/repo1"
+}
 ```
 
 ### Importing existing resources
@@ -35,6 +41,7 @@ resource "buildkite_agent_token" "token" {
 The following resources provided by this provider are:
 
 - `buildkite_agent_token` using its GraphQL ID (not UUID)
+- `buildkite_pipeline` using its slug
 
 You can import them using the standard terraform method.
 
