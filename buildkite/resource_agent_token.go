@@ -8,8 +8,6 @@ import (
 	"github.com/shurcooL/graphql"
 )
 
-const idSeparator = "|"
-
 type AgentTokenNode struct {
 	Description graphql.String
 	Id          graphql.String

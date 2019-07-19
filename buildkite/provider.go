@@ -9,6 +9,7 @@ func Provider() terraform.ResourceProvider {
 	return &schema.Provider{
 		ResourcesMap: map[string]*schema.Resource{
 			"buildkite_agent_token": resourceAgentToken(),
+			"buildkite_pipeline":    resourcePipeline(),
 		},
 		Schema: map[string]*schema.Schema{
 			"organization": &schema.Schema{
