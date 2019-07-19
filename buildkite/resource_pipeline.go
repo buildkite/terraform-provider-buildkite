@@ -2,6 +2,9 @@ package buildkite
 
 import (
 	"context"
+	"fmt"
+	"net/http"
+	"strings"
 
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/shurcooL/graphql"
@@ -15,6 +18,7 @@ type PipelineNode struct {
 	Repository    struct {
 		Url graphql.String
 	}
+	Slug  graphql.String
 	Steps struct {
 		Yaml graphql.String
 	}
@@ -49,6 +53,10 @@ func resourcePipeline() *schema.Resource {
 				Computed: true,
 				Type:     schema.TypeString,
 			},
+			"slug": &schema.Schema{
+				Computed: true,
+				Type:     schema.TypeString,
+			},
 			"steps": &schema.Schema{
 				// TODO: make this an input
 				Computed: true,
@@ -68,15 +76,15 @@ func CreatePipeline(d *schema.ResourceData, m interface{}) error {
 	var mutation struct {
 		PipelineCreate struct {
 			Pipeline PipelineNode
-		} `graphql:"pipelineCreate(input: {organizationID: $org, name: $name, description: $desc, repository: {url: $repository_url}, steps: {yaml: $steps}})"`
+		} `graphql:"pipelineCreate(input: {organizationId: $org, name: $name, description: $desc, repository: {url: $repository_url}, steps: {yaml: $steps}})"`
 	}
 
 	vars := map[string]interface{}{
 		"desc":           graphql.String(d.Get("description").(string)),
-		"name":           d.Get("name").(string),
+		"name":           graphql.String(d.Get("name").(string)),
 		"org":            id,
-		"repository_url": d.Get("repository").(string),
-		"steps":          "steps:\n  - command: \"buildkite-agent pipeline upload\"\n    label: \":pipeline:\"",
+		"repository_url": graphql.String(d.Get("repository").(string)),
+		"steps":          graphql.String("steps:\n  - command: \"buildkite-agent pipeline upload\"\n    label: \":pipeline:\""),
 	}
 
 	err = client.graphql.Mutate(context.Background(), &mutation, vars)
@@ -98,7 +106,7 @@ func ReadPipeline(d *schema.ResourceData, m interface{}) error {
 	}
 
 	vars := map[string]interface{}{
-		"id": d.Id(),
+		"id": graphql.ID(d.Id()),
 	}
 
 	err := client.graphql.Query(context.Background(), &query, vars)
@@ -126,10 +134,10 @@ func UpdatePipeline(d *schema.ResourceData, m interface{}) error {
 
 	vars := map[string]interface{}{
 		"desc":           graphql.String(d.Get("description").(string)),
-		"name":           d.Get("name").(string),
-		"org":            id,
-		"repository_url": d.Get("repository").(string),
-		"steps":          "steps:\n  - command: \"buildkite-agent pipeline upload\"\n    label: \":pipeline:\"",
+		"name":           graphql.String(d.Get("name").(string)),
+		"org":            graphql.String(id),
+		"repository_url": graphql.String(d.Get("repository").(string)),
+		"steps":          graphql.String("steps:\n  - command: \"buildkite-agent pipeline upload\"\n    label: \":pipeline:\""),
 	}
 
 	err = client.graphql.Mutate(context.Background(), &mutation, vars)
@@ -142,11 +150,29 @@ func UpdatePipeline(d *schema.ResourceData, m interface{}) error {
 	return nil
 }
 
+func DeletePipeline(d *schema.ResourceData, m interface{}) error {
+	client := m.(*Client)
+
+	// there is no delete mutation in graphql yet so we must use rest api
+	req, err := http.NewRequest("DELETE", fmt.Sprintf("https://api.buildkite.com/v2/organizations/%s/pipelines/%s",
+		client.organization, d.Get("slug").(string)), strings.NewReader(""))
+	if err != nil {
+		return err
+	}
+	resp, err := client.http.Do(req)
+	if err != nil && resp.StatusCode != 204 {
+		return err
+	}
+
+	return nil
+}
+
 func updatePipeline(d *schema.ResourceData, t *PipelineNode) {
 	d.SetId(string(t.Id))
 	d.Set("description", string(t.Description))
 	d.Set("name", string(t.Name))
 	d.Set("repository", string(t.Repository.Url))
+	d.Set("slug", string(t.Slug))
 	d.Set("steps", string(t.Steps.Yaml))
 	d.Set("uuid", string(t.Uuid))
 	d.Set("webhook_url", string(t.WebhookURL))
