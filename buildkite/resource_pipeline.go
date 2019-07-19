@@ -12,14 +12,21 @@ type PipelineNode struct {
 	Description   graphql.String
 	Id            graphql.String
 	Name          graphql.String
-	Uuid          graphql.String
-	WebhookURL    graphql.String `graphql:"webhookURL"`
+	Repository    struct {
+		Url graphql.String
+	}
+	Steps struct {
+		Yaml graphql.String
+	}
+	Uuid       graphql.String
+	WebhookURL graphql.String `graphql:"webhookURL"`
 }
 
 func resourcePipeline() *schema.Resource {
 	return &schema.Resource{
 		Create: CreatePipeline,
 		Read:   ReadPipeline,
+		Update: UpdatePipeline,
 		Delete: DeletePipeline,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
@@ -42,10 +49,11 @@ func resourcePipeline() *schema.Resource {
 				Computed: true,
 				Type:     schema.TypeString,
 			},
-			// "steps": &schema.Schema{
-			//     Computed: true,
-			//     Type:     schema.TypeString,
-			// },
+			"steps": &schema.Schema{
+				// TODO: make this an input
+				Computed: true,
+				Type:     schema.TypeString,
+			},
 		},
 	}
 }
@@ -103,23 +111,33 @@ func ReadPipeline(d *schema.ResourceData, m interface{}) error {
 	return nil
 }
 
-func DeletePipeline(d *schema.ResourceData, m interface{}) error {
+func UpdatePipeline(d *schema.ResourceData, m interface{}) error {
 	client := m.(*Client)
-	var mutation struct {
-		AgentTokenRevoke struct {
-			AgentToken AgentTokenNode
-		} `graphql:"agentTokenRevoke(input: {id: $id, reason: $reason})"`
-	}
-
-	vars := map[string]interface{}{
-		"id":     graphql.ID(d.Id()),
-		"reason": graphql.String("Revoked by Terraform"),
-	}
-
-	err := client.graphql.Mutate(context.Background(), &mutation, vars)
+	id, err := GetOrganizationID(client.organization, client.graphql)
 	if err != nil {
 		return err
 	}
+
+	var mutation struct {
+		PipelineUpdate struct {
+			Pipeline PipelineNode
+		} `graphql:"pipelineUpdate(input: {id: $id, name: $name, description: $desc, repository: {url: $repository_url}, steps: {yaml: $steps}})"`
+	}
+
+	vars := map[string]interface{}{
+		"desc":           graphql.String(d.Get("description").(string)),
+		"name":           d.Get("name").(string),
+		"org":            id,
+		"repository_url": d.Get("repository").(string),
+		"steps":          "steps:\n  - command: \"buildkite-agent pipeline upload\"\n    label: \":pipeline:\"",
+	}
+
+	err = client.graphql.Mutate(context.Background(), &mutation, vars)
+	if err != nil {
+		return err
+	}
+
+	updatePipeline(d, &mutation.PipelineUpdate.Pipeline)
 
 	return nil
 }
@@ -128,6 +146,8 @@ func updatePipeline(d *schema.ResourceData, t *PipelineNode) {
 	d.SetId(string(t.Id))
 	d.Set("description", string(t.Description))
 	d.Set("name", string(t.Name))
+	d.Set("repository", string(t.Repository.Url))
+	d.Set("steps", string(t.Steps.Yaml))
 	d.Set("uuid", string(t.Uuid))
 	d.Set("webhook_url", string(t.WebhookURL))
 }
