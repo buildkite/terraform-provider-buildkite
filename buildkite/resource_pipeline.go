@@ -58,8 +58,7 @@ func resourcePipeline() *schema.Resource {
 				Type:     schema.TypeString,
 			},
 			"steps": &schema.Schema{
-				// TODO: make this an input
-				Computed: true,
+				Required: true,
 				Type:     schema.TypeString,
 			},
 		},
@@ -84,7 +83,7 @@ func CreatePipeline(d *schema.ResourceData, m interface{}) error {
 		"name":           graphql.String(d.Get("name").(string)),
 		"org":            id,
 		"repository_url": graphql.String(d.Get("repository").(string)),
-		"steps":          graphql.String("steps:\n  - command: \"buildkite-agent pipeline upload\"\n    label: \":pipeline:\""),
+		"steps":          graphql.String(d.Get("steps").(string)),
 	}
 
 	err = client.graphql.Mutate(context.Background(), &mutation, vars)
