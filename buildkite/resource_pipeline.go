@@ -129,6 +129,7 @@ func UpdatePipeline(d *schema.ResourceData, m interface{}) error {
 
 	vars := map[string]interface{}{
 		"desc":           graphql.String(d.Get("description").(string)),
+		"id":             graphql.ID(d.Id()),
 		"name":           graphql.String(d.Get("name").(string)),
 		"repository_url": graphql.String(d.Get("repository").(string)),
 		"steps":          graphql.String("steps:\n  - command: \"buildkite-agent pipeline upload\"\n    label: \":pipeline:\""),
