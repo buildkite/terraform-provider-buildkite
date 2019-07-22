@@ -120,10 +120,6 @@ func ReadPipeline(d *schema.ResourceData, m interface{}) error {
 
 func UpdatePipeline(d *schema.ResourceData, m interface{}) error {
 	client := m.(*Client)
-	id, err := GetOrganizationID(client.organization, client.graphql)
-	if err != nil {
-		return err
-	}
 
 	var mutation struct {
 		PipelineUpdate struct {
@@ -134,12 +130,11 @@ func UpdatePipeline(d *schema.ResourceData, m interface{}) error {
 	vars := map[string]interface{}{
 		"desc":           graphql.String(d.Get("description").(string)),
 		"name":           graphql.String(d.Get("name").(string)),
-		"org":            graphql.String(id),
 		"repository_url": graphql.String(d.Get("repository").(string)),
 		"steps":          graphql.String("steps:\n  - command: \"buildkite-agent pipeline upload\"\n    label: \":pipeline:\""),
 	}
 
-	err = client.graphql.Mutate(context.Background(), &mutation, vars)
+	err := client.graphql.Mutate(context.Background(), &mutation, vars)
 	if err != nil {
 		return err
 	}
