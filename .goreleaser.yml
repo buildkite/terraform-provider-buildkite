@@ -1,0 +1,26 @@
+env:
+  - GO111MODULE=on
+  - GOPROXY=https://gocenter.io
+before:
+  hooks:
+    - go mod download
+builds:
+  - binary: '{{ .ProjectName }}_v{{ .Version }}'
+    env:
+    - CGO_ENABLED=0
+    goarch:
+      - amd64
+    goos:
+      - linux
+      - darwin
+      - windows
+checksum:
+  name_template: '{{ .ProjectName }}_checksums.txt'
+archives:
+  - name_template: "{{ .ProjectName }}_v{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+changelog:
+  sort: asc
+  filters:
+    exclude:
+    - '^docs:'
+    - '^test:'
