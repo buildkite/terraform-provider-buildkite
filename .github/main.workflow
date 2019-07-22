@@ -1,5 +1,5 @@
 workflow "Release" {
-  on = "push"
+  on = "release"
   resolves = ["goreleaser"]
 }
 
