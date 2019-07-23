@@ -2,26 +2,36 @@
 
 [![Build Status](https://travis-ci.com/jradtilbrook/terraform-provider-buildkite.svg?branch=master)](https://travis-ci.com/jradtilbrook/terraform-provider-buildkite)
 
+This is a Terraform provider for Buildkite.
+
+The provider allows you to manage resources in your Buildkite organization. Current supported resources are:
+
+- agent tokens
+- pipelines
+
 ## Installation
 
 There are multiple ways to get a binary for this provider:
 
-- `go get github.com/jradtilbrook/terraform-provider-buildkite`
+- download a pre-built release from GitHub _**recommended**_
 - clone this repo and build it
-- download a pre-built release from GitHub
+- `go get github.com/jradtilbrook/terraform-provider-buildkite`
+
+*Note*: The last 2 options will not include the version information so are not recommended
 
 Once you have a binary you need to make sure it's on terraform plugin search path. You can get more information from
 [the terraform docs](https://www.terraform.io/docs/configuration/providers.html#third-party-plugins).
 
 ## Usage
 
-Create a GraphQL token in Buildkite at https://buildkite.com/user/api-access-tokens/new.  
-This provider requires that token and the Buildkite organisation slug in which to manage resources.
+Create a API Access Tokens in Buildkite at https://buildkite.com/user/api-access-tokens/new.  
+This provider requires the token and the Buildkite organization slug in which to manage resources.
 
 ```terraform
+# configure the Buildkite provider
 provider "buildkite" {
-    api_token = "TOKEN" # can also be set from env: BUILDKITE_API_TOKEN
-    organization = "SLUG" # can also be set from env: BUILDKITE_ORGANIZATION
+    api_token = "token" # can also be set from env: BUILDKITE_API_TOKEN
+    organization = "slug" # can also be set from env: BUILDKITE_ORGANIZATION
 }
 
 # create an agent token with an optional description
@@ -34,19 +44,83 @@ resource "buildkite_pipeline" "repo1" {
     name = "repo1"
     description = "a repository pipeline"
     repository = "git@github.com:org/repo1"
+    steps = "steps:\n  - command: \"buildkite-agent pipeline upload\"\n    label: \":pipeline:\""
 }
 ```
 
+#### `provider` Argument reference
+
+The following arguments are supported on the provider block:
+
+- `api_token` - (Required) This is the Buildkite API Access Token. It must be provided but can also be sourced from the
+  `BUILDKITE_API_TOKEN` environment variable.
+- `organization` - (Required) This is the Buildkite organization slug. It must be provided, but can also be sourced from
+  the `BUILDKITE_ORGANIZATION` environment variable. The token requires GraphQL access and the `write_pipelines` scope.  
+
+### `buildkite_agent_token` resource
+
+This resource allows you to create and manage agent tokens.
+
+#### Example
+
+```terraform
+resource "buildkite_agent_token" "fleet" {
+    description = "token used by build fleet"
+}
+```
+
+#### Argument reference
+
+- `description` - (Optional) This is the description of the agent token.
+
+#### Attribute reference
+
+- `token` - The value of the created agent token.
+- `uuid` - The UUID of the token.
+
+### `buildkite_pipeline` resource
+
+This resource allows you to create pipelines for repositories.
+
+#### Example
+
+```terraform
+# in ./steps.yml:
+# steps:
+#   - label: ':pipeline:'
+#     command: buildkite-agent upload
+        
+resource "buildkite_pipeline" "repo2" {
+    name = "repo2"
+    repository = "git@github.com:org/repo2"
+    steps = file("./steps.yml")
+}
+```
+
+#### Argument reference
+
+- `name` - (Required) The name of the pipeline.
+- `description` - (Optional) A description of the pipeline.
+- `repository` - (Required) The git URL of the repository.
+- `steps` - (Required) The string YAML steps to run the pipeline.
+
+#### Attribute reference
+
+- `webhook_url` - The Buildkite webhook URL to configure on the repository to trigger builds on this pipeline.
+- `slug` - The slug of the created pipeline.
+
 ### Importing existing resources
 
-The following resources provided by this provider are:
+The following resources support importing:
 
 - `buildkite_agent_token` using its GraphQL ID (not UUID)
+    - eg: `terraform import buildkite_agent_token.fleet QWdlbnRUb2tlbi0tLTQzNWNhZDU4LWU4MWQtNDVhZi04NjM3LWIxY2Y4MDcwMjM4ZA==`
 - `buildkite_pipeline` using its GraphQL ID (not UUID)
-
-You can import them using the standard terraform method.
+    - eg: `terraform import buildkite_pipeline.fleet UGlwZWxpbmUtLS00MzVjYWQ1OC1lODFkLTQ1YWYtODYzNy1iMWNmODA3MDIzOGQ=`
 
 ## Local development
+
+Contributions welcome!!
 
 #### Releasing a version
 
