@@ -8,6 +8,7 @@ import (
 	"github.com/shurcooL/graphql"
 )
 
+// AgentTokenNode represents a pipeline as returned from the GraphQL API
 type AgentTokenNode struct {
 	Description graphql.String
 	Id          graphql.String
@@ -20,6 +21,7 @@ func resourceAgentToken() *schema.Resource {
 	return &schema.Resource{
 		Create: CreateToken,
 		Read:   ReadToken,
+		// NB: there is no updating a token, changes force a new one to be creaated
 		Delete: DeleteToken,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
@@ -43,6 +45,7 @@ func resourceAgentToken() *schema.Resource {
 	}
 }
 
+// CreateToken creates a Buildkite agent token
 func CreateToken(d *schema.ResourceData, m interface{}) error {
 	client := m.(*Client)
 	id, err := GetOrganizationID(client.organization, client.graphql)
@@ -73,6 +76,7 @@ func CreateToken(d *schema.ResourceData, m interface{}) error {
 	return nil
 }
 
+// ReadToken retrieves a Buildkite agent token
 func ReadToken(d *schema.ResourceData, m interface{}) error {
 	client := m.(*Client)
 	var query struct {
@@ -98,6 +102,7 @@ func ReadToken(d *schema.ResourceData, m interface{}) error {
 	return nil
 }
 
+// DeleteToken revokes a Buildkite agent token - they cannot be completely deleted
 func DeleteToken(d *schema.ResourceData, m interface{}) error {
 	client := m.(*Client)
 	var mutation struct {

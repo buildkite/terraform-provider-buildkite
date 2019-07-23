@@ -5,6 +5,7 @@ import (
 	"github.com/hashicorp/terraform/terraform"
 )
 
+// Provider creates the terraform.ResourceProvider for Buildkite
 func Provider() terraform.ResourceProvider {
 	return &schema.Provider{
 		ResourcesMap: map[string]*schema.Resource{
@@ -20,7 +21,7 @@ func Provider() terraform.ResourceProvider {
 			},
 			"api_token": &schema.Schema{
 				DefaultFunc: schema.EnvDefaultFunc("BUILDKITE_API_TOKEN", nil),
-				Description: "API token with necessary scopes", // TODO: what scopes are required?
+				Description: "API token with GraphQL access and `write_pipelines` scope",
 				Required:    true,
 				Type:        schema.TypeString,
 			},

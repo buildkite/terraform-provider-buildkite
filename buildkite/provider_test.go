@@ -18,6 +18,7 @@ func init() {
 	}
 }
 
+// TestProvider just does basic validation to ensure the schema is defined and supporting functions exist
 func TestProvider(t *testing.T) {
 	if err := Provider().(*schema.Provider).InternalValidate(); err != nil {
 		t.Fatalf("err: %s", err)

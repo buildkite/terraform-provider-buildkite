@@ -10,6 +10,7 @@ import (
 	"github.com/shurcooL/graphql"
 )
 
+// PipelineNode represents a pipeline as returned from the GraphQL API
 type PipelineNode struct {
 	DefaultBranch graphql.String
 	Description   graphql.String
@@ -65,6 +66,7 @@ func resourcePipeline() *schema.Resource {
 	}
 }
 
+// CreatePipeline creates a Buildkite pipeline
 func CreatePipeline(d *schema.ResourceData, m interface{}) error {
 	client := m.(*Client)
 	id, err := GetOrganizationID(client.organization, client.graphql)
@@ -96,6 +98,7 @@ func CreatePipeline(d *schema.ResourceData, m interface{}) error {
 	return nil
 }
 
+// ReadPipeline retrieves a Buildkite pipeline
 func ReadPipeline(d *schema.ResourceData, m interface{}) error {
 	client := m.(*Client)
 	var query struct {
@@ -118,6 +121,7 @@ func ReadPipeline(d *schema.ResourceData, m interface{}) error {
 	return nil
 }
 
+// UpdatePipeline updates a Buildkite pipeline
 func UpdatePipeline(d *schema.ResourceData, m interface{}) error {
 	client := m.(*Client)
 
@@ -145,6 +149,7 @@ func UpdatePipeline(d *schema.ResourceData, m interface{}) error {
 	return nil
 }
 
+// DeletePipeline removes a Buildkite pipeline
 func DeletePipeline(d *schema.ResourceData, m interface{}) error {
 	client := m.(*Client)
 
@@ -154,6 +159,8 @@ func DeletePipeline(d *schema.ResourceData, m interface{}) error {
 	if err != nil {
 		return err
 	}
+
+	// a successful response returns 204
 	resp, err := client.http.Do(req)
 	if err != nil && resp.StatusCode != 204 {
 		return err
