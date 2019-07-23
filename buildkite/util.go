@@ -6,7 +6,7 @@ import (
 	"github.com/shurcooL/graphql"
 )
 
-// GetOrganizationID retrieves the Buildkite organization ID by using the provided slug
+// GetOrganizationID retrieves the Buildkite organization ID associated with the supplied slug
 func GetOrganizationID(slug string, client *graphql.Client) (string, error) {
 	var query struct {
 		Organization struct {
