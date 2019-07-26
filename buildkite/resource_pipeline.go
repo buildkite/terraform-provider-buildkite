@@ -136,7 +136,7 @@ func UpdatePipeline(d *schema.ResourceData, m interface{}) error {
 		"id":             graphql.ID(d.Id()),
 		"name":           graphql.String(d.Get("name").(string)),
 		"repository_url": graphql.String(d.Get("repository").(string)),
-		"steps":          graphql.String("steps:\n  - command: \"buildkite-agent pipeline upload\"\n    label: \":pipeline:\""),
+		"steps":          graphql.String(d.Get("steps").(string)),
 	}
 
 	err := client.graphql.Mutate(context.Background(), &mutation, vars)
