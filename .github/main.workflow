@@ -14,5 +14,5 @@ action "goreleaser" {
   uses = "docker://goreleaser/goreleaser"
   secrets = ["GITHUB_TOKEN"]
   args = "release"
-  needs = ["is-published"]
+  needs = ["is-created"]
 }
