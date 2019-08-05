@@ -62,6 +62,10 @@ func resourcePipeline() *schema.Resource {
 				Required: true,
 				Type:     schema.TypeString,
 			},
+			"default_branch": &schema.Schema{
+				Optional: true,
+				Type:     schema.TypeString,
+			},
 		},
 	}
 }
@@ -77,7 +81,7 @@ func CreatePipeline(d *schema.ResourceData, m interface{}) error {
 	var mutation struct {
 		PipelineCreate struct {
 			Pipeline PipelineNode
-		} `graphql:"pipelineCreate(input: {organizationId: $org, name: $name, description: $desc, repository: {url: $repository_url}, steps: {yaml: $steps}})"`
+		} `graphql:"pipelineCreate(input: {organizationId: $org, name: $name, description: $desc, repository: {url: $repository_url}, steps: {yaml: $steps}, defaultBranch: $default_branch})"`
 	}
 
 	vars := map[string]interface{}{
@@ -86,6 +90,7 @@ func CreatePipeline(d *schema.ResourceData, m interface{}) error {
 		"org":            id,
 		"repository_url": graphql.String(d.Get("repository").(string)),
 		"steps":          graphql.String(d.Get("steps").(string)),
+		"default_branch": graphql.String(d.Get("default_branch").(string)),
 	}
 
 	err = client.graphql.Mutate(context.Background(), &mutation, vars)
@@ -128,7 +133,7 @@ func UpdatePipeline(d *schema.ResourceData, m interface{}) error {
 	var mutation struct {
 		PipelineUpdate struct {
 			Pipeline PipelineNode
-		} `graphql:"pipelineUpdate(input: {id: $id, name: $name, description: $desc, repository: {url: $repository_url}, steps: {yaml: $steps}})"`
+		} `graphql:"pipelineUpdate(input: {id: $id, name: $name, description: $desc, repository: {url: $repository_url}, steps: {yaml: $steps}, defaultBranch: $default_branch})"`
 	}
 
 	vars := map[string]interface{}{
@@ -137,6 +142,7 @@ func UpdatePipeline(d *schema.ResourceData, m interface{}) error {
 		"name":           graphql.String(d.Get("name").(string)),
 		"repository_url": graphql.String(d.Get("repository").(string)),
 		"steps":          graphql.String(d.Get("steps").(string)),
+		"default_branch": graphql.String(d.Get("default_branch").(string)),
 	}
 
 	err := client.graphql.Mutate(context.Background(), &mutation, vars)
@@ -178,4 +184,5 @@ func updatePipeline(d *schema.ResourceData, t *PipelineNode) {
 	d.Set("steps", string(t.Steps.Yaml))
 	d.Set("uuid", string(t.Uuid))
 	d.Set("webhook_url", string(t.WebhookURL))
+	d.Set("default_branch", string(t.DefaultBranch))
 }
