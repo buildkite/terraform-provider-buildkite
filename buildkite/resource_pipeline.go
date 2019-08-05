@@ -23,8 +23,12 @@ type PipelineNode struct {
 	Steps struct {
 		Yaml graphql.String
 	}
-	Uuid       graphql.String
-	WebhookURL graphql.String `graphql:"webhookURL"`
+	Uuid                                 graphql.String
+	WebhookURL                           graphql.String `graphql:"webhookURL"`
+	SkipIntermediateBuilds               graphql.Boolean
+	SkipIntermediateBuildsBranchFilter   graphql.String
+	CancelIntermediateBuilds             graphql.Boolean
+	CancelIntermediateBuildsBranchFilter graphql.String
 }
 
 func resourcePipeline() *schema.Resource {
@@ -66,6 +70,22 @@ func resourcePipeline() *schema.Resource {
 				Optional: true,
 				Type:     schema.TypeString,
 			},
+			"skip_intermediate_builds": &schema.Schema{
+				Optional: true,
+				Type:     schema.TypeBool,
+			},
+			"skip_intermediate_builds_branch_filter": &schema.Schema{
+				Optional: true,
+				Type:     schema.TypeString,
+			},
+			"cancel_intermediate_builds": &schema.Schema{
+				Optional: true,
+				Type:     schema.TypeBool,
+			},
+			"cancel_intermediate_builds_branch_filter": &schema.Schema{
+				Optional: true,
+				Type:     schema.TypeString,
+			},
 		},
 	}
 }
@@ -81,16 +101,20 @@ func CreatePipeline(d *schema.ResourceData, m interface{}) error {
 	var mutation struct {
 		PipelineCreate struct {
 			Pipeline PipelineNode
-		} `graphql:"pipelineCreate(input: {organizationId: $org, name: $name, description: $desc, repository: {url: $repository_url}, steps: {yaml: $steps}, defaultBranch: $default_branch})"`
+		} `graphql:"pipelineCreate(input: {organizationId: $org, name: $name, description: $desc, repository: {url: $repository_url}, steps: {yaml: $steps}, defaultBranch: $default_branch, skipIntermediateBuilds: $skip_intermediate_builds, skipIntermediateBuildsBranchFilter: $skip_intermediate_builds_branch_filter, cancelIntermediateBuilds: $cancel_intermediate_builds, cancelIntermediateBuildsBranchFilter: $cancel_intermediate_builds_branch_filter})"`
 	}
 
 	vars := map[string]interface{}{
-		"desc":           graphql.String(d.Get("description").(string)),
-		"name":           graphql.String(d.Get("name").(string)),
-		"org":            id,
-		"repository_url": graphql.String(d.Get("repository").(string)),
-		"steps":          graphql.String(d.Get("steps").(string)),
-		"default_branch": graphql.String(d.Get("default_branch").(string)),
+		"desc":                                   graphql.String(d.Get("description").(string)),
+		"name":                                   graphql.String(d.Get("name").(string)),
+		"org":                                    id,
+		"repository_url":                         graphql.String(d.Get("repository").(string)),
+		"steps":                                  graphql.String(d.Get("steps").(string)),
+		"default_branch":                         graphql.String(d.Get("default_branch").(string)),
+		"skip_intermediate_builds":               graphql.Boolean(d.Get("skip_intermediate_builds").(bool)),
+		"skip_intermediate_builds_branch_filter": graphql.String(d.Get("skip_intermediate_builds_branch_filter").(string)),
+		"cancel_intermediate_builds":             graphql.Boolean(d.Get("cancel_intermediate_builds").(bool)),
+		"cancel_intermediate_builds_branch_filter": graphql.String(d.Get("cancel_intermediate_builds_branch_filter").(string)),
 	}
 
 	err = client.graphql.Mutate(context.Background(), &mutation, vars)
@@ -133,16 +157,20 @@ func UpdatePipeline(d *schema.ResourceData, m interface{}) error {
 	var mutation struct {
 		PipelineUpdate struct {
 			Pipeline PipelineNode
-		} `graphql:"pipelineUpdate(input: {id: $id, name: $name, description: $desc, repository: {url: $repository_url}, steps: {yaml: $steps}, defaultBranch: $default_branch})"`
+		} `graphql:"pipelineUpdate(input: {id: $id, name: $name, description: $desc, repository: {url: $repository_url}, steps: {yaml: $steps}, defaultBranch: $default_branch, skipIntermediateBuilds: $skip_intermediate_builds, skipIntermediateBuildsBranchFilter: $skip_intermediate_builds_branch_filter, cancelIntermediateBuilds: $cancel_intermediate_builds, cancelIntermediateBuildsBranchFilter: $cancel_intermediate_builds_branch_filter})"`
 	}
 
 	vars := map[string]interface{}{
-		"desc":           graphql.String(d.Get("description").(string)),
-		"id":             graphql.ID(d.Id()),
-		"name":           graphql.String(d.Get("name").(string)),
-		"repository_url": graphql.String(d.Get("repository").(string)),
-		"steps":          graphql.String(d.Get("steps").(string)),
-		"default_branch": graphql.String(d.Get("default_branch").(string)),
+		"desc":                                   graphql.String(d.Get("description").(string)),
+		"id":                                     graphql.ID(d.Id()),
+		"name":                                   graphql.String(d.Get("name").(string)),
+		"repository_url":                         graphql.String(d.Get("repository").(string)),
+		"steps":                                  graphql.String(d.Get("steps").(string)),
+		"default_branch":                         graphql.String(d.Get("default_branch").(string)),
+		"skip_intermediate_builds":               graphql.Boolean(d.Get("skip_intermediate_builds").(bool)),
+		"skip_intermediate_builds_branch_filter": graphql.String(d.Get("skip_intermediate_builds_branch_filter").(string)),
+		"cancel_intermediate_builds":             graphql.Boolean(d.Get("cancel_intermediate_builds").(bool)),
+		"cancel_intermediate_builds_branch_filter": graphql.String(d.Get("cancel_intermediate_builds_branch_filter").(string)),
 	}
 
 	err := client.graphql.Mutate(context.Background(), &mutation, vars)
@@ -185,4 +213,8 @@ func updatePipeline(d *schema.ResourceData, t *PipelineNode) {
 	d.Set("uuid", string(t.Uuid))
 	d.Set("webhook_url", string(t.WebhookURL))
 	d.Set("default_branch", string(t.DefaultBranch))
+	d.Set("skip_intermediate_builds", bool(t.SkipIntermediateBuilds))
+	d.Set("skip_intermediate_builds_branch_filter", string(t.SkipIntermediateBuildsBranchFilter))
+	d.Set("cancel_intermediate_builds", bool(t.CancelIntermediateBuilds))
+	d.Set("cancel_intermediate_builds_branch_filter", string(t.CancelIntermediateBuildsBranchFilter))
 }
