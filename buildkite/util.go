@@ -3,6 +3,7 @@ package buildkite
 import (
 	"context"
 	"fmt"
+	"log"
 	"strings"
 
 	"github.com/shurcooL/graphql"
@@ -34,9 +35,7 @@ func GetTeamID(slug string, client *Client) (string, error) {
 		slug = prefix + slug
 	}
 	var query struct {
-		Node struct {
-			Team TeamNode `graphql:"... on Team"`
-		} `graphql:"team(slug: $slug)"`
+		Team TeamNode `graphql:"team(slug: $slug)"`
 	}
 	vars := map[string]interface{}{
 		"slug": graphql.ID(slug),
@@ -45,5 +44,7 @@ func GetTeamID(slug string, client *Client) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return string(query.Node.Team.Id), nil
+	id := string(query.Team.Id)
+	log.Printf("Found id '%s' for team '%s'.", id, slug)
+	return id, nil
 }
