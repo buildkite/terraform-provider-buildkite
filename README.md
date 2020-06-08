@@ -46,6 +46,27 @@ resource "buildkite_pipeline" "repo1" {
     repository = "git@github.com:org/repo1"
     steps = "steps:\n  - command: \"buildkite-agent pipeline upload\"\n    label: \":pipeline:\""
 }
+
+# create a pipeline with default upload step and assign team access
+resource "buildkite_pipeline" "repo1" {
+    name = "repo1"
+    description = "a repository pipeline"
+    repository = "git@github.com:org/repo1"
+    steps = "steps:\n  - command: \"buildkite-agent pipeline upload\"\n    label: \":pipeline:\""
+
+    team {
+        slug = "everyone"
+        access_level = "READ_ONLY"
+    }
+    team {
+        slug = "developers"
+        access_level = "BUILD_AND_READ"
+    }
+    team {
+        slug = "admins"
+        access_level = "MANAGE_BUILD_AND_READ"
+    }
+}
 ```
 
 #### `provider` Argument reference

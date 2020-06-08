@@ -2,6 +2,8 @@ package buildkite
 
 import (
 	"context"
+	"fmt"
+	"strings"
 
 	"github.com/shurcooL/graphql"
 )
@@ -22,4 +24,26 @@ func GetOrganizationID(slug string, client *graphql.Client) (string, error) {
 	}
 
 	return query.Organization.ID.(string), nil
+}
+
+// GetTeamID retrieves the Buildkite team ID associated with the supplied team slug
+func GetTeamID(slug string, client *Client) (string, error) {
+	// Make sure the slug is prefixed with the organization
+	prefix := fmt.Sprintf("%s/", client.organization)
+	if !strings.HasPrefix(slug, prefix) {
+		slug = prefix + slug
+	}
+	var query struct {
+		Node struct {
+			Team TeamNode `graphql:"... on Team"`
+		} `graphql:"team(slug: $slug)"`
+	}
+	vars := map[string]interface{}{
+		"slug": graphql.ID(slug),
+	}
+	err := client.graphql.Query(context.Background(), &query, vars)
+	if err != nil {
+		return "", err
+	}
+	return string(query.Node.Team.Id), nil
 }
