@@ -37,10 +37,10 @@ func GetTeamID(slug string, client *Client) (string, error) {
 	var query struct {
 		Team TeamNode `graphql:"team(slug: $slug)"`
 	}
-	vars := map[string]interface{}{
+	params := map[string]interface{}{
 		"slug": graphql.ID(slug),
 	}
-	err := client.graphql.Query(context.Background(), &query, vars)
+	err := client.graphql.Query(context.Background(), &query, params)
 	if err != nil {
 		return "", err
 	}

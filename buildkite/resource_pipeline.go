@@ -3,12 +3,10 @@ package buildkite
 import (
 	"context"
 	"fmt"
-	"log"
-	"net/http"
-	"strings"
-
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/shurcooL/graphql"
+	"log"
+	"net/http"
 )
 
 // PipelineNode represents a pipeline as returned from the GraphQL API
@@ -113,8 +111,7 @@ func resourcePipeline() *schema.Resource {
 							Required: true,
 							Type:     schema.TypeString,
 							ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
-								v := val.(string)
-								switch v {
+								switch v := val.(string); v {
 								case "READ_ONLY":
 								case "BUILD_AND_READ":
 								case "MANAGE_BUILD_AND_READ":
@@ -253,7 +250,7 @@ func DeletePipeline(d *schema.ResourceData, m interface{}) error {
 	log.Printf("Deleting pipeline %s ...", slug)
 	// there is no delete mutation in graphql yet so we must use rest api
 	req, err := http.NewRequest("DELETE", fmt.Sprintf("https://api.buildkite.com/v2/organizations/%s/pipelines/%s",
-		client.organization, slug), strings.NewReader(""))
+		client.organization, slug), nil)
 	if err != nil {
 		return err
 	}
@@ -373,12 +370,12 @@ func createTeamPipelines(teamPipelines []TeamPipelineNode, pipelineId string, cl
 			log.Printf("Unable to get ID for team slug %s", teamPipeline.Team.Slug)
 			return err
 		}
-		vars := map[string]interface{}{
+		params := map[string]interface{}{
 			"team":        graphql.ID(teamId),
 			"pipeline":    graphql.ID(pipelineId),
 			"accessLevel": teamPipeline.AccessLevel,
 		}
-		err = client.graphql.Mutate(context.Background(), &mutation, vars)
+		err = client.graphql.Mutate(context.Background(), &mutation, params)
 		if err != nil {
 			log.Printf("Unable to create team pipeline %s", teamPipeline.Team.Slug)
 			return err
@@ -398,11 +395,11 @@ func updateTeamPipelines(teamPipelines []TeamPipelineNode, client *Client) error
 	}
 	for _, teamPipeline := range teamPipelines {
 		log.Printf("Updating access to %s for teamPipeline id '%s'...", teamPipeline.AccessLevel, teamPipeline.Id)
-		vars := map[string]interface{}{
+		params := map[string]interface{}{
 			"id":          graphql.ID(string(teamPipeline.Id)),
 			"accessLevel": teamPipeline.AccessLevel,
 		}
-		err := client.graphql.Mutate(context.Background(), &mutation, vars)
+		err := client.graphql.Mutate(context.Background(), &mutation, params)
 		if err != nil {
 			log.Printf("Unable to update team pipeline")
 			return err
@@ -421,10 +418,10 @@ func deleteTeamPipelines(teamPipelines []TeamPipelineNode, client *Client) error
 	}
 	for _, teamPipeline := range teamPipelines {
 		log.Printf("Removing access for teamPipeline %s (id=%s)...", teamPipeline.Team.Slug, teamPipeline.Id)
-		vars := map[string]interface{}{
+		params := map[string]interface{}{
 			"id": graphql.ID(string(teamPipeline.Id)),
 		}
-		err := client.graphql.Mutate(context.Background(), &mutation, vars)
+		err := client.graphql.Mutate(context.Background(), &mutation, params)
 		if err != nil {
 			log.Printf("Unable to delete team pipeline")
 			return err
