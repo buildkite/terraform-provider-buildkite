@@ -1,3 +1,5 @@
+release:
+  draft: true
 env:
   - GO111MODULE=on
   - GOPROXY=https://gocenter.io
