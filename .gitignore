@@ -17,3 +17,6 @@ terraform-provider-buildkite
 
 # GoReleaser dist
 dist/
+
+# IDE files
+.idea
