@@ -129,7 +129,7 @@ resource "buildkite_pipeline" "repo2" {
 - `description` - (Optional) A description of the pipeline.
 - `repository` - (Required) The git URL of the repository.
 - `steps` - (Required) The string YAML steps to run the pipeline.
-- `team` - (Optional) Set team access for the pipeline. Can be specified multiple times for each team. Note that non-admin users may receive a buildkite permission error if trying to create a pipeline without at least one team. 
+- `team` - (Optional) Set team access for the pipeline. Can be specified multiple times for each team.  
 
 The `team` block supports:
 
