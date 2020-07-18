@@ -115,6 +115,11 @@ resource "buildkite_pipeline" "repo2" {
     name = "repo2"
     repository = "git@github.com:org/repo2"
     steps = file("./steps.yml")
+
+    team {
+        slug = "everyone"
+        access_level = "READ_ONLY"
+    }
 }
 ```
 
@@ -124,6 +129,12 @@ resource "buildkite_pipeline" "repo2" {
 - `description` - (Optional) A description of the pipeline.
 - `repository` - (Required) The git URL of the repository.
 - `steps` - (Required) The string YAML steps to run the pipeline.
+- `team` - (Optional) Set team access for the pipeline. Can be specified multiple times for each team.  
+
+The `team` block supports:
+
+- `slug` - (Required) The buildkite slug of the team.
+- `access_level` - (Required) The level of access to grant. Must be one of `READ_ONLY`, `BUILD_AND_READ` or `MANAGE_BUILD_AND_READ`.
 
 #### Attribute reference
 

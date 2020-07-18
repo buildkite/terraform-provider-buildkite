@@ -99,7 +99,7 @@ func resourcePipeline() *schema.Resource {
 			},
 			"team": {
 				Type:       schema.TypeSet,
-				Required:   true,
+				Optional:   true,
 				ConfigMode: schema.SchemaConfigModeAttr,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
