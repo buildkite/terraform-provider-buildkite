@@ -3,10 +3,11 @@ package buildkite
 import (
 	"context"
 	"fmt"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/shurcooL/graphql"
 	"log"
 	"net/http"
+
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/shurcooL/graphql"
 )
 
 // PipelineNode represents a pipeline as returned from the GraphQL API
@@ -14,6 +15,7 @@ type PipelineNode struct {
 	CancelIntermediateBuilds             graphql.Boolean
 	CancelIntermediateBuildsBranchFilter graphql.String
 	DefaultBranch                        graphql.String
+	BranchConfiguration                  graphql.String
 	Description                          graphql.String
 	Id                                   graphql.String
 	Name                                 graphql.String
@@ -62,6 +64,10 @@ func resourcePipeline() *schema.Resource {
 				Optional: true,
 				Default:  "",
 				Type:     schema.TypeString,
+			},
+			"branch_configuration": {
+				Type:     schema.TypeString,
+				Optional: true,
 			},
 			"default_branch": {
 				Optional: true,
@@ -145,12 +151,13 @@ func CreatePipeline(d *schema.ResourceData, m interface{}) error {
 	var mutation struct {
 		PipelineCreate struct {
 			Pipeline PipelineNode
-		} `graphql:"pipelineCreate(input: {cancelIntermediateBuilds: $cancel_intermediate_builds, cancelIntermediateBuildsBranchFilter: $cancel_intermediate_builds_branch_filter, defaultBranch: $default_branch, description: $desc, name: $name, organizationId: $org, repository: {url: $repository_url}, skipIntermediateBuilds: $skip_intermediate_builds, skipIntermediateBuildsBranchFilter: $skip_intermediate_builds_branch_filter, steps: {yaml: $steps}})"`
+		} `graphql:"pipelineCreate(input: {cancelIntermediateBuilds: $cancel_intermediate_builds, cancelIntermediateBuildsBranchFilter: $cancel_intermediate_builds_branch_filter, defaultBranch: $default_branch, branchConfiguration: $branch_configuration, description: $desc, name: $name, organizationId: $org, repository: {url: $repository_url}, skipIntermediateBuilds: $skip_intermediate_builds, skipIntermediateBuildsBranchFilter: $skip_intermediate_builds_branch_filter, steps: {yaml: $steps}})"`
 	}
 	vars := map[string]interface{}{
 		"cancel_intermediate_builds":               graphql.Boolean(d.Get("cancel_intermediate_builds").(bool)),
 		"cancel_intermediate_builds_branch_filter": graphql.String(d.Get("cancel_intermediate_builds_branch_filter").(string)),
 		"default_branch":                           graphql.String(d.Get("default_branch").(string)),
+		"branch_configuration":                     graphql.String(d.Get("branch_configuration").(string)),
 		"desc":                                     graphql.String(d.Get("description").(string)),
 		"name":                                     graphql.String(d.Get("name").(string)),
 		"org":                                      orgId,
@@ -208,12 +215,13 @@ func UpdatePipeline(d *schema.ResourceData, m interface{}) error {
 	var mutation struct {
 		PipelineUpdate struct {
 			Pipeline PipelineNode
-		} `graphql:"pipelineUpdate(input: {cancelIntermediateBuilds: $cancel_intermediate_builds, cancelIntermediateBuildsBranchFilter: $cancel_intermediate_builds_branch_filter, defaultBranch: $default_branch, description: $desc, id: $id, name: $name, repository: {url: $repository_url}, skipIntermediateBuilds: $skip_intermediate_builds, skipIntermediateBuildsBranchFilter: $skip_intermediate_builds_branch_filter, steps: {yaml: $steps}})"`
+		} `graphql:"pipelineUpdate(input: {cancelIntermediateBuilds: $cancel_intermediate_builds, cancelIntermediateBuildsBranchFilter: $cancel_intermediate_builds_branch_filter, defaultBranch: $default_branch, branchConfiguration: $branch_configuration, description: $desc, id: $id, name: $name, repository: {url: $repository_url}, skipIntermediateBuilds: $skip_intermediate_builds, skipIntermediateBuildsBranchFilter: $skip_intermediate_builds_branch_filter, steps: {yaml: $steps}})"`
 	}
 	vars := map[string]interface{}{
 		"cancel_intermediate_builds":               graphql.Boolean(d.Get("cancel_intermediate_builds").(bool)),
 		"cancel_intermediate_builds_branch_filter": graphql.String(d.Get("cancel_intermediate_builds_branch_filter").(string)),
 		"default_branch":                           graphql.String(d.Get("default_branch").(string)),
+		"branch_configuration":                     graphql.String(d.Get("branch_configuration").(string)),
 		"desc":                                     graphql.String(d.Get("description").(string)),
 		"id":                                       graphql.ID(d.Id()),
 		"name":                                     graphql.String(d.Get("name").(string)),
@@ -437,6 +445,7 @@ func updatePipelineResource(d *schema.ResourceData, pipeline *PipelineNode) {
 	d.Set("cancel_intermediate_builds", bool(pipeline.CancelIntermediateBuilds))
 	d.Set("cancel_intermediate_builds_branch_filter", string(pipeline.CancelIntermediateBuildsBranchFilter))
 	d.Set("default_branch", string(pipeline.DefaultBranch))
+	d.Set("branch_configuration", string(pipeline.BranchConfiguration))
 	d.Set("description", string(pipeline.Description))
 	d.Set("name", string(pipeline.Name))
 	d.Set("repository", string(pipeline.Repository.Url))
