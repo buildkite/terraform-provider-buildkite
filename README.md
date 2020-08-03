@@ -128,6 +128,7 @@ resource "buildkite_pipeline" "repo2" {
 - `name` - (Required) The name of the pipeline.
 - `description` - (Optional) A description of the pipeline.
 - `repository` - (Required) The git URL of the repository.
+- `default_branch` - (Optional) The default branch to prefill when new builds are created or triggered.
 - `steps` - (Required) The string YAML steps to run the pipeline.
 - `team` - (Optional) Set team access for the pipeline. Can be specified multiple times for each team.  
 
