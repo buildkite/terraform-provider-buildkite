@@ -1,7 +1,9 @@
 package buildkite
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -15,7 +17,6 @@ type PipelineNode struct {
 	CancelIntermediateBuilds             graphql.Boolean
 	CancelIntermediateBuildsBranchFilter graphql.String
 	DefaultBranch                        graphql.String
-	BranchConfiguration                  graphql.String
 	Description                          graphql.String
 	Id                                   graphql.String
 	Name                                 graphql.String
@@ -151,13 +152,12 @@ func CreatePipeline(d *schema.ResourceData, m interface{}) error {
 	var mutation struct {
 		PipelineCreate struct {
 			Pipeline PipelineNode
-		} `graphql:"pipelineCreate(input: {cancelIntermediateBuilds: $cancel_intermediate_builds, cancelIntermediateBuildsBranchFilter: $cancel_intermediate_builds_branch_filter, defaultBranch: $default_branch, branchConfiguration: $branch_configuration, description: $desc, name: $name, organizationId: $org, repository: {url: $repository_url}, skipIntermediateBuilds: $skip_intermediate_builds, skipIntermediateBuildsBranchFilter: $skip_intermediate_builds_branch_filter, steps: {yaml: $steps}})"`
+		} `graphql:"pipelineCreate(input: {cancelIntermediateBuilds: $cancel_intermediate_builds, cancelIntermediateBuildsBranchFilter: $cancel_intermediate_builds_branch_filter, defaultBranch: $default_branch, description: $desc, name: $name, organizationId: $org, repository: {url: $repository_url}, skipIntermediateBuilds: $skip_intermediate_builds, skipIntermediateBuildsBranchFilter: $skip_intermediate_builds_branch_filter, steps: {yaml: $steps}})"`
 	}
 	vars := map[string]interface{}{
 		"cancel_intermediate_builds":               graphql.Boolean(d.Get("cancel_intermediate_builds").(bool)),
 		"cancel_intermediate_builds_branch_filter": graphql.String(d.Get("cancel_intermediate_builds_branch_filter").(string)),
 		"default_branch":                           graphql.String(d.Get("default_branch").(string)),
-		"branch_configuration":                     graphql.String(d.Get("branch_configuration").(string)),
 		"desc":                                     graphql.String(d.Get("description").(string)),
 		"name":                                     graphql.String(d.Get("name").(string)),
 		"org":                                      orgId,
@@ -183,6 +183,7 @@ func CreatePipeline(d *schema.ResourceData, m interface{}) error {
 	}
 
 	updatePipelineResource(d, &mutation.PipelineCreate.Pipeline)
+	updatePipelineWithRESTfulAPI(d, client)
 
 	return ReadPipeline(d, m)
 }
@@ -215,13 +216,12 @@ func UpdatePipeline(d *schema.ResourceData, m interface{}) error {
 	var mutation struct {
 		PipelineUpdate struct {
 			Pipeline PipelineNode
-		} `graphql:"pipelineUpdate(input: {cancelIntermediateBuilds: $cancel_intermediate_builds, cancelIntermediateBuildsBranchFilter: $cancel_intermediate_builds_branch_filter, defaultBranch: $default_branch, branchConfiguration: $branch_configuration, description: $desc, id: $id, name: $name, repository: {url: $repository_url}, skipIntermediateBuilds: $skip_intermediate_builds, skipIntermediateBuildsBranchFilter: $skip_intermediate_builds_branch_filter, steps: {yaml: $steps}})"`
+		} `graphql:"pipelineUpdate(input: {cancelIntermediateBuilds: $cancel_intermediate_builds, cancelIntermediateBuildsBranchFilter: $cancel_intermediate_builds_branch_filter, defaultBranch: $default_branch, description: $desc, id: $id, name: $name, repository: {url: $repository_url}, skipIntermediateBuilds: $skip_intermediate_builds, skipIntermediateBuildsBranchFilter: $skip_intermediate_builds_branch_filter, steps: {yaml: $steps}})"`
 	}
 	vars := map[string]interface{}{
 		"cancel_intermediate_builds":               graphql.Boolean(d.Get("cancel_intermediate_builds").(bool)),
 		"cancel_intermediate_builds_branch_filter": graphql.String(d.Get("cancel_intermediate_builds_branch_filter").(string)),
 		"default_branch":                           graphql.String(d.Get("default_branch").(string)),
-		"branch_configuration":                     graphql.String(d.Get("branch_configuration").(string)),
 		"desc":                                     graphql.String(d.Get("description").(string)),
 		"id":                                       graphql.ID(d.Id()),
 		"name":                                     graphql.String(d.Get("name").(string)),
@@ -246,6 +246,7 @@ func UpdatePipeline(d *schema.ResourceData, m interface{}) error {
 	}
 
 	updatePipelineResource(d, &mutation.PipelineUpdate.Pipeline)
+	updatePipelineWithRESTfulAPI(d, client)
 
 	return ReadPipeline(d, m)
 }
@@ -267,6 +268,39 @@ func DeletePipeline(d *schema.ResourceData, m interface{}) error {
 	resp, err := client.http.Do(req)
 	if err != nil && resp.StatusCode != 204 {
 		log.Printf("Unable to delete pipeline %s", slug)
+		return err
+	}
+
+	return nil
+}
+
+// As of August 7th 2020, GraphQL Pipeline is lacking support for updating properties:
+// - branch_configuration
+// - github provider configuration
+// We fallback to REST API
+func updatePipelineWithRESTfulAPI(d *schema.ResourceData, client *Client) error {
+	slug := d.Get("slug").(string)
+	log.Printf("Updating pipeline %s ...", slug)
+
+	payload := map[string]interface{}{
+		"branch_configuration": d.Get("branch_configuration").(string),
+	}
+
+	jsonStr, err := json.Marshal(payload)
+	if err != nil {
+		return err
+	}
+
+	req, err := http.NewRequest("PATCH", fmt.Sprintf("https://api.buildkite.com/v2/organizations/%s/pipelines/%s",
+		client.organization, slug), bytes.NewBuffer(jsonStr))
+	if err != nil {
+		return err
+	}
+
+	// a successful response returns 200
+	resp, err := client.http.Do(req)
+	if err != nil && resp.StatusCode != 200 {
+		log.Printf("Unable to update pipeline %s", slug)
 		return err
 	}
 
@@ -445,7 +479,6 @@ func updatePipelineResource(d *schema.ResourceData, pipeline *PipelineNode) {
 	d.Set("cancel_intermediate_builds", bool(pipeline.CancelIntermediateBuilds))
 	d.Set("cancel_intermediate_builds_branch_filter", string(pipeline.CancelIntermediateBuildsBranchFilter))
 	d.Set("default_branch", string(pipeline.DefaultBranch))
-	d.Set("branch_configuration", string(pipeline.BranchConfiguration))
 	d.Set("description", string(pipeline.Description))
 	d.Set("name", string(pipeline.Name))
 	d.Set("repository", string(pipeline.Repository.Url))
