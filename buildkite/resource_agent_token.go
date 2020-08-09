@@ -11,9 +11,9 @@ import (
 // AgentTokenNode represents a pipeline as returned from the GraphQL API
 type AgentTokenNode struct {
 	Description graphql.String
-	Id          graphql.String
+	ID          graphql.String
 	Token       graphql.String
-	Uuid        graphql.String
+	UUID        graphql.String
 	RevokedAt   graphql.String
 }
 
@@ -125,8 +125,8 @@ func DeleteToken(d *schema.ResourceData, m interface{}) error {
 }
 
 func updateAgentToken(d *schema.ResourceData, t *AgentTokenNode) {
-	d.SetId(string(t.Id))
-	d.Set("uuid", string(t.Uuid))
+	d.SetId(string(t.ID))
+	d.Set("uuid", string(t.UUID))
 	d.Set("description", string(t.Description))
 	d.Set("token", string(t.Token))
 }

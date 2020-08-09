@@ -13,13 +13,13 @@ type TeamMemberRole graphql.String
 
 type TeamNode struct {
 	Description               graphql.String
-	Id                        graphql.String
+	ID                        graphql.String
 	IsDefaultTeam             graphql.Boolean
 	Name                      graphql.String
 	MembersCanCreatePipelines graphql.Boolean
 	Privacy                   TeamPrivacy
 	Slug                      graphql.String
-	Uuid                      graphql.String
+	UUID                      graphql.String
 }
 
 func resourceTeam() *schema.Resource {
@@ -205,12 +205,12 @@ func DeleteTeam(d *schema.ResourceData, m interface{}) error {
 }
 
 func updateTeam(d *schema.ResourceData, t *TeamNode) {
-	d.SetId(string(t.Id))
+	d.SetId(string(t.ID))
 	d.Set("default_team", bool(t.IsDefaultTeam))
 	d.Set("description", string(t.Description))
 	d.Set("members_can_create_pipelines", bool(t.MembersCanCreatePipelines))
 	d.Set("name", string(t.Name))
 	d.Set("privacy", string(t.Privacy))
 	d.Set("slug", string(t.Slug))
-	d.Set("uuid", string(t.Uuid))
+	d.Set("uuid", string(t.UUID))
 }

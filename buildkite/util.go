@@ -44,7 +44,7 @@ func GetTeamID(slug string, client *Client) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	id := string(query.Team.Id)
+	id := string(query.Team.ID)
 	log.Printf("Found id '%s' for team '%s'.", id, slug)
 	return id, nil
 }
