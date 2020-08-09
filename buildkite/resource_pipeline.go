@@ -1,12 +1,15 @@
 package buildkite
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/shurcooL/graphql"
 	"log"
 	"net/http"
+
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/shurcooL/graphql"
 )
 
 // PipelineNode represents a pipeline as returned from the GraphQL API
@@ -62,6 +65,10 @@ func resourcePipeline() *schema.Resource {
 				Optional: true,
 				Default:  "",
 				Type:     schema.TypeString,
+			},
+			"branch_configuration": {
+				Type:     schema.TypeString,
+				Optional: true,
 			},
 			"default_branch": {
 				Optional: true,
@@ -176,6 +183,7 @@ func CreatePipeline(d *schema.ResourceData, m interface{}) error {
 	}
 
 	updatePipelineResource(d, &mutation.PipelineCreate.Pipeline)
+	updatePipelineWithRESTfulAPI(d, client)
 
 	return ReadPipeline(d, m)
 }
@@ -238,6 +246,7 @@ func UpdatePipeline(d *schema.ResourceData, m interface{}) error {
 	}
 
 	updatePipelineResource(d, &mutation.PipelineUpdate.Pipeline)
+	updatePipelineWithRESTfulAPI(d, client)
 
 	return ReadPipeline(d, m)
 }
@@ -259,6 +268,39 @@ func DeletePipeline(d *schema.ResourceData, m interface{}) error {
 	resp, err := client.http.Do(req)
 	if err != nil && resp.StatusCode != 204 {
 		log.Printf("Unable to delete pipeline %s", slug)
+		return err
+	}
+
+	return nil
+}
+
+// As of August 7th 2020, GraphQL Pipeline is lacking support for updating properties:
+// - branch_configuration
+// - github provider configuration
+// We fallback to REST API
+func updatePipelineWithRESTfulAPI(d *schema.ResourceData, client *Client) error {
+	slug := d.Get("slug").(string)
+	log.Printf("Updating pipeline %s ...", slug)
+
+	payload := map[string]interface{}{
+		"branch_configuration": d.Get("branch_configuration").(string),
+	}
+
+	jsonStr, err := json.Marshal(payload)
+	if err != nil {
+		return err
+	}
+
+	req, err := http.NewRequest("PATCH", fmt.Sprintf("https://api.buildkite.com/v2/organizations/%s/pipelines/%s",
+		client.organization, slug), bytes.NewBuffer(jsonStr))
+	if err != nil {
+		return err
+	}
+
+	// a successful response returns 200
+	resp, err := client.http.Do(req)
+	if err != nil && resp.StatusCode != 200 {
+		log.Printf("Unable to update pipeline %s", slug)
 		return err
 	}
 
