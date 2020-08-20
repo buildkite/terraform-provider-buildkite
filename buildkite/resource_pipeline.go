@@ -37,7 +37,11 @@ type PipelineNode struct {
 	UUID       graphql.String
 	WebhookURL graphql.String `graphql:"webhookURL"`
 }
+
+// PipelineAccessLevels represents a pipeline access levels as returned from the GraphQL API
 type PipelineAccessLevels graphql.String
+
+// TeamPipelineNode represents a team pipeline as returned from the GraphQL API
 type TeamPipelineNode struct {
 	AccessLevel PipelineAccessLevels
 	ID          graphql.String
@@ -255,19 +259,21 @@ func UpdatePipeline(d *schema.ResourceData, m interface{}) error {
 func DeletePipeline(d *schema.ResourceData, m interface{}) error {
 	client := m.(*Client)
 
-	slug := d.Get("slug").(string)
-	log.Printf("Deleting pipeline %s ...", slug)
-	// there is no delete mutation in graphql yet so we must use rest api
-	req, err := http.NewRequest("DELETE", fmt.Sprintf("https://api.buildkite.com/v2/organizations/%s/pipelines/%s",
-		client.organization, slug), nil)
-	if err != nil {
-		return err
+	var mutation struct {
+		PipelineDelete struct {
+			Organization struct {
+				ID graphql.ID
+			}
+		} `graphql:"pipelineDelete(input: {id: $id})"`
+	}
+	vars := map[string]interface{}{
+		"id": graphql.ID(d.Id()),
 	}
 
-	// a successful response returns 204
-	resp, err := client.http.Do(req)
-	if err != nil && resp.StatusCode != 204 {
-		log.Printf("Unable to delete pipeline %s", slug)
+	log.Printf("Deleting pipeline %s ...", d.Get("name"))
+	err := client.graphql.Mutate(context.Background(), &mutation, vars)
+	if err != nil {
+		log.Printf("Unable to delete pipeline %s", d.Get("name"))
 		return err
 	}
 
