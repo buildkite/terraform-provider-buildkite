@@ -1,6 +1,6 @@
 # <resource name> Resource/Data Source
 
-This resource allows you to create pipelines for repositories.
+This resource allows you to create and manage pipelines for repositories.
 
 Buildkite Documentation: https://buildkite.com/docs/pipelines
 
