@@ -1,0 +1,57 @@
+# <resource name> Resource/Data Source
+
+This resource allows you to create pipelines for repositories.
+
+Buildkite Documentation: https://buildkite.com/docs/pipelines
+
+## Example Usage
+
+```hcl
+# in ./steps.yml:
+# steps:
+#   - label: ':pipeline:'
+#     command: buildkite-agent upload
+
+resource "buildkite_pipeline" "repo2" {
+    name = "repo2"
+    repository = "git@github.com:org/repo2"
+    steps = file("./steps.yml")
+
+    team {
+        slug = "everyone"
+        access_level = "READ_ONLY"
+    }
+}
+```
+
+## Argument Reference
+
+* `name` - (Required) The name of the pipeline.
+* `repository` - (Required) The git URL of the repository.
+* `steps` - (Required) The string YAML steps to run the pipeline.
+* `description` - (Optional) A description of the pipeline.
+
+* `default_branch` - (Optional) The default branch to prefill when new builds are created or triggered.
+* `branch_configuration` - (Optional) Limit which branches and tags cause new builds to be created, either via a code push or via the Builds REST API.
+* `team` - (Optional) Set team access for the pipeline. Can be specified multiple times for each team.
+
+### Team
+
+The `team` block supports:
+
+* `slug` - (Required) The buildkite slug of the team.
+* `access_level` - (Required) The level of access to grant. Must be one of `READ_ONLY`, `BUILD_AND_READ` or `MANAGE_BUILD_AND_READ`.
+
+## Attribute Reference
+
+* `webhook_url` - The Buildkite webhook URL to configure on the repository to trigger builds on this pipeline.
+* `slug` - The slug of the created pipeline.
+
+
+## Import
+
+Pipelines can be imported using the `GraphQL ID` (not UUID), e.g.
+
+```
+$ terraform import buildkite_pipeline.fleet UGlwZWxpbmUtLS00MzVjYWQ1OC1lODFkLTQ1YWYtODYzNy1iMWNmODA3MDIzOGQ=
+```
