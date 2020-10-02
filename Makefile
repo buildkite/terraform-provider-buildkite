@@ -3,7 +3,7 @@ HOSTNAME=github.com
 NAMESPACE=jradtilbrook
 NAME=buildkite
 BINARY=terraform-provider-${NAME}
-VERSION=0.10.0
+VERSION=0.0.10
 OS_ARCH=darwin_amd64
 
 default: install
