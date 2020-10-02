@@ -1,4 +1,4 @@
-# <resource name> Resource/Data Source
+# Resource: agent_token
 
 This resource allows you to create and manage agent tokens.
 

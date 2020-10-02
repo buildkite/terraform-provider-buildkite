@@ -1,4 +1,4 @@
-# <resource name> Resource/Data Source
+# Resource: pipeline
 
 This resource allows you to create and manage pipelines for repositories.
 

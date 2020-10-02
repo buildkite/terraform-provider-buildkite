@@ -1,4 +1,4 @@
-# <resource name> Resource/Data Source
+# Resource: team
 
 This resource allows you to create and manage teams.
 
