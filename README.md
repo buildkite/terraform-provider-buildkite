@@ -11,13 +11,25 @@ The provider allows you to manage resources in your Buildkite organization. Curr
 
 ## Installation
 
-There are multiple ways to get a binary for this provider:
+The recommended way is to download a pre-built release from Github.
 
-- download a pre-built release from GitHub _**recommended**_
+For OSX:
+
+```bash
+export TF_BK_VERSION=0.0.10
+mkdir -p ~/.terraform.d/plugins/darwin_amd64
+wget \
+  "https://github.com/jradtilbrook/terraform-provider-buildkite/releases/download/v"$TF_BK_VERSION"/terraform-provider-buildkite_v"$TF_BK_VERSION"_darwin_amd64.tar.gz" \
+  -O terraform-provider-buildkite.tar.gz
+tar -zxvf terraform-provider-buildkite.tar.gz terraform-provider-buildkite_v$TF_BK_VERSION
+mv terraform-provider-buildkite_v$TF_BK_VERSION ~/.terraform.d/plugins/darwin_amd64/
+rm terraform-provider-buildkite.tar.gz
+```
+
+Other ways to get a binary for this provider will not include the version information and so are not recommended.
+
 - clone this repo and build it
 - `go get github.com/jradtilbrook/terraform-provider-buildkite`
-
-*Note*: The last 2 options will not include the version information so are not recommended
 
 Once you have a binary you need to make sure it's on terraform plugin search path. You can get more information from
 [the terraform docs](https://www.terraform.io/docs/configuration/providers.html#third-party-plugins).
@@ -37,14 +49,6 @@ provider "buildkite" {
 # create an agent token with an optional description
 resource "buildkite_agent_token" "token" {
     description = "default agent token"
-}
-
-# create a pipeline with default upload step
-resource "buildkite_pipeline" "repo1" {
-    name = "repo1"
-    description = "a repository pipeline"
-    repository = "git@github.com:org/repo1"
-    steps = "steps:\n  - command: \"buildkite-agent pipeline upload\"\n    label: \":pipeline:\""
 }
 
 # create a pipeline with default upload step and assign team access
