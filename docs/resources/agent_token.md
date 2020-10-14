@@ -26,7 +26,7 @@ resource "buildkite_agent_token" "fleet" {
 * `uuid` - The UUID of the token.
 
 
-## Import
+## Import
 
 Tokens can be imported using the `GraphQL ID` (not UUID), e.g.
 
