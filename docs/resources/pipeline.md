@@ -33,6 +33,10 @@ resource "buildkite_pipeline" "repo2" {
 
 * `default_branch` - (Optional) The default branch to prefill when new builds are created or triggered.
 * `branch_configuration` - (Optional) Limit which branches and tags cause new builds to be created, either via a code push or via the Builds REST API.
+* `skip_intermediate_builds` - (Optional, Default: `false` ) A boolean to enable automatically skipping any unstarted builds on the same branch when a new build is created.    
+* `skip_intermediate_builds_branch_filter` - (Optional) Limit which branches build skipping applies to, for example !master will ensure that the master branch won't have it's builds automatically skipped.
+* `cancel_intermediate_builds` - (Optional, Default: `false` ) A boolean to enable automtically cancelling any running builds on the same branch when a new build is created.   
+* `cancel_intermediate_builds_branch_filter` - (Optional) Limit which branches build cancelling applies to, for example !master will ensure that the master branch won't have it's builds automatically cancelled.
 * `team` - (Optional) Set team access for the pipeline. Can be specified multiple times for each team.
 
 ### Team
