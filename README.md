@@ -1,6 +1,6 @@
 # Buildkite Terraform Provider
 
-This is a Terraform provider for Buildkite.
+This is the official Terraform provider for Buildkite.
 
 The provider allows you to manage resources in your Buildkite organization.
 
