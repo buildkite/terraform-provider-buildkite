@@ -42,4 +42,16 @@ Buildkite Terraform Provider is licensed under the MIT license.
 
 ## Local development
 
-Contributions welcome!!
+Contributions are welcome.
+
+If you wish to work on the provider, you'll first need Go installed on your machine (version 1.12+ is required). Dependencies are managed via gomodules and installed automatically as required.
+
+To compile the provider:
+
+    make build
+
+To run local tests that don't require any network access:
+
+    make test
+
+Buildkite has two APIs: REST and GraphQL. New resources should use the GraphQL API where possible, but can fallback to the REST API for resouces or properties not yet supported by GraphQL.
