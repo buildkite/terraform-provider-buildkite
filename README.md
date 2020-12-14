@@ -1,8 +1,15 @@
 # Buildkite Terraform Provider
 
-This is the official Terraform provider for Buildkite.
+This is the official Terraform provider for [Buildkite](https://buildkite.com).
 
 The provider allows you to manage resources in your Buildkite organization.
+
+Two configuration values are required:
+
+* An API token, generated at https://buildkite.com/user/api-access-tokens. The
+  token must have the `write_pipelines` REST API scope and be enabled for GraphQL
+* A Buildkite organization slug, available by signing into buildkite.com and
+  examining the URL: https://buildkite.com/<org-slug>
 
 ## Quick Start
 
