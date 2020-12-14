@@ -1,12 +1,26 @@
 # Buildkite Provider
 
-This provider can be used to manage resources on `buildkite.com` via Terraform.
+This provider can be used to manage resources on [buildkite.com](https://buildkite.com) via Terraform.
 
-Create an API Access Token in Buildkite at https://buildkite.com/user/api-access-tokens/new.
+Two configuration values are required:
+
+* An API token, generated at https://buildkite.com/user/api-access-tokens. The
+  token must have the `write_pipelines` REST API scope and be enabled for GraphQL
+* A Buildkite organization slug, available by signing into buildkite.com and
+  examining the URL: https://buildkite.com/<org-slug>
 
 ## Example Usage
 
 ```hcl
+terraform {
+  required_providers {
+    buildkite = {
+      source = "jradtilbrook/buildkite"
+      version = "0.0.15"
+    }
+  }
+}
+
 provider "buildkite" {
     api_token = "token" # can also be set from env: BUILDKITE_API_TOKEN
     organization = "slug" # can also be set from env: BUILDKITE_ORGANIZATION
