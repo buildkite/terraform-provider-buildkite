@@ -1,4 +1,4 @@
-module github.com/jradtilbrook/terraform-provider-buildkite
+module github.com/buildkite/terraform-provider-buildkite
 
 go 1.12
 
