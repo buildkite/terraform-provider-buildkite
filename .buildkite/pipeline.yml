@@ -1,0 +1,31 @@
+steps:
+  - label: fmt
+    key: fmt
+    command: "make testfmt"
+    plugins:
+      docker-compose#v2.2.0:
+        run: go
+
+  - label: vet
+    key: vet
+    command: "make vet"
+    plugins:
+      docker-compose#v2.2.0:
+        run: go
+
+  - label: test
+    key: test
+    command: "make test"
+    plugins:
+      docker-compose#v2.2.0:
+        run: go
+
+  - label: build
+    command: "make"
+    plugins:
+      docker-compose#v2.2.0:
+        run: go
+    depends_on:
+      - fmt
+      - test
+      - vet
