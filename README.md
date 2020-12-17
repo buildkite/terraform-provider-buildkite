@@ -45,7 +45,7 @@ GitHub release. All that is required is to create the release in GitHub.
 
 ## Thanks :heart:
 
-* A massive thanks to [Jarryd Tilbrook](https://github.com/jradtilbrook) for authoring the original Buildkite Terraform provider.
+A massive thanks to [Jarryd Tilbrook](https://github.com/jradtilbrook) for authoring the original Buildkite Terraform provider.
 
 ## License
 
