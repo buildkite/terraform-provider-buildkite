@@ -43,6 +43,10 @@ provider "buildkite" {
 This repo has GitHub Actions setup that will automatically build the binary for different platforms and attach it to a
 GitHub release. All that is required is to create the release in GitHub.
 
+## Thanks :heart:
+
+* A massive thanks to [Jarryd Tilbrook](https://github.com/jradtilbrook) for authoring the original Buildkite Terraform provider.
+
 ## License
 
 Buildkite Terraform Provider is licensed under the MIT license.
