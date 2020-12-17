@@ -6,6 +6,13 @@ steps:
       docker-compose#v2.2.0:
         run: go
 
+  - label: vet
+    key: vet
+    command: "make vet"
+    plugins:
+      docker-compose#v2.2.0:
+        run: go
+
   - label: test
     key: test
     command: "make test"
@@ -21,3 +28,4 @@ steps:
     depends_on:
       - fmt
       - test
+      - vet
