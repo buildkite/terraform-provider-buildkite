@@ -13,7 +13,7 @@ Two configuration values are required:
 
 ## Quick Start
 
-- [Using the provider](https://registry.terraform.io/providers/jradtilbrook/buildkite/latest)
+- [Using the provider](https://registry.terraform.io/providers/buildktie/buildkite/latest)
 
 ## Installation
 
@@ -25,8 +25,8 @@ To use the provider, add the following terraform:
 terraform {
   required_providers {
     buildkite = {
-      source = "jradtilbrook/buildkite"
-      version = "0.0.15"
+      source = "buildkite/buildkite"
+      version = "0.0.16"
     }
   }
 }

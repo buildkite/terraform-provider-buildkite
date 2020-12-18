@@ -15,8 +15,8 @@ Two configuration values are required:
 terraform {
   required_providers {
     buildkite = {
-      source = "jradtilbrook/buildkite"
-      version = "0.0.15"
+      source = "buildkite/buildkite"
+      version = "0.0.16"
     }
   }
 }
