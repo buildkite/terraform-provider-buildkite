@@ -4,6 +4,7 @@
 # TODO: exit if the tagger release is already on GitHub
 
 if [ -z "$BUILDKITE_TAG" ]
+then
     echo
     echo "Releases only run when a new tag is pushed to github.com"
     echo
