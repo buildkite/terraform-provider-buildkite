@@ -66,3 +66,13 @@ To run local tests that don't require any network access:
     make test
 
 Buildkite has two APIs: REST and GraphQL. New resources should use the GraphQL API where possible, but can fallback to the REST API for resouces or properties not yet supported by GraphQL.
+
+## Release Process
+
+Pushing a new version tag to GitHub (or creating a new release on github.com)
+will trigger a new build in the release pipeline. That pipeline will compile
+the appropriate binaries, sign them, and attach them to a release in
+https://github.com/buildkite/terraform-provider-buildkite.
+
+The [terraform registry](https://registry.terraform.io) will detect the new
+release on GitHub and update their own listings.
