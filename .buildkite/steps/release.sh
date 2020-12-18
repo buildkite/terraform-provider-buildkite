@@ -13,6 +13,12 @@ else
     echo "Preparing to release: ${BUILDKITE_TAG}"
 fi
 
+echo "--- Fetching git tags"
+
+git show-ref --tags -d
+
+get fetch origin
+
 echo "--- importing GPG Secret Key"
 
 if [ -z "$GPG_SECRET_KEY_BASE64" ]
