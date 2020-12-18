@@ -17,7 +17,7 @@ echo "--- Fetching git tags"
 
 git show-ref --tags -d
 
-get fetch origin
+git fetch origin
 
 echo "--- importing GPG Secret Key"
 
