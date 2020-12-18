@@ -1,6 +1,6 @@
 # Buildkite Terraform Provider
 
-This is the official Terraform provider for [Buildkite](https://buildkite.com).
+This is the official Terraform provider for [Buildkite](https://buildkite.com). The provider is listed in the [Terraform Registry](https://registry.terraform.io/) and supports terraform >= 0.13.
 
 The provider allows you to manage resources in your Buildkite organization.
 
@@ -11,13 +11,12 @@ Two configuration values are required:
 * A Buildkite organization slug, available by signing into buildkite.com and
   examining the URL: https://buildkite.com/<org-slug>
 
-## Quick Start
+## Documentation
 
-- [Using the provider](https://registry.terraform.io/providers/buildktie/buildkite/latest)
+The reference documentation on [the terraform registry](https://registry.terraform.io/providers/buildktie/buildkite/latest)
+is the recommended location for guidance on using this provider.
 
 ## Installation
-
-This provider is hosted on the [Terraform Registry](https://registry.terraform.io/).
 
 To use the provider, add the following terraform:
 
@@ -37,11 +36,6 @@ provider "buildkite" {
   organization = "slug" # can also be set from env: BUILDKITE_ORGANIZATION
 }
 ```
-
-#### Releasing a version
-
-This repo has GitHub Actions setup that will automatically build the binary for different platforms and attach it to a
-GitHub release. All that is required is to create the release in GitHub.
 
 ## Thanks :heart:
 
