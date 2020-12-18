@@ -19,6 +19,9 @@ vendor/
 # GoReleaser dist
 dist/
 
+# goreleaser bin
+goreleaser
+
 # IDE files
 .idea
 

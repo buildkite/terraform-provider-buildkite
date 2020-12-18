@@ -7,3 +7,6 @@ services:
     volumes:
       - .:/work
     working_dir: /work
+    environment:
+      - GPG_SECRET_KEY_BASE64
+      - GITHUB_TOKEN
