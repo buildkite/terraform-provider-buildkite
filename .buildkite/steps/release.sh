@@ -3,11 +3,13 @@
 # TODO: exit if HEAD isn't tagged with a release
 # TODO: exit if the tagger release is already on GitHub
 
-if [[ ${BUILDKITE_BRANCH} != "main" ]]; then
+if [ -z "$BUILDKITE_TAG" ]
     echo
-    echo "Releases can only happen on the main branch"
+    echo "Releases only run when a new tag is pushed to github.com"
     echo
     exit 0
+else
+    echo "Preparing to release: ${BUILDKITE_TAG}"
 fi
 
 echo "--- importing GPG Secret Key"
