@@ -13,7 +13,7 @@ Two configuration values are required:
 
 ## Documentation
 
-The reference documentation on [the terraform registry](https://registry.terraform.io/providers/buildktie/buildkite/latest)
+The reference documentation on [the terraform registry](https://registry.terraform.io/providers/buildkite/buildkite/latest/docs)
 is the recommended location for guidance on using this provider.
 
 ## Installation
