@@ -28,8 +28,8 @@ resource "buildkite_pipeline_schedule" "repo2_nightly" {
 
 ## Import
 
-Pipeline schedules can be imported using the `GraphQL ID` (not UUID), e.g.
+Pipeline schedules can be imported using a slug (which consists of `$BUILDKITE_ORGANIZATION_SLUG/$BUILDKITE_PIPELINE_SLUG/$PIPELINE_SCHEDULE_UUID`), e.g.
 
 ```
-$ terraform import buildkite_pipeline_schedule.test UGlwZWxpbmUtLS00MzVjYWQ1OC1lODFkLTQ1YWYtODYzNy1iMWNmODA3MDIzOGQ=
+$ terraform import buildkite_pipeline_schedule.test myorg/test/1be3e7c7-1e03-4011-accf-b2d8eec90222
 ```

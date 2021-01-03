@@ -34,9 +34,8 @@ func resourcePipelineSchedule() *schema.Resource {
 		Update: UpdatePipelineSchedule,
 		Delete: DeletePipelineSchedule,
 		Importer: &schema.ResourceImporter{
-			State: schema.ImportStatePassthrough,
+			State: setPipelineScheduleIDFromSlug,
 		},
-
 		Schema: map[string]*schema.Schema{
 			"pipeline_id": {
 				Required: true,
@@ -78,6 +77,30 @@ func resourcePipelineSchedule() *schema.Resource {
 			},
 		},
 	}
+}
+
+func setPipelineScheduleIDFromSlug(d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
+	client := m.(*Client)
+
+	var query struct {
+		PipelineSchedule struct {
+			ID graphql.String
+		} `graphql:"pipelineSchedule(slug: $slug)"`
+	}
+
+	// d.Id() here is the last argument passed to the `terraform import buildkite_pipeline_schedule.NAME SCHEDULE_SLUG` command
+	vars := map[string]interface{}{
+		"slug": graphql.ID(d.Id()),
+	}
+
+	err := client.graphql.Query(context.Background(), &query, vars)
+	if err != nil {
+		return nil, err
+	}
+
+	d.SetId(string(query.PipelineSchedule.ID))
+
+	return []*schema.ResourceData{d}, nil
 }
 
 // CreatePipelineSchedule creates a Buildkite pipeline schedule
