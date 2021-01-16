@@ -1,7 +1,10 @@
 package buildkite
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
+	"io/ioutil"
 	"net/http"
 
 	"github.com/shurcooL/graphql"
@@ -27,4 +30,33 @@ func NewClient(org, apiToken string) *Client {
 		http:         httpClient,
 		organization: org,
 	}
+}
+
+func (client *Client) makeRequest(method string, url string, postData interface{}, responseObject interface{}) error {
+	jsonPayload, err := json.Marshal(postData)
+	if err != nil {
+		return err
+	}
+
+	req, err := http.NewRequest(method, url, bytes.NewBuffer(jsonPayload))
+	if err != nil {
+		return err
+	}
+
+	resp, err := client.http.Do(req)
+	if err != nil && resp.StatusCode >= 400 {
+		return err
+	}
+
+	defer resp.Body.Close()
+	responseBody, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+
+	if err := json.Unmarshal(responseBody, responseObject); err != nil {
+		return err
+	}
+
+	return nil
 }

@@ -1,12 +1,9 @@
 package buildkite
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"log"
-	"net/http"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -61,7 +58,7 @@ func resourcePipeline() *schema.Resource {
 		UpdateContext: UpdatePipeline,
 		DeleteContext: DeletePipeline,
 		Importer: &schema.ResourceImporter{
-			State: schema.ImportStatePassthrough,
+			StateContext: schema.ImportStatePassthroughContext,
 		},
 
 		Schema: map[string]*schema.Schema{
@@ -145,6 +142,104 @@ func resourcePipeline() *schema.Resource {
 					},
 				},
 			},
+			"provider_settings": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Computed: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"trigger_mode": {
+							Computed: true,
+							Optional: true,
+							Type:     schema.TypeString,
+							ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
+								switch v := val.(string); v {
+								case "code":
+								case "deployment":
+								case "fork":
+								case "none":
+									return
+								default:
+									errs = append(errs, fmt.Errorf("%q must be one of code, deployment, fork or none, got: %s", key, v))
+									return
+								}
+								return
+							},
+						},
+						"build_pull_requests": {
+							Computed: true,
+							Optional: true,
+							Type:     schema.TypeBool,
+						},
+						"pull_request_branch_filter_enabled": {
+							Computed: true,
+							Optional: true,
+							Type:     schema.TypeBool,
+						},
+						"pull_request_branch_filter_configuration": {
+							Computed: true,
+							Optional: true,
+							Type:     schema.TypeString,
+						},
+						"skip_pull_request_builds_for_existing_commits": {
+							Computed: true,
+							Optional: true,
+							Type:     schema.TypeBool,
+						},
+						"build_pull_request_ready_for_review": {
+							Computed: true,
+							Optional: true,
+							Type:     schema.TypeBool,
+						},
+						"build_pull_request_forks": {
+							Computed: true,
+							Optional: true,
+							Type:     schema.TypeBool,
+						},
+						"prefix_pull_request_fork_branch_names": {
+							Computed: true,
+							Optional: true,
+							Type:     schema.TypeBool,
+						},
+						"build_branches": {
+							Computed: true,
+							Optional: true,
+							Type:     schema.TypeBool,
+						},
+						"build_tags": {
+							Computed: true,
+							Optional: true,
+							Type:     schema.TypeBool,
+						},
+						"cancel_deleted_branch_builds": {
+							Computed: true,
+							Optional: true,
+							Type:     schema.TypeBool,
+						},
+						"publish_commit_status": {
+							Computed: true,
+							Optional: true,
+							Type:     schema.TypeBool,
+						},
+						"publish_blocked_as_pending": {
+							Computed: true,
+							Optional: true,
+							Type:     schema.TypeBool,
+						},
+						"publish_commit_status_per_step": {
+							Computed: true,
+							Optional: true,
+							Type:     schema.TypeBool,
+						},
+						"separate_pull_request_statuses": {
+							Computed: true,
+							Optional: true,
+							Type:     schema.TypeBool,
+						},
+					},
+				},
+			},
 			"webhook_url": {
 				Computed: true,
 				Type:     schema.TypeString,
@@ -205,7 +300,12 @@ func CreatePipeline(ctx context.Context, d *schema.ResourceData, m interface{}) 
 	log.Printf("Successfully created pipeline with id '%s'.", mutation.PipelineCreate.Pipeline.ID)
 
 	updatePipelineResource(d, &mutation.PipelineCreate.Pipeline)
-	updatePipelineWithRESTfulAPI(d, client)
+
+	pipelineExtraInfo, err := updatePipelineExtraInfo(d, client)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	updatePipelineResourceExtraInfo(d, &pipelineExtraInfo)
 
 	return ReadPipeline(ctx, d, m)
 }
@@ -228,6 +328,14 @@ func ReadPipeline(ctx context.Context, d *schema.ResourceData, m interface{}) di
 	}
 
 	updatePipelineResource(d, &query.Node.Pipeline)
+
+	if slug, pipelineExists := d.GetOk("slug"); pipelineExists {
+		pipelineExtraInfo, err := getPipelineExtraInfo(d, m, slug.(string))
+		if err != nil {
+			return diag.FromErr(err)
+		}
+		updatePipelineResourceExtraInfo(d, pipelineExtraInfo)
+	}
 
 	return nil
 }
@@ -268,7 +376,13 @@ func UpdatePipeline(ctx context.Context, d *schema.ResourceData, m interface{}) 
 	}
 
 	updatePipelineResource(d, &mutation.PipelineUpdate.Pipeline)
-	updatePipelineWithRESTfulAPI(d, client)
+
+	pipelineExtraInfo, err := updatePipelineExtraInfo(d, client)
+	if err != nil {
+		log.Print("Unable to update pipeline attributes via REST API")
+		return diag.FromErr(err)
+	}
+	updatePipelineResourceExtraInfo(d, &pipelineExtraInfo)
 
 	return ReadPipeline(ctx, d, m)
 }
@@ -298,37 +412,60 @@ func DeletePipeline(ctx context.Context, d *schema.ResourceData, m interface{}) 
 	return nil
 }
 
-// As of August 7th 2020, GraphQL Pipeline is lacking support for updating properties:
+// As of March 16, 2021, GraphQL Pipeline is lacking support for the following properties:
 // - branch_configuration
-// - github provider configuration
+// - provider_settings
 // We fallback to REST API
-func updatePipelineWithRESTfulAPI(d *schema.ResourceData, client *Client) error {
-	slug := d.Get("slug").(string)
-	log.Printf("Updating pipeline %s ...", slug)
 
+// PipelineExtraInfo is used to manage pipeline attributes that are not exposed via GraphQL API.
+type PipelineExtraInfo struct {
+	BranchConfiguration string `json:"branch_configuration"`
+	Provider            struct {
+		Settings struct {
+			TriggerMode                             string `json:"trigger_mode"`
+			BuildPullRequests                       bool   `json:"build_pull_requests"`
+			PullRequestBranchFilterEnabled          bool   `json:"pull_request_branch_filter_enabled"`
+			PullRequestBranchFilterConfiguration    string `json:"pull_request_branch_filter_configuration"`
+			SkipPullRequestBuildsForExistingCommits bool   `json:"skip_pull_request_builds_for_existing_commits"`
+			BuildPullRequestReadyForReview          bool   `json:"build_pull_request_ready_for_review"`
+			BuildPullRequestForks                   bool   `json:"build_pull_request_forks"`
+			PrefixPullRequestForkBranchNames        bool   `json:"prefix_pull_request_fork_branch_names"`
+			BuildBranches                           bool   `json:"build_branches"`
+			BuildTags                               bool   `json:"build_tags"`
+			CancelDeletedBranchBuilds               bool   `json:"cancel_deleted_branch_builds"`
+			PublishCommitStatus                     bool   `json:"publish_commit_status"`
+			PublishBlockedAsPending                 bool   `json:"publish_blocked_as_pending"`
+			PublishCommitStatusPerStep              bool   `json:"publish_commit_status_per_step"`
+			SeparatePullRequestStatuses             bool   `json:"separate_pull_request_statuses"`
+		} `json:"settings"`
+	} `json:"provider"`
+}
+
+func getPipelineExtraInfo(d *schema.ResourceData, m interface{}, slug string) (*PipelineExtraInfo, error) {
+	client := m.(*Client)
+	pipelineExtraInfo := PipelineExtraInfo{}
+	err := client.makeRequest("GET", fmt.Sprintf("https://api.buildkite.com/v2/organizations/%s/pipelines/%s", client.organization, slug), nil, &pipelineExtraInfo)
+	if err != nil {
+		return nil, err
+	}
+	return &pipelineExtraInfo, nil
+}
+
+func updatePipelineExtraInfo(d *schema.ResourceData, client *Client) (PipelineExtraInfo, error) {
 	payload := map[string]interface{}{
 		"branch_configuration": d.Get("branch_configuration").(string),
 	}
+	if settings := d.Get("provider_settings").([]interface{}); len(settings) > 0 {
+		payload["provider_settings"] = settings[0].(map[string]interface{})
+	}
 
-	jsonStr, err := json.Marshal(payload)
+	slug := d.Get("slug").(string)
+	pipelineExtraInfo := PipelineExtraInfo{}
+	err := client.makeRequest("PATCH", fmt.Sprintf("https://api.buildkite.com/v2/organizations/%s/pipelines/%s", client.organization, slug), payload, &pipelineExtraInfo)
 	if err != nil {
-		return err
+		return pipelineExtraInfo, err
 	}
-
-	req, err := http.NewRequest("PATCH", fmt.Sprintf("https://api.buildkite.com/v2/organizations/%s/pipelines/%s",
-		client.organization, slug), bytes.NewBuffer(jsonStr))
-	if err != nil {
-		return err
-	}
-
-	// a successful response returns 200
-	resp, err := client.http.Do(req)
-	if err != nil && resp.StatusCode != 200 {
-		log.Printf("Unable to update pipeline %s", slug)
-		return err
-	}
-
-	return nil
+	return pipelineExtraInfo, nil
 }
 
 func getTeamPipelinesFromSchema(d *schema.ResourceData) []TeamPipelineNode {
@@ -521,4 +658,30 @@ func updatePipelineResource(d *schema.ResourceData, pipeline *PipelineNode) {
 		teams[i] = team
 	}
 	d.Set("team", teams)
+}
+
+// updatePipelineResourceExtraInfo updates the terraform resource with data received from Buildkite REST API
+func updatePipelineResourceExtraInfo(d *schema.ResourceData, pipeline *PipelineExtraInfo) {
+	d.Set("branch_configuration", pipeline.BranchConfiguration)
+
+	s := &pipeline.Provider.Settings
+	providerSettings := make([]map[string]interface{}, 1, 1)
+	providerSettings[0] = map[string]interface{}{
+		"trigger_mode":                                  s.TriggerMode,
+		"build_pull_requests":                           s.BuildPullRequests,
+		"pull_request_branch_filter_enabled":            s.PullRequestBranchFilterEnabled,
+		"pull_request_branch_filter_configuration":      s.PullRequestBranchFilterConfiguration,
+		"skip_pull_request_builds_for_existing_commits": s.SkipPullRequestBuildsForExistingCommits,
+		"build_pull_request_ready_for_review":           s.BuildPullRequestReadyForReview,
+		"build_pull_request_forks":                      s.BuildPullRequestForks,
+		"prefix_pull_request_fork_branch_names":         s.PrefixPullRequestForkBranchNames,
+		"build_branches":                                s.BuildBranches,
+		"build_tags":                                    s.BuildTags,
+		"cancel_deleted_branch_builds":                  s.CancelDeletedBranchBuilds,
+		"publish_commit_status":                         s.PublishCommitStatus,
+		"publish_blocked_as_pending":                    s.PublishBlockedAsPending,
+		"publish_commit_status_per_step":                s.PublishCommitStatusPerStep,
+		"separate_pull_request_statuses":                s.SeparatePullRequestStatuses,
+	}
+	d.Set("provider_settings", providerSettings)
 }
