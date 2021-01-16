@@ -8,7 +8,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/shurcooL/graphql"
 )
 
@@ -34,7 +34,6 @@ type PipelineNode struct {
 			Node TeamPipelineNode
 		}
 	} `graphql:"teams(first: 50)"`
-	UUID       graphql.String
 	WebhookURL graphql.String `graphql:"webhookURL"`
 }
 
@@ -492,7 +491,6 @@ func updatePipelineResource(d *schema.ResourceData, pipeline *PipelineNode) {
 	d.Set("skip_intermediate_builds_branch_filter", string(pipeline.SkipIntermediateBuildsBranchFilter))
 	d.Set("slug", string(pipeline.Slug))
 	d.Set("steps", string(pipeline.Steps.YAML))
-	d.Set("uuid", string(pipeline.UUID))
 	d.Set("webhook_url", string(pipeline.WebhookURL))
 
 	teams := make([]map[string]interface{}, len(pipeline.Teams.Edges))
