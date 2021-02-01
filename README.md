@@ -49,7 +49,7 @@ Buildkite Terraform Provider is licensed under the MIT license.
 
 Contributions are welcome.
 
-If you wish to work on the provider, you'll first need Go installed on your machine (version 1.12+ is required). Dependencies are managed via gomodules and installed automatically as required.
+If you wish to work on the provider, you'll first need Go installed on your machine (version 1.14+ is required). Dependencies are managed via gomodules and installed automatically as required.
 
 To compile the provider:
 
