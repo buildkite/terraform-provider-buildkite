@@ -21,7 +21,7 @@ resource "buildkite_pipeline_schedule" "repo2_nightly" {
 * `label` - (Required) Schedule label.
 * `cronline` - (Required) Schedule interval (see [docs](https://buildkite.com/docs/pipelines/scheduled-builds#schedule-intervals)).
 * `branch` - (Required) The branch to use for the build.
-* `commit` - (Optional, Default: `HEAD`) The commit ref to use for the build..
+* `commit` - (Optional, Default: `HEAD`) The commit ref to use for the build.
 * `message` - (Optional, Default: `Scheduled build`) The message to use for the build.
 * `env` - (Optional) A map of environment variables to use for the build.
 * `enabled` - (Optional, Default: `true`) Whether the schedule should run.
