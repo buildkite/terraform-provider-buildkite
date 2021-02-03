@@ -1,4 +1,4 @@
-# Resource: pipeline
+# Resource: pipeline_schedule
 
 This resource allows you to create and manage pipeline schedules.
 
