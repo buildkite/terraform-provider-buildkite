@@ -8,9 +8,10 @@ import (
 func Provider() *schema.Provider {
 	return &schema.Provider{
 		ResourcesMap: map[string]*schema.Resource{
-			"buildkite_agent_token": resourceAgentToken(),
-			"buildkite_pipeline":    resourcePipeline(),
-			"buildkite_team":        resourceTeam(),
+			"buildkite_agent_token":       resourceAgentToken(),
+			"buildkite_pipeline":          resourcePipeline(),
+			"buildkite_pipeline_schedule": resourcePipelineSchedule(),
+			"buildkite_team":              resourceTeam(),
 		},
 		Schema: map[string]*schema.Schema{
 			"organization": &schema.Schema{
