@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
 var testAccProviders map[string]*schema.Provider
@@ -35,4 +36,11 @@ func testAccPreCheck(t *testing.T) {
 	if v := os.Getenv("BUILDKITE_API_TOKEN"); v == "" {
 		t.Fatal("BUILDKITE_API_TOKEN must be set for acceptance tests")
 	}
+}
+
+// testAccCheckExampleResourceDestroy verifies the Widget
+// has been destroyed
+func testAccCheckExampleResourceDestroy(s *terraform.State) error {
+	// TODO manually check that all resources created during acceptance tests have been cleaned up
+	return nil
 }

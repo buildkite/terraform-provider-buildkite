@@ -77,6 +77,26 @@ The repo contains a tf-proj/ directory that can be used to quickly test a compil
 
     BUILDKITE_API_TOKEN=<api-token> BUILDKITE_ORGANIZATION=<org-slug> terraform plan
 
+## Acceptance tests
+
+Acceptance tests that test the provider works against the live Buildkite API can be executed like this:
+
+    make testacc
+
+These tests require two environment variables to run correctly:
+
+    BUILDKITE_ORGANIZATION=<org-slug> BUILDKITE_API_TOKEN=<token> make testacc
+
+Note that these tests make live changes to an organization and probably
+shouldn't be run against organizations with real data. Anyone actively
+developing features for this provider is welcome to request a test organization
+by contacting support@buildkite.com.
+
+Also note that the CI process will not run acceptance tests on pull requests.
+Code reviewers will run the acceptance tests manually, and we ask that code
+submissions run the acceptance tests locally to confirm the tests pass before
+requesting a review.
+
 ## Release Process
 
 Pushing a new version tag to GitHub (or creating a new release on github.com)
