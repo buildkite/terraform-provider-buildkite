@@ -20,6 +20,18 @@ steps:
       docker-compose#v2.2.0:
         run: go
 
+  - label: acceptance tests
+    key: testacc
+    if: build.branch == "main"
+    command: "make testacc"
+    plugins:
+      - zacharymctague/aws-ssm#v1.0.0:
+          parameters:
+            BUILDKITE_ORGANIZATION: /pipelines/terraform-provider-buildkite-main/buildkite_organization
+            BUILDKITE_API_TOKEN: /pipelines/terraform-provider-buildkite-main/buildkite_api_token
+      - docker-compose#v2.2.0:
+          run: go
+
   - label: build
     command: "make"
     plugins:
@@ -28,4 +40,5 @@ steps:
     depends_on:
       - fmt
       - test
+      - testacc
       - vet

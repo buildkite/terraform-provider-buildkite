@@ -14,3 +14,8 @@ vet:
 
 test:
 	go test ./...
+
+# Acceptance tests. This will create, manage and delete real resources in a real
+# Buildkite organization!
+testacc:
+	TF_ACC=1 go test ./...
