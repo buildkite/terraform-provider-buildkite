@@ -59,3 +59,8 @@ override.tf.json
 # Ignore CLI configuration files
 .terraformrc
 terraform.rc
+
+# A local terraform project for rapid testing
+tf-proj/terraform.d/*
+tf-proj/*.tfstate
+tf-proj/*.tfstate.backup

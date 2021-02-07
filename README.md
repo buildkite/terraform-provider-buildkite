@@ -61,6 +61,22 @@ To run local tests that don't require any network access:
 
 Buildkite has two APIs: REST and GraphQL. New resources should use the GraphQL API where possible, but can fallback to the REST API for resouces or properties not yet supported by GraphQL.
 
+## Manual testing
+
+The repo contains a tf-proj/ directory that can be used to quickly test a compiled version of the provider from the current branch.
+
+1. Update tf-proj/main.tf to use the resource or property you're developing
+2. Compile the provider and copy it into the filesystem cache in tf-proj
+
+    go build -o terraform-provider-buildkite_v0.0.18 . && \
+      mkdir -p tf-proj/terraform.d/plugins/registry.terraform.io/buildkite/buildkite/0.0.18/linux_amd64/ && \
+      mv terraform-provider-buildkite_v0.0.18 tf-proj/terraform.d/plugins/registry.terraform.io/buildkite/buildkite/0.0.18/linux_amd64/
+
+3. Ensure the version number in the above command and in tf-proj/main.tf match
+4. Run `terraform plan` in the tf-proj directory
+
+    BUILDKITE_API_TOKEN=<api-token> BUILDKITE_ORGANIZATION=<org-slug> terraform plan
+
 ## Release Process
 
 Pushing a new version tag to GitHub (or creating a new release on github.com)
