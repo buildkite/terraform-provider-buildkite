@@ -18,6 +18,8 @@ is the recommended location for guidance on using this provider.
 
 ## Installation
 
+**NOTE**: This provider is built with the assumption that Buildkite Teams are enabled for your organisation. Most resources should work without, but we can't guarantee compatibility. Check out our [documentation regarding Teams](https://buildkite.com/docs/pipelines/permissions#permissions-with-teams) for more information.
+
 To use the provider, add the following terraform:
 
 ```hcl
