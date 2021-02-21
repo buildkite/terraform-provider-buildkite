@@ -7,6 +7,7 @@ import (
 	"log"
 	"strings"
 
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/shurcooL/graphql"
 )
@@ -30,10 +31,10 @@ type PipelineScheduleNode struct {
 // resourcePipelineSchedule represents the terraform pipeline_schedule resource schema
 func resourcePipelineSchedule() *schema.Resource {
 	return &schema.Resource{
-		Create: CreatePipelineSchedule,
-		Read:   ReadPipelineSchedule,
-		Update: UpdatePipelineSchedule,
-		Delete: DeletePipelineSchedule,
+		CreateContext: CreatePipelineSchedule,
+		ReadContext:   ReadPipelineSchedule,
+		UpdateContext: UpdatePipelineSchedule,
+		DeleteContext: DeletePipelineSchedule,
 		Importer: &schema.ResourceImporter{
 			State: setPipelineScheduleIDFromSlug,
 		},
@@ -109,7 +110,7 @@ func setPipelineScheduleIDFromSlug(d *schema.ResourceData, m interface{}) ([]*sc
 }
 
 // CreatePipelineSchedule creates a Buildkite pipeline schedule
-func CreatePipelineSchedule(d *schema.ResourceData, m interface{}) error {
+func CreatePipelineSchedule(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := m.(*Client)
 
 	var mutation struct {
@@ -135,16 +136,16 @@ func CreatePipelineSchedule(d *schema.ResourceData, m interface{}) error {
 	var err = client.graphql.Mutate(context.Background(), &mutation, vars)
 	if err != nil {
 		log.Printf("Unable to create pipeline schedule %s", d.Get("label"))
-		return err
+		return diag.FromErr(err)
 	}
 	log.Printf("Successfully created pipeline schedule with id '%s'.", mutation.PipelineScheduleCreatePayload.PipelineScheduleEdge.Node.ID)
 
 	updatePipelineScheduleResource(d, &mutation.PipelineScheduleCreatePayload.PipelineScheduleEdge.Node)
-	return ReadPipelineSchedule(d, m)
+	return ReadPipelineSchedule(ctx, d, m)
 }
 
 // ReadPipelineSchedule retrieves a Buildkite pipeline schedule
-func ReadPipelineSchedule(d *schema.ResourceData, m interface{}) error {
+func ReadPipelineSchedule(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := m.(*Client)
 	var query struct {
 		Node struct {
@@ -157,7 +158,7 @@ func ReadPipelineSchedule(d *schema.ResourceData, m interface{}) error {
 
 	err := client.graphql.Query(context.Background(), &query, vars)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	updatePipelineScheduleResource(d, &query.Node.PipelineSchedule)
@@ -165,7 +166,7 @@ func ReadPipelineSchedule(d *schema.ResourceData, m interface{}) error {
 }
 
 // UpdatePipelineSchedule updates a Buildkite pipeline schedule
-func UpdatePipelineSchedule(d *schema.ResourceData, m interface{}) error {
+func UpdatePipelineSchedule(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := m.(*Client)
 	var mutation struct {
 		PipelineScheduleUpdate struct {
@@ -187,15 +188,15 @@ func UpdatePipelineSchedule(d *schema.ResourceData, m interface{}) error {
 	err := client.graphql.Mutate(context.Background(), &mutation, vars)
 	if err != nil {
 		log.Printf("Unable to update pipeline schedule %s", d.Get("label"))
-		return err
+		return diag.FromErr(err)
 	}
 
 	updatePipelineScheduleResource(d, &mutation.PipelineScheduleUpdate.PipelineSchedule)
-	return ReadPipelineSchedule(d, m)
+	return ReadPipelineSchedule(ctx, d, m)
 }
 
 // DeletePipelineSchedule removes a Buildkite pipeline schedule
-func DeletePipelineSchedule(d *schema.ResourceData, m interface{}) error {
+func DeletePipelineSchedule(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := m.(*Client)
 
 	var mutation struct {
@@ -211,7 +212,7 @@ func DeletePipelineSchedule(d *schema.ResourceData, m interface{}) error {
 	err := client.graphql.Mutate(context.Background(), &mutation, vars)
 	if err != nil {
 		log.Printf("Unable to delete pipeline %s", d.Get("label"))
-		return err
+		return diag.FromErr(err)
 	}
 
 	return nil

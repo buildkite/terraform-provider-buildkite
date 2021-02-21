@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/shurcooL/graphql"
 )
@@ -50,10 +51,10 @@ type TeamPipelineNode struct {
 // resourcePipeline represents the terraform pipeline resource schema
 func resourcePipeline() *schema.Resource {
 	return &schema.Resource{
-		Create: CreatePipeline,
-		Read:   ReadPipeline,
-		Update: UpdatePipeline,
-		Delete: DeletePipeline,
+		CreateContext: CreatePipeline,
+		ReadContext:   ReadPipeline,
+		UpdateContext: UpdatePipeline,
+		DeleteContext: DeletePipeline,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -145,11 +146,11 @@ func resourcePipeline() *schema.Resource {
 }
 
 // CreatePipeline creates a Buildkite pipeline
-func CreatePipeline(d *schema.ResourceData, m interface{}) error {
+func CreatePipeline(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := m.(*Client)
 	orgID, err := GetOrganizationID(client.organization, client.graphql)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	var mutation struct {
@@ -174,7 +175,7 @@ func CreatePipeline(d *schema.ResourceData, m interface{}) error {
 	err = client.graphql.Mutate(context.Background(), &mutation, vars)
 	if err != nil {
 		log.Printf("Unable to create pipeline %s", d.Get("name"))
-		return err
+		return diag.FromErr(err)
 	}
 	log.Printf("Successfully created pipeline with id '%s'.", mutation.PipelineCreate.Pipeline.ID)
 
@@ -182,17 +183,17 @@ func CreatePipeline(d *schema.ResourceData, m interface{}) error {
 	err = reconcileTeamPipelines(teamPipelines, &mutation.PipelineCreate.Pipeline, client)
 	if err != nil {
 		log.Print("Unable to create team pipelines")
-		return err
+		return diag.FromErr(err)
 	}
 
 	updatePipelineResource(d, &mutation.PipelineCreate.Pipeline)
 	updatePipelineWithRESTfulAPI(d, client)
 
-	return ReadPipeline(d, m)
+	return ReadPipeline(ctx, d, m)
 }
 
 // ReadPipeline retrieves a Buildkite pipeline
-func ReadPipeline(d *schema.ResourceData, m interface{}) error {
+func ReadPipeline(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := m.(*Client)
 	var query struct {
 		Node struct {
@@ -205,7 +206,7 @@ func ReadPipeline(d *schema.ResourceData, m interface{}) error {
 
 	err := client.graphql.Query(context.Background(), &query, vars)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	updatePipelineResource(d, &query.Node.Pipeline)
@@ -214,7 +215,7 @@ func ReadPipeline(d *schema.ResourceData, m interface{}) error {
 }
 
 // UpdatePipeline updates a Buildkite pipeline
-func UpdatePipeline(d *schema.ResourceData, m interface{}) error {
+func UpdatePipeline(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := m.(*Client)
 	var mutation struct {
 		PipelineUpdate struct {
@@ -238,24 +239,24 @@ func UpdatePipeline(d *schema.ResourceData, m interface{}) error {
 	err := client.graphql.Mutate(context.Background(), &mutation, vars)
 	if err != nil {
 		log.Printf("Unable to update pipeline %s", d.Get("name"))
-		return err
+		return diag.FromErr(err)
 	}
 
 	teamPipelines := getTeamPipelinesFromSchema(d)
 	err = reconcileTeamPipelines(teamPipelines, &mutation.PipelineUpdate.Pipeline, client)
 	if err != nil {
 		log.Print("Unable to reconcile team pipelines")
-		return err
+		return diag.FromErr(err)
 	}
 
 	updatePipelineResource(d, &mutation.PipelineUpdate.Pipeline)
 	updatePipelineWithRESTfulAPI(d, client)
 
-	return ReadPipeline(d, m)
+	return ReadPipeline(ctx, d, m)
 }
 
 // DeletePipeline removes a Buildkite pipeline
-func DeletePipeline(d *schema.ResourceData, m interface{}) error {
+func DeletePipeline(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := m.(*Client)
 
 	var mutation struct {
@@ -273,7 +274,7 @@ func DeletePipeline(d *schema.ResourceData, m interface{}) error {
 	err := client.graphql.Mutate(context.Background(), &mutation, vars)
 	if err != nil {
 		log.Printf("Unable to delete pipeline %s", d.Get("name"))
-		return err
+		return diag.FromErr(err)
 	}
 
 	return nil

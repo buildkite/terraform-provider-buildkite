@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/shurcooL/graphql"
 )
@@ -25,10 +26,10 @@ type TeamNode struct {
 
 func resourceTeam() *schema.Resource {
 	return &schema.Resource{
-		Create: CreateTeam,
-		Read:   ReadTeam,
-		Update: UpdateTeam,
-		Delete: DeleteTeam,
+		CreateContext: CreateTeam,
+		ReadContext:   ReadTeam,
+		UpdateContext: UpdateTeam,
+		DeleteContext: DeleteTeam,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -95,11 +96,11 @@ func resourceTeam() *schema.Resource {
 }
 
 // CreateTeam creates a Buildkite team
-func CreateTeam(d *schema.ResourceData, m interface{}) error {
+func CreateTeam(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := m.(*Client)
 	id, err := GetOrganizationID(client.organization, client.graphql)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	var mutation struct {
@@ -122,7 +123,7 @@ func CreateTeam(d *schema.ResourceData, m interface{}) error {
 
 	err = client.graphql.Mutate(context.Background(), &mutation, vars)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	updateTeam(d, &mutation.TeamCreate.TeamEdge.Node)
@@ -131,7 +132,7 @@ func CreateTeam(d *schema.ResourceData, m interface{}) error {
 }
 
 // ReadTeam retrieves a Buildkite team
-func ReadTeam(d *schema.ResourceData, m interface{}) error {
+func ReadTeam(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := m.(*Client)
 
 	var query struct {
@@ -146,7 +147,7 @@ func ReadTeam(d *schema.ResourceData, m interface{}) error {
 
 	err := client.graphql.Query(context.Background(), &query, vars)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	updateTeam(d, &query.Node.Team)
@@ -155,7 +156,7 @@ func ReadTeam(d *schema.ResourceData, m interface{}) error {
 }
 
 // UpdateTeam updates a Buildkite team
-func UpdateTeam(d *schema.ResourceData, m interface{}) error {
+func UpdateTeam(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := m.(*Client)
 
 	var mutation struct {
@@ -176,7 +177,7 @@ func UpdateTeam(d *schema.ResourceData, m interface{}) error {
 
 	err := client.graphql.Mutate(context.Background(), &mutation, vars)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	updateTeam(d, &mutation.TeamUpdate.Team)
@@ -185,7 +186,7 @@ func UpdateTeam(d *schema.ResourceData, m interface{}) error {
 }
 
 // DeleteTeam removes a Buildkite team
-func DeleteTeam(d *schema.ResourceData, m interface{}) error {
+func DeleteTeam(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := m.(*Client)
 	var mutation struct {
 		TeamDelete struct {
@@ -199,7 +200,7 @@ func DeleteTeam(d *schema.ResourceData, m interface{}) error {
 
 	err := client.graphql.Mutate(context.Background(), &mutation, vars)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	return nil
