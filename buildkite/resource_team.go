@@ -15,6 +15,7 @@ type TeamNode struct {
 	Description               graphql.String
 	ID                        graphql.String
 	IsDefaultTeam             graphql.Boolean
+	DefaultMemberRole         graphql.String
 	Name                      graphql.String
 	MembersCanCreatePipelines graphql.Boolean
 	Privacy                   TeamPrivacy
@@ -208,6 +209,7 @@ func updateTeam(d *schema.ResourceData, t *TeamNode) {
 	d.SetId(string(t.ID))
 	d.Set("default_team", bool(t.IsDefaultTeam))
 	d.Set("description", string(t.Description))
+	d.Set("default_member_role", string(t.DefaultMemberRole))
 	d.Set("members_can_create_pipelines", bool(t.MembersCanCreatePipelines))
 	d.Set("name", string(t.Name))
 	d.Set("privacy", string(t.Privacy))
