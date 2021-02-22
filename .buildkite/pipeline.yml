@@ -23,6 +23,8 @@ steps:
   - label: acceptance tests
     key: testacc
     if: build.branch == "main"
+    concurrency: 1
+    concurrency_group: terraform-provider-acceptance-tests
     command: "make testacc"
     plugins:
       - zacharymctague/aws-ssm#v1.0.0:
