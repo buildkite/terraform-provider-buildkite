@@ -140,10 +140,6 @@ func testAccCheckTeamExists(resourceName string, resourceTeam *TeamNode) resourc
 			return fmt.Errorf("No team found with graphql id: %s", resourceState.Primary.ID)
 		}
 
-		if string(query.Node.Team.Name) != resourceState.Primary.Attributes["name"] {
-			return fmt.Errorf("Team name in state doesn't match remote name")
-		}
-
 		*resourceTeam = query.Node.Team
 
 		return nil
