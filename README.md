@@ -1,5 +1,5 @@
 # Buildkite Terraform Provider
-[![Build status](https://badge.buildkite.com/7224047dadf711cab2facd75939ea39848850d7c5c5a765acd.svg)](https://buildkite.com/buildkite/terraform-provider-buildkite-main?branch=main)
+[![Build status](https://badge.buildkite.com/7224047dadf711cab2facd75939ea39848850d7c5c5a765acd.svg?branch=main)](https://buildkite.com/buildkite/terraform-provider-buildkite-main)
 
 This is the official Terraform provider for [Buildkite](https://buildkite.com). The provider is listed in the [Terraform Registry](https://registry.terraform.io/) and supports terraform >= 0.13.
 
