@@ -27,9 +27,11 @@ func TestAccPipelineSchedule_add_remove(t *testing.T) {
 					// Confirm the schedule exists in the buildkite API
 					testAccCheckPipelineScheduleExists("buildkite_pipeline_schedule.foobar", &resourceSchedule),
 					// Confirm the schedule has the correct values in Buildkite's system
-					testAccCheckPipelineScheduleRemoteValues(&resourcePipeline, &resourceSchedule, "main", "Test Schedule foo", "0 * * * *"),
+					testAccCheckPipelineScheduleRemoteValues(&resourcePipeline, &resourceSchedule, "Test Schedule foo"),
 					// Confirm the pipeline has the correct values in terraform state
 					resource.TestCheckResourceAttr("buildkite_pipeline_schedule.foobar", "label", "Test Schedule foo"),
+					resource.TestCheckResourceAttr("buildkite_pipeline_schedule.foobar", "cronline", "0 * * * *"),
+					resource.TestCheckResourceAttr("buildkite_pipeline_schedule.foobar", "branch", "main"),
 				),
 			},
 		},
@@ -64,10 +66,11 @@ func TestAccPipelineSchedule_update(t *testing.T) {
 					// Confirm the schedule exists in the buildkite API
 					testAccCheckPipelineScheduleExists("buildkite_pipeline_schedule.foobar", &resourceSchedule),
 					// Confirm the schedule has the updated values in Buildkite's system
-					testAccCheckPipelineScheduleRemoteValues(&resourcePipeline, &resourceSchedule, "main", "Test Schedule bar", "* 0 * * *"),
+					testAccCheckPipelineScheduleRemoteValues(&resourcePipeline, &resourceSchedule, "Test Schedule bar"),
 					// Confirm the schedule has the updated values in terraform state
 					resource.TestCheckResourceAttr("buildkite_pipeline_schedule.foobar", "cronline", "* 0 * * *"),
 					resource.TestCheckResourceAttr("buildkite_pipeline_schedule.foobar", "label", "Test Schedule bar"),
+					resource.TestCheckResourceAttr("buildkite_pipeline_schedule.foobar", "branch", "main"),
 				),
 			},
 		},
@@ -146,23 +149,15 @@ func testAccCheckPipelineScheduleExists(resourceName string, resourceSchedule *P
 	}
 }
 
-func testAccCheckPipelineScheduleRemoteValues(resourcePipeline *PipelineNode, resourceSchedule *PipelineScheduleNode, branch string, label string, cronline string) resource.TestCheckFunc {
+func testAccCheckPipelineScheduleRemoteValues(resourcePipeline *PipelineNode, resourceSchedule *PipelineScheduleNode, label string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 
 		if string(resourceSchedule.Pipeline.ID) != string(resourcePipeline.ID) {
 			return fmt.Errorf("remote pipeline schedule pipeline ID (%s) doesn't match expected value (%s)", resourceSchedule.Pipeline.ID, resourcePipeline.ID)
 		}
 
-		if string(resourceSchedule.Branch) != branch {
-			return fmt.Errorf("remote pipeline schedule branch (%s) doesn't match expected value (%s)", resourceSchedule.Branch, branch)
-		}
-
 		if string(resourceSchedule.Label) != label {
 			return fmt.Errorf("remote pipeline schedule label (%s) doesn't match expected value (%s)", resourceSchedule.Label, label)
-		}
-
-		if string(resourceSchedule.Cronline) != cronline {
-			return fmt.Errorf("remote pipeline schedule cronline (%s) doesn't match expected value (%s)", resourceSchedule.Cronline, cronline)
 		}
 
 		return nil
