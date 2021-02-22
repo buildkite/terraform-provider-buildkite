@@ -13,6 +13,9 @@ func Provider() *schema.Provider {
 			"buildkite_pipeline_schedule": resourcePipelineSchedule(),
 			"buildkite_team":              resourceTeam(),
 		},
+		DataSourcesMap: map[string]*schema.Resource{
+			"buildkite_pipeline": dataSourcePipeline(),
+		},
 		Schema: map[string]*schema.Schema{
 			"organization": &schema.Schema{
 				DefaultFunc: schema.EnvDefaultFunc("BUILDKITE_ORGANIZATION", nil),
