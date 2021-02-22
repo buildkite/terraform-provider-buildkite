@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/shurcooL/graphql"
 )
@@ -19,10 +20,10 @@ type AgentTokenNode struct {
 
 func resourceAgentToken() *schema.Resource {
 	return &schema.Resource{
-		Create: CreateToken,
-		Read:   ReadToken,
+		CreateContext: CreateToken,
+		ReadContext:   ReadToken,
 		// NB: there is no updating a token, changes force a new one to be creaated
-		Delete: DeleteToken,
+		DeleteContext: DeleteToken,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -46,11 +47,11 @@ func resourceAgentToken() *schema.Resource {
 }
 
 // CreateToken creates a Buildkite agent token
-func CreateToken(d *schema.ResourceData, m interface{}) error {
+func CreateToken(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := m.(*Client)
 	id, err := GetOrganizationID(client.organization, client.graphql)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	var mutation struct {
@@ -68,7 +69,7 @@ func CreateToken(d *schema.ResourceData, m interface{}) error {
 
 	err = client.graphql.Mutate(context.Background(), &mutation, vars)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	updateAgentToken(d, &mutation.AgentTokenCreate.AgentTokenEdge.Node)
@@ -77,7 +78,7 @@ func CreateToken(d *schema.ResourceData, m interface{}) error {
 }
 
 // ReadToken retrieves a Buildkite agent token
-func ReadToken(d *schema.ResourceData, m interface{}) error {
+func ReadToken(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := m.(*Client)
 	var query struct {
 		Node struct {
@@ -91,10 +92,10 @@ func ReadToken(d *schema.ResourceData, m interface{}) error {
 
 	err := client.graphql.Query(context.Background(), &query, vars)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 	if query.Node.AgentToken.RevokedAt != "" {
-		return errors.New("Cannot import revoked token")
+		return diag.FromErr(errors.New("Cannot import revoked token"))
 	}
 
 	updateAgentToken(d, &query.Node.AgentToken)
@@ -103,7 +104,7 @@ func ReadToken(d *schema.ResourceData, m interface{}) error {
 }
 
 // DeleteToken revokes a Buildkite agent token - they cannot be completely deleted
-func DeleteToken(d *schema.ResourceData, m interface{}) error {
+func DeleteToken(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := m.(*Client)
 	var mutation struct {
 		AgentTokenRevoke struct {
@@ -118,7 +119,7 @@ func DeleteToken(d *schema.ResourceData, m interface{}) error {
 
 	err := client.graphql.Mutate(context.Background(), &mutation, vars)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	return nil
