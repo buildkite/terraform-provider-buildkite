@@ -31,7 +31,7 @@ resource "buildkite_pipeline" "repo2" {
 * `steps` - (Required) The string YAML steps to run the pipeline.
 * `description` - (Optional) A description of the pipeline.
 
-* `default_branch` - (Optional) The default branch to prefill when new builds are created or triggered.
+* `default_branch` - (Optional) The default branch to prefill when new builds are created or triggered, usually main or master but can be anything.
 * `branch_configuration` - (Optional) Limit which branches and tags cause new builds to be created, either via a code push or via the Builds REST API.
 * `skip_intermediate_builds` - (Optional, Default: `false` ) A boolean to enable automatically skipping any unstarted builds on the same branch when a new build is created.    
 * `skip_intermediate_builds_branch_filter` - (Optional) Limit which branches build skipping applies to, for example !master will ensure that the master branch won't have it's builds automatically skipped.
