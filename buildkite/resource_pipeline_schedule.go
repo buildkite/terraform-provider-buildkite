@@ -19,6 +19,7 @@ type PipelineScheduleNode struct {
 	Enabled  graphql.Boolean
 	Env      []graphql.String
 	ID       graphql.String
+	UUID     graphql.String
 	Label    graphql.String
 	Message  graphql.String
 	Pipeline struct {
@@ -39,6 +40,10 @@ func resourcePipelineSchedule() *schema.Resource {
 		Schema: map[string]*schema.Schema{
 			"pipeline_id": {
 				Required: true,
+				Type:     schema.TypeString,
+			},
+			"uuid": {
+				Computed: true,
 				Type:     schema.TypeString,
 			},
 			"label": {
@@ -216,6 +221,7 @@ func DeletePipelineSchedule(d *schema.ResourceData, m interface{}) error {
 func updatePipelineScheduleResource(d *schema.ResourceData, pipelineSchedule *PipelineScheduleNode) {
 	d.SetId(string(pipelineSchedule.ID))
 	d.Set("pipeline_id", string(pipelineSchedule.Pipeline.ID))
+	d.Set("uuid", string(pipelineSchedule.UUID))
 	d.Set("label", string(pipelineSchedule.Label))
 	d.Set("cronline", string(pipelineSchedule.Cronline))
 	d.Set("message", string(pipelineSchedule.Message))
