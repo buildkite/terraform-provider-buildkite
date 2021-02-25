@@ -1,9 +1,13 @@
 package buildkite
 
 import (
+	"context"
+	"fmt"
 	"os"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
@@ -38,9 +42,31 @@ func testAccPreCheck(t *testing.T) {
 	}
 }
 
-// testAccCheckExampleResourceDestroy verifies the Widget
-// has been destroyed
-func testAccCheckExampleResourceDestroy(s *terraform.State) error {
-	// TODO manually check that all resources created during acceptance tests have been cleaned up
-	return nil
+// testAccCheckResourceDisappears verifies the Provider has had the resource removed from state
+func testAccCheckResourceDisappears(provider *schema.Provider, resource *schema.Resource, resourceName string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		resourceState, ok := s.RootModule().Resources[resourceName]
+
+		if !ok {
+			return fmt.Errorf("resource not found: %s", resourceName)
+		}
+
+		if resourceState.Primary.ID == "" {
+			return fmt.Errorf("resource ID missing: %s", resourceName)
+		}
+
+		if resource.DeleteContext != nil {
+			diags := resource.DeleteContext(context.Background(), resource.Data(resourceState.Primary), provider.Meta())
+
+			for i := range diags {
+				if diags[i].Severity == diag.Error {
+					return fmt.Errorf("error deleting resource: %s", diags[i].Summary)
+				}
+			}
+
+			return nil
+		}
+
+		return resource.Delete(resource.Data(resourceState.Primary), provider.Meta())
+	}
 }
