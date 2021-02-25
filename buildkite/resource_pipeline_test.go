@@ -238,6 +238,34 @@ func testAccPipelineConfigComplex(name string, steps string) string {
 
 // verifies the Pipeline has been destroyed
 func testAccCheckPipelineResourceDestroy(s *terraform.State) error {
-	// TODO manually check that all resources created during acceptance tests have been cleaned up
+	provider := testAccProvider.Meta().(*Client)
+
+	for _, rs := range s.RootModule().Resources {
+		if rs.Type != "buildkite_pipeline" {
+			continue
+		}
+
+		// Try to find the resource remotely
+		var query struct {
+			Node struct {
+				Pipeline PipelineNode `graphql:"... on Pipeline"`
+			} `graphql:"node(id: $id)"`
+		}
+
+		vars := map[string]interface{}{
+			"id": rs.Primary.ID,
+		}
+
+		err := provider.graphql.Query(context.Background(), &query, vars)
+		if err == nil {
+			if string(query.Node.Pipeline.ID) != "" &&
+				string(query.Node.Pipeline.ID) == rs.Primary.ID {
+				return fmt.Errorf("Pipeline still exists")
+			}
+		}
+
+		return err
+	}
+
 	return nil
 }
