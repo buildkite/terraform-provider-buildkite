@@ -184,7 +184,6 @@ func testAccCheckAgentTokenResourceDestroy(s *terraform.State) error {
 			"id": rs.Primary.ID,
 		}
 
-		fmt.Println("woofwoof test")
 		err := provider.graphql.Query(context.Background(), &query, vars)
 		if err == nil {
 			if string(query.Node.AgentToken.ID) != "" &&
@@ -193,7 +192,6 @@ func testAccCheckAgentTokenResourceDestroy(s *terraform.State) error {
 			}
 		}
 
-		fmt.Printf("Error is: %+v\n", err)
 		if !strings.Contains(err.Error(), "This agent registration token was already revoked") {
 			return err
 		}
