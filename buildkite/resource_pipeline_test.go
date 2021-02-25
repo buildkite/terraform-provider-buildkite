@@ -127,6 +127,30 @@ func TestAccPipeline_import(t *testing.T) {
 	})
 }
 
+// Confirm that this resource can be removed
+func TestAccPipeline_disappears(t *testing.T) {
+	var node PipelineNode
+	resourceName := "buildkite_pipeline.foobar"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckPipelineResourceDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccPipelineConfigBasic("foo"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					// Confirm the pipeline exists in the buildkite API
+					testAccCheckPipelineExists(resourceName, &node),
+					// Ensure its removal from the spec
+					testAccCheckResourceDisappears(testAccProvider, resourcePipeline(), resourceName),
+				),
+				ExpectNonEmptyPlan: true,
+			},
+		},
+	})
+}
+
 func testAccCheckPipelineExists(resourceName string, resourcePipeline *PipelineNode) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		resourceState, ok := s.RootModule().Resources[resourceName]
