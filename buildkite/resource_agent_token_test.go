@@ -3,6 +3,7 @@ package buildkite
 import (
 	"context"
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
@@ -164,8 +165,39 @@ func testAccAgentTokenConfigBasic(description string) string {
 	return fmt.Sprintf(config, description)
 }
 
-// verifies the Pipeline has been destroyed
+// verifies the agent token has been destroyed
 func testAccCheckAgentTokenResourceDestroy(s *terraform.State) error {
-	// TODO manually check that all resources created during acceptance tests have been cleaned up
+	provider := testAccProvider.Meta().(*Client)
+
+	for _, rs := range s.RootModule().Resources {
+		if rs.Type != "buildkite_agent_token" {
+			continue
+		}
+
+		var query struct {
+			Node struct {
+				AgentToken AgentTokenNode `graphql:"... on AgentToken"`
+			} `graphql:"node(id: $id)"`
+		}
+
+		vars := map[string]interface{}{
+			"id": rs.Primary.ID,
+		}
+
+		fmt.Println("woofwoof test")
+		err := provider.graphql.Query(context.Background(), &query, vars)
+		if err == nil {
+			if string(query.Node.AgentToken.ID) != "" &&
+				string(query.Node.AgentToken.ID) == rs.Primary.ID {
+				return fmt.Errorf("Agent token still exists")
+			}
+		}
+
+		fmt.Printf("Error is: %+v\n", err)
+		if !strings.Contains(err.Error(), "This agent registration token was already revoked") {
+			return err
+		}
+	}
+
 	return nil
 }
