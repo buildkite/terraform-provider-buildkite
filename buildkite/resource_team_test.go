@@ -108,6 +108,30 @@ func TestAccTeam_import(t *testing.T) {
 	})
 }
 
+// Confirm that this resource can be removed
+func TestAccTeam_disappears(t *testing.T) {
+	var node TeamNode
+	resourceName := "buildkite_team.test"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckPipelineResourceDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccTeamConfigBasic("foo"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					// Confirm the team exists in the buildkite API
+					testAccCheckTeamExists(resourceName, &node),
+					// Ensure its removal from the spec
+					testAccCheckResourceDisappears(testAccProvider, resourceTeam(), resourceName),
+				),
+				ExpectNonEmptyPlan: true,
+			},
+		},
+	})
+}
+
 func testAccCheckTeamExists(resourceName string, resourceTeam *TeamNode) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		resourceState, ok := s.RootModule().Resources[resourceName]
@@ -184,6 +208,34 @@ func testAccTeamConfigSecret(name string) string {
 
 // verifies the team has been destroyed
 func testAccCheckTeamResourceDestroy(s *terraform.State) error {
-	// TODO manually check that all resources created during acceptance tests have been cleaned up
+	provider := testAccProvider.Meta().(*Client)
+
+	for _, rs := range s.RootModule().Resources {
+		if rs.Type != "buildkite_team" {
+			continue
+		}
+
+		// Try to find the resource remotely
+		var query struct {
+			Node struct {
+				Team TeamNode `graphql:"... on Team"`
+			} `graphql:"node(id: $id)"`
+		}
+
+		vars := map[string]interface{}{
+			"id": rs.Primary.ID,
+		}
+
+		err := provider.graphql.Query(context.Background(), &query, vars)
+		if err == nil {
+			if string(query.Node.Team.ID) != "" &&
+				string(query.Node.Team.ID) == rs.Primary.ID {
+				return fmt.Errorf("Team still exists")
+			}
+		}
+
+		return err
+	}
+
 	return nil
 }
