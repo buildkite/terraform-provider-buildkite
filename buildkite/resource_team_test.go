@@ -87,7 +87,7 @@ func TestAccTeam_import(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckExampleResourceDestroy,
+		CheckDestroy: testAccCheckTeamResourceDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccTeamConfigBasic("important"),

@@ -106,7 +106,7 @@ func TestAccPipeline_import(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckExampleResourceDestroy,
+		CheckDestroy: testAccCheckPipelineResourceDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccPipelineConfigBasic("foo"),

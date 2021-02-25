@@ -3,9 +3,10 @@ package buildkite
 import (
 	"context"
 	"fmt"
+	"testing"
+
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	"testing"
 )
 
 // Confirm that we can create a new agent token, and then delete it without error
@@ -15,7 +16,7 @@ func TestAccAgentToken_add_remove(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckExampleResourceDestroy,
+		CheckDestroy: testAccCheckAgentTokenResourceDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccAgentTokenConfigBasic("foo"),
@@ -40,7 +41,7 @@ func TestAccAgentToken_update(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckExampleResourceDestroy,
+		CheckDestroy: testAccCheckAgentTokenResourceDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccAgentTokenConfigBasic("foo"),
@@ -73,7 +74,7 @@ func TestAccAgentToken_import(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckExampleResourceDestroy,
+		CheckDestroy: testAccCheckAgentTokenResourceDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccAgentTokenConfigBasic("foo"),
@@ -161,4 +162,10 @@ func testAccAgentTokenConfigBasic(description string) string {
 		}
 	`
 	return fmt.Sprintf(config, description)
+}
+
+// verifies the Pipeline has been destroyed
+func testAccCheckAgentTokenResourceDestroy(s *terraform.State) error {
+	// TODO manually check that all resources created during acceptance tests have been cleaned up
+	return nil
 }
