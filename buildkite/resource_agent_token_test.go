@@ -3,9 +3,11 @@ package buildkite
 import (
 	"context"
 	"fmt"
+	"strings"
+	"testing"
+
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	"testing"
 )
 
 // Confirm that we can create a new agent token, and then delete it without error
@@ -15,7 +17,7 @@ func TestAccAgentToken_add_remove(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckExampleResourceDestroy,
+		CheckDestroy: testAccCheckAgentTokenResourceDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccAgentTokenConfigBasic("foo"),
@@ -40,7 +42,7 @@ func TestAccAgentToken_update(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckExampleResourceDestroy,
+		CheckDestroy: testAccCheckAgentTokenResourceDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccAgentTokenConfigBasic("foo"),
@@ -73,7 +75,7 @@ func TestAccAgentToken_import(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckExampleResourceDestroy,
+		CheckDestroy: testAccCheckAgentTokenResourceDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccAgentTokenConfigBasic("foo"),
@@ -161,4 +163,39 @@ func testAccAgentTokenConfigBasic(description string) string {
 		}
 	`
 	return fmt.Sprintf(config, description)
+}
+
+// verifies the agent token has been destroyed
+func testAccCheckAgentTokenResourceDestroy(s *terraform.State) error {
+	provider := testAccProvider.Meta().(*Client)
+
+	for _, rs := range s.RootModule().Resources {
+		if rs.Type != "buildkite_agent_token" {
+			continue
+		}
+
+		var query struct {
+			Node struct {
+				AgentToken AgentTokenNode `graphql:"... on AgentToken"`
+			} `graphql:"node(id: $id)"`
+		}
+
+		vars := map[string]interface{}{
+			"id": rs.Primary.ID,
+		}
+
+		err := provider.graphql.Query(context.Background(), &query, vars)
+		if err == nil {
+			if string(query.Node.AgentToken.ID) != "" &&
+				string(query.Node.AgentToken.ID) == rs.Primary.ID {
+				return fmt.Errorf("Agent token still exists")
+			}
+		}
+
+		if !strings.Contains(err.Error(), "This agent registration token was already revoked") {
+			return err
+		}
+	}
+
+	return nil
 }
