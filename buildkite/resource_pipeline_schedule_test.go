@@ -59,7 +59,7 @@ func TestAccPipelineSchedule_update(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccPipelineScheduleConfigBasic("bar", "* 0 * * *"),
+				Config: testAccPipelineScheduleConfigBasic("bar", "0 1 * * *"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Schedules need a pipeline
 					testAccCheckPipelineExists("buildkite_pipeline.foobar", &resourcePipeline),
@@ -68,7 +68,7 @@ func TestAccPipelineSchedule_update(t *testing.T) {
 					// Confirm the schedule has the updated values in Buildkite's system
 					testAccCheckPipelineScheduleRemoteValues(&resourcePipeline, &resourceSchedule, "Test Schedule bar"),
 					// Confirm the schedule has the updated values in terraform state
-					resource.TestCheckResourceAttr("buildkite_pipeline_schedule.foobar", "cronline", "* 0 * * *"),
+					resource.TestCheckResourceAttr("buildkite_pipeline_schedule.foobar", "cronline", "0 1 * * *"),
 					resource.TestCheckResourceAttr("buildkite_pipeline_schedule.foobar", "label", "Test Schedule bar"),
 					resource.TestCheckResourceAttr("buildkite_pipeline_schedule.foobar", "branch", "main"),
 				),
