@@ -38,6 +38,35 @@ func TestAccPipelineSchedule_add_remove(t *testing.T) {
 	})
 }
 
+// Confirm that we can add a new pipeline schedule to a pipeline when the pipeline uses teams
+func TestAccPipelineSchedule_add_remove_withteams(t *testing.T) {
+	var resourcePipeline PipelineNode
+	var resourceSchedule PipelineScheduleNode
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckAllPipelineScheduleResourcesDestroyed,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccPipelineScheduleConfigBasicWithTeam("foo", "0 * * * *"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					// Schedules need a pipeline
+					testAccCheckPipelineExists("buildkite_pipeline.foobar", &resourcePipeline),
+					// Confirm the schedule exists in the buildkite API
+					testAccCheckPipelineScheduleExists("buildkite_pipeline_schedule.foobar", &resourceSchedule),
+					// Confirm the schedule has the correct values in Buildkite's system
+					testAccCheckPipelineScheduleRemoteValues(&resourcePipeline, &resourceSchedule, "Test Schedule foo"),
+					// Confirm the pipeline has the correct values in terraform state
+					resource.TestCheckResourceAttr("buildkite_pipeline_schedule.foobar", "label", "Test Schedule foo"),
+					resource.TestCheckResourceAttr("buildkite_pipeline_schedule.foobar", "cronline", "0 * * * *"),
+					resource.TestCheckResourceAttr("buildkite_pipeline_schedule.foobar", "branch", "main"),
+				),
+			},
+		},
+	})
+}
+
 // Confirm that we can create a new pipeline schedule, and then update the description
 func TestAccPipelineSchedule_update(t *testing.T) {
 	var resourcePipeline PipelineNode
@@ -60,6 +89,45 @@ func TestAccPipelineSchedule_update(t *testing.T) {
 			},
 			{
 				Config: testAccPipelineScheduleConfigBasic("bar", "0 1 * * *"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					// Schedules need a pipeline
+					testAccCheckPipelineExists("buildkite_pipeline.foobar", &resourcePipeline),
+					// Confirm the schedule exists in the buildkite API
+					testAccCheckPipelineScheduleExists("buildkite_pipeline_schedule.foobar", &resourceSchedule),
+					// Confirm the schedule has the updated values in Buildkite's system
+					testAccCheckPipelineScheduleRemoteValues(&resourcePipeline, &resourceSchedule, "Test Schedule bar"),
+					// Confirm the schedule has the updated values in terraform state
+					resource.TestCheckResourceAttr("buildkite_pipeline_schedule.foobar", "cronline", "0 1 * * *"),
+					resource.TestCheckResourceAttr("buildkite_pipeline_schedule.foobar", "label", "Test Schedule bar"),
+					resource.TestCheckResourceAttr("buildkite_pipeline_schedule.foobar", "branch", "main"),
+				),
+			},
+		},
+	})
+}
+
+// Confirm that we can create a new pipeline schedule, and then update the description - for pipelines that use teams
+func TestAccPipelineSchedule_update_withteams(t *testing.T) {
+	var resourcePipeline PipelineNode
+	var resourceSchedule PipelineScheduleNode
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckAllPipelineScheduleResourcesDestroyed,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccPipelineScheduleConfigBasicWithTeam("foo", "0 * * * *"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					// Confirm the schedule exists in the buildkite API
+					testAccCheckPipelineScheduleExists("buildkite_pipeline_schedule.foobar", &resourceSchedule),
+					// Quick check to confirm the local state is correct before we update it
+					resource.TestCheckResourceAttr("buildkite_pipeline_schedule.foobar", "cronline", "0 * * * *"),
+					resource.TestCheckResourceAttr("buildkite_pipeline_schedule.foobar", "label", "Test Schedule foo"),
+				),
+			},
+			{
+				Config: testAccPipelineScheduleConfigBasicWithTeam("bar", "0 1 * * *"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Schedules need a pipeline
 					testAccCheckPipelineExists("buildkite_pipeline.foobar", &resourcePipeline),
@@ -200,6 +268,29 @@ func testAccPipelineScheduleConfigBasic(label string, cronline string) string {
             name = "Test Pipeline %s"
 		    repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
 			steps = ""
+        }
+
+		resource "buildkite_pipeline_schedule" "foobar" {
+            pipeline_id = buildkite_pipeline.foobar.id
+            branch = "main"
+            cronline = "%s"
+			label = "Test Schedule %s"
+		}
+	`
+	return fmt.Sprintf(config, label, cronline, label)
+}
+
+func testAccPipelineScheduleConfigBasicWithTeam(label string, cronline string) string {
+	config := `
+        resource "buildkite_pipeline" "foobar" {
+            name = "Test Pipeline %s"
+		    repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
+			steps = ""
+
+			team {
+				slug = "everyone"
+				access_level = "MANAGE_BUILD_AND_READ"
+			}
         }
 
 		resource "buildkite_pipeline_schedule" "foobar" {
