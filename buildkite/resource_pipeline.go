@@ -48,6 +48,11 @@ type TeamPipelineNode struct {
 	Team        TeamNode
 }
 
+type PipelineTeamAssignmentInput struct {
+	Id          graphql.ID     `json:"id"`
+	AccessLevel graphql.String `json:"accessLevel"`
+}
+
 // resourcePipeline represents the terraform pipeline resource schema
 func resourcePipeline() *schema.Resource {
 	return &schema.Resource{
@@ -153,11 +158,27 @@ func CreatePipeline(ctx context.Context, d *schema.ResourceData, m interface{}) 
 		return diag.FromErr(err)
 	}
 
+	teamPipelines := getTeamPipelinesFromSchema(d)
 	var mutation struct {
 		PipelineCreate struct {
 			Pipeline PipelineNode
-		} `graphql:"pipelineCreate(input: {cancelIntermediateBuilds: $cancel_intermediate_builds, cancelIntermediateBuildsBranchFilter: $cancel_intermediate_builds_branch_filter, defaultBranch: $default_branch, description: $desc, name: $name, organizationId: $org, repository: {url: $repository_url}, skipIntermediateBuilds: $skip_intermediate_builds, skipIntermediateBuildsBranchFilter: $skip_intermediate_builds_branch_filter, steps: {yaml: $steps}})"`
+		} `graphql:"pipelineCreate(input: {cancelIntermediateBuilds: $cancel_intermediate_builds, cancelIntermediateBuildsBranchFilter: $cancel_intermediate_builds_branch_filter, defaultBranch: $default_branch, description: $desc, name: $name, organizationId: $org, repository: {url: $repository_url}, skipIntermediateBuilds: $skip_intermediate_builds, skipIntermediateBuildsBranchFilter: $skip_intermediate_builds_branch_filter, steps: {yaml: $steps}, teams: $teams})"`
 	}
+
+	teamsData := make([]PipelineTeamAssignmentInput, 0)
+	for _, team := range teamPipelines {
+		log.Printf("converting team slug '%s' to an ID", string(team.Team.Slug))
+		teamID, err := GetTeamID(string(team.Team.Slug), client)
+		if err != nil {
+			log.Printf("Unable to get ID for team slug %s", team.Team.Slug)
+			return diag.FromErr(err)
+		}
+		teamsData = append(teamsData, PipelineTeamAssignmentInput{
+			Id:          teamID,
+			AccessLevel: graphql.String(team.AccessLevel),
+		})
+	}
+
 	vars := map[string]interface{}{
 		"cancel_intermediate_builds":               graphql.Boolean(d.Get("cancel_intermediate_builds").(bool)),
 		"cancel_intermediate_builds_branch_filter": graphql.String(d.Get("cancel_intermediate_builds_branch_filter").(string)),
@@ -169,6 +190,7 @@ func CreatePipeline(ctx context.Context, d *schema.ResourceData, m interface{}) 
 		"skip_intermediate_builds":                 graphql.Boolean(d.Get("skip_intermediate_builds").(bool)),
 		"skip_intermediate_builds_branch_filter":   graphql.String(d.Get("skip_intermediate_builds_branch_filter").(string)),
 		"steps":                                    graphql.String(d.Get("steps").(string)),
+		"teams":                                    teamsData,
 	}
 
 	log.Printf("Creating pipeline %s ...", vars["name"])
@@ -178,13 +200,6 @@ func CreatePipeline(ctx context.Context, d *schema.ResourceData, m interface{}) 
 		return diag.FromErr(err)
 	}
 	log.Printf("Successfully created pipeline with id '%s'.", mutation.PipelineCreate.Pipeline.ID)
-
-	teamPipelines := getTeamPipelinesFromSchema(d)
-	err = reconcileTeamPipelines(teamPipelines, &mutation.PipelineCreate.Pipeline, client)
-	if err != nil {
-		log.Print("Unable to create team pipelines")
-		return diag.FromErr(err)
-	}
 
 	updatePipelineResource(d, &mutation.PipelineCreate.Pipeline)
 	updatePipelineWithRESTfulAPI(d, client)
