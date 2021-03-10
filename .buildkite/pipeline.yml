@@ -34,6 +34,20 @@ steps:
       - docker-compose#v2.2.0:
           run: go
 
+  - label: acceptance tests - non-admin
+    key: testacc-nonadmin
+    if: build.branch == "main"
+    concurrency: 1
+    concurrency_group: terraform-provider-acceptance-tests
+    command: "make testacc-nonadmin"
+    plugins:
+      - zacharymctague/aws-ssm#v1.0.0:
+          parameters:
+            BUILDKITE_ORGANIZATION: /pipelines/terraform-provider-buildkite-main/buildkite_organization
+            BUILDKITE_API_TOKEN: /pipelines/terraform-provider-buildkite-main/buildkite_api_token_nonadmin
+      - docker-compose#v2.2.0:
+          run: go
+
   - label: build
     command: "make"
     plugins:
@@ -43,4 +57,5 @@ steps:
       - fmt
       - test
       - testacc
+      - testacc-nonadmin
       - vet
