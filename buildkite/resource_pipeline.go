@@ -66,24 +66,27 @@ func resourcePipeline() *schema.Resource {
 
 		Schema: map[string]*schema.Schema{
 			"cancel_intermediate_builds": {
+				Computed: true,
 				Optional: true,
-				Default:  false,
 				Type:     schema.TypeBool,
 			},
 			"cancel_intermediate_builds_branch_filter": {
+				Computed: true,
 				Optional: true,
-				Default:  "",
 				Type:     schema.TypeString,
 			},
 			"branch_configuration": {
-				Type:     schema.TypeString,
+				Computed: true,
 				Optional: true,
+				Type:     schema.TypeString,
 			},
 			"default_branch": {
+				Computed: true,
 				Optional: true,
 				Type:     schema.TypeString,
 			},
 			"description": {
+				Computed: true,
 				Optional: true,
 				Type:     schema.TypeString,
 			},
@@ -96,13 +99,13 @@ func resourcePipeline() *schema.Resource {
 				Type:     schema.TypeString,
 			},
 			"skip_intermediate_builds": {
+				Computed: true,
 				Optional: true,
-				Default:  false,
 				Type:     schema.TypeBool,
 			},
 			"skip_intermediate_builds_branch_filter": {
+				Computed: true,
 				Optional: true,
-				Default:  "",
 				Type:     schema.TypeString,
 			},
 			"slug": {
