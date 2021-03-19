@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 
@@ -44,8 +45,11 @@ func (client *Client) makeRequest(method string, url string, postData interface{
 	}
 
 	resp, err := client.http.Do(req)
-	if err != nil && resp.StatusCode >= 400 {
+	if err != nil {
 		return err
+	}
+	if resp.StatusCode >= 400 {
+		return fmt.Errorf("Buildkite API request failed: %s %s (status: %d)", method, url, resp.StatusCode)
 	}
 
 	defer resp.Body.Close()
