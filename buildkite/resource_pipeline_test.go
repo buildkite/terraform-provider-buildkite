@@ -60,6 +60,21 @@ func TestAccPipeline_add_remove_complex(t *testing.T) {
 					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "skip_intermediate_builds_branch_filter", "main"),
 					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "cancel_intermediate_builds", "true"),
 					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "cancel_intermediate_builds_branch_filter", "!main"),
+					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "provider_settings.0.trigger_mode", "code"),
+					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "provider_settings.0.build_branches", "false"),
+					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "provider_settings.0.build_pull_request_forks", "true"),
+					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "provider_settings.0.build_pull_request_ready_for_review", "true"),
+					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "provider_settings.0.build_pull_requests", "false"),
+					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "provider_settings.0.build_tags", "true"),
+					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "provider_settings.0.cancel_deleted_branch_builds", "true"),
+					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "provider_settings.0.prefix_pull_request_fork_branch_names", "true"),
+					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "provider_settings.0.publish_blocked_as_pending", "true"),
+					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "provider_settings.0.publish_commit_status", "true"),
+					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "provider_settings.0.publish_commit_status_per_step", "true"),
+					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "provider_settings.0.pull_request_branch_filter_configuration", "features/*"),
+					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "provider_settings.0.pull_request_branch_filter_enabled", "true"),
+					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "provider_settings.0.separate_pull_request_statuses", "true"),
+					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "provider_settings.0.skip_pull_request_builds_for_existing_commits", "false"),
 				),
 			},
 		},
@@ -302,6 +317,23 @@ func testAccPipelineConfigComplex(name string, steps string) string {
             skip_intermediate_builds_branch_filter = "main"
             cancel_intermediate_builds = true
             cancel_intermediate_builds_branch_filter = "!main"
+			provider_settings {
+				trigger_mode = "code"
+				build_branches = false
+				build_pull_request_forks = true
+				build_pull_request_ready_for_review = true
+				build_pull_requests = false
+				build_tags = true
+				cancel_deleted_branch_builds = true
+				prefix_pull_request_fork_branch_names = true
+				publish_blocked_as_pending = true
+				publish_commit_status = true
+				publish_commit_status_per_step = true
+				pull_request_branch_filter_configuration = "features/*"
+				pull_request_branch_filter_enabled = true
+				separate_pull_request_statuses = true
+				skip_pull_request_builds_for_existing_commits = false
+			}
         }
 	`
 	return fmt.Sprintf(config, name, steps)

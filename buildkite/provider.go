@@ -25,7 +25,7 @@ func Provider() *schema.Provider {
 			},
 			"api_token": &schema.Schema{
 				DefaultFunc: schema.EnvDefaultFunc("BUILDKITE_API_TOKEN", nil),
-				Description: "API token with GraphQL access and `write_pipelines` scope",
+				Description: "API token with GraphQL access and `write_pipelines, read_pipelines` scopes",
 				Required:    true,
 				Type:        schema.TypeString,
 			},

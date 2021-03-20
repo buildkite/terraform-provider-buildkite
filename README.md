@@ -1,4 +1,5 @@
 # Buildkite Terraform Provider
+
 [![Build status](https://badge.buildkite.com/7224047dadf711cab2facd75939ea39848850d7c5c5a765acd.svg?branch=main)](https://buildkite.com/buildkite/terraform-provider-buildkite-main)
 
 This is the official Terraform provider for [Buildkite](https://buildkite.com). The provider is listed in the [Terraform Registry](https://registry.terraform.io/) and supports terraform >= 0.13.
@@ -7,10 +8,10 @@ The provider allows you to manage resources in your Buildkite organization.
 
 Two configuration values are required:
 
-* An API token, generated at https://buildkite.com/user/api-access-tokens. The
-  token must have the `write_pipelines` REST API scope and be enabled for GraphQL
-* A Buildkite organization slug, available by signing into buildkite.com and
-  examining the URL: https://buildkite.com/<org-slug>
+-   An API token, generated at https://buildkite.com/user/api-access-tokens. The
+    token must have the `write_pipelines, read_pipelines` REST API scopes and be enabled for GraphQL
+-   A Buildkite organization slug, available by signing into buildkite.com and
+    examining the URL: https://buildkite.com/<org-slug>
 
 ## Documentation
 
@@ -71,24 +72,32 @@ The repo contains a tf-proj/ directory that can be used to quickly test a compil
 1. Update tf-proj/main.tf to use the resource or property you're developing
 2. Compile the provider and copy it into the filesystem cache in tf-proj
 
+    ```bash
     go build -o terraform-provider-buildkite_v0.0.18 . && \
       mkdir -p tf-proj/terraform.d/plugins/registry.terraform.io/buildkite/buildkite/0.0.18/linux_amd64/ && \
       mv terraform-provider-buildkite_v0.0.18 tf-proj/terraform.d/plugins/registry.terraform.io/buildkite/buildkite/0.0.18/linux_amd64/
+    ```
 
 3. Ensure the version number in the above command and in tf-proj/main.tf match
 4. Run `terraform plan` in the tf-proj directory
 
+    ```bash
     BUILDKITE_API_TOKEN=<api-token> BUILDKITE_ORGANIZATION=<org-slug> terraform plan
+    ```
 
 ## Acceptance tests
 
 Acceptance tests that test the provider works against the live Buildkite API can be executed like this:
 
-    make testacc
+```bash
+make testacc
+```
 
 These tests require two environment variables to run correctly:
 
-    BUILDKITE_ORGANIZATION=<org-slug> BUILDKITE_API_TOKEN=<token> make testacc
+```bash
+BUILDKITE_ORGANIZATION=<org-slug> BUILDKITE_API_TOKEN=<token> make testacc
+```
 
 Note that these tests make live changes to an organization and probably
 shouldn't be run against organizations with real data. Anyone actively
