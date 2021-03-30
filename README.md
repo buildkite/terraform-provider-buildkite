@@ -113,8 +113,10 @@ requesting a review.
 
 Pushing a new version tag to GitHub (or creating a new release on github.com)
 will trigger a new build in the release pipeline. That pipeline will compile
-the appropriate binaries, sign them, and attach them to a release in
+the appropriate binaries, sign them, and attach them to a draft release in
 https://github.com/buildkite/terraform-provider-buildkite.
+
+Edit the draft to add in the relevant changes and click publish.
 
 The [terraform registry](https://registry.terraform.io) will detect the new
 release on GitHub and update their own listings.
