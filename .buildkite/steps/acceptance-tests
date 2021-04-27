@@ -1,7 +1,0 @@
-#!/bin/bash -eu
-
-$(dirname $0)/../../scripts/install-terraform
-
-echo "+++ running acceptance tests"
-
-make testacc
