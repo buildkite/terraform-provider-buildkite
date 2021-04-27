@@ -4,6 +4,9 @@ TERRAFORM_VERSION="0.14.11"
 
 echo "+++ downloading terraform ${TERRAFORM_VERSION}"
 
-curl -o /usr/local/bin/terraform --silent "https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_amd64.zip"
+curl -o /tmp/terraform.zip --silent "https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_amd64.zip"
+unzip /tmp/terraform.zip terraform
+cp terraform /usr/local/bin/terraform
 chmod +x /usr/local/bin/terraform
 
+terraform version
