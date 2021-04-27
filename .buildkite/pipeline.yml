@@ -25,7 +25,7 @@ steps:
     if: build.branch == "main"
     concurrency: 1
     concurrency_group: terraform-provider-acceptance-tests
-    command: "make testacc"
+    command: ".buildkite/steps/acceptance-tests"
     plugins:
       - zacharymctague/aws-ssm#v1.0.0:
           parameters:
@@ -39,7 +39,7 @@ steps:
     if: build.branch == "main"
     concurrency: 1
     concurrency_group: terraform-provider-acceptance-tests
-    command: "make testacc-nonadmin"
+    command: ".buildkite/steps/acceptance-tests-nonadmin"
     plugins:
       - zacharymctague/aws-ssm#v1.0.0:
           parameters:
