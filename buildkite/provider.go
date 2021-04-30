@@ -14,6 +14,7 @@ func Provider() *schema.Provider {
 			"buildkite_team":              resourceTeam(),
 		},
 		DataSourcesMap: map[string]*schema.Resource{
+			"buildkite_meta":     dataSourceMeta(),
 			"buildkite_pipeline": dataSourcePipeline(),
 		},
 		Schema: map[string]*schema.Schema{
