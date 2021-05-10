@@ -104,6 +104,10 @@ func setPipelineScheduleIDFromSlug(d *schema.ResourceData, m interface{}) ([]*sc
 		return nil, err
 	}
 
+	if string(query.PipelineSchedule.ID) == "" {
+		return nil, fmt.Errorf("No pipeline schedule with slug %s found", d.Id())
+	}
+
 	d.SetId(string(query.PipelineSchedule.ID))
 
 	return []*schema.ResourceData{d}, nil
