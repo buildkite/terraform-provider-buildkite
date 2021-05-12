@@ -82,11 +82,13 @@ The `team` block supports:
 Properties available for Bitbucket Server:
 
 -   `build_pull_requests` - (Optional) Whether to create builds for commits that are part of a Pull Request.
+-   `build_branches` - (Optional) Whether to create builds when branches are pushed.
 -   `build_tags` - (Optional) Whether to create builds when tags are pushed.
 
 Properties available for Bitbucket Cloud, GitHub, and GitHub Enterprise:
 
 -   `build_pull_requests` - (Optional) Whether to create builds for commits that are part of a Pull Request.
+-   `build_branches` - (Optional) Whether to create builds when branches are pushed.
 -   `build_tags` - (Optional) Whether to create builds when tags are pushed.
 -   `pull_request_branch_filter_enabled` - (Optional) Whether to limit the creation of builds to specific branches or patterns.
 -   `pull_request_branch_filter_configuration` - (Optional) The branch filtering pattern. Only pull requests on branches matching this pattern will cause builds to be created.
