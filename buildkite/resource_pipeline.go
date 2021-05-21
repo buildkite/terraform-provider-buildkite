@@ -244,6 +244,10 @@ func resourcePipeline() *schema.Resource {
 				Computed: true,
 				Type:     schema.TypeString,
 			},
+			"badge_url": {
+				Computed: true,
+				Type:     schema.TypeString,
+			},
 		},
 	}
 }
@@ -412,14 +416,16 @@ func DeletePipeline(ctx context.Context, d *schema.ResourceData, m interface{}) 
 	return nil
 }
 
-// As of March 16, 2021, GraphQL Pipeline is lacking support for the following properties:
+// As of May 21, 2021, GraphQL Pipeline is lacking support for the following properties:
 // - branch_configuration
+// - badge_url
 // - provider_settings
 // We fallback to REST API
 
 // PipelineExtraInfo is used to manage pipeline attributes that are not exposed via GraphQL API.
 type PipelineExtraInfo struct {
 	BranchConfiguration string `json:"branch_configuration"`
+	BadgeUrl            string `json:"badge_url"`
 	Provider            struct {
 		Settings struct {
 			TriggerMode                             string `json:"trigger_mode"`
@@ -663,6 +669,7 @@ func updatePipelineResource(d *schema.ResourceData, pipeline *PipelineNode) {
 // updatePipelineResourceExtraInfo updates the terraform resource with data received from Buildkite REST API
 func updatePipelineResourceExtraInfo(d *schema.ResourceData, pipeline *PipelineExtraInfo) {
 	d.Set("branch_configuration", pipeline.BranchConfiguration)
+	d.Set("badge_url", pipeline.BadgeUrl)
 
 	s := &pipeline.Provider.Settings
 	providerSettings := make([]map[string]interface{}, 1, 1)

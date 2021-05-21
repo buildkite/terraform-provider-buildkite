@@ -26,3 +26,7 @@ resource "buildkite_agent_token" "fleet" {
 output "agent_token" {
     value = buildkite_agent_token.fleet.token
 }
+
+output "badge_url" {
+    value = buildkite_pipeline.test.badge_url
+}
