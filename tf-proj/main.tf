@@ -24,3 +24,6 @@ resource "buildkite_pipeline_schedule" "foo" {
   branch      = "master"
 }
 
+output "badge_url" {
+  value = buildkite_pipeline.test.badge_url
+}

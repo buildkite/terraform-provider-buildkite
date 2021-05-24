@@ -64,3 +64,4 @@ terraform.rc
 tf-proj/terraform.d/*
 tf-proj/*.tfstate
 tf-proj/*.tfstate.backup
+tf-proj/.terraform.lock.hcl

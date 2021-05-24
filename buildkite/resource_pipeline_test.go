@@ -3,13 +3,14 @@ package buildkite
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
-// Confirm that we can create a new agent token, and then delete it without error
+// Confirm that we can create a new pipeline, and then delete it without error
 func TestAccPipeline_add_remove(t *testing.T) {
 	var resourcePipeline PipelineNode
 
@@ -75,6 +76,7 @@ func TestAccPipeline_add_remove_complex(t *testing.T) {
 					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "provider_settings.0.pull_request_branch_filter_enabled", "true"),
 					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "provider_settings.0.separate_pull_request_statuses", "true"),
 					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "provider_settings.0.skip_pull_request_builds_for_existing_commits", "false"),
+					resource.TestMatchResourceAttr("buildkite_pipeline.foobar", "badge_url", regexp.MustCompile(`^https://badge.buildkite.com/[a-z0-9]{50}\.svg$`)),
 				),
 			},
 		},
