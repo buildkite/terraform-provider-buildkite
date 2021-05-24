@@ -76,6 +76,7 @@ func TestAccPipeline_add_remove_complex(t *testing.T) {
 					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "provider_settings.0.pull_request_branch_filter_enabled", "true"),
 					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "provider_settings.0.separate_pull_request_statuses", "true"),
 					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "provider_settings.0.skip_pull_request_builds_for_existing_commits", "false"),
+					resource.TestMatchResourceAttr("buildkite_pipeline.foobar", "webhook_url", regexp.MustCompile(`^https://webhook.buildkite.com/deliver/[a-z0-9]{50}$`)),
 					resource.TestMatchResourceAttr("buildkite_pipeline.foobar", "badge_url", regexp.MustCompile(`^https://badge.buildkite.com/[a-z0-9]{50}\.svg$`)),
 				),
 			},
