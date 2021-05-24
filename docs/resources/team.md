@@ -28,5 +28,6 @@ resource "buildkite_team" "team" {
 
 ## Attribute Reference
 
+* `id`   - The GraphQL ID of the team.
 * `slug` - The name of the team.
-* `uuid` - The GraphQL UUID for the team.
+* `uuid` - The UUID for the team.

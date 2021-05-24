@@ -26,6 +26,11 @@ resource "buildkite_pipeline_schedule" "repo2_nightly" {
 * `env` - (Optional) A map of environment variables to use for the build.
 * `enabled` - (Optional, Default: `true`) Whether the schedule should run.
 
+## Attribute Reference
+
+* `id` - The GraphQL ID of the pipeline schedule
+* `uuid` - The UUID of the pipeline schedule
+
 ## Import
 
 Pipeline schedules can be imported using a slug (which consists of `$BUILDKITE_ORGANIZATION_SLUG/$BUILDKITE_PIPELINE_SLUG/$PIPELINE_SCHEDULE_UUID`), e.g.

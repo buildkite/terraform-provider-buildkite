@@ -112,6 +112,7 @@ Additional properties available for GitHub:
 
 ## Attribute Reference
 
+-   `id` - The GraphQL ID of the pipeline
 -   `webhook_url` - The Buildkite webhook URL to configure on the repository to trigger builds on this pipeline.
 -   `slug` - The slug of the created pipeline.
 -   `bagde_url` - The pipeline's last build status so you can display build status badge.
