@@ -272,8 +272,7 @@ func CreatePipeline(ctx context.Context, d *schema.ResourceData, m interface{}) 
 		log.Printf("converting team slug '%s' to an ID", string(team.Team.Slug))
 		teamID, err := GetTeamID(string(team.Team.Slug), client)
 		if err != nil {
-			log.Printf("Unable to get ID for team slug %s", team.Team.Slug)
-			return diag.FromErr(err)
+			return diag.FromErr(fmt.Errorf("Unable to get ID for team slug %s (%v)", team.Team.Slug, err))
 		}
 		teamsData = append(teamsData, PipelineTeamAssignmentInput{
 			Id:          teamID,
@@ -576,8 +575,7 @@ func createTeamPipelines(teamPipelines []TeamPipelineNode, pipelineID string, cl
 		log.Printf("Granting teamPipeline %s %s access to pipeline id '%s'...", teamPipeline.Team.Slug, teamPipeline.AccessLevel, pipelineID)
 		teamID, err := GetTeamID(string(teamPipeline.Team.Slug), client)
 		if err != nil {
-			log.Printf("Unable to get ID for team slug %s", teamPipeline.Team.Slug)
-			return err
+			return fmt.Errorf("Unable to get ID for team slug %s (%v)", teamPipeline.Team.Slug, err)
 		}
 		params := map[string]interface{}{
 			"team":        graphql.ID(teamID),
