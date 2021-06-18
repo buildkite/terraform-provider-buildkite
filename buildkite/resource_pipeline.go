@@ -217,6 +217,16 @@ func resourcePipeline() *schema.Resource {
 							Optional: true,
 							Type:     schema.TypeBool,
 						},
+						"filter_enabled": {
+							Computed: true,
+							Optional: true,
+							Type:     schema.TypeBool,
+						},
+						"filter_condition": {
+							Computed: true,
+							Optional: true,
+							Type:     schema.TypeString,
+						},
 						"publish_commit_status": {
 							Computed: true,
 							Optional: true,
@@ -438,6 +448,8 @@ type PipelineExtraInfo struct {
 			BuildBranches                           bool   `json:"build_branches"`
 			BuildTags                               bool   `json:"build_tags"`
 			CancelDeletedBranchBuilds               bool   `json:"cancel_deleted_branch_builds"`
+			FilterEnabled                           bool   `json:"filter_enabled"`
+			FilterCondition                         string `json:"filter_condition"`
 			PublishCommitStatus                     bool   `json:"publish_commit_status"`
 			PublishBlockedAsPending                 bool   `json:"publish_blocked_as_pending"`
 			PublishCommitStatusPerStep              bool   `json:"publish_commit_status_per_step"`
@@ -679,6 +691,8 @@ func updatePipelineResourceExtraInfo(d *schema.ResourceData, pipeline *PipelineE
 		"skip_pull_request_builds_for_existing_commits": s.SkipPullRequestBuildsForExistingCommits,
 		"build_pull_request_ready_for_review":           s.BuildPullRequestReadyForReview,
 		"build_pull_request_forks":                      s.BuildPullRequestForks,
+		"filter_enabled":                                s.FilterEnabled,
+		"filter_condition":                              s.FilterCondition,
 		"prefix_pull_request_fork_branch_names":         s.PrefixPullRequestForkBranchNames,
 		"build_branches":                                s.BuildBranches,
 		"build_tags":                                    s.BuildTags,
