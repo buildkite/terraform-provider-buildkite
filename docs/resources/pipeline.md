@@ -90,6 +90,8 @@ Properties available for Bitbucket Cloud, GitHub, and GitHub Enterprise:
 -   `build_pull_requests` - (Optional) Whether to create builds for commits that are part of a Pull Request.
 -   `build_branches` - (Optional) Whether to create builds when branches are pushed.
 -   `build_tags` - (Optional) Whether to create builds when tags are pushed.
+-   `filter_enabled` - (Optional) [true/false] Whether to filter builds to only run when the condition in `filter_condition` is true
+-   `filter_condition` - (Optional) The condition to evaluate when deciding if a build should run. More details available in [the documentation](https://buildkite.com/docs/pipelines/conditionals#conditionals-in-pipelines)
 -   `pull_request_branch_filter_enabled` - (Optional) Whether to limit the creation of builds to specific branches or patterns.
 -   `pull_request_branch_filter_configuration` - (Optional) The branch filtering pattern. Only pull requests on branches matching this pattern will cause builds to be created.
 -   `skip_pull_request_builds_for_existing_commits` - (Optional) Whether to skip creating a new build for a pull request if an existing build for the commit and branch already exists.
