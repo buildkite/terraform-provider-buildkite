@@ -97,6 +97,7 @@ Properties available for Bitbucket Cloud, GitHub, and GitHub Enterprise:
 -   `skip_pull_request_builds_for_existing_commits` - (Optional) Whether to skip creating a new build for a pull request if an existing build for the commit and branch already exists.
 -   `publish_commit_status` - (Optional) Whether to update the status of commits in Bitbucket or GitHub.
 -   `publish_commit_status_per_step` - (Optional) Whether to create a separate status for each job in a build, allowing you to see the status of each job directly in Bitbucket or GitHub.
+-   `cancel_deleted_branch_builds` - (Optional, Default: `false` ) A boolean to enable automatically cancelling any running builds for a branch if the branch is deleted.
 
 Additional properties available for GitHub:
 
