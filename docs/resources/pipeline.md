@@ -109,6 +109,7 @@ Additional properties available for GitHub:
     -   `none` will not create any builds based on GitHub activity.
 
 -   `build_pull_request_forks` - (Optional) Whether to create builds for pull requests from third-party forks.
+-   `build_pull_request_labels_changed` - (Optional) Whether to create builds for pull requests when labels are added or removed.
 -   `prefix_pull_request_fork_branch_names` - (Optional) Prefix branch names for third-party fork builds to ensure they don't trigger branch conditions. For example, the `master` branch from `some-user` will become `some-user:master`.
 -   `separate_pull_request_statuses` - (Optional) Whether to create a separate status for pull request builds, allowing you to require a passing pull request build in your [required status checks](https://help.github.com/en/articles/enabling-required-status-checks) in GitHub.
 -   `publish_blocked_as_pending` - (Optional) The status to use for blocked builds. Pending can be used with [required status checks](https://help.github.com/en/articles/enabling-required-status-checks) to prevent merging pull requests with blocked builds.
