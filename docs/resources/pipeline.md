@@ -10,7 +10,7 @@ Buildkite Documentation: https://buildkite.com/docs/pipelines
 # in ./steps.yml:
 # steps:
 #   - label: ':pipeline:'
-#     command: buildkite-agent upload
+#     command: buildkite-agent pipeline upload
 
 resource "buildkite_pipeline" "repo2" {
     name = "repo2"
