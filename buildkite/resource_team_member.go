@@ -28,7 +28,7 @@ func resourceTeamMember() *schema.Resource {
 		Schema: map[string]*schema.Schema{
 			"role": &schema.Schema{
 				Optional: true,
-				Type:     schema.TypeSet,
+				Type:     schema.TypeString,
 				ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
 					v := val.(string)
 					switch v {
@@ -68,8 +68,8 @@ func CreateTeamMember(ctx context.Context, d *schema.ResourceData, m interface{}
 	}
 
 	vars := map[string]interface{}{
-		"teamID": graphql.String(d.Get("team_id").(string)),
-		"userId": graphql.String(d.Get("user_id").(string)),
+		"teamId": graphql.ID(d.Get("team_id").(string)),
+		"userId": graphql.ID(d.Get("user_id").(string)),
 	}
 
 	err := client.graphql.Mutate(context.Background(), &mutation, vars)
