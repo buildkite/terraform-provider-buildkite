@@ -13,6 +13,7 @@ type TeamMemberNode struct {
 	ID   graphql.String
 	Role TeamMemberRole
 	UUID graphql.String
+	Team TeamNode
 }
 
 func resourceTeamMember() *schema.Resource {
@@ -27,7 +28,7 @@ func resourceTeamMember() *schema.Resource {
 
 		Schema: map[string]*schema.Schema{
 			"role": &schema.Schema{
-				Optional: true,
+				Required: true,
 				Type:     schema.TypeString,
 				ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
 					v := val.(string)
@@ -64,7 +65,6 @@ func CreateTeamMember(ctx context.Context, d *schema.ResourceData, m interface{}
 
 	var mutation struct {
 		TeamMemberCreate struct {
-			Team           TeamNode
 			TeamMemberEdge struct {
 				Node TeamMemberNode
 			}
@@ -82,9 +82,11 @@ func CreateTeamMember(ctx context.Context, d *schema.ResourceData, m interface{}
 	}
 
 	updateTeamMember(d, &mutation.TeamMemberCreate.TeamMemberEdge.Node)
+	// theres a bug in teamMemberCreate that doesnt respect the default role, so set it manually
+	d.Set("role", mutation.TeamMemberCreate.TeamMemberEdge.Node.Team.DefaultMemberRole)
 
 	// make a separate call to change the role if necessary
-	if mutation.TeamMemberCreate.Team.DefaultMemberRole != graphql.String(d.Get("role").(string)) {
+	if mutation.TeamMemberCreate.TeamMemberEdge.Node.Role != d.Get("role") {
 		UpdateTeamMember(ctx, d, m)
 	}
 
@@ -127,7 +129,7 @@ func UpdateTeamMember(ctx context.Context, d *schema.ResourceData, m interface{}
 
 	vars := map[string]interface{}{
 		"id":   d.Id(),
-		"role": graphql.String(d.Get("role").(string)),
+		"role": TeamMemberRole(d.Get("role").(string)),
 	}
 
 	err := client.graphql.Mutate(context.Background(), &mutation, vars)
