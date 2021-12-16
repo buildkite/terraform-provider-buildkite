@@ -141,7 +141,7 @@ func DeleteTeamMember(ctx context.Context, d *schema.ResourceData, m interface{}
 	client := m.(*Client)
 	var mutation struct {
 		TeamDelete struct {
-			DeletedTeamMemberId graphql.String
+			DeletedTeamMemberId graphql.String `graphql:"deletedTeamMemberID"`
 		} `graphql:"teamMemberDelete(input: {id: $id})"`
 	}
 
