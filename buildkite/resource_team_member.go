@@ -50,6 +50,10 @@ func resourceTeamMember() *schema.Resource {
 				Required: true,
 				Type:     schema.TypeString,
 			},
+			"uuid": &schema.Schema{
+				Computed: true,
+				Type:     schema.TypeString,
+			},
 		},
 	}
 }
