@@ -192,6 +192,11 @@ func resourcePipeline() *schema.Resource {
 							Optional: true,
 							Type:     schema.TypeBool,
 						},
+						"build_pull_request_labels_changed": {
+							Computed: true,
+							Optional: true,
+							Type:     schema.TypeBool,
+						},
 						"build_pull_request_forks": {
 							Computed: true,
 							Optional: true,
@@ -443,6 +448,7 @@ type PipelineExtraInfo struct {
 			PullRequestBranchFilterConfiguration    string `json:"pull_request_branch_filter_configuration"`
 			SkipPullRequestBuildsForExistingCommits bool   `json:"skip_pull_request_builds_for_existing_commits"`
 			BuildPullRequestReadyForReview          bool   `json:"build_pull_request_ready_for_review"`
+			BuildPullRequestLabelsChanged           bool   `json:"build_pull_request_labels_changed"`
 			BuildPullRequestForks                   bool   `json:"build_pull_request_forks"`
 			PrefixPullRequestForkBranchNames        bool   `json:"prefix_pull_request_fork_branch_names"`
 			BuildBranches                           bool   `json:"build_branches"`
@@ -690,6 +696,7 @@ func updatePipelineResourceExtraInfo(d *schema.ResourceData, pipeline *PipelineE
 		"pull_request_branch_filter_configuration":      s.PullRequestBranchFilterConfiguration,
 		"skip_pull_request_builds_for_existing_commits": s.SkipPullRequestBuildsForExistingCommits,
 		"build_pull_request_ready_for_review":           s.BuildPullRequestReadyForReview,
+		"build_pull_request_labels_changed":             s.BuildPullRequestLabelsChanged,
 		"build_pull_request_forks":                      s.BuildPullRequestForks,
 		"filter_enabled":                                s.FilterEnabled,
 		"filter_condition":                              s.FilterCondition,
