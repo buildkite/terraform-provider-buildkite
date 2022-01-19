@@ -33,5 +33,5 @@ The following arguments are supported:
 In addition to all arguments above, the following attributes are exported:
 
 * `id`   - The GraphQL ID of the team.
-* `slug` - The name of the team.
+* `slug` - The Buildkite slug of the team.
 * `uuid` - The UUID for the team.
