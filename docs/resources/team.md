@@ -22,10 +22,10 @@ resource "buildkite_team" "team" {
 The following arguments are supported:
 
 * `name` - (Required) The name of the team.
-* `privacy` - (Required) The privacy level to set the team too.
-* `default_team` - (Required) Whether to assign this team to a user by default.
-* `default_member_role` - (Required) Default role to assign to a team member.
-* `members_can_create_pipelines` - (Optional) Whether team members can create.
+* `privacy` - (Required) The privacy setting for the team, either `VISIBLE` or `SECRET`.
+* `default_team` - (Required) A boolean value to control whether to assign this team to a user by default.
+* `default_member_role` - (Required) Default role to assign to a team member, either `MEMBER` or `MAINTAINER`.
+* `members_can_create_pipelines` - (Optional, Default: `true`) A boolean value to control whether team members can create pipelines.
 * `description` - (Optional) The description to assign to the team.
 
 ## Attribute Reference
