@@ -29,5 +29,9 @@ provider "buildkite" {
 
 ## Argument Reference
 
+In addition to [generic `provider` arguments](https://www.terraform.io/docs/configuration/providers.html)
+(e.g., `alias` and `version`), the following arguments are supported in the Buildkite
+ `provider` block:
+
 -   `api_token` - (Required) This is the Buildkite API Access Token. It must be provided but can also be sourced from the `BUILDKITE_API_TOKEN` environment variable.
 -   `organization` - (Required) This is the Buildkite organization slug. It must be provided, but can also be sourced from the `BUILDKITE_ORGANIZATION` environment variable. The token requires GraphQL access and the `write_pipelines, read_pipelines` scopes.

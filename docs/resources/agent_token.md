@@ -16,11 +16,15 @@ resource "buildkite_agent_token" "fleet" {
 
 ## Argument Reference
 
+The following arguments are supported:
+
 * `description` - (Optional) This is the description of the agent token.
 
 -> Changing `description` will cause the resource to be destroyed and re-created.
 
 ## Attribute Reference
+
+In addition to all arguments above, the following attributes are exported:
 
 * `id` - The Graphql ID of the created agent token.
 * `token` - The value of the created agent token.

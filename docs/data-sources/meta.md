@@ -29,8 +29,10 @@ resource "aws_security_group" "from_buildkite" {
 
 ## Argument Reference
 
-None.
+This data source has no arguments.
 
 ## Attributes Reference
+
+In addition to all arguments above, the following attributes are exported:
 
 * `webhook_ips` - A list of strings, each one an IP address (x.x.x.x) or CIDR address (x.x.x.x/32) that Buildkite may use to send webhooks and other external requests.

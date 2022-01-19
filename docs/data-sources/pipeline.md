@@ -15,11 +15,15 @@ data "buildkite_pipeline" "repo2" {
 
 ## Argument Reference
 
+The following arguments are supported:
+
 * `slug` - (Required) The slug of the pipeline, available in the URL of the pipeline on buildkite.com
 
 ## Attributes Reference
 
-* `description` - A description of the pipeline.
+In addition to all arguments above, the following attributes are exported:
+
+* `description` - The description of the pipeline.
 * `default_branch` - The default branch to prefill when new builds are created or triggered, usually main or master but can be anything.
 * `name` - The name of the pipeline.
 * `id` - The GraphQL ID of the pipeline.

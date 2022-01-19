@@ -17,6 +17,8 @@ resource "buildkite_pipeline_schedule" "repo2_nightly" {
 
 ## Argument Reference
 
+The following arguments are supported:
+
 * `pipeline_id` - (Required) Terraform resource ID of a buildkite pipeline (Buildkite GraphQL ID).
 * `label` - (Required) Schedule label.
 * `cronline` - (Required) Schedule interval (see [docs](https://buildkite.com/docs/pipelines/scheduled-builds#schedule-intervals)).
@@ -27,6 +29,8 @@ resource "buildkite_pipeline_schedule" "repo2_nightly" {
 * `enabled` - (Optional, Default: `true`) Whether the schedule should run.
 
 ## Attribute Reference
+
+In addition to all arguments above, the following attributes are exported:
 
 * `id` - The GraphQL ID of the pipeline schedule
 * `uuid` - The UUID of the pipeline schedule

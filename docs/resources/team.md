@@ -19,6 +19,8 @@ resource "buildkite_team" "team" {
 
 ## Argument Reference
 
+The following arguments are supported:
+
 * `name` - (Required) The name of the team.
 * `privacy` - (Required) The privacy level to set the team too.
 * `default_team` - (Required) Whether to assign this team to a user by default.
@@ -27,6 +29,8 @@ resource "buildkite_team" "team" {
 * `description` - (Optional) The description to assign to the team.
 
 ## Attribute Reference
+
+In addition to all arguments above, the following attributes are exported:
 
 * `id`   - The GraphQL ID of the team.
 * `slug` - The name of the team.

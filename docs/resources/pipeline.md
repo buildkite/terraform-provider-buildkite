@@ -55,6 +55,8 @@ resource "buildkite_pipeline" "repo2-release" {
 
 ## Argument Reference
 
+The following arguments are supported:
+
 -   `name` - (Required) The name of the pipeline.
 -   `repository` - (Required) The git URL of the repository.
 -   `steps` - (Required) The string YAML steps to run the pipeline.
@@ -115,6 +117,8 @@ Additional properties available for GitHub:
 -   `publish_blocked_as_pending` - (Optional) The status to use for blocked builds. Pending can be used with [required status checks](https://help.github.com/en/articles/enabling-required-status-checks) to prevent merging pull requests with blocked builds.
 
 ## Attribute Reference
+
+In addition to all arguments above, the following attributes are exported:
 
 -   `id` - The GraphQL ID of the pipeline
 -   `webhook_url` - The Buildkite webhook URL to configure on the repository to trigger builds on this pipeline.
