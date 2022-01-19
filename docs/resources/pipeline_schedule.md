@@ -32,8 +32,8 @@ The following arguments are supported:
 
 In addition to all arguments above, the following attributes are exported:
 
-* `id` - The GraphQL ID of the pipeline schedule
-* `uuid` - The UUID of the pipeline schedule
+* `id` - The GraphQL ID of the pipeline schedule.
+* `uuid` - The UUID of the pipeline schedule.
 
 ## Import
 

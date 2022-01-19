@@ -26,7 +26,7 @@ The following arguments are supported:
 
 In addition to all arguments above, the following attributes are exported:
 
-* `id` - The Graphql ID of the created agent token.
+* `id` - The GraphQL ID of the created agent token.
 * `token` - The value of the created agent token.
 * `uuid` - The UUID of the token.
 

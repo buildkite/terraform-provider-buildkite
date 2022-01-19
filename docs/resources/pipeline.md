@@ -64,9 +64,9 @@ The following arguments are supported:
 -   `default_branch` - (Optional) The default branch to prefill when new builds are created or triggered, usually main or master but can be anything.
 -   `branch_configuration` - (Optional) Limit which branches and tags cause new builds to be created, either via a code push or via the Builds REST API.
 -   `skip_intermediate_builds` - (Optional, Default: `false` ) A boolean to enable automatically skipping any unstarted builds on the same branch when a new build is created.
--   `skip_intermediate_builds_branch_filter` - (Optional) Limit which branches build skipping applies to, for example `!master` will ensure that the master branch won't have it's builds automatically skipped.
+-   `skip_intermediate_builds_branch_filter` - (Optional) Limit which branches build skipping applies to, for example `!master` will ensure that the master branch won't have its builds automatically skipped.
 -   `cancel_intermediate_builds` - (Optional, Default: `false` ) A boolean to enable automatically cancelling any running builds on the same branch when a new build is created.
--   `cancel_intermediate_builds_branch_filter` - (Optional) Limit which branches build cancelling applies to, for example !master will ensure that the master branch won't have it's builds automatically cancelled.
+-   `cancel_intermediate_builds_branch_filter` - (Optional) Limit which branches build cancelling applies to, for example !master will ensure that the master branch won't have its builds automatically cancelled.
 -   `team` - (Optional) Set team access for the pipeline. Can be specified multiple times for each team. See [Teams Configuration](#team) below for details.
 -   `provider_settings` - (Optional) Source control provider settings for the pipeline. See [Provider Settings Configuration](#provider-settings-configuration) below for details.
 
@@ -120,7 +120,7 @@ Additional properties available for GitHub:
 
 In addition to all arguments above, the following attributes are exported:
 
--   `id` - The GraphQL ID of the pipeline
+-   `id` - The GraphQL ID of the pipeline.
 -   `webhook_url` - The Buildkite webhook URL to configure on the repository to trigger builds on this pipeline.
 -   `slug` - The slug of the created pipeline.
 -   `badge_url` - The pipeline's last build status so you can display build status badge.
