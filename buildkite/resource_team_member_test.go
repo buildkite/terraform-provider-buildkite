@@ -23,7 +23,7 @@ func TestAccTeamMember_add_remove(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Confirm the team member exists in the buildkite API
 					testAccChecKTeamMemberExists("buildkite_team_member.test", &resourceTeamMember),
-					// Confirm the team has the correct values in Buildkite's system
+					// Confirm the team member has the correct values in Buildkite's system
 					testAccCheckTeamMemberRemoteValues(&resourceTeamMember, "MEMBER"),
 					// Confirm the team member has the correct values in terraform state
 					resource.TestCheckResourceAttr("buildkite_team_member.test", "role", "MEMBER"),
@@ -46,7 +46,7 @@ func TestAccTeamMember_add_remove_non_default_role(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Confirm the team member exists in the buildkite API
 					testAccChecKTeamMemberExists("buildkite_team_member.test", &resourceTeamMember),
-					// Confirm the team has the correct values in Buildkite's system
+					// Confirm the team member has the correct values in Buildkite's system
 					testAccCheckTeamMemberRemoteValues(&resourceTeamMember, "MAINTAINER"),
 					// Confirm the team member has the correct values in terraform state
 					resource.TestCheckResourceAttr("buildkite_team_member.test", "role", "MAINTAINER"),
@@ -79,7 +79,7 @@ func TestAccTeamMember_update(t *testing.T) {
 					// Confirm the team member exists in the buildkite API
 					testAccChecKTeamMemberExists("buildkite_team_member.test", &resourceTeamMember),
 					// Confirm the team has the correct values in Buildkite's system
-					testAccCheckTeamMemberRemoteValues(&resourceTeamMember, "MEMBER"),
+					testAccCheckTeamMemberRemoteValues(&resourceTeamMember, "MAINTAINER"),
 				),
 			},
 		},
@@ -133,7 +133,7 @@ func testAccChecKTeamMemberExists(resourceName string, resourceTeamMember *TeamM
 		}
 
 		if string(query.Node.TeamMember.ID) == "" {
-			return fmt.Errorf("No team found with graphql id: %s", resourceState.Primary.ID)
+			return fmt.Errorf("No team member found with graphql id: %s", resourceState.Primary.ID)
 		}
 
 		*resourceTeamMember = query.Node.TeamMember
@@ -176,11 +176,11 @@ func testCheckTeamMemberResourceRemoved(s *terraform.State) error {
 	return nil
 }
 
-func testAccCheckTeamMemberRemoteValues(resourceTeamMember *TeamMemberNode, name string) resource.TestCheckFunc {
+func testAccCheckTeamMemberRemoteValues(resourceTeamMember *TeamMemberNode, role string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 
-		if string(resourceTeamMember.Role) != name {
-			return fmt.Errorf("remote team member role (%s) doesn't match expected value (%s)", resourceTeamMember.Role, name)
+		if string(resourceTeamMember.Role) != role {
+			return fmt.Errorf("remote team member role (%s) doesn't match expected value (%s)", resourceTeamMember.Role, role)
 		}
 		return nil
 	}
