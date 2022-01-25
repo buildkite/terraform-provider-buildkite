@@ -113,7 +113,7 @@ func testCheckTeamMemberResourceRemoved(s *terraform.State) error {
 		if err == nil {
 			if string(query.Node.TeamMember.ID) != "" &&
 				string(query.Node.TeamMember.ID) == rs.Primary.ID {
-				return fmt.Errorf("Team still exists")
+				return fmt.Errorf("Team member still exists")
 			}
 		}
 
