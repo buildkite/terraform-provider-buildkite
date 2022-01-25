@@ -33,6 +33,59 @@ func TestAccTeamMember_add_remove(t *testing.T) {
 	})
 }
 
+func TestAccTeamMember_add_remove_non_default_role(t *testing.T) {
+	var resourceTeamMember TeamMemberNode
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testCheckTeamMemberResourceRemoved,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccTeamMemberConfigBasic("MAINTAINER"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					// Confirm the team member exists in the buildkite API
+					testAccChecKTeamMemberExists("buildkite_team_member.test", &resourceTeamMember),
+					// Confirm the team has the correct values in Buildkite's system
+					testAccCheckTeamMemberRemoteValues(&resourceTeamMember, "MAINTAINER"),
+					// Confirm the team member has the correct values in terraform state
+					resource.TestCheckResourceAttr("buildkite_team_member.test", "role", "MAINTAINER"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccTeamMember_update(t *testing.T) {
+	var resourceTeamMember TeamMemberNode
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testCheckTeamMemberResourceRemoved,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccTeamMemberConfigBasic("MEMBER"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					// Confirm the team member exists in the buildkite API
+					testAccChecKTeamMemberExists("buildkite_team_member.test", &resourceTeamMember),
+					// Confirm the team has the correct values in Buildkite's system
+					testAccCheckTeamMemberRemoteValues(&resourceTeamMember, "MEMBER"),
+				),
+			},
+			{
+				Config: testAccTeamMemberConfigBasic("MAINTAINER"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					// Confirm the team member exists in the buildkite API
+					testAccChecKTeamMemberExists("buildkite_team_member.test", &resourceTeamMember),
+					// Confirm the team has the correct values in Buildkite's system
+					testAccCheckTeamMemberRemoteValues(&resourceTeamMember, "MEMBER"),
+				),
+			},
+		},
+	})
+}
+
 func testAccTeamMemberConfigBasic(role string) string {
 	config := `
 		resource "buildkite_team" "test" {
