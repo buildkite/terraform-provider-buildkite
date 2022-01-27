@@ -172,5 +172,5 @@ func updateTeamMember(d *schema.ResourceData, t *TeamMemberNode) {
 	d.Set("role", string(t.Role))
 	d.Set("uuid", string(t.UUID))
 	d.Set("team_id", string(t.Team.ID))
-	d.Set("user_id", t.User.ID.(string))
+	d.Set("user_id", t.User.ID)
 }

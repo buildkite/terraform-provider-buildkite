@@ -114,6 +114,29 @@ func TestAccTeamMember_import(t *testing.T) {
 	})
 }
 
+// Confirm that this resource can be removed
+func TestAccTeamMember_disappears(t *testing.T) {
+	var teamMember TeamMemberNode
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testCheckTeamMemberResourceRemoved,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccTeamMemberConfigBasic("MEMBER"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					// Confirm the team member exists in the buildkite API
+					testAccChecKTeamMemberExists("buildkite_team_member.test", &teamMember),
+					// Ensure its removed
+					testAccCheckResourceDisappears(testAccProvider, resourceTeamMember(), "buildkite_team_member.test"),
+				),
+				ExpectNonEmptyPlan: true,
+			},
+		},
+	})
+}
+
 func testAccTeamMemberConfigBasic(role string) string {
 	config := `
 		resource "buildkite_team" "test" {
