@@ -14,6 +14,9 @@ type TeamMemberNode struct {
 	Role TeamMemberRole
 	UUID graphql.String
 	Team TeamNode
+	User struct {
+		ID graphql.ID
+	}
 }
 
 func resourceTeamMember() *schema.Resource {
@@ -168,4 +171,6 @@ func updateTeamMember(d *schema.ResourceData, t *TeamMemberNode) {
 	d.SetId(string(t.ID))
 	d.Set("role", string(t.Role))
 	d.Set("uuid", string(t.UUID))
+	d.Set("team_id", string(t.Team.ID))
+	d.Set("user_id", t.User.ID.(string))
 }

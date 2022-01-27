@@ -86,6 +86,34 @@ func TestAccTeamMember_update(t *testing.T) {
 	})
 }
 
+// Confirm that this resource can be imported
+func TestAccTeamMember_import(t *testing.T) {
+	var resourceTeamMember TeamMemberNode
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testCheckTeamMemberResourceRemoved,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccTeamMemberConfigBasic("MEMBER"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					// Confirm the team member exists in the buildkite API
+					testAccChecKTeamMemberExists("buildkite_team_member.test", &resourceTeamMember),
+					// Confirm the team has the correct values in Buildkite's system
+					resource.TestCheckResourceAttr("buildkite_team_member.test", "role", "MEMBER"),
+				),
+			},
+			{
+				// re-import the resource and confirm they match
+				ResourceName:      "buildkite_team_member.test",
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
 func testAccTeamMemberConfigBasic(role string) string {
 	config := `
 		resource "buildkite_team" "test" {
