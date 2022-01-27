@@ -61,6 +61,7 @@ func resourceTeamMember() *schema.Resource {
 
 // CreateTeamMember adds a user to a Buildkite team
 func CreateTeamMember(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	originalRole := d.Get("role").(string)
 	client := m.(*Client)
 
 	var mutation struct {
@@ -82,11 +83,11 @@ func CreateTeamMember(ctx context.Context, d *schema.ResourceData, m interface{}
 	}
 
 	updateTeamMember(d, &mutation.TeamMemberCreate.TeamMemberEdge.Node)
-	// theres a bug in teamMemberCreate that doesnt respect the default role, so set it manually
-	d.Set("role", mutation.TeamMemberCreate.TeamMemberEdge.Node.Team.DefaultMemberRole)
 
-	// make a separate call to change the role if necessary
-	if mutation.TeamMemberCreate.TeamMemberEdge.Node.Role != d.Get("role") {
+	// theres a bug in teamMemberCreate that always sets role to MEMBER
+	// so if using MAINTAINER, make a separate call to change the role if necessary
+	if originalRole == "MAINTAINER" {
+		d.Set("role", "MAINTAINER")
 		UpdateTeamMember(ctx, d, m)
 	}
 
