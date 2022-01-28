@@ -12,6 +12,7 @@ import (
 
 // PipelineNode represents a pipeline as returned from the GraphQL API
 type PipelineNode struct {
+	Archived                             graphql.Boolean
 	CancelIntermediateBuilds             graphql.Boolean
 	CancelIntermediateBuildsBranchFilter graphql.String
 	DefaultBranch                        graphql.String
@@ -62,6 +63,11 @@ func resourcePipeline() *schema.Resource {
 		},
 
 		Schema: map[string]*schema.Schema{
+			"archived": {
+				Computed: true,
+				Optional: true,
+				Type:     schema.TypeBool,
+			},
 			"cancel_intermediate_builds": {
 				Computed: true,
 				Optional: true,
@@ -317,6 +323,12 @@ func CreatePipeline(ctx context.Context, d *schema.ResourceData, m interface{}) 
 	}
 	log.Printf("Successfully created pipeline with id '%s'.", mutation.PipelineCreate.Pipeline.ID)
 
+	if d.Get("archived").(bool) {
+		if err = archivePipeline(mutation.PipelineCreate.Pipeline, client.graphql); err != nil {
+			return diag.FromErr(err)
+		}
+	}
+
 	updatePipelineResource(d, &mutation.PipelineCreate.Pipeline)
 
 	pipelineExtraInfo, err := updatePipelineExtraInfo(d, client)
@@ -392,6 +404,18 @@ func UpdatePipeline(ctx context.Context, d *schema.ResourceData, m interface{}) 
 		log.Print("Unable to reconcile team pipelines")
 		return diag.FromErr(err)
 	}
+
+	// if terraform says to archive it but the api says its not, make another call to archive it
+	if d.Get("archived").(bool) && !bool(mutation.PipelineUpdate.Pipeline.Archived) {
+		if err := archivePipeline(mutation.PipelineUpdate.Pipeline, client.graphql); err != nil {
+			log.Printf("Unable to archive pipeline: %s", mutation.PipelineUpdate.Pipeline.Name)
+		}
+	} else if !d.Get("archived").(bool) && bool(mutation.PipelineUpdate.Pipeline.Archived) {
+		// else if terraform says to not archive it and the api says it is, make another call to unarchive it
+		if err := unArchivePipeline(mutation.PipelineUpdate.Pipeline, client.graphql); err != nil {
+			log.Printf("Unable to unarchive pipeline: %s", mutation.PipelineUpdate.Pipeline.Name)
+		}
+	} // both other options are correct without more changes (false:false, true:true)
 
 	updatePipelineResource(d, &mutation.PipelineUpdate.Pipeline)
 
@@ -489,6 +513,38 @@ func updatePipelineExtraInfo(d *schema.ResourceData, client *Client) (PipelineEx
 		return pipelineExtraInfo, err
 	}
 	return pipelineExtraInfo, nil
+}
+
+func archivePipeline(pipeline PipelineNode, client *graphql.Client) error {
+	var mutation struct {
+		PipelineArchive struct {
+			Pipeline struct {
+				ID graphql.ID
+			}
+		} `graphql:"pipelineArchive(input: {id: $id})"`
+	}
+	vars := map[string]interface{}{
+		"id": pipeline.ID,
+	}
+
+	log.Printf("Archiving pipeline %s ...", pipeline.Name)
+	return client.Mutate(context.Background(), &mutation, vars)
+}
+
+func unArchivePipeline(pipeline PipelineNode, client *graphql.Client) error {
+	var mutation struct {
+		PipelineUnarchive struct {
+			Pipeline struct {
+				ID graphql.ID
+			}
+		} `graphql:"pipelineUnarchive(input: {id: $id})"`
+	}
+	vars := map[string]interface{}{
+		"id": pipeline.ID,
+	}
+
+	log.Printf("Unarchiving pipeline %s ...", pipeline.Name)
+	return client.Mutate(context.Background(), &mutation, vars)
 }
 
 func getTeamPipelinesFromSchema(d *schema.ResourceData) []TeamPipelineNode {
