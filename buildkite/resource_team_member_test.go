@@ -22,7 +22,7 @@ func TestAccTeamMember_add_remove(t *testing.T) {
 				Config: testAccTeamMemberConfigBasic("MEMBER"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Confirm the team member exists in the buildkite API
-					testAccChecKTeamMemberExists("buildkite_team_member.test", &resourceTeamMember),
+					testAccCheckTeamMemberExists("buildkite_team_member.test", &resourceTeamMember),
 					// Confirm the team member has the correct values in Buildkite's system
 					testAccCheckTeamMemberRemoteValues(&resourceTeamMember, "MEMBER"),
 					// Confirm the team member has the correct values in terraform state
@@ -45,7 +45,7 @@ func TestAccTeamMember_add_remove_non_default_role(t *testing.T) {
 				Config: testAccTeamMemberConfigBasic("MAINTAINER"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Confirm the team member exists in the buildkite API
-					testAccChecKTeamMemberExists("buildkite_team_member.test", &resourceTeamMember),
+					testAccCheckTeamMemberExists("buildkite_team_member.test", &resourceTeamMember),
 					// Confirm the team member has the correct values in Buildkite's system
 					testAccCheckTeamMemberRemoteValues(&resourceTeamMember, "MAINTAINER"),
 					// Confirm the team member has the correct values in terraform state
@@ -68,7 +68,7 @@ func TestAccTeamMember_update(t *testing.T) {
 				Config: testAccTeamMemberConfigBasic("MEMBER"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Confirm the team member exists in the buildkite API
-					testAccChecKTeamMemberExists("buildkite_team_member.test", &resourceTeamMember),
+					testAccCheckTeamMemberExists("buildkite_team_member.test", &resourceTeamMember),
 					// Confirm the team has the correct values in Buildkite's system
 					testAccCheckTeamMemberRemoteValues(&resourceTeamMember, "MEMBER"),
 				),
@@ -77,7 +77,7 @@ func TestAccTeamMember_update(t *testing.T) {
 				Config: testAccTeamMemberConfigBasic("MAINTAINER"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Confirm the team member exists in the buildkite API
-					testAccChecKTeamMemberExists("buildkite_team_member.test", &resourceTeamMember),
+					testAccCheckTeamMemberExists("buildkite_team_member.test", &resourceTeamMember),
 					// Confirm the team has the correct values in Buildkite's system
 					testAccCheckTeamMemberRemoteValues(&resourceTeamMember, "MAINTAINER"),
 				),
@@ -99,7 +99,7 @@ func TestAccTeamMember_import(t *testing.T) {
 				Config: testAccTeamMemberConfigBasic("MEMBER"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Confirm the team member exists in the buildkite API
-					testAccChecKTeamMemberExists("buildkite_team_member.test", &resourceTeamMember),
+					testAccCheckTeamMemberExists("buildkite_team_member.test", &resourceTeamMember),
 					// Confirm the team has the correct values in Buildkite's system
 					resource.TestCheckResourceAttr("buildkite_team_member.test", "role", "MEMBER"),
 				),
@@ -127,7 +127,7 @@ func TestAccTeamMember_disappears(t *testing.T) {
 				Config: testAccTeamMemberConfigBasic("MEMBER"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Confirm the team member exists in the buildkite API
-					testAccChecKTeamMemberExists("buildkite_team_member.test", &teamMember),
+					testAccCheckTeamMemberExists("buildkite_team_member.test", &teamMember),
 					// Ensure its removed
 					testAccCheckResourceDisappears(testAccProvider, resourceTeamMember(), "buildkite_team_member.test"),
 				),
