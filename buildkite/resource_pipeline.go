@@ -715,6 +715,7 @@ func deleteTeamPipelines(teamPipelines []TeamPipelineNode, client *Client) error
 // updatePipelineResource updates the terraform resource data for the pipeline resource
 func updatePipelineResource(d *schema.ResourceData, pipeline *PipelineNode) {
 	d.SetId(string(pipeline.ID))
+	d.Set("archived", bool(pipeline.Archived))
 	d.Set("cancel_intermediate_builds", bool(pipeline.CancelIntermediateBuilds))
 	d.Set("cancel_intermediate_builds_branch_filter", string(pipeline.CancelIntermediateBuildsBranchFilter))
 	d.Set("default_branch", string(pipeline.DefaultBranch))
