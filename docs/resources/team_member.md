@@ -2,6 +2,8 @@
 
 This resource allows manage team membership for existing organization users.
 
+The user must already be part of the organization to which you are managing team membership. This will not invite a new user to the organization.
+
 Buildkite Documentation: https://buildkite.com/docs/pipelines/permissions
 
 Note: You must first enable Teams on your organization.
