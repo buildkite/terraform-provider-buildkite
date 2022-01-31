@@ -155,7 +155,7 @@ func testAccTeamMemberConfigBasic(role string) string {
 	return fmt.Sprintf(config, role)
 }
 
-func testAccChecKTeamMemberExists(resourceName string, resourceTeamMember *TeamMemberNode) resource.TestCheckFunc {
+func testAccCheckTeamMemberExists(resourceName string, resourceTeamMember *TeamMemberNode) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		resourceState, ok := s.RootModule().Resources[resourceName]
 
