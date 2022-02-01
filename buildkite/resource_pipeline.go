@@ -275,6 +275,11 @@ func resourcePipeline() *schema.Resource {
 
 // CreatePipeline creates a Buildkite pipeline
 func CreatePipeline(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	// as soon as a pipeline is marked as archived, you cannot modify it so we can't support this in the create
+	if d.Get("archived").(bool) {
+		return diag.Errorf("Creating a pipeline in an archived state is not supported. You must create the pipeline and then archive it.")
+	}
+
 	client := m.(*Client)
 	orgID, err := GetOrganizationID(client.organization, client.graphql)
 	if err != nil {
@@ -322,12 +327,6 @@ func CreatePipeline(ctx context.Context, d *schema.ResourceData, m interface{}) 
 		return diag.FromErr(err)
 	}
 	log.Printf("Successfully created pipeline with id '%s'.", mutation.PipelineCreate.Pipeline.ID)
-
-	if d.Get("archived").(bool) {
-		if err = archivePipeline(mutation.PipelineCreate.Pipeline, client.graphql); err != nil {
-			return diag.FromErr(err)
-		}
-	}
 
 	updatePipelineResource(d, &mutation.PipelineCreate.Pipeline)
 
