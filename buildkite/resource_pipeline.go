@@ -64,7 +64,7 @@ func resourcePipeline() *schema.Resource {
 
 		Schema: map[string]*schema.Schema{
 			"archived": {
-				Computed: true,
+				Default:  false,
 				Optional: true,
 				Type:     schema.TypeBool,
 			},
@@ -372,6 +372,15 @@ func ReadPipeline(ctx context.Context, d *schema.ResourceData, m interface{}) di
 // UpdatePipeline updates a Buildkite pipeline
 func UpdatePipeline(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := m.(*Client)
+	originalArchived := d.Get("archived").(bool)
+
+	// if the archived state was changed and is now not archived (in state) we need to change the buildkite API first before other parameters are changed
+	if !originalArchived && d.HasChange("archived") {
+		if _, err := unArchivePipeline(d.Id(), client.graphql); err != nil {
+			return diag.FromErr(err)
+		}
+	}
+
 	var mutation struct {
 		PipelineUpdate struct {
 			Pipeline PipelineNode
@@ -404,18 +413,6 @@ func UpdatePipeline(ctx context.Context, d *schema.ResourceData, m interface{}) 
 		return diag.FromErr(err)
 	}
 
-	// if terraform says to archive it but the api says its not, make another call to archive it
-	if d.Get("archived").(bool) && !bool(mutation.PipelineUpdate.Pipeline.Archived) {
-		if err := archivePipeline(mutation.PipelineUpdate.Pipeline, client.graphql); err != nil {
-			log.Printf("Unable to archive pipeline: %s", mutation.PipelineUpdate.Pipeline.Name)
-		}
-	} else if !d.Get("archived").(bool) && bool(mutation.PipelineUpdate.Pipeline.Archived) {
-		// else if terraform says to not archive it and the api says it is, make another call to unarchive it
-		if err := unArchivePipeline(mutation.PipelineUpdate.Pipeline, client.graphql); err != nil {
-			log.Printf("Unable to unarchive pipeline: %s", mutation.PipelineUpdate.Pipeline.Name)
-		}
-	} // both other options are correct without more changes (false:false, true:true)
-
 	updatePipelineResource(d, &mutation.PipelineUpdate.Pipeline)
 
 	pipelineExtraInfo, err := updatePipelineExtraInfo(d, client)
@@ -424,6 +421,17 @@ func UpdatePipeline(ctx context.Context, d *schema.ResourceData, m interface{}) 
 		return diag.FromErr(err)
 	}
 	updatePipelineResourceExtraInfo(d, &pipelineExtraInfo)
+
+	// if terraform says to archive it but the api says its not, make another call to archive it
+	// this must be done after all other changes because once done, it is read only
+	if originalArchived && !bool(mutation.PipelineUpdate.Pipeline.Archived) {
+		if archived, err := archivePipeline(mutation.PipelineUpdate.Pipeline.ID, client.graphql); err != nil {
+			return diag.FromErr(err)
+		} else {
+			mutation.PipelineUpdate.Pipeline.Archived = archived
+			updatePipelineResource(d, &mutation.PipelineUpdate.Pipeline)
+		}
+	}
 
 	return ReadPipeline(ctx, d, m)
 }
