@@ -244,7 +244,7 @@ func testAccCheckPipelineScheduleExists(resourceName string, resourceSchedule *P
 func testAccCheckPipelineScheduleRemoteValues(resourcePipeline *PipelineNode, resourceSchedule *PipelineScheduleNode, label string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 
-		if string(resourceSchedule.Pipeline.ID) != string(resourcePipeline.ID) {
+		if string(resourceSchedule.Pipeline.ID) != resourcePipeline.ID.(string) {
 			return fmt.Errorf("remote pipeline schedule pipeline ID (%s) doesn't match expected value (%s)", resourceSchedule.Pipeline.ID, resourcePipeline.ID)
 		}
 

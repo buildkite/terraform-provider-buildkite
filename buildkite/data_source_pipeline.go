@@ -65,7 +65,7 @@ func dataSourcePipelineRead(ctx context.Context, d *schema.ResourceData, m inter
 		return diag.FromErr(errors.New("Pipeline not found"))
 	}
 
-	d.SetId(string(query.Pipeline.ID))
+	d.SetId(query.Pipeline.ID.(string))
 	d.Set("default_branch", string(query.Pipeline.DefaultBranch))
 	d.Set("description", string(query.Pipeline.Description))
 	d.Set("name", string(query.Pipeline.Name))

@@ -17,7 +17,7 @@ type PipelineNode struct {
 	CancelIntermediateBuildsBranchFilter graphql.String
 	DefaultBranch                        graphql.String
 	Description                          graphql.String
-	ID                                   graphql.String
+	ID                                   graphql.ID
 	Name                                 graphql.String
 	Repository                           struct {
 		URL graphql.String
@@ -515,36 +515,36 @@ func updatePipelineExtraInfo(d *schema.ResourceData, client *Client) (PipelineEx
 	return pipelineExtraInfo, nil
 }
 
-func archivePipeline(pipeline PipelineNode, client *graphql.Client) error {
+func archivePipeline(id graphql.ID, client *graphql.Client) (graphql.Boolean, error) {
 	var mutation struct {
 		PipelineArchive struct {
-			Pipeline struct {
-				ID graphql.ID
-			}
+			Pipeline PipelineNode
 		} `graphql:"pipelineArchive(input: {id: $id})"`
 	}
 	vars := map[string]interface{}{
-		"id": pipeline.ID,
+		"id": id,
 	}
 
-	log.Printf("Archiving pipeline %s ...", pipeline.Name)
-	return client.Mutate(context.Background(), &mutation, vars)
+	log.Printf("Archiving pipeline ID: %s ...", id)
+	err := client.Mutate(context.Background(), &mutation, vars)
+
+	return mutation.PipelineArchive.Pipeline.Archived, err
 }
 
-func unArchivePipeline(pipeline PipelineNode, client *graphql.Client) error {
+func unArchivePipeline(id graphql.ID, client *graphql.Client) (graphql.Boolean, error) {
 	var mutation struct {
 		PipelineUnarchive struct {
-			Pipeline struct {
-				ID graphql.ID
-			}
+			Pipeline PipelineNode
 		} `graphql:"pipelineUnarchive(input: {id: $id})"`
 	}
 	vars := map[string]interface{}{
-		"id": pipeline.ID,
+		"id": id,
 	}
 
-	log.Printf("Unarchiving pipeline %s ...", pipeline.Name)
-	return client.Mutate(context.Background(), &mutation, vars)
+	log.Printf("Unarchiving pipeline ID: %s ...", id)
+	err := client.Mutate(context.Background(), &mutation, vars)
+
+	return mutation.PipelineUnarchive.Pipeline.Archived, err
 }
 
 func getTeamPipelinesFromSchema(d *schema.ResourceData) []TeamPipelineNode {
@@ -616,7 +616,7 @@ func reconcileTeamPipelines(teamPipelines []TeamPipelineNode, pipeline *Pipeline
 	log.Printf("EXISTING_BUILDKITE_TEAMS: %s", teamPipelineIds)
 
 	// Add any teamsInput that don't already exist
-	err := createTeamPipelines(toAdd, string(pipeline.ID), client)
+	err := createTeamPipelines(toAdd, pipeline.ID.(string), client)
 	if err != nil {
 		return err
 	}
@@ -714,7 +714,7 @@ func deleteTeamPipelines(teamPipelines []TeamPipelineNode, client *Client) error
 
 // updatePipelineResource updates the terraform resource data for the pipeline resource
 func updatePipelineResource(d *schema.ResourceData, pipeline *PipelineNode) {
-	d.SetId(string(pipeline.ID))
+	d.SetId(pipeline.ID.(string))
 	d.Set("archived", bool(pipeline.Archived))
 	d.Set("cancel_intermediate_builds", bool(pipeline.CancelIntermediateBuilds))
 	d.Set("cancel_intermediate_builds_branch_filter", string(pipeline.CancelIntermediateBuildsBranchFilter))

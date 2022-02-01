@@ -255,7 +255,7 @@ func testAccCheckPipelineExists(resourceName string, resourcePipeline *PipelineN
 			return fmt.Errorf("Error fetching pipeline from graphql API: %v", err)
 		}
 
-		if string(query.Node.Pipeline.ID) == "" {
+		if query.Node.Pipeline.ID.(string) == "" {
 			return fmt.Errorf("No pipeline found with graphql id: %s", resourceState.Primary.ID)
 		}
 
@@ -370,8 +370,8 @@ func testAccCheckPipelineResourceDestroy(s *terraform.State) error {
 
 		err := provider.graphql.Query(context.Background(), &query, vars)
 		if err == nil {
-			if string(query.Node.Pipeline.ID) != "" &&
-				string(query.Node.Pipeline.ID) == rs.Primary.ID {
+			if query.Node.Pipeline.ID.(string) != "" &&
+				query.Node.Pipeline.ID.(string) == rs.Primary.ID {
 				return fmt.Errorf("Pipeline still exists")
 			}
 		}
