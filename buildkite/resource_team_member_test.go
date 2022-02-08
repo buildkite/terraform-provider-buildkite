@@ -149,7 +149,7 @@ func testAccTeamMemberConfigBasic(role string) string {
 		resource "buildkite_team_member" "test" {
 		    role = "%s"
 			team_id = buildkite_team.test.id
-			user_id = "VXNlci0tLWRlOTdmMjBiLWJkZmMtNGNjOC1hOTcwLTY1ODNiZTk2ZGEyYQ=="
+			user_id = "VXNlci0tLThkYjI5MjBlLTNjNjAtNDhhNy1hM2Y4LTI1ODRiZTM3NGJhYw=="
 		}
 	`
 	return fmt.Sprintf(config, role)
