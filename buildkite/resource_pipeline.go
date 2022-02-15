@@ -383,27 +383,41 @@ func ReadPipeline(ctx context.Context, d *schema.ResourceData, m interface{}) di
 // UpdatePipeline updates a Buildkite pipeline
 func UpdatePipeline(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := m.(*Client)
+	var err error
 	var mutation struct {
 		PipelineUpdate struct {
 			Pipeline PipelineNode
-		} `graphql:"pipelineUpdate(input: {cancelIntermediateBuilds: $cancel_intermediate_builds, cancelIntermediateBuildsBranchFilter: $cancel_intermediate_builds_branch_filter, clusterId: $cluster_id, defaultBranch: $default_branch, description: $desc, id: $id, name: $name, repository: {url: $repository_url}, skipIntermediateBuilds: $skip_intermediate_builds, skipIntermediateBuildsBranchFilter: $skip_intermediate_builds_branch_filter, steps: {yaml: $steps}})"`
+		} `graphql:"pipelineUpdate(input: {cancelIntermediateBuilds: $cancel_intermediate_builds, cancelIntermediateBuildsBranchFilter: $cancel_intermediate_builds_branch_filter, defaultBranch: $default_branch, description: $desc, id: $id, name: $name, repository: {url: $repository_url}, skipIntermediateBuilds: $skip_intermediate_builds, skipIntermediateBuildsBranchFilter: $skip_intermediate_builds_branch_filter, steps: {yaml: $steps}})"`
 	}
 	vars := map[string]interface{}{
 		"cancel_intermediate_builds":               graphql.Boolean(d.Get("cancel_intermediate_builds").(bool)),
 		"cancel_intermediate_builds_branch_filter": graphql.String(d.Get("cancel_intermediate_builds_branch_filter").(string)),
-		"cluster_id":                             graphql.ID(d.Get("cluster_id").(string)),
-		"default_branch":                         graphql.String(d.Get("default_branch").(string)),
-		"desc":                                   graphql.String(d.Get("description").(string)),
-		"id":                                     graphql.ID(d.Id()),
-		"name":                                   graphql.String(d.Get("name").(string)),
-		"repository_url":                         graphql.String(d.Get("repository").(string)),
-		"skip_intermediate_builds":               graphql.Boolean(d.Get("skip_intermediate_builds").(bool)),
-		"skip_intermediate_builds_branch_filter": graphql.String(d.Get("skip_intermediate_builds_branch_filter").(string)),
-		"steps":                                  graphql.String(d.Get("steps").(string)),
+		"default_branch":                           graphql.String(d.Get("default_branch").(string)),
+		"desc":                                     graphql.String(d.Get("description").(string)),
+		"id":                                       graphql.ID(d.Id()),
+		"name":                                     graphql.String(d.Get("name").(string)),
+		"repository_url":                           graphql.String(d.Get("repository").(string)),
+		"skip_intermediate_builds":                 graphql.Boolean(d.Get("skip_intermediate_builds").(bool)),
+		"skip_intermediate_builds_branch_filter":   graphql.String(d.Get("skip_intermediate_builds_branch_filter").(string)),
+		"steps":                                    graphql.String(d.Get("steps").(string)),
 	}
 
 	log.Printf("Updating pipeline %s ...", vars["name"])
-	err := client.graphql.Mutate(context.Background(), &mutation, vars)
+
+	// If the cluster_id key is present in the mutation, GraphQL expects a valid ID.
+	// Check if cluster_id exists in the configuration before adding to mutation.
+	if clusterID, ok := d.GetOk("cluster_id"); ok {
+		var mutationWithClusterID struct {
+			PipelineCreate struct {
+				Pipeline PipelineNode
+			} `graphql:"pipelineUpdate(input: {cancelIntermediateBuilds: $cancel_intermediate_builds, cancelIntermediateBuildsBranchFilter: $cancel_intermediate_builds_branch_filter, clusterId: $cluster_id, defaultBranch: $default_branch, description: $desc, id: $id, name: $name, repository: {url: $repository_url}, skipIntermediateBuilds: $skip_intermediate_builds, skipIntermediateBuildsBranchFilter: $skip_intermediate_builds_branch_filter, steps: {yaml: $steps}})"`
+		}
+		vars["cluster_id"] = graphql.ID(clusterID.(string))
+		err = client.graphql.Mutate(context.Background(), &mutationWithClusterID, vars)
+	} else {
+		err = client.graphql.Mutate(context.Background(), &mutation, vars)
+	}
+
 	if err != nil {
 		log.Printf("Unable to update pipeline %s", d.Get("name"))
 		return diag.FromErr(err)
