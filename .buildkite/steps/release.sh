@@ -45,9 +45,9 @@ fi
 
 echo "--- installing goreleaser"
 
-curl -L -o /tmp/goreleaser_Linux_x86_64.tar.gz https://github.com/goreleaser/goreleaser/releases/download/v0.157.0/goreleaser_Linux_x86_64.tar.gz
+curl -L -o /tmp/goreleaser_Linux_x86_64.tar.gz https://github.com/goreleaser/goreleaser/releases/download/v1.7.0/goreleaser_Linux_x86_64.tar.gz
 
-cd /tmp && echo "a03082c770d0966db434c8d355b7df337698f7dc669b4ac40db5d3927426308f  goreleaser_Linux_x86_64.tar.gz" | sha256sum -c
+cd /tmp && echo "e74934e7571991522324642ac7b032310f04baf192ce2a54db1dc323b97bcd7d  goreleaser_Linux_x86_64.tar.gz" | sha256sum -c
 
 tar -zxvf goreleaser_Linux_x86_64.tar.gz
 
