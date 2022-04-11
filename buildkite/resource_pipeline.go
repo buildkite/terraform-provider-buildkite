@@ -501,8 +501,8 @@ func updatePipelineExtraInfo(d *schema.ResourceData, client *Client) (PipelineEx
 
 func getTagsFromSchema(d *schema.ResourceData) []graphql.String {
 	tags := []graphql.String{}
-	eventSet := d.Get("events").(*schema.Set)
-	for _, v := range eventSet.List() {
+	tagSet := d.Get("tags").(*schema.Set)
+	for _, v := range tagSet.List() {
 		tags = append(tags, graphql.String(v.(string)))
 	}
 	return tags
