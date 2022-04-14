@@ -1,7 +1,9 @@
-# Data Source: Team
+# Data Source: team
 
 Use this data source to look up properties of a team. This can be used to
 validate that a team exists before setting the team slug on a pipeline.
+
+Buildkite documentation: https://buildkite.com/docs/pipelines/permissions
 
 ## Example Usage
 
