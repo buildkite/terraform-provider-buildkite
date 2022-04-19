@@ -27,6 +27,7 @@ type PipelineNode struct {
 	Steps                              struct {
 		YAML graphql.String
 	}
+        Tags []PipelineTag
 	Teams struct {
 		Edges []struct {
 			Node TeamPipelineNode
@@ -37,6 +38,13 @@ type PipelineNode struct {
 
 // PipelineAccessLevels represents a pipeline access levels as returned from the GraphQL API
 type PipelineAccessLevels graphql.String
+
+type PipelineTag struct {
+        Label graphql.String
+}
+type PipelineTagInput struct {
+        Label graphql.String `json:"label"`
+}
 
 // TeamPipelineNode represents a team pipeline as returned from the GraphQL API
 type TeamPipelineNode struct {
@@ -499,11 +507,13 @@ func updatePipelineExtraInfo(d *schema.ResourceData, client *Client) (PipelineEx
 	return pipelineExtraInfo, nil
 }
 
-func getTagsFromSchema(d *schema.ResourceData) []graphql.String {
-	tags := []graphql.String{}
+func getTagsFromSchema(d *schema.ResourceData) []PipelineTagInput {
 	tagSet := d.Get("tags").(*schema.Set)
-	for _, v := range tagSet.List() {
-		tags = append(tags, graphql.String(v.(string)))
+	tags := make([]PipelineTagInput, tagSet.Len())
+	for i, v := range tagSet.List() {
+                tags[i] = PipelineTagInput{
+                        Label: graphql.String(v.(string)),
+                }
 	}
 	return tags
 }

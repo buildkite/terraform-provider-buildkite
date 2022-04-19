@@ -61,8 +61,8 @@ func TestAccPipeline_add_remove_complex(t *testing.T) {
 					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "skip_intermediate_builds_branch_filter", "main"),
 					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "cancel_intermediate_builds", "true"),
 					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "cancel_intermediate_builds_branch_filter", "!main"),
-					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "tags.0", "🛫"),
-					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "tags.1", "test-tag"),
+					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "tags.0", "test-tag"),
+					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "tags.1", "🛫"),
 					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "provider_settings.0.trigger_mode", "code"),
 					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "provider_settings.0.build_branches", "false"),
 					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "provider_settings.0.build_pull_request_forks", "true"),
@@ -325,7 +325,7 @@ func testAccPipelineConfigComplex(name string, steps string) string {
             skip_intermediate_builds_branch_filter = "main"
             cancel_intermediate_builds = true
             cancel_intermediate_builds_branch_filter = "!main"
-			tags = [ "🛫", "test-tag"]
+			tags = ["🛫", "test-tag"]
 			provider_settings {
 				trigger_mode = "code"
 				build_branches = false
