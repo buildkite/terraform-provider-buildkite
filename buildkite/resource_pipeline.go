@@ -30,6 +30,7 @@ type PipelineNode struct {
 	Steps                              struct {
 		YAML graphql.String
 	}
+        Tags []PipelineTag
 	Teams struct {
 		Edges []struct {
 			Node TeamPipelineNode
@@ -40,6 +41,13 @@ type PipelineNode struct {
 
 // PipelineAccessLevels represents a pipeline access levels as returned from the GraphQL API
 type PipelineAccessLevels graphql.String
+
+type PipelineTag struct {
+        Label graphql.String
+}
+type PipelineTagInput struct {
+        Label graphql.String `json:"label"`
+}
 
 // TeamPipelineNode represents a team pipeline as returned from the GraphQL API
 type TeamPipelineNode struct {
@@ -149,6 +157,12 @@ func resourcePipeline() *schema.Resource {
 						},
 					},
 				},
+			},
+			"tags": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+				Set:      schema.HashString,
 			},
 			"provider_settings": {
 				Type:     schema.TypeList,
@@ -287,7 +301,7 @@ func CreatePipeline(ctx context.Context, d *schema.ResourceData, m interface{}) 
 	var mutation struct {
 		PipelineCreate struct {
 			Pipeline PipelineNode
-		} `graphql:"pipelineCreate(input: {cancelIntermediateBuilds: $cancel_intermediate_builds, cancelIntermediateBuildsBranchFilter: $cancel_intermediate_builds_branch_filter, defaultBranch: $default_branch, description: $desc, name: $name, organizationId: $org, repository: {url: $repository_url}, skipIntermediateBuilds: $skip_intermediate_builds, skipIntermediateBuildsBranchFilter: $skip_intermediate_builds_branch_filter, steps: {yaml: $steps}, teams: $teams})"`
+		} `graphql:"pipelineCreate(input: {cancelIntermediateBuilds: $cancel_intermediate_builds, cancelIntermediateBuildsBranchFilter: $cancel_intermediate_builds_branch_filter, defaultBranch: $default_branch, description: $desc, name: $name, organizationId: $org, repository: {url: $repository_url}, skipIntermediateBuilds: $skip_intermediate_builds, skipIntermediateBuildsBranchFilter: $skip_intermediate_builds_branch_filter, steps: {yaml: $steps}, teams: $teams, tags: $tags})"`
 	}
 
 	teamsData := make([]PipelineTeamAssignmentInput, 0)
@@ -315,6 +329,7 @@ func CreatePipeline(ctx context.Context, d *schema.ResourceData, m interface{}) 
 		"skip_intermediate_builds_branch_filter":   graphql.String(d.Get("skip_intermediate_builds_branch_filter").(string)),
 		"steps":                                    graphql.String(d.Get("steps").(string)),
 		"teams":                                    teamsData,
+		"tags":                                     getTagsFromSchema(d),
 	}
 
 	log.Printf("Creating pipeline %s ...", vars["name"])
@@ -387,7 +402,7 @@ func UpdatePipeline(ctx context.Context, d *schema.ResourceData, m interface{}) 
 	var mutation struct {
 		PipelineUpdate struct {
 			Pipeline PipelineNode
-		} `graphql:"pipelineUpdate(input: {cancelIntermediateBuilds: $cancel_intermediate_builds, cancelIntermediateBuildsBranchFilter: $cancel_intermediate_builds_branch_filter, defaultBranch: $default_branch, description: $desc, id: $id, name: $name, repository: {url: $repository_url}, skipIntermediateBuilds: $skip_intermediate_builds, skipIntermediateBuildsBranchFilter: $skip_intermediate_builds_branch_filter, steps: {yaml: $steps}})"`
+		} `graphql:"pipelineUpdate(input: {cancelIntermediateBuilds: $cancel_intermediate_builds, cancelIntermediateBuildsBranchFilter: $cancel_intermediate_builds_branch_filter, defaultBranch: $default_branch, description: $desc, id: $id, name: $name, repository: {url: $repository_url}, skipIntermediateBuilds: $skip_intermediate_builds, skipIntermediateBuildsBranchFilter: $skip_intermediate_builds_branch_filter, steps: {yaml: $steps}, tags: $tags})"`
 	}
 	vars := map[string]interface{}{
 		"cancel_intermediate_builds":               graphql.Boolean(d.Get("cancel_intermediate_builds").(bool)),
@@ -400,6 +415,7 @@ func UpdatePipeline(ctx context.Context, d *schema.ResourceData, m interface{}) 
 		"skip_intermediate_builds":                 graphql.Boolean(d.Get("skip_intermediate_builds").(bool)),
 		"skip_intermediate_builds_branch_filter":   graphql.String(d.Get("skip_intermediate_builds_branch_filter").(string)),
 		"steps":                                    graphql.String(d.Get("steps").(string)),
+		"tags":                                     getTagsFromSchema(d),
 	}
 
 	log.Printf("Updating pipeline %s ...", vars["name"])
@@ -526,6 +542,17 @@ func updatePipelineExtraInfo(d *schema.ResourceData, client *Client) (PipelineEx
 		return pipelineExtraInfo, err
 	}
 	return pipelineExtraInfo, nil
+}
+
+func getTagsFromSchema(d *schema.ResourceData) []PipelineTagInput {
+	tagSet := d.Get("tags").(*schema.Set)
+	tags := make([]PipelineTagInput, tagSet.Len())
+	for i, v := range tagSet.List() {
+                tags[i] = PipelineTagInput{
+                        Label: graphql.String(v.(string)),
+                }
+	}
+	return tags
 }
 
 func getTeamPipelinesFromSchema(d *schema.ResourceData) []TeamPipelineNode {
