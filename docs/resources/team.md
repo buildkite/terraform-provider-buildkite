@@ -4,6 +4,8 @@ This resource allows you to create and manage teams.
 
 Buildkite Documentation: https://buildkite.com/docs/pipelines/permissions
 
+Note: You must first enable Teams on your organization.
+
 ## Example Usage
 
 ```hcl

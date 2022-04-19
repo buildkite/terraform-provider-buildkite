@@ -15,6 +15,9 @@ type PipelineNode struct {
 	Archived                             graphql.Boolean
 	CancelIntermediateBuilds             graphql.Boolean
 	CancelIntermediateBuildsBranchFilter graphql.String
+	Cluster                              struct {
+		ID graphql.String
+	}
 	DefaultBranch                        graphql.String
 	Description                          graphql.String
 	ID                                   graphql.ID
@@ -28,6 +31,7 @@ type PipelineNode struct {
 	Steps                              struct {
 		YAML graphql.String
 	}
+        Tags []PipelineTag
 	Teams struct {
 		Edges []struct {
 			Node TeamPipelineNode
@@ -38,6 +42,13 @@ type PipelineNode struct {
 
 // PipelineAccessLevels represents a pipeline access levels as returned from the GraphQL API
 type PipelineAccessLevels graphql.String
+
+type PipelineTag struct {
+        Label graphql.String
+}
+type PipelineTagInput struct {
+        Label graphql.String `json:"label"`
+}
 
 // TeamPipelineNode represents a team pipeline as returned from the GraphQL API
 type TeamPipelineNode struct {
@@ -79,6 +90,11 @@ func resourcePipeline() *schema.Resource {
 				Type:     schema.TypeString,
 			},
 			"branch_configuration": {
+				Computed: true,
+				Optional: true,
+				Type:     schema.TypeString,
+			},
+			"cluster_id": {
 				Computed: true,
 				Optional: true,
 				Type:     schema.TypeString,
@@ -147,6 +163,12 @@ func resourcePipeline() *schema.Resource {
 						},
 					},
 				},
+			},
+			"tags": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+				Set:      schema.HashString,
 			},
 			"provider_settings": {
 				Type:     schema.TypeList,
@@ -290,7 +312,7 @@ func CreatePipeline(ctx context.Context, d *schema.ResourceData, m interface{}) 
 	var mutation struct {
 		PipelineCreate struct {
 			Pipeline PipelineNode
-		} `graphql:"pipelineCreate(input: {cancelIntermediateBuilds: $cancel_intermediate_builds, cancelIntermediateBuildsBranchFilter: $cancel_intermediate_builds_branch_filter, defaultBranch: $default_branch, description: $desc, name: $name, organizationId: $org, repository: {url: $repository_url}, skipIntermediateBuilds: $skip_intermediate_builds, skipIntermediateBuildsBranchFilter: $skip_intermediate_builds_branch_filter, steps: {yaml: $steps}, teams: $teams})"`
+		} `graphql:"pipelineCreate(input: {cancelIntermediateBuilds: $cancel_intermediate_builds, cancelIntermediateBuildsBranchFilter: $cancel_intermediate_builds_branch_filter, defaultBranch: $default_branch, description: $desc, name: $name, organizationId: $org, repository: {url: $repository_url}, skipIntermediateBuilds: $skip_intermediate_builds, skipIntermediateBuildsBranchFilter: $skip_intermediate_builds_branch_filter, steps: {yaml: $steps}, teams: $teams, tags: $tags})"`
 	}
 
 	teamsData := make([]PipelineTeamAssignmentInput, 0)
@@ -318,10 +340,25 @@ func CreatePipeline(ctx context.Context, d *schema.ResourceData, m interface{}) 
 		"skip_intermediate_builds_branch_filter":   graphql.String(d.Get("skip_intermediate_builds_branch_filter").(string)),
 		"steps":                                    graphql.String(d.Get("steps").(string)),
 		"teams":                                    teamsData,
+		"tags":                                     getTagsFromSchema(d),
 	}
 
 	log.Printf("Creating pipeline %s ...", vars["name"])
-	err = client.graphql.Mutate(context.Background(), &mutation, vars)
+
+	// If the cluster_id key is present in the mutation, GraphQL expects a valid ID.
+	// Check if cluster_id exists in the configuration before adding to mutation.
+	if clusterID, ok := d.GetOk("cluster_id"); ok {
+		var mutationWithClusterID struct {
+			PipelineCreate struct {
+				Pipeline PipelineNode
+			} `graphql:"pipelineCreate(input: {cancelIntermediateBuilds: $cancel_intermediate_builds, cancelIntermediateBuildsBranchFilter: $cancel_intermediate_builds_branch_filter, clusterId: $cluster_id, defaultBranch: $default_branch, description: $desc, name: $name, organizationId: $org, repository: {url: $repository_url}, skipIntermediateBuilds: $skip_intermediate_builds, skipIntermediateBuildsBranchFilter: $skip_intermediate_builds_branch_filter, steps: {yaml: $steps}, teams: $teams})"`
+		}
+		vars["cluster_id"] = graphql.ID(clusterID.(string))
+		err = client.graphql.Mutate(context.Background(), &mutationWithClusterID, vars)
+	} else {
+		err = client.graphql.Mutate(context.Background(), &mutation, vars)
+	}
+
 	if err != nil {
 		log.Printf("Unable to create pipeline %s", d.Get("name"))
 		return diag.FromErr(err)
@@ -381,10 +418,11 @@ func UpdatePipeline(ctx context.Context, d *schema.ResourceData, m interface{}) 
 		}
 	}
 
+	var err error
 	var mutation struct {
 		PipelineUpdate struct {
 			Pipeline PipelineNode
-		} `graphql:"pipelineUpdate(input: {cancelIntermediateBuilds: $cancel_intermediate_builds, cancelIntermediateBuildsBranchFilter: $cancel_intermediate_builds_branch_filter, defaultBranch: $default_branch, description: $desc, id: $id, name: $name, repository: {url: $repository_url}, skipIntermediateBuilds: $skip_intermediate_builds, skipIntermediateBuildsBranchFilter: $skip_intermediate_builds_branch_filter, steps: {yaml: $steps}})"`
+		} `graphql:"pipelineUpdate(input: {cancelIntermediateBuilds: $cancel_intermediate_builds, cancelIntermediateBuildsBranchFilter: $cancel_intermediate_builds_branch_filter, defaultBranch: $default_branch, description: $desc, id: $id, name: $name, repository: {url: $repository_url}, skipIntermediateBuilds: $skip_intermediate_builds, skipIntermediateBuildsBranchFilter: $skip_intermediate_builds_branch_filter, steps: {yaml: $steps}, tags: $tags})"`
 	}
 	vars := map[string]interface{}{
 		"cancel_intermediate_builds":               graphql.Boolean(d.Get("cancel_intermediate_builds").(bool)),
@@ -397,10 +435,25 @@ func UpdatePipeline(ctx context.Context, d *schema.ResourceData, m interface{}) 
 		"skip_intermediate_builds":                 graphql.Boolean(d.Get("skip_intermediate_builds").(bool)),
 		"skip_intermediate_builds_branch_filter":   graphql.String(d.Get("skip_intermediate_builds_branch_filter").(string)),
 		"steps":                                    graphql.String(d.Get("steps").(string)),
+		"tags":                                     getTagsFromSchema(d),
 	}
 
 	log.Printf("Updating pipeline %s ...", vars["name"])
-	err := client.graphql.Mutate(context.Background(), &mutation, vars)
+
+	// If the cluster_id key is present in the mutation, GraphQL expects a valid ID.
+	// Check if cluster_id exists in the configuration before adding to mutation.
+	if clusterID, ok := d.GetOk("cluster_id"); ok {
+		var mutationWithClusterID struct {
+			PipelineCreate struct {
+				Pipeline PipelineNode
+			} `graphql:"pipelineUpdate(input: {cancelIntermediateBuilds: $cancel_intermediate_builds, cancelIntermediateBuildsBranchFilter: $cancel_intermediate_builds_branch_filter, clusterId: $cluster_id, defaultBranch: $default_branch, description: $desc, id: $id, name: $name, repository: {url: $repository_url}, skipIntermediateBuilds: $skip_intermediate_builds, skipIntermediateBuildsBranchFilter: $skip_intermediate_builds_branch_filter, steps: {yaml: $steps}})"`
+		}
+		vars["cluster_id"] = graphql.ID(clusterID.(string))
+		err = client.graphql.Mutate(context.Background(), &mutationWithClusterID, vars)
+	} else {
+		err = client.graphql.Mutate(context.Background(), &mutation, vars)
+	}
+
 	if err != nil {
 		log.Printf("Unable to update pipeline %s", d.Get("name"))
 		return diag.FromErr(err)
@@ -552,6 +605,17 @@ func unArchivePipeline(id graphql.ID, client *graphql.Client) (graphql.Boolean, 
 	err := client.Mutate(context.Background(), &mutation, vars)
 
 	return mutation.PipelineUnarchive.Pipeline.Archived, err
+}
+
+func getTagsFromSchema(d *schema.ResourceData) []PipelineTagInput {
+	tagSet := d.Get("tags").(*schema.Set)
+	tags := make([]PipelineTagInput, tagSet.Len())
+	for i, v := range tagSet.List() {
+                tags[i] = PipelineTagInput{
+                        Label: graphql.String(v.(string)),
+                }
+	}
+	return tags
 }
 
 func getTeamPipelinesFromSchema(d *schema.ResourceData) []TeamPipelineNode {
@@ -725,6 +789,7 @@ func updatePipelineResource(d *schema.ResourceData, pipeline *PipelineNode) {
 	d.Set("archived", bool(pipeline.Archived))
 	d.Set("cancel_intermediate_builds", bool(pipeline.CancelIntermediateBuilds))
 	d.Set("cancel_intermediate_builds_branch_filter", string(pipeline.CancelIntermediateBuildsBranchFilter))
+	d.Set("cluster_id", string(pipeline.Cluster.ID))
 	d.Set("default_branch", string(pipeline.DefaultBranch))
 	d.Set("description", string(pipeline.Description))
 	d.Set("name", string(pipeline.Name))
