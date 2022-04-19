@@ -18,11 +18,11 @@ type PipelineNode struct {
 	Cluster                              struct {
 		ID graphql.String
 	}
-	DefaultBranch                        graphql.String
-	Description                          graphql.String
-	ID                                   graphql.ID
-	Name                                 graphql.String
-	Repository                           struct {
+	DefaultBranch graphql.String
+	Description   graphql.String
+	ID            graphql.ID
+	Name          graphql.String
+	Repository    struct {
 		URL graphql.String
 	}
 	SkipIntermediateBuilds             graphql.Boolean
@@ -31,7 +31,7 @@ type PipelineNode struct {
 	Steps                              struct {
 		YAML graphql.String
 	}
-        Tags []PipelineTag
+	Tags  []PipelineTag
 	Teams struct {
 		Edges []struct {
 			Node TeamPipelineNode
@@ -44,10 +44,10 @@ type PipelineNode struct {
 type PipelineAccessLevels graphql.String
 
 type PipelineTag struct {
-        Label graphql.String
+	Label graphql.String
 }
 type PipelineTagInput struct {
-        Label graphql.String `json:"label"`
+	Label graphql.String `json:"label"`
 }
 
 // TeamPipelineNode represents a team pipeline as returned from the GraphQL API
@@ -611,9 +611,9 @@ func getTagsFromSchema(d *schema.ResourceData) []PipelineTagInput {
 	tagSet := d.Get("tags").(*schema.Set)
 	tags := make([]PipelineTagInput, tagSet.Len())
 	for i, v := range tagSet.List() {
-                tags[i] = PipelineTagInput{
-                        Label: graphql.String(v.(string)),
-                }
+		tags[i] = PipelineTagInput{
+			Label: graphql.String(v.(string)),
+		}
 	}
 	return tags
 }
