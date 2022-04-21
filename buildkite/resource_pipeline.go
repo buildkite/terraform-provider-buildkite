@@ -12,6 +12,7 @@ import (
 
 // PipelineNode represents a pipeline as returned from the GraphQL API
 type PipelineNode struct {
+	AllowRebuilds                        graphql.Boolean
 	Archived                             graphql.Boolean
 	CancelIntermediateBuilds             graphql.Boolean
 	CancelIntermediateBuildsBranchFilter graphql.String
@@ -74,6 +75,11 @@ func resourcePipeline() *schema.Resource {
 		},
 
 		Schema: map[string]*schema.Schema{
+			"allow_rebuilds": {
+				Computed: true,
+				Optional: true,
+				Type:     schema.TypeBool,
+			},
 			"archived": {
 				Default:  false,
 				Optional: true,
@@ -312,7 +318,7 @@ func CreatePipeline(ctx context.Context, d *schema.ResourceData, m interface{}) 
 	var mutation struct {
 		PipelineCreate struct {
 			Pipeline PipelineNode
-		} `graphql:"pipelineCreate(input: {cancelIntermediateBuilds: $cancel_intermediate_builds, cancelIntermediateBuildsBranchFilter: $cancel_intermediate_builds_branch_filter, defaultBranch: $default_branch, description: $desc, name: $name, organizationId: $org, repository: {url: $repository_url}, skipIntermediateBuilds: $skip_intermediate_builds, skipIntermediateBuildsBranchFilter: $skip_intermediate_builds_branch_filter, steps: {yaml: $steps}, teams: $teams, tags: $tags})"`
+		} `graphql:"pipelineCreate(input: {allowRebuilds: $allow_rebuilds, cancelIntermediateBuilds: $cancel_intermediate_builds, cancelIntermediateBuildsBranchFilter: $cancel_intermediate_builds_branch_filter, defaultBranch: $default_branch, description: $desc, name: $name, organizationId: $org, repository: {url: $repository_url}, skipIntermediateBuilds: $skip_intermediate_builds, skipIntermediateBuildsBranchFilter: $skip_intermediate_builds_branch_filter, steps: {yaml: $steps}, teams: $teams, tags: $tags})"`
 	}
 
 	teamsData := make([]PipelineTeamAssignmentInput, 0)
@@ -329,6 +335,7 @@ func CreatePipeline(ctx context.Context, d *schema.ResourceData, m interface{}) 
 	}
 
 	vars := map[string]interface{}{
+		"allow_rebuilds":                           graphql.Boolean(d.Get("allow_rebuilds").(bool)),
 		"cancel_intermediate_builds":               graphql.Boolean(d.Get("cancel_intermediate_builds").(bool)),
 		"cancel_intermediate_builds_branch_filter": graphql.String(d.Get("cancel_intermediate_builds_branch_filter").(string)),
 		"default_branch":                           graphql.String(d.Get("default_branch").(string)),
@@ -422,9 +429,10 @@ func UpdatePipeline(ctx context.Context, d *schema.ResourceData, m interface{}) 
 	var mutation struct {
 		PipelineUpdate struct {
 			Pipeline PipelineNode
-		} `graphql:"pipelineUpdate(input: {cancelIntermediateBuilds: $cancel_intermediate_builds, cancelIntermediateBuildsBranchFilter: $cancel_intermediate_builds_branch_filter, defaultBranch: $default_branch, description: $desc, id: $id, name: $name, repository: {url: $repository_url}, skipIntermediateBuilds: $skip_intermediate_builds, skipIntermediateBuildsBranchFilter: $skip_intermediate_builds_branch_filter, steps: {yaml: $steps}, tags: $tags})"`
+		} `graphql:"pipelineUpdate(input: {allowRebuilds: $allow_rebuilds, cancelIntermediateBuilds: $cancel_intermediate_builds, cancelIntermediateBuildsBranchFilter: $cancel_intermediate_builds_branch_filter, defaultBranch: $default_branch, description: $desc, id: $id, name: $name, repository: {url: $repository_url}, skipIntermediateBuilds: $skip_intermediate_builds, skipIntermediateBuildsBranchFilter: $skip_intermediate_builds_branch_filter, steps: {yaml: $steps}, tags: $tags})"`
 	}
 	vars := map[string]interface{}{
+		"allow_rebuilds":                           graphql.Boolean(d.Get("allow_rebuilds").(bool)),
 		"cancel_intermediate_builds":               graphql.Boolean(d.Get("cancel_intermediate_builds").(bool)),
 		"cancel_intermediate_builds_branch_filter": graphql.String(d.Get("cancel_intermediate_builds_branch_filter").(string)),
 		"default_branch":                           graphql.String(d.Get("default_branch").(string)),
@@ -786,6 +794,7 @@ func deleteTeamPipelines(teamPipelines []TeamPipelineNode, client *Client) error
 // updatePipelineResource updates the terraform resource data for the pipeline resource
 func updatePipelineResource(d *schema.ResourceData, pipeline *PipelineNode) {
 	d.SetId(pipeline.ID.(string))
+	d.Set("allow_rebuilds", bool(pipeline.AllowRebuilds))
 	d.Set("archived", bool(pipeline.Archived))
 	d.Set("cancel_intermediate_builds", bool(pipeline.CancelIntermediateBuilds))
 	d.Set("cancel_intermediate_builds_branch_filter", string(pipeline.CancelIntermediateBuildsBranchFilter))

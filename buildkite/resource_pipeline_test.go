@@ -59,6 +59,7 @@ func TestAccPipeline_add_remove_complex(t *testing.T) {
 					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "branch_configuration", "main"),
 					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "skip_intermediate_builds", "true"),
 					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "skip_intermediate_builds_branch_filter", "main"),
+					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "allow_rebuilds", "true"),
 					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "cancel_intermediate_builds", "true"),
 					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "cancel_intermediate_builds_branch_filter", "!main"),
 					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "tags.0", "test-tag"),
@@ -393,6 +394,7 @@ func testAccPipelineConfigComplex(name string, steps string) string {
             branch_configuration = "main"
             skip_intermediate_builds = true
             skip_intermediate_builds_branch_filter = "main"
+            allow_rebuilds = true
             cancel_intermediate_builds = true
             cancel_intermediate_builds_branch_filter = "!main"
 			tags = ["🛫", "test-tag"]
