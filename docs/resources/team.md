@@ -30,7 +30,7 @@ The following arguments are supported:
 * `members_can_create_pipelines` - (Optional, Default: `true`) A boolean value to control whether team members can create pipelines.
 * `description` - (Optional) The description to assign to the team.
 
-## Attribute Reference
+## Attributes Reference
 
 In addition to all arguments above, the following attributes are exported:
 

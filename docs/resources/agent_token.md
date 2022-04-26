@@ -22,7 +22,7 @@ The following arguments are supported:
 
 -> Changing `description` will cause the resource to be destroyed and re-created.
 
-## Attribute Reference
+## Attributes Reference
 
 In addition to all arguments above, the following attributes are exported:
 

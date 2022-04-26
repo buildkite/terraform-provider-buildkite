@@ -28,7 +28,7 @@ The following arguments are supported:
 * `env` - (Optional) A map of environment variables to use for the build.
 * `enabled` - (Optional, Default: `true`) Whether the schedule should run.
 
-## Attribute Reference
+## Attributes Reference
 
 In addition to all arguments above, the following attributes are exported:
 

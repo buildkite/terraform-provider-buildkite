@@ -33,7 +33,7 @@ resource "buildkite_team_member" "a_smith" {
 * `team_id` - (Required) The GraphQL ID of the team to add to/remove from.
 * `user_id` - (Required) The GraphQL ID of the user to add/remove.
 
-## Attribute Reference
+## Attributes Reference
 
 * `id`   - The GraphQL ID of the team membership.
 * `uuid` - The UUID for the team membership.
