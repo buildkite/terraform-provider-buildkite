@@ -67,6 +67,7 @@ The following arguments are supported:
 -   `skip_intermediate_builds_branch_filter` - (Optional) Limit which branches build skipping applies to, for example `!master` will ensure that the master branch won't have its builds automatically skipped.
 -   `cancel_intermediate_builds` - (Optional, Default: `false` ) A boolean to enable automatically cancelling any running builds on the same branch when a new build is created.
 -   `cancel_intermediate_builds_branch_filter` - (Optional) Limit which branches build cancelling applies to, for example !master will ensure that the master branch won't have its builds automatically cancelled.
+-   `cluster_id` - (Optional) The GraphQL ID of the cluster you want to use for the pipeline.
 -   `team` - (Optional) Set team access for the pipeline. Can be specified multiple times for each team. See [Teams Configuration](#team) below for details.
 -   `provider_settings` - (Optional) Source control provider settings for the pipeline. See [Provider Settings Configuration](#provider-settings-configuration) below for details.
 
