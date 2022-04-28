@@ -22,7 +22,6 @@ steps:
 
   - label: acceptance tests
     key: testacc
-    if: build.branch == "main"
     concurrency: 1
     concurrency_group: terraform-provider-acceptance-tests
     command: "make testacc"
@@ -36,7 +35,6 @@ steps:
 
   - label: acceptance tests - non-admin
     key: testacc-nonadmin
-    if: build.branch == "main"
     concurrency: 1
     concurrency_group: terraform-provider-acceptance-tests
     command: "make testacc-nonadmin"
