@@ -351,6 +351,7 @@ func CreatePipeline(ctx context.Context, d *schema.ResourceData, m interface{}) 
 		}
 		vars["cluster_id"] = graphql.ID(clusterID.(string))
 		err = client.graphql.Mutate(context.Background(), &mutationWithClusterID, vars)
+		mutation.PipelineCreate.Pipeline = mutationWithClusterID.PipelineCreate.Pipeline
 	} else {
 		err = client.graphql.Mutate(context.Background(), &mutation, vars)
 	}
