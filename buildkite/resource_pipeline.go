@@ -347,7 +347,7 @@ func CreatePipeline(ctx context.Context, d *schema.ResourceData, m interface{}) 
 		var mutationWithClusterID struct {
 			PipelineCreate struct {
 				Pipeline PipelineNode
-			} `graphql:"pipelineCreate(input: {allowRebuilds: $allow_rebuilds, cancelIntermediateBuilds: $cancel_intermediate_builds, cancelIntermediateBuildsBranchFilter: $cancel_intermediate_builds_branch_filter, clusterId: $cluster_id, defaultBranch: $default_branch, description: $desc, name: $name, organizationId: $org, repository: {url: $repository_url}, skipIntermediateBuilds: $skip_intermediate_builds, skipIntermediateBuildsBranchFilter: $skip_intermediate_builds_branch_filter, steps: {yaml: $steps}, teams: $teams})"`
+			} `graphql:"pipelineCreate(input: {allowRebuilds: $allow_rebuilds, cancelIntermediateBuilds: $cancel_intermediate_builds, cancelIntermediateBuildsBranchFilter: $cancel_intermediate_builds_branch_filter, clusterId: $cluster_id, defaultBranch: $default_branch, description: $desc, name: $name, organizationId: $org, repository: {url: $repository_url}, skipIntermediateBuilds: $skip_intermediate_builds, skipIntermediateBuildsBranchFilter: $skip_intermediate_builds_branch_filter, steps: {yaml: $steps}, teams: $teams, tags: $tags})"`
 		}
 		vars["cluster_id"] = graphql.ID(clusterID.(string))
 		err = client.graphql.Mutate(context.Background(), &mutationWithClusterID, vars)
@@ -433,12 +433,13 @@ func UpdatePipeline(ctx context.Context, d *schema.ResourceData, m interface{}) 
 	// Check if cluster_id exists in the configuration before adding to mutation.
 	if clusterID, ok := d.GetOk("cluster_id"); ok {
 		var mutationWithClusterID struct {
-			PipelineCreate struct {
+			PipelineUpdate struct {
 				Pipeline PipelineNode
-			} `graphql:"pipelineUpdate(input: {allowRebuilds: $allow_rebuilds, cancelIntermediateBuilds: $cancel_intermediate_builds, cancelIntermediateBuildsBranchFilter: $cancel_intermediate_builds_branch_filter, clusterId: $cluster_id, defaultBranch: $default_branch, description: $desc, id: $id, name: $name, repository: {url: $repository_url}, skipIntermediateBuilds: $skip_intermediate_builds, skipIntermediateBuildsBranchFilter: $skip_intermediate_builds_branch_filter, steps: {yaml: $steps}})"`
+			} `graphql:"pipelineUpdate(input: {allowRebuilds: $allow_rebuilds, cancelIntermediateBuilds: $cancel_intermediate_builds, cancelIntermediateBuildsBranchFilter: $cancel_intermediate_builds_branch_filter, clusterId: $cluster_id, defaultBranch: $default_branch, description: $desc, id: $id, name: $name, repository: {url: $repository_url}, skipIntermediateBuilds: $skip_intermediate_builds, skipIntermediateBuildsBranchFilter: $skip_intermediate_builds_branch_filter, steps: {yaml: $steps}, tags: $tags})"`
 		}
 		vars["cluster_id"] = graphql.ID(clusterID.(string))
 		err = client.graphql.Mutate(context.Background(), &mutationWithClusterID, vars)
+		mutation.PipelineUpdate.Pipeline = mutationWithClusterID.PipelineUpdate.Pipeline
 	} else {
 		err = client.graphql.Mutate(context.Background(), &mutation, vars)
 	}
