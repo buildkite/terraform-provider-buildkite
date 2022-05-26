@@ -530,7 +530,7 @@ type PipelineExtraInfo struct {
 func getPipelineExtraInfo(d *schema.ResourceData, m interface{}, slug string) (*PipelineExtraInfo, error) {
 	client := m.(*Client)
 	pipelineExtraInfo := PipelineExtraInfo{}
-	err := client.makeRequest("GET", fmt.Sprintf("https://api.buildkite.com/v2/organizations/%s/pipelines/%s", client.organization, slug), nil, &pipelineExtraInfo)
+	err := client.makeRequest("GET", fmt.Sprintf("/v2/organizations/%s/pipelines/%s", client.organization, slug), nil, &pipelineExtraInfo)
 	if err != nil {
 		return nil, err
 	}
@@ -547,7 +547,7 @@ func updatePipelineExtraInfo(d *schema.ResourceData, client *Client) (PipelineEx
 
 	slug := d.Get("slug").(string)
 	pipelineExtraInfo := PipelineExtraInfo{}
-	err := client.makeRequest("PATCH", fmt.Sprintf("https://api.buildkite.com/v2/organizations/%s/pipelines/%s", client.organization, slug), payload, &pipelineExtraInfo)
+	err := client.makeRequest("PATCH", fmt.Sprintf("/v2/organizations/%s/pipelines/%s", client.organization, slug), payload, &pipelineExtraInfo)
 	if err != nil {
 		return pipelineExtraInfo, err
 	}
