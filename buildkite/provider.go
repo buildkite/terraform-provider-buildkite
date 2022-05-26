@@ -35,16 +35,16 @@ func Provider() *schema.Provider {
 				Required:    true,
 				Type:        schema.TypeString,
 			},
-			"graphqlUrl": &schema.Schema{
+			"graphql_url": &schema.Schema{
 				DefaultFunc: schema.EnvDefaultFunc("BUILDKITE_GRAPHQL_URL", graphqlEndpoint),
 				Description: "Base URL for the GraphQL API to use",
-				Required:    false,
+				Optional:    true,
 				Type:        schema.TypeString,
 			},
-			"restUrl": &schema.Schema{
+			"rest_url": &schema.Schema{
 				DefaultFunc: schema.EnvDefaultFunc("BUILDKITE_REST_URL", restEndpoint),
 				Description: "Base URL for the REST API to use",
-				Required:    false,
+				Optional:    true,
 				Type:        schema.TypeString,
 			},
 		},
