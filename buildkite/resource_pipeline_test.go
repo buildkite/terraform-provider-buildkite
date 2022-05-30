@@ -34,6 +34,45 @@ func TestAccPipeline_add_remove(t *testing.T) {
 	})
 }
 
+// Confirm that we can create a new pipeline with a cluster, and then delete it without error
+func TestAccPipeline_add_remove_withcluster(t *testing.T) {
+	var resourcePipeline PipelineNode
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckPipelineResourceDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccPipelineConfigBasicWithCluster("foo"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					// Confirm the pipeline exists in the buildkite API
+					testAccCheckPipelineExists("buildkite_pipeline.foobar", &resourcePipeline),
+					// Confirm the pipeline has the correct values in Buildkite's system
+					testAccCheckPipelineRemoteValues(&resourcePipeline, "Test Pipeline foo"),
+					// Confirm the pipeline has the correct values in terraform state
+					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "name", "Test Pipeline foo"),
+					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "cluster_id", "Q2x1c3Rlci0tLTRlN2JmM2FjLWUzMjMtNGY1OS05MGY2LTQ5OTljZmI2MGQyYg=="),
+					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "allow_rebuilds", "true"),
+				),
+			},
+			{
+				Config: testAccPipelineConfigBasicWithCluster("bar"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					// Confirm the pipeline exists in the buildkite API
+					testAccCheckPipelineExists("buildkite_pipeline.foobar", &resourcePipeline),
+					// Confirm the pipeline has the correct values in Buildkite's system
+					testAccCheckPipelineRemoteValues(&resourcePipeline, "Test Pipeline bar"),
+					// Confirm the pipeline has the correct values in terraform state
+					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "name", "Test Pipeline bar"),
+					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "cluster_id", "Q2x1c3Rlci0tLTRlN2JmM2FjLWUzMjMtNGY1OS05MGY2LTQ5OTljZmI2MGQyYg=="),
+					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "allow_rebuilds", "true"),
+				),
+			},
+		},
+	})
+}
+
 func TestAccPipeline_add_remove_complex(t *testing.T) {
 	var resourcePipeline PipelineNode
 	steps := `"steps:\n- command: buildkite-agent pipeline upload\n"`
@@ -373,6 +412,24 @@ func testAccPipelineConfigBasicWithTeam(name string) string {
 			name = "Test Pipeline %s"
 			repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
 			steps = ""
+
+			team {
+				slug = "everyone"
+				access_level = "MANAGE_BUILD_AND_READ"
+			}
+		}
+	`
+	return fmt.Sprintf(config, name)
+}
+
+func testAccPipelineConfigBasicWithCluster(name string) string {
+	config := `
+		resource "buildkite_pipeline" "foobar" {
+			name = "Test Pipeline %s"
+			repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
+			steps = ""
+                        cluster_id = "Q2x1c3Rlci0tLTRlN2JmM2FjLWUzMjMtNGY1OS05MGY2LTQ5OTljZmI2MGQyYg=="
+                        allow_rebuilds = true
 
 			team {
 				slug = "everyone"

@@ -30,7 +30,7 @@ func dataSourceMeta() *schema.Resource {
 func dataSourceMetaRead(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := m.(*Client)
 	meta := MetaResponse{}
-	err := client.makeRequest("GET", "https://api.buildkite.com/v2/meta", nil, &meta)
+	err := client.makeRequest("GET", "/v2/meta", nil, &meta)
 
 	if err != nil {
 		return diag.FromErr(err)
