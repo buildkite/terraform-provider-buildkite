@@ -7,7 +7,6 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/shurcooL/graphql"
 )
 
 func dataSourceTeam() *schema.Resource {
@@ -60,32 +59,27 @@ func dataSourceTeamRead(ctx context.Context, d *schema.ResourceData, m interface
 	var diags diag.Diagnostics
 
 	client := m.(*Client)
-	var query struct {
-		Team TeamNode `graphql:"team(slug: $slug)"`
-	}
 	orgTeamSlug := fmt.Sprintf("%s/%s", client.organization, d.Get("slug").(string))
-	vars := map[string]interface{}{
-		"slug": graphql.ID(orgTeamSlug),
-	}
 
-	err := client.graphql.Query(context.Background(), &query, vars)
+	response, err := getTeam(client.genqlient, orgTeamSlug)
+
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	if query.Team.ID == "" {
-		return diag.FromErr(errors.New("Team not found"))
+	if response.Team.Id == "" {
+		return diag.FromErr(errors.New(fmt.Sprintf("Team not found: '%s'", d.Get("slug"))))
 	}
 
-	d.SetId(string(query.Team.ID))
-	d.Set("slug", string(query.Team.Slug))
-	d.Set("uuid", string(query.Team.UUID))
-	d.Set("name", string(query.Team.Name))
-	d.Set("privacy", string(query.Team.Privacy))
-	d.Set("default_team", bool(query.Team.IsDefaultTeam))
-	d.Set("description", string(query.Team.Description))
-	d.Set("default_member_role", string(query.Team.DefaultMemberRole))
-	d.Set("members_can_create_pipelines", bool(query.Team.MembersCanCreatePipelines))
+	d.SetId(response.Team.Id)
+	d.Set("slug", response.Team.Slug)
+	d.Set("uuid", response.Team.Uuid)
+	d.Set("name", response.Team.Name)
+	d.Set("privacy", response.Team.Privacy)
+	d.Set("default_team", response.Team.IsDefaultTeam)
+	d.Set("description", response.Team.Description)
+	d.Set("default_member_role", response.Team.DefaultMemberRole)
+	d.Set("members_can_create_pipelines", response.Team.MembersCanCreatePipelines)
 
 	return diags
 }

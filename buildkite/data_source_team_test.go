@@ -2,12 +2,13 @@ package buildkite
 
 import (
 	"fmt"
+	"regexp"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
-// Confirm that we can create a new agent token, and then delete it without error
+// Confirm that we can read a team based on the slug
 func TestAccDataTeam_read(t *testing.T) {
 	var resourceTeam TeamNode
 
@@ -17,7 +18,7 @@ func TestAccDataTeam_read(t *testing.T) {
 		CheckDestroy: testAccCheckTeamResourceDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDataTeamConfigBasic("foo"),
+				Config: testAccDataTeamConfigBasic("foo", "buildkite_team.foobar.slug"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Confirm the team exists in the buildkite API
 					testAccCheckTeamExists("buildkite_team.foobar", &resourceTeam),
@@ -35,7 +36,22 @@ func TestAccDataTeam_read(t *testing.T) {
 	})
 }
 
-func testAccDataTeamConfigBasic(name string) string {
+// Confirm that we get a nice error if no team is found
+func TestAccDataTeam_readNotFound(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckTeamResourceDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config:      testAccDataTeamConfigBasic("foo", "\"bar\""),
+				ExpectError: regexp.MustCompile("Team not found: 'bar'"),
+			},
+		},
+	})
+}
+
+func testAccDataTeamConfigBasic(name, slug string) string {
 	config := `
 		resource "buildkite_team" "foobar" {
 			name = "Test Team %s"
@@ -46,8 +62,8 @@ func testAccDataTeamConfigBasic(name string) string {
 		}
 
 		data "buildkite_team" "foobar" {
-			slug = buildkite_team.foobar.slug
+			slug = %s
 		}
 	`
-	return fmt.Sprintf(config, name, name)
+	return fmt.Sprintf(config, name, name, slug)
 }
