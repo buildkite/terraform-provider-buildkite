@@ -27,3 +27,11 @@ testacc:
 # This will create, manage and delete real resources in a real Buildkite organization!
 testacc-nonadmin:
 	TF_ACC=1 go test -v -run "TestAccPipeline(Schedule)?_.*withteams" ./...
+
+# Generate the Buildkite GraphQL schema file
+schema:
+	go run github.com/suessflorian/gqlfetch/gqlfetch -endpoint https://graphql.buildkite.com/v1 -header "Authorization=Bearer ${BUILDKITE_GRAPHQL_TOKEN}" > schema.graphql
+
+# Generate the GraphQL code
+generate: schema
+	go run github.com/Khan/genqlient
