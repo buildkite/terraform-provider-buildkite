@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"net/http"
 
+	genqlient "github.com/Khan/genqlient/graphql"
 	"github.com/shurcooL/graphql"
 	"golang.org/x/oauth2"
 )
@@ -15,6 +16,7 @@ import (
 // Client can be used to interact with the Buildkite API
 type Client struct {
 	graphql      *graphql.Client
+	genqlient    genqlient.Client
 	http         *http.Client
 	organization string
 	restUrl      string
@@ -27,6 +29,7 @@ func NewClient(org, apiToken, graphqlUrl, restUrl string) *Client {
 
 	return &Client{
 		graphql:      graphql.NewClient(graphqlUrl, httpClient),
+		genqlient:    genqlient.NewClient(graphqlUrl, httpClient),
 		http:         httpClient,
 		organization: org,
 		restUrl:      restUrl,
