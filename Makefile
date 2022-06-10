@@ -19,6 +19,8 @@ test:
 # Buildkite organization!
 testacc:
 	TF_ACC=1 go test -v ./...
+testacc-annotate:
+	TF_ACC=1 .buildkite/steps/annotate.sh
 
 # Acceptance tests, but only the ones that can pass with a non-admin API token. Non-admins can manage
 # pipelines and pipeline schedules, but only if they use teams. The API token must also belong to a user

@@ -24,7 +24,7 @@ steps:
     key: testacc
     concurrency: 1
     concurrency_group: terraform-provider-acceptance-tests
-    command: "make testacc"
+    command: "make testacc-annotate"
     plugins:
       - zacharymctague/aws-ssm#v1.0.0:
           parameters:

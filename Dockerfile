@@ -1,7 +1,8 @@
 FROM golang:1.18.2@sha256:04fab5aaf4fc18c40379924674491d988af3d9e97487472e674d0b5fd837dfac
 
 RUN apt-get update \
-    && apt-get install -y unzip
+    && apt-get install -y unzip \
+    && go install github.com/mfridman/tparse@latest
 
 ENV TERRAFORM_VERSION=0.14.11
 
