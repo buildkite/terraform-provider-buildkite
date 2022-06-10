@@ -30,6 +30,7 @@ steps:
           parameters:
             BUILDKITE_ORGANIZATION: /pipelines/terraform-provider-buildkite-main/buildkite_organization
             BUILDKITE_API_TOKEN: /pipelines/terraform-provider-buildkite-main/buildkite_api_token
+            # BUILDKITE_ANALYTICS_TOKEN: /pipelines/terraform-provider-buildkite-main/buildkite_analytics_token
       - docker-compose#v3.9.0:
           run: go
           mount-buildkite-agent: 'true'
