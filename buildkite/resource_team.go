@@ -36,15 +36,15 @@ func resourceTeam() *schema.Resource {
 		},
 
 		Schema: map[string]*schema.Schema{
-			"description": &schema.Schema{
+			"description": {
 				Optional: true,
 				Type:     schema.TypeString,
 			},
-			"name": &schema.Schema{
+			"name": {
 				Required: true,
 				Type:     schema.TypeString,
 			},
-			"privacy": &schema.Schema{
+			"privacy": {
 				Required: true,
 				Type:     schema.TypeString,
 				ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
@@ -60,11 +60,11 @@ func resourceTeam() *schema.Resource {
 					return
 				},
 			},
-			"default_team": &schema.Schema{
+			"default_team": {
 				Required: true,
 				Type:     schema.TypeBool,
 			},
-			"default_member_role": &schema.Schema{
+			"default_member_role": {
 				Required: true,
 				Type:     schema.TypeString,
 				ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
@@ -80,15 +80,15 @@ func resourceTeam() *schema.Resource {
 					return
 				},
 			},
-			"members_can_create_pipelines": &schema.Schema{
+			"members_can_create_pipelines": {
 				Optional: true,
 				Type:     schema.TypeBool,
 			},
-			"slug": &schema.Schema{
+			"slug": {
 				Computed: true,
 				Type:     schema.TypeString,
 			},
-			"uuid": &schema.Schema{
+			"uuid": {
 				Computed: true,
 				Type:     schema.TypeString,
 			},
