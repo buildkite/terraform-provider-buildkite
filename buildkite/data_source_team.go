@@ -72,15 +72,7 @@ func dataSourceTeamRead(ctx context.Context, d *schema.ResourceData, m interface
 		return diag.FromErr(errors.New(fmt.Sprintf("Team not found: '%s'", d.Get("slug"))))
 	}
 
-	d.SetId(response.Team.Id)
-	d.Set("slug", response.Team.Slug)
-	d.Set("uuid", response.Team.Uuid)
-	d.Set("name", response.Team.Name)
-	d.Set("privacy", response.Team.Privacy)
-	d.Set("default_team", response.Team.IsDefaultTeam)
-	d.Set("description", response.Team.Description)
-	d.Set("default_member_role", response.Team.DefaultMemberRole)
-	d.Set("members_can_create_pipelines", response.Team.MembersCanCreatePipelines)
+	setTeamSchema(d, &response.Team)
 
 	return diags
 }

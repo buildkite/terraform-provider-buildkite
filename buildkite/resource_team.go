@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	genqlient "github.com/buildkite/terraform-provider-buildkite/buildkite/graphql"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/shurcooL/graphql"
@@ -216,4 +217,16 @@ func updateTeam(d *schema.ResourceData, t *TeamNode) {
 	d.Set("privacy", string(t.Privacy))
 	d.Set("slug", string(t.Slug))
 	d.Set("uuid", string(t.UUID))
+}
+
+func setTeamSchema(d *schema.ResourceData, t *genqlient.GetTeamTeam) {
+	d.SetId(t.Id)
+	d.Set("default_member_role", t.DefaultMemberRole)
+	d.Set("default_team", t.IsDefaultTeam)
+	d.Set("description", t.Description)
+	d.Set("members_can_create_pipelines", t.MembersCanCreatePipelines)
+	d.Set("name", t.Name)
+	d.Set("privacy", t.Privacy)
+	d.Set("slug", t.Slug)
+	d.Set("uuid", t.Uuid)
 }
