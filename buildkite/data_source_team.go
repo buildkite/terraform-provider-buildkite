@@ -72,7 +72,7 @@ func dataSourceTeamRead(ctx context.Context, d *schema.ResourceData, m interface
 		return diag.FromErr(errors.New(fmt.Sprintf("Team not found: '%s'", d.Get("slug"))))
 	}
 
-	setTeamSchema(d, &response.Team)
+	setTeamSchema(d, &response.Team.Team)
 
 	return diags
 }

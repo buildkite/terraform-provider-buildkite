@@ -1,14 +1,24 @@
+fragment Team on Team {
+  defaultMemberRole
+  description
+  id
+  isDefaultTeam
+  membersCanCreatePipelines
+  name
+  privacy
+  slug
+  uuid
+}
+
 query GetTeam($slug: ID!) {
   # maybe change the generated type name with @genqlient(typename: "Team")?
   team(slug: $slug) {
-    defaultMemberRole
-    description
-    id
-    isDefaultTeam
-    membersCanCreatePipelines
-    name
-    privacy
-    slug
-    uuid
+    ... Team
+  }
+}
+
+query GetTeamNode($id: ID!) {
+  team: node(id: $id) {
+    ... Team
   }
 }

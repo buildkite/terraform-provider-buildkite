@@ -2,6 +2,7 @@ package buildkite
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	genqlient "github.com/buildkite/terraform-provider-buildkite/buildkite/graphql"
@@ -136,22 +137,18 @@ func CreateTeam(ctx context.Context, d *schema.ResourceData, m interface{}) diag
 func ReadTeam(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := m.(*Client)
 
-	var query struct {
-		Node struct {
-			Team TeamNode `graphql:"... on Team"`
-		} `graphql:"node(id: $id)"`
-	}
+	response, err := genqlient.GetTeamNode(client.genqlient, d.Id())
 
-	vars := map[string]interface{}{
-		"id": d.Id(),
-	}
-
-	err := client.graphql.Query(context.Background(), &query, vars)
 	if err != nil {
 		return diag.FromErr(err)
 	}
+	if team, ok := response.Team.(*genqlient.GetTeamNodeTeam); ok {
+		if team.Id == "" {
+			return diag.FromErr(errors.New(fmt.Sprintf("Team not found: '%s'", d.Id())))
+		}
 
-	updateTeam(d, &query.Node.Team)
+		setTeamSchema(d, &team.Team)
+	}
 
 	return nil
 }
@@ -219,7 +216,7 @@ func updateTeam(d *schema.ResourceData, t *TeamNode) {
 	d.Set("uuid", string(t.UUID))
 }
 
-func setTeamSchema(d *schema.ResourceData, t *genqlient.GetTeamTeam) {
+func setTeamSchema(d *schema.ResourceData, t *genqlient.Team) {
 	d.SetId(t.Id)
 	d.Set("default_member_role", t.DefaultMemberRole)
 	d.Set("default_team", t.IsDefaultTeam)
