@@ -347,10 +347,11 @@ func CreatePipeline(ctx context.Context, d *schema.ResourceData, m interface{}) 
 		var mutationWithClusterID struct {
 			PipelineCreate struct {
 				Pipeline PipelineNode
-			} `graphql:"pipelineCreate(input: {cancelIntermediateBuilds: $cancel_intermediate_builds, cancelIntermediateBuildsBranchFilter: $cancel_intermediate_builds_branch_filter, clusterId: $cluster_id, defaultBranch: $default_branch, description: $desc, name: $name, organizationId: $org, repository: {url: $repository_url}, skipIntermediateBuilds: $skip_intermediate_builds, skipIntermediateBuildsBranchFilter: $skip_intermediate_builds_branch_filter, steps: {yaml: $steps}, teams: $teams})"`
+			} `graphql:"pipelineCreate(input: {allowRebuilds: $allow_rebuilds, cancelIntermediateBuilds: $cancel_intermediate_builds, cancelIntermediateBuildsBranchFilter: $cancel_intermediate_builds_branch_filter, clusterId: $cluster_id, defaultBranch: $default_branch, description: $desc, name: $name, organizationId: $org, repository: {url: $repository_url}, skipIntermediateBuilds: $skip_intermediate_builds, skipIntermediateBuildsBranchFilter: $skip_intermediate_builds_branch_filter, steps: {yaml: $steps}, teams: $teams, tags: $tags})"`
 		}
 		vars["cluster_id"] = graphql.ID(clusterID.(string))
 		err = client.graphql.Mutate(context.Background(), &mutationWithClusterID, vars)
+		mutation.PipelineCreate.Pipeline = mutationWithClusterID.PipelineCreate.Pipeline
 	} else {
 		err = client.graphql.Mutate(context.Background(), &mutation, vars)
 	}
@@ -432,12 +433,13 @@ func UpdatePipeline(ctx context.Context, d *schema.ResourceData, m interface{}) 
 	// Check if cluster_id exists in the configuration before adding to mutation.
 	if clusterID, ok := d.GetOk("cluster_id"); ok {
 		var mutationWithClusterID struct {
-			PipelineCreate struct {
+			PipelineUpdate struct {
 				Pipeline PipelineNode
-			} `graphql:"pipelineUpdate(input: {cancelIntermediateBuilds: $cancel_intermediate_builds, cancelIntermediateBuildsBranchFilter: $cancel_intermediate_builds_branch_filter, clusterId: $cluster_id, defaultBranch: $default_branch, description: $desc, id: $id, name: $name, repository: {url: $repository_url}, skipIntermediateBuilds: $skip_intermediate_builds, skipIntermediateBuildsBranchFilter: $skip_intermediate_builds_branch_filter, steps: {yaml: $steps}})"`
+			} `graphql:"pipelineUpdate(input: {allowRebuilds: $allow_rebuilds, cancelIntermediateBuilds: $cancel_intermediate_builds, cancelIntermediateBuildsBranchFilter: $cancel_intermediate_builds_branch_filter, clusterId: $cluster_id, defaultBranch: $default_branch, description: $desc, id: $id, name: $name, repository: {url: $repository_url}, skipIntermediateBuilds: $skip_intermediate_builds, skipIntermediateBuildsBranchFilter: $skip_intermediate_builds_branch_filter, steps: {yaml: $steps}, tags: $tags})"`
 		}
 		vars["cluster_id"] = graphql.ID(clusterID.(string))
 		err = client.graphql.Mutate(context.Background(), &mutationWithClusterID, vars)
+		mutation.PipelineUpdate.Pipeline = mutationWithClusterID.PipelineUpdate.Pipeline
 	} else {
 		err = client.graphql.Mutate(context.Background(), &mutation, vars)
 	}
@@ -528,7 +530,7 @@ type PipelineExtraInfo struct {
 func getPipelineExtraInfo(d *schema.ResourceData, m interface{}, slug string) (*PipelineExtraInfo, error) {
 	client := m.(*Client)
 	pipelineExtraInfo := PipelineExtraInfo{}
-	err := client.makeRequest("GET", fmt.Sprintf("https://api.buildkite.com/v2/organizations/%s/pipelines/%s", client.organization, slug), nil, &pipelineExtraInfo)
+	err := client.makeRequest("GET", fmt.Sprintf("/v2/organizations/%s/pipelines/%s", client.organization, slug), nil, &pipelineExtraInfo)
 	if err != nil {
 		return nil, err
 	}
@@ -545,7 +547,7 @@ func updatePipelineExtraInfo(d *schema.ResourceData, client *Client) (PipelineEx
 
 	slug := d.Get("slug").(string)
 	pipelineExtraInfo := PipelineExtraInfo{}
-	err := client.makeRequest("PATCH", fmt.Sprintf("https://api.buildkite.com/v2/organizations/%s/pipelines/%s", client.organization, slug), payload, &pipelineExtraInfo)
+	err := client.makeRequest("PATCH", fmt.Sprintf("/v2/organizations/%s/pipelines/%s", client.organization, slug), payload, &pipelineExtraInfo)
 	if err != nil {
 		return pipelineExtraInfo, err
 	}

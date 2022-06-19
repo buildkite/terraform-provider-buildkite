@@ -1,0 +1,9 @@
+schema: schema.graphql
+
+operations:
+  - buildkite/graphql/teams.graphql
+
+generated: buildkite/generated.go
+
+# We pass context.Background() everywhere so just leave it off
+context_type: '-'

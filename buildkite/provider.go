@@ -4,6 +4,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
+const graphqlEndpoint = "https://graphql.buildkite.com/v1"
+const restEndpoint = "https://api.buildkite.com"
+
 // Provider creates the schema.Provider for Buildkite
 func Provider() *schema.Provider {
 	return &schema.Provider{
@@ -32,6 +35,18 @@ func Provider() *schema.Provider {
 				Required:    true,
 				Type:        schema.TypeString,
 			},
+			"graphql_url": &schema.Schema{
+				DefaultFunc: schema.EnvDefaultFunc("BUILDKITE_GRAPHQL_URL", graphqlEndpoint),
+				Description: "Base URL for the GraphQL API to use",
+				Optional:    true,
+				Type:        schema.TypeString,
+			},
+			"rest_url": &schema.Schema{
+				DefaultFunc: schema.EnvDefaultFunc("BUILDKITE_REST_URL", restEndpoint),
+				Description: "Base URL for the REST API to use",
+				Optional:    true,
+				Type:        schema.TypeString,
+			},
 		},
 		ConfigureFunc: providerConfigure,
 	}
@@ -40,6 +55,8 @@ func Provider() *schema.Provider {
 func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 	orgName := d.Get("organization").(string)
 	apiToken := d.Get("api_token").(string)
+	graphqlUrl := d.Get("graphql_url").(string)
+	restUrl := d.Get("rest_url").(string)
 
-	return NewClient(orgName, apiToken), nil
+	return NewClient(orgName, apiToken, graphqlUrl, restUrl), nil
 }
