@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/buildkite/terraform-provider-buildkite/buildkite/graphql"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
@@ -61,7 +62,7 @@ func dataSourceTeamRead(ctx context.Context, d *schema.ResourceData, m interface
 	client := m.(*Client)
 	orgTeamSlug := fmt.Sprintf("%s/%s", client.organization, d.Get("slug").(string))
 
-	response, err := getTeam(client.genqlient, orgTeamSlug)
+	response, err := graphql.GetTeam(client.genqlient, orgTeamSlug)
 
 	if err != nil {
 		return diag.FromErr(err)
