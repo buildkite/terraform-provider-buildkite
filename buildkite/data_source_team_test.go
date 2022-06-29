@@ -2,7 +2,6 @@ package buildkite
 
 import (
 	"fmt"
-	"regexp"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
@@ -44,8 +43,10 @@ func TestAccDataTeam_readNotFound(t *testing.T) {
 		CheckDestroy: testAccCheckTeamResourceDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config:      testAccDataTeamConfigBasic("foo", "\"bar\""),
-				ExpectError: regexp.MustCompile("Team not found: 'bar'"),
+				Config: testAccDataTeamConfigBasic("foo", "\"bar\""),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckNoResourceAttr("data.buildkite_team.foobar", "id"),
+				),
 			},
 		},
 	})

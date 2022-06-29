@@ -2,7 +2,6 @@ package buildkite
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"github.com/buildkite/terraform-provider-buildkite/buildkite/graphql"
@@ -69,7 +68,8 @@ func dataSourceTeamRead(ctx context.Context, d *schema.ResourceData, m interface
 	}
 
 	if response.Team.Id == "" {
-		return diag.FromErr(errors.New(fmt.Sprintf("Team not found: '%s'", d.Get("slug"))))
+		d.SetId("")
+		return nil
 	}
 
 	setTeamSchema(d, &response.Team.Team)

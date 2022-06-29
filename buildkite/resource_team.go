@@ -2,7 +2,6 @@ package buildkite
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	genqlient "github.com/buildkite/terraform-provider-buildkite/buildkite/graphql"
@@ -142,14 +141,18 @@ func ReadTeam(ctx context.Context, d *schema.ResourceData, m interface{}) diag.D
 	if err != nil {
 		return diag.FromErr(err)
 	}
+	// GraphQL returns a 200 response with no data in it for a missing team so we check if the ID is empty or not
 	if team, ok := response.Team.(*genqlient.GetTeamNodeTeam); ok {
 		if team.Id == "" {
-			return diag.FromErr(errors.New(fmt.Sprintf("Team not found: '%s'", d.Id())))
+			d.SetId("")
+			return nil
 		}
 
 		setTeamSchema(d, &team.Team)
+		return nil
 	}
 
+	d.SetId("")
 	return nil
 }
 
