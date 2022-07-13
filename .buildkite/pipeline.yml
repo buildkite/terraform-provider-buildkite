@@ -3,35 +3,37 @@ steps:
     key: fmt
     command: "make testfmt"
     plugins:
-      docker-compose#v2.2.0:
+      docker-compose#v3.9.0:
         run: go
 
   - label: vet
     key: vet
     command: "make vet"
     plugins:
-      docker-compose#v2.2.0:
+      docker-compose#v3.9.0:
         run: go
 
   - label: test
     key: test
     command: "make test"
     plugins:
-      docker-compose#v2.2.0:
+      docker-compose#v3.9.0:
         run: go
 
   - label: acceptance tests
     key: testacc
     concurrency: 1
     concurrency_group: terraform-provider-acceptance-tests
-    command: "make testacc"
+    command: "make testacc-annotate"
     plugins:
       - zacharymctague/aws-ssm#v1.0.0:
           parameters:
             BUILDKITE_ORGANIZATION: /pipelines/terraform-provider-buildkite-main/buildkite_organization
             BUILDKITE_API_TOKEN: /pipelines/terraform-provider-buildkite-main/buildkite_api_token
-      - docker-compose#v2.2.0:
+            BUILDKITE_ANALYTICS_TOKEN: /pipelines/terraform-provider-buildkite-main/buildkite_analytics_token
+      - docker-compose#v3.9.0:
           run: go
+          mount-buildkite-agent: 'true'
 
   - label: acceptance tests - non-admin
     key: testacc-nonadmin
@@ -43,13 +45,13 @@ steps:
           parameters:
             BUILDKITE_ORGANIZATION: /pipelines/terraform-provider-buildkite-main/buildkite_organization
             BUILDKITE_API_TOKEN: /pipelines/terraform-provider-buildkite-main/buildkite_api_token_nonadmin
-      - docker-compose#v2.2.0:
+      - docker-compose#v3.9.0:
           run: go
 
   - label: build
     command: "make"
     plugins:
-      docker-compose#v2.2.0:
+      docker-compose#v3.9.0:
         run: go
     depends_on:
       - fmt

@@ -8,8 +8,15 @@ services:
       - .:/work
     working_dir: /work
     environment:
-      - BUILDKITE_TAG
-      - GPG_SECRET_KEY_BASE64
-      - GITHUB_TOKEN
-      - BUILDKITE_ORGANIZATION
+      - BUILDKITE_ANALYTICS_TOKEN
       - BUILDKITE_API_TOKEN
+      - BUILDKITE_BRANCH
+      - BUILDKITE_BUILD_NUMBER
+      - BUILDKITE_BUILD_URL
+      - BUILDKITE_COMMIT
+      - BUILDKITE_JOB_ID
+      - BUILDKITE_MESSAGE
+      - BUILDKITE_ORGANIZATION
+      - BUILDKITE_TAG
+      - GITHUB_TOKEN
+      - GPG_SECRET_KEY_BASE64
