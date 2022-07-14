@@ -2,6 +2,8 @@
 
 go test -v -cover -json ./... | tee test_output
 
+TEST_RESULT=${PIPESTATUS[0]}
+
 tparse -all -file test_output | tee tparse_output
 
 printf '```term\n%b\n```' "$(cat tparse_output)" | buildkite-agent annotate --style info
@@ -15,3 +17,5 @@ buildkite-test-analytics-go < test_output \
   --commit-sha "$BUILDKITE_COMMIT" \
   --message "$BUILDKITE_MESSAGE" \
   --build-url "$BUILDKITE_BUILD_URL"
+
+exit $TEST_RESULT
