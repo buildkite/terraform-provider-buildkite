@@ -1,4 +1,4 @@
-FROM golang:1.18.3@sha256:a452d6273ad03a47c2f29b898d6bb57630e77baf839651ef77d03e4e049c5bf3
+FROM golang:1.19.4@sha256:660f138b4477001d65324a51fa158c1b868651b44e43f0953bf062e9f38b72f3
 
 RUN apt-get update \
     && apt-get install -y unzip \
