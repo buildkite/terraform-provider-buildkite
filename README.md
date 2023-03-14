@@ -73,9 +73,9 @@ The repo contains a tf-proj/ directory that can be used to quickly test a compil
 2. Compile the provider and copy it into the filesystem cache in tf-proj
 
     ```bash
-    go build -o terraform-provider-buildkite_v0.0.18 . && \
-      mkdir -p tf-proj/terraform.d/plugins/registry.terraform.io/buildkite/buildkite/0.0.18/linux_amd64/ && \
-      mv terraform-provider-buildkite_v0.0.18 tf-proj/terraform.d/plugins/registry.terraform.io/buildkite/buildkite/0.0.18/linux_amd64/
+      go build -o terraform-provider-buildkite . && \
+        mkdir -p tf-proj/terraform.d/plugins/registry.terraform.io/buildkite/buildkite/0.5.0/$(arch)/ && \
+        mv terraform-provider-buildkite tf-proj/terraform.d/plugins/registry.terraform.io/buildkite/buildkite/0.5.0/$(arch)/
     ```
 
 3. Ensure the version number in the above command and in tf-proj/main.tf match
