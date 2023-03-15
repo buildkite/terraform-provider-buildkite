@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v0.11.1](https://github.com/buildkite/terraform-provider-buildkite/compare/v0.5.0...v0.11.1)
+
+* Documentation had fallen out of sync due to lack of tag use. This change in the version includes a tag bump in order to merge documentation changes/improvements in to the provider page.
+
 ## [v0.5.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v0.4.0...v0.5.0)
 
 ### Added
