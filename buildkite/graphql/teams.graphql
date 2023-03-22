@@ -1,15 +1,16 @@
 query getTeam($slug: ID!) {
-  # maybe change the generated type name with @genqlient(typename: "Team")?
-  team(slug: $slug) {
-    defaultMemberRole
-    description
-    id
-    isDefaultTeam
-    membersCanCreatePipelines
-    name
-    # @genqlient(typename: "GenqlientTeamPrivacy")
-    privacy
-    slug
-    uuid
-  }
+    # maybe change the generated type name with @genqlient(typename: "Team")?
+    team(slug: $slug) {
+        # @genqlient(typename: "GTeamMemberRole")
+        defaultMemberRole
+        description
+        id
+        isDefaultTeam
+        membersCanCreatePipelines
+        name
+        # @genqlient(typename: "GenqlientTeamPrivacy")
+        privacy
+        slug
+        uuid
+    }
 }
