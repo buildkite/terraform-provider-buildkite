@@ -85,9 +85,7 @@ func ReadOrganizationSettings(ctx context.Context, d *schema.ResourceData, m int
 
 	response, err := getOrganization(client.genqlient, d.Get("slug").(string))
 
-	if err != nil {
-		return diag.FromErr(err)
-	}
+  assertError(err)
 
 	if response.Organization.Id == "" {
 		return diag.FromErr(fmt.Errorf("organization not found: '%s'", d.Get("slug")))
