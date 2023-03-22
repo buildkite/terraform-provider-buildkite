@@ -1,0 +1,18 @@
+query getOrganization($slug: ID!) {
+    organization(slug: $slug) {
+        allowedApiIpAddresses
+        id
+        name
+        slug
+        uuid
+    }
+}
+
+mutation setApiIpAddresses($organizationID: ID!, $ipAddresses: String!) {
+    organizationApiIpAllowlistUpdate(input: { organizationID: $organizationID, ipAddresses: $ipAddresses }) {
+        organization {
+            name
+            allowedApiIpAddresses
+        }
+    }
+}

@@ -11,16 +11,18 @@ const restEndpoint = "https://api.buildkite.com"
 func Provider() *schema.Provider {
 	return &schema.Provider{
 		ResourcesMap: map[string]*schema.Resource{
-			"buildkite_agent_token":       resourceAgentToken(),
-			"buildkite_pipeline":          resourcePipeline(),
-			"buildkite_pipeline_schedule": resourcePipelineSchedule(),
-			"buildkite_team":              resourceTeam(),
-			"buildkite_team_member":       resourceTeamMember(),
+			"buildkite_agent_token":           resourceAgentToken(),
+			"buildkite_pipeline":              resourcePipeline(),
+			"buildkite_pipeline_schedule":     resourcePipelineSchedule(),
+			"buildkite_team":                  resourceTeam(),
+			"buildkite_team_member":           resourceTeamMember(),
+			"buildkite_organization_settings": resourceOrganizationSettings(),
 		},
 		DataSourcesMap: map[string]*schema.Resource{
-			"buildkite_meta":     dataSourceMeta(),
-			"buildkite_pipeline": dataSourcePipeline(),
-			"buildkite_team":     dataSourceTeam(),
+			"buildkite_meta":         dataSourceMeta(),
+			"buildkite_pipeline":     dataSourcePipeline(),
+			"buildkite_team":         dataSourceTeam(),
+			"buildkite_organization": dataSourceOrganization(),
 		},
 		Schema: map[string]*schema.Schema{
 			"organization": &schema.Schema{
