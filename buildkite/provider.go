@@ -27,7 +27,7 @@ func Provider() *schema.Provider {
 		Schema: map[string]*schema.Schema{
 			"organization": &schema.Schema{
 				DefaultFunc: schema.EnvDefaultFunc("BUILDKITE_ORGANIZATION", nil),
-				Description: "The Buildkite organization ID",
+				Description: "The Buildkite organization slug",
 				Required:    true,
 				Type:        schema.TypeString,
 			},

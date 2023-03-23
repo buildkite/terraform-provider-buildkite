@@ -19,14 +19,6 @@ func resourceOrganizationSettings() *schema.Resource {
 		},
 
 		Schema: map[string]*schema.Schema{
-			"id": {
-				Type:     schema.TypeString,
-				Computed: true,
-			},
-			"slug": {
-				Type:     schema.TypeString,
-				Required: true,
-			},
 			"uuid": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -56,12 +48,12 @@ func CreateUpdateDeleteOrganizationSettings(ctx context.Context, d *schema.Resou
 	var diags diag.Diagnostics
 	client := m.(*Client)
 
-	response, err := getOrganization(client.genqlient, d.Get("slug").(string))
+	response, err := getOrganization(client.genqlient, client.organization)
 
 	assertError(err)
 
 	if response.Organization.Id == "" {
-		return diag.FromErr(fmt.Errorf("organization not found: '%s'", d.Get("slug")))
+		return diag.FromErr(fmt.Errorf("organization not found: '%s'", client.organization))
 	}
 
 	apiResponse, queryError := setApiIpAddresses(client.genqlient, response.Organization.Id, d.Get("allowed_api_ip_addresses").(string))
@@ -69,7 +61,6 @@ func CreateUpdateDeleteOrganizationSettings(ctx context.Context, d *schema.Resou
 	assertError(queryError)
 
 	d.SetId(response.Organization.Id)
-	d.Set("slug", response.Organization.Slug)
 	d.Set("uuid", response.Organization.Uuid)
 	d.Set("name", response.Organization.Name)
 	d.Set("allowed_api_ip_addresses", apiResponse.OrganizationApiIpAllowlistUpdate.Organization.AllowedApiIpAddresses)
@@ -83,16 +74,15 @@ func ReadOrganizationSettings(ctx context.Context, d *schema.ResourceData, m int
 
 	client := m.(*Client)
 
-	response, err := getOrganization(client.genqlient, d.Get("slug").(string))
+	response, err := getOrganization(client.genqlient, client.organization)
 
 	assertError(err)
 
 	if response.Organization.Id == "" {
-		return diag.FromErr(fmt.Errorf("organization not found: '%s'", d.Get("slug")))
+		return diag.FromErr(fmt.Errorf("organization not found: '%s'", client.organization))
 	}
 
 	d.SetId(response.Organization.Id)
-	d.Set("slug", response.Organization.Slug)
 	d.Set("uuid", response.Organization.Uuid)
 	d.Set("name", response.Organization.Name)
 	d.Set("allowed_api_ip_addresses", response.Organization.AllowedApiIpAddresses)

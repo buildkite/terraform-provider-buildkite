@@ -12,14 +12,6 @@ func dataSourceOrganization() *schema.Resource {
 	return &schema.Resource{
 		ReadContext: dataSourceOrganizationRead,
 		Schema: map[string]*schema.Schema{
-			"id": {
-				Computed: true,
-				Type:     schema.TypeString,
-			},
-			"slug": {
-				Required: true,
-				Type:     schema.TypeString,
-			},
 			"uuid": {
 				Computed: true,
 				Type:     schema.TypeString,
@@ -43,18 +35,17 @@ func dataSourceOrganizationRead(ctx context.Context, d *schema.ResourceData, m i
 
 	client := m.(*Client)
 
-	response, err := getOrganization(client.genqlient, d.Get("slug").(string))
+	response, err := getOrganization(client.genqlient, client.organization)
 
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
 	if response.Organization.Id == "" {
-		return diag.FromErr(fmt.Errorf("organization not found: '%s'", d.Get("slug")))
+		return diag.FromErr(fmt.Errorf("organization not found: '%s'", client.organization))
 	}
 
 	d.SetId(response.Organization.Id)
-	d.Set("slug", response.Organization.Slug)
 	d.Set("uuid", response.Organization.Uuid)
 	d.Set("name", response.Organization.Name)
 	d.Set("allowed_api_ip_addresses", response.Organization.AllowedApiIpAddresses)
