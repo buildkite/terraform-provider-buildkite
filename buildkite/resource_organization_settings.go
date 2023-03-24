@@ -17,7 +17,6 @@ func resourceOrganizationSettings() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
-
 		Schema: map[string]*schema.Schema{
 			"uuid": {
 				Type:     schema.TypeString,
@@ -28,8 +27,11 @@ func resourceOrganizationSettings() *schema.Resource {
 				Computed: true,
 			},
 			"allowed_api_ip_addresses": {
-				Type:     schema.TypeString,
 				Optional: true,
+				Type:     schema.TypeList,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
 			},
 		},
 	}
@@ -68,7 +70,7 @@ func CreateUpdateDeleteOrganizationSettings(ctx context.Context, d *schema.Resou
 	return diags
 }
 
-// ReadOrganization retrieves a Buildkite organization
+// ReadOrganizationSettings retrieves a Buildkite organization
 func ReadOrganizationSettings(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	var diags diag.Diagnostics
 
@@ -76,7 +78,9 @@ func ReadOrganizationSettings(ctx context.Context, d *schema.ResourceData, m int
 
 	response, err := getOrganization(client.genqlient, client.organization)
 
-	assertError(err)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 
 	if response.Organization.Id == "" {
 		return diag.FromErr(fmt.Errorf("organization not found: '%s'", client.organization))
