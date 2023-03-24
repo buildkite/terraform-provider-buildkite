@@ -89,6 +89,5 @@ func ReadOrganizationSettings(ctx context.Context, d *schema.ResourceData, m int
 	d.Set("name", response.Organization.Name)
 	d.Set("allowed_api_ip_addresses", strings.Split(response.Organization.AllowedApiIpAddresses, " "))
 
-
 	return diags
 }

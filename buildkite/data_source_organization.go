@@ -8,6 +8,6 @@ func dataSourceOrganization() *schema.Resource {
 	resource := resourceOrganizationSettings()
 	return &schema.Resource{
 		ReadContext: resource.ReadContext,
-		Schema: resource.Schema,
+		Schema:      resource.Schema,
 	}
 }
