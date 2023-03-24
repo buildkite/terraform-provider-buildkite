@@ -18,8 +18,7 @@ resource "buildkite_pipeline" "test" {
 }
 
 resource "buildkite_organization_settings" "test_settings" {
-  slug = buildkite_pipeline.test.organization_slug
-  allowed_api_ip_addresses = "0.0.0.0/0"
+  allowed_api_ip_addresses = ["0.0.0.0/0"]
 }
 
 resource "buildkite_pipeline_schedule" "foo" {
