@@ -3,6 +3,7 @@ package buildkite
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -58,14 +59,15 @@ func CreateUpdateDeleteOrganizationSettings(ctx context.Context, d *schema.Resou
 		return diag.FromErr(fmt.Errorf("organization not found: '%s'", client.organization))
 	}
 
-	apiResponse, queryError := setApiIpAddresses(client.genqlient, response.Organization.Id, d.Get("allowed_api_ip_addresses").(string))
+	cidrs := strings.Join(d.Get("allowed_api_ip_addresses").([]string), " ")
+	apiResponse, queryError := setApiIpAddresses(client.genqlient, response.Organization.Id, cidrs)
 
 	assertError(queryError)
 
 	d.SetId(response.Organization.Id)
 	d.Set("uuid", response.Organization.Uuid)
 	d.Set("name", response.Organization.Name)
-	d.Set("allowed_api_ip_addresses", apiResponse.OrganizationApiIpAllowlistUpdate.Organization.AllowedApiIpAddresses)
+	d.Set("allowed_api_ip_addresses", strings.Split(apiResponse.OrganizationApiIpAllowlistUpdate.Organization.AllowedApiIpAddresses, " "))
 
 	return diags
 }
@@ -89,7 +91,8 @@ func ReadOrganizationSettings(ctx context.Context, d *schema.ResourceData, m int
 	d.SetId(response.Organization.Id)
 	d.Set("uuid", response.Organization.Uuid)
 	d.Set("name", response.Organization.Name)
-	d.Set("allowed_api_ip_addresses", response.Organization.AllowedApiIpAddresses)
+	d.Set("allowed_api_ip_addresses", strings.Split(response.Organization.AllowedApiIpAddresses, " "))
+
 
 	return diags
 }
