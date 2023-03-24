@@ -2,7 +2,6 @@ query getOrganization($slug: ID!) {
     organization(slug: $slug) {
         allowedApiIpAddresses
         id
-        name
         uuid
     }
 }
@@ -10,7 +9,6 @@ query getOrganization($slug: ID!) {
 mutation setApiIpAddresses($organizationID: ID!, $ipAddresses: String!) {
     organizationApiIpAllowlistUpdate(input: { organizationID: $organizationID, ipAddresses: $ipAddresses }) {
         organization {
-            name
             allowedApiIpAddresses
         }
     }

@@ -62,10 +62,6 @@ type getOrganizationOrganization struct {
 	// A space-separated allowlist of IP addresses that can access the organization via the GraphQL or REST API
 	AllowedApiIpAddresses string `json:"allowedApiIpAddresses"`
 	Id                    string `json:"id"`
-	// The name of the organization
-	Name string `json:"name"`
-	// The slug used to represent the organization in URLs
-	Slug string `json:"slug"`
 	// The public UUID for this organization
 	Uuid string `json:"uuid"`
 }
@@ -77,12 +73,6 @@ func (v *getOrganizationOrganization) GetAllowedApiIpAddresses() string {
 
 // GetId returns getOrganizationOrganization.Id, and is useful for accessing the field via an interface.
 func (v *getOrganizationOrganization) GetId() string { return v.Id }
-
-// GetName returns getOrganizationOrganization.Name, and is useful for accessing the field via an interface.
-func (v *getOrganizationOrganization) GetName() string { return v.Name }
-
-// GetSlug returns getOrganizationOrganization.Slug, and is useful for accessing the field via an interface.
-func (v *getOrganizationOrganization) GetSlug() string { return v.Slug }
 
 // GetUuid returns getOrganizationOrganization.Uuid, and is useful for accessing the field via an interface.
 func (v *getOrganizationOrganization) GetUuid() string { return v.Uuid }
@@ -176,15 +166,8 @@ func (v *setApiIpAddressesOrganizationApiIpAllowlistUpdateOrganizationAPIIPAllow
 //
 // An organization
 type setApiIpAddressesOrganizationApiIpAllowlistUpdateOrganizationAPIIPAllowlistUpdateMutationPayloadOrganization struct {
-	// The name of the organization
-	Name string `json:"name"`
 	// A space-separated allowlist of IP addresses that can access the organization via the GraphQL or REST API
 	AllowedApiIpAddresses string `json:"allowedApiIpAddresses"`
-}
-
-// GetName returns setApiIpAddressesOrganizationApiIpAllowlistUpdateOrganizationAPIIPAllowlistUpdateMutationPayloadOrganization.Name, and is useful for accessing the field via an interface.
-func (v *setApiIpAddressesOrganizationApiIpAllowlistUpdateOrganizationAPIIPAllowlistUpdateMutationPayloadOrganization) GetName() string {
-	return v.Name
 }
 
 // GetAllowedApiIpAddresses returns setApiIpAddressesOrganizationApiIpAllowlistUpdateOrganizationAPIIPAllowlistUpdateMutationPayloadOrganization.AllowedApiIpAddresses, and is useful for accessing the field via an interface.
@@ -221,8 +204,6 @@ query getOrganization ($slug: ID!) {
 	organization(slug: $slug) {
 		allowedApiIpAddresses
 		id
-		name
-		slug
 		uuid
 	}
 }
@@ -286,7 +267,6 @@ func setApiIpAddresses(
 mutation setApiIpAddresses ($organizationID: ID!, $ipAddresses: String!) {
 	organizationApiIpAllowlistUpdate(input: {organizationID:$organizationID,ipAddresses:$ipAddresses}) {
 		organization {
-			name
 			allowedApiIpAddresses
 		}
 	}

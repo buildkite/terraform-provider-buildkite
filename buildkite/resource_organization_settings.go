@@ -23,10 +23,6 @@ func resourceOrganizationSettings() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
-			"name": {
-				Type:     schema.TypeString,
-				Computed: true,
-			},
 			"allowed_api_ip_addresses": {
 				Optional: true,
 				Type:     schema.TypeList,
@@ -62,7 +58,6 @@ func CreateUpdateDeleteOrganizationSettings(ctx context.Context, d *schema.Resou
 
 	d.SetId(response.Organization.Id)
 	d.Set("uuid", response.Organization.Uuid)
-	d.Set("name", response.Organization.Name)
 	d.Set("allowed_api_ip_addresses", strings.Split(apiResponse.OrganizationApiIpAllowlistUpdate.Organization.AllowedApiIpAddresses, " "))
 
 	return diags
@@ -86,7 +81,6 @@ func ReadOrganizationSettings(ctx context.Context, d *schema.ResourceData, m int
 
 	d.SetId(response.Organization.Id)
 	d.Set("uuid", response.Organization.Uuid)
-	d.Set("name", response.Organization.Name)
 	d.Set("allowed_api_ip_addresses", strings.Split(response.Organization.AllowedApiIpAddresses, " "))
 
 	return diags
