@@ -38,31 +38,27 @@ func resourceOrganizationSettings() *schema.Resource {
 	}
 }
 
-func assertError(err error) diag.Diagnostics {
-	if err != nil {
-		return diag.FromErr(err)
-	}
-	return nil
-}
-
 // CreateUpdateDeleteOrganizationSettings is used for the creation, updating and deleting of a Buildkite organization's settings
-// In the future, this will be split into separate functions, but given it only has one field, it's not worth it yet
 func CreateUpdateDeleteOrganizationSettings(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	var diags diag.Diagnostics
 	client := m.(*Client)
 
 	response, err := getOrganization(client.genqlient, client.organization)
 
-	assertError(err)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 
 	if response.Organization.Id == "" {
 		return diag.FromErr(fmt.Errorf("organization not found: '%s'", client.organization))
 	}
 
 	cidrs := strings.Join(d.Get("allowed_api_ip_addresses").([]string), " ")
-	apiResponse, queryError := setApiIpAddresses(client.genqlient, response.Organization.Id, cidrs)
+	apiResponse, err := setApiIpAddresses(client.genqlient, response.Organization.Id, cidrs)
 
-	assertError(queryError)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 
 	d.SetId(response.Organization.Id)
 	d.Set("uuid", response.Organization.Uuid)
