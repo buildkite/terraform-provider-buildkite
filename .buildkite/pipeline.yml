@@ -26,7 +26,9 @@ steps:
     concurrency_group: terraform-provider-acceptance-tests
     command: "make testacc-annotate"
     plugins:
-      - zacharymctague/aws-ssm#v1.0.0:
+      - aws-assume-role-with-web-identity:
+          role-arn: arn:aws:iam::445615400570:role/pipeline-buildkite-terraform-provider-buildkite-main
+      - aws-ssm#v1.0.0:
           parameters:
             BUILDKITE_ORGANIZATION: /pipelines/terraform-provider-buildkite-main/buildkite_organization
             BUILDKITE_API_TOKEN: /pipelines/terraform-provider-buildkite-main/buildkite_api_token
@@ -41,7 +43,9 @@ steps:
     concurrency_group: terraform-provider-acceptance-tests
     command: "make testacc-nonadmin"
     plugins:
-      - zacharymctague/aws-ssm#v1.0.0:
+      - aws-assume-role-with-web-identity:
+          role-arn: arn:aws:iam::445615400570:role/pipeline-buildkite-terraform-provider-buildkite-main
+      - aws-ssm#v1.0.0:
           parameters:
             BUILDKITE_ORGANIZATION: /pipelines/terraform-provider-buildkite-main/buildkite_organization
             BUILDKITE_API_TOKEN: /pipelines/terraform-provider-buildkite-main/buildkite_api_token_nonadmin
