@@ -107,12 +107,12 @@ func TestAccOrganizationSettings_disappears(t *testing.T) {
 func testAccOrganizationSettingsConfigBasic(ip_addresses []string) string {
 	config := `
 		resource "buildkite_organization_settings" "let_them_in" {
-      allowed_api_ip_addresses = "%v"
+      allowed_api_ip_addresses = %v
 		}
 	`
 	marshal, _ := json.Marshal(ip_addresses)
 
-	return fmt.Sprintf(config, marshal)
+	return fmt.Sprintf(config, string(marshal))
 }
 
 func testCheckOrganizationSettingsResourceRemoved(s *terraform.State) error {
