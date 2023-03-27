@@ -2,6 +2,7 @@ package buildkite
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"testing"
@@ -109,9 +110,9 @@ func testAccOrganizationSettingsConfigBasic(ip_addresses []string) string {
       allowed_api_ip_addresses = "%v"
 		}
 	`
-  marshal, _ := json.Marshal(ip_addresses)
+	marshal, _ := json.Marshal(ip_addresses)
 
-  return fmt.Sprintf(config, string(marshal)
+	return fmt.Sprintf(config, string(marshal))
 }
 
 func testCheckOrganizationSettingsResourceRemoved(s *terraform.State) error {
