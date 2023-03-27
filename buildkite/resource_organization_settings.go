@@ -14,7 +14,7 @@ func resourceOrganizationSettings() *schema.Resource {
 		CreateContext: CreateUpdateDeleteOrganizationSettings,
 		ReadContext:   ReadOrganizationSettings,
 		UpdateContext: CreateUpdateDeleteOrganizationSettings,
-		DeleteContext: CreateUpdateDeleteOrganizationSettings,
+		DeleteContext: DeleteOrganizationSettings,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -54,7 +54,7 @@ func CreateUpdateDeleteOrganizationSettings(ctx context.Context, d *schema.Resou
 	for i, v := range allowedIpAddresses {
 		cidrs[i] = v.(string)
 	}
-	
+
 	apiResponse, err := setApiIpAddresses(client.genqlient, response.Organization.Id, strings.Join(cidrs, " "))
 
 	if err != nil {
@@ -64,6 +64,30 @@ func CreateUpdateDeleteOrganizationSettings(ctx context.Context, d *schema.Resou
 	d.SetId(response.Organization.Id)
 	d.Set("uuid", response.Organization.Uuid)
 	d.Set("allowed_api_ip_addresses", strings.Split(apiResponse.OrganizationApiIpAllowlistUpdate.Organization.AllowedApiIpAddresses, " "))
+
+	return diags
+}
+
+// DeleteOrganizationSettings is used for the deleting of a Buildkite organization's settings
+func DeleteOrganizationSettings(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	var diags diag.Diagnostics
+	client := m.(*Client)
+
+	response, err := getOrganization(client.genqlient, client.organization)
+
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	if response.Organization.Id == "" {
+		return diag.FromErr(fmt.Errorf("organization not found: '%s'", client.organization))
+	}
+
+	_, err = setApiIpAddresses(client.genqlient, response.Organization.Id, "")
+
+	if err != nil {
+		return diag.FromErr(err)
+	}
 
 	return diags
 }
