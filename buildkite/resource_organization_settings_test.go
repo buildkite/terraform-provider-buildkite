@@ -112,7 +112,7 @@ func testAccOrganizationSettingsConfigBasic(ip_addresses []string) string {
 	`
 	marshal, _ := json.Marshal(ip_addresses)
 
-	return fmt.Sprintf(config, string(marshal))
+	return fmt.Sprintf(config, marshal)
 }
 
 func testCheckOrganizationSettingsResourceRemoved(s *terraform.State) error {
