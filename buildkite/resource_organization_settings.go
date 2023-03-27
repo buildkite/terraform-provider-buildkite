@@ -49,8 +49,13 @@ func CreateUpdateDeleteOrganizationSettings(ctx context.Context, d *schema.Resou
 		return diag.FromErr(fmt.Errorf("organization not found: '%s'", client.organization))
 	}
 
-	cidrs := strings.Join(d.Get("allowed_api_ip_addresses").([]string), " ")
-	apiResponse, err := setApiIpAddresses(client.genqlient, response.Organization.Id, cidrs)
+	allowedIpAddresses := d.Get("allowed_api_ip_addresses").([]interface{})
+	cidrs := make([]string, len(allowedIpAddresses))
+	for i, v := range allowedIpAddresses {
+		cidrs[i] = v.(string)
+	}
+	
+	apiResponse, err := setApiIpAddresses(client.genqlient, response.Organization.Id, strings.Join(cidrs, " "))
 
 	if err != nil {
 		return diag.FromErr(err)
