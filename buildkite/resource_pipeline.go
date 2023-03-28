@@ -433,6 +433,8 @@ func UpdatePipeline(ctx context.Context, d *schema.ResourceData, m interface{}) 
 		"cancel_intermediate_builds":               graphql.Boolean(d.Get("cancel_intermediate_builds").(bool)),
 		"cancel_intermediate_builds_branch_filter": graphql.String(d.Get("cancel_intermediate_builds_branch_filter").(string)),
 		"default_branch":                           graphql.String(d.Get("default_branch").(string)),
+		"default_timeout_in_minutes":               graphql.Int(d.Get("default_timeout_in_minutes").(int)),
+		"maximum_timeout_in_minutes":               graphql.Int(d.Get("maximum_timeout_in_minutes").(int)),
 		"desc":                                     graphql.String(d.Get("description").(string)),
 		"id":                                       graphql.ID(d.Id()),
 		"name":                                     graphql.String(d.Get("name").(string)),
