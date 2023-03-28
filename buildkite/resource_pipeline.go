@@ -359,7 +359,7 @@ func CreatePipeline(ctx context.Context, d *schema.ResourceData, m interface{}) 
 		var mutationWithClusterID struct {
 			PipelineCreate struct {
 				Pipeline PipelineNode
-			} `graphql:"pipelineCreate(input: {allowRebuilds: $allow_rebuilds, cancelIntermediateBuilds: $cancel_intermediate_builds, cancelIntermediateBuildsBranchFilter: $cancel_intermediate_builds_branch_filter, clusterId: $cluster_id, defaultBranch: $default_branch $defaultTimeoutInMinutes: $default_timeout_in_minutes, description: $desc, maximumTimeoutInMinutes: $maximum_timeout_in_minutes, name: $name, organizationId: $org, repository: {url: $repository_url}, skipIntermediateBuilds: $skip_intermediate_builds, skipIntermediateBuildsBranchFilter: $skip_intermediate_builds_branch_filter, steps: {yaml: $steps}, teams: $teams, tags: $tags})"`
+			} `graphql:"pipelineCreate(input: {allowRebuilds: $allow_rebuilds, cancelIntermediateBuilds: $cancel_intermediate_builds, cancelIntermediateBuildsBranchFilter: $cancel_intermediate_builds_branch_filter, clusterId: $cluster_id, defaultBranch: $default_branch, defaultTimeoutInMinutes: $default_timeout_in_minutes, description: $desc, maximumTimeoutInMinutes: $maximum_timeout_in_minutes, name: $name, organizationId: $org, repository: {url: $repository_url}, skipIntermediateBuilds: $skip_intermediate_builds, skipIntermediateBuildsBranchFilter: $skip_intermediate_builds_branch_filter, steps: {yaml: $steps}, teams: $teams, tags: $tags})"`
 		}
 		vars["cluster_id"] = graphql.ID(clusterID.(string))
 		err = client.graphql.Mutate(context.Background(), &mutationWithClusterID, vars)
