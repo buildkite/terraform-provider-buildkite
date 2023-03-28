@@ -152,6 +152,29 @@ func TestAccPipeline_add_remove_withteams(t *testing.T) {
 	})
 }
 
+func TestAccPipeline_add_remove_withtimeouts(t *testing.T) {
+	var resourcePipeline PipelineNode
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckPipelineResourceDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccPipelineConfigBasicWithTimeouts("foo"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					// Confirm the pipeline exists in the buildkite API
+					testAccCheckPipelineExists("buildkite_pipeline.foobar", &resourcePipeline),
+					// Confirm the pipeline has the correct values in Buildkite's system
+					testAccCheckPipelineRemoteValues(&resourcePipeline, "Test Pipeline foo"),
+					// Confirm the pipeline has the correct values in terraform state
+					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "maximum_timeout_in_minutes", "20"),
+				),
+			},
+		},
+	})
+}
+
 // Confirm that we can create a new pipeline, and then update the description
 func TestAccPipeline_update(t *testing.T) {
 	var resourcePipeline PipelineNode
@@ -365,6 +388,20 @@ func testAccPipelineConfigBasicWithCluster(name string) string {
 				slug = "everyone"
 				access_level = "MANAGE_BUILD_AND_READ"
 			}
+		}
+	`
+	return fmt.Sprintf(config, name)
+}
+
+func testAccPipelineConfigBasicWithTimeouts(name string) string {
+	config := `
+		resource "buildkite_pipeline" "foobar" {
+			name = "Test Pipeline %s"
+			repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
+			steps = ""
+
+			default_timeout_in_minutes = 10
+			maximum_timeout_in_minutes = 20
 		}
 	`
 	return fmt.Sprintf(config, name)
