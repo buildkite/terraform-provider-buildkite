@@ -24,6 +24,23 @@ resource "buildkite_pipeline" "repo2" {
 }
 ```
 
+## Example Usage with command timeouts
+
+```hcl
+resource "buildkite_pipeline" "test_new" {
+    name       = "Testing Timeouts"
+    repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
+
+    steps = file("./deploy-steps.yml")
+
+    default_timeout_in_minutes = 60
+    maximum_timeout_in_minutes = 120
+}
+}
+```
+
+Currently, the `default_timeout_in_minutes` and `maximum_timeout_in_minutes` will be retained in state even if removed from the configuration. In order to remove them, you must set them to `0` in either the configuration or the web UI.
+
 ## Example Usage with GitHub Provider Settings
 
 ```hcl
@@ -60,6 +77,8 @@ resource "buildkite_pipeline" "repo2-release" {
 -   `steps` - (Required) The string YAML steps to run the pipeline.
 -   `description` - (Optional) A description of the pipeline.
 -   `default_branch` - (Optional) The default branch to prefill when new builds are created or triggered, usually main or master but can be anything.
+-   `default_timeout_in_minutes` - (Optional) The default timeout for commands in this pipeline, in minutes.
+-   `maximum_timeout_in_minutes` - (Optional) The maximum timeout for commands in this pipeline, in minutes.
 -   `branch_configuration` - (Optional) Limit which branches and tags cause new builds to be created, either via a code push or via the Builds REST API.
 -   `skip_intermediate_builds` - (Optional, Default: `false` ) A boolean to enable automatically skipping any unstarted builds on the same branch when a new build is created.
 -   `skip_intermediate_builds_branch_filter` - (Optional) Limit which branches build skipping applies to, for example `!master` will ensure that the master branch won't have its builds automatically skipped.
