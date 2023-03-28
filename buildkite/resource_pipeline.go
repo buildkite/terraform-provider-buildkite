@@ -107,12 +107,10 @@ func resourcePipeline() *schema.Resource {
 				Type:     schema.TypeString,
 			},
 			"default_timeout_in_minutes": {
-				Computed: true,
 				Optional: true,
 				Type:     schema.TypeInt,
 			},
 			"maximum_timeout_in_minutes": {
-				Computed: true,
 				Optional: true,
 				Type:     schema.TypeInt,
 			},
