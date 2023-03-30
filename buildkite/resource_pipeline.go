@@ -87,17 +87,15 @@ func resourcePipeline() *schema.Resource {
 				Type:     schema.TypeBool,
 			},
 			"build_retention_enabled": {
-				Computed: true,
 				Optional: true,
+				Default: false,
 				Type:     schema.TypeBool,
 			},
 			"build_retention_number": {
-				Computed: true,
 				Optional: true,
 				Type:     schema.TypeInt,
 			},
 			"build_retention_period": {
-				Computed: true,
 				Optional: true,
 				Type:     schema.TypeString,
 				ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
