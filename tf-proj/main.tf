@@ -16,10 +16,6 @@ resource "buildkite_pipeline" "test_new" {
   repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
 
   steps = ""
-
-  build_retention_enabled = true
-  build_retention_number = 25
-  build_retention_period = "DAYS_30"
 }
 
 resource "buildkite_pipeline_schedule" "test_scheduled" {
