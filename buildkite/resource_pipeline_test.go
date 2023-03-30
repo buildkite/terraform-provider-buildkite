@@ -175,6 +175,130 @@ func TestAccPipeline_add_remove_withtimeouts(t *testing.T) {
 	})
 }
 
+func TestAccPipelineRetention_add_remove(t *testing.T) {
+	var resourcePipeline PipelineNode
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckPipelineResourceDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccPipelineConfigBasicWithRetention("foo", true, 25, "DAYS_30"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					// Confirm the pipeline exists in the buildkite API
+					testAccCheckPipelineExists("buildkite_pipeline.foobar", &resourcePipeline),
+					// Confirm the pipeline has the correct values in Buildkite's system
+					testAccCheckPipelineRetentionRemoteValues(&resourcePipeline, "Test Pipeline foo", true, 25, "DAYS_30"),
+					// Confirm the pipeline has the correct values in terraform state
+					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "build_retention.0.enabled", "true"),
+					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "build_retention.0.build_retention_number", "25"),
+					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "build_retention.0.build_retention_period", "DAYS_30"),
+				),
+			},
+		},
+	})
+}
+
+// ---
+func TestAccPipelineRetention_update(t *testing.T) {
+	var resourcePipeline PipelineNode
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckPipelineResourceDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccPipelineConfigBasicWithRetention("foo", true, 25, "DAYS_30"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccCheckPipelineExists("buildkite_pipeline.foobar", &resourcePipeline),
+					testAccCheckPipelineRetentionRemoteValues(&resourcePipeline, "Test Pipeline foo", true, 25, "DAYS_30"),
+					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "build_retention.0.build_retention_number", "25"),
+				),
+			},
+
+			{
+				Config: testAccPipelineConfigBasicWithRetention("foo", true, 10, "DAYS_60"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccCheckPipelineRetentionRemoteValues(&resourcePipeline, "Test Pipeline foo", true, 10, "DAYS_60"),
+					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "build_retention.0.build_retention_number", "10"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccPipelineRetention_disabled(t *testing.T) {
+	var resourcePipeline PipelineNode
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckPipelineResourceDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccPipelineConfigBasicWithRetention("foo", false, 25, "DAYS_30"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccCheckPipelineExists("buildkite_pipeline.foobar", &resourcePipeline),
+					testAccCheckPipelineRetentionRemoteValues(&resourcePipeline, "Test Pipeline foo", false, 25, "DAYS_30"),
+					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "build_retention.0.build_retention_enabled", "false"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccPipelineRetention_import(t *testing.T) {
+	var resourcePipeline PipelineNode
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testCheckOrganizationSettingsResourceRemoved,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccPipelineConfigBasicWithRetention("foo", true, 25, "DAYS_30"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					// Confirm that the allowed IP addresses are set correctly in Buildkite's system
+					testAccCheckPipelineRetentionRemoteValues(&resourcePipeline, "Test Pipeline foo", false, 25, "DAYS_30"),
+					// Check that the second IP added to the list is the one we expect, 0.0.0.0/0, this also ensures the length is greater than 1
+					// allowing us to assert the first IP is also added correctly
+					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "build_retention_enabled.0", "true"),
+				),
+			},
+			{
+				ResourceName:      "buildkite_pipeline.foobar",
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+func TestAccPipelineRetention_disappears(t *testing.T) {
+	var node PipelineNode
+	resourceName := "buildkite_pipeline.foobar"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testCheckOrganizationSettingsResourceRemoved,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccPipelineConfigBasicWithRetention("foo", false, 25, "DAYS_30"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccCheckPipelineExists(resourceName, &node),
+					testAccCheckResourceDisappears(testAccProvider, resourcePipeline(), resourceName),
+				),
+				ExpectNonEmptyPlan: true,
+			},
+		},
+	})
+}
+
+// ---
+
 // Confirm that we can create a new pipeline, and then update the description
 func TestAccPipeline_update(t *testing.T) {
 	var resourcePipeline PipelineNode
@@ -348,6 +472,25 @@ func testAccCheckPipelineRemoteValues(resourcePipeline *PipelineNode, name strin
 	}
 }
 
+func testAccCheckPipelineRetentionRemoteValues(resourcePipeline *PipelineNode, name string, enabled bool, number int, period string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+
+		if string(resourcePipeline.Name) != name {
+			return fmt.Errorf("remote pipeline name (%s) doesn't match expected value (%s)", resourcePipeline.Name, name)
+		}
+		if bool(resourcePipeline.BuildRetentionEnabled) != enabled {
+			return fmt.Errorf("remote pipeline retention enabled (%t) doesn't match expected value (%t)", resourcePipeline.BuildRetentionEnabled, enabled)
+		}
+		if int(resourcePipeline.BuildRetentionNumber) != number {
+			return fmt.Errorf("remote pipeline retention builds number (%d) doesn't match expected value (%d)", resourcePipeline.BuildRetentionNumber, number)
+		}
+		if string(resourcePipeline.BuildRetentionPeriod) != period {
+			return fmt.Errorf("remote pipeline retention builds period (%s) doesn't match expected value (%s)", resourcePipeline.BuildRetentionPeriod, period)
+		}
+		return nil
+	}
+}
+
 func testAccPipelineConfigBasic(name string) string {
 	config := `
 		resource "buildkite_pipeline" "foobar" {
@@ -405,6 +548,21 @@ func testAccPipelineConfigBasicWithTimeouts(name string) string {
 		}
 	`
 	return fmt.Sprintf(config, name)
+}
+
+func testAccPipelineConfigBasicWithRetention(name string, enabled bool, number int, period string) string {
+	config := `
+		resource "buildkite_pipeline" "foobar" {
+			name = "Test Pipeline %s"
+			repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
+			steps = ""
+
+			build_retention_enabled = %t
+			build_retention_period = "%s"
+			build_retention_number = %d
+		}
+	`
+	return fmt.Sprintf(config, name, enabled, period, number)
 }
 
 func testAccPipelineConfigComplex(name string, steps string) string {

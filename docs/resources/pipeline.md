@@ -36,10 +36,26 @@ resource "buildkite_pipeline" "test_new" {
     default_timeout_in_minutes = 60
     maximum_timeout_in_minutes = 120
 }
-}
 ```
 
 Currently, the `default_timeout_in_minutes` and `maximum_timeout_in_minutes` will be retained in state even if removed from the configuration. In order to remove them, you must set them to `0` in either the configuration or the web UI.
+
+## Example Usage with build retention
+
+```hcl
+resource "buildkite_pipeline" "test_new" {
+    name       = "Testing Retention"
+    repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
+
+    steps = file("./deploy-steps.yml")
+
+    build_retention_enabled = true
+    build_retention_number = 25
+    build_retention_period = "DAYS_60"
+}
+```
+
+If `build_retention_enabled` is set to `true`, both `build_retention_number` and `build_retention_period` are required.
 
 ## Example Usage with GitHub Provider Settings
 

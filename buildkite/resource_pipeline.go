@@ -10,9 +10,14 @@ import (
 	"github.com/shurcooL/graphql"
 )
 
+type BuildRetentionPeriods graphql.String
+
 // PipelineNode represents a pipeline as returned from the GraphQL API
 type PipelineNode struct {
 	AllowRebuilds                        graphql.Boolean
+	BuildRetentionEnabled                graphql.Boolean
+	BuildRetentionNumber                 graphql.Int
+	BuildRetentionPeriod                 BuildRetentionPeriods
 	CancelIntermediateBuilds             graphql.Boolean
 	CancelIntermediateBuildsBranchFilter graphql.String
 	Cluster                              struct {
@@ -80,6 +85,37 @@ func resourcePipeline() *schema.Resource {
 				Computed: true,
 				Optional: true,
 				Type:     schema.TypeBool,
+			},
+			"build_retention_enabled": {
+				Computed: true,
+				Optional: true,
+				Type:     schema.TypeBool,
+			},
+			"build_retention_number": {
+				Computed: true,
+				Optional: true,
+				Type:     schema.TypeInt,
+			},
+			"build_retention_period": {
+				Computed: true,
+				Optional: true,
+				Type:     schema.TypeString,
+				ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
+					switch v := val.(string); v {
+					case "DAYS_30":
+					case "DAYS_60":
+					case "DAYS_90":
+					case "MONTHS_6":
+					case "MONTHS_12":
+					case "MONTHS_18":
+					case "YEARS_2":
+						return
+					default:
+						errs = append(errs, fmt.Errorf("%q must be one of DAYS_30, DAYS_60, DAYS_90, MONTHS_6, MONTHS_12, MONTHS_18 or YEARS_2, got: %s", key, v))
+						return
+					}
+					return
+				},
 			},
 			"cancel_intermediate_builds": {
 				Computed: true,
@@ -321,7 +357,7 @@ func CreatePipeline(ctx context.Context, d *schema.ResourceData, m interface{}) 
 	var mutation struct {
 		PipelineCreate struct {
 			Pipeline PipelineNode
-		} `graphql:"pipelineCreate(input: {allowRebuilds: $allow_rebuilds, cancelIntermediateBuilds: $cancel_intermediate_builds, cancelIntermediateBuildsBranchFilter: $cancel_intermediate_builds_branch_filter, defaultBranch: $default_branch, defaultTimeoutInMinutes: $default_timeout_in_minutes, maximumTimeoutInMinutes: $maximum_timeout_in_minutes, description: $desc, name: $name, organizationId: $org, repository: {url: $repository_url}, skipIntermediateBuilds: $skip_intermediate_builds, skipIntermediateBuildsBranchFilter: $skip_intermediate_builds_branch_filter, steps: {yaml: $steps}, teams: $teams, tags: $tags})"`
+		} `graphql:"pipelineCreate(input: {allowRebuilds: $allow_rebuilds, buildRetentionEnabled: $build_retention_enabled, buildRetentionNumber: $build_retention_number, buildRetentionPeriod: $build_retention_period, cancelIntermediateBuilds: $cancel_intermediate_builds, cancelIntermediateBuildsBranchFilter: $cancel_intermediate_builds_branch_filter, defaultBranch: $default_branch, defaultTimeoutInMinutes: $default_timeout_in_minutes, maximumTimeoutInMinutes: $maximum_timeout_in_minutes, description: $desc, name: $name, organizationId: $org, repository: {url: $repository_url}, skipIntermediateBuilds: $skip_intermediate_builds, skipIntermediateBuildsBranchFilter: $skip_intermediate_builds_branch_filter, steps: {yaml: $steps}, teams: $teams, tags: $tags})"`
 	}
 
 	teamsData := make([]PipelineTeamAssignmentInput, 0)
@@ -339,6 +375,9 @@ func CreatePipeline(ctx context.Context, d *schema.ResourceData, m interface{}) 
 
 	vars := map[string]interface{}{
 		"allow_rebuilds":                           graphql.Boolean(d.Get("allow_rebuilds").(bool)),
+		"build_retention_enabled":                  graphql.Boolean(d.Get("build_retention_enabled").(bool)),
+		"build_retention_number":                   graphql.Int(d.Get("build_retention_number").(int)),
+		"build_retention_period":                   BuildRetentionPeriods(d.Get("build_retention_period").(string)),
 		"cancel_intermediate_builds":               graphql.Boolean(d.Get("cancel_intermediate_builds").(bool)),
 		"cancel_intermediate_builds_branch_filter": graphql.String(d.Get("cancel_intermediate_builds_branch_filter").(string)),
 		"default_branch":                           graphql.String(d.Get("default_branch").(string)),
@@ -363,7 +402,7 @@ func CreatePipeline(ctx context.Context, d *schema.ResourceData, m interface{}) 
 		var mutationWithClusterID struct {
 			PipelineCreate struct {
 				Pipeline PipelineNode
-			} `graphql:"pipelineCreate(input: {allowRebuilds: $allow_rebuilds, cancelIntermediateBuilds: $cancel_intermediate_builds, cancelIntermediateBuildsBranchFilter: $cancel_intermediate_builds_branch_filter, clusterId: $cluster_id, defaultBranch: $default_branch, defaultTimeoutInMinutes: $default_timeout_in_minutes, description: $desc, maximumTimeoutInMinutes: $maximum_timeout_in_minutes, name: $name, organizationId: $org, repository: {url: $repository_url}, skipIntermediateBuilds: $skip_intermediate_builds, skipIntermediateBuildsBranchFilter: $skip_intermediate_builds_branch_filter, steps: {yaml: $steps}, teams: $teams, tags: $tags})"`
+			} `graphql:"pipelineCreate(input: {allowRebuilds: $allow_rebuilds, buildRetentionEnabled: $build_retention_enabled, buildRetentionNumber: $build_retention_number, buildRetentionPeriod: $build_retention_period, cancelIntermediateBuilds: $cancel_intermediate_builds, cancelIntermediateBuildsBranchFilter: $cancel_intermediate_builds_branch_filter, clusterId: $cluster_id, defaultBranch: $default_branch, defaultTimeoutInMinutes: $default_timeout_in_minutes, description: $desc, maximumTimeoutInMinutes: $maximum_timeout_in_minutes, name: $name, organizationId: $org, repository: {url: $repository_url}, skipIntermediateBuilds: $skip_intermediate_builds, skipIntermediateBuildsBranchFilter: $skip_intermediate_builds_branch_filter, steps: {yaml: $steps}, teams: $teams, tags: $tags})"`
 		}
 		vars["cluster_id"] = graphql.ID(clusterID.(string))
 		err = client.graphql.Mutate(context.Background(), &mutationWithClusterID, vars)
@@ -426,10 +465,13 @@ func UpdatePipeline(ctx context.Context, d *schema.ResourceData, m interface{}) 
 	var mutation struct {
 		PipelineUpdate struct {
 			Pipeline PipelineNode
-		} `graphql:"pipelineUpdate(input: {allowRebuilds: $allow_rebuilds, cancelIntermediateBuilds: $cancel_intermediate_builds, cancelIntermediateBuildsBranchFilter: $cancel_intermediate_builds_branch_filter, defaultBranch: $default_branch, defaultTimeoutInMinutes: $default_timeout_in_minutes, maximumTimeoutInMinutes: $maximum_timeout_in_minutes, description: $desc, id: $id, name: $name, repository: {url: $repository_url}, skipIntermediateBuilds: $skip_intermediate_builds, skipIntermediateBuildsBranchFilter: $skip_intermediate_builds_branch_filter, steps: {yaml: $steps}, tags: $tags})"`
+		} `graphql:"pipelineUpdate(input: {allowRebuilds: $allow_rebuilds, buildRetentionEnabled: $build_retention_enabled, buildRetentionNumber: $build_retention_number, buildRetentionPeriod: $build_retention_period, cancelIntermediateBuilds: $cancel_intermediate_builds, cancelIntermediateBuildsBranchFilter: $cancel_intermediate_builds_branch_filter, defaultBranch: $default_branch, defaultTimeoutInMinutes: $default_timeout_in_minutes, maximumTimeoutInMinutes: $maximum_timeout_in_minutes, description: $desc, id: $id, name: $name, repository: {url: $repository_url}, skipIntermediateBuilds: $skip_intermediate_builds, skipIntermediateBuildsBranchFilter: $skip_intermediate_builds_branch_filter, steps: {yaml: $steps}, tags: $tags})"`
 	}
 	vars := map[string]interface{}{
 		"allow_rebuilds":                           graphql.Boolean(d.Get("allow_rebuilds").(bool)),
+		"build_retention_enabled":                  graphql.Boolean(d.Get("build_retention_enabled").(bool)),
+		"build_retention_number":                   graphql.Int(d.Get("build_retention_number").(int)),
+		"build_retention_period":                   BuildRetentionPeriods(d.Get("build_retention_period").(string)),
 		"cancel_intermediate_builds":               graphql.Boolean(d.Get("cancel_intermediate_builds").(bool)),
 		"cancel_intermediate_builds_branch_filter": graphql.String(d.Get("cancel_intermediate_builds_branch_filter").(string)),
 		"default_branch":                           graphql.String(d.Get("default_branch").(string)),
@@ -453,7 +495,7 @@ func UpdatePipeline(ctx context.Context, d *schema.ResourceData, m interface{}) 
 		var mutationWithClusterID struct {
 			PipelineUpdate struct {
 				Pipeline PipelineNode
-			} `graphql:"pipelineUpdate(input: {allowRebuilds: $allow_rebuilds, cancelIntermediateBuilds: $cancel_intermediate_builds, cancelIntermediateBuildsBranchFilter: $cancel_intermediate_builds_branch_filter, clusterId: $cluster_id, defaultBranch: $default_branch, defaultTimeoutInMinutes: $default_timeout_in_minutes, maximumTimeoutInMinutes: $maximum_timeout_in_minutes, description: $desc, id: $id, name: $name, repository: {url: $repository_url}, skipIntermediateBuilds: $skip_intermediate_builds, skipIntermediateBuildsBranchFilter: $skip_intermediate_builds_branch_filter, steps: {yaml: $steps}, tags: $tags})"`
+			} `graphql:"pipelineUpdate(input: {allowRebuilds: $allow_rebuilds, buildRetentionEnabled: $build_retention_enabled, buildRetentionNumber: $build_retention_number, buildRetentionPeriod: $build_retention_period, cancelIntermediateBuilds: $cancel_intermediate_builds, cancelIntermediateBuildsBranchFilter: $cancel_intermediate_builds_branch_filter, clusterId: $cluster_id, defaultBranch: $default_branch, defaultTimeoutInMinutes: $default_timeout_in_minutes, maximumTimeoutInMinutes: $maximum_timeout_in_minutes, description: $desc, id: $id, name: $name, repository: {url: $repository_url}, skipIntermediateBuilds: $skip_intermediate_builds, skipIntermediateBuildsBranchFilter: $skip_intermediate_builds_branch_filter, steps: {yaml: $steps}, tags: $tags})"`
 		}
 		vars["cluster_id"] = graphql.ID(clusterID.(string))
 		err = client.graphql.Mutate(context.Background(), &mutationWithClusterID, vars)
@@ -752,6 +794,9 @@ func deleteTeamPipelines(teamPipelines []TeamPipelineNode, client *Client) error
 func updatePipelineResource(d *schema.ResourceData, pipeline *PipelineNode) {
 	d.SetId(string(pipeline.ID))
 	d.Set("allow_rebuilds", bool(pipeline.AllowRebuilds))
+	d.Set("build_retention_enabled", bool(pipeline.BuildRetentionEnabled))
+	d.Set("build_retention_number", int(pipeline.BuildRetentionNumber))
+	d.Set("build_retention_period", string(pipeline.BuildRetentionPeriod))
 	d.Set("default_timeout_in_minutes", int(pipeline.DefaultTimeoutInMinutes))
 	d.Set("maximum_timeout_in_minutes", int(pipeline.MaximumTimeoutInMinutes))
 	d.Set("cancel_intermediate_builds", bool(pipeline.CancelIntermediateBuilds))
