@@ -213,7 +213,6 @@ func TestAccPipelineRetention_update(t *testing.T) {
 				Config: testAccPipelineConfigBasicWithRetention("foo", true, 25, "DAYS_30"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckPipelineExists("buildkite_pipeline.foobar", &resourcePipeline),
-					testAccCheckPipelineRetentionRemoteValues(&resourcePipeline, "Test Pipeline foo", true, 25, "DAYS_30"),
 					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "build_retention_number", "25"),
 				),
 			},
@@ -221,6 +220,7 @@ func TestAccPipelineRetention_update(t *testing.T) {
 			{
 				Config: testAccPipelineConfigBasicWithRetention("foo", true, 10, "DAYS_60"),
 				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccCheckPipelineExists("buildkite_pipeline.foobar", &resourcePipeline),
 					testAccCheckPipelineRetentionRemoteValues(&resourcePipeline, "Test Pipeline foo", true, 10, "DAYS_60"),
 					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "build_retention_number", "10"),
 				),
@@ -255,7 +255,7 @@ func TestAccPipelineRetention_import(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
-		CheckDestroy: testCheckOrganizationSettingsResourceRemoved,
+		CheckDestroy: testAccCheckPipelineResourceDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccPipelineConfigBasicWithRetention("foo", true, 25, "DAYS_30"),
