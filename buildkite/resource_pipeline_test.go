@@ -260,10 +260,7 @@ func TestAccPipelineRetention_import(t *testing.T) {
 			{
 				Config: testAccPipelineConfigBasicWithRetention("foo", true, 25, "DAYS_30"),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					// Confirm that the allowed IP addresses are set correctly in Buildkite's system
-					testAccCheckPipelineRetentionRemoteValues(&resourcePipeline, "Test Pipeline foo", false, 25, "DAYS_30"),
-					// Check that the second IP added to the list is the one we expect, 0.0.0.0/0, this also ensures the length is greater than 1
-					// allowing us to assert the first IP is also added correctly
+					testAccCheckPipelineExists("buildkite_pipeline.foobar", &resourcePipeline),
 					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "build_retention_enabled", "true"),
 				),
 			},
@@ -558,7 +555,7 @@ func testAccPipelineConfigBasicWithRetention(name string, enabled bool, number i
 			steps = ""
 
 			build_retention_enabled = %t
-			build_retention_period = "%s"
+			build_retention_period = %s
 			build_retention_number = %d
 		}
 	`

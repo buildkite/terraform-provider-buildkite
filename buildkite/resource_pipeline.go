@@ -88,7 +88,7 @@ func resourcePipeline() *schema.Resource {
 			},
 			"build_retention_enabled": {
 				Optional: true,
-				Default: false,
+				Default:  false,
 				Type:     schema.TypeBool,
 			},
 			"build_retention_number": {
