@@ -191,9 +191,9 @@ func TestAccPipelineRetention_add_remove(t *testing.T) {
 					// Confirm the pipeline has the correct values in Buildkite's system
 					testAccCheckPipelineRetentionRemoteValues(&resourcePipeline, "Test Pipeline foo", true, 25, "DAYS_30"),
 					// Confirm the pipeline has the correct values in terraform state
-					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "build_retention.0.enabled", "true"),
-					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "build_retention.0.build_retention_number", "25"),
-					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "build_retention.0.build_retention_period", "DAYS_30"),
+					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "build_retention_enabled", "true"),
+					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "build_retention_number", "25"),
+					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "build_retention_period", "DAYS_30"),
 				),
 			},
 		},
@@ -214,7 +214,7 @@ func TestAccPipelineRetention_update(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckPipelineExists("buildkite_pipeline.foobar", &resourcePipeline),
 					testAccCheckPipelineRetentionRemoteValues(&resourcePipeline, "Test Pipeline foo", true, 25, "DAYS_30"),
-					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "build_retention.0.build_retention_number", "25"),
+					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "build_retention_number", "25"),
 				),
 			},
 
@@ -222,7 +222,7 @@ func TestAccPipelineRetention_update(t *testing.T) {
 				Config: testAccPipelineConfigBasicWithRetention("foo", true, 10, "DAYS_60"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckPipelineRetentionRemoteValues(&resourcePipeline, "Test Pipeline foo", true, 10, "DAYS_60"),
-					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "build_retention.0.build_retention_number", "10"),
+					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "build_retention_number", "10"),
 				),
 			},
 		},
@@ -242,7 +242,7 @@ func TestAccPipelineRetention_disabled(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckPipelineExists("buildkite_pipeline.foobar", &resourcePipeline),
 					testAccCheckPipelineRetentionRemoteValues(&resourcePipeline, "Test Pipeline foo", false, 25, "DAYS_30"),
-					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "build_retention.0.build_retention_enabled", "false"),
+					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "build_retention_enabled", "false"),
 				),
 			},
 		},
@@ -264,7 +264,7 @@ func TestAccPipelineRetention_import(t *testing.T) {
 					testAccCheckPipelineRetentionRemoteValues(&resourcePipeline, "Test Pipeline foo", false, 25, "DAYS_30"),
 					// Check that the second IP added to the list is the one we expect, 0.0.0.0/0, this also ensures the length is greater than 1
 					// allowing us to assert the first IP is also added correctly
-					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "build_retention_enabled.0", "true"),
+					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "build_retention_enabled", "true"),
 				),
 			},
 			{
