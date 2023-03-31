@@ -555,7 +555,7 @@ func testAccPipelineConfigBasicWithRetention(name string, enabled bool, number i
 			steps = ""
 
 			build_retention_enabled = %t
-			build_retention_period = %s
+			build_retention_period = "%s"
 			build_retention_number = %d
 		}
 	`
