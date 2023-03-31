@@ -269,10 +269,6 @@ func testAccPipelineScheduleConfigBasic(label string, cronline string) string {
             name = "Test Pipeline %s"
 		    repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
 			steps = ""
-
-			build_retention = true
-			build_retention_number = 25
-			build_retention_period = "DAYS_30"
         }
 
 		resource "buildkite_pipeline_schedule" "foobar" {
