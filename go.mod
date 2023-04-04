@@ -1,6 +1,6 @@
 module github.com/buildkite/terraform-provider-buildkite
 
-go 1.14
+go 1.20
 
 require (
 	cloud.google.com/go/storage v1.30.1 // indirect
