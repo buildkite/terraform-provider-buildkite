@@ -7,7 +7,9 @@ require (
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.0.3
 	github.com/shurcooL/graphql v0.0.0-20181231061246-d48a9a75455f
 	golang.org/x/oauth2 v0.6.0
+)
 
+require (
 	// Start of indirect dependencies
 	cloud.google.com/go v0.61.0 // indirect
 	cloud.google.com/go/storage v1.10.0 // indirect
@@ -59,7 +61,7 @@ require (
 	github.com/xanzy/ssh-agent v0.2.1 // indirect
 	github.com/zclconf/go-cty v1.2.1 // indirect
 	go.opencensus.io v0.22.4 // indirect
-	golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9 // indirect
+	golang.org/x/crypto v0.1.0 // indirect
 	golang.org/x/lint v0.0.0-20200302205851-738671d3881b // indirect
 	golang.org/x/mod v0.8.0 // indirect
 	golang.org/x/net v0.8.0 // indirect
