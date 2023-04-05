@@ -1,4 +1,5 @@
-#!/bin/bash -e
+#!/bin/bash
+set -ueo pipefail
 
 go test -v -cover -json ./... | tee test_output
 
