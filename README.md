@@ -85,6 +85,24 @@ The repo contains a tf-proj/ directory that can be used to quickly test a compil
     BUILDKITE_API_TOKEN=<api-token> BUILDKITE_ORGANIZATION=<org-slug> terraform plan
     ```
 
+### Overriding the provider for local development
+
+You'll need to add a provider override to your `~/.terraformrc`. Documentation around using this file can be found [here](https://developer.hashicorp.com/terraform/cli/config/config-file#development-overrides-for-provider-developers). See below for an example of a `.terraformrc` file set up for plugin override.
+
+```hcl
+provider_installation {
+
+        dev_overrides {
+                "buildkite/buildkite" = "/Path/to/this/repo/directory/"
+        }
+
+        direct {}
+}
+
+```
+
+When you run `terraform` commands, you will now be using the local plugin, rather than the remote.
+
 ## Acceptance tests
 
 Acceptance tests that test the provider works against the live Buildkite API can be executed like this:
