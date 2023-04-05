@@ -2,6 +2,7 @@ package buildkite
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"strings"
@@ -24,7 +25,12 @@ func GetOrganizationID(slug string, client *graphql.Client) (string, error) {
 		return "", err
 	}
 
-	return query.Organization.ID.(string), nil
+	id, ok := query.Organization.ID.(string)
+	if !ok {
+		return "", errors.New(fmt.Sprintf("Organization %s not found", slug))
+	}
+
+	return id, nil
 }
 
 // GetTeamID retrieves the Buildkite team ID associated with the supplied team slug
