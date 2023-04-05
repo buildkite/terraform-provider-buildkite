@@ -93,7 +93,7 @@ You'll need to add a provider override to your `~/.terraformrc`. Documentation a
 provider_installation {
 
         dev_overrides {
-                "buildkite/buildkite" = "/Path/to/terraform-provider-buildkite/"
+                "buildkite/buildkite" = "/Path/to/this/repo/directory/"
         }
 
         direct {}
