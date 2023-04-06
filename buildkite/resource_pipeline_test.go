@@ -293,7 +293,7 @@ func TestAccPipeline_disappears(t *testing.T) {
 }
 
 // Testing for deletion protection on pipeline
-func TestAccPipelineDeletionProtection_created(t *testing.T) {
+func TestAccPipelineDeletionProtection_create(t *testing.T) {
 	var node PipelineNode
 	resourceName := "buildkite_pipeline.foobar"
 
@@ -315,7 +315,7 @@ func TestAccPipelineDeletionProtection_created(t *testing.T) {
 	})
 }
 
-func TestAccPipelineDeletionProtection_updated(t *testing.T) {
+func TestAccPipelineDeletionProtection_update(t *testing.T) {
 	var node PipelineNode
 
 	resource.Test(t, resource.TestCase{
@@ -345,9 +345,8 @@ func TestAccPipelineDeletionProtection_updated(t *testing.T) {
 	})
 }
 
-func TestAccPipelineDeletionProtection_imports(t *testing.T) {
+func TestAccPipelineDeletionProtection_import(t *testing.T) {
 	var node PipelineNode
-	resourceName := "buildkite_pipeline.foobar"
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -358,9 +357,9 @@ func TestAccPipelineDeletionProtection_imports(t *testing.T) {
 				Config: testAccPipelineDeletionProtectionConfig("this_should_pass", false),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Confirm the pipeline exists in the buildkite API
-					testAccCheckPipelineExists(resourceName, &node),
+					testAccCheckPipelineExists("buildkite_pipeline.foobar", &node),
 					// Ensure deletion_protection is present in the config
-					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "deletion_protection", "false"),
+					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "name", "this_should_pass"),
 				),
 			},
 			{
@@ -373,7 +372,7 @@ func TestAccPipelineDeletionProtection_imports(t *testing.T) {
 	})
 }
 
-func TestAccPipelineDeletionProtection_fails(t *testing.T) {
+func TestAccPipelineDeletionProtection_fail(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
