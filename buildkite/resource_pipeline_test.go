@@ -263,6 +263,7 @@ func TestAccPipeline_import(t *testing.T) {
 				ResourceName:      "buildkite_pipeline.foobar",
 				ImportState:       true,
 				ImportStateVerify: true,
+				ImportStateVerifyIgnore: []string{"deletion_protection"},
 			},
 		},
 	})
@@ -381,6 +382,7 @@ func TestAccPipelineDeletionProtection_import(t *testing.T) {
 				// re-import the resource (using the graphql token of the existing resource) and confirm they match
 				ResourceName:            resourceName,
 				ImportState:             true,
+				ImportStateVerify: true,
 				ImportStateVerifyIgnore: []string{"deletion_protection"},
 			},
 		},
