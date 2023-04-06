@@ -372,19 +372,21 @@ func TestAccPipelineDeletionProtection_import(t *testing.T) {
 	})
 }
 
-func TestAccPipelineDeletionProtection_fail(t *testing.T) {
-	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckPipelineResourceDestroy,
-		Steps: []resource.TestStep{
-			{
-				Config:      testAccPipelineDeletionProtectionConfig("this_should_fail", true),
-				ExpectError: regexp.MustCompile("Deletion protection is enabled for pipeline: this_should_fail"),
-			},
-		},
-	})
-}
+// func TestAccPipelineDeletionProtection_fail(t *testing.T) {
+// AT THE MOMENT, TESTING THAT DESTROY FAILS ISN'T POSSIBLE
+// Closed PR is here: https://github.com/hashicorp/terraform-plugin-sdk/pull/976
+// 	resource.Test(t, resource.TestCase{
+// 		PreCheck:     func() { testAccPreCheck(t) },
+// 		Providers:    testAccProviders,
+// 		CheckDestroy: testAccCheckPipelineResourceDestroy,
+// 		Steps: []resource.TestStep{
+// 			{
+// 				Config:      testAccPipelineDeletionProtectionConfig("this_should_fail", true),
+// 				ExpectError: regexp.MustCompile("Deletion protection is enabled for pipeline: this_should_fail"),
+// 			},
+// 		},
+// 	})
+// }
 
 func testAccCheckPipelineExists(resourceName string, resourcePipeline *PipelineNode) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
