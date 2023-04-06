@@ -52,7 +52,6 @@ resource "buildkite_pipeline" "test_new" {
 
     deletion_protection = true
 }
-}
 ```
 
 `deletion_protection` will block `destroy` actions on the **pipeline**. Attached resources, such as `schedules` will still be destroyed.
