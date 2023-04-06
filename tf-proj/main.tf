@@ -2,7 +2,7 @@ terraform {
   required_providers {
     buildkite = {
       source  = "buildkite/buildkite"
-      version = "0.11.1"
+      version = "0.12.1"
     }
   }
 }
@@ -16,9 +16,8 @@ resource "buildkite_pipeline" "test_new" {
   repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
 
   steps = ""
-
-  default_timeout_in_minutes = 5
-  maximum_timeout_in_minutes = 20
+  default_timeout_in_minutes = 15
+  maximum_timeout_in_minutes = 60
 }
 
 resource "buildkite_pipeline_schedule" "test_scheduled" {

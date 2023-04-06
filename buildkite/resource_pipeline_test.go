@@ -260,9 +260,10 @@ func TestAccPipeline_import(t *testing.T) {
 			},
 			{
 				// re-import the resource (using the graphql token of the existing resource) and confirm they match
-				ResourceName:      "buildkite_pipeline.foobar",
-				ImportState:       true,
-				ImportStateVerify: true,
+				ResourceName:            "buildkite_pipeline.foobar",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"deletion_protection"},
 			},
 		},
 	})
@@ -291,6 +292,118 @@ func TestAccPipeline_disappears(t *testing.T) {
 		},
 	})
 }
+
+// Testing for deletion protection on pipeline
+
+func testAccPipelineDeletionProtectionConfig(name string, deletion_protection bool) string {
+	config := `
+		resource "buildkite_pipeline" "deletion_test" {
+			name = "%s"
+			repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
+			steps = ""
+			deletion_protection = %t
+		}
+	`
+	return fmt.Sprintf(config, name, deletion_protection)
+}
+
+func TestAccPipelineDeletionProtection_create(t *testing.T) {
+	var node PipelineNode
+	resourceName := "buildkite_pipeline.deletion_test"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckPipelineResourceDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccPipelineDeletionProtectionConfig("this_should_pass", false),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					// Confirm the pipeline exists in the buildkite API
+					testAccCheckPipelineExists(resourceName, &node),
+					// Ensure deletion_protection is present in the config
+					resource.TestCheckResourceAttr(resourceName, "deletion_protection", "false"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccPipelineDeletionProtection_update(t *testing.T) {
+	var node PipelineNode
+	resourceName := "buildkite_pipeline.deletion_test"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckPipelineResourceDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccPipelineDeletionProtectionConfig("deletion_protection_update", true),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					// Confirm the pipeline exists in the buildkite API
+					testAccCheckPipelineExists(resourceName, &node),
+					// Ensure deletion_protection is present in the config
+					resource.TestCheckResourceAttr(resourceName, "deletion_protection", "true"),
+				),
+			},
+			{
+				Config: testAccPipelineDeletionProtectionConfig("deletion_protection_update", false),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					// Confirm the pipeline exists in the buildkite API
+					testAccCheckPipelineExists(resourceName, &node),
+					// Ensure deletion_protection is updated in the config
+					resource.TestCheckResourceAttr(resourceName, "deletion_protection", "false"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccPipelineDeletionProtection_import(t *testing.T) {
+	var node PipelineNode
+	resourceName := "buildkite_pipeline.deletion_test"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckPipelineResourceDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccPipelineDeletionProtectionConfig("this_should_pass", false),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					// Confirm the pipeline exists in the buildkite API
+					testAccCheckPipelineExists(resourceName, &node),
+					// Ensure deletion_protection is present in the config
+					resource.TestCheckResourceAttr(resourceName, "name", "this_should_pass"),
+				),
+			},
+			{
+				// re-import the resource (using the graphql token of the existing resource) and confirm they match
+				ResourceName:            resourceName,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"deletion_protection"},
+			},
+		},
+	})
+}
+
+// func TestAccPipelineDeletionProtection_fail(t *testing.T) {
+// AT THE MOMENT, TESTING THAT DESTROY FAILS ISN'T POSSIBLE
+// Closed PR is here: https://github.com/hashicorp/terraform-plugin-sdk/pull/976
+// 	resource.Test(t, resource.TestCase{
+// 		PreCheck:     func() { testAccPreCheck(t) },
+// 		Providers:    testAccProviders,
+// 		CheckDestroy: testAccCheckPipelineResourceDestroy,
+// 		Steps: []resource.TestStep{
+// 			{
+// 				Config:      testAccPipelineDeletionProtectionConfig("this_should_fail", true),
+// 				ExpectError: regexp.MustCompile("Deletion protection is enabled for pipeline: this_should_fail"),
+// 			},
+// 		},
+// 	})
+// }
 
 func testAccCheckPipelineExists(resourceName string, resourcePipeline *PipelineNode) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
