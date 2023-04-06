@@ -458,7 +458,7 @@ func testAccPipelineConfigBasic(name string) string {
 func testAccPipelineDeletionProtectionConfig(name string, deletion_protection bool) string {
 	config := `
 		resource "buildkite_pipeline" "foobar" {
-			name = "Test Pipeline %s"
+			name = "%s"
 			repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
 			steps = ""
 			deletion_protection = %t
