@@ -112,6 +112,12 @@ func resourcePipeline() *schema.Resource {
 				Default:  nil,
 				Type:     schema.TypeInt,
 			},
+			"deletion_protection": {
+				Optional:    true,
+				Default:     false,
+				Type:        schema.TypeBool,
+				Description: "If set to 'true', deletion of a pipeline via `terraform destroy` will fail, until set to 'false'.",
+			},
 			"maximum_timeout_in_minutes": {
 				Computed: true,
 				Optional: true,
@@ -499,6 +505,10 @@ func DeletePipeline(ctx context.Context, d *schema.ResourceData, m interface{}) 
 	}
 	vars := map[string]interface{}{
 		"id": graphql.ID(d.Id()),
+	}
+
+	if d.Get("deletion_protection") == true {
+		return diag.Errorf("Deletion protection is enabled for pipeline: %s", d.Get("name"))
 	}
 
 	log.Printf("Deleting pipeline %s ...", d.Get("name"))
