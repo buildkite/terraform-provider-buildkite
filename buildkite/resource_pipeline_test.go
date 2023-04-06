@@ -293,9 +293,22 @@ func TestAccPipeline_disappears(t *testing.T) {
 }
 
 // Testing for deletion protection on pipeline
+
+func testAccPipelineDeletionProtectionConfig(name string, deletion_protection bool) string {
+	config := `
+		resource "buildkite_pipeline" "deletion_test" {
+			name = "%s"
+			repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
+			steps = ""
+			deletion_protection = %t
+		}
+	`
+	return fmt.Sprintf(config, name, deletion_protection)
+}
+
 func TestAccPipelineDeletionProtection_create(t *testing.T) {
 	var node PipelineNode
-	resourceName := "buildkite_pipeline.foobar"
+	resourceName := "buildkite_pipeline.deletion_test"
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -308,7 +321,7 @@ func TestAccPipelineDeletionProtection_create(t *testing.T) {
 					// Confirm the pipeline exists in the buildkite API
 					testAccCheckPipelineExists(resourceName, &node),
 					// Ensure deletion_protection is present in the config
-					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "deletion_protection", "false"),
+					resource.TestCheckResourceAttr(resourceName, "deletion_protection", "false"),
 				),
 			},
 		},
@@ -317,6 +330,7 @@ func TestAccPipelineDeletionProtection_create(t *testing.T) {
 
 func TestAccPipelineDeletionProtection_update(t *testing.T) {
 	var node PipelineNode
+	resourceName := "buildkite_pipeline.deletion_test"
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -327,18 +341,18 @@ func TestAccPipelineDeletionProtection_update(t *testing.T) {
 				Config: testAccPipelineDeletionProtectionConfig("deletion_protection_update", true),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Confirm the pipeline exists in the buildkite API
-					testAccCheckPipelineExists("buildkite_pipeline.foobar", &node),
+					testAccCheckPipelineExists(resourceName, &node),
 					// Ensure deletion_protection is present in the config
-					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "deletion_protection", "true"),
+					resource.TestCheckResourceAttr(resourceName, "deletion_protection", "true"),
 				),
 			},
 			{
 				Config: testAccPipelineDeletionProtectionConfig("deletion_protection_update", false),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Confirm the pipeline exists in the buildkite API
-					testAccCheckPipelineExists("buildkite_pipeline.foobar", &node),
+					testAccCheckPipelineExists(resourceName, &node),
 					// Ensure deletion_protection is updated in the config
-					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "deletion_protection", "false"),
+					resource.TestCheckResourceAttr(resourceName, "deletion_protection", "false"),
 				),
 			},
 		},
@@ -347,6 +361,7 @@ func TestAccPipelineDeletionProtection_update(t *testing.T) {
 
 func TestAccPipelineDeletionProtection_import(t *testing.T) {
 	var node PipelineNode
+	resourceName := "buildkite_pipeline.deletion_test"
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -357,14 +372,14 @@ func TestAccPipelineDeletionProtection_import(t *testing.T) {
 				Config: testAccPipelineDeletionProtectionConfig("this_should_pass", false),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Confirm the pipeline exists in the buildkite API
-					testAccCheckPipelineExists("buildkite_pipeline.foobar", &node),
+					testAccCheckPipelineExists(resourceName, &node),
 					// Ensure deletion_protection is present in the config
-					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "name", "this_should_pass"),
+					resource.TestCheckResourceAttr(resourceName, "name", "this_should_pass"),
 				),
 			},
 			{
 				// re-import the resource (using the graphql token of the existing resource) and confirm they match
-				ResourceName:      "buildkite_pipeline.foobar",
+				ResourceName:      resourceName,
 				ImportState:       true,
 				ImportStateVerify: true,
 			},
@@ -453,18 +468,6 @@ func testAccPipelineConfigBasic(name string) string {
 		}
 	`
 	return fmt.Sprintf(config, name)
-}
-
-func testAccPipelineDeletionProtectionConfig(name string, deletion_protection bool) string {
-	config := `
-		resource "buildkite_pipeline" "foobar" {
-			name = "%s"
-			repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
-			steps = ""
-			deletion_protection = %t
-		}
-	`
-	return fmt.Sprintf(config, name, deletion_protection)
 }
 
 func testAccPipelineConfigBasicWithTeam(name string) string {

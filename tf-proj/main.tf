@@ -18,8 +18,6 @@ resource "buildkite_pipeline" "test_new" {
   steps = ""
   default_timeout_in_minutes = 15
   maximum_timeout_in_minutes = 60
-
-  deletion_protection = false
 }
 
 resource "buildkite_pipeline_schedule" "test_scheduled" {
