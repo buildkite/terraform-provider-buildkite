@@ -17,6 +17,8 @@ resource "buildkite_pipeline" "repo2" {
         slug = buildkite_team.test.slug
         access_level = "READ_ONLY"
     }
+
+    deletion_protection = true
 }
 
 resource "buildkite_agent_token" "fleet" {

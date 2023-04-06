@@ -41,6 +41,22 @@ resource "buildkite_pipeline" "test_new" {
 
 Currently, the `default_timeout_in_minutes` and `maximum_timeout_in_minutes` will be retained in state even if removed from the configuration. In order to remove them, you must set them to `0` in either the configuration or the web UI.
 
+## Example Usage with Deletion Protection
+
+```hcl
+resource "buildkite_pipeline" "test_new" {
+    name       = "Testing Timeouts"
+    repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
+
+    steps = file("./deploy-steps.yml")
+
+    deletion_protection = true
+}
+}
+```
+
+`deletion_protection` will block `destroy` actions on the **pipeline**. Attached resources, such as `schedules` will still be destroyed.
+
 ## Example Usage with GitHub Provider Settings
 
 ```hcl
@@ -88,6 +104,7 @@ resource "buildkite_pipeline" "repo2-release" {
 -   `cluster_id` - (Optional) The GraphQL ID of the cluster you want to use for the pipeline.
 -   `team` - (Optional) Set team access for the pipeline. Can be specified multiple times for each team. See [Teams Configuration](#team) below for details.
 -   `provider_settings` - (Optional) Source control provider settings for the pipeline. See [Provider Settings Configuration](#provider-settings-configuration) below for details.
+-   `deletion_protection` - (Optional) Set to either `true` or `false`. When set to `true`, `destroy` actions on a pipeline will be blocked and fail with a message "Deletion protection is enabled for pipeline: <pipeline name>"
 
 ### Teams Configuration
 
