@@ -6,7 +6,7 @@ require (
 	github.com/Khan/genqlient v0.4.0
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.0.3
 	github.com/shurcooL/graphql v0.0.0-20181231061246-d48a9a75455f
-	golang.org/x/oauth2 v0.6.0
+	golang.org/x/oauth2 v0.7.0
 )
 
 require (
@@ -72,9 +72,9 @@ require (
 	github.com/zclconf/go-cty v1.2.1 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	golang.org/x/crypto v0.1.0 // indirect
-	golang.org/x/net v0.8.0 // indirect
-	golang.org/x/sys v0.6.0 // indirect
-	golang.org/x/text v0.8.0 // indirect
+	golang.org/x/net v0.9.0 // indirect
+	golang.org/x/sys v0.7.0 // indirect
+	golang.org/x/text v0.9.0 // indirect
 	google.golang.org/api v0.114.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20230403163135-c38d8f061ccd // indirect
