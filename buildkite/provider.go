@@ -8,8 +8,8 @@ const graphqlEndpoint = "https://graphql.buildkite.com/v1"
 const restEndpoint = "https://api.buildkite.com"
 
 // Provider creates the schema.Provider for Buildkite
-func Provider() *schema.Provider {
-	return &schema.Provider{
+func Provider(version string) *schema.Provider {
+	provider := &schema.Provider{
 		ResourcesMap: map[string]*schema.Resource{
 			"buildkite_agent_token":           resourceAgentToken(),
 			"buildkite_pipeline":              resourcePipeline(),
@@ -50,15 +50,19 @@ func Provider() *schema.Provider {
 				Type:        schema.TypeString,
 			},
 		},
-		ConfigureFunc: providerConfigure,
 	}
+	provider.ConfigureFunc = providerConfigure(provider.UserAgent("buildkite", version))
+
+	return provider
 }
 
-func providerConfigure(d *schema.ResourceData) (interface{}, error) {
-	orgName := d.Get("organization").(string)
-	apiToken := d.Get("api_token").(string)
-	graphqlUrl := d.Get("graphql_url").(string)
-	restUrl := d.Get("rest_url").(string)
+func providerConfigure(userAgent string) func(d *schema.ResourceData) (interface{}, error) {
+	return func(d *schema.ResourceData) (interface{}, error) {
+		orgName := d.Get("organization").(string)
+		apiToken := d.Get("api_token").(string)
+		graphqlUrl := d.Get("graphql_url").(string)
+		restUrl := d.Get("rest_url").(string)
 
-	return NewClient(orgName, apiToken, graphqlUrl, restUrl), nil
+		return NewClient(orgName, apiToken, graphqlUrl, restUrl, userAgent), nil
+	}
 }

@@ -21,10 +21,11 @@ type Client struct {
 	http         *http.Client
 	organization string
 	restUrl      string
+	userAgent    string
 }
 
 // NewClient creates a client to use for interacting with the Buildkite API
-func NewClient(org, apiToken, graphqlUrl, restUrl string) *Client {
+func NewClient(org, apiToken, graphqlUrl, restUrl, userAgent string) *Client {
 	token := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: apiToken})
 	httpClient := oauth2.NewClient(context.Background(), token)
 
@@ -34,6 +35,7 @@ func NewClient(org, apiToken, graphqlUrl, restUrl string) *Client {
 		http:         httpClient,
 		organization: org,
 		restUrl:      restUrl,
+		userAgent:    userAgent,
 	}
 }
 
@@ -53,6 +55,8 @@ func (client *Client) makeRequest(method string, path string, postData interface
 	if err != nil {
 		return err
 	}
+
+	req.Header.Add("User-Agent", client.userAgent)
 
 	resp, err := client.http.Do(req)
 	if err != nil {

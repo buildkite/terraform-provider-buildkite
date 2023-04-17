@@ -7,7 +7,7 @@ import (
 
 func TestGetOrganizationIDMissing(t *testing.T) {
 	slug := "doesnt match API key"
-	client := NewClient(slug, os.Getenv("BUILDKITE_API_TOKEN"), graphqlEndpoint, restEndpoint)
+	client := NewClient(slug, os.Getenv("BUILDKITE_API_TOKEN"), graphqlEndpoint, restEndpoint, "test-user-agent")
 
 	id, err := GetOrganizationID(slug, client.graphql)
 	if err == nil {
