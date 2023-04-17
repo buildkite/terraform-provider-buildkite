@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 
@@ -37,7 +38,7 @@ func NewClient(org, apiToken, graphqlUrl, restUrl string) *Client {
 }
 
 func (client *Client) makeRequest(method string, path string, postData interface{}, responseObject interface{}) error {
-	var bodyBytes *bytes.Buffer
+	var bodyBytes io.Reader
 	if postData != nil {
 		jsonPayload, err := json.Marshal(postData)
 		if err != nil {
