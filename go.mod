@@ -3,7 +3,7 @@ module github.com/buildkite/terraform-provider-buildkite
 go 1.20
 
 require (
-	github.com/Khan/genqlient v0.4.0
+	github.com/Khan/genqlient v0.5.0
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.0.3
 	github.com/shurcooL/graphql v0.0.0-20181231061246-d48a9a75455f
 	golang.org/x/oauth2 v0.7.0
@@ -61,12 +61,12 @@ require (
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/mitchellh/go-testing-interface v1.14.1 // indirect
 	github.com/mitchellh/go-wordwrap v1.0.0 // indirect
-	github.com/mitchellh/mapstructure v1.1.2 // indirect
+	github.com/mitchellh/mapstructure v1.2.3 // indirect
 	github.com/mitchellh/reflectwalk v1.0.1 // indirect
 	github.com/oklog/run v1.0.0 // indirect
 	github.com/sergi/go-diff v1.1.0 // indirect
 	github.com/ulikunitz/xz v0.5.11 // indirect
-	github.com/vektah/gqlparser/v2 v2.3.1 // indirect
+	github.com/vektah/gqlparser/v2 v2.4.5 // indirect
 	github.com/vmihailenco/msgpack v4.0.1+incompatible // indirect
 	github.com/xanzy/ssh-agent v0.2.1 // indirect
 	github.com/zclconf/go-cty v1.2.1 // indirect
