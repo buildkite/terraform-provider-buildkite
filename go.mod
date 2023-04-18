@@ -6,7 +6,6 @@ require (
 	github.com/Khan/genqlient v0.4.0
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.0.3
 	github.com/shurcooL/graphql v0.0.0-20181231061246-d48a9a75455f
-	golang.org/x/oauth2 v0.7.0
 )
 
 require (
@@ -17,6 +16,7 @@ require (
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.2.3 // indirect
 	github.com/klauspost/compress v1.15.11 // indirect
+	golang.org/x/oauth2 v0.7.0 // indirect
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
 )
 
