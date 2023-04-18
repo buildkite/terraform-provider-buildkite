@@ -24,18 +24,26 @@ type Client struct {
 	userAgent    string
 }
 
+type clientConfig struct {
+	org        string
+	apiToken   string
+	graphqlURL string
+	restURL    string
+	userAgent  string
+}
+
 // NewClient creates a client to use for interacting with the Buildkite API
-func NewClient(org, apiToken, graphqlUrl, restUrl, userAgent string) *Client {
-	token := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: apiToken})
+func NewClient(config *clientConfig) *Client {
+	token := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: config.apiToken})
 	httpClient := oauth2.NewClient(context.Background(), token)
 
 	return &Client{
-		graphql:      graphql.NewClient(graphqlUrl, httpClient),
-		genqlient:    genqlient.NewClient(graphqlUrl, httpClient),
+		graphql:      graphql.NewClient(config.graphqlURL, httpClient),
+		genqlient:    genqlient.NewClient(config.graphqlURL, httpClient),
 		http:         httpClient,
-		organization: org,
-		restUrl:      restUrl,
-		userAgent:    userAgent,
+		organization: config.org,
+		restUrl:      config.restURL,
+		userAgent:    config.userAgent,
 	}
 }
 

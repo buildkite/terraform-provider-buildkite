@@ -4,8 +4,17 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-const graphqlEndpoint = "https://graphql.buildkite.com/v1"
-const restEndpoint = "https://api.buildkite.com"
+const (
+	defaultGraphqlEndpoint = "https://graphql.buildkite.com/v1"
+	defaultRestEndpoint    = "https://api.buildkite.com"
+)
+
+const (
+	SchemaKeyOrganization = "organization"
+	SchemaKeyAPIToken     = "api_token"
+	SchemaKeyGraphqlURL   = "graphql_url"
+	SchemaKeyRestURL      = "rest_url"
+)
 
 // Provider creates the schema.Provider for Buildkite
 func Provider(version string) *schema.Provider {
@@ -25,26 +34,26 @@ func Provider(version string) *schema.Provider {
 			"buildkite_organization": dataSourceOrganization(),
 		},
 		Schema: map[string]*schema.Schema{
-			"organization": &schema.Schema{
+			SchemaKeyOrganization: {
 				DefaultFunc: schema.EnvDefaultFunc("BUILDKITE_ORGANIZATION", nil),
 				Description: "The Buildkite organization slug",
 				Required:    true,
 				Type:        schema.TypeString,
 			},
-			"api_token": &schema.Schema{
+			SchemaKeyAPIToken: {
 				DefaultFunc: schema.EnvDefaultFunc("BUILDKITE_API_TOKEN", nil),
 				Description: "API token with GraphQL access and `write_pipelines, read_pipelines` scopes",
 				Required:    true,
 				Type:        schema.TypeString,
 			},
-			"graphql_url": &schema.Schema{
-				DefaultFunc: schema.EnvDefaultFunc("BUILDKITE_GRAPHQL_URL", graphqlEndpoint),
+			SchemaKeyGraphqlURL: {
+				DefaultFunc: schema.EnvDefaultFunc("BUILDKITE_GRAPHQL_URL", defaultGraphqlEndpoint),
 				Description: "Base URL for the GraphQL API to use",
 				Optional:    true,
 				Type:        schema.TypeString,
 			},
-			"rest_url": &schema.Schema{
-				DefaultFunc: schema.EnvDefaultFunc("BUILDKITE_REST_URL", restEndpoint),
+			SchemaKeyRestURL: {
+				DefaultFunc: schema.EnvDefaultFunc("BUILDKITE_REST_URL", defaultRestEndpoint),
 				Description: "Base URL for the REST API to use",
 				Optional:    true,
 				Type:        schema.TypeString,
@@ -58,11 +67,19 @@ func Provider(version string) *schema.Provider {
 
 func providerConfigure(userAgent string) func(d *schema.ResourceData) (interface{}, error) {
 	return func(d *schema.ResourceData) (interface{}, error) {
-		orgName := d.Get("organization").(string)
-		apiToken := d.Get("api_token").(string)
-		graphqlUrl := d.Get("graphql_url").(string)
-		restUrl := d.Get("rest_url").(string)
+		orgName := d.Get(SchemaKeyOrganization).(string)
+		apiToken := d.Get(SchemaKeyAPIToken).(string)
+		graphqlUrl := d.Get(SchemaKeyGraphqlURL).(string)
+		restUrl := d.Get(SchemaKeyRestURL).(string)
 
-		return NewClient(orgName, apiToken, graphqlUrl, restUrl, userAgent), nil
+		config := &clientConfig{
+			org:        orgName,
+			apiToken:   apiToken,
+			graphqlURL: graphqlUrl,
+			restURL:    restUrl,
+			userAgent:  userAgent,
+		}
+
+		return NewClient(config), nil
 	}
 }
