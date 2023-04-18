@@ -1,7 +1,7 @@
 default: build
 
 build:
-	go build -o terraform-provider-buildkite .
+	go build -o terraform-provider-buildkite -ldflags="-s -w -X main.version=$(shell git describe --tag)" .
 
 fmt:
 	go fmt ./...
