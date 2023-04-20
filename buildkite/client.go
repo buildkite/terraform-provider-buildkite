@@ -2,7 +2,6 @@ package buildkite
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -11,7 +10,6 @@ import (
 
 	genqlient "github.com/Khan/genqlient/graphql"
 	"github.com/shurcooL/graphql"
-	"golang.org/x/oauth2"
 )
 
 // Client can be used to interact with the Buildkite API
@@ -21,7 +19,6 @@ type Client struct {
 	http         *http.Client
 	organization string
 	restUrl      string
-	userAgent    string
 }
 
 type clientConfig struct {
@@ -32,10 +29,25 @@ type clientConfig struct {
 	userAgent  string
 }
 
+type headerRoundTripper struct {
+	next   http.RoundTripper
+	Header http.Header
+}
+
 // NewClient creates a client to use for interacting with the Buildkite API
 func NewClient(config *clientConfig) *Client {
-	token := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: config.apiToken})
-	httpClient := oauth2.NewClient(context.Background(), token)
+
+	// Setup a HTTP Client that can be used by all REST and graphql API calls,
+	// with suitable headers for authentication and user agent identification
+	rt := http.DefaultTransport
+	header := make(http.Header)
+	header.Set("Authorization", "Bearer "+config.apiToken)
+	header.Set("User-Agent", config.userAgent)
+	rt = newHeaderRoundTripper(rt, header)
+
+	httpClient := &http.Client{
+		Transport: rt,
+	}
 
 	return &Client{
 		graphql:      graphql.NewClient(config.graphqlURL, httpClient),
@@ -43,8 +55,26 @@ func NewClient(config *clientConfig) *Client {
 		http:         httpClient,
 		organization: config.org,
 		restUrl:      config.restURL,
-		userAgent:    config.userAgent,
 	}
+}
+
+func newHeaderRoundTripper(next http.RoundTripper, header http.Header) *headerRoundTripper {
+	if next == nil {
+		next = http.DefaultTransport
+	}
+	return &headerRoundTripper{
+		next:   next,
+		Header: header,
+	}
+}
+
+func (rt *headerRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+	if rt.Header != nil {
+		for k, v := range rt.Header {
+			req.Header[k] = v
+		}
+	}
+	return rt.next.RoundTrip(req)
 }
 
 func (client *Client) makeRequest(method string, path string, postData interface{}, responseObject interface{}) error {
@@ -63,8 +93,6 @@ func (client *Client) makeRequest(method string, path string, postData interface
 	if err != nil {
 		return fmt.Errorf("failed to create request: %w", err)
 	}
-
-	req.Header.Add("User-Agent", client.userAgent)
 
 	resp, err := client.http.Do(req)
 	if err != nil {
