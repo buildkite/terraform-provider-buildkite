@@ -16,16 +16,12 @@ func TestGetOrganizationIDMissing(t *testing.T) {
 		userAgent:  "test-user-agent",
 	}
 
+	// NewClient calls GetOrganizationId so we can test the output
 	client, err := NewClient(config)
 	if err == nil {
 		t.Fatalf("err: %s", err)
 	}
-
-	id, err := GetOrganizationID(slug, client.graphql)
-	if err == nil {
-		t.Fatalf("err: %s", err)
-	}
-	if id != "" {
+	if client != nil {
 		t.Fatalf("Nonexistent organization found")
 	}
 }
