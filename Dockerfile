@@ -5,9 +5,4 @@ RUN apt-get update \
     && go install github.com/mfridman/tparse@latest \
     && go install github.com/lox/buildkite-test-analytics-go@latest
 
-ENV TERRAFORM_VERSION=0.14.11
-
-RUN cd /tmp && \
-    curl -O https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_amd64.zip && \
-    unzip terraform_${TERRAFORM_VERSION}_linux_amd64.zip && \
-    cp terraform /usr/local/bin/terraform
+COPY --from=hashicorp/terraform:1.4@sha256:5ca7188b7566703fd96c6f84c27d8e7aa4fe1c690803157264b8569580a99712 /bin/terraform /usr/local/bin/terraform
