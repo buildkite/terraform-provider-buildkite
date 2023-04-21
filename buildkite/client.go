@@ -14,11 +14,12 @@ import (
 
 // Client can be used to interact with the Buildkite API
 type Client struct {
-	graphql      *graphql.Client
-	genqlient    genqlient.Client
-	http         *http.Client
-	organization string
-	restUrl      string
+	graphql        *graphql.Client
+	genqlient      genqlient.Client
+	http           *http.Client
+	organization   string
+	organizationId string
+	restUrl        string
 }
 
 type clientConfig struct {
@@ -35,7 +36,7 @@ type headerRoundTripper struct {
 }
 
 // NewClient creates a client to use for interacting with the Buildkite API
-func NewClient(config *clientConfig) *Client {
+func NewClient(config *clientConfig) (*Client, error) {
 
 	// Setup a HTTP Client that can be used by all REST and graphql API calls,
 	// with suitable headers for authentication and user agent identification
@@ -49,13 +50,21 @@ func NewClient(config *clientConfig) *Client {
 		Transport: rt,
 	}
 
-	return &Client{
-		graphql:      graphql.NewClient(config.graphqlURL, httpClient),
-		genqlient:    genqlient.NewClient(config.graphqlURL, httpClient),
-		http:         httpClient,
-		organization: config.org,
-		restUrl:      config.restURL,
+	graphqlClient := graphql.NewClient(config.graphqlURL, httpClient)
+	orgId, err := GetOrganizationID(config.org, graphqlClient)
+
+	if err != nil {
+		return nil, err
 	}
+
+	return &Client{
+		graphql:        graphqlClient,
+		genqlient:      genqlient.NewClient(config.graphqlURL, httpClient),
+		http:           httpClient,
+		organization:   config.org,
+		organizationId: orgId,
+		restUrl:        config.restURL,
+	}, nil
 }
 
 func newHeaderRoundTripper(next http.RoundTripper, header http.Header) *headerRoundTripper {
