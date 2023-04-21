@@ -98,10 +98,6 @@ func resourceTeam() *schema.Resource {
 // CreateTeam creates a Buildkite team
 func CreateTeam(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := m.(*Client)
-	id, err := GetOrganizationID(client.organization, client.graphql)
-	if err != nil {
-		return diag.FromErr(err)
-	}
 
 	var mutation struct {
 		TeamCreate struct {
@@ -112,7 +108,7 @@ func CreateTeam(ctx context.Context, d *schema.ResourceData, m interface{}) diag
 	}
 
 	vars := map[string]interface{}{
-		"org":                          id,
+		"org":                          client.organizationId,
 		"name":                         graphql.String(d.Get("name").(string)),
 		"desc":                         graphql.String(d.Get("description").(string)),
 		"privacy":                      TeamPrivacy(d.Get("privacy").(string)),
@@ -121,7 +117,7 @@ func CreateTeam(ctx context.Context, d *schema.ResourceData, m interface{}) diag
 		"members_can_create_pipelines": graphql.Boolean(d.Get("members_can_create_pipelines").(bool)),
 	}
 
-	err = client.graphql.Mutate(context.Background(), &mutation, vars)
+	err := client.graphql.Mutate(context.Background(), &mutation, vars)
 	if err != nil {
 		return diag.FromErr(err)
 	}

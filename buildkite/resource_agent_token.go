@@ -49,10 +49,6 @@ func resourceAgentToken() *schema.Resource {
 // CreateToken creates a Buildkite agent token
 func CreateToken(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := m.(*Client)
-	id, err := GetOrganizationID(client.organization, client.graphql)
-	if err != nil {
-		return diag.FromErr(err)
-	}
 
 	var mutation struct {
 		AgentTokenCreate struct {
@@ -63,11 +59,11 @@ func CreateToken(ctx context.Context, d *schema.ResourceData, m interface{}) dia
 	}
 
 	vars := map[string]interface{}{
-		"org":  id,
+		"org":  client.organizationId,
 		"desc": graphql.String(d.Get("description").(string)),
 	}
 
-	err = client.graphql.Mutate(context.Background(), &mutation, vars)
+	err := client.graphql.Mutate(context.Background(), &mutation, vars)
 	if err != nil {
 		return diag.FromErr(err)
 	}

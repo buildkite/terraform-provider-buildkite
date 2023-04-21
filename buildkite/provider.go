@@ -80,6 +80,6 @@ func providerConfigure(userAgent string) func(d *schema.ResourceData) (interface
 			userAgent:  userAgent,
 		}
 
-		return NewClient(config), nil
+		return NewClient(config)
 	}
 }

@@ -318,10 +318,7 @@ func resourcePipeline() *schema.Resource {
 // CreatePipeline creates a Buildkite pipeline
 func CreatePipeline(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := m.(*Client)
-	orgID, err := GetOrganizationID(client.organization, client.graphql)
-	if err != nil {
-		return diag.FromErr(err)
-	}
+	var err error
 
 	teamPipelines := getTeamPipelinesFromSchema(d)
 	var mutation struct {
@@ -352,7 +349,7 @@ func CreatePipeline(ctx context.Context, d *schema.ResourceData, m interface{}) 
 		"maximum_timeout_in_minutes":               graphql.Int(d.Get("maximum_timeout_in_minutes").(int)),
 		"desc":                                     graphql.String(d.Get("description").(string)),
 		"name":                                     graphql.String(d.Get("name").(string)),
-		"org":                                      orgID,
+		"org":                                      client.organizationId,
 		"repository_url":                           graphql.String(d.Get("repository").(string)),
 		"skip_intermediate_builds":                 graphql.Boolean(d.Get("skip_intermediate_builds").(bool)),
 		"skip_intermediate_builds_branch_filter":   graphql.String(d.Get("skip_intermediate_builds_branch_filter").(string)),
