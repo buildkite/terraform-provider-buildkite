@@ -152,7 +152,8 @@ func resourcePipeline() *schema.Resource {
 				Type:     schema.TypeString,
 			},
 			"steps": {
-				Required: true,
+				Optional: true,
+				Default:  "buildkite-agent pipeline upload",
 				Type:     schema.TypeString,
 			},
 			"team": {
