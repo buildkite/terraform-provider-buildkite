@@ -10,7 +10,7 @@ import (
 	"github.com/shurcooL/graphql"
 )
 
-const DefaultSteps = `steps:
+const defaultSteps = `steps:
 - label: ':pipeline: Pipeline Upload'
   command: buildkite-agent pipeline upload`
 
@@ -157,7 +157,7 @@ func resourcePipeline() *schema.Resource {
 			},
 			"steps": {
 				Optional: true,
-				Default:  DefaultSteps,
+				Default:  defaultSteps,
 				Type:     schema.TypeString,
 			},
 			"team": {
