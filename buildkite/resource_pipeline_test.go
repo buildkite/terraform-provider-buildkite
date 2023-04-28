@@ -208,7 +208,7 @@ func TestAccPipeline_add_remove_withdefinedsteps(t *testing.T) {
 		CheckDestroy: testAccCheckPipelineResourceDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccPipelineConfigComplex("bar", steps),
+				Config: testAccPipelineConfigBasicWithSteps("bar", steps),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Confirm the pipeline exists in the buildkite API
 					testAccCheckPipelineExists("buildkite_pipeline.foobar", &resourcePipeline),
@@ -582,10 +582,10 @@ func testAccPipelineConfigBasicWithSteps(name string, steps string) string {
 		resource "buildkite_pipeline" "foobar" {
 		    name = "Test Pipeline %s"
 		    repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
-			steps = %s
+		    steps = %s
 		}
 	`
-	return fmt.Sprintf(config, name)
+	return fmt.Sprintf(config, name, steps)
 }
 
 func testAccPipelineConfigComplex(name string, steps string) string {
