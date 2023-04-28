@@ -198,6 +198,31 @@ func TestAccPipeline_add_remove_withdefaultsteps(t *testing.T) {
 	})
 }
 
+func TestAccPipeline_add_remove_withdefinedsteps(t *testing.T) {
+	var resourcePipeline PipelineNode
+	steps := `"steps:\n- command: echo 'Hello from the Buildkite Terraform Provider!'\n"`
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckPipelineResourceDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccPipelineConfigComplex("bar", steps),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					// Confirm the pipeline exists in the buildkite API
+					testAccCheckPipelineExists("buildkite_pipeline.foobar", &resourcePipeline),
+					// Confirm the pipeline has the correct values in Buildkite's system
+					testAccCheckPipelineRemoteValues(&resourcePipeline, "Test Pipeline bar"),
+					// Confirm the pipeline has the correct values in terraform state
+					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "steps", "steps:\n- command: echo 'Hello from the Buildkite Terraform Provider!'\n"),
+				),
+			},
+		},
+	})
+}
+
+
 // Confirm that we can create a new pipeline, and then update the description
 func TestAccPipeline_update(t *testing.T) {
 	var resourcePipeline PipelineNode
@@ -548,6 +573,17 @@ func testAccPipelineConfigBasicWithNoSteps(name string) string {
 		resource "buildkite_pipeline" "foobar" {
 		    name = "Test Pipeline %s"
 		    repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
+		}
+	`
+	return fmt.Sprintf(config, name)
+}
+
+func testAccPipelineConfigBasicWithSteps(name string, steps string) string {
+	config := `
+		resource "buildkite_pipeline" "foobar" {
+		    name = "Test Pipeline %s"
+		    repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
+			steps = %s
 		}
 	`
 	return fmt.Sprintf(config, name)
