@@ -177,7 +177,7 @@ func TestAccPipeline_add_remove_withtimeouts(t *testing.T) {
 
 func TestAccPipeline_add_remove_withdefaultsteps(t *testing.T) {
 	var resourcePipeline PipelineNode
-	
+
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
@@ -221,7 +221,6 @@ func TestAccPipeline_add_remove_withdefinedsteps(t *testing.T) {
 		},
 	})
 }
-
 
 // Confirm that we can create a new pipeline, and then update the description
 func TestAccPipeline_update(t *testing.T) {
