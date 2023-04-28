@@ -10,6 +10,10 @@ import (
 	"github.com/shurcooL/graphql"
 )
 
+const defaultSteps = `steps:
+- label: ':pipeline: Pipeline Upload'
+  command: buildkite-agent pipeline upload`
+
 // PipelineNode represents a pipeline as returned from the GraphQL API
 type PipelineNode struct {
 	AllowRebuilds                        graphql.Boolean
@@ -152,7 +156,8 @@ func resourcePipeline() *schema.Resource {
 				Type:     schema.TypeString,
 			},
 			"steps": {
-				Required: true,
+				Optional: true,
+				Default:  defaultSteps,
 				Type:     schema.TypeString,
 			},
 			"team": {
