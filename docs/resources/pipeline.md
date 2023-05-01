@@ -89,7 +89,7 @@ resource "buildkite_pipeline" "repo2-release" {
 
 -   `name` - (Required) The name of the pipeline.
 -   `repository` - (Required) The git URL of the repository.
--   `steps` - (Required) The string YAML steps to run the pipeline.
+-   `steps` - (Optional) The string YAML steps to run the pipeline. Defaults to `buildkite-agent pipeline upload` if not specified.
 -   `description` - (Optional) A description of the pipeline.
 -   `default_branch` - (Optional) The default branch to prefill when new builds are created or triggered, usually main or master but can be anything.
 -   `default_timeout_in_minutes` - (Optional) The default timeout for commands in this pipeline, in minutes.
