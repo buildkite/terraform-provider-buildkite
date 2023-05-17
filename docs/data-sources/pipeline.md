@@ -9,7 +9,7 @@ Buildkite Documentation: https://buildkite.com/docs/pipelines
 
 ```hcl
 data "buildkite_pipeline" "repo2" {
-    slug = "repo2"
+  slug = "repo2"
 }
 ```
 

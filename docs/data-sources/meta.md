@@ -16,14 +16,14 @@ customers that use AWS, that might look like this:
 data "buildkite_meta" "ips" { }
 
 resource "aws_security_group" "from_buildkite" {
-    name = "from_buildkite"
+  name = "from_buildkite"
 
-    ingress {
-        from_port        = "*"
-        to_port          = "443"
-        protocol         = "tcp"
-        cidr_blocks      = data.buildkite_meta.ips.webhook_ips
-    }
+  ingress {
+    from_port   = "*"
+    to_port     = "443"
+    protocol    = "tcp"
+    cidr_blocks = data.buildkite_meta.ips.webhook_ips
+  }
 }
 ```
 
