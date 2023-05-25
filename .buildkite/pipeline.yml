@@ -24,7 +24,7 @@ steps:
     key: testacc
     concurrency: 1
     concurrency_group: terraform-provider-acceptance-tests
-    command: "make testacc-annotate"
+    command: .buildkite/steps/annotate.sh
     plugins:
       - aws-assume-role-with-web-identity:
           role-arn: arn:aws:iam::445615400570:role/pipeline-buildkite-terraform-provider-buildkite-main
@@ -36,6 +36,9 @@ steps:
       - docker-compose#v3.9.0:
           run: go
           mount-buildkite-agent: 'true'
+      - test-collector#v1.8.0:
+          files: junit-*.xml
+          format: junit
 
   - label: acceptance tests - non-admin
     key: testacc-nonadmin
