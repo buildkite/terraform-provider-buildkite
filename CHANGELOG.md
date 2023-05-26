@@ -120,7 +120,6 @@ All notable changes to this project will be documented in this file.
 Bump Golang to 1.17.3
 * Pipeline resource: Add build_pull_request_labels_changed property [[PR #164](https://github.com/buildkite/terraform-provider-buildkite/pull/164)] @hadusam
 
-
 ### Fixed
 
 * Fixed typo in pipeline docs [[PR #172](https://github.com/buildkite/terraform-provider-buildkite/pull/172)] @RussellRollins
