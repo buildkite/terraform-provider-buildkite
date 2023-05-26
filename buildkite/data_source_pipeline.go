@@ -7,7 +7,6 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/shurcooL/graphql"
 )
 
 func dataSourcePipeline() *schema.Resource {
@@ -48,30 +47,25 @@ func dataSourcePipelineRead(ctx context.Context, d *schema.ResourceData, m inter
 	var diags diag.Diagnostics
 
 	client := m.(*Client)
-	var query struct {
-		Pipeline PipelineNode `graphql:"pipeline(slug: $slug)"`
-	}
-	orgPipelineSlug := fmt.Sprintf("%s/%s", client.organization, d.Get("slug").(string))
-	vars := map[string]interface{}{
-		"slug": graphql.ID(orgPipelineSlug),
-	}
 
-	err := client.graphql.Query(context.Background(), &query, vars)
+	orgPipelineSlug := fmt.Sprintf("%s/%s", client.organization, d.Get("slug").(string))
+	pipeline, err := getPipeline(client.genqlient, orgPipelineSlug)
+
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	if query.Pipeline.ID == "" {
+	if pipeline.Pipeline.Id == "" {
 		return diag.FromErr(errors.New("Pipeline not found"))
 	}
 
-	d.SetId(string(query.Pipeline.ID))
-	d.Set("default_branch", string(query.Pipeline.DefaultBranch))
-	d.Set("description", string(query.Pipeline.Description))
-	d.Set("name", string(query.Pipeline.Name))
-	d.Set("repository", string(query.Pipeline.Repository.URL))
-	d.Set("slug", string(query.Pipeline.Slug))
-	d.Set("webhook_url", string(query.Pipeline.WebhookURL))
+	d.SetId(pipeline.Pipeline.Id)
+	d.Set("default_branch", pipeline.Pipeline.DefaultBranch)
+	d.Set("description", pipeline.Pipeline.Description)
+	d.Set("name", pipeline.Pipeline.Name)
+	d.Set("repository", pipeline.Pipeline.Repository.Url)
+	d.Set("slug", pipeline.Pipeline.Slug)
+	d.Set("webhook_url", pipeline.Pipeline.WebhookURL)
 
 	return diags
 }

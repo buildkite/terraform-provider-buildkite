@@ -34,6 +34,14 @@ type __getOrganizationInput struct {
 // GetSlug returns __getOrganizationInput.Slug, and is useful for accessing the field via an interface.
 func (v *__getOrganizationInput) GetSlug() string { return v.Slug }
 
+// __getPipelineInput is used internally by genqlient
+type __getPipelineInput struct {
+	Slug string `json:"slug"`
+}
+
+// GetSlug returns __getPipelineInput.Slug, and is useful for accessing the field via an interface.
+func (v *__getPipelineInput) GetSlug() string { return v.Slug }
+
 // __getTeamInput is used internally by genqlient
 type __getTeamInput struct {
 	Slug string `json:"slug"`
@@ -87,6 +95,68 @@ type getOrganizationResponse struct {
 func (v *getOrganizationResponse) GetOrganization() getOrganizationOrganization {
 	return v.Organization
 }
+
+// getPipelinePipeline includes the requested fields of the GraphQL type Pipeline.
+// The GraphQL type's documentation follows.
+//
+// A pipeline
+type getPipelinePipeline struct {
+	Id string `json:"id"`
+	// The default branch for this pipeline
+	DefaultBranch string `json:"defaultBranch"`
+	// The short description of the pipeline
+	Description string `json:"description"`
+	// The name of the pipeline
+	Name string `json:"name"`
+	// The repository for this pipeline
+	Repository getPipelinePipelineRepository `json:"repository"`
+	// The slug of the pipeline
+	Slug string `json:"slug"`
+	// The URL to use in your repository settings for commit webhooks
+	WebhookURL string `json:"webhookURL"`
+}
+
+// GetId returns getPipelinePipeline.Id, and is useful for accessing the field via an interface.
+func (v *getPipelinePipeline) GetId() string { return v.Id }
+
+// GetDefaultBranch returns getPipelinePipeline.DefaultBranch, and is useful for accessing the field via an interface.
+func (v *getPipelinePipeline) GetDefaultBranch() string { return v.DefaultBranch }
+
+// GetDescription returns getPipelinePipeline.Description, and is useful for accessing the field via an interface.
+func (v *getPipelinePipeline) GetDescription() string { return v.Description }
+
+// GetName returns getPipelinePipeline.Name, and is useful for accessing the field via an interface.
+func (v *getPipelinePipeline) GetName() string { return v.Name }
+
+// GetRepository returns getPipelinePipeline.Repository, and is useful for accessing the field via an interface.
+func (v *getPipelinePipeline) GetRepository() getPipelinePipelineRepository { return v.Repository }
+
+// GetSlug returns getPipelinePipeline.Slug, and is useful for accessing the field via an interface.
+func (v *getPipelinePipeline) GetSlug() string { return v.Slug }
+
+// GetWebhookURL returns getPipelinePipeline.WebhookURL, and is useful for accessing the field via an interface.
+func (v *getPipelinePipeline) GetWebhookURL() string { return v.WebhookURL }
+
+// getPipelinePipelineRepository includes the requested fields of the GraphQL type Repository.
+// The GraphQL type's documentation follows.
+//
+// A repository associated with a pipeline
+type getPipelinePipelineRepository struct {
+	// The git URL for this repository
+	Url string `json:"url"`
+}
+
+// GetUrl returns getPipelinePipelineRepository.Url, and is useful for accessing the field via an interface.
+func (v *getPipelinePipelineRepository) GetUrl() string { return v.Url }
+
+// getPipelineResponse is returned by getPipeline on success.
+type getPipelineResponse struct {
+	// Find a pipeline
+	Pipeline getPipelinePipeline `json:"pipeline"`
+}
+
+// GetPipeline returns getPipelineResponse.Pipeline, and is useful for accessing the field via an interface.
+func (v *getPipelineResponse) GetPipeline() getPipelinePipeline { return v.Pipeline }
 
 // getTeamResponse is returned by getTeam on success.
 type getTeamResponse struct {
@@ -205,6 +275,40 @@ query getOrganization ($slug: ID!) {
 		allowedApiIpAddresses
 		id
 		uuid
+	}
+}
+`,
+		&retval,
+		&__input,
+	)
+	return &retval, err
+}
+
+func getPipeline(
+	client graphql.Client,
+	slug string,
+) (*getPipelineResponse, error) {
+	__input := __getPipelineInput{
+		Slug: slug,
+	}
+	var err error
+
+	var retval getPipelineResponse
+	err = client.MakeRequest(
+		nil,
+		"getPipeline",
+		`
+query getPipeline ($slug: ID!) {
+	pipeline(slug: $slug) {
+		id
+		defaultBranch
+		description
+		name
+		repository {
+			url
+		}
+		slug
+		webhookURL
 	}
 }
 `,
