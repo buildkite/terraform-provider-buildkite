@@ -1,0 +1,13 @@
+query getPipeline($slug: ID!) {
+    pipeline(slug: $slug) {
+        id
+        defaultBranch
+        description
+        name
+        repository {
+            url
+        }
+        slug
+        webhookURL
+    }
+}
