@@ -10,7 +10,7 @@ Buildkite Documentation: https://buildkite.com/docs/agent/v3/tokens
 provider "buildkite" {}
 
 resource "buildkite_agent_token" "fleet" {
-    description = "token used by build fleet"
+  description = "token used by build fleet"
 }
 ```
 
