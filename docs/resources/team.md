@@ -10,12 +10,12 @@ Note: You must first enable Teams on your organization.
 
 ```hcl
 resource "buildkite_team" "team" {
-    name = "developers"
+  name = "developers"
 
-    privacy = "VISIBLE"
+  privacy = "VISIBLE"
 
-    default_team = true
-    default_member_role = "MEMBER"
+  default_team        = true
+  default_member_role = "MEMBER"
 }
 ```
 

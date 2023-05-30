@@ -15,7 +15,7 @@ resource "buildkite_pipeline" "test_new" {
   name       = "Testing Timeouts"
   repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
 
-  steps = ""
+  steps                      = ""
   default_timeout_in_minutes = 15
   maximum_timeout_in_minutes = 60
 }
@@ -23,10 +23,10 @@ resource "buildkite_pipeline" "test_new" {
 resource "buildkite_pipeline_schedule" "test_scheduled" {
   pipeline_id = buildkite_pipeline.test_new.id
   label       = "Test Scheduled"
-  cronline = "0 0 * * *"
-  branch = "master"
-  commit = "HEAD"
-  message = "Test Scheduled Builds in Terraform"
+  cronline    = "0 0 * * *"
+  branch      = "master"
+  commit      = "HEAD"
+  message     = "Test Scheduled Builds in Terraform"
 }
 
 output "badge_url" {
