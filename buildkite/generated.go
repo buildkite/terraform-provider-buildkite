@@ -256,20 +256,8 @@ func (v *setApiIpAddressesResponse) GetOrganizationApiIpAllowlistUpdate() setApi
 	return v.OrganizationApiIpAllowlistUpdate
 }
 
-func getOrganization(
-	client graphql.Client,
-	slug string,
-) (*getOrganizationResponse, error) {
-	__input := __getOrganizationInput{
-		Slug: slug,
-	}
-	var err error
-
-	var retval getOrganizationResponse
-	err = client.MakeRequest(
-		nil,
-		"getOrganization",
-		`
+// The query or mutation executed by getOrganization.
+const getOrganization_Operation = `
 query getOrganization ($slug: ID!) {
 	organization(slug: $slug) {
 		allowedApiIpAddresses
@@ -277,27 +265,35 @@ query getOrganization ($slug: ID!) {
 		uuid
 	}
 }
-`,
-		&retval,
-		&__input,
-	)
-	return &retval, err
-}
+`
 
-func getPipeline(
+func getOrganization(
 	client graphql.Client,
 	slug string,
-) (*getPipelineResponse, error) {
-	__input := __getPipelineInput{
-		Slug: slug,
+) (*getOrganizationResponse, error) {
+	req := &graphql.Request{
+		OpName: "getOrganization",
+		Query:  getOrganization_Operation,
+		Variables: &__getOrganizationInput{
+			Slug: slug,
+		},
 	}
 	var err error
 
-	var retval getPipelineResponse
+	var data getOrganizationResponse
+	resp := &graphql.Response{Data: &data}
+
 	err = client.MakeRequest(
 		nil,
-		"getPipeline",
-		`
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
+// The query or mutation executed by getPipeline.
+const getPipeline_Operation = `
 query getPipeline ($slug: ID!) {
 	pipeline(slug: $slug) {
 		id
@@ -311,27 +307,35 @@ query getPipeline ($slug: ID!) {
 		webhookURL
 	}
 }
-`,
-		&retval,
-		&__input,
-	)
-	return &retval, err
-}
+`
 
-func getTeam(
+func getPipeline(
 	client graphql.Client,
 	slug string,
-) (*getTeamResponse, error) {
-	__input := __getTeamInput{
-		Slug: slug,
+) (*getPipelineResponse, error) {
+	req := &graphql.Request{
+		OpName: "getPipeline",
+		Query:  getPipeline_Operation,
+		Variables: &__getPipelineInput{
+			Slug: slug,
+		},
 	}
 	var err error
 
-	var retval getTeamResponse
+	var data getPipelineResponse
+	resp := &graphql.Response{Data: &data}
+
 	err = client.MakeRequest(
 		nil,
-		"getTeam",
-		`
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
+// The query or mutation executed by getTeam.
+const getTeam_Operation = `
 query getTeam ($slug: ID!) {
 	team(slug: $slug) {
 		defaultMemberRole
@@ -345,29 +349,35 @@ query getTeam ($slug: ID!) {
 		uuid
 	}
 }
-`,
-		&retval,
-		&__input,
-	)
-	return &retval, err
-}
+`
 
-func setApiIpAddresses(
+func getTeam(
 	client graphql.Client,
-	organizationID string,
-	ipAddresses string,
-) (*setApiIpAddressesResponse, error) {
-	__input := __setApiIpAddressesInput{
-		OrganizationID: organizationID,
-		IpAddresses:    ipAddresses,
+	slug string,
+) (*getTeamResponse, error) {
+	req := &graphql.Request{
+		OpName: "getTeam",
+		Query:  getTeam_Operation,
+		Variables: &__getTeamInput{
+			Slug: slug,
+		},
 	}
 	var err error
 
-	var retval setApiIpAddressesResponse
+	var data getTeamResponse
+	resp := &graphql.Response{Data: &data}
+
 	err = client.MakeRequest(
 		nil,
-		"setApiIpAddresses",
-		`
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
+// The query or mutation executed by setApiIpAddresses.
+const setApiIpAddresses_Operation = `
 mutation setApiIpAddresses ($organizationID: ID!, $ipAddresses: String!) {
 	organizationApiIpAllowlistUpdate(input: {organizationID:$organizationID,ipAddresses:$ipAddresses}) {
 		organization {
@@ -375,9 +385,31 @@ mutation setApiIpAddresses ($organizationID: ID!, $ipAddresses: String!) {
 		}
 	}
 }
-`,
-		&retval,
-		&__input,
+`
+
+func setApiIpAddresses(
+	client graphql.Client,
+	organizationID string,
+	ipAddresses string,
+) (*setApiIpAddressesResponse, error) {
+	req := &graphql.Request{
+		OpName: "setApiIpAddresses",
+		Query:  setApiIpAddresses_Operation,
+		Variables: &__setApiIpAddressesInput{
+			OrganizationID: organizationID,
+			IpAddresses:    ipAddresses,
+		},
+	}
+	var err error
+
+	var data setApiIpAddressesResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		nil,
+		req,
+		resp,
 	)
-	return &retval, err
+
+	return &data, err
 }
