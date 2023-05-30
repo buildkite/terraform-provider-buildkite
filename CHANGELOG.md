@@ -2,9 +2,137 @@
 
 All notable changes to this project will be documented in this file.
 
-## [v0.11.1](https://github.com/buildkite/terraform-provider-buildkite/compare/v0.5.0...v0.11.1)
+## [v0.18.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v0.17.1...v0.18.0)
+
+### Added
+
+* Add PR/issue templates [[PR #272](https://github.com/buildkite/terraform-provider-buildkite/pull/272)] @jradtilbrook
+* Add bug report issue template [[PR #273](https://github.com/buildkite/terraform-provider-buildkite/pull/273)] @jradtilbrook
+* Use gotestsum for running and reporting tests [[PR #274](https://github.com/buildkite/terraform-provider-buildkite/pull/274)] @jradtilbrook
+* Remove Computed values from Pipeline where not required [[PR #275](https://github.com/buildkite/terraform-provider-buildkite/pull/275)] @mcncl 
+
+## [v0.17.1](https://github.com/buildkite/terraform-provider-buildkite/compare/v0.17.0...v0.17.1)
+
+### Fixed
+
+* SUP-906/Fix: Adjustment of README version, Pipeline Argument Reference amendments [[PR #269](https://github.com/buildkite/terraform-provider-buildkite/pull/269)] @james2791
+
+## [v0.17.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v0.16.0...v0.17.0)
+
+### Added
+
+* SUP-707: Pipeline resource's steps made optional, default pipeline upload step [[PR #265](https://github.com/buildkite/terraform-provider-buildkite/pull/265)] @james2791
+* Update the paths where we load environment variables from [[PR #266](https://github.com/buildkite/terraform-provider-buildkite/pull/265)] @yob
+
+## [v0.16.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v0.15.0...v0.16.0)
+
+### Added
+
+* Allow release pipeline to pull from private ECR registry [[PR #258](https://github.com/buildkite/terraform-provider-buildkite/pull/258)] @ellsclytn
+* Set User-Agent header on both REST and graphql requests [[PR #259](https://github.com/buildkite/terraform-provider-buildkite/pull/259)] @yob
+* Update terraform SDKv2 to the latest version [[PR #261](https://github.com/buildkite/terraform-provider-buildkite/pull/261)] @yob 
+* Run go mod tidy [[PR #262](https://github.com/buildkite/terraform-provider-buildkite/pull/262)] @yob
+* SUP-819 Retrieve org id only once in provider configuration [[PR #263](https://github.com/buildkite/terraform-provider-buildkite/pull/263)] @jradtilbrook 
+* SUP-820 Pull latest 1.4 version terraform from docker image [[PR #264](https://github.com/buildkite/terraform-provider-buildkite/pull/264)] @jradtilbrook
+
+## [v0.15.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v0.14.0...v0.15.0)
+
+### Added
+
+* Don't include null body in GET requests [[PR #254](https://github.com/buildkite/terraform-provider-buildkite/pull/254)] @nhurden
+* Set User-Agent header in client [[PR #256](https://github.com/buildkite/terraform-provider-buildkite/pull/256)] @danstn
+
+## [v0.14.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v0.12.2...v0.14.0)
+
+### Added
+
+* Update Go and the package dependendies (inc SUP-841) [[PR #240](https://github.com/buildkite/terraform-provider-buildkite/pull/240)] @mcncl
+* SUP-857 Manually update go getter & deps [[PR #246](https://github.com/buildkite/terraform-provider-buildkite/pull/246)] @mcncl
+* Add documentation around plugin override for local dev [[PR #247](https://github.com/buildkite/terraform-provider-buildkite/pull/247)] @mcncl
+* SUP-838 Ensure CI passes/fails correctly [[PR #248](https://github.com/buildkite/terraform-provider-buildkite/pull/248)] @jradtilbrook
+* SUP-866 Add deletion protection for a pipeline [[PR #250](https://github.com/buildkite/terraform-provider-buildkite/pull/250)] @mcncl
+
+### Fixes
+
+* SUP-770 Fix panic in `GetOrganizationID` [[PR #249](https://github.com/buildkite/terraform-provider-buildkite/pull/249)] @jradtilbrook
+
+## [v0.12.2](https://github.com/buildkite/terraform-provider-buildkite/compare/v0.12.1...v0.12.2)
+
+### Added
+
+* Add a reviewer to dependabot PRs [[PR #236](https://github.com/buildkite/terraform-provider-buildkite/pull/236)] @yob
+* Add support for timeout settings. [[PR #238](https://github.com/buildkite/terraform-provider-buildkite/pull/238)] @mcncl
+
+## [v0.12.1](https://github.com/buildkite/terraform-provider-buildkite/compare/v0.12.0...v0.12.1)
+
+### Added
+
+* Add `organization_settings` documentation [[PR #237](https://github.com/buildkite/terraform-provider-buildkite/pull/237)] @mcncl
+
+## [v0.12.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v0.11.1...v0.12.0)
+
+### Added
+
+* Added Organisational settings [[PR #230](https://github.com/buildkite/terraform-provider-buildkite/pull/230)] @mcncl
+
+## [v0.11.1](https://github.com/buildkite/terraform-provider-buildkite/compare/v0.11.0...v0.11.1)
 
 * Documentation had fallen out of sync due to lack of tag use. This change in the version includes a tag bump in order to merge documentation changes/improvements in to the provider page.
+
+###
+* GraphQL demo with Khan/genqlient [[PR #205](https://github.com/buildkite/terraform-provider-buildkite/pull/205)] @jradtilbrook 
+* Add `allow_rebuilds documentation`. Grammar. [[#PR 208](https://github.com/buildkite/terraform-provider-buildkite/pull/208)] @jmctune 
+* SUP-191 Generate test coverage [[PR #206](https://github.com/buildkite/terraform-provider-buildkite/pull/206)] @jradtilbrook  
+* Add arch command for agnostic support of architecture in build command [[PR #228](https://github.com/buildkite/terraform-provider-buildkite/pull/228)] @mcncl 
+* Update version and tag so that documentation is merged in to provider [[PR #229](https://github.com/buildkite/terraform-provider-buildkite/pull/229)] @mcncl 
+
+## [v0.11.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v0.10.0...v0.11.0)
+
+### Added
+
+* Allow configuring API endpoints [[PR #202](https://github.com/buildkite/terraform-provider-buildkite/pull/202)] @jradtilbrook 
+
+## [v0.10.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v0.9.0...v0.10.0)
+
+### Added
+
+* Allow tests to run on PRs [[PR #197](https://github.com/buildkite/terraform-provider-buildkite/pull/197)] @jradtilbrook
+
+### Fixed
+
+* Fix cluster support [[#PR 200](https://github.com/buildkite/terraform-provider-buildkite/pull/200)] @jradtilbrook
+
+## [v0.9.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v0.8.0...v0.9.0)
+
+### Added
+* Add team data source [[PR #190](https://github.com/buildkite/terraform-provider-buildkite/pull/190)] @margueritepd 
+* add support for tags [[PR #186](https://github.com/buildkite/terraform-provider-buildkite/pull/186)] @mhornbacher
+* Add allow rebuilds to pipeline resource [[#PR 193](https://github.com/buildkite/terraform-provider-buildkite/pull/193)] @jradtilbrook
+
+## [v0.8.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v0.7.0...v0.8.0)
+
+### Added
+
+* Add `cluster_id` argument to pipeline resource [[PR #181](https://github.com/buildkite/terraform-provider-buildkite/pull/181)] @kate-syberspace
+
+## [v0.7.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v0.6.0...v0.7.0)
+
+### Fixed
+
+* Brought back build target for darwin/arm64 [[PR #189](https://github.com/buildkite/terraform-provider-buildkite/pull/189)] @mhornbacher
+
+## [v0.6.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v0.5.0...v0.6.0)
+
+### Added
+
+* `buildkite_team_member` resource: Manage organisation team membership [[PR #173](https://github.com/buildkite/terraform-provider-buildkite/pull/173)] @jradtilbrook
+Bump Golang to 1.17.3
+* Pipeline resource: Add build_pull_request_labels_changed property [[PR #164](https://github.com/buildkite/terraform-provider-buildkite/pull/164)] @hadusam
+
+### Fixed
+
+* Fixed typo in pipeline docs [[PR #172](https://github.com/buildkite/terraform-provider-buildkite/pull/172)] @RussellRollins
+* Added `cancel_deleted_branch_builds` to pipeline docs [[PR #160](https://github.com/buildkite/terraform-provider-buildkite/pull/160)] @keith
 
 ## [v0.5.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v0.4.0...v0.5.0)
 

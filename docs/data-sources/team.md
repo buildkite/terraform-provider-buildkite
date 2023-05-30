@@ -9,7 +9,7 @@ Buildkite documentation: https://buildkite.com/docs/pipelines/permissions
 
 ```hcl
 data "buildkite_team" "my_team" {
-    slug = "my_team"
+  slug = "my_team"
 }
 ```
 

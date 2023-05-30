@@ -12,7 +12,7 @@ max_line_length = 120
 [*.go]
 indent_style = tab
 
-[*.{workflow,yaml,yml}]
+[*.{tf,workflow,yaml,yml}]
 indent_size = 2
 
 [{Makefile,makefile}]

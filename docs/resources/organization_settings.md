@@ -16,7 +16,7 @@ resource "buildkite_organization_settings" "test_settings" {
 
 ## Argument Reference
 
--   `allowed_api_ip_addresses` - (Optional) A list of IP addresses in CIDR format that are allowed to access the Buildkite API. If not set, all IP addresses are allowed (the same as setting 0.0.0.0/0).
+- `allowed_api_ip_addresses` - (Optional) A list of IP addresses in CIDR format that are allowed to access the Buildkite API. If not set, all IP addresses are allowed (the same as setting 0.0.0.0/0).
 
 ## Import
 
