@@ -81,32 +81,39 @@ func resourcePipeline() *schema.Resource {
 
 		Schema: map[string]*schema.Schema{
 			"allow_rebuilds": {
+				Computed: true,
 				Optional: true,
 				Type:     schema.TypeBool,
 			},
 			"cancel_intermediate_builds": {
+				Computed: true,
 				Optional: true,
 				Type:     schema.TypeBool,
 			},
 			"cancel_intermediate_builds_branch_filter": {
+				Computed: true,
 				Optional: true,
 				Type:     schema.TypeString,
 			},
 			"branch_configuration": {
+				Computed: true,
 				Optional: true,
 				Type:     schema.TypeString,
 			},
 			"cluster_id": {
+				Computed: true,
 				Optional: true,
 				Type:     schema.TypeString,
 			},
 			"default_branch": {
+				Computed: true,
 				Optional: true,
 				Type:     schema.TypeString,
 			},
 			"default_timeout_in_minutes": {
+				Computed: true,
 				Optional: true,
-				Default:  20,
+				Default:  nil,
 				Type:     schema.TypeInt,
 			},
 			"deletion_protection": {
@@ -116,11 +123,13 @@ func resourcePipeline() *schema.Resource {
 				Description: "If set to 'true', deletion of a pipeline via `terraform destroy` will fail, until set to 'false'.",
 			},
 			"maximum_timeout_in_minutes": {
+				Computed: true,
 				Optional: true,
-				Default:  60,
+				Default:  nil,
 				Type:     schema.TypeInt,
 			},
 			"description": {
+				Computed: true,
 				Optional: true,
 				Type:     schema.TypeString,
 			},
@@ -133,10 +142,12 @@ func resourcePipeline() *schema.Resource {
 				Type:     schema.TypeString,
 			},
 			"skip_intermediate_builds": {
+				Computed: true,
 				Optional: true,
 				Type:     schema.TypeBool,
 			},
 			"skip_intermediate_builds_branch_filter": {
+				Computed: true,
 				Optional: true,
 				Type:     schema.TypeString,
 			},
@@ -186,8 +197,8 @@ func resourcePipeline() *schema.Resource {
 			},
 			"provider_settings": {
 				Type:     schema.TypeList,
-				Computed: true,
 				Optional: true,
+				Computed: true,
 				MaxItems: 1,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{

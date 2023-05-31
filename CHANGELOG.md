@@ -2,14 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v0.18.1](https://github.com/buildkite/terraform-provider-buildkite/compare/v0.18.0...v0.18.1)
+
+### Fixes
+* Pipelines resource Computed/Default nil values reversion[[PR #277](https://github.com/buildkite/terraform-provider-buildkite/pull/277)] @james2791
+
 ## [v0.18.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v0.17.1...v0.18.0)
 
 ### Added
 
+* DOCS fmt [[PR #271](https://github.com/buildkite/terraform-provider-buildkite/pull/271)] @mattclegg
 * Add PR/issue templates [[PR #272](https://github.com/buildkite/terraform-provider-buildkite/pull/272)] @jradtilbrook
 * Add bug report issue template [[PR #273](https://github.com/buildkite/terraform-provider-buildkite/pull/273)] @jradtilbrook
 * Use gotestsum for running and reporting tests [[PR #274](https://github.com/buildkite/terraform-provider-buildkite/pull/274)] @jradtilbrook
 * Remove Computed values from Pipeline where not required [[PR #275](https://github.com/buildkite/terraform-provider-buildkite/pull/275)] @mcncl 
+* SUP-995: Changelog updates, v0.18.0 release prep [[PR #276](https://github.com/buildkite/terraform-provider-buildkite/pull/276)] @james2791
+
+### Fixes
+* Fixed issues when bumping genqlient from 0.4.0 to 0.6.0 [[PR #278](https://github.com/buildkite/terraform-provider-buildkite/pull/278)] @lizrabuya
 
 ## [v0.17.1](https://github.com/buildkite/terraform-provider-buildkite/compare/v0.17.0...v0.17.1)
 
