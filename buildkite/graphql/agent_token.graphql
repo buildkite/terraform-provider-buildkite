@@ -1,0 +1,39 @@
+query getAgentToken($slug: ID!) {
+    agentToken(slug: $slug) {
+        id
+        description
+        token
+        uuid
+    }
+}
+
+mutation createAgentToken(
+    $organizationId: ID!
+    $description: String
+) {
+    agentTokenCreate(
+        input: {
+            organizationID: $organizationId
+            description: $description
+        }
+    ) {
+        agentTokenEdge {
+            node {
+                id
+                description
+                token
+                uuid
+            }
+        }
+    }
+}
+
+mutation revokeAgentToken($id: ID!, $reason: String!) {
+    agentTokenRevoke(input: {id: $id, reason: $reason}){
+        agentToken {
+            id
+            description
+            uuid        
+        }
+    }
+}

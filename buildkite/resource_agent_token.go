@@ -3,6 +3,7 @@ package buildkite
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -48,82 +49,75 @@ func resourceAgentToken() *schema.Resource {
 
 // CreateToken creates a Buildkite agent token
 func CreateToken(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	var diags diag.Diagnostics
 	client := m.(*Client)
 
-	var mutation struct {
-		AgentTokenCreate struct {
-			AgentTokenEdge struct {
-				Node AgentTokenNode
-			}
-		} `graphql:"agentTokenCreate(input: {organizationID: $org, description: $desc})"`
-	}
+	apiResponse, err := createAgentToken(
+		client.genqlient,
+		client.organizationId,
+		d.Get("description").(string),
+	)
 
-	vars := map[string]interface{}{
-		"org":  client.organizationId,
-		"desc": graphql.String(d.Get("description").(string)),
-	}
-
-	err := client.graphql.Mutate(context.Background(), &mutation, vars)
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	updateAgentToken(d, &mutation.AgentTokenCreate.AgentTokenEdge.Node)
+	d.SetId(apiResponse.AgentTokenCreate.AgentTokenEdge.Node.Id)
+	d.Set("uuid", apiResponse.AgentTokenCreate.AgentTokenEdge.Node.Uuid)
+	d.Set("description", apiResponse.AgentTokenCreate.AgentTokenEdge.Node.Description)
+	d.Set("token", apiResponse.AgentTokenCreate.AgentTokenEdge.Node.Token)
 
-	return nil
+	return diags
 }
 
 // ReadToken retrieves a Buildkite agent token
 func ReadToken(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	var diags diag.Diagnostics
 	client := m.(*Client)
-	var query struct {
-		Node struct {
-			AgentToken AgentTokenNode `graphql:"... on AgentToken"`
-		} `graphql:"node(id: $id)"`
-	}
 
-	vars := map[string]interface{}{
-		"id": d.Id(),
-	}
+	agentToken, err := getAgentToken(client.genqlient, fmt.Sprintf("%s/%s", client.organization, d.Get("uuid").(string))) 
 
-	err := client.graphql.Query(context.Background(), &query, vars)
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	if query.Node.AgentToken.RevokedAt != "" {
-		return diag.FromErr(errors.New("Cannot import revoked token"))
+
+	if agentToken.AgentToken.Id == "" {
+		return diag.FromErr(errors.New("Agent Token not found"))
 	}
 
-	updateAgentToken(d, &query.Node.AgentToken)
+	d.SetId(agentToken.AgentToken.Id)
+	d.Set("uuid", agentToken.AgentToken.Uuid)
+	d.Set("description", agentToken.AgentToken.Description)
+	d.Set("token", agentToken.AgentToken.Token)
 
-	return nil
+	return diags
 }
 
-// DeleteToken revokes a Buildkite agent token - they cannot be completely deleted
+// DeleteToken revokes a Buildkite agent token - they cannot be completely deleted (will have a revoke)
 func DeleteToken(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	var diags diag.Diagnostics
 	client := m.(*Client)
-	var mutation struct {
-		AgentTokenRevoke struct {
-			AgentToken AgentTokenNode
-		} `graphql:"agentTokenRevoke(input: {id: $id, reason: $reason})"`
-	}
 
-	vars := map[string]interface{}{
-		"id":     graphql.ID(d.Id()),
-		"reason": graphql.String("Revoked by Terraform"),
-	}
+	agentTokenRevCandidate, err := getAgentToken(client.genqlient, fmt.Sprintf("%s/%s", client.organization, d.Get("uuid").(string)))
 
-	err := client.graphql.Mutate(context.Background(), &mutation, vars)
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	return nil
+	if agentTokenRevCandidate.AgentToken.Id == "" {
+		return diag.FromErr(errors.New("Agent Token not found"))
+	}
+
+	_, err = revokeAgentToken(
+		client.genqlient, 
+		agentTokenRevCandidate.AgentToken.Id, 
+		"Revoked by Terraform",
+	)
+
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	return diags
 }
 
-func updateAgentToken(d *schema.ResourceData, t *AgentTokenNode) {
-	d.SetId(string(t.ID))
-	d.Set("uuid", string(t.UUID))
-	d.Set("description", string(t.Description))
-	d.Set("token", string(t.Token))
-}
