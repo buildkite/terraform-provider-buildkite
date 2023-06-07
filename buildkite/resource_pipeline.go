@@ -52,9 +52,6 @@ type PipelineAccessLevels graphql.String
 type PipelineTag struct {
 	Label graphql.String
 }
-type PipelineTagInput struct {
-	Label graphql.String `json:"label"`
-}
 
 // TeamPipelineNode represents a team pipeline as returned from the GraphQL API
 type TeamPipelineNode struct {
@@ -589,7 +586,7 @@ func getTagsFromSchema(d *schema.ResourceData) []PipelineTagInput {
 	tags := make([]PipelineTagInput, tagSet.Len())
 	for i, v := range tagSet.List() {
 		tags[i] = PipelineTagInput{
-			Label: graphql.String(v.(string)),
+			Label: v.(string),
 		}
 	}
 	return tags

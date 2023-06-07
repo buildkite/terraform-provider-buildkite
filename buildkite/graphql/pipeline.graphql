@@ -12,7 +12,10 @@ query getPipeline($slug: ID!) {
     }
 }
 
-mutation updatePipeline($input: PipelineUpdateInput!) {
+# @genqlient(for: "PipelineUpdateInput.clusterId", pointer: true)
+mutation updatePipeline(
+    $input: PipelineUpdateInput!
+) {
     pipelineUpdate(input: $input) {
         pipeline {
             id
