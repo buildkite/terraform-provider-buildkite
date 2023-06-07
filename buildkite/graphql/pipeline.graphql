@@ -11,3 +11,11 @@ query getPipeline($slug: ID!) {
         webhookURL
     }
 }
+
+mutation updatePipeline($input: PipelineUpdateInput!) {
+    pipelineUpdate(input: $input) {
+        pipeline {
+            id
+        }
+    }
+}
