@@ -37,7 +37,7 @@ $ terraform import buildkite_agent_token.fleet QWdlbnRUb2tlbi0tLTQzNWNhZDU4LWU4M
 
 To find the ID to use, you can use the GraphQL query below. Alternatively, you use this [pre-saved query](https://buildkite.com/user/graphql/console/747fb309-e2f3-452a-aea3-ee3962a7e92b).
 
-```
+```graphql
 query agentToken {
   organization(slug: "ORGANIZATION_SLUG") {
     agentTokens(first: 20) {
