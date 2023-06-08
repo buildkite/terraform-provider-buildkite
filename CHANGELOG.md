@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## Unreleased
+
+* Allow pipeline to be removed from a cluster [[PR #279](https://github.com/buildkite/terraform-provider-buildkite/pull/279)]
+
 ## [v0.18.1](https://github.com/buildkite/terraform-provider-buildkite/compare/v0.18.0...v0.18.1)
 
 ### Fixes
