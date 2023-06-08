@@ -15,39 +15,39 @@ const defaultSteps = `steps:
   command: buildkite-agent pipeline upload`
 
 // PipelineNode represents a pipeline as returned from the GraphQL API
+type Cluster struct {
+	ID graphql.String
+}
+type Repository struct {
+	URL graphql.String
+}
+type Steps struct {
+	YAML graphql.String
+}
 type PipelineNode struct {
 	AllowRebuilds                        graphql.Boolean
 	CancelIntermediateBuilds             graphql.Boolean
 	CancelIntermediateBuildsBranchFilter graphql.String
-	Cluster                              struct {
-		ID graphql.String
-	}
-	DefaultBranch           graphql.String
-	DefaultTimeoutInMinutes graphql.Int
-	MaximumTimeoutInMinutes graphql.Int
-	Description             graphql.String
-	ID                      graphql.String
-	Name                    graphql.String
-	Repository              struct {
-		URL graphql.String
-	}
-	SkipIntermediateBuilds             graphql.Boolean
-	SkipIntermediateBuildsBranchFilter graphql.String
-	Slug                               graphql.String
-	Steps                              struct {
-		YAML graphql.String
-	}
-	Tags  []PipelineTag
-	Teams struct {
+	Cluster                              Cluster
+	DefaultBranch                        graphql.String
+	DefaultTimeoutInMinutes              graphql.Int
+	MaximumTimeoutInMinutes              graphql.Int
+	Description                          graphql.String
+	ID                                   graphql.String
+	Name                                 graphql.String
+	Repository                           Repository
+	SkipIntermediateBuilds               graphql.Boolean
+	SkipIntermediateBuildsBranchFilter   graphql.String
+	Slug                                 graphql.String
+	Steps                                Steps
+	Tags                                 []PipelineTag
+	Teams                                struct {
 		Edges []struct {
 			Node TeamPipelineNode
 		}
 	} `graphql:"teams(first: 50)"`
 	WebhookURL graphql.String `graphql:"webhookURL"`
 }
-
-// PipelineAccessLevels represents a pipeline access levels as returned from the GraphQL API
-type PipelineAccessLevels graphql.String
 
 type PipelineTag struct {
 	Label graphql.String
@@ -98,7 +98,6 @@ func resourcePipeline() *schema.Resource {
 				Type:     schema.TypeString,
 			},
 			"cluster_id": {
-				Computed: true,
 				Optional: true,
 				Type:     schema.TypeString,
 			},
@@ -428,58 +427,71 @@ func ReadPipeline(ctx context.Context, d *schema.ResourceData, m interface{}) di
 func UpdatePipeline(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := m.(*Client)
 	var err error
-	var mutation struct {
-		PipelineUpdate struct {
-			Pipeline PipelineNode
-		} `graphql:"pipelineUpdate(input: {allowRebuilds: $allow_rebuilds, cancelIntermediateBuilds: $cancel_intermediate_builds, cancelIntermediateBuildsBranchFilter: $cancel_intermediate_builds_branch_filter, defaultBranch: $default_branch, defaultTimeoutInMinutes: $default_timeout_in_minutes, maximumTimeoutInMinutes: $maximum_timeout_in_minutes, description: $desc, id: $id, name: $name, repository: {url: $repository_url}, skipIntermediateBuilds: $skip_intermediate_builds, skipIntermediateBuildsBranchFilter: $skip_intermediate_builds_branch_filter, steps: {yaml: $steps}, tags: $tags})"`
-	}
-	vars := map[string]interface{}{
-		"allow_rebuilds":                           graphql.Boolean(d.Get("allow_rebuilds").(bool)),
-		"cancel_intermediate_builds":               graphql.Boolean(d.Get("cancel_intermediate_builds").(bool)),
-		"cancel_intermediate_builds_branch_filter": graphql.String(d.Get("cancel_intermediate_builds_branch_filter").(string)),
-		"default_branch":                           graphql.String(d.Get("default_branch").(string)),
-		"default_timeout_in_minutes":               graphql.Int(d.Get("default_timeout_in_minutes").(int)),
-		"maximum_timeout_in_minutes":               graphql.Int(d.Get("maximum_timeout_in_minutes").(int)),
-		"desc":                                     graphql.String(d.Get("description").(string)),
-		"id":                                       graphql.ID(d.Id()),
-		"name":                                     graphql.String(d.Get("name").(string)),
-		"repository_url":                           graphql.String(d.Get("repository").(string)),
-		"skip_intermediate_builds":                 graphql.Boolean(d.Get("skip_intermediate_builds").(bool)),
-		"skip_intermediate_builds_branch_filter":   graphql.String(d.Get("skip_intermediate_builds_branch_filter").(string)),
-		"steps":                                    graphql.String(d.Get("steps").(string)),
-		"tags":                                     getTagsFromSchema(d),
+
+	input := PipelineUpdateInput{
+		AllowRebuilds:                        d.Get("allow_rebuilds").(bool),
+		CancelIntermediateBuilds:             d.Get("cancel_intermediate_builds").(bool),
+		CancelIntermediateBuildsBranchFilter: d.Get("cancel_intermediate_builds_branch_filter").(string),
+		DefaultBranch:                        d.Get("default_branch").(string),
+		DefaultTimeoutInMinutes:              d.Get("default_timeout_in_minutes").(int),
+		MaximumTimeoutInMinutes:              d.Get("maximum_timeout_in_minutes").(int),
+		Description:                          d.Get("description").(string),
+		Id:                                   d.Id(),
+		Name:                                 d.Get("name").(string),
+		Repository:                           PipelineRepositoryInput{Url: d.Get("repository").(string)},
+		SkipIntermediateBuilds:               d.Get("skip_intermediate_builds").(bool),
+		SkipIntermediateBuildsBranchFilter:   d.Get("skip_intermediate_builds_branch_filter").(string),
+		Steps:                                PipelineStepsInput{Yaml: d.Get("steps").(string)},
+		Tags:                                 getTagsFromSchema(d),
 	}
 
-	log.Printf("Updating pipeline %s ...", vars["name"])
-
-	// If the cluster_id key is present in the mutation, GraphQL expects a valid ID.
-	// Check if cluster_id exists in the configuration before adding to mutation.
-	if clusterID, ok := d.GetOk("cluster_id"); ok {
-		var mutationWithClusterID struct {
-			PipelineUpdate struct {
-				Pipeline PipelineNode
-			} `graphql:"pipelineUpdate(input: {allowRebuilds: $allow_rebuilds, cancelIntermediateBuilds: $cancel_intermediate_builds, cancelIntermediateBuildsBranchFilter: $cancel_intermediate_builds_branch_filter, clusterId: $cluster_id, defaultBranch: $default_branch, defaultTimeoutInMinutes: $default_timeout_in_minutes, maximumTimeoutInMinutes: $maximum_timeout_in_minutes, description: $desc, id: $id, name: $name, repository: {url: $repository_url}, skipIntermediateBuilds: $skip_intermediate_builds, skipIntermediateBuildsBranchFilter: $skip_intermediate_builds_branch_filter, steps: {yaml: $steps}, tags: $tags})"`
+	// If cluster_id exists in the schema it must be a non-empty string
+	// Otherwise, if its not present it will be set to nil by default
+	if clusterID, clusterIdPresent := d.GetOk("cluster_id"); clusterIdPresent {
+		if value, isString := clusterID.(string); isString && value != "" {
+			input.ClusterId = &value
 		}
-		vars["cluster_id"] = graphql.ID(clusterID.(string))
-		err = client.graphql.Mutate(context.Background(), &mutationWithClusterID, vars)
-		mutation.PipelineUpdate.Pipeline = mutationWithClusterID.PipelineUpdate.Pipeline
-	} else {
-		err = client.graphql.Mutate(context.Background(), &mutation, vars)
 	}
+
+	log.Printf("Updating pipeline %s ...", input.Name)
+
+	response, err := updatePipeline(client.genqlient, input)
 
 	if err != nil {
 		log.Printf("Unable to update pipeline %s", d.Get("name"))
 		return diag.FromErr(err)
 	}
 
+	// While transitioning from shurcool to genqlient, we'll map the response here to utilise existing functionality
+	pipeline := PipelineNode{
+		AllowRebuilds:                        graphql.Boolean(response.PipelineUpdate.Pipeline.AllowRebuilds),
+		CancelIntermediateBuilds:             graphql.Boolean(response.PipelineUpdate.Pipeline.CancelIntermediateBuilds),
+		CancelIntermediateBuildsBranchFilter: graphql.String(response.PipelineUpdate.Pipeline.CancelIntermediateBuildsBranchFilter),
+		Cluster:                              Cluster{ID: graphql.String(response.PipelineUpdate.Pipeline.Cluster.Id)},
+		DefaultBranch:                        graphql.String(response.PipelineUpdate.Pipeline.DefaultBranch),
+		DefaultTimeoutInMinutes:              graphql.Int(response.PipelineUpdate.Pipeline.DefaultTimeoutInMinutes),
+		MaximumTimeoutInMinutes:              graphql.Int(response.PipelineUpdate.Pipeline.MaximumTimeoutInMinutes),
+		Description:                          graphql.String(response.PipelineUpdate.Pipeline.Description),
+		ID:                                   graphql.String(response.PipelineUpdate.Pipeline.Id),
+		Name:                                 graphql.String(response.PipelineUpdate.Pipeline.Name),
+		Repository:                           Repository{URL: graphql.String(response.PipelineUpdate.Pipeline.Repository.Url)},
+		SkipIntermediateBuilds:               graphql.Boolean(response.PipelineUpdate.Pipeline.SkipIntermediateBuilds),
+		SkipIntermediateBuildsBranchFilter:   graphql.String(response.PipelineUpdate.Pipeline.SkipIntermediateBuildsBranchFilter),
+		Slug:                                 graphql.String(response.PipelineUpdate.Pipeline.Slug),
+		Steps:                                Steps{YAML: graphql.String(response.PipelineUpdate.Pipeline.Steps.Yaml)},
+		Tags:                                 mapTagsFromGenqlient(response.PipelineUpdate.Pipeline.Tags),
+		Teams:                                mapTeamPipelinesFromGenqlient(response.PipelineUpdate.Pipeline.Teams.Edges),
+		WebhookURL:                           graphql.String(response.PipelineUpdate.Pipeline.WebhookURL),
+	}
+
 	teamPipelines := getTeamPipelinesFromSchema(d)
-	err = reconcileTeamPipelines(teamPipelines, &mutation.PipelineUpdate.Pipeline, client)
+	err = reconcileTeamPipelines(teamPipelines, &pipeline, client)
 	if err != nil {
 		log.Print("Unable to reconcile team pipelines")
 		return diag.FromErr(err)
 	}
 
-	updatePipelineResource(d, &mutation.PipelineUpdate.Pipeline)
+	updatePipelineResource(d, &pipeline)
 
 	pipelineExtraInfo, err := updatePipelineExtraInfo(d, client)
 	if err != nil {
@@ -581,6 +593,15 @@ func updatePipelineExtraInfo(d *schema.ResourceData, client *Client) (PipelineEx
 	return pipelineExtraInfo, nil
 }
 
+func mapTagsFromGenqlient(tags []updatePipelinePipelineUpdatePipelineUpdatePayloadPipelineTagsPipelineTag) []PipelineTag {
+	newTags := make([]PipelineTag, len(tags))
+
+	for i, v := range tags {
+		newTags[i] = PipelineTag{Label: graphql.String(v.Label)}
+	}
+	return newTags
+}
+
 func getTagsFromSchema(d *schema.ResourceData) []PipelineTagInput {
 	tagSet := d.Get("tags").(*schema.Set)
 	tags := make([]PipelineTagInput, tagSet.Len())
@@ -590,6 +611,25 @@ func getTagsFromSchema(d *schema.ResourceData) []PipelineTagInput {
 		}
 	}
 	return tags
+}
+
+func mapTeamPipelinesFromGenqlient(tags []updatePipelinePipelineUpdatePipelineUpdatePayloadPipelineTeamsTeamPipelineConnectionEdgesTeamPipelineEdge) struct {
+	Edges []struct{ Node TeamPipelineNode }
+} {
+	teamPipelineNodes := make([]struct{ Node TeamPipelineNode }, len(tags))
+	for i, v := range tags {
+		teamPipelineNodes[i] = struct{ Node TeamPipelineNode }{
+			Node: TeamPipelineNode{
+				AccessLevel: v.Node.AccessLevel,
+				ID:          graphql.String(v.Node.Id),
+				Team: TeamNode{
+					Slug: graphql.String(v.Node.Team.Slug),
+				}},
+		}
+	}
+	return struct {
+		Edges []struct{ Node TeamPipelineNode }
+	}{Edges: teamPipelineNodes}
 }
 
 func getTeamPipelinesFromSchema(d *schema.ResourceData) []TeamPipelineNode {
