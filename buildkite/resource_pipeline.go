@@ -239,6 +239,7 @@ func resourcePipeline() *schema.Resource {
 							Computed: true,
 							Optional: true,
 							Type:     schema.TypeBool,
+							Default:  true,
 						},
 						"build_pull_request_ready_for_review": {
 							Computed: true,
@@ -264,6 +265,7 @@ func resourcePipeline() *schema.Resource {
 							Computed: true,
 							Optional: true,
 							Type:     schema.TypeBool,
+							Default:  true,
 						},
 						"build_tags": {
 							Computed: true,
@@ -289,6 +291,7 @@ func resourcePipeline() *schema.Resource {
 							Computed: true,
 							Optional: true,
 							Type:     schema.TypeBool,
+							Default:  true,
 						},
 						"publish_blocked_as_pending": {
 							Computed: true,
