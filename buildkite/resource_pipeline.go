@@ -224,6 +224,7 @@ func resourcePipeline() *schema.Resource {
 							Computed: true,
 							Optional: true,
 							Type:     schema.TypeBool,
+							Default:  true,
 						},
 						"pull_request_branch_filter_enabled": {
 							Computed: true,
