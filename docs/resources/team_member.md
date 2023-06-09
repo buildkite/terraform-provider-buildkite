@@ -46,17 +46,15 @@ Team members can be imported using the GraphQL ID of the membership. Note this i
 $ terraform import buildkite_team_member.a_smith VGVhbU1lbWJlci0tLTVlZDEyMmY2LTM2NjQtNDI1MS04YzMwLTc4NjRiMDdiZDQ4Zg==
 ```
 
-To find the ID of a team member you are trying to import you can use the GraphQL snippet below. A link to this snippet can also be found at https://buildkite.com/user/graphql/console/c6a2cc65-dc59-49df-95c6-7167b68dbd5d.
-
-You will need fo fill in the organization slug and search terms for teams and members. Both search terms work on the name of the associated object.
+To find the ID to use, you can use the GraphQL query below. Alternatively, you could use this [pre-saved query](https://buildkite.com/user/graphql/console/ce4540dd-4f60-4e79-8e8f-9f4c3bc8784e), where you will need fo fill in the organization slug and search terms for teams and members. Both search terms (TEAM_SEARCH_TERM and TEAM_MEMBER_SEARCH_TERM) work on the name of the associated object.
 
 ```graphql
-query {
-  organization(slug: "") {
-    teams(first: 2, search: "") {
+query getTeamMemberId {
+  organization(slug: "ORGANIZATION_SLUG") {
+    teams(first: 2, search: "TEAM_SEARCH_TERM") {
       edges {
         node {
-          members(first: 2, search: "") {
+          members(first: 2, search: "TEAM_MEMBER_SEARCH_TERM") {
             edges {
               node {
                 id
