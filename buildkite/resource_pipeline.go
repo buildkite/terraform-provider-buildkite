@@ -221,7 +221,6 @@ func resourcePipeline() *schema.Resource {
 							},
 						},
 						"build_pull_requests": {
-							Computed: true,
 							Optional: true,
 							Type:     schema.TypeBool,
 							Default:  true,
@@ -237,7 +236,6 @@ func resourcePipeline() *schema.Resource {
 							Type:     schema.TypeString,
 						},
 						"skip_pull_request_builds_for_existing_commits": {
-							Computed: true,
 							Optional: true,
 							Type:     schema.TypeBool,
 							Default:  true,
@@ -263,7 +261,6 @@ func resourcePipeline() *schema.Resource {
 							Type:     schema.TypeBool,
 						},
 						"build_branches": {
-							Computed: true,
 							Optional: true,
 							Type:     schema.TypeBool,
 							Default:  true,
@@ -289,7 +286,6 @@ func resourcePipeline() *schema.Resource {
 							Type:     schema.TypeString,
 						},
 						"publish_commit_status": {
-							Computed: true,
 							Optional: true,
 							Type:     schema.TypeBool,
 							Default:  true,
