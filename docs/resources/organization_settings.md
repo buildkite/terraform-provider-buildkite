@@ -26,4 +26,4 @@ Organization settings can be imported by passing the organization slug to the im
 $ terraform import buildkite_organization_settings.test_settings test_org
 ```
 
-Your organization's slug can be found in your organisation's [settings](https://buildkite.com/organizations/settings) page.
+Your organization's slug can be found in your organisation's [settings](https://buildkite.com/organizations/~/settings) page.

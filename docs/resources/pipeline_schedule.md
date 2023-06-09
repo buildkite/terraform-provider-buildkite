@@ -39,24 +39,9 @@ Pipeline schedules can be imported using a slug (which consists of `$BUILDKITE_O
 $ terraform import buildkite_pipeline_schedule.test myorg/test/1be3e7c7-1e03-4011-accf-b2d8eec90222
 ```
 
-Your organization's slug can be found in your organisation's [settings](https://buildkite.com/organizations/settings) page. 
+Your organization's slug can be found in your organisation's [settings](https://buildkite.com/organizations/~/settingss) page. 
 
-The pipeline slug can be found via the URL of a pipeline, or by the GraphQL query below. Alternatively, you could use this [pre-saved query](https://buildkite.com/user/graphql/console/de9839b2-6249-47f0-869e-1873c07c3cab), specifying the organisation slug (when known) and the pipeline search term (PIPELINE_SEARCH_TERM).
-
-query getPipelineSlug {
-  organization(slug: "ORGANIZATION_SLUG") {
-		pipelines(first: 5, search: "PIPELINE_SEARCH_TERM") {
-      edges {
-        node{
-          name
-          slug
-        }
-      }
-    }
-  }
-}
-
-The pipeline schedule UUID can be found with the GraphQL query below. Alternatively, you could use this [pre-saved query](https://buildkite.com/user/graphql/console/abf9270e-eccf-4c5f-af21-4cd35164ab6c), specifying the organisation slug (when known) and the pipeline search term (PIPELINE_SEARCH_TERM).
+The pipeline slug and its relevant schedule UUID can be found with the GraphQL query below. Alternatively, you could use this [pre-saved query](https://buildkite.com/user/graphql/console/abf9270e-eccf-4c5f-af21-4cd35164ab6c), specifying the organisation slug (when known) and the pipeline search term (PIPELINE_SEARCH_TERM).
 
 query getPipelineScheduleUuid {
   organization(slug: "ORGANIZATION_SLUG") {

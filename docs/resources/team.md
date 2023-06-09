@@ -42,7 +42,7 @@ Teams can be imported using the `GraphQL ID` (not UUID), e.g.
 $ terraform import buildkite_team.fleet UGlwZWxpbmUtLS00MzVjYWQ1OC1lODFkLTQ1YWYtODYzNy1iMWNmODA3MDIzOGQ=
 ```
 
-To find the ID to use, you can use the GraphQL query below. Alternatively, you could use this [pre-saved query](https://buildkite.com/user/graphql/console/9cfcca03-df1a-4951-9fa9-a7345aa3daaf2), where you will need fo fill in the organization slug and search term (TEAM_SEARCH_TERM) for the team.
+To find the ID to use, you can use the GraphQL query below. Alternatively, you could use this [pre-saved query](https://buildkite.com/user/graphql/console/6e74c89c-4e91-4d1d-92ca-4fb19d0ea453), where you will need fo fill in the organization slug and search term (TEAM_SEARCH_TERM) for the team.
 
 ```graphql
 query getTeamId {
