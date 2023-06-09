@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
-* Change default provider settings to match new pipeline[[PR #282](https://github.com/buildkite/terraform-provider-buildkite/pull/282)] 
+* Change default provider settings to match new pipeline [[PR #282](https://github.com/buildkite/terraform-provider-buildkite/pull/282)] 
 
 ## [v0.18.1](https://github.com/buildkite/terraform-provider-buildkite/compare/v0.18.0...v0.18.1)
 
