@@ -75,7 +75,7 @@ func ReadToken(ctx context.Context, d *schema.ResourceData, m interface{}) diag.
 	var diags diag.Diagnostics
 	client := m.(*Client)
 
-	agentToken, err := getAgentToken(client.genqlient, fmt.Sprintf("%s/%s", client.organization, d.Get("uuid").(string))) 
+	agentToken, err := getAgentToken(client.genqlient, fmt.Sprintf("%s/%s", client.organization, d.Get("uuid").(string)))
 
 	if err != nil {
 		return diag.FromErr(err)
@@ -109,8 +109,8 @@ func DeleteToken(ctx context.Context, d *schema.ResourceData, m interface{}) dia
 	}
 
 	_, err = revokeAgentToken(
-		client.genqlient, 
-		agentTokenRevCandidate.AgentToken.Id, 
+		client.genqlient,
+		agentTokenRevCandidate.AgentToken.Id,
 		"Revoked by Terraform",
 	)
 
@@ -120,4 +120,3 @@ func DeleteToken(ctx context.Context, d *schema.ResourceData, m interface{}) dia
 
 	return diags
 }
-
