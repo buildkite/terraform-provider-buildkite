@@ -7,3 +7,7 @@ generated: buildkite/generated.go
 
 # We pass context.Background() everywhere so just leave it off
 context_type: "-"
+
+bindings:
+  YAML:
+    type: string
