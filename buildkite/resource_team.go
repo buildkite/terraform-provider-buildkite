@@ -9,9 +9,6 @@ import (
 	"github.com/shurcooL/graphql"
 )
 
-type TeamPrivacy graphql.String
-type TeamMemberRole graphql.String
-
 type TeamNode struct {
 	Description               graphql.String
 	ID                        graphql.String
