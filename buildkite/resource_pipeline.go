@@ -217,9 +217,9 @@ func resourcePipeline() *schema.Resource {
 							},
 						},
 						"build_pull_requests": {
-							Computed: true,
 							Optional: true,
 							Type:     schema.TypeBool,
+							Default:  true,
 						},
 						"pull_request_branch_filter_enabled": {
 							Computed: true,
@@ -231,10 +231,14 @@ func resourcePipeline() *schema.Resource {
 							Optional: true,
 							Type:     schema.TypeString,
 						},
-						"skip_pull_request_builds_for_existing_commits": {
-							Computed: true,
+						"skip_builds_for_existing_commits": {
 							Optional: true,
 							Type:     schema.TypeBool,
+						},
+						"skip_pull_request_builds_for_existing_commits": {
+							Optional: true,
+							Type:     schema.TypeBool,
+							Default:  true,
 						},
 						"build_pull_request_ready_for_review": {
 							Computed: true,
@@ -257,9 +261,9 @@ func resourcePipeline() *schema.Resource {
 							Type:     schema.TypeBool,
 						},
 						"build_branches": {
-							Computed: true,
 							Optional: true,
 							Type:     schema.TypeBool,
+							Default:  true,
 						},
 						"build_tags": {
 							Computed: true,
@@ -282,9 +286,9 @@ func resourcePipeline() *schema.Resource {
 							Type:     schema.TypeString,
 						},
 						"publish_commit_status": {
-							Computed: true,
 							Optional: true,
 							Type:     schema.TypeBool,
+							Default:  true,
 						},
 						"publish_blocked_as_pending": {
 							Computed: true,
@@ -548,6 +552,7 @@ type PipelineExtraInfo struct {
 			BuildPullRequests                       bool   `json:"build_pull_requests"`
 			PullRequestBranchFilterEnabled          bool   `json:"pull_request_branch_filter_enabled"`
 			PullRequestBranchFilterConfiguration    string `json:"pull_request_branch_filter_configuration"`
+			SkipBuildsForExistingCommits            bool   `json:"skip_builds_for_existing_commits"`
 			SkipPullRequestBuildsForExistingCommits bool   `json:"skip_pull_request_builds_for_existing_commits"`
 			BuildPullRequestReadyForReview          bool   `json:"build_pull_request_ready_for_review"`
 			BuildPullRequestLabelsChanged           bool   `json:"build_pull_request_labels_changed"`
@@ -839,6 +844,7 @@ func updatePipelineResourceExtraInfo(d *schema.ResourceData, pipeline *PipelineE
 		"build_pull_requests":                           s.BuildPullRequests,
 		"pull_request_branch_filter_enabled":            s.PullRequestBranchFilterEnabled,
 		"pull_request_branch_filter_configuration":      s.PullRequestBranchFilterConfiguration,
+		"skip_builds_for_existing_commits":              s.SkipBuildsForExistingCommits,
 		"skip_pull_request_builds_for_existing_commits": s.SkipPullRequestBuildsForExistingCommits,
 		"build_pull_request_ready_for_review":           s.BuildPullRequestReadyForReview,
 		"build_pull_request_labels_changed":             s.BuildPullRequestLabelsChanged,
