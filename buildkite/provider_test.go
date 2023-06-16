@@ -6,6 +6,8 @@ import (
 	"os"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-framework/providerserver"
+	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -19,6 +21,12 @@ func init() {
 	testAccProvider = Provider("")
 	testAccProviders = map[string]*schema.Provider{
 		"buildkite": testAccProvider,
+	}
+}
+
+func protoV6ProviderFactories() map[string]func() (tfprotov6.ProviderServer, error) {
+	return map[string]func() (tfprotov6.ProviderServer, error){
+		"buildkite": providerserver.NewProtocol6WithError(New("testing")),
 	}
 }
 
@@ -40,6 +48,34 @@ func testAccPreCheck(t *testing.T) {
 	if v := os.Getenv("BUILDKITE_API_TOKEN"); v == "" {
 		t.Fatal("BUILDKITE_API_TOKEN must be set for acceptance tests")
 	}
+}
+
+func TestDataSource_UpgradeFromVersion(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		Steps: []resource.TestStep{
+			{
+				ProviderFactories: map[string]func() (*schema.Provider, error){
+					"buildkite": func() (*schema.Provider, error) {
+						return testAccProvider, nil
+					},
+				},
+				Config: `data "buildkite_team" "team" {
+							slug = "everyone"
+                        }`,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("data.buildkite_team.team", "uuid", "31529c8a-7cfa-42e8-bb85-4c844a983ea0"),
+					resource.TestCheckResourceAttr("data.buildkite_team.team", "slug", "everyone"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: protoV6ProviderFactories(),
+				Config: `data "buildkite_team" "team" {
+							slug = "everyone"
+						}`,
+				PlanOnly: true,
+			},
+		},
+	})
 }
 
 // testAccCheckResourceDisappears verifies the Provider has had the resource removed from state

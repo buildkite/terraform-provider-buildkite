@@ -1,6 +1,13 @@
 package buildkite
 
 import (
+	"context"
+	"fmt"
+
+	"github.com/hashicorp/terraform-plugin-framework/datasource"
+	"github.com/hashicorp/terraform-plugin-framework/provider"
+	framework_schema "github.com/hashicorp/terraform-plugin-framework/provider/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -15,6 +22,91 @@ const (
 	SchemaKeyGraphqlURL   = "graphql_url"
 	SchemaKeyRestURL      = "rest_url"
 )
+
+type terraformProvider struct {
+	version string
+}
+
+type providerModel struct {
+	api_token    *string
+	graphql_url  *string
+	organization *string
+	rest_url     *string
+}
+
+func (tf *terraformProvider) Configure(ctx context.Context, req provider.ConfigureRequest, resp *provider.ConfigureResponse) {
+	var model providerModel
+	diag := req.Config.Get(ctx, &model)
+
+	if diag.HasError() {
+		resp.Diagnostics.Append(diag...)
+		return
+	}
+
+	legacyProvider := schema.Provider{}
+	config := clientConfig{
+		apiToken:   "",
+		graphqlURL: defaultGraphqlEndpoint,
+		org:        "",
+		restURL:    defaultRestEndpoint,
+		userAgent:  legacyProvider.UserAgent("buildkite", tf.version),
+	}
+	client, err := NewClient(&config)
+
+	if err != nil {
+		resp.Diagnostics.AddError(err.Error(), fmt.Sprintf("... details ... %s", err))
+	}
+
+	resp.ResourceData = &client
+	resp.DataSourceData = &client
+}
+
+func (*terraformProvider) DataSources(context.Context) []func() datasource.DataSource {
+	return []func() datasource.DataSource{}
+}
+
+func (tf *terraformProvider) Metadata(ctx context.Context, req provider.MetadataRequest, resp *provider.MetadataResponse) {
+	resp.TypeName = "buildkite"
+	resp.Version = tf.version
+}
+
+func (*terraformProvider) Resources(context.Context) []func() resource.Resource {
+	return []func() resource.Resource{}
+}
+
+func (*terraformProvider) Schema(ctx context.Context, req provider.SchemaRequest, resp *provider.SchemaResponse) {
+	resp.Schema = framework_schema.Schema{
+		Attributes: map[string]framework_schema.Attribute{
+			SchemaKeyOrganization: framework_schema.StringAttribute{
+				Optional:            true,
+				Description:         "The Buildkite organization slug",
+				MarkdownDescription: "The Buildkite organization slug",
+			},
+			SchemaKeyAPIToken: framework_schema.StringAttribute{
+				Optional:            true,
+				Description:         "API token with GraphQL access and `write_pipelines, read_pipelines` scopes",
+				MarkdownDescription: "API token with GraphQL access and `write_pipelines, read_pipelines` scopes",
+				Sensitive:           true,
+			},
+			SchemaKeyGraphqlURL: framework_schema.StringAttribute{
+				Optional:            true,
+				Description:         "Base URL for the GraphQL API to use",
+				MarkdownDescription: "Base URL for the GraphQL API to use",
+			},
+			SchemaKeyRestURL: framework_schema.StringAttribute{
+				Optional:            true,
+				Description:         "Base URL for the REST API to use",
+				MarkdownDescription: "Base URL for the REST API to use",
+			},
+		},
+	}
+}
+
+func New(version string) provider.Provider {
+	return &terraformProvider{
+		version: version,
+	}
+}
 
 // Provider creates the schema.Provider for Buildkite
 func Provider(version string) *schema.Provider {
