@@ -121,7 +121,12 @@ func testAccCheckResourceDisappears(provider *schema.Provider, resource *schema.
 		}
 
 		if resource.DeleteContext != nil {
-			diags := resource.DeleteContext(context.Background(), resource.Data(resourceState.Primary), provider.Meta())
+			client := Client{
+				graphql:      graphqlClient,
+				genqlient:    genqlientGraphql,
+				organization: os.Getenv("BUILDKITE_ORGANIZATION"),
+			}
+			diags := resource.DeleteContext(context.Background(), resource.Data(resourceState.Primary), &client)
 
 			for i := range diags {
 				if diags[i].Severity == diag.Error {
