@@ -14,9 +14,9 @@ func TestAccTeamMember_add_remove(t *testing.T) {
 	var resourceTeamMember TeamMemberNode
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
-		ProviderFactories: providerFactories(),
-		CheckDestroy:      testCheckTeamMemberResourceRemoved,
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		CheckDestroy:             testCheckTeamMemberResourceRemoved,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccTeamMemberConfigBasic("MEMBER"),
@@ -37,9 +37,9 @@ func TestAccTeamMember_add_remove_non_default_role(t *testing.T) {
 	var resourceTeamMember TeamMemberNode
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
-		ProviderFactories: providerFactories(),
-		CheckDestroy:      testCheckTeamMemberResourceRemoved,
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		CheckDestroy:             testCheckTeamMemberResourceRemoved,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccTeamMemberConfigBasic("MAINTAINER"),
@@ -60,9 +60,9 @@ func TestAccTeamMember_update(t *testing.T) {
 	var resourceTeamMember TeamMemberNode
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
-		ProviderFactories: providerFactories(),
-		CheckDestroy:      testCheckTeamMemberResourceRemoved,
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		CheckDestroy:             testCheckTeamMemberResourceRemoved,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccTeamMemberConfigBasic("MEMBER"),
@@ -91,9 +91,9 @@ func TestAccTeamMember_import(t *testing.T) {
 	var resourceTeamMember TeamMemberNode
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
-		ProviderFactories: providerFactories(),
-		CheckDestroy:      testCheckTeamMemberResourceRemoved,
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		CheckDestroy:             testCheckTeamMemberResourceRemoved,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccTeamMemberConfigBasic("MEMBER"),
@@ -119,9 +119,9 @@ func TestAccTeamMember_disappears(t *testing.T) {
 	var teamMember TeamMemberNode
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
-		ProviderFactories: providerFactories(),
-		CheckDestroy:      testCheckTeamMemberResourceRemoved,
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		CheckDestroy:             testCheckTeamMemberResourceRemoved,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccTeamMemberConfigBasic("MEMBER"),

@@ -16,9 +16,9 @@ func TestAccAgentToken_add_remove(t *testing.T) {
 	var resourceToken AgentTokenNode
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
-		ProviderFactories: providerFactories(),
-		CheckDestroy:      testAccCheckAgentTokenResourceDestroy,
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		CheckDestroy:             testAccCheckAgentTokenResourceDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccAgentTokenConfigBasic("foo"),
@@ -54,9 +54,9 @@ func TestAccAgentToken_update(t *testing.T) {
 	var resourceToken AgentTokenNode
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
-		ProviderFactories: providerFactories(),
-		CheckDestroy:      testAccCheckAgentTokenResourceDestroy,
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		CheckDestroy:             testAccCheckAgentTokenResourceDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccAgentTokenConfigBasic("foo"),

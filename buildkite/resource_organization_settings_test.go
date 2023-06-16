@@ -13,9 +13,9 @@ import (
 
 func TestAccOrganizationSettings_create(t *testing.T) {
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
-		ProviderFactories: providerFactories(),
-		CheckDestroy:      testCheckOrganizationSettingsResourceRemoved,
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		CheckDestroy:             testCheckOrganizationSettingsResourceRemoved,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccOrganizationSettingsConfigBasic([]string{"0.0.0.0/0", "1.1.1.1/32", "1.0.0.1/32"}),
@@ -33,9 +33,9 @@ func TestAccOrganizationSettings_create(t *testing.T) {
 
 func TestAccOrganizationSettings_update(t *testing.T) {
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
-		ProviderFactories: providerFactories(),
-		CheckDestroy:      testCheckOrganizationSettingsResourceRemoved,
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		CheckDestroy:             testCheckOrganizationSettingsResourceRemoved,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccOrganizationSettingsConfigBasic([]string{"0.0.0.0/0", "1.1.1.1/32", "1.0.0.1/32"}),
@@ -63,9 +63,9 @@ func TestAccOrganizationSettings_update(t *testing.T) {
 
 func TestAccOrganizationSettings_import(t *testing.T) {
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
-		ProviderFactories: providerFactories(),
-		CheckDestroy:      testCheckOrganizationSettingsResourceRemoved,
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		CheckDestroy:             testCheckOrganizationSettingsResourceRemoved,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccOrganizationSettingsConfigBasic([]string{"0.0.0.0/0", "1.1.1.1/32", "1.0.0.1/32"}),
@@ -88,9 +88,9 @@ func TestAccOrganizationSettings_import(t *testing.T) {
 
 func TestAccOrganizationSettings_disappears(t *testing.T) {
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
-		ProviderFactories: providerFactories(),
-		CheckDestroy:      testCheckOrganizationSettingsResourceRemoved,
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		CheckDestroy:             testCheckOrganizationSettingsResourceRemoved,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccOrganizationSettingsConfigBasic([]string{"0.0.0.0/0", "1.1.1.1/32", "1.0.0.1/32"}),

@@ -14,9 +14,9 @@ func TestAccTeam_add_remove(t *testing.T) {
 	var resourceTeam TeamNode
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
-		ProviderFactories: providerFactories(),
-		CheckDestroy:      testAccCheckTeamResourceDestroy,
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		CheckDestroy:             testAccCheckTeamResourceDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccTeamConfigBasic("developers"),
@@ -38,9 +38,9 @@ func TestAccTeam_update(t *testing.T) {
 	var resourceTeam TeamNode
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
-		ProviderFactories: providerFactories(),
-		CheckDestroy:      testAccCheckTeamResourceDestroy,
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		CheckDestroy:             testAccCheckTeamResourceDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccTeamConfigBasic("developers"),
@@ -85,9 +85,9 @@ func TestAccTeam_import(t *testing.T) {
 	var resourceTeam TeamNode
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
-		ProviderFactories: providerFactories(),
-		CheckDestroy:      testAccCheckTeamResourceDestroy,
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		CheckDestroy:             testAccCheckTeamResourceDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccTeamConfigBasic("important"),
@@ -114,9 +114,9 @@ func TestAccTeam_disappears(t *testing.T) {
 	resourceName := "buildkite_team.test"
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
-		ProviderFactories: providerFactories(),
-		CheckDestroy:      testAccCheckPipelineResourceDestroy,
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		CheckDestroy:             testAccCheckPipelineResourceDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccTeamConfigBasic("foo"),

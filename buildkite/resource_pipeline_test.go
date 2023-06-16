@@ -15,9 +15,9 @@ func TestAccPipeline_add_remove(t *testing.T) {
 	var resourcePipeline PipelineNode
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
-		ProviderFactories: providerFactories(),
-		CheckDestroy:      testAccCheckPipelineResourceDestroy,
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		CheckDestroy:             testAccCheckPipelineResourceDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccPipelineConfigBasic("foo"),
@@ -39,9 +39,9 @@ func TestAccPipeline_add_delete_withcluster(t *testing.T) {
 	var resourcePipeline PipelineNode
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
-		ProviderFactories: providerFactories(),
-		CheckDestroy:      testAccCheckPipelineResourceDestroy,
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		CheckDestroy:             testAccCheckPipelineResourceDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccPipelineConfigBasicWithCluster("foo"),
@@ -78,9 +78,9 @@ func TestAccPipeline_add_remove_withcluster(t *testing.T) {
 	var resourcePipeline PipelineNode
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
-		ProviderFactories: providerFactories(),
-		CheckDestroy:      testAccCheckPipelineResourceDestroy,
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		CheckDestroy:             testAccCheckPipelineResourceDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccPipelineConfigBasicWithCluster("foo"),
@@ -117,9 +117,9 @@ func TestAccPipeline_add_remove_complex(t *testing.T) {
 	steps := `"steps:\n- command: buildkite-agent pipeline upload\n"`
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
-		ProviderFactories: providerFactories(),
-		CheckDestroy:      testAccCheckPipelineResourceDestroy,
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		CheckDestroy:             testAccCheckPipelineResourceDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccPipelineConfigComplex("bar", steps),
@@ -172,9 +172,9 @@ func TestAccPipeline_add_remove_withteams(t *testing.T) {
 	var resourcePipeline PipelineNode
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
-		ProviderFactories: providerFactories(),
-		CheckDestroy:      testAccCheckPipelineResourceDestroy,
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		CheckDestroy:             testAccCheckPipelineResourceDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccPipelineConfigBasicWithTeam("foo"),
@@ -195,9 +195,9 @@ func TestAccPipeline_add_remove_withtimeouts(t *testing.T) {
 	var resourcePipeline PipelineNode
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
-		ProviderFactories: providerFactories(),
-		CheckDestroy:      testAccCheckPipelineResourceDestroy,
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		CheckDestroy:             testAccCheckPipelineResourceDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccPipelineConfigBasicWithTimeouts("foo"),
@@ -218,9 +218,9 @@ func TestAccPipeline_add_remove_withdefaultsteps(t *testing.T) {
 	var resourcePipeline PipelineNode
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
-		ProviderFactories: providerFactories(),
-		CheckDestroy:      testAccCheckPipelineResourceDestroy,
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		CheckDestroy:             testAccCheckPipelineResourceDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccPipelineConfigBasicWithNoSteps("foo"),
@@ -242,9 +242,9 @@ func TestAccPipeline_add_remove_withdefinedsteps(t *testing.T) {
 	steps := `"steps:\n- command: echo 'Hello from the Buildkite Terraform Provider!'\n"`
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
-		ProviderFactories: providerFactories(),
-		CheckDestroy:      testAccCheckPipelineResourceDestroy,
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		CheckDestroy:             testAccCheckPipelineResourceDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccPipelineConfigBasicWithSteps("bar", steps),
@@ -266,9 +266,9 @@ func TestAccPipeline_update(t *testing.T) {
 	var resourcePipeline PipelineNode
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
-		ProviderFactories: providerFactories(),
-		CheckDestroy:      testAccCheckPipelineResourceDestroy,
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		CheckDestroy:             testAccCheckPipelineResourceDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccPipelineConfigBasic("foo"),
@@ -298,9 +298,9 @@ func TestAccPipeline_update_withteams(t *testing.T) {
 	var resourcePipeline PipelineNode
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
-		ProviderFactories: providerFactories(),
-		CheckDestroy:      testAccCheckPipelineResourceDestroy,
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		CheckDestroy:             testAccCheckPipelineResourceDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccPipelineConfigBasicWithTeam("foo"),
@@ -331,9 +331,9 @@ func TestAccPipeline_import(t *testing.T) {
 	var resourcePipeline PipelineNode
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
-		ProviderFactories: providerFactories(),
-		CheckDestroy:      testAccCheckPipelineResourceDestroy,
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		CheckDestroy:             testAccCheckPipelineResourceDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccPipelineConfigBasic("foo"),
@@ -361,9 +361,9 @@ func TestAccPipeline_disappears(t *testing.T) {
 	resourceName := "buildkite_pipeline.foobar"
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
-		ProviderFactories: providerFactories(),
-		CheckDestroy:      testAccCheckPipelineResourceDestroy,
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		CheckDestroy:             testAccCheckPipelineResourceDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccPipelineConfigBasic("foo"),
@@ -398,9 +398,9 @@ func TestAccPipelineDeletionProtection_create(t *testing.T) {
 	resourceName := "buildkite_pipeline.deletion_test"
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
-		ProviderFactories: providerFactories(),
-		CheckDestroy:      testAccCheckPipelineResourceDestroy,
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		CheckDestroy:             testAccCheckPipelineResourceDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccPipelineDeletionProtectionConfig("this_should_pass", false),
@@ -420,9 +420,9 @@ func TestAccPipelineDeletionProtection_update(t *testing.T) {
 	resourceName := "buildkite_pipeline.deletion_test"
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
-		ProviderFactories: providerFactories(),
-		CheckDestroy:      testAccCheckPipelineResourceDestroy,
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		CheckDestroy:             testAccCheckPipelineResourceDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccPipelineDeletionProtectionConfig("deletion_protection_update", true),
@@ -451,9 +451,9 @@ func TestAccPipelineDeletionProtection_import(t *testing.T) {
 	resourceName := "buildkite_pipeline.deletion_test"
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
-		ProviderFactories: providerFactories(),
-		CheckDestroy:      testAccCheckPipelineResourceDestroy,
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		CheckDestroy:             testAccCheckPipelineResourceDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccPipelineDeletionProtectionConfig("this_should_pass", false),

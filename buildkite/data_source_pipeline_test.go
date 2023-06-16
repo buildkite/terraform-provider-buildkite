@@ -13,9 +13,9 @@ func TestAccDataPipeline_read(t *testing.T) {
 	var resourcePipeline PipelineNode
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
-		ProviderFactories: providerFactories(),
-		CheckDestroy:      testAccCheckPipelineResourceDestroy,
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		CheckDestroy:             testAccCheckPipelineResourceDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccDataPipelineConfigBasic("foo"),

@@ -12,8 +12,8 @@ import (
 // Confirm that we can create a new agent token, and then delete it without error
 func TestAccDataMeta_read(t *testing.T) {
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
-		ProviderFactories: providerFactories(),
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccDataMetaConfigBasic(),

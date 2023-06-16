@@ -9,6 +9,8 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
+	"github.com/hashicorp/terraform-plugin-mux/tf5to6server"
+	"github.com/hashicorp/terraform-plugin-mux/tf6muxserver"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -32,17 +34,28 @@ func init() {
 	graphqlClient = graphql.NewClient(defaultGraphqlEndpoint, httpClient)
 }
 
-func providerFactories() map[string]func() (*schema.Provider, error) {
-	return map[string]func() (*schema.Provider, error){
-		"buildkite": func() (*schema.Provider, error) {
-			return Provider("testing"), nil
+func protoV6ProviderFactories() map[string]func() (tfprotov6.ProviderServer, error) {
+	upgradedSdkServer, err := tf5to6server.UpgradeServer(
+		context.Background(),
+		Provider("testing").GRPCProvider,
+	)
+
+	if err != nil {
+		panic(err)
+	}
+
+	providers := []func() tfprotov6.ProviderServer{
+		providerserver.NewProtocol6(New("testing")),
+		func() tfprotov6.ProviderServer {
+			return upgradedSdkServer
 		},
 	}
-}
 
-func protoV6ProviderFactories() map[string]func() (tfprotov6.ProviderServer, error) {
+	muxServer, err := tf6muxserver.NewMuxServer(context.Background(), providers...)
 	return map[string]func() (tfprotov6.ProviderServer, error){
-		"buildkite": providerserver.NewProtocol6WithError(New("testing")),
+		"buildkite": func() (tfprotov6.ProviderServer, error) {
+			return muxServer.ProviderServer(), nil
+		},
 	}
 }
 
@@ -71,7 +84,7 @@ func TestDataSource_UpgradeFromVersion(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		Steps: []resource.TestStep{
 			{
-				ProviderFactories: providerFactories(),
+				ProtoV6ProviderFactories: protoV6ProviderFactories(),
 				Config: `data "buildkite_team" "team" {
 							slug = "everyone"
                         }`,

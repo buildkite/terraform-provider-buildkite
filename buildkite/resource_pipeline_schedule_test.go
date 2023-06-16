@@ -16,9 +16,9 @@ func TestAccPipelineSchedule_add_remove(t *testing.T) {
 	var resourceSchedule PipelineScheduleNode
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
-		ProviderFactories: providerFactories(),
-		CheckDestroy:      testAccCheckAllPipelineScheduleResourcesDestroyed,
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		CheckDestroy:             testAccCheckAllPipelineScheduleResourcesDestroyed,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccPipelineScheduleConfigBasic("foo", "0 * * * *"),
@@ -45,9 +45,9 @@ func TestAccPipelineSchedule_add_remove_withteams(t *testing.T) {
 	var resourceSchedule PipelineScheduleNode
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
-		ProviderFactories: providerFactories(),
-		CheckDestroy:      testAccCheckAllPipelineScheduleResourcesDestroyed,
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		CheckDestroy:             testAccCheckAllPipelineScheduleResourcesDestroyed,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccPipelineScheduleConfigBasicWithTeam("foo", "0 * * * *"),
@@ -74,9 +74,9 @@ func TestAccPipelineSchedule_update(t *testing.T) {
 	var resourceSchedule PipelineScheduleNode
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
-		ProviderFactories: providerFactories(),
-		CheckDestroy:      testAccCheckAllPipelineScheduleResourcesDestroyed,
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		CheckDestroy:             testAccCheckAllPipelineScheduleResourcesDestroyed,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccPipelineScheduleConfigBasic("foo", "0 * * * *"),
@@ -113,9 +113,9 @@ func TestAccPipelineSchedule_update_withteams(t *testing.T) {
 	var resourceSchedule PipelineScheduleNode
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
-		ProviderFactories: providerFactories(),
-		CheckDestroy:      testAccCheckAllPipelineScheduleResourcesDestroyed,
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		CheckDestroy:             testAccCheckAllPipelineScheduleResourcesDestroyed,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccPipelineScheduleConfigBasicWithTeam("foo", "0 * * * *"),
@@ -151,9 +151,9 @@ func TestAccPipelineSchedule_import(t *testing.T) {
 	var resourceSchedule PipelineScheduleNode
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
-		ProviderFactories: providerFactories(),
-		CheckDestroy:      testAccCheckAllPipelineScheduleResourcesDestroyed,
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		CheckDestroy:             testAccCheckAllPipelineScheduleResourcesDestroyed,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccPipelineScheduleConfigBasic("foo", "0 * * * *"),
@@ -181,9 +181,9 @@ func TestAccPipelineSchedule_disappears(t *testing.T) {
 	resourceName := "buildkite_pipeline_schedule.foobar"
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
-		ProviderFactories: providerFactories(),
-		CheckDestroy:      testAccCheckAllPipelineScheduleResourcesDestroyed,
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		CheckDestroy:             testAccCheckAllPipelineScheduleResourcesDestroyed,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccPipelineScheduleConfigBasic("foo", "0 * * * *"),
