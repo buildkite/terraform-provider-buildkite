@@ -23,5 +23,6 @@ resource "buildkite_agent_token" "fleet" {
 ## Attribute Reference
 
 * `id` - The Graphql ID of the created agent token.
+* `token` - The value of the created agent token.
 * `uuid` - The UUID of the token.
 

@@ -6,7 +6,7 @@ All notable changes to this project will be documented in this file.
 
 * Allow pipeline to be removed from a cluster [[PR #279](https://github.com/buildkite/terraform-provider-buildkite/pull/279)] @jradtilbrook
 * Change default provider settings to match new pipeline [[PR #282](https://github.com/buildkite/terraform-provider-buildkite/pull/282)] @jradtilbrook
-* Agent Token resource genqlient migration & adjustment [[PR #282](https://github.com/buildkite/terraform-provider-buildkite/pull/281)] @james2791
+* Agent Token resource genqlient migration & adjustment [[PR #281](https://github.com/buildkite/terraform-provider-buildkite/pull/281)] @james2791
 
 ## [v0.18.1](https://github.com/buildkite/terraform-provider-buildkite/compare/v0.18.0...v0.18.1)
 
