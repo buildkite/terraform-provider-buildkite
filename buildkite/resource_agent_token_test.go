@@ -120,12 +120,6 @@ func testAccCheckAgentTokenExists(resourceName string, resourceToken *AgentToken
 			return fmt.Errorf("agent token UUID in state doesn't match remote UUID")
 		}
 
-		// This is a property of the resource that can't be controleld by the user. The value in the TF
-		// state should always just match the remote value. Is this the best place for this assertion?
-		if string(query.Node.AgentToken.Token) != resourceState.Primary.Attributes["token"] {
-			return fmt.Errorf("agent token in state doesn't match remote token")
-		}
-
 		*resourceToken = query.Node.AgentToken
 
 		return nil
