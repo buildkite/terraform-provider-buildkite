@@ -2,7 +2,6 @@ query getAgentToken($slug: ID!) {
     agentToken(slug: $slug) {
         id
         description
-        token
         uuid
     }
 }
