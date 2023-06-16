@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 	"strings"
 	"testing"
 
@@ -141,8 +142,7 @@ func testCheckOrganizationSettingsResourceRemoved(s *terraform.State) error {
 
 func testAccCheckOrganizationSettingsRemoteValues(ip_addresses []string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
-		provider := Provider("testing").Meta().(*Client)
-		resp, err := getOrganization(provider.genqlient, provider.organization)
+		resp, err := getOrganization(genqlientGraphql, os.Getenv("BUILDKITE_ORGANIZATION"))
 
 		if err != nil {
 			return err

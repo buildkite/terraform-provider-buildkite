@@ -7,6 +7,7 @@ import (
 	"os"
 	"testing"
 
+	genqlient "github.com/Khan/genqlient/graphql"
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 	"github.com/hashicorp/terraform-plugin-mux/tf5to6server"
@@ -19,6 +20,7 @@ import (
 )
 
 var graphqlClient *graphql.Client
+var genqlientGraphql genqlient.Client
 
 func init() {
 	rt := http.DefaultTransport
@@ -32,6 +34,7 @@ func init() {
 	}
 
 	graphqlClient = graphql.NewClient(defaultGraphqlEndpoint, httpClient)
+	genqlientGraphql = genqlient.NewClient(defaultGraphqlEndpoint, httpClient)
 }
 
 func protoV6ProviderFactories() map[string]func() (tfprotov6.ProviderServer, error) {
