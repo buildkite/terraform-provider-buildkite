@@ -2,6 +2,7 @@ package buildkite
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"testing"
@@ -28,6 +29,19 @@ func TestAccAgentToken_add_remove(t *testing.T) {
 					testAccCheckAgentTokenRemoteValues(&resourceToken, "Acceptance Test foo"),
 					// Confirm the token has the correct values in terraform state
 					resource.TestCheckResourceAttr("buildkite_agent_token.foobar", "description", "Acceptance Test foo"),
+				),
+			},
+			{
+				RefreshState: true,
+				PlanOnly:     true,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					// Confirm the token has the correct values in terraform state
+					resource.TestCheckResourceAttrWith("buildkite_agent_token.foobar", "token", func(value string) error {
+						if value == "" {
+							return errors.New("Token should not be empty.")
+						}
+						return nil
+					}),
 				),
 			},
 		},
@@ -63,34 +77,6 @@ func TestAccAgentToken_update(t *testing.T) {
 					// Confirm the token has the updated values in terraform state
 					resource.TestCheckResourceAttr("buildkite_agent_token.foobar", "description", "Acceptance Test bar"),
 				),
-			},
-		},
-	})
-}
-
-// Confirm that this resource can be imported
-func TestAccAgentToken_import(t *testing.T) {
-	var resourceToken AgentTokenNode
-
-	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckAgentTokenResourceDestroy,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccAgentTokenConfigBasic("foo"),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					// Confirm the token exists in the buildkite API
-					testAccCheckAgentTokenExists("buildkite_agent_token.foobar", &resourceToken),
-					// Quick check to confirm the local state is correct before we re-import it
-					resource.TestCheckResourceAttr("buildkite_agent_token.foobar", "description", "Acceptance Test foo"),
-				),
-			},
-			{
-				// re-import the resource (using the graphql token of the existing resource) and confirm they match
-				ResourceName:      "buildkite_agent_token.foobar",
-				ImportState:       true,
-				ImportStateVerify: true,
 			},
 		},
 	})
@@ -132,12 +118,6 @@ func testAccCheckAgentTokenExists(resourceName string, resourceToken *AgentToken
 		// state should always just match the remote value. Is this the best place for this assertion?
 		if string(query.Node.AgentToken.UUID) != resourceState.Primary.Attributes["uuid"] {
 			return fmt.Errorf("agent token UUID in state doesn't match remote UUID")
-		}
-
-		// This is a property of the resource that can't be controleld by the user. The value in the TF
-		// state should always just match the remote value. Is this the best place for this assertion?
-		if string(query.Node.AgentToken.Token) != resourceState.Primary.Attributes["token"] {
-			return fmt.Errorf("agent token in state doesn't match remote token")
 		}
 
 		*resourceToken = query.Node.AgentToken

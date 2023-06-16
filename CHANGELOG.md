@@ -2,10 +2,28 @@
 
 All notable changes to this project will be documented in this file.
 
-## [v0.18.1](https://github.com/buildkite/terraform-provider-buildkite/compare/v0.18.0...v0.18.1)
+## Unreleased
+
+## [v0.19.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v0.18.0...v0.19.0)
+
+### Breaking changes
+This release removes the ability to import Agent tokens.  
+As per https://buildkite.com/changelog/207-agent-token-being-deprecated-from-graphql-apis, it will soon not be possible
+to read the agent token value after creation, making importing Agent tokens impossible.
+
+**Note**: If you are using an earlier version than `v0.19.0` after the change above occurs, you will likely see an
+unexpected diff in your `terraform plan`s. Upon state refresh, the token values will be emptied out which could trigger
+other dependent resources to change. It is highly recommended to upgrade to `v0.19.0` prior to avoid this happening.
 
 ### Fixes
-* Pipelines resource Computed/Default nil values reversion[[PR #277](https://github.com/buildkite/terraform-provider-buildkite/pull/277)] @james2791
+
+* Pipelines resource Computed/Default nil values reversion [[PR #277](https://github.com/buildkite/terraform-provider-buildkite/pull/277)] @james2791
+* Allow pipeline to be removed from a cluster [[PR #279](https://github.com/buildkite/terraform-provider-buildkite/pull/279)] @jradtilbrook
+* Change default provider settings to match new pipeline [[PR #282](https://github.com/buildkite/terraform-provider-buildkite/pull/282)] @jradtilbrook
+
+### Added
+
+* Agent Token resource genqlient migration & adjustment [[PR #281](https://github.com/buildkite/terraform-provider-buildkite/pull/281)] @james2791
 
 ## [v0.18.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v0.17.1...v0.18.0)
 
