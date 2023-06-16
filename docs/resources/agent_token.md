@@ -23,14 +23,5 @@ resource "buildkite_agent_token" "fleet" {
 ## Attribute Reference
 
 * `id` - The Graphql ID of the created agent token.
-* `token` - The value of the created agent token.
 * `uuid` - The UUID of the token.
 
-
-## Import
-
-Tokens can be imported using the `GraphQL ID` (not UUID), e.g.
-
-```
-$ terraform import buildkite_agent_token.fleet QWdlbnRUb2tlbi0tLTQzNWNhZDU4LWU4MWQtNDVhZi04NjM3LWIxY2Y4MDcwMjM4ZA==
-```
