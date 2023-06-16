@@ -2,6 +2,7 @@ package buildkite
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"testing"
@@ -28,6 +29,19 @@ func TestAccAgentToken_add_remove(t *testing.T) {
 					testAccCheckAgentTokenRemoteValues(&resourceToken, "Acceptance Test foo"),
 					// Confirm the token has the correct values in terraform state
 					resource.TestCheckResourceAttr("buildkite_agent_token.foobar", "description", "Acceptance Test foo"),
+				),
+			},
+			{
+				RefreshState: true,
+				PlanOnly: true,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					// Confirm the token has the correct values in terraform state
+					resource.TestCheckResourceAttrWith("buildkite_agent_token.foobar", "token", func(value string) error {
+						if value == "" {
+							return errors.New("Token should not be empty.")
+						}
+						return nil
+					}),
 				),
 			},
 		},
