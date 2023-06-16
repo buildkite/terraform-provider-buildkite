@@ -167,7 +167,6 @@ func testAccCheckTeamMemberExists(resourceName string, resourceTeamMember *TeamM
 			return fmt.Errorf("No ID is set in state")
 		}
 
-		provider := Provider("testing").Meta().(*Client)
 		var query struct {
 			Node struct {
 				TeamMember TeamMemberNode `graphql:"... on TeamMember"`
@@ -178,7 +177,7 @@ func testAccCheckTeamMemberExists(resourceName string, resourceTeamMember *TeamM
 			"id": resourceState.Primary.ID,
 		}
 
-		err := provider.graphql.Query(context.Background(), &query, vars)
+		err := graphqlClient.Query(context.Background(), &query, vars)
 		if err != nil {
 			return fmt.Errorf("Error fetching team from graphql API: %v", err)
 		}
@@ -195,8 +194,6 @@ func testAccCheckTeamMemberExists(resourceName string, resourceTeamMember *TeamM
 
 // verify the team member has been removed
 func testCheckTeamMemberResourceRemoved(s *terraform.State) error {
-	provider := Provider("testing").Meta().(*Client)
-
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "buildkite_team_member" {
 			continue
@@ -213,7 +210,7 @@ func testCheckTeamMemberResourceRemoved(s *terraform.State) error {
 			"id": rs.Primary.ID,
 		}
 
-		err := provider.graphql.Query(context.Background(), &query, vars)
+		err := graphqlClient.Query(context.Background(), &query, vars)
 		if err == nil {
 			if string(query.Node.TeamMember.ID) != "" &&
 				string(query.Node.TeamMember.ID) == rs.Primary.ID {

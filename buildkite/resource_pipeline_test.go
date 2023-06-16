@@ -503,7 +503,6 @@ func testAccCheckPipelineExists(resourceName string, resourcePipeline *PipelineN
 			return fmt.Errorf("No ID is set in state")
 		}
 
-		provider := Provider("testing").Meta().(*Client)
 		var query struct {
 			Node struct {
 				Pipeline PipelineNode `graphql:"... on Pipeline"`
@@ -514,7 +513,7 @@ func testAccCheckPipelineExists(resourceName string, resourcePipeline *PipelineN
 			"id": resourceState.Primary.ID,
 		}
 
-		err := provider.graphql.Query(context.Background(), &query, vars)
+		err := graphqlClient.Query(context.Background(), &query, vars)
 		if err != nil {
 			return fmt.Errorf("Error fetching pipeline from graphql API: %v", err)
 		}

@@ -94,7 +94,6 @@ func testAccCheckAgentTokenExists(resourceName string, resourceToken *AgentToken
 			return fmt.Errorf("No ID is set in state")
 		}
 
-		provider := Provider("testing").Meta().(*Client)
 		var query struct {
 			Node struct {
 				AgentToken AgentTokenNode `graphql:"... on AgentToken"`
@@ -105,7 +104,7 @@ func testAccCheckAgentTokenExists(resourceName string, resourceToken *AgentToken
 			"id": resourceState.Primary.ID,
 		}
 
-		err := provider.graphql.Query(context.Background(), &query, vars)
+		err := graphqlClient.Query(context.Background(), &query, vars)
 		if err != nil {
 			return fmt.Errorf("Error fetching agent token from graphql API: %v", err)
 		}
@@ -147,8 +146,6 @@ func testAccAgentTokenConfigBasic(description string) string {
 
 // verifies the agent token has been destroyed
 func testAccCheckAgentTokenResourceDestroy(s *terraform.State) error {
-	provider := Provider("testing").Meta().(*Client)
-
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "buildkite_agent_token" {
 			continue
@@ -164,7 +161,7 @@ func testAccCheckAgentTokenResourceDestroy(s *terraform.State) error {
 			"id": rs.Primary.ID,
 		}
 
-		err := provider.graphql.Query(context.Background(), &query, vars)
+		err := graphqlClient.Query(context.Background(), &query, vars)
 		if err != nil {
 			if strings.Contains(err.Error(), "This agent registration token was already revoked") {
 				// not sure why it's already revoked, but fine by us. It's the state we need

@@ -116,7 +116,6 @@ func testAccOrganizationSettingsConfigBasic(ip_addresses []string) string {
 }
 
 func testCheckOrganizationSettingsResourceRemoved(s *terraform.State) error {
-	provider := Provider("testing").Meta().(*Client)
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "buildkite_organization_settings" {
 			continue
@@ -128,7 +127,7 @@ func testCheckOrganizationSettingsResourceRemoved(s *terraform.State) error {
 			}
 		}
 
-		err := provider.graphql.Query(context.Background(), &getOrganizationQuery, map[string]interface{}{
+		err := graphqlClient.Query(context.Background(), &getOrganizationQuery, map[string]interface{}{
 			"slug": rs.Primary.ID,
 		})
 
