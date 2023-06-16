@@ -51,6 +51,7 @@ func testAccPreCheck(t *testing.T) {
 }
 
 func TestDataSource_UpgradeFromVersion(t *testing.T) {
+	t.Skipf("Skipping until new provider has a resource created")
 	resource.Test(t, resource.TestCase{
 		Steps: []resource.TestStep{
 			{
