@@ -43,9 +43,10 @@ Your organization's slug can be found in your organisation's [settings](https://
 
 The pipeline slug and its relevant schedule UUID can be found with the GraphQL query below. Alternatively, you could use this [pre-saved query](https://buildkite.com/user/graphql/console/abf9270e-eccf-4c5f-af21-4cd35164ab6c), specifying the organisation slug (when known) and the pipeline search term (PIPELINE_SEARCH_TERM).
 
+```graphql
 query getPipelineScheduleUuid {
   organization(slug: "ORGANIZATION_SLUG") {
-		pipelines(first: 5, search: "PIPELINE_SEARCH_TERM") {
+    pipelines(first: 5, search: "PIPELINE_SEARCH_TERM") {
       edges{
         node{
           name
