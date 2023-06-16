@@ -95,8 +95,8 @@ func DeleteToken(ctx context.Context, d *schema.ResourceData, m interface{}) dia
 	var diags diag.Diagnostics
 	client := m.(*Client)
 	var err error
-	
-	_, err = revokeAgentToken(client.genqlient, d.Id(),"Revoked by Terraform")
+
+	_, err = revokeAgentToken(client.genqlient, d.Id(), "Revoked by Terraform")
 
 	if err != nil {
 		return diag.FromErr(err)
