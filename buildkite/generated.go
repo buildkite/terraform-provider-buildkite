@@ -46,25 +46,6 @@ const (
 	GenqlientTeamPrivacySecret GenqlientTeamPrivacy = "SECRET"
 )
 
-// __createAgentTokenInput is used internally by genqlient
-type __createAgentTokenInput struct {
-	OrganizationId string `json:"organizationId"`
-	Description    string `json:"description"`
-}
-
-// GetOrganizationId returns __createAgentTokenInput.OrganizationId, and is useful for accessing the field via an interface.
-func (v *__createAgentTokenInput) GetOrganizationId() string { return v.OrganizationId }
-
-// GetDescription returns __createAgentTokenInput.Description, and is useful for accessing the field via an interface.
-func (v *__createAgentTokenInput) GetDescription() string { return v.Description }
-
-// __getAgentTokenInput is used internally by genqlient
-type __getAgentTokenInput struct {
-	Slug string `json:"slug"`
-}
-
-// GetSlug returns __getAgentTokenInput.Slug, and is useful for accessing the field via an interface.
-func (v *__getAgentTokenInput) GetSlug() string { return v.Slug }
 // The access levels that can be assigned to a pipeline
 type PipelineAccessLevels string
 
@@ -269,6 +250,26 @@ const (
 	TeamPrivacySecret TeamPrivacy = "SECRET"
 )
 
+// __createAgentTokenInput is used internally by genqlient
+type __createAgentTokenInput struct {
+	OrganizationId string `json:"organizationId"`
+	Description    string `json:"description"`
+}
+
+// GetOrganizationId returns __createAgentTokenInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__createAgentTokenInput) GetOrganizationId() string { return v.OrganizationId }
+
+// GetDescription returns __createAgentTokenInput.Description, and is useful for accessing the field via an interface.
+func (v *__createAgentTokenInput) GetDescription() string { return v.Description }
+
+// __getAgentTokenInput is used internally by genqlient
+type __getAgentTokenInput struct {
+	Slug string `json:"slug"`
+}
+
+// GetSlug returns __getAgentTokenInput.Slug, and is useful for accessing the field via an interface.
+func (v *__getAgentTokenInput) GetSlug() string { return v.Slug }
+
 // __getOrganizationInput is used internally by genqlient
 type __getOrganizationInput struct {
 	Slug string `json:"slug"`
@@ -316,6 +317,14 @@ func (v *__setApiIpAddressesInput) GetOrganizationID() string { return v.Organiz
 
 // GetIpAddresses returns __setApiIpAddressesInput.IpAddresses, and is useful for accessing the field via an interface.
 func (v *__setApiIpAddressesInput) GetIpAddresses() string { return v.IpAddresses }
+
+// __updatePipelineInput is used internally by genqlient
+type __updatePipelineInput struct {
+	Input PipelineUpdateInput `json:"input"`
+}
+
+// GetInput returns __updatePipelineInput.Input, and is useful for accessing the field via an interface.
+func (v *__updatePipelineInput) GetInput() PipelineUpdateInput { return v.Input }
 
 // createAgentTokenAgentTokenCreateAgentTokenCreatePayload includes the requested fields of the GraphQL type AgentTokenCreatePayload.
 // The GraphQL type's documentation follows.
@@ -393,8 +402,6 @@ type getAgentTokenAgentToken struct {
 	Id string `json:"id"`
 	// A description about what this agent token is used for
 	Description string `json:"description"`
-	// The token value used to register a new agent
-	Token string `json:"token"`
 	// The public UUID for the agent
 	Uuid string `json:"uuid"`
 }
@@ -404,9 +411,6 @@ func (v *getAgentTokenAgentToken) GetId() string { return v.Id }
 
 // GetDescription returns getAgentTokenAgentToken.Description, and is useful for accessing the field via an interface.
 func (v *getAgentTokenAgentToken) GetDescription() string { return v.Description }
-
-// GetToken returns getAgentTokenAgentToken.Token, and is useful for accessing the field via an interface.
-func (v *getAgentTokenAgentToken) GetToken() string { return v.Token }
 
 // GetUuid returns getAgentTokenAgentToken.Uuid, and is useful for accessing the field via an interface.
 func (v *getAgentTokenAgentToken) GetUuid() string { return v.Uuid }
@@ -419,13 +423,6 @@ type getAgentTokenResponse struct {
 
 // GetAgentToken returns getAgentTokenResponse.AgentToken, and is useful for accessing the field via an interface.
 func (v *getAgentTokenResponse) GetAgentToken() getAgentTokenAgentToken { return v.AgentToken }
-// __updatePipelineInput is used internally by genqlient
-type __updatePipelineInput struct {
-	Input PipelineUpdateInput `json:"input"`
-}
-
-// GetInput returns __updatePipelineInput.Input, and is useful for accessing the field via an interface.
-func (v *__updatePipelineInput) GetInput() PipelineUpdateInput { return v.Input }
 
 // getOrganizationOrganization includes the requested fields of the GraphQL type Organization.
 // The GraphQL type's documentation follows.
@@ -672,84 +669,6 @@ func (v *setApiIpAddressesResponse) GetOrganizationApiIpAllowlistUpdate() setApi
 	return v.OrganizationApiIpAllowlistUpdate
 }
 
-// The query or mutation executed by createAgentToken.
-const createAgentToken_Operation = `
-mutation createAgentToken ($organizationId: ID!, $description: String) {
-	agentTokenCreate(input: {organizationID:$organizationId,description:$description}) {
-		tokenValue
-		agentTokenEdge {
-			node {
-				id
-				description
-				uuid
-			}
-		}
-	}
-}
-`
-
-func createAgentToken(
-	client graphql.Client,
-	organizationId string,
-	description string,
-) (*createAgentTokenResponse, error) {
-	req := &graphql.Request{
-		OpName: "createAgentToken",
-		Query:  createAgentToken_Operation,
-		Variables: &__createAgentTokenInput{
-			OrganizationId: organizationId,
-			Description:    description,
-		},
-	}
-	var err error
-
-	var data createAgentTokenResponse
-	resp := &graphql.Response{Data: &data}
-
-	err = client.MakeRequest(
-		nil,
-		req,
-		resp,
-	)
-
-	return &data, err
-}
-
-// The query or mutation executed by getAgentToken.
-const getAgentToken_Operation = `
-query getAgentToken ($slug: ID!) {
-	agentToken(slug: $slug) {
-		id
-		description
-		token
-		uuid
-	}
-}
-`
-
-func getAgentToken(
-	client graphql.Client,
-	slug string,
-) (*getAgentTokenResponse, error) {
-	req := &graphql.Request{
-		OpName: "getAgentToken",
-		Query:  getAgentToken_Operation,
-		Variables: &__getAgentTokenInput{
-			Slug: slug,
-		},
-	}
-	var err error
-
-	var data getAgentTokenResponse
-	resp := &graphql.Response{Data: &data}
-
-	err = client.MakeRequest(
-		nil,
-		req,
-		resp,
-	)
-
-	return &data, err
 // updatePipelinePipelineUpdatePipelineUpdatePayload includes the requested fields of the GraphQL type PipelineUpdatePayload.
 // The GraphQL type's documentation follows.
 //
@@ -1067,6 +986,85 @@ type updatePipelineResponse struct {
 // GetPipelineUpdate returns updatePipelineResponse.PipelineUpdate, and is useful for accessing the field via an interface.
 func (v *updatePipelineResponse) GetPipelineUpdate() updatePipelinePipelineUpdatePipelineUpdatePayload {
 	return v.PipelineUpdate
+}
+
+// The query or mutation executed by createAgentToken.
+const createAgentToken_Operation = `
+mutation createAgentToken ($organizationId: ID!, $description: String) {
+	agentTokenCreate(input: {organizationID:$organizationId,description:$description}) {
+		tokenValue
+		agentTokenEdge {
+			node {
+				id
+				description
+				uuid
+			}
+		}
+	}
+}
+`
+
+func createAgentToken(
+	client graphql.Client,
+	organizationId string,
+	description string,
+) (*createAgentTokenResponse, error) {
+	req := &graphql.Request{
+		OpName: "createAgentToken",
+		Query:  createAgentToken_Operation,
+		Variables: &__createAgentTokenInput{
+			OrganizationId: organizationId,
+			Description:    description,
+		},
+	}
+	var err error
+
+	var data createAgentTokenResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		nil,
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
+// The query or mutation executed by getAgentToken.
+const getAgentToken_Operation = `
+query getAgentToken ($slug: ID!) {
+	agentToken(slug: $slug) {
+		id
+		description
+		uuid
+	}
+}
+`
+
+func getAgentToken(
+	client graphql.Client,
+	slug string,
+) (*getAgentTokenResponse, error) {
+	req := &graphql.Request{
+		OpName: "getAgentToken",
+		Query:  getAgentToken_Operation,
+		Variables: &__getAgentTokenInput{
+			Slug: slug,
+		},
+	}
+	var err error
+
+	var data getAgentTokenResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		nil,
+		req,
+		resp,
+	)
+
+	return &data, err
 }
 
 // The query or mutation executed by getOrganization.
