@@ -668,8 +668,6 @@ func testAccPipelineConfigComplex(name string, steps string) string {
 
 // verifies the Pipeline has been destroyed
 func testAccCheckPipelineResourceDestroy(s *terraform.State) error {
-	provider := Provider("testing").Meta().(*Client)
-
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "buildkite_pipeline" {
 			continue
@@ -686,7 +684,7 @@ func testAccCheckPipelineResourceDestroy(s *terraform.State) error {
 			"id": rs.Primary.ID,
 		}
 
-		err := provider.graphql.Query(context.Background(), &query, vars)
+		err := graphqlClient.Query(context.Background(), &query, vars)
 		if err == nil {
 			if string(query.Node.Pipeline.ID) != "" &&
 				string(query.Node.Pipeline.ID) == rs.Primary.ID {

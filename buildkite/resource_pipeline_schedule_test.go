@@ -211,7 +211,6 @@ func testAccCheckPipelineScheduleExists(resourceName string, resourceSchedule *P
 			return fmt.Errorf("No ID is set in state")
 		}
 
-		provider := Provider("testing").Meta().(*Client)
 		var query struct {
 			Node struct {
 				PipelineSchedule PipelineScheduleNode `graphql:"... on PipelineSchedule"`
@@ -222,7 +221,7 @@ func testAccCheckPipelineScheduleExists(resourceName string, resourceSchedule *P
 			"id": resourceState.Primary.ID,
 		}
 
-		err := provider.graphql.Query(context.Background(), &query, vars)
+		err := graphqlClient.Query(context.Background(), &query, vars)
 		if err != nil {
 			return fmt.Errorf("Error fetching pipeline schedule from graphql API: %v", err)
 		}
@@ -306,8 +305,6 @@ func testAccPipelineScheduleConfigBasicWithTeam(label string, cronline string) s
 
 // verifies the pipeline schedule has been destroyed
 func testAccCheckPipelineScheduleResourceDestroy(s *terraform.State) error {
-	provider := Provider("testing").Meta().(*Client)
-
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "buildkite_pipeline_schedule" {
 			continue
@@ -324,7 +321,7 @@ func testAccCheckPipelineScheduleResourceDestroy(s *terraform.State) error {
 			"id": rs.Primary.ID,
 		}
 
-		err := provider.graphql.Query(context.Background(), &query, vars)
+		err := graphqlClient.Query(context.Background(), &query, vars)
 		if err == nil {
 			if string(query.Node.PipelineSchedule.ID) != "" &&
 				string(query.Node.PipelineSchedule.ID) == rs.Primary.ID {

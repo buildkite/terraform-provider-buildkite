@@ -3,6 +3,7 @@ package buildkite
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"os"
 	"testing"
 
@@ -12,7 +13,24 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
+	"github.com/shurcooL/graphql"
 )
+
+var graphqlClient *graphql.Client
+
+func init() {
+	rt := http.DefaultTransport
+	header := make(http.Header)
+	header.Set("Authorization", "Bearer "+os.Getenv("BUILDKITE_API_TOKEN"))
+	header.Set("User-Agent", "testing")
+	rt = newHeaderRoundTripper(rt, header)
+
+	httpClient := &http.Client{
+		Transport: rt,
+	}
+
+	graphqlClient = graphql.NewClient(defaultGraphqlEndpoint, httpClient)
+}
 
 func providerFactories() map[string]func() (*schema.Provider, error) {
 	return map[string]func() (*schema.Provider, error){
