@@ -33,7 +33,7 @@ func TestAccAgentToken_add_remove(t *testing.T) {
 			},
 			{
 				RefreshState: true,
-				PlanOnly: true,
+				PlanOnly:     true,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Confirm the token has the correct values in terraform state
 					resource.TestCheckResourceAttrWith("buildkite_agent_token.foobar", "token", func(value string) error {
