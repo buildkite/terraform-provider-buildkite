@@ -25,10 +25,7 @@ func resourceAgentToken() *schema.Resource {
 		ReadContext:   ReadToken,
 		// NB: there is no updating a token, changes force a new one to be creaated
 		DeleteContext: DeleteToken,
-		Importer: &schema.ResourceImporter{
-			State: schema.ImportStatePassthrough,
-		},
-
+		Importer:      nil,
 		Schema: map[string]*schema.Schema{
 			"description": &schema.Schema{
 				ForceNew: true,
@@ -65,7 +62,7 @@ func CreateToken(ctx context.Context, d *schema.ResourceData, m interface{}) dia
 	d.SetId(apiResponse.AgentTokenCreate.AgentTokenEdge.Node.Id)
 	d.Set("uuid", apiResponse.AgentTokenCreate.AgentTokenEdge.Node.Uuid)
 	d.Set("description", apiResponse.AgentTokenCreate.AgentTokenEdge.Node.Description)
-	d.Set("token", apiResponse.AgentTokenCreate.AgentTokenEdge.Node.Token)
+	d.Set("token", apiResponse.AgentTokenCreate.TokenValue)
 
 	return diags
 }
@@ -88,7 +85,7 @@ func ReadToken(ctx context.Context, d *schema.ResourceData, m interface{}) diag.
 	d.SetId(agentToken.AgentToken.Id)
 	d.Set("uuid", agentToken.AgentToken.Uuid)
 	d.Set("description", agentToken.AgentToken.Description)
-	d.Set("token", agentToken.AgentToken.Token)
+	// NB: we never set the token in read context because its not available in the API after creation
 
 	return diags
 }

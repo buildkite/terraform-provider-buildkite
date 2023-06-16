@@ -17,11 +17,11 @@ mutation createAgentToken(
             description: $description
         }
     ) {
+        tokenValue
         agentTokenEdge {
             node {
                 id
                 description
-                token
                 uuid
             }
         }
@@ -33,7 +33,7 @@ mutation revokeAgentToken($id: ID!, $reason: String!) {
         agentToken {
             id
             description
-            uuid        
+            uuid
         }
     }
 }
