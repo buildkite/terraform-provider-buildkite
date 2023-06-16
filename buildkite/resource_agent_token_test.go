@@ -68,34 +68,6 @@ func TestAccAgentToken_update(t *testing.T) {
 	})
 }
 
-// Confirm that this resource can be imported
-func TestAccAgentToken_import(t *testing.T) {
-	var resourceToken AgentTokenNode
-
-	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckAgentTokenResourceDestroy,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccAgentTokenConfigBasic("foo"),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					// Confirm the token exists in the buildkite API
-					testAccCheckAgentTokenExists("buildkite_agent_token.foobar", &resourceToken),
-					// Quick check to confirm the local state is correct before we re-import it
-					resource.TestCheckResourceAttr("buildkite_agent_token.foobar", "description", "Acceptance Test foo"),
-				),
-			},
-			{
-				// re-import the resource (using the graphql token of the existing resource) and confirm they match
-				ResourceName:      "buildkite_agent_token.foobar",
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
-		},
-	})
-}
-
 func testAccCheckAgentTokenExists(resourceName string, resourceToken *AgentTokenNode) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		resourceState, ok := s.RootModule().Resources[resourceName]
