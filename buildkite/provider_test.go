@@ -14,13 +14,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
-var testAccProviders map[string]*schema.Provider
-var testAccProvider *schema.Provider
-
-func init() {
-	testAccProvider = Provider("")
-	testAccProviders = map[string]*schema.Provider{
-		"buildkite": testAccProvider,
+func providerFactories() map[string]func() (*schema.Provider, error) {
+	return map[string]func() (*schema.Provider, error){
+		"buildkite": func() (*schema.Provider, error) {
+			return Provider("testing"), nil
+		},
 	}
 }
 
@@ -55,11 +53,7 @@ func TestDataSource_UpgradeFromVersion(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		Steps: []resource.TestStep{
 			{
-				ProviderFactories: map[string]func() (*schema.Provider, error){
-					"buildkite": func() (*schema.Provider, error) {
-						return testAccProvider, nil
-					},
-				},
+				ProviderFactories: providerFactories(),
 				Config: `data "buildkite_team" "team" {
 							slug = "everyone"
                         }`,

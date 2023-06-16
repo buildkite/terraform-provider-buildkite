@@ -13,9 +13,9 @@ func TestAccDataTeam_read(t *testing.T) {
 	var resourceTeam TeamNode
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckTeamResourceDestroy,
+		PreCheck:          func() { testAccPreCheck(t) },
+		ProviderFactories: providerFactories(),
+		CheckDestroy:      testAccCheckTeamResourceDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccDataTeamConfigBasic("foo", "buildkite_team.foobar.slug"),
@@ -39,9 +39,9 @@ func TestAccDataTeam_read(t *testing.T) {
 // Confirm that we get a nice error if no team is found
 func TestAccDataTeam_readNotFound(t *testing.T) {
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckTeamResourceDestroy,
+		PreCheck:          func() { testAccPreCheck(t) },
+		ProviderFactories: providerFactories(),
+		CheckDestroy:      testAccCheckTeamResourceDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config:      testAccDataTeamConfigBasic("foo", "\"bar\""),

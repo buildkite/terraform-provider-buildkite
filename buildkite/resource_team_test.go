@@ -14,9 +14,9 @@ func TestAccTeam_add_remove(t *testing.T) {
 	var resourceTeam TeamNode
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckTeamResourceDestroy,
+		PreCheck:          func() { testAccPreCheck(t) },
+		ProviderFactories: providerFactories(),
+		CheckDestroy:      testAccCheckTeamResourceDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccTeamConfigBasic("developers"),
@@ -38,9 +38,9 @@ func TestAccTeam_update(t *testing.T) {
 	var resourceTeam TeamNode
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckTeamResourceDestroy,
+		PreCheck:          func() { testAccPreCheck(t) },
+		ProviderFactories: providerFactories(),
+		CheckDestroy:      testAccCheckTeamResourceDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccTeamConfigBasic("developers"),
@@ -85,9 +85,9 @@ func TestAccTeam_import(t *testing.T) {
 	var resourceTeam TeamNode
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckTeamResourceDestroy,
+		PreCheck:          func() { testAccPreCheck(t) },
+		ProviderFactories: providerFactories(),
+		CheckDestroy:      testAccCheckTeamResourceDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccTeamConfigBasic("important"),
@@ -114,9 +114,9 @@ func TestAccTeam_disappears(t *testing.T) {
 	resourceName := "buildkite_team.test"
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckPipelineResourceDestroy,
+		PreCheck:          func() { testAccPreCheck(t) },
+		ProviderFactories: providerFactories(),
+		CheckDestroy:      testAccCheckPipelineResourceDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccTeamConfigBasic("foo"),
@@ -124,7 +124,7 @@ func TestAccTeam_disappears(t *testing.T) {
 					// Confirm the team exists in the buildkite API
 					testAccCheckTeamExists(resourceName, &node),
 					// Ensure its removal from the spec
-					testAccCheckResourceDisappears(testAccProvider, resourceTeam(), resourceName),
+					testAccCheckResourceDisappears(Provider("testing"), resourceTeam(), resourceName),
 				),
 				ExpectNonEmptyPlan: true,
 			},
@@ -144,7 +144,7 @@ func testAccCheckTeamExists(resourceName string, resourceTeam *TeamNode) resourc
 			return fmt.Errorf("No ID is set in state")
 		}
 
-		provider := testAccProvider.Meta().(*Client)
+		provider := Provider("testing").Meta().(*Client)
 		var query struct {
 			Node struct {
 				Team TeamNode `graphql:"... on Team"`
@@ -208,7 +208,7 @@ func testAccTeamConfigSecret(name string) string {
 
 // verifies the team has been destroyed
 func testAccCheckTeamResourceDestroy(s *terraform.State) error {
-	provider := testAccProvider.Meta().(*Client)
+	provider := Provider("testing").Meta().(*Client)
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "buildkite_team" {

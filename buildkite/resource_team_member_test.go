@@ -14,9 +14,9 @@ func TestAccTeamMember_add_remove(t *testing.T) {
 	var resourceTeamMember TeamMemberNode
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testCheckTeamMemberResourceRemoved,
+		PreCheck:          func() { testAccPreCheck(t) },
+		ProviderFactories: providerFactories(),
+		CheckDestroy:      testCheckTeamMemberResourceRemoved,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccTeamMemberConfigBasic("MEMBER"),
@@ -37,9 +37,9 @@ func TestAccTeamMember_add_remove_non_default_role(t *testing.T) {
 	var resourceTeamMember TeamMemberNode
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testCheckTeamMemberResourceRemoved,
+		PreCheck:          func() { testAccPreCheck(t) },
+		ProviderFactories: providerFactories(),
+		CheckDestroy:      testCheckTeamMemberResourceRemoved,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccTeamMemberConfigBasic("MAINTAINER"),
@@ -60,9 +60,9 @@ func TestAccTeamMember_update(t *testing.T) {
 	var resourceTeamMember TeamMemberNode
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testCheckTeamMemberResourceRemoved,
+		PreCheck:          func() { testAccPreCheck(t) },
+		ProviderFactories: providerFactories(),
+		CheckDestroy:      testCheckTeamMemberResourceRemoved,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccTeamMemberConfigBasic("MEMBER"),
@@ -91,9 +91,9 @@ func TestAccTeamMember_import(t *testing.T) {
 	var resourceTeamMember TeamMemberNode
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testCheckTeamMemberResourceRemoved,
+		PreCheck:          func() { testAccPreCheck(t) },
+		ProviderFactories: providerFactories(),
+		CheckDestroy:      testCheckTeamMemberResourceRemoved,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccTeamMemberConfigBasic("MEMBER"),
@@ -119,9 +119,9 @@ func TestAccTeamMember_disappears(t *testing.T) {
 	var teamMember TeamMemberNode
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testCheckTeamMemberResourceRemoved,
+		PreCheck:          func() { testAccPreCheck(t) },
+		ProviderFactories: providerFactories(),
+		CheckDestroy:      testCheckTeamMemberResourceRemoved,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccTeamMemberConfigBasic("MEMBER"),
@@ -129,7 +129,7 @@ func TestAccTeamMember_disappears(t *testing.T) {
 					// Confirm the team member exists in the buildkite API
 					testAccCheckTeamMemberExists("buildkite_team_member.test", &teamMember),
 					// Ensure its removed
-					testAccCheckResourceDisappears(testAccProvider, resourceTeamMember(), "buildkite_team_member.test"),
+					testAccCheckResourceDisappears(Provider("testing"), resourceTeamMember(), "buildkite_team_member.test"),
 				),
 				ExpectNonEmptyPlan: true,
 			},
@@ -167,7 +167,7 @@ func testAccCheckTeamMemberExists(resourceName string, resourceTeamMember *TeamM
 			return fmt.Errorf("No ID is set in state")
 		}
 
-		provider := testAccProvider.Meta().(*Client)
+		provider := Provider("testing").Meta().(*Client)
 		var query struct {
 			Node struct {
 				TeamMember TeamMemberNode `graphql:"... on TeamMember"`
@@ -195,7 +195,7 @@ func testAccCheckTeamMemberExists(resourceName string, resourceTeamMember *TeamM
 
 // verify the team member has been removed
 func testCheckTeamMemberResourceRemoved(s *terraform.State) error {
-	provider := testAccProvider.Meta().(*Client)
+	provider := Provider("testing").Meta().(*Client)
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "buildkite_team_member" {

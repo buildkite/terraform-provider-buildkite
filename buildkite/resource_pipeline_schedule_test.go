@@ -16,9 +16,9 @@ func TestAccPipelineSchedule_add_remove(t *testing.T) {
 	var resourceSchedule PipelineScheduleNode
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckAllPipelineScheduleResourcesDestroyed,
+		PreCheck:          func() { testAccPreCheck(t) },
+		ProviderFactories: providerFactories(),
+		CheckDestroy:      testAccCheckAllPipelineScheduleResourcesDestroyed,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccPipelineScheduleConfigBasic("foo", "0 * * * *"),
@@ -45,9 +45,9 @@ func TestAccPipelineSchedule_add_remove_withteams(t *testing.T) {
 	var resourceSchedule PipelineScheduleNode
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckAllPipelineScheduleResourcesDestroyed,
+		PreCheck:          func() { testAccPreCheck(t) },
+		ProviderFactories: providerFactories(),
+		CheckDestroy:      testAccCheckAllPipelineScheduleResourcesDestroyed,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccPipelineScheduleConfigBasicWithTeam("foo", "0 * * * *"),
@@ -74,9 +74,9 @@ func TestAccPipelineSchedule_update(t *testing.T) {
 	var resourceSchedule PipelineScheduleNode
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckAllPipelineScheduleResourcesDestroyed,
+		PreCheck:          func() { testAccPreCheck(t) },
+		ProviderFactories: providerFactories(),
+		CheckDestroy:      testAccCheckAllPipelineScheduleResourcesDestroyed,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccPipelineScheduleConfigBasic("foo", "0 * * * *"),
@@ -113,9 +113,9 @@ func TestAccPipelineSchedule_update_withteams(t *testing.T) {
 	var resourceSchedule PipelineScheduleNode
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckAllPipelineScheduleResourcesDestroyed,
+		PreCheck:          func() { testAccPreCheck(t) },
+		ProviderFactories: providerFactories(),
+		CheckDestroy:      testAccCheckAllPipelineScheduleResourcesDestroyed,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccPipelineScheduleConfigBasicWithTeam("foo", "0 * * * *"),
@@ -151,9 +151,9 @@ func TestAccPipelineSchedule_import(t *testing.T) {
 	var resourceSchedule PipelineScheduleNode
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckAllPipelineScheduleResourcesDestroyed,
+		PreCheck:          func() { testAccPreCheck(t) },
+		ProviderFactories: providerFactories(),
+		CheckDestroy:      testAccCheckAllPipelineScheduleResourcesDestroyed,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccPipelineScheduleConfigBasic("foo", "0 * * * *"),
@@ -181,9 +181,9 @@ func TestAccPipelineSchedule_disappears(t *testing.T) {
 	resourceName := "buildkite_pipeline_schedule.foobar"
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckAllPipelineScheduleResourcesDestroyed,
+		PreCheck:          func() { testAccPreCheck(t) },
+		ProviderFactories: providerFactories(),
+		CheckDestroy:      testAccCheckAllPipelineScheduleResourcesDestroyed,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccPipelineScheduleConfigBasic("foo", "0 * * * *"),
@@ -191,7 +191,7 @@ func TestAccPipelineSchedule_disappears(t *testing.T) {
 					// Confirm the pipeline schedule exists in the buildkite API
 					testAccCheckPipelineScheduleExists(resourceName, &node),
 					// Check that the schedule can be removed from the plan
-					testAccCheckResourceDisappears(testAccProvider, resourcePipelineSchedule(), resourceName),
+					testAccCheckResourceDisappears(Provider("testing"), resourcePipelineSchedule(), resourceName),
 				),
 				ExpectNonEmptyPlan: true,
 			},
@@ -211,7 +211,7 @@ func testAccCheckPipelineScheduleExists(resourceName string, resourceSchedule *P
 			return fmt.Errorf("No ID is set in state")
 		}
 
-		provider := testAccProvider.Meta().(*Client)
+		provider := Provider("testing").Meta().(*Client)
 		var query struct {
 			Node struct {
 				PipelineSchedule PipelineScheduleNode `graphql:"... on PipelineSchedule"`
@@ -306,7 +306,7 @@ func testAccPipelineScheduleConfigBasicWithTeam(label string, cronline string) s
 
 // verifies the pipeline schedule has been destroyed
 func testAccCheckPipelineScheduleResourceDestroy(s *terraform.State) error {
-	provider := testAccProvider.Meta().(*Client)
+	provider := Provider("testing").Meta().(*Client)
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "buildkite_pipeline_schedule" {

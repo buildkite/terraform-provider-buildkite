@@ -16,9 +16,9 @@ func TestAccAgentToken_add_remove(t *testing.T) {
 	var resourceToken AgentTokenNode
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckAgentTokenResourceDestroy,
+		PreCheck:          func() { testAccPreCheck(t) },
+		ProviderFactories: providerFactories(),
+		CheckDestroy:      testAccCheckAgentTokenResourceDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccAgentTokenConfigBasic("foo"),
@@ -54,9 +54,9 @@ func TestAccAgentToken_update(t *testing.T) {
 	var resourceToken AgentTokenNode
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckAgentTokenResourceDestroy,
+		PreCheck:          func() { testAccPreCheck(t) },
+		ProviderFactories: providerFactories(),
+		CheckDestroy:      testAccCheckAgentTokenResourceDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccAgentTokenConfigBasic("foo"),
@@ -94,7 +94,7 @@ func testAccCheckAgentTokenExists(resourceName string, resourceToken *AgentToken
 			return fmt.Errorf("No ID is set in state")
 		}
 
-		provider := testAccProvider.Meta().(*Client)
+		provider := Provider("testing").Meta().(*Client)
 		var query struct {
 			Node struct {
 				AgentToken AgentTokenNode `graphql:"... on AgentToken"`
@@ -147,7 +147,7 @@ func testAccAgentTokenConfigBasic(description string) string {
 
 // verifies the agent token has been destroyed
 func testAccCheckAgentTokenResourceDestroy(s *terraform.State) error {
-	provider := testAccProvider.Meta().(*Client)
+	provider := Provider("testing").Meta().(*Client)
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "buildkite_agent_token" {

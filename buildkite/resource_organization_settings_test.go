@@ -13,9 +13,9 @@ import (
 
 func TestAccOrganizationSettings_create(t *testing.T) {
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testCheckOrganizationSettingsResourceRemoved,
+		PreCheck:          func() { testAccPreCheck(t) },
+		ProviderFactories: providerFactories(),
+		CheckDestroy:      testCheckOrganizationSettingsResourceRemoved,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccOrganizationSettingsConfigBasic([]string{"0.0.0.0/0", "1.1.1.1/32", "1.0.0.1/32"}),
@@ -33,9 +33,9 @@ func TestAccOrganizationSettings_create(t *testing.T) {
 
 func TestAccOrganizationSettings_update(t *testing.T) {
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testCheckOrganizationSettingsResourceRemoved,
+		PreCheck:          func() { testAccPreCheck(t) },
+		ProviderFactories: providerFactories(),
+		CheckDestroy:      testCheckOrganizationSettingsResourceRemoved,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccOrganizationSettingsConfigBasic([]string{"0.0.0.0/0", "1.1.1.1/32", "1.0.0.1/32"}),
@@ -63,9 +63,9 @@ func TestAccOrganizationSettings_update(t *testing.T) {
 
 func TestAccOrganizationSettings_import(t *testing.T) {
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testCheckOrganizationSettingsResourceRemoved,
+		PreCheck:          func() { testAccPreCheck(t) },
+		ProviderFactories: providerFactories(),
+		CheckDestroy:      testCheckOrganizationSettingsResourceRemoved,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccOrganizationSettingsConfigBasic([]string{"0.0.0.0/0", "1.1.1.1/32", "1.0.0.1/32"}),
@@ -88,15 +88,15 @@ func TestAccOrganizationSettings_import(t *testing.T) {
 
 func TestAccOrganizationSettings_disappears(t *testing.T) {
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testCheckOrganizationSettingsResourceRemoved,
+		PreCheck:          func() { testAccPreCheck(t) },
+		ProviderFactories: providerFactories(),
+		CheckDestroy:      testCheckOrganizationSettingsResourceRemoved,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccOrganizationSettingsConfigBasic([]string{"0.0.0.0/0", "1.1.1.1/32", "1.0.0.1/32"}),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Confirm that the allowed IP addresses are set correctly in Buildkite's system
-					testAccCheckResourceDisappears(testAccProvider, resourceOrganizationSettings(), "buildkite_organization_settings.let_them_in"),
+					testAccCheckResourceDisappears(Provider("testing"), resourceOrganizationSettings(), "buildkite_organization_settings.let_them_in"),
 				),
 				ExpectNonEmptyPlan: true,
 			},
@@ -116,7 +116,7 @@ func testAccOrganizationSettingsConfigBasic(ip_addresses []string) string {
 }
 
 func testCheckOrganizationSettingsResourceRemoved(s *terraform.State) error {
-	provider := testAccProvider.Meta().(*Client)
+	provider := Provider("testing").Meta().(*Client)
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "buildkite_organization_settings" {
 			continue
@@ -142,7 +142,7 @@ func testCheckOrganizationSettingsResourceRemoved(s *terraform.State) error {
 
 func testAccCheckOrganizationSettingsRemoteValues(ip_addresses []string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
-		provider := testAccProvider.Meta().(*Client)
+		provider := Provider("testing").Meta().(*Client)
 		resp, err := getOrganization(provider.genqlient, provider.organization)
 
 		if err != nil {
