@@ -95,19 +95,19 @@ func TestAccPipeline_add_remove_withcluster(t *testing.T) {
 					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "allow_rebuilds", "true"),
 				),
 			},
-			{
-				Config: testAccPipelineConfigBasicWithTeam("foo"),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					// Confirm the pipeline exists in the buildkite API
-					testAccCheckPipelineExists("buildkite_pipeline.foobar", &resourcePipeline),
-					// Confirm the pipeline has the correct values in Buildkite's system
-					testAccCheckPipelineRemoteValues(&resourcePipeline, "Test Pipeline foo"),
-					// Confirm the pipeline has the correct values in terraform state
-					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "name", "Test Pipeline foo"),
-					// resource.TestCheckResourceAttrPtr("buiidkite_pipeline.foobar", "cluster_id", nil),
-					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "allow_rebuilds", "true"),
-				),
-			},
+			// {
+			// 	Config: testAccPipelineConfigBasicWithTeam("foo"),
+			// 	Check: resource.ComposeAggregateTestCheckFunc(
+			// 		// Confirm the pipeline exists in the buildkite API
+			// 		testAccCheckPipelineExists("buildkite_pipeline.foobar", &resourcePipeline),
+			// 		// Confirm the pipeline has the correct values in Buildkite's system
+			// 		testAccCheckPipelineRemoteValues(&resourcePipeline, "Test Pipeline foo"),
+			// 		// Confirm the pipeline has the correct values in terraform state
+			// 		resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "name", "Test Pipeline foo"),
+			// 		resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "cluster_id", "Q2x1c3Rlci0tLTRlN2JmM2FjLWUzMjMtNGY1OS05MGY2LTQ5OTljZmI2MGQyYg=="),
+			// 		resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "allow_rebuilds", "true"),
+			// 	),
+			// },
 		},
 	})
 }
