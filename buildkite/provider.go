@@ -99,23 +99,19 @@ func (*terraformProvider) Schema(ctx context.Context, req provider.SchemaRequest
 			SchemaKeyOrganization: framework_schema.StringAttribute{
 				Optional:    true,
 				Description: "The Buildkite organization slug",
-				// MarkdownDescription: "The Buildkite organization slug",
 			},
 			SchemaKeyAPIToken: framework_schema.StringAttribute{
 				Optional:    true,
 				Description: "API token with GraphQL access and `write_pipelines, read_pipelines` scopes",
-				// MarkdownDescription: "API token with GraphQL access and `write_pipelines, read_pipelines` scopes",
 				Sensitive: true,
 			},
 			SchemaKeyGraphqlURL: framework_schema.StringAttribute{
 				Optional:    true,
 				Description: "Base URL for the GraphQL API to use",
-				// MarkdownDescription: "Base URL for the GraphQL API to use",
 			},
 			SchemaKeyRestURL: framework_schema.StringAttribute{
 				Optional:    true,
 				Description: "Base URL for the REST API to use",
-				// MarkdownDescription: "Base URL for the REST API to use",
 			},
 		},
 	}
