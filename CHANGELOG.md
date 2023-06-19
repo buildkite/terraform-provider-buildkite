@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v0.19.1](https://github.com/buildkite/terraform-provider-buildkite/compare/v0.19.0...v0.19.1)
+### Fixes
+* Error: input: Clusters has not been activated for your organization [[Issue #287](https://github.com/buildkite/terraform-provider-buildkite/issues/287)] @mcncl
+
 ## Unreleased
 
 * SUP-202 Add graphql example queries for finding import IDs [[PR #280](https://github.com/buildkite/terraform-provider-buildkite/pull/280)] @james2791 @jradtilbrook
