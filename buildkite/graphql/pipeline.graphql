@@ -12,15 +12,11 @@ query getPipeline($slug: ID!) {
     }
 }
 
-# @genqlient(for: "PipelineUpdateInput.clusterId", pointer: true)
+# @genqlient(for: "PipelineUpdateInput.clusterId", pointer: true, omitempty: true)
 # @genqlient(for: "PipelineUpdateInput.visibility", omitempty: true)
-# @genqlient(for: "PipelineUpdateInput.buildRetentionPeriod", omitempty: true)
-# @genqlient(for: "PipelineUpdateInput.buildRetentionNumber", omitempty: true)
 # @genqlient(for: "PipelineUpdateInput.archived", omitempty: true)
 # @genqlient(for: "PipelineUpdateInput.nextBuildNumber", omitempty: true)
-mutation updatePipeline(
-    $input: PipelineUpdateInput!
-) {
+mutation updatePipeline($input: PipelineUpdateInput!) {
     pipelineUpdate(input: $input) {
         pipeline {
             id
@@ -47,7 +43,7 @@ mutation updatePipeline(
             tags {
                 label
             }
-            teams (first: 50) {
+            teams(first: 50) {
                 edges {
                     node {
                         accessLevel
