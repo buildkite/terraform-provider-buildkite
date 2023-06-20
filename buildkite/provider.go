@@ -103,7 +103,7 @@ func (*terraformProvider) Schema(ctx context.Context, req provider.SchemaRequest
 			SchemaKeyAPIToken: framework_schema.StringAttribute{
 				Optional:    true,
 				Description: "API token with GraphQL access and `write_pipelines, read_pipelines` scopes",
-				Sensitive: true,
+				Sensitive:   true,
 			},
 			SchemaKeyGraphqlURL: framework_schema.StringAttribute{
 				Optional:    true,
