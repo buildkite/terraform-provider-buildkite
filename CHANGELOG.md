@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ## [v0.19.1](https://github.com/buildkite/terraform-provider-buildkite/compare/v0.19.0...v0.19.1)
 ### Fixes
-* Error: input: Clusters has not been activated for your organization [[Issue #287](https://github.com/buildkite/terraform-provider-buildkite/issues/287)] @mcncl
+* SUP-1078 Fix input error for org not using Clusters [[PR #288](https://github.com/buildkite/terraform-provider-buildkite/pull/288)] @mcncl
 
 ## Unreleased
 
