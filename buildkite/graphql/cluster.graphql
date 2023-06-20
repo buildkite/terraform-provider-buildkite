@@ -1,0 +1,52 @@
+query getCluster($orgSlug: ID!, $id: ID!) {
+    organization(slug: $orgSlug) {
+        cluster(id: $id) {
+            name
+            id
+            uuid
+            description
+            defaultQueue {
+                key
+                id
+                dispatchPaused
+                dispatchPausedBy {
+                    name
+                    id
+                }
+                description
+                createdBy {
+                    name
+                    id
+                }
+            }
+            agentTokens {
+                edges {
+                    node {
+                        createdBy {
+                            name
+                            id
+                        }
+                        id
+                        description
+                        jobTokensEnabled
+                    }
+                }
+            }
+        }
+    }
+}
+
+mutation createCluster($input: ClusterCreateInput!) {
+    clusterCreate(input: $input) {
+        clientMutationId
+        cluster {
+            id
+        }
+    }
+}
+
+mutation updateCluster($input: ClusterUpdateInput!) {
+    clusterUpdate(input: $input) {
+        clientMutationId
+    }
+}
