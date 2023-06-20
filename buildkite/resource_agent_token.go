@@ -2,11 +2,13 @@ package buildkite
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
-	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource"
+	resource_schema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/shurcooL/graphql"
 )
 
@@ -19,88 +21,115 @@ type AgentTokenNode struct {
 	RevokedAt   graphql.String
 }
 
-func resourceAgentToken() *schema.Resource {
-	return &schema.Resource{
-		CreateContext: CreateToken,
-		ReadContext:   ReadToken,
-		// NB: there is no updating a token, changes force a new one to be creaated
-		DeleteContext: DeleteToken,
-		Importer:      nil,
-		Schema: map[string]*schema.Schema{
-			"description": &schema.Schema{
-				ForceNew: true,
+type agentTokenStateModel struct {
+	Description types.String `tfsdk:"description"`
+	Id          types.String `tfsdk:"id"`
+	Token       types.String `tfsdk:"token"`
+	Uuid        types.String `tfsdk:"uuid"`
+}
+
+type AgentToken struct {
+	client *Client
+}
+
+func NewAgentToken() resource.Resource {
+	return &AgentToken{}
+}
+
+func (at *AgentToken) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
+	if req.ProviderData == nil {
+		return
+	}
+	at.client = req.ProviderData.(*Client)
+}
+
+func (at *AgentToken) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	var plan, state agentTokenStateModel
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+
+	apiResponse, err := createAgentToken(
+		at.client.genqlient,
+		at.client.organizationId,
+		plan.Description.ValueStringPointer(),
+	)
+
+	if err != nil {
+		resp.Diagnostics.AddError(err.Error(), err.Error())
+	}
+
+	state.Description = types.StringPointerValue(apiResponse.AgentTokenCreate.AgentTokenEdge.Node.Description)
+	state.Id = types.StringValue(apiResponse.AgentTokenCreate.AgentTokenEdge.Node.Id)
+	state.Token = types.StringValue(apiResponse.AgentTokenCreate.TokenValue)
+	state.Uuid = types.StringValue(apiResponse.AgentTokenCreate.AgentTokenEdge.Node.Uuid)
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+}
+
+func (at *AgentToken) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	var plan agentTokenStateModel
+	resp.Diagnostics.Append(req.State.Get(ctx, &plan)...)
+
+	_, err := revokeAgentToken(at.client.genqlient, plan.Id.ValueString(), "Revoked by Terraform")
+
+	if err != nil {
+		resp.Diagnostics.AddError(err.Error(), err.Error())
+	}
+}
+
+func (AgentToken) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
+	resp.TypeName = "buildkite_agent_token"
+}
+
+func (at *AgentToken) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	var plan, state agentTokenStateModel
+	resp.Diagnostics.Append(req.State.Get(ctx, &plan)...)
+
+	agentToken, err := getAgentToken(at.client.genqlient, fmt.Sprintf("%s/%s", at.client.organization, plan.Uuid.ValueString()))
+
+	if err != nil {
+		resp.Diagnostics.AddError(err.Error(), err.Error())
+	}
+	if agentToken == nil {
+		resp.Diagnostics.AddError("Agent token not found", "Removing from state")
+		resp.State.RemoveResource(ctx)
+		return
+	}
+
+	state.Description = types.StringPointerValue(agentToken.AgentToken.Description)
+	state.Id = types.StringValue(agentToken.AgentToken.Id)
+	state.Token = plan.Token // token is never returned after creation so use the existing value in state
+	state.Uuid = types.StringValue(agentToken.AgentToken.Uuid)
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+}
+
+func (AgentToken) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
+	resp.Schema = resource_schema.Schema{
+		Attributes: map[string]resource_schema.Attribute{
+			"description": resource_schema.StringAttribute{
 				Optional: true,
-				Type:     schema.TypeString,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
-			"token": &schema.Schema{
+			"id": resource_schema.StringAttribute{
 				Computed: true,
-				Type:     schema.TypeString,
 			},
-			"uuid": &schema.Schema{
+			"token": resource_schema.StringAttribute{
+				Computed:  true,
+				Sensitive: true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"uuid": resource_schema.StringAttribute{
 				Computed: true,
-				Type:     schema.TypeString,
 			},
 		},
 	}
 }
 
-// CreateToken creates a Buildkite agent token
-func CreateToken(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	var diags diag.Diagnostics
-	client := m.(*Client)
-
-	apiResponse, err := createAgentToken(
-		client.genqlient,
-		client.organizationId,
-		d.Get("description").(string),
-	)
-
-	if err != nil {
-		return diag.FromErr(err)
-	}
-
-	d.SetId(apiResponse.AgentTokenCreate.AgentTokenEdge.Node.Id)
-	d.Set("uuid", apiResponse.AgentTokenCreate.AgentTokenEdge.Node.Uuid)
-	d.Set("description", apiResponse.AgentTokenCreate.AgentTokenEdge.Node.Description)
-	d.Set("token", apiResponse.AgentTokenCreate.TokenValue)
-
-	return diags
-}
-
-// ReadToken retrieves a Buildkite agent token
-func ReadToken(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	var diags diag.Diagnostics
-	client := m.(*Client)
-
-	agentToken, err := getAgentToken(client.genqlient, fmt.Sprintf("%s/%s", client.organization, d.Get("uuid").(string)))
-
-	if err != nil {
-		return diag.FromErr(err)
-	}
-
-	if agentToken.AgentToken.Id == "" {
-		return diag.FromErr(errors.New("Agent Token not found"))
-	}
-
-	d.SetId(agentToken.AgentToken.Id)
-	d.Set("uuid", agentToken.AgentToken.Uuid)
-	d.Set("description", agentToken.AgentToken.Description)
-	// NB: we never set the token in read context because its not available in the API after creation
-
-	return diags
-}
-
-// DeleteToken revokes a Buildkite agent token - they cannot be completely deleted (will have a revoke)
-func DeleteToken(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	var diags diag.Diagnostics
-	client := m.(*Client)
-	var err error
-
-	_, err = revokeAgentToken(client.genqlient, d.Id(), "Revoked by Terraform")
-
-	if err != nil {
-		return diag.FromErr(err)
-	}
-
-	return diags
+func (AgentToken) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	resp.Diagnostics.AddError("Cannot update an agent token", "A new agent token must be created")
+	panic("cannot update an agent token")
 }
