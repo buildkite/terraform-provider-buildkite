@@ -21,14 +21,6 @@ type ClusterResourceModel struct {
 	Color       types.String `tfsdk:"color"`
 }
 
-type ClusterResourceAPIModel struct {
-	ID          string `json:"id"`
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	Emoji       string `json:"emoji"`
-	Color       string `json:"color"`
-}
-
 func (c *ClusterResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
 	resp.TypeName = "_cluster"
 }
