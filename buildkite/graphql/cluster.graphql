@@ -50,3 +50,9 @@ mutation updateCluster($input: ClusterUpdateInput!) {
         clientMutationId
     }
 }
+
+mutation deleteCluster($input: ClusterDeleteInput!) {
+    clusterDelete(input: $input) {
+        clientMutationId
+    }
+}

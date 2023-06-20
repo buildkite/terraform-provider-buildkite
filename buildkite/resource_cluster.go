@@ -84,13 +84,78 @@ func (c *ClusterResource) Create(ctx context.Context, req resource.CreateRequest
 }
 
 func (c *ClusterResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	/* ... */
+	var data ClusterResourceModel
+
+	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	cluster, err := getCluster(c.client.genqlient, c.client.organizationId, data.ID.ValueString())
+
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Unable to read Cluster",
+			fmt.Sprintf("Unable to read Cluster: %s", err.Error()),
+		)
+		return
+	}
+
+	data.Name = types.StringValue(cluster.Organization.Cluster.Name)
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
 func (c *ClusterResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	/* ... */
+	var data ClusterResourceModel
+
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	updateReq := ClusterUpdateInput{
+		Name:        data.Name.ValueString(),
+		Description: data.Description.ValueString(),
+		Emoji:       data.Emoji.ValueString(),
+		Color:       data.Color.ValueString(),
+	}
+
+	_, err := updateCluster(c.client.genqlient, updateReq)
+
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Unable to update Cluster",
+			fmt.Sprintf("Unable to update Cluster: %s", err.Error()),
+		)
+		return
+	}
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
 func (c *ClusterResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	/* ... */
+	var data ClusterResourceModel
+
+	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	deleteReq := ClusterDeleteInput{
+		Id: data.ID.ValueString(),
+	}
+
+	_, err := deleteCluster(c.client.genqlient, deleteReq)
+
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Unable to delete Cluster",
+			fmt.Sprintf("Unable to delete Cluster: %s", err.Error()),
+		)
+		return
+	}
 }
