@@ -2,7 +2,6 @@ package buildkite
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"strings"
 	"testing"
@@ -13,6 +12,7 @@ import (
 
 // Confirm that we can create a new agent token, and then delete it without error
 func TestAccAgentToken_add_remove(t *testing.T) {
+	t.Parallel()
 	var resourceToken AgentTokenNode
 
 	resource.Test(t, resource.TestCase{
@@ -29,6 +29,9 @@ func TestAccAgentToken_add_remove(t *testing.T) {
 					testAccCheckAgentTokenRemoteValues(&resourceToken, "Acceptance Test foo"),
 					// Confirm the token has the correct values in terraform state
 					resource.TestCheckResourceAttr("buildkite_agent_token.foobar", "description", "Acceptance Test foo"),
+					resource.TestCheckResourceAttrSet("buildkite_agent_token.foobar", "id"),
+					resource.TestCheckResourceAttrSet("buildkite_agent_token.foobar", "token"),
+					resource.TestCheckResourceAttrSet("buildkite_agent_token.foobar", "uuid"),
 				),
 			},
 			{
@@ -36,12 +39,9 @@ func TestAccAgentToken_add_remove(t *testing.T) {
 				PlanOnly:     true,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Confirm the token has the correct values in terraform state
-					resource.TestCheckResourceAttrWith("buildkite_agent_token.foobar", "token", func(value string) error {
-						if value == "" {
-							return errors.New("Token should not be empty.")
-						}
-						return nil
-					}),
+					resource.TestCheckResourceAttrSet("buildkite_agent_token.foobar", "id"),
+					resource.TestCheckResourceAttrSet("buildkite_agent_token.foobar", "token"),
+					resource.TestCheckResourceAttrSet("buildkite_agent_token.foobar", "uuid"),
 				),
 			},
 		},
@@ -51,6 +51,7 @@ func TestAccAgentToken_add_remove(t *testing.T) {
 // Confirm that we can create a new agent token, and then update the description
 // Technically tokens can't be updated, so this will actuall do a delete+create
 func TestAccAgentToken_update(t *testing.T) {
+	t.Parallel()
 	var resourceToken AgentTokenNode
 
 	resource.Test(t, resource.TestCase{
