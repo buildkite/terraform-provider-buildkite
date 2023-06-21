@@ -21,30 +21,30 @@ type AgentTokenNode struct {
 	RevokedAt   graphql.String
 }
 
-type agentTokenStateModel struct {
+type AgentTokenStateModel struct {
 	Description types.String `tfsdk:"description"`
 	Id          types.String `tfsdk:"id"`
 	Token       types.String `tfsdk:"token"`
 	Uuid        types.String `tfsdk:"uuid"`
 }
 
-type AgentToken struct {
+type AgentTokenResource struct {
 	client *Client
 }
 
-func NewAgentToken() resource.Resource {
-	return &AgentToken{}
+func NewAgentTokenResource() resource.Resource {
+	return &AgentTokenResource{}
 }
 
-func (at *AgentToken) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
+func (at *AgentTokenResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
 	if req.ProviderData == nil {
 		return
 	}
 	at.client = req.ProviderData.(*Client)
 }
 
-func (at *AgentToken) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	var plan, state agentTokenStateModel
+func (at *AgentTokenResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	var plan, state AgentTokenStateModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 
 	apiResponse, err := createAgentToken(
@@ -65,8 +65,8 @@ func (at *AgentToken) Create(ctx context.Context, req resource.CreateRequest, re
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
-func (at *AgentToken) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var plan agentTokenStateModel
+func (at *AgentTokenResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	var plan AgentTokenStateModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &plan)...)
 
 	_, err := revokeAgentToken(at.client.genqlient, plan.Id.ValueString(), "Revoked by Terraform")
@@ -76,12 +76,12 @@ func (at *AgentToken) Delete(ctx context.Context, req resource.DeleteRequest, re
 	}
 }
 
-func (AgentToken) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
+func (AgentTokenResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
 	resp.TypeName = "buildkite_agent_token"
 }
 
-func (at *AgentToken) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var plan, state agentTokenStateModel
+func (at *AgentTokenResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	var plan, state AgentTokenStateModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &plan)...)
 
 	agentToken, err := getAgentToken(at.client.genqlient, fmt.Sprintf("%s/%s", at.client.organization, plan.Uuid.ValueString()))
@@ -103,7 +103,7 @@ func (at *AgentToken) Read(ctx context.Context, req resource.ReadRequest, resp *
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
-func (AgentToken) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
+func (AgentTokenResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = resource_schema.Schema{
 		Attributes: map[string]resource_schema.Attribute{
 			"description": resource_schema.StringAttribute{
@@ -129,7 +129,7 @@ func (AgentToken) Schema(ctx context.Context, req resource.SchemaRequest, resp *
 	}
 }
 
-func (AgentToken) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+func (AgentTokenResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	resp.Diagnostics.AddError("Cannot update an agent token", "A new agent token must be created")
 	panic("cannot update an agent token")
 }

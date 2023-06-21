@@ -91,7 +91,7 @@ func (tf *terraformProvider) Metadata(ctx context.Context, req provider.Metadata
 
 func (*terraformProvider) Resources(context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
-		NewAgentToken,
+		NewAgentTokenResource,
 	}
 }
 
