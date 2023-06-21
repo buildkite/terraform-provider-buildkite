@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	resource_schema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -19,6 +19,7 @@ type ClusterResourceModel struct {
 	Description types.String `tfsdk:"description"`
 	Emoji       types.String `tfsdk:"emoji"`
 	Color       types.String `tfsdk:"color"`
+	UUID        types.String `tfsdk:"uuid"`
 }
 
 func NewClusterResource() resource.Resource {
@@ -29,27 +30,38 @@ func (c *ClusterResource) Metadata(ctx context.Context, req resource.MetadataReq
 	resp.TypeName = req.ProviderTypeName + "_cluster"
 }
 
+func (c *ClusterResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
+	if req.ProviderData == nil {
+		return
+	}
+
+	c.client = req.ProviderData.(*Client)
+}
+
 func (c *ClusterResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
-	resp.Schema = schema.Schema{
+	resp.Schema = resource_schema.Schema{
 		MarkdownDescription: "A Cluster is a group of Agents that can be used to run your builds. " +
 			"Clusters are useful for grouping Agents by their capabilities, such as operating system, hardware, or location. ",
-		Attributes: map[string]schema.Attribute{
-			"id": schema.StringAttribute{
+		Attributes: map[string]resource_schema.Attribute{
+			"id": resource_schema.StringAttribute{
 				Computed: true,
 			},
-			"name": schema.StringAttribute{
+			"uuid": resource_schema.StringAttribute{
+				Computed: true,
+			},
+			"name": resource_schema.StringAttribute{
 				MarkdownDescription: "The name of the Cluster. Can only contain numbers and letters, no spaces or special characters.",
 				Required:            true,
 			},
-			"description": schema.StringAttribute{
+			"description": resource_schema.StringAttribute{
 				Optional:            true,
 				MarkdownDescription: "A description for the Cluster. Consider something short but clear on the Cluster's function.",
 			},
-			"emoji": schema.StringAttribute{
+			"emoji": resource_schema.StringAttribute{
 				Optional:            true,
 				MarkdownDescription: "An emoji to represent the Cluster. Accepts the format :buildkite:.",
 			},
-			"color": schema.StringAttribute{
+			"color": resource_schema.StringAttribute{
 				Optional:            true,
 				MarkdownDescription: "A color representation of the Cluster. Accepts hex codes, eg #BADA55.",
 			},
@@ -58,22 +70,21 @@ func (c *ClusterResource) Schema(ctx context.Context, req resource.SchemaRequest
 }
 
 func (c *ClusterResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	var data *ClusterResourceModel
+	var data ClusterResourceModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
 
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	createReq := ClusterCreateInput{
-		Name:           data.Name.ValueString(),
-		Description:    data.Description.ValueString(),
-		Emoji:          data.Emoji.ValueString(),
-		Color:          data.Color.ValueString(),
-		OrganizationId: c.client.organizationId,
-	}
-
-	r, err := createCluster(c.client.genqlient, createReq)
+	r, err := createCluster(
+		c.client.genqlient,
+		c.client.organizationId,
+		data.Name.ValueString(),
+		data.Description.ValueString(),
+		data.Emoji.ValueString(),
+		data.Color.ValueString(),
+	)
 
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -84,6 +95,7 @@ func (c *ClusterResource) Create(ctx context.Context, req resource.CreateRequest
 	}
 
 	data.ID = types.StringValue(r.ClusterCreate.Cluster.Id)
+	data.UUID = types.StringValue(r.ClusterCreate.Cluster.Uuid)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
@@ -97,7 +109,7 @@ func (c *ClusterResource) Read(ctx context.Context, req resource.ReadRequest, re
 		return
 	}
 
-	cluster, err := getCluster(c.client.genqlient, c.client.organizationId, data.ID.ValueString())
+	cluster, err := getCluster(c.client.genqlient, c.client.organization, data.ID.ValueString())
 
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -107,7 +119,10 @@ func (c *ClusterResource) Read(ctx context.Context, req resource.ReadRequest, re
 		return
 	}
 
+	data.ID = types.StringValue(cluster.Organization.Cluster.Id)
 	data.Name = types.StringValue(cluster.Organization.Cluster.Name)
+	data.Description = types.StringValue(cluster.Organization.Cluster.Description)
+	data.UUID = types.StringValue(cluster.Organization.Cluster.Uuid)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
@@ -121,14 +136,14 @@ func (c *ClusterResource) Update(ctx context.Context, req resource.UpdateRequest
 		return
 	}
 
-	updateReq := ClusterUpdateInput{
-		Name:        data.Name.ValueString(),
-		Description: data.Description.ValueString(),
-		Emoji:       data.Emoji.ValueString(),
-		Color:       data.Color.ValueString(),
-	}
-
-	_, err := updateCluster(c.client.genqlient, updateReq)
+	_, err := updateCluster(
+		c.client.genqlient,
+		c.client.organizationId,
+		data.Name.ValueString(),
+		data.Description.ValueString(),
+		data.Emoji.ValueString(),
+		data.Color.ValueString(),
+	)
 
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -150,11 +165,7 @@ func (c *ClusterResource) Delete(ctx context.Context, req resource.DeleteRequest
 		return
 	}
 
-	deleteReq := ClusterDeleteInput{
-		Id: data.ID.ValueString(),
-	}
-
-	_, err := deleteCluster(c.client.genqlient, deleteReq)
+	_, err := deleteCluster(c.client.genqlient, c.client.organizationId, data.ID.ValueString())
 
 	if err != nil {
 		resp.Diagnostics.AddError(
