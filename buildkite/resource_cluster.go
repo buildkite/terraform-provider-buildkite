@@ -21,8 +21,12 @@ type ClusterResourceModel struct {
 	Color       types.String `tfsdk:"color"`
 }
 
+func NewClusterResource() resource.Resource {
+	return &ClusterResource{}
+}
+
 func (c *ClusterResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
-	resp.TypeName = "_cluster"
+	resp.TypeName = req.ProviderTypeName + "_cluster"
 }
 
 func (c *ClusterResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
@@ -62,10 +66,11 @@ func (c *ClusterResource) Create(ctx context.Context, req resource.CreateRequest
 	}
 
 	createReq := ClusterCreateInput{
-		Name:        data.Name.ValueString(),
-		Description: data.Description.ValueString(),
-		Emoji:       data.Emoji.ValueString(),
-		Color:       data.Color.ValueString(),
+		Name:           data.Name.ValueString(),
+		Description:    data.Description.ValueString(),
+		Emoji:          data.Emoji.ValueString(),
+		Color:          data.Color.ValueString(),
+		OrganizationId: c.client.organizationId,
 	}
 
 	r, err := createCluster(c.client.genqlient, createReq)

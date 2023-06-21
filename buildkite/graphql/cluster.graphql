@@ -36,8 +36,10 @@ query getCluster($orgSlug: ID!, $id: ID!) {
     }
 }
 
-mutation createCluster($input: ClusterCreateInput!) {
-    clusterCreate(input: $input) {
+mutation createCluster($organizationId: ID!, $name: String!, $description: String, $emoji: String, $color: String) {
+    clusterCreate(
+        input: { organizationId: $organizationId, name: $name, description: $description, emoji: $emoji, color: $color }
+    ) {
         clientMutationId
         cluster {
             id
