@@ -76,8 +76,8 @@ func (tf *terraformProvider) Configure(ctx context.Context, req provider.Configu
 		resp.Diagnostics.AddError(err.Error(), fmt.Sprintf("... details ... %s", err))
 	}
 
-	resp.ResourceData = &client
-	resp.DataSourceData = &client
+	resp.ResourceData = client
+	resp.DataSourceData = client
 }
 
 func (*terraformProvider) DataSources(context.Context) []func() datasource.DataSource {
@@ -91,7 +91,7 @@ func (tf *terraformProvider) Metadata(ctx context.Context, req provider.Metadata
 
 func (*terraformProvider) Resources(context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
-		NewClusterResource,
+		NewAgentTokenResource,
 	}
 }
 
@@ -129,7 +129,6 @@ func New(version string) provider.Provider {
 func Provider(version string) *schema.Provider {
 	provider := &schema.Provider{
 		ResourcesMap: map[string]*schema.Resource{
-			"buildkite_agent_token":           resourceAgentToken(),
 			"buildkite_pipeline":              resourcePipeline(),
 			"buildkite_pipeline_schedule":     resourcePipelineSchedule(),
 			"buildkite_team":                  resourceTeam(),

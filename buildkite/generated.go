@@ -315,15 +315,15 @@ const (
 
 // __createAgentTokenInput is used internally by genqlient
 type __createAgentTokenInput struct {
-	OrganizationId string `json:"organizationId"`
-	Description    string `json:"description"`
+	OrganizationId string  `json:"organizationId"`
+	Description    *string `json:"description"`
 }
 
 // GetOrganizationId returns __createAgentTokenInput.OrganizationId, and is useful for accessing the field via an interface.
 func (v *__createAgentTokenInput) GetOrganizationId() string { return v.OrganizationId }
 
 // GetDescription returns __createAgentTokenInput.Description, and is useful for accessing the field via an interface.
-func (v *__createAgentTokenInput) GetDescription() string { return v.Description }
+func (v *__createAgentTokenInput) GetDescription() *string { return v.Description }
 
 // __createClusterInput is used internally by genqlient
 type __createClusterInput struct {
@@ -478,7 +478,7 @@ func (v *createAgentTokenAgentTokenCreateAgentTokenCreatePayloadAgentTokenEdge) 
 type createAgentTokenAgentTokenCreateAgentTokenCreatePayloadAgentTokenEdgeNodeAgentToken struct {
 	Id string `json:"id"`
 	// A description about what this agent token is used for
-	Description string `json:"description"`
+	Description *string `json:"description"`
 	// The public UUID for the agent
 	Uuid string `json:"uuid"`
 }
@@ -489,7 +489,7 @@ func (v *createAgentTokenAgentTokenCreateAgentTokenCreatePayloadAgentTokenEdgeNo
 }
 
 // GetDescription returns createAgentTokenAgentTokenCreateAgentTokenCreatePayloadAgentTokenEdgeNodeAgentToken.Description, and is useful for accessing the field via an interface.
-func (v *createAgentTokenAgentTokenCreateAgentTokenCreatePayloadAgentTokenEdgeNodeAgentToken) GetDescription() string {
+func (v *createAgentTokenAgentTokenCreateAgentTokenCreatePayloadAgentTokenEdgeNodeAgentToken) GetDescription() *string {
 	return v.Description
 }
 
@@ -580,7 +580,7 @@ func (v *deleteClusterResponse) GetClusterDelete() deleteClusterClusterDeleteClu
 type getAgentTokenAgentToken struct {
 	Id string `json:"id"`
 	// A description about what this agent token is used for
-	Description string `json:"description"`
+	Description *string `json:"description"`
 	// The public UUID for the agent
 	Uuid string `json:"uuid"`
 }
@@ -589,7 +589,7 @@ type getAgentTokenAgentToken struct {
 func (v *getAgentTokenAgentToken) GetId() string { return v.Id }
 
 // GetDescription returns getAgentTokenAgentToken.Description, and is useful for accessing the field via an interface.
-func (v *getAgentTokenAgentToken) GetDescription() string { return v.Description }
+func (v *getAgentTokenAgentToken) GetDescription() *string { return v.Description }
 
 // GetUuid returns getAgentTokenAgentToken.Uuid, and is useful for accessing the field via an interface.
 func (v *getAgentTokenAgentToken) GetUuid() string { return v.Uuid }
@@ -988,7 +988,7 @@ func (v *revokeAgentTokenAgentTokenRevokeAgentTokenRevokePayload) GetAgentToken(
 type revokeAgentTokenAgentTokenRevokeAgentTokenRevokePayloadAgentToken struct {
 	Id string `json:"id"`
 	// A description about what this agent token is used for
-	Description string `json:"description"`
+	Description *string `json:"description"`
 	// The public UUID for the agent
 	Uuid string `json:"uuid"`
 }
@@ -999,7 +999,7 @@ func (v *revokeAgentTokenAgentTokenRevokeAgentTokenRevokePayloadAgentToken) GetI
 }
 
 // GetDescription returns revokeAgentTokenAgentTokenRevokeAgentTokenRevokePayloadAgentToken.Description, and is useful for accessing the field via an interface.
-func (v *revokeAgentTokenAgentTokenRevokeAgentTokenRevokePayloadAgentToken) GetDescription() string {
+func (v *revokeAgentTokenAgentTokenRevokeAgentTokenRevokePayloadAgentToken) GetDescription() *string {
 	return v.Description
 }
 
@@ -1420,7 +1420,7 @@ mutation createAgentToken ($organizationId: ID!, $description: String) {
 func createAgentToken(
 	client graphql.Client,
 	organizationId string,
-	description string,
+	description *string,
 ) (*createAgentTokenResponse, error) {
 	req := &graphql.Request{
 		OpName: "createAgentToken",
