@@ -1,4 +1,4 @@
-version: '3.5'
+version: "3.5"
 
 services:
   go:
@@ -16,7 +16,7 @@ services:
       - BUILDKITE_COMMIT
       - BUILDKITE_JOB_ID
       - BUILDKITE_MESSAGE
-      - BUILDKITE_ORGANIZATION
+      - BUILDKITE_ORGANIZATION_SLUG
       - BUILDKITE_TAG
       - GITHUB_TOKEN
       - GPG_SECRET_KEY_BASE64

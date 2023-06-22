@@ -142,7 +142,7 @@ func testCheckOrganizationSettingsResourceRemoved(s *terraform.State) error {
 
 func testAccCheckOrganizationSettingsRemoteValues(ip_addresses []string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
-		resp, err := getOrganization(genqlientGraphql, os.Getenv("BUILDKITE_ORGANIZATION"))
+		resp, err := getOrganization(genqlientGraphql, os.Getenv("BUILDKITE_ORGANIZATION_SLUG"))
 
 		if err != nil {
 			return err
