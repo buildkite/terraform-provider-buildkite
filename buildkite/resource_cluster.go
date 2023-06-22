@@ -123,9 +123,10 @@ func (c *ClusterResource) Read(ctx context.Context, req resource.ReadRequest, re
 }
 
 func (c *ClusterResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	var state ClusterResourceModel
+	var state, plan ClusterResourceModel
 
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &state)...)
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 
 	if resp.Diagnostics.HasError() {
 		return
@@ -135,28 +136,27 @@ func (c *ClusterResource) Update(ctx context.Context, req resource.UpdateRequest
 
 	fmt.Println("ID: ", id)
 
-	r, _ := updateCluster(
+	_, err := updateCluster(
 		c.client.genqlient,
 		c.client.organizationId,
 		id,
-		state.Name.ValueString(),
-		state.Description.ValueString(),
-		state.Emoji.ValueString(),
-		state.Color.ValueString(),
+		plan.Name.ValueString(),
+		plan.Description.ValueString(),
+		plan.Emoji.ValueString(),
+		plan.Color.ValueString(),
 	)
 
-	// if err != nil {
-	// 	resp.Diagnostics.AddError(
-	// 		"Unable to update Cluster",
-	// 		fmt.Sprintf("Unable to update Cluster: %s", err.Error()),
-	// 	)
-	// 	return
-	// }
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Unable to update Cluster",
+			fmt.Sprintf("Unable to update Cluster: %s", err.Error()),
+		)
+		return
+	}
 
-	state.ID = types.StringValue(id)
-	state.UUID = types.StringValue(r.ClusterUpdate.Cluster.Uuid)
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+	plan.ID = state.ID
+	plan.UUID = state.UUID
+	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 }
 
 func (c *ClusterResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
