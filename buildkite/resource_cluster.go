@@ -70,8 +70,8 @@ func (c *ClusterResource) Schema(ctx context.Context, req resource.SchemaRequest
 }
 
 func (c *ClusterResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	var data ClusterResourceModel
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
+	var state *ClusterResourceModel
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &state)...)
 
 	if resp.Diagnostics.HasError() {
 		return
@@ -80,10 +80,10 @@ func (c *ClusterResource) Create(ctx context.Context, req resource.CreateRequest
 	r, err := createCluster(
 		c.client.genqlient,
 		c.client.organizationId,
-		data.Name.ValueString(),
-		data.Description.ValueString(),
-		data.Emoji.ValueString(),
-		data.Color.ValueString(),
+		state.Name.ValueString(),
+		state.Description.ValueString(),
+		state.Emoji.ValueString(),
+		state.Color.ValueString(),
 	)
 
 	if err != nil {
@@ -94,22 +94,22 @@ func (c *ClusterResource) Create(ctx context.Context, req resource.CreateRequest
 		return
 	}
 
-	data.ID = types.StringValue(r.ClusterCreate.Cluster.Id)
-	data.UUID = types.StringValue(r.ClusterCreate.Cluster.Uuid)
+	state.ID = types.StringValue(r.ClusterCreate.Cluster.Id)
+	state.UUID = types.StringValue(r.ClusterCreate.Cluster.Uuid)
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
 func (c *ClusterResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var data ClusterResourceModel
+	var state ClusterResourceModel
 
-	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	cluster, err := getCluster(c.client.genqlient, c.client.organization, data.ID.ValueString())
+	_, err := getCluster(c.client.genqlient, c.client.organization, state.UUID.ValueString())
 
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -119,53 +119,56 @@ func (c *ClusterResource) Read(ctx context.Context, req resource.ReadRequest, re
 		return
 	}
 
-	data.ID = types.StringValue(cluster.Organization.Cluster.Id)
-	data.Name = types.StringValue(cluster.Organization.Cluster.Name)
-	data.Description = types.StringValue(cluster.Organization.Cluster.Description)
-	data.UUID = types.StringValue(cluster.Organization.Cluster.Uuid)
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
 func (c *ClusterResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	var data ClusterResourceModel
+	var state ClusterResourceModel
 
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &state)...)
 
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	_, err := updateCluster(
+	id := state.ID.ValueString()
+
+	fmt.Println("ID: ", id)
+
+	r, _ := updateCluster(
 		c.client.genqlient,
 		c.client.organizationId,
-		data.Name.ValueString(),
-		data.Description.ValueString(),
-		data.Emoji.ValueString(),
-		data.Color.ValueString(),
+		id,
+		state.Name.ValueString(),
+		state.Description.ValueString(),
+		state.Emoji.ValueString(),
+		state.Color.ValueString(),
 	)
 
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Unable to update Cluster",
-			fmt.Sprintf("Unable to update Cluster: %s", err.Error()),
-		)
-		return
-	}
+	// if err != nil {
+	// 	resp.Diagnostics.AddError(
+	// 		"Unable to update Cluster",
+	// 		fmt.Sprintf("Unable to update Cluster: %s", err.Error()),
+	// 	)
+	// 	return
+	// }
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+	state.ID = types.StringValue(id)
+	state.UUID = types.StringValue(r.ClusterUpdate.Cluster.Uuid)
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
 func (c *ClusterResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var data ClusterResourceModel
+	var state ClusterResourceModel
 
-	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	_, err := deleteCluster(c.client.genqlient, c.client.organizationId, data.ID.ValueString())
+	_, err := deleteCluster(c.client.genqlient, c.client.organizationId, state.ID.ValueString())
 
 	if err != nil {
 		resp.Diagnostics.AddError(

@@ -48,11 +48,33 @@ mutation createCluster($organizationId: ID!, $name: String!, $description: Strin
     }
 }
 
-mutation updateCluster($organizationId: ID!, $name: String!, $description: String, $emoji: String, $color: String) {
-    clusterCreate(
-        input: { organizationId: $organizationId, name: $name, description: $description, emoji: $emoji, color: $color }
+mutation updateCluster(
+    $organizationId: ID!
+    $id: ID!
+    $name: String
+    $description: String
+    $emoji: String
+    $color: String
+) {
+    clusterUpdate(
+        input: {
+            organizationId: $organizationId
+            id: $id
+            name: $name
+            description: $description
+            emoji: $emoji
+            color: $color
+        }
     ) {
         clientMutationId
+        cluster {
+            id
+            uuid
+            name
+            description
+            emoji
+            color
+        }
     }
 }
 

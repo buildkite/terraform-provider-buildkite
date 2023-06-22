@@ -13,6 +13,6 @@ provider "buildkite" {
 
 
 resource "buildkite_cluster" "test_cluster" {
-  name = "test-cluster"
+  name = "cluster-test-2"
   description = "test cluster"
 }
