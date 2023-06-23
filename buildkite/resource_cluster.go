@@ -6,6 +6,8 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	resource_schema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -45,9 +47,15 @@ func (c *ClusterResource) Schema(ctx context.Context, req resource.SchemaRequest
 		Attributes: map[string]resource_schema.Attribute{
 			"id": resource_schema.StringAttribute{
 				Computed: true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"uuid": resource_schema.StringAttribute{
 				Computed: true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"name": resource_schema.StringAttribute{
 				MarkdownDescription: "The name of the Cluster. Can only contain numbers and letters, no spaces or special characters.",
@@ -154,8 +162,8 @@ func (c *ClusterResource) Update(ctx context.Context, req resource.UpdateRequest
 		return
 	}
 
-	plan.ID = state.ID
-	plan.UUID = state.UUID
+	// plan.ID = state.ID
+	// plan.UUID = state.UUID
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 }
 
