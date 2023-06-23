@@ -3,7 +3,6 @@ package buildkite
 import (
 	"context"
 	"fmt"
-	"os"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
@@ -257,7 +256,7 @@ func testAccCheckPipelineScheduleRemoteValues(resourcePipeline *PipelineNode, re
 
 func testAccGetImportPipelineScheduleSlug(resourceSchedule *PipelineScheduleNode) resource.ImportStateIdFunc {
 	return func(s *terraform.State) (string, error) {
-		slug := fmt.Sprintf("%s/%s/%s", os.Getenv("BUILDKITE_ORGANIZATION"), "test-pipeline-foo", resourceSchedule.UUID)
+		slug := fmt.Sprintf("%s/%s/%s", getenv("BUILDKITE_ORGANIZATION_SLUG"), "test-pipeline-foo", resourceSchedule.UUID)
 		return slug, nil
 	}
 }

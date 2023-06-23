@@ -37,7 +37,7 @@ terraform {
 provider "buildkite" {
   # Configuration options
   api_token = "token" # can also be set from env: BUILDKITE_API_TOKEN
-  organization = "slug" # can also be set from env: BUILDKITE_ORGANIZATION
+  organization = "slug" # can also be set from env: BUILDKITE_ORGANIZATION_SLUG
 }
 ```
 
@@ -82,7 +82,7 @@ The repo contains a tf-proj/ directory that can be used to quickly test a compil
 4. Run `terraform plan` in the tf-proj directory
 
     ```bash
-    BUILDKITE_API_TOKEN=<api-token> BUILDKITE_ORGANIZATION=<org-slug> terraform plan
+    BUILDKITE_API_TOKEN=<api-token> BUILDKITE_ORGANIZATION_SLUG=<org-slug> terraform plan
     ```
 
 ### Overriding the provider for local development
@@ -114,7 +114,7 @@ make testacc
 These tests require two environment variables to run correctly:
 
 ```bash
-BUILDKITE_ORGANIZATION=<org-slug> BUILDKITE_API_TOKEN=<token> make testacc
+BUILDKITE_ORGANIZATION_SLUG=<org-slug> BUILDKITE_API_TOKEN=<token> make testacc
 ```
 
 Note that these tests make live changes to an organization and probably

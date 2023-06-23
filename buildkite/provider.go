@@ -42,7 +42,7 @@ func (tf *terraformProvider) Configure(ctx context.Context, req provider.Configu
 
 	apiToken := os.Getenv("BUILDKITE_API_TOKEN")
 	graphqlUrl := defaultGraphqlEndpoint
-	organization := os.Getenv("BUILDKITE_ORGANIZATION")
+	organization := getenv("BUILDKITE_ORGANIZATION_SLUG")
 	restUrl := defaultRestEndpoint
 
 	if data.ApiToken.ValueString() != "" {
@@ -174,7 +174,7 @@ func providerConfigure(userAgent string) func(d *schema.ResourceData) (interface
 	return func(d *schema.ResourceData) (interface{}, error) {
 		apiToken := os.Getenv("BUILDKITE_API_TOKEN")
 		graphqlUrl := defaultGraphqlEndpoint
-		organization := os.Getenv("BUILDKITE_ORGANIZATION")
+		organization := getenv("BUILDKITE_ORGANIZATION_SLUG")
 		restUrl := defaultRestEndpoint
 
 		if v, ok := d.Get(SchemaKeyAPIToken).(string); ok && v != "" {

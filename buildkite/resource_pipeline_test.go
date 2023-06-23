@@ -52,7 +52,7 @@ func TestAccPipeline_add_delete_withcluster(t *testing.T) {
 					testAccCheckPipelineRemoteValues(&resourcePipeline, "Test Pipeline foo"),
 					// Confirm the pipeline has the correct values in terraform state
 					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "name", "Test Pipeline foo"),
-					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "cluster_id", "Q2x1c3Rlci0tLTRlN2JmM2FjLWUzMjMtNGY1OS05MGY2LTQ5OTljZmI2MGQyYg=="),
+					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "cluster_id", "Q2x1c3Rlci0tLTFkNmIxOTg5LTJmYjctNDRlMC04MWYyLTAxYjIxNzQ4MTVkMg=="),
 					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "allow_rebuilds", "true"),
 				),
 			},
@@ -65,7 +65,7 @@ func TestAccPipeline_add_delete_withcluster(t *testing.T) {
 					testAccCheckPipelineRemoteValues(&resourcePipeline, "Test Pipeline bar"),
 					// Confirm the pipeline has the correct values in terraform state
 					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "name", "Test Pipeline bar"),
-					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "cluster_id", "Q2x1c3Rlci0tLTRlN2JmM2FjLWUzMjMtNGY1OS05MGY2LTQ5OTljZmI2MGQyYg=="),
+					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "cluster_id", "Q2x1c3Rlci0tLTFkNmIxOTg5LTJmYjctNDRlMC04MWYyLTAxYjIxNzQ4MTVkMg=="),
 					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "allow_rebuilds", "true"),
 				),
 			},
@@ -91,7 +91,7 @@ func TestAccPipeline_add_remove_withcluster(t *testing.T) {
 					testAccCheckPipelineRemoteValues(&resourcePipeline, "Test Pipeline foo"),
 					// Confirm the pipeline has the correct values in terraform state
 					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "name", "Test Pipeline foo"),
-					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "cluster_id", "Q2x1c3Rlci0tLTRlN2JmM2FjLWUzMjMtNGY1OS05MGY2LTQ5OTljZmI2MGQyYg=="),
+					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "cluster_id", "Q2x1c3Rlci0tLTFkNmIxOTg5LTJmYjctNDRlMC04MWYyLTAxYjIxNzQ4MTVkMg=="),
 					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "allow_rebuilds", "true"),
 				),
 			},
@@ -578,7 +578,7 @@ func testAccPipelineConfigBasicWithCluster(name string) string {
 		resource "buildkite_pipeline" "foobar" {
 			name = "Test Pipeline %s"
 			repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
-			cluster_id = "Q2x1c3Rlci0tLTRlN2JmM2FjLWUzMjMtNGY1OS05MGY2LTQ5OTljZmI2MGQyYg=="
+			cluster_id = "Q2x1c3Rlci0tLTFkNmIxOTg5LTJmYjctNDRlMC04MWYyLTAxYjIxNzQ4MTVkMg=="
 			allow_rebuilds = true
 
 			team {
