@@ -74,7 +74,7 @@ func TestProvider_impl(t *testing.T) {
 }
 
 func testAccPreCheck(t *testing.T) {
-	if v := os.Getenv("BUILDKITE_ORGANIZATION_SLUG"); v == "" {
+	if v := getenv("BUILDKITE_ORGANIZATION_SLUG"); v == "" {
 		t.Fatal("BUILDKITE_ORGANIZATION_SLUG must be set for acceptance tests")
 	}
 	if v := os.Getenv("BUILDKITE_API_TOKEN"); v == "" {
@@ -124,7 +124,7 @@ func testAccCheckResourceDisappears(provider *schema.Provider, resource *schema.
 			client := Client{
 				graphql:      graphqlClient,
 				genqlient:    genqlientGraphql,
-				organization: os.Getenv("BUILDKITE_ORGANIZATION_SLUG"),
+				organization: getenv("BUILDKITE_ORGANIZATION_SLUG"),
 			}
 			diags := resource.DeleteContext(context.Background(), resource.Data(resourceState.Primary), &client)
 

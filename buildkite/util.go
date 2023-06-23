@@ -2,9 +2,9 @@ package buildkite
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log"
+	"os"
 	"strings"
 
 	"github.com/shurcooL/graphql"
@@ -27,7 +27,7 @@ func GetOrganizationID(slug string, client *graphql.Client) (string, error) {
 
 	id, ok := query.Organization.ID.(string)
 	if !ok {
-		return "", errors.New(fmt.Sprintf("Organization %s not found", slug))
+		return "", fmt.Errorf("organization %s not found", slug)
 	}
 
 	return id, nil
@@ -53,4 +53,12 @@ func GetTeamID(slug string, client *Client) (string, error) {
 	id := string(query.Team.ID)
 	log.Printf("Found id '%s' for team '%s'.", id, slug)
 	return id, nil
+}
+
+func getenv(key string) string {
+	val, ok := os.LookupEnv(key)
+	if !ok {
+		return os.Getenv("BUILDKITE_ORGANIZATION")
+	}
+	return val
 }
