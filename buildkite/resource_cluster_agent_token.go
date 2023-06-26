@@ -17,12 +17,11 @@ type ClusterAgentToken struct {
 }
 
 type ClusterAgentTokenResourceModel struct {
-	Id               types.String `tfsdk:"id"`
-	Uuid             types.String `tfsdk:"uuid"`
-	Description      types.String `tfsdk:"description"`
-	TokenValue       types.String `tfsdk:"tokenValue"`
-	JobTokensEnabled types.Bool   `tfsdk:"jobTokensEnabled"`
-	ClusterId        types.String `tfsdk:"clusterId"`
+	Id          types.String `tfsdk:"id"`
+	Uuid        types.String `tfsdk:"uuid"`
+	Description types.String `tfsdk:"description"`
+	Token       types.String `tfsdk:"token"`
+	ClusterId   types.String `tfsdk:"cluster_id"`
 }
 
 func NewClusterAgentTokenResource() resource.Resource {
@@ -30,7 +29,7 @@ func NewClusterAgentTokenResource() resource.Resource {
 }
 
 func (ct *ClusterAgentToken) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
-	resp.TypeName = "buildkite_cluster_agent_token"
+	resp.TypeName = req.ProviderTypeName + "_cluster_agent_token"
 }
 
 func (ct *ClusterAgentToken) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
@@ -38,15 +37,9 @@ func (ct *ClusterAgentToken) Schema(_ context.Context, _ resource.SchemaRequest,
 		Attributes: map[string]resource_schema.Attribute{
 			"id": resource_schema.StringAttribute{
 				Computed: true,
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
-				},
 			},
 			"uuid": resource_schema.StringAttribute{
 				Computed: true,
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
-				},
 			},
 			"description": resource_schema.StringAttribute{
 				Optional:            true,
@@ -55,19 +48,14 @@ func (ct *ClusterAgentToken) Schema(_ context.Context, _ resource.SchemaRequest,
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
-			"tokenValue": resource_schema.StringAttribute{
+			"token": resource_schema.StringAttribute{
 				Computed:  true,
 				Sensitive: true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
-			"jobTokensEnabled": resource_schema.BoolAttribute{
-				Computed:            true,
-				Optional:            true,
-				MarkdownDescription: "Agents registered with this token will use a unique token for each job. Please note that this feature is not yet available to all organizations",
-			},
-			"clusterId": resource_schema.StringAttribute{
+			"cluster_id": resource_schema.StringAttribute{
 				Required:            true,
 				MarkdownDescription: "The ID of the Cluster that this Cluster Queue belongs to.",
 			},
@@ -76,20 +64,18 @@ func (ct *ClusterAgentToken) Schema(_ context.Context, _ resource.SchemaRequest,
 }
 
 func (ct *ClusterAgentToken) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	var plan, state *ClusterAgentTokenResourceModel
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 
+	var plan, state ClusterAgentTokenResourceModel
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	createReq := ClusterAgentTokenCreateInput{
-		OrganizationId: ct.client.organizationId,
-		ClusterId:      plan.ClusterId.ValueString(),
-		Description:    plan.Description.ValueString(),
-	}
-
-	r, err := createClusterAgentToken(ct.client.genqlient, createReq)
+	r, err := createClusterAgentToken(ct.client.genqlient,
+		ct.client.organizationId,
+		plan.ClusterId.ValueString(),
+		plan.Description.ValueString(),
+	)
 
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -100,13 +86,12 @@ func (ct *ClusterAgentToken) Create(ctx context.Context, req resource.CreateRequ
 	}
 
 	state.Id = types.StringValue(r.ClusterAgentTokenCreate.ClusterAgentToken.Id)
+	state.Uuid = types.StringValue(r.ClusterAgentTokenCreate.ClusterAgentToken.Uuid)
 	state.Description = types.StringValue(r.ClusterAgentTokenCreate.ClusterAgentToken.Description)
-	state.JobTokensEnabled = types.BoolValue(r.ClusterAgentTokenCreate.ClusterAgentToken.JobTokensEnabled)
-	state.TokenValue = types.StringValue(r.ClusterAgentTokenCreate.TokenValue)
+	state.Token = types.StringValue(r.ClusterAgentTokenCreate.TokenValue)
 	state.ClusterId = plan.ClusterId
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
-
 }
 
 func (ct *ClusterAgentToken) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
@@ -114,11 +99,47 @@ func (ct *ClusterAgentToken) Read(ctx context.Context, req resource.ReadRequest,
 }
 
 func (ct *ClusterAgentToken) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	// to implement
+	var state, plan ClusterAgentTokenResourceModel
+
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	_, err := updateClusterAgentToken(
+		ct.client.genqlient,
+		ct.client.organizationId,
+		state.Id.ValueString(),
+		plan.Description.ValueString(),
+	)
+
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Unable to update Cluster Agent Token",
+			fmt.Sprintf("Unable to update Cluster Agent Token: %s", err.Error()),
+		)
+		return
+	}
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
+
 }
 
 func (ct *ClusterAgentToken) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	// to implement
+	var plan ClusterAgentTokenResourceModel
+	resp.Diagnostics.Append(req.State.Get(ctx, &plan)...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	_, err := revokeClusterAgentToken(ct.client.genqlient, ct.client.organizationId, plan.Id.ValueString())
+
+	if err != nil {
+		resp.Diagnostics.AddError(err.Error(), err.Error())
+		return
+	}
 }
 
 func (ct *ClusterAgentToken) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {

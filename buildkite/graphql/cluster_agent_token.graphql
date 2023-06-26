@@ -6,8 +6,7 @@ query getClusterAgentTokens($orgSlug: ID!, $id: ID!) {
 					node {
 						id
 						description
-						uuid
-						jobTokensEnabled
+						uuid 
 					}
 				}
 			}
@@ -15,40 +14,54 @@ query getClusterAgentTokens($orgSlug: ID!, $id: ID!) {
 	}
 }
 
-
-mutation createClusterAgentToken($input: ClusterAgentTokenCreateInput!) {
-	clusterAgentTokenCreate(input: $input) { 
-		# @genqlient(pointer: true)
-		clientMutationId
-		clusterAgentToken { 
-			id
-			description
-			jobTokensEnabled
-			uuid
+mutation createClusterAgentToken(
+    $organizationId: ID!
+	$clusterId: ID!
+    $description: String!	
+) {
+		clusterAgentTokenCreate(input:{
+			organizationId: $organizationId
+			clusterId: $clusterId
+			description: $description
+		}) {   
+			clusterAgentToken { 
+				id
+				description 
+				uuid
+			}
+			tokenValue		
 		}
-		tokenValue		
-	}
+	
 }
 
 
-mutation revokeClusterAgentToken($input: ClusterAgentTokenRevokeInput!) {
-    clusterAgentTokenRevoke(input: $input) {
-		# @genqlient(pointer: true)
-        clientMutationId
+mutation revokeClusterAgentToken(
+	$organizationId: ID!
+	$id: ID!
+) {
+    clusterAgentTokenRevoke(input: {
+		organizationId: $organizationId
+		id: $id
+	}) {  
         deletedClusterAgentTokenId 
     }
 }
 
 
-mutation updateClusterAgentToken($input: ClusterAgentTokenUpdateInput!) {
-    clusterAgentTokenUpdate(input: $input) { 
+mutation updateClusterAgentToken(
+    $organizationId: ID!
+	$id: ID!
+    $description: String!	
+) {
+    clusterAgentTokenUpdate(input: {
+		organizationId: $organizationId
+		id: $id
+		description: $description
+	}) { 
 		clusterAgentToken { 
 			id
-			description
-			jobTokensEnabled
+			description 
 			uuid
-		}				 
-		# @genqlient(pointer: true)
-		clientMutationId
+		}				  
     }
 }
