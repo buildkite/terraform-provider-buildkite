@@ -349,7 +349,7 @@ func TestAccPipeline_import(t *testing.T) {
 				ResourceName:            "buildkite_pipeline.foobar",
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"deletion_protection"},
+				ImportStateVerifyIgnore: []string{"deletion_protection", "archive_on_delete"},
 			},
 		},
 	})
@@ -469,7 +469,7 @@ func TestAccPipelineDeletionProtection_import(t *testing.T) {
 				ResourceName:            resourceName,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"deletion_protection"},
+				ImportStateVerifyIgnore: []string{"deletion_protection", "archive_on_delete"},
 			},
 		},
 	})
