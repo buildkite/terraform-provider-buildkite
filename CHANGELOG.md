@@ -3,10 +3,18 @@
 All notable changes to this project will be documented in this file.
 
 ## Unreleased
+* Support option to archive on delete [[PR #296](https://github.com/buildkite/terraform-provider-buildkite/pull/296)]
+
+## [v0.19.2](https://github.com/buildkite/terraform-provider-buildkite/compare/v0.19.1...v0.19.2)
+* Consistent naming for environment variables [[PR #290](https://github.com/buildkite/terraform-provider-buildkite/pull/290)] @mcncl
+* Support TF version < 0.15.4 [[PR #294](https://github.com/buildkite/terraform-provider-buildkite/pull/294)] @mcncl
+
+## [v0.19.1](https://github.com/buildkite/terraform-provider-buildkite/compare/v0.19.0...v0.19.1)
 
 * SUP-202 Add graphql example queries for finding import IDs [[PR #280](https://github.com/buildkite/terraform-provider-buildkite/pull/280)] @james2791 @jradtilbrook
 * SUP-1072 Create new provider using framework plugin [[PR #286](https://github.com/buildkite/terraform-provider-buildkite/pull/286)] @jradtilbrook
 * SUP-1066 Migrate agent token to framework [[PR #289](https://github.com/buildkite/terraform-provider-buildkite/pull/289)] @jradtilbrook
+* Omit empty buildRetentionEnabled input [[PR #291](https://github.com/buildkite/terraform-provider-buildkite/pull/291)] @jradtilbrook
 
 ## [v0.19.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v0.18.0...v0.19.0)
 
