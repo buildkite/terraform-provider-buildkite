@@ -2,14 +2,9 @@
 
 All notable changes to this project will be documented in this file.
 
-## Unreleased
+## [v0.19.2](https://github.com/buildkite/terraform-provider-buildkite/compare/v0.19.1...v0.19.2)
 * Consistent naming for environment variables [[PR #290](https://github.com/buildkite/terraform-provider-buildkite/pull/290)] @mcncl
-
-### Upcoming Changes
-[[PR #290](https://github.com/buildkite/terraform-provider-buildkite/pull/290)] changes the way that the organization environment variable is handled and brings
-it in line with the way it's used in Buildkite. Currently we check for `BUILDKITE_ORGANIZATION` but by changing it to `BUILDKITE_ORGANIZATION_SLUG` we can use it in the Terraform provider if a user opts to not set the `organization` input in their Terraform config file.
-
-`BUILDKITE_ORGANIZATION` will still be checked for backwards compatibility but will be removed in a future release.
+* Support TF version < 0.15.4 [[PR #294](https://github.com/buildkite/terraform-provider-buildkite/pull/294)] @mcncl
 
 ## [v0.19.1](https://github.com/buildkite/terraform-provider-buildkite/compare/v0.19.0...v0.19.1)
 
