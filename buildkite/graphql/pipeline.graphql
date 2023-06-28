@@ -71,3 +71,11 @@ mutation updatePipeline(
         }
     }
 }
+
+mutation archivePipeline ($id: ID!) {
+  pipelineArchive(input:{
+    id: $id
+  }) {
+    clientMutationId
+  }
+}

@@ -82,6 +82,11 @@ func resourcePipeline() *schema.Resource {
 				Optional: true,
 				Type:     schema.TypeBool,
 			},
+			"archive_on_delete": {
+				Optional: true,
+				Default:  false,
+				Type:     schema.TypeBool,
+			},
 			"cancel_intermediate_builds": {
 				Computed: true,
 				Optional: true,
@@ -518,12 +523,22 @@ func DeletePipeline(ctx context.Context, d *schema.ResourceData, m interface{}) 
 			}
 		} `graphql:"pipelineDelete(input: {id: $id})"`
 	}
+
 	vars := map[string]interface{}{
 		"id": graphql.ID(d.Id()),
 	}
 
 	if d.Get("deletion_protection") == true {
 		return diag.Errorf("Deletion protection is enabled for pipeline: %s", d.Get("name"))
+	}
+
+	if d.Get("archive_on_delete") == true {
+		fmt.Printf("Pipeline %s set to archive on delete. Archiving...", d.Get("name"))
+		_, err := archivePipeline(client.genqlient, d.Id())
+		if err != nil {
+			return diag.FromErr(err)
+		}
+		return nil
 	}
 
 	log.Printf("Deleting pipeline %s ...", d.Get("name"))
