@@ -1,6 +1,7 @@
 package buildkite
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"testing"
@@ -94,12 +95,22 @@ func testAccCheckClusterDestroy(s *terraform.State) error {
 			continue
 		}
 
-		_, err := getCluster(genqlientGraphql, os.Getenv("BUILDKITE_ORGANIZATION_SLUG"), rs.Primary.ID)
+		var getClusterQuery struct {
+			Organization struct {
+				Cluster struct {
+					ID string `graphql:"id"`
+				}
+			}
+		}
+
+		err := graphqlClient.Query(context.Background(), &getClusterQuery, map[string]interface{}{
+			"id": rs.Primary.ID,
+		})
 
 		if err == nil {
 			return fmt.Errorf("Cluster still exists")
 		}
+		return nil
 	}
-
 	return nil
 }
