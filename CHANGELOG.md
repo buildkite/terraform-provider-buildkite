@@ -2,6 +2,9 @@
 
 All notable changes to this project will be documented in this file.
 
+## Unreleased
+* Support oftion to archive on delete [[PR #296](https://github.com/buildkite/terraform-provider-buildkite/pull/296)]
+
 ## [v0.19.2](https://github.com/buildkite/terraform-provider-buildkite/compare/v0.19.1...v0.19.2)
 * Consistent naming for environment variables [[PR #290](https://github.com/buildkite/terraform-provider-buildkite/pull/290)] @mcncl
 * Support TF version < 0.15.4 [[PR #294](https://github.com/buildkite/terraform-provider-buildkite/pull/294)] @mcncl
