@@ -142,8 +142,6 @@ func (c *ClusterResource) Update(ctx context.Context, req resource.UpdateRequest
 
 	id := state.ID.ValueString()
 
-	fmt.Println("ID: ", id)
-
 	_, err := updateCluster(
 		c.client.genqlient,
 		c.client.organizationId,
@@ -162,8 +160,6 @@ func (c *ClusterResource) Update(ctx context.Context, req resource.UpdateRequest
 		return
 	}
 
-	// plan.ID = state.ID
-	// plan.UUID = state.UUID
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 }
 
