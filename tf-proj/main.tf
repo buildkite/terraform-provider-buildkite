@@ -2,7 +2,7 @@ terraform {
   required_providers {
     buildkite = {
       source  = "buildkite/buildkite"
-      version = "0.19.0"
+      version = "0.19.2"
     }
   }
 }
@@ -13,6 +13,6 @@ provider "buildkite" {
 
 
 resource "buildkite_cluster" "test_cluster" {
-  name = "cluster-test-2"
+  name = "cluster-test"
   description = "test cluster"
 }

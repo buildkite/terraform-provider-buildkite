@@ -11,7 +11,7 @@ import (
 
 func testAccClusterBasic(name string) string {
 	config := `
-		resource "buildkite_cluster" "test_cluster" {
+		resource "buildkite_cluster" "foo" {
 			name = "%s_test_cluster"
 			description = "Test cluster"
 		}
@@ -38,7 +38,6 @@ func TestAccCluster_AddRemove(t *testing.T) {
 				RefreshState: true,
 				PlanOnly:     true,
 				Check: resource.ComposeAggregateTestCheckFunc(
-					// Confirm the token has the correct values in terraform state
 					resource.TestCheckResourceAttrSet("buildkite_cluster.foo", "name"),
 					resource.TestCheckResourceAttrSet("buildkite_cluster.foo", "description"),
 				),
@@ -60,14 +59,14 @@ func TestAccCluster_Update(t *testing.T) {
 				Config: testAccClusterBasic("bar"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckClusterRemoteValues(c.ID.ValueString()),
-					resource.TestCheckResourceAttr("buildkite_cluster.bar", "name", "bar_test_cluster"),
+					resource.TestCheckResourceAttr("buildkite_cluster.foo", "name", "bar_test_cluster"),
 				),
 			},
 			{
 				Config: testAccClusterBasic("baz"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckClusterRemoteValues(c.ID.ValueString()),
-					resource.TestCheckResourceAttr("buildkite_cluster.baz", "name", "baz_test_cluster"),
+					resource.TestCheckResourceAttr("buildkite_cluster.foo", "name", "baz_test_cluster"),
 				),
 			},
 		},
@@ -76,7 +75,7 @@ func TestAccCluster_Update(t *testing.T) {
 
 func testAccCheckClusterRemoteValues(id string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
-		resp, err := getCluster(genqlientGraphql, os.Getenv("BUILDKITE_ORGANIZATION"), id)
+		resp, err := getCluster(genqlientGraphql, os.Getenv("BUILDKITE_ORGANIZATION_SLUG"), id)
 
 		if err != nil {
 			return err
@@ -95,7 +94,7 @@ func testAccCheckClusterDestroy(s *terraform.State) error {
 			continue
 		}
 
-		_, err := getCluster(genqlientGraphql, os.Getenv("BUILDKITE_ORGANIZATION"), rs.Primary.ID)
+		_, err := getCluster(genqlientGraphql, os.Getenv("BUILDKITE_ORGANIZATION_SLUG"), rs.Primary.ID)
 
 		if err == nil {
 			return fmt.Errorf("Cluster still exists")
