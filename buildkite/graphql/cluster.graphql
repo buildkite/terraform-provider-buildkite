@@ -1,3 +1,12 @@
+fragment ClusterValues on Cluster {
+    id
+    uuid
+    name
+    description
+    emoji
+    color
+}
+
 query getCluster($orgSlug: ID!, $id: ID!) {
     organization(slug: $orgSlug) {
         cluster(id: $id) {
@@ -42,8 +51,7 @@ mutation createCluster($organizationId: ID!, $name: String!, $description: Strin
     ) {
         clientMutationId
         cluster {
-            id
-            uuid
+            ...ClusterValues
         }
     }
 }
@@ -68,12 +76,7 @@ mutation updateCluster(
     ) {
         clientMutationId
         cluster {
-            id
-            uuid
-            name
-            description
-            emoji
-            color
+            ...ClusterValues
         }
     }
 }

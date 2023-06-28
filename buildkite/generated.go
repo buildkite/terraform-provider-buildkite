@@ -3,6 +3,8 @@
 package buildkite
 
 import (
+	"encoding/json"
+
 	"github.com/Khan/genqlient/graphql"
 )
 
@@ -25,6 +27,39 @@ const (
 	// 2 years
 	BuildRetentionPeriodsYears2 BuildRetentionPeriods = "YEARS_2"
 )
+
+// ClusterValues includes the GraphQL fields of Cluster requested by the fragment ClusterValues.
+type ClusterValues struct {
+	Id string `json:"id"`
+	// The public UUID for this cluster
+	Uuid string `json:"uuid"`
+	// Name of the cluster
+	Name string `json:"name"`
+	// Description of the cluster
+	Description string `json:"description"`
+	// Emoji for the cluster using Buildkite emoji syntax
+	Emoji string `json:"emoji"`
+	// Color hex code for the cluster
+	Color string `json:"color"`
+}
+
+// GetId returns ClusterValues.Id, and is useful for accessing the field via an interface.
+func (v *ClusterValues) GetId() string { return v.Id }
+
+// GetUuid returns ClusterValues.Uuid, and is useful for accessing the field via an interface.
+func (v *ClusterValues) GetUuid() string { return v.Uuid }
+
+// GetName returns ClusterValues.Name, and is useful for accessing the field via an interface.
+func (v *ClusterValues) GetName() string { return v.Name }
+
+// GetDescription returns ClusterValues.Description, and is useful for accessing the field via an interface.
+func (v *ClusterValues) GetDescription() string { return v.Description }
+
+// GetEmoji returns ClusterValues.Emoji, and is useful for accessing the field via an interface.
+func (v *ClusterValues) GetEmoji() string { return v.Emoji }
+
+// GetColor returns ClusterValues.Color, and is useful for accessing the field via an interface.
+func (v *ClusterValues) GetColor() string { return v.Color }
 
 // The roles a user can be within a team
 type GTeamMemberRole string
@@ -525,16 +560,97 @@ func (v *createClusterClusterCreateClusterCreatePayload) GetCluster() createClus
 
 // createClusterClusterCreateClusterCreatePayloadCluster includes the requested fields of the GraphQL type Cluster.
 type createClusterClusterCreateClusterCreatePayloadCluster struct {
-	Id string `json:"id"`
-	// The public UUID for this cluster
-	Uuid string `json:"uuid"`
+	ClusterValues `json:"-"`
 }
 
 // GetId returns createClusterClusterCreateClusterCreatePayloadCluster.Id, and is useful for accessing the field via an interface.
-func (v *createClusterClusterCreateClusterCreatePayloadCluster) GetId() string { return v.Id }
+func (v *createClusterClusterCreateClusterCreatePayloadCluster) GetId() string {
+	return v.ClusterValues.Id
+}
 
 // GetUuid returns createClusterClusterCreateClusterCreatePayloadCluster.Uuid, and is useful for accessing the field via an interface.
-func (v *createClusterClusterCreateClusterCreatePayloadCluster) GetUuid() string { return v.Uuid }
+func (v *createClusterClusterCreateClusterCreatePayloadCluster) GetUuid() string {
+	return v.ClusterValues.Uuid
+}
+
+// GetName returns createClusterClusterCreateClusterCreatePayloadCluster.Name, and is useful for accessing the field via an interface.
+func (v *createClusterClusterCreateClusterCreatePayloadCluster) GetName() string {
+	return v.ClusterValues.Name
+}
+
+// GetDescription returns createClusterClusterCreateClusterCreatePayloadCluster.Description, and is useful for accessing the field via an interface.
+func (v *createClusterClusterCreateClusterCreatePayloadCluster) GetDescription() string {
+	return v.ClusterValues.Description
+}
+
+// GetEmoji returns createClusterClusterCreateClusterCreatePayloadCluster.Emoji, and is useful for accessing the field via an interface.
+func (v *createClusterClusterCreateClusterCreatePayloadCluster) GetEmoji() string {
+	return v.ClusterValues.Emoji
+}
+
+// GetColor returns createClusterClusterCreateClusterCreatePayloadCluster.Color, and is useful for accessing the field via an interface.
+func (v *createClusterClusterCreateClusterCreatePayloadCluster) GetColor() string {
+	return v.ClusterValues.Color
+}
+
+func (v *createClusterClusterCreateClusterCreatePayloadCluster) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*createClusterClusterCreateClusterCreatePayloadCluster
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.createClusterClusterCreateClusterCreatePayloadCluster = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	err = json.Unmarshal(
+		b, &v.ClusterValues)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+type __premarshalcreateClusterClusterCreateClusterCreatePayloadCluster struct {
+	Id string `json:"id"`
+
+	Uuid string `json:"uuid"`
+
+	Name string `json:"name"`
+
+	Description string `json:"description"`
+
+	Emoji string `json:"emoji"`
+
+	Color string `json:"color"`
+}
+
+func (v *createClusterClusterCreateClusterCreatePayloadCluster) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *createClusterClusterCreateClusterCreatePayloadCluster) __premarshalJSON() (*__premarshalcreateClusterClusterCreateClusterCreatePayloadCluster, error) {
+	var retval __premarshalcreateClusterClusterCreateClusterCreatePayloadCluster
+
+	retval.Id = v.ClusterValues.Id
+	retval.Uuid = v.ClusterValues.Uuid
+	retval.Name = v.ClusterValues.Name
+	retval.Description = v.ClusterValues.Description
+	retval.Emoji = v.ClusterValues.Emoji
+	retval.Color = v.ClusterValues.Color
+	return &retval, nil
+}
 
 // createClusterResponse is returned by createCluster on success.
 type createClusterResponse struct {
@@ -1078,38 +1194,97 @@ func (v *updateClusterClusterUpdateClusterUpdatePayload) GetCluster() updateClus
 
 // updateClusterClusterUpdateClusterUpdatePayloadCluster includes the requested fields of the GraphQL type Cluster.
 type updateClusterClusterUpdateClusterUpdatePayloadCluster struct {
-	Id string `json:"id"`
-	// The public UUID for this cluster
-	Uuid string `json:"uuid"`
-	// Name of the cluster
-	Name string `json:"name"`
-	// Description of the cluster
-	Description string `json:"description"`
-	// Emoji for the cluster using Buildkite emoji syntax
-	Emoji string `json:"emoji"`
-	// Color hex code for the cluster
-	Color string `json:"color"`
+	ClusterValues `json:"-"`
 }
 
 // GetId returns updateClusterClusterUpdateClusterUpdatePayloadCluster.Id, and is useful for accessing the field via an interface.
-func (v *updateClusterClusterUpdateClusterUpdatePayloadCluster) GetId() string { return v.Id }
+func (v *updateClusterClusterUpdateClusterUpdatePayloadCluster) GetId() string {
+	return v.ClusterValues.Id
+}
 
 // GetUuid returns updateClusterClusterUpdateClusterUpdatePayloadCluster.Uuid, and is useful for accessing the field via an interface.
-func (v *updateClusterClusterUpdateClusterUpdatePayloadCluster) GetUuid() string { return v.Uuid }
+func (v *updateClusterClusterUpdateClusterUpdatePayloadCluster) GetUuid() string {
+	return v.ClusterValues.Uuid
+}
 
 // GetName returns updateClusterClusterUpdateClusterUpdatePayloadCluster.Name, and is useful for accessing the field via an interface.
-func (v *updateClusterClusterUpdateClusterUpdatePayloadCluster) GetName() string { return v.Name }
+func (v *updateClusterClusterUpdateClusterUpdatePayloadCluster) GetName() string {
+	return v.ClusterValues.Name
+}
 
 // GetDescription returns updateClusterClusterUpdateClusterUpdatePayloadCluster.Description, and is useful for accessing the field via an interface.
 func (v *updateClusterClusterUpdateClusterUpdatePayloadCluster) GetDescription() string {
-	return v.Description
+	return v.ClusterValues.Description
 }
 
 // GetEmoji returns updateClusterClusterUpdateClusterUpdatePayloadCluster.Emoji, and is useful for accessing the field via an interface.
-func (v *updateClusterClusterUpdateClusterUpdatePayloadCluster) GetEmoji() string { return v.Emoji }
+func (v *updateClusterClusterUpdateClusterUpdatePayloadCluster) GetEmoji() string {
+	return v.ClusterValues.Emoji
+}
 
 // GetColor returns updateClusterClusterUpdateClusterUpdatePayloadCluster.Color, and is useful for accessing the field via an interface.
-func (v *updateClusterClusterUpdateClusterUpdatePayloadCluster) GetColor() string { return v.Color }
+func (v *updateClusterClusterUpdateClusterUpdatePayloadCluster) GetColor() string {
+	return v.ClusterValues.Color
+}
+
+func (v *updateClusterClusterUpdateClusterUpdatePayloadCluster) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*updateClusterClusterUpdateClusterUpdatePayloadCluster
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.updateClusterClusterUpdateClusterUpdatePayloadCluster = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	err = json.Unmarshal(
+		b, &v.ClusterValues)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+type __premarshalupdateClusterClusterUpdateClusterUpdatePayloadCluster struct {
+	Id string `json:"id"`
+
+	Uuid string `json:"uuid"`
+
+	Name string `json:"name"`
+
+	Description string `json:"description"`
+
+	Emoji string `json:"emoji"`
+
+	Color string `json:"color"`
+}
+
+func (v *updateClusterClusterUpdateClusterUpdatePayloadCluster) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *updateClusterClusterUpdateClusterUpdatePayloadCluster) __premarshalJSON() (*__premarshalupdateClusterClusterUpdateClusterUpdatePayloadCluster, error) {
+	var retval __premarshalupdateClusterClusterUpdateClusterUpdatePayloadCluster
+
+	retval.Id = v.ClusterValues.Id
+	retval.Uuid = v.ClusterValues.Uuid
+	retval.Name = v.ClusterValues.Name
+	retval.Description = v.ClusterValues.Description
+	retval.Emoji = v.ClusterValues.Emoji
+	retval.Color = v.ClusterValues.Color
+	return &retval, nil
+}
 
 // updateClusterResponse is returned by updateCluster on success.
 type updateClusterResponse struct {
@@ -1524,10 +1699,17 @@ mutation createCluster ($organizationId: ID!, $name: String!, $description: Stri
 	clusterCreate(input: {organizationId:$organizationId,name:$name,description:$description,emoji:$emoji,color:$color}) {
 		clientMutationId
 		cluster {
-			id
-			uuid
+			... ClusterValues
 		}
 	}
+}
+fragment ClusterValues on Cluster {
+	id
+	uuid
+	name
+	description
+	emoji
+	color
 }
 `
 
@@ -1908,14 +2090,17 @@ mutation updateCluster ($organizationId: ID!, $id: ID!, $name: String, $descript
 	clusterUpdate(input: {organizationId:$organizationId,id:$id,name:$name,description:$description,emoji:$emoji,color:$color}) {
 		clientMutationId
 		cluster {
-			id
-			uuid
-			name
-			description
-			emoji
-			color
+			... ClusterValues
 		}
 	}
+}
+fragment ClusterValues on Cluster {
+	id
+	uuid
+	name
+	description
+	emoji
+	color
 }
 `
 
