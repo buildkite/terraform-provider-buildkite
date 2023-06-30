@@ -25,6 +25,12 @@ resource "buildkite_agent_token" "fleet" {
   description = "token used by build fleet"
 }
 
+resource "buildkite_cluster_queue" "queue1" {
+  cluster_id = "Q2x1c3Rlci0tLTMzMDc0ZDhiLTM4MjctNDRkNC05YTQ3LTkwN2E2NWZjODViNg=="
+  key = "dev"
+  description = "Dev cluster queue"
+}
+
 output "agent_token" {
   value = buildkite_agent_token.fleet.token
 }
@@ -32,3 +38,4 @@ output "agent_token" {
 output "badge_url" {
   value = buildkite_pipeline.test.badge_url
 }
+

@@ -1,7 +1,6 @@
 package buildkite
 
 import (
-	//	"context"
 	"fmt"
 	"testing"
 
@@ -13,7 +12,7 @@ func testAccClusterQueueConfigBasic(name string) string {
 	config := `
 	
 	resource "buildkite_cluster_queue" "foobar" {
-		cluster_id = "Q2x1c3Rlci0tLTMzMDc1ZDhiLTMyMjctNDRkYS05YTk3LTkwN2E2NWZjOGFiNg=="
+		cluster_id = "Q2x1c3Rlci0tLTFkNmIxOTg5LTJmYjctNDRlMC04MWYyLTAxYjIxNzQ4MTVkMg=="
 		description = "Acceptance Test %s"
 		key = "foobar"
 	}
