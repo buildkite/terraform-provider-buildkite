@@ -133,15 +133,13 @@ func testAccCheckClusterDestroy(s *terraform.State) error {
 		}
 
 		var getClusterQuery struct {
-			Organization struct {
-				Cluster struct {
-					Name string
-				}
+			Cluster struct {
+				ID string
 			}
 		}
 
 		err := graphqlClient.Query(context.Background(), &getClusterQuery, map[string]interface{}{
-			"id": rs.Primary.Attributes["uuid"],
+			"id": rs.Primary.ID,
 		})
 
 		if err == nil {
