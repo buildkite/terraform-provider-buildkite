@@ -6,19 +6,19 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	resource_schema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
-	resource_schema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 type ClusterQueueResourceModel struct {
-	Id             types.String `tfsdk:"id"`
-	Uuid           types.String `tfsdk:"uuid"`
-	ClusterId      types.String `tfsdk:"cluster_id"`
-	ClusterUuid    types.String `tfsdk:"cluster_uuid"`
-	Key            types.String `tfsdk:"key"`
-	Description    types.String `tfsdk:"description"`
+	Id          types.String `tfsdk:"id"`
+	Uuid        types.String `tfsdk:"uuid"`
+	ClusterId   types.String `tfsdk:"cluster_id"`
+	ClusterUuid types.String `tfsdk:"cluster_uuid"`
+	Key         types.String `tfsdk:"key"`
+	Description types.String `tfsdk:"description"`
 }
 
 type ClusterQueueResource struct {
@@ -52,13 +52,13 @@ func (ClusterQueueResource) Schema(ctx context.Context, req resource.SchemaReque
 				},
 			},
 			"uuid": resource_schema.StringAttribute{
-				Computed:            true,
+				Computed: true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
 			"cluster_uuid": resource_schema.StringAttribute{
-				Computed:            true,
+				Computed: true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
@@ -135,7 +135,7 @@ func (cq *ClusterQueueResource) Read(ctx context.Context, req resource.ReadReque
 
 	// Find the Cluster Q from the returned queues to update state
 	for i := range queues.Organization.Cluster.Queues.Edges {
-		if queues.Organization.Cluster.Queues.Edges[i].Node.Id == state.Id.ValueString(){
+		if queues.Organization.Cluster.Queues.Edges[i].Node.Id == state.Id.ValueString() {
 			// Update ClusterQueueResourceModel with Node values and append
 			updateClusterQueueResource(queues.Organization.Cluster.Queues.Edges[i].Node, &state)
 			resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
@@ -200,7 +200,7 @@ func (cq *ClusterQueueResource) Delete(ctx context.Context, req resource.DeleteR
 	}
 }
 
-func updateClusterQueueResource(clusterQueueNode getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue, cq *ClusterQueueResourceModel){
+func updateClusterQueueResource(clusterQueueNode getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue, cq *ClusterQueueResourceModel) {
 	cq.Id = types.StringValue(clusterQueueNode.Id)
 	cq.Uuid = types.StringValue(clusterQueueNode.Uuid)
 	cq.Key = types.StringValue(clusterQueueNode.Key)
