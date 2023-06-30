@@ -563,8 +563,8 @@ func DeletePipeline(ctx context.Context, d *schema.ResourceData, m interface{}) 
 
 // PipelineExtraInfo is used to manage pipeline attributes that are not exposed via GraphQL API.
 type PipelineExtraInfo struct {
-	BadgeUrl            string `json:"badge_url"`
-	Provider            struct {
+	BadgeUrl string `json:"badge_url"`
+	Provider struct {
 		Settings struct {
 			TriggerMode                             string `json:"trigger_mode"`
 			BuildPullRequests                       bool   `json:"build_pull_requests"`
@@ -600,8 +600,7 @@ func getPipelineExtraInfo(d *schema.ResourceData, m interface{}, slug string) (*
 }
 
 func updatePipelineExtraInfo(d *schema.ResourceData, client *Client) (PipelineExtraInfo, error) {
-	payload := map[string]interface{}{
-	}
+	payload := map[string]interface{}{}
 	if settings := d.Get("provider_settings").([]interface{}); len(settings) > 0 {
 		payload["provider_settings"] = settings[0].(map[string]interface{})
 	}
