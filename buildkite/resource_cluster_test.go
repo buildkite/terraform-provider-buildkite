@@ -1,7 +1,6 @@
 package buildkite
 
 import (
-	"context"
 	"fmt"
 	"testing"
 
@@ -39,6 +38,7 @@ func TestAccCluster_AddRemove(t *testing.T) {
 			{
 				Config: testAccClusterBasic("foo"),
 				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccCheckClusterExists("buildkite_cluster.foo", &c),
 					testAccCheckClusterRemoteValues(&c, "Test cluster"),
 				),
 			},
@@ -92,26 +92,11 @@ func testAccCheckClusterExists(n string, c *ClusterResourceModel) resource.TestC
 			return fmt.Errorf("no cluster ID is set")
 		}
 
-		var getClusterQuery struct {
-			Organization struct {
-				Cluster struct {
-					ID string `graphql:"id"`
-				}
-			}
-		}
-
-		err := graphqlClient.Query(context.Background(), &getClusterQuery, map[string]interface{}{
-			"id": rs.Primary.ID,
-		})
+		_, err := getCluster(genqlientGraphql, getenv("BUILDKITE_ORGANIZATION_SLUG"), rs.Primary.Attributes["uuid"])
 
 		if err != nil {
 			return err
 		}
-
-		if getClusterQuery.Organization.Cluster.ID != rs.Primary.ID {
-			return fmt.Errorf("cluster not found")
-		}
-
 		return nil
 	}
 }
@@ -132,15 +117,7 @@ func testAccCheckClusterDestroy(s *terraform.State) error {
 			continue
 		}
 
-		var getClusterQuery struct {
-			Cluster struct {
-				ID string
-			}
-		}
-
-		err := graphqlClient.Query(context.Background(), &getClusterQuery, map[string]interface{}{
-			"id": rs.Primary.ID,
-		})
+		_, err := getCluster(genqlientGraphql, getenv("BUILDKITE_ORGANIZATION_SLUG"), rs.Primary.Attributes["uuid"])
 
 		if err == nil {
 			return fmt.Errorf("Cluster still exists")
