@@ -26,6 +26,7 @@ type Steps struct {
 }
 type PipelineNode struct {
 	AllowRebuilds                        graphql.Boolean
+	BranchConfiguration                  graphql.String
 	CancelIntermediateBuilds             graphql.Boolean
 	CancelIntermediateBuildsBranchFilter graphql.String
 	Cluster                              Cluster
@@ -98,7 +99,6 @@ func resourcePipeline() *schema.Resource {
 				Type:     schema.TypeString,
 			},
 			"branch_configuration": {
-				Computed: true,
 				Optional: true,
 				Type:     schema.TypeString,
 			},
@@ -334,7 +334,7 @@ func CreatePipeline(ctx context.Context, d *schema.ResourceData, m interface{}) 
 	var mutation struct {
 		PipelineCreate struct {
 			Pipeline PipelineNode
-		} `graphql:"pipelineCreate(input: {allowRebuilds: $allow_rebuilds, cancelIntermediateBuilds: $cancel_intermediate_builds, cancelIntermediateBuildsBranchFilter: $cancel_intermediate_builds_branch_filter, defaultBranch: $default_branch, defaultTimeoutInMinutes: $default_timeout_in_minutes, maximumTimeoutInMinutes: $maximum_timeout_in_minutes, description: $desc, name: $name, organizationId: $org, repository: {url: $repository_url}, skipIntermediateBuilds: $skip_intermediate_builds, skipIntermediateBuildsBranchFilter: $skip_intermediate_builds_branch_filter, steps: {yaml: $steps}, teams: $teams, tags: $tags})"`
+		} `graphql:"pipelineCreate(input: {allowRebuilds: $allow_rebuilds, branchConfiguration: $branch_configuration, cancelIntermediateBuilds: $cancel_intermediate_builds, cancelIntermediateBuildsBranchFilter: $cancel_intermediate_builds_branch_filter, defaultBranch: $default_branch, defaultTimeoutInMinutes: $default_timeout_in_minutes, maximumTimeoutInMinutes: $maximum_timeout_in_minutes, description: $desc, name: $name, organizationId: $org, repository: {url: $repository_url}, skipIntermediateBuilds: $skip_intermediate_builds, skipIntermediateBuildsBranchFilter: $skip_intermediate_builds_branch_filter, steps: {yaml: $steps}, teams: $teams, tags: $tags})"`
 	}
 
 	teamsData := make([]PipelineTeamAssignmentInput, 0)
@@ -352,6 +352,7 @@ func CreatePipeline(ctx context.Context, d *schema.ResourceData, m interface{}) 
 
 	vars := map[string]interface{}{
 		"allow_rebuilds":                           graphql.Boolean(d.Get("allow_rebuilds").(bool)),
+		"branch_configuration":                     graphql.String(d.Get("branch_configuration").(string)),
 		"cancel_intermediate_builds":               graphql.Boolean(d.Get("cancel_intermediate_builds").(bool)),
 		"cancel_intermediate_builds_branch_filter": graphql.String(d.Get("cancel_intermediate_builds_branch_filter").(string)),
 		"default_branch":                           graphql.String(d.Get("default_branch").(string)),
@@ -376,7 +377,7 @@ func CreatePipeline(ctx context.Context, d *schema.ResourceData, m interface{}) 
 		var mutationWithClusterID struct {
 			PipelineCreate struct {
 				Pipeline PipelineNode
-			} `graphql:"pipelineCreate(input: {allowRebuilds: $allow_rebuilds, cancelIntermediateBuilds: $cancel_intermediate_builds, cancelIntermediateBuildsBranchFilter: $cancel_intermediate_builds_branch_filter, clusterId: $cluster_id, defaultBranch: $default_branch, defaultTimeoutInMinutes: $default_timeout_in_minutes, description: $desc, maximumTimeoutInMinutes: $maximum_timeout_in_minutes, name: $name, organizationId: $org, repository: {url: $repository_url}, skipIntermediateBuilds: $skip_intermediate_builds, skipIntermediateBuildsBranchFilter: $skip_intermediate_builds_branch_filter, steps: {yaml: $steps}, teams: $teams, tags: $tags})"`
+			} `graphql:"pipelineCreate(input: {allowRebuilds: $allow_rebuilds, branchConfiguration: $branch_configuration, cancelIntermediateBuilds: $cancel_intermediate_builds, cancelIntermediateBuildsBranchFilter: $cancel_intermediate_builds_branch_filter, clusterId: $cluster_id, defaultBranch: $default_branch, defaultTimeoutInMinutes: $default_timeout_in_minutes, description: $desc, maximumTimeoutInMinutes: $maximum_timeout_in_minutes, name: $name, organizationId: $org, repository: {url: $repository_url}, skipIntermediateBuilds: $skip_intermediate_builds, skipIntermediateBuildsBranchFilter: $skip_intermediate_builds_branch_filter, steps: {yaml: $steps}, teams: $teams, tags: $tags})"`
 		}
 		vars["cluster_id"] = graphql.ID(clusterID.(string))
 		err = client.graphql.Mutate(context.Background(), &mutationWithClusterID, vars)
@@ -437,8 +438,11 @@ func UpdatePipeline(ctx context.Context, d *schema.ResourceData, m interface{}) 
 	client := m.(*Client)
 	var err error
 
+	branch := d.Get("branch_configuration").(string)
+
 	input := PipelineUpdateInput{
 		AllowRebuilds:                        d.Get("allow_rebuilds").(bool),
+		BranchConfiguration:                  &branch,
 		CancelIntermediateBuilds:             d.Get("cancel_intermediate_builds").(bool),
 		CancelIntermediateBuildsBranchFilter: d.Get("cancel_intermediate_builds_branch_filter").(string),
 		DefaultBranch:                        d.Get("default_branch").(string),
@@ -476,6 +480,7 @@ func UpdatePipeline(ctx context.Context, d *schema.ResourceData, m interface{}) 
 		AllowRebuilds:                        graphql.Boolean(response.PipelineUpdate.Pipeline.AllowRebuilds),
 		CancelIntermediateBuilds:             graphql.Boolean(response.PipelineUpdate.Pipeline.CancelIntermediateBuilds),
 		CancelIntermediateBuildsBranchFilter: graphql.String(response.PipelineUpdate.Pipeline.CancelIntermediateBuildsBranchFilter),
+		BranchConfiguration:                  graphql.String(response.PipelineUpdate.Pipeline.BranchConfiguration),
 		Cluster:                              Cluster{ID: graphql.String(response.PipelineUpdate.Pipeline.Cluster.Id)},
 		DefaultBranch:                        graphql.String(response.PipelineUpdate.Pipeline.DefaultBranch),
 		DefaultTimeoutInMinutes:              graphql.Int(response.PipelineUpdate.Pipeline.DefaultTimeoutInMinutes),
@@ -552,14 +557,12 @@ func DeletePipeline(ctx context.Context, d *schema.ResourceData, m interface{}) 
 }
 
 // As of May 21, 2021, GraphQL Pipeline is lacking support for the following properties:
-// - branch_configuration
 // - badge_url
 // - provider_settings
 // We fallback to REST API
 
 // PipelineExtraInfo is used to manage pipeline attributes that are not exposed via GraphQL API.
 type PipelineExtraInfo struct {
-	BranchConfiguration string `json:"branch_configuration"`
 	BadgeUrl            string `json:"badge_url"`
 	Provider            struct {
 		Settings struct {
@@ -598,7 +601,6 @@ func getPipelineExtraInfo(d *schema.ResourceData, m interface{}, slug string) (*
 
 func updatePipelineExtraInfo(d *schema.ResourceData, client *Client) (PipelineExtraInfo, error) {
 	payload := map[string]interface{}{
-		"branch_configuration": d.Get("branch_configuration").(string),
 	}
 	if settings := d.Get("provider_settings").([]interface{}); len(settings) > 0 {
 		payload["provider_settings"] = settings[0].(map[string]interface{})
@@ -821,6 +823,7 @@ func deleteTeamPipelines(teamPipelines []TeamPipelineNode, client *Client) error
 func updatePipelineResource(d *schema.ResourceData, pipeline *PipelineNode) {
 	d.SetId(string(pipeline.ID))
 	d.Set("allow_rebuilds", bool(pipeline.AllowRebuilds))
+	d.Set("branch_configuration", string(pipeline.BranchConfiguration))
 	d.Set("default_timeout_in_minutes", int(pipeline.DefaultTimeoutInMinutes))
 	d.Set("maximum_timeout_in_minutes", int(pipeline.MaximumTimeoutInMinutes))
 	d.Set("cancel_intermediate_builds", bool(pipeline.CancelIntermediateBuilds))
@@ -849,7 +852,6 @@ func updatePipelineResource(d *schema.ResourceData, pipeline *PipelineNode) {
 
 // updatePipelineResourceExtraInfo updates the terraform resource with data received from Buildkite REST API
 func updatePipelineResourceExtraInfo(d *schema.ResourceData, pipeline *PipelineExtraInfo) {
-	d.Set("branch_configuration", pipeline.BranchConfiguration)
 	d.Set("badge_url", pipeline.BadgeUrl)
 
 	s := &pipeline.Provider.Settings
