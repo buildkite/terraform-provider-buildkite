@@ -13,7 +13,7 @@ func testAccClusterQueueConfigBasic(name string) string {
 	config := `
 	
 	resource "buildkite_cluster_queue" "foobar" {
-		cluster_id = "Q2x1c3Rlci0tLTFkNmIxOTg5LTJmYjctNDRlMC04MWYyLTAxYjIxNzQ4MTVkMg=="
+		cluster_id = "Q2x1c3Rlci0tLTMzMDc1ZDhiLTMyMjctNDRkYS05YTk3LTkwN2E2NWZjOGFiNg=="
 		description = "Acceptance Test %s"
 		key = "foobar"
 	}
@@ -24,7 +24,6 @@ func testAccClusterQueueConfigBasic(name string) string {
 
 // Confirm that we can create a new cluster queue, and then delete it without error
 func TestAccClusterQueue_add_remove(t *testing.T) {
-	t.Parallel()
 	var cq ClusterQueueResourceModel
 
 	resource.Test(t, resource.TestCase{
@@ -59,7 +58,6 @@ func TestAccClusterQueue_add_remove(t *testing.T) {
 }
 
 func TestAccClusterQueue_update(t *testing.T) {
-	t.Parallel()
 	var cq ClusterQueueResourceModel
 
 	resource.Test(t, resource.TestCase{
@@ -94,7 +92,6 @@ func TestAccClusterQueue_update(t *testing.T) {
 }
 
 func TestAccClusterQueue_import(t *testing.T) {
-	t.Parallel()
 	var cq ClusterQueueResourceModel
 
 	resource.Test(t, resource.TestCase{
