@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	resource_schema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
@@ -11,11 +12,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-type ClusterResource struct {
+type clusterResource struct {
 	client *Client
 }
 
-type ClusterResourceModel struct {
+type clusterResourceModel struct {
 	ID          types.String `tfsdk:"id"`
 	Name        types.String `tfsdk:"name"`
 	Description types.String `tfsdk:"description"`
@@ -24,15 +25,15 @@ type ClusterResourceModel struct {
 	UUID        types.String `tfsdk:"uuid"`
 }
 
-func NewClusterResource() resource.Resource {
-	return &ClusterResource{}
+func newClusterResource() resource.Resource {
+	return &clusterResource{}
 }
 
-func (c *ClusterResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
+func (c *clusterResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
 	resp.TypeName = req.ProviderTypeName + "_cluster"
 }
 
-func (c *ClusterResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
+func (c *clusterResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
 	if req.ProviderData == nil {
 		return
 	}
@@ -40,7 +41,7 @@ func (c *ClusterResource) Configure(ctx context.Context, req resource.ConfigureR
 	c.client = req.ProviderData.(*Client)
 }
 
-func (c *ClusterResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
+func (c *clusterResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = resource_schema.Schema{
 		MarkdownDescription: "A Cluster is a group of Agents that can be used to run your builds. " +
 			"Clusters are useful for grouping Agents by their capabilities, such as operating system, hardware, or location. ",
@@ -77,8 +78,8 @@ func (c *ClusterResource) Schema(ctx context.Context, req resource.SchemaRequest
 	}
 }
 
-func (c *ClusterResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	var state *ClusterResourceModel
+func (c *clusterResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	var state *clusterResourceModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &state)...)
 
 	if resp.Diagnostics.HasError() {
@@ -108,8 +109,8 @@ func (c *ClusterResource) Create(ctx context.Context, req resource.CreateRequest
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
-func (c *ClusterResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var state ClusterResourceModel
+func (c *clusterResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	var state clusterResourceModel
 
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 
@@ -130,8 +131,8 @@ func (c *ClusterResource) Read(ctx context.Context, req resource.ReadRequest, re
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
-func (c *ClusterResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	var state, plan ClusterResourceModel
+func (c *clusterResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	var state, plan clusterResourceModel
 
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
@@ -163,8 +164,8 @@ func (c *ClusterResource) Update(ctx context.Context, req resource.UpdateRequest
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 }
 
-func (c *ClusterResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var state ClusterResourceModel
+func (c *clusterResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	var state clusterResourceModel
 
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 
@@ -181,4 +182,35 @@ func (c *ClusterResource) Delete(ctx context.Context, req resource.DeleteRequest
 		)
 		return
 	}
+}
+
+func (c *clusterResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	uuid := req.ID
+
+	if uuid == "" {
+		resp.Diagnostics.AddError(
+			"Unable to import Cluster",
+			"Unable to import Cluster, no UUID was provided",
+		)
+		return
+	}
+
+	cluster, err := getCluster(c.client.genqlient, c.client.organization, uuid)
+
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Unable to import Cluster",
+			fmt.Sprintf("Unable to import Cluster: %s", err.Error()),
+		)
+		return
+	}
+
+	id := cluster.Organization.Cluster.Id
+
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), types.StringValue(id))...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("uuid"), uuid)...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("name"), types.StringValue(cluster.Organization.Cluster.Name))...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("description"), types.StringValue(cluster.Organization.Cluster.Description))...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("emoji"), types.StringValue(cluster.Organization.Cluster.Emoji))...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("color"), types.StringValue(cluster.Organization.Cluster.Color))...)
 }

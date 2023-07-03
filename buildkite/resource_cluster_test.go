@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-framework/providerserver"
-	"github.com/hashicorp/terraform-plugin-go/tfprotov5"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
@@ -14,40 +12,35 @@ func testAccClusterBasic(name string) string {
 	config := `
 		resource "buildkite_cluster" "foo" {
 			name = "%s_test_cluster"
-			description = "Test cluster"
 		}
 	`
 	return fmt.Sprintf(config, name)
 }
 
-func protoV5ProviderFactories() map[string]func() (tfprotov5.ProviderServer, error) {
-	return map[string]func() (tfprotov5.ProviderServer, error){
-		"buildkite": providerserver.NewProtocol5WithError(New("testing")),
-	}
-}
-
 func TestAccCluster_AddRemove(t *testing.T) {
-	t.Parallel()
-	var c ClusterResourceModel
+	var c clusterResourceModel
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV5ProviderFactories: protoV5ProviderFactories(),
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
 		CheckDestroy:             testAccCheckClusterDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccClusterBasic("foo"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckClusterExists("buildkite_cluster.foo", &c),
-					testAccCheckClusterRemoteValues(&c, "Test cluster"),
+					testAccCheckClusterRemoteValues(&c, "foo_test_cluster"),
+					resource.TestCheckResourceAttr("buildkite_cluster.foo", "name", "foo_test_cluster"),
+					resource.TestCheckResourceAttrSet("buildkite_cluster.foo", "id"),
+					resource.TestCheckResourceAttrSet("buildkite_cluster.foo", "uuid"),
 				),
 			},
 			{
 				RefreshState: true,
 				PlanOnly:     true,
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttrSet("buildkite_cluster.foo", "name"),
-					resource.TestCheckResourceAttrSet("buildkite_cluster.foo", "description"),
+					resource.TestCheckResourceAttrSet("buildkite_cluster.foo", "id"),
+					resource.TestCheckResourceAttrSet("buildkite_cluster.foo", "uuid"),
 				),
 			},
 		},
@@ -55,12 +48,11 @@ func TestAccCluster_AddRemove(t *testing.T) {
 }
 
 func TestAccCluster_Update(t *testing.T) {
-	t.Parallel()
-	var c ClusterResourceModel
+	var c clusterResourceModel
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV5ProviderFactories: protoV5ProviderFactories(),
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
 		CheckDestroy:             testAccCheckClusterDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -81,7 +73,7 @@ func TestAccCluster_Update(t *testing.T) {
 	})
 }
 
-func testAccCheckClusterExists(n string, c *ClusterResourceModel) resource.TestCheckFunc {
+func testAccCheckClusterExists(n string, c *clusterResourceModel) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {
@@ -101,11 +93,11 @@ func testAccCheckClusterExists(n string, c *ClusterResourceModel) resource.TestC
 	}
 }
 
-func testAccCheckClusterRemoteValues(c *ClusterResourceModel, description string) resource.TestCheckFunc {
+func testAccCheckClusterRemoteValues(c *clusterResourceModel, name string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 
-		if string(c.Description.ValueString()) != description {
-			return fmt.Errorf("unexpected description: %s", c.Description)
+		if c.Name.ValueString() != name {
+			return fmt.Errorf("unexpected name: %s, wanted: %s", c.Name, name)
 		}
 		return nil
 	}

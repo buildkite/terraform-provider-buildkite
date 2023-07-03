@@ -1,4 +1,4 @@
-fragment ClusterValues on Cluster {
+fragment ClusterFields on Cluster {
     id
     uuid
     name
@@ -10,52 +10,34 @@ fragment ClusterValues on Cluster {
 query getCluster($orgSlug: ID!, $id: ID!) {
     organization(slug: $orgSlug) {
         cluster(id: $id) {
-            name
-            id
-            uuid
-            description
-            defaultQueue {
-                key
-                id
-                dispatchPaused
-                dispatchPausedBy {
-                    name
-                    id
-                }
-                description
-                createdBy {
-                    name
-                    id
-                }
-            }
-            agentTokens {
-                edges {
-                    node {
-                        createdBy {
-                            name
-                            id
-                        }
-                        id
-                        description
-                        jobTokensEnabled
-                    }
-                }
-            }
+            ...ClusterFields
         }
     }
 }
 
-mutation createCluster($organizationId: ID!, $name: String!, $description: String, $emoji: String, $color: String) {
+# @genqlient(for: "ClusterCreateInput.description", pointer: true)
+# @genqlient(for: "ClusterCreateInput.emoji", pointer: true)
+# @genqlient(for: "ClusterCreateInput.color", pointer: true)
+mutation createCluster(
+  $organizationId: ID!
+  $name: String!
+  $description: String
+  $emoji: String
+  $color: String
+  ) {
     clusterCreate(
         input: { organizationId: $organizationId, name: $name, description: $description, emoji: $emoji, color: $color }
     ) {
         clientMutationId
         cluster {
-            ...ClusterValues
+            ...ClusterFields
         }
     }
 }
 
+# @genqlient(for: "ClusterUpdateInput.description", pointer: true)
+# @genqlient(for: "ClusterUpdateInput.emoji", pointer: true)
+# @genqlient(for: "ClusterUpdateInput.color", pointer: true)
 mutation updateCluster(
     $organizationId: ID!
     $id: ID!
@@ -76,7 +58,7 @@ mutation updateCluster(
     ) {
         clientMutationId
         cluster {
-            ...ClusterValues
+            ...ClusterFields
         }
     }
 }
