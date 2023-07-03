@@ -161,7 +161,7 @@ func testAccCheckClusterQueueExists(resourceName string, clusterQueueResourceMod
 	}
 }
 
-func testAccCheckClusterQueueRemoteValues(cq *ClusterQueueResourceModel, description string, key string) resource.TestCheckFunc {
+func testAccCheckClusterQueueRemoteValues(cq *ClusterQueueResourceModel, description, key string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 
 		if cq.Key.ValueString() != key {

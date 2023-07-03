@@ -119,7 +119,6 @@ func (cq *ClusterQueueResource) Create(ctx context.Context, req resource.CreateR
 
 func (cq *ClusterQueueResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var state ClusterQueueResourceModel
-	var queueFound bool = false
 
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 
@@ -151,13 +150,11 @@ func (cq *ClusterQueueResource) Read(ctx context.Context, req resource.ReadReque
 
 	// If not returned by this point, the cluster queue could not be found
 	// This is a tradeoff of the current getClusterQueues Genqlient query (searches for 50 queues via the cluster UUID in state)
-	if !queueFound {
-		resp.Diagnostics.AddError(
-			"Unable to find Cluster Queue",
-			fmt.Sprintf("Unable to find Cluster Queue: %s", err.Error()),
-		)
-		return
-	}
+	resp.Diagnostics.AddError(
+		"Unable to find Cluster Queue",
+		fmt.Sprintf("Unable to find Cluster Queue: %s", err.Error()),
+	)
+	return
 }
 
 func (cq *ClusterQueueResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
