@@ -3,6 +3,8 @@ package buildkite
 import (
 	"context"
 	"fmt"
+	"log"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -88,6 +90,7 @@ func (cq *ClusterQueueResource) Create(ctx context.Context, req resource.CreateR
 		return
 	}
 
+	log.Printf("Creating cluster queue with key %s into cluster %s ...", plan.Key.ValueString(), plan.ClusterId.ValueString())
 	apiResponse, err := createClusterQueue(
 		cq.client.genqlient,
 		cq.client.organizationId,
@@ -109,13 +112,14 @@ func (cq *ClusterQueueResource) Create(ctx context.Context, req resource.CreateR
 	state.ClusterId = plan.ClusterId
 	state.ClusterUuid = types.StringValue(apiResponse.ClusterQueueCreate.ClusterQueue.Cluster.Uuid)
 	state.Key = types.StringValue(apiResponse.ClusterQueueCreate.ClusterQueue.Key)
-	state.Description = types.StringPointerValue(&apiResponse.ClusterQueueCreate.ClusterQueue.Description)
+	state.Description = types.StringPointerValue(apiResponse.ClusterQueueCreate.ClusterQueue.Description)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
 func (cq *ClusterQueueResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var state ClusterQueueResourceModel
+	var queueFound bool = false
 
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 
@@ -123,25 +127,54 @@ func (cq *ClusterQueueResource) Read(ctx context.Context, req resource.ReadReque
 		return
 	}
 
+	log.Printf("Getting cluster queues for cluster %s ...", state.ClusterUuid.ValueString())
 	queues, err := getClusterQueues(cq.client.genqlient, cq.client.organization, state.ClusterUuid.ValueString())
 
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Unable to read Cluster Queue",
-			fmt.Sprintf("Unable to read Cluster Queue: %s", err.Error()),
+			"Unable to read Cluster Queues",
+			fmt.Sprintf("Unable to read Cluster Queues: %s", err.Error()),
 		)
 		return
 	}
 
-	// Find the Cluster Q from the returned queues to update state
-	for i := range queues.Organization.Cluster.Queues.Edges {
-		if queues.Organization.Cluster.Queues.Edges[i].Node.Id == state.Id.ValueString() {
+	// Find the cluster queue from the returned queues to update state
+	for _, edge := range queues.Organization.Cluster.Queues.Edges {
+		if edge.Node.Id == state.Id.ValueString() {
+			log.Printf("Found cluster queue with ID %s in cluster %s", edge.Node.Id, state.ClusterUuid.ValueString())
 			// Update ClusterQueueResourceModel with Node values and append
-			updateClusterQueueResource(queues.Organization.Cluster.Queues.Edges[i].Node, &state)
+			updateClusterQueueResource(edge.Node, &state)
 			resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
-			break
+			return
 		}
 	}
+
+	// If not returned by this point, the cluster queue could not be found
+	// This is a tradeoff of the current getClusterQueues Genqlient query (searches for 50 queues via the cluster UUID in state) 
+	if !queueFound {
+		resp.Diagnostics.AddError(
+			"Unable to find Cluster Queue",
+			fmt.Sprintf("Unable to find Cluster Queue: %s", err.Error()),
+		)
+		return
+	}
+}
+
+func (cq *ClusterQueueResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse){
+	importComponents := strings.Split(req.ID, ",")
+
+    if len(importComponents) != 2 || importComponents[0] == "" || importComponents[1] == "" {
+        resp.Diagnostics.AddError(
+            "Unexpected Import Identifier",
+            fmt.Sprintf("Expected import identifier with format: id,cluster_uuid. Got: %q", req.ID),
+        )
+        return
+    }
+
+	// Adding the cluster queue ID/cluster UUID to state for Read
+	log.Printf("Importing cluster queue %s ...", importComponents[0])
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), importComponents[0])...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("cluster_uuid"), importComponents[1])...)
 }
 
 func (cq *ClusterQueueResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
@@ -156,6 +189,7 @@ func (cq *ClusterQueueResource) Update(ctx context.Context, req resource.UpdateR
 		return
 	}
 
+	log.Printf("Updating cluster queue %s ...", state.Id.ValueString())
 	apiResponse, err := updateClusterQueue(
 		cq.client.genqlient,
 		cq.client.organizationId,
@@ -171,7 +205,7 @@ func (cq *ClusterQueueResource) Update(ctx context.Context, req resource.UpdateR
 		return
 	}
 
-	state.Description = types.StringPointerValue(&apiResponse.ClusterQueueUpdate.ClusterQueue.Description)
+	state.Description = types.StringPointerValue(apiResponse.ClusterQueueUpdate.ClusterQueue.Description)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
@@ -185,6 +219,7 @@ func (cq *ClusterQueueResource) Delete(ctx context.Context, req resource.DeleteR
 		return
 	}
 
+	log.Printf("Deleting cluster queue %s ...", plan.Id.ValueString())
 	_, err := deleteClusterQueue(
 		cq.client.genqlient,
 		cq.client.organizationId,
@@ -204,7 +239,7 @@ func updateClusterQueueResource(clusterQueueNode getClusterQueuesOrganizationClu
 	cq.Id = types.StringValue(clusterQueueNode.Id)
 	cq.Uuid = types.StringValue(clusterQueueNode.Uuid)
 	cq.Key = types.StringValue(clusterQueueNode.Key)
-	cq.Description = types.StringPointerValue(&clusterQueueNode.Description)
+	cq.Description = types.StringPointerValue(clusterQueueNode.Description)
 	cq.ClusterId = types.StringValue(clusterQueueNode.Cluster.Id)
 	cq.ClusterUuid = types.StringValue(clusterQueueNode.Cluster.Uuid)
 }

@@ -117,10 +117,9 @@ func testAccCheckClusterQueueExists(resourceName string, clusterQueueResourceMod
 		}
 
 		// Obtain the ClusterQueueResourceModel from the queues slice
-		for i := range queues.Organization.Cluster.Queues.Edges {
-			if queues.Organization.Cluster.Queues.Edges[i].Node.Id == resourceState.Primary.ID {
-				// Update ClusterQueueResourceModel with Node values and append
-				updateClusterQueueResource(queues.Organization.Cluster.Queues.Edges[i].Node, clusterQueueResourceModel)
+		for _, edge := range queues.Organization.Cluster.Queues.Edges {
+			if edge.Node.Id == resourceState.Primary.ID {
+				updateClusterQueueResource(edge.Node, clusterQueueResourceModel)
 				break
 			}
 		}
@@ -167,9 +166,9 @@ func testAccCheckClusterQueueDestroy(s *terraform.State) error {
 			return fmt.Errorf("Error fetching Cluster queues from graphql API: %v", err)
 		}
 
-		for i := range queues.Organization.Cluster.Queues.Edges {
-			//If the cluster queue's ID matches any of the queues in the cluster, it hasnt been deleted
-			if queues.Organization.Cluster.Queues.Edges[i].Node.Id == rs.Primary.ID {
+		// Loop over the cluster's queues, error if the queue still exists
+		for _, edge := range queues.Organization.Cluster.Queues.Edges {
+			if edge.Node.Id == rs.Primary.ID {
 				return fmt.Errorf("Cluster queue still exists in cluster, expected not to find it")
 			}
 		}

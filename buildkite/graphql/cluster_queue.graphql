@@ -2,6 +2,7 @@ fragment ClusterQueueValues on ClusterQueue {
     id
     uuid
     key
+    # @genqlient(pointer: true)
     description             
     cluster {
         id

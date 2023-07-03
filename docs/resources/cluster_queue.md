@@ -27,3 +27,48 @@ resource "buildkite_cluster_queue" "queue1" {
 * `id` - The Graphql ID of the created cluster queue.
 * `uuid` - The UUID of the created cluster queue.
 * `cluster_uuid` - The UUID of the cluster that this cluster queue belongs to.
+
+## Import
+
+Cluster queues can be imported using its `GraphQL ID`, along with its respective cluster `UUID`, sepeated by a comma. e.g.
+
+```
+$ terraform import buildkite_cluster_queue.test Q2x1c3RlclF1ZXVlLS0tYjJiOGRhNTEtOWY5My00Y2MyLTkyMjktMGRiNzg3ZDQzOTAz,35498aaf-ad05-4fa5-9a07-91bf6cacd2bd 
+```
+
+To find the cluster's `UUID` to utilise, you can use the below GraphQL query below. Alternatively, you can use this [pre-saved query](https://buildkite.com/user/graphql/console/3adf0389-02bd-45ef-adcd-4e8e5ae57f25), where you will need fo fill in the organization slug (ORGANIZATION_SLUG) for obtaining the relevant cluster name/`UUID` that the cluster queue is in.
+
+```graphql
+query getClusters {
+  organization(slug: "ORGANIZATION_SLUG") {
+	clusters(first: 50) {
+      edges{
+        node{
+          name
+          uuid
+        }
+      }
+	}
+  }
+}
+```
+
+After the cluster `UUID` has been found, you can use the below GraphQL query to find the cluster queue's `GraphQL ID`. Alternatively, this [pre-saved query](https://buildkite.com/user/graphql/console/1d913905-900e-40e7-8f46-651543487b5a) can be used, specifying the organisation slug (ORGANIZATION_SLUG) and the cluster `UUID` from above (CLUSTER_UUID).
+
+```graphql
+query getClusterQueues {
+  organization(slug: "ORGANIZATION_SLUG") {
+    cluster(id: "CLUSTER_UUID") {
+      queues(first: 50) {
+        edges {
+          node {
+            id
+            key
+          }
+        }
+      }
+    }
+  }
+}
+```
+

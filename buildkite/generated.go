@@ -34,7 +34,7 @@ type ClusterQueueValues struct {
 	// The public UUID for this cluster queue
 	Uuid        string                    `json:"uuid"`
 	Key         string                    `json:"key"`
-	Description string                    `json:"description"`
+	Description *string                   `json:"description"`
 	Cluster     ClusterQueueValuesCluster `json:"cluster"`
 }
 
@@ -48,7 +48,7 @@ func (v *ClusterQueueValues) GetUuid() string { return v.Uuid }
 func (v *ClusterQueueValues) GetKey() string { return v.Key }
 
 // GetDescription returns ClusterQueueValues.Description, and is useful for accessing the field via an interface.
-func (v *ClusterQueueValues) GetDescription() string { return v.Description }
+func (v *ClusterQueueValues) GetDescription() *string { return v.Description }
 
 // GetCluster returns ClusterQueueValues.Cluster, and is useful for accessing the field via an interface.
 func (v *ClusterQueueValues) GetCluster() ClusterQueueValuesCluster { return v.Cluster }
@@ -561,7 +561,7 @@ func (v *createClusterQueueClusterQueueCreateClusterQueueCreatePayloadClusterQue
 }
 
 // GetDescription returns createClusterQueueClusterQueueCreateClusterQueueCreatePayloadClusterQueue.Description, and is useful for accessing the field via an interface.
-func (v *createClusterQueueClusterQueueCreateClusterQueueCreatePayloadClusterQueue) GetDescription() string {
+func (v *createClusterQueueClusterQueueCreateClusterQueueCreatePayloadClusterQueue) GetDescription() *string {
 	return v.ClusterQueueValues.Description
 }
 
@@ -602,7 +602,7 @@ type __premarshalcreateClusterQueueClusterQueueCreateClusterQueueCreatePayloadCl
 
 	Key string `json:"key"`
 
-	Description string `json:"description"`
+	Description *string `json:"description"`
 
 	Cluster ClusterQueueValuesCluster `json:"cluster"`
 }
@@ -757,7 +757,7 @@ func (v *getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClu
 }
 
 // GetDescription returns getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue.Description, and is useful for accessing the field via an interface.
-func (v *getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue) GetDescription() string {
+func (v *getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue) GetDescription() *string {
 	return v.ClusterQueueValues.Description
 }
 
@@ -798,7 +798,7 @@ type __premarshalgetClusterQueuesOrganizationClusterQueuesClusterQueueConnection
 
 	Key string `json:"key"`
 
-	Description string `json:"description"`
+	Description *string `json:"description"`
 
 	Cluster ClusterQueueValuesCluster `json:"cluster"`
 }
@@ -1112,7 +1112,7 @@ func (v *updateClusterQueueClusterQueueUpdateClusterQueueUpdatePayloadClusterQue
 }
 
 // GetDescription returns updateClusterQueueClusterQueueUpdateClusterQueueUpdatePayloadClusterQueue.Description, and is useful for accessing the field via an interface.
-func (v *updateClusterQueueClusterQueueUpdateClusterQueueUpdatePayloadClusterQueue) GetDescription() string {
+func (v *updateClusterQueueClusterQueueUpdateClusterQueueUpdatePayloadClusterQueue) GetDescription() *string {
 	return v.ClusterQueueValues.Description
 }
 
@@ -1153,7 +1153,7 @@ type __premarshalupdateClusterQueueClusterQueueUpdateClusterQueueUpdatePayloadCl
 
 	Key string `json:"key"`
 
-	Description string `json:"description"`
+	Description *string `json:"description"`
 
 	Cluster ClusterQueueValuesCluster `json:"cluster"`
 }
