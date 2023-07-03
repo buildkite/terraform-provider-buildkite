@@ -150,7 +150,7 @@ func (cq *ClusterQueueResource) Read(ctx context.Context, req resource.ReadReque
 	}
 
 	// If not returned by this point, the cluster queue could not be found
-	// This is a tradeoff of the current getClusterQueues Genqlient query (searches for 50 queues via the cluster UUID in state) 
+	// This is a tradeoff of the current getClusterQueues Genqlient query (searches for 50 queues via the cluster UUID in state)
 	if !queueFound {
 		resp.Diagnostics.AddError(
 			"Unable to find Cluster Queue",
@@ -160,16 +160,16 @@ func (cq *ClusterQueueResource) Read(ctx context.Context, req resource.ReadReque
 	}
 }
 
-func (cq *ClusterQueueResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse){
+func (cq *ClusterQueueResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	importComponents := strings.Split(req.ID, ",")
 
-    if len(importComponents) != 2 || importComponents[0] == "" || importComponents[1] == "" {
-        resp.Diagnostics.AddError(
-            "Unexpected Import Identifier",
-            fmt.Sprintf("Expected import identifier with format: id,cluster_uuid. Got: %q", req.ID),
-        )
-        return
-    }
+	if len(importComponents) != 2 || importComponents[0] == "" || importComponents[1] == "" {
+		resp.Diagnostics.AddError(
+			"Unexpected Import Identifier",
+			fmt.Sprintf("Expected import identifier with format: id,cluster_uuid. Got: %q", req.ID),
+		)
+		return
+	}
 
 	// Adding the cluster queue ID/cluster UUID to state for Read
 	log.Printf("Importing cluster queue %s ...", importComponents[0])

@@ -2,6 +2,7 @@ package buildkite
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
@@ -92,6 +93,36 @@ func TestAccClusterQueue_update(t *testing.T) {
 	})
 }
 
+func TestAccClusterQueue_import(t *testing.T) {
+	t.Parallel()
+	var cq ClusterQueueResourceModel
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		CheckDestroy:             testAccCheckClusterQueueDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccClusterQueueConfigBasic("foo"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					// Confirm the cluster queue exists in the buildkite API
+					testAccCheckClusterQueueExists("buildkite_cluster_queue.foobar", &cq),
+					// Check to confirm the local state is correct before we re-import it
+					resource.TestCheckResourceAttr("buildkite_cluster_queue.foobar", "key", "foobar"),
+					resource.TestCheckResourceAttr("buildkite_cluster_queue.foobar", "description", "Acceptance Test foo"),
+				),
+			},
+			{
+				// re-import the resource (using the graphql token of the existing resource) and confirm they match
+				ResourceName:      "buildkite_cluster_queue.foobar",
+				ImportStateIdFunc: testAccGetImportClusterQueueId(&cq),
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
 func testAccCheckClusterQueueExists(resourceName string, clusterQueueResourceModel *ClusterQueueResourceModel) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		resourceState, ok := s.RootModule().Resources[resourceName]
@@ -145,6 +176,17 @@ func testAccCheckClusterQueueRemoteValues(cq *ClusterQueueResourceModel, descrip
 		}
 
 		return nil
+	}
+}
+
+func testAccGetImportClusterQueueId(cq *ClusterQueueResourceModel) resource.ImportStateIdFunc {
+	return func(s *terraform.State) (string, error) {
+		// Obtain trimmed cluster ID and cluster UUID
+		clusterUuid := strings.Trim(cq.Id.ValueString(), "\"")
+		clusterQueueID := strings.Trim(cq.ClusterUuid.ValueString(), "\"")
+		// Set ID for import
+		id := fmt.Sprintf("%s,%s", clusterUuid, clusterQueueID)
+		return id, nil
 	}
 }
 
