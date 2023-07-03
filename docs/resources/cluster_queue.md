@@ -41,14 +41,14 @@ To find the cluster's `UUID` to utilize, you can use the below GraphQL query bel
 ```graphql
 query getClusters {
   organization(slug: "ORGANIZATION_SLUG") {
-	clusters(first: 50) {
+    clusters(first: 50) {
       edges{
         node{
           name
           uuid
         }
       }
-	  }
+    }
   }
 }
 ```
