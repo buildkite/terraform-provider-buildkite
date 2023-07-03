@@ -165,7 +165,7 @@ func testAccCheckClusterQueueRemoteValues(cq *ClusterQueueResourceModel, descrip
 	return func(s *terraform.State) error {
 
 		if cq.Key.ValueString() != key {
-			return fmt.Errorf("Remote Cluster queue key (%s) doesn't match expected value (%s)", cq.Description, description)
+			return fmt.Errorf("Remote Cluster queue key (%s) doesn't match expected value (%s)", cq.Key, key)
 		}
 
 		if cq.Description.ValueString() != description {
