@@ -30,6 +30,7 @@ func TestAccCluster_AddRemove(t *testing.T) {
 				Config: testAccClusterBasic("foo"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckClusterExists("buildkite_cluster.foo", &c),
+					testAccCheckClusterRemoteValues(&c, "foo_test_cluster"),
 					resource.TestCheckResourceAttrSet("buildkite_cluster.foo", "id"),
 					resource.TestCheckResourceAttrSet("buildkite_cluster.foo", "uuid"),
 				),
@@ -51,6 +52,7 @@ func TestAccCluster_Update(t *testing.T) {
 				Config: testAccClusterBasic("bar"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckClusterExists("buildkite_cluster.foo", &c),
+					testAccCheckClusterRemoteValues(&c, "bar_test_cluster"),
 					resource.TestCheckResourceAttr("buildkite_cluster.foo", "name", "bar_test_cluster"),
 				),
 			},
@@ -58,6 +60,7 @@ func TestAccCluster_Update(t *testing.T) {
 				Config: testAccClusterBasic("baz"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckClusterExists("buildkite_cluster.foo", &c),
+					testAccCheckClusterRemoteValues(&c, "baz_test_cluster"),
 					resource.TestCheckResourceAttr("buildkite_cluster.foo", "name", "baz_test_cluster"),
 				),
 			},
@@ -84,6 +87,7 @@ func TestAccCluster_Import(t *testing.T) {
 				ResourceName:      "buildkite_cluster.foo",
 				ImportState:       true,
 				ImportStateVerify: true,
+				ImportStateId:     c.UUID.ValueString(),
 			},
 		},
 	})

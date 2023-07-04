@@ -186,31 +186,7 @@ func (c *clusterResource) Delete(ctx context.Context, req resource.DeleteRequest
 }
 
 func (c *clusterResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	uuid := req.ID
-
-	if uuid == "" {
-		resp.Diagnostics.AddError(
-			"Unable to import Cluster",
-			"Unable to import Cluster, no UUID was provided",
-		)
-		return
-	}
-
-	cluster, err := getCluster(c.client.genqlient, c.client.organization, uuid)
-
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Unable to import Cluster",
-			fmt.Sprintf("Unable to import Cluster: %s", err.Error()),
-		)
-		return
-	}
-
-	id := cluster.Organization.Cluster.Id
-	uuid = cluster.Organization.Cluster.Uuid
-
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), types.StringValue(id))...)
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("uuid"), types.StringValue(uuid))...)
+	resource.ImportStatePassthroughID(ctx, path.Root("uuid"), req, resp)
 }
 
 func updateClusterResourceState(cl getClusterOrganizationCluster, c *clusterResourceModel) {
