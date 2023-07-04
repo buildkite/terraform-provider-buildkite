@@ -186,6 +186,7 @@ func (c *clusterResource) Delete(ctx context.Context, req resource.DeleteRequest
 }
 
 func (c *clusterResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	req.ID = ""
 	resource.ImportStatePassthroughID(ctx, path.Root("uuid"), req, resp)
 }
 
