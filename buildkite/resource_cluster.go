@@ -90,9 +90,9 @@ func (c *clusterResource) Create(ctx context.Context, req resource.CreateRequest
 		c.client.genqlient,
 		c.client.organizationId,
 		state.Name.ValueString(),
-		state.Description.ValueString(),
-		state.Emoji.ValueString(),
-		state.Color.ValueString(),
+		state.Description.ValueStringPointer(),
+		state.Emoji.ValueStringPointer(),
+		state.Color.ValueStringPointer(),
 	)
 
 	if err != nil {
@@ -149,9 +149,9 @@ func (c *clusterResource) Update(ctx context.Context, req resource.UpdateRequest
 		c.client.organizationId,
 		id,
 		plan.Name.ValueString(),
-		plan.Description.ValueString(),
-		plan.Emoji.ValueString(),
-		plan.Color.ValueString(),
+		plan.Description.ValueStringPointer(),
+		plan.Emoji.ValueStringPointer(),
+		plan.Color.ValueStringPointer(),
 	)
 
 	if err != nil {
@@ -193,7 +193,7 @@ func updateClusterResourceState(cl getClusterOrganizationCluster, c *clusterReso
 	c.ID = types.StringValue(cl.Id)
 	c.UUID = types.StringValue(cl.Uuid)
 	c.Name = types.StringValue(cl.Name)
-	c.Description = types.StringValue(cl.Description)
-	c.Emoji = types.StringValue(cl.Emoji)
-	c.Color = types.StringValue(cl.Color)
+	c.Description = types.StringPointerValue(cl.Description)
+	c.Emoji = types.StringPointerValue(cl.Emoji)
+	c.Color = types.StringPointerValue(cl.Color)
 }
