@@ -31,8 +31,8 @@ func TestAccCluster_AddRemove(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckClusterExists("buildkite_cluster.foo", &c),
 					testAccCheckClusterRemoteValues(&c, "foo_test_cluster"),
-					resource.TestCheckResourceAttrSet("buildkite_cluster.foo", "id"),
-					resource.TestCheckResourceAttrSet("buildkite_cluster.foo", "uuid"),
+					resource.TestCheckResourceAttr("buildkite_cluster.foo", "id", c.ID.ValueString()),
+					resource.TestCheckResourceAttr("buildkite_cluster.foo", "uuid", c.UUID.ValueString()),
 				),
 			},
 		},
@@ -104,11 +104,13 @@ func testAccCheckClusterExists(n string, c *clusterResourceModel) resource.TestC
 			return fmt.Errorf("no cluster ID is set")
 		}
 
-		_, err := getCluster(genqlientGraphql, getenv("BUILDKITE_ORGANIZATION_SLUG"), rs.Primary.Attributes["uuid"])
+		r, err := getCluster(genqlientGraphql, getenv("BUILDKITE_ORGANIZATION_SLUG"), rs.Primary.Attributes["uuid"])
 
 		if err != nil {
 			return err
 		}
+
+		updateClusterResourceState(r.Organization.Cluster, c)
 		return nil
 	}
 }
