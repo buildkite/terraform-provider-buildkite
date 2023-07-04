@@ -2,6 +2,7 @@ package buildkite
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"regexp"
 	"testing"
@@ -470,6 +471,49 @@ func TestAccPipelineDeletionProtection_import(t *testing.T) {
 				ImportState:             true,
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"deletion_protection", "archive_on_delete"},
+			},
+		},
+	})
+}
+
+func TestAccPipelineBranchConfiguration(t *testing.T) {
+	var node PipelineNode
+	resourceName := "buildkite_pipeline.branch_config"
+	config := `
+		resource "buildkite_pipeline" "branch_config" {
+			name = "Test Pipeline branch_config"
+			repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
+	        branch_configuration = "%s"
+		}
+	`
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		CheckDestroy:             testAccCheckPipelineResourceDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: fmt.Sprintf(config, "main"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					// Confirm the pipeline exists in the buildkite API
+					testAccCheckPipelineExists(resourceName, &node),
+					// Ensure deletion_protection is present in the config
+					resource.TestCheckResourceAttr(resourceName, "branch_configuration", "main"),
+				),
+			},
+			{
+				Config: fmt.Sprintf(config, ""),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					// Confirm the pipeline exists in the buildkite API
+					testAccCheckPipelineExists(resourceName, &node),
+					resource.TestCheckResourceAttr(resourceName, "branch_configuration", ""),
+					func(s *terraform.State) error {
+						if string(node.BranchConfiguration) != "" {
+							return errors.New(fmt.Sprintf("remote branch_configuration: \"%s\" is not empty", string(node.BranchConfiguration)))
+						}
+						return nil
+					},
+				),
 			},
 		},
 	})
