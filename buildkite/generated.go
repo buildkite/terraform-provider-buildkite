@@ -3,6 +3,8 @@
 package buildkite
 
 import (
+	"encoding/json"
+
 	"github.com/Khan/genqlient/graphql"
 )
 
@@ -25,6 +27,44 @@ const (
 	// 2 years
 	BuildRetentionPeriodsYears2 BuildRetentionPeriods = "YEARS_2"
 )
+
+// ClusterQueueValues includes the GraphQL fields of ClusterQueue requested by the fragment ClusterQueueValues.
+type ClusterQueueValues struct {
+	Id string `json:"id"`
+	// The public UUID for this cluster queue
+	Uuid        string                    `json:"uuid"`
+	Key         string                    `json:"key"`
+	Description *string                   `json:"description"`
+	Cluster     ClusterQueueValuesCluster `json:"cluster"`
+}
+
+// GetId returns ClusterQueueValues.Id, and is useful for accessing the field via an interface.
+func (v *ClusterQueueValues) GetId() string { return v.Id }
+
+// GetUuid returns ClusterQueueValues.Uuid, and is useful for accessing the field via an interface.
+func (v *ClusterQueueValues) GetUuid() string { return v.Uuid }
+
+// GetKey returns ClusterQueueValues.Key, and is useful for accessing the field via an interface.
+func (v *ClusterQueueValues) GetKey() string { return v.Key }
+
+// GetDescription returns ClusterQueueValues.Description, and is useful for accessing the field via an interface.
+func (v *ClusterQueueValues) GetDescription() *string { return v.Description }
+
+// GetCluster returns ClusterQueueValues.Cluster, and is useful for accessing the field via an interface.
+func (v *ClusterQueueValues) GetCluster() ClusterQueueValuesCluster { return v.Cluster }
+
+// ClusterQueueValuesCluster includes the requested fields of the GraphQL type Cluster.
+type ClusterQueueValuesCluster struct {
+	Id string `json:"id"`
+	// The public UUID for this cluster
+	Uuid string `json:"uuid"`
+}
+
+// GetId returns ClusterQueueValuesCluster.Id, and is useful for accessing the field via an interface.
+func (v *ClusterQueueValuesCluster) GetId() string { return v.Id }
+
+// GetUuid returns ClusterQueueValuesCluster.Uuid, and is useful for accessing the field via an interface.
+func (v *ClusterQueueValuesCluster) GetUuid() string { return v.Uuid }
 
 // The roles a user can be within a team
 type GTeamMemberRole string
@@ -270,6 +310,38 @@ func (v *__createAgentTokenInput) GetOrganizationId() string { return v.Organiza
 // GetDescription returns __createAgentTokenInput.Description, and is useful for accessing the field via an interface.
 func (v *__createAgentTokenInput) GetDescription() *string { return v.Description }
 
+// __createClusterQueueInput is used internally by genqlient
+type __createClusterQueueInput struct {
+	OrganizationId string  `json:"organizationId"`
+	ClusterId      string  `json:"clusterId"`
+	Key            string  `json:"key"`
+	Description    *string `json:"description"`
+}
+
+// GetOrganizationId returns __createClusterQueueInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__createClusterQueueInput) GetOrganizationId() string { return v.OrganizationId }
+
+// GetClusterId returns __createClusterQueueInput.ClusterId, and is useful for accessing the field via an interface.
+func (v *__createClusterQueueInput) GetClusterId() string { return v.ClusterId }
+
+// GetKey returns __createClusterQueueInput.Key, and is useful for accessing the field via an interface.
+func (v *__createClusterQueueInput) GetKey() string { return v.Key }
+
+// GetDescription returns __createClusterQueueInput.Description, and is useful for accessing the field via an interface.
+func (v *__createClusterQueueInput) GetDescription() *string { return v.Description }
+
+// __deleteClusterQueueInput is used internally by genqlient
+type __deleteClusterQueueInput struct {
+	OrganizationId string `json:"organizationId"`
+	Id             string `json:"id"`
+}
+
+// GetOrganizationId returns __deleteClusterQueueInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__deleteClusterQueueInput) GetOrganizationId() string { return v.OrganizationId }
+
+// GetId returns __deleteClusterQueueInput.Id, and is useful for accessing the field via an interface.
+func (v *__deleteClusterQueueInput) GetId() string { return v.Id }
+
 // __getAgentTokenInput is used internally by genqlient
 type __getAgentTokenInput struct {
 	Slug string `json:"slug"`
@@ -277,6 +349,18 @@ type __getAgentTokenInput struct {
 
 // GetSlug returns __getAgentTokenInput.Slug, and is useful for accessing the field via an interface.
 func (v *__getAgentTokenInput) GetSlug() string { return v.Slug }
+
+// __getClusterQueuesInput is used internally by genqlient
+type __getClusterQueuesInput struct {
+	OrgSlug string `json:"orgSlug"`
+	Id      string `json:"id"`
+}
+
+// GetOrgSlug returns __getClusterQueuesInput.OrgSlug, and is useful for accessing the field via an interface.
+func (v *__getClusterQueuesInput) GetOrgSlug() string { return v.OrgSlug }
+
+// GetId returns __getClusterQueuesInput.Id, and is useful for accessing the field via an interface.
+func (v *__getClusterQueuesInput) GetId() string { return v.Id }
 
 // __getOrganizationInput is used internally by genqlient
 type __getOrganizationInput struct {
@@ -325,6 +409,22 @@ func (v *__setApiIpAddressesInput) GetOrganizationID() string { return v.Organiz
 
 // GetIpAddresses returns __setApiIpAddressesInput.IpAddresses, and is useful for accessing the field via an interface.
 func (v *__setApiIpAddressesInput) GetIpAddresses() string { return v.IpAddresses }
+
+// __updateClusterQueueInput is used internally by genqlient
+type __updateClusterQueueInput struct {
+	OrganizationId string  `json:"organizationId"`
+	Id             string  `json:"id"`
+	Description    *string `json:"description"`
+}
+
+// GetOrganizationId returns __updateClusterQueueInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__updateClusterQueueInput) GetOrganizationId() string { return v.OrganizationId }
+
+// GetId returns __updateClusterQueueInput.Id, and is useful for accessing the field via an interface.
+func (v *__updateClusterQueueInput) GetId() string { return v.Id }
+
+// GetDescription returns __updateClusterQueueInput.Description, and is useful for accessing the field via an interface.
+func (v *__updateClusterQueueInput) GetDescription() *string { return v.Description }
 
 // __updatePipelineInput is used internally by genqlient
 type __updatePipelineInput struct {
@@ -427,6 +527,141 @@ func (v *createAgentTokenResponse) GetAgentTokenCreate() createAgentTokenAgentTo
 	return v.AgentTokenCreate
 }
 
+// createClusterQueueClusterQueueCreateClusterQueueCreatePayload includes the requested fields of the GraphQL type ClusterQueueCreatePayload.
+// The GraphQL type's documentation follows.
+//
+// Autogenerated return type of ClusterQueueCreate.
+type createClusterQueueClusterQueueCreateClusterQueueCreatePayload struct {
+	ClusterQueue createClusterQueueClusterQueueCreateClusterQueueCreatePayloadClusterQueue `json:"clusterQueue"`
+}
+
+// GetClusterQueue returns createClusterQueueClusterQueueCreateClusterQueueCreatePayload.ClusterQueue, and is useful for accessing the field via an interface.
+func (v *createClusterQueueClusterQueueCreateClusterQueueCreatePayload) GetClusterQueue() createClusterQueueClusterQueueCreateClusterQueueCreatePayloadClusterQueue {
+	return v.ClusterQueue
+}
+
+// createClusterQueueClusterQueueCreateClusterQueueCreatePayloadClusterQueue includes the requested fields of the GraphQL type ClusterQueue.
+type createClusterQueueClusterQueueCreateClusterQueueCreatePayloadClusterQueue struct {
+	ClusterQueueValues `json:"-"`
+}
+
+// GetId returns createClusterQueueClusterQueueCreateClusterQueueCreatePayloadClusterQueue.Id, and is useful for accessing the field via an interface.
+func (v *createClusterQueueClusterQueueCreateClusterQueueCreatePayloadClusterQueue) GetId() string {
+	return v.ClusterQueueValues.Id
+}
+
+// GetUuid returns createClusterQueueClusterQueueCreateClusterQueueCreatePayloadClusterQueue.Uuid, and is useful for accessing the field via an interface.
+func (v *createClusterQueueClusterQueueCreateClusterQueueCreatePayloadClusterQueue) GetUuid() string {
+	return v.ClusterQueueValues.Uuid
+}
+
+// GetKey returns createClusterQueueClusterQueueCreateClusterQueueCreatePayloadClusterQueue.Key, and is useful for accessing the field via an interface.
+func (v *createClusterQueueClusterQueueCreateClusterQueueCreatePayloadClusterQueue) GetKey() string {
+	return v.ClusterQueueValues.Key
+}
+
+// GetDescription returns createClusterQueueClusterQueueCreateClusterQueueCreatePayloadClusterQueue.Description, and is useful for accessing the field via an interface.
+func (v *createClusterQueueClusterQueueCreateClusterQueueCreatePayloadClusterQueue) GetDescription() *string {
+	return v.ClusterQueueValues.Description
+}
+
+// GetCluster returns createClusterQueueClusterQueueCreateClusterQueueCreatePayloadClusterQueue.Cluster, and is useful for accessing the field via an interface.
+func (v *createClusterQueueClusterQueueCreateClusterQueueCreatePayloadClusterQueue) GetCluster() ClusterQueueValuesCluster {
+	return v.ClusterQueueValues.Cluster
+}
+
+func (v *createClusterQueueClusterQueueCreateClusterQueueCreatePayloadClusterQueue) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*createClusterQueueClusterQueueCreateClusterQueueCreatePayloadClusterQueue
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.createClusterQueueClusterQueueCreateClusterQueueCreatePayloadClusterQueue = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	err = json.Unmarshal(
+		b, &v.ClusterQueueValues)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+type __premarshalcreateClusterQueueClusterQueueCreateClusterQueueCreatePayloadClusterQueue struct {
+	Id string `json:"id"`
+
+	Uuid string `json:"uuid"`
+
+	Key string `json:"key"`
+
+	Description *string `json:"description"`
+
+	Cluster ClusterQueueValuesCluster `json:"cluster"`
+}
+
+func (v *createClusterQueueClusterQueueCreateClusterQueueCreatePayloadClusterQueue) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *createClusterQueueClusterQueueCreateClusterQueueCreatePayloadClusterQueue) __premarshalJSON() (*__premarshalcreateClusterQueueClusterQueueCreateClusterQueueCreatePayloadClusterQueue, error) {
+	var retval __premarshalcreateClusterQueueClusterQueueCreateClusterQueueCreatePayloadClusterQueue
+
+	retval.Id = v.ClusterQueueValues.Id
+	retval.Uuid = v.ClusterQueueValues.Uuid
+	retval.Key = v.ClusterQueueValues.Key
+	retval.Description = v.ClusterQueueValues.Description
+	retval.Cluster = v.ClusterQueueValues.Cluster
+	return &retval, nil
+}
+
+// createClusterQueueResponse is returned by createClusterQueue on success.
+type createClusterQueueResponse struct {
+	// Create a cluster queue.
+	ClusterQueueCreate createClusterQueueClusterQueueCreateClusterQueueCreatePayload `json:"clusterQueueCreate"`
+}
+
+// GetClusterQueueCreate returns createClusterQueueResponse.ClusterQueueCreate, and is useful for accessing the field via an interface.
+func (v *createClusterQueueResponse) GetClusterQueueCreate() createClusterQueueClusterQueueCreateClusterQueueCreatePayload {
+	return v.ClusterQueueCreate
+}
+
+// deleteClusterQueueClusterQueueDeleteClusterQueueDeletePayload includes the requested fields of the GraphQL type ClusterQueueDeletePayload.
+// The GraphQL type's documentation follows.
+//
+// Autogenerated return type of ClusterQueueDelete.
+type deleteClusterQueueClusterQueueDeleteClusterQueueDeletePayload struct {
+	// A unique identifier for the client performing the mutation.
+	ClientMutationId string `json:"clientMutationId"`
+}
+
+// GetClientMutationId returns deleteClusterQueueClusterQueueDeleteClusterQueueDeletePayload.ClientMutationId, and is useful for accessing the field via an interface.
+func (v *deleteClusterQueueClusterQueueDeleteClusterQueueDeletePayload) GetClientMutationId() string {
+	return v.ClientMutationId
+}
+
+// deleteClusterQueueResponse is returned by deleteClusterQueue on success.
+type deleteClusterQueueResponse struct {
+	// Delete a cluster queue.
+	ClusterQueueDelete deleteClusterQueueClusterQueueDeleteClusterQueueDeletePayload `json:"clusterQueueDelete"`
+}
+
+// GetClusterQueueDelete returns deleteClusterQueueResponse.ClusterQueueDelete, and is useful for accessing the field via an interface.
+func (v *deleteClusterQueueResponse) GetClusterQueueDelete() deleteClusterQueueClusterQueueDeleteClusterQueueDeletePayload {
+	return v.ClusterQueueDelete
+}
+
 // getAgentTokenAgentToken includes the requested fields of the GraphQL type AgentToken.
 // The GraphQL type's documentation follows.
 //
@@ -456,6 +691,147 @@ type getAgentTokenResponse struct {
 
 // GetAgentToken returns getAgentTokenResponse.AgentToken, and is useful for accessing the field via an interface.
 func (v *getAgentTokenResponse) GetAgentToken() getAgentTokenAgentToken { return v.AgentToken }
+
+// getClusterQueuesOrganization includes the requested fields of the GraphQL type Organization.
+// The GraphQL type's documentation follows.
+//
+// An organization
+type getClusterQueuesOrganization struct {
+	// Return cluster in the Organization by UUID
+	Cluster getClusterQueuesOrganizationCluster `json:"cluster"`
+}
+
+// GetCluster returns getClusterQueuesOrganization.Cluster, and is useful for accessing the field via an interface.
+func (v *getClusterQueuesOrganization) GetCluster() getClusterQueuesOrganizationCluster {
+	return v.Cluster
+}
+
+// getClusterQueuesOrganizationCluster includes the requested fields of the GraphQL type Cluster.
+type getClusterQueuesOrganizationCluster struct {
+	Queues getClusterQueuesOrganizationClusterQueuesClusterQueueConnection `json:"queues"`
+}
+
+// GetQueues returns getClusterQueuesOrganizationCluster.Queues, and is useful for accessing the field via an interface.
+func (v *getClusterQueuesOrganizationCluster) GetQueues() getClusterQueuesOrganizationClusterQueuesClusterQueueConnection {
+	return v.Queues
+}
+
+// getClusterQueuesOrganizationClusterQueuesClusterQueueConnection includes the requested fields of the GraphQL type ClusterQueueConnection.
+type getClusterQueuesOrganizationClusterQueuesClusterQueueConnection struct {
+	Edges []getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdge `json:"edges"`
+}
+
+// GetEdges returns getClusterQueuesOrganizationClusterQueuesClusterQueueConnection.Edges, and is useful for accessing the field via an interface.
+func (v *getClusterQueuesOrganizationClusterQueuesClusterQueueConnection) GetEdges() []getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdge {
+	return v.Edges
+}
+
+// getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdge includes the requested fields of the GraphQL type ClusterQueueEdge.
+type getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdge struct {
+	Node getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue `json:"node"`
+}
+
+// GetNode returns getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdge.Node, and is useful for accessing the field via an interface.
+func (v *getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdge) GetNode() getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue {
+	return v.Node
+}
+
+// getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue includes the requested fields of the GraphQL type ClusterQueue.
+type getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue struct {
+	ClusterQueueValues `json:"-"`
+}
+
+// GetId returns getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue.Id, and is useful for accessing the field via an interface.
+func (v *getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue) GetId() string {
+	return v.ClusterQueueValues.Id
+}
+
+// GetUuid returns getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue.Uuid, and is useful for accessing the field via an interface.
+func (v *getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue) GetUuid() string {
+	return v.ClusterQueueValues.Uuid
+}
+
+// GetKey returns getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue.Key, and is useful for accessing the field via an interface.
+func (v *getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue) GetKey() string {
+	return v.ClusterQueueValues.Key
+}
+
+// GetDescription returns getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue.Description, and is useful for accessing the field via an interface.
+func (v *getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue) GetDescription() *string {
+	return v.ClusterQueueValues.Description
+}
+
+// GetCluster returns getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue.Cluster, and is useful for accessing the field via an interface.
+func (v *getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue) GetCluster() ClusterQueueValuesCluster {
+	return v.ClusterQueueValues.Cluster
+}
+
+func (v *getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	err = json.Unmarshal(
+		b, &v.ClusterQueueValues)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+type __premarshalgetClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue struct {
+	Id string `json:"id"`
+
+	Uuid string `json:"uuid"`
+
+	Key string `json:"key"`
+
+	Description *string `json:"description"`
+
+	Cluster ClusterQueueValuesCluster `json:"cluster"`
+}
+
+func (v *getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue) __premarshalJSON() (*__premarshalgetClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue, error) {
+	var retval __premarshalgetClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue
+
+	retval.Id = v.ClusterQueueValues.Id
+	retval.Uuid = v.ClusterQueueValues.Uuid
+	retval.Key = v.ClusterQueueValues.Key
+	retval.Description = v.ClusterQueueValues.Description
+	retval.Cluster = v.ClusterQueueValues.Cluster
+	return &retval, nil
+}
+
+// getClusterQueuesResponse is returned by getClusterQueues on success.
+type getClusterQueuesResponse struct {
+	// Find an organization
+	Organization getClusterQueuesOrganization `json:"organization"`
+}
+
+// GetOrganization returns getClusterQueuesResponse.Organization, and is useful for accessing the field via an interface.
+func (v *getClusterQueuesResponse) GetOrganization() getClusterQueuesOrganization {
+	return v.Organization
+}
 
 // getOrganizationOrganization includes the requested fields of the GraphQL type Organization.
 // The GraphQL type's documentation follows.
@@ -700,6 +1076,116 @@ type setApiIpAddressesResponse struct {
 // GetOrganizationApiIpAllowlistUpdate returns setApiIpAddressesResponse.OrganizationApiIpAllowlistUpdate, and is useful for accessing the field via an interface.
 func (v *setApiIpAddressesResponse) GetOrganizationApiIpAllowlistUpdate() setApiIpAddressesOrganizationApiIpAllowlistUpdateOrganizationAPIIPAllowlistUpdateMutationPayload {
 	return v.OrganizationApiIpAllowlistUpdate
+}
+
+// updateClusterQueueClusterQueueUpdateClusterQueueUpdatePayload includes the requested fields of the GraphQL type ClusterQueueUpdatePayload.
+// The GraphQL type's documentation follows.
+//
+// Autogenerated return type of ClusterQueueUpdate.
+type updateClusterQueueClusterQueueUpdateClusterQueueUpdatePayload struct {
+	ClusterQueue updateClusterQueueClusterQueueUpdateClusterQueueUpdatePayloadClusterQueue `json:"clusterQueue"`
+}
+
+// GetClusterQueue returns updateClusterQueueClusterQueueUpdateClusterQueueUpdatePayload.ClusterQueue, and is useful for accessing the field via an interface.
+func (v *updateClusterQueueClusterQueueUpdateClusterQueueUpdatePayload) GetClusterQueue() updateClusterQueueClusterQueueUpdateClusterQueueUpdatePayloadClusterQueue {
+	return v.ClusterQueue
+}
+
+// updateClusterQueueClusterQueueUpdateClusterQueueUpdatePayloadClusterQueue includes the requested fields of the GraphQL type ClusterQueue.
+type updateClusterQueueClusterQueueUpdateClusterQueueUpdatePayloadClusterQueue struct {
+	ClusterQueueValues `json:"-"`
+}
+
+// GetId returns updateClusterQueueClusterQueueUpdateClusterQueueUpdatePayloadClusterQueue.Id, and is useful for accessing the field via an interface.
+func (v *updateClusterQueueClusterQueueUpdateClusterQueueUpdatePayloadClusterQueue) GetId() string {
+	return v.ClusterQueueValues.Id
+}
+
+// GetUuid returns updateClusterQueueClusterQueueUpdateClusterQueueUpdatePayloadClusterQueue.Uuid, and is useful for accessing the field via an interface.
+func (v *updateClusterQueueClusterQueueUpdateClusterQueueUpdatePayloadClusterQueue) GetUuid() string {
+	return v.ClusterQueueValues.Uuid
+}
+
+// GetKey returns updateClusterQueueClusterQueueUpdateClusterQueueUpdatePayloadClusterQueue.Key, and is useful for accessing the field via an interface.
+func (v *updateClusterQueueClusterQueueUpdateClusterQueueUpdatePayloadClusterQueue) GetKey() string {
+	return v.ClusterQueueValues.Key
+}
+
+// GetDescription returns updateClusterQueueClusterQueueUpdateClusterQueueUpdatePayloadClusterQueue.Description, and is useful for accessing the field via an interface.
+func (v *updateClusterQueueClusterQueueUpdateClusterQueueUpdatePayloadClusterQueue) GetDescription() *string {
+	return v.ClusterQueueValues.Description
+}
+
+// GetCluster returns updateClusterQueueClusterQueueUpdateClusterQueueUpdatePayloadClusterQueue.Cluster, and is useful for accessing the field via an interface.
+func (v *updateClusterQueueClusterQueueUpdateClusterQueueUpdatePayloadClusterQueue) GetCluster() ClusterQueueValuesCluster {
+	return v.ClusterQueueValues.Cluster
+}
+
+func (v *updateClusterQueueClusterQueueUpdateClusterQueueUpdatePayloadClusterQueue) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*updateClusterQueueClusterQueueUpdateClusterQueueUpdatePayloadClusterQueue
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.updateClusterQueueClusterQueueUpdateClusterQueueUpdatePayloadClusterQueue = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	err = json.Unmarshal(
+		b, &v.ClusterQueueValues)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+type __premarshalupdateClusterQueueClusterQueueUpdateClusterQueueUpdatePayloadClusterQueue struct {
+	Id string `json:"id"`
+
+	Uuid string `json:"uuid"`
+
+	Key string `json:"key"`
+
+	Description *string `json:"description"`
+
+	Cluster ClusterQueueValuesCluster `json:"cluster"`
+}
+
+func (v *updateClusterQueueClusterQueueUpdateClusterQueueUpdatePayloadClusterQueue) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *updateClusterQueueClusterQueueUpdateClusterQueueUpdatePayloadClusterQueue) __premarshalJSON() (*__premarshalupdateClusterQueueClusterQueueUpdateClusterQueueUpdatePayloadClusterQueue, error) {
+	var retval __premarshalupdateClusterQueueClusterQueueUpdateClusterQueueUpdatePayloadClusterQueue
+
+	retval.Id = v.ClusterQueueValues.Id
+	retval.Uuid = v.ClusterQueueValues.Uuid
+	retval.Key = v.ClusterQueueValues.Key
+	retval.Description = v.ClusterQueueValues.Description
+	retval.Cluster = v.ClusterQueueValues.Cluster
+	return &retval, nil
+}
+
+// updateClusterQueueResponse is returned by updateClusterQueue on success.
+type updateClusterQueueResponse struct {
+	// Updates a cluster queue.
+	ClusterQueueUpdate updateClusterQueueClusterQueueUpdateClusterQueueUpdatePayload `json:"clusterQueueUpdate"`
+}
+
+// GetClusterQueueUpdate returns updateClusterQueueResponse.ClusterQueueUpdate, and is useful for accessing the field via an interface.
+func (v *updateClusterQueueResponse) GetClusterQueueUpdate() updateClusterQueueClusterQueueUpdateClusterQueueUpdatePayload {
+	return v.ClusterQueueUpdate
 }
 
 // updatePipelinePipelineUpdatePipelineUpdatePayload includes the requested fields of the GraphQL type PipelineUpdatePayload.
@@ -1105,6 +1591,94 @@ func createAgentToken(
 	return &data, err
 }
 
+// The query or mutation executed by createClusterQueue.
+const createClusterQueue_Operation = `
+mutation createClusterQueue ($organizationId: ID!, $clusterId: ID!, $key: String!, $description: String) {
+	clusterQueueCreate(input: {organizationId:$organizationId,clusterId:$clusterId,key:$key,description:$description}) {
+		clusterQueue {
+			... ClusterQueueValues
+		}
+	}
+}
+fragment ClusterQueueValues on ClusterQueue {
+	id
+	uuid
+	key
+	description
+	cluster {
+		id
+		uuid
+	}
+}
+`
+
+func createClusterQueue(
+	client graphql.Client,
+	organizationId string,
+	clusterId string,
+	key string,
+	description *string,
+) (*createClusterQueueResponse, error) {
+	req := &graphql.Request{
+		OpName: "createClusterQueue",
+		Query:  createClusterQueue_Operation,
+		Variables: &__createClusterQueueInput{
+			OrganizationId: organizationId,
+			ClusterId:      clusterId,
+			Key:            key,
+			Description:    description,
+		},
+	}
+	var err error
+
+	var data createClusterQueueResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		nil,
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
+// The query or mutation executed by deleteClusterQueue.
+const deleteClusterQueue_Operation = `
+mutation deleteClusterQueue ($organizationId: ID!, $id: ID!) {
+	clusterQueueDelete(input: {organizationId:$organizationId,id:$id}) {
+		clientMutationId
+	}
+}
+`
+
+func deleteClusterQueue(
+	client graphql.Client,
+	organizationId string,
+	id string,
+) (*deleteClusterQueueResponse, error) {
+	req := &graphql.Request{
+		OpName: "deleteClusterQueue",
+		Query:  deleteClusterQueue_Operation,
+		Variables: &__deleteClusterQueueInput{
+			OrganizationId: organizationId,
+			Id:             id,
+		},
+	}
+	var err error
+
+	var data deleteClusterQueueResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		nil,
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
 // The query or mutation executed by getAgentToken.
 const getAgentToken_Operation = `
 query getAgentToken ($slug: ID!) {
@@ -1130,6 +1704,60 @@ func getAgentToken(
 	var err error
 
 	var data getAgentTokenResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		nil,
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
+// The query or mutation executed by getClusterQueues.
+const getClusterQueues_Operation = `
+query getClusterQueues ($orgSlug: ID!, $id: ID!) {
+	organization(slug: $orgSlug) {
+		cluster(id: $id) {
+			queues(first: 50) {
+				edges {
+					node {
+						... ClusterQueueValues
+					}
+				}
+			}
+		}
+	}
+}
+fragment ClusterQueueValues on ClusterQueue {
+	id
+	uuid
+	key
+	description
+	cluster {
+		id
+		uuid
+	}
+}
+`
+
+func getClusterQueues(
+	client graphql.Client,
+	orgSlug string,
+	id string,
+) (*getClusterQueuesResponse, error) {
+	req := &graphql.Request{
+		OpName: "getClusterQueues",
+		Query:  getClusterQueues_Operation,
+		Variables: &__getClusterQueuesInput{
+			OrgSlug: orgSlug,
+			Id:      id,
+		},
+	}
+	var err error
+
+	var data getClusterQueuesResponse
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(
@@ -1328,6 +1956,56 @@ func setApiIpAddresses(
 	var err error
 
 	var data setApiIpAddressesResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		nil,
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
+// The query or mutation executed by updateClusterQueue.
+const updateClusterQueue_Operation = `
+mutation updateClusterQueue ($organizationId: ID!, $id: ID!, $description: String) {
+	clusterQueueUpdate(input: {organizationId:$organizationId,id:$id,description:$description}) {
+		clusterQueue {
+			... ClusterQueueValues
+		}
+	}
+}
+fragment ClusterQueueValues on ClusterQueue {
+	id
+	uuid
+	key
+	description
+	cluster {
+		id
+		uuid
+	}
+}
+`
+
+func updateClusterQueue(
+	client graphql.Client,
+	organizationId string,
+	id string,
+	description *string,
+) (*updateClusterQueueResponse, error) {
+	req := &graphql.Request{
+		OpName: "updateClusterQueue",
+		Query:  updateClusterQueue_Operation,
+		Variables: &__updateClusterQueueInput{
+			OrganizationId: organizationId,
+			Id:             id,
+			Description:    description,
+		},
+	}
+	var err error
+
+	var data updateClusterQueueResponse
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(

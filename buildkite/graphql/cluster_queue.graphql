@@ -1,0 +1,79 @@
+fragment ClusterQueueValues on ClusterQueue {
+    id
+    uuid
+    key
+    # @genqlient(pointer: true)
+    description             
+    cluster {
+        id
+        uuid
+    }
+}
+
+query getClusterQueues($orgSlug: ID!, $id: ID!) {
+    organization(slug: $orgSlug) {
+        cluster(id: $id) {
+            queues(first: 50) {
+                edges {
+                    node {
+                        ...ClusterQueueValues
+                    }
+                }
+            }
+        }
+    }
+}
+
+mutation createClusterQueue(
+    $organizationId: ID!, 
+    $clusterId: ID!,
+    $key: String!,
+    # @genqlient(pointer: true)
+    $description: String
+) {
+    clusterQueueCreate(
+        input: {
+            organizationId: $organizationId
+            clusterId: $clusterId,
+            key: $key
+            description: $description
+        }
+    ) {
+        clusterQueue {
+            ...ClusterQueueValues
+        }
+    }
+}
+
+mutation updateClusterQueue(
+    $organizationId: ID!, 
+    $id: ID!,
+    # @genqlient(pointer: true)
+    $description: String
+) {
+    clusterQueueUpdate(
+        input: {
+            organizationId: $organizationId
+            id: $id
+            description: $description
+        }
+    ) {
+        clusterQueue {
+            ...ClusterQueueValues
+        }
+    }
+}
+
+mutation deleteClusterQueue(
+    $organizationId: ID!, 
+    $id: ID!,
+){
+    clusterQueueDelete(
+        input: {
+            organizationId: $organizationId
+            id: $id
+        }
+    ) {
+        clientMutationId
+    }
+}
