@@ -118,7 +118,7 @@ func (c *clusterResource) Read(ctx context.Context, req resource.ReadRequest, re
 		return
 	}
 
-	_, err := getCluster(c.client.genqlient, c.client.organization, state.UUID.ValueString())
+	r, err := getCluster(c.client.genqlient, c.client.organization, state.UUID.ValueString())
 
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -128,6 +128,7 @@ func (c *clusterResource) Read(ctx context.Context, req resource.ReadRequest, re
 		return
 	}
 
+	updateClusterResourceState(r.Organization.Cluster, &state)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
@@ -206,11 +207,17 @@ func (c *clusterResource) ImportState(ctx context.Context, req resource.ImportSt
 	}
 
 	id := cluster.Organization.Cluster.Id
+	uuid = cluster.Organization.Cluster.Uuid
 
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), types.StringValue(id))...)
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("uuid"), uuid)...)
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("name"), types.StringValue(cluster.Organization.Cluster.Name))...)
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("description"), types.StringValue(cluster.Organization.Cluster.Description))...)
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("emoji"), types.StringValue(cluster.Organization.Cluster.Emoji))...)
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("color"), types.StringValue(cluster.Organization.Cluster.Color))...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("uuid"), types.StringValue(uuid))...)
+}
+
+func updateClusterResourceState(cl getClusterOrganizationCluster, c *clusterResourceModel) {
+	c.ID = types.StringValue(cl.Id)
+	c.UUID = types.StringValue(cl.Uuid)
+	c.Name = types.StringValue(cl.Name)
+	c.Description = types.StringValue(cl.Description)
+	c.Emoji = types.StringValue(cl.Emoji)
+	c.Color = types.StringValue(cl.Color)
 }
