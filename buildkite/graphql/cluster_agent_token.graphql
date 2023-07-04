@@ -16,7 +16,7 @@ query getClusterAgentTokens($orgSlug: ID!, $id: ID!) {
 
 mutation createClusterAgentToken(
     $organizationId: ID!
-	$clusterId: ID!
+	$clusterId: ID! 
     $description: String!	
 ) {
 		clusterAgentTokenCreate(input:{
@@ -50,7 +50,7 @@ mutation revokeClusterAgentToken(
 
 mutation updateClusterAgentToken(
     $organizationId: ID!
-	$id: ID!
+	$id: ID! 
     $description: String!	
 ) {
     clusterAgentTokenUpdate(input: {

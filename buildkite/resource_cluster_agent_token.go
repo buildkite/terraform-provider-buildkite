@@ -3,6 +3,7 @@ package buildkite
 import (
 	"context"
 	"fmt"
+	"log"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -22,6 +23,7 @@ type ClusterAgentTokenResourceModel struct {
 	Description types.String `tfsdk:"description"`
 	Token       types.String `tfsdk:"token"`
 	ClusterId   types.String `tfsdk:"cluster_id"`
+	ClusterUuid types.String `tfsdk:"cluster_uuid"`
 }
 
 func NewClusterAgentTokenResource() resource.Resource {
@@ -32,8 +34,16 @@ func (ct *ClusterAgentToken) Metadata(_ context.Context, req resource.MetadataRe
 	resp.TypeName = req.ProviderTypeName + "_cluster_agent_token"
 }
 
+func (ct *ClusterAgentToken) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
+	if req.ProviderData == nil {
+		return
+	}
+	ct.client = req.ProviderData.(*Client)
+}
+
 func (ct *ClusterAgentToken) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		MarkdownDescription: "A Cluster Agent Token is a token used to connect an agent in cluster to Buildkite.",
 		Attributes: map[string]resource_schema.Attribute{
 			"id": resource_schema.StringAttribute{
 				Computed: true,
@@ -57,21 +67,30 @@ func (ct *ClusterAgentToken) Schema(_ context.Context, _ resource.SchemaRequest,
 			},
 			"cluster_id": resource_schema.StringAttribute{
 				Required:            true,
-				MarkdownDescription: "The ID of the Cluster that this Cluster Queue belongs to.",
+				MarkdownDescription: "The ID of the Cluster that this Cluster Agent Token belongs to.",
+			},
+			"cluster_uuid": resource_schema.StringAttribute{
+				Computed: true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 		},
 	}
 }
 
 func (ct *ClusterAgentToken) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-
 	var plan, state ClusterAgentTokenResourceModel
+
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	r, err := createClusterAgentToken(ct.client.genqlient,
+	log.Printf("Creating cluster agent token with description %s into cluster %s ...", plan.Description.ValueString(), plan.ClusterId.ValueString())
+	r, err := createClusterAgentToken(
+		ct.client.genqlient,
 		ct.client.organizationId,
 		plan.ClusterId.ValueString(),
 		plan.Description.ValueString(),
@@ -90,12 +109,39 @@ func (ct *ClusterAgentToken) Create(ctx context.Context, req resource.CreateRequ
 	state.Description = types.StringValue(r.ClusterAgentTokenCreate.ClusterAgentToken.Description)
 	state.Token = types.StringValue(r.ClusterAgentTokenCreate.TokenValue)
 	state.ClusterId = plan.ClusterId
+	state.ClusterUuid = plan.ClusterUuid
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
 func (ct *ClusterAgentToken) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	// to implement
+	var state ClusterAgentTokenResourceModel
+
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	log.Printf("Getting cluster agent tokens for cluster %s ...", state.ClusterUuid.ValueString())
+	tokens, err := getClusterAgentTokens(ct.client.genqlient, ct.client.organization, state.ClusterUuid.ValueString())
+
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Unable to read Cluster Agent Tokens",
+			fmt.Sprintf("Unable to read Cluster Agent Tokens: %s", err.Error()),
+		)
+		return
+	}
+
+	for _, edge := range tokens.Organization.Cluster.AgentTokens.Edges {
+		if edge.Node.Id == state.Id.ValueString() {
+			log.Printf("Found cluster Token with Description %s in cluster %s", edge.Node.Id, state.ClusterUuid.ValueString())
+			state.Description = types.StringValue(edge.Node.Description)
+			resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+			return
+		}
+	}
+
 }
 
 func (ct *ClusterAgentToken) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
@@ -134,17 +180,14 @@ func (ct *ClusterAgentToken) Delete(ctx context.Context, req resource.DeleteRequ
 		return
 	}
 
+	log.Printf("Revoking Cluster Agent Token %s ...", plan.Id.ValueString())
 	_, err := revokeClusterAgentToken(ct.client.genqlient, ct.client.organizationId, plan.Id.ValueString())
 
 	if err != nil {
-		resp.Diagnostics.AddError(err.Error(), err.Error())
+		resp.Diagnostics.AddError(
+			"Unable to revoke Cluster Agent Token",
+			fmt.Sprintf("Unable to revoke Cluster Agent Token: %s", err.Error()),
+		)
 		return
 	}
-}
-
-func (ct *ClusterAgentToken) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
-	if req.ProviderData == nil {
-		return
-	}
-	ct.client = req.ProviderData.(*Client)
 }
