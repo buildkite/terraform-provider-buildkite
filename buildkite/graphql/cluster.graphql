@@ -2,8 +2,11 @@ fragment ClusterFields on Cluster {
     id
     uuid
     name
+    # @genqlient(pointer: true)
     description
+    # @genqlient(pointer: true)
     emoji
+    # @genqlient(pointer: true)
     color
 }
 
@@ -15,16 +18,16 @@ query getCluster($orgSlug: ID!, $id: ID!) {
     }
 }
 
-# @genqlient(for: "ClusterCreateInput.description", pointer: true)
-# @genqlient(for: "ClusterCreateInput.emoji", pointer: true)
-# @genqlient(for: "ClusterCreateInput.color", pointer: true)
 mutation createCluster(
-  $organizationId: ID!
-  $name: String!
-  $description: String
-  $emoji: String
-  $color: String
-  ) {
+    $organizationId: ID!
+    $name: String!
+    # @genqlient(pointer: true)
+    $description: String
+    # @genqlient(pointer: true)
+    $emoji: String
+    # @genqlient(pointer: true)
+    $color: String
+) {
     clusterCreate(
         input: { organizationId: $organizationId, name: $name, description: $description, emoji: $emoji, color: $color }
     ) {
@@ -35,15 +38,15 @@ mutation createCluster(
     }
 }
 
-# @genqlient(for: "ClusterUpdateInput.description", pointer: true)
-# @genqlient(for: "ClusterUpdateInput.emoji", pointer: true)
-# @genqlient(for: "ClusterUpdateInput.color", pointer: true)
 mutation updateCluster(
     $organizationId: ID!
     $id: ID!
     $name: String
+    # @genqlient(pointer: true)
     $description: String
+    # @genqlient(pointer: true)
     $emoji: String
+    # @genqlient(pointer: true)
     $color: String
 ) {
     clusterUpdate(
