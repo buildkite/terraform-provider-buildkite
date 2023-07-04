@@ -65,6 +65,30 @@ func TestAccCluster_Update(t *testing.T) {
 	})
 }
 
+func TestAccCluster_Import(t *testing.T) {
+	var c clusterResourceModel
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		CheckDestroy:             testAccCheckClusterDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccClusterBasic("imported"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccCheckClusterExists("buildkite_cluster.foo", &c),
+					resource.TestCheckResourceAttr("buildkite_cluster.foo", "name", "imported_test_cluster"),
+				),
+			},
+			{
+				ResourceName:      "buildkite_cluster.foo",
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
 func testAccCheckClusterExists(n string, c *clusterResourceModel) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
