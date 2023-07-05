@@ -26,4 +26,29 @@ resource "buildkite_cluster" "linux" {
 * `id` - The GraphQL ID that is created with the Cluster.
 * `uuid` - The UUID created with the Cluster.
 
-The `uuid` is used when *getting* a Cluster. The `id` is used when *modifying* a Cluster.   
+The `uuid` is used when *getting* a Cluster. The `id` is used when *modifying* a Cluster.
+
+## import
+Clusters can be imported using their `UUID`, this is the `-` separated identifier in the Clusters's `Settings` page, e.g.
+
+```shell
+terraform import buildkite_cluster.foo 878a539f-2c77-435e-9675-936263eb9c08
+```
+
+A helpful GraphQL query to get the UUID of the target cluster can be found below, or [this pre-saved query](https://buildkite.com/user/graphql/console/49ad82a8-fb96-43a3-bfae-73f6e3c9a297) can be used as a template. You'll need to substitute in your organization's `slug`.
+
+```graphql
+query getClusters {
+  organization(slug: "ORGANIZATION"){
+    clusters(first: 5, order:NAME) {
+      edges{
+        node {
+          uuid
+          name
+        }
+      }
+    }
+  }
+}
+```
+
