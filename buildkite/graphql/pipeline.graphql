@@ -18,6 +18,7 @@ query getPipeline($slug: ID!) {
 # @genqlient(for: "PipelineUpdateInput.buildRetentionEnabled", omitempty: true)
 # @genqlient(for: "PipelineUpdateInput.buildRetentionPeriod", omitempty: true)
 # @genqlient(for: "PipelineUpdateInput.buildRetentionNumber", omitempty: true)
+# @genqlient(for: "PipelineUpdateInput.pipelineTemplateId", omitempty: true)
 # @genqlient(for: "PipelineUpdateInput.archived", omitempty: true)
 # @genqlient(for: "PipelineUpdateInput.nextBuildNumber", omitempty: true)
 mutation updatePipeline(
