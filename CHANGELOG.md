@@ -7,6 +7,7 @@ All notable changes to this project will be documented in this file.
 * SUP-1085: Cluster Queue resource implementation [[PR #297](https://github.com/buildkite/terraform-provider-buildkite/pull/297)] @james2791
 * SUP-270 Fix branch_configuration updating to empty string [[PR #298](https://github.com/buildkite/terraform-provider-buildkite/pull/298)] @jradtilbrook
 * SUP-1084 Add Cluster resource [[PR #301](https://github.com/buildkite/terraform-provider-buildkite/pull/301)] @mcncl
+* Add cluster datasource [[PR #303](https://github.com/buildkite/terraform-provider-buildkite/pull/303)] @jradtilbrook
 
 ## [v0.19.2](https://github.com/buildkite/terraform-provider-buildkite/compare/v0.19.1...v0.19.2)
 * Consistent naming for environment variables [[PR #290](https://github.com/buildkite/terraform-provider-buildkite/pull/290)] @mcncl

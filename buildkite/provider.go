@@ -81,7 +81,9 @@ func (tf *terraformProvider) Configure(ctx context.Context, req provider.Configu
 }
 
 func (*terraformProvider) DataSources(context.Context) []func() datasource.DataSource {
-	return []func() datasource.DataSource{}
+	return []func() datasource.DataSource{
+		newClusterDatasource,
+	}
 }
 
 func (tf *terraformProvider) Metadata(ctx context.Context, req provider.MetadataRequest, resp *provider.MetadataResponse) {
