@@ -82,31 +82,6 @@ func testAccPreCheck(t *testing.T) {
 	}
 }
 
-func TestDataSource_UpgradeFromVersion(t *testing.T) {
-	t.Skipf("Skipping until new provider has a resource created")
-	resource.Test(t, resource.TestCase{
-		Steps: []resource.TestStep{
-			{
-				ProtoV6ProviderFactories: protoV6ProviderFactories(),
-				Config: `data "buildkite_team" "team" {
-							slug = "everyone"
-                        }`,
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("data.buildkite_team.team", "uuid", "31529c8a-7cfa-42e8-bb85-4c844a983ea0"),
-					resource.TestCheckResourceAttr("data.buildkite_team.team", "slug", "everyone"),
-				),
-			},
-			{
-				ProtoV6ProviderFactories: protoV6ProviderFactories(),
-				Config: `data "buildkite_team" "team" {
-							slug = "everyone"
-						}`,
-				PlanOnly: true,
-			},
-		},
-	})
-}
-
 // testAccCheckResourceDisappears verifies the Provider has had the resource removed from state
 func testAccCheckResourceDisappears(provider *schema.Provider, resource *schema.Resource, resourceName string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {

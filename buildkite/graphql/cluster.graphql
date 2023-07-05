@@ -18,6 +18,26 @@ query getCluster($orgSlug: ID!, $id: ID!) {
     }
 }
 
+query getClusterByName(
+    $orgSlug: ID!,
+    # @genqlient(pointer: true)
+    $cursor: String
+) {
+    organization(slug: $orgSlug) {
+        clusters(order: NAME, first: 50, after: $cursor) {
+            pageInfo {
+                endCursor
+                hasNextPage
+            }
+            edges {
+                node {
+                    ...ClusterFields
+                }
+            }
+        }
+    }
+}
+
 mutation createCluster(
     $organizationId: ID!
     $name: String!

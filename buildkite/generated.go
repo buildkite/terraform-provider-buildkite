@@ -424,6 +424,18 @@ type __getAgentTokenInput struct {
 // GetSlug returns __getAgentTokenInput.Slug, and is useful for accessing the field via an interface.
 func (v *__getAgentTokenInput) GetSlug() string { return v.Slug }
 
+// __getClusterByNameInput is used internally by genqlient
+type __getClusterByNameInput struct {
+	OrgSlug string  `json:"orgSlug"`
+	Cursor  *string `json:"cursor"`
+}
+
+// GetOrgSlug returns __getClusterByNameInput.OrgSlug, and is useful for accessing the field via an interface.
+func (v *__getClusterByNameInput) GetOrgSlug() string { return v.OrgSlug }
+
+// GetCursor returns __getClusterByNameInput.Cursor, and is useful for accessing the field via an interface.
+func (v *__getClusterByNameInput) GetCursor() *string { return v.Cursor }
+
 // __getClusterInput is used internally by genqlient
 type __getClusterInput struct {
 	OrgSlug string `json:"orgSlug"`
@@ -955,6 +967,172 @@ type getAgentTokenResponse struct {
 
 // GetAgentToken returns getAgentTokenResponse.AgentToken, and is useful for accessing the field via an interface.
 func (v *getAgentTokenResponse) GetAgentToken() getAgentTokenAgentToken { return v.AgentToken }
+
+// getClusterByNameOrganization includes the requested fields of the GraphQL type Organization.
+// The GraphQL type's documentation follows.
+//
+// An organization
+type getClusterByNameOrganization struct {
+	// Returns clusters for an Organization
+	Clusters getClusterByNameOrganizationClustersClusterConnection `json:"clusters"`
+}
+
+// GetClusters returns getClusterByNameOrganization.Clusters, and is useful for accessing the field via an interface.
+func (v *getClusterByNameOrganization) GetClusters() getClusterByNameOrganizationClustersClusterConnection {
+	return v.Clusters
+}
+
+// getClusterByNameOrganizationClustersClusterConnection includes the requested fields of the GraphQL type ClusterConnection.
+type getClusterByNameOrganizationClustersClusterConnection struct {
+	PageInfo getClusterByNameOrganizationClustersClusterConnectionPageInfo           `json:"pageInfo"`
+	Edges    []getClusterByNameOrganizationClustersClusterConnectionEdgesClusterEdge `json:"edges"`
+}
+
+// GetPageInfo returns getClusterByNameOrganizationClustersClusterConnection.PageInfo, and is useful for accessing the field via an interface.
+func (v *getClusterByNameOrganizationClustersClusterConnection) GetPageInfo() getClusterByNameOrganizationClustersClusterConnectionPageInfo {
+	return v.PageInfo
+}
+
+// GetEdges returns getClusterByNameOrganizationClustersClusterConnection.Edges, and is useful for accessing the field via an interface.
+func (v *getClusterByNameOrganizationClustersClusterConnection) GetEdges() []getClusterByNameOrganizationClustersClusterConnectionEdgesClusterEdge {
+	return v.Edges
+}
+
+// getClusterByNameOrganizationClustersClusterConnectionEdgesClusterEdge includes the requested fields of the GraphQL type ClusterEdge.
+type getClusterByNameOrganizationClustersClusterConnectionEdgesClusterEdge struct {
+	Node getClusterByNameOrganizationClustersClusterConnectionEdgesClusterEdgeNodeCluster `json:"node"`
+}
+
+// GetNode returns getClusterByNameOrganizationClustersClusterConnectionEdgesClusterEdge.Node, and is useful for accessing the field via an interface.
+func (v *getClusterByNameOrganizationClustersClusterConnectionEdgesClusterEdge) GetNode() getClusterByNameOrganizationClustersClusterConnectionEdgesClusterEdgeNodeCluster {
+	return v.Node
+}
+
+// getClusterByNameOrganizationClustersClusterConnectionEdgesClusterEdgeNodeCluster includes the requested fields of the GraphQL type Cluster.
+type getClusterByNameOrganizationClustersClusterConnectionEdgesClusterEdgeNodeCluster struct {
+	ClusterFields `json:"-"`
+}
+
+// GetId returns getClusterByNameOrganizationClustersClusterConnectionEdgesClusterEdgeNodeCluster.Id, and is useful for accessing the field via an interface.
+func (v *getClusterByNameOrganizationClustersClusterConnectionEdgesClusterEdgeNodeCluster) GetId() string {
+	return v.ClusterFields.Id
+}
+
+// GetUuid returns getClusterByNameOrganizationClustersClusterConnectionEdgesClusterEdgeNodeCluster.Uuid, and is useful for accessing the field via an interface.
+func (v *getClusterByNameOrganizationClustersClusterConnectionEdgesClusterEdgeNodeCluster) GetUuid() string {
+	return v.ClusterFields.Uuid
+}
+
+// GetName returns getClusterByNameOrganizationClustersClusterConnectionEdgesClusterEdgeNodeCluster.Name, and is useful for accessing the field via an interface.
+func (v *getClusterByNameOrganizationClustersClusterConnectionEdgesClusterEdgeNodeCluster) GetName() string {
+	return v.ClusterFields.Name
+}
+
+// GetDescription returns getClusterByNameOrganizationClustersClusterConnectionEdgesClusterEdgeNodeCluster.Description, and is useful for accessing the field via an interface.
+func (v *getClusterByNameOrganizationClustersClusterConnectionEdgesClusterEdgeNodeCluster) GetDescription() *string {
+	return v.ClusterFields.Description
+}
+
+// GetEmoji returns getClusterByNameOrganizationClustersClusterConnectionEdgesClusterEdgeNodeCluster.Emoji, and is useful for accessing the field via an interface.
+func (v *getClusterByNameOrganizationClustersClusterConnectionEdgesClusterEdgeNodeCluster) GetEmoji() *string {
+	return v.ClusterFields.Emoji
+}
+
+// GetColor returns getClusterByNameOrganizationClustersClusterConnectionEdgesClusterEdgeNodeCluster.Color, and is useful for accessing the field via an interface.
+func (v *getClusterByNameOrganizationClustersClusterConnectionEdgesClusterEdgeNodeCluster) GetColor() *string {
+	return v.ClusterFields.Color
+}
+
+func (v *getClusterByNameOrganizationClustersClusterConnectionEdgesClusterEdgeNodeCluster) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*getClusterByNameOrganizationClustersClusterConnectionEdgesClusterEdgeNodeCluster
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.getClusterByNameOrganizationClustersClusterConnectionEdgesClusterEdgeNodeCluster = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	err = json.Unmarshal(
+		b, &v.ClusterFields)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+type __premarshalgetClusterByNameOrganizationClustersClusterConnectionEdgesClusterEdgeNodeCluster struct {
+	Id string `json:"id"`
+
+	Uuid string `json:"uuid"`
+
+	Name string `json:"name"`
+
+	Description *string `json:"description"`
+
+	Emoji *string `json:"emoji"`
+
+	Color *string `json:"color"`
+}
+
+func (v *getClusterByNameOrganizationClustersClusterConnectionEdgesClusterEdgeNodeCluster) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *getClusterByNameOrganizationClustersClusterConnectionEdgesClusterEdgeNodeCluster) __premarshalJSON() (*__premarshalgetClusterByNameOrganizationClustersClusterConnectionEdgesClusterEdgeNodeCluster, error) {
+	var retval __premarshalgetClusterByNameOrganizationClustersClusterConnectionEdgesClusterEdgeNodeCluster
+
+	retval.Id = v.ClusterFields.Id
+	retval.Uuid = v.ClusterFields.Uuid
+	retval.Name = v.ClusterFields.Name
+	retval.Description = v.ClusterFields.Description
+	retval.Emoji = v.ClusterFields.Emoji
+	retval.Color = v.ClusterFields.Color
+	return &retval, nil
+}
+
+// getClusterByNameOrganizationClustersClusterConnectionPageInfo includes the requested fields of the GraphQL type PageInfo.
+// The GraphQL type's documentation follows.
+//
+// Information about pagination in a connection.
+type getClusterByNameOrganizationClustersClusterConnectionPageInfo struct {
+	// When paginating forwards, the cursor to continue.
+	EndCursor string `json:"endCursor"`
+	// When paginating forwards, are there more items?
+	HasNextPage bool `json:"hasNextPage"`
+}
+
+// GetEndCursor returns getClusterByNameOrganizationClustersClusterConnectionPageInfo.EndCursor, and is useful for accessing the field via an interface.
+func (v *getClusterByNameOrganizationClustersClusterConnectionPageInfo) GetEndCursor() string {
+	return v.EndCursor
+}
+
+// GetHasNextPage returns getClusterByNameOrganizationClustersClusterConnectionPageInfo.HasNextPage, and is useful for accessing the field via an interface.
+func (v *getClusterByNameOrganizationClustersClusterConnectionPageInfo) GetHasNextPage() bool {
+	return v.HasNextPage
+}
+
+// getClusterByNameResponse is returned by getClusterByName on success.
+type getClusterByNameResponse struct {
+	// Find an organization
+	Organization getClusterByNameOrganization `json:"organization"`
+}
+
+// GetOrganization returns getClusterByNameResponse.Organization, and is useful for accessing the field via an interface.
+func (v *getClusterByNameResponse) GetOrganization() getClusterByNameOrganization {
+	return v.Organization
+}
 
 // getClusterOrganization includes the requested fields of the GraphQL type Organization.
 // The GraphQL type's documentation follows.
@@ -2331,6 +2509,60 @@ func getCluster(
 	var err error
 
 	var data getClusterResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		nil,
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
+// The query or mutation executed by getClusterByName.
+const getClusterByName_Operation = `
+query getClusterByName ($orgSlug: ID!, $cursor: String) {
+	organization(slug: $orgSlug) {
+		clusters(order: NAME, first: 50, after: $cursor) {
+			pageInfo {
+				endCursor
+				hasNextPage
+			}
+			edges {
+				node {
+					... ClusterFields
+				}
+			}
+		}
+	}
+}
+fragment ClusterFields on Cluster {
+	id
+	uuid
+	name
+	description
+	emoji
+	color
+}
+`
+
+func getClusterByName(
+	client graphql.Client,
+	orgSlug string,
+	cursor *string,
+) (*getClusterByNameResponse, error) {
+	req := &graphql.Request{
+		OpName: "getClusterByName",
+		Query:  getClusterByName_Operation,
+		Variables: &__getClusterByNameInput{
+			OrgSlug: orgSlug,
+			Cursor:  cursor,
+		},
+	}
+	var err error
+
+	var data getClusterByNameResponse
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(
