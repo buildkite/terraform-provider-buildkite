@@ -71,7 +71,7 @@ func TestAccCluster_Update(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckClusterExists("buildkite_cluster.foo", &c),
 					testAccCheckClusterRemoteValues(&c, "baz_test_cluster"),
-					resource.TestCheckResourceAttr("buildkite_cluster.foo", "name", c.Name.ValueString()),
+          resource.TestCheckResourceAttr("buildkite_cluster.foo", "name", "baz_test_cluster"),
 				),
 			},
 		},
@@ -96,11 +96,11 @@ func TestAccCluster_Import(t *testing.T) {
 			},
 			{
 				ResourceName:      "buildkite_cluster.foo",
-				ImportState:       true,
-				ImportStateVerify: true,
 				ImportStateIdFunc: func(s *terraform.State) (string, error) {
 					return c.UUID.ValueString(), nil
 				},
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
