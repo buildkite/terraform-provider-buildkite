@@ -1,0 +1,73 @@
+fragment ClusterFields on Cluster {
+    id
+    uuid
+    name
+    # @genqlient(pointer: true)
+    description
+    # @genqlient(pointer: true)
+    emoji
+    # @genqlient(pointer: true)
+    color
+}
+
+query getCluster($orgSlug: ID!, $id: ID!) {
+    organization(slug: $orgSlug) {
+        cluster(id: $id) {
+            ...ClusterFields
+        }
+    }
+}
+
+mutation createCluster(
+    $organizationId: ID!
+    $name: String!
+    # @genqlient(pointer: true)
+    $description: String
+    # @genqlient(pointer: true)
+    $emoji: String
+    # @genqlient(pointer: true)
+    $color: String
+) {
+    clusterCreate(
+        input: { organizationId: $organizationId, name: $name, description: $description, emoji: $emoji, color: $color }
+    ) {
+        clientMutationId
+        cluster {
+            ...ClusterFields
+        }
+    }
+}
+
+mutation updateCluster(
+    $organizationId: ID!
+    $id: ID!
+    $name: String
+    # @genqlient(pointer: true)
+    $description: String
+    # @genqlient(pointer: true)
+    $emoji: String
+    # @genqlient(pointer: true)
+    $color: String
+) {
+    clusterUpdate(
+        input: {
+            organizationId: $organizationId
+            id: $id
+            name: $name
+            description: $description
+            emoji: $emoji
+            color: $color
+        }
+    ) {
+        clientMutationId
+        cluster {
+            ...ClusterFields
+        }
+    }
+}
+
+mutation deleteCluster($organizationId: ID!, $id: ID!) {
+    clusterDelete(input: { organizationId: $organizationId, id: $id }) {
+        clientMutationId
+    }
+}
