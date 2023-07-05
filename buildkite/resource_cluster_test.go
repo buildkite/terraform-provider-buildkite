@@ -49,7 +49,7 @@ func TestAccCluster_AddRemove(t *testing.T) {
 
 func TestAccCluster_Update(t *testing.T) {
 	t.Parallel()
-	var c clusterResourceModel
+	var c = new(clusterResourceModel)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
@@ -59,8 +59,8 @@ func TestAccCluster_Update(t *testing.T) {
 			{
 				Config: testAccClusterBasic("bar"),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckClusterExists("buildkite_cluster.foo", &c),
-					testAccCheckClusterRemoteValues(&c, "bar_test_cluster"),
+					testAccCheckClusterExists("buildkite_cluster.foo", c),
+					testAccCheckClusterRemoteValues(c, "bar_test_cluster"),
 					resource.TestCheckResourceAttr("buildkite_cluster.foo", "name", "bar_test_cluster"),
 					resource.TestCheckResourceAttrSet("buildkite_cluster.foo", "id"),
 					resource.TestCheckResourceAttrSet("buildkite_cluster.foo", "uuid"),
@@ -69,8 +69,8 @@ func TestAccCluster_Update(t *testing.T) {
 			{
 				Config: testAccClusterBasic("baz"),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckClusterExists("buildkite_cluster.foo", &c),
-					testAccCheckClusterRemoteValues(&c, "baz_test_cluster"),
+					testAccCheckClusterExists("buildkite_cluster.foo", c),
+					testAccCheckClusterRemoteValues(c, "baz_test_cluster"),
 					resource.TestCheckResourceAttr("buildkite_cluster.foo", "name", "baz_test_cluster"),
 				),
 			},
@@ -80,7 +80,7 @@ func TestAccCluster_Update(t *testing.T) {
 
 func TestAccCluster_Import(t *testing.T) {
 	t.Parallel()
-	var c clusterResourceModel
+	var c = new(clusterResourceModel)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
@@ -90,7 +90,7 @@ func TestAccCluster_Import(t *testing.T) {
 			{
 				Config: testAccClusterBasic("imported"),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckClusterExists("buildkite_cluster.foo", &c),
+					testAccCheckClusterExists("buildkite_cluster.foo", c),
 					resource.TestCheckResourceAttr("buildkite_cluster.foo", "name", "imported_test_cluster"),
 				),
 			},
