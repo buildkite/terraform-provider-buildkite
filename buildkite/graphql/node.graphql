@@ -1,0 +1,9 @@
+query get(
+    $id: ID!
+) {
+    node(id: $id){
+        ... on TeamMember {
+            ...TeamMemberValues
+        }
+    }
+}

@@ -4,6 +4,7 @@ package buildkite
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/Khan/genqlient/graphql"
 )
@@ -356,6 +357,59 @@ const (
 	TeamMemberRoleMaintainer TeamMemberRole = "MAINTAINER"
 )
 
+// TeamMemberValues includes the GraphQL fields of TeamMember requested by the fragment TeamMemberValues.
+// The GraphQL type's documentation follows.
+//
+// An member of a team
+type TeamMemberValues struct {
+	Id string `json:"id"`
+	// The public UUID for this team member
+	Uuid string `json:"uuid"`
+	// The team associated with this team member
+	Team TeamMemberValuesTeam `json:"team"`
+	// The user associated with this team member
+	User TeamMemberValuesUser `json:"user"`
+	// The users role within the team
+	Role TeamMemberRole `json:"role"`
+}
+
+// GetId returns TeamMemberValues.Id, and is useful for accessing the field via an interface.
+func (v *TeamMemberValues) GetId() string { return v.Id }
+
+// GetUuid returns TeamMemberValues.Uuid, and is useful for accessing the field via an interface.
+func (v *TeamMemberValues) GetUuid() string { return v.Uuid }
+
+// GetTeam returns TeamMemberValues.Team, and is useful for accessing the field via an interface.
+func (v *TeamMemberValues) GetTeam() TeamMemberValuesTeam { return v.Team }
+
+// GetUser returns TeamMemberValues.User, and is useful for accessing the field via an interface.
+func (v *TeamMemberValues) GetUser() TeamMemberValuesUser { return v.User }
+
+// GetRole returns TeamMemberValues.Role, and is useful for accessing the field via an interface.
+func (v *TeamMemberValues) GetRole() TeamMemberRole { return v.Role }
+
+// TeamMemberValuesTeam includes the requested fields of the GraphQL type Team.
+// The GraphQL type's documentation follows.
+//
+// An organization team
+type TeamMemberValuesTeam struct {
+	Id string `json:"id"`
+}
+
+// GetId returns TeamMemberValuesTeam.Id, and is useful for accessing the field via an interface.
+func (v *TeamMemberValuesTeam) GetId() string { return v.Id }
+
+// TeamMemberValuesUser includes the requested fields of the GraphQL type User.
+// The GraphQL type's documentation follows.
+//
+// A user
+type TeamMemberValuesUser struct {
+	Id string `json:"id"`
+}
+
+// GetId returns TeamMemberValuesUser.Id, and is useful for accessing the field via an interface.
+func (v *TeamMemberValuesUser) GetId() string { return v.Id }
+
 // Whether a team is visible or secret within an organization
 type TeamPrivacy string
 
@@ -446,6 +500,22 @@ func (v *__createClusterQueueInput) GetKey() string { return v.Key }
 // GetDescription returns __createClusterQueueInput.Description, and is useful for accessing the field via an interface.
 func (v *__createClusterQueueInput) GetDescription() *string { return v.Description }
 
+// __createTeamMemberInput is used internally by genqlient
+type __createTeamMemberInput struct {
+	TeamID string         `json:"teamID"`
+	UserID string         `json:"userID"`
+	Role   TeamMemberRole `json:"role,omitempty"`
+}
+
+// GetTeamID returns __createTeamMemberInput.TeamID, and is useful for accessing the field via an interface.
+func (v *__createTeamMemberInput) GetTeamID() string { return v.TeamID }
+
+// GetUserID returns __createTeamMemberInput.UserID, and is useful for accessing the field via an interface.
+func (v *__createTeamMemberInput) GetUserID() string { return v.UserID }
+
+// GetRole returns __createTeamMemberInput.Role, and is useful for accessing the field via an interface.
+func (v *__createTeamMemberInput) GetRole() TeamMemberRole { return v.Role }
+
 // __deleteClusterInput is used internally by genqlient
 type __deleteClusterInput struct {
 	OrganizationId string `json:"organizationId"`
@@ -469,6 +539,14 @@ func (v *__deleteClusterQueueInput) GetOrganizationId() string { return v.Organi
 
 // GetId returns __deleteClusterQueueInput.Id, and is useful for accessing the field via an interface.
 func (v *__deleteClusterQueueInput) GetId() string { return v.Id }
+
+// __deleteTeamMemberInput is used internally by genqlient
+type __deleteTeamMemberInput struct {
+	Id string `json:"id"`
+}
+
+// GetId returns __deleteTeamMemberInput.Id, and is useful for accessing the field via an interface.
+func (v *__deleteTeamMemberInput) GetId() string { return v.Id }
 
 // __getAgentTokenInput is used internally by genqlient
 type __getAgentTokenInput struct {
@@ -525,6 +603,14 @@ func (v *__getClusterQueuesInput) GetOrgSlug() string { return v.OrgSlug }
 
 // GetId returns __getClusterQueuesInput.Id, and is useful for accessing the field via an interface.
 func (v *__getClusterQueuesInput) GetId() string { return v.Id }
+
+// __getInput is used internally by genqlient
+type __getInput struct {
+	Id string `json:"id"`
+}
+
+// GetId returns __getInput.Id, and is useful for accessing the field via an interface.
+func (v *__getInput) GetId() string { return v.Id }
 
 // __getOrganizationInput is used internally by genqlient
 type __getOrganizationInput struct {
@@ -653,6 +739,18 @@ type __updatePipelineInput struct {
 
 // GetInput returns __updatePipelineInput.Input, and is useful for accessing the field via an interface.
 func (v *__updatePipelineInput) GetInput() PipelineUpdateInput { return v.Input }
+
+// __updateTeamMemberInput is used internally by genqlient
+type __updateTeamMemberInput struct {
+	Id   string         `json:"id"`
+	Role TeamMemberRole `json:"role"`
+}
+
+// GetId returns __updateTeamMemberInput.Id, and is useful for accessing the field via an interface.
+func (v *__updateTeamMemberInput) GetId() string { return v.Id }
+
+// GetRole returns __updateTeamMemberInput.Role, and is useful for accessing the field via an interface.
+func (v *__updateTeamMemberInput) GetRole() TeamMemberRole { return v.Role }
 
 // archivePipelinePipelineArchivePipelineArchivePayload includes the requested fields of the GraphQL type PipelineArchivePayload.
 // The GraphQL type's documentation follows.
@@ -1094,6 +1192,129 @@ func (v *createClusterResponse) GetClusterCreate() createClusterClusterCreateClu
 	return v.ClusterCreate
 }
 
+// createTeamMemberResponse is returned by createTeamMember on success.
+type createTeamMemberResponse struct {
+	// Add a user to a team.
+	TeamMemberCreate createTeamMemberTeamMemberCreateTeamMemberCreatePayload `json:"teamMemberCreate"`
+}
+
+// GetTeamMemberCreate returns createTeamMemberResponse.TeamMemberCreate, and is useful for accessing the field via an interface.
+func (v *createTeamMemberResponse) GetTeamMemberCreate() createTeamMemberTeamMemberCreateTeamMemberCreatePayload {
+	return v.TeamMemberCreate
+}
+
+// createTeamMemberTeamMemberCreateTeamMemberCreatePayload includes the requested fields of the GraphQL type TeamMemberCreatePayload.
+// The GraphQL type's documentation follows.
+//
+// Autogenerated return type of TeamMemberCreate.
+type createTeamMemberTeamMemberCreateTeamMemberCreatePayload struct {
+	TeamMemberEdge createTeamMemberTeamMemberCreateTeamMemberCreatePayloadTeamMemberEdge `json:"teamMemberEdge"`
+}
+
+// GetTeamMemberEdge returns createTeamMemberTeamMemberCreateTeamMemberCreatePayload.TeamMemberEdge, and is useful for accessing the field via an interface.
+func (v *createTeamMemberTeamMemberCreateTeamMemberCreatePayload) GetTeamMemberEdge() createTeamMemberTeamMemberCreateTeamMemberCreatePayloadTeamMemberEdge {
+	return v.TeamMemberEdge
+}
+
+// createTeamMemberTeamMemberCreateTeamMemberCreatePayloadTeamMemberEdge includes the requested fields of the GraphQL type TeamMemberEdge.
+type createTeamMemberTeamMemberCreateTeamMemberCreatePayloadTeamMemberEdge struct {
+	Node createTeamMemberTeamMemberCreateTeamMemberCreatePayloadTeamMemberEdgeNodeTeamMember `json:"node"`
+}
+
+// GetNode returns createTeamMemberTeamMemberCreateTeamMemberCreatePayloadTeamMemberEdge.Node, and is useful for accessing the field via an interface.
+func (v *createTeamMemberTeamMemberCreateTeamMemberCreatePayloadTeamMemberEdge) GetNode() createTeamMemberTeamMemberCreateTeamMemberCreatePayloadTeamMemberEdgeNodeTeamMember {
+	return v.Node
+}
+
+// createTeamMemberTeamMemberCreateTeamMemberCreatePayloadTeamMemberEdgeNodeTeamMember includes the requested fields of the GraphQL type TeamMember.
+// The GraphQL type's documentation follows.
+//
+// An member of a team
+type createTeamMemberTeamMemberCreateTeamMemberCreatePayloadTeamMemberEdgeNodeTeamMember struct {
+	TeamMemberValues `json:"-"`
+}
+
+// GetId returns createTeamMemberTeamMemberCreateTeamMemberCreatePayloadTeamMemberEdgeNodeTeamMember.Id, and is useful for accessing the field via an interface.
+func (v *createTeamMemberTeamMemberCreateTeamMemberCreatePayloadTeamMemberEdgeNodeTeamMember) GetId() string {
+	return v.TeamMemberValues.Id
+}
+
+// GetUuid returns createTeamMemberTeamMemberCreateTeamMemberCreatePayloadTeamMemberEdgeNodeTeamMember.Uuid, and is useful for accessing the field via an interface.
+func (v *createTeamMemberTeamMemberCreateTeamMemberCreatePayloadTeamMemberEdgeNodeTeamMember) GetUuid() string {
+	return v.TeamMemberValues.Uuid
+}
+
+// GetTeam returns createTeamMemberTeamMemberCreateTeamMemberCreatePayloadTeamMemberEdgeNodeTeamMember.Team, and is useful for accessing the field via an interface.
+func (v *createTeamMemberTeamMemberCreateTeamMemberCreatePayloadTeamMemberEdgeNodeTeamMember) GetTeam() TeamMemberValuesTeam {
+	return v.TeamMemberValues.Team
+}
+
+// GetUser returns createTeamMemberTeamMemberCreateTeamMemberCreatePayloadTeamMemberEdgeNodeTeamMember.User, and is useful for accessing the field via an interface.
+func (v *createTeamMemberTeamMemberCreateTeamMemberCreatePayloadTeamMemberEdgeNodeTeamMember) GetUser() TeamMemberValuesUser {
+	return v.TeamMemberValues.User
+}
+
+// GetRole returns createTeamMemberTeamMemberCreateTeamMemberCreatePayloadTeamMemberEdgeNodeTeamMember.Role, and is useful for accessing the field via an interface.
+func (v *createTeamMemberTeamMemberCreateTeamMemberCreatePayloadTeamMemberEdgeNodeTeamMember) GetRole() TeamMemberRole {
+	return v.TeamMemberValues.Role
+}
+
+func (v *createTeamMemberTeamMemberCreateTeamMemberCreatePayloadTeamMemberEdgeNodeTeamMember) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*createTeamMemberTeamMemberCreateTeamMemberCreatePayloadTeamMemberEdgeNodeTeamMember
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.createTeamMemberTeamMemberCreateTeamMemberCreatePayloadTeamMemberEdgeNodeTeamMember = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	err = json.Unmarshal(
+		b, &v.TeamMemberValues)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+type __premarshalcreateTeamMemberTeamMemberCreateTeamMemberCreatePayloadTeamMemberEdgeNodeTeamMember struct {
+	Id string `json:"id"`
+
+	Uuid string `json:"uuid"`
+
+	Team TeamMemberValuesTeam `json:"team"`
+
+	User TeamMemberValuesUser `json:"user"`
+
+	Role TeamMemberRole `json:"role"`
+}
+
+func (v *createTeamMemberTeamMemberCreateTeamMemberCreatePayloadTeamMemberEdgeNodeTeamMember) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *createTeamMemberTeamMemberCreateTeamMemberCreatePayloadTeamMemberEdgeNodeTeamMember) __premarshalJSON() (*__premarshalcreateTeamMemberTeamMemberCreateTeamMemberCreatePayloadTeamMemberEdgeNodeTeamMember, error) {
+	var retval __premarshalcreateTeamMemberTeamMemberCreateTeamMemberCreatePayloadTeamMemberEdgeNodeTeamMember
+
+	retval.Id = v.TeamMemberValues.Id
+	retval.Uuid = v.TeamMemberValues.Uuid
+	retval.Team = v.TeamMemberValues.Team
+	retval.User = v.TeamMemberValues.User
+	retval.Role = v.TeamMemberValues.Role
+	return &retval, nil
+}
+
 // deleteClusterClusterDeleteClusterDeletePayload includes the requested fields of the GraphQL type ClusterDeletePayload.
 // The GraphQL type's documentation follows.
 //
@@ -1142,6 +1363,31 @@ type deleteClusterResponse struct {
 // GetClusterDelete returns deleteClusterResponse.ClusterDelete, and is useful for accessing the field via an interface.
 func (v *deleteClusterResponse) GetClusterDelete() deleteClusterClusterDeleteClusterDeletePayload {
 	return v.ClusterDelete
+}
+
+// deleteTeamMemberResponse is returned by deleteTeamMember on success.
+type deleteTeamMemberResponse struct {
+	// Remove a user from a team.
+	TeamMemberDelete deleteTeamMemberTeamMemberDeleteTeamMemberDeletePayload `json:"teamMemberDelete"`
+}
+
+// GetTeamMemberDelete returns deleteTeamMemberResponse.TeamMemberDelete, and is useful for accessing the field via an interface.
+func (v *deleteTeamMemberResponse) GetTeamMemberDelete() deleteTeamMemberTeamMemberDeleteTeamMemberDeletePayload {
+	return v.TeamMemberDelete
+}
+
+// deleteTeamMemberTeamMemberDeleteTeamMemberDeletePayload includes the requested fields of the GraphQL type TeamMemberDeletePayload.
+// The GraphQL type's documentation follows.
+//
+// Autogenerated return type of TeamMemberDelete.
+type deleteTeamMemberTeamMemberDeleteTeamMemberDeletePayload struct {
+	// A unique identifier for the client performing the mutation.
+	ClientMutationId string `json:"clientMutationId"`
+}
+
+// GetClientMutationId returns deleteTeamMemberTeamMemberDeleteTeamMemberDeletePayload.ClientMutationId, and is useful for accessing the field via an interface.
+func (v *deleteTeamMemberTeamMemberDeleteTeamMemberDeletePayload) GetClientMutationId() string {
+	return v.ClientMutationId
 }
 
 // getAgentTokenAgentToken includes the requested fields of the GraphQL type AgentToken.
@@ -1721,6 +1967,1261 @@ type getClusterResponse struct {
 // GetOrganization returns getClusterResponse.Organization, and is useful for accessing the field via an interface.
 func (v *getClusterResponse) GetOrganization() getClusterOrganization { return v.Organization }
 
+// getNode includes the requested fields of the GraphQL interface Node.
+//
+// getNode is implemented by the following types:
+// getNodeAPIAccessToken
+// getNodeAPIAccessTokenCode
+// getNodeAPIApplication
+// getNodeAgent
+// getNodeAgentToken
+// getNodeAnnotation
+// getNodeArtifact
+// getNodeAuditEvent
+// getNodeAuthorizationBitbucket
+// getNodeAuthorizationGitHub
+// getNodeAuthorizationGitHubApp
+// getNodeAuthorizationGitHubEnterprise
+// getNodeAuthorizationGoogle
+// getNodeAuthorizationSAML
+// getNodeBuild
+// getNodeChangelog
+// getNodeClusterToken
+// getNodeEmail
+// getNodeJobEventAssigned
+// getNodeJobEventBuildStepUploadCreated
+// getNodeJobEventCanceled
+// getNodeJobEventFinished
+// getNodeJobEventGeneric
+// getNodeJobEventRetried
+// getNodeJobEventTimedOut
+// getNodeJobTypeBlock
+// getNodeJobTypeCommand
+// getNodeJobTypeTrigger
+// getNodeJobTypeWait
+// getNodeNotificationServiceSlack
+// getNodeOrganization
+// getNodeOrganizationInvitation
+// getNodeOrganizationMember
+// getNodePipeline
+// getNodePipelineMetric
+// getNodePipelineSchedule
+// getNodePipelineTemplate
+// getNodeSSOProviderGitHubApp
+// getNodeSSOProviderGoogleGSuite
+// getNodeSSOProviderSAML
+// getNodeSuite
+// getNodeTeam
+// getNodeTeamMember
+// getNodeTeamPipeline
+// getNodeTeamSuite
+// getNodeUser
+// getNodeViewer
+// The GraphQL type's documentation follows.
+//
+// An object with an ID.
+type getNode interface {
+	implementsGraphQLInterfacegetNode()
+	// GetTypename returns the receiver's concrete GraphQL type-name (see interface doc for possible values).
+	GetTypename() string
+}
+
+func (v *getNodeAPIAccessToken) implementsGraphQLInterfacegetNode()                 {}
+func (v *getNodeAPIAccessTokenCode) implementsGraphQLInterfacegetNode()             {}
+func (v *getNodeAPIApplication) implementsGraphQLInterfacegetNode()                 {}
+func (v *getNodeAgent) implementsGraphQLInterfacegetNode()                          {}
+func (v *getNodeAgentToken) implementsGraphQLInterfacegetNode()                     {}
+func (v *getNodeAnnotation) implementsGraphQLInterfacegetNode()                     {}
+func (v *getNodeArtifact) implementsGraphQLInterfacegetNode()                       {}
+func (v *getNodeAuditEvent) implementsGraphQLInterfacegetNode()                     {}
+func (v *getNodeAuthorizationBitbucket) implementsGraphQLInterfacegetNode()         {}
+func (v *getNodeAuthorizationGitHub) implementsGraphQLInterfacegetNode()            {}
+func (v *getNodeAuthorizationGitHubApp) implementsGraphQLInterfacegetNode()         {}
+func (v *getNodeAuthorizationGitHubEnterprise) implementsGraphQLInterfacegetNode()  {}
+func (v *getNodeAuthorizationGoogle) implementsGraphQLInterfacegetNode()            {}
+func (v *getNodeAuthorizationSAML) implementsGraphQLInterfacegetNode()              {}
+func (v *getNodeBuild) implementsGraphQLInterfacegetNode()                          {}
+func (v *getNodeChangelog) implementsGraphQLInterfacegetNode()                      {}
+func (v *getNodeClusterToken) implementsGraphQLInterfacegetNode()                   {}
+func (v *getNodeEmail) implementsGraphQLInterfacegetNode()                          {}
+func (v *getNodeJobEventAssigned) implementsGraphQLInterfacegetNode()               {}
+func (v *getNodeJobEventBuildStepUploadCreated) implementsGraphQLInterfacegetNode() {}
+func (v *getNodeJobEventCanceled) implementsGraphQLInterfacegetNode()               {}
+func (v *getNodeJobEventFinished) implementsGraphQLInterfacegetNode()               {}
+func (v *getNodeJobEventGeneric) implementsGraphQLInterfacegetNode()                {}
+func (v *getNodeJobEventRetried) implementsGraphQLInterfacegetNode()                {}
+func (v *getNodeJobEventTimedOut) implementsGraphQLInterfacegetNode()               {}
+func (v *getNodeJobTypeBlock) implementsGraphQLInterfacegetNode()                   {}
+func (v *getNodeJobTypeCommand) implementsGraphQLInterfacegetNode()                 {}
+func (v *getNodeJobTypeTrigger) implementsGraphQLInterfacegetNode()                 {}
+func (v *getNodeJobTypeWait) implementsGraphQLInterfacegetNode()                    {}
+func (v *getNodeNotificationServiceSlack) implementsGraphQLInterfacegetNode()       {}
+func (v *getNodeOrganization) implementsGraphQLInterfacegetNode()                   {}
+func (v *getNodeOrganizationInvitation) implementsGraphQLInterfacegetNode()         {}
+func (v *getNodeOrganizationMember) implementsGraphQLInterfacegetNode()             {}
+func (v *getNodePipeline) implementsGraphQLInterfacegetNode()                       {}
+func (v *getNodePipelineMetric) implementsGraphQLInterfacegetNode()                 {}
+func (v *getNodePipelineSchedule) implementsGraphQLInterfacegetNode()               {}
+func (v *getNodePipelineTemplate) implementsGraphQLInterfacegetNode()               {}
+func (v *getNodeSSOProviderGitHubApp) implementsGraphQLInterfacegetNode()           {}
+func (v *getNodeSSOProviderGoogleGSuite) implementsGraphQLInterfacegetNode()        {}
+func (v *getNodeSSOProviderSAML) implementsGraphQLInterfacegetNode()                {}
+func (v *getNodeSuite) implementsGraphQLInterfacegetNode()                          {}
+func (v *getNodeTeam) implementsGraphQLInterfacegetNode()                           {}
+func (v *getNodeTeamMember) implementsGraphQLInterfacegetNode()                     {}
+func (v *getNodeTeamPipeline) implementsGraphQLInterfacegetNode()                   {}
+func (v *getNodeTeamSuite) implementsGraphQLInterfacegetNode()                      {}
+func (v *getNodeUser) implementsGraphQLInterfacegetNode()                           {}
+func (v *getNodeViewer) implementsGraphQLInterfacegetNode()                         {}
+
+func __unmarshalgetNode(b []byte, v *getNode) error {
+	if string(b) == "null" {
+		return nil
+	}
+
+	var tn struct {
+		TypeName string `json:"__typename"`
+	}
+	err := json.Unmarshal(b, &tn)
+	if err != nil {
+		return err
+	}
+
+	switch tn.TypeName {
+	case "APIAccessToken":
+		*v = new(getNodeAPIAccessToken)
+		return json.Unmarshal(b, *v)
+	case "APIAccessTokenCode":
+		*v = new(getNodeAPIAccessTokenCode)
+		return json.Unmarshal(b, *v)
+	case "APIApplication":
+		*v = new(getNodeAPIApplication)
+		return json.Unmarshal(b, *v)
+	case "Agent":
+		*v = new(getNodeAgent)
+		return json.Unmarshal(b, *v)
+	case "AgentToken":
+		*v = new(getNodeAgentToken)
+		return json.Unmarshal(b, *v)
+	case "Annotation":
+		*v = new(getNodeAnnotation)
+		return json.Unmarshal(b, *v)
+	case "Artifact":
+		*v = new(getNodeArtifact)
+		return json.Unmarshal(b, *v)
+	case "AuditEvent":
+		*v = new(getNodeAuditEvent)
+		return json.Unmarshal(b, *v)
+	case "AuthorizationBitbucket":
+		*v = new(getNodeAuthorizationBitbucket)
+		return json.Unmarshal(b, *v)
+	case "AuthorizationGitHub":
+		*v = new(getNodeAuthorizationGitHub)
+		return json.Unmarshal(b, *v)
+	case "AuthorizationGitHubApp":
+		*v = new(getNodeAuthorizationGitHubApp)
+		return json.Unmarshal(b, *v)
+	case "AuthorizationGitHubEnterprise":
+		*v = new(getNodeAuthorizationGitHubEnterprise)
+		return json.Unmarshal(b, *v)
+	case "AuthorizationGoogle":
+		*v = new(getNodeAuthorizationGoogle)
+		return json.Unmarshal(b, *v)
+	case "AuthorizationSAML":
+		*v = new(getNodeAuthorizationSAML)
+		return json.Unmarshal(b, *v)
+	case "Build":
+		*v = new(getNodeBuild)
+		return json.Unmarshal(b, *v)
+	case "Changelog":
+		*v = new(getNodeChangelog)
+		return json.Unmarshal(b, *v)
+	case "ClusterToken":
+		*v = new(getNodeClusterToken)
+		return json.Unmarshal(b, *v)
+	case "Email":
+		*v = new(getNodeEmail)
+		return json.Unmarshal(b, *v)
+	case "JobEventAssigned":
+		*v = new(getNodeJobEventAssigned)
+		return json.Unmarshal(b, *v)
+	case "JobEventBuildStepUploadCreated":
+		*v = new(getNodeJobEventBuildStepUploadCreated)
+		return json.Unmarshal(b, *v)
+	case "JobEventCanceled":
+		*v = new(getNodeJobEventCanceled)
+		return json.Unmarshal(b, *v)
+	case "JobEventFinished":
+		*v = new(getNodeJobEventFinished)
+		return json.Unmarshal(b, *v)
+	case "JobEventGeneric":
+		*v = new(getNodeJobEventGeneric)
+		return json.Unmarshal(b, *v)
+	case "JobEventRetried":
+		*v = new(getNodeJobEventRetried)
+		return json.Unmarshal(b, *v)
+	case "JobEventTimedOut":
+		*v = new(getNodeJobEventTimedOut)
+		return json.Unmarshal(b, *v)
+	case "JobTypeBlock":
+		*v = new(getNodeJobTypeBlock)
+		return json.Unmarshal(b, *v)
+	case "JobTypeCommand":
+		*v = new(getNodeJobTypeCommand)
+		return json.Unmarshal(b, *v)
+	case "JobTypeTrigger":
+		*v = new(getNodeJobTypeTrigger)
+		return json.Unmarshal(b, *v)
+	case "JobTypeWait":
+		*v = new(getNodeJobTypeWait)
+		return json.Unmarshal(b, *v)
+	case "NotificationServiceSlack":
+		*v = new(getNodeNotificationServiceSlack)
+		return json.Unmarshal(b, *v)
+	case "Organization":
+		*v = new(getNodeOrganization)
+		return json.Unmarshal(b, *v)
+	case "OrganizationInvitation":
+		*v = new(getNodeOrganizationInvitation)
+		return json.Unmarshal(b, *v)
+	case "OrganizationMember":
+		*v = new(getNodeOrganizationMember)
+		return json.Unmarshal(b, *v)
+	case "Pipeline":
+		*v = new(getNodePipeline)
+		return json.Unmarshal(b, *v)
+	case "PipelineMetric":
+		*v = new(getNodePipelineMetric)
+		return json.Unmarshal(b, *v)
+	case "PipelineSchedule":
+		*v = new(getNodePipelineSchedule)
+		return json.Unmarshal(b, *v)
+	case "PipelineTemplate":
+		*v = new(getNodePipelineTemplate)
+		return json.Unmarshal(b, *v)
+	case "SSOProviderGitHubApp":
+		*v = new(getNodeSSOProviderGitHubApp)
+		return json.Unmarshal(b, *v)
+	case "SSOProviderGoogleGSuite":
+		*v = new(getNodeSSOProviderGoogleGSuite)
+		return json.Unmarshal(b, *v)
+	case "SSOProviderSAML":
+		*v = new(getNodeSSOProviderSAML)
+		return json.Unmarshal(b, *v)
+	case "Suite":
+		*v = new(getNodeSuite)
+		return json.Unmarshal(b, *v)
+	case "Team":
+		*v = new(getNodeTeam)
+		return json.Unmarshal(b, *v)
+	case "TeamMember":
+		*v = new(getNodeTeamMember)
+		return json.Unmarshal(b, *v)
+	case "TeamPipeline":
+		*v = new(getNodeTeamPipeline)
+		return json.Unmarshal(b, *v)
+	case "TeamSuite":
+		*v = new(getNodeTeamSuite)
+		return json.Unmarshal(b, *v)
+	case "User":
+		*v = new(getNodeUser)
+		return json.Unmarshal(b, *v)
+	case "Viewer":
+		*v = new(getNodeViewer)
+		return json.Unmarshal(b, *v)
+	case "":
+		return fmt.Errorf(
+			"response was missing Node.__typename")
+	default:
+		return fmt.Errorf(
+			`unexpected concrete type for getNode: "%v"`, tn.TypeName)
+	}
+}
+
+func __marshalgetNode(v *getNode) ([]byte, error) {
+
+	var typename string
+	switch v := (*v).(type) {
+	case *getNodeAPIAccessToken:
+		typename = "APIAccessToken"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getNodeAPIAccessToken
+		}{typename, v}
+		return json.Marshal(result)
+	case *getNodeAPIAccessTokenCode:
+		typename = "APIAccessTokenCode"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getNodeAPIAccessTokenCode
+		}{typename, v}
+		return json.Marshal(result)
+	case *getNodeAPIApplication:
+		typename = "APIApplication"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getNodeAPIApplication
+		}{typename, v}
+		return json.Marshal(result)
+	case *getNodeAgent:
+		typename = "Agent"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getNodeAgent
+		}{typename, v}
+		return json.Marshal(result)
+	case *getNodeAgentToken:
+		typename = "AgentToken"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getNodeAgentToken
+		}{typename, v}
+		return json.Marshal(result)
+	case *getNodeAnnotation:
+		typename = "Annotation"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getNodeAnnotation
+		}{typename, v}
+		return json.Marshal(result)
+	case *getNodeArtifact:
+		typename = "Artifact"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getNodeArtifact
+		}{typename, v}
+		return json.Marshal(result)
+	case *getNodeAuditEvent:
+		typename = "AuditEvent"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getNodeAuditEvent
+		}{typename, v}
+		return json.Marshal(result)
+	case *getNodeAuthorizationBitbucket:
+		typename = "AuthorizationBitbucket"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getNodeAuthorizationBitbucket
+		}{typename, v}
+		return json.Marshal(result)
+	case *getNodeAuthorizationGitHub:
+		typename = "AuthorizationGitHub"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getNodeAuthorizationGitHub
+		}{typename, v}
+		return json.Marshal(result)
+	case *getNodeAuthorizationGitHubApp:
+		typename = "AuthorizationGitHubApp"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getNodeAuthorizationGitHubApp
+		}{typename, v}
+		return json.Marshal(result)
+	case *getNodeAuthorizationGitHubEnterprise:
+		typename = "AuthorizationGitHubEnterprise"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getNodeAuthorizationGitHubEnterprise
+		}{typename, v}
+		return json.Marshal(result)
+	case *getNodeAuthorizationGoogle:
+		typename = "AuthorizationGoogle"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getNodeAuthorizationGoogle
+		}{typename, v}
+		return json.Marshal(result)
+	case *getNodeAuthorizationSAML:
+		typename = "AuthorizationSAML"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getNodeAuthorizationSAML
+		}{typename, v}
+		return json.Marshal(result)
+	case *getNodeBuild:
+		typename = "Build"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getNodeBuild
+		}{typename, v}
+		return json.Marshal(result)
+	case *getNodeChangelog:
+		typename = "Changelog"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getNodeChangelog
+		}{typename, v}
+		return json.Marshal(result)
+	case *getNodeClusterToken:
+		typename = "ClusterToken"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getNodeClusterToken
+		}{typename, v}
+		return json.Marshal(result)
+	case *getNodeEmail:
+		typename = "Email"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getNodeEmail
+		}{typename, v}
+		return json.Marshal(result)
+	case *getNodeJobEventAssigned:
+		typename = "JobEventAssigned"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getNodeJobEventAssigned
+		}{typename, v}
+		return json.Marshal(result)
+	case *getNodeJobEventBuildStepUploadCreated:
+		typename = "JobEventBuildStepUploadCreated"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getNodeJobEventBuildStepUploadCreated
+		}{typename, v}
+		return json.Marshal(result)
+	case *getNodeJobEventCanceled:
+		typename = "JobEventCanceled"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getNodeJobEventCanceled
+		}{typename, v}
+		return json.Marshal(result)
+	case *getNodeJobEventFinished:
+		typename = "JobEventFinished"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getNodeJobEventFinished
+		}{typename, v}
+		return json.Marshal(result)
+	case *getNodeJobEventGeneric:
+		typename = "JobEventGeneric"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getNodeJobEventGeneric
+		}{typename, v}
+		return json.Marshal(result)
+	case *getNodeJobEventRetried:
+		typename = "JobEventRetried"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getNodeJobEventRetried
+		}{typename, v}
+		return json.Marshal(result)
+	case *getNodeJobEventTimedOut:
+		typename = "JobEventTimedOut"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getNodeJobEventTimedOut
+		}{typename, v}
+		return json.Marshal(result)
+	case *getNodeJobTypeBlock:
+		typename = "JobTypeBlock"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getNodeJobTypeBlock
+		}{typename, v}
+		return json.Marshal(result)
+	case *getNodeJobTypeCommand:
+		typename = "JobTypeCommand"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getNodeJobTypeCommand
+		}{typename, v}
+		return json.Marshal(result)
+	case *getNodeJobTypeTrigger:
+		typename = "JobTypeTrigger"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getNodeJobTypeTrigger
+		}{typename, v}
+		return json.Marshal(result)
+	case *getNodeJobTypeWait:
+		typename = "JobTypeWait"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getNodeJobTypeWait
+		}{typename, v}
+		return json.Marshal(result)
+	case *getNodeNotificationServiceSlack:
+		typename = "NotificationServiceSlack"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getNodeNotificationServiceSlack
+		}{typename, v}
+		return json.Marshal(result)
+	case *getNodeOrganization:
+		typename = "Organization"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getNodeOrganization
+		}{typename, v}
+		return json.Marshal(result)
+	case *getNodeOrganizationInvitation:
+		typename = "OrganizationInvitation"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getNodeOrganizationInvitation
+		}{typename, v}
+		return json.Marshal(result)
+	case *getNodeOrganizationMember:
+		typename = "OrganizationMember"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getNodeOrganizationMember
+		}{typename, v}
+		return json.Marshal(result)
+	case *getNodePipeline:
+		typename = "Pipeline"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getNodePipeline
+		}{typename, v}
+		return json.Marshal(result)
+	case *getNodePipelineMetric:
+		typename = "PipelineMetric"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getNodePipelineMetric
+		}{typename, v}
+		return json.Marshal(result)
+	case *getNodePipelineSchedule:
+		typename = "PipelineSchedule"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getNodePipelineSchedule
+		}{typename, v}
+		return json.Marshal(result)
+	case *getNodePipelineTemplate:
+		typename = "PipelineTemplate"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getNodePipelineTemplate
+		}{typename, v}
+		return json.Marshal(result)
+	case *getNodeSSOProviderGitHubApp:
+		typename = "SSOProviderGitHubApp"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getNodeSSOProviderGitHubApp
+		}{typename, v}
+		return json.Marshal(result)
+	case *getNodeSSOProviderGoogleGSuite:
+		typename = "SSOProviderGoogleGSuite"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getNodeSSOProviderGoogleGSuite
+		}{typename, v}
+		return json.Marshal(result)
+	case *getNodeSSOProviderSAML:
+		typename = "SSOProviderSAML"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getNodeSSOProviderSAML
+		}{typename, v}
+		return json.Marshal(result)
+	case *getNodeSuite:
+		typename = "Suite"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getNodeSuite
+		}{typename, v}
+		return json.Marshal(result)
+	case *getNodeTeam:
+		typename = "Team"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getNodeTeam
+		}{typename, v}
+		return json.Marshal(result)
+	case *getNodeTeamMember:
+		typename = "TeamMember"
+
+		premarshaled, err := v.__premarshalJSON()
+		if err != nil {
+			return nil, err
+		}
+		result := struct {
+			TypeName string `json:"__typename"`
+			*__premarshalgetNodeTeamMember
+		}{typename, premarshaled}
+		return json.Marshal(result)
+	case *getNodeTeamPipeline:
+		typename = "TeamPipeline"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getNodeTeamPipeline
+		}{typename, v}
+		return json.Marshal(result)
+	case *getNodeTeamSuite:
+		typename = "TeamSuite"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getNodeTeamSuite
+		}{typename, v}
+		return json.Marshal(result)
+	case *getNodeUser:
+		typename = "User"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getNodeUser
+		}{typename, v}
+		return json.Marshal(result)
+	case *getNodeViewer:
+		typename = "Viewer"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getNodeViewer
+		}{typename, v}
+		return json.Marshal(result)
+	case nil:
+		return []byte("null"), nil
+	default:
+		return nil, fmt.Errorf(
+			`unexpected concrete type for getNode: "%T"`, v)
+	}
+}
+
+// getNodeAPIAccessToken includes the requested fields of the GraphQL type APIAccessToken.
+// The GraphQL type's documentation follows.
+//
+// API access tokens for authentication with the Buildkite API
+type getNodeAPIAccessToken struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getNodeAPIAccessToken.Typename, and is useful for accessing the field via an interface.
+func (v *getNodeAPIAccessToken) GetTypename() string { return v.Typename }
+
+// getNodeAPIAccessTokenCode includes the requested fields of the GraphQL type APIAccessTokenCode.
+// The GraphQL type's documentation follows.
+//
+// A code that is used by an API Application to request an API Access Token
+type getNodeAPIAccessTokenCode struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getNodeAPIAccessTokenCode.Typename, and is useful for accessing the field via an interface.
+func (v *getNodeAPIAccessTokenCode) GetTypename() string { return v.Typename }
+
+// getNodeAPIApplication includes the requested fields of the GraphQL type APIApplication.
+// The GraphQL type's documentation follows.
+//
+// An API Application
+type getNodeAPIApplication struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getNodeAPIApplication.Typename, and is useful for accessing the field via an interface.
+func (v *getNodeAPIApplication) GetTypename() string { return v.Typename }
+
+// getNodeAgent includes the requested fields of the GraphQL type Agent.
+// The GraphQL type's documentation follows.
+//
+// An agent
+type getNodeAgent struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getNodeAgent.Typename, and is useful for accessing the field via an interface.
+func (v *getNodeAgent) GetTypename() string { return v.Typename }
+
+// getNodeAgentToken includes the requested fields of the GraphQL type AgentToken.
+// The GraphQL type's documentation follows.
+//
+// A token used to connect an agent to Buildkite
+type getNodeAgentToken struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getNodeAgentToken.Typename, and is useful for accessing the field via an interface.
+func (v *getNodeAgentToken) GetTypename() string { return v.Typename }
+
+// getNodeAnnotation includes the requested fields of the GraphQL type Annotation.
+// The GraphQL type's documentation follows.
+//
+// An annotation allows you to add arbitrary content to the top of a build page in the Buildkite UI
+type getNodeAnnotation struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getNodeAnnotation.Typename, and is useful for accessing the field via an interface.
+func (v *getNodeAnnotation) GetTypename() string { return v.Typename }
+
+// getNodeArtifact includes the requested fields of the GraphQL type Artifact.
+// The GraphQL type's documentation follows.
+//
+// A file uploaded from the agent whilst running a job
+type getNodeArtifact struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getNodeArtifact.Typename, and is useful for accessing the field via an interface.
+func (v *getNodeArtifact) GetTypename() string { return v.Typename }
+
+// getNodeAuditEvent includes the requested fields of the GraphQL type AuditEvent.
+// The GraphQL type's documentation follows.
+//
+// Audit record of an event which occurred in the system
+type getNodeAuditEvent struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getNodeAuditEvent.Typename, and is useful for accessing the field via an interface.
+func (v *getNodeAuditEvent) GetTypename() string { return v.Typename }
+
+// getNodeAuthorizationBitbucket includes the requested fields of the GraphQL type AuthorizationBitbucket.
+// The GraphQL type's documentation follows.
+//
+// A Bitbucket account authorized with a Buildkite account
+type getNodeAuthorizationBitbucket struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getNodeAuthorizationBitbucket.Typename, and is useful for accessing the field via an interface.
+func (v *getNodeAuthorizationBitbucket) GetTypename() string { return v.Typename }
+
+// getNodeAuthorizationGitHub includes the requested fields of the GraphQL type AuthorizationGitHub.
+// The GraphQL type's documentation follows.
+//
+// A GitHub account authorized with a Buildkite account
+type getNodeAuthorizationGitHub struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getNodeAuthorizationGitHub.Typename, and is useful for accessing the field via an interface.
+func (v *getNodeAuthorizationGitHub) GetTypename() string { return v.Typename }
+
+// getNodeAuthorizationGitHubApp includes the requested fields of the GraphQL type AuthorizationGitHubApp.
+// The GraphQL type's documentation follows.
+//
+// A GitHub app authorized with a Buildkite account
+type getNodeAuthorizationGitHubApp struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getNodeAuthorizationGitHubApp.Typename, and is useful for accessing the field via an interface.
+func (v *getNodeAuthorizationGitHubApp) GetTypename() string { return v.Typename }
+
+// getNodeAuthorizationGitHubEnterprise includes the requested fields of the GraphQL type AuthorizationGitHubEnterprise.
+// The GraphQL type's documentation follows.
+//
+// A GitHub Enterprise account authorized with a Buildkite account
+type getNodeAuthorizationGitHubEnterprise struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getNodeAuthorizationGitHubEnterprise.Typename, and is useful for accessing the field via an interface.
+func (v *getNodeAuthorizationGitHubEnterprise) GetTypename() string { return v.Typename }
+
+// getNodeAuthorizationGoogle includes the requested fields of the GraphQL type AuthorizationGoogle.
+// The GraphQL type's documentation follows.
+//
+// A Google account authorized with a Buildkite account
+type getNodeAuthorizationGoogle struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getNodeAuthorizationGoogle.Typename, and is useful for accessing the field via an interface.
+func (v *getNodeAuthorizationGoogle) GetTypename() string { return v.Typename }
+
+// getNodeAuthorizationSAML includes the requested fields of the GraphQL type AuthorizationSAML.
+// The GraphQL type's documentation follows.
+//
+// A SAML account authorized with a Buildkite account
+type getNodeAuthorizationSAML struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getNodeAuthorizationSAML.Typename, and is useful for accessing the field via an interface.
+func (v *getNodeAuthorizationSAML) GetTypename() string { return v.Typename }
+
+// getNodeBuild includes the requested fields of the GraphQL type Build.
+// The GraphQL type's documentation follows.
+//
+// A build from a pipeline
+type getNodeBuild struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getNodeBuild.Typename, and is useful for accessing the field via an interface.
+func (v *getNodeBuild) GetTypename() string { return v.Typename }
+
+// getNodeChangelog includes the requested fields of the GraphQL type Changelog.
+// The GraphQL type's documentation follows.
+//
+// A changelog
+type getNodeChangelog struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getNodeChangelog.Typename, and is useful for accessing the field via an interface.
+func (v *getNodeChangelog) GetTypename() string { return v.Typename }
+
+// getNodeClusterToken includes the requested fields of the GraphQL type ClusterToken.
+// The GraphQL type's documentation follows.
+//
+// A token used to connect an agent in cluster to Buildkite
+type getNodeClusterToken struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getNodeClusterToken.Typename, and is useful for accessing the field via an interface.
+func (v *getNodeClusterToken) GetTypename() string { return v.Typename }
+
+// getNodeEmail includes the requested fields of the GraphQL type Email.
+// The GraphQL type's documentation follows.
+//
+// An email address
+type getNodeEmail struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getNodeEmail.Typename, and is useful for accessing the field via an interface.
+func (v *getNodeEmail) GetTypename() string { return v.Typename }
+
+// getNodeJobEventAssigned includes the requested fields of the GraphQL type JobEventAssigned.
+// The GraphQL type's documentation follows.
+//
+// An event created when the dispatcher assigns the job to an agent
+type getNodeJobEventAssigned struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getNodeJobEventAssigned.Typename, and is useful for accessing the field via an interface.
+func (v *getNodeJobEventAssigned) GetTypename() string { return v.Typename }
+
+// getNodeJobEventBuildStepUploadCreated includes the requested fields of the GraphQL type JobEventBuildStepUploadCreated.
+// The GraphQL type's documentation follows.
+//
+// An event created when the job creates new build steps via pipeline upload
+type getNodeJobEventBuildStepUploadCreated struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getNodeJobEventBuildStepUploadCreated.Typename, and is useful for accessing the field via an interface.
+func (v *getNodeJobEventBuildStepUploadCreated) GetTypename() string { return v.Typename }
+
+// getNodeJobEventCanceled includes the requested fields of the GraphQL type JobEventCanceled.
+// The GraphQL type's documentation follows.
+//
+// An event created when the job is canceled
+type getNodeJobEventCanceled struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getNodeJobEventCanceled.Typename, and is useful for accessing the field via an interface.
+func (v *getNodeJobEventCanceled) GetTypename() string { return v.Typename }
+
+// getNodeJobEventFinished includes the requested fields of the GraphQL type JobEventFinished.
+// The GraphQL type's documentation follows.
+//
+// An event created when the job is finished
+type getNodeJobEventFinished struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getNodeJobEventFinished.Typename, and is useful for accessing the field via an interface.
+func (v *getNodeJobEventFinished) GetTypename() string { return v.Typename }
+
+// getNodeJobEventGeneric includes the requested fields of the GraphQL type JobEventGeneric.
+// The GraphQL type's documentation follows.
+//
+// A generic event type that doesn't have any additional meta-information associated with the event
+type getNodeJobEventGeneric struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getNodeJobEventGeneric.Typename, and is useful for accessing the field via an interface.
+func (v *getNodeJobEventGeneric) GetTypename() string { return v.Typename }
+
+// getNodeJobEventRetried includes the requested fields of the GraphQL type JobEventRetried.
+// The GraphQL type's documentation follows.
+//
+// An event created when the job is retried
+type getNodeJobEventRetried struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getNodeJobEventRetried.Typename, and is useful for accessing the field via an interface.
+func (v *getNodeJobEventRetried) GetTypename() string { return v.Typename }
+
+// getNodeJobEventTimedOut includes the requested fields of the GraphQL type JobEventTimedOut.
+// The GraphQL type's documentation follows.
+//
+// An event created when the job is timed out
+type getNodeJobEventTimedOut struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getNodeJobEventTimedOut.Typename, and is useful for accessing the field via an interface.
+func (v *getNodeJobEventTimedOut) GetTypename() string { return v.Typename }
+
+// getNodeJobTypeBlock includes the requested fields of the GraphQL type JobTypeBlock.
+// The GraphQL type's documentation follows.
+//
+// A type of job that requires a user to unblock it before proceeding in a build pipeline
+type getNodeJobTypeBlock struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getNodeJobTypeBlock.Typename, and is useful for accessing the field via an interface.
+func (v *getNodeJobTypeBlock) GetTypename() string { return v.Typename }
+
+// getNodeJobTypeCommand includes the requested fields of the GraphQL type JobTypeCommand.
+// The GraphQL type's documentation follows.
+//
+// A type of job that runs a command on an agent
+type getNodeJobTypeCommand struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getNodeJobTypeCommand.Typename, and is useful for accessing the field via an interface.
+func (v *getNodeJobTypeCommand) GetTypename() string { return v.Typename }
+
+// getNodeJobTypeTrigger includes the requested fields of the GraphQL type JobTypeTrigger.
+// The GraphQL type's documentation follows.
+//
+// A type of job that triggers another build on a pipeline
+type getNodeJobTypeTrigger struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getNodeJobTypeTrigger.Typename, and is useful for accessing the field via an interface.
+func (v *getNodeJobTypeTrigger) GetTypename() string { return v.Typename }
+
+// getNodeJobTypeWait includes the requested fields of the GraphQL type JobTypeWait.
+// The GraphQL type's documentation follows.
+//
+// A type of job that waits for all previous jobs to pass before proceeding the build pipeline
+type getNodeJobTypeWait struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getNodeJobTypeWait.Typename, and is useful for accessing the field via an interface.
+func (v *getNodeJobTypeWait) GetTypename() string { return v.Typename }
+
+// getNodeNotificationServiceSlack includes the requested fields of the GraphQL type NotificationServiceSlack.
+// The GraphQL type's documentation follows.
+//
+// Deliver notifications to Slack
+type getNodeNotificationServiceSlack struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getNodeNotificationServiceSlack.Typename, and is useful for accessing the field via an interface.
+func (v *getNodeNotificationServiceSlack) GetTypename() string { return v.Typename }
+
+// getNodeOrganization includes the requested fields of the GraphQL type Organization.
+// The GraphQL type's documentation follows.
+//
+// An organization
+type getNodeOrganization struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getNodeOrganization.Typename, and is useful for accessing the field via an interface.
+func (v *getNodeOrganization) GetTypename() string { return v.Typename }
+
+// getNodeOrganizationInvitation includes the requested fields of the GraphQL type OrganizationInvitation.
+// The GraphQL type's documentation follows.
+//
+// A pending invitation to a user to join this organization
+type getNodeOrganizationInvitation struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getNodeOrganizationInvitation.Typename, and is useful for accessing the field via an interface.
+func (v *getNodeOrganizationInvitation) GetTypename() string { return v.Typename }
+
+// getNodeOrganizationMember includes the requested fields of the GraphQL type OrganizationMember.
+// The GraphQL type's documentation follows.
+//
+// A member of an organization
+type getNodeOrganizationMember struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getNodeOrganizationMember.Typename, and is useful for accessing the field via an interface.
+func (v *getNodeOrganizationMember) GetTypename() string { return v.Typename }
+
+// getNodePipeline includes the requested fields of the GraphQL type Pipeline.
+// The GraphQL type's documentation follows.
+//
+// A pipeline
+type getNodePipeline struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getNodePipeline.Typename, and is useful for accessing the field via an interface.
+func (v *getNodePipeline) GetTypename() string { return v.Typename }
+
+// getNodePipelineMetric includes the requested fields of the GraphQL type PipelineMetric.
+// The GraphQL type's documentation follows.
+//
+// A metric for a pipeline
+type getNodePipelineMetric struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getNodePipelineMetric.Typename, and is useful for accessing the field via an interface.
+func (v *getNodePipelineMetric) GetTypename() string { return v.Typename }
+
+// getNodePipelineSchedule includes the requested fields of the GraphQL type PipelineSchedule.
+// The GraphQL type's documentation follows.
+//
+// A schedule of when a build should automatically triggered for a Pipeline
+type getNodePipelineSchedule struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getNodePipelineSchedule.Typename, and is useful for accessing the field via an interface.
+func (v *getNodePipelineSchedule) GetTypename() string { return v.Typename }
+
+// getNodePipelineTemplate includes the requested fields of the GraphQL type PipelineTemplate.
+// The GraphQL type's documentation follows.
+//
+// A template defining a fixed step configuration for a pipeline
+type getNodePipelineTemplate struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getNodePipelineTemplate.Typename, and is useful for accessing the field via an interface.
+func (v *getNodePipelineTemplate) GetTypename() string { return v.Typename }
+
+// getNodeSSOProviderGitHubApp includes the requested fields of the GraphQL type SSOProviderGitHubApp.
+// The GraphQL type's documentation follows.
+//
+// Single sign-on provided by GitHub
+type getNodeSSOProviderGitHubApp struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getNodeSSOProviderGitHubApp.Typename, and is useful for accessing the field via an interface.
+func (v *getNodeSSOProviderGitHubApp) GetTypename() string { return v.Typename }
+
+// getNodeSSOProviderGoogleGSuite includes the requested fields of the GraphQL type SSOProviderGoogleGSuite.
+// The GraphQL type's documentation follows.
+//
+// Single sign-on provided by Google
+type getNodeSSOProviderGoogleGSuite struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getNodeSSOProviderGoogleGSuite.Typename, and is useful for accessing the field via an interface.
+func (v *getNodeSSOProviderGoogleGSuite) GetTypename() string { return v.Typename }
+
+// getNodeSSOProviderSAML includes the requested fields of the GraphQL type SSOProviderSAML.
+// The GraphQL type's documentation follows.
+//
+// Single sign-on provided via SAML
+type getNodeSSOProviderSAML struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getNodeSSOProviderSAML.Typename, and is useful for accessing the field via an interface.
+func (v *getNodeSSOProviderSAML) GetTypename() string { return v.Typename }
+
+// getNodeSuite includes the requested fields of the GraphQL type Suite.
+// The GraphQL type's documentation follows.
+//
+// A suite
+type getNodeSuite struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getNodeSuite.Typename, and is useful for accessing the field via an interface.
+func (v *getNodeSuite) GetTypename() string { return v.Typename }
+
+// getNodeTeam includes the requested fields of the GraphQL type Team.
+// The GraphQL type's documentation follows.
+//
+// An organization team
+type getNodeTeam struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getNodeTeam.Typename, and is useful for accessing the field via an interface.
+func (v *getNodeTeam) GetTypename() string { return v.Typename }
+
+// getNodeTeamMember includes the requested fields of the GraphQL type TeamMember.
+// The GraphQL type's documentation follows.
+//
+// An member of a team
+type getNodeTeamMember struct {
+	Typename         string `json:"__typename"`
+	TeamMemberValues `json:"-"`
+}
+
+// GetTypename returns getNodeTeamMember.Typename, and is useful for accessing the field via an interface.
+func (v *getNodeTeamMember) GetTypename() string { return v.Typename }
+
+// GetId returns getNodeTeamMember.Id, and is useful for accessing the field via an interface.
+func (v *getNodeTeamMember) GetId() string { return v.TeamMemberValues.Id }
+
+// GetUuid returns getNodeTeamMember.Uuid, and is useful for accessing the field via an interface.
+func (v *getNodeTeamMember) GetUuid() string { return v.TeamMemberValues.Uuid }
+
+// GetTeam returns getNodeTeamMember.Team, and is useful for accessing the field via an interface.
+func (v *getNodeTeamMember) GetTeam() TeamMemberValuesTeam { return v.TeamMemberValues.Team }
+
+// GetUser returns getNodeTeamMember.User, and is useful for accessing the field via an interface.
+func (v *getNodeTeamMember) GetUser() TeamMemberValuesUser { return v.TeamMemberValues.User }
+
+// GetRole returns getNodeTeamMember.Role, and is useful for accessing the field via an interface.
+func (v *getNodeTeamMember) GetRole() TeamMemberRole { return v.TeamMemberValues.Role }
+
+func (v *getNodeTeamMember) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*getNodeTeamMember
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.getNodeTeamMember = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	err = json.Unmarshal(
+		b, &v.TeamMemberValues)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+type __premarshalgetNodeTeamMember struct {
+	Typename string `json:"__typename"`
+
+	Id string `json:"id"`
+
+	Uuid string `json:"uuid"`
+
+	Team TeamMemberValuesTeam `json:"team"`
+
+	User TeamMemberValuesUser `json:"user"`
+
+	Role TeamMemberRole `json:"role"`
+}
+
+func (v *getNodeTeamMember) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *getNodeTeamMember) __premarshalJSON() (*__premarshalgetNodeTeamMember, error) {
+	var retval __premarshalgetNodeTeamMember
+
+	retval.Typename = v.Typename
+	retval.Id = v.TeamMemberValues.Id
+	retval.Uuid = v.TeamMemberValues.Uuid
+	retval.Team = v.TeamMemberValues.Team
+	retval.User = v.TeamMemberValues.User
+	retval.Role = v.TeamMemberValues.Role
+	return &retval, nil
+}
+
+// getNodeTeamPipeline includes the requested fields of the GraphQL type TeamPipeline.
+// The GraphQL type's documentation follows.
+//
+// An pipeline that's been assigned to a team
+type getNodeTeamPipeline struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getNodeTeamPipeline.Typename, and is useful for accessing the field via an interface.
+func (v *getNodeTeamPipeline) GetTypename() string { return v.Typename }
+
+// getNodeTeamSuite includes the requested fields of the GraphQL type TeamSuite.
+// The GraphQL type's documentation follows.
+//
+// A suite that's been assigned to a team
+type getNodeTeamSuite struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getNodeTeamSuite.Typename, and is useful for accessing the field via an interface.
+func (v *getNodeTeamSuite) GetTypename() string { return v.Typename }
+
+// getNodeUser includes the requested fields of the GraphQL type User.
+// The GraphQL type's documentation follows.
+//
+// A user
+type getNodeUser struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getNodeUser.Typename, and is useful for accessing the field via an interface.
+func (v *getNodeUser) GetTypename() string { return v.Typename }
+
+// getNodeViewer includes the requested fields of the GraphQL type Viewer.
+// The GraphQL type's documentation follows.
+//
+// Represents the current user session
+type getNodeViewer struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getNodeViewer.Typename, and is useful for accessing the field via an interface.
+func (v *getNodeViewer) GetTypename() string { return v.Typename }
+
 // getOrganizationOrganization includes the requested fields of the GraphQL type Organization.
 // The GraphQL type's documentation follows.
 //
@@ -1816,6 +3317,78 @@ type getPipelineResponse struct {
 
 // GetPipeline returns getPipelineResponse.Pipeline, and is useful for accessing the field via an interface.
 func (v *getPipelineResponse) GetPipeline() getPipelinePipeline { return v.Pipeline }
+
+// getResponse is returned by get on success.
+type getResponse struct {
+	// Fetches an object given its ID.
+	Node getNode `json:"-"`
+}
+
+// GetNode returns getResponse.Node, and is useful for accessing the field via an interface.
+func (v *getResponse) GetNode() getNode { return v.Node }
+
+func (v *getResponse) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*getResponse
+		Node json.RawMessage `json:"node"`
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.getResponse = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	{
+		dst := &v.Node
+		src := firstPass.Node
+		if len(src) != 0 && string(src) != "null" {
+			err = __unmarshalgetNode(
+				src, dst)
+			if err != nil {
+				return fmt.Errorf(
+					"unable to unmarshal getResponse.Node: %w", err)
+			}
+		}
+	}
+	return nil
+}
+
+type __premarshalgetResponse struct {
+	Node json.RawMessage `json:"node"`
+}
+
+func (v *getResponse) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *getResponse) __premarshalJSON() (*__premarshalgetResponse, error) {
+	var retval __premarshalgetResponse
+
+	{
+
+		dst := &retval.Node
+		src := v.Node
+		var err error
+		*dst, err = __marshalgetNode(
+			&src)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"unable to marshal getResponse.Node: %w", err)
+		}
+	}
+	return &retval, nil
+}
 
 // getTeamResponse is returned by getTeam on success.
 type getTeamResponse struct {
@@ -2656,6 +4229,119 @@ func (v *updatePipelineResponse) GetPipelineUpdate() updatePipelinePipelineUpdat
 	return v.PipelineUpdate
 }
 
+// updateTeamMemberResponse is returned by updateTeamMember on success.
+type updateTeamMemberResponse struct {
+	// Update a user's role in a team.
+	TeamMemberUpdate updateTeamMemberTeamMemberUpdateTeamMemberUpdatePayload `json:"teamMemberUpdate"`
+}
+
+// GetTeamMemberUpdate returns updateTeamMemberResponse.TeamMemberUpdate, and is useful for accessing the field via an interface.
+func (v *updateTeamMemberResponse) GetTeamMemberUpdate() updateTeamMemberTeamMemberUpdateTeamMemberUpdatePayload {
+	return v.TeamMemberUpdate
+}
+
+// updateTeamMemberTeamMemberUpdateTeamMemberUpdatePayload includes the requested fields of the GraphQL type TeamMemberUpdatePayload.
+// The GraphQL type's documentation follows.
+//
+// Autogenerated return type of TeamMemberUpdate.
+type updateTeamMemberTeamMemberUpdateTeamMemberUpdatePayload struct {
+	TeamMember updateTeamMemberTeamMemberUpdateTeamMemberUpdatePayloadTeamMember `json:"teamMember"`
+}
+
+// GetTeamMember returns updateTeamMemberTeamMemberUpdateTeamMemberUpdatePayload.TeamMember, and is useful for accessing the field via an interface.
+func (v *updateTeamMemberTeamMemberUpdateTeamMemberUpdatePayload) GetTeamMember() updateTeamMemberTeamMemberUpdateTeamMemberUpdatePayloadTeamMember {
+	return v.TeamMember
+}
+
+// updateTeamMemberTeamMemberUpdateTeamMemberUpdatePayloadTeamMember includes the requested fields of the GraphQL type TeamMember.
+// The GraphQL type's documentation follows.
+//
+// An member of a team
+type updateTeamMemberTeamMemberUpdateTeamMemberUpdatePayloadTeamMember struct {
+	TeamMemberValues `json:"-"`
+}
+
+// GetId returns updateTeamMemberTeamMemberUpdateTeamMemberUpdatePayloadTeamMember.Id, and is useful for accessing the field via an interface.
+func (v *updateTeamMemberTeamMemberUpdateTeamMemberUpdatePayloadTeamMember) GetId() string {
+	return v.TeamMemberValues.Id
+}
+
+// GetUuid returns updateTeamMemberTeamMemberUpdateTeamMemberUpdatePayloadTeamMember.Uuid, and is useful for accessing the field via an interface.
+func (v *updateTeamMemberTeamMemberUpdateTeamMemberUpdatePayloadTeamMember) GetUuid() string {
+	return v.TeamMemberValues.Uuid
+}
+
+// GetTeam returns updateTeamMemberTeamMemberUpdateTeamMemberUpdatePayloadTeamMember.Team, and is useful for accessing the field via an interface.
+func (v *updateTeamMemberTeamMemberUpdateTeamMemberUpdatePayloadTeamMember) GetTeam() TeamMemberValuesTeam {
+	return v.TeamMemberValues.Team
+}
+
+// GetUser returns updateTeamMemberTeamMemberUpdateTeamMemberUpdatePayloadTeamMember.User, and is useful for accessing the field via an interface.
+func (v *updateTeamMemberTeamMemberUpdateTeamMemberUpdatePayloadTeamMember) GetUser() TeamMemberValuesUser {
+	return v.TeamMemberValues.User
+}
+
+// GetRole returns updateTeamMemberTeamMemberUpdateTeamMemberUpdatePayloadTeamMember.Role, and is useful for accessing the field via an interface.
+func (v *updateTeamMemberTeamMemberUpdateTeamMemberUpdatePayloadTeamMember) GetRole() TeamMemberRole {
+	return v.TeamMemberValues.Role
+}
+
+func (v *updateTeamMemberTeamMemberUpdateTeamMemberUpdatePayloadTeamMember) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*updateTeamMemberTeamMemberUpdateTeamMemberUpdatePayloadTeamMember
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.updateTeamMemberTeamMemberUpdateTeamMemberUpdatePayloadTeamMember = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	err = json.Unmarshal(
+		b, &v.TeamMemberValues)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+type __premarshalupdateTeamMemberTeamMemberUpdateTeamMemberUpdatePayloadTeamMember struct {
+	Id string `json:"id"`
+
+	Uuid string `json:"uuid"`
+
+	Team TeamMemberValuesTeam `json:"team"`
+
+	User TeamMemberValuesUser `json:"user"`
+
+	Role TeamMemberRole `json:"role"`
+}
+
+func (v *updateTeamMemberTeamMemberUpdateTeamMemberUpdatePayloadTeamMember) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *updateTeamMemberTeamMemberUpdateTeamMemberUpdatePayloadTeamMember) __premarshalJSON() (*__premarshalupdateTeamMemberTeamMemberUpdateTeamMemberUpdatePayloadTeamMember, error) {
+	var retval __premarshalupdateTeamMemberTeamMemberUpdateTeamMemberUpdatePayloadTeamMember
+
+	retval.Id = v.TeamMemberValues.Id
+	retval.Uuid = v.TeamMemberValues.Uuid
+	retval.Team = v.TeamMemberValues.Team
+	retval.User = v.TeamMemberValues.User
+	retval.Role = v.TeamMemberValues.Role
+	return &retval, nil
+}
+
 // The query or mutation executed by archivePipeline.
 const archivePipeline_Operation = `
 mutation archivePipeline ($id: ID!) {
@@ -2888,6 +4574,59 @@ func createClusterQueue(
 	return &data, err
 }
 
+// The query or mutation executed by createTeamMember.
+const createTeamMember_Operation = `
+mutation createTeamMember ($teamID: ID!, $userID: ID!, $role: TeamMemberRole) {
+	teamMemberCreate(input: {teamID:$teamID,userID:$userID,role:$role}) {
+		teamMemberEdge {
+			node {
+				... TeamMemberValues
+			}
+		}
+	}
+}
+fragment TeamMemberValues on TeamMember {
+	id
+	uuid
+	team {
+		id
+	}
+	user {
+		id
+	}
+	role
+}
+`
+
+func createTeamMember(
+	client graphql.Client,
+	teamID string,
+	userID string,
+	role TeamMemberRole,
+) (*createTeamMemberResponse, error) {
+	req := &graphql.Request{
+		OpName: "createTeamMember",
+		Query:  createTeamMember_Operation,
+		Variables: &__createTeamMemberInput{
+			TeamID: teamID,
+			UserID: userID,
+			Role:   role,
+		},
+	}
+	var err error
+
+	var data createTeamMemberResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		nil,
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
 // The query or mutation executed by deleteCluster.
 const deleteCluster_Operation = `
 mutation deleteCluster ($organizationId: ID!, $id: ID!) {
@@ -2949,6 +4688,88 @@ func deleteClusterQueue(
 	var err error
 
 	var data deleteClusterQueueResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		nil,
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
+// The query or mutation executed by deleteTeamMember.
+const deleteTeamMember_Operation = `
+mutation deleteTeamMember ($id: ID!) {
+	teamMemberDelete(input: {id:$id}) {
+		clientMutationId
+	}
+}
+`
+
+func deleteTeamMember(
+	client graphql.Client,
+	id string,
+) (*deleteTeamMemberResponse, error) {
+	req := &graphql.Request{
+		OpName: "deleteTeamMember",
+		Query:  deleteTeamMember_Operation,
+		Variables: &__deleteTeamMemberInput{
+			Id: id,
+		},
+	}
+	var err error
+
+	var data deleteTeamMemberResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		nil,
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
+// The query or mutation executed by get.
+const get_Operation = `
+query get ($id: ID!) {
+	node(id: $id) {
+		__typename
+		... on TeamMember {
+			... TeamMemberValues
+		}
+	}
+}
+fragment TeamMemberValues on TeamMember {
+	id
+	uuid
+	team {
+		id
+	}
+	user {
+		id
+	}
+	role
+}
+`
+
+func get(
+	client graphql.Client,
+	id string,
+) (*getResponse, error) {
+	req := &graphql.Request{
+		OpName: "get",
+		Query:  get_Operation,
+		Variables: &__getInput{
+			Id: id,
+		},
+	}
+	var err error
+
+	var data getResponse
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(
@@ -3660,6 +5481,55 @@ func updatePipeline(
 	var err error
 
 	var data updatePipelineResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		nil,
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
+// The query or mutation executed by updateTeamMember.
+const updateTeamMember_Operation = `
+mutation updateTeamMember ($id: ID!, $role: TeamMemberRole!) {
+	teamMemberUpdate(input: {id:$id,role:$role}) {
+		teamMember {
+			... TeamMemberValues
+		}
+	}
+}
+fragment TeamMemberValues on TeamMember {
+	id
+	uuid
+	team {
+		id
+	}
+	user {
+		id
+	}
+	role
+}
+`
+
+func updateTeamMember(
+	client graphql.Client,
+	id string,
+	role TeamMemberRole,
+) (*updateTeamMemberResponse, error) {
+	req := &graphql.Request{
+		OpName: "updateTeamMember",
+		Query:  updateTeamMember_Operation,
+		Variables: &__updateTeamMemberInput{
+			Id:   id,
+			Role: role,
+		},
+	}
+	var err error
+
+	var data updateTeamMemberResponse
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(

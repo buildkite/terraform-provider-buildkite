@@ -1,0 +1,71 @@
+fragment TeamMemberValues on TeamMember {
+    id
+    uuid
+    team {
+        id
+    }
+    user {
+        id
+    }
+    role 
+}
+
+
+#query getNode(
+#    $id: ID!
+#) {
+#    node(id: $id){
+#        ... on TeamMember {
+#            ...TeamMemberValues
+#        }
+#    }
+#}
+
+mutation createTeamMember(
+    $teamID: ID!, 
+    $userID: ID!,
+    # @genqlient(omitempty: true)
+    $role: TeamMemberRole,
+) {
+    teamMemberCreate(
+        input: {
+            teamID: $teamID
+            userID: $userID,
+            role: $role,
+        }
+    ) {
+        teamMemberEdge {
+            node {
+                ...TeamMemberValues
+            }
+        }
+    }
+}
+
+mutation updateTeamMember(
+    $id: ID!,
+    $role: TeamMemberRole!
+) {
+    teamMemberUpdate(
+        input: {
+            id: $id
+            role: $role
+        }
+    ) {
+        teamMember {
+            ...TeamMemberValues
+        }
+    }
+}
+
+mutation deleteTeamMember(
+    $id: ID!
+) {
+    teamMemberDelete(
+        input: {
+            id: $id
+        }
+    ) {
+        clientMutationId
+    }
+}
