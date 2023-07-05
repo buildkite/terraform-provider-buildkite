@@ -7,7 +7,7 @@ Buildkite documentation: https://buildkite.com/docs/clusters/overview
 ## Example Usage
 
 ```hcl
-provider "buildkitE" {}
+provider "buildkite" {}
 
 resource "buildkite_cluster" "linux" {
     name = "linux_builds"
