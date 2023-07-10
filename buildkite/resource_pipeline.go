@@ -79,8 +79,8 @@ func resourcePipeline() *schema.Resource {
 
 		Schema: map[string]*schema.Schema{
 			"allow_rebuilds": {
-				Computed: true,
 				Optional: true,
+				Default: true,
 				Type:     schema.TypeBool,
 			},
 			"archive_on_delete": {
