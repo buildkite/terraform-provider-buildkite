@@ -1,67 +1,68 @@
+fragment ClusterAgentTokenValues on ClusterToken {
+    id
+    description
+    uuid
+    allowedIpAddresses
+}
+
 query getClusterAgentTokens($orgSlug: ID!, $id: ID!) {
-	organization(slug: $orgSlug) {
-		cluster(id: $id) {
-			agentTokens(first: 50) {
-				edges {
-					node {
-						id
-						description
-						uuid 
-					}
-				}
-			}
-		}
-	}
+    organization(slug: $orgSlug) {
+        cluster(id: $id) {
+            agentTokens(first: 50) {
+                edges {
+                    node {
+                        ... ClusterAgentTokenValues
+                    }
+                }
+            }
+        }
+    }
 }
 
 mutation createClusterAgentToken(
     $organizationId: ID!
-	$clusterId: ID! 
-    $description: String!	
+    $clusterId: ID!
+    $description: String!
 ) {
-		clusterAgentTokenCreate(input:{
-			organizationId: $organizationId
-			clusterId: $clusterId
-			description: $description
-		}) {   
-			clusterAgentToken { 
-				id
-				description 
-				uuid
-			}
-			tokenValue		
-		}
-	
+        clusterAgentTokenCreate(input:{
+            organizationId: $organizationId
+            clusterId: $clusterId
+            description: $description
+        }) {
+            clusterAgentToken {
+                ... ClusterAgentTokenValues
+            }
+            tokenValue
+        }
+
 }
 
 
 mutation revokeClusterAgentToken(
-	$organizationId: ID!
-	$id: ID!
+    $organizationId: ID!
+    $id: ID!
 ) {
     clusterAgentTokenRevoke(input: {
-		organizationId: $organizationId
-		id: $id
-	}) {  
-        deletedClusterAgentTokenId 
+        organizationId: $organizationId
+        id: $id
+    }) {
+        deletedClusterAgentTokenId
     }
 }
 
 
 mutation updateClusterAgentToken(
     $organizationId: ID!
-	$id: ID! 
-    $description: String!	
+    $id: ID!
+    $description: String!
 ) {
     clusterAgentTokenUpdate(input: {
-		organizationId: $organizationId
-		id: $id
-		description: $description
-	}) { 
-		clusterAgentToken { 
-			id
-			description 
-			uuid
-		}				  
+        organizationId: $organizationId
+        id: $id
+        description: $description
+    }) {
+        clusterAgentToken {
+            ... ClusterAgentTokenValues
+        }
     }
 }
