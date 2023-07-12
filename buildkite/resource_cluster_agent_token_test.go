@@ -32,11 +32,11 @@ func TestAccClusterAgentToken_add_remove(t *testing.T) {
 				Config: testAccClusterAgentTokenBasic("foo"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Confirm the token exists in the buildkite API
-					testAccCheckClusterAgentTokenExists("buildkite_agent_token.foobar", &ct),
+					testAccCheckClusterAgentTokenExists("buildkite_cluster_agent_token.foobar", &ct),
 					// Confirm the token has the correct values in Buildkite's system
 					testAccCheckClusterAgentTokenRemoteValues(&ct, "Acceptance Test foo"),
 					// Confirm the token has the correct values in terraform state
-					resource.TestCheckResourceAttr("buildkite_agent_token.foobar", "description", "Acceptance Test foo"),
+					resource.TestCheckResourceAttr("buildkite_cluster_agent_token.foobar", "description", "Acceptance Test foo"),
 				),
 			},
 			{
@@ -64,22 +64,22 @@ func TestAccClusterAgentToken_update(t *testing.T) {
 				Config: testAccClusterAgentTokenBasic("foo"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Confirm the token exists in the buildkite API
-					testAccCheckClusterAgentTokenExists("buildkite_agent_token.foobar", &ct),
+					testAccCheckClusterAgentTokenExists("buildkite_cluster_agent_token.foobar", &ct),
 					// Confirm the token has the correct values in Buildkite's system
 					testAccCheckClusterAgentTokenRemoteValues(&ct, "Acceptance Test foobar"),
 					// Confirm the token has the correct values in terraform state
-					resource.TestCheckResourceAttr("buildkite_agent_token.foobar", "description", "Acceptance Test foo"),
+					resource.TestCheckResourceAttr("buildkite_cluster_agent_token.foobar", "description", "Acceptance Test foo"),
 				),
 			},
 			{
 				Config: testAccClusterAgentTokenBasic("bar"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Confirm the token exists in the buildkite API
-					testAccCheckClusterAgentTokenExists("buildkite_agent_token.foobar", &ct),
+					testAccCheckClusterAgentTokenExists("buildkite_cluster_agent_token.foobar", &ct),
 					// Confirm the token has the correct values in Buildkite's system
 					testAccCheckClusterAgentTokenRemoteValues(&ct, "Acceptance Test foobar"),
 					// Confirm the token has the correct values in terraform state
-					resource.TestCheckResourceAttr("buildkite_agent_token.foobar", "description", "Acceptance Test bar"),
+					resource.TestCheckResourceAttr("buildkite_cluster_agent_token.foobar", "description", "Acceptance Test bar"),
 				),
 			},
 		},
