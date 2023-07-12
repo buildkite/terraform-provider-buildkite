@@ -1,8 +1,7 @@
 fragment ClusterAgentTokenValues on ClusterToken {
-    id
     description
+    id
     uuid
-    allowedIpAddresses
 }
 
 query getClusterAgentTokens($orgSlug: ID!, $id: ID!) {

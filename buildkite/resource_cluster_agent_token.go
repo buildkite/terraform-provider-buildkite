@@ -43,7 +43,7 @@ func (ct *ClusterAgentToken) Configure(ctx context.Context, req resource.Configu
 
 func (ct *ClusterAgentToken) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		MarkdownDescription: "A Cluster Agent Token is a token used to connect an agent in cluster to Buildkite.",
+		MarkdownDescription: "A Cluster Agent Token is a token used to connect an agent to a cluster in Buildkite.",
 		Attributes: map[string]resource_schema.Attribute{
 			"id": resource_schema.StringAttribute{
 				Computed: true,
