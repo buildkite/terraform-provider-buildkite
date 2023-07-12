@@ -153,6 +153,7 @@ func (ct *ClusterAgentToken) Update(ctx context.Context, req resource.UpdateRequ
 	if resp.Diagnostics.HasError() {
 		return
 	}
+    log.Printf("Updating cluster token %s", state.Id.ValueString())
 	_, err := updateClusterAgentToken(
 		ct.client.genqlient,
 		ct.client.organizationId,
