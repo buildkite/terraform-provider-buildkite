@@ -44,7 +44,7 @@ func TestAccClusterAgentToken_add_remove(t *testing.T) {
 				PlanOnly:     true,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Confirm the token has the correct values in terraform state
-					resource.TestCheckResourceAttrSet("buildkite_cluster_agent_token.foobar", "description"),
+					resource.TestCheckResourceAttr("buildkite_cluster_agent_token.foobar", "description", "Acceptance Test foo"),
 				),
 			},
 		},
@@ -66,7 +66,7 @@ func TestAccClusterAgentToken_update(t *testing.T) {
 					// Confirm the token exists in the buildkite API
 					testAccCheckClusterAgentTokenExists("buildkite_cluster_agent_token.foobar", &ct),
 					// Confirm the token has the correct values in Buildkite's system
-					testAccCheckClusterAgentTokenRemoteValues(&ct, "Acceptance Test foobar"),
+					testAccCheckClusterAgentTokenRemoteValues(&ct, "Acceptance Test foo"),
 					// Confirm the token has the correct values in terraform state
 					resource.TestCheckResourceAttr("buildkite_cluster_agent_token.foobar", "description", "Acceptance Test foo"),
 				),
