@@ -30,7 +30,7 @@ testacc-nonadmin:
 
 # Generate the Buildkite GraphQL schema file
 schema:
-	go run github.com/suessflorian/gqlfetch/gqlfetch -endpoint https://graphql.buildkite.com/v1 -header "Authorization=Bearer ${BUILDKITE_GRAPHQL_TOKEN}" > schema.graphql
+	go run github.com/suessflorian/gqlfetch/gqlfetch -endpoint https://graphql.buildkite.com/v1 -header "Authorization=Bearer $${BUILDKITE_GRAPHQL_TOKEN}" > schema.graphql
 
 # Generate the GraphQL code
 generate: schema
