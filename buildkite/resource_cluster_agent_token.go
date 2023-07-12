@@ -108,8 +108,8 @@ func (ct *ClusterAgentToken) Create(ctx context.Context, req resource.CreateRequ
 	state.Uuid = types.StringValue(r.ClusterAgentTokenCreate.ClusterAgentToken.Uuid)
 	state.Description = types.StringValue(r.ClusterAgentTokenCreate.ClusterAgentToken.Description)
 	state.Token = types.StringValue(r.ClusterAgentTokenCreate.TokenValue)
-	state.ClusterId = plan.ClusterId
-	state.ClusterUuid = plan.ClusterUuid
+	state.ClusterId = types.StringValue(r.ClusterAgentTokenCreate.ClusterAgentToken.Cluster.Id)
+	state.ClusterUuid = types.StringValue(r.ClusterAgentTokenCreate.ClusterAgentToken.Cluster.Uuid)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }

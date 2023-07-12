@@ -1,4 +1,8 @@
 fragment ClusterAgentTokenValues on ClusterToken {
+    cluster {
+        id
+        uuid
+    }
     description
     id
     uuid

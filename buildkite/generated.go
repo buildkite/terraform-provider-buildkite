@@ -33,12 +33,16 @@ const (
 //
 // A token used to connect an agent in cluster to Buildkite
 type ClusterAgentTokenValues struct {
+	Cluster ClusterAgentTokenValuesCluster `json:"cluster"`
 	// A description about what this cluster agent token is used for
 	Description string `json:"description"`
 	Id          string `json:"id"`
 	// The public UUID for this cluster token
 	Uuid string `json:"uuid"`
 }
+
+// GetCluster returns ClusterAgentTokenValues.Cluster, and is useful for accessing the field via an interface.
+func (v *ClusterAgentTokenValues) GetCluster() ClusterAgentTokenValuesCluster { return v.Cluster }
 
 // GetDescription returns ClusterAgentTokenValues.Description, and is useful for accessing the field via an interface.
 func (v *ClusterAgentTokenValues) GetDescription() string { return v.Description }
@@ -48,6 +52,19 @@ func (v *ClusterAgentTokenValues) GetId() string { return v.Id }
 
 // GetUuid returns ClusterAgentTokenValues.Uuid, and is useful for accessing the field via an interface.
 func (v *ClusterAgentTokenValues) GetUuid() string { return v.Uuid }
+
+// ClusterAgentTokenValuesCluster includes the requested fields of the GraphQL type Cluster.
+type ClusterAgentTokenValuesCluster struct {
+	Id string `json:"id"`
+	// The public UUID for this cluster
+	Uuid string `json:"uuid"`
+}
+
+// GetId returns ClusterAgentTokenValuesCluster.Id, and is useful for accessing the field via an interface.
+func (v *ClusterAgentTokenValuesCluster) GetId() string { return v.Id }
+
+// GetUuid returns ClusterAgentTokenValuesCluster.Uuid, and is useful for accessing the field via an interface.
+func (v *ClusterAgentTokenValuesCluster) GetUuid() string { return v.Uuid }
 
 // ClusterFields includes the GraphQL fields of Cluster requested by the fragment ClusterFields.
 type ClusterFields struct {
@@ -758,6 +775,11 @@ type createClusterAgentTokenClusterAgentTokenCreateClusterAgentTokenCreatePayloa
 	ClusterAgentTokenValues `json:"-"`
 }
 
+// GetCluster returns createClusterAgentTokenClusterAgentTokenCreateClusterAgentTokenCreatePayloadClusterAgentTokenClusterToken.Cluster, and is useful for accessing the field via an interface.
+func (v *createClusterAgentTokenClusterAgentTokenCreateClusterAgentTokenCreatePayloadClusterAgentTokenClusterToken) GetCluster() ClusterAgentTokenValuesCluster {
+	return v.ClusterAgentTokenValues.Cluster
+}
+
 // GetDescription returns createClusterAgentTokenClusterAgentTokenCreateClusterAgentTokenCreatePayloadClusterAgentTokenClusterToken.Description, and is useful for accessing the field via an interface.
 func (v *createClusterAgentTokenClusterAgentTokenCreateClusterAgentTokenCreatePayloadClusterAgentTokenClusterToken) GetDescription() string {
 	return v.ClusterAgentTokenValues.Description
@@ -799,6 +821,8 @@ func (v *createClusterAgentTokenClusterAgentTokenCreateClusterAgentTokenCreatePa
 }
 
 type __premarshalcreateClusterAgentTokenClusterAgentTokenCreateClusterAgentTokenCreatePayloadClusterAgentTokenClusterToken struct {
+	Cluster ClusterAgentTokenValuesCluster `json:"cluster"`
+
 	Description string `json:"description"`
 
 	Id string `json:"id"`
@@ -817,6 +841,7 @@ func (v *createClusterAgentTokenClusterAgentTokenCreateClusterAgentTokenCreatePa
 func (v *createClusterAgentTokenClusterAgentTokenCreateClusterAgentTokenCreatePayloadClusterAgentTokenClusterToken) __premarshalJSON() (*__premarshalcreateClusterAgentTokenClusterAgentTokenCreateClusterAgentTokenCreatePayloadClusterAgentTokenClusterToken, error) {
 	var retval __premarshalcreateClusterAgentTokenClusterAgentTokenCreateClusterAgentTokenCreatePayloadClusterAgentTokenClusterToken
 
+	retval.Cluster = v.ClusterAgentTokenValues.Cluster
 	retval.Description = v.ClusterAgentTokenValues.Description
 	retval.Id = v.ClusterAgentTokenValues.Id
 	retval.Uuid = v.ClusterAgentTokenValues.Uuid
@@ -1202,6 +1227,11 @@ type getClusterAgentTokensOrganizationClusterAgentTokensClusterAgentTokenConnect
 	ClusterAgentTokenValues `json:"-"`
 }
 
+// GetCluster returns getClusterAgentTokensOrganizationClusterAgentTokensClusterAgentTokenConnectionEdgesClusterAgentTokenEdgeNodeClusterToken.Cluster, and is useful for accessing the field via an interface.
+func (v *getClusterAgentTokensOrganizationClusterAgentTokensClusterAgentTokenConnectionEdgesClusterAgentTokenEdgeNodeClusterToken) GetCluster() ClusterAgentTokenValuesCluster {
+	return v.ClusterAgentTokenValues.Cluster
+}
+
 // GetDescription returns getClusterAgentTokensOrganizationClusterAgentTokensClusterAgentTokenConnectionEdgesClusterAgentTokenEdgeNodeClusterToken.Description, and is useful for accessing the field via an interface.
 func (v *getClusterAgentTokensOrganizationClusterAgentTokensClusterAgentTokenConnectionEdgesClusterAgentTokenEdgeNodeClusterToken) GetDescription() string {
 	return v.ClusterAgentTokenValues.Description
@@ -1243,6 +1273,8 @@ func (v *getClusterAgentTokensOrganizationClusterAgentTokensClusterAgentTokenCon
 }
 
 type __premarshalgetClusterAgentTokensOrganizationClusterAgentTokensClusterAgentTokenConnectionEdgesClusterAgentTokenEdgeNodeClusterToken struct {
+	Cluster ClusterAgentTokenValuesCluster `json:"cluster"`
+
 	Description string `json:"description"`
 
 	Id string `json:"id"`
@@ -1261,6 +1293,7 @@ func (v *getClusterAgentTokensOrganizationClusterAgentTokensClusterAgentTokenCon
 func (v *getClusterAgentTokensOrganizationClusterAgentTokensClusterAgentTokenConnectionEdgesClusterAgentTokenEdgeNodeClusterToken) __premarshalJSON() (*__premarshalgetClusterAgentTokensOrganizationClusterAgentTokensClusterAgentTokenConnectionEdgesClusterAgentTokenEdgeNodeClusterToken, error) {
 	var retval __premarshalgetClusterAgentTokensOrganizationClusterAgentTokensClusterAgentTokenConnectionEdgesClusterAgentTokenEdgeNodeClusterToken
 
+	retval.Cluster = v.ClusterAgentTokenValues.Cluster
 	retval.Description = v.ClusterAgentTokenValues.Description
 	retval.Id = v.ClusterAgentTokenValues.Id
 	retval.Uuid = v.ClusterAgentTokenValues.Uuid
@@ -1978,6 +2011,11 @@ type updateClusterAgentTokenClusterAgentTokenUpdateClusterAgentTokenUpdatePayloa
 	ClusterAgentTokenValues `json:"-"`
 }
 
+// GetCluster returns updateClusterAgentTokenClusterAgentTokenUpdateClusterAgentTokenUpdatePayloadClusterAgentTokenClusterToken.Cluster, and is useful for accessing the field via an interface.
+func (v *updateClusterAgentTokenClusterAgentTokenUpdateClusterAgentTokenUpdatePayloadClusterAgentTokenClusterToken) GetCluster() ClusterAgentTokenValuesCluster {
+	return v.ClusterAgentTokenValues.Cluster
+}
+
 // GetDescription returns updateClusterAgentTokenClusterAgentTokenUpdateClusterAgentTokenUpdatePayloadClusterAgentTokenClusterToken.Description, and is useful for accessing the field via an interface.
 func (v *updateClusterAgentTokenClusterAgentTokenUpdateClusterAgentTokenUpdatePayloadClusterAgentTokenClusterToken) GetDescription() string {
 	return v.ClusterAgentTokenValues.Description
@@ -2019,6 +2057,8 @@ func (v *updateClusterAgentTokenClusterAgentTokenUpdateClusterAgentTokenUpdatePa
 }
 
 type __premarshalupdateClusterAgentTokenClusterAgentTokenUpdateClusterAgentTokenUpdatePayloadClusterAgentTokenClusterToken struct {
+	Cluster ClusterAgentTokenValuesCluster `json:"cluster"`
+
 	Description string `json:"description"`
 
 	Id string `json:"id"`
@@ -2037,6 +2077,7 @@ func (v *updateClusterAgentTokenClusterAgentTokenUpdateClusterAgentTokenUpdatePa
 func (v *updateClusterAgentTokenClusterAgentTokenUpdateClusterAgentTokenUpdatePayloadClusterAgentTokenClusterToken) __premarshalJSON() (*__premarshalupdateClusterAgentTokenClusterAgentTokenUpdateClusterAgentTokenUpdatePayloadClusterAgentTokenClusterToken, error) {
 	var retval __premarshalupdateClusterAgentTokenClusterAgentTokenUpdateClusterAgentTokenUpdatePayloadClusterAgentTokenClusterToken
 
+	retval.Cluster = v.ClusterAgentTokenValues.Cluster
 	retval.Description = v.ClusterAgentTokenValues.Description
 	retval.Id = v.ClusterAgentTokenValues.Id
 	retval.Uuid = v.ClusterAgentTokenValues.Uuid
@@ -2756,6 +2797,10 @@ mutation createClusterAgentToken ($organizationId: ID!, $clusterId: ID!, $descri
 	}
 }
 fragment ClusterAgentTokenValues on ClusterToken {
+	cluster {
+		id
+		uuid
+	}
 	description
 	id
 	uuid
@@ -3013,6 +3058,10 @@ query getClusterAgentTokens ($orgSlug: ID!, $id: ID!) {
 	}
 }
 fragment ClusterAgentTokenValues on ClusterToken {
+	cluster {
+		id
+		uuid
+	}
 	description
 	id
 	uuid
@@ -3453,6 +3502,10 @@ mutation updateClusterAgentToken ($organizationId: ID!, $id: ID!, $description: 
 	}
 }
 fragment ClusterAgentTokenValues on ClusterToken {
+	cluster {
+		id
+		uuid
+	}
 	description
 	id
 	uuid
