@@ -32,7 +32,7 @@ type AgentTokenResource struct {
 	client *Client
 }
 
-func NewAgentTokenResource() resource.Resource {
+func newAgentTokenResource() resource.Resource {
 	return &AgentTokenResource{}
 }
 
