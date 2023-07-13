@@ -52,11 +52,8 @@ func (ct *ClusterAgentToken) Schema(_ context.Context, _ resource.SchemaRequest,
 				Computed: true,
 			},
 			"description": resource_schema.StringAttribute{
-				Optional:            true,
+				Required:            true,
 				MarkdownDescription: "A description about what this cluster agent token is used for",
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.RequiresReplace(),
-				},
 			},
 			"token": resource_schema.StringAttribute{
 				Computed:  true,
@@ -153,7 +150,7 @@ func (ct *ClusterAgentToken) Update(ctx context.Context, req resource.UpdateRequ
 	if resp.Diagnostics.HasError() {
 		return
 	}
-    log.Printf("Updating cluster token %s", state.Id.ValueString())
+	log.Printf("Updating cluster token %s", state.Id.ValueString())
 	_, err := updateClusterAgentToken(
 		ct.client.genqlient,
 		ct.client.organizationId,
