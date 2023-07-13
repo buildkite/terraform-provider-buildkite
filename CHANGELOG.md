@@ -2,19 +2,33 @@
 
 All notable changes to this project will be documented in this file.
 
-## Unreleased
+## [v0.20.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v0.19.2...v0.20.0)
+
+### Added
+
 * Support option to archive on delete [[PR #296](https://github.com/buildkite/terraform-provider-buildkite/pull/296)] @mcncl
 * SUP-1085: Cluster Queue resource implementation [[PR #297](https://github.com/buildkite/terraform-provider-buildkite/pull/297)] @james2791
-* SUP-270 Fix branch_configuration updating to empty string [[PR #298](https://github.com/buildkite/terraform-provider-buildkite/pull/298)] @jradtilbrook
 * SUP-1084 Add Cluster resource [[PR #301](https://github.com/buildkite/terraform-provider-buildkite/pull/301)] @mcncl
 * Add cluster datasource [[PR #303](https://github.com/buildkite/terraform-provider-buildkite/pull/303)] @jradtilbrook
 * SUP-1086 Add cluster agent token resource [[PR #309](https://github.com/buildkite/terraform-provider-buildkite/pull/309)] @lizrabuya
 
+### Fixed
+
+* SUP-270 Fix branch_configuration updating to empty string [[PR #298](https://github.com/buildkite/terraform-provider-buildkite/pull/298)] @jradtilbrook
+
 ## [v0.19.2](https://github.com/buildkite/terraform-provider-buildkite/compare/v0.19.1...v0.19.2)
+
+### Added
+
 * Consistent naming for environment variables [[PR #290](https://github.com/buildkite/terraform-provider-buildkite/pull/290)] @mcncl
+
+### Fixed
+
 * Support TF version < 0.15.4 [[PR #294](https://github.com/buildkite/terraform-provider-buildkite/pull/294)] @mcncl
 
 ## [v0.19.1](https://github.com/buildkite/terraform-provider-buildkite/compare/v0.19.0...v0.19.1)
+
+### Added
 
 * SUP-202 Add graphql example queries for finding import IDs [[PR #280](https://github.com/buildkite/terraform-provider-buildkite/pull/280)] @james2791 @jradtilbrook
 * SUP-1072 Create new provider using framework plugin [[PR #286](https://github.com/buildkite/terraform-provider-buildkite/pull/286)] @jradtilbrook
@@ -32,7 +46,7 @@ to read the agent token value after creation, making importing Agent tokens impo
 unexpected diff in your `terraform plan`s. Upon state refresh, the token values will be emptied out which could trigger
 other dependent resources to change. It is highly recommended to upgrade to `v0.19.0` prior to avoid this happening.
 
-### Fixes
+### Fixed
 
 * Pipelines resource Computed/Default nil values reversion [[PR #277](https://github.com/buildkite/terraform-provider-buildkite/pull/277)] @james2791
 * Allow pipeline to be removed from a cluster [[PR #279](https://github.com/buildkite/terraform-provider-buildkite/pull/279)] @jradtilbrook
@@ -53,7 +67,8 @@ other dependent resources to change. It is highly recommended to upgrade to `v0.
 * Remove Computed values from Pipeline where not required [[PR #275](https://github.com/buildkite/terraform-provider-buildkite/pull/275)] @mcncl 
 * SUP-995: Changelog updates, v0.18.0 release prep [[PR #276](https://github.com/buildkite/terraform-provider-buildkite/pull/276)] @james2791
 
-### Fixes
+### Fixed
+
 * Fixed issues when bumping genqlient from 0.4.0 to 0.6.0 [[PR #278](https://github.com/buildkite/terraform-provider-buildkite/pull/278)] @lizrabuya
 
 ## [v0.17.1](https://github.com/buildkite/terraform-provider-buildkite/compare/v0.17.0...v0.17.1)
@@ -97,7 +112,7 @@ other dependent resources to change. It is highly recommended to upgrade to `v0.
 * SUP-838 Ensure CI passes/fails correctly [[PR #248](https://github.com/buildkite/terraform-provider-buildkite/pull/248)] @jradtilbrook
 * SUP-866 Add deletion protection for a pipeline [[PR #250](https://github.com/buildkite/terraform-provider-buildkite/pull/250)] @mcncl
 
-### Fixes
+### Fixed
 
 * SUP-770 Fix panic in `GetOrganizationID` [[PR #249](https://github.com/buildkite/terraform-provider-buildkite/pull/249)] @jradtilbrook
 
