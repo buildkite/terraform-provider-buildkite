@@ -12,6 +12,7 @@ import (
 
 type organizationDatasourceModel struct {
 	AllowedApiIpAddresses types.List   `tfsdk:"allowed_api_ip_addresses"`
+	ID                    types.String `tfsdk:"id"`
 	UUID                  types.String `tfsdk:"uuid"`
 }
 
@@ -52,6 +53,7 @@ func (o *organizationDatasource) Read(ctx context.Context, req datasource.ReadRe
 		return
 	}
 
+	state.ID = types.StringValue(response.Organization.Id)
 	state.UUID = types.StringValue(response.Organization.Uuid)
 	ips, diag := types.ListValueFrom(ctx, types.StringType, strings.Split(response.Organization.AllowedApiIpAddresses, " "))
 	state.AllowedApiIpAddresses = ips
@@ -66,8 +68,11 @@ func (o *organizationDatasource) Read(ctx context.Context, req datasource.ReadRe
 
 func (*organizationDatasource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		MarkdownDescription: "Look up a cluster by name.",
+		MarkdownDescription: "Look up organization settings.",
 		Attributes: map[string]schema.Attribute{
+			"id": schema.StringAttribute{
+				Computed: true,
+			},
 			"uuid": schema.StringAttribute{
 				Computed: true,
 			},
