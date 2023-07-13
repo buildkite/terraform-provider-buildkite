@@ -7,31 +7,69 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+
+	"github.com/hashicorp/terraform-plugin-framework/resource"
+	resource_schema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func resourceOrganizationSettings() *schema.Resource {
-	return &schema.Resource{
-		CreateContext: CreateUpdateDeleteOrganizationSettings,
-		ReadContext:   ReadOrganizationSettings,
-		UpdateContext: CreateUpdateDeleteOrganizationSettings,
-		DeleteContext: DeleteOrganizationSettings,
-		Importer: &schema.ResourceImporter{
-			State: schema.ImportStatePassthrough,
-		},
-		Schema: map[string]*schema.Schema{
-			"uuid": {
-				Type:     schema.TypeString,
+type OrganizationResourceModel struct {
+	AllowedApiIpAddresses types.List   `tfsdk:"allowed_api_ip_addresses"`
+	UUID                  types.String `tfsdk:"uuid"`
+}
+
+type OrganizationResource struct {
+	client *Client
+}
+
+func NewOrganizationResource() resource.Resource {
+	return &OrganizationResource{}
+}
+
+func (OrganizationResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
+	resp.TypeName = req.ProviderTypeName + "_organization"
+}
+
+func (o *OrganizationResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
+	if req.ProviderData == nil {
+		return
+	}
+
+	o.client = req.ProviderData.(*Client)
+}
+
+func (*OrganizationResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
+	resp.Schema = resource_schema.Schema{
+		Attributes: map[string]resource_schema.Attribute{
+			"uuid": resource_schema.StringAttribute{
 				Computed: true,
-			},
-			"allowed_api_ip_addresses": {
-				Optional: true,
-				Type:     schema.TypeList,
-				Elem: &schema.Schema{
-					Type: schema.TypeString,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
 				},
+			},
+			"allowed_api_ip_addresses": resource_schema.ListAttribute{
+				Optional: true,
+				ElementType: types.StringType,
 			},
 		},
 	}
+}
+
+func (o *OrganizationResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+}
+
+func (o *OrganizationResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+}
+
+func (o *OrganizationResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+}
+
+func (o *OrganizationResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+}
+
+func (o *OrganizationResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 }
 
 // CreateUpdateDeleteOrganizationSettings is used for the creation, updating and deleting of a Buildkite organization's settings
