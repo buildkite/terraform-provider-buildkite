@@ -151,7 +151,7 @@ func (ct *ClusterAgentToken) Update(ctx context.Context, req resource.UpdateRequ
 		return
 	}
 	log.Printf("Updating cluster token %s", state.Id.ValueString())
-	_, err := updateClusterAgentToken(
+	response, err := updateClusterAgentToken(
 		ct.client.genqlient,
 		ct.client.organizationId,
 		state.Id.ValueString(),
@@ -165,8 +165,9 @@ func (ct *ClusterAgentToken) Update(ctx context.Context, req resource.UpdateRequ
 		)
 		return
 	}
+	state.Description = types.StringValue(response.ClusterAgentTokenUpdate.ClusterAgentToken.Description)
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 
 }
 
