@@ -28,6 +28,44 @@ const (
 	BuildRetentionPeriodsYears2 BuildRetentionPeriods = "YEARS_2"
 )
 
+// ClusterAgentTokenValues includes the GraphQL fields of ClusterToken requested by the fragment ClusterAgentTokenValues.
+// The GraphQL type's documentation follows.
+//
+// A token used to connect an agent in cluster to Buildkite
+type ClusterAgentTokenValues struct {
+	Cluster ClusterAgentTokenValuesCluster `json:"cluster"`
+	// A description about what this cluster agent token is used for
+	Description string `json:"description"`
+	Id          string `json:"id"`
+	// The public UUID for this cluster token
+	Uuid string `json:"uuid"`
+}
+
+// GetCluster returns ClusterAgentTokenValues.Cluster, and is useful for accessing the field via an interface.
+func (v *ClusterAgentTokenValues) GetCluster() ClusterAgentTokenValuesCluster { return v.Cluster }
+
+// GetDescription returns ClusterAgentTokenValues.Description, and is useful for accessing the field via an interface.
+func (v *ClusterAgentTokenValues) GetDescription() string { return v.Description }
+
+// GetId returns ClusterAgentTokenValues.Id, and is useful for accessing the field via an interface.
+func (v *ClusterAgentTokenValues) GetId() string { return v.Id }
+
+// GetUuid returns ClusterAgentTokenValues.Uuid, and is useful for accessing the field via an interface.
+func (v *ClusterAgentTokenValues) GetUuid() string { return v.Uuid }
+
+// ClusterAgentTokenValuesCluster includes the requested fields of the GraphQL type Cluster.
+type ClusterAgentTokenValuesCluster struct {
+	Id string `json:"id"`
+	// The public UUID for this cluster
+	Uuid string `json:"uuid"`
+}
+
+// GetId returns ClusterAgentTokenValuesCluster.Id, and is useful for accessing the field via an interface.
+func (v *ClusterAgentTokenValuesCluster) GetId() string { return v.Id }
+
+// GetUuid returns ClusterAgentTokenValuesCluster.Uuid, and is useful for accessing the field via an interface.
+func (v *ClusterAgentTokenValuesCluster) GetUuid() string { return v.Uuid }
+
 // ClusterFields includes the GraphQL fields of Cluster requested by the fragment ClusterFields.
 type ClusterFields struct {
 	Id string `json:"id"`
@@ -348,6 +386,22 @@ func (v *__createAgentTokenInput) GetOrganizationId() string { return v.Organiza
 // GetDescription returns __createAgentTokenInput.Description, and is useful for accessing the field via an interface.
 func (v *__createAgentTokenInput) GetDescription() *string { return v.Description }
 
+// __createClusterAgentTokenInput is used internally by genqlient
+type __createClusterAgentTokenInput struct {
+	OrganizationId string `json:"organizationId"`
+	ClusterId      string `json:"clusterId"`
+	Description    string `json:"description"`
+}
+
+// GetOrganizationId returns __createClusterAgentTokenInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__createClusterAgentTokenInput) GetOrganizationId() string { return v.OrganizationId }
+
+// GetClusterId returns __createClusterAgentTokenInput.ClusterId, and is useful for accessing the field via an interface.
+func (v *__createClusterAgentTokenInput) GetClusterId() string { return v.ClusterId }
+
+// GetDescription returns __createClusterAgentTokenInput.Description, and is useful for accessing the field via an interface.
+func (v *__createClusterAgentTokenInput) GetDescription() string { return v.Description }
+
 // __createClusterInput is used internally by genqlient
 type __createClusterInput struct {
 	OrganizationId string  `json:"organizationId"`
@@ -424,6 +478,18 @@ type __getAgentTokenInput struct {
 // GetSlug returns __getAgentTokenInput.Slug, and is useful for accessing the field via an interface.
 func (v *__getAgentTokenInput) GetSlug() string { return v.Slug }
 
+// __getClusterAgentTokensInput is used internally by genqlient
+type __getClusterAgentTokensInput struct {
+	OrgSlug string `json:"orgSlug"`
+	Id      string `json:"id"`
+}
+
+// GetOrgSlug returns __getClusterAgentTokensInput.OrgSlug, and is useful for accessing the field via an interface.
+func (v *__getClusterAgentTokensInput) GetOrgSlug() string { return v.OrgSlug }
+
+// GetId returns __getClusterAgentTokensInput.Id, and is useful for accessing the field via an interface.
+func (v *__getClusterAgentTokensInput) GetId() string { return v.Id }
+
 // __getClusterByNameInput is used internally by genqlient
 type __getClusterByNameInput struct {
 	OrgSlug string  `json:"orgSlug"`
@@ -496,6 +562,18 @@ func (v *__revokeAgentTokenInput) GetId() string { return v.Id }
 // GetReason returns __revokeAgentTokenInput.Reason, and is useful for accessing the field via an interface.
 func (v *__revokeAgentTokenInput) GetReason() string { return v.Reason }
 
+// __revokeClusterAgentTokenInput is used internally by genqlient
+type __revokeClusterAgentTokenInput struct {
+	OrganizationId string `json:"organizationId"`
+	Id             string `json:"id"`
+}
+
+// GetOrganizationId returns __revokeClusterAgentTokenInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__revokeClusterAgentTokenInput) GetOrganizationId() string { return v.OrganizationId }
+
+// GetId returns __revokeClusterAgentTokenInput.Id, and is useful for accessing the field via an interface.
+func (v *__revokeClusterAgentTokenInput) GetId() string { return v.Id }
+
 // __setApiIpAddressesInput is used internally by genqlient
 type __setApiIpAddressesInput struct {
 	OrganizationID string `json:"organizationID"`
@@ -507,6 +585,22 @@ func (v *__setApiIpAddressesInput) GetOrganizationID() string { return v.Organiz
 
 // GetIpAddresses returns __setApiIpAddressesInput.IpAddresses, and is useful for accessing the field via an interface.
 func (v *__setApiIpAddressesInput) GetIpAddresses() string { return v.IpAddresses }
+
+// __updateClusterAgentTokenInput is used internally by genqlient
+type __updateClusterAgentTokenInput struct {
+	OrganizationId string `json:"organizationId"`
+	Id             string `json:"id"`
+	Description    string `json:"description"`
+}
+
+// GetOrganizationId returns __updateClusterAgentTokenInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__updateClusterAgentTokenInput) GetOrganizationId() string { return v.OrganizationId }
+
+// GetId returns __updateClusterAgentTokenInput.Id, and is useful for accessing the field via an interface.
+func (v *__updateClusterAgentTokenInput) GetId() string { return v.Id }
+
+// GetDescription returns __updateClusterAgentTokenInput.Description, and is useful for accessing the field via an interface.
+func (v *__updateClusterAgentTokenInput) GetDescription() string { return v.Description }
 
 // __updateClusterInput is used internally by genqlient
 type __updateClusterInput struct {
@@ -651,6 +745,118 @@ type createAgentTokenResponse struct {
 // GetAgentTokenCreate returns createAgentTokenResponse.AgentTokenCreate, and is useful for accessing the field via an interface.
 func (v *createAgentTokenResponse) GetAgentTokenCreate() createAgentTokenAgentTokenCreateAgentTokenCreatePayload {
 	return v.AgentTokenCreate
+}
+
+// createClusterAgentTokenClusterAgentTokenCreateClusterAgentTokenCreatePayload includes the requested fields of the GraphQL type ClusterAgentTokenCreatePayload.
+// The GraphQL type's documentation follows.
+//
+// Autogenerated return type of ClusterAgentTokenCreate.
+type createClusterAgentTokenClusterAgentTokenCreateClusterAgentTokenCreatePayload struct {
+	ClusterAgentToken createClusterAgentTokenClusterAgentTokenCreateClusterAgentTokenCreatePayloadClusterAgentTokenClusterToken `json:"clusterAgentToken"`
+	// The token value used to register a new agent to this tokens cluster. Please ensure to securely copy this value immediately upon generation as it will not be displayed again.
+	TokenValue string `json:"tokenValue"`
+}
+
+// GetClusterAgentToken returns createClusterAgentTokenClusterAgentTokenCreateClusterAgentTokenCreatePayload.ClusterAgentToken, and is useful for accessing the field via an interface.
+func (v *createClusterAgentTokenClusterAgentTokenCreateClusterAgentTokenCreatePayload) GetClusterAgentToken() createClusterAgentTokenClusterAgentTokenCreateClusterAgentTokenCreatePayloadClusterAgentTokenClusterToken {
+	return v.ClusterAgentToken
+}
+
+// GetTokenValue returns createClusterAgentTokenClusterAgentTokenCreateClusterAgentTokenCreatePayload.TokenValue, and is useful for accessing the field via an interface.
+func (v *createClusterAgentTokenClusterAgentTokenCreateClusterAgentTokenCreatePayload) GetTokenValue() string {
+	return v.TokenValue
+}
+
+// createClusterAgentTokenClusterAgentTokenCreateClusterAgentTokenCreatePayloadClusterAgentTokenClusterToken includes the requested fields of the GraphQL type ClusterToken.
+// The GraphQL type's documentation follows.
+//
+// A token used to connect an agent in cluster to Buildkite
+type createClusterAgentTokenClusterAgentTokenCreateClusterAgentTokenCreatePayloadClusterAgentTokenClusterToken struct {
+	ClusterAgentTokenValues `json:"-"`
+}
+
+// GetCluster returns createClusterAgentTokenClusterAgentTokenCreateClusterAgentTokenCreatePayloadClusterAgentTokenClusterToken.Cluster, and is useful for accessing the field via an interface.
+func (v *createClusterAgentTokenClusterAgentTokenCreateClusterAgentTokenCreatePayloadClusterAgentTokenClusterToken) GetCluster() ClusterAgentTokenValuesCluster {
+	return v.ClusterAgentTokenValues.Cluster
+}
+
+// GetDescription returns createClusterAgentTokenClusterAgentTokenCreateClusterAgentTokenCreatePayloadClusterAgentTokenClusterToken.Description, and is useful for accessing the field via an interface.
+func (v *createClusterAgentTokenClusterAgentTokenCreateClusterAgentTokenCreatePayloadClusterAgentTokenClusterToken) GetDescription() string {
+	return v.ClusterAgentTokenValues.Description
+}
+
+// GetId returns createClusterAgentTokenClusterAgentTokenCreateClusterAgentTokenCreatePayloadClusterAgentTokenClusterToken.Id, and is useful for accessing the field via an interface.
+func (v *createClusterAgentTokenClusterAgentTokenCreateClusterAgentTokenCreatePayloadClusterAgentTokenClusterToken) GetId() string {
+	return v.ClusterAgentTokenValues.Id
+}
+
+// GetUuid returns createClusterAgentTokenClusterAgentTokenCreateClusterAgentTokenCreatePayloadClusterAgentTokenClusterToken.Uuid, and is useful for accessing the field via an interface.
+func (v *createClusterAgentTokenClusterAgentTokenCreateClusterAgentTokenCreatePayloadClusterAgentTokenClusterToken) GetUuid() string {
+	return v.ClusterAgentTokenValues.Uuid
+}
+
+func (v *createClusterAgentTokenClusterAgentTokenCreateClusterAgentTokenCreatePayloadClusterAgentTokenClusterToken) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*createClusterAgentTokenClusterAgentTokenCreateClusterAgentTokenCreatePayloadClusterAgentTokenClusterToken
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.createClusterAgentTokenClusterAgentTokenCreateClusterAgentTokenCreatePayloadClusterAgentTokenClusterToken = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	err = json.Unmarshal(
+		b, &v.ClusterAgentTokenValues)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+type __premarshalcreateClusterAgentTokenClusterAgentTokenCreateClusterAgentTokenCreatePayloadClusterAgentTokenClusterToken struct {
+	Cluster ClusterAgentTokenValuesCluster `json:"cluster"`
+
+	Description string `json:"description"`
+
+	Id string `json:"id"`
+
+	Uuid string `json:"uuid"`
+}
+
+func (v *createClusterAgentTokenClusterAgentTokenCreateClusterAgentTokenCreatePayloadClusterAgentTokenClusterToken) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *createClusterAgentTokenClusterAgentTokenCreateClusterAgentTokenCreatePayloadClusterAgentTokenClusterToken) __premarshalJSON() (*__premarshalcreateClusterAgentTokenClusterAgentTokenCreateClusterAgentTokenCreatePayloadClusterAgentTokenClusterToken, error) {
+	var retval __premarshalcreateClusterAgentTokenClusterAgentTokenCreateClusterAgentTokenCreatePayloadClusterAgentTokenClusterToken
+
+	retval.Cluster = v.ClusterAgentTokenValues.Cluster
+	retval.Description = v.ClusterAgentTokenValues.Description
+	retval.Id = v.ClusterAgentTokenValues.Id
+	retval.Uuid = v.ClusterAgentTokenValues.Uuid
+	return &retval, nil
+}
+
+// createClusterAgentTokenResponse is returned by createClusterAgentToken on success.
+type createClusterAgentTokenResponse struct {
+	// Create a new cluster agent token
+	ClusterAgentTokenCreate createClusterAgentTokenClusterAgentTokenCreateClusterAgentTokenCreatePayload `json:"clusterAgentTokenCreate"`
+}
+
+// GetClusterAgentTokenCreate returns createClusterAgentTokenResponse.ClusterAgentTokenCreate, and is useful for accessing the field via an interface.
+func (v *createClusterAgentTokenResponse) GetClusterAgentTokenCreate() createClusterAgentTokenClusterAgentTokenCreateClusterAgentTokenCreatePayload {
+	return v.ClusterAgentTokenCreate
 }
 
 // createClusterClusterCreateClusterCreatePayload includes the requested fields of the GraphQL type ClusterCreatePayload.
@@ -967,6 +1173,143 @@ type getAgentTokenResponse struct {
 
 // GetAgentToken returns getAgentTokenResponse.AgentToken, and is useful for accessing the field via an interface.
 func (v *getAgentTokenResponse) GetAgentToken() getAgentTokenAgentToken { return v.AgentToken }
+
+// getClusterAgentTokensOrganization includes the requested fields of the GraphQL type Organization.
+// The GraphQL type's documentation follows.
+//
+// An organization
+type getClusterAgentTokensOrganization struct {
+	// Return cluster in the Organization by UUID
+	Cluster getClusterAgentTokensOrganizationCluster `json:"cluster"`
+}
+
+// GetCluster returns getClusterAgentTokensOrganization.Cluster, and is useful for accessing the field via an interface.
+func (v *getClusterAgentTokensOrganization) GetCluster() getClusterAgentTokensOrganizationCluster {
+	return v.Cluster
+}
+
+// getClusterAgentTokensOrganizationCluster includes the requested fields of the GraphQL type Cluster.
+type getClusterAgentTokensOrganizationCluster struct {
+	// Returns agent tokens for the Cluster
+	AgentTokens getClusterAgentTokensOrganizationClusterAgentTokensClusterAgentTokenConnection `json:"agentTokens"`
+}
+
+// GetAgentTokens returns getClusterAgentTokensOrganizationCluster.AgentTokens, and is useful for accessing the field via an interface.
+func (v *getClusterAgentTokensOrganizationCluster) GetAgentTokens() getClusterAgentTokensOrganizationClusterAgentTokensClusterAgentTokenConnection {
+	return v.AgentTokens
+}
+
+// getClusterAgentTokensOrganizationClusterAgentTokensClusterAgentTokenConnection includes the requested fields of the GraphQL type ClusterAgentTokenConnection.
+type getClusterAgentTokensOrganizationClusterAgentTokensClusterAgentTokenConnection struct {
+	Edges []getClusterAgentTokensOrganizationClusterAgentTokensClusterAgentTokenConnectionEdgesClusterAgentTokenEdge `json:"edges"`
+}
+
+// GetEdges returns getClusterAgentTokensOrganizationClusterAgentTokensClusterAgentTokenConnection.Edges, and is useful for accessing the field via an interface.
+func (v *getClusterAgentTokensOrganizationClusterAgentTokensClusterAgentTokenConnection) GetEdges() []getClusterAgentTokensOrganizationClusterAgentTokensClusterAgentTokenConnectionEdgesClusterAgentTokenEdge {
+	return v.Edges
+}
+
+// getClusterAgentTokensOrganizationClusterAgentTokensClusterAgentTokenConnectionEdgesClusterAgentTokenEdge includes the requested fields of the GraphQL type ClusterAgentTokenEdge.
+type getClusterAgentTokensOrganizationClusterAgentTokensClusterAgentTokenConnectionEdgesClusterAgentTokenEdge struct {
+	Node getClusterAgentTokensOrganizationClusterAgentTokensClusterAgentTokenConnectionEdgesClusterAgentTokenEdgeNodeClusterToken `json:"node"`
+}
+
+// GetNode returns getClusterAgentTokensOrganizationClusterAgentTokensClusterAgentTokenConnectionEdgesClusterAgentTokenEdge.Node, and is useful for accessing the field via an interface.
+func (v *getClusterAgentTokensOrganizationClusterAgentTokensClusterAgentTokenConnectionEdgesClusterAgentTokenEdge) GetNode() getClusterAgentTokensOrganizationClusterAgentTokensClusterAgentTokenConnectionEdgesClusterAgentTokenEdgeNodeClusterToken {
+	return v.Node
+}
+
+// getClusterAgentTokensOrganizationClusterAgentTokensClusterAgentTokenConnectionEdgesClusterAgentTokenEdgeNodeClusterToken includes the requested fields of the GraphQL type ClusterToken.
+// The GraphQL type's documentation follows.
+//
+// A token used to connect an agent in cluster to Buildkite
+type getClusterAgentTokensOrganizationClusterAgentTokensClusterAgentTokenConnectionEdgesClusterAgentTokenEdgeNodeClusterToken struct {
+	ClusterAgentTokenValues `json:"-"`
+}
+
+// GetCluster returns getClusterAgentTokensOrganizationClusterAgentTokensClusterAgentTokenConnectionEdgesClusterAgentTokenEdgeNodeClusterToken.Cluster, and is useful for accessing the field via an interface.
+func (v *getClusterAgentTokensOrganizationClusterAgentTokensClusterAgentTokenConnectionEdgesClusterAgentTokenEdgeNodeClusterToken) GetCluster() ClusterAgentTokenValuesCluster {
+	return v.ClusterAgentTokenValues.Cluster
+}
+
+// GetDescription returns getClusterAgentTokensOrganizationClusterAgentTokensClusterAgentTokenConnectionEdgesClusterAgentTokenEdgeNodeClusterToken.Description, and is useful for accessing the field via an interface.
+func (v *getClusterAgentTokensOrganizationClusterAgentTokensClusterAgentTokenConnectionEdgesClusterAgentTokenEdgeNodeClusterToken) GetDescription() string {
+	return v.ClusterAgentTokenValues.Description
+}
+
+// GetId returns getClusterAgentTokensOrganizationClusterAgentTokensClusterAgentTokenConnectionEdgesClusterAgentTokenEdgeNodeClusterToken.Id, and is useful for accessing the field via an interface.
+func (v *getClusterAgentTokensOrganizationClusterAgentTokensClusterAgentTokenConnectionEdgesClusterAgentTokenEdgeNodeClusterToken) GetId() string {
+	return v.ClusterAgentTokenValues.Id
+}
+
+// GetUuid returns getClusterAgentTokensOrganizationClusterAgentTokensClusterAgentTokenConnectionEdgesClusterAgentTokenEdgeNodeClusterToken.Uuid, and is useful for accessing the field via an interface.
+func (v *getClusterAgentTokensOrganizationClusterAgentTokensClusterAgentTokenConnectionEdgesClusterAgentTokenEdgeNodeClusterToken) GetUuid() string {
+	return v.ClusterAgentTokenValues.Uuid
+}
+
+func (v *getClusterAgentTokensOrganizationClusterAgentTokensClusterAgentTokenConnectionEdgesClusterAgentTokenEdgeNodeClusterToken) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*getClusterAgentTokensOrganizationClusterAgentTokensClusterAgentTokenConnectionEdgesClusterAgentTokenEdgeNodeClusterToken
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.getClusterAgentTokensOrganizationClusterAgentTokensClusterAgentTokenConnectionEdgesClusterAgentTokenEdgeNodeClusterToken = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	err = json.Unmarshal(
+		b, &v.ClusterAgentTokenValues)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+type __premarshalgetClusterAgentTokensOrganizationClusterAgentTokensClusterAgentTokenConnectionEdgesClusterAgentTokenEdgeNodeClusterToken struct {
+	Cluster ClusterAgentTokenValuesCluster `json:"cluster"`
+
+	Description string `json:"description"`
+
+	Id string `json:"id"`
+
+	Uuid string `json:"uuid"`
+}
+
+func (v *getClusterAgentTokensOrganizationClusterAgentTokensClusterAgentTokenConnectionEdgesClusterAgentTokenEdgeNodeClusterToken) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *getClusterAgentTokensOrganizationClusterAgentTokensClusterAgentTokenConnectionEdgesClusterAgentTokenEdgeNodeClusterToken) __premarshalJSON() (*__premarshalgetClusterAgentTokensOrganizationClusterAgentTokensClusterAgentTokenConnectionEdgesClusterAgentTokenEdgeNodeClusterToken, error) {
+	var retval __premarshalgetClusterAgentTokensOrganizationClusterAgentTokensClusterAgentTokenConnectionEdgesClusterAgentTokenEdgeNodeClusterToken
+
+	retval.Cluster = v.ClusterAgentTokenValues.Cluster
+	retval.Description = v.ClusterAgentTokenValues.Description
+	retval.Id = v.ClusterAgentTokenValues.Id
+	retval.Uuid = v.ClusterAgentTokenValues.Uuid
+	return &retval, nil
+}
+
+// getClusterAgentTokensResponse is returned by getClusterAgentTokens on success.
+type getClusterAgentTokensResponse struct {
+	// Find an organization
+	Organization getClusterAgentTokensOrganization `json:"organization"`
+}
+
+// GetOrganization returns getClusterAgentTokensResponse.Organization, and is useful for accessing the field via an interface.
+func (v *getClusterAgentTokensResponse) GetOrganization() getClusterAgentTokensOrganization {
+	return v.Organization
+}
 
 // getClusterByNameOrganization includes the requested fields of the GraphQL type Organization.
 // The GraphQL type's documentation follows.
@@ -1585,6 +1928,30 @@ func (v *revokeAgentTokenResponse) GetAgentTokenRevoke() revokeAgentTokenAgentTo
 	return v.AgentTokenRevoke
 }
 
+// revokeClusterAgentTokenClusterAgentTokenRevokeClusterAgentTokenRevokePayload includes the requested fields of the GraphQL type ClusterAgentTokenRevokePayload.
+// The GraphQL type's documentation follows.
+//
+// Autogenerated return type of ClusterAgentTokenRevoke.
+type revokeClusterAgentTokenClusterAgentTokenRevokeClusterAgentTokenRevokePayload struct {
+	DeletedClusterAgentTokenId string `json:"deletedClusterAgentTokenId"`
+}
+
+// GetDeletedClusterAgentTokenId returns revokeClusterAgentTokenClusterAgentTokenRevokeClusterAgentTokenRevokePayload.DeletedClusterAgentTokenId, and is useful for accessing the field via an interface.
+func (v *revokeClusterAgentTokenClusterAgentTokenRevokeClusterAgentTokenRevokePayload) GetDeletedClusterAgentTokenId() string {
+	return v.DeletedClusterAgentTokenId
+}
+
+// revokeClusterAgentTokenResponse is returned by revokeClusterAgentToken on success.
+type revokeClusterAgentTokenResponse struct {
+	// Revokes a cluster agent token
+	ClusterAgentTokenRevoke revokeClusterAgentTokenClusterAgentTokenRevokeClusterAgentTokenRevokePayload `json:"clusterAgentTokenRevoke"`
+}
+
+// GetClusterAgentTokenRevoke returns revokeClusterAgentTokenResponse.ClusterAgentTokenRevoke, and is useful for accessing the field via an interface.
+func (v *revokeClusterAgentTokenResponse) GetClusterAgentTokenRevoke() revokeClusterAgentTokenClusterAgentTokenRevokeClusterAgentTokenRevokePayload {
+	return v.ClusterAgentTokenRevoke
+}
+
 // setApiIpAddressesOrganizationApiIpAllowlistUpdateOrganizationAPIIPAllowlistUpdateMutationPayload includes the requested fields of the GraphQL type OrganizationAPIIPAllowlistUpdateMutationPayload.
 // The GraphQL type's documentation follows.
 //
@@ -1621,6 +1988,111 @@ type setApiIpAddressesResponse struct {
 // GetOrganizationApiIpAllowlistUpdate returns setApiIpAddressesResponse.OrganizationApiIpAllowlistUpdate, and is useful for accessing the field via an interface.
 func (v *setApiIpAddressesResponse) GetOrganizationApiIpAllowlistUpdate() setApiIpAddressesOrganizationApiIpAllowlistUpdateOrganizationAPIIPAllowlistUpdateMutationPayload {
 	return v.OrganizationApiIpAllowlistUpdate
+}
+
+// updateClusterAgentTokenClusterAgentTokenUpdateClusterAgentTokenUpdatePayload includes the requested fields of the GraphQL type ClusterAgentTokenUpdatePayload.
+// The GraphQL type's documentation follows.
+//
+// Autogenerated return type of ClusterAgentTokenUpdate.
+type updateClusterAgentTokenClusterAgentTokenUpdateClusterAgentTokenUpdatePayload struct {
+	ClusterAgentToken updateClusterAgentTokenClusterAgentTokenUpdateClusterAgentTokenUpdatePayloadClusterAgentTokenClusterToken `json:"clusterAgentToken"`
+}
+
+// GetClusterAgentToken returns updateClusterAgentTokenClusterAgentTokenUpdateClusterAgentTokenUpdatePayload.ClusterAgentToken, and is useful for accessing the field via an interface.
+func (v *updateClusterAgentTokenClusterAgentTokenUpdateClusterAgentTokenUpdatePayload) GetClusterAgentToken() updateClusterAgentTokenClusterAgentTokenUpdateClusterAgentTokenUpdatePayloadClusterAgentTokenClusterToken {
+	return v.ClusterAgentToken
+}
+
+// updateClusterAgentTokenClusterAgentTokenUpdateClusterAgentTokenUpdatePayloadClusterAgentTokenClusterToken includes the requested fields of the GraphQL type ClusterToken.
+// The GraphQL type's documentation follows.
+//
+// A token used to connect an agent in cluster to Buildkite
+type updateClusterAgentTokenClusterAgentTokenUpdateClusterAgentTokenUpdatePayloadClusterAgentTokenClusterToken struct {
+	ClusterAgentTokenValues `json:"-"`
+}
+
+// GetCluster returns updateClusterAgentTokenClusterAgentTokenUpdateClusterAgentTokenUpdatePayloadClusterAgentTokenClusterToken.Cluster, and is useful for accessing the field via an interface.
+func (v *updateClusterAgentTokenClusterAgentTokenUpdateClusterAgentTokenUpdatePayloadClusterAgentTokenClusterToken) GetCluster() ClusterAgentTokenValuesCluster {
+	return v.ClusterAgentTokenValues.Cluster
+}
+
+// GetDescription returns updateClusterAgentTokenClusterAgentTokenUpdateClusterAgentTokenUpdatePayloadClusterAgentTokenClusterToken.Description, and is useful for accessing the field via an interface.
+func (v *updateClusterAgentTokenClusterAgentTokenUpdateClusterAgentTokenUpdatePayloadClusterAgentTokenClusterToken) GetDescription() string {
+	return v.ClusterAgentTokenValues.Description
+}
+
+// GetId returns updateClusterAgentTokenClusterAgentTokenUpdateClusterAgentTokenUpdatePayloadClusterAgentTokenClusterToken.Id, and is useful for accessing the field via an interface.
+func (v *updateClusterAgentTokenClusterAgentTokenUpdateClusterAgentTokenUpdatePayloadClusterAgentTokenClusterToken) GetId() string {
+	return v.ClusterAgentTokenValues.Id
+}
+
+// GetUuid returns updateClusterAgentTokenClusterAgentTokenUpdateClusterAgentTokenUpdatePayloadClusterAgentTokenClusterToken.Uuid, and is useful for accessing the field via an interface.
+func (v *updateClusterAgentTokenClusterAgentTokenUpdateClusterAgentTokenUpdatePayloadClusterAgentTokenClusterToken) GetUuid() string {
+	return v.ClusterAgentTokenValues.Uuid
+}
+
+func (v *updateClusterAgentTokenClusterAgentTokenUpdateClusterAgentTokenUpdatePayloadClusterAgentTokenClusterToken) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*updateClusterAgentTokenClusterAgentTokenUpdateClusterAgentTokenUpdatePayloadClusterAgentTokenClusterToken
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.updateClusterAgentTokenClusterAgentTokenUpdateClusterAgentTokenUpdatePayloadClusterAgentTokenClusterToken = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	err = json.Unmarshal(
+		b, &v.ClusterAgentTokenValues)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+type __premarshalupdateClusterAgentTokenClusterAgentTokenUpdateClusterAgentTokenUpdatePayloadClusterAgentTokenClusterToken struct {
+	Cluster ClusterAgentTokenValuesCluster `json:"cluster"`
+
+	Description string `json:"description"`
+
+	Id string `json:"id"`
+
+	Uuid string `json:"uuid"`
+}
+
+func (v *updateClusterAgentTokenClusterAgentTokenUpdateClusterAgentTokenUpdatePayloadClusterAgentTokenClusterToken) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *updateClusterAgentTokenClusterAgentTokenUpdateClusterAgentTokenUpdatePayloadClusterAgentTokenClusterToken) __premarshalJSON() (*__premarshalupdateClusterAgentTokenClusterAgentTokenUpdateClusterAgentTokenUpdatePayloadClusterAgentTokenClusterToken, error) {
+	var retval __premarshalupdateClusterAgentTokenClusterAgentTokenUpdateClusterAgentTokenUpdatePayloadClusterAgentTokenClusterToken
+
+	retval.Cluster = v.ClusterAgentTokenValues.Cluster
+	retval.Description = v.ClusterAgentTokenValues.Description
+	retval.Id = v.ClusterAgentTokenValues.Id
+	retval.Uuid = v.ClusterAgentTokenValues.Uuid
+	return &retval, nil
+}
+
+// updateClusterAgentTokenResponse is returned by updateClusterAgentToken on success.
+type updateClusterAgentTokenResponse struct {
+	// Updates a cluster agent token
+	ClusterAgentTokenUpdate updateClusterAgentTokenClusterAgentTokenUpdateClusterAgentTokenUpdatePayload `json:"clusterAgentTokenUpdate"`
+}
+
+// GetClusterAgentTokenUpdate returns updateClusterAgentTokenResponse.ClusterAgentTokenUpdate, and is useful for accessing the field via an interface.
+func (v *updateClusterAgentTokenResponse) GetClusterAgentTokenUpdate() updateClusterAgentTokenClusterAgentTokenUpdateClusterAgentTokenUpdatePayload {
+	return v.ClusterAgentTokenUpdate
 }
 
 // updateClusterClusterUpdateClusterUpdatePayload includes the requested fields of the GraphQL type ClusterUpdatePayload.
@@ -2314,6 +2786,56 @@ func createCluster(
 	return &data, err
 }
 
+// The query or mutation executed by createClusterAgentToken.
+const createClusterAgentToken_Operation = `
+mutation createClusterAgentToken ($organizationId: ID!, $clusterId: ID!, $description: String!) {
+	clusterAgentTokenCreate(input: {organizationId:$organizationId,clusterId:$clusterId,description:$description}) {
+		clusterAgentToken {
+			... ClusterAgentTokenValues
+		}
+		tokenValue
+	}
+}
+fragment ClusterAgentTokenValues on ClusterToken {
+	cluster {
+		id
+		uuid
+	}
+	description
+	id
+	uuid
+}
+`
+
+func createClusterAgentToken(
+	client graphql.Client,
+	organizationId string,
+	clusterId string,
+	description string,
+) (*createClusterAgentTokenResponse, error) {
+	req := &graphql.Request{
+		OpName: "createClusterAgentToken",
+		Query:  createClusterAgentToken_Operation,
+		Variables: &__createClusterAgentTokenInput{
+			OrganizationId: organizationId,
+			ClusterId:      clusterId,
+			Description:    description,
+		},
+	}
+	var err error
+
+	var data createClusterAgentTokenResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		nil,
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
 // The query or mutation executed by createClusterQueue.
 const createClusterQueue_Operation = `
 mutation createClusterQueue ($organizationId: ID!, $clusterId: ID!, $key: String!, $description: String) {
@@ -2509,6 +3031,59 @@ func getCluster(
 	var err error
 
 	var data getClusterResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		nil,
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
+// The query or mutation executed by getClusterAgentTokens.
+const getClusterAgentTokens_Operation = `
+query getClusterAgentTokens ($orgSlug: ID!, $id: ID!) {
+	organization(slug: $orgSlug) {
+		cluster(id: $id) {
+			agentTokens(first: 50) {
+				edges {
+					node {
+						... ClusterAgentTokenValues
+					}
+				}
+			}
+		}
+	}
+}
+fragment ClusterAgentTokenValues on ClusterToken {
+	cluster {
+		id
+		uuid
+	}
+	description
+	id
+	uuid
+}
+`
+
+func getClusterAgentTokens(
+	client graphql.Client,
+	orgSlug string,
+	id string,
+) (*getClusterAgentTokensResponse, error) {
+	req := &graphql.Request{
+		OpName: "getClusterAgentTokens",
+		Query:  getClusterAgentTokens_Operation,
+		Variables: &__getClusterAgentTokensInput{
+			OrgSlug: orgSlug,
+			Id:      id,
+		},
+	}
+	var err error
+
+	var data getClusterAgentTokensResponse
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(
@@ -2788,6 +3363,42 @@ func revokeAgentToken(
 	return &data, err
 }
 
+// The query or mutation executed by revokeClusterAgentToken.
+const revokeClusterAgentToken_Operation = `
+mutation revokeClusterAgentToken ($organizationId: ID!, $id: ID!) {
+	clusterAgentTokenRevoke(input: {organizationId:$organizationId,id:$id}) {
+		deletedClusterAgentTokenId
+	}
+}
+`
+
+func revokeClusterAgentToken(
+	client graphql.Client,
+	organizationId string,
+	id string,
+) (*revokeClusterAgentTokenResponse, error) {
+	req := &graphql.Request{
+		OpName: "revokeClusterAgentToken",
+		Query:  revokeClusterAgentToken_Operation,
+		Variables: &__revokeClusterAgentTokenInput{
+			OrganizationId: organizationId,
+			Id:             id,
+		},
+	}
+	var err error
+
+	var data revokeClusterAgentTokenResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		nil,
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
 // The query or mutation executed by setApiIpAddresses.
 const setApiIpAddresses_Operation = `
 mutation setApiIpAddresses ($organizationID: ID!, $ipAddresses: String!) {
@@ -2870,6 +3481,55 @@ func updateCluster(
 	var err error
 
 	var data updateClusterResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		nil,
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
+// The query or mutation executed by updateClusterAgentToken.
+const updateClusterAgentToken_Operation = `
+mutation updateClusterAgentToken ($organizationId: ID!, $id: ID!, $description: String!) {
+	clusterAgentTokenUpdate(input: {organizationId:$organizationId,id:$id,description:$description}) {
+		clusterAgentToken {
+			... ClusterAgentTokenValues
+		}
+	}
+}
+fragment ClusterAgentTokenValues on ClusterToken {
+	cluster {
+		id
+		uuid
+	}
+	description
+	id
+	uuid
+}
+`
+
+func updateClusterAgentToken(
+	client graphql.Client,
+	organizationId string,
+	id string,
+	description string,
+) (*updateClusterAgentTokenResponse, error) {
+	req := &graphql.Request{
+		OpName: "updateClusterAgentToken",
+		Query:  updateClusterAgentToken_Operation,
+		Variables: &__updateClusterAgentTokenInput{
+			OrganizationId: organizationId,
+			Id:             id,
+			Description:    description,
+		},
+	}
+	var err error
+
+	var data updateClusterAgentTokenResponse
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(

@@ -31,6 +31,11 @@ resource "buildkite_cluster_queue" "queue1" {
   description = "Dev cluster queue"
 }
 
+resource "buildkite_cluster_agent_token" "token1" {
+  cluster_id = "Q2x1c3Rlci0tLTMzMDc0ZDhiLTM4MjctNDRkNC05YTQ3LTkwN2E2NWZjODViNg==" 
+  description = "agent token for Dev cluster" 
+}
+
 output "agent_token" {
   value = buildkite_agent_token.fleet.token
 }
