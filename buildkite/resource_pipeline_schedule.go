@@ -1,256 +1,141 @@
 package buildkite
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"log"
-	"strings"
 
-	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/shurcooL/graphql"
+	"github.com/hashicorp/terraform-plugin-framework/resource"
+	resource_schema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// PipelineScheduleNode represents a pipeline schedule as returned from the GraphQL API
-type PipelineScheduleNode struct {
-	Branch   graphql.String
-	Commit   graphql.String
-	Cronline graphql.String
-	Enabled  graphql.Boolean
-	Env      []graphql.String
-	ID       graphql.String
-	UUID     graphql.String
-	Label    graphql.String
-	Message  graphql.String
-	Pipeline struct {
-		ID graphql.String
-	}
+type PipelineSchedule struct {
+	client *Client
 }
 
-// resourcePipelineSchedule represents the terraform pipeline_schedule resource schema
-func resourcePipelineSchedule() *schema.Resource {
-	return &schema.Resource{
-		CreateContext: CreatePipelineSchedule,
-		ReadContext:   ReadPipelineSchedule,
-		UpdateContext: UpdatePipelineSchedule,
-		DeleteContext: DeletePipelineSchedule,
-		Importer: &schema.ResourceImporter{
-			State: setPipelineScheduleIDFromSlug,
-		},
-		Schema: map[string]*schema.Schema{
-			"pipeline_id": {
-				Required: true,
-				Type:     schema.TypeString,
-			},
-			"uuid": {
-				Computed: true,
-				Type:     schema.TypeString,
-			},
-			"label": {
-				Required: true,
-				Type:     schema.TypeString,
-			},
-			"cronline": {
-				Required: true,
-				Type:     schema.TypeString,
-			},
-			"commit": {
-				Optional: true,
-				Default:  "HEAD",
-				Type:     schema.TypeString,
-			},
-			"branch": {
-				Required: true,
-				Type:     schema.TypeString,
-			},
-			"message": {
-				Optional: true,
-				Computed: true,
-				Type:     schema.TypeString,
-			},
-			"env": {
-				Optional: true,
-				Type:     schema.TypeMap,
-				Elem: &schema.Schema{
-					Type: schema.TypeString,
+type PipelineScheduleResourceModel struct {
+	Id         types.String `tfsdk:"id"`
+	Label      types.String `tfsdk:"label"`
+	Cronline   types.String `tfsdk:"cronline"`
+	Commit     types.String `tfsdk:"commit"`
+	Branch     types.String `tfsdk:"branch"`
+	Message    types.String `tfsdk:"message"`
+	Env        types.String `tfsdk:"env"`
+	Enabled    types.Bool   `tfsdk:"enabled"`
+	PipelineId types.String `tfsdk:"pipeline_id"`
+}
+
+func NewPipelineScheduleResource() resource.Resource {
+	return &PipelineSchedule{}
+}
+
+func (ps *PipelineSchedule) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
+	resp.TypeName = req.ProviderTypeName + "_pipeline_schedule"
+}
+
+func (ps *PipelineSchedule) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
+	if req.ProviderData == nil {
+		return
+	}
+	ps.client = req.ProviderData.(*Client)
+}
+
+func (ps *PipelineSchedule) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
+	resp.Schema = resource_schema.Schema{
+		MarkdownDescription: "A Pipeline Schedule is a schedule that triggers a pipeline to run at a specific time.",
+		Attributes: map[string]resource_schema.Attribute{
+			"pipeline_id": resource_schema.StringAttribute{
+				Required:            true,
+				MarkdownDescription: "The ID of the pipeline that this schedule belongs to.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
-			"enabled": {
-				Optional: true,
-				Default:  true,
-				Type:     schema.TypeBool,
+			"label": resource_schema.StringAttribute{
+				Required:            true,
+				MarkdownDescription: "A label to describe the schedule.",
+			},
+			"cronline": resource_schema.StringAttribute{
+				Required:            true,
+				MarkdownDescription: "The cronline that describes when the schedule should run.",
+			},
+			"branch": resource_schema.StringAttribute{
+				Required:            true,
+				MarkdownDescription: "The branch that the schedule should run on.",
+			},
+			"commit": resource_schema.StringAttribute{
+				Optional:            true,
+				MarkdownDescription: "The commit that the schedule should run on.",
+			},
+			"message": resource_schema.StringAttribute{
+				Optional:            true,
+				MarkdownDescription: "The message that the schedule should run on.",
+			},
+			"env": resource_schema.StringAttribute{
+				Optional:            true,
+				MarkdownDescription: "The environment variables that the schedule should run on.",
+			},
+			"enabled": resource_schema.BoolAttribute{
+				Optional:            true,
+				MarkdownDescription: "Whether the schedule is enabled or not.",
+			},
+			"id": resource_schema.StringAttribute{
+				Computed: true,
 			},
 		},
 	}
 }
 
-func setPipelineScheduleIDFromSlug(d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
-	client := m.(*Client)
+func (ps *PipelineSchedule) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	var plan PipelineScheduleResourceModel
 
-	var query struct {
-		PipelineSchedule struct {
-			ID graphql.String
-		} `graphql:"pipelineSchedule(slug: $slug)"`
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+
+	if resp.Diagnostics.HasError() {
+		return
 	}
 
-	// d.Id() here is the last argument passed to the `terraform import buildkite_pipeline_schedule.NAME SCHEDULE_SLUG` command
-	vars := map[string]interface{}{
-		"slug": graphql.ID(d.Id()),
-	}
+	log.Printf("Creating Pipeline schedule %s ...", plan.Label.ValueString())
+	apiResponse, err := createPipelineSchedule(
+		ps.client.genqlient,
+		plan.PipelineId.ValueString(),
+		plan.Label.ValueString(),
+		plan.Cronline.ValueString(),
+		plan.Branch.ValueString(),
+		plan.Commit.ValueString(),
+		plan.Message.ValueString(),
+		plan.Env.ValueString(),
+		plan.Enabled.ValueBool())
 
-	err := client.graphql.Query(context.Background(), &query, vars)
 	if err != nil {
-		return nil, err
+		resp.Diagnostics.AddError(
+			"Unable to create Pipeline schedule",
+			fmt.Sprintf("Unable to create Pipeline schedule: %s", err.Error()),
+		)
+		return
 	}
 
-	if string(query.PipelineSchedule.ID) == "" {
-		return nil, fmt.Errorf("No pipeline schedule with slug %s found", d.Id())
+	state := PipelineScheduleResourceModel{
+		PipelineId: types.StringValue(apiResponse.PipelineScheduleCreate.Pipeline.Id),
+		Id:         types.StringValue(apiResponse.PipelineScheduleCreate.PipelineScheduleEdge.Node.Id),
+		Label:      types.StringValue(apiResponse.PipelineScheduleCreate.PipelineScheduleEdge.Node.Label),
 	}
 
-	d.SetId(string(query.PipelineSchedule.ID))
+	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 
-	return []*schema.ResourceData{d}, nil
 }
 
-// CreatePipelineSchedule creates a Buildkite pipeline schedule
-func CreatePipelineSchedule(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	client := m.(*Client)
-
-	var mutation struct {
-		PipelineScheduleCreatePayload struct {
-			Pipeline             PipelineNode
-			PipelineScheduleEdge struct {
-				Node PipelineScheduleNode
-			}
-		} `graphql:"pipelineScheduleCreate(input: {pipelineID: $pipeline_id, branch: $branch, commit: $commit, cronline: $cronline, enabled: $enabled, env: $env, label: $label, message: $message})"`
-	}
-	vars := map[string]interface{}{
-		"pipeline_id": graphql.ID(d.Get("pipeline_id").(string)),
-		"label":       graphql.String(d.Get("label").(string)),
-		"cronline":    graphql.String(d.Get("cronline").(string)),
-		"commit":      graphql.String(d.Get("commit").(string)),
-		"branch":      graphql.String(d.Get("branch").(string)),
-		"message":     graphql.String(d.Get("message").(string)),
-		"env":         graphql.String(envVarsToString(d.Get("env").(map[string]interface{}))),
-		"enabled":     graphql.Boolean(d.Get("enabled").(bool)),
-	}
-
-	log.Printf("Creating pipeline %s ...", vars["label"])
-	var err = client.graphql.Mutate(context.Background(), &mutation, vars)
-	if err != nil {
-		log.Printf("Unable to create pipeline schedule %s", d.Get("label"))
-		return diag.FromErr(err)
-	}
-	log.Printf("Successfully created pipeline schedule with id '%s'.", mutation.PipelineScheduleCreatePayload.PipelineScheduleEdge.Node.ID)
-
-	updatePipelineScheduleResource(d, &mutation.PipelineScheduleCreatePayload.PipelineScheduleEdge.Node)
-	return ReadPipelineSchedule(ctx, d, m)
+func (ps *PipelineSchedule) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	//TODO
 }
 
-// ReadPipelineSchedule retrieves a Buildkite pipeline schedule
-func ReadPipelineSchedule(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	client := m.(*Client)
-	var query struct {
-		Node struct {
-			PipelineSchedule PipelineScheduleNode `graphql:"... on PipelineSchedule"`
-		} `graphql:"node(id: $id)"`
-	}
-	vars := map[string]interface{}{
-		"id": graphql.ID(d.Id()),
-	}
-
-	err := client.graphql.Query(context.Background(), &query, vars)
-	if err != nil {
-		return diag.FromErr(err)
-	}
-
-	updatePipelineScheduleResource(d, &query.Node.PipelineSchedule)
-	return nil
+func (ps *PipelineSchedule) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	//TODO
 }
 
-// UpdatePipelineSchedule updates a Buildkite pipeline schedule
-func UpdatePipelineSchedule(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	client := m.(*Client)
-	var mutation struct {
-		PipelineScheduleUpdate struct {
-			PipelineSchedule PipelineScheduleNode
-		} `graphql:"pipelineScheduleUpdate(input: {id: $id, branch: $branch, commit: $commit, cronline: $cronline, enabled: $enabled, env: $env, label: $label, message: $message})"`
-	}
-	vars := map[string]interface{}{
-		"id":       graphql.ID(d.Id()),
-		"label":    graphql.String(d.Get("label").(string)),
-		"cronline": graphql.String(d.Get("cronline").(string)),
-		"commit":   graphql.String(d.Get("commit").(string)),
-		"branch":   graphql.String(d.Get("branch").(string)),
-		"message":  graphql.String(d.Get("message").(string)),
-		"env":      graphql.String(envVarsToString(d.Get("env").(map[string]interface{}))),
-		"enabled":  graphql.Boolean(d.Get("enabled").(bool)),
-	}
-
-	log.Printf("Updating pipeline schedule %s ...", vars["label"])
-	err := client.graphql.Mutate(context.Background(), &mutation, vars)
-	if err != nil {
-		log.Printf("Unable to update pipeline schedule %s", d.Get("label"))
-		return diag.FromErr(err)
-	}
-
-	updatePipelineScheduleResource(d, &mutation.PipelineScheduleUpdate.PipelineSchedule)
-	return ReadPipelineSchedule(ctx, d, m)
-}
-
-// DeletePipelineSchedule removes a Buildkite pipeline schedule
-func DeletePipelineSchedule(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	client := m.(*Client)
-
-	var mutation struct {
-		PipelineScheduleDelete struct {
-			Pipeline PipelineNode
-		} `graphql:"pipelineScheduleDelete(input: {id: $id})"`
-	}
-	vars := map[string]interface{}{
-		"id": graphql.ID(d.Id()),
-	}
-
-	log.Printf("Deleting pipeline schedule %s ...", d.Get("label"))
-	err := client.graphql.Mutate(context.Background(), &mutation, vars)
-	if err != nil {
-		log.Printf("Unable to delete pipeline %s", d.Get("label"))
-		return diag.FromErr(err)
-	}
-
-	return nil
-}
-
-// updatePipelineScheduleResource updates the terraform resource data for the pipeline_schedule resource
-func updatePipelineScheduleResource(d *schema.ResourceData, pipelineSchedule *PipelineScheduleNode) {
-	d.SetId(string(pipelineSchedule.ID))
-	d.Set("pipeline_id", string(pipelineSchedule.Pipeline.ID))
-	d.Set("uuid", string(pipelineSchedule.UUID))
-	d.Set("label", string(pipelineSchedule.Label))
-	d.Set("cronline", string(pipelineSchedule.Cronline))
-	d.Set("message", string(pipelineSchedule.Message))
-	d.Set("commit", string(pipelineSchedule.Commit))
-	d.Set("branch", string(pipelineSchedule.Branch))
-	d.Set("env", envVarsArrayToMap(pipelineSchedule.Env))
-	d.Set("enabled", bool(pipelineSchedule.Enabled))
-}
-
-// converts env vars map to a newline-separated string
-func envVarsToString(m map[string]interface{}) string {
-	b := new(bytes.Buffer)
-	for key, value := range m {
-		fmt.Fprintf(b, "%s=%s\n", key, value.(string))
-	}
-	return b.String()
-}
-
-// converts env vars array of Strings to a map
-func envVarsArrayToMap(envVarsArray []graphql.String) map[string]string {
-	result := make(map[string]string)
-	for _, envVar := range envVarsArray {
-		tuple := strings.Split(string(envVar), "=")
-		result[tuple[0]] = tuple[1]
-	}
-	return result
+func (ps *PipelineSchedule) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	//TODO
 }

@@ -1,0 +1,78 @@
+fragment PipelineScheduleFragment on PipelineSchedule {
+    id
+    label
+    cronline
+    message
+    commit
+    branch
+    env
+    enabled 
+}
+
+
+mutation createPipelineSchedule( 
+    $pipelineId: ID!
+    $label: String!
+    $cronline: String!
+    $message: String!
+    $commit: String!
+    $branch: String!
+    $env: String!
+    $enabled: Boolean!
+){
+    pipelineScheduleCreate(input: {
+        pipelineID: $pipelineId
+        label: $label
+        cronline: $cronline
+        message: $message
+        commit: $commit
+        branch: $branch
+        env: $env
+        enabled: $enabled 
+    }) {
+        pipeline {
+            id
+        }
+        pipelineScheduleEdge {
+            node {
+                ...PipelineScheduleFragment
+            }
+        } 
+    }
+} 
+
+mutation updatePipelineSchedule(
+    $id: ID!
+    $label: String!
+    $cronline: String!
+    $message: String!
+    $commit: String!
+    $branch: String!
+    $env: String!
+    $enabled: Boolean!
+){
+    pipelineScheduleUpdate(input: {
+        id: $id
+        label: $label
+        cronline: $cronline
+        message: $message
+        commit: $commit
+        branch: $branch
+        env: $env
+        enabled: $enabled 
+    }) {
+        pipelineSchedule {
+            ...PipelineScheduleFragment
+        } 
+    }
+}
+
+mutation deletePipelineSchedule(
+    $id: ID!
+){
+    pipelineScheduleDelete(input: {
+        id: $id
+    }) {
+        deletedPipelineScheduleID
+    }
+}

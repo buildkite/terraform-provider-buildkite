@@ -178,6 +178,52 @@ type PipelineRepositoryInput struct {
 // GetUrl returns PipelineRepositoryInput.Url, and is useful for accessing the field via an interface.
 func (v *PipelineRepositoryInput) GetUrl() string { return v.Url }
 
+// PipelineScheduleFragment includes the GraphQL fields of PipelineSchedule requested by the fragment PipelineScheduleFragment.
+// The GraphQL type's documentation follows.
+//
+// A schedule of when a build should automatically triggered for a Pipeline
+type PipelineScheduleFragment struct {
+	Id string `json:"id"`
+	// A short description of the Pipeline schedule
+	Label string `json:"label"`
+	// A definition of the trigger build schedule in cron syntax
+	Cronline string `json:"cronline"`
+	// The message to use for builds that this schedule triggers
+	Message string `json:"message"`
+	// The commit to use for builds that this schedule triggers. Defaults to `HEAD`
+	Commit string `json:"commit"`
+	// The branch to use for builds that this schedule triggers. Defaults to to the default branch in the Pipeline
+	Branch string `json:"branch"`
+	// Environment variables passed to any triggered builds
+	Env []string `json:"env"`
+	// If this Pipeline schedule is currently enabled
+	Enabled bool `json:"enabled"`
+}
+
+// GetId returns PipelineScheduleFragment.Id, and is useful for accessing the field via an interface.
+func (v *PipelineScheduleFragment) GetId() string { return v.Id }
+
+// GetLabel returns PipelineScheduleFragment.Label, and is useful for accessing the field via an interface.
+func (v *PipelineScheduleFragment) GetLabel() string { return v.Label }
+
+// GetCronline returns PipelineScheduleFragment.Cronline, and is useful for accessing the field via an interface.
+func (v *PipelineScheduleFragment) GetCronline() string { return v.Cronline }
+
+// GetMessage returns PipelineScheduleFragment.Message, and is useful for accessing the field via an interface.
+func (v *PipelineScheduleFragment) GetMessage() string { return v.Message }
+
+// GetCommit returns PipelineScheduleFragment.Commit, and is useful for accessing the field via an interface.
+func (v *PipelineScheduleFragment) GetCommit() string { return v.Commit }
+
+// GetBranch returns PipelineScheduleFragment.Branch, and is useful for accessing the field via an interface.
+func (v *PipelineScheduleFragment) GetBranch() string { return v.Branch }
+
+// GetEnv returns PipelineScheduleFragment.Env, and is useful for accessing the field via an interface.
+func (v *PipelineScheduleFragment) GetEnv() []string { return v.Env }
+
+// GetEnabled returns PipelineScheduleFragment.Enabled, and is useful for accessing the field via an interface.
+func (v *PipelineScheduleFragment) GetEnabled() bool { return v.Enabled }
+
 // Step definition for a pipeline
 type PipelineStepsInput struct {
 	// Step definition for a pipeline
@@ -446,6 +492,42 @@ func (v *__createClusterQueueInput) GetKey() string { return v.Key }
 // GetDescription returns __createClusterQueueInput.Description, and is useful for accessing the field via an interface.
 func (v *__createClusterQueueInput) GetDescription() *string { return v.Description }
 
+// __createPipelineScheduleInput is used internally by genqlient
+type __createPipelineScheduleInput struct {
+	PipelineId string `json:"pipelineId"`
+	Label      string `json:"label"`
+	Cronline   string `json:"cronline"`
+	Message    string `json:"message"`
+	Commit     string `json:"commit"`
+	Branch     string `json:"branch"`
+	Env        string `json:"env"`
+	Enabled    bool   `json:"enabled"`
+}
+
+// GetPipelineId returns __createPipelineScheduleInput.PipelineId, and is useful for accessing the field via an interface.
+func (v *__createPipelineScheduleInput) GetPipelineId() string { return v.PipelineId }
+
+// GetLabel returns __createPipelineScheduleInput.Label, and is useful for accessing the field via an interface.
+func (v *__createPipelineScheduleInput) GetLabel() string { return v.Label }
+
+// GetCronline returns __createPipelineScheduleInput.Cronline, and is useful for accessing the field via an interface.
+func (v *__createPipelineScheduleInput) GetCronline() string { return v.Cronline }
+
+// GetMessage returns __createPipelineScheduleInput.Message, and is useful for accessing the field via an interface.
+func (v *__createPipelineScheduleInput) GetMessage() string { return v.Message }
+
+// GetCommit returns __createPipelineScheduleInput.Commit, and is useful for accessing the field via an interface.
+func (v *__createPipelineScheduleInput) GetCommit() string { return v.Commit }
+
+// GetBranch returns __createPipelineScheduleInput.Branch, and is useful for accessing the field via an interface.
+func (v *__createPipelineScheduleInput) GetBranch() string { return v.Branch }
+
+// GetEnv returns __createPipelineScheduleInput.Env, and is useful for accessing the field via an interface.
+func (v *__createPipelineScheduleInput) GetEnv() string { return v.Env }
+
+// GetEnabled returns __createPipelineScheduleInput.Enabled, and is useful for accessing the field via an interface.
+func (v *__createPipelineScheduleInput) GetEnabled() bool { return v.Enabled }
+
 // __deleteClusterInput is used internally by genqlient
 type __deleteClusterInput struct {
 	OrganizationId string `json:"organizationId"`
@@ -469,6 +551,14 @@ func (v *__deleteClusterQueueInput) GetOrganizationId() string { return v.Organi
 
 // GetId returns __deleteClusterQueueInput.Id, and is useful for accessing the field via an interface.
 func (v *__deleteClusterQueueInput) GetId() string { return v.Id }
+
+// __deletePipelineScheduleInput is used internally by genqlient
+type __deletePipelineScheduleInput struct {
+	Id string `json:"id"`
+}
+
+// GetId returns __deletePipelineScheduleInput.Id, and is useful for accessing the field via an interface.
+func (v *__deletePipelineScheduleInput) GetId() string { return v.Id }
 
 // __getAgentTokenInput is used internally by genqlient
 type __getAgentTokenInput struct {
@@ -653,6 +743,42 @@ type __updatePipelineInput struct {
 
 // GetInput returns __updatePipelineInput.Input, and is useful for accessing the field via an interface.
 func (v *__updatePipelineInput) GetInput() PipelineUpdateInput { return v.Input }
+
+// __updatePipelineScheduleInput is used internally by genqlient
+type __updatePipelineScheduleInput struct {
+	Id       string `json:"id"`
+	Label    string `json:"label"`
+	Cronline string `json:"cronline"`
+	Message  string `json:"message"`
+	Commit   string `json:"commit"`
+	Branch   string `json:"branch"`
+	Env      string `json:"env"`
+	Enabled  bool   `json:"enabled"`
+}
+
+// GetId returns __updatePipelineScheduleInput.Id, and is useful for accessing the field via an interface.
+func (v *__updatePipelineScheduleInput) GetId() string { return v.Id }
+
+// GetLabel returns __updatePipelineScheduleInput.Label, and is useful for accessing the field via an interface.
+func (v *__updatePipelineScheduleInput) GetLabel() string { return v.Label }
+
+// GetCronline returns __updatePipelineScheduleInput.Cronline, and is useful for accessing the field via an interface.
+func (v *__updatePipelineScheduleInput) GetCronline() string { return v.Cronline }
+
+// GetMessage returns __updatePipelineScheduleInput.Message, and is useful for accessing the field via an interface.
+func (v *__updatePipelineScheduleInput) GetMessage() string { return v.Message }
+
+// GetCommit returns __updatePipelineScheduleInput.Commit, and is useful for accessing the field via an interface.
+func (v *__updatePipelineScheduleInput) GetCommit() string { return v.Commit }
+
+// GetBranch returns __updatePipelineScheduleInput.Branch, and is useful for accessing the field via an interface.
+func (v *__updatePipelineScheduleInput) GetBranch() string { return v.Branch }
+
+// GetEnv returns __updatePipelineScheduleInput.Env, and is useful for accessing the field via an interface.
+func (v *__updatePipelineScheduleInput) GetEnv() string { return v.Env }
+
+// GetEnabled returns __updatePipelineScheduleInput.Enabled, and is useful for accessing the field via an interface.
+func (v *__updatePipelineScheduleInput) GetEnabled() bool { return v.Enabled }
 
 // archivePipelinePipelineArchivePipelineArchivePayload includes the requested fields of the GraphQL type PipelineArchivePayload.
 // The GraphQL type's documentation follows.
@@ -1094,6 +1220,172 @@ func (v *createClusterResponse) GetClusterCreate() createClusterClusterCreateClu
 	return v.ClusterCreate
 }
 
+// createPipelineSchedulePipelineScheduleCreatePipelineScheduleCreatePayload includes the requested fields of the GraphQL type PipelineScheduleCreatePayload.
+// The GraphQL type's documentation follows.
+//
+// Autogenerated return type of PipelineScheduleCreate.
+type createPipelineSchedulePipelineScheduleCreatePipelineScheduleCreatePayload struct {
+	Pipeline             createPipelineSchedulePipelineScheduleCreatePipelineScheduleCreatePayloadPipeline             `json:"pipeline"`
+	PipelineScheduleEdge createPipelineSchedulePipelineScheduleCreatePipelineScheduleCreatePayloadPipelineScheduleEdge `json:"pipelineScheduleEdge"`
+}
+
+// GetPipeline returns createPipelineSchedulePipelineScheduleCreatePipelineScheduleCreatePayload.Pipeline, and is useful for accessing the field via an interface.
+func (v *createPipelineSchedulePipelineScheduleCreatePipelineScheduleCreatePayload) GetPipeline() createPipelineSchedulePipelineScheduleCreatePipelineScheduleCreatePayloadPipeline {
+	return v.Pipeline
+}
+
+// GetPipelineScheduleEdge returns createPipelineSchedulePipelineScheduleCreatePipelineScheduleCreatePayload.PipelineScheduleEdge, and is useful for accessing the field via an interface.
+func (v *createPipelineSchedulePipelineScheduleCreatePipelineScheduleCreatePayload) GetPipelineScheduleEdge() createPipelineSchedulePipelineScheduleCreatePipelineScheduleCreatePayloadPipelineScheduleEdge {
+	return v.PipelineScheduleEdge
+}
+
+// createPipelineSchedulePipelineScheduleCreatePipelineScheduleCreatePayloadPipeline includes the requested fields of the GraphQL type Pipeline.
+// The GraphQL type's documentation follows.
+//
+// A pipeline
+type createPipelineSchedulePipelineScheduleCreatePipelineScheduleCreatePayloadPipeline struct {
+	Id string `json:"id"`
+}
+
+// GetId returns createPipelineSchedulePipelineScheduleCreatePipelineScheduleCreatePayloadPipeline.Id, and is useful for accessing the field via an interface.
+func (v *createPipelineSchedulePipelineScheduleCreatePipelineScheduleCreatePayloadPipeline) GetId() string {
+	return v.Id
+}
+
+// createPipelineSchedulePipelineScheduleCreatePipelineScheduleCreatePayloadPipelineScheduleEdge includes the requested fields of the GraphQL type PipelineScheduleEdge.
+type createPipelineSchedulePipelineScheduleCreatePipelineScheduleCreatePayloadPipelineScheduleEdge struct {
+	Node createPipelineSchedulePipelineScheduleCreatePipelineScheduleCreatePayloadPipelineScheduleEdgeNodePipelineSchedule `json:"node"`
+}
+
+// GetNode returns createPipelineSchedulePipelineScheduleCreatePipelineScheduleCreatePayloadPipelineScheduleEdge.Node, and is useful for accessing the field via an interface.
+func (v *createPipelineSchedulePipelineScheduleCreatePipelineScheduleCreatePayloadPipelineScheduleEdge) GetNode() createPipelineSchedulePipelineScheduleCreatePipelineScheduleCreatePayloadPipelineScheduleEdgeNodePipelineSchedule {
+	return v.Node
+}
+
+// createPipelineSchedulePipelineScheduleCreatePipelineScheduleCreatePayloadPipelineScheduleEdgeNodePipelineSchedule includes the requested fields of the GraphQL type PipelineSchedule.
+// The GraphQL type's documentation follows.
+//
+// A schedule of when a build should automatically triggered for a Pipeline
+type createPipelineSchedulePipelineScheduleCreatePipelineScheduleCreatePayloadPipelineScheduleEdgeNodePipelineSchedule struct {
+	PipelineScheduleFragment `json:"-"`
+}
+
+// GetId returns createPipelineSchedulePipelineScheduleCreatePipelineScheduleCreatePayloadPipelineScheduleEdgeNodePipelineSchedule.Id, and is useful for accessing the field via an interface.
+func (v *createPipelineSchedulePipelineScheduleCreatePipelineScheduleCreatePayloadPipelineScheduleEdgeNodePipelineSchedule) GetId() string {
+	return v.PipelineScheduleFragment.Id
+}
+
+// GetLabel returns createPipelineSchedulePipelineScheduleCreatePipelineScheduleCreatePayloadPipelineScheduleEdgeNodePipelineSchedule.Label, and is useful for accessing the field via an interface.
+func (v *createPipelineSchedulePipelineScheduleCreatePipelineScheduleCreatePayloadPipelineScheduleEdgeNodePipelineSchedule) GetLabel() string {
+	return v.PipelineScheduleFragment.Label
+}
+
+// GetCronline returns createPipelineSchedulePipelineScheduleCreatePipelineScheduleCreatePayloadPipelineScheduleEdgeNodePipelineSchedule.Cronline, and is useful for accessing the field via an interface.
+func (v *createPipelineSchedulePipelineScheduleCreatePipelineScheduleCreatePayloadPipelineScheduleEdgeNodePipelineSchedule) GetCronline() string {
+	return v.PipelineScheduleFragment.Cronline
+}
+
+// GetMessage returns createPipelineSchedulePipelineScheduleCreatePipelineScheduleCreatePayloadPipelineScheduleEdgeNodePipelineSchedule.Message, and is useful for accessing the field via an interface.
+func (v *createPipelineSchedulePipelineScheduleCreatePipelineScheduleCreatePayloadPipelineScheduleEdgeNodePipelineSchedule) GetMessage() string {
+	return v.PipelineScheduleFragment.Message
+}
+
+// GetCommit returns createPipelineSchedulePipelineScheduleCreatePipelineScheduleCreatePayloadPipelineScheduleEdgeNodePipelineSchedule.Commit, and is useful for accessing the field via an interface.
+func (v *createPipelineSchedulePipelineScheduleCreatePipelineScheduleCreatePayloadPipelineScheduleEdgeNodePipelineSchedule) GetCommit() string {
+	return v.PipelineScheduleFragment.Commit
+}
+
+// GetBranch returns createPipelineSchedulePipelineScheduleCreatePipelineScheduleCreatePayloadPipelineScheduleEdgeNodePipelineSchedule.Branch, and is useful for accessing the field via an interface.
+func (v *createPipelineSchedulePipelineScheduleCreatePipelineScheduleCreatePayloadPipelineScheduleEdgeNodePipelineSchedule) GetBranch() string {
+	return v.PipelineScheduleFragment.Branch
+}
+
+// GetEnv returns createPipelineSchedulePipelineScheduleCreatePipelineScheduleCreatePayloadPipelineScheduleEdgeNodePipelineSchedule.Env, and is useful for accessing the field via an interface.
+func (v *createPipelineSchedulePipelineScheduleCreatePipelineScheduleCreatePayloadPipelineScheduleEdgeNodePipelineSchedule) GetEnv() []string {
+	return v.PipelineScheduleFragment.Env
+}
+
+// GetEnabled returns createPipelineSchedulePipelineScheduleCreatePipelineScheduleCreatePayloadPipelineScheduleEdgeNodePipelineSchedule.Enabled, and is useful for accessing the field via an interface.
+func (v *createPipelineSchedulePipelineScheduleCreatePipelineScheduleCreatePayloadPipelineScheduleEdgeNodePipelineSchedule) GetEnabled() bool {
+	return v.PipelineScheduleFragment.Enabled
+}
+
+func (v *createPipelineSchedulePipelineScheduleCreatePipelineScheduleCreatePayloadPipelineScheduleEdgeNodePipelineSchedule) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*createPipelineSchedulePipelineScheduleCreatePipelineScheduleCreatePayloadPipelineScheduleEdgeNodePipelineSchedule
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.createPipelineSchedulePipelineScheduleCreatePipelineScheduleCreatePayloadPipelineScheduleEdgeNodePipelineSchedule = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	err = json.Unmarshal(
+		b, &v.PipelineScheduleFragment)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+type __premarshalcreatePipelineSchedulePipelineScheduleCreatePipelineScheduleCreatePayloadPipelineScheduleEdgeNodePipelineSchedule struct {
+	Id string `json:"id"`
+
+	Label string `json:"label"`
+
+	Cronline string `json:"cronline"`
+
+	Message string `json:"message"`
+
+	Commit string `json:"commit"`
+
+	Branch string `json:"branch"`
+
+	Env []string `json:"env"`
+
+	Enabled bool `json:"enabled"`
+}
+
+func (v *createPipelineSchedulePipelineScheduleCreatePipelineScheduleCreatePayloadPipelineScheduleEdgeNodePipelineSchedule) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *createPipelineSchedulePipelineScheduleCreatePipelineScheduleCreatePayloadPipelineScheduleEdgeNodePipelineSchedule) __premarshalJSON() (*__premarshalcreatePipelineSchedulePipelineScheduleCreatePipelineScheduleCreatePayloadPipelineScheduleEdgeNodePipelineSchedule, error) {
+	var retval __premarshalcreatePipelineSchedulePipelineScheduleCreatePipelineScheduleCreatePayloadPipelineScheduleEdgeNodePipelineSchedule
+
+	retval.Id = v.PipelineScheduleFragment.Id
+	retval.Label = v.PipelineScheduleFragment.Label
+	retval.Cronline = v.PipelineScheduleFragment.Cronline
+	retval.Message = v.PipelineScheduleFragment.Message
+	retval.Commit = v.PipelineScheduleFragment.Commit
+	retval.Branch = v.PipelineScheduleFragment.Branch
+	retval.Env = v.PipelineScheduleFragment.Env
+	retval.Enabled = v.PipelineScheduleFragment.Enabled
+	return &retval, nil
+}
+
+// createPipelineScheduleResponse is returned by createPipelineSchedule on success.
+type createPipelineScheduleResponse struct {
+	// Create a scheduled build on pipeline.
+	PipelineScheduleCreate createPipelineSchedulePipelineScheduleCreatePipelineScheduleCreatePayload `json:"pipelineScheduleCreate"`
+}
+
+// GetPipelineScheduleCreate returns createPipelineScheduleResponse.PipelineScheduleCreate, and is useful for accessing the field via an interface.
+func (v *createPipelineScheduleResponse) GetPipelineScheduleCreate() createPipelineSchedulePipelineScheduleCreatePipelineScheduleCreatePayload {
+	return v.PipelineScheduleCreate
+}
+
 // deleteClusterClusterDeleteClusterDeletePayload includes the requested fields of the GraphQL type ClusterDeletePayload.
 // The GraphQL type's documentation follows.
 //
@@ -1142,6 +1434,30 @@ type deleteClusterResponse struct {
 // GetClusterDelete returns deleteClusterResponse.ClusterDelete, and is useful for accessing the field via an interface.
 func (v *deleteClusterResponse) GetClusterDelete() deleteClusterClusterDeleteClusterDeletePayload {
 	return v.ClusterDelete
+}
+
+// deletePipelineSchedulePipelineScheduleDeletePipelineScheduleDeletePayload includes the requested fields of the GraphQL type PipelineScheduleDeletePayload.
+// The GraphQL type's documentation follows.
+//
+// Autogenerated return type of PipelineScheduleDelete.
+type deletePipelineSchedulePipelineScheduleDeletePipelineScheduleDeletePayload struct {
+	DeletedPipelineScheduleID string `json:"deletedPipelineScheduleID"`
+}
+
+// GetDeletedPipelineScheduleID returns deletePipelineSchedulePipelineScheduleDeletePipelineScheduleDeletePayload.DeletedPipelineScheduleID, and is useful for accessing the field via an interface.
+func (v *deletePipelineSchedulePipelineScheduleDeletePipelineScheduleDeletePayload) GetDeletedPipelineScheduleID() string {
+	return v.DeletedPipelineScheduleID
+}
+
+// deletePipelineScheduleResponse is returned by deletePipelineSchedule on success.
+type deletePipelineScheduleResponse struct {
+	// Delete a scheduled build on pipeline.
+	PipelineScheduleDelete deletePipelineSchedulePipelineScheduleDeletePipelineScheduleDeletePayload `json:"pipelineScheduleDelete"`
+}
+
+// GetPipelineScheduleDelete returns deletePipelineScheduleResponse.PipelineScheduleDelete, and is useful for accessing the field via an interface.
+func (v *deletePipelineScheduleResponse) GetPipelineScheduleDelete() deletePipelineSchedulePipelineScheduleDeletePipelineScheduleDeletePayload {
+	return v.PipelineScheduleDelete
 }
 
 // getAgentTokenAgentToken includes the requested fields of the GraphQL type AgentToken.
@@ -2656,6 +2972,143 @@ func (v *updatePipelineResponse) GetPipelineUpdate() updatePipelinePipelineUpdat
 	return v.PipelineUpdate
 }
 
+// updatePipelineSchedulePipelineScheduleUpdatePipelineScheduleUpdatePayload includes the requested fields of the GraphQL type PipelineScheduleUpdatePayload.
+// The GraphQL type's documentation follows.
+//
+// Autogenerated return type of PipelineScheduleUpdate.
+type updatePipelineSchedulePipelineScheduleUpdatePipelineScheduleUpdatePayload struct {
+	PipelineSchedule updatePipelineSchedulePipelineScheduleUpdatePipelineScheduleUpdatePayloadPipelineSchedule `json:"pipelineSchedule"`
+}
+
+// GetPipelineSchedule returns updatePipelineSchedulePipelineScheduleUpdatePipelineScheduleUpdatePayload.PipelineSchedule, and is useful for accessing the field via an interface.
+func (v *updatePipelineSchedulePipelineScheduleUpdatePipelineScheduleUpdatePayload) GetPipelineSchedule() updatePipelineSchedulePipelineScheduleUpdatePipelineScheduleUpdatePayloadPipelineSchedule {
+	return v.PipelineSchedule
+}
+
+// updatePipelineSchedulePipelineScheduleUpdatePipelineScheduleUpdatePayloadPipelineSchedule includes the requested fields of the GraphQL type PipelineSchedule.
+// The GraphQL type's documentation follows.
+//
+// A schedule of when a build should automatically triggered for a Pipeline
+type updatePipelineSchedulePipelineScheduleUpdatePipelineScheduleUpdatePayloadPipelineSchedule struct {
+	PipelineScheduleFragment `json:"-"`
+}
+
+// GetId returns updatePipelineSchedulePipelineScheduleUpdatePipelineScheduleUpdatePayloadPipelineSchedule.Id, and is useful for accessing the field via an interface.
+func (v *updatePipelineSchedulePipelineScheduleUpdatePipelineScheduleUpdatePayloadPipelineSchedule) GetId() string {
+	return v.PipelineScheduleFragment.Id
+}
+
+// GetLabel returns updatePipelineSchedulePipelineScheduleUpdatePipelineScheduleUpdatePayloadPipelineSchedule.Label, and is useful for accessing the field via an interface.
+func (v *updatePipelineSchedulePipelineScheduleUpdatePipelineScheduleUpdatePayloadPipelineSchedule) GetLabel() string {
+	return v.PipelineScheduleFragment.Label
+}
+
+// GetCronline returns updatePipelineSchedulePipelineScheduleUpdatePipelineScheduleUpdatePayloadPipelineSchedule.Cronline, and is useful for accessing the field via an interface.
+func (v *updatePipelineSchedulePipelineScheduleUpdatePipelineScheduleUpdatePayloadPipelineSchedule) GetCronline() string {
+	return v.PipelineScheduleFragment.Cronline
+}
+
+// GetMessage returns updatePipelineSchedulePipelineScheduleUpdatePipelineScheduleUpdatePayloadPipelineSchedule.Message, and is useful for accessing the field via an interface.
+func (v *updatePipelineSchedulePipelineScheduleUpdatePipelineScheduleUpdatePayloadPipelineSchedule) GetMessage() string {
+	return v.PipelineScheduleFragment.Message
+}
+
+// GetCommit returns updatePipelineSchedulePipelineScheduleUpdatePipelineScheduleUpdatePayloadPipelineSchedule.Commit, and is useful for accessing the field via an interface.
+func (v *updatePipelineSchedulePipelineScheduleUpdatePipelineScheduleUpdatePayloadPipelineSchedule) GetCommit() string {
+	return v.PipelineScheduleFragment.Commit
+}
+
+// GetBranch returns updatePipelineSchedulePipelineScheduleUpdatePipelineScheduleUpdatePayloadPipelineSchedule.Branch, and is useful for accessing the field via an interface.
+func (v *updatePipelineSchedulePipelineScheduleUpdatePipelineScheduleUpdatePayloadPipelineSchedule) GetBranch() string {
+	return v.PipelineScheduleFragment.Branch
+}
+
+// GetEnv returns updatePipelineSchedulePipelineScheduleUpdatePipelineScheduleUpdatePayloadPipelineSchedule.Env, and is useful for accessing the field via an interface.
+func (v *updatePipelineSchedulePipelineScheduleUpdatePipelineScheduleUpdatePayloadPipelineSchedule) GetEnv() []string {
+	return v.PipelineScheduleFragment.Env
+}
+
+// GetEnabled returns updatePipelineSchedulePipelineScheduleUpdatePipelineScheduleUpdatePayloadPipelineSchedule.Enabled, and is useful for accessing the field via an interface.
+func (v *updatePipelineSchedulePipelineScheduleUpdatePipelineScheduleUpdatePayloadPipelineSchedule) GetEnabled() bool {
+	return v.PipelineScheduleFragment.Enabled
+}
+
+func (v *updatePipelineSchedulePipelineScheduleUpdatePipelineScheduleUpdatePayloadPipelineSchedule) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*updatePipelineSchedulePipelineScheduleUpdatePipelineScheduleUpdatePayloadPipelineSchedule
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.updatePipelineSchedulePipelineScheduleUpdatePipelineScheduleUpdatePayloadPipelineSchedule = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	err = json.Unmarshal(
+		b, &v.PipelineScheduleFragment)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+type __premarshalupdatePipelineSchedulePipelineScheduleUpdatePipelineScheduleUpdatePayloadPipelineSchedule struct {
+	Id string `json:"id"`
+
+	Label string `json:"label"`
+
+	Cronline string `json:"cronline"`
+
+	Message string `json:"message"`
+
+	Commit string `json:"commit"`
+
+	Branch string `json:"branch"`
+
+	Env []string `json:"env"`
+
+	Enabled bool `json:"enabled"`
+}
+
+func (v *updatePipelineSchedulePipelineScheduleUpdatePipelineScheduleUpdatePayloadPipelineSchedule) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *updatePipelineSchedulePipelineScheduleUpdatePipelineScheduleUpdatePayloadPipelineSchedule) __premarshalJSON() (*__premarshalupdatePipelineSchedulePipelineScheduleUpdatePipelineScheduleUpdatePayloadPipelineSchedule, error) {
+	var retval __premarshalupdatePipelineSchedulePipelineScheduleUpdatePipelineScheduleUpdatePayloadPipelineSchedule
+
+	retval.Id = v.PipelineScheduleFragment.Id
+	retval.Label = v.PipelineScheduleFragment.Label
+	retval.Cronline = v.PipelineScheduleFragment.Cronline
+	retval.Message = v.PipelineScheduleFragment.Message
+	retval.Commit = v.PipelineScheduleFragment.Commit
+	retval.Branch = v.PipelineScheduleFragment.Branch
+	retval.Env = v.PipelineScheduleFragment.Env
+	retval.Enabled = v.PipelineScheduleFragment.Enabled
+	return &retval, nil
+}
+
+// updatePipelineScheduleResponse is returned by updatePipelineSchedule on success.
+type updatePipelineScheduleResponse struct {
+	// Update a scheduled build on pipeline.
+	PipelineScheduleUpdate updatePipelineSchedulePipelineScheduleUpdatePipelineScheduleUpdatePayload `json:"pipelineScheduleUpdate"`
+}
+
+// GetPipelineScheduleUpdate returns updatePipelineScheduleResponse.PipelineScheduleUpdate, and is useful for accessing the field via an interface.
+func (v *updatePipelineScheduleResponse) GetPipelineScheduleUpdate() updatePipelineSchedulePipelineScheduleUpdatePipelineScheduleUpdatePayload {
+	return v.PipelineScheduleUpdate
+}
+
 // The query or mutation executed by archivePipeline.
 const archivePipeline_Operation = `
 mutation archivePipeline ($id: ID!) {
@@ -2888,6 +3341,71 @@ func createClusterQueue(
 	return &data, err
 }
 
+// The query or mutation executed by createPipelineSchedule.
+const createPipelineSchedule_Operation = `
+mutation createPipelineSchedule ($pipelineId: ID!, $label: String!, $cronline: String!, $message: String!, $commit: String!, $branch: String!, $env: String!, $enabled: Boolean!) {
+	pipelineScheduleCreate(input: {pipelineID:$pipelineId,label:$label,cronline:$cronline,message:$message,commit:$commit,branch:$branch,env:$env,enabled:$enabled}) {
+		pipeline {
+			id
+		}
+		pipelineScheduleEdge {
+			node {
+				... PipelineScheduleFragment
+			}
+		}
+	}
+}
+fragment PipelineScheduleFragment on PipelineSchedule {
+	id
+	label
+	cronline
+	message
+	commit
+	branch
+	env
+	enabled
+}
+`
+
+func createPipelineSchedule(
+	client graphql.Client,
+	pipelineId string,
+	label string,
+	cronline string,
+	message string,
+	commit string,
+	branch string,
+	env string,
+	enabled bool,
+) (*createPipelineScheduleResponse, error) {
+	req := &graphql.Request{
+		OpName: "createPipelineSchedule",
+		Query:  createPipelineSchedule_Operation,
+		Variables: &__createPipelineScheduleInput{
+			PipelineId: pipelineId,
+			Label:      label,
+			Cronline:   cronline,
+			Message:    message,
+			Commit:     commit,
+			Branch:     branch,
+			Env:        env,
+			Enabled:    enabled,
+		},
+	}
+	var err error
+
+	var data createPipelineScheduleResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		nil,
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
 // The query or mutation executed by deleteCluster.
 const deleteCluster_Operation = `
 mutation deleteCluster ($organizationId: ID!, $id: ID!) {
@@ -2949,6 +3467,40 @@ func deleteClusterQueue(
 	var err error
 
 	var data deleteClusterQueueResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		nil,
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
+// The query or mutation executed by deletePipelineSchedule.
+const deletePipelineSchedule_Operation = `
+mutation deletePipelineSchedule ($id: ID!) {
+	pipelineScheduleDelete(input: {id:$id}) {
+		deletedPipelineScheduleID
+	}
+}
+`
+
+func deletePipelineSchedule(
+	client graphql.Client,
+	id string,
+) (*deletePipelineScheduleResponse, error) {
+	req := &graphql.Request{
+		OpName: "deletePipelineSchedule",
+		Query:  deletePipelineSchedule_Operation,
+		Variables: &__deletePipelineScheduleInput{
+			Id: id,
+		},
+	}
+	var err error
+
+	var data deletePipelineScheduleResponse
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(
@@ -3660,6 +4212,66 @@ func updatePipeline(
 	var err error
 
 	var data updatePipelineResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		nil,
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
+// The query or mutation executed by updatePipelineSchedule.
+const updatePipelineSchedule_Operation = `
+mutation updatePipelineSchedule ($id: ID!, $label: String!, $cronline: String!, $message: String!, $commit: String!, $branch: String!, $env: String!, $enabled: Boolean!) {
+	pipelineScheduleUpdate(input: {id:$id,label:$label,cronline:$cronline,message:$message,commit:$commit,branch:$branch,env:$env,enabled:$enabled}) {
+		pipelineSchedule {
+			... PipelineScheduleFragment
+		}
+	}
+}
+fragment PipelineScheduleFragment on PipelineSchedule {
+	id
+	label
+	cronline
+	message
+	commit
+	branch
+	env
+	enabled
+}
+`
+
+func updatePipelineSchedule(
+	client graphql.Client,
+	id string,
+	label string,
+	cronline string,
+	message string,
+	commit string,
+	branch string,
+	env string,
+	enabled bool,
+) (*updatePipelineScheduleResponse, error) {
+	req := &graphql.Request{
+		OpName: "updatePipelineSchedule",
+		Query:  updatePipelineSchedule_Operation,
+		Variables: &__updatePipelineScheduleInput{
+			Id:       id,
+			Label:    label,
+			Cronline: cronline,
+			Message:  message,
+			Commit:   commit,
+			Branch:   branch,
+			Env:      env,
+			Enabled:  enabled,
+		},
+	}
+	var err error
+
+	var data updatePipelineScheduleResponse
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(
