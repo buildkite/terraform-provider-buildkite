@@ -26,7 +26,7 @@ type ClusterAgentTokenResourceModel struct {
 	ClusterUuid types.String `tfsdk:"cluster_uuid"`
 }
 
-func NewClusterAgentTokenResource() resource.Resource {
+func newClusterAgentTokenResource() resource.Resource {
 	return &ClusterAgentToken{}
 }
 
