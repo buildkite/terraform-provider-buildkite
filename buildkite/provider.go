@@ -136,10 +136,10 @@ func New(version string) provider.Provider {
 func Provider(version string) *schema.Provider {
 	provider := &schema.Provider{
 		ResourcesMap: map[string]*schema.Resource{
-			"buildkite_pipeline":              resourcePipeline(),
-			"buildkite_pipeline_schedule":     resourcePipelineSchedule(),
-			"buildkite_team":                  resourceTeam(),
-			"buildkite_team_member":           resourceTeamMember(),
+			"buildkite_pipeline":          resourcePipeline(),
+			"buildkite_pipeline_schedule": resourcePipelineSchedule(),
+			"buildkite_team":              resourceTeam(),
+			"buildkite_team_member":       resourceTeamMember(),
 		},
 		DataSourcesMap: map[string]*schema.Resource{
 			"buildkite_meta":     dataSourceMeta(),
