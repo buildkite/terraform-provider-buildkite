@@ -33,7 +33,7 @@ func testDatasourceOrganization() string {
 	data := `
 	%s
 	data "buildkite_organization" "settings" {
-	  depends_on = [buildkite_organization_settings.let_them_in]
+	  depends_on = [buildkite_organization.let_them_in]
 	}
 	`
 	return fmt.Sprintf(data, testAccOrganizationSettingsConfigBasic([]string{"0.0.0.0/0", "1.1.1.1/32", "1.0.0.1/32"}))

@@ -24,7 +24,7 @@ func TestAccOrganizationSettings_create(t *testing.T) {
 					testAccCheckOrganizationSettingsRemoteValues([]string{"0.0.0.0/0", "1.1.1.1/32", "1.0.0.1/32"}),
 					// Check that the second IP added to the list is the one we expect, 0.0.0.0/0, this also ensures the length is greater than 1
 					// allowing us to assert the first IP is also added correctly
-					resource.TestCheckResourceAttr("buildkite_organization_settings.let_them_in", "allowed_api_ip_addresses.1", "1.1.1.1/32"),
+					resource.TestCheckResourceAttr("buildkite_organization.let_them_in", "allowed_api_ip_addresses.1", "1.1.1.1/32"),
 				),
 			},
 		},
@@ -54,7 +54,7 @@ func TestAccOrganizationSettings_update(t *testing.T) {
 					// Confirm that the allowed IP addresses are set correctly in Buildkite's system
 					testAccCheckOrganizationSettingsRemoteValues([]string{"0.0.0.0/0", "4.4.4.4/32"}),
 					// This check allows us to ensure that TF still has access (0.0.0.0/0) and that the new IP address is added correctly
-					resource.TestCheckResourceAttr("buildkite_organization_settings.let_them_in", "allowed_api_ip_addresses.1", "4.4.4.4/32"),
+					resource.TestCheckResourceAttr("buildkite_organization.let_them_in", "allowed_api_ip_addresses.1", "4.4.4.4/32"),
 				),
 			},
 		},
@@ -74,11 +74,11 @@ func TestAccOrganizationSettings_import(t *testing.T) {
 					testAccCheckOrganizationSettingsRemoteValues([]string{"0.0.0.0/0", "1.1.1.1/32", "1.0.0.1/32"}),
 					// Check that the second IP added to the list is the one we expect, 0.0.0.0/0, this also ensures the length is greater than 1
 					// allowing us to assert the first IP is also added correctly
-					resource.TestCheckResourceAttr("buildkite_organization_settings.let_them_in", "allowed_api_ip_addresses.2", "1.0.0.1/32"),
+					resource.TestCheckResourceAttr("buildkite_organization.let_them_in", "allowed_api_ip_addresses.2", "1.0.0.1/32"),
 				),
 			},
 			{
-				ResourceName:      "buildkite_organization_settings.let_them_in",
+				ResourceName:      "buildkite_organization.let_them_in",
 				ImportState:       true,
 				ImportStateVerify: true,
 			},
@@ -96,7 +96,7 @@ func TestAccOrganizationSettings_disappears(t *testing.T) {
 				Config: testAccOrganizationSettingsConfigBasic([]string{"0.0.0.0/0", "1.1.1.1/32", "1.0.0.1/32"}),
 				Check:  resource.ComposeAggregateTestCheckFunc(
 				// Confirm that the allowed IP addresses are set correctly in Buildkite's system
-				//	testAccCheckResourceDisappears(Provider("testing"), resourceOrganizationSettings(), "buildkite_organization_settings.let_them_in"),
+				//testAccCheckResourceDisappears(Provider("testing"), NewOrganizationResource(), "buildkite_organization.let_them_in"),
 				),
 				ExpectNonEmptyPlan: true,
 			},
@@ -106,9 +106,10 @@ func TestAccOrganizationSettings_disappears(t *testing.T) {
 
 func testAccOrganizationSettingsConfigBasic(ip_addresses []string) string {
 	config := `
-		resource "buildkite_organization_settings" "let_them_in" {
-      allowed_api_ip_addresses = %v
-		}
+	
+	resource "buildkite_organization" "let_them_in" {
+        allowed_api_ip_addresses = %v
+	}
 	`
 	marshal, _ := json.Marshal(ip_addresses)
 
@@ -117,7 +118,7 @@ func testAccOrganizationSettingsConfigBasic(ip_addresses []string) string {
 
 func testCheckOrganizationSettingsResourceRemoved(s *terraform.State) error {
 	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "buildkite_organization_settings" {
+		if rs.Type != "buildkite_organization" {
 			continue
 		}
 
@@ -132,7 +133,7 @@ func testCheckOrganizationSettingsResourceRemoved(s *terraform.State) error {
 		})
 
 		if err == nil {
-			return fmt.Errorf("Organization settings still exist")
+			return fmt.Errorf("Organization still exists")
 		}
 		return nil
 	}
