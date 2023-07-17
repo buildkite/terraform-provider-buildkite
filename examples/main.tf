@@ -8,6 +8,10 @@ resource "buildkite_team" "test" {
   default_member_role = "MEMBER"
 }
 
+resource "buildkite_organization" "devorg" {
+    allowed_api_ip_addresses = ["10.1.100.33/24"]
+}
+
 resource "buildkite_pipeline" "repo2" {
   name       = "terraform_provider_buildkite_pipeline"
   repository = "git@github.com:org/repo2"
