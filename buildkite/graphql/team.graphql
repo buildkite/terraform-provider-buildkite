@@ -1,0 +1,84 @@
+fragment TeamFields on Team {
+	id
+	uuid
+	name
+	# @genclient(pointer: true)
+	description
+	slug
+	privacy
+	isDefaultTeam
+	defaultMemberRole
+	membersCanCreatePipelines
+}
+
+query getTeam($id:ID!) {
+	node(id:$id) {
+		... on Team {
+			... TeamFields
+		}
+	}
+}
+
+mutation teamCreate(
+	$organizationID: ID!
+	$name: String!
+	# @genclient(pointer: true)
+	$description: String
+	$privacy: TeamPrivacy!
+	$isDefaultTeam: Boolean!
+	$defaultMemberRole: TeamMemberRole!
+	$membersCanCreatePipelines: Boolean
+) {
+	teamCreate(
+		input: {
+			organizationID: $organizationID
+			name: $name
+			description: $description
+			privacy: $privacy
+			isDefaultTeam: $isDefaultTeam
+			defaultMemberRole: $defaultMemberRole
+			membersCanCreatePipelines: $membersCanCreatePipelines
+		}
+	) {
+		teamEdge {
+			node {
+				... TeamFields
+			}
+		}
+	}
+}
+
+mutation teamUpdate(
+	$id: ID!
+	$name: String!
+	# @genclient(pointer: true)
+	$description: String
+	$privacy: TeamPrivacy!
+	$isDefaultTeam: Boolean!
+	$defaultMemberRole: TeamMemberRole!
+	$membersCanCreatePipelines: Boolean
+) {
+	teamUpdate(
+		input: {
+			id: $id
+			name: $name
+			description: $description
+			privacy: $privacy
+			isDefaultTeam: $isDefaultTeam
+			defaultMemberRole: $defaultMemberRole
+			membersCanCreatePipelines: $membersCanCreatePipelines
+		}
+	) {
+		team {
+			... TeamFields
+		}
+	}
+}
+
+mutation teamDelete($id: ID!) {
+	teamDelete(input: { id: $id }) {
+		deletedTeamID
+	}
+}
+
+

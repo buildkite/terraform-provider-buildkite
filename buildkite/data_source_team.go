@@ -2,84 +2,123 @@ package buildkite
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
-	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-framework/datasource"
+	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func dataSourceTeam() *schema.Resource {
-	return &schema.Resource{
-		ReadContext: dataSourceTeamRead,
-		Schema: map[string]*schema.Schema{
-			"id": {
-				Computed: true,
-				Type:     schema.TypeString,
+type teamDatasourceModel struct {
+	ID                        types.String   `tfsdk:"id"`
+	UUID                      types.String   `tfsdk:"uuid"`
+	Slug                      types.String   `tfsdk:"slug"`
+	Name                      types.String   `tfsdk:"name"`
+	Privacy                   TeamPrivacy    `tfsdk:"privacy"`
+	Description               types.String   `tfsdk:"description"`
+	IsDefaultTeam             types.Bool     `tfsdk:"default_team"`
+	DefaultMemberRole         TeamMemberRole `tfsdk:"default_member_role"`
+	MembersCanCreatePipelines types.Bool     `tfsdk:"members_can_create_pipelines"`
+}
+
+type teamDatasource struct {
+	client *Client
+}
+
+func newTeamDatasource() datasource.DataSource {
+	return &teamDatasource{}
+}
+
+func (t *teamDatasource) Configure(ctx context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
+	if req.ProviderData == nil {
+		return
+	}
+
+	t.client = req.ProviderData.(*Client)
+}
+
+func (t *teamDatasource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
+	resp.TypeName = req.ProviderTypeName + "_team"
+}
+
+func (t *teamDatasource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
+	resp.Schema = schema.Schema{
+		MarkdownDescription: "This datasource allows you to get a team from Buildkite.",
+		Attributes: map[string]schema.Attribute{
+			"id": schema.StringAttribute{
+				Description: "The ID of the team.",
+				Computed:    true,
 			},
-			"slug": {
-				Required: true,
-				Type:     schema.TypeString,
+			"uuid": schema.StringAttribute{
+				Description: "The UUID of the team.",
+				Computed:    true,
 			},
-			"uuid": {
-				Computed: true,
-				Type:     schema.TypeString,
+			"slug": schema.StringAttribute{
+				Description: "The slug of the team.",
+				Computed:    true,
 			},
-			"name": {
-				Computed: true,
-				Type:     schema.TypeString,
+			"name": schema.StringAttribute{
+				Description: "The name of the team.",
+				Computed:    true,
 			},
-			"privacy": {
-				Computed: true,
-				Type:     schema.TypeString,
+			"privacy": schema.StringAttribute{
+				Description: "The privacy of the team.",
+				Computed:    true,
 			},
-			"description": {
-				Computed: true,
-				Type:     schema.TypeString,
+			"description": schema.StringAttribute{
+				Description: "The description of the team.",
+				Computed:    true,
 			},
-			"default_team": {
-				Computed: true,
-				Type:     schema.TypeBool,
+			"default_team": schema.BoolAttribute{
+				Description: "Whether the team is the default team.",
+				Computed:    true,
 			},
-			"default_member_role": {
-				Computed: true,
-				Type:     schema.TypeString,
+			"default_member_role": schema.StringAttribute{
+				Description: "The default member role of the team.",
+				Computed:    true,
 			},
-			"members_can_create_pipelines": {
-				Computed: true,
-				Type:     schema.TypeBool,
+			"members_can_create_pipelines": schema.BoolAttribute{
+				Description: "Whether members can create pipelines.",
+				Computed:    true,
 			},
 		},
 	}
 }
 
-// ReadTeam retrieves a Buildkite team
-func dataSourceTeamRead(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	// Warning or errors can be collected in a slice type
-	var diags diag.Diagnostics
+func (t *teamDatasource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
+	var state teamDatasourceModel
 
-	client := m.(*Client)
-	orgTeamSlug := fmt.Sprintf("%s/%s", client.organization, d.Get("slug").(string))
+	resp.Diagnostics.Append(req.Config.Get(ctx, &state)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
-	response, err := getTeam(client.genqlient, orgTeamSlug)
+	res, err := getTeam(t.client.genqlient, state.ID.ValueString())
 
 	if err != nil {
-		return diag.FromErr(err)
+		resp.Diagnostics.AddError(
+			"Unable to get team",
+			fmt.Sprintf("Error getting team: %s", err.Error()),
+		)
+		return
 	}
 
-	if response.Team.Id == "" {
-		return diag.FromErr(errors.New(fmt.Sprintf("Team not found: '%s'", d.Get("slug"))))
+	if converted, ok := res.GetNode().(*getTeamNodeTeam); ok {
+		if converted == nil {
+			resp.Diagnostics.AddError(
+				"Unable to get team",
+				"Error getting team: nil response",
+			)
+			return
+		}
+		state.ID = types.StringValue(converted.Id)
+		state.UUID = types.StringValue(converted.Uuid)
+		state.Slug = types.StringValue(converted.Slug)
+		state.Name = types.StringValue(converted.Name)
+		state.Privacy = converted.Privacy
+		state.Description = types.StringValue(converted.Description)
+		state.IsDefaultTeam = types.BoolValue(converted.IsDefaultTeam)
+		state.DefaultMemberRole = converted.DefaultMemberRole
+		state.MembersCanCreatePipelines = types.BoolValue(converted.MembersCanCreatePipelines)
 	}
-
-	d.SetId(response.Team.Id)
-	d.Set("slug", response.Team.Slug)
-	d.Set("uuid", response.Team.Uuid)
-	d.Set("name", response.Team.Name)
-	d.Set("privacy", response.Team.Privacy)
-	d.Set("default_team", response.Team.IsDefaultTeam)
-	d.Set("description", response.Team.Description)
-	d.Set("default_member_role", response.Team.DefaultMemberRole)
-	d.Set("members_can_create_pipelines", response.Team.MembersCanCreatePipelines)
-
-	return diags
 }
