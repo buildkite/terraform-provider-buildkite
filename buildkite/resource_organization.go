@@ -28,7 +28,7 @@ func NewOrganizationResource() resource.Resource {
 }
 
 func (OrganizationResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
-	resp.TypeName = req.ProviderTypeName + "_organization"
+	resp.TypeName = req.ProviderTypeName + "_organization_settings"
 }
 
 func (o *OrganizationResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
