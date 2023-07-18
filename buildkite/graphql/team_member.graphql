@@ -10,17 +10,6 @@ fragment TeamMemberValues on TeamMember {
     role 
 }
 
-
-#query getNode(
-#    $id: ID!
-#) {
-#    node(id: $id){
-#        ... on TeamMember {
-#            ...TeamMemberValues
-#        }
-#    }
-#}
-
 mutation createTeamMember(
     $teamID: ID!, 
     $userID: ID!,
