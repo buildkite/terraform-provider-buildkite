@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 ## Unreleased
 
 * Migrate organization datasource to plugin framework [[PR #304](https://github.com/buildkite/terraform-provider-buildkite/pull/304)] @jradtilbrook
+* SUP-1051: Team Member resource Framework/Genqlient conversion [[PR #313](https://github.com/buildkite/terraform-provider-buildkite/pull/313)] @james2791
 
 ## [v0.20.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v0.19.2...v0.20.0)
 

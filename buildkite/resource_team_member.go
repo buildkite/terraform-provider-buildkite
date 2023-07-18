@@ -7,13 +7,13 @@ import (
 
 	//"fmt"
 
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	resource_schema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
-	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/shurcooL/graphql"
 )
@@ -145,24 +145,24 @@ func (tm *TeamMemberResource) Read(ctx context.Context, req resource.ReadRequest
 			fmt.Sprintf("Unable to read ream member: %s", err.Error()),
 		)
 		return
-	} 
+	}
 
-	// Convert fron Node to getNodeTeamMember type 
-	if teamMemberNode, ok := apiResponse.GetNode().(*getNodeTeamMember); ok {	
+	// Convert fron Node to getNodeTeamMember type
+	if teamMemberNode, ok := apiResponse.GetNode().(*getNodeTeamMember); ok {
 		if teamMemberNode == nil {
 			resp.Diagnostics.AddError(
-			  "Unable to get team member",
-			  "Error getting team member: nil response",
+				"Unable to get team member",
+				"Error getting team member: nil response",
 			)
 			return
-		  }
+		}
 		updateTeamMemberResourceState(&state, *teamMemberNode)
 		resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 	}
 }
 
 func (tm *TeamMemberResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-    resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
 
 func (tm *TeamMemberResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {

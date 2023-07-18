@@ -8,6 +8,12 @@ resource "buildkite_team" "test" {
   default_member_role = "MEMBER"
 }
 
+resource "buildkite_team_member" "member1" {
+  role = "MEMBER"
+	team_id = "VXfhnVUS78HavgtP55WhWGzT401guK38Vm9LMMeCgQD124m8xaKBRq0Fth=="
+	user_id = "VXNbwSA9hwVPpMgUXu1dWIDWf45ZwU6J7deETygiLUrKBg2TZBxuDr6aKj=="
+}
+
 resource "buildkite_pipeline" "repo2" {
   name       = "terraform_provider_buildkite_pipeline"
   repository = "git@github.com:org/repo2"
