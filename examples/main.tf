@@ -8,7 +8,7 @@ resource "buildkite_team" "test" {
   default_member_role = "MEMBER"
 }
 
-resource "buildkite_organization" "devorg" {
+resource "buildkite_organization_settings" "devorg" {
     allowed_api_ip_addresses = ["10.1.100.33/24"]
 }
 
