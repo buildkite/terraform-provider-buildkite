@@ -18,7 +18,7 @@ type metaDatasource struct {
 }
 
 type metaDatasourceModel struct {
-	WebhookIps types.List   `tfsdk:""`
+	WebhookIps types.List   `tfsdk:"webhook_ips"`
 	ID         types.String `tfsdk:"id"`
 }
 
