@@ -9,6 +9,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
+const metaId = "https://api.buildkite.com/v2/meta"
+
 type MetaResponse struct {
 	WebhookIps []string `json:"webhook_ips"`
 }
@@ -54,7 +56,7 @@ func (m *metaDatasource) Read(ctx context.Context, req datasource.ReadRequest, r
 	}
 
 	state.WebhookIps = ips
-	state.ID = types.StringValue("https://api.buildkite.com/v2/meta")
+	state.ID = types.StringValue(metaId)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }
