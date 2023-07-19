@@ -83,6 +83,8 @@ func (tf *terraformProvider) Configure(ctx context.Context, req provider.Configu
 func (*terraformProvider) DataSources(context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
 		newClusterDatasource,
+		newOrganizationDatasource,
+		newMetaDatasource,
 	}
 }
 
@@ -93,8 +95,8 @@ func (tf *terraformProvider) Metadata(ctx context.Context, req provider.Metadata
 
 func (*terraformProvider) Resources(context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
-		NewAgentTokenResource,
-		NewClusterAgentTokenResource,
+		newAgentTokenResource,
+		newClusterAgentTokenResource,
 		NewClusterQueueResource,
 		newClusterResource,
 		NewPipelineScheduleResource,
@@ -141,10 +143,8 @@ func Provider(version string) *schema.Provider {
 			"buildkite_organization_settings": resourceOrganizationSettings(),
 		},
 		DataSourcesMap: map[string]*schema.Resource{
-			"buildkite_meta":         dataSourceMeta(),
-			"buildkite_pipeline":     dataSourcePipeline(),
-			"buildkite_team":         dataSourceTeam(),
-			"buildkite_organization": dataSourceOrganization(),
+			"buildkite_pipeline": dataSourcePipeline(),
+			"buildkite_team":     dataSourceTeam(),
 		},
 		Schema: map[string]*schema.Schema{
 			SchemaKeyOrganization: {
