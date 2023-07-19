@@ -4,48 +4,76 @@ import (
 	"context"
 	"sort"
 
-	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-framework/datasource"
+	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 type MetaResponse struct {
 	WebhookIps []string `json:"webhook_ips"`
 }
 
-func dataSourceMeta() *schema.Resource {
-	return &schema.Resource{
-		ReadContext: dataSourceMetaRead,
-		Schema: map[string]*schema.Schema{
-			"webhook_ips": {
-				Computed: true,
-				Type:     schema.TypeList,
-				Elem: &schema.Schema{
-					Type: schema.TypeString,
-				},
-			},
-		},
-	}
+type metaDatasource struct {
+	client *Client
 }
 
-func dataSourceMetaRead(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	client := m.(*Client)
-	meta := MetaResponse{}
-	err := client.makeRequest("GET", "/v2/meta", nil, &meta)
+type metaDatasourceModel struct {
+	WebhookIps types.List   `tfsdk:""`
+	ID         types.String `tfsdk:"id"`
+}
 
+func (c *metaDatasource) Configure(ctx context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
+	if req.ProviderData == nil {
+		return
+	}
+
+	c.client = req.ProviderData.(*Client)
+}
+
+func (*metaDatasource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
+	resp.TypeName = req.ProviderTypeName + "_meta"
+}
+
+func (m *metaDatasource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
+	var state metaDatasourceModel
+	meta := MetaResponse{}
+	err := m.client.makeRequest("GET", "/v2/meta", nil, &meta)
 	if err != nil {
-		return diag.FromErr(err)
+		resp.Diagnostics.AddError("Failed to read meta", err.Error())
+		return
 	}
 
 	// a consistent order will ensure a change in ordering from the server won't trigger
 	// changes in a terraform plan
 	sort.Strings(meta.WebhookIps)
 
-	if err := d.Set("webhook_ips", meta.WebhookIps); err != nil {
-		return diag.FromErr(err)
+	ips, diag := types.ListValueFrom(ctx, types.StringType, meta.WebhookIps)
+	if diag.HasError() {
+		resp.Diagnostics.Append(diag...)
+		return
 	}
 
-	// It seems we need to set an ID for a data source, so pick a stable one that won't change
-	d.SetId("https://api.buildkite.com/v2/meta")
+	state.WebhookIps = ips
+	state.ID = types.StringValue("https://api.buildkite.com/v2/meta")
 
-	return nil
+	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
+}
+
+func (*metaDatasource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
+	resp.Schema = schema.Schema{
+		MarkdownDescription: "", // TODO
+		Attributes: map[string]schema.Attribute{
+			"id": schema.StringAttribute{
+				Computed: true,
+			},
+			"webhook_ips": schema.ListAttribute{
+				Computed:    true,
+				ElementType: types.StringType,
+			},
+		},
+	}
+}
+
+func newMetaDatasource() datasource.DataSource {
+	return &metaDatasource{}
 }
