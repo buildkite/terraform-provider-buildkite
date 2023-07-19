@@ -3,8 +3,8 @@ package buildkite
 import (
 	"context"
 	"fmt"
-	"strings"
 	"log"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
