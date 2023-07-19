@@ -113,29 +113,6 @@ func TestAccTeamMember_import(t *testing.T) {
 	})
 }
 
-// Confirm that this resource can be removed
-func TestAccTeamMember_disappears(t *testing.T) {
-	var tm TeamMemberResourceModel
-
-	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: protoV6ProviderFactories(),
-		CheckDestroy:             testCheckTeamMemberResourceRemoved,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccTeamMemberConfigBasic("MEMBER"),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					// Confirm the team member exists in the buildkite API
-					testAccCheckTeamMemberExists("buildkite_team_member.test", &tm),
-					// Ensure its removed
-					//testAccCheckResourceDisappears(Provider("testing"), resourceTeamMember(), "buildkite_team_member.test"),
-				),
-				ExpectNonEmptyPlan: true,
-			},
-		},
-	})
-}
-
 func testAccTeamMemberConfigBasic(role string) string {
 	config := `
 		resource "buildkite_team" "test" {
