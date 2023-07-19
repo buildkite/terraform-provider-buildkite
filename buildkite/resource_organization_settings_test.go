@@ -115,7 +115,7 @@ func testCheckOrganizationSettingsResourceRemoved(s *terraform.State) error {
 		})
 
 		if err == nil {
-			return fmt.Errorf("Organization still exists")
+			return fmt.Errorf("Organization settings still exist")
 		}
 		return nil
 	}
