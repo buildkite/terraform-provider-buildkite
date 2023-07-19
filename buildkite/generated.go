@@ -2182,6 +2182,8 @@ func (v *getPipelineResponse) GetPipeline() getPipelinePipeline { return v.Pipel
 // getPipelineScheduleNodeAuthorizationSAML
 // getPipelineScheduleNodeBuild
 // getPipelineScheduleNodeChangelog
+// getPipelineScheduleNodeCluster
+// getPipelineScheduleNodeClusterQueue
 // getPipelineScheduleNodeClusterToken
 // getPipelineScheduleNodeEmail
 // getPipelineScheduleNodeJobEventAssigned
@@ -2245,6 +2247,8 @@ func (v *getPipelineScheduleNodeAuthorizationSAML) implementsGraphQLInterfaceget
 }
 func (v *getPipelineScheduleNodeBuild) implementsGraphQLInterfacegetPipelineScheduleNode()        {}
 func (v *getPipelineScheduleNodeChangelog) implementsGraphQLInterfacegetPipelineScheduleNode()    {}
+func (v *getPipelineScheduleNodeCluster) implementsGraphQLInterfacegetPipelineScheduleNode()      {}
+func (v *getPipelineScheduleNodeClusterQueue) implementsGraphQLInterfacegetPipelineScheduleNode() {}
 func (v *getPipelineScheduleNodeClusterToken) implementsGraphQLInterfacegetPipelineScheduleNode() {}
 func (v *getPipelineScheduleNodeEmail) implementsGraphQLInterfacegetPipelineScheduleNode()        {}
 func (v *getPipelineScheduleNodeJobEventAssigned) implementsGraphQLInterfacegetPipelineScheduleNode() {
@@ -2353,6 +2357,12 @@ func __unmarshalgetPipelineScheduleNode(b []byte, v *getPipelineScheduleNode) er
 		return json.Unmarshal(b, *v)
 	case "Changelog":
 		*v = new(getPipelineScheduleNodeChangelog)
+		return json.Unmarshal(b, *v)
+	case "Cluster":
+		*v = new(getPipelineScheduleNodeCluster)
+		return json.Unmarshal(b, *v)
+	case "ClusterQueue":
+		*v = new(getPipelineScheduleNodeClusterQueue)
 		return json.Unmarshal(b, *v)
 	case "ClusterToken":
 		*v = new(getPipelineScheduleNodeClusterToken)
@@ -2586,6 +2596,22 @@ func __marshalgetPipelineScheduleNode(v *getPipelineScheduleNode) ([]byte, error
 		result := struct {
 			TypeName string `json:"__typename"`
 			*getPipelineScheduleNodeChangelog
+		}{typename, v}
+		return json.Marshal(result)
+	case *getPipelineScheduleNodeCluster:
+		typename = "Cluster"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getPipelineScheduleNodeCluster
+		}{typename, v}
+		return json.Marshal(result)
+	case *getPipelineScheduleNodeClusterQueue:
+		typename = "ClusterQueue"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getPipelineScheduleNodeClusterQueue
 		}{typename, v}
 		return json.Marshal(result)
 	case *getPipelineScheduleNodeClusterToken:
@@ -3025,6 +3051,22 @@ type getPipelineScheduleNodeChangelog struct {
 
 // GetTypename returns getPipelineScheduleNodeChangelog.Typename, and is useful for accessing the field via an interface.
 func (v *getPipelineScheduleNodeChangelog) GetTypename() string { return v.Typename }
+
+// getPipelineScheduleNodeCluster includes the requested fields of the GraphQL type Cluster.
+type getPipelineScheduleNodeCluster struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getPipelineScheduleNodeCluster.Typename, and is useful for accessing the field via an interface.
+func (v *getPipelineScheduleNodeCluster) GetTypename() string { return v.Typename }
+
+// getPipelineScheduleNodeClusterQueue includes the requested fields of the GraphQL type ClusterQueue.
+type getPipelineScheduleNodeClusterQueue struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getPipelineScheduleNodeClusterQueue.Typename, and is useful for accessing the field via an interface.
+func (v *getPipelineScheduleNodeClusterQueue) GetTypename() string { return v.Typename }
 
 // getPipelineScheduleNodeClusterToken includes the requested fields of the GraphQL type ClusterToken.
 // The GraphQL type's documentation follows.

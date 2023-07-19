@@ -548,6 +548,7 @@ union AuditSubjectNode =APIAccessToken | AgentToken | AuthorizationBitbucket | A
 
 """All the possible types of subjects in an Audit Event"""
 enum AuditSubjectType {
+	AUTHORIZATION
 	SUBSCRIPTION
 	CLUSTER
 	AGENT_TOKEN
@@ -1018,7 +1019,7 @@ type ChangelogEdge {
 	node: Changelog
 }
 
-type Cluster {
+type Cluster implements Node{
 """Returns agent tokens for the Cluster"""
 	agentTokens(
 		first: Int
@@ -1206,7 +1207,7 @@ type ClusterPermission {
 """Actor to whom a cluster permission is applied"""
 union ClusterPermissionActor =OrganizationMember | Team
 
-type ClusterQueue {
+type ClusterQueue implements Node{
 	cluster: Cluster
 	createdBy: User
 	description: String

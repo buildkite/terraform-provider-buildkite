@@ -9,10 +9,11 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	resource_schema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
 type pipelineSchedule struct {
@@ -52,13 +53,13 @@ func (ps *pipelineSchedule) Schema(_ context.Context, _ resource.SchemaRequest, 
 		Attributes: map[string]resource_schema.Attribute{
 			"id": resource_schema.StringAttribute{
 				Computed: true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"pipeline_id": resource_schema.StringAttribute{
 				Required:            true,
 				MarkdownDescription: "The ID of the pipeline that this schedule belongs to.",
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
-				},
 			},
 			"label": resource_schema.StringAttribute{
 				Required:            true,
@@ -74,22 +75,24 @@ func (ps *pipelineSchedule) Schema(_ context.Context, _ resource.SchemaRequest, 
 			},
 			"commit": resource_schema.StringAttribute{
 				Optional:            true,
+				Computed:            true,
 				MarkdownDescription: "The commit that the schedule should run on.",
+				Default:             stringdefault.StaticString("HEAD"),
 			},
 			"message": resource_schema.StringAttribute{
 				Optional:            true,
 				MarkdownDescription: "The message that the schedule should run on.",
 			},
 			"env": resource_schema.MapAttribute{
-				ElementType: types.MapType{
-					ElemType: types.StringType,
-				},
+				ElementType:         types.StringType,
 				Optional:            true,
 				MarkdownDescription: "The environment variables that the schedule should run on.",
 			},
 			"enabled": resource_schema.BoolAttribute{
 				Optional:            true,
+				Computed:            true,
 				MarkdownDescription: "Whether the schedule is enabled or not.",
+				Default:             booldefault.StaticBool(false),
 			},
 		},
 	}
@@ -103,12 +106,6 @@ func (ps *pipelineSchedule) Create(ctx context.Context, req resource.CreateReque
 	if resp.Diagnostics.HasError() {
 		return
 	}
-
-	log.Printf(" ######### Creating Pipeline schedule ... %v", plan)
-	log.Printf(" #########Creating Pipeline schedule label #########  %s ...", plan.Label.ValueString())
-	log.Printf(" #########Creating Pipeline schedule Branch #########  %s ...", plan.Branch.ValueString())
-	log.Printf(" #########Creating Pipeline schedule Enabled #########  %t ...", plan.Enabled.ValueBool())
-	log.Printf(" #########Creating Pipeline schedule Message #########  %s ...", plan.Message.ValueString())
 
 	log.Printf("Creating Pipeline schedule %s ...", plan.Label.ValueString())
 
@@ -139,9 +136,8 @@ func (ps *pipelineSchedule) Create(ctx context.Context, req resource.CreateReque
 	state.Commit = types.StringPointerValue(apiResponse.PipelineScheduleCreate.PipelineScheduleEdge.Node.Commit)
 	state.Cronline = types.StringPointerValue(apiResponse.PipelineScheduleCreate.PipelineScheduleEdge.Node.Cronline)
 	state.Message = types.StringPointerValue(apiResponse.PipelineScheduleCreate.PipelineScheduleEdge.Node.Message)
-	m := envVarsArrayToMap(apiResponse.PipelineScheduleCreate.PipelineScheduleEdge.Node.Env)
-	state.Env, _ = types.MapValueFrom(ctx, types.MapType{ElemType: types.StringType}, m)
 	state.Enabled = types.BoolValue(apiResponse.PipelineScheduleCreate.PipelineScheduleEdge.Node.Enabled)
+	state.Env = envVarsArrayToMap(ctx, apiResponse.PipelineScheduleCreate.PipelineScheduleEdge.Node.Env)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 
@@ -157,12 +153,12 @@ func (ps *pipelineSchedule) Read(ctx context.Context, req resource.ReadRequest, 
 	}
 
 	log.Printf("Reading Pipeline schedule %s ...", state.Label.ValueString())
-
-	_, err := getPipelineSchedule(
+	r, err := getPipelineSchedule(
 		ps.client.genqlient,
 		state.Id.ValueString(),
 	)
 
+	log.Printf("r: %v\n", r)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to read Pipeline schedule",
@@ -184,7 +180,7 @@ func (ps *pipelineSchedule) Update(ctx context.Context, req resource.UpdateReque
 		return
 	}
 
-	var envVars basetypes.StringValue // temp
+	envVars := envVarsMapFromTfToString(ctx, plan.Env)
 	input := PipelineScheduleUpdateInput{
 		Id:       state.Id.ValueString(),
 		Label:    plan.Label.ValueStringPointer(),
@@ -192,12 +188,12 @@ func (ps *pipelineSchedule) Update(ctx context.Context, req resource.UpdateReque
 		Branch:   plan.Branch.ValueStringPointer(),
 		Commit:   plan.Commit.ValueStringPointer(),
 		Message:  plan.Message.ValueStringPointer(),
-		Env:      envVars.ValueStringPointer(),
+		Env:      &envVars,
 		Enabled:  plan.Enabled.ValueBool(),
 	}
 
 	log.Printf("Updating Pipeline schedule %s ...", plan.Label.ValueString())
-	apiResponse, err := updatePipelineSchedule(
+	_, err := updatePipelineSchedule(
 		ps.client.genqlient,
 		input,
 	)
@@ -210,16 +206,8 @@ func (ps *pipelineSchedule) Update(ctx context.Context, req resource.UpdateReque
 		return
 	}
 
-	state.Label = types.StringPointerValue(apiResponse.PipelineScheduleUpdate.PipelineSchedule.Label)
-	state.Branch = types.StringPointerValue(apiResponse.PipelineScheduleUpdate.PipelineSchedule.Branch)
-	state.Commit = types.StringPointerValue(apiResponse.PipelineScheduleUpdate.PipelineSchedule.Commit)
-	state.Cronline = types.StringPointerValue(apiResponse.PipelineScheduleUpdate.PipelineSchedule.Cronline)
-	state.Message = types.StringPointerValue(apiResponse.PipelineScheduleUpdate.PipelineSchedule.Message)
-	m := envVarsArrayToMap(apiResponse.PipelineScheduleUpdate.PipelineSchedule.Env)
-	state.Env, _ = types.MapValueFrom(ctx, types.MapType{ElemType: types.StringType}, m)
-	state.Enabled = types.BoolValue(apiResponse.PipelineScheduleUpdate.PipelineSchedule.Enabled)
-
-	resp.Diagnostics.Append(req.State.Set(ctx, &state)...)
+	plan.Id = state.Id
+	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 
 }
 
@@ -242,40 +230,34 @@ func (ps *pipelineSchedule) Delete(ctx context.Context, req resource.DeleteReque
 	}
 }
 
-func envVarsArrayToMap(envVars []*string) map[string]interface{} {
-	envVarsMap := make(map[string]interface{})
+func envVarsArrayToMap(ctx context.Context, envVars []*string) types.Map {
+	envVarsMap := make(map[string]string)
 	for _, envVar := range envVars {
 		if envVar != nil {
 			envVarSplit := strings.Split(*envVar, "=")
 			envVarsMap[envVarSplit[0]] = envVarSplit[1]
 		}
 	}
-	return envVarsMap
+	if len(envVarsMap) == 0 {
+		return types.MapNull(types.StringType)
+	}
+
+	m, _ := types.MapValueFrom(ctx, types.StringType, envVarsMap)
+	return m
 }
 
 func envVarsMapFromTfToString(ctx context.Context, m types.Map) string {
 	b := new(bytes.Buffer)
 
-	envVarsMap := make(map[string]interface{})
+	envVarsMap := make(map[string]string)
 	// read from the terraform data into the map
 	if diags := m.ElementsAs(ctx, &envVarsMap, false); diags != nil {
 		return ""
 	}
 
 	for key, value := range envVarsMap {
-		fmt.Fprintf(b, "%s=%s\n", key, value.(string))
+		fmt.Fprintf(b, "%s=%s\n", key, value)
 	}
 	return b.String()
 
-}
-
-func updatePipelineScheduleResource(ctx context.Context, src getPipelineScheduleNodePipelineSchedule, ps *pipelineScheduleResourceModel) {
-
-	ps.Label = types.StringPointerValue(src.Label)
-	ps.Branch = types.StringPointerValue(src.Branch)
-	ps.Commit = types.StringPointerValue(src.Commit)
-	ps.Cronline = types.StringPointerValue(src.Cronline)
-	ps.Enabled = types.BoolValue(src.Enabled)
-	m := envVarsArrayToMap(src.Env)
-	ps.Env, _ = types.MapValueFrom(ctx, types.MapType{ElemType: types.StringType}, m)
 }
