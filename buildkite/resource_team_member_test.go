@@ -1,7 +1,6 @@
 package buildkite
 
 import (
-	"context"
 	"fmt"
 	"testing"
 
@@ -11,8 +10,8 @@ import (
 
 // Confirm we can add and remove a team member
 func TestAccTeamMember_add_remove(t *testing.T) {
-	var resourceTeamMember TeamMemberNode
-
+	var tm TeamMemberResourceModel
+	
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: protoV6ProviderFactories(),
@@ -22,9 +21,9 @@ func TestAccTeamMember_add_remove(t *testing.T) {
 				Config: testAccTeamMemberConfigBasic("MEMBER"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Confirm the team member exists in the buildkite API
-					testAccCheckTeamMemberExists("buildkite_team_member.test", &resourceTeamMember),
+					testAccCheckTeamMemberExists("buildkite_team_member.test", &tm),
 					// Confirm the team member has the correct values in Buildkite's system
-					testAccCheckTeamMemberRemoteValues(&resourceTeamMember, "MEMBER"),
+					testAccCheckTeamMemberRemoteValues(&tm, "MEMBER"),
 					// Confirm the team member has the correct values in terraform state
 					resource.TestCheckResourceAttr("buildkite_team_member.test", "role", "MEMBER"),
 				),
@@ -34,7 +33,7 @@ func TestAccTeamMember_add_remove(t *testing.T) {
 }
 
 func TestAccTeamMember_add_remove_non_default_role(t *testing.T) {
-	var resourceTeamMember TeamMemberNode
+	var tm TeamMemberResourceModel
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
@@ -45,9 +44,9 @@ func TestAccTeamMember_add_remove_non_default_role(t *testing.T) {
 				Config: testAccTeamMemberConfigBasic("MAINTAINER"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Confirm the team member exists in the buildkite API
-					testAccCheckTeamMemberExists("buildkite_team_member.test", &resourceTeamMember),
+					testAccCheckTeamMemberExists("buildkite_team_member.test", &tm),
 					// Confirm the team member has the correct values in Buildkite's system
-					testAccCheckTeamMemberRemoteValues(&resourceTeamMember, "MAINTAINER"),
+					testAccCheckTeamMemberRemoteValues(&tm, "MAINTAINER"),
 					// Confirm the team member has the correct values in terraform state
 					resource.TestCheckResourceAttr("buildkite_team_member.test", "role", "MAINTAINER"),
 				),
@@ -57,7 +56,7 @@ func TestAccTeamMember_add_remove_non_default_role(t *testing.T) {
 }
 
 func TestAccTeamMember_update(t *testing.T) {
-	var resourceTeamMember TeamMemberNode
+	var tm TeamMemberResourceModel
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
@@ -68,18 +67,18 @@ func TestAccTeamMember_update(t *testing.T) {
 				Config: testAccTeamMemberConfigBasic("MEMBER"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Confirm the team member exists in the buildkite API
-					testAccCheckTeamMemberExists("buildkite_team_member.test", &resourceTeamMember),
+					testAccCheckTeamMemberExists("buildkite_team_member.test", &tm),
 					// Confirm the team has the correct values in Buildkite's system
-					testAccCheckTeamMemberRemoteValues(&resourceTeamMember, "MEMBER"),
+					testAccCheckTeamMemberRemoteValues(&tm, "MEMBER"),
 				),
 			},
 			{
 				Config: testAccTeamMemberConfigBasic("MAINTAINER"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Confirm the team member exists in the buildkite API
-					testAccCheckTeamMemberExists("buildkite_team_member.test", &resourceTeamMember),
+					testAccCheckTeamMemberExists("buildkite_team_member.test", &tm),
 					// Confirm the team has the correct values in Buildkite's system
-					testAccCheckTeamMemberRemoteValues(&resourceTeamMember, "MAINTAINER"),
+					testAccCheckTeamMemberRemoteValues(&tm, "MAINTAINER"),
 				),
 			},
 		},
@@ -88,7 +87,7 @@ func TestAccTeamMember_update(t *testing.T) {
 
 // Confirm that this resource can be imported
 func TestAccTeamMember_import(t *testing.T) {
-	var resourceTeamMember TeamMemberNode
+	var tm TeamMemberResourceModel
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
@@ -99,7 +98,7 @@ func TestAccTeamMember_import(t *testing.T) {
 				Config: testAccTeamMemberConfigBasic("MEMBER"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Confirm the team member exists in the buildkite API
-					testAccCheckTeamMemberExists("buildkite_team_member.test", &resourceTeamMember),
+					testAccCheckTeamMemberExists("buildkite_team_member.test", &tm),
 					// Confirm the team has the correct values in Buildkite's system
 					resource.TestCheckResourceAttr("buildkite_team_member.test", "role", "MEMBER"),
 				),
@@ -116,7 +115,7 @@ func TestAccTeamMember_import(t *testing.T) {
 
 // Confirm that this resource can be removed
 func TestAccTeamMember_disappears(t *testing.T) {
-	var teamMember TeamMemberNode
+	var tm TeamMemberResourceModel
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
@@ -127,7 +126,7 @@ func TestAccTeamMember_disappears(t *testing.T) {
 				Config: testAccTeamMemberConfigBasic("MEMBER"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Confirm the team member exists in the buildkite API
-					testAccCheckTeamMemberExists("buildkite_team_member.test", &teamMember),
+					testAccCheckTeamMemberExists("buildkite_team_member.test", &tm),
 					// Ensure its removed
 					//testAccCheckResourceDisappears(Provider("testing"), resourceTeamMember(), "buildkite_team_member.test"),
 				),
@@ -155,7 +154,7 @@ func testAccTeamMemberConfigBasic(role string) string {
 	return fmt.Sprintf(config, role)
 }
 
-func testAccCheckTeamMemberExists(resourceName string, resourceTeamMember *TeamMemberNode) resource.TestCheckFunc {
+func testAccCheckTeamMemberExists(resourceName string, tm *TeamMemberResourceModel) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		resourceState, ok := s.RootModule().Resources[resourceName]
 
@@ -167,26 +166,18 @@ func testAccCheckTeamMemberExists(resourceName string, resourceTeamMember *TeamM
 			return fmt.Errorf("No ID is set in state")
 		}
 
-		var query struct {
-			Node struct {
-				TeamMember TeamMemberNode `graphql:"... on TeamMember"`
-			} `graphql:"node(id: $id)"`
-		}
+		apiResponse, err := get(genqlientGraphql, resourceState.Primary.ID)
 
-		vars := map[string]interface{}{
-			"id": resourceState.Primary.ID,
-		}
-
-		err := graphqlClient.Query(context.Background(), &query, vars)
 		if err != nil {
-			return fmt.Errorf("Error fetching team from graphql API: %v", err)
+			return fmt.Errorf("Error fetching team member from graphql API: %v", err)
 		}
 
-		if string(query.Node.TeamMember.ID) == "" {
-			return fmt.Errorf("No team member found with graphql id: %s", resourceState.Primary.ID)
+		if teamMemberNode, ok := apiResponse.GetNode().(*getNodeTeamMember); ok {
+			if teamMemberNode == nil {
+				return fmt.Errorf("Error getting team member: nil response")
+			}
+			updateTeamMemberResourceState(tm, *teamMemberNode)
 		}
-
-		*resourceTeamMember = query.Node.TeamMember
 
 		return nil
 	}
@@ -199,36 +190,26 @@ func testCheckTeamMemberResourceRemoved(s *terraform.State) error {
 			continue
 		}
 
-		// Try to find the resource remotely
-		var query struct {
-			Node struct {
-				TeamMember TeamMemberNode `graphql:"... on TeamMember"`
-			} `graphql:"node(id: $id)"`
+		apiResponse, err := get(genqlientGraphql, rs.Primary.ID)
+
+		if err != nil {
+			return fmt.Errorf("Error fetching team member from graphql API: %v", err)
 		}
 
-		vars := map[string]interface{}{
-			"id": rs.Primary.ID,
-		}
-
-		err := graphqlClient.Query(context.Background(), &query, vars)
-		if err == nil {
-			if string(query.Node.TeamMember.ID) != "" &&
-				string(query.Node.TeamMember.ID) == rs.Primary.ID {
+		if teamMemberNode, ok := apiResponse.GetNode().(*getNodeTeamMember); ok {
+			if teamMemberNode != nil {
 				return fmt.Errorf("Team member still exists")
 			}
 		}
-
-		return err
 	}
-
 	return nil
 }
 
-func testAccCheckTeamMemberRemoteValues(resourceTeamMember *TeamMemberNode, role string) resource.TestCheckFunc {
+func testAccCheckTeamMemberRemoteValues(tm *TeamMemberResourceModel, role string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 
-		if string(resourceTeamMember.Role) != role {
-			return fmt.Errorf("remote team member role (%s) doesn't match expected value (%s)", resourceTeamMember.Role, role)
+		if string(tm.Role.ValueString()) != role {
+			return fmt.Errorf("remote team member role (%s) doesn't match expected value (%s)", tm.Role.ValueString(), role)
 		}
 		return nil
 	}
