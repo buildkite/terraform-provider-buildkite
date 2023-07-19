@@ -134,7 +134,7 @@ func (t *teamResource) Create(ctx context.Context, req resource.CreateRequest, r
 		state.Privacy.ValueString(),
 		state.IsDefaultTeam.ValueBool(),
 		state.DefaultMemberRole.ValueString(),
-		state.MembersCanCreatePipelines.ValueBool(),
+		*state.MembersCanCreatePipelines.ValueBoolPointer(),
 	)
 
 	if err != nil {
@@ -195,7 +195,7 @@ func (t *teamResource) Update(ctx context.Context, req resource.UpdateRequest, r
 		plan.Privacy.ValueString(),
 		plan.IsDefaultTeam.ValueBool(),
 		plan.DefaultMemberRole.ValueString(),
-		plan.MembersCanCreatePipelines.ValueBool(),
+		*plan.MembersCanCreatePipelines.ValueBoolPointer(),
 	)
 
 	if err != nil {

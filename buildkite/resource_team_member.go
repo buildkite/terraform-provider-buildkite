@@ -11,7 +11,7 @@ import (
 
 type TeamMemberNode struct {
 	ID   graphql.String
-	Role TeamMemberRole
+	Role string
 	UUID graphql.String
 	Team TeamNode
 	User struct {
@@ -133,7 +133,7 @@ func UpdateTeamMember(ctx context.Context, d *schema.ResourceData, m interface{}
 
 	vars := map[string]interface{}{
 		"id":   d.Id(),
-		"role": TeamMemberRole(d.Get("role").(string)),
+		"role": d.Get("role"),
 	}
 
 	err := client.graphql.Mutate(context.Background(), &mutation, vars)
