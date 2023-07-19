@@ -11,7 +11,7 @@ import (
 // Confirm we can add and remove a team member
 func TestAccTeamMember_add_remove(t *testing.T) {
 	var tm TeamMemberResourceModel
-	
+
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: protoV6ProviderFactories(),
