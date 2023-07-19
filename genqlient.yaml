@@ -11,3 +11,7 @@ context_type: "-"
 bindings:
   YAML:
     type: string
+  TeamPrivacy:
+    type: string
+  TeamMemberRole:
+    type: string

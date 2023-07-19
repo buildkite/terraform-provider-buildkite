@@ -8,7 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
-func testAccDataTeamConfigBasic(name, slug string) string {
+func testAccDataTeamConfigBasic(name string) string {
 	config := `
 		resource "buildkite_team" "foobar" {
 			name = "Test Team %s"
@@ -19,10 +19,10 @@ func testAccDataTeamConfigBasic(name, slug string) string {
 		}
 
 		data "buildkite_team" "foobar" {
-			slug = %s
+			depends_on = [buildkite_team.foobar]
 		}
 	`
-	return fmt.Sprintf(config, name, name, slug)
+	return fmt.Sprintf(config, name, name)
 }
 
 // Confirm that we can read a team based on the slug
@@ -35,7 +35,7 @@ func TestAccDataTeam_Read(t *testing.T) {
 		CheckDestroy:             testAccCheckTeamResourceDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDataTeamConfigBasic("foo", "buildkite_team.foobar.slug"),
+				Config: testAccDataTeamConfigBasic("foo"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckTeamExists("buildkite_team.foobar", &tr),
 					resource.TestCheckResourceAttr("data.buildkite_team.foobar", "name", "Test Team foo"),
@@ -58,7 +58,7 @@ func TestAccDataTeam_NotFound(t *testing.T) {
 		CheckDestroy:             testAccCheckTeamResourceDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config:      testAccDataTeamConfigBasic("foo", "\"bar\""),
+				Config:      testAccDataTeamConfigBasic("foo"),
 				ExpectError: regexp.MustCompile("Team not found: 'bar'"),
 			},
 		},

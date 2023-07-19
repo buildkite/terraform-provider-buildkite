@@ -10,15 +10,15 @@ import (
 )
 
 type teamDatasourceModel struct {
-	ID                        types.String   `tfsdk:"id"`
-	UUID                      types.String   `tfsdk:"uuid"`
-	Slug                      types.String   `tfsdk:"slug"`
-	Name                      types.String   `tfsdk:"name"`
-	Privacy                   TeamPrivacy    `tfsdk:"privacy"`
-	Description               types.String   `tfsdk:"description"`
-	IsDefaultTeam             types.Bool     `tfsdk:"default_team"`
-	DefaultMemberRole         TeamMemberRole `tfsdk:"default_member_role"`
-	MembersCanCreatePipelines types.Bool     `tfsdk:"members_can_create_pipelines"`
+	ID                        types.String `tfsdk:"id"`
+	UUID                      types.String `tfsdk:"uuid"`
+	Slug                      types.String `tfsdk:"slug"`
+	Name                      types.String `tfsdk:"name"`
+	Privacy                   types.String `tfsdk:"privacy"`
+	Description               types.String `tfsdk:"description"`
+	IsDefaultTeam             types.Bool   `tfsdk:"default_team"`
+	DefaultMemberRole         types.String `tfsdk:"default_member_role"`
+	MembersCanCreatePipelines types.Bool   `tfsdk:"members_can_create_pipelines"`
 }
 
 type teamDatasource struct {
@@ -115,10 +115,10 @@ func (t *teamDatasource) Read(ctx context.Context, req datasource.ReadRequest, r
 		state.UUID = types.StringValue(converted.Uuid)
 		state.Slug = types.StringValue(converted.Slug)
 		state.Name = types.StringValue(converted.Name)
-		state.Privacy = converted.Privacy
+		state.Privacy = types.StringValue(converted.Privacy)
 		state.Description = types.StringValue(converted.Description)
 		state.IsDefaultTeam = types.BoolValue(converted.IsDefaultTeam)
-		state.DefaultMemberRole = converted.DefaultMemberRole
+		state.DefaultMemberRole = types.StringValue(converted.DefaultMemberRole)
 		state.MembersCanCreatePipelines = types.BoolValue(converted.MembersCanCreatePipelines)
 	}
 }

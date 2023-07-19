@@ -19,15 +19,15 @@ type teamResource struct {
 }
 
 type teamResourceModel struct {
-	ID                        types.String   `tfsdk:"id"`
-	UUID                      types.String   `tfsdk:"uuid"`
-	Name                      types.String   `tfsdk:"name"`
-	Description               types.String   `tfsdk:"description"`
-	Privacy                   TeamPrivacy    `tfsdk:"privacy"`
-	IsDefaultTeam             types.Bool     `tfsdk:"default_team"`
-	DefaultMemberRole         TeamMemberRole `tfsdk:"default_member_role"`
-	Slug                      types.String   `tfsdk:"slug"`
-	MembersCanCreatePipelines types.Bool     `tfsdk:"members_can_create_pipelines"`
+	ID                        types.String `tfsdk:"id"`
+	UUID                      types.String `tfsdk:"uuid"`
+	Name                      types.String `tfsdk:"name"`
+	Description               types.String `tfsdk:"description"`
+	Privacy                   types.String `tfsdk:"privacy"`
+	IsDefaultTeam             types.Bool   `tfsdk:"default_team"`
+	DefaultMemberRole         types.String `tfsdk:"default_member_role"`
+	Slug                      types.String `tfsdk:"slug"`
+	MembersCanCreatePipelines types.Bool   `tfsdk:"members_can_create_pipelines"`
 }
 
 // This is required due to the getTeam function not using Genqlient
@@ -38,7 +38,7 @@ type TeamNode struct {
 	DefaultMemberRole         graphql.String
 	Name                      graphql.String
 	MembersCanCreatePipelines graphql.Boolean
-	Privacy                   TeamPrivacy
+	Privacy                   graphql.String
 	Slug                      graphql.String
 	UUID                      graphql.String
 }
@@ -131,9 +131,9 @@ func (t *teamResource) Create(ctx context.Context, req resource.CreateRequest, r
 		t.client.organizationId,
 		state.Name.ValueString(),
 		*state.Description.ValueStringPointer(),
-		state.Privacy,
+		state.Privacy.ValueString(),
 		state.IsDefaultTeam.ValueBool(),
-		state.DefaultMemberRole,
+		state.DefaultMemberRole.ValueString(),
 		state.MembersCanCreatePipelines.ValueBool(),
 	)
 
@@ -192,9 +192,9 @@ func (t *teamResource) Update(ctx context.Context, req resource.UpdateRequest, r
 		state.ID.ValueString(),
 		plan.Name.ValueString(),
 		*plan.Description.ValueStringPointer(),
-		plan.Privacy,
+		plan.Privacy.ValueString(),
 		plan.IsDefaultTeam.ValueBool(),
-		plan.DefaultMemberRole,
+		plan.DefaultMemberRole.ValueString(),
 		plan.MembersCanCreatePipelines.ValueBool(),
 	)
 
@@ -234,9 +234,9 @@ func updateTeamResourceState(state *teamResourceModel, res *getTeamNodeTeam) {
 	state.UUID = types.StringValue(res.Uuid)
 	state.Slug = types.StringValue(res.Slug)
 	state.Name = types.StringValue(res.Name)
-	state.Privacy = res.Privacy
+	state.Privacy = types.StringValue(string(res.GetPrivacy()))
 	state.Description = types.StringValue(res.Description)
 	state.IsDefaultTeam = types.BoolValue(res.IsDefaultTeam)
-	state.DefaultMemberRole = res.DefaultMemberRole
+	state.DefaultMemberRole = types.StringValue(string(res.GetDefaultMemberRole()))
 	state.MembersCanCreatePipelines = types.BoolValue(res.MembersCanCreatePipelines)
 }

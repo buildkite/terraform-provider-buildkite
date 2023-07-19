@@ -342,11 +342,11 @@ type TeamFields struct {
 	// The slug of the team
 	Slug string `json:"slug"`
 	// The privacy setting for this team
-	Privacy TeamPrivacy `json:"privacy"`
+	Privacy string `json:"privacy"`
 	// Add new organization members to this team by default
 	IsDefaultTeam bool `json:"isDefaultTeam"`
 	// New organization members will be granted this role on this team
-	DefaultMemberRole TeamMemberRole `json:"defaultMemberRole"`
+	DefaultMemberRole string `json:"defaultMemberRole"`
 	// Whether or not team members can create new pipelines in this team
 	MembersCanCreatePipelines bool `json:"membersCanCreatePipelines"`
 }
@@ -367,36 +367,16 @@ func (v *TeamFields) GetDescription() string { return v.Description }
 func (v *TeamFields) GetSlug() string { return v.Slug }
 
 // GetPrivacy returns TeamFields.Privacy, and is useful for accessing the field via an interface.
-func (v *TeamFields) GetPrivacy() TeamPrivacy { return v.Privacy }
+func (v *TeamFields) GetPrivacy() string { return v.Privacy }
 
 // GetIsDefaultTeam returns TeamFields.IsDefaultTeam, and is useful for accessing the field via an interface.
 func (v *TeamFields) GetIsDefaultTeam() bool { return v.IsDefaultTeam }
 
 // GetDefaultMemberRole returns TeamFields.DefaultMemberRole, and is useful for accessing the field via an interface.
-func (v *TeamFields) GetDefaultMemberRole() TeamMemberRole { return v.DefaultMemberRole }
+func (v *TeamFields) GetDefaultMemberRole() string { return v.DefaultMemberRole }
 
 // GetMembersCanCreatePipelines returns TeamFields.MembersCanCreatePipelines, and is useful for accessing the field via an interface.
 func (v *TeamFields) GetMembersCanCreatePipelines() bool { return v.MembersCanCreatePipelines }
-
-// The roles a user can be within a team
-type TeamMemberRole string
-
-const (
-	// The user is a regular member of the team
-	TeamMemberRoleMember TeamMemberRole = "MEMBER"
-	// The user can manage pipelines and users within the team
-	TeamMemberRoleMaintainer TeamMemberRole = "MAINTAINER"
-)
-
-// Whether a team is visible or secret within an organization
-type TeamPrivacy string
-
-const (
-	// Visible to all members of the organization
-	TeamPrivacyVisible TeamPrivacy = "VISIBLE"
-	// Visible to organization administrators and members
-	TeamPrivacySecret TeamPrivacy = "SECRET"
-)
 
 // __archivePipelineInput is used internally by genqlient
 type __archivePipelineInput struct {
@@ -620,13 +600,13 @@ func (v *__setApiIpAddressesInput) GetIpAddresses() string { return v.IpAddresse
 
 // __teamCreateInput is used internally by genqlient
 type __teamCreateInput struct {
-	OrganizationID            string         `json:"organizationID"`
-	Name                      string         `json:"name"`
-	Description               string         `json:"description"`
-	Privacy                   TeamPrivacy    `json:"privacy"`
-	IsDefaultTeam             bool           `json:"isDefaultTeam"`
-	DefaultMemberRole         TeamMemberRole `json:"defaultMemberRole"`
-	MembersCanCreatePipelines bool           `json:"membersCanCreatePipelines"`
+	OrganizationID            string `json:"organizationID"`
+	Name                      string `json:"name"`
+	Description               string `json:"description"`
+	Privacy                   string `json:"privacy"`
+	IsDefaultTeam             bool   `json:"isDefaultTeam"`
+	DefaultMemberRole         string `json:"defaultMemberRole"`
+	MembersCanCreatePipelines bool   `json:"membersCanCreatePipelines"`
 }
 
 // GetOrganizationID returns __teamCreateInput.OrganizationID, and is useful for accessing the field via an interface.
@@ -639,13 +619,13 @@ func (v *__teamCreateInput) GetName() string { return v.Name }
 func (v *__teamCreateInput) GetDescription() string { return v.Description }
 
 // GetPrivacy returns __teamCreateInput.Privacy, and is useful for accessing the field via an interface.
-func (v *__teamCreateInput) GetPrivacy() TeamPrivacy { return v.Privacy }
+func (v *__teamCreateInput) GetPrivacy() string { return v.Privacy }
 
 // GetIsDefaultTeam returns __teamCreateInput.IsDefaultTeam, and is useful for accessing the field via an interface.
 func (v *__teamCreateInput) GetIsDefaultTeam() bool { return v.IsDefaultTeam }
 
 // GetDefaultMemberRole returns __teamCreateInput.DefaultMemberRole, and is useful for accessing the field via an interface.
-func (v *__teamCreateInput) GetDefaultMemberRole() TeamMemberRole { return v.DefaultMemberRole }
+func (v *__teamCreateInput) GetDefaultMemberRole() string { return v.DefaultMemberRole }
 
 // GetMembersCanCreatePipelines returns __teamCreateInput.MembersCanCreatePipelines, and is useful for accessing the field via an interface.
 func (v *__teamCreateInput) GetMembersCanCreatePipelines() bool { return v.MembersCanCreatePipelines }
@@ -660,13 +640,13 @@ func (v *__teamDeleteInput) GetId() string { return v.Id }
 
 // __teamUpdateInput is used internally by genqlient
 type __teamUpdateInput struct {
-	Id                        string         `json:"id"`
-	Name                      string         `json:"name"`
-	Description               string         `json:"description"`
-	Privacy                   TeamPrivacy    `json:"privacy"`
-	IsDefaultTeam             bool           `json:"isDefaultTeam"`
-	DefaultMemberRole         TeamMemberRole `json:"defaultMemberRole"`
-	MembersCanCreatePipelines bool           `json:"membersCanCreatePipelines"`
+	Id                        string `json:"id"`
+	Name                      string `json:"name"`
+	Description               string `json:"description"`
+	Privacy                   string `json:"privacy"`
+	IsDefaultTeam             bool   `json:"isDefaultTeam"`
+	DefaultMemberRole         string `json:"defaultMemberRole"`
+	MembersCanCreatePipelines bool   `json:"membersCanCreatePipelines"`
 }
 
 // GetId returns __teamUpdateInput.Id, and is useful for accessing the field via an interface.
@@ -679,13 +659,13 @@ func (v *__teamUpdateInput) GetName() string { return v.Name }
 func (v *__teamUpdateInput) GetDescription() string { return v.Description }
 
 // GetPrivacy returns __teamUpdateInput.Privacy, and is useful for accessing the field via an interface.
-func (v *__teamUpdateInput) GetPrivacy() TeamPrivacy { return v.Privacy }
+func (v *__teamUpdateInput) GetPrivacy() string { return v.Privacy }
 
 // GetIsDefaultTeam returns __teamUpdateInput.IsDefaultTeam, and is useful for accessing the field via an interface.
 func (v *__teamUpdateInput) GetIsDefaultTeam() bool { return v.IsDefaultTeam }
 
 // GetDefaultMemberRole returns __teamUpdateInput.DefaultMemberRole, and is useful for accessing the field via an interface.
-func (v *__teamUpdateInput) GetDefaultMemberRole() TeamMemberRole { return v.DefaultMemberRole }
+func (v *__teamUpdateInput) GetDefaultMemberRole() string { return v.DefaultMemberRole }
 
 // GetMembersCanCreatePipelines returns __teamUpdateInput.MembersCanCreatePipelines, and is useful for accessing the field via an interface.
 func (v *__teamUpdateInput) GetMembersCanCreatePipelines() bool { return v.MembersCanCreatePipelines }
@@ -3063,15 +3043,13 @@ func (v *getTeamNodeTeam) GetDescription() string { return v.TeamFields.Descript
 func (v *getTeamNodeTeam) GetSlug() string { return v.TeamFields.Slug }
 
 // GetPrivacy returns getTeamNodeTeam.Privacy, and is useful for accessing the field via an interface.
-func (v *getTeamNodeTeam) GetPrivacy() TeamPrivacy { return v.TeamFields.Privacy }
+func (v *getTeamNodeTeam) GetPrivacy() string { return v.TeamFields.Privacy }
 
 // GetIsDefaultTeam returns getTeamNodeTeam.IsDefaultTeam, and is useful for accessing the field via an interface.
 func (v *getTeamNodeTeam) GetIsDefaultTeam() bool { return v.TeamFields.IsDefaultTeam }
 
 // GetDefaultMemberRole returns getTeamNodeTeam.DefaultMemberRole, and is useful for accessing the field via an interface.
-func (v *getTeamNodeTeam) GetDefaultMemberRole() TeamMemberRole {
-	return v.TeamFields.DefaultMemberRole
-}
+func (v *getTeamNodeTeam) GetDefaultMemberRole() string { return v.TeamFields.DefaultMemberRole }
 
 // GetMembersCanCreatePipelines returns getTeamNodeTeam.MembersCanCreatePipelines, and is useful for accessing the field via an interface.
 func (v *getTeamNodeTeam) GetMembersCanCreatePipelines() bool {
@@ -3116,11 +3094,11 @@ type __premarshalgetTeamNodeTeam struct {
 
 	Slug string `json:"slug"`
 
-	Privacy TeamPrivacy `json:"privacy"`
+	Privacy string `json:"privacy"`
 
 	IsDefaultTeam bool `json:"isDefaultTeam"`
 
-	DefaultMemberRole TeamMemberRole `json:"defaultMemberRole"`
+	DefaultMemberRole string `json:"defaultMemberRole"`
 
 	MembersCanCreatePipelines bool `json:"membersCanCreatePipelines"`
 }
@@ -3457,7 +3435,7 @@ func (v *teamCreateTeamCreateTeamCreatePayloadTeamEdgeNodeTeam) GetSlug() string
 }
 
 // GetPrivacy returns teamCreateTeamCreateTeamCreatePayloadTeamEdgeNodeTeam.Privacy, and is useful for accessing the field via an interface.
-func (v *teamCreateTeamCreateTeamCreatePayloadTeamEdgeNodeTeam) GetPrivacy() TeamPrivacy {
+func (v *teamCreateTeamCreateTeamCreatePayloadTeamEdgeNodeTeam) GetPrivacy() string {
 	return v.TeamFields.Privacy
 }
 
@@ -3467,7 +3445,7 @@ func (v *teamCreateTeamCreateTeamCreatePayloadTeamEdgeNodeTeam) GetIsDefaultTeam
 }
 
 // GetDefaultMemberRole returns teamCreateTeamCreateTeamCreatePayloadTeamEdgeNodeTeam.DefaultMemberRole, and is useful for accessing the field via an interface.
-func (v *teamCreateTeamCreateTeamCreatePayloadTeamEdgeNodeTeam) GetDefaultMemberRole() TeamMemberRole {
+func (v *teamCreateTeamCreateTeamCreatePayloadTeamEdgeNodeTeam) GetDefaultMemberRole() string {
 	return v.TeamFields.DefaultMemberRole
 }
 
@@ -3512,11 +3490,11 @@ type __premarshalteamCreateTeamCreateTeamCreatePayloadTeamEdgeNodeTeam struct {
 
 	Slug string `json:"slug"`
 
-	Privacy TeamPrivacy `json:"privacy"`
+	Privacy string `json:"privacy"`
 
 	IsDefaultTeam bool `json:"isDefaultTeam"`
 
-	DefaultMemberRole TeamMemberRole `json:"defaultMemberRole"`
+	DefaultMemberRole string `json:"defaultMemberRole"`
 
 	MembersCanCreatePipelines bool `json:"membersCanCreatePipelines"`
 }
@@ -3616,9 +3594,7 @@ func (v *teamUpdateTeamUpdateTeamUpdatePayloadTeam) GetDescription() string {
 func (v *teamUpdateTeamUpdateTeamUpdatePayloadTeam) GetSlug() string { return v.TeamFields.Slug }
 
 // GetPrivacy returns teamUpdateTeamUpdateTeamUpdatePayloadTeam.Privacy, and is useful for accessing the field via an interface.
-func (v *teamUpdateTeamUpdateTeamUpdatePayloadTeam) GetPrivacy() TeamPrivacy {
-	return v.TeamFields.Privacy
-}
+func (v *teamUpdateTeamUpdateTeamUpdatePayloadTeam) GetPrivacy() string { return v.TeamFields.Privacy }
 
 // GetIsDefaultTeam returns teamUpdateTeamUpdateTeamUpdatePayloadTeam.IsDefaultTeam, and is useful for accessing the field via an interface.
 func (v *teamUpdateTeamUpdateTeamUpdatePayloadTeam) GetIsDefaultTeam() bool {
@@ -3626,7 +3602,7 @@ func (v *teamUpdateTeamUpdateTeamUpdatePayloadTeam) GetIsDefaultTeam() bool {
 }
 
 // GetDefaultMemberRole returns teamUpdateTeamUpdateTeamUpdatePayloadTeam.DefaultMemberRole, and is useful for accessing the field via an interface.
-func (v *teamUpdateTeamUpdateTeamUpdatePayloadTeam) GetDefaultMemberRole() TeamMemberRole {
+func (v *teamUpdateTeamUpdateTeamUpdatePayloadTeam) GetDefaultMemberRole() string {
 	return v.TeamFields.DefaultMemberRole
 }
 
@@ -3671,11 +3647,11 @@ type __premarshalteamUpdateTeamUpdateTeamUpdatePayloadTeam struct {
 
 	Slug string `json:"slug"`
 
-	Privacy TeamPrivacy `json:"privacy"`
+	Privacy string `json:"privacy"`
 
 	IsDefaultTeam bool `json:"isDefaultTeam"`
 
-	DefaultMemberRole TeamMemberRole `json:"defaultMemberRole"`
+	DefaultMemberRole string `json:"defaultMemberRole"`
 
 	MembersCanCreatePipelines bool `json:"membersCanCreatePipelines"`
 }
@@ -4300,13 +4276,13 @@ type updatePipelinePipelineUpdatePipelineUpdatePayloadPipelineTeamsTeamPipelineC
 	// Add new organization members to this team by default
 	IsDefaultTeam bool `json:"isDefaultTeam"`
 	// New organization members will be granted this role on this team
-	DefaultMemberRole TeamMemberRole `json:"defaultMemberRole"`
+	DefaultMemberRole string `json:"defaultMemberRole"`
 	// The name of the team
 	Name string `json:"name"`
 	// Whether or not team members can create new pipelines in this team
 	MembersCanCreatePipelines bool `json:"membersCanCreatePipelines"`
 	// The privacy setting for this team
-	Privacy TeamPrivacy `json:"privacy"`
+	Privacy string `json:"privacy"`
 	// The slug of the team
 	Slug string `json:"slug"`
 	// The public UUID for this team
@@ -4329,7 +4305,7 @@ func (v *updatePipelinePipelineUpdatePipelineUpdatePayloadPipelineTeamsTeamPipel
 }
 
 // GetDefaultMemberRole returns updatePipelinePipelineUpdatePipelineUpdatePayloadPipelineTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipelineTeam.DefaultMemberRole, and is useful for accessing the field via an interface.
-func (v *updatePipelinePipelineUpdatePipelineUpdatePayloadPipelineTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipelineTeam) GetDefaultMemberRole() TeamMemberRole {
+func (v *updatePipelinePipelineUpdatePipelineUpdatePayloadPipelineTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipelineTeam) GetDefaultMemberRole() string {
 	return v.DefaultMemberRole
 }
 
@@ -4344,7 +4320,7 @@ func (v *updatePipelinePipelineUpdatePipelineUpdatePayloadPipelineTeamsTeamPipel
 }
 
 // GetPrivacy returns updatePipelinePipelineUpdatePipelineUpdatePayloadPipelineTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipelineTeam.Privacy, and is useful for accessing the field via an interface.
-func (v *updatePipelinePipelineUpdatePipelineUpdatePayloadPipelineTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipelineTeam) GetPrivacy() TeamPrivacy {
+func (v *updatePipelinePipelineUpdatePipelineUpdatePayloadPipelineTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipelineTeam) GetPrivacy() string {
 	return v.Privacy
 }
 
@@ -5185,9 +5161,9 @@ func teamCreate(
 	organizationID string,
 	name string,
 	description string,
-	privacy TeamPrivacy,
+	privacy string,
 	isDefaultTeam bool,
-	defaultMemberRole TeamMemberRole,
+	defaultMemberRole string,
 	membersCanCreatePipelines bool,
 ) (*teamCreateResponse, error) {
 	req := &graphql.Request{
@@ -5278,9 +5254,9 @@ func teamUpdate(
 	id string,
 	name string,
 	description string,
-	privacy TeamPrivacy,
+	privacy string,
 	isDefaultTeam bool,
-	defaultMemberRole TeamMemberRole,
+	defaultMemberRole string,
 	membersCanCreatePipelines bool,
 ) (*teamUpdateResponse, error) {
 	req := &graphql.Request{
