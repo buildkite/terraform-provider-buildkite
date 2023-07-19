@@ -61,14 +61,15 @@ func (m *metaDatasource) Read(ctx context.Context, req datasource.ReadRequest, r
 
 func (*metaDatasource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		MarkdownDescription: "", // TODO
+		MarkdownDescription: "Find source IP addresses that Buildkite may use to send external requests to.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed: true,
 			},
 			"webhook_ips": schema.ListAttribute{
-				Computed:    true,
-				ElementType: types.StringType,
+				MarkdownDescription: "List of IPs in CIDR format",
+				Computed:            true,
+				ElementType:         types.StringType,
 			},
 		},
 	}
