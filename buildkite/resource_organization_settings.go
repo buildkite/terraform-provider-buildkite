@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"log"
 
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -13,25 +14,25 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-type OrganizationResourceModel struct {
+type organizationResourceModel struct {
 	AllowedApiIpAddresses types.List   `tfsdk:"allowed_api_ip_addresses"`
 	ID                    types.String `tfsdk:"id"`
 	UUID                  types.String `tfsdk:"uuid"`
 }
 
-type OrganizationResource struct {
+type organizationResource struct {
 	client *Client
 }
 
-func NewOrganizationResource() resource.Resource {
-	return &OrganizationResource{}
+func newOrganizationResource() resource.Resource {
+	return &organizationResource{}
 }
 
-func (OrganizationResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
+func (organizationResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
 	resp.TypeName = req.ProviderTypeName + "_organization_settings"
 }
 
-func (o *OrganizationResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
+func (o *organizationResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
 	if req.ProviderData == nil {
 		return
 	}
@@ -39,7 +40,7 @@ func (o *OrganizationResource) Configure(ctx context.Context, req resource.Confi
 	o.client = req.ProviderData.(*Client)
 }
 
-func (*OrganizationResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
+func (*organizationResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = resource_schema.Schema{
 		Attributes: map[string]resource_schema.Attribute{
 			"id": resource_schema.StringAttribute{
@@ -62,8 +63,8 @@ func (*OrganizationResource) Schema(ctx context.Context, req resource.SchemaRequ
 	}
 }
 
-func (o *OrganizationResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	var plan, state OrganizationResourceModel
+func (o *organizationResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	var plan, state organizationResourceModel
 
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 
@@ -96,6 +97,7 @@ func (o *OrganizationResource) Create(ctx context.Context, req resource.CreateRe
 		cidrs[i] = strings.Trim(v.String(), "\"")
 	}
 
+	log.Printf("Creating settings for organization %s ...", response.Organization.Id)
 	apiResponse, err := setApiIpAddresses(
 		o.client.genqlient,
 		o.client.organizationId,
@@ -123,8 +125,8 @@ func (o *OrganizationResource) Create(ctx context.Context, req resource.CreateRe
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }
 
-func (o *OrganizationResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var state OrganizationResourceModel
+func (o *organizationResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	var state organizationResourceModel
 
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 
@@ -132,7 +134,7 @@ func (o *OrganizationResource) Read(ctx context.Context, req resource.ReadReques
 		return
 	}
 
-	// Get Organization
+	log.Printf("Reading settings for organization ...")
 	response, err := getOrganization(o.client.genqlient, o.client.organization)
 
 	if err != nil {
@@ -164,12 +166,12 @@ func (o *OrganizationResource) Read(ctx context.Context, req resource.ReadReques
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }
 
-func (o *OrganizationResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+func (o *organizationResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
 
-func (o *OrganizationResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	var plan, state OrganizationResourceModel
+func (o *organizationResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	var plan, state organizationResourceModel
 
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 
@@ -202,6 +204,7 @@ func (o *OrganizationResource) Update(ctx context.Context, req resource.UpdateRe
 		cidrs[i] = strings.Trim(v.String(), "\"")
 	}
 
+	log.Printf("Updating settings for organization %s ...", response.Organization.Id)
 	apiResponse, err := setApiIpAddresses(
 		o.client.genqlient,
 		o.client.organizationId,
@@ -229,7 +232,7 @@ func (o *OrganizationResource) Update(ctx context.Context, req resource.UpdateRe
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }
 
-func (o *OrganizationResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+func (o *organizationResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	response, err := getOrganization(o.client.genqlient, o.client.organization)
 
 	if err != nil {
@@ -247,6 +250,8 @@ func (o *OrganizationResource) Delete(ctx context.Context, req resource.DeleteRe
 		)
 		return
 	}
+
+	log.Printf("Deleting settings for organization %s ...", response.Organization.Id)
 	_, err = setApiIpAddresses(o.client.genqlient, response.Organization.Id, "")
 
 	if err != nil {
