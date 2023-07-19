@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 ## Unreleased
 
 * Migrate organization datasource to plugin framework [[PR #304](https://github.com/buildkite/terraform-provider-buildkite/pull/304)] @jradtilbrook
+* SUP-1063 Convert meta datasource to framework [[PR #314](https://github.com/buildkite/terraform-provider-buildkite/pull/314)] @jradtilbrook
 
 ## [v0.20.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v0.19.2...v0.20.0)
 
