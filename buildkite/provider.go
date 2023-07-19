@@ -84,6 +84,7 @@ func (*terraformProvider) DataSources(context.Context) []func() datasource.DataS
 	return []func() datasource.DataSource{
 		newClusterDatasource,
 		newOrganizationDatasource,
+		newMetaDatasource,
 	}
 }
 
@@ -142,7 +143,6 @@ func Provider(version string) *schema.Provider {
 			"buildkite_organization_settings": resourceOrganizationSettings(),
 		},
 		DataSourcesMap: map[string]*schema.Resource{
-			"buildkite_meta":     dataSourceMeta(),
 			"buildkite_pipeline": dataSourcePipeline(),
 			"buildkite_team":     dataSourceTeam(),
 		},
