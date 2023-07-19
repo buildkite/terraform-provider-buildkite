@@ -10,7 +10,7 @@ import (
 
 // Confirm we can add and remove a team member
 func TestAccTeamMember_add_remove(t *testing.T) {
-	var tm TeamMemberResourceModel
+	var tm teamMemberResourceModel
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
@@ -33,7 +33,7 @@ func TestAccTeamMember_add_remove(t *testing.T) {
 }
 
 func TestAccTeamMember_add_remove_non_default_role(t *testing.T) {
-	var tm TeamMemberResourceModel
+	var tm teamMemberResourceModel
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
@@ -56,7 +56,7 @@ func TestAccTeamMember_add_remove_non_default_role(t *testing.T) {
 }
 
 func TestAccTeamMember_update(t *testing.T) {
-	var tm TeamMemberResourceModel
+	var tm teamMemberResourceModel
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
@@ -87,7 +87,7 @@ func TestAccTeamMember_update(t *testing.T) {
 
 // Confirm that this resource can be imported
 func TestAccTeamMember_import(t *testing.T) {
-	var tm TeamMemberResourceModel
+	var tm teamMemberResourceModel
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
@@ -131,7 +131,7 @@ func testAccTeamMemberConfigBasic(role string) string {
 	return fmt.Sprintf(config, role)
 }
 
-func testAccCheckTeamMemberExists(resourceName string, tm *TeamMemberResourceModel) resource.TestCheckFunc {
+func testAccCheckTeamMemberExists(resourceName string, tm *teamMemberResourceModel) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		resourceState, ok := s.RootModule().Resources[resourceName]
 
@@ -182,7 +182,7 @@ func testCheckTeamMemberResourceRemoved(s *terraform.State) error {
 	return nil
 }
 
-func testAccCheckTeamMemberRemoteValues(tm *TeamMemberResourceModel, role string) resource.TestCheckFunc {
+func testAccCheckTeamMemberRemoteValues(tm *teamMemberResourceModel, role string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 
 		if string(tm.Role.ValueString()) != role {

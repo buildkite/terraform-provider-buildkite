@@ -28,7 +28,7 @@ type TeamMemberNode struct {
 	}
 }
 
-type TeamMemberResourceModel struct {
+type teamMemberResourceModel struct {
 	Id     types.String `tfsdk:"id"`
 	Uuid   types.String `tfsdk:"uuid"`
 	Role   types.String `tfsdk:"role"`
@@ -36,19 +36,19 @@ type TeamMemberResourceModel struct {
 	UserId types.String `tfsdk:"user_id"`
 }
 
-type TeamMemberResource struct {
+type teamMemberResource struct {
 	client *Client
 }
 
-func NewTeamMemberResource() resource.Resource {
-	return &TeamMemberResource{}
+func newTeamMemberResource() resource.Resource {
+	return &teamMemberResource{}
 }
 
-func (TeamMemberResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
+func (teamMemberResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
 	resp.TypeName = req.ProviderTypeName + "_team_member"
 }
 
-func (tm *TeamMemberResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
+func (tm *teamMemberResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
 	if req.ProviderData == nil {
 		return
 	}
@@ -56,7 +56,7 @@ func (tm *TeamMemberResource) Configure(ctx context.Context, req resource.Config
 	tm.client = req.ProviderData.(*Client)
 }
 
-func (TeamMemberResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
+func (teamMemberResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = resource_schema.Schema{
 		MarkdownDescription: "A team member resourc allows for the management of team team membership for existing organization users.",
 		Attributes: map[string]resource_schema.Attribute{
@@ -91,8 +91,8 @@ func (TeamMemberResource) Schema(ctx context.Context, req resource.SchemaRequest
 	}
 }
 
-func (tm *TeamMemberResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	var plan, state TeamMemberResourceModel
+func (tm *teamMemberResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	var plan, state teamMemberResourceModel
 
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 
@@ -127,8 +127,8 @@ func (tm *TeamMemberResource) Create(ctx context.Context, req resource.CreateReq
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
-func (tm *TeamMemberResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var state TeamMemberResourceModel
+func (tm *teamMemberResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	var state teamMemberResourceModel
 
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 
@@ -161,11 +161,11 @@ func (tm *TeamMemberResource) Read(ctx context.Context, req resource.ReadRequest
 	}
 }
 
-func (tm *TeamMemberResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+func (tm *teamMemberResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
 
-func (tm *TeamMemberResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+func (tm *teamMemberResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	var id, role string
 
 	// Obtain team member's ID from state, new role from plan
@@ -192,7 +192,7 @@ func (tm *TeamMemberResource) Update(ctx context.Context, req resource.UpdateReq
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("role"), newRole)...)
 }
 
-func (tm *TeamMemberResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+func (tm *teamMemberResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	var id string
 
 	// Obtain team member's ID from state
@@ -214,7 +214,7 @@ func (tm *TeamMemberResource) Delete(ctx context.Context, req resource.DeleteReq
 	}
 }
 
-func updateTeamMemberResourceState(tmr *TeamMemberResourceModel, tmn getNodeTeamMember) {
+func updateTeamMemberResourceState(tmr *teamMemberResourceModel, tmn getNodeTeamMember) {
 	tmr.Id = types.StringValue(tmn.Id)
 	tmr.Uuid = types.StringValue(tmn.Uuid)
 	tmr.TeamId = types.StringValue(tmn.Team.Id)

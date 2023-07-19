@@ -98,7 +98,7 @@ func (*terraformProvider) Resources(context.Context) []func() resource.Resource 
 		newClusterAgentTokenResource,
 		NewClusterQueueResource,
 		newClusterResource,
-		NewTeamMemberResource,
+		newTeamMemberResource,
 	}
 }
 
