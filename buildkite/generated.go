@@ -465,9 +465,9 @@ func (v *__createClusterQueueInput) GetDescription() *string { return v.Descript
 
 // __createTeamMemberInput is used internally by genqlient
 type __createTeamMemberInput struct {
-	TeamID string          `json:"teamID"`
-	UserID string          `json:"userID"`
-	Role   *TeamMemberRole `json:"role"`
+	TeamID string         `json:"teamID"`
+	UserID string         `json:"userID"`
+	Role   TeamMemberRole `json:"role,omitempty"`
 }
 
 // GetTeamID returns __createTeamMemberInput.TeamID, and is useful for accessing the field via an interface.
@@ -477,7 +477,7 @@ func (v *__createTeamMemberInput) GetTeamID() string { return v.TeamID }
 func (v *__createTeamMemberInput) GetUserID() string { return v.UserID }
 
 // GetRole returns __createTeamMemberInput.Role, and is useful for accessing the field via an interface.
-func (v *__createTeamMemberInput) GetRole() *TeamMemberRole { return v.Role }
+func (v *__createTeamMemberInput) GetRole() TeamMemberRole { return v.Role }
 
 // __deleteClusterInput is used internally by genqlient
 type __deleteClusterInput struct {
@@ -4620,7 +4620,7 @@ func createTeamMember(
 	client graphql.Client,
 	teamID string,
 	userID string,
-	role *TeamMemberRole,
+	role TeamMemberRole,
 ) (*createTeamMemberResponse, error) {
 	req := &graphql.Request{
 		OpName: "createTeamMember",
