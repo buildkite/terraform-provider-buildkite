@@ -63,6 +63,7 @@ func (*organizationResource) Schema(ctx context.Context, req resource.SchemaRequ
 	}
 }
 
+
 func (o *organizationResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var plan, state organizationResourceModel
 
@@ -93,7 +94,7 @@ func (o *organizationResource) Create(ctx context.Context, req resource.CreateRe
 		return
 	}
 
-	state.ID = types.StringValue(response.Organization.Id)
+	state.ID = types.StringValue(o.client.organizationId)
 	state.UUID = types.StringValue(response.Organization.Uuid)
 	ips, diag := types.ListValueFrom(ctx, types.StringType, strings.Split(apiResponse.OrganizationApiIpAllowlistUpdate.Organization.AllowedApiIpAddresses, " "))
 	state.AllowedApiIpAddresses = ips
@@ -126,7 +127,7 @@ func (o *organizationResource) Read(ctx context.Context, req resource.ReadReques
 		return
 	}
 
-	state.ID = types.StringValue(response.Organization.Id)
+	state.ID = types.StringValue(o.client.organizationId)
 	state.UUID = types.StringValue(response.Organization.Uuid)
 	ips, diag := types.ListValueFrom(ctx, types.StringType, strings.Split(response.Organization.AllowedApiIpAddresses, " "))
 	state.AllowedApiIpAddresses = ips
@@ -173,7 +174,7 @@ func (o *organizationResource) Update(ctx context.Context, req resource.UpdateRe
 		return
 	}
 
-	state.ID = types.StringValue(response.Organization.Id)
+	state.ID = types.StringValue(o.client.organizationId)
 	state.UUID = types.StringValue(response.Organization.Uuid)
 	ips, diag := types.ListValueFrom(ctx, types.StringType, strings.Split(apiResponse.OrganizationApiIpAllowlistUpdate.Organization.AllowedApiIpAddresses, " "))
 	state.AllowedApiIpAddresses = ips
