@@ -1972,11 +1972,24 @@ func (v *setApiIpAddressesOrganizationApiIpAllowlistUpdateOrganizationAPIIPAllow
 type setApiIpAddressesOrganizationApiIpAllowlistUpdateOrganizationAPIIPAllowlistUpdateMutationPayloadOrganization struct {
 	// A space-separated allowlist of IP addresses that can access the organization via the GraphQL or REST API
 	AllowedApiIpAddresses string `json:"allowedApiIpAddresses"`
+	Id                    string `json:"id"`
+	// The public UUID for this organization
+	Uuid string `json:"uuid"`
 }
 
 // GetAllowedApiIpAddresses returns setApiIpAddressesOrganizationApiIpAllowlistUpdateOrganizationAPIIPAllowlistUpdateMutationPayloadOrganization.AllowedApiIpAddresses, and is useful for accessing the field via an interface.
 func (v *setApiIpAddressesOrganizationApiIpAllowlistUpdateOrganizationAPIIPAllowlistUpdateMutationPayloadOrganization) GetAllowedApiIpAddresses() string {
 	return v.AllowedApiIpAddresses
+}
+
+// GetId returns setApiIpAddressesOrganizationApiIpAllowlistUpdateOrganizationAPIIPAllowlistUpdateMutationPayloadOrganization.Id, and is useful for accessing the field via an interface.
+func (v *setApiIpAddressesOrganizationApiIpAllowlistUpdateOrganizationAPIIPAllowlistUpdateMutationPayloadOrganization) GetId() string {
+	return v.Id
+}
+
+// GetUuid returns setApiIpAddressesOrganizationApiIpAllowlistUpdateOrganizationAPIIPAllowlistUpdateMutationPayloadOrganization.Uuid, and is useful for accessing the field via an interface.
+func (v *setApiIpAddressesOrganizationApiIpAllowlistUpdateOrganizationAPIIPAllowlistUpdateMutationPayloadOrganization) GetUuid() string {
+	return v.Uuid
 }
 
 // setApiIpAddressesResponse is returned by setApiIpAddresses on success.
@@ -3405,6 +3418,8 @@ mutation setApiIpAddresses ($organizationID: ID!, $ipAddresses: String!) {
 	organizationApiIpAllowlistUpdate(input: {organizationID:$organizationID,ipAddresses:$ipAddresses}) {
 		organization {
 			allowedApiIpAddresses
+			id
+			uuid
 		}
 	}
 }

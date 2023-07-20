@@ -63,7 +63,6 @@ func (*organizationResource) Schema(ctx context.Context, req resource.SchemaRequ
 	}
 }
 
-
 func (o *organizationResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var plan, state organizationResourceModel
 
@@ -73,13 +72,10 @@ func (o *organizationResource) Create(ctx context.Context, req resource.CreateRe
 		return
 	}
 
-	// Get Organization
-	response, err := getOrganization(o.client.genqlient, o.client.organization)
-
 	// Create CIDR slice from AllowedApiIpAddresses
 	cidrs := createCidrSliceFromList(plan.AllowedApiIpAddresses)
 
-	log.Printf("Creating settings for organization %s ...", response.Organization.Id)
+	log.Printf("Creating settings for organization %s ...", o.client.organizationId)
 	apiResponse, err := setApiIpAddresses(
 		o.client.genqlient,
 		o.client.organizationId,
@@ -94,8 +90,8 @@ func (o *organizationResource) Create(ctx context.Context, req resource.CreateRe
 		return
 	}
 
-	state.ID = types.StringValue(o.client.organizationId)
-	state.UUID = types.StringValue(response.Organization.Uuid)
+	state.ID = types.StringValue(apiResponse.OrganizationApiIpAllowlistUpdate.Organization.Id)
+	state.UUID = types.StringValue(apiResponse.OrganizationApiIpAllowlistUpdate.Organization.Uuid)
 	ips, diag := types.ListValueFrom(ctx, types.StringType, strings.Split(apiResponse.OrganizationApiIpAllowlistUpdate.Organization.AllowedApiIpAddresses, " "))
 	state.AllowedApiIpAddresses = ips
 
@@ -153,13 +149,10 @@ func (o *organizationResource) Update(ctx context.Context, req resource.UpdateRe
 		return
 	}
 
-	// Get Organization
-	response, err := getOrganization(o.client.genqlient, o.client.organization)
-
 	// Create CIDR slice from AllowedApiIpAddresses
 	cidrs := createCidrSliceFromList(plan.AllowedApiIpAddresses)
 
-	log.Printf("Updating settings for organization %s ...", response.Organization.Id)
+	log.Printf("Updating settings for organization %s ...", o.client.organizationId)
 	apiResponse, err := setApiIpAddresses(
 		o.client.genqlient,
 		o.client.organizationId,
@@ -173,9 +166,8 @@ func (o *organizationResource) Update(ctx context.Context, req resource.UpdateRe
 		)
 		return
 	}
-
-	state.ID = types.StringValue(o.client.organizationId)
-	state.UUID = types.StringValue(response.Organization.Uuid)
+	state.ID = types.StringValue(apiResponse.OrganizationApiIpAllowlistUpdate.Organization.Id)
+	state.UUID = types.StringValue(apiResponse.OrganizationApiIpAllowlistUpdate.Organization.Uuid)
 	ips, diag := types.ListValueFrom(ctx, types.StringType, strings.Split(apiResponse.OrganizationApiIpAllowlistUpdate.Organization.AllowedApiIpAddresses, " "))
 	state.AllowedApiIpAddresses = ips
 
@@ -188,10 +180,9 @@ func (o *organizationResource) Update(ctx context.Context, req resource.UpdateRe
 }
 
 func (o *organizationResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	response, err := getOrganization(o.client.genqlient, o.client.organization)
+	log.Printf("Deleting settings for organization %s ...", o.client.organizationId)
 
-	log.Printf("Deleting settings for organization %s ...", response.Organization.Id)
-	_, err = setApiIpAddresses(o.client.genqlient, response.Organization.Id, "")
+	_, err := setApiIpAddresses(o.client.genqlient, o.client.organizationId, "")
 
 	if err != nil {
 		resp.Diagnostics.AddError(
