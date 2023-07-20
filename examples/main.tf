@@ -31,6 +31,10 @@ resource "buildkite_pipeline" "repo2" {
   deletion_protection = true
 }
 
+data "buildkite_pipeline" "data2" {
+	slug = buildkite_pipeline.repo2.slug
+}
+
 resource "buildkite_agent_token" "fleet" {
   description = "token used by build fleet"
 }
