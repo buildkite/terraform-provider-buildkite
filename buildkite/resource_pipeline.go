@@ -521,18 +521,6 @@ func UpdatePipeline(ctx context.Context, d *schema.ResourceData, m interface{}) 
 func DeletePipeline(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := m.(*Client)
 
-	var mutation struct {
-		PipelineDelete struct {
-			Organization struct {
-				ID graphql.ID
-			}
-		} `graphql:"pipelineDelete(input: {id: $id})"`
-	}
-
-	vars := map[string]interface{}{
-		"id": graphql.ID(d.Id()),
-	}
-
 	if d.Get("deletion_protection") == true {
 		return diag.Errorf("Deletion protection is enabled for pipeline: %s", d.Get("name"))
 	}
@@ -547,7 +535,7 @@ func DeletePipeline(ctx context.Context, d *schema.ResourceData, m interface{}) 
 	}
 
 	log.Printf("Deleting pipeline %s ...", d.Get("name"))
-	err := client.graphql.Mutate(context.Background(), &mutation, vars)
+	_, err := deletePipeline(client.genqlient, d.Id())
 	if err != nil {
 		log.Printf("Unable to delete pipeline %s", d.Get("name"))
 		return diag.FromErr(err)
