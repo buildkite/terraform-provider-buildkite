@@ -84,6 +84,7 @@ func (*terraformProvider) DataSources(context.Context) []func() datasource.DataS
 	return []func() datasource.DataSource{
 		newClusterDatasource,
 		newOrganizationDatasource,
+		newMetaDatasource,
 		newTeamDatasource,
 	}
 }
@@ -100,6 +101,8 @@ func (*terraformProvider) Resources(context.Context) []func() resource.Resource 
 		NewClusterQueueResource,
 		newClusterResource,
 		newTeamResource,
+		newTeamMemberResource,
+		newOrganizationResource,
 	}
 }
 
@@ -139,11 +142,10 @@ func Provider(version string) *schema.Provider {
 		ResourcesMap: map[string]*schema.Resource{
 			"buildkite_pipeline":              resourcePipeline(),
 			"buildkite_pipeline_schedule":     resourcePipelineSchedule(),
-			"buildkite_team_member":           resourceTeamMember(),
+			"buildkite_team":                  resourceTeam(),
 			"buildkite_organization_settings": resourceOrganizationSettings(),
 		},
 		DataSourcesMap: map[string]*schema.Resource{
-			"buildkite_meta":     dataSourceMeta(),
 			"buildkite_pipeline": dataSourcePipeline(),
 		},
 		Schema: map[string]*schema.Schema{

@@ -10,6 +10,8 @@ mutation setApiIpAddresses($organizationID: ID!, $ipAddresses: String!) {
     organizationApiIpAllowlistUpdate(input: { organizationID: $organizationID, ipAddresses: $ipAddresses }) {
         organization {
             allowedApiIpAddresses
+            id
+            uuid
         }
     }
 }
