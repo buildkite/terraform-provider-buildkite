@@ -2,8 +2,8 @@ package buildkite
 
 import (
 	"context"
-	"errors"
 	"fmt"
+	"log"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
@@ -11,13 +11,13 @@ import (
 )
 
 type pipelineDataSourceModel struct {
-	ID                    types.String `tfsdk:"id"`
-	UUID                  types.String `tfsdk:"uuid"`
-	DefaultBranch  		  types.String `tfsdk:"default_branch"`
-	Description  		  types.String `tfsdk:"description"`
-	Repository  		  types.String `tfsdk:"repository"`
-	Slug  		 		  types.String `tfsdk:"slug"`
-	WebhookUrl  		  types.String `tfsdk:"webhook_url"`
+	ID            types.String `tfsdk:"id"`
+	Name          types.String `tfsdk:"name"`
+	DefaultBranch types.String `tfsdk:"default_branch"`
+	Description   types.String `tfsdk:"description"`
+	Repository    types.String `tfsdk:"repository"`
+	Slug          types.String `tfsdk:"slug"`
+	WebhookUrl    types.String `tfsdk:"webhook_url"`
 }
 
 type pipelineDatasource struct {
@@ -25,7 +25,7 @@ type pipelineDatasource struct {
 }
 
 func newPipelineDatasource() datasource.DataSource {
-	return &clusterDatasource{}
+	return &pipelineDatasource{}
 }
 
 func (p *pipelineDatasource) Configure(ctx context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
@@ -46,23 +46,29 @@ func (*pipelineDatasource) Schema(ctx context.Context, req datasource.SchemaRequ
 			"id": schema.StringAttribute{
 				Computed: true,
 			},
-			"uuid": schema.StringAttribute{
-				Computed: true,
+			"name": schema.StringAttribute{
+				Computed:            true,
+				MarkdownDescription: "The name of the pipeline.",
 			},
 			"default_branch": schema.StringAttribute{
 				Computed:            true,
+				MarkdownDescription: "The default branch to prefill when new builds are created or triggered.",
 			},
 			"description": schema.StringAttribute{
 				Computed:            true,
+				MarkdownDescription: "The description of the pipeline.",
 			},
 			"repository": schema.StringAttribute{
 				Computed:            true,
+				MarkdownDescription: "The git URL of the repository.",
 			},
 			"slug": schema.StringAttribute{
 				Required:            true,
+				MarkdownDescription: "The slug of the pipeline.",
 			},
 			"webhook_url": schema.StringAttribute{
 				Computed:            true,
+				MarkdownDescription: "The Buildkite webhook URL that triggers builds on this pipeline.",
 			},
 		},
 	}
@@ -72,84 +78,42 @@ func (c *pipelineDatasource) Read(ctx context.Context, req datasource.ReadReques
 	var state pipelineDataSourceModel
 
 	resp.Diagnostics.Append(req.Config.Get(ctx, &state)...)
-	
+
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	orgPipelineSlug := fmt.Sprintf("%s/%s", c.client.organization, state.Slug.String())
+	orgPipelineSlug := fmt.Sprintf("%s/%s", c.client.organization, state.Slug.ValueString())
+
+	log.Printf("Obtaining pipeline with slug %s ...", orgPipelineSlug)
 	pipeline, err := getPipeline(c.client.genqlient, orgPipelineSlug)
 
 	if err != nil {
-		return diag.FromErr(err)
+		resp.Diagnostics.AddError(
+			"Unable to read pipeline",
+			fmt.Sprintf("Unable to read pipeline: %s", err.Error()),
+		)
+		return
 	}
 
 	if pipeline.Pipeline.Id == "" {
-		return diag.FromErr(errors.New("Pipeline not found"))
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Unable to find pipeline",
+				fmt.Sprintf("Pipeline not found: %s", err.Error()),
+			)
+			return
+		}
+
 	}
 
+	state.ID = types.StringValue(pipeline.Pipeline.Id)
+	state.DefaultBranch = types.StringValue(pipeline.Pipeline.DefaultBranch)
+	state.Description = types.StringValue(pipeline.Pipeline.Description)
+	state.Name = types.StringValue(pipeline.Pipeline.Name)
+	state.Repository = types.StringValue(pipeline.Pipeline.Repository.Url)
+	state.Slug = types.StringValue(pipeline.Pipeline.Slug)
+	state.WebhookUrl = types.StringValue(pipeline.Pipeline.WebhookURL)
 
+	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
-
-/*
-func dataSourcePipeline() *schema.Resource {
-	return &schema.Resource{
-		ReadContext: dataSourcePipelineRead,
-		Schema: map[string]*schema.Schema{
-			"default_branch": {
-				Computed: true,
-				Type:     schema.TypeString,
-			},
-			"description": {
-				Computed: true,
-				Type:     schema.TypeString,
-			},
-			"name": {
-				Computed: true,
-				Type:     schema.TypeString,
-			},
-			"repository": {
-				Computed: true,
-				Type:     schema.TypeString,
-			},
-			"slug": {
-				Required: true,
-				Type:     schema.TypeString,
-			},
-			"webhook_url": {
-				Computed: true,
-				Type:     schema.TypeString,
-			},
-		},
-	}
-}
-
-// ReadPipeline retrieves a Buildkite pipeline
-func dataSourcePipelineRead(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	// Warning or errors can be collected in a slice type
-	var diags diag.Diagnostics
-
-	client := m.(*Client)
-
-	orgPipelineSlug := fmt.Sprintf("%s/%s", client.organization, d.Get("slug").(string))
-	pipeline, err := getPipeline(client.genqlient, orgPipelineSlug)
-
-	if err != nil {
-		return diag.FromErr(err)
-	}
-
-	if pipeline.Pipeline.Id == "" {
-		return diag.FromErr(errors.New("Pipeline not found"))
-	}
-
-	d.SetId(pipeline.Pipeline.Id)
-	d.Set("default_branch", pipeline.Pipeline.DefaultBranch)
-	d.Set("description", pipeline.Pipeline.Description)
-	d.Set("name", pipeline.Pipeline.Name)
-	d.Set("repository", pipeline.Pipeline.Repository.Url)
-	d.Set("slug", pipeline.Pipeline.Slug)
-	d.Set("webhook_url", pipeline.Pipeline.WebhookURL)
-
-	return diags
-}
-*/

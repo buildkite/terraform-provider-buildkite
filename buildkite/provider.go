@@ -145,8 +145,7 @@ func Provider(version string) *schema.Provider {
 			"buildkite_organization_settings": resourceOrganizationSettings(),
 		},
 		DataSourcesMap: map[string]*schema.Resource{
-			"buildkite_pipeline": dataSourcePipeline(),
-			"buildkite_team":     dataSourceTeam(),
+			"buildkite_team": dataSourceTeam(),
 		},
 		Schema: map[string]*schema.Schema{
 			SchemaKeyOrganization: {
