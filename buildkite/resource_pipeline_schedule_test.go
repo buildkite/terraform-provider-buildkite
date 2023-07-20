@@ -7,7 +7,23 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
+	"github.com/shurcooL/graphql"
 )
+
+type PipelineScheduleNode struct {
+	Branch   graphql.String
+	Commit   graphql.String
+	Cronline graphql.String
+	Enabled  graphql.Boolean
+	Env      []graphql.String
+	ID       graphql.String
+	UUID     graphql.String
+	Label    graphql.String
+	Message  graphql.String
+	Pipeline struct {
+		ID graphql.String
+	}
+}
 
 // Confirm that we can add a new pipeline schedule to a pipeline
 func TestAccPipelineSchedule_add_remove(t *testing.T) {
@@ -190,7 +206,7 @@ func TestAccPipelineSchedule_disappears(t *testing.T) {
 					// Confirm the pipeline schedule exists in the buildkite API
 					testAccCheckPipelineScheduleExists(resourceName, &node),
 					// Check that the schedule can be removed from the plan
-					testAccCheckResourceDisappears(Provider("testing"), resourcePipelineSchedule(), resourceName),
+					testAccCheckResourceDisappears(Provider("testing"), NewPipelineScheduleResource(), resourceName),
 				),
 				ExpectNonEmptyPlan: true,
 			},
