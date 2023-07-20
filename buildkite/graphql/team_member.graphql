@@ -13,7 +13,7 @@ fragment TeamMemberValues on TeamMember {
 mutation createTeamMember(
     $teamID: ID!, 
     $userID: ID!,
-    # @genqlient(pointer: true)
+    # @genqlient(omitempty: true)
     $role: TeamMemberRole,
 ) {
     teamMemberCreate(
