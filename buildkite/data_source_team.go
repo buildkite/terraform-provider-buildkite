@@ -115,5 +115,5 @@ func (t *teamDatasource) Read(ctx context.Context, req datasource.ReadRequest, r
 		state.MembersCanCreatePipelines = types.BoolValue(converted.MembersCanCreatePipelines)
 	}
 
-		resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
