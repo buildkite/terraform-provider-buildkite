@@ -9,6 +9,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
+var deprecationMessage = `This resource has been deprecated in favour of the newer buildkite_organization resource. 
+Please visit the provider's documentation at https://registry.terraform.io/providers/buildkite/buildkite/latest/docs fo more details.`
+
 func resourceOrganizationSettings() *schema.Resource {
 	return &schema.Resource{
 		CreateContext: CreateUpdateDeleteOrganizationSettings,
@@ -18,6 +21,7 @@ func resourceOrganizationSettings() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
+		DeprecationMessage: deprecationMessage,
 		Schema: map[string]*schema.Schema{
 			"uuid": {
 				Type:     schema.TypeString,

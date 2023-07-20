@@ -1,5 +1,7 @@
 # Resource: organization_settings
 
+**Note**: This resource has been deprecated. In a future minor release, we will remove this resource in favour of the newer `buildkite_organization` [resource](./docs/resources/organization.md) that aligns with the [datasource](./docs/data-sources/organization.md) of the same name. 
+
 This resource allows you to manage the settings for an organization.
 
 You must be an organization administrator to manage organization settings.

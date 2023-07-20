@@ -75,22 +75,6 @@ func (o *organizationResource) Create(ctx context.Context, req resource.CreateRe
 	// Get Organization
 	response, err := getOrganization(o.client.genqlient, o.client.organization)
 
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Unable to obtain Organization",
-			fmt.Sprintf("Unable to obtain Organization: %s", err.Error()),
-		)
-		return
-	}
-
-	if response.Organization.Id == "" {
-		resp.Diagnostics.AddError(
-			"Organization not found",
-			fmt.Sprintf("Organization not found: %s", err.Error()),
-		)
-		return
-	}
-
 	// Create CIDR slice from AllowedApiIpAddresses
 	cidrs := createCidrSliceFromList(plan.AllowedApiIpAddresses)
 
@@ -142,14 +126,6 @@ func (o *organizationResource) Read(ctx context.Context, req resource.ReadReques
 		return
 	}
 
-	if response.Organization.Id == "" {
-		resp.Diagnostics.AddError(
-			"Organization not found",
-			fmt.Sprintf("Organization not found: %s", err.Error()),
-		)
-		return
-	}
-
 	state.ID = types.StringValue(response.Organization.Id)
 	state.UUID = types.StringValue(response.Organization.Uuid)
 	ips, diag := types.ListValueFrom(ctx, types.StringType, strings.Split(response.Organization.AllowedApiIpAddresses, " "))
@@ -178,22 +154,6 @@ func (o *organizationResource) Update(ctx context.Context, req resource.UpdateRe
 
 	// Get Organization
 	response, err := getOrganization(o.client.genqlient, o.client.organization)
-
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Unable to obtain Organization",
-			fmt.Sprintf("Unable to obtain Organization: %s", err.Error()),
-		)
-		return
-	}
-
-	if response.Organization.Id == "" {
-		resp.Diagnostics.AddError(
-			"Organization not found",
-			fmt.Sprintf("Organization not found: %s", err.Error()),
-		)
-		return
-	}
 
 	// Create CIDR slice from AllowedApiIpAddresses
 	cidrs := createCidrSliceFromList(plan.AllowedApiIpAddresses)
@@ -228,22 +188,6 @@ func (o *organizationResource) Update(ctx context.Context, req resource.UpdateRe
 
 func (o *organizationResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	response, err := getOrganization(o.client.genqlient, o.client.organization)
-
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Unable to obtain Organization",
-			fmt.Sprintf("Unable to obtain Organization: %s", err.Error()),
-		)
-		return
-	}
-
-	if response.Organization.Id == "" {
-		resp.Diagnostics.AddError(
-			"Organization not found",
-			fmt.Sprintf("Organization not found: %s", err.Error()),
-		)
-		return
-	}
 
 	log.Printf("Deleting settings for organization %s ...", response.Organization.Id)
 	_, err = setApiIpAddresses(o.client.genqlient, response.Organization.Id, "")
