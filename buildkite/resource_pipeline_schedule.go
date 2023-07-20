@@ -7,6 +7,7 @@ import (
 	"log"
 	"strings"
 
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	resource_schema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
@@ -22,6 +23,7 @@ type pipelineSchedule struct {
 
 type pipelineScheduleResourceModel struct {
 	Id         types.String `tfsdk:"id"`
+	Uuid       types.String `tfsdk:"uuid"`
 	Label      types.String `tfsdk:"label"`
 	Cronline   types.String `tfsdk:"cronline"`
 	Commit     types.String `tfsdk:"commit"`
@@ -52,6 +54,12 @@ func (ps *pipelineSchedule) Schema(_ context.Context, _ resource.SchemaRequest, 
 		MarkdownDescription: "A Pipeline Schedule is a schedule that triggers a pipeline to run at a specific time.",
 		Attributes: map[string]resource_schema.Attribute{
 			"id": resource_schema.StringAttribute{
+				Computed: true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"uuid": resource_schema.StringAttribute{
 				Computed: true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
@@ -131,6 +139,7 @@ func (ps *pipelineSchedule) Create(ctx context.Context, req resource.CreateReque
 
 	state.PipelineId = types.StringValue(apiResponse.PipelineScheduleCreate.Pipeline.Id)
 	state.Id = types.StringValue(apiResponse.PipelineScheduleCreate.PipelineScheduleEdge.Node.Id)
+	state.Uuid = types.StringValue(apiResponse.PipelineScheduleCreate.PipelineScheduleEdge.Node.Uuid)
 	state.Label = types.StringPointerValue(apiResponse.PipelineScheduleCreate.PipelineScheduleEdge.Node.Label)
 	state.Branch = types.StringPointerValue(apiResponse.PipelineScheduleCreate.PipelineScheduleEdge.Node.Branch)
 	state.Commit = types.StringPointerValue(apiResponse.PipelineScheduleCreate.PipelineScheduleEdge.Node.Commit)
@@ -237,6 +246,30 @@ func (ps *pipelineSchedule) Delete(ctx context.Context, req resource.DeleteReque
 		)
 		return
 	}
+}
+
+func (ps *pipelineSchedule) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+
+	log.Printf("Import components %s ...", req.ID)
+
+	if len(req.ID) == 0 {
+		resp.Diagnostics.AddError(
+			"Missing Import Identifier",
+			fmt.Sprintf("Import identifier is expected with format: $BUILDKITE_ORGANIZATION_SLUG/$BUILDKITE_PIPELINE_SLUG/$PIPELINE_SCHEDULE_UUID. Got: %q", req.ID),
+		)
+		return
+	}
+
+	importComponents := strings.Split(req.ID, "/")
+	if len(importComponents) != 3 || importComponents[0] == "" || importComponents[1] == "" || importComponents[2] == "" {
+		resp.Diagnostics.AddError(
+			"Unexpected Import Identifier",
+			fmt.Sprintf("Expected import identifier must have format $BUILDKITE_ORGANIZATION_SLUG/$BUILDKITE_PIPELINE_SLUG/$PIPELINE_SCHEDULE_UUID. Got: %q", req.ID),
+		)
+		return
+	}
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("uuid"), importComponents[2])...)
+
 }
 
 func envVarsArrayToMap(ctx context.Context, envVars []*string) types.Map {

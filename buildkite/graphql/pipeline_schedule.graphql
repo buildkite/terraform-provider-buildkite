@@ -1,5 +1,6 @@
 fragment PipelineScheduleValues on PipelineSchedule {
     id 
+    uuid
     # @genqlient(pointer: true)
     label
     # @genqlient(pointer: true)
