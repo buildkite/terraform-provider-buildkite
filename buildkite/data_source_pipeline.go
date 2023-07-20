@@ -97,14 +97,11 @@ func (c *pipelineDatasource) Read(ctx context.Context, req datasource.ReadReques
 	}
 
 	if pipeline.Pipeline.Id == "" {
-		if err != nil {
-			resp.Diagnostics.AddError(
-				"Unable to find pipeline",
-				fmt.Sprintf("Pipeline not found: %s", err.Error()),
-			)
-			return
-		}
-
+		resp.Diagnostics.AddError(
+			"Unable to find pipeline",
+			fmt.Sprintf("Pipeline not found: %s", err.Error()),
+		)
+		return
 	}
 
 	state.ID = types.StringValue(pipeline.Pipeline.Id)
