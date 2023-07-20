@@ -4,8 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
-### Forthcoming breaking changes
-In release `v0.2x.0`, we are planning to deprecate the `buildkite_organization_settings` resource in favour of the newer `buildkite_organization` [resource](./docs/resources/organization.md).
+### Forthcoming changes
+This release deprecates the `buildkite_organization_settings` [resource](./docs/resources/organization_settings.md). In a future minor release, we will remove this resource in favour of the newer `buildkite_organization` [resource](./docs/resources/organization.md) that aligns with the [datasource](./docs/data-sources/organization.md) of the same name. 
 
 * Migrate organization datasource to plugin framework [[PR #304](https://github.com/buildkite/terraform-provider-buildkite/pull/304)] @jradtilbrook
 * SUP-1067: Organization resource conversion to Framework[[PR #311](https://github.com/buildkite/terraform-provider-buildkite/pull/311)] @james2791
