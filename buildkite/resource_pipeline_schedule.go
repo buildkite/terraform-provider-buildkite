@@ -153,12 +153,11 @@ func (ps *pipelineSchedule) Read(ctx context.Context, req resource.ReadRequest, 
 	}
 
 	log.Printf("Reading Pipeline schedule %s ...", state.Label.ValueString())
-	r, err := getPipelineSchedule(
+	apiResponse, err := getPipelineSchedule(
 		ps.client.genqlient,
 		state.Id.ValueString(),
 	)
 
-	log.Printf("r: %v\n", r)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to read Pipeline schedule",
@@ -167,6 +166,16 @@ func (ps *pipelineSchedule) Read(ctx context.Context, req resource.ReadRequest, 
 		return
 	}
 
+	if pipelineScheduleNode, ok := apiResponse.GetNode().(*getPipelineScheduleNodePipelineSchedule); ok {
+		if pipelineScheduleNode == nil {
+			resp.Diagnostics.AddError(
+				"Unable to read Pipeline schedule",
+				"Error getting Pipeline schedule: nil response",
+			)
+			return
+		}
+		updatePipelineScheduleNode(ctx, &state, *pipelineScheduleNode)
+	}
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
@@ -260,4 +269,15 @@ func envVarsMapFromTfToString(ctx context.Context, m types.Map) string {
 	}
 	return b.String()
 
+}
+
+func updatePipelineScheduleNode(ctx context.Context, psState *pipelineScheduleResourceModel, psNode getPipelineScheduleNodePipelineSchedule) {
+
+	psState.Label = types.StringPointerValue(psNode.Label)
+	psState.Branch = types.StringPointerValue(psNode.Branch)
+	psState.Commit = types.StringPointerValue(psNode.Commit)
+	psState.Cronline = types.StringPointerValue(psNode.Cronline)
+	psState.Message = types.StringPointerValue(psNode.Message)
+	psState.Enabled = types.BoolValue(psNode.Enabled)
+	psState.Env = envVarsArrayToMap(ctx, psNode.Env)
 }
