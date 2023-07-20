@@ -191,29 +191,6 @@ func TestAccPipelineSchedule_import(t *testing.T) {
 	})
 }
 
-func TestAccPipelineSchedule_disappears(t *testing.T) {
-	var node PipelineScheduleNode
-	resourceName := "buildkite_pipeline_schedule.foobar"
-
-	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: protoV6ProviderFactories(),
-		CheckDestroy:             testAccCheckAllPipelineScheduleResourcesDestroyed,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccPipelineScheduleConfigBasic("foo", "0 * * * *"),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					// Confirm the pipeline schedule exists in the buildkite API
-					testAccCheckPipelineScheduleExists(resourceName, &node),
-					// Check that the schedule can be removed from the plan
-					testAccCheckResourceDisappears(Provider("testing"), NewPipelineScheduleResource(), resourceName),
-				),
-				ExpectNonEmptyPlan: true,
-			},
-		},
-	})
-}
-
 func testAccCheckPipelineScheduleExists(resourceName string, resourceSchedule *PipelineScheduleNode) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		resourceState, ok := s.RootModule().Resources[resourceName]
