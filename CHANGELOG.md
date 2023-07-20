@@ -12,6 +12,7 @@ This release deprecates the `buildkite_organization_settings` [resource](./docs/
 * SUP-1067: Organization resource conversion to Framework[[PR #311](https://github.com/buildkite/terraform-provider-buildkite/pull/311)] @james2791
 * SUP-1063 Convert meta datasource to framework [[PR #314](https://github.com/buildkite/terraform-provider-buildkite/pull/314)] @jradtilbrook
 * SUP-1065: Pipeline Datasource conversion to Framework [[PR #315](https://github.com/buildkite/terraform-provider-buildkite/pull/315)] @james2791
+* Convert DeletePipeline to genqlient [[PR #317](https://github.com/buildkite/terraform-provider-buildkite/pull/317)] @jradtilbrook
 
 ## [v0.20.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v0.19.2...v0.20.0)
 
