@@ -45,7 +45,7 @@ func (tm *teamMemberResource) Configure(ctx context.Context, req resource.Config
 
 func (teamMemberResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = resource_schema.Schema{
-		MarkdownDescription: "A team member resourc allows for the management of team team membership for existing organization users.",
+		MarkdownDescription: "A team member resource allows for the management of team membership for existing organization users.",
 		Attributes: map[string]resource_schema.Attribute{
 			"id": resource_schema.StringAttribute{
 				Computed: true,
@@ -61,14 +61,14 @@ func (teamMemberResource) Schema(ctx context.Context, req resource.SchemaRequest
 			},
 			"team_id": resource_schema.StringAttribute{
 				Required:            true,
-				MarkdownDescription: "The GraphQL ID of the team to add/remove the user to/from.",
+				MarkdownDescription: "The GraphQL ID of the team.",
 			},
 			"user_id": resource_schema.StringAttribute{
 				Required:            true,
-				MarkdownDescription: "The GraphQL ID of the user to add/remove.",
+				MarkdownDescription: "The GraphQL ID of the user.",
 			},
 			"role": resource_schema.StringAttribute{
-				Optional:            true,
+				Required:            true,
 				MarkdownDescription: "The role for the user. Either MEMBER or MAINTAINER.",
 				Validators: []validator.String{
 					stringvalidator.OneOf("MEMBER", "MAINTAINER"),
@@ -79,20 +79,20 @@ func (teamMemberResource) Schema(ctx context.Context, req resource.SchemaRequest
 }
 
 func (tm *teamMemberResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	var plan, state teamMemberResourceModel
+	var state teamMemberResourceModel
 
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &state)...)
 
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	log.Printf("Creating team member into team %s ...", plan.TeamId.ValueString())
+	log.Printf("Creating team member into team %s ...", state.TeamId.ValueString())
 	apiResponse, err := createTeamMember(
 		tm.client.genqlient,
-		plan.TeamId.ValueString(),
-		plan.UserId.ValueString(),
-		TeamMemberRole(*plan.Role.ValueStringPointer()),
+		state.TeamId.ValueString(),
+		state.UserId.ValueString(),
+		TeamMemberRole(*state.Role.ValueStringPointer()),
 	)
 
 	if err != nil {
@@ -106,8 +106,6 @@ func (tm *teamMemberResource) Create(ctx context.Context, req resource.CreateReq
 	// Update state with values from API response/plan
 	state.Id = types.StringValue(apiResponse.TeamMemberCreate.TeamMemberEdge.Node.Id)
 	state.Uuid = types.StringValue(apiResponse.TeamMemberCreate.TeamMemberEdge.Node.Uuid)
-	state.TeamId = plan.TeamId
-	state.UserId = plan.UserId
 	// The role of the user will by default be "MEMBER" if none was entered in the plan
 	state.Role = types.StringValue(string(apiResponse.TeamMemberCreate.TeamMemberEdge.Node.Role))
 
@@ -124,7 +122,7 @@ func (tm *teamMemberResource) Read(ctx context.Context, req resource.ReadRequest
 	}
 
 	log.Printf("Reading team member %s ...", state.Id.ValueString())
-	apiResponse, err := get(tm.client.genqlient, state.Id.ValueString())
+	apiResponse, err := getNode(tm.client.genqlient, state.Id.ValueString())
 
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -135,7 +133,7 @@ func (tm *teamMemberResource) Read(ctx context.Context, req resource.ReadRequest
 	}
 
 	// Convert fron Node to getNodeTeamMember type
-	if teamMemberNode, ok := apiResponse.GetNode().(*getNodeTeamMember); ok {
+	if teamMemberNode, ok := apiResponse.GetNode().(*getNodeNodeTeamMember); ok {
 		if teamMemberNode == nil {
 			resp.Diagnostics.AddError(
 				"Unable to get team member",
@@ -180,17 +178,16 @@ func (tm *teamMemberResource) Update(ctx context.Context, req resource.UpdateReq
 }
 
 func (tm *teamMemberResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var id string
+	var state teamMemberResourceModel
 
-	// Obtain team member's ID from state
-	resp.Diagnostics.Append(req.State.GetAttribute(ctx, path.Root("id"), &id)...)
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	log.Printf("Deleting team member with ID %s ...", id)
-	_, err := deleteTeamMember(tm.client.genqlient, id)
+	log.Printf("Deleting team member with ID %s ...", state.Id.ValueString())
+	_, err := deleteTeamMember(tm.client.genqlient, state.Id.ValueString())
 
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -201,7 +198,7 @@ func (tm *teamMemberResource) Delete(ctx context.Context, req resource.DeleteReq
 	}
 }
 
-func updateTeamMemberResourceState(tmr *teamMemberResourceModel, tmn getNodeTeamMember) {
+func updateTeamMemberResourceState(tmr *teamMemberResourceModel, tmn getNodeNodeTeamMember) {
 	tmr.Id = types.StringValue(tmn.Id)
 	tmr.Uuid = types.StringValue(tmn.Uuid)
 	tmr.TeamId = types.StringValue(tmn.Team.Id)

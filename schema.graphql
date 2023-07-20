@@ -564,17 +564,17 @@ enum AuditSubjectType {
 	TEAM_MEMBER
 	TEAM_PIPELINE
 	TEAM_SUITE
+	ORGANIZATION_MEMBER
 	SCM_SERVICE
 	SCM_PIPELINE_SETTINGS
 	SCM_REPOSITORY_HOST
-	ORGANIZATION_MEMBER
 	SUITE_MONITOR
 	SSO_PROVIDER
 	USER_EMAIL
 	SUITE
-	USER_TOTP
 	PIPELINE
 	USER
+	USER_TOTP
 	CLUSTER_PERMISSION
 }
 
@@ -1019,7 +1019,7 @@ type ChangelogEdge {
 	node: Changelog
 }
 
-type Cluster {
+type Cluster implements Node{
 """Returns agent tokens for the Cluster"""
 	agentTokens(
 		first: Int
@@ -1207,7 +1207,7 @@ type ClusterPermission {
 """Actor to whom a cluster permission is applied"""
 union ClusterPermissionActor =OrganizationMember | Team
 
-type ClusterQueue {
+type ClusterQueue implements Node{
 	cluster: Cluster
 	createdBy: User
 	description: String

@@ -1,4 +1,4 @@
-query get(
+query getNode(
     $id: ID!
 ) {
     node(id: $id){
