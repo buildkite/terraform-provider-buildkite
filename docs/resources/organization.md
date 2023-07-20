@@ -1,6 +1,4 @@
-# Resource: organization_settings
-
-**Note**: This resource has been deprecated. In a future minor release, we will remove this resource in favour of the newer `buildkite_organization` [resource](./docs/resources/organization.md) that aligns with the [datasource](./docs/data-sources/organization.md) of the same name. 
+# Resource: organization
 
 This resource allows you to manage the settings for an organization.
 
@@ -11,7 +9,7 @@ Note: The "Allowed API IP Addresses" feature must be enabled on your organizatio
 ## Example Usage
 
 ```hcl
-resource "buildkite_organization_settings" "test_settings" {
+resource "buildkite_organization" "test_settings" {
   allowed_api_ip_addresses = ["1.1.1.1/32"]
 }
 ```
@@ -25,7 +23,7 @@ resource "buildkite_organization_settings" "test_settings" {
 Organization settings can be imported by passing the organization slug to the import command, along with the identifier of the resource.
 
 ```
-$ terraform import buildkite_organization_settings.test_settings test_org
+$ terraform import buildkite_organization.test_settings test_org
 ```
 
 Your organization's slug can be found in your organisation's [settings](https://buildkite.com/organizations/~/settings) page.

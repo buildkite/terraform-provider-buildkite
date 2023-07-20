@@ -548,7 +548,6 @@ union AuditSubjectNode =APIAccessToken | AgentToken | AuthorizationBitbucket | A
 
 """All the possible types of subjects in an Audit Event"""
 enum AuditSubjectType {
-	AUTHORIZATION
 	SUBSCRIPTION
 	CLUSTER
 	AGENT_TOKEN
@@ -566,16 +565,17 @@ enum AuditSubjectType {
 	TEAM_SUITE
 	SCM_SERVICE
 	SCM_PIPELINE_SETTINGS
-	SCM_REPOSITORY_HOST
-	ORGANIZATION_MEMBER
-	SUITE_MONITOR
 	SSO_PROVIDER
-	USER_EMAIL
+	SCM_REPOSITORY_HOST
+	SUITE_MONITOR
 	SUITE
+	ORGANIZATION_MEMBER
 	USER_TOTP
+	USER_EMAIL
 	PIPELINE
 	USER
 	CLUSTER_PERMISSION
+	AUTHORIZATION
 }
 
 """Context for an audit event created during a web request"""
@@ -1019,7 +1019,7 @@ type ChangelogEdge {
 	node: Changelog
 }
 
-type Cluster {
+type Cluster implements Node{
 """Returns agent tokens for the Cluster"""
 	agentTokens(
 		first: Int
@@ -1207,7 +1207,7 @@ type ClusterPermission {
 """Actor to whom a cluster permission is applied"""
 union ClusterPermissionActor =OrganizationMember | Team
 
-type ClusterQueue {
+type ClusterQueue implements Node{
 	cluster: Cluster
 	createdBy: User
 	description: String
