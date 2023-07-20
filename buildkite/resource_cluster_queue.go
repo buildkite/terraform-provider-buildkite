@@ -126,7 +126,7 @@ func (cq *ClusterQueueResource) Read(ctx context.Context, req resource.ReadReque
 		return
 	}
 
-	log.Printf("Getting cluster queues for cluster %s ...", state.ClusterUuid.ValueString())
+	log.Printf("Getting cluster queue %s ...", state.Id.ValueString())
 	apiResponse, err := getNode(cq.client.genqlient, state.Id.ValueString())
 
 	if err != nil {
