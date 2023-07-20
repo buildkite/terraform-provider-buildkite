@@ -47,7 +47,7 @@ func (t *teamDatasource) Schema(ctx context.Context, req datasource.SchemaReques
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Description: "The ID of the team.",
-				Computed:    true,
+				Required:    true,
 			},
 			"uuid": schema.StringAttribute{
 				Description: "The UUID of the team.",

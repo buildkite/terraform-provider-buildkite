@@ -11,11 +11,12 @@ import (
 func testAccTeamConfigBasic(name string) string {
 	config := `
 		resource "buildkite_team" "test" {
-		  name = "%s"
+			name = "%s"
 			description = "a cool team of %s"
-		  privacy = "VISIBLE"
-		  default_team = true
-		  default_member_role = "MEMBER"
+			privacy = "VISIBLE"
+			default_team = true
+			default_member_role = "MEMBER"
+			members_can_create_pipelines = true
 		}
 	`
 	return fmt.Sprintf(config, name, name)
@@ -24,11 +25,12 @@ func testAccTeamConfigBasic(name string) string {
 func testAccTeamConfigSecret(name string) string {
 	config := `
 		resource "buildkite_team" "test" {
-		  name = "%s"
-			description = "a cool team of %s"
-		  privacy = "SECRET"
-		  default_team = true
-		  default_member_role = "MEMBER"
+			name = "%s"
+			description = "a secret team of %s"
+			privacy = "SECRET"
+			default_team = true
+			default_member_role = "MEMBER"
+			members_can_create_pipelines = true
 		}
 	`
 	return fmt.Sprintf(config, name, name)
@@ -65,7 +67,7 @@ func TestAccTeam_AddRemove(t *testing.T) {
 
 func TestAccTeam_Update(t *testing.T) {
 	t.Parallel()
-	var rt = new(teamResourceModel)
+	var tr teamResourceModel
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
@@ -75,15 +77,15 @@ func TestAccTeam_Update(t *testing.T) {
 			{
 				Config: testAccTeamConfigBasic("developers"),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckTeamExists("buildkite_team.test", rt),
+					testAccCheckTeamExists("buildkite_team.test", &tr),
 					resource.TestCheckResourceAttr("buildkite_team.test", "name", "developers"),
 				),
 			},
 			{
 				Config: testAccTeamConfigBasic("wombats"),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckTeamExists("buildkite_team.test", rt),
-					testAccCheckTeamRemoteValues("wombats", rt),
+					testAccCheckTeamExists("buildkite_team.test", &tr),
+					testAccCheckTeamRemoteValues("wombats", &tr),
 					resource.TestCheckResourceAttr("buildkite_team.test", "name", "wombats"),
 					resource.TestCheckResourceAttr("buildkite_team.test", "name", "wombats"),
 				),
@@ -91,12 +93,36 @@ func TestAccTeam_Update(t *testing.T) {
 			{
 				Config: testAccTeamConfigSecret("wombats"),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckTeamExists("buildkite_team.test", rt),
-					testAccCheckTeamRemoteValues("wombats", rt),
+					testAccCheckTeamExists("buildkite_team.test", &tr),
+					testAccCheckTeamRemoteValues("wombats", &tr),
 					resource.TestCheckResourceAttr("buildkite_team.test", "name", "wombats"),
 					resource.TestCheckResourceAttr("buildkite_team.test", "description", "a secret team of wombats"),
 					resource.TestCheckResourceAttr("buildkite_team.test", "privacy", "SECRET"),
 				),
+			},
+		},
+	})
+}
+
+func TestAccTeam_Import(t *testing.T) {
+	var tr teamResourceModel
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		CheckDestroy:             testAccCheckTeamResourceDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccTeamConfigBasic("imported"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccCheckTeamExists("buildkite_team.test", &tr),
+					resource.TestCheckResourceAttr("buildkite_team.test", "name", "imported"),
+				),
+			},
+			{
+				ResourceName:      "buildkite_team.test",
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
@@ -141,12 +167,17 @@ func testAccCheckTeamResourceDestroy(s *terraform.State) error {
 			continue
 		}
 
-		_, err := getTeam(genqlientGraphql, rs.Primary.ID)
+		r, err := getTeam(genqlientGraphql, rs.Primary.ID)
 
-		if err == nil {
-			return fmt.Errorf("Team still exists")
+		if err != nil {
+			return err
 		}
-		return nil
+
+		if teamNode, ok := r.GetNode().(*getTeamNodeTeam); ok {
+			if teamNode != nil {
+				return fmt.Errorf("Team still exists: %v", teamNode)
+			}
+		}
 	}
 	return nil
 }

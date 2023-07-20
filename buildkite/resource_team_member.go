@@ -15,23 +15,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-<<<<<<< HEAD
-type TeamMemberNode struct {
-	ID   graphql.String
-	Role string
-	UUID graphql.String
-	Team TeamNode
-	User struct {
-		ID graphql.ID
-	}
-=======
 type teamMemberResourceModel struct {
 	Id     types.String `tfsdk:"id"`
 	Uuid   types.String `tfsdk:"uuid"`
 	Role   types.String `tfsdk:"role"`
 	TeamId types.String `tfsdk:"team_id"`
 	UserId types.String `tfsdk:"user_id"`
->>>>>>> origin/main
 }
 
 type teamMemberResource struct {
@@ -103,7 +92,7 @@ func (tm *teamMemberResource) Create(ctx context.Context, req resource.CreateReq
 		tm.client.genqlient,
 		state.TeamId.ValueString(),
 		state.UserId.ValueString(),
-		TeamMemberRole(*state.Role.ValueStringPointer()),
+		state.Role.ValueStringPointer(),
 	)
 
 	if err != nil {
@@ -172,15 +161,8 @@ func (tm *teamMemberResource) Update(ctx context.Context, req resource.UpdateReq
 		return
 	}
 
-<<<<<<< HEAD
-	vars := map[string]interface{}{
-		"id":   d.Id(),
-		"role": d.Get("role"),
-	}
-=======
 	log.Printf("Updating team member %s with role %s ...", id, role)
-	apiResponse, err := updateTeamMember(tm.client.genqlient, id, TeamMemberRole(role))
->>>>>>> origin/main
+	apiResponse, err := updateTeamMember(tm.client.genqlient, id, role)
 
 	if err != nil {
 		resp.Diagnostics.AddError(

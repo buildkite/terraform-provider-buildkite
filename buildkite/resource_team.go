@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	resource_schema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
@@ -118,6 +119,10 @@ func (t *teamResource) Schema(ctx context.Context, req resource.SchemaRequest, r
 	}
 }
 
+func (t *teamResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+}
+
 func (t *teamResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var state *teamResourceModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &state)...)
@@ -134,7 +139,7 @@ func (t *teamResource) Create(ctx context.Context, req resource.CreateRequest, r
 		state.Privacy.ValueString(),
 		state.IsDefaultTeam.ValueBool(),
 		state.DefaultMemberRole.ValueString(),
-		*state.MembersCanCreatePipelines.ValueBoolPointer(),
+		state.MembersCanCreatePipelines.ValueBool(),
 	)
 
 	if err != nil {
