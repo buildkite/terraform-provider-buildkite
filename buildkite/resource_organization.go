@@ -91,7 +91,7 @@ func (o *organizationResource) Create(ctx context.Context, req resource.CreateRe
 		return
 	}
 
-	// Create CIDR slice from AllowedApiIpAddresses 
+	// Create CIDR slice from AllowedApiIpAddresses
 	cidrs := createCidrSliceFromList(plan.AllowedApiIpAddresses)
 
 	log.Printf("Creating settings for organization %s ...", response.Organization.Id)
@@ -195,7 +195,7 @@ func (o *organizationResource) Update(ctx context.Context, req resource.UpdateRe
 		return
 	}
 
-	// Create CIDR slice from AllowedApiIpAddresses 
+	// Create CIDR slice from AllowedApiIpAddresses
 	cidrs := createCidrSliceFromList(plan.AllowedApiIpAddresses)
 
 	log.Printf("Updating settings for organization %s ...", response.Organization.Id)
