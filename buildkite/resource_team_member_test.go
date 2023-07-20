@@ -121,6 +121,7 @@ func testAccTeamMemberConfigBasic(role string) string {
 			privacy = "VISIBLE"
 			default_team = true
 			default_member_role = "MEMBER"
+			members_can_create_pipelines = false
 		}
 		resource "buildkite_team_member" "test" {
 		    role = "%s"
