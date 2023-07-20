@@ -14,6 +14,10 @@ resource "buildkite_team_member" "member1" {
 	user_id = "VXNbwSA9hwVPpMgUXu1dWIDWf45ZwU6J7deETygiLUrKBg2TZBxuDr6aKj=="
 }
 
+resource "buildkite_organization_settings" "devorg" {
+    allowed_api_ip_addresses = ["10.1.100.33/24"]
+}
+
 resource "buildkite_pipeline" "repo2" {
   name       = "terraform_provider_buildkite_pipeline"
   repository = "git@github.com:org/repo2"

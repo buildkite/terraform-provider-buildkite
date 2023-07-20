@@ -100,6 +100,7 @@ func (*terraformProvider) Resources(context.Context) []func() resource.Resource 
 		NewClusterQueueResource,
 		newClusterResource,
 		newTeamMemberResource,
+		newOrganizationResource,
 	}
 }
 
