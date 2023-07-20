@@ -10,7 +10,7 @@ import (
 )
 
 var deprecationMessage = `This resource has been deprecated in favour of the newer buildkite_organization resource. 
-Please visit the provider's documentation at https://registry.terraform.io/providers/buildkite/buildkite/latest/docs fo more details.`
+Please visit the provider's documentation at https://registry.terraform.io/providers/buildkite/buildkite/latest/docs for more details.`
 
 func resourceOrganizationSettings() *schema.Resource {
 	return &schema.Resource{
