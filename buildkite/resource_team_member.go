@@ -3,174 +3,205 @@ package buildkite
 import (
 	"context"
 	"fmt"
+	"log"
 
-	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/shurcooL/graphql"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+	"github.com/hashicorp/terraform-plugin-framework/path"
+	"github.com/hashicorp/terraform-plugin-framework/resource"
+	resource_schema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-type TeamMemberNode struct {
-	ID   graphql.String
-	Role TeamMemberRole
-	UUID graphql.String
-	Team TeamNode
-	User struct {
-		ID graphql.ID
-	}
+type teamMemberResourceModel struct {
+	Id     types.String `tfsdk:"id"`
+	Uuid   types.String `tfsdk:"uuid"`
+	Role   types.String `tfsdk:"role"`
+	TeamId types.String `tfsdk:"team_id"`
+	UserId types.String `tfsdk:"user_id"`
 }
 
-func resourceTeamMember() *schema.Resource {
-	return &schema.Resource{
-		CreateContext: CreateTeamMember,
-		ReadContext:   ReadTeamMember,
-		UpdateContext: UpdateTeamMember,
-		DeleteContext: DeleteTeamMember,
-		Importer: &schema.ResourceImporter{
-			State: schema.ImportStatePassthrough,
-		},
+type teamMemberResource struct {
+	client *Client
+}
 
-		Schema: map[string]*schema.Schema{
-			"role": &schema.Schema{
-				Required: true,
-				Type:     schema.TypeString,
-				ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
-					v := val.(string)
-					switch v {
-					case "MEMBER":
-					case "MAINTAINER":
-						return
-					default:
-						errs = append(errs, fmt.Errorf("%q must be either MEMBER or MAINTAINER, got: %s", key, v))
-						return
-					}
-					return
+func newTeamMemberResource() resource.Resource {
+	return &teamMemberResource{}
+}
+
+func (teamMemberResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
+	resp.TypeName = req.ProviderTypeName + "_team_member"
+}
+
+func (tm *teamMemberResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
+	if req.ProviderData == nil {
+		return
+	}
+
+	tm.client = req.ProviderData.(*Client)
+}
+
+func (teamMemberResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
+	resp.Schema = resource_schema.Schema{
+		MarkdownDescription: "A team member resource allows for the management of team membership for existing organization users.",
+		Attributes: map[string]resource_schema.Attribute{
+			"id": resource_schema.StringAttribute{
+				Computed: true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
-			"team_id": &schema.Schema{
-				Required: true,
-				Type:     schema.TypeString,
-			},
-			"user_id": &schema.Schema{
-				Required: true,
-				Type:     schema.TypeString,
-			},
-			"uuid": &schema.Schema{
+			"uuid": resource_schema.StringAttribute{
 				Computed: true,
-				Type:     schema.TypeString,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"team_id": resource_schema.StringAttribute{
+				Required:            true,
+				MarkdownDescription: "The GraphQL ID of the team.",
+			},
+			"user_id": resource_schema.StringAttribute{
+				Required:            true,
+				MarkdownDescription: "The GraphQL ID of the user.",
+			},
+			"role": resource_schema.StringAttribute{
+				Required:            true,
+				MarkdownDescription: "The role for the user. Either MEMBER or MAINTAINER.",
+				Validators: []validator.String{
+					stringvalidator.OneOf("MEMBER", "MAINTAINER"),
+				},
 			},
 		},
 	}
 }
 
-// CreateTeamMember adds a user to a Buildkite team
-func CreateTeamMember(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	originalRole := d.Get("role").(string)
-	client := m.(*Client)
+func (tm *teamMemberResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	var state teamMemberResourceModel
 
-	var mutation struct {
-		TeamMemberCreate struct {
-			TeamMemberEdge struct {
-				Node TeamMemberNode
-			}
-		} `graphql:"teamMemberCreate(input: {teamID: $teamId, userID: $userId})"`
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &state)...)
+
+	if resp.Diagnostics.HasError() {
+		return
 	}
 
-	vars := map[string]interface{}{
-		"teamId": graphql.ID(d.Get("team_id").(string)),
-		"userId": graphql.ID(d.Get("user_id").(string)),
-	}
+	log.Printf("Creating team member into team %s ...", state.TeamId.ValueString())
+	apiResponse, err := createTeamMember(
+		tm.client.genqlient,
+		state.TeamId.ValueString(),
+		state.UserId.ValueString(),
+		TeamMemberRole(*state.Role.ValueStringPointer()),
+	)
 
-	err := client.graphql.Mutate(context.Background(), &mutation, vars)
 	if err != nil {
-		return diag.FromErr(err)
+		resp.Diagnostics.AddError(
+			"Unable to create team member",
+			fmt.Sprintf("Unable to create team member: %s", err.Error()),
+		)
+		return
 	}
 
-	updateTeamMember(d, &mutation.TeamMemberCreate.TeamMemberEdge.Node)
+	// Update state with values from API response/plan
+	state.Id = types.StringValue(apiResponse.TeamMemberCreate.TeamMemberEdge.Node.Id)
+	state.Uuid = types.StringValue(apiResponse.TeamMemberCreate.TeamMemberEdge.Node.Uuid)
+	// The role of the user will by default be "MEMBER" if none was entered in the plan
+	state.Role = types.StringValue(string(apiResponse.TeamMemberCreate.TeamMemberEdge.Node.Role))
 
-	// theres a bug in teamMemberCreate that always sets role to MEMBER
-	// so if using MAINTAINER, make a separate call to change the role if necessary
-	if originalRole == "MAINTAINER" {
-		d.Set("role", "MAINTAINER")
-		UpdateTeamMember(ctx, d, m)
-	}
-
-	return nil
+	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
-// ReadTeamMember retrieves a Buildkite team
-func ReadTeamMember(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	client := m.(*Client)
+func (tm *teamMemberResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	var state teamMemberResourceModel
 
-	var query struct {
-		Node struct {
-			TeamMember TeamMemberNode `graphql:"... on TeamMember"`
-		} `graphql:"node(id: $id)"`
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+
+	if resp.Diagnostics.HasError() {
+		return
 	}
 
-	vars := map[string]interface{}{
-		"id": d.Id(),
-	}
+	log.Printf("Reading team member %s ...", state.Id.ValueString())
+	apiResponse, err := getNode(tm.client.genqlient, state.Id.ValueString())
 
-	err := client.graphql.Query(context.Background(), &query, vars)
 	if err != nil {
-		return diag.FromErr(err)
+		resp.Diagnostics.AddError(
+			"Unable to read team member",
+			fmt.Sprintf("Unable to read ream member: %s", err.Error()),
+		)
+		return
 	}
 
-	updateTeamMember(d, &query.Node.TeamMember)
-
-	return nil
+	// Convert fron Node to getNodeTeamMember type
+	if teamMemberNode, ok := apiResponse.GetNode().(*getNodeNodeTeamMember); ok {
+		if teamMemberNode == nil {
+			resp.Diagnostics.AddError(
+				"Unable to get team member",
+				"Error getting team member: nil response",
+			)
+			return
+		}
+		updateTeamMemberResourceState(&state, *teamMemberNode)
+		resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+	}
 }
 
-// UpdateTeamMember a team members role within a Buildkite team
-func UpdateTeamMember(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	client := m.(*Client)
-
-	var mutation struct {
-		TeamMemberUpdate struct {
-			TeamMember TeamMemberNode
-		} `graphql:"teamMemberUpdate(input: {id: $id, role: $role})"`
-	}
-
-	vars := map[string]interface{}{
-		"id":   d.Id(),
-		"role": TeamMemberRole(d.Get("role").(string)),
-	}
-
-	err := client.graphql.Mutate(context.Background(), &mutation, vars)
-	if err != nil {
-		return diag.FromErr(err)
-	}
-
-	updateTeamMember(d, &mutation.TeamMemberUpdate.TeamMember)
-
-	return nil
+func (tm *teamMemberResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
 
-// DeleteTeamMember removes a user from a Buildkite team
-func DeleteTeamMember(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	client := m.(*Client)
-	var mutation struct {
-		TeamDelete struct {
-			DeletedTeamMemberId graphql.String `graphql:"deletedTeamMemberID"`
-		} `graphql:"teamMemberDelete(input: {id: $id})"`
+func (tm *teamMemberResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	var id, role string
+
+	// Obtain team member's ID from state, new role from plan
+	resp.Diagnostics.Append(req.State.GetAttribute(ctx, path.Root("id"), &id)...)
+	resp.Diagnostics.Append(req.Plan.GetAttribute(ctx, path.Root("role"), &role)...)
+
+	if resp.Diagnostics.HasError() {
+		return
 	}
 
-	vars := map[string]interface{}{
-		"id": graphql.ID(d.Id()),
-	}
+	log.Printf("Updating team member %s with role %s ...", id, role)
+	apiResponse, err := updateTeamMember(tm.client.genqlient, id, TeamMemberRole(role))
 
-	err := client.graphql.Mutate(context.Background(), &mutation, vars)
 	if err != nil {
-		return diag.FromErr(err)
+		resp.Diagnostics.AddError(
+			"Unable to update Team member",
+			fmt.Sprintf("Unable to update Team member: %s", err.Error()),
+		)
+		return
 	}
 
-	return nil
+	// Update state with revised role
+	newRole := types.StringValue(string(apiResponse.TeamMemberUpdate.TeamMember.Role))
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("role"), newRole)...)
 }
 
-func updateTeamMember(d *schema.ResourceData, t *TeamMemberNode) {
-	d.SetId(string(t.ID))
-	d.Set("role", string(t.Role))
-	d.Set("uuid", string(t.UUID))
-	d.Set("team_id", string(t.Team.ID))
-	d.Set("user_id", t.User.ID)
+func (tm *teamMemberResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	var state teamMemberResourceModel
+
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	log.Printf("Deleting team member with ID %s ...", state.Id.ValueString())
+	_, err := deleteTeamMember(tm.client.genqlient, state.Id.ValueString())
+
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Unable to delete team member",
+			fmt.Sprintf("Unable to delete team member: %s", err.Error()),
+		)
+		return
+	}
+}
+
+func updateTeamMemberResourceState(tmr *teamMemberResourceModel, tmn getNodeNodeTeamMember) {
+	tmr.Id = types.StringValue(tmn.Id)
+	tmr.Uuid = types.StringValue(tmn.Uuid)
+	tmr.TeamId = types.StringValue(tmn.Team.Id)
+	tmr.UserId = types.StringValue(tmn.User.Id)
+	tmr.Role = types.StringValue(string(tmn.Role))
 }
