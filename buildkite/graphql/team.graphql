@@ -8,7 +8,6 @@ fragment TeamFields on Team {
 	privacy
 	isDefaultTeam
 	defaultMemberRole
-    # @genclient(pointer: true)
 	membersCanCreatePipelines
 }
 

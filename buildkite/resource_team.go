@@ -200,7 +200,7 @@ func (t *teamResource) Update(ctx context.Context, req resource.UpdateRequest, r
 		plan.Privacy.ValueString(),
 		plan.IsDefaultTeam.ValueBool(),
 		plan.DefaultMemberRole.ValueString(),
-		*plan.MembersCanCreatePipelines.ValueBoolPointer(),
+		plan.MembersCanCreatePipelines.ValueBool(),
 	)
 
 	if err != nil {
