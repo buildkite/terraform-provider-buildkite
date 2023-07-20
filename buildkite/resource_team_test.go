@@ -10,7 +10,7 @@ import (
 
 func testAccTeamConfigBasic(name string) string {
 	config := `
-		resource "buildkite_team" "test" {
+		resource "buildkite_team" "acc_tests" {
 			name = "%s"
 			description = "a cool team of %s"
 			privacy = "VISIBLE"
@@ -24,7 +24,7 @@ func testAccTeamConfigBasic(name string) string {
 
 func testAccTeamConfigSecret(name string) string {
 	config := `
-		resource "buildkite_team" "test" {
+		resource "buildkite_team" "acc_tests" {
 			name = "%s"
 			description = "a secret team of %s"
 			privacy = "SECRET"
@@ -48,17 +48,17 @@ func TestAccTeam_AddRemove(t *testing.T) {
 			{
 				Config: testAccTeamConfigBasic("developers"),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckTeamExists("buildkite_team.test", &tr),
+					testAccCheckTeamExists("buildkite_team.acc_tests", &tr),
 					testAccCheckTeamRemoteValues("developers", &tr),
-					resource.TestCheckResourceAttr("buildkite_team.test", "name", "developers"),
-					resource.TestCheckResourceAttr("buildkite_team.test", "privacy", "VISIBLE"),
+					resource.TestCheckResourceAttr("buildkite_team.acc_tests", "name", "developers"),
+					resource.TestCheckResourceAttr("buildkite_team.acc_tests", "privacy", "VISIBLE"),
 				),
 			},
 			{
 				RefreshState: true,
 				PlanOnly:     true,
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttrSet("buildkite_team.test", "name"),
+					resource.TestCheckResourceAttrSet("buildkite_team.acc_tests", "name"),
 				),
 			},
 		},
@@ -77,27 +77,27 @@ func TestAccTeam_Update(t *testing.T) {
 			{
 				Config: testAccTeamConfigBasic("developers"),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckTeamExists("buildkite_team.test", &tr),
-					resource.TestCheckResourceAttr("buildkite_team.test", "name", "developers"),
+					testAccCheckTeamExists("buildkite_team.acc_tests", &tr),
+					resource.TestCheckResourceAttr("buildkite_team.acc_tests", "name", "developers"),
 				),
 			},
 			{
 				Config: testAccTeamConfigBasic("wombats"),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckTeamExists("buildkite_team.test", &tr),
+					testAccCheckTeamExists("buildkite_team.acc_tests", &tr),
 					testAccCheckTeamRemoteValues("wombats", &tr),
-					resource.TestCheckResourceAttr("buildkite_team.test", "name", "wombats"),
-					resource.TestCheckResourceAttr("buildkite_team.test", "name", "wombats"),
+					resource.TestCheckResourceAttr("buildkite_team.acc_tests", "name", "wombats"),
+					resource.TestCheckResourceAttr("buildkite_team.acc_tests", "name", "wombats"),
 				),
 			},
 			{
 				Config: testAccTeamConfigSecret("wombats"),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckTeamExists("buildkite_team.test", &tr),
+					testAccCheckTeamExists("buildkite_team.acc_tests", &tr),
 					testAccCheckTeamRemoteValues("wombats", &tr),
-					resource.TestCheckResourceAttr("buildkite_team.test", "name", "wombats"),
-					resource.TestCheckResourceAttr("buildkite_team.test", "description", "a secret team of wombats"),
-					resource.TestCheckResourceAttr("buildkite_team.test", "privacy", "SECRET"),
+					resource.TestCheckResourceAttr("buildkite_team.acc_tests", "name", "wombats"),
+					resource.TestCheckResourceAttr("buildkite_team.acc_tests", "description", "a secret team of wombats"),
+					resource.TestCheckResourceAttr("buildkite_team.acc_tests", "privacy", "SECRET"),
 				),
 			},
 		},
@@ -115,12 +115,12 @@ func TestAccTeam_Import(t *testing.T) {
 			{
 				Config: testAccTeamConfigBasic("imported"),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckTeamExists("buildkite_team.test", &tr),
-					resource.TestCheckResourceAttr("buildkite_team.test", "name", "imported"),
+					testAccCheckTeamExists("buildkite_team.acc_tests", &tr),
+					resource.TestCheckResourceAttr("buildkite_team.acc_tests", "name", "imported"),
 				),
 			},
 			{
-				ResourceName:      "buildkite_team.test",
+				ResourceName:      "buildkite_team.acc_tests",
 				ImportState:       true,
 				ImportStateVerify: true,
 			},

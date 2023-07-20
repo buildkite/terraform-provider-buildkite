@@ -7,15 +7,23 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
-func testDatasourceTeamConfig() string {
+func testDatasourceTeamConfig(name string) string {
 	data := `
-	%s
-	data "buildkite_team" "test" {
-	  depends_on = [buildkite_team.test]
-	  id = buildkite_team.test.id
-	}
+		resource "buildkite_team" "acc_tests" {
+			name = "%s"
+			description = "a cool team of %s"
+			privacy = "VISIBLE"
+			default_team = true
+			default_member_role = "MEMBER"
+			members_can_create_pipelines = true
+		}
+
+		data "buildkite_team" "data_test" {
+			depends_on = [buildkite_team.acc_tests]
+			id = buildkite_team.acc_tests.id
+		}
 	`
-	return fmt.Sprintf(data, testAccTeamConfigBasic("developers"))
+	return fmt.Sprintf(data, name, name)
 }
 
 func TestAccDataTeam_Read(t *testing.T) {
@@ -27,12 +35,12 @@ func TestAccDataTeam_Read(t *testing.T) {
 		ProtoV6ProviderFactories: protoV6ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
-				Config: testDatasourceTeamConfig(),
+				Config: testDatasourceTeamConfig("developers"),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckTeamExists("buildkite_team.test", &tr),
+					testAccCheckTeamExists("buildkite_team.acc_tests", &tr),
 					testAccCheckTeamRemoteValues("developers", &tr),
-					resource.TestCheckResourceAttr("buildkite_team.test", "name", "developers"),
-					resource.TestCheckResourceAttr("buildkite_team.test", "privacy", "VISIBLE"),
+					resource.TestCheckResourceAttr("data.buildkite_team.data_test", "name", "developers"),
+					resource.TestCheckResourceAttr("data.buildkite_team.data_test", "privacy", "VISIBLE"),
 				),
 			},
 		},

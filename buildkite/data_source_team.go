@@ -104,13 +104,6 @@ func (t *teamDatasource) Read(ctx context.Context, req datasource.ReadRequest, r
 	}
 
 	if converted, ok := res.GetNode().(*getTeamNodeTeam); ok {
-		if converted == nil {
-			resp.Diagnostics.AddError(
-				"Unable to get team",
-				"Error getting team: nil response",
-			)
-			return
-		}
 		state.ID = types.StringValue(converted.Id)
 		state.UUID = types.StringValue(converted.Uuid)
 		state.Slug = types.StringValue(converted.Slug)
@@ -121,4 +114,6 @@ func (t *teamDatasource) Read(ctx context.Context, req datasource.ReadRequest, r
 		state.DefaultMemberRole = types.StringValue(converted.DefaultMemberRole)
 		state.MembersCanCreatePipelines = types.BoolValue(converted.MembersCanCreatePipelines)
 	}
+
+		resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
