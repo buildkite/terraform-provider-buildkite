@@ -132,29 +132,17 @@ func testAccCheckClusterQueueExists(resourceName string, clusterQueueResourceMod
 			return fmt.Errorf("No ID is set in state")
 		}
 
-		// Obtain queues of the queue's cluster from its cluster UUID
-		queues, err := getClusterQueues(
-			genqlientGraphql,
-			getenv("BUILDKITE_ORGANIZATION_SLUG"),
-			resourceState.Primary.Attributes["cluster_uuid"],
-		)
+		apiResponse, err := getNode(genqlientGraphql, resourceState.Primary.ID)
 
-		// If cluster queues were not able to be fetched by Genqlient
 		if err != nil {
-			return fmt.Errorf("Error fetching Cluster queues from graphql API: %v", err)
+			return fmt.Errorf("Error fetching cluster queue from graphql API: %v", err)
 		}
 
-		// Obtain the ClusterQueueResourceModel from the queues slice
-		for _, edge := range queues.Organization.Cluster.Queues.Edges {
-			if edge.Node.Id == resourceState.Primary.ID {
-				updateClusterQueueResource(edge.Node, clusterQueueResourceModel)
-				break
+		if clusterQueueNode, ok := apiResponse.GetNode().(*getNodeNodeClusterQueue); ok {
+			if clusterQueueNode == nil {
+				return fmt.Errorf("Error getting cluster queue: nil response")
 			}
-		}
-
-		// If clusterQueueResourceModel isnt set from the queues slice
-		if clusterQueueResourceModel.Id.ValueString() == "" {
-			return fmt.Errorf("No Cluster queue found with graphql id: %s", resourceState.Primary.ID)
+			updateClusterQueueResource(*clusterQueueNode, clusterQueueResourceModel)
 		}
 
 		return nil
@@ -193,26 +181,17 @@ func testAccCheckClusterQueueDestroy(s *terraform.State) error {
 			continue
 		}
 
-		// Obtain queues of the queue's cluster from its cluster UUID
-		queues, err := getClusterQueues(
-			genqlientGraphql,
-			getenv("BUILDKITE_ORGANIZATION_SLUG"),
-			rs.Primary.Attributes["cluster_uuid"],
-		)
+		apiResponse, err := getNode(genqlientGraphql, rs.Primary.ID)
 
-		// If cluster queues were not able to be fetched by Genqlient
 		if err != nil {
-			return fmt.Errorf("Error fetching Cluster queues from graphql API: %v", err)
+			return fmt.Errorf("Error fetching cluster queue from graphql API: %v", err)
 		}
 
-		// Loop over the cluster's queues, error if the queue still exists
-		for _, edge := range queues.Organization.Cluster.Queues.Edges {
-			if edge.Node.Id == rs.Primary.ID {
-				return fmt.Errorf("Cluster queue still exists in cluster, expected not to find it")
+		if clusterQueueNode, ok := apiResponse.GetNode().(*getNodeNodeClusterQueue); ok {
+			if clusterQueueNode != nil {
+				return fmt.Errorf("Cluster queue still exists")
 			}
 		}
-
-		return nil
 	}
 	return nil
 }

@@ -563,18 +563,6 @@ func (v *__getClusterInput) GetOrgSlug() string { return v.OrgSlug }
 // GetId returns __getClusterInput.Id, and is useful for accessing the field via an interface.
 func (v *__getClusterInput) GetId() string { return v.Id }
 
-// __getClusterQueuesInput is used internally by genqlient
-type __getClusterQueuesInput struct {
-	OrgSlug string `json:"orgSlug"`
-	Id      string `json:"id"`
-}
-
-// GetOrgSlug returns __getClusterQueuesInput.OrgSlug, and is useful for accessing the field via an interface.
-func (v *__getClusterQueuesInput) GetOrgSlug() string { return v.OrgSlug }
-
-// GetId returns __getClusterQueuesInput.Id, and is useful for accessing the field via an interface.
-func (v *__getClusterQueuesInput) GetId() string { return v.Id }
-
 // __getNodeInput is used internally by genqlient
 type __getNodeInput struct {
 	Id string `json:"id"`
@@ -1813,147 +1801,6 @@ func (v *getClusterOrganizationCluster) __premarshalJSON() (*__premarshalgetClus
 	return &retval, nil
 }
 
-// getClusterQueuesOrganization includes the requested fields of the GraphQL type Organization.
-// The GraphQL type's documentation follows.
-//
-// An organization
-type getClusterQueuesOrganization struct {
-	// Return cluster in the Organization by UUID
-	Cluster getClusterQueuesOrganizationCluster `json:"cluster"`
-}
-
-// GetCluster returns getClusterQueuesOrganization.Cluster, and is useful for accessing the field via an interface.
-func (v *getClusterQueuesOrganization) GetCluster() getClusterQueuesOrganizationCluster {
-	return v.Cluster
-}
-
-// getClusterQueuesOrganizationCluster includes the requested fields of the GraphQL type Cluster.
-type getClusterQueuesOrganizationCluster struct {
-	Queues getClusterQueuesOrganizationClusterQueuesClusterQueueConnection `json:"queues"`
-}
-
-// GetQueues returns getClusterQueuesOrganizationCluster.Queues, and is useful for accessing the field via an interface.
-func (v *getClusterQueuesOrganizationCluster) GetQueues() getClusterQueuesOrganizationClusterQueuesClusterQueueConnection {
-	return v.Queues
-}
-
-// getClusterQueuesOrganizationClusterQueuesClusterQueueConnection includes the requested fields of the GraphQL type ClusterQueueConnection.
-type getClusterQueuesOrganizationClusterQueuesClusterQueueConnection struct {
-	Edges []getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdge `json:"edges"`
-}
-
-// GetEdges returns getClusterQueuesOrganizationClusterQueuesClusterQueueConnection.Edges, and is useful for accessing the field via an interface.
-func (v *getClusterQueuesOrganizationClusterQueuesClusterQueueConnection) GetEdges() []getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdge {
-	return v.Edges
-}
-
-// getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdge includes the requested fields of the GraphQL type ClusterQueueEdge.
-type getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdge struct {
-	Node getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue `json:"node"`
-}
-
-// GetNode returns getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdge.Node, and is useful for accessing the field via an interface.
-func (v *getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdge) GetNode() getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue {
-	return v.Node
-}
-
-// getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue includes the requested fields of the GraphQL type ClusterQueue.
-type getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue struct {
-	ClusterQueueValues `json:"-"`
-}
-
-// GetId returns getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue.Id, and is useful for accessing the field via an interface.
-func (v *getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue) GetId() string {
-	return v.ClusterQueueValues.Id
-}
-
-// GetUuid returns getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue.Uuid, and is useful for accessing the field via an interface.
-func (v *getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue) GetUuid() string {
-	return v.ClusterQueueValues.Uuid
-}
-
-// GetKey returns getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue.Key, and is useful for accessing the field via an interface.
-func (v *getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue) GetKey() string {
-	return v.ClusterQueueValues.Key
-}
-
-// GetDescription returns getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue.Description, and is useful for accessing the field via an interface.
-func (v *getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue) GetDescription() *string {
-	return v.ClusterQueueValues.Description
-}
-
-// GetCluster returns getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue.Cluster, and is useful for accessing the field via an interface.
-func (v *getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue) GetCluster() ClusterQueueValuesCluster {
-	return v.ClusterQueueValues.Cluster
-}
-
-func (v *getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue) UnmarshalJSON(b []byte) error {
-
-	if string(b) == "null" {
-		return nil
-	}
-
-	var firstPass struct {
-		*getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue
-		graphql.NoUnmarshalJSON
-	}
-	firstPass.getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue = v
-
-	err := json.Unmarshal(b, &firstPass)
-	if err != nil {
-		return err
-	}
-
-	err = json.Unmarshal(
-		b, &v.ClusterQueueValues)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-type __premarshalgetClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue struct {
-	Id string `json:"id"`
-
-	Uuid string `json:"uuid"`
-
-	Key string `json:"key"`
-
-	Description *string `json:"description"`
-
-	Cluster ClusterQueueValuesCluster `json:"cluster"`
-}
-
-func (v *getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue) MarshalJSON() ([]byte, error) {
-	premarshaled, err := v.__premarshalJSON()
-	if err != nil {
-		return nil, err
-	}
-	return json.Marshal(premarshaled)
-}
-
-func (v *getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue) __premarshalJSON() (*__premarshalgetClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue, error) {
-	var retval __premarshalgetClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue
-
-	retval.Id = v.ClusterQueueValues.Id
-	retval.Uuid = v.ClusterQueueValues.Uuid
-	retval.Key = v.ClusterQueueValues.Key
-	retval.Description = v.ClusterQueueValues.Description
-	retval.Cluster = v.ClusterQueueValues.Cluster
-	return &retval, nil
-}
-
-// getClusterQueuesResponse is returned by getClusterQueues on success.
-type getClusterQueuesResponse struct {
-	// Find an organization
-	Organization getClusterQueuesOrganization `json:"organization"`
-}
-
-// GetOrganization returns getClusterQueuesResponse.Organization, and is useful for accessing the field via an interface.
-func (v *getClusterQueuesResponse) GetOrganization() getClusterQueuesOrganization {
-	return v.Organization
-}
-
 // getClusterResponse is returned by getCluster on success.
 type getClusterResponse struct {
 	// Find an organization
@@ -2387,10 +2234,14 @@ func __marshalgetNodeNode(v *getNodeNode) ([]byte, error) {
 	case *getNodeNodeClusterQueue:
 		typename = "ClusterQueue"
 
+		premarshaled, err := v.__premarshalJSON()
+		if err != nil {
+			return nil, err
+		}
 		result := struct {
 			TypeName string `json:"__typename"`
-			*getNodeNodeClusterQueue
-		}{typename, v}
+			*__premarshalgetNodeNodeClusterQueue
+		}{typename, premarshaled}
 		return json.Marshal(result)
 	case *getNodeNodeClusterToken:
 		typename = "ClusterToken"
@@ -2838,11 +2689,88 @@ func (v *getNodeNodeCluster) GetTypename() string { return v.Typename }
 
 // getNodeNodeClusterQueue includes the requested fields of the GraphQL type ClusterQueue.
 type getNodeNodeClusterQueue struct {
-	Typename string `json:"__typename"`
+	Typename           string `json:"__typename"`
+	ClusterQueueValues `json:"-"`
 }
 
 // GetTypename returns getNodeNodeClusterQueue.Typename, and is useful for accessing the field via an interface.
 func (v *getNodeNodeClusterQueue) GetTypename() string { return v.Typename }
+
+// GetId returns getNodeNodeClusterQueue.Id, and is useful for accessing the field via an interface.
+func (v *getNodeNodeClusterQueue) GetId() string { return v.ClusterQueueValues.Id }
+
+// GetUuid returns getNodeNodeClusterQueue.Uuid, and is useful for accessing the field via an interface.
+func (v *getNodeNodeClusterQueue) GetUuid() string { return v.ClusterQueueValues.Uuid }
+
+// GetKey returns getNodeNodeClusterQueue.Key, and is useful for accessing the field via an interface.
+func (v *getNodeNodeClusterQueue) GetKey() string { return v.ClusterQueueValues.Key }
+
+// GetDescription returns getNodeNodeClusterQueue.Description, and is useful for accessing the field via an interface.
+func (v *getNodeNodeClusterQueue) GetDescription() *string { return v.ClusterQueueValues.Description }
+
+// GetCluster returns getNodeNodeClusterQueue.Cluster, and is useful for accessing the field via an interface.
+func (v *getNodeNodeClusterQueue) GetCluster() ClusterQueueValuesCluster {
+	return v.ClusterQueueValues.Cluster
+}
+
+func (v *getNodeNodeClusterQueue) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*getNodeNodeClusterQueue
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.getNodeNodeClusterQueue = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	err = json.Unmarshal(
+		b, &v.ClusterQueueValues)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+type __premarshalgetNodeNodeClusterQueue struct {
+	Typename string `json:"__typename"`
+
+	Id string `json:"id"`
+
+	Uuid string `json:"uuid"`
+
+	Key string `json:"key"`
+
+	Description *string `json:"description"`
+
+	Cluster ClusterQueueValuesCluster `json:"cluster"`
+}
+
+func (v *getNodeNodeClusterQueue) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *getNodeNodeClusterQueue) __premarshalJSON() (*__premarshalgetNodeNodeClusterQueue, error) {
+	var retval __premarshalgetNodeNodeClusterQueue
+
+	retval.Typename = v.Typename
+	retval.Id = v.ClusterQueueValues.Id
+	retval.Uuid = v.ClusterQueueValues.Uuid
+	retval.Key = v.ClusterQueueValues.Key
+	retval.Description = v.ClusterQueueValues.Description
+	retval.Cluster = v.ClusterQueueValues.Cluster
+	return &retval, nil
+}
 
 // getNodeNodeClusterToken includes the requested fields of the GraphQL type ClusterToken.
 // The GraphQL type's documentation follows.
@@ -5007,18 +4935,16 @@ func getClusterByName(
 	return &data, err
 }
 
-// The query or mutation executed by getClusterQueues.
-const getClusterQueues_Operation = `
-query getClusterQueues ($orgSlug: ID!, $id: ID!) {
-	organization(slug: $orgSlug) {
-		cluster(id: $id) {
-			queues(first: 50) {
-				edges {
-					node {
-						... ClusterQueueValues
-					}
-				}
-			}
+// The query or mutation executed by getNode.
+const getNode_Operation = `
+query getNode ($id: ID!) {
+	node(id: $id) {
+		__typename
+		... on ClusterQueue {
+			... ClusterQueueValues
+		}
+		... on TeamMember {
+			... TeamMemberValues
 		}
 	}
 }
@@ -5030,45 +4956,6 @@ fragment ClusterQueueValues on ClusterQueue {
 	cluster {
 		id
 		uuid
-	}
-}
-`
-
-func getClusterQueues(
-	client graphql.Client,
-	orgSlug string,
-	id string,
-) (*getClusterQueuesResponse, error) {
-	req := &graphql.Request{
-		OpName: "getClusterQueues",
-		Query:  getClusterQueues_Operation,
-		Variables: &__getClusterQueuesInput{
-			OrgSlug: orgSlug,
-			Id:      id,
-		},
-	}
-	var err error
-
-	var data getClusterQueuesResponse
-	resp := &graphql.Response{Data: &data}
-
-	err = client.MakeRequest(
-		nil,
-		req,
-		resp,
-	)
-
-	return &data, err
-}
-
-// The query or mutation executed by getNode.
-const getNode_Operation = `
-query getNode ($id: ID!) {
-	node(id: $id) {
-		__typename
-		... on TeamMember {
-			... TeamMemberValues
-		}
 	}
 }
 fragment TeamMemberValues on TeamMember {

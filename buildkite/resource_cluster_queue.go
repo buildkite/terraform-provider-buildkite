@@ -127,7 +127,7 @@ func (cq *ClusterQueueResource) Read(ctx context.Context, req resource.ReadReque
 	}
 
 	log.Printf("Getting cluster queues for cluster %s ...", state.ClusterUuid.ValueString())
-	queues, err := getClusterQueues(cq.client.genqlient, cq.client.organization, state.ClusterUuid.ValueString())
+	apiResponse, err := getNode(cq.client.genqlient, state.Id.ValueString())
 
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -137,23 +137,18 @@ func (cq *ClusterQueueResource) Read(ctx context.Context, req resource.ReadReque
 		return
 	}
 
-	// Find the cluster queue from the returned queues to update state
-	for _, edge := range queues.Organization.Cluster.Queues.Edges {
-		if edge.Node.Id == state.Id.ValueString() {
-			log.Printf("Found cluster queue with ID %s in cluster %s", edge.Node.Id, state.ClusterUuid.ValueString())
-			// Update ClusterQueueResourceModel with Node values and append
-			updateClusterQueueResource(edge.Node, &state)
-			resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+	// Convert fron Node to getNodeNodeClusterQueue type
+	if clusterQueueNode, ok := apiResponse.GetNode().(*getNodeNodeClusterQueue); ok {
+		if clusterQueueNode == nil {
+			resp.Diagnostics.AddError(
+				"Unable to get Cluster Queue",
+				"Error getting Cluster Queue: nil response",
+			)
 			return
 		}
+		updateClusterQueueResource(*clusterQueueNode, &state)
+		resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 	}
-
-	// If not returned by this point, the cluster queue could not be found
-	// This is a tradeoff of the current getClusterQueues Genqlient query (searches for 50 queues via the cluster UUID in state)
-	resp.Diagnostics.AddError(
-		"Unable to find Cluster Queue",
-		fmt.Sprintf("Unable to find Cluster Queue: %s", err.Error()),
-	)
 	return
 }
 
@@ -232,7 +227,7 @@ func (cq *ClusterQueueResource) Delete(ctx context.Context, req resource.DeleteR
 	}
 }
 
-func updateClusterQueueResource(clusterQueueNode getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue, cq *ClusterQueueResourceModel) {
+func updateClusterQueueResource(clusterQueueNode getNodeNodeClusterQueue, cq *ClusterQueueResourceModel) {
 	cq.Id = types.StringValue(clusterQueueNode.Id)
 	cq.Uuid = types.StringValue(clusterQueueNode.Uuid)
 	cq.Key = types.StringValue(clusterQueueNode.Key)

@@ -10,20 +10,6 @@ fragment ClusterQueueValues on ClusterQueue {
     }
 }
 
-query getClusterQueues($orgSlug: ID!, $id: ID!) {
-    organization(slug: $orgSlug) {
-        cluster(id: $id) {
-            queues(first: 50) {
-                edges {
-                    node {
-                        ...ClusterQueueValues
-                    }
-                }
-            }
-        }
-    }
-}
-
 mutation createClusterQueue(
     $organizationId: ID!, 
     $clusterId: ID!,
