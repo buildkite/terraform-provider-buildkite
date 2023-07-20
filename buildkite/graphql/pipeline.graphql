@@ -72,6 +72,14 @@ mutation updatePipeline(
     }
 }
 
+mutation deletePipeline ($id: ID!) {
+    pipelineDelete(input: {
+        id: $id
+    }) {
+        clientMutationId
+    }
+}
+
 mutation archivePipeline ($id: ID!) {
   pipelineArchive(input:{
     id: $id
