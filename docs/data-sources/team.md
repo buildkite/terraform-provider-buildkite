@@ -8,14 +8,21 @@ Buildkite documentation: https://buildkite.com/docs/pipelines/permissions
 ## Example Usage
 
 ```hcl
-data "buildkite_team" "my_team" {
-  slug = "my_team"
+data "buildkite_team" "my_team_data" {
+    depends_on = [buildkite_team.my_team]
+    id = buildkite_team.my_team.id
 }
 ```
 
+The above will automatically fill the ID attribute with that of the team created by the resource, then fill the other
+attributes of that team.
+
+The datasource can also reference an imported Team. For more on using Import check
+[here](https://github.com/buildkite/terraform-provider-buildkite/blob/main/docs/resources/team.md#import).
+
 ## Argument Reference
 
-* `slug` - (Required) The slug of the team, available in the URL of the team on buildkite.com
+* `id` - (Required) The GraphQL ID of the team, available in the Settings page for the team.
 
 ## Attribute Reference
 

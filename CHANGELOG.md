@@ -3,15 +3,20 @@
 All notable changes to this project will be documented in this file.
 
 ## Unreleased
-
-### Forthcoming changes
-This release deprecates the `buildkite_organization_settings` [resource](./docs/resources/organization_settings.md). In a future minor release, we will remove this resource in favour of the newer `buildkite_organization` [resource](./docs/resources/organization.md) that aligns with the [datasource](./docs/data-sources/organization.md) of the same name. 
-
 * Migrate organization datasource to plugin framework [[PR #304](https://github.com/buildkite/terraform-provider-buildkite/pull/304)] @jradtilbrook
 * SUP-1051: Team Member resource Framework/Genqlient conversion [[PR #313](https://github.com/buildkite/terraform-provider-buildkite/pull/313)] @james2791
 * SUP-1067: Organization resource conversion to Framework[[PR #311](https://github.com/buildkite/terraform-provider-buildkite/pull/311)] @james2791
 * SUP-1063 Convert meta datasource to framework [[PR #314](https://github.com/buildkite/terraform-provider-buildkite/pull/314)] @jradtilbrook
 * Convert DeletePipeline to genqlient [[PR #317](https://github.com/buildkite/terraform-provider-buildkite/pull/317)] @jradtilbrook
+* SUP-1049 Migrate Team to framework & Genqlient [[PR #318](https://github.com/buildkite/terraform-provider-buildkite/pull/317)] @mcncl
+
+### Forthcoming changes
+This release deprecates the `buildkite_organization_settings` [resource](./docs/resources/organization_settings.md). In a future minor release, we will remove this resource in favour of the newer `buildkite_organization` [resource](./docs/resources/organization.md) that aligns with the [datasource](./docs/data-sources/organization.md) of the same name. 
+[[PR #318](https://github.com/buildkite/terraform-provider-buildkite/pull/317)] introduces a change in how we handle
+
+Team data-sources importing Teams. Instead of `slug` the data-source will now require ID as the input. This is to avoid
+breaking changes which *may* be caused with the rename of a Team and the resulting change of `slug` value. GraphQL IDs
+of resources to not change, regardless of values within the resource being changed. 
 
 ## [v0.20.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v0.19.2...v0.20.0)
 
