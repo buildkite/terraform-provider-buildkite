@@ -45,7 +45,7 @@ func TestAccTeam_AddRemove(t *testing.T) {
 		ProtoV6ProviderFactories: protoV6ProviderFactories(),
 		CheckDestroy:             testAccCheckTeamResourceDestroy,
 		Steps: []resource.TestStep{
-			{
+			{q
 				Config: testAccTeamConfigBasic("developers"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckTeamExists("buildkite_team.acc_tests", &tr),
