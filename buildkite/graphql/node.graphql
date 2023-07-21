@@ -5,5 +5,8 @@ query getNode(
         ... on TeamMember {
             ...TeamMemberValues
         }
+        ... on Team {
+            ...TeamFields
+        }
     }
 }

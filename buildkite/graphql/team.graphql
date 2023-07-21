@@ -11,12 +11,10 @@ fragment TeamFields on Team {
 	membersCanCreatePipelines
 }
 
-query getTeam($id:ID!) {
-	node(id:$id) {
-		... on Team {
-			... TeamFields
-		}
-	}
+query GetTeamFromSlug($slug: ID!){
+    team(slug:$slug){
+        ...TeamFields
+    }
 }
 
 mutation teamCreate(

@@ -92,7 +92,7 @@ func (tm *teamMemberResource) Create(ctx context.Context, req resource.CreateReq
 		tm.client.genqlient,
 		state.TeamId.ValueString(),
 		state.UserId.ValueString(),
-		state.Role.ValueStringPointer(),
+		*state.Role.ValueStringPointer(),
 	)
 
 	if err != nil {

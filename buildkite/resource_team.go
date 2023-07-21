@@ -8,6 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	resource_schema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
@@ -113,6 +114,8 @@ func (t *teamResource) Schema(ctx context.Context, req resource.SchemaRequest, r
 			},
 			"members_can_create_pipelines": resource_schema.BoolAttribute{
 				Optional:            true,
+				Computed:            true,
+				Default:             booldefault.StaticBool(false),
 				MarkdownDescription: "Whether members of the Team can create Pipelines.",
 			},
 		},
@@ -160,7 +163,7 @@ func (t *teamResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 	var state teamResourceModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 
-	res, err := getTeam(t.client.genqlient, state.ID.ValueString())
+	res, err := getNode(t.client.genqlient, state.ID.ValueString())
 
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -170,15 +173,15 @@ func (t *teamResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 		return
 	}
 
-	if converted, ok := res.GetNode().(*getTeamNodeTeam); ok {
-		if converted == nil {
+	if teamNode, ok := res.GetNode().(*getNodeNodeTeam); ok {
+		if teamNode == nil {
 			resp.Diagnostics.AddError(
 				"Unable to get team",
 				"Error getting team: nil response",
 			)
 			return
 		}
-		updateTeamResourceState(&state, converted)
+		updateTeamResourceState(&state, *teamNode)
 		resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 	}
 }
@@ -234,7 +237,7 @@ func (t *teamResource) Delete(ctx context.Context, req resource.DeleteRequest, r
 	}
 }
 
-func updateTeamResourceState(state *teamResourceModel, res *getTeamNodeTeam) {
+func updateTeamResourceState(state *teamResourceModel, res getNodeNodeTeam) {
 	state.ID = types.StringValue(res.Id)
 	state.UUID = types.StringValue(res.Uuid)
 	state.Slug = types.StringValue(res.Slug)

@@ -46,40 +46,42 @@ func (t *teamDatasource) Schema(ctx context.Context, req datasource.SchemaReques
 		MarkdownDescription: "This datasource allows you to get a team from Buildkite.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
-				Description: "The ID of the team.",
-				Required:    true,
+				MarkdownDescription: "The ID of the team.",
+				Optional: true,
+				Computed:            true,
 			},
 			"uuid": schema.StringAttribute{
-				Description: "The UUID of the team.",
-				Computed:    true,
+				MarkdownDescription: "The UUID of the team.",
+				Computed:            true,
 			},
 			"slug": schema.StringAttribute{
-				Description: "The slug of the team.",
-				Computed:    true,
+				MarkdownDescription: "The slug of the team.",
+				Computed:            true,
+				Optional:            true,
 			},
 			"name": schema.StringAttribute{
-				Description: "The name of the team.",
-				Computed:    true,
+				MarkdownDescription: "The name of the team.",
+				Computed:            true,
 			},
 			"privacy": schema.StringAttribute{
-				Description: "The privacy of the team.",
-				Computed:    true,
+				MarkdownDescription: "The privacy of the team.",
+				Computed:            true,
 			},
 			"description": schema.StringAttribute{
-				Description: "The description of the team.",
-				Computed:    true,
+				MarkdownDescription: "The description of the team.",
+				Computed:            true,
 			},
 			"default_team": schema.BoolAttribute{
-				Description: "Whether the team is the default team.",
-				Computed:    true,
+				MarkdownDescription: "Whether the team is the default team.",
+				Computed:            true,
 			},
 			"default_member_role": schema.StringAttribute{
-				Description: "The default member role of the team.",
-				Computed:    true,
+				MarkdownDescription: "The default member role of the team.",
+				Computed:            true,
 			},
 			"members_can_create_pipelines": schema.BoolAttribute{
-				Description: "Whether members can create pipelines.",
-				Computed:    true,
+				MarkdownDescription: "Whether members can create pipelines.",
+				Computed:            true,
 			},
 		},
 	}
@@ -93,27 +95,60 @@ func (t *teamDatasource) Read(ctx context.Context, req datasource.ReadRequest, r
 		return
 	}
 
-	res, err := getTeam(t.client.genqlient, state.ID.ValueString())
-
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Unable to get team",
-			fmt.Sprintf("Error getting team: %s", err.Error()),
-		)
-		return
-	}
-
-	if converted, ok := res.GetNode().(*getTeamNodeTeam); ok {
-		state.ID = types.StringValue(converted.Id)
-		state.UUID = types.StringValue(converted.Uuid)
-		state.Slug = types.StringValue(converted.Slug)
-		state.Name = types.StringValue(converted.Name)
-		state.Privacy = types.StringValue(converted.Privacy)
-		state.Description = types.StringValue(converted.Description)
-		state.IsDefaultTeam = types.BoolValue(converted.IsDefaultTeam)
-		state.DefaultMemberRole = types.StringValue(converted.DefaultMemberRole)
-		state.MembersCanCreatePipelines = types.BoolValue(converted.MembersCanCreatePipelines)
+	if !state.Slug.IsNull() {
+		res, err := GetTeamFromSlug(t.client.genqlient, fmt.Sprintf("%s/%s", t.client.organization, state.Slug.ValueString()))
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Unable to get team",
+				fmt.Sprintf("Error getting team: %s", err.Error()),
+			)
+			return
+		}
+		updateTeamDatasourceStateFromSlug(&state, *res)
+	} else if !state.ID.IsNull() {
+		res, err := getNode(t.client.genqlient, state.ID.ValueString())
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Unable to get team",
+				fmt.Sprintf("Error getting team: %s", err.Error()),
+			)
+			return
+		}
+		if teamNode, ok := res.GetNode().(*getNodeNodeTeam); ok {
+			if !ok {
+				resp.Diagnostics.AddError(
+					"Unable to get team",
+					fmt.Sprintf("Error getting team. Please create a new issue with any log output from the error here: https://github.com/buildkite/terraform-provider-buildkite/issues/new"),
+				)
+				return
+			}
+			updateTeamDatasourceState(&state, *teamNode)
+		}
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+}
+
+func updateTeamDatasourceStateFromSlug(state *teamDatasourceModel, data GetTeamFromSlugResponse) {
+	state.ID = types.StringValue(data.Team.TeamFields.Id)
+	state.UUID = types.StringValue(data.Team.TeamFields.Uuid)
+	state.Slug = types.StringValue(data.Team.TeamFields.Slug)
+	state.Name = types.StringValue(data.Team.TeamFields.Name)
+	state.Privacy = types.StringValue(data.Team.TeamFields.Privacy)
+	state.Description = types.StringPointerValue(&data.Team.TeamFields.Description)
+	state.IsDefaultTeam = types.BoolValue(data.Team.TeamFields.IsDefaultTeam)
+	state.DefaultMemberRole = types.StringValue(data.Team.TeamFields.DefaultMemberRole)
+	state.MembersCanCreatePipelines = types.BoolValue(data.Team.TeamFields.MembersCanCreatePipelines)
+}
+
+func updateTeamDatasourceState(state *teamDatasourceModel, data getNodeNodeTeam) {
+	state.ID = types.StringValue(data.Id)
+	state.UUID = types.StringValue(data.Uuid)
+	state.Slug = types.StringValue(data.Slug)
+	state.Name = types.StringValue(data.Name)
+	state.Privacy = types.StringValue(string(data.GetPrivacy()))
+	state.Description = types.StringValue(data.Description)
+	state.IsDefaultTeam = types.BoolValue(data.IsDefaultTeam)
+	state.DefaultMemberRole = types.StringValue(string(data.GetDefaultMemberRole()))
+	state.MembersCanCreatePipelines = types.BoolValue(data.MembersCanCreatePipelines)
 }
