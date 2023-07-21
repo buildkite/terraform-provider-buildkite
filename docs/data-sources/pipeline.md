@@ -23,4 +23,4 @@ data "buildkite_pipeline" "repo2" {
 * `default_branch` - The default branch to prefill when new builds are created or triggered, usually main or master but can be anything.
 * `name` - The name of the pipeline.
 * `repository` - The git URL of the repository.
-* `webhook_url` - The default branch to prefill when new builds are created or triggered.
+* `webhook_url` - The Buildkite webhook URL that triggers builds on this pipeline.

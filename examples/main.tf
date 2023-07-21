@@ -31,13 +31,16 @@ resource "buildkite_pipeline" "repo2" {
   deletion_protection = true
 }
 
-
 resource "buildkite_pipeline_schedule" "weekly" {
   pipeline_id = buildkite_pipeline.repo2
   label       = "Weekly build from default branch"
   cronline    = "@midnight"
   branch      = "default"
   message = "Weekly scheduled build"   
+}
+
+data "buildkite_pipeline" "data2" {
+	slug = buildkite_pipeline.repo2.slug
 }
 
 resource "buildkite_agent_token" "fleet" {
