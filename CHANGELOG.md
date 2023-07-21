@@ -7,6 +7,7 @@ All notable changes to this project will be documented in this file.
 * SUP-1051: Team Member resource Framework/Genqlient conversion [[PR #313](https://github.com/buildkite/terraform-provider-buildkite/pull/313)] @james2791
 * SUP-1067: Organization resource conversion to Framework[[PR #311](https://github.com/buildkite/terraform-provider-buildkite/pull/311)] @james2791
 * SUP-1063 Convert meta datasource to framework [[PR #314](https://github.com/buildkite/terraform-provider-buildkite/pull/314)] @jradtilbrook
+* SUP-1065: Pipeline Datasource conversion to Framework [[PR #315](https://github.com/buildkite/terraform-provider-buildkite/pull/315)] @james2791
 * Convert DeletePipeline to genqlient [[PR #317](https://github.com/buildkite/terraform-provider-buildkite/pull/317)] @jradtilbrook
 * SUP-1049 Migrate Team to framework & Genqlient [[PR #318](https://github.com/buildkite/terraform-provider-buildkite/pull/317)] @mcncl
 
