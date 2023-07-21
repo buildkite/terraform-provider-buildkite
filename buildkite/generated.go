@@ -6953,7 +6953,6 @@ mutation deletePipelineSchedule ($id: ID!) {
 }
 `
 
-
 // The query or mutation executed by deletePipeline.
 const deletePipeline_Operation = `
 mutation deletePipeline ($id: ID!) {
@@ -6962,6 +6961,7 @@ mutation deletePipeline ($id: ID!) {
 	}
 }
 `
+
 func deletePipelineSchedule(
 	client graphql.Client,
 	id string,
@@ -6986,7 +6986,7 @@ func deletePipelineSchedule(
 
 	return &data, err
 }
- 
+
 func deletePipeline(
 	client graphql.Client,
 	id string,
@@ -6999,7 +6999,6 @@ func deletePipeline(
 		},
 	}
 	var err error
-
 
 	var data deletePipelineResponse
 	resp := &graphql.Response{Data: &data}
