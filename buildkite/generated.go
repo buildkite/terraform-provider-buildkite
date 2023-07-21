@@ -229,7 +229,8 @@ type PipelineScheduleValues struct {
 	// Environment variables passed to any triggered builds
 	Env []*string `json:"env"`
 	// If this Pipeline schedule is currently enabled
-	Enabled bool `json:"enabled"`
+	Enabled  bool                           `json:"enabled"`
+	Pipeline PipelineScheduleValuesPipeline `json:"pipeline"`
 }
 
 // GetId returns PipelineScheduleValues.Id, and is useful for accessing the field via an interface.
@@ -258,6 +259,20 @@ func (v *PipelineScheduleValues) GetEnv() []*string { return v.Env }
 
 // GetEnabled returns PipelineScheduleValues.Enabled, and is useful for accessing the field via an interface.
 func (v *PipelineScheduleValues) GetEnabled() bool { return v.Enabled }
+
+// GetPipeline returns PipelineScheduleValues.Pipeline, and is useful for accessing the field via an interface.
+func (v *PipelineScheduleValues) GetPipeline() PipelineScheduleValuesPipeline { return v.Pipeline }
+
+// PipelineScheduleValuesPipeline includes the requested fields of the GraphQL type Pipeline.
+// The GraphQL type's documentation follows.
+//
+// A pipeline
+type PipelineScheduleValuesPipeline struct {
+	Id string `json:"id"`
+}
+
+// GetId returns PipelineScheduleValuesPipeline.Id, and is useful for accessing the field via an interface.
+func (v *PipelineScheduleValuesPipeline) GetId() string { return v.Id }
 
 // Step definition for a pipeline
 type PipelineStepsInput struct {
@@ -734,6 +749,14 @@ type __getPipelineInput struct {
 
 // GetSlug returns __getPipelineInput.Slug, and is useful for accessing the field via an interface.
 func (v *__getPipelineInput) GetSlug() string { return v.Slug }
+
+// __getPipelineScheduleBySlugInput is used internally by genqlient
+type __getPipelineScheduleBySlugInput struct {
+	Slug string `json:"slug"`
+}
+
+// GetSlug returns __getPipelineScheduleBySlugInput.Slug, and is useful for accessing the field via an interface.
+func (v *__getPipelineScheduleBySlugInput) GetSlug() string { return v.Slug }
 
 // __getPipelineScheduleInput is used internally by genqlient
 type __getPipelineScheduleInput struct {
@@ -1410,6 +1433,11 @@ func (v *createPipelineSchedulePipelineScheduleCreatePipelineScheduleCreatePaylo
 	return v.PipelineScheduleValues.Enabled
 }
 
+// GetPipeline returns createPipelineSchedulePipelineScheduleCreatePipelineScheduleCreatePayloadPipelineScheduleEdgeNodePipelineSchedule.Pipeline, and is useful for accessing the field via an interface.
+func (v *createPipelineSchedulePipelineScheduleCreatePipelineScheduleCreatePayloadPipelineScheduleEdgeNodePipelineSchedule) GetPipeline() PipelineScheduleValuesPipeline {
+	return v.PipelineScheduleValues.Pipeline
+}
+
 func (v *createPipelineSchedulePipelineScheduleCreatePipelineScheduleCreatePayloadPipelineScheduleEdgeNodePipelineSchedule) UnmarshalJSON(b []byte) error {
 
 	if string(b) == "null" {
@@ -1453,6 +1481,8 @@ type __premarshalcreatePipelineSchedulePipelineScheduleCreatePipelineScheduleCre
 	Env []*string `json:"env"`
 
 	Enabled bool `json:"enabled"`
+
+	Pipeline PipelineScheduleValuesPipeline `json:"pipeline"`
 }
 
 func (v *createPipelineSchedulePipelineScheduleCreatePipelineScheduleCreatePayloadPipelineScheduleEdgeNodePipelineSchedule) MarshalJSON() ([]byte, error) {
@@ -1475,6 +1505,7 @@ func (v *createPipelineSchedulePipelineScheduleCreatePipelineScheduleCreatePaylo
 	retval.Branch = v.PipelineScheduleValues.Branch
 	retval.Env = v.PipelineScheduleValues.Env
 	retval.Enabled = v.PipelineScheduleValues.Enabled
+	retval.Pipeline = v.PipelineScheduleValues.Pipeline
 	return &retval, nil
 }
 
@@ -3753,6 +3784,146 @@ type getPipelineResponse struct {
 // GetPipeline returns getPipelineResponse.Pipeline, and is useful for accessing the field via an interface.
 func (v *getPipelineResponse) GetPipeline() getPipelinePipeline { return v.Pipeline }
 
+// getPipelineScheduleBySlugPipelineSchedule includes the requested fields of the GraphQL type PipelineSchedule.
+// The GraphQL type's documentation follows.
+//
+// A schedule of when a build should automatically triggered for a Pipeline
+type getPipelineScheduleBySlugPipelineSchedule struct {
+	PipelineScheduleValues `json:"-"`
+}
+
+// GetId returns getPipelineScheduleBySlugPipelineSchedule.Id, and is useful for accessing the field via an interface.
+func (v *getPipelineScheduleBySlugPipelineSchedule) GetId() string {
+	return v.PipelineScheduleValues.Id
+}
+
+// GetUuid returns getPipelineScheduleBySlugPipelineSchedule.Uuid, and is useful for accessing the field via an interface.
+func (v *getPipelineScheduleBySlugPipelineSchedule) GetUuid() string {
+	return v.PipelineScheduleValues.Uuid
+}
+
+// GetLabel returns getPipelineScheduleBySlugPipelineSchedule.Label, and is useful for accessing the field via an interface.
+func (v *getPipelineScheduleBySlugPipelineSchedule) GetLabel() *string {
+	return v.PipelineScheduleValues.Label
+}
+
+// GetCronline returns getPipelineScheduleBySlugPipelineSchedule.Cronline, and is useful for accessing the field via an interface.
+func (v *getPipelineScheduleBySlugPipelineSchedule) GetCronline() *string {
+	return v.PipelineScheduleValues.Cronline
+}
+
+// GetMessage returns getPipelineScheduleBySlugPipelineSchedule.Message, and is useful for accessing the field via an interface.
+func (v *getPipelineScheduleBySlugPipelineSchedule) GetMessage() *string {
+	return v.PipelineScheduleValues.Message
+}
+
+// GetCommit returns getPipelineScheduleBySlugPipelineSchedule.Commit, and is useful for accessing the field via an interface.
+func (v *getPipelineScheduleBySlugPipelineSchedule) GetCommit() *string {
+	return v.PipelineScheduleValues.Commit
+}
+
+// GetBranch returns getPipelineScheduleBySlugPipelineSchedule.Branch, and is useful for accessing the field via an interface.
+func (v *getPipelineScheduleBySlugPipelineSchedule) GetBranch() *string {
+	return v.PipelineScheduleValues.Branch
+}
+
+// GetEnv returns getPipelineScheduleBySlugPipelineSchedule.Env, and is useful for accessing the field via an interface.
+func (v *getPipelineScheduleBySlugPipelineSchedule) GetEnv() []*string {
+	return v.PipelineScheduleValues.Env
+}
+
+// GetEnabled returns getPipelineScheduleBySlugPipelineSchedule.Enabled, and is useful for accessing the field via an interface.
+func (v *getPipelineScheduleBySlugPipelineSchedule) GetEnabled() bool {
+	return v.PipelineScheduleValues.Enabled
+}
+
+// GetPipeline returns getPipelineScheduleBySlugPipelineSchedule.Pipeline, and is useful for accessing the field via an interface.
+func (v *getPipelineScheduleBySlugPipelineSchedule) GetPipeline() PipelineScheduleValuesPipeline {
+	return v.PipelineScheduleValues.Pipeline
+}
+
+func (v *getPipelineScheduleBySlugPipelineSchedule) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*getPipelineScheduleBySlugPipelineSchedule
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.getPipelineScheduleBySlugPipelineSchedule = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	err = json.Unmarshal(
+		b, &v.PipelineScheduleValues)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+type __premarshalgetPipelineScheduleBySlugPipelineSchedule struct {
+	Id string `json:"id"`
+
+	Uuid string `json:"uuid"`
+
+	Label *string `json:"label"`
+
+	Cronline *string `json:"cronline"`
+
+	Message *string `json:"message"`
+
+	Commit *string `json:"commit"`
+
+	Branch *string `json:"branch"`
+
+	Env []*string `json:"env"`
+
+	Enabled bool `json:"enabled"`
+
+	Pipeline PipelineScheduleValuesPipeline `json:"pipeline"`
+}
+
+func (v *getPipelineScheduleBySlugPipelineSchedule) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *getPipelineScheduleBySlugPipelineSchedule) __premarshalJSON() (*__premarshalgetPipelineScheduleBySlugPipelineSchedule, error) {
+	var retval __premarshalgetPipelineScheduleBySlugPipelineSchedule
+
+	retval.Id = v.PipelineScheduleValues.Id
+	retval.Uuid = v.PipelineScheduleValues.Uuid
+	retval.Label = v.PipelineScheduleValues.Label
+	retval.Cronline = v.PipelineScheduleValues.Cronline
+	retval.Message = v.PipelineScheduleValues.Message
+	retval.Commit = v.PipelineScheduleValues.Commit
+	retval.Branch = v.PipelineScheduleValues.Branch
+	retval.Env = v.PipelineScheduleValues.Env
+	retval.Enabled = v.PipelineScheduleValues.Enabled
+	retval.Pipeline = v.PipelineScheduleValues.Pipeline
+	return &retval, nil
+}
+
+// getPipelineScheduleBySlugResponse is returned by getPipelineScheduleBySlug on success.
+type getPipelineScheduleBySlugResponse struct {
+	// Find a pipeline schedule by its slug
+	PipelineSchedule getPipelineScheduleBySlugPipelineSchedule `json:"pipelineSchedule"`
+}
+
+// GetPipelineSchedule returns getPipelineScheduleBySlugResponse.PipelineSchedule, and is useful for accessing the field via an interface.
+func (v *getPipelineScheduleBySlugResponse) GetPipelineSchedule() getPipelineScheduleBySlugPipelineSchedule {
+	return v.PipelineSchedule
+}
+
 // getPipelineScheduleNode includes the requested fields of the GraphQL interface Node.
 //
 // getPipelineScheduleNode is implemented by the following types:
@@ -4924,6 +5095,11 @@ func (v *getPipelineScheduleNodePipelineSchedule) GetEnabled() bool {
 	return v.PipelineScheduleValues.Enabled
 }
 
+// GetPipeline returns getPipelineScheduleNodePipelineSchedule.Pipeline, and is useful for accessing the field via an interface.
+func (v *getPipelineScheduleNodePipelineSchedule) GetPipeline() PipelineScheduleValuesPipeline {
+	return v.PipelineScheduleValues.Pipeline
+}
+
 func (v *getPipelineScheduleNodePipelineSchedule) UnmarshalJSON(b []byte) error {
 
 	if string(b) == "null" {
@@ -4969,6 +5145,8 @@ type __premarshalgetPipelineScheduleNodePipelineSchedule struct {
 	Env []*string `json:"env"`
 
 	Enabled bool `json:"enabled"`
+
+	Pipeline PipelineScheduleValuesPipeline `json:"pipeline"`
 }
 
 func (v *getPipelineScheduleNodePipelineSchedule) MarshalJSON() ([]byte, error) {
@@ -4992,6 +5170,7 @@ func (v *getPipelineScheduleNodePipelineSchedule) __premarshalJSON() (*__premars
 	retval.Branch = v.PipelineScheduleValues.Branch
 	retval.Env = v.PipelineScheduleValues.Env
 	retval.Enabled = v.PipelineScheduleValues.Enabled
+	retval.Pipeline = v.PipelineScheduleValues.Pipeline
 	return &retval, nil
 }
 
@@ -6106,6 +6285,11 @@ func (v *updatePipelineSchedulePipelineScheduleUpdatePipelineScheduleUpdatePaylo
 	return v.PipelineScheduleValues.Enabled
 }
 
+// GetPipeline returns updatePipelineSchedulePipelineScheduleUpdatePipelineScheduleUpdatePayloadPipelineSchedule.Pipeline, and is useful for accessing the field via an interface.
+func (v *updatePipelineSchedulePipelineScheduleUpdatePipelineScheduleUpdatePayloadPipelineSchedule) GetPipeline() PipelineScheduleValuesPipeline {
+	return v.PipelineScheduleValues.Pipeline
+}
+
 func (v *updatePipelineSchedulePipelineScheduleUpdatePipelineScheduleUpdatePayloadPipelineSchedule) UnmarshalJSON(b []byte) error {
 
 	if string(b) == "null" {
@@ -6149,6 +6333,8 @@ type __premarshalupdatePipelineSchedulePipelineScheduleUpdatePipelineScheduleUpd
 	Env []*string `json:"env"`
 
 	Enabled bool `json:"enabled"`
+
+	Pipeline PipelineScheduleValuesPipeline `json:"pipeline"`
 }
 
 func (v *updatePipelineSchedulePipelineScheduleUpdatePipelineScheduleUpdatePayloadPipelineSchedule) MarshalJSON() ([]byte, error) {
@@ -6171,6 +6357,7 @@ func (v *updatePipelineSchedulePipelineScheduleUpdatePipelineScheduleUpdatePaylo
 	retval.Branch = v.PipelineScheduleValues.Branch
 	retval.Env = v.PipelineScheduleValues.Env
 	retval.Enabled = v.PipelineScheduleValues.Enabled
+	retval.Pipeline = v.PipelineScheduleValues.Pipeline
 	return &retval, nil
 }
 
@@ -6554,6 +6741,9 @@ fragment PipelineScheduleValues on PipelineSchedule {
 	branch
 	env
 	enabled
+	pipeline {
+		id
+	}
 }
 `
 
@@ -7178,6 +7368,9 @@ fragment PipelineScheduleValues on PipelineSchedule {
 	branch
 	env
 	enabled
+	pipeline {
+		id
+	}
 }
 `
 
@@ -7195,6 +7388,54 @@ func getPipelineSchedule(
 	var err error
 
 	var data getPipelineScheduleResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		nil,
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
+// The query or mutation executed by getPipelineScheduleBySlug.
+const getPipelineScheduleBySlug_Operation = `
+query getPipelineScheduleBySlug ($slug: ID!) {
+	pipelineSchedule(slug: $slug) {
+		... PipelineScheduleValues
+	}
+}
+fragment PipelineScheduleValues on PipelineSchedule {
+	id
+	uuid
+	label
+	cronline
+	message
+	commit
+	branch
+	env
+	enabled
+	pipeline {
+		id
+	}
+}
+`
+
+func getPipelineScheduleBySlug(
+	client graphql.Client,
+	slug string,
+) (*getPipelineScheduleBySlugResponse, error) {
+	req := &graphql.Request{
+		OpName: "getPipelineScheduleBySlug",
+		Query:  getPipelineScheduleBySlug_Operation,
+		Variables: &__getPipelineScheduleBySlugInput{
+			Slug: slug,
+		},
+	}
+	var err error
+
+	var data getPipelineScheduleBySlugResponse
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(
@@ -7617,6 +7858,9 @@ fragment PipelineScheduleValues on PipelineSchedule {
 	branch
 	env
 	enabled
+	pipeline {
+		id
+	}
 }
 `
 

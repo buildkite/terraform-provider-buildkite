@@ -260,15 +260,22 @@ func (ps *pipelineSchedule) ImportState(ctx context.Context, req resource.Import
 		return
 	}
 
-	importComponents := strings.Split(req.ID, "/")
-	if len(importComponents) != 3 || importComponents[0] == "" || importComponents[1] == "" || importComponents[2] == "" {
+	apiResponse, err := getPipelineScheduleBySlug(
+		ps.client.genqlient,
+		req.ID,
+	)
+
+	if err != nil {
 		resp.Diagnostics.AddError(
-			"Unexpected Import Identifier",
-			fmt.Sprintf("Expected import identifier must have format $BUILDKITE_ORGANIZATION_SLUG/$BUILDKITE_PIPELINE_SLUG/$PIPELINE_SCHEDULE_UUID. Got: %q", req.ID),
+			"Unable to read Pipeline schedule",
+			fmt.Sprintf("Unable to read Pipeline schedule: %s", err.Error()),
 		)
 		return
 	}
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("uuid"), importComponents[2])...)
+
+	var newReq resource.ImportStateRequest
+	newReq.ID = apiResponse.PipelineSchedule.Id
+	resource.ImportStatePassthroughID(ctx, path.Root("id"), newReq, resp)
 
 }
 
@@ -306,6 +313,7 @@ func envVarsMapFromTfToString(ctx context.Context, m types.Map) string {
 
 func updatePipelineScheduleNode(ctx context.Context, psState *pipelineScheduleResourceModel, psNode getPipelineScheduleNodePipelineSchedule) {
 
+	psState.Uuid = types.StringValue(psNode.Uuid)
 	psState.Label = types.StringPointerValue(psNode.Label)
 	psState.Branch = types.StringPointerValue(psNode.Branch)
 	psState.Commit = types.StringPointerValue(psNode.Commit)
@@ -313,4 +321,5 @@ func updatePipelineScheduleNode(ctx context.Context, psState *pipelineScheduleRe
 	psState.Message = types.StringPointerValue(psNode.Message)
 	psState.Enabled = types.BoolValue(psNode.Enabled)
 	psState.Env = envVarsArrayToMap(ctx, psNode.Env)
+	psState.PipelineId = types.StringValue(psNode.Pipeline.Id)
 }
