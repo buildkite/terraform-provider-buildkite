@@ -406,22 +406,23 @@ func CreatePipeline(ctx context.Context, d *schema.ResourceData, m interface{}) 
 // ReadPipeline retrieves a Buildkite pipeline
 func ReadPipeline(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := m.(*Client)
-	var query struct {
-		Node struct {
-			Pipeline PipelineNode `graphql:"... on Pipeline"`
-		} `graphql:"node(id: $id)"`
-	}
-	vars := map[string]interface{}{
-		"id": graphql.ID(d.Id()),
-	}
 
-	err := client.graphql.Query(context.Background(), &query, vars)
+	apiResponse, err := getNode(client.genqlient, d.Id())
+
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	updatePipelineResource(d, &query.Node.Pipeline)
-
+	// Convert fron Node to getNodePipeline type
+	if pipelineNode, ok := apiResponse.GetNode().(*getNodeNodePipeline); ok {
+		if pipelineNode == nil {
+			return diag.FromErr(
+				fmt.Errorf("Unable to get pipeline with ID %s (%v)", d.Id(), err),
+			)
+		}
+		updatePipelineResourceNode(d, pipelineNode)
+	}
+	
 	if slug, pipelineExists := d.GetOk("slug"); pipelineExists {
 		pipelineExtraInfo, err := getPipelineExtraInfo(d, m, slug.(string))
 		if err != nil {
@@ -602,7 +603,7 @@ func updatePipelineExtraInfo(d *schema.ResourceData, client *Client) (PipelineEx
 	return pipelineExtraInfo, nil
 }
 
-func mapTagsFromGenqlient(tags []updatePipelinePipelineUpdatePipelineUpdatePayloadPipelineTagsPipelineTag) []PipelineTag {
+func mapTagsFromGenqlient(tags []PipelineValuesTagsPipelineTag) []PipelineTag {
 	newTags := make([]PipelineTag, len(tags))
 
 	for i, v := range tags {
@@ -622,7 +623,7 @@ func getTagsFromSchema(d *schema.ResourceData) []PipelineTagInput {
 	return tags
 }
 
-func mapTeamPipelinesFromGenqlient(tags []updatePipelinePipelineUpdatePipelineUpdatePayloadPipelineTeamsTeamPipelineConnectionEdgesTeamPipelineEdge) struct {
+func mapTeamPipelinesFromGenqlient(tags []PipelineValuesTeamsTeamPipelineConnectionEdgesTeamPipelineEdge) struct {
 	Edges []struct{ Node TeamPipelineNode }
 } {
 	teamPipelineNodes := make([]struct{ Node TeamPipelineNode }, len(tags))
@@ -824,6 +825,37 @@ func updatePipelineResource(d *schema.ResourceData, pipeline *PipelineNode) {
 	d.Set("skip_intermediate_builds_branch_filter", string(pipeline.SkipIntermediateBuildsBranchFilter))
 	d.Set("slug", string(pipeline.Slug))
 	d.Set("steps", string(pipeline.Steps.YAML))
+	d.Set("webhook_url", string(pipeline.WebhookURL))
+
+	teams := make([]map[string]interface{}, len(pipeline.Teams.Edges))
+	for i, id := range pipeline.Teams.Edges {
+		team := map[string]interface{}{
+			"slug":         string(id.Node.Team.Slug),
+			"access_level": string(id.Node.AccessLevel),
+		}
+		teams[i] = team
+	}
+	d.Set("team", teams)
+}
+
+// updatePipelineResourceNode updates the terraform resource data for the pipeline resource from a passed in getNodeNodePipeline
+func updatePipelineResourceNode(d *schema.ResourceData, pipeline *getNodeNodePipeline) {
+	d.SetId(string(pipeline.Id))
+	d.Set("allow_rebuilds", bool(pipeline.AllowRebuilds))
+	d.Set("branch_configuration", string(pipeline.BranchConfiguration))
+	d.Set("default_timeout_in_minutes", int(pipeline.DefaultTimeoutInMinutes))
+	d.Set("maximum_timeout_in_minutes", int(pipeline.MaximumTimeoutInMinutes))
+	d.Set("cancel_intermediate_builds", bool(pipeline.CancelIntermediateBuilds))
+	d.Set("cancel_intermediate_builds_branch_filter", string(pipeline.CancelIntermediateBuildsBranchFilter))
+	d.Set("cluster_id", string(pipeline.Cluster.Id))
+	d.Set("default_branch", string(pipeline.DefaultBranch))
+	d.Set("description", string(pipeline.Description))
+	d.Set("name", string(pipeline.Name))
+	d.Set("repository", string(pipeline.Repository.Url))
+	d.Set("skip_intermediate_builds", bool(pipeline.SkipIntermediateBuilds))
+	d.Set("skip_intermediate_builds_branch_filter", string(pipeline.SkipIntermediateBuildsBranchFilter))
+	d.Set("slug", string(pipeline.Slug))
+	d.Set("steps", string(pipeline.Steps.Yaml))
 	d.Set("webhook_url", string(pipeline.WebhookURL))
 
 	teams := make([]map[string]interface{}, len(pipeline.Teams.Edges))
