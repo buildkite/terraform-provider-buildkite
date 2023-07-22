@@ -2,8 +2,8 @@ package buildkite
 
 import (
 	"fmt"
-	"testing"
 	"regexp"
+	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
@@ -112,8 +112,8 @@ func TestAccDataTeam_ReadUsingIDAndSlug(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: protoV6ProviderFactories(),
-				Config: testDatasourceTeamConfigIDSlug("noobs"),
-				ExpectError: regexp.MustCompile("Invalid Attribute Combination"),
+				Config:                   testDatasourceTeamConfigIDSlug("noobs"),
+				ExpectError:              regexp.MustCompile("Invalid Attribute Combination"),
 			},
 		},
 	})
