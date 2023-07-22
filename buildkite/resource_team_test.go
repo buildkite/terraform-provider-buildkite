@@ -37,7 +37,6 @@ func testAccTeamConfigSecret(name string) string {
 }
 
 func TestAccTeam_AddRemove(t *testing.T) {
-	t.Parallel()
 	var tr teamResourceModel
 
 	resource.Test(t, resource.TestCase{
@@ -66,7 +65,6 @@ func TestAccTeam_AddRemove(t *testing.T) {
 }
 
 func TestAccTeam_Update(t *testing.T) {
-	t.Parallel()
 	var tr teamResourceModel
 
 	resource.Test(t, resource.TestCase{
@@ -86,7 +84,6 @@ func TestAccTeam_Update(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckTeamExists("buildkite_team.acc_tests", &tr),
 					testAccCheckTeamRemoteValues("wombats", &tr),
-					resource.TestCheckResourceAttr("buildkite_team.acc_tests", "name", "wombats"),
 					resource.TestCheckResourceAttr("buildkite_team.acc_tests", "name", "wombats"),
 				),
 			},
