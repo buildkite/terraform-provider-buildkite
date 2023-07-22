@@ -7,7 +7,23 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
+	"github.com/shurcooL/graphql"
 )
+
+type PipelineScheduleNode struct {
+	Branch   graphql.String
+	Commit   graphql.String
+	Cronline graphql.String
+	Enabled  graphql.Boolean
+	Env      []graphql.String
+	ID       graphql.String
+	UUID     graphql.String
+	Label    graphql.String
+	Message  graphql.String
+	Pipeline struct {
+		ID graphql.String
+	}
+}
 
 // Confirm that we can add a new pipeline schedule to a pipeline
 func TestAccPipelineSchedule_add_remove(t *testing.T) {
@@ -170,29 +186,6 @@ func TestAccPipelineSchedule_import(t *testing.T) {
 				ImportStateIdFunc: testAccGetImportPipelineScheduleSlug(&resourceSchedule),
 				ImportState:       true,
 				ImportStateVerify: true,
-			},
-		},
-	})
-}
-
-func TestAccPipelineSchedule_disappears(t *testing.T) {
-	var node PipelineScheduleNode
-	resourceName := "buildkite_pipeline_schedule.foobar"
-
-	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: protoV6ProviderFactories(),
-		CheckDestroy:             testAccCheckAllPipelineScheduleResourcesDestroyed,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccPipelineScheduleConfigBasic("foo", "0 * * * *"),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					// Confirm the pipeline schedule exists in the buildkite API
-					testAccCheckPipelineScheduleExists(resourceName, &node),
-					// Check that the schedule can be removed from the plan
-					testAccCheckResourceDisappears(Provider("testing"), resourcePipelineSchedule(), resourceName),
-				),
-				ExpectNonEmptyPlan: true,
 			},
 		},
 	})

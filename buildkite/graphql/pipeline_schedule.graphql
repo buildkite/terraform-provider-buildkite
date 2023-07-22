@@ -1,0 +1,104 @@
+fragment PipelineScheduleValues on PipelineSchedule {
+    id 
+    uuid
+    # @genqlient(pointer: true)
+    label
+    # @genqlient(pointer: true)
+    cronline
+    # @genqlient(pointer: true)
+    message
+    # @genqlient(pointer: true)
+    commit
+    # @genqlient(pointer: true)
+    branch
+    # @genqlient(pointer: true)
+    env    
+    enabled 
+
+    pipeline {
+        id   
+     }
+}
+
+query getPipelineSchedule(
+    $id: ID! 
+){
+    node(id: $id) {
+        ... on PipelineSchedule {
+            ...PipelineScheduleValues
+        }
+    }
+}
+
+
+query getPipelineScheduleBySlug(
+    $slug: ID! 
+){
+    pipelineSchedule(slug: $slug) { 
+        ...PipelineScheduleValues   
+    }
+}
+
+mutation createPipelineSchedule( 
+    $pipelineId: ID!
+     # @genqlient(pointer: true)
+    $label: String
+     # @genqlient(pointer: true)
+    $cronline: String
+     # @genqlient(pointer: true)
+    $message: String
+     # @genqlient(pointer: true)
+    $commit: String
+     # @genqlient(pointer: true)
+    $branch: String
+     # @genqlient(pointer: true)
+    $env: String
+    $enabled: Boolean
+){
+    pipelineScheduleCreate(input: {
+        pipelineID: $pipelineId
+        label: $label
+        cronline: $cronline
+        message: $message
+        commit: $commit
+        branch: $branch
+        env: $env
+        enabled: $enabled 
+    }) {
+        pipeline {
+            id 
+        }
+        pipelineScheduleEdge {
+            node {
+                ...PipelineScheduleValues
+            }
+        } 
+    }
+} 
+ 
+# @genqlient(for: "PipelineScheduleUpdateInput.label", pointer: true) 
+# @genqlient(for: "PipelineScheduleUpdateInput.cronline", pointer: true)
+# @genqlient(for: "PipelineScheduleUpdateInput.message", pointer: true)
+# @genqlient(for: "PipelineScheduleUpdateInput.commit", pointer: true)
+# @genqlient(for: "PipelineScheduleUpdateInput.branch", pointer: true)
+# @genqlient(for: "PipelineScheduleUpdateInput.env", pointer: true)
+# @genqlient(for: "PipelineScheduleUpdateInput.enabled", omitempty: true)
+mutation updatePipelineSchedule( 
+    $input: PipelineScheduleUpdateInput!
+){
+    pipelineScheduleUpdate(input: $input) {
+        pipelineSchedule {
+            ...PipelineScheduleValues
+        }  
+    }
+}
+
+mutation deletePipelineSchedule(
+    $id: ID!
+){
+    pipelineScheduleDelete(input: {
+        id: $id
+    }) {
+        deletedPipelineScheduleID
+    }
+}

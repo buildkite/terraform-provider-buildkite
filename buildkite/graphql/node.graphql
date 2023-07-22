@@ -2,6 +2,9 @@ query getNode(
     $id: ID!
 ) {
     node(id: $id){
+        ... on ClusterToken {
+            ...ClusterAgentTokenValues
+        }
         ... on TeamMember {
             ...TeamMemberValues
         }

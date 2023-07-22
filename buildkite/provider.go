@@ -104,6 +104,7 @@ func (*terraformProvider) Resources(context.Context) []func() resource.Resource 
 		newTeamResource,
 		newTeamMemberResource,
 		newOrganizationResource,
+		NewPipelineScheduleResource,
 	}
 }
 
@@ -142,7 +143,6 @@ func Provider(version string) *schema.Provider {
 	provider := &schema.Provider{
 		ResourcesMap: map[string]*schema.Resource{
 			"buildkite_pipeline":              resourcePipeline(),
-			"buildkite_pipeline_schedule":     resourcePipelineSchedule(),
 			"buildkite_organization_settings": resourceOrganizationSettings(),
 		},
 		Schema: map[string]*schema.Schema{
