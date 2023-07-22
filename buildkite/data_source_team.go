@@ -4,8 +4,11 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/path"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -49,6 +52,12 @@ func (t *teamDatasource) Schema(ctx context.Context, req datasource.SchemaReques
 				MarkdownDescription: "The ID of the team.",
 				Optional:            true,
 				Computed:            true,
+				Validators: []validator.String{
+					stringvalidator.ExactlyOneOf(path.Expressions{
+						path.MatchRoot("slug"),
+						path.MatchRoot("id"),
+					}...),
+				},
 			},
 			"uuid": schema.StringAttribute{
 				MarkdownDescription: "The UUID of the team.",
