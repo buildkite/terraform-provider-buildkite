@@ -5,6 +5,9 @@ query getNode(
         ... on ClusterQueue {
             ...ClusterQueueValues
         }
+        ... on ClusterToken {
+            ...ClusterAgentTokenValues
+        }
         ... on TeamMember {
             ...TeamMemberValues
         }

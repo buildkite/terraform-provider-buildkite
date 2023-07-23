@@ -16,6 +16,7 @@ This release deprecates the `buildkite_organization_settings` [resource](./docs/
 * Convert DeletePipeline to genqlient [[PR #317](https://github.com/buildkite/terraform-provider-buildkite/pull/317)] @jradtilbrook
 * Conversion of Cluster Queue resource to node GraphQL query [[PR #321](https://github.com/buildkite/terraform-provider-buildkite/pull/321)] @james2791
 
+* Conversion of Cluster Agent Token resource to node GraphQL query [[PR #322](https://github.com/buildkite/terraform-provider-buildkite/pull/322)] @james2791
 
 ## [v0.20.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v0.19.2...v0.20.0)
 
