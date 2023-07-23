@@ -20,6 +20,7 @@ func testAccClusterAgentTokenBasic(description string) string {
 }
 
 func TestAccClusterAgentToken_add_remove(t *testing.T) {
+	t.Parallel()
 	var ct ClusterAgentTokenResourceModel
 
 	resource.Test(t, resource.TestCase{
@@ -51,6 +52,7 @@ func TestAccClusterAgentToken_add_remove(t *testing.T) {
 }
 
 func TestAccClusterAgentToken_update(t *testing.T) {
+	t.Parallel()
 	var ct ClusterAgentTokenResourceModel
 
 	resource.Test(t, resource.TestCase{
@@ -59,7 +61,7 @@ func TestAccClusterAgentToken_update(t *testing.T) {
 		CheckDestroy:             testAccCheckClusterAgentTokenDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccClusterAgentTokenBasic("foo"),
+				Config: testAccClusterAgentTokenBasic("bar"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Confirm the token exists in the buildkite API
 					testAccCheckClusterAgentTokenExists("buildkite_cluster_agent_token.foobar", &ct),
@@ -70,7 +72,7 @@ func TestAccClusterAgentToken_update(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccClusterAgentTokenBasic("bar"),
+				Config: testAccClusterAgentTokenBasic("baz"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Confirm the token exists in the buildkite API
 					testAccCheckClusterAgentTokenExists("buildkite_cluster_agent_token.foobar", &ct),
