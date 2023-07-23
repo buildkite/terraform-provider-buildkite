@@ -66,9 +66,9 @@ func TestAccClusterAgentToken_update(t *testing.T) {
 					// Confirm the token exists in the buildkite API
 					testAccCheckClusterAgentTokenExists("buildkite_cluster_agent_token.foobar", &ct),
 					// Confirm the token has the correct values in Buildkite's system
-					testAccCheckClusterAgentTokenRemoteValues(&ct, "Acceptance Test foo"),
+					testAccCheckClusterAgentTokenRemoteValues(&ct, "Acceptance Test bar"),
 					// Confirm the token has the correct values in terraform state
-					resource.TestCheckResourceAttr("buildkite_cluster_agent_token.foobar", "description", "Acceptance Test foo"),
+					resource.TestCheckResourceAttr("buildkite_cluster_agent_token.foobar", "description", "Acceptance Test bar"),
 				),
 			},
 			{
@@ -77,9 +77,9 @@ func TestAccClusterAgentToken_update(t *testing.T) {
 					// Confirm the token exists in the buildkite API
 					testAccCheckClusterAgentTokenExists("buildkite_cluster_agent_token.foobar", &ct),
 					// Confirm the token has the correct values in Buildkite's system
-					testAccCheckClusterAgentTokenRemoteValues(&ct, "Acceptance Test bar"),
+					testAccCheckClusterAgentTokenRemoteValues(&ct, "Acceptance Test baz"),
 					// Confirm the token has the correct values in terraform state
-					resource.TestCheckResourceAttr("buildkite_cluster_agent_token.foobar", "description", "Acceptance Test bar"),
+					resource.TestCheckResourceAttr("buildkite_cluster_agent_token.foobar", "description", "Acceptance Test baz"),
 				),
 			},
 		},
