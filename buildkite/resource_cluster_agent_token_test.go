@@ -20,7 +20,6 @@ func testAccClusterAgentTokenBasic(description string) string {
 }
 
 func TestAccClusterAgentToken_add_remove(t *testing.T) {
-	t.Parallel()
 	var ct ClusterAgentTokenResourceModel
 
 	resource.Test(t, resource.TestCase{
@@ -52,7 +51,6 @@ func TestAccClusterAgentToken_add_remove(t *testing.T) {
 }
 
 func TestAccClusterAgentToken_update(t *testing.T) {
-	t.Parallel()
 	var ct ClusterAgentTokenResourceModel
 
 	resource.Test(t, resource.TestCase{

@@ -18,7 +18,6 @@ func testAccClusterBasic(name string) string {
 }
 
 func TestAccCluster_AddRemove(t *testing.T) {
-	t.Parallel()
 	var c clusterResourceModel
 
 	resource.Test(t, resource.TestCase{
@@ -48,7 +47,6 @@ func TestAccCluster_AddRemove(t *testing.T) {
 }
 
 func TestAccCluster_Update(t *testing.T) {
-	t.Parallel()
 	var c = new(clusterResourceModel)
 
 	resource.Test(t, resource.TestCase{
@@ -79,7 +77,6 @@ func TestAccCluster_Update(t *testing.T) {
 }
 
 func TestAccCluster_Import(t *testing.T) {
-	t.Parallel()
 	var c = new(clusterResourceModel)
 
 	resource.Test(t, resource.TestCase{
