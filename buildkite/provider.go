@@ -27,6 +27,7 @@ const (
 
 type terraformProvider struct {
 	version string
+	isProtoV6 bool
 }
 
 type providerModel struct {
@@ -95,16 +96,17 @@ func (tf *terraformProvider) Metadata(ctx context.Context, req provider.Metadata
 	resp.Version = tf.version
 }
 
-func (*terraformProvider) Resources(context.Context) []func() resource.Resource {
+func (p *terraformProvider) Resources(context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
+		NewClusterQueueResource,
+		NewPipelineScheduleResource,
 		newAgentTokenResource,
 		newClusterAgentTokenResource,
-		NewClusterQueueResource,
 		newClusterResource,
-		newTeamResource,
-		newTeamMemberResource,
 		newOrganizationResource,
-		NewPipelineScheduleResource,
+		newTeamMemberResource,
+		newTeamResource,
+		newTestSuiteResource(p.isProtoV6),
 	}
 }
 
@@ -132,9 +134,10 @@ func (*terraformProvider) Schema(ctx context.Context, req provider.SchemaRequest
 	}
 }
 
-func New(version string) provider.Provider {
+func New(version string, isProtoV6 bool) provider.Provider {
 	return &terraformProvider{
 		version: version,
+		isProtoV6: isProtoV6,
 	}
 }
 

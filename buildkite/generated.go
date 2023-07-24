@@ -519,6 +519,16 @@ const (
 	PipelineVisibilityPrivate PipelineVisibility = "PRIVATE"
 )
 
+// The access levels that can be assigned to a suite
+type SuiteAccessLevels string
+
+const (
+	// Allows edits and reads
+	SuiteAccessLevelsManageAndRead SuiteAccessLevels = "MANAGE_AND_READ"
+	// Read only
+	SuiteAccessLevelsReadOnly SuiteAccessLevels = "READ_ONLY"
+)
+
 // TeamFields includes the GraphQL fields of Team requested by the fragment TeamFields.
 // The GraphQL type's documentation follows.
 //
@@ -811,6 +821,22 @@ type __deleteTeamMemberInput struct {
 // GetId returns __deleteTeamMemberInput.Id, and is useful for accessing the field via an interface.
 func (v *__deleteTeamMemberInput) GetId() string { return v.Id }
 
+// __findTeamSuiteInput is used internally by genqlient
+type __findTeamSuiteInput struct {
+	Org       string `json:"org"`
+	Suite     string `json:"suite"`
+	TeamCount int    `json:"teamCount"`
+}
+
+// GetOrg returns __findTeamSuiteInput.Org, and is useful for accessing the field via an interface.
+func (v *__findTeamSuiteInput) GetOrg() string { return v.Org }
+
+// GetSuite returns __findTeamSuiteInput.Suite, and is useful for accessing the field via an interface.
+func (v *__findTeamSuiteInput) GetSuite() string { return v.Suite }
+
+// GetTeamCount returns __findTeamSuiteInput.TeamCount, and is useful for accessing the field via an interface.
+func (v *__findTeamSuiteInput) GetTeamCount() int { return v.TeamCount }
+
 // __getAgentTokenInput is used internally by genqlient
 type __getAgentTokenInput struct {
 	Slug string `json:"slug"`
@@ -1102,6 +1128,18 @@ func (v *__updateTeamMemberInput) GetId() string { return v.Id }
 
 // GetRole returns __updateTeamMemberInput.Role, and is useful for accessing the field via an interface.
 func (v *__updateTeamMemberInput) GetRole() string { return v.Role }
+
+// __updateTestSuiteTeamInput is used internally by genqlient
+type __updateTestSuiteTeamInput struct {
+	Id          string            `json:"id"`
+	AccessLevel SuiteAccessLevels `json:"accessLevel"`
+}
+
+// GetId returns __updateTestSuiteTeamInput.Id, and is useful for accessing the field via an interface.
+func (v *__updateTestSuiteTeamInput) GetId() string { return v.Id }
+
+// GetAccessLevel returns __updateTestSuiteTeamInput.AccessLevel, and is useful for accessing the field via an interface.
+func (v *__updateTestSuiteTeamInput) GetAccessLevel() SuiteAccessLevels { return v.AccessLevel }
 
 // archivePipelinePipelineArchivePipelineArchivePayload includes the requested fields of the GraphQL type PipelineArchivePayload.
 // The GraphQL type's documentation follows.
@@ -1971,6 +2009,138 @@ type deleteTeamMemberTeamMemberDeleteTeamMemberDeletePayload struct {
 func (v *deleteTeamMemberTeamMemberDeleteTeamMemberDeletePayload) GetClientMutationId() string {
 	return v.ClientMutationId
 }
+
+// findTeamSuiteOrganization includes the requested fields of the GraphQL type Organization.
+// The GraphQL type's documentation follows.
+//
+// An organization
+type findTeamSuiteOrganization struct {
+	// Return all the suite the current user has access to for this organization
+	Suites findTeamSuiteOrganizationSuitesSuiteConnection `json:"suites"`
+}
+
+// GetSuites returns findTeamSuiteOrganization.Suites, and is useful for accessing the field via an interface.
+func (v *findTeamSuiteOrganization) GetSuites() findTeamSuiteOrganizationSuitesSuiteConnection {
+	return v.Suites
+}
+
+// findTeamSuiteOrganizationSuitesSuiteConnection includes the requested fields of the GraphQL type SuiteConnection.
+type findTeamSuiteOrganizationSuitesSuiteConnection struct {
+	Edges []findTeamSuiteOrganizationSuitesSuiteConnectionEdgesSuiteEdge `json:"edges"`
+}
+
+// GetEdges returns findTeamSuiteOrganizationSuitesSuiteConnection.Edges, and is useful for accessing the field via an interface.
+func (v *findTeamSuiteOrganizationSuitesSuiteConnection) GetEdges() []findTeamSuiteOrganizationSuitesSuiteConnectionEdgesSuiteEdge {
+	return v.Edges
+}
+
+// findTeamSuiteOrganizationSuitesSuiteConnectionEdgesSuiteEdge includes the requested fields of the GraphQL type SuiteEdge.
+type findTeamSuiteOrganizationSuitesSuiteConnectionEdgesSuiteEdge struct {
+	Node findTeamSuiteOrganizationSuitesSuiteConnectionEdgesSuiteEdgeNodeSuite `json:"node"`
+}
+
+// GetNode returns findTeamSuiteOrganizationSuitesSuiteConnectionEdgesSuiteEdge.Node, and is useful for accessing the field via an interface.
+func (v *findTeamSuiteOrganizationSuitesSuiteConnectionEdgesSuiteEdge) GetNode() findTeamSuiteOrganizationSuitesSuiteConnectionEdgesSuiteEdgeNodeSuite {
+	return v.Node
+}
+
+// findTeamSuiteOrganizationSuitesSuiteConnectionEdgesSuiteEdgeNodeSuite includes the requested fields of the GraphQL type Suite.
+// The GraphQL type's documentation follows.
+//
+// A suite
+type findTeamSuiteOrganizationSuitesSuiteConnectionEdgesSuiteEdgeNodeSuite struct {
+	Id   string `json:"id"`
+	Uuid string `json:"uuid"`
+	// Teams associated with this suite
+	Teams findTeamSuiteOrganizationSuitesSuiteConnectionEdgesSuiteEdgeNodeSuiteTeamsTeamSuiteConnection `json:"teams"`
+}
+
+// GetId returns findTeamSuiteOrganizationSuitesSuiteConnectionEdgesSuiteEdgeNodeSuite.Id, and is useful for accessing the field via an interface.
+func (v *findTeamSuiteOrganizationSuitesSuiteConnectionEdgesSuiteEdgeNodeSuite) GetId() string {
+	return v.Id
+}
+
+// GetUuid returns findTeamSuiteOrganizationSuitesSuiteConnectionEdgesSuiteEdgeNodeSuite.Uuid, and is useful for accessing the field via an interface.
+func (v *findTeamSuiteOrganizationSuitesSuiteConnectionEdgesSuiteEdgeNodeSuite) GetUuid() string {
+	return v.Uuid
+}
+
+// GetTeams returns findTeamSuiteOrganizationSuitesSuiteConnectionEdgesSuiteEdgeNodeSuite.Teams, and is useful for accessing the field via an interface.
+func (v *findTeamSuiteOrganizationSuitesSuiteConnectionEdgesSuiteEdgeNodeSuite) GetTeams() findTeamSuiteOrganizationSuitesSuiteConnectionEdgesSuiteEdgeNodeSuiteTeamsTeamSuiteConnection {
+	return v.Teams
+}
+
+// findTeamSuiteOrganizationSuitesSuiteConnectionEdgesSuiteEdgeNodeSuiteTeamsTeamSuiteConnection includes the requested fields of the GraphQL type TeamSuiteConnection.
+// The GraphQL type's documentation follows.
+//
+// A collection of TeamSuite records
+type findTeamSuiteOrganizationSuitesSuiteConnectionEdgesSuiteEdgeNodeSuiteTeamsTeamSuiteConnection struct {
+	Edges []findTeamSuiteOrganizationSuitesSuiteConnectionEdgesSuiteEdgeNodeSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdge `json:"edges"`
+}
+
+// GetEdges returns findTeamSuiteOrganizationSuitesSuiteConnectionEdgesSuiteEdgeNodeSuiteTeamsTeamSuiteConnection.Edges, and is useful for accessing the field via an interface.
+func (v *findTeamSuiteOrganizationSuitesSuiteConnectionEdgesSuiteEdgeNodeSuiteTeamsTeamSuiteConnection) GetEdges() []findTeamSuiteOrganizationSuitesSuiteConnectionEdgesSuiteEdgeNodeSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdge {
+	return v.Edges
+}
+
+// findTeamSuiteOrganizationSuitesSuiteConnectionEdgesSuiteEdgeNodeSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdge includes the requested fields of the GraphQL type TeamSuiteEdge.
+type findTeamSuiteOrganizationSuitesSuiteConnectionEdgesSuiteEdgeNodeSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdge struct {
+	Node findTeamSuiteOrganizationSuitesSuiteConnectionEdgesSuiteEdgeNodeSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdgeNodeTeamSuite `json:"node"`
+}
+
+// GetNode returns findTeamSuiteOrganizationSuitesSuiteConnectionEdgesSuiteEdgeNodeSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdge.Node, and is useful for accessing the field via an interface.
+func (v *findTeamSuiteOrganizationSuitesSuiteConnectionEdgesSuiteEdgeNodeSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdge) GetNode() findTeamSuiteOrganizationSuitesSuiteConnectionEdgesSuiteEdgeNodeSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdgeNodeTeamSuite {
+	return v.Node
+}
+
+// findTeamSuiteOrganizationSuitesSuiteConnectionEdgesSuiteEdgeNodeSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdgeNodeTeamSuite includes the requested fields of the GraphQL type TeamSuite.
+// The GraphQL type's documentation follows.
+//
+// A suite that's been assigned to a team
+type findTeamSuiteOrganizationSuitesSuiteConnectionEdgesSuiteEdgeNodeSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdgeNodeTeamSuite struct {
+	Id string `json:"id"`
+	// The access level users have to this suite
+	AccessLevel SuiteAccessLevels `json:"accessLevel"`
+	// The team associated with this team member
+	Team findTeamSuiteOrganizationSuitesSuiteConnectionEdgesSuiteEdgeNodeSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdgeNodeTeamSuiteTeam `json:"team"`
+}
+
+// GetId returns findTeamSuiteOrganizationSuitesSuiteConnectionEdgesSuiteEdgeNodeSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdgeNodeTeamSuite.Id, and is useful for accessing the field via an interface.
+func (v *findTeamSuiteOrganizationSuitesSuiteConnectionEdgesSuiteEdgeNodeSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdgeNodeTeamSuite) GetId() string {
+	return v.Id
+}
+
+// GetAccessLevel returns findTeamSuiteOrganizationSuitesSuiteConnectionEdgesSuiteEdgeNodeSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdgeNodeTeamSuite.AccessLevel, and is useful for accessing the field via an interface.
+func (v *findTeamSuiteOrganizationSuitesSuiteConnectionEdgesSuiteEdgeNodeSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdgeNodeTeamSuite) GetAccessLevel() SuiteAccessLevels {
+	return v.AccessLevel
+}
+
+// GetTeam returns findTeamSuiteOrganizationSuitesSuiteConnectionEdgesSuiteEdgeNodeSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdgeNodeTeamSuite.Team, and is useful for accessing the field via an interface.
+func (v *findTeamSuiteOrganizationSuitesSuiteConnectionEdgesSuiteEdgeNodeSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdgeNodeTeamSuite) GetTeam() findTeamSuiteOrganizationSuitesSuiteConnectionEdgesSuiteEdgeNodeSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdgeNodeTeamSuiteTeam {
+	return v.Team
+}
+
+// findTeamSuiteOrganizationSuitesSuiteConnectionEdgesSuiteEdgeNodeSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdgeNodeTeamSuiteTeam includes the requested fields of the GraphQL type Team.
+// The GraphQL type's documentation follows.
+//
+// An organization team
+type findTeamSuiteOrganizationSuitesSuiteConnectionEdgesSuiteEdgeNodeSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdgeNodeTeamSuiteTeam struct {
+	Id string `json:"id"`
+}
+
+// GetId returns findTeamSuiteOrganizationSuitesSuiteConnectionEdgesSuiteEdgeNodeSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdgeNodeTeamSuiteTeam.Id, and is useful for accessing the field via an interface.
+func (v *findTeamSuiteOrganizationSuitesSuiteConnectionEdgesSuiteEdgeNodeSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdgeNodeTeamSuiteTeam) GetId() string {
+	return v.Id
+}
+
+// findTeamSuiteResponse is returned by findTeamSuite on success.
+type findTeamSuiteResponse struct {
+	// Find an organization
+	Organization findTeamSuiteOrganization `json:"organization"`
+}
+
+// GetOrganization returns findTeamSuiteResponse.Organization, and is useful for accessing the field via an interface.
+func (v *findTeamSuiteResponse) GetOrganization() findTeamSuiteOrganization { return v.Organization }
 
 // getAgentTokenAgentToken includes the requested fields of the GraphQL type AgentToken.
 // The GraphQL type's documentation follows.
@@ -7072,6 +7242,57 @@ func (v *updateTeamMemberTeamMemberUpdateTeamMemberUpdatePayloadTeamMember) __pr
 	return &retval, nil
 }
 
+// updateTestSuiteTeamResponse is returned by updateTestSuiteTeam on success.
+type updateTestSuiteTeamResponse struct {
+	// Update a suite's access level within a team.
+	TeamSuiteUpdate updateTestSuiteTeamTeamSuiteUpdateTeamSuiteUpdatePayload `json:"teamSuiteUpdate"`
+}
+
+// GetTeamSuiteUpdate returns updateTestSuiteTeamResponse.TeamSuiteUpdate, and is useful for accessing the field via an interface.
+func (v *updateTestSuiteTeamResponse) GetTeamSuiteUpdate() updateTestSuiteTeamTeamSuiteUpdateTeamSuiteUpdatePayload {
+	return v.TeamSuiteUpdate
+}
+
+// updateTestSuiteTeamTeamSuiteUpdateTeamSuiteUpdatePayload includes the requested fields of the GraphQL type TeamSuiteUpdatePayload.
+// The GraphQL type's documentation follows.
+//
+// Autogenerated return type of TeamSuiteUpdate.
+type updateTestSuiteTeamTeamSuiteUpdateTeamSuiteUpdatePayload struct {
+	TeamSuite updateTestSuiteTeamTeamSuiteUpdateTeamSuiteUpdatePayloadTeamSuite `json:"teamSuite"`
+}
+
+// GetTeamSuite returns updateTestSuiteTeamTeamSuiteUpdateTeamSuiteUpdatePayload.TeamSuite, and is useful for accessing the field via an interface.
+func (v *updateTestSuiteTeamTeamSuiteUpdateTeamSuiteUpdatePayload) GetTeamSuite() updateTestSuiteTeamTeamSuiteUpdateTeamSuiteUpdatePayloadTeamSuite {
+	return v.TeamSuite
+}
+
+// updateTestSuiteTeamTeamSuiteUpdateTeamSuiteUpdatePayloadTeamSuite includes the requested fields of the GraphQL type TeamSuite.
+// The GraphQL type's documentation follows.
+//
+// A suite that's been assigned to a team
+type updateTestSuiteTeamTeamSuiteUpdateTeamSuiteUpdatePayloadTeamSuite struct {
+	// The access level users have to this suite
+	AccessLevel SuiteAccessLevels `json:"accessLevel"`
+	Id          string            `json:"id"`
+	// The public UUID for this team suite
+	Uuid string `json:"uuid"`
+}
+
+// GetAccessLevel returns updateTestSuiteTeamTeamSuiteUpdateTeamSuiteUpdatePayloadTeamSuite.AccessLevel, and is useful for accessing the field via an interface.
+func (v *updateTestSuiteTeamTeamSuiteUpdateTeamSuiteUpdatePayloadTeamSuite) GetAccessLevel() SuiteAccessLevels {
+	return v.AccessLevel
+}
+
+// GetId returns updateTestSuiteTeamTeamSuiteUpdateTeamSuiteUpdatePayloadTeamSuite.Id, and is useful for accessing the field via an interface.
+func (v *updateTestSuiteTeamTeamSuiteUpdateTeamSuiteUpdatePayloadTeamSuite) GetId() string {
+	return v.Id
+}
+
+// GetUuid returns updateTestSuiteTeamTeamSuiteUpdateTeamSuiteUpdatePayloadTeamSuite.Uuid, and is useful for accessing the field via an interface.
+func (v *updateTestSuiteTeamTeamSuiteUpdateTeamSuiteUpdatePayloadTeamSuite) GetUuid() string {
+	return v.Uuid
+}
+
 // The query or mutation executed by GetTeamFromSlug.
 const GetTeamFromSlug_Operation = `
 query GetTeamFromSlug ($slug: ID!) {
@@ -7634,6 +7855,62 @@ func deleteTeamMember(
 	var err error
 
 	var data deleteTeamMemberResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		nil,
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
+// The query or mutation executed by findTeamSuite.
+const findTeamSuite_Operation = `
+query findTeamSuite ($org: ID!, $suite: String, $teamCount: Int) {
+	organization(slug: $org) {
+		suites(search: $suite, first: 1) {
+			edges {
+				node {
+					id
+					uuid
+					teams(first: $teamCount, order: NAME) {
+						edges {
+							node {
+								id
+								accessLevel
+								team {
+									id
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
+`
+
+func findTeamSuite(
+	client graphql.Client,
+	org string,
+	suite string,
+	teamCount int,
+) (*findTeamSuiteResponse, error) {
+	req := &graphql.Request{
+		OpName: "findTeamSuite",
+		Query:  findTeamSuite_Operation,
+		Variables: &__findTeamSuiteInput{
+			Org:       org,
+			Suite:     suite,
+			TeamCount: teamCount,
+		},
+	}
+	var err error
+
+	var data findTeamSuiteResponse
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(
@@ -8719,6 +8996,46 @@ func updateTeamMember(
 	var err error
 
 	var data updateTeamMemberResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		nil,
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
+// The query or mutation executed by updateTestSuiteTeam.
+const updateTestSuiteTeam_Operation = `
+mutation updateTestSuiteTeam ($id: ID!, $accessLevel: SuiteAccessLevels!) {
+	teamSuiteUpdate(input: {id:$id,accessLevel:$accessLevel}) {
+		teamSuite {
+			accessLevel
+			id
+			uuid
+		}
+	}
+}
+`
+
+func updateTestSuiteTeam(
+	client graphql.Client,
+	id string,
+	accessLevel SuiteAccessLevels,
+) (*updateTestSuiteTeamResponse, error) {
+	req := &graphql.Request{
+		OpName: "updateTestSuiteTeam",
+		Query:  updateTestSuiteTeam_Operation,
+		Variables: &__updateTestSuiteTeamInput{
+			Id:          id,
+			AccessLevel: accessLevel,
+		},
+	}
+	var err error
+
+	var data updateTestSuiteTeamResponse
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(

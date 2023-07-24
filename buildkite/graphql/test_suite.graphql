@@ -1,0 +1,33 @@
+mutation updateTestSuiteTeam($id: ID!, $accessLevel: SuiteAccessLevels!) {
+    teamSuiteUpdate(input: {id: $id, accessLevel: $accessLevel}) {
+        teamSuite {
+            accessLevel
+            id
+            uuid
+        }
+    }
+}
+
+query findTeamSuite($org: ID!, $suite: String, $teamCount: Int) {
+    organization(slug: $org) {
+        suites(search: $suite, first: 1) {
+            edges {
+                node {
+                    id
+                    uuid
+                    teams(first: $teamCount, order: NAME) {
+                        edges {
+                            node {
+                                id
+                                accessLevel
+                                team {
+                                    id
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
