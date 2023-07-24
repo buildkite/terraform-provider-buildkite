@@ -12,6 +12,7 @@ import (
 
 // Confirm that we can create a new agent token, and then delete it without error
 func TestAccAgentToken_add_remove(t *testing.T) {
+	t.Parallel()
 	var resourceToken AgentTokenNode
 
 	resource.Test(t, resource.TestCase{
@@ -50,6 +51,7 @@ func TestAccAgentToken_add_remove(t *testing.T) {
 // Confirm that we can create a new agent token, and then update the description
 // Technically tokens can't be updated, so this will actuall do a delete+create
 func TestAccAgentToken_update(t *testing.T) {
+	t.Parallel()
 	var resourceToken AgentTokenNode
 
 	resource.Test(t, resource.TestCase{

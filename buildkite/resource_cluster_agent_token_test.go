@@ -12,7 +12,7 @@ import (
 func testAccClusterAgentTokenBasic(description string) string {
 	config := `
 		resource "buildkite_cluster_agent_token" "foobar" {
-			cluster_id = "Q2x1c3Rlci0tLTBhOTY5Yjc0LWEwYjctNDM0MC1hYWNlLWQ4NzQ0MjNmM2Q2Yw=="
+			cluster_id = "Q2x1c3Rlci0tLTliYWE0ZWQ1LTJjMWQtNDg2Yi1hYzc5LWYxY2VlZGYyN2JmOQ=="
 			description = "Acceptance Test %s"
 		}
 	`
