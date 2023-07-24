@@ -118,7 +118,7 @@ func testAccCheckClusterAgentTokenExists(resourceName string, ct *ClusterAgentTo
 			}
 		}
 
-		// If ClusterAgentTokenResourceModel isnt set from the queues slice
+		// If ClusterAgentTokenResourceModel isnt set from the token slice
 		if ct.Id.ValueString() == "" {
 			return fmt.Errorf("No Cluster agent token found with graphql id: %s", resourceState.Primary.ID)
 		}
@@ -131,7 +131,7 @@ func testAccCheckClusterAgentTokenRemoteValues(ct *ClusterAgentTokenResourceMode
 	return func(s *terraform.State) error {
 
 		if ct.Description.ValueString() != description {
-			return fmt.Errorf("Remote Cluster queue description (%s) doesn't match expected value (%s)", ct.Description, description)
+			return fmt.Errorf("Remote Cluster agent token description (%s) doesn't match expected value (%s)", ct.Description, description)
 		}
 
 		return nil
