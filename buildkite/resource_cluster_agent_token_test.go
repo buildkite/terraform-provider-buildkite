@@ -98,19 +98,29 @@ func testAccCheckClusterAgentTokenExists(resourceName string, ct *ClusterAgentTo
 			return fmt.Errorf("No ID is set in state")
 		}
 
-		apiResponse, err := getNode(genqlientGraphql, resourceState.Primary.ID)
+		clusterTokens, err := getClusterAgentTokens(
+			genqlientGraphql,
+			getenv("BUILDKITE_ORGANIZATION_SLUG"),
+			resourceState.Primary.Attributes["cluster_uuid"],
+		)
 
 		if err != nil {
-			return fmt.Errorf("Error fetching Cluster Agent Token from graphql API: %v", err)
+			return fmt.Errorf("Error fetching Cluster Agent Tokens from graphql API: %v", err)
 		}
 
-		if clusterAgentTokenNode, ok := apiResponse.GetNode().(*getNodeNodeClusterToken); ok {
-			if clusterAgentTokenNode == nil {
-				return fmt.Errorf("Error getting Cluster Agent Token: nil response")
+		// Obtain the ClusterAgentTokenResourceModel
+		for _, edge := range clusterTokens.Organization.Cluster.AgentTokens.Edges {
+			if edge.Node.Id == resourceState.Primary.ID {
+				ct.Id = types.StringValue(edge.Node.Id)
+				ct.Uuid = types.StringValue(edge.Node.Uuid)
+				ct.Description = types.StringValue(edge.Node.Description)
+				break
 			}
-			ct.Id = types.StringValue(clusterAgentTokenNode.Id)
-			ct.Uuid = types.StringValue(clusterAgentTokenNode.Uuid)
-			ct.Description = types.StringValue(clusterAgentTokenNode.Description)
+		}
+
+		// If ClusterAgentTokenResourceModel isnt set from the token slice
+		if ct.Id.ValueString() == "" {
+			return fmt.Errorf("No Cluster agent token found with graphql id: %s", resourceState.Primary.ID)
 		}
 
 		return nil
@@ -121,7 +131,7 @@ func testAccCheckClusterAgentTokenRemoteValues(ct *ClusterAgentTokenResourceMode
 	return func(s *terraform.State) error {
 
 		if ct.Description.ValueString() != description {
-			return fmt.Errorf("Remote Cluster queue description (%s) doesn't match expected value (%s)", ct.Description, description)
+			return fmt.Errorf("Remote Cluster agent token description (%s) doesn't match expected value (%s)", ct.Description, description)
 		}
 
 		return nil
@@ -134,18 +144,24 @@ func testAccCheckClusterAgentTokenDestroy(s *terraform.State) error {
 			continue
 		}
 
-		apiResponse, err := getNode(genqlientGraphql, rs.Primary.ID)
+		clusterTokens, err := getClusterAgentTokens(
+			genqlientGraphql,
+			getenv("BUILDKITE_ORGANIZATION_SLUG"),
+			rs.Primary.Attributes["cluster_uuid"],
+		)
 
 		if err != nil {
 			return fmt.Errorf("Error fetching Cluster Agent Tokens from graphql API: %v", err)
 		}
 
 		// Obtain the ClusterAgentTokenResourceModel
-		if clusterAgentTokenNode, ok := apiResponse.GetNode().(*getNodeNodeClusterToken); ok {
-			if clusterAgentTokenNode != nil {
+		for _, edge := range clusterTokens.Organization.Cluster.AgentTokens.Edges {
+			if edge.Node.Id == rs.Primary.ID {
 				return fmt.Errorf("Cluster agent token still exists in cluster, expected not to find it")
 			}
 		}
+
+		return nil
 	}
 
 	return nil
