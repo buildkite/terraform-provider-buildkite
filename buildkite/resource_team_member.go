@@ -92,7 +92,7 @@ func (tm *teamMemberResource) Create(ctx context.Context, req resource.CreateReq
 		tm.client.genqlient,
 		state.TeamId.ValueString(),
 		state.UserId.ValueString(),
-		TeamMemberRole(*state.Role.ValueStringPointer()),
+		*state.Role.ValueStringPointer(),
 	)
 
 	if err != nil {
@@ -162,7 +162,7 @@ func (tm *teamMemberResource) Update(ctx context.Context, req resource.UpdateReq
 	}
 
 	log.Printf("Updating team member %s with role %s ...", id, role)
-	apiResponse, err := updateTeamMember(tm.client.genqlient, id, TeamMemberRole(role))
+	apiResponse, err := updateTeamMember(tm.client.genqlient, id, role)
 
 	if err != nil {
 		resp.Diagnostics.AddError(

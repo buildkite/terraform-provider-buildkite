@@ -4,11 +4,35 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+	"github.com/hashicorp/terraform-plugin-framework/path"
+	"github.com/hashicorp/terraform-plugin-framework/resource"
+	resource_schema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/shurcooL/graphql"
 )
 
+type teamResource struct {
+	client *Client
+}
+
+type teamResourceModel struct {
+	ID                        types.String `tfsdk:"id"`
+	UUID                      types.String `tfsdk:"uuid"`
+	Name                      types.String `tfsdk:"name"`
+	Description               types.String `tfsdk:"description"`
+	Privacy                   types.String `tfsdk:"privacy"`
+	IsDefaultTeam             types.Bool   `tfsdk:"default_team"`
+	DefaultMemberRole         types.String `tfsdk:"default_member_role"`
+	Slug                      types.String `tfsdk:"slug"`
+	MembersCanCreatePipelines types.Bool   `tfsdk:"members_can_create_pipelines"`
+}
+
+// This is required due to the getTeam function not using Genqlient
 type TeamNode struct {
 	Description               graphql.String
 	ID                        graphql.String
@@ -16,197 +40,211 @@ type TeamNode struct {
 	DefaultMemberRole         graphql.String
 	Name                      graphql.String
 	MembersCanCreatePipelines graphql.Boolean
-	Privacy                   TeamPrivacy
+	Privacy                   graphql.String
 	Slug                      graphql.String
 	UUID                      graphql.String
 }
 
-func resourceTeam() *schema.Resource {
-	return &schema.Resource{
-		CreateContext: CreateTeam,
-		ReadContext:   ReadTeam,
-		UpdateContext: UpdateTeam,
-		DeleteContext: DeleteTeam,
-		Importer: &schema.ResourceImporter{
-			State: schema.ImportStatePassthrough,
-		},
+func newTeamResource() resource.Resource {
+	return &teamResource{}
+}
 
-		Schema: map[string]*schema.Schema{
-			"description": &schema.Schema{
-				Optional: true,
-				Type:     schema.TypeString,
+func (t *teamResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
+	resp.TypeName = req.ProviderTypeName + "_team"
+}
+
+func (t *teamResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
+	if req.ProviderData == nil {
+		return
+	}
+
+	t.client = req.ProviderData.(*Client)
+}
+
+func (t *teamResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
+	resp.Schema = resource_schema.Schema{
+		MarkdownDescription: "A Cluster is a group of Agents that can be used to run your builds. " +
+			"Clusters are useful for grouping Agents by their capabilities, such as operating system, hardware, or location. ",
+		Attributes: map[string]resource_schema.Attribute{
+			"id": resource_schema.StringAttribute{
+				Computed: true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+				MarkdownDescription: "The ID of the Team. This is a computed value and cannot be set.",
 			},
-			"name": &schema.Schema{
-				Required: true,
-				Type:     schema.TypeString,
+			"uuid": resource_schema.StringAttribute{
+				Computed: true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+				MarkdownDescription: "The UUID of the Team. This is a computed value and cannot be set.",
 			},
-			"privacy": &schema.Schema{
-				Required: true,
-				Type:     schema.TypeString,
-				ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
-					v := val.(string)
-					switch v {
-					case "VISIBLE":
-					case "SECRET":
-						return
-					default:
-						errs = append(errs, fmt.Errorf("%q must be either VISIBLE or SECRET, got: %s", key, v))
-						return
-					}
-					return
+			"name": resource_schema.StringAttribute{
+				MarkdownDescription: "The name of the Team.",
+				Required:            true,
+			},
+			"description": resource_schema.StringAttribute{
+				Optional:            true,
+				MarkdownDescription: "A description for the Team. This is displayed in the Buildkite UI.",
+			},
+			"privacy": resource_schema.StringAttribute{
+				Required:            true,
+				MarkdownDescription: "The privacy setting for the Team. This can be either `VISIBLE` or `SECRET`.",
+				Validators: []validator.String{
+					stringvalidator.OneOf("VISIBLE", "SECRET"),
 				},
 			},
-			"default_team": &schema.Schema{
-				Required: true,
-				Type:     schema.TypeBool,
+			"default_team": resource_schema.BoolAttribute{
+				Required:            true,
+				MarkdownDescription: "Whether this is the default Team for the Organization.",
 			},
-			"default_member_role": &schema.Schema{
-				Required: true,
-				Type:     schema.TypeString,
-				ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
-					v := val.(string)
-					switch v {
-					case "MEMBER":
-					case "MAINTAINER":
-						return
-					default:
-						errs = append(errs, fmt.Errorf("%q must be either MEMBER or MAINTAINER, got: %s", key, v))
-						return
-					}
-					return
+			"default_member_role": resource_schema.StringAttribute{
+				Required:            true,
+				MarkdownDescription: "The default role for new members of the Team. This can be either `MEMBER` or `MAINTAINER`.",
+				Validators: []validator.String{
+					stringvalidator.OneOf("MEMBER", "MAINTAINER"),
 				},
 			},
-			"members_can_create_pipelines": &schema.Schema{
-				Optional: true,
-				Type:     schema.TypeBool,
-			},
-			"slug": &schema.Schema{
+			"slug": resource_schema.StringAttribute{
 				Computed: true,
-				Type:     schema.TypeString,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
-			"uuid": &schema.Schema{
-				Computed: true,
-				Type:     schema.TypeString,
+			"members_can_create_pipelines": resource_schema.BoolAttribute{
+				Optional:            true,
+				Computed:            true,
+				Default:             booldefault.StaticBool(false),
+				MarkdownDescription: "Whether members of the Team can create Pipelines.",
 			},
 		},
 	}
 }
 
-// CreateTeam creates a Buildkite team
-func CreateTeam(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	client := m.(*Client)
-
-	var mutation struct {
-		TeamCreate struct {
-			TeamEdge struct {
-				Node TeamNode
-			}
-		} `graphql:"teamCreate(input: {organizationID: $org, name: $name, description: $desc, privacy: $privacy, isDefaultTeam: $default_team, defaultMemberRole: $default_member_role, membersCanCreatePipelines: $members_can_create_pipelines})"`
-	}
-
-	vars := map[string]interface{}{
-		"org":                          client.organizationId,
-		"name":                         graphql.String(d.Get("name").(string)),
-		"desc":                         graphql.String(d.Get("description").(string)),
-		"privacy":                      TeamPrivacy(d.Get("privacy").(string)),
-		"default_team":                 graphql.Boolean(d.Get("default_team").(bool)),
-		"default_member_role":          TeamMemberRole(d.Get("default_member_role").(string)),
-		"members_can_create_pipelines": graphql.Boolean(d.Get("members_can_create_pipelines").(bool)),
-	}
-
-	err := client.graphql.Mutate(context.Background(), &mutation, vars)
-	if err != nil {
-		return diag.FromErr(err)
-	}
-
-	updateTeam(d, &mutation.TeamCreate.TeamEdge.Node)
-
-	return nil
+func (t *teamResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
 
-// ReadTeam retrieves a Buildkite team
-func ReadTeam(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	client := m.(*Client)
+func (t *teamResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	var state *teamResourceModel
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &state)...)
 
-	var query struct {
-		Node struct {
-			Team TeamNode `graphql:"... on Team"`
-		} `graphql:"node(id: $id)"`
+	if resp.Diagnostics.HasError() {
+		return
 	}
 
-	vars := map[string]interface{}{
-		"id": d.Id(),
-	}
+	r, err := teamCreate(
+		t.client.genqlient,
+		t.client.organizationId,
+		state.Name.ValueString(),
+		*state.Description.ValueStringPointer(),
+		state.Privacy.ValueString(),
+		state.IsDefaultTeam.ValueBool(),
+		state.DefaultMemberRole.ValueString(),
+		state.MembersCanCreatePipelines.ValueBool(),
+	)
 
-	err := client.graphql.Query(context.Background(), &query, vars)
 	if err != nil {
-		return diag.FromErr(err)
+		resp.Diagnostics.AddError(
+			"Unable to create team.",
+			fmt.Sprintf("Unable to create team: %s", err.Error()),
+		)
 	}
 
-	updateTeam(d, &query.Node.Team)
+	state.ID = types.StringValue(r.TeamCreate.TeamEdge.Node.Id)
+	state.UUID = types.StringValue(r.TeamCreate.TeamEdge.Node.Uuid)
+	state.Slug = types.StringValue(r.TeamCreate.TeamEdge.Node.Slug)
 
-	return nil
+	resp.Diagnostics.Append(resp.State.Set(ctx, *state)...)
 }
 
-// UpdateTeam updates a Buildkite team
-func UpdateTeam(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	client := m.(*Client)
+func (t *teamResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	var state teamResourceModel
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 
-	var mutation struct {
-		TeamUpdate struct {
-			Team TeamNode
-		} `graphql:"teamUpdate(input: {id: $id, name: $name, description: $desc, privacy: $privacy, isDefaultTeam: $default_team, defaultMemberRole: $default_member_role, membersCanCreatePipelines: $members_can_create_pipelines})"`
-	}
+	res, err := getNode(t.client.genqlient, state.ID.ValueString())
 
-	vars := map[string]interface{}{
-		"id":                           d.Id(),
-		"name":                         graphql.String(d.Get("name").(string)),
-		"desc":                         graphql.String(d.Get("description").(string)),
-		"privacy":                      TeamPrivacy(d.Get("privacy").(string)),
-		"default_team":                 graphql.Boolean(d.Get("default_team").(bool)),
-		"default_member_role":          TeamMemberRole(d.Get("default_member_role").(string)),
-		"members_can_create_pipelines": graphql.Boolean(d.Get("members_can_create_pipelines").(bool)),
-	}
-
-	err := client.graphql.Mutate(context.Background(), &mutation, vars)
 	if err != nil {
-		return diag.FromErr(err)
+		resp.Diagnostics.AddError(
+			"Unable to read team.",
+			fmt.Sprintf("Unable to read team: %s", err.Error()),
+		)
+		return
 	}
 
-	updateTeam(d, &mutation.TeamUpdate.Team)
-
-	return nil
+	if teamNode, ok := res.GetNode().(*getNodeNodeTeam); ok {
+		if teamNode == nil {
+			resp.Diagnostics.AddError(
+				"Unable to get team",
+				"Error getting team: nil response",
+			)
+			return
+		}
+		updateTeamResourceState(&state, *teamNode)
+		resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+	}
 }
 
-// DeleteTeam removes a Buildkite team
-func DeleteTeam(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	client := m.(*Client)
-	var mutation struct {
-		TeamDelete struct {
-			DeletedTeamId graphql.String `graphql:"deletedTeamID"`
-		} `graphql:"teamDelete(input: {id: $id})"`
+func (t *teamResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	var state, plan teamResourceModel
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+
+	if resp.Diagnostics.HasError() {
+		return
 	}
 
-	vars := map[string]interface{}{
-		"id": graphql.ID(d.Id()),
-	}
+	_, err := teamUpdate(
+		t.client.genqlient,
+		state.ID.ValueString(),
+		plan.Name.ValueString(),
+		*plan.Description.ValueStringPointer(),
+		plan.Privacy.ValueString(),
+		plan.IsDefaultTeam.ValueBool(),
+		plan.DefaultMemberRole.ValueString(),
+		plan.MembersCanCreatePipelines.ValueBool(),
+	)
 
-	err := client.graphql.Mutate(context.Background(), &mutation, vars)
 	if err != nil {
-		return diag.FromErr(err)
+		resp.Diagnostics.AddError(
+			"Unable to update Team",
+			fmt.Sprintf("Unable to update Team: %s", err.Error()),
+		)
+		return
 	}
 
-	return nil
+	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 }
 
-func updateTeam(d *schema.ResourceData, t *TeamNode) {
-	d.SetId(string(t.ID))
-	d.Set("default_team", bool(t.IsDefaultTeam))
-	d.Set("description", string(t.Description))
-	d.Set("default_member_role", string(t.DefaultMemberRole))
-	d.Set("members_can_create_pipelines", bool(t.MembersCanCreatePipelines))
-	d.Set("name", string(t.Name))
-	d.Set("privacy", string(t.Privacy))
-	d.Set("slug", string(t.Slug))
-	d.Set("uuid", string(t.UUID))
+func (t *teamResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	var state teamResourceModel
+
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	_, err := teamDelete(t.client.genqlient, state.ID.ValueString())
+
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Unable to delete Team",
+			fmt.Sprintf("Unable to delete Team: %s", err.Error()),
+		)
+		return
+	}
+}
+
+func updateTeamResourceState(state *teamResourceModel, res getNodeNodeTeam) {
+	state.ID = types.StringValue(res.Id)
+	state.UUID = types.StringValue(res.Uuid)
+	state.Slug = types.StringValue(res.Slug)
+	state.Name = types.StringValue(res.Name)
+	state.Privacy = types.StringValue(string(res.GetPrivacy()))
+	state.Description = types.StringValue(res.Description)
+	state.IsDefaultTeam = types.BoolValue(res.IsDefaultTeam)
+	state.DefaultMemberRole = types.StringValue(string(res.GetDefaultMemberRole()))
+	state.MembersCanCreatePipelines = types.BoolValue(res.MembersCanCreatePipelines)
 }

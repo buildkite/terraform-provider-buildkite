@@ -8,14 +8,19 @@ Buildkite documentation: https://buildkite.com/docs/pipelines/permissions
 ## Example Usage
 
 ```hcl
-data "buildkite_team" "my_team" {
-  slug = "my_team"
+data "buildkite_team" "my_team_data" {
+    id = "<team id>"
 }
 ```
 
 ## Argument Reference
 
-* `slug` - (Required) The slug of the team, available in the URL of the team on buildkite.com
+One of:
+* `id` - The GraphQL ID of the team, available in the Settings page for the team.
+* `slug` - The slug of the team. Available in the URL of the team on buildkite.com; in the format
+  "<organizaton/team-name>"
+
+The `team` data-source supports **either** the use of `id` or `slug` for lookup of a team.
 
 ## Attribute Reference
 
