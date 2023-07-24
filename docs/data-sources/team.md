@@ -9,8 +9,7 @@ Buildkite documentation: https://buildkite.com/docs/pipelines/permissions
 
 ```hcl
 data "buildkite_team" "my_team_data" {
-    depends_on = [buildkite_team.my_team]
-    id = buildkite_team.my_team.id
+    id = "<team id>"
 }
 ```
 
@@ -22,7 +21,12 @@ The datasource can also reference an imported Team. For more on using Import che
 
 ## Argument Reference
 
-* `id` - (Required) The GraphQL ID of the team, available in the Settings page for the team.
+One of:
+* `id` - The GraphQL ID of the team, available in the Settings page for the team.
+* `slug` - The slug of the team. Available in the URL of the team on buildkite.com; in the format
+  "<organizaton/team-name>"
+
+The `team` data-source supports **either** the use of `id` or `slug` for lookup of a team.
 
 ## Attribute Reference
 
