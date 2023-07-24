@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## Unreleased
+## [v0.21.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v0.20.0...v0.21.0)
 
 -   SUP-1052: Migrate Pipeline Schedule resource to Genqlient/Framework [[PR #320](https://github.com/buildkite/terraform-provider-buildkite/pull/320)] @lizrabuya
 -   Migrate organization datasource to plugin framework [[PR #304](https://github.com/buildkite/terraform-provider-buildkite/pull/304)] @jradtilbrook
