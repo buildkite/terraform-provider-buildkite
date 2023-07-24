@@ -20,6 +20,7 @@ This release deprecates the `buildkite_organization_settings` [resource](./docs/
 
 A change has been implemented to make it easier to use data-sources with Teams; both `slug` and `id` are now accepted as arguments. This change will be released in the next minor release. Only one of either `slug` or `id` should be set in order to use the `data.buildkite_team` data-source.
 
+
 ## [v0.20.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v0.19.2...v0.20.0)
 
 ### Added
