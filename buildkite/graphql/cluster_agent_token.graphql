@@ -8,6 +8,20 @@ fragment ClusterAgentTokenValues on ClusterToken {
     uuid
 }
 
+query getClusterAgentTokens($orgSlug: ID!, $id: ID!) {
+    organization(slug: $orgSlug) {
+        cluster(id: $id) {
+            agentTokens(first: 50) {
+                edges {
+                    node {
+                        ... ClusterAgentTokenValues
+                    }
+                }
+            }
+        }
+    }
+}
+
 mutation createClusterAgentToken(
     $organizationId: ID!
     $clusterId: ID!
