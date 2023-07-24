@@ -119,9 +119,8 @@ func (ct *ClusterAgentToken) Read(ctx context.Context, req resource.ReadRequest,
 	if resp.Diagnostics.HasError() {
 		return
 	}
-
-	log.Printf("Getting cluster agent token %s ...", state.Id.ValueString())
-	apiResponse, err := getNode(ct.client.genqlient, state.Id.ValueString())
+	log.Printf("Getting cluster agent tokens for cluster %s ...", state.ClusterUuid.ValueString())
+	tokens, err := getClusterAgentTokens(ct.client.genqlient, ct.client.organization, state.ClusterUuid.ValueString())
 
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -131,19 +130,15 @@ func (ct *ClusterAgentToken) Read(ctx context.Context, req resource.ReadRequest,
 		return
 	}
 
-	if clusterAgentTokenNode, ok := apiResponse.GetNode().(*getNodeNodeClusterToken); ok {
-		if clusterAgentTokenNode == nil {
-			resp.Diagnostics.AddError(
-				"Unable to get Cluster Agent Token",
-				"Error getting Cluster Agent Token: nil response",
-			)
+	for _, edge := range tokens.Organization.Cluster.AgentTokens.Edges {
+		if edge.Node.Id == state.Id.ValueString() {
+			log.Printf("Found cluster Token with Description %s in cluster %s", edge.Node.Id, state.ClusterUuid.ValueString())
+			state.Description = types.StringValue(edge.Node.Description)
+			resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 			return
 		}
-		state.Description = types.StringValue(clusterAgentTokenNode.Description)
-		resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 	}
 
-	return
 }
 
 func (ct *ClusterAgentToken) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
