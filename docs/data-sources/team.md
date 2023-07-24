@@ -13,12 +13,6 @@ data "buildkite_team" "my_team_data" {
 }
 ```
 
-The above will automatically fill the ID attribute with that of the team created by the resource, then fill the other
-attributes of that team.
-
-The datasource can also reference an imported Team. For more on using Import check
-[here](https://github.com/buildkite/terraform-provider-buildkite/blob/main/docs/resources/team.md#import).
-
 ## Argument Reference
 
 One of:
