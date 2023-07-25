@@ -48,7 +48,7 @@ func protoV6ProviderFactories() map[string]func() (tfprotov6.ProviderServer, err
 	}
 
 	providers := []func() tfprotov6.ProviderServer{
-		providerserver.NewProtocol6(New("testing", false)),
+		providerserver.NewProtocol6(New("testing")),
 		func() tfprotov6.ProviderServer {
 			return upgradedSdkServer
 		},

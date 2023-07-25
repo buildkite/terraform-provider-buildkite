@@ -20,12 +20,38 @@ query getTestSuite($id: ID!, $teamCount: Int) {
         }
     }
 }
+
 mutation createTestSuiteTeam($teamId: ID!, $suiteId: ID!, $accessLevel: SuiteAccessLevels!) {
     teamSuiteCreate(input: {teamID: $teamId, suiteID: $suiteId, accessLevel: $accessLevel}) {
+        suite {
+            teams(order: NAME, first: 50) {
+                edges {
+                    node {
+                        id
+                        uuid
+                        team {
+                            id
+                        }
+                    }
+                }
+            }
+        }
         teamSuite {
             id
             uuid
             accessLevel
+            team {
+                id
+            }
+        }
+    }
+}
+
+mutation deleteTestSuiteTeam($id: ID!) {
+    teamSuiteDelete(input: {id: $id, force: true}) {
+        deletedTeamSuiteID
+        team {
+            id
         }
     }
 }

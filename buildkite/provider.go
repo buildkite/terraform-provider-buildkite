@@ -27,7 +27,6 @@ const (
 
 type terraformProvider struct {
 	version string
-	isProtoV6 bool
 }
 
 type providerModel struct {
@@ -106,7 +105,7 @@ func (p *terraformProvider) Resources(context.Context) []func() resource.Resourc
 		newOrganizationResource,
 		newTeamMemberResource,
 		newTeamResource,
-		newTestSuiteResource(p.isProtoV6),
+		newTestSuiteResource,
 	}
 }
 
@@ -134,10 +133,9 @@ func (*terraformProvider) Schema(ctx context.Context, req provider.SchemaRequest
 	}
 }
 
-func New(version string, isProtoV6 bool) provider.Provider {
+func New(version string) provider.Provider {
 	return &terraformProvider{
 		version: version,
-		isProtoV6: isProtoV6,
 	}
 }
 

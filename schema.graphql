@@ -548,7 +548,7 @@ union AuditSubjectNode =APIAccessToken | AgentToken | AuthorizationBitbucket | A
 
 """All the possible types of subjects in an Audit Event"""
 enum AuditSubjectType {
-	CLUSTER_PERMISSION
+	AUTHORIZATION
 	SUBSCRIPTION
 	USER_EMAIL
 	CLUSTER
@@ -564,49 +564,18 @@ enum AuditSubjectType {
 	PIPELINE
 	ORGANIZATION_MEMBER
 	TEAM
-<<<<<<< HEAD
 	PIPELINE_TEMPLATE
 	TEAM_PIPELINE
-||||||| parent of 0633af0 (WIP adding test suite)
-	TEAM_MEMBER
-	TEAM_PIPELINE
-=======
-	TEAM_MEMBER
-	PIPELINE
->>>>>>> 0633af0 (WIP adding test suite)
 	TEAM_SUITE
-<<<<<<< HEAD
-||||||| parent of 0633af0 (WIP adding test suite)
-	ORGANIZATION_MEMBER
-	SCM_SERVICE
-=======
-	ORGANIZATION_MEMBER
-	TEAM_PIPELINE
-	SSO_PROVIDER
-	SCM_SERVICE
->>>>>>> 0633af0 (WIP adding test suite)
 	SCM_PIPELINE_SETTINGS
 	SCM_REPOSITORY_HOST
 	TEAM_MEMBER
 	SUITE_MONITOR
-<<<<<<< HEAD
 	SSO_PROVIDER
 	SCM_SERVICE
-||||||| parent of 0633af0 (WIP adding test suite)
-	SSO_PROVIDER
-	USER_EMAIL
-=======
->>>>>>> 0633af0 (WIP adding test suite)
 	SUITE
 	USER
 	USER_TOTP
-<<<<<<< HEAD
-||||||| parent of 0633af0 (WIP adding test suite)
-	CLUSTER_PERMISSION
-=======
-	USER_EMAIL
-	AUTHORIZATION
->>>>>>> 0633af0 (WIP adding test suite)
 }
 
 """Context for an audit event created during a web request"""

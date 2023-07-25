@@ -26,7 +26,7 @@ func main() {
 	flag.Parse()
 
 	providers := []func() tfprotov5.ProviderServer{
-		providerserver.NewProtocol5(buildkite.New(version, false)),
+		providerserver.NewProtocol5(buildkite.New(version)),
 		buildkite.Provider(version).GRPCProvider,
 	}
 
