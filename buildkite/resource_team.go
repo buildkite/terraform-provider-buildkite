@@ -127,7 +127,7 @@ func (t *teamResource) ImportState(ctx context.Context, req resource.ImportState
 }
 
 func (t *teamResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	var state *teamResourceModel
+	var state teamResourceModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &state)...)
 
 	if resp.Diagnostics.HasError() {
@@ -138,7 +138,7 @@ func (t *teamResource) Create(ctx context.Context, req resource.CreateRequest, r
 		t.client.genqlient,
 		t.client.organizationId,
 		state.Name.ValueString(),
-		*state.Description.ValueStringPointer(),
+		state.Description.ValueStringPointer(),
 		state.Privacy.ValueString(),
 		state.IsDefaultTeam.ValueBool(),
 		state.DefaultMemberRole.ValueString(),
@@ -156,7 +156,7 @@ func (t *teamResource) Create(ctx context.Context, req resource.CreateRequest, r
 	state.UUID = types.StringValue(r.TeamCreate.TeamEdge.Node.Uuid)
 	state.Slug = types.StringValue(r.TeamCreate.TeamEdge.Node.Slug)
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, *state)...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
 func (t *teamResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
@@ -199,7 +199,7 @@ func (t *teamResource) Update(ctx context.Context, req resource.UpdateRequest, r
 		t.client.genqlient,
 		state.ID.ValueString(),
 		plan.Name.ValueString(),
-		*plan.Description.ValueStringPointer(),
+		plan.Description.ValueStringPointer(),
 		plan.Privacy.ValueString(),
 		plan.IsDefaultTeam.ValueBool(),
 		plan.DefaultMemberRole.ValueString(),
@@ -243,7 +243,7 @@ func updateTeamResourceState(state *teamResourceModel, res getNodeNodeTeam) {
 	state.Slug = types.StringValue(res.Slug)
 	state.Name = types.StringValue(res.Name)
 	state.Privacy = types.StringValue(string(res.GetPrivacy()))
-	state.Description = types.StringValue(res.Description)
+	state.Description = types.StringPointerValue(res.Description)
 	state.IsDefaultTeam = types.BoolValue(res.IsDefaultTeam)
 	state.DefaultMemberRole = types.StringValue(string(res.GetDefaultMemberRole()))
 	state.MembersCanCreatePipelines = types.BoolValue(res.MembersCanCreatePipelines)
