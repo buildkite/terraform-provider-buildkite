@@ -1,3 +1,35 @@
+query getTestSuite($id: ID!, $teamCount: Int) {
+    suite: node(id: $id) {
+        ... on Suite {
+            id
+            uuid
+            defaultBranch
+            name
+            slug
+            teams(first: $teamCount, order: NAME) {
+                edges {
+                    node {
+                        id
+                        accessLevel
+                        team {
+                            id
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+mutation createTestSuiteTeam($teamId: ID!, $suiteId: ID!, $accessLevel: SuiteAccessLevels!) {
+    teamSuiteCreate(input: {teamID: $teamId, suiteID: $suiteId, accessLevel: $accessLevel}) {
+        teamSuite {
+            id
+            uuid
+            accessLevel
+        }
+    }
+}
+
 mutation updateTestSuiteTeam($id: ID!, $accessLevel: SuiteAccessLevels!) {
     teamSuiteUpdate(input: {id: $id, accessLevel: $accessLevel}) {
         teamSuite {
@@ -8,13 +40,16 @@ mutation updateTestSuiteTeam($id: ID!, $accessLevel: SuiteAccessLevels!) {
     }
 }
 
-query findTeamSuite($org: ID!, $suite: String, $teamCount: Int) {
+query listTeamSuites($org: ID!, $suite: String, $teamCount: Int) {
     organization(slug: $org) {
-        suites(search: $suite, first: 1) {
+        suites(search: $suite, first: 5, order: RECENTLY_CREATED) {
             edges {
                 node {
                     id
                     uuid
+                    defaultBranch
+                    name
+                    slug
                     teams(first: $teamCount, order: NAME) {
                         edges {
                             node {
