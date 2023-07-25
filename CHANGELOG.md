@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v0.21.2](https://github.com/buildkite/terraform-provider-buildkite/compare/v0.21.1...v0.21.2)
+
+### Fixed
+
+- Make descriptions not required on Team [[PR #331](https://github.com/buildkite/terraform-provider-buildkite/pull/331)] @mcncl
+- Set pipeline_schedule enabled=true [[PR #332](https://github.com/buildkite/terraform-provider-buildkite/pull/332)] @jradtilbrook
+
 ## [v0.21.1](https://github.com/buildkite/terraform-provider-buildkite/compare/v0.21.0...v0.21.1)
 
 ### Fixed
