@@ -100,7 +100,7 @@ func (ps *pipelineSchedule) Schema(_ context.Context, _ resource.SchemaRequest, 
 				Optional:            true,
 				Computed:            true,
 				MarkdownDescription: "Whether the schedule is enabled or not.",
-				Default:             booldefault.StaticBool(false),
+				Default:             booldefault.StaticBool(true),
 			},
 		},
 	}
