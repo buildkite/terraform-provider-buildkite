@@ -16,9 +16,8 @@ All notable changes to this project will be documented in this file.
 ### Forthcoming changes
 
 This release deprecates the `buildkite_organization_settings` [resource](./docs/resources/organization_settings.md). In a future minor release, we will remove this resource in favour of the newer `buildkite_organization` [resource](./docs/resources/organization.md) that aligns with the [datasource](./docs/data-sources/organization.md) of the same name.
-[[PR #318](https://github.com/buildkite/terraform-provider-buildkite/pull/317)] introduces a change in how we handle
 
-A change has been implemented to make it easier to use data-sources with Teams; both `slug` and `id` are now accepted as arguments. This change will be released in the next minor release. Only one of either `slug` or `id` should be set in order to use the `data.buildkite_team` data-source.
+PR [#318](https://github.com/buildkite/terraform-provider-buildkite/pull/318) introduces a change to make it easier to use data-sources with Teams; both `slug` and `id` are now accepted as arguments. Only one of either `slug` or `id` should be set in order to use the `data.buildkite_team` data-source.
 
 
 ## [v0.20.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v0.19.2...v0.20.0)
