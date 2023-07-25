@@ -33,10 +33,6 @@ type testSuiteResponse struct {
 	TeamUuids     string `json:"team_ids"`
 }
 
-type teamMap struct {
-	id, uuid string
-}
-
 type testSuiteResource struct {
 	client *Client
 }
