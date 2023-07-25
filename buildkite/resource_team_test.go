@@ -26,8 +26,8 @@ func testAccTeamConfigSecret(name string) string {
 	config := `
 		resource "buildkite_team" "acc_tests" {
 			name = "%s"
-			description = "a secret team of %s"
 			privacy = "SECRET"
+			description = "a secret team of %s"
 			default_team = true
 			default_member_role = "MEMBER"
 			members_can_create_pipelines = true
