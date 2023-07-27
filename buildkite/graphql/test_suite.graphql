@@ -65,30 +65,3 @@ mutation updateTestSuiteTeam($id: ID!, $accessLevel: SuiteAccessLevels!) {
         }
     }
 }
-
-query listTeamSuites($org: ID!, $suite: String, $teamCount: Int) {
-    organization(slug: $org) {
-        suites(search: $suite, first: 5, order: RECENTLY_CREATED) {
-            edges {
-                node {
-                    id
-                    uuid
-                    defaultBranch
-                    name
-                    slug
-                    teams(first: $teamCount, order: NAME) {
-                        edges {
-                            node {
-                                id
-                                accessLevel
-                                team {
-                                    id
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
