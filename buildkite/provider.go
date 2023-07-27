@@ -95,7 +95,7 @@ func (tf *terraformProvider) Metadata(ctx context.Context, req provider.Metadata
 	resp.Version = tf.version
 }
 
-func (p *terraformProvider) Resources(context.Context) []func() resource.Resource {
+func (*terraformProvider) Resources(context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
 		NewClusterQueueResource,
 		NewPipelineScheduleResource,

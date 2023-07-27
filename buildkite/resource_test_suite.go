@@ -30,7 +30,6 @@ type testSuiteResponse struct {
 	GraphqlID     string `json:"graphql_id"`
 	Name          string `json:"name"`
 	Slug          string `json:"slug"`
-	TeamUuids     string `json:"team_ids"`
 }
 
 type testSuiteResource struct {
@@ -96,7 +95,7 @@ func (ts *testSuiteResource) Create(ctx context.Context, req resource.CreateRequ
 	state.Slug = types.StringValue(response.Slug)
 	state.TeamOwnerId = plan.TeamOwnerId
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
 func (ts *testSuiteResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
@@ -117,16 +116,6 @@ func (ts *testSuiteResource) Delete(ctx context.Context, req resource.DeleteRequ
 
 func (*testSuiteResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
 	resp.TypeName = req.ProviderTypeName + "_test_suite"
-}
-
-func findTeamSuite(uuid string, suites []listTeamSuitesOrganizationSuitesSuiteConnectionEdgesSuiteEdge) *listTeamSuitesOrganizationSuitesSuiteConnectionEdgesSuiteEdgeNodeSuite {
-	for _, suite := range suites {
-		if suite.Node.Uuid == uuid {
-			return &suite.Node
-		}
-	}
-
-	return nil
 }
 
 func (ts *testSuiteResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
@@ -162,7 +151,7 @@ func (ts *testSuiteResource) Read(ctx context.Context, req resource.ReadRequest,
 		return
 	}
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 
 }
 
@@ -248,5 +237,5 @@ func (ts *testSuiteResource) Update(ctx context.Context, req resource.UpdateRequ
 		}
 	}
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
