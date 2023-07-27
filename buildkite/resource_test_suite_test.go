@@ -82,8 +82,8 @@ func TestAcc_testSuiteUpdate(t *testing.T) {
 			},
 			{
 				Config: `
-				resource "buildkite_team" "team2" {
-					name = "test suite team update 2"
+				resource "buildkite_team" "team" {
+					name = "test suite team update"
 					default_team = false
 					privacy = "VISIBLE"
 					default_member_role = "MAINTAINER"
@@ -91,9 +91,10 @@ func TestAcc_testSuiteUpdate(t *testing.T) {
 				resource "buildkite_test_suite" "suite" {
 					name = "test suite update"
 					default_branch = "main"
-					team_owner_id = resource.buildkite_team.team2.id
+					team_owner_id = resource.buildkite_team.team.id
 				}
 				`,
+				Taint: []string{"buildkite_team.team"},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet("buildkite_test_suite.suite", "id"),
 					resource.TestCheckResourceAttrSet("buildkite_test_suite.suite", "api_token"),
