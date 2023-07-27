@@ -717,13 +717,13 @@ type PipelineValuesTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipel
 	// Add new organization members to this team by default
 	IsDefaultTeam bool `json:"isDefaultTeam"`
 	// New organization members will be granted this role on this team
-	DefaultMemberRole TeamMemberRole `json:"defaultMemberRole"`
+	DefaultMemberRole string `json:"defaultMemberRole"`
 	// The name of the team
 	Name string `json:"name"`
 	// Whether or not team members can create new pipelines in this team
 	MembersCanCreatePipelines bool `json:"membersCanCreatePipelines"`
 	// The privacy setting for this team
-	Privacy TeamPrivacy `json:"privacy"`
+	Privacy string `json:"privacy"`
 	// The slug of the team
 	Slug string `json:"slug"`
 	// The public UUID for this team
@@ -746,7 +746,7 @@ func (v *PipelineValuesTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamP
 }
 
 // GetDefaultMemberRole returns PipelineValuesTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipelineTeam.DefaultMemberRole, and is useful for accessing the field via an interface.
-func (v *PipelineValuesTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipelineTeam) GetDefaultMemberRole() TeamMemberRole {
+func (v *PipelineValuesTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipelineTeam) GetDefaultMemberRole() string {
 	return v.DefaultMemberRole
 }
 
@@ -761,7 +761,7 @@ func (v *PipelineValuesTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamP
 }
 
 // GetPrivacy returns PipelineValuesTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipelineTeam.Privacy, and is useful for accessing the field via an interface.
-func (v *PipelineValuesTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipelineTeam) GetPrivacy() TeamPrivacy {
+func (v *PipelineValuesTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipelineTeam) GetPrivacy() string {
 	return v.Privacy
 }
 
