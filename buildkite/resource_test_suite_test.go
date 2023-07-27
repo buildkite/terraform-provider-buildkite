@@ -1,9 +1,11 @@
 package buildkite
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
 func TestAcc_testSuiteAddRemove(t *testing.T) {
@@ -12,7 +14,7 @@ func TestAcc_testSuiteAddRemove(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: protoV6ProviderFactories(),
-		// CheckDestroy: , // TODO add destroy check
+		CheckDestroy:             testTestSuiteDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: `
@@ -47,7 +49,7 @@ func TestAcc_testSuiteUpdate(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: protoV6ProviderFactories(),
-		// CheckDestroy: , // TODO add destroy check
+		CheckDestroy:             testTestSuiteDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: `
@@ -97,4 +99,23 @@ func TestAcc_testSuiteUpdate(t *testing.T) {
 			},
 		},
 	})
+}
+
+func testTestSuiteDestroy(s *terraform.State) error {
+	for _, rs := range s.RootModule().Resources {
+		if rs.Type != "buildkite_test_suite" {
+			continue
+		}
+
+		suite, err := getTestSuite(genqlientGraphql, rs.Primary.Attributes["id"], 1)
+
+		if err != nil {
+			return fmt.Errorf("Error fetching test suite from graphql API: %v", err)
+		}
+
+		if suite.Suite != nil {
+			return fmt.Errorf("Error fetching test suite from graphql API: %v", suite)
+		}
+	}
+	return nil
 }
