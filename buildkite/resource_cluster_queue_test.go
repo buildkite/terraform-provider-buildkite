@@ -132,30 +132,46 @@ func testAccCheckClusterQueueExists(resourceName string, clusterQueueResourceMod
 			return fmt.Errorf("No ID is set in state")
 		}
 
-		// Obtain queues of the queue's cluster from its cluster UUID
-		queues, err := getClusterQueues(
-			genqlientGraphql,
-			getenv("BUILDKITE_ORGANIZATION_SLUG"),
-			resourceState.Primary.Attributes["cluster_uuid"],
-		)
+		// Setup variables
+		var queueFound bool
+		var cursor *string
 
-		// If cluster queues were not able to be fetched by Genqlient
-		if err != nil {
-			return fmt.Errorf("Error fetching Cluster queues from graphql API: %v", err)
-		}
-
-		// Obtain the ClusterQueueResourceModel from the queues slice
-		for _, edge := range queues.Organization.Cluster.Queues.Edges {
-			if edge.Node.Id == resourceState.Primary.ID {
-				updateClusterQueueResource(edge.Node, clusterQueueResourceModel)
+		for {
+			queues, err := getClusterQueues(
+				genqlientGraphql,
+				getenv("BUILDKITE_ORGANIZATION_SLUG"),
+				resourceState.Primary.Attributes["cluster_uuid"],
+				cursor,
+			)
+	
+			if err != nil {
+				return fmt.Errorf("Unable to read Cluster Queues: %v", err)
+			}
+	
+			// Loop over the returned page of cluster queues to see if the queue is found
+			for _, queue := range queues.Organization.Cluster.Queues.Edges {
+				if queue.Node.Id == resourceState.Primary.ID {
+					queueFound = true
+					// Update ClusterQueueResourceModel with Node values and append
+					updateClusterQueueResource(queue.Node, clusterQueueResourceModel)
+					break
+				}
+			}
+	
+			// Stop the do-while for loop if the queue was found or no more pages from the API response
+			if queueFound || !queues.Organization.Cluster.Queues.PageInfo.HasNextPage {
 				break
 			}
+			
+			// Update cursor with next page
+			cursor = &queues.Organization.Cluster.Queues.PageInfo.EndCursor
 		}
 
-		// If clusterQueueResourceModel isnt set from the queues slice
-		if clusterQueueResourceModel.Id.ValueString() == "" {
-			return fmt.Errorf("No Cluster queue found with graphql id: %s", resourceState.Primary.ID)
-		}
+		if !queueFound {
+			return fmt.Errorf("Unable to find Cluster Queue %s in cluster %s", 
+			resourceState.Primary.ID, 
+			resourceState.Primary.Attributes["cluster_uuid"])
+		}	
 
 		return nil
 	}
@@ -193,26 +209,49 @@ func testAccCheckClusterQueueDestroy(s *terraform.State) error {
 			continue
 		}
 
-		// Obtain queues of the queue's cluster from its cluster UUID
-		queues, err := getClusterQueues(
-			genqlientGraphql,
-			getenv("BUILDKITE_ORGANIZATION_SLUG"),
-			rs.Primary.Attributes["cluster_uuid"],
-		)
+		// Setup variables
+		var queueFound bool
+		var cursor *string
 
-		// If cluster queues were not able to be fetched by Genqlient
-		if err != nil {
-			return fmt.Errorf("Error fetching Cluster queues from graphql API: %v", err)
-		}
-
-		// Loop over the cluster's queues, error if the queue still exists
-		for _, edge := range queues.Organization.Cluster.Queues.Edges {
-			if edge.Node.Id == rs.Primary.ID {
-				return fmt.Errorf("Cluster queue still exists in cluster, expected not to find it")
+		for {
+			queues, err := getClusterQueues(
+				genqlientGraphql,
+				getenv("BUILDKITE_ORGANIZATION_SLUG"),
+				rs.Primary.Attributes["cluster_uuid"],
+				cursor,
+			)
+	
+			if err != nil {
+				return fmt.Errorf("Unable to read Cluster Queues: %v", err)
 			}
-		}
+	
+			// Loop over the returned page of cluster queues to see if the queue is found
+			for _, queue := range queues.Organization.Cluster.Queues.Edges {
+				if queue.Node.Id == rs.Primary.ID {
+					queueFound = true
+					break
+				}
+			}
 
-		return nil
+			// If the cluster queue is found, error - as we expect not to find it
+			if queueFound {
+				return fmt.Errorf("Cluster queue %s still exists in cluster %s, expected not to find it", 
+					rs.Primary.ID, 
+					rs.Primary.Attributes["cluster_uuid"],
+				)
+			}
+
+			// If there are no more pages from the API response
+			if !queues.Organization.Cluster.Queues.PageInfo.HasNextPage {
+				return fmt.Errorf("Could not find cluster queue %s in cluster %s", 
+					rs.Primary.ID, 
+					rs.Primary.Attributes["cluster_uuid"],
+				)
+			}
+			
+			// Update cursor with next page
+			cursor = &queues.Organization.Cluster.Queues.PageInfo.EndCursor
+		}
 	}
 	return nil
 }

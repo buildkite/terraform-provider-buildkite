@@ -119,6 +119,8 @@ func (cq *ClusterQueueResource) Create(ctx context.Context, req resource.CreateR
 
 func (cq *ClusterQueueResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var state ClusterQueueResourceModel
+	var queueFound bool
+	var cursor *string
 
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 
@@ -126,35 +128,53 @@ func (cq *ClusterQueueResource) Read(ctx context.Context, req resource.ReadReque
 		return
 	}
 
-	log.Printf("Getting cluster queues for cluster %s ...", state.ClusterUuid.ValueString())
-	queues, err := getClusterQueues(cq.client.genqlient, cq.client.organization, state.ClusterUuid.ValueString())
-
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Unable to read Cluster Queues",
-			fmt.Sprintf("Unable to read Cluster Queues: %s", err.Error()),
+	log.Printf("Reading cluster queue with ID %s in cluster %s ...", state.Id.ValueString(), state.ClusterUuid.ValueString())
+	for {
+		queues, err := getClusterQueues(cq.client.genqlient, 
+			cq.client.organization, state.ClusterUuid.ValueString(),
+			cursor,
 		)
-		return
-	}
 
-	// Find the cluster queue from the returned queues to update state
-	for _, edge := range queues.Organization.Cluster.Queues.Edges {
-		if edge.Node.Id == state.Id.ValueString() {
-			log.Printf("Found cluster queue with ID %s in cluster %s", edge.Node.Id, state.ClusterUuid.ValueString())
-			// Update ClusterQueueResourceModel with Node values and append
-			updateClusterQueueResource(edge.Node, &state)
-			resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Unable to read Cluster Queues",
+				fmt.Sprintf("Unable to read Cluster Queues: %s", err.Error()),
+			)
 			return
 		}
+
+		// Loop over the returned page of cluster queues to see if the queue is found
+		for _, queue := range queues.Organization.Cluster.Queues.Edges {
+			if queue.Node.Id == state.Id.ValueString() {
+				// Cluster queue found
+				queueFound = true
+				log.Printf("Found cluster queue with ID %s in cluster %s", queue.Node.Id, state.ClusterUuid.ValueString())
+				// Update ClusterQueueResourceModel with Node values and append
+				updateClusterQueueResource(queue.Node, &state)
+				break
+			}
+		}
+
+		// Stop the do-while for loop if the queue was found or no more pages from the API response
+		if queueFound || !queues.Organization.Cluster.Queues.PageInfo.HasNextPage {
+			break
+		}
+		
+		// Update cursor with next page
+		cursor = &queues.Organization.Cluster.Queues.PageInfo.EndCursor
 	}
 
 	// If not returned by this point, the cluster queue could not be found
 	// This is a tradeoff of the current getClusterQueues Genqlient query (searches for 50 queues via the cluster UUID in state)
-	resp.Diagnostics.AddError(
-		"Unable to find Cluster Queue",
-		fmt.Sprintf("Unable to find Cluster Queue: %s", err.Error()),
-	)
-	return
+	if !queueFound {
+		resp.Diagnostics.AddError(
+			"Unable to find Cluster Queue",
+			fmt.Sprintf("Unable to find Cluster Queue in cluster %s", state.ClusterUuid.ValueString()),
+		)
+		return
+	}	
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
 func (cq *ClusterQueueResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {

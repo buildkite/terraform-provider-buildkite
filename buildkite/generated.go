@@ -1002,8 +1002,9 @@ func (v *__getClusterInput) GetId() string { return v.Id }
 
 // __getClusterQueuesInput is used internally by genqlient
 type __getClusterQueuesInput struct {
-	OrgSlug string `json:"orgSlug"`
-	Id      string `json:"id"`
+	OrgSlug string  `json:"orgSlug"`
+	Id      string  `json:"id"`
+	Cursor  *string `json:"cursor"`
 }
 
 // GetOrgSlug returns __getClusterQueuesInput.OrgSlug, and is useful for accessing the field via an interface.
@@ -1011,6 +1012,9 @@ func (v *__getClusterQueuesInput) GetOrgSlug() string { return v.OrgSlug }
 
 // GetId returns __getClusterQueuesInput.Id, and is useful for accessing the field via an interface.
 func (v *__getClusterQueuesInput) GetId() string { return v.Id }
+
+// GetCursor returns __getClusterQueuesInput.Cursor, and is useful for accessing the field via an interface.
+func (v *__getClusterQueuesInput) GetCursor() *string { return v.Cursor }
 
 // __getNodeInput is used internally by genqlient
 type __getNodeInput struct {
@@ -2896,7 +2900,13 @@ func (v *getClusterQueuesOrganizationCluster) GetQueues() getClusterQueuesOrgani
 
 // getClusterQueuesOrganizationClusterQueuesClusterQueueConnection includes the requested fields of the GraphQL type ClusterQueueConnection.
 type getClusterQueuesOrganizationClusterQueuesClusterQueueConnection struct {
-	Edges []getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdge `json:"edges"`
+	PageInfo getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionPageInfo                `json:"pageInfo"`
+	Edges    []getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdge `json:"edges"`
+}
+
+// GetPageInfo returns getClusterQueuesOrganizationClusterQueuesClusterQueueConnection.PageInfo, and is useful for accessing the field via an interface.
+func (v *getClusterQueuesOrganizationClusterQueuesClusterQueueConnection) GetPageInfo() getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionPageInfo {
+	return v.PageInfo
 }
 
 // GetEdges returns getClusterQueuesOrganizationClusterQueuesClusterQueueConnection.Edges, and is useful for accessing the field via an interface.
@@ -2998,6 +3008,27 @@ func (v *getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClu
 	retval.Description = v.ClusterQueueValues.Description
 	retval.Cluster = v.ClusterQueueValues.Cluster
 	return &retval, nil
+}
+
+// getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionPageInfo includes the requested fields of the GraphQL type PageInfo.
+// The GraphQL type's documentation follows.
+//
+// Information about pagination in a connection.
+type getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionPageInfo struct {
+	// When paginating forwards, the cursor to continue.
+	EndCursor string `json:"endCursor"`
+	// When paginating forwards, are there more items?
+	HasNextPage bool `json:"hasNextPage"`
+}
+
+// GetEndCursor returns getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionPageInfo.EndCursor, and is useful for accessing the field via an interface.
+func (v *getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionPageInfo) GetEndCursor() string {
+	return v.EndCursor
+}
+
+// GetHasNextPage returns getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionPageInfo.HasNextPage, and is useful for accessing the field via an interface.
+func (v *getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionPageInfo) GetHasNextPage() bool {
+	return v.HasNextPage
 }
 
 // getClusterQueuesResponse is returned by getClusterQueues on success.
@@ -8387,10 +8418,14 @@ func getClusterByName(
 
 // The query or mutation executed by getClusterQueues.
 const getClusterQueues_Operation = `
-query getClusterQueues ($orgSlug: ID!, $id: ID!) {
+query getClusterQueues ($orgSlug: ID!, $id: ID!, $cursor: String) {
 	organization(slug: $orgSlug) {
 		cluster(id: $id) {
-			queues(first: 50) {
+			queues(first: 500, after: $cursor) {
+				pageInfo {
+					endCursor
+					hasNextPage
+				}
 				edges {
 					node {
 						... ClusterQueueValues
@@ -8416,6 +8451,7 @@ func getClusterQueues(
 	client graphql.Client,
 	orgSlug string,
 	id string,
+	cursor *string,
 ) (*getClusterQueuesResponse, error) {
 	req := &graphql.Request{
 		OpName: "getClusterQueues",
@@ -8423,6 +8459,7 @@ func getClusterQueues(
 		Variables: &__getClusterQueuesInput{
 			OrgSlug: orgSlug,
 			Id:      id,
+			Cursor:  cursor,
 		},
 	}
 	var err error

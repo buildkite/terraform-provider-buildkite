@@ -10,10 +10,19 @@ fragment ClusterQueueValues on ClusterQueue {
     }
 }
 
-query getClusterQueues($orgSlug: ID!, $id: ID!) {
+query getClusterQueues(
+    $orgSlug: ID!, 
+    $id: ID!,
+    # @genqlient(pointer: true)
+    $cursor: String
+) {
     organization(slug: $orgSlug) {
         cluster(id: $id) {
-            queues(first: 50) {
+            queues(first: 500, after: $cursor) {
+                pageInfo {
+                    endCursor
+                    hasNextPage
+                } 
                 edges {
                     node {
                         ...ClusterQueueValues
