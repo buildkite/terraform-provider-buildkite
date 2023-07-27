@@ -413,7 +413,7 @@ func ReadPipeline(ctx context.Context, d *schema.ResourceData, m interface{}) di
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	
+
 	// Convert fron Node to getNodePipeline type
 	if pipelineNode, ok := apiResponse.GetNode().(*getNodeNodePipeline); ok {
 		if pipelineNode == nil {
