@@ -68,14 +68,15 @@ func (ts *testSuiteResource) Create(ctx context.Context, req resource.CreateRequ
 	}
 	if apiTeam, ok := apiResponse.Node.(*getNodeNodeTeam); ok {
 		teamOwnerUuid = apiTeam.Uuid
+	} else {
+		resp.Diagnostics.AddError("Failed to parse team from graphql", err.Error())
+		return
 	}
 
 	payload["name"] = plan.Name.ValueString()
 	payload["default_branch"] = plan.DefaultBranch.ValueString()
 	payload["show_api_token"] = true
-	payload["team_ids"] = []string{
-		teamOwnerUuid,
-	}
+	payload["team_ids"] = []string{teamOwnerUuid}
 
 	url := fmt.Sprintf("/v2/analytics/organizations/%s/suites", ts.client.organization)
 	err = ts.client.makeRequest("POST", url, payload, &response)
@@ -84,8 +85,11 @@ func (ts *testSuiteResource) Create(ctx context.Context, req resource.CreateRequ
 		return
 	}
 
-	// TODO: dont rely on this, add the ID to the REST response
-	response.GraphqlID = base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("Suite---%s", response.UUID)))
+	// The REST API doesn't return a graphql_id just yet but it should be added soon. If not present, compute it
+	// ourselves
+	if response.GraphqlID == "" {
+		response.GraphqlID = base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("Suite---%s", response.UUID)))
+	}
 
 	state.ApiToken = types.StringValue(response.ApiToken)
 	state.DefaultBranch = types.StringValue(response.DefaultBranch)
@@ -152,7 +156,6 @@ func (ts *testSuiteResource) Read(ctx context.Context, req resource.ReadRequest,
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
-
 }
 
 func (ts *testSuiteResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
@@ -217,6 +220,7 @@ func (ts *testSuiteResource) Update(ctx context.Context, req resource.UpdateRequ
 
 	state.Name = plan.Name
 	state.DefaultBranch = plan.DefaultBranch
+	state.Slug = types.StringValue(response.Slug)
 
 	// If the planned team_owner_id differs from the state, add the new one and remove the old one
 	if !plan.TeamOwnerId.Equal(state.TeamOwnerId) {
