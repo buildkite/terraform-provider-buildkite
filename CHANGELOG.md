@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+- Convert CreatePipeline to genqlient [[PR #334](https://github.com/buildkite/terraform-provider-buildkite/pull/334)] @jradtilbrook
 - Add buildkite_test_suite resource [[PR #327](https://github.com/buildkite/terraform-provider-buildkite/pull/327)] @jradtilbrook
 
 ## [v0.21.2](https://github.com/buildkite/terraform-provider-buildkite/compare/v0.21.1...v0.21.2)
