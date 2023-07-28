@@ -12,6 +12,7 @@ import (
 
 func TestAcc_testSuiteAddRemove(t *testing.T) {
 	t.Parallel()
+	var suite getTestSuiteSuite
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
@@ -33,14 +34,14 @@ func TestAcc_testSuiteAddRemove(t *testing.T) {
 				}
 				`,
 				Check: resource.ComposeAggregateTestCheckFunc(
+					checkTestSuiteExists("buildkite_test_suite.suite", &suite),
+					checkTestSuiteRemoteValue(&suite, "Name", "test suite"),
+					checkTestSuiteRemoteValue(&suite, "DefaultBranch", "main"),
 					resource.TestCheckResourceAttrSet("buildkite_test_suite.suite", "id"),
 					resource.TestCheckResourceAttrSet("buildkite_test_suite.suite", "api_token"),
 					resource.TestCheckResourceAttr("buildkite_test_suite.suite", "default_branch", "main"),
 					resource.TestCheckResourceAttr("buildkite_test_suite.suite", "name", "test suite"),
 					resource.TestCheckResourceAttrSet("buildkite_test_suite.suite", "team_owner_id"),
-					checkTestSuiteExists("buildkite_test_suite.suite"),
-					checkTestSuiteRemoteValue("buildkite_test_suite.suite", "Name", "test suite"),
-					checkTestSuiteRemoteValue("buildkite_test_suite.suite", "DefaultBranch", "main"),
 				),
 			},
 		},
@@ -49,6 +50,7 @@ func TestAcc_testSuiteAddRemove(t *testing.T) {
 
 func TestAcc_testSuiteUpdate(t *testing.T) {
 	t.Parallel()
+	var suite getTestSuiteSuite
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
@@ -75,9 +77,9 @@ func TestAcc_testSuiteUpdate(t *testing.T) {
 					resource.TestCheckResourceAttr("buildkite_test_suite.suite", "default_branch", "main"),
 					resource.TestCheckResourceAttr("buildkite_test_suite.suite", "name", "test suite update"),
 					resource.TestCheckResourceAttrSet("buildkite_test_suite.suite", "team_owner_id"),
-					checkTestSuiteExists("buildkite_test_suite.suite"),
-					checkTestSuiteRemoteValue("buildkite_test_suite.suite", "Name", "test suite update"),
-					checkTestSuiteRemoteValue("buildkite_test_suite.suite", "DefaultBranch", "main"),
+					checkTestSuiteExists("buildkite_test_suite.suite", &suite),
+					checkTestSuiteRemoteValue(&suite, "Name", "test suite update"),
+					checkTestSuiteRemoteValue(&suite, "DefaultBranch", "main"),
 				),
 			},
 			{
@@ -101,26 +103,19 @@ func TestAcc_testSuiteUpdate(t *testing.T) {
 					resource.TestCheckResourceAttr("buildkite_test_suite.suite", "default_branch", "main"),
 					resource.TestCheckResourceAttr("buildkite_test_suite.suite", "name", "test suite update"),
 					resource.TestCheckResourceAttrSet("buildkite_test_suite.suite", "team_owner_id"),
-					checkTestSuiteExists("buildkite_test_suite.suite"),
-					checkTestSuiteRemoteValue("buildkite_test_suite.suite", "Name", "test suite update"),
-					checkTestSuiteRemoteValue("buildkite_test_suite.suite", "DefaultBranch", "main"),
+					checkTestSuiteExists("buildkite_test_suite.suite", &suite),
+					checkTestSuiteRemoteValue(&suite, "Name", "test suite update"),
+					checkTestSuiteRemoteValue(&suite, "DefaultBranch", "main"),
 				),
 			},
 		},
 	})
 }
 
-func checkTestSuiteRemoteValue(name, property, value string) resource.TestCheckFunc {
+func checkTestSuiteRemoteValue(suite *getTestSuiteSuite, property, value string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
-		rs, ok := s.RootModule().Resources[name]
-		if !ok {
-			return errors.New("Test suite not found in state")
-		}
-
-		suite := loadRemoteTestSuite(rs.Primary.Attributes["id"])
-
-		if reflect.ValueOf(*suite).FieldByName(property).String() != value {
-			return fmt.Errorf("%s property on test suite does not match %s", property, value)
+		if obj := reflect.ValueOf(*suite).FieldByName(property).String(); obj != value {
+			return fmt.Errorf("%s property on test suite does not match \"%s\" (\"%s\")", property, value, obj)
 		}
 
 		return nil
@@ -139,18 +134,25 @@ func loadRemoteTestSuite(id string) *getTestSuiteSuite {
 	return nil
 }
 
-func checkTestSuiteExists(name string) resource.TestCheckFunc {
+func checkTestSuiteExists(name string, suite *getTestSuiteSuite) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[name]
 		if !ok {
 			return errors.New("Test suite not found in state")
 		}
 
-		suite := loadRemoteTestSuite(rs.Primary.Attributes["id"])
+		_suite := loadRemoteTestSuite(rs.Primary.Attributes["id"])
 
-		if suite == nil {
+		if _suite == nil {
 			return errors.New("Test suite does not exist on server")
 		}
+
+		suite.Id = _suite.Id
+		suite.Uuid = _suite.Uuid
+		suite.DefaultBranch = _suite.DefaultBranch
+		suite.Name = _suite.Name
+		suite.Slug = _suite.Slug
+		suite.Teams = _suite.Teams
 
 		return nil
 	}
