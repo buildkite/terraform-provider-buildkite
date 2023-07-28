@@ -12,6 +12,7 @@ query getPipeline($slug: ID!) {
     }
 }
 
+# @genqlient(for: "PipelineCreateInput.clusterId", pointer: true)
 mutation createPipeline(
     $input: PipelineCreateInput!
 ) {
