@@ -422,6 +422,10 @@ func ReadPipeline(ctx context.Context, d *schema.ResourceData, m interface{}) di
 			)
 		}
 		updatePipelineResourceNode(d, pipelineNode)
+	} else {
+		//clear state
+		d.SetId("")
+		return nil
 	}
 
 	if slug, pipelineExists := d.GetOk("slug"); pipelineExists {
