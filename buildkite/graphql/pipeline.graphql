@@ -15,6 +15,7 @@ query getPipeline($slug: ID!) {
 # @genqlient(for: "PipelineCreateInput.clusterId", pointer: true)
 # @genqlient(for: "PipelineCreateInput.visibility", omitempty: true)
 # @genqlient(for: "PipelineCreateInput.pipelineTemplateId", omitempty: true)
+# @genqlient(for: "PipelineCreateInput.nextBuildNumber", omitempty: true)
 mutation createPipeline(
     $input: PipelineCreateInput!
 ) {
