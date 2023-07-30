@@ -7,6 +7,7 @@ All notable changes to this project will be documented in this file.
 ### Added 
 
 - SUP-1281: Pipeline resource ReadPipeline conversion to Genqlient[[PR #319](https://github.com/buildkite/terraform-provider-buildkite/pull/319)] @james2791
+- Convert CreatePipeline to genqlient [[PR #334](https://github.com/buildkite/terraform-provider-buildkite/pull/334)] @jradtilbrook
 
 ## [v0.21.2](https://github.com/buildkite/terraform-provider-buildkite/compare/v0.21.1...v0.21.2)
 
