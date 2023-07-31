@@ -407,7 +407,7 @@ func ReadPipeline(ctx context.Context, d *schema.ResourceData, m interface{}) di
 		}
 		updatePipelineResourceNode(d, pipelineNode)
 	} else {
-		//clear state
+		// Pipeline was removed - set ID blank
 		d.SetId("")
 		return nil
 	}
