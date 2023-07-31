@@ -2,7 +2,6 @@ package buildkite
 
 import (
 	"context"
-	"encoding/base64"
 	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -83,12 +82,6 @@ func (ts *testSuiteResource) Create(ctx context.Context, req resource.CreateRequ
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to create test suite", err.Error())
 		return
-	}
-
-	// The REST API doesn't return a graphql_id just yet but it should be added soon. If not present, compute it
-	// ourselves
-	if response.GraphqlID == "" {
-		response.GraphqlID = base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("Suite---%s", response.UUID)))
 	}
 
 	state.ApiToken = types.StringValue(response.ApiToken)
