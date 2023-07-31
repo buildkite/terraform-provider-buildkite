@@ -9,6 +9,7 @@ All notable changes to this project will be documented in this file.
 ## Unreleased
 
 - Convert CreatePipeline to genqlient [[PR #334](https://github.com/buildkite/terraform-provider-buildkite/pull/334)] @jradtilbrook
+- Add deprecation message to `archive_on_delete` [[PR #337](https://github.com/buildkite/terraform-provider-buildkite/pull/337)] @mcncl
 
 ## [v0.21.2](https://github.com/buildkite/terraform-provider-buildkite/compare/v0.21.1...v0.21.2)
 
