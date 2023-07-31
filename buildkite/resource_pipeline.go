@@ -10,7 +10,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/shurcooL/graphql"
@@ -68,28 +72,29 @@ type TeamPipelineNode struct {
 }
 
 type pipelineResourceModel struct {
-	AllowRebuilds                        types.Bool            `tfsdk:"allow_rebuilds"`
-	ArchiveOnDelete                      types.Bool            `tfsdk:"archive_on_delete"`
-	BadgeUrl                             types.String          `tfsdk:"badge_url"`
-	BranchConfiguration                  types.String          `tfsdk:"branch_configuration"`
-	CancelIntermediateBuilds             types.Bool            `tfsdk:"cancel_intermediate_builds"`
-	CancelIntermediateBuildsBranchFilter types.String          `tfsdk:"cancel_intermediate_builds_branch_filter"`
-	ClusterId                            types.String          `tfsdk:"cluster_id"`
-	DefaultBranch                        types.String          `tfsdk:"default_branch"`
-	DefaultTimeoutInMinutes              types.Int64           `tfsdk:"default_timeout_in_minutes"`
-	Description                          types.String          `tfsdk:"description"`
-	Id                                   types.String          `tfsdk:"id"`
-	MaximumTimeoutInMinutes              types.Int64           `tfsdk:"maximum_timeout_in_minutes"`
-	Name                                 types.String          `tfsdk:"name"`
-	ProviderSettings                     providerSettingsModel `tfsdk:"provider_settings"`
-	Repository                           types.String          `tfsdk:"repository"`
-	SkipIntermediateBuilds               types.Bool            `tfsdk:"skip_intermedia_builds"`
-	SkipIntermediateBuildsBranchFilter   types.String          `tfsdk:"skip_intermediate_builds_branch_filter"`
-	Slug                                 types.String          `tfsdk:"slug"`
-	Steps                                types.String          `tfsdk:"steps"`
-	Tags                                 []string              `tfsdk:"tags"`
-	Teams                                []pipelineTeamModel   `tfsdk:"team"`
-	WebhookUrl                           types.String          `tfsdk:"webhook_url"`
+	AllowRebuilds                        types.Bool             `tfsdk:"allow_rebuilds"`
+	ArchiveOnDelete                      types.Bool             `tfsdk:"archive_on_delete"`
+	BadgeUrl                             types.String           `tfsdk:"badge_url"`
+	BranchConfiguration                  types.String           `tfsdk:"branch_configuration"`
+	CancelIntermediateBuilds             types.Bool             `tfsdk:"cancel_intermediate_builds"`
+	CancelIntermediateBuildsBranchFilter types.String           `tfsdk:"cancel_intermediate_builds_branch_filter"`
+	ClusterId                            types.String           `tfsdk:"cluster_id"`
+	DefaultBranch                        types.String           `tfsdk:"default_branch"`
+	DefaultTimeoutInMinutes              types.Int64            `tfsdk:"default_timeout_in_minutes"`
+	DeletionProtection                   types.Bool             `tfsdk:"deletion_protection"`
+	Description                          types.String           `tfsdk:"description"`
+	Id                                   types.String           `tfsdk:"id"`
+	MaximumTimeoutInMinutes              types.Int64            `tfsdk:"maximum_timeout_in_minutes"`
+	Name                                 types.String           `tfsdk:"name"`
+	ProviderSettings                     *providerSettingsModel `tfsdk:"provider_settings"`
+	Repository                           types.String           `tfsdk:"repository"`
+	SkipIntermediateBuilds               types.Bool             `tfsdk:"skip_intermediate_builds"`
+	SkipIntermediateBuildsBranchFilter   types.String           `tfsdk:"skip_intermediate_builds_branch_filter"`
+	Slug                                 types.String           `tfsdk:"slug"`
+	Steps                                types.String           `tfsdk:"steps"`
+	Tags                                 []string               `tfsdk:"tags"`
+	Teams                                []pipelineTeamModel    `tfsdk:"team"`
+	WebhookUrl                           types.String           `tfsdk:"webhook_url"`
 }
 
 type providerSettingsModel struct {
@@ -101,17 +106,17 @@ type providerSettingsModel struct {
 	SkipPullRequestBuildsForExistingCommits types.Bool   `tfsdk:"skip_pull_request_builds_for_existing_commits"`
 	BuildPullRequestReadyForReview          types.Bool   `tfsdk:"build_pull_request_ready_for_review"`
 	BuildPullRequestLabelsChanged           types.Bool   `tfsdk:"build_pull_request_labels_changed"`
-	BuildPullRequestForks                   types.Bool   `tfsdk:"BuildPullRequestForks"`
-	PrefixPullRequestForkBranchNames        types.Bool   `tfsdk:"BuildPullRequestForks"`
-	BuildBranches                           types.Bool   `tfsdk:"BuildPullRequestForks"`
-	BuildTags                               types.Bool   `tfsdk:"BuildPullRequestForks"`
-	CancelDeletedBranchBuilds               types.Bool   `tfsdk:"BuildPullRequestForks"`
-	FilterEnabled                           types.Bool   `tfsdk:"BuildPullRequestForks"`
-	FilterCondition                         types.String `tfsdk:"BuildPullRequestForks"`
-	PublishCommitStatus                     types.Bool   `tfsdk:"BuildPullRequestForks"`
-	PublishBlockedAsPending                 types.Bool   `tfsdk:"BuildPullRequestForks"`
-	PublishCommitStatusPerStep              types.Bool   `tfsdk:"BuildPullRequestForks"`
-	SeparatePullRequestStatuses             types.Bool   `tfsdk:"BuildPullRequestForks"`
+	BuildPullRequestForks                   types.Bool   `tfsdk:"build_pull_request_forks"`
+	PrefixPullRequestForkBranchNames        types.Bool   `tfsdk:"prefix_pull_request_fork_branch_names"`
+	BuildBranches                           types.Bool   `tfsdk:"build_branches"`
+	BuildTags                               types.Bool   `tfsdk:"build_tags"`
+	CancelDeletedBranchBuilds               types.Bool   `tfsdk:"cancel_deleted_branch_builds"`
+	FilterEnabled                           types.Bool   `tfsdk:"filter_enabled"`
+	FilterCondition                         types.String `tfsdk:"filter_condition"`
+	PublishCommitStatus                     types.Bool   `tfsdk:"publish_commit_status"`
+	PublishBlockedAsPending                 types.Bool   `tfsdk:"publish_blocked_as_pending"`
+	PublishCommitStatusPerStep              types.Bool   `tfsdk:"publish_commit_status_per_step"`
+	SeparatePullRequestStatuses             types.Bool   `tfsdk:"separate_pull_request_statuses"`
 }
 
 type pipelineTeamModel struct {
@@ -126,7 +131,7 @@ type pipelineResource struct {
 type pipelineResponse interface {
 	GetId() string
 	GetAllowRebuilds() bool
-	GetBranchConfiguration() string
+	GetBranchConfiguration() *string
 	GetCancelIntermediateBuilds() bool
 	GetCancelIntermediateBuildsBranchFilter() string
 	GetCluster() PipelineValuesCluster
@@ -176,7 +181,7 @@ func (p *pipelineResource) Create(ctx context.Context, req resource.CreateReques
 
 	input := PipelineCreateInput{
 		AllowRebuilds:                        plan.AllowRebuilds.ValueBool(),
-		BranchConfiguration:                  plan.BranchConfiguration.ValueString(),
+		BranchConfiguration:                  plan.BranchConfiguration.ValueStringPointer(),
 		CancelIntermediateBuilds:             plan.CancelIntermediateBuilds.ValueBool(),
 		CancelIntermediateBuildsBranchFilter: plan.CancelIntermediateBuildsBranchFilter.ValueString(),
 		ClusterId:                            plan.ClusterId.ValueStringPointer(),
@@ -204,14 +209,18 @@ func (p *pipelineResource) Create(ctx context.Context, req resource.CreateReques
 	log.Printf("Successfully created pipeline with id '%s'.", response.PipelineCreate.Pipeline.Id)
 
 	setPipelineModel(&state, &response.PipelineCreate.Pipeline)
+	state.DeletionProtection = plan.DeletionProtection
+	state.ArchiveOnDelete = plan.ArchiveOnDelete
 
-	pipelineExtraInfo, err := updatePipelineExtraInfo(&plan, p.client)
-	if err != nil {
-		resp.Diagnostics.AddError("Unable to set pipeline info from REST", err.Error())
-		return
+	if plan.ProviderSettings != nil {
+		pipelineExtraInfo, err := updatePipelineExtraInfo(&state, p.client)
+		if err != nil {
+			resp.Diagnostics.AddError("Unable to set pipeline info from REST", err.Error())
+			return
+		}
+
+		updatePipelineResourceExtraInfo(&state, &pipelineExtraInfo)
 	}
-
-	updatePipelineResourceExtraInfo(&state, &pipelineExtraInfo)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
@@ -275,7 +284,9 @@ func (p *pipelineResource) Read(ctx context.Context, req resource.ReadRequest, r
 		}
 
 		setPipelineModel(&state, pipelineNode)
-		updatePipelineResourceExtraInfo(&state, extraInfo)
+		if state.ProviderSettings != nil {
+			updatePipelineResourceExtraInfo(&state, extraInfo)
+		}
 		resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 	} else {
 		// no pipeline was found so set an empty state
@@ -288,22 +299,33 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed: true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"allow_rebuilds": schema.BoolAttribute{
 				Optional: true,
+				Computed: true,
 				Default:  booldefault.StaticBool(true),
 			},
 			"archive_on_delete": schema.BoolAttribute{
 				Optional: true,
+				Computed: true,
 				Default:  booldefault.StaticBool(false),
 			},
 			"cancel_intermediate_builds": schema.BoolAttribute{
 				Computed: true,
 				Optional: true,
+				PlanModifiers: []planmodifier.Bool{
+					boolplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"cancel_intermediate_builds_branch_filter": schema.StringAttribute{
 				Computed: true,
 				Optional: true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"branch_configuration": schema.StringAttribute{
 				Optional: true,
@@ -314,14 +336,21 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 			"default_branch": schema.StringAttribute{
 				Computed: true,
 				Optional: true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"default_timeout_in_minutes": schema.Int64Attribute{
 				Computed: true,
 				Optional: true,
 				Default:  nil,
+				PlanModifiers: []planmodifier.Int64{
+					int64planmodifier.UseStateForUnknown(),
+				},
 			},
 			"deletion_protection": schema.BoolAttribute{
 				Optional:    true,
+				Computed:    true,
 				Default:     booldefault.StaticBool(false),
 				Description: "If set to 'true', deletion of a pipeline via `terraform destroy` will fail, until set to 'false'.",
 			},
@@ -329,10 +358,16 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 				Computed: true,
 				Optional: true,
 				Default:  nil,
+				PlanModifiers: []planmodifier.Int64{
+					int64planmodifier.UseStateForUnknown(),
+				},
 			},
 			"description": schema.StringAttribute{
 				Computed: true,
 				Optional: true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"name": schema.StringAttribute{
 				Required: true,
@@ -343,16 +378,26 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 			"skip_intermediate_builds": schema.BoolAttribute{
 				Computed: true,
 				Optional: true,
+				PlanModifiers: []planmodifier.Bool{
+					boolplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"skip_intermediate_builds_branch_filter": schema.StringAttribute{
 				Computed: true,
 				Optional: true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"slug": schema.StringAttribute{
 				Computed: true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"steps": schema.StringAttribute{
 				Optional: true,
+				Computed: true,
 				Default:  stringdefault.StaticString(defaultSteps),
 			},
 			"tags": schema.SetAttribute{
@@ -361,9 +406,15 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 			},
 			"webhook_url": schema.StringAttribute{
 				Computed: true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"badge_url": schema.StringAttribute{
 				Computed: true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 		},
 		Blocks: map[string]schema.Block{
@@ -393,6 +444,7 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 					},
 					"build_pull_requests": schema.BoolAttribute{
 						Optional: true,
+						Computed: true,
 						Default:  booldefault.StaticBool(true),
 					},
 					"pull_request_branch_filter_enabled": schema.BoolAttribute{
@@ -408,6 +460,7 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 					},
 					"skip_pull_request_builds_for_existing_commits": schema.BoolAttribute{
 						Optional: true,
+						Computed: true,
 						Default:  booldefault.StaticBool(true),
 					},
 					"build_pull_request_ready_for_review": schema.BoolAttribute{
@@ -428,6 +481,7 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 					},
 					"build_branches": schema.BoolAttribute{
 						Optional: true,
+						Computed: true,
 						Default:  booldefault.StaticBool(true),
 					},
 					"build_tags": schema.BoolAttribute{
@@ -448,6 +502,7 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 					},
 					"publish_commit_status": schema.BoolAttribute{
 						Optional: true,
+						Computed: true,
 						Default:  booldefault.StaticBool(true),
 					},
 					"publish_blocked_as_pending": schema.BoolAttribute{
@@ -504,8 +559,9 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 	}
 
 	setPipelineModel(&state, &response.PipelineUpdate.Pipeline)
+	state.DeletionProtection = plan.DeletionProtection
 
-	pipelineExtraInfo, err := updatePipelineExtraInfo(&plan, p.client)
+	pipelineExtraInfo, err := updatePipelineExtraInfo(&state, p.client)
 	if err != nil {
 		resp.Diagnostics.AddError("Unable to set pipeline info from REST", err.Error())
 		return
@@ -522,10 +578,10 @@ func (*pipelineResource) ImportState(ctx context.Context, req resource.ImportSta
 
 func setPipelineModel(model *pipelineResourceModel, data pipelineResponse) {
 	model.AllowRebuilds = types.BoolValue(data.GetAllowRebuilds())
-	model.BranchConfiguration = types.StringValue(data.GetBranchConfiguration())
+	model.BranchConfiguration = types.StringPointerValue(data.GetBranchConfiguration())
 	model.CancelIntermediateBuilds = types.BoolValue(data.GetCancelIntermediateBuilds())
 	model.CancelIntermediateBuildsBranchFilter = types.StringValue(data.GetCancelIntermediateBuildsBranchFilter())
-	model.ClusterId = types.StringValue(data.GetCluster().Id)
+	model.ClusterId = types.StringPointerValue(data.GetCluster().Id)
 	model.DefaultBranch = types.StringValue(data.GetDefaultBranch())
 	model.DefaultTimeoutInMinutes = types.Int64Value(int64(data.GetDefaultTimeoutInMinutes()))
 	model.Description = types.StringValue(data.GetDescription())
@@ -591,13 +647,13 @@ func getPipelineExtraInfo(client *Client, slug string) (*PipelineExtraInfo, erro
 	return &pipelineExtraInfo, nil
 }
 
-func updatePipelineExtraInfo(plan *pipelineResourceModel, client *Client) (PipelineExtraInfo, error) {
+func updatePipelineExtraInfo(state *pipelineResourceModel, client *Client) (PipelineExtraInfo, error) {
 	payload := map[string]interface{}{
-		"provider_settings": plan.ProviderSettings,
+		"provider_settings": state.ProviderSettings,
 	}
 
 	pipelineExtraInfo := PipelineExtraInfo{}
-	err := client.makeRequest("PATCH", fmt.Sprintf("/v2/organizations/%s/pipelines/%s", client.organization, plan.Name.ValueString()), payload, &pipelineExtraInfo)
+	err := client.makeRequest("PATCH", fmt.Sprintf("/v2/organizations/%s/pipelines/%s", client.organization, state.Slug.ValueString()), payload, &pipelineExtraInfo)
 	if err != nil {
 		return pipelineExtraInfo, err
 	}
@@ -811,7 +867,7 @@ func deleteTeamPipelines(teamPipelines []TeamPipelineNode, client *Client) error
 func updatePipelineResourceExtraInfo(state *pipelineResourceModel, pipeline *PipelineExtraInfo) {
 	state.BadgeUrl = types.StringValue(pipeline.BadgeUrl)
 	s := pipeline.Provider.Settings
-	state.ProviderSettings = providerSettingsModel{
+	state.ProviderSettings = &providerSettingsModel{
 		TriggerMode:                             types.StringValue(s.TriggerMode),
 		BuildPullRequests:                       types.BoolValue(s.BuildPullRequests),
 		PullRequestBranchFilterEnabled:          types.BoolValue(s.PullRequestBranchFilterEnabled),
