@@ -61,51 +61,7 @@ mutation createPipeline(
 ) {
     pipelineCreate(input: $input) {
         pipeline {
-            id
-            allowRebuilds
-            branchConfiguration
-            cancelIntermediateBuilds
-            cancelIntermediateBuildsBranchFilter
-            cluster {
-                id
-            }
-            defaultBranch
-            defaultTimeoutInMinutes
-            maximumTimeoutInMinutes
-            description
-            name
-            repository {
-                url
-            }
-            skipIntermediateBuilds
-            skipIntermediateBuildsBranchFilter
-            slug
-            steps {
-                yaml
-            }
-            tags {
-                label
-            }
-            teams (first: 50) {
-                edges {
-                    node {
-                        accessLevel
-                        id
-                        team {
-                            description
-                            id
-                            isDefaultTeam
-                            defaultMemberRole
-                            name
-                            membersCanCreatePipelines
-                            privacy
-                            slug
-                            uuid
-                        }
-                    }
-                }
-            }
-            webhookURL
+            ...PipelineValues
         }
     }
 }
