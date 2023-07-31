@@ -143,11 +143,11 @@ func testAccCheckClusterQueueExists(resourceName string, clusterQueueResourceMod
 				resourceState.Primary.Attributes["cluster_uuid"],
 				cursor,
 			)
-	
+
 			if err != nil {
 				return fmt.Errorf("Unable to read Cluster Queues: %v", err)
 			}
-	
+
 			// Loop over the returned page of cluster queues to see if the queue is found
 			for _, queue := range queues.Organization.Cluster.Queues.Edges {
 				if queue.Node.Id == resourceState.Primary.ID {
@@ -157,21 +157,21 @@ func testAccCheckClusterQueueExists(resourceName string, clusterQueueResourceMod
 					break
 				}
 			}
-	
+
 			// Stop the do-while for loop if the queue was found or no more pages from the API response
 			if queueFound || !queues.Organization.Cluster.Queues.PageInfo.HasNextPage {
 				break
 			}
-			
+
 			// Update cursor with next page
 			cursor = &queues.Organization.Cluster.Queues.PageInfo.EndCursor
 		}
 
 		if !queueFound {
-			return fmt.Errorf("Unable to find Cluster Queue %s in cluster %s", 
-			resourceState.Primary.ID, 
-			resourceState.Primary.Attributes["cluster_uuid"])
-		}	
+			return fmt.Errorf("Unable to find Cluster Queue %s in cluster %s",
+				resourceState.Primary.ID,
+				resourceState.Primary.Attributes["cluster_uuid"])
+		}
 
 		return nil
 	}
@@ -220,11 +220,11 @@ func testAccCheckClusterQueueDestroy(s *terraform.State) error {
 				rs.Primary.Attributes["cluster_uuid"],
 				cursor,
 			)
-	
+
 			if err != nil {
 				return fmt.Errorf("Unable to read Cluster Queues: %v", err)
 			}
-	
+
 			// Loop over the returned page of cluster queues to see if the queue is found
 			for _, queue := range queues.Organization.Cluster.Queues.Edges {
 				if queue.Node.Id == rs.Primary.ID {
@@ -235,8 +235,8 @@ func testAccCheckClusterQueueDestroy(s *terraform.State) error {
 
 			// If the cluster queue is found, error - as we expect not to find it
 			if queueFound {
-				return fmt.Errorf("Cluster queue %s still exists in cluster %s, expected not to find it", 
-					rs.Primary.ID, 
+				return fmt.Errorf("Cluster queue %s still exists in cluster %s, expected not to find it",
+					rs.Primary.ID,
 					rs.Primary.Attributes["cluster_uuid"],
 				)
 			}

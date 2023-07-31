@@ -130,7 +130,7 @@ func (cq *ClusterQueueResource) Read(ctx context.Context, req resource.ReadReque
 
 	log.Printf("Reading cluster queue with ID %s in cluster %s ...", state.Id.ValueString(), state.ClusterUuid.ValueString())
 	for {
-		queues, err := getClusterQueues(cq.client.genqlient, 
+		queues, err := getClusterQueues(cq.client.genqlient,
 			cq.client.organization, state.ClusterUuid.ValueString(),
 			cursor,
 		)
@@ -159,7 +159,7 @@ func (cq *ClusterQueueResource) Read(ctx context.Context, req resource.ReadReque
 		if queueFound || !queues.Organization.Cluster.Queues.PageInfo.HasNextPage {
 			break
 		}
-		
+
 		// Update cursor with next page
 		cursor = &queues.Organization.Cluster.Queues.PageInfo.EndCursor
 	}
@@ -172,7 +172,7 @@ func (cq *ClusterQueueResource) Read(ctx context.Context, req resource.ReadReque
 			fmt.Sprintf("Unable to find Cluster Queue in cluster %s", state.ClusterUuid.ValueString()),
 		)
 		return
-	}	
+	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
