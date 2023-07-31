@@ -71,6 +71,7 @@ type TeamPipelineNode struct {
 
 type pipelineResourceModel struct {
 	AllowRebuilds                        types.Bool       `tfsdk:"allow_rebuilds"`
+	ArchiveOnDelete                      types.Bool       `tfsdk:"archive_on_delete"`
 	BadgeUrl                             types.String     `tfsdk:"badge_url"`
 	BranchConfiguration                  types.String     `tfsdk:"branch_configuration"`
 	CancelIntermediateBuilds             types.Bool       `tfsdk:"cancel_intermediate_builds"`
@@ -161,8 +162,28 @@ func (*pipelineResource) Create(context.Context, resource.CreateRequest, *resour
 	panic("unimplemented")
 }
 
-func (*pipelineResource) Delete(context.Context, resource.DeleteRequest, *resource.DeleteResponse) {
-	panic("unimplemented")
+func (p* pipelineResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	var state pipelineResourceModel
+
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	if state.ArchiveOnDelete.ValueBool() {
+		log.Printf("Pipeline %s set to archive on delete. Archiving...", state.Name.ValueString())
+		_, err := archivePipeline(p.client.genqlient, state.Id.ValueString())
+		if err != nil {
+			resp.Diagnostics.AddError("Could not archive pipeline", err.Error())
+		}
+		return
+	}
+
+	log.Printf("Deleting pipeline %s ...", state.Name.ValueString())
+	_, err := deletePipeline(p.client.genqlient, state.Id.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddError("Could not delete pipeline", err.Error())
+	}
 }
 
 func (*pipelineResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
