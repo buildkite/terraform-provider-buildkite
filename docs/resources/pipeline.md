@@ -70,6 +70,9 @@ resource "buildkite_pipeline" "test_new" {
 
 `archive_on_delete` will archive the **pipeline** when `destroy` is called. Attached resources, such as `schedules` will still be destroyed. In order to delete the pipeline, `archive_on_delete` must be set to `false` in the configuration, then `destroy` must be called again.
 
+#### Deprecated
+`archive_on_delete` has been deprecated and will be removed from a future version of the provider.
+
 ## Example Usage with GitHub Provider Settings
 
 ```hcl
