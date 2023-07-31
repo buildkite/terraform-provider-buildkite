@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/shurcooL/graphql"
@@ -59,6 +60,44 @@ type TeamPipelineNode struct {
 	AccessLevel PipelineAccessLevels
 	ID          graphql.String
 	Team        TeamNode
+}
+
+type pipelineResource struct {
+	client *Client
+}
+
+// Create implements resource.Resource.
+func (*pipelineResource) Create(context.Context, resource.CreateRequest, *resource.CreateResponse) {
+	panic("unimplemented")
+}
+
+// Delete implements resource.Resource.
+func (*pipelineResource) Delete(context.Context, resource.DeleteRequest, *resource.DeleteResponse) {
+	panic("unimplemented")
+}
+
+// Metadata implements resource.Resource.
+func (*pipelineResource) Metadata(context.Context, resource.MetadataRequest, *resource.MetadataResponse) {
+	panic("unimplemented")
+}
+
+// Read implements resource.Resource.
+func (*pipelineResource) Read(context.Context, resource.ReadRequest, *resource.ReadResponse) {
+	panic("unimplemented")
+}
+
+// Schema implements resource.Resource.
+func (*pipelineResource) Schema(context.Context, resource.SchemaRequest, *resource.SchemaResponse) {
+	panic("unimplemented")
+}
+
+// Update implements resource.Resource.
+func (*pipelineResource) Update(context.Context, resource.UpdateRequest, *resource.UpdateResponse) {
+	panic("unimplemented")
+}
+
+func newPipelineResource() resource.Resource {
+	return &pipelineResource{}
 }
 
 // resourcePipeline represents the terraform pipeline resource schema
