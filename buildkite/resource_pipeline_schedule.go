@@ -249,36 +249,41 @@ func (ps *pipelineSchedule) Delete(ctx context.Context, req resource.DeleteReque
 }
 
 func (ps *pipelineSchedule) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	// Split import components
+	importComponents := strings.Split(req.ID, "/")
 
-	log.Printf("Import components %s ...", req.ID)
+	// Handle import case with 3 parts (org/pipeline-slug/UUID)
+	if len(importComponents) == 3 && importComponents[0] != "" && importComponents[1] != "" && importComponents[2] != "" {
+		log.Printf("Import components %s ...", req.ID)
 
-	if len(req.ID) == 0 {
+		apiResponse, err := getPipelineScheduleBySlug(
+			ps.client.genqlient,
+			req.ID,
+		)
+
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Unable to read Pipeline schedule",
+				fmt.Sprintf("Unable to read Pipeline schedule: %s", err.Error()),
+			)
+			return
+		}
+
+		var newReq resource.ImportStateRequest
+		newReq.ID = apiResponse.PipelineSchedule.Id
+		resource.ImportStatePassthroughID(ctx, path.Root("id"), newReq, resp)
+	// Handle import case with 1 component (ID)
+	} else if len(importComponents) == 1 && importComponents[0] != "" {
+		// Pass through ID from import to state for Read
+		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), importComponents[0])...)
+	} else {
 		resp.Diagnostics.AddError(
 			"Missing Import Identifier",
-			fmt.Sprintf("Import identifier is expected with format: $BUILDKITE_ORGANIZATION_SLUG/$BUILDKITE_PIPELINE_SLUG/$PIPELINE_SCHEDULE_UUID. Got: %q", req.ID),
+			fmt.Sprintf("Import identifier is expected with format: $BUILDKITE_ORGANIZATION_SLUG/$BUILDKITE_PIPELINE_SLUG/$PIPELINE_SCHEDULE_UUID or PIPELINE_SCHEDULE_ID. Got: %q", req.ID),
 		)
 		return
 	}
-
-	apiResponse, err := getPipelineScheduleBySlug(
-		ps.client.genqlient,
-		req.ID,
-	)
-
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Unable to read Pipeline schedule",
-			fmt.Sprintf("Unable to read Pipeline schedule: %s", err.Error()),
-		)
-		return
-	}
-
-	var newReq resource.ImportStateRequest
-	newReq.ID = apiResponse.PipelineSchedule.Id
-	resource.ImportStatePassthroughID(ctx, path.Root("id"), newReq, resp)
-
 }
-
 func envVarsArrayToMap(ctx context.Context, envVars []*string) types.Map {
 	envVarsMap := make(map[string]string)
 	for _, envVar := range envVars {
