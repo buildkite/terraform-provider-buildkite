@@ -109,6 +109,8 @@ func (client *Client) makeRequest(method string, path string, postData interface
 	}
 	if resp.StatusCode >= 400 {
 		return fmt.Errorf("Buildkite API request failed: %s %s (status: %d)", method, url, resp.StatusCode)
+	} else if resp.StatusCode == 204 {
+		return nil
 	}
 	defer resp.Body.Close()
 

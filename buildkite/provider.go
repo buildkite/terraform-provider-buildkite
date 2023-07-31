@@ -97,14 +97,15 @@ func (tf *terraformProvider) Metadata(ctx context.Context, req provider.Metadata
 
 func (*terraformProvider) Resources(context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
+		NewClusterQueueResource,
+		NewPipelineScheduleResource,
 		newAgentTokenResource,
 		newClusterAgentTokenResource,
-		NewClusterQueueResource,
 		newClusterResource,
-		newTeamResource,
-		newTeamMemberResource,
 		newOrganizationResource,
-		NewPipelineScheduleResource,
+		newTeamMemberResource,
+		newTeamResource,
+		newTestSuiteResource,
 	}
 }
 
