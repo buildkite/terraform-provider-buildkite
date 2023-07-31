@@ -80,9 +80,9 @@ func resourcePipeline() *schema.Resource {
 			},
 			"archive_on_delete": {
 				Deprecated: "This attribute has been deprecated and will be removed in a future release.",
-				Optional: true,
-				Default:  false,
-				Type:     schema.TypeBool,
+				Optional:   true,
+				Default:    false,
+				Type:       schema.TypeBool,
 			},
 			"cancel_intermediate_builds": {
 				Computed: true,
