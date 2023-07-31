@@ -1,4 +1,8 @@
 # Changelog
+## Forthcoming Changes
+We will be deprecating `archive_on_delete` in the Pipeline resource and moving the functionality to the core provider.
+This feels like a logical change and allows the setting to be made on an entire organization level rather than requiring
+configuration on every pipeline.
 
 All notable changes to this project will be documented in this file.
 
