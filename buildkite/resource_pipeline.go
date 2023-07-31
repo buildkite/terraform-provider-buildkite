@@ -78,6 +78,14 @@ type pipelineResource struct {
 	client *Client
 }
 
+type pipelineResponse interface {
+	GetId() string
+}
+
+func newPipelineResource() resource.Resource {
+	return &pipelineResource{}
+}
+
 func (p *pipelineResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
 	if req.ProviderData == nil {
 		return
@@ -125,6 +133,7 @@ func (p *pipelineResource) Read(ctx context.Context, req resource.ReadRequest, r
 		// TODO: update pipeline extra info
 
 		// TODO: set values on state
+		setPipelineModel(&state, pipelineNode)
 		resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 	}
 }
@@ -274,7 +283,7 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 					},
 					"build_branches": resource_schema.BoolAttribute{
 						Optional: true,
-						Default:  true,
+						Default:  booldefault.StaticBool(true),
 					},
 					"build_tags": resource_schema.BoolAttribute{
 						Computed: true,
@@ -322,8 +331,8 @@ func (*pipelineResource) ImportState(ctx context.Context, req resource.ImportSta
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
 
-func newPipelineResource() resource.Resource {
-	return &pipelineResource{}
+func setPipelineModel(model *pipelineResourceModel, data pipelineResponse) {
+	model.Id = types.StringValue(data.GetId())
 }
 
 // resourcePipeline represents the terraform pipeline resource schema
