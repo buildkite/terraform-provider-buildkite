@@ -13,7 +13,7 @@ func testAccClusterQueueConfigBasic(name string) string {
 	config := `
 	
 	resource "buildkite_cluster_queue" "foobar" {
-		cluster_id = "Q2x1c3Rlci0tLTFkNmIxOTg5LTJmYjctNDRlMC04MWYyLTAxYjIxNzQ4MTVkMg=="
+		cluster_id = "Q2x1c3Rlci0tLTMzMDc1ZDhiLTMyMjctNDRkYS05YTk3LTkwN2E2NWZjOGFiNg=="
 		description = "Acceptance Test %s"
 		key = "foobar"
 	}
@@ -241,17 +241,17 @@ func testAccCheckClusterQueueDestroy(s *terraform.State) error {
 				)
 			}
 
-			// If there are no more pages from the API response
+			// If there are no more pages from the API response break (Cluster queue is deleted)
 			if !queues.Organization.Cluster.Queues.PageInfo.HasNextPage {
-				return fmt.Errorf("Could not find cluster queue %s in cluster %s", 
-					rs.Primary.ID, 
-					rs.Primary.Attributes["cluster_uuid"],
-				)
+				break
+			} else {
+				// Update cursor with the EndCursor (next page)
+				cursor = &queues.Organization.Cluster.Queues.PageInfo.EndCursor
 			}
-			
-			// Update cursor with next page
-			cursor = &queues.Organization.Cluster.Queues.PageInfo.EndCursor
 		}
+
+		// If we end up here, the Cluster queue was deleted
+		return nil
 	}
 	return nil
 }
