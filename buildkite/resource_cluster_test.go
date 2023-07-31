@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
@@ -18,6 +19,7 @@ func testAccClusterBasic(name string) string {
 }
 
 func TestAccCluster_AddRemove(t *testing.T) {
+	resName := acctest.RandString(12)
 	t.Parallel()
 	var c clusterResourceModel
 
@@ -27,11 +29,11 @@ func TestAccCluster_AddRemove(t *testing.T) {
 		CheckDestroy:             testAccCheckClusterDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccClusterBasic("foo"),
+				Config: testAccClusterBasic(resName),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckClusterExists("buildkite_cluster.foo", &c),
-					testAccCheckClusterRemoteValues(&c, "foo_test_cluster"),
-					resource.TestCheckResourceAttr("buildkite_cluster.foo", "name", "foo_test_cluster"),
+					testAccCheckClusterRemoteValues(&c, fmt.Sprintf("%s_test_cluster", resName)),
+					resource.TestCheckResourceAttr("buildkite_cluster.foo", "name", fmt.Sprintf("%s_test_cluster", resName)),
 					resource.TestCheckResourceAttrSet("buildkite_cluster.foo", "id"),
 					resource.TestCheckResourceAttrSet("buildkite_cluster.foo", "uuid"),
 				),
@@ -48,6 +50,8 @@ func TestAccCluster_AddRemove(t *testing.T) {
 }
 
 func TestAccCluster_Update(t *testing.T) {
+	resName := acctest.RandString(12)
+	newResName := acctest.RandString(15)
 	t.Parallel()
 	var c = new(clusterResourceModel)
 
@@ -57,21 +61,21 @@ func TestAccCluster_Update(t *testing.T) {
 		CheckDestroy:             testAccCheckClusterDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccClusterBasic("bar"),
+				Config: testAccClusterBasic(resName),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckClusterExists("buildkite_cluster.foo", c),
-					testAccCheckClusterRemoteValues(c, "bar_test_cluster"),
-					resource.TestCheckResourceAttr("buildkite_cluster.foo", "name", "bar_test_cluster"),
+					testAccCheckClusterRemoteValues(c, fmt.Sprintf("%s_test_cluster", resName)),
+					resource.TestCheckResourceAttr("buildkite_cluster.foo", "name", fmt.Sprintf("%s_test_cluster", resName)),
 					resource.TestCheckResourceAttrSet("buildkite_cluster.foo", "id"),
 					resource.TestCheckResourceAttrSet("buildkite_cluster.foo", "uuid"),
 				),
 			},
 			{
-				Config: testAccClusterBasic("baz"),
+				Config: testAccClusterBasic(newResName),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckClusterExists("buildkite_cluster.foo", c),
-					testAccCheckClusterRemoteValues(c, "baz_test_cluster"),
-					resource.TestCheckResourceAttr("buildkite_cluster.foo", "name", "baz_test_cluster"),
+					testAccCheckClusterRemoteValues(c, fmt.Sprintf("%s_test_cluster", newResName)),
+					resource.TestCheckResourceAttr("buildkite_cluster.foo", "name", fmt.Sprintf("%s_test_cluster", newResName)),
 				),
 			},
 		},
@@ -79,6 +83,7 @@ func TestAccCluster_Update(t *testing.T) {
 }
 
 func TestAccCluster_Import(t *testing.T) {
+	resName := acctest.RandString(13)
 	t.Parallel()
 	var c = new(clusterResourceModel)
 
@@ -88,10 +93,10 @@ func TestAccCluster_Import(t *testing.T) {
 		CheckDestroy:             testAccCheckClusterDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccClusterBasic("imported"),
+				Config: testAccClusterBasic(resName),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckClusterExists("buildkite_cluster.foo", c),
-					resource.TestCheckResourceAttr("buildkite_cluster.foo", "name", "imported_test_cluster"),
+					resource.TestCheckResourceAttr("buildkite_cluster.foo", "name", fmt.Sprintf("%s_test_cluster", resName)),
 				),
 			},
 			{
