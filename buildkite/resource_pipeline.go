@@ -70,8 +70,53 @@ type TeamPipelineNode struct {
 }
 
 type pipelineResourceModel struct {
-	Id     types.String `tfsdk:"id"`
-	Uuid   types.String `tfsdk:"uuid"`
+	AllowRebuilds                        types.Bool       `tfsdk:"allow_rebuilds"`
+	BadgeUrl                             types.String     `tfsdk:"badge_url"`
+	BranchConfiguration                  types.String     `tfsdk:"branch_configuration"`
+	CancelIntermediateBuilds             types.Bool       `tfsdk:"cancel_intermediate_builds"`
+	CancelIntermediateBuildsBranchFilter types.String     `tfsdk:"cancel_intermediate_builds_branch_filter"`
+	ClusterId                            types.String     `tfsdk:"cluster_id"`
+	DefaultBranch                        types.String     `tfsdk:"default_branch"`
+	DefaultTimeoutInMinutes              types.Int64      `tfsdk:"default_timeout_in_minutes"`
+	Description                          types.String     `tfsdk:"description"`
+	Id                                   types.String     `tfsdk:"id"`
+	MaximumTimeoutInMinutes              types.Int64      `tfsdk:"maximum_timeout_in_minutes"`
+	Name                                 types.String     `tfsdk:"name"`
+	ProviderSettings                     providerSettingsModel `tfsdk:"provider_settings"`
+	Repository                           types.String     `tfsdk:"repository"`
+	SkipIntermediateBuilds               types.Bool       `tfsdk:"skip_intermedia_builds"`
+	SkipIntermediateBuildsBranchFilter   types.String     `tfsdk:"skip_intermediate_builds_branch_filter"`
+	Slug                                 types.String     `tfsdk:"slug"`
+	Steps                                types.String     `tfsdk:"steps"`
+	Teams                                []pipelineTeamModel   `tfsdk:"team"`
+	WebhookUrl                           types.String     `tfsdk:"webhook_url"`
+}
+
+type providerSettingsModel struct {
+	TriggerMode                             types.String `tfsdk:"trigger_mode"`
+	BuildPullRequests                       types.Bool   `tfsdk:"build_pull_requests"`
+	PullRequestBranchFilterEnabled          types.Bool   `tfsdk:"pull_request_branch_filter_enabled"`
+	PullRequestBranchFilterConfiguration    types.String `tfsdk:"pull_request_branch_filter_configuration"`
+	SkipBuildsForExistingCommits            types.Bool   `tfsdk:"skip_builds_for_existing_commits"`
+	SkipPullRequestBuildsForExistingCommits types.Bool   `tfsdk:"skip_pull_request_builds_for_existing_commits"`
+	BuildPullRequestReadyForReview          types.Bool   `tfsdk:"build_pull_request_ready_for_review"`
+	BuildPullRequestLabelsChanged           types.Bool   `tfsdk:"build_pull_request_labels_changed"`
+	BuildPullRequestForks                   types.Bool   `tfsdk:"BuildPullRequestForks"`
+	PrefixPullRequestForkBranchNames        types.Bool   `tfsdk:"BuildPullRequestForks"`
+	BuildBranches                           types.Bool   `tfsdk:"BuildPullRequestForks"`
+	BuildTags                               types.Bool   `tfsdk:"BuildPullRequestForks"`
+	CancelDeletedBranchBuilds               types.Bool   `tfsdk:"BuildPullRequestForks"`
+	FilterEnabled                           types.Bool   `tfsdk:"BuildPullRequestForks"`
+	FilterCondition                         types.String `tfsdk:"BuildPullRequestForks"`
+	PublishCommitStatus                     types.Bool   `tfsdk:"BuildPullRequestForks"`
+	PublishBlockedAsPending                 types.Bool   `tfsdk:"BuildPullRequestForks"`
+	PublishCommitStatusPerStep              types.Bool   `tfsdk:"BuildPullRequestForks"`
+	SeparatePullRequestStatuses             types.Bool   `tfsdk:"BuildPullRequestForks"`
+}
+
+type pipelineTeamModel struct {
+	Slug        types.String `tfsdk:"slug"`
+	AccessLevel types.String `tfsdk:"access_level"`
 }
 
 type pipelineResource struct {
@@ -80,6 +125,24 @@ type pipelineResource struct {
 
 type pipelineResponse interface {
 	GetId() string
+	GetAllowRebuilds() bool
+	GetBranchConfiguration() string
+	GetCancelIntermediateBuilds() bool
+	GetCancelIntermediateBuildsBranchFilter() string
+	GetCluster() PipelineValuesCluster
+	GetDefaultBranch() string
+	GetDefaultTimeoutInMinutes() int
+	GetMaximumTimeoutInMinutes() int
+	GetDescription() string
+	GetName() string
+	GetRepository() PipelineValuesRepository
+	GetSkipIntermediateBuilds() bool
+	GetSkipIntermediateBuildsBranchFilter() string
+	GetSlug() string
+	GetSteps() PipelineValuesStepsPipelineSteps
+	GetTags() []PipelineValuesTagsPipelineTag
+	GetTeams() PipelineValuesTeamsTeamPipelineConnection
+	GetWebhookURL() string
 }
 
 func newPipelineResource() resource.Resource {
@@ -126,15 +189,22 @@ func (p *pipelineResource) Read(ctx context.Context, req resource.ReadRequest, r
 	if pipelineNode, ok := response.Node.(*getNodeNodePipeline); ok {
 		// no pipeline with given ID found, set empty state
 		if pipelineNode == nil {
-			resp.Diagnostics.Append(resp.State.Set(ctx, pipelineResourceModel{})...)
+			resp.Diagnostics.AddError("Unable to get pipeline", fmt.Sprintf("Unable to get pipeline with ID %s (%v)", state.Id.ValueString(), err))
 			return
 		}
 
-		// TODO: update pipeline extra info
+		extraInfo, err := getPipelineExtraInfo(p.client, pipelineNode.Slug)
+		if err != nil {
+			resp.Diagnostics.AddError("Unable to read pipeline info from REST", err.Error())
+			return
+		}
 
-		// TODO: set values on state
 		setPipelineModel(&state, pipelineNode)
+		updatePipelineResourceExtraInfo(&state, extraInfo)
 		resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+	} else {
+		// no pipeline was found so set an empty state
+		resp.Diagnostics.Append(resp.State.Set(ctx, pipelineResourceModel{})...)
 	}
 }
 
@@ -332,7 +402,32 @@ func (*pipelineResource) ImportState(ctx context.Context, req resource.ImportSta
 }
 
 func setPipelineModel(model *pipelineResourceModel, data pipelineResponse) {
+	model.AllowRebuilds = types.BoolValue(data.GetAllowRebuilds())
+	model.BranchConfiguration = types.StringValue(data.GetBranchConfiguration())
+	model.CancelIntermediateBuilds = types.BoolValue(data.GetCancelIntermediateBuilds())
+	model.CancelIntermediateBuildsBranchFilter = types.StringValue(data.GetCancelIntermediateBuildsBranchFilter())
+	model.ClusterId = types.StringValue(data.GetCluster().Id)
+	model.DefaultBranch = types.StringValue(data.GetDefaultBranch())
+	model.DefaultTimeoutInMinutes = types.Int64Value(int64(data.GetDefaultTimeoutInMinutes()))
+	model.Description = types.StringValue(data.GetDescription())
 	model.Id = types.StringValue(data.GetId())
+	model.MaximumTimeoutInMinutes = types.Int64Value(int64(data.GetMaximumTimeoutInMinutes()))
+	model.Name = types.StringValue(data.GetName())
+	model.Repository = types.StringValue(data.GetRepository().Url)
+	model.SkipIntermediateBuilds = types.BoolValue(data.GetSkipIntermediateBuilds())
+	model.SkipIntermediateBuildsBranchFilter = types.StringValue(data.GetSkipIntermediateBuildsBranchFilter())
+	model.Slug = types.StringValue(data.GetSlug())
+	model.Steps = types.StringValue(data.GetSteps().Yaml)
+	model.WebhookUrl = types.StringValue(data.GetWebhookURL())
+
+	teams := make([]pipelineTeamModel, len(data.GetTeams().Edges))
+	for i, teamEdge := range data.GetTeams().Edges {
+		teams[i] = pipelineTeamModel{
+			Slug: types.StringValue(teamEdge.Node.Team.Slug),
+			AccessLevel: types.StringValue(string(teamEdge.Node.AccessLevel)),
+		}
+	}
+	model.Teams = teams
 }
 
 // resourcePipeline represents the terraform pipeline resource schema
@@ -654,11 +749,11 @@ func CreatePipeline(ctx context.Context, d *schema.ResourceData, m interface{}) 
 
 	updatePipelineResourceFromCreate(d, response.PipelineCreate.Pipeline)
 
-	pipelineExtraInfo, err := updatePipelineExtraInfo(d, client)
-	if err != nil {
-		return diag.FromErr(err)
-	}
-	updatePipelineResourceExtraInfo(d, &pipelineExtraInfo)
+	// pipelineExtraInfo, err := updatePipelineExtraInfo(d, client)
+	// if err != nil {
+	// 	return diag.FromErr(err)
+	// }
+	// updatePipelineResourceExtraInfo(d, &pipelineExtraInfo)
 
 	return ReadPipeline(ctx, d, m)
 }
@@ -688,13 +783,13 @@ func ReadPipeline(ctx context.Context, d *schema.ResourceData, m interface{}) di
 		return nil
 	}
 
-	if slug, pipelineExists := d.GetOk("slug"); pipelineExists {
-		pipelineExtraInfo, err := getPipelineExtraInfo(d, m, slug.(string))
-		if err != nil {
-			return diag.FromErr(err)
-		}
-		updatePipelineResourceExtraInfo(d, pipelineExtraInfo)
-	}
+	// if slug, pipelineExists := d.GetOk("slug"); pipelineExists {
+	// 	pipelineExtraInfo, err := getPipelineExtraInfo(d, m, slug.(string))
+	// 	if err != nil {
+	// 		return diag.FromErr(err)
+	// 	}
+	// 	updatePipelineResourceExtraInfo(d, pipelineExtraInfo)
+	// }
 
 	return nil
 }
@@ -773,12 +868,12 @@ func UpdatePipeline(ctx context.Context, d *schema.ResourceData, m interface{}) 
 
 	updatePipelineResource(d, &pipeline)
 
-	pipelineExtraInfo, err := updatePipelineExtraInfo(d, client)
-	if err != nil {
-		log.Print("Unable to update pipeline attributes via REST API")
-		return diag.FromErr(err)
-	}
-	updatePipelineResourceExtraInfo(d, &pipelineExtraInfo)
+	// pipelineExtraInfo, err := updatePipelineExtraInfo(d, client)
+	// if err != nil {
+	// 	log.Print("Unable to update pipeline attributes via REST API")
+	// 	return diag.FromErr(err)
+	// }
+	// updatePipelineResourceExtraInfo(d, &pipelineExtraInfo)
 
 	return ReadPipeline(ctx, d, m)
 }
@@ -843,8 +938,7 @@ type PipelineExtraInfo struct {
 	} `json:"provider"`
 }
 
-func getPipelineExtraInfo(d *schema.ResourceData, m interface{}, slug string) (*PipelineExtraInfo, error) {
-	client := m.(*Client)
+func getPipelineExtraInfo(client *Client, slug string) (*PipelineExtraInfo, error) {
 	pipelineExtraInfo := PipelineExtraInfo{}
 	err := client.makeRequest("GET", fmt.Sprintf("/v2/organizations/%s/pipelines/%s", client.organization, slug), nil, &pipelineExtraInfo)
 	if err != nil {
@@ -1165,31 +1259,28 @@ func updatePipelineResourceNode(d *schema.ResourceData, pipeline *getNodeNodePip
 }
 
 // updatePipelineResourceExtraInfo updates the terraform resource with data received from Buildkite REST API
-func updatePipelineResourceExtraInfo(d *schema.ResourceData, pipeline *PipelineExtraInfo) {
-	d.Set("badge_url", pipeline.BadgeUrl)
-
-	s := &pipeline.Provider.Settings
-	providerSettings := make([]map[string]interface{}, 1, 1)
-	providerSettings[0] = map[string]interface{}{
-		"trigger_mode":                                  s.TriggerMode,
-		"build_pull_requests":                           s.BuildPullRequests,
-		"pull_request_branch_filter_enabled":            s.PullRequestBranchFilterEnabled,
-		"pull_request_branch_filter_configuration":      s.PullRequestBranchFilterConfiguration,
-		"skip_builds_for_existing_commits":              s.SkipBuildsForExistingCommits,
-		"skip_pull_request_builds_for_existing_commits": s.SkipPullRequestBuildsForExistingCommits,
-		"build_pull_request_ready_for_review":           s.BuildPullRequestReadyForReview,
-		"build_pull_request_labels_changed":             s.BuildPullRequestLabelsChanged,
-		"build_pull_request_forks":                      s.BuildPullRequestForks,
-		"filter_enabled":                                s.FilterEnabled,
-		"filter_condition":                              s.FilterCondition,
-		"prefix_pull_request_fork_branch_names":         s.PrefixPullRequestForkBranchNames,
-		"build_branches":                                s.BuildBranches,
-		"build_tags":                                    s.BuildTags,
-		"cancel_deleted_branch_builds":                  s.CancelDeletedBranchBuilds,
-		"publish_commit_status":                         s.PublishCommitStatus,
-		"publish_blocked_as_pending":                    s.PublishBlockedAsPending,
-		"publish_commit_status_per_step":                s.PublishCommitStatusPerStep,
-		"separate_pull_request_statuses":                s.SeparatePullRequestStatuses,
+func updatePipelineResourceExtraInfo(state *pipelineResourceModel, pipeline *PipelineExtraInfo) {
+	state.BadgeUrl = types.StringValue(pipeline.BadgeUrl)
+	s := pipeline.Provider.Settings
+	state.ProviderSettings = providerSettingsModel{
+		TriggerMode: types.StringValue(s.TriggerMode),
+		BuildPullRequests: types.BoolValue(s.BuildPullRequests),
+		PullRequestBranchFilterEnabled: types.BoolValue(s.PullRequestBranchFilterEnabled),
+		PullRequestBranchFilterConfiguration: types.StringValue(s.PullRequestBranchFilterConfiguration),
+		SkipBuildsForExistingCommits: types.BoolValue(s.SkipBuildsForExistingCommits),
+		SkipPullRequestBuildsForExistingCommits: types.BoolValue(s.SkipPullRequestBuildsForExistingCommits),
+		BuildPullRequestReadyForReview: types.BoolValue(s.BuildPullRequestReadyForReview),
+		BuildPullRequestLabelsChanged: types.BoolValue(s.BuildPullRequestLabelsChanged),
+		BuildPullRequestForks: types.BoolValue(s.BuildPullRequestForks),
+		PrefixPullRequestForkBranchNames: types.BoolValue(s.PrefixPullRequestForkBranchNames),
+		BuildBranches: types.BoolValue(s.BuildBranches),
+		BuildTags: types.BoolValue(s.BuildTags),
+		CancelDeletedBranchBuilds: types.BoolValue(s.CancelDeletedBranchBuilds),
+		FilterEnabled: types.BoolValue(s.FilterEnabled),
+		FilterCondition: types.StringValue(s.FilterCondition),
+		PublishCommitStatus: types.BoolValue(s.PublishCommitStatus),
+		PublishBlockedAsPending: types.BoolValue(s.PublishBlockedAsPending),
+		PublishCommitStatusPerStep: types.BoolValue(s.PublishCommitStatusPerStep),
+		SeparatePullRequestStatuses: types.BoolValue(s.SeparatePullRequestStatuses),
 	}
-	d.Set("provider_settings", providerSettings)
 }
