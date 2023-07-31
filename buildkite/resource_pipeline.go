@@ -5,7 +5,14 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	resource_schema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/shurcooL/graphql"
@@ -66,6 +73,14 @@ type pipelineResource struct {
 	client *Client
 }
 
+func (p *pipelineResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
+	if req.ProviderData == nil {
+		return
+	}
+
+	p.client = req.ProviderData.(*Client)
+}
+
 // Create implements resource.Resource.
 func (*pipelineResource) Create(context.Context, resource.CreateRequest, *resource.CreateResponse) {
 	panic("unimplemented")
@@ -77,8 +92,8 @@ func (*pipelineResource) Delete(context.Context, resource.DeleteRequest, *resour
 }
 
 // Metadata implements resource.Resource.
-func (*pipelineResource) Metadata(context.Context, resource.MetadataRequest, *resource.MetadataResponse) {
-	panic("unimplemented")
+func (*pipelineResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
+	resp.TypeName = req.ProviderTypeName + "_pipeline"
 }
 
 // Read implements resource.Resource.
@@ -87,13 +102,198 @@ func (*pipelineResource) Read(context.Context, resource.ReadRequest, *resource.R
 }
 
 // Schema implements resource.Resource.
-func (*pipelineResource) Schema(context.Context, resource.SchemaRequest, *resource.SchemaResponse) {
-	panic("unimplemented")
+func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
+	resp.Schema = resource_schema.Schema{
+		Attributes: map[string]resource_schema.Attribute{
+			"id": resource_schema.StringAttribute{
+				Computed: true,
+			},
+			"allow_rebuilds": resource_schema.BoolAttribute{
+				Optional: true,
+				Default:  booldefault.StaticBool(true),
+			},
+			"archive_on_delete": resource_schema.BoolAttribute{
+				Optional: true,
+				Default:  booldefault.StaticBool(false),
+			},
+			"cancel_intermediate_builds": resource_schema.BoolAttribute{
+				Computed: true,
+				Optional: true,
+			},
+			"cancel_intermediate_builds_branch_filter": resource_schema.StringAttribute{
+				Computed: true,
+				Optional: true,
+			},
+			"branch_configuration": resource_schema.StringAttribute{
+				Optional: true,
+			},
+			"cluster_id": resource_schema.StringAttribute{
+				Optional: true,
+			},
+			"default_branch": resource_schema.StringAttribute{
+				Computed: true,
+				Optional: true,
+			},
+			"default_timeout_in_minutes": resource_schema.Int64Attribute{
+				Computed: true,
+				Optional: true,
+				Default:  nil,
+			},
+			"deletion_protection": resource_schema.BoolAttribute{
+				Optional:    true,
+				Default:     booldefault.StaticBool(false),
+				Description: "If set to 'true', deletion of a pipeline via `terraform destroy` will fail, until set to 'false'.",
+			},
+			"maximum_timeout_in_minutes": resource_schema.Int64Attribute{
+				Computed: true,
+				Optional: true,
+				Default:  nil,
+			},
+			"description": resource_schema.StringAttribute{
+				Computed: true,
+				Optional: true,
+			},
+			"name": resource_schema.StringAttribute{
+				Required: true,
+			},
+			"repository": resource_schema.StringAttribute{
+				Required: true,
+			},
+			"skip_intermediate_builds": resource_schema.BoolAttribute{
+				Computed: true,
+				Optional: true,
+			},
+			"skip_intermediate_builds_branch_filter": resource_schema.StringAttribute{
+				Computed: true,
+				Optional: true,
+			},
+			"slug": resource_schema.StringAttribute{
+				Computed: true,
+			},
+			"steps": resource_schema.StringAttribute{
+				Optional: true,
+				Default:  stringdefault.StaticString(defaultSteps),
+			},
+			"tags": resource_schema.SetAttribute{
+				Optional:    true,
+				ElementType: types.StringType,
+			},
+			"webhook_url": resource_schema.StringAttribute{
+				Computed: true,
+			},
+			"badge_url": resource_schema.StringAttribute{
+				Computed: true,
+			},
+		},
+		Blocks: map[string]resource_schema.Block{
+			"team": resource_schema.SetNestedBlock{
+				NestedObject: resource_schema.NestedBlockObject{
+					Attributes: map[string]resource_schema.Attribute{
+						"slug": resource_schema.StringAttribute{
+							Required: true,
+						},
+						"access_level": resource_schema.StringAttribute{
+							Required: true,
+							Validators: []validator.String{
+								stringvalidator.OneOf(string(PipelineAccessLevelsReadOnly), string(PipelineAccessLevelsBuildAndRead), string(PipelineAccessLevelsManageBuildAndRead)),
+							},
+						},
+					},
+				},
+			},
+			"provider_settings": resource_schema.SingleNestedBlock{
+				Attributes: map[string]resource_schema.Attribute{
+					"trigger_mode": resource_schema.StringAttribute{
+						Computed: true,
+						Optional: true,
+						Validators: []validator.String{
+							stringvalidator.OneOf("code", "deployment", "fork", "none"),
+						},
+					},
+					"build_pull_requests": resource_schema.BoolAttribute{
+						Optional: true,
+						Default:  booldefault.StaticBool(true),
+					},
+					"pull_request_branch_filter_enabled": resource_schema.BoolAttribute{
+						Computed: true,
+						Optional: true,
+					},
+					"pull_request_branch_filter_configuration": resource_schema.StringAttribute{
+						Computed: true,
+						Optional: true,
+					},
+					"skip_builds_for_existing_commits": resource_schema.BoolAttribute{
+						Optional: true,
+					},
+					"skip_pull_request_builds_for_existing_commits": resource_schema.BoolAttribute{
+						Optional: true,
+						Default:  booldefault.StaticBool(true),
+					},
+					"build_pull_request_ready_for_review": resource_schema.BoolAttribute{
+						Computed: true,
+						Optional: true,
+					},
+					"build_pull_request_labels_changed": resource_schema.BoolAttribute{
+						Computed: true,
+						Optional: true,
+					},
+					"build_pull_request_forks": resource_schema.BoolAttribute{
+						Computed: true,
+						Optional: true,
+					},
+					"prefix_pull_request_fork_branch_names": resource_schema.BoolAttribute{
+						Computed: true,
+						Optional: true,
+					},
+					"build_branches": resource_schema.BoolAttribute{
+						Optional: true,
+						Default:  true,
+					},
+					"build_tags": resource_schema.BoolAttribute{
+						Computed: true,
+						Optional: true,
+					},
+					"cancel_deleted_branch_builds": resource_schema.BoolAttribute{
+						Computed: true,
+						Optional: true,
+					},
+					"filter_enabled": resource_schema.BoolAttribute{
+						Computed: true,
+						Optional: true,
+					},
+					"filter_condition": resource_schema.StringAttribute{
+						Computed: true,
+						Optional: true,
+					},
+					"publish_commit_status": resource_schema.BoolAttribute{
+						Optional: true,
+						Default:  booldefault.StaticBool(true),
+					},
+					"publish_blocked_as_pending": resource_schema.BoolAttribute{
+						Computed: true,
+						Optional: true,
+					},
+					"publish_commit_status_per_step": resource_schema.BoolAttribute{
+						Computed: true,
+						Optional: true,
+					},
+					"separate_pull_request_statuses": resource_schema.BoolAttribute{
+						Computed: true,
+						Optional: true,
+					},
+				},
+			},
+		},
+	}
 }
 
 // Update implements resource.Resource.
 func (*pipelineResource) Update(context.Context, resource.UpdateRequest, *resource.UpdateResponse) {
 	panic("unimplemented")
+}
+
+func (*pipelineResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
 
 func newPipelineResource() resource.Resource {
