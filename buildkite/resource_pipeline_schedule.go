@@ -272,7 +272,7 @@ func (ps *pipelineSchedule) ImportState(ctx context.Context, req resource.Import
 		var newReq resource.ImportStateRequest
 		newReq.ID = apiResponse.PipelineSchedule.Id
 		resource.ImportStatePassthroughID(ctx, path.Root("id"), newReq, resp)
-	// Handle import case with 1 component (ID)
+		// Handle import case with 1 component (ID)
 	} else if len(importComponents) == 1 && importComponents[0] != "" {
 		// Pass through ID from import to state for Read
 		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), importComponents[0])...)
