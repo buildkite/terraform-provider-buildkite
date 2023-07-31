@@ -69,6 +69,11 @@ type TeamPipelineNode struct {
 	Team        TeamNode
 }
 
+type pipelineResourceModel struct {
+	Id     types.String `tfsdk:"id"`
+	Uuid   types.String `tfsdk:"uuid"`
+}
+
 type pipelineResource struct {
 	client *Client
 }
@@ -81,27 +86,49 @@ func (p *pipelineResource) Configure(ctx context.Context, req resource.Configure
 	p.client = req.ProviderData.(*Client)
 }
 
-// Create implements resource.Resource.
 func (*pipelineResource) Create(context.Context, resource.CreateRequest, *resource.CreateResponse) {
 	panic("unimplemented")
 }
 
-// Delete implements resource.Resource.
 func (*pipelineResource) Delete(context.Context, resource.DeleteRequest, *resource.DeleteResponse) {
 	panic("unimplemented")
 }
 
-// Metadata implements resource.Resource.
 func (*pipelineResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
 	resp.TypeName = req.ProviderTypeName + "_pipeline"
 }
 
-// Read implements resource.Resource.
-func (*pipelineResource) Read(context.Context, resource.ReadRequest, *resource.ReadResponse) {
-	panic("unimplemented")
+func (p *pipelineResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	var state pipelineResourceModel
+
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	response, err := getNode(p.client.genqlient, state.Id.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Unable to read pipeline",
+			fmt.Sprintf("Unable to pipeline: %s", err.Error()),
+		)
+		return
+	}
+
+	if pipelineNode, ok := response.Node.(*getNodeNodePipeline); ok {
+		// no pipeline with given ID found, set empty state
+		if pipelineNode == nil {
+			resp.Diagnostics.Append(resp.State.Set(ctx, pipelineResourceModel{})...)
+			return
+		}
+
+		// TODO: update pipeline extra info
+
+		// TODO: set values on state
+		resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+	}
 }
 
-// Schema implements resource.Resource.
 func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = resource_schema.Schema{
 		Attributes: map[string]resource_schema.Attribute{
@@ -287,7 +314,6 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 	}
 }
 
-// Update implements resource.Resource.
 func (*pipelineResource) Update(context.Context, resource.UpdateRequest, *resource.UpdateResponse) {
 	panic("unimplemented")
 }
