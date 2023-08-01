@@ -103,6 +103,7 @@ func (*terraformProvider) Resources(context.Context) []func() resource.Resource 
 		newClusterAgentTokenResource,
 		newClusterResource,
 		newOrganizationResource,
+		newPipelineResource,
 		newTeamMemberResource,
 		newTeamResource,
 		newTestSuiteResource,
