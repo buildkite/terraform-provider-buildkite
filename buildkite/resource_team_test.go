@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
@@ -37,6 +38,7 @@ func testAccTeamConfigSecret(name string) string {
 }
 
 func TestAccTeam_AddRemove(t *testing.T) {
+	resName := acctest.RandString(12)
 	t.Parallel()
 	var tr teamResourceModel
 
@@ -46,11 +48,11 @@ func TestAccTeam_AddRemove(t *testing.T) {
 		CheckDestroy:             testAccCheckTeamResourceDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccTeamConfigBasic("narwals"),
+				Config: testAccTeamConfigBasic(resName),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckTeamExists("buildkite_team.acc_tests", &tr),
-					testAccCheckTeamRemoteValues("narwals", &tr),
-					resource.TestCheckResourceAttr("buildkite_team.acc_tests", "name", "narwals"),
+					testAccCheckTeamRemoteValues(resName, &tr),
+					resource.TestCheckResourceAttr("buildkite_team.acc_tests", "name", resName),
 					resource.TestCheckResourceAttr("buildkite_team.acc_tests", "privacy", "VISIBLE"),
 				),
 			},
@@ -66,6 +68,8 @@ func TestAccTeam_AddRemove(t *testing.T) {
 }
 
 func TestAccTeam_Update(t *testing.T) {
+	resName := acctest.RandString(12)
+	resNameNew := acctest.RandString(12)
 	t.Parallel()
 	var tr teamResourceModel
 
@@ -75,27 +79,27 @@ func TestAccTeam_Update(t *testing.T) {
 		CheckDestroy:             testAccCheckTeamResourceDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccTeamConfigBasic("developers"),
+				Config: testAccTeamConfigBasic(resName),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckTeamExists("buildkite_team.acc_tests", &tr),
-					resource.TestCheckResourceAttr("buildkite_team.acc_tests", "name", "developers"),
+					resource.TestCheckResourceAttr("buildkite_team.acc_tests", "name", resName),
 				),
 			},
 			{
-				Config: testAccTeamConfigBasic("wombats"),
+				Config: testAccTeamConfigBasic(resNameNew),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckTeamExists("buildkite_team.acc_tests", &tr),
-					testAccCheckTeamRemoteValues("wombats", &tr),
-					resource.TestCheckResourceAttr("buildkite_team.acc_tests", "name", "wombats"),
+					testAccCheckTeamRemoteValues(resNameNew, &tr),
+					resource.TestCheckResourceAttr("buildkite_team.acc_tests", "name", resNameNew),
 				),
 			},
 			{
-				Config: testAccTeamConfigSecret("wombats"),
+				Config: testAccTeamConfigSecret(resNameNew),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckTeamExists("buildkite_team.acc_tests", &tr),
-					testAccCheckTeamRemoteValues("wombats", &tr),
-					resource.TestCheckResourceAttr("buildkite_team.acc_tests", "name", "wombats"),
-					resource.TestCheckResourceAttr("buildkite_team.acc_tests", "description", "a secret team of wombats"),
+					testAccCheckTeamRemoteValues(resNameNew, &tr),
+					resource.TestCheckResourceAttr("buildkite_team.acc_tests", "name", resNameNew),
+					resource.TestCheckResourceAttr("buildkite_team.acc_tests", "description", fmt.Sprintf("a secret team of %s", resNameNew)),
 					resource.TestCheckResourceAttr("buildkite_team.acc_tests", "privacy", "SECRET"),
 				),
 			},
@@ -104,6 +108,7 @@ func TestAccTeam_Update(t *testing.T) {
 }
 
 func TestAccTeam_Import(t *testing.T) {
+	resName := acctest.RandString(12)
 	t.Parallel()
 	var tr teamResourceModel
 
@@ -113,10 +118,10 @@ func TestAccTeam_Import(t *testing.T) {
 		CheckDestroy:             testAccCheckTeamResourceDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccTeamConfigBasic("imported"),
+				Config: testAccTeamConfigBasic(resName),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckTeamExists("buildkite_team.acc_tests", &tr),
-					resource.TestCheckResourceAttr("buildkite_team.acc_tests", "name", "imported"),
+					resource.TestCheckResourceAttr("buildkite_team.acc_tests", "name", resName),
 				),
 			},
 			{
