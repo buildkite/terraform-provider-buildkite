@@ -922,6 +922,16 @@ const (
 	PipelineVisibilityPrivate PipelineVisibility = "PRIVATE"
 )
 
+// The access levels that can be assigned to a suite
+type SuiteAccessLevels string
+
+const (
+	// Allows edits and reads
+	SuiteAccessLevelsManageAndRead SuiteAccessLevels = "MANAGE_AND_READ"
+	// Read only
+	SuiteAccessLevelsReadOnly SuiteAccessLevels = "READ_ONLY"
+)
+
 // TeamFields includes the GraphQL fields of Team requested by the fragment TeamFields.
 // The GraphQL type's documentation follows.
 //
@@ -1174,6 +1184,22 @@ func (v *__createTeamMemberInput) GetUserID() string { return v.UserID }
 // GetRole returns __createTeamMemberInput.Role, and is useful for accessing the field via an interface.
 func (v *__createTeamMemberInput) GetRole() string { return v.Role }
 
+// __createTestSuiteTeamInput is used internally by genqlient
+type __createTestSuiteTeamInput struct {
+	TeamId      string            `json:"teamId"`
+	SuiteId     string            `json:"suiteId"`
+	AccessLevel SuiteAccessLevels `json:"accessLevel"`
+}
+
+// GetTeamId returns __createTestSuiteTeamInput.TeamId, and is useful for accessing the field via an interface.
+func (v *__createTestSuiteTeamInput) GetTeamId() string { return v.TeamId }
+
+// GetSuiteId returns __createTestSuiteTeamInput.SuiteId, and is useful for accessing the field via an interface.
+func (v *__createTestSuiteTeamInput) GetSuiteId() string { return v.SuiteId }
+
+// GetAccessLevel returns __createTestSuiteTeamInput.AccessLevel, and is useful for accessing the field via an interface.
+func (v *__createTestSuiteTeamInput) GetAccessLevel() SuiteAccessLevels { return v.AccessLevel }
+
 // __deleteClusterInput is used internally by genqlient
 type __deleteClusterInput struct {
 	OrganizationId string `json:"organizationId"`
@@ -1221,6 +1247,14 @@ type __deleteTeamMemberInput struct {
 
 // GetId returns __deleteTeamMemberInput.Id, and is useful for accessing the field via an interface.
 func (v *__deleteTeamMemberInput) GetId() string { return v.Id }
+
+// __deleteTestSuiteTeamInput is used internally by genqlient
+type __deleteTestSuiteTeamInput struct {
+	Id string `json:"id"`
+}
+
+// GetId returns __deleteTestSuiteTeamInput.Id, and is useful for accessing the field via an interface.
+func (v *__deleteTestSuiteTeamInput) GetId() string { return v.Id }
 
 // __getAgentTokenInput is used internally by genqlient
 type __getAgentTokenInput struct {
@@ -1317,6 +1351,18 @@ type __getPipelineScheduleInput struct {
 
 // GetId returns __getPipelineScheduleInput.Id, and is useful for accessing the field via an interface.
 func (v *__getPipelineScheduleInput) GetId() string { return v.Id }
+
+// __getTestSuiteInput is used internally by genqlient
+type __getTestSuiteInput struct {
+	Id        string `json:"id"`
+	TeamCount int    `json:"teamCount"`
+}
+
+// GetId returns __getTestSuiteInput.Id, and is useful for accessing the field via an interface.
+func (v *__getTestSuiteInput) GetId() string { return v.Id }
+
+// GetTeamCount returns __getTestSuiteInput.TeamCount, and is useful for accessing the field via an interface.
+func (v *__getTestSuiteInput) GetTeamCount() int { return v.TeamCount }
 
 // __revokeAgentTokenInput is used internally by genqlient
 type __revokeAgentTokenInput struct {
@@ -1513,6 +1559,18 @@ func (v *__updateTeamMemberInput) GetId() string { return v.Id }
 
 // GetRole returns __updateTeamMemberInput.Role, and is useful for accessing the field via an interface.
 func (v *__updateTeamMemberInput) GetRole() string { return v.Role }
+
+// __updateTestSuiteTeamInput is used internally by genqlient
+type __updateTestSuiteTeamInput struct {
+	Id          string            `json:"id"`
+	AccessLevel SuiteAccessLevels `json:"accessLevel"`
+}
+
+// GetId returns __updateTestSuiteTeamInput.Id, and is useful for accessing the field via an interface.
+func (v *__updateTestSuiteTeamInput) GetId() string { return v.Id }
+
+// GetAccessLevel returns __updateTestSuiteTeamInput.AccessLevel, and is useful for accessing the field via an interface.
+func (v *__updateTestSuiteTeamInput) GetAccessLevel() SuiteAccessLevels { return v.AccessLevel }
 
 // archivePipelinePipelineArchivePipelineArchivePayload includes the requested fields of the GraphQL type PipelineArchivePayload.
 // The GraphQL type's documentation follows.
@@ -2585,6 +2643,160 @@ func (v *createTeamMemberTeamMemberCreateTeamMemberCreatePayloadTeamMemberEdgeNo
 	return &retval, nil
 }
 
+// createTestSuiteTeamResponse is returned by createTestSuiteTeam on success.
+type createTestSuiteTeamResponse struct {
+	// Add a suite to a team.
+	TeamSuiteCreate createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayload `json:"teamSuiteCreate"`
+}
+
+// GetTeamSuiteCreate returns createTestSuiteTeamResponse.TeamSuiteCreate, and is useful for accessing the field via an interface.
+func (v *createTestSuiteTeamResponse) GetTeamSuiteCreate() createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayload {
+	return v.TeamSuiteCreate
+}
+
+// createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayload includes the requested fields of the GraphQL type TeamSuiteCreatePayload.
+// The GraphQL type's documentation follows.
+//
+// Autogenerated return type of TeamSuiteCreate.
+type createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayload struct {
+	Suite     createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuite     `json:"suite"`
+	TeamSuite createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadTeamSuite `json:"teamSuite"`
+}
+
+// GetSuite returns createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayload.Suite, and is useful for accessing the field via an interface.
+func (v *createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayload) GetSuite() createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuite {
+	return v.Suite
+}
+
+// GetTeamSuite returns createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayload.TeamSuite, and is useful for accessing the field via an interface.
+func (v *createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayload) GetTeamSuite() createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadTeamSuite {
+	return v.TeamSuite
+}
+
+// createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuite includes the requested fields of the GraphQL type Suite.
+// The GraphQL type's documentation follows.
+//
+// A suite
+type createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuite struct {
+	// Teams associated with this suite
+	Teams createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuiteTeamsTeamSuiteConnection `json:"teams"`
+}
+
+// GetTeams returns createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuite.Teams, and is useful for accessing the field via an interface.
+func (v *createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuite) GetTeams() createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuiteTeamsTeamSuiteConnection {
+	return v.Teams
+}
+
+// createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuiteTeamsTeamSuiteConnection includes the requested fields of the GraphQL type TeamSuiteConnection.
+// The GraphQL type's documentation follows.
+//
+// A collection of TeamSuite records
+type createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuiteTeamsTeamSuiteConnection struct {
+	Edges []createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdge `json:"edges"`
+}
+
+// GetEdges returns createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuiteTeamsTeamSuiteConnection.Edges, and is useful for accessing the field via an interface.
+func (v *createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuiteTeamsTeamSuiteConnection) GetEdges() []createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdge {
+	return v.Edges
+}
+
+// createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdge includes the requested fields of the GraphQL type TeamSuiteEdge.
+type createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdge struct {
+	Node createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdgeNodeTeamSuite `json:"node"`
+}
+
+// GetNode returns createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdge.Node, and is useful for accessing the field via an interface.
+func (v *createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdge) GetNode() createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdgeNodeTeamSuite {
+	return v.Node
+}
+
+// createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdgeNodeTeamSuite includes the requested fields of the GraphQL type TeamSuite.
+// The GraphQL type's documentation follows.
+//
+// A suite that's been assigned to a team
+type createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdgeNodeTeamSuite struct {
+	Id string `json:"id"`
+	// The public UUID for this team suite
+	Uuid string `json:"uuid"`
+	// The team associated with this team member
+	Team createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdgeNodeTeamSuiteTeam `json:"team"`
+}
+
+// GetId returns createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdgeNodeTeamSuite.Id, and is useful for accessing the field via an interface.
+func (v *createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdgeNodeTeamSuite) GetId() string {
+	return v.Id
+}
+
+// GetUuid returns createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdgeNodeTeamSuite.Uuid, and is useful for accessing the field via an interface.
+func (v *createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdgeNodeTeamSuite) GetUuid() string {
+	return v.Uuid
+}
+
+// GetTeam returns createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdgeNodeTeamSuite.Team, and is useful for accessing the field via an interface.
+func (v *createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdgeNodeTeamSuite) GetTeam() createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdgeNodeTeamSuiteTeam {
+	return v.Team
+}
+
+// createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdgeNodeTeamSuiteTeam includes the requested fields of the GraphQL type Team.
+// The GraphQL type's documentation follows.
+//
+// An organization team
+type createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdgeNodeTeamSuiteTeam struct {
+	Id string `json:"id"`
+}
+
+// GetId returns createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdgeNodeTeamSuiteTeam.Id, and is useful for accessing the field via an interface.
+func (v *createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdgeNodeTeamSuiteTeam) GetId() string {
+	return v.Id
+}
+
+// createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadTeamSuite includes the requested fields of the GraphQL type TeamSuite.
+// The GraphQL type's documentation follows.
+//
+// A suite that's been assigned to a team
+type createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadTeamSuite struct {
+	Id string `json:"id"`
+	// The public UUID for this team suite
+	Uuid string `json:"uuid"`
+	// The access level users have to this suite
+	AccessLevel SuiteAccessLevels `json:"accessLevel"`
+	// The team associated with this team member
+	Team createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadTeamSuiteTeam `json:"team"`
+}
+
+// GetId returns createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadTeamSuite.Id, and is useful for accessing the field via an interface.
+func (v *createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadTeamSuite) GetId() string {
+	return v.Id
+}
+
+// GetUuid returns createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadTeamSuite.Uuid, and is useful for accessing the field via an interface.
+func (v *createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadTeamSuite) GetUuid() string {
+	return v.Uuid
+}
+
+// GetAccessLevel returns createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadTeamSuite.AccessLevel, and is useful for accessing the field via an interface.
+func (v *createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadTeamSuite) GetAccessLevel() SuiteAccessLevels {
+	return v.AccessLevel
+}
+
+// GetTeam returns createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadTeamSuite.Team, and is useful for accessing the field via an interface.
+func (v *createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadTeamSuite) GetTeam() createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadTeamSuiteTeam {
+	return v.Team
+}
+
+// createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadTeamSuiteTeam includes the requested fields of the GraphQL type Team.
+// The GraphQL type's documentation follows.
+//
+// An organization team
+type createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadTeamSuiteTeam struct {
+	Id string `json:"id"`
+}
+
+// GetId returns createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadTeamSuiteTeam.Id, and is useful for accessing the field via an interface.
+func (v *createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadTeamSuiteTeam) GetId() string {
+	return v.Id
+}
+
 // deleteClusterClusterDeleteClusterDeletePayload includes the requested fields of the GraphQL type ClusterDeletePayload.
 // The GraphQL type's documentation follows.
 //
@@ -2708,6 +2920,47 @@ type deleteTeamMemberTeamMemberDeleteTeamMemberDeletePayload struct {
 func (v *deleteTeamMemberTeamMemberDeleteTeamMemberDeletePayload) GetClientMutationId() string {
 	return v.ClientMutationId
 }
+
+// deleteTestSuiteTeamResponse is returned by deleteTestSuiteTeam on success.
+type deleteTestSuiteTeamResponse struct {
+	// Remove a suite from a team.
+	TeamSuiteDelete deleteTestSuiteTeamTeamSuiteDeleteTeamSuiteDeletePayload `json:"teamSuiteDelete"`
+}
+
+// GetTeamSuiteDelete returns deleteTestSuiteTeamResponse.TeamSuiteDelete, and is useful for accessing the field via an interface.
+func (v *deleteTestSuiteTeamResponse) GetTeamSuiteDelete() deleteTestSuiteTeamTeamSuiteDeleteTeamSuiteDeletePayload {
+	return v.TeamSuiteDelete
+}
+
+// deleteTestSuiteTeamTeamSuiteDeleteTeamSuiteDeletePayload includes the requested fields of the GraphQL type TeamSuiteDeletePayload.
+// The GraphQL type's documentation follows.
+//
+// Autogenerated return type of TeamSuiteDelete.
+type deleteTestSuiteTeamTeamSuiteDeleteTeamSuiteDeletePayload struct {
+	DeletedTeamSuiteID string                                                       `json:"deletedTeamSuiteID"`
+	Team               deleteTestSuiteTeamTeamSuiteDeleteTeamSuiteDeletePayloadTeam `json:"team"`
+}
+
+// GetDeletedTeamSuiteID returns deleteTestSuiteTeamTeamSuiteDeleteTeamSuiteDeletePayload.DeletedTeamSuiteID, and is useful for accessing the field via an interface.
+func (v *deleteTestSuiteTeamTeamSuiteDeleteTeamSuiteDeletePayload) GetDeletedTeamSuiteID() string {
+	return v.DeletedTeamSuiteID
+}
+
+// GetTeam returns deleteTestSuiteTeamTeamSuiteDeleteTeamSuiteDeletePayload.Team, and is useful for accessing the field via an interface.
+func (v *deleteTestSuiteTeamTeamSuiteDeleteTeamSuiteDeletePayload) GetTeam() deleteTestSuiteTeamTeamSuiteDeleteTeamSuiteDeletePayloadTeam {
+	return v.Team
+}
+
+// deleteTestSuiteTeamTeamSuiteDeleteTeamSuiteDeletePayloadTeam includes the requested fields of the GraphQL type Team.
+// The GraphQL type's documentation follows.
+//
+// An organization team
+type deleteTestSuiteTeamTeamSuiteDeleteTeamSuiteDeletePayloadTeam struct {
+	Id string `json:"id"`
+}
+
+// GetId returns deleteTestSuiteTeamTeamSuiteDeleteTeamSuiteDeletePayloadTeam.Id, and is useful for accessing the field via an interface.
+func (v *deleteTestSuiteTeamTeamSuiteDeleteTeamSuiteDeletePayloadTeam) GetId() string { return v.Id }
 
 // getAgentTokenAgentToken includes the requested fields of the GraphQL type AgentToken.
 // The GraphQL type's documentation follows.
@@ -6752,6 +7005,1391 @@ func (v *getPipelineScheduleResponse) __premarshalJSON() (*__premarshalgetPipeli
 	return &retval, nil
 }
 
+// getTestSuiteResponse is returned by getTestSuite on success.
+type getTestSuiteResponse struct {
+	// Fetches an object given its ID.
+	Suite getTestSuiteSuiteNode `json:"-"`
+}
+
+// GetSuite returns getTestSuiteResponse.Suite, and is useful for accessing the field via an interface.
+func (v *getTestSuiteResponse) GetSuite() getTestSuiteSuiteNode { return v.Suite }
+
+func (v *getTestSuiteResponse) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*getTestSuiteResponse
+		Suite json.RawMessage `json:"suite"`
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.getTestSuiteResponse = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	{
+		dst := &v.Suite
+		src := firstPass.Suite
+		if len(src) != 0 && string(src) != "null" {
+			err = __unmarshalgetTestSuiteSuiteNode(
+				src, dst)
+			if err != nil {
+				return fmt.Errorf(
+					"unable to unmarshal getTestSuiteResponse.Suite: %w", err)
+			}
+		}
+	}
+	return nil
+}
+
+type __premarshalgetTestSuiteResponse struct {
+	Suite json.RawMessage `json:"suite"`
+}
+
+func (v *getTestSuiteResponse) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *getTestSuiteResponse) __premarshalJSON() (*__premarshalgetTestSuiteResponse, error) {
+	var retval __premarshalgetTestSuiteResponse
+
+	{
+
+		dst := &retval.Suite
+		src := v.Suite
+		var err error
+		*dst, err = __marshalgetTestSuiteSuiteNode(
+			&src)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"unable to marshal getTestSuiteResponse.Suite: %w", err)
+		}
+	}
+	return &retval, nil
+}
+
+// getTestSuiteSuite includes the requested fields of the GraphQL type Suite.
+// The GraphQL type's documentation follows.
+//
+// A suite
+type getTestSuiteSuite struct {
+	Typename string `json:"__typename"`
+	Id       string `json:"id"`
+	Uuid     string `json:"uuid"`
+	// The default branch for this suite
+	DefaultBranch string `json:"defaultBranch"`
+	// The name of the suite
+	Name string `json:"name"`
+	// The slug of the suite
+	Slug string `json:"slug"`
+	// Teams associated with this suite
+	Teams getTestSuiteSuiteTeamsTeamSuiteConnection `json:"teams"`
+}
+
+// GetTypename returns getTestSuiteSuite.Typename, and is useful for accessing the field via an interface.
+func (v *getTestSuiteSuite) GetTypename() string { return v.Typename }
+
+// GetId returns getTestSuiteSuite.Id, and is useful for accessing the field via an interface.
+func (v *getTestSuiteSuite) GetId() string { return v.Id }
+
+// GetUuid returns getTestSuiteSuite.Uuid, and is useful for accessing the field via an interface.
+func (v *getTestSuiteSuite) GetUuid() string { return v.Uuid }
+
+// GetDefaultBranch returns getTestSuiteSuite.DefaultBranch, and is useful for accessing the field via an interface.
+func (v *getTestSuiteSuite) GetDefaultBranch() string { return v.DefaultBranch }
+
+// GetName returns getTestSuiteSuite.Name, and is useful for accessing the field via an interface.
+func (v *getTestSuiteSuite) GetName() string { return v.Name }
+
+// GetSlug returns getTestSuiteSuite.Slug, and is useful for accessing the field via an interface.
+func (v *getTestSuiteSuite) GetSlug() string { return v.Slug }
+
+// GetTeams returns getTestSuiteSuite.Teams, and is useful for accessing the field via an interface.
+func (v *getTestSuiteSuite) GetTeams() getTestSuiteSuiteTeamsTeamSuiteConnection { return v.Teams }
+
+// getTestSuiteSuiteAPIAccessToken includes the requested fields of the GraphQL type APIAccessToken.
+// The GraphQL type's documentation follows.
+//
+// API access tokens for authentication with the Buildkite API
+type getTestSuiteSuiteAPIAccessToken struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getTestSuiteSuiteAPIAccessToken.Typename, and is useful for accessing the field via an interface.
+func (v *getTestSuiteSuiteAPIAccessToken) GetTypename() string { return v.Typename }
+
+// getTestSuiteSuiteAPIAccessTokenCode includes the requested fields of the GraphQL type APIAccessTokenCode.
+// The GraphQL type's documentation follows.
+//
+// A code that is used by an API Application to request an API Access Token
+type getTestSuiteSuiteAPIAccessTokenCode struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getTestSuiteSuiteAPIAccessTokenCode.Typename, and is useful for accessing the field via an interface.
+func (v *getTestSuiteSuiteAPIAccessTokenCode) GetTypename() string { return v.Typename }
+
+// getTestSuiteSuiteAPIApplication includes the requested fields of the GraphQL type APIApplication.
+// The GraphQL type's documentation follows.
+//
+// An API Application
+type getTestSuiteSuiteAPIApplication struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getTestSuiteSuiteAPIApplication.Typename, and is useful for accessing the field via an interface.
+func (v *getTestSuiteSuiteAPIApplication) GetTypename() string { return v.Typename }
+
+// getTestSuiteSuiteAgent includes the requested fields of the GraphQL type Agent.
+// The GraphQL type's documentation follows.
+//
+// An agent
+type getTestSuiteSuiteAgent struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getTestSuiteSuiteAgent.Typename, and is useful for accessing the field via an interface.
+func (v *getTestSuiteSuiteAgent) GetTypename() string { return v.Typename }
+
+// getTestSuiteSuiteAgentToken includes the requested fields of the GraphQL type AgentToken.
+// The GraphQL type's documentation follows.
+//
+// A token used to connect an agent to Buildkite
+type getTestSuiteSuiteAgentToken struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getTestSuiteSuiteAgentToken.Typename, and is useful for accessing the field via an interface.
+func (v *getTestSuiteSuiteAgentToken) GetTypename() string { return v.Typename }
+
+// getTestSuiteSuiteAnnotation includes the requested fields of the GraphQL type Annotation.
+// The GraphQL type's documentation follows.
+//
+// An annotation allows you to add arbitrary content to the top of a build page in the Buildkite UI
+type getTestSuiteSuiteAnnotation struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getTestSuiteSuiteAnnotation.Typename, and is useful for accessing the field via an interface.
+func (v *getTestSuiteSuiteAnnotation) GetTypename() string { return v.Typename }
+
+// getTestSuiteSuiteArtifact includes the requested fields of the GraphQL type Artifact.
+// The GraphQL type's documentation follows.
+//
+// A file uploaded from the agent whilst running a job
+type getTestSuiteSuiteArtifact struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getTestSuiteSuiteArtifact.Typename, and is useful for accessing the field via an interface.
+func (v *getTestSuiteSuiteArtifact) GetTypename() string { return v.Typename }
+
+// getTestSuiteSuiteAuditEvent includes the requested fields of the GraphQL type AuditEvent.
+// The GraphQL type's documentation follows.
+//
+// Audit record of an event which occurred in the system
+type getTestSuiteSuiteAuditEvent struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getTestSuiteSuiteAuditEvent.Typename, and is useful for accessing the field via an interface.
+func (v *getTestSuiteSuiteAuditEvent) GetTypename() string { return v.Typename }
+
+// getTestSuiteSuiteAuthorizationBitbucket includes the requested fields of the GraphQL type AuthorizationBitbucket.
+// The GraphQL type's documentation follows.
+//
+// A Bitbucket account authorized with a Buildkite account
+type getTestSuiteSuiteAuthorizationBitbucket struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getTestSuiteSuiteAuthorizationBitbucket.Typename, and is useful for accessing the field via an interface.
+func (v *getTestSuiteSuiteAuthorizationBitbucket) GetTypename() string { return v.Typename }
+
+// getTestSuiteSuiteAuthorizationGitHub includes the requested fields of the GraphQL type AuthorizationGitHub.
+// The GraphQL type's documentation follows.
+//
+// A GitHub account authorized with a Buildkite account
+type getTestSuiteSuiteAuthorizationGitHub struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getTestSuiteSuiteAuthorizationGitHub.Typename, and is useful for accessing the field via an interface.
+func (v *getTestSuiteSuiteAuthorizationGitHub) GetTypename() string { return v.Typename }
+
+// getTestSuiteSuiteAuthorizationGitHubApp includes the requested fields of the GraphQL type AuthorizationGitHubApp.
+// The GraphQL type's documentation follows.
+//
+// A GitHub app authorized with a Buildkite account
+type getTestSuiteSuiteAuthorizationGitHubApp struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getTestSuiteSuiteAuthorizationGitHubApp.Typename, and is useful for accessing the field via an interface.
+func (v *getTestSuiteSuiteAuthorizationGitHubApp) GetTypename() string { return v.Typename }
+
+// getTestSuiteSuiteAuthorizationGitHubEnterprise includes the requested fields of the GraphQL type AuthorizationGitHubEnterprise.
+// The GraphQL type's documentation follows.
+//
+// A GitHub Enterprise account authorized with a Buildkite account
+type getTestSuiteSuiteAuthorizationGitHubEnterprise struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getTestSuiteSuiteAuthorizationGitHubEnterprise.Typename, and is useful for accessing the field via an interface.
+func (v *getTestSuiteSuiteAuthorizationGitHubEnterprise) GetTypename() string { return v.Typename }
+
+// getTestSuiteSuiteAuthorizationGoogle includes the requested fields of the GraphQL type AuthorizationGoogle.
+// The GraphQL type's documentation follows.
+//
+// A Google account authorized with a Buildkite account
+type getTestSuiteSuiteAuthorizationGoogle struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getTestSuiteSuiteAuthorizationGoogle.Typename, and is useful for accessing the field via an interface.
+func (v *getTestSuiteSuiteAuthorizationGoogle) GetTypename() string { return v.Typename }
+
+// getTestSuiteSuiteAuthorizationSAML includes the requested fields of the GraphQL type AuthorizationSAML.
+// The GraphQL type's documentation follows.
+//
+// A SAML account authorized with a Buildkite account
+type getTestSuiteSuiteAuthorizationSAML struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getTestSuiteSuiteAuthorizationSAML.Typename, and is useful for accessing the field via an interface.
+func (v *getTestSuiteSuiteAuthorizationSAML) GetTypename() string { return v.Typename }
+
+// getTestSuiteSuiteBuild includes the requested fields of the GraphQL type Build.
+// The GraphQL type's documentation follows.
+//
+// A build from a pipeline
+type getTestSuiteSuiteBuild struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getTestSuiteSuiteBuild.Typename, and is useful for accessing the field via an interface.
+func (v *getTestSuiteSuiteBuild) GetTypename() string { return v.Typename }
+
+// getTestSuiteSuiteChangelog includes the requested fields of the GraphQL type Changelog.
+// The GraphQL type's documentation follows.
+//
+// A changelog
+type getTestSuiteSuiteChangelog struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getTestSuiteSuiteChangelog.Typename, and is useful for accessing the field via an interface.
+func (v *getTestSuiteSuiteChangelog) GetTypename() string { return v.Typename }
+
+// getTestSuiteSuiteCluster includes the requested fields of the GraphQL type Cluster.
+type getTestSuiteSuiteCluster struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getTestSuiteSuiteCluster.Typename, and is useful for accessing the field via an interface.
+func (v *getTestSuiteSuiteCluster) GetTypename() string { return v.Typename }
+
+// getTestSuiteSuiteClusterQueue includes the requested fields of the GraphQL type ClusterQueue.
+type getTestSuiteSuiteClusterQueue struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getTestSuiteSuiteClusterQueue.Typename, and is useful for accessing the field via an interface.
+func (v *getTestSuiteSuiteClusterQueue) GetTypename() string { return v.Typename }
+
+// getTestSuiteSuiteClusterToken includes the requested fields of the GraphQL type ClusterToken.
+// The GraphQL type's documentation follows.
+//
+// A token used to connect an agent in cluster to Buildkite
+type getTestSuiteSuiteClusterToken struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getTestSuiteSuiteClusterToken.Typename, and is useful for accessing the field via an interface.
+func (v *getTestSuiteSuiteClusterToken) GetTypename() string { return v.Typename }
+
+// getTestSuiteSuiteEmail includes the requested fields of the GraphQL type Email.
+// The GraphQL type's documentation follows.
+//
+// An email address
+type getTestSuiteSuiteEmail struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getTestSuiteSuiteEmail.Typename, and is useful for accessing the field via an interface.
+func (v *getTestSuiteSuiteEmail) GetTypename() string { return v.Typename }
+
+// getTestSuiteSuiteJobEventAssigned includes the requested fields of the GraphQL type JobEventAssigned.
+// The GraphQL type's documentation follows.
+//
+// An event created when the dispatcher assigns the job to an agent
+type getTestSuiteSuiteJobEventAssigned struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getTestSuiteSuiteJobEventAssigned.Typename, and is useful for accessing the field via an interface.
+func (v *getTestSuiteSuiteJobEventAssigned) GetTypename() string { return v.Typename }
+
+// getTestSuiteSuiteJobEventBuildStepUploadCreated includes the requested fields of the GraphQL type JobEventBuildStepUploadCreated.
+// The GraphQL type's documentation follows.
+//
+// An event created when the job creates new build steps via pipeline upload
+type getTestSuiteSuiteJobEventBuildStepUploadCreated struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getTestSuiteSuiteJobEventBuildStepUploadCreated.Typename, and is useful for accessing the field via an interface.
+func (v *getTestSuiteSuiteJobEventBuildStepUploadCreated) GetTypename() string { return v.Typename }
+
+// getTestSuiteSuiteJobEventCanceled includes the requested fields of the GraphQL type JobEventCanceled.
+// The GraphQL type's documentation follows.
+//
+// An event created when the job is canceled
+type getTestSuiteSuiteJobEventCanceled struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getTestSuiteSuiteJobEventCanceled.Typename, and is useful for accessing the field via an interface.
+func (v *getTestSuiteSuiteJobEventCanceled) GetTypename() string { return v.Typename }
+
+// getTestSuiteSuiteJobEventFinished includes the requested fields of the GraphQL type JobEventFinished.
+// The GraphQL type's documentation follows.
+//
+// An event created when the job is finished
+type getTestSuiteSuiteJobEventFinished struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getTestSuiteSuiteJobEventFinished.Typename, and is useful for accessing the field via an interface.
+func (v *getTestSuiteSuiteJobEventFinished) GetTypename() string { return v.Typename }
+
+// getTestSuiteSuiteJobEventGeneric includes the requested fields of the GraphQL type JobEventGeneric.
+// The GraphQL type's documentation follows.
+//
+// A generic event type that doesn't have any additional meta-information associated with the event
+type getTestSuiteSuiteJobEventGeneric struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getTestSuiteSuiteJobEventGeneric.Typename, and is useful for accessing the field via an interface.
+func (v *getTestSuiteSuiteJobEventGeneric) GetTypename() string { return v.Typename }
+
+// getTestSuiteSuiteJobEventRetried includes the requested fields of the GraphQL type JobEventRetried.
+// The GraphQL type's documentation follows.
+//
+// An event created when the job is retried
+type getTestSuiteSuiteJobEventRetried struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getTestSuiteSuiteJobEventRetried.Typename, and is useful for accessing the field via an interface.
+func (v *getTestSuiteSuiteJobEventRetried) GetTypename() string { return v.Typename }
+
+// getTestSuiteSuiteJobEventTimedOut includes the requested fields of the GraphQL type JobEventTimedOut.
+// The GraphQL type's documentation follows.
+//
+// An event created when the job is timed out
+type getTestSuiteSuiteJobEventTimedOut struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getTestSuiteSuiteJobEventTimedOut.Typename, and is useful for accessing the field via an interface.
+func (v *getTestSuiteSuiteJobEventTimedOut) GetTypename() string { return v.Typename }
+
+// getTestSuiteSuiteJobTypeBlock includes the requested fields of the GraphQL type JobTypeBlock.
+// The GraphQL type's documentation follows.
+//
+// A type of job that requires a user to unblock it before proceeding in a build pipeline
+type getTestSuiteSuiteJobTypeBlock struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getTestSuiteSuiteJobTypeBlock.Typename, and is useful for accessing the field via an interface.
+func (v *getTestSuiteSuiteJobTypeBlock) GetTypename() string { return v.Typename }
+
+// getTestSuiteSuiteJobTypeCommand includes the requested fields of the GraphQL type JobTypeCommand.
+// The GraphQL type's documentation follows.
+//
+// A type of job that runs a command on an agent
+type getTestSuiteSuiteJobTypeCommand struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getTestSuiteSuiteJobTypeCommand.Typename, and is useful for accessing the field via an interface.
+func (v *getTestSuiteSuiteJobTypeCommand) GetTypename() string { return v.Typename }
+
+// getTestSuiteSuiteJobTypeTrigger includes the requested fields of the GraphQL type JobTypeTrigger.
+// The GraphQL type's documentation follows.
+//
+// A type of job that triggers another build on a pipeline
+type getTestSuiteSuiteJobTypeTrigger struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getTestSuiteSuiteJobTypeTrigger.Typename, and is useful for accessing the field via an interface.
+func (v *getTestSuiteSuiteJobTypeTrigger) GetTypename() string { return v.Typename }
+
+// getTestSuiteSuiteJobTypeWait includes the requested fields of the GraphQL type JobTypeWait.
+// The GraphQL type's documentation follows.
+//
+// A type of job that waits for all previous jobs to pass before proceeding the build pipeline
+type getTestSuiteSuiteJobTypeWait struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getTestSuiteSuiteJobTypeWait.Typename, and is useful for accessing the field via an interface.
+func (v *getTestSuiteSuiteJobTypeWait) GetTypename() string { return v.Typename }
+
+// getTestSuiteSuiteNode includes the requested fields of the GraphQL interface Node.
+//
+// getTestSuiteSuiteNode is implemented by the following types:
+// getTestSuiteSuiteAPIAccessToken
+// getTestSuiteSuiteAPIAccessTokenCode
+// getTestSuiteSuiteAPIApplication
+// getTestSuiteSuiteAgent
+// getTestSuiteSuiteAgentToken
+// getTestSuiteSuiteAnnotation
+// getTestSuiteSuiteArtifact
+// getTestSuiteSuiteAuditEvent
+// getTestSuiteSuiteAuthorizationBitbucket
+// getTestSuiteSuiteAuthorizationGitHub
+// getTestSuiteSuiteAuthorizationGitHubApp
+// getTestSuiteSuiteAuthorizationGitHubEnterprise
+// getTestSuiteSuiteAuthorizationGoogle
+// getTestSuiteSuiteAuthorizationSAML
+// getTestSuiteSuiteBuild
+// getTestSuiteSuiteChangelog
+// getTestSuiteSuiteCluster
+// getTestSuiteSuiteClusterQueue
+// getTestSuiteSuiteClusterToken
+// getTestSuiteSuiteEmail
+// getTestSuiteSuiteJobEventAssigned
+// getTestSuiteSuiteJobEventBuildStepUploadCreated
+// getTestSuiteSuiteJobEventCanceled
+// getTestSuiteSuiteJobEventFinished
+// getTestSuiteSuiteJobEventGeneric
+// getTestSuiteSuiteJobEventRetried
+// getTestSuiteSuiteJobEventTimedOut
+// getTestSuiteSuiteJobTypeBlock
+// getTestSuiteSuiteJobTypeCommand
+// getTestSuiteSuiteJobTypeTrigger
+// getTestSuiteSuiteJobTypeWait
+// getTestSuiteSuiteNotificationServiceSlack
+// getTestSuiteSuiteOrganization
+// getTestSuiteSuiteOrganizationInvitation
+// getTestSuiteSuiteOrganizationMember
+// getTestSuiteSuitePipeline
+// getTestSuiteSuitePipelineMetric
+// getTestSuiteSuitePipelineSchedule
+// getTestSuiteSuitePipelineTemplate
+// getTestSuiteSuiteSSOProviderGitHubApp
+// getTestSuiteSuiteSSOProviderGoogleGSuite
+// getTestSuiteSuiteSSOProviderSAML
+// getTestSuiteSuite
+// getTestSuiteSuiteTeam
+// getTestSuiteSuiteTeamMember
+// getTestSuiteSuiteTeamPipeline
+// getTestSuiteSuiteTeamSuite
+// getTestSuiteSuiteUser
+// getTestSuiteSuiteViewer
+// The GraphQL type's documentation follows.
+//
+// An object with an ID.
+type getTestSuiteSuiteNode interface {
+	implementsGraphQLInterfacegetTestSuiteSuiteNode()
+	// GetTypename returns the receiver's concrete GraphQL type-name (see interface doc for possible values).
+	GetTypename() string
+}
+
+func (v *getTestSuiteSuiteAPIAccessToken) implementsGraphQLInterfacegetTestSuiteSuiteNode()         {}
+func (v *getTestSuiteSuiteAPIAccessTokenCode) implementsGraphQLInterfacegetTestSuiteSuiteNode()     {}
+func (v *getTestSuiteSuiteAPIApplication) implementsGraphQLInterfacegetTestSuiteSuiteNode()         {}
+func (v *getTestSuiteSuiteAgent) implementsGraphQLInterfacegetTestSuiteSuiteNode()                  {}
+func (v *getTestSuiteSuiteAgentToken) implementsGraphQLInterfacegetTestSuiteSuiteNode()             {}
+func (v *getTestSuiteSuiteAnnotation) implementsGraphQLInterfacegetTestSuiteSuiteNode()             {}
+func (v *getTestSuiteSuiteArtifact) implementsGraphQLInterfacegetTestSuiteSuiteNode()               {}
+func (v *getTestSuiteSuiteAuditEvent) implementsGraphQLInterfacegetTestSuiteSuiteNode()             {}
+func (v *getTestSuiteSuiteAuthorizationBitbucket) implementsGraphQLInterfacegetTestSuiteSuiteNode() {}
+func (v *getTestSuiteSuiteAuthorizationGitHub) implementsGraphQLInterfacegetTestSuiteSuiteNode()    {}
+func (v *getTestSuiteSuiteAuthorizationGitHubApp) implementsGraphQLInterfacegetTestSuiteSuiteNode() {}
+func (v *getTestSuiteSuiteAuthorizationGitHubEnterprise) implementsGraphQLInterfacegetTestSuiteSuiteNode() {
+}
+func (v *getTestSuiteSuiteAuthorizationGoogle) implementsGraphQLInterfacegetTestSuiteSuiteNode() {}
+func (v *getTestSuiteSuiteAuthorizationSAML) implementsGraphQLInterfacegetTestSuiteSuiteNode()   {}
+func (v *getTestSuiteSuiteBuild) implementsGraphQLInterfacegetTestSuiteSuiteNode()               {}
+func (v *getTestSuiteSuiteChangelog) implementsGraphQLInterfacegetTestSuiteSuiteNode()           {}
+func (v *getTestSuiteSuiteCluster) implementsGraphQLInterfacegetTestSuiteSuiteNode()             {}
+func (v *getTestSuiteSuiteClusterQueue) implementsGraphQLInterfacegetTestSuiteSuiteNode()        {}
+func (v *getTestSuiteSuiteClusterToken) implementsGraphQLInterfacegetTestSuiteSuiteNode()        {}
+func (v *getTestSuiteSuiteEmail) implementsGraphQLInterfacegetTestSuiteSuiteNode()               {}
+func (v *getTestSuiteSuiteJobEventAssigned) implementsGraphQLInterfacegetTestSuiteSuiteNode()    {}
+func (v *getTestSuiteSuiteJobEventBuildStepUploadCreated) implementsGraphQLInterfacegetTestSuiteSuiteNode() {
+}
+func (v *getTestSuiteSuiteJobEventCanceled) implementsGraphQLInterfacegetTestSuiteSuiteNode() {}
+func (v *getTestSuiteSuiteJobEventFinished) implementsGraphQLInterfacegetTestSuiteSuiteNode() {}
+func (v *getTestSuiteSuiteJobEventGeneric) implementsGraphQLInterfacegetTestSuiteSuiteNode()  {}
+func (v *getTestSuiteSuiteJobEventRetried) implementsGraphQLInterfacegetTestSuiteSuiteNode()  {}
+func (v *getTestSuiteSuiteJobEventTimedOut) implementsGraphQLInterfacegetTestSuiteSuiteNode() {}
+func (v *getTestSuiteSuiteJobTypeBlock) implementsGraphQLInterfacegetTestSuiteSuiteNode()     {}
+func (v *getTestSuiteSuiteJobTypeCommand) implementsGraphQLInterfacegetTestSuiteSuiteNode()   {}
+func (v *getTestSuiteSuiteJobTypeTrigger) implementsGraphQLInterfacegetTestSuiteSuiteNode()   {}
+func (v *getTestSuiteSuiteJobTypeWait) implementsGraphQLInterfacegetTestSuiteSuiteNode()      {}
+func (v *getTestSuiteSuiteNotificationServiceSlack) implementsGraphQLInterfacegetTestSuiteSuiteNode() {
+}
+func (v *getTestSuiteSuiteOrganization) implementsGraphQLInterfacegetTestSuiteSuiteNode()           {}
+func (v *getTestSuiteSuiteOrganizationInvitation) implementsGraphQLInterfacegetTestSuiteSuiteNode() {}
+func (v *getTestSuiteSuiteOrganizationMember) implementsGraphQLInterfacegetTestSuiteSuiteNode()     {}
+func (v *getTestSuiteSuitePipeline) implementsGraphQLInterfacegetTestSuiteSuiteNode()               {}
+func (v *getTestSuiteSuitePipelineMetric) implementsGraphQLInterfacegetTestSuiteSuiteNode()         {}
+func (v *getTestSuiteSuitePipelineSchedule) implementsGraphQLInterfacegetTestSuiteSuiteNode()       {}
+func (v *getTestSuiteSuitePipelineTemplate) implementsGraphQLInterfacegetTestSuiteSuiteNode()       {}
+func (v *getTestSuiteSuiteSSOProviderGitHubApp) implementsGraphQLInterfacegetTestSuiteSuiteNode()   {}
+func (v *getTestSuiteSuiteSSOProviderGoogleGSuite) implementsGraphQLInterfacegetTestSuiteSuiteNode() {
+}
+func (v *getTestSuiteSuiteSSOProviderSAML) implementsGraphQLInterfacegetTestSuiteSuiteNode() {}
+func (v *getTestSuiteSuite) implementsGraphQLInterfacegetTestSuiteSuiteNode()                {}
+func (v *getTestSuiteSuiteTeam) implementsGraphQLInterfacegetTestSuiteSuiteNode()            {}
+func (v *getTestSuiteSuiteTeamMember) implementsGraphQLInterfacegetTestSuiteSuiteNode()      {}
+func (v *getTestSuiteSuiteTeamPipeline) implementsGraphQLInterfacegetTestSuiteSuiteNode()    {}
+func (v *getTestSuiteSuiteTeamSuite) implementsGraphQLInterfacegetTestSuiteSuiteNode()       {}
+func (v *getTestSuiteSuiteUser) implementsGraphQLInterfacegetTestSuiteSuiteNode()            {}
+func (v *getTestSuiteSuiteViewer) implementsGraphQLInterfacegetTestSuiteSuiteNode()          {}
+
+func __unmarshalgetTestSuiteSuiteNode(b []byte, v *getTestSuiteSuiteNode) error {
+	if string(b) == "null" {
+		return nil
+	}
+
+	var tn struct {
+		TypeName string `json:"__typename"`
+	}
+	err := json.Unmarshal(b, &tn)
+	if err != nil {
+		return err
+	}
+
+	switch tn.TypeName {
+	case "APIAccessToken":
+		*v = new(getTestSuiteSuiteAPIAccessToken)
+		return json.Unmarshal(b, *v)
+	case "APIAccessTokenCode":
+		*v = new(getTestSuiteSuiteAPIAccessTokenCode)
+		return json.Unmarshal(b, *v)
+	case "APIApplication":
+		*v = new(getTestSuiteSuiteAPIApplication)
+		return json.Unmarshal(b, *v)
+	case "Agent":
+		*v = new(getTestSuiteSuiteAgent)
+		return json.Unmarshal(b, *v)
+	case "AgentToken":
+		*v = new(getTestSuiteSuiteAgentToken)
+		return json.Unmarshal(b, *v)
+	case "Annotation":
+		*v = new(getTestSuiteSuiteAnnotation)
+		return json.Unmarshal(b, *v)
+	case "Artifact":
+		*v = new(getTestSuiteSuiteArtifact)
+		return json.Unmarshal(b, *v)
+	case "AuditEvent":
+		*v = new(getTestSuiteSuiteAuditEvent)
+		return json.Unmarshal(b, *v)
+	case "AuthorizationBitbucket":
+		*v = new(getTestSuiteSuiteAuthorizationBitbucket)
+		return json.Unmarshal(b, *v)
+	case "AuthorizationGitHub":
+		*v = new(getTestSuiteSuiteAuthorizationGitHub)
+		return json.Unmarshal(b, *v)
+	case "AuthorizationGitHubApp":
+		*v = new(getTestSuiteSuiteAuthorizationGitHubApp)
+		return json.Unmarshal(b, *v)
+	case "AuthorizationGitHubEnterprise":
+		*v = new(getTestSuiteSuiteAuthorizationGitHubEnterprise)
+		return json.Unmarshal(b, *v)
+	case "AuthorizationGoogle":
+		*v = new(getTestSuiteSuiteAuthorizationGoogle)
+		return json.Unmarshal(b, *v)
+	case "AuthorizationSAML":
+		*v = new(getTestSuiteSuiteAuthorizationSAML)
+		return json.Unmarshal(b, *v)
+	case "Build":
+		*v = new(getTestSuiteSuiteBuild)
+		return json.Unmarshal(b, *v)
+	case "Changelog":
+		*v = new(getTestSuiteSuiteChangelog)
+		return json.Unmarshal(b, *v)
+	case "Cluster":
+		*v = new(getTestSuiteSuiteCluster)
+		return json.Unmarshal(b, *v)
+	case "ClusterQueue":
+		*v = new(getTestSuiteSuiteClusterQueue)
+		return json.Unmarshal(b, *v)
+	case "ClusterToken":
+		*v = new(getTestSuiteSuiteClusterToken)
+		return json.Unmarshal(b, *v)
+	case "Email":
+		*v = new(getTestSuiteSuiteEmail)
+		return json.Unmarshal(b, *v)
+	case "JobEventAssigned":
+		*v = new(getTestSuiteSuiteJobEventAssigned)
+		return json.Unmarshal(b, *v)
+	case "JobEventBuildStepUploadCreated":
+		*v = new(getTestSuiteSuiteJobEventBuildStepUploadCreated)
+		return json.Unmarshal(b, *v)
+	case "JobEventCanceled":
+		*v = new(getTestSuiteSuiteJobEventCanceled)
+		return json.Unmarshal(b, *v)
+	case "JobEventFinished":
+		*v = new(getTestSuiteSuiteJobEventFinished)
+		return json.Unmarshal(b, *v)
+	case "JobEventGeneric":
+		*v = new(getTestSuiteSuiteJobEventGeneric)
+		return json.Unmarshal(b, *v)
+	case "JobEventRetried":
+		*v = new(getTestSuiteSuiteJobEventRetried)
+		return json.Unmarshal(b, *v)
+	case "JobEventTimedOut":
+		*v = new(getTestSuiteSuiteJobEventTimedOut)
+		return json.Unmarshal(b, *v)
+	case "JobTypeBlock":
+		*v = new(getTestSuiteSuiteJobTypeBlock)
+		return json.Unmarshal(b, *v)
+	case "JobTypeCommand":
+		*v = new(getTestSuiteSuiteJobTypeCommand)
+		return json.Unmarshal(b, *v)
+	case "JobTypeTrigger":
+		*v = new(getTestSuiteSuiteJobTypeTrigger)
+		return json.Unmarshal(b, *v)
+	case "JobTypeWait":
+		*v = new(getTestSuiteSuiteJobTypeWait)
+		return json.Unmarshal(b, *v)
+	case "NotificationServiceSlack":
+		*v = new(getTestSuiteSuiteNotificationServiceSlack)
+		return json.Unmarshal(b, *v)
+	case "Organization":
+		*v = new(getTestSuiteSuiteOrganization)
+		return json.Unmarshal(b, *v)
+	case "OrganizationInvitation":
+		*v = new(getTestSuiteSuiteOrganizationInvitation)
+		return json.Unmarshal(b, *v)
+	case "OrganizationMember":
+		*v = new(getTestSuiteSuiteOrganizationMember)
+		return json.Unmarshal(b, *v)
+	case "Pipeline":
+		*v = new(getTestSuiteSuitePipeline)
+		return json.Unmarshal(b, *v)
+	case "PipelineMetric":
+		*v = new(getTestSuiteSuitePipelineMetric)
+		return json.Unmarshal(b, *v)
+	case "PipelineSchedule":
+		*v = new(getTestSuiteSuitePipelineSchedule)
+		return json.Unmarshal(b, *v)
+	case "PipelineTemplate":
+		*v = new(getTestSuiteSuitePipelineTemplate)
+		return json.Unmarshal(b, *v)
+	case "SSOProviderGitHubApp":
+		*v = new(getTestSuiteSuiteSSOProviderGitHubApp)
+		return json.Unmarshal(b, *v)
+	case "SSOProviderGoogleGSuite":
+		*v = new(getTestSuiteSuiteSSOProviderGoogleGSuite)
+		return json.Unmarshal(b, *v)
+	case "SSOProviderSAML":
+		*v = new(getTestSuiteSuiteSSOProviderSAML)
+		return json.Unmarshal(b, *v)
+	case "Suite":
+		*v = new(getTestSuiteSuite)
+		return json.Unmarshal(b, *v)
+	case "Team":
+		*v = new(getTestSuiteSuiteTeam)
+		return json.Unmarshal(b, *v)
+	case "TeamMember":
+		*v = new(getTestSuiteSuiteTeamMember)
+		return json.Unmarshal(b, *v)
+	case "TeamPipeline":
+		*v = new(getTestSuiteSuiteTeamPipeline)
+		return json.Unmarshal(b, *v)
+	case "TeamSuite":
+		*v = new(getTestSuiteSuiteTeamSuite)
+		return json.Unmarshal(b, *v)
+	case "User":
+		*v = new(getTestSuiteSuiteUser)
+		return json.Unmarshal(b, *v)
+	case "Viewer":
+		*v = new(getTestSuiteSuiteViewer)
+		return json.Unmarshal(b, *v)
+	case "":
+		return fmt.Errorf(
+			"response was missing Node.__typename")
+	default:
+		return fmt.Errorf(
+			`unexpected concrete type for getTestSuiteSuiteNode: "%v"`, tn.TypeName)
+	}
+}
+
+func __marshalgetTestSuiteSuiteNode(v *getTestSuiteSuiteNode) ([]byte, error) {
+
+	var typename string
+	switch v := (*v).(type) {
+	case *getTestSuiteSuiteAPIAccessToken:
+		typename = "APIAccessToken"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getTestSuiteSuiteAPIAccessToken
+		}{typename, v}
+		return json.Marshal(result)
+	case *getTestSuiteSuiteAPIAccessTokenCode:
+		typename = "APIAccessTokenCode"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getTestSuiteSuiteAPIAccessTokenCode
+		}{typename, v}
+		return json.Marshal(result)
+	case *getTestSuiteSuiteAPIApplication:
+		typename = "APIApplication"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getTestSuiteSuiteAPIApplication
+		}{typename, v}
+		return json.Marshal(result)
+	case *getTestSuiteSuiteAgent:
+		typename = "Agent"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getTestSuiteSuiteAgent
+		}{typename, v}
+		return json.Marshal(result)
+	case *getTestSuiteSuiteAgentToken:
+		typename = "AgentToken"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getTestSuiteSuiteAgentToken
+		}{typename, v}
+		return json.Marshal(result)
+	case *getTestSuiteSuiteAnnotation:
+		typename = "Annotation"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getTestSuiteSuiteAnnotation
+		}{typename, v}
+		return json.Marshal(result)
+	case *getTestSuiteSuiteArtifact:
+		typename = "Artifact"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getTestSuiteSuiteArtifact
+		}{typename, v}
+		return json.Marshal(result)
+	case *getTestSuiteSuiteAuditEvent:
+		typename = "AuditEvent"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getTestSuiteSuiteAuditEvent
+		}{typename, v}
+		return json.Marshal(result)
+	case *getTestSuiteSuiteAuthorizationBitbucket:
+		typename = "AuthorizationBitbucket"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getTestSuiteSuiteAuthorizationBitbucket
+		}{typename, v}
+		return json.Marshal(result)
+	case *getTestSuiteSuiteAuthorizationGitHub:
+		typename = "AuthorizationGitHub"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getTestSuiteSuiteAuthorizationGitHub
+		}{typename, v}
+		return json.Marshal(result)
+	case *getTestSuiteSuiteAuthorizationGitHubApp:
+		typename = "AuthorizationGitHubApp"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getTestSuiteSuiteAuthorizationGitHubApp
+		}{typename, v}
+		return json.Marshal(result)
+	case *getTestSuiteSuiteAuthorizationGitHubEnterprise:
+		typename = "AuthorizationGitHubEnterprise"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getTestSuiteSuiteAuthorizationGitHubEnterprise
+		}{typename, v}
+		return json.Marshal(result)
+	case *getTestSuiteSuiteAuthorizationGoogle:
+		typename = "AuthorizationGoogle"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getTestSuiteSuiteAuthorizationGoogle
+		}{typename, v}
+		return json.Marshal(result)
+	case *getTestSuiteSuiteAuthorizationSAML:
+		typename = "AuthorizationSAML"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getTestSuiteSuiteAuthorizationSAML
+		}{typename, v}
+		return json.Marshal(result)
+	case *getTestSuiteSuiteBuild:
+		typename = "Build"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getTestSuiteSuiteBuild
+		}{typename, v}
+		return json.Marshal(result)
+	case *getTestSuiteSuiteChangelog:
+		typename = "Changelog"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getTestSuiteSuiteChangelog
+		}{typename, v}
+		return json.Marshal(result)
+	case *getTestSuiteSuiteCluster:
+		typename = "Cluster"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getTestSuiteSuiteCluster
+		}{typename, v}
+		return json.Marshal(result)
+	case *getTestSuiteSuiteClusterQueue:
+		typename = "ClusterQueue"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getTestSuiteSuiteClusterQueue
+		}{typename, v}
+		return json.Marshal(result)
+	case *getTestSuiteSuiteClusterToken:
+		typename = "ClusterToken"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getTestSuiteSuiteClusterToken
+		}{typename, v}
+		return json.Marshal(result)
+	case *getTestSuiteSuiteEmail:
+		typename = "Email"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getTestSuiteSuiteEmail
+		}{typename, v}
+		return json.Marshal(result)
+	case *getTestSuiteSuiteJobEventAssigned:
+		typename = "JobEventAssigned"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getTestSuiteSuiteJobEventAssigned
+		}{typename, v}
+		return json.Marshal(result)
+	case *getTestSuiteSuiteJobEventBuildStepUploadCreated:
+		typename = "JobEventBuildStepUploadCreated"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getTestSuiteSuiteJobEventBuildStepUploadCreated
+		}{typename, v}
+		return json.Marshal(result)
+	case *getTestSuiteSuiteJobEventCanceled:
+		typename = "JobEventCanceled"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getTestSuiteSuiteJobEventCanceled
+		}{typename, v}
+		return json.Marshal(result)
+	case *getTestSuiteSuiteJobEventFinished:
+		typename = "JobEventFinished"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getTestSuiteSuiteJobEventFinished
+		}{typename, v}
+		return json.Marshal(result)
+	case *getTestSuiteSuiteJobEventGeneric:
+		typename = "JobEventGeneric"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getTestSuiteSuiteJobEventGeneric
+		}{typename, v}
+		return json.Marshal(result)
+	case *getTestSuiteSuiteJobEventRetried:
+		typename = "JobEventRetried"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getTestSuiteSuiteJobEventRetried
+		}{typename, v}
+		return json.Marshal(result)
+	case *getTestSuiteSuiteJobEventTimedOut:
+		typename = "JobEventTimedOut"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getTestSuiteSuiteJobEventTimedOut
+		}{typename, v}
+		return json.Marshal(result)
+	case *getTestSuiteSuiteJobTypeBlock:
+		typename = "JobTypeBlock"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getTestSuiteSuiteJobTypeBlock
+		}{typename, v}
+		return json.Marshal(result)
+	case *getTestSuiteSuiteJobTypeCommand:
+		typename = "JobTypeCommand"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getTestSuiteSuiteJobTypeCommand
+		}{typename, v}
+		return json.Marshal(result)
+	case *getTestSuiteSuiteJobTypeTrigger:
+		typename = "JobTypeTrigger"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getTestSuiteSuiteJobTypeTrigger
+		}{typename, v}
+		return json.Marshal(result)
+	case *getTestSuiteSuiteJobTypeWait:
+		typename = "JobTypeWait"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getTestSuiteSuiteJobTypeWait
+		}{typename, v}
+		return json.Marshal(result)
+	case *getTestSuiteSuiteNotificationServiceSlack:
+		typename = "NotificationServiceSlack"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getTestSuiteSuiteNotificationServiceSlack
+		}{typename, v}
+		return json.Marshal(result)
+	case *getTestSuiteSuiteOrganization:
+		typename = "Organization"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getTestSuiteSuiteOrganization
+		}{typename, v}
+		return json.Marshal(result)
+	case *getTestSuiteSuiteOrganizationInvitation:
+		typename = "OrganizationInvitation"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getTestSuiteSuiteOrganizationInvitation
+		}{typename, v}
+		return json.Marshal(result)
+	case *getTestSuiteSuiteOrganizationMember:
+		typename = "OrganizationMember"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getTestSuiteSuiteOrganizationMember
+		}{typename, v}
+		return json.Marshal(result)
+	case *getTestSuiteSuitePipeline:
+		typename = "Pipeline"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getTestSuiteSuitePipeline
+		}{typename, v}
+		return json.Marshal(result)
+	case *getTestSuiteSuitePipelineMetric:
+		typename = "PipelineMetric"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getTestSuiteSuitePipelineMetric
+		}{typename, v}
+		return json.Marshal(result)
+	case *getTestSuiteSuitePipelineSchedule:
+		typename = "PipelineSchedule"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getTestSuiteSuitePipelineSchedule
+		}{typename, v}
+		return json.Marshal(result)
+	case *getTestSuiteSuitePipelineTemplate:
+		typename = "PipelineTemplate"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getTestSuiteSuitePipelineTemplate
+		}{typename, v}
+		return json.Marshal(result)
+	case *getTestSuiteSuiteSSOProviderGitHubApp:
+		typename = "SSOProviderGitHubApp"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getTestSuiteSuiteSSOProviderGitHubApp
+		}{typename, v}
+		return json.Marshal(result)
+	case *getTestSuiteSuiteSSOProviderGoogleGSuite:
+		typename = "SSOProviderGoogleGSuite"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getTestSuiteSuiteSSOProviderGoogleGSuite
+		}{typename, v}
+		return json.Marshal(result)
+	case *getTestSuiteSuiteSSOProviderSAML:
+		typename = "SSOProviderSAML"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getTestSuiteSuiteSSOProviderSAML
+		}{typename, v}
+		return json.Marshal(result)
+	case *getTestSuiteSuite:
+		typename = "Suite"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getTestSuiteSuite
+		}{typename, v}
+		return json.Marshal(result)
+	case *getTestSuiteSuiteTeam:
+		typename = "Team"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getTestSuiteSuiteTeam
+		}{typename, v}
+		return json.Marshal(result)
+	case *getTestSuiteSuiteTeamMember:
+		typename = "TeamMember"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getTestSuiteSuiteTeamMember
+		}{typename, v}
+		return json.Marshal(result)
+	case *getTestSuiteSuiteTeamPipeline:
+		typename = "TeamPipeline"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getTestSuiteSuiteTeamPipeline
+		}{typename, v}
+		return json.Marshal(result)
+	case *getTestSuiteSuiteTeamSuite:
+		typename = "TeamSuite"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getTestSuiteSuiteTeamSuite
+		}{typename, v}
+		return json.Marshal(result)
+	case *getTestSuiteSuiteUser:
+		typename = "User"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getTestSuiteSuiteUser
+		}{typename, v}
+		return json.Marshal(result)
+	case *getTestSuiteSuiteViewer:
+		typename = "Viewer"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getTestSuiteSuiteViewer
+		}{typename, v}
+		return json.Marshal(result)
+	case nil:
+		return []byte("null"), nil
+	default:
+		return nil, fmt.Errorf(
+			`unexpected concrete type for getTestSuiteSuiteNode: "%T"`, v)
+	}
+}
+
+// getTestSuiteSuiteNotificationServiceSlack includes the requested fields of the GraphQL type NotificationServiceSlack.
+// The GraphQL type's documentation follows.
+//
+// Deliver notifications to Slack
+type getTestSuiteSuiteNotificationServiceSlack struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getTestSuiteSuiteNotificationServiceSlack.Typename, and is useful for accessing the field via an interface.
+func (v *getTestSuiteSuiteNotificationServiceSlack) GetTypename() string { return v.Typename }
+
+// getTestSuiteSuiteOrganization includes the requested fields of the GraphQL type Organization.
+// The GraphQL type's documentation follows.
+//
+// An organization
+type getTestSuiteSuiteOrganization struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getTestSuiteSuiteOrganization.Typename, and is useful for accessing the field via an interface.
+func (v *getTestSuiteSuiteOrganization) GetTypename() string { return v.Typename }
+
+// getTestSuiteSuiteOrganizationInvitation includes the requested fields of the GraphQL type OrganizationInvitation.
+// The GraphQL type's documentation follows.
+//
+// A pending invitation to a user to join this organization
+type getTestSuiteSuiteOrganizationInvitation struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getTestSuiteSuiteOrganizationInvitation.Typename, and is useful for accessing the field via an interface.
+func (v *getTestSuiteSuiteOrganizationInvitation) GetTypename() string { return v.Typename }
+
+// getTestSuiteSuiteOrganizationMember includes the requested fields of the GraphQL type OrganizationMember.
+// The GraphQL type's documentation follows.
+//
+// A member of an organization
+type getTestSuiteSuiteOrganizationMember struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getTestSuiteSuiteOrganizationMember.Typename, and is useful for accessing the field via an interface.
+func (v *getTestSuiteSuiteOrganizationMember) GetTypename() string { return v.Typename }
+
+// getTestSuiteSuitePipeline includes the requested fields of the GraphQL type Pipeline.
+// The GraphQL type's documentation follows.
+//
+// A pipeline
+type getTestSuiteSuitePipeline struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getTestSuiteSuitePipeline.Typename, and is useful for accessing the field via an interface.
+func (v *getTestSuiteSuitePipeline) GetTypename() string { return v.Typename }
+
+// getTestSuiteSuitePipelineMetric includes the requested fields of the GraphQL type PipelineMetric.
+// The GraphQL type's documentation follows.
+//
+// A metric for a pipeline
+type getTestSuiteSuitePipelineMetric struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getTestSuiteSuitePipelineMetric.Typename, and is useful for accessing the field via an interface.
+func (v *getTestSuiteSuitePipelineMetric) GetTypename() string { return v.Typename }
+
+// getTestSuiteSuitePipelineSchedule includes the requested fields of the GraphQL type PipelineSchedule.
+// The GraphQL type's documentation follows.
+//
+// A schedule of when a build should automatically triggered for a Pipeline
+type getTestSuiteSuitePipelineSchedule struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getTestSuiteSuitePipelineSchedule.Typename, and is useful for accessing the field via an interface.
+func (v *getTestSuiteSuitePipelineSchedule) GetTypename() string { return v.Typename }
+
+// getTestSuiteSuitePipelineTemplate includes the requested fields of the GraphQL type PipelineTemplate.
+// The GraphQL type's documentation follows.
+//
+// A template defining a fixed step configuration for a pipeline
+type getTestSuiteSuitePipelineTemplate struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getTestSuiteSuitePipelineTemplate.Typename, and is useful for accessing the field via an interface.
+func (v *getTestSuiteSuitePipelineTemplate) GetTypename() string { return v.Typename }
+
+// getTestSuiteSuiteSSOProviderGitHubApp includes the requested fields of the GraphQL type SSOProviderGitHubApp.
+// The GraphQL type's documentation follows.
+//
+// Single sign-on provided by GitHub
+type getTestSuiteSuiteSSOProviderGitHubApp struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getTestSuiteSuiteSSOProviderGitHubApp.Typename, and is useful for accessing the field via an interface.
+func (v *getTestSuiteSuiteSSOProviderGitHubApp) GetTypename() string { return v.Typename }
+
+// getTestSuiteSuiteSSOProviderGoogleGSuite includes the requested fields of the GraphQL type SSOProviderGoogleGSuite.
+// The GraphQL type's documentation follows.
+//
+// Single sign-on provided by Google
+type getTestSuiteSuiteSSOProviderGoogleGSuite struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getTestSuiteSuiteSSOProviderGoogleGSuite.Typename, and is useful for accessing the field via an interface.
+func (v *getTestSuiteSuiteSSOProviderGoogleGSuite) GetTypename() string { return v.Typename }
+
+// getTestSuiteSuiteSSOProviderSAML includes the requested fields of the GraphQL type SSOProviderSAML.
+// The GraphQL type's documentation follows.
+//
+// Single sign-on provided via SAML
+type getTestSuiteSuiteSSOProviderSAML struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getTestSuiteSuiteSSOProviderSAML.Typename, and is useful for accessing the field via an interface.
+func (v *getTestSuiteSuiteSSOProviderSAML) GetTypename() string { return v.Typename }
+
+// getTestSuiteSuiteTeam includes the requested fields of the GraphQL type Team.
+// The GraphQL type's documentation follows.
+//
+// An organization team
+type getTestSuiteSuiteTeam struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getTestSuiteSuiteTeam.Typename, and is useful for accessing the field via an interface.
+func (v *getTestSuiteSuiteTeam) GetTypename() string { return v.Typename }
+
+// getTestSuiteSuiteTeamMember includes the requested fields of the GraphQL type TeamMember.
+// The GraphQL type's documentation follows.
+//
+// An member of a team
+type getTestSuiteSuiteTeamMember struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getTestSuiteSuiteTeamMember.Typename, and is useful for accessing the field via an interface.
+func (v *getTestSuiteSuiteTeamMember) GetTypename() string { return v.Typename }
+
+// getTestSuiteSuiteTeamPipeline includes the requested fields of the GraphQL type TeamPipeline.
+// The GraphQL type's documentation follows.
+//
+// An pipeline that's been assigned to a team
+type getTestSuiteSuiteTeamPipeline struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getTestSuiteSuiteTeamPipeline.Typename, and is useful for accessing the field via an interface.
+func (v *getTestSuiteSuiteTeamPipeline) GetTypename() string { return v.Typename }
+
+// getTestSuiteSuiteTeamSuite includes the requested fields of the GraphQL type TeamSuite.
+// The GraphQL type's documentation follows.
+//
+// A suite that's been assigned to a team
+type getTestSuiteSuiteTeamSuite struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getTestSuiteSuiteTeamSuite.Typename, and is useful for accessing the field via an interface.
+func (v *getTestSuiteSuiteTeamSuite) GetTypename() string { return v.Typename }
+
+// getTestSuiteSuiteTeamsTeamSuiteConnection includes the requested fields of the GraphQL type TeamSuiteConnection.
+// The GraphQL type's documentation follows.
+//
+// A collection of TeamSuite records
+type getTestSuiteSuiteTeamsTeamSuiteConnection struct {
+	Edges []getTestSuiteSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdge `json:"edges"`
+}
+
+// GetEdges returns getTestSuiteSuiteTeamsTeamSuiteConnection.Edges, and is useful for accessing the field via an interface.
+func (v *getTestSuiteSuiteTeamsTeamSuiteConnection) GetEdges() []getTestSuiteSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdge {
+	return v.Edges
+}
+
+// getTestSuiteSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdge includes the requested fields of the GraphQL type TeamSuiteEdge.
+type getTestSuiteSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdge struct {
+	Node getTestSuiteSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdgeNodeTeamSuite `json:"node"`
+}
+
+// GetNode returns getTestSuiteSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdge.Node, and is useful for accessing the field via an interface.
+func (v *getTestSuiteSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdge) GetNode() getTestSuiteSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdgeNodeTeamSuite {
+	return v.Node
+}
+
+// getTestSuiteSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdgeNodeTeamSuite includes the requested fields of the GraphQL type TeamSuite.
+// The GraphQL type's documentation follows.
+//
+// A suite that's been assigned to a team
+type getTestSuiteSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdgeNodeTeamSuite struct {
+	Id string `json:"id"`
+	// The access level users have to this suite
+	AccessLevel SuiteAccessLevels `json:"accessLevel"`
+	// The team associated with this team member
+	Team getTestSuiteSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdgeNodeTeamSuiteTeam `json:"team"`
+}
+
+// GetId returns getTestSuiteSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdgeNodeTeamSuite.Id, and is useful for accessing the field via an interface.
+func (v *getTestSuiteSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdgeNodeTeamSuite) GetId() string {
+	return v.Id
+}
+
+// GetAccessLevel returns getTestSuiteSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdgeNodeTeamSuite.AccessLevel, and is useful for accessing the field via an interface.
+func (v *getTestSuiteSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdgeNodeTeamSuite) GetAccessLevel() SuiteAccessLevels {
+	return v.AccessLevel
+}
+
+// GetTeam returns getTestSuiteSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdgeNodeTeamSuite.Team, and is useful for accessing the field via an interface.
+func (v *getTestSuiteSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdgeNodeTeamSuite) GetTeam() getTestSuiteSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdgeNodeTeamSuiteTeam {
+	return v.Team
+}
+
+// getTestSuiteSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdgeNodeTeamSuiteTeam includes the requested fields of the GraphQL type Team.
+// The GraphQL type's documentation follows.
+//
+// An organization team
+type getTestSuiteSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdgeNodeTeamSuiteTeam struct {
+	Id string `json:"id"`
+}
+
+// GetId returns getTestSuiteSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdgeNodeTeamSuiteTeam.Id, and is useful for accessing the field via an interface.
+func (v *getTestSuiteSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdgeNodeTeamSuiteTeam) GetId() string {
+	return v.Id
+}
+
+// getTestSuiteSuiteUser includes the requested fields of the GraphQL type User.
+// The GraphQL type's documentation follows.
+//
+// A user
+type getTestSuiteSuiteUser struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getTestSuiteSuiteUser.Typename, and is useful for accessing the field via an interface.
+func (v *getTestSuiteSuiteUser) GetTypename() string { return v.Typename }
+
+// getTestSuiteSuiteViewer includes the requested fields of the GraphQL type Viewer.
+// The GraphQL type's documentation follows.
+//
+// Represents the current user session
+type getTestSuiteSuiteViewer struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getTestSuiteSuiteViewer.Typename, and is useful for accessing the field via an interface.
+func (v *getTestSuiteSuiteViewer) GetTypename() string { return v.Typename }
+
 // revokeAgentTokenAgentTokenRevokeAgentTokenRevokePayload includes the requested fields of the GraphQL type AgentTokenRevokePayload.
 // The GraphQL type's documentation follows.
 //
@@ -8021,6 +9659,57 @@ func (v *updateTeamMemberTeamMemberUpdateTeamMemberUpdatePayloadTeamMember) __pr
 	return &retval, nil
 }
 
+// updateTestSuiteTeamResponse is returned by updateTestSuiteTeam on success.
+type updateTestSuiteTeamResponse struct {
+	// Update a suite's access level within a team.
+	TeamSuiteUpdate updateTestSuiteTeamTeamSuiteUpdateTeamSuiteUpdatePayload `json:"teamSuiteUpdate"`
+}
+
+// GetTeamSuiteUpdate returns updateTestSuiteTeamResponse.TeamSuiteUpdate, and is useful for accessing the field via an interface.
+func (v *updateTestSuiteTeamResponse) GetTeamSuiteUpdate() updateTestSuiteTeamTeamSuiteUpdateTeamSuiteUpdatePayload {
+	return v.TeamSuiteUpdate
+}
+
+// updateTestSuiteTeamTeamSuiteUpdateTeamSuiteUpdatePayload includes the requested fields of the GraphQL type TeamSuiteUpdatePayload.
+// The GraphQL type's documentation follows.
+//
+// Autogenerated return type of TeamSuiteUpdate.
+type updateTestSuiteTeamTeamSuiteUpdateTeamSuiteUpdatePayload struct {
+	TeamSuite updateTestSuiteTeamTeamSuiteUpdateTeamSuiteUpdatePayloadTeamSuite `json:"teamSuite"`
+}
+
+// GetTeamSuite returns updateTestSuiteTeamTeamSuiteUpdateTeamSuiteUpdatePayload.TeamSuite, and is useful for accessing the field via an interface.
+func (v *updateTestSuiteTeamTeamSuiteUpdateTeamSuiteUpdatePayload) GetTeamSuite() updateTestSuiteTeamTeamSuiteUpdateTeamSuiteUpdatePayloadTeamSuite {
+	return v.TeamSuite
+}
+
+// updateTestSuiteTeamTeamSuiteUpdateTeamSuiteUpdatePayloadTeamSuite includes the requested fields of the GraphQL type TeamSuite.
+// The GraphQL type's documentation follows.
+//
+// A suite that's been assigned to a team
+type updateTestSuiteTeamTeamSuiteUpdateTeamSuiteUpdatePayloadTeamSuite struct {
+	// The access level users have to this suite
+	AccessLevel SuiteAccessLevels `json:"accessLevel"`
+	Id          string            `json:"id"`
+	// The public UUID for this team suite
+	Uuid string `json:"uuid"`
+}
+
+// GetAccessLevel returns updateTestSuiteTeamTeamSuiteUpdateTeamSuiteUpdatePayloadTeamSuite.AccessLevel, and is useful for accessing the field via an interface.
+func (v *updateTestSuiteTeamTeamSuiteUpdateTeamSuiteUpdatePayloadTeamSuite) GetAccessLevel() SuiteAccessLevels {
+	return v.AccessLevel
+}
+
+// GetId returns updateTestSuiteTeamTeamSuiteUpdateTeamSuiteUpdatePayloadTeamSuite.Id, and is useful for accessing the field via an interface.
+func (v *updateTestSuiteTeamTeamSuiteUpdateTeamSuiteUpdatePayloadTeamSuite) GetId() string {
+	return v.Id
+}
+
+// GetUuid returns updateTestSuiteTeamTeamSuiteUpdateTeamSuiteUpdatePayloadTeamSuite.Uuid, and is useful for accessing the field via an interface.
+func (v *updateTestSuiteTeamTeamSuiteUpdateTeamSuiteUpdatePayloadTeamSuite) GetUuid() string {
+	return v.Uuid
+}
+
 // The query or mutation executed by GetTeamFromSlug.
 const GetTeamFromSlug_Operation = `
 query GetTeamFromSlug ($slug: ID!) {
@@ -8500,6 +10189,64 @@ func createTeamMember(
 	return &data, err
 }
 
+// The query or mutation executed by createTestSuiteTeam.
+const createTestSuiteTeam_Operation = `
+mutation createTestSuiteTeam ($teamId: ID!, $suiteId: ID!, $accessLevel: SuiteAccessLevels!) {
+	teamSuiteCreate(input: {teamID:$teamId,suiteID:$suiteId,accessLevel:$accessLevel}) {
+		suite {
+			teams(order: NAME, first: 50) {
+				edges {
+					node {
+						id
+						uuid
+						team {
+							id
+						}
+					}
+				}
+			}
+		}
+		teamSuite {
+			id
+			uuid
+			accessLevel
+			team {
+				id
+			}
+		}
+	}
+}
+`
+
+func createTestSuiteTeam(
+	client graphql.Client,
+	teamId string,
+	suiteId string,
+	accessLevel SuiteAccessLevels,
+) (*createTestSuiteTeamResponse, error) {
+	req := &graphql.Request{
+		OpName: "createTestSuiteTeam",
+		Query:  createTestSuiteTeam_Operation,
+		Variables: &__createTestSuiteTeamInput{
+			TeamId:      teamId,
+			SuiteId:     suiteId,
+			AccessLevel: accessLevel,
+		},
+	}
+	var err error
+
+	var data createTestSuiteTeamResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		nil,
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
 // The query or mutation executed by deleteCluster.
 const deleteCluster_Operation = `
 mutation deleteCluster ($organizationId: ID!, $id: ID!) {
@@ -8663,6 +10410,43 @@ func deleteTeamMember(
 	var err error
 
 	var data deleteTeamMemberResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		nil,
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
+// The query or mutation executed by deleteTestSuiteTeam.
+const deleteTestSuiteTeam_Operation = `
+mutation deleteTestSuiteTeam ($id: ID!) {
+	teamSuiteDelete(input: {id:$id,force:true}) {
+		deletedTeamSuiteID
+		team {
+			id
+		}
+	}
+}
+`
+
+func deleteTestSuiteTeam(
+	client graphql.Client,
+	id string,
+) (*deleteTestSuiteTeamResponse, error) {
+	req := &graphql.Request{
+		OpName: "deleteTestSuiteTeam",
+		Query:  deleteTestSuiteTeam_Operation,
+		Variables: &__deleteTestSuiteTeamInput{
+			Id: id,
+		},
+	}
+	var err error
+
+	var data deleteTestSuiteTeamResponse
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(
@@ -9234,6 +11018,60 @@ func getPipelineScheduleBySlug(
 	var err error
 
 	var data getPipelineScheduleBySlugResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		nil,
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
+// The query or mutation executed by getTestSuite.
+const getTestSuite_Operation = `
+query getTestSuite ($id: ID!, $teamCount: Int) {
+	suite: node(id: $id) {
+		__typename
+		... on Suite {
+			id
+			uuid
+			defaultBranch
+			name
+			slug
+			teams(first: $teamCount, order: NAME) {
+				edges {
+					node {
+						id
+						accessLevel
+						team {
+							id
+						}
+					}
+				}
+			}
+		}
+	}
+}
+`
+
+func getTestSuite(
+	client graphql.Client,
+	id string,
+	teamCount int,
+) (*getTestSuiteResponse, error) {
+	req := &graphql.Request{
+		OpName: "getTestSuite",
+		Query:  getTestSuite_Operation,
+		Variables: &__getTestSuiteInput{
+			Id:        id,
+			TeamCount: teamCount,
+		},
+	}
+	var err error
+
+	var data getTestSuiteResponse
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(
@@ -9840,6 +11678,46 @@ func updateTeamMember(
 	var err error
 
 	var data updateTeamMemberResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		nil,
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
+// The query or mutation executed by updateTestSuiteTeam.
+const updateTestSuiteTeam_Operation = `
+mutation updateTestSuiteTeam ($id: ID!, $accessLevel: SuiteAccessLevels!) {
+	teamSuiteUpdate(input: {id:$id,accessLevel:$accessLevel}) {
+		teamSuite {
+			accessLevel
+			id
+			uuid
+		}
+	}
+}
+`
+
+func updateTestSuiteTeam(
+	client graphql.Client,
+	id string,
+	accessLevel SuiteAccessLevels,
+) (*updateTestSuiteTeamResponse, error) {
+	req := &graphql.Request{
+		OpName: "updateTestSuiteTeam",
+		Query:  updateTestSuiteTeam_Operation,
+		Variables: &__updateTestSuiteTeamInput{
+			Id:          id,
+			AccessLevel: accessLevel,
+		},
+	}
+	var err error
+
+	var data updateTestSuiteTeamResponse
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(
