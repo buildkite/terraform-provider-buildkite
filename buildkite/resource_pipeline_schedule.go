@@ -249,34 +249,7 @@ func (ps *pipelineSchedule) Delete(ctx context.Context, req resource.DeleteReque
 }
 
 func (ps *pipelineSchedule) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-
-	log.Printf("Import components %s ...", req.ID)
-
-	if len(req.ID) == 0 {
-		resp.Diagnostics.AddError(
-			"Missing Import Identifier",
-			fmt.Sprintf("Import identifier is expected with format: $BUILDKITE_ORGANIZATION_SLUG/$BUILDKITE_PIPELINE_SLUG/$PIPELINE_SCHEDULE_UUID. Got: %q", req.ID),
-		)
-		return
-	}
-
-	apiResponse, err := getPipelineScheduleBySlug(
-		ps.client.genqlient,
-		req.ID,
-	)
-
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Unable to read Pipeline schedule",
-			fmt.Sprintf("Unable to read Pipeline schedule: %s", err.Error()),
-		)
-		return
-	}
-
-	var newReq resource.ImportStateRequest
-	newReq.ID = apiResponse.PipelineSchedule.Id
-	resource.ImportStatePassthroughID(ctx, path.Root("id"), newReq, resp)
-
+	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
 
 func envVarsArrayToMap(ctx context.Context, envVars []*string) types.Map {
