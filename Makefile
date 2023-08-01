@@ -18,7 +18,7 @@ test:
 # Acceptance tests. This will create, manage and delete real resources in a real
 # Buildkite organization!
 testacc:
-	TF_ACC=1 go run gotest.tools/gotestsum --format testname --junitfile "junit-${BUILDKITE_JOB_ID}.xml" ./... -p=100
+	TF_ACC=1 go run gotest.tools/gotestsum --format testname --junitfile "junit-${BUILDKITE_JOB_ID}.xml" ./...
 
 # Acceptance tests, but only the ones that can pass with a non-admin API token. Non-admins can manage
 # pipelines and pipeline schedules, but only if they use teams. The API token must also belong to a user
