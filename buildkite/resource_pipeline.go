@@ -213,7 +213,7 @@ func (p *pipelineResource) Create(ctx context.Context, req resource.CreateReques
 	state.ArchiveOnDelete = plan.ArchiveOnDelete
 
 	if plan.ProviderSettings != nil {
-		pipelineExtraInfo, err := updatePipelineExtraInfo(&state, p.client)
+		pipelineExtraInfo, err := updatePipelineExtraInfo(response.PipelineCreate.Pipeline.Slug, plan.ProviderSettings, p.client)
 		if err != nil {
 			resp.Diagnostics.AddError("Unable to set pipeline info from REST", err.Error())
 			return
@@ -561,7 +561,7 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 	setPipelineModel(&state, &response.PipelineUpdate.Pipeline)
 	state.DeletionProtection = plan.DeletionProtection
 
-	pipelineExtraInfo, err := updatePipelineExtraInfo(&state, p.client)
+	pipelineExtraInfo, err := updatePipelineExtraInfo(response.PipelineUpdate.Pipeline.Slug, plan.ProviderSettings, p.client)
 	if err != nil {
 		resp.Diagnostics.AddError("Unable to set pipeline info from REST", err.Error())
 		return
@@ -652,13 +652,13 @@ func getPipelineExtraInfo(client *Client, slug string) (*PipelineExtraInfo, erro
 	return &pipelineExtraInfo, nil
 }
 
-func updatePipelineExtraInfo(state *pipelineResourceModel, client *Client) (PipelineExtraInfo, error) {
+func updatePipelineExtraInfo(slug string, settings *providerSettingsModel, client *Client) (PipelineExtraInfo, error) {
 	payload := map[string]interface{}{
-		"provider_settings": state.ProviderSettings,
+		"provider_settings": settings,
 	}
 
 	pipelineExtraInfo := PipelineExtraInfo{}
-	err := client.makeRequest("PATCH", fmt.Sprintf("/v2/organizations/%s/pipelines/%s", client.organization, state.Slug.ValueString()), payload, &pipelineExtraInfo)
+	err := client.makeRequest("PATCH", fmt.Sprintf("/v2/organizations/%s/pipelines/%s", client.organization, slug), payload, &pipelineExtraInfo)
 	if err != nil {
 		return pipelineExtraInfo, err
 	}
