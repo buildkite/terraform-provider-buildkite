@@ -92,7 +92,7 @@ type pipelineResourceModel struct {
 	SkipIntermediateBuildsBranchFilter   types.String           `tfsdk:"skip_intermediate_builds_branch_filter"`
 	Slug                                 types.String           `tfsdk:"slug"`
 	Steps                                types.String           `tfsdk:"steps"`
-	Tags                                 []string               `tfsdk:"tags"`
+	Tags                                 []types.String         `tfsdk:"tags"`
 	Teams                                []pipelineTeamModel    `tfsdk:"team"`
 	WebhookUrl                           types.String           `tfsdk:"webhook_url"`
 }
@@ -595,6 +595,11 @@ func setPipelineModel(model *pipelineResourceModel, data pipelineResponse) {
 	model.Steps = types.StringValue(data.GetSteps().Yaml)
 	model.WebhookUrl = types.StringValue(data.GetWebhookURL())
 
+	tags := make([]types.String, len(data.GetTags()))
+	for i, tag := range data.GetTags() {
+		tags[i] = types.StringValue(tag.Label)
+	}
+	model.Tags = tags
 	teams := make([]pipelineTeamModel, len(data.GetTeams().Edges))
 	for i, teamEdge := range data.GetTeams().Edges {
 		teams[i] = pipelineTeamModel{
@@ -673,7 +678,7 @@ func getTagsFromSchema(plan *pipelineResourceModel) []PipelineTagInput {
 	tags := make([]PipelineTagInput, len(plan.Tags))
 	for i, tag := range plan.Tags {
 		tags[i] = PipelineTagInput{
-			Label: tag,
+			Label: tag.ValueString(),
 		}
 	}
 	return tags
