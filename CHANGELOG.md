@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 `deletion_protection` is being deprecated and will be removed in a future release (`v1`). This feature offers similar
 functionality to [lifecycles](https://developer.hashicorp.com/terraform/language/meta-arguments/lifecycle) which are supported by Terraform.
 
-## Unreleased
+## [v0.22.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v0.21.2...v0.22.0)
 
 ### Added 
 
