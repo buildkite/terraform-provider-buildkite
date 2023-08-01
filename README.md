@@ -9,9 +9,9 @@ The provider allows you to manage resources in your Buildkite organization.
 Two configuration values are required:
 
 -   An API token, generated at https://buildkite.com/user/api-access-tokens. The
-    token must have the `write_pipelines, read_pipelines` REST API scopes and be enabled for GraphQL
+    token must have the `write_pipelines`, `read_pipelines` and `write_suites` REST API scopes and be enabled for GraphQL API access.
 -   A Buildkite organization slug, available by signing into buildkite.com and
-    examining the URL: https://buildkite.com/<org-slug>
+    examining the URL: https://buildkite.com/<org-slug>.
 
 ## Documentation
 
