@@ -113,8 +113,10 @@ func resourcePipeline() *schema.Resource {
 				Type:     schema.TypeInt,
 			},
 			"deletion_protection": {
-				Optional:    true,
-				Default:     false,
+				Optional: true,
+				Default:  false,
+				Deprecated: "Deletion protection will be removed in a future release. A similar solution already " +
+					"exists and is supported by Terraform. See https://developer.hashicorp.com/terraform/language/meta-arguments/lifecycle.",
 				Type:        schema.TypeBool,
 				Description: "If set to 'true', deletion of a pipeline via `terraform destroy` will fail, until set to 'false'.",
 			},
