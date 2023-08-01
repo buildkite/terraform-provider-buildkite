@@ -14,9 +14,8 @@ type testSuiteTeamModel struct {
 	ID            types.String `tfsdk:"id"`
 	UUID          types.String `tfsdk:"uuid"`
 	TestSuiteId   types.String `tfsdk:"test_suite_id"`
-	team_id	      types.String `tfsdk:"team_id"`
+	TeamID	      types.String `tfsdk:"team_id"`
 	Name          types.String `tfsdk:"access_level"`
-
 }
 
 type testSuiteTeamResource struct {
