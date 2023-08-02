@@ -372,8 +372,7 @@ func TestAccPipeline_disappears(t *testing.T) {
 					// Confirm the pipeline exists in the buildkite API
 					testAccCheckPipelineExists(resourceName, &node),
 					// Ensure its removal from the spec
-					// TODO: refactor to use new provider (or remove the pipeline manually)
-					// testAccCheckResourceDisappears(Provider("testing"), resourcePipeline(), resourceName),
+					testAccCheckPipelineDisappears(resourceName),
 				),
 				ExpectNonEmptyPlan: true,
 			},
@@ -740,4 +739,22 @@ func testAccCheckPipelineResourceDestroy(s *terraform.State) error {
 	}
 
 	return nil
+}
+
+// testAccCheckPipelineDisappears verifies the Provider has had the resource removed from state
+func testAccCheckPipelineDisappears(resourceName string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		resourceState, ok := s.RootModule().Resources[resourceName]
+
+		if !ok {
+			return fmt.Errorf("resource not found: %s", resourceName)
+		}
+
+		if resourceState.Primary.ID == "" {
+			return fmt.Errorf("resource ID missing: %s", resourceName)
+		}
+
+		_, err := deletePipeline(genqlientGraphql, resourceState.Primary.ID)
+		return err
+	}
 }
