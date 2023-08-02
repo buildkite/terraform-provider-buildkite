@@ -72,29 +72,29 @@ type TeamPipelineNode struct {
 }
 
 type pipelineResourceModel struct {
-	AllowRebuilds                        types.Bool             `tfsdk:"allow_rebuilds"`
-	ArchiveOnDelete                      types.Bool             `tfsdk:"archive_on_delete"`
-	BadgeUrl                             types.String           `tfsdk:"badge_url"`
-	BranchConfiguration                  types.String           `tfsdk:"branch_configuration"`
-	CancelIntermediateBuilds             types.Bool             `tfsdk:"cancel_intermediate_builds"`
-	CancelIntermediateBuildsBranchFilter types.String           `tfsdk:"cancel_intermediate_builds_branch_filter"`
-	ClusterId                            types.String           `tfsdk:"cluster_id"`
-	DefaultBranch                        types.String           `tfsdk:"default_branch"`
-	DefaultTimeoutInMinutes              types.Int64            `tfsdk:"default_timeout_in_minutes"`
-	DeletionProtection                   types.Bool             `tfsdk:"deletion_protection"`
-	Description                          types.String           `tfsdk:"description"`
-	Id                                   types.String           `tfsdk:"id"`
-	MaximumTimeoutInMinutes              types.Int64            `tfsdk:"maximum_timeout_in_minutes"`
-	Name                                 types.String           `tfsdk:"name"`
+	AllowRebuilds                        types.Bool               `tfsdk:"allow_rebuilds"`
+	ArchiveOnDelete                      types.Bool               `tfsdk:"archive_on_delete"`
+	BadgeUrl                             types.String             `tfsdk:"badge_url"`
+	BranchConfiguration                  types.String             `tfsdk:"branch_configuration"`
+	CancelIntermediateBuilds             types.Bool               `tfsdk:"cancel_intermediate_builds"`
+	CancelIntermediateBuildsBranchFilter types.String             `tfsdk:"cancel_intermediate_builds_branch_filter"`
+	ClusterId                            types.String             `tfsdk:"cluster_id"`
+	DefaultBranch                        types.String             `tfsdk:"default_branch"`
+	DefaultTimeoutInMinutes              types.Int64              `tfsdk:"default_timeout_in_minutes"`
+	DeletionProtection                   types.Bool               `tfsdk:"deletion_protection"`
+	Description                          types.String             `tfsdk:"description"`
+	Id                                   types.String             `tfsdk:"id"`
+	MaximumTimeoutInMinutes              types.Int64              `tfsdk:"maximum_timeout_in_minutes"`
+	Name                                 types.String             `tfsdk:"name"`
 	ProviderSettings                     []*providerSettingsModel `tfsdk:"provider_settings"`
-	Repository                           types.String           `tfsdk:"repository"`
-	SkipIntermediateBuilds               types.Bool             `tfsdk:"skip_intermediate_builds"`
-	SkipIntermediateBuildsBranchFilter   types.String           `tfsdk:"skip_intermediate_builds_branch_filter"`
-	Slug                                 types.String           `tfsdk:"slug"`
-	Steps                                types.String           `tfsdk:"steps"`
-	Tags                                 []types.String         `tfsdk:"tags"`
-	Teams                                []pipelineTeamModel    `tfsdk:"team"`
-	WebhookUrl                           types.String           `tfsdk:"webhook_url"`
+	Repository                           types.String             `tfsdk:"repository"`
+	SkipIntermediateBuilds               types.Bool               `tfsdk:"skip_intermediate_builds"`
+	SkipIntermediateBuildsBranchFilter   types.String             `tfsdk:"skip_intermediate_builds_branch_filter"`
+	Slug                                 types.String             `tfsdk:"slug"`
+	Steps                                types.String             `tfsdk:"steps"`
+	Tags                                 []types.String           `tfsdk:"tags"`
+	Teams                                []pipelineTeamModel      `tfsdk:"team"`
+	WebhookUrl                           types.String             `tfsdk:"webhook_url"`
 }
 
 type providerSettingsModel struct {
@@ -663,25 +663,25 @@ func getPipelineExtraInfo(client *Client, slug string) (*PipelineExtraInfo, erro
 func updatePipelineExtraInfo(slug string, settings *providerSettingsModel, client *Client) (PipelineExtraInfo, error) {
 	payload := map[string]any{
 		"provider_settings": PipelineExtraSettings{
-			TriggerMode: settings.TriggerMode.ValueStringPointer(),
-			BuildPullRequests: settings.BuildPullRequests.ValueBoolPointer(),
-			PullRequestBranchFilterEnabled: settings.PullRequestBranchFilterEnabled.ValueBoolPointer(),
-			PullRequestBranchFilterConfiguration: settings.PullRequestBranchFilterConfiguration.ValueStringPointer(),
-			SkipBuildsForExistingCommits: settings.SkipBuildsForExistingCommits.ValueBoolPointer(),
+			TriggerMode:                             settings.TriggerMode.ValueStringPointer(),
+			BuildPullRequests:                       settings.BuildPullRequests.ValueBoolPointer(),
+			PullRequestBranchFilterEnabled:          settings.PullRequestBranchFilterEnabled.ValueBoolPointer(),
+			PullRequestBranchFilterConfiguration:    settings.PullRequestBranchFilterConfiguration.ValueStringPointer(),
+			SkipBuildsForExistingCommits:            settings.SkipBuildsForExistingCommits.ValueBoolPointer(),
 			SkipPullRequestBuildsForExistingCommits: settings.SkipPullRequestBuildsForExistingCommits.ValueBoolPointer(),
-			BuildPullRequestReadyForReview: settings.BuildPullRequestReadyForReview.ValueBoolPointer(),
-			BuildPullRequestLabelsChanged: settings.BuildPullRequestLabelsChanged.ValueBoolPointer(),
-			BuildPullRequestForks: settings.BuildPullRequestForks.ValueBoolPointer(),
-			PrefixPullRequestForkBranchNames: settings.PrefixPullRequestForkBranchNames.ValueBoolPointer(),
-			BuildBranches: settings.BuildBranches.ValueBoolPointer(),
-			BuildTags: settings.BuildTags.ValueBoolPointer(),
-			CancelDeletedBranchBuilds: settings.CancelDeletedBranchBuilds.ValueBoolPointer(),
-			FilterEnabled: settings.FilterEnabled.ValueBoolPointer(),
-			FilterCondition: settings.FilterCondition.ValueStringPointer(),
-			PublishCommitStatus: settings.PublishCommitStatus.ValueBoolPointer(),
-			PublishBlockedAsPending: settings.PublishBlockedAsPending.ValueBoolPointer(),
-			PublishCommitStatusPerStep: settings.PublishCommitStatusPerStep.ValueBoolPointer(),
-			SeparatePullRequestStatuses: settings.SeparatePullRequestStatuses.ValueBoolPointer(),
+			BuildPullRequestReadyForReview:          settings.BuildPullRequestReadyForReview.ValueBoolPointer(),
+			BuildPullRequestLabelsChanged:           settings.BuildPullRequestLabelsChanged.ValueBoolPointer(),
+			BuildPullRequestForks:                   settings.BuildPullRequestForks.ValueBoolPointer(),
+			PrefixPullRequestForkBranchNames:        settings.PrefixPullRequestForkBranchNames.ValueBoolPointer(),
+			BuildBranches:                           settings.BuildBranches.ValueBoolPointer(),
+			BuildTags:                               settings.BuildTags.ValueBoolPointer(),
+			CancelDeletedBranchBuilds:               settings.CancelDeletedBranchBuilds.ValueBoolPointer(),
+			FilterEnabled:                           settings.FilterEnabled.ValueBoolPointer(),
+			FilterCondition:                         settings.FilterCondition.ValueStringPointer(),
+			PublishCommitStatus:                     settings.PublishCommitStatus.ValueBoolPointer(),
+			PublishBlockedAsPending:                 settings.PublishBlockedAsPending.ValueBoolPointer(),
+			PublishCommitStatusPerStep:              settings.PublishCommitStatusPerStep.ValueBoolPointer(),
+			SeparatePullRequestStatuses:             settings.SeparatePullRequestStatuses.ValueBoolPointer(),
 		},
 	}
 
