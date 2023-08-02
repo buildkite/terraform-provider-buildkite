@@ -102,7 +102,7 @@ func (tst *testSuiteTeamResource) Create(ctx context.Context, req resource.Creat
 
 	// Set ID and UUID to state
 	state.ID = types.StringValue(apiResponse.TeamSuiteCreate.TeamSuite.Id)
-	state.UUID = types.StringValue(apiResponse.TeamSuiteCreate.TeamSuite.Uuid)
+	state.UUID = types.StringValue(apiResponse.TeamSuiteCreate.TeamSuite.TeamSuiteUuid)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
