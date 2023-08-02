@@ -391,9 +391,6 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 			},
 			"slug": schema.StringAttribute{
 				Computed: true,
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
-				},
 			},
 			"steps": schema.StringAttribute{
 				Optional: true,
@@ -560,14 +557,17 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 
 	setPipelineModel(&state, &response.PipelineUpdate.Pipeline)
 	state.DeletionProtection = plan.DeletionProtection
+	state.ArchiveOnDelete = plan.ArchiveOnDelete
 
-	pipelineExtraInfo, err := updatePipelineExtraInfo(response.PipelineUpdate.Pipeline.Slug, plan.ProviderSettings, p.client)
-	if err != nil {
-		resp.Diagnostics.AddError("Unable to set pipeline info from REST", err.Error())
-		return
+	if plan.ProviderSettings != nil {
+		pipelineExtraInfo, err := updatePipelineExtraInfo(response.PipelineUpdate.Pipeline.Slug, plan.ProviderSettings, p.client)
+		if err != nil {
+			resp.Diagnostics.AddError("Unable to set pipeline info from REST", err.Error())
+			return
+		}
+
+		updatePipelineResourceExtraInfo(&state, &pipelineExtraInfo)
 	}
-
-	updatePipelineResourceExtraInfo(&state, &pipelineExtraInfo)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }

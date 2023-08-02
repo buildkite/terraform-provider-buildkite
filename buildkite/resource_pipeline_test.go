@@ -105,7 +105,7 @@ func TestAccPipeline_add_remove_withcluster(t *testing.T) {
 					testAccCheckPipelineRemoteValues(&resourcePipeline, "Test Pipeline foo"),
 					// Confirm the pipeline has the correct values in terraform state
 					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "name", "Test Pipeline foo"),
-					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "cluster_id", ""),
+					resource.TestCheckNoResourceAttr("buildkite_pipeline.foobar", "cluster_id"),
 					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "allow_rebuilds", "true"),
 				),
 			},
