@@ -119,7 +119,7 @@ func (*terraformProvider) Schema(ctx context.Context, req provider.SchemaRequest
 			},
 			SchemaKeyAPIToken: framework_schema.StringAttribute{
 				Optional:    true,
-				Description: "API token with GraphQL access and `write_pipelines, read_pipelines` scopes",
+				Description: "API token with GraphQL access and `write_pipelines, read_pipelines` and `write_suites` REST API scopes",
 				Sensitive:   true,
 			},
 			SchemaKeyGraphqlURL: framework_schema.StringAttribute{
@@ -154,7 +154,7 @@ func Provider(version string) *schema.Provider {
 				Type:        schema.TypeString,
 			},
 			SchemaKeyAPIToken: {
-				Description: "API token with GraphQL access and `write_pipelines, read_pipelines` scopes",
+				Description: "API token with GraphQL access and `write_pipelines, read_pipelines` and `write_suites` REST API scopes",
 				Optional:    true,
 				Type:        schema.TypeString,
 				Sensitive:   true,

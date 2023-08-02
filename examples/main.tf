@@ -28,7 +28,9 @@ resource "buildkite_pipeline" "repo2" {
     access_level = "READ_ONLY"
   }
 
-  deletion_protection = true
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 resource "buildkite_pipeline_schedule" "weekly" {
