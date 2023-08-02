@@ -86,7 +86,7 @@ type pipelineResourceModel struct {
 	Id                                   types.String           `tfsdk:"id"`
 	MaximumTimeoutInMinutes              types.Int64            `tfsdk:"maximum_timeout_in_minutes"`
 	Name                                 types.String           `tfsdk:"name"`
-	ProviderSettings                     *providerSettingsModel `tfsdk:"provider_settings"`
+	ProviderSettings                     []*providerSettingsModel `tfsdk:"provider_settings"`
 	Repository                           types.String           `tfsdk:"repository"`
 	SkipIntermediateBuilds               types.Bool             `tfsdk:"skip_intermediate_builds"`
 	SkipIntermediateBuildsBranchFilter   types.String           `tfsdk:"skip_intermediate_builds_branch_filter"`
@@ -212,8 +212,8 @@ func (p *pipelineResource) Create(ctx context.Context, req resource.CreateReques
 	state.DeletionProtection = plan.DeletionProtection
 	state.ArchiveOnDelete = plan.ArchiveOnDelete
 
-	if plan.ProviderSettings != nil {
-		pipelineExtraInfo, err := updatePipelineExtraInfo(response.PipelineCreate.Pipeline.Slug, plan.ProviderSettings, p.client)
+	if len(plan.ProviderSettings) > 0 {
+		pipelineExtraInfo, err := updatePipelineExtraInfo(response.PipelineCreate.Pipeline.Slug, plan.ProviderSettings[0], p.client)
 		if err != nil {
 			resp.Diagnostics.AddError("Unable to set pipeline info from REST", err.Error())
 			return
@@ -284,7 +284,7 @@ func (p *pipelineResource) Read(ctx context.Context, req resource.ReadRequest, r
 		}
 
 		setPipelineModel(&state, pipelineNode)
-		if state.ProviderSettings != nil {
+		if len(state.ProviderSettings) > 0 {
 			updatePipelineResourceExtraInfo(&state, extraInfo)
 		}
 		resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
@@ -430,89 +430,92 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 					},
 				},
 			},
-			"provider_settings": schema.SingleNestedBlock{
-				Attributes: map[string]schema.Attribute{
-					"trigger_mode": schema.StringAttribute{
-						Computed: true,
-						Optional: true,
-						Validators: []validator.String{
-							stringvalidator.OneOf("code", "deployment", "fork", "none"),
+			"provider_settings": schema.ListNestedBlock{
+				NestedObject: schema.NestedBlockObject{
+					Attributes: map[string]schema.Attribute{
+						"trigger_mode": schema.StringAttribute{
+							Computed: true,
+							Optional: true,
+							Validators: []validator.String{
+								stringvalidator.OneOf("code", "deployment", "fork", "none"),
+							},
 						},
-					},
-					"build_pull_requests": schema.BoolAttribute{
-						Optional: true,
-						Computed: true,
-						Default:  booldefault.StaticBool(true),
-					},
-					"pull_request_branch_filter_enabled": schema.BoolAttribute{
-						Computed: true,
-						Optional: true,
-					},
-					"pull_request_branch_filter_configuration": schema.StringAttribute{
-						Computed: true,
-						Optional: true,
-					},
-					"skip_builds_for_existing_commits": schema.BoolAttribute{
-						Optional: true,
-					},
-					"skip_pull_request_builds_for_existing_commits": schema.BoolAttribute{
-						Optional: true,
-						Computed: true,
-						Default:  booldefault.StaticBool(true),
-					},
-					"build_pull_request_ready_for_review": schema.BoolAttribute{
-						Computed: true,
-						Optional: true,
-					},
-					"build_pull_request_labels_changed": schema.BoolAttribute{
-						Computed: true,
-						Optional: true,
-					},
-					"build_pull_request_forks": schema.BoolAttribute{
-						Computed: true,
-						Optional: true,
-					},
-					"prefix_pull_request_fork_branch_names": schema.BoolAttribute{
-						Computed: true,
-						Optional: true,
-					},
-					"build_branches": schema.BoolAttribute{
-						Optional: true,
-						Computed: true,
-						Default:  booldefault.StaticBool(true),
-					},
-					"build_tags": schema.BoolAttribute{
-						Computed: true,
-						Optional: true,
-					},
-					"cancel_deleted_branch_builds": schema.BoolAttribute{
-						Computed: true,
-						Optional: true,
-					},
-					"filter_enabled": schema.BoolAttribute{
-						Computed: true,
-						Optional: true,
-					},
-					"filter_condition": schema.StringAttribute{
-						Computed: true,
-						Optional: true,
-					},
-					"publish_commit_status": schema.BoolAttribute{
-						Optional: true,
-						Computed: true,
-						Default:  booldefault.StaticBool(true),
-					},
-					"publish_blocked_as_pending": schema.BoolAttribute{
-						Computed: true,
-						Optional: true,
-					},
-					"publish_commit_status_per_step": schema.BoolAttribute{
-						Computed: true,
-						Optional: true,
-					},
-					"separate_pull_request_statuses": schema.BoolAttribute{
-						Computed: true,
-						Optional: true,
+						"build_pull_requests": schema.BoolAttribute{
+							Optional: true,
+							Computed: true,
+							Default:  booldefault.StaticBool(true),
+						},
+						"pull_request_branch_filter_enabled": schema.BoolAttribute{
+							Computed: true,
+							Optional: true,
+						},
+						"pull_request_branch_filter_configuration": schema.StringAttribute{
+							Computed: true,
+							Optional: true,
+						},
+						"skip_builds_for_existing_commits": schema.BoolAttribute{
+							Optional: true,
+							Computed: true,
+						},
+						"skip_pull_request_builds_for_existing_commits": schema.BoolAttribute{
+							Optional: true,
+							Computed: true,
+							Default:  booldefault.StaticBool(true),
+						},
+						"build_pull_request_ready_for_review": schema.BoolAttribute{
+							Computed: true,
+							Optional: true,
+						},
+						"build_pull_request_labels_changed": schema.BoolAttribute{
+							Computed: true,
+							Optional: true,
+						},
+						"build_pull_request_forks": schema.BoolAttribute{
+							Computed: true,
+							Optional: true,
+						},
+						"prefix_pull_request_fork_branch_names": schema.BoolAttribute{
+							Computed: true,
+							Optional: true,
+						},
+						"build_branches": schema.BoolAttribute{
+							Optional: true,
+							Computed: true,
+							Default:  booldefault.StaticBool(true),
+						},
+						"build_tags": schema.BoolAttribute{
+							Computed: true,
+							Optional: true,
+						},
+						"cancel_deleted_branch_builds": schema.BoolAttribute{
+							Computed: true,
+							Optional: true,
+						},
+						"filter_enabled": schema.BoolAttribute{
+							Computed: true,
+							Optional: true,
+						},
+						"filter_condition": schema.StringAttribute{
+							Computed: true,
+							Optional: true,
+						},
+						"publish_commit_status": schema.BoolAttribute{
+							Optional: true,
+							Computed: true,
+							Default:  booldefault.StaticBool(true),
+						},
+						"publish_blocked_as_pending": schema.BoolAttribute{
+							Computed: true,
+							Optional: true,
+						},
+						"publish_commit_status_per_step": schema.BoolAttribute{
+							Computed: true,
+							Optional: true,
+						},
+						"separate_pull_request_statuses": schema.BoolAttribute{
+							Computed: true,
+							Optional: true,
+						},
 					},
 				},
 			},
@@ -559,8 +562,8 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 	state.DeletionProtection = plan.DeletionProtection
 	state.ArchiveOnDelete = plan.ArchiveOnDelete
 
-	if plan.ProviderSettings != nil {
-		pipelineExtraInfo, err := updatePipelineExtraInfo(response.PipelineUpdate.Pipeline.Slug, plan.ProviderSettings, p.client)
+	if len(plan.ProviderSettings) > 0 {
+		pipelineExtraInfo, err := updatePipelineExtraInfo(response.PipelineUpdate.Pipeline.Slug, plan.ProviderSettings[0], p.client)
 		if err != nil {
 			resp.Diagnostics.AddError("Unable to set pipeline info from REST", err.Error())
 			return
@@ -624,28 +627,29 @@ func setPipelineModel(model *pipelineResourceModel, data pipelineResponse) {
 type PipelineExtraInfo struct {
 	BadgeUrl string `json:"badge_url"`
 	Provider struct {
-		Settings struct {
-			TriggerMode                             string `json:"trigger_mode"`
-			BuildPullRequests                       bool   `json:"build_pull_requests"`
-			PullRequestBranchFilterEnabled          bool   `json:"pull_request_branch_filter_enabled"`
-			PullRequestBranchFilterConfiguration    string `json:"pull_request_branch_filter_configuration"`
-			SkipBuildsForExistingCommits            bool   `json:"skip_builds_for_existing_commits"`
-			SkipPullRequestBuildsForExistingCommits bool   `json:"skip_pull_request_builds_for_existing_commits"`
-			BuildPullRequestReadyForReview          bool   `json:"build_pull_request_ready_for_review"`
-			BuildPullRequestLabelsChanged           bool   `json:"build_pull_request_labels_changed"`
-			BuildPullRequestForks                   bool   `json:"build_pull_request_forks"`
-			PrefixPullRequestForkBranchNames        bool   `json:"prefix_pull_request_fork_branch_names"`
-			BuildBranches                           bool   `json:"build_branches"`
-			BuildTags                               bool   `json:"build_tags"`
-			CancelDeletedBranchBuilds               bool   `json:"cancel_deleted_branch_builds"`
-			FilterEnabled                           bool   `json:"filter_enabled"`
-			FilterCondition                         string `json:"filter_condition"`
-			PublishCommitStatus                     bool   `json:"publish_commit_status"`
-			PublishBlockedAsPending                 bool   `json:"publish_blocked_as_pending"`
-			PublishCommitStatusPerStep              bool   `json:"publish_commit_status_per_step"`
-			SeparatePullRequestStatuses             bool   `json:"separate_pull_request_statuses"`
-		} `json:"settings"`
+		Settings PipelineExtraSettings `json:"settings"`
 	} `json:"provider"`
+}
+type PipelineExtraSettings struct {
+	TriggerMode                             *string `json:"trigger_mode,omitempty"`
+	BuildPullRequests                       *bool   `json:"build_pull_requests,omitempty"`
+	PullRequestBranchFilterEnabled          *bool   `json:"pull_request_branch_filter_enabled,omitempty"`
+	PullRequestBranchFilterConfiguration    *string `json:"pull_request_branch_filter_configuration,omitempty"`
+	SkipBuildsForExistingCommits            *bool   `json:"skip_builds_for_existing_commits,omitempty"`
+	SkipPullRequestBuildsForExistingCommits *bool   `json:"skip_pull_request_builds_for_existing_commits,omitempty"`
+	BuildPullRequestReadyForReview          *bool   `json:"build_pull_request_ready_for_review,omitempty"`
+	BuildPullRequestLabelsChanged           *bool   `json:"build_pull_request_labels_changed,omitempty"`
+	BuildPullRequestForks                   *bool   `json:"build_pull_request_forks,omitempty"`
+	PrefixPullRequestForkBranchNames        *bool   `json:"prefix_pull_request_fork_branch_names,omitempty"`
+	BuildBranches                           *bool   `json:"build_branches,omitempty"`
+	BuildTags                               *bool   `json:"build_tags,omitempty"`
+	CancelDeletedBranchBuilds               *bool   `json:"cancel_deleted_branch_builds,omitempty"`
+	FilterEnabled                           *bool   `json:"filter_enabled,omitempty"`
+	FilterCondition                         *string `json:"filter_condition,omitempty"`
+	PublishCommitStatus                     *bool   `json:"publish_commit_status,omitempty"`
+	PublishBlockedAsPending                 *bool   `json:"publish_blocked_as_pending,omitempty"`
+	PublishCommitStatusPerStep              *bool   `json:"publish_commit_status_per_step,omitempty"`
+	SeparatePullRequestStatuses             *bool   `json:"separate_pull_request_statuses,omitempty"`
 }
 
 func getPipelineExtraInfo(client *Client, slug string) (*PipelineExtraInfo, error) {
@@ -656,10 +660,29 @@ func getPipelineExtraInfo(client *Client, slug string) (*PipelineExtraInfo, erro
 	}
 	return &pipelineExtraInfo, nil
 }
-
 func updatePipelineExtraInfo(slug string, settings *providerSettingsModel, client *Client) (PipelineExtraInfo, error) {
-	payload := map[string]interface{}{
-		"provider_settings": settings,
+	payload := map[string]any{
+		"provider_settings": PipelineExtraSettings{
+			TriggerMode: settings.TriggerMode.ValueStringPointer(),
+			BuildPullRequests: settings.BuildPullRequests.ValueBoolPointer(),
+			PullRequestBranchFilterEnabled: settings.PullRequestBranchFilterEnabled.ValueBoolPointer(),
+			PullRequestBranchFilterConfiguration: settings.PullRequestBranchFilterConfiguration.ValueStringPointer(),
+			SkipBuildsForExistingCommits: settings.SkipBuildsForExistingCommits.ValueBoolPointer(),
+			SkipPullRequestBuildsForExistingCommits: settings.SkipPullRequestBuildsForExistingCommits.ValueBoolPointer(),
+			BuildPullRequestReadyForReview: settings.BuildPullRequestReadyForReview.ValueBoolPointer(),
+			BuildPullRequestLabelsChanged: settings.BuildPullRequestLabelsChanged.ValueBoolPointer(),
+			BuildPullRequestForks: settings.BuildPullRequestForks.ValueBoolPointer(),
+			PrefixPullRequestForkBranchNames: settings.PrefixPullRequestForkBranchNames.ValueBoolPointer(),
+			BuildBranches: settings.BuildBranches.ValueBoolPointer(),
+			BuildTags: settings.BuildTags.ValueBoolPointer(),
+			CancelDeletedBranchBuilds: settings.CancelDeletedBranchBuilds.ValueBoolPointer(),
+			FilterEnabled: settings.FilterEnabled.ValueBoolPointer(),
+			FilterCondition: settings.FilterCondition.ValueStringPointer(),
+			PublishCommitStatus: settings.PublishCommitStatus.ValueBoolPointer(),
+			PublishBlockedAsPending: settings.PublishBlockedAsPending.ValueBoolPointer(),
+			PublishCommitStatusPerStep: settings.PublishCommitStatusPerStep.ValueBoolPointer(),
+			SeparatePullRequestStatuses: settings.SeparatePullRequestStatuses.ValueBoolPointer(),
+		},
 	}
 
 	pipelineExtraInfo := PipelineExtraInfo{}
@@ -877,25 +900,27 @@ func deleteTeamPipelines(teamPipelines []TeamPipelineNode, client *Client) error
 func updatePipelineResourceExtraInfo(state *pipelineResourceModel, pipeline *PipelineExtraInfo) {
 	state.BadgeUrl = types.StringValue(pipeline.BadgeUrl)
 	s := pipeline.Provider.Settings
-	state.ProviderSettings = &providerSettingsModel{
-		TriggerMode:                             types.StringValue(s.TriggerMode),
-		BuildPullRequests:                       types.BoolValue(s.BuildPullRequests),
-		PullRequestBranchFilterEnabled:          types.BoolValue(s.PullRequestBranchFilterEnabled),
-		PullRequestBranchFilterConfiguration:    types.StringValue(s.PullRequestBranchFilterConfiguration),
-		SkipBuildsForExistingCommits:            types.BoolValue(s.SkipBuildsForExistingCommits),
-		SkipPullRequestBuildsForExistingCommits: types.BoolValue(s.SkipPullRequestBuildsForExistingCommits),
-		BuildPullRequestReadyForReview:          types.BoolValue(s.BuildPullRequestReadyForReview),
-		BuildPullRequestLabelsChanged:           types.BoolValue(s.BuildPullRequestLabelsChanged),
-		BuildPullRequestForks:                   types.BoolValue(s.BuildPullRequestForks),
-		PrefixPullRequestForkBranchNames:        types.BoolValue(s.PrefixPullRequestForkBranchNames),
-		BuildBranches:                           types.BoolValue(s.BuildBranches),
-		BuildTags:                               types.BoolValue(s.BuildTags),
-		CancelDeletedBranchBuilds:               types.BoolValue(s.CancelDeletedBranchBuilds),
-		FilterEnabled:                           types.BoolValue(s.FilterEnabled),
-		FilterCondition:                         types.StringValue(s.FilterCondition),
-		PublishCommitStatus:                     types.BoolValue(s.PublishCommitStatus),
-		PublishBlockedAsPending:                 types.BoolValue(s.PublishBlockedAsPending),
-		PublishCommitStatusPerStep:              types.BoolValue(s.PublishCommitStatusPerStep),
-		SeparatePullRequestStatuses:             types.BoolValue(s.SeparatePullRequestStatuses),
+	state.ProviderSettings = []*providerSettingsModel{
+		&providerSettingsModel{
+			TriggerMode:                             types.StringValue(*s.TriggerMode),
+			BuildPullRequests:                       types.BoolValue(*s.BuildPullRequests),
+			PullRequestBranchFilterEnabled:          types.BoolValue(*s.PullRequestBranchFilterEnabled),
+			PullRequestBranchFilterConfiguration:    types.StringValue(*s.PullRequestBranchFilterConfiguration),
+			SkipBuildsForExistingCommits:            types.BoolValue(*s.SkipBuildsForExistingCommits),
+			SkipPullRequestBuildsForExistingCommits: types.BoolValue(*s.SkipPullRequestBuildsForExistingCommits),
+			BuildPullRequestReadyForReview:          types.BoolValue(*s.BuildPullRequestReadyForReview),
+			BuildPullRequestLabelsChanged:           types.BoolValue(*s.BuildPullRequestLabelsChanged),
+			BuildPullRequestForks:                   types.BoolValue(*s.BuildPullRequestForks),
+			PrefixPullRequestForkBranchNames:        types.BoolValue(*s.PrefixPullRequestForkBranchNames),
+			BuildBranches:                           types.BoolValue(*s.BuildBranches),
+			BuildTags:                               types.BoolValue(*s.BuildTags),
+			CancelDeletedBranchBuilds:               types.BoolValue(*s.CancelDeletedBranchBuilds),
+			FilterEnabled:                           types.BoolValue(*s.FilterEnabled),
+			FilterCondition:                         types.StringValue(*s.FilterCondition),
+			PublishCommitStatus:                     types.BoolValue(*s.PublishCommitStatus),
+			PublishBlockedAsPending:                 types.BoolValue(*s.PublishBlockedAsPending),
+			PublishCommitStatusPerStep:              types.BoolValue(*s.PublishCommitStatusPerStep),
+			SeparatePullRequestStatuses:             types.BoolValue(*s.SeparatePullRequestStatuses),
+		},
 	}
 }
