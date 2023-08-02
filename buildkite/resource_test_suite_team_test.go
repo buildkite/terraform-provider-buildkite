@@ -15,9 +15,7 @@ func TestAccTestSuiteTeam_add_remove(t *testing.T) {
 		ProtoV6ProviderFactories: protoV6ProviderFactories(),
 		CheckDestroy:             testAccCheckTestSuiteTeamDestroy,
 		Steps: []resource.TestStep{
-			{
-
-			},
+			{},
 		},
 	})
 }
@@ -30,9 +28,7 @@ func TestAccTestSuiteTeam_update(t *testing.T) {
 		ProtoV6ProviderFactories: protoV6ProviderFactories(),
 		CheckDestroy:             testAccCheckTestSuiteTeamDestroy,
 		Steps: []resource.TestStep{
-			{
-
-			},
+			{},
 		},
 	})
 }
@@ -45,9 +41,7 @@ func TestAccTestSuiteTeam_import(t *testing.T) {
 		ProtoV6ProviderFactories: protoV6ProviderFactories(),
 		CheckDestroy:             testAccCheckTestSuiteTeamDestroy,
 		Steps: []resource.TestStep{
-			{
-
-			},
+			{},
 		},
 	})
 }

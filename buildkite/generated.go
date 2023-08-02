@@ -2808,46 +2808,88 @@ func (v *createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuiteTeamsTeamS
 //
 // A suite that's been assigned to a team
 type createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadTeamSuite struct {
-	Id string `json:"id"`
-	// The public UUID for this team suite
-	Uuid string `json:"uuid"`
-	// The access level users have to this suite
-	AccessLevel SuiteAccessLevels `json:"accessLevel"`
-	// The team associated with this team member
-	Team createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadTeamSuiteTeam `json:"team"`
+	TeamSuiteFields `json:"-"`
 }
 
 // GetId returns createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadTeamSuite.Id, and is useful for accessing the field via an interface.
 func (v *createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadTeamSuite) GetId() string {
-	return v.Id
+	return v.TeamSuiteFields.Id
 }
 
-// GetUuid returns createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadTeamSuite.Uuid, and is useful for accessing the field via an interface.
-func (v *createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadTeamSuite) GetUuid() string {
-	return v.Uuid
+// GetTeamSuiteUuid returns createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadTeamSuite.TeamSuiteUuid, and is useful for accessing the field via an interface.
+func (v *createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadTeamSuite) GetTeamSuiteUuid() string {
+	return v.TeamSuiteFields.TeamSuiteUuid
 }
 
 // GetAccessLevel returns createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadTeamSuite.AccessLevel, and is useful for accessing the field via an interface.
 func (v *createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadTeamSuite) GetAccessLevel() SuiteAccessLevels {
-	return v.AccessLevel
+	return v.TeamSuiteFields.AccessLevel
 }
 
 // GetTeam returns createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadTeamSuite.Team, and is useful for accessing the field via an interface.
-func (v *createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadTeamSuite) GetTeam() createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadTeamSuiteTeam {
-	return v.Team
+func (v *createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadTeamSuite) GetTeam() TeamSuiteFieldsTeam {
+	return v.TeamSuiteFields.Team
 }
 
-// createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadTeamSuiteTeam includes the requested fields of the GraphQL type Team.
-// The GraphQL type's documentation follows.
-//
-// An organization team
-type createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadTeamSuiteTeam struct {
+// GetSuite returns createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadTeamSuite.Suite, and is useful for accessing the field via an interface.
+func (v *createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadTeamSuite) GetSuite() TeamSuiteFieldsSuite {
+	return v.TeamSuiteFields.Suite
+}
+
+func (v *createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadTeamSuite) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadTeamSuite
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadTeamSuite = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	err = json.Unmarshal(
+		b, &v.TeamSuiteFields)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+type __premarshalcreateTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadTeamSuite struct {
 	Id string `json:"id"`
+
+	TeamSuiteUuid string `json:"teamSuiteUuid"`
+
+	AccessLevel SuiteAccessLevels `json:"accessLevel"`
+
+	Team TeamSuiteFieldsTeam `json:"team"`
+
+	Suite TeamSuiteFieldsSuite `json:"suite"`
 }
 
-// GetId returns createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadTeamSuiteTeam.Id, and is useful for accessing the field via an interface.
-func (v *createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadTeamSuiteTeam) GetId() string {
-	return v.Id
+func (v *createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadTeamSuite) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadTeamSuite) __premarshalJSON() (*__premarshalcreateTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadTeamSuite, error) {
+	var retval __premarshalcreateTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadTeamSuite
+
+	retval.Id = v.TeamSuiteFields.Id
+	retval.TeamSuiteUuid = v.TeamSuiteFields.TeamSuiteUuid
+	retval.AccessLevel = v.TeamSuiteFields.AccessLevel
+	retval.Team = v.TeamSuiteFields.Team
+	retval.Suite = v.TeamSuiteFields.Suite
+	return &retval, nil
 }
 
 // deleteClusterClusterDeleteClusterDeletePayload includes the requested fields of the GraphQL type ClusterDeletePayload.
@@ -10341,13 +10383,19 @@ mutation createTestSuiteTeam ($teamId: ID!, $suiteId: ID!, $accessLevel: SuiteAc
 			}
 		}
 		teamSuite {
-			id
-			uuid
-			accessLevel
-			team {
-				id
-			}
+			... TeamSuiteFields
 		}
+	}
+}
+fragment TeamSuiteFields on TeamSuite {
+	id
+	teamSuiteUuid: uuid
+	accessLevel
+	team {
+		id
+	}
+	suite {
+		id
 	}
 }
 `

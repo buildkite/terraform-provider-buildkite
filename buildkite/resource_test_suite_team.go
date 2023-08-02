@@ -194,7 +194,7 @@ func (tst *testSuiteTeamResource) Delete(ctx context.Context, req resource.Delet
 	}
 }
 
-func updateTeamSuiteTeamResource(tstm *testSuiteTeamModel, tsn getNodeNodeTeamSuite){
+func updateTeamSuiteTeamResource(tstm *testSuiteTeamModel, tsn getNodeNodeTeamSuite) {
 	tstm.ID = types.StringValue(tsn.Id)
 	tstm.UUID = types.StringValue(tsn.TeamSuiteUuid)
 	tstm.TeamID = types.StringValue(tsn.Team.Id)

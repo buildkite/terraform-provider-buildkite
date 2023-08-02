@@ -26,12 +26,7 @@ mutation createTestSuiteTeam($teamId: ID!, $suiteId: ID!, $accessLevel: SuiteAcc
             }
         }
         teamSuite {
-            id
-            uuid
-            accessLevel
-            team {
-                id
-            }
+            ...TeamSuiteFields
         }
     }
 }
