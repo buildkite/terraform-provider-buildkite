@@ -93,7 +93,7 @@ type pipelineResourceModel struct {
 	Slug                                 types.String             `tfsdk:"slug"`
 	Steps                                types.String             `tfsdk:"steps"`
 	Tags                                 []types.String           `tfsdk:"tags"`
-	Teams                                []pipelineTeamModel      `tfsdk:"team"`
+	Teams                                []*pipelineTeamModel     `tfsdk:"team"`
 	WebhookUrl                           types.String             `tfsdk:"webhook_url"`
 }
 
@@ -120,8 +120,10 @@ type providerSettingsModel struct {
 }
 
 type pipelineTeamModel struct {
-	Slug        types.String `tfsdk:"slug"`
-	AccessLevel types.String `tfsdk:"access_level"`
+	TeamId         types.String `tfsdk:"team_id"`
+	PipelineTeamId types.String `tfsdk:"pipeline_team_id"`
+	Slug           types.String `tfsdk:"slug"`
+	AccessLevel    types.String `tfsdk:"access_level"`
 }
 
 type pipelineResource struct {
@@ -427,6 +429,12 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 								stringvalidator.OneOf(string(PipelineAccessLevelsReadOnly), string(PipelineAccessLevelsBuildAndRead), string(PipelineAccessLevelsManageBuildAndRead)),
 							},
 						},
+						"team_id": schema.StringAttribute{
+							Computed: true,
+						},
+						"pipeline_team_id": schema.StringAttribute{
+							Computed: true,
+						},
 					},
 				},
 			},
@@ -562,6 +570,14 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 	state.DeletionProtection = plan.DeletionProtection
 	state.ArchiveOnDelete = plan.ArchiveOnDelete
 
+	// plan.Teams has what we want. state.Teams has what exists on the server. we need to make them match
+	err = p.reconcileTeamPipelines(plan.Teams, state.Teams, state.Id.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddError("Unable to reconcile team pipelines", err.Error())
+		return
+	}
+	state.Teams = plan.Teams
+
 	if len(plan.ProviderSettings) > 0 {
 		pipelineExtraInfo, err := updatePipelineExtraInfo(response.PipelineUpdate.Pipeline.Slug, plan.ProviderSettings[0], p.client)
 		if err != nil {
@@ -608,11 +624,13 @@ func setPipelineModel(model *pipelineResourceModel, data pipelineResponse) {
 		tags = nil
 	}
 	model.Tags = tags
-	teams := make([]pipelineTeamModel, len(data.GetTeams().Edges))
+	teams := make([]*pipelineTeamModel, len(data.GetTeams().Edges))
 	for i, teamEdge := range data.GetTeams().Edges {
-		teams[i] = pipelineTeamModel{
-			Slug:        types.StringValue(teamEdge.Node.Team.Slug),
-			AccessLevel: types.StringValue(string(teamEdge.Node.AccessLevel)),
+		teams[i] = &pipelineTeamModel{
+			Slug:           types.StringValue(teamEdge.Node.Team.Slug),
+			AccessLevel:    types.StringValue(string(teamEdge.Node.AccessLevel)),
+			TeamId:         types.StringValue(teamEdge.Node.Team.Id),
+			PipelineTeamId: types.StringValue(teamEdge.Node.Id),
 		}
 	}
 	model.Teams = teams
@@ -693,15 +711,6 @@ func updatePipelineExtraInfo(slug string, settings *providerSettingsModel, clien
 	return pipelineExtraInfo, nil
 }
 
-func mapTagsFromGenqlient(tags []PipelineValuesTagsPipelineTag) []PipelineTag {
-	newTags := make([]PipelineTag, len(tags))
-
-	for i, v := range tags {
-		newTags[i] = PipelineTag{Label: graphql.String(v.Label)}
-	}
-	return newTags
-}
-
 func getTagsFromSchema(plan *pipelineResourceModel) []PipelineTagInput {
 	tags := make([]PipelineTagInput, len(plan.Tags))
 	for i, tag := range plan.Tags {
@@ -710,25 +719,6 @@ func getTagsFromSchema(plan *pipelineResourceModel) []PipelineTagInput {
 		}
 	}
 	return tags
-}
-
-func mapTeamPipelinesFromGenqlient(tags []PipelineValuesTeamsTeamPipelineConnectionEdgesTeamPipelineEdge) struct {
-	Edges []struct{ Node TeamPipelineNode }
-} {
-	teamPipelineNodes := make([]struct{ Node TeamPipelineNode }, len(tags))
-	for i, v := range tags {
-		teamPipelineNodes[i] = struct{ Node TeamPipelineNode }{
-			Node: TeamPipelineNode{
-				AccessLevel: v.Node.AccessLevel,
-				ID:          graphql.String(v.Node.Id),
-				Team: TeamNode{
-					Slug: graphql.String(v.Node.Team.Slug),
-				}},
-		}
-	}
-	return struct {
-		Edges []struct{ Node TeamPipelineNode }
-	}{Edges: teamPipelineNodes}
 }
 
 func (p *pipelineResource) getTeamPipelinesFromSchema(plan *pipelineResourceModel) []PipelineTeamAssignmentInput {
@@ -749,50 +739,38 @@ func (p *pipelineResource) getTeamPipelinesFromSchema(plan *pipelineResourceMode
 }
 
 // reconcileTeamPipelines adds/updates/deletes the teamPipelines on buildkite to match the teams in terraform resource data
-func reconcileTeamPipelines(teamPipelines []TeamPipelineNode, pipeline *PipelineNode, client *Client) error {
+func (p *pipelineResource) reconcileTeamPipelines(planTeams []*pipelineTeamModel, stateTeams []*pipelineTeamModel, pipelineId string) error {
 	teamPipelineIds := make(map[string]graphql.ID)
 
-	var toAdd []TeamPipelineNode
-	var toUpdate []TeamPipelineNode
-	var toDelete []TeamPipelineNode
+	var toAdd []*pipelineTeamModel
+	var toUpdate []*pipelineTeamModel
+	var toDelete []*pipelineTeamModel
 
 	// Look for teamPipelines on buildkite that need updated or removed
-	for _, teamPipeline := range pipeline.Teams.Edges {
-		teamSlugBk := teamPipeline.Node.Team.Slug
-		accessLevelBk := teamPipeline.Node.AccessLevel
-		id := teamPipeline.Node.ID
+	for _, teamPipeline := range stateTeams {
+		teamSlugBk := teamPipeline.Slug.ValueString()
+		accessLevelBk := teamPipeline.AccessLevel
+		id := teamPipeline.PipelineTeamId.ValueString()
 
 		teamPipelineIds[string(teamSlugBk)] = graphql.ID(id)
 
 		found := false
-		for _, teamPipeline := range teamPipelines {
-			if teamPipeline.Team.Slug == teamSlugBk {
+		for _, teamPipeline := range planTeams {
+			if string(teamPipeline.Slug.ValueString()) == teamSlugBk {
 				found = true
 				if teamPipeline.AccessLevel != accessLevelBk {
-					toUpdate = append(toUpdate, TeamPipelineNode{
-						AccessLevel: teamPipeline.AccessLevel,
-						ID:          id,
-						Team: TeamNode{
-							Slug: teamPipeline.Team.Slug,
-						},
-					})
+					toUpdate = append(toUpdate, teamPipeline)
 				}
 			}
 		}
 		if !found {
-			toDelete = append(toDelete, TeamPipelineNode{
-				AccessLevel: accessLevelBk,
-				ID:          id,
-				Team: TeamNode{
-					Slug: teamSlugBk,
-				},
-			})
+			toDelete = append(toDelete, teamPipeline)
 		}
 	}
 
 	// Look for new teamsInput that need added to buildkite
-	for _, teamPipeline := range teamPipelines {
-		if _, found := teamPipelineIds[string(teamPipeline.Team.Slug)]; !found {
+	for _, teamPipeline := range planTeams {
+		if _, found := teamPipelineIds[teamPipeline.Slug.ValueString()]; !found {
 			toAdd = append(toAdd, teamPipeline)
 		}
 	}
@@ -800,19 +778,19 @@ func reconcileTeamPipelines(teamPipelines []TeamPipelineNode, pipeline *Pipeline
 	log.Printf("EXISTING_BUILDKITE_TEAMS: %s", teamPipelineIds)
 
 	// Add any teamsInput that don't already exist
-	err := createTeamPipelines(toAdd, string(pipeline.ID), client)
+	err := createTeamPipelines(toAdd, pipelineId, p.client)
 	if err != nil {
 		return err
 	}
 
 	// Update any teamsInput access levels that need updating
-	err = updateTeamPipelines(toUpdate, client)
+	err = updateTeamPipelines(toUpdate, p.client)
 	if err != nil {
 		return err
 	}
 
 	// Remove any teamsInput that shouldn't exist
-	err = deleteTeamPipelines(toDelete, client)
+	err = deleteTeamPipelines(toDelete, p.client)
 	if err != nil {
 		return err
 	}
@@ -821,50 +799,29 @@ func reconcileTeamPipelines(teamPipelines []TeamPipelineNode, pipeline *Pipeline
 }
 
 // createTeamPipelines grants access to a pipeline for the teams specified
-func createTeamPipelines(teamPipelines []TeamPipelineNode, pipelineID string, client *Client) error {
-	var mutation struct {
-		TeamPipelineCreate struct {
-			TeamPipeline struct {
-				ID graphql.ID
-			}
-		} `graphql:"teamPipelineCreate(input: {teamID: $team, pipelineID: $pipeline, accessLevel: $accessLevel})"`
-	}
+func createTeamPipelines(teamPipelines []*pipelineTeamModel, pipelineID string, client *Client) error {
 	for _, teamPipeline := range teamPipelines {
-		log.Printf("Granting teamPipeline %s %s access to pipeline id '%s'...", teamPipeline.Team.Slug, teamPipeline.AccessLevel, pipelineID)
-		teamID, err := GetTeamID(string(teamPipeline.Team.Slug), client)
+		log.Printf("Granting teamPipeline %s %s access to pipeline id '%s'...", teamPipeline.Slug, teamPipeline.AccessLevel, pipelineID)
+		teamID, err := GetTeamID(string(teamPipeline.Slug.ValueString()), client)
 		if err != nil {
-			return fmt.Errorf("Unable to get ID for team slug %s (%v)", teamPipeline.Team.Slug, err)
+			return fmt.Errorf("Unable to get ID for team slug %s (%v)", teamPipeline.Slug.ValueString(), err)
 		}
-		params := map[string]interface{}{
-			"team":        graphql.ID(teamID),
-			"pipeline":    graphql.ID(pipelineID),
-			"accessLevel": teamPipeline.AccessLevel,
-		}
-		err = client.graphql.Mutate(context.Background(), &mutation, params)
+		resp, err := teamPipelineCreate(client.genqlient, teamID, pipelineID, PipelineAccessLevels(teamPipeline.AccessLevel.ValueString()))
 		if err != nil {
-			log.Printf("Unable to create team pipeline %s", teamPipeline.Team.Slug)
+			log.Printf("Unable to create team pipeline %s", teamPipeline.Slug)
 			return err
 		}
+		teamPipeline.TeamId = types.StringValue(teamID)
+		teamPipeline.PipelineTeamId = types.StringValue(resp.TeamPipelineCreate.TeamPipeline.Id)
 	}
 	return nil
 }
 
 // Update access levels for the given teamPipelines
-func updateTeamPipelines(teamPipelines []TeamPipelineNode, client *Client) error {
-	var mutation struct {
-		TeamPipelineUpdate struct {
-			TeamPipeline struct {
-				ID graphql.ID
-			}
-		} `graphql:"teamPipelineUpdate(input: {id: $id, accessLevel: $accessLevel})"`
-	}
+func updateTeamPipelines(teamPipelines []*pipelineTeamModel, client *Client) error {
 	for _, teamPipeline := range teamPipelines {
-		log.Printf("Updating access to %s for teamPipeline id '%s'...", teamPipeline.AccessLevel, teamPipeline.ID)
-		params := map[string]interface{}{
-			"id":          graphql.ID(string(teamPipeline.ID)),
-			"accessLevel": teamPipeline.AccessLevel,
-		}
-		err := client.graphql.Mutate(context.Background(), &mutation, params)
+		log.Printf("Updating access to %s for teamPipeline id '%s'...", teamPipeline.AccessLevel, teamPipeline.PipelineTeamId)
+		_, err := teamPipelineUpdate(client.genqlient, teamPipeline.PipelineTeamId.ValueString(), PipelineAccessLevels(teamPipeline.AccessLevel.ValueString()))
 		if err != nil {
 			log.Printf("Unable to update team pipeline")
 			return err
@@ -873,20 +830,10 @@ func updateTeamPipelines(teamPipelines []TeamPipelineNode, client *Client) error
 	return nil
 }
 
-func deleteTeamPipelines(teamPipelines []TeamPipelineNode, client *Client) error {
-	var mutation struct {
-		TeamPipelineDelete struct {
-			Team struct {
-				ID graphql.ID
-			}
-		} `graphql:"teamPipelineDelete(input: {id: $id})"`
-	}
+func deleteTeamPipelines(teamPipelines []*pipelineTeamModel, client *Client) error {
 	for _, teamPipeline := range teamPipelines {
-		log.Printf("Removing access for teamPipeline %s (id=%s)...", teamPipeline.Team.Slug, teamPipeline.ID)
-		params := map[string]interface{}{
-			"id": graphql.ID(string(teamPipeline.ID)),
-		}
-		err := client.graphql.Mutate(context.Background(), &mutation, params)
+		log.Printf("Removing access for teamPipeline %s (id=%s)...", teamPipeline.Slug, teamPipeline.PipelineTeamId)
+		_, err := teamPipelineDelete(client.genqlient, teamPipeline.PipelineTeamId.ValueString())
 		if err != nil {
 			log.Printf("Unable to delete team pipeline")
 			return err

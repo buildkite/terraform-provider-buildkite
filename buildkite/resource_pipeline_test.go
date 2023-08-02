@@ -327,6 +327,70 @@ func TestAccPipeline_update_withteams(t *testing.T) {
 	})
 }
 
+func TestAccPipeline_add_team(t *testing.T) {
+	var resourcePipeline PipelineNode
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		CheckDestroy:             testAccCheckPipelineResourceDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccPipelineConfigBasic("foo"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					// Confirm the pipeline exists in the buildkite API
+					testAccCheckPipelineExists("buildkite_pipeline.foobar", &resourcePipeline),
+					// Quick check to confirm the local state is correct before we update it
+					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "name", "Test Pipeline foo"),
+				),
+			},
+			{
+				Config: testAccPipelineConfigBasicWithTeam("foo"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					// Confirm the pipeline exists in the buildkite API
+					testAccCheckPipelineExists("buildkite_pipeline.foobar", &resourcePipeline),
+					// Confirm the pipeline has the updated values in Buildkite's system
+					testAccCheckPipelineRemoteValues(&resourcePipeline, "Test Pipeline foo"),
+					// Confirm the pipeline has the updated values in terraform state
+					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "name", "Test Pipeline foo"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccPipeline_remove_team_here(t *testing.T) {
+	var resourcePipeline PipelineNode
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		CheckDestroy:             testAccCheckPipelineResourceDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccPipelineConfigBasicWithTeam("foo"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					// Confirm the pipeline exists in the buildkite API
+					testAccCheckPipelineExists("buildkite_pipeline.foobar", &resourcePipeline),
+					// Quick check to confirm the local state is correct before we update it
+					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "name", "Test Pipeline foo"),
+				),
+			},
+			{
+				Config: testAccPipelineConfigBasic("foo"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					// Confirm the pipeline exists in the buildkite API
+					testAccCheckPipelineExists("buildkite_pipeline.foobar", &resourcePipeline),
+					// Confirm the pipeline has the updated values in Buildkite's system
+					testAccCheckPipelineRemoteValues(&resourcePipeline, "Test Pipeline foo"),
+					// Confirm the pipeline has the updated values in terraform state
+					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "name", "Test Pipeline foo"),
+				),
+			},
+		},
+	})
+}
+
 // Confirm that this resource can be imported
 func TestAccPipeline_import(t *testing.T) {
 	var resourcePipeline PipelineNode

@@ -85,6 +85,28 @@ mutation updatePipeline(
     }
 }
 
+mutation teamPipelineCreate($teamId: ID!, $pipelineId: ID!, $accessLevel: PipelineAccessLevels) {
+    teamPipelineCreate(input: {teamID: $teamId, pipelineID: $pipelineId, accessLevel: $accessLevel}) {
+        teamPipeline {
+            id
+        }
+    }
+}
+
+mutation teamPipelineDelete($id: ID!) {
+    teamPipelineDelete(input: {id: $id}) {
+        deletedTeamPipelineID
+    }
+}
+
+mutation teamPipelineUpdate($id: ID!, $accessLevel: PipelineAccessLevels!) {
+    teamPipelineUpdate(input: {id: $id, accessLevel: $accessLevel}) {
+        teamPipeline {
+            id
+        }
+    }
+}
+
 mutation deletePipeline ($id: ID!) {
     pipelineDelete(input: {
         id: $id
