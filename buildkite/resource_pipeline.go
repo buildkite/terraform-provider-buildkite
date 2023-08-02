@@ -291,8 +291,9 @@ func (p *pipelineResource) Read(ctx context.Context, req resource.ReadRequest, r
 		}
 		resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 	} else {
-		// no pipeline was found so set an empty state
-		resp.Diagnostics.Append(resp.State.Set(ctx, pipelineResourceModel{})...)
+		// no pipeline was found so remove it from state
+		resp.Diagnostics.AddWarning("Pipeline not found", "Removing pipeline from state")
+		resp.State.RemoveResource(ctx)
 	}
 }
 
