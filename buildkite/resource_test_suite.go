@@ -137,7 +137,7 @@ func (ts *testSuiteResource) Read(ctx context.Context, req resource.ReadRequest,
 				break
 			}
 			if teamSuite.Node.AccessLevel == SuiteAccessLevelsManageAndRead {
-				state.TeamOwnerId = types.StringValue(string(teamSuite.Node.AccessLevel))
+				state.TeamOwnerId = types.StringValue(string(teamSuite.Node.Team.Id))
 				break
 			}
 		}
