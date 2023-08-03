@@ -32,7 +32,7 @@ func newteamPipelineResource() resource.Resource {
 }
 
 func (teamPipelineResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
-	resp.TypeName = req.ProviderTypeName + "_team_pipeline"
+	resp.TypeName = req.ProviderTypeName + "_pipeline_team"
 }
 
 func (tp *teamPipelineResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
