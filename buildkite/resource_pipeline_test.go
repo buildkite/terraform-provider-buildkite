@@ -140,6 +140,8 @@ func TestAccPipeline_add_remove_withcluster_old_version(t *testing.T) {
 					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "name", "Test Pipeline foo"),
 					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "cluster_id", "Q2x1c3Rlci0tLTFkNmIxOTg5LTJmYjctNDRlMC04MWYyLTAxYjIxNzQ4MTVkMg=="),
 					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "allow_rebuilds", "true"),
+					// check provider settings are present
+					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "provider_settings.0.trigger_mode", "code"),
 				),
 			},
 			{
@@ -154,6 +156,8 @@ func TestAccPipeline_add_remove_withcluster_old_version(t *testing.T) {
 					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "name", "Test Pipeline foo"),
 					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "cluster_id", "Q2x1c3Rlci0tLTFkNmIxOTg5LTJmYjctNDRlMC04MWYyLTAxYjIxNzQ4MTVkMg=="),
 					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "allow_rebuilds", "true"),
+					// check provider settings are present
+					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "provider_settings.0.trigger_mode", "code"),
 				),
 			},
 		},
@@ -187,6 +191,8 @@ func TestAccPipeline_add_remove_withoutcluster_old_version(t *testing.T) {
 					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "name", "Test Pipeline foo"),
 					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "cluster_id", ""),
 					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "allow_rebuilds", "true"),
+					// check provider settings are present
+					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "provider_settings.0.trigger_mode", "code"),
 				),
 			},
 			{
@@ -201,6 +207,29 @@ func TestAccPipeline_add_remove_withoutcluster_old_version(t *testing.T) {
 					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "name", "Test Pipeline foo"),
 					resource.TestCheckNoResourceAttr("buildkite_pipeline.foobar", "cluster_id"),
 					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "allow_rebuilds", "true"),
+					// check provider settings are present
+					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "provider_settings.0.trigger_mode", "code"),
+				),
+			},
+			{
+				Config: testAccPipelineConfigBasic("foo"),
+				ExternalProviders: map[string]resource.ExternalProvider{
+					"buildkite": {
+						Source:            "registry.terraform.io/buildkite/buildkite",
+						VersionConstraint: "0.21.1",
+					},
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					// Confirm the pipeline exists in the buildkite API
+					testAccCheckPipelineExists("buildkite_pipeline.foobar", &resourcePipeline),
+					// Confirm the pipeline has the correct values in Buildkite's system
+					testAccCheckPipelineRemoteValues(&resourcePipeline, "Test Pipeline foo"),
+					// Confirm the pipeline has the correct values in terraform state
+					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "name", "Test Pipeline foo"),
+					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "cluster_id", ""),
+					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "allow_rebuilds", "true"),
+					// check provider settings are present
+					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "provider_settings.0.trigger_mode", "code"),
 				),
 			},
 		},
