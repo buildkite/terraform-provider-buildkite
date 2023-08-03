@@ -61,15 +61,19 @@ func (tst *testSuiteTeamResource) Schema(ctx context.Context, req resource.Schem
 			},
 			"test_suite_id": schema.StringAttribute{
 				Required: true,
+				MarkdownDescription: "The GraphQL ID of the test suite.",
 			},
 			"team_id": schema.StringAttribute{
+				
 				Required: true,
+				MarkdownDescription: "The GraphQL ID of the team.",
 			},
 			"access_level": schema.StringAttribute{
 				Required: true,
 				Validators: []validator.String{
 					stringvalidator.OneOf("MANAGE_AND_READ", "READ_ONLY"),
 				},
+				MarkdownDescription: " The access level the team has on the test suite. Either `READ_ONLY` or `MANAGE_AND_READ`",
 			},
 		},
 	}
