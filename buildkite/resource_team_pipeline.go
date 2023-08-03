@@ -92,7 +92,7 @@ func (tp *teamPipelineResource) Create(ctx context.Context, req resource.CreateR
 		tp.client.genqlient,
 		state.TeamId.ValueString(),
 		state.PipelineId.ValueString(),
-		*state.AccessLevel.ValueStringPointer(),
+		parseAccessLevelString(state.AccessLevel.ValueString()),
 	)
 
 	if err != nil {
@@ -161,7 +161,7 @@ func (tp *teamPipelineResource) Update(ctx context.Context, req resource.UpdateR
 		return
 	}
 
-	apiResponse, err := updateTeamPipeline(tp.client.genqlient, id, accessLevel)
+	apiResponse, err := updateTeamPipeline(tp.client.genqlient, id, parseAccessLevelString(accessLevel))
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to update Team pipeline",
@@ -201,4 +201,17 @@ func updateTeamPipelineResourceState(tpState *teamPipelineResourceModel, tpNode 
 	tpState.TeamId = types.StringValue(tpNode.Team.Id)
 	tpState.PipelineId = types.StringValue(tpNode.Pipeline.Id)
 	tpState.AccessLevel = types.StringValue(string(tpNode.AccessLevel))
+}
+
+func parseAccessLevelString(str string) PipelineAccessLevels {
+	switch str {
+	case "READ_ONLY":
+		return PipelineAccessLevelsReadOnly
+	case "BUILD_AND_READ":
+		return PipelineAccessLevelsBuildAndRead
+	case "MANAGE_BUILD_AND_READ":
+		return PipelineAccessLevelsManageBuildAndRead
+	default:
+		return PipelineAccessLevelsReadOnly
+	}
 }
