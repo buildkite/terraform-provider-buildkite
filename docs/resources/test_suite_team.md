@@ -40,7 +40,7 @@ resource "buildkite_test_suite_team" "viewers_rspec" {
 
 * `test_suite_id` - (Required) The GraphQL ID of the test suite.
 * `team_id` - (Required) The GraphQL ID of the team.
-* `access_level` - (Required) The access level the team has on the test suite, Either READ_ONLY or MANAGE_AND_READ.
+* `access_level` - (Required) The access level the team has on the test suite. Either READ_ONLY or MANAGE_AND_READ.
 
 ## Attribute Reference
 
