@@ -160,6 +160,53 @@ func TestAccPipeline_add_remove_withcluster_old_version(t *testing.T) {
 	})
 }
 
+// TestAccPipeline_add_remove_withoutcluster_old_version tests that the provider doesn't get stuffed up when coming from an
+// older version to this new version. the first step runs against the published v0.21.1 version and the second step runs
+// against the current provider. the configuration is the same between each one so there should be no state/plan change
+func TestAccPipeline_add_remove_withoutcluster_old_version(t *testing.T) {
+	var resourcePipeline PipelineNode
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		CheckDestroy: testAccCheckPipelineResourceDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccPipelineConfigBasic("foo"),
+				ExternalProviders: map[string]resource.ExternalProvider{
+					"buildkite": {
+						Source:            "registry.terraform.io/buildkite/buildkite",
+						VersionConstraint: "0.21.1",
+					},
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					// Confirm the pipeline exists in the buildkite API
+					testAccCheckPipelineExists("buildkite_pipeline.foobar", &resourcePipeline),
+					// Confirm the pipeline has the correct values in Buildkite's system
+					testAccCheckPipelineRemoteValues(&resourcePipeline, "Test Pipeline foo"),
+					// Confirm the pipeline has the correct values in terraform state
+					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "name", "Test Pipeline foo"),
+					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "cluster_id", ""),
+					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "allow_rebuilds", "true"),
+				),
+			},
+			{
+				Config:                   testAccPipelineConfigBasic("foo"),
+				ProtoV6ProviderFactories: protoV6ProviderFactories(),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					// Confirm the pipeline exists in the buildkite API
+					testAccCheckPipelineExists("buildkite_pipeline.foobar", &resourcePipeline),
+					// Confirm the pipeline has the correct values in Buildkite's system
+					testAccCheckPipelineRemoteValues(&resourcePipeline, "Test Pipeline foo"),
+					// Confirm the pipeline has the correct values in terraform state
+					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "name", "Test Pipeline foo"),
+					resource.TestCheckNoResourceAttr("buildkite_pipeline.foobar", "cluster_id"),
+					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "allow_rebuilds", "true"),
+				),
+			},
+		},
+	})
+}
+
 func TestAccPipeline_add_remove_complex(t *testing.T) {
 	var resourcePipeline PipelineNode
 	steps := `"steps:\n- command: buildkite-agent pipeline upload\n"`
