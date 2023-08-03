@@ -356,6 +356,8 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 				Computed:    true,
 				Default:     booldefault.StaticBool(false),
 				Description: "If set to 'true', deletion of a pipeline via `terraform destroy` will fail, until set to 'false'.",
+				DeprecationMessage: "Deletion protection will be removed in a future release. A similar solution already " +
+					"exists and is supported by Terraform. See https://developer.hashicorp.com/terraform/language/meta-arguments/lifecycle.",
 			},
 			"maximum_timeout_in_minutes": schema.Int64Attribute{
 				Computed: true,
