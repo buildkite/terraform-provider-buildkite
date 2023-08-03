@@ -124,8 +124,8 @@ func testAccTeamPipelineConfigBasic(accessLevel string) string {
 		resource "buildkite_team" "test-team" {
 			name = "acceptance testing team" 
 			privacy = "VISIBLE"
-			default_team = true
-			default_member_access = "MEMBER" 
+			default_team = true 
+			default_member_role = "MEMBER"
 		}
 		resource "buildkite_pipeline_team" "test" {
 		    access_level = "%s"
