@@ -120,14 +120,14 @@ func TestAccPipeline_add_remove_withcluster_old_version(t *testing.T) {
 	var resourcePipeline PipelineNode
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		CheckDestroy:             testAccCheckPipelineResourceDestroy,
+		PreCheck:     func() { testAccPreCheck(t) },
+		CheckDestroy: testAccCheckPipelineResourceDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccPipelineConfigBasicWithCluster("foo"),
 				ExternalProviders: map[string]resource.ExternalProvider{
 					"buildkite": {
-						Source: "registry.terraform.io/buildkite/buildkite",
+						Source:            "registry.terraform.io/buildkite/buildkite",
 						VersionConstraint: "0.21.1",
 					},
 				},
@@ -143,7 +143,7 @@ func TestAccPipeline_add_remove_withcluster_old_version(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccPipelineConfigBasicWithCluster("foo"),
+				Config:                   testAccPipelineConfigBasicWithCluster("foo"),
 				ProtoV6ProviderFactories: protoV6ProviderFactories(),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Confirm the pipeline exists in the buildkite API
