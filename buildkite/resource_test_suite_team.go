@@ -142,6 +142,11 @@ func (tst *testSuiteTeamResource) Read(ctx context.Context, req resource.ReadReq
 		}
 		updateTeamSuiteTeamResource(&state, *teamSuiteNode)
 		resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+	} else {
+		// Test suite team was removed - remove from state
+		resp.Diagnostics.AddWarning("Test suite team not found", "Removing test suite team from state")
+		resp.State.RemoveResource(ctx)
+		return
 	}
 }
 
