@@ -222,6 +222,14 @@ func (p *pipelineResource) Create(ctx context.Context, req resource.CreateReques
 		}
 
 		updatePipelineResourceExtraInfo(&state, &pipelineExtraInfo)
+	} else {
+		// no provider_settings provided, but we still need to read in the badge url
+		extraInfo, err := getPipelineExtraInfo(p.client, response.PipelineCreate.Pipeline.Slug)
+		if err != nil {
+			resp.Diagnostics.AddError("Unable to read pipeline info from REST", err.Error())
+			return
+		}
+		state.BadgeUrl = types.StringValue(extraInfo.BadgeUrl)
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
@@ -289,6 +297,7 @@ func (p *pipelineResource) Read(ctx context.Context, req resource.ReadRequest, r
 		if len(state.ProviderSettings) > 0 {
 			updatePipelineResourceExtraInfo(&state, extraInfo)
 		}
+		state.BadgeUrl = types.StringValue(extraInfo.BadgeUrl)
 		resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 	} else {
 		// no pipeline was found so remove it from state
@@ -414,9 +423,6 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 			},
 			"badge_url": schema.StringAttribute{
 				Computed: true,
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
-				},
 			},
 		},
 		Blocks: map[string]schema.Block{
@@ -851,26 +857,26 @@ func updatePipelineResourceExtraInfo(state *pipelineResourceModel, pipeline *Pip
 	state.BadgeUrl = types.StringValue(pipeline.BadgeUrl)
 	s := pipeline.Provider.Settings
 	state.ProviderSettings = []*providerSettingsModel{
-		&providerSettingsModel{
-			TriggerMode:                             types.StringValue(*s.TriggerMode),
-			BuildPullRequests:                       types.BoolValue(*s.BuildPullRequests),
-			PullRequestBranchFilterEnabled:          types.BoolValue(*s.PullRequestBranchFilterEnabled),
-			PullRequestBranchFilterConfiguration:    types.StringValue(*s.PullRequestBranchFilterConfiguration),
-			SkipBuildsForExistingCommits:            types.BoolValue(*s.SkipBuildsForExistingCommits),
-			SkipPullRequestBuildsForExistingCommits: types.BoolValue(*s.SkipPullRequestBuildsForExistingCommits),
-			BuildPullRequestReadyForReview:          types.BoolValue(*s.BuildPullRequestReadyForReview),
-			BuildPullRequestLabelsChanged:           types.BoolValue(*s.BuildPullRequestLabelsChanged),
-			BuildPullRequestForks:                   types.BoolValue(*s.BuildPullRequestForks),
-			PrefixPullRequestForkBranchNames:        types.BoolValue(*s.PrefixPullRequestForkBranchNames),
-			BuildBranches:                           types.BoolValue(*s.BuildBranches),
-			BuildTags:                               types.BoolValue(*s.BuildTags),
-			CancelDeletedBranchBuilds:               types.BoolValue(*s.CancelDeletedBranchBuilds),
-			FilterEnabled:                           types.BoolValue(*s.FilterEnabled),
-			FilterCondition:                         types.StringValue(*s.FilterCondition),
-			PublishCommitStatus:                     types.BoolValue(*s.PublishCommitStatus),
-			PublishBlockedAsPending:                 types.BoolValue(*s.PublishBlockedAsPending),
-			PublishCommitStatusPerStep:              types.BoolValue(*s.PublishCommitStatusPerStep),
-			SeparatePullRequestStatuses:             types.BoolValue(*s.SeparatePullRequestStatuses),
+		{
+			TriggerMode:                             types.StringPointerValue(s.TriggerMode),
+			BuildPullRequests:                       types.BoolPointerValue(s.BuildPullRequests),
+			PullRequestBranchFilterEnabled:          types.BoolPointerValue(s.PullRequestBranchFilterEnabled),
+			PullRequestBranchFilterConfiguration:    types.StringPointerValue(s.PullRequestBranchFilterConfiguration),
+			SkipBuildsForExistingCommits:            types.BoolPointerValue(s.SkipBuildsForExistingCommits),
+			SkipPullRequestBuildsForExistingCommits: types.BoolPointerValue(s.SkipPullRequestBuildsForExistingCommits),
+			BuildPullRequestReadyForReview:          types.BoolPointerValue(s.BuildPullRequestReadyForReview),
+			BuildPullRequestLabelsChanged:           types.BoolPointerValue(s.BuildPullRequestLabelsChanged),
+			BuildPullRequestForks:                   types.BoolPointerValue(s.BuildPullRequestForks),
+			PrefixPullRequestForkBranchNames:        types.BoolPointerValue(s.PrefixPullRequestForkBranchNames),
+			BuildBranches:                           types.BoolPointerValue(s.BuildBranches),
+			BuildTags:                               types.BoolPointerValue(s.BuildTags),
+			CancelDeletedBranchBuilds:               types.BoolPointerValue(s.CancelDeletedBranchBuilds),
+			FilterEnabled:                           types.BoolPointerValue(s.FilterEnabled),
+			FilterCondition:                         types.StringPointerValue(s.FilterCondition),
+			PublishCommitStatus:                     types.BoolPointerValue(s.PublishCommitStatus),
+			PublishBlockedAsPending:                 types.BoolPointerValue(s.PublishBlockedAsPending),
+			PublishCommitStatusPerStep:              types.BoolPointerValue(s.PublishCommitStatusPerStep),
+			SeparatePullRequestStatuses:             types.BoolPointerValue(s.SeparatePullRequestStatuses),
 		},
 	}
 }
