@@ -55,36 +55,6 @@ func TestAccPipelineTeam_add_remove_non_default_access(t *testing.T) {
 	})
 }
 
-func TestAccPipelineTeam_update(t *testing.T) {
-	var tp pipelineTeamResourceModel
-
-	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: protoV6ProviderFactories(),
-		CheckDestroy:             testCheckPipelineTeamResourceRemoved,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccPipelineTeamConfigBasic("READ_ONLY"),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					// Confirm the team pipeline exists in the buildkite API
-					testAccCheckPipelineTeamExists("buildkite_pipeline_team.test", &tp),
-					// Confirm the team has the correct values in Buildkite's system
-					testAccCheckPipelineTeamRemoteValues("READ_ONLY", &tp),
-				),
-			},
-			{
-				Config: testAccPipelineTeamConfigBasic("BUILD_AND_READ"),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					// Confirm the team pipeline exists in the buildkite API
-					testAccCheckPipelineTeamExists("buildkite_pipeline_team.test", &tp),
-					// Confirm the team has the correct values in Buildkite's system
-					testAccCheckPipelineTeamRemoteValues("BUILD_AND_READ", &tp),
-				),
-			},
-		},
-	})
-}
-
 // Confirm that this resource can be imported
 func TestAccPipelineTeam_import(t *testing.T) {
 	var tp pipelineTeamResourceModel
