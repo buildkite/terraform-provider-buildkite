@@ -15,7 +15,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-type teamPipelineResourceModel struct {
+type pipelineTeamResourceModel struct {
 	Id          types.String `tfsdk:"id"`
 	Uuid        types.String `tfsdk:"uuid"`
 	PipelineId  types.String `tfsdk:"pipeline_id"`
@@ -23,19 +23,19 @@ type teamPipelineResourceModel struct {
 	AccessLevel types.String `tfsdk:"access_level"`
 }
 
-type teamPipelineResource struct {
+type pipelineTeamResource struct {
 	client *Client
 }
 
-func newteamPipelineResource() resource.Resource {
-	return &teamPipelineResource{}
+func newPipelineTeamResource() resource.Resource {
+	return &pipelineTeamResource{}
 }
 
-func (teamPipelineResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
+func (pipelineTeamResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
 	resp.TypeName = req.ProviderTypeName + "_pipeline_team"
 }
 
-func (tp *teamPipelineResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
+func (tp *pipelineTeamResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
 	if req.ProviderData == nil {
 		return
 	}
@@ -43,7 +43,7 @@ func (tp *teamPipelineResource) Configure(ctx context.Context, req resource.Conf
 	tp.client = req.ProviderData.(*Client)
 }
 
-func (teamPipelineResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
+func (pipelineTeamResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = resource_schema.Schema{
 		MarkdownDescription: "A team pipeline resource sets a team's access for the pipeline.",
 		Attributes: map[string]resource_schema.Attribute{
@@ -78,8 +78,8 @@ func (teamPipelineResource) Schema(ctx context.Context, req resource.SchemaReque
 	}
 }
 
-func (tp *teamPipelineResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	var state teamPipelineResourceModel
+func (tp *pipelineTeamResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	var state pipelineTeamResourceModel
 
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &state)...)
 
@@ -113,8 +113,8 @@ func (tp *teamPipelineResource) Create(ctx context.Context, req resource.CreateR
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
-func (tp *teamPipelineResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var state teamPipelineResourceModel
+func (tp *pipelineTeamResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	var state pipelineTeamResourceModel
 
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 
@@ -122,18 +122,21 @@ func (tp *teamPipelineResource) Read(ctx context.Context, req resource.ReadReque
 		return
 	}
 
-	apiResponse, err := getNode(tp.client.genqlient, state.Id.ValueString())
+	log.Printf("Reading Team pipeline id=%s ...", state.Id.ValueString())
+	apiResponse, err := getTeamPipeline(
+		tp.client.genqlient,
+		state.Id.ValueString(),
+	)
 
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to read team pipeline",
 			fmt.Sprintf("Unable to read team pipeline: %s", err.Error()),
 		)
-		return
 	}
 
 	// Convert fron Node to getNodeNodeTeamPipeline type
-	if teamPipelineNode, ok := apiResponse.GetNode().(*getNodeNodeTeamPipeline); ok {
+	if teamPipelineNode, ok := apiResponse.GetNode().(*getTeamPipelineNodeTeamPipeline); ok {
 		if teamPipelineNode == nil {
 			resp.Diagnostics.AddError(
 				"Unable to get team pipeline",
@@ -142,26 +145,26 @@ func (tp *teamPipelineResource) Read(ctx context.Context, req resource.ReadReque
 			return
 		}
 		updateTeamPipelineResourceState(&state, *teamPipelineNode)
-		resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 	}
+	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
-func (tp *teamPipelineResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+func (tp *pipelineTeamResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
 
-func (tp *teamPipelineResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	var id, accessLevel string
+func (tp *pipelineTeamResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	var state, plan pipelineTeamResourceModel
 
-	// Obtain team pipeline's ID from state, new role from plan
-	resp.Diagnostics.Append(req.State.GetAttribute(ctx, path.Root("id"), &id)...)
-	resp.Diagnostics.Append(req.Plan.GetAttribute(ctx, path.Root("access_level"), &accessLevel)...)
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	apiResponse, err := updateTeamPipeline(tp.client.genqlient, id, parseAccessLevelString(accessLevel))
+	log.Printf("Updating Team pipeline id=%s ...", state.Id.ValueString())
+	_, err := updateTeamPipeline(tp.client.genqlient, state.Id.ValueString(), parseAccessLevelString(plan.AccessLevel.ValueString()))
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to update Team pipeline",
@@ -170,13 +173,12 @@ func (tp *teamPipelineResource) Update(ctx context.Context, req resource.UpdateR
 		return
 	}
 
-	// Update state with revised access level
-	newAccessLevel := types.StringValue(string(apiResponse.TeamPipelineUpdate.TeamPipeline.AccessLevel))
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("access_level"), newAccessLevel)...)
+	plan.Id = state.Id
+	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 }
 
-func (tp *teamPipelineResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var state teamPipelineResourceModel
+func (tp *pipelineTeamResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	var state pipelineTeamResourceModel
 
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 
@@ -184,6 +186,7 @@ func (tp *teamPipelineResource) Delete(ctx context.Context, req resource.DeleteR
 		return
 	}
 
+	log.Println("Deleting Team pipeline ...")
 	_, err := deleteTeamPipeline(tp.client.genqlient, state.Id.ValueString())
 
 	if err != nil {
@@ -195,7 +198,7 @@ func (tp *teamPipelineResource) Delete(ctx context.Context, req resource.DeleteR
 	}
 }
 
-func updateTeamPipelineResourceState(tpState *teamPipelineResourceModel, tpNode getNodeNodeTeamPipeline) {
+func updateTeamPipelineResourceState(tpState *pipelineTeamResourceModel, tpNode getTeamPipelineNodeTeamPipeline) {
 	tpState.Id = types.StringValue(tpNode.Id)
 	tpState.Uuid = types.StringValue(tpNode.Uuid)
 	tpState.TeamId = types.StringValue(tpNode.Team.Id)

@@ -11,9 +11,5 @@ query getNode(
         ... on Team {
             ...TeamFields
         }
-
-        ... on TeamPipeline {
-            ...TeamPipelineFields
-        }
     }
 }

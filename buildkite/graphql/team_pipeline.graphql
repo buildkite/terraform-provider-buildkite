@@ -10,6 +10,16 @@ fragment TeamPipelineFields on TeamPipeline {
     }
 }
 
+query getTeamPipeline(
+    $id: ID! 
+){
+    node(id: $id) {
+        ... on TeamPipeline {
+            ... TeamPipelineFields
+        }
+    }
+}
+
 mutation createTeamPipeline(
     $teamID: ID!,
     $pipelineID: ID!,
