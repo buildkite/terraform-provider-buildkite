@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## Unreleased
+## [v0.23.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v0.22.0...v0.23.0)
 
 - SUP-1305: Test Suite Team Resource addition[[PR #346](https://github.com/buildkite/terraform-provider-buildkite/pull/346)] @james2791
 
