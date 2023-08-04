@@ -127,7 +127,7 @@ func TestAccPipeline_add_remove_withcluster_old_version(t *testing.T) {
 				Config: testAccPipelineConfigBasicWithCluster("foo"),
 				ExternalProviders: map[string]resource.ExternalProvider{
 					"buildkite": {
-						Source:            "registry.terraform.io/buildkite/buildkite",
+						Source:            "buildkite/buildkite",
 						VersionConstraint: "0.21.1",
 					},
 				},
@@ -178,7 +178,7 @@ func TestAccPipeline_add_remove_withoutcluster_old_version(t *testing.T) {
 				Config: testAccPipelineConfigBasic("foo"),
 				ExternalProviders: map[string]resource.ExternalProvider{
 					"buildkite": {
-						Source:            "registry.terraform.io/buildkite/buildkite",
+						Source:            "buildkite/buildkite",
 						VersionConstraint: "0.21.1",
 					},
 				},
@@ -215,7 +215,7 @@ func TestAccPipeline_add_remove_withoutcluster_old_version(t *testing.T) {
 				Config: testAccPipelineConfigBasic("foo"),
 				ExternalProviders: map[string]resource.ExternalProvider{
 					"buildkite": {
-						Source:            "registry.terraform.io/buildkite/buildkite",
+						Source:            "buildkite/buildkite",
 						VersionConstraint: "0.21.1",
 					},
 				},
