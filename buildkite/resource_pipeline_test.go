@@ -157,7 +157,7 @@ func TestAccPipeline_add_remove_withcluster_old_version(t *testing.T) {
 					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "cluster_id", "Q2x1c3Rlci0tLTFkNmIxOTg5LTJmYjctNDRlMC04MWYyLTAxYjIxNzQ4MTVkMg=="),
 					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "allow_rebuilds", "true"),
 					// check provider settings are not present
-					resource.TestCheckNoResourceAttr("buildkite_pipeline.foobar", "provider_settings"),
+					resource.TestCheckNoResourceAttr("buildkite_pipeline.foobar", "provider_settings.0"),
 				),
 			},
 		},
@@ -208,7 +208,7 @@ func TestAccPipeline_add_remove_withoutcluster_old_version(t *testing.T) {
 					resource.TestCheckNoResourceAttr("buildkite_pipeline.foobar", "cluster_id"),
 					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "allow_rebuilds", "true"),
 					// check provider settings are not present
-					resource.TestCheckNoResourceAttr("buildkite_pipeline.foobar", "provider_settings"),
+					resource.TestCheckNoResourceAttr("buildkite_pipeline.foobar", "provider_settings.0"),
 				),
 			},
 			{
