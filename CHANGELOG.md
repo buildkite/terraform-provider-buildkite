@@ -4,7 +4,13 @@ All notable changes to this project will be documented in this file.
 
 ## [v0.23.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v0.22.0...v0.23.0)
 
+### Added
+
 - SUP-1305: Test Suite Team Resource addition[[PR #346](https://github.com/buildkite/terraform-provider-buildkite/pull/346)] @james2791
+
+### Fixed
+
+- Test Suite resource reads [replacing](https://github.com/buildkite/terraform-provider-buildkite/pull/346/commits/f4b911075bb58dc691896cfacef60f9b36032fb2) `team_owner_id` with `MANAGE_AND_READ` @james2791 @jradtilbrook
 
 ## [v0.22.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v0.21.2...v0.22.0)
 
