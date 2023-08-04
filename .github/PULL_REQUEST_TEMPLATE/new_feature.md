@@ -10,10 +10,10 @@
 test(pipeline resource): Add a test to resource_pipeline_test to check for valid name chars
 
 ## PR checklist:
-- [ ] `docs/` updated
-- [x] tests added
-- [ ] an example added to `examples/` (useful to demo new field/resource)
-- [x] `CHANGELOG.md` updated with pending release information
+- [ ] `docs/` updated <-- No need for a doc update, no user impact
+- [x] tests added <-- Tests were added
+- [ ] an example added to `examples/` (useful to demo new field/resource) <-- No demo required as no user impact
+- [x] `CHANGELOG.md` updated with pending release information <-- Changes were made
 
 
 #### To ! or not to !
