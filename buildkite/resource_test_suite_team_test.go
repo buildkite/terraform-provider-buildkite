@@ -141,6 +141,35 @@ func TestAccTestSuiteTeam_import(t *testing.T) {
 	})
 }
 
+func TestAccTestSuiteTeam_disappears(t *testing.T) {
+	ownerTeamName := acctest.RandString(12)
+	newTeamName := acctest.RandString(12)
+	var tr teamResourceModel
+	var ts getTestSuiteSuite
+	var tst testSuiteTeamModel
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		CheckDestroy:             testAccCheckPipelineResourceDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCTestSuiteTeamConfigBasic(ownerTeamName, newTeamName, "READ_ONLY"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					// Confirm the new team/test suite exists in the Buildkite API
+					testAccCheckTeamExists("buildkite_team.newteam", &tr),
+					checkTestSuiteExists("buildkite_test_suite.testsuite", &ts),
+					// Confirm the test suite team exists in the buildkite API
+					testAccCheckTestSuiteTeamExists("buildkite_test_suite_team.teamsuite", &tst),
+					// Ensure the test suite team removal from spec
+					testAccCheckTestSuiteTeamDisappears("buildkite_test_suite_team.teamsuite"),
+				),
+				ExpectNonEmptyPlan: true,
+			},
+		},
+	})
+}
+
 func testAccCTestSuiteTeamConfigBasic(ownerTeamName, newTeamName, accessLevel string) string {
 	config := `
 	
@@ -239,5 +268,23 @@ func testAccCheckTestSuiteTeamRemoteValues(accessLevel string, tr *teamResourceM
 		}
 
 		return nil
+	}
+}
+
+func testAccCheckTestSuiteTeamDisappears(resourceName string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		resourceState, ok := s.RootModule().Resources[resourceName]
+
+		if !ok {
+			return fmt.Errorf("Resource not found: %s", resourceName)
+		}
+
+		if resourceState.Primary.ID == "" {
+			return fmt.Errorf("Resource ID missing: %s", resourceName)
+		}
+
+		_, err := deleteTestSuiteTeam(genqlientGraphql, resourceState.Primary.ID)
+
+		return err
 	}
 }
