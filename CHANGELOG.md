@@ -2,9 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
-## Unreleased
+## [v0.23.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v0.22.0...v0.23.0)
 
-- SUP-1305: Test Suite Team Resource addition[[PR #346](https://github.com/buildkite/terraform-provider-buildkite/pull/346)] @james2791
+### Added
+
+- SUP-1305: Test Suite Team Resource addition [[PR #346](https://github.com/buildkite/terraform-provider-buildkite/pull/346)] @james2791
+- SUP-1301: Deletion protection deprecation warning [[PR #342](https://github.com/buildkite/terraform-provider-buildkite/pull/342)] @mcncl
+
+### Fixed
+
+- Fixed a bug in `buildkite_test_suite` resources where `team_owner_id` could be set to the `access_level` instead @james2791 @jradtilbrook
 
 ## [v0.22.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v0.21.2...v0.22.0)
 
