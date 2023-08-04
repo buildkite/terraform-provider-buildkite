@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 - refactor 🧹: Refactor templates to use Conventional Commits[[PR #348](https://github.com/buildkite/terraform-provider-buildkite/pull/348)] @mcncl
+- SUP-1305: Test Suite Team Resource addition[[PR #346](https://github.com/buildkite/terraform-provider-buildkite/pull/346)] @james2791
+
 ### Forthcoming Changes
 `deletion_protection` is being deprecated and will be removed in a future release (`v1`). This feature offers similar
 functionality to [lifecycles](https://developer.hashicorp.com/terraform/language/meta-arguments/lifecycle) which are supported by Terraform.
@@ -16,6 +18,10 @@ functionality to [lifecycles](https://developer.hashicorp.com/terraform/language
 - Convert CreatePipeline to genqlient [[PR #334](https://github.com/buildkite/terraform-provider-buildkite/pull/334)] @jradtilbrook
 - SUP-196: Pipeline Schedule GraphQL transition [[PR #339](https://github.com/buildkite/terraform-provider-buildkite/pull/339)] @james2791
 - Add buildkite_test_suite resource [[PR #327](https://github.com/buildkite/terraform-provider-buildkite/pull/327)] @jradtilbrook
+
+### Forthcoming Changes
+`deletion_protection` is being deprecated and will be removed in a future release (`v1`). This feature offers similar
+functionality to [lifecycles](https://developer.hashicorp.com/terraform/language/meta-arguments/lifecycle) which are supported by Terraform.
 
 ## [v0.21.2](https://github.com/buildkite/terraform-provider-buildkite/compare/v0.21.1...v0.21.2)
 
