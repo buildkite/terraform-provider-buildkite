@@ -224,15 +224,16 @@ func (ts *testSuiteResource) Update(ctx context.Context, req resource.UpdateRequ
 	state.Slug = types.StringValue(response.Slug)
 
 	// If the planned team_owner_id differs from the state, add the new one and remove the old one
-	if !plan.TeamOwnerId.Equal(state.TeamOwnerId) {
+	if plan.TeamOwnerId.ValueString() != state.TeamOwnerId.ValueString() {
 		graphqlResponse, err := createTestSuiteTeam(ts.client.genqlient, plan.TeamOwnerId.ValueString(), state.ID.ValueString(), SuiteAccessLevelsManageAndRead)
 		if err != nil {
 			resp.Diagnostics.AddError("Could not add new owner team", err.Error())
 			return
 		}
+		previousOwnerId := state.TeamOwnerId.ValueString()
 		state.TeamOwnerId = types.StringValue(graphqlResponse.TeamSuiteCreate.TeamSuite.Team.Id)
 		for _, team := range graphqlResponse.TeamSuiteCreate.Suite.Teams.Edges {
-			if team.Node.Team.Id == state.TeamOwnerId.ValueString() {
+			if team.Node.Team.Id == previousOwnerId {
 				_, err = deleteTestSuiteTeam(ts.client.genqlient, team.Node.Id)
 				if err != nil {
 					resp.Diagnostics.AddError("Failed to delete team owner", err.Error())
