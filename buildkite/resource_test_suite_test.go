@@ -151,7 +151,7 @@ func TestAcc_testSuiteTeamOwnerResolution(t *testing.T) {
 					checkTestSuiteExists("buildkite_test_suite.suite", &suite),
 					checkTestSuiteRemoteValue(&suite, "Name", "test suite update"),
 					checkTestSuiteRemoteValue(&suite, "DefaultBranch", "main"),
-),
+				),
 			},
 			{
 				Config: `
