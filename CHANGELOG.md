@@ -6,6 +6,17 @@ All notable changes to this project will be documented in this file.
 
 - SUP-1068 Migrate pipeline resource to framework [[PR #345](https://github.com/buildkite/terraform-provider-buildkite/pull/345)] @jradtilbrook
 
+## [v0.23.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v0.22.0...v0.23.0)
+
+### Added
+
+- SUP-1305: Test Suite Team Resource addition [[PR #346](https://github.com/buildkite/terraform-provider-buildkite/pull/346)] @james2791
+- SUP-1301: Deletion protection deprecation warning [[PR #342](https://github.com/buildkite/terraform-provider-buildkite/pull/342)] @mcncl
+
+### Fixed
+
+- Fixed a bug in `buildkite_test_suite` resources where `team_owner_id` could be set to the `access_level` instead @james2791 @jradtilbrook
+
 ### Forthcoming Changes
 `deletion_protection` is being deprecated and will be removed in a future release (`v1`). This feature offers similar
 functionality to [lifecycles](https://developer.hashicorp.com/terraform/language/meta-arguments/lifecycle) which are supported by Terraform.
@@ -18,6 +29,10 @@ functionality to [lifecycles](https://developer.hashicorp.com/terraform/language
 - Convert CreatePipeline to genqlient [[PR #334](https://github.com/buildkite/terraform-provider-buildkite/pull/334)] @jradtilbrook
 - SUP-196: Pipeline Schedule GraphQL transition [[PR #339](https://github.com/buildkite/terraform-provider-buildkite/pull/339)] @james2791
 - Add buildkite_test_suite resource [[PR #327](https://github.com/buildkite/terraform-provider-buildkite/pull/327)] @jradtilbrook
+
+### Forthcoming Changes
+`deletion_protection` is being deprecated and will be removed in a future release (`v1`). This feature offers similar
+functionality to [lifecycles](https://developer.hashicorp.com/terraform/language/meta-arguments/lifecycle) which are supported by Terraform.
 
 ## [v0.21.2](https://github.com/buildkite/terraform-provider-buildkite/compare/v0.21.1...v0.21.2)
 
