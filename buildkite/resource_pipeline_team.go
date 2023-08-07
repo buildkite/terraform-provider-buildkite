@@ -3,7 +3,6 @@ package buildkite
 import (
 	"context"
 	"fmt"
-	"log"
 
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -87,7 +86,6 @@ func (tp *pipelineTeamResource) Create(ctx context.Context, req resource.CreateR
 		return
 	}
 
-	log.Printf("Creating team pipeline into team %s ...", state.TeamId.ValueString())
 	apiResponse, err := createTeamPipeline(
 		tp.client.genqlient,
 		state.TeamId.ValueString(),
@@ -122,7 +120,6 @@ func (tp *pipelineTeamResource) Read(ctx context.Context, req resource.ReadReque
 		return
 	}
 
-	log.Printf("Reading Team pipeline id=%s ...", state.Id.ValueString())
 	apiResponse, err := getNode(
 		tp.client.genqlient,
 		state.Id.ValueString(),
@@ -169,17 +166,24 @@ func (tp *pipelineTeamResource) Update(ctx context.Context, req resource.UpdateR
 		return
 	}
 
-	log.Printf("Updating Team pipeline id=%s ...", state.Id.ValueString())
-	_, err := updateTeamPipeline(tp.client.genqlient, state.Id.ValueString(), PipelineAccessLevels(accessLevel))
+	apiResponse, err := createTeamPipeline(
+		tp.client.genqlient,
+		state.TeamId.ValueString(),
+		state.PipelineId.ValueString(),
+		PipelineAccessLevels(accessLevel),
+	)
+
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Unable to update Team pipeline",
-			fmt.Sprintf("Unable to update Team pipeline: %s", err.Error()),
+			"Unable to update team pipeline",
+			fmt.Sprintf("Unable to update team pipeline: %s", err.Error()),
 		)
 		return
 	}
 
-	state.AccessLevel = types.StringValue(accessLevel)
+	// Update state with values from API response/plan
+	state.AccessLevel = types.StringValue(string(apiResponse.TeamPipelineCreate.TeamPipelineEdge.Node.PipelineAccessLevel))
+
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
@@ -192,7 +196,6 @@ func (tp *pipelineTeamResource) Delete(ctx context.Context, req resource.DeleteR
 		return
 	}
 
-	log.Println("Deleting Team pipeline ...")
 	_, err := deleteTeamPipeline(tp.client.genqlient, state.Id.ValueString())
 
 	if err != nil {
