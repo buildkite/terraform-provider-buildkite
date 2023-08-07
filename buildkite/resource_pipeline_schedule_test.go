@@ -89,7 +89,7 @@ func TestAccPipelineSchedule_add_remove_withteams(t *testing.T) {
 }
 
 // Confirm that we can create a new pipeline schedule, and then update the description
-func TestAccPipelineSchedule_updatee(t *testing.T) {
+func TestAccPipelineSchedule_update(t *testing.T) {
 	resName := acctest.RandString(12)
 	newResName := acctest.RandString(15)
 	var resourcePipeline PipelineNode

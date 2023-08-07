@@ -112,6 +112,88 @@ func TestAcc_testSuiteUpdate(t *testing.T) {
 	})
 }
 
+func TestAcc_testSuiteTeamOwnerResolution(t *testing.T) {
+	t.Parallel()
+	var suite getTestSuiteSuite
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		CheckDestroy:             testTestSuiteDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: `
+				resource "buildkite_team" "ateam" {
+					name = "a team"
+					default_team = false
+					privacy = "VISIBLE"
+					default_member_role = "MAINTAINER"
+				}
+				resource "buildkite_team" "bteam" {
+					name = "b team"
+					default_team = false
+					privacy = "VISIBLE"
+					default_member_role = "MAINTAINER"
+				}
+				resource "buildkite_test_suite" "suite" {
+					name = "test suite update"
+					default_branch = "main"
+					team_owner_id = resource.buildkite_team.bteam.id
+				}
+				`,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttrSet("buildkite_test_suite.suite", "id"),
+					resource.TestCheckResourceAttrSet("buildkite_test_suite.suite", "api_token"),
+					resource.TestCheckResourceAttr("buildkite_test_suite.suite", "default_branch", "main"),
+					resource.TestCheckResourceAttr("buildkite_test_suite.suite", "name", "test suite update"),
+					resource.TestCheckResourceAttrSet("buildkite_test_suite.suite", "team_owner_id"),
+					resource.TestCheckResourceAttrPair("buildkite_test_suite.suite", "team_owner_id", "buildkite_team.bteam", "id"),
+					checkTestSuiteExists("buildkite_test_suite.suite", &suite),
+					checkTestSuiteRemoteValue(&suite, "Name", "test suite update"),
+					checkTestSuiteRemoteValue(&suite, "DefaultBranch", "main"),
+				),
+			},
+			{
+				Config: `
+				resource "buildkite_team" "ateam" {
+					name = "a team"
+					default_team = false
+					privacy = "VISIBLE"
+					default_member_role = "MAINTAINER"
+				}
+				resource "buildkite_team" "bteam" {
+					name = "b team"
+					default_team = false
+					privacy = "VISIBLE"
+					default_member_role = "MAINTAINER"
+				}
+				resource "buildkite_test_suite" "suite" {
+					name = "test suite update"
+					default_branch = "main"
+					team_owner_id = resource.buildkite_team.bteam.id
+				}
+				resource "buildkite_test_suite_team" "team-a" {
+					test_suite_id = buildkite_test_suite.suite.id
+					team_id = buildkite_team.ateam.id
+					access_level = "MANAGE_AND_READ"
+				}
+				`,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttrSet("buildkite_test_suite.suite", "id"),
+					resource.TestCheckResourceAttrSet("buildkite_test_suite.suite", "api_token"),
+					resource.TestCheckResourceAttr("buildkite_test_suite.suite", "default_branch", "main"),
+					resource.TestCheckResourceAttr("buildkite_test_suite.suite", "name", "test suite update"),
+					resource.TestCheckResourceAttrSet("buildkite_test_suite.suite", "team_owner_id"),
+					resource.TestCheckResourceAttrPair("buildkite_test_suite.suite", "team_owner_id", "buildkite_team.bteam", "id"),
+					checkTestSuiteExists("buildkite_test_suite.suite", &suite),
+					checkTestSuiteRemoteValue(&suite, "Name", "test suite update"),
+					checkTestSuiteRemoteValue(&suite, "DefaultBranch", "main"),
+				),
+			},
+		},
+	})
+}
+
 func checkTestSuiteRemoteValue(suite *getTestSuiteSuite, property, value string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		if obj := reflect.ValueOf(*suite).FieldByName(property).String(); obj != value {

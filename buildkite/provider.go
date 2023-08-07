@@ -107,6 +107,7 @@ func (*terraformProvider) Resources(context.Context) []func() resource.Resource 
 		newTeamResource,
 		newTestSuiteResource,
 		newPipelineTeamResource,
+		newTestSuiteTeamResource,
 	}
 }
 

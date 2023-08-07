@@ -11,5 +11,8 @@ query getNode(
         ... on Team {
             ...TeamFields
         }
+        ... on TeamSuite {
+            ...TeamSuiteFields
+        }
     }
 }
