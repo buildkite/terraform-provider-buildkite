@@ -14,5 +14,8 @@ query getNode(
         ... on TeamSuite {
             ...TeamSuiteFields
         }
+        ... on TeamPipeline {
+            ... TeamPipelineFields
+        }
     }
 }

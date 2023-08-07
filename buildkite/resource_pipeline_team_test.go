@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
@@ -11,6 +12,9 @@ import (
 // Confirm we can add and remove a team pipeline resource with the default access level
 func TestAccPipelineTeam_add_remove_default_access(t *testing.T) {
 	var tp pipelineTeamResourceModel
+	var tr teamResourceModel
+	teamName := acctest.RandString(12)
+	t.Parallel()
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
@@ -18,14 +22,19 @@ func TestAccPipelineTeam_add_remove_default_access(t *testing.T) {
 		CheckDestroy:             testCheckPipelineTeamResourceRemoved,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccPipelineTeamConfigBasic("READ_ONLY"),
+				Config: testAccPipelineTeamConfigBasic(teamName, "READ_ONLY"),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					// Confirm the team pipeline exists in the buildkite API
-					testAccCheckPipelineTeamExists("buildkite_pipeline_team.test", &tp),
+					// Confirm the test resource team & team pipeline exists in the Buildkite API
+					testAccCheckTeamExists("buildkite_team.acc_test_team", &tr),
+					testAccCheckPipelineTeamExists("buildkite_pipeline_team.pipelineteam", &tp),
 					// Confirm the team pipeline has the correct values in Buildkite's system
-					testAccCheckPipelineTeamRemoteValues("READ_ONLY", &tp),
+					testAccCheckPipelineTeamRemoteValues("READ_ONLY", &tr, &tp),
 					// Confirm the team pipeline has the correct values in terraform state
-					resource.TestCheckResourceAttr("buildkite_pipeline_team.test", "access_level", "READ_ONLY"),
+					resource.TestCheckResourceAttrSet("buildkite_pipeline_team.pipelineteam", "id"),
+					resource.TestCheckResourceAttrSet("buildkite_pipeline_team.pipelineteam", "uuid"),
+					resource.TestCheckResourceAttrSet("buildkite_pipeline_team.pipelineteam", "team_id"),
+					resource.TestCheckResourceAttrSet("buildkite_pipeline_team.pipelineteam", "pipeline_id"),
+					resource.TestCheckResourceAttr("buildkite_pipeline_team.pipelineteam", "access_level", "READ_ONLY"),
 				),
 			},
 		},
@@ -34,6 +43,9 @@ func TestAccPipelineTeam_add_remove_default_access(t *testing.T) {
 
 func TestAccPipelineTeam_add_remove_non_default_access(t *testing.T) {
 	var tp pipelineTeamResourceModel
+	var tr teamResourceModel
+	teamName := acctest.RandString(12)
+	t.Parallel()
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
@@ -41,14 +53,66 @@ func TestAccPipelineTeam_add_remove_non_default_access(t *testing.T) {
 		CheckDestroy:             testCheckPipelineTeamResourceRemoved,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccPipelineTeamConfigBasic("BUILD_AND_READ"),
+				Config: testAccPipelineTeamConfigBasic(teamName, "BUILD_AND_READ"),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					// Confirm the team pipeline exists in the buildkite API
-					testAccCheckPipelineTeamExists("buildkite_pipeline_team.test", &tp),
+					// Confirm the test resource team & team pipeline exists in the Buildkite API
+					testAccCheckTeamExists("buildkite_team.acc_test_team", &tr),
+					testAccCheckPipelineTeamExists("buildkite_pipeline_team.pipelineteam", &tp),
 					// Confirm the team pipeline has the correct values in Buildkite's system
-					testAccCheckPipelineTeamRemoteValues("BUILD_AND_READ", &tp),
+					testAccCheckPipelineTeamRemoteValues("BUILD_AND_READ", &tr, &tp),
 					// Confirm the team pipeline has the correct values in terraform state
-					resource.TestCheckResourceAttr("buildkite_pipeline_team.test", "access_level", "BUILD_AND_READ"),
+					resource.TestCheckResourceAttrSet("buildkite_pipeline_team.pipelineteam", "id"),
+					resource.TestCheckResourceAttrSet("buildkite_pipeline_team.pipelineteam", "uuid"),
+					resource.TestCheckResourceAttrSet("buildkite_pipeline_team.pipelineteam", "team_id"),
+					resource.TestCheckResourceAttrSet("buildkite_pipeline_team.pipelineteam", "pipeline_id"),
+					resource.TestCheckResourceAttr("buildkite_pipeline_team.pipelineteam", "access_level", "BUILD_AND_READ"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccPipelineTeam_update(t *testing.T) {
+	var tr teamResourceModel
+	var tp pipelineTeamResourceModel
+	teamName := acctest.RandString(12)
+	t.Parallel()
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		CheckDestroy:             testCheckPipelineTeamResourceRemoved,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccPipelineTeamConfigBasic(teamName, "READ_ONLY"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					// Confirm the test resource team & team pipeline exists in the Buildkite API
+					testAccCheckTeamExists("buildkite_team.acc_test_team", &tr),
+					testAccCheckPipelineTeamExists("buildkite_pipeline_team.pipelineteam", &tp),
+					// Confirm the team has the correct values in Buildkite's system
+					testAccCheckPipelineTeamRemoteValues("READ_ONLY", &tr, &tp),
+					// Confirm the team pipeline has the correct values in terraform state
+					resource.TestCheckResourceAttrSet("buildkite_pipeline_team.pipelineteam", "id"),
+					resource.TestCheckResourceAttrSet("buildkite_pipeline_team.pipelineteam", "uuid"),
+					resource.TestCheckResourceAttrSet("buildkite_pipeline_team.pipelineteam", "team_id"),
+					resource.TestCheckResourceAttrSet("buildkite_pipeline_team.pipelineteam", "pipeline_id"),
+					resource.TestCheckResourceAttr("buildkite_pipeline_team.pipelineteam", "access_level", "READ_ONLY"),
+				),
+			},
+			{
+				Config: testAccPipelineTeamConfigBasic(teamName, "MANAGE_BUILD_AND_READ"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					// Confirm the test resource team & team pipeline exists in the Buildkite API
+					testAccCheckTeamExists("buildkite_team.acc_test_team", &tr),
+					testAccCheckPipelineTeamExists("buildkite_pipeline_team.pipelineteam", &tp),
+					// Confirm the team has the correct values in Buildkite's system
+					testAccCheckPipelineTeamRemoteValues("MANAGE_BUILD_AND_READ", &tr, &tp),
+					// Confirm the team pipeline has the correct values in terraform state
+					resource.TestCheckResourceAttrSet("buildkite_pipeline_team.pipelineteam", "id"),
+					resource.TestCheckResourceAttrSet("buildkite_pipeline_team.pipelineteam", "uuid"),
+					resource.TestCheckResourceAttrSet("buildkite_pipeline_team.pipelineteam", "team_id"),
+					resource.TestCheckResourceAttrSet("buildkite_pipeline_team.pipelineteam", "pipeline_id"),
+					resource.TestCheckResourceAttr("buildkite_pipeline_team.pipelineteam", "access_level", "MANAGE_BUILD_AND_READ"),
 				),
 			},
 		},
@@ -58,6 +122,9 @@ func TestAccPipelineTeam_add_remove_non_default_access(t *testing.T) {
 // Confirm that this resource can be imported
 func TestAccPipelineTeam_import(t *testing.T) {
 	var tp pipelineTeamResourceModel
+	var tr teamResourceModel
+	teamName := acctest.RandString(12)
+	t.Parallel()
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
@@ -65,17 +132,22 @@ func TestAccPipelineTeam_import(t *testing.T) {
 		CheckDestroy:             testCheckPipelineTeamResourceRemoved,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccPipelineTeamConfigBasic("READ_ONLY"),
+				Config: testAccPipelineTeamConfigBasic(teamName, "READ_ONLY"),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					// Confirm the team pipeline exists in the buildkite API
-					testAccCheckPipelineTeamExists("buildkite_pipeline_team.test", &tp),
+					// Confirm the test resource team & team pipeline exists in the Buildkite API
+					testAccCheckTeamExists("buildkite_team.acc_test_team", &tr),
+					testAccCheckPipelineTeamExists("buildkite_pipeline_team.pipelineteam", &tp),
 					// Confirm the team has the correct values in Buildkite's system
-					resource.TestCheckResourceAttr("buildkite_pipeline_team.test", "access_level", "READ_ONLY"),
+					resource.TestCheckResourceAttrSet("buildkite_pipeline_team.pipelineteam", "id"),
+					resource.TestCheckResourceAttrSet("buildkite_pipeline_team.pipelineteam", "uuid"),
+					resource.TestCheckResourceAttrSet("buildkite_pipeline_team.pipelineteam", "team_id"),
+					resource.TestCheckResourceAttrSet("buildkite_pipeline_team.pipelineteam", "pipeline_id"),
+					resource.TestCheckResourceAttr("buildkite_pipeline_team.pipelineteam", "access_level", "READ_ONLY"),
 				),
 			},
 			{
 				// re-import the resource and confirm they match
-				ResourceName:      "buildkite_pipeline_team.test",
+				ResourceName:      "buildkite_pipeline_team.pipelineteam",
 				ImportState:       true,
 				ImportStateVerify: true,
 			},
@@ -83,27 +155,29 @@ func TestAccPipelineTeam_import(t *testing.T) {
 	})
 }
 
-func testAccPipelineTeamConfigBasic(accessLevel string) string {
+func testAccPipelineTeamConfigBasic(teamName string, accessLevel string) string {
 	config := `
-		resource "buildkite_pipeline" "test-pipeline" {
-			name = "acceptance testing pipeline"
-		    repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
-			steps = ""
-		}
+	resource "buildkite_pipeline" "acc_test_pipeline" {
+	    name = "acceptance testing pipeline"
+	    repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
+	    steps = "steps:\n- label: ':pipeline: Pipeline Upload'\n  command: buildkite-agent pipeline upload"
+	}
 
-		resource "buildkite_team" "test-team" {
-			name = "acceptance testing team" 
-			privacy = "VISIBLE"
-			default_team = true 
-			default_member_role = "MEMBER"
-		}
-		resource "buildkite_pipeline_team" "test" {
-		    access_level = "%s"
-			team_id = buildkite_team.test-team.id
-			pipeline_id = buildkite_pipeline.test-pipeline.id 
-		}
+	resource "buildkite_team" "acc_test_team" {
+		name = "Acceptance Testing Team %s"
+		privacy = "VISIBLE"
+		default_team = true 
+		default_member_role = "MEMBER"
+		members_can_create_pipelines = true
+	}
+
+	resource "buildkite_pipeline_team" "pipelineteam" {
+		access_level = "%s"
+		team_id = buildkite_team.acc_test_team.id
+		pipeline_id = buildkite_pipeline.acc_test_pipeline.id 
+	}
 	`
-	return fmt.Sprintf(config, accessLevel)
+	return fmt.Sprintf(config, teamName, accessLevel)
 }
 
 func testAccCheckPipelineTeamExists(resourceName string, tp *pipelineTeamResourceModel) resource.TestCheckFunc {
@@ -124,11 +198,11 @@ func testAccCheckPipelineTeamExists(resourceName string, tp *pipelineTeamResourc
 			return fmt.Errorf("Error fetching team pipeline from graphql API: %v", err)
 		}
 
-		if pipelineTeamNode, ok := apiResponse.GetNode().(*getNodeNodePipelineTeam); ok {
+		if pipelineTeamNode, ok := apiResponse.GetNode().(*getNodeNodeTeamPipeline); ok {
 			if pipelineTeamNode == nil {
 				return fmt.Errorf("Error getting team pipeline: nil response")
 			}
-			updatePipelineTeamResourceState(tp, *pipelineTeamNode)
+			updateTeamPipelineResourceState(tp, *pipelineTeamNode)
 		}
 
 		return nil
@@ -148,7 +222,7 @@ func testCheckPipelineTeamResourceRemoved(s *terraform.State) error {
 			return fmt.Errorf("Error fetching team pipeline from graphql API: %v", err)
 		}
 
-		if pipelineTeamNode, ok := apiResponse.GetNode().(*getNodeNodePipelineTeam); ok {
+		if pipelineTeamNode, ok := apiResponse.GetNode().(*getNodeNodeTeamPipeline); ok {
 			if pipelineTeamNode != nil {
 				return fmt.Errorf("Team pipeline still exists")
 			}
@@ -157,10 +231,14 @@ func testCheckPipelineTeamResourceRemoved(s *terraform.State) error {
 	return nil
 }
 
-func testAccCheckPipelineTeamRemoteValues(accessLevel string, tp *pipelineTeamResourceModel) resource.TestCheckFunc {
+func testAccCheckPipelineTeamRemoteValues(accessLevel string, tr *teamResourceModel, tp *pipelineTeamResourceModel) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 
-		if string(tp.AccessLevel.ValueString()) != accessLevel {
+		if tp.TeamId.ValueString() != tr.ID.ValueString() {
+			return fmt.Errorf("Remote pipeline team ID (%s) doesn't match expected value (%s)", tp.TeamId.ValueString(), tr.ID)
+		}
+
+		if tp.AccessLevel.ValueString() != accessLevel {
 			return fmt.Errorf("remote team pipeline access level (%s) doesn't match expected value (%s)", tp.AccessLevel.ValueString(), accessLevel)
 		}
 		return nil

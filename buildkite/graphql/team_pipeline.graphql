@@ -1,22 +1,12 @@
 fragment TeamPipelineFields on TeamPipeline {
     id
     uuid 
-    accessLevel
+    pipelineAccessLevel: accessLevel
     team {
         id
     }
     pipeline {
         id
-    }
-}
-
-query getTeamPipeline(
-    $id: ID! 
-){
-    node(id: $id) {
-        ... on TeamPipeline {
-            ... TeamPipelineFields
-        }
     }
 }
 

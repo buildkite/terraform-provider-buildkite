@@ -92,7 +92,7 @@ func (tp *pipelineTeamResource) Create(ctx context.Context, req resource.CreateR
 		tp.client.genqlient,
 		state.TeamId.ValueString(),
 		state.PipelineId.ValueString(),
-		parseAccessLevelString(state.AccessLevel.ValueString()),
+		PipelineAccessLevels(state.AccessLevel.ValueString()),
 	)
 
 	if err != nil {
@@ -108,7 +108,7 @@ func (tp *pipelineTeamResource) Create(ctx context.Context, req resource.CreateR
 	state.Uuid = types.StringValue(apiResponse.TeamPipelineCreate.TeamPipelineEdge.Node.Uuid)
 	state.PipelineId = types.StringValue(apiResponse.TeamPipelineCreate.TeamPipelineEdge.Node.Pipeline.Id)
 	state.TeamId = types.StringValue(apiResponse.TeamPipelineCreate.TeamPipelineEdge.Node.Team.Id)
-	state.AccessLevel = types.StringValue(string(apiResponse.TeamPipelineCreate.TeamPipelineEdge.Node.AccessLevel))
+	state.AccessLevel = types.StringValue(string(apiResponse.TeamPipelineCreate.TeamPipelineEdge.Node.PipelineAccessLevel))
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
@@ -123,7 +123,7 @@ func (tp *pipelineTeamResource) Read(ctx context.Context, req resource.ReadReque
 	}
 
 	log.Printf("Reading Team pipeline id=%s ...", state.Id.ValueString())
-	apiResponse, err := getTeamPipeline(
+	apiResponse, err := getNode(
 		tp.client.genqlient,
 		state.Id.ValueString(),
 	)
@@ -135,8 +135,8 @@ func (tp *pipelineTeamResource) Read(ctx context.Context, req resource.ReadReque
 		)
 	}
 
-	// Convert fron Node to getNodeNodeTeamPipeline type
-	if teamPipelineNode, ok := apiResponse.GetNode().(*getTeamPipelineNodeTeamPipeline); ok {
+	// Convert from Node to getNodeNodeTeamPipeline type
+	if teamPipelineNode, ok := apiResponse.GetNode().(*getNodeNodeTeamPipeline); ok {
 		if teamPipelineNode == nil {
 			resp.Diagnostics.AddError(
 				"Unable to get team pipeline",
@@ -145,8 +145,13 @@ func (tp *pipelineTeamResource) Read(ctx context.Context, req resource.ReadReque
 			return
 		}
 		updateTeamPipelineResourceState(&state, *teamPipelineNode)
+		resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+	} else {
+		// Resource not found, remove from state
+		resp.Diagnostics.AddWarning("Team pipeline resource not found", "Removing team pipeline from state")
+		resp.State.RemoveResource(ctx)
 	}
-	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+
 }
 
 func (tp *pipelineTeamResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
@@ -154,17 +159,18 @@ func (tp *pipelineTeamResource) ImportState(ctx context.Context, req resource.Im
 }
 
 func (tp *pipelineTeamResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	var state, plan pipelineTeamResourceModel
+	var state pipelineTeamResourceModel
+	var accessLevel string
 
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	resp.Diagnostics.Append(req.Plan.GetAttribute(ctx, path.Root("access_level"), &accessLevel)...)
 
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
 	log.Printf("Updating Team pipeline id=%s ...", state.Id.ValueString())
-	_, err := updateTeamPipeline(tp.client.genqlient, state.Id.ValueString(), parseAccessLevelString(plan.AccessLevel.ValueString()))
+	_, err := updateTeamPipeline(tp.client.genqlient, state.Id.ValueString(), PipelineAccessLevels(accessLevel))
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to update Team pipeline",
@@ -173,8 +179,8 @@ func (tp *pipelineTeamResource) Update(ctx context.Context, req resource.UpdateR
 		return
 	}
 
-	plan.Id = state.Id
-	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
+	state.AccessLevel = types.StringValue(accessLevel)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
 func (tp *pipelineTeamResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
@@ -198,23 +204,10 @@ func (tp *pipelineTeamResource) Delete(ctx context.Context, req resource.DeleteR
 	}
 }
 
-func updateTeamPipelineResourceState(tpState *pipelineTeamResourceModel, tpNode getTeamPipelineNodeTeamPipeline) {
+func updateTeamPipelineResourceState(tpState *pipelineTeamResourceModel, tpNode getNodeNodeTeamPipeline) {
 	tpState.Id = types.StringValue(tpNode.Id)
 	tpState.Uuid = types.StringValue(tpNode.Uuid)
 	tpState.TeamId = types.StringValue(tpNode.Team.Id)
 	tpState.PipelineId = types.StringValue(tpNode.Pipeline.Id)
-	tpState.AccessLevel = types.StringValue(string(tpNode.AccessLevel))
-}
-
-func parseAccessLevelString(str string) PipelineAccessLevels {
-	switch str {
-	case "READ_ONLY":
-		return PipelineAccessLevelsReadOnly
-	case "BUILD_AND_READ":
-		return PipelineAccessLevelsBuildAndRead
-	case "MANAGE_BUILD_AND_READ":
-		return PipelineAccessLevelsManageBuildAndRead
-	default:
-		return PipelineAccessLevelsReadOnly
-	}
+	tpState.AccessLevel = types.StringValue(string(tpNode.PipelineAccessLevel))
 }
