@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/Khan/genqlient/graphql"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -166,24 +167,39 @@ func (tp *pipelineTeamResource) Update(ctx context.Context, req resource.UpdateR
 		return
 	}
 
-	apiResponse, err := createTeamPipeline(
-		tp.client.genqlient,
-		state.TeamId.ValueString(),
-		state.PipelineId.ValueString(),
-		PipelineAccessLevels(accessLevel),
-	)
-
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Unable to update team pipeline",
-			fmt.Sprintf("Unable to update team pipeline: %s", err.Error()),
+	found := findTeamInPipelineNode(&tp.client.genqlient, &state)
+	if !found {
+		_, err := createTeamPipeline(
+			tp.client.genqlient,
+			state.TeamId.ValueString(),
+			state.PipelineId.ValueString(),
+			PipelineAccessLevels(accessLevel),
 		)
-		return
+
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Unable to create team pipeline",
+				fmt.Sprintf("Unable to create team pipeline: %s", err.Error()),
+			)
+			return
+		}
+	} else {
+		_, err := updateTeamPipeline(tp.client.genqlient,
+			state.Id.ValueString(),
+			PipelineAccessLevels(accessLevel),
+		)
+
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Unable to update team pipeline",
+				fmt.Sprintf("Unable to update team pipeline: %s", err.Error()),
+			)
+			return
+		}
 	}
 
 	// Update state with values from API response/plan
-	state.AccessLevel = types.StringValue(string(apiResponse.TeamPipelineCreate.TeamPipelineEdge.Node.PipelineAccessLevel))
-
+	state.AccessLevel = types.StringValue(accessLevel)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
@@ -213,4 +229,22 @@ func updateTeamPipelineResourceState(tpState *pipelineTeamResourceModel, tpNode 
 	tpState.TeamId = types.StringValue(tpNode.Team.Id)
 	tpState.PipelineId = types.StringValue(tpNode.Pipeline.Id)
 	tpState.AccessLevel = types.StringValue(string(tpNode.PipelineAccessLevel))
+}
+
+func findTeamInPipelineNode(client *graphql.Client, tpState *pipelineTeamResourceModel) bool {
+
+	apiResponse, err := getNode(*client, tpState.PipelineId.ValueString())
+	if err != nil {
+		return false
+	}
+
+	teams := apiResponse.GetNode().(*getNodeNodePipeline).Teams.Edges
+	found := false
+	for _, team := range teams {
+		if team.Node.Id == tpState.TeamId.ValueString() {
+			found = true
+			break
+		}
+	}
+	return found
 }
