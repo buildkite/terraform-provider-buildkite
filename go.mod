@@ -5,7 +5,7 @@ go 1.20
 require (
 	github.com/Khan/genqlient v0.6.0
 	github.com/hashicorp/terraform-plugin-framework v1.3.4
-	github.com/hashicorp/terraform-plugin-framework-validators v0.10.0
+	github.com/hashicorp/terraform-plugin-framework-validators v0.11.0
 	github.com/hashicorp/terraform-plugin-go v0.18.0
 	github.com/hashicorp/terraform-plugin-mux v0.11.2
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.26.1
