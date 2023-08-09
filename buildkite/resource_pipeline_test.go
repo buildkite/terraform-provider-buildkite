@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
@@ -118,16 +119,17 @@ func TestAccPipeline_add_remove_withcluster(t *testing.T) {
 // against the current provider. the configuration is the same between each one so there should be no state/plan change
 func TestAccPipeline_add_remove_withcluster_old_version(t *testing.T) {
 	var resourcePipeline PipelineNode
+	pipelineName := acctest.RandString(12)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		CheckDestroy: testAccCheckPipelineResourceDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccPipelineConfigBasicWithCluster("foo"),
+				Config: testAccPipelineConfigBasicWithCluster(pipelineName),
 				ExternalProviders: map[string]resource.ExternalProvider{
 					"buildkite": {
-						Source:            "buildkite/buildkite",
+						Source:            "registry.terraform.io/buildkite/buildkite",
 						VersionConstraint: "0.21.1",
 					},
 				},
@@ -135,9 +137,9 @@ func TestAccPipeline_add_remove_withcluster_old_version(t *testing.T) {
 					// Confirm the pipeline exists in the buildkite API
 					testAccCheckPipelineExists("buildkite_pipeline.foobar", &resourcePipeline),
 					// Confirm the pipeline has the correct values in Buildkite's system
-					testAccCheckPipelineRemoteValues(&resourcePipeline, "Test Pipeline foo"),
+					testAccCheckPipelineRemoteValues(&resourcePipeline, fmt.Sprintf("Test Pipeline %s", pipelineName)),
 					// Confirm the pipeline has the correct values in terraform state
-					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "name", "Test Pipeline foo"),
+					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "name", fmt.Sprintf("Test Pipeline %s", pipelineName)),
 					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "cluster_id", "Q2x1c3Rlci0tLTFkNmIxOTg5LTJmYjctNDRlMC04MWYyLTAxYjIxNzQ4MTVkMg=="),
 					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "allow_rebuilds", "true"),
 					// check provider settings are present
@@ -145,15 +147,15 @@ func TestAccPipeline_add_remove_withcluster_old_version(t *testing.T) {
 				),
 			},
 			{
-				Config:                   testAccPipelineConfigBasicWithCluster("foo"),
+				Config:                   testAccPipelineConfigBasicWithCluster(pipelineName),
 				ProtoV6ProviderFactories: protoV6ProviderFactories(),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Confirm the pipeline exists in the buildkite API
 					testAccCheckPipelineExists("buildkite_pipeline.foobar", &resourcePipeline),
 					// Confirm the pipeline has the correct values in Buildkite's system
-					testAccCheckPipelineRemoteValues(&resourcePipeline, "Test Pipeline foo"),
+					testAccCheckPipelineRemoteValues(&resourcePipeline, fmt.Sprintf("Test Pipeline %s", pipelineName)),
 					// Confirm the pipeline has the correct values in terraform state
-					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "name", "Test Pipeline foo"),
+					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "name", fmt.Sprintf("Test Pipeline %s", pipelineName)),
 					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "cluster_id", "Q2x1c3Rlci0tLTFkNmIxOTg5LTJmYjctNDRlMC04MWYyLTAxYjIxNzQ4MTVkMg=="),
 					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "allow_rebuilds", "true"),
 					// check provider settings are not present
@@ -169,16 +171,17 @@ func TestAccPipeline_add_remove_withcluster_old_version(t *testing.T) {
 // against the current provider. the configuration is the same between each one so there should be no state/plan change
 func TestAccPipeline_add_remove_withoutcluster_old_version(t *testing.T) {
 	var resourcePipeline PipelineNode
+	pipelineName := acctest.RandString(12)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		CheckDestroy: testAccCheckPipelineResourceDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccPipelineConfigBasic("foo"),
+				Config: testAccPipelineConfigBasic(pipelineName),
 				ExternalProviders: map[string]resource.ExternalProvider{
 					"buildkite": {
-						Source:            "buildkite/buildkite",
+						Source:            "registry.terraform.io/buildkite/buildkite",
 						VersionConstraint: "0.21.1",
 					},
 				},
@@ -186,9 +189,9 @@ func TestAccPipeline_add_remove_withoutcluster_old_version(t *testing.T) {
 					// Confirm the pipeline exists in the buildkite API
 					testAccCheckPipelineExists("buildkite_pipeline.foobar", &resourcePipeline),
 					// Confirm the pipeline has the correct values in Buildkite's system
-					testAccCheckPipelineRemoteValues(&resourcePipeline, "Test Pipeline foo"),
+					testAccCheckPipelineRemoteValues(&resourcePipeline, fmt.Sprintf("Test Pipeline %s", pipelineName)),
 					// Confirm the pipeline has the correct values in terraform state
-					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "name", "Test Pipeline foo"),
+					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "name", fmt.Sprintf("Test Pipeline %s", pipelineName)),
 					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "cluster_id", ""),
 					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "allow_rebuilds", "true"),
 					// check provider settings are present
@@ -196,15 +199,15 @@ func TestAccPipeline_add_remove_withoutcluster_old_version(t *testing.T) {
 				),
 			},
 			{
-				Config:                   testAccPipelineConfigBasic("foo"),
+				Config:                   testAccPipelineConfigBasic(pipelineName),
 				ProtoV6ProviderFactories: protoV6ProviderFactories(),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Confirm the pipeline exists in the buildkite API
 					testAccCheckPipelineExists("buildkite_pipeline.foobar", &resourcePipeline),
 					// Confirm the pipeline has the correct values in Buildkite's system
-					testAccCheckPipelineRemoteValues(&resourcePipeline, "Test Pipeline foo"),
+					testAccCheckPipelineRemoteValues(&resourcePipeline, fmt.Sprintf("Test Pipeline %s", pipelineName)),
 					// Confirm the pipeline has the correct values in terraform state
-					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "name", "Test Pipeline foo"),
+					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "name", fmt.Sprintf("Test Pipeline %s", pipelineName)),
 					resource.TestCheckNoResourceAttr("buildkite_pipeline.foobar", "cluster_id"),
 					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "allow_rebuilds", "true"),
 					// check provider settings are not present
@@ -212,10 +215,10 @@ func TestAccPipeline_add_remove_withoutcluster_old_version(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccPipelineConfigBasic("foo"),
+				Config: testAccPipelineConfigBasic(pipelineName),
 				ExternalProviders: map[string]resource.ExternalProvider{
 					"buildkite": {
-						Source:            "buildkite/buildkite",
+						Source:            "registry.terraform.io/buildkite/buildkite",
 						VersionConstraint: "0.21.1",
 					},
 				},
@@ -223,9 +226,9 @@ func TestAccPipeline_add_remove_withoutcluster_old_version(t *testing.T) {
 					// Confirm the pipeline exists in the buildkite API
 					testAccCheckPipelineExists("buildkite_pipeline.foobar", &resourcePipeline),
 					// Confirm the pipeline has the correct values in Buildkite's system
-					testAccCheckPipelineRemoteValues(&resourcePipeline, "Test Pipeline foo"),
+					testAccCheckPipelineRemoteValues(&resourcePipeline, fmt.Sprintf("Test Pipeline %s", pipelineName)),
 					// Confirm the pipeline has the correct values in terraform state
-					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "name", "Test Pipeline foo"),
+					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "name", fmt.Sprintf("Test Pipeline %s", pipelineName)),
 					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "cluster_id", ""),
 					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "allow_rebuilds", "true"),
 					// check provider settings are present
