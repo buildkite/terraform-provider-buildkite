@@ -6,6 +6,7 @@ import (
 	"log"
 	"unsafe"
 
+	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -410,6 +411,9 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 			},
 			"slug": schema.StringAttribute{
 				Computed: true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"steps": schema.StringAttribute{
 				Optional: true,
@@ -428,6 +432,9 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 			},
 			"badge_url": schema.StringAttribute{
 				Computed: true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 		},
 		Blocks: map[string]schema.Block{
@@ -453,6 +460,9 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 				},
 			},
 			"provider_settings": schema.ListNestedBlock{
+				Validators: []validator.List{
+					listvalidator.SizeBetween(0, 1),
+				},
 				NestedObject: schema.NestedBlockObject{
 					Attributes: map[string]schema.Attribute{
 						"trigger_mode": schema.StringAttribute{
@@ -602,6 +612,14 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 		}
 
 		updatePipelineResourceExtraInfo(&state, &pipelineExtraInfo)
+	} else {
+		// no provider_settings provided, but we still need to read in the badge url
+		extraInfo, err := getPipelineExtraInfo(p.client, response.PipelineUpdate.Pipeline.Slug)
+		if err != nil {
+			resp.Diagnostics.AddError("Unable to read pipeline info from REST", err.Error())
+			return
+		}
+		state.BadgeUrl = types.StringValue(extraInfo.BadgeUrl)
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
