@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"unsafe"
 
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -138,7 +139,7 @@ type pipelineResponse interface {
 	GetCancelIntermediateBuildsBranchFilter() string
 	GetCluster() PipelineValuesCluster
 	GetDefaultBranch() string
-	GetDefaultTimeoutInMinutes() int
+	GetDefaultTimeoutInMinutes() *int
 	GetMaximumTimeoutInMinutes() int
 	GetDescription() string
 	GetName() string
@@ -181,6 +182,10 @@ func (p *pipelineResource) Create(ctx context.Context, req resource.CreateReques
 		return
 	}
 
+	// use the unsafe module to convert to an int. this is fine because the absolute max accepted by the API is much
+	// less than an int
+	defaultTimeoutInMinutes := (*int)(unsafe.Pointer(plan.DefaultTimeoutInMinutes.ValueInt64Pointer()))
+
 	input := PipelineCreateInput{
 		AllowRebuilds:                        plan.AllowRebuilds.ValueBool(),
 		BranchConfiguration:                  plan.BranchConfiguration.ValueStringPointer(),
@@ -188,7 +193,7 @@ func (p *pipelineResource) Create(ctx context.Context, req resource.CreateReques
 		CancelIntermediateBuildsBranchFilter: plan.CancelIntermediateBuildsBranchFilter.ValueString(),
 		ClusterId:                            plan.ClusterId.ValueStringPointer(),
 		DefaultBranch:                        plan.DefaultBranch.ValueString(),
-		DefaultTimeoutInMinutes:              int(plan.DefaultTimeoutInMinutes.ValueInt64()),
+		DefaultTimeoutInMinutes:              defaultTimeoutInMinutes,
 		MaximumTimeoutInMinutes:              int(plan.MaximumTimeoutInMinutes.ValueInt64()),
 		Description:                          plan.Description.ValueString(),
 		Name:                                 plan.Name.ValueString(),
@@ -548,6 +553,8 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 		return
 	}
 
+	defaultTimeoutInMinutes := (*int)(unsafe.Pointer(plan.DefaultTimeoutInMinutes.ValueInt64Pointer()))
+
 	input := PipelineUpdateInput{
 		AllowRebuilds:                        plan.AllowRebuilds.ValueBool(),
 		BranchConfiguration:                  plan.BranchConfiguration.ValueStringPointer(),
@@ -555,7 +562,7 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 		CancelIntermediateBuildsBranchFilter: plan.CancelIntermediateBuildsBranchFilter.ValueString(),
 		ClusterId:                            plan.ClusterId.ValueStringPointer(),
 		DefaultBranch:                        plan.DefaultBranch.ValueString(),
-		DefaultTimeoutInMinutes:              int(plan.DefaultTimeoutInMinutes.ValueInt64()),
+		DefaultTimeoutInMinutes:              defaultTimeoutInMinutes,
 		MaximumTimeoutInMinutes:              int(plan.MaximumTimeoutInMinutes.ValueInt64()),
 		Description:                          plan.Description.ValueString(),
 		Id:                                   plan.Id.ValueString(),
@@ -605,13 +612,14 @@ func (*pipelineResource) ImportState(ctx context.Context, req resource.ImportSta
 }
 
 func setPipelineModel(model *pipelineResourceModel, data pipelineResponse) {
+	defaultTimeoutInMinutes := (*int64)(unsafe.Pointer(data.GetDefaultTimeoutInMinutes()))
 	model.AllowRebuilds = types.BoolValue(data.GetAllowRebuilds())
 	model.BranchConfiguration = types.StringPointerValue(data.GetBranchConfiguration())
 	model.CancelIntermediateBuilds = types.BoolValue(data.GetCancelIntermediateBuilds())
 	model.CancelIntermediateBuildsBranchFilter = types.StringValue(data.GetCancelIntermediateBuildsBranchFilter())
 	model.ClusterId = types.StringPointerValue(data.GetCluster().Id)
 	model.DefaultBranch = types.StringValue(data.GetDefaultBranch())
-	model.DefaultTimeoutInMinutes = types.Int64Value(int64(data.GetDefaultTimeoutInMinutes()))
+	model.DefaultTimeoutInMinutes = types.Int64PointerValue(defaultTimeoutInMinutes)
 	model.Description = types.StringValue(data.GetDescription())
 	model.Id = types.StringValue(data.GetId())
 	model.MaximumTimeoutInMinutes = types.Int64Value(int64(data.GetMaximumTimeoutInMinutes()))

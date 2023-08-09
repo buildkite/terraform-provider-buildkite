@@ -10,6 +10,7 @@ fragment PipelineValues on Pipeline {
         id
     }
     defaultBranch
+    # @genqlient(pointer: true)
     defaultTimeoutInMinutes
     maximumTimeoutInMinutes
     description
@@ -59,6 +60,7 @@ query getPipeline($slug: ID!) {
 # @genqlient(for: "PipelineCreateInput.nextBuildNumber", omitempty: true)
 # @genqlient(for: "PipelineCreateInput.pipelineTemplateId", omitempty: true)
 # @genqlient(for: "PipelineCreateInput.visibility", omitempty: true)
+# @genqlient(for: "PipelineCreateInput.defaultTimeoutInMinutes", pointer: true)
 mutation createPipeline(
     $input: PipelineCreateInput!
 ) {
@@ -75,6 +77,7 @@ mutation createPipeline(
 # @genqlient(for: "PipelineUpdateInput.pipelineTemplateId", omitempty: true)
 # @genqlient(for: "PipelineUpdateInput.archived", omitempty: true)
 # @genqlient(for: "PipelineUpdateInput.nextBuildNumber", omitempty: true)
+# @genqlient(for: "PipelineUpdateInput.defaultTimeoutInMinutes", pointer: true)
 mutation updatePipeline(
     $input: PipelineUpdateInput!
 ) {
