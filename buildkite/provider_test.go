@@ -17,6 +17,7 @@ import (
 
 var graphqlClient *graphql.Client
 var genqlientGraphql genqlient.Client
+var organizationID string
 
 func init() {
 	rt := http.DefaultTransport
@@ -31,6 +32,7 @@ func init() {
 
 	graphqlClient = graphql.NewClient(defaultGraphqlEndpoint, httpClient)
 	genqlientGraphql = genqlient.NewClient(defaultGraphqlEndpoint, httpClient)
+	organizationID, _ = GetOrganizationID(getenv("BUILDKITE_ORGANIZATION_SLUG"), graphqlClient)
 }
 
 func protoV6ProviderFactories() map[string]func() (tfprotov6.ProviderServer, error) {
