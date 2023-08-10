@@ -218,6 +218,116 @@ func TestAccPipeline_add_remove_withoutcluster_old_version(t *testing.T) {
 	})
 }
 
+func TestAccPipeline_team_added(t *testing.T) {
+	var resourcePipeline PipelineNode
+	var teamID string
+	pipelineName := acctest.RandString(12)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		CheckDestroy:             removeTeamAndPipeline(&teamID),
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccPipelineConfigBasic(pipelineName),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					// Confirm the pipeline exists in the buildkite API
+					testAccCheckPipelineExists("buildkite_pipeline.foobar", &resourcePipeline),
+					// check no teams are present
+					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "team.#", "0"),
+					// add a team to the pipeline outside of terraform
+					func(s *terraform.State) error {
+						// TODO: figure out how to remove the team after this test runs
+						team, err := teamCreate(genqlientGraphql, organizationID, acctest.RandString(6), nil, "VISIBLE", false, "MEMBER", false)
+						teamID = team.TeamCreate.TeamEdge.Node.Id
+						if err != nil {
+							return err
+						}
+						_, err = teamPipelineCreate(genqlientGraphql, teamID, string(resourcePipeline.ID), PipelineAccessLevelsBuildAndRead)
+						if err != nil {
+							return err
+						}
+						return nil
+					},
+				),
+			},
+			{
+				Config: testAccPipelineConfigBasic(pipelineName),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					// Confirm the pipeline exists in the buildkite API
+					testAccCheckPipelineExists("buildkite_pipeline.foobar", &resourcePipeline),
+					// verify that we havent added the team to terraform since it was added outside
+					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "team.#", "0"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccPipeline_team_changed(t *testing.T) {
+	var resourcePipeline PipelineNode
+	pipelineName := acctest.RandString(12)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		CheckDestroy:             testAccCheckPipelineResourceDestroy,
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccPipelineConfigBasicWithTeam(pipelineName),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					// Confirm the pipeline exists in the buildkite API
+					testAccCheckPipelineExists("buildkite_pipeline.foobar", &resourcePipeline),
+					// check no teams are present
+					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "team.#", "1"),
+					// change the team access level outside of terraform
+					func(s *terraform.State) error {
+						_, err := teamPipelineUpdate(genqlientGraphql, string(resourcePipeline.Teams.Edges[0].Node.ID), PipelineAccessLevelsReadOnly)
+						if err != nil {
+							return err
+						}
+						return nil
+					},
+				),
+				// expect non-empty plan because team access level has changed
+				ExpectNonEmptyPlan: true,
+			},
+		},
+	})
+}
+
+func TestAccPipeline_team_removed(t *testing.T) {
+	var resourcePipeline PipelineNode
+	pipelineName := acctest.RandString(12)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		CheckDestroy:             testAccCheckPipelineResourceDestroy,
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccPipelineConfigBasicWithTeam(pipelineName),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					// Confirm the pipeline exists in the buildkite API
+					testAccCheckPipelineExists("buildkite_pipeline.foobar", &resourcePipeline),
+					// check no teams are present
+					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "team.#", "1"),
+					// remove the team from the api
+					func(s *terraform.State) error {
+						_, err := teamPipelineDelete(genqlientGraphql, string(resourcePipeline.Teams.Edges[0].Node.ID))
+						if err != nil {
+							return err
+						}
+						return nil
+					},
+				),
+				// expect non-empty plan because it should want to link the team again
+				ExpectNonEmptyPlan: true,
+			},
+		},
+	})
+}
+
 func TestAccPipeline_add_remove_complex(t *testing.T) {
 	var resourcePipeline PipelineNode
 	steps := `"steps:\n- command: buildkite-agent pipeline upload\n"`
@@ -464,7 +574,7 @@ func TestAccPipeline_add_team(t *testing.T) {
 	})
 }
 
-func TestAccPipeline_remove_team_here(t *testing.T) {
+func TestAccPipeline_remove_team(t *testing.T) {
 	var resourcePipeline PipelineNode
 
 	resource.Test(t, resource.TestCase{
@@ -876,6 +986,16 @@ func testAccPipelineConfigComplex(name string, steps string) string {
         }
 	`
 	return fmt.Sprintf(config, name, steps)
+}
+
+func removeTeamAndPipeline(id *string) resource.TestCheckFunc {
+	return func (s *terraform.State) error {
+		_, err := teamDelete(genqlientGraphql, *id)
+		if err != nil {
+			return err
+		}
+		return testAccCheckPipelineResourceDestroy(s)
+	}
 }
 
 // verifies the Pipeline has been destroyed
