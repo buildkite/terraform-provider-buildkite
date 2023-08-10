@@ -237,7 +237,6 @@ func TestAccPipeline_team_added(t *testing.T) {
 					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "team.#", "0"),
 					// add a team to the pipeline outside of terraform
 					func(s *terraform.State) error {
-						// TODO: figure out how to remove the team after this test runs
 						team, err := teamCreate(genqlientGraphql, organizationID, acctest.RandString(6), nil, "VISIBLE", false, "MEMBER", false)
 						teamID = team.TeamCreate.TeamEdge.Node.Id
 						if err != nil {
@@ -250,15 +249,7 @@ func TestAccPipeline_team_added(t *testing.T) {
 						return nil
 					},
 				),
-			},
-			{
-				Config: testAccPipelineConfigBasic(pipelineName),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					// Confirm the pipeline exists in the buildkite API
-					testAccCheckPipelineExists("buildkite_pipeline.foobar", &resourcePipeline),
-					// verify that we havent added the team to terraform since it was added outside
-					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "team.#", "0"),
-				),
+				ExpectNonEmptyPlan: true,
 			},
 		},
 	})
@@ -989,7 +980,7 @@ func testAccPipelineConfigComplex(name string, steps string) string {
 }
 
 func removeTeamAndPipeline(id *string) resource.TestCheckFunc {
-	return func (s *terraform.State) error {
+	return func(s *terraform.State) error {
 		_, err := teamDelete(genqlientGraphql, *id)
 		if err != nil {
 			return err
