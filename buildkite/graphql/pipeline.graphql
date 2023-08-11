@@ -12,6 +12,7 @@ fragment PipelineValues on Pipeline {
     defaultBranch
     # @genqlient(pointer: true)
     defaultTimeoutInMinutes
+    # @genqlient(pointer: true)
     maximumTimeoutInMinutes
     description
     name

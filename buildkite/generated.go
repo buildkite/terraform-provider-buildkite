@@ -666,7 +666,7 @@ type PipelineValues struct {
 	// The default timeout in minutes for all command steps in this pipeline. This can still be overridden in any command step
 	DefaultTimeoutInMinutes *int `json:"defaultTimeoutInMinutes"`
 	// The maximum timeout in minutes for all command steps in this pipeline. Any command step without a timeout or with a timeout greater than this value will be set to this value.
-	MaximumTimeoutInMinutes int `json:"maximumTimeoutInMinutes"`
+	MaximumTimeoutInMinutes *int `json:"maximumTimeoutInMinutes"`
 	// The short description of the pipeline
 	Description string `json:"description"`
 	// The name of the pipeline
@@ -715,7 +715,7 @@ func (v *PipelineValues) GetDefaultBranch() string { return v.DefaultBranch }
 func (v *PipelineValues) GetDefaultTimeoutInMinutes() *int { return v.DefaultTimeoutInMinutes }
 
 // GetMaximumTimeoutInMinutes returns PipelineValues.MaximumTimeoutInMinutes, and is useful for accessing the field via an interface.
-func (v *PipelineValues) GetMaximumTimeoutInMinutes() int { return v.MaximumTimeoutInMinutes }
+func (v *PipelineValues) GetMaximumTimeoutInMinutes() *int { return v.MaximumTimeoutInMinutes }
 
 // GetDescription returns PipelineValues.Description, and is useful for accessing the field via an interface.
 func (v *PipelineValues) GetDescription() string { return v.Description }
@@ -2163,7 +2163,7 @@ func (v *createPipelinePipelineCreatePipelineCreatePayloadPipeline) GetDefaultTi
 }
 
 // GetMaximumTimeoutInMinutes returns createPipelinePipelineCreatePipelineCreatePayloadPipeline.MaximumTimeoutInMinutes, and is useful for accessing the field via an interface.
-func (v *createPipelinePipelineCreatePipelineCreatePayloadPipeline) GetMaximumTimeoutInMinutes() int {
+func (v *createPipelinePipelineCreatePipelineCreatePayloadPipeline) GetMaximumTimeoutInMinutes() *int {
 	return v.PipelineValues.MaximumTimeoutInMinutes
 }
 
@@ -2259,7 +2259,7 @@ type __premarshalcreatePipelinePipelineCreatePipelineCreatePayloadPipeline struc
 
 	DefaultTimeoutInMinutes *int `json:"defaultTimeoutInMinutes"`
 
-	MaximumTimeoutInMinutes int `json:"maximumTimeoutInMinutes"`
+	MaximumTimeoutInMinutes *int `json:"maximumTimeoutInMinutes"`
 
 	Description string `json:"description"`
 
@@ -4694,7 +4694,7 @@ func (v *getNodeNodePipeline) GetDefaultTimeoutInMinutes() *int {
 }
 
 // GetMaximumTimeoutInMinutes returns getNodeNodePipeline.MaximumTimeoutInMinutes, and is useful for accessing the field via an interface.
-func (v *getNodeNodePipeline) GetMaximumTimeoutInMinutes() int {
+func (v *getNodeNodePipeline) GetMaximumTimeoutInMinutes() *int {
 	return v.PipelineValues.MaximumTimeoutInMinutes
 }
 
@@ -4782,7 +4782,7 @@ type __premarshalgetNodeNodePipeline struct {
 
 	DefaultTimeoutInMinutes *int `json:"defaultTimeoutInMinutes"`
 
-	MaximumTimeoutInMinutes int `json:"maximumTimeoutInMinutes"`
+	MaximumTimeoutInMinutes *int `json:"maximumTimeoutInMinutes"`
 
 	Description string `json:"description"`
 
@@ -5382,7 +5382,7 @@ func (v *getPipelinePipeline) GetDefaultTimeoutInMinutes() *int {
 }
 
 // GetMaximumTimeoutInMinutes returns getPipelinePipeline.MaximumTimeoutInMinutes, and is useful for accessing the field via an interface.
-func (v *getPipelinePipeline) GetMaximumTimeoutInMinutes() int {
+func (v *getPipelinePipeline) GetMaximumTimeoutInMinutes() *int {
 	return v.PipelineValues.MaximumTimeoutInMinutes
 }
 
@@ -5468,7 +5468,7 @@ type __premarshalgetPipelinePipeline struct {
 
 	DefaultTimeoutInMinutes *int `json:"defaultTimeoutInMinutes"`
 
-	MaximumTimeoutInMinutes int `json:"maximumTimeoutInMinutes"`
+	MaximumTimeoutInMinutes *int `json:"maximumTimeoutInMinutes"`
 
 	Description string `json:"description"`
 
@@ -9439,7 +9439,7 @@ func (v *updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline) GetDefaultTi
 }
 
 // GetMaximumTimeoutInMinutes returns updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline.MaximumTimeoutInMinutes, and is useful for accessing the field via an interface.
-func (v *updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline) GetMaximumTimeoutInMinutes() int {
+func (v *updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline) GetMaximumTimeoutInMinutes() *int {
 	return v.PipelineValues.MaximumTimeoutInMinutes
 }
 
@@ -9535,7 +9535,7 @@ type __premarshalupdatePipelinePipelineUpdatePipelineUpdatePayloadPipeline struc
 
 	DefaultTimeoutInMinutes *int `json:"defaultTimeoutInMinutes"`
 
-	MaximumTimeoutInMinutes int `json:"maximumTimeoutInMinutes"`
+	MaximumTimeoutInMinutes *int `json:"maximumTimeoutInMinutes"`
 
 	Description string `json:"description"`
 

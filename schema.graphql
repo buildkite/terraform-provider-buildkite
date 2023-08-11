@@ -550,31 +550,31 @@ union AuditSubjectNode =APIAccessToken | AgentToken | AuthorizationBitbucket | A
 enum AuditSubjectType {
 	ORGANIZATION_MEMBER
 	AUTHORIZATION
+	CLUSTER_PERMISSION
+	CLUSTER
+	SUBSCRIPTION
 	AGENT_TOKEN
 	API_ACCESS_TOKEN
 	CLUSTER_QUEUE
 	CLUSTER_TOKEN
-	CLUSTER
 	NOTIFICATION_SERVICE
-	ORGANIZATION_INVITATION
-	CLUSTER_PERMISSION
 	ORGANIZATION
-	PIPELINE_TEMPLATE
+	ORGANIZATION_INVITATION
 	PIPELINE_SCHEDULE
-	TEAM_MEMBER
+	PIPELINE_TEMPLATE
 	TEAM
-	TEAM_SUITE
+	TEAM_MEMBER
 	TEAM_PIPELINE
+	TEAM_SUITE
+	PIPELINE
 	SCM_PIPELINE_SETTINGS
+	SCM_REPOSITORY_HOST
 	SCM_SERVICE
 	SUITE_MONITOR
-	SCM_REPOSITORY_HOST
-	USER_EMAIL
-	SUBSCRIPTION
-	USER_TOTP
 	SUITE
-	PIPELINE
+	USER_EMAIL
 	USER
+	USER_TOTP
 	SSO_PROVIDER
 }
 
@@ -1714,6 +1714,8 @@ enum JobEventSignalReason {
 	PROCESS_RUN_ERROR
 """The agent pre-bootstrap hook refused the job. Note that in this case, no signal was sent to the process, the bootstrap was not run at all."""
 	AGENT_REFUSED
+"""The agent refused the job because the signature could not be verified. Note that in this case, no signal was sent to the process, the bootstrap was not run at all."""
+	SIGNATURE_REJECTED
 }
 
 """An event created when the job is timed out"""

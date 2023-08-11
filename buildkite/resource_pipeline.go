@@ -141,7 +141,7 @@ type pipelineResponse interface {
 	GetCluster() PipelineValuesCluster
 	GetDefaultBranch() string
 	GetDefaultTimeoutInMinutes() *int
-	GetMaximumTimeoutInMinutes() int
+	GetMaximumTimeoutInMinutes() *int
 	GetDescription() string
 	GetName() string
 	GetRepository() PipelineValuesRepository
@@ -628,6 +628,8 @@ func (*pipelineResource) ImportState(ctx context.Context, req resource.ImportSta
 
 func setPipelineModel(model *pipelineResourceModel, data pipelineResponse) {
 	defaultTimeoutInMinutes := (*int64)(unsafe.Pointer(data.GetDefaultTimeoutInMinutes()))
+	maximumTimeoutInMinutes := (*int64)(unsafe.Pointer(data.GetMaximumTimeoutInMinutes()))
+
 	model.AllowRebuilds = types.BoolValue(data.GetAllowRebuilds())
 	model.BranchConfiguration = types.StringPointerValue(data.GetBranchConfiguration())
 	model.CancelIntermediateBuilds = types.BoolValue(data.GetCancelIntermediateBuilds())
@@ -637,7 +639,7 @@ func setPipelineModel(model *pipelineResourceModel, data pipelineResponse) {
 	model.DefaultTimeoutInMinutes = types.Int64PointerValue(defaultTimeoutInMinutes)
 	model.Description = types.StringValue(data.GetDescription())
 	model.Id = types.StringValue(data.GetId())
-	model.MaximumTimeoutInMinutes = types.Int64Value(int64(data.GetMaximumTimeoutInMinutes()))
+	model.MaximumTimeoutInMinutes = types.Int64PointerValue(maximumTimeoutInMinutes)
 	model.Name = types.StringValue(data.GetName())
 	model.Repository = types.StringValue(data.GetRepository().Url)
 	model.SkipIntermediateBuilds = types.BoolValue(data.GetSkipIntermediateBuilds())
