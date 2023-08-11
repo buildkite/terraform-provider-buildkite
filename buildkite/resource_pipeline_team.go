@@ -167,35 +167,17 @@ func (tp *pipelineTeamResource) Update(ctx context.Context, req resource.UpdateR
 		return
 	}
 
-	found := findTeamInPipelineNode(&tp.client.genqlient, &state)
-	if !found {
-		_, err := createTeamPipeline(
-			tp.client.genqlient,
-			state.TeamId.ValueString(),
-			state.PipelineId.ValueString(),
-			PipelineAccessLevels(accessLevel),
-		)
+	_, err := updateTeamPipeline(tp.client.genqlient,
+		state.Id.ValueString(),
+		PipelineAccessLevels(accessLevel),
+	)
 
-		if err != nil {
-			resp.Diagnostics.AddError(
-				"Unable to create team pipeline",
-				fmt.Sprintf("Unable to create team pipeline: %s", err.Error()),
-			)
-			return
-		}
-	} else {
-		_, err := updateTeamPipeline(tp.client.genqlient,
-			state.Id.ValueString(),
-			PipelineAccessLevels(accessLevel),
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Unable to update team pipeline",
+			fmt.Sprintf("Unable to update team pipeline: %s", err.Error()),
 		)
-
-		if err != nil {
-			resp.Diagnostics.AddError(
-				"Unable to update team pipeline",
-				fmt.Sprintf("Unable to update team pipeline: %s", err.Error()),
-			)
-			return
-		}
+		return
 	}
 
 	// Update state with values from API response/plan
