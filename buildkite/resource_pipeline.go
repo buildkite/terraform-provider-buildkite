@@ -216,7 +216,7 @@ func (p *pipelineResource) Create(ctx context.Context, req resource.CreateReques
 	}
 	log.Printf("Successfully created pipeline with id '%s'.", response.PipelineCreate.Pipeline.Id)
 
-	setPipelineModel(&state, &response.PipelineCreate.Pipeline, true)
+	setPipelineModel(&state, &response.PipelineCreate.Pipeline)
 	state.DeletionProtection = plan.DeletionProtection
 	state.ArchiveOnDelete = plan.ArchiveOnDelete
 
@@ -299,7 +299,7 @@ func (p *pipelineResource) Read(ctx context.Context, req resource.ReadRequest, r
 			return
 		}
 
-		setPipelineModel(&state, pipelineNode, false)
+		setPipelineModel(&state, pipelineNode)
 		if len(state.ProviderSettings) > 0 {
 			updatePipelineResourceExtraInfo(&state, extraInfo)
 		}
@@ -589,7 +589,7 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 		return
 	}
 
-	setPipelineModel(&state, &response.PipelineUpdate.Pipeline, false)
+	setPipelineModel(&state, &response.PipelineUpdate.Pipeline)
 	state.DeletionProtection = plan.DeletionProtection
 	state.ArchiveOnDelete = plan.ArchiveOnDelete
 
@@ -626,7 +626,7 @@ func (*pipelineResource) ImportState(ctx context.Context, req resource.ImportSta
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
 
-func setPipelineModel(model *pipelineResourceModel, data pipelineResponse, addNewTeams bool) {
+func setPipelineModel(model *pipelineResourceModel, data pipelineResponse) {
 	defaultTimeoutInMinutes := (*int64)(unsafe.Pointer(data.GetDefaultTimeoutInMinutes()))
 	model.AllowRebuilds = types.BoolValue(data.GetAllowRebuilds())
 	model.BranchConfiguration = types.StringPointerValue(data.GetBranchConfiguration())
@@ -656,41 +656,16 @@ func setPipelineModel(model *pipelineResourceModel, data pipelineResponse, addNe
 		tags = nil
 	}
 	model.Tags = tags
-
-	if addNewTeams {
-		teams := make([]*pipelineTeamModel, len(data.GetTeams().Edges))
-		for i, teamEdge := range data.GetTeams().Edges {
-			teams[i] = &pipelineTeamModel{
-				Slug:           types.StringValue(teamEdge.Node.Team.Slug),
-				AccessLevel:    types.StringValue(string(teamEdge.Node.AccessLevel)),
-				TeamId:         types.StringValue(teamEdge.Node.Team.Id),
-				PipelineTeamId: types.StringValue(teamEdge.Node.Id),
-			}
-		}
-		model.Teams = teams
-	} else {
-		for i, team := range model.Teams {
-			var found *PipelineValuesTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipeline
-			for _, teamEdge := range data.GetTeams().Edges {
-				if team.PipelineTeamId.ValueString() == teamEdge.Node.Id {
-					found = &teamEdge.Node
-					break
-				}
-			}
-			// if we found a matching team, update the access level in case its changed
-			if found != nil {
-				team.AccessLevel = types.StringValue(string(found.AccessLevel))
-			} else { // otherwise remove the team since its not linked to the pipeline
-				if i == 0 { // at the head
-					model.Teams = model.Teams[i+1:]
-				} else if i == len(model.Teams)-1 { // at the tail
-					model.Teams = model.Teams[:i]
-				} else { // in the middle
-					model.Teams = append(model.Teams[:i], model.Teams[i+1:]...)
-				}
-			}
+	teams := make([]*pipelineTeamModel, len(data.GetTeams().Edges))
+	for i, teamEdge := range data.GetTeams().Edges {
+		teams[i] = &pipelineTeamModel{
+			Slug:           types.StringValue(teamEdge.Node.Team.Slug),
+			AccessLevel:    types.StringValue(string(teamEdge.Node.AccessLevel)),
+			TeamId:         types.StringValue(teamEdge.Node.Team.Id),
+			PipelineTeamId: types.StringValue(teamEdge.Node.Id),
 		}
 	}
+	model.Teams = teams
 }
 
 // As of May 21, 2021, GraphQL Pipeline is lacking support for the following properties:
