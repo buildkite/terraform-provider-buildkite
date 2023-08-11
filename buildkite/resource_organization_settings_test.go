@@ -86,24 +86,6 @@ func TestAccOrganizationSettings_import(t *testing.T) {
 	})
 }
 
-func TestAccOrganizationSettings_disappears(t *testing.T) {
-	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: protoV6ProviderFactories(),
-		CheckDestroy:             testCheckOrganizationSettingsResourceRemoved,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccOrganizationSettingsConfigBasic([]string{"0.0.0.0/0", "1.1.1.1/32", "1.0.0.1/32"}),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					// Confirm that the allowed IP addresses are set correctly in Buildkite's system
-					testAccCheckResourceDisappears(Provider("testing"), resourceOrganizationSettings(), "buildkite_organization_settings.let_them_in"),
-				),
-				ExpectNonEmptyPlan: true,
-			},
-		},
-	})
-}
-
 func testAccOrganizationSettingsConfigBasic(ip_addresses []string) string {
 	config := `
 		resource "buildkite_organization_settings" "let_them_in" {

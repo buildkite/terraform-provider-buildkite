@@ -2,7 +2,6 @@ package buildkite
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"os"
 	"testing"
@@ -12,15 +11,13 @@ import (
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 	"github.com/hashicorp/terraform-plugin-mux/tf5to6server"
 	"github.com/hashicorp/terraform-plugin-mux/tf6muxserver"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/shurcooL/graphql"
 )
 
 var graphqlClient *graphql.Client
 var genqlientGraphql genqlient.Client
+var organizationID string
 
 func init() {
 	rt := http.DefaultTransport
@@ -35,6 +32,7 @@ func init() {
 
 	graphqlClient = graphql.NewClient(defaultGraphqlEndpoint, httpClient)
 	genqlientGraphql = genqlient.NewClient(defaultGraphqlEndpoint, httpClient)
+	organizationID, _ = GetOrganizationID(getenv("BUILDKITE_ORGANIZATION_SLUG"), graphqlClient)
 }
 
 func protoV6ProviderFactories() map[string]func() (tfprotov6.ProviderServer, error) {
@@ -79,39 +77,5 @@ func testAccPreCheck(t *testing.T) {
 	}
 	if v := os.Getenv("BUILDKITE_API_TOKEN"); v == "" {
 		t.Fatal("BUILDKITE_API_TOKEN must be set for acceptance tests")
-	}
-}
-
-// testAccCheckResourceDisappears verifies the Provider has had the resource removed from state
-func testAccCheckResourceDisappears(provider *schema.Provider, resource *schema.Resource, resourceName string) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		resourceState, ok := s.RootModule().Resources[resourceName]
-
-		if !ok {
-			return fmt.Errorf("resource not found: %s", resourceName)
-		}
-
-		if resourceState.Primary.ID == "" {
-			return fmt.Errorf("resource ID missing: %s", resourceName)
-		}
-
-		if resource.DeleteContext != nil {
-			client := Client{
-				graphql:      graphqlClient,
-				genqlient:    genqlientGraphql,
-				organization: getenv("BUILDKITE_ORGANIZATION_SLUG"),
-			}
-			diags := resource.DeleteContext(context.Background(), resource.Data(resourceState.Primary), &client)
-
-			for i := range diags {
-				if diags[i].Severity == diag.Error {
-					return fmt.Errorf("error deleting resource: %s", diags[i].Summary)
-				}
-			}
-
-			return nil
-		}
-
-		return resource.Delete(resource.Data(resourceState.Primary), provider.Meta())
 	}
 }

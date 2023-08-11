@@ -4,9 +4,21 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"unsafe"
 
-	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+	"github.com/hashicorp/terraform-plugin-framework/path"
+	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/shurcooL/graphql"
 )
 
@@ -61,479 +73,601 @@ type TeamPipelineNode struct {
 	Team        TeamNode
 }
 
-// resourcePipeline represents the terraform pipeline resource schema
-func resourcePipeline() *schema.Resource {
-	return &schema.Resource{
-		CreateContext: CreatePipeline,
-		ReadContext:   ReadPipeline,
-		UpdateContext: UpdatePipeline,
-		DeleteContext: DeletePipeline,
-		Importer: &schema.ResourceImporter{
-			StateContext: schema.ImportStatePassthroughContext,
-		},
-
-		Schema: map[string]*schema.Schema{
-			"allow_rebuilds": {
-				Optional: true,
-				Default:  true,
-				Type:     schema.TypeBool,
-			},
-			"archive_on_delete": {
-				Optional: true,
-				Default:  false,
-				Type:     schema.TypeBool,
-			},
-			"cancel_intermediate_builds": {
-				Computed: true,
-				Optional: true,
-				Type:     schema.TypeBool,
-			},
-			"cancel_intermediate_builds_branch_filter": {
-				Computed: true,
-				Optional: true,
-				Type:     schema.TypeString,
-			},
-			"branch_configuration": {
-				Optional: true,
-				Type:     schema.TypeString,
-			},
-			"cluster_id": {
-				Optional: true,
-				Type:     schema.TypeString,
-			},
-			"default_branch": {
-				Computed: true,
-				Optional: true,
-				Type:     schema.TypeString,
-			},
-			"default_timeout_in_minutes": {
-				Computed: true,
-				Optional: true,
-				Default:  nil,
-				Type:     schema.TypeInt,
-			},
-			"deletion_protection": {
-				Optional: true,
-				Default:  false,
-				Deprecated: "Deletion protection will be removed in a future release. A similar solution already " +
-					"exists and is supported by Terraform. See https://developer.hashicorp.com/terraform/language/meta-arguments/lifecycle.",
-				Type:        schema.TypeBool,
-				Description: "If set to 'true', deletion of a pipeline via `terraform destroy` will fail, until set to 'false'.",
-			},
-			"maximum_timeout_in_minutes": {
-				Computed: true,
-				Optional: true,
-				Default:  nil,
-				Type:     schema.TypeInt,
-			},
-			"description": {
-				Computed: true,
-				Optional: true,
-				Type:     schema.TypeString,
-			},
-			"name": {
-				Required: true,
-				Type:     schema.TypeString,
-			},
-			"repository": {
-				Required: true,
-				Type:     schema.TypeString,
-			},
-			"skip_intermediate_builds": {
-				Computed: true,
-				Optional: true,
-				Type:     schema.TypeBool,
-			},
-			"skip_intermediate_builds_branch_filter": {
-				Computed: true,
-				Optional: true,
-				Type:     schema.TypeString,
-			},
-			"slug": {
-				Computed: true,
-				Type:     schema.TypeString,
-			},
-			"steps": {
-				Optional: true,
-				Default:  defaultSteps,
-				Type:     schema.TypeString,
-			},
-			"team": {
-				Type:       schema.TypeSet,
-				Optional:   true,
-				ConfigMode: schema.SchemaConfigModeAttr,
-				Elem: &schema.Resource{
-					Schema: map[string]*schema.Schema{
-						"slug": {
-							Required: true,
-							Type:     schema.TypeString,
-						},
-						"access_level": {
-							Required: true,
-							Type:     schema.TypeString,
-							ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
-								switch v := val.(string); v {
-								case "READ_ONLY":
-								case "BUILD_AND_READ":
-								case "MANAGE_BUILD_AND_READ":
-									return
-								default:
-									errs = append(errs, fmt.Errorf("%q must be one of READ_ONLY, BUILD_AND_READ or MANAGE_BUILD_AND_READ, got: %s", key, v))
-									return
-								}
-								return
-							},
-						},
-					},
-				},
-			},
-			"tags": {
-				Type:     schema.TypeSet,
-				Optional: true,
-				Elem:     &schema.Schema{Type: schema.TypeString},
-				Set:      schema.HashString,
-			},
-			"provider_settings": {
-				Type:     schema.TypeList,
-				Optional: true,
-				Computed: true,
-				MaxItems: 1,
-				Elem: &schema.Resource{
-					Schema: map[string]*schema.Schema{
-						"trigger_mode": {
-							Computed: true,
-							Optional: true,
-							Type:     schema.TypeString,
-							ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
-								switch v := val.(string); v {
-								case "code":
-								case "deployment":
-								case "fork":
-								case "none":
-									return
-								default:
-									errs = append(errs, fmt.Errorf("%q must be one of code, deployment, fork or none, got: %s", key, v))
-									return
-								}
-								return
-							},
-						},
-						"build_pull_requests": {
-							Optional: true,
-							Type:     schema.TypeBool,
-							Default:  true,
-						},
-						"pull_request_branch_filter_enabled": {
-							Computed: true,
-							Optional: true,
-							Type:     schema.TypeBool,
-						},
-						"pull_request_branch_filter_configuration": {
-							Computed: true,
-							Optional: true,
-							Type:     schema.TypeString,
-						},
-						"skip_builds_for_existing_commits": {
-							Optional: true,
-							Type:     schema.TypeBool,
-						},
-						"skip_pull_request_builds_for_existing_commits": {
-							Optional: true,
-							Type:     schema.TypeBool,
-							Default:  true,
-						},
-						"build_pull_request_ready_for_review": {
-							Computed: true,
-							Optional: true,
-							Type:     schema.TypeBool,
-						},
-						"build_pull_request_labels_changed": {
-							Computed: true,
-							Optional: true,
-							Type:     schema.TypeBool,
-						},
-						"build_pull_request_forks": {
-							Computed: true,
-							Optional: true,
-							Type:     schema.TypeBool,
-						},
-						"prefix_pull_request_fork_branch_names": {
-							Computed: true,
-							Optional: true,
-							Type:     schema.TypeBool,
-						},
-						"build_branches": {
-							Optional: true,
-							Type:     schema.TypeBool,
-							Default:  true,
-						},
-						"build_tags": {
-							Computed: true,
-							Optional: true,
-							Type:     schema.TypeBool,
-						},
-						"cancel_deleted_branch_builds": {
-							Computed: true,
-							Optional: true,
-							Type:     schema.TypeBool,
-						},
-						"filter_enabled": {
-							Computed: true,
-							Optional: true,
-							Type:     schema.TypeBool,
-						},
-						"filter_condition": {
-							Computed: true,
-							Optional: true,
-							Type:     schema.TypeString,
-						},
-						"publish_commit_status": {
-							Optional: true,
-							Type:     schema.TypeBool,
-							Default:  true,
-						},
-						"publish_blocked_as_pending": {
-							Computed: true,
-							Optional: true,
-							Type:     schema.TypeBool,
-						},
-						"publish_commit_status_per_step": {
-							Computed: true,
-							Optional: true,
-							Type:     schema.TypeBool,
-						},
-						"separate_pull_request_statuses": {
-							Computed: true,
-							Optional: true,
-							Type:     schema.TypeBool,
-						},
-					},
-				},
-			},
-			"webhook_url": {
-				Computed: true,
-				Type:     schema.TypeString,
-			},
-			"badge_url": {
-				Computed: true,
-				Type:     schema.TypeString,
-			},
-		},
-	}
+type pipelineResourceModel struct {
+	AllowRebuilds                        types.Bool               `tfsdk:"allow_rebuilds"`
+	ArchiveOnDelete                      types.Bool               `tfsdk:"archive_on_delete"`
+	BadgeUrl                             types.String             `tfsdk:"badge_url"`
+	BranchConfiguration                  types.String             `tfsdk:"branch_configuration"`
+	CancelIntermediateBuilds             types.Bool               `tfsdk:"cancel_intermediate_builds"`
+	CancelIntermediateBuildsBranchFilter types.String             `tfsdk:"cancel_intermediate_builds_branch_filter"`
+	ClusterId                            types.String             `tfsdk:"cluster_id"`
+	DefaultBranch                        types.String             `tfsdk:"default_branch"`
+	DefaultTimeoutInMinutes              types.Int64              `tfsdk:"default_timeout_in_minutes"`
+	DeletionProtection                   types.Bool               `tfsdk:"deletion_protection"`
+	Description                          types.String             `tfsdk:"description"`
+	Id                                   types.String             `tfsdk:"id"`
+	MaximumTimeoutInMinutes              types.Int64              `tfsdk:"maximum_timeout_in_minutes"`
+	Name                                 types.String             `tfsdk:"name"`
+	ProviderSettings                     []*providerSettingsModel `tfsdk:"provider_settings"`
+	Repository                           types.String             `tfsdk:"repository"`
+	SkipIntermediateBuilds               types.Bool               `tfsdk:"skip_intermediate_builds"`
+	SkipIntermediateBuildsBranchFilter   types.String             `tfsdk:"skip_intermediate_builds_branch_filter"`
+	Slug                                 types.String             `tfsdk:"slug"`
+	Steps                                types.String             `tfsdk:"steps"`
+	Tags                                 []types.String           `tfsdk:"tags"`
+	Teams                                []*pipelineTeamModel     `tfsdk:"team"`
+	WebhookUrl                           types.String             `tfsdk:"webhook_url"`
 }
 
-// CreatePipeline creates a Buildkite pipeline
-func CreatePipeline(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	client := m.(*Client)
-	var err error
+type providerSettingsModel struct {
+	TriggerMode                             types.String `tfsdk:"trigger_mode"`
+	BuildPullRequests                       types.Bool   `tfsdk:"build_pull_requests"`
+	PullRequestBranchFilterEnabled          types.Bool   `tfsdk:"pull_request_branch_filter_enabled"`
+	PullRequestBranchFilterConfiguration    types.String `tfsdk:"pull_request_branch_filter_configuration"`
+	SkipBuildsForExistingCommits            types.Bool   `tfsdk:"skip_builds_for_existing_commits"`
+	SkipPullRequestBuildsForExistingCommits types.Bool   `tfsdk:"skip_pull_request_builds_for_existing_commits"`
+	BuildPullRequestReadyForReview          types.Bool   `tfsdk:"build_pull_request_ready_for_review"`
+	BuildPullRequestLabelsChanged           types.Bool   `tfsdk:"build_pull_request_labels_changed"`
+	BuildPullRequestForks                   types.Bool   `tfsdk:"build_pull_request_forks"`
+	PrefixPullRequestForkBranchNames        types.Bool   `tfsdk:"prefix_pull_request_fork_branch_names"`
+	BuildBranches                           types.Bool   `tfsdk:"build_branches"`
+	BuildTags                               types.Bool   `tfsdk:"build_tags"`
+	CancelDeletedBranchBuilds               types.Bool   `tfsdk:"cancel_deleted_branch_builds"`
+	FilterEnabled                           types.Bool   `tfsdk:"filter_enabled"`
+	FilterCondition                         types.String `tfsdk:"filter_condition"`
+	PublishCommitStatus                     types.Bool   `tfsdk:"publish_commit_status"`
+	PublishBlockedAsPending                 types.Bool   `tfsdk:"publish_blocked_as_pending"`
+	PublishCommitStatusPerStep              types.Bool   `tfsdk:"publish_commit_status_per_step"`
+	SeparatePullRequestStatuses             types.Bool   `tfsdk:"separate_pull_request_statuses"`
+}
 
-	teamPipelines := getTeamPipelinesFromSchema(d)
+type pipelineTeamModel struct {
+	TeamId         types.String `tfsdk:"team_id"`
+	PipelineTeamId types.String `tfsdk:"pipeline_team_id"`
+	Slug           types.String `tfsdk:"slug"`
+	AccessLevel    types.String `tfsdk:"access_level"`
+}
 
-	teamsData := make([]PipelineTeamAssignmentInput, 0)
-	for _, team := range teamPipelines {
-		log.Printf("converting team slug '%s' to an ID", string(team.Team.Slug))
-		teamID, err := GetTeamID(string(team.Team.Slug), client)
-		if err != nil {
-			return diag.FromErr(fmt.Errorf("Unable to get ID for team slug %s (%v)", team.Team.Slug, err))
-		}
-		teamsData = append(teamsData, PipelineTeamAssignmentInput{
-			Id:          teamID,
-			AccessLevel: team.AccessLevel,
-		})
+type pipelineResource struct {
+	client *Client
+}
+
+type pipelineResponse interface {
+	GetId() string
+	GetAllowRebuilds() bool
+	GetBranchConfiguration() *string
+	GetCancelIntermediateBuilds() bool
+	GetCancelIntermediateBuildsBranchFilter() string
+	GetCluster() PipelineValuesCluster
+	GetDefaultBranch() string
+	GetDefaultTimeoutInMinutes() *int
+	GetMaximumTimeoutInMinutes() *int
+	GetDescription() string
+	GetName() string
+	GetRepository() PipelineValuesRepository
+	GetSkipIntermediateBuilds() bool
+	GetSkipIntermediateBuildsBranchFilter() string
+	GetSlug() string
+	GetSteps() PipelineValuesStepsPipelineSteps
+	GetTags() []PipelineValuesTagsPipelineTag
+	GetTeams() PipelineValuesTeamsTeamPipelineConnection
+	GetWebhookURL() string
+}
+
+func newPipelineResource() resource.Resource {
+	return &pipelineResource{}
+}
+
+func (p *pipelineResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
+	if req.ProviderData == nil {
+		return
 	}
+
+	p.client = req.ProviderData.(*Client)
+}
+
+func (p *pipelineResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	var plan, state pipelineResourceModel
+
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	var teamsInput []PipelineTeamAssignmentInput
+	if len(plan.Teams) > 0 {
+		teamsInput = p.getTeamPipelinesFromSchema(&plan)
+	}
+	if len(teamsInput) != len(plan.Teams) {
+		resp.Diagnostics.AddError("Could not resolve all team IDs", "Could not resolve all team IDs")
+		return
+	}
+
+	// use the unsafe module to convert to an int. this is fine because the absolute max accepted by the API is much
+	// less than an int
+	defaultTimeoutInMinutes := (*int)(unsafe.Pointer(plan.DefaultTimeoutInMinutes.ValueInt64Pointer()))
 
 	input := PipelineCreateInput{
-		AllowRebuilds:                        d.Get("allow_rebuilds").(bool),
-		BranchConfiguration:                  d.Get("branch_configuration").(string),
-		CancelIntermediateBuilds:             d.Get("cancel_intermediate_builds").(bool),
-		CancelIntermediateBuildsBranchFilter: d.Get("cancel_intermediate_builds_branch_filter").(string),
-		DefaultBranch:                        d.Get("default_branch").(string),
-		DefaultTimeoutInMinutes:              d.Get("default_timeout_in_minutes").(int),
-		MaximumTimeoutInMinutes:              d.Get("maximum_timeout_in_minutes").(int),
-		Description:                          d.Get("description").(string),
-		Name:                                 d.Get("name").(string),
-		OrganizationId:                       client.organizationId,
-		Repository:                           PipelineRepositoryInput{Url: d.Get("repository").(string)},
-		SkipIntermediateBuilds:               d.Get("skip_intermediate_builds").(bool),
-		SkipIntermediateBuildsBranchFilter:   d.Get("skip_intermediate_builds_branch_filter").(string),
-		Steps:                                PipelineStepsInput{Yaml: d.Get("steps").(string)},
-		Teams:                                teamsData,
-		Tags:                                 getTagsFromSchema(d),
+		AllowRebuilds:                        plan.AllowRebuilds.ValueBool(),
+		BranchConfiguration:                  plan.BranchConfiguration.ValueStringPointer(),
+		CancelIntermediateBuilds:             plan.CancelIntermediateBuilds.ValueBool(),
+		CancelIntermediateBuildsBranchFilter: plan.CancelIntermediateBuildsBranchFilter.ValueString(),
+		ClusterId:                            plan.ClusterId.ValueStringPointer(),
+		DefaultBranch:                        plan.DefaultBranch.ValueString(),
+		DefaultTimeoutInMinutes:              defaultTimeoutInMinutes,
+		MaximumTimeoutInMinutes:              int(plan.MaximumTimeoutInMinutes.ValueInt64()),
+		Description:                          plan.Description.ValueString(),
+		Name:                                 plan.Name.ValueString(),
+		OrganizationId:                       p.client.organizationId,
+		Repository:                           PipelineRepositoryInput{Url: plan.Repository.ValueString()},
+		SkipIntermediateBuilds:               plan.SkipIntermediateBuilds.ValueBool(),
+		SkipIntermediateBuildsBranchFilter:   plan.SkipIntermediateBuildsBranchFilter.ValueString(),
+		Steps:                                PipelineStepsInput{Yaml: plan.Steps.ValueString()},
+		Teams:                                teamsInput,
+		Tags:                                 getTagsFromSchema(&plan),
 	}
 
-	log.Printf("Creating pipeline %s ...", d.Get("name"))
-
-	// If the cluster_id key is present in the mutation, GraphQL expects a valid ID.
-	// Check if cluster_id exists in the configuration before adding to mutation.
-	if clusterID, ok := d.GetOk("cluster_id"); ok {
-		id := clusterID.(string)
-		input.ClusterId = &id
-	}
-
-	response, err := createPipeline(client.genqlient, input)
+	log.Printf("Creating pipeline %s ...", plan.Name.ValueString())
+	response, err := createPipeline(p.client.genqlient, input)
 
 	if err != nil {
-		log.Printf("Unable to create pipeline %s", d.Get("name"))
-		return diag.FromErr(err)
+		resp.Diagnostics.AddError("Failed to create pipeline", err.Error())
+		return
 	}
 	log.Printf("Successfully created pipeline with id '%s'.", response.PipelineCreate.Pipeline.Id)
 
-	updatePipelineResourceFromCreate(d, response.PipelineCreate.Pipeline)
+	setPipelineModel(&state, &response.PipelineCreate.Pipeline)
+	state.DeletionProtection = plan.DeletionProtection
+	state.ArchiveOnDelete = plan.ArchiveOnDelete
 
-	pipelineExtraInfo, err := updatePipelineExtraInfo(d, client)
-	if err != nil {
-		return diag.FromErr(err)
-	}
-	updatePipelineResourceExtraInfo(d, &pipelineExtraInfo)
-
-	return ReadPipeline(ctx, d, m)
-}
-
-// ReadPipeline retrieves a Buildkite pipeline
-func ReadPipeline(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	client := m.(*Client)
-
-	log.Printf("Reading pipeline with ID %s ...", d.Id())
-	apiResponse, err := getNode(client.genqlient, d.Id())
-
-	if err != nil {
-		return diag.FromErr(err)
-	}
-
-	// Convert fron Node to getNodePipeline type
-	if pipelineNode, ok := apiResponse.GetNode().(*getNodeNodePipeline); ok {
-		if pipelineNode == nil {
-			return diag.FromErr(
-				fmt.Errorf("Unable to get pipeline with ID %s (%v)", d.Id(), err),
-			)
-		}
-		updatePipelineResourceNode(d, pipelineNode)
-	} else {
-		// Pipeline was removed - set ID blank
-		d.SetId("")
-		return nil
-	}
-
-	if slug, pipelineExists := d.GetOk("slug"); pipelineExists {
-		pipelineExtraInfo, err := getPipelineExtraInfo(d, m, slug.(string))
+	if len(plan.ProviderSettings) > 0 {
+		pipelineExtraInfo, err := updatePipelineExtraInfo(response.PipelineCreate.Pipeline.Slug, plan.ProviderSettings[0], p.client)
 		if err != nil {
-			return diag.FromErr(err)
+			resp.Diagnostics.AddError("Unable to set pipeline info from REST", err.Error())
+			return
 		}
-		updatePipelineResourceExtraInfo(d, pipelineExtraInfo)
+
+		updatePipelineResourceExtraInfo(&state, &pipelineExtraInfo)
+	} else {
+		// no provider_settings provided, but we still need to read in the badge url
+		extraInfo, err := getPipelineExtraInfo(p.client, response.PipelineCreate.Pipeline.Slug)
+		if err != nil {
+			resp.Diagnostics.AddError("Unable to read pipeline info from REST", err.Error())
+			return
+		}
+		state.BadgeUrl = types.StringValue(extraInfo.BadgeUrl)
 	}
 
-	return nil
+	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
-// UpdatePipeline updates a Buildkite pipeline
-func UpdatePipeline(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	client := m.(*Client)
-	var err error
+func (p *pipelineResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	var state pipelineResourceModel
 
-	branch := d.Get("branch_configuration").(string)
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	if state.ArchiveOnDelete.ValueBool() {
+		log.Printf("Pipeline %s set to archive on delete. Archiving...", state.Name.ValueString())
+		_, err := archivePipeline(p.client.genqlient, state.Id.ValueString())
+		if err != nil {
+			resp.Diagnostics.AddError("Could not archive pipeline", err.Error())
+		}
+		return
+	}
+
+	log.Printf("Deleting pipeline %s ...", state.Name.ValueString())
+	_, err := deletePipeline(p.client.genqlient, state.Id.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddError("Could not delete pipeline", err.Error())
+	}
+}
+
+func (*pipelineResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
+	resp.TypeName = req.ProviderTypeName + "_pipeline"
+}
+
+func (p *pipelineResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	var state pipelineResourceModel
+
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	response, err := getNode(p.client.genqlient, state.Id.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Unable to read pipeline",
+			fmt.Sprintf("Unable to pipeline: %s", err.Error()),
+		)
+		return
+	}
+
+	if pipelineNode, ok := response.Node.(*getNodeNodePipeline); ok {
+		// no pipeline with given ID found, set empty state
+		if pipelineNode == nil {
+			resp.Diagnostics.AddError("Unable to get pipeline", fmt.Sprintf("Unable to get pipeline with ID %s (%v)", state.Id.ValueString(), err))
+			return
+		}
+
+		extraInfo, err := getPipelineExtraInfo(p.client, pipelineNode.Slug)
+		if err != nil {
+			resp.Diagnostics.AddError("Unable to read pipeline info from REST", err.Error())
+			return
+		}
+
+		setPipelineModel(&state, pipelineNode)
+		if len(state.ProviderSettings) > 0 {
+			updatePipelineResourceExtraInfo(&state, extraInfo)
+		}
+		state.BadgeUrl = types.StringValue(extraInfo.BadgeUrl)
+		resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+	} else {
+		// no pipeline was found so remove it from state
+		resp.Diagnostics.AddWarning("Pipeline not found", "Removing pipeline from state")
+		resp.State.RemoveResource(ctx)
+	}
+}
+
+func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
+	resp.Schema = schema.Schema{
+		Attributes: map[string]schema.Attribute{
+			"id": schema.StringAttribute{
+				Computed: true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"allow_rebuilds": schema.BoolAttribute{
+				Optional: true,
+				Computed: true,
+				Default:  booldefault.StaticBool(true),
+			},
+			"archive_on_delete": schema.BoolAttribute{
+				Optional: true,
+				Computed: true,
+				Default:  booldefault.StaticBool(false),
+			},
+			"cancel_intermediate_builds": schema.BoolAttribute{
+				Computed: true,
+				Optional: true,
+				PlanModifiers: []planmodifier.Bool{
+					boolplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"cancel_intermediate_builds_branch_filter": schema.StringAttribute{
+				Computed: true,
+				Optional: true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"branch_configuration": schema.StringAttribute{
+				Optional: true,
+			},
+			"cluster_id": schema.StringAttribute{
+				Optional: true,
+			},
+			"default_branch": schema.StringAttribute{
+				Computed: true,
+				Optional: true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"default_timeout_in_minutes": schema.Int64Attribute{
+				Computed: true,
+				Optional: true,
+				Default:  nil,
+				PlanModifiers: []planmodifier.Int64{
+					int64planmodifier.UseStateForUnknown(),
+				},
+			},
+			"deletion_protection": schema.BoolAttribute{
+				Optional:    true,
+				Computed:    true,
+				Default:     booldefault.StaticBool(false),
+				Description: "If set to 'true', deletion of a pipeline via `terraform destroy` will fail, until set to 'false'.",
+				DeprecationMessage: "Deletion protection will be removed in a future release. A similar solution already " +
+					"exists and is supported by Terraform. See https://developer.hashicorp.com/terraform/language/meta-arguments/lifecycle.",
+			},
+			"maximum_timeout_in_minutes": schema.Int64Attribute{
+				Computed: true,
+				Optional: true,
+				Default:  nil,
+				PlanModifiers: []planmodifier.Int64{
+					int64planmodifier.UseStateForUnknown(),
+				},
+			},
+			"description": schema.StringAttribute{
+				Computed: true,
+				Optional: true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"name": schema.StringAttribute{
+				Required: true,
+			},
+			"repository": schema.StringAttribute{
+				Required: true,
+			},
+			"skip_intermediate_builds": schema.BoolAttribute{
+				Computed: true,
+				Optional: true,
+				PlanModifiers: []planmodifier.Bool{
+					boolplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"skip_intermediate_builds_branch_filter": schema.StringAttribute{
+				Computed: true,
+				Optional: true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"slug": schema.StringAttribute{
+				Computed: true,
+			},
+			"steps": schema.StringAttribute{
+				Optional: true,
+				Computed: true,
+				Default:  stringdefault.StaticString(defaultSteps),
+			},
+			"tags": schema.SetAttribute{
+				Optional:    true,
+				ElementType: types.StringType,
+			},
+			"webhook_url": schema.StringAttribute{
+				Computed: true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"badge_url": schema.StringAttribute{
+				Computed: true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
+		},
+		Blocks: map[string]schema.Block{
+			"team": schema.SetNestedBlock{
+				NestedObject: schema.NestedBlockObject{
+					Attributes: map[string]schema.Attribute{
+						"slug": schema.StringAttribute{
+							Required: true,
+						},
+						"access_level": schema.StringAttribute{
+							Required: true,
+							Validators: []validator.String{
+								stringvalidator.OneOf(string(PipelineAccessLevelsReadOnly), string(PipelineAccessLevelsBuildAndRead), string(PipelineAccessLevelsManageBuildAndRead)),
+							},
+						},
+						"team_id": schema.StringAttribute{
+							Computed: true,
+						},
+						"pipeline_team_id": schema.StringAttribute{
+							Computed: true,
+						},
+					},
+				},
+			},
+			"provider_settings": schema.ListNestedBlock{
+				Validators: []validator.List{
+					listvalidator.SizeBetween(0, 1),
+				},
+				NestedObject: schema.NestedBlockObject{
+					Attributes: map[string]schema.Attribute{
+						"trigger_mode": schema.StringAttribute{
+							Computed: true,
+							Optional: true,
+							Validators: []validator.String{
+								stringvalidator.OneOf("code", "deployment", "fork", "none"),
+							},
+						},
+						"build_pull_requests": schema.BoolAttribute{
+							Optional: true,
+							Computed: true,
+							Default:  booldefault.StaticBool(true),
+						},
+						"pull_request_branch_filter_enabled": schema.BoolAttribute{
+							Computed: true,
+							Optional: true,
+						},
+						"pull_request_branch_filter_configuration": schema.StringAttribute{
+							Computed: true,
+							Optional: true,
+						},
+						"skip_builds_for_existing_commits": schema.BoolAttribute{
+							Optional: true,
+							Computed: true,
+						},
+						"skip_pull_request_builds_for_existing_commits": schema.BoolAttribute{
+							Optional: true,
+							Computed: true,
+							Default:  booldefault.StaticBool(true),
+						},
+						"build_pull_request_ready_for_review": schema.BoolAttribute{
+							Computed: true,
+							Optional: true,
+						},
+						"build_pull_request_labels_changed": schema.BoolAttribute{
+							Computed: true,
+							Optional: true,
+						},
+						"build_pull_request_forks": schema.BoolAttribute{
+							Computed: true,
+							Optional: true,
+						},
+						"prefix_pull_request_fork_branch_names": schema.BoolAttribute{
+							Computed: true,
+							Optional: true,
+						},
+						"build_branches": schema.BoolAttribute{
+							Optional: true,
+							Computed: true,
+							Default:  booldefault.StaticBool(true),
+						},
+						"build_tags": schema.BoolAttribute{
+							Computed: true,
+							Optional: true,
+						},
+						"cancel_deleted_branch_builds": schema.BoolAttribute{
+							Computed: true,
+							Optional: true,
+						},
+						"filter_enabled": schema.BoolAttribute{
+							Computed: true,
+							Optional: true,
+						},
+						"filter_condition": schema.StringAttribute{
+							Computed: true,
+							Optional: true,
+						},
+						"publish_commit_status": schema.BoolAttribute{
+							Optional: true,
+							Computed: true,
+							Default:  booldefault.StaticBool(true),
+						},
+						"publish_blocked_as_pending": schema.BoolAttribute{
+							Computed: true,
+							Optional: true,
+						},
+						"publish_commit_status_per_step": schema.BoolAttribute{
+							Computed: true,
+							Optional: true,
+						},
+						"separate_pull_request_statuses": schema.BoolAttribute{
+							Computed: true,
+							Optional: true,
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	var plan, state pipelineResourceModel
+
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	defaultTimeoutInMinutes := (*int)(unsafe.Pointer(plan.DefaultTimeoutInMinutes.ValueInt64Pointer()))
 
 	input := PipelineUpdateInput{
-		AllowRebuilds:                        d.Get("allow_rebuilds").(bool),
-		BranchConfiguration:                  &branch,
-		CancelIntermediateBuilds:             d.Get("cancel_intermediate_builds").(bool),
-		CancelIntermediateBuildsBranchFilter: d.Get("cancel_intermediate_builds_branch_filter").(string),
-		DefaultBranch:                        d.Get("default_branch").(string),
-		DefaultTimeoutInMinutes:              d.Get("default_timeout_in_minutes").(int),
-		MaximumTimeoutInMinutes:              d.Get("maximum_timeout_in_minutes").(int),
-		Description:                          d.Get("description").(string),
-		Id:                                   d.Id(),
-		Name:                                 d.Get("name").(string),
-		Repository:                           PipelineRepositoryInput{Url: d.Get("repository").(string)},
-		SkipIntermediateBuilds:               d.Get("skip_intermediate_builds").(bool),
-		SkipIntermediateBuildsBranchFilter:   d.Get("skip_intermediate_builds_branch_filter").(string),
-		Steps:                                PipelineStepsInput{Yaml: d.Get("steps").(string)},
-		Tags:                                 getTagsFromSchema(d),
-	}
-
-	// If cluster_id exists in the schema it must be a non-empty string
-	// Otherwise, if its not present it will be set to nil by default
-	if clusterID, clusterIdPresent := d.GetOk("cluster_id"); clusterIdPresent {
-		if value, isString := clusterID.(string); isString && value != "" {
-			input.ClusterId = &value
-		}
+		AllowRebuilds:                        plan.AllowRebuilds.ValueBool(),
+		BranchConfiguration:                  plan.BranchConfiguration.ValueStringPointer(),
+		CancelIntermediateBuilds:             plan.CancelIntermediateBuilds.ValueBool(),
+		CancelIntermediateBuildsBranchFilter: plan.CancelIntermediateBuildsBranchFilter.ValueString(),
+		ClusterId:                            plan.ClusterId.ValueStringPointer(),
+		DefaultBranch:                        plan.DefaultBranch.ValueString(),
+		DefaultTimeoutInMinutes:              defaultTimeoutInMinutes,
+		MaximumTimeoutInMinutes:              int(plan.MaximumTimeoutInMinutes.ValueInt64()),
+		Description:                          plan.Description.ValueString(),
+		Id:                                   plan.Id.ValueString(),
+		Name:                                 plan.Name.ValueString(),
+		Repository:                           PipelineRepositoryInput{Url: plan.Repository.ValueString()},
+		SkipIntermediateBuilds:               plan.SkipIntermediateBuilds.ValueBool(),
+		SkipIntermediateBuildsBranchFilter:   plan.SkipIntermediateBuildsBranchFilter.ValueString(),
+		Steps:                                PipelineStepsInput{Yaml: plan.Steps.ValueString()},
+		Tags:                                 getTagsFromSchema(&plan),
 	}
 
 	log.Printf("Updating pipeline %s ...", input.Name)
-
-	response, err := updatePipeline(client.genqlient, input)
+	response, err := updatePipeline(p.client.genqlient, input)
 
 	if err != nil {
-		log.Printf("Unable to update pipeline %s", d.Get("name"))
-		return diag.FromErr(err)
+		resp.Diagnostics.AddError("Unable to update pipeline %s", state.Name.ValueString())
+		return
 	}
 
-	// While transitioning from shurcool to genqlient, we'll map the response here to utilise existing functionality
-	pipeline := PipelineNode{
-		AllowRebuilds:                        graphql.Boolean(response.PipelineUpdate.Pipeline.AllowRebuilds),
-		CancelIntermediateBuilds:             graphql.Boolean(response.PipelineUpdate.Pipeline.CancelIntermediateBuilds),
-		CancelIntermediateBuildsBranchFilter: graphql.String(response.PipelineUpdate.Pipeline.CancelIntermediateBuildsBranchFilter),
-		BranchConfiguration:                  graphql.String(response.PipelineUpdate.Pipeline.BranchConfiguration),
-		Cluster:                              Cluster{ID: graphql.String(response.PipelineUpdate.Pipeline.Cluster.Id)},
-		DefaultBranch:                        graphql.String(response.PipelineUpdate.Pipeline.DefaultBranch),
-		DefaultTimeoutInMinutes:              graphql.Int(response.PipelineUpdate.Pipeline.DefaultTimeoutInMinutes),
-		MaximumTimeoutInMinutes:              graphql.Int(response.PipelineUpdate.Pipeline.MaximumTimeoutInMinutes),
-		Description:                          graphql.String(response.PipelineUpdate.Pipeline.Description),
-		ID:                                   graphql.String(response.PipelineUpdate.Pipeline.Id),
-		Name:                                 graphql.String(response.PipelineUpdate.Pipeline.Name),
-		Repository:                           Repository{URL: graphql.String(response.PipelineUpdate.Pipeline.Repository.Url)},
-		SkipIntermediateBuilds:               graphql.Boolean(response.PipelineUpdate.Pipeline.SkipIntermediateBuilds),
-		SkipIntermediateBuildsBranchFilter:   graphql.String(response.PipelineUpdate.Pipeline.SkipIntermediateBuildsBranchFilter),
-		Slug:                                 graphql.String(response.PipelineUpdate.Pipeline.Slug),
-		Steps:                                Steps{YAML: graphql.String(response.PipelineUpdate.Pipeline.Steps.Yaml)},
-		Tags:                                 mapTagsFromGenqlient(response.PipelineUpdate.Pipeline.Tags),
-		Teams:                                mapTeamPipelinesFromGenqlient(response.PipelineUpdate.Pipeline.Teams.Edges),
-		WebhookURL:                           graphql.String(response.PipelineUpdate.Pipeline.WebhookURL),
-	}
+	setPipelineModel(&state, &response.PipelineUpdate.Pipeline)
+	state.DeletionProtection = plan.DeletionProtection
+	state.ArchiveOnDelete = plan.ArchiveOnDelete
 
-	teamPipelines := getTeamPipelinesFromSchema(d)
-	err = reconcileTeamPipelines(teamPipelines, &pipeline, client)
+	// plan.Teams has what we want. state.Teams has what exists on the server. we need to make them match
+	err = p.reconcileTeamPipelines(plan.Teams, state.Teams, state.Id.ValueString())
 	if err != nil {
-		log.Print("Unable to reconcile team pipelines")
-		return diag.FromErr(err)
+		resp.Diagnostics.AddError("Unable to reconcile team pipelines", err.Error())
+		return
+	}
+	state.Teams = plan.Teams
+
+	if len(plan.ProviderSettings) > 0 {
+		pipelineExtraInfo, err := updatePipelineExtraInfo(response.PipelineUpdate.Pipeline.Slug, plan.ProviderSettings[0], p.client)
+		if err != nil {
+			resp.Diagnostics.AddError("Unable to set pipeline info from REST", err.Error())
+			return
+		}
+
+		updatePipelineResourceExtraInfo(&state, &pipelineExtraInfo)
+	} else {
+		// no provider_settings provided, but we still need to read in the badge url
+		extraInfo, err := getPipelineExtraInfo(p.client, response.PipelineUpdate.Pipeline.Slug)
+		if err != nil {
+			resp.Diagnostics.AddError("Unable to read pipeline info from REST", err.Error())
+			return
+		}
+		state.BadgeUrl = types.StringValue(extraInfo.BadgeUrl)
 	}
 
-	updatePipelineResource(d, &pipeline)
-
-	pipelineExtraInfo, err := updatePipelineExtraInfo(d, client)
-	if err != nil {
-		log.Print("Unable to update pipeline attributes via REST API")
-		return diag.FromErr(err)
-	}
-	updatePipelineResourceExtraInfo(d, &pipelineExtraInfo)
-
-	return ReadPipeline(ctx, d, m)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
-// DeletePipeline removes a Buildkite pipeline
-func DeletePipeline(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	client := m.(*Client)
+func (*pipelineResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+}
 
-	if d.Get("deletion_protection") == true {
-		return diag.Errorf("Deletion protection is enabled for pipeline: %s", d.Get("name"))
-	}
+func setPipelineModel(model *pipelineResourceModel, data pipelineResponse) {
+	defaultTimeoutInMinutes := (*int64)(unsafe.Pointer(data.GetDefaultTimeoutInMinutes()))
+	maximumTimeoutInMinutes := (*int64)(unsafe.Pointer(data.GetMaximumTimeoutInMinutes()))
 
-	if d.Get("archive_on_delete") == true {
-		fmt.Printf("Pipeline %s set to archive on delete. Archiving...", d.Get("name"))
-		_, err := archivePipeline(client.genqlient, d.Id())
-		if err != nil {
-			return diag.FromErr(err)
+	model.AllowRebuilds = types.BoolValue(data.GetAllowRebuilds())
+	model.BranchConfiguration = types.StringPointerValue(data.GetBranchConfiguration())
+	model.CancelIntermediateBuilds = types.BoolValue(data.GetCancelIntermediateBuilds())
+	model.CancelIntermediateBuildsBranchFilter = types.StringValue(data.GetCancelIntermediateBuildsBranchFilter())
+	model.ClusterId = types.StringPointerValue(data.GetCluster().Id)
+	model.DefaultBranch = types.StringValue(data.GetDefaultBranch())
+	model.DefaultTimeoutInMinutes = types.Int64PointerValue(defaultTimeoutInMinutes)
+	model.Description = types.StringValue(data.GetDescription())
+	model.Id = types.StringValue(data.GetId())
+	model.MaximumTimeoutInMinutes = types.Int64PointerValue(maximumTimeoutInMinutes)
+	model.Name = types.StringValue(data.GetName())
+	model.Repository = types.StringValue(data.GetRepository().Url)
+	model.SkipIntermediateBuilds = types.BoolValue(data.GetSkipIntermediateBuilds())
+	model.SkipIntermediateBuildsBranchFilter = types.StringValue(data.GetSkipIntermediateBuildsBranchFilter())
+	model.Slug = types.StringValue(data.GetSlug())
+	model.Steps = types.StringValue(data.GetSteps().Yaml)
+	model.WebhookUrl = types.StringValue(data.GetWebhookURL())
+
+	var tags []types.String
+	if len(data.GetTags()) > 0 {
+		tags = make([]types.String, len(data.GetTags()))
+		for i, tag := range data.GetTags() {
+			tags[i] = types.StringValue(tag.Label)
 		}
-		return nil
+	} else {
+		tags = nil
 	}
-
-	log.Printf("Deleting pipeline %s ...", d.Get("name"))
-	_, err := deletePipeline(client.genqlient, d.Id())
-	if err != nil {
-		log.Printf("Unable to delete pipeline %s", d.Get("name"))
-		return diag.FromErr(err)
+	model.Tags = tags
+	teams := make([]*pipelineTeamModel, len(data.GetTeams().Edges))
+	for i, teamEdge := range data.GetTeams().Edges {
+		teams[i] = &pipelineTeamModel{
+			Slug:           types.StringValue(teamEdge.Node.Team.Slug),
+			AccessLevel:    types.StringValue(string(teamEdge.Node.AccessLevel)),
+			TeamId:         types.StringValue(teamEdge.Node.Team.Id),
+			PipelineTeamId: types.StringValue(teamEdge.Node.Id),
+		}
 	}
-
-	return nil
+	model.Teams = teams
 }
 
 // As of May 21, 2021, GraphQL Pipeline is lacking support for the following properties:
@@ -545,32 +679,32 @@ func DeletePipeline(ctx context.Context, d *schema.ResourceData, m interface{}) 
 type PipelineExtraInfo struct {
 	BadgeUrl string `json:"badge_url"`
 	Provider struct {
-		Settings struct {
-			TriggerMode                             string `json:"trigger_mode"`
-			BuildPullRequests                       bool   `json:"build_pull_requests"`
-			PullRequestBranchFilterEnabled          bool   `json:"pull_request_branch_filter_enabled"`
-			PullRequestBranchFilterConfiguration    string `json:"pull_request_branch_filter_configuration"`
-			SkipBuildsForExistingCommits            bool   `json:"skip_builds_for_existing_commits"`
-			SkipPullRequestBuildsForExistingCommits bool   `json:"skip_pull_request_builds_for_existing_commits"`
-			BuildPullRequestReadyForReview          bool   `json:"build_pull_request_ready_for_review"`
-			BuildPullRequestLabelsChanged           bool   `json:"build_pull_request_labels_changed"`
-			BuildPullRequestForks                   bool   `json:"build_pull_request_forks"`
-			PrefixPullRequestForkBranchNames        bool   `json:"prefix_pull_request_fork_branch_names"`
-			BuildBranches                           bool   `json:"build_branches"`
-			BuildTags                               bool   `json:"build_tags"`
-			CancelDeletedBranchBuilds               bool   `json:"cancel_deleted_branch_builds"`
-			FilterEnabled                           bool   `json:"filter_enabled"`
-			FilterCondition                         string `json:"filter_condition"`
-			PublishCommitStatus                     bool   `json:"publish_commit_status"`
-			PublishBlockedAsPending                 bool   `json:"publish_blocked_as_pending"`
-			PublishCommitStatusPerStep              bool   `json:"publish_commit_status_per_step"`
-			SeparatePullRequestStatuses             bool   `json:"separate_pull_request_statuses"`
-		} `json:"settings"`
+		Settings PipelineExtraSettings `json:"settings"`
 	} `json:"provider"`
 }
+type PipelineExtraSettings struct {
+	TriggerMode                             *string `json:"trigger_mode,omitempty"`
+	BuildPullRequests                       *bool   `json:"build_pull_requests,omitempty"`
+	PullRequestBranchFilterEnabled          *bool   `json:"pull_request_branch_filter_enabled,omitempty"`
+	PullRequestBranchFilterConfiguration    *string `json:"pull_request_branch_filter_configuration,omitempty"`
+	SkipBuildsForExistingCommits            *bool   `json:"skip_builds_for_existing_commits,omitempty"`
+	SkipPullRequestBuildsForExistingCommits *bool   `json:"skip_pull_request_builds_for_existing_commits,omitempty"`
+	BuildPullRequestReadyForReview          *bool   `json:"build_pull_request_ready_for_review,omitempty"`
+	BuildPullRequestLabelsChanged           *bool   `json:"build_pull_request_labels_changed,omitempty"`
+	BuildPullRequestForks                   *bool   `json:"build_pull_request_forks,omitempty"`
+	PrefixPullRequestForkBranchNames        *bool   `json:"prefix_pull_request_fork_branch_names,omitempty"`
+	BuildBranches                           *bool   `json:"build_branches,omitempty"`
+	BuildTags                               *bool   `json:"build_tags,omitempty"`
+	CancelDeletedBranchBuilds               *bool   `json:"cancel_deleted_branch_builds,omitempty"`
+	FilterEnabled                           *bool   `json:"filter_enabled,omitempty"`
+	FilterCondition                         *string `json:"filter_condition,omitempty"`
+	PublishCommitStatus                     *bool   `json:"publish_commit_status,omitempty"`
+	PublishBlockedAsPending                 *bool   `json:"publish_blocked_as_pending,omitempty"`
+	PublishCommitStatusPerStep              *bool   `json:"publish_commit_status_per_step,omitempty"`
+	SeparatePullRequestStatuses             *bool   `json:"separate_pull_request_statuses,omitempty"`
+}
 
-func getPipelineExtraInfo(d *schema.ResourceData, m interface{}, slug string) (*PipelineExtraInfo, error) {
-	client := m.(*Client)
+func getPipelineExtraInfo(client *Client, slug string) (*PipelineExtraInfo, error) {
 	pipelineExtraInfo := PipelineExtraInfo{}
 	err := client.makeRequest("GET", fmt.Sprintf("/v2/organizations/%s/pipelines/%s", client.organization, slug), nil, &pipelineExtraInfo)
 	if err != nil {
@@ -578,14 +712,31 @@ func getPipelineExtraInfo(d *schema.ResourceData, m interface{}, slug string) (*
 	}
 	return &pipelineExtraInfo, nil
 }
-
-func updatePipelineExtraInfo(d *schema.ResourceData, client *Client) (PipelineExtraInfo, error) {
-	payload := map[string]interface{}{}
-	if settings := d.Get("provider_settings").([]interface{}); len(settings) > 0 {
-		payload["provider_settings"] = settings[0].(map[string]interface{})
+func updatePipelineExtraInfo(slug string, settings *providerSettingsModel, client *Client) (PipelineExtraInfo, error) {
+	payload := map[string]any{
+		"provider_settings": PipelineExtraSettings{
+			TriggerMode:                             settings.TriggerMode.ValueStringPointer(),
+			BuildPullRequests:                       settings.BuildPullRequests.ValueBoolPointer(),
+			PullRequestBranchFilterEnabled:          settings.PullRequestBranchFilterEnabled.ValueBoolPointer(),
+			PullRequestBranchFilterConfiguration:    settings.PullRequestBranchFilterConfiguration.ValueStringPointer(),
+			SkipBuildsForExistingCommits:            settings.SkipBuildsForExistingCommits.ValueBoolPointer(),
+			SkipPullRequestBuildsForExistingCommits: settings.SkipPullRequestBuildsForExistingCommits.ValueBoolPointer(),
+			BuildPullRequestReadyForReview:          settings.BuildPullRequestReadyForReview.ValueBoolPointer(),
+			BuildPullRequestLabelsChanged:           settings.BuildPullRequestLabelsChanged.ValueBoolPointer(),
+			BuildPullRequestForks:                   settings.BuildPullRequestForks.ValueBoolPointer(),
+			PrefixPullRequestForkBranchNames:        settings.PrefixPullRequestForkBranchNames.ValueBoolPointer(),
+			BuildBranches:                           settings.BuildBranches.ValueBoolPointer(),
+			BuildTags:                               settings.BuildTags.ValueBoolPointer(),
+			CancelDeletedBranchBuilds:               settings.CancelDeletedBranchBuilds.ValueBoolPointer(),
+			FilterEnabled:                           settings.FilterEnabled.ValueBoolPointer(),
+			FilterCondition:                         settings.FilterCondition.ValueStringPointer(),
+			PublishCommitStatus:                     settings.PublishCommitStatus.ValueBoolPointer(),
+			PublishBlockedAsPending:                 settings.PublishBlockedAsPending.ValueBoolPointer(),
+			PublishCommitStatusPerStep:              settings.PublishCommitStatusPerStep.ValueBoolPointer(),
+			SeparatePullRequestStatuses:             settings.SeparatePullRequestStatuses.ValueBoolPointer(),
+		},
 	}
 
-	slug := d.Get("slug").(string)
 	pipelineExtraInfo := PipelineExtraInfo{}
 	err := client.makeRequest("PATCH", fmt.Sprintf("/v2/organizations/%s/pipelines/%s", client.organization, slug), payload, &pipelineExtraInfo)
 	if err != nil {
@@ -594,107 +745,66 @@ func updatePipelineExtraInfo(d *schema.ResourceData, client *Client) (PipelineEx
 	return pipelineExtraInfo, nil
 }
 
-func mapTagsFromGenqlient(tags []PipelineValuesTagsPipelineTag) []PipelineTag {
-	newTags := make([]PipelineTag, len(tags))
-
-	for i, v := range tags {
-		newTags[i] = PipelineTag{Label: graphql.String(v.Label)}
-	}
-	return newTags
-}
-
-func getTagsFromSchema(d *schema.ResourceData) []PipelineTagInput {
-	tagSet := d.Get("tags").(*schema.Set)
-	tags := make([]PipelineTagInput, tagSet.Len())
-	for i, v := range tagSet.List() {
+func getTagsFromSchema(plan *pipelineResourceModel) []PipelineTagInput {
+	tags := make([]PipelineTagInput, len(plan.Tags))
+	for i, tag := range plan.Tags {
 		tags[i] = PipelineTagInput{
-			Label: v.(string),
+			Label: tag.ValueString(),
 		}
 	}
 	return tags
 }
 
-func mapTeamPipelinesFromGenqlient(tags []PipelineValuesTeamsTeamPipelineConnectionEdgesTeamPipelineEdge) struct {
-	Edges []struct{ Node TeamPipelineNode }
-} {
-	teamPipelineNodes := make([]struct{ Node TeamPipelineNode }, len(tags))
-	for i, v := range tags {
-		teamPipelineNodes[i] = struct{ Node TeamPipelineNode }{
-			Node: TeamPipelineNode{
-				AccessLevel: v.Node.AccessLevel,
-				ID:          graphql.String(v.Node.Id),
-				Team: TeamNode{
-					Slug: graphql.String(v.Node.Team.Slug),
-				}},
+func (p *pipelineResource) getTeamPipelinesFromSchema(plan *pipelineResourceModel) []PipelineTeamAssignmentInput {
+	teamPipelineNodes := make([]PipelineTeamAssignmentInput, len(plan.Teams))
+	for i, team := range plan.Teams {
+		log.Printf("converting team slug '%s' to an ID", string(team.Slug.ValueString()))
+		teamID, err := GetTeamID(string(team.Slug.ValueString()), p.client)
+		if err != nil {
+			log.Printf("Unable to get ID for team slug")
+			return []PipelineTeamAssignmentInput{}
 		}
-	}
-	return struct {
-		Edges []struct{ Node TeamPipelineNode }
-	}{Edges: teamPipelineNodes}
-}
-
-func getTeamPipelinesFromSchema(d *schema.ResourceData) []TeamPipelineNode {
-	teamsInput := d.Get("team").(*schema.Set).List()
-	teamPipelineNodes := make([]TeamPipelineNode, len(teamsInput))
-	for i, v := range teamsInput {
-		teamInput := v.(map[string]interface{})
-		teamPipeline := TeamPipelineNode{
-			AccessLevel: PipelineAccessLevels(teamInput["access_level"].(string)),
-			ID:          "",
-			Team: TeamNode{
-				Slug: graphql.String(teamInput["slug"].(string)),
-			},
+		teamPipelineNodes[i] = PipelineTeamAssignmentInput{
+			Id:          teamID,
+			AccessLevel: PipelineAccessLevels(team.AccessLevel.ValueString()),
 		}
-		teamPipelineNodes[i] = teamPipeline
 	}
 	return teamPipelineNodes
 }
 
 // reconcileTeamPipelines adds/updates/deletes the teamPipelines on buildkite to match the teams in terraform resource data
-func reconcileTeamPipelines(teamPipelines []TeamPipelineNode, pipeline *PipelineNode, client *Client) error {
+func (p *pipelineResource) reconcileTeamPipelines(planTeams []*pipelineTeamModel, stateTeams []*pipelineTeamModel, pipelineId string) error {
 	teamPipelineIds := make(map[string]graphql.ID)
 
-	var toAdd []TeamPipelineNode
-	var toUpdate []TeamPipelineNode
-	var toDelete []TeamPipelineNode
+	var toAdd []*pipelineTeamModel
+	var toUpdate []*pipelineTeamModel
+	var toDelete []*pipelineTeamModel
 
 	// Look for teamPipelines on buildkite that need updated or removed
-	for _, teamPipeline := range pipeline.Teams.Edges {
-		teamSlugBk := teamPipeline.Node.Team.Slug
-		accessLevelBk := teamPipeline.Node.AccessLevel
-		id := teamPipeline.Node.ID
+	for _, teamPipeline := range stateTeams {
+		teamSlugBk := teamPipeline.Slug.ValueString()
+		accessLevelBk := teamPipeline.AccessLevel
+		id := teamPipeline.PipelineTeamId.ValueString()
 
 		teamPipelineIds[string(teamSlugBk)] = graphql.ID(id)
 
 		found := false
-		for _, teamPipeline := range teamPipelines {
-			if teamPipeline.Team.Slug == teamSlugBk {
+		for _, teamPipeline := range planTeams {
+			if string(teamPipeline.Slug.ValueString()) == teamSlugBk {
 				found = true
 				if teamPipeline.AccessLevel != accessLevelBk {
-					toUpdate = append(toUpdate, TeamPipelineNode{
-						AccessLevel: teamPipeline.AccessLevel,
-						ID:          id,
-						Team: TeamNode{
-							Slug: teamPipeline.Team.Slug,
-						},
-					})
+					toUpdate = append(toUpdate, teamPipeline)
 				}
 			}
 		}
 		if !found {
-			toDelete = append(toDelete, TeamPipelineNode{
-				AccessLevel: accessLevelBk,
-				ID:          id,
-				Team: TeamNode{
-					Slug: teamSlugBk,
-				},
-			})
+			toDelete = append(toDelete, teamPipeline)
 		}
 	}
 
 	// Look for new teamsInput that need added to buildkite
-	for _, teamPipeline := range teamPipelines {
-		if _, found := teamPipelineIds[string(teamPipeline.Team.Slug)]; !found {
+	for _, teamPipeline := range planTeams {
+		if _, found := teamPipelineIds[teamPipeline.Slug.ValueString()]; !found {
 			toAdd = append(toAdd, teamPipeline)
 		}
 	}
@@ -702,19 +812,19 @@ func reconcileTeamPipelines(teamPipelines []TeamPipelineNode, pipeline *Pipeline
 	log.Printf("EXISTING_BUILDKITE_TEAMS: %s", teamPipelineIds)
 
 	// Add any teamsInput that don't already exist
-	err := createTeamPipelines(toAdd, string(pipeline.ID), client)
+	err := createTeamPipelines(toAdd, pipelineId, p.client)
 	if err != nil {
 		return err
 	}
 
 	// Update any teamsInput access levels that need updating
-	err = updateTeamPipelines(toUpdate, client)
+	err = updateTeamPipelines(toUpdate, p.client)
 	if err != nil {
 		return err
 	}
 
 	// Remove any teamsInput that shouldn't exist
-	err = deleteTeamPipelines(toDelete, client)
+	err = deleteTeamPipelines(toDelete, p.client)
 	if err != nil {
 		return err
 	}
@@ -723,50 +833,29 @@ func reconcileTeamPipelines(teamPipelines []TeamPipelineNode, pipeline *Pipeline
 }
 
 // createTeamPipelines grants access to a pipeline for the teams specified
-func createTeamPipelines(teamPipelines []TeamPipelineNode, pipelineID string, client *Client) error {
-	var mutation struct {
-		TeamPipelineCreate struct {
-			TeamPipeline struct {
-				ID graphql.ID
-			}
-		} `graphql:"teamPipelineCreate(input: {teamID: $team, pipelineID: $pipeline, accessLevel: $accessLevel})"`
-	}
+func createTeamPipelines(teamPipelines []*pipelineTeamModel, pipelineID string, client *Client) error {
 	for _, teamPipeline := range teamPipelines {
-		log.Printf("Granting teamPipeline %s %s access to pipeline id '%s'...", teamPipeline.Team.Slug, teamPipeline.AccessLevel, pipelineID)
-		teamID, err := GetTeamID(string(teamPipeline.Team.Slug), client)
+		log.Printf("Granting teamPipeline %s %s access to pipeline id '%s'...", teamPipeline.Slug, teamPipeline.AccessLevel, pipelineID)
+		teamID, err := GetTeamID(string(teamPipeline.Slug.ValueString()), client)
 		if err != nil {
-			return fmt.Errorf("Unable to get ID for team slug %s (%v)", teamPipeline.Team.Slug, err)
+			return fmt.Errorf("Unable to get ID for team slug %s (%v)", teamPipeline.Slug.ValueString(), err)
 		}
-		params := map[string]interface{}{
-			"team":        graphql.ID(teamID),
-			"pipeline":    graphql.ID(pipelineID),
-			"accessLevel": teamPipeline.AccessLevel,
-		}
-		err = client.graphql.Mutate(context.Background(), &mutation, params)
+		resp, err := teamPipelineCreate(client.genqlient, teamID, pipelineID, PipelineAccessLevels(teamPipeline.AccessLevel.ValueString()))
 		if err != nil {
-			log.Printf("Unable to create team pipeline %s", teamPipeline.Team.Slug)
+			log.Printf("Unable to create team pipeline %s", teamPipeline.Slug)
 			return err
 		}
+		teamPipeline.TeamId = types.StringValue(teamID)
+		teamPipeline.PipelineTeamId = types.StringValue(resp.TeamPipelineCreate.TeamPipeline.Id)
 	}
 	return nil
 }
 
 // Update access levels for the given teamPipelines
-func updateTeamPipelines(teamPipelines []TeamPipelineNode, client *Client) error {
-	var mutation struct {
-		TeamPipelineUpdate struct {
-			TeamPipeline struct {
-				ID graphql.ID
-			}
-		} `graphql:"teamPipelineUpdate(input: {id: $id, accessLevel: $accessLevel})"`
-	}
+func updateTeamPipelines(teamPipelines []*pipelineTeamModel, client *Client) error {
 	for _, teamPipeline := range teamPipelines {
-		log.Printf("Updating access to %s for teamPipeline id '%s'...", teamPipeline.AccessLevel, teamPipeline.ID)
-		params := map[string]interface{}{
-			"id":          graphql.ID(string(teamPipeline.ID)),
-			"accessLevel": teamPipeline.AccessLevel,
-		}
-		err := client.graphql.Mutate(context.Background(), &mutation, params)
+		log.Printf("Updating access to %s for teamPipeline id '%s'...", teamPipeline.AccessLevel, teamPipeline.PipelineTeamId)
+		_, err := teamPipelineUpdate(client.genqlient, teamPipeline.PipelineTeamId.ValueString(), PipelineAccessLevels(teamPipeline.AccessLevel.ValueString()))
 		if err != nil {
 			log.Printf("Unable to update team pipeline")
 			return err
@@ -775,20 +864,10 @@ func updateTeamPipelines(teamPipelines []TeamPipelineNode, client *Client) error
 	return nil
 }
 
-func deleteTeamPipelines(teamPipelines []TeamPipelineNode, client *Client) error {
-	var mutation struct {
-		TeamPipelineDelete struct {
-			Team struct {
-				ID graphql.ID
-			}
-		} `graphql:"teamPipelineDelete(input: {id: $id})"`
-	}
+func deleteTeamPipelines(teamPipelines []*pipelineTeamModel, client *Client) error {
 	for _, teamPipeline := range teamPipelines {
-		log.Printf("Removing access for teamPipeline %s (id=%s)...", teamPipeline.Team.Slug, teamPipeline.ID)
-		params := map[string]interface{}{
-			"id": graphql.ID(string(teamPipeline.ID)),
-		}
-		err := client.graphql.Mutate(context.Background(), &mutation, params)
+		log.Printf("Removing access for teamPipeline %s (id=%s)...", teamPipeline.Slug, teamPipeline.PipelineTeamId)
+		_, err := teamPipelineDelete(client.genqlient, teamPipeline.PipelineTeamId.ValueString())
 		if err != nil {
 			log.Printf("Unable to delete team pipeline")
 			return err
@@ -798,124 +877,31 @@ func deleteTeamPipelines(teamPipelines []TeamPipelineNode, client *Client) error
 	return nil
 }
 
-func updatePipelineResourceFromCreate(d *schema.ResourceData, pipeline createPipelinePipelineCreatePipelineCreatePayloadPipeline) {
-	d.SetId(string(pipeline.Id))
-	d.Set("allow_rebuilds", bool(pipeline.AllowRebuilds))
-	d.Set("branch_configuration", string(pipeline.BranchConfiguration))
-	d.Set("default_timeout_in_minutes", int(pipeline.DefaultTimeoutInMinutes))
-	d.Set("maximum_timeout_in_minutes", int(pipeline.MaximumTimeoutInMinutes))
-	d.Set("cancel_intermediate_builds", bool(pipeline.CancelIntermediateBuilds))
-	d.Set("cancel_intermediate_builds_branch_filter", string(pipeline.CancelIntermediateBuildsBranchFilter))
-	d.Set("cluster_id", string(pipeline.Cluster.Id))
-	d.Set("default_branch", string(pipeline.DefaultBranch))
-	d.Set("description", string(pipeline.Description))
-	d.Set("name", string(pipeline.Name))
-	d.Set("repository", string(pipeline.Repository.Url))
-	d.Set("skip_intermediate_builds", bool(pipeline.SkipIntermediateBuilds))
-	d.Set("skip_intermediate_builds_branch_filter", string(pipeline.SkipIntermediateBuildsBranchFilter))
-	d.Set("slug", string(pipeline.Slug))
-	d.Set("steps", string(pipeline.Steps.Yaml))
-	d.Set("webhook_url", string(pipeline.WebhookURL))
-
-	teams := make([]map[string]interface{}, len(pipeline.Teams.Edges))
-	for i, id := range pipeline.Teams.Edges {
-		team := map[string]interface{}{
-			"slug":         string(id.Node.Team.Slug),
-			"access_level": string(id.Node.AccessLevel),
-		}
-		teams[i] = team
-	}
-	d.Set("team", teams)
-}
-
-// updatePipelineResource updates the terraform resource data for the pipeline resource
-func updatePipelineResource(d *schema.ResourceData, pipeline *PipelineNode) {
-	d.SetId(string(pipeline.ID))
-	d.Set("allow_rebuilds", bool(pipeline.AllowRebuilds))
-	d.Set("branch_configuration", string(pipeline.BranchConfiguration))
-	d.Set("default_timeout_in_minutes", int(pipeline.DefaultTimeoutInMinutes))
-	d.Set("maximum_timeout_in_minutes", int(pipeline.MaximumTimeoutInMinutes))
-	d.Set("cancel_intermediate_builds", bool(pipeline.CancelIntermediateBuilds))
-	d.Set("cancel_intermediate_builds_branch_filter", string(pipeline.CancelIntermediateBuildsBranchFilter))
-	d.Set("cluster_id", string(pipeline.Cluster.ID))
-	d.Set("default_branch", string(pipeline.DefaultBranch))
-	d.Set("description", string(pipeline.Description))
-	d.Set("name", string(pipeline.Name))
-	d.Set("repository", string(pipeline.Repository.URL))
-	d.Set("skip_intermediate_builds", bool(pipeline.SkipIntermediateBuilds))
-	d.Set("skip_intermediate_builds_branch_filter", string(pipeline.SkipIntermediateBuildsBranchFilter))
-	d.Set("slug", string(pipeline.Slug))
-	d.Set("steps", string(pipeline.Steps.YAML))
-	d.Set("webhook_url", string(pipeline.WebhookURL))
-
-	teams := make([]map[string]interface{}, len(pipeline.Teams.Edges))
-	for i, id := range pipeline.Teams.Edges {
-		team := map[string]interface{}{
-			"slug":         string(id.Node.Team.Slug),
-			"access_level": string(id.Node.AccessLevel),
-		}
-		teams[i] = team
-	}
-	d.Set("team", teams)
-}
-
-// updatePipelineResourceNode updates the terraform resource data for the pipeline resource from a passed in getNodeNodePipeline
-func updatePipelineResourceNode(d *schema.ResourceData, pipeline *getNodeNodePipeline) {
-	d.SetId(string(pipeline.Id))
-	d.Set("allow_rebuilds", bool(pipeline.AllowRebuilds))
-	d.Set("branch_configuration", string(pipeline.BranchConfiguration))
-	d.Set("default_timeout_in_minutes", int(pipeline.DefaultTimeoutInMinutes))
-	d.Set("maximum_timeout_in_minutes", int(pipeline.MaximumTimeoutInMinutes))
-	d.Set("cancel_intermediate_builds", bool(pipeline.CancelIntermediateBuilds))
-	d.Set("cancel_intermediate_builds_branch_filter", string(pipeline.CancelIntermediateBuildsBranchFilter))
-	d.Set("cluster_id", string(pipeline.Cluster.Id))
-	d.Set("default_branch", string(pipeline.DefaultBranch))
-	d.Set("description", string(pipeline.Description))
-	d.Set("name", string(pipeline.Name))
-	d.Set("repository", string(pipeline.Repository.Url))
-	d.Set("skip_intermediate_builds", bool(pipeline.SkipIntermediateBuilds))
-	d.Set("skip_intermediate_builds_branch_filter", string(pipeline.SkipIntermediateBuildsBranchFilter))
-	d.Set("slug", string(pipeline.Slug))
-	d.Set("steps", string(pipeline.Steps.Yaml))
-	d.Set("webhook_url", string(pipeline.WebhookURL))
-
-	teams := make([]map[string]interface{}, len(pipeline.Teams.Edges))
-	for i, id := range pipeline.Teams.Edges {
-		team := map[string]interface{}{
-			"slug":         string(id.Node.Team.Slug),
-			"access_level": string(id.Node.AccessLevel),
-		}
-		teams[i] = team
-	}
-	d.Set("team", teams)
-}
-
 // updatePipelineResourceExtraInfo updates the terraform resource with data received from Buildkite REST API
-func updatePipelineResourceExtraInfo(d *schema.ResourceData, pipeline *PipelineExtraInfo) {
-	d.Set("badge_url", pipeline.BadgeUrl)
-
-	s := &pipeline.Provider.Settings
-	providerSettings := make([]map[string]interface{}, 1, 1)
-	providerSettings[0] = map[string]interface{}{
-		"trigger_mode":                                  s.TriggerMode,
-		"build_pull_requests":                           s.BuildPullRequests,
-		"pull_request_branch_filter_enabled":            s.PullRequestBranchFilterEnabled,
-		"pull_request_branch_filter_configuration":      s.PullRequestBranchFilterConfiguration,
-		"skip_builds_for_existing_commits":              s.SkipBuildsForExistingCommits,
-		"skip_pull_request_builds_for_existing_commits": s.SkipPullRequestBuildsForExistingCommits,
-		"build_pull_request_ready_for_review":           s.BuildPullRequestReadyForReview,
-		"build_pull_request_labels_changed":             s.BuildPullRequestLabelsChanged,
-		"build_pull_request_forks":                      s.BuildPullRequestForks,
-		"filter_enabled":                                s.FilterEnabled,
-		"filter_condition":                              s.FilterCondition,
-		"prefix_pull_request_fork_branch_names":         s.PrefixPullRequestForkBranchNames,
-		"build_branches":                                s.BuildBranches,
-		"build_tags":                                    s.BuildTags,
-		"cancel_deleted_branch_builds":                  s.CancelDeletedBranchBuilds,
-		"publish_commit_status":                         s.PublishCommitStatus,
-		"publish_blocked_as_pending":                    s.PublishBlockedAsPending,
-		"publish_commit_status_per_step":                s.PublishCommitStatusPerStep,
-		"separate_pull_request_statuses":                s.SeparatePullRequestStatuses,
+func updatePipelineResourceExtraInfo(state *pipelineResourceModel, pipeline *PipelineExtraInfo) {
+	state.BadgeUrl = types.StringValue(pipeline.BadgeUrl)
+	s := pipeline.Provider.Settings
+	state.ProviderSettings = []*providerSettingsModel{
+		{
+			TriggerMode:                             types.StringPointerValue(s.TriggerMode),
+			BuildPullRequests:                       types.BoolPointerValue(s.BuildPullRequests),
+			PullRequestBranchFilterEnabled:          types.BoolPointerValue(s.PullRequestBranchFilterEnabled),
+			PullRequestBranchFilterConfiguration:    types.StringPointerValue(s.PullRequestBranchFilterConfiguration),
+			SkipBuildsForExistingCommits:            types.BoolPointerValue(s.SkipBuildsForExistingCommits),
+			SkipPullRequestBuildsForExistingCommits: types.BoolPointerValue(s.SkipPullRequestBuildsForExistingCommits),
+			BuildPullRequestReadyForReview:          types.BoolPointerValue(s.BuildPullRequestReadyForReview),
+			BuildPullRequestLabelsChanged:           types.BoolPointerValue(s.BuildPullRequestLabelsChanged),
+			BuildPullRequestForks:                   types.BoolPointerValue(s.BuildPullRequestForks),
+			PrefixPullRequestForkBranchNames:        types.BoolPointerValue(s.PrefixPullRequestForkBranchNames),
+			BuildBranches:                           types.BoolPointerValue(s.BuildBranches),
+			BuildTags:                               types.BoolPointerValue(s.BuildTags),
+			CancelDeletedBranchBuilds:               types.BoolPointerValue(s.CancelDeletedBranchBuilds),
+			FilterEnabled:                           types.BoolPointerValue(s.FilterEnabled),
+			FilterCondition:                         types.StringPointerValue(s.FilterCondition),
+			PublishCommitStatus:                     types.BoolPointerValue(s.PublishCommitStatus),
+			PublishBlockedAsPending:                 types.BoolPointerValue(s.PublishBlockedAsPending),
+			PublishCommitStatusPerStep:              types.BoolPointerValue(s.PublishCommitStatusPerStep),
+			SeparatePullRequestStatuses:             types.BoolPointerValue(s.SeparatePullRequestStatuses),
+		},
 	}
-	d.Set("provider_settings", providerSettings)
 }

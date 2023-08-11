@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
@@ -105,9 +106,214 @@ func TestAccPipeline_add_remove_withcluster(t *testing.T) {
 					testAccCheckPipelineRemoteValues(&resourcePipeline, "Test Pipeline foo"),
 					// Confirm the pipeline has the correct values in terraform state
 					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "name", "Test Pipeline foo"),
-					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "cluster_id", ""),
+					resource.TestCheckNoResourceAttr("buildkite_pipeline.foobar", "cluster_id"),
 					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "allow_rebuilds", "true"),
 				),
+			},
+		},
+	})
+}
+
+// TestAccPipeline_add_remove_withcluster_old_version tests that the provider doesn't get stuffed up when coming from an
+// older version to this new version. the first step runs against the published v0.21.1 version and the second step runs
+// against the current provider. the configuration is the same between each one so there should be no state/plan change
+func TestAccPipeline_add_remove_withcluster_old_version(t *testing.T) {
+	var resourcePipeline PipelineNode
+	pipelineName := acctest.RandString(12)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		CheckDestroy: testAccCheckPipelineResourceDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccPipelineConfigBasicWithCluster(pipelineName),
+				ExternalProviders: map[string]resource.ExternalProvider{
+					"buildkite": {
+						Source:            "registry.terraform.io/buildkite/buildkite",
+						VersionConstraint: "0.21.1",
+					},
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					// Confirm the pipeline exists in the buildkite API
+					testAccCheckPipelineExists("buildkite_pipeline.foobar", &resourcePipeline),
+					// Confirm the pipeline has the correct values in Buildkite's system
+					testAccCheckPipelineRemoteValues(&resourcePipeline, fmt.Sprintf("Test Pipeline %s", pipelineName)),
+					// Confirm the pipeline has the correct values in terraform state
+					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "name", fmt.Sprintf("Test Pipeline %s", pipelineName)),
+					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "cluster_id", "Q2x1c3Rlci0tLTFkNmIxOTg5LTJmYjctNDRlMC04MWYyLTAxYjIxNzQ4MTVkMg=="),
+					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "allow_rebuilds", "true"),
+					// check provider settings are present
+					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "provider_settings.0.trigger_mode", "code"),
+				),
+			},
+			{
+				Config:                   testAccPipelineConfigBasicWithCluster(pipelineName),
+				ProtoV6ProviderFactories: protoV6ProviderFactories(),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					// Confirm the pipeline exists in the buildkite API
+					testAccCheckPipelineExists("buildkite_pipeline.foobar", &resourcePipeline),
+					// Confirm the pipeline has the correct values in Buildkite's system
+					testAccCheckPipelineRemoteValues(&resourcePipeline, fmt.Sprintf("Test Pipeline %s", pipelineName)),
+					// Confirm the pipeline has the correct values in terraform state
+					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "name", fmt.Sprintf("Test Pipeline %s", pipelineName)),
+					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "cluster_id", "Q2x1c3Rlci0tLTFkNmIxOTg5LTJmYjctNDRlMC04MWYyLTAxYjIxNzQ4MTVkMg=="),
+					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "allow_rebuilds", "true"),
+					// check provider settings are not present
+					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "provider_settings.#", "0"),
+				),
+			},
+		},
+	})
+}
+
+// TestAccPipeline_add_remove_withoutcluster_old_version tests that the provider doesn't get stuffed up when coming from an
+// older version to this new version. the first step runs against the published v0.21.1 version and the second step runs
+// against the current provider. the configuration is the same between each one so there should be no state/plan change
+func TestAccPipeline_add_remove_withoutcluster_old_version(t *testing.T) {
+	var resourcePipeline PipelineNode
+	pipelineName := acctest.RandString(12)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		CheckDestroy: testAccCheckPipelineResourceDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccPipelineConfigBasic(pipelineName),
+				ExternalProviders: map[string]resource.ExternalProvider{
+					"buildkite": {
+						Source:            "registry.terraform.io/buildkite/buildkite",
+						VersionConstraint: "0.21.1",
+					},
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					// Confirm the pipeline exists in the buildkite API
+					testAccCheckPipelineExists("buildkite_pipeline.foobar", &resourcePipeline),
+					// Confirm the pipeline has the correct values in Buildkite's system
+					testAccCheckPipelineRemoteValues(&resourcePipeline, fmt.Sprintf("Test Pipeline %s", pipelineName)),
+					// Confirm the pipeline has the correct values in terraform state
+					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "name", fmt.Sprintf("Test Pipeline %s", pipelineName)),
+					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "cluster_id", ""),
+					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "allow_rebuilds", "true"),
+					// check provider settings are present
+					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "provider_settings.0.trigger_mode", "code"),
+				),
+			},
+			{
+				Config:                   testAccPipelineConfigBasic(pipelineName),
+				ProtoV6ProviderFactories: protoV6ProviderFactories(),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					// Confirm the pipeline exists in the buildkite API
+					testAccCheckPipelineExists("buildkite_pipeline.foobar", &resourcePipeline),
+					// Confirm the pipeline has the correct values in Buildkite's system
+					testAccCheckPipelineRemoteValues(&resourcePipeline, fmt.Sprintf("Test Pipeline %s", pipelineName)),
+					// Confirm the pipeline has the correct values in terraform state
+					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "name", fmt.Sprintf("Test Pipeline %s", pipelineName)),
+					resource.TestCheckNoResourceAttr("buildkite_pipeline.foobar", "cluster_id"),
+					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "allow_rebuilds", "true"),
+					// check provider settings are not present
+					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "provider_settings.#", "0"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccPipeline_team_added(t *testing.T) {
+	var resourcePipeline PipelineNode
+	var teamID string
+	pipelineName := acctest.RandString(12)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		CheckDestroy:             removeTeamAndPipeline(&teamID),
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccPipelineConfigBasic(pipelineName),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					// Confirm the pipeline exists in the buildkite API
+					testAccCheckPipelineExists("buildkite_pipeline.foobar", &resourcePipeline),
+					// check no teams are present
+					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "team.#", "0"),
+					// add a team to the pipeline outside of terraform
+					func(s *terraform.State) error {
+						team, err := teamCreate(genqlientGraphql, organizationID, acctest.RandString(6), nil, "VISIBLE", false, "MEMBER", false)
+						teamID = team.TeamCreate.TeamEdge.Node.Id
+						if err != nil {
+							return err
+						}
+						_, err = teamPipelineCreate(genqlientGraphql, teamID, string(resourcePipeline.ID), PipelineAccessLevelsBuildAndRead)
+						if err != nil {
+							return err
+						}
+						return nil
+					},
+				),
+				ExpectNonEmptyPlan: true,
+			},
+		},
+	})
+}
+
+func TestAccPipeline_team_changed(t *testing.T) {
+	var resourcePipeline PipelineNode
+	pipelineName := acctest.RandString(12)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		CheckDestroy:             testAccCheckPipelineResourceDestroy,
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccPipelineConfigBasicWithTeam(pipelineName),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					// Confirm the pipeline exists in the buildkite API
+					testAccCheckPipelineExists("buildkite_pipeline.foobar", &resourcePipeline),
+					// check no teams are present
+					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "team.#", "1"),
+					// change the team access level outside of terraform
+					func(s *terraform.State) error {
+						_, err := teamPipelineUpdate(genqlientGraphql, string(resourcePipeline.Teams.Edges[0].Node.ID), PipelineAccessLevelsReadOnly)
+						if err != nil {
+							return err
+						}
+						return nil
+					},
+				),
+				// expect non-empty plan because team access level has changed
+				ExpectNonEmptyPlan: true,
+			},
+		},
+	})
+}
+
+func TestAccPipeline_team_removed(t *testing.T) {
+	var resourcePipeline PipelineNode
+	pipelineName := acctest.RandString(12)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		CheckDestroy:             testAccCheckPipelineResourceDestroy,
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccPipelineConfigBasicWithTeam(pipelineName),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					// Confirm the pipeline exists in the buildkite API
+					testAccCheckPipelineExists("buildkite_pipeline.foobar", &resourcePipeline),
+					// check no teams are present
+					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "team.#", "1"),
+					// remove the team from the api
+					func(s *terraform.State) error {
+						_, err := teamPipelineDelete(genqlientGraphql, string(resourcePipeline.Teams.Edges[0].Node.ID))
+						if err != nil {
+							return err
+						}
+						return nil
+					},
+				),
+				// expect non-empty plan because it should want to link the team again
+				ExpectNonEmptyPlan: true,
 			},
 		},
 	})
@@ -327,6 +533,70 @@ func TestAccPipeline_update_withteams(t *testing.T) {
 	})
 }
 
+func TestAccPipeline_add_team(t *testing.T) {
+	var resourcePipeline PipelineNode
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		CheckDestroy:             testAccCheckPipelineResourceDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccPipelineConfigBasic("foo"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					// Confirm the pipeline exists in the buildkite API
+					testAccCheckPipelineExists("buildkite_pipeline.foobar", &resourcePipeline),
+					// Quick check to confirm the local state is correct before we update it
+					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "name", "Test Pipeline foo"),
+				),
+			},
+			{
+				Config: testAccPipelineConfigBasicWithTeam("foo"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					// Confirm the pipeline exists in the buildkite API
+					testAccCheckPipelineExists("buildkite_pipeline.foobar", &resourcePipeline),
+					// Confirm the pipeline has the updated values in Buildkite's system
+					testAccCheckPipelineRemoteValues(&resourcePipeline, "Test Pipeline foo"),
+					// Confirm the pipeline has the updated values in terraform state
+					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "name", "Test Pipeline foo"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccPipeline_remove_team(t *testing.T) {
+	var resourcePipeline PipelineNode
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		CheckDestroy:             testAccCheckPipelineResourceDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccPipelineConfigBasicWithTeam("foo"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					// Confirm the pipeline exists in the buildkite API
+					testAccCheckPipelineExists("buildkite_pipeline.foobar", &resourcePipeline),
+					// Quick check to confirm the local state is correct before we update it
+					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "name", "Test Pipeline foo"),
+				),
+			},
+			{
+				Config: testAccPipelineConfigBasic("foo"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					// Confirm the pipeline exists in the buildkite API
+					testAccCheckPipelineExists("buildkite_pipeline.foobar", &resourcePipeline),
+					// Confirm the pipeline has the updated values in Buildkite's system
+					testAccCheckPipelineRemoteValues(&resourcePipeline, "Test Pipeline foo"),
+					// Confirm the pipeline has the updated values in terraform state
+					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "name", "Test Pipeline foo"),
+				),
+			},
+		},
+	})
+}
+
 // Confirm that this resource can be imported
 func TestAccPipeline_import(t *testing.T) {
 	var resourcePipeline PipelineNode
@@ -372,7 +642,7 @@ func TestAccPipeline_disappears(t *testing.T) {
 					// Confirm the pipeline exists in the buildkite API
 					testAccCheckPipelineExists(resourceName, &node),
 					// Ensure its removal from the spec
-					testAccCheckResourceDisappears(Provider("testing"), resourcePipeline(), resourceName),
+					testAccCheckPipelineDisappears(resourceName),
 				),
 				ExpectNonEmptyPlan: true,
 			},
@@ -709,6 +979,16 @@ func testAccPipelineConfigComplex(name string, steps string) string {
 	return fmt.Sprintf(config, name, steps)
 }
 
+func removeTeamAndPipeline(id *string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		_, err := teamDelete(genqlientGraphql, *id)
+		if err != nil {
+			return err
+		}
+		return testAccCheckPipelineResourceDestroy(s)
+	}
+}
+
 // verifies the Pipeline has been destroyed
 func testAccCheckPipelineResourceDestroy(s *terraform.State) error {
 	for _, rs := range s.RootModule().Resources {
@@ -739,4 +1019,22 @@ func testAccCheckPipelineResourceDestroy(s *terraform.State) error {
 	}
 
 	return nil
+}
+
+// testAccCheckPipelineDisappears verifies the Provider has had the resource removed from state
+func testAccCheckPipelineDisappears(resourceName string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		resourceState, ok := s.RootModule().Resources[resourceName]
+
+		if !ok {
+			return fmt.Errorf("resource not found: %s", resourceName)
+		}
+
+		if resourceState.Primary.ID == "" {
+			return fmt.Errorf("resource ID missing: %s", resourceName)
+		}
+
+		_, err := deletePipeline(genqlientGraphql, resourceState.Primary.ID)
+		return err
+	}
 }
