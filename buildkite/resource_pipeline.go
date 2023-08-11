@@ -658,16 +658,26 @@ func setPipelineModel(model *pipelineResourceModel, data pipelineResponse) {
 		tags = nil
 	}
 	model.Tags = tags
-	teams := make([]*pipelineTeamModel, len(data.GetTeams().Edges))
-	for i, teamEdge := range data.GetTeams().Edges {
-		teams[i] = &pipelineTeamModel{
-			Slug:           types.StringValue(teamEdge.Node.Team.Slug),
-			AccessLevel:    types.StringValue(string(teamEdge.Node.AccessLevel)),
-			TeamId:         types.StringValue(teamEdge.Node.Team.Id),
-			PipelineTeamId: types.StringValue(teamEdge.Node.Id),
+
+	// go through all teams in the state, find the team from the api response and update the access level in case it
+	// changed
+	// if we dont find the team in the api response, remove it from state
+	for i, team := range model.Teams {
+		found := false
+		for _, teamEdge := range data.GetTeams().Edges {
+			if team.PipelineTeamId.ValueString() == teamEdge.Node.Id {
+				found = true
+				if team.AccessLevel.ValueString() != string(teamEdge.Node.AccessLevel) {
+					team.AccessLevel = types.StringValue(string(teamEdge.Node.AccessLevel))
+				}
+				break
+			}
+		}
+		if !found {
+			// remove from state
+			model.Teams = append(model.Teams[:i], model.Teams[i+1:]...)
 		}
 	}
-	model.Teams = teams
 }
 
 // As of May 21, 2021, GraphQL Pipeline is lacking support for the following properties:
@@ -772,13 +782,13 @@ func (p *pipelineResource) getTeamPipelinesFromSchema(plan *pipelineResourceMode
 	return teamPipelineNodes
 }
 
-// reconcileTeamPipelines adds/updates/deletes the teamPipelines on buildkite to match the teams in terraform resource data
+// reconcileTeamPipelines updates/deletes the teamPipelines on buildkite to match the teams in terraform resource data
 func (p *pipelineResource) reconcileTeamPipelines(planTeams []*pipelineTeamModel, stateTeams []*pipelineTeamModel, pipelineId string) error {
+	// a map from slug to graphql id of the team pipelines in state (from api)
 	teamPipelineIds := make(map[string]graphql.ID)
 
 	var toAdd []*pipelineTeamModel
 	var toUpdate []*pipelineTeamModel
-	var toDelete []*pipelineTeamModel
 
 	// Look for teamPipelines on buildkite that need updated or removed
 	for _, teamPipeline := range stateTeams {
@@ -788,17 +798,12 @@ func (p *pipelineResource) reconcileTeamPipelines(planTeams []*pipelineTeamModel
 
 		teamPipelineIds[string(teamSlugBk)] = graphql.ID(id)
 
-		found := false
 		for _, teamPipeline := range planTeams {
 			if string(teamPipeline.Slug.ValueString()) == teamSlugBk {
-				found = true
 				if teamPipeline.AccessLevel != accessLevelBk {
 					toUpdate = append(toUpdate, teamPipeline)
 				}
 			}
-		}
-		if !found {
-			toDelete = append(toDelete, teamPipeline)
 		}
 	}
 
@@ -819,12 +824,6 @@ func (p *pipelineResource) reconcileTeamPipelines(planTeams []*pipelineTeamModel
 
 	// Update any teamsInput access levels that need updating
 	err = updateTeamPipelines(toUpdate, p.client)
-	if err != nil {
-		return err
-	}
-
-	// Remove any teamsInput that shouldn't exist
-	err = deleteTeamPipelines(toDelete, p.client)
 	if err != nil {
 		return err
 	}
