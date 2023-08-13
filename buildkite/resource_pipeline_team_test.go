@@ -67,7 +67,6 @@ func TestAccPipelineTeam_AddRemoveWithNonDefaultAccess(t *testing.T) {
 func TestAccPipelineTeam_Update(t *testing.T) {
 	var tp pipelineTeamResourceModel
 	t.Parallel()
-	t.Skip("Skipping until we can figure out how to update the access level of a team pipeline resource")
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
