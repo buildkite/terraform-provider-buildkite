@@ -10,7 +10,7 @@ import (
 )
 
 // Confirm we can add and remove a team pipeline resource with the default access level
-func TestAccPipelineTeam_add_remove_default_access(t *testing.T) {
+func TestAccPipelineTeam_AddRemoveWithDefaultsAccess(t *testing.T) {
 	var tp pipelineTeamResourceModel
 	teamName := acctest.RandString(12)
 	t.Parallel()
@@ -21,8 +21,7 @@ func TestAccPipelineTeam_add_remove_default_access(t *testing.T) {
 		CheckDestroy:             testCheckPipelineTeamResourceRemoved,
 		Steps: []resource.TestStep{
 			{
-				Config:             testAccPipelineTeamConfigBasic(teamName, "READ_ONLY"),
-				ExpectNonEmptyPlan: true,
+				Config: testAccPipelineTeamConfigBasic(teamName, "READ_ONLY"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Confirm the test resource team & team pipeline exists in the Buildkite API
 					testAccCheckPipelineTeamExists("buildkite_pipeline_team.pipelineteam", &tp),
@@ -38,7 +37,7 @@ func TestAccPipelineTeam_add_remove_default_access(t *testing.T) {
 	})
 }
 
-func TestAccPipelineTeam_add_remove_non_default_access(t *testing.T) {
+func TestAccPipelineTeam_AddRemoveWithNonDefaultAccess(t *testing.T) {
 	var tp pipelineTeamResourceModel
 	teamName := acctest.RandString(12)
 	t.Parallel()
@@ -49,8 +48,7 @@ func TestAccPipelineTeam_add_remove_non_default_access(t *testing.T) {
 		CheckDestroy:             testCheckPipelineTeamResourceRemoved,
 		Steps: []resource.TestStep{
 			{
-				Config:             testAccPipelineTeamConfigBasic(teamName, "BUILD_AND_READ"),
-				ExpectNonEmptyPlan: true,
+				Config: testAccPipelineTeamConfigBasic(teamName, "BUILD_AND_READ"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Confirm the test resource team & team pipeline exists in the Buildkite API
 					testAccCheckPipelineTeamExists("buildkite_pipeline_team.pipelineteam", &tp),
@@ -66,7 +64,7 @@ func TestAccPipelineTeam_add_remove_non_default_access(t *testing.T) {
 	})
 }
 
-func TestAccPipelineTeam_update(t *testing.T) {
+func TestAccPipelineTeam_Update(t *testing.T) {
 	var tp pipelineTeamResourceModel
 	t.Parallel()
 
@@ -102,7 +100,7 @@ func TestAccPipelineTeam_update(t *testing.T) {
 }
 
 // Confirm that this resource can be imported
-func TestAccPipelineTeam_import(t *testing.T) {
+func TestAccPipelineTeam_Import(t *testing.T) {
 	var tp pipelineTeamResourceModel
 	teamName := acctest.RandString(12)
 	t.Parallel()
@@ -113,8 +111,7 @@ func TestAccPipelineTeam_import(t *testing.T) {
 		CheckDestroy:             testCheckPipelineTeamResourceRemoved,
 		Steps: []resource.TestStep{
 			{
-				Config:             testAccPipelineTeamConfigBasic(teamName, "READ_ONLY"),
-				ExpectNonEmptyPlan: true,
+				Config: testAccPipelineTeamConfigBasic(teamName, "READ_ONLY"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Confirm the test resource team & team pipeline exists in the Buildkite API
 					testAccCheckPipelineTeamExists("buildkite_pipeline_team.pipelineteam", &tp),

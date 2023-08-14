@@ -677,7 +677,6 @@ func setPipelineModel(model *pipelineResourceModel, data pipelineResponse) {
 			// remove from state
 			model.Teams = append(model.Teams[:i], model.Teams[i+1:]...)
 		}
-	}
 }
 
 // As of May 21, 2021, GraphQL Pipeline is lacking support for the following properties:

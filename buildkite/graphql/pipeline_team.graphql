@@ -12,8 +12,7 @@ fragment TeamPipelineFields on TeamPipeline {
 
 mutation createTeamPipeline(
     $teamID: ID!,
-    $pipelineID: ID!,
-     # @genqlient(omitempty: true)
+    $pipelineID: ID!, 
     $accessLevel: PipelineAccessLevels
 ) {
     teamPipelineCreate(input:{
