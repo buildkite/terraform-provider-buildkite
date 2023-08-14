@@ -129,7 +129,8 @@ type pipelineTeamModel struct {
 }
 
 type pipelineResource struct {
-	client *Client
+	client          *Client
+	archiveOnDelete bool
 }
 
 type pipelineResponse interface {
@@ -154,8 +155,12 @@ type pipelineResponse interface {
 	GetWebhookURL() string
 }
 
-func newPipelineResource() resource.Resource {
-	return &pipelineResource{}
+func newPipelineResource(archiveOnDelete bool) func() resource.Resource {
+	return func() resource.Resource {
+		return &pipelineResource{
+			archiveOnDelete: archiveOnDelete,
+		}
+	}
 }
 
 func (p *pipelineResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
@@ -249,7 +254,7 @@ func (p *pipelineResource) Delete(ctx context.Context, req resource.DeleteReques
 		return
 	}
 
-	if state.ArchiveOnDelete.ValueBool() {
+	if state.ArchiveOnDelete.ValueBool() || p.archiveOnDelete {
 		log.Printf("Pipeline %s set to archive on delete. Archiving...", state.Name.ValueString())
 		_, err := archivePipeline(p.client.genqlient, state.Id.ValueString())
 		if err != nil {
