@@ -1296,7 +1296,7 @@ func (v *__createTeamMemberInput) GetRole() string { return v.Role }
 type __createTeamPipelineInput struct {
 	TeamID      string               `json:"teamID"`
 	PipelineID  string               `json:"pipelineID"`
-	AccessLevel PipelineAccessLevels `json:"accessLevel,omitempty"`
+	AccessLevel PipelineAccessLevels `json:"accessLevel"`
 }
 
 // GetTeamID returns __createTeamPipelineInput.TeamID, and is useful for accessing the field via an interface.

@@ -677,6 +677,7 @@ func setPipelineModel(model *pipelineResourceModel, data pipelineResponse) {
 			// remove from state
 			model.Teams = append(model.Teams[:i], model.Teams[i+1:]...)
 		}
+	}
 }
 
 // As of May 21, 2021, GraphQL Pipeline is lacking support for the following properties:
@@ -691,6 +692,7 @@ type PipelineExtraInfo struct {
 		Settings PipelineExtraSettings `json:"settings"`
 	} `json:"provider"`
 }
+
 type PipelineExtraSettings struct {
 	TriggerMode                             *string `json:"trigger_mode,omitempty"`
 	BuildPullRequests                       *bool   `json:"build_pull_requests,omitempty"`
@@ -714,6 +716,7 @@ type PipelineExtraSettings struct {
 }
 
 func getPipelineExtraInfo(client *Client, slug string) (*PipelineExtraInfo, error) {
+
 	pipelineExtraInfo := PipelineExtraInfo{}
 	err := client.makeRequest("GET", fmt.Sprintf("/v2/organizations/%s/pipelines/%s", client.organization, slug), nil, &pipelineExtraInfo)
 	if err != nil {
@@ -721,6 +724,7 @@ func getPipelineExtraInfo(client *Client, slug string) (*PipelineExtraInfo, erro
 	}
 	return &pipelineExtraInfo, nil
 }
+
 func updatePipelineExtraInfo(slug string, settings *providerSettingsModel, client *Client) (PipelineExtraInfo, error) {
 	payload := map[string]any{
 		"provider_settings": PipelineExtraSettings{
@@ -836,7 +840,7 @@ func createTeamPipelines(teamPipelines []*pipelineTeamModel, pipelineID string, 
 		log.Printf("Granting teamPipeline %s %s access to pipeline id '%s'...", teamPipeline.Slug, teamPipeline.AccessLevel, pipelineID)
 		teamID, err := GetTeamID(string(teamPipeline.Slug.ValueString()), client)
 		if err != nil {
-			return fmt.Errorf("Unable to get ID for team slug %s (%v)", teamPipeline.Slug.ValueString(), err)
+			return fmt.Errorf("unable to get ID for team slug %s (%v)", teamPipeline.Slug.ValueString(), err)
 		}
 		resp, err := teamPipelineCreate(client.genqlient, teamID, pipelineID, PipelineAccessLevels(teamPipeline.AccessLevel.ValueString()))
 		if err != nil {
@@ -859,19 +863,6 @@ func updateTeamPipelines(teamPipelines []*pipelineTeamModel, client *Client) err
 			return err
 		}
 	}
-	return nil
-}
-
-func deleteTeamPipelines(teamPipelines []*pipelineTeamModel, client *Client) error {
-	for _, teamPipeline := range teamPipelines {
-		log.Printf("Removing access for teamPipeline %s (id=%s)...", teamPipeline.Slug, teamPipeline.PipelineTeamId)
-		_, err := teamPipelineDelete(client.genqlient, teamPipeline.PipelineTeamId.ValueString())
-		if err != nil {
-			log.Printf("Unable to delete team pipeline")
-			return err
-		}
-	}
-
 	return nil
 }
 

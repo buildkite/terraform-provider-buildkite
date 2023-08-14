@@ -66,6 +66,8 @@ func TestAccPipelineTeam_AddRemoveWithNonDefaultAccess(t *testing.T) {
 
 func TestAccPipelineTeam_Update(t *testing.T) {
 	var tp pipelineTeamResourceModel
+	teamName := acctest.RandString(12)
+	teamNameNew := acctest.RandString(12)
 	t.Parallel()
 
 	resource.Test(t, resource.TestCase{
@@ -74,7 +76,7 @@ func TestAccPipelineTeam_Update(t *testing.T) {
 		CheckDestroy:             testCheckPipelineTeamResourceRemoved,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccPipelineTeamConfigUpdateBasic("READ_ONLY"),
+				Config: testAccPipelineTeamConfigBasic(teamName, "READ_ONLY"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Confirm the test resource team & team pipeline exists in the Buildkite API
 					testAccCheckPipelineTeamExists("buildkite_pipeline_team.pipelineteam", &tp),
@@ -85,7 +87,7 @@ func TestAccPipelineTeam_Update(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccPipelineTeamConfigUpdateBasic("MANAGE_BUILD_AND_READ"),
+				Config: testAccPipelineTeamConfigBasic(teamNameNew, "MANAGE_BUILD_AND_READ"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Confirm the test resource team & team pipeline exists in the Buildkite API
 					testAccCheckPipelineTeamExists("buildkite_pipeline_team.pipelineteam", &tp),
@@ -111,7 +113,8 @@ func TestAccPipelineTeam_Import(t *testing.T) {
 		CheckDestroy:             testCheckPipelineTeamResourceRemoved,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccPipelineTeamConfigBasic(teamName, "READ_ONLY"),
+				Config:             testAccPipelineTeamConfigBasic(teamName, "READ_ONLY"),
+				ExpectNonEmptyPlan: true,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Confirm the test resource team & team pipeline exists in the Buildkite API
 					testAccCheckPipelineTeamExists("buildkite_pipeline_team.pipelineteam", &tp),
@@ -154,33 +157,6 @@ func testAccPipelineTeamConfigBasic(teamName string, accessLevel string) string 
 	}
 	`
 	return fmt.Sprintf(config, teamName, teamName, accessLevel)
-}
-
-func testAccPipelineTeamConfigUpdateBasic(accessLevel string) string {
-	pipelineName := acctest.RandString(12)
-	teamName := acctest.RandString(12)
-	config := `
-	resource "buildkite_pipeline" "acc_test_pipeline" {
-	    name = "%s"
-	    repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
-	    steps = "steps:\n- label: ':pipeline: Pipeline Upload'\n  command: buildkite-agent pipeline upload"
-	}
-
-	resource "buildkite_team" "acc_test_team" {
-		name = "%s"
-		privacy = "VISIBLE"
-		default_team = true
-		default_member_role = "MEMBER"
-		members_can_create_pipelines = true
-	}
-
-	resource "buildkite_pipeline_team" "pipelineteam" {
-		access_level = "%s"
-		team_id = buildkite_team.acc_test_team.id
-		pipeline_id = buildkite_pipeline.acc_test_pipeline.id
-	}
-	`
-	return fmt.Sprintf(config, pipelineName, teamName, accessLevel)
 }
 
 func testAccCheckPipelineTeamExists(resourceName string, tp *pipelineTeamResourceModel) resource.TestCheckFunc {

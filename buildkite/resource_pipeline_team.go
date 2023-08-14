@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/Khan/genqlient/graphql"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -70,9 +71,7 @@ func (pipelineTeamResource) Schema(ctx context.Context, req resource.SchemaReque
 				Required:            true,
 				MarkdownDescription: "The access level for the team. Either READ_ONLY, BUILD_AND_READ or MANAGE_BUILD_AND_READ.",
 				Validators: []validator.String{
-					stringvalidator.OneOf(string(PipelineAccessLevelsReadOnly),
-						string(PipelineAccessLevelsBuildAndRead),
-						string(PipelineAccessLevelsManageBuildAndRead)),
+					stringvalidator.OneOf("READ_ONLY", "BUILD_AND_READ", "MANAGE_BUILD_AND_READ"),
 				},
 			},
 		},
@@ -106,6 +105,8 @@ func (tp *pipelineTeamResource) Create(ctx context.Context, req resource.CreateR
 	// Update state with values from API response/plan
 	state.Id = types.StringValue(apiResponse.TeamPipelineCreate.TeamPipelineEdge.Node.Id)
 	state.Uuid = types.StringValue(apiResponse.TeamPipelineCreate.TeamPipelineEdge.Node.Uuid)
+	state.PipelineId = types.StringValue(apiResponse.TeamPipelineCreate.TeamPipelineEdge.Node.Pipeline.Id)
+	state.TeamId = types.StringValue(apiResponse.TeamPipelineCreate.TeamPipelineEdge.Node.Team.Id)
 	state.AccessLevel = types.StringValue(string(apiResponse.TeamPipelineCreate.TeamPipelineEdge.Node.PipelineAccessLevel))
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
@@ -210,4 +211,22 @@ func updateTeamPipelineResourceState(tpState *pipelineTeamResourceModel, tpNode 
 	tpState.TeamId = types.StringValue(tpNode.Team.Id)
 	tpState.PipelineId = types.StringValue(tpNode.Pipeline.Id)
 	tpState.AccessLevel = types.StringValue(string(tpNode.PipelineAccessLevel))
+}
+
+func findTeamInPipelineNode(client *graphql.Client, tpState *pipelineTeamResourceModel) bool {
+
+	apiResponse, err := getNode(*client, tpState.PipelineId.ValueString())
+	if err != nil {
+		return false
+	}
+
+	teams := apiResponse.GetNode().(*getNodeNodePipeline).Teams.Edges
+	found := false
+	for _, team := range teams {
+		if team.Node.Id == tpState.TeamId.ValueString() {
+			found = true
+			break
+		}
+	}
+	return found
 }
