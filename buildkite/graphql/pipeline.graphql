@@ -1,14 +1,18 @@
 fragment PipelineValues on Pipeline {
     id
     allowRebuilds
+    # @genqlient(pointer: true)
     branchConfiguration
     cancelIntermediateBuilds
     cancelIntermediateBuildsBranchFilter
     cluster {
+        # @genqlient(pointer: true)
         id
     }
     defaultBranch
+    # @genqlient(pointer: true)
     defaultTimeoutInMinutes
+    # @genqlient(pointer: true)
     maximumTimeoutInMinutes
     description
     name
@@ -52,60 +56,18 @@ query getPipeline($slug: ID!) {
     }
 }
 
+# @genqlient(for: "PipelineCreateInput.branchConfiguration", pointer: true)
 # @genqlient(for: "PipelineCreateInput.clusterId", pointer: true)
-# @genqlient(for: "PipelineCreateInput.visibility", omitempty: true)
-# @genqlient(for: "PipelineCreateInput.pipelineTemplateId", omitempty: true)
 # @genqlient(for: "PipelineCreateInput.nextBuildNumber", omitempty: true)
+# @genqlient(for: "PipelineCreateInput.pipelineTemplateId", omitempty: true)
+# @genqlient(for: "PipelineCreateInput.visibility", omitempty: true)
+# @genqlient(for: "PipelineCreateInput.defaultTimeoutInMinutes", pointer: true)
 mutation createPipeline(
     $input: PipelineCreateInput!
 ) {
     pipelineCreate(input: $input) {
         pipeline {
-            id
-            allowRebuilds
-            branchConfiguration
-            cancelIntermediateBuilds
-            cancelIntermediateBuildsBranchFilter
-            cluster {
-                id
-            }
-            defaultBranch
-            defaultTimeoutInMinutes
-            maximumTimeoutInMinutes
-            description
-            name
-            repository {
-                url
-            }
-            skipIntermediateBuilds
-            skipIntermediateBuildsBranchFilter
-            slug
-            steps {
-                yaml
-            }
-            tags {
-                label
-            }
-            teams (first: 50) {
-                edges {
-                    node {
-                        accessLevel
-                        id
-                        team {
-                            description
-                            id
-                            isDefaultTeam
-                            defaultMemberRole
-                            name
-                            membersCanCreatePipelines
-                            privacy
-                            slug
-                            uuid
-                        }
-                    }
-                }
-            }
-            webhookURL
+            ...PipelineValues
         }
     }
 }
@@ -116,12 +78,35 @@ mutation createPipeline(
 # @genqlient(for: "PipelineUpdateInput.pipelineTemplateId", omitempty: true)
 # @genqlient(for: "PipelineUpdateInput.archived", omitempty: true)
 # @genqlient(for: "PipelineUpdateInput.nextBuildNumber", omitempty: true)
+# @genqlient(for: "PipelineUpdateInput.defaultTimeoutInMinutes", pointer: true)
 mutation updatePipeline(
     $input: PipelineUpdateInput!
 ) {
     pipelineUpdate(input: $input) {
         pipeline {
             ...PipelineValues
+        }
+    }
+}
+
+mutation teamPipelineCreate($teamId: ID!, $pipelineId: ID!, $accessLevel: PipelineAccessLevels) {
+    teamPipelineCreate(input: {teamID: $teamId, pipelineID: $pipelineId, accessLevel: $accessLevel}) {
+        teamPipeline {
+            id
+        }
+    }
+}
+
+mutation teamPipelineDelete($id: ID!) {
+    teamPipelineDelete(input: {id: $id}) {
+        deletedTeamPipelineID
+    }
+}
+
+mutation teamPipelineUpdate($id: ID!, $accessLevel: PipelineAccessLevels!) {
+    teamPipelineUpdate(input: {id: $id, accessLevel: $accessLevel}) {
+        teamPipeline {
+            id
         }
     }
 }

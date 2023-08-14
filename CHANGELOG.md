@@ -3,11 +3,9 @@
 All notable changes to this project will be documented in this file.
 
 ## Unreleased
-- refactor 🧹: Refactor templates to use Conventional Commits[[PR #348](https://github.com/buildkite/terraform-provider-buildkite/pull/348)] @mcncl
 
-### Forthcoming Changes
-`deletion_protection` is being deprecated and will be removed in a future release (`v1`). This feature offers similar
-functionality to [lifecycles](https://developer.hashicorp.com/terraform/language/meta-arguments/lifecycle) which are supported by Terraform.
+- SUP-1068 Migrate pipeline resource to framework [[PR #345](https://github.com/buildkite/terraform-provider-buildkite/pull/345)] @jradtilbrook
+- refactor 🧹: Refactor templates to use Conventional Commits[[PR #348](https://github.com/buildkite/terraform-provider-buildkite/pull/348)] @mcncl
 
 ## [v0.23.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v0.22.0...v0.23.0)
 
@@ -19,6 +17,10 @@ functionality to [lifecycles](https://developer.hashicorp.com/terraform/language
 ### Fixed
 
 - Fixed a bug in `buildkite_test_suite` resources where `team_owner_id` could be set to the `access_level` instead @james2791 @jradtilbrook
+
+### Forthcoming Changes
+`deletion_protection` is being deprecated and will be removed in a future release (`v1`). This feature offers similar
+functionality to [lifecycles](https://developer.hashicorp.com/terraform/language/meta-arguments/lifecycle) which are supported by Terraform.
 
 ## [v0.22.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v0.21.2...v0.22.0)
 
