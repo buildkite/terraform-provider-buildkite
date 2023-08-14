@@ -21,7 +21,8 @@ func TestAccPipelineTeam_AddRemoveWithDefaultsAccess(t *testing.T) {
 		CheckDestroy:             testCheckPipelineTeamResourceRemoved,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccPipelineTeamConfigBasic(teamName, "READ_ONLY"),
+				Config:             testAccPipelineTeamConfigBasic(teamName, "READ_ONLY"),
+				ExpectNonEmptyPlan: true,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Confirm the test resource team & team pipeline exists in the Buildkite API
 					testAccCheckPipelineTeamExists("buildkite_pipeline_team.pipelineteam", &tp),
@@ -48,7 +49,8 @@ func TestAccPipelineTeam_AddRemoveWithNonDefaultAccess(t *testing.T) {
 		CheckDestroy:             testCheckPipelineTeamResourceRemoved,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccPipelineTeamConfigBasic(teamName, "BUILD_AND_READ"),
+				Config:             testAccPipelineTeamConfigBasic(teamName, "BUILD_AND_READ"),
+				ExpectNonEmptyPlan: true,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Confirm the test resource team & team pipeline exists in the Buildkite API
 					testAccCheckPipelineTeamExists("buildkite_pipeline_team.pipelineteam", &tp),
@@ -76,7 +78,8 @@ func TestAccPipelineTeam_Update(t *testing.T) {
 		CheckDestroy:             testCheckPipelineTeamResourceRemoved,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccPipelineTeamConfigBasic(teamName, "READ_ONLY"),
+				Config:             testAccPipelineTeamConfigBasic(teamName, "READ_ONLY"),
+				ExpectNonEmptyPlan: true,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Confirm the test resource team & team pipeline exists in the Buildkite API
 					testAccCheckPipelineTeamExists("buildkite_pipeline_team.pipelineteam", &tp),
@@ -87,7 +90,8 @@ func TestAccPipelineTeam_Update(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccPipelineTeamConfigBasic(teamNameNew, "MANAGE_BUILD_AND_READ"),
+				Config:             testAccPipelineTeamConfigBasic(teamNameNew, "MANAGE_BUILD_AND_READ"),
+				ExpectNonEmptyPlan: true,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Confirm the test resource team & team pipeline exists in the Buildkite API
 					testAccCheckPipelineTeamExists("buildkite_pipeline_team.pipelineteam", &tp),

@@ -651,23 +651,25 @@ func setPipelineModel(model *pipelineResourceModel, data pipelineResponse) {
 
 	var tags []types.String
 	if len(data.GetTags()) > 0 {
-		model.Tags = make([]types.String, len(data.GetTags()))
+		tags = make([]types.String, len(data.GetTags()))
 		for i, tag := range data.GetTags() {
 			tags[i] = types.StringValue(tag.Label)
 		}
 	} else {
-		model.Tags = nil
+		tags = nil
 	}
+	model.Tags = tags
 
-	model.Teams = make([]*pipelineTeamModel, len(data.GetTeams().Edges))
+	teams := make([]*pipelineTeamModel, len(data.GetTeams().Edges))
 	for i, teamEdge := range data.GetTeams().Edges {
-		model.Teams[i] = &pipelineTeamModel{
+		teams[i] = &pipelineTeamModel{
 			Slug:           types.StringValue(teamEdge.Node.Team.Slug),
 			AccessLevel:    types.StringValue(string(teamEdge.Node.AccessLevel)),
 			TeamId:         types.StringValue(teamEdge.Node.Team.Id),
 			PipelineTeamId: types.StringValue(teamEdge.Node.Id),
 		}
 	}
+	model.Teams = teams
 }
 
 // As of May 21, 2021, GraphQL Pipeline is lacking support for the following properties:
