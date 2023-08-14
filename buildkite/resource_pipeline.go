@@ -178,6 +178,7 @@ func (p *pipelineResource) Create(ctx context.Context, req resource.CreateReques
 	if len(plan.Teams) > 0 {
 		teamsInput = p.getTeamPipelinesFromSchema(&plan)
 	}
+
 	if len(teamsInput) != len(plan.Teams) {
 		resp.Diagnostics.AddError("Could not resolve all team IDs", "Could not resolve all team IDs")
 		return
@@ -650,32 +651,21 @@ func setPipelineModel(model *pipelineResourceModel, data pipelineResponse) {
 
 	var tags []types.String
 	if len(data.GetTags()) > 0 {
-		tags = make([]types.String, len(data.GetTags()))
+		model.Tags = make([]types.String, len(data.GetTags()))
 		for i, tag := range data.GetTags() {
 			tags[i] = types.StringValue(tag.Label)
 		}
 	} else {
-		tags = nil
+		model.Tags = nil
 	}
-	model.Tags = tags
 
-	// go through all teams in the state, find the team from the api response and update the access level in case it
-	// changed
-	// if we dont find the team in the api response, remove it from state
-	for i, team := range model.Teams {
-		found := false
-		for _, teamEdge := range data.GetTeams().Edges {
-			if team.PipelineTeamId.ValueString() == teamEdge.Node.Id {
-				found = true
-				if team.AccessLevel.ValueString() != string(teamEdge.Node.AccessLevel) {
-					team.AccessLevel = types.StringValue(string(teamEdge.Node.AccessLevel))
-				}
-				break
-			}
-		}
-		if !found {
-			// remove from state
-			model.Teams = append(model.Teams[:i], model.Teams[i+1:]...)
+	model.Teams = make([]*pipelineTeamModel, len(data.GetTeams().Edges))
+	for i, teamEdge := range data.GetTeams().Edges {
+		model.Teams[i] = &pipelineTeamModel{
+			Slug:           types.StringValue(teamEdge.Node.Team.Slug),
+			AccessLevel:    types.StringValue(string(teamEdge.Node.AccessLevel)),
+			TeamId:         types.StringValue(teamEdge.Node.Team.Id),
+			PipelineTeamId: types.StringValue(teamEdge.Node.Id),
 		}
 	}
 }
@@ -785,8 +775,20 @@ func (p *pipelineResource) getTeamPipelinesFromSchema(plan *pipelineResourceMode
 	return teamPipelineNodes
 }
 
+func createPipelineTeamsMap(teams []*pipelineTeamModel) map[string]*pipelineTeamModel {
+	teamsMap := make(map[string]*pipelineTeamModel)
+	for _, team := range teams {
+		teamsMap[string(team.Slug.ValueString())] = team
+	}
+	return teamsMap
+}
+
 // reconcileTeamPipelines updates/deletes the teamPipelines on buildkite to match the teams in terraform resource data
 func (p *pipelineResource) reconcileTeamPipelines(planTeams []*pipelineTeamModel, stateTeams []*pipelineTeamModel, pipelineId string) error {
+
+	// a map from slug to pipeline teams in plan (from tf)
+	planTeamsMap := createPipelineTeamsMap(planTeams)
+
 	// a map from slug to graphql id of the team pipelines in state (from api)
 	teamPipelineIds := make(map[string]graphql.ID)
 
@@ -800,13 +802,8 @@ func (p *pipelineResource) reconcileTeamPipelines(planTeams []*pipelineTeamModel
 		id := teamPipeline.PipelineTeamId.ValueString()
 
 		teamPipelineIds[string(teamSlugBk)] = graphql.ID(id)
-
-		for _, teamPipeline := range planTeams {
-			if string(teamPipeline.Slug.ValueString()) == teamSlugBk {
-				if teamPipeline.AccessLevel != accessLevelBk {
-					toUpdate = append(toUpdate, teamPipeline)
-				}
-			}
+		if _, found := planTeamsMap[string(teamSlugBk)]; found && planTeamsMap[string(teamSlugBk)].AccessLevel != accessLevelBk {
+			toUpdate = append(toUpdate, teamPipeline)
 		}
 	}
 
