@@ -176,6 +176,11 @@ func Provider(version string) *schema.Provider {
 				Optional:    true,
 				Type:        schema.TypeString,
 			},
+			"archive_pipeline_on_delete": {
+				Description: "Archive pipelines when destroying instead of completely deleting.",
+				Optional: true,
+				Type: schema.TypeBool,
+			},
 		},
 	}
 	provider.ConfigureFunc = providerConfigure(provider.UserAgent("buildkite", version))
