@@ -178,8 +178,8 @@ func Provider(version string) *schema.Provider {
 			},
 			"archive_pipeline_on_delete": {
 				Description: "Archive pipelines when destroying instead of completely deleting.",
-				Optional: true,
-				Type: schema.TypeBool,
+				Optional:    true,
+				Type:        schema.TypeBool,
 			},
 		},
 	}

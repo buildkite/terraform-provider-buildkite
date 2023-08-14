@@ -332,9 +332,9 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 				Default:  booldefault.StaticBool(true),
 			},
 			"archive_on_delete": schema.BoolAttribute{
-				Optional: true,
-				Computed: true,
-				Default:  booldefault.StaticBool(false),
+				Optional:           true,
+				Computed:           true,
+				Default:            booldefault.StaticBool(false),
 				DeprecationMessage: "This attribute has been deprecated and will be removed in v0.26.0. Please use provider configuration `archive_pipeline_on_delete` instead.",
 			},
 			"cancel_intermediate_builds": schema.BoolAttribute{
