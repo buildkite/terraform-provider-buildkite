@@ -2,10 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
-## Unreleased
+## [v0.24.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v0.23.0...v0.24.0)
 
 - SUP-1068 Migrate pipeline resource to framework [[PR #345](https://github.com/buildkite/terraform-provider-buildkite/pull/345)] @jradtilbrook
+- Bump github.com/hashicorp/terraform-plugin-framework from 1.3.3 to 1.3.4 [[PR #349](https://github.com/buildkite/terraform-provider-buildkite/pull/349)]
+- Bump github.com/hashicorp/terraform-plugin-framework-validators [[PR #350](https://github.com/buildkite/terraform-provider-buildkite/pull/350)]
 - refactor 🧹: Refactor templates to use Conventional Commits[[PR #348](https://github.com/buildkite/terraform-provider-buildkite/pull/348)] @mcncl
+
+This release migrates `buildkite_pipeline` to the terraform plugin framework. Every effort was made to maintain
+backwards compatibility with the provider. Due to these changes, there are some transparent changes to the state file.
+This should not cause any errors for end-users, however if you find a problem, please raise an issue.
 
 ## [v0.23.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v0.22.0...v0.23.0)
 
