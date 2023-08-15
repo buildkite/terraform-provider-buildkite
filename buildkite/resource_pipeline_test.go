@@ -581,9 +581,11 @@ func TestAccPipeline_remove_team(t *testing.T) {
 					// Quick check to confirm the local state is correct before we update it
 					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "name", "Test Pipeline foo"),
 				),
+				ImportStateVerifyIgnore: []string{"slug"},
 			},
 			{
-				Config: testAccPipelineConfigBasic("foo"),
+				Config:             testAccPipelineConfigBasic("foo"),
+				ExpectNonEmptyPlan: true,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Confirm the pipeline exists in the buildkite API
 					testAccCheckPipelineExists("buildkite_pipeline.foobar", &resourcePipeline),
@@ -592,6 +594,7 @@ func TestAccPipeline_remove_team(t *testing.T) {
 					// Confirm the pipeline has the updated values in terraform state
 					resource.TestCheckResourceAttr("buildkite_pipeline.foobar", "name", "Test Pipeline foo"),
 				),
+				ImportStateVerifyIgnore: []string{"slug"},
 			},
 		},
 	})
