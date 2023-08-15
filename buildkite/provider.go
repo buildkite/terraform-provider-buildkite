@@ -26,19 +26,22 @@ const (
 )
 
 type terraformProvider struct {
-	version string
+	version                 string
+	archivePipelineOnDelete bool
 }
 
 type providerModel struct {
-	ApiToken     types.String `tfsdk:"api_token"`
-	GraphqlUrl   types.String `tfsdk:"graphql_url"`
-	Organization types.String `tfsdk:"organization"`
-	RestUrl      types.String `tfsdk:"rest_url"`
+	ApiToken                types.String `tfsdk:"api_token"`
+	ArchivePipelineOnDelete types.Bool   `tfsdk:"archive_pipeline_on_delete"`
+	GraphqlUrl              types.String `tfsdk:"graphql_url"`
+	Organization            types.String `tfsdk:"organization"`
+	RestUrl                 types.String `tfsdk:"rest_url"`
 }
 
 func (tf *terraformProvider) Configure(ctx context.Context, req provider.ConfigureRequest, resp *provider.ConfigureResponse) {
 	var data providerModel
 	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
+	tf.archivePipelineOnDelete = data.ArchivePipelineOnDelete.ValueBool()
 
 	apiToken := os.Getenv("BUILDKITE_API_TOKEN")
 	graphqlUrl := defaultGraphqlEndpoint
@@ -95,7 +98,7 @@ func (tf *terraformProvider) Metadata(ctx context.Context, req provider.Metadata
 	resp.Version = tf.version
 }
 
-func (*terraformProvider) Resources(context.Context) []func() resource.Resource {
+func (tf *terraformProvider) Resources(context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
 		NewClusterQueueResource,
 		NewPipelineScheduleResource,
@@ -103,7 +106,7 @@ func (*terraformProvider) Resources(context.Context) []func() resource.Resource 
 		newClusterAgentTokenResource,
 		newClusterResource,
 		newOrganizationResource,
-		newPipelineResource,
+		newPipelineResource(tf.archivePipelineOnDelete),
 		newTeamMemberResource,
 		newTeamResource,
 		newTestSuiteResource,
@@ -131,6 +134,10 @@ func (*terraformProvider) Schema(ctx context.Context, req provider.SchemaRequest
 			SchemaKeyRestURL: framework_schema.StringAttribute{
 				Optional:    true,
 				Description: "Base URL for the REST API to use",
+			},
+			"archive_pipeline_on_delete": framework_schema.BoolAttribute{
+				Optional:    true,
+				Description: "Archive pipelines when destroying instead of completely deleting.",
 			},
 		},
 	}
@@ -169,6 +176,11 @@ func Provider(version string) *schema.Provider {
 				Description: "Base URL for the REST API to use",
 				Optional:    true,
 				Type:        schema.TypeString,
+			},
+			"archive_pipeline_on_delete": {
+				Description: "Archive pipelines when destroying instead of completely deleting.",
+				Optional:    true,
+				Type:        schema.TypeBool,
 			},
 		},
 	}

@@ -60,20 +60,9 @@ for resources, including the prevention of destruction of a resource. In the abo
 
 Lifecycles will replace the deprecated `deletion_protection` in `v1` of the provider in favour of `lifecycle` rules.
 
-## Example Usage with Archive on Delete
-
-```hcl
-resource "buildkite_pipeline" "test_new" {
-  name       = "Testing Timeouts"
-  repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
-
-  steps = file("./deploy-steps.yml")
-
-  archive_on_delete = true
-}
-```
-
-`archive_on_delete` will archive the **pipeline** when `destroy` is called. Attached resources, such as `schedules` will still be destroyed. In order to delete the pipeline, `archive_on_delete` must be set to `false` in the configuration, then `destroy` must be called again.
+#### Deprecation notice
+`archive_on_delete` has been deprecated and moved to provider configuration instead. The usage through provider
+configuration makes more sense and will apply to all pipelines managed through terraform. Please see `archive_pipeline_on_delete`.
 
 ## Example Usage with GitHub Provider Settings
 

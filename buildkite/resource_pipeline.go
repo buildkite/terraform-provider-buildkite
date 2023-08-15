@@ -129,7 +129,8 @@ type pipelineTeamModel struct {
 }
 
 type pipelineResource struct {
-	client *Client
+	client          *Client
+	archiveOnDelete bool
 }
 
 type pipelineResponse interface {
@@ -154,8 +155,12 @@ type pipelineResponse interface {
 	GetWebhookURL() string
 }
 
-func newPipelineResource() resource.Resource {
-	return &pipelineResource{}
+func newPipelineResource(archiveOnDelete bool) func() resource.Resource {
+	return func() resource.Resource {
+		return &pipelineResource{
+			archiveOnDelete: archiveOnDelete,
+		}
+	}
 }
 
 func (p *pipelineResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
@@ -250,7 +255,7 @@ func (p *pipelineResource) Delete(ctx context.Context, req resource.DeleteReques
 		return
 	}
 
-	if state.ArchiveOnDelete.ValueBool() {
+	if state.ArchiveOnDelete.ValueBool() || p.archiveOnDelete {
 		log.Printf("Pipeline %s set to archive on delete. Archiving...", state.Name.ValueString())
 		_, err := archivePipeline(p.client.genqlient, state.Id.ValueString())
 		if err != nil {
@@ -328,9 +333,10 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 				Default:  booldefault.StaticBool(true),
 			},
 			"archive_on_delete": schema.BoolAttribute{
-				Optional: true,
-				Computed: true,
-				Default:  booldefault.StaticBool(false),
+				Optional:           true,
+				Computed:           true,
+				Default:            booldefault.StaticBool(false),
+				DeprecationMessage: "This attribute has been deprecated and will be removed in v0.27.0. Please use provider configuration `archive_pipeline_on_delete` instead.",
 			},
 			"cancel_intermediate_builds": schema.BoolAttribute{
 				Computed: true,
