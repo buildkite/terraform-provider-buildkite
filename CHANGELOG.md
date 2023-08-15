@@ -5,6 +5,8 @@ All notable changes to this project will be documented in this file.
 ## Unreleased
 
 - Move archive pipeline config to provider [[PR #354](https://github.com/buildkite/terraform-provider-buildkite/pull/354)] @jradtilbrook
+- SUP-1307: Implement Pipeline Team Resource[[PR #351](https://github.com/buildkite/terraform-provider-buildkite/pull/351)]
+
 
 ## [v0.24.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v0.23.0...v0.24.0)
 
@@ -12,10 +14,6 @@ All notable changes to this project will be documented in this file.
 - Bump github.com/hashicorp/terraform-plugin-framework from 1.3.3 to 1.3.4 [[PR #349](https://github.com/buildkite/terraform-provider-buildkite/pull/349)]
 - Bump github.com/hashicorp/terraform-plugin-framework-validators [[PR #350](https://github.com/buildkite/terraform-provider-buildkite/pull/350)]
 - refactor 🧹: Refactor templates to use Conventional Commits[[PR #348](https://github.com/buildkite/terraform-provider-buildkite/pull/348)] @mcncl
-- SUP-1307: Implement Pipeline Team Resource[[PR #351](https://github.com/buildkite/terraform-provider-buildkite/pull/351)]
-- SUP-1068 Migrate pipeline resource to framework [[PR #345](https://github.com/buildkite/terraform-provider-buildkite/pull/345)] @jradtilbrook
-
-
 
 ### Forthcoming Changes
 `deletion_protection` is being deprecated and will be removed in a future release (`v1`). This feature offers similar
