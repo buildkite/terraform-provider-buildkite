@@ -15,10 +15,6 @@ All notable changes to this project will be documented in this file.
 - Bump github.com/hashicorp/terraform-plugin-framework-validators [[PR #350](https://github.com/buildkite/terraform-provider-buildkite/pull/350)]
 - refactor 🧹: Refactor templates to use Conventional Commits[[PR #348](https://github.com/buildkite/terraform-provider-buildkite/pull/348)] @mcncl
 
-### Forthcoming Changes
-`deletion_protection` is being deprecated and will be removed in a future release (`v1`). This feature offers similar
-functionality to [lifecycles](https://developer.hashicorp.com/terraform/language/meta-arguments/lifecycle) which are supported by Terraform.
-
 =======
 
 This release migrates `buildkite_pipeline` to the terraform plugin framework. Every effort was made to maintain
