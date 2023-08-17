@@ -57,6 +57,16 @@ resource "buildkite_agent_token" "fleet" {
   description = "token used by build fleet"
 }
 
+resource "buildkite_cluster" "my_awesome_cluster" {
+  name = "best cluster ever"
+  description = "This cluster can do it all 😍"
+  color = "#BADA55"
+  emoji = ":muscle:"
+  timeouts {
+    create = "20m"
+  }
+}
+
 resource "buildkite_cluster_queue" "queue1" {
   cluster_id = "Q2x1c3Rlci0tLTMzMDc0ZDhiLTM4MjctNDRkNC05YTQ3LTkwN2E2NWZjODViNg=="
   key = "dev"

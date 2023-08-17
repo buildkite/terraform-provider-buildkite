@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 ## Unreleased
 
 - Move archive pipeline config to provider [[PR #354](https://github.com/buildkite/terraform-provider-buildkite/pull/354)] @jradtilbrook
+- Support retrying on Cluster creates [[PR #356](https://github.com/buildkite/terraform-provider-buildkite/pull/356)] @mcncl
 
 ## [v0.24.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v0.23.0...v0.24.0)
 
