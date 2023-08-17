@@ -4,12 +4,14 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	resource_schema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
 type clusterResource struct {
@@ -17,12 +19,13 @@ type clusterResource struct {
 }
 
 type clusterResourceModel struct {
-	ID          types.String `tfsdk:"id"`
-	Name        types.String `tfsdk:"name"`
-	Description types.String `tfsdk:"description"`
-	Emoji       types.String `tfsdk:"emoji"`
-	Color       types.String `tfsdk:"color"`
-	UUID        types.String `tfsdk:"uuid"`
+	ID          types.String   `tfsdk:"id"`
+	Name        types.String   `tfsdk:"name"`
+	Description types.String   `tfsdk:"description"`
+	Emoji       types.String   `tfsdk:"emoji"`
+	Color       types.String   `tfsdk:"color"`
+	UUID        types.String   `tfsdk:"uuid"`
+	Timeouts    timeouts.Value `tfsdk:"timeouts"`
 }
 
 func newClusterResource() resource.Resource {
@@ -75,25 +78,50 @@ func (c *clusterResource) Schema(ctx context.Context, req resource.SchemaRequest
 				MarkdownDescription: "A color representation of the Cluster. Accepts hex codes, eg #BADA55.",
 			},
 		},
+		Blocks: map[string]resource_schema.Block{
+			"timeouts": timeouts.Block(ctx, timeouts.Opts{
+				Create: true,
+			}),
+		},
 	}
 }
 
 func (c *clusterResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var state *clusterResourceModel
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &state)...)
+
+	diags := req.Plan.Get(ctx, &state)
+
+	resp.Diagnostics.Append(diags...)
 
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	r, err := createCluster(
-		c.client.genqlient,
-		c.client.organizationId,
-		state.Name.ValueString(),
-		state.Description.ValueStringPointer(),
-		state.Emoji.ValueStringPointer(),
-		state.Color.ValueStringPointer(),
-	)
+	createTimeout, diags := state.Timeouts.Create(ctx, DefaultTimeout)
+
+	resp.Diagnostics.Append(diags...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	var r *createClusterResponse
+	err := retry.RetryContext(ctx, createTimeout, func() *retry.RetryError {
+		var err error
+		r, err = createCluster(
+			c.client.genqlient,
+			c.client.organizationId,
+			state.Name.ValueString(),
+			state.Description.ValueStringPointer(),
+			state.Emoji.ValueStringPointer(),
+			state.Color.ValueStringPointer(),
+		)
+		if err != nil {
+			return retry.NonRetryableError(err)
+		}
+
+		return nil
+	})
 
 	if err != nil {
 		resp.Diagnostics.AddError(

@@ -6,9 +6,12 @@ import (
 	"log"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/shurcooL/graphql"
 )
+
+const DefaultTimeout = 60 * time.Second
 
 // GetOrganizationID retrieves the Buildkite organization ID associated with the supplied slug
 func GetOrganizationID(slug string, client *graphql.Client) (string, error) {

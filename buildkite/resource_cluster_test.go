@@ -13,6 +13,9 @@ func testAccClusterBasic(name string) string {
 	config := `
 		resource "buildkite_cluster" "foo" {
 			name = "%s_test_cluster"
+			timeouts {
+				create = "1m"
+			}
 		}
 	`
 	return fmt.Sprintf(config, name)
@@ -36,6 +39,7 @@ func TestAccCluster_AddRemove(t *testing.T) {
 					resource.TestCheckResourceAttr("buildkite_cluster.foo", "name", fmt.Sprintf("%s_test_cluster", resName)),
 					resource.TestCheckResourceAttrSet("buildkite_cluster.foo", "id"),
 					resource.TestCheckResourceAttrSet("buildkite_cluster.foo", "uuid"),
+					resource.TestCheckResourceAttr("buildkite_cluster.foo", "timeouts.create", "1m"),
 				),
 			},
 			{
