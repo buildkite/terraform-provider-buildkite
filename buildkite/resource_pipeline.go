@@ -654,14 +654,11 @@ func setPipelineModel(model *pipelineResourceModel, data pipelineResponse) {
 	model.Steps = types.StringValue(data.GetSteps().Yaml)
 	model.WebhookUrl = types.StringValue(data.GetWebhookURL())
 
-	var tags []types.String
+	tags := make([]types.String, len(data.GetTags()))
 	if len(data.GetTags()) > 0 {
-		tags = make([]types.String, len(data.GetTags()))
 		for i, tag := range data.GetTags() {
 			tags[i] = types.StringValue(tag.Label)
 		}
-	} else {
-		tags = nil
 	}
 	model.Tags = tags
 	teams := make([]*pipelineTeamModel, len(data.GetTeams().Edges))

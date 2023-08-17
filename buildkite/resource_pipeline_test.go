@@ -36,6 +36,37 @@ func TestAccPipeline_add_remove(t *testing.T) {
 	})
 }
 
+func TestAccPipeline_empty_tags(t *testing.T) {
+	var resourcePipeline PipelineNode
+	pipelineName := acctest.RandString(12)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		CheckDestroy:             testAccCheckPipelineResourceDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: fmt.Sprintf(`
+					resource "buildkite_pipeline" "pipeline" {
+						name = "%s"
+						repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
+						steps = ""
+						tags = []
+					}
+					`, pipelineName),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					// Confirm the pipeline exists in the buildkite API
+					testAccCheckPipelineExists("buildkite_pipeline.pipeline", &resourcePipeline),
+					testAccCheckPipelineRemoteValues(&resourcePipeline, pipelineName),
+					// Confirm the pipeline has the correct values in terraform state
+					resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "name", pipelineName),
+					resource.TestCheckNoResourceAttr("buildkite_pipeline.pipeline", "tags.#"),
+				),
+			},
+		},
+	})
+}
+
 // Confirm that we can create a new pipeline with a cluster, and then delete it without error
 func TestAccPipeline_add_delete_withcluster(t *testing.T) {
 	var resourcePipeline PipelineNode
