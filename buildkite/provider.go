@@ -142,9 +142,11 @@ func (*terraformProvider) Schema(ctx context.Context, req provider.SchemaRequest
 	}
 }
 
-func New(version string) provider.Provider {
-	return &terraformProvider{
-		version: version,
+func New(version string) func() provider.Provider {
+	return func() provider.Provider {
+		return &terraformProvider{
+			version: version,
+		}
 	}
 }
 
