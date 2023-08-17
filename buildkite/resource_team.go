@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	custom_modifier "github.com/buildkite/terraform-provider-buildkite/internal/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -14,6 +15,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/shurcooL/graphql"
 )
 
@@ -22,15 +24,16 @@ type teamResource struct {
 }
 
 type teamResourceModel struct {
-	ID                        types.String `tfsdk:"id"`
-	UUID                      types.String `tfsdk:"uuid"`
-	Name                      types.String `tfsdk:"name"`
-	Description               types.String `tfsdk:"description"`
-	Privacy                   types.String `tfsdk:"privacy"`
-	IsDefaultTeam             types.Bool   `tfsdk:"default_team"`
-	DefaultMemberRole         types.String `tfsdk:"default_member_role"`
-	Slug                      types.String `tfsdk:"slug"`
-	MembersCanCreatePipelines types.Bool   `tfsdk:"members_can_create_pipelines"`
+	ID                        types.String   `tfsdk:"id"`
+	UUID                      types.String   `tfsdk:"uuid"`
+	Name                      types.String   `tfsdk:"name"`
+	Description               types.String   `tfsdk:"description"`
+	Privacy                   types.String   `tfsdk:"privacy"`
+	IsDefaultTeam             types.Bool     `tfsdk:"default_team"`
+	DefaultMemberRole         types.String   `tfsdk:"default_member_role"`
+	Slug                      types.String   `tfsdk:"slug"`
+	MembersCanCreatePipelines types.Bool     `tfsdk:"members_can_create_pipelines"`
+	Timeouts                  timeouts.Value `tfsdk:"timeouts"`
 }
 
 // This is required due to the getTeam function not using Genqlient
@@ -120,6 +123,11 @@ func (t *teamResource) Schema(ctx context.Context, req resource.SchemaRequest, r
 				MarkdownDescription: "Whether members of the Team can create Pipelines.",
 			},
 		},
+		Blocks: map[string]resource_schema.Block{
+			"timeouts": timeouts.Block(ctx, timeouts.Opts{
+				Create: true,
+			}),
+		},
 	}
 }
 
@@ -129,22 +137,41 @@ func (t *teamResource) ImportState(ctx context.Context, req resource.ImportState
 
 func (t *teamResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var state teamResourceModel
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &state)...)
+	diags := req.Plan.Get(ctx, &state)
+	resp.Diagnostics.Append(diags...)
 
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	r, err := teamCreate(ctx,
-		t.client.genqlient,
-		t.client.organizationId,
-		state.Name.ValueString(),
-		state.Description.ValueStringPointer(),
-		state.Privacy.ValueString(),
-		state.IsDefaultTeam.ValueBool(),
-		state.DefaultMemberRole.ValueString(),
-		state.MembersCanCreatePipelines.ValueBool(),
-	)
+	createTimeout, diags := state.Timeouts.Create(ctx, DefaultTimeout)
+	resp.Diagnostics.Append(diags...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	var r *teamCreateResponse
+	err := retry.RetryContext(ctx, createTimeout, func() *retry.RetryError {
+		var err error
+		r, err = teamCreate(
+			ctx,
+			t.client.genqlient,
+			t.client.organizationId,
+			state.Name.ValueString(),
+			state.Description.ValueStringPointer(),
+			state.Privacy.ValueString(),
+			state.IsDefaultTeam.ValueBool(),
+			state.DefaultMemberRole.ValueString(),
+			state.MembersCanCreatePipelines.ValueBool(),
+		)
+
+		if err != nil {
+			return retry.NonRetryableError(err)
+		}
+
+		return nil
+	})
 
 	if err != nil {
 		resp.Diagnostics.AddError(
