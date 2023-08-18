@@ -109,7 +109,7 @@ func (*clusterDatasource) Schema(ctx context.Context, req datasource.SchemaReque
 		},
 		Blocks: map[string]schema.Block{
 			"timeouts": timeouts.Block(ctx, timeouts.Opts{
-				Create: true,
+				Read: true,
 			}),
 		},
 	}

@@ -79,9 +79,7 @@ func (c *clusterResource) Schema(ctx context.Context, req resource.SchemaRequest
 			},
 		},
 		Blocks: map[string]resource_schema.Block{
-			"timeouts": timeouts.Block(ctx, timeouts.Opts{
-				Create: true,
-			}),
+			"timeouts": timeouts.BlockAll(ctx),
 		},
 	}
 }
