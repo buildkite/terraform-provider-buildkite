@@ -249,7 +249,7 @@ func TestAccPipeline_team_added(t *testing.T) {
 						return nil
 					},
 				),
-				ExpectNonEmptyPlan: true,
+				ExpectNonEmptyPlan: false,
 			},
 		},
 	})
