@@ -240,7 +240,7 @@ func (p *pipelineResource) Create(ctx context.Context, req resource.CreateReques
 	state.ArchiveOnDelete = plan.ArchiveOnDelete
 
 	if len(plan.ProviderSettings) > 0 {
-		pipelineExtraInfo, err := updatePipelineExtraInfo(response.PipelineCreate.Pipeline.Slug, plan.ProviderSettings[0], p.client)
+		pipelineExtraInfo, err := updatePipelineExtraInfo(ctx, response.PipelineCreate.Pipeline.Slug, plan.ProviderSettings[0], p.client)
 		if err != nil {
 			resp.Diagnostics.AddError("Unable to set pipeline info from REST", err.Error())
 			return
@@ -249,7 +249,7 @@ func (p *pipelineResource) Create(ctx context.Context, req resource.CreateReques
 		updatePipelineResourceExtraInfo(&state, &pipelineExtraInfo)
 	} else {
 		// no provider_settings provided, but we still need to read in the badge url
-		extraInfo, err := getPipelineExtraInfo(p.client, response.PipelineCreate.Pipeline.Slug)
+		extraInfo, err := getPipelineExtraInfo(ctx, p.client, response.PipelineCreate.Pipeline.Slug)
 		if err != nil {
 			resp.Diagnostics.AddError("Unable to read pipeline info from REST", err.Error())
 			return
@@ -312,7 +312,7 @@ func (p *pipelineResource) Read(ctx context.Context, req resource.ReadRequest, r
 			return
 		}
 
-		extraInfo, err := getPipelineExtraInfo(p.client, pipelineNode.Slug)
+		extraInfo, err := getPipelineExtraInfo(ctx, p.client, pipelineNode.Slug)
 		if err != nil {
 			resp.Diagnostics.AddError("Unable to read pipeline info from REST", err.Error())
 			return
@@ -647,7 +647,7 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 	state.Teams = plan.Teams
 
 	if len(plan.ProviderSettings) > 0 {
-		pipelineExtraInfo, err := updatePipelineExtraInfo(response.PipelineUpdate.Pipeline.Slug, plan.ProviderSettings[0], p.client)
+		pipelineExtraInfo, err := updatePipelineExtraInfo(ctx, response.PipelineUpdate.Pipeline.Slug, plan.ProviderSettings[0], p.client)
 		if err != nil {
 			resp.Diagnostics.AddError("Unable to set pipeline info from REST", err.Error())
 			return
@@ -656,7 +656,7 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 		updatePipelineResourceExtraInfo(&state, &pipelineExtraInfo)
 	} else {
 		// no provider_settings provided, but we still need to read in the badge url
-		extraInfo, err := getPipelineExtraInfo(p.client, response.PipelineUpdate.Pipeline.Slug)
+		extraInfo, err := getPipelineExtraInfo(ctx, p.client, response.PipelineUpdate.Pipeline.Slug)
 		if err != nil {
 			resp.Diagnostics.AddError("Unable to read pipeline info from REST", err.Error())
 			return
@@ -734,15 +734,15 @@ type PipelineExtraSettings struct {
 	SeparatePullRequestStatuses             *bool   `json:"separate_pull_request_statuses,omitempty"`
 }
 
-func getPipelineExtraInfo(client *Client, slug string) (*PipelineExtraInfo, error) {
+func getPipelineExtraInfo(ctx context.Context, client *Client, slug string) (*PipelineExtraInfo, error) {
 	pipelineExtraInfo := PipelineExtraInfo{}
-	err := client.makeRequest("GET", fmt.Sprintf("/v2/organizations/%s/pipelines/%s", client.organization, slug), nil, &pipelineExtraInfo)
+	err := client.makeRequest(ctx, "GET", fmt.Sprintf("/v2/organizations/%s/pipelines/%s", client.organization, slug), nil, &pipelineExtraInfo)
 	if err != nil {
 		return nil, err
 	}
 	return &pipelineExtraInfo, nil
 }
-func updatePipelineExtraInfo(slug string, settings *providerSettingsModel, client *Client) (PipelineExtraInfo, error) {
+func updatePipelineExtraInfo(ctx context.Context, slug string, settings *providerSettingsModel, client *Client) (PipelineExtraInfo, error) {
 	payload := map[string]any{
 		"provider_settings": PipelineExtraSettings{
 			TriggerMode:                             settings.TriggerMode.ValueStringPointer(),
@@ -768,7 +768,7 @@ func updatePipelineExtraInfo(slug string, settings *providerSettingsModel, clien
 	}
 
 	pipelineExtraInfo := PipelineExtraInfo{}
-	err := client.makeRequest("PATCH", fmt.Sprintf("/v2/organizations/%s/pipelines/%s", client.organization, slug), payload, &pipelineExtraInfo)
+	err := client.makeRequest(ctx, "PATCH", fmt.Sprintf("/v2/organizations/%s/pipelines/%s", client.organization, slug), payload, &pipelineExtraInfo)
 	if err != nil {
 		return pipelineExtraInfo, err
 	}

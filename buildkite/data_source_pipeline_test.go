@@ -1,6 +1,7 @@
 package buildkite
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
@@ -16,7 +17,7 @@ func TestAccBuildkitePipelineDataSource(t *testing.T) {
 	loadPipeline := func(pipeline *getPipelinePipeline) resource.TestCheckFunc {
 		return func(s *terraform.State) error {
 			slug := fmt.Sprintf("%s/%s", getenv("BUILDKITE_ORGANIZATION_SLUG"), pipelineName)
-			resp, err := getPipeline(genqlientGraphql, slug)
+			resp, err := getPipeline(context.Background(), genqlientGraphql, slug)
 			pipeline = &resp.Pipeline
 			return err
 		}

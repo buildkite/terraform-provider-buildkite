@@ -1,6 +1,7 @@
 package buildkite
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
@@ -145,7 +146,7 @@ func testAccCheckTeamExists(name string, tr *teamResourceModel) resource.TestChe
 			return fmt.Errorf("No ID is set in state")
 		}
 
-		r, err := getNode(genqlientGraphql, rs.Primary.ID)
+		r, err := getNode(context.Background(), genqlientGraphql, rs.Primary.ID)
 
 		if err != nil {
 			return err
@@ -177,7 +178,7 @@ func testAccCheckTeamResourceDestroy(s *terraform.State) error {
 			continue
 		}
 
-		r, err := getNode(genqlientGraphql, rs.Primary.ID)
+		r, err := getNode(context.Background(), genqlientGraphql, rs.Primary.ID)
 
 		if err != nil {
 			return err

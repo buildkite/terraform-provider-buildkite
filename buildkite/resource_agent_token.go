@@ -47,7 +47,7 @@ func (at *AgentTokenResource) Create(ctx context.Context, req resource.CreateReq
 	var plan, state AgentTokenStateModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 
-	apiResponse, err := createAgentToken(
+	apiResponse, err := createAgentToken(ctx,
 		at.client.genqlient,
 		at.client.organizationId,
 		plan.Description.ValueStringPointer(),
@@ -69,7 +69,7 @@ func (at *AgentTokenResource) Delete(ctx context.Context, req resource.DeleteReq
 	var plan AgentTokenStateModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &plan)...)
 
-	_, err := revokeAgentToken(at.client.genqlient, plan.Id.ValueString(), "Revoked by Terraform")
+	_, err := revokeAgentToken(ctx, at.client.genqlient, plan.Id.ValueString(), "Revoked by Terraform")
 
 	if err != nil {
 		resp.Diagnostics.AddError(err.Error(), err.Error())
@@ -84,7 +84,7 @@ func (at *AgentTokenResource) Read(ctx context.Context, req resource.ReadRequest
 	var plan, state AgentTokenStateModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &plan)...)
 
-	agentToken, err := getAgentToken(at.client.genqlient, fmt.Sprintf("%s/%s", at.client.organization, plan.Uuid.ValueString()))
+	agentToken, err := getAgentToken(ctx, at.client.genqlient, fmt.Sprintf("%s/%s", at.client.organization, plan.Uuid.ValueString()))
 
 	if err != nil {
 		resp.Diagnostics.AddError(err.Error(), err.Error())

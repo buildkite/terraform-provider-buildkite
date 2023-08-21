@@ -44,7 +44,7 @@ func (o *organizationDatasource) Read(ctx context.Context, req datasource.ReadRe
 		return
 	}
 
-	response, err := getOrganization(o.client.genqlient, o.client.organization)
+	response, err := getOrganization(ctx, o.client.genqlient, o.client.organization)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to read organization settings",

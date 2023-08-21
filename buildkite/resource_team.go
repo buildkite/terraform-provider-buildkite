@@ -134,7 +134,7 @@ func (t *teamResource) Create(ctx context.Context, req resource.CreateRequest, r
 		return
 	}
 
-	r, err := teamCreate(
+	r, err := teamCreate(ctx,
 		t.client.genqlient,
 		t.client.organizationId,
 		state.Name.ValueString(),
@@ -163,7 +163,7 @@ func (t *teamResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 	var state teamResourceModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 
-	res, err := getNode(t.client.genqlient, state.ID.ValueString())
+	res, err := getNode(ctx, t.client.genqlient, state.ID.ValueString())
 
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -195,7 +195,7 @@ func (t *teamResource) Update(ctx context.Context, req resource.UpdateRequest, r
 		return
 	}
 
-	_, err := teamUpdate(
+	_, err := teamUpdate(ctx,
 		t.client.genqlient,
 		state.ID.ValueString(),
 		plan.Name.ValueString(),
@@ -226,7 +226,7 @@ func (t *teamResource) Delete(ctx context.Context, req resource.DeleteRequest, r
 		return
 	}
 
-	_, err := teamDelete(t.client.genqlient, state.ID.ValueString())
+	_, err := teamDelete(ctx, t.client.genqlient, state.ID.ValueString())
 
 	if err != nil {
 		resp.Diagnostics.AddError(

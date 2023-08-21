@@ -118,7 +118,7 @@ func (ps *pipelineSchedule) Create(ctx context.Context, req resource.CreateReque
 	log.Printf("Creating Pipeline schedule %s ...", plan.Label.ValueString())
 
 	envVars := envVarsMapFromTfToString(ctx, plan.Env)
-	apiResponse, err := createPipelineSchedule(
+	apiResponse, err := createPipelineSchedule(ctx,
 		ps.client.genqlient,
 		plan.PipelineId.ValueString(),
 		plan.Label.ValueStringPointer(),
@@ -162,7 +162,7 @@ func (ps *pipelineSchedule) Read(ctx context.Context, req resource.ReadRequest, 
 	}
 
 	log.Printf("Reading Pipeline schedule %s ...", state.Label.ValueString())
-	apiResponse, err := getPipelineSchedule(
+	apiResponse, err := getPipelineSchedule(ctx,
 		ps.client.genqlient,
 		state.Id.ValueString(),
 	)
@@ -211,7 +211,7 @@ func (ps *pipelineSchedule) Update(ctx context.Context, req resource.UpdateReque
 	}
 
 	log.Printf("Updating Pipeline schedule %s ...", plan.Label.ValueString())
-	_, err := updatePipelineSchedule(
+	_, err := updatePipelineSchedule(ctx,
 		ps.client.genqlient,
 		input,
 	)
@@ -237,7 +237,7 @@ func (ps *pipelineSchedule) Delete(ctx context.Context, req resource.DeleteReque
 	}
 
 	log.Println("Deleting Pipeline schedule ...")
-	_, err := deletePipelineSchedule(ps.client.genqlient, plan.Id.ValueString())
+	_, err := deletePipelineSchedule(ctx, ps.client.genqlient, plan.Id.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to delete Pipeline schedule",
