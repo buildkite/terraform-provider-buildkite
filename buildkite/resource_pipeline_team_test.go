@@ -35,6 +35,7 @@ func TestAccBuildkitePipelineTeam(t *testing.T) {
 					ConfigPlanChecks: resource.ConfigPlanChecks{
 						PostApplyPostRefresh: []plancheck.PlanCheck{
 							plancheck.ExpectEmptyPlan(),
+							plancheck.ExpectResourceAction("buildkite_pipeline.acc_test_pipeline", plancheck.ResourceActionNoop),
 						},
 					},
 				},
@@ -73,6 +74,7 @@ func TestAccBuildkitePipelineTeam(t *testing.T) {
 					ConfigPlanChecks: resource.ConfigPlanChecks{
 						PostApplyPostRefresh: []plancheck.PlanCheck{
 							plancheck.ExpectEmptyPlan(),
+							plancheck.ExpectResourceAction("buildkite_pipeline.acc_test_pipeline", plancheck.ResourceActionNoop),
 						},
 					},
 				},
@@ -91,6 +93,7 @@ func TestAccBuildkitePipelineTeam(t *testing.T) {
 					ConfigPlanChecks: resource.ConfigPlanChecks{
 						PostApplyPostRefresh: []plancheck.PlanCheck{
 							plancheck.ExpectEmptyPlan(),
+							plancheck.ExpectResourceAction("buildkite_pipeline.acc_test_pipeline", plancheck.ResourceActionNoop),
 						},
 					},
 				},
