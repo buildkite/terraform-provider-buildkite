@@ -6,135 +6,96 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
-// Confirm we can add and remove a team pipeline resource with the default access level
-func TestAccPipelineTeam_AddRemoveWithDefaultsAccess(t *testing.T) {
-	var tp pipelineTeamResourceModel
-	teamName := acctest.RandString(12)
-	t.Parallel()
+func TestAccBuildkitePipelineTeam(t *testing.T) {
+	t.Run("pipeline team can be created", func(t *testing.T) {
+		var tp pipelineTeamResourceModel
+		teamName := acctest.RandString(12)
 
-	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: protoV6ProviderFactories(),
-		CheckDestroy:             testCheckPipelineTeamResourceRemoved,
-		Steps: []resource.TestStep{
-			{
-				Config:             testAccPipelineTeamConfigBasic(teamName, "READ_ONLY"),
-				ExpectNonEmptyPlan: true,
-				Check: resource.ComposeAggregateTestCheckFunc(
-					// Confirm the test resource team & team pipeline exists in the Buildkite API
-					testAccCheckPipelineTeamExists("buildkite_pipeline_team.pipelineteam", &tp),
-					// Confirm the team pipeline has the correct values in Buildkite's system
-					testAccCheckPipelineTeamRemoteValues("READ_ONLY", &tp),
-					// Confirm the team pipeline has the correct values in terraform state
-					resource.TestCheckResourceAttrSet("buildkite_pipeline_team.pipelineteam", "team_id"),
-					resource.TestCheckResourceAttrSet("buildkite_pipeline_team.pipelineteam", "pipeline_id"),
-					resource.TestCheckResourceAttr("buildkite_pipeline_team.pipelineteam", "access_level", "READ_ONLY"),
-				),
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			CheckDestroy:             testCheckPipelineTeamResourceRemoved,
+			Steps: []resource.TestStep{
+				{
+					Config: testAccPipelineTeamConfigBasic(teamName, "READ_ONLY"),
+					Check: resource.ComposeAggregateTestCheckFunc(
+						// Confirm the test resource team & team pipeline exists in the Buildkite API
+						testAccCheckPipelineTeamExists("buildkite_pipeline_team.pipelineteam", &tp),
+						// Confirm the team pipeline has the correct values in Buildkite's system
+						testAccCheckPipelineTeamRemoteValues("READ_ONLY", &tp),
+						// Confirm the team pipeline has the correct values in terraform state
+						resource.TestCheckResourceAttrPair("buildkite_pipeline_team.pipelineteam", "team_id", "buildkite_team.acc_test_team", "id"),
+						resource.TestCheckResourceAttrPair("buildkite_pipeline_team.pipelineteam", "pipeline_id", "buildkite_pipeline.acc_test_pipeline", "id"),
+						resource.TestCheckResourceAttr("buildkite_pipeline_team.pipelineteam", "access_level", "READ_ONLY"),
+					),
+					ConfigPlanChecks: resource.ConfigPlanChecks{
+						PostApplyPostRefresh: []plancheck.PlanCheck{
+							plancheck.ExpectEmptyPlan(),
+						},
+					},
+				},
+				{
+					ResourceName:      "buildkite_pipeline_team.pipelineteam",
+					ImportState:       true,
+					ImportStateId:     tp.Id.ValueString(),
+					ImportStateVerify: true,
+				},
 			},
-		},
+		})
 	})
-}
 
-func TestAccPipelineTeam_AddRemoveWithNonDefaultAccess(t *testing.T) {
-	var tp pipelineTeamResourceModel
-	teamName := acctest.RandString(12)
-	t.Parallel()
+	t.Run("pipeline team can be updated", func(t *testing.T) {
+		var tp pipelineTeamResourceModel
+		teamName := acctest.RandString(12)
+		teamNameNew := acctest.RandString(12)
 
-	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: protoV6ProviderFactories(),
-		CheckDestroy:             testCheckPipelineTeamResourceRemoved,
-		Steps: []resource.TestStep{
-			{
-				Config:             testAccPipelineTeamConfigBasic(teamName, "BUILD_AND_READ"),
-				ExpectNonEmptyPlan: true,
-				Check: resource.ComposeAggregateTestCheckFunc(
-					// Confirm the test resource team & team pipeline exists in the Buildkite API
-					testAccCheckPipelineTeamExists("buildkite_pipeline_team.pipelineteam", &tp),
-					// Confirm the team pipeline has the correct values in Buildkite's system
-					testAccCheckPipelineTeamRemoteValues("BUILD_AND_READ", &tp),
-					// Confirm the team pipeline has the correct values in terraform state
-					resource.TestCheckResourceAttrSet("buildkite_pipeline_team.pipelineteam", "team_id"),
-					resource.TestCheckResourceAttrSet("buildkite_pipeline_team.pipelineteam", "pipeline_id"),
-					resource.TestCheckResourceAttr("buildkite_pipeline_team.pipelineteam", "access_level", "BUILD_AND_READ"),
-				),
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			CheckDestroy:             testCheckPipelineTeamResourceRemoved,
+			Steps: []resource.TestStep{
+				{
+					Config: testAccPipelineTeamConfigBasic(teamName, "READ_ONLY"),
+					Check: resource.ComposeAggregateTestCheckFunc(
+						// Confirm the test resource team & team pipeline exists in the Buildkite API
+						testAccCheckPipelineTeamExists("buildkite_pipeline_team.pipelineteam", &tp),
+						// Confirm the team has the correct values in Buildkite's system
+						testAccCheckPipelineTeamRemoteValues("READ_ONLY", &tp),
+						// Confirm the team pipeline has the correct values in terraform state
+						resource.TestCheckResourceAttrPair("buildkite_pipeline_team.pipelineteam", "team_id", "buildkite_team.acc_test_team", "id"),
+						resource.TestCheckResourceAttrPair("buildkite_pipeline_team.pipelineteam", "pipeline_id", "buildkite_pipeline.acc_test_pipeline", "id"),
+						resource.TestCheckResourceAttr("buildkite_pipeline_team.pipelineteam", "access_level", "READ_ONLY"),
+					),
+					ConfigPlanChecks: resource.ConfigPlanChecks{
+						PostApplyPostRefresh: []plancheck.PlanCheck{
+							plancheck.ExpectEmptyPlan(),
+						},
+					},
+				},
+				{
+					Config: testAccPipelineTeamConfigBasic(teamNameNew, "MANAGE_BUILD_AND_READ"),
+					Check: resource.ComposeAggregateTestCheckFunc(
+						// Confirm the test resource team & team pipeline exists in the Buildkite API
+						testAccCheckPipelineTeamExists("buildkite_pipeline_team.pipelineteam", &tp),
+						// Confirm the team has the correct values in Buildkite's system
+						testAccCheckPipelineTeamRemoteValues("MANAGE_BUILD_AND_READ", &tp),
+						// Confirm the team pipeline has the correct values in terraform state
+						resource.TestCheckResourceAttrPair("buildkite_pipeline_team.pipelineteam", "team_id", "buildkite_team.acc_test_team", "id"),
+						resource.TestCheckResourceAttrPair("buildkite_pipeline_team.pipelineteam", "pipeline_id", "buildkite_pipeline.acc_test_pipeline", "id"),
+						resource.TestCheckResourceAttr("buildkite_pipeline_team.pipelineteam", "access_level", "MANAGE_BUILD_AND_READ"),
+					),
+					ConfigPlanChecks: resource.ConfigPlanChecks{
+						PostApplyPostRefresh: []plancheck.PlanCheck{
+							plancheck.ExpectEmptyPlan(),
+						},
+					},
+				},
 			},
-		},
-	})
-}
-
-func TestAccPipelineTeam_Update(t *testing.T) {
-	var tp pipelineTeamResourceModel
-	teamName := acctest.RandString(12)
-	teamNameNew := acctest.RandString(12)
-	t.Parallel()
-
-	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: protoV6ProviderFactories(),
-		CheckDestroy:             testCheckPipelineTeamResourceRemoved,
-		Steps: []resource.TestStep{
-			{
-				Config:             testAccPipelineTeamConfigBasic(teamName, "READ_ONLY"),
-				ExpectNonEmptyPlan: true,
-				Check: resource.ComposeAggregateTestCheckFunc(
-					// Confirm the test resource team & team pipeline exists in the Buildkite API
-					testAccCheckPipelineTeamExists("buildkite_pipeline_team.pipelineteam", &tp),
-					// Confirm the team has the correct values in Buildkite's system
-					testAccCheckPipelineTeamRemoteValues("READ_ONLY", &tp),
-					// Confirm the team pipeline has the correct values in terraform state
-					resource.TestCheckResourceAttr("buildkite_pipeline_team.pipelineteam", "access_level", "READ_ONLY"),
-				),
-			},
-			{
-				Config:             testAccPipelineTeamConfigBasic(teamNameNew, "MANAGE_BUILD_AND_READ"),
-				ExpectNonEmptyPlan: true,
-				Check: resource.ComposeAggregateTestCheckFunc(
-					// Confirm the test resource team & team pipeline exists in the Buildkite API
-					testAccCheckPipelineTeamExists("buildkite_pipeline_team.pipelineteam", &tp),
-					// Confirm the team has the correct values in Buildkite's system
-					testAccCheckPipelineTeamRemoteValues("MANAGE_BUILD_AND_READ", &tp),
-					// Confirm the team pipeline has the correct values in terraform state
-					resource.TestCheckResourceAttr("buildkite_pipeline_team.pipelineteam", "access_level", "MANAGE_BUILD_AND_READ"),
-				),
-			},
-		},
-	})
-}
-
-// Confirm that this resource can be imported
-func TestAccPipelineTeam_Import(t *testing.T) {
-	var tp pipelineTeamResourceModel
-	teamName := acctest.RandString(12)
-	t.Parallel()
-
-	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: protoV6ProviderFactories(),
-		CheckDestroy:             testCheckPipelineTeamResourceRemoved,
-		Steps: []resource.TestStep{
-			{
-				Config:             testAccPipelineTeamConfigBasic(teamName, "READ_ONLY"),
-				ExpectNonEmptyPlan: true,
-				Check: resource.ComposeAggregateTestCheckFunc(
-					// Confirm the test resource team & team pipeline exists in the Buildkite API
-					testAccCheckPipelineTeamExists("buildkite_pipeline_team.pipelineteam", &tp),
-					// Confirm the team has the correct values in Buildkite's system
-					resource.TestCheckResourceAttrSet("buildkite_pipeline_team.pipelineteam", "team_id"),
-					resource.TestCheckResourceAttrSet("buildkite_pipeline_team.pipelineteam", "pipeline_id"),
-					resource.TestCheckResourceAttr("buildkite_pipeline_team.pipelineteam", "access_level", "READ_ONLY"),
-				),
-			},
-			{
-				// re-import the resource and confirm they match
-				ResourceName:      "buildkite_pipeline_team.pipelineteam",
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
-		},
+		})
 	})
 }
 
