@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
-func TestAccClusterNew(t *testing.T) {
+func TestAccCluster(t *testing.T) {
 	var c clusterResourceModel
 	basic := func(name string) string {
 		return fmt.Sprintf(`
