@@ -9,6 +9,7 @@ import (
 	"net/http"
 
 	genqlient "github.com/Khan/genqlient/graphql"
+	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/shurcooL/graphql"
 )
 
@@ -20,6 +21,7 @@ type Client struct {
 	organization   string
 	organizationId string
 	restUrl        string
+	timeouts       timeouts.Value
 }
 
 type clientConfig struct {
@@ -28,6 +30,7 @@ type clientConfig struct {
 	graphqlURL string
 	restURL    string
 	userAgent  string
+	timeouts   timeouts.Value
 }
 
 type headerRoundTripper struct {
@@ -64,6 +67,7 @@ func NewClient(config *clientConfig) (*Client, error) {
 		organization:   config.org,
 		organizationId: orgId,
 		restUrl:        config.restURL,
+		timeouts:       config.timeouts,
 	}, nil
 }
 

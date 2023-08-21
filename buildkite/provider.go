@@ -32,7 +32,6 @@ const (
 type terraformProvider struct {
 	version                 string
 	archivePipelineOnDelete bool
-	timeouts                timeouts.Value
 }
 
 type providerModel struct {
@@ -48,7 +47,6 @@ func (tf *terraformProvider) Configure(ctx context.Context, req provider.Configu
 	var data providerModel
 	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
 	tf.archivePipelineOnDelete = data.ArchivePipelineOnDelete.ValueBool()
-	tf.timeouts = data.Timeouts
 
 	apiToken := os.Getenv("BUILDKITE_API_TOKEN")
 	graphqlUrl := defaultGraphqlEndpoint
@@ -79,6 +77,7 @@ func (tf *terraformProvider) Configure(ctx context.Context, req provider.Configu
 		org:        organization,
 		restURL:    restUrl,
 		userAgent:  legacyProvider.UserAgent("buildkite", tf.version),
+		timeouts:   data.Timeouts,
 	}
 	client, err := NewClient(&config)
 
