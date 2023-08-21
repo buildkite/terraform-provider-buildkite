@@ -8,6 +8,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -15,6 +16,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
@@ -191,6 +193,7 @@ func (p *pipelineResource) Create(ctx context.Context, req resource.CreateReques
 	// use the unsafe module to convert to an int. this is fine because the absolute max accepted by the API is much
 	// less than an int
 	defaultTimeoutInMinutes := (*int)(unsafe.Pointer(plan.DefaultTimeoutInMinutes.ValueInt64Pointer()))
+	maxTimeoutInMinutes := (*int)(unsafe.Pointer(plan.MaximumTimeoutInMinutes.ValueInt64Pointer()))
 
 	input := PipelineCreateInput{
 		AllowRebuilds:                        plan.AllowRebuilds.ValueBool(),
@@ -200,7 +203,7 @@ func (p *pipelineResource) Create(ctx context.Context, req resource.CreateReques
 		ClusterId:                            plan.ClusterId.ValueStringPointer(),
 		DefaultBranch:                        plan.DefaultBranch.ValueString(),
 		DefaultTimeoutInMinutes:              defaultTimeoutInMinutes,
-		MaximumTimeoutInMinutes:              int(plan.MaximumTimeoutInMinutes.ValueInt64()),
+		MaximumTimeoutInMinutes:              maxTimeoutInMinutes,
 		Description:                          plan.Description.ValueString(),
 		Name:                                 plan.Name.ValueString(),
 		OrganizationId:                       p.client.organizationId,
@@ -425,7 +428,9 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 			},
 			"tags": schema.SetAttribute{
 				Optional:    true,
+				Computed:    true,
 				ElementType: types.StringType,
+				Default:     setdefault.StaticValue(types.SetValueMust(types.StringType, []attr.Value{})),
 			},
 			"webhook_url": schema.StringAttribute{
 				Computed: true,
@@ -567,6 +572,7 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 	}
 
 	defaultTimeoutInMinutes := (*int)(unsafe.Pointer(plan.DefaultTimeoutInMinutes.ValueInt64Pointer()))
+	maxTimeoutInMinutes := (*int)(unsafe.Pointer(plan.MaximumTimeoutInMinutes.ValueInt64Pointer()))
 
 	input := PipelineUpdateInput{
 		AllowRebuilds:                        plan.AllowRebuilds.ValueBool(),
@@ -576,7 +582,7 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 		ClusterId:                            plan.ClusterId.ValueStringPointer(),
 		DefaultBranch:                        plan.DefaultBranch.ValueString(),
 		DefaultTimeoutInMinutes:              defaultTimeoutInMinutes,
-		MaximumTimeoutInMinutes:              int(plan.MaximumTimeoutInMinutes.ValueInt64()),
+		MaximumTimeoutInMinutes:              maxTimeoutInMinutes,
 		Description:                          plan.Description.ValueString(),
 		Id:                                   plan.Id.ValueString(),
 		Name:                                 plan.Name.ValueString(),
@@ -654,14 +660,9 @@ func setPipelineModel(model *pipelineResourceModel, data pipelineResponse) {
 	model.Steps = types.StringValue(data.GetSteps().Yaml)
 	model.WebhookUrl = types.StringValue(data.GetWebhookURL())
 
-	var tags []types.String
-	if len(data.GetTags()) > 0 {
-		tags = make([]types.String, len(data.GetTags()))
-		for i, tag := range data.GetTags() {
-			tags[i] = types.StringValue(tag.Label)
-		}
-	} else {
-		tags = nil
+	tags := make([]types.String, len(data.GetTags()))
+	for i, tag := range data.GetTags() {
+		tags[i] = types.StringValue(tag.Label)
 	}
 	model.Tags = tags
 	teams := make([]*pipelineTeamModel, len(data.GetTeams().Edges))
