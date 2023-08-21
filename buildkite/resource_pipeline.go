@@ -216,7 +216,7 @@ func (p *pipelineResource) Create(ctx context.Context, req resource.CreateReques
 	}
 
 	log.Printf("Creating pipeline %s ...", plan.Name.ValueString())
-	response, err := createPipeline(p.client.genqlient, input)
+	response, err := createPipeline(ctx, p.client.genqlient, input)
 
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to create pipeline", err.Error())
@@ -270,7 +270,7 @@ func (p *pipelineResource) Delete(ctx context.Context, req resource.DeleteReques
 
 	if state.ArchiveOnDelete.ValueBool() || p.archiveOnDelete {
 		log.Printf("Pipeline %s set to archive on delete. Archiving...", state.Name.ValueString())
-		_, err := archivePipeline(p.client.genqlient, state.Id.ValueString())
+		_, err := archivePipeline(ctx, p.client.genqlient, state.Id.ValueString())
 		if err != nil {
 			resp.Diagnostics.AddError("Could not archive pipeline", err.Error())
 		}
@@ -278,7 +278,7 @@ func (p *pipelineResource) Delete(ctx context.Context, req resource.DeleteReques
 	}
 
 	log.Printf("Deleting pipeline %s ...", state.Name.ValueString())
-	_, err := deletePipeline(p.client.genqlient, state.Id.ValueString())
+	_, err := deletePipeline(ctx, p.client.genqlient, state.Id.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError("Could not delete pipeline", err.Error())
 	}
@@ -296,7 +296,7 @@ func (p *pipelineResource) Read(ctx context.Context, req resource.ReadRequest, r
 		return
 	}
 
-	response, err := getNode(p.client.genqlient, state.Id.ValueString())
+	response, err := getNode(ctx, p.client.genqlient, state.Id.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to read pipeline",
@@ -627,7 +627,7 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 	}
 
 	log.Printf("Updating pipeline %s ...", input.Name)
-	response, err := updatePipeline(p.client.genqlient, input)
+	response, err := updatePipeline(ctx, p.client.genqlient, input)
 
 	if err != nil {
 		resp.Diagnostics.AddError("Unable to update pipeline %s", state.Name.ValueString())
@@ -639,7 +639,7 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 	state.ArchiveOnDelete = plan.ArchiveOnDelete
 
 	// plan.Teams has what we want. state.Teams has what exists on the server. we need to make them match
-	err = p.reconcileTeamPipelinesToPlan(plan.Teams, state.Teams, &response.PipelineUpdate.Pipeline, response.PipelineUpdate.Pipeline.Id)
+	err = p.reconcileTeamPipelinesToPlan(ctx, plan.Teams, state.Teams, &response.PipelineUpdate.Pipeline, response.PipelineUpdate.Pipeline.Id)
 	if err != nil {
 		resp.Diagnostics.AddError("Unable to reconcile team pipelines", err.Error())
 		return
@@ -803,7 +803,7 @@ func (p *pipelineResource) getTeamPipelinesFromSchema(plan *pipelineResourceMode
 }
 
 // reconcileTeamPipelines plan.Teams has what we want - adds/updates/deletes the teamPipelines on buildkite to match the teams in terraform resource data
-func (p *pipelineResource) reconcileTeamPipelinesToPlan(planTeams []*pipelineTeamModel, stateTeams []*pipelineTeamModel, data pipelineResponse, pipelineId string) error {
+func (p *pipelineResource) reconcileTeamPipelinesToPlan(ctx context.Context, planTeams []*pipelineTeamModel, stateTeams []*pipelineTeamModel, data pipelineResponse, pipelineId string) error {
 
 	var toAdd []*pipelineTeamModel
 	var toUpdate []*pipelineTeamModel
@@ -855,19 +855,19 @@ func (p *pipelineResource) reconcileTeamPipelinesToPlan(planTeams []*pipelineTea
 	}
 
 	// Add any teams that don't already exist
-	err := createTeamPipelines(toAdd, pipelineId, p.client)
+	err := createTeamPipelines(ctx, toAdd, pipelineId, p.client)
 	if err != nil {
 		return err
 	}
 
 	// Update any teams access levels that need updating
-	err = updateTeamPipelines(toUpdate, p.client)
+	err = updateTeamPipelines(ctx, toUpdate, p.client)
 	if err != nil {
 		return err
 	}
 
 	// Remove any teams that shouldn't exist
-	err = deleteTeamPipelines(toDelete, p.client)
+	err = deleteTeamPipelines(ctx, toDelete, p.client)
 	if err != nil {
 		return err
 	}
@@ -876,14 +876,14 @@ func (p *pipelineResource) reconcileTeamPipelinesToPlan(planTeams []*pipelineTea
 }
 
 // createTeamPipelines grants access to a pipeline for the teams specified
-func createTeamPipelines(teamPipelines []*pipelineTeamModel, pipelineID string, client *Client) error {
+func createTeamPipelines(ctx context.Context, teamPipelines []*pipelineTeamModel, pipelineID string, client *Client) error {
 	for _, teamPipeline := range teamPipelines {
 		log.Printf("Granting teamPipeline %s %s access to pipeline id '%s'...", teamPipeline.Slug, teamPipeline.AccessLevel, pipelineID)
 		teamID, err := GetTeamID(string(teamPipeline.Slug.ValueString()), client)
 		if err != nil {
 			return fmt.Errorf("Unable to get ID for team slug %s (%v)", teamPipeline.Slug.ValueString(), err)
 		}
-		resp, err := teamPipelineCreate(client.genqlient, teamID, pipelineID, PipelineAccessLevels(teamPipeline.AccessLevel.ValueString()))
+		resp, err := teamPipelineCreate(ctx, client.genqlient, teamID, pipelineID, PipelineAccessLevels(teamPipeline.AccessLevel.ValueString()))
 		if err != nil {
 			log.Printf("Unable to create team pipeline %s", teamPipeline.Slug)
 			return err
@@ -895,10 +895,10 @@ func createTeamPipelines(teamPipelines []*pipelineTeamModel, pipelineID string, 
 }
 
 // Update access levels for the given teamPipelines
-func updateTeamPipelines(teamPipelines []*pipelineTeamModel, client *Client) error {
+func updateTeamPipelines(ctx context.Context, teamPipelines []*pipelineTeamModel, client *Client) error {
 	for _, teamPipeline := range teamPipelines {
 		log.Printf("Updating access to %s for teamPipeline id '%s'...", teamPipeline.AccessLevel, teamPipeline.PipelineTeamId)
-		_, err := teamPipelineUpdate(client.genqlient, teamPipeline.PipelineTeamId.ValueString(), PipelineAccessLevels(teamPipeline.AccessLevel.ValueString()))
+		_, err := teamPipelineUpdate(ctx, client.genqlient, teamPipeline.PipelineTeamId.ValueString(), PipelineAccessLevels(teamPipeline.AccessLevel.ValueString()))
 		if err != nil {
 			log.Printf("Unable to update team pipeline")
 			return err
@@ -907,10 +907,10 @@ func updateTeamPipelines(teamPipelines []*pipelineTeamModel, client *Client) err
 	return nil
 }
 
-func deleteTeamPipelines(teamPipelines []*pipelineTeamModel, client *Client) error {
+func deleteTeamPipelines(ctx context.Context, teamPipelines []*pipelineTeamModel, client *Client) error {
 	for _, teamPipeline := range teamPipelines {
 		log.Printf("Removing access for teamPipeline %s (id=%s)...", teamPipeline.Slug, teamPipeline.PipelineTeamId)
-		_, err := teamPipelineDelete(client.genqlient, teamPipeline.PipelineTeamId.ValueString())
+		_, err := teamPipelineDelete(ctx, client.genqlient, teamPipeline.PipelineTeamId.ValueString())
 		if err != nil {
 			log.Printf("Unable to delete team pipeline")
 			return err
