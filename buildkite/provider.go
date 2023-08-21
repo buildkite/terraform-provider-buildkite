@@ -4,7 +4,9 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"time"
 
+	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
 	framework_schema "github.com/hashicorp/terraform-plugin-framework/provider/schema"
@@ -16,6 +18,8 @@ import (
 const (
 	defaultGraphqlEndpoint = "https://graphql.buildkite.com/v1"
 	defaultRestEndpoint    = "https://api.buildkite.com"
+
+	DefaultTimeout = 15 * time.Second
 )
 
 const (
@@ -28,20 +32,23 @@ const (
 type terraformProvider struct {
 	version                 string
 	archivePipelineOnDelete bool
+	timeouts                timeouts.Value
 }
 
 type providerModel struct {
-	ApiToken                types.String `tfsdk:"api_token"`
-	ArchivePipelineOnDelete types.Bool   `tfsdk:"archive_pipeline_on_delete"`
-	GraphqlUrl              types.String `tfsdk:"graphql_url"`
-	Organization            types.String `tfsdk:"organization"`
-	RestUrl                 types.String `tfsdk:"rest_url"`
+	ApiToken                types.String   `tfsdk:"api_token"`
+	ArchivePipelineOnDelete types.Bool     `tfsdk:"archive_pipeline_on_delete"`
+	GraphqlUrl              types.String   `tfsdk:"graphql_url"`
+	Organization            types.String   `tfsdk:"organization"`
+	RestUrl                 types.String   `tfsdk:"rest_url"`
+	Timeouts                timeouts.Value `tfsdk:"timeouts"`
 }
 
 func (tf *terraformProvider) Configure(ctx context.Context, req provider.ConfigureRequest, resp *provider.ConfigureResponse) {
 	var data providerModel
 	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
 	tf.archivePipelineOnDelete = data.ArchivePipelineOnDelete.ValueBool()
+	tf.timeouts = data.Timeouts
 
 	apiToken := os.Getenv("BUILDKITE_API_TOKEN")
 	graphqlUrl := defaultGraphqlEndpoint
@@ -140,6 +147,9 @@ func (*terraformProvider) Schema(ctx context.Context, req provider.SchemaRequest
 				Description: "Archive pipelines when destroying instead of completely deleting.",
 			},
 		},
+		Blocks: map[string]framework_schema.Block{
+			"timeouts": timeouts.BlockAll(ctx),
+		},
 	}
 }
 
@@ -181,6 +191,28 @@ func Provider(version string) *schema.Provider {
 				Description: "Archive pipelines when destroying instead of completely deleting.",
 				Optional:    true,
 				Type:        schema.TypeBool,
+			},
+			"timeouts": {
+				Type:     schema.TypeMap,
+				Optional: true,
+				Elem: map[string]*schema.Schema{
+					"create": {
+						Type:     schema.TypeString,
+						Optional: true,
+					},
+					"read": {
+						Type:     schema.TypeString,
+						Optional: true,
+					},
+					"update": {
+						Type:     schema.TypeString,
+						Optional: true,
+					},
+					"delete": {
+						Type:     schema.TypeString,
+						Optional: true,
+					},
+				},
 			},
 		},
 	}
