@@ -49,6 +49,12 @@ resource "buildkite_pipeline_schedule" "weekly" {
   message = "Weekly scheduled build"
 }
 
+resource "buildkite_pipeline_team" "developers" { 
+  pipeline_id = buildkite_pipeline.repo2
+  team_id = buildkite_team.test.id
+  access_level = "MANAGE_BUILD_AND_READ"  
+}
+
 data "buildkite_pipeline" "data2" {
 	slug = buildkite_pipeline.repo2.slug
 }
