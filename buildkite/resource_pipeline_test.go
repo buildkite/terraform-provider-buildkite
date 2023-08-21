@@ -446,7 +446,6 @@ func TestAccBuildkitePipeline(t *testing.T) {
 		var teamID string
 		var pipeline getPipelinePipeline
 		pipelineName := acctest.RandString(12)
-		t.Skip("Not implmented yet")
 
 		resource.ParallelTest(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },
