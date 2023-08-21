@@ -1,0 +1,54 @@
+fragment TeamPipelineFields on TeamPipeline {
+    id
+    uuid 
+    pipelineAccessLevel: accessLevel
+    team {
+        id
+    }
+    pipeline {
+        id
+    }
+}
+
+mutation createTeamPipeline(
+    $teamID: ID!,
+    $pipelineID: ID!, 
+    $accessLevel: PipelineAccessLevels
+) {
+    teamPipelineCreate(input:{
+        teamID: $teamID,
+        pipelineID: $pipelineID,
+        accessLevel: $accessLevel
+    }) {
+        teamPipelineEdge {
+            node {
+                ...TeamPipelineFields
+            }
+        }
+    }
+}
+ 
+mutation updateTeamPipeline(
+    $id: ID!,
+    $accessLevel: PipelineAccessLevels!
+) {
+    teamPipelineUpdate(input:{
+        id: $id,
+        accessLevel: $accessLevel
+    }) {
+        teamPipeline {
+            ...TeamPipelineFields
+        }
+    }
+}
+
+mutation deleteTeamPipeline(
+    $id: ID!,
+) {
+    teamPipelineDelete(input:{
+        id: $id
+    }) {
+        deletedTeamPipelineID 
+        clientMutationId
+    }
+}

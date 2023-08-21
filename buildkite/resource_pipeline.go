@@ -477,6 +477,7 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 		},
 		Blocks: map[string]schema.Block{
 			"team": schema.SetNestedBlock{
+				DeprecationMessage: "This block is deprecated. Please use `buildkite_pipeline_team` instead.",
 				NestedObject: schema.NestedBlockObject{
 					Attributes: map[string]schema.Attribute{
 						"slug": schema.StringAttribute{
