@@ -226,7 +226,6 @@ func (ps *pipelineSchedule) Update(ctx context.Context, req resource.UpdateReque
 
 	plan.Id = state.Id
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
-
 }
 
 func (ps *pipelineSchedule) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {

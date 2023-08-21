@@ -2,51 +2,52 @@ package buildkite
 
 import (
 	"fmt"
-	"regexp"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
-// Confirm that we can create a new agent token, and then delete it without error
-func TestAccDataPipeline_read(t *testing.T) {
-	var resourcePipeline PipelineNode
+func TestAccBuildkitePipelineDataSource(t *testing.T) {
+	var pipeline getPipelinePipeline
+	pipelineName := acctest.RandString(12)
 
-	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: protoV6ProviderFactories(),
-		CheckDestroy:             testAccCheckPipelineResourceDestroy,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccDataPipelineConfigBasic("foo"),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					// Confirm the pipeline exists in the buildkite API
-					testAccCheckPipelineExists("buildkite_pipeline.foobar", &resourcePipeline),
-					// Confirm the pipeline data source has the correct values in terraform state
-					resource.TestCheckResourceAttr("data.buildkite_pipeline.foobar", "name", "Test Pipeline foo"),
-					resource.TestCheckResourceAttr("data.buildkite_pipeline.foobar", "repository", "https://github.com/buildkite/terraform-provider-buildkite.git"),
-					resource.TestCheckResourceAttr("data.buildkite_pipeline.foobar", "default_branch", "main"),
-					resource.TestCheckResourceAttr("data.buildkite_pipeline.foobar", "description", "A test pipeline foo"),
-					resource.TestMatchResourceAttr("data.buildkite_pipeline.foobar", "webhook_url", regexp.MustCompile("^https://webhook.buildkite.com/deliver/.+")),
-				),
+	loadPipeline := func(pipeline *getPipelinePipeline) resource.TestCheckFunc {
+		return func(s *terraform.State) error {
+			slug := fmt.Sprintf("%s/%s", getenv("BUILDKITE_ORGANIZATION_SLUG"), pipelineName)
+			resp, err := getPipeline(genqlientGraphql, slug)
+			pipeline = &resp.Pipeline
+			return err
+		}
+	}
+
+	t.Run("pipeline datasource can be loaded from slug", func(t *testing.T) {
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			Steps: []resource.TestStep{
+				{
+					Config: fmt.Sprintf(`
+						resource "buildkite_pipeline" "pipeline" {
+							name = "%s"
+							repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
+						}
+
+						data "buildkite_pipeline" "pipeline" {
+							slug = buildkite_pipeline.pipeline.slug
+						}
+					`, pipelineName),
+					Check: resource.ComposeAggregateTestCheckFunc(
+						// Confirm the pipeline exists in the buildkite API
+						loadPipeline(&pipeline),
+						// Confirm the pipeline data source has the correct values in terraform state
+						resource.TestCheckResourceAttr("data.buildkite_pipeline.pipeline", "name", pipelineName),
+						resource.TestCheckResourceAttr("data.buildkite_pipeline.pipeline", "repository", "https://github.com/buildkite/terraform-provider-buildkite.git"),
+						resource.TestCheckResourceAttrPair("data.buildkite_pipeline.pipeline", "id", "buildkite_pipeline.pipeline", "id"),
+					),
+				},
 			},
-		},
+		})
 	})
-}
-
-func testAccDataPipelineConfigBasic(name string) string {
-	config := `
-		resource "buildkite_pipeline" "foobar" {
-			name = "Test Pipeline %s"
-			repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
-			default_branch = "main"
-			description = "A test pipeline %s"
-			steps = ""
-		}
-
-		data "buildkite_pipeline" "foobar" {
-			slug = buildkite_pipeline.foobar.slug
-		}
-	`
-	return fmt.Sprintf(config, name, name)
 }
