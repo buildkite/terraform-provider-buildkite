@@ -9,105 +9,130 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
-func testAccClusterBasic(name string) string {
-	config := `
+func TestAccClusterNew(t *testing.T) {
+	var c clusterResourceModel
+	basic := func(name string) string {
+		return fmt.Sprintf(`
 		resource "buildkite_cluster" "foo" {
 			name = "%s_test_cluster"
 		}
-	`
-	return fmt.Sprintf(config, name)
-}
+		`, name)
+	}
 
-func TestAccCluster_AddRemove(t *testing.T) {
-	resName := acctest.RandString(12)
-	t.Parallel()
-	var c clusterResourceModel
+	complex := func(name string) string {
+		return fmt.Sprintf(`
+		resource "buildkite_cluster" "foo" {
+			name = "%s_test_cluster"
+			description = "Just another Buildkite cluster"
+			emoji = ":one-does-not-simply:"
+			color = "#BADA55"
+		}
+		`, name)
+	}
 
-	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: protoV6ProviderFactories(),
-		CheckDestroy:             testAccCheckClusterDestroy,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccClusterBasic(resName),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckClusterExists("buildkite_cluster.foo", &c),
-					testAccCheckClusterRemoteValues(&c, fmt.Sprintf("%s_test_cluster", resName)),
-					resource.TestCheckResourceAttr("buildkite_cluster.foo", "name", fmt.Sprintf("%s_test_cluster", resName)),
-					resource.TestCheckResourceAttrSet("buildkite_cluster.foo", "id"),
-					resource.TestCheckResourceAttrSet("buildkite_cluster.foo", "uuid"),
-				),
-			},
-			{
-				RefreshState: true,
-				PlanOnly:     true,
-				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttrSet("buildkite_cluster.foo", "name"),
-				),
-			},
-		},
-	})
-}
+	t.Run("Creates a Cluster", func(t *testing.T) {
+		randName := acctest.RandString(5)
+		check := resource.ComposeAggregateTestCheckFunc(
+			testAccCheckClusterExists("buildkite_cluster.foo", &c),
+			testAccCheckClusterRemoteValues(&c, fmt.Sprintf("%s_test_cluster", randName)),
+			resource.TestCheckResourceAttr("buildkite_cluster.foo", "name", fmt.Sprintf("%s_test_cluster", randName)),
+			resource.TestCheckResourceAttrSet("buildkite_cluster.foo", "id"),
+			resource.TestCheckResourceAttrSet("buildkite_cluster.foo", "uuid"),
+		)
 
-func TestAccCluster_Update(t *testing.T) {
-	resName := acctest.RandString(12)
-	newResName := acctest.RandString(15)
-	t.Parallel()
-	var c = new(clusterResourceModel)
-
-	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: protoV6ProviderFactories(),
-		CheckDestroy:             testAccCheckClusterDestroy,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccClusterBasic(resName),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckClusterExists("buildkite_cluster.foo", c),
-					testAccCheckClusterRemoteValues(c, fmt.Sprintf("%s_test_cluster", resName)),
-					resource.TestCheckResourceAttr("buildkite_cluster.foo", "name", fmt.Sprintf("%s_test_cluster", resName)),
-					resource.TestCheckResourceAttrSet("buildkite_cluster.foo", "id"),
-					resource.TestCheckResourceAttrSet("buildkite_cluster.foo", "uuid"),
-				),
-			},
-			{
-				Config: testAccClusterBasic(newResName),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckClusterExists("buildkite_cluster.foo", c),
-					testAccCheckClusterRemoteValues(c, fmt.Sprintf("%s_test_cluster", newResName)),
-					resource.TestCheckResourceAttr("buildkite_cluster.foo", "name", fmt.Sprintf("%s_test_cluster", newResName)),
-				),
-			},
-		},
-	})
-}
-
-func TestAccCluster_Import(t *testing.T) {
-	resName := acctest.RandString(13)
-	t.Parallel()
-	var c = new(clusterResourceModel)
-
-	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: protoV6ProviderFactories(),
-		CheckDestroy:             testAccCheckClusterDestroy,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccClusterBasic(resName),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckClusterExists("buildkite_cluster.foo", c),
-					resource.TestCheckResourceAttr("buildkite_cluster.foo", "name", fmt.Sprintf("%s_test_cluster", resName)),
-				),
-			},
-			{
-				ResourceName: "buildkite_cluster.foo",
-				ImportStateIdFunc: func(s *terraform.State) (string, error) {
-					return c.UUID.ValueString(), nil
+		testCase := func(t *testing.T, config string) {
+			resource.Test(t, resource.TestCase{
+				PreCheck:                 func() { testAccPreCheck(t) },
+				ProtoV6ProviderFactories: protoV6ProviderFactories(),
+				CheckDestroy:             testAccCheckClusterDestroy,
+				Steps: []resource.TestStep{
+					{
+						Config: config,
+						Check:  check,
+					},
 				},
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
-		},
+			})
+		}
+		t.Run("with basic settings", func(t *testing.T) {
+			testCase(t, basic(randName))
+		})
+
+		t.Run("with complex settings", func(t *testing.T) {
+			testCase(t, complex(randName))
+		})
+	})
+
+	t.Run("Updates a Cluster", func(t *testing.T) {
+		randName := acctest.RandString(5)
+		randNameUpdated := acctest.RandString(5)
+		testCase := func(t *testing.T, originalConfig, newConfig string) {
+			resource.ParallelTest(t, resource.TestCase{
+				PreCheck:                 func() { testAccPreCheck(t) },
+				ProtoV6ProviderFactories: protoV6ProviderFactories(),
+				CheckDestroy:             testAccCheckClusterDestroy,
+				Steps: []resource.TestStep{
+					{
+						Config: originalConfig,
+						Check: resource.ComposeAggregateTestCheckFunc(
+							testAccCheckClusterExists("buildkite_cluster.foo", &c),
+							testAccCheckClusterRemoteValues(&c, fmt.Sprintf("%s_test_cluster", randName)),
+							resource.TestCheckResourceAttr("buildkite_cluster.foo", "name", fmt.Sprintf("%s_test_cluster", randName)),
+							resource.TestCheckResourceAttrSet("buildkite_cluster.foo", "id"),
+							resource.TestCheckResourceAttrSet("buildkite_cluster.foo", "uuid"),
+						),
+					},
+					{
+						Config: newConfig,
+						Check: resource.ComposeAggregateTestCheckFunc(
+							testAccCheckClusterExists("buildkite_cluster.foo", &c),
+							testAccCheckClusterRemoteValues(&c, fmt.Sprintf("%s_test_cluster", randNameUpdated)),
+							resource.TestCheckResourceAttr("buildkite_cluster.foo", "name", fmt.Sprintf("%s_test_cluster", randNameUpdated)),
+							resource.TestCheckResourceAttrSet("buildkite_cluster.foo", "id"),
+							resource.TestCheckResourceAttrSet("buildkite_cluster.foo", "uuid"),
+						),
+					},
+				},
+			})
+		}
+		t.Run("with basic settings", func(t *testing.T) {
+			testCase(t, basic(randName), basic(randNameUpdated))
+		})
+	})
+
+	t.Run("Imports a Cluster", func(t *testing.T) {
+		randName := acctest.RandString(5)
+		check := resource.ComposeAggregateTestCheckFunc(
+			testAccCheckClusterExists("buildkite_cluster.foo", &c),
+			resource.TestCheckResourceAttr("buildkite_cluster.foo", "name", fmt.Sprintf("%s_test_cluster", randName)),
+		)
+
+		testCase := func(t *testing.T, config string) {
+			resource.Test(t, resource.TestCase{
+				PreCheck:                 func() { testAccPreCheck(t) },
+				ProtoV6ProviderFactories: protoV6ProviderFactories(),
+				CheckDestroy:             testAccCheckClusterDestroy,
+				Steps: []resource.TestStep{
+					{
+						Config: config,
+						Check:  check,
+					},
+					{
+						ResourceName: "buildkite_cluster.foo",
+						ImportStateIdFunc: func(s *terraform.State) (string, error) {
+							return c.UUID.ValueString(), nil
+						},
+						ImportState:       true,
+						ImportStateVerify: true,
+					},
+				},
+			})
+		}
+		t.Run("with basic settings", func(t *testing.T) {
+			testCase(t, basic(randName))
+		})
+		t.Run("with complex settings", func(t *testing.T) {
+			testCase(t, complex(randName))
+		})
 	})
 }
 
