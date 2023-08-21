@@ -51,10 +51,10 @@ func (c *clusterDatasource) Read(ctx context.Context, req datasource.ReadRequest
 		var cursor *string
 		for {
 			r, err := getClusterByName(c.client.genqlient, c.client.organization, cursor)
-			if isRetryableError(err) {
-				return retry.RetryableError(err)
-			}
 			if err != nil {
+				if isRetryableError(err) {
+					return retry.RetryableError(err)
+				}
 				resp.Diagnostics.AddError(
 					"Unable to read Cluster",
 					fmt.Sprintf("Unable to read Cluster: %s", err.Error()),
