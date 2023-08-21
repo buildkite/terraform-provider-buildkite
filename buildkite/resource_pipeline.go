@@ -8,6 +8,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -15,6 +16,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
@@ -183,7 +185,6 @@ func (p *pipelineResource) Create(ctx context.Context, req resource.CreateReques
 	if len(plan.Teams) > 0 {
 		teamsInput = p.getTeamPipelinesFromSchema(&plan)
 	}
-
 	if len(teamsInput) != len(plan.Teams) {
 		resp.Diagnostics.AddError("Could not resolve all team IDs", "Could not resolve all team IDs")
 		return
@@ -192,6 +193,7 @@ func (p *pipelineResource) Create(ctx context.Context, req resource.CreateReques
 	// use the unsafe module to convert to an int. this is fine because the absolute max accepted by the API is much
 	// less than an int
 	defaultTimeoutInMinutes := (*int)(unsafe.Pointer(plan.DefaultTimeoutInMinutes.ValueInt64Pointer()))
+	maxTimeoutInMinutes := (*int)(unsafe.Pointer(plan.MaximumTimeoutInMinutes.ValueInt64Pointer()))
 
 	input := PipelineCreateInput{
 		AllowRebuilds:                        plan.AllowRebuilds.ValueBool(),
@@ -201,7 +203,7 @@ func (p *pipelineResource) Create(ctx context.Context, req resource.CreateReques
 		ClusterId:                            plan.ClusterId.ValueStringPointer(),
 		DefaultBranch:                        plan.DefaultBranch.ValueString(),
 		DefaultTimeoutInMinutes:              defaultTimeoutInMinutes,
-		MaximumTimeoutInMinutes:              int(plan.MaximumTimeoutInMinutes.ValueInt64()),
+		MaximumTimeoutInMinutes:              maxTimeoutInMinutes,
 		Description:                          plan.Description.ValueString(),
 		Name:                                 plan.Name.ValueString(),
 		OrganizationId:                       p.client.organizationId,
@@ -223,6 +225,17 @@ func (p *pipelineResource) Create(ctx context.Context, req resource.CreateReques
 	log.Printf("Successfully created pipeline with id '%s'.", response.PipelineCreate.Pipeline.Id)
 
 	setPipelineModel(&state, &response.PipelineCreate.Pipeline)
+	teamsFromApi := response.PipelineCreate.Pipeline.GetTeams().Edges
+	teams := make([]*pipelineTeamModel, len(teamsFromApi))
+	for i, teamEdge := range teamsFromApi {
+		teams[i] = &pipelineTeamModel{
+			Slug:           types.StringValue(teamEdge.Node.Team.Slug),
+			AccessLevel:    types.StringValue(string(teamEdge.Node.AccessLevel)),
+			TeamId:         types.StringValue(teamEdge.Node.Team.Id),
+			PipelineTeamId: types.StringValue(teamEdge.Node.Id),
+		}
+	}
+	state.Teams = teams
 	state.DeletionProtection = plan.DeletionProtection
 	state.ArchiveOnDelete = plan.ArchiveOnDelete
 
@@ -306,6 +319,8 @@ func (p *pipelineResource) Read(ctx context.Context, req resource.ReadRequest, r
 		}
 
 		setPipelineModel(&state, pipelineNode)
+		reconcileTeamPipelinesToState(&state, pipelineNode)
+
 		if len(state.ProviderSettings) > 0 {
 			updatePipelineResourceExtraInfo(&state, extraInfo)
 		}
@@ -316,6 +331,23 @@ func (p *pipelineResource) Read(ctx context.Context, req resource.ReadRequest, r
 		resp.Diagnostics.AddWarning("Pipeline not found", "Removing pipeline from state")
 		resp.State.RemoveResource(ctx)
 	}
+}
+
+func reconcileTeamPipelinesToState(model *pipelineResourceModel, data pipelineResponse) {
+
+	var stateTeams []*pipelineTeamModel
+
+	for _, team := range model.Teams {
+		for _, teamEdge := range data.GetTeams().Edges {
+			if team.TeamId.ValueString() == string(teamEdge.Node.Team.Id) {
+				if team.AccessLevel.ValueString() != string(teamEdge.Node.AccessLevel) {
+					team.AccessLevel = types.StringValue(string(teamEdge.Node.AccessLevel))
+				}
+				stateTeams = append(stateTeams, team)
+			}
+		}
+	}
+	model.Teams = stateTeams
 }
 
 func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
@@ -426,7 +458,9 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 			},
 			"tags": schema.SetAttribute{
 				Optional:    true,
+				Computed:    true,
 				ElementType: types.StringType,
+				Default:     setdefault.StaticValue(types.SetValueMust(types.StringType, []attr.Value{})),
 			},
 			"webhook_url": schema.StringAttribute{
 				Computed: true,
@@ -562,12 +596,15 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	var plan, state pipelineResourceModel
 
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
 	defaultTimeoutInMinutes := (*int)(unsafe.Pointer(plan.DefaultTimeoutInMinutes.ValueInt64Pointer()))
+	maxTimeoutInMinutes := (*int)(unsafe.Pointer(plan.MaximumTimeoutInMinutes.ValueInt64Pointer()))
 
 	input := PipelineUpdateInput{
 		AllowRebuilds:                        plan.AllowRebuilds.ValueBool(),
@@ -577,7 +614,7 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 		ClusterId:                            plan.ClusterId.ValueStringPointer(),
 		DefaultBranch:                        plan.DefaultBranch.ValueString(),
 		DefaultTimeoutInMinutes:              defaultTimeoutInMinutes,
-		MaximumTimeoutInMinutes:              int(plan.MaximumTimeoutInMinutes.ValueInt64()),
+		MaximumTimeoutInMinutes:              maxTimeoutInMinutes,
 		Description:                          plan.Description.ValueString(),
 		Id:                                   plan.Id.ValueString(),
 		Name:                                 plan.Name.ValueString(),
@@ -601,7 +638,7 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 	state.ArchiveOnDelete = plan.ArchiveOnDelete
 
 	// plan.Teams has what we want. state.Teams has what exists on the server. we need to make them match
-	err = p.reconcileTeamPipelines(plan.Teams, state.Teams, state.Id.ValueString())
+	err = p.reconcileTeamPipelinesToPlan(plan.Teams, state.Teams, &response.PipelineUpdate.Pipeline, response.PipelineUpdate.Pipeline.Id)
 	if err != nil {
 		resp.Diagnostics.AddError("Unable to reconcile team pipelines", err.Error())
 		return
@@ -655,27 +692,11 @@ func setPipelineModel(model *pipelineResourceModel, data pipelineResponse) {
 	model.Steps = types.StringValue(data.GetSteps().Yaml)
 	model.WebhookUrl = types.StringValue(data.GetWebhookURL())
 
-	var tags []types.String
-	if len(data.GetTags()) > 0 {
-		tags = make([]types.String, len(data.GetTags()))
-		for i, tag := range data.GetTags() {
-			tags[i] = types.StringValue(tag.Label)
-		}
-	} else {
-		tags = nil
+	tags := make([]types.String, len(data.GetTags()))
+	for i, tag := range data.GetTags() {
+		tags[i] = types.StringValue(tag.Label)
 	}
 	model.Tags = tags
-
-	teams := make([]*pipelineTeamModel, len(data.GetTeams().Edges))
-	for i, teamEdge := range data.GetTeams().Edges {
-		teams[i] = &pipelineTeamModel{
-			Slug:           types.StringValue(teamEdge.Node.Team.Slug),
-			AccessLevel:    types.StringValue(string(teamEdge.Node.AccessLevel)),
-			TeamId:         types.StringValue(teamEdge.Node.Team.Id),
-			PipelineTeamId: types.StringValue(teamEdge.Node.Id),
-		}
-	}
-	model.Teams = teams
 }
 
 // As of May 21, 2021, GraphQL Pipeline is lacking support for the following properties:
@@ -690,7 +711,6 @@ type PipelineExtraInfo struct {
 		Settings PipelineExtraSettings `json:"settings"`
 	} `json:"provider"`
 }
-
 type PipelineExtraSettings struct {
 	TriggerMode                             *string `json:"trigger_mode,omitempty"`
 	BuildPullRequests                       *bool   `json:"build_pull_requests,omitempty"`
@@ -714,7 +734,6 @@ type PipelineExtraSettings struct {
 }
 
 func getPipelineExtraInfo(client *Client, slug string) (*PipelineExtraInfo, error) {
-
 	pipelineExtraInfo := PipelineExtraInfo{}
 	err := client.makeRequest("GET", fmt.Sprintf("/v2/organizations/%s/pipelines/%s", client.organization, slug), nil, &pipelineExtraInfo)
 	if err != nil {
@@ -722,7 +741,6 @@ func getPipelineExtraInfo(client *Client, slug string) (*PipelineExtraInfo, erro
 	}
 	return &pipelineExtraInfo, nil
 }
-
 func updatePipelineExtraInfo(slug string, settings *providerSettingsModel, client *Client) (PipelineExtraInfo, error) {
 	payload := map[string]any{
 		"provider_settings": PipelineExtraSettings{
@@ -783,55 +801,72 @@ func (p *pipelineResource) getTeamPipelinesFromSchema(plan *pipelineResourceMode
 	return teamPipelineNodes
 }
 
-func createPipelineTeamsMap(teams []*pipelineTeamModel) map[string]*pipelineTeamModel {
-	teamsMap := make(map[string]*pipelineTeamModel)
-	for _, team := range teams {
-		teamsMap[string(team.Slug.ValueString())] = team
-	}
-	return teamsMap
-}
-
-// reconcileTeamPipelines updates/deletes the teamPipelines on buildkite to match the teams in terraform resource data
-func (p *pipelineResource) reconcileTeamPipelines(planTeams []*pipelineTeamModel, stateTeams []*pipelineTeamModel, pipelineId string) error {
-
-	// a map from slug to pipeline teams in plan (from tf)
-	planTeamsMap := createPipelineTeamsMap(planTeams)
-
-	// a map from slug to graphql id of the team pipelines in state (from api)
-	teamPipelineIds := make(map[string]graphql.ID)
+// reconcileTeamPipelines plan.Teams has what we want - adds/updates/deletes the teamPipelines on buildkite to match the teams in terraform resource data
+func (p *pipelineResource) reconcileTeamPipelinesToPlan(planTeams []*pipelineTeamModel, stateTeams []*pipelineTeamModel, data pipelineResponse, pipelineId string) error {
 
 	var toAdd []*pipelineTeamModel
 	var toUpdate []*pipelineTeamModel
+	var toDelete []*pipelineTeamModel
 
-	// Look for teamPipelines on buildkite that need updated or removed
-	for _, teamPipeline := range stateTeams {
-		teamSlugBk := teamPipeline.Slug.ValueString()
-		accessLevelBk := teamPipeline.AccessLevel
-		id := teamPipeline.PipelineTeamId.ValueString()
+	// state.Teams has what exists on the server. we need to make them match
+	// apiResponseTeams is what exists on the server
+	// state.Teams is whats on the server (minus any new teams that have appeared outside this resource)
+	for _, teamInState := range stateTeams {
+		for _, teamInServer := range data.GetTeams().Edges {
+			if teamInState.PipelineTeamId.ValueString() == string(teamInServer.Node.Id) {
+				teamInState.AccessLevel = types.StringValue(string(teamInServer.Node.AccessLevel))
+			}
 
-		teamPipelineIds[string(teamSlugBk)] = graphql.ID(id)
-		if _, found := planTeamsMap[string(teamSlugBk)]; found && planTeamsMap[string(teamSlugBk)].AccessLevel != accessLevelBk {
-			toUpdate = append(toUpdate, teamPipeline)
 		}
 	}
 
-	// Look for new teamsInput that need added to buildkite
-	for _, teamPipeline := range planTeams {
-		if _, found := teamPipelineIds[teamPipeline.Slug.ValueString()]; !found {
-			toAdd = append(toAdd, teamPipeline)
+	// plan.Teams is what we want to exist on the server
+	teamsInStateMap := make(map[string]*pipelineTeamModel)
+	for _, team := range stateTeams {
+		teamsInStateMap[team.Slug.ValueString()] = team
+	}
+	for _, teamPlan := range planTeams {
+		slugPlan := teamPlan.Slug.ValueString()
+		if _, found := teamsInStateMap[slugPlan]; found {
+			// if any access levels have changed with the remainder, update on the api
+			if teamPlan.AccessLevel != teamsInStateMap[slugPlan].AccessLevel {
+				teamsInStateMap[slugPlan].AccessLevel = teamPlan.AccessLevel
+				toUpdate = append(toUpdate, teamsInStateMap[slugPlan])
+			}
+			teamPlan.PipelineTeamId = teamsInStateMap[slugPlan].PipelineTeamId
+			teamPlan.TeamId = teamsInStateMap[slugPlan].TeamId
+		} else {
+			// if there are teams in plan but not in state, the user has added a new team block to tf -> we should add them on the api
+			toAdd = append(toAdd, teamPlan)
 		}
 	}
 
-	log.Printf("EXISTING_BUILDKITE_TEAMS: %s", teamPipelineIds)
+	// if there are teams in state but not in plan, the user has removed them from tf -> we should remove them on the api
+	teamsInPlanMap := make(map[string]*pipelineTeamModel)
+	for _, team := range planTeams {
+		teamsInPlanMap[team.Slug.ValueString()] = team
+	}
+	for _, teamState := range stateTeams {
+		slugBK := teamState.Slug.ValueString()
+		if _, found := teamsInPlanMap[slugBK]; !found {
+			toDelete = append(toDelete, teamState)
+		}
+	}
 
-	// Add any teamsInput that don't already exist
+	// Add any teams that don't already exist
 	err := createTeamPipelines(toAdd, pipelineId, p.client)
 	if err != nil {
 		return err
 	}
 
-	// Update any teamsInput access levels that need updating
+	// Update any teams access levels that need updating
 	err = updateTeamPipelines(toUpdate, p.client)
+	if err != nil {
+		return err
+	}
+
+	// Remove any teams that shouldn't exist
+	err = deleteTeamPipelines(toDelete, p.client)
 	if err != nil {
 		return err
 	}
@@ -845,7 +880,7 @@ func createTeamPipelines(teamPipelines []*pipelineTeamModel, pipelineID string, 
 		log.Printf("Granting teamPipeline %s %s access to pipeline id '%s'...", teamPipeline.Slug, teamPipeline.AccessLevel, pipelineID)
 		teamID, err := GetTeamID(string(teamPipeline.Slug.ValueString()), client)
 		if err != nil {
-			return fmt.Errorf("unable to get ID for team slug %s (%v)", teamPipeline.Slug.ValueString(), err)
+			return fmt.Errorf("Unable to get ID for team slug %s (%v)", teamPipeline.Slug.ValueString(), err)
 		}
 		resp, err := teamPipelineCreate(client.genqlient, teamID, pipelineID, PipelineAccessLevels(teamPipeline.AccessLevel.ValueString()))
 		if err != nil {
@@ -868,6 +903,19 @@ func updateTeamPipelines(teamPipelines []*pipelineTeamModel, client *Client) err
 			return err
 		}
 	}
+	return nil
+}
+
+func deleteTeamPipelines(teamPipelines []*pipelineTeamModel, client *Client) error {
+	for _, teamPipeline := range teamPipelines {
+		log.Printf("Removing access for teamPipeline %s (id=%s)...", teamPipeline.Slug, teamPipeline.PipelineTeamId)
+		_, err := teamPipelineDelete(client.genqlient, teamPipeline.PipelineTeamId.ValueString())
+		if err != nil {
+			log.Printf("Unable to delete team pipeline")
+			return err
+		}
+	}
+
 	return nil
 }
 
