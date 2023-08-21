@@ -10,6 +10,22 @@ import (
 )
 
 func TestAccBuildkitePipelineSchedule(t *testing.T) {
+	config := func(name, cronline, label string) string {
+		return fmt.Sprintf(`
+			resource "buildkite_pipeline" "pipeline" {
+				name = "%s"
+				repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
+			}
+
+			resource "buildkite_pipeline_schedule" "pipeline" {
+				pipeline_id = buildkite_pipeline.pipeline.id
+				branch = "main"
+				cronline = "%s"
+				label = "%s"
+			}
+		`, name, cronline, label)
+	}
+
 	loadPipeline := func(name string, pipeline *getPipelinePipeline) resource.TestCheckFunc {
 		return func(s *terraform.State) error {
 			slug := fmt.Sprintf("%s/%s", getenv("BUILDKITE_ORGANIZATION_SLUG"), name)
@@ -52,19 +68,7 @@ func TestAccBuildkitePipelineSchedule(t *testing.T) {
 			},
 			Steps: []resource.TestStep{
 				{
-					Config: fmt.Sprintf(`
-						resource "buildkite_pipeline" "pipeline" {
-							name = "%s"
-							repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
-						}
-
-						resource "buildkite_pipeline_schedule" "pipeline" {
-							pipeline_id = buildkite_pipeline.pipeline.id
-							branch = "main"
-							cronline = "%s"
-							label = "%s"
-						}
-					`, pipelineName, cronline, label),
+					Config: config(pipelineName, cronline, label),
 					Check: resource.ComposeAggregateTestCheckFunc(
 						// Schedules need a pipeline
 						loadPipeline(pipelineName, &pipeline),
@@ -111,19 +115,7 @@ func TestAccBuildkitePipelineSchedule(t *testing.T) {
 			ProtoV6ProviderFactories: protoV6ProviderFactories(),
 			Steps: []resource.TestStep{
 				{
-					Config: fmt.Sprintf(`
-						resource "buildkite_pipeline" "pipeline" {
-							name = "%s"
-							repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
-						}
-
-						resource "buildkite_pipeline_schedule" "pipeline" {
-							pipeline_id = buildkite_pipeline.pipeline.id
-							branch = "main"
-							cronline = "%s"
-							label = "%s"
-						}
-					`, pipelineName, "0 * * * *", label),
+					Config: config(pipelineName, "0 * * * *", label),
 					Check: resource.ComposeAggregateTestCheckFunc(
 						// Schedules need a pipeline
 						loadPipeline(pipelineName, &pipeline),
@@ -149,19 +141,7 @@ func TestAccBuildkitePipelineSchedule(t *testing.T) {
 					),
 				},
 				{
-					Config: fmt.Sprintf(`
-						resource "buildkite_pipeline" "pipeline" {
-							name = "%s"
-							repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
-						}
-
-						resource "buildkite_pipeline_schedule" "pipeline" {
-							pipeline_id = buildkite_pipeline.pipeline.id
-							branch = "main"
-							cronline = "%s"
-							label = "%s"
-						}
-					`, pipelineName, "0 1 * * *", label),
+					Config: config(pipelineName, "0 1 * * *", label),
 					Check: resource.ComposeAggregateTestCheckFunc(
 						// Confirm the schedule exists in the buildkite API
 						loadPipelineSchedule(&schedule),
