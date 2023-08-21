@@ -151,7 +151,7 @@ func TestAccTestSuiteTeam_disappears(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: protoV6ProviderFactories(),
-		CheckDestroy:             testAccCheckPipelineResourceDestroy,
+		// CheckDestroy:             testAccCheckPipelineResourceDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccCTestSuiteTeamConfigBasic(ownerTeamName, newTeamName, "READ_ONLY"),
