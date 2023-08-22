@@ -11,8 +11,6 @@ All notable changes to this project will be documented in this file.
 
 This release implements the `buildkite_pipeline_team` resource to create and manage team configuration in a pipeline. Tests have also been refactored to use Framework from SDKv2.
 
-This release implements the `buildkite_pipeline_team` resource. Tests are also 
-
 ## [v0.24.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v0.23.0...v0.24.0)
 
 - SUP-1068 Migrate pipeline resource to framework [[PR #345](https://github.com/buildkite/terraform-provider-buildkite/pull/345)] @jradtilbrook
