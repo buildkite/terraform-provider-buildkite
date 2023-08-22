@@ -107,7 +107,7 @@ func TestAccBuildkiteCluster(t *testing.T) {
 		)
 
 		testCase := func(t *testing.T, config string) {
-			resource.Test(t, resource.TestCase{
+			resource.ParallelTest(t, resource.TestCase{
 				PreCheck:                 func() { testAccPreCheck(t) },
 				ProtoV6ProviderFactories: protoV6ProviderFactories(),
 				CheckDestroy:             testAccCheckClusterDestroy,
