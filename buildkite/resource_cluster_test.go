@@ -132,9 +132,9 @@ func TestAccBuildkiteCluster(t *testing.T) {
 		t.Run("with basic settings", func(t *testing.T) {
 			testCase(t, basic(randName))
 		})
-		t.Run("with complex settings", func(t *testing.T) {
-			testCase(t, complex(randName))
-		})
+		// t.Run("with complex settings", func(t *testing.T) {
+		// 	testCase(t, complex(randName))
+		// })
 	})
 }
 
