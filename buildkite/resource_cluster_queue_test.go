@@ -1,6 +1,7 @@
 package buildkite
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"testing"
@@ -11,7 +12,7 @@ import (
 
 func testAccClusterQueueConfigBasic(name string) string {
 	config := `
-	
+
 	resource "buildkite_cluster_queue" "foobar" {
 		cluster_id = "Q2x1c3Rlci0tLTFkNmIxOTg5LTJmYjctNDRlMC04MWYyLTAxYjIxNzQ4MTVkMg=="
 		description = "Acceptance Test %s"
@@ -134,6 +135,7 @@ func testAccCheckClusterQueueExists(resourceName string, clusterQueueResourceMod
 
 		// Obtain queues of the queue's cluster from its cluster UUID
 		queues, err := getClusterQueues(
+			context.Background(),
 			genqlientGraphql,
 			getenv("BUILDKITE_ORGANIZATION_SLUG"),
 			resourceState.Primary.Attributes["cluster_uuid"],
@@ -195,6 +197,7 @@ func testAccCheckClusterQueueDestroy(s *terraform.State) error {
 
 		// Obtain queues of the queue's cluster from its cluster UUID
 		queues, err := getClusterQueues(
+			context.Background(),
 			genqlientGraphql,
 			getenv("BUILDKITE_ORGANIZATION_SLUG"),
 			rs.Primary.Attributes["cluster_uuid"],

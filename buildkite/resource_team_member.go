@@ -88,7 +88,7 @@ func (tm *teamMemberResource) Create(ctx context.Context, req resource.CreateReq
 	}
 
 	log.Printf("Creating team member into team %s ...", state.TeamId.ValueString())
-	apiResponse, err := createTeamMember(
+	apiResponse, err := createTeamMember(ctx,
 		tm.client.genqlient,
 		state.TeamId.ValueString(),
 		state.UserId.ValueString(),
@@ -122,7 +122,7 @@ func (tm *teamMemberResource) Read(ctx context.Context, req resource.ReadRequest
 	}
 
 	log.Printf("Reading team member %s ...", state.Id.ValueString())
-	apiResponse, err := getNode(tm.client.genqlient, state.Id.ValueString())
+	apiResponse, err := getNode(ctx, tm.client.genqlient, state.Id.ValueString())
 
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -162,7 +162,7 @@ func (tm *teamMemberResource) Update(ctx context.Context, req resource.UpdateReq
 	}
 
 	log.Printf("Updating team member %s with role %s ...", id, role)
-	apiResponse, err := updateTeamMember(tm.client.genqlient, id, role)
+	apiResponse, err := updateTeamMember(ctx, tm.client.genqlient, id, role)
 
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -187,7 +187,7 @@ func (tm *teamMemberResource) Delete(ctx context.Context, req resource.DeleteReq
 	}
 
 	log.Printf("Deleting team member with ID %s ...", state.Id.ValueString())
-	_, err := deleteTeamMember(tm.client.genqlient, state.Id.ValueString())
+	_, err := deleteTeamMember(ctx, tm.client.genqlient, state.Id.ValueString())
 
 	if err != nil {
 		resp.Diagnostics.AddError(
