@@ -10,7 +10,6 @@ import (
 )
 
 func TestAccBuildkiteCluster(t *testing.T) {
-	var c clusterResourceModel
 	basic := func(name string) string {
 		return fmt.Sprintf(`
 		resource "buildkite_cluster" "foo" {
@@ -31,6 +30,7 @@ func TestAccBuildkiteCluster(t *testing.T) {
 	}
 
 	t.Run("Creates a Cluster", func(t *testing.T) {
+		var c clusterResourceModel
 		randName := acctest.RandString(5)
 		check := resource.ComposeAggregateTestCheckFunc(
 			testAccCheckClusterExists("buildkite_cluster.foo", &c),
@@ -63,6 +63,7 @@ func TestAccBuildkiteCluster(t *testing.T) {
 	})
 
 	t.Run("Updates a Cluster", func(t *testing.T) {
+		var c clusterResourceModel
 		randName := acctest.RandString(5)
 		randNameUpdated := acctest.RandString(5)
 		testCase := func(t *testing.T, originalConfig, newConfig string) {
@@ -100,6 +101,7 @@ func TestAccBuildkiteCluster(t *testing.T) {
 	})
 
 	t.Run("Imports a Cluster", func(t *testing.T) {
+		var c clusterResourceModel
 		randName := acctest.RandString(5)
 		check := resource.ComposeAggregateTestCheckFunc(
 			testAccCheckClusterExists("buildkite_cluster.foo", &c),
