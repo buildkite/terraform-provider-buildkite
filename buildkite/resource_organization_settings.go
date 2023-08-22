@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-var deprecationMessage = `This resource has been deprecated in favour of the newer buildkite_organization resource. 
+var deprecationMessage = `This resource has been deprecated in favour of the newer buildkite_organization resource.
 Please visit the provider's documentation at https://registry.terraform.io/providers/buildkite/buildkite/latest/docs for more details.`
 
 func resourceOrganizationSettings() *schema.Resource {
@@ -43,7 +43,7 @@ func CreateUpdateDeleteOrganizationSettings(ctx context.Context, d *schema.Resou
 	var diags diag.Diagnostics
 	client := m.(*Client)
 
-	response, err := getOrganization(client.genqlient, client.organization)
+	response, err := getOrganization(ctx, client.genqlient, client.organization)
 
 	if err != nil {
 		return diag.FromErr(err)
@@ -59,7 +59,7 @@ func CreateUpdateDeleteOrganizationSettings(ctx context.Context, d *schema.Resou
 		cidrs[i] = v.(string)
 	}
 
-	apiResponse, err := setApiIpAddresses(client.genqlient, response.Organization.Id, strings.Join(cidrs, " "))
+	apiResponse, err := setApiIpAddresses(ctx, client.genqlient, response.Organization.Id, strings.Join(cidrs, " "))
 
 	if err != nil {
 		return diag.FromErr(err)
@@ -77,7 +77,7 @@ func DeleteOrganizationSettings(ctx context.Context, d *schema.ResourceData, m i
 	var diags diag.Diagnostics
 	client := m.(*Client)
 
-	response, err := getOrganization(client.genqlient, client.organization)
+	response, err := getOrganization(ctx, client.genqlient, client.organization)
 
 	if err != nil {
 		return diag.FromErr(err)
@@ -87,7 +87,7 @@ func DeleteOrganizationSettings(ctx context.Context, d *schema.ResourceData, m i
 		return diag.FromErr(fmt.Errorf("organization not found: '%s'", client.organization))
 	}
 
-	_, err = setApiIpAddresses(client.genqlient, response.Organization.Id, "")
+	_, err = setApiIpAddresses(ctx, client.genqlient, response.Organization.Id, "")
 
 	if err != nil {
 		return diag.FromErr(err)
@@ -102,7 +102,7 @@ func ReadOrganizationSettings(ctx context.Context, d *schema.ResourceData, m int
 
 	client := m.(*Client)
 
-	response, err := getOrganization(client.genqlient, client.organization)
+	response, err := getOrganization(ctx, client.genqlient, client.organization)
 
 	if err != nil {
 		return diag.FromErr(err)

@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## Unreleased
+
+- SUP-1375 Use context everywhere [[PR #362](https://github.com/buildkite/terraform-provider-buildkite/pull/362)] @jradtilbrook
+
 ## [v0.25.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v0.24.0...v0.25.0)
 
 - Move archive pipeline config to provider [[PR #354](https://github.com/buildkite/terraform-provider-buildkite/pull/354)] @jradtilbrook

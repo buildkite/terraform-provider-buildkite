@@ -105,7 +105,7 @@ func (t *teamDatasource) Read(ctx context.Context, req datasource.ReadRequest, r
 	}
 
 	if !state.Slug.IsNull() {
-		res, err := GetTeamFromSlug(t.client.genqlient, fmt.Sprintf("%s/%s", t.client.organization, state.Slug.ValueString()))
+		res, err := GetTeamFromSlug(ctx, t.client.genqlient, fmt.Sprintf("%s/%s", t.client.organization, state.Slug.ValueString()))
 		if err != nil {
 			resp.Diagnostics.AddError(
 				"Unable to get team",
@@ -115,7 +115,7 @@ func (t *teamDatasource) Read(ctx context.Context, req datasource.ReadRequest, r
 		}
 		updateTeamDatasourceStateFromSlug(&state, *res)
 	} else if !state.ID.IsNull() {
-		res, err := getNode(t.client.genqlient, state.ID.ValueString())
+		res, err := getNode(ctx, t.client.genqlient, state.ID.ValueString())
 		if err != nil {
 			resp.Diagnostics.AddError(
 				"Unable to get team",

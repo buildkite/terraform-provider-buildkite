@@ -1,6 +1,7 @@
 package buildkite
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
@@ -152,7 +153,7 @@ func testAccCheckClusterExists(n string, c *clusterResourceModel) resource.TestC
 			return fmt.Errorf("no cluster ID is set")
 		}
 
-		r, err := getCluster(genqlientGraphql, getenv("BUILDKITE_ORGANIZATION_SLUG"), rs.Primary.Attributes["uuid"])
+		r, err := getCluster(context.Background(), genqlientGraphql, getenv("BUILDKITE_ORGANIZATION_SLUG"), rs.Primary.Attributes["uuid"])
 
 		if err != nil {
 			return err
@@ -179,7 +180,7 @@ func testAccCheckClusterDestroy(s *terraform.State) error {
 			continue
 		}
 
-		_, err := getCluster(genqlientGraphql, getenv("BUILDKITE_ORGANIZATION_SLUG"), rs.Primary.Attributes["uuid"])
+		_, err := getCluster(context.Background(), genqlientGraphql, getenv("BUILDKITE_ORGANIZATION_SLUG"), rs.Primary.Attributes["uuid"])
 
 		if err == nil {
 			return fmt.Errorf("Cluster still exists")
