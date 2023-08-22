@@ -19,15 +19,15 @@ func TestAccBuildkiteCluster(t *testing.T) {
 		`, name)
 	}
 
-	complex := func(name string) string {
+	complex := func(fields ...string) string {
 		return fmt.Sprintf(`
 		resource "buildkite_cluster" "foo" {
 			name = "%s_test_cluster"
 			description = "Just another Buildkite cluster"
-			emoji = ":one-does-not-simply:"
-			color = "#BADA55"
+			emoji = "%s"
+			color = "%s"
 		}
-		`, name)
+		`, fields[0], fields[1], fields[2])
 	}
 
 	t.Run("Creates a Cluster", func(t *testing.T) {
@@ -59,7 +59,7 @@ func TestAccBuildkiteCluster(t *testing.T) {
 		})
 
 		t.Run("with complex settings", func(t *testing.T) {
-			testCase(t, complex(randName))
+			testCase(t, complex(randName, ":buildkite:", "#BADA55"))
 		})
 	})
 
@@ -81,6 +81,8 @@ func TestAccBuildkiteCluster(t *testing.T) {
 							resource.TestCheckResourceAttr("buildkite_cluster.foo", "name", fmt.Sprintf("%s_test_cluster", randName)),
 							resource.TestCheckResourceAttrSet("buildkite_cluster.foo", "id"),
 							resource.TestCheckResourceAttrSet("buildkite_cluster.foo", "uuid"),
+							resource.TestCheckResourceAttr("buildkite_cluster.foo", "emoji", ":one-does-not-simply:"),
+							resource.TestCheckResourceAttr("buildkite_cluster.foo", "color", "#BADA55"),
 						),
 					},
 					{
@@ -91,16 +93,16 @@ func TestAccBuildkiteCluster(t *testing.T) {
 							resource.TestCheckResourceAttr("buildkite_cluster.foo", "name", fmt.Sprintf("%s_test_cluster", randNameUpdated)),
 							resource.TestCheckResourceAttrSet("buildkite_cluster.foo", "id"),
 							resource.TestCheckResourceAttrSet("buildkite_cluster.foo", "uuid"),
-							resource.TestCheckNoResourceAttr("buildkite_cluster.foo", "description"),
-							resource.TestCheckNoResourceAttr("buildkite_cluster.foo", "emoji"),
-							resource.TestCheckNoResourceAttr("buildkite_cluster.foo", "color"),
+							resource.TestCheckResourceAttrSet("buildkite_cluster.foo", "description"),
+							resource.TestCheckResourceAttr("buildkite_cluster.foo", "emoji", ":terraform:"),
+							resource.TestCheckResourceAttr("buildkite_cluster.foo", "color", "#b31625"),
 						),
 					},
 				},
 			})
 		}
 		t.Run("with basic settings", func(t *testing.T) {
-			testCase(t, basic(randName), basic(randNameUpdated))
+			testCase(t, complex(randName, ":one-does-not-simply:", "#BADA55"), complex(randNameUpdated, ":terraform:", "#b31625"))
 		})
 	})
 
