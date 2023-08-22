@@ -154,8 +154,7 @@ func (t *teamResource) Create(ctx context.Context, req resource.CreateRequest, r
 	var r *teamCreateResponse
 	err := retry.RetryContext(ctx, createTimeout, func() *retry.RetryError {
 		var err error
-		r, err = teamCreate(
-			ctx,
+		r, err = teamCreate(ctx,
 			t.client.genqlient,
 			t.client.organizationId,
 			state.Name.ValueString(),
