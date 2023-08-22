@@ -101,7 +101,7 @@ func TestAccBuildkiteCluster(t *testing.T) {
 				},
 			})
 		}
-		t.Run("with basic settings", func(t *testing.T) {
+		t.Run("with complex settings", func(t *testing.T) {
 			testCase(t, complex(randName, ":one-does-not-simply:", "#BADA55"), complex(randNameUpdated, ":terraform:", "#b31625"))
 		})
 	})
