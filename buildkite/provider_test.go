@@ -1,7 +1,6 @@
 package buildkite
 
 import (
-	"context"
 	"net/http"
 	"os"
 	"testing"
@@ -9,9 +8,6 @@ import (
 	genqlient "github.com/Khan/genqlient/graphql"
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
-	"github.com/hashicorp/terraform-plugin-mux/tf5to6server"
-	"github.com/hashicorp/terraform-plugin-mux/tf6muxserver"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/shurcooL/graphql"
 )
 
@@ -36,39 +32,9 @@ func init() {
 }
 
 func protoV6ProviderFactories() map[string]func() (tfprotov6.ProviderServer, error) {
-	upgradedSdkServer, err := tf5to6server.UpgradeServer(
-		context.Background(),
-		Provider("testing").GRPCProvider,
-	)
-
-	if err != nil {
-		panic(err)
-	}
-
-	providers := []func() tfprotov6.ProviderServer{
-		providerserver.NewProtocol6(New("testing")),
-		func() tfprotov6.ProviderServer {
-			return upgradedSdkServer
-		},
-	}
-
-	muxServer, err := tf6muxserver.NewMuxServer(context.Background(), providers...)
 	return map[string]func() (tfprotov6.ProviderServer, error){
-		"buildkite": func() (tfprotov6.ProviderServer, error) {
-			return muxServer.ProviderServer(), nil
-		},
+		"buildkite": providerserver.NewProtocol6WithError(New("test")),
 	}
-}
-
-// TestProvider just does basic validation to ensure the schema is defined and supporting functions exist
-func TestProvider(t *testing.T) {
-	if err := Provider("").InternalValidate(); err != nil {
-		t.Fatalf("err: %s", err)
-	}
-}
-
-func TestProvider_impl(t *testing.T) {
-	var _ *schema.Provider = Provider("")
 }
 
 func testAccPreCheck(t *testing.T) {
