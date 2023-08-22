@@ -10,7 +10,6 @@ import (
 	framework_schema "github.com/hashicorp/terraform-plugin-framework/provider/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 const (
@@ -65,13 +64,12 @@ func (tf *terraformProvider) Configure(ctx context.Context, req provider.Configu
 		restUrl = v
 	}
 
-	legacyProvider := schema.Provider{}
 	config := clientConfig{
 		apiToken:   apiToken,
 		graphqlURL: graphqlUrl,
 		org:        organization,
 		restURL:    restUrl,
-		userAgent:  legacyProvider.UserAgent("buildkite", tf.version),
+		userAgent:  fmt.Sprintf("buildkite/%s", tf.version),
 	}
 	client, err := NewClient(&config)
 
@@ -143,8 +141,11 @@ func (*terraformProvider) Schema(ctx context.Context, req provider.SchemaRequest
 	}
 }
 
-func New(version string) provider.Provider {
-	return &terraformProvider{
-		version: version,
+// New is a helper function to simplify provider server and testing implementation.
+func New(version string) func() provider.Provider {
+	return func() provider.Provider {
+		return &terraformProvider{
+			version: version,
+		}
 	}
 }

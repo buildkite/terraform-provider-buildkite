@@ -33,7 +33,7 @@ func init() {
 
 func protoV6ProviderFactories() map[string]func() (tfprotov6.ProviderServer, error) {
 	return map[string]func() (tfprotov6.ProviderServer, error){
-		"buildkite": providerserver.NewProtocol6WithError(New("test")),
+		"buildkite": providerserver.NewProtocol6WithError(New("testing")()),
 	}
 }
 
