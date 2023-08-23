@@ -116,6 +116,7 @@ func TestAcc_testSuiteUpdate(t *testing.T) {
 }
 
 func TestAcc_testSuiteTeamOwnerResolution(t *testing.T) {
+	t.Skip("Bug in Test Analytics API")
 	t.Parallel()
 	t.Skip("Bug in Test Analytics API")
 	var suite getTestSuiteSuite
