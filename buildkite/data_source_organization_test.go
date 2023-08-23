@@ -7,7 +7,7 @@ import (
 )
 
 func TestAccDataOrganization(t *testing.T) {
-	t.Run("organization data source can be loaded from slug", func(t *testing.T) {
+	t.Run("organization data source can be loaded with defaults", func(t *testing.T) {
 		resource.ParallelTest(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },
 			ProtoV6ProviderFactories: protoV6ProviderFactories(),
