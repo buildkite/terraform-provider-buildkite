@@ -196,7 +196,7 @@ func (t *teamResource) Update(ctx context.Context, req resource.UpdateRequest, r
 		return
 	}
 
-	_, err := teamUpdate(ctx,
+	response, err := teamUpdate(ctx,
 		t.client.genqlient,
 		state.ID.ValueString(),
 		plan.Name.ValueString(),
@@ -215,6 +215,7 @@ func (t *teamResource) Update(ctx context.Context, req resource.UpdateRequest, r
 		return
 	}
 
+	plan.Slug = types.StringValue(response.TeamUpdate.Team.Slug)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 }
 
