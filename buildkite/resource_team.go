@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	custom_modifier "github.com/buildkite/terraform-provider-buildkite/internal/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -109,7 +110,7 @@ func (t *teamResource) Schema(ctx context.Context, req resource.SchemaRequest, r
 			"slug": resource_schema.StringAttribute{
 				Computed: true,
 				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
+					custom_modifier.UseStateIfUnchanged("name"),
 				},
 			},
 			"members_can_create_pipelines": resource_schema.BoolAttribute{
