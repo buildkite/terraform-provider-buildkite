@@ -583,7 +583,6 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 				},
 			},
 		},
-		Version: 1,
 	}
 }
 
