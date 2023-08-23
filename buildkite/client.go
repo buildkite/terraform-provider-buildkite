@@ -2,6 +2,7 @@ package buildkite
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -86,7 +87,7 @@ func (rt *headerRoundTripper) RoundTrip(req *http.Request) (*http.Response, erro
 	return rt.next.RoundTrip(req)
 }
 
-func (client *Client) makeRequest(method string, path string, postData interface{}, responseObject interface{}) error {
+func (client *Client) makeRequest(ctx context.Context, method string, path string, postData interface{}, responseObject interface{}) error {
 	var bodyBytes io.Reader
 	if postData != nil {
 		jsonPayload, err := json.Marshal(postData)
@@ -98,7 +99,7 @@ func (client *Client) makeRequest(method string, path string, postData interface
 
 	url := fmt.Sprintf("%s%s", client.restUrl, path)
 
-	req, err := http.NewRequest(method, url, bodyBytes)
+	req, err := http.NewRequestWithContext(ctx, method, url, bodyBytes)
 	if err != nil {
 		return fmt.Errorf("failed to create request: %w", err)
 	}

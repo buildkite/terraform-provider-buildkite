@@ -40,7 +40,7 @@ func (c *clusterDatasource) Read(ctx context.Context, req datasource.ReadRequest
 	var matchFound bool
 	var cursor *string
 	for {
-		r, err := getClusterByName(c.client.genqlient, c.client.organization, cursor)
+		r, err := getClusterByName(ctx, c.client.genqlient, c.client.organization, cursor)
 		if err != nil {
 			resp.Diagnostics.AddError(
 				"Unable to read Cluster",

@@ -86,7 +86,7 @@ func (c *clusterResource) Create(ctx context.Context, req resource.CreateRequest
 		return
 	}
 
-	r, err := createCluster(
+	r, err := createCluster(ctx,
 		c.client.genqlient,
 		c.client.organizationId,
 		state.Name.ValueString(),
@@ -118,7 +118,7 @@ func (c *clusterResource) Read(ctx context.Context, req resource.ReadRequest, re
 		return
 	}
 
-	r, err := getCluster(c.client.genqlient, c.client.organization, state.UUID.ValueString())
+	r, err := getCluster(ctx, c.client.genqlient, c.client.organization, state.UUID.ValueString())
 
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -144,7 +144,7 @@ func (c *clusterResource) Update(ctx context.Context, req resource.UpdateRequest
 
 	id := state.ID.ValueString()
 
-	_, err := updateCluster(
+	_, err := updateCluster(ctx,
 		c.client.genqlient,
 		c.client.organizationId,
 		id,
@@ -174,7 +174,7 @@ func (c *clusterResource) Delete(ctx context.Context, req resource.DeleteRequest
 		return
 	}
 
-	_, err := deleteCluster(c.client.genqlient, c.client.organizationId, state.ID.ValueString())
+	_, err := deleteCluster(ctx, c.client.genqlient, c.client.organizationId, state.ID.ValueString())
 
 	if err != nil {
 		resp.Diagnostics.AddError(

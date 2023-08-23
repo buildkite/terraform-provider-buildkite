@@ -86,7 +86,7 @@ func (ct *ClusterAgentToken) Create(ctx context.Context, req resource.CreateRequ
 	}
 
 	log.Printf("Creating cluster agent token with description %s into cluster %s ...", plan.Description.ValueString(), plan.ClusterId.ValueString())
-	r, err := createClusterAgentToken(
+	r, err := createClusterAgentToken(ctx,
 		ct.client.genqlient,
 		ct.client.organizationId,
 		plan.ClusterId.ValueString(),
@@ -120,7 +120,7 @@ func (ct *ClusterAgentToken) Read(ctx context.Context, req resource.ReadRequest,
 		return
 	}
 	log.Printf("Getting cluster agent tokens for cluster %s ...", state.ClusterUuid.ValueString())
-	tokens, err := getClusterAgentTokens(ct.client.genqlient, ct.client.organization, state.ClusterUuid.ValueString())
+	tokens, err := getClusterAgentTokens(ctx, ct.client.genqlient, ct.client.organization, state.ClusterUuid.ValueString())
 
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -151,7 +151,7 @@ func (ct *ClusterAgentToken) Update(ctx context.Context, req resource.UpdateRequ
 		return
 	}
 	log.Printf("Updating cluster token %s", state.Id.ValueString())
-	response, err := updateClusterAgentToken(
+	response, err := updateClusterAgentToken(ctx,
 		ct.client.genqlient,
 		ct.client.organizationId,
 		state.Id.ValueString(),
@@ -180,7 +180,7 @@ func (ct *ClusterAgentToken) Delete(ctx context.Context, req resource.DeleteRequ
 	}
 
 	log.Printf("Revoking Cluster Agent Token %s ...", plan.Id.ValueString())
-	_, err := revokeClusterAgentToken(ct.client.genqlient, ct.client.organizationId, plan.Id.ValueString())
+	_, err := revokeClusterAgentToken(ctx, ct.client.genqlient, ct.client.organizationId, plan.Id.ValueString())
 
 	if err != nil {
 		resp.Diagnostics.AddError(

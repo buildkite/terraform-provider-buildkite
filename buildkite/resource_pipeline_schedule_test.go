@@ -1,6 +1,7 @@
 package buildkite
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
@@ -29,7 +30,7 @@ func TestAccBuildkitePipelineSchedule(t *testing.T) {
 	loadPipeline := func(name string, pipeline *getPipelinePipeline) resource.TestCheckFunc {
 		return func(s *terraform.State) error {
 			slug := fmt.Sprintf("%s/%s", getenv("BUILDKITE_ORGANIZATION_SLUG"), name)
-			resp, err := getPipeline(genqlientGraphql, slug)
+			resp, err := getPipeline(context.Background(), genqlientGraphql, slug)
 			*pipeline = resp.Pipeline
 			return err
 		}
@@ -37,7 +38,7 @@ func TestAccBuildkitePipelineSchedule(t *testing.T) {
 	loadPipelineSchedule := func(schedule *PipelineScheduleValues) resource.TestCheckFunc {
 		return func(s *terraform.State) error {
 			scheduleRes := s.RootModule().Resources["buildkite_pipeline_schedule.pipeline"]
-			resp, err := getPipelineSchedule(genqlientGraphql, scheduleRes.Primary.ID)
+			resp, err := getPipelineSchedule(context.Background(), genqlientGraphql, scheduleRes.Primary.ID)
 			if err != nil {
 				return err
 			}
@@ -60,7 +61,7 @@ func TestAccBuildkitePipelineSchedule(t *testing.T) {
 			PreCheck:                 func() { testAccPreCheck(t) },
 			ProtoV6ProviderFactories: protoV6ProviderFactories(),
 			CheckDestroy: func(s *terraform.State) error {
-				resp, err := getPipeline(genqlientGraphql, fmt.Sprintf("%s/%s", getenv("BUILDKITE_ORGANIZATION_SLUG"), pipelineName))
+				resp, err := getPipeline(context.Background(), genqlientGraphql, fmt.Sprintf("%s/%s", getenv("BUILDKITE_ORGANIZATION_SLUG"), pipelineName))
 				if resp.Pipeline.Name == pipelineName {
 					return fmt.Errorf("Pipeline still exists: %s", pipelineName)
 				}

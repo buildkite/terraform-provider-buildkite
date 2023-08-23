@@ -1,6 +1,7 @@
 package buildkite
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"testing"
@@ -63,7 +64,7 @@ func TestAccBuildkitePipeline(t *testing.T) {
 						// check api values are expected
 						func(s *terraform.State) error {
 							slug := fmt.Sprintf("%s/%s", getenv("BUILDKITE_ORGANIZATION_SLUG"), pipelineName)
-							resp, err := getPipeline(genqlientGraphql, slug)
+							resp, err := getPipeline(context.Background(), genqlientGraphql, slug)
 							pipeline = resp.Pipeline
 							return err
 						},
@@ -125,7 +126,7 @@ func TestAccBuildkitePipeline(t *testing.T) {
 						// check api values are expected
 						func(s *terraform.State) error {
 							slug := fmt.Sprintf("%s/%s", getenv("BUILDKITE_ORGANIZATION_SLUG"), pipelineName)
-							resp, err := getPipeline(genqlientGraphql, slug)
+							resp, err := getPipeline(context.Background(), genqlientGraphql, slug)
 							pipeline = &resp.Pipeline
 							return err
 						},
@@ -273,7 +274,7 @@ func TestAccBuildkitePipeline(t *testing.T) {
 					// check api values are expected
 					Check: func(s *terraform.State) error {
 						slug := fmt.Sprintf("%s/%s", getenv("BUILDKITE_ORGANIZATION_SLUG"), pipelineName)
-						resp, err := getPipeline(genqlientGraphql, slug)
+						resp, err := getPipeline(context.Background(), genqlientGraphql, slug)
 						pipeline = resp.Pipeline
 						return err
 					},
@@ -367,7 +368,7 @@ func TestAccBuildkitePipeline(t *testing.T) {
 					Check: func(s *terraform.State) error {
 						// remove the pipeline
 						pipeline := s.RootModule().Resources["buildkite_pipeline.pipeline"]
-						_, err := deletePipeline(genqlientGraphql, pipeline.Primary.ID)
+						_, err := deletePipeline(context.Background(), genqlientGraphql, pipeline.Primary.ID)
 						return err
 					},
 					ExpectNonEmptyPlan: true,
@@ -389,7 +390,7 @@ func TestAccBuildkitePipeline(t *testing.T) {
 			PreCheck:                 func() { testAccPreCheck(t) },
 			ProtoV6ProviderFactories: protoV6ProviderFactories(),
 			CheckDestroy: func(s *terraform.State) error {
-				resp, err := getPipeline(genqlientGraphql, fmt.Sprintf("%s/%s", getenv("BUILDKITE_ORGANIZATION_SLUG"), pipelineName))
+				resp, err := getPipeline(context.Background(), genqlientGraphql, fmt.Sprintf("%s/%s", getenv("BUILDKITE_ORGANIZATION_SLUG"), pipelineName))
 				if resp.Pipeline.Name == pipelineName {
 					return fmt.Errorf("Pipeline still exists: %s", pipelineName)
 				}
@@ -416,7 +417,7 @@ func TestAccBuildkitePipeline(t *testing.T) {
 			PreCheck:                 func() { testAccPreCheck(t) },
 			ProtoV6ProviderFactories: protoV6ProviderFactories(),
 			CheckDestroy: func(s *terraform.State) error {
-				resp, err := getPipeline(genqlientGraphql, fmt.Sprintf("%s/%s", getenv("BUILDKITE_ORGANIZATION_SLUG"), pipelineName))
+				resp, err := getPipeline(context.Background(), genqlientGraphql, fmt.Sprintf("%s/%s", getenv("BUILDKITE_ORGANIZATION_SLUG"), pipelineName))
 				if err != nil {
 					return err
 				}
@@ -462,18 +463,18 @@ func TestAccBuildkitePipeline(t *testing.T) {
 					Check: resource.ComposeTestCheckFunc(
 						func(s *terraform.State) error {
 							slug := fmt.Sprintf("%s/%s", getenv("BUILDKITE_ORGANIZATION_SLUG"), pipelineName)
-							resp, err := getPipeline(genqlientGraphql, slug)
+							resp, err := getPipeline(context.Background(), genqlientGraphql, slug)
 							pipeline = resp.Pipeline
 							return err
 						},
 						func(s *terraform.State) error {
 							// add new team to pipeline
-							team, err := teamCreate(genqlientGraphql, organizationID, acctest.RandString(6), nil, "VISIBLE", false, "MEMBER", false)
+							team, err := teamCreate(context.Background(), genqlientGraphql, organizationID, acctest.RandString(6), nil, "VISIBLE", false, "MEMBER", false)
 							teamID = team.TeamCreate.TeamEdge.Node.Id
 							if err != nil {
 								return err
 							}
-							_, err = teamPipelineCreate(genqlientGraphql, teamID, string(pipeline.Id), PipelineAccessLevelsBuildAndRead)
+							_, err = teamPipelineCreate(context.Background(), genqlientGraphql, teamID, string(pipeline.Id), PipelineAccessLevelsBuildAndRead)
 							if err != nil {
 								return err
 							}
@@ -519,13 +520,13 @@ func TestAccBuildkitePipeline(t *testing.T) {
 					Check: resource.ComposeTestCheckFunc(
 						func(s *terraform.State) error {
 							slug := fmt.Sprintf("%s/%s", getenv("BUILDKITE_ORGANIZATION_SLUG"), pipelineName)
-							resp, err := getPipeline(genqlientGraphql, slug)
+							resp, err := getPipeline(context.Background(), genqlientGraphql, slug)
 							pipeline = resp.Pipeline
 							return err
 						},
 						func(s *terraform.State) error {
 							// change team access level
-							_, err := teamPipelineUpdate(genqlientGraphql, pipeline.Teams.Edges[0].Node.Id, PipelineAccessLevelsBuildAndRead)
+							_, err := teamPipelineUpdate(context.Background(), genqlientGraphql, pipeline.Teams.Edges[0].Node.Id, PipelineAccessLevelsBuildAndRead)
 							if err != nil {
 								return err
 							}
@@ -572,13 +573,13 @@ func TestAccBuildkitePipeline(t *testing.T) {
 					Check: resource.ComposeTestCheckFunc(
 						func(s *terraform.State) error {
 							slug := fmt.Sprintf("%s/%s", getenv("BUILDKITE_ORGANIZATION_SLUG"), pipelineName)
-							resp, err := getPipeline(genqlientGraphql, slug)
+							resp, err := getPipeline(context.Background(), genqlientGraphql, slug)
 							pipeline = resp.Pipeline
 							return err
 						},
 						func(s *terraform.State) error {
 							// change team access level
-							_, err := teamPipelineDelete(genqlientGraphql, pipeline.Teams.Edges[0].Node.Id)
+							_, err := teamPipelineDelete(context.Background(), genqlientGraphql, pipeline.Teams.Edges[0].Node.Id)
 							if err != nil {
 								return err
 							}
@@ -588,6 +589,61 @@ func TestAccBuildkitePipeline(t *testing.T) {
 					ExpectNonEmptyPlan: true,
 					ConfigPlanChecks: resource.ConfigPlanChecks{
 						PostApplyPostRefresh: []plancheck.PlanCheck{
+							plancheck.ExpectResourceAction("buildkite_pipeline.pipeline", plancheck.ResourceActionUpdate),
+						},
+					},
+				},
+			},
+		})
+	})
+
+	t.Run("updating provider maintains teams", func(t *testing.T) {
+		pipelineName := acctest.RandString(12)
+		teamName := acctest.RandString(12)
+		config := fmt.Sprintf(`
+			resource "buildkite_team" "team" {
+				name = "%s"
+				default_team = false
+				default_member_role = "MEMBER"
+				privacy = "VISIBLE"
+			}
+			resource "buildkite_pipeline" "pipeline" {
+				name = "%s"
+				repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
+				team {
+					slug = buildkite_team.team.slug
+					access_level = "BUILD_AND_READ"
+				}
+			}
+		`, teamName, pipelineName)
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck: func() { testAccPreCheck(t) },
+			Steps: []resource.TestStep{
+				{
+					// create a pipeline and link a team using the old provider
+					Config: config,
+					ExternalProviders: map[string]resource.ExternalProvider{
+						"buildkite": {
+							Source:            "registry.terraform.io/buildkite/buildkite",
+							VersionConstraint: "0.23.0",
+						},
+					},
+					Check: resource.ComposeAggregateTestCheckFunc(
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "team.#", "1"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.#", "1"),
+					),
+				},
+				{
+					// now when using the new provider, we expect teams to still be 1 and no change to be made
+					Config:                   config,
+					ProtoV6ProviderFactories: protoV6ProviderFactories(),
+					Check: resource.ComposeAggregateTestCheckFunc(
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "team.#", "1"),
+						resource.TestCheckNoResourceAttr("buildkite_pipeline.pipeline", "provider_settings.#"),
+					),
+					ConfigPlanChecks: resource.ConfigPlanChecks{
+						PreApply: []plancheck.PlanCheck{
 							plancheck.ExpectResourceAction("buildkite_pipeline.pipeline", plancheck.ResourceActionUpdate),
 						},
 					},

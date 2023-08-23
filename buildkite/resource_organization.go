@@ -77,6 +77,7 @@ func (o *organizationResource) Create(ctx context.Context, req resource.CreateRe
 
 	log.Printf("Creating settings for organization %s ...", o.client.organizationId)
 	apiResponse, err := setApiIpAddresses(
+		ctx,
 		o.client.genqlient,
 		o.client.organizationId,
 		strings.Join(cidrs, " "),
@@ -113,7 +114,7 @@ func (o *organizationResource) Read(ctx context.Context, req resource.ReadReques
 	}
 
 	log.Printf("Reading settings for organization ...")
-	response, err := getOrganization(o.client.genqlient, o.client.organization)
+	response, err := getOrganization(ctx, o.client.genqlient, o.client.organization)
 
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -154,6 +155,7 @@ func (o *organizationResource) Update(ctx context.Context, req resource.UpdateRe
 
 	log.Printf("Updating settings for organization %s ...", o.client.organizationId)
 	apiResponse, err := setApiIpAddresses(
+		ctx,
 		o.client.genqlient,
 		o.client.organizationId,
 		strings.Join(cidrs, " "),
@@ -182,7 +184,7 @@ func (o *organizationResource) Update(ctx context.Context, req resource.UpdateRe
 func (o *organizationResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	log.Printf("Deleting settings for organization %s ...", o.client.organizationId)
 
-	_, err := setApiIpAddresses(o.client.genqlient, o.client.organizationId, "")
+	_, err := setApiIpAddresses(ctx, o.client.genqlient, o.client.organizationId, "")
 
 	if err != nil {
 		resp.Diagnostics.AddError(

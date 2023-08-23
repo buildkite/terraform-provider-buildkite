@@ -1,6 +1,7 @@
 package buildkite
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
@@ -99,6 +100,7 @@ func testAccCheckClusterAgentTokenExists(resourceName string, ct *ClusterAgentTo
 		}
 
 		clusterTokens, err := getClusterAgentTokens(
+			context.Background(),
 			genqlientGraphql,
 			getenv("BUILDKITE_ORGANIZATION_SLUG"),
 			resourceState.Primary.Attributes["cluster_uuid"],
@@ -145,6 +147,7 @@ func testAccCheckClusterAgentTokenDestroy(s *terraform.State) error {
 		}
 
 		clusterTokens, err := getClusterAgentTokens(
+			context.Background(),
 			genqlientGraphql,
 			getenv("BUILDKITE_ORGANIZATION_SLUG"),
 			rs.Primary.Attributes["cluster_uuid"],
