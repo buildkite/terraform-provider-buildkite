@@ -107,7 +107,7 @@ resource "buildkite_pipeline" "repo2-release" {
 -   `team` - (Optional) **DEPRECATED** Set team access for the pipeline. Can be specified multiple times for each team.
 -   `tags` - (Optional) A set of tags to be set to the pipeline. For example `["terraform", "provider"]`.
 -   `provider_settings` - (Optional) Source control provider settings for the pipeline. See [Provider Settings Configuration](#provider-settings-configuration) below for details.
--   `deletion_protection` - **DEPRECATED** (Optional) Set to either `true` or `false`. When set to `true`, `destroy` actions on a pipeline will be blocked and fail with a message "Deletion protection is enabled for pipeline: <pipeline name>"
+
 
 ### Provider Settings Configuration
 
