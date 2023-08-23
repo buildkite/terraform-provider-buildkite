@@ -8,6 +8,10 @@ All notable changes to this project will be documented in this file.
 - SUP-1319: Removal of archive_on_delete from pipeline resource [[PR #369](https://github.com/buildkite/terraform-provider-buildkite/pull/369)] @james2791
 - SUP-1383 Fix teams block bug in v0.25.0 [[PR #370](https://github.com/buildkite/terraform-provider-buildkite/pull/370)] @jradtilbrook
 
+### Changes
+
+The `archive_on_delete` attribute has been removed from the `buildkite_pipeline` resource in this release. Please use the provider configuration `archive_pipeline_on_delete` instead.
+
 ## [v0.25.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v0.24.0...v0.25.0)
 
 - Move archive pipeline config to provider [[PR #354](https://github.com/buildkite/terraform-provider-buildkite/pull/354)] @jradtilbrook

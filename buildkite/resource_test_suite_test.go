@@ -13,6 +13,7 @@ import (
 
 func TestAcc_testSuiteAddRemove(t *testing.T) {
 	t.Parallel()
+	t.Skip("Bug in Test Analytics API")
 	var suite getTestSuiteSuite
 
 	resource.Test(t, resource.TestCase{
@@ -51,6 +52,7 @@ func TestAcc_testSuiteAddRemove(t *testing.T) {
 
 func TestAcc_testSuiteUpdate(t *testing.T) {
 	t.Parallel()
+	t.Skip("Bug in Test Analytics API")
 	var suite getTestSuiteSuite
 
 	resource.Test(t, resource.TestCase{
@@ -115,6 +117,7 @@ func TestAcc_testSuiteUpdate(t *testing.T) {
 
 func TestAcc_testSuiteTeamOwnerResolution(t *testing.T) {
 	t.Parallel()
+	t.Skip("Bug in Test Analytics API")
 	var suite getTestSuiteSuite
 
 	resource.Test(t, resource.TestCase{
