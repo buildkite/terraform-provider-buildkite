@@ -334,15 +334,15 @@ func (p *pipelineResource) Read(ctx context.Context, req resource.ReadRequest, r
 }
 
 func reconcileTeamPipelinesToState(model *pipelineResourceModel, data pipelineResponse) {
-
 	var stateTeams []*pipelineTeamModel
 
 	for _, team := range model.Teams {
 		for _, teamEdge := range data.GetTeams().Edges {
-			if team.TeamId.ValueString() == string(teamEdge.Node.Team.Id) {
-				if team.AccessLevel.ValueString() != string(teamEdge.Node.AccessLevel) {
-					team.AccessLevel = types.StringValue(string(teamEdge.Node.AccessLevel))
-				}
+			if team.Slug.ValueString() == string(teamEdge.Node.Team.Slug) {
+				// make sure we update all values in state for users migrating from an old version
+				team.TeamId = types.StringValue(teamEdge.Node.Team.Id)
+				team.PipelineTeamId = types.StringValue(teamEdge.Node.Id)
+				team.AccessLevel = types.StringValue(string(teamEdge.Node.AccessLevel))
 				stateTeams = append(stateTeams, team)
 			}
 		}
@@ -662,6 +662,7 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 			return
 		}
 		state.BadgeUrl = types.StringValue(extraInfo.BadgeUrl)
+		state.ProviderSettings = make([]*providerSettingsModel, 0)
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
