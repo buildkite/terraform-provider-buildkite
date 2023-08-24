@@ -235,7 +235,6 @@ func (p *pipelineResource) Create(ctx context.Context, req resource.CreateReques
 		}
 	}
 	state.Teams = teams
-	state.ArchiveOnDelete = plan.ArchiveOnDelete
 
 	if len(plan.ProviderSettings) > 0 {
 		pipelineExtraInfo, err := updatePipelineExtraInfo(ctx, response.PipelineCreate.Pipeline.Slug, plan.ProviderSettings[0], p.client)
@@ -622,7 +621,6 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 	}
 
 	setPipelineModel(&state, &response.PipelineUpdate.Pipeline)
-	state.ArchiveOnDelete = plan.ArchiveOnDelete
 
 	// plan.Teams has what we want. state.Teams has what exists on the server. we need to make them match
 	err = p.reconcileTeamPipelinesToPlan(ctx, plan.Teams, state.Teams, &response.PipelineUpdate.Pipeline, response.PipelineUpdate.Pipeline.Id)

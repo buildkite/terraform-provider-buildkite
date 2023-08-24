@@ -15,6 +15,9 @@ All notable changes to this project will be documented in this file.
 
 The `archive_on_delete` attribute has been removed from the `buildkite_pipeline` resource in this release. Please use the provider configuration `archive_pipeline_on_delete` instead.
 
+The `deletion_protection` attribute has also been removed from the `buildkite_pipeline` resource in this release. This feature offers similar
+functionality to [lifecycles](https://developer.hashicorp.com/terraform/language/meta-arguments/lifecycle) which are supported by Terraform.
+
 ## [v0.25.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v0.24.0...v0.25.0)
 
 - Move archive pipeline config to provider [[PR #354](https://github.com/buildkite/terraform-provider-buildkite/pull/354)] @jradtilbrook
