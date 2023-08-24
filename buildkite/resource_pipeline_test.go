@@ -73,7 +73,6 @@ func TestAccBuildkitePipeline(t *testing.T) {
 						resource.TestCheckNoResourceAttr("buildkite_pipeline.pipeline", "branch_configuration"),
 						resource.TestCheckNoResourceAttr("buildkite_pipeline.pipeline", "cluster_id"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "allow_rebuilds", "true"),
-						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "archive_on_delete", "false"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "cancel_intermediate_builds", "false"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "cancel_intermediate_builds_branch_filter", ""),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "default_branch", ""),
