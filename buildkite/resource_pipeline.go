@@ -6,6 +6,7 @@ import (
 	"log"
 	"unsafe"
 
+	custom_modifier "github.com/buildkite/terraform-provider-buildkite/internal/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -77,7 +78,6 @@ type TeamPipelineNode struct {
 
 type pipelineResourceModel struct {
 	AllowRebuilds                        types.Bool               `tfsdk:"allow_rebuilds"`
-	ArchiveOnDelete                      types.Bool               `tfsdk:"archive_on_delete"`
 	BadgeUrl                             types.String             `tfsdk:"badge_url"`
 	BranchConfiguration                  types.String             `tfsdk:"branch_configuration"`
 	CancelIntermediateBuilds             types.Bool               `tfsdk:"cancel_intermediate_builds"`
@@ -237,7 +237,6 @@ func (p *pipelineResource) Create(ctx context.Context, req resource.CreateReques
 	}
 	state.Teams = teams
 	state.DeletionProtection = plan.DeletionProtection
-	state.ArchiveOnDelete = plan.ArchiveOnDelete
 
 	if len(plan.ProviderSettings) > 0 {
 		pipelineExtraInfo, err := updatePipelineExtraInfo(ctx, response.PipelineCreate.Pipeline.Slug, plan.ProviderSettings[0], p.client)
@@ -268,7 +267,7 @@ func (p *pipelineResource) Delete(ctx context.Context, req resource.DeleteReques
 		return
 	}
 
-	if state.ArchiveOnDelete.ValueBool() || p.archiveOnDelete {
+	if p.archiveOnDelete {
 		log.Printf("Pipeline %s set to archive on delete. Archiving...", state.Name.ValueString())
 		_, err := archivePipeline(ctx, p.client.genqlient, state.Id.ValueString())
 		if err != nil {
@@ -364,12 +363,6 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 				Computed: true,
 				Default:  booldefault.StaticBool(true),
 			},
-			"archive_on_delete": schema.BoolAttribute{
-				Optional:           true,
-				Computed:           true,
-				Default:            booldefault.StaticBool(false),
-				DeprecationMessage: "This attribute has been deprecated and will be removed in v0.27.0. Please use provider configuration `archive_pipeline_on_delete` instead.",
-			},
 			"cancel_intermediate_builds": schema.BoolAttribute{
 				Computed: true,
 				Optional: true,
@@ -450,6 +443,9 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 			},
 			"slug": schema.StringAttribute{
 				Computed: true,
+				PlanModifiers: []planmodifier.String{
+					custom_modifier.UseStateIfUnchanged("name"),
+				},
 			},
 			"steps": schema.StringAttribute{
 				Optional: true,
@@ -636,7 +632,6 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 
 	setPipelineModel(&state, &response.PipelineUpdate.Pipeline)
 	state.DeletionProtection = plan.DeletionProtection
-	state.ArchiveOnDelete = plan.ArchiveOnDelete
 
 	// plan.Teams has what we want. state.Teams has what exists on the server. we need to make them match
 	err = p.reconcileTeamPipelinesToPlan(ctx, plan.Teams, state.Teams, &response.PipelineUpdate.Pipeline, response.PipelineUpdate.Pipeline.Id)
