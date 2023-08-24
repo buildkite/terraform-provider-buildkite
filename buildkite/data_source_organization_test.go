@@ -6,7 +6,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
-func TestAccDataOrganization(t *testing.T) {
+func TestAccBuildkiteOrganizationDatasource(t *testing.T) {
 	t.Run("organization data source can be loaded with defaults", func(t *testing.T) {
 		resource.ParallelTest(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },
