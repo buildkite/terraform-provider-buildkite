@@ -30,7 +30,7 @@ func TestAccBuildkiteCluster(t *testing.T) {
 		`, fields[0], fields[1], fields[2])
 	}
 
-	t.Run("Creates a Cluster", func(t *testing.T) {
+	t.Run("Creates a Cluster with basic settings", func(t *testing.T) {
 		var c clusterResourceModel
 		randName := acctest.RandString(5)
 		check := resource.ComposeAggregateTestCheckFunc(
@@ -41,68 +41,78 @@ func TestAccBuildkiteCluster(t *testing.T) {
 			resource.TestCheckResourceAttrSet("buildkite_cluster.foo", "uuid"),
 		)
 
-		testCase := func(t *testing.T, config string) {
-			resource.Test(t, resource.TestCase{
-				PreCheck:                 func() { testAccPreCheck(t) },
-				ProtoV6ProviderFactories: protoV6ProviderFactories(),
-				CheckDestroy:             testAccCheckClusterDestroy,
-				Steps: []resource.TestStep{
-					{
-						Config: config,
-						Check:  check,
-					},
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			CheckDestroy:             testAccCheckClusterDestroy,
+			Steps: []resource.TestStep{
+				{
+					Config: basic(randName),
+					Check:  check,
 				},
-			})
-		}
-		t.Run("with basic settings", func(t *testing.T) {
-			testCase(t, basic(randName))
-		})
-
-		t.Run("with complex settings", func(t *testing.T) {
-			testCase(t, complex(randName, ":buildkite:", "#BADA55"))
+			},
 		})
 	})
 
-	t.Run("Updates a Cluster", func(t *testing.T) {
+	t.Run("Creates a Cluster with complex settings", func(t *testing.T) {
+		var c clusterResourceModel
+		randName := acctest.RandString(5)
+		check := resource.ComposeAggregateTestCheckFunc(
+			testAccCheckClusterExists("buildkite_cluster.foo", &c),
+			testAccCheckClusterRemoteValues(&c, fmt.Sprintf("%s_test_cluster", randName)),
+			resource.TestCheckResourceAttr("buildkite_cluster.foo", "name", fmt.Sprintf("%s_test_cluster", randName)),
+			resource.TestCheckResourceAttrSet("buildkite_cluster.foo", "id"),
+			resource.TestCheckResourceAttrSet("buildkite_cluster.foo", "uuid"),
+		)
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			CheckDestroy:             testAccCheckClusterDestroy,
+			Steps: []resource.TestStep{
+				{
+					Config: complex(randName, ":triple-green-shell:", "#6932f9"),
+					Check:  check,
+				},
+			},
+		})
+	})
+
+	t.Run("Updates a Cluster using complex settings", func(t *testing.T) {
 		var c clusterResourceModel
 		randName := acctest.RandString(5)
 		randNameUpdated := acctest.RandString(5)
-		testCase := func(t *testing.T, originalConfig, newConfig string) {
-			resource.ParallelTest(t, resource.TestCase{
-				PreCheck:                 func() { testAccPreCheck(t) },
-				ProtoV6ProviderFactories: protoV6ProviderFactories(),
-				CheckDestroy:             testAccCheckClusterDestroy,
-				Steps: []resource.TestStep{
-					{
-						Config: originalConfig,
-						Check: resource.ComposeAggregateTestCheckFunc(
-							testAccCheckClusterExists("buildkite_cluster.foo", &c),
-							testAccCheckClusterRemoteValues(&c, fmt.Sprintf("%s_test_cluster", randName)),
-							resource.TestCheckResourceAttr("buildkite_cluster.foo", "name", fmt.Sprintf("%s_test_cluster", randName)),
-							resource.TestCheckResourceAttrSet("buildkite_cluster.foo", "id"),
-							resource.TestCheckResourceAttrSet("buildkite_cluster.foo", "uuid"),
-							resource.TestCheckResourceAttr("buildkite_cluster.foo", "emoji", ":one-does-not-simply:"),
-							resource.TestCheckResourceAttr("buildkite_cluster.foo", "color", "#BADA55"),
-						),
-					},
-					{
-						Config: newConfig,
-						Check: resource.ComposeAggregateTestCheckFunc(
-							testAccCheckClusterExists("buildkite_cluster.foo", &c),
-							testAccCheckClusterRemoteValues(&c, fmt.Sprintf("%s_test_cluster", randNameUpdated)),
-							resource.TestCheckResourceAttr("buildkite_cluster.foo", "name", fmt.Sprintf("%s_test_cluster", randNameUpdated)),
-							resource.TestCheckResourceAttrSet("buildkite_cluster.foo", "id"),
-							resource.TestCheckResourceAttrSet("buildkite_cluster.foo", "uuid"),
-							resource.TestCheckResourceAttrSet("buildkite_cluster.foo", "description"),
-							resource.TestCheckResourceAttr("buildkite_cluster.foo", "emoji", ":terraform:"),
-							resource.TestCheckResourceAttr("buildkite_cluster.foo", "color", "#b31625"),
-						),
-					},
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			CheckDestroy:             testAccCheckClusterDestroy,
+			Steps: []resource.TestStep{
+				{
+					Config: complex(randName, ":one-does-not-simply:", "#BADA55"),
+					Check: resource.ComposeAggregateTestCheckFunc(
+						testAccCheckClusterExists("buildkite_cluster.foo", &c),
+						testAccCheckClusterRemoteValues(&c, fmt.Sprintf("%s_test_cluster", randName)),
+						resource.TestCheckResourceAttr("buildkite_cluster.foo", "name", fmt.Sprintf("%s_test_cluster", randName)),
+						resource.TestCheckResourceAttrSet("buildkite_cluster.foo", "id"),
+						resource.TestCheckResourceAttrSet("buildkite_cluster.foo", "uuid"),
+						resource.TestCheckResourceAttr("buildkite_cluster.foo", "emoji", ":one-does-not-simply:"),
+						resource.TestCheckResourceAttr("buildkite_cluster.foo", "color", "#BADA55"),
+					),
 				},
-			})
-		}
-		t.Run("with complex settings", func(t *testing.T) {
-			testCase(t, complex(randName, ":one-does-not-simply:", "#BADA55"), complex(randNameUpdated, ":terraform:", "#b31625"))
+				{
+					Config: complex(randNameUpdated, ":terraform:", "#b31625"),
+					Check: resource.ComposeAggregateTestCheckFunc(
+						testAccCheckClusterExists("buildkite_cluster.foo", &c),
+						testAccCheckClusterRemoteValues(&c, fmt.Sprintf("%s_test_cluster", randNameUpdated)),
+						resource.TestCheckResourceAttr("buildkite_cluster.foo", "name", fmt.Sprintf("%s_test_cluster", randNameUpdated)),
+						resource.TestCheckResourceAttrSet("buildkite_cluster.foo", "id"),
+						resource.TestCheckResourceAttrSet("buildkite_cluster.foo", "uuid"),
+						resource.TestCheckResourceAttrSet("buildkite_cluster.foo", "description"),
+						resource.TestCheckResourceAttr("buildkite_cluster.foo", "emoji", ":terraform:"),
+						resource.TestCheckResourceAttr("buildkite_cluster.foo", "color", "#b31625"),
+					),
+				},
+			},
 		})
 	})
 
@@ -114,30 +124,22 @@ func TestAccBuildkiteCluster(t *testing.T) {
 			resource.TestCheckResourceAttr("buildkite_cluster.foo", "name", fmt.Sprintf("%s_test_cluster", randName)),
 		)
 
-		testCase := func(t *testing.T, config string) {
-			resource.ParallelTest(t, resource.TestCase{
-				PreCheck:                 func() { testAccPreCheck(t) },
-				ProtoV6ProviderFactories: protoV6ProviderFactories(),
-				CheckDestroy:             testAccCheckClusterDestroy,
-				Steps: []resource.TestStep{
-					{
-						Config: config,
-						Check:  check,
-					},
-					{
-						ResourceName:      "buildkite_cluster.foo",
-						ImportState:       true,
-						ImportStateVerify: true,
-					},
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			CheckDestroy:             testAccCheckClusterDestroy,
+			Steps: []resource.TestStep{
+				{
+					Config: basic(randName),
+					Check:  check,
 				},
-			})
-		}
-		t.Run("with basic settings", func(t *testing.T) {
-			testCase(t, basic(randName))
+				{
+					ResourceName:      "buildkite_cluster.foo",
+					ImportState:       true,
+					ImportStateVerify: true,
+				},
+			},
 		})
-		// t.Run("with complex settings", func(t *testing.T) {
-		// 	testCase(t, complex(randName))
-		// })
 	})
 }
 
