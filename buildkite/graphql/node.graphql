@@ -17,5 +17,8 @@ query getNode(
         ... on TeamPipeline {
             ... TeamPipelineFields
         }
+        ... on Cluster {
+            ... ClusterFields
+        }
     }
 }

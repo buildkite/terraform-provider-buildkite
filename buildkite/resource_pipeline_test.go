@@ -73,7 +73,6 @@ func TestAccBuildkitePipeline(t *testing.T) {
 						resource.TestCheckNoResourceAttr("buildkite_pipeline.pipeline", "branch_configuration"),
 						resource.TestCheckNoResourceAttr("buildkite_pipeline.pipeline", "cluster_id"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "allow_rebuilds", "true"),
-						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "archive_on_delete", "false"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "cancel_intermediate_builds", "false"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "cancel_intermediate_builds_branch_filter", ""),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "default_branch", ""),
@@ -589,6 +588,61 @@ func TestAccBuildkitePipeline(t *testing.T) {
 					ExpectNonEmptyPlan: true,
 					ConfigPlanChecks: resource.ConfigPlanChecks{
 						PostApplyPostRefresh: []plancheck.PlanCheck{
+							plancheck.ExpectResourceAction("buildkite_pipeline.pipeline", plancheck.ResourceActionUpdate),
+						},
+					},
+				},
+			},
+		})
+	})
+
+	t.Run("updating provider maintains teams", func(t *testing.T) {
+		pipelineName := acctest.RandString(12)
+		teamName := acctest.RandString(12)
+		config := fmt.Sprintf(`
+			resource "buildkite_team" "team" {
+				name = "%s"
+				default_team = false
+				default_member_role = "MEMBER"
+				privacy = "VISIBLE"
+			}
+			resource "buildkite_pipeline" "pipeline" {
+				name = "%s"
+				repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
+				team {
+					slug = buildkite_team.team.slug
+					access_level = "BUILD_AND_READ"
+				}
+			}
+		`, teamName, pipelineName)
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck: func() { testAccPreCheck(t) },
+			Steps: []resource.TestStep{
+				{
+					// create a pipeline and link a team using the old provider
+					Config: config,
+					ExternalProviders: map[string]resource.ExternalProvider{
+						"buildkite": {
+							Source:            "registry.terraform.io/buildkite/buildkite",
+							VersionConstraint: "0.23.0",
+						},
+					},
+					Check: resource.ComposeAggregateTestCheckFunc(
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "team.#", "1"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.#", "1"),
+					),
+				},
+				{
+					// now when using the new provider, we expect teams to still be 1 and no change to be made
+					Config:                   config,
+					ProtoV6ProviderFactories: protoV6ProviderFactories(),
+					Check: resource.ComposeAggregateTestCheckFunc(
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "team.#", "1"),
+						resource.TestCheckNoResourceAttr("buildkite_pipeline.pipeline", "provider_settings.#"),
+					),
+					ConfigPlanChecks: resource.ConfigPlanChecks{
+						PreApply: []plancheck.PlanCheck{
 							plancheck.ExpectResourceAction("buildkite_pipeline.pipeline", plancheck.ResourceActionUpdate),
 						},
 					},

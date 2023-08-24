@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	custom_modifier "github.com/buildkite/terraform-provider-buildkite/internal/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -180,6 +181,9 @@ func (ts *testSuiteResource) Schema(ctx context.Context, req resource.SchemaRequ
 			},
 			"slug": schema.StringAttribute{
 				Computed: true,
+				PlanModifiers: []planmodifier.String{
+					custom_modifier.UseStateIfUnchanged("name"),
+				},
 			},
 			"name": schema.StringAttribute{
 				Required: true,

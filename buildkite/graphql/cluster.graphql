@@ -10,14 +10,6 @@ fragment ClusterFields on Cluster {
     color
 }
 
-query getCluster($orgSlug: ID!, $id: ID!) {
-    organization(slug: $orgSlug) {
-        cluster(id: $id) {
-            ...ClusterFields
-        }
-    }
-}
-
 query getClusterByName(
     $orgSlug: ID!,
     # @genqlient(pointer: true)
