@@ -3,7 +3,9 @@ package buildkite
 import (
 	"context"
 	"fmt"
+	"log"
 	"os"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
@@ -69,7 +71,7 @@ func (tf *terraformProvider) Configure(ctx context.Context, req provider.Configu
 		graphqlURL: graphqlUrl,
 		org:        organization,
 		restURL:    restUrl,
-		userAgent:  fmt.Sprintf("buildkite/%s", tf.version),
+		userAgent:  userAgent("buildkite", tf.version, req.TerraformVersion),
 	}
 	client, err := NewClient(&config)
 
@@ -79,6 +81,26 @@ func (tf *terraformProvider) Configure(ctx context.Context, req provider.Configu
 
 	resp.ResourceData = client
 	resp.DataSourceData = client
+}
+
+func userAgent(name, providerVersion, tfVersion string) string {
+	ua := fmt.Sprintf("Terraform/%s (+https://www.terraform.io)", tfVersion)
+	if name != "" {
+		ua += " " + name
+		if providerVersion != "" {
+			ua += "/" + providerVersion
+		}
+	}
+
+	if add := os.Getenv("TF_APPEND_USER_AGENT"); add != "" {
+		add = strings.TrimSpace(add)
+		if len(add) > 0 {
+			ua += " " + add
+			log.Printf("[DEBUG] Using modified User-Agent: %s", ua)
+		}
+	}
+
+	return ua
 }
 
 func (*terraformProvider) DataSources(context.Context) []func() datasource.DataSource {
@@ -142,10 +164,8 @@ func (*terraformProvider) Schema(ctx context.Context, req provider.SchemaRequest
 }
 
 // New is a helper function to simplify provider server and testing implementation.
-func New(version string) func() provider.Provider {
-	return func() provider.Provider {
-		return &terraformProvider{
-			version: version,
-		}
+func New(version string) provider.Provider {
+	return &terraformProvider{
+		version: version,
 	}
 }

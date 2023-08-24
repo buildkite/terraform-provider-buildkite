@@ -1,12 +1,12 @@
 package main
 
 import (
-	"context"
 	"flag"
 	"log"
 
 	"github.com/buildkite/terraform-provider-buildkite/buildkite"
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
+	"github.com/hashicorp/terraform-plugin-go/tfprotov5/tf5server"
 )
 
 // Set at compile time from ldflags
@@ -15,21 +15,24 @@ var (
 )
 
 func main() {
-	ctx := context.Background()
-
 	var debug bool
 
 	flag.BoolVar(&debug, "debug", false, "set to true to run the provider with support for debuggers like delve")
 	flag.Parse()
 
-	opts := providerserver.ServeOpts{
-		Address: "registry.terraform.io/buildkite/buildkite",
-		Debug:   debug,
+	var serveOpts []tf5server.ServeOpt
+
+	if debug {
+		serveOpts = append(serveOpts, tf5server.WithManagedDebug())
 	}
 
-	err := providerserver.Serve(ctx, buildkite.New(version), opts)
+	err := tf5server.Serve(
+		"registry.terraform.io/buildkite/buildkite",
+		providerserver.NewProtocol5(buildkite.New(version)),
+		serveOpts...,
+	)
 
 	if err != nil {
-		log.Fatal(err.Error())
+		log.Fatal(err)
 	}
 }
