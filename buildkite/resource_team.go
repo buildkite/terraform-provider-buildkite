@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	custom_modifier "github.com/buildkite/terraform-provider-buildkite/internal/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -109,7 +110,7 @@ func (t *teamResource) Schema(ctx context.Context, req resource.SchemaRequest, r
 			"slug": resource_schema.StringAttribute{
 				Computed: true,
 				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
+					custom_modifier.UseStateIfUnchanged("name"),
 				},
 			},
 			"members_can_create_pipelines": resource_schema.BoolAttribute{
@@ -134,7 +135,7 @@ func (t *teamResource) Create(ctx context.Context, req resource.CreateRequest, r
 		return
 	}
 
-	r, err := teamCreate(
+	r, err := teamCreate(ctx,
 		t.client.genqlient,
 		t.client.organizationId,
 		state.Name.ValueString(),
@@ -163,7 +164,7 @@ func (t *teamResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 	var state teamResourceModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 
-	res, err := getNode(t.client.genqlient, state.ID.ValueString())
+	res, err := getNode(ctx, t.client.genqlient, state.ID.ValueString())
 
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -195,7 +196,7 @@ func (t *teamResource) Update(ctx context.Context, req resource.UpdateRequest, r
 		return
 	}
 
-	_, err := teamUpdate(
+	response, err := teamUpdate(ctx,
 		t.client.genqlient,
 		state.ID.ValueString(),
 		plan.Name.ValueString(),
@@ -214,6 +215,7 @@ func (t *teamResource) Update(ctx context.Context, req resource.UpdateRequest, r
 		return
 	}
 
+	plan.Slug = types.StringValue(response.TeamUpdate.Team.Slug)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 }
 
@@ -226,7 +228,7 @@ func (t *teamResource) Delete(ctx context.Context, req resource.DeleteRequest, r
 		return
 	}
 
-	_, err := teamDelete(t.client.genqlient, state.ID.ValueString())
+	_, err := teamDelete(ctx, t.client.genqlient, state.ID.ValueString())
 
 	if err != nil {
 		resp.Diagnostics.AddError(

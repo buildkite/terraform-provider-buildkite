@@ -88,7 +88,7 @@ func (tp *pipelineTeamResource) Create(ctx context.Context, req resource.CreateR
 		return
 	}
 
-	apiResponse, err := createTeamPipeline(
+	apiResponse, err := createTeamPipeline(ctx,
 		tp.client.genqlient,
 		state.TeamId.ValueString(),
 		state.PipelineId.ValueString(),
@@ -120,7 +120,7 @@ func (tp *pipelineTeamResource) Read(ctx context.Context, req resource.ReadReque
 		return
 	}
 
-	apiResponse, err := getNode(
+	apiResponse, err := getNode(ctx,
 		tp.client.genqlient,
 		state.Id.ValueString(),
 	)
@@ -166,7 +166,7 @@ func (tp *pipelineTeamResource) Update(ctx context.Context, req resource.UpdateR
 		return
 	}
 
-	_, err := updateTeamPipeline(tp.client.genqlient,
+	_, err := updateTeamPipeline(ctx, tp.client.genqlient,
 		state.Id.ValueString(),
 		PipelineAccessLevels(accessLevel),
 	)
@@ -193,7 +193,7 @@ func (tp *pipelineTeamResource) Delete(ctx context.Context, req resource.DeleteR
 		return
 	}
 
-	_, err := deleteTeamPipeline(tp.client.genqlient, state.Id.ValueString())
+	_, err := deleteTeamPipeline(ctx, tp.client.genqlient, state.Id.ValueString())
 
 	if err != nil {
 		resp.Diagnostics.AddError(

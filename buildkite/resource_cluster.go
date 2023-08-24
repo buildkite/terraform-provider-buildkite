@@ -86,7 +86,7 @@ func (c *clusterResource) Create(ctx context.Context, req resource.CreateRequest
 		return
 	}
 
-	r, err := createCluster(
+	r, err := createCluster(ctx,
 		c.client.genqlient,
 		c.client.organizationId,
 		state.Name.ValueString(),
@@ -118,7 +118,7 @@ func (c *clusterResource) Read(ctx context.Context, req resource.ReadRequest, re
 		return
 	}
 
-	r, err := getCluster(c.client.genqlient, c.client.organization, state.UUID.ValueString())
+	r, err := getNode(ctx, c.client.genqlient, state.ID.ValueString())
 
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -128,8 +128,23 @@ func (c *clusterResource) Read(ctx context.Context, req resource.ReadRequest, re
 		return
 	}
 
-	updateClusterResourceState(r.Organization.Cluster, &state)
-	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+	if clusterNode, ok := r.GetNode().(*getNodeNodeCluster); ok {
+		if clusterNode == nil {
+			resp.Diagnostics.AddError(
+				"Unable to get Cluster",
+				"Error getting Cluster: nil response",
+			)
+			return
+		}
+		updateClusterResourceState(&state, *clusterNode)
+		resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+	} else {
+		resp.Diagnostics.AddWarning(
+			"Cluster not found",
+			"Removing Cluster from state...",
+		)
+		resp.State.RemoveResource(ctx)
+	}
 }
 
 func (c *clusterResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
@@ -144,7 +159,7 @@ func (c *clusterResource) Update(ctx context.Context, req resource.UpdateRequest
 
 	id := state.ID.ValueString()
 
-	_, err := updateCluster(
+	_, err := updateCluster(ctx,
 		c.client.genqlient,
 		c.client.organizationId,
 		id,
@@ -174,7 +189,7 @@ func (c *clusterResource) Delete(ctx context.Context, req resource.DeleteRequest
 		return
 	}
 
-	_, err := deleteCluster(c.client.genqlient, c.client.organizationId, state.ID.ValueString())
+	_, err := deleteCluster(ctx, c.client.genqlient, c.client.organizationId, state.ID.ValueString())
 
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -186,14 +201,14 @@ func (c *clusterResource) Delete(ctx context.Context, req resource.DeleteRequest
 }
 
 func (c *clusterResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	resource.ImportStatePassthroughID(ctx, path.Root("uuid"), req, resp)
+	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
 
-func updateClusterResourceState(cl getClusterOrganizationCluster, c *clusterResourceModel) {
-	c.ID = types.StringValue(cl.Id)
-	c.UUID = types.StringValue(cl.Uuid)
-	c.Name = types.StringValue(cl.Name)
-	c.Description = types.StringPointerValue(cl.Description)
-	c.Emoji = types.StringPointerValue(cl.Emoji)
-	c.Color = types.StringPointerValue(cl.Color)
+func updateClusterResourceState(state *clusterResourceModel, res getNodeNodeCluster) {
+	state.ID = types.StringValue(res.Id)
+	state.UUID = types.StringValue(res.Uuid)
+	state.Name = types.StringValue(res.Name)
+	state.Description = types.StringPointerValue(res.Description)
+	state.Emoji = types.StringPointerValue(res.Emoji)
+	state.Color = types.StringPointerValue(res.Color)
 }

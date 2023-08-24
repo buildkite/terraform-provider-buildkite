@@ -89,7 +89,7 @@ func (tst *testSuiteTeamResource) Create(ctx context.Context, req resource.Creat
 	}
 
 	log.Printf("Adding team %s to test suite %s ...", state.TeamID.ValueString(), state.TestSuiteId.ValueString())
-	apiResponse, err := createTestSuiteTeam(
+	apiResponse, err := createTestSuiteTeam(ctx,
 		tst.client.genqlient,
 		state.TeamID.ValueString(),
 		state.TestSuiteId.ValueString(),
@@ -121,7 +121,7 @@ func (tst *testSuiteTeamResource) Read(ctx context.Context, req resource.ReadReq
 	}
 
 	log.Printf("Reading test suite team with ID %s ...", state.ID.ValueString())
-	apiResponse, err := getNode(tst.client.genqlient, state.ID.ValueString())
+	apiResponse, err := getNode(ctx, tst.client.genqlient, state.ID.ValueString())
 
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -162,7 +162,7 @@ func (tst *testSuiteTeamResource) Update(ctx context.Context, req resource.Updat
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 
 	log.Printf("Updating team %s in test suite %s to %s ...", state.TeamID.ValueString(), state.TestSuiteId.ValueString(), testSuiteTeamAccessLevel)
-	apiResponse, err := updateTestSuiteTeam(
+	apiResponse, err := updateTestSuiteTeam(ctx,
 		tst.client.genqlient,
 		state.ID.ValueString(),
 		SuiteAccessLevels(testSuiteTeamAccessLevel),
@@ -192,7 +192,7 @@ func (tst *testSuiteTeamResource) Delete(ctx context.Context, req resource.Delet
 	}
 
 	log.Printf("Deleting team %s's access to test suite %s ...", state.TeamID.ValueString(), state.TestSuiteId.ValueString())
-	_, err := deleteTestSuiteTeam(tst.client.genqlient, state.ID.ValueString())
+	_, err := deleteTestSuiteTeam(ctx, tst.client.genqlient, state.ID.ValueString())
 
 	if err != nil {
 		resp.Diagnostics.AddError(

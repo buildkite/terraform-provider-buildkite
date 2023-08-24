@@ -50,7 +50,7 @@ func (c *clusterDatasource) Read(ctx context.Context, req datasource.ReadRequest
 	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		var cursor *string
 		for {
-			r, err := getClusterByName(c.client.genqlient, c.client.organization, cursor)
+			r, err := getClusterByName(ctx, c.client.genqlient, c.client.organization, cursor)
 			if err != nil {
 				if isRetryableError(err) {
 					return retry.RetryableError(err)

@@ -91,7 +91,7 @@ func (cq *ClusterQueueResource) Create(ctx context.Context, req resource.CreateR
 	}
 
 	log.Printf("Creating cluster queue with key %s into cluster %s ...", plan.Key.ValueString(), plan.ClusterId.ValueString())
-	apiResponse, err := createClusterQueue(
+	apiResponse, err := createClusterQueue(ctx,
 		cq.client.genqlient,
 		cq.client.organizationId,
 		plan.ClusterId.ValueString(),
@@ -127,7 +127,7 @@ func (cq *ClusterQueueResource) Read(ctx context.Context, req resource.ReadReque
 	}
 
 	log.Printf("Getting cluster queues for cluster %s ...", state.ClusterUuid.ValueString())
-	queues, err := getClusterQueues(cq.client.genqlient, cq.client.organization, state.ClusterUuid.ValueString())
+	queues, err := getClusterQueues(ctx, cq.client.genqlient, cq.client.organization, state.ClusterUuid.ValueString())
 
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -187,7 +187,7 @@ func (cq *ClusterQueueResource) Update(ctx context.Context, req resource.UpdateR
 	}
 
 	log.Printf("Updating cluster queue %s ...", state.Id.ValueString())
-	apiResponse, err := updateClusterQueue(
+	apiResponse, err := updateClusterQueue(ctx,
 		cq.client.genqlient,
 		cq.client.organizationId,
 		state.Id.ValueString(),
@@ -217,7 +217,7 @@ func (cq *ClusterQueueResource) Delete(ctx context.Context, req resource.DeleteR
 	}
 
 	log.Printf("Deleting cluster queue %s ...", plan.Id.ValueString())
-	_, err := deleteClusterQueue(
+	_, err := deleteClusterQueue(ctx,
 		cq.client.genqlient,
 		cq.client.organizationId,
 		plan.Id.ValueString(),

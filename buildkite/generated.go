@@ -3,6 +3,7 @@
 package buildkite
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 
@@ -1419,18 +1420,6 @@ func (v *__getClusterByNameInput) GetOrgSlug() string { return v.OrgSlug }
 
 // GetCursor returns __getClusterByNameInput.Cursor, and is useful for accessing the field via an interface.
 func (v *__getClusterByNameInput) GetCursor() *string { return v.Cursor }
-
-// __getClusterInput is used internally by genqlient
-type __getClusterInput struct {
-	OrgSlug string `json:"orgSlug"`
-	Id      string `json:"id"`
-}
-
-// GetOrgSlug returns __getClusterInput.OrgSlug, and is useful for accessing the field via an interface.
-func (v *__getClusterInput) GetOrgSlug() string { return v.OrgSlug }
-
-// GetId returns __getClusterInput.Id, and is useful for accessing the field via an interface.
-func (v *__getClusterInput) GetId() string { return v.Id }
 
 // __getClusterQueuesInput is used internally by genqlient
 type __getClusterQueuesInput struct {
@@ -3570,100 +3559,6 @@ func (v *getClusterByNameResponse) GetOrganization() getClusterByNameOrganizatio
 	return v.Organization
 }
 
-// getClusterOrganization includes the requested fields of the GraphQL type Organization.
-// The GraphQL type's documentation follows.
-//
-// An organization
-type getClusterOrganization struct {
-	// Return cluster in the Organization by UUID
-	Cluster getClusterOrganizationCluster `json:"cluster"`
-}
-
-// GetCluster returns getClusterOrganization.Cluster, and is useful for accessing the field via an interface.
-func (v *getClusterOrganization) GetCluster() getClusterOrganizationCluster { return v.Cluster }
-
-// getClusterOrganizationCluster includes the requested fields of the GraphQL type Cluster.
-type getClusterOrganizationCluster struct {
-	ClusterFields `json:"-"`
-}
-
-// GetId returns getClusterOrganizationCluster.Id, and is useful for accessing the field via an interface.
-func (v *getClusterOrganizationCluster) GetId() string { return v.ClusterFields.Id }
-
-// GetUuid returns getClusterOrganizationCluster.Uuid, and is useful for accessing the field via an interface.
-func (v *getClusterOrganizationCluster) GetUuid() string { return v.ClusterFields.Uuid }
-
-// GetName returns getClusterOrganizationCluster.Name, and is useful for accessing the field via an interface.
-func (v *getClusterOrganizationCluster) GetName() string { return v.ClusterFields.Name }
-
-// GetDescription returns getClusterOrganizationCluster.Description, and is useful for accessing the field via an interface.
-func (v *getClusterOrganizationCluster) GetDescription() *string { return v.ClusterFields.Description }
-
-// GetEmoji returns getClusterOrganizationCluster.Emoji, and is useful for accessing the field via an interface.
-func (v *getClusterOrganizationCluster) GetEmoji() *string { return v.ClusterFields.Emoji }
-
-// GetColor returns getClusterOrganizationCluster.Color, and is useful for accessing the field via an interface.
-func (v *getClusterOrganizationCluster) GetColor() *string { return v.ClusterFields.Color }
-
-func (v *getClusterOrganizationCluster) UnmarshalJSON(b []byte) error {
-
-	if string(b) == "null" {
-		return nil
-	}
-
-	var firstPass struct {
-		*getClusterOrganizationCluster
-		graphql.NoUnmarshalJSON
-	}
-	firstPass.getClusterOrganizationCluster = v
-
-	err := json.Unmarshal(b, &firstPass)
-	if err != nil {
-		return err
-	}
-
-	err = json.Unmarshal(
-		b, &v.ClusterFields)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-type __premarshalgetClusterOrganizationCluster struct {
-	Id string `json:"id"`
-
-	Uuid string `json:"uuid"`
-
-	Name string `json:"name"`
-
-	Description *string `json:"description"`
-
-	Emoji *string `json:"emoji"`
-
-	Color *string `json:"color"`
-}
-
-func (v *getClusterOrganizationCluster) MarshalJSON() ([]byte, error) {
-	premarshaled, err := v.__premarshalJSON()
-	if err != nil {
-		return nil, err
-	}
-	return json.Marshal(premarshaled)
-}
-
-func (v *getClusterOrganizationCluster) __premarshalJSON() (*__premarshalgetClusterOrganizationCluster, error) {
-	var retval __premarshalgetClusterOrganizationCluster
-
-	retval.Id = v.ClusterFields.Id
-	retval.Uuid = v.ClusterFields.Uuid
-	retval.Name = v.ClusterFields.Name
-	retval.Description = v.ClusterFields.Description
-	retval.Emoji = v.ClusterFields.Emoji
-	retval.Color = v.ClusterFields.Color
-	return &retval, nil
-}
-
 // getClusterQueuesOrganization includes the requested fields of the GraphQL type Organization.
 // The GraphQL type's documentation follows.
 //
@@ -3804,15 +3699,6 @@ type getClusterQueuesResponse struct {
 func (v *getClusterQueuesResponse) GetOrganization() getClusterQueuesOrganization {
 	return v.Organization
 }
-
-// getClusterResponse is returned by getCluster on success.
-type getClusterResponse struct {
-	// Find an organization
-	Organization getClusterOrganization `json:"organization"`
-}
-
-// GetOrganization returns getClusterResponse.Organization, and is useful for accessing the field via an interface.
-func (v *getClusterResponse) GetOrganization() getClusterOrganization { return v.Organization }
 
 // getNodeNode includes the requested fields of the GraphQL interface Node.
 //
@@ -4230,10 +4116,14 @@ func __marshalgetNodeNode(v *getNodeNode) ([]byte, error) {
 	case *getNodeNodeCluster:
 		typename = "Cluster"
 
+		premarshaled, err := v.__premarshalJSON()
+		if err != nil {
+			return nil, err
+		}
 		result := struct {
 			TypeName string `json:"__typename"`
-			*getNodeNodeCluster
-		}{typename, v}
+			*__premarshalgetNodeNodeCluster
+		}{typename, premarshaled}
 		return json.Marshal(result)
 	case *getNodeNodeClusterQueue:
 		typename = "ClusterQueue"
@@ -4697,11 +4587,92 @@ func (v *getNodeNodeChangelog) GetTypename() string { return v.Typename }
 
 // getNodeNodeCluster includes the requested fields of the GraphQL type Cluster.
 type getNodeNodeCluster struct {
-	Typename string `json:"__typename"`
+	Typename      string `json:"__typename"`
+	ClusterFields `json:"-"`
 }
 
 // GetTypename returns getNodeNodeCluster.Typename, and is useful for accessing the field via an interface.
 func (v *getNodeNodeCluster) GetTypename() string { return v.Typename }
+
+// GetId returns getNodeNodeCluster.Id, and is useful for accessing the field via an interface.
+func (v *getNodeNodeCluster) GetId() string { return v.ClusterFields.Id }
+
+// GetUuid returns getNodeNodeCluster.Uuid, and is useful for accessing the field via an interface.
+func (v *getNodeNodeCluster) GetUuid() string { return v.ClusterFields.Uuid }
+
+// GetName returns getNodeNodeCluster.Name, and is useful for accessing the field via an interface.
+func (v *getNodeNodeCluster) GetName() string { return v.ClusterFields.Name }
+
+// GetDescription returns getNodeNodeCluster.Description, and is useful for accessing the field via an interface.
+func (v *getNodeNodeCluster) GetDescription() *string { return v.ClusterFields.Description }
+
+// GetEmoji returns getNodeNodeCluster.Emoji, and is useful for accessing the field via an interface.
+func (v *getNodeNodeCluster) GetEmoji() *string { return v.ClusterFields.Emoji }
+
+// GetColor returns getNodeNodeCluster.Color, and is useful for accessing the field via an interface.
+func (v *getNodeNodeCluster) GetColor() *string { return v.ClusterFields.Color }
+
+func (v *getNodeNodeCluster) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*getNodeNodeCluster
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.getNodeNodeCluster = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	err = json.Unmarshal(
+		b, &v.ClusterFields)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+type __premarshalgetNodeNodeCluster struct {
+	Typename string `json:"__typename"`
+
+	Id string `json:"id"`
+
+	Uuid string `json:"uuid"`
+
+	Name string `json:"name"`
+
+	Description *string `json:"description"`
+
+	Emoji *string `json:"emoji"`
+
+	Color *string `json:"color"`
+}
+
+func (v *getNodeNodeCluster) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *getNodeNodeCluster) __premarshalJSON() (*__premarshalgetNodeNodeCluster, error) {
+	var retval __premarshalgetNodeNodeCluster
+
+	retval.Typename = v.Typename
+	retval.Id = v.ClusterFields.Id
+	retval.Uuid = v.ClusterFields.Uuid
+	retval.Name = v.ClusterFields.Name
+	retval.Description = v.ClusterFields.Description
+	retval.Emoji = v.ClusterFields.Emoji
+	retval.Color = v.ClusterFields.Color
+	return &retval, nil
+}
 
 // getNodeNodeClusterQueue includes the requested fields of the GraphQL type ClusterQueue.
 type getNodeNodeClusterQueue struct {
@@ -10381,6 +10352,7 @@ fragment TeamFields on Team {
 `
 
 func GetTeamFromSlug(
+	ctx context.Context,
 	client graphql.Client,
 	slug string,
 ) (*GetTeamFromSlugResponse, error) {
@@ -10397,7 +10369,7 @@ func GetTeamFromSlug(
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(
-		nil,
+		ctx,
 		req,
 		resp,
 	)
@@ -10415,6 +10387,7 @@ mutation archivePipeline ($id: ID!) {
 `
 
 func archivePipeline(
+	ctx context.Context,
 	client graphql.Client,
 	id string,
 ) (*archivePipelineResponse, error) {
@@ -10431,7 +10404,7 @@ func archivePipeline(
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(
-		nil,
+		ctx,
 		req,
 		resp,
 	)
@@ -10456,6 +10429,7 @@ mutation createAgentToken ($organizationId: ID!, $description: String) {
 `
 
 func createAgentToken(
+	ctx context.Context,
 	client graphql.Client,
 	organizationId string,
 	description *string,
@@ -10474,7 +10448,7 @@ func createAgentToken(
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(
-		nil,
+		ctx,
 		req,
 		resp,
 	)
@@ -10503,6 +10477,7 @@ fragment ClusterFields on Cluster {
 `
 
 func createCluster(
+	ctx context.Context,
 	client graphql.Client,
 	organizationId string,
 	name string,
@@ -10527,7 +10502,7 @@ func createCluster(
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(
-		nil,
+		ctx,
 		req,
 		resp,
 	)
@@ -10557,6 +10532,7 @@ fragment ClusterAgentTokenValues on ClusterToken {
 `
 
 func createClusterAgentToken(
+	ctx context.Context,
 	client graphql.Client,
 	organizationId string,
 	clusterId string,
@@ -10577,7 +10553,7 @@ func createClusterAgentToken(
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(
-		nil,
+		ctx,
 		req,
 		resp,
 	)
@@ -10607,6 +10583,7 @@ fragment ClusterQueueValues on ClusterQueue {
 `
 
 func createClusterQueue(
+	ctx context.Context,
 	client graphql.Client,
 	organizationId string,
 	clusterId string,
@@ -10629,7 +10606,7 @@ func createClusterQueue(
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(
-		nil,
+		ctx,
 		req,
 		resp,
 	)
@@ -10696,6 +10673,7 @@ fragment PipelineValues on Pipeline {
 `
 
 func createPipeline(
+	ctx context.Context,
 	client graphql.Client,
 	input PipelineCreateInput,
 ) (*createPipelineResponse, error) {
@@ -10712,7 +10690,7 @@ func createPipeline(
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(
-		nil,
+		ctx,
 		req,
 		resp,
 	)
@@ -10751,6 +10729,7 @@ fragment PipelineScheduleValues on PipelineSchedule {
 `
 
 func createPipelineSchedule(
+	ctx context.Context,
 	client graphql.Client,
 	pipelineId string,
 	label *string,
@@ -10781,7 +10760,7 @@ func createPipelineSchedule(
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(
-		nil,
+		ctx,
 		req,
 		resp,
 	)
@@ -10814,6 +10793,7 @@ fragment TeamMemberValues on TeamMember {
 `
 
 func createTeamMember(
+	ctx context.Context,
 	client graphql.Client,
 	teamID string,
 	userID string,
@@ -10834,7 +10814,7 @@ func createTeamMember(
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(
-		nil,
+		ctx,
 		req,
 		resp,
 	)
@@ -10867,6 +10847,7 @@ fragment TeamPipelineFields on TeamPipeline {
 `
 
 func createTeamPipeline(
+	ctx context.Context,
 	client graphql.Client,
 	teamID string,
 	pipelineID string,
@@ -10887,7 +10868,7 @@ func createTeamPipeline(
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(
-		nil,
+		ctx,
 		req,
 		resp,
 	)
@@ -10931,6 +10912,7 @@ fragment TeamSuiteFields on TeamSuite {
 `
 
 func createTestSuiteTeam(
+	ctx context.Context,
 	client graphql.Client,
 	teamId string,
 	suiteId string,
@@ -10951,7 +10933,7 @@ func createTestSuiteTeam(
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(
-		nil,
+		ctx,
 		req,
 		resp,
 	)
@@ -10969,6 +10951,7 @@ mutation deleteCluster ($organizationId: ID!, $id: ID!) {
 `
 
 func deleteCluster(
+	ctx context.Context,
 	client graphql.Client,
 	organizationId string,
 	id string,
@@ -10987,7 +10970,7 @@ func deleteCluster(
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(
-		nil,
+		ctx,
 		req,
 		resp,
 	)
@@ -11005,6 +10988,7 @@ mutation deleteClusterQueue ($organizationId: ID!, $id: ID!) {
 `
 
 func deleteClusterQueue(
+	ctx context.Context,
 	client graphql.Client,
 	organizationId string,
 	id string,
@@ -11023,7 +11007,7 @@ func deleteClusterQueue(
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(
-		nil,
+		ctx,
 		req,
 		resp,
 	)
@@ -11041,6 +11025,7 @@ mutation deletePipeline ($id: ID!) {
 `
 
 func deletePipeline(
+	ctx context.Context,
 	client graphql.Client,
 	id string,
 ) (*deletePipelineResponse, error) {
@@ -11057,7 +11042,7 @@ func deletePipeline(
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(
-		nil,
+		ctx,
 		req,
 		resp,
 	)
@@ -11075,6 +11060,7 @@ mutation deletePipelineSchedule ($id: ID!) {
 `
 
 func deletePipelineSchedule(
+	ctx context.Context,
 	client graphql.Client,
 	id string,
 ) (*deletePipelineScheduleResponse, error) {
@@ -11091,7 +11077,7 @@ func deletePipelineSchedule(
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(
-		nil,
+		ctx,
 		req,
 		resp,
 	)
@@ -11109,6 +11095,7 @@ mutation deleteTeamMember ($id: ID!) {
 `
 
 func deleteTeamMember(
+	ctx context.Context,
 	client graphql.Client,
 	id string,
 ) (*deleteTeamMemberResponse, error) {
@@ -11125,7 +11112,7 @@ func deleteTeamMember(
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(
-		nil,
+		ctx,
 		req,
 		resp,
 	)
@@ -11144,6 +11131,7 @@ mutation deleteTeamPipeline ($id: ID!) {
 `
 
 func deleteTeamPipeline(
+	ctx context.Context,
 	client graphql.Client,
 	id string,
 ) (*deleteTeamPipelineResponse, error) {
@@ -11160,7 +11148,7 @@ func deleteTeamPipeline(
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(
-		nil,
+		ctx,
 		req,
 		resp,
 	)
@@ -11181,6 +11169,7 @@ mutation deleteTestSuiteTeam ($id: ID!) {
 `
 
 func deleteTestSuiteTeam(
+	ctx context.Context,
 	client graphql.Client,
 	id string,
 ) (*deleteTestSuiteTeamResponse, error) {
@@ -11197,7 +11186,7 @@ func deleteTestSuiteTeam(
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(
-		nil,
+		ctx,
 		req,
 		resp,
 	)
@@ -11217,6 +11206,7 @@ query getAgentToken ($slug: ID!) {
 `
 
 func getAgentToken(
+	ctx context.Context,
 	client graphql.Client,
 	slug string,
 ) (*getAgentTokenResponse, error) {
@@ -11233,53 +11223,7 @@ func getAgentToken(
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(
-		nil,
-		req,
-		resp,
-	)
-
-	return &data, err
-}
-
-// The query or mutation executed by getCluster.
-const getCluster_Operation = `
-query getCluster ($orgSlug: ID!, $id: ID!) {
-	organization(slug: $orgSlug) {
-		cluster(id: $id) {
-			... ClusterFields
-		}
-	}
-}
-fragment ClusterFields on Cluster {
-	id
-	uuid
-	name
-	description
-	emoji
-	color
-}
-`
-
-func getCluster(
-	client graphql.Client,
-	orgSlug string,
-	id string,
-) (*getClusterResponse, error) {
-	req := &graphql.Request{
-		OpName: "getCluster",
-		Query:  getCluster_Operation,
-		Variables: &__getClusterInput{
-			OrgSlug: orgSlug,
-			Id:      id,
-		},
-	}
-	var err error
-
-	var data getClusterResponse
-	resp := &graphql.Response{Data: &data}
-
-	err = client.MakeRequest(
-		nil,
+		ctx,
 		req,
 		resp,
 	)
@@ -11314,6 +11258,7 @@ fragment ClusterAgentTokenValues on ClusterToken {
 `
 
 func getClusterAgentTokens(
+	ctx context.Context,
 	client graphql.Client,
 	orgSlug string,
 	id string,
@@ -11332,7 +11277,7 @@ func getClusterAgentTokens(
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(
-		nil,
+		ctx,
 		req,
 		resp,
 	)
@@ -11368,6 +11313,7 @@ fragment ClusterFields on Cluster {
 `
 
 func getClusterByName(
+	ctx context.Context,
 	client graphql.Client,
 	orgSlug string,
 	cursor *string,
@@ -11386,7 +11332,7 @@ func getClusterByName(
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(
-		nil,
+		ctx,
 		req,
 		resp,
 	)
@@ -11422,6 +11368,7 @@ fragment ClusterQueueValues on ClusterQueue {
 `
 
 func getClusterQueues(
+	ctx context.Context,
 	client graphql.Client,
 	orgSlug string,
 	id string,
@@ -11440,7 +11387,7 @@ func getClusterQueues(
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(
-		nil,
+		ctx,
 		req,
 		resp,
 	)
@@ -11467,6 +11414,9 @@ query getNode ($id: ID!) {
 		}
 		... on TeamPipeline {
 			... TeamPipelineFields
+		}
+		... on Cluster {
+			... ClusterFields
 		}
 	}
 }
@@ -11561,9 +11511,18 @@ fragment TeamPipelineFields on TeamPipeline {
 		id
 	}
 }
+fragment ClusterFields on Cluster {
+	id
+	uuid
+	name
+	description
+	emoji
+	color
+}
 `
 
 func getNode(
+	ctx context.Context,
 	client graphql.Client,
 	id string,
 ) (*getNodeResponse, error) {
@@ -11580,7 +11539,7 @@ func getNode(
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(
-		nil,
+		ctx,
 		req,
 		resp,
 	)
@@ -11600,6 +11559,7 @@ query getOrganization ($slug: ID!) {
 `
 
 func getOrganization(
+	ctx context.Context,
 	client graphql.Client,
 	slug string,
 ) (*getOrganizationResponse, error) {
@@ -11616,7 +11576,7 @@ func getOrganization(
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(
-		nil,
+		ctx,
 		req,
 		resp,
 	)
@@ -11681,6 +11641,7 @@ fragment PipelineValues on Pipeline {
 `
 
 func getPipeline(
+	ctx context.Context,
 	client graphql.Client,
 	slug string,
 ) (*getPipelineResponse, error) {
@@ -11697,7 +11658,7 @@ func getPipeline(
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(
-		nil,
+		ctx,
 		req,
 		resp,
 	)
@@ -11732,6 +11693,7 @@ fragment PipelineScheduleValues on PipelineSchedule {
 `
 
 func getPipelineSchedule(
+	ctx context.Context,
 	client graphql.Client,
 	id string,
 ) (*getPipelineScheduleResponse, error) {
@@ -11748,7 +11710,7 @@ func getPipelineSchedule(
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(
-		nil,
+		ctx,
 		req,
 		resp,
 	)
@@ -11780,6 +11742,7 @@ fragment PipelineScheduleValues on PipelineSchedule {
 `
 
 func getPipelineScheduleBySlug(
+	ctx context.Context,
 	client graphql.Client,
 	slug string,
 ) (*getPipelineScheduleBySlugResponse, error) {
@@ -11796,7 +11759,7 @@ func getPipelineScheduleBySlug(
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(
-		nil,
+		ctx,
 		req,
 		resp,
 	)
@@ -11832,6 +11795,7 @@ query getTestSuite ($id: ID!, $teamCount: Int) {
 `
 
 func getTestSuite(
+	ctx context.Context,
 	client graphql.Client,
 	id string,
 	teamCount int,
@@ -11850,7 +11814,7 @@ func getTestSuite(
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(
-		nil,
+		ctx,
 		req,
 		resp,
 	)
@@ -11872,6 +11836,7 @@ mutation revokeAgentToken ($id: ID!, $reason: String!) {
 `
 
 func revokeAgentToken(
+	ctx context.Context,
 	client graphql.Client,
 	id string,
 	reason string,
@@ -11890,7 +11855,7 @@ func revokeAgentToken(
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(
-		nil,
+		ctx,
 		req,
 		resp,
 	)
@@ -11908,6 +11873,7 @@ mutation revokeClusterAgentToken ($organizationId: ID!, $id: ID!) {
 `
 
 func revokeClusterAgentToken(
+	ctx context.Context,
 	client graphql.Client,
 	organizationId string,
 	id string,
@@ -11926,7 +11892,7 @@ func revokeClusterAgentToken(
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(
-		nil,
+		ctx,
 		req,
 		resp,
 	)
@@ -11948,6 +11914,7 @@ mutation setApiIpAddresses ($organizationID: ID!, $ipAddresses: String!) {
 `
 
 func setApiIpAddresses(
+	ctx context.Context,
 	client graphql.Client,
 	organizationID string,
 	ipAddresses string,
@@ -11966,7 +11933,7 @@ func setApiIpAddresses(
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(
-		nil,
+		ctx,
 		req,
 		resp,
 	)
@@ -11999,6 +11966,7 @@ fragment TeamFields on Team {
 `
 
 func teamCreate(
+	ctx context.Context,
 	client graphql.Client,
 	organizationID string,
 	name string,
@@ -12027,7 +11995,7 @@ func teamCreate(
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(
-		nil,
+		ctx,
 		req,
 		resp,
 	)
@@ -12045,6 +12013,7 @@ mutation teamDelete ($id: ID!) {
 `
 
 func teamDelete(
+	ctx context.Context,
 	client graphql.Client,
 	id string,
 ) (*teamDeleteResponse, error) {
@@ -12061,7 +12030,7 @@ func teamDelete(
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(
-		nil,
+		ctx,
 		req,
 		resp,
 	)
@@ -12081,6 +12050,7 @@ mutation teamPipelineCreate ($teamId: ID!, $pipelineId: ID!, $accessLevel: Pipel
 `
 
 func teamPipelineCreate(
+	ctx context.Context,
 	client graphql.Client,
 	teamId string,
 	pipelineId string,
@@ -12101,7 +12071,7 @@ func teamPipelineCreate(
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(
-		nil,
+		ctx,
 		req,
 		resp,
 	)
@@ -12119,6 +12089,7 @@ mutation teamPipelineDelete ($id: ID!) {
 `
 
 func teamPipelineDelete(
+	ctx context.Context,
 	client graphql.Client,
 	id string,
 ) (*teamPipelineDeleteResponse, error) {
@@ -12135,7 +12106,7 @@ func teamPipelineDelete(
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(
-		nil,
+		ctx,
 		req,
 		resp,
 	)
@@ -12155,6 +12126,7 @@ mutation teamPipelineUpdate ($id: ID!, $accessLevel: PipelineAccessLevels!) {
 `
 
 func teamPipelineUpdate(
+	ctx context.Context,
 	client graphql.Client,
 	id string,
 	accessLevel PipelineAccessLevels,
@@ -12173,7 +12145,7 @@ func teamPipelineUpdate(
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(
-		nil,
+		ctx,
 		req,
 		resp,
 	)
@@ -12204,6 +12176,7 @@ fragment TeamFields on Team {
 `
 
 func teamUpdate(
+	ctx context.Context,
 	client graphql.Client,
 	id string,
 	name string,
@@ -12232,7 +12205,7 @@ func teamUpdate(
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(
-		nil,
+		ctx,
 		req,
 		resp,
 	)
@@ -12261,6 +12234,7 @@ fragment ClusterFields on Cluster {
 `
 
 func updateCluster(
+	ctx context.Context,
 	client graphql.Client,
 	organizationId string,
 	id string,
@@ -12287,7 +12261,7 @@ func updateCluster(
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(
-		nil,
+		ctx,
 		req,
 		resp,
 	)
@@ -12316,6 +12290,7 @@ fragment ClusterAgentTokenValues on ClusterToken {
 `
 
 func updateClusterAgentToken(
+	ctx context.Context,
 	client graphql.Client,
 	organizationId string,
 	id string,
@@ -12336,7 +12311,7 @@ func updateClusterAgentToken(
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(
-		nil,
+		ctx,
 		req,
 		resp,
 	)
@@ -12366,6 +12341,7 @@ fragment ClusterQueueValues on ClusterQueue {
 `
 
 func updateClusterQueue(
+	ctx context.Context,
 	client graphql.Client,
 	organizationId string,
 	id string,
@@ -12386,7 +12362,7 @@ func updateClusterQueue(
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(
-		nil,
+		ctx,
 		req,
 		resp,
 	)
@@ -12453,6 +12429,7 @@ fragment PipelineValues on Pipeline {
 `
 
 func updatePipeline(
+	ctx context.Context,
 	client graphql.Client,
 	input PipelineUpdateInput,
 ) (*updatePipelineResponse, error) {
@@ -12469,7 +12446,7 @@ func updatePipeline(
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(
-		nil,
+		ctx,
 		req,
 		resp,
 	)
@@ -12503,6 +12480,7 @@ fragment PipelineScheduleValues on PipelineSchedule {
 `
 
 func updatePipelineSchedule(
+	ctx context.Context,
 	client graphql.Client,
 	input PipelineScheduleUpdateInput,
 ) (*updatePipelineScheduleResponse, error) {
@@ -12519,7 +12497,7 @@ func updatePipelineSchedule(
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(
-		nil,
+		ctx,
 		req,
 		resp,
 	)
@@ -12550,6 +12528,7 @@ fragment TeamMemberValues on TeamMember {
 `
 
 func updateTeamMember(
+	ctx context.Context,
 	client graphql.Client,
 	id string,
 	role string,
@@ -12568,7 +12547,7 @@ func updateTeamMember(
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(
-		nil,
+		ctx,
 		req,
 		resp,
 	)
@@ -12599,6 +12578,7 @@ fragment TeamPipelineFields on TeamPipeline {
 `
 
 func updateTeamPipeline(
+	ctx context.Context,
 	client graphql.Client,
 	id string,
 	accessLevel PipelineAccessLevels,
@@ -12617,7 +12597,7 @@ func updateTeamPipeline(
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(
-		nil,
+		ctx,
 		req,
 		resp,
 	)
@@ -12639,6 +12619,7 @@ mutation updateTestSuiteTeam ($id: ID!, $accessLevel: SuiteAccessLevels!) {
 `
 
 func updateTestSuiteTeam(
+	ctx context.Context,
 	client graphql.Client,
 	id string,
 	accessLevel SuiteAccessLevels,
@@ -12657,7 +12638,7 @@ func updateTestSuiteTeam(
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(
-		nil,
+		ctx,
 		req,
 		resp,
 	)

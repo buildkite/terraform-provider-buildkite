@@ -1,6 +1,7 @@
 package buildkite
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"reflect"
@@ -205,7 +206,7 @@ func checkTestSuiteRemoteValue(suite *getTestSuiteSuite, property, value string)
 }
 
 func loadRemoteTestSuite(id string) *getTestSuiteSuite {
-	_suite, err := getTestSuite(genqlientGraphql, id, 1)
+	_suite, err := getTestSuite(context.Background(), genqlientGraphql, id, 1)
 	if err != nil {
 		return nil
 	}
@@ -246,7 +247,7 @@ func testTestSuiteDestroy(s *terraform.State) error {
 			continue
 		}
 
-		suite, err := getTestSuite(genqlientGraphql, rs.Primary.Attributes["id"], 1)
+		suite, err := getTestSuite(context.Background(), genqlientGraphql, rs.Primary.Attributes["id"], 1)
 
 		if err != nil {
 			return fmt.Errorf("Error fetching test suite from graphql API: %v", err)

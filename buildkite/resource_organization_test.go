@@ -88,7 +88,7 @@ func TestAccOrganization_import(t *testing.T) {
 
 func testAccOrganizationConfigBasic(ip_addresses []string) string {
 	config := `
-	
+
 	resource "buildkite_organization" "let_them_in" {
         allowed_api_ip_addresses = %v
 	}
@@ -124,7 +124,7 @@ func testCheckOrganizationResourceRemoved(s *terraform.State) error {
 
 func testAccCheckOrganizationRemoteValues(ip_addresses []string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
-		resp, err := getOrganization(genqlientGraphql, getenv("BUILDKITE_ORGANIZATION_SLUG"))
+		resp, err := getOrganization(context.Background(), genqlientGraphql, getenv("BUILDKITE_ORGANIZATION_SLUG"))
 
 		if err != nil {
 			return err
