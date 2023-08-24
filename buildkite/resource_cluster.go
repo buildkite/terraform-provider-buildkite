@@ -138,8 +138,13 @@ func (c *clusterResource) Read(ctx context.Context, req resource.ReadRequest, re
 		}
 		updateClusterResourceState(&state, *clusterNode)
 		resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+	} else {
+		resp.Diagnostics.AddWarning(
+			"Cluster not found",
+			"Removing Cluster from state...",
+		)
+		resp.State.RemoveResource(ctx)
 	}
-
 }
 
 func (c *clusterResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
