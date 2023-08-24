@@ -101,7 +101,7 @@ func TestAccCluster_Import(t *testing.T) {
 				),
 			},
 			{
-				ResourceName: "buildkite_cluster.foo",
+				ResourceName:      "buildkite_cluster.foo",
 				ImportState:       true,
 				ImportStateVerify: true,
 			},
