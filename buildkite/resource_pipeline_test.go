@@ -600,7 +600,7 @@ func TestAccBuildkitePipeline(t *testing.T) {
 		teamName := acctest.RandString(12)
 		config := fmt.Sprintf(`
 			resource "buildkite_team" "team" {
-				name = "%s"g
+				name = "%s"
 				default_team = false
 				default_member_role = "MEMBER"
 				privacy = "VISIBLE"
