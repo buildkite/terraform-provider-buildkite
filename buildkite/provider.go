@@ -83,24 +83,24 @@ func (tf *terraformProvider) Configure(ctx context.Context, req provider.Configu
 	resp.DataSourceData = client
 }
 
-func userAgent(name, providerVersion, tfVersion string) string {
-	ua := fmt.Sprintf("Terraform/%s (+https://www.terraform.io)", tfVersion)
-	if name != "" {
-		ua += " " + name
+func userAgent(providerName, providerVersion, tfVersion string) string {
+	userAgentHeader := fmt.Sprintf("Terraform/%s (+https://www.terraform.io)", tfVersion)
+	if providerName != "" {
+		userAgentHeader += " " + providerName
 		if providerVersion != "" {
-			ua += "/" + providerVersion
+			userAgentHeader += "/" + providerVersion
 		}
 	}
 
-	if add := os.Getenv("TF_APPEND_USER_AGENT"); add != "" {
-		add = strings.TrimSpace(add)
-		if len(add) > 0 {
-			ua += " " + add
-			log.Printf("[DEBUG] Using modified User-Agent: %s", ua)
+	if addDetails := os.Getenv("TF_APPEND_USER_AGENT"); addDetails != "" {
+		addDetails = strings.TrimSpace(addDetails)
+		if len(addDetails) > 0 {
+			userAgentHeader += " " + addDetails
+			log.Printf("[DEBUG] Using modified User-Agent: %s", userAgentHeader)
 		}
 	}
 
-	return ua
+	return userAgentHeader
 }
 
 func (*terraformProvider) DataSources(context.Context) []func() datasource.DataSource {
