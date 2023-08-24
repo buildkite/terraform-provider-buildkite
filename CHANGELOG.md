@@ -8,6 +8,7 @@ All notable changes to this project will be documented in this file.
 - SUP-1319: Removal of archive_on_delete from pipeline resource [[PR #369](https://github.com/buildkite/terraform-provider-buildkite/pull/369)] @james2791
 - SUP-1383 Fix teams block bug in v0.25.0 [[PR #370](https://github.com/buildkite/terraform-provider-buildkite/pull/370)] @jradtilbrook
 - SUP-1320 Remove deletion_protection from pipeline resource [[PR #373](https://github.com/buildkite/terraform-provider-buildkite/pull/373)] @lizrabuya
+- SUP-1337 Remove org settings resource [[PR #368](https://github.com/buildkite/terraform-provider-buildkite/pull/368)] @lizrabuya
 - SUP-1380 Use ID for Cluster importing [[PR #372](https://github.com/buildkite/terraform-provider-buildkite/pull/372)] @mcncl
 - SUP-1388 Implement planmodifier.String for slugs [[PR #374](https://github.com/buildkite/terraform-provider-buildkite/pull/374)] @jradtilbrook
 
@@ -22,6 +23,7 @@ functionality to [lifecycles](https://developer.hashicorp.com/terraform/language
 
 - Move archive pipeline config to provider [[PR #354](https://github.com/buildkite/terraform-provider-buildkite/pull/354)] @jradtilbrook
 - SUP-1076 Convert testing to framework [[PR #361](https://github.com/buildkite/terraform-provider-buildkite/pull/361)] @jradtilbrook
+    - SUP-1076 Move Cluster tests to use t.Run [[PR #365](https://github.com/buildkite/terraform-provider-buildkite/pull/365)] @mcncl
 - SUP-1368 Fix pipeline resource update [[PR #359](https://github.com/buildkite/terraform-provider-buildkite/pull/359)] @lizrabuya
 - SUP-1307: Implement Pipeline Team Resource[[PR #351](https://github.com/buildkite/terraform-provider-buildkite/pull/351)] @lizrabuya
 
