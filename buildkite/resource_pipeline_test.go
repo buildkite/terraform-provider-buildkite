@@ -77,7 +77,6 @@ func TestAccBuildkitePipeline(t *testing.T) {
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "cancel_intermediate_builds_branch_filter", ""),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "default_branch", ""),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "default_timeout_in_minutes", "0"),
-						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "deletion_protection", "false"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "description", ""),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "maximum_timeout_in_minutes", "0"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "name", pipelineName),

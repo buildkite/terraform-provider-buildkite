@@ -85,7 +85,6 @@ type pipelineResourceModel struct {
 	ClusterId                            types.String             `tfsdk:"cluster_id"`
 	DefaultBranch                        types.String             `tfsdk:"default_branch"`
 	DefaultTimeoutInMinutes              types.Int64              `tfsdk:"default_timeout_in_minutes"`
-	DeletionProtection                   types.Bool               `tfsdk:"deletion_protection"`
 	Description                          types.String             `tfsdk:"description"`
 	Id                                   types.String             `tfsdk:"id"`
 	MaximumTimeoutInMinutes              types.Int64              `tfsdk:"maximum_timeout_in_minutes"`
@@ -236,7 +235,6 @@ func (p *pipelineResource) Create(ctx context.Context, req resource.CreateReques
 		}
 	}
 	state.Teams = teams
-	state.DeletionProtection = plan.DeletionProtection
 
 	if len(plan.ProviderSettings) > 0 {
 		pipelineExtraInfo, err := updatePipelineExtraInfo(ctx, response.PipelineCreate.Pipeline.Slug, plan.ProviderSettings[0], p.client)
@@ -397,14 +395,6 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 				PlanModifiers: []planmodifier.Int64{
 					int64planmodifier.UseStateForUnknown(),
 				},
-			},
-			"deletion_protection": schema.BoolAttribute{
-				Optional:    true,
-				Computed:    true,
-				Default:     booldefault.StaticBool(false),
-				Description: "If set to 'true', deletion of a pipeline via `terraform destroy` will fail, until set to 'false'.",
-				DeprecationMessage: "Deletion protection will be removed in a future release. A similar solution already " +
-					"exists and is supported by Terraform. See https://developer.hashicorp.com/terraform/language/meta-arguments/lifecycle.",
 			},
 			"maximum_timeout_in_minutes": schema.Int64Attribute{
 				Computed: true,
@@ -631,7 +621,6 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 	}
 
 	setPipelineModel(&state, &response.PipelineUpdate.Pipeline)
-	state.DeletionProtection = plan.DeletionProtection
 
 	// plan.Teams has what we want. state.Teams has what exists on the server. we need to make them match
 	err = p.reconcileTeamPipelinesToPlan(ctx, plan.Teams, state.Teams, &response.PipelineUpdate.Pipeline, response.PipelineUpdate.Pipeline.Id)
