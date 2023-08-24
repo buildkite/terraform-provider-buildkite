@@ -8,6 +8,7 @@ All notable changes to this project will be documented in this file.
 - SUP-1319: Removal of archive_on_delete from pipeline resource [[PR #369](https://github.com/buildkite/terraform-provider-buildkite/pull/369)] @james2791
 - SUP-1383 Fix teams block bug in v0.25.0 [[PR #370](https://github.com/buildkite/terraform-provider-buildkite/pull/370)] @jradtilbrook
 - SUP-1380 Use ID for Cluster importing [[PR #372](https://github.com/buildkite/terraform-provider-buildkite/pull/372)] @mcncl
+- SUP-1388 Implement planmodifier.String for slugs [[PR #374](https://github.com/buildkite/terraform-provider-buildkite/pull/374)] @jradtilbrook
 
 ### Changes
 

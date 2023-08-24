@@ -6,6 +6,7 @@ import (
 	"log"
 	"unsafe"
 
+	custom_modifier "github.com/buildkite/terraform-provider-buildkite/internal/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -442,6 +443,9 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 			},
 			"slug": schema.StringAttribute{
 				Computed: true,
+				PlanModifiers: []planmodifier.String{
+					custom_modifier.UseStateIfUnchanged("name"),
+				},
 			},
 			"steps": schema.StringAttribute{
 				Optional: true,
