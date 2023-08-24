@@ -102,9 +102,6 @@ func TestAccCluster_Import(t *testing.T) {
 			},
 			{
 				ResourceName: "buildkite_cluster.foo",
-				ImportStateIdFunc: func(s *terraform.State) (string, error) {
-					return c.ID.ValueString(), nil
-				},
 				ImportState:       true,
 				ImportStateVerify: true,
 			},
