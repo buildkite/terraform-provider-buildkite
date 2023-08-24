@@ -101,10 +101,7 @@ func TestAccCluster_Import(t *testing.T) {
 				),
 			},
 			{
-				ResourceName: "buildkite_cluster.foo",
-				ImportStateIdFunc: func(s *terraform.State) (string, error) {
-					return c.UUID.ValueString(), nil
-				},
+				ResourceName:      "buildkite_cluster.foo",
 				ImportState:       true,
 				ImportStateVerify: true,
 			},
@@ -112,24 +109,30 @@ func TestAccCluster_Import(t *testing.T) {
 	})
 }
 
-func testAccCheckClusterExists(n string, c *clusterResourceModel) resource.TestCheckFunc {
+func testAccCheckClusterExists(name string, c *clusterResourceModel) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
-		rs, ok := s.RootModule().Resources[n]
+		rs, ok := s.RootModule().Resources[name]
+
 		if !ok {
-			return fmt.Errorf("cluster not found: %s", n)
+			return fmt.Errorf("Not found in state: %s", name)
 		}
 
 		if rs.Primary.ID == "" {
-			return fmt.Errorf("no cluster ID is set")
+			return fmt.Errorf("No ID is set in state")
 		}
 
-		r, err := getCluster(context.Background(), genqlientGraphql, getenv("BUILDKITE_ORGANIZATION_SLUG"), rs.Primary.Attributes["uuid"])
+		r, err := getNode(context.Background(), genqlientGraphql, rs.Primary.ID)
 
 		if err != nil {
 			return err
 		}
 
-		updateClusterResourceState(r.Organization.Cluster, c)
+		if clusterNode, ok := r.GetNode().(*getNodeNodeCluster); ok {
+			if clusterNode == nil {
+				return fmt.Errorf("Team not found: nil response")
+			}
+			updateClusterResourceState(c, *clusterNode)
+		}
 		return nil
 	}
 }
@@ -150,12 +153,17 @@ func testAccCheckClusterDestroy(s *terraform.State) error {
 			continue
 		}
 
-		_, err := getCluster(context.Background(), genqlientGraphql, getenv("BUILDKITE_ORGANIZATION_SLUG"), rs.Primary.Attributes["uuid"])
+		r, err := getNode(context.Background(), genqlientGraphql, rs.Primary.ID)
 
-		if err == nil {
-			return fmt.Errorf("Cluster still exists")
+		if err != nil {
+			return err
 		}
-		return nil
+
+		if clusterNode, ok := r.GetNode().(*getNodeNodeCluster); ok {
+			if clusterNode != nil {
+				return fmt.Errorf("Cluster still exists: %v", clusterNode)
+			}
+		}
 	}
 	return nil
 }
