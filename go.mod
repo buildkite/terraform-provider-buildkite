@@ -13,6 +13,16 @@ require (
 )
 
 require (
+	github.com/dnephin/pflag v1.0.7 // indirect
+	github.com/fsnotify/fsnotify v1.5.4 // indirect
+	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510 // indirect
+	golang.org/x/sync v0.1.0 // indirect
+	golang.org/x/term v0.10.0 // indirect
+	golang.org/x/tools v0.8.0 // indirect
+	gotest.tools/gotestsum v1.10.1 // indirect
+)
+
+require (
 	github.com/ProtonMail/go-crypto v0.0.0-20230217124315-7d5c6f04bbb8 // indirect
 	github.com/agext/levenshtein v1.2.2 // indirect
 	github.com/apparentlymart/go-textseg/v13 v13.0.0 // indirect
