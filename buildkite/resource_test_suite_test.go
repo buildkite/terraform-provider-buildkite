@@ -83,7 +83,7 @@ func TestAccBuildkiteTestSuite(t *testing.T) {
 		randName := acctest.RandString(10)
 		check := resource.ComposeAggregateTestCheckFunc(
 			checkTestSuiteExists("buildkite_test_suite.suite", &suite),
-			checkTestSuiteRemoteValue(&suite, "Name", "test suite"),
+			checkTestSuiteRemoteValue(&suite, "Name", fmt.Sprintf("test suite %s", randName)),
 			checkTestSuiteRemoteValue(&suite, "DefaultBranch", "main"),
 			resource.TestCheckResourceAttrSet("buildkite_test_suite.suite", "id"),
 			resource.TestCheckResourceAttrSet("buildkite_test_suite.suite", "api_token"),
@@ -115,7 +115,7 @@ func TestAccBuildkiteTestSuite(t *testing.T) {
 			resource.TestCheckResourceAttr("buildkite_test_suite.suite", "name", fmt.Sprintf("test suite update %s", randName)),
 			resource.TestCheckResourceAttrSet("buildkite_test_suite.suite", "team_owner_id"),
 			checkTestSuiteExists("buildkite_test_suite.suite", &suite),
-			checkTestSuiteRemoteValue(&suite, "Name", "test suite update"),
+			checkTestSuiteRemoteValue(&suite, "Name", fmt.Sprintf("test suite update %s", randName)),
 			checkTestSuiteRemoteValue(&suite, "DefaultBranch", "main"),
 		)
 
@@ -149,7 +149,7 @@ func TestAccBuildkiteTestSuite(t *testing.T) {
 			resource.TestCheckResourceAttrSet("buildkite_test_suite.suite", "team_owner_id"),
 			resource.TestCheckResourceAttrPair("buildkite_test_suite.suite", "team_owner_id", "buildkite_team.bteam", "id"),
 			checkTestSuiteExists("buildkite_test_suite.suite", &suite),
-			checkTestSuiteRemoteValue(&suite, "Name", "test suite update"),
+			checkTestSuiteRemoteValue(&suite, "Name", fmt.Sprintf("test suite update %s", randName)),
 			checkTestSuiteRemoteValue(&suite, "DefaultBranch", "main"),
 		)
 
