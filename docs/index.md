@@ -38,4 +38,12 @@ provider "buildkite" {
 - `graphql_url` - (Optional) This is the base URL to use for GraphQL requests. It defaults to "https://graphql.buildkite.com/v1", but can also be sourced from the `BUILDKITE_GRAPHQL_URL` environment variable.
 - `rest_url` - (Optional) This is the the base URL to use for REST requests. It defaults to "https://api.buildkite.com", but can also be sourced from the `BUILDKITE_REST_URL` environment variable.
 - `archive_pipeline_on_delete` - (Optional) Whether to archive pipelines when being destroyed instead of deleting them. This can be used a soft-delete approach to pipeline destruction.
-- `timeouts` - (Optional) A block of `create`, `read`, `update`, and `delete` durations. These are used by the provider per resource when running through the given CRUD operation. Defaults to 30 seconds
+- `timeouts` - (Optional. Default `30s`) A block of `create`, `read`, `update`, and `delete` durations. These are used by the provider per resource when running through the given CRUD operation.
+
+## Usage of `timeouts` and retries
+
+All resources and datasources managed by this provider have a global timeout configuration. This timeout is used to limit when performing the CRUD operations on each resource.
+It is configured globally for the provider but each resource uses the timeout separately. Ie. if you manage 3 pipelines in terraform and have set an update timeout of 15 seconds, each pipeline will be given 15 seconds to finish updating (not 15/3 (5) seconds to update).
+
+CRUD operations also have retries configured with an exponential back-off. The retry attempts are included in the timeout. Ie. with a timeout of 15 seconds, a pipeline create operation will retry as many times as it can within 15 seconds.
+This helps to automatically retry operations when the API is experiencing high latency.
