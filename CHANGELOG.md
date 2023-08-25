@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+- SUP-1392: Random test suite names in tests/t.Run() conversion [[PR #376](https://github.com/buildkite/terraform-provider-buildkite/pull/376)] @james2791
+
+## [v0.26.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v0.25.0...v0.26.0)
+
 - SUP-1375 Use context everywhere [[PR #362](https://github.com/buildkite/terraform-provider-buildkite/pull/362)] @jradtilbrook
 - SUP-1319: Removal of archive_on_delete from pipeline resource [[PR #369](https://github.com/buildkite/terraform-provider-buildkite/pull/369)] @james2791
 - SUP-1383 Fix teams block bug in v0.25.0 [[PR #370](https://github.com/buildkite/terraform-provider-buildkite/pull/370)] @jradtilbrook
