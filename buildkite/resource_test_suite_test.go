@@ -88,7 +88,7 @@ func TestAccBuildkiteTestSuite(t *testing.T) {
 			resource.TestCheckResourceAttrSet("buildkite_test_suite.suite", "id"),
 			resource.TestCheckResourceAttrSet("buildkite_test_suite.suite", "api_token"),
 			resource.TestCheckResourceAttr("buildkite_test_suite.suite", "default_branch", "main"),
-			resource.TestCheckResourceAttr("buildkite_test_suite.suite", "name", "test suite"),
+			resource.TestCheckResourceAttr("buildkite_test_suite.suite", "name", fmt.Sprintf("test suite %s", randName)),
 			resource.TestCheckResourceAttrSet("buildkite_test_suite.suite", "team_owner_id"),
 		)
 
@@ -112,7 +112,7 @@ func TestAccBuildkiteTestSuite(t *testing.T) {
 			resource.TestCheckResourceAttrSet("buildkite_test_suite.suite", "id"),
 			resource.TestCheckResourceAttrSet("buildkite_test_suite.suite", "api_token"),
 			resource.TestCheckResourceAttr("buildkite_test_suite.suite", "default_branch", "main"),
-			resource.TestCheckResourceAttr("buildkite_test_suite.suite", "name", "test suite update"),
+			resource.TestCheckResourceAttr("buildkite_test_suite.suite", "name", fmt.Sprintf("test suite update %s", randName)),
 			resource.TestCheckResourceAttrSet("buildkite_test_suite.suite", "team_owner_id"),
 			checkTestSuiteExists("buildkite_test_suite.suite", &suite),
 			checkTestSuiteRemoteValue(&suite, "Name", "test suite update"),
@@ -145,7 +145,7 @@ func TestAccBuildkiteTestSuite(t *testing.T) {
 			resource.TestCheckResourceAttrSet("buildkite_test_suite.suite", "id"),
 			resource.TestCheckResourceAttrSet("buildkite_test_suite.suite", "api_token"),
 			resource.TestCheckResourceAttr("buildkite_test_suite.suite", "default_branch", "main"),
-			resource.TestCheckResourceAttr("buildkite_test_suite.suite", "name", "test suite update"),
+			resource.TestCheckResourceAttr("buildkite_test_suite.suite", "name", fmt.Sprintf("test suite update %s", randName)),
 			resource.TestCheckResourceAttrSet("buildkite_test_suite.suite", "team_owner_id"),
 			resource.TestCheckResourceAttrPair("buildkite_test_suite.suite", "team_owner_id", "buildkite_team.bteam", "id"),
 			checkTestSuiteExists("buildkite_test_suite.suite", &suite),
