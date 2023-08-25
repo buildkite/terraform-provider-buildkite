@@ -29,7 +29,7 @@ func TestAccBuildkiteClusterDatasource(t *testing.T) {
 						data "buildkite_cluster" "default" {
 							name = buildkite_cluster.cluster.name
 						}`, clusterName),
-					ExpectError: regexp.MustCompile(`timeout while waiting for state to become 'success' \(timeout: 50ms\)`),
+					ExpectError: regexp.MustCompile(`(timeout while waiting for state to become 'success' \(timeout: 50ms\))|(context deadline exceeded)`),
 				},
 			},
 		})
