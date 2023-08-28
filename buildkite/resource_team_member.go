@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -13,14 +14,16 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
 type teamMemberResourceModel struct {
-	Id     types.String `tfsdk:"id"`
-	Uuid   types.String `tfsdk:"uuid"`
-	Role   types.String `tfsdk:"role"`
-	TeamId types.String `tfsdk:"team_id"`
-	UserId types.String `tfsdk:"user_id"`
+	Id       types.String   `tfsdk:"id"`
+	Uuid     types.String   `tfsdk:"uuid"`
+	Role     types.String   `tfsdk:"role"`
+	TeamId   types.String   `tfsdk:"team_id"`
+	UserId   types.String   `tfsdk:"user_id"`
+	Timeouts timeouts.Value `tfsdk:"timeouts"`
 }
 
 type teamMemberResource struct {
@@ -75,39 +78,62 @@ func (teamMemberResource) Schema(ctx context.Context, req resource.SchemaRequest
 				},
 			},
 		},
+		Blocks: map[string]resource_schema.Block{
+			"timeouts": timeouts.BlockAll(ctx),
+		},
 	}
 }
 
 func (tm *teamMemberResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var state teamMemberResourceModel
 
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &state)...)
+	diags := req.Plan.Get(ctx, &state)
+	resp.Diagnostics.Append(diags...)
 
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	log.Printf("Creating team member into team %s ...", state.TeamId.ValueString())
-	apiResponse, err := createTeamMember(ctx,
-		tm.client.genqlient,
-		state.TeamId.ValueString(),
-		state.UserId.ValueString(),
-		*state.Role.ValueStringPointer(),
-	)
+	timeout, diags := state.Timeouts.Create(ctx, DefaultTimeout)
+	resp.Diagnostics.Append(diags...)
 
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Unable to create team member",
-			fmt.Sprintf("Unable to create team member: %s", err.Error()),
-		)
+	if resp.Diagnostics.HasError() {
 		return
 	}
 
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
+	log.Printf("Creating team member into team %s ...", state.TeamId.ValueString())
+	var r *createTeamMemberResponse
+	retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+		var err error
+		r, err = createTeamMember(ctx,
+			tm.client.genqlient,
+			state.TeamId.ValueString(),
+			state.UserId.ValueString(),
+			*state.Role.ValueStringPointer(),
+		)
+
+		if err != nil {
+			if isRetryableError(err) {
+				return retry.RetryableError(err)
+			}
+			resp.Diagnostics.AddError(
+				"Unable to create team member",
+				fmt.Sprintf("Unable to create team member: %s", err.Error()),
+			)
+			return retry.NonRetryableError(err)
+		}
+
+		return nil
+	})
+
 	// Update state with values from API response/plan
-	state.Id = types.StringValue(apiResponse.TeamMemberCreate.TeamMemberEdge.Node.Id)
-	state.Uuid = types.StringValue(apiResponse.TeamMemberCreate.TeamMemberEdge.Node.Uuid)
+	state.Id = types.StringValue(r.TeamMemberCreate.TeamMemberEdge.Node.Id)
+	state.Uuid = types.StringValue(r.TeamMemberCreate.TeamMemberEdge.Node.Uuid)
 	// The role of the user will by default be "MEMBER" if none was entered in the plan
-	state.Role = types.StringValue(string(apiResponse.TeamMemberCreate.TeamMemberEdge.Node.Role))
+	state.Role = types.StringValue(string(r.TeamMemberCreate.TeamMemberEdge.Node.Role))
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
