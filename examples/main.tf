@@ -24,6 +24,12 @@ resource "buildkite_team_member" "member1" {
   role    = "MEMBER"
   team_id = "VXfhnVUS78HavgtP55WhWGzT401guK38Vm9LMMeCgQD124m8xaKBRq0Fth=="
   user_id = "VXNbwSA9hwVPpMgUXu1dWIDWf45ZwU6J7deETygiLUrKBg2TZBxuDr6aKj=="
+  timeouts {
+    create = "3m"
+    read = "3m"
+    update = "3m"
+    delete = "3m"
+  }
 }
 
 
