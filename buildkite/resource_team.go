@@ -135,6 +135,7 @@ func (t *teamResource) ImportState(ctx context.Context, req resource.ImportState
 
 func (t *teamResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var state teamResourceModel
+
 	diags := req.Plan.Get(ctx, &state)
 	resp.Diagnostics.Append(diags...)
 
@@ -142,15 +143,18 @@ func (t *teamResource) Create(ctx context.Context, req resource.CreateRequest, r
 		return
 	}
 
-	createTimeout, diags := state.Timeouts.Create(ctx, DefaultTimeout)
+	timeout, diags := state.Timeouts.Create(ctx, DefaultTimeout)
 	resp.Diagnostics.Append(diags...)
 
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+    defer cancel()
+
 	var r *teamCreateResponse
-	err := retry.RetryContext(ctx, createTimeout, func() *retry.RetryError {
+	retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		var err error
 		r, err = teamCreate(ctx,
 			t.client.genqlient,
@@ -164,18 +168,18 @@ func (t *teamResource) Create(ctx context.Context, req resource.CreateRequest, r
 		)
 
 		if err != nil {
+			if isRetryableError(err) {
+				return retry.RetryableError(err)
+			}
+			resp.Diagnostics.AddError(
+				"Unable to create team.",
+				fmt.Sprintf("Unable to create team: %s", err.Error()),
+			)
 			return retry.NonRetryableError(err)
 		}
 
 		return nil
 	})
-
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Unable to create team.",
-			fmt.Sprintf("Unable to create team: %s", err.Error()),
-		)
-	}
 
 	state.ID = types.StringValue(r.TeamCreate.TeamEdge.Node.Id)
 	state.UUID = types.StringValue(r.TeamCreate.TeamEdge.Node.Uuid)
@@ -186,17 +190,45 @@ func (t *teamResource) Create(ctx context.Context, req resource.CreateRequest, r
 
 func (t *teamResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var state teamResourceModel
-	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 
-	res, err := getNode(ctx, t.client.genqlient, state.ID.ValueString())
+	diags := req.State.Get(ctx, &state)
+	resp.Diagnostics.Append(diags...)
 
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Unable to read team.",
-			fmt.Sprintf("Unable to read team: %s", err.Error()),
-		)
+	if resp.Diagnostics.HasError() {
 		return
 	}
+
+	timeout, diags := state.Timeouts.Create(ctx, DefaultTimeout)
+	resp.Diagnostics.Append(diags...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+    defer cancel()
+
+	var res *getNodeResponse	
+	retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+		var err error
+		res, err = getNode(ctx,
+			 t.client.genqlient, 
+			 state.ID.ValueString(),
+			)
+
+		if err != nil {
+			if isRetryableError(err) {
+				return retry.RetryableError(err)
+			}
+			resp.Diagnostics.AddError(
+				"Unable to read team.",
+				fmt.Sprintf("Unable to read team: %s", err.Error()),
+			)
+			return retry.NonRetryableError(err)
+		}
+
+		return nil
+	})
 
 	if teamNode, ok := res.GetNode().(*getNodeNodeTeam); ok {
 		if teamNode == nil {
@@ -246,21 +278,41 @@ func (t *teamResource) Update(ctx context.Context, req resource.UpdateRequest, r
 func (t *teamResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	var state teamResourceModel
 
-	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+    diags := req.State.Get(ctx, &state)
+    resp.Diagnostics.Append(diags...)
+
+    if resp.Diagnostics.HasError() {
+        return
+    }
+
+	timeout, diags := state.Timeouts.Create(ctx, DefaultTimeout)
+	resp.Diagnostics.Append(diags...)
 
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	_, err := teamDelete(ctx, t.client.genqlient, state.ID.ValueString())
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+    defer cancel()
 
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Unable to delete Team",
-			fmt.Sprintf("Unable to delete Team: %s", err.Error()),
+	retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+		_, err := teamDelete(ctx, 
+			t.client.genqlient, 
+			state.ID.ValueString(),
 		)
-		return
-	}
+
+		if err != nil {
+			if isRetryableError(err) {
+				return retry.RetryableError(err)
+			}
+			resp.Diagnostics.AddError(
+				"Unable to delete Team",
+				fmt.Sprintf("Unable to delete Team: %s", err.Error()),
+			)
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
 }
 
 func updateTeamResourceState(state *teamResourceModel, res getNodeNodeTeam) {
