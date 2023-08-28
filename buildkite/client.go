@@ -8,8 +8,11 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"regexp"
+	"strconv"
 
 	genqlient "github.com/Khan/genqlient/graphql"
+	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/shurcooL/graphql"
 )
 
@@ -21,6 +24,7 @@ type Client struct {
 	organization   string
 	organizationId string
 	restUrl        string
+	timeouts       timeouts.Value
 }
 
 type clientConfig struct {
@@ -29,6 +33,7 @@ type clientConfig struct {
 	graphqlURL string
 	restURL    string
 	userAgent  string
+	timeouts   timeouts.Value
 }
 
 type headerRoundTripper struct {
@@ -65,7 +70,36 @@ func NewClient(config *clientConfig) (*Client, error) {
 		organization:   config.org,
 		organizationId: orgId,
 		restUrl:        config.restURL,
+		timeouts:       config.timeouts,
 	}, nil
+}
+
+func isRetryableError(err error) bool {
+	return isRateLimited(err) || isServerError(err)
+}
+
+func isRateLimited(err error) bool {
+	// see: https://github.com/Khan/genqlient/blob/main/graphql/client.go#L167
+	r := regexp.MustCompile(`returned error (\d{3}):`)
+	if match := r.FindString(err.Error()); match != "" {
+		code, _ := strconv.Atoi(match)
+		if code == http.StatusTooManyRequests {
+			return true
+		}
+	}
+	return false
+}
+
+func isServerError(err error) bool {
+	// see: https://github.com/Khan/genqlient/blob/main/graphql/client.go#L167
+	r := regexp.MustCompile(`returned error (\d{3}):`)
+	if match := r.FindString(err.Error()); match != "" {
+		code, _ := strconv.Atoi(match)
+		if code >= http.StatusBadGateway && code <= http.StatusGatewayTimeout {
+			return true
+		}
+	}
+	return false
 }
 
 func newHeaderRoundTripper(next http.RoundTripper, header http.Header) *headerRoundTripper {

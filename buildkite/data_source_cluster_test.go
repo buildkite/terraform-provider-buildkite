@@ -1,41 +1,74 @@
 package buildkite
 
 import (
+	"fmt"
 	"regexp"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
-func TestDataCluster_read(t *testing.T) {
-	t.Parallel()
-	resource.Test(t, resource.TestCase{
-		Steps: []resource.TestStep{
-			{
-				ProtoV6ProviderFactories: protoV6ProviderFactories(),
-				Config: `data "buildkite_cluster" "default" {
-							name = "acceptance testing"
-						}`,
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("data.buildkite_cluster.default", "uuid", "0a969b74-a0b7-4340-aace-d874423f3d6c"),
-					resource.TestCheckResourceAttr("data.buildkite_cluster.default", "color", "#f1efff"),
-				),
-			},
-		},
-	})
-}
+func TestAccBuildkiteClusterDatasource(t *testing.T) {
+	t.Run("timeout reading cluster", func(t *testing.T) {
+		clusterName := acctest.RandString(12)
 
-func TestDataCluster_read_not_exists(t *testing.T) {
-	t.Parallel()
-	resource.Test(t, resource.TestCase{
-		Steps: []resource.TestStep{
-			{
-				ProtoV6ProviderFactories: protoV6ProviderFactories(),
-				Config: `data "buildkite_cluster" "default" {
-							name = "doesn't exist"
-						}`,
-				ExpectError: regexp.MustCompile("Unable to find Cluster"),
+		resource.ParallelTest(t, resource.TestCase{
+			ProtoV5ProviderFactories: protoV5ProviderFactories(),
+			Steps: []resource.TestStep{
+				{
+					Config: fmt.Sprintf(`
+						provider "buildkite" {
+							timeouts {
+								read = "50ms"
+							}
+						}
+						resource "buildkite_cluster" "cluster" {
+							name = "%s"
+						}
+						data "buildkite_cluster" "default" {
+							name = buildkite_cluster.cluster.name
+						}`, clusterName),
+					ExpectError: regexp.MustCompile(`(timeout while waiting for state to become 'success' \(timeout: 50ms\))|(context deadline exceeded)`),
+				},
 			},
-		},
+		})
+	})
+
+	t.Run("can find a cluster", func(t *testing.T) {
+		clusterName := acctest.RandString(12)
+		resource.ParallelTest(t, resource.TestCase{
+			ProtoV5ProviderFactories: protoV5ProviderFactories(),
+			Steps: []resource.TestStep{
+				{
+					Config: fmt.Sprintf(`
+						resource "buildkite_cluster" "cluster" {
+							name = "%s"
+							color = "#f1efff"
+						}
+						data "buildkite_cluster" "cluster" {
+								name = buildkite_cluster.cluster.name
+						}`, clusterName),
+					Check: resource.ComposeTestCheckFunc(
+						resource.TestCheckResourceAttrPair("data.buildkite_cluster.cluster", "id", "buildkite_cluster.cluster", "id"),
+						resource.TestCheckResourceAttr("data.buildkite_cluster.cluster", "color", "#f1efff"),
+					),
+				},
+			},
+		})
+	})
+
+	t.Run("errors if cannot find cluster", func(t *testing.T) {
+		resource.ParallelTest(t, resource.TestCase{
+			ProtoV5ProviderFactories: protoV5ProviderFactories(),
+			Steps: []resource.TestStep{
+				{
+					Config: `data "buildkite_cluster" "default" {
+								name = "doesn't exist"
+							}`,
+					ExpectError: regexp.MustCompile("Unable to find Cluster"),
+				},
+			},
+		})
 	})
 }

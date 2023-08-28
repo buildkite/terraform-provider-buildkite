@@ -6,10 +6,12 @@ import (
 	"log"
 	"os"
 	"strings"
+	"time"
 
+	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
-	framework_schema "github.com/hashicorp/terraform-plugin-framework/provider/schema"
+	"github.com/hashicorp/terraform-plugin-framework/provider/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -17,6 +19,8 @@ import (
 const (
 	defaultGraphqlEndpoint = "https://graphql.buildkite.com/v1"
 	defaultRestEndpoint    = "https://api.buildkite.com"
+
+	DefaultTimeout = 30 * time.Second
 )
 
 const (
@@ -32,11 +36,12 @@ type terraformProvider struct {
 }
 
 type providerModel struct {
-	ApiToken                types.String `tfsdk:"api_token"`
-	ArchivePipelineOnDelete types.Bool   `tfsdk:"archive_pipeline_on_delete"`
-	GraphqlUrl              types.String `tfsdk:"graphql_url"`
-	Organization            types.String `tfsdk:"organization"`
-	RestUrl                 types.String `tfsdk:"rest_url"`
+	ApiToken                types.String   `tfsdk:"api_token"`
+	ArchivePipelineOnDelete types.Bool     `tfsdk:"archive_pipeline_on_delete"`
+	GraphqlUrl              types.String   `tfsdk:"graphql_url"`
+	Organization            types.String   `tfsdk:"organization"`
+	RestUrl                 types.String   `tfsdk:"rest_url"`
+	Timeouts                timeouts.Value `tfsdk:"timeouts"`
 }
 
 func (tf *terraformProvider) Configure(ctx context.Context, req provider.ConfigureRequest, resp *provider.ConfigureResponse) {
@@ -71,6 +76,7 @@ func (tf *terraformProvider) Configure(ctx context.Context, req provider.Configu
 		graphqlURL: graphqlUrl,
 		org:        organization,
 		restURL:    restUrl,
+		timeouts:   data.Timeouts,
 		userAgent:  userAgent("buildkite", tf.version, req.TerraformVersion),
 	}
 	client, err := NewClient(&config)
@@ -136,29 +142,32 @@ func (tf *terraformProvider) Resources(context.Context) []func() resource.Resour
 }
 
 func (*terraformProvider) Schema(ctx context.Context, req provider.SchemaRequest, resp *provider.SchemaResponse) {
-	resp.Schema = framework_schema.Schema{
-		Attributes: map[string]framework_schema.Attribute{
-			SchemaKeyOrganization: framework_schema.StringAttribute{
+	resp.Schema = schema.Schema{
+		Attributes: map[string]schema.Attribute{
+			SchemaKeyOrganization: schema.StringAttribute{
 				Optional:    true,
 				Description: "The Buildkite organization slug",
 			},
-			SchemaKeyAPIToken: framework_schema.StringAttribute{
+			SchemaKeyAPIToken: schema.StringAttribute{
 				Optional:    true,
 				Description: "API token with GraphQL access and `write_pipelines, read_pipelines` and `write_suites` REST API scopes",
 				Sensitive:   true,
 			},
-			SchemaKeyGraphqlURL: framework_schema.StringAttribute{
+			SchemaKeyGraphqlURL: schema.StringAttribute{
 				Optional:    true,
 				Description: "Base URL for the GraphQL API to use",
 			},
-			SchemaKeyRestURL: framework_schema.StringAttribute{
+			SchemaKeyRestURL: schema.StringAttribute{
 				Optional:    true,
 				Description: "Base URL for the REST API to use",
 			},
-			"archive_pipeline_on_delete": framework_schema.BoolAttribute{
+			"archive_pipeline_on_delete": schema.BoolAttribute{
 				Optional:    true,
 				Description: "Archive pipelines when destroying instead of completely deleting.",
 			},
+		},
+		Blocks: map[string]schema.Block{
+			"timeouts": timeouts.BlockAll(ctx),
 		},
 	}
 }
