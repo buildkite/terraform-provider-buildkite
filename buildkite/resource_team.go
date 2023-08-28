@@ -124,9 +124,7 @@ func (t *teamResource) Schema(ctx context.Context, req resource.SchemaRequest, r
 			},
 		},
 		Blocks: map[string]resource_schema.Block{
-			"timeouts": timeouts.Block(ctx, timeouts.Opts{
-				Create: true,
-			}),
+			"timeouts": timeouts.BlockAll(ctx),
 		},
 	}
 }
