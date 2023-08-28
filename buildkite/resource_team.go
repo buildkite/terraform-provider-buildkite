@@ -151,7 +151,7 @@ func (t *teamResource) Create(ctx context.Context, req resource.CreateRequest, r
 	}
 
 	ctx, cancel := context.WithTimeout(ctx, timeout)
-    defer cancel()
+	defer cancel()
 
 	var r *teamCreateResponse
 	retry.RetryContext(ctx, timeout, func() *retry.RetryError {
@@ -206,15 +206,15 @@ func (t *teamResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 	}
 
 	ctx, cancel := context.WithTimeout(ctx, timeout)
-    defer cancel()
+	defer cancel()
 
-	var res *getNodeResponse	
+	var response *getNodeResponse
 	retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		var err error
-		res, err = getNode(ctx,
-			 t.client.genqlient, 
-			 state.ID.ValueString(),
-			)
+		response, err = getNode(ctx,
+			t.client.genqlient,
+			state.ID.ValueString(),
+		)
 
 		if err != nil {
 			if isRetryableError(err) {
@@ -230,7 +230,7 @@ func (t *teamResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 		return nil
 	})
 
-	if teamNode, ok := res.GetNode().(*getNodeNodeTeam); ok {
+	if teamNode, ok := response.GetNode().(*getNodeNodeTeam); ok {
 		if teamNode == nil {
 			resp.Diagnostics.AddError(
 				"Unable to get team",
@@ -245,45 +245,15 @@ func (t *teamResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 
 func (t *teamResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	var state, plan teamResourceModel
-	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	diagsState := req.State.Get(ctx, &state)
+	diagsPlan := req.Plan.Get(ctx, &plan)
+
+	resp.Diagnostics.Append(diagsPlan...)
+	resp.Diagnostics.Append(diagsState...)
 
 	if resp.Diagnostics.HasError() {
 		return
 	}
-
-	response, err := teamUpdate(ctx,
-		t.client.genqlient,
-		state.ID.ValueString(),
-		plan.Name.ValueString(),
-		plan.Description.ValueStringPointer(),
-		plan.Privacy.ValueString(),
-		plan.IsDefaultTeam.ValueBool(),
-		plan.DefaultMemberRole.ValueString(),
-		plan.MembersCanCreatePipelines.ValueBool(),
-	)
-
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Unable to update Team",
-			fmt.Sprintf("Unable to update Team: %s", err.Error()),
-		)
-		return
-	}
-
-	plan.Slug = types.StringValue(response.TeamUpdate.Team.Slug)
-	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
-}
-
-func (t *teamResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var state teamResourceModel
-
-    diags := req.State.Get(ctx, &state)
-    resp.Diagnostics.Append(diags...)
-
-    if resp.Diagnostics.HasError() {
-        return
-    }
 
 	timeout, diags := state.Timeouts.Create(ctx, DefaultTimeout)
 	resp.Diagnostics.Append(diags...)
@@ -293,11 +263,63 @@ func (t *teamResource) Delete(ctx context.Context, req resource.DeleteRequest, r
 	}
 
 	ctx, cancel := context.WithTimeout(ctx, timeout)
-    defer cancel()
+	defer cancel()
+
+	var response *teamUpdateResponse
+	retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+		var err error
+		response, err = teamUpdate(ctx,
+			t.client.genqlient,
+			state.ID.ValueString(),
+			plan.Name.ValueString(),
+			plan.Description.ValueStringPointer(),
+			plan.Privacy.ValueString(),
+			plan.IsDefaultTeam.ValueBool(),
+			plan.DefaultMemberRole.ValueString(),
+			plan.MembersCanCreatePipelines.ValueBool(),
+		)
+
+		if err != nil {
+			if isRetryableError(err) {
+				return retry.RetryableError(err)
+			}
+			resp.Diagnostics.AddError(
+				"Unable to update Team",
+				fmt.Sprintf("Unable to update Team: %s", err.Error()),
+			)
+			return retry.NonRetryableError(err)
+		}
+
+		return nil
+	})
+
+	plan.Slug = types.StringValue(response.TeamUpdate.Team.Slug)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
+}
+
+func (t *teamResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	var state teamResourceModel
+
+	diags := req.State.Get(ctx, &state)
+	resp.Diagnostics.Append(diags...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	timeout, diags := state.Timeouts.Create(ctx, DefaultTimeout)
+	resp.Diagnostics.Append(diags...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
 
 	retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-		_, err := teamDelete(ctx, 
-			t.client.genqlient, 
+		_, err := teamDelete(ctx,
+			t.client.genqlient,
 			state.ID.ValueString(),
 		)
 
