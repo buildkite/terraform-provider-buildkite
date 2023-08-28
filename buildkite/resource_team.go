@@ -150,9 +150,6 @@ func (t *teamResource) Create(ctx context.Context, req resource.CreateRequest, r
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(ctx, timeout)
-	defer cancel()
-
 	var r *teamCreateResponse
 	retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		var err error
@@ -204,9 +201,6 @@ func (t *teamResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 	if resp.Diagnostics.HasError() {
 		return
 	}
-
-	ctx, cancel := context.WithTimeout(ctx, timeout)
-	defer cancel()
 
 	var response *getNodeResponse
 	retry.RetryContext(ctx, timeout, func() *retry.RetryError {
@@ -262,9 +256,6 @@ func (t *teamResource) Update(ctx context.Context, req resource.UpdateRequest, r
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(ctx, timeout)
-	defer cancel()
-
 	var response *teamUpdateResponse
 	retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		var err error
@@ -313,9 +304,6 @@ func (t *teamResource) Delete(ctx context.Context, req resource.DeleteRequest, r
 	if resp.Diagnostics.HasError() {
 		return
 	}
-
-	ctx, cancel := context.WithTimeout(ctx, timeout)
-	defer cancel()
 
 	retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		_, err := teamDelete(ctx,
