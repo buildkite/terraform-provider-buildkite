@@ -43,8 +43,6 @@ func (c *clusterDatasource) Read(ctx context.Context, req datasource.ReadRequest
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	ctx, cancel := context.WithTimeout(ctx, timeout)
-	defer cancel()
 
 	var matchFound bool
 	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
