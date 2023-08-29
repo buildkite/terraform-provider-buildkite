@@ -10,8 +10,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
-func testAccTeamConfigBasic(name string) string {
-	config := `
+func TestAccBuildkiteTeam(t *testing.T) {
+	configBasic := func(name string) string {
+		return fmt.Sprintf(`
 		resource "buildkite_team" "acc_tests" {
 			name = "%s"
 			description = "a cool team of %s"
@@ -20,12 +21,11 @@ func testAccTeamConfigBasic(name string) string {
 			default_member_role = "MEMBER"
 			members_can_create_pipelines = true
 		}
-	`
-	return fmt.Sprintf(config, name, name)
-}
+		`, name, name)
+	}
 
-func testAccTeamConfigSecret(name string) string {
-	config := `
+	configSecret := func(name string) string {
+		return fmt.Sprintf(`
 		resource "buildkite_team" "acc_tests" {
 			name = "%s"
 			privacy = "SECRET"
@@ -34,103 +34,112 @@ func testAccTeamConfigSecret(name string) string {
 			default_member_role = "MEMBER"
 			members_can_create_pipelines = true
 		}
-	`
-	return fmt.Sprintf(config, name, name)
-}
+		`, name, name)
+	}
 
-func TestAccTeam_AddRemove(t *testing.T) {
-	resName := acctest.RandString(12)
-	t.Parallel()
-	var tr teamResourceModel
+	t.Run("creates a team", func(t *testing.T) {
+		resName := acctest.RandString(12)
+		var tr teamResourceModel
 
-	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: protoV6ProviderFactories(),
-		CheckDestroy:             testAccCheckTeamResourceDestroy,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccTeamConfigBasic(resName),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckTeamExists("buildkite_team.acc_tests", &tr),
-					testAccCheckTeamRemoteValues(resName, &tr),
-					resource.TestCheckResourceAttr("buildkite_team.acc_tests", "name", resName),
-					resource.TestCheckResourceAttr("buildkite_team.acc_tests", "privacy", "VISIBLE"),
-				),
+		check := resource.ComposeAggregateTestCheckFunc(
+			testAccCheckTeamExists("buildkite_team.acc_tests", &tr),
+			testAccCheckTeamRemoteValues(resName, &tr),
+			resource.TestCheckResourceAttr("buildkite_team.acc_tests", "name", resName),
+			resource.TestCheckResourceAttr("buildkite_team.acc_tests", "privacy", "VISIBLE"),
+		)
+
+		checkPostRefresh := resource.ComposeAggregateTestCheckFunc(
+			resource.TestCheckResourceAttrSet("buildkite_team.acc_tests", "name"),
+		)
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			CheckDestroy:             testAccCheckTeamResourceDestroy,
+			Steps: []resource.TestStep{
+				{
+					Config: configBasic(resName),
+					Check:  check,
+				},
+				{
+					RefreshState: true,
+					PlanOnly:     true,
+					Check:        checkPostRefresh,
+				},
 			},
-			{
-				RefreshState: true,
-				PlanOnly:     true,
-				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttrSet("buildkite_team.acc_tests", "name"),
-				),
-			},
-		},
+		})
 	})
-}
 
-func TestAccTeam_Update(t *testing.T) {
-	resName := acctest.RandString(12)
-	resNameNew := acctest.RandString(12)
-	t.Parallel()
-	var tr teamResourceModel
+	t.Run("updates a team", func(t *testing.T) {
+		resName := acctest.RandString(12)
+		resNameNew := acctest.RandString(12)
+		var tr teamResourceModel
 
-	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: protoV6ProviderFactories(),
-		CheckDestroy:             testAccCheckTeamResourceDestroy,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccTeamConfigBasic(resName),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckTeamExists("buildkite_team.acc_tests", &tr),
-					resource.TestCheckResourceAttr("buildkite_team.acc_tests", "name", resName),
-				),
+		check := resource.ComposeAggregateTestCheckFunc(
+			testAccCheckTeamExists("buildkite_team.acc_tests", &tr),
+			resource.TestCheckResourceAttr("buildkite_team.acc_tests", "name", resName),
+		)
+
+		checkNewName := resource.ComposeAggregateTestCheckFunc(
+			testAccCheckTeamExists("buildkite_team.acc_tests", &tr),
+			testAccCheckTeamRemoteValues(resNameNew, &tr),
+			resource.TestCheckResourceAttr("buildkite_team.acc_tests", "name", resNameNew),
+		)
+
+		checkSecretTeam := resource.ComposeAggregateTestCheckFunc(
+			testAccCheckTeamExists("buildkite_team.acc_tests", &tr),
+			testAccCheckTeamRemoteValues(resNameNew, &tr),
+			resource.TestCheckResourceAttr("buildkite_team.acc_tests", "name", resNameNew),
+			resource.TestCheckResourceAttr("buildkite_team.acc_tests", "description", fmt.Sprintf("a secret team of %s", resNameNew)),
+			resource.TestCheckResourceAttr("buildkite_team.acc_tests", "privacy", "SECRET"),
+		)
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			CheckDestroy:             testAccCheckTeamResourceDestroy,
+			Steps: []resource.TestStep{
+				{
+					Config: configBasic(resName),
+					Check:  check,
+				},
+				{
+					Config: configBasic(resNameNew),
+					Check:  checkNewName,
+				},
+				{
+					Config: configSecret(resNameNew),
+					Check:  checkSecretTeam,
+				},
 			},
-			{
-				Config: testAccTeamConfigBasic(resNameNew),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckTeamExists("buildkite_team.acc_tests", &tr),
-					testAccCheckTeamRemoteValues(resNameNew, &tr),
-					resource.TestCheckResourceAttr("buildkite_team.acc_tests", "name", resNameNew),
-				),
-			},
-			{
-				Config: testAccTeamConfigSecret(resNameNew),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckTeamExists("buildkite_team.acc_tests", &tr),
-					testAccCheckTeamRemoteValues(resNameNew, &tr),
-					resource.TestCheckResourceAttr("buildkite_team.acc_tests", "name", resNameNew),
-					resource.TestCheckResourceAttr("buildkite_team.acc_tests", "description", fmt.Sprintf("a secret team of %s", resNameNew)),
-					resource.TestCheckResourceAttr("buildkite_team.acc_tests", "privacy", "SECRET"),
-				),
-			},
-		},
+		})
 	})
-}
 
-func TestAccTeam_Import(t *testing.T) {
-	resName := acctest.RandString(12)
-	t.Parallel()
-	var tr teamResourceModel
+	t.Run("imports a team", func(t *testing.T) {
+		resName := acctest.RandString(12)
+		var tr teamResourceModel
 
-	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: protoV6ProviderFactories(),
-		CheckDestroy:             testAccCheckTeamResourceDestroy,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccTeamConfigBasic(resName),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckTeamExists("buildkite_team.acc_tests", &tr),
-					resource.TestCheckResourceAttr("buildkite_team.acc_tests", "name", resName),
-				),
+		check := resource.ComposeAggregateTestCheckFunc(
+			testAccCheckTeamExists("buildkite_team.acc_tests", &tr),
+			resource.TestCheckResourceAttr("buildkite_team.acc_tests", "name", resName),
+		)
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			CheckDestroy:             testAccCheckTeamResourceDestroy,
+			Steps: []resource.TestStep{
+				{
+					Config: configBasic(resName),
+					Check:  check,
+				},
+				{
+					ResourceName:      "buildkite_team.acc_tests",
+					ImportState:       true,
+					ImportStateVerify: true,
+				},
 			},
-			{
-				ResourceName:      "buildkite_team.acc_tests",
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
-		},
+		})
 	})
 }
 
