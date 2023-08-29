@@ -45,7 +45,7 @@ func TestAccBuildkiteAgentToken(t *testing.T) {
 			resource.TestCheckResourceAttrSet("buildkite_agent_token.foobar", "token"),
 			resource.TestCheckResourceAttrSet("buildkite_agent_token.foobar", "uuid"),
 		)
-	
+
 		checkRefresh := resource.ComposeAggregateTestCheckFunc(
 			// Confirm the token has the correct values in terraform state
 			resource.TestCheckResourceAttrSet("buildkite_agent_token.foobar", "id"),
@@ -65,7 +65,7 @@ func TestAccBuildkiteAgentToken(t *testing.T) {
 				{
 					RefreshState: true,
 					PlanOnly:     true,
-					Check: checkRefresh,
+					Check:        checkRefresh,
 				},
 			},
 		})
@@ -77,14 +77,14 @@ func TestAccBuildkiteAgentToken(t *testing.T) {
 		var resourceToken AgentTokenNode
 		randName := acctest.RandString(10)
 		randNameUpdated := acctest.RandString(10)
-	
+
 		check := resource.ComposeAggregateTestCheckFunc(
 			// Confirm the token exists in the buildkite API
 			testAccCheckAgentTokenExists("buildkite_agent_token.foobar", &resourceToken),
 			// Quick check to confirm the local state is correct before we update it
 			resource.TestCheckResourceAttr("buildkite_agent_token.foobar", "description", fmt.Sprintf("Acceptance Test %s", randName)),
 		)
-	
+
 		checkUpdated := resource.ComposeAggregateTestCheckFunc(
 			// Confirm the token exists in the buildkite API
 			testAccCheckAgentTokenExists("buildkite_agent_token.foobar", &resourceToken),
@@ -93,7 +93,7 @@ func TestAccBuildkiteAgentToken(t *testing.T) {
 			// Confirm the token has the updated values in terraform state
 			resource.TestCheckResourceAttr("buildkite_agent_token.foobar", "description", fmt.Sprintf("Acceptance Test %s", randNameUpdated)),
 		)
-	
+
 		resource.ParallelTest(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },
 			ProtoV6ProviderFactories: protoV6ProviderFactories(),
