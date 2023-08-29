@@ -190,7 +190,7 @@ func (t *teamResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 		return
 	}
 
-	timeout, diags := t.client.timeouts.Create(ctx, DefaultTimeout)
+	timeout, diags := t.client.timeouts.Read(ctx, DefaultTimeout)
 	resp.Diagnostics.Append(diags...)
 
 	if resp.Diagnostics.HasError() {
@@ -244,7 +244,7 @@ func (t *teamResource) Update(ctx context.Context, req resource.UpdateRequest, r
 		return
 	}
 
-	timeout, diags := t.client.timeouts.Create(ctx, DefaultTimeout)
+	timeout, diags := t.client.timeouts.Update(ctx, DefaultTimeout)
 	resp.Diagnostics.Append(diags...)
 
 	if resp.Diagnostics.HasError() {
@@ -293,7 +293,7 @@ func (t *teamResource) Delete(ctx context.Context, req resource.DeleteRequest, r
 		return
 	}
 
-	timeout, diags := t.client.timeouts.Create(ctx, DefaultTimeout)
+	timeout, diags := t.client.timeouts.Delete(ctx, DefaultTimeout)
 	resp.Diagnostics.Append(diags...)
 
 	if resp.Diagnostics.HasError() {
