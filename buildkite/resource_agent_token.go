@@ -47,7 +47,7 @@ func (at *AgentTokenResource) Configure(ctx context.Context, req resource.Config
 func (at *AgentTokenResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var plan, state AgentTokenStateModel
 
-	diags := req.Plan.Get(ctx, &state)
+	diags := req.Plan.Get(ctx, &plan)
 	resp.Diagnostics.Append(diags...)
 
 	if resp.Diagnostics.HasError() {
