@@ -7,6 +7,7 @@ All notable changes to this project will be documented in this file.
 - SUP-805: SUP-805: Team resource API retries [[PR #360](https://github.com/buildkite/terraform-provider-buildkite/pull/360)] @james2791
 - SUP-1392: Random test suite names in tests/t.Run() conversion [[PR #376](https://github.com/buildkite/terraform-provider-buildkite/pull/376)] @james2791
 - SUP-1374 Add timeout to provider and cluster datasource [[PR #363](https://github.com/buildkite/terraform-provider-buildkite/pull/363)] @jradtilbrook
+    - SUP-1374 Remove timeout context [[PR #378](https://github.com/buildkite/terraform-provider-buildkite/pull/378)] @jradtilbrook
 
 ### Changes
 
