@@ -19,9 +19,6 @@ func testAccTeamConfigBasic(name string) string {
 			default_team = true
 			default_member_role = "MEMBER"
 			members_can_create_pipelines = true
-			timeouts {
-				create = "1m"
-			}
 		}
 	`
 	return fmt.Sprintf(config, name, name)
@@ -36,9 +33,6 @@ func testAccTeamConfigSecret(name string) string {
 			default_team = true
 			default_member_role = "MEMBER"
 			members_can_create_pipelines = true
-			timeouts {
-				create = "1m"
-			}
 		}
 	`
 	return fmt.Sprintf(config, name, name)

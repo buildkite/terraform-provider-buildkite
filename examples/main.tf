@@ -10,9 +10,6 @@ resource "buildkite_team" "test" {
   privacy             = "VISIBLE"
   default_team        = false
   default_member_role = "MEMBER"
-  timeouts {
-    create = "1m"
-  }
 }
 
 resource "buildkite_team" "testtwo" {
@@ -21,9 +18,6 @@ resource "buildkite_team" "testtwo" {
   privacy             = "VISIBLE"
   default_team        = false
   default_member_role = "MEMBER"
-  timeouts {
-    create = "1m"
-  }
 }
 
 resource "buildkite_team_member" "member1" {

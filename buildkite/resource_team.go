@@ -24,16 +24,15 @@ type teamResource struct {
 }
 
 type teamResourceModel struct {
-	ID                        types.String   `tfsdk:"id"`
-	UUID                      types.String   `tfsdk:"uuid"`
-	Name                      types.String   `tfsdk:"name"`
-	Description               types.String   `tfsdk:"description"`
-	Privacy                   types.String   `tfsdk:"privacy"`
-	IsDefaultTeam             types.Bool     `tfsdk:"default_team"`
-	DefaultMemberRole         types.String   `tfsdk:"default_member_role"`
-	Slug                      types.String   `tfsdk:"slug"`
-	MembersCanCreatePipelines types.Bool     `tfsdk:"members_can_create_pipelines"`
-	Timeouts                  timeouts.Value `tfsdk:"timeouts"`
+	ID                        types.String `tfsdk:"id"`
+	UUID                      types.String `tfsdk:"uuid"`
+	Name                      types.String `tfsdk:"name"`
+	Description               types.String `tfsdk:"description"`
+	Privacy                   types.String `tfsdk:"privacy"`
+	IsDefaultTeam             types.Bool   `tfsdk:"default_team"`
+	DefaultMemberRole         types.String `tfsdk:"default_member_role"`
+	Slug                      types.String `tfsdk:"slug"`
+	MembersCanCreatePipelines types.Bool   `tfsdk:"members_can_create_pipelines"`
 }
 
 // This is required due to the getTeam function not using Genqlient
@@ -122,9 +121,6 @@ func (t *teamResource) Schema(ctx context.Context, req resource.SchemaRequest, r
 				Default:             booldefault.StaticBool(false),
 				MarkdownDescription: "Whether members of the Team can create Pipelines.",
 			},
-		},
-		Blocks: map[string]resource_schema.Block{
-			"timeouts": timeouts.BlockAll(ctx),
 		},
 	}
 }

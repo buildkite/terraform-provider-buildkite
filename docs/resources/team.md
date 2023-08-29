@@ -16,9 +16,6 @@ resource "buildkite_team" "team" {
 
   default_team        = true
   default_member_role = "MEMBER"
-  timeouts {
-    create = "60m"
-  }
 }
 ```
 
@@ -30,7 +27,6 @@ resource "buildkite_team" "team" {
 * `default_member_role` - (Required) Default role to assign to a team member.
 * `members_can_create_pipelines` - (Optional) Whether team members can create.
 * `description` - (Optional) The description to assign to the team.
-* `timeouts` - (Optional) A `block` (see above) for timeout values. The default is 60s (1m).
 
 ## Attribute Reference
 
