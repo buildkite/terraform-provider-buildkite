@@ -78,9 +78,10 @@ func TestAccBuildkiteTestSuite(t *testing.T) {
 		`, name)
 	}
 
-	t.Run("Creates a Test Suite", func(t *testing.T) {
+	t.Run("creates a test suite", func(t *testing.T) {
 		var suite getTestSuiteSuite
 		randName := acctest.RandString(10)
+
 		check := resource.ComposeAggregateTestCheckFunc(
 			checkTestSuiteExists("buildkite_test_suite.suite", &suite),
 			checkTestSuiteRemoteValue(&suite, "Name", fmt.Sprintf("test suite %s", randName)),
@@ -105,9 +106,10 @@ func TestAccBuildkiteTestSuite(t *testing.T) {
 		})
 	})
 
-	t.Run("Updates a Test Suite", func(t *testing.T) {
+	t.Run("updates a test suite", func(t *testing.T) {
 		var suite getTestSuiteSuite
 		randName := acctest.RandString(10)
+
 		check := resource.ComposeAggregateTestCheckFunc(
 			resource.TestCheckResourceAttrSet("buildkite_test_suite.suite", "id"),
 			resource.TestCheckResourceAttrSet("buildkite_test_suite.suite", "api_token"),
@@ -137,7 +139,7 @@ func TestAccBuildkiteTestSuite(t *testing.T) {
 		})
 	})
 
-	t.Run("Creates and handles Test Suite Team owner resolution", func(t *testing.T) {
+	t.Run("creates and handles test suite team owner resolution", func(t *testing.T) {
 		var suite getTestSuiteSuite
 		randName := acctest.RandString(10)
 
