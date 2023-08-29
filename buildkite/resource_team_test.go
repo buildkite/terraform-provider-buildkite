@@ -13,6 +13,12 @@ import (
 func TestAccBuildkiteTeam(t *testing.T) {
 	configBasic := func(name string) string {
 		return fmt.Sprintf(`
+		provider "buildkite" {
+			timeouts {
+				create = "10s"
+			}
+		}
+
 		resource "buildkite_team" "acc_tests" {
 			name = "%s"
 			description = "a cool team of %s"
@@ -26,6 +32,13 @@ func TestAccBuildkiteTeam(t *testing.T) {
 
 	configSecret := func(name string) string {
 		return fmt.Sprintf(`
+		provider "buildkite" {
+			timeouts {
+				create = "10s"
+				update = "10s"
+			}
+		}
+
 		resource "buildkite_team" "acc_tests" {
 			name = "%s"
 			privacy = "SECRET"
