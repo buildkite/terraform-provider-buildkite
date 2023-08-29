@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	custom_modifier "github.com/buildkite/terraform-provider-buildkite/internal/planmodifier"
-	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -139,7 +138,7 @@ func (t *teamResource) Create(ctx context.Context, req resource.CreateRequest, r
 		return
 	}
 
-	timeout, diags := state.Timeouts.Create(ctx, DefaultTimeout)
+	timeout, diags := t.client.timeouts.Create(ctx, DefaultTimeout)
 	resp.Diagnostics.Append(diags...)
 
 	if resp.Diagnostics.HasError() {
@@ -191,7 +190,7 @@ func (t *teamResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 		return
 	}
 
-	timeout, diags := state.Timeouts.Create(ctx, DefaultTimeout)
+	timeout, diags := t.client.timeouts.Create(ctx, DefaultTimeout)
 	resp.Diagnostics.Append(diags...)
 
 	if resp.Diagnostics.HasError() {
@@ -245,7 +244,7 @@ func (t *teamResource) Update(ctx context.Context, req resource.UpdateRequest, r
 		return
 	}
 
-	timeout, diags := state.Timeouts.Create(ctx, DefaultTimeout)
+	timeout, diags := t.client.timeouts.Create(ctx, DefaultTimeout)
 	resp.Diagnostics.Append(diags...)
 
 	if resp.Diagnostics.HasError() {
@@ -294,7 +293,7 @@ func (t *teamResource) Delete(ctx context.Context, req resource.DeleteRequest, r
 		return
 	}
 
-	timeout, diags := state.Timeouts.Create(ctx, DefaultTimeout)
+	timeout, diags := t.client.timeouts.Create(ctx, DefaultTimeout)
 	resp.Diagnostics.Append(diags...)
 
 	if resp.Diagnostics.HasError() {
