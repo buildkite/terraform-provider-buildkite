@@ -107,9 +107,7 @@ func (ps *pipelineSchedule) Schema(ctx context.Context, req resource.SchemaReque
 			},
 		},
 		Blocks: map[string]resource_schema.Block{
-			"timeouts": timeouts.Block(ctx, timeouts.Opts{
-				Create: true,
-			}),
+			"timeouts": timeouts.BlockAll(ctx),
 		},
 	}
 }
@@ -125,7 +123,7 @@ func (ps *pipelineSchedule) Create(ctx context.Context, req resource.CreateReque
 
 	log.Printf("Creating Pipeline schedule %s ...", plan.Label.ValueString())
 
-	createTimeout, diags := plan.Timeouts.Create(ctx, DefaultTimeout)
+	timeouts, diags := plan.Timeouts.Create(ctx, DefaultTimeout)
 
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
@@ -133,7 +131,7 @@ func (ps *pipelineSchedule) Create(ctx context.Context, req resource.CreateReque
 	}
 
 	var apiResponse *createPipelineScheduleResponse
-	err := retry.RetryContext(ctx, createTimeout, func() *retry.RetryError {
+	err := retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
 		var err error
 
 		envVars := envVarsMapFromTfToString(ctx, plan.Env)
@@ -149,6 +147,9 @@ func (ps *pipelineSchedule) Create(ctx context.Context, req resource.CreateReque
 			plan.Enabled.ValueBool())
 
 		if err != nil {
+			if isRetryableError(err) {
+				return retry.RetryableError(err)
+			}
 			return retry.NonRetryableError(err)
 		}
 		return nil
@@ -180,17 +181,37 @@ func (ps *pipelineSchedule) Create(ctx context.Context, req resource.CreateReque
 func (ps *pipelineSchedule) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var state pipelineScheduleResourceModel
 
-	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	diagsState := req.State.Get(ctx, &state)
+	resp.Diagnostics.Append(diagsState...)
 
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	log.Printf("Reading Pipeline schedule %s ...", state.Label.ValueString())
-	apiResponse, err := getPipelineSchedule(ctx,
-		ps.client.genqlient,
-		state.Id.ValueString(),
-	)
+	timeouts, diags := state.Timeouts.Read(ctx, DefaultTimeout)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	var apiResponse *getPipelineScheduleResponse
+	err := retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
+		var err error
+
+		log.Printf("Reading Pipeline schedule %s ...", state.Label.ValueString())
+		apiResponse, err = getPipelineSchedule(ctx,
+			ps.client.genqlient,
+			state.Id.ValueString(),
+		)
+
+		if err != nil {
+			if isRetryableError(err) {
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
 
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -216,37 +237,57 @@ func (ps *pipelineSchedule) Read(ctx context.Context, req resource.ReadRequest, 
 func (ps *pipelineSchedule) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	var state, plan pipelineScheduleResourceModel
 
-	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	diagsState := req.State.Get(ctx, &state)
+	diagsPlan := req.Plan.Get(ctx, &plan)
+
+	resp.Diagnostics.Append(diagsState...)
+	resp.Diagnostics.Append(diagsPlan...)
 
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	envVars := envVarsMapFromTfToString(ctx, plan.Env)
-	input := PipelineScheduleUpdateInput{
-		Id:       state.Id.ValueString(),
-		Label:    plan.Label.ValueStringPointer(),
-		Cronline: plan.Cronline.ValueStringPointer(),
-		Branch:   plan.Branch.ValueStringPointer(),
-		Commit:   plan.Commit.ValueStringPointer(),
-		Message:  plan.Message.ValueStringPointer(),
-		Env:      &envVars,
-		Enabled:  plan.Enabled.ValueBool(),
+	timeouts, diags := plan.Timeouts.Update(ctx, DefaultTimeout)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
 	}
 
-	log.Printf("Updating Pipeline schedule %s ...", plan.Label.ValueString())
-	_, err := updatePipelineSchedule(ctx,
-		ps.client.genqlient,
-		input,
-	)
+	err := retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
+		var err error
+
+		envVars := envVarsMapFromTfToString(ctx, plan.Env)
+		input := PipelineScheduleUpdateInput{
+			Id:       state.Id.ValueString(),
+			Label:    plan.Label.ValueStringPointer(),
+			Cronline: plan.Cronline.ValueStringPointer(),
+			Branch:   plan.Branch.ValueStringPointer(),
+			Commit:   plan.Commit.ValueStringPointer(),
+			Message:  plan.Message.ValueStringPointer(),
+			Env:      &envVars,
+			Enabled:  plan.Enabled.ValueBool(),
+		}
+		log.Printf("Updating Pipeline schedule %s ...", plan.Label.ValueString())
+		_, err = updatePipelineSchedule(ctx,
+			ps.client.genqlient,
+			input,
+		)
+
+		if err != nil {
+			if isRetryableError(err) {
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+
+		return nil
+	})
 
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to update Pipeline schedule",
 			fmt.Sprintf("Unable to update Pipeline schedule: %s", err.Error()),
 		)
-		return
 	}
 
 	plan.Id = state.Id
@@ -255,14 +296,33 @@ func (ps *pipelineSchedule) Update(ctx context.Context, req resource.UpdateReque
 
 func (ps *pipelineSchedule) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	var plan pipelineScheduleResourceModel
-	resp.Diagnostics.Append(req.State.Get(ctx, &plan)...)
+
+	diagsPlan := req.State.Get(ctx, &plan)
+	resp.Diagnostics.Append(diagsPlan...)
 
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	log.Println("Deleting Pipeline schedule ...")
-	_, err := deletePipelineSchedule(ctx, ps.client.genqlient, plan.Id.ValueString())
+	timeout, diags := plan.Timeouts.Delete(ctx, DefaultTimeout)
+	resp.Diagnostics.Append(diags...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+		_, err := deletePipelineSchedule(ctx, ps.client.genqlient, plan.Id.ValueString())
+
+		if err != nil {
+			if isRetryableError(err) {
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to delete Pipeline schedule",
