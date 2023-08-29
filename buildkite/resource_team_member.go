@@ -17,11 +17,11 @@ import (
 )
 
 type teamMemberResourceModel struct {
-	Id       types.String   `tfsdk:"id"`
-	Uuid     types.String   `tfsdk:"uuid"`
-	Role     types.String   `tfsdk:"role"`
-	TeamId   types.String   `tfsdk:"team_id"`
-	UserId   types.String   `tfsdk:"user_id"`
+	Id     types.String `tfsdk:"id"`
+	Uuid   types.String `tfsdk:"uuid"`
+	Role   types.String `tfsdk:"role"`
+	TeamId types.String `tfsdk:"team_id"`
+	UserId types.String `tfsdk:"user_id"`
 }
 
 type teamMemberResource struct {
