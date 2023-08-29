@@ -7,6 +7,7 @@ import (
 	"log"
 	"strings"
 
+	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	resource_schema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -15,6 +16,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
 type pipelineSchedule struct {
@@ -22,23 +24,24 @@ type pipelineSchedule struct {
 }
 
 type pipelineScheduleResourceModel struct {
-	Id         types.String `tfsdk:"id"`
-	Uuid       types.String `tfsdk:"uuid"`
-	Label      types.String `tfsdk:"label"`
-	Cronline   types.String `tfsdk:"cronline"`
-	Commit     types.String `tfsdk:"commit"`
-	Branch     types.String `tfsdk:"branch"`
-	Message    types.String `tfsdk:"message"`
-	Env        types.Map    `tfsdk:"env"`
-	Enabled    types.Bool   `tfsdk:"enabled"`
-	PipelineId types.String `tfsdk:"pipeline_id"`
+	Id         types.String   `tfsdk:"id"`
+	Uuid       types.String   `tfsdk:"uuid"`
+	Label      types.String   `tfsdk:"label"`
+	Cronline   types.String   `tfsdk:"cronline"`
+	Commit     types.String   `tfsdk:"commit"`
+	Branch     types.String   `tfsdk:"branch"`
+	Message    types.String   `tfsdk:"message"`
+	Env        types.Map      `tfsdk:"env"`
+	Enabled    types.Bool     `tfsdk:"enabled"`
+	PipelineId types.String   `tfsdk:"pipeline_id"`
+	Timeouts   timeouts.Value `tfsdk:"timeouts"`
 }
 
 func NewPipelineScheduleResource() resource.Resource {
 	return &pipelineSchedule{}
 }
 
-func (ps *pipelineSchedule) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
+func (ps *pipelineSchedule) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
 	resp.TypeName = req.ProviderTypeName + "_pipeline_schedule"
 }
 
@@ -49,7 +52,7 @@ func (ps *pipelineSchedule) Configure(ctx context.Context, req resource.Configur
 	ps.client = req.ProviderData.(*Client)
 }
 
-func (ps *pipelineSchedule) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
+func (ps *pipelineSchedule) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = resource_schema.Schema{
 		MarkdownDescription: "A Pipeline Schedule is a schedule that triggers a pipeline to run at a specific time.",
 		Attributes: map[string]resource_schema.Attribute{
@@ -103,6 +106,11 @@ func (ps *pipelineSchedule) Schema(_ context.Context, _ resource.SchemaRequest, 
 				Default:             booldefault.StaticBool(true),
 			},
 		},
+		Blocks: map[string]resource_schema.Block{
+			"timeouts": timeouts.Block(ctx, timeouts.Opts{
+				Create: true,
+			}),
+		},
 	}
 }
 
@@ -117,17 +125,34 @@ func (ps *pipelineSchedule) Create(ctx context.Context, req resource.CreateReque
 
 	log.Printf("Creating Pipeline schedule %s ...", plan.Label.ValueString())
 
-	envVars := envVarsMapFromTfToString(ctx, plan.Env)
-	apiResponse, err := createPipelineSchedule(ctx,
-		ps.client.genqlient,
-		plan.PipelineId.ValueString(),
-		plan.Label.ValueStringPointer(),
-		plan.Cronline.ValueStringPointer(),
-		plan.Message.ValueStringPointer(),
-		plan.Commit.ValueStringPointer(),
-		plan.Branch.ValueStringPointer(),
-		&envVars,
-		plan.Enabled.ValueBool())
+	createTimeout, diags := plan.Timeouts.Create(ctx, DefaultTimeout)
+
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	var apiResponse *createPipelineScheduleResponse
+	err := retry.RetryContext(ctx, createTimeout, func() *retry.RetryError {
+		var err error
+
+		envVars := envVarsMapFromTfToString(ctx, plan.Env)
+		apiResponse, err = createPipelineSchedule(ctx,
+			ps.client.genqlient,
+			plan.PipelineId.ValueString(),
+			plan.Label.ValueStringPointer(),
+			plan.Cronline.ValueStringPointer(),
+			plan.Message.ValueStringPointer(),
+			plan.Commit.ValueStringPointer(),
+			plan.Branch.ValueStringPointer(),
+			&envVars,
+			plan.Enabled.ValueBool())
+
+		if err != nil {
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
 
 	if err != nil {
 		resp.Diagnostics.AddError(
