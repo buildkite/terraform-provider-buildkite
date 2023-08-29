@@ -123,23 +123,13 @@ func testAccTeamMemberConfigBasic(role string) string {
 			default_team = true
 			default_member_role = "MEMBER"
 			members_can_create_pipelines = false
-			timeouts {
-				create = "1m"
-				read = "1m"
-				update = "1m"
-				delete = "1m"
-			}
 		}
+
 		resource "buildkite_team_member" "test" {
 		    role = "%s"
 			team_id = buildkite_team.test.id
 			user_id = "VXNlci0tLThkYjI5MjBlLTNjNjAtNDhhNy1hM2Y4LTI1ODRiZTM3NGJhYw=="
-			timeouts {
-				create = "1m"
-				read = "1m"
-				update = "1m"
-				delete = "1m"
-			}}
+		}
 	`
 	return fmt.Sprintf(config, role)
 }

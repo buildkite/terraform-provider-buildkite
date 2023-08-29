@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -23,7 +22,6 @@ type teamMemberResourceModel struct {
 	Role     types.String   `tfsdk:"role"`
 	TeamId   types.String   `tfsdk:"team_id"`
 	UserId   types.String   `tfsdk:"user_id"`
-	Timeouts timeouts.Value `tfsdk:"timeouts"`
 }
 
 type teamMemberResource struct {
@@ -78,9 +76,6 @@ func (teamMemberResource) Schema(ctx context.Context, req resource.SchemaRequest
 				},
 			},
 		},
-		Blocks: map[string]resource_schema.Block{
-			"timeouts": timeouts.BlockAll(ctx),
-		},
 	}
 }
 
@@ -94,15 +89,12 @@ func (tm *teamMemberResource) Create(ctx context.Context, req resource.CreateReq
 		return
 	}
 
-	timeout, diags := state.Timeouts.Create(ctx, DefaultTimeout)
+	timeout, diags := tm.client.timeouts.Create(ctx, DefaultTimeout)
 	resp.Diagnostics.Append(diags...)
 
 	if resp.Diagnostics.HasError() {
 		return
 	}
-
-	ctx, cancel := context.WithTimeout(ctx, timeout)
-	defer cancel()
 
 	log.Printf("Creating team member into team %s ...", state.TeamId.ValueString())
 	var r *createTeamMemberResponse
@@ -148,22 +140,19 @@ func (tm *teamMemberResource) Read(ctx context.Context, req resource.ReadRequest
 		return
 	}
 
-	timeout, diags := state.Timeouts.Create(ctx, DefaultTimeout)
+	timeout, diags := tm.client.timeouts.Read(ctx, DefaultTimeout)
 	resp.Diagnostics.Append(diags...)
 
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(ctx, timeout)
-	defer cancel()
-
 	log.Printf("Reading team member %s ...", state.Id.ValueString())
 	var r *getNodeResponse
 	retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		var err error
-		r, err = getNode(ctx, 
-			tm.client.genqlient, 
+		r, err = getNode(ctx,
+			tm.client.genqlient,
 			state.Id.ValueString(),
 		)
 
@@ -213,23 +202,20 @@ func (tm *teamMemberResource) Update(ctx context.Context, req resource.UpdateReq
 		return
 	}
 
-	timeout, diags := state.Timeouts.Create(ctx, DefaultTimeout)
+	timeout, diags := tm.client.timeouts.Update(ctx, DefaultTimeout)
 	resp.Diagnostics.Append(diags...)
 
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(ctx, timeout)
-	defer cancel()
-
 	log.Printf("Updating team member %s with role %s ...", state.Id.ValueString(), plan.Role.ValueString())
 	var r *updateTeamMemberResponse
 	retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		var err error
-		r, err = updateTeamMember(ctx, 
-			tm.client.genqlient, 
-			state.Id.ValueString(), 
+		r, err = updateTeamMember(ctx,
+			tm.client.genqlient,
+			state.Id.ValueString(),
 			*plan.Role.ValueStringPointer(),
 		)
 
@@ -262,20 +248,17 @@ func (tm *teamMemberResource) Delete(ctx context.Context, req resource.DeleteReq
 		return
 	}
 
-	timeout, diags := state.Timeouts.Create(ctx, DefaultTimeout)
+	timeout, diags := tm.client.timeouts.Delete(ctx, DefaultTimeout)
 	resp.Diagnostics.Append(diags...)
 
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(ctx, timeout)
-	defer cancel()
-
 	log.Printf("Deleting team member with ID %s ...", state.Id.ValueString())
 	retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-		_, err := deleteTeamMember(ctx, 
-			tm.client.genqlient, 
+		_, err := deleteTeamMember(ctx,
+			tm.client.genqlient,
 			state.Id.ValueString(),
 		)
 

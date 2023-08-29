@@ -18,21 +18,12 @@ resource "buildkite_team" "team" {
 
   default_team        = true
   default_member_role = "MEMBER"
-  timeouts {
-    create = "5m"
-  }
 }
 
 resource "buildkite_team_member" "a_smith" {
   role    = "MEMBER"
   team_id = buildkite_team.team.id
   user_id = "VXNlci0tLWRlOTdmMjBiLWJkZmMtNGNjOC1hOTcwLTY1ODNiZTk2ZGEyYQ=="
-  timeouts {
-		create = "2m"
-		read = "2m"
-		update = "2m"
-		delete = "2m"
-  }
 }
 ```
 
@@ -41,7 +32,6 @@ resource "buildkite_team_member" "a_smith" {
 * `role` - (Required) Either MEMBER or MAINTAINER.
 * `team_id` - (Required) The GraphQL ID of the team to add to/remove from.
 * `user_id` - (Required) The GraphQL ID of the user to add/remove.
-* `timeouts` - (Optional) A `block` (see above) for timeout values. The default is 60s (1m).
 
 ## Attribute Reference
 
