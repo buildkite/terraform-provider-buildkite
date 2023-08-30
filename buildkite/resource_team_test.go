@@ -156,11 +156,10 @@ func TestAccBuildkiteTeam(t *testing.T) {
 		})
 	})
 
-
 	t.Run("team is recreated if removed", func(t *testing.T) {
-		resName  := acctest.RandString(12)
+		resName := acctest.RandString(12)
 
-		check :=  func(s *terraform.State) error {
+		check := func(s *terraform.State) error {
 			team := s.RootModule().Resources["buildkite_team.acc_tests"]
 			_, err := teamDelete(context.Background(), genqlientGraphql, team.Primary.ID)
 			return err
@@ -171,8 +170,8 @@ func TestAccBuildkiteTeam(t *testing.T) {
 			ProtoV6ProviderFactories: protoV6ProviderFactories(),
 			Steps: []resource.TestStep{
 				{
-					Config: configBasic(resName),
-					Check: 	check,
+					Config:             configBasic(resName),
+					Check:              check,
 					ExpectNonEmptyPlan: true,
 					ConfigPlanChecks: resource.ConfigPlanChecks{
 						PostApplyPostRefresh: []plancheck.PlanCheck{
