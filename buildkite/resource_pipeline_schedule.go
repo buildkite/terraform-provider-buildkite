@@ -225,8 +225,15 @@ func (ps *pipelineSchedule) Read(ctx context.Context, req resource.ReadRequest, 
 			return
 		}
 		updatePipelineScheduleNode(ctx, &state, *pipelineScheduleNode)
+		resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+	} else {
+		resp.Diagnostics.AddWarning(
+			"Pipeline schedule not found",
+			"Removing Pipeline schedule from state...",
+		)
+		resp.State.RemoveResource(ctx)
 	}
-	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+
 }
 
 func (ps *pipelineSchedule) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {

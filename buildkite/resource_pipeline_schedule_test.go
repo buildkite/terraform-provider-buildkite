@@ -13,6 +13,15 @@ import (
 func TestAccBuildkitePipelineSchedule(t *testing.T) {
 	config := func(name, cronline, label string) string {
 		return fmt.Sprintf(`
+			provider "buildkite" {
+				timeouts {
+					create = "10s"
+					read = "10s"
+					update = "10s"
+					delete = "10s"
+				}
+			}
+			
 			resource "buildkite_pipeline" "pipeline" {
 				name = "%s"
 				repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
