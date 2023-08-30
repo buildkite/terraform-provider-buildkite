@@ -107,18 +107,26 @@ func (ts *testSuiteResource) Create(ctx context.Context, req resource.CreateRequ
 
 	// Construct URL to call to the REST API
 	url := fmt.Sprintf("/v2/analytics/organizations/%s/suites", ts.client.organization)
-	retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+	createErr := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		err = ts.client.makeRequest(ctx, "POST", url, payload, &response)
 
 		if err != nil {
-			resp.Diagnostics.AddError(
-				"Failed to create test suite",
-				err.Error())
+			if isRetryableError(err){
+				return retry.RetryableError(err)
+			}
 			return retry.NonRetryableError(err)
 		}
 
 		return nil
 	})
+
+	if createErr != nil {
+		resp.Diagnostics.AddError(
+			"Failed to create test suite",
+			createErr.Error(),
+		)
+		return
+	}
 
 	state.ApiToken = types.StringValue(response.ApiToken)
 	state.DefaultBranch = types.StringValue(response.DefaultBranch)
@@ -146,19 +154,26 @@ func (ts *testSuiteResource) Delete(ctx context.Context, req resource.DeleteRequ
 
 	// Construct URL to call to the REST API
 	url := fmt.Sprintf("/v2/analytics/organizations/%s/suites/%s", ts.client.organization, state.Slug.ValueString())
-	retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		err := ts.client.makeRequest(ctx, "DELETE", url, nil, nil)
 
 		if err != nil {
-			resp.Diagnostics.AddError(
-				"Failed to delete test suite",
-				err.Error(),
-			)
+			if isRetryableError(err){
+				return retry.RetryableError(err)
+			}
 			return retry.NonRetryableError(err)
 		}
 
 		return nil
 	})
+
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Failed to delete test suite",
+			err.Error(),
+		)
+		return
+	}
 }
 
 func (*testSuiteResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -306,19 +321,26 @@ func (ts *testSuiteResource) Update(ctx context.Context, req resource.UpdateRequ
 
 	// Construct URL to call to the REST API
 	url := fmt.Sprintf("/v2/analytics/organizations/%s/suites/%s", ts.client.organization, state.Slug.ValueString())
-	retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+	updateErr := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		err := ts.client.makeRequest(ctx, "PATCH", url, payload, &response)
 
 		if err != nil {
-			resp.Diagnostics.AddError(
-				"Failed to create test suite",
-				err.Error(),
-			)
+			if isRetryableError(err){
+				return retry.RetryableError(err)
+			}
 			return retry.NonRetryableError(err)
 		}
 
 		return nil
 	})
+
+	if updateErr != nil {
+		resp.Diagnostics.AddError(
+			"Failed to update test suite",
+			updateErr.Error(),
+		)
+		return
+	}
 
 	state.Name = plan.Name
 	state.DefaultBranch = plan.DefaultBranch
