@@ -7,6 +7,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
@@ -151,6 +152,34 @@ func TestAccBuildkiteTeamMember(t *testing.T) {
 					ResourceName:      "buildkite_team_member.test",
 					ImportState:       true,
 					ImportStateVerify: true,
+				},
+			},
+		})
+	})
+
+	t.Run("team member is recreated if removed", func(t *testing.T) {
+		resName  := acctest.RandString(12)
+
+		check :=  func(s *terraform.State) error {
+			teamMember := s.RootModule().Resources["buildkite_team_member.test"]
+			_, err := deleteTeamMember(context.Background(), genqlientGraphql, teamMember.Primary.ID)
+			return err
+		}
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			Steps: []resource.TestStep{
+				{
+					Config: basic(resName, "MEMBER"),
+					Check: 	check,
+					ExpectNonEmptyPlan: true,
+					ConfigPlanChecks: resource.ConfigPlanChecks{
+						PostApplyPostRefresh: []plancheck.PlanCheck{
+							// expect terraform to plan a new create
+							plancheck.ExpectResourceAction("buildkite_team_member.test", plancheck.ResourceActionCreate),
+						},
+					},
 				},
 			},
 		})
