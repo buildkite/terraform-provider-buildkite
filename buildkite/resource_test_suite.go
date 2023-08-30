@@ -11,6 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
 type testSuiteModel struct {
@@ -54,19 +55,41 @@ func (ts *testSuiteResource) Create(ctx context.Context, req resource.CreateRequ
 	payload := map[string]interface{}{}
 	var teamOwnerUuid string
 
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	diags := req.Plan.Get(ctx, &plan)
+	resp.Diagnostics.Append(diags...)
+
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
+	timeout, diags := ts.client.timeouts.Create(ctx, DefaultTimeout)
+	resp.Diagnostics.Append(diags...)
+
 	// The REST API requires team UUIDs but everything else in the provider uses GraphQL IDs. So we map from UUID to ID
 	// here
-	apiResponse, err := getNode(ctx, ts.client.genqlient, plan.TeamOwnerId.ValueString())
-	if err != nil {
-		resp.Diagnostics.AddError("Failed to find team", err.Error())
-		return
-	}
-	if apiTeam, ok := apiResponse.Node.(*getNodeNodeTeam); ok {
+	var r *getNodeResponse
+	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+		var err error
+		r, err = getNode(ctx, 
+			ts.client.genqlient, 
+			plan.TeamOwnerId.ValueString(),
+		)
+		
+		if err != nil {
+			if isRetryableError(err) {
+				return retry.RetryableError(err)
+			}
+			resp.Diagnostics.AddError(
+				"Failed to find team",
+				 err.Error(),
+			)
+			return retry.NonRetryableError(err)
+		}
+
+		return nil
+	})
+
+	if apiTeam, ok := r.Node.(*getNodeNodeTeam); ok {
 		teamOwnerUuid = apiTeam.Uuid
 	} else {
 		resp.Diagnostics.AddError("Failed to parse team from graphql", err.Error())
@@ -78,12 +101,23 @@ func (ts *testSuiteResource) Create(ctx context.Context, req resource.CreateRequ
 	payload["show_api_token"] = true
 	payload["team_ids"] = []string{teamOwnerUuid}
 
+	// Construct URL to call to the REST API
 	url := fmt.Sprintf("/v2/analytics/organizations/%s/suites", ts.client.organization)
-	err = ts.client.makeRequest(ctx, "POST", url, payload, &response)
-	if err != nil {
-		resp.Diagnostics.AddError("Failed to create test suite", err.Error())
-		return
-	}
+	retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+		err = ts.client.makeRequest(ctx, "POST", url, payload, &response)
+		
+		if err != nil {
+			if isRetryableError(err) {
+				return retry.RetryableError(err)
+			}
+			resp.Diagnostics.AddError(
+				"Failed to create test suite", 
+				err.Error())
+			return retry.NonRetryableError(err)
+		}
+
+		return nil
+	})
 
 	state.ApiToken = types.StringValue(response.ApiToken)
 	state.DefaultBranch = types.StringValue(response.DefaultBranch)
@@ -99,17 +133,34 @@ func (ts *testSuiteResource) Create(ctx context.Context, req resource.CreateRequ
 func (ts *testSuiteResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	var state testSuiteModel
 
-	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	diags := req.State.Get(ctx, &state)
+	resp.Diagnostics.Append(diags...)
+
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
+	timeout, diags := ts.client.timeouts.Delete(ctx, DefaultTimeout)
+	resp.Diagnostics.Append(diags...)
+
+	// Construct URL to call to the REST API
 	url := fmt.Sprintf("/v2/analytics/organizations/%s/suites/%s", ts.client.organization, state.Slug.ValueString())
-	err := ts.client.makeRequest(ctx, "DELETE", url, nil, nil)
-	if err != nil {
-		resp.Diagnostics.AddError("Failed to delete test suite", err.Error())
-		return
-	}
+	retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+		err := ts.client.makeRequest(ctx, "DELETE", url, nil, nil)
+		
+		if err != nil {
+			if isRetryableError(err) {
+				return retry.RetryableError(err)
+			}
+			resp.Diagnostics.AddError(
+				"Failed to delete test suite", 
+				err.Error(),
+			)
+			return retry.NonRetryableError(err)
+		}
+
+		return nil
+	})
 }
 
 func (*testSuiteResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -119,20 +170,44 @@ func (*testSuiteResource) Metadata(ctx context.Context, req resource.MetadataReq
 func (ts *testSuiteResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var state testSuiteModel
 
-	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	diags := req.State.Get(ctx, &state)
+	resp.Diagnostics.Append(diags...)
+
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	graphqlResponse, err := getTestSuite(ctx, ts.client.genqlient, state.ID.ValueString(), 50)
-	if err != nil {
-		resp.Diagnostics.AddError("Failed to load test suite from GraphQL", err.Error())
+	timeout, diags := ts.client.timeouts.Read(ctx, DefaultTimeout)
+	resp.Diagnostics.Append(diags...)
+
+	if resp.Diagnostics.HasError() {
 		return
 	}
 
+	var r *getTestSuiteResponse
+	retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+		var err error
+		r, err = getTestSuite(ctx, 
+			ts.client.genqlient, state.ID.ValueString(), 
+			50,
+		)
+		if err != nil {
+			if isRetryableError(err) {
+				return retry.RetryableError(err)
+			}
+			resp.Diagnostics.AddError(
+				"Failed to load test suite from GraphQL",
+				 err.Error(),
+			)
+			return retry.NonRetryableError(err)
+		}
+
+		return nil
+	})
+
 	teamToFind := state.TeamOwnerId.ValueString()
 	// Find either the team ID from the state (if set) or the first team linked with MANAGE_AND_READ
-	if suite, ok := graphqlResponse.Suite.(*getTestSuiteSuite); ok {
+	if suite, ok := r.Suite.(*getTestSuiteSuite); ok {
 		var found *getTestSuiteSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdge
 		for _, teamSuite := range suite.Teams.Edges {
 			if teamSuite.Node.Team.Id == teamToFind {
