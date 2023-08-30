@@ -237,6 +237,10 @@ func (t *teamResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 		}
 		updateTeamResourceState(&state, *teamNode)
 		resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+	} else {
+		// Resource not found, remove from state
+		resp.Diagnostics.AddWarning("Team resource not found", "Removing team from state")
+		resp.State.RemoveResource(ctx)
 	}
 }
 
