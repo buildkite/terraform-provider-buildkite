@@ -107,9 +107,6 @@ func (ts *testSuiteResource) Create(ctx context.Context, req resource.CreateRequ
 		err = ts.client.makeRequest(ctx, "POST", url, payload, &response)
 
 		if err != nil {
-			if isRetryableError(err) {
-				return retry.RetryableError(err)
-			}
 			resp.Diagnostics.AddError(
 				"Failed to create test suite",
 				err.Error())
@@ -149,9 +146,6 @@ func (ts *testSuiteResource) Delete(ctx context.Context, req resource.DeleteRequ
 		err := ts.client.makeRequest(ctx, "DELETE", url, nil, nil)
 
 		if err != nil {
-			if isRetryableError(err) {
-				return retry.RetryableError(err)
-			}
 			resp.Diagnostics.AddError(
 				"Failed to delete test suite",
 				err.Error(),
