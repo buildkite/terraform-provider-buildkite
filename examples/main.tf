@@ -1,6 +1,7 @@
 provider "buildkite" {
   timeouts {
-    create = "15s"
+    create = "10s"
+    update = "15s"
   }
 }
 
