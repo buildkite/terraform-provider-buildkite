@@ -70,18 +70,18 @@ func (ts *testSuiteResource) Create(ctx context.Context, req resource.CreateRequ
 	var r *getNodeResponse
 	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		var err error
-		r, err = getNode(ctx, 
-			ts.client.genqlient, 
+		r, err = getNode(ctx,
+			ts.client.genqlient,
 			plan.TeamOwnerId.ValueString(),
 		)
-		
+
 		if err != nil {
 			if isRetryableError(err) {
 				return retry.RetryableError(err)
 			}
 			resp.Diagnostics.AddError(
 				"Failed to find team",
-				 err.Error(),
+				err.Error(),
 			)
 			return retry.NonRetryableError(err)
 		}
@@ -105,13 +105,13 @@ func (ts *testSuiteResource) Create(ctx context.Context, req resource.CreateRequ
 	url := fmt.Sprintf("/v2/analytics/organizations/%s/suites", ts.client.organization)
 	retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		err = ts.client.makeRequest(ctx, "POST", url, payload, &response)
-		
+
 		if err != nil {
 			if isRetryableError(err) {
 				return retry.RetryableError(err)
 			}
 			resp.Diagnostics.AddError(
-				"Failed to create test suite", 
+				"Failed to create test suite",
 				err.Error())
 			return retry.NonRetryableError(err)
 		}
@@ -147,13 +147,13 @@ func (ts *testSuiteResource) Delete(ctx context.Context, req resource.DeleteRequ
 	url := fmt.Sprintf("/v2/analytics/organizations/%s/suites/%s", ts.client.organization, state.Slug.ValueString())
 	retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		err := ts.client.makeRequest(ctx, "DELETE", url, nil, nil)
-		
+
 		if err != nil {
 			if isRetryableError(err) {
 				return retry.RetryableError(err)
 			}
 			resp.Diagnostics.AddError(
-				"Failed to delete test suite", 
+				"Failed to delete test suite",
 				err.Error(),
 			)
 			return retry.NonRetryableError(err)
@@ -187,8 +187,8 @@ func (ts *testSuiteResource) Read(ctx context.Context, req resource.ReadRequest,
 	var r *getTestSuiteResponse
 	retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		var err error
-		r, err = getTestSuite(ctx, 
-			ts.client.genqlient, state.ID.ValueString(), 
+		r, err = getTestSuite(ctx,
+			ts.client.genqlient, state.ID.ValueString(),
 			50,
 		)
 		if err != nil {
@@ -197,7 +197,7 @@ func (ts *testSuiteResource) Read(ctx context.Context, req resource.ReadRequest,
 			}
 			resp.Diagnostics.AddError(
 				"Failed to load test suite from GraphQL",
-				 err.Error(),
+				err.Error(),
 			)
 			return retry.NonRetryableError(err)
 		}
