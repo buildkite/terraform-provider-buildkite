@@ -79,15 +79,19 @@ func (ts *testSuiteResource) Create(ctx context.Context, req resource.CreateRequ
 			if isRetryableError(err) {
 				return retry.RetryableError(err)
 			}
-			resp.Diagnostics.AddError(
-				"Failed to find team",
-				err.Error(),
-			)
 			return retry.NonRetryableError(err)
 		}
 
 		return nil
 	})
+
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Failed to find team",
+			err.Error(),
+		)
+		return
+	}
 
 	if apiTeam, ok := r.Node.(*getNodeNodeTeam); ok {
 		teamOwnerUuid = apiTeam.Uuid
@@ -179,7 +183,7 @@ func (ts *testSuiteResource) Read(ctx context.Context, req resource.ReadRequest,
 	}
 
 	var r *getTestSuiteResponse
-	retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		var err error
 		r, err = getTestSuite(ctx,
 			ts.client.genqlient, state.ID.ValueString(),
@@ -189,15 +193,19 @@ func (ts *testSuiteResource) Read(ctx context.Context, req resource.ReadRequest,
 			if isRetryableError(err) {
 				return retry.RetryableError(err)
 			}
-			resp.Diagnostics.AddError(
-				"Failed to load test suite from GraphQL",
-				err.Error(),
-			)
 			return retry.NonRetryableError(err)
 		}
 
 		return nil
 	})
+
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Failed to load test suite from GraphQL",
+			err.Error(),
+		)
+		return
+	}
 
 	teamToFind := state.TeamOwnerId.ValueString()
 	// Find either the team ID from the state (if set) or the first team linked with MANAGE_AND_READ
@@ -319,7 +327,7 @@ func (ts *testSuiteResource) Update(ctx context.Context, req resource.UpdateRequ
 	// If the planned team_owner_id differs from the state, add the new one and remove the old one
 	if plan.TeamOwnerId.ValueString() != state.TeamOwnerId.ValueString() {
 		var r *createTestSuiteTeamResponse
-		retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+		err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 			var err error
 			r, err = createTestSuiteTeam(ctx,
 				ts.client.genqlient,
@@ -332,20 +340,24 @@ func (ts *testSuiteResource) Update(ctx context.Context, req resource.UpdateRequ
 				if isRetryableError(err) {
 					return retry.RetryableError(err)
 				}
-				resp.Diagnostics.AddError(
-					"Could not add new owner team",
-					err.Error(),
-				)
 				return retry.NonRetryableError(err)
 			}
 
 			return nil
 		})
+
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Could not add new owner team",
+				err.Error(),
+			)
+			return
+		}
 		previousOwnerId := state.TeamOwnerId.ValueString()
 		state.TeamOwnerId = types.StringValue(r.TeamSuiteCreate.TeamSuite.Team.Id)
 		for _, team := range r.TeamSuiteCreate.Suite.Teams.Edges {
 			if team.Node.Team.Id == previousOwnerId {
-				retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+				err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 					_, err := deleteTestSuiteTeam(ctx,
 						ts.client.genqlient,
 						team.Node.Id,
@@ -355,15 +367,18 @@ func (ts *testSuiteResource) Update(ctx context.Context, req resource.UpdateRequ
 						if isRetryableError(err) {
 							return retry.RetryableError(err)
 						}
-						resp.Diagnostics.AddError(
-							"Failed to delete team owner",
-							err.Error(),
-						)
-
 						return retry.NonRetryableError(err)
 					}
 					return nil
 				})
+
+				if err != nil {
+					resp.Diagnostics.AddError(
+						"Failed to delete team owner",
+						err.Error(),
+					)
+					return
+				}
 			}
 		}
 	}

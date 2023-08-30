@@ -99,7 +99,7 @@ func (tst *testSuiteTeamResource) Create(ctx context.Context, req resource.Creat
 
 	log.Printf("Adding team %s to test suite %s ...", state.TeamID.ValueString(), state.TestSuiteId.ValueString())
 	var r *createTestSuiteTeamResponse
-	retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		var err error
 		r, err = createTestSuiteTeam(ctx,
 			tst.client.genqlient,
@@ -112,15 +112,19 @@ func (tst *testSuiteTeamResource) Create(ctx context.Context, req resource.Creat
 			if isRetryableError(err) {
 				return retry.RetryableError(err)
 			}
-			resp.Diagnostics.AddError(
-				"Unable to create test suite team",
-				fmt.Sprintf("Unable to create test suite team: %s", err.Error()),
-			)
 			return retry.NonRetryableError(err)
 		}
 
 		return nil
 	})
+
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Unable to create test suite team",
+			fmt.Sprintf("Unable to create test suite team: %s", err.Error()),
+		)
+		return
+	}
 
 	// Set ID and UUID to state
 	state.ID = types.StringValue(r.TeamSuiteCreate.TeamSuite.Id)
@@ -148,7 +152,7 @@ func (tst *testSuiteTeamResource) Read(ctx context.Context, req resource.ReadReq
 
 	log.Printf("Reading test suite team with ID %s ...", state.ID.ValueString())
 	var r *getNodeResponse
-	retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		var err error
 		r, err = getNode(ctx,
 			tst.client.genqlient,
@@ -159,15 +163,19 @@ func (tst *testSuiteTeamResource) Read(ctx context.Context, req resource.ReadReq
 			if isRetryableError(err) {
 				return retry.RetryableError(err)
 			}
-			resp.Diagnostics.AddError(
-				"Unable to read test suite team",
-				fmt.Sprintf("Unable to read test suite team member: %s", err.Error()),
-			)
 			return retry.NonRetryableError(err)
 		}
 
 		return nil
 	})
+
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Unable to read test suite team",
+			fmt.Sprintf("Unable to read test suite team member: %s", err.Error()),
+		)
+		return
+	}
 
 	// Convert fron Node to getNodeTeamMember type
 	if teamSuiteNode, ok := r.GetNode().(*getNodeNodeTeamSuite); ok {
@@ -215,7 +223,7 @@ func (tst *testSuiteTeamResource) Update(ctx context.Context, req resource.Updat
 
 	log.Printf("Updating team %s in test suite %s to %s ...", state.TeamID.ValueString(), state.TestSuiteId.ValueString(), testSuiteTeamAccessLevel)
 	var r *updateTestSuiteTeamResponse
-	retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		var err error
 		r, err = updateTestSuiteTeam(ctx,
 			tst.client.genqlient,
@@ -227,15 +235,19 @@ func (tst *testSuiteTeamResource) Update(ctx context.Context, req resource.Updat
 			if isRetryableError(err) {
 				return retry.RetryableError(err)
 			}
-			resp.Diagnostics.AddError(
-				"Unable to update test suite team",
-				fmt.Sprintf("Unable to update test suite team: %s", err.Error()),
-			)
 			return retry.NonRetryableError(err)
 		}
 
 		return nil
 	})
+
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Unable to update test suite team",
+			fmt.Sprintf("Unable to update test suite team: %s", err.Error()),
+		)
+		return
+	}
 
 	// Update state access level
 	state.AccessLevel = types.StringValue(string(r.TeamSuiteUpdate.TeamSuite.AccessLevel))
@@ -261,7 +273,7 @@ func (tst *testSuiteTeamResource) Delete(ctx context.Context, req resource.Delet
 	}
 
 	log.Printf("Deleting team %s's access to test suite %s ...", state.TeamID.ValueString(), state.TestSuiteId.ValueString())
-	retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		_, err := deleteTestSuiteTeam(ctx,
 			tst.client.genqlient,
 			state.ID.ValueString(),
@@ -271,14 +283,18 @@ func (tst *testSuiteTeamResource) Delete(ctx context.Context, req resource.Delet
 			if isRetryableError(err) {
 				return retry.RetryableError(err)
 			}
-			resp.Diagnostics.AddError(
-				"Unable to delete test suite team",
-				fmt.Sprintf("Unable to delete test suite team: %s", err.Error()),
-			)
 			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
+
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Unable to delete test suite team",
+			fmt.Sprintf("Unable to delete test suite team: %s", err.Error()),
+		)
+		return
+	}
 }
 
 func updateTeamSuiteTeamResource(tstm *testSuiteTeamModel, tsn getNodeNodeTeamSuite) {
