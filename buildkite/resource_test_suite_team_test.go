@@ -13,6 +13,15 @@ import (
 func TestAccBuildkiteTestSuiteTeam(t *testing.T) {
 	config := func(ownerTeamName, newTeamName, accessLevel string) string {
 		return fmt.Sprintf(`
+		provider "buildkite" {
+			timeouts {
+				create = "10s"
+				read = "10s"
+				update = "10s"
+				delete = "10s"
+			}
+		}
+		
 		resource "buildkite_team" "ownerteam" {
 			name = "Test Suite Team %s"
 			default_team = false

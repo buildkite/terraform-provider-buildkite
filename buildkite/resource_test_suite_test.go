@@ -15,6 +15,15 @@ import (
 func TestAccBuildkiteTestSuite(t *testing.T) {
 	basicTestSuite := func(name string) string {
 		return fmt.Sprintf(`
+		provider "buildkite" {
+			timeouts {
+				create = "10s"
+				read = "10s"
+				update = "10s"
+				delete = "10s"
+			}
+		}
+
 		resource "buildkite_team" "team" {
 			name = "test suite team"
 			default_team = false
@@ -31,6 +40,15 @@ func TestAccBuildkiteTestSuite(t *testing.T) {
 
 	testSuiteWithTwoTeams := func(name string) string {
 		return fmt.Sprintf(`
+		provider "buildkite" {
+			timeouts {
+				create = "10s"
+				read = "10s"
+				update = "10s"
+				delete = "10s"
+			}
+		}
+
 		resource "buildkite_team" "ateam" {
 			name = "a team"
 			default_team = false
@@ -53,6 +71,15 @@ func TestAccBuildkiteTestSuite(t *testing.T) {
 
 	testSuiteTeamAddition := func(name string) string {
 		return fmt.Sprintf(`
+		provider "buildkite" {
+			timeouts {
+				create = "10s"
+				read = "10s"
+				update = "10s"
+				delete = "10s"
+			}
+		}
+
 		resource "buildkite_team" "ateam" {
 			name = "a team"
 			default_team = false
