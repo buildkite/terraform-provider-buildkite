@@ -24,7 +24,7 @@ resource "buildkite_pipeline_schedule" "repo2_nightly" {
 * `commit` - (Optional, Default: `HEAD`) The commit ref to use for the build.
 * `message` - (Optional, Default: `Scheduled build`) The message to use for the build.
 * `env` - (Optional) A map of environment variables to use for the build.
-* `enabled` - (Optional, Default: `true`) Whether the schedule should run. 
+* `enabled` - (Optional, Default: `true`) Whether the schedule should run.
 
 ## Attribute Reference
 
