@@ -11,11 +11,7 @@ resource "buildkite_pipeline_schedule" "repo2_nightly" {
   pipeline_id = buildkite_pipeline.repo2.id
   label       = "Nightly build"
   cronline    = "@midnight"
-  branch      = buildkite_pipeline.repo2.default_branch
-  timeouts {
-    create = "60m"
-  }
-}
+  branch      = buildkite_pipeline.repo2.default_branch 
 ```
 
 ## Argument Reference
@@ -27,8 +23,7 @@ resource "buildkite_pipeline_schedule" "repo2_nightly" {
 * `commit` - (Optional, Default: `HEAD`) The commit ref to use for the build.
 * `message` - (Optional, Default: `Scheduled build`) The message to use for the build.
 * `env` - (Optional) A map of environment variables to use for the build.
-* `enabled` - (Optional, Default: `true`) Whether the schedule should run.
-* `timeouts` - (Optional) A `block` (see above) for timeout values. The default is 60s (1m).
+* `enabled` - (Optional, Default: `true`) Whether the schedule should run. 
 
 ## Attribute Reference
 
