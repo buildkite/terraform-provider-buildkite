@@ -146,7 +146,7 @@ func (t *teamResource) Create(ctx context.Context, req resource.CreateRequest, r
 	}
 
 	var r *teamCreateResponse
-	retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		var err error
 		r, err = teamCreate(ctx,
 			t.client.genqlient,
@@ -163,15 +163,19 @@ func (t *teamResource) Create(ctx context.Context, req resource.CreateRequest, r
 			if isRetryableError(err) {
 				return retry.RetryableError(err)
 			}
-			resp.Diagnostics.AddError(
-				"Unable to create team.",
-				fmt.Sprintf("Unable to create team: %s", err.Error()),
-			)
 			return retry.NonRetryableError(err)
 		}
 
 		return nil
 	})
+
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Unable to create team.",
+			fmt.Sprintf("Unable to create team: %s", err.Error()),
+		)
+		return
+	}
 
 	state.ID = types.StringValue(r.TeamCreate.TeamEdge.Node.Id)
 	state.UUID = types.StringValue(r.TeamCreate.TeamEdge.Node.Uuid)
@@ -198,7 +202,7 @@ func (t *teamResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 	}
 
 	var response *getNodeResponse
-	retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		var err error
 		response, err = getNode(ctx,
 			t.client.genqlient,
@@ -209,15 +213,19 @@ func (t *teamResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 			if isRetryableError(err) {
 				return retry.RetryableError(err)
 			}
-			resp.Diagnostics.AddError(
-				"Unable to read team.",
-				fmt.Sprintf("Unable to read team: %s", err.Error()),
-			)
 			return retry.NonRetryableError(err)
 		}
 
 		return nil
 	})
+
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Unable to read team.",
+			fmt.Sprintf("Unable to read team: %s", err.Error()),
+		)
+		return
+	}
 
 	if teamNode, ok := response.GetNode().(*getNodeNodeTeam); ok {
 		if teamNode == nil {
@@ -252,7 +260,7 @@ func (t *teamResource) Update(ctx context.Context, req resource.UpdateRequest, r
 	}
 
 	var response *teamUpdateResponse
-	retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		var err error
 		response, err = teamUpdate(ctx,
 			t.client.genqlient,
@@ -269,15 +277,19 @@ func (t *teamResource) Update(ctx context.Context, req resource.UpdateRequest, r
 			if isRetryableError(err) {
 				return retry.RetryableError(err)
 			}
-			resp.Diagnostics.AddError(
-				"Unable to update Team",
-				fmt.Sprintf("Unable to update Team: %s", err.Error()),
-			)
 			return retry.NonRetryableError(err)
 		}
 
 		return nil
 	})
+
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Unable to update Team",
+			fmt.Sprintf("Unable to update Team: %s", err.Error()),
+		)
+		return
+	}
 
 	plan.Slug = types.StringValue(response.TeamUpdate.Team.Slug)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
@@ -300,7 +312,7 @@ func (t *teamResource) Delete(ctx context.Context, req resource.DeleteRequest, r
 		return
 	}
 
-	retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		_, err := teamDelete(ctx,
 			t.client.genqlient,
 			state.ID.ValueString(),
@@ -310,14 +322,18 @@ func (t *teamResource) Delete(ctx context.Context, req resource.DeleteRequest, r
 			if isRetryableError(err) {
 				return retry.RetryableError(err)
 			}
-			resp.Diagnostics.AddError(
-				"Unable to delete Team",
-				fmt.Sprintf("Unable to delete Team: %s", err.Error()),
-			)
 			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
+
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Unable to delete Team",
+			fmt.Sprintf("Unable to delete Team: %s", err.Error()),
+		)
+		return
+	}
 }
 
 func updateTeamResourceState(state *teamResourceModel, res getNodeNodeTeam) {
