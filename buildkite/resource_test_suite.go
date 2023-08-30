@@ -276,8 +276,19 @@ func (ts *testSuiteResource) Update(ctx context.Context, req resource.UpdateRequ
 	var response testSuiteResponse
 	payload := map[string]interface{}{}
 
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
-	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	diagsPlan := req.Plan.Get(ctx, &plan)
+	diagsState := req.State.Get(ctx, &state)
+
+	resp.Diagnostics.Append(diagsPlan...)
+	resp.Diagnostics.Append(diagsState...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	timeout, diags := ts.client.timeouts.Update(ctx, DefaultTimeout)
+	resp.Diagnostics.Append(diags...)
+
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -285,12 +296,21 @@ func (ts *testSuiteResource) Update(ctx context.Context, req resource.UpdateRequ
 	payload["name"] = plan.Name.ValueString()
 	payload["default_branch"] = plan.DefaultBranch.ValueString()
 
+	// Construct URL to call to the REST API
 	url := fmt.Sprintf("/v2/analytics/organizations/%s/suites/%s", ts.client.organization, state.Slug.ValueString())
-	err := ts.client.makeRequest(ctx, "PATCH", url, payload, &response)
-	if err != nil {
-		resp.Diagnostics.AddError("Failed to create test suite", err.Error())
-		return
-	}
+	retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+		err := ts.client.makeRequest(ctx, "PATCH", url, payload, &response)
+
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Failed to create test suite",
+				err.Error(),
+			)
+			return retry.NonRetryableError(err)
+		}
+
+		return nil
+	})
 
 	state.Name = plan.Name
 	state.DefaultBranch = plan.DefaultBranch
@@ -298,20 +318,52 @@ func (ts *testSuiteResource) Update(ctx context.Context, req resource.UpdateRequ
 
 	// If the planned team_owner_id differs from the state, add the new one and remove the old one
 	if plan.TeamOwnerId.ValueString() != state.TeamOwnerId.ValueString() {
-		graphqlResponse, err := createTestSuiteTeam(ctx, ts.client.genqlient, plan.TeamOwnerId.ValueString(), state.ID.ValueString(), SuiteAccessLevelsManageAndRead)
-		if err != nil {
-			resp.Diagnostics.AddError("Could not add new owner team", err.Error())
-			return
-		}
-		previousOwnerId := state.TeamOwnerId.ValueString()
-		state.TeamOwnerId = types.StringValue(graphqlResponse.TeamSuiteCreate.TeamSuite.Team.Id)
-		for _, team := range graphqlResponse.TeamSuiteCreate.Suite.Teams.Edges {
-			if team.Node.Team.Id == previousOwnerId {
-				_, err = deleteTestSuiteTeam(ctx, ts.client.genqlient, team.Node.Id)
-				if err != nil {
-					resp.Diagnostics.AddError("Failed to delete team owner", err.Error())
-					return
+		var r *createTestSuiteTeamResponse
+		retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+			var err error
+			r, err = createTestSuiteTeam(ctx,
+				ts.client.genqlient,
+				plan.TeamOwnerId.ValueString(),
+				state.ID.ValueString(),
+				SuiteAccessLevelsManageAndRead,
+			)
+
+			if err != nil {
+				if isRetryableError(err) {
+					return retry.RetryableError(err)
 				}
+				resp.Diagnostics.AddError(
+					"Could not add new owner team",
+					err.Error(),
+				)
+				return retry.NonRetryableError(err)
+			}
+
+			return nil
+		})
+		previousOwnerId := state.TeamOwnerId.ValueString()
+		state.TeamOwnerId = types.StringValue(r.TeamSuiteCreate.TeamSuite.Team.Id)
+		for _, team := range r.TeamSuiteCreate.Suite.Teams.Edges {
+			if team.Node.Team.Id == previousOwnerId {
+				retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+					_, err := deleteTestSuiteTeam(ctx,
+						ts.client.genqlient,
+						team.Node.Id,
+					)
+
+					if err != nil {
+						if isRetryableError(err) {
+							return retry.RetryableError(err)
+						}
+						resp.Diagnostics.AddError(
+							"Failed to delete team owner",
+							err.Error(),
+						)
+
+						return retry.NonRetryableError(err)
+					}
+					return nil
+				})
 			}
 		}
 	}
