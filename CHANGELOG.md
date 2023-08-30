@@ -8,6 +8,7 @@ All notable changes to this project will be documented in this file.
 - SUP-1392: Random test suite names in tests/t.Run() conversion [[PR #376](https://github.com/buildkite/terraform-provider-buildkite/pull/376)] @james2791
 - SUP-1374 Add timeout to provider and cluster datasource [[PR #363](https://github.com/buildkite/terraform-provider-buildkite/pull/363)] @jradtilbrook
 - SUP-1374 Remove timeout context [[PR #378](https://github.com/buildkite/terraform-provider-buildkite/pull/378)] @jradtilbrook
+- SUP-1402: Agent token resource retries [[PR #382](https://github.com/buildkite/terraform-provider-buildkite/pull/382)] @james2791
 
 ### Changes
 
