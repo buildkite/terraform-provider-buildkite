@@ -98,7 +98,7 @@ func (tm *teamMemberResource) Create(ctx context.Context, req resource.CreateReq
 
 	log.Printf("Creating team member into team %s ...", state.TeamId.ValueString())
 	var r *createTeamMemberResponse
-	retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		var err error
 		r, err = createTeamMember(ctx,
 			tm.client.genqlient,
@@ -111,15 +111,19 @@ func (tm *teamMemberResource) Create(ctx context.Context, req resource.CreateReq
 			if isRetryableError(err) {
 				return retry.RetryableError(err)
 			}
-			resp.Diagnostics.AddError(
-				"Unable to create team member",
-				fmt.Sprintf("Unable to create team member: %s", err.Error()),
-			)
 			return retry.NonRetryableError(err)
 		}
 
 		return nil
 	})
+
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Unable to create team member",
+			fmt.Sprintf("Unable to create team member: %s", err.Error()),
+		)
+		return
+	}
 
 	// Update state with values from API response/plan
 	state.Id = types.StringValue(r.TeamMemberCreate.TeamMemberEdge.Node.Id)
@@ -149,7 +153,7 @@ func (tm *teamMemberResource) Read(ctx context.Context, req resource.ReadRequest
 
 	log.Printf("Reading team member %s ...", state.Id.ValueString())
 	var r *getNodeResponse
-	retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		var err error
 		r, err = getNode(ctx,
 			tm.client.genqlient,
@@ -160,15 +164,19 @@ func (tm *teamMemberResource) Read(ctx context.Context, req resource.ReadRequest
 			if isRetryableError(err) {
 				return retry.RetryableError(err)
 			}
-			resp.Diagnostics.AddError(
-				"Unable to read team member",
-				fmt.Sprintf("Unable to read ream member: %s", err.Error()),
-			)
 			return retry.NonRetryableError(err)
 		}
 
 		return nil
 	})
+
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Unable to read team member",
+			fmt.Sprintf("Unable to read ream member: %s", err.Error()),
+		)
+		return
+	}
 
 	// Convert fron Node to getNodeTeamMember type
 	if teamMemberNode, ok := r.GetNode().(*getNodeNodeTeamMember); ok {
@@ -211,7 +219,7 @@ func (tm *teamMemberResource) Update(ctx context.Context, req resource.UpdateReq
 
 	log.Printf("Updating team member %s with role %s ...", state.Id.ValueString(), plan.Role.ValueString())
 	var r *updateTeamMemberResponse
-	retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		var err error
 		r, err = updateTeamMember(ctx,
 			tm.client.genqlient,
@@ -223,15 +231,19 @@ func (tm *teamMemberResource) Update(ctx context.Context, req resource.UpdateReq
 			if isRetryableError(err) {
 				return retry.RetryableError(err)
 			}
-			resp.Diagnostics.AddError(
-				"Unable to update Team member",
-				fmt.Sprintf("Unable to update Team member: %s", err.Error()),
-			)
 			return retry.NonRetryableError(err)
 		}
 
 		return nil
 	})
+
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Unable to update Team member",
+			fmt.Sprintf("Unable to update Team member: %s", err.Error()),
+		)
+		return
+	}
 
 	// Update state with revised role
 	newRole := types.StringValue(string(r.TeamMemberUpdate.TeamMember.Role))
@@ -256,7 +268,7 @@ func (tm *teamMemberResource) Delete(ctx context.Context, req resource.DeleteReq
 	}
 
 	log.Printf("Deleting team member with ID %s ...", state.Id.ValueString())
-	retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		_, err := deleteTeamMember(ctx,
 			tm.client.genqlient,
 			state.Id.ValueString(),
@@ -266,14 +278,18 @@ func (tm *teamMemberResource) Delete(ctx context.Context, req resource.DeleteReq
 			if isRetryableError(err) {
 				return retry.RetryableError(err)
 			}
-			resp.Diagnostics.AddError(
-				"Unable to delete team member",
-				fmt.Sprintf("Unable to delete team member: %s", err.Error()),
-			)
 			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
+
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Unable to delete team member",
+			fmt.Sprintf("Unable to delete team member: %s", err.Error()),
+		)
+		return
+	}
 }
 
 func updateTeamMemberResourceState(tmr *teamMemberResourceModel, tmn getNodeNodeTeamMember) {
