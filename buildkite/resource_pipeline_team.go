@@ -12,6 +12,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
 type pipelineTeamResourceModel struct {
@@ -88,12 +89,31 @@ func (tp *pipelineTeamResource) Create(ctx context.Context, req resource.CreateR
 		return
 	}
 
-	apiResponse, err := createTeamPipeline(ctx,
-		tp.client.genqlient,
-		state.TeamId.ValueString(),
-		state.PipelineId.ValueString(),
-		PipelineAccessLevels(state.AccessLevel.ValueString()),
-	)
+	timeouts, diags := tp.client.timeouts.Create(ctx, DefaultTimeout)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	var apiResponse *createTeamPipelineResponse
+	err := retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
+		var err error
+
+		apiResponse, err = createTeamPipeline(ctx,
+			tp.client.genqlient,
+			state.TeamId.ValueString(),
+			state.PipelineId.ValueString(),
+			PipelineAccessLevels(state.AccessLevel.ValueString()),
+		)
+
+		if err != nil {
+			if isRetryableError(err) {
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
 
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -120,16 +140,36 @@ func (tp *pipelineTeamResource) Read(ctx context.Context, req resource.ReadReque
 		return
 	}
 
-	apiResponse, err := getNode(ctx,
-		tp.client.genqlient,
-		state.Id.ValueString(),
-	)
+	timeouts, diags := tp.client.timeouts.Read(ctx, DefaultTimeout)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	var apiResponse *getNodeResponse
+	err := retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
+		var err error
+
+		apiResponse, err = getNode(ctx,
+			tp.client.genqlient,
+			state.Id.ValueString(),
+		)
+
+		if err != nil {
+			if isRetryableError(err) {
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
 
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to read team pipeline",
 			fmt.Sprintf("Unable to read team pipeline: %s", err.Error()),
 		)
+		return
 	}
 
 	// Convert from Node to getNodeNodeTeamPipeline type
@@ -166,10 +206,25 @@ func (tp *pipelineTeamResource) Update(ctx context.Context, req resource.UpdateR
 		return
 	}
 
-	_, err := updateTeamPipeline(ctx, tp.client.genqlient,
-		state.Id.ValueString(),
-		PipelineAccessLevels(accessLevel),
-	)
+	timeouts, diags := tp.client.timeouts.Update(ctx, DefaultTimeout)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	err := retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
+		_, err := updateTeamPipeline(ctx, tp.client.genqlient,
+			state.Id.ValueString(),
+			PipelineAccessLevels(accessLevel),
+		)
+		if err != nil {
+			if isRetryableError(err) {
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
 
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -193,7 +248,23 @@ func (tp *pipelineTeamResource) Delete(ctx context.Context, req resource.DeleteR
 		return
 	}
 
-	_, err := deleteTeamPipeline(ctx, tp.client.genqlient, state.Id.ValueString())
+	timeout, diags := tp.client.timeouts.Delete(ctx, DefaultTimeout)
+	resp.Diagnostics.Append(diags...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+		_, err := deleteTeamPipeline(ctx, tp.client.genqlient, state.Id.ValueString())
+		if err != nil {
+			if isRetryableError(err) {
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
 
 	if err != nil {
 		resp.Diagnostics.AddError(
