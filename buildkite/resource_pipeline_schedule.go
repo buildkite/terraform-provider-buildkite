@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"log"
 	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -116,8 +115,6 @@ func (ps *pipelineSchedule) Create(ctx context.Context, req resource.CreateReque
 		return
 	}
 
-	log.Printf("Creating Pipeline schedule %s ...", plan.Label.ValueString())
-
 	timeouts, diags := ps.client.timeouts.Create(ctx, DefaultTimeout)
 
 	resp.Diagnostics.Append(diags...)
@@ -125,11 +122,12 @@ func (ps *pipelineSchedule) Create(ctx context.Context, req resource.CreateReque
 		return
 	}
 
+	envVars := envVarsMapFromTfToString(ctx, plan.Env)
 	var apiResponse *createPipelineScheduleResponse
+
 	err := retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
 		var err error
 
-		envVars := envVarsMapFromTfToString(ctx, plan.Env)
 		apiResponse, err = createPipelineSchedule(ctx,
 			ps.client.genqlient,
 			plan.PipelineId.ValueString(),
@@ -193,7 +191,6 @@ func (ps *pipelineSchedule) Read(ctx context.Context, req resource.ReadRequest, 
 	err := retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
 		var err error
 
-		log.Printf("Reading Pipeline schedule %s ...", state.Label.ValueString())
 		apiResponse, err = getPipelineSchedule(ctx,
 			ps.client.genqlient,
 			state.Id.ValueString(),
@@ -255,21 +252,20 @@ func (ps *pipelineSchedule) Update(ctx context.Context, req resource.UpdateReque
 		return
 	}
 
+	envVars := envVarsMapFromTfToString(ctx, plan.Env)
+	input := PipelineScheduleUpdateInput{
+		Id:       state.Id.ValueString(),
+		Label:    plan.Label.ValueStringPointer(),
+		Cronline: plan.Cronline.ValueStringPointer(),
+		Branch:   plan.Branch.ValueStringPointer(),
+		Commit:   plan.Commit.ValueStringPointer(),
+		Message:  plan.Message.ValueStringPointer(),
+		Env:      &envVars,
+		Enabled:  plan.Enabled.ValueBool(),
+	}
+
 	err := retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
 		var err error
-
-		envVars := envVarsMapFromTfToString(ctx, plan.Env)
-		input := PipelineScheduleUpdateInput{
-			Id:       state.Id.ValueString(),
-			Label:    plan.Label.ValueStringPointer(),
-			Cronline: plan.Cronline.ValueStringPointer(),
-			Branch:   plan.Branch.ValueStringPointer(),
-			Commit:   plan.Commit.ValueStringPointer(),
-			Message:  plan.Message.ValueStringPointer(),
-			Env:      &envVars,
-			Enabled:  plan.Enabled.ValueBool(),
-		}
-		log.Printf("Updating Pipeline schedule %s ...", plan.Label.ValueString())
 		_, err = updatePipelineSchedule(ctx,
 			ps.client.genqlient,
 			input,
