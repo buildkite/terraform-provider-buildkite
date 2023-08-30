@@ -111,7 +111,7 @@ func (ts *testSuiteResource) Create(ctx context.Context, req resource.CreateRequ
 		err = ts.client.makeRequest(ctx, "POST", url, payload, &response)
 
 		if err != nil {
-			if isRetryableError(err){
+			if isRetryableError(err) {
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
@@ -158,7 +158,7 @@ func (ts *testSuiteResource) Delete(ctx context.Context, req resource.DeleteRequ
 		err := ts.client.makeRequest(ctx, "DELETE", url, nil, nil)
 
 		if err != nil {
-			if isRetryableError(err){
+			if isRetryableError(err) {
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
@@ -325,7 +325,7 @@ func (ts *testSuiteResource) Update(ctx context.Context, req resource.UpdateRequ
 		err := ts.client.makeRequest(ctx, "PATCH", url, payload, &response)
 
 		if err != nil {
-			if isRetryableError(err){
+			if isRetryableError(err) {
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
