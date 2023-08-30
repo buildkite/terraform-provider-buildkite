@@ -101,6 +101,34 @@ func TestAccBuildkitePipelineTeam(t *testing.T) {
 			},
 		})
 	})
+
+	t.Run("pipeline team is recreated if removed", func(t *testing.T) {
+		teamName := acctest.RandString(12)
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			Steps: []resource.TestStep{
+				{
+					Config: testAccPipelineTeamConfigBasic(teamName, "READ_ONLY"),
+					Check: func(s *terraform.State) error {
+						pipelineTeam := s.RootModule().Resources["buildkite_pipeline_team.pipelineteam"]
+						_, err := deleteTeamPipeline(context.Background(),
+							genqlientGraphql,
+							pipelineTeam.Primary.ID)
+						return err
+					},
+					ExpectNonEmptyPlan: true,
+					ConfigPlanChecks: resource.ConfigPlanChecks{
+						PostApplyPostRefresh: []plancheck.PlanCheck{
+							plancheck.ExpectResourceAction("buildkite_pipeline_team.pipelineteam", plancheck.ResourceActionCreate),
+						},
+					},
+				},
+			},
+		})
+	})
+
 }
 
 func testAccPipelineTeamConfigBasic(teamName string, accessLevel string) string {
