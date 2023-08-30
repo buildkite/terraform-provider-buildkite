@@ -62,7 +62,7 @@ func (at *AgentTokenResource) Create(ctx context.Context, req resource.CreateReq
 	}
 
 	var r *createAgentTokenResponse
-	retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		var err error
 		r, err = createAgentToken(ctx,
 			at.client.genqlient,
@@ -74,15 +74,19 @@ func (at *AgentTokenResource) Create(ctx context.Context, req resource.CreateReq
 			if isRetryableError(err) {
 				return retry.RetryableError(err)
 			}
-			resp.Diagnostics.AddError(
-				"Unable to create agent token",
-				fmt.Sprintf("Unable to create agent token: %s", err.Error()),
-			)
 			return retry.NonRetryableError(err)
 		}
 
 		return nil
 	})
+
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Unable to create agent token",
+			fmt.Sprintf("Unable to create agent token: %s", err.Error()),
+		)
+		return
+	}
 
 	state.Description = types.StringPointerValue(r.AgentTokenCreate.AgentTokenEdge.Node.Description)
 	state.Id = types.StringValue(r.AgentTokenCreate.AgentTokenEdge.Node.Id)
@@ -109,7 +113,7 @@ func (at *AgentTokenResource) Delete(ctx context.Context, req resource.DeleteReq
 		return
 	}
 
-	retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		_, err := revokeAgentToken(ctx,
 			at.client.genqlient,
 			state.Id.ValueString(),
@@ -120,14 +124,18 @@ func (at *AgentTokenResource) Delete(ctx context.Context, req resource.DeleteReq
 			if isRetryableError(err) {
 				return retry.RetryableError(err)
 			}
-			resp.Diagnostics.AddError(
-				"Unable to revoke agent token",
-				fmt.Sprintf("Unable to revoke agent token: %s", err.Error()),
-			)
 			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
+
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Unable to revoke agent token",
+			fmt.Sprintf("Unable to revoke agent token: %s", err.Error()),
+		)
+		return
+	}
 }
 
 func (AgentTokenResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -152,7 +160,7 @@ func (at *AgentTokenResource) Read(ctx context.Context, req resource.ReadRequest
 	}
 
 	var r *getAgentTokenResponse
-	retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		var err error
 		r, err = getAgentToken(ctx,
 			at.client.genqlient,
@@ -163,15 +171,18 @@ func (at *AgentTokenResource) Read(ctx context.Context, req resource.ReadRequest
 			if isRetryableError(err) {
 				return retry.RetryableError(err)
 			}
-			resp.Diagnostics.AddError(
-				"Unable to read agent token",
-				fmt.Sprintf("Unable to read agent token: %s", err.Error()),
-			)
 			return retry.NonRetryableError(err)
 		}
 
 		return nil
 	})
+
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Unable to read agent token",
+			fmt.Sprintf("Unable to read agent token: %s", err.Error()),
+		)
+	}
 
 	if r == nil {
 		resp.Diagnostics.AddError("Agent token not found", "Removing from state")
