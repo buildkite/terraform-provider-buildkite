@@ -12,6 +12,7 @@ resource "buildkite_pipeline_schedule" "repo2_nightly" {
   label       = "Nightly build"
   cronline    = "@midnight"
   branch      = buildkite_pipeline.repo2.default_branch 
+}
 ```
 
 ## Argument Reference
