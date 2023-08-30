@@ -7,7 +7,6 @@ import (
 	"log"
 	"strings"
 
-	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	resource_schema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -24,17 +23,16 @@ type pipelineSchedule struct {
 }
 
 type pipelineScheduleResourceModel struct {
-	Id         types.String   `tfsdk:"id"`
-	Uuid       types.String   `tfsdk:"uuid"`
-	Label      types.String   `tfsdk:"label"`
-	Cronline   types.String   `tfsdk:"cronline"`
-	Commit     types.String   `tfsdk:"commit"`
-	Branch     types.String   `tfsdk:"branch"`
-	Message    types.String   `tfsdk:"message"`
-	Env        types.Map      `tfsdk:"env"`
-	Enabled    types.Bool     `tfsdk:"enabled"`
-	PipelineId types.String   `tfsdk:"pipeline_id"`
-	Timeouts   timeouts.Value `tfsdk:"timeouts"`
+	Id         types.String `tfsdk:"id"`
+	Uuid       types.String `tfsdk:"uuid"`
+	Label      types.String `tfsdk:"label"`
+	Cronline   types.String `tfsdk:"cronline"`
+	Commit     types.String `tfsdk:"commit"`
+	Branch     types.String `tfsdk:"branch"`
+	Message    types.String `tfsdk:"message"`
+	Env        types.Map    `tfsdk:"env"`
+	Enabled    types.Bool   `tfsdk:"enabled"`
+	PipelineId types.String `tfsdk:"pipeline_id"`
 }
 
 func NewPipelineScheduleResource() resource.Resource {
@@ -106,9 +104,6 @@ func (ps *pipelineSchedule) Schema(ctx context.Context, req resource.SchemaReque
 				Default:             booldefault.StaticBool(true),
 			},
 		},
-		Blocks: map[string]resource_schema.Block{
-			"timeouts": timeouts.BlockAll(ctx),
-		},
 	}
 }
 
@@ -123,7 +118,7 @@ func (ps *pipelineSchedule) Create(ctx context.Context, req resource.CreateReque
 
 	log.Printf("Creating Pipeline schedule %s ...", plan.Label.ValueString())
 
-	timeouts, diags := plan.Timeouts.Create(ctx, DefaultTimeout)
+	timeouts, diags := ps.client.timeouts.Create(ctx, DefaultTimeout)
 
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
@@ -188,7 +183,7 @@ func (ps *pipelineSchedule) Read(ctx context.Context, req resource.ReadRequest, 
 		return
 	}
 
-	timeouts, diags := state.Timeouts.Read(ctx, DefaultTimeout)
+	timeouts, diags := ps.client.timeouts.Read(ctx, DefaultTimeout)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -247,7 +242,7 @@ func (ps *pipelineSchedule) Update(ctx context.Context, req resource.UpdateReque
 		return
 	}
 
-	timeouts, diags := plan.Timeouts.Update(ctx, DefaultTimeout)
+	timeouts, diags := ps.client.timeouts.Update(ctx, DefaultTimeout)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -304,7 +299,7 @@ func (ps *pipelineSchedule) Delete(ctx context.Context, req resource.DeleteReque
 		return
 	}
 
-	timeout, diags := plan.Timeouts.Delete(ctx, DefaultTimeout)
+	timeout, diags := ps.client.timeouts.Delete(ctx, DefaultTimeout)
 	resp.Diagnostics.Append(diags...)
 
 	if resp.Diagnostics.HasError() {

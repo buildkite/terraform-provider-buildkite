@@ -47,10 +47,7 @@ resource "buildkite_pipeline_schedule" "weekly" {
   label       = "Weekly build from default branch"
   cronline    = "@midnight"
   branch      = "default"
-  message     = "Weekly scheduled build"
-  timeouts {
-    create = "60m"
-  }
+  message     = "Weekly scheduled build" 
 }
 
 resource "buildkite_pipeline_team" "developers" {
