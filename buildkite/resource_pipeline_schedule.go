@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"log"
 	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -15,6 +14,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
 type pipelineSchedule struct {
@@ -38,7 +38,7 @@ func NewPipelineScheduleResource() resource.Resource {
 	return &pipelineSchedule{}
 }
 
-func (ps *pipelineSchedule) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
+func (ps *pipelineSchedule) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
 	resp.TypeName = req.ProviderTypeName + "_pipeline_schedule"
 }
 
@@ -49,7 +49,7 @@ func (ps *pipelineSchedule) Configure(ctx context.Context, req resource.Configur
 	ps.client = req.ProviderData.(*Client)
 }
 
-func (ps *pipelineSchedule) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
+func (ps *pipelineSchedule) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = resource_schema.Schema{
 		MarkdownDescription: "A Pipeline Schedule is a schedule that triggers a pipeline to run at a specific time.",
 		Attributes: map[string]resource_schema.Attribute{
@@ -115,19 +115,38 @@ func (ps *pipelineSchedule) Create(ctx context.Context, req resource.CreateReque
 		return
 	}
 
-	log.Printf("Creating Pipeline schedule %s ...", plan.Label.ValueString())
+	timeouts, diags := ps.client.timeouts.Create(ctx, DefaultTimeout)
+
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
 	envVars := envVarsMapFromTfToString(ctx, plan.Env)
-	apiResponse, err := createPipelineSchedule(ctx,
-		ps.client.genqlient,
-		plan.PipelineId.ValueString(),
-		plan.Label.ValueStringPointer(),
-		plan.Cronline.ValueStringPointer(),
-		plan.Message.ValueStringPointer(),
-		plan.Commit.ValueStringPointer(),
-		plan.Branch.ValueStringPointer(),
-		&envVars,
-		plan.Enabled.ValueBool())
+	var apiResponse *createPipelineScheduleResponse
+
+	err := retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
+		var err error
+
+		apiResponse, err = createPipelineSchedule(ctx,
+			ps.client.genqlient,
+			plan.PipelineId.ValueString(),
+			plan.Label.ValueStringPointer(),
+			plan.Cronline.ValueStringPointer(),
+			plan.Message.ValueStringPointer(),
+			plan.Commit.ValueStringPointer(),
+			plan.Branch.ValueStringPointer(),
+			&envVars,
+			plan.Enabled.ValueBool())
+
+		if err != nil {
+			if isRetryableError(err) {
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
 
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -155,17 +174,36 @@ func (ps *pipelineSchedule) Create(ctx context.Context, req resource.CreateReque
 func (ps *pipelineSchedule) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var state pipelineScheduleResourceModel
 
-	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	diagsState := req.State.Get(ctx, &state)
+	resp.Diagnostics.Append(diagsState...)
 
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	log.Printf("Reading Pipeline schedule %s ...", state.Label.ValueString())
-	apiResponse, err := getPipelineSchedule(ctx,
-		ps.client.genqlient,
-		state.Id.ValueString(),
-	)
+	timeouts, diags := ps.client.timeouts.Read(ctx, DefaultTimeout)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	var apiResponse *getPipelineScheduleResponse
+	err := retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
+		var err error
+
+		apiResponse, err = getPipelineSchedule(ctx,
+			ps.client.genqlient,
+			state.Id.ValueString(),
+		)
+
+		if err != nil {
+			if isRetryableError(err) {
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
 
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -184,16 +222,32 @@ func (ps *pipelineSchedule) Read(ctx context.Context, req resource.ReadRequest, 
 			return
 		}
 		updatePipelineScheduleNode(ctx, &state, *pipelineScheduleNode)
+		resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+	} else {
+		resp.Diagnostics.AddWarning(
+			"Pipeline schedule not found",
+			"Removing Pipeline schedule from state...",
+		)
+		resp.State.RemoveResource(ctx)
 	}
-	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+
 }
 
 func (ps *pipelineSchedule) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	var state, plan pipelineScheduleResourceModel
 
-	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	diagsState := req.State.Get(ctx, &state)
+	diagsPlan := req.Plan.Get(ctx, &plan)
 
+	resp.Diagnostics.Append(diagsState...)
+	resp.Diagnostics.Append(diagsPlan...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	timeouts, diags := ps.client.timeouts.Update(ctx, DefaultTimeout)
+	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -210,18 +264,28 @@ func (ps *pipelineSchedule) Update(ctx context.Context, req resource.UpdateReque
 		Enabled:  plan.Enabled.ValueBool(),
 	}
 
-	log.Printf("Updating Pipeline schedule %s ...", plan.Label.ValueString())
-	_, err := updatePipelineSchedule(ctx,
-		ps.client.genqlient,
-		input,
-	)
+	err := retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
+		var err error
+		_, err = updatePipelineSchedule(ctx,
+			ps.client.genqlient,
+			input,
+		)
+
+		if err != nil {
+			if isRetryableError(err) {
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+
+		return nil
+	})
 
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to update Pipeline schedule",
 			fmt.Sprintf("Unable to update Pipeline schedule: %s", err.Error()),
 		)
-		return
 	}
 
 	plan.Id = state.Id
@@ -230,14 +294,33 @@ func (ps *pipelineSchedule) Update(ctx context.Context, req resource.UpdateReque
 
 func (ps *pipelineSchedule) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	var plan pipelineScheduleResourceModel
-	resp.Diagnostics.Append(req.State.Get(ctx, &plan)...)
+
+	diagsPlan := req.State.Get(ctx, &plan)
+	resp.Diagnostics.Append(diagsPlan...)
 
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	log.Println("Deleting Pipeline schedule ...")
-	_, err := deletePipelineSchedule(ctx, ps.client.genqlient, plan.Id.ValueString())
+	timeout, diags := ps.client.timeouts.Delete(ctx, DefaultTimeout)
+	resp.Diagnostics.Append(diags...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+		_, err := deletePipelineSchedule(ctx, ps.client.genqlient, plan.Id.ValueString())
+
+		if err != nil {
+			if isRetryableError(err) {
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to delete Pipeline schedule",

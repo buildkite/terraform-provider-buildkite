@@ -7,12 +7,22 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
 func TestAccBuildkitePipelineSchedule(t *testing.T) {
 	config := func(name, cronline, label string) string {
 		return fmt.Sprintf(`
+			provider "buildkite" {
+				timeouts {
+					create = "10s"
+					read = "10s"
+					update = "10s"
+					delete = "10s"
+				}
+			}
+			
 			resource "buildkite_pipeline" "pipeline" {
 				name = "%s"
 				repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
@@ -164,6 +174,34 @@ func TestAccBuildkitePipelineSchedule(t *testing.T) {
 						resource.TestCheckResourceAttr("buildkite_pipeline_schedule.pipeline", "cronline", "0 1 * * *"),
 						resource.TestCheckResourceAttr("buildkite_pipeline_schedule.pipeline", "branch", "main"),
 					),
+				},
+			},
+		})
+	})
+
+	t.Run("pipeline schedule is recreated if removed", func(t *testing.T) {
+		pipelineName := acctest.RandString(12)
+		label := acctest.RandString(12)
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			Steps: []resource.TestStep{
+				{
+					Config: config(pipelineName, "0 * * * *", label),
+					Check: func(s *terraform.State) error {
+						ps := s.RootModule().Resources["buildkite_pipeline_schedule.pipeline"]
+						_, err := deletePipelineSchedule(context.Background(),
+							genqlientGraphql,
+							ps.Primary.ID)
+						return err
+					},
+					ExpectNonEmptyPlan: true,
+					ConfigPlanChecks: resource.ConfigPlanChecks{
+						PostApplyPostRefresh: []plancheck.PlanCheck{
+							plancheck.ExpectResourceAction("buildkite_pipeline_schedule.pipeline", plancheck.ResourceActionCreate),
+						},
+					},
 				},
 			},
 		})
