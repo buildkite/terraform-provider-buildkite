@@ -7,6 +7,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
@@ -213,6 +214,35 @@ func TestAccBuildkiteTestSuiteTeam(t *testing.T) {
 					Config:             config(ownerTeamName, newTeamName, "READ_ONLY"),
 					Check:              check,
 					ExpectNonEmptyPlan: true,
+				},
+			},
+		})
+	})
+
+	t.Run("test suite team is recreated if removed", func(t *testing.T) {
+		ownerTeamName := acctest.RandString(12)
+		newTeamName := acctest.RandString(12)
+
+		check := func(s *terraform.State) error {
+			teamSuite := s.RootModule().Resources["buildkite_test_suite_team.teamsuite"]
+			_, err := deleteTestSuiteTeam(context.Background(), genqlientGraphql, teamSuite.Primary.ID,)
+			return err
+		}
+	
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			Steps: []resource.TestStep{
+				{
+					Config:             config(ownerTeamName, newTeamName, "READ_ONLY"),
+					Check:              check,
+					ExpectNonEmptyPlan: true,
+					ConfigPlanChecks: resource.ConfigPlanChecks{
+						PostApplyPostRefresh: []plancheck.PlanCheck{
+							// expect terraform to plan a new create
+							plancheck.ExpectResourceAction("buildkite_test_suite_team.teamsuite", plancheck.ResourceActionCreate),
+						},
+					},
 				},
 			},
 		})
