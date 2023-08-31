@@ -242,6 +242,11 @@ func (ts *testSuiteResource) Read(ctx context.Context, req resource.ReadRequest,
 			// and we didnt find another team with MANAGE_AND_READ
 			state.TeamOwnerId = types.StringUnknown()
 		}
+	} else {
+		// Test suite was removed - remove from state
+		resp.Diagnostics.AddWarning("Test suite not found", "Removing test suite from state")
+		resp.State.RemoveResource(ctx)
+		return
 	}
 
 	if state.TeamOwnerId.IsUnknown() {
