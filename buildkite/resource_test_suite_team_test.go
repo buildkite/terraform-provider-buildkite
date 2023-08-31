@@ -225,10 +225,10 @@ func TestAccBuildkiteTestSuiteTeam(t *testing.T) {
 
 		check := func(s *terraform.State) error {
 			teamSuite := s.RootModule().Resources["buildkite_test_suite_team.teamsuite"]
-			_, err := deleteTestSuiteTeam(context.Background(), genqlientGraphql, teamSuite.Primary.ID,)
+			_, err := deleteTestSuiteTeam(context.Background(), genqlientGraphql, teamSuite.Primary.ID)
 			return err
 		}
-	
+
 		resource.ParallelTest(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },
 			ProtoV6ProviderFactories: protoV6ProviderFactories(),
