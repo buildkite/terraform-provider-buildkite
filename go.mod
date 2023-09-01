@@ -4,6 +4,7 @@ go 1.20
 
 require (
 	github.com/Khan/genqlient v0.6.0
+	github.com/cli/go-gh/v2 v2.3.0
 	github.com/hashicorp/terraform-plugin-framework v1.3.5
 	github.com/hashicorp/terraform-plugin-framework-validators v0.11.0
 	github.com/hashicorp/terraform-plugin-go v0.18.0
@@ -13,13 +14,8 @@ require (
 )
 
 require (
-	github.com/dnephin/pflag v1.0.7 // indirect
-	github.com/fsnotify/fsnotify v1.5.4 // indirect
-	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510 // indirect
-	golang.org/x/sync v0.1.0 // indirect
-	golang.org/x/term v0.11.0 // indirect
-	golang.org/x/tools v0.8.0 // indirect
-	gotest.tools/gotestsum v1.10.1 // indirect
+	github.com/cli/safeexec v1.0.0 // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
 require (
@@ -49,8 +45,8 @@ require (
 	github.com/hashicorp/terraform-registry-address v0.2.1 // indirect
 	github.com/hashicorp/terraform-svchost v0.1.1 // indirect
 	github.com/hashicorp/yamux v0.0.0-20181012175058-2f1d1f20f75d // indirect
-	github.com/mattn/go-colorable v0.1.12 // indirect
-	github.com/mattn/go-isatty v0.0.14 // indirect
+	github.com/mattn/go-colorable v0.1.13 // indirect
+	github.com/mattn/go-isatty v0.0.19 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/go-testing-interface v1.14.1 // indirect
 	github.com/mitchellh/go-wordwrap v1.0.0 // indirect
