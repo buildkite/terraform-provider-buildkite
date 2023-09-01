@@ -11,7 +11,7 @@ resource "buildkite_pipeline_schedule" "repo2_nightly" {
   pipeline_id = buildkite_pipeline.repo2.id
   label       = "Nightly build"
   cronline    = "@midnight"
-  branch      = buildkite_pipeline.repo2.default_branch
+  branch      = buildkite_pipeline.repo2.default_branch 
 }
 ```
 

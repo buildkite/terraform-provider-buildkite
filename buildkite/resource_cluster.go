@@ -95,7 +95,7 @@ func (c *clusterResource) Create(ctx context.Context, req resource.CreateRequest
 		return
 	}
 
-	createTimeout, diags := state.Timeouts.Create(ctx, DefaultTimeout)
+	timeout, diags := c.client.timeouts.Create(ctx, DefaultTimeout)
 
 	resp.Diagnostics.Append(diags...)
 
@@ -104,9 +104,10 @@ func (c *clusterResource) Create(ctx context.Context, req resource.CreateRequest
 	}
 
 	var r *createClusterResponse
-	err := retry.RetryContext(ctx, createTimeout, func() *retry.RetryError {
+	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		var err error
 		r, err = createCluster(
+			ctx,
 			c.client.genqlient,
 			c.client.organizationId,
 			state.Name.ValueString(),
@@ -115,11 +116,24 @@ func (c *clusterResource) Create(ctx context.Context, req resource.CreateRequest
 			state.Color.ValueStringPointer(),
 		)
 		if err != nil {
+			if isRetryableError(err) {
+				return retry.RetryableError(err)
+			}
 			return retry.NonRetryableError(err)
 		}
 
 		return nil
 	})
+
+	r, err = createCluster(
+		ctx,
+		c.client.genqlient,
+		c.client.organizationId,
+		state.Name.ValueString(),
+		state.Description.ValueStringPointer(),
+		state.Emoji.ValueStringPointer(),
+		state.Color.ValueStringPointer(),
+	)
 
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -138,13 +152,36 @@ func (c *clusterResource) Create(ctx context.Context, req resource.CreateRequest
 func (c *clusterResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var state clusterResourceModel
 
-	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	diags := req.State.Get(ctx, &state)
+
+	resp.Diagnostics.Append(diags...)
 
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	r, err := getCluster(c.client.genqlient, c.client.organization, state.UUID.ValueString())
+	timeout, diags := c.client.timeouts.Read(ctx, DefaultTimeout)
+
+	resp.Diagnostics.Append(diags...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	var r *getNodeResponse
+	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+		var err error
+		r, err = getNode(ctx, c.client.genqlient, state.ID.ValueString())
+
+		if err != nil {
+			if isRetryableError(err) {
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+
+		return nil
+	})
 
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -154,8 +191,23 @@ func (c *clusterResource) Read(ctx context.Context, req resource.ReadRequest, re
 		return
 	}
 
-	updateClusterResourceState(r.Organization.Cluster, &state)
-	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+	if clusterNode, ok := r.GetNode().(*getNodeNodeCluster); ok {
+		if clusterNode == nil {
+			resp.Diagnostics.AddError(
+				"Unable to get Cluster",
+				"Error getting Cluster: nil response",
+			)
+			return
+		}
+		updateClusterResourceState(&state, *clusterNode)
+		resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+	} else {
+		resp.Diagnostics.AddWarning(
+			"Cluster not found",
+			"Removing Cluster from state...",
+		)
+		resp.State.RemoveResource(ctx)
+	}
 }
 
 func (c *clusterResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
@@ -168,17 +220,35 @@ func (c *clusterResource) Update(ctx context.Context, req resource.UpdateRequest
 		return
 	}
 
-	id := state.ID.ValueString()
+	timeout, diags := c.client.timeouts.Update(ctx, DefaultTimeout)
 
-	_, err := updateCluster(
-		c.client.genqlient,
-		c.client.organizationId,
-		id,
-		plan.Name.ValueString(),
-		plan.Description.ValueStringPointer(),
-		plan.Emoji.ValueStringPointer(),
-		plan.Color.ValueStringPointer(),
-	)
+	resp.Diagnostics.Append(diags...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+		var err error
+		_, err = updateCluster(ctx,
+			c.client.genqlient,
+			c.client.organizationId,
+			state.ID.ValueString(),
+			plan.Name.ValueString(),
+			plan.Description.ValueStringPointer(),
+			plan.Emoji.ValueStringPointer(),
+			plan.Color.ValueStringPointer(),
+		)
+
+		if err != nil {
+			if isRetryableError(err) {
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+
+		return nil
+	})
 
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -194,13 +264,36 @@ func (c *clusterResource) Update(ctx context.Context, req resource.UpdateRequest
 func (c *clusterResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	var state clusterResourceModel
 
-	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	diags := req.State.Get(ctx, &state)
+
+	resp.Diagnostics.Append(diags...)
 
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	_, err := deleteCluster(c.client.genqlient, c.client.organizationId, state.ID.ValueString())
+	timeout, diags := c.client.timeouts.Delete(ctx, DefaultTimeout)
+
+	resp.Diagnostics.Append(diags...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+		var err error
+		_, err = deleteCluster(ctx, c.client.genqlient, c.client.organizationId, state.ID.ValueString())
+
+		if err != nil {
+			if isRetryableError(err) {
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+
+		return nil
+	})
+
 
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -212,14 +305,14 @@ func (c *clusterResource) Delete(ctx context.Context, req resource.DeleteRequest
 }
 
 func (c *clusterResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	resource.ImportStatePassthroughID(ctx, path.Root("uuid"), req, resp)
+	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
 
-func updateClusterResourceState(cl getClusterOrganizationCluster, c *clusterResourceModel) {
-	c.ID = types.StringValue(cl.Id)
-	c.UUID = types.StringValue(cl.Uuid)
-	c.Name = types.StringValue(cl.Name)
-	c.Description = types.StringPointerValue(cl.Description)
-	c.Emoji = types.StringPointerValue(cl.Emoji)
-	c.Color = types.StringPointerValue(cl.Color)
+func updateClusterResourceState(state *clusterResourceModel, res getNodeNodeCluster) {
+	state.ID = types.StringValue(res.Id)
+	state.UUID = types.StringValue(res.Uuid)
+	state.Name = types.StringValue(res.Name)
+	state.Description = types.StringPointerValue(res.Description)
+	state.Emoji = types.StringPointerValue(res.Emoji)
+	state.Color = types.StringPointerValue(res.Color)
 }

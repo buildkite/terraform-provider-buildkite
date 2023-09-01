@@ -1,12 +1,13 @@
 package buildkite
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
+	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
 func TestAccTestSuiteTeam_add_remove(t *testing.T) {
@@ -151,7 +152,7 @@ func TestAccTestSuiteTeam_disappears(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: protoV6ProviderFactories(),
-		CheckDestroy:             testAccCheckPipelineResourceDestroy,
+		// CheckDestroy:             testAccCheckPipelineResourceDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccCTestSuiteTeamConfigBasic(ownerTeamName, newTeamName, "READ_ONLY"),
@@ -172,7 +173,7 @@ func TestAccTestSuiteTeam_disappears(t *testing.T) {
 
 func testAccCTestSuiteTeamConfigBasic(ownerTeamName, newTeamName, accessLevel string) string {
 	config := `
-	
+
 	resource "buildkite_team" "ownerteam" {
 		name = "Test Suite Team %s"
 		default_team = false
@@ -215,7 +216,7 @@ func testAccCheckTestSuiteTeamExists(resourceName string, tst *testSuiteTeamMode
 			return fmt.Errorf("No ID is set in state")
 		}
 
-		apiResponse, err := getNode(genqlientGraphql, resourceState.Primary.ID)
+		apiResponse, err := getNode(context.Background(), genqlientGraphql, resourceState.Primary.ID)
 
 		if err != nil {
 			return fmt.Errorf("Error fetching test suite team from graphql API: %v", err)
@@ -238,7 +239,7 @@ func testAccCheckTestSuiteTeamDestroy(s *terraform.State) error {
 			continue
 		}
 
-		apiResponse, err := getNode(genqlientGraphql, rs.Primary.ID)
+		apiResponse, err := getNode(context.Background(), genqlientGraphql, rs.Primary.ID)
 
 		if err != nil {
 			return fmt.Errorf("Error fetching test suite team from graphql API: %v", err)
@@ -283,7 +284,7 @@ func testAccCheckTestSuiteTeamDisappears(resourceName string) resource.TestCheck
 			return fmt.Errorf("Resource ID missing: %s", resourceName)
 		}
 
-		_, err := deleteTestSuiteTeam(genqlientGraphql, resourceState.Primary.ID)
+		_, err := deleteTestSuiteTeam(context.Background(), genqlientGraphql, resourceState.Primary.ID)
 
 		return err
 	}

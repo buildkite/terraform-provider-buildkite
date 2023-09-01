@@ -3,19 +3,24 @@ package buildkite
 import (
 	"context"
 	"fmt"
+	"log"
 	"os"
+	"strings"
+	"time"
 
+	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
-	framework_schema "github.com/hashicorp/terraform-plugin-framework/provider/schema"
+	"github.com/hashicorp/terraform-plugin-framework/provider/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 const (
 	defaultGraphqlEndpoint = "https://graphql.buildkite.com/v1"
 	defaultRestEndpoint    = "https://api.buildkite.com"
+
+	DefaultTimeout = 30 * time.Second
 )
 
 const (
@@ -31,11 +36,12 @@ type terraformProvider struct {
 }
 
 type providerModel struct {
-	ApiToken                types.String `tfsdk:"api_token"`
-	ArchivePipelineOnDelete types.Bool   `tfsdk:"archive_pipeline_on_delete"`
-	GraphqlUrl              types.String `tfsdk:"graphql_url"`
-	Organization            types.String `tfsdk:"organization"`
-	RestUrl                 types.String `tfsdk:"rest_url"`
+	ApiToken                types.String   `tfsdk:"api_token"`
+	ArchivePipelineOnDelete types.Bool     `tfsdk:"archive_pipeline_on_delete"`
+	GraphqlUrl              types.String   `tfsdk:"graphql_url"`
+	Organization            types.String   `tfsdk:"organization"`
+	RestUrl                 types.String   `tfsdk:"rest_url"`
+	Timeouts                timeouts.Value `tfsdk:"timeouts"`
 }
 
 func (tf *terraformProvider) Configure(ctx context.Context, req provider.ConfigureRequest, resp *provider.ConfigureResponse) {
@@ -65,13 +71,13 @@ func (tf *terraformProvider) Configure(ctx context.Context, req provider.Configu
 		restUrl = v
 	}
 
-	legacyProvider := schema.Provider{}
 	config := clientConfig{
 		apiToken:   apiToken,
 		graphqlURL: graphqlUrl,
 		org:        organization,
 		restURL:    restUrl,
-		userAgent:  legacyProvider.UserAgent("buildkite", tf.version),
+		timeouts:   data.Timeouts,
+		userAgent:  userAgent("buildkite", tf.version, req.TerraformVersion),
 	}
 	client, err := NewClient(&config)
 
@@ -81,6 +87,26 @@ func (tf *terraformProvider) Configure(ctx context.Context, req provider.Configu
 
 	resp.ResourceData = client
 	resp.DataSourceData = client
+}
+
+func userAgent(providerName, providerVersion, tfVersion string) string {
+	userAgentHeader := fmt.Sprintf("Terraform/%s (+https://www.terraform.io)", tfVersion)
+	if providerName != "" {
+		userAgentHeader += " " + providerName
+		if providerVersion != "" {
+			userAgentHeader += "/" + providerVersion
+		}
+	}
+
+	if addDetails := os.Getenv("TF_APPEND_USER_AGENT"); addDetails != "" {
+		addDetails = strings.TrimSpace(addDetails)
+		if len(addDetails) > 0 {
+			userAgentHeader += " " + addDetails
+			log.Printf("[DEBUG] Using modified User-Agent: %s", userAgentHeader)
+		}
+	}
+
+	return userAgentHeader
 }
 
 func (*terraformProvider) DataSources(context.Context) []func() datasource.DataSource {
@@ -110,116 +136,45 @@ func (tf *terraformProvider) Resources(context.Context) []func() resource.Resour
 		newTeamMemberResource,
 		newTeamResource,
 		newTestSuiteResource,
+		newPipelineTeamResource,
 		newTestSuiteTeamResource,
 	}
 }
 
 func (*terraformProvider) Schema(ctx context.Context, req provider.SchemaRequest, resp *provider.SchemaResponse) {
-	resp.Schema = framework_schema.Schema{
-		Attributes: map[string]framework_schema.Attribute{
-			SchemaKeyOrganization: framework_schema.StringAttribute{
+	resp.Schema = schema.Schema{
+		Attributes: map[string]schema.Attribute{
+			SchemaKeyOrganization: schema.StringAttribute{
 				Optional:    true,
 				Description: "The Buildkite organization slug",
 			},
-			SchemaKeyAPIToken: framework_schema.StringAttribute{
+			SchemaKeyAPIToken: schema.StringAttribute{
 				Optional:    true,
 				Description: "API token with GraphQL access and `write_pipelines, read_pipelines` and `write_suites` REST API scopes",
 				Sensitive:   true,
 			},
-			SchemaKeyGraphqlURL: framework_schema.StringAttribute{
+			SchemaKeyGraphqlURL: schema.StringAttribute{
 				Optional:    true,
 				Description: "Base URL for the GraphQL API to use",
 			},
-			SchemaKeyRestURL: framework_schema.StringAttribute{
+			SchemaKeyRestURL: schema.StringAttribute{
 				Optional:    true,
 				Description: "Base URL for the REST API to use",
 			},
-			"archive_pipeline_on_delete": framework_schema.BoolAttribute{
+			"archive_pipeline_on_delete": schema.BoolAttribute{
 				Optional:    true,
 				Description: "Archive pipelines when destroying instead of completely deleting.",
 			},
 		},
+		Blocks: map[string]schema.Block{
+			"timeouts": timeouts.BlockAll(ctx),
+		},
 	}
 }
 
+// New is a helper function to simplify provider server and testing implementation.
 func New(version string) provider.Provider {
 	return &terraformProvider{
 		version: version,
-	}
-}
-
-// Provider creates the schema.Provider for Buildkite
-func Provider(version string) *schema.Provider {
-	provider := &schema.Provider{
-		ResourcesMap: map[string]*schema.Resource{
-			"buildkite_organization_settings": resourceOrganizationSettings(),
-		},
-		Schema: map[string]*schema.Schema{
-			SchemaKeyOrganization: {
-				Description: "The Buildkite organization slug",
-				Optional:    true,
-				Type:        schema.TypeString,
-			},
-			SchemaKeyAPIToken: {
-				Description: "API token with GraphQL access and `write_pipelines, read_pipelines` and `write_suites` REST API scopes",
-				Optional:    true,
-				Type:        schema.TypeString,
-				Sensitive:   true,
-			},
-			SchemaKeyGraphqlURL: {
-				Description: "Base URL for the GraphQL API to use",
-				Optional:    true,
-				Type:        schema.TypeString,
-			},
-			SchemaKeyRestURL: {
-				Description: "Base URL for the REST API to use",
-				Optional:    true,
-				Type:        schema.TypeString,
-			},
-			"archive_pipeline_on_delete": {
-				Description: "Archive pipelines when destroying instead of completely deleting.",
-				Optional:    true,
-				Type:        schema.TypeBool,
-			},
-		},
-	}
-	provider.ConfigureFunc = providerConfigure(provider.UserAgent("buildkite", version))
-
-	return provider
-}
-
-func providerConfigure(userAgent string) func(d *schema.ResourceData) (interface{}, error) {
-	return func(d *schema.ResourceData) (interface{}, error) {
-		apiToken := os.Getenv("BUILDKITE_API_TOKEN")
-		graphqlUrl := defaultGraphqlEndpoint
-		organization := getenv("BUILDKITE_ORGANIZATION_SLUG")
-		restUrl := defaultRestEndpoint
-
-		if v, ok := d.Get(SchemaKeyAPIToken).(string); ok && v != "" {
-			apiToken = v
-		}
-		if v, ok := d.Get(SchemaKeyGraphqlURL).(string); ok && v != "" {
-			graphqlUrl = v
-		} else if v, ok := os.LookupEnv("BUILDKITE_GRAPHQL_URL"); ok {
-			graphqlUrl = v
-		}
-		if v, ok := d.Get(SchemaKeyOrganization).(string); ok && v != "" {
-			organization = v
-		}
-		if v, ok := d.Get(SchemaKeyRestURL).(string); ok && v != "" {
-			restUrl = v
-		} else if v, ok := os.LookupEnv("BUILDKITE_REST_URL"); ok {
-			restUrl = v
-		}
-
-		config := &clientConfig{
-			org:        organization,
-			apiToken:   apiToken,
-			graphqlURL: graphqlUrl,
-			restURL:    restUrl,
-			userAgent:  userAgent,
-		}
-
-		return NewClient(config)
 	}
 }

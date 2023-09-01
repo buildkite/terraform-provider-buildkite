@@ -1,12 +1,13 @@
 package buildkite
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
 func testAccClusterAgentTokenBasic(description string) string {
@@ -99,6 +100,7 @@ func testAccCheckClusterAgentTokenExists(resourceName string, ct *ClusterAgentTo
 		}
 
 		clusterTokens, err := getClusterAgentTokens(
+			context.Background(),
 			genqlientGraphql,
 			getenv("BUILDKITE_ORGANIZATION_SLUG"),
 			resourceState.Primary.Attributes["cluster_uuid"],
@@ -145,6 +147,7 @@ func testAccCheckClusterAgentTokenDestroy(s *terraform.State) error {
 		}
 
 		clusterTokens, err := getClusterAgentTokens(
+			context.Background(),
 			genqlientGraphql,
 			getenv("BUILDKITE_ORGANIZATION_SLUG"),
 			rs.Primary.Attributes["cluster_uuid"],

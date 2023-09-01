@@ -9,6 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/shurcooL/graphql"
 )
 
@@ -45,34 +46,95 @@ func (at *AgentTokenResource) Configure(ctx context.Context, req resource.Config
 
 func (at *AgentTokenResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var plan, state AgentTokenStateModel
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 
-	apiResponse, err := createAgentToken(
-		at.client.genqlient,
-		at.client.organizationId,
-		plan.Description.ValueStringPointer(),
-	)
+	diags := req.Plan.Get(ctx, &plan)
+	resp.Diagnostics.Append(diags...)
 
-	if err != nil {
-		resp.Diagnostics.AddError(err.Error(), err.Error())
+	if resp.Diagnostics.HasError() {
+		return
 	}
 
-	state.Description = types.StringPointerValue(apiResponse.AgentTokenCreate.AgentTokenEdge.Node.Description)
-	state.Id = types.StringValue(apiResponse.AgentTokenCreate.AgentTokenEdge.Node.Id)
-	state.Token = types.StringValue(apiResponse.AgentTokenCreate.TokenValue)
-	state.Uuid = types.StringValue(apiResponse.AgentTokenCreate.AgentTokenEdge.Node.Uuid)
+	timeout, diags := at.client.timeouts.Create(ctx, DefaultTimeout)
+	resp.Diagnostics.Append(diags...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	var r *createAgentTokenResponse
+	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+		var err error
+		r, err = createAgentToken(ctx,
+			at.client.genqlient,
+			at.client.organizationId,
+			plan.Description.ValueStringPointer(),
+		)
+
+		if err != nil {
+			if isRetryableError(err) {
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Unable to create agent token",
+			fmt.Sprintf("Unable to create agent token: %s", err.Error()),
+		)
+		return
+	}
+
+	state.Description = types.StringPointerValue(r.AgentTokenCreate.AgentTokenEdge.Node.Description)
+	state.Id = types.StringValue(r.AgentTokenCreate.AgentTokenEdge.Node.Id)
+	state.Token = types.StringValue(r.AgentTokenCreate.TokenValue)
+	state.Uuid = types.StringValue(r.AgentTokenCreate.AgentTokenEdge.Node.Uuid)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
 func (at *AgentTokenResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var plan AgentTokenStateModel
-	resp.Diagnostics.Append(req.State.Get(ctx, &plan)...)
+	var state AgentTokenStateModel
 
-	_, err := revokeAgentToken(at.client.genqlient, plan.Id.ValueString(), "Revoked by Terraform")
+	diags := req.State.Get(ctx, &state)
+	resp.Diagnostics.Append(diags...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	timeout, diags := at.client.timeouts.Delete(ctx, DefaultTimeout)
+	resp.Diagnostics.Append(diags...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+		_, err := revokeAgentToken(ctx,
+			at.client.genqlient,
+			state.Id.ValueString(),
+			"Revoked by Terraform",
+		)
+
+		if err != nil {
+			if isRetryableError(err) {
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
 
 	if err != nil {
-		resp.Diagnostics.AddError(err.Error(), err.Error())
+		resp.Diagnostics.AddError(
+			"Unable to revoke agent token",
+			fmt.Sprintf("Unable to revoke agent token: %s", err.Error()),
+		)
+		return
 	}
 }
 
@@ -82,23 +144,56 @@ func (AgentTokenResource) Metadata(ctx context.Context, req resource.MetadataReq
 
 func (at *AgentTokenResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var plan, state AgentTokenStateModel
-	resp.Diagnostics.Append(req.State.Get(ctx, &plan)...)
 
-	agentToken, err := getAgentToken(at.client.genqlient, fmt.Sprintf("%s/%s", at.client.organization, plan.Uuid.ValueString()))
+	diags := req.State.Get(ctx, &plan)
+	resp.Diagnostics.Append(diags...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	timeout, diags := at.client.timeouts.Read(ctx, DefaultTimeout)
+	resp.Diagnostics.Append(diags...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	var r *getAgentTokenResponse
+	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+		var err error
+		r, err = getAgentToken(ctx,
+			at.client.genqlient,
+			fmt.Sprintf("%s/%s", at.client.organization, plan.Uuid.ValueString()),
+		)
+
+		if err != nil {
+			if isRetryableError(err) {
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+
+		return nil
+	})
 
 	if err != nil {
-		resp.Diagnostics.AddError(err.Error(), err.Error())
+		resp.Diagnostics.AddError(
+			"Unable to read agent token",
+			fmt.Sprintf("Unable to read agent token: %s", err.Error()),
+		)
 	}
-	if agentToken == nil {
+
+	if r == nil {
 		resp.Diagnostics.AddError("Agent token not found", "Removing from state")
 		resp.State.RemoveResource(ctx)
 		return
 	}
 
-	state.Description = types.StringPointerValue(agentToken.AgentToken.Description)
-	state.Id = types.StringValue(agentToken.AgentToken.Id)
+	state.Description = types.StringPointerValue(r.AgentToken.Description)
+	state.Id = types.StringValue(r.AgentToken.Id)
 	state.Token = plan.Token // token is never returned after creation so use the existing value in state
-	state.Uuid = types.StringValue(agentToken.AgentToken.Uuid)
+	state.Uuid = types.StringValue(r.AgentToken.Uuid)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }

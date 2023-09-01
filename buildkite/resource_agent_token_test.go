@@ -6,80 +6,109 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
+	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
-// Confirm that we can create a new agent token, and then delete it without error
-func TestAccAgentToken_add_remove(t *testing.T) {
-	t.Parallel()
-	var resourceToken AgentTokenNode
+func TestAccBuildkiteAgentToken(t *testing.T) {
+	basic := func(name string) string {
+		return fmt.Sprintf(`
+		provider "buildkite" {
+			timeouts {
+				create = "10s"
+				read = "10s"
+				update = "10s"
+				delete = "10s"
+			}
+		}
 
-	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: protoV6ProviderFactories(),
-		CheckDestroy:             testAccCheckAgentTokenResourceDestroy,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccAgentTokenConfigBasic("foo"),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					// Confirm the token exists in the buildkite API
-					testAccCheckAgentTokenExists("buildkite_agent_token.foobar", &resourceToken),
-					// Confirm the token has the correct values in Buildkite's system
-					testAccCheckAgentTokenRemoteValues(&resourceToken, "Acceptance Test foo"),
-					// Confirm the token has the correct values in terraform state
-					resource.TestCheckResourceAttr("buildkite_agent_token.foobar", "description", "Acceptance Test foo"),
-					resource.TestCheckResourceAttrSet("buildkite_agent_token.foobar", "id"),
-					resource.TestCheckResourceAttrSet("buildkite_agent_token.foobar", "token"),
-					resource.TestCheckResourceAttrSet("buildkite_agent_token.foobar", "uuid"),
-				),
+		resource "buildkite_agent_token" "foobar" {
+			description = "Acceptance Test %s"
+		}
+		`, name)
+	}
+
+	// Confirm that we can create a new agent token, and then delete it without error
+	t.Run("adds an agent token", func(t *testing.T) {
+		var resourceToken AgentTokenNode
+		randName := acctest.RandString(10)
+
+		check := resource.ComposeAggregateTestCheckFunc(
+			// Confirm the token exists in the buildkite API
+			testAccCheckAgentTokenExists("buildkite_agent_token.foobar", &resourceToken),
+			// Confirm the token has the correct values in Buildkite's system
+			testAccCheckAgentTokenRemoteValues(&resourceToken, fmt.Sprintf("Acceptance Test %s", randName)),
+			// Confirm the token has the correct values in terraform state
+			resource.TestCheckResourceAttr("buildkite_agent_token.foobar", "description", fmt.Sprintf("Acceptance Test %s", randName)),
+			resource.TestCheckResourceAttrSet("buildkite_agent_token.foobar", "id"),
+			resource.TestCheckResourceAttrSet("buildkite_agent_token.foobar", "token"),
+			resource.TestCheckResourceAttrSet("buildkite_agent_token.foobar", "uuid"),
+		)
+
+		checkRefresh := resource.ComposeAggregateTestCheckFunc(
+			// Confirm the token has the correct values in terraform state
+			resource.TestCheckResourceAttrSet("buildkite_agent_token.foobar", "id"),
+			resource.TestCheckResourceAttrSet("buildkite_agent_token.foobar", "token"),
+			resource.TestCheckResourceAttrSet("buildkite_agent_token.foobar", "uuid"),
+		)
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			CheckDestroy:             testAccCheckAgentTokenResourceDestroy,
+			Steps: []resource.TestStep{
+				{
+					Config: basic(randName),
+					Check:  check,
+				},
+				{
+					RefreshState: true,
+					PlanOnly:     true,
+					Check:        checkRefresh,
+				},
 			},
-			{
-				RefreshState: true,
-				PlanOnly:     true,
-				Check: resource.ComposeAggregateTestCheckFunc(
-					// Confirm the token has the correct values in terraform state
-					resource.TestCheckResourceAttrSet("buildkite_agent_token.foobar", "id"),
-					resource.TestCheckResourceAttrSet("buildkite_agent_token.foobar", "token"),
-					resource.TestCheckResourceAttrSet("buildkite_agent_token.foobar", "uuid"),
-				),
-			},
-		},
+		})
 	})
-}
 
-// Confirm that we can create a new agent token, and then update the description
-// Technically tokens can't be updated, so this will actuall do a delete+create
-func TestAccAgentToken_update(t *testing.T) {
-	t.Parallel()
-	var resourceToken AgentTokenNode
+	// Confirm that we can create a new agent token, and then update the description
+	// Technically tokens can't be updated, so this will actuall do a delete+create
+	t.Run("updates an agent token", func(t *testing.T) {
+		var resourceToken AgentTokenNode
+		randName := acctest.RandString(10)
+		randNameUpdated := acctest.RandString(10)
 
-	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: protoV6ProviderFactories(),
-		CheckDestroy:             testAccCheckAgentTokenResourceDestroy,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccAgentTokenConfigBasic("foo"),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					// Confirm the token exists in the buildkite API
-					testAccCheckAgentTokenExists("buildkite_agent_token.foobar", &resourceToken),
-					// Quick check to confirm the local state is correct before we update it
-					resource.TestCheckResourceAttr("buildkite_agent_token.foobar", "description", "Acceptance Test foo"),
-				),
+		check := resource.ComposeAggregateTestCheckFunc(
+			// Confirm the token exists in the buildkite API
+			testAccCheckAgentTokenExists("buildkite_agent_token.foobar", &resourceToken),
+			// Quick check to confirm the local state is correct before we update it
+			resource.TestCheckResourceAttr("buildkite_agent_token.foobar", "description", fmt.Sprintf("Acceptance Test %s", randName)),
+		)
+
+		checkUpdated := resource.ComposeAggregateTestCheckFunc(
+			// Confirm the token exists in the buildkite API
+			testAccCheckAgentTokenExists("buildkite_agent_token.foobar", &resourceToken),
+			// Confirm the token has the updated values in Buildkite's system
+			testAccCheckAgentTokenRemoteValues(&resourceToken, fmt.Sprintf("Acceptance Test %s", randNameUpdated)),
+			// Confirm the token has the updated values in terraform state
+			resource.TestCheckResourceAttr("buildkite_agent_token.foobar", "description", fmt.Sprintf("Acceptance Test %s", randNameUpdated)),
+		)
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			CheckDestroy:             testAccCheckAgentTokenResourceDestroy,
+			Steps: []resource.TestStep{
+				{
+					Config: basic(randName),
+					Check:  check,
+				},
+				{
+					Config: basic(randNameUpdated),
+					Check:  checkUpdated,
+				},
 			},
-			{
-				Config: testAccAgentTokenConfigBasic("bar"),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					// Confirm the token exists in the buildkite API
-					testAccCheckAgentTokenExists("buildkite_agent_token.foobar", &resourceToken),
-					// Confirm the token has the updated values in Buildkite's system
-					testAccCheckAgentTokenRemoteValues(&resourceToken, "Acceptance Test bar"),
-					// Confirm the token has the updated values in terraform state
-					resource.TestCheckResourceAttr("buildkite_agent_token.foobar", "description", "Acceptance Test bar"),
-				),
-			},
-		},
+		})
 	})
 }
 
@@ -134,15 +163,6 @@ func testAccCheckAgentTokenRemoteValues(resourceToken *AgentTokenNode, descripti
 		}
 		return nil
 	}
-}
-
-func testAccAgentTokenConfigBasic(description string) string {
-	config := `
-		resource "buildkite_agent_token" "foobar" {
-			description = "Acceptance Test %s"
-		}
-	`
-	return fmt.Sprintf(config, description)
 }
 
 // verifies the agent token has been destroyed

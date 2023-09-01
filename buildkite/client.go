@@ -2,13 +2,17 @@ package buildkite
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
+	"regexp"
+	"strconv"
 
 	genqlient "github.com/Khan/genqlient/graphql"
+	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/shurcooL/graphql"
 )
 
@@ -20,6 +24,7 @@ type Client struct {
 	organization   string
 	organizationId string
 	restUrl        string
+	timeouts       timeouts.Value
 }
 
 type clientConfig struct {
@@ -28,6 +33,7 @@ type clientConfig struct {
 	graphqlURL string
 	restURL    string
 	userAgent  string
+	timeouts   timeouts.Value
 }
 
 type headerRoundTripper struct {
@@ -64,7 +70,36 @@ func NewClient(config *clientConfig) (*Client, error) {
 		organization:   config.org,
 		organizationId: orgId,
 		restUrl:        config.restURL,
+		timeouts:       config.timeouts,
 	}, nil
+}
+
+func isRetryableError(err error) bool {
+	return isRateLimited(err) || isServerError(err)
+}
+
+func isRateLimited(err error) bool {
+	// see: https://github.com/Khan/genqlient/blob/main/graphql/client.go#L167
+	r := regexp.MustCompile(`returned error (\d{3}):`)
+	if match := r.FindString(err.Error()); match != "" {
+		code, _ := strconv.Atoi(match)
+		if code == http.StatusTooManyRequests {
+			return true
+		}
+	}
+	return false
+}
+
+func isServerError(err error) bool {
+	// see: https://github.com/Khan/genqlient/blob/main/graphql/client.go#L167
+	r := regexp.MustCompile(`returned error (\d{3}):`)
+	if match := r.FindString(err.Error()); match != "" {
+		code, _ := strconv.Atoi(match)
+		if code >= http.StatusBadGateway && code <= http.StatusGatewayTimeout {
+			return true
+		}
+	}
+	return false
 }
 
 func newHeaderRoundTripper(next http.RoundTripper, header http.Header) *headerRoundTripper {
@@ -86,7 +121,7 @@ func (rt *headerRoundTripper) RoundTrip(req *http.Request) (*http.Response, erro
 	return rt.next.RoundTrip(req)
 }
 
-func (client *Client) makeRequest(method string, path string, postData interface{}, responseObject interface{}) error {
+func (client *Client) makeRequest(ctx context.Context, method string, path string, postData interface{}, responseObject interface{}) error {
 	var bodyBytes io.Reader
 	if postData != nil {
 		jsonPayload, err := json.Marshal(postData)
@@ -98,7 +133,7 @@ func (client *Client) makeRequest(method string, path string, postData interface
 
 	url := fmt.Sprintf("%s%s", client.restUrl, path)
 
-	req, err := http.NewRequest(method, url, bodyBytes)
+	req, err := http.NewRequestWithContext(ctx, method, url, bodyBytes)
 	if err != nil {
 		return fmt.Errorf("failed to create request: %w", err)
 	}

@@ -86,7 +86,7 @@ func (c *pipelineDatasource) Read(ctx context.Context, req datasource.ReadReques
 	orgPipelineSlug := fmt.Sprintf("%s/%s", c.client.organization, state.Slug.ValueString())
 
 	log.Printf("Obtaining pipeline with slug %s ...", orgPipelineSlug)
-	pipeline, err := getPipeline(c.client.genqlient, orgPipelineSlug)
+	pipeline, err := getPipeline(ctx, c.client.genqlient, orgPipelineSlug)
 
 	if err != nil {
 		resp.Diagnostics.AddError(

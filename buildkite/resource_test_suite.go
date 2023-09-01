@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	custom_modifier "github.com/buildkite/terraform-provider-buildkite/internal/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -60,7 +61,7 @@ func (ts *testSuiteResource) Create(ctx context.Context, req resource.CreateRequ
 
 	// The REST API requires team UUIDs but everything else in the provider uses GraphQL IDs. So we map from UUID to ID
 	// here
-	apiResponse, err := getNode(ts.client.genqlient, plan.TeamOwnerId.ValueString())
+	apiResponse, err := getNode(ctx, ts.client.genqlient, plan.TeamOwnerId.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to find team", err.Error())
 		return
@@ -78,7 +79,7 @@ func (ts *testSuiteResource) Create(ctx context.Context, req resource.CreateRequ
 	payload["team_ids"] = []string{teamOwnerUuid}
 
 	url := fmt.Sprintf("/v2/analytics/organizations/%s/suites", ts.client.organization)
-	err = ts.client.makeRequest("POST", url, payload, &response)
+	err = ts.client.makeRequest(ctx, "POST", url, payload, &response)
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to create test suite", err.Error())
 		return
@@ -104,7 +105,7 @@ func (ts *testSuiteResource) Delete(ctx context.Context, req resource.DeleteRequ
 	}
 
 	url := fmt.Sprintf("/v2/analytics/organizations/%s/suites/%s", ts.client.organization, state.Slug.ValueString())
-	err := ts.client.makeRequest("DELETE", url, nil, nil)
+	err := ts.client.makeRequest(ctx, "DELETE", url, nil, nil)
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to delete test suite", err.Error())
 		return
@@ -123,7 +124,7 @@ func (ts *testSuiteResource) Read(ctx context.Context, req resource.ReadRequest,
 		return
 	}
 
-	graphqlResponse, err := getTestSuite(ts.client.genqlient, state.ID.ValueString(), 50)
+	graphqlResponse, err := getTestSuite(ctx, ts.client.genqlient, state.ID.ValueString(), 50)
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to load test suite from GraphQL", err.Error())
 		return
@@ -180,6 +181,9 @@ func (ts *testSuiteResource) Schema(ctx context.Context, req resource.SchemaRequ
 			},
 			"slug": schema.StringAttribute{
 				Computed: true,
+				PlanModifiers: []planmodifier.String{
+					custom_modifier.UseStateIfUnchanged("name"),
+				},
 			},
 			"name": schema.StringAttribute{
 				Required: true,
@@ -213,7 +217,7 @@ func (ts *testSuiteResource) Update(ctx context.Context, req resource.UpdateRequ
 	payload["default_branch"] = plan.DefaultBranch.ValueString()
 
 	url := fmt.Sprintf("/v2/analytics/organizations/%s/suites/%s", ts.client.organization, state.Slug.ValueString())
-	err := ts.client.makeRequest("PATCH", url, payload, &response)
+	err := ts.client.makeRequest(ctx, "PATCH", url, payload, &response)
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to create test suite", err.Error())
 		return
@@ -225,7 +229,7 @@ func (ts *testSuiteResource) Update(ctx context.Context, req resource.UpdateRequ
 
 	// If the planned team_owner_id differs from the state, add the new one and remove the old one
 	if plan.TeamOwnerId.ValueString() != state.TeamOwnerId.ValueString() {
-		graphqlResponse, err := createTestSuiteTeam(ts.client.genqlient, plan.TeamOwnerId.ValueString(), state.ID.ValueString(), SuiteAccessLevelsManageAndRead)
+		graphqlResponse, err := createTestSuiteTeam(ctx, ts.client.genqlient, plan.TeamOwnerId.ValueString(), state.ID.ValueString(), SuiteAccessLevelsManageAndRead)
 		if err != nil {
 			resp.Diagnostics.AddError("Could not add new owner team", err.Error())
 			return
@@ -234,7 +238,7 @@ func (ts *testSuiteResource) Update(ctx context.Context, req resource.UpdateRequ
 		state.TeamOwnerId = types.StringValue(graphqlResponse.TeamSuiteCreate.TeamSuite.Team.Id)
 		for _, team := range graphqlResponse.TeamSuiteCreate.Suite.Teams.Edges {
 			if team.Node.Team.Id == previousOwnerId {
-				_, err = deleteTestSuiteTeam(ts.client.genqlient, team.Node.Id)
+				_, err = deleteTestSuiteTeam(ctx, ts.client.genqlient, team.Node.Id)
 				if err != nil {
 					resp.Diagnostics.AddError("Failed to delete team owner", err.Error())
 					return

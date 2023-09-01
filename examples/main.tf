@@ -1,4 +1,9 @@
-provider "buildkite" {}
+provider "buildkite" {
+  timeouts {
+    create = "10s"
+    update = "15s"
+  }
+}
 
 resource "buildkite_team" "test" {
   name = "terraform_provider_test"
@@ -17,14 +22,11 @@ resource "buildkite_team" "testtwo" {
 }
 
 resource "buildkite_team_member" "member1" {
-  role = "MEMBER"
-	team_id = "VXfhnVUS78HavgtP55WhWGzT401guK38Vm9LMMeCgQD124m8xaKBRq0Fth=="
-	user_id = "VXNbwSA9hwVPpMgUXu1dWIDWf45ZwU6J7deETygiLUrKBg2TZBxuDr6aKj=="
+  role    = "MEMBER"
+  team_id = "VXfhnVUS78HavgtP55WhWGzT401guK38Vm9LMMeCgQD124m8xaKBRq0Fth=="
+  user_id = "VXNbwSA9hwVPpMgUXu1dWIDWf45ZwU6J7deETygiLUrKBg2TZBxuDr6aKj=="
 }
 
-resource "buildkite_organization_settings" "devorg" {
-    allowed_api_ip_addresses = ["10.1.100.33/24"]
-}
 
 resource "buildkite_pipeline" "repo2" {
   name       = "terraform_provider_buildkite_pipeline"
@@ -46,11 +48,17 @@ resource "buildkite_pipeline_schedule" "weekly" {
   label       = "Weekly build from default branch"
   cronline    = "@midnight"
   branch      = "default"
-  message = "Weekly scheduled build"
+  message     = "Weekly scheduled build" 
+}
+
+resource "buildkite_pipeline_team" "developers" {
+  pipeline_id  = buildkite_pipeline.repo2
+  team_id      = buildkite_team.test.id
+  access_level = "MANAGE_BUILD_AND_READ"
 }
 
 data "buildkite_pipeline" "data2" {
-	slug = buildkite_pipeline.repo2.slug
+  slug = buildkite_pipeline.repo2.slug
 }
 
 resource "buildkite_agent_token" "fleet" {
@@ -68,26 +76,26 @@ resource "buildkite_cluster" "my_awesome_cluster" {
 }
 
 resource "buildkite_cluster_queue" "queue1" {
-  cluster_id = "Q2x1c3Rlci0tLTMzMDc0ZDhiLTM4MjctNDRkNC05YTQ3LTkwN2E2NWZjODViNg=="
-  key = "dev"
+  cluster_id  = "Q2x1c3Rlci0tLTMzMDc0ZDhiLTM4MjctNDRkNC05YTQ3LTkwN2E2NWZjODViNg=="
+  key         = "dev"
   description = "Dev cluster queue"
 }
 
 resource "buildkite_cluster_agent_token" "token1" {
-  cluster_id = "Q2x1c3Rlci0tLTMzMDc0ZDhiLTM4MjctNDRkNC05YTQ3LTkwN2E2NWZjODViNg=="
+  cluster_id  = "Q2x1c3Rlci0tLTMzMDc0ZDhiLTM4MjctNDRkNC05YTQ3LTkwN2E2NWZjODViNg=="
   description = "agent token for Dev cluster"
 }
 
 resource "buildkite_test_suite" "unit_tests" {
-  name = "Unit tests"
+  name           = "Unit tests"
   default_branch = "main"
-  team_owner_id = buildkite_team.test.id
+  team_owner_id  = buildkite_team.test.id
 }
 
 resource "buildkite_test_suite_team" "suite_read_only" {
-    test_suite_id = buildkite_test_suite.unit_tests.id
-    team_id = buildkite_team.testtwo.id
-    access_level = "READ_ONLY"
+  test_suite_id = buildkite_test_suite.unit_tests.id
+  team_id       = buildkite_team.testtwo.id
+  access_level  = "READ_ONLY"
 }
 
 output "agent_token" {

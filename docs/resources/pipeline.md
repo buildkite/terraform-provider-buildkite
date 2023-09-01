@@ -16,11 +16,6 @@ resource "buildkite_pipeline" "repo2" {
   name       = "repo2"
   repository = "git@github.com:org/repo2"
   steps      = file("./steps.yml")
-
-  team {
-    slug         = "everyone"
-    access_level = "READ_ONLY"
-  }
 }
 ```
 
@@ -57,12 +52,6 @@ resource "buildkite_pipeline" "test_new" {
 
 [Lifecycles](https://developer.hashicorp.com/terraform/language/meta-arguments/lifecycle) allow you to set general rules
 for resources, including the prevention of destruction of a resource. In the above example, the `destroy` command on the `Testing TImeouts` pipeline will fail.
-
-Lifecycles will replace the deprecated `deletion_protection` in `v1` of the provider in favour of `lifecycle` rules.
-
-#### Deprecation notice
-`archive_on_delete` has been deprecated and moved to provider configuration instead. The usage through provider
-configuration makes more sense and will apply to all pipelines managed through terraform. Please see `archive_pipeline_on_delete`.
 
 ## Example Usage with GitHub Provider Settings
 
@@ -109,17 +98,10 @@ resource "buildkite_pipeline" "repo2-release" {
 -   `cancel_intermediate_builds_branch_filter` - (Optional) Limit which branches build cancelling applies to, for example !master will ensure that the master branch won't have its builds automatically cancelled.
 -   `allow_rebuilds` - (Optional, Default: `true` ) A boolean on whether or not to allow rebuilds for the pipeline.
 -   `cluster_id` - (Optional) The GraphQL ID of the cluster you want to use for the pipeline.
--   `team` - (Optional) Set team access for the pipeline. Can be specified multiple times for each team. See [Teams Configuration](#team) below for details.
+-   `team` - (Optional) **DEPRECATED** Set team access for the pipeline. Can be specified multiple times for each team.
 -   `tags` - (Optional) A set of tags to be set to the pipeline. For example `["terraform", "provider"]`.
 -   `provider_settings` - (Optional) Source control provider settings for the pipeline. See [Provider Settings Configuration](#provider-settings-configuration) below for details.
--   `deletion_protection` - **DEPRECATED** (Optional) Set to either `true` or `false`. When set to `true`, `destroy` actions on a pipeline will be blocked and fail with a message "Deletion protection is enabled for pipeline: <pipeline name>"
 
-### Teams Configuration
-
-The `team` block supports:
-
--   `slug` - (Required) The buildkite slug of the team.
--   `access_level` - (Required) The level of access to grant. Must be one of `READ_ONLY`, `BUILD_AND_READ` or `MANAGE_BUILD_AND_READ`.
 
 ### Provider Settings Configuration
 
