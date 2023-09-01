@@ -62,6 +62,7 @@ func (ts *testSuiteResource) Create(ctx context.Context, req resource.CreateRequ
 		return
 	}
 
+	// Use the Read timeout for obtaining a Test suite's UUID
 	timeout, diags := ts.client.timeouts.Read(ctx, DefaultTimeout)
 	resp.Diagnostics.Append(diags...)
 
@@ -107,6 +108,11 @@ func (ts *testSuiteResource) Create(ctx context.Context, req resource.CreateRequ
 
 	// Construct URL to call to the REST API
 	url := fmt.Sprintf("/v2/analytics/organizations/%s/suites", ts.client.organization)
+
+	// Use the Create timeout for test suite creation
+	timeout, diags = ts.client.timeouts.Create(ctx, DefaultTimeout)
+	resp.Diagnostics.Append(diags...)
+
 	createErr := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		err = ts.client.makeRequest(ctx, "POST", url, payload, &response)
 
