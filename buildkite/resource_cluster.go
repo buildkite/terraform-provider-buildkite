@@ -294,7 +294,6 @@ func (c *clusterResource) Delete(ctx context.Context, req resource.DeleteRequest
 		return nil
 	})
 
-
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to delete Cluster",
