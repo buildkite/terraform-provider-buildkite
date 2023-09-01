@@ -62,7 +62,7 @@ func (ts *testSuiteResource) Create(ctx context.Context, req resource.CreateRequ
 		return
 	}
 
-	timeout, diags := ts.client.timeouts.Create(ctx, DefaultTimeout)
+	timeout, diags := ts.client.timeouts.Read(ctx, DefaultTimeout)
 	resp.Diagnostics.Append(diags...)
 
 	// The REST API requires team UUIDs but everything else in the provider uses GraphQL IDs. So we map from UUID to ID
