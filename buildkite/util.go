@@ -17,6 +17,7 @@ const (
 	RepositoryProviderGitHub    RepositoryProvider = "GITHUB"
 	RepositoryProviderGitLab    RepositoryProvider = "GITLAB"
 	RepositoryProviderBitbucket RepositoryProvider = "BITBUCKET"
+	RepositoryProviderPrivate   RepositoryProvider = "PRIVATE"
 )
 
 func findRepositoryProvider(repo string) (RepositoryProvider, error) {
@@ -33,7 +34,7 @@ func findRepositoryProvider(repo string) (RepositoryProvider, error) {
 	case "gitlab.com":
 		return RepositoryProviderGitLab, nil
 	default:
-		return "", fmt.Errorf("Could not map repository to provider. URL: %s", repo)
+		return RepositoryProviderPrivate, nil
 	}
 }
 
