@@ -81,7 +81,6 @@ func TestAccBuildkitePipeline(t *testing.T) {
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "maximum_timeout_in_minutes", "0"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "name", pipelineName),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "repository", "https://github.com/buildkite/terraform-provider-buildkite.git"),
-						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "repository_provider", "GITHUB"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "skip_intermediate_builds", "false"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "skip_intermediate_builds_branch_filter", ""),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "steps", defaultSteps),

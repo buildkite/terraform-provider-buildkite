@@ -93,7 +93,6 @@ type pipelineResourceModel struct {
 	Name                                 types.String             `tfsdk:"name"`
 	ProviderSettings                     []*providerSettingsModel `tfsdk:"provider_settings"`
 	Repository                           types.String             `tfsdk:"repository"`
-	RepositoryProvider                   types.String             `tfsdk:"repository_provider"`
 	SkipIntermediateBuilds               types.Bool               `tfsdk:"skip_intermediate_builds"`
 	SkipIntermediateBuildsBranchFilter   types.String             `tfsdk:"skip_intermediate_builds_branch_filter"`
 	Slug                                 types.String             `tfsdk:"slug"`
@@ -268,13 +267,6 @@ func (p *pipelineResource) Create(ctx context.Context, req resource.CreateReques
 		state.BadgeUrl = types.StringValue(extraInfo.BadgeUrl)
 	}
 
-	provider, err := findRepositoryProvider(state.Repository.ValueString())
-	if err != nil {
-		resp.Diagnostics.AddError("Error finding repository provider", err.Error())
-		return
-	}
-	state.RepositoryProvider = types.StringValue(string(provider))
-
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
@@ -369,14 +361,6 @@ func (p *pipelineResource) Read(ctx context.Context, req resource.ReadRequest, r
 			updatePipelineResourceExtraInfo(&state, extraInfo)
 		}
 		state.BadgeUrl = types.StringValue(extraInfo.BadgeUrl)
-
-		provider, err := findRepositoryProvider(state.Repository.ValueString())
-		if err != nil {
-			resp.Diagnostics.AddError("Error finding repository provider", err.Error())
-			return
-		}
-		state.RepositoryProvider = types.StringValue(string(provider))
-
 		resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 	} else {
 		// no pipeline was found so remove it from state
@@ -471,9 +455,6 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 			},
 			"repository": schema.StringAttribute{
 				Required: true,
-			},
-			"repository_provider": schema.StringAttribute{
-				Computed: true,
 			},
 			"skip_intermediate_builds": schema.BoolAttribute{
 				Computed: true,
@@ -717,13 +698,6 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 		state.BadgeUrl = types.StringValue(extraInfo.BadgeUrl)
 		state.ProviderSettings = make([]*providerSettingsModel, 0)
 	}
-
-	provider, err := findRepositoryProvider(state.Repository.ValueString())
-	if err != nil {
-		resp.Diagnostics.AddError("Error finding repository provider", err.Error())
-		return
-	}
-	state.RepositoryProvider = types.StringValue(string(provider))
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
