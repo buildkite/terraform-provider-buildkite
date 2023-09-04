@@ -125,16 +125,6 @@ func (c *clusterResource) Create(ctx context.Context, req resource.CreateRequest
 		return nil
 	})
 
-	r, err = createCluster(
-		ctx,
-		c.client.genqlient,
-		c.client.organizationId,
-		state.Name.ValueString(),
-		state.Description.ValueStringPointer(),
-		state.Emoji.ValueStringPointer(),
-		state.Color.ValueStringPointer(),
-	)
-
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to create Cluster",

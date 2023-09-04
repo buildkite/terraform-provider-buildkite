@@ -10,7 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
-func TestAccBuildkiteCluster(t *testing.T) {
+func TestAccBuildkiteClusterResource(t *testing.T) {
 	basic := func(name string) string {
 		return fmt.Sprintf(`
 		provider "buildkite" {
