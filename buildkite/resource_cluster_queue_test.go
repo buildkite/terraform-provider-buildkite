@@ -74,7 +74,7 @@ func TestAccBuildkiteClusterQueueResource(t *testing.T) {
 		})
 	})
 
-	t.Run("updates a cluster queue ", func(t *testing.T) {
+	t.Run("updates a cluster queue", func(t *testing.T) {
 		var cq ClusterQueueResourceModel
 		clusterName := acctest.RandString(10)
 		queueKey := acctest.RandString(10)
