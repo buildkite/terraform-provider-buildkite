@@ -13,6 +13,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
 type testSuiteTeamModel struct {
@@ -82,19 +83,40 @@ func (tst *testSuiteTeamResource) Schema(ctx context.Context, req resource.Schem
 func (tst *testSuiteTeamResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var state testSuiteTeamModel
 
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &state)...)
+	diags := req.Plan.Get(ctx, &state)
+	resp.Diagnostics.Append(diags...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	timeout, diags := tst.client.timeouts.Create(ctx, DefaultTimeout)
+	resp.Diagnostics.Append(diags...)
 
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
 	log.Printf("Adding team %s to test suite %s ...", state.TeamID.ValueString(), state.TestSuiteId.ValueString())
-	apiResponse, err := createTestSuiteTeam(ctx,
-		tst.client.genqlient,
-		state.TeamID.ValueString(),
-		state.TestSuiteId.ValueString(),
-		SuiteAccessLevels(state.AccessLevel.ValueString()),
-	)
+	var r *createTestSuiteTeamResponse
+	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+		var err error
+		r, err = createTestSuiteTeam(ctx,
+			tst.client.genqlient,
+			state.TeamID.ValueString(),
+			state.TestSuiteId.ValueString(),
+			SuiteAccessLevels(state.AccessLevel.ValueString()),
+		)
+
+		if err != nil {
+			if isRetryableError(err) {
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+
+		return nil
+	})
 
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -105,8 +127,8 @@ func (tst *testSuiteTeamResource) Create(ctx context.Context, req resource.Creat
 	}
 
 	// Set ID and UUID to state
-	state.ID = types.StringValue(apiResponse.TeamSuiteCreate.TeamSuite.Id)
-	state.UUID = types.StringValue(apiResponse.TeamSuiteCreate.TeamSuite.TeamSuiteUuid)
+	state.ID = types.StringValue(r.TeamSuiteCreate.TeamSuite.Id)
+	state.UUID = types.StringValue(r.TeamSuiteCreate.TeamSuite.TeamSuiteUuid)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
@@ -114,14 +136,38 @@ func (tst *testSuiteTeamResource) Create(ctx context.Context, req resource.Creat
 func (tst *testSuiteTeamResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var state testSuiteTeamModel
 
-	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	diags := req.State.Get(ctx, &state)
+	resp.Diagnostics.Append(diags...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	timeout, diags := tst.client.timeouts.Read(ctx, DefaultTimeout)
+	resp.Diagnostics.Append(diags...)
 
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
 	log.Printf("Reading test suite team with ID %s ...", state.ID.ValueString())
-	apiResponse, err := getNode(ctx, tst.client.genqlient, state.ID.ValueString())
+	var r *getNodeResponse
+	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+		var err error
+		r, err = getNode(ctx,
+			tst.client.genqlient,
+			state.ID.ValueString(),
+		)
+
+		if err != nil {
+			if isRetryableError(err) {
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+
+		return nil
+	})
 
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -132,7 +178,7 @@ func (tst *testSuiteTeamResource) Read(ctx context.Context, req resource.ReadReq
 	}
 
 	// Convert fron Node to getNodeTeamMember type
-	if teamSuiteNode, ok := apiResponse.GetNode().(*getNodeNodeTeamSuite); ok {
+	if teamSuiteNode, ok := r.GetNode().(*getNodeNodeTeamSuite); ok {
 		if teamSuiteNode == nil {
 			resp.Diagnostics.AddError(
 				"Unable to get test suite team",
@@ -158,15 +204,42 @@ func (tst *testSuiteTeamResource) Update(ctx context.Context, req resource.Updat
 	var state testSuiteTeamModel
 	var testSuiteTeamAccessLevel string
 
-	resp.Diagnostics.Append(req.Plan.GetAttribute(ctx, path.Root("access_level"), &testSuiteTeamAccessLevel)...)
-	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	diagsState := req.State.Get(ctx, &state)
+	diagsAccessLevel := req.Plan.GetAttribute(ctx, path.Root("access_level"), &testSuiteTeamAccessLevel)
+
+	resp.Diagnostics.Append(diagsState...)
+	resp.Diagnostics.Append(diagsAccessLevel...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	timeout, diags := tst.client.timeouts.Update(ctx, DefaultTimeout)
+	resp.Diagnostics.Append(diags...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
 	log.Printf("Updating team %s in test suite %s to %s ...", state.TeamID.ValueString(), state.TestSuiteId.ValueString(), testSuiteTeamAccessLevel)
-	apiResponse, err := updateTestSuiteTeam(ctx,
-		tst.client.genqlient,
-		state.ID.ValueString(),
-		SuiteAccessLevels(testSuiteTeamAccessLevel),
-	)
+	var r *updateTestSuiteTeamResponse
+	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+		var err error
+		r, err = updateTestSuiteTeam(ctx,
+			tst.client.genqlient,
+			state.ID.ValueString(),
+			SuiteAccessLevels(testSuiteTeamAccessLevel),
+		)
+
+		if err != nil {
+			if isRetryableError(err) {
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+
+		return nil
+	})
 
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -177,7 +250,7 @@ func (tst *testSuiteTeamResource) Update(ctx context.Context, req resource.Updat
 	}
 
 	// Update state access level
-	state.AccessLevel = types.StringValue(string(apiResponse.TeamSuiteUpdate.TeamSuite.AccessLevel))
+	state.AccessLevel = types.StringValue(string(r.TeamSuiteUpdate.TeamSuite.AccessLevel))
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
@@ -185,14 +258,35 @@ func (tst *testSuiteTeamResource) Update(ctx context.Context, req resource.Updat
 func (tst *testSuiteTeamResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	var state testSuiteTeamModel
 
-	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	diags := req.State.Get(ctx, &state)
+	resp.Diagnostics.Append(diags...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	timeout, diags := tst.client.timeouts.Delete(ctx, DefaultTimeout)
+	resp.Diagnostics.Append(diags...)
 
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
 	log.Printf("Deleting team %s's access to test suite %s ...", state.TeamID.ValueString(), state.TestSuiteId.ValueString())
-	_, err := deleteTestSuiteTeam(ctx, tst.client.genqlient, state.ID.ValueString())
+	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+		_, err := deleteTestSuiteTeam(ctx,
+			tst.client.genqlient,
+			state.ID.ValueString(),
+		)
+
+		if err != nil {
+			if isRetryableError(err) {
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
 
 	if err != nil {
 		resp.Diagnostics.AddError(
