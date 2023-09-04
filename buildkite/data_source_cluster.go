@@ -125,10 +125,5 @@ func (*clusterDatasource) Schema(ctx context.Context, req datasource.SchemaReque
 				MarkdownDescription: "The color of the cluster.",
 			},
 		},
-		Blocks: map[string]schema.Block{
-			"timeouts": timeouts.Block(ctx, timeouts.Opts{
-				Read: true,
-			}),
-		},
 	}
 }
