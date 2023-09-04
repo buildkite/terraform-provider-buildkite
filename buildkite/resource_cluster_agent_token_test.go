@@ -11,7 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
-func TestAccBuildkiteClusterAgentToken(t *testing.T) {
+func TestAccBuildkiteClusterAgentTokenResource(t *testing.T) {
 	configBasic := func(fields ...string) string {
 		return fmt.Sprintf(`
 		provider "buildkite" {
