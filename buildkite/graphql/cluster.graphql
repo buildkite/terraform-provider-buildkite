@@ -24,6 +24,9 @@ query getClusterByName(
             edges {
                 node {
                     ...ClusterFields
+                    defaultQueue {
+                        id
+                    }
                 }
             }
         }
@@ -60,6 +63,8 @@ mutation updateCluster(
     $emoji: String
     # @genqlient(pointer: true)
     $color: String
+    # @genqlient(pointer: true)
+    $defaultQueueID: ID
 ) {
     clusterUpdate(
         input: {
@@ -69,11 +74,15 @@ mutation updateCluster(
             description: $description
             emoji: $emoji
             color: $color
+            defaultQueueId: $defaultQueueID
         }
     ) {
         clientMutationId
         cluster {
             ...ClusterFields
+            defaultQueue {
+                id
+            }
         }
     }
 }

@@ -20,6 +20,26 @@ resource "buildkite_cluster" "linux" {
 * `description` - (Optional) This is a description for the cluster, this may describe the usage for it, the region, or something else which would help identify the Cluster's purpose.
 * `emoji` - (Optional) An emoji to use with the Cluster, this can either be set using `:buildkite:` notation, or with the emoji itself, such as 😎.
 * `color` - (Optional) A color to associate with the Cluster. Perhaps a team related color, or one related to an environment. This is set using hex value, such as `#BADA55`.
+* `default_queue_id` - (Optional) The ID of the Cluster queue that you wish to set as the default queue for the Cluster.
+
+In order to get the available queues for a Cluster, you may wish to use the following GraqhQL query, or [this pre-saved query](https://buildkite.com/user/graphql/console/95f10d02-e731-49db-ac08-2b2617211570):
+
+```graphql
+query getClusterQueues {
+  node(id:"<CLUSTER ID>"){
+    ... on Cluster {
+      queues(first:100){
+        edges{
+          node{
+            id
+            key
+          }
+        }
+      }
+    }
+  }
+}
+```
 
 ## Attribute Reference
 

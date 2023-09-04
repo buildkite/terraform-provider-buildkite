@@ -1653,6 +1653,7 @@ type __updateClusterInput struct {
 	Description    *string `json:"description"`
 	Emoji          *string `json:"emoji"`
 	Color          *string `json:"color"`
+	DefaultQueueID *string `json:"defaultQueueID"`
 }
 
 // GetOrganizationId returns __updateClusterInput.OrganizationId, and is useful for accessing the field via an interface.
@@ -1672,6 +1673,9 @@ func (v *__updateClusterInput) GetEmoji() *string { return v.Emoji }
 
 // GetColor returns __updateClusterInput.Color, and is useful for accessing the field via an interface.
 func (v *__updateClusterInput) GetColor() *string { return v.Color }
+
+// GetDefaultQueueID returns __updateClusterInput.DefaultQueueID, and is useful for accessing the field via an interface.
+func (v *__updateClusterInput) GetDefaultQueueID() *string { return v.DefaultQueueID }
 
 // __updateClusterQueueInput is used internally by genqlient
 type __updateClusterQueueInput struct {
@@ -3436,6 +3440,13 @@ func (v *getClusterByNameOrganizationClustersClusterConnectionEdgesClusterEdge) 
 // getClusterByNameOrganizationClustersClusterConnectionEdgesClusterEdgeNodeCluster includes the requested fields of the GraphQL type Cluster.
 type getClusterByNameOrganizationClustersClusterConnectionEdgesClusterEdgeNodeCluster struct {
 	ClusterFields `json:"-"`
+	// The default queue that agents connecting to the cluster without specifying a queue will accept jobs from
+	DefaultQueue getClusterByNameOrganizationClustersClusterConnectionEdgesClusterEdgeNodeClusterDefaultQueueClusterQueue `json:"defaultQueue"`
+}
+
+// GetDefaultQueue returns getClusterByNameOrganizationClustersClusterConnectionEdgesClusterEdgeNodeCluster.DefaultQueue, and is useful for accessing the field via an interface.
+func (v *getClusterByNameOrganizationClustersClusterConnectionEdgesClusterEdgeNodeCluster) GetDefaultQueue() getClusterByNameOrganizationClustersClusterConnectionEdgesClusterEdgeNodeClusterDefaultQueueClusterQueue {
+	return v.DefaultQueue
 }
 
 // GetId returns getClusterByNameOrganizationClustersClusterConnectionEdgesClusterEdgeNodeCluster.Id, and is useful for accessing the field via an interface.
@@ -3494,6 +3505,8 @@ func (v *getClusterByNameOrganizationClustersClusterConnectionEdgesClusterEdgeNo
 }
 
 type __premarshalgetClusterByNameOrganizationClustersClusterConnectionEdgesClusterEdgeNodeCluster struct {
+	DefaultQueue getClusterByNameOrganizationClustersClusterConnectionEdgesClusterEdgeNodeClusterDefaultQueueClusterQueue `json:"defaultQueue"`
+
 	Id string `json:"id"`
 
 	Uuid string `json:"uuid"`
@@ -3518,6 +3531,7 @@ func (v *getClusterByNameOrganizationClustersClusterConnectionEdgesClusterEdgeNo
 func (v *getClusterByNameOrganizationClustersClusterConnectionEdgesClusterEdgeNodeCluster) __premarshalJSON() (*__premarshalgetClusterByNameOrganizationClustersClusterConnectionEdgesClusterEdgeNodeCluster, error) {
 	var retval __premarshalgetClusterByNameOrganizationClustersClusterConnectionEdgesClusterEdgeNodeCluster
 
+	retval.DefaultQueue = v.DefaultQueue
 	retval.Id = v.ClusterFields.Id
 	retval.Uuid = v.ClusterFields.Uuid
 	retval.Name = v.ClusterFields.Name
@@ -3525,6 +3539,16 @@ func (v *getClusterByNameOrganizationClustersClusterConnectionEdgesClusterEdgeNo
 	retval.Emoji = v.ClusterFields.Emoji
 	retval.Color = v.ClusterFields.Color
 	return &retval, nil
+}
+
+// getClusterByNameOrganizationClustersClusterConnectionEdgesClusterEdgeNodeClusterDefaultQueueClusterQueue includes the requested fields of the GraphQL type ClusterQueue.
+type getClusterByNameOrganizationClustersClusterConnectionEdgesClusterEdgeNodeClusterDefaultQueueClusterQueue struct {
+	Id string `json:"id"`
+}
+
+// GetId returns getClusterByNameOrganizationClustersClusterConnectionEdgesClusterEdgeNodeClusterDefaultQueueClusterQueue.Id, and is useful for accessing the field via an interface.
+func (v *getClusterByNameOrganizationClustersClusterConnectionEdgesClusterEdgeNodeClusterDefaultQueueClusterQueue) GetId() string {
+	return v.Id
 }
 
 // getClusterByNameOrganizationClustersClusterConnectionPageInfo includes the requested fields of the GraphQL type PageInfo.
@@ -3736,6 +3760,7 @@ func (v *getClusterQueuesResponse) GetOrganization() getClusterQueuesOrganizatio
 // getNodeNodeJobTypeWait
 // getNodeNodeNotificationServiceSlack
 // getNodeNodeOrganization
+// getNodeNodeOrganizationBanner
 // getNodeNodeOrganizationInvitation
 // getNodeNodeOrganizationMember
 // getNodeNodePipeline
@@ -3794,6 +3819,7 @@ func (v *getNodeNodeJobTypeTrigger) implementsGraphQLInterfacegetNodeNode()     
 func (v *getNodeNodeJobTypeWait) implementsGraphQLInterfacegetNodeNode()                    {}
 func (v *getNodeNodeNotificationServiceSlack) implementsGraphQLInterfacegetNodeNode()       {}
 func (v *getNodeNodeOrganization) implementsGraphQLInterfacegetNodeNode()                   {}
+func (v *getNodeNodeOrganizationBanner) implementsGraphQLInterfacegetNodeNode()             {}
 func (v *getNodeNodeOrganizationInvitation) implementsGraphQLInterfacegetNodeNode()         {}
 func (v *getNodeNodeOrganizationMember) implementsGraphQLInterfacegetNodeNode()             {}
 func (v *getNodeNodePipeline) implementsGraphQLInterfacegetNodeNode()                       {}
@@ -3923,6 +3949,9 @@ func __unmarshalgetNodeNode(b []byte, v *getNodeNode) error {
 		return json.Unmarshal(b, *v)
 	case "Organization":
 		*v = new(getNodeNodeOrganization)
+		return json.Unmarshal(b, *v)
+	case "OrganizationBanner":
+		*v = new(getNodeNodeOrganizationBanner)
 		return json.Unmarshal(b, *v)
 	case "OrganizationInvitation":
 		*v = new(getNodeNodeOrganizationInvitation)
@@ -4251,6 +4280,14 @@ func __marshalgetNodeNode(v *getNodeNode) ([]byte, error) {
 		result := struct {
 			TypeName string `json:"__typename"`
 			*getNodeNodeOrganization
+		}{typename, v}
+		return json.Marshal(result)
+	case *getNodeNodeOrganizationBanner:
+		typename = "OrganizationBanner"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getNodeNodeOrganizationBanner
 		}{typename, v}
 		return json.Marshal(result)
 	case *getNodeNodeOrganizationInvitation:
@@ -4846,6 +4883,17 @@ type getNodeNodeOrganization struct {
 
 // GetTypename returns getNodeNodeOrganization.Typename, and is useful for accessing the field via an interface.
 func (v *getNodeNodeOrganization) GetTypename() string { return v.Typename }
+
+// getNodeNodeOrganizationBanner includes the requested fields of the GraphQL type OrganizationBanner.
+// The GraphQL type's documentation follows.
+//
+// System banner of an organization
+type getNodeNodeOrganizationBanner struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getNodeNodeOrganizationBanner.Typename, and is useful for accessing the field via an interface.
+func (v *getNodeNodeOrganizationBanner) GetTypename() string { return v.Typename }
 
 // getNodeNodeOrganizationInvitation includes the requested fields of the GraphQL type OrganizationInvitation.
 // The GraphQL type's documentation follows.
@@ -6008,6 +6056,7 @@ func (v *getPipelineScheduleBySlugResponse) GetPipelineSchedule() getPipelineSch
 // getPipelineScheduleNodeJobTypeWait
 // getPipelineScheduleNodeNotificationServiceSlack
 // getPipelineScheduleNodeOrganization
+// getPipelineScheduleNodeOrganizationBanner
 // getPipelineScheduleNodeOrganizationInvitation
 // getPipelineScheduleNodeOrganizationMember
 // getPipelineScheduleNodePipeline
@@ -6081,6 +6130,8 @@ func (v *getPipelineScheduleNodeJobTypeWait) implementsGraphQLInterfacegetPipeli
 func (v *getPipelineScheduleNodeNotificationServiceSlack) implementsGraphQLInterfacegetPipelineScheduleNode() {
 }
 func (v *getPipelineScheduleNodeOrganization) implementsGraphQLInterfacegetPipelineScheduleNode() {}
+func (v *getPipelineScheduleNodeOrganizationBanner) implementsGraphQLInterfacegetPipelineScheduleNode() {
+}
 func (v *getPipelineScheduleNodeOrganizationInvitation) implementsGraphQLInterfacegetPipelineScheduleNode() {
 }
 func (v *getPipelineScheduleNodeOrganizationMember) implementsGraphQLInterfacegetPipelineScheduleNode() {
@@ -6217,6 +6268,9 @@ func __unmarshalgetPipelineScheduleNode(b []byte, v *getPipelineScheduleNode) er
 		return json.Unmarshal(b, *v)
 	case "Organization":
 		*v = new(getPipelineScheduleNodeOrganization)
+		return json.Unmarshal(b, *v)
+	case "OrganizationBanner":
+		*v = new(getPipelineScheduleNodeOrganizationBanner)
 		return json.Unmarshal(b, *v)
 	case "OrganizationInvitation":
 		*v = new(getPipelineScheduleNodeOrganizationInvitation)
@@ -6541,6 +6595,14 @@ func __marshalgetPipelineScheduleNode(v *getPipelineScheduleNode) ([]byte, error
 		result := struct {
 			TypeName string `json:"__typename"`
 			*getPipelineScheduleNodeOrganization
+		}{typename, v}
+		return json.Marshal(result)
+	case *getPipelineScheduleNodeOrganizationBanner:
+		typename = "OrganizationBanner"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getPipelineScheduleNodeOrganizationBanner
 		}{typename, v}
 		return json.Marshal(result)
 	case *getPipelineScheduleNodeOrganizationInvitation:
@@ -7043,6 +7105,17 @@ type getPipelineScheduleNodeOrganization struct {
 
 // GetTypename returns getPipelineScheduleNodeOrganization.Typename, and is useful for accessing the field via an interface.
 func (v *getPipelineScheduleNodeOrganization) GetTypename() string { return v.Typename }
+
+// getPipelineScheduleNodeOrganizationBanner includes the requested fields of the GraphQL type OrganizationBanner.
+// The GraphQL type's documentation follows.
+//
+// System banner of an organization
+type getPipelineScheduleNodeOrganizationBanner struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getPipelineScheduleNodeOrganizationBanner.Typename, and is useful for accessing the field via an interface.
+func (v *getPipelineScheduleNodeOrganizationBanner) GetTypename() string { return v.Typename }
 
 // getPipelineScheduleNodeOrganizationInvitation includes the requested fields of the GraphQL type OrganizationInvitation.
 // The GraphQL type's documentation follows.
@@ -7897,6 +7970,7 @@ func (v *getTestSuiteSuiteJobTypeWait) GetTypename() string { return v.Typename 
 // getTestSuiteSuiteJobTypeWait
 // getTestSuiteSuiteNotificationServiceSlack
 // getTestSuiteSuiteOrganization
+// getTestSuiteSuiteOrganizationBanner
 // getTestSuiteSuiteOrganizationInvitation
 // getTestSuiteSuiteOrganizationMember
 // getTestSuiteSuitePipeline
@@ -7958,6 +8032,7 @@ func (v *getTestSuiteSuiteJobTypeWait) implementsGraphQLInterfacegetTestSuiteSui
 func (v *getTestSuiteSuiteNotificationServiceSlack) implementsGraphQLInterfacegetTestSuiteSuiteNode() {
 }
 func (v *getTestSuiteSuiteOrganization) implementsGraphQLInterfacegetTestSuiteSuiteNode()           {}
+func (v *getTestSuiteSuiteOrganizationBanner) implementsGraphQLInterfacegetTestSuiteSuiteNode()     {}
 func (v *getTestSuiteSuiteOrganizationInvitation) implementsGraphQLInterfacegetTestSuiteSuiteNode() {}
 func (v *getTestSuiteSuiteOrganizationMember) implementsGraphQLInterfacegetTestSuiteSuiteNode()     {}
 func (v *getTestSuiteSuitePipeline) implementsGraphQLInterfacegetTestSuiteSuiteNode()               {}
@@ -8088,6 +8163,9 @@ func __unmarshalgetTestSuiteSuiteNode(b []byte, v *getTestSuiteSuiteNode) error 
 		return json.Unmarshal(b, *v)
 	case "Organization":
 		*v = new(getTestSuiteSuiteOrganization)
+		return json.Unmarshal(b, *v)
+	case "OrganizationBanner":
+		*v = new(getTestSuiteSuiteOrganizationBanner)
 		return json.Unmarshal(b, *v)
 	case "OrganizationInvitation":
 		*v = new(getTestSuiteSuiteOrganizationInvitation)
@@ -8414,6 +8492,14 @@ func __marshalgetTestSuiteSuiteNode(v *getTestSuiteSuiteNode) ([]byte, error) {
 			*getTestSuiteSuiteOrganization
 		}{typename, v}
 		return json.Marshal(result)
+	case *getTestSuiteSuiteOrganizationBanner:
+		typename = "OrganizationBanner"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getTestSuiteSuiteOrganizationBanner
+		}{typename, v}
+		return json.Marshal(result)
 	case *getTestSuiteSuiteOrganizationInvitation:
 		typename = "OrganizationInvitation"
 
@@ -8571,6 +8657,17 @@ type getTestSuiteSuiteOrganization struct {
 
 // GetTypename returns getTestSuiteSuiteOrganization.Typename, and is useful for accessing the field via an interface.
 func (v *getTestSuiteSuiteOrganization) GetTypename() string { return v.Typename }
+
+// getTestSuiteSuiteOrganizationBanner includes the requested fields of the GraphQL type OrganizationBanner.
+// The GraphQL type's documentation follows.
+//
+// System banner of an organization
+type getTestSuiteSuiteOrganizationBanner struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getTestSuiteSuiteOrganizationBanner.Typename, and is useful for accessing the field via an interface.
+func (v *getTestSuiteSuiteOrganizationBanner) GetTypename() string { return v.Typename }
 
 // getTestSuiteSuiteOrganizationInvitation includes the requested fields of the GraphQL type OrganizationInvitation.
 // The GraphQL type's documentation follows.
@@ -9464,6 +9561,13 @@ func (v *updateClusterClusterUpdateClusterUpdatePayload) GetCluster() updateClus
 // updateClusterClusterUpdateClusterUpdatePayloadCluster includes the requested fields of the GraphQL type Cluster.
 type updateClusterClusterUpdateClusterUpdatePayloadCluster struct {
 	ClusterFields `json:"-"`
+	// The default queue that agents connecting to the cluster without specifying a queue will accept jobs from
+	DefaultQueue updateClusterClusterUpdateClusterUpdatePayloadClusterDefaultQueueClusterQueue `json:"defaultQueue"`
+}
+
+// GetDefaultQueue returns updateClusterClusterUpdateClusterUpdatePayloadCluster.DefaultQueue, and is useful for accessing the field via an interface.
+func (v *updateClusterClusterUpdateClusterUpdatePayloadCluster) GetDefaultQueue() updateClusterClusterUpdateClusterUpdatePayloadClusterDefaultQueueClusterQueue {
+	return v.DefaultQueue
 }
 
 // GetId returns updateClusterClusterUpdateClusterUpdatePayloadCluster.Id, and is useful for accessing the field via an interface.
@@ -9522,6 +9626,8 @@ func (v *updateClusterClusterUpdateClusterUpdatePayloadCluster) UnmarshalJSON(b 
 }
 
 type __premarshalupdateClusterClusterUpdateClusterUpdatePayloadCluster struct {
+	DefaultQueue updateClusterClusterUpdateClusterUpdatePayloadClusterDefaultQueueClusterQueue `json:"defaultQueue"`
+
 	Id string `json:"id"`
 
 	Uuid string `json:"uuid"`
@@ -9546,6 +9652,7 @@ func (v *updateClusterClusterUpdateClusterUpdatePayloadCluster) MarshalJSON() ([
 func (v *updateClusterClusterUpdateClusterUpdatePayloadCluster) __premarshalJSON() (*__premarshalupdateClusterClusterUpdateClusterUpdatePayloadCluster, error) {
 	var retval __premarshalupdateClusterClusterUpdateClusterUpdatePayloadCluster
 
+	retval.DefaultQueue = v.DefaultQueue
 	retval.Id = v.ClusterFields.Id
 	retval.Uuid = v.ClusterFields.Uuid
 	retval.Name = v.ClusterFields.Name
@@ -9553,6 +9660,16 @@ func (v *updateClusterClusterUpdateClusterUpdatePayloadCluster) __premarshalJSON
 	retval.Emoji = v.ClusterFields.Emoji
 	retval.Color = v.ClusterFields.Color
 	return &retval, nil
+}
+
+// updateClusterClusterUpdateClusterUpdatePayloadClusterDefaultQueueClusterQueue includes the requested fields of the GraphQL type ClusterQueue.
+type updateClusterClusterUpdateClusterUpdatePayloadClusterDefaultQueueClusterQueue struct {
+	Id string `json:"id"`
+}
+
+// GetId returns updateClusterClusterUpdateClusterUpdatePayloadClusterDefaultQueueClusterQueue.Id, and is useful for accessing the field via an interface.
+func (v *updateClusterClusterUpdateClusterUpdatePayloadClusterDefaultQueueClusterQueue) GetId() string {
+	return v.Id
 }
 
 // updateClusterQueueClusterQueueUpdateClusterQueueUpdatePayload includes the requested fields of the GraphQL type ClusterQueueUpdatePayload.
@@ -11297,6 +11414,9 @@ query getClusterByName ($orgSlug: ID!, $cursor: String) {
 			edges {
 				node {
 					... ClusterFields
+					defaultQueue {
+						id
+					}
 				}
 			}
 		}
@@ -12215,11 +12335,14 @@ func teamUpdate(
 
 // The query or mutation executed by updateCluster.
 const updateCluster_Operation = `
-mutation updateCluster ($organizationId: ID!, $id: ID!, $name: String, $description: String, $emoji: String, $color: String) {
-	clusterUpdate(input: {organizationId:$organizationId,id:$id,name:$name,description:$description,emoji:$emoji,color:$color}) {
+mutation updateCluster ($organizationId: ID!, $id: ID!, $name: String, $description: String, $emoji: String, $color: String, $defaultQueueID: ID) {
+	clusterUpdate(input: {organizationId:$organizationId,id:$id,name:$name,description:$description,emoji:$emoji,color:$color,defaultQueueId:$defaultQueueID}) {
 		clientMutationId
 		cluster {
 			... ClusterFields
+			defaultQueue {
+				id
+			}
 		}
 	}
 }
@@ -12242,6 +12365,7 @@ func updateCluster(
 	description *string,
 	emoji *string,
 	color *string,
+	defaultQueueID *string,
 ) (*updateClusterResponse, error) {
 	req := &graphql.Request{
 		OpName: "updateCluster",
@@ -12253,6 +12377,7 @@ func updateCluster(
 			Description:    description,
 			Emoji:          emoji,
 			Color:          color,
+			DefaultQueueID: defaultQueueID,
 		},
 	}
 	var err error

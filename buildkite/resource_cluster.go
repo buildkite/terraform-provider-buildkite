@@ -18,12 +18,13 @@ type clusterResource struct {
 }
 
 type clusterResourceModel struct {
-	ID          types.String `tfsdk:"id"`
-	Name        types.String `tfsdk:"name"`
-	Description types.String `tfsdk:"description"`
-	Emoji       types.String `tfsdk:"emoji"`
-	Color       types.String `tfsdk:"color"`
-	UUID        types.String `tfsdk:"uuid"`
+	ID             types.String `tfsdk:"id"`
+	Name           types.String `tfsdk:"name"`
+	Description    types.String `tfsdk:"description"`
+	Emoji          types.String `tfsdk:"emoji"`
+	Color          types.String `tfsdk:"color"`
+	UUID           types.String `tfsdk:"uuid"`
+	DefaultQueueID types.String `tfsdk:"default_queue_id"`
 }
 
 func newClusterResource() resource.Resource {
@@ -74,6 +75,10 @@ func (c *clusterResource) Schema(ctx context.Context, req resource.SchemaRequest
 			"color": resource_schema.StringAttribute{
 				Optional:            true,
 				MarkdownDescription: "A color representation of the Cluster. Accepts hex codes, eg #BADA55.",
+			},
+			"default_queue_id": resource_schema.StringAttribute{
+				Optional:            true,
+				MarkdownDescription: "The ID for the Cluster queue that should be considered the default for this Cluster.",
 			},
 		},
 	}
@@ -223,6 +228,7 @@ func (c *clusterResource) Update(ctx context.Context, req resource.UpdateRequest
 			plan.Description.ValueStringPointer(),
 			plan.Emoji.ValueStringPointer(),
 			plan.Color.ValueStringPointer(),
+			plan.DefaultQueueID.ValueStringPointer(),
 		)
 
 		if err != nil {

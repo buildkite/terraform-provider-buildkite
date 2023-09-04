@@ -57,6 +57,7 @@ func TestAccBuildkiteClusterResource(t *testing.T) {
 			resource.TestCheckResourceAttr("buildkite_cluster.foo", "name", fmt.Sprintf("%s_test_cluster", randName)),
 			resource.TestCheckResourceAttrSet("buildkite_cluster.foo", "id"),
 			resource.TestCheckResourceAttrSet("buildkite_cluster.foo", "uuid"),
+			testAccEnsureQueueIDIsNull(&c),
 		)
 
 		resource.ParallelTest(t, resource.TestCase{
@@ -159,6 +160,15 @@ func TestAccBuildkiteClusterResource(t *testing.T) {
 			},
 		})
 	})
+}
+
+func testAccEnsureQueueIDIsNull(c *clusterResourceModel) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		if c.DefaultQueueID.ValueStringPointer() != nil {
+			return fmt.Errorf("expected no default queue ID, but got %s", c.DefaultQueueID.ValueString())
+		}
+		return nil
+	}
 }
 
 func testAccCheckClusterExists(name string, c *clusterResourceModel) resource.TestCheckFunc {
