@@ -16,6 +16,7 @@ All notable changes to this project will be documented in this file.
 - SUP-1361: Add timeouts to pipeline resource api [[PR #385](https://github.com/buildkite/terraform-provider-buildkite/pull/385)] @lizrabuya
 - SUP-1393 Detect repository provider type [[PR #386](https://github.com/buildkite/terraform-provider-buildkite/pull/386)] @jradtilbrook
 - SUP-1405: Fix dangling team resources created in tests [[PR #389](https://github.com/buildkite/terraform-provider-buildkite/pull/389)] @lizrabuya
+- SUP-1394 Add validation to provider_settings [[PR #387](https://github.com/buildkite/terraform-provider-buildkite/pull/387)] @jradtilbrook
 
 ### Changes
 
