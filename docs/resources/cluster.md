@@ -11,9 +11,6 @@ provider "buildkite" {}
 
 resource "buildkite_cluster" "linux" {
     name = "linux_builds"
-    timeouts {
-        create = "60m"
-    }
 }
 ```
 
