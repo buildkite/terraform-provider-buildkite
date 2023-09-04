@@ -544,7 +544,6 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 						"build_pull_requests": schema.BoolAttribute{
 							Optional: true,
 							Computed: true,
-							Default:  booldefault.StaticBool(true),
 							Validators: []validator.Bool{
 								boolvalidator.Any(
 									pipelinevalidation.WhenRepositoryProviderIs(pipelinevalidation.RepositoryProviderBitbucket),
@@ -579,7 +578,6 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 						"skip_pull_request_builds_for_existing_commits": schema.BoolAttribute{
 							Optional: true,
 							Computed: true,
-							Default:  booldefault.StaticBool(true),
 							Validators: []validator.Bool{
 								boolvalidation.WhenBool(path.MatchRoot("provider_settings").AtAnyListIndex().AtName("build_pull_requests"), true),
 							},
@@ -621,7 +619,6 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 						"build_branches": schema.BoolAttribute{
 							Optional: true,
 							Computed: true,
-							Default:  booldefault.StaticBool(true),
 							Validators: []validator.Bool{
 								pipelinevalidation.WhenRepositoryProviderIs(pipelinevalidation.RepositoryProviderGitHub, pipelinevalidation.RepositoryProviderBitbucket),
 							},
@@ -659,7 +656,6 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 						"publish_commit_status": schema.BoolAttribute{
 							Optional: true,
 							Computed: true,
-							Default:  booldefault.StaticBool(true),
 							Validators: []validator.Bool{
 								boolvalidator.Any(
 									pipelinevalidation.WhenRepositoryProviderIs(pipelinevalidation.RepositoryProviderBitbucket),
