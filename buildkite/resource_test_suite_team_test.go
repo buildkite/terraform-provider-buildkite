@@ -7,201 +7,246 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
-func TestAccTestSuiteTeam_add_remove(t *testing.T) {
-	ownerTeamName := acctest.RandString(12)
-	newTeamName := acctest.RandString(12)
-	var tr teamResourceModel
-	var ts getTestSuiteSuite
-	var tst testSuiteTeamModel
-	t.Parallel()
-
-	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: protoV6ProviderFactories(),
-		CheckDestroy:             testAccCheckTestSuiteTeamDestroy,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccCTestSuiteTeamConfigBasic(ownerTeamName, newTeamName, "READ_ONLY"),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					// Confirm the new team/test suite exists in the Buildkite API
-					testAccCheckTeamExists("buildkite_team.newteam", &tr),
-					checkTestSuiteExists("buildkite_test_suite.testsuite", &ts),
-					// Confirm the test suite team exists in the buildkite API
-					testAccCheckTestSuiteTeamExists("buildkite_test_suite_team.teamsuite", &tst),
-					// Confirm the test suite team has the correct values in Buildkite's system
-					testAccCheckTestSuiteTeamRemoteValues("READ_ONLY", &tr, &ts, &tst),
-					// Confirm the test suite team has the correct values in terraform state
-					resource.TestCheckResourceAttr("buildkite_test_suite_team.teamsuite", "access_level", "READ_ONLY"),
-					resource.TestCheckResourceAttrSet("buildkite_test_suite_team.teamsuite", "id"),
-					resource.TestCheckResourceAttrSet("buildkite_test_suite_team.teamsuite", "uuid"),
-					resource.TestCheckResourceAttrSet("buildkite_test_suite_team.teamsuite", "test_suite_id"),
-					resource.TestCheckResourceAttrSet("buildkite_test_suite_team.teamsuite", "team_id"),
-					resource.TestCheckResourceAttrSet("buildkite_test_suite_team.teamsuite", "access_level"),
-				),
-			},
-		},
-	})
-}
-
-func TestAccTestSuiteTeam_update(t *testing.T) {
-	ownerTeamName := acctest.RandString(12)
-	newTeamName := acctest.RandString(12)
-	var tr teamResourceModel
-	var ts getTestSuiteSuite
-	var tst testSuiteTeamModel
-	t.Parallel()
-
-	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: protoV6ProviderFactories(),
-		CheckDestroy:             testAccCheckTestSuiteTeamDestroy,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccCTestSuiteTeamConfigBasic(ownerTeamName, newTeamName, "READ_ONLY"),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					// Confirm the new team/test suite exists in the Buildkite API
-					testAccCheckTeamExists("buildkite_team.newteam", &tr),
-					checkTestSuiteExists("buildkite_test_suite.testsuite", &ts),
-					// Confirm the test suite team exists in the buildkite API
-					testAccCheckTestSuiteTeamExists("buildkite_test_suite_team.teamsuite", &tst),
-					// Confirm the test suite team has the correct values in Buildkite's system
-					testAccCheckTestSuiteTeamRemoteValues("READ_ONLY", &tr, &ts, &tst),
-					// Confirm the test suite team has the correct values in terraform state
-					resource.TestCheckResourceAttr("buildkite_test_suite_team.teamsuite", "access_level", "READ_ONLY"),
-					resource.TestCheckResourceAttrSet("buildkite_test_suite_team.teamsuite", "id"),
-					resource.TestCheckResourceAttrSet("buildkite_test_suite_team.teamsuite", "uuid"),
-					resource.TestCheckResourceAttrSet("buildkite_test_suite_team.teamsuite", "test_suite_id"),
-					resource.TestCheckResourceAttrSet("buildkite_test_suite_team.teamsuite", "team_id"),
-					resource.TestCheckResourceAttrSet("buildkite_test_suite_team.teamsuite", "access_level"),
-				),
-			},
-			{
-				Config: testAccCTestSuiteTeamConfigBasic(ownerTeamName, newTeamName, "MANAGE_AND_READ"),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					// Confirm the new team/test suite exists in the Buildkite API
-					testAccCheckTeamExists("buildkite_team.newteam", &tr),
-					checkTestSuiteExists("buildkite_test_suite.testsuite", &ts),
-					// Confirm the test suite team exists in the buildkite API
-					testAccCheckTestSuiteTeamExists("buildkite_test_suite_team.teamsuite", &tst),
-					// Confirm the test suite team has the correct values in Buildkite's system
-					testAccCheckTestSuiteTeamRemoteValues("MANAGE_AND_READ", &tr, &ts, &tst),
-					// Confirm the test suite team has the correct values in terraform state
-					resource.TestCheckResourceAttr("buildkite_test_suite_team.teamsuite", "access_level", "MANAGE_AND_READ"),
-					resource.TestCheckResourceAttrSet("buildkite_test_suite_team.teamsuite", "id"),
-					resource.TestCheckResourceAttrSet("buildkite_test_suite_team.teamsuite", "uuid"),
-					resource.TestCheckResourceAttrSet("buildkite_test_suite_team.teamsuite", "test_suite_id"),
-					resource.TestCheckResourceAttrSet("buildkite_test_suite_team.teamsuite", "team_id"),
-					resource.TestCheckResourceAttrSet("buildkite_test_suite_team.teamsuite", "access_level"),
-				),
-			},
-		},
-	})
-}
-
-func TestAccTestSuiteTeam_import(t *testing.T) {
-	ownerTeamName := acctest.RandString(12)
-	newTeamName := acctest.RandString(12)
-	var tr teamResourceModel
-	var ts getTestSuiteSuite
-	var tst testSuiteTeamModel
-
-	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: protoV6ProviderFactories(),
-		CheckDestroy:             testAccCheckTestSuiteTeamDestroy,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccCTestSuiteTeamConfigBasic(ownerTeamName, newTeamName, "READ_ONLY"),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					// Confirm the new team/test suite exists in the Buildkite API
-					testAccCheckTeamExists("buildkite_team.newteam", &tr),
-					checkTestSuiteExists("buildkite_test_suite.testsuite", &ts),
-					// Confirm the test suite team exists in the buildkite API
-					testAccCheckTestSuiteTeamExists("buildkite_test_suite_team.teamsuite", &tst),
-					// Confirm the test suite team has the correct values in Buildkite's system
-					testAccCheckTestSuiteTeamRemoteValues("READ_ONLY", &tr, &ts, &tst),
-					// Confirm the test suite team has the correct values in terraform state
-					resource.TestCheckResourceAttr("buildkite_test_suite_team.teamsuite", "access_level", "READ_ONLY"),
-					resource.TestCheckResourceAttrSet("buildkite_test_suite_team.teamsuite", "id"),
-					resource.TestCheckResourceAttrSet("buildkite_test_suite_team.teamsuite", "uuid"),
-					resource.TestCheckResourceAttrSet("buildkite_test_suite_team.teamsuite", "test_suite_id"),
-					resource.TestCheckResourceAttrSet("buildkite_test_suite_team.teamsuite", "team_id"),
-					resource.TestCheckResourceAttrSet("buildkite_test_suite_team.teamsuite", "access_level"),
-				),
-			},
-			{
-				// re-import the resource (using the graphql token of the existing resource) and confirm they match
-				ResourceName:      "buildkite_test_suite_team.teamsuite",
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
-		},
-	})
-}
-
-func TestAccTestSuiteTeam_disappears(t *testing.T) {
-	ownerTeamName := acctest.RandString(12)
-	newTeamName := acctest.RandString(12)
-	var tr teamResourceModel
-	var ts getTestSuiteSuite
-	var tst testSuiteTeamModel
-
-	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: protoV6ProviderFactories(),
-		// CheckDestroy:             testAccCheckPipelineResourceDestroy,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccCTestSuiteTeamConfigBasic(ownerTeamName, newTeamName, "READ_ONLY"),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					// Confirm the new team/test suite exists in the Buildkite API
-					testAccCheckTeamExists("buildkite_team.newteam", &tr),
-					checkTestSuiteExists("buildkite_test_suite.testsuite", &ts),
-					// Confirm the test suite team exists in the buildkite API
-					testAccCheckTestSuiteTeamExists("buildkite_test_suite_team.teamsuite", &tst),
-					// Ensure the test suite team removal from spec
-					testAccCheckTestSuiteTeamDisappears("buildkite_test_suite_team.teamsuite"),
-				),
-				ExpectNonEmptyPlan: true,
-			},
-		},
-	})
-}
-
-func testAccCTestSuiteTeamConfigBasic(ownerTeamName, newTeamName, accessLevel string) string {
-	config := `
-
-	resource "buildkite_team" "ownerteam" {
-		name = "Test Suite Team %s"
-		default_team = false
-		privacy = "VISIBLE"
-		default_member_role = "MAINTAINER"
+func TestAccBuildkiteTestSuiteTeamResource(t *testing.T) {
+	config := func(ownerTeamName, newTeamName, accessLevel string) string {
+		return fmt.Sprintf(`
+		provider "buildkite" {
+			timeouts {
+				create = "10s"
+				read = "10s"
+				update = "10s"
+				delete = "10s"
+			}
+		}
+		
+		resource "buildkite_team" "ownerteam" {
+			name = "Test Suite Team %s"
+			default_team = false
+			privacy = "VISIBLE"
+			default_member_role = "MAINTAINER"
+		}
+	
+		resource "buildkite_team" "newteam" {
+			name = "Test Suite Team %s"
+			default_team = false
+			privacy = "VISIBLE"
+			default_member_role = "MAINTAINER"
+		}
+	
+		resource "buildkite_test_suite" "testsuite" {
+			name = "Test Suite %s"
+			default_branch = "main"
+			team_owner_id = buildkite_team.ownerteam.id
+		}
+	
+		resource "buildkite_test_suite_team" "teamsuite" {
+			test_suite_id = buildkite_test_suite.testsuite.id
+			team_id = buildkite_team.newteam.id
+			access_level = "%s"
+		}
+		`, ownerTeamName, newTeamName, ownerTeamName, accessLevel)
 	}
 
-	resource "buildkite_team" "newteam" {
-		name = "Test Suite Team %s"
-		default_team = false
-		privacy = "VISIBLE"
-		default_member_role = "MAINTAINER"
-	}
+	t.Run("creates a test suite team", func(t *testing.T) {
+		ownerTeamName := acctest.RandString(12)
+		newTeamName := acctest.RandString(12)
+		var tr teamResourceModel
+		var ts getTestSuiteSuite
+		var tst testSuiteTeamModel
 
-	resource "buildkite_test_suite" "testsuite" {
-		name = "Test Suite %s"
-		default_branch = "main"
-		team_owner_id = buildkite_team.ownerteam.id
-	}
+		check := resource.ComposeAggregateTestCheckFunc(
+			// Confirm the new team/test suite exists in the Buildkite API
+			testAccCheckTeamExists("buildkite_team.newteam", &tr),
+			checkTestSuiteExists("buildkite_test_suite.testsuite", &ts),
+			// Confirm the test suite team exists in the buildkite API
+			testAccCheckTestSuiteTeamExists("buildkite_test_suite_team.teamsuite", &tst),
+			// Confirm the test suite team has the correct values in Buildkite's system
+			testAccCheckTestSuiteTeamRemoteValues("READ_ONLY", &tr, &ts, &tst),
+			// Confirm the test suite team has the correct values in terraform state
+			resource.TestCheckResourceAttr("buildkite_test_suite_team.teamsuite", "access_level", "READ_ONLY"),
+			resource.TestCheckResourceAttrSet("buildkite_test_suite_team.teamsuite", "id"),
+			resource.TestCheckResourceAttrSet("buildkite_test_suite_team.teamsuite", "uuid"),
+			resource.TestCheckResourceAttrSet("buildkite_test_suite_team.teamsuite", "test_suite_id"),
+			resource.TestCheckResourceAttrSet("buildkite_test_suite_team.teamsuite", "team_id"),
+			resource.TestCheckResourceAttrSet("buildkite_test_suite_team.teamsuite", "access_level"),
+		)
 
-	resource "buildkite_test_suite_team" "teamsuite" {
-		test_suite_id = buildkite_test_suite.testsuite.id
-		team_id = buildkite_team.newteam.id
-		access_level = "%s"
-	}
-	`
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			CheckDestroy:             testAccCheckTestSuiteTeamDestroy,
+			Steps: []resource.TestStep{
+				{
+					Config: config(ownerTeamName, newTeamName, "READ_ONLY"),
+					Check:  check,
+				},
+			},
+		})
+	})
 
-	return fmt.Sprintf(config, ownerTeamName, newTeamName, ownerTeamName, accessLevel)
+	t.Run("updates a test suite teams access level", func(t *testing.T) {
+		ownerTeamName := acctest.RandString(12)
+		newTeamName := acctest.RandString(12)
+		var tr teamResourceModel
+		var ts getTestSuiteSuite
+		var tst testSuiteTeamModel
+
+		checkReadOnly := resource.ComposeAggregateTestCheckFunc(
+			// Confirm the new team/test suite exists in the Buildkite API
+			testAccCheckTeamExists("buildkite_team.newteam", &tr),
+			checkTestSuiteExists("buildkite_test_suite.testsuite", &ts),
+			// Confirm the test suite team exists in the buildkite API
+			testAccCheckTestSuiteTeamExists("buildkite_test_suite_team.teamsuite", &tst),
+			// Confirm the test suite team has the correct values in Buildkite's system
+			testAccCheckTestSuiteTeamRemoteValues("READ_ONLY", &tr, &ts, &tst),
+			// Confirm the test suite team has the correct values in terraform state
+			resource.TestCheckResourceAttr("buildkite_test_suite_team.teamsuite", "access_level", "READ_ONLY"),
+			resource.TestCheckResourceAttrSet("buildkite_test_suite_team.teamsuite", "id"),
+			resource.TestCheckResourceAttrSet("buildkite_test_suite_team.teamsuite", "uuid"),
+			resource.TestCheckResourceAttrSet("buildkite_test_suite_team.teamsuite", "test_suite_id"),
+			resource.TestCheckResourceAttrSet("buildkite_test_suite_team.teamsuite", "team_id"),
+			resource.TestCheckResourceAttrSet("buildkite_test_suite_team.teamsuite", "access_level"),
+		)
+
+		checkManageAndRead := resource.ComposeAggregateTestCheckFunc(
+			// Confirm the new team/test suite exists in the Buildkite API
+			testAccCheckTeamExists("buildkite_team.newteam", &tr),
+			checkTestSuiteExists("buildkite_test_suite.testsuite", &ts),
+			// Confirm the test suite team exists in the buildkite API
+			testAccCheckTestSuiteTeamExists("buildkite_test_suite_team.teamsuite", &tst),
+			// Confirm the test suite team has the correct values in Buildkite's system
+			testAccCheckTestSuiteTeamRemoteValues("MANAGE_AND_READ", &tr, &ts, &tst),
+			// Confirm the test suite team has the correct values in terraform state
+			resource.TestCheckResourceAttr("buildkite_test_suite_team.teamsuite", "access_level", "MANAGE_AND_READ"),
+			resource.TestCheckResourceAttrSet("buildkite_test_suite_team.teamsuite", "id"),
+			resource.TestCheckResourceAttrSet("buildkite_test_suite_team.teamsuite", "uuid"),
+			resource.TestCheckResourceAttrSet("buildkite_test_suite_team.teamsuite", "test_suite_id"),
+			resource.TestCheckResourceAttrSet("buildkite_test_suite_team.teamsuite", "team_id"),
+			resource.TestCheckResourceAttrSet("buildkite_test_suite_team.teamsuite", "access_level"),
+		)
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			CheckDestroy:             testAccCheckTestSuiteTeamDestroy,
+			Steps: []resource.TestStep{
+				{
+					Config: config(ownerTeamName, newTeamName, "READ_ONLY"),
+					Check:  checkReadOnly,
+				},
+				{
+					Config: config(ownerTeamName, newTeamName, "MANAGE_AND_READ"),
+					Check:  checkManageAndRead,
+				},
+			},
+		})
+	})
+
+	t.Run("imports a test suite team", func(t *testing.T) {
+		ownerTeamName := acctest.RandString(12)
+		newTeamName := acctest.RandString(12)
+		var tr teamResourceModel
+		var ts getTestSuiteSuite
+		var tst testSuiteTeamModel
+
+		check := resource.ComposeAggregateTestCheckFunc(
+			// Confirm the new team/test suite exists in the Buildkite API
+			testAccCheckTeamExists("buildkite_team.newteam", &tr),
+			checkTestSuiteExists("buildkite_test_suite.testsuite", &ts),
+			// Confirm the test suite team exists in the buildkite API
+			testAccCheckTestSuiteTeamExists("buildkite_test_suite_team.teamsuite", &tst),
+			// Confirm the test suite team has the correct values in Buildkite's system
+			testAccCheckTestSuiteTeamRemoteValues("READ_ONLY", &tr, &ts, &tst),
+			// Confirm the test suite team has the correct values in terraform state
+			resource.TestCheckResourceAttr("buildkite_test_suite_team.teamsuite", "access_level", "READ_ONLY"),
+			resource.TestCheckResourceAttrSet("buildkite_test_suite_team.teamsuite", "id"),
+			resource.TestCheckResourceAttrSet("buildkite_test_suite_team.teamsuite", "uuid"),
+			resource.TestCheckResourceAttrSet("buildkite_test_suite_team.teamsuite", "test_suite_id"),
+			resource.TestCheckResourceAttrSet("buildkite_test_suite_team.teamsuite", "team_id"),
+			resource.TestCheckResourceAttrSet("buildkite_test_suite_team.teamsuite", "access_level"),
+		)
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			CheckDestroy:             testAccCheckTestSuiteTeamDestroy,
+			Steps: []resource.TestStep{
+				{
+					Config: config(ownerTeamName, newTeamName, "READ_ONLY"),
+					Check:  check,
+				},
+				{
+					// re-import the resource (using the graphql token of the existing resource) and confirm they match
+					ResourceName:      "buildkite_test_suite_team.teamsuite",
+					ImportState:       true,
+					ImportStateVerify: true,
+				},
+			},
+		})
+	})
+
+	t.Run("removes a test suite team", func(t *testing.T) {
+		ownerTeamName := acctest.RandString(12)
+		newTeamName := acctest.RandString(12)
+		var tr teamResourceModel
+		var ts getTestSuiteSuite
+		var tst testSuiteTeamModel
+
+		check := resource.ComposeAggregateTestCheckFunc(
+			// Confirm the new team/test suite exists in the Buildkite API
+			testAccCheckTeamExists("buildkite_team.newteam", &tr),
+			checkTestSuiteExists("buildkite_test_suite.testsuite", &ts),
+			// Confirm the test suite team exists in the buildkite API
+			testAccCheckTestSuiteTeamExists("buildkite_test_suite_team.teamsuite", &tst),
+			// Ensure the test suite team removal from spec
+			testAccCheckTestSuiteTeamDisappears("buildkite_test_suite_team.teamsuite"),
+		)
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			Steps: []resource.TestStep{
+				{
+					Config:             config(ownerTeamName, newTeamName, "READ_ONLY"),
+					Check:              check,
+					ExpectNonEmptyPlan: true,
+				},
+			},
+		})
+	})
+
+	t.Run("test suite team is recreated if removed", func(t *testing.T) {
+		ownerTeamName := acctest.RandString(12)
+		newTeamName := acctest.RandString(12)
+
+		check := func(s *terraform.State) error {
+			teamSuite := s.RootModule().Resources["buildkite_test_suite_team.teamsuite"]
+			_, err := deleteTestSuiteTeam(context.Background(), genqlientGraphql, teamSuite.Primary.ID)
+			return err
+		}
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			Steps: []resource.TestStep{
+				{
+					Config:             config(ownerTeamName, newTeamName, "READ_ONLY"),
+					Check:              check,
+					ExpectNonEmptyPlan: true,
+					ConfigPlanChecks: resource.ConfigPlanChecks{
+						PostApplyPostRefresh: []plancheck.PlanCheck{
+							// expect terraform to plan a new create
+							plancheck.ExpectResourceAction("buildkite_test_suite_team.teamsuite", plancheck.ResourceActionCreate),
+						},
+					},
+				},
+			},
+		})
+	})
 }
 
 func testAccCheckTestSuiteTeamExists(resourceName string, tst *testSuiteTeamModel) resource.TestCheckFunc {
