@@ -13,6 +13,7 @@ All notable changes to this project will be documented in this file.
 - SUP-1402: Agent token resource retries [[PR #382](https://github.com/buildkite/terraform-provider-buildkite/pull/382)] @james2791
 - SUP-1399: Add retry to pipeline team resource [[PR #384](https://github.com/buildkite/terraform-provider-buildkite/pull/384)] @lizrabuya
 - SUP-1361: Add timeouts to pipeline resource api[[PR #385](https://github.com/buildkite/terraform-provider-buildkite/pull/385)] @lizrabuya
+- SUP-1401: Cluster Queue and Cluster Agent Token resource retries [[PR #388](https://github.com/buildkite/terraform-provider-buildkite/pull/388)] @james2791
 
 ### Changes
 
