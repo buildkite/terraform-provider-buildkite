@@ -6,9 +6,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
 func TestAccBuildkiteClusterQueue(t *testing.T) {
@@ -57,7 +57,7 @@ func TestAccBuildkiteClusterQueue(t *testing.T) {
 			Steps: []resource.TestStep{
 				{
 					Config: configBasic(clusterName, queueKey, queueDesc),
-					Check: 	check,
+					Check:  check,
 				},
 			},
 		})
@@ -67,7 +67,7 @@ func TestAccBuildkiteClusterQueue(t *testing.T) {
 		var cq ClusterQueueResourceModel
 		clusterName := acctest.RandString(10)
 		queueKey := acctest.RandString(10)
-		queueDesc := acctest.RandString(10)		
+		queueDesc := acctest.RandString(10)
 		updatedDesc := acctest.RandString(10)
 
 		check := resource.ComposeAggregateTestCheckFunc(
@@ -97,11 +97,11 @@ func TestAccBuildkiteClusterQueue(t *testing.T) {
 			Steps: []resource.TestStep{
 				{
 					Config: configBasic(clusterName, queueKey, queueDesc),
-					Check: 	check,
+					Check:  check,
 				},
 				{
 					Config: configBasic(clusterName, queueKey, updatedDesc),
-					Check: 	ckecUpdated,
+					Check:  ckecUpdated,
 				},
 			},
 		})
@@ -111,7 +111,7 @@ func TestAccBuildkiteClusterQueue(t *testing.T) {
 		var cq ClusterQueueResourceModel
 		clusterName := acctest.RandString(10)
 		queueKey := acctest.RandString(10)
-		queueDesc := acctest.RandString(10)		
+		queueDesc := acctest.RandString(10)
 
 		check := resource.ComposeAggregateTestCheckFunc(
 			// Confirm the cluster queue exists in the buildkite API
@@ -128,7 +128,7 @@ func TestAccBuildkiteClusterQueue(t *testing.T) {
 			Steps: []resource.TestStep{
 				{
 					Config: configBasic(clusterName, queueKey, queueDesc),
-					Check: 	check,
+					Check:  check,
 				},
 				{
 					// re-import the resource (using the graphql token of the existing resource) and confirm they match
