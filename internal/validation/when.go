@@ -5,12 +5,16 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework-validators/helpers/validatordiag"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
+	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 type whenValidator struct {
-	attr, value string
+	expression path.Expression
+	value      string
 }
 
 // Description implements validator.Bool.
@@ -31,19 +35,41 @@ func (when whenValidator) ValidateBool(ctx context.Context, req validator.BoolRe
 	}
 
 	// get the value from config
-	path := path.Root(when.attr)
-	var val string
-	resp.Diagnostics.Append(req.Config.GetAttribute(ctx, path, &val)...)
-
+	matchedPaths, diags := req.Config.PathMatches(ctx, when.expression)
+	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	if when.value != val {
-		resp.Diagnostics.Append(validatordiag.InvalidAttributeValueDiagnostic(path, fmt.Sprintf("%q", when.value), val))
+	for _, matchedPath := range matchedPaths {
+		var matchedPathValue attr.Value
+
+		diags := req.Config.GetAttribute(ctx, matchedPath, &matchedPathValue)
+		resp.Diagnostics.Append(diags...)
+		// Collect all errors
+		if diags.HasError() {
+			continue
+		}
+
+		// If the matched path value is null or unknown, we cannot compare
+		// values, so continue to other matched paths.
+		if matchedPathValue.IsNull() || matchedPathValue.IsUnknown() {
+			continue
+		}
+
+		var val types.String
+		diags = tfsdk.ValueAs(ctx, matchedPathValue, &val)
+		resp.Diagnostics.Append(diags...)
+		if diags.HasError() {
+			continue
+		}
+
+		if when.value != val.ValueString() {
+			resp.Diagnostics.Append(validatordiag.InvalidAttributeValueDiagnostic(matchedPath, fmt.Sprintf("%q", when.value), val.ValueString()))
+		}
 	}
 }
 
-func WhenStringAttrIs(attr, value string) validator.Bool {
+func WhenStringAttrIs(attr path.Expression, value string) validator.Bool {
 	return whenValidator{attr, value}
 }

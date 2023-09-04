@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/provider/schema"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
@@ -113,7 +114,7 @@ func TestWhenStringAttrIsValidator(t *testing.T) {
 				Diagnostics: diag.Diagnostics{},
 			}
 
-			WhenStringAttrIs("name", "value").ValidateBool(context.Background(), testCase.request, &resp)
+			WhenStringAttrIs(path.MatchRoot("name"), "value").ValidateBool(context.Background(), testCase.request, &resp)
 
 			if testCase.expectError != resp.Diagnostics.HasError() {
 				t.Error("Expected error mismatch")
