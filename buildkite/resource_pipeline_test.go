@@ -157,7 +157,7 @@ func TestAccBuildkitePipeline(t *testing.T) {
 		clusterName := acctest.RandString(12)
 		config := fmt.Sprintf(`
 			resource "buildkite_team" "team" {
-				name = "%s"
+				name = "pipeline test %s"
 				default_team = false
 				default_member_role = "MEMBER"
 				privacy = "VISIBLE"
@@ -281,7 +281,7 @@ func TestAccBuildkitePipeline(t *testing.T) {
 				{
 					Config: fmt.Sprintf(`
 						resource "buildkite_team" "team" {
-							name = "%s"
+							name = "pipeline test %s"
 							default_team = false
 							default_member_role = "MEMBER"
 							privacy = "VISIBLE"
@@ -450,6 +450,15 @@ func TestAccBuildkitePipeline(t *testing.T) {
 		resource.ParallelTest(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },
 			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			CheckDestroy: func(s *terraform.State) error {
+				// if team created in the tests still exists,it must be deleted
+				_, err := getNode(context.Background(), genqlientGraphql, teamID)
+				if err != nil {
+					return err
+				}
+				_, err = teamDelete(context.Background(), genqlientGraphql, teamID)
+				return err
+			},
 			Steps: []resource.TestStep{
 				{
 					Config: fmt.Sprintf(`
@@ -468,7 +477,7 @@ func TestAccBuildkitePipeline(t *testing.T) {
 						},
 						func(s *terraform.State) error {
 							// add new team to pipeline
-							team, err := teamCreate(context.Background(), genqlientGraphql, organizationID, acctest.RandString(6), nil, "VISIBLE", false, "MEMBER", false)
+							team, err := teamCreate(context.Background(), genqlientGraphql, organizationID, fmt.Sprintf("pipeline adhoc team %s", acctest.RandString(6)), nil, "VISIBLE", false, "MEMBER", false)
 							teamID = team.TeamCreate.TeamEdge.Node.Id
 							if err != nil {
 								return err
@@ -502,7 +511,7 @@ func TestAccBuildkitePipeline(t *testing.T) {
 				{
 					Config: fmt.Sprintf(`
 						resource "buildkite_team" "team" {
-							name = "%s"
+							name = "pipeline team test %s"
 							default_team = false
 							default_member_role = "MEMBER"
 							privacy = "VISIBLE"
@@ -555,7 +564,7 @@ func TestAccBuildkitePipeline(t *testing.T) {
 				{
 					Config: fmt.Sprintf(`
 						resource "buildkite_team" "team" {
-							name = "%s"
+							name = "pipeline team test %s"
 							default_team = false
 							default_member_role = "MEMBER"
 							privacy = "VISIBLE"
@@ -601,7 +610,7 @@ func TestAccBuildkitePipeline(t *testing.T) {
 		teamName := acctest.RandString(12)
 		config := fmt.Sprintf(`
 			resource "buildkite_team" "team" {
-				name = "%s"
+				name = "pipeline team test %s"
 				default_team = false
 				default_member_role = "MEMBER"
 				privacy = "VISIBLE"
