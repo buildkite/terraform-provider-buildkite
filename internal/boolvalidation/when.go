@@ -34,7 +34,7 @@ func (when whenValidator) Description(ctx context.Context) string {
 
 // MarkdownDescription implements validator.Bool.
 func (when whenValidator) MarkdownDescription(context.Context) string {
-	return fmt.Sprintf("This attribute can only be set when the dependent attribute is set to: %q", when.value)
+	return fmt.Sprintf("This attribute can only be set when the dependent attribute is set to: %s", when.value)
 }
 
 func (when whenValidator) Validate(ctx context.Context, req whenValidatorRequest, resp *whenValidatorResponse) {
@@ -74,7 +74,7 @@ func (when whenValidator) Validate(ctx context.Context, req whenValidatorRequest
 		}
 
 		if !val.Equal(when.value) {
-			resp.Diagnostics.Append(validatordiag.InvalidAttributeValueDiagnostic(matchedPath, fmt.Sprintf("%q", when.value), val.String()))
+			resp.Diagnostics.Append(validatordiag.InvalidAttributeValueDiagnostic(matchedPath, fmt.Sprintf("%s", when.value), val.String()))
 		}
 	}
 }
