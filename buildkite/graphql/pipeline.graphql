@@ -28,25 +28,6 @@ fragment PipelineValues on Pipeline {
     tags {
         label
     }
-    teams (first: 50) {
-        edges {
-            node {
-                accessLevel
-                id
-                team {
-                    description
-                    id
-                    isDefaultTeam
-                    defaultMemberRole
-                    name
-                    membersCanCreatePipelines
-                    privacy
-                    slug
-                    uuid
-                }
-            }
-        }
-    }
     webhookURL
 }
 
@@ -105,13 +86,7 @@ mutation teamPipelineDelete($id: ID!) {
     }
 }
 
-mutation teamPipelineUpdate($id: ID!, $accessLevel: PipelineAccessLevels!) {
-    teamPipelineUpdate(input: {id: $id, accessLevel: $accessLevel}) {
-        teamPipeline {
-            id
-        }
-    }
-}
+
 
 mutation deletePipeline ($id: ID!) {
     pipelineDelete(input: {

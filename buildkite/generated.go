@@ -683,8 +683,6 @@ type PipelineValues struct {
 	Steps PipelineValuesStepsPipelineSteps `json:"steps"`
 	// Tags that have been given to this pipeline
 	Tags []PipelineValuesTagsPipelineTag `json:"tags"`
-	// Teams associated with this pipeline
-	Teams PipelineValuesTeamsTeamPipelineConnection `json:"teams"`
 	// The URL to use in your repository settings for commit webhooks
 	WebhookURL string `json:"webhookURL"`
 }
@@ -744,9 +742,6 @@ func (v *PipelineValues) GetSteps() PipelineValuesStepsPipelineSteps { return v.
 // GetTags returns PipelineValues.Tags, and is useful for accessing the field via an interface.
 func (v *PipelineValues) GetTags() []PipelineValuesTagsPipelineTag { return v.Tags }
 
-// GetTeams returns PipelineValues.Teams, and is useful for accessing the field via an interface.
-func (v *PipelineValues) GetTeams() PipelineValuesTeamsTeamPipelineConnection { return v.Teams }
-
 // GetWebhookURL returns PipelineValues.WebhookURL, and is useful for accessing the field via an interface.
 func (v *PipelineValues) GetWebhookURL() string { return v.WebhookURL }
 
@@ -793,125 +788,6 @@ type PipelineValuesTagsPipelineTag struct {
 
 // GetLabel returns PipelineValuesTagsPipelineTag.Label, and is useful for accessing the field via an interface.
 func (v *PipelineValuesTagsPipelineTag) GetLabel() string { return v.Label }
-
-// PipelineValuesTeamsTeamPipelineConnection includes the requested fields of the GraphQL type TeamPipelineConnection.
-// The GraphQL type's documentation follows.
-//
-// A collection of TeamPipeline records
-type PipelineValuesTeamsTeamPipelineConnection struct {
-	Edges []PipelineValuesTeamsTeamPipelineConnectionEdgesTeamPipelineEdge `json:"edges"`
-}
-
-// GetEdges returns PipelineValuesTeamsTeamPipelineConnection.Edges, and is useful for accessing the field via an interface.
-func (v *PipelineValuesTeamsTeamPipelineConnection) GetEdges() []PipelineValuesTeamsTeamPipelineConnectionEdgesTeamPipelineEdge {
-	return v.Edges
-}
-
-// PipelineValuesTeamsTeamPipelineConnectionEdgesTeamPipelineEdge includes the requested fields of the GraphQL type TeamPipelineEdge.
-type PipelineValuesTeamsTeamPipelineConnectionEdgesTeamPipelineEdge struct {
-	Node PipelineValuesTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipeline `json:"node"`
-}
-
-// GetNode returns PipelineValuesTeamsTeamPipelineConnectionEdgesTeamPipelineEdge.Node, and is useful for accessing the field via an interface.
-func (v *PipelineValuesTeamsTeamPipelineConnectionEdgesTeamPipelineEdge) GetNode() PipelineValuesTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipeline {
-	return v.Node
-}
-
-// PipelineValuesTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipeline includes the requested fields of the GraphQL type TeamPipeline.
-// The GraphQL type's documentation follows.
-//
-// An pipeline that's been assigned to a team
-type PipelineValuesTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipeline struct {
-	// The access level users have to this pipeline
-	AccessLevel PipelineAccessLevels `json:"accessLevel"`
-	Id          string               `json:"id"`
-	// The team associated with this team member
-	Team PipelineValuesTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipelineTeam `json:"team"`
-}
-
-// GetAccessLevel returns PipelineValuesTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipeline.AccessLevel, and is useful for accessing the field via an interface.
-func (v *PipelineValuesTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipeline) GetAccessLevel() PipelineAccessLevels {
-	return v.AccessLevel
-}
-
-// GetId returns PipelineValuesTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipeline.Id, and is useful for accessing the field via an interface.
-func (v *PipelineValuesTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipeline) GetId() string {
-	return v.Id
-}
-
-// GetTeam returns PipelineValuesTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipeline.Team, and is useful for accessing the field via an interface.
-func (v *PipelineValuesTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipeline) GetTeam() PipelineValuesTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipelineTeam {
-	return v.Team
-}
-
-// PipelineValuesTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipelineTeam includes the requested fields of the GraphQL type Team.
-// The GraphQL type's documentation follows.
-//
-// An organization team
-type PipelineValuesTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipelineTeam struct {
-	// A description of the team
-	Description string `json:"description"`
-	Id          string `json:"id"`
-	// Add new organization members to this team by default
-	IsDefaultTeam bool `json:"isDefaultTeam"`
-	// New organization members will be granted this role on this team
-	DefaultMemberRole string `json:"defaultMemberRole"`
-	// The name of the team
-	Name string `json:"name"`
-	// Whether or not team members can create new pipelines in this team
-	MembersCanCreatePipelines bool `json:"membersCanCreatePipelines"`
-	// The privacy setting for this team
-	Privacy string `json:"privacy"`
-	// The slug of the team
-	Slug string `json:"slug"`
-	// The public UUID for this team
-	Uuid string `json:"uuid"`
-}
-
-// GetDescription returns PipelineValuesTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipelineTeam.Description, and is useful for accessing the field via an interface.
-func (v *PipelineValuesTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipelineTeam) GetDescription() string {
-	return v.Description
-}
-
-// GetId returns PipelineValuesTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipelineTeam.Id, and is useful for accessing the field via an interface.
-func (v *PipelineValuesTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipelineTeam) GetId() string {
-	return v.Id
-}
-
-// GetIsDefaultTeam returns PipelineValuesTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipelineTeam.IsDefaultTeam, and is useful for accessing the field via an interface.
-func (v *PipelineValuesTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipelineTeam) GetIsDefaultTeam() bool {
-	return v.IsDefaultTeam
-}
-
-// GetDefaultMemberRole returns PipelineValuesTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipelineTeam.DefaultMemberRole, and is useful for accessing the field via an interface.
-func (v *PipelineValuesTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipelineTeam) GetDefaultMemberRole() string {
-	return v.DefaultMemberRole
-}
-
-// GetName returns PipelineValuesTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipelineTeam.Name, and is useful for accessing the field via an interface.
-func (v *PipelineValuesTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipelineTeam) GetName() string {
-	return v.Name
-}
-
-// GetMembersCanCreatePipelines returns PipelineValuesTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipelineTeam.MembersCanCreatePipelines, and is useful for accessing the field via an interface.
-func (v *PipelineValuesTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipelineTeam) GetMembersCanCreatePipelines() bool {
-	return v.MembersCanCreatePipelines
-}
-
-// GetPrivacy returns PipelineValuesTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipelineTeam.Privacy, and is useful for accessing the field via an interface.
-func (v *PipelineValuesTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipelineTeam) GetPrivacy() string {
-	return v.Privacy
-}
-
-// GetSlug returns PipelineValuesTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipelineTeam.Slug, and is useful for accessing the field via an interface.
-func (v *PipelineValuesTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipelineTeam) GetSlug() string {
-	return v.Slug
-}
-
-// GetUuid returns PipelineValuesTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipelineTeam.Uuid, and is useful for accessing the field via an interface.
-func (v *PipelineValuesTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipelineTeam) GetUuid() string {
-	return v.Uuid
-}
 
 // The visibility of the pipeline
 type PipelineVisibility string
@@ -1584,18 +1460,6 @@ type __teamPipelineDeleteInput struct {
 
 // GetId returns __teamPipelineDeleteInput.Id, and is useful for accessing the field via an interface.
 func (v *__teamPipelineDeleteInput) GetId() string { return v.Id }
-
-// __teamPipelineUpdateInput is used internally by genqlient
-type __teamPipelineUpdateInput struct {
-	Id          string               `json:"id"`
-	AccessLevel PipelineAccessLevels `json:"accessLevel"`
-}
-
-// GetId returns __teamPipelineUpdateInput.Id, and is useful for accessing the field via an interface.
-func (v *__teamPipelineUpdateInput) GetId() string { return v.Id }
-
-// GetAccessLevel returns __teamPipelineUpdateInput.AccessLevel, and is useful for accessing the field via an interface.
-func (v *__teamPipelineUpdateInput) GetAccessLevel() PipelineAccessLevels { return v.AccessLevel }
 
 // __teamUpdateInput is used internally by genqlient
 type __teamUpdateInput struct {
@@ -2287,11 +2151,6 @@ func (v *createPipelinePipelineCreatePipelineCreatePayloadPipeline) GetTags() []
 	return v.PipelineValues.Tags
 }
 
-// GetTeams returns createPipelinePipelineCreatePipelineCreatePayloadPipeline.Teams, and is useful for accessing the field via an interface.
-func (v *createPipelinePipelineCreatePipelineCreatePayloadPipeline) GetTeams() PipelineValuesTeamsTeamPipelineConnection {
-	return v.PipelineValues.Teams
-}
-
 // GetWebhookURL returns createPipelinePipelineCreatePipelineCreatePayloadPipeline.WebhookURL, and is useful for accessing the field via an interface.
 func (v *createPipelinePipelineCreatePipelineCreatePayloadPipeline) GetWebhookURL() string {
 	return v.PipelineValues.WebhookURL
@@ -2357,8 +2216,6 @@ type __premarshalcreatePipelinePipelineCreatePipelineCreatePayloadPipeline struc
 
 	Tags []PipelineValuesTagsPipelineTag `json:"tags"`
 
-	Teams PipelineValuesTeamsTeamPipelineConnection `json:"teams"`
-
 	WebhookURL string `json:"webhookURL"`
 }
 
@@ -2390,7 +2247,6 @@ func (v *createPipelinePipelineCreatePipelineCreatePayloadPipeline) __premarshal
 	retval.Slug = v.PipelineValues.Slug
 	retval.Steps = v.PipelineValues.Steps
 	retval.Tags = v.PipelineValues.Tags
-	retval.Teams = v.PipelineValues.Teams
 	retval.WebhookURL = v.PipelineValues.WebhookURL
 	return &retval, nil
 }
@@ -3736,6 +3592,7 @@ func (v *getClusterQueuesResponse) GetOrganization() getClusterQueuesOrganizatio
 // getNodeNodeJobTypeWait
 // getNodeNodeNotificationServiceSlack
 // getNodeNodeOrganization
+// getNodeNodeOrganizationBanner
 // getNodeNodeOrganizationInvitation
 // getNodeNodeOrganizationMember
 // getNodeNodePipeline
@@ -3794,6 +3651,7 @@ func (v *getNodeNodeJobTypeTrigger) implementsGraphQLInterfacegetNodeNode()     
 func (v *getNodeNodeJobTypeWait) implementsGraphQLInterfacegetNodeNode()                    {}
 func (v *getNodeNodeNotificationServiceSlack) implementsGraphQLInterfacegetNodeNode()       {}
 func (v *getNodeNodeOrganization) implementsGraphQLInterfacegetNodeNode()                   {}
+func (v *getNodeNodeOrganizationBanner) implementsGraphQLInterfacegetNodeNode()             {}
 func (v *getNodeNodeOrganizationInvitation) implementsGraphQLInterfacegetNodeNode()         {}
 func (v *getNodeNodeOrganizationMember) implementsGraphQLInterfacegetNodeNode()             {}
 func (v *getNodeNodePipeline) implementsGraphQLInterfacegetNodeNode()                       {}
@@ -3923,6 +3781,9 @@ func __unmarshalgetNodeNode(b []byte, v *getNodeNode) error {
 		return json.Unmarshal(b, *v)
 	case "Organization":
 		*v = new(getNodeNodeOrganization)
+		return json.Unmarshal(b, *v)
+	case "OrganizationBanner":
+		*v = new(getNodeNodeOrganizationBanner)
 		return json.Unmarshal(b, *v)
 	case "OrganizationInvitation":
 		*v = new(getNodeNodeOrganizationInvitation)
@@ -4251,6 +4112,14 @@ func __marshalgetNodeNode(v *getNodeNode) ([]byte, error) {
 		result := struct {
 			TypeName string `json:"__typename"`
 			*getNodeNodeOrganization
+		}{typename, v}
+		return json.Marshal(result)
+	case *getNodeNodeOrganizationBanner:
+		typename = "OrganizationBanner"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getNodeNodeOrganizationBanner
 		}{typename, v}
 		return json.Marshal(result)
 	case *getNodeNodeOrganizationInvitation:
@@ -4847,6 +4716,17 @@ type getNodeNodeOrganization struct {
 // GetTypename returns getNodeNodeOrganization.Typename, and is useful for accessing the field via an interface.
 func (v *getNodeNodeOrganization) GetTypename() string { return v.Typename }
 
+// getNodeNodeOrganizationBanner includes the requested fields of the GraphQL type OrganizationBanner.
+// The GraphQL type's documentation follows.
+//
+// System banner of an organization
+type getNodeNodeOrganizationBanner struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getNodeNodeOrganizationBanner.Typename, and is useful for accessing the field via an interface.
+func (v *getNodeNodeOrganizationBanner) GetTypename() string { return v.Typename }
+
 // getNodeNodeOrganizationInvitation includes the requested fields of the GraphQL type OrganizationInvitation.
 // The GraphQL type's documentation follows.
 //
@@ -4950,11 +4830,6 @@ func (v *getNodeNodePipeline) GetSteps() PipelineValuesStepsPipelineSteps {
 // GetTags returns getNodeNodePipeline.Tags, and is useful for accessing the field via an interface.
 func (v *getNodeNodePipeline) GetTags() []PipelineValuesTagsPipelineTag { return v.PipelineValues.Tags }
 
-// GetTeams returns getNodeNodePipeline.Teams, and is useful for accessing the field via an interface.
-func (v *getNodeNodePipeline) GetTeams() PipelineValuesTeamsTeamPipelineConnection {
-	return v.PipelineValues.Teams
-}
-
 // GetWebhookURL returns getNodeNodePipeline.WebhookURL, and is useful for accessing the field via an interface.
 func (v *getNodeNodePipeline) GetWebhookURL() string { return v.PipelineValues.WebhookURL }
 
@@ -5020,8 +4895,6 @@ type __premarshalgetNodeNodePipeline struct {
 
 	Tags []PipelineValuesTagsPipelineTag `json:"tags"`
 
-	Teams PipelineValuesTeamsTeamPipelineConnection `json:"teams"`
-
 	WebhookURL string `json:"webhookURL"`
 }
 
@@ -5054,7 +4927,6 @@ func (v *getNodeNodePipeline) __premarshalJSON() (*__premarshalgetNodeNodePipeli
 	retval.Slug = v.PipelineValues.Slug
 	retval.Steps = v.PipelineValues.Steps
 	retval.Tags = v.PipelineValues.Tags
-	retval.Teams = v.PipelineValues.Teams
 	retval.WebhookURL = v.PipelineValues.WebhookURL
 	return &retval, nil
 }
@@ -5717,11 +5589,6 @@ func (v *getPipelinePipeline) GetSteps() PipelineValuesStepsPipelineSteps {
 // GetTags returns getPipelinePipeline.Tags, and is useful for accessing the field via an interface.
 func (v *getPipelinePipeline) GetTags() []PipelineValuesTagsPipelineTag { return v.PipelineValues.Tags }
 
-// GetTeams returns getPipelinePipeline.Teams, and is useful for accessing the field via an interface.
-func (v *getPipelinePipeline) GetTeams() PipelineValuesTeamsTeamPipelineConnection {
-	return v.PipelineValues.Teams
-}
-
 // GetWebhookURL returns getPipelinePipeline.WebhookURL, and is useful for accessing the field via an interface.
 func (v *getPipelinePipeline) GetWebhookURL() string { return v.PipelineValues.WebhookURL }
 
@@ -5785,8 +5652,6 @@ type __premarshalgetPipelinePipeline struct {
 
 	Tags []PipelineValuesTagsPipelineTag `json:"tags"`
 
-	Teams PipelineValuesTeamsTeamPipelineConnection `json:"teams"`
-
 	WebhookURL string `json:"webhookURL"`
 }
 
@@ -5818,7 +5683,6 @@ func (v *getPipelinePipeline) __premarshalJSON() (*__premarshalgetPipelinePipeli
 	retval.Slug = v.PipelineValues.Slug
 	retval.Steps = v.PipelineValues.Steps
 	retval.Tags = v.PipelineValues.Tags
-	retval.Teams = v.PipelineValues.Teams
 	retval.WebhookURL = v.PipelineValues.WebhookURL
 	return &retval, nil
 }
@@ -6008,6 +5872,7 @@ func (v *getPipelineScheduleBySlugResponse) GetPipelineSchedule() getPipelineSch
 // getPipelineScheduleNodeJobTypeWait
 // getPipelineScheduleNodeNotificationServiceSlack
 // getPipelineScheduleNodeOrganization
+// getPipelineScheduleNodeOrganizationBanner
 // getPipelineScheduleNodeOrganizationInvitation
 // getPipelineScheduleNodeOrganizationMember
 // getPipelineScheduleNodePipeline
@@ -6081,6 +5946,8 @@ func (v *getPipelineScheduleNodeJobTypeWait) implementsGraphQLInterfacegetPipeli
 func (v *getPipelineScheduleNodeNotificationServiceSlack) implementsGraphQLInterfacegetPipelineScheduleNode() {
 }
 func (v *getPipelineScheduleNodeOrganization) implementsGraphQLInterfacegetPipelineScheduleNode() {}
+func (v *getPipelineScheduleNodeOrganizationBanner) implementsGraphQLInterfacegetPipelineScheduleNode() {
+}
 func (v *getPipelineScheduleNodeOrganizationInvitation) implementsGraphQLInterfacegetPipelineScheduleNode() {
 }
 func (v *getPipelineScheduleNodeOrganizationMember) implementsGraphQLInterfacegetPipelineScheduleNode() {
@@ -6217,6 +6084,9 @@ func __unmarshalgetPipelineScheduleNode(b []byte, v *getPipelineScheduleNode) er
 		return json.Unmarshal(b, *v)
 	case "Organization":
 		*v = new(getPipelineScheduleNodeOrganization)
+		return json.Unmarshal(b, *v)
+	case "OrganizationBanner":
+		*v = new(getPipelineScheduleNodeOrganizationBanner)
 		return json.Unmarshal(b, *v)
 	case "OrganizationInvitation":
 		*v = new(getPipelineScheduleNodeOrganizationInvitation)
@@ -6541,6 +6411,14 @@ func __marshalgetPipelineScheduleNode(v *getPipelineScheduleNode) ([]byte, error
 		result := struct {
 			TypeName string `json:"__typename"`
 			*getPipelineScheduleNodeOrganization
+		}{typename, v}
+		return json.Marshal(result)
+	case *getPipelineScheduleNodeOrganizationBanner:
+		typename = "OrganizationBanner"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getPipelineScheduleNodeOrganizationBanner
 		}{typename, v}
 		return json.Marshal(result)
 	case *getPipelineScheduleNodeOrganizationInvitation:
@@ -7043,6 +6921,17 @@ type getPipelineScheduleNodeOrganization struct {
 
 // GetTypename returns getPipelineScheduleNodeOrganization.Typename, and is useful for accessing the field via an interface.
 func (v *getPipelineScheduleNodeOrganization) GetTypename() string { return v.Typename }
+
+// getPipelineScheduleNodeOrganizationBanner includes the requested fields of the GraphQL type OrganizationBanner.
+// The GraphQL type's documentation follows.
+//
+// System banner of an organization
+type getPipelineScheduleNodeOrganizationBanner struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getPipelineScheduleNodeOrganizationBanner.Typename, and is useful for accessing the field via an interface.
+func (v *getPipelineScheduleNodeOrganizationBanner) GetTypename() string { return v.Typename }
 
 // getPipelineScheduleNodeOrganizationInvitation includes the requested fields of the GraphQL type OrganizationInvitation.
 // The GraphQL type's documentation follows.
@@ -7897,6 +7786,7 @@ func (v *getTestSuiteSuiteJobTypeWait) GetTypename() string { return v.Typename 
 // getTestSuiteSuiteJobTypeWait
 // getTestSuiteSuiteNotificationServiceSlack
 // getTestSuiteSuiteOrganization
+// getTestSuiteSuiteOrganizationBanner
 // getTestSuiteSuiteOrganizationInvitation
 // getTestSuiteSuiteOrganizationMember
 // getTestSuiteSuitePipeline
@@ -7958,6 +7848,7 @@ func (v *getTestSuiteSuiteJobTypeWait) implementsGraphQLInterfacegetTestSuiteSui
 func (v *getTestSuiteSuiteNotificationServiceSlack) implementsGraphQLInterfacegetTestSuiteSuiteNode() {
 }
 func (v *getTestSuiteSuiteOrganization) implementsGraphQLInterfacegetTestSuiteSuiteNode()           {}
+func (v *getTestSuiteSuiteOrganizationBanner) implementsGraphQLInterfacegetTestSuiteSuiteNode()     {}
 func (v *getTestSuiteSuiteOrganizationInvitation) implementsGraphQLInterfacegetTestSuiteSuiteNode() {}
 func (v *getTestSuiteSuiteOrganizationMember) implementsGraphQLInterfacegetTestSuiteSuiteNode()     {}
 func (v *getTestSuiteSuitePipeline) implementsGraphQLInterfacegetTestSuiteSuiteNode()               {}
@@ -8088,6 +7979,9 @@ func __unmarshalgetTestSuiteSuiteNode(b []byte, v *getTestSuiteSuiteNode) error 
 		return json.Unmarshal(b, *v)
 	case "Organization":
 		*v = new(getTestSuiteSuiteOrganization)
+		return json.Unmarshal(b, *v)
+	case "OrganizationBanner":
+		*v = new(getTestSuiteSuiteOrganizationBanner)
 		return json.Unmarshal(b, *v)
 	case "OrganizationInvitation":
 		*v = new(getTestSuiteSuiteOrganizationInvitation)
@@ -8414,6 +8308,14 @@ func __marshalgetTestSuiteSuiteNode(v *getTestSuiteSuiteNode) ([]byte, error) {
 			*getTestSuiteSuiteOrganization
 		}{typename, v}
 		return json.Marshal(result)
+	case *getTestSuiteSuiteOrganizationBanner:
+		typename = "OrganizationBanner"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getTestSuiteSuiteOrganizationBanner
+		}{typename, v}
+		return json.Marshal(result)
 	case *getTestSuiteSuiteOrganizationInvitation:
 		typename = "OrganizationInvitation"
 
@@ -8571,6 +8473,17 @@ type getTestSuiteSuiteOrganization struct {
 
 // GetTypename returns getTestSuiteSuiteOrganization.Typename, and is useful for accessing the field via an interface.
 func (v *getTestSuiteSuiteOrganization) GetTypename() string { return v.Typename }
+
+// getTestSuiteSuiteOrganizationBanner includes the requested fields of the GraphQL type OrganizationBanner.
+// The GraphQL type's documentation follows.
+//
+// System banner of an organization
+type getTestSuiteSuiteOrganizationBanner struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getTestSuiteSuiteOrganizationBanner.Typename, and is useful for accessing the field via an interface.
+func (v *getTestSuiteSuiteOrganizationBanner) GetTypename() string { return v.Typename }
 
 // getTestSuiteSuiteOrganizationInvitation includes the requested fields of the GraphQL type OrganizationInvitation.
 // The GraphQL type's documentation follows.
@@ -9164,43 +9077,6 @@ func (v *teamPipelineDeleteTeamPipelineDeleteTeamPipelineDeletePayload) GetDelet
 	return v.DeletedTeamPipelineID
 }
 
-// teamPipelineUpdateResponse is returned by teamPipelineUpdate on success.
-type teamPipelineUpdateResponse struct {
-	// Update a pipeline's access level within a team.
-	TeamPipelineUpdate teamPipelineUpdateTeamPipelineUpdateTeamPipelineUpdatePayload `json:"teamPipelineUpdate"`
-}
-
-// GetTeamPipelineUpdate returns teamPipelineUpdateResponse.TeamPipelineUpdate, and is useful for accessing the field via an interface.
-func (v *teamPipelineUpdateResponse) GetTeamPipelineUpdate() teamPipelineUpdateTeamPipelineUpdateTeamPipelineUpdatePayload {
-	return v.TeamPipelineUpdate
-}
-
-// teamPipelineUpdateTeamPipelineUpdateTeamPipelineUpdatePayload includes the requested fields of the GraphQL type TeamPipelineUpdatePayload.
-// The GraphQL type's documentation follows.
-//
-// Autogenerated return type of TeamPipelineUpdate.
-type teamPipelineUpdateTeamPipelineUpdateTeamPipelineUpdatePayload struct {
-	TeamPipeline teamPipelineUpdateTeamPipelineUpdateTeamPipelineUpdatePayloadTeamPipeline `json:"teamPipeline"`
-}
-
-// GetTeamPipeline returns teamPipelineUpdateTeamPipelineUpdateTeamPipelineUpdatePayload.TeamPipeline, and is useful for accessing the field via an interface.
-func (v *teamPipelineUpdateTeamPipelineUpdateTeamPipelineUpdatePayload) GetTeamPipeline() teamPipelineUpdateTeamPipelineUpdateTeamPipelineUpdatePayloadTeamPipeline {
-	return v.TeamPipeline
-}
-
-// teamPipelineUpdateTeamPipelineUpdateTeamPipelineUpdatePayloadTeamPipeline includes the requested fields of the GraphQL type TeamPipeline.
-// The GraphQL type's documentation follows.
-//
-// An pipeline that's been assigned to a team
-type teamPipelineUpdateTeamPipelineUpdateTeamPipelineUpdatePayloadTeamPipeline struct {
-	Id string `json:"id"`
-}
-
-// GetId returns teamPipelineUpdateTeamPipelineUpdateTeamPipelineUpdatePayloadTeamPipeline.Id, and is useful for accessing the field via an interface.
-func (v *teamPipelineUpdateTeamPipelineUpdateTeamPipelineUpdatePayloadTeamPipeline) GetId() string {
-	return v.Id
-}
-
 // teamUpdateResponse is returned by teamUpdate on success.
 type teamUpdateResponse struct {
 	// Change the settings for a team.
@@ -9782,11 +9658,6 @@ func (v *updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline) GetTags() []
 	return v.PipelineValues.Tags
 }
 
-// GetTeams returns updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline.Teams, and is useful for accessing the field via an interface.
-func (v *updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline) GetTeams() PipelineValuesTeamsTeamPipelineConnection {
-	return v.PipelineValues.Teams
-}
-
 // GetWebhookURL returns updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline.WebhookURL, and is useful for accessing the field via an interface.
 func (v *updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline) GetWebhookURL() string {
 	return v.PipelineValues.WebhookURL
@@ -9852,8 +9723,6 @@ type __premarshalupdatePipelinePipelineUpdatePipelineUpdatePayloadPipeline struc
 
 	Tags []PipelineValuesTagsPipelineTag `json:"tags"`
 
-	Teams PipelineValuesTeamsTeamPipelineConnection `json:"teams"`
-
 	WebhookURL string `json:"webhookURL"`
 }
 
@@ -9885,7 +9754,6 @@ func (v *updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline) __premarshal
 	retval.Slug = v.PipelineValues.Slug
 	retval.Steps = v.PipelineValues.Steps
 	retval.Tags = v.PipelineValues.Tags
-	retval.Teams = v.PipelineValues.Teams
 	retval.WebhookURL = v.PipelineValues.WebhookURL
 	return &retval, nil
 }
@@ -10648,25 +10516,6 @@ fragment PipelineValues on Pipeline {
 	}
 	tags {
 		label
-	}
-	teams(first: 50) {
-		edges {
-			node {
-				accessLevel
-				id
-				team {
-					description
-					id
-					isDefaultTeam
-					defaultMemberRole
-					name
-					membersCanCreatePipelines
-					privacy
-					slug
-					uuid
-				}
-			}
-		}
 	}
 	webhookURL
 }
@@ -11446,25 +11295,6 @@ fragment PipelineValues on Pipeline {
 	tags {
 		label
 	}
-	teams(first: 50) {
-		edges {
-			node {
-				accessLevel
-				id
-				team {
-					description
-					id
-					isDefaultTeam
-					defaultMemberRole
-					name
-					membersCanCreatePipelines
-					privacy
-					slug
-					uuid
-				}
-			}
-		}
-	}
 	webhookURL
 }
 fragment TeamMemberValues on TeamMember {
@@ -11616,25 +11446,6 @@ fragment PipelineValues on Pipeline {
 	}
 	tags {
 		label
-	}
-	teams(first: 50) {
-		edges {
-			node {
-				accessLevel
-				id
-				team {
-					description
-					id
-					isDefaultTeam
-					defaultMemberRole
-					name
-					membersCanCreatePipelines
-					privacy
-					slug
-					uuid
-				}
-			}
-		}
 	}
 	webhookURL
 }
@@ -12114,45 +11925,6 @@ func teamPipelineDelete(
 	return &data, err
 }
 
-// The query or mutation executed by teamPipelineUpdate.
-const teamPipelineUpdate_Operation = `
-mutation teamPipelineUpdate ($id: ID!, $accessLevel: PipelineAccessLevels!) {
-	teamPipelineUpdate(input: {id:$id,accessLevel:$accessLevel}) {
-		teamPipeline {
-			id
-		}
-	}
-}
-`
-
-func teamPipelineUpdate(
-	ctx context.Context,
-	client graphql.Client,
-	id string,
-	accessLevel PipelineAccessLevels,
-) (*teamPipelineUpdateResponse, error) {
-	req := &graphql.Request{
-		OpName: "teamPipelineUpdate",
-		Query:  teamPipelineUpdate_Operation,
-		Variables: &__teamPipelineUpdateInput{
-			Id:          id,
-			AccessLevel: accessLevel,
-		},
-	}
-	var err error
-
-	var data teamPipelineUpdateResponse
-	resp := &graphql.Response{Data: &data}
-
-	err = client.MakeRequest(
-		ctx,
-		req,
-		resp,
-	)
-
-	return &data, err
-}
-
 // The query or mutation executed by teamUpdate.
 const teamUpdate_Operation = `
 mutation teamUpdate ($id: ID!, $name: String!, $description: String, $privacy: TeamPrivacy!, $isDefaultTeam: Boolean!, $defaultMemberRole: TeamMemberRole!, $membersCanCreatePipelines: Boolean) {
@@ -12404,25 +12176,6 @@ fragment PipelineValues on Pipeline {
 	}
 	tags {
 		label
-	}
-	teams(first: 50) {
-		edges {
-			node {
-				accessLevel
-				id
-				team {
-					description
-					id
-					isDefaultTeam
-					defaultMemberRole
-					name
-					membersCanCreatePipelines
-					privacy
-					slug
-					uuid
-				}
-			}
-		}
 	}
 	webhookURL
 }
