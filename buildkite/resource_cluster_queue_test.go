@@ -62,6 +62,14 @@ func TestAccBuildkiteClusterQueueResource(t *testing.T) {
 					Config: configBasic(clusterName, queueKey, queueDesc),
 					Check:  check,
 				},
+				{
+					RefreshState: true,
+					PlanOnly:     true,
+					Check: resource.ComposeAggregateTestCheckFunc(
+						resource.TestCheckResourceAttrSet("buildkite_cluster_queue.foobar", "key"),
+						resource.TestCheckResourceAttrSet("buildkite_cluster_queue.foobar", "description"),
+					),
+				},
 			},
 		})
 	})
