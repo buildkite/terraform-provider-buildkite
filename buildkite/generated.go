@@ -4626,10 +4626,17 @@ func (v *getNodeNodeChangelog) GetTypename() string { return v.Typename }
 type getNodeNodeCluster struct {
 	Typename      string `json:"__typename"`
 	ClusterFields `json:"-"`
+	// The default queue that agents connecting to the cluster without specifying a queue will accept jobs from
+	DefaultQueue getNodeNodeClusterDefaultQueueClusterQueue `json:"defaultQueue"`
 }
 
 // GetTypename returns getNodeNodeCluster.Typename, and is useful for accessing the field via an interface.
 func (v *getNodeNodeCluster) GetTypename() string { return v.Typename }
+
+// GetDefaultQueue returns getNodeNodeCluster.DefaultQueue, and is useful for accessing the field via an interface.
+func (v *getNodeNodeCluster) GetDefaultQueue() getNodeNodeClusterDefaultQueueClusterQueue {
+	return v.DefaultQueue
+}
 
 // GetId returns getNodeNodeCluster.Id, and is useful for accessing the field via an interface.
 func (v *getNodeNodeCluster) GetId() string { return v.ClusterFields.Id }
@@ -4677,6 +4684,8 @@ func (v *getNodeNodeCluster) UnmarshalJSON(b []byte) error {
 type __premarshalgetNodeNodeCluster struct {
 	Typename string `json:"__typename"`
 
+	DefaultQueue getNodeNodeClusterDefaultQueueClusterQueue `json:"defaultQueue"`
+
 	Id string `json:"id"`
 
 	Uuid string `json:"uuid"`
@@ -4702,6 +4711,7 @@ func (v *getNodeNodeCluster) __premarshalJSON() (*__premarshalgetNodeNodeCluster
 	var retval __premarshalgetNodeNodeCluster
 
 	retval.Typename = v.Typename
+	retval.DefaultQueue = v.DefaultQueue
 	retval.Id = v.ClusterFields.Id
 	retval.Uuid = v.ClusterFields.Uuid
 	retval.Name = v.ClusterFields.Name
@@ -4710,6 +4720,14 @@ func (v *getNodeNodeCluster) __premarshalJSON() (*__premarshalgetNodeNodeCluster
 	retval.Color = v.ClusterFields.Color
 	return &retval, nil
 }
+
+// getNodeNodeClusterDefaultQueueClusterQueue includes the requested fields of the GraphQL type ClusterQueue.
+type getNodeNodeClusterDefaultQueueClusterQueue struct {
+	Id string `json:"id"`
+}
+
+// GetId returns getNodeNodeClusterDefaultQueueClusterQueue.Id, and is useful for accessing the field via an interface.
+func (v *getNodeNodeClusterDefaultQueueClusterQueue) GetId() string { return v.Id }
 
 // getNodeNodeClusterQueue includes the requested fields of the GraphQL type ClusterQueue.
 type getNodeNodeClusterQueue struct {
@@ -11537,6 +11555,9 @@ query getNode ($id: ID!) {
 		}
 		... on Cluster {
 			... ClusterFields
+			defaultQueue {
+				id
+			}
 		}
 	}
 }

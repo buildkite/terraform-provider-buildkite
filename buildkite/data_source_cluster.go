@@ -70,6 +70,7 @@ func (c *clusterDatasource) Read(ctx context.Context, req datasource.ReadRequest
 					state.ID = types.StringValue(cluster.Node.Id)
 					state.Name = types.StringValue(cluster.Node.Name)
 					state.UUID = types.StringValue(cluster.Node.Uuid)
+					state.DefaultQueueID = types.StringPointerValue(&cluster.Node.DefaultQueue.Id)
 					break
 				}
 			}
@@ -122,6 +123,10 @@ func (*clusterDatasource) Schema(ctx context.Context, req datasource.SchemaReque
 			"color": schema.StringAttribute{
 				Computed:            true,
 				MarkdownDescription: "The color of the cluster.",
+			},
+			"default_queue_id": schema.StringAttribute{
+				Computed:            true,
+				MarkdownDescription: "The default queue ID of the cluster",
 			},
 		},
 	}

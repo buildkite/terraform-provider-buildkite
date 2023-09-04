@@ -19,6 +19,9 @@ query getNode(
         }
         ... on Cluster {
             ... ClusterFields
+            defaultQueue {
+                id
+            }
         }
     }
 }
