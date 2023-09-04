@@ -7,36 +7,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/cli/go-gh/v2/pkg/repository"
 	"github.com/shurcooL/graphql"
 )
-
-type RepositoryProvider string
-
-const (
-	RepositoryProviderGitHub    RepositoryProvider = "GITHUB"
-	RepositoryProviderGitLab    RepositoryProvider = "GITLAB"
-	RepositoryProviderBitbucket RepositoryProvider = "BITBUCKET"
-	RepositoryProviderPrivate   RepositoryProvider = "PRIVATE"
-)
-
-func findRepositoryProvider(repo string) (RepositoryProvider, error) {
-	r, err := repository.Parse(repo)
-	if err != nil {
-		return "", err
-	}
-
-	switch r.Host {
-	case "github.com":
-		return RepositoryProviderGitHub, nil
-	case "bitbucket.org":
-		return RepositoryProviderBitbucket, nil
-	case "gitlab.com":
-		return RepositoryProviderGitLab, nil
-	default:
-		return RepositoryProviderPrivate, nil
-	}
-}
 
 // GetOrganizationID retrieves the Buildkite organization ID associated with the supplied slug
 func GetOrganizationID(slug string, client *graphql.Client) (string, error) {
