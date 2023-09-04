@@ -13,6 +13,8 @@ All notable changes to this project will be documented in this file.
 - SUP-1322: Team member resource retries [[PR #381](https://github.com/buildkite/terraform-provider-buildkite/pull/381)] @james2791
 - SUP-1402: Agent token resource retries [[PR #382](https://github.com/buildkite/terraform-provider-buildkite/pull/382)] @james2791
 - SUP-1399: Add retry to pipeline team resource [[PR #384](https://github.com/buildkite/terraform-provider-buildkite/pull/384)] @lizrabuya
+- SUP-1361: Add timeouts to pipeline resource api[[PR #385](https://github.com/buildkite/terraform-provider-buildkite/pull/385)] @lizrabuya
+- SUP-1405: Fix dangling team resources created in tests [[PR #389](https://github.com/buildkite/terraform-provider-buildkite/pull/389)] @lizrabuya
 
 ### Changes
 
