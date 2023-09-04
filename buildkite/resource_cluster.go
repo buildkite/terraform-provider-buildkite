@@ -78,9 +78,6 @@ func (c *clusterResource) Schema(ctx context.Context, req resource.SchemaRequest
 				MarkdownDescription: "A color representation of the Cluster. Accepts hex codes, eg #BADA55.",
 			},
 		},
-		Blocks: map[string]resource_schema.Block{
-			"timeouts": timeouts.BlockAll(ctx),
-		},
 	}
 }
 
