@@ -566,7 +566,7 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 							Computed: true,
 							Optional: true,
 							Validators: []validator.String{
-								stringvalidation.WhenBool(path.MatchRoot("provider_settings").AtName("pull_request_branch_filter_enabled"), true),
+								stringvalidation.WhenBool(path.MatchRoot("provider_settings").AtAnyListIndex().AtName("pull_request_branch_filter_enabled"), true),
 							},
 						},
 						"skip_builds_for_existing_commits": schema.BoolAttribute{
