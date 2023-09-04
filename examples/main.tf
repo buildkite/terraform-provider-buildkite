@@ -48,7 +48,7 @@ resource "buildkite_pipeline_schedule" "weekly" {
   label       = "Weekly build from default branch"
   cronline    = "@midnight"
   branch      = "default"
-  message     = "Weekly scheduled build" 
+  message     = "Weekly scheduled build"
 }
 
 resource "buildkite_pipeline_team" "developers" {
@@ -63,6 +63,13 @@ data "buildkite_pipeline" "data2" {
 
 resource "buildkite_agent_token" "fleet" {
   description = "token used by build fleet"
+}
+
+resource "buildkite_cluster" "my_awesome_cluster" {
+  name = "best cluster ever"
+  description = "This cluster can do it all 😍"
+  color = "#BADA55"
+  emoji = ":muscle:"
 }
 
 resource "buildkite_cluster_queue" "queue1" {
