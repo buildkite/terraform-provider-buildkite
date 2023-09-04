@@ -19,12 +19,12 @@ type clusterResource struct {
 }
 
 type clusterResourceModel struct {
-	ID          types.String   `tfsdk:"id"`
-	Name        types.String   `tfsdk:"name"`
-	Description types.String   `tfsdk:"description"`
-	Emoji       types.String   `tfsdk:"emoji"`
-	Color       types.String   `tfsdk:"color"`
-	UUID        types.String   `tfsdk:"uuid"`
+	ID          types.String `tfsdk:"id"`
+	Name        types.String `tfsdk:"name"`
+	Description types.String `tfsdk:"description"`
+	Emoji       types.String `tfsdk:"emoji"`
+	Color       types.String `tfsdk:"color"`
+	UUID        types.String `tfsdk:"uuid"`
 }
 
 func newClusterResource() resource.Resource {

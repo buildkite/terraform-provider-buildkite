@@ -48,7 +48,7 @@ resource "buildkite_pipeline_schedule" "weekly" {
   label       = "Weekly build from default branch"
   cronline    = "@midnight"
   branch      = "default"
-  message     = "Weekly scheduled build" 
+  message     = "Weekly scheduled build"
 }
 
 resource "buildkite_pipeline_team" "developers" {
@@ -70,9 +70,6 @@ resource "buildkite_cluster" "my_awesome_cluster" {
   description = "This cluster can do it all 😍"
   color = "#BADA55"
   emoji = ":muscle:"
-  timeouts {
-    create = "20m"
-  }
 }
 
 resource "buildkite_cluster_queue" "queue1" {
