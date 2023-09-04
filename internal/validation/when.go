@@ -25,6 +25,11 @@ func (when whenValidator) MarkdownDescription(context.Context) string {
 
 // ValidateBool adds a diagnostic error if the configured attribute is not set the the required value
 func (when whenValidator) ValidateBool(ctx context.Context, req validator.BoolRequest, resp *validator.BoolResponse) {
+	// if the value is null or unknown then nothing to do
+	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
+		return
+	}
+
 	// get the value from config
 	path := path.Root(when.attr)
 	var val string
