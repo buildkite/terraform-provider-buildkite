@@ -7,8 +7,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/cli/go-gh/v2/pkg/repository"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/shurcooL/graphql"
 )
 
