@@ -9,6 +9,7 @@ All notable changes to this project will be documented in this file.
 - SUP-1374 Add timeout to provider and cluster datasource [[PR #363](https://github.com/buildkite/terraform-provider-buildkite/pull/363)] @jradtilbrook
 - SUP-804: Retry pipeline_schedule api requests[[PR #380](https://github.com/buildkite/terraform-provider-buildkite/pull/380)] @lizrabuya
 - SUP-1374 Remove timeout context [[PR #378](https://github.com/buildkite/terraform-provider-buildkite/pull/378)] @jradtilbrook
+- SUP-1400: Test suite and test suite team (team suite) resource retries [[PR #383](https://github.com/buildkite/terraform-provider-buildkite/pull/383)] @james2791
 - SUP-1322: Team member resource retries [[PR #381](https://github.com/buildkite/terraform-provider-buildkite/pull/381)] @james2791
 - SUP-1402: Agent token resource retries [[PR #382](https://github.com/buildkite/terraform-provider-buildkite/pull/382)] @james2791
 - SUP-1399: Add retry to pipeline team resource [[PR #384](https://github.com/buildkite/terraform-provider-buildkite/pull/384)] @lizrabuya

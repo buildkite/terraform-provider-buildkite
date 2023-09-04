@@ -143,7 +143,7 @@ func (client *Client) makeRequest(ctx context.Context, method string, path strin
 		return fmt.Errorf("failed to send request: %w", err)
 	}
 	if resp.StatusCode >= 400 {
-		return fmt.Errorf("Buildkite API request failed: %s %s (status: %d)", method, url, resp.StatusCode)
+		return fmt.Errorf("Buildkite API request failed: %s %s (returned error %d)", method, url, resp.StatusCode)
 	} else if resp.StatusCode == 204 {
 		return nil
 	}
