@@ -23,7 +23,6 @@ resource "buildkite_cluster" "linux" {
 * `description` - (Optional) This is a description for the cluster, this may describe the usage for it, the region, or something else which would help identify the Cluster's purpose.
 * `emoji` - (Optional) An emoji to use with the Cluster, this can either be set using `:buildkite:` notation, or with the emoji itself, such as 😎.
 * `color` - (Optional) A color to associate with the Cluster. Perhaps a team related color, or one related to an environment. This is set using hex value, such as `#BADA55`.
-* `timeouts` - (Optional) A `block` (see above) for timeout values. The default is 60s (1m).
 
 ## Attribute Reference
 
