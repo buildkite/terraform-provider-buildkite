@@ -24,9 +24,6 @@ func TestAccBuildkiteClusterResource(t *testing.T) {
 
 		resource "buildkite_cluster" "foo" {
 			name = "%s_test_cluster"
-			timeouts {
-				create = "1m"
-			}
 		}
 		`, name)
 	}
