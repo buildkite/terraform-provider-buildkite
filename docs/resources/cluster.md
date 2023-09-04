@@ -27,7 +27,7 @@ resource "buildkite_cluster" "linux" {
 * `uuid` - The UUID created with the Cluster.
 
 
-## import
+## Import
 Clusters can be imported using their `ID`, this can be found in the Clusters's `Settings` page, e.g.
 
 ```shell
