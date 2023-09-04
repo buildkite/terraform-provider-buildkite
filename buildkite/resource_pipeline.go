@@ -7,7 +7,11 @@ import (
 	"time"
 	"unsafe"
 
+	"github.com/buildkite/terraform-provider-buildkite/internal/boolvalidation"
+	"github.com/buildkite/terraform-provider-buildkite/internal/pipelinevalidation"
 	custom_modifier "github.com/buildkite/terraform-provider-buildkite/internal/planmodifier"
+	"github.com/buildkite/terraform-provider-buildkite/internal/stringvalidation"
+	"github.com/hashicorp/terraform-plugin-framework-validators/boolvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -533,6 +537,7 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 							Computed: true,
 							Optional: true,
 							Validators: []validator.String{
+								pipelinevalidation.WhenRepositoryProviderIs(pipelinevalidation.RepositoryProviderGitHub),
 								stringvalidator.OneOf("code", "deployment", "fork", "none"),
 							},
 						},
@@ -540,77 +545,154 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 							Optional: true,
 							Computed: true,
 							Default:  booldefault.StaticBool(true),
+							Validators: []validator.Bool{
+								boolvalidator.Any(
+									pipelinevalidation.WhenRepositoryProviderIs(pipelinevalidation.RepositoryProviderBitbucket),
+									boolvalidator.All(
+										pipelinevalidation.WhenRepositoryProviderIs(pipelinevalidation.RepositoryProviderGitHub),
+										boolvalidation.WhenString(path.MatchRoot("provider_settings").AtAnyListIndex().AtName("trigger_mode"), "code"),
+									),
+								),
+							},
 						},
 						"pull_request_branch_filter_enabled": schema.BoolAttribute{
 							Computed: true,
 							Optional: true,
+							Validators: []validator.Bool{
+								boolvalidation.WhenBool(path.MatchRoot("provider_settings").AtAnyListIndex().AtName("build_pull_requests"), true),
+							},
 						},
 						"pull_request_branch_filter_configuration": schema.StringAttribute{
 							Computed: true,
 							Optional: true,
+							Validators: []validator.String{
+								stringvalidation.WhenBool(path.MatchRoot("provider_settings").AtName("pull_request_branch_filter_enabled"), true),
+							},
 						},
 						"skip_builds_for_existing_commits": schema.BoolAttribute{
 							Optional: true,
 							Computed: true,
+							Validators: []validator.Bool{
+								pipelinevalidation.WhenRepositoryProviderIs(pipelinevalidation.RepositoryProviderGitHub),
+							},
 						},
 						"skip_pull_request_builds_for_existing_commits": schema.BoolAttribute{
 							Optional: true,
 							Computed: true,
 							Default:  booldefault.StaticBool(true),
+							Validators: []validator.Bool{
+								boolvalidation.WhenBool(path.MatchRoot("provider_settings").AtAnyListIndex().AtName("build_pull_requests"), true),
+							},
 						},
 						"build_pull_request_ready_for_review": schema.BoolAttribute{
 							Computed: true,
 							Optional: true,
+							Validators: []validator.Bool{
+								pipelinevalidation.WhenRepositoryProviderIs(pipelinevalidation.RepositoryProviderGitHub),
+								boolvalidation.WhenString(path.MatchRoot("provider_settings").AtAnyListIndex().AtName("trigger_mode"), "code"),
+								boolvalidation.WhenBool(path.MatchRoot("provider_settings").AtAnyListIndex().AtName("build_pull_requests"), true),
+							},
 						},
 						"build_pull_request_labels_changed": schema.BoolAttribute{
 							Computed: true,
 							Optional: true,
+							Validators: []validator.Bool{
+								pipelinevalidation.WhenRepositoryProviderIs(pipelinevalidation.RepositoryProviderGitHub),
+								boolvalidation.WhenString(path.MatchRoot("provider_settings").AtAnyListIndex().AtName("trigger_mode"), "code"),
+								boolvalidation.WhenBool(path.MatchRoot("provider_settings").AtAnyListIndex().AtName("build_pull_requests"), true),
+							},
 						},
 						"build_pull_request_forks": schema.BoolAttribute{
 							Computed: true,
 							Optional: true,
+							Validators: []validator.Bool{
+								pipelinevalidation.WhenRepositoryProviderIs(pipelinevalidation.RepositoryProviderGitHub),
+								boolvalidation.WhenString(path.MatchRoot("provider_settings").AtAnyListIndex().AtName("trigger_mode"), "code"),
+								boolvalidation.WhenBool(path.MatchRoot("provider_settings").AtAnyListIndex().AtName("build_pull_requests"), true),
+							},
 						},
 						"prefix_pull_request_fork_branch_names": schema.BoolAttribute{
 							Computed: true,
 							Optional: true,
+							Validators: []validator.Bool{
+								boolvalidation.WhenBool(path.MatchRoot("provider_settings").AtAnyListIndex().AtName("build_pull_request_forks"), true),
+							},
 						},
 						"build_branches": schema.BoolAttribute{
 							Optional: true,
 							Computed: true,
 							Default:  booldefault.StaticBool(true),
+							Validators: []validator.Bool{
+								pipelinevalidation.WhenRepositoryProviderIs(pipelinevalidation.RepositoryProviderGitHub, pipelinevalidation.RepositoryProviderBitbucket),
+							},
 						},
 						"build_tags": schema.BoolAttribute{
 							Computed: true,
 							Optional: true,
+							Validators: []validator.Bool{
+								pipelinevalidation.WhenRepositoryProviderIs(pipelinevalidation.RepositoryProviderGitHub, pipelinevalidation.RepositoryProviderBitbucket),
+							},
 						},
 						"cancel_deleted_branch_builds": schema.BoolAttribute{
 							Computed: true,
 							Optional: true,
+							Validators: []validator.Bool{
+								pipelinevalidation.WhenRepositoryProviderIs(pipelinevalidation.RepositoryProviderGitHub),
+								boolvalidation.WhenString(path.MatchRoot("provider_settings").AtAnyListIndex().AtName("trigger_mode"), "code"),
+							},
 						},
 						"filter_enabled": schema.BoolAttribute{
 							Computed: true,
 							Optional: true,
+							Validators: []validator.Bool{
+								pipelinevalidation.WhenRepositoryProviderIs(pipelinevalidation.RepositoryProviderGitHub),
+								boolvalidation.WhenString(path.MatchRoot("provider_settings").AtAnyListIndex().AtName("trigger_mode"), "code"),
+							},
 						},
 						"filter_condition": schema.StringAttribute{
 							Computed: true,
 							Optional: true,
+							Validators: []validator.String{
+								stringvalidation.WhenBool(path.MatchRoot("provider_settings").AtAnyListIndex().AtName("filter_enabled"), true),
+							},
 						},
 						"publish_commit_status": schema.BoolAttribute{
 							Optional: true,
 							Computed: true,
 							Default:  booldefault.StaticBool(true),
+							Validators: []validator.Bool{
+								boolvalidator.Any(
+									pipelinevalidation.WhenRepositoryProviderIs(pipelinevalidation.RepositoryProviderBitbucket),
+									boolvalidator.All(
+										pipelinevalidation.WhenRepositoryProviderIs(pipelinevalidation.RepositoryProviderGitHub),
+										boolvalidation.WhenString(path.MatchRoot("provider_settings").AtAnyListIndex().AtName("trigger_mode"), "code"),
+									),
+								),
+							},
 						},
 						"publish_blocked_as_pending": schema.BoolAttribute{
 							Computed: true,
 							Optional: true,
+							Validators: []validator.Bool{
+								pipelinevalidation.WhenRepositoryProviderIs(pipelinevalidation.RepositoryProviderGitHub),
+								boolvalidation.WhenBool(path.MatchRoot("provider_settings").AtAnyListIndex().AtName("publish_commit_status"), true),
+							},
 						},
 						"publish_commit_status_per_step": schema.BoolAttribute{
 							Computed: true,
 							Optional: true,
+							Validators: []validator.Bool{
+								pipelinevalidation.WhenRepositoryProviderIs(pipelinevalidation.RepositoryProviderGitHub, pipelinevalidation.RepositoryProviderBitbucket),
+								boolvalidation.WhenBool(path.MatchRoot("provider_settings").AtAnyListIndex().AtName("publish_commit_status"), true),
+							},
 						},
 						"separate_pull_request_statuses": schema.BoolAttribute{
 							Computed: true,
 							Optional: true,
+							Validators: []validator.Bool{
+								pipelinevalidation.WhenRepositoryProviderIs(pipelinevalidation.RepositoryProviderGitHub),
+								boolvalidation.WhenBool(path.MatchRoot("provider_settings").AtAnyListIndex().AtName("publish_commit_status"), true),
+							},
 						},
 					},
 				},
