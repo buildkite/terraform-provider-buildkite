@@ -64,6 +64,14 @@ func (when repositoryProviderValidator) Validate(ctx context.Context, req reposi
 		resp.Diagnostics.AddError("Could not parse repository URL", repository)
 	}
 
+	// we actually cant enforce this validation because the list of discoverable repository providers is incomplete
+	// so we risk incorrectly validating some users with providers that are not supported yet
+	// we need an api available to query all configured repository providers to fully discover and validate
+	// so if its not one of the cloud providers, exit here to not perform any validation
+	if repoProvider == RepositoryProviderPrivate {
+		return
+	}
+
 	var found bool
 	for _, match := range when.values {
 		if repoProvider == match {
@@ -120,6 +128,11 @@ func findRepositoryProvider(repo string) (RepositoryProvider, error) {
 	case "gitlab.com":
 		return RepositoryProviderGitLab, nil
 	default:
-		return RepositoryProviderPrivate, nil
+		return discoverRemoteProvider(repo)
 	}
+}
+
+// discoverRemoteProvider attempts to finds a matching remote provider URL from the API (eg for on-prem instances)
+func discoverRemoteProvider(repo string) (RepositoryProvider, error) {
+	return RepositoryProviderPrivate, nil
 }
