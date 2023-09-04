@@ -68,7 +68,7 @@ func TestAccBuildkiteClusterQueue(t *testing.T) {
 		clusterName := acctest.RandString(10)
 		queueKey := acctest.RandString(10)
 		queueDesc := acctest.RandString(10)
-		updatedDesc := acctest.RandString(10)
+		updatedQueueDesc := acctest.RandString(10)
 
 		check := resource.ComposeAggregateTestCheckFunc(
 			// Confirm the cluster queue exists in the buildkite API
@@ -84,10 +84,10 @@ func TestAccBuildkiteClusterQueue(t *testing.T) {
 			// Confirm the cluster queue exists in the buildkite API
 			testAccCheckClusterQueueExists("buildkite_cluster_queue.foobar", &cq),
 			// Confirm the cluster queue has the correct values in Buildkite's system
-			testAccCheckClusterQueueRemoteValues(&cq, fmt.Sprintf("Acceptance test %s", updatedDesc), fmt.Sprintf("queue-%s", queueKey)),
+			testAccCheckClusterQueueRemoteValues(&cq, fmt.Sprintf("Acceptance test %s", updatedQueueDesc), fmt.Sprintf("queue-%s", queueKey)),
 			// Confirm the cluster queue has the correct values in terraform state
 			resource.TestCheckResourceAttr("buildkite_cluster_queue.foobar", "key", fmt.Sprintf("queue-%s", queueKey)),
-			resource.TestCheckResourceAttr("buildkite_cluster_queue.foobar", "description", fmt.Sprintf("Acceptance test %s", updatedDesc)),
+			resource.TestCheckResourceAttr("buildkite_cluster_queue.foobar", "description", fmt.Sprintf("Acceptance test %s", updatedQueueDesc)),
 		)
 
 		resource.ParallelTest(t, resource.TestCase{
@@ -100,7 +100,7 @@ func TestAccBuildkiteClusterQueue(t *testing.T) {
 					Check:  check,
 				},
 				{
-					Config: configBasic(clusterName, queueKey, updatedDesc),
+					Config: configBasic(clusterName, queueKey, updatedQueueDesc),
 					Check:  ckecUpdated,
 				},
 			},
