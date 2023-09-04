@@ -1,4 +1,4 @@
-package validation
+package stringvalidation
 
 import (
 	"context"
@@ -17,11 +17,11 @@ func TestWhenStringAttrIsValidator(t *testing.T) {
 	t.Parallel()
 
 	testCases := map[string]struct {
-		request     validator.BoolRequest
+		request     validator.StringRequest
 		expectError bool
 	}{
 		"matching value": {
-			request: validator.BoolRequest{
+			request: validator.StringRequest{
 				Config: tfsdk.Config{
 					Raw: tftypes.NewValue(tftypes.Object{
 						AttributeTypes: map[string]tftypes.Type{
@@ -42,8 +42,8 @@ func TestWhenStringAttrIsValidator(t *testing.T) {
 		},
 		"not matching value": {
 			expectError: true,
-			request: validator.BoolRequest{
-				ConfigValue: basetypes.NewBoolValue(true),
+			request: validator.StringRequest{
+				ConfigValue: basetypes.NewStringValue("any"),
 				Config: tfsdk.Config{
 					Raw: tftypes.NewValue(tftypes.Object{
 						AttributeTypes: map[string]tftypes.Type{
@@ -63,8 +63,8 @@ func TestWhenStringAttrIsValidator(t *testing.T) {
 			},
 		},
 		"unknown value": {
-			request: validator.BoolRequest{
-				ConfigValue: basetypes.NewBoolUnknown(),
+			request: validator.StringRequest{
+				ConfigValue: basetypes.NewStringUnknown(),
 				Config: tfsdk.Config{
 					Raw: tftypes.NewValue(tftypes.Object{
 						AttributeTypes: map[string]tftypes.Type{
@@ -84,8 +84,8 @@ func TestWhenStringAttrIsValidator(t *testing.T) {
 			},
 		},
 		"null value": {
-			request: validator.BoolRequest{
-				ConfigValue: basetypes.NewBoolPointerValue(nil),
+			request: validator.StringRequest{
+				ConfigValue: basetypes.NewStringPointerValue(nil),
 				Config: tfsdk.Config{
 					Raw: tftypes.NewValue(tftypes.Object{
 						AttributeTypes: map[string]tftypes.Type{
@@ -110,11 +110,11 @@ func TestWhenStringAttrIsValidator(t *testing.T) {
 		name, testCase := name, testCase
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-			resp := validator.BoolResponse{
+			resp := validator.StringResponse{
 				Diagnostics: diag.Diagnostics{},
 			}
 
-			WhenStringAttrIs(path.MatchRoot("name"), "value").ValidateBool(context.Background(), testCase.request, &resp)
+			WhenString(path.MatchRoot("name"), "value").ValidateString(context.Background(), testCase.request, &resp)
 
 			if testCase.expectError != resp.Diagnostics.HasError() {
 				t.Error("Expected error mismatch")
