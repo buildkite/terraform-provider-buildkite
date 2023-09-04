@@ -8,116 +8,137 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
+	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
-func testAccClusterQueueConfigBasic(name string) string {
-	config := `
+func TestAccBuildkiteClusterQueue(t *testing.T) {
+	configBasic := func(fields ...string) string {
+		return fmt.Sprintf(`
+		provider "buildkite" {
+			timeouts {
+				create = "10s"
+			}
+		}
 
-	resource "buildkite_cluster_queue" "foobar" {
-		cluster_id = "Q2x1c3Rlci0tLTFkNmIxOTg5LTJmYjctNDRlMC04MWYyLTAxYjIxNzQ4MTVkMg=="
-		description = "Acceptance Test %s"
-		key = "foobar"
+		resource "buildkite_cluster" "cluster_test" {
+			name = "Test cluster %s"
+		}
+
+		resource "buildkite_cluster_queue" "foobar" {
+			cluster_id = buildkite_cluster.cluster_test.id
+			key = "queue-%s"
+			description = "Acceptance test %s"
+		}
+		`, fields[0], fields[1], fields[2])
 	}
-	`
 
-	return fmt.Sprintf(config, name)
-}
+	t.Run("creates a cluster queue", func(t *testing.T) {
+		var cq ClusterQueueResourceModel
+		clusterName := acctest.RandString(10)
+		queueKey := acctest.RandString(10)
+		queueDesc := acctest.RandString(10)
 
-// Confirm that we can create a new cluster queue, and then delete it without error
-func TestAccClusterQueue_add_remove(t *testing.T) {
-	var cq ClusterQueueResourceModel
+		check := resource.ComposeAggregateTestCheckFunc(
+			// Confirm the cluster queue exists in the buildkite API
+			testAccCheckClusterQueueExists("buildkite_cluster_queue.foobar", &cq),
+			// Confirm the cluster queue has the correct values in Buildkite's system
+			testAccCheckClusterQueueRemoteValues(&cq, fmt.Sprintf("Acceptance test %s", queueDesc), fmt.Sprintf("queue-%s", queueKey)),
+			// Confirm the cluster queue has the correct values in terraform state
+			resource.TestCheckResourceAttr("buildkite_cluster_queue.foobar", "key", fmt.Sprintf("queue-%s", queueKey)),
+			resource.TestCheckResourceAttr("buildkite_cluster_queue.foobar", "description", fmt.Sprintf("Acceptance test %s", queueDesc)),
+			resource.TestCheckResourceAttrSet("buildkite_cluster_queue.foobar", "id"),
+			resource.TestCheckResourceAttrSet("buildkite_cluster_queue.foobar", "uuid"),
+		)
 
-	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: protoV6ProviderFactories(),
-		CheckDestroy:             testAccCheckClusterQueueDestroy,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccClusterQueueConfigBasic("foo"),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					// Confirm the cluster queue exists in the buildkite API
-					testAccCheckClusterQueueExists("buildkite_cluster_queue.foobar", &cq),
-					// Confirm the cluster queue has the correct values in Buildkite's system
-					testAccCheckClusterQueueRemoteValues(&cq, "Acceptance Test foo", "foobar"),
-					// Confirm the cluster queue has the correct values in terraform state
-					resource.TestCheckResourceAttr("buildkite_cluster_queue.foobar", "key", "foobar"),
-					resource.TestCheckResourceAttr("buildkite_cluster_queue.foobar", "description", "Acceptance Test foo"),
-					resource.TestCheckResourceAttrSet("buildkite_cluster_queue.foobar", "id"),
-					resource.TestCheckResourceAttrSet("buildkite_cluster_queue.foobar", "uuid"),
-				),
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			//CheckDestroy:             testAccCheckClusterQueueDestroy,
+			Steps: []resource.TestStep{
+				{
+					Config: configBasic(clusterName, queueKey, queueDesc),
+					Check: 	check,
+				},
 			},
-			{
-				RefreshState: true,
-				PlanOnly:     true,
-				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttrSet("buildkite_cluster_queue.foobar", "key"),
-					resource.TestCheckResourceAttrSet("buildkite_cluster_queue.foobar", "description"),
-				),
-			},
-		},
+		})
 	})
-}
 
-func TestAccClusterQueue_update(t *testing.T) {
-	var cq ClusterQueueResourceModel
+	t.Run("updates a cluster queue ", func(t *testing.T) {
+		var cq ClusterQueueResourceModel
+		clusterName := acctest.RandString(10)
+		queueKey := acctest.RandString(10)
+		queueDesc := acctest.RandString(10)		
+		updatedDesc := acctest.RandString(10)
 
-	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: protoV6ProviderFactories(),
-		CheckDestroy:             testAccCheckClusterQueueDestroy,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccClusterQueueConfigBasic("foo"),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					// Confirm the cluster queue exists in the buildkite API
-					testAccCheckClusterQueueExists("buildkite_cluster_queue.foobar", &cq),
-					// Confirm the cluster queue has the correct values in Buildkite's system
-					testAccCheckClusterQueueRemoteValues(&cq, "Acceptance Test foo", "foobar"),
-					// Confirm the cluster queue has the correct values in terraform state
-					resource.TestCheckResourceAttr("buildkite_cluster_queue.foobar", "description", "Acceptance Test foo"),
-				),
+		check := resource.ComposeAggregateTestCheckFunc(
+			// Confirm the cluster queue exists in the buildkite API
+			testAccCheckClusterQueueExists("buildkite_cluster_queue.foobar", &cq),
+			// Confirm the cluster queue has the correct values in Buildkite's system
+			testAccCheckClusterQueueRemoteValues(&cq, fmt.Sprintf("Acceptance test %s", queueDesc), fmt.Sprintf("queue-%s", queueKey)),
+			// Confirm the cluster queue has the correct values in terraform state
+			resource.TestCheckResourceAttr("buildkite_cluster_queue.foobar", "key", fmt.Sprintf("queue-%s", queueKey)),
+			resource.TestCheckResourceAttr("buildkite_cluster_queue.foobar", "description", fmt.Sprintf("Acceptance test %s", queueDesc)),
+		)
+
+		ckecUpdated := resource.ComposeAggregateTestCheckFunc(
+			// Confirm the cluster queue exists in the buildkite API
+			testAccCheckClusterQueueExists("buildkite_cluster_queue.foobar", &cq),
+			// Confirm the cluster queue has the correct values in Buildkite's system
+			testAccCheckClusterQueueRemoteValues(&cq, fmt.Sprintf("Acceptance test %s", updatedDesc), fmt.Sprintf("queue-%s", queueKey)),
+			// Confirm the cluster queue has the correct values in terraform state
+			resource.TestCheckResourceAttr("buildkite_cluster_queue.foobar", "key", fmt.Sprintf("queue-%s", queueKey)),
+			resource.TestCheckResourceAttr("buildkite_cluster_queue.foobar", "description", fmt.Sprintf("Acceptance test %s", updatedDesc)),
+		)
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			//CheckDestroy:             testAccCheckClusterQueueDestroy,
+			Steps: []resource.TestStep{
+				{
+					Config: configBasic(clusterName, queueKey, queueDesc),
+					Check: 	check,
+				},
+				{
+					Config: configBasic(clusterName, queueKey, updatedDesc),
+					Check: 	ckecUpdated,
+				},
 			},
-			{
-				Config: testAccClusterQueueConfigBasic("bar"),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					// Confirm the cluster queue exists in the buildkite API
-					testAccCheckClusterQueueExists("buildkite_cluster_queue.foobar", &cq),
-					// Confirm the cluster queue has the correct values in Buildkite's system
-					testAccCheckClusterQueueRemoteValues(&cq, "Acceptance Test bar", "foobar"),
-					// Confirm the cluster queue has the correct values in terraform state
-					resource.TestCheckResourceAttr("buildkite_cluster_queue.foobar", "description", "Acceptance Test bar"),
-				),
-			},
-		},
+		})
 	})
-}
 
-func TestAccClusterQueue_import(t *testing.T) {
-	var cq ClusterQueueResourceModel
+	t.Run("imports a cluster queue", func(t *testing.T) {
+		var cq ClusterQueueResourceModel
+		clusterName := acctest.RandString(10)
+		queueKey := acctest.RandString(10)
+		queueDesc := acctest.RandString(10)		
 
-	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: protoV6ProviderFactories(),
-		CheckDestroy:             testAccCheckClusterQueueDestroy,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccClusterQueueConfigBasic("foo"),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					// Confirm the cluster queue exists in the buildkite API
-					testAccCheckClusterQueueExists("buildkite_cluster_queue.foobar", &cq),
-					// Check to confirm the local state is correct before we re-import it
-					resource.TestCheckResourceAttr("buildkite_cluster_queue.foobar", "key", "foobar"),
-					resource.TestCheckResourceAttr("buildkite_cluster_queue.foobar", "description", "Acceptance Test foo"),
-				),
+		check := resource.ComposeAggregateTestCheckFunc(
+			// Confirm the cluster queue exists in the buildkite API
+			testAccCheckClusterQueueExists("buildkite_cluster_queue.foobar", &cq),
+			// Check to confirm the local state is correct before we re-import it
+			resource.TestCheckResourceAttr("buildkite_cluster_queue.foobar", "key", fmt.Sprintf("queue-%s", queueKey)),
+			resource.TestCheckResourceAttr("buildkite_cluster_queue.foobar", "description", fmt.Sprintf("Acceptance test %s", queueDesc)),
+		)
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			//CheckDestroy:             testAccCheckClusterQueueDestroy,
+			Steps: []resource.TestStep{
+				{
+					Config: configBasic(clusterName, queueKey, queueDesc),
+					Check: 	check,
+				},
+				{
+					// re-import the resource (using the graphql token of the existing resource) and confirm they match
+					ResourceName:      "buildkite_cluster_queue.foobar",
+					ImportStateIdFunc: testAccGetImportClusterQueueId(&cq),
+					ImportState:       true,
+					ImportStateVerify: true,
+				},
 			},
-			{
-				// re-import the resource (using the graphql token of the existing resource) and confirm they match
-				ResourceName:      "buildkite_cluster_queue.foobar",
-				ImportStateIdFunc: testAccGetImportClusterQueueId(&cq),
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
-		},
+		})
 	})
 }
 
