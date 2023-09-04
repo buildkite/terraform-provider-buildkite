@@ -106,14 +106,7 @@ func (ct *ClusterAgentToken) Create(ctx context.Context, req resource.CreateRequ
 			plan.Description.ValueString(),
 		)
 
-		if err != nil {
-			if isRetryableError(err) {
-				return retry.RetryableError(err)
-			}
-			return retry.NonRetryableError(err)
-		}
-
-		return nil
+		return retryContextError(err)
 	})
 
 	if err != nil {
@@ -162,14 +155,7 @@ func (ct *ClusterAgentToken) Read(ctx context.Context, req resource.ReadRequest,
 			state.ClusterUuid.ValueString(),
 		)
 
-		if err != nil {
-			if isRetryableError(err) {
-				return retry.RetryableError(err)
-			}
-			return retry.NonRetryableError(err)
-		}
-
-		return nil
+		return retryContextError(err)
 	})
 
 	if err != nil {
@@ -221,14 +207,8 @@ func (ct *ClusterAgentToken) Update(ctx context.Context, req resource.UpdateRequ
 			state.Id.ValueString(),
 			plan.Description.ValueString(),
 		)
-		if err != nil {
-			if isRetryableError(err) {
-				return retry.RetryableError(err)
-			}
-			return retry.NonRetryableError(err)
-		}
 
-		return nil
+		return retryContextError(err)
 	})
 
 	if err != nil {
@@ -271,14 +251,7 @@ func (ct *ClusterAgentToken) Delete(ctx context.Context, req resource.DeleteRequ
 			plan.Id.ValueString(),
 		)
 
-		if err != nil {
-			if isRetryableError(err) {
-				return retry.RetryableError(err)
-			}
-			return retry.NonRetryableError(err)
-		}
-
-		return nil
+		return retryContextError(err)
 	})
 
 	if err != nil {

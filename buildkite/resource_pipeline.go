@@ -1009,13 +1009,3 @@ func updatePipelineResourceExtraInfo(state *pipelineResourceModel, pipeline *Pip
 		},
 	}
 }
-
-func retryContextError(err error) *retry.RetryError {
-	if err != nil {
-		if isRetryableError(err) {
-			return retry.RetryableError(err)
-		}
-		return retry.NonRetryableError(err)
-	}
-	return nil
-}

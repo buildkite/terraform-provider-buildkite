@@ -112,14 +112,7 @@ func (cq *ClusterQueueResource) Create(ctx context.Context, req resource.CreateR
 			plan.Description.ValueStringPointer(),
 		)
 
-		if err != nil {
-			if isRetryableError(err) {
-				return retry.RetryableError(err)
-			}
-			return retry.NonRetryableError(err)
-		}
-
-		return nil
+		return retryContextError(err)
 	})
 
 	if err != nil {
@@ -167,14 +160,7 @@ func (cq *ClusterQueueResource) Read(ctx context.Context, req resource.ReadReque
 			cq.client.organization, state.ClusterUuid.ValueString(),
 		)
 
-		if err != nil {
-			if isRetryableError(err) {
-				return retry.RetryableError(err)
-			}
-			return retry.NonRetryableError(err)
-		}
-
-		return nil
+		return retryContextError(err)
 	})
 
 	if err != nil {
@@ -256,14 +242,7 @@ func (cq *ClusterQueueResource) Update(ctx context.Context, req resource.UpdateR
 			&description,
 		)
 
-		if err != nil {
-			if isRetryableError(err) {
-				return retry.RetryableError(err)
-			}
-			return retry.NonRetryableError(err)
-		}
-
-		return nil
+		return retryContextError(err)
 	})
 
 	if err != nil {
@@ -306,14 +285,7 @@ func (cq *ClusterQueueResource) Delete(ctx context.Context, req resource.DeleteR
 			plan.Id.ValueString(),
 		)
 
-		if err != nil {
-			if isRetryableError(err) {
-				return retry.RetryableError(err)
-			}
-			return retry.NonRetryableError(err)
-		}
-
-		return nil
+		return retryContextError(err)
 	})
 
 	if err != nil {

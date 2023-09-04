@@ -91,7 +91,6 @@ func TestAccBuildkiteClusterAgentToken(t *testing.T) {
 			resource.TestCheckResourceAttr("buildkite_cluster_agent_token.foobar", "description", fmt.Sprintf("Acceptance Test %s", updatedTokenDesc)),
 		)
 
-
 		resource.ParallelTest(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },
 			ProtoV6ProviderFactories: protoV6ProviderFactories(),
