@@ -17,6 +17,9 @@ func TestAccBuildkiteClusterAgentToken(t *testing.T) {
 		provider "buildkite" {
 			timeouts {
 				create = "10s"
+				read = "10s"
+				update = "10s"
+				delete = "10s"
 			}
 		}
 
