@@ -10,6 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
 type clusterResource struct {
@@ -80,20 +81,44 @@ func (c *clusterResource) Schema(ctx context.Context, req resource.SchemaRequest
 
 func (c *clusterResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var state *clusterResourceModel
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &state)...)
+
+	diags := req.Plan.Get(ctx, &state)
+
+	resp.Diagnostics.Append(diags...)
 
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	r, err := createCluster(ctx,
-		c.client.genqlient,
-		c.client.organizationId,
-		state.Name.ValueString(),
-		state.Description.ValueStringPointer(),
-		state.Emoji.ValueStringPointer(),
-		state.Color.ValueStringPointer(),
-	)
+	timeout, diags := c.client.timeouts.Create(ctx, DefaultTimeout)
+
+	resp.Diagnostics.Append(diags...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	var r *createClusterResponse
+	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+		var err error
+		r, err = createCluster(
+			ctx,
+			c.client.genqlient,
+			c.client.organizationId,
+			state.Name.ValueString(),
+			state.Description.ValueStringPointer(),
+			state.Emoji.ValueStringPointer(),
+			state.Color.ValueStringPointer(),
+		)
+		if err != nil {
+			if isRetryableError(err) {
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+
+		return nil
+	})
 
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -112,13 +137,36 @@ func (c *clusterResource) Create(ctx context.Context, req resource.CreateRequest
 func (c *clusterResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var state clusterResourceModel
 
-	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	diags := req.State.Get(ctx, &state)
+
+	resp.Diagnostics.Append(diags...)
 
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	r, err := getNode(ctx, c.client.genqlient, state.ID.ValueString())
+	timeout, diags := c.client.timeouts.Read(ctx, DefaultTimeout)
+
+	resp.Diagnostics.Append(diags...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	var r *getNodeResponse
+	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+		var err error
+		r, err = getNode(ctx, c.client.genqlient, state.ID.ValueString())
+
+		if err != nil {
+			if isRetryableError(err) {
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+
+		return nil
+	})
 
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -157,17 +205,35 @@ func (c *clusterResource) Update(ctx context.Context, req resource.UpdateRequest
 		return
 	}
 
-	id := state.ID.ValueString()
+	timeout, diags := c.client.timeouts.Update(ctx, DefaultTimeout)
 
-	_, err := updateCluster(ctx,
-		c.client.genqlient,
-		c.client.organizationId,
-		id,
-		plan.Name.ValueString(),
-		plan.Description.ValueStringPointer(),
-		plan.Emoji.ValueStringPointer(),
-		plan.Color.ValueStringPointer(),
-	)
+	resp.Diagnostics.Append(diags...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+		var err error
+		_, err = updateCluster(ctx,
+			c.client.genqlient,
+			c.client.organizationId,
+			state.ID.ValueString(),
+			plan.Name.ValueString(),
+			plan.Description.ValueStringPointer(),
+			plan.Emoji.ValueStringPointer(),
+			plan.Color.ValueStringPointer(),
+		)
+
+		if err != nil {
+			if isRetryableError(err) {
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+
+		return nil
+	})
 
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -183,13 +249,35 @@ func (c *clusterResource) Update(ctx context.Context, req resource.UpdateRequest
 func (c *clusterResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	var state clusterResourceModel
 
-	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	diags := req.State.Get(ctx, &state)
+
+	resp.Diagnostics.Append(diags...)
 
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	_, err := deleteCluster(ctx, c.client.genqlient, c.client.organizationId, state.ID.ValueString())
+	timeout, diags := c.client.timeouts.Delete(ctx, DefaultTimeout)
+
+	resp.Diagnostics.Append(diags...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+		var err error
+		_, err = deleteCluster(ctx, c.client.genqlient, c.client.organizationId, state.ID.ValueString())
+
+		if err != nil {
+			if isRetryableError(err) {
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+
+		return nil
+	})
 
 	if err != nil {
 		resp.Diagnostics.AddError(

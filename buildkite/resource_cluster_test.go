@@ -10,9 +10,18 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
-func TestAccBuildkiteCluster(t *testing.T) {
+func TestAccBuildkiteClusterResource(t *testing.T) {
 	basic := func(name string) string {
 		return fmt.Sprintf(`
+		provider "buildkite" {
+			timeouts {
+				create = "10s"
+				read = "10s"
+				update = "10s"
+				delete = "10s"
+			}
+		}
+
 		resource "buildkite_cluster" "foo" {
 			name = "%s_test_cluster"
 		}
@@ -21,6 +30,15 @@ func TestAccBuildkiteCluster(t *testing.T) {
 
 	complex := func(fields ...string) string {
 		return fmt.Sprintf(`
+		provider "buildkite" {
+			timeouts {
+				create = "10s"
+				read = "10s"
+				update = "10s"
+				delete = "10s"
+			}
+		}
+
 		resource "buildkite_cluster" "foo" {
 			name = "%s_test_cluster"
 			description = "Just another Buildkite cluster"
