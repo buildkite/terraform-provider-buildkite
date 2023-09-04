@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"time"
 	"unsafe"
 
 	custom_modifier "github.com/buildkite/terraform-provider-buildkite/internal/planmodifier"
@@ -22,6 +23,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/shurcooL/graphql"
 )
 
@@ -214,8 +216,19 @@ func (p *pipelineResource) Create(ctx context.Context, req resource.CreateReques
 		Tags:                                 getTagsFromSchema(&plan),
 	}
 
+	timeouts, diags := p.client.timeouts.Create(ctx, DefaultTimeout)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	var response *createPipelineResponse
 	log.Printf("Creating pipeline %s ...", plan.Name.ValueString())
-	response, err := createPipeline(ctx, p.client.genqlient, input)
+	err := retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
+		var err error
+		response, err = createPipeline(ctx, p.client.genqlient, input)
+		return retryContextError(err)
+	})
 
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to create pipeline", err.Error())
@@ -237,7 +250,7 @@ func (p *pipelineResource) Create(ctx context.Context, req resource.CreateReques
 	state.Teams = teams
 
 	if len(plan.ProviderSettings) > 0 {
-		pipelineExtraInfo, err := updatePipelineExtraInfo(ctx, response.PipelineCreate.Pipeline.Slug, plan.ProviderSettings[0], p.client)
+		pipelineExtraInfo, err := updatePipelineExtraInfo(ctx, response.PipelineCreate.Pipeline.Slug, plan.ProviderSettings[0], p.client, timeouts)
 		if err != nil {
 			resp.Diagnostics.AddError("Unable to set pipeline info from REST", err.Error())
 			return
@@ -246,7 +259,7 @@ func (p *pipelineResource) Create(ctx context.Context, req resource.CreateReques
 		updatePipelineResourceExtraInfo(&state, &pipelineExtraInfo)
 	} else {
 		// no provider_settings provided, but we still need to read in the badge url
-		extraInfo, err := getPipelineExtraInfo(ctx, p.client, response.PipelineCreate.Pipeline.Slug)
+		extraInfo, err := getPipelineExtraInfo(ctx, p.client, response.PipelineCreate.Pipeline.Slug, timeouts)
 		if err != nil {
 			resp.Diagnostics.AddError("Unable to read pipeline info from REST", err.Error())
 			return
@@ -265,17 +278,31 @@ func (p *pipelineResource) Delete(ctx context.Context, req resource.DeleteReques
 		return
 	}
 
+	timeout, diags := p.client.timeouts.Delete(ctx, DefaultTimeout)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	if p.archiveOnDelete {
 		log.Printf("Pipeline %s set to archive on delete. Archiving...", state.Name.ValueString())
-		_, err := archivePipeline(ctx, p.client.genqlient, state.Id.ValueString())
+
+		err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+			_, err := archivePipeline(ctx, p.client.genqlient, state.Id.ValueString())
+			return retryContextError(err)
+		})
 		if err != nil {
 			resp.Diagnostics.AddError("Could not archive pipeline", err.Error())
 		}
 		return
 	}
 
-	log.Printf("Deleting pipeline %s ...", state.Name.ValueString())
-	_, err := deletePipeline(ctx, p.client.genqlient, state.Id.ValueString())
+	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+		log.Printf("Deleting pipeline %s ...", state.Name.ValueString())
+		_, err := deletePipeline(ctx, p.client.genqlient, state.Id.ValueString())
+		return retryContextError(err)
+	})
+
 	if err != nil {
 		resp.Diagnostics.AddError("Could not delete pipeline", err.Error())
 	}
@@ -293,7 +320,19 @@ func (p *pipelineResource) Read(ctx context.Context, req resource.ReadRequest, r
 		return
 	}
 
-	response, err := getNode(ctx, p.client.genqlient, state.Id.ValueString())
+	timeouts, diags := p.client.timeouts.Read(ctx, DefaultTimeout)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	var response *getNodeResponse
+	err := retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
+		var err error
+		response, err = getNode(ctx, p.client.genqlient, state.Id.ValueString())
+		return retryContextError(err)
+	})
+
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to read pipeline",
@@ -309,7 +348,7 @@ func (p *pipelineResource) Read(ctx context.Context, req resource.ReadRequest, r
 			return
 		}
 
-		extraInfo, err := getPipelineExtraInfo(ctx, p.client, pipelineNode.Slug)
+		extraInfo, err := getPipelineExtraInfo(ctx, p.client, pipelineNode.Slug, timeouts)
 		if err != nil {
 			resp.Diagnostics.AddError("Unable to read pipeline info from REST", err.Error())
 			return
@@ -612,8 +651,19 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 		Tags:                                 getTagsFromSchema(&plan),
 	}
 
-	log.Printf("Updating pipeline %s ...", input.Name)
-	response, err := updatePipeline(ctx, p.client.genqlient, input)
+	timeouts, diags := p.client.timeouts.Read(ctx, DefaultTimeout)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	var response *updatePipelineResponse
+	err := retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
+		var err error
+		log.Printf("Updating pipeline %s ...", input.Name)
+		response, err = updatePipeline(ctx, p.client.genqlient, input)
+		return retryContextError(err)
+	})
 
 	if err != nil {
 		resp.Diagnostics.AddError("Unable to update pipeline %s", state.Name.ValueString())
@@ -623,7 +673,7 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 	setPipelineModel(&state, &response.PipelineUpdate.Pipeline)
 
 	// plan.Teams has what we want. state.Teams has what exists on the server. we need to make them match
-	err = p.reconcileTeamPipelinesToPlan(ctx, plan.Teams, state.Teams, &response.PipelineUpdate.Pipeline, response.PipelineUpdate.Pipeline.Id)
+	err = p.reconcileTeamPipelinesToPlan(ctx, plan.Teams, state.Teams, &response.PipelineUpdate.Pipeline, response.PipelineUpdate.Pipeline.Id, timeouts)
 	if err != nil {
 		resp.Diagnostics.AddError("Unable to reconcile team pipelines", err.Error())
 		return
@@ -631,7 +681,7 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 	state.Teams = plan.Teams
 
 	if len(plan.ProviderSettings) > 0 {
-		pipelineExtraInfo, err := updatePipelineExtraInfo(ctx, response.PipelineUpdate.Pipeline.Slug, plan.ProviderSettings[0], p.client)
+		pipelineExtraInfo, err := updatePipelineExtraInfo(ctx, response.PipelineUpdate.Pipeline.Slug, plan.ProviderSettings[0], p.client, timeouts)
 		if err != nil {
 			resp.Diagnostics.AddError("Unable to set pipeline info from REST", err.Error())
 			return
@@ -640,7 +690,7 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 		updatePipelineResourceExtraInfo(&state, &pipelineExtraInfo)
 	} else {
 		// no provider_settings provided, but we still need to read in the badge url
-		extraInfo, err := getPipelineExtraInfo(ctx, p.client, response.PipelineUpdate.Pipeline.Slug)
+		extraInfo, err := getPipelineExtraInfo(ctx, p.client, response.PipelineUpdate.Pipeline.Slug, timeouts)
 		if err != nil {
 			resp.Diagnostics.AddError("Unable to read pipeline info from REST", err.Error())
 			return
@@ -719,15 +769,21 @@ type PipelineExtraSettings struct {
 	SeparatePullRequestStatuses             *bool   `json:"separate_pull_request_statuses,omitempty"`
 }
 
-func getPipelineExtraInfo(ctx context.Context, client *Client, slug string) (*PipelineExtraInfo, error) {
+func getPipelineExtraInfo(ctx context.Context, client *Client, slug string, timeouts time.Duration) (*PipelineExtraInfo, error) {
 	pipelineExtraInfo := PipelineExtraInfo{}
-	err := client.makeRequest(ctx, "GET", fmt.Sprintf("/v2/organizations/%s/pipelines/%s", client.organization, slug), nil, &pipelineExtraInfo)
+
+	err := retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
+		err := client.makeRequest(ctx, "GET", fmt.Sprintf("/v2/organizations/%s/pipelines/%s", client.organization, slug), nil, &pipelineExtraInfo)
+		return retryContextError(err)
+	})
+
 	if err != nil {
 		return nil, err
 	}
+
 	return &pipelineExtraInfo, nil
 }
-func updatePipelineExtraInfo(ctx context.Context, slug string, settings *providerSettingsModel, client *Client) (PipelineExtraInfo, error) {
+func updatePipelineExtraInfo(ctx context.Context, slug string, settings *providerSettingsModel, client *Client, timeouts time.Duration) (PipelineExtraInfo, error) {
 	payload := map[string]any{
 		"provider_settings": PipelineExtraSettings{
 			TriggerMode:                             settings.TriggerMode.ValueStringPointer(),
@@ -753,7 +809,11 @@ func updatePipelineExtraInfo(ctx context.Context, slug string, settings *provide
 	}
 
 	pipelineExtraInfo := PipelineExtraInfo{}
-	err := client.makeRequest(ctx, "PATCH", fmt.Sprintf("/v2/organizations/%s/pipelines/%s", client.organization, slug), payload, &pipelineExtraInfo)
+	err := retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
+		err := client.makeRequest(ctx, "PATCH", fmt.Sprintf("/v2/organizations/%s/pipelines/%s", client.organization, slug), payload, &pipelineExtraInfo)
+		return retryContextError(err)
+	})
+
 	if err != nil {
 		return pipelineExtraInfo, err
 	}
@@ -788,7 +848,7 @@ func (p *pipelineResource) getTeamPipelinesFromSchema(plan *pipelineResourceMode
 }
 
 // reconcileTeamPipelines plan.Teams has what we want - adds/updates/deletes the teamPipelines on buildkite to match the teams in terraform resource data
-func (p *pipelineResource) reconcileTeamPipelinesToPlan(ctx context.Context, planTeams []*pipelineTeamModel, stateTeams []*pipelineTeamModel, data pipelineResponse, pipelineId string) error {
+func (p *pipelineResource) reconcileTeamPipelinesToPlan(ctx context.Context, planTeams []*pipelineTeamModel, stateTeams []*pipelineTeamModel, data pipelineResponse, pipelineId string, timeouts time.Duration) error {
 
 	var toAdd []*pipelineTeamModel
 	var toUpdate []*pipelineTeamModel
@@ -840,19 +900,19 @@ func (p *pipelineResource) reconcileTeamPipelinesToPlan(ctx context.Context, pla
 	}
 
 	// Add any teams that don't already exist
-	err := createTeamPipelines(ctx, toAdd, pipelineId, p.client)
+	err := createTeamPipelines(ctx, toAdd, pipelineId, p.client, timeouts)
 	if err != nil {
 		return err
 	}
 
 	// Update any teams access levels that need updating
-	err = updateTeamPipelines(ctx, toUpdate, p.client)
+	err = updateTeamPipelines(ctx, toUpdate, p.client, timeouts)
 	if err != nil {
 		return err
 	}
 
 	// Remove any teams that shouldn't exist
-	err = deleteTeamPipelines(ctx, toDelete, p.client)
+	err = deleteTeamPipelines(ctx, toDelete, p.client, timeouts)
 	if err != nil {
 		return err
 	}
@@ -861,14 +921,24 @@ func (p *pipelineResource) reconcileTeamPipelinesToPlan(ctx context.Context, pla
 }
 
 // createTeamPipelines grants access to a pipeline for the teams specified
-func createTeamPipelines(ctx context.Context, teamPipelines []*pipelineTeamModel, pipelineID string, client *Client) error {
+func createTeamPipelines(ctx context.Context, teamPipelines []*pipelineTeamModel, pipelineID string, client *Client, timeouts time.Duration) error {
 	for _, teamPipeline := range teamPipelines {
 		log.Printf("Granting teamPipeline %s %s access to pipeline id '%s'...", teamPipeline.Slug, teamPipeline.AccessLevel, pipelineID)
-		teamID, err := GetTeamID(string(teamPipeline.Slug.ValueString()), client)
+		var teamID string
+		err := retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
+			var err error
+			teamID, err = GetTeamID(string(teamPipeline.Slug.ValueString()), client)
+			return retryContextError(err)
+		})
 		if err != nil {
 			return fmt.Errorf("Unable to get ID for team slug %s (%v)", teamPipeline.Slug.ValueString(), err)
 		}
-		resp, err := teamPipelineCreate(ctx, client.genqlient, teamID, pipelineID, PipelineAccessLevels(teamPipeline.AccessLevel.ValueString()))
+		var resp *teamPipelineCreateResponse
+		err = retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
+			var err error
+			resp, err = teamPipelineCreate(ctx, client.genqlient, teamID, pipelineID, PipelineAccessLevels(teamPipeline.AccessLevel.ValueString()))
+			return retryContextError(err)
+		})
 		if err != nil {
 			log.Printf("Unable to create team pipeline %s", teamPipeline.Slug)
 			return err
@@ -880,10 +950,13 @@ func createTeamPipelines(ctx context.Context, teamPipelines []*pipelineTeamModel
 }
 
 // Update access levels for the given teamPipelines
-func updateTeamPipelines(ctx context.Context, teamPipelines []*pipelineTeamModel, client *Client) error {
+func updateTeamPipelines(ctx context.Context, teamPipelines []*pipelineTeamModel, client *Client, timeouts time.Duration) error {
 	for _, teamPipeline := range teamPipelines {
 		log.Printf("Updating access to %s for teamPipeline id '%s'...", teamPipeline.AccessLevel, teamPipeline.PipelineTeamId)
-		_, err := teamPipelineUpdate(ctx, client.genqlient, teamPipeline.PipelineTeamId.ValueString(), PipelineAccessLevels(teamPipeline.AccessLevel.ValueString()))
+		err := retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
+			_, err := teamPipelineUpdate(ctx, client.genqlient, teamPipeline.PipelineTeamId.ValueString(), PipelineAccessLevels(teamPipeline.AccessLevel.ValueString()))
+			return retryContextError(err)
+		})
 		if err != nil {
 			log.Printf("Unable to update team pipeline")
 			return err
@@ -892,10 +965,13 @@ func updateTeamPipelines(ctx context.Context, teamPipelines []*pipelineTeamModel
 	return nil
 }
 
-func deleteTeamPipelines(ctx context.Context, teamPipelines []*pipelineTeamModel, client *Client) error {
+func deleteTeamPipelines(ctx context.Context, teamPipelines []*pipelineTeamModel, client *Client, timeouts time.Duration) error {
 	for _, teamPipeline := range teamPipelines {
 		log.Printf("Removing access for teamPipeline %s (id=%s)...", teamPipeline.Slug, teamPipeline.PipelineTeamId)
-		_, err := teamPipelineDelete(ctx, client.genqlient, teamPipeline.PipelineTeamId.ValueString())
+		err := retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
+			_, err := teamPipelineDelete(ctx, client.genqlient, teamPipeline.PipelineTeamId.ValueString())
+			return retryContextError(err)
+		})
 		if err != nil {
 			log.Printf("Unable to delete team pipeline")
 			return err
@@ -932,4 +1008,14 @@ func updatePipelineResourceExtraInfo(state *pipelineResourceModel, pipeline *Pip
 			SeparatePullRequestStatuses:             types.BoolPointerValue(s.SeparatePullRequestStatuses),
 		},
 	}
+}
+
+func retryContextError(err error) *retry.RetryError {
+	if err != nil {
+		if isRetryableError(err) {
+			return retry.RetryableError(err)
+		}
+		return retry.NonRetryableError(err)
+	}
+	return nil
 }
