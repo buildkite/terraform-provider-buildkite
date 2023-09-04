@@ -11,7 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
-func TestAccBuildkiteTestSuiteTeam(t *testing.T) {
+func TestAccBuildkiteTestSuiteTeamResource(t *testing.T) {
 	config := func(ownerTeamName, newTeamName, accessLevel string) string {
 		return fmt.Sprintf(`
 		provider "buildkite" {

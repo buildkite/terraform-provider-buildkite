@@ -12,7 +12,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
-func TestAccBuildkiteTestSuite(t *testing.T) {
+func TestAccBuildkiteTestSuiteResource(t *testing.T) {
 	basicTestSuite := func(name string) string {
 		return fmt.Sprintf(`
 		provider "buildkite" {
