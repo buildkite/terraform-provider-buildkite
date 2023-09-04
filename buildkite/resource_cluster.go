@@ -25,7 +25,6 @@ type clusterResourceModel struct {
 	Emoji       types.String   `tfsdk:"emoji"`
 	Color       types.String   `tfsdk:"color"`
 	UUID        types.String   `tfsdk:"uuid"`
-	Timeouts    timeouts.Value `tfsdk:"timeouts"`
 }
 
 func newClusterResource() resource.Resource {
