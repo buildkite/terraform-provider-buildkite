@@ -7,6 +7,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/shurcooL/graphql"
 )
 
@@ -61,4 +62,14 @@ func getenv(key string) string {
 		return os.Getenv("BUILDKITE_ORGANIZATION")
 	}
 	return val
+}
+
+func retryContextError(err error) *retry.RetryError {
+	if err != nil {
+		if isRetryableError(err) {
+			return retry.RetryableError(err)
+		}
+		return retry.NonRetryableError(err)
+	}
+	return nil
 }

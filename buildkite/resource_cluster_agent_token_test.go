@@ -6,84 +6,110 @@ import (
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
-func testAccClusterAgentTokenBasic(description string) string {
-	config := `
+func TestAccBuildkiteClusterAgentTokenResource(t *testing.T) {
+	configBasic := func(fields ...string) string {
+		return fmt.Sprintf(`
+		provider "buildkite" {
+			timeouts {
+				create = "10s"
+				read = "10s"
+				update = "10s"
+				delete = "10s"
+			}
+		}
+
+		resource "buildkite_cluster" "cluster_test" {
+			name = "Test cluster %s"
+			description = "Acceptance testing cluster"
+		}
+
 		resource "buildkite_cluster_agent_token" "foobar" {
-			cluster_id = "Q2x1c3Rlci0tLTBhOTY5Yjc0LWEwYjctNDM0MC1hYWNlLWQ4NzQ0MjNmM2Q2Yw=="
+			cluster_id = buildkite_cluster.cluster_test.id
 			description = "Acceptance Test %s"
 		}
-	`
-	return fmt.Sprintf(config, description)
-}
 
-func TestAccClusterAgentToken_add_remove(t *testing.T) {
-	t.Parallel()
-	var ct ClusterAgentTokenResourceModel
+		`, fields[0], fields[1])
+	}
 
-	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: protoV6ProviderFactories(),
-		CheckDestroy:             testAccCheckClusterAgentTokenDestroy,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccClusterAgentTokenBasic("foo"),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					// Confirm the token exists in the buildkite API
-					testAccCheckClusterAgentTokenExists("buildkite_cluster_agent_token.foobar", &ct),
-					// Confirm the token has the correct values in Buildkite's system
-					testAccCheckClusterAgentTokenRemoteValues(&ct, "Acceptance Test foo"),
-					// Confirm the token has the correct values in terraform state
-					resource.TestCheckResourceAttr("buildkite_cluster_agent_token.foobar", "description", "Acceptance Test foo"),
-				),
+	t.Run("creates a cluster agent token", func(t *testing.T) {
+		var ct ClusterAgentTokenResourceModel
+		clusterName := acctest.RandString(10)
+		tokenDesc := acctest.RandString(10)
+
+		check := resource.ComposeAggregateTestCheckFunc(
+			// Confirm the token exists in the buildkite API
+			testAccCheckClusterAgentTokenExists("buildkite_cluster_agent_token.foobar", &ct),
+			// Confirm the token has the correct values in Buildkite's system
+			testAccCheckClusterAgentTokenRemoteValues(&ct, fmt.Sprintf("Acceptance Test %s", tokenDesc)),
+			// Confirm the token has the correct values in terraform state
+			resource.TestCheckResourceAttr("buildkite_cluster_agent_token.foobar", "description", fmt.Sprintf("Acceptance Test %s", tokenDesc)),
+		)
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			CheckDestroy:             testAccCheckClusterAgentTokenDestroy,
+			Steps: []resource.TestStep{
+				{
+					Config: configBasic(clusterName, tokenDesc),
+					Check:  check,
+				},
+				{
+					RefreshState: true,
+					PlanOnly:     true,
+					Check: resource.ComposeAggregateTestCheckFunc(
+						// Confirm the token has the correct values in terraform state
+						resource.TestCheckResourceAttr("buildkite_cluster_agent_token.foobar", "description", fmt.Sprintf("Acceptance Test %s", tokenDesc)),
+					),
+				},
 			},
-			{
-				RefreshState: true,
-				PlanOnly:     true,
-				Check: resource.ComposeAggregateTestCheckFunc(
-					// Confirm the token has the correct values in terraform state
-					resource.TestCheckResourceAttr("buildkite_cluster_agent_token.foobar", "description", "Acceptance Test foo"),
-				),
-			},
-		},
+		})
 	})
-}
 
-func TestAccClusterAgentToken_update(t *testing.T) {
-	t.Parallel()
-	var ct ClusterAgentTokenResourceModel
+	t.Run("updates a cluster agent token", func(t *testing.T) {
+		var ct ClusterAgentTokenResourceModel
+		clusterName := acctest.RandString(10)
+		tokenDesc := acctest.RandString(10)
+		updatedTokenDesc := acctest.RandString(10)
 
-	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: protoV6ProviderFactories(),
-		CheckDestroy:             testAccCheckClusterAgentTokenDestroy,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccClusterAgentTokenBasic("foo"),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					// Confirm the token exists in the buildkite API
-					testAccCheckClusterAgentTokenExists("buildkite_cluster_agent_token.foobar", &ct),
-					// Confirm the token has the correct values in Buildkite's system
-					testAccCheckClusterAgentTokenRemoteValues(&ct, "Acceptance Test foo"),
-					// Confirm the token has the correct values in terraform state
-					resource.TestCheckResourceAttr("buildkite_cluster_agent_token.foobar", "description", "Acceptance Test foo"),
-				),
+		check := resource.ComposeAggregateTestCheckFunc(
+			// Confirm the token exists in the buildkite API
+			testAccCheckClusterAgentTokenExists("buildkite_cluster_agent_token.foobar", &ct),
+			// Confirm the token has the correct values in Buildkite's system
+			testAccCheckClusterAgentTokenRemoteValues(&ct, fmt.Sprintf("Acceptance Test %s", tokenDesc)),
+			// Confirm the token has the correct values in terraform state
+			resource.TestCheckResourceAttr("buildkite_cluster_agent_token.foobar", "description", fmt.Sprintf("Acceptance Test %s", tokenDesc)),
+		)
+
+		ckecUpdated := resource.ComposeAggregateTestCheckFunc(
+			// Confirm the token exists in the buildkite API
+			testAccCheckClusterAgentTokenExists("buildkite_cluster_agent_token.foobar", &ct),
+			// Confirm the token has the correct values in Buildkite's system
+			testAccCheckClusterAgentTokenRemoteValues(&ct, fmt.Sprintf("Acceptance Test %s", updatedTokenDesc)),
+			// Confirm the token has the correct values in terraform state
+			resource.TestCheckResourceAttr("buildkite_cluster_agent_token.foobar", "description", fmt.Sprintf("Acceptance Test %s", updatedTokenDesc)),
+		)
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			CheckDestroy:             testAccCheckClusterAgentTokenDestroy,
+			Steps: []resource.TestStep{
+				{
+					Config: configBasic(clusterName, tokenDesc),
+					Check:  check,
+				},
+				{
+					Config: configBasic(clusterName, updatedTokenDesc),
+					Check:  ckecUpdated,
+				},
 			},
-			{
-				Config: testAccClusterAgentTokenBasic("bar"),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					// Confirm the token exists in the buildkite API
-					testAccCheckClusterAgentTokenExists("buildkite_cluster_agent_token.foobar", &ct),
-					// Confirm the token has the correct values in Buildkite's system
-					testAccCheckClusterAgentTokenRemoteValues(&ct, "Acceptance Test bar"),
-					// Confirm the token has the correct values in terraform state
-					resource.TestCheckResourceAttr("buildkite_cluster_agent_token.foobar", "description", "Acceptance Test bar"),
-				),
-			},
-		},
+		})
 	})
 }
 
@@ -145,27 +171,14 @@ func testAccCheckClusterAgentTokenDestroy(s *terraform.State) error {
 		if rs.Type != "buildkite_cluster_agent_token" {
 			continue
 		}
-
-		clusterTokens, err := getClusterAgentTokens(
-			context.Background(),
-			genqlientGraphql,
-			getenv("BUILDKITE_ORGANIZATION_SLUG"),
-			rs.Primary.Attributes["cluster_uuid"],
-		)
-
-		if err != nil {
-			return fmt.Errorf("Error fetching Cluster Agent Tokens from graphql API: %v", err)
+		// Try to obtain the cluster tokens' cluster by its ID
+		resp, err := getNode(context.Background(), genqlientGraphql, rs.Primary.Attributes["cluster_id"])
+		// If exists a getNodeNodeCluster, cluster still exists, error
+		if clusterNode, ok := resp.GetNode().(*getNodeNodeCluster); ok {
+			// Cluster still exists
+			return fmt.Errorf("Cluster still exists: %v", clusterNode)
 		}
-
-		// Obtain the ClusterAgentTokenResourceModel
-		for _, edge := range clusterTokens.Organization.Cluster.AgentTokens.Edges {
-			if edge.Node.Id == rs.Primary.ID {
-				return fmt.Errorf("Cluster agent token still exists in cluster, expected not to find it")
-			}
-		}
-
-		return nil
+		return err
 	}
-
 	return nil
 }
