@@ -13,7 +13,6 @@ All notable changes to this project will be documented in this file.
 - SUP-1322: Team member resource retries [[PR #381](https://github.com/buildkite/terraform-provider-buildkite/pull/381)] @james2791
 - SUP-1402: Agent token resource retries [[PR #382](https://github.com/buildkite/terraform-provider-buildkite/pull/382)] @james2791
 - SUP-1399: Add retry to pipeline team resource [[PR #384](https://github.com/buildkite/terraform-provider-buildkite/pull/384)] @lizrabuya
-- SUP-1361: Add timeouts to pipeline resource api[[PR #385](https://github.com/buildkite/terraform-provider-buildkite/pull/385)] @lizrabuya
 - SUP-1401: Cluster Queue and Cluster Agent Token resource retries [[PR #388](https://github.com/buildkite/terraform-provider-buildkite/pull/388)] @james2791
 - SUP-1361: Add timeouts to pipeline resource api [[PR #385](https://github.com/buildkite/terraform-provider-buildkite/pull/385)] @lizrabuya
 - SUP-1393 Detect repository provider type [[PR #386](https://github.com/buildkite/terraform-provider-buildkite/pull/386)] @jradtilbrook
@@ -44,7 +43,7 @@ functionality to [lifecycles](https://developer.hashicorp.com/terraform/language
 
 - Move archive pipeline config to provider [[PR #354](https://github.com/buildkite/terraform-provider-buildkite/pull/354)] @jradtilbrook
 - SUP-1076 Convert testing to framework [[PR #361](https://github.com/buildkite/terraform-provider-buildkite/pull/361)] @jradtilbrook
-- SUP-1076 Move Cluster tests to use t.Run [[PR #365](https://github.com/buildkite/terraform-provider-buildkite/pull/365)] @mcncl
+    - SUP-1076 Move Cluster tests to use t.Run [[PR #365](https://github.com/buildkite/terraform-provider-buildkite/pull/365)] @mcncl
 - SUP-1368 Fix pipeline resource update [[PR #359](https://github.com/buildkite/terraform-provider-buildkite/pull/359)] @lizrabuya
 - SUP-1307: Implement Pipeline Team Resource[[PR #351](https://github.com/buildkite/terraform-provider-buildkite/pull/351)] @lizrabuya
 
