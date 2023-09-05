@@ -106,13 +106,7 @@ func (tp *pipelineTeamResource) Create(ctx context.Context, req resource.CreateR
 			PipelineAccessLevels(state.AccessLevel.ValueString()),
 		)
 
-		if err != nil {
-			if isRetryableError(err) {
-				return retry.RetryableError(err)
-			}
-			return retry.NonRetryableError(err)
-		}
-		return nil
+		return retryContextError(err)
 	})
 
 	if err != nil {
@@ -155,13 +149,7 @@ func (tp *pipelineTeamResource) Read(ctx context.Context, req resource.ReadReque
 			state.Id.ValueString(),
 		)
 
-		if err != nil {
-			if isRetryableError(err) {
-				return retry.RetryableError(err)
-			}
-			return retry.NonRetryableError(err)
-		}
-		return nil
+		return retryContextError(err)
 	})
 
 	if err != nil {
@@ -217,13 +205,8 @@ func (tp *pipelineTeamResource) Update(ctx context.Context, req resource.UpdateR
 			state.Id.ValueString(),
 			PipelineAccessLevels(accessLevel),
 		)
-		if err != nil {
-			if isRetryableError(err) {
-				return retry.RetryableError(err)
-			}
-			return retry.NonRetryableError(err)
-		}
-		return nil
+
+		return retryContextError(err)
 	})
 
 	if err != nil {
@@ -257,13 +240,8 @@ func (tp *pipelineTeamResource) Delete(ctx context.Context, req resource.DeleteR
 
 	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		_, err := deleteTeamPipeline(ctx, tp.client.genqlient, state.Id.ValueString())
-		if err != nil {
-			if isRetryableError(err) {
-				return retry.RetryableError(err)
-			}
-			return retry.NonRetryableError(err)
-		}
-		return nil
+		
+		return retryContextError(err)
 	})
 
 	if err != nil {

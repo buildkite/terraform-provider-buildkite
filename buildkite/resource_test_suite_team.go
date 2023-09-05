@@ -108,14 +108,7 @@ func (tst *testSuiteTeamResource) Create(ctx context.Context, req resource.Creat
 			SuiteAccessLevels(state.AccessLevel.ValueString()),
 		)
 
-		if err != nil {
-			if isRetryableError(err) {
-				return retry.RetryableError(err)
-			}
-			return retry.NonRetryableError(err)
-		}
-
-		return nil
+		return retryContextError(err)
 	})
 
 	if err != nil {
@@ -159,14 +152,7 @@ func (tst *testSuiteTeamResource) Read(ctx context.Context, req resource.ReadReq
 			state.ID.ValueString(),
 		)
 
-		if err != nil {
-			if isRetryableError(err) {
-				return retry.RetryableError(err)
-			}
-			return retry.NonRetryableError(err)
-		}
-
-		return nil
+		return retryContextError(err)
 	})
 
 	if err != nil {
@@ -231,14 +217,7 @@ func (tst *testSuiteTeamResource) Update(ctx context.Context, req resource.Updat
 			SuiteAccessLevels(testSuiteTeamAccessLevel),
 		)
 
-		if err != nil {
-			if isRetryableError(err) {
-				return retry.RetryableError(err)
-			}
-			return retry.NonRetryableError(err)
-		}
-
-		return nil
+		return retryContextError(err)
 	})
 
 	if err != nil {
@@ -279,13 +258,7 @@ func (tst *testSuiteTeamResource) Delete(ctx context.Context, req resource.Delet
 			state.ID.ValueString(),
 		)
 
-		if err != nil {
-			if isRetryableError(err) {
-				return retry.RetryableError(err)
-			}
-			return retry.NonRetryableError(err)
-		}
-		return nil
+		return retryContextError(err)
 	})
 
 	if err != nil {

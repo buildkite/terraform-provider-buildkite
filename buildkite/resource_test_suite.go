@@ -76,14 +76,7 @@ func (ts *testSuiteResource) Create(ctx context.Context, req resource.CreateRequ
 			plan.TeamOwnerId.ValueString(),
 		)
 
-		if err != nil {
-			if isRetryableError(err) {
-				return retry.RetryableError(err)
-			}
-			return retry.NonRetryableError(err)
-		}
-
-		return nil
+		return retryContextError(err)
 	})
 
 	if err != nil {
@@ -116,14 +109,7 @@ func (ts *testSuiteResource) Create(ctx context.Context, req resource.CreateRequ
 	createErr := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		err = ts.client.makeRequest(ctx, "POST", url, payload, &response)
 
-		if err != nil {
-			if isRetryableError(err) {
-				return retry.RetryableError(err)
-			}
-			return retry.NonRetryableError(err)
-		}
-
-		return nil
+		return retryContextError(err)
 	})
 
 	if createErr != nil {
@@ -163,14 +149,7 @@ func (ts *testSuiteResource) Delete(ctx context.Context, req resource.DeleteRequ
 	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		err := ts.client.makeRequest(ctx, "DELETE", url, nil, nil)
 
-		if err != nil {
-			if isRetryableError(err) {
-				return retry.RetryableError(err)
-			}
-			return retry.NonRetryableError(err)
-		}
-
-		return nil
+		return retryContextError(err)
 	})
 
 	if err != nil {
@@ -210,14 +189,8 @@ func (ts *testSuiteResource) Read(ctx context.Context, req resource.ReadRequest,
 			ts.client.genqlient, state.ID.ValueString(),
 			50,
 		)
-		if err != nil {
-			if isRetryableError(err) {
-				return retry.RetryableError(err)
-			}
-			return retry.NonRetryableError(err)
-		}
 
-		return nil
+		return retryContextError(err)
 	})
 
 	if err != nil {
@@ -335,14 +308,7 @@ func (ts *testSuiteResource) Update(ctx context.Context, req resource.UpdateRequ
 	updateErr := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		err := ts.client.makeRequest(ctx, "PATCH", url, payload, &response)
 
-		if err != nil {
-			if isRetryableError(err) {
-				return retry.RetryableError(err)
-			}
-			return retry.NonRetryableError(err)
-		}
-
-		return nil
+		return retryContextError(err)
 	})
 
 	if updateErr != nil {
@@ -369,14 +335,7 @@ func (ts *testSuiteResource) Update(ctx context.Context, req resource.UpdateRequ
 				SuiteAccessLevelsManageAndRead,
 			)
 
-			if err != nil {
-				if isRetryableError(err) {
-					return retry.RetryableError(err)
-				}
-				return retry.NonRetryableError(err)
-			}
-
-			return nil
+			return retryContextError(err)
 		})
 
 		if err != nil {
@@ -396,13 +355,7 @@ func (ts *testSuiteResource) Update(ctx context.Context, req resource.UpdateRequ
 						team.Node.Id,
 					)
 
-					if err != nil {
-						if isRetryableError(err) {
-							return retry.RetryableError(err)
-						}
-						return retry.NonRetryableError(err)
-					}
-					return nil
+					return retryContextError(err)
 				})
 
 				if err != nil {

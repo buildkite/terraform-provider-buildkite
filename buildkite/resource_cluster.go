@@ -110,14 +110,8 @@ func (c *clusterResource) Create(ctx context.Context, req resource.CreateRequest
 			state.Emoji.ValueStringPointer(),
 			state.Color.ValueStringPointer(),
 		)
-		if err != nil {
-			if isRetryableError(err) {
-				return retry.RetryableError(err)
-			}
-			return retry.NonRetryableError(err)
-		}
 
-		return nil
+		return retryContextError(err)
 	})
 
 	if err != nil {
@@ -158,14 +152,7 @@ func (c *clusterResource) Read(ctx context.Context, req resource.ReadRequest, re
 		var err error
 		r, err = getNode(ctx, c.client.genqlient, state.ID.ValueString())
 
-		if err != nil {
-			if isRetryableError(err) {
-				return retry.RetryableError(err)
-			}
-			return retry.NonRetryableError(err)
-		}
-
-		return nil
+		return retryContextError(err)
 	})
 
 	if err != nil {
@@ -225,14 +212,7 @@ func (c *clusterResource) Update(ctx context.Context, req resource.UpdateRequest
 			plan.Color.ValueStringPointer(),
 		)
 
-		if err != nil {
-			if isRetryableError(err) {
-				return retry.RetryableError(err)
-			}
-			return retry.NonRetryableError(err)
-		}
-
-		return nil
+		return retryContextError(err)
 	})
 
 	if err != nil {
@@ -269,14 +249,7 @@ func (c *clusterResource) Delete(ctx context.Context, req resource.DeleteRequest
 		var err error
 		_, err = deleteCluster(ctx, c.client.genqlient, c.client.organizationId, state.ID.ValueString())
 
-		if err != nil {
-			if isRetryableError(err) {
-				return retry.RetryableError(err)
-			}
-			return retry.NonRetryableError(err)
-		}
-
-		return nil
+		return retryContextError(err)
 	})
 
 	if err != nil {

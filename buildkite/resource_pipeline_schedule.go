@@ -139,13 +139,7 @@ func (ps *pipelineSchedule) Create(ctx context.Context, req resource.CreateReque
 			&envVars,
 			plan.Enabled.ValueBool())
 
-		if err != nil {
-			if isRetryableError(err) {
-				return retry.RetryableError(err)
-			}
-			return retry.NonRetryableError(err)
-		}
-		return nil
+		return retryContextError(err)
 	})
 
 	if err != nil {
@@ -196,13 +190,7 @@ func (ps *pipelineSchedule) Read(ctx context.Context, req resource.ReadRequest, 
 			state.Id.ValueString(),
 		)
 
-		if err != nil {
-			if isRetryableError(err) {
-				return retry.RetryableError(err)
-			}
-			return retry.NonRetryableError(err)
-		}
-		return nil
+		return retryContextError(err)
 	})
 
 	if err != nil {
@@ -271,14 +259,7 @@ func (ps *pipelineSchedule) Update(ctx context.Context, req resource.UpdateReque
 			input,
 		)
 
-		if err != nil {
-			if isRetryableError(err) {
-				return retry.RetryableError(err)
-			}
-			return retry.NonRetryableError(err)
-		}
-
-		return nil
+		return retryContextError(err)
 	})
 
 	if err != nil {
@@ -312,13 +293,7 @@ func (ps *pipelineSchedule) Delete(ctx context.Context, req resource.DeleteReque
 	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		_, err := deletePipelineSchedule(ctx, ps.client.genqlient, plan.Id.ValueString())
 
-		if err != nil {
-			if isRetryableError(err) {
-				return retry.RetryableError(err)
-			}
-			return retry.NonRetryableError(err)
-		}
-		return nil
+		return retryContextError(err)
 	})
 
 	if err != nil {
