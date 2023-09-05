@@ -158,7 +158,7 @@ func (t *teamResource) Create(ctx context.Context, req resource.CreateRequest, r
 			state.DefaultMemberRole.ValueString(),
 			state.MembersCanCreatePipelines.ValueBool(),
 		)
-		
+
 		return retryContextError(err)
 	})
 
