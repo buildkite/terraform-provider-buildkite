@@ -177,7 +177,7 @@ func testAccCheckClusterAgentTokenDestroy(s *terraform.State) error {
 		if clusterNode, ok := resp.GetNode().(*getNodeNodeCluster); ok {
 			// Cluster still exists
 			return fmt.Errorf("Cluster still exists: %v", clusterNode)
-		} 
+		}
 		return err
 	}
 	return nil
