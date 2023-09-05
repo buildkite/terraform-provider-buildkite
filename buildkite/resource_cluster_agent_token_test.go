@@ -25,6 +25,7 @@ func TestAccBuildkiteClusterAgentTokenResource(t *testing.T) {
 
 		resource "buildkite_cluster" "cluster_test" {
 			name = "Test cluster %s"
+			description = "Acceptance testing cluster"
 		}
 
 		resource "buildkite_cluster_agent_token" "foobar" {
@@ -52,7 +53,7 @@ func TestAccBuildkiteClusterAgentTokenResource(t *testing.T) {
 		resource.ParallelTest(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },
 			ProtoV6ProviderFactories: protoV6ProviderFactories(),
-			//CheckDestroy:             testAccCheckClusterAgentTokenDestroy,
+			CheckDestroy:             testAccCheckClusterAgentTokenDestroy,
 			Steps: []resource.TestStep{
 				{
 					Config: configBasic(clusterName, tokenDesc),
@@ -97,7 +98,7 @@ func TestAccBuildkiteClusterAgentTokenResource(t *testing.T) {
 		resource.ParallelTest(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },
 			ProtoV6ProviderFactories: protoV6ProviderFactories(),
-			//CheckDestroy:             testAccCheckClusterAgentTokenDestroy,
+			CheckDestroy:             testAccCheckClusterAgentTokenDestroy,
 			Steps: []resource.TestStep{
 				{
 					Config: configBasic(clusterName, tokenDesc),
@@ -170,27 +171,14 @@ func testAccCheckClusterAgentTokenDestroy(s *terraform.State) error {
 		if rs.Type != "buildkite_cluster_agent_token" {
 			continue
 		}
-
-		clusterTokens, err := getClusterAgentTokens(
-			context.Background(),
-			genqlientGraphql,
-			getenv("BUILDKITE_ORGANIZATION_SLUG"),
-			rs.Primary.Attributes["cluster_uuid"],
-		)
-
-		if err != nil {
-			return fmt.Errorf("Error fetching Cluster Agent Tokens from graphql API: %v", err)
-		}
-
-		// Obtain the ClusterAgentTokenResourceModel
-		for _, edge := range clusterTokens.Organization.Cluster.AgentTokens.Edges {
-			if edge.Node.Id == rs.Primary.ID {
-				return fmt.Errorf("Cluster agent token still exists in cluster, expected not to find it")
-			}
-		}
-
-		return nil
+		// Try to obtain the cluster tokens' cluster by its ID
+		resp, err := getNode(context.Background(), genqlientGraphql, rs.Primary.Attributes["cluster_id"])
+		// If exists a getNodeNodeCluster, cluster still exists, error
+		if clusterNode, ok := resp.GetNode().(*getNodeNodeCluster); ok {
+			// Cluster still exists
+			return fmt.Errorf("Cluster still exists: %v", clusterNode)
+		} 
+		return err
 	}
-
 	return nil
 }

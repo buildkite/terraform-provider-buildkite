@@ -25,6 +25,7 @@ func TestAccBuildkiteClusterQueueResource(t *testing.T) {
 
 		resource "buildkite_cluster" "cluster_test" {
 			name = "Test cluster %s"
+			description = "Acceptance testing cluster"
 		}
 
 		resource "buildkite_cluster_queue" "foobar" {
@@ -56,7 +57,7 @@ func TestAccBuildkiteClusterQueueResource(t *testing.T) {
 		resource.ParallelTest(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },
 			ProtoV6ProviderFactories: protoV6ProviderFactories(),
-			//CheckDestroy:             testAccCheckClusterQueueDestroy,
+			CheckDestroy:             testAccCheckClusterQueueDestroy,
 			Steps: []resource.TestStep{
 				{
 					Config: configBasic(clusterName, queueKey, queueDesc),
@@ -104,7 +105,7 @@ func TestAccBuildkiteClusterQueueResource(t *testing.T) {
 		resource.ParallelTest(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },
 			ProtoV6ProviderFactories: protoV6ProviderFactories(),
-			//CheckDestroy:             testAccCheckClusterQueueDestroy,
+			CheckDestroy:             testAccCheckClusterQueueDestroy,
 			Steps: []resource.TestStep{
 				{
 					Config: configBasic(clusterName, queueKey, queueDesc),
@@ -135,7 +136,7 @@ func TestAccBuildkiteClusterQueueResource(t *testing.T) {
 		resource.ParallelTest(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },
 			ProtoV6ProviderFactories: protoV6ProviderFactories(),
-			//CheckDestroy:             testAccCheckClusterQueueDestroy,
+			CheckDestroy:             testAccCheckClusterQueueDestroy,
 			Steps: []resource.TestStep{
 				{
 					Config: configBasic(clusterName, queueKey, queueDesc),
@@ -226,28 +227,14 @@ func testAccCheckClusterQueueDestroy(s *terraform.State) error {
 		if rs.Type != "buildkite_cluster_queue" {
 			continue
 		}
-
-		// Obtain queues of the queue's cluster from its cluster UUID
-		queues, err := getClusterQueues(
-			context.Background(),
-			genqlientGraphql,
-			getenv("BUILDKITE_ORGANIZATION_SLUG"),
-			rs.Primary.Attributes["cluster_uuid"],
-		)
-
-		// If cluster queues were not able to be fetched by Genqlient
-		if err != nil {
-			return fmt.Errorf("Error fetching Cluster queues from graphql API: %v", err)
-		}
-
-		// Loop over the cluster's queues, error if the queue still exists
-		for _, edge := range queues.Organization.Cluster.Queues.Edges {
-			if edge.Node.Id == rs.Primary.ID {
-				return fmt.Errorf("Cluster queue still exists in cluster, expected not to find it")
-			}
-		}
-
-		return nil
+		// Try to obtain the queues' cluster by its ID 
+		resp, err := getNode(context.Background(), genqlientGraphql, rs.Primary.Attributes["cluster_id"])
+		// If exists a getNodeNodeCluster, cluster still exists, error
+		if clusterNode, ok := resp.GetNode().(*getNodeNodeCluster); ok {
+			// Cluster still exists
+			return fmt.Errorf("Cluster still exists: %v", clusterNode)
+		} 
+		return err
 	}
 	return nil
 }
