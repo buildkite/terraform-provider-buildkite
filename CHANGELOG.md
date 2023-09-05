@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## Unreleased
+## [v0.27.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v0.26.0...v0.27.0)
 
 - SUP-805: SUP-805: Team resource retries [[PR #360](https://github.com/buildkite/terraform-provider-buildkite/pull/360)] @james2791
 - SUP-1392: Random test suite names in tests/t.Run() conversion [[PR #376](https://github.com/buildkite/terraform-provider-buildkite/pull/376)] @james2791
@@ -21,7 +21,7 @@ All notable changes to this project will be documented in this file.
 
 ### Changes
 
-This release adds a default timeout for all CRUD operations of 30 seconds. You can override this using the `timeout` attribute of the provider configuration block.
+This release introduces a default timeout for all CRUD operations on resources of 30 seconds. You can override this using the `timeout` attribute of the provider configuration block.
 
 ## [v0.26.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v0.25.0...v0.26.0)
 
