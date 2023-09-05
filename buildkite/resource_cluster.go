@@ -3,6 +3,7 @@ package buildkite
 import (
 	"context"
 	"fmt"
+	"log/slog"
 
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -18,13 +19,14 @@ type clusterResource struct {
 }
 
 type clusterResourceModel struct {
-	ID             types.String `tfsdk:"id"`
-	Name           types.String `tfsdk:"name"`
-	Description    types.String `tfsdk:"description"`
-	Emoji          types.String `tfsdk:"emoji"`
-	Color          types.String `tfsdk:"color"`
-	UUID           types.String `tfsdk:"uuid"`
-	DefaultQueueID types.String `tfsdk:"default_queue_id"`
+	ID                 types.String `tfsdk:"id"`
+	Name               types.String `tfsdk:"name"`
+	Description        types.String `tfsdk:"description"`
+	Emoji              types.String `tfsdk:"emoji"`
+	Color              types.String `tfsdk:"color"`
+	UUID               types.String `tfsdk:"uuid"`
+	CreateDefaultQueue types.Bool   `tfsdk:"create_default_queue"`
+	DefaultQueueID     types.String `tfsdk:"default_queue_id"`
 }
 
 func newClusterResource() resource.Resource {
@@ -76,7 +78,13 @@ func (c *clusterResource) Schema(ctx context.Context, req resource.SchemaRequest
 				Optional:            true,
 				MarkdownDescription: "A color representation of the Cluster. Accepts hex codes, eg #BADA55.",
 			},
+			"create_default_queue": resource_schema.BoolAttribute{
+				Optional:            true,
+				Computed:            true,
+				MarkdownDescription: "If `true`, the provider will create a default queue to associate with the Cluster.",
+			},
 			"default_queue_id": resource_schema.StringAttribute{
+				Computed:            true,
 				Optional:            true,
 				MarkdownDescription: "The ID for the Cluster queue that should be considered the default for this Cluster.",
 			},
@@ -106,6 +114,7 @@ func (c *clusterResource) Create(ctx context.Context, req resource.CreateRequest
 	var r *createClusterResponse
 	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		var err error
+		slog.Info("Creating cluster: %s", state.Name)
 		r, err = createCluster(
 			ctx,
 			c.client.genqlient,
@@ -120,6 +129,57 @@ func (c *clusterResource) Create(ctx context.Context, req resource.CreateRequest
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
+		}
+
+		slog.Info("Cluster created successfully 🎉")
+
+		if state.CreateDefaultQueue.ValueBool() == true {
+			var cqr *createClusterQueueResponse
+			err = retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+				var createQueueError error
+				slog.Info("Creating cluster queue `default` on cluster: %s", state.Name)
+				cqr, createQueueError = createClusterQueue(
+					ctx,
+					c.client.genqlient,
+					c.client.organizationId,
+					r.ClusterCreate.Cluster.Id,
+					"default",
+					state.Description.ValueStringPointer(),
+				)
+				if createQueueError != nil {
+					if isRetryableError(err) {
+						return retry.RetryableError(err)
+					}
+					return retry.NonRetryableError(err)
+				}
+				return nil
+			})
+
+			slog.Info("Cluster queue %s created successfully 🎉", cqr.ClusterQueueCreate.ClusterQueue.Id)
+
+			var cur *updateClusterResponse
+			err = retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+				var updateClusterError error
+				cur, updateClusterError = updateCluster(
+					ctx,
+					c.client.genqlient,
+					c.client.organizationId,
+					r.ClusterCreate.Cluster.Id,
+					state.Name.ValueString(),
+					state.Description.ValueStringPointer(),
+					state.Emoji.ValueStringPointer(),
+					state.Color.ValueStringPointer(),
+					&cqr.ClusterQueueCreate.ClusterQueue.Id,
+				)
+				if updateClusterError != nil {
+					if isRetryableError(err) {
+						return retry.RetryableError(err)
+					}
+					return retry.NonRetryableError(err)
+				}
+				state.DefaultQueueID = types.StringValue(cur.ClusterUpdate.Cluster.DefaultQueue.Id)
+				return nil
+			})
 		}
 
 		return nil
