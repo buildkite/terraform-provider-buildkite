@@ -107,14 +107,7 @@ func (tm *teamMemberResource) Create(ctx context.Context, req resource.CreateReq
 			*state.Role.ValueStringPointer(),
 		)
 
-		if err != nil {
-			if isRetryableError(err) {
-				return retry.RetryableError(err)
-			}
-			return retry.NonRetryableError(err)
-		}
-
-		return nil
+		return retryContextError(err)
 	})
 
 	if err != nil {
@@ -160,14 +153,7 @@ func (tm *teamMemberResource) Read(ctx context.Context, req resource.ReadRequest
 			state.Id.ValueString(),
 		)
 
-		if err != nil {
-			if isRetryableError(err) {
-				return retry.RetryableError(err)
-			}
-			return retry.NonRetryableError(err)
-		}
-
-		return nil
+		return retryContextError(err)
 	})
 
 	if err != nil {
@@ -231,14 +217,7 @@ func (tm *teamMemberResource) Update(ctx context.Context, req resource.UpdateReq
 			*plan.Role.ValueStringPointer(),
 		)
 
-		if err != nil {
-			if isRetryableError(err) {
-				return retry.RetryableError(err)
-			}
-			return retry.NonRetryableError(err)
-		}
-
-		return nil
+		return retryContextError(err)
 	})
 
 	if err != nil {
@@ -278,13 +257,7 @@ func (tm *teamMemberResource) Delete(ctx context.Context, req resource.DeleteReq
 			state.Id.ValueString(),
 		)
 
-		if err != nil {
-			if isRetryableError(err) {
-				return retry.RetryableError(err)
-			}
-			return retry.NonRetryableError(err)
-		}
-		return nil
+		return retryContextError(err)
 	})
 
 	if err != nil {
