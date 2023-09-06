@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
-- SUP-1382: Remove the deprecated team block from pipelines
+- SUP-1382: Remove the deprecated team block from pipelines [[PR #391](https://github.com/buildkite/terraform-provider-buildkite/pull/391)] @lizrabuya
 
 The `team` block from the `buildkite_pipeline` resource has been removed. Please use the resource `buildkite_pipeline_team` to create and manage team configuration in a pipeline.
 
