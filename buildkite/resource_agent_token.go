@@ -70,14 +70,7 @@ func (at *AgentTokenResource) Create(ctx context.Context, req resource.CreateReq
 			plan.Description.ValueStringPointer(),
 		)
 
-		if err != nil {
-			if isRetryableError(err) {
-				return retry.RetryableError(err)
-			}
-			return retry.NonRetryableError(err)
-		}
-
-		return nil
+		return retryContextError(err)
 	})
 
 	if err != nil {
@@ -120,13 +113,7 @@ func (at *AgentTokenResource) Delete(ctx context.Context, req resource.DeleteReq
 			"Revoked by Terraform",
 		)
 
-		if err != nil {
-			if isRetryableError(err) {
-				return retry.RetryableError(err)
-			}
-			return retry.NonRetryableError(err)
-		}
-		return nil
+		return retryContextError(err)
 	})
 
 	if err != nil {
@@ -167,14 +154,7 @@ func (at *AgentTokenResource) Read(ctx context.Context, req resource.ReadRequest
 			fmt.Sprintf("%s/%s", at.client.organization, plan.Uuid.ValueString()),
 		)
 
-		if err != nil {
-			if isRetryableError(err) {
-				return retry.RetryableError(err)
-			}
-			return retry.NonRetryableError(err)
-		}
-
-		return nil
+		return retryContextError(err)
 	})
 
 	if err != nil {
