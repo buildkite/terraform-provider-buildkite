@@ -72,22 +72,6 @@ mutation updatePipeline(
     }
 }
 
-mutation teamPipelineCreate($teamId: ID!, $pipelineId: ID!, $accessLevel: PipelineAccessLevels) {
-    teamPipelineCreate(input: {teamID: $teamId, pipelineID: $pipelineId, accessLevel: $accessLevel}) {
-        teamPipeline {
-            id
-        }
-    }
-}
-
-mutation teamPipelineDelete($id: ID!) {
-    teamPipelineDelete(input: {id: $id}) {
-        deletedTeamPipelineID
-    }
-}
-
-
-
 mutation deletePipeline ($id: ID!) {
     pipelineDelete(input: {
         id: $id
