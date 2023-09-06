@@ -9,6 +9,7 @@ All notable changes to this project will be documented in this file.
 ## Unreleased 
 
 - retryContextError util resource switch [[PR #394](https://github.com/buildkite/terraform-provider-buildkite/pull/394)] @james2791
+- Added `build_pull_request_ready_for_review` to pipeline resource docs/examples/tests[[PR #396](https://github.com/buildkite/terraform-provider-buildkite/pull/396)] @james2791
 
 ## [v0.27.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v0.26.0...v0.27.0)
 
