@@ -181,10 +181,11 @@ func TestAccBuildkitePipeline(t *testing.T) {
 				tags = ["llama"]
 				provider_settings {
 					trigger_mode = "code"
-					build_pull_requests = false
+					build_pull_requests = true
 					skip_builds_for_existing_commits = true
 					build_branches = true
 					build_tags = true
+					build_pull_request_ready_for_review = true
 					cancel_deleted_branch_builds = true
 					filter_enabled = true
 					filter_condition = "true"
@@ -222,10 +223,11 @@ func TestAccBuildkitePipeline(t *testing.T) {
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "skip_intermediate_builds", "true"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "skip_intermediate_builds_branch_filter", "!main"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.0.trigger_mode", "code"),
-						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.0.build_pull_requests", "false"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.0.build_pull_requests", "true"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.0.skip_builds_for_existing_commits", "true"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.0.build_branches", "true"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.0.build_tags", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.0.build_pull_request_ready_for_review", "true"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.0.cancel_deleted_branch_builds", "true"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.0.filter_enabled", "true"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.0.filter_condition", "true"),
@@ -292,10 +294,11 @@ func TestAccBuildkitePipeline(t *testing.T) {
 							tags = ["llama"]
 							provider_settings {
 								trigger_mode = "code"
-								build_pull_requests = false
+								build_pull_requests = true
 								skip_builds_for_existing_commits = true
 								build_branches = true
 								build_tags = true
+								build_pull_request_ready_for_review = true
 								cancel_deleted_branch_builds = true
 								filter_enabled = true
 								filter_condition = "true"
