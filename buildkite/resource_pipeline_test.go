@@ -138,10 +138,10 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 						resource.TestCheckNoResourceAttr("buildkite_pipeline.pipeline", "tags.#"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.#", "1"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.0.trigger_mode", ""),
-						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.0.build_pull_requests", "true"),
-						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.0.skip_pull_request_builds_for_existing_commits", "true"),
-						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.0.build_branches", "true"),
-						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.0.publish_commit_status", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.0.build_pull_requests", "false"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.0.skip_pull_request_builds_for_existing_commits", "false"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.0.build_branches", "false"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.0.publish_commit_status", "false"),
 					),
 				},
 			},
@@ -173,14 +173,7 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 				provider_settings {
 					trigger_mode = "code"
 					build_pull_requests = false
-					pull_request_branch_filter_enabled = true
-					pull_request_branch_filter_configuration = "main"
 					skip_builds_for_existing_commits = true
-					skip_pull_request_builds_for_existing_commits = true
-					build_pull_request_ready_for_review = true
-					build_pull_request_labels_changed = true
-					build_pull_request_forks = true
-					prefix_pull_request_fork_branch_names = true
 					build_branches = true
 					build_tags = true
 					cancel_deleted_branch_builds = true
@@ -215,13 +208,7 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "skip_intermediate_builds_branch_filter", "!main"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.0.trigger_mode", "code"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.0.build_pull_requests", "false"),
-						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.0.pull_request_branch_filter_enabled", "true"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.0.skip_builds_for_existing_commits", "true"),
-						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.0.skip_pull_request_builds_for_existing_commits", "true"),
-						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.0.build_pull_request_ready_for_review", "true"),
-						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.0.build_pull_request_labels_changed", "true"),
-						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.0.build_pull_request_forks", "true"),
-						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.0.prefix_pull_request_fork_branch_names", "true"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.0.build_branches", "true"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.0.build_tags", "true"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.0.cancel_deleted_branch_builds", "true"),
@@ -284,14 +271,7 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 							provider_settings {
 								trigger_mode = "code"
 								build_pull_requests = false
-								pull_request_branch_filter_enabled = true
-								pull_request_branch_filter_configuration = "main"
 								skip_builds_for_existing_commits = true
-								skip_pull_request_builds_for_existing_commits = true
-								build_pull_request_ready_for_review = true
-								build_pull_request_labels_changed = true
-								build_pull_request_forks = true
-								prefix_pull_request_fork_branch_names = true
 								build_branches = true
 								build_tags = true
 								cancel_deleted_branch_builds = true

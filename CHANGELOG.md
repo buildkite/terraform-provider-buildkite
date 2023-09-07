@@ -1,8 +1,11 @@
 # Changelog
+ 
+## Unreleased 
+All notable changes to this project will be documented in this file.
 
-All notable changes to this p 
-## Unreleased
+## v1.0.0-beta
 
+- SUP-1394 Add validation to provider_settings [[PR #387](https://github.com/buildkite/terraform-provider-buildkite/pull/387)] @jradtilbrook
 - SUP-1382: Remove the deprecated team block from pipelines [[PR #391](https://github.com/buildkite/terraform-provider-buildkite/pull/391)] @lizrabuya
 - retryContextError util resource switch [[PR #394](https://github.com/buildkite/terraform-provider-buildkite/pull/394)] @james2791
 
