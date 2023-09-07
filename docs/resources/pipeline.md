@@ -97,8 +97,7 @@ resource "buildkite_pipeline" "repo2-release" {
 -   `cancel_intermediate_builds` - (Optional, Default: `false` ) A boolean to enable automatically cancelling any running builds on the same branch when a new build is created.
 -   `cancel_intermediate_builds_branch_filter` - (Optional) Limit which branches build cancelling applies to, for example !master will ensure that the master branch won't have its builds automatically cancelled.
 -   `allow_rebuilds` - (Optional, Default: `true` ) A boolean on whether or not to allow rebuilds for the pipeline.
--   `cluster_id` - (Optional) The GraphQL ID of the cluster you want to use for the pipeline.
--   `team` - (Optional) **DEPRECATED** Set team access for the pipeline. Can be specified multiple times for each team.
+-   `cluster_id` - (Optional) The GraphQL ID of the cluster you want to use for the pipeline. 
 -   `tags` - (Optional) A set of tags to be set to the pipeline. For example `["terraform", "provider"]`.
 -   `provider_settings` - (Optional) Source control provider settings for the pipeline. See [Provider Settings Configuration](#provider-settings-configuration) below for details.
 

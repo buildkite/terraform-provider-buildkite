@@ -63,23 +63,11 @@ type PipelineNode struct {
 	Slug                                 graphql.String
 	Steps                                Steps
 	Tags                                 []PipelineTag
-	Teams                                struct {
-		Edges []struct {
-			Node TeamPipelineNode
-		}
-	} `graphql:"teams(first: 50)"`
-	WebhookURL graphql.String `graphql:"webhookURL"`
+	WebhookURL                           graphql.String `graphql:"webhookURL"`
 }
 
 type PipelineTag struct {
 	Label graphql.String
-}
-
-// TeamPipelineNode represents a team pipeline as returned from the GraphQL API
-type TeamPipelineNode struct {
-	AccessLevel PipelineAccessLevels
-	ID          graphql.String
-	Team        TeamNode
 }
 
 type pipelineResourceModel struct {
@@ -102,7 +90,6 @@ type pipelineResourceModel struct {
 	Slug                                 types.String             `tfsdk:"slug"`
 	Steps                                types.String             `tfsdk:"steps"`
 	Tags                                 []types.String           `tfsdk:"tags"`
-	Teams                                []*pipelineTeamModel     `tfsdk:"team"`
 	WebhookUrl                           types.String             `tfsdk:"webhook_url"`
 }
 
@@ -128,13 +115,6 @@ type providerSettingsModel struct {
 	SeparatePullRequestStatuses             types.Bool   `tfsdk:"separate_pull_request_statuses"`
 }
 
-type pipelineTeamModel struct {
-	TeamId         types.String `tfsdk:"team_id"`
-	PipelineTeamId types.String `tfsdk:"pipeline_team_id"`
-	Slug           types.String `tfsdk:"slug"`
-	AccessLevel    types.String `tfsdk:"access_level"`
-}
-
 type pipelineResource struct {
 	client          *Client
 	archiveOnDelete bool
@@ -158,7 +138,6 @@ type pipelineResponse interface {
 	GetSlug() string
 	GetSteps() PipelineValuesStepsPipelineSteps
 	GetTags() []PipelineValuesTagsPipelineTag
-	GetTeams() PipelineValuesTeamsTeamPipelineConnection
 	GetWebhookURL() string
 }
 
@@ -186,15 +165,6 @@ func (p *pipelineResource) Create(ctx context.Context, req resource.CreateReques
 		return
 	}
 
-	var teamsInput []PipelineTeamAssignmentInput
-	if len(plan.Teams) > 0 {
-		teamsInput = p.getTeamPipelinesFromSchema(&plan)
-	}
-	if len(teamsInput) != len(plan.Teams) {
-		resp.Diagnostics.AddError("Could not resolve all team IDs", "Could not resolve all team IDs")
-		return
-	}
-
 	// use the unsafe module to convert to an int. this is fine because the absolute max accepted by the API is much
 	// less than an int
 	defaultTimeoutInMinutes := (*int)(unsafe.Pointer(plan.DefaultTimeoutInMinutes.ValueInt64Pointer()))
@@ -216,7 +186,6 @@ func (p *pipelineResource) Create(ctx context.Context, req resource.CreateReques
 		SkipIntermediateBuilds:               plan.SkipIntermediateBuilds.ValueBool(),
 		SkipIntermediateBuildsBranchFilter:   plan.SkipIntermediateBuildsBranchFilter.ValueString(),
 		Steps:                                PipelineStepsInput{Yaml: plan.Steps.ValueString()},
-		Teams:                                teamsInput,
 		Tags:                                 getTagsFromSchema(&plan),
 	}
 
@@ -241,17 +210,6 @@ func (p *pipelineResource) Create(ctx context.Context, req resource.CreateReques
 	log.Printf("Successfully created pipeline with id '%s'.", response.PipelineCreate.Pipeline.Id)
 
 	setPipelineModel(&state, &response.PipelineCreate.Pipeline)
-	teamsFromApi := response.PipelineCreate.Pipeline.GetTeams().Edges
-	teams := make([]*pipelineTeamModel, len(teamsFromApi))
-	for i, teamEdge := range teamsFromApi {
-		teams[i] = &pipelineTeamModel{
-			Slug:           types.StringValue(teamEdge.Node.Team.Slug),
-			AccessLevel:    types.StringValue(string(teamEdge.Node.AccessLevel)),
-			TeamId:         types.StringValue(teamEdge.Node.Team.Id),
-			PipelineTeamId: types.StringValue(teamEdge.Node.Id),
-		}
-	}
-	state.Teams = teams
 
 	if len(plan.ProviderSettings) > 0 {
 		pipelineExtraInfo, err := updatePipelineExtraInfo(ctx, response.PipelineCreate.Pipeline.Slug, plan.ProviderSettings[0], p.client, timeouts)
@@ -359,7 +317,6 @@ func (p *pipelineResource) Read(ctx context.Context, req resource.ReadRequest, r
 		}
 
 		setPipelineModel(&state, pipelineNode)
-		reconcileTeamPipelinesToState(&state, pipelineNode)
 
 		if len(state.ProviderSettings) > 0 {
 			updatePipelineResourceExtraInfo(&state, extraInfo)
@@ -371,23 +328,6 @@ func (p *pipelineResource) Read(ctx context.Context, req resource.ReadRequest, r
 		resp.Diagnostics.AddWarning("Pipeline not found", "Removing pipeline from state")
 		resp.State.RemoveResource(ctx)
 	}
-}
-
-func reconcileTeamPipelinesToState(model *pipelineResourceModel, data pipelineResponse) {
-	var stateTeams []*pipelineTeamModel
-
-	for _, team := range model.Teams {
-		for _, teamEdge := range data.GetTeams().Edges {
-			if team.Slug.ValueString() == string(teamEdge.Node.Team.Slug) {
-				// make sure we update all values in state for users migrating from an old version
-				team.TeamId = types.StringValue(teamEdge.Node.Team.Id)
-				team.PipelineTeamId = types.StringValue(teamEdge.Node.Id)
-				team.AccessLevel = types.StringValue(string(teamEdge.Node.AccessLevel))
-				stateTeams = append(stateTeams, team)
-			}
-		}
-	}
-	model.Teams = stateTeams
 }
 
 func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
@@ -505,28 +445,6 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 			},
 		},
 		Blocks: map[string]schema.Block{
-			"team": schema.SetNestedBlock{
-				DeprecationMessage: "This block is deprecated. Please use `buildkite_pipeline_team` instead.",
-				NestedObject: schema.NestedBlockObject{
-					Attributes: map[string]schema.Attribute{
-						"slug": schema.StringAttribute{
-							Required: true,
-						},
-						"access_level": schema.StringAttribute{
-							Required: true,
-							Validators: []validator.String{
-								stringvalidator.OneOf(string(PipelineAccessLevelsReadOnly), string(PipelineAccessLevelsBuildAndRead), string(PipelineAccessLevelsManageBuildAndRead)),
-							},
-						},
-						"team_id": schema.StringAttribute{
-							Computed: true,
-						},
-						"pipeline_team_id": schema.StringAttribute{
-							Computed: true,
-						},
-					},
-				},
-			},
 			"provider_settings": schema.ListNestedBlock{
 				Validators: []validator.List{
 					listvalidator.SizeBetween(0, 1),
@@ -750,14 +668,6 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 
 	setPipelineModel(&state, &response.PipelineUpdate.Pipeline)
 
-	// plan.Teams has what we want. state.Teams has what exists on the server. we need to make them match
-	err = p.reconcileTeamPipelinesToPlan(ctx, plan.Teams, state.Teams, &response.PipelineUpdate.Pipeline, response.PipelineUpdate.Pipeline.Id, timeouts)
-	if err != nil {
-		resp.Diagnostics.AddError("Unable to reconcile team pipelines", err.Error())
-		return
-	}
-	state.Teams = plan.Teams
-
 	if len(plan.ProviderSettings) > 0 {
 		pipelineExtraInfo, err := updatePipelineExtraInfo(ctx, response.PipelineUpdate.Pipeline.Slug, plan.ProviderSettings[0], p.client, timeouts)
 		if err != nil {
@@ -906,157 +816,6 @@ func getTagsFromSchema(plan *pipelineResourceModel) []PipelineTagInput {
 		}
 	}
 	return tags
-}
-
-func (p *pipelineResource) getTeamPipelinesFromSchema(plan *pipelineResourceModel) []PipelineTeamAssignmentInput {
-	teamPipelineNodes := make([]PipelineTeamAssignmentInput, len(plan.Teams))
-	for i, team := range plan.Teams {
-		log.Printf("converting team slug '%s' to an ID", string(team.Slug.ValueString()))
-		teamID, err := GetTeamID(string(team.Slug.ValueString()), p.client)
-		if err != nil {
-			log.Printf("Unable to get ID for team slug")
-			return []PipelineTeamAssignmentInput{}
-		}
-		teamPipelineNodes[i] = PipelineTeamAssignmentInput{
-			Id:          teamID,
-			AccessLevel: PipelineAccessLevels(team.AccessLevel.ValueString()),
-		}
-	}
-	return teamPipelineNodes
-}
-
-// reconcileTeamPipelines plan.Teams has what we want - adds/updates/deletes the teamPipelines on buildkite to match the teams in terraform resource data
-func (p *pipelineResource) reconcileTeamPipelinesToPlan(ctx context.Context, planTeams []*pipelineTeamModel, stateTeams []*pipelineTeamModel, data pipelineResponse, pipelineId string, timeouts time.Duration) error {
-
-	var toAdd []*pipelineTeamModel
-	var toUpdate []*pipelineTeamModel
-	var toDelete []*pipelineTeamModel
-
-	// state.Teams has what exists on the server. we need to make them match
-	// apiResponseTeams is what exists on the server
-	// state.Teams is whats on the server (minus any new teams that have appeared outside this resource)
-	for _, teamInState := range stateTeams {
-		for _, teamInServer := range data.GetTeams().Edges {
-			if teamInState.PipelineTeamId.ValueString() == string(teamInServer.Node.Id) {
-				teamInState.AccessLevel = types.StringValue(string(teamInServer.Node.AccessLevel))
-			}
-
-		}
-	}
-
-	// plan.Teams is what we want to exist on the server
-	teamsInStateMap := make(map[string]*pipelineTeamModel)
-	for _, team := range stateTeams {
-		teamsInStateMap[team.Slug.ValueString()] = team
-	}
-	for _, teamPlan := range planTeams {
-		slugPlan := teamPlan.Slug.ValueString()
-		if _, found := teamsInStateMap[slugPlan]; found {
-			// if any access levels have changed with the remainder, update on the api
-			if teamPlan.AccessLevel != teamsInStateMap[slugPlan].AccessLevel {
-				teamsInStateMap[slugPlan].AccessLevel = teamPlan.AccessLevel
-				toUpdate = append(toUpdate, teamsInStateMap[slugPlan])
-			}
-			teamPlan.PipelineTeamId = teamsInStateMap[slugPlan].PipelineTeamId
-			teamPlan.TeamId = teamsInStateMap[slugPlan].TeamId
-		} else {
-			// if there are teams in plan but not in state, the user has added a new team block to tf -> we should add them on the api
-			toAdd = append(toAdd, teamPlan)
-		}
-	}
-
-	// if there are teams in state but not in plan, the user has removed them from tf -> we should remove them on the api
-	teamsInPlanMap := make(map[string]*pipelineTeamModel)
-	for _, team := range planTeams {
-		teamsInPlanMap[team.Slug.ValueString()] = team
-	}
-	for _, teamState := range stateTeams {
-		slugBK := teamState.Slug.ValueString()
-		if _, found := teamsInPlanMap[slugBK]; !found {
-			toDelete = append(toDelete, teamState)
-		}
-	}
-
-	// Add any teams that don't already exist
-	err := createTeamPipelines(ctx, toAdd, pipelineId, p.client, timeouts)
-	if err != nil {
-		return err
-	}
-
-	// Update any teams access levels that need updating
-	err = updateTeamPipelines(ctx, toUpdate, p.client, timeouts)
-	if err != nil {
-		return err
-	}
-
-	// Remove any teams that shouldn't exist
-	err = deleteTeamPipelines(ctx, toDelete, p.client, timeouts)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// createTeamPipelines grants access to a pipeline for the teams specified
-func createTeamPipelines(ctx context.Context, teamPipelines []*pipelineTeamModel, pipelineID string, client *Client, timeouts time.Duration) error {
-	for _, teamPipeline := range teamPipelines {
-		log.Printf("Granting teamPipeline %s %s access to pipeline id '%s'...", teamPipeline.Slug, teamPipeline.AccessLevel, pipelineID)
-		var teamID string
-		err := retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
-			var err error
-			teamID, err = GetTeamID(string(teamPipeline.Slug.ValueString()), client)
-			return retryContextError(err)
-		})
-		if err != nil {
-			return fmt.Errorf("Unable to get ID for team slug %s (%v)", teamPipeline.Slug.ValueString(), err)
-		}
-		var resp *teamPipelineCreateResponse
-		err = retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
-			var err error
-			resp, err = teamPipelineCreate(ctx, client.genqlient, teamID, pipelineID, PipelineAccessLevels(teamPipeline.AccessLevel.ValueString()))
-			return retryContextError(err)
-		})
-		if err != nil {
-			log.Printf("Unable to create team pipeline %s", teamPipeline.Slug)
-			return err
-		}
-		teamPipeline.TeamId = types.StringValue(teamID)
-		teamPipeline.PipelineTeamId = types.StringValue(resp.TeamPipelineCreate.TeamPipeline.Id)
-	}
-	return nil
-}
-
-// Update access levels for the given teamPipelines
-func updateTeamPipelines(ctx context.Context, teamPipelines []*pipelineTeamModel, client *Client, timeouts time.Duration) error {
-	for _, teamPipeline := range teamPipelines {
-		log.Printf("Updating access to %s for teamPipeline id '%s'...", teamPipeline.AccessLevel, teamPipeline.PipelineTeamId)
-		err := retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
-			_, err := teamPipelineUpdate(ctx, client.genqlient, teamPipeline.PipelineTeamId.ValueString(), PipelineAccessLevels(teamPipeline.AccessLevel.ValueString()))
-			return retryContextError(err)
-		})
-		if err != nil {
-			log.Printf("Unable to update team pipeline")
-			return err
-		}
-	}
-	return nil
-}
-
-func deleteTeamPipelines(ctx context.Context, teamPipelines []*pipelineTeamModel, client *Client, timeouts time.Duration) error {
-	for _, teamPipeline := range teamPipelines {
-		log.Printf("Removing access for teamPipeline %s (id=%s)...", teamPipeline.Slug, teamPipeline.PipelineTeamId)
-		err := retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
-			_, err := teamPipelineDelete(ctx, client.genqlient, teamPipeline.PipelineTeamId.ValueString())
-			return retryContextError(err)
-		})
-		if err != nil {
-			log.Printf("Unable to delete team pipeline")
-			return err
-		}
-	}
-
-	return nil
 }
 
 // updatePipelineResourceExtraInfo updates the terraform resource with data received from Buildkite REST API
