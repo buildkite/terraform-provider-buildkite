@@ -36,6 +36,12 @@ resource "buildkite_pipeline" "repo2" {
   lifecycle {
     prevent_destroy = true
   }
+
+  provider_settings {
+    trigger_mode = "code"
+    build_pull_requests = true
+    build_pull_request_ready_for_review = true
+  }
 }
 
 resource "buildkite_pipeline_schedule" "weekly" {
