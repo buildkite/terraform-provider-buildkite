@@ -13,6 +13,15 @@ steps:
       docker-compose#v3.9.0:
         run: go
 
+  - label: check docs generated
+    key: check-docs
+    commands:
+      - make docs
+      - git diff --quiet
+    plugins:
+      docker-compose#v3.9.0:
+        run: go
+
   - label: test
     key: test
     command: "make test"
