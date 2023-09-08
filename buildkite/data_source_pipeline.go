@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/MakeNowJust/heredoc"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -42,9 +43,15 @@ func (*pipelineDatasource) Metadata(ctx context.Context, req datasource.Metadata
 
 func (*pipelineDatasource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		MarkdownDescription: heredoc.Doc(`
+			Use this data source to look up properties on a specific pipeline. This is particularly useful for looking up the webhook URL for each pipeline.
+
+			More info in the Buildkite [documentation](https://buildkite.com/docs/pipelines).
+		`),
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
-				Computed: true,
+				Computed:            true,
+				MarkdownDescription: "The GraphQL ID of the pipeline.",
 			},
 			"name": schema.StringAttribute{
 				Computed:            true,
