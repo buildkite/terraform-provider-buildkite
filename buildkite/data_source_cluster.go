@@ -99,16 +99,18 @@ func (c *clusterDatasource) Read(ctx context.Context, req datasource.ReadRequest
 
 func (*clusterDatasource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		MarkdownDescription: "Look up a cluster by name.",
+		MarkdownDescription: "Use this data source to retrieve a cluster by name. You can find out more about clusters in the Buildkite [documentation](https://buildkite.com/docs/clusters/overview).",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
-				Computed: true,
+				Computed:            true,
+				MarkdownDescription: "The GraphQL ID of the cluster.",
 			},
 			"uuid": schema.StringAttribute{
-				Computed: true,
+				Computed:            true,
+				MarkdownDescription: "The UUID of the cluster",
 			},
 			"name": schema.StringAttribute{
-				MarkdownDescription: "The name of the Cluster to find.",
+				MarkdownDescription: "The name of the cluster to retrieve.",
 				Required:            true,
 			},
 			"description": schema.StringAttribute{
