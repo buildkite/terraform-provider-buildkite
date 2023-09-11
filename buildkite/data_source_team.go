@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/MakeNowJust/heredoc"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
@@ -46,10 +47,13 @@ func (t *teamDatasource) Metadata(ctx context.Context, req datasource.MetadataRe
 
 func (t *teamDatasource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		MarkdownDescription: "This datasource allows you to get a team from Buildkite.",
+		MarkdownDescription: heredoc.Doc(`
+			Use this data source to retrieve a team by slug or id. You can find out more about clusters in the Buildkite
+			[documentation](https://buildkite.com/docs/pipelines/permissions).
+		`),
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
-				MarkdownDescription: "The ID of the team.",
+				MarkdownDescription: "The ID of the team to find. Use either ID or slug.",
 				Optional:            true,
 				Computed:            true,
 				Validators: []validator.String{
@@ -64,7 +68,7 @@ func (t *teamDatasource) Schema(ctx context.Context, req datasource.SchemaReques
 				Computed:            true,
 			},
 			"slug": schema.StringAttribute{
-				MarkdownDescription: "The slug of the team.",
+				MarkdownDescription: "The slug of the team to find. Use either ID or slug.",
 				Computed:            true,
 				Optional:            true,
 			},
@@ -73,7 +77,7 @@ func (t *teamDatasource) Schema(ctx context.Context, req datasource.SchemaReques
 				Computed:            true,
 			},
 			"privacy": schema.StringAttribute{
-				MarkdownDescription: "The privacy of the team.",
+				MarkdownDescription: "The privacy setting of the team.",
 				Computed:            true,
 			},
 			"description": schema.StringAttribute{
