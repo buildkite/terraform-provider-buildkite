@@ -11,6 +11,8 @@ If you want to manage all your infrastructure through Terraform, you can utilize
 [`aws`](https://registry.terraform.io/providers/hashicorp/aws/latest) provider to create a CloudFormation stack using
 our template. An example is given below:
 
+For more information on the Elastic CI Stack for AWS, visit https://buildkite.com/docs/agent/v3/elastic-ci-aws/elastic-ci-stack-overview.
+
 ```tf
 resource "buildkite_agent_token" "elastic_stack" {
   description = "Elastic stack"
