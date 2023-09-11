@@ -5,8 +5,8 @@ services:
     build:
       context: .
     volumes:
-      - .:/app/terraform-provider-buildkite
-    working_dir: /app/terraform-provider-buildkite
+      - .:/work
+    working_dir: /work
     environment:
       - BUILDKITE_ANALYTICS_TOKEN
       - BUILDKITE_API_TOKEN
