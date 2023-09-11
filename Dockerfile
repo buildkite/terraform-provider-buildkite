@@ -3,4 +3,4 @@ FROM 445615400570.dkr.ecr.us-east-1.amazonaws.com/ecr-public/docker/library/gola
 RUN apt-get update \
     && apt-get install -y unzip
 
-COPY --from=hashicorp/terraform:1.4@sha256:5ca7188b7566703fd96c6f84c27d8e7aa4fe1c690803157264b8569580a99712 /bin/terraform /usr/local/bin/terraform
+COPY --from=hashicorp/terraform:1.5.7@sha256:fb39302e870036eaf1bca0b83a4bc005b9edb3766a6f9b4eaa8163999226b441 /bin/terraform /usr/local/bin/terraform
