@@ -49,13 +49,15 @@ func (teamMemberResource) Schema(ctx context.Context, req resource.SchemaRequest
 		MarkdownDescription: "A team member resource allows for the management of team membership for existing organization users.",
 		Attributes: map[string]resource_schema.Attribute{
 			"id": resource_schema.StringAttribute{
-				Computed: true,
+				Computed:            true,
+				MarkdownDescription: "The GraphQL ID of the team membership.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
 			"uuid": resource_schema.StringAttribute{
-				Computed: true,
+				Computed:            true,
+				MarkdownDescription: "The UUID of the team membership.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
@@ -70,7 +72,7 @@ func (teamMemberResource) Schema(ctx context.Context, req resource.SchemaRequest
 			},
 			"role": resource_schema.StringAttribute{
 				Required:            true,
-				MarkdownDescription: "The role for the user. Either MEMBER or MAINTAINER.",
+				MarkdownDescription: "The role for the user. Either `MEMBER` or `MAINTAINER`.",
 				Validators: []validator.String{
 					stringvalidator.OneOf("MEMBER", "MAINTAINER"),
 				},
