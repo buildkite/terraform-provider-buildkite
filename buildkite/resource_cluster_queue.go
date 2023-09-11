@@ -49,34 +49,37 @@ func (ClusterQueueResource) Schema(ctx context.Context, req resource.SchemaReque
 		MarkdownDescription: "A Cluster Queue is a queue belonging to a specific Cluster for its Agents to target builds on. ",
 		Attributes: map[string]resource_schema.Attribute{
 			"id": resource_schema.StringAttribute{
-				Computed: true,
+				Computed:            true,
+				MarkdownDescription: "The GraphQL ID of the cluster queue.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
 			"uuid": resource_schema.StringAttribute{
-				Computed: true,
+				Computed:            true,
+				MarkdownDescription: "The UUID of the cluster queue.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
 			"cluster_uuid": resource_schema.StringAttribute{
-				Computed: true,
+				Computed:            true,
+				MarkdownDescription: "The UUID of the cluster this queue belongs to.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
 			"cluster_id": resource_schema.StringAttribute{
 				Required:            true,
-				MarkdownDescription: "The ID of the Cluster that this Cluster Queue belongs to.",
+				MarkdownDescription: "The ID of the cluster that this cluster queue belongs to.",
 			},
 			"key": resource_schema.StringAttribute{
 				Required:            true,
-				MarkdownDescription: "The key of the Cluster Queue.",
+				MarkdownDescription: "The key of the cluster queue.",
 			},
 			"description": resource_schema.StringAttribute{
 				Optional:            true,
-				MarkdownDescription: "A description for the Cluster Queue. ",
+				MarkdownDescription: "A description for the cluster queue. ",
 			},
 		},
 	}
