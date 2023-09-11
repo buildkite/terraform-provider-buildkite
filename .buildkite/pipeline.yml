@@ -16,6 +16,7 @@ steps:
   - label: check docs generated
     key: check-docs
     commands:
+      - terraform version
       - make docs
       - git diff --quiet
     plugins:
