@@ -80,11 +80,9 @@ func (c *clusterResource) Schema(ctx context.Context, req resource.SchemaRequest
 			},
 			"create_default_queue": resource_schema.BoolAttribute{
 				Optional:            true,
-				Computed:            true,
 				MarkdownDescription: "If `true`, the provider will create a default queue to associate with the Cluster.",
 			},
 			"default_queue_id": resource_schema.StringAttribute{
-				Computed:            true,
 				Optional:            true,
 				MarkdownDescription: "The ID for the Cluster queue that should be considered the default for this Cluster.",
 			},
@@ -114,7 +112,7 @@ func (c *clusterResource) Create(ctx context.Context, req resource.CreateRequest
 	var r *createClusterResponse
 	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		var err error
-		slog.Info("Creating cluster: %s", state.Name)
+		slog.Info(fmt.Sprintf("Creating cluster: %s", state.Name.ValueString()))
 		r, err = createCluster(
 			ctx,
 			c.client.genqlient,
@@ -137,7 +135,7 @@ func (c *clusterResource) Create(ctx context.Context, req resource.CreateRequest
 			var cqr *createClusterQueueResponse
 			err = retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 				var createQueueError error
-				slog.Info("Creating cluster queue `default` on cluster: %s", state.Name)
+				slog.Info(fmt.Sprintf("Creating cluster queue `default` on cluster: %s", state.Name.ValueString()))
 				cqr, createQueueError = createClusterQueue(
 					ctx,
 					c.client.genqlient,
@@ -152,10 +150,9 @@ func (c *clusterResource) Create(ctx context.Context, req resource.CreateRequest
 					}
 					return retry.NonRetryableError(err)
 				}
+				slog.Info("Default Cluster queue created successfully 🎉")
 				return nil
 			})
-
-			slog.Info("Cluster queue %s created successfully 🎉", cqr.ClusterQueueCreate.ClusterQueue.Id)
 
 			var cur *updateClusterResponse
 			err = retry.RetryContext(ctx, timeout, func() *retry.RetryError {
@@ -181,7 +178,6 @@ func (c *clusterResource) Create(ctx context.Context, req resource.CreateRequest
 				return nil
 			})
 		}
-
 		return nil
 	})
 
@@ -365,4 +361,5 @@ func updateClusterResourceState(state *clusterResourceModel, res getNodeNodeClus
 	state.Description = types.StringPointerValue(res.Description)
 	state.Emoji = types.StringPointerValue(res.Emoji)
 	state.Color = types.StringPointerValue(res.Color)
+	state.DefaultQueueID = types.StringPointerValue(&res.DefaultQueue.Id)
 }

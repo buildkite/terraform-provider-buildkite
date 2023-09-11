@@ -48,6 +48,24 @@ func TestAccBuildkiteClusterResource(t *testing.T) {
 		`, fields[0], fields[1], fields[2])
 	}
 
+	basicWithQueue := func(name string) string {
+		return fmt.Sprintf(`
+		provider "buildkite" {
+			timeouts {
+				create = "10s"
+				read = "10s"
+				update = "10s"
+				delete = "10s"
+			}
+		}
+
+		resource "buildkite_cluster" "foo" {
+			name = "%s_test_cluster"
+			create_default_queue = true
+		}
+		`, name)
+	}
+
 	t.Run("Creates a Cluster with basic settings", func(t *testing.T) {
 		var c clusterResourceModel
 		randName := acctest.RandString(5)
@@ -57,7 +75,6 @@ func TestAccBuildkiteClusterResource(t *testing.T) {
 			resource.TestCheckResourceAttr("buildkite_cluster.foo", "name", fmt.Sprintf("%s_test_cluster", randName)),
 			resource.TestCheckResourceAttrSet("buildkite_cluster.foo", "id"),
 			resource.TestCheckResourceAttrSet("buildkite_cluster.foo", "uuid"),
-			testAccEnsureQueueIDIsNull(&c),
 		)
 
 		resource.ParallelTest(t, resource.TestCase{
@@ -135,6 +152,31 @@ func TestAccBuildkiteClusterResource(t *testing.T) {
 		})
 	})
 
+	t.Run("Creates a Cluster with a default queue created", func(t *testing.T) {
+		var c clusterResourceModel
+		randName := acctest.RandString(5)
+		check := resource.ComposeAggregateTestCheckFunc(
+			testAccCheckClusterExists("buildkite_cluster.foo", &c),
+			testAccCheckClusterRemoteValues(&c, fmt.Sprintf("%s_test_cluster", randName)),
+			resource.TestCheckResourceAttr("buildkite_cluster.foo", "name", fmt.Sprintf("%s_test_cluster", randName)),
+			resource.TestCheckResourceAttrSet("buildkite_cluster.foo", "id"),
+			resource.TestCheckResourceAttrSet("buildkite_cluster.foo", "uuid"),
+			resource.TestCheckResourceAttrSet("buildkite_cluster.foo", "default_queue_id"),
+		)
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			CheckDestroy:             testAccCheckClusterDestroy,
+			Steps: []resource.TestStep{
+				{
+					Config: basicWithQueue(randName),
+					Check:  check,
+				},
+			},
+		})
+	})
+
 	t.Run("Imports a Cluster", func(t *testing.T) {
 		var c clusterResourceModel
 		randName := acctest.RandString(5)
@@ -160,15 +202,6 @@ func TestAccBuildkiteClusterResource(t *testing.T) {
 			},
 		})
 	})
-}
-
-func testAccEnsureQueueIDIsNull(c *clusterResourceModel) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		if c.DefaultQueueID.ValueStringPointer() != nil {
-			return fmt.Errorf("expected no default queue ID, but got %s", c.DefaultQueueID.ValueString())
-		}
-		return nil
-	}
 }
 
 func testAccCheckClusterExists(name string, c *clusterResourceModel) resource.TestCheckFunc {
