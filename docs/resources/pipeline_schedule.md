@@ -16,11 +16,13 @@ You can find more information in the [documentation](https://buildkite.com/docs/
 ## Example Usage
 
 ```terraform
+# create a pipeline
 resource "buildkite_pipeline" "pipeline" {
   name       = "my pipeline"
   repository = "https://github.com/..."
 }
 
+# schedule a build at midnight every day
 resource "buildkite_pipeline_schedule" "nightly" {
   pipeline_id = buildkite_pipeline.repo.id
   label       = "Nightly build"

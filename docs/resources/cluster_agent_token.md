@@ -13,6 +13,7 @@ A Cluster Agent Token is a token used to connect an agent to a cluster in Buildk
 ## Example Usage
 
 ```terraform
+# create a cluster
 resource "buildkite_cluster" "primary" {
   name        = "Primary cluster"
   description = "Runs the monolith build and deploy"
@@ -20,6 +21,7 @@ resource "buildkite_cluster" "primary" {
   color       = "#bada55"
 }
 
+# create an agent token for the cluster
 resource "buildkite_cluster_agent_token" "default" {
   description = "Default cluster token"
   cluster_id  = buildkite_cluster.primary.id

@@ -16,6 +16,7 @@ The user of your API token must be an organization administrator to manage organ
 ## Example Usage
 
 ```terraform
+# allow api access only from 1.1.1.1
 resource "buildkite_organization" "settings" {
   allowed_api_ip_addresses = ["1.1.1.1/32"]
 }
@@ -40,5 +41,6 @@ resource "buildkite_organization" "settings" {
 Import is supported using the following syntax:
 
 ```shell
+# import the organization settings via the organization slug
 terraform import buildkite_organization.settings <organization slug>
 ```

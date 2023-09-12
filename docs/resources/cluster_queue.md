@@ -13,6 +13,7 @@ A Cluster Queue is a queue belonging to a specific Cluster for its Agents to tar
 ## Example Usage
 
 ```terraform
+# create a cluster
 resource "buildkite_cluster" "primary" {
   name        = "Primary cluster"
   description = "Runs the monolith build and deploy"
@@ -26,6 +27,7 @@ resource "buildkite_pipeline" "monolith" {
   cluster_id = buildkite_cluster.primary.id
 }
 
+# create a queue to put pipeline builds in
 resource "buildkite_cluster_queue" "default" {
   cluster_id = buildkite_cluster.primary.id
   key        = "default"

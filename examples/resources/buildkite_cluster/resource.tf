@@ -1,3 +1,4 @@
+# create a cluster
 resource "buildkite_cluster" "primary" {
   name        = "Primary cluster"
   description = "Runs the monolith build and deploy"
@@ -5,6 +6,7 @@ resource "buildkite_cluster" "primary" {
   color       = "#bada55"
 }
 
+# add a pipeline to the cluster
 resource "buildkite_pipeline" "monolith" {
   name       = "Monolith"
   repository = "https://github.com/..."

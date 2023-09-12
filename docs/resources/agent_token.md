@@ -15,6 +15,7 @@ You can find out more about clusters in the Buildkite [documentation](https://bu
 ## Example Usage
 
 ```terraform
+# create a default token
 resource "buildkite_agent_token" "default" {
   description = "Default token"
 }
