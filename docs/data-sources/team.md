@@ -3,13 +3,13 @@
 page_title: "buildkite_team Data Source - terraform-provider-buildkite"
 subcategory: ""
 description: |-
-  Use this data source to retrieve a team by slug or id. You can find out more about clusters in the Buildkite
+  Use this data source to retrieve a team by slug or id. You can find out more about teams in the Buildkite
   documentation https://buildkite.com/docs/pipelines/permissions.
 ---
 
 # buildkite_team (Data Source)
 
-Use this data source to retrieve a team by slug or id. You can find out more about clusters in the Buildkite
+Use this data source to retrieve a team by slug or id. You can find out more about teams in the Buildkite
 [documentation](https://buildkite.com/docs/pipelines/permissions).
 
 ## Example Usage

@@ -48,7 +48,7 @@ func (t *teamDatasource) Metadata(ctx context.Context, req datasource.MetadataRe
 func (t *teamDatasource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		MarkdownDescription: heredoc.Doc(`
-			Use this data source to retrieve a team by slug or id. You can find out more about clusters in the Buildkite
+			Use this data source to retrieve a team by slug or id. You can find out more about teams in the Buildkite
 			[documentation](https://buildkite.com/docs/pipelines/permissions).
 		`),
 		Attributes: map[string]schema.Attribute{
