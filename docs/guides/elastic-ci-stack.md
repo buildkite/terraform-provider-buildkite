@@ -1,5 +1,5 @@
 ---
-page _title: Usage with Elastic CI Stack for AWS
+page_title: Usage with Elastic CI Stack for AWS
 ---
 
 # Usage with the Elastic CI Stack for AWS
