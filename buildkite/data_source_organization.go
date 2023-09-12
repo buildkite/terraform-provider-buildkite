@@ -68,17 +68,20 @@ func (o *organizationDatasource) Read(ctx context.Context, req datasource.ReadRe
 
 func (*organizationDatasource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		MarkdownDescription: "Look up organization settings.",
+		MarkdownDescription: "Use this data source to look up the organization settings.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
-				Computed: true,
+				Computed:            true,
+				MarkdownDescription: "The GraphQL ID of the organization.",
 			},
 			"uuid": schema.StringAttribute{
-				Computed: true,
+				Computed:            true,
+				MarkdownDescription: "The UUID of the organization.",
 			},
 			"allowed_api_ip_addresses": schema.ListAttribute{
-				Computed:    true,
-				ElementType: types.StringType,
+				Computed:            true,
+				ElementType:         types.StringType,
+				MarkdownDescription: "List of IP addresses in CIDR format that are allowed to access the Buildkite API for this organization.",
 			},
 		},
 	}

@@ -238,41 +238,49 @@ func (ts *testSuiteResource) Read(ctx context.Context, req resource.ReadRequest,
 
 func (ts *testSuiteResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		MarkdownDescription: "A test suite is a collection of tests. A run is to a suite what a build is to a Pipeline.",
+		MarkdownDescription: "A test suite is a collection of tests. A run is to a suite what a build is to a Pipeline." +
+			"Use this resource to manage [Test Suites](https://buildkite.com/docs/test-analytics) on Buildkite.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
-				Computed: true,
+				Computed:            true,
+				MarkdownDescription: "The GraphQL ID of the test suite.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
 			"uuid": schema.StringAttribute{
-				Computed: true,
+				Computed:            true,
+				MarkdownDescription: "The UUID of the test suite.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
 			"team_owner_id": schema.StringAttribute{
-				Required: true,
+				MarkdownDescription: "The GraphQL ID of the team to mark as the owner/admin of the test suite.",
+				Required:            true,
 			},
 			"slug": schema.StringAttribute{
-				Computed: true,
+				Computed:            true,
+				MarkdownDescription: "The generated slug of the test suite.",
 				PlanModifiers: []planmodifier.String{
 					custom_modifier.UseStateIfUnchanged("name"),
 				},
 			},
 			"name": schema.StringAttribute{
-				Required: true,
+				Required:            true,
+				MarkdownDescription: "The name to give the test suite.",
 			},
 			"api_token": schema.StringAttribute{
-				Computed:  true,
-				Sensitive: true,
+				Computed:            true,
+				Sensitive:           true,
+				MarkdownDescription: "The API token to use to send test run data to the API.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
 			"default_branch": schema.StringAttribute{
-				Required: true,
+				MarkdownDescription: "The default branch for the repository this test suite is for.",
+				Required:            true,
 			},
 		},
 	}

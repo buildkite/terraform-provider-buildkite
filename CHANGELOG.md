@@ -10,9 +10,10 @@ All notable changes to this project will be documented in this file.
 - retryContextError util resource switch [[PR #394](https://github.com/buildkite/terraform-provider-buildkite/pull/394)] @james2791
 - Added `build_pull_request_ready_for_review` to pipeline resource docs/examples/tests [[PR #396](https://github.com/buildkite/terraform-provider-buildkite/pull/396)] @james2791
 - SUP-1370 Update to protocol v6 [[PR #400](https://github.com/buildkite/terraform-provider-buildkite/pull/400)] @jradtilbrook
+- SUP-1293 Generate docs from code [[PR #397](https://github.com/buildkite/terraform-provider-buildkite/pull/397)] @jradtilbrook
 
 The `team` block from the `buildkite_pipeline` resource has been removed. Please use the resource `buildkite_pipeline_team` to create and manage team configuration in a pipeline.
-   
+
 ## [v0.27.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v0.26.0...v0.27.0)
 
 - SUP-805: SUP-805: Team resource retries [[PR #360](https://github.com/buildkite/terraform-provider-buildkite/pull/360)] @james2791

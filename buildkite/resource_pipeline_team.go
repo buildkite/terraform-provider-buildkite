@@ -45,16 +45,18 @@ func (tp *pipelineTeamResource) Configure(ctx context.Context, req resource.Conf
 
 func (pipelineTeamResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = resource_schema.Schema{
-		MarkdownDescription: "A team pipeline resource sets a team's access for the pipeline.",
+		MarkdownDescription: "Manage team access to a pipeline.",
 		Attributes: map[string]resource_schema.Attribute{
 			"id": resource_schema.StringAttribute{
-				Computed: true,
+				Computed:            true,
+				MarkdownDescription: "The GraphQL ID of the pipeline-team relationship.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
 			"uuid": resource_schema.StringAttribute{
-				Computed: true,
+				Computed:            true,
+				MarkdownDescription: "The UUID of the pipeline-team relationship.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
@@ -69,7 +71,7 @@ func (pipelineTeamResource) Schema(ctx context.Context, req resource.SchemaReque
 			},
 			"access_level": resource_schema.StringAttribute{
 				Required:            true,
-				MarkdownDescription: "The access level for the team. Either READ_ONLY, BUILD_AND_READ or MANAGE_BUILD_AND_READ.",
+				MarkdownDescription: "The access level for the team. Either `READ_ONLY`, `BUILD_AND_READ` or `MANAGE_BUILD_AND_READ`.",
 				Validators: []validator.String{
 					stringvalidator.OneOf(string(PipelineAccessLevelsReadOnly),
 						string(PipelineAccessLevelsBuildAndRead),

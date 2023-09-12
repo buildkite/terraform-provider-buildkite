@@ -47,28 +47,32 @@ func (ct *ClusterAgentToken) Schema(_ context.Context, _ resource.SchemaRequest,
 		MarkdownDescription: "A Cluster Agent Token is a token used to connect an agent to a cluster in Buildkite.",
 		Attributes: map[string]resource_schema.Attribute{
 			"id": resource_schema.StringAttribute{
-				Computed: true,
+				Computed:            true,
+				MarkdownDescription: "The GraphQL ID of the token.",
 			},
 			"uuid": resource_schema.StringAttribute{
-				Computed: true,
+				Computed:            true,
+				MarkdownDescription: "The UUID of the token.",
 			},
 			"description": resource_schema.StringAttribute{
 				Required:            true,
-				MarkdownDescription: "A description about what this cluster agent token is used for",
+				MarkdownDescription: "A description about what this cluster agent token is used for.",
 			},
 			"token": resource_schema.StringAttribute{
-				Computed:  true,
-				Sensitive: true,
+				Computed:            true,
+				Sensitive:           true,
+				MarkdownDescription: "The token value used by an agent to register with the API.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
 			"cluster_id": resource_schema.StringAttribute{
 				Required:            true,
-				MarkdownDescription: "The ID of the Cluster that this Cluster Agent Token belongs to.",
+				MarkdownDescription: "The GraphQL ID of the Cluster that this Cluster Agent Token belongs to.",
 			},
 			"cluster_uuid": resource_schema.StringAttribute{
-				Computed: true,
+				Computed:            true,
+				MarkdownDescription: "The UUID of the Cluster that this token belongs to.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
