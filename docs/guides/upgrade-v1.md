@@ -85,6 +85,10 @@ All resources now use their GraphQL IDs as the primary ID in the schema.
 
 ## Upgrade Guide
 
+~> If you are coming from a 0.x release of the provider and using `buildkite_pipeline.team` attribute on your resources,
+you **must** upgrade to version 0.27.0 prior to upgrading to v1.0. See [Migrate pipeline.team usage to pipeline_team
+resource](./upgrade-v1#migrate-pipelineteam-usage-to-pipeline_team-resource) for more info.
+
 ### Pin provider version
 
 You should pin your provider installation to the 1.x releases.
