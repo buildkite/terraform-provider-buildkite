@@ -171,9 +171,7 @@ func (*terraformProvider) Schema(ctx context.Context, req provider.SchemaRequest
 				Optional:            true,
 				MarkdownDescription: "Enable this to archive pipelines when destroying the resource. This is opposed to completely deleting pipelines.",
 			},
-		},
-		Blocks: map[string]schema.Block{
-			"timeouts": timeouts.BlockAll(ctx),
+			"timeouts": timeouts.AttributesAll(ctx),
 		},
 	}
 }

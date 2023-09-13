@@ -15,7 +15,7 @@ func TestAccBuildkiteTeam(t *testing.T) {
 	configBasic := func(name string) string {
 		return fmt.Sprintf(`
 		provider "buildkite" {
-			timeouts {
+			timeouts = {
 				create = "10s"
 			}
 		}
@@ -34,7 +34,7 @@ func TestAccBuildkiteTeam(t *testing.T) {
 	configSecret := func(name string) string {
 		return fmt.Sprintf(`
 		provider "buildkite" {
-			timeouts {
+			timeouts = {
 				create = "10s"
 				update = "10s"
 			}

@@ -15,34 +15,34 @@ func TestAccBuildkiteTestSuiteTeamResource(t *testing.T) {
 	config := func(ownerTeamName, newTeamName, accessLevel string) string {
 		return fmt.Sprintf(`
 		provider "buildkite" {
-			timeouts {
+			timeouts = {
 				create = "10s"
 				read = "10s"
 				update = "10s"
 				delete = "10s"
 			}
 		}
-		
+
 		resource "buildkite_team" "ownerteam" {
 			name = "Test Suite Team %s"
 			default_team = false
 			privacy = "VISIBLE"
 			default_member_role = "MAINTAINER"
 		}
-	
+
 		resource "buildkite_team" "newteam" {
 			name = "Test Suite Team %s"
 			default_team = false
 			privacy = "VISIBLE"
 			default_member_role = "MAINTAINER"
 		}
-	
+
 		resource "buildkite_test_suite" "testsuite" {
 			name = "Test Suite %s"
 			default_branch = "main"
 			team_owner_id = buildkite_team.ownerteam.id
 		}
-	
+
 		resource "buildkite_test_suite_team" "teamsuite" {
 			test_suite_id = buildkite_test_suite.testsuite.id
 			team_id = buildkite_team.newteam.id
