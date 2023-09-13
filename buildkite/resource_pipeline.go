@@ -470,7 +470,7 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 				},
 			},
 			"provider_settings": schema.SingleNestedAttribute{
-				Required: false,
+				Optional: true,
 				Attributes: map[string]schema.Attribute{
 					"trigger_mode": schema.StringAttribute{
 						Computed: true,
