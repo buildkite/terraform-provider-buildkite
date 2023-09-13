@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/MakeNowJust/heredoc"
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
@@ -143,9 +144,11 @@ func (tf *terraformProvider) Resources(context.Context) []func() resource.Resour
 
 func (*terraformProvider) Schema(ctx context.Context, req provider.SchemaRequest, resp *provider.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		MarkdownDescription: `
-		This provider can be used to manage resources on [buildkite.com](https://buildkite.com).
-		`,
+		MarkdownDescription: heredoc.Doc(`
+			~> You are viewing documentation for a pre-release version of the provider. Please see the latest stable docs at https://registry.terraform.io/providers/buildkite/buildkite/0.26.0/docs
+
+			This provider can be used to manage resources on [buildkite.com](https://buildkite.com).
+		`),
 		Attributes: map[string]schema.Attribute{
 			SchemaKeyOrganization: schema.StringAttribute{
 				Optional:            true,
