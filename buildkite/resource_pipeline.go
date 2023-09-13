@@ -928,7 +928,6 @@ func updatePipelineResourceExtraInfo(state *pipelineResourceModel, pipeline *Pip
 func upgradePipelineStateV0toV1(ctx context.Context, req resource.UpgradeStateRequest, resp *resource.UpgradeStateResponse) {
 	type pipelineResourceModelV0 struct {
 		AllowRebuilds                        types.Bool               `tfsdk:"allow_rebuilds"`
-		ArchiveOnDelete                      types.Bool               `tfsdk:"archive_on_delete"`
 		BadgeUrl                             types.String             `tfsdk:"badge_url"`
 		BranchConfiguration                  types.String             `tfsdk:"branch_configuration"`
 		CancelIntermediateBuilds             types.Bool               `tfsdk:"cancel_intermediate_builds"`
@@ -936,7 +935,6 @@ func upgradePipelineStateV0toV1(ctx context.Context, req resource.UpgradeStateRe
 		ClusterId                            types.String             `tfsdk:"cluster_id"`
 		DefaultBranch                        types.String             `tfsdk:"default_branch"`
 		DefaultTimeoutInMinutes              types.Int64              `tfsdk:"default_timeout_in_minutes"`
-		DeletionProtection                   types.Bool               `tfsdk:"deletion_protection"`
 		Description                          types.String             `tfsdk:"description"`
 		Id                                   types.String             `tfsdk:"id"`
 		MaximumTimeoutInMinutes              types.Int64              `tfsdk:"maximum_timeout_in_minutes"`
@@ -959,6 +957,7 @@ func upgradePipelineStateV0toV1(ctx context.Context, req resource.UpgradeStateRe
 		return
 	}
 
+	// Create a new pipelineResourceModel instance with fields from state
 	upgradedPipelineStateData := pipelineResourceModel{
 		AllowRebuilds:                        priorPipelineStateData.AllowRebuilds,
 		BadgeUrl:                             priorPipelineStateData.BadgeUrl,
@@ -972,7 +971,6 @@ func upgradePipelineStateV0toV1(ctx context.Context, req resource.UpgradeStateRe
 		Id:                                   priorPipelineStateData.Id,
 		MaximumTimeoutInMinutes:              priorPipelineStateData.MaximumTimeoutInMinutes,
 		Name:                                 priorPipelineStateData.Name,
-		ProviderSettings:                     priorPipelineStateData.ProviderSettings[0],
 		Repository:                           priorPipelineStateData.Repository,
 		SkipIntermediateBuilds:               priorPipelineStateData.SkipIntermediateBuilds,
 		SkipIntermediateBuildsBranchFilter:   priorPipelineStateData.SkipIntermediateBuildsBranchFilter,
@@ -982,7 +980,14 @@ func upgradePipelineStateV0toV1(ctx context.Context, req resource.UpgradeStateRe
 		WebhookUrl:                           priorPipelineStateData.WebhookUrl,
 	}
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, upgradedPipelineStateData)...)
+	// If the existing pipelines' state had ProviderSettings - set it as part of the V1 pipelineResourceModel 
+	if len(priorPipelineStateData.ProviderSettings) == 1 {
+		upgradedPipelineStateData.ProviderSettings = priorPipelineStateData.ProviderSettings[0]
+	}
+
+	// Upgrade pipeline in state 
+	diags := resp.State.Set(ctx, upgradedPipelineStateData)
+	resp.Diagnostics.Append(diags...)
 }
 
 func pipelineSchemaV0() schema.Schema {
