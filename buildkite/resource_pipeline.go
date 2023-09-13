@@ -72,26 +72,26 @@ type PipelineTag struct {
 }
 
 type pipelineResourceModel struct {
-	AllowRebuilds                        types.Bool               `tfsdk:"allow_rebuilds"`
-	BadgeUrl                             types.String             `tfsdk:"badge_url"`
-	BranchConfiguration                  types.String             `tfsdk:"branch_configuration"`
-	CancelIntermediateBuilds             types.Bool               `tfsdk:"cancel_intermediate_builds"`
-	CancelIntermediateBuildsBranchFilter types.String             `tfsdk:"cancel_intermediate_builds_branch_filter"`
-	ClusterId                            types.String             `tfsdk:"cluster_id"`
-	DefaultBranch                        types.String             `tfsdk:"default_branch"`
-	DefaultTimeoutInMinutes              types.Int64              `tfsdk:"default_timeout_in_minutes"`
-	Description                          types.String             `tfsdk:"description"`
-	Id                                   types.String             `tfsdk:"id"`
-	MaximumTimeoutInMinutes              types.Int64              `tfsdk:"maximum_timeout_in_minutes"`
-	Name                                 types.String             `tfsdk:"name"`
-	ProviderSettings                     []*providerSettingsModel `tfsdk:"provider_settings"`
-	Repository                           types.String             `tfsdk:"repository"`
-	SkipIntermediateBuilds               types.Bool               `tfsdk:"skip_intermediate_builds"`
-	SkipIntermediateBuildsBranchFilter   types.String             `tfsdk:"skip_intermediate_builds_branch_filter"`
-	Slug                                 types.String             `tfsdk:"slug"`
-	Steps                                types.String             `tfsdk:"steps"`
-	Tags                                 []types.String           `tfsdk:"tags"`
-	WebhookUrl                           types.String             `tfsdk:"webhook_url"`
+	AllowRebuilds                        types.Bool             `tfsdk:"allow_rebuilds"`
+	BadgeUrl                             types.String           `tfsdk:"badge_url"`
+	BranchConfiguration                  types.String           `tfsdk:"branch_configuration"`
+	CancelIntermediateBuilds             types.Bool             `tfsdk:"cancel_intermediate_builds"`
+	CancelIntermediateBuildsBranchFilter types.String           `tfsdk:"cancel_intermediate_builds_branch_filter"`
+	ClusterId                            types.String           `tfsdk:"cluster_id"`
+	DefaultBranch                        types.String           `tfsdk:"default_branch"`
+	DefaultTimeoutInMinutes              types.Int64            `tfsdk:"default_timeout_in_minutes"`
+	Description                          types.String           `tfsdk:"description"`
+	Id                                   types.String           `tfsdk:"id"`
+	MaximumTimeoutInMinutes              types.Int64            `tfsdk:"maximum_timeout_in_minutes"`
+	Name                                 types.String           `tfsdk:"name"`
+	ProviderSettings                     *providerSettingsModel `tfsdk:"provider_settings"`
+	Repository                           types.String           `tfsdk:"repository"`
+	SkipIntermediateBuilds               types.Bool             `tfsdk:"skip_intermediate_builds"`
+	SkipIntermediateBuildsBranchFilter   types.String           `tfsdk:"skip_intermediate_builds_branch_filter"`
+	Slug                                 types.String           `tfsdk:"slug"`
+	Steps                                types.String           `tfsdk:"steps"`
+	Tags                                 []types.String         `tfsdk:"tags"`
+	WebhookUrl                           types.String           `tfsdk:"webhook_url"`
 }
 
 type providerSettingsModel struct {
@@ -212,8 +212,8 @@ func (p *pipelineResource) Create(ctx context.Context, req resource.CreateReques
 
 	setPipelineModel(&state, &response.PipelineCreate.Pipeline)
 
-	if len(plan.ProviderSettings) > 0 {
-		pipelineExtraInfo, err := updatePipelineExtraInfo(ctx, response.PipelineCreate.Pipeline.Slug, plan.ProviderSettings[0], p.client, timeouts)
+	if plan.ProviderSettings != nil {
+		pipelineExtraInfo, err := updatePipelineExtraInfo(ctx, response.PipelineCreate.Pipeline.Slug, plan.ProviderSettings, p.client, timeouts)
 		if err != nil {
 			resp.Diagnostics.AddError("Unable to set pipeline info from REST", err.Error())
 			return
@@ -319,7 +319,7 @@ func (p *pipelineResource) Read(ctx context.Context, req resource.ReadRequest, r
 
 		setPipelineModel(&state, pipelineNode)
 
-		if len(state.ProviderSettings) > 0 {
+		if state.ProviderSettings != nil {
 			updatePipelineResourceExtraInfo(&state, extraInfo)
 		}
 		state.BadgeUrl = types.StringValue(extraInfo.BadgeUrl)
@@ -333,6 +333,660 @@ func (p *pipelineResource) Read(ctx context.Context, req resource.ReadRequest, r
 
 func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		Version: 1,
+		MarkdownDescription: heredoc.Doc(`
+			This resource allows you to create and manage pipelines for repositories.
+
+			More information on pipelines can be found in the documentation](https://buildkite.com/docs/pipelines).
+		`),
+		Attributes: map[string]schema.Attribute{
+			"id": schema.StringAttribute{
+				Computed:            true,
+				MarkdownDescription: "The GraphQL ID of the pipeline.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"allow_rebuilds": schema.BoolAttribute{
+				Optional:            true,
+				Computed:            true,
+				Default:             booldefault.StaticBool(true),
+				MarkdownDescription: "Whether rebuilds are allowed for this pipeline.",
+			},
+			"cancel_intermediate_builds": schema.BoolAttribute{
+				Computed:            true,
+				Optional:            true,
+				MarkdownDescription: "Whether to cancel builds when a new commit is pushed to a matching branch.",
+				PlanModifiers: []planmodifier.Bool{
+					boolplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"cancel_intermediate_builds_branch_filter": schema.StringAttribute{
+				Computed:            true,
+				Optional:            true,
+				MarkdownDescription: "Filter the `cancel_intermediate_builds` setting based on this branch condition.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"branch_configuration": schema.StringAttribute{
+				MarkdownDescription: "Configure the pipeline to only build on this branch conditional.",
+				Optional:            true,
+			},
+			"cluster_id": schema.StringAttribute{
+				MarkdownDescription: "Attach this pipeline to the given cluster GraphQL ID.",
+				Optional:            true,
+			},
+			"default_branch": schema.StringAttribute{
+				Computed:            true,
+				Optional:            true,
+				MarkdownDescription: "Default branch of the pipeline.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"default_timeout_in_minutes": schema.Int64Attribute{
+				Computed:            true,
+				Optional:            true,
+				Default:             nil,
+				MarkdownDescription: "Set pipeline wide timeout for command steps.",
+				PlanModifiers: []planmodifier.Int64{
+					int64planmodifier.UseStateForUnknown(),
+				},
+			},
+			"maximum_timeout_in_minutes": schema.Int64Attribute{
+				Computed:            true,
+				Optional:            true,
+				Default:             nil,
+				MarkdownDescription: "Set pipeline wide maximum timeout for command steps.",
+				PlanModifiers: []planmodifier.Int64{
+					int64planmodifier.UseStateForUnknown(),
+				},
+			},
+			"description": schema.StringAttribute{
+				Computed:            true,
+				Optional:            true,
+				MarkdownDescription: "Description for the pipeline. Can include emoji 🙌.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"name": schema.StringAttribute{
+				Required:            true,
+				MarkdownDescription: "Name to give the pipeline.",
+			},
+			"repository": schema.StringAttribute{
+				Required:            true,
+				MarkdownDescription: "URL to the repository this pipeline is configured for.",
+			},
+			"skip_intermediate_builds": schema.BoolAttribute{
+				Computed:            true,
+				Optional:            true,
+				MarkdownDescription: "Whether to skip queued builds if a new commit is pushed to a matching branch.",
+				PlanModifiers: []planmodifier.Bool{
+					boolplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"skip_intermediate_builds_branch_filter": schema.StringAttribute{
+				Computed:            true,
+				Optional:            true,
+				MarkdownDescription: "Filter the `skip_intermediate_builds` setting based on this branch condition.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"slug": schema.StringAttribute{
+				Computed:            true,
+				MarkdownDescription: "The slug generated for the pipeline.",
+				PlanModifiers: []planmodifier.String{
+					custom_modifier.UseStateIfUnchanged("name"),
+				},
+			},
+			"steps": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Default:             stringdefault.StaticString(defaultSteps),
+				MarkdownDescription: "The YAML steps to configure for the pipeline. Defaults to `buildkite-agent pipeline upload`.",
+			},
+			"tags": schema.SetAttribute{
+				Optional:            true,
+				Computed:            true,
+				ElementType:         types.StringType,
+				Default:             setdefault.StaticValue(types.SetValueMust(types.StringType, []attr.Value{})),
+				MarkdownDescription: "Tags to attribute to the pipeline. Useful for searching by in the UI.",
+			},
+			"webhook_url": schema.StringAttribute{
+				Computed:            true,
+				MarkdownDescription: "The webhook URL used to trigger builds from VCS providers.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"badge_url": schema.StringAttribute{
+				Computed:            true,
+				MarkdownDescription: "The badge URL showing build state.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"provider_settings": schema.SingleNestedAttribute{
+				Required: false,
+				Attributes: map[string]schema.Attribute{
+					"trigger_mode": schema.StringAttribute{
+						Computed: true,
+						Optional: true,
+						MarkdownDescription: heredoc.Docf(`
+							What type of event to trigger builds on. Must be one of:
+								- %s
+								- %s
+								- %s
+								- %s
+
+								-> %s is only valid if the pipeline uses a GitHub repository.
+						`,
+							"`code` will create builds when code is pushed to GitHub.",
+							"`deployment` will create builds when a deployment is created in GitHub.",
+							"`fork` will create builds when the GitHub repository is forked.",
+							"`none` will not create any builds based on GitHub activity.",
+							"`trigger_mode`",
+						),
+						Validators: []validator.String{
+							pipelinevalidation.WhenRepositoryProviderIs(pipelinevalidation.RepositoryProviderGitHub),
+							stringvalidator.OneOf("code", "deployment", "fork", "none"),
+						},
+					},
+					"build_pull_requests": schema.BoolAttribute{
+						Optional: true,
+						Computed: true,
+						MarkdownDescription: "Whether to create builds for commits that are part part of a pull request." +
+							"Only valid for Bitbucket or GitHub using a `trigger_mode = \"code\"`",
+						Validators: []validator.Bool{
+							boolvalidator.Any(
+								pipelinevalidation.WhenRepositoryProviderIs(pipelinevalidation.RepositoryProviderBitbucket),
+								boolvalidator.All(
+									pipelinevalidation.WhenRepositoryProviderIs(pipelinevalidation.RepositoryProviderGitHub),
+									boolvalidation.WhenString(path.MatchRoot("provider_settings").AtAnyListIndex().AtName("trigger_mode"), "code"),
+								),
+							),
+						},
+					},
+					"pull_request_branch_filter_enabled": schema.BoolAttribute{
+						Computed:            true,
+						Optional:            true,
+						MarkdownDescription: "Filter pull request builds. Only valid if `build_pull_requests = true`.",
+						Validators: []validator.Bool{
+							boolvalidation.WhenBool(path.MatchRoot("provider_settings").AtAnyListIndex().AtName("build_pull_requests"), true),
+						},
+					},
+					"pull_request_branch_filter_configuration": schema.StringAttribute{
+						Computed:            true,
+						Optional:            true,
+						MarkdownDescription: "Filter pull requests builds by the branch filter. Only valid if `pull_request_branch_filter_enabled = true`.",
+						Validators: []validator.String{
+							stringvalidation.WhenBool(path.MatchRoot("provider_settings").AtAnyListIndex().AtName("pull_request_branch_filter_enabled"), true),
+						},
+					},
+					"skip_builds_for_existing_commits": schema.BoolAttribute{
+						Optional: true,
+						Computed: true,
+						MarkdownDescription: "Whether to skip creating a new build if an existing build for the commit and branch already exists." +
+							"Only valid for GitHub repositories.",
+						Validators: []validator.Bool{
+							pipelinevalidation.WhenRepositoryProviderIs(pipelinevalidation.RepositoryProviderGitHub),
+						},
+					},
+					"skip_pull_request_builds_for_existing_commits": schema.BoolAttribute{
+						Optional: true,
+						Computed: true,
+						MarkdownDescription: "Whether to skip creating a new build for a pull request if an existing build for the commit and branch already exists." +
+							"Only valid if `build_pull_requests = true`.",
+						Validators: []validator.Bool{
+							boolvalidation.WhenBool(path.MatchRoot("provider_settings").AtAnyListIndex().AtName("build_pull_requests"), true),
+						},
+					},
+					"build_pull_request_ready_for_review": schema.BoolAttribute{
+						Computed: true,
+						Optional: true,
+						MarkdownDescription: "Whether to create a build when a pull request changes to \"Ready for review\"." +
+							"Only valid for GitHub repositories that have `trigger_mode = \"code\"` and `build_pull_requests = true`.",
+						Validators: []validator.Bool{
+							pipelinevalidation.WhenRepositoryProviderIs(pipelinevalidation.RepositoryProviderGitHub),
+							boolvalidation.WhenString(path.MatchRoot("provider_settings").AtAnyListIndex().AtName("trigger_mode"), "code"),
+							boolvalidation.WhenBool(path.MatchRoot("provider_settings").AtAnyListIndex().AtName("build_pull_requests"), true),
+						},
+					},
+					"build_pull_request_labels_changed": schema.BoolAttribute{
+						Computed: true,
+						Optional: true,
+						MarkdownDescription: "Whether to create builds for pull requests when labels are added or removed." +
+							"Only valid for GitHub repositories that have `trigger_mode = \"code\"` and `build_pull_requests = true`.",
+						Validators: []validator.Bool{
+							pipelinevalidation.WhenRepositoryProviderIs(pipelinevalidation.RepositoryProviderGitHub),
+							boolvalidation.WhenString(path.MatchRoot("provider_settings").AtAnyListIndex().AtName("trigger_mode"), "code"),
+							boolvalidation.WhenBool(path.MatchRoot("provider_settings").AtAnyListIndex().AtName("build_pull_requests"), true),
+						},
+					},
+					"build_pull_request_forks": schema.BoolAttribute{
+						Computed: true,
+						Optional: true,
+						MarkdownDescription: "Whether to create builds for pull requests from third-party forks." +
+							"Only valid for GitHub repositories that have `trigger_mode = \"code\"` and `build_pull_requests = true`.",
+						Validators: []validator.Bool{
+							pipelinevalidation.WhenRepositoryProviderIs(pipelinevalidation.RepositoryProviderGitHub),
+							boolvalidation.WhenString(path.MatchRoot("provider_settings").AtAnyListIndex().AtName("trigger_mode"), "code"),
+							boolvalidation.WhenBool(path.MatchRoot("provider_settings").AtAnyListIndex().AtName("build_pull_requests"), true),
+						},
+					},
+					"prefix_pull_request_fork_branch_names": schema.BoolAttribute{
+						Computed: true,
+						Optional: true,
+						MarkdownDescription: "Prefix branch names for third-party fork builds to ensure they don't trigger branch conditions." +
+							"For example, the master branch from some-user will become some-user:master." +
+							"Only valid when `build_pull_request_forks = true`.",
+						Validators: []validator.Bool{
+							boolvalidation.WhenBool(path.MatchRoot("provider_settings").AtAnyListIndex().AtName("build_pull_request_forks"), true),
+						},
+					},
+					"build_branches": schema.BoolAttribute{
+						Optional:            true,
+						Computed:            true,
+						MarkdownDescription: "Whether to create builds when branches are pushed. Only valid for GitHub and Bitbucket repositories.",
+						Validators: []validator.Bool{
+							pipelinevalidation.WhenRepositoryProviderIs(pipelinevalidation.RepositoryProviderGitHub, pipelinevalidation.RepositoryProviderBitbucket),
+						},
+					},
+					"build_tags": schema.BoolAttribute{
+						Computed:            true,
+						Optional:            true,
+						MarkdownDescription: "Whether to create builds when tags are pushed. Only valid for GitHub and Bitbucket repositories.",
+						Validators: []validator.Bool{
+							pipelinevalidation.WhenRepositoryProviderIs(pipelinevalidation.RepositoryProviderGitHub, pipelinevalidation.RepositoryProviderBitbucket),
+						},
+					},
+					"cancel_deleted_branch_builds": schema.BoolAttribute{
+						Computed:            true,
+						Optional:            true,
+						MarkdownDescription: "Automatically cancel running builds for a branch if the branch is deleted. Only valid for GitHub repositories when `trigger_mode = \"code\"`.",
+						Validators: []validator.Bool{
+							pipelinevalidation.WhenRepositoryProviderIs(pipelinevalidation.RepositoryProviderGitHub),
+							boolvalidation.WhenString(path.MatchRoot("provider_settings").AtAnyListIndex().AtName("trigger_mode"), "code"),
+						},
+					},
+					"filter_enabled": schema.BoolAttribute{
+						Computed: true,
+						Optional: true,
+						MarkdownDescription: "Whether to filter builds to only run when the condition in `filter_condition` is true." +
+							"Only valid for GitHub repositories when `trigger_mode = \"code\"`.",
+						Validators: []validator.Bool{
+							pipelinevalidation.WhenRepositoryProviderIs(pipelinevalidation.RepositoryProviderGitHub),
+							boolvalidation.WhenString(path.MatchRoot("provider_settings").AtAnyListIndex().AtName("trigger_mode"), "code"),
+						},
+					},
+					"filter_condition": schema.StringAttribute{
+						Computed: true,
+						Optional: true,
+						MarkdownDescription: "The condition to evaluate when deciding if a build should run." +
+							"More details available in [the documentation](https://buildkite.com/docs/pipelines/conditionals#conditionals-in-pipelines)." +
+							"Only valid if `filter_enabled = true`.",
+						Validators: []validator.String{
+							stringvalidation.WhenBool(path.MatchRoot("provider_settings").AtAnyListIndex().AtName("filter_enabled"), true),
+						},
+					},
+					"publish_commit_status": schema.BoolAttribute{
+						Optional: true,
+						Computed: true,
+						MarkdownDescription: "Whether to update the status of commits in Bitbucket or GitHub." +
+							"Only valid for Bitbucket, or GitHub repositories when `trigger_mode = \"code\"`.",
+						Validators: []validator.Bool{
+							boolvalidator.Any(
+								pipelinevalidation.WhenRepositoryProviderIs(pipelinevalidation.RepositoryProviderBitbucket),
+								boolvalidator.All(
+									pipelinevalidation.WhenRepositoryProviderIs(pipelinevalidation.RepositoryProviderGitHub),
+									boolvalidation.WhenString(path.MatchRoot("provider_settings").AtAnyListIndex().AtName("trigger_mode"), "code"),
+								),
+							),
+						},
+					},
+					"publish_blocked_as_pending": schema.BoolAttribute{
+						Computed: true,
+						Optional: true,
+						MarkdownDescription: "The status to use for blocked builds. Pending can be used with [required status checks](https://help.github.com/en/articles/enabling-required-status-checks)" +
+							"to prevent merging pull requests with blocked builds. Only valid for GitHub repositories when `publish_commit_statue = true`.",
+						Validators: []validator.Bool{
+							pipelinevalidation.WhenRepositoryProviderIs(pipelinevalidation.RepositoryProviderGitHub),
+							boolvalidation.WhenBool(path.MatchRoot("provider_settings").AtAnyListIndex().AtName("publish_commit_status"), true),
+						},
+					},
+					"publish_commit_status_per_step": schema.BoolAttribute{
+						Computed:            true,
+						Optional:            true,
+						MarkdownDescription: "Whether to create a separate status for each job in a build, allowing you to see the status of each job directly in Bitbucket or GitHub.",
+						Validators: []validator.Bool{
+							pipelinevalidation.WhenRepositoryProviderIs(pipelinevalidation.RepositoryProviderGitHub, pipelinevalidation.RepositoryProviderBitbucket),
+							boolvalidation.WhenBool(path.MatchRoot("provider_settings").AtAnyListIndex().AtName("publish_commit_status"), true),
+						},
+					},
+					"separate_pull_request_statuses": schema.BoolAttribute{
+						Computed: true,
+						Optional: true,
+						MarkdownDescription: "Whether to create a separate status for pull request builds, allowing you to require a passing pull request" +
+							"build in your [required status checks](https://help.github.com/en/articles/enabling-required-status-checks) in GitHub.",
+						Validators: []validator.Bool{
+							pipelinevalidation.WhenRepositoryProviderIs(pipelinevalidation.RepositoryProviderGitHub),
+							boolvalidation.WhenBool(path.MatchRoot("provider_settings").AtAnyListIndex().AtName("publish_commit_status"), true),
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func (p *pipelineResource) UpgradeState(ctx context.Context) map[int64]resource.StateUpgrader {
+	pipelineV0 := pipelineSchemaV0()
+
+	return map[int64]resource.StateUpgrader{
+		// State upgrade implementation from Version 0 (prior Pipeline state version) to 1 (Schema.Version)
+		0: {
+			PriorSchema:   &pipelineV0,
+			StateUpgrader: upgradePipelineStateV0toV1,
+		},
+	}
+}
+
+func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	var plan, state pipelineResourceModel
+
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	defaultTimeoutInMinutes := (*int)(unsafe.Pointer(plan.DefaultTimeoutInMinutes.ValueInt64Pointer()))
+	maxTimeoutInMinutes := (*int)(unsafe.Pointer(plan.MaximumTimeoutInMinutes.ValueInt64Pointer()))
+
+	input := PipelineUpdateInput{
+		AllowRebuilds:                        plan.AllowRebuilds.ValueBool(),
+		BranchConfiguration:                  plan.BranchConfiguration.ValueStringPointer(),
+		CancelIntermediateBuilds:             plan.CancelIntermediateBuilds.ValueBool(),
+		CancelIntermediateBuildsBranchFilter: plan.CancelIntermediateBuildsBranchFilter.ValueString(),
+		ClusterId:                            plan.ClusterId.ValueStringPointer(),
+		DefaultBranch:                        plan.DefaultBranch.ValueString(),
+		DefaultTimeoutInMinutes:              defaultTimeoutInMinutes,
+		MaximumTimeoutInMinutes:              maxTimeoutInMinutes,
+		Description:                          plan.Description.ValueString(),
+		Id:                                   plan.Id.ValueString(),
+		Name:                                 plan.Name.ValueString(),
+		Repository:                           PipelineRepositoryInput{Url: plan.Repository.ValueString()},
+		SkipIntermediateBuilds:               plan.SkipIntermediateBuilds.ValueBool(),
+		SkipIntermediateBuildsBranchFilter:   plan.SkipIntermediateBuildsBranchFilter.ValueString(),
+		Steps:                                PipelineStepsInput{Yaml: plan.Steps.ValueString()},
+		Tags:                                 getTagsFromSchema(&plan),
+	}
+
+	timeouts, diags := p.client.timeouts.Read(ctx, DefaultTimeout)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	var response *updatePipelineResponse
+	err := retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
+		var err error
+		log.Printf("Updating pipeline %s ...", input.Name)
+		response, err = updatePipeline(ctx, p.client.genqlient, input)
+		return retryContextError(err)
+	})
+
+	if err != nil {
+		resp.Diagnostics.AddError("Unable to update pipeline %s", state.Name.ValueString())
+		return
+	}
+
+	setPipelineModel(&state, &response.PipelineUpdate.Pipeline)
+
+	if plan.ProviderSettings != nil {
+		pipelineExtraInfo, err := updatePipelineExtraInfo(ctx, response.PipelineUpdate.Pipeline.Slug, plan.ProviderSettings, p.client, timeouts)
+		if err != nil {
+			resp.Diagnostics.AddError("Unable to set pipeline info from REST", err.Error())
+			return
+		}
+
+		updatePipelineResourceExtraInfo(&state, &pipelineExtraInfo)
+	} else {
+		// no provider_settings provided, but we still need to read in the badge url
+		extraInfo, err := getPipelineExtraInfo(ctx, p.client, response.PipelineUpdate.Pipeline.Slug, timeouts)
+		if err != nil {
+			resp.Diagnostics.AddError("Unable to read pipeline info from REST", err.Error())
+			return
+		}
+		state.BadgeUrl = types.StringValue(extraInfo.BadgeUrl)
+		state.ProviderSettings = new(providerSettingsModel)
+	}
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+}
+
+func (*pipelineResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+}
+
+func setPipelineModel(model *pipelineResourceModel, data pipelineResponse) {
+	defaultTimeoutInMinutes := (*int64)(unsafe.Pointer(data.GetDefaultTimeoutInMinutes()))
+	maximumTimeoutInMinutes := (*int64)(unsafe.Pointer(data.GetMaximumTimeoutInMinutes()))
+
+	model.AllowRebuilds = types.BoolValue(data.GetAllowRebuilds())
+	model.BranchConfiguration = types.StringPointerValue(data.GetBranchConfiguration())
+	model.CancelIntermediateBuilds = types.BoolValue(data.GetCancelIntermediateBuilds())
+	model.CancelIntermediateBuildsBranchFilter = types.StringValue(data.GetCancelIntermediateBuildsBranchFilter())
+	model.ClusterId = types.StringPointerValue(data.GetCluster().Id)
+	model.DefaultBranch = types.StringValue(data.GetDefaultBranch())
+	model.DefaultTimeoutInMinutes = types.Int64PointerValue(defaultTimeoutInMinutes)
+	model.Description = types.StringValue(data.GetDescription())
+	model.Id = types.StringValue(data.GetId())
+	model.MaximumTimeoutInMinutes = types.Int64PointerValue(maximumTimeoutInMinutes)
+	model.Name = types.StringValue(data.GetName())
+	model.Repository = types.StringValue(data.GetRepository().Url)
+	model.SkipIntermediateBuilds = types.BoolValue(data.GetSkipIntermediateBuilds())
+	model.SkipIntermediateBuildsBranchFilter = types.StringValue(data.GetSkipIntermediateBuildsBranchFilter())
+	model.Slug = types.StringValue(data.GetSlug())
+	model.Steps = types.StringValue(data.GetSteps().Yaml)
+	model.WebhookUrl = types.StringValue(data.GetWebhookURL())
+
+	tags := make([]types.String, len(data.GetTags()))
+	for i, tag := range data.GetTags() {
+		tags[i] = types.StringValue(tag.Label)
+	}
+	model.Tags = tags
+}
+
+// As of May 21, 2021, GraphQL Pipeline is lacking support for the following properties:
+// - badge_url
+// - provider_settings
+// We fallback to REST API
+
+// PipelineExtraInfo is used to manage pipeline attributes that are not exposed via GraphQL API.
+type PipelineExtraInfo struct {
+	BadgeUrl string `json:"badge_url"`
+	Provider struct {
+		Settings PipelineExtraSettings `json:"settings"`
+	} `json:"provider"`
+}
+type PipelineExtraSettings struct {
+	TriggerMode                             *string `json:"trigger_mode,omitempty"`
+	BuildPullRequests                       *bool   `json:"build_pull_requests,omitempty"`
+	PullRequestBranchFilterEnabled          *bool   `json:"pull_request_branch_filter_enabled,omitempty"`
+	PullRequestBranchFilterConfiguration    *string `json:"pull_request_branch_filter_configuration,omitempty"`
+	SkipBuildsForExistingCommits            *bool   `json:"skip_builds_for_existing_commits,omitempty"`
+	SkipPullRequestBuildsForExistingCommits *bool   `json:"skip_pull_request_builds_for_existing_commits,omitempty"`
+	BuildPullRequestReadyForReview          *bool   `json:"build_pull_request_ready_for_review,omitempty"`
+	BuildPullRequestLabelsChanged           *bool   `json:"build_pull_request_labels_changed,omitempty"`
+	BuildPullRequestForks                   *bool   `json:"build_pull_request_forks,omitempty"`
+	PrefixPullRequestForkBranchNames        *bool   `json:"prefix_pull_request_fork_branch_names,omitempty"`
+	BuildBranches                           *bool   `json:"build_branches,omitempty"`
+	BuildTags                               *bool   `json:"build_tags,omitempty"`
+	CancelDeletedBranchBuilds               *bool   `json:"cancel_deleted_branch_builds,omitempty"`
+	FilterEnabled                           *bool   `json:"filter_enabled,omitempty"`
+	FilterCondition                         *string `json:"filter_condition,omitempty"`
+	PublishCommitStatus                     *bool   `json:"publish_commit_status,omitempty"`
+	PublishBlockedAsPending                 *bool   `json:"publish_blocked_as_pending,omitempty"`
+	PublishCommitStatusPerStep              *bool   `json:"publish_commit_status_per_step,omitempty"`
+	SeparatePullRequestStatuses             *bool   `json:"separate_pull_request_statuses,omitempty"`
+}
+
+func getPipelineExtraInfo(ctx context.Context, client *Client, slug string, timeouts time.Duration) (*PipelineExtraInfo, error) {
+	pipelineExtraInfo := PipelineExtraInfo{}
+
+	err := retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
+		err := client.makeRequest(ctx, "GET", fmt.Sprintf("/v2/organizations/%s/pipelines/%s", client.organization, slug), nil, &pipelineExtraInfo)
+		return retryContextError(err)
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &pipelineExtraInfo, nil
+}
+func updatePipelineExtraInfo(ctx context.Context, slug string, settings *providerSettingsModel, client *Client, timeouts time.Duration) (PipelineExtraInfo, error) {
+	payload := map[string]any{
+		"provider_settings": PipelineExtraSettings{
+			TriggerMode:                             settings.TriggerMode.ValueStringPointer(),
+			BuildPullRequests:                       settings.BuildPullRequests.ValueBoolPointer(),
+			PullRequestBranchFilterEnabled:          settings.PullRequestBranchFilterEnabled.ValueBoolPointer(),
+			PullRequestBranchFilterConfiguration:    settings.PullRequestBranchFilterConfiguration.ValueStringPointer(),
+			SkipBuildsForExistingCommits:            settings.SkipBuildsForExistingCommits.ValueBoolPointer(),
+			SkipPullRequestBuildsForExistingCommits: settings.SkipPullRequestBuildsForExistingCommits.ValueBoolPointer(),
+			BuildPullRequestReadyForReview:          settings.BuildPullRequestReadyForReview.ValueBoolPointer(),
+			BuildPullRequestLabelsChanged:           settings.BuildPullRequestLabelsChanged.ValueBoolPointer(),
+			BuildPullRequestForks:                   settings.BuildPullRequestForks.ValueBoolPointer(),
+			PrefixPullRequestForkBranchNames:        settings.PrefixPullRequestForkBranchNames.ValueBoolPointer(),
+			BuildBranches:                           settings.BuildBranches.ValueBoolPointer(),
+			BuildTags:                               settings.BuildTags.ValueBoolPointer(),
+			CancelDeletedBranchBuilds:               settings.CancelDeletedBranchBuilds.ValueBoolPointer(),
+			FilterEnabled:                           settings.FilterEnabled.ValueBoolPointer(),
+			FilterCondition:                         settings.FilterCondition.ValueStringPointer(),
+			PublishCommitStatus:                     settings.PublishCommitStatus.ValueBoolPointer(),
+			PublishBlockedAsPending:                 settings.PublishBlockedAsPending.ValueBoolPointer(),
+			PublishCommitStatusPerStep:              settings.PublishCommitStatusPerStep.ValueBoolPointer(),
+			SeparatePullRequestStatuses:             settings.SeparatePullRequestStatuses.ValueBoolPointer(),
+		},
+	}
+
+	pipelineExtraInfo := PipelineExtraInfo{}
+	err := retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
+		err := client.makeRequest(ctx, "PATCH", fmt.Sprintf("/v2/organizations/%s/pipelines/%s", client.organization, slug), payload, &pipelineExtraInfo)
+		return retryContextError(err)
+	})
+
+	if err != nil {
+		return pipelineExtraInfo, err
+	}
+	return pipelineExtraInfo, nil
+}
+
+func getTagsFromSchema(plan *pipelineResourceModel) []PipelineTagInput {
+	tags := make([]PipelineTagInput, len(plan.Tags))
+	for i, tag := range plan.Tags {
+		tags[i] = PipelineTagInput{
+			Label: tag.ValueString(),
+		}
+	}
+	return tags
+}
+
+// updatePipelineResourceExtraInfo updates the terraform resource with data received from Buildkite REST API
+func updatePipelineResourceExtraInfo(state *pipelineResourceModel, pipeline *PipelineExtraInfo) {
+	state.BadgeUrl = types.StringValue(pipeline.BadgeUrl)
+	s := pipeline.Provider.Settings
+
+	state.ProviderSettings = &providerSettingsModel{
+		TriggerMode:                             types.StringPointerValue(s.TriggerMode),
+		BuildPullRequests:                       types.BoolPointerValue(s.BuildPullRequests),
+		PullRequestBranchFilterEnabled:          types.BoolPointerValue(s.PullRequestBranchFilterEnabled),
+		PullRequestBranchFilterConfiguration:    types.StringPointerValue(s.PullRequestBranchFilterConfiguration),
+		SkipBuildsForExistingCommits:            types.BoolPointerValue(s.SkipBuildsForExistingCommits),
+		SkipPullRequestBuildsForExistingCommits: types.BoolPointerValue(s.SkipPullRequestBuildsForExistingCommits),
+		BuildPullRequestReadyForReview:          types.BoolPointerValue(s.BuildPullRequestReadyForReview),
+		BuildPullRequestLabelsChanged:           types.BoolPointerValue(s.BuildPullRequestLabelsChanged),
+		BuildPullRequestForks:                   types.BoolPointerValue(s.BuildPullRequestForks),
+		PrefixPullRequestForkBranchNames:        types.BoolPointerValue(s.PrefixPullRequestForkBranchNames),
+		BuildBranches:                           types.BoolPointerValue(s.BuildBranches),
+		BuildTags:                               types.BoolPointerValue(s.BuildTags),
+		CancelDeletedBranchBuilds:               types.BoolPointerValue(s.CancelDeletedBranchBuilds),
+		FilterEnabled:                           types.BoolPointerValue(s.FilterEnabled),
+		FilterCondition:                         types.StringPointerValue(s.FilterCondition),
+		PublishCommitStatus:                     types.BoolPointerValue(s.PublishCommitStatus),
+		PublishBlockedAsPending:                 types.BoolPointerValue(s.PublishBlockedAsPending),
+		PublishCommitStatusPerStep:              types.BoolPointerValue(s.PublishCommitStatusPerStep),
+		SeparatePullRequestStatuses:             types.BoolPointerValue(s.SeparatePullRequestStatuses),
+	}
+}
+
+func upgradePipelineStateV0toV1(ctx context.Context, req resource.UpgradeStateRequest, resp *resource.UpgradeStateResponse) {
+	type pipelineResourceModelV0 struct {
+		AllowRebuilds                        types.Bool               `tfsdk:"allow_rebuilds"`
+		ArchiveOnDelete                      types.Bool               `tfsdk:"archive_on_delete"`
+		BadgeUrl                             types.String             `tfsdk:"badge_url"`
+		BranchConfiguration                  types.String             `tfsdk:"branch_configuration"`
+		CancelIntermediateBuilds             types.Bool               `tfsdk:"cancel_intermediate_builds"`
+		CancelIntermediateBuildsBranchFilter types.String             `tfsdk:"cancel_intermediate_builds_branch_filter"`
+		ClusterId                            types.String             `tfsdk:"cluster_id"`
+		DefaultBranch                        types.String             `tfsdk:"default_branch"`
+		DefaultTimeoutInMinutes              types.Int64              `tfsdk:"default_timeout_in_minutes"`
+		DeletionProtection                   types.Bool               `tfsdk:"deletion_protection"`
+		Description                          types.String             `tfsdk:"description"`
+		Id                                   types.String             `tfsdk:"id"`
+		MaximumTimeoutInMinutes              types.Int64              `tfsdk:"maximum_timeout_in_minutes"`
+		Name                                 types.String             `tfsdk:"name"`
+		ProviderSettings                     []*providerSettingsModel `tfsdk:"provider_settings"`
+		Repository                           types.String             `tfsdk:"repository"`
+		SkipIntermediateBuilds               types.Bool               `tfsdk:"skip_intermediate_builds"`
+		SkipIntermediateBuildsBranchFilter   types.String             `tfsdk:"skip_intermediate_builds_branch_filter"`
+		Slug                                 types.String             `tfsdk:"slug"`
+		Steps                                types.String             `tfsdk:"steps"`
+		Tags                                 []types.String           `tfsdk:"tags"`
+		WebhookUrl                           types.String             `tfsdk:"webhook_url"`
+	}
+
+	var priorPipelineStateData pipelineResourceModelV0
+
+	resp.Diagnostics.Append(req.State.Get(ctx, &priorPipelineStateData)...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	upgradedPipelineStateData := pipelineResourceModel{
+		AllowRebuilds:                        priorPipelineStateData.AllowRebuilds,
+		BadgeUrl:                             priorPipelineStateData.BadgeUrl,
+		BranchConfiguration:                  priorPipelineStateData.BranchConfiguration,
+		CancelIntermediateBuilds:             priorPipelineStateData.CancelIntermediateBuilds,
+		CancelIntermediateBuildsBranchFilter: priorPipelineStateData.CancelIntermediateBuildsBranchFilter,
+		ClusterId:                            priorPipelineStateData.ClusterId,
+		DefaultBranch:                        priorPipelineStateData.DefaultBranch,
+		DefaultTimeoutInMinutes:              priorPipelineStateData.DefaultTimeoutInMinutes,
+		Description:                          priorPipelineStateData.Description,
+		Id:                                   priorPipelineStateData.Id,
+		MaximumTimeoutInMinutes:              priorPipelineStateData.MaximumTimeoutInMinutes,
+		Name:                                 priorPipelineStateData.Name,
+		ProviderSettings:                     priorPipelineStateData.ProviderSettings[0],
+		Repository:                           priorPipelineStateData.Repository,
+		SkipIntermediateBuilds:               priorPipelineStateData.SkipIntermediateBuilds,
+		SkipIntermediateBuildsBranchFilter:   priorPipelineStateData.SkipIntermediateBuildsBranchFilter,
+		Slug:                                 priorPipelineStateData.Slug,
+		Steps:                                priorPipelineStateData.Steps,
+		Tags:                                 priorPipelineStateData.Tags,
+		WebhookUrl:                           priorPipelineStateData.WebhookUrl,
+	}
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, upgradedPipelineStateData)...)
+}
+
+func pipelineSchemaV0() schema.Schema {
+	return schema.Schema{
 		MarkdownDescription: heredoc.Doc(`
 			This resource allows you to create and manage pipelines for repositories.
 
@@ -684,238 +1338,6 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 					},
 				},
 			},
-		},
-	}
-}
-
-func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	var plan, state pipelineResourceModel
-
-	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
-
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	defaultTimeoutInMinutes := (*int)(unsafe.Pointer(plan.DefaultTimeoutInMinutes.ValueInt64Pointer()))
-	maxTimeoutInMinutes := (*int)(unsafe.Pointer(plan.MaximumTimeoutInMinutes.ValueInt64Pointer()))
-
-	input := PipelineUpdateInput{
-		AllowRebuilds:                        plan.AllowRebuilds.ValueBool(),
-		BranchConfiguration:                  plan.BranchConfiguration.ValueStringPointer(),
-		CancelIntermediateBuilds:             plan.CancelIntermediateBuilds.ValueBool(),
-		CancelIntermediateBuildsBranchFilter: plan.CancelIntermediateBuildsBranchFilter.ValueString(),
-		ClusterId:                            plan.ClusterId.ValueStringPointer(),
-		DefaultBranch:                        plan.DefaultBranch.ValueString(),
-		DefaultTimeoutInMinutes:              defaultTimeoutInMinutes,
-		MaximumTimeoutInMinutes:              maxTimeoutInMinutes,
-		Description:                          plan.Description.ValueString(),
-		Id:                                   plan.Id.ValueString(),
-		Name:                                 plan.Name.ValueString(),
-		Repository:                           PipelineRepositoryInput{Url: plan.Repository.ValueString()},
-		SkipIntermediateBuilds:               plan.SkipIntermediateBuilds.ValueBool(),
-		SkipIntermediateBuildsBranchFilter:   plan.SkipIntermediateBuildsBranchFilter.ValueString(),
-		Steps:                                PipelineStepsInput{Yaml: plan.Steps.ValueString()},
-		Tags:                                 getTagsFromSchema(&plan),
-	}
-
-	timeouts, diags := p.client.timeouts.Read(ctx, DefaultTimeout)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	var response *updatePipelineResponse
-	err := retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
-		var err error
-		log.Printf("Updating pipeline %s ...", input.Name)
-		response, err = updatePipeline(ctx, p.client.genqlient, input)
-		return retryContextError(err)
-	})
-
-	if err != nil {
-		resp.Diagnostics.AddError("Unable to update pipeline %s", state.Name.ValueString())
-		return
-	}
-
-	setPipelineModel(&state, &response.PipelineUpdate.Pipeline)
-
-	if len(plan.ProviderSettings) > 0 {
-		pipelineExtraInfo, err := updatePipelineExtraInfo(ctx, response.PipelineUpdate.Pipeline.Slug, plan.ProviderSettings[0], p.client, timeouts)
-		if err != nil {
-			resp.Diagnostics.AddError("Unable to set pipeline info from REST", err.Error())
-			return
-		}
-
-		updatePipelineResourceExtraInfo(&state, &pipelineExtraInfo)
-	} else {
-		// no provider_settings provided, but we still need to read in the badge url
-		extraInfo, err := getPipelineExtraInfo(ctx, p.client, response.PipelineUpdate.Pipeline.Slug, timeouts)
-		if err != nil {
-			resp.Diagnostics.AddError("Unable to read pipeline info from REST", err.Error())
-			return
-		}
-		state.BadgeUrl = types.StringValue(extraInfo.BadgeUrl)
-		state.ProviderSettings = make([]*providerSettingsModel, 0)
-	}
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
-}
-
-func (*pipelineResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
-}
-
-func setPipelineModel(model *pipelineResourceModel, data pipelineResponse) {
-	defaultTimeoutInMinutes := (*int64)(unsafe.Pointer(data.GetDefaultTimeoutInMinutes()))
-	maximumTimeoutInMinutes := (*int64)(unsafe.Pointer(data.GetMaximumTimeoutInMinutes()))
-
-	model.AllowRebuilds = types.BoolValue(data.GetAllowRebuilds())
-	model.BranchConfiguration = types.StringPointerValue(data.GetBranchConfiguration())
-	model.CancelIntermediateBuilds = types.BoolValue(data.GetCancelIntermediateBuilds())
-	model.CancelIntermediateBuildsBranchFilter = types.StringValue(data.GetCancelIntermediateBuildsBranchFilter())
-	model.ClusterId = types.StringPointerValue(data.GetCluster().Id)
-	model.DefaultBranch = types.StringValue(data.GetDefaultBranch())
-	model.DefaultTimeoutInMinutes = types.Int64PointerValue(defaultTimeoutInMinutes)
-	model.Description = types.StringValue(data.GetDescription())
-	model.Id = types.StringValue(data.GetId())
-	model.MaximumTimeoutInMinutes = types.Int64PointerValue(maximumTimeoutInMinutes)
-	model.Name = types.StringValue(data.GetName())
-	model.Repository = types.StringValue(data.GetRepository().Url)
-	model.SkipIntermediateBuilds = types.BoolValue(data.GetSkipIntermediateBuilds())
-	model.SkipIntermediateBuildsBranchFilter = types.StringValue(data.GetSkipIntermediateBuildsBranchFilter())
-	model.Slug = types.StringValue(data.GetSlug())
-	model.Steps = types.StringValue(data.GetSteps().Yaml)
-	model.WebhookUrl = types.StringValue(data.GetWebhookURL())
-
-	tags := make([]types.String, len(data.GetTags()))
-	for i, tag := range data.GetTags() {
-		tags[i] = types.StringValue(tag.Label)
-	}
-	model.Tags = tags
-}
-
-// As of May 21, 2021, GraphQL Pipeline is lacking support for the following properties:
-// - badge_url
-// - provider_settings
-// We fallback to REST API
-
-// PipelineExtraInfo is used to manage pipeline attributes that are not exposed via GraphQL API.
-type PipelineExtraInfo struct {
-	BadgeUrl string `json:"badge_url"`
-	Provider struct {
-		Settings PipelineExtraSettings `json:"settings"`
-	} `json:"provider"`
-}
-type PipelineExtraSettings struct {
-	TriggerMode                             *string `json:"trigger_mode,omitempty"`
-	BuildPullRequests                       *bool   `json:"build_pull_requests,omitempty"`
-	PullRequestBranchFilterEnabled          *bool   `json:"pull_request_branch_filter_enabled,omitempty"`
-	PullRequestBranchFilterConfiguration    *string `json:"pull_request_branch_filter_configuration,omitempty"`
-	SkipBuildsForExistingCommits            *bool   `json:"skip_builds_for_existing_commits,omitempty"`
-	SkipPullRequestBuildsForExistingCommits *bool   `json:"skip_pull_request_builds_for_existing_commits,omitempty"`
-	BuildPullRequestReadyForReview          *bool   `json:"build_pull_request_ready_for_review,omitempty"`
-	BuildPullRequestLabelsChanged           *bool   `json:"build_pull_request_labels_changed,omitempty"`
-	BuildPullRequestForks                   *bool   `json:"build_pull_request_forks,omitempty"`
-	PrefixPullRequestForkBranchNames        *bool   `json:"prefix_pull_request_fork_branch_names,omitempty"`
-	BuildBranches                           *bool   `json:"build_branches,omitempty"`
-	BuildTags                               *bool   `json:"build_tags,omitempty"`
-	CancelDeletedBranchBuilds               *bool   `json:"cancel_deleted_branch_builds,omitempty"`
-	FilterEnabled                           *bool   `json:"filter_enabled,omitempty"`
-	FilterCondition                         *string `json:"filter_condition,omitempty"`
-	PublishCommitStatus                     *bool   `json:"publish_commit_status,omitempty"`
-	PublishBlockedAsPending                 *bool   `json:"publish_blocked_as_pending,omitempty"`
-	PublishCommitStatusPerStep              *bool   `json:"publish_commit_status_per_step,omitempty"`
-	SeparatePullRequestStatuses             *bool   `json:"separate_pull_request_statuses,omitempty"`
-}
-
-func getPipelineExtraInfo(ctx context.Context, client *Client, slug string, timeouts time.Duration) (*PipelineExtraInfo, error) {
-	pipelineExtraInfo := PipelineExtraInfo{}
-
-	err := retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
-		err := client.makeRequest(ctx, "GET", fmt.Sprintf("/v2/organizations/%s/pipelines/%s", client.organization, slug), nil, &pipelineExtraInfo)
-		return retryContextError(err)
-	})
-
-	if err != nil {
-		return nil, err
-	}
-
-	return &pipelineExtraInfo, nil
-}
-func updatePipelineExtraInfo(ctx context.Context, slug string, settings *providerSettingsModel, client *Client, timeouts time.Duration) (PipelineExtraInfo, error) {
-	payload := map[string]any{
-		"provider_settings": PipelineExtraSettings{
-			TriggerMode:                             settings.TriggerMode.ValueStringPointer(),
-			BuildPullRequests:                       settings.BuildPullRequests.ValueBoolPointer(),
-			PullRequestBranchFilterEnabled:          settings.PullRequestBranchFilterEnabled.ValueBoolPointer(),
-			PullRequestBranchFilterConfiguration:    settings.PullRequestBranchFilterConfiguration.ValueStringPointer(),
-			SkipBuildsForExistingCommits:            settings.SkipBuildsForExistingCommits.ValueBoolPointer(),
-			SkipPullRequestBuildsForExistingCommits: settings.SkipPullRequestBuildsForExistingCommits.ValueBoolPointer(),
-			BuildPullRequestReadyForReview:          settings.BuildPullRequestReadyForReview.ValueBoolPointer(),
-			BuildPullRequestLabelsChanged:           settings.BuildPullRequestLabelsChanged.ValueBoolPointer(),
-			BuildPullRequestForks:                   settings.BuildPullRequestForks.ValueBoolPointer(),
-			PrefixPullRequestForkBranchNames:        settings.PrefixPullRequestForkBranchNames.ValueBoolPointer(),
-			BuildBranches:                           settings.BuildBranches.ValueBoolPointer(),
-			BuildTags:                               settings.BuildTags.ValueBoolPointer(),
-			CancelDeletedBranchBuilds:               settings.CancelDeletedBranchBuilds.ValueBoolPointer(),
-			FilterEnabled:                           settings.FilterEnabled.ValueBoolPointer(),
-			FilterCondition:                         settings.FilterCondition.ValueStringPointer(),
-			PublishCommitStatus:                     settings.PublishCommitStatus.ValueBoolPointer(),
-			PublishBlockedAsPending:                 settings.PublishBlockedAsPending.ValueBoolPointer(),
-			PublishCommitStatusPerStep:              settings.PublishCommitStatusPerStep.ValueBoolPointer(),
-			SeparatePullRequestStatuses:             settings.SeparatePullRequestStatuses.ValueBoolPointer(),
-		},
-	}
-
-	pipelineExtraInfo := PipelineExtraInfo{}
-	err := retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
-		err := client.makeRequest(ctx, "PATCH", fmt.Sprintf("/v2/organizations/%s/pipelines/%s", client.organization, slug), payload, &pipelineExtraInfo)
-		return retryContextError(err)
-	})
-
-	if err != nil {
-		return pipelineExtraInfo, err
-	}
-	return pipelineExtraInfo, nil
-}
-
-func getTagsFromSchema(plan *pipelineResourceModel) []PipelineTagInput {
-	tags := make([]PipelineTagInput, len(plan.Tags))
-	for i, tag := range plan.Tags {
-		tags[i] = PipelineTagInput{
-			Label: tag.ValueString(),
-		}
-	}
-	return tags
-}
-
-// updatePipelineResourceExtraInfo updates the terraform resource with data received from Buildkite REST API
-func updatePipelineResourceExtraInfo(state *pipelineResourceModel, pipeline *PipelineExtraInfo) {
-	state.BadgeUrl = types.StringValue(pipeline.BadgeUrl)
-	s := pipeline.Provider.Settings
-	state.ProviderSettings = []*providerSettingsModel{
-		{
-			TriggerMode:                             types.StringPointerValue(s.TriggerMode),
-			BuildPullRequests:                       types.BoolPointerValue(s.BuildPullRequests),
-			PullRequestBranchFilterEnabled:          types.BoolPointerValue(s.PullRequestBranchFilterEnabled),
-			PullRequestBranchFilterConfiguration:    types.StringPointerValue(s.PullRequestBranchFilterConfiguration),
-			SkipBuildsForExistingCommits:            types.BoolPointerValue(s.SkipBuildsForExistingCommits),
-			SkipPullRequestBuildsForExistingCommits: types.BoolPointerValue(s.SkipPullRequestBuildsForExistingCommits),
-			BuildPullRequestReadyForReview:          types.BoolPointerValue(s.BuildPullRequestReadyForReview),
-			BuildPullRequestLabelsChanged:           types.BoolPointerValue(s.BuildPullRequestLabelsChanged),
-			BuildPullRequestForks:                   types.BoolPointerValue(s.BuildPullRequestForks),
-			PrefixPullRequestForkBranchNames:        types.BoolPointerValue(s.PrefixPullRequestForkBranchNames),
-			BuildBranches:                           types.BoolPointerValue(s.BuildBranches),
-			BuildTags:                               types.BoolPointerValue(s.BuildTags),
-			CancelDeletedBranchBuilds:               types.BoolPointerValue(s.CancelDeletedBranchBuilds),
-			FilterEnabled:                           types.BoolPointerValue(s.FilterEnabled),
-			FilterCondition:                         types.StringPointerValue(s.FilterCondition),
-			PublishCommitStatus:                     types.BoolPointerValue(s.PublishCommitStatus),
-			PublishBlockedAsPending:                 types.BoolPointerValue(s.PublishBlockedAsPending),
-			PublishCommitStatusPerStep:              types.BoolPointerValue(s.PublishCommitStatusPerStep),
-			SeparatePullRequestStatuses:             types.BoolPointerValue(s.SeparatePullRequestStatuses),
 		},
 	}
 }
