@@ -108,7 +108,7 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 				name = "%s"
 				repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
 				tags = []
-				provider_settings {}
+				provider_settings = {}
 			}
 		`, pipelineName)
 
@@ -136,12 +136,11 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 						// check lists are empty
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "tags.#", "0"),
 						resource.TestCheckNoResourceAttr("buildkite_pipeline.pipeline", "tags.#"),
-						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.#", "1"),
-						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.0.trigger_mode", ""),
-						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.0.build_pull_requests", "false"),
-						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.0.skip_pull_request_builds_for_existing_commits", "false"),
-						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.0.build_branches", "false"),
-						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.0.publish_commit_status", "false"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.trigger_mode", ""),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_pull_requests", "false"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.skip_pull_request_builds_for_existing_commits", "false"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_branches", "false"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.publish_commit_status", "false"),
 					),
 				},
 			},
@@ -170,7 +169,7 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 				skip_intermediate_builds = true
 				skip_intermediate_builds_branch_filter = "!main"
 				tags = ["llama"]
-				provider_settings {
+				provider_settings = {
 					trigger_mode = "code"
 					build_pull_requests = true
 					skip_builds_for_existing_commits = true
@@ -207,19 +206,19 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "description", "terraform test"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "skip_intermediate_builds", "true"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "skip_intermediate_builds_branch_filter", "!main"),
-						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.0.trigger_mode", "code"),
-						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.0.build_pull_requests", "true"),
-						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.0.skip_builds_for_existing_commits", "true"),
-						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.0.build_branches", "true"),
-						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.0.build_tags", "true"),
-						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.0.build_pull_request_ready_for_review", "true"),
-						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.0.cancel_deleted_branch_builds", "true"),
-						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.0.filter_enabled", "true"),
-						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.0.filter_condition", "true"),
-						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.0.publish_commit_status", "true"),
-						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.0.publish_blocked_as_pending", "true"),
-						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.0.publish_commit_status_per_step", "true"),
-						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.0.separate_pull_request_statuses", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.trigger_mode", "code"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_pull_requests", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.skip_builds_for_existing_commits", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_branches", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_tags", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_pull_request_ready_for_review", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.cancel_deleted_branch_builds", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.filter_enabled", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.filter_condition", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.publish_commit_status", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.publish_blocked_as_pending", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.publish_commit_status_per_step", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.separate_pull_request_statuses", "true"),
 					),
 				},
 			},
@@ -270,7 +269,7 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 							skip_intermediate_builds = true
 							skip_intermediate_builds_branch_filter = "!main"
 							tags = ["llama"]
-							provider_settings {
+							provider_settings = {
 								trigger_mode = "code"
 								build_pull_requests = true
 								skip_builds_for_existing_commits = true
