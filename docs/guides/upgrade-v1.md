@@ -50,7 +50,7 @@ provider "buildkite" {
 
 ### Pipeline resource `provider_settings` type change
 The `provider_settings` attribute on the pipeline resource has been completely overhauled. It is now a nested attribute
-(thanks to protocol v6) and has validation on inner attributes.
+(thanks to protocol v6) and has validation on its inner attributes.
 
 Previously:
 
