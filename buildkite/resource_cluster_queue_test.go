@@ -15,7 +15,7 @@ func TestAccBuildkiteClusterQueueResource(t *testing.T) {
 	configBasic := func(fields ...string) string {
 		return fmt.Sprintf(`
 		provider "buildkite" {
-			timeouts {
+			timeouts = {
 				create = "10s"
 				read = "10s"
 				update = "10s"

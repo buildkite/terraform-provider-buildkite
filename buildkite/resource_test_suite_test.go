@@ -16,7 +16,7 @@ func TestAccBuildkiteTestSuiteResource(t *testing.T) {
 	basicTestSuite := func(name string) string {
 		return fmt.Sprintf(`
 		provider "buildkite" {
-			timeouts {
+			timeouts = {
 				create = "10s"
 				read = "10s"
 				update = "10s"
@@ -41,7 +41,7 @@ func TestAccBuildkiteTestSuiteResource(t *testing.T) {
 	testSuiteWithTwoTeams := func(name string) string {
 		return fmt.Sprintf(`
 		provider "buildkite" {
-			timeouts {
+			timeouts = {
 				create = "10s"
 				read = "10s"
 				update = "10s"
@@ -72,7 +72,7 @@ func TestAccBuildkiteTestSuiteResource(t *testing.T) {
 	testSuiteTeamAddition := func(name string) string {
 		return fmt.Sprintf(`
 		provider "buildkite" {
-			timeouts {
+			timeouts = {
 				create = "10s"
 				read = "10s"
 				update = "10s"

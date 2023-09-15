@@ -3,10 +3,13 @@
 page_title: "buildkite Provider"
 subcategory: ""
 description: |-
-  This provider can be used to manage resources on [buildkite.com](https://buildkite.com).
+  ~> You are viewing documentation for a pre-release version of the provider. Please see the latest stable docs at https://registry.terraform.io/providers/buildkite/buildkite/0.27.0/docs
+  This provider can be used to manage resources on buildkite.com https://buildkite.com.
 ---
 
 # buildkite Provider
+
+~> You are viewing documentation for a pre-release version of the provider. Please see the latest stable docs at https://registry.terraform.io/providers/buildkite/buildkite/0.27.0/docs
 
 This provider can be used to manage resources on [buildkite.com](https://buildkite.com).
 
@@ -45,9 +48,9 @@ resource "buildkite_pipeline" "pipeline" {
 - `graphql_url` (String) Base URL for the GraphQL API to use. If not provided, the value is taken from the `BUILDKITE_GRAPHQL_URL` environment variable.
 - `organization` (String) The Buildkite organization slug. This can be found on the [settings](https://buildkite.com/organizations/~/settings) page. If not provided, the value is taken from the `BUILDKITE_ORGANIZATION_SLUG` environment variable.
 - `rest_url` (String) Base URL for the REST API to use. If not provided, the value is taken from the `BUILDKITE_REST_URL` environment variable.
-- `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
+- `timeouts` (Attributes) (see [below for nested schema](#nestedatt--timeouts))
 
-<a id="nestedblock--timeouts"></a>
+<a id="nestedatt--timeouts"></a>
 ### Nested Schema for `timeouts`
 
 Optional:

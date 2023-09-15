@@ -85,6 +85,10 @@ All resources now use their GraphQL IDs as the primary ID in the schema.
 
 ## Upgrade Guide
 
+~> If you are coming from a 0.x release of the provider and using `buildkite_pipeline.team` attribute on your resources,
+you **must** upgrade to version 0.27.0 prior to upgrading to v1.0. See [Migrate pipeline.team usage to pipeline_team
+resource](./upgrade-v1#migrate-pipelineteam-usage-to-pipeline_team-resource) for more info.
+
 ### Pin provider version
 
 You should pin your provider installation to the 1.x releases.
@@ -99,6 +103,15 @@ terraform {
   }
 }
 ```
+
+### Upgrade provider
+
+After pinning the provider version, you can upgrade it by running: `terraform init -upgrade`. This will pull in the
+latest release under the 1.x version.
+
+### Refresh state
+
+The next step is to refresh your state file: `terraform refresh`.
 
 ### Migrate `pipeline.team` usage to `pipeline_team` resource
 
@@ -149,4 +162,44 @@ resource "buildkite_pipeline_team" "deploy_pipeline" {
   team_id = buildkite_team.deploy.id
   access_level = "BUILD_AND_READ"
 }
+```
+
+After applying that change to all `pipeline` resources with a `team` attribute, you can run an apply: `terraform apply`.
+
+This will show something like below. You can see in the plan that it will temporarily remove the team from the pipeline,
+then followup with adding it back through the separate resource. This will result in a very small time window where the
+team doesn't have access to the pipeline. It should be unnoticeable.
+
+```
+Terraform used the selected providers to generate the following execution plan. Resource actions are indicated with the following symbols:
+  + create
+  ~ update in-place
+
+Terraform will perform the following actions:
+
+  # buildkite_pipeline.pipeline will be updated in-place
+  ~ resource "buildkite_pipeline" "pipeline" {
+        id                         = "<obfuscated>"
+        name                       = "v0.27"
+        tags                       = []
+        # (10 unchanged attributes hidden)
+
+      - team {
+          - access_level     = "READ_ONLY" -> null
+          - pipeline_team_id = "<obfuscated>" -> null
+          - slug             = "team" -> null
+          - team_id          = "<obfuscated>" -> null
+        }
+    }
+
+  # buildkite_pipeline_team.p_team will be created
+  + resource "buildkite_pipeline_team" "p_team" {
+      + access_level = "READ_ONLY"
+      + id           = (known after apply)
+      + pipeline_id  = "<obfuscated>"
+      + team_id      = "<obfuscated>"
+      + uuid         = (known after apply)
+    }
+
+Plan: 1 to add, 1 to change, 0 to destroy.
 ```
