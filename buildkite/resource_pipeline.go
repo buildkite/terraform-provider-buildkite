@@ -980,12 +980,12 @@ func upgradePipelineStateV0toV1(ctx context.Context, req resource.UpgradeStateRe
 		WebhookUrl:                           priorPipelineStateData.WebhookUrl,
 	}
 
-	// If the existing pipelines' state had ProviderSettings - set it as part of the V1 pipelineResourceModel 
+	// If the existing pipelines' state had ProviderSettings - set it as part of the V1 pipelineResourceModel
 	if len(priorPipelineStateData.ProviderSettings) == 1 {
 		upgradedPipelineStateData.ProviderSettings = priorPipelineStateData.ProviderSettings[0]
 	}
 
-	// Upgrade pipeline in state 
+	// Upgrade pipeline in state
 	diags := resp.State.Set(ctx, upgradedPipelineStateData)
 	resp.Diagnostics.Append(diags...)
 }
