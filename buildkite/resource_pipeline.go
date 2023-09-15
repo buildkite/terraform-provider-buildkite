@@ -470,7 +470,8 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 				},
 			},
 			"provider_settings": schema.SingleNestedAttribute{
-				Optional: true,
+				Optional:            true,
+				MarkdownDescription: "Control settings depending on the VCS provider used in `repository`.",
 				Attributes: map[string]schema.Attribute{
 					"trigger_mode": schema.StringAttribute{
 						Computed: true,
