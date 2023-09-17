@@ -438,7 +438,7 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 					),
 				},
 				{
-					Config: configNested,
+					Config:                   configNested,
 					ProtoV6ProviderFactories: protoV6ProviderFactories(),
 					Check: resource.ComposeAggregateTestCheckFunc(
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "name", pipelineName),
