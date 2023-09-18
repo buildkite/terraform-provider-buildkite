@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 
+	"github.com/MakeNowJust/heredoc"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	resource_schema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -47,17 +48,22 @@ func (c *clusterResource) Configure(ctx context.Context, req resource.ConfigureR
 
 func (c *clusterResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = resource_schema.Schema{
-		MarkdownDescription: "A Cluster is a group of Agents that can be used to run your builds. " +
-			"Clusters are useful for grouping Agents by their capabilities, such as operating system, hardware, or location. ",
+		MarkdownDescription: heredoc.Doc(`
+			This resource allows you to create and manage a Buildkite Cluster to run your builds in.
+			Clusters are useful for grouping agents by there capabilities or permissions.
+			Find out more information in our [documentation](https://buildkite.com/docs/clusters/overview).
+		`),
 		Attributes: map[string]resource_schema.Attribute{
 			"id": resource_schema.StringAttribute{
-				Computed: true,
+				Computed:            true,
+				MarkdownDescription: "The GraphQL ID of the cluster.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
 			"uuid": resource_schema.StringAttribute{
-				Computed: true,
+				Computed:            true,
+				MarkdownDescription: "The UUID of the cluster.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
@@ -67,12 +73,18 @@ func (c *clusterResource) Schema(ctx context.Context, req resource.SchemaRequest
 				Required:            true,
 			},
 			"description": resource_schema.StringAttribute{
-				Optional:            true,
-				MarkdownDescription: "A description for the Cluster. Consider something short but clear on the Cluster's function.",
+				Optional: true,
+				MarkdownDescription: heredoc.Doc(`
+					This is a description for the cluster, this may describe the usage for it, the region, or something else
+					which would help identify the Cluster's purpose.
+				`),
 			},
 			"emoji": resource_schema.StringAttribute{
-				Optional:            true,
-				MarkdownDescription: "An emoji to represent the Cluster. Accepts the format :buildkite:.",
+				Optional: true,
+				MarkdownDescription: heredoc.Doc(`
+					An emoji to use with the Cluster, this can either be set using :buildkite: notation, or with the
+					emoji itself, such as 🚀.
+				`),
 			},
 			"color": resource_schema.StringAttribute{
 				Optional:            true,

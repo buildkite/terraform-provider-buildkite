@@ -6,6 +6,7 @@ import (
 	"log"
 	"strings"
 
+	"github.com/MakeNowJust/heredoc"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	resource_schema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -42,15 +43,22 @@ func (o *organizationResource) Configure(ctx context.Context, req resource.Confi
 
 func (*organizationResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = resource_schema.Schema{
+		MarkdownDescription: heredoc.Doc(`
+			This resource allows you to manage the settings for an organization.
+
+			The user of your API token must be an organization administrator to manage organization settings.
+		`),
 		Attributes: map[string]resource_schema.Attribute{
 			"id": resource_schema.StringAttribute{
-				Computed: true,
+				Computed:            true,
+				MarkdownDescription: "The GraphQL ID of the organization.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
 			"uuid": resource_schema.StringAttribute{
-				Computed: true,
+				Computed:            true,
+				MarkdownDescription: "The UUID of the organization.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
@@ -58,6 +66,9 @@ func (*organizationResource) Schema(ctx context.Context, req resource.SchemaRequ
 			"allowed_api_ip_addresses": resource_schema.ListAttribute{
 				Optional:    true,
 				ElementType: types.StringType,
+				MarkdownDescription: "A list of IP addresses in CIDR format that are allowed to access the Buildkite API." +
+					"If not set, all IP addresses are allowed (the same as setting 0.0.0.0/0).\n\n" +
+					"-> The \"Allowed API IP Addresses\" feature must be enabled on your organization in order to manage the `allowed_api_ip_addresses` attribute.",
 			},
 		},
 	}

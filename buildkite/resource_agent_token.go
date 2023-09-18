@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/MakeNowJust/heredoc"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	resource_schema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
@@ -180,25 +181,33 @@ func (at *AgentTokenResource) Read(ctx context.Context, req resource.ReadRequest
 
 func (AgentTokenResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = resource_schema.Schema{
+		MarkdownDescription: heredoc.Doc(`
+			This resource allows you to create and manage non-clustered agent tokens.
+			You can find out more about clusters in the Buildkite [documentation](https://buildkite.com/docs/agent/v3/tokens).
+		`),
 		Attributes: map[string]resource_schema.Attribute{
 			"description": resource_schema.StringAttribute{
-				Optional: true,
+				Optional:            true,
+				MarkdownDescription: "The description of the agent token. Used to help identify its use.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
 			"id": resource_schema.StringAttribute{
-				Computed: true,
+				Computed:            true,
+				MarkdownDescription: "The GraphQL ID of the agent token.",
 			},
 			"token": resource_schema.StringAttribute{
-				Computed:  true,
-				Sensitive: true,
+				Computed:            true,
+				Sensitive:           true,
+				MarkdownDescription: "The token value used by an agent to register with the API.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
 			"uuid": resource_schema.StringAttribute{
-				Computed: true,
+				Computed:            true,
+				MarkdownDescription: "The UUID of the agent token.",
 			},
 		},
 	}

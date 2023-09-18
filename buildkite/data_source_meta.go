@@ -4,6 +4,7 @@ import (
 	"context"
 	"sort"
 
+	"github.com/MakeNowJust/heredoc"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -63,13 +64,19 @@ func (m *metaDatasource) Read(ctx context.Context, req datasource.ReadRequest, r
 
 func (*metaDatasource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		MarkdownDescription: "Find source IP addresses that Buildkite may use to send external requests to.",
+		MarkdownDescription: heredoc.Doc(`
+		Use this data source to look up the source IP addresses that Buildkite may use to send external requests,
+		including webhooks and API calls to source control systems (like GitHub Enterprise Server and BitBucket Server).
+
+		More info in the Buildkite [documentation](https://buildkite.com/docs/apis/rest-api/meta).
+		`),
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
-				Computed: true,
+				Computed:            true,
+				MarkdownDescription: "Fixed value: `https://api.buildkite.com/v2/meta`.",
 			},
 			"webhook_ips": schema.ListAttribute{
-				MarkdownDescription: "List of IPs in CIDR format",
+				MarkdownDescription: "List of IPs in CIDR format.",
 				Computed:            true,
 				ElementType:         types.StringType,
 			},

@@ -69,47 +69,48 @@ func (t *teamResource) Schema(ctx context.Context, req resource.SchemaRequest, r
 			"Clusters are useful for grouping Agents by their capabilities, such as operating system, hardware, or location. ",
 		Attributes: map[string]resource_schema.Attribute{
 			"id": resource_schema.StringAttribute{
-				Computed: true,
+				Computed:            true,
+				MarkdownDescription: "The GraphQL ID of the team.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
-				MarkdownDescription: "The ID of the Team. This is a computed value and cannot be set.",
 			},
 			"uuid": resource_schema.StringAttribute{
-				Computed: true,
+				Computed:            true,
+				MarkdownDescription: "The UUID of the team.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
-				MarkdownDescription: "The UUID of the Team. This is a computed value and cannot be set.",
 			},
 			"name": resource_schema.StringAttribute{
-				MarkdownDescription: "The name of the Team.",
+				MarkdownDescription: "The name of the team.",
 				Required:            true,
 			},
 			"description": resource_schema.StringAttribute{
 				Optional:            true,
-				MarkdownDescription: "A description for the Team. This is displayed in the Buildkite UI.",
+				MarkdownDescription: "A description for the team. This is displayed in the Buildkite UI.",
 			},
 			"privacy": resource_schema.StringAttribute{
 				Required:            true,
-				MarkdownDescription: "The privacy setting for the Team. This can be either `VISIBLE` or `SECRET`.",
+				MarkdownDescription: "The privacy setting for the team. This can be either `VISIBLE` or `SECRET`.",
 				Validators: []validator.String{
 					stringvalidator.OneOf("VISIBLE", "SECRET"),
 				},
 			},
 			"default_team": resource_schema.BoolAttribute{
 				Required:            true,
-				MarkdownDescription: "Whether this is the default Team for the Organization.",
+				MarkdownDescription: "Whether this is the default team for the organization.",
 			},
 			"default_member_role": resource_schema.StringAttribute{
 				Required:            true,
-				MarkdownDescription: "The default role for new members of the Team. This can be either `MEMBER` or `MAINTAINER`.",
+				MarkdownDescription: "The default role for new members of the team. This can be either `MEMBER` or `MAINTAINER`.",
 				Validators: []validator.String{
 					stringvalidator.OneOf("MEMBER", "MAINTAINER"),
 				},
 			},
 			"slug": resource_schema.StringAttribute{
-				Computed: true,
+				Computed:            true,
+				MarkdownDescription: "The generated slug for the team.",
 				PlanModifiers: []planmodifier.String{
 					custom_modifier.UseStateIfUnchanged("name"),
 				},
@@ -118,7 +119,7 @@ func (t *teamResource) Schema(ctx context.Context, req resource.SchemaRequest, r
 				Optional:            true,
 				Computed:            true,
 				Default:             booldefault.StaticBool(false),
-				MarkdownDescription: "Whether members of the Team can create Pipelines.",
+				MarkdownDescription: "Whether members of the team can create Pipelines.",
 			},
 		},
 	}

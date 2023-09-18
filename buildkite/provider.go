@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/MakeNowJust/heredoc"
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
@@ -143,31 +144,34 @@ func (tf *terraformProvider) Resources(context.Context) []func() resource.Resour
 
 func (*terraformProvider) Schema(ctx context.Context, req provider.SchemaRequest, resp *provider.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		MarkdownDescription: heredoc.Doc(`
+			~> You are viewing documentation for a pre-release version of the provider. Please see the latest stable docs at https://registry.terraform.io/providers/buildkite/buildkite/0.27.0/docs
+
+			This provider can be used to manage resources on [buildkite.com](https://buildkite.com).
+		`),
 		Attributes: map[string]schema.Attribute{
 			SchemaKeyOrganization: schema.StringAttribute{
-				Optional:    true,
-				Description: "The Buildkite organization slug",
+				Optional:            true,
+				MarkdownDescription: "The Buildkite organization slug. This can be found on the [settings](https://buildkite.com/organizations/~/settings) page. If not provided, the value is taken from the `BUILDKITE_ORGANIZATION_SLUG` environment variable.",
 			},
 			SchemaKeyAPIToken: schema.StringAttribute{
-				Optional:    true,
-				Description: "API token with GraphQL access and `write_pipelines, read_pipelines` and `write_suites` REST API scopes",
-				Sensitive:   true,
+				Optional:            true,
+				MarkdownDescription: "API token with GraphQL access and `write_pipelines`, `read_pipelines` and `write_suites` REST API scopes. You can generate a token from [your settings page](https://buildkite.com/user/api-access-tokens/new?description=terraform&scopes[]=write_pipelines&scopes[]=write_suites&scopes[]=read_pipelines&scopes[]=graphql). If not provided, the value is taken from the `BUILDKITE_API_TOKEN` environment variable.",
+				Sensitive:           true,
 			},
 			SchemaKeyGraphqlURL: schema.StringAttribute{
-				Optional:    true,
-				Description: "Base URL for the GraphQL API to use",
+				Optional:            true,
+				MarkdownDescription: "Base URL for the GraphQL API to use. If not provided, the value is taken from the `BUILDKITE_GRAPHQL_URL` environment variable.",
 			},
 			SchemaKeyRestURL: schema.StringAttribute{
-				Optional:    true,
-				Description: "Base URL for the REST API to use",
+				Optional:            true,
+				MarkdownDescription: "Base URL for the REST API to use. If not provided, the value is taken from the `BUILDKITE_REST_URL` environment variable.",
 			},
 			"archive_pipeline_on_delete": schema.BoolAttribute{
-				Optional:    true,
-				Description: "Archive pipelines when destroying instead of completely deleting.",
+				Optional:            true,
+				MarkdownDescription: "Enable this to archive pipelines when destroying the resource. This is opposed to completely deleting pipelines.",
 			},
-		},
-		Blocks: map[string]schema.Block{
-			"timeouts": timeouts.BlockAll(ctx),
+			"timeouts": timeouts.AttributesAll(ctx),
 		},
 	}
 }

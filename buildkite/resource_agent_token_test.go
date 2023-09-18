@@ -15,7 +15,7 @@ func TestAccBuildkiteAgentToken(t *testing.T) {
 	basic := func(name string) string {
 		return fmt.Sprintf(`
 		provider "buildkite" {
-			timeouts {
+			timeouts = {
 				create = "10s"
 				read = "10s"
 				update = "10s"

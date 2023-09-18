@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/MakeNowJust/heredoc"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	resource_schema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -51,31 +52,38 @@ func (ps *pipelineSchedule) Configure(ctx context.Context, req resource.Configur
 
 func (ps *pipelineSchedule) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = resource_schema.Schema{
-		MarkdownDescription: "A Pipeline Schedule is a schedule that triggers a pipeline to run at a specific time.",
+		MarkdownDescription: heredoc.Doc(`
+			A pipeline schedule is a schedule that triggers a pipeline to run at a specific time.
+
+			You can find more information in the [documentation](https://buildkite.com/docs/pipelines/scheduled-builds).
+		`),
 		Attributes: map[string]resource_schema.Attribute{
 			"id": resource_schema.StringAttribute{
-				Computed: true,
+				Computed:            true,
+				MarkdownDescription: "The GraphQL ID of the schedule.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
 			"uuid": resource_schema.StringAttribute{
-				Computed: true,
+				Computed:            true,
+				MarkdownDescription: "The UUID of the schedule.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
 			"pipeline_id": resource_schema.StringAttribute{
 				Required:            true,
-				MarkdownDescription: "The ID of the pipeline that this schedule belongs to.",
+				MarkdownDescription: "The GraphQL ID of the pipeline that this schedule belongs to.",
 			},
 			"label": resource_schema.StringAttribute{
 				Required:            true,
 				MarkdownDescription: "A label to describe the schedule.",
 			},
 			"cronline": resource_schema.StringAttribute{
-				Required:            true,
-				MarkdownDescription: "The cronline that describes when the schedule should run.",
+				Required: true,
+				MarkdownDescription: "The cronline that describes when the schedule should run. See" +
+					"[here](https://buildkite.com/docs/pipelines/scheduled-builds#schedule-intervals) for supported syntax.",
 			},
 			"branch": resource_schema.StringAttribute{
 				Required:            true,
@@ -89,12 +97,12 @@ func (ps *pipelineSchedule) Schema(ctx context.Context, req resource.SchemaReque
 			},
 			"message": resource_schema.StringAttribute{
 				Optional:            true,
-				MarkdownDescription: "The message that the schedule should run on.",
+				MarkdownDescription: "The message the builds show for builds created by this schedule.",
 			},
 			"env": resource_schema.MapAttribute{
 				ElementType:         types.StringType,
 				Optional:            true,
-				MarkdownDescription: "The environment variables that the schedule should run on.",
+				MarkdownDescription: "The environment variables that scheduled builds should use.",
 			},
 			"enabled": resource_schema.BoolAttribute{
 				Optional:            true,

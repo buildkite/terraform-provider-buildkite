@@ -8,10 +8,14 @@ All notable changes to this project will be documented in this file.
 - SUP-1394 Add validation to provider_settings [[PR #387](https://github.com/buildkite/terraform-provider-buildkite/pull/387)] @jradtilbrook
 - SUP-1382: Remove the deprecated team block from pipelines [[PR #391](https://github.com/buildkite/terraform-provider-buildkite/pull/391)] @lizrabuya
 - retryContextError util resource switch [[PR #394](https://github.com/buildkite/terraform-provider-buildkite/pull/394)] @james2791
-- Added `build_pull_request_ready_for_review` to pipeline resource docs/examples/tests[[PR #396](https://github.com/buildkite/terraform-provider-buildkite/pull/396)] @james2791
+- Added `build_pull_request_ready_for_review` to pipeline resource docs/examples/tests [[PR #396](https://github.com/buildkite/terraform-provider-buildkite/pull/396)] @james2791
+- SUP-1370 Update to protocol v6 [[PR #400](https://github.com/buildkite/terraform-provider-buildkite/pull/400)] @jradtilbrook
+- SUP-1293 Generate docs from code [[PR #397](https://github.com/buildkite/terraform-provider-buildkite/pull/397)] @jradtilbrook
+- SUP-1431 Upgrade path for pipeline teams [[PR #401](https://github.com/buildkite/terraform-provider-buildkite/pull/401)] @jradtilbrook
+- SUP-1395 Change timeouts to nested attribute [[PR #402](https://github.com/buildkite/terraform-provider-buildkite/pull/402)] @jradtilbrook
 
 The `team` block from the `buildkite_pipeline` resource has been removed. Please use the resource `buildkite_pipeline_team` to create and manage team configuration in a pipeline.
-   
+
 ## [v0.27.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v0.26.0...v0.27.0)
 
 - SUP-805: SUP-805: Team resource retries [[PR #360](https://github.com/buildkite/terraform-provider-buildkite/pull/360)] @james2791
