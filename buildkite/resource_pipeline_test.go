@@ -415,6 +415,27 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 			}
 		`, pipelineName)
 
+		check := resource.ComposeAggregateTestCheckFunc(
+			resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "name", pipelineName),
+			resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "repository", "https://github.com/buildkite/terraform-provider-buildkite.git"),
+			// Ensure that v0 pipeline's provider_settings is a list of length 1 in state & defaulted attributes are at index 0
+			resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.#", "1"),
+			resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.0.build_pull_requests", "true"),
+			resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.0.build_branches", "true"),
+			resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.0.publish_commit_status", "true"),
+			resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.0.skip_pull_request_builds_for_existing_commits", "true"),
+		)
+
+		checkNested := resource.ComposeAggregateTestCheckFunc(
+			resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "name", pipelineName),
+			resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "repository", "https://github.com/buildkite/terraform-provider-buildkite.git"),
+			// Ensure that v1 pipeline's provider_settings defaulted attributes are nested in state when upgraded from v0
+			resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_pull_requests", "true"),
+			resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_branches", "true"),
+			resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.publish_commit_status", "true"),
+			resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.skip_pull_request_builds_for_existing_commits", "true"),
+		)
+
 		resource.ParallelTest(t, resource.TestCase{
 			PreCheck: func() { testAccPreCheck(t) },
 			Steps: []resource.TestStep{
@@ -426,29 +447,19 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 							VersionConstraint: "0.27.0",
 						},
 					},
-					Check: resource.ComposeAggregateTestCheckFunc(
-						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "name", pipelineName),
-						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "repository", "https://github.com/buildkite/terraform-provider-buildkite.git"),
-						// Ensure that v0 pipeline's provider_settings is a list of length 1 in state & defaulted attributes are at index 0
-						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.#", "1"),
-						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.0.build_pull_requests", "true"),
-						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.0.build_branches", "true"),
-						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.0.publish_commit_status", "true"),
-						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.0.skip_pull_request_builds_for_existing_commits", "true"),
-					),
+					Check: check,
 				},
 				{
 					Config:                   configNested,
 					ProtoV6ProviderFactories: protoV6ProviderFactories(),
-					Check: resource.ComposeAggregateTestCheckFunc(
-						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "name", pipelineName),
-						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "repository", "https://github.com/buildkite/terraform-provider-buildkite.git"),
-						// Ensure that v1 pipeline's provider_settings defaulted attributes are nested in state when upgraded from v0
-						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_pull_requests", "true"),
-						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_branches", "true"),
-						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.publish_commit_status", "true"),
-						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.skip_pull_request_builds_for_existing_commits", "true"),
-					),
+					Check:                    checkNested,
+					// We expect an empty plan and no action on the pipeline resource before applying nested provider_settings config
+					ConfigPlanChecks: resource.ConfigPlanChecks{
+						PreApply: []plancheck.PlanCheck{
+							plancheck.ExpectEmptyPlan(),
+							plancheck.ExpectResourceAction("buildkite_pipeline.pipeline", plancheck.ResourceActionNoop),
+						},
+					},
 				},
 			},
 		})
