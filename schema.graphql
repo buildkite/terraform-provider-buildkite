@@ -551,33 +551,33 @@ union AuditSubjectNode =APIAccessToken | AgentToken | AuthorizationBitbucket | A
 
 """All the possible types of subjects in an Audit Event"""
 enum AuditSubjectType {
+	CLUSTER_PERMISSION
+	SUBSCRIPTION
+	AUTHORIZATION
 	AGENT_TOKEN
 	API_ACCESS_TOKEN
-	AUTHORIZATION
 	CLUSTER_QUEUE
 	CLUSTER_TOKEN
+	NOTIFICATION_SERVICE
 	ORGANIZATION
 	ORGANIZATION_BANNER
 	ORGANIZATION_INVITATION
-	CLUSTER
-	CLUSTER_PERMISSION
-	NOTIFICATION_SERVICE
 	PIPELINE_SCHEDULE
 	PIPELINE_TEMPLATE
+	TEAM
 	ORGANIZATION_MEMBER
 	TEAM_MEMBER
 	TEAM_PIPELINE
-	TEAM
-	SCM_SERVICE
-	SCM_PIPELINE_SETTINGS
 	TEAM_SUITE
-	SUBSCRIPTION
+	SCM_PIPELINE_SETTINGS
 	SSO_PROVIDER
-	SCM_REPOSITORY_HOST
+	SCM_SERVICE
 	SUITE_MONITOR
-	SUITE
+	SCM_REPOSITORY_HOST
 	USER_EMAIL
+	SUITE
 	USER_TOTP
+	CLUSTER
 	PIPELINE
 	USER
 }
@@ -1716,9 +1716,9 @@ enum JobEventSignalReason {
 	CANCEL
 """The agent was unable to start the job process, often due to memory or resource constraints. Note that in this case, no signal was sent to the process, it simply never started."""
 	PROCESS_RUN_ERROR
-"""The agent pre-bootstrap hook refused the job. Note that in this case, no signal was sent to the process, the bootstrap was not run at all."""
+"""The agent refused the job. Note that in this case, no signal was sent to the process, the job was not run at all."""
 	AGENT_REFUSED
-"""The agent refused the job because the signature could not be verified. Note that in this case, no signal was sent to the process, the bootstrap was not run at all."""
+"""The agent refused the job because the signature could not be verified. Note that in this case, no signal was sent to the process, the job was not run at all."""
 	SIGNATURE_REJECTED
 }
 

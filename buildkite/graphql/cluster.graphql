@@ -8,6 +8,12 @@ fragment ClusterFields on Cluster {
     emoji
     # @genqlient(pointer: true)
     color
+    defaultQueue {
+        id
+        uuid
+        key
+        description
+    }
 }
 
 query getClusterByName(
@@ -74,6 +80,30 @@ mutation updateCluster(
         clientMutationId
         cluster {
             ...ClusterFields
+        }
+    }
+}
+
+mutation setClusterDefaultQueue($organizationId: ID!, $clusterId: ID!, $queueId: ID) {
+    clusterUpdate(input: {organizationId: $organizationId, id: $clusterId, defaultQueueId: $queueId}) {
+        cluster {
+            ...ClusterFields
+            defaultQueue {
+                id
+                uuid
+            }
+        }
+    }
+}
+
+mutation removeClusterDefaultQueue($organizationId: ID!, $clusterId: ID!) {
+    clusterUpdate(input: {organizationId: $organizationId, id: $clusterId, defaultQueueId: null}) {
+        cluster {
+            ...ClusterFields
+            defaultQueue {
+                id
+                uuid
+            }
         }
     }
 }
