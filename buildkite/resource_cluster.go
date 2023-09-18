@@ -83,6 +83,7 @@ func (c *clusterResource) Schema(ctx context.Context, req resource.SchemaRequest
 				MarkdownDescription: "If `true`, the provider will create a default queue to associate with the Cluster.",
 			},
 			"default_queue_id": resource_schema.StringAttribute{
+				Computed:            true,
 				Optional:            true,
 				MarkdownDescription: "The ID for the Cluster queue that should be considered the default for this Cluster.",
 			},
@@ -122,12 +123,6 @@ func (c *clusterResource) Create(ctx context.Context, req resource.CreateRequest
 			state.Emoji.ValueStringPointer(),
 			state.Color.ValueStringPointer(),
 		)
-		if err != nil {
-			if isRetryableError(err) {
-				return retry.RetryableError(err)
-			}
-			return retry.NonRetryableError(err)
-		}
 
 		slog.Info("Cluster created successfully 🎉")
 
@@ -174,7 +169,7 @@ func (c *clusterResource) Create(ctx context.Context, req resource.CreateRequest
 					}
 					return retry.NonRetryableError(err)
 				}
-				state.DefaultQueueID = types.StringValue(cur.ClusterUpdate.Cluster.DefaultQueue.Id)
+				state.DefaultQueueID = types.StringPointerValue(cur.ClusterUpdate.Cluster.DefaultQueue.Id)
 				return nil
 			})
 		}
@@ -191,6 +186,7 @@ func (c *clusterResource) Create(ctx context.Context, req resource.CreateRequest
 
 	state.ID = types.StringValue(r.ClusterCreate.Cluster.Id)
 	state.UUID = types.StringValue(r.ClusterCreate.Cluster.Uuid)
+	state.DefaultQueueID = types.StringPointerValue(r.ClusterCreate.Cluster.DefaultQueue.Id)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
@@ -219,14 +215,7 @@ func (c *clusterResource) Read(ctx context.Context, req resource.ReadRequest, re
 		var err error
 		r, err = getNode(ctx, c.client.genqlient, state.ID.ValueString())
 
-		if err != nil {
-			if isRetryableError(err) {
-				return retry.RetryableError(err)
-			}
-			return retry.NonRetryableError(err)
-		}
-
-		return nil
+		return retryContextError(err)
 	})
 
 	if err != nil {
@@ -287,14 +276,7 @@ func (c *clusterResource) Update(ctx context.Context, req resource.UpdateRequest
 			plan.DefaultQueueID.ValueStringPointer(),
 		)
 
-		if err != nil {
-			if isRetryableError(err) {
-				return retry.RetryableError(err)
-			}
-			return retry.NonRetryableError(err)
-		}
-
-		return nil
+		return retryContextError(err)
 	})
 
 	if err != nil {
@@ -331,14 +313,7 @@ func (c *clusterResource) Delete(ctx context.Context, req resource.DeleteRequest
 		var err error
 		_, err = deleteCluster(ctx, c.client.genqlient, c.client.organizationId, state.ID.ValueString())
 
-		if err != nil {
-			if isRetryableError(err) {
-				return retry.RetryableError(err)
-			}
-			return retry.NonRetryableError(err)
-		}
-
-		return nil
+		return retryContextError(err)
 	})
 
 	if err != nil {

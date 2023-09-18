@@ -11,6 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
 type ClusterAgentToken struct {
@@ -79,19 +80,34 @@ func (ct *ClusterAgentToken) Schema(_ context.Context, _ resource.SchemaRequest,
 func (ct *ClusterAgentToken) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var plan, state ClusterAgentTokenResourceModel
 
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	diags := req.Plan.Get(ctx, &plan)
+	resp.Diagnostics.Append(diags...)
 
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	log.Printf("Creating cluster agent token with description %s into cluster %s ...", plan.Description.ValueString(), plan.ClusterId.ValueString())
-	r, err := createClusterAgentToken(ctx,
-		ct.client.genqlient,
-		ct.client.organizationId,
-		plan.ClusterId.ValueString(),
-		plan.Description.ValueString(),
-	)
+	timeout, diags := ct.client.timeouts.Create(ctx, DefaultTimeout)
+	resp.Diagnostics.Append(diags...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	var r *createClusterAgentTokenResponse
+	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+		var err error
+
+		log.Printf("Creating cluster agent token with description %s into cluster %s ...", plan.Description.ValueString(), plan.ClusterId.ValueString())
+		r, err = createClusterAgentToken(ctx,
+			ct.client.genqlient,
+			ct.client.organizationId,
+			plan.ClusterId.ValueString(),
+			plan.Description.ValueString(),
+		)
+
+		return retryContextError(err)
+	})
 
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -114,13 +130,33 @@ func (ct *ClusterAgentToken) Create(ctx context.Context, req resource.CreateRequ
 func (ct *ClusterAgentToken) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var state ClusterAgentTokenResourceModel
 
-	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	diags := req.State.Get(ctx, &state)
+	resp.Diagnostics.Append(diags...)
 
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	log.Printf("Getting cluster agent tokens for cluster %s ...", state.ClusterUuid.ValueString())
-	tokens, err := getClusterAgentTokens(ctx, ct.client.genqlient, ct.client.organization, state.ClusterUuid.ValueString())
+
+	timeout, diags := ct.client.timeouts.Read(ctx, DefaultTimeout)
+	resp.Diagnostics.Append(diags...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	var r *getClusterAgentTokensResponse
+	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+		var err error
+
+		log.Printf("Getting cluster agent tokens for cluster %s ...", state.ClusterUuid.ValueString())
+		r, err = getClusterAgentTokens(ctx,
+			ct.client.genqlient,
+			ct.client.organization,
+			state.ClusterUuid.ValueString(),
+		)
+
+		return retryContextError(err)
+	})
 
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -130,7 +166,7 @@ func (ct *ClusterAgentToken) Read(ctx context.Context, req resource.ReadRequest,
 		return
 	}
 
-	for _, edge := range tokens.Organization.Cluster.AgentTokens.Edges {
+	for _, edge := range r.Organization.Cluster.AgentTokens.Edges {
 		if edge.Node.Id == state.Id.ValueString() {
 			log.Printf("Found cluster Token with Description %s in cluster %s", edge.Node.Id, state.ClusterUuid.ValueString())
 			state.Description = types.StringValue(edge.Node.Description)
@@ -138,25 +174,42 @@ func (ct *ClusterAgentToken) Read(ctx context.Context, req resource.ReadRequest,
 			return
 		}
 	}
-
 }
 
 func (ct *ClusterAgentToken) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	var state, plan ClusterAgentTokenResourceModel
 
-	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	diagsState := req.State.Get(ctx, &state)
+	diagsPlan := req.Plan.Get(ctx, &plan)
+
+	resp.Diagnostics.Append(diagsState...)
+	resp.Diagnostics.Append(diagsPlan...)
 
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	log.Printf("Updating cluster token %s", state.Id.ValueString())
-	response, err := updateClusterAgentToken(ctx,
-		ct.client.genqlient,
-		ct.client.organizationId,
-		state.Id.ValueString(),
-		plan.Description.ValueString(),
-	)
+
+	timeout, diags := ct.client.timeouts.Update(ctx, DefaultTimeout)
+	resp.Diagnostics.Append(diags...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	var r *updateClusterAgentTokenResponse
+	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+		var err error
+
+		log.Printf("Updating cluster token %s", state.Id.ValueString())
+		r, err = updateClusterAgentToken(ctx,
+			ct.client.genqlient,
+			ct.client.organizationId,
+			state.Id.ValueString(),
+			plan.Description.ValueString(),
+		)
+
+		return retryContextError(err)
+	})
 
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -165,7 +218,7 @@ func (ct *ClusterAgentToken) Update(ctx context.Context, req resource.UpdateRequ
 		)
 		return
 	}
-	state.Description = types.StringValue(response.ClusterAgentTokenUpdate.ClusterAgentToken.Description)
+	state.Description = types.StringValue(r.ClusterAgentTokenUpdate.ClusterAgentToken.Description)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 
@@ -173,14 +226,33 @@ func (ct *ClusterAgentToken) Update(ctx context.Context, req resource.UpdateRequ
 
 func (ct *ClusterAgentToken) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	var plan ClusterAgentTokenResourceModel
-	resp.Diagnostics.Append(req.State.Get(ctx, &plan)...)
+
+	diags := req.State.Get(ctx, &plan)
+	resp.Diagnostics.Append(diags...)
 
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	log.Printf("Revoking Cluster Agent Token %s ...", plan.Id.ValueString())
-	_, err := revokeClusterAgentToken(ctx, ct.client.genqlient, ct.client.organizationId, plan.Id.ValueString())
+	timeout, diags := ct.client.timeouts.Delete(ctx, DefaultTimeout)
+	resp.Diagnostics.Append(diags...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+		var err error
+
+		log.Printf("Revoking Cluster Agent Token %s ...", plan.Id.ValueString())
+		_, err = revokeClusterAgentToken(ctx,
+			ct.client.genqlient,
+			ct.client.organizationId,
+			plan.Id.ValueString(),
+		)
+
+		return retryContextError(err)
+	})
 
 	if err != nil {
 		resp.Diagnostics.AddError(

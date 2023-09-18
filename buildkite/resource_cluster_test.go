@@ -171,6 +171,7 @@ func TestAccBuildkiteClusterResource(t *testing.T) {
 			Steps: []resource.TestStep{
 				{
 					Config: basicWithQueue(randName),
+					RefreshState: true,
 					Check:  check,
 				},
 			},

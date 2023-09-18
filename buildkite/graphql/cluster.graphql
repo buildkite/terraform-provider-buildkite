@@ -8,6 +8,10 @@ fragment ClusterFields on Cluster {
     emoji
     # @genqlient(pointer: true)
     color
+    defaultQueue {
+    # @genqlient(pointer: true)
+        id
+    }
 }
 
 query getClusterByName(
@@ -80,9 +84,6 @@ mutation updateCluster(
         clientMutationId
         cluster {
             ...ClusterFields
-            defaultQueue {
-                id
-            }
         }
     }
 }

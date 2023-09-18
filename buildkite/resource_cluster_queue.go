@@ -12,6 +12,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
 type ClusterQueueResourceModel struct {
@@ -84,20 +85,35 @@ func (ClusterQueueResource) Schema(ctx context.Context, req resource.SchemaReque
 func (cq *ClusterQueueResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var plan, state ClusterQueueResourceModel
 
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	diags := req.Plan.Get(ctx, &plan)
+	resp.Diagnostics.Append(diags...)
 
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	log.Printf("Creating cluster queue with key %s into cluster %s ...", plan.Key.ValueString(), plan.ClusterId.ValueString())
-	apiResponse, err := createClusterQueue(ctx,
-		cq.client.genqlient,
-		cq.client.organizationId,
-		plan.ClusterId.ValueString(),
-		plan.Key.ValueString(),
-		plan.Description.ValueStringPointer(),
-	)
+	timeout, diags := cq.client.timeouts.Create(ctx, DefaultTimeout)
+	resp.Diagnostics.Append(diags...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	var r *createClusterQueueResponse
+	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+		var err error
+
+		log.Printf("Creating cluster queue with key %s into cluster %s ...", plan.Key.ValueString(), plan.ClusterId.ValueString())
+		r, err = createClusterQueue(ctx,
+			cq.client.genqlient,
+			cq.client.organizationId,
+			plan.ClusterId.ValueString(),
+			plan.Key.ValueString(),
+			plan.Description.ValueStringPointer(),
+		)
+
+		return retryContextError(err)
+	})
 
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -107,12 +123,12 @@ func (cq *ClusterQueueResource) Create(ctx context.Context, req resource.CreateR
 		return
 	}
 
-	state.Id = types.StringValue(apiResponse.ClusterQueueCreate.ClusterQueue.Id)
-	state.Uuid = types.StringValue(apiResponse.ClusterQueueCreate.ClusterQueue.Uuid)
+	state.Id = types.StringValue(r.ClusterQueueCreate.ClusterQueue.Id)
+	state.Uuid = types.StringValue(r.ClusterQueueCreate.ClusterQueue.Uuid)
 	state.ClusterId = plan.ClusterId
-	state.ClusterUuid = types.StringValue(apiResponse.ClusterQueueCreate.ClusterQueue.Cluster.Uuid)
-	state.Key = types.StringValue(apiResponse.ClusterQueueCreate.ClusterQueue.Key)
-	state.Description = types.StringPointerValue(apiResponse.ClusterQueueCreate.ClusterQueue.Description)
+	state.ClusterUuid = types.StringValue(r.ClusterQueueCreate.ClusterQueue.Cluster.Uuid)
+	state.Key = types.StringValue(r.ClusterQueueCreate.ClusterQueue.Key)
+	state.Description = types.StringPointerValue(r.ClusterQueueCreate.ClusterQueue.Description)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
@@ -120,14 +136,32 @@ func (cq *ClusterQueueResource) Create(ctx context.Context, req resource.CreateR
 func (cq *ClusterQueueResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var state ClusterQueueResourceModel
 
-	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	diags := req.State.Get(ctx, &state)
+	resp.Diagnostics.Append(diags...)
 
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	log.Printf("Getting cluster queues for cluster %s ...", state.ClusterUuid.ValueString())
-	queues, err := getClusterQueues(ctx, cq.client.genqlient, cq.client.organization, state.ClusterUuid.ValueString())
+	timeout, diags := cq.client.timeouts.Read(ctx, DefaultTimeout)
+	resp.Diagnostics.Append(diags...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	var r *getClusterQueuesResponse
+	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+		var err error
+
+		log.Printf("Getting cluster queues for cluster %s ...", state.ClusterUuid.ValueString())
+		r, err = getClusterQueues(ctx,
+			cq.client.genqlient,
+			cq.client.organization, state.ClusterUuid.ValueString(),
+		)
+
+		return retryContextError(err)
+	})
 
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -138,7 +172,7 @@ func (cq *ClusterQueueResource) Read(ctx context.Context, req resource.ReadReque
 	}
 
 	// Find the cluster queue from the returned queues to update state
-	for _, edge := range queues.Organization.Cluster.Queues.Edges {
+	for _, edge := range r.Organization.Cluster.Queues.Edges {
 		if edge.Node.Id == state.Id.ValueString() {
 			log.Printf("Found cluster queue with ID %s in cluster %s", edge.Node.Id, state.ClusterUuid.ValueString())
 			// Update ClusterQueueResourceModel with Node values and append
@@ -178,21 +212,38 @@ func (cq *ClusterQueueResource) Update(ctx context.Context, req resource.UpdateR
 	var state ClusterQueueResourceModel
 	var description string
 
+	diagsState := req.State.Get(ctx, &state)
+	diagsDescription := req.Plan.GetAttribute(ctx, path.Root("description"), &description)
+
 	//Load state and ontain description from plan (singularly)
-	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
-	resp.Diagnostics.Append(req.Plan.GetAttribute(ctx, path.Root("description"), &description)...)
+	resp.Diagnostics.Append(diagsState...)
+	resp.Diagnostics.Append(diagsDescription...)
 
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	log.Printf("Updating cluster queue %s ...", state.Id.ValueString())
-	apiResponse, err := updateClusterQueue(ctx,
-		cq.client.genqlient,
-		cq.client.organizationId,
-		state.Id.ValueString(),
-		&description,
-	)
+	timeout, diags := cq.client.timeouts.Update(ctx, DefaultTimeout)
+	resp.Diagnostics.Append(diags...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	var r *updateClusterQueueResponse
+	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+		var err error
+
+		log.Printf("Updating cluster queue %s ...", state.Id.ValueString())
+		r, err = updateClusterQueue(ctx,
+			cq.client.genqlient,
+			cq.client.organizationId,
+			state.Id.ValueString(),
+			&description,
+		)
+
+		return retryContextError(err)
+	})
 
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -202,7 +253,7 @@ func (cq *ClusterQueueResource) Update(ctx context.Context, req resource.UpdateR
 		return
 	}
 
-	state.Description = types.StringPointerValue(apiResponse.ClusterQueueUpdate.ClusterQueue.Description)
+	state.Description = types.StringPointerValue(r.ClusterQueueUpdate.ClusterQueue.Description)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
@@ -210,18 +261,32 @@ func (cq *ClusterQueueResource) Update(ctx context.Context, req resource.UpdateR
 func (cq *ClusterQueueResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	var plan ClusterQueueResourceModel
 
-	resp.Diagnostics.Append(req.State.Get(ctx, &plan)...)
+	diags := req.State.Get(ctx, &plan)
+	resp.Diagnostics.Append(diags...)
 
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	log.Printf("Deleting cluster queue %s ...", plan.Id.ValueString())
-	_, err := deleteClusterQueue(ctx,
-		cq.client.genqlient,
-		cq.client.organizationId,
-		plan.Id.ValueString(),
-	)
+	timeout, diags := cq.client.timeouts.Delete(ctx, DefaultTimeout)
+	resp.Diagnostics.Append(diags...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+		var err error
+
+		log.Printf("Deleting cluster queue %s ...", plan.Id.ValueString())
+		_, err = deleteClusterQueue(ctx,
+			cq.client.genqlient,
+			cq.client.organizationId,
+			plan.Id.ValueString(),
+		)
+
+		return retryContextError(err)
+	})
 
 	if err != nil {
 		resp.Diagnostics.AddError(

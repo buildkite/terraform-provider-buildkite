@@ -12,7 +12,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
-func TestAccBuildkitePipeline(t *testing.T) {
+func TestAccBuildkitePipelineResource(t *testing.T) {
 	compareRemoteValue := func(prop func() any, value any) resource.TestCheckFunc {
 		return func(s *terraform.State) error {
 			if v := prop(); v != value {
@@ -87,8 +87,6 @@ func TestAccBuildkitePipeline(t *testing.T) {
 						// check lists are empty
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "tags.#", "0"),
 						resource.TestCheckNoResourceAttr("buildkite_pipeline.pipeline", "tags.#"),
-						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "team.#", "0"),
-						resource.TestCheckNoResourceAttr("buildkite_pipeline.pipeline", "team.#"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.#", "0"),
 						resource.TestCheckNoResourceAttr("buildkite_pipeline.pipeline", "provider_settings.#"),
 					),
@@ -140,10 +138,10 @@ func TestAccBuildkitePipeline(t *testing.T) {
 						resource.TestCheckNoResourceAttr("buildkite_pipeline.pipeline", "tags.#"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.#", "1"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.0.trigger_mode", ""),
-						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.0.build_pull_requests", "true"),
-						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.0.skip_pull_request_builds_for_existing_commits", "true"),
-						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.0.build_branches", "true"),
-						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.0.publish_commit_status", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.0.build_pull_requests", "false"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.0.skip_pull_request_builds_for_existing_commits", "false"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.0.build_branches", "false"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.0.publish_commit_status", "false"),
 					),
 				},
 			},
@@ -152,15 +150,8 @@ func TestAccBuildkitePipeline(t *testing.T) {
 
 	t.Run("create pipeline setting all attributes", func(t *testing.T) {
 		pipelineName := acctest.RandString(12)
-		teamName := acctest.RandString(12)
 		clusterName := acctest.RandString(12)
 		config := fmt.Sprintf(`
-			resource "buildkite_team" "team" {
-				name = "pipeline test %s"
-				default_team = false
-				default_member_role = "MEMBER"
-				privacy = "VISIBLE"
-			}
 			resource "buildkite_cluster" "cluster" {
 				name = "%s"
 			}
@@ -181,17 +172,11 @@ func TestAccBuildkitePipeline(t *testing.T) {
 				tags = ["llama"]
 				provider_settings {
 					trigger_mode = "code"
-					build_pull_requests = false
-					pull_request_branch_filter_enabled = true
-					pull_request_branch_filter_configuration = "main"
+					build_pull_requests = true
 					skip_builds_for_existing_commits = true
-					skip_pull_request_builds_for_existing_commits = true
-					build_pull_request_ready_for_review = true
-					build_pull_request_labels_changed = true
-					build_pull_request_forks = true
-					prefix_pull_request_fork_branch_names = true
 					build_branches = true
 					build_tags = true
+					build_pull_request_ready_for_review = true
 					cancel_deleted_branch_builds = true
 					filter_enabled = true
 					filter_condition = "true"
@@ -200,12 +185,8 @@ func TestAccBuildkitePipeline(t *testing.T) {
 					publish_commit_status_per_step = true
 					separate_pull_request_statuses = true
 				}
-				team {
-					slug = buildkite_team.team.slug
-					access_level = "READ_ONLY"
-				}
 			}
-		`, teamName, clusterName, pipelineName)
+		`, clusterName, pipelineName)
 
 		resource.ParallelTest(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },
@@ -215,9 +196,7 @@ func TestAccBuildkitePipeline(t *testing.T) {
 					Config: config,
 					Check: resource.ComposeAggregateTestCheckFunc(
 						resource.TestCheckResourceAttrPair("buildkite_pipeline.pipeline", "cluster_id", "buildkite_cluster.cluster", "id"),
-						resource.TestCheckResourceAttrPair("buildkite_pipeline.pipeline", "team.0.team_id", "buildkite_team.team", "id"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "tags.0", "llama"),
-						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "team.0.access_level", "READ_ONLY"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "allow_rebuilds", "false"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "cancel_intermediate_builds", "true"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "cancel_intermediate_builds_branch_filter", "!main"),
@@ -229,16 +208,11 @@ func TestAccBuildkitePipeline(t *testing.T) {
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "skip_intermediate_builds", "true"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "skip_intermediate_builds_branch_filter", "!main"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.0.trigger_mode", "code"),
-						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.0.build_pull_requests", "false"),
-						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.0.pull_request_branch_filter_enabled", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.0.build_pull_requests", "true"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.0.skip_builds_for_existing_commits", "true"),
-						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.0.skip_pull_request_builds_for_existing_commits", "true"),
-						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.0.build_pull_request_ready_for_review", "true"),
-						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.0.build_pull_request_labels_changed", "true"),
-						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.0.build_pull_request_forks", "true"),
-						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.0.prefix_pull_request_fork_branch_names", "true"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.0.build_branches", "true"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.0.build_tags", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.0.build_pull_request_ready_for_review", "true"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.0.cancel_deleted_branch_builds", "true"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.0.filter_enabled", "true"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.0.filter_condition", "true"),
@@ -255,7 +229,6 @@ func TestAccBuildkitePipeline(t *testing.T) {
 	t.Run("update pipeline setting all attributes", func(t *testing.T) {
 		var pipeline getPipelinePipeline
 		pipelineName := acctest.RandString(12)
-		teamName := acctest.RandString(12)
 		clusterName := acctest.RandString(12)
 
 		resource.ParallelTest(t, resource.TestCase{
@@ -279,12 +252,6 @@ func TestAccBuildkitePipeline(t *testing.T) {
 				},
 				{
 					Config: fmt.Sprintf(`
-						resource "buildkite_team" "team" {
-							name = "pipeline test %s"
-							default_team = false
-							default_member_role = "MEMBER"
-							privacy = "VISIBLE"
-						}
 						resource "buildkite_cluster" "cluster" {
 							name = "%s"
 						}
@@ -305,17 +272,11 @@ func TestAccBuildkitePipeline(t *testing.T) {
 							tags = ["llama"]
 							provider_settings {
 								trigger_mode = "code"
-								build_pull_requests = false
-								pull_request_branch_filter_enabled = true
-								pull_request_branch_filter_configuration = "main"
+								build_pull_requests = true
 								skip_builds_for_existing_commits = true
-								skip_pull_request_builds_for_existing_commits = true
-								build_pull_request_ready_for_review = true
-								build_pull_request_labels_changed = true
-								build_pull_request_forks = true
-								prefix_pull_request_fork_branch_names = true
 								build_branches = true
 								build_tags = true
+								build_pull_request_ready_for_review = true
 								cancel_deleted_branch_builds = true
 								filter_enabled = true
 								filter_condition = "true"
@@ -324,12 +285,8 @@ func TestAccBuildkitePipeline(t *testing.T) {
 								publish_commit_status_per_step = true
 								separate_pull_request_statuses = true
 							}
-							team {
-								slug = buildkite_team.team.slug
-								access_level = "READ_ONLY"
-							}
 						}
-					`, teamName, clusterName, pipelineName),
+					`, clusterName, pipelineName),
 					Check: resource.ComposeAggregateTestCheckFunc(
 						// check the pipeline IDs are the same (so it wasn't recreated)
 						func(s *terraform.State) error {
@@ -340,7 +297,6 @@ func TestAccBuildkitePipeline(t *testing.T) {
 							return nil
 						},
 						resource.TestCheckResourceAttrPair("buildkite_pipeline.pipeline", "cluster_id", "buildkite_cluster.cluster", "id"),
-						resource.TestCheckResourceAttrPair("buildkite_pipeline.pipeline", "team.0.team_id", "buildkite_team.team", "id"),
 						aggregateRemoteCheck(&pipeline),
 					),
 				},
@@ -436,224 +392,6 @@ func TestAccBuildkitePipeline(t *testing.T) {
 							cluster_id = buildkite_cluster.cluster.id
 						}
 					`, clusterName, pipelineName),
-				},
-			},
-		})
-	})
-
-	t.Run("team added to pipeline is ignored", func(t *testing.T) {
-		var teamID string
-		var pipeline getPipelinePipeline
-		pipelineName := acctest.RandString(12)
-
-		resource.ParallelTest(t, resource.TestCase{
-			PreCheck:                 func() { testAccPreCheck(t) },
-			ProtoV6ProviderFactories: protoV6ProviderFactories(),
-			CheckDestroy: func(s *terraform.State) error {
-				// if team created in the tests still exists,it must be deleted
-				_, err := getNode(context.Background(), genqlientGraphql, teamID)
-				if err != nil {
-					return err
-				}
-				_, err = teamDelete(context.Background(), genqlientGraphql, teamID)
-				return err
-			},
-			Steps: []resource.TestStep{
-				{
-					Config: fmt.Sprintf(`
-						resource "buildkite_pipeline" "pipeline" {
-							name = "%s"
-							repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
-
-						}
-					`, pipelineName),
-					Check: resource.ComposeTestCheckFunc(
-						func(s *terraform.State) error {
-							slug := fmt.Sprintf("%s/%s", getenv("BUILDKITE_ORGANIZATION_SLUG"), pipelineName)
-							resp, err := getPipeline(context.Background(), genqlientGraphql, slug)
-							pipeline = resp.Pipeline
-							return err
-						},
-						func(s *terraform.State) error {
-							// add new team to pipeline
-							team, err := teamCreate(context.Background(), genqlientGraphql, organizationID, fmt.Sprintf("pipeline adhoc team %s", acctest.RandString(6)), nil, "VISIBLE", false, "MEMBER", false)
-							teamID = team.TeamCreate.TeamEdge.Node.Id
-							if err != nil {
-								return err
-							}
-							_, err = teamPipelineCreate(context.Background(), genqlientGraphql, teamID, string(pipeline.Id), PipelineAccessLevelsBuildAndRead)
-							if err != nil {
-								return err
-							}
-							return nil
-						},
-					),
-					ConfigPlanChecks: resource.ConfigPlanChecks{
-						PostApplyPostRefresh: []plancheck.PlanCheck{
-							plancheck.ExpectResourceAction("buildkite_pipeline.pipeline", plancheck.ResourceActionNoop),
-						},
-					},
-				},
-			},
-		})
-	})
-
-	t.Run("team access changed in api causes terraform to update", func(t *testing.T) {
-		var pipeline getPipelinePipeline
-		pipelineName := acctest.RandString(12)
-		teamName := acctest.RandString(12)
-
-		resource.ParallelTest(t, resource.TestCase{
-			PreCheck:                 func() { testAccPreCheck(t) },
-			ProtoV6ProviderFactories: protoV6ProviderFactories(),
-			Steps: []resource.TestStep{
-				{
-					Config: fmt.Sprintf(`
-						resource "buildkite_team" "team" {
-							name = "pipeline team test %s"
-							default_team = false
-							default_member_role = "MEMBER"
-							privacy = "VISIBLE"
-						}
-						resource "buildkite_pipeline" "pipeline" {
-							name = "%s"
-							repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
-							team {
-								slug = buildkite_team.team.slug
-								access_level = "READ_ONLY"
-							}
-						}
-					`, teamName, pipelineName),
-					Check: resource.ComposeTestCheckFunc(
-						func(s *terraform.State) error {
-							slug := fmt.Sprintf("%s/%s", getenv("BUILDKITE_ORGANIZATION_SLUG"), pipelineName)
-							resp, err := getPipeline(context.Background(), genqlientGraphql, slug)
-							pipeline = resp.Pipeline
-							return err
-						},
-						func(s *terraform.State) error {
-							// change team access level
-							_, err := teamPipelineUpdate(context.Background(), genqlientGraphql, pipeline.Teams.Edges[0].Node.Id, PipelineAccessLevelsBuildAndRead)
-							if err != nil {
-								return err
-							}
-							return nil
-						},
-					),
-					ExpectNonEmptyPlan: true,
-					ConfigPlanChecks: resource.ConfigPlanChecks{
-						PostApplyPostRefresh: []plancheck.PlanCheck{
-							plancheck.ExpectResourceAction("buildkite_pipeline.pipeline", plancheck.ResourceActionUpdate),
-						},
-					},
-				},
-			},
-		})
-	})
-
-	t.Run("team removed in api causes terraform to update", func(t *testing.T) {
-		var pipeline getPipelinePipeline
-		pipelineName := acctest.RandString(12)
-		teamName := acctest.RandString(12)
-
-		resource.ParallelTest(t, resource.TestCase{
-			PreCheck:                 func() { testAccPreCheck(t) },
-			ProtoV6ProviderFactories: protoV6ProviderFactories(),
-			Steps: []resource.TestStep{
-				{
-					Config: fmt.Sprintf(`
-						resource "buildkite_team" "team" {
-							name = "pipeline team test %s"
-							default_team = false
-							default_member_role = "MEMBER"
-							privacy = "VISIBLE"
-						}
-						resource "buildkite_pipeline" "pipeline" {
-							name = "%s"
-							repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
-							team {
-								slug = buildkite_team.team.slug
-								access_level = "READ_ONLY"
-							}
-						}
-					`, teamName, pipelineName),
-					Check: resource.ComposeTestCheckFunc(
-						func(s *terraform.State) error {
-							slug := fmt.Sprintf("%s/%s", getenv("BUILDKITE_ORGANIZATION_SLUG"), pipelineName)
-							resp, err := getPipeline(context.Background(), genqlientGraphql, slug)
-							pipeline = resp.Pipeline
-							return err
-						},
-						func(s *terraform.State) error {
-							// change team access level
-							_, err := teamPipelineDelete(context.Background(), genqlientGraphql, pipeline.Teams.Edges[0].Node.Id)
-							if err != nil {
-								return err
-							}
-							return nil
-						},
-					),
-					ExpectNonEmptyPlan: true,
-					ConfigPlanChecks: resource.ConfigPlanChecks{
-						PostApplyPostRefresh: []plancheck.PlanCheck{
-							plancheck.ExpectResourceAction("buildkite_pipeline.pipeline", plancheck.ResourceActionUpdate),
-						},
-					},
-				},
-			},
-		})
-	})
-
-	t.Run("updating provider maintains teams", func(t *testing.T) {
-		pipelineName := acctest.RandString(12)
-		teamName := acctest.RandString(12)
-		config := fmt.Sprintf(`
-			resource "buildkite_team" "team" {
-				name = "pipeline team test %s"
-				default_team = false
-				default_member_role = "MEMBER"
-				privacy = "VISIBLE"
-			}
-			resource "buildkite_pipeline" "pipeline" {
-				name = "%s"
-				repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
-				team {
-					slug = buildkite_team.team.slug
-					access_level = "BUILD_AND_READ"
-				}
-			}
-		`, teamName, pipelineName)
-
-		resource.ParallelTest(t, resource.TestCase{
-			PreCheck: func() { testAccPreCheck(t) },
-			Steps: []resource.TestStep{
-				{
-					// create a pipeline and link a team using the old provider
-					Config: config,
-					ExternalProviders: map[string]resource.ExternalProvider{
-						"buildkite": {
-							Source:            "registry.terraform.io/buildkite/buildkite",
-							VersionConstraint: "0.23.0",
-						},
-					},
-					Check: resource.ComposeAggregateTestCheckFunc(
-						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "team.#", "1"),
-						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.#", "1"),
-					),
-				},
-				{
-					// now when using the new provider, we expect teams to still be 1 and no change to be made
-					Config:                   config,
-					ProtoV6ProviderFactories: protoV6ProviderFactories(),
-					Check: resource.ComposeAggregateTestCheckFunc(
-						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "team.#", "1"),
-						resource.TestCheckNoResourceAttr("buildkite_pipeline.pipeline", "provider_settings.#"),
-					),
-					ConfigPlanChecks: resource.ConfigPlanChecks{
-						PreApply: []plancheck.PlanCheck{
-							plancheck.ExpectResourceAction("buildkite_pipeline.pipeline", plancheck.ResourceActionUpdate),
-						},
-					},
 				},
 			},
 		})

@@ -31,15 +31,16 @@ resource "buildkite_team_member" "member1" {
 resource "buildkite_pipeline" "repo2" {
   name       = "terraform_provider_buildkite_pipeline"
   repository = "git@github.com:org/repo2"
-  steps      = file("./steps.yml")
-
-  team {
-    slug         = buildkite_team.test.slug
-    access_level = "READ_ONLY"
-  }
+  steps      = file("./steps.yml") 
 
   lifecycle {
     prevent_destroy = true
+  }
+
+  provider_settings {
+    trigger_mode = "code"
+    build_pull_requests = true
+    build_pull_request_ready_for_review = true
   }
 }
 
