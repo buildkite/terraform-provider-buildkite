@@ -1000,133 +1000,77 @@ func pipelineSchemaV0() schema.Schema {
 		`),
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
-				Computed:            true,
-				MarkdownDescription: "The GraphQL ID of the pipeline.",
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
-				},
+				Computed: true,
 			},
 			"allow_rebuilds": schema.BoolAttribute{
-				Optional:            true,
-				Computed:            true,
-				Default:             booldefault.StaticBool(true),
-				MarkdownDescription: "Whether rebuilds are allowed for this pipeline.",
+				Optional: true,
+				Computed: true,
+				Default:  booldefault.StaticBool(true),
 			},
 			"cancel_intermediate_builds": schema.BoolAttribute{
-				Computed:            true,
-				Optional:            true,
-				MarkdownDescription: "Whether to cancel builds when a new commit is pushed to a matching branch.",
-				PlanModifiers: []planmodifier.Bool{
-					boolplanmodifier.UseStateForUnknown(),
-				},
+				Computed: true,
+				Optional: true,
 			},
 			"cancel_intermediate_builds_branch_filter": schema.StringAttribute{
-				Computed:            true,
-				Optional:            true,
-				MarkdownDescription: "Filter the `cancel_intermediate_builds` setting based on this branch condition.",
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
-				},
+				Computed: true,
+				Optional: true,
 			},
 			"branch_configuration": schema.StringAttribute{
-				MarkdownDescription: "Configure the pipeline to only build on this branch conditional.",
-				Optional:            true,
+				Optional: true,
 			},
 			"cluster_id": schema.StringAttribute{
-				MarkdownDescription: "Attach this pipeline to the given cluster GraphQL ID.",
-				Optional:            true,
+				Optional: true,
 			},
 			"default_branch": schema.StringAttribute{
-				Computed:            true,
-				Optional:            true,
-				MarkdownDescription: "Default branch of the pipeline.",
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
-				},
+				Computed: true,
+				Optional: true,
 			},
 			"default_timeout_in_minutes": schema.Int64Attribute{
-				Computed:            true,
-				Optional:            true,
-				Default:             nil,
-				MarkdownDescription: "Set pipeline wide timeout for command steps.",
-				PlanModifiers: []planmodifier.Int64{
-					int64planmodifier.UseStateForUnknown(),
-				},
+				Computed: true,
+				Optional: true,
+				Default:  nil,
 			},
 			"maximum_timeout_in_minutes": schema.Int64Attribute{
-				Computed:            true,
-				Optional:            true,
-				Default:             nil,
-				MarkdownDescription: "Set pipeline wide maximum timeout for command steps.",
-				PlanModifiers: []planmodifier.Int64{
-					int64planmodifier.UseStateForUnknown(),
-				},
+				Computed: true,
+				Optional: true,
+				Default:  nil,
 			},
 			"description": schema.StringAttribute{
-				Computed:            true,
-				Optional:            true,
-				MarkdownDescription: "Description for the pipeline. Can include emoji 🙌.",
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
-				},
+				Computed: true,
+				Optional: true,
 			},
 			"name": schema.StringAttribute{
-				Required:            true,
-				MarkdownDescription: "Name to give the pipeline.",
+				Required: true,
 			},
 			"repository": schema.StringAttribute{
-				Required:            true,
-				MarkdownDescription: "URL to the repository this pipeline is configured for.",
+				Required: true,
 			},
 			"skip_intermediate_builds": schema.BoolAttribute{
-				Computed:            true,
-				Optional:            true,
-				MarkdownDescription: "Whether to skip queued builds if a new commit is pushed to a matching branch.",
-				PlanModifiers: []planmodifier.Bool{
-					boolplanmodifier.UseStateForUnknown(),
-				},
+				Computed: true,
+				Optional: true,
 			},
 			"skip_intermediate_builds_branch_filter": schema.StringAttribute{
-				Computed:            true,
-				Optional:            true,
-				MarkdownDescription: "Filter the `skip_intermediate_builds` setting based on this branch condition.",
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
-				},
+				Computed: true,
+				Optional: true,
 			},
 			"slug": schema.StringAttribute{
-				Computed:            true,
-				MarkdownDescription: "The slug generated for the pipeline.",
-				PlanModifiers: []planmodifier.String{
-					custom_modifier.UseStateIfUnchanged("name"),
-				},
+				Computed: true,
 			},
 			"steps": schema.StringAttribute{
-				Optional:            true,
-				Computed:            true,
-				Default:             stringdefault.StaticString(defaultSteps),
-				MarkdownDescription: "The YAML steps to configure for the pipeline. Defaults to `buildkite-agent pipeline upload`.",
+				Optional: true,
+				Computed: true,
+				Default:  stringdefault.StaticString(defaultSteps),
 			},
 			"tags": schema.SetAttribute{
-				Optional:            true,
-				Computed:            true,
-				ElementType:         types.StringType,
-				Default:             setdefault.StaticValue(types.SetValueMust(types.StringType, []attr.Value{})),
-				MarkdownDescription: "Tags to attribute to the pipeline. Useful for searching by in the UI.",
+				Optional:    true,
+				Computed:    true,
+				ElementType: types.StringType,
 			},
 			"webhook_url": schema.StringAttribute{
-				Computed:            true,
-				MarkdownDescription: "The webhook URL used to trigger builds from VCS providers.",
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
-				},
+				Computed: true,
 			},
 			"badge_url": schema.StringAttribute{
-				Computed:            true,
-				MarkdownDescription: "The badge URL showing build state.",
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
-				},
+				Computed: true,
 			},
 		},
 		Blocks: map[string]schema.Block{
@@ -1140,206 +1084,78 @@ func pipelineSchemaV0() schema.Schema {
 						"trigger_mode": schema.StringAttribute{
 							Computed: true,
 							Optional: true,
-							MarkdownDescription: heredoc.Docf(`
-								What type of event to trigger builds on. Must be one of:
-									- %s
-									- %s
-									- %s
-									- %s
-
-									-> %s is only valid if the pipeline uses a GitHub repository.
-							`,
-								"`code` will create builds when code is pushed to GitHub.",
-								"`deployment` will create builds when a deployment is created in GitHub.",
-								"`fork` will create builds when the GitHub repository is forked.",
-								"`none` will not create any builds based on GitHub activity.",
-								"`trigger_mode`",
-							),
-							Validators: []validator.String{
-								pipelinevalidation.WhenRepositoryProviderIs(pipelinevalidation.RepositoryProviderGitHub),
-								stringvalidator.OneOf("code", "deployment", "fork", "none"),
-							},
 						},
 						"build_pull_requests": schema.BoolAttribute{
 							Optional: true,
 							Computed: true,
-							MarkdownDescription: "Whether to create builds for commits that are part part of a pull request." +
-								"Only valid for Bitbucket or GitHub using a `trigger_mode = \"code\"`",
-							Validators: []validator.Bool{
-								boolvalidator.Any(
-									pipelinevalidation.WhenRepositoryProviderIs(pipelinevalidation.RepositoryProviderBitbucket),
-									boolvalidator.All(
-										pipelinevalidation.WhenRepositoryProviderIs(pipelinevalidation.RepositoryProviderGitHub),
-										boolvalidation.WhenString(path.MatchRoot("provider_settings").AtAnyListIndex().AtName("trigger_mode"), "code"),
-									),
-								),
-							},
 						},
 						"pull_request_branch_filter_enabled": schema.BoolAttribute{
-							Computed:            true,
-							Optional:            true,
-							MarkdownDescription: "Filter pull request builds. Only valid if `build_pull_requests = true`.",
-							Validators: []validator.Bool{
-								boolvalidation.WhenBool(path.MatchRoot("provider_settings").AtAnyListIndex().AtName("build_pull_requests"), true),
-							},
+							Computed: true,
+							Optional: true,
 						},
 						"pull_request_branch_filter_configuration": schema.StringAttribute{
-							Computed:            true,
-							Optional:            true,
-							MarkdownDescription: "Filter pull requests builds by the branch filter. Only valid if `pull_request_branch_filter_enabled = true`.",
-							Validators: []validator.String{
-								stringvalidation.WhenBool(path.MatchRoot("provider_settings").AtAnyListIndex().AtName("pull_request_branch_filter_enabled"), true),
-							},
+							Computed: true,
+							Optional: true,
 						},
 						"skip_builds_for_existing_commits": schema.BoolAttribute{
 							Optional: true,
 							Computed: true,
-							MarkdownDescription: "Whether to skip creating a new build if an existing build for the commit and branch already exists." +
-								"Only valid for GitHub repositories.",
-							Validators: []validator.Bool{
-								pipelinevalidation.WhenRepositoryProviderIs(pipelinevalidation.RepositoryProviderGitHub),
-							},
 						},
 						"skip_pull_request_builds_for_existing_commits": schema.BoolAttribute{
 							Optional: true,
 							Computed: true,
-							MarkdownDescription: "Whether to skip creating a new build for a pull request if an existing build for the commit and branch already exists." +
-								"Only valid if `build_pull_requests = true`.",
-							Validators: []validator.Bool{
-								boolvalidation.WhenBool(path.MatchRoot("provider_settings").AtAnyListIndex().AtName("build_pull_requests"), true),
-							},
 						},
 						"build_pull_request_ready_for_review": schema.BoolAttribute{
 							Computed: true,
 							Optional: true,
-							MarkdownDescription: "Whether to create a build when a pull request changes to \"Ready for review\"." +
-								"Only valid for GitHub repositories that have `trigger_mode = \"code\"` and `build_pull_requests = true`.",
-							Validators: []validator.Bool{
-								pipelinevalidation.WhenRepositoryProviderIs(pipelinevalidation.RepositoryProviderGitHub),
-								boolvalidation.WhenString(path.MatchRoot("provider_settings").AtAnyListIndex().AtName("trigger_mode"), "code"),
-								boolvalidation.WhenBool(path.MatchRoot("provider_settings").AtAnyListIndex().AtName("build_pull_requests"), true),
-							},
 						},
 						"build_pull_request_labels_changed": schema.BoolAttribute{
 							Computed: true,
 							Optional: true,
-							MarkdownDescription: "Whether to create builds for pull requests when labels are added or removed." +
-								"Only valid for GitHub repositories that have `trigger_mode = \"code\"` and `build_pull_requests = true`.",
-							Validators: []validator.Bool{
-								pipelinevalidation.WhenRepositoryProviderIs(pipelinevalidation.RepositoryProviderGitHub),
-								boolvalidation.WhenString(path.MatchRoot("provider_settings").AtAnyListIndex().AtName("trigger_mode"), "code"),
-								boolvalidation.WhenBool(path.MatchRoot("provider_settings").AtAnyListIndex().AtName("build_pull_requests"), true),
-							},
 						},
 						"build_pull_request_forks": schema.BoolAttribute{
 							Computed: true,
 							Optional: true,
-							MarkdownDescription: "Whether to create builds for pull requests from third-party forks." +
-								"Only valid for GitHub repositories that have `trigger_mode = \"code\"` and `build_pull_requests = true`.",
-							Validators: []validator.Bool{
-								pipelinevalidation.WhenRepositoryProviderIs(pipelinevalidation.RepositoryProviderGitHub),
-								boolvalidation.WhenString(path.MatchRoot("provider_settings").AtAnyListIndex().AtName("trigger_mode"), "code"),
-								boolvalidation.WhenBool(path.MatchRoot("provider_settings").AtAnyListIndex().AtName("build_pull_requests"), true),
-							},
 						},
 						"prefix_pull_request_fork_branch_names": schema.BoolAttribute{
 							Computed: true,
 							Optional: true,
-							MarkdownDescription: "Prefix branch names for third-party fork builds to ensure they don't trigger branch conditions." +
-								"For example, the master branch from some-user will become some-user:master." +
-								"Only valid when `build_pull_request_forks = true`.",
-							Validators: []validator.Bool{
-								boolvalidation.WhenBool(path.MatchRoot("provider_settings").AtAnyListIndex().AtName("build_pull_request_forks"), true),
-							},
 						},
 						"build_branches": schema.BoolAttribute{
-							Optional:            true,
-							Computed:            true,
-							MarkdownDescription: "Whether to create builds when branches are pushed. Only valid for GitHub and Bitbucket repositories.",
-							Validators: []validator.Bool{
-								pipelinevalidation.WhenRepositoryProviderIs(pipelinevalidation.RepositoryProviderGitHub, pipelinevalidation.RepositoryProviderBitbucket),
-							},
+							Optional: true,
+							Computed: true,
 						},
 						"build_tags": schema.BoolAttribute{
-							Computed:            true,
-							Optional:            true,
-							MarkdownDescription: "Whether to create builds when tags are pushed. Only valid for GitHub and Bitbucket repositories.",
-							Validators: []validator.Bool{
-								pipelinevalidation.WhenRepositoryProviderIs(pipelinevalidation.RepositoryProviderGitHub, pipelinevalidation.RepositoryProviderBitbucket),
-							},
+							Computed: true,
+							Optional: true,
 						},
 						"cancel_deleted_branch_builds": schema.BoolAttribute{
-							Computed:            true,
-							Optional:            true,
-							MarkdownDescription: "Automatically cancel running builds for a branch if the branch is deleted. Only valid for GitHub repositories when `trigger_mode = \"code\"`.",
-							Validators: []validator.Bool{
-								pipelinevalidation.WhenRepositoryProviderIs(pipelinevalidation.RepositoryProviderGitHub),
-								boolvalidation.WhenString(path.MatchRoot("provider_settings").AtAnyListIndex().AtName("trigger_mode"), "code"),
-							},
+							Computed: true,
+							Optional: true,
 						},
 						"filter_enabled": schema.BoolAttribute{
 							Computed: true,
 							Optional: true,
-							MarkdownDescription: "Whether to filter builds to only run when the condition in `filter_condition` is true." +
-								"Only valid for GitHub repositories when `trigger_mode = \"code\"`.",
-							Validators: []validator.Bool{
-								pipelinevalidation.WhenRepositoryProviderIs(pipelinevalidation.RepositoryProviderGitHub),
-								boolvalidation.WhenString(path.MatchRoot("provider_settings").AtAnyListIndex().AtName("trigger_mode"), "code"),
-							},
 						},
 						"filter_condition": schema.StringAttribute{
 							Computed: true,
 							Optional: true,
-							MarkdownDescription: "The condition to evaluate when deciding if a build should run." +
-								"More details available in [the documentation](https://buildkite.com/docs/pipelines/conditionals#conditionals-in-pipelines)." +
-								"Only valid if `filter_enabled = true`.",
-							Validators: []validator.String{
-								stringvalidation.WhenBool(path.MatchRoot("provider_settings").AtAnyListIndex().AtName("filter_enabled"), true),
-							},
 						},
 						"publish_commit_status": schema.BoolAttribute{
 							Optional: true,
 							Computed: true,
-							MarkdownDescription: "Whether to update the status of commits in Bitbucket or GitHub." +
-								"Only valid for Bitbucket, or GitHub repositories when `trigger_mode = \"code\"`.",
-							Validators: []validator.Bool{
-								boolvalidator.Any(
-									pipelinevalidation.WhenRepositoryProviderIs(pipelinevalidation.RepositoryProviderBitbucket),
-									boolvalidator.All(
-										pipelinevalidation.WhenRepositoryProviderIs(pipelinevalidation.RepositoryProviderGitHub),
-										boolvalidation.WhenString(path.MatchRoot("provider_settings").AtAnyListIndex().AtName("trigger_mode"), "code"),
-									),
-								),
-							},
 						},
 						"publish_blocked_as_pending": schema.BoolAttribute{
 							Computed: true,
 							Optional: true,
-							MarkdownDescription: "The status to use for blocked builds. Pending can be used with [required status checks](https://help.github.com/en/articles/enabling-required-status-checks)" +
-								"to prevent merging pull requests with blocked builds. Only valid for GitHub repositories when `publish_commit_statue = true`.",
-							Validators: []validator.Bool{
-								pipelinevalidation.WhenRepositoryProviderIs(pipelinevalidation.RepositoryProviderGitHub),
-								boolvalidation.WhenBool(path.MatchRoot("provider_settings").AtAnyListIndex().AtName("publish_commit_status"), true),
-							},
 						},
 						"publish_commit_status_per_step": schema.BoolAttribute{
-							Computed:            true,
-							Optional:            true,
-							MarkdownDescription: "Whether to create a separate status for each job in a build, allowing you to see the status of each job directly in Bitbucket or GitHub.",
-							Validators: []validator.Bool{
-								pipelinevalidation.WhenRepositoryProviderIs(pipelinevalidation.RepositoryProviderGitHub, pipelinevalidation.RepositoryProviderBitbucket),
-								boolvalidation.WhenBool(path.MatchRoot("provider_settings").AtAnyListIndex().AtName("publish_commit_status"), true),
-							},
+							Computed: true,
+							Optional: true,
 						},
 						"separate_pull_request_statuses": schema.BoolAttribute{
 							Computed: true,
 							Optional: true,
-							MarkdownDescription: "Whether to create a separate status for pull request builds, allowing you to require a passing pull request" +
-								"build in your [required status checks](https://help.github.com/en/articles/enabling-required-status-checks) in GitHub.",
-							Validators: []validator.Bool{
-								pipelinevalidation.WhenRepositoryProviderIs(pipelinevalidation.RepositoryProviderGitHub),
-								boolvalidation.WhenBool(path.MatchRoot("provider_settings").AtAnyListIndex().AtName("publish_commit_status"), true),
-							},
 						},
 					},
 				},
