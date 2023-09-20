@@ -137,6 +137,7 @@ func testAccPipelineTeamConfigBasic(teamName string, accessLevel string) string 
 	    name = "acctest pipeline %s"
 	    repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
 	    steps = "steps:\n- label: ':pipeline: Pipeline Upload'\n  command: buildkite-agent pipeline upload"
+		provider_settings = {}
 	}
 
 	resource "buildkite_team" "acc_test_team" {
@@ -178,7 +179,6 @@ func testAccCheckPipelineTeamExists(resourceName string, tp *pipelineTeamResourc
 			if pipelineTeamNode == nil {
 				return fmt.Errorf("Error getting team pipeline: nil response")
 			}
-			fmt.Printf("pipeline access level in BK: %s", pipelineTeamNode.PipelineAccessLevel)
 			updateTeamPipelineResourceState(tp, *pipelineTeamNode)
 		}
 

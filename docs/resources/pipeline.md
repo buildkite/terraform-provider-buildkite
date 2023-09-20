@@ -27,7 +27,7 @@ resource "buildkite_pipeline" "pipeline" {
   name       = "repo"
   repository = "git@github.com:org/repo"
 
-  provider_settings {
+  provider_settings = {
     build_branches      = false
     build_tags          = true
     build_pull_requests = false
@@ -55,7 +55,7 @@ resource "buildkite_pipeline" "pipeline" {
 - `default_timeout_in_minutes` (Number) Set pipeline wide timeout for command steps.
 - `description` (String) Description for the pipeline. Can include emoji 🙌.
 - `maximum_timeout_in_minutes` (Number) Set pipeline wide maximum timeout for command steps.
-- `provider_settings` (Block List) Control settings depending on the VCS provider used in `repository`. (see [below for nested schema](#nestedblock--provider_settings))
+- `provider_settings` (Attributes) Control settings depending on the VCS provider used in `repository`. (see [below for nested schema](#nestedatt--provider_settings))
 - `skip_intermediate_builds` (Boolean) Whether to skip queued builds if a new commit is pushed to a matching branch.
 - `skip_intermediate_builds_branch_filter` (String) Filter the `skip_intermediate_builds` setting based on this branch condition.
 - `steps` (String) The YAML steps to configure for the pipeline. Defaults to `buildkite-agent pipeline upload`.
@@ -68,7 +68,7 @@ resource "buildkite_pipeline" "pipeline" {
 - `slug` (String) The slug generated for the pipeline.
 - `webhook_url` (String) The webhook URL used to trigger builds from VCS providers.
 
-<a id="nestedblock--provider_settings"></a>
+<a id="nestedatt--provider_settings"></a>
 ### Nested Schema for `provider_settings`
 
 Optional:
