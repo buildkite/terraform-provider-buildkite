@@ -2,34 +2,34 @@
 
 [![Build status](https://badge.buildkite.com/7224047dadf711cab2facd75939ea39848850d7c5c5a765acd.svg?branch=main)](https://buildkite.com/buildkite/terraform-provider-buildkite-main)
 
-This is the official Terraform provider for [Buildkite](https://buildkite.com). The provider is listed in the [Terraform Registry](https://registry.terraform.io/) and supports terraform >= 0.13.
+This is the official Terraform provider for [Buildkite](https://buildkite.com). The provider is listed in the [HashiCorp Terraform registry](https://registry.terraform.io/) and supports Terraform >= 1.0.
 
 The provider allows you to manage resources in your Buildkite organization.
 
 Two configuration values are required:
 
--   An API token, generated at https://buildkite.com/user/api-access-tokens. The
+-   An API Access token, generated at https://buildkite.com/user/api-access-tokens. The API Access
     token must have the `write_pipelines`, `read_pipelines` and `write_suites` REST API scopes and be enabled for GraphQL API access.
 -   A Buildkite organization slug, available by signing into buildkite.com and
     examining the URL: https://buildkite.com/<org-slug>.
 
 ## Documentation
 
-The reference documentation on [the terraform registry](https://registry.terraform.io/providers/buildkite/buildkite/latest/docs)
+The reference documentation on [the HashiCorp Terraform registry](https://registry.terraform.io/providers/buildkite/buildkite/latest/docs)
 is the recommended location for guidance on using this provider.
 
 ## Installation
 
 **NOTE**: This provider is built with the assumption that teams are enabled for your Buildkite organization. Most resources should work without, but we can't guarantee compatibility. Check out our [documentation regarding teams](https://buildkite.com/docs/pipelines/permissions#permissions-with-teams) for more information.
 
-To use the provider, add the following terraform:
+To use the provider, add the following `terraform` configuration:
 
 ```hcl
 terraform {
   required_providers {
     buildkite = {
       source = "buildkite/buildkite"
-      version = "0.27.0"
+      version = "1.0.0"
     }
   }
 }
@@ -87,7 +87,7 @@ The repo contains a tf-proj/ directory that can be used to quickly test a compil
 
 ### Overriding the provider for local development
 
-You'll need to add a provider override to your `~/.terraformrc`. Documentation around using this file can be found [here](https://developer.hashicorp.com/terraform/cli/config/config-file#development-overrides-for-provider-developers). See below for an example of a `.terraformrc` file set up for plugin override.
+You'll need to add a provider override to your `~/.terraformrc`. Documentation around using this file can be found on the [HashiCorp Developer website](https://developer.hashicorp.com/terraform/cli/config/config-file#development-overrides-for-provider-developers). See below for an example of a `.terraformrc` file set up for plugin override - replacing `/Path/to/this/repo/directory/` with the directory that this repository has been cloned.
 
 ```hcl
 provider_installation {
@@ -101,7 +101,7 @@ provider_installation {
 
 ```
 
-When you run `terraform` commands, you will now be using the local plugin, rather than the remote.
+With the above in place, whenever a `terraform` command is run, you will now be using the local plugin, rather than the remote.
 
 ## Acceptance tests
 
@@ -118,7 +118,7 @@ BUILDKITE_ORGANIZATION_SLUG=<org-slug> BUILDKITE_API_TOKEN=<token> make testacc
 ```
 
 Note that these tests make live changes to an organization and probably
-shouldn't be run against organizations with real data. Anyone actively
+shouldn't be run against organizations with real, production data. Anyone actively
 developing features for this provider is welcome to request a test organization
 by contacting support@buildkite.com.
 
@@ -136,5 +136,5 @@ https://github.com/buildkite/terraform-provider-buildkite.
 
 Edit the draft to add in the relevant changes and click publish.
 
-The [terraform registry](https://registry.terraform.io) will detect the new
+The [HashiCorp Terraform registry](https://registry.terraform.io) will detect the new
 release on GitHub and update their own listings.
