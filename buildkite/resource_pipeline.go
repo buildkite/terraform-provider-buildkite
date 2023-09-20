@@ -72,26 +72,26 @@ type PipelineTag struct {
 }
 
 type pipelineResourceModel struct {
-	AllowRebuilds                        types.Bool               `tfsdk:"allow_rebuilds"`
-	BadgeUrl                             types.String             `tfsdk:"badge_url"`
-	BranchConfiguration                  types.String             `tfsdk:"branch_configuration"`
-	CancelIntermediateBuilds             types.Bool               `tfsdk:"cancel_intermediate_builds"`
-	CancelIntermediateBuildsBranchFilter types.String             `tfsdk:"cancel_intermediate_builds_branch_filter"`
-	ClusterId                            types.String             `tfsdk:"cluster_id"`
-	DefaultBranch                        types.String             `tfsdk:"default_branch"`
-	DefaultTimeoutInMinutes              types.Int64              `tfsdk:"default_timeout_in_minutes"`
-	Description                          types.String             `tfsdk:"description"`
-	Id                                   types.String             `tfsdk:"id"`
-	MaximumTimeoutInMinutes              types.Int64              `tfsdk:"maximum_timeout_in_minutes"`
-	Name                                 types.String             `tfsdk:"name"`
-	ProviderSettings                     []*providerSettingsModel `tfsdk:"provider_settings"`
-	Repository                           types.String             `tfsdk:"repository"`
-	SkipIntermediateBuilds               types.Bool               `tfsdk:"skip_intermediate_builds"`
-	SkipIntermediateBuildsBranchFilter   types.String             `tfsdk:"skip_intermediate_builds_branch_filter"`
-	Slug                                 types.String             `tfsdk:"slug"`
-	Steps                                types.String             `tfsdk:"steps"`
-	Tags                                 []types.String           `tfsdk:"tags"`
-	WebhookUrl                           types.String             `tfsdk:"webhook_url"`
+	AllowRebuilds                        types.Bool             `tfsdk:"allow_rebuilds"`
+	BadgeUrl                             types.String           `tfsdk:"badge_url"`
+	BranchConfiguration                  types.String           `tfsdk:"branch_configuration"`
+	CancelIntermediateBuilds             types.Bool             `tfsdk:"cancel_intermediate_builds"`
+	CancelIntermediateBuildsBranchFilter types.String           `tfsdk:"cancel_intermediate_builds_branch_filter"`
+	ClusterId                            types.String           `tfsdk:"cluster_id"`
+	DefaultBranch                        types.String           `tfsdk:"default_branch"`
+	DefaultTimeoutInMinutes              types.Int64            `tfsdk:"default_timeout_in_minutes"`
+	Description                          types.String           `tfsdk:"description"`
+	Id                                   types.String           `tfsdk:"id"`
+	MaximumTimeoutInMinutes              types.Int64            `tfsdk:"maximum_timeout_in_minutes"`
+	Name                                 types.String           `tfsdk:"name"`
+	ProviderSettings                     *providerSettingsModel `tfsdk:"provider_settings"`
+	Repository                           types.String           `tfsdk:"repository"`
+	SkipIntermediateBuilds               types.Bool             `tfsdk:"skip_intermediate_builds"`
+	SkipIntermediateBuildsBranchFilter   types.String           `tfsdk:"skip_intermediate_builds_branch_filter"`
+	Slug                                 types.String           `tfsdk:"slug"`
+	Steps                                types.String           `tfsdk:"steps"`
+	Tags                                 []types.String         `tfsdk:"tags"`
+	WebhookUrl                           types.String           `tfsdk:"webhook_url"`
 }
 
 type providerSettingsModel struct {
@@ -212,8 +212,8 @@ func (p *pipelineResource) Create(ctx context.Context, req resource.CreateReques
 
 	setPipelineModel(&state, &response.PipelineCreate.Pipeline)
 
-	if len(plan.ProviderSettings) > 0 {
-		pipelineExtraInfo, err := updatePipelineExtraInfo(ctx, response.PipelineCreate.Pipeline.Slug, plan.ProviderSettings[0], p.client, timeouts)
+	if plan.ProviderSettings != nil {
+		pipelineExtraInfo, err := updatePipelineExtraInfo(ctx, response.PipelineCreate.Pipeline.Slug, plan.ProviderSettings, p.client, timeouts)
 		if err != nil {
 			resp.Diagnostics.AddError("Unable to set pipeline info from REST", err.Error())
 			return
@@ -319,7 +319,7 @@ func (p *pipelineResource) Read(ctx context.Context, req resource.ReadRequest, r
 
 		setPipelineModel(&state, pipelineNode)
 
-		if len(state.ProviderSettings) > 0 {
+		if state.ProviderSettings != nil {
 			updatePipelineResourceExtraInfo(&state, extraInfo)
 		}
 		state.BadgeUrl = types.StringValue(extraInfo.BadgeUrl)
@@ -333,6 +333,7 @@ func (p *pipelineResource) Read(ctx context.Context, req resource.ReadRequest, r
 
 func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		Version: 1,
 		MarkdownDescription: heredoc.Doc(`
 			This resource allows you to create and manage pipelines for repositories.
 
@@ -468,222 +469,228 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
-		},
-		Blocks: map[string]schema.Block{
-			"provider_settings": schema.ListNestedBlock{
+			"provider_settings": schema.SingleNestedAttribute{
+				Optional:            true,
 				MarkdownDescription: "Control settings depending on the VCS provider used in `repository`.",
-				Validators: []validator.List{
-					listvalidator.SizeBetween(0, 1),
-				},
-				NestedObject: schema.NestedBlockObject{
-					Attributes: map[string]schema.Attribute{
-						"trigger_mode": schema.StringAttribute{
-							Computed: true,
-							Optional: true,
-							MarkdownDescription: heredoc.Docf(`
-								What type of event to trigger builds on. Must be one of:
-									- %s
-									- %s
-									- %s
-									- %s
+				Attributes: map[string]schema.Attribute{
+					"trigger_mode": schema.StringAttribute{
+						Computed: true,
+						Optional: true,
+						MarkdownDescription: heredoc.Docf(`
+							What type of event to trigger builds on. Must be one of:
+								- %s
+								- %s
+								- %s
+								- %s
 
-									-> %s is only valid if the pipeline uses a GitHub repository.
-							`,
-								"`code` will create builds when code is pushed to GitHub.",
-								"`deployment` will create builds when a deployment is created in GitHub.",
-								"`fork` will create builds when the GitHub repository is forked.",
-								"`none` will not create any builds based on GitHub activity.",
-								"`trigger_mode`",
+								-> %s is only valid if the pipeline uses a GitHub repository.
+						`,
+							"`code` will create builds when code is pushed to GitHub.",
+							"`deployment` will create builds when a deployment is created in GitHub.",
+							"`fork` will create builds when the GitHub repository is forked.",
+							"`none` will not create any builds based on GitHub activity.",
+							"`trigger_mode`",
+						),
+						Validators: []validator.String{
+							pipelinevalidation.WhenRepositoryProviderIs(pipelinevalidation.RepositoryProviderGitHub),
+							stringvalidator.OneOf("code", "deployment", "fork", "none"),
+						},
+					},
+					"build_pull_requests": schema.BoolAttribute{
+						Optional: true,
+						Computed: true,
+						MarkdownDescription: "Whether to create builds for commits that are part part of a pull request." +
+							"Only valid for Bitbucket or GitHub using a `trigger_mode = \"code\"`",
+						Validators: []validator.Bool{
+							boolvalidator.Any(
+								pipelinevalidation.WhenRepositoryProviderIs(pipelinevalidation.RepositoryProviderBitbucket),
+								boolvalidator.All(
+									pipelinevalidation.WhenRepositoryProviderIs(pipelinevalidation.RepositoryProviderGitHub),
+									boolvalidation.WhenString(path.MatchRoot("provider_settings").AtName("trigger_mode"), "code"),
+								),
 							),
-							Validators: []validator.String{
-								pipelinevalidation.WhenRepositoryProviderIs(pipelinevalidation.RepositoryProviderGitHub),
-								stringvalidator.OneOf("code", "deployment", "fork", "none"),
-							},
 						},
-						"build_pull_requests": schema.BoolAttribute{
-							Optional: true,
-							Computed: true,
-							MarkdownDescription: "Whether to create builds for commits that are part part of a pull request." +
-								"Only valid for Bitbucket or GitHub using a `trigger_mode = \"code\"`",
-							Validators: []validator.Bool{
-								boolvalidator.Any(
-									pipelinevalidation.WhenRepositoryProviderIs(pipelinevalidation.RepositoryProviderBitbucket),
-									boolvalidator.All(
-										pipelinevalidation.WhenRepositoryProviderIs(pipelinevalidation.RepositoryProviderGitHub),
-										boolvalidation.WhenString(path.MatchRoot("provider_settings").AtAnyListIndex().AtName("trigger_mode"), "code"),
-									),
+					},
+					"pull_request_branch_filter_enabled": schema.BoolAttribute{
+						Computed:            true,
+						Optional:            true,
+						MarkdownDescription: "Filter pull request builds. Only valid if `build_pull_requests = true`.",
+						Validators: []validator.Bool{
+							boolvalidation.WhenBool(path.MatchRoot("provider_settings").AtName("build_pull_requests"), true),
+						},
+					},
+					"pull_request_branch_filter_configuration": schema.StringAttribute{
+						Computed:            true,
+						Optional:            true,
+						MarkdownDescription: "Filter pull requests builds by the branch filter. Only valid if `pull_request_branch_filter_enabled = true`.",
+						Validators: []validator.String{
+							stringvalidation.WhenBool(path.MatchRoot("provider_settings").AtName("pull_request_branch_filter_enabled"), true),
+						},
+					},
+					"skip_builds_for_existing_commits": schema.BoolAttribute{
+						Optional: true,
+						Computed: true,
+						MarkdownDescription: "Whether to skip creating a new build if an existing build for the commit and branch already exists." +
+							"Only valid for GitHub repositories.",
+						Validators: []validator.Bool{
+							pipelinevalidation.WhenRepositoryProviderIs(pipelinevalidation.RepositoryProviderGitHub),
+						},
+					},
+					"skip_pull_request_builds_for_existing_commits": schema.BoolAttribute{
+						Optional: true,
+						Computed: true,
+						MarkdownDescription: "Whether to skip creating a new build for a pull request if an existing build for the commit and branch already exists." +
+							"Only valid if `build_pull_requests = true`.",
+						Validators: []validator.Bool{
+							boolvalidation.WhenBool(path.MatchRoot("provider_settings").AtName("build_pull_requests"), true),
+						},
+					},
+					"build_pull_request_ready_for_review": schema.BoolAttribute{
+						Computed: true,
+						Optional: true,
+						MarkdownDescription: "Whether to create a build when a pull request changes to \"Ready for review\"." +
+							"Only valid for GitHub repositories that have `trigger_mode = \"code\"` and `build_pull_requests = true`.",
+						Validators: []validator.Bool{
+							pipelinevalidation.WhenRepositoryProviderIs(pipelinevalidation.RepositoryProviderGitHub),
+							boolvalidation.WhenString(path.MatchRoot("provider_settings").AtName("trigger_mode"), "code"),
+							boolvalidation.WhenBool(path.MatchRoot("provider_settings").AtName("build_pull_requests"), true),
+						},
+					},
+					"build_pull_request_labels_changed": schema.BoolAttribute{
+						Computed: true,
+						Optional: true,
+						MarkdownDescription: "Whether to create builds for pull requests when labels are added or removed." +
+							"Only valid for GitHub repositories that have `trigger_mode = \"code\"` and `build_pull_requests = true`.",
+						Validators: []validator.Bool{
+							pipelinevalidation.WhenRepositoryProviderIs(pipelinevalidation.RepositoryProviderGitHub),
+							boolvalidation.WhenString(path.MatchRoot("provider_settings").AtName("trigger_mode"), "code"),
+							boolvalidation.WhenBool(path.MatchRoot("provider_settings").AtName("build_pull_requests"), true),
+						},
+					},
+					"build_pull_request_forks": schema.BoolAttribute{
+						Computed: true,
+						Optional: true,
+						MarkdownDescription: "Whether to create builds for pull requests from third-party forks." +
+							"Only valid for GitHub repositories that have `trigger_mode = \"code\"` and `build_pull_requests = true`.",
+						Validators: []validator.Bool{
+							pipelinevalidation.WhenRepositoryProviderIs(pipelinevalidation.RepositoryProviderGitHub),
+							boolvalidation.WhenString(path.MatchRoot("provider_settings").AtName("trigger_mode"), "code"),
+							boolvalidation.WhenBool(path.MatchRoot("provider_settings").AtName("build_pull_requests"), true),
+						},
+					},
+					"prefix_pull_request_fork_branch_names": schema.BoolAttribute{
+						Computed: true,
+						Optional: true,
+						MarkdownDescription: "Prefix branch names for third-party fork builds to ensure they don't trigger branch conditions." +
+							"For example, the master branch from some-user will become some-user:master." +
+							"Only valid when `build_pull_request_forks = true`.",
+						Validators: []validator.Bool{
+							boolvalidation.WhenBool(path.MatchRoot("provider_settings").AtName("build_pull_request_forks"), true),
+						},
+					},
+					"build_branches": schema.BoolAttribute{
+						Optional:            true,
+						Computed:            true,
+						MarkdownDescription: "Whether to create builds when branches are pushed. Only valid for GitHub and Bitbucket repositories.",
+						Validators: []validator.Bool{
+							pipelinevalidation.WhenRepositoryProviderIs(pipelinevalidation.RepositoryProviderGitHub, pipelinevalidation.RepositoryProviderBitbucket),
+						},
+					},
+					"build_tags": schema.BoolAttribute{
+						Computed:            true,
+						Optional:            true,
+						MarkdownDescription: "Whether to create builds when tags are pushed. Only valid for GitHub and Bitbucket repositories.",
+						Validators: []validator.Bool{
+							pipelinevalidation.WhenRepositoryProviderIs(pipelinevalidation.RepositoryProviderGitHub, pipelinevalidation.RepositoryProviderBitbucket),
+						},
+					},
+					"cancel_deleted_branch_builds": schema.BoolAttribute{
+						Computed:            true,
+						Optional:            true,
+						MarkdownDescription: "Automatically cancel running builds for a branch if the branch is deleted. Only valid for GitHub repositories when `trigger_mode = \"code\"`.",
+						Validators: []validator.Bool{
+							pipelinevalidation.WhenRepositoryProviderIs(pipelinevalidation.RepositoryProviderGitHub),
+							boolvalidation.WhenString(path.MatchRoot("provider_settings").AtName("trigger_mode"), "code"),
+						},
+					},
+					"filter_enabled": schema.BoolAttribute{
+						Computed: true,
+						Optional: true,
+						MarkdownDescription: "Whether to filter builds to only run when the condition in `filter_condition` is true." +
+							"Only valid for GitHub repositories when `trigger_mode = \"code\"`.",
+						Validators: []validator.Bool{
+							pipelinevalidation.WhenRepositoryProviderIs(pipelinevalidation.RepositoryProviderGitHub),
+							boolvalidation.WhenString(path.MatchRoot("provider_settings").AtName("trigger_mode"), "code"),
+						},
+					},
+					"filter_condition": schema.StringAttribute{
+						Computed: true,
+						Optional: true,
+						MarkdownDescription: "The condition to evaluate when deciding if a build should run." +
+							"More details available in [the documentation](https://buildkite.com/docs/pipelines/conditionals#conditionals-in-pipelines)." +
+							"Only valid if `filter_enabled = true`.",
+						Validators: []validator.String{
+							stringvalidation.WhenBool(path.MatchRoot("provider_settings").AtName("filter_enabled"), true),
+						},
+					},
+					"publish_commit_status": schema.BoolAttribute{
+						Optional: true,
+						Computed: true,
+						MarkdownDescription: "Whether to update the status of commits in Bitbucket or GitHub." +
+							"Only valid for Bitbucket, or GitHub repositories when `trigger_mode = \"code\"`.",
+						Validators: []validator.Bool{
+							boolvalidator.Any(
+								pipelinevalidation.WhenRepositoryProviderIs(pipelinevalidation.RepositoryProviderBitbucket),
+								boolvalidator.All(
+									pipelinevalidation.WhenRepositoryProviderIs(pipelinevalidation.RepositoryProviderGitHub),
+									boolvalidation.WhenString(path.MatchRoot("provider_settings").AtName("trigger_mode"), "code"),
 								),
-							},
+							),
 						},
-						"pull_request_branch_filter_enabled": schema.BoolAttribute{
-							Computed:            true,
-							Optional:            true,
-							MarkdownDescription: "Filter pull request builds. Only valid if `build_pull_requests = true`.",
-							Validators: []validator.Bool{
-								boolvalidation.WhenBool(path.MatchRoot("provider_settings").AtAnyListIndex().AtName("build_pull_requests"), true),
-							},
+					},
+					"publish_blocked_as_pending": schema.BoolAttribute{
+						Computed: true,
+						Optional: true,
+						MarkdownDescription: "The status to use for blocked builds. Pending can be used with [required status checks](https://help.github.com/en/articles/enabling-required-status-checks)" +
+							"to prevent merging pull requests with blocked builds. Only valid for GitHub repositories when `publish_commit_statue = true`.",
+						Validators: []validator.Bool{
+							pipelinevalidation.WhenRepositoryProviderIs(pipelinevalidation.RepositoryProviderGitHub),
+							boolvalidation.WhenBool(path.MatchRoot("provider_settings").AtName("publish_commit_status"), true),
 						},
-						"pull_request_branch_filter_configuration": schema.StringAttribute{
-							Computed:            true,
-							Optional:            true,
-							MarkdownDescription: "Filter pull requests builds by the branch filter. Only valid if `pull_request_branch_filter_enabled = true`.",
-							Validators: []validator.String{
-								stringvalidation.WhenBool(path.MatchRoot("provider_settings").AtAnyListIndex().AtName("pull_request_branch_filter_enabled"), true),
-							},
+					},
+					"publish_commit_status_per_step": schema.BoolAttribute{
+						Computed:            true,
+						Optional:            true,
+						MarkdownDescription: "Whether to create a separate status for each job in a build, allowing you to see the status of each job directly in Bitbucket or GitHub.",
+						Validators: []validator.Bool{
+							pipelinevalidation.WhenRepositoryProviderIs(pipelinevalidation.RepositoryProviderGitHub, pipelinevalidation.RepositoryProviderBitbucket),
+							boolvalidation.WhenBool(path.MatchRoot("provider_settings").AtName("publish_commit_status"), true),
 						},
-						"skip_builds_for_existing_commits": schema.BoolAttribute{
-							Optional: true,
-							Computed: true,
-							MarkdownDescription: "Whether to skip creating a new build if an existing build for the commit and branch already exists." +
-								"Only valid for GitHub repositories.",
-							Validators: []validator.Bool{
-								pipelinevalidation.WhenRepositoryProviderIs(pipelinevalidation.RepositoryProviderGitHub),
-							},
-						},
-						"skip_pull_request_builds_for_existing_commits": schema.BoolAttribute{
-							Optional: true,
-							Computed: true,
-							MarkdownDescription: "Whether to skip creating a new build for a pull request if an existing build for the commit and branch already exists." +
-								"Only valid if `build_pull_requests = true`.",
-							Validators: []validator.Bool{
-								boolvalidation.WhenBool(path.MatchRoot("provider_settings").AtAnyListIndex().AtName("build_pull_requests"), true),
-							},
-						},
-						"build_pull_request_ready_for_review": schema.BoolAttribute{
-							Computed: true,
-							Optional: true,
-							MarkdownDescription: "Whether to create a build when a pull request changes to \"Ready for review\"." +
-								"Only valid for GitHub repositories that have `trigger_mode = \"code\"` and `build_pull_requests = true`.",
-							Validators: []validator.Bool{
-								pipelinevalidation.WhenRepositoryProviderIs(pipelinevalidation.RepositoryProviderGitHub),
-								boolvalidation.WhenString(path.MatchRoot("provider_settings").AtAnyListIndex().AtName("trigger_mode"), "code"),
-								boolvalidation.WhenBool(path.MatchRoot("provider_settings").AtAnyListIndex().AtName("build_pull_requests"), true),
-							},
-						},
-						"build_pull_request_labels_changed": schema.BoolAttribute{
-							Computed: true,
-							Optional: true,
-							MarkdownDescription: "Whether to create builds for pull requests when labels are added or removed." +
-								"Only valid for GitHub repositories that have `trigger_mode = \"code\"` and `build_pull_requests = true`.",
-							Validators: []validator.Bool{
-								pipelinevalidation.WhenRepositoryProviderIs(pipelinevalidation.RepositoryProviderGitHub),
-								boolvalidation.WhenString(path.MatchRoot("provider_settings").AtAnyListIndex().AtName("trigger_mode"), "code"),
-								boolvalidation.WhenBool(path.MatchRoot("provider_settings").AtAnyListIndex().AtName("build_pull_requests"), true),
-							},
-						},
-						"build_pull_request_forks": schema.BoolAttribute{
-							Computed: true,
-							Optional: true,
-							MarkdownDescription: "Whether to create builds for pull requests from third-party forks." +
-								"Only valid for GitHub repositories that have `trigger_mode = \"code\"` and `build_pull_requests = true`.",
-							Validators: []validator.Bool{
-								pipelinevalidation.WhenRepositoryProviderIs(pipelinevalidation.RepositoryProviderGitHub),
-								boolvalidation.WhenString(path.MatchRoot("provider_settings").AtAnyListIndex().AtName("trigger_mode"), "code"),
-								boolvalidation.WhenBool(path.MatchRoot("provider_settings").AtAnyListIndex().AtName("build_pull_requests"), true),
-							},
-						},
-						"prefix_pull_request_fork_branch_names": schema.BoolAttribute{
-							Computed: true,
-							Optional: true,
-							MarkdownDescription: "Prefix branch names for third-party fork builds to ensure they don't trigger branch conditions." +
-								"For example, the master branch from some-user will become some-user:master." +
-								"Only valid when `build_pull_request_forks = true`.",
-							Validators: []validator.Bool{
-								boolvalidation.WhenBool(path.MatchRoot("provider_settings").AtAnyListIndex().AtName("build_pull_request_forks"), true),
-							},
-						},
-						"build_branches": schema.BoolAttribute{
-							Optional:            true,
-							Computed:            true,
-							MarkdownDescription: "Whether to create builds when branches are pushed. Only valid for GitHub and Bitbucket repositories.",
-							Validators: []validator.Bool{
-								pipelinevalidation.WhenRepositoryProviderIs(pipelinevalidation.RepositoryProviderGitHub, pipelinevalidation.RepositoryProviderBitbucket),
-							},
-						},
-						"build_tags": schema.BoolAttribute{
-							Computed:            true,
-							Optional:            true,
-							MarkdownDescription: "Whether to create builds when tags are pushed. Only valid for GitHub and Bitbucket repositories.",
-							Validators: []validator.Bool{
-								pipelinevalidation.WhenRepositoryProviderIs(pipelinevalidation.RepositoryProviderGitHub, pipelinevalidation.RepositoryProviderBitbucket),
-							},
-						},
-						"cancel_deleted_branch_builds": schema.BoolAttribute{
-							Computed:            true,
-							Optional:            true,
-							MarkdownDescription: "Automatically cancel running builds for a branch if the branch is deleted. Only valid for GitHub repositories when `trigger_mode = \"code\"`.",
-							Validators: []validator.Bool{
-								pipelinevalidation.WhenRepositoryProviderIs(pipelinevalidation.RepositoryProviderGitHub),
-								boolvalidation.WhenString(path.MatchRoot("provider_settings").AtAnyListIndex().AtName("trigger_mode"), "code"),
-							},
-						},
-						"filter_enabled": schema.BoolAttribute{
-							Computed: true,
-							Optional: true,
-							MarkdownDescription: "Whether to filter builds to only run when the condition in `filter_condition` is true." +
-								"Only valid for GitHub repositories when `trigger_mode = \"code\"`.",
-							Validators: []validator.Bool{
-								pipelinevalidation.WhenRepositoryProviderIs(pipelinevalidation.RepositoryProviderGitHub),
-								boolvalidation.WhenString(path.MatchRoot("provider_settings").AtAnyListIndex().AtName("trigger_mode"), "code"),
-							},
-						},
-						"filter_condition": schema.StringAttribute{
-							Computed: true,
-							Optional: true,
-							MarkdownDescription: "The condition to evaluate when deciding if a build should run." +
-								"More details available in [the documentation](https://buildkite.com/docs/pipelines/conditionals#conditionals-in-pipelines)." +
-								"Only valid if `filter_enabled = true`.",
-							Validators: []validator.String{
-								stringvalidation.WhenBool(path.MatchRoot("provider_settings").AtAnyListIndex().AtName("filter_enabled"), true),
-							},
-						},
-						"publish_commit_status": schema.BoolAttribute{
-							Optional: true,
-							Computed: true,
-							MarkdownDescription: "Whether to update the status of commits in Bitbucket or GitHub." +
-								"Only valid for Bitbucket, or GitHub repositories when `trigger_mode = \"code\"`.",
-							Validators: []validator.Bool{
-								boolvalidator.Any(
-									pipelinevalidation.WhenRepositoryProviderIs(pipelinevalidation.RepositoryProviderBitbucket),
-									boolvalidator.All(
-										pipelinevalidation.WhenRepositoryProviderIs(pipelinevalidation.RepositoryProviderGitHub),
-										boolvalidation.WhenString(path.MatchRoot("provider_settings").AtAnyListIndex().AtName("trigger_mode"), "code"),
-									),
-								),
-							},
-						},
-						"publish_blocked_as_pending": schema.BoolAttribute{
-							Computed: true,
-							Optional: true,
-							MarkdownDescription: "The status to use for blocked builds. Pending can be used with [required status checks](https://help.github.com/en/articles/enabling-required-status-checks)" +
-								"to prevent merging pull requests with blocked builds. Only valid for GitHub repositories when `publish_commit_statue = true`.",
-							Validators: []validator.Bool{
-								pipelinevalidation.WhenRepositoryProviderIs(pipelinevalidation.RepositoryProviderGitHub),
-								boolvalidation.WhenBool(path.MatchRoot("provider_settings").AtAnyListIndex().AtName("publish_commit_status"), true),
-							},
-						},
-						"publish_commit_status_per_step": schema.BoolAttribute{
-							Computed:            true,
-							Optional:            true,
-							MarkdownDescription: "Whether to create a separate status for each job in a build, allowing you to see the status of each job directly in Bitbucket or GitHub.",
-							Validators: []validator.Bool{
-								pipelinevalidation.WhenRepositoryProviderIs(pipelinevalidation.RepositoryProviderGitHub, pipelinevalidation.RepositoryProviderBitbucket),
-								boolvalidation.WhenBool(path.MatchRoot("provider_settings").AtAnyListIndex().AtName("publish_commit_status"), true),
-							},
-						},
-						"separate_pull_request_statuses": schema.BoolAttribute{
-							Computed: true,
-							Optional: true,
-							MarkdownDescription: "Whether to create a separate status for pull request builds, allowing you to require a passing pull request" +
-								"build in your [required status checks](https://help.github.com/en/articles/enabling-required-status-checks) in GitHub.",
-							Validators: []validator.Bool{
-								pipelinevalidation.WhenRepositoryProviderIs(pipelinevalidation.RepositoryProviderGitHub),
-								boolvalidation.WhenBool(path.MatchRoot("provider_settings").AtAnyListIndex().AtName("publish_commit_status"), true),
-							},
+					},
+					"separate_pull_request_statuses": schema.BoolAttribute{
+						Computed: true,
+						Optional: true,
+						MarkdownDescription: "Whether to create a separate status for pull request builds, allowing you to require a passing pull request" +
+							"build in your [required status checks](https://help.github.com/en/articles/enabling-required-status-checks) in GitHub.",
+						Validators: []validator.Bool{
+							pipelinevalidation.WhenRepositoryProviderIs(pipelinevalidation.RepositoryProviderGitHub),
+							boolvalidation.WhenBool(path.MatchRoot("provider_settings").AtName("publish_commit_status"), true),
 						},
 					},
 				},
 			},
+		},
+	}
+}
+
+func (p *pipelineResource) UpgradeState(ctx context.Context) map[int64]resource.StateUpgrader {
+	pipelineV0 := pipelineSchemaV0()
+
+	return map[int64]resource.StateUpgrader{
+		// State upgrade implementation from Version 0 (prior Pipeline state version) to 1 (Schema.Version)
+		0: {
+			PriorSchema:   &pipelineV0,
+			StateUpgrader: upgradePipelineStateV0toV1,
 		},
 	}
 }
@@ -741,8 +748,8 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 
 	setPipelineModel(&state, &response.PipelineUpdate.Pipeline)
 
-	if len(plan.ProviderSettings) > 0 {
-		pipelineExtraInfo, err := updatePipelineExtraInfo(ctx, response.PipelineUpdate.Pipeline.Slug, plan.ProviderSettings[0], p.client, timeouts)
+	if plan.ProviderSettings != nil {
+		pipelineExtraInfo, err := updatePipelineExtraInfo(ctx, response.PipelineUpdate.Pipeline.Slug, plan.ProviderSettings, p.client, timeouts)
 		if err != nil {
 			resp.Diagnostics.AddError("Unable to set pipeline info from REST", err.Error())
 			return
@@ -757,7 +764,7 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 			return
 		}
 		state.BadgeUrl = types.StringValue(extraInfo.BadgeUrl)
-		state.ProviderSettings = make([]*providerSettingsModel, 0)
+		state.ProviderSettings = new(providerSettingsModel)
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
@@ -895,27 +902,264 @@ func getTagsFromSchema(plan *pipelineResourceModel) []PipelineTagInput {
 func updatePipelineResourceExtraInfo(state *pipelineResourceModel, pipeline *PipelineExtraInfo) {
 	state.BadgeUrl = types.StringValue(pipeline.BadgeUrl)
 	s := pipeline.Provider.Settings
-	state.ProviderSettings = []*providerSettingsModel{
-		{
-			TriggerMode:                             types.StringPointerValue(s.TriggerMode),
-			BuildPullRequests:                       types.BoolPointerValue(s.BuildPullRequests),
-			PullRequestBranchFilterEnabled:          types.BoolPointerValue(s.PullRequestBranchFilterEnabled),
-			PullRequestBranchFilterConfiguration:    types.StringPointerValue(s.PullRequestBranchFilterConfiguration),
-			SkipBuildsForExistingCommits:            types.BoolPointerValue(s.SkipBuildsForExistingCommits),
-			SkipPullRequestBuildsForExistingCommits: types.BoolPointerValue(s.SkipPullRequestBuildsForExistingCommits),
-			BuildPullRequestReadyForReview:          types.BoolPointerValue(s.BuildPullRequestReadyForReview),
-			BuildPullRequestLabelsChanged:           types.BoolPointerValue(s.BuildPullRequestLabelsChanged),
-			BuildPullRequestForks:                   types.BoolPointerValue(s.BuildPullRequestForks),
-			PrefixPullRequestForkBranchNames:        types.BoolPointerValue(s.PrefixPullRequestForkBranchNames),
-			BuildBranches:                           types.BoolPointerValue(s.BuildBranches),
-			BuildTags:                               types.BoolPointerValue(s.BuildTags),
-			CancelDeletedBranchBuilds:               types.BoolPointerValue(s.CancelDeletedBranchBuilds),
-			FilterEnabled:                           types.BoolPointerValue(s.FilterEnabled),
-			FilterCondition:                         types.StringPointerValue(s.FilterCondition),
-			PublishCommitStatus:                     types.BoolPointerValue(s.PublishCommitStatus),
-			PublishBlockedAsPending:                 types.BoolPointerValue(s.PublishBlockedAsPending),
-			PublishCommitStatusPerStep:              types.BoolPointerValue(s.PublishCommitStatusPerStep),
-			SeparatePullRequestStatuses:             types.BoolPointerValue(s.SeparatePullRequestStatuses),
+
+	state.ProviderSettings = &providerSettingsModel{
+		TriggerMode:                             types.StringPointerValue(s.TriggerMode),
+		BuildPullRequests:                       types.BoolPointerValue(s.BuildPullRequests),
+		PullRequestBranchFilterEnabled:          types.BoolPointerValue(s.PullRequestBranchFilterEnabled),
+		PullRequestBranchFilterConfiguration:    types.StringPointerValue(s.PullRequestBranchFilterConfiguration),
+		SkipBuildsForExistingCommits:            types.BoolPointerValue(s.SkipBuildsForExistingCommits),
+		SkipPullRequestBuildsForExistingCommits: types.BoolPointerValue(s.SkipPullRequestBuildsForExistingCommits),
+		BuildPullRequestReadyForReview:          types.BoolPointerValue(s.BuildPullRequestReadyForReview),
+		BuildPullRequestLabelsChanged:           types.BoolPointerValue(s.BuildPullRequestLabelsChanged),
+		BuildPullRequestForks:                   types.BoolPointerValue(s.BuildPullRequestForks),
+		PrefixPullRequestForkBranchNames:        types.BoolPointerValue(s.PrefixPullRequestForkBranchNames),
+		BuildBranches:                           types.BoolPointerValue(s.BuildBranches),
+		BuildTags:                               types.BoolPointerValue(s.BuildTags),
+		CancelDeletedBranchBuilds:               types.BoolPointerValue(s.CancelDeletedBranchBuilds),
+		FilterEnabled:                           types.BoolPointerValue(s.FilterEnabled),
+		FilterCondition:                         types.StringPointerValue(s.FilterCondition),
+		PublishCommitStatus:                     types.BoolPointerValue(s.PublishCommitStatus),
+		PublishBlockedAsPending:                 types.BoolPointerValue(s.PublishBlockedAsPending),
+		PublishCommitStatusPerStep:              types.BoolPointerValue(s.PublishCommitStatusPerStep),
+		SeparatePullRequestStatuses:             types.BoolPointerValue(s.SeparatePullRequestStatuses),
+	}
+}
+
+func upgradePipelineStateV0toV1(ctx context.Context, req resource.UpgradeStateRequest, resp *resource.UpgradeStateResponse) {
+	type pipelineResourceModelV0 struct {
+		AllowRebuilds                        types.Bool               `tfsdk:"allow_rebuilds"`
+		BadgeUrl                             types.String             `tfsdk:"badge_url"`
+		BranchConfiguration                  types.String             `tfsdk:"branch_configuration"`
+		CancelIntermediateBuilds             types.Bool               `tfsdk:"cancel_intermediate_builds"`
+		CancelIntermediateBuildsBranchFilter types.String             `tfsdk:"cancel_intermediate_builds_branch_filter"`
+		ClusterId                            types.String             `tfsdk:"cluster_id"`
+		DefaultBranch                        types.String             `tfsdk:"default_branch"`
+		DefaultTimeoutInMinutes              types.Int64              `tfsdk:"default_timeout_in_minutes"`
+		Description                          types.String             `tfsdk:"description"`
+		Id                                   types.String             `tfsdk:"id"`
+		MaximumTimeoutInMinutes              types.Int64              `tfsdk:"maximum_timeout_in_minutes"`
+		Name                                 types.String             `tfsdk:"name"`
+		ProviderSettings                     []*providerSettingsModel `tfsdk:"provider_settings"`
+		Repository                           types.String             `tfsdk:"repository"`
+		SkipIntermediateBuilds               types.Bool               `tfsdk:"skip_intermediate_builds"`
+		SkipIntermediateBuildsBranchFilter   types.String             `tfsdk:"skip_intermediate_builds_branch_filter"`
+		Slug                                 types.String             `tfsdk:"slug"`
+		Steps                                types.String             `tfsdk:"steps"`
+		Tags                                 []types.String           `tfsdk:"tags"`
+		WebhookUrl                           types.String             `tfsdk:"webhook_url"`
+	}
+
+	var priorPipelineStateData pipelineResourceModelV0
+
+	resp.Diagnostics.Append(req.State.Get(ctx, &priorPipelineStateData)...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// Create a new pipelineResourceModel instance with fields from state
+	upgradedPipelineStateData := pipelineResourceModel{
+		AllowRebuilds:                        priorPipelineStateData.AllowRebuilds,
+		BadgeUrl:                             priorPipelineStateData.BadgeUrl,
+		BranchConfiguration:                  priorPipelineStateData.BranchConfiguration,
+		CancelIntermediateBuilds:             priorPipelineStateData.CancelIntermediateBuilds,
+		CancelIntermediateBuildsBranchFilter: priorPipelineStateData.CancelIntermediateBuildsBranchFilter,
+		ClusterId:                            priorPipelineStateData.ClusterId,
+		DefaultBranch:                        priorPipelineStateData.DefaultBranch,
+		DefaultTimeoutInMinutes:              priorPipelineStateData.DefaultTimeoutInMinutes,
+		Description:                          priorPipelineStateData.Description,
+		Id:                                   priorPipelineStateData.Id,
+		MaximumTimeoutInMinutes:              priorPipelineStateData.MaximumTimeoutInMinutes,
+		Name:                                 priorPipelineStateData.Name,
+		Repository:                           priorPipelineStateData.Repository,
+		SkipIntermediateBuilds:               priorPipelineStateData.SkipIntermediateBuilds,
+		SkipIntermediateBuildsBranchFilter:   priorPipelineStateData.SkipIntermediateBuildsBranchFilter,
+		Slug:                                 priorPipelineStateData.Slug,
+		Steps:                                priorPipelineStateData.Steps,
+		Tags:                                 priorPipelineStateData.Tags,
+		WebhookUrl:                           priorPipelineStateData.WebhookUrl,
+	}
+
+	// If the existing pipelines' state had ProviderSettings - set it as part of the V1 pipelineResourceModel
+	if len(priorPipelineStateData.ProviderSettings) == 1 {
+		upgradedPipelineStateData.ProviderSettings = priorPipelineStateData.ProviderSettings[0]
+	}
+
+	// Upgrade pipeline in state
+	diags := resp.State.Set(ctx, upgradedPipelineStateData)
+	resp.Diagnostics.Append(diags...)
+}
+
+func pipelineSchemaV0() schema.Schema {
+	return schema.Schema{
+		MarkdownDescription: heredoc.Doc(`
+			This resource allows you to create and manage pipelines for repositories.
+
+			More information on pipelines can be found in the documentation](https://buildkite.com/docs/pipelines).
+		`),
+		Attributes: map[string]schema.Attribute{
+			"id": schema.StringAttribute{
+				Computed: true,
+			},
+			"allow_rebuilds": schema.BoolAttribute{
+				Optional: true,
+				Computed: true,
+				Default:  booldefault.StaticBool(true),
+			},
+			"cancel_intermediate_builds": schema.BoolAttribute{
+				Computed: true,
+				Optional: true,
+			},
+			"cancel_intermediate_builds_branch_filter": schema.StringAttribute{
+				Computed: true,
+				Optional: true,
+			},
+			"branch_configuration": schema.StringAttribute{
+				Optional: true,
+			},
+			"cluster_id": schema.StringAttribute{
+				Optional: true,
+			},
+			"default_branch": schema.StringAttribute{
+				Computed: true,
+				Optional: true,
+			},
+			"default_timeout_in_minutes": schema.Int64Attribute{
+				Computed: true,
+				Optional: true,
+				Default:  nil,
+			},
+			"maximum_timeout_in_minutes": schema.Int64Attribute{
+				Computed: true,
+				Optional: true,
+				Default:  nil,
+			},
+			"description": schema.StringAttribute{
+				Computed: true,
+				Optional: true,
+			},
+			"name": schema.StringAttribute{
+				Required: true,
+			},
+			"repository": schema.StringAttribute{
+				Required: true,
+			},
+			"skip_intermediate_builds": schema.BoolAttribute{
+				Computed: true,
+				Optional: true,
+			},
+			"skip_intermediate_builds_branch_filter": schema.StringAttribute{
+				Computed: true,
+				Optional: true,
+			},
+			"slug": schema.StringAttribute{
+				Computed: true,
+			},
+			"steps": schema.StringAttribute{
+				Optional: true,
+				Computed: true,
+				Default:  stringdefault.StaticString(defaultSteps),
+			},
+			"tags": schema.SetAttribute{
+				Optional:    true,
+				Computed:    true,
+				ElementType: types.StringType,
+			},
+			"webhook_url": schema.StringAttribute{
+				Computed: true,
+			},
+			"badge_url": schema.StringAttribute{
+				Computed: true,
+			},
+		},
+		Blocks: map[string]schema.Block{
+			"provider_settings": schema.ListNestedBlock{
+				MarkdownDescription: "Control settings depending on the VCS provider used in `repository`.",
+				Validators: []validator.List{
+					listvalidator.SizeBetween(0, 1),
+				},
+				NestedObject: schema.NestedBlockObject{
+					Attributes: map[string]schema.Attribute{
+						"trigger_mode": schema.StringAttribute{
+							Computed: true,
+							Optional: true,
+						},
+						"build_pull_requests": schema.BoolAttribute{
+							Optional: true,
+							Computed: true,
+						},
+						"pull_request_branch_filter_enabled": schema.BoolAttribute{
+							Computed: true,
+							Optional: true,
+						},
+						"pull_request_branch_filter_configuration": schema.StringAttribute{
+							Computed: true,
+							Optional: true,
+						},
+						"skip_builds_for_existing_commits": schema.BoolAttribute{
+							Optional: true,
+							Computed: true,
+						},
+						"skip_pull_request_builds_for_existing_commits": schema.BoolAttribute{
+							Optional: true,
+							Computed: true,
+						},
+						"build_pull_request_ready_for_review": schema.BoolAttribute{
+							Computed: true,
+							Optional: true,
+						},
+						"build_pull_request_labels_changed": schema.BoolAttribute{
+							Computed: true,
+							Optional: true,
+						},
+						"build_pull_request_forks": schema.BoolAttribute{
+							Computed: true,
+							Optional: true,
+						},
+						"prefix_pull_request_fork_branch_names": schema.BoolAttribute{
+							Computed: true,
+							Optional: true,
+						},
+						"build_branches": schema.BoolAttribute{
+							Optional: true,
+							Computed: true,
+						},
+						"build_tags": schema.BoolAttribute{
+							Computed: true,
+							Optional: true,
+						},
+						"cancel_deleted_branch_builds": schema.BoolAttribute{
+							Computed: true,
+							Optional: true,
+						},
+						"filter_enabled": schema.BoolAttribute{
+							Computed: true,
+							Optional: true,
+						},
+						"filter_condition": schema.StringAttribute{
+							Computed: true,
+							Optional: true,
+						},
+						"publish_commit_status": schema.BoolAttribute{
+							Optional: true,
+							Computed: true,
+						},
+						"publish_blocked_as_pending": schema.BoolAttribute{
+							Computed: true,
+							Optional: true,
+						},
+						"publish_commit_status_per_step": schema.BoolAttribute{
+							Computed: true,
+							Optional: true,
+						},
+						"separate_pull_request_statuses": schema.BoolAttribute{
+							Computed: true,
+							Optional: true,
+						},
+					},
+				},
+			},
 		},
 	}
 }

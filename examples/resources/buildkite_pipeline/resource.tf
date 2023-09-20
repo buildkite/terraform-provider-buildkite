@@ -9,7 +9,7 @@ resource "buildkite_pipeline" "pipeline" {
   name       = "repo"
   repository = "git@github.com:org/repo"
 
-  provider_settings {
+  provider_settings = {
     build_branches      = false
     build_tags          = true
     build_pull_requests = false

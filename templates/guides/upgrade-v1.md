@@ -50,7 +50,7 @@ provider "buildkite" {
 
 ### Pipeline resource `provider_settings` type change
 The `provider_settings` attribute on the pipeline resource has been completely overhauled. It is now a nested attribute
-(thanks to protocol v6) and has validation on inner attributes.
+(thanks to protocol v6) and has validation on its inner attributes.
 
 Previously:
 
@@ -75,6 +75,8 @@ resource "buildkite_pipeline" "pipeline" {
   }
 }
 ```
+
+~> The upgrade for a pipeline's `provider_settings` as part of 1.0 from a block to nested attribute is designed to be a forward moving event. However, if you require moving back to using a Buildkite Terraform provider version earlier than 1.0 after upgrading your pipeline resources with nested attributed `provider_settings`, various options exist. If you have access to state files, you can roll back to a backup managing pipelines using the older block `provider_settings` (with `"schema_version": 0`), converting each pipeline resource's `provider_settings` configuration back to a block and planning against the older provider version. Alternatively, you can remove the pipeline from state and re-import it once the provider downgrade has occurred. 
 
 ### Consistent IDs across resources
 All resources now use their GraphQL IDs as the primary ID in the schema.
