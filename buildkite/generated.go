@@ -61,6 +61,8 @@ type ClusterFields struct {
 	Emoji *string `json:"emoji"`
 	// Color hex code for the cluster
 	Color *string `json:"color"`
+	// The default queue that agents connecting to the cluster without specifying a queue will accept jobs from
+	DefaultQueue *ClusterFieldsDefaultQueueClusterQueue `json:"defaultQueue"`
 }
 
 // GetId returns ClusterFields.Id, and is useful for accessing the field via an interface.
@@ -80,6 +82,32 @@ func (v *ClusterFields) GetEmoji() *string { return v.Emoji }
 
 // GetColor returns ClusterFields.Color, and is useful for accessing the field via an interface.
 func (v *ClusterFields) GetColor() *string { return v.Color }
+
+// GetDefaultQueue returns ClusterFields.DefaultQueue, and is useful for accessing the field via an interface.
+func (v *ClusterFields) GetDefaultQueue() *ClusterFieldsDefaultQueueClusterQueue {
+	return v.DefaultQueue
+}
+
+// ClusterFieldsDefaultQueueClusterQueue includes the requested fields of the GraphQL type ClusterQueue.
+type ClusterFieldsDefaultQueueClusterQueue struct {
+	Id string `json:"id"`
+	// The public UUID for this cluster queue
+	Uuid        string  `json:"uuid"`
+	Key         string  `json:"key"`
+	Description *string `json:"description"`
+}
+
+// GetId returns ClusterFieldsDefaultQueueClusterQueue.Id, and is useful for accessing the field via an interface.
+func (v *ClusterFieldsDefaultQueueClusterQueue) GetId() string { return v.Id }
+
+// GetUuid returns ClusterFieldsDefaultQueueClusterQueue.Uuid, and is useful for accessing the field via an interface.
+func (v *ClusterFieldsDefaultQueueClusterQueue) GetUuid() string { return v.Uuid }
+
+// GetKey returns ClusterFieldsDefaultQueueClusterQueue.Key, and is useful for accessing the field via an interface.
+func (v *ClusterFieldsDefaultQueueClusterQueue) GetKey() string { return v.Key }
+
+// GetDescription returns ClusterFieldsDefaultQueueClusterQueue.Description, and is useful for accessing the field via an interface.
+func (v *ClusterFieldsDefaultQueueClusterQueue) GetDescription() *string { return v.Description }
 
 // ClusterQueueValues includes the GraphQL fields of ClusterQueue requested by the fragment ClusterQueueValues.
 type ClusterQueueValues struct {
@@ -1361,6 +1389,18 @@ func (v *__getTestSuiteInput) GetId() string { return v.Id }
 // GetTeamCount returns __getTestSuiteInput.TeamCount, and is useful for accessing the field via an interface.
 func (v *__getTestSuiteInput) GetTeamCount() int { return v.TeamCount }
 
+// __removeClusterDefaultQueueInput is used internally by genqlient
+type __removeClusterDefaultQueueInput struct {
+	OrganizationId string `json:"organizationId"`
+	ClusterId      string `json:"clusterId"`
+}
+
+// GetOrganizationId returns __removeClusterDefaultQueueInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__removeClusterDefaultQueueInput) GetOrganizationId() string { return v.OrganizationId }
+
+// GetClusterId returns __removeClusterDefaultQueueInput.ClusterId, and is useful for accessing the field via an interface.
+func (v *__removeClusterDefaultQueueInput) GetClusterId() string { return v.ClusterId }
+
 // __revokeAgentTokenInput is used internally by genqlient
 type __revokeAgentTokenInput struct {
 	Id     string `json:"id"`
@@ -1396,6 +1436,22 @@ func (v *__setApiIpAddressesInput) GetOrganizationID() string { return v.Organiz
 
 // GetIpAddresses returns __setApiIpAddressesInput.IpAddresses, and is useful for accessing the field via an interface.
 func (v *__setApiIpAddressesInput) GetIpAddresses() string { return v.IpAddresses }
+
+// __setClusterDefaultQueueInput is used internally by genqlient
+type __setClusterDefaultQueueInput struct {
+	OrganizationId string `json:"organizationId"`
+	ClusterId      string `json:"clusterId"`
+	QueueId        string `json:"queueId"`
+}
+
+// GetOrganizationId returns __setClusterDefaultQueueInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__setClusterDefaultQueueInput) GetOrganizationId() string { return v.OrganizationId }
+
+// GetClusterId returns __setClusterDefaultQueueInput.ClusterId, and is useful for accessing the field via an interface.
+func (v *__setClusterDefaultQueueInput) GetClusterId() string { return v.ClusterId }
+
+// GetQueueId returns __setClusterDefaultQueueInput.QueueId, and is useful for accessing the field via an interface.
+func (v *__setClusterDefaultQueueInput) GetQueueId() string { return v.QueueId }
 
 // __teamCreateInput is used internally by genqlient
 type __teamCreateInput struct {
@@ -1841,6 +1897,11 @@ func (v *createClusterClusterCreateClusterCreatePayloadCluster) GetColor() *stri
 	return v.ClusterFields.Color
 }
 
+// GetDefaultQueue returns createClusterClusterCreateClusterCreatePayloadCluster.DefaultQueue, and is useful for accessing the field via an interface.
+func (v *createClusterClusterCreateClusterCreatePayloadCluster) GetDefaultQueue() *ClusterFieldsDefaultQueueClusterQueue {
+	return v.ClusterFields.DefaultQueue
+}
+
 func (v *createClusterClusterCreateClusterCreatePayloadCluster) UnmarshalJSON(b []byte) error {
 
 	if string(b) == "null" {
@@ -1878,6 +1939,8 @@ type __premarshalcreateClusterClusterCreateClusterCreatePayloadCluster struct {
 	Emoji *string `json:"emoji"`
 
 	Color *string `json:"color"`
+
+	DefaultQueue *ClusterFieldsDefaultQueueClusterQueue `json:"defaultQueue"`
 }
 
 func (v *createClusterClusterCreateClusterCreatePayloadCluster) MarshalJSON() ([]byte, error) {
@@ -1897,6 +1960,7 @@ func (v *createClusterClusterCreateClusterCreatePayloadCluster) __premarshalJSON
 	retval.Description = v.ClusterFields.Description
 	retval.Emoji = v.ClusterFields.Emoji
 	retval.Color = v.ClusterFields.Color
+	retval.DefaultQueue = v.ClusterFields.DefaultQueue
 	return &retval, nil
 }
 
@@ -3300,6 +3364,11 @@ func (v *getClusterByNameOrganizationClustersClusterConnectionEdgesClusterEdgeNo
 	return v.ClusterFields.Color
 }
 
+// GetDefaultQueue returns getClusterByNameOrganizationClustersClusterConnectionEdgesClusterEdgeNodeCluster.DefaultQueue, and is useful for accessing the field via an interface.
+func (v *getClusterByNameOrganizationClustersClusterConnectionEdgesClusterEdgeNodeCluster) GetDefaultQueue() *ClusterFieldsDefaultQueueClusterQueue {
+	return v.ClusterFields.DefaultQueue
+}
+
 func (v *getClusterByNameOrganizationClustersClusterConnectionEdgesClusterEdgeNodeCluster) UnmarshalJSON(b []byte) error {
 
 	if string(b) == "null" {
@@ -3337,6 +3406,8 @@ type __premarshalgetClusterByNameOrganizationClustersClusterConnectionEdgesClust
 	Emoji *string `json:"emoji"`
 
 	Color *string `json:"color"`
+
+	DefaultQueue *ClusterFieldsDefaultQueueClusterQueue `json:"defaultQueue"`
 }
 
 func (v *getClusterByNameOrganizationClustersClusterConnectionEdgesClusterEdgeNodeCluster) MarshalJSON() ([]byte, error) {
@@ -3356,6 +3427,7 @@ func (v *getClusterByNameOrganizationClustersClusterConnectionEdgesClusterEdgeNo
 	retval.Description = v.ClusterFields.Description
 	retval.Emoji = v.ClusterFields.Emoji
 	retval.Color = v.ClusterFields.Color
+	retval.DefaultQueue = v.ClusterFields.DefaultQueue
 	return &retval, nil
 }
 
@@ -4457,6 +4529,11 @@ func (v *getNodeNodeCluster) GetEmoji() *string { return v.ClusterFields.Emoji }
 // GetColor returns getNodeNodeCluster.Color, and is useful for accessing the field via an interface.
 func (v *getNodeNodeCluster) GetColor() *string { return v.ClusterFields.Color }
 
+// GetDefaultQueue returns getNodeNodeCluster.DefaultQueue, and is useful for accessing the field via an interface.
+func (v *getNodeNodeCluster) GetDefaultQueue() *ClusterFieldsDefaultQueueClusterQueue {
+	return v.ClusterFields.DefaultQueue
+}
+
 func (v *getNodeNodeCluster) UnmarshalJSON(b []byte) error {
 
 	if string(b) == "null" {
@@ -4496,6 +4573,8 @@ type __premarshalgetNodeNodeCluster struct {
 	Emoji *string `json:"emoji"`
 
 	Color *string `json:"color"`
+
+	DefaultQueue *ClusterFieldsDefaultQueueClusterQueue `json:"defaultQueue"`
 }
 
 func (v *getNodeNodeCluster) MarshalJSON() ([]byte, error) {
@@ -4516,6 +4595,7 @@ func (v *getNodeNodeCluster) __premarshalJSON() (*__premarshalgetNodeNodeCluster
 	retval.Description = v.ClusterFields.Description
 	retval.Emoji = v.ClusterFields.Emoji
 	retval.Color = v.ClusterFields.Color
+	retval.DefaultQueue = v.ClusterFields.DefaultQueue
 	return &retval, nil
 }
 
@@ -8689,6 +8769,151 @@ type getTestSuiteSuiteViewer struct {
 // GetTypename returns getTestSuiteSuiteViewer.Typename, and is useful for accessing the field via an interface.
 func (v *getTestSuiteSuiteViewer) GetTypename() string { return v.Typename }
 
+// removeClusterDefaultQueueClusterUpdateClusterUpdatePayload includes the requested fields of the GraphQL type ClusterUpdatePayload.
+// The GraphQL type's documentation follows.
+//
+// Autogenerated return type of ClusterUpdate.
+type removeClusterDefaultQueueClusterUpdateClusterUpdatePayload struct {
+	Cluster removeClusterDefaultQueueClusterUpdateClusterUpdatePayloadCluster `json:"cluster"`
+}
+
+// GetCluster returns removeClusterDefaultQueueClusterUpdateClusterUpdatePayload.Cluster, and is useful for accessing the field via an interface.
+func (v *removeClusterDefaultQueueClusterUpdateClusterUpdatePayload) GetCluster() removeClusterDefaultQueueClusterUpdateClusterUpdatePayloadCluster {
+	return v.Cluster
+}
+
+// removeClusterDefaultQueueClusterUpdateClusterUpdatePayloadCluster includes the requested fields of the GraphQL type Cluster.
+type removeClusterDefaultQueueClusterUpdateClusterUpdatePayloadCluster struct {
+	ClusterFields `json:"-"`
+	// The default queue that agents connecting to the cluster without specifying a queue will accept jobs from
+	DefaultQueue removeClusterDefaultQueueClusterUpdateClusterUpdatePayloadClusterDefaultQueueClusterQueue `json:"defaultQueue"`
+}
+
+// GetDefaultQueue returns removeClusterDefaultQueueClusterUpdateClusterUpdatePayloadCluster.DefaultQueue, and is useful for accessing the field via an interface.
+func (v *removeClusterDefaultQueueClusterUpdateClusterUpdatePayloadCluster) GetDefaultQueue() removeClusterDefaultQueueClusterUpdateClusterUpdatePayloadClusterDefaultQueueClusterQueue {
+	return v.DefaultQueue
+}
+
+// GetId returns removeClusterDefaultQueueClusterUpdateClusterUpdatePayloadCluster.Id, and is useful for accessing the field via an interface.
+func (v *removeClusterDefaultQueueClusterUpdateClusterUpdatePayloadCluster) GetId() string {
+	return v.ClusterFields.Id
+}
+
+// GetUuid returns removeClusterDefaultQueueClusterUpdateClusterUpdatePayloadCluster.Uuid, and is useful for accessing the field via an interface.
+func (v *removeClusterDefaultQueueClusterUpdateClusterUpdatePayloadCluster) GetUuid() string {
+	return v.ClusterFields.Uuid
+}
+
+// GetName returns removeClusterDefaultQueueClusterUpdateClusterUpdatePayloadCluster.Name, and is useful for accessing the field via an interface.
+func (v *removeClusterDefaultQueueClusterUpdateClusterUpdatePayloadCluster) GetName() string {
+	return v.ClusterFields.Name
+}
+
+// GetDescription returns removeClusterDefaultQueueClusterUpdateClusterUpdatePayloadCluster.Description, and is useful for accessing the field via an interface.
+func (v *removeClusterDefaultQueueClusterUpdateClusterUpdatePayloadCluster) GetDescription() *string {
+	return v.ClusterFields.Description
+}
+
+// GetEmoji returns removeClusterDefaultQueueClusterUpdateClusterUpdatePayloadCluster.Emoji, and is useful for accessing the field via an interface.
+func (v *removeClusterDefaultQueueClusterUpdateClusterUpdatePayloadCluster) GetEmoji() *string {
+	return v.ClusterFields.Emoji
+}
+
+// GetColor returns removeClusterDefaultQueueClusterUpdateClusterUpdatePayloadCluster.Color, and is useful for accessing the field via an interface.
+func (v *removeClusterDefaultQueueClusterUpdateClusterUpdatePayloadCluster) GetColor() *string {
+	return v.ClusterFields.Color
+}
+
+func (v *removeClusterDefaultQueueClusterUpdateClusterUpdatePayloadCluster) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*removeClusterDefaultQueueClusterUpdateClusterUpdatePayloadCluster
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.removeClusterDefaultQueueClusterUpdateClusterUpdatePayloadCluster = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	err = json.Unmarshal(
+		b, &v.ClusterFields)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+type __premarshalremoveClusterDefaultQueueClusterUpdateClusterUpdatePayloadCluster struct {
+	DefaultQueue removeClusterDefaultQueueClusterUpdateClusterUpdatePayloadClusterDefaultQueueClusterQueue `json:"defaultQueue"`
+
+	Id string `json:"id"`
+
+	Uuid string `json:"uuid"`
+
+	Name string `json:"name"`
+
+	Description *string `json:"description"`
+
+	Emoji *string `json:"emoji"`
+
+	Color *string `json:"color"`
+}
+
+func (v *removeClusterDefaultQueueClusterUpdateClusterUpdatePayloadCluster) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *removeClusterDefaultQueueClusterUpdateClusterUpdatePayloadCluster) __premarshalJSON() (*__premarshalremoveClusterDefaultQueueClusterUpdateClusterUpdatePayloadCluster, error) {
+	var retval __premarshalremoveClusterDefaultQueueClusterUpdateClusterUpdatePayloadCluster
+
+	retval.DefaultQueue = v.DefaultQueue
+	retval.Id = v.ClusterFields.Id
+	retval.Uuid = v.ClusterFields.Uuid
+	retval.Name = v.ClusterFields.Name
+	retval.Description = v.ClusterFields.Description
+	retval.Emoji = v.ClusterFields.Emoji
+	retval.Color = v.ClusterFields.Color
+	return &retval, nil
+}
+
+// removeClusterDefaultQueueClusterUpdateClusterUpdatePayloadClusterDefaultQueueClusterQueue includes the requested fields of the GraphQL type ClusterQueue.
+type removeClusterDefaultQueueClusterUpdateClusterUpdatePayloadClusterDefaultQueueClusterQueue struct {
+	Id string `json:"id"`
+	// The public UUID for this cluster queue
+	Uuid string `json:"uuid"`
+}
+
+// GetId returns removeClusterDefaultQueueClusterUpdateClusterUpdatePayloadClusterDefaultQueueClusterQueue.Id, and is useful for accessing the field via an interface.
+func (v *removeClusterDefaultQueueClusterUpdateClusterUpdatePayloadClusterDefaultQueueClusterQueue) GetId() string {
+	return v.Id
+}
+
+// GetUuid returns removeClusterDefaultQueueClusterUpdateClusterUpdatePayloadClusterDefaultQueueClusterQueue.Uuid, and is useful for accessing the field via an interface.
+func (v *removeClusterDefaultQueueClusterUpdateClusterUpdatePayloadClusterDefaultQueueClusterQueue) GetUuid() string {
+	return v.Uuid
+}
+
+// removeClusterDefaultQueueResponse is returned by removeClusterDefaultQueue on success.
+type removeClusterDefaultQueueResponse struct {
+	// Updates a cluster.
+	ClusterUpdate removeClusterDefaultQueueClusterUpdateClusterUpdatePayload `json:"clusterUpdate"`
+}
+
+// GetClusterUpdate returns removeClusterDefaultQueueResponse.ClusterUpdate, and is useful for accessing the field via an interface.
+func (v *removeClusterDefaultQueueResponse) GetClusterUpdate() removeClusterDefaultQueueClusterUpdateClusterUpdatePayload {
+	return v.ClusterUpdate
+}
+
 // revokeAgentTokenAgentTokenRevokeAgentTokenRevokePayload includes the requested fields of the GraphQL type AgentTokenRevokePayload.
 // The GraphQL type's documentation follows.
 //
@@ -8813,6 +9038,151 @@ type setApiIpAddressesResponse struct {
 // GetOrganizationApiIpAllowlistUpdate returns setApiIpAddressesResponse.OrganizationApiIpAllowlistUpdate, and is useful for accessing the field via an interface.
 func (v *setApiIpAddressesResponse) GetOrganizationApiIpAllowlistUpdate() setApiIpAddressesOrganizationApiIpAllowlistUpdateOrganizationAPIIPAllowlistUpdateMutationPayload {
 	return v.OrganizationApiIpAllowlistUpdate
+}
+
+// setClusterDefaultQueueClusterUpdateClusterUpdatePayload includes the requested fields of the GraphQL type ClusterUpdatePayload.
+// The GraphQL type's documentation follows.
+//
+// Autogenerated return type of ClusterUpdate.
+type setClusterDefaultQueueClusterUpdateClusterUpdatePayload struct {
+	Cluster setClusterDefaultQueueClusterUpdateClusterUpdatePayloadCluster `json:"cluster"`
+}
+
+// GetCluster returns setClusterDefaultQueueClusterUpdateClusterUpdatePayload.Cluster, and is useful for accessing the field via an interface.
+func (v *setClusterDefaultQueueClusterUpdateClusterUpdatePayload) GetCluster() setClusterDefaultQueueClusterUpdateClusterUpdatePayloadCluster {
+	return v.Cluster
+}
+
+// setClusterDefaultQueueClusterUpdateClusterUpdatePayloadCluster includes the requested fields of the GraphQL type Cluster.
+type setClusterDefaultQueueClusterUpdateClusterUpdatePayloadCluster struct {
+	ClusterFields `json:"-"`
+	// The default queue that agents connecting to the cluster without specifying a queue will accept jobs from
+	DefaultQueue setClusterDefaultQueueClusterUpdateClusterUpdatePayloadClusterDefaultQueueClusterQueue `json:"defaultQueue"`
+}
+
+// GetDefaultQueue returns setClusterDefaultQueueClusterUpdateClusterUpdatePayloadCluster.DefaultQueue, and is useful for accessing the field via an interface.
+func (v *setClusterDefaultQueueClusterUpdateClusterUpdatePayloadCluster) GetDefaultQueue() setClusterDefaultQueueClusterUpdateClusterUpdatePayloadClusterDefaultQueueClusterQueue {
+	return v.DefaultQueue
+}
+
+// GetId returns setClusterDefaultQueueClusterUpdateClusterUpdatePayloadCluster.Id, and is useful for accessing the field via an interface.
+func (v *setClusterDefaultQueueClusterUpdateClusterUpdatePayloadCluster) GetId() string {
+	return v.ClusterFields.Id
+}
+
+// GetUuid returns setClusterDefaultQueueClusterUpdateClusterUpdatePayloadCluster.Uuid, and is useful for accessing the field via an interface.
+func (v *setClusterDefaultQueueClusterUpdateClusterUpdatePayloadCluster) GetUuid() string {
+	return v.ClusterFields.Uuid
+}
+
+// GetName returns setClusterDefaultQueueClusterUpdateClusterUpdatePayloadCluster.Name, and is useful for accessing the field via an interface.
+func (v *setClusterDefaultQueueClusterUpdateClusterUpdatePayloadCluster) GetName() string {
+	return v.ClusterFields.Name
+}
+
+// GetDescription returns setClusterDefaultQueueClusterUpdateClusterUpdatePayloadCluster.Description, and is useful for accessing the field via an interface.
+func (v *setClusterDefaultQueueClusterUpdateClusterUpdatePayloadCluster) GetDescription() *string {
+	return v.ClusterFields.Description
+}
+
+// GetEmoji returns setClusterDefaultQueueClusterUpdateClusterUpdatePayloadCluster.Emoji, and is useful for accessing the field via an interface.
+func (v *setClusterDefaultQueueClusterUpdateClusterUpdatePayloadCluster) GetEmoji() *string {
+	return v.ClusterFields.Emoji
+}
+
+// GetColor returns setClusterDefaultQueueClusterUpdateClusterUpdatePayloadCluster.Color, and is useful for accessing the field via an interface.
+func (v *setClusterDefaultQueueClusterUpdateClusterUpdatePayloadCluster) GetColor() *string {
+	return v.ClusterFields.Color
+}
+
+func (v *setClusterDefaultQueueClusterUpdateClusterUpdatePayloadCluster) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*setClusterDefaultQueueClusterUpdateClusterUpdatePayloadCluster
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.setClusterDefaultQueueClusterUpdateClusterUpdatePayloadCluster = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	err = json.Unmarshal(
+		b, &v.ClusterFields)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+type __premarshalsetClusterDefaultQueueClusterUpdateClusterUpdatePayloadCluster struct {
+	DefaultQueue setClusterDefaultQueueClusterUpdateClusterUpdatePayloadClusterDefaultQueueClusterQueue `json:"defaultQueue"`
+
+	Id string `json:"id"`
+
+	Uuid string `json:"uuid"`
+
+	Name string `json:"name"`
+
+	Description *string `json:"description"`
+
+	Emoji *string `json:"emoji"`
+
+	Color *string `json:"color"`
+}
+
+func (v *setClusterDefaultQueueClusterUpdateClusterUpdatePayloadCluster) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *setClusterDefaultQueueClusterUpdateClusterUpdatePayloadCluster) __premarshalJSON() (*__premarshalsetClusterDefaultQueueClusterUpdateClusterUpdatePayloadCluster, error) {
+	var retval __premarshalsetClusterDefaultQueueClusterUpdateClusterUpdatePayloadCluster
+
+	retval.DefaultQueue = v.DefaultQueue
+	retval.Id = v.ClusterFields.Id
+	retval.Uuid = v.ClusterFields.Uuid
+	retval.Name = v.ClusterFields.Name
+	retval.Description = v.ClusterFields.Description
+	retval.Emoji = v.ClusterFields.Emoji
+	retval.Color = v.ClusterFields.Color
+	return &retval, nil
+}
+
+// setClusterDefaultQueueClusterUpdateClusterUpdatePayloadClusterDefaultQueueClusterQueue includes the requested fields of the GraphQL type ClusterQueue.
+type setClusterDefaultQueueClusterUpdateClusterUpdatePayloadClusterDefaultQueueClusterQueue struct {
+	Id string `json:"id"`
+	// The public UUID for this cluster queue
+	Uuid string `json:"uuid"`
+}
+
+// GetId returns setClusterDefaultQueueClusterUpdateClusterUpdatePayloadClusterDefaultQueueClusterQueue.Id, and is useful for accessing the field via an interface.
+func (v *setClusterDefaultQueueClusterUpdateClusterUpdatePayloadClusterDefaultQueueClusterQueue) GetId() string {
+	return v.Id
+}
+
+// GetUuid returns setClusterDefaultQueueClusterUpdateClusterUpdatePayloadClusterDefaultQueueClusterQueue.Uuid, and is useful for accessing the field via an interface.
+func (v *setClusterDefaultQueueClusterUpdateClusterUpdatePayloadClusterDefaultQueueClusterQueue) GetUuid() string {
+	return v.Uuid
+}
+
+// setClusterDefaultQueueResponse is returned by setClusterDefaultQueue on success.
+type setClusterDefaultQueueResponse struct {
+	// Updates a cluster.
+	ClusterUpdate setClusterDefaultQueueClusterUpdateClusterUpdatePayload `json:"clusterUpdate"`
+}
+
+// GetClusterUpdate returns setClusterDefaultQueueResponse.ClusterUpdate, and is useful for accessing the field via an interface.
+func (v *setClusterDefaultQueueResponse) GetClusterUpdate() setClusterDefaultQueueClusterUpdateClusterUpdatePayload {
+	return v.ClusterUpdate
 }
 
 // teamCreateResponse is returned by teamCreate on success.
@@ -9287,6 +9657,11 @@ func (v *updateClusterClusterUpdateClusterUpdatePayloadCluster) GetColor() *stri
 	return v.ClusterFields.Color
 }
 
+// GetDefaultQueue returns updateClusterClusterUpdateClusterUpdatePayloadCluster.DefaultQueue, and is useful for accessing the field via an interface.
+func (v *updateClusterClusterUpdateClusterUpdatePayloadCluster) GetDefaultQueue() *ClusterFieldsDefaultQueueClusterQueue {
+	return v.ClusterFields.DefaultQueue
+}
+
 func (v *updateClusterClusterUpdateClusterUpdatePayloadCluster) UnmarshalJSON(b []byte) error {
 
 	if string(b) == "null" {
@@ -9324,6 +9699,8 @@ type __premarshalupdateClusterClusterUpdateClusterUpdatePayloadCluster struct {
 	Emoji *string `json:"emoji"`
 
 	Color *string `json:"color"`
+
+	DefaultQueue *ClusterFieldsDefaultQueueClusterQueue `json:"defaultQueue"`
 }
 
 func (v *updateClusterClusterUpdateClusterUpdatePayloadCluster) MarshalJSON() ([]byte, error) {
@@ -9343,6 +9720,7 @@ func (v *updateClusterClusterUpdateClusterUpdatePayloadCluster) __premarshalJSON
 	retval.Description = v.ClusterFields.Description
 	retval.Emoji = v.ClusterFields.Emoji
 	retval.Color = v.ClusterFields.Color
+	retval.DefaultQueue = v.ClusterFields.DefaultQueue
 	return &retval, nil
 }
 
@@ -10256,6 +10634,12 @@ fragment ClusterFields on Cluster {
 	description
 	emoji
 	color
+	defaultQueue {
+		id
+		uuid
+		key
+		description
+	}
 }
 `
 
@@ -11073,6 +11457,12 @@ fragment ClusterFields on Cluster {
 	description
 	emoji
 	color
+	defaultQueue {
+		id
+		uuid
+		key
+		description
+	}
 }
 `
 
@@ -11263,6 +11653,12 @@ fragment ClusterFields on Cluster {
 	description
 	emoji
 	color
+	defaultQueue {
+		id
+		uuid
+		key
+		description
+	}
 }
 `
 
@@ -11548,6 +11944,63 @@ func getTestSuite(
 	return &data, err
 }
 
+// The query or mutation executed by removeClusterDefaultQueue.
+const removeClusterDefaultQueue_Operation = `
+mutation removeClusterDefaultQueue ($organizationId: ID!, $clusterId: ID!) {
+	clusterUpdate(input: {organizationId:$organizationId,id:$clusterId,defaultQueueId:null}) {
+		cluster {
+			... ClusterFields
+			defaultQueue {
+				id
+				uuid
+			}
+		}
+	}
+}
+fragment ClusterFields on Cluster {
+	id
+	uuid
+	name
+	description
+	emoji
+	color
+	defaultQueue {
+		id
+		uuid
+		key
+		description
+	}
+}
+`
+
+func removeClusterDefaultQueue(
+	ctx context.Context,
+	client graphql.Client,
+	organizationId string,
+	clusterId string,
+) (*removeClusterDefaultQueueResponse, error) {
+	req := &graphql.Request{
+		OpName: "removeClusterDefaultQueue",
+		Query:  removeClusterDefaultQueue_Operation,
+		Variables: &__removeClusterDefaultQueueInput{
+			OrganizationId: organizationId,
+			ClusterId:      clusterId,
+		},
+	}
+	var err error
+
+	var data removeClusterDefaultQueueResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		ctx,
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
 // The query or mutation executed by revokeAgentToken.
 const revokeAgentToken_Operation = `
 mutation revokeAgentToken ($id: ID!, $reason: String!) {
@@ -11656,6 +12109,65 @@ func setApiIpAddresses(
 	var err error
 
 	var data setApiIpAddressesResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		ctx,
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
+// The query or mutation executed by setClusterDefaultQueue.
+const setClusterDefaultQueue_Operation = `
+mutation setClusterDefaultQueue ($organizationId: ID!, $clusterId: ID!, $queueId: ID) {
+	clusterUpdate(input: {organizationId:$organizationId,id:$clusterId,defaultQueueId:$queueId}) {
+		cluster {
+			... ClusterFields
+			defaultQueue {
+				id
+				uuid
+			}
+		}
+	}
+}
+fragment ClusterFields on Cluster {
+	id
+	uuid
+	name
+	description
+	emoji
+	color
+	defaultQueue {
+		id
+		uuid
+		key
+		description
+	}
+}
+`
+
+func setClusterDefaultQueue(
+	ctx context.Context,
+	client graphql.Client,
+	organizationId string,
+	clusterId string,
+	queueId string,
+) (*setClusterDefaultQueueResponse, error) {
+	req := &graphql.Request{
+		OpName: "setClusterDefaultQueue",
+		Query:  setClusterDefaultQueue_Operation,
+		Variables: &__setClusterDefaultQueueInput{
+			OrganizationId: organizationId,
+			ClusterId:      clusterId,
+			QueueId:        queueId,
+		},
+	}
+	var err error
+
+	var data setClusterDefaultQueueResponse
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(
@@ -11841,6 +12353,12 @@ fragment ClusterFields on Cluster {
 	description
 	emoji
 	color
+	defaultQueue {
+		id
+		uuid
+		key
+		description
+	}
 }
 `
 
