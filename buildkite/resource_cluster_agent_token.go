@@ -57,6 +57,9 @@ func (ct *ClusterAgentToken) Schema(_ context.Context, _ resource.SchemaRequest,
 			"description": resource_schema.StringAttribute{
 				Required:            true,
 				MarkdownDescription: "A description about what this cluster agent token is used for.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"token": resource_schema.StringAttribute{
 				Computed:            true,
