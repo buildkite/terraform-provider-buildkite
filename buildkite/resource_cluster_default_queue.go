@@ -174,14 +174,24 @@ func (c *clusterDefaultQueueResource) ImportState(ctx context.Context, req resou
 
 // ModifyPlan implements resource.ResourceWithModifyPlan.
 func (c *clusterDefaultQueueResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
+	if req.Plan.Raw.IsNull() {
+		return
+	}
+	if req.Config.Raw.IsNull() {
+		return
+	}
+	if req.State.Raw.IsNull() {
+		return
+	}
 	// load the cluster and check if it already has a default queue attached. fail if it does
 	timeout, diags := c.client.timeouts.Read(ctx, DefaultTimeout)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	var clusterId types.String
-	resp.Diagnostics.Append(req.Plan.GetAttribute(ctx, path.Root("cluster_id"), &clusterId)...)
+	var clusterId, queueId types.String
+	resp.Diagnostics.Append(req.Config.GetAttribute(ctx, path.Root("cluster_id"), &clusterId)...)
+	resp.Diagnostics.Append(req.Plan.GetAttribute(ctx, path.Root("queue_id"), &queueId)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -193,13 +203,17 @@ func (c *clusterDefaultQueueResource) ModifyPlan(ctx context.Context, req resour
 
 		return retryContextError(err)
 	})
+	if err != nil {
+		resp.Diagnostics.AddError("Could not load cluster", err.Error())
+		return
+	}
 
-	if clusterNode, ok := r.GetNode().(*getNodeNodeCluster); err != nil && ok {
+	if clusterNode, ok := r.Node.(*getNodeNodeCluster); ok {
 		if clusterNode == nil {
 			return
 		}
-		if clusterNode.DefaultQueue.Id != "" {
-			resp.Diagnostics.AddAttributeError(path.Root("cluster_id"), "abc", "xyz")
+		if clusterNode.DefaultQueue.Id != queueId.ValueString() {
+			resp.Diagnostics.AddAttributeError(path.Root("cluster_id"), "Cannot add default queue", "Cluster already has a default")
 		}
 	}
 }

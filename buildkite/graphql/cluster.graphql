@@ -8,10 +8,12 @@ fragment ClusterFields on Cluster {
     emoji
     # @genqlient(pointer: true)
     color
+    # @genqlient(pointer: true)
     defaultQueue {
         id
         uuid
         key
+        # @genqlient(pointer: true)
         description
     }
 }

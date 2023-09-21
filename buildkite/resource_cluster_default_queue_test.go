@@ -2,6 +2,7 @@ package buildkite
 
 import (
 	"fmt"
+	"regexp"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
@@ -91,11 +92,11 @@ func TestAccBuildkiteClusterDefaultQueueResource(t *testing.T) {
 					`, clusterName),
 					ConfigPlanChecks: resource.ConfigPlanChecks{
 						PostApplyPostRefresh: []plancheck.PlanCheck{
-							// plancheck.ExpectResourceAction("buildkite_cluster_default_queue.extra", plancheck.ResourceActionNoop),
-							// plancheck.ExpectResourceAction("buildkite_cluster_default_queue.cluster", plancheck.ResourceActionNoop),
+							plancheck.ExpectResourceAction("buildkite_cluster_default_queue.extra", plancheck.ResourceActionCreate),
+							plancheck.ExpectResourceAction("buildkite_cluster_default_queue.cluster", plancheck.ResourceActionNoop),
 						},
 					},
-					// ExpectError: regexp.MustCompile(""),
+					ExpectError: regexp.MustCompile("Cluster already has a default"),
 				},
 			},
 		})

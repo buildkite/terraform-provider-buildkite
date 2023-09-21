@@ -62,7 +62,7 @@ type ClusterFields struct {
 	// Color hex code for the cluster
 	Color *string `json:"color"`
 	// The default queue that agents connecting to the cluster without specifying a queue will accept jobs from
-	DefaultQueue ClusterFieldsDefaultQueueClusterQueue `json:"defaultQueue"`
+	DefaultQueue *ClusterFieldsDefaultQueueClusterQueue `json:"defaultQueue"`
 }
 
 // GetId returns ClusterFields.Id, and is useful for accessing the field via an interface.
@@ -84,7 +84,7 @@ func (v *ClusterFields) GetEmoji() *string { return v.Emoji }
 func (v *ClusterFields) GetColor() *string { return v.Color }
 
 // GetDefaultQueue returns ClusterFields.DefaultQueue, and is useful for accessing the field via an interface.
-func (v *ClusterFields) GetDefaultQueue() ClusterFieldsDefaultQueueClusterQueue {
+func (v *ClusterFields) GetDefaultQueue() *ClusterFieldsDefaultQueueClusterQueue {
 	return v.DefaultQueue
 }
 
@@ -92,9 +92,9 @@ func (v *ClusterFields) GetDefaultQueue() ClusterFieldsDefaultQueueClusterQueue 
 type ClusterFieldsDefaultQueueClusterQueue struct {
 	Id string `json:"id"`
 	// The public UUID for this cluster queue
-	Uuid        string `json:"uuid"`
-	Key         string `json:"key"`
-	Description string `json:"description"`
+	Uuid        string  `json:"uuid"`
+	Key         string  `json:"key"`
+	Description *string `json:"description"`
 }
 
 // GetId returns ClusterFieldsDefaultQueueClusterQueue.Id, and is useful for accessing the field via an interface.
@@ -107,7 +107,7 @@ func (v *ClusterFieldsDefaultQueueClusterQueue) GetUuid() string { return v.Uuid
 func (v *ClusterFieldsDefaultQueueClusterQueue) GetKey() string { return v.Key }
 
 // GetDescription returns ClusterFieldsDefaultQueueClusterQueue.Description, and is useful for accessing the field via an interface.
-func (v *ClusterFieldsDefaultQueueClusterQueue) GetDescription() string { return v.Description }
+func (v *ClusterFieldsDefaultQueueClusterQueue) GetDescription() *string { return v.Description }
 
 // ClusterQueueValues includes the GraphQL fields of ClusterQueue requested by the fragment ClusterQueueValues.
 type ClusterQueueValues struct {
@@ -1898,7 +1898,7 @@ func (v *createClusterClusterCreateClusterCreatePayloadCluster) GetColor() *stri
 }
 
 // GetDefaultQueue returns createClusterClusterCreateClusterCreatePayloadCluster.DefaultQueue, and is useful for accessing the field via an interface.
-func (v *createClusterClusterCreateClusterCreatePayloadCluster) GetDefaultQueue() ClusterFieldsDefaultQueueClusterQueue {
+func (v *createClusterClusterCreateClusterCreatePayloadCluster) GetDefaultQueue() *ClusterFieldsDefaultQueueClusterQueue {
 	return v.ClusterFields.DefaultQueue
 }
 
@@ -1940,7 +1940,7 @@ type __premarshalcreateClusterClusterCreateClusterCreatePayloadCluster struct {
 
 	Color *string `json:"color"`
 
-	DefaultQueue ClusterFieldsDefaultQueueClusterQueue `json:"defaultQueue"`
+	DefaultQueue *ClusterFieldsDefaultQueueClusterQueue `json:"defaultQueue"`
 }
 
 func (v *createClusterClusterCreateClusterCreatePayloadCluster) MarshalJSON() ([]byte, error) {
@@ -3365,7 +3365,7 @@ func (v *getClusterByNameOrganizationClustersClusterConnectionEdgesClusterEdgeNo
 }
 
 // GetDefaultQueue returns getClusterByNameOrganizationClustersClusterConnectionEdgesClusterEdgeNodeCluster.DefaultQueue, and is useful for accessing the field via an interface.
-func (v *getClusterByNameOrganizationClustersClusterConnectionEdgesClusterEdgeNodeCluster) GetDefaultQueue() ClusterFieldsDefaultQueueClusterQueue {
+func (v *getClusterByNameOrganizationClustersClusterConnectionEdgesClusterEdgeNodeCluster) GetDefaultQueue() *ClusterFieldsDefaultQueueClusterQueue {
 	return v.ClusterFields.DefaultQueue
 }
 
@@ -3407,7 +3407,7 @@ type __premarshalgetClusterByNameOrganizationClustersClusterConnectionEdgesClust
 
 	Color *string `json:"color"`
 
-	DefaultQueue ClusterFieldsDefaultQueueClusterQueue `json:"defaultQueue"`
+	DefaultQueue *ClusterFieldsDefaultQueueClusterQueue `json:"defaultQueue"`
 }
 
 func (v *getClusterByNameOrganizationClustersClusterConnectionEdgesClusterEdgeNodeCluster) MarshalJSON() ([]byte, error) {
@@ -4530,7 +4530,7 @@ func (v *getNodeNodeCluster) GetEmoji() *string { return v.ClusterFields.Emoji }
 func (v *getNodeNodeCluster) GetColor() *string { return v.ClusterFields.Color }
 
 // GetDefaultQueue returns getNodeNodeCluster.DefaultQueue, and is useful for accessing the field via an interface.
-func (v *getNodeNodeCluster) GetDefaultQueue() ClusterFieldsDefaultQueueClusterQueue {
+func (v *getNodeNodeCluster) GetDefaultQueue() *ClusterFieldsDefaultQueueClusterQueue {
 	return v.ClusterFields.DefaultQueue
 }
 
@@ -4574,7 +4574,7 @@ type __premarshalgetNodeNodeCluster struct {
 
 	Color *string `json:"color"`
 
-	DefaultQueue ClusterFieldsDefaultQueueClusterQueue `json:"defaultQueue"`
+	DefaultQueue *ClusterFieldsDefaultQueueClusterQueue `json:"defaultQueue"`
 }
 
 func (v *getNodeNodeCluster) MarshalJSON() ([]byte, error) {
@@ -9658,7 +9658,7 @@ func (v *updateClusterClusterUpdateClusterUpdatePayloadCluster) GetColor() *stri
 }
 
 // GetDefaultQueue returns updateClusterClusterUpdateClusterUpdatePayloadCluster.DefaultQueue, and is useful for accessing the field via an interface.
-func (v *updateClusterClusterUpdateClusterUpdatePayloadCluster) GetDefaultQueue() ClusterFieldsDefaultQueueClusterQueue {
+func (v *updateClusterClusterUpdateClusterUpdatePayloadCluster) GetDefaultQueue() *ClusterFieldsDefaultQueueClusterQueue {
 	return v.ClusterFields.DefaultQueue
 }
 
@@ -9700,7 +9700,7 @@ type __premarshalupdateClusterClusterUpdateClusterUpdatePayloadCluster struct {
 
 	Color *string `json:"color"`
 
-	DefaultQueue ClusterFieldsDefaultQueueClusterQueue `json:"defaultQueue"`
+	DefaultQueue *ClusterFieldsDefaultQueueClusterQueue `json:"defaultQueue"`
 }
 
 func (v *updateClusterClusterUpdateClusterUpdatePayloadCluster) MarshalJSON() ([]byte, error) {
