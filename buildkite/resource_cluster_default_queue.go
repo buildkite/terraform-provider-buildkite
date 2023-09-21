@@ -222,7 +222,7 @@ func (c *clusterDefaultQueueResource) ModifyPlan(ctx context.Context, req resour
 func (c *clusterDefaultQueueResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		MarkdownDescription: heredoc.Doc(`
-			This resource allows you to create and manage a default queue for a Buildkite Cluster.
+			This resource allows you to manage a default queue for a Buildkite Cluster.
 			Find out more information in our [documentation](https://buildkite.com/docs/clusters/overview).
 		`),
 		Attributes: map[string]schema.Attribute{
