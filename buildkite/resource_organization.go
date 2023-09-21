@@ -9,7 +9,7 @@ import (
 	"github.com/MakeNowJust/heredoc"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	resource_schema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -19,6 +19,7 @@ type organizationResourceModel struct {
 	AllowedApiIpAddresses types.List   `tfsdk:"allowed_api_ip_addresses"`
 	ID                    types.String `tfsdk:"id"`
 	UUID                  types.String `tfsdk:"uuid"`
+	Enforce2FA            types.Bool   `tfsdk:"enforce_2fa"`
 }
 
 type organizationResource struct {
@@ -42,33 +43,37 @@ func (o *organizationResource) Configure(ctx context.Context, req resource.Confi
 }
 
 func (*organizationResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
-	resp.Schema = resource_schema.Schema{
+	resp.Schema = schema.Schema{
 		MarkdownDescription: heredoc.Doc(`
 			This resource allows you to manage the settings for an organization.
 
 			The user of your API token must be an organization administrator to manage organization settings.
 		`),
-		Attributes: map[string]resource_schema.Attribute{
-			"id": resource_schema.StringAttribute{
+		Attributes: map[string]schema.Attribute{
+			"id": schema.StringAttribute{
 				Computed:            true,
 				MarkdownDescription: "The GraphQL ID of the organization.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
-			"uuid": resource_schema.StringAttribute{
+			"uuid": schema.StringAttribute{
 				Computed:            true,
 				MarkdownDescription: "The UUID of the organization.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
-			"allowed_api_ip_addresses": resource_schema.ListAttribute{
+			"allowed_api_ip_addresses": schema.ListAttribute{
 				Optional:    true,
 				ElementType: types.StringType,
 				MarkdownDescription: "A list of IP addresses in CIDR format that are allowed to access the Buildkite API." +
 					"If not set, all IP addresses are allowed (the same as setting 0.0.0.0/0).\n\n" +
 					"-> The \"Allowed API IP Addresses\" feature must be enabled on your organization in order to manage the `allowed_api_ip_addresses` attribute.",
+			},
+			"enforce_2fa": schema.BoolAttribute{
+				Optional:            true,
+				MarkdownDescription: "Sets whether the organization requires two-factor authentication for all members.",
 			},
 		},
 	}
@@ -93,7 +98,6 @@ func (o *organizationResource) Create(ctx context.Context, req resource.CreateRe
 		o.client.organizationId,
 		strings.Join(cidrs, " "),
 	)
-
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to create Organization settings",
@@ -102,8 +106,17 @@ func (o *organizationResource) Create(ctx context.Context, req resource.CreateRe
 		return
 	}
 
+	if plan.Enforce2FA.ValueBool() {
+		_, err = setOrganization2FA(ctx, o.client.genqlient, o.client.organizationId, true)
+		if err != nil {
+			resp.Diagnostics.AddError("Unable to set 2FA enforced", err.Error())
+			return
+		}
+	}
+
 	state.ID = types.StringValue(apiResponse.OrganizationApiIpAllowlistUpdate.Organization.Id)
 	state.UUID = types.StringValue(apiResponse.OrganizationApiIpAllowlistUpdate.Organization.Uuid)
+	state.Enforce2FA = plan.Enforce2FA
 	ips, diag := types.ListValueFrom(ctx, types.StringType, strings.Split(apiResponse.OrganizationApiIpAllowlistUpdate.Organization.AllowedApiIpAddresses, " "))
 	state.AllowedApiIpAddresses = ips
 
@@ -137,6 +150,7 @@ func (o *organizationResource) Read(ctx context.Context, req resource.ReadReques
 
 	state.ID = types.StringValue(o.client.organizationId)
 	state.UUID = types.StringValue(response.Organization.Uuid)
+	state.Enforce2FA = types.BoolValue(response.Organization.MembersRequireTwoFactorAuthentication)
 	ips, diag := types.ListValueFrom(ctx, types.StringType, strings.Split(response.Organization.AllowedApiIpAddresses, " "))
 	state.AllowedApiIpAddresses = ips
 
@@ -179,6 +193,13 @@ func (o *organizationResource) Update(ctx context.Context, req resource.UpdateRe
 		)
 		return
 	}
+
+	_, err = setOrganization2FA(ctx, o.client.genqlient, o.client.organizationId, plan.Enforce2FA.ValueBool())
+	if err != nil {
+		resp.Diagnostics.AddError("Unable to set 2FA", err.Error())
+		return
+	}
+
 	state.ID = types.StringValue(apiResponse.OrganizationApiIpAllowlistUpdate.Organization.Id)
 	state.UUID = types.StringValue(apiResponse.OrganizationApiIpAllowlistUpdate.Organization.Uuid)
 	ips, diag := types.ListValueFrom(ctx, types.StringType, strings.Split(apiResponse.OrganizationApiIpAllowlistUpdate.Organization.AllowedApiIpAddresses, " "))
@@ -204,6 +225,8 @@ func (o *organizationResource) Delete(ctx context.Context, req resource.DeleteRe
 		)
 		return
 	}
+
+	resp.Diagnostics.AddAttributeWarning(path.Root("enforce_2fa"), "Enforce 2FA setting left intact", "Use the web UI if you wish to change the value")
 }
 
 func createCidrSliceFromList(cidrList types.List) []string {
