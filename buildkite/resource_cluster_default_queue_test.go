@@ -1,13 +1,13 @@
 package buildkite
 
 import (
+	"context"
+	"errors"
 	"fmt"
-	"regexp"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
-	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
@@ -37,15 +37,23 @@ func TestAccBuildkiteClusterDefaultQueueResource(t *testing.T) {
 						}
 					`, clusterName),
 					Check: func(s *terraform.State) error {
+						cluster := s.RootModule().Resources["buildkite_cluster.cluster"].Primary
+						queue := s.RootModule().Resources["buildkite_cluster_queue.cluster"].Primary
 						// load the cluster from the api and ensure the correct queue is default
-						return nil
+						r, err := getNode(context.Background(), genqlientGraphql, cluster.ID)
+						if clusterNode, ok := r.GetNode().(*getNodeNodeCluster); ok {
+							if clusterNode.DefaultQueue.Id != queue.ID {
+								return errors.New("Default queue does not match")
+							}
+						}
+						return err
 					},
 				},
 			},
 		})
 	})
 
-	t.Run("fails to add default if one exists already", func(t *testing.T) {
+	t.Run("change default queue", func(t *testing.T) {
 		clusterName := acctest.RandString(5)
 
 		resource.ParallelTest(t, resource.TestCase{
@@ -74,29 +82,26 @@ func TestAccBuildkiteClusterDefaultQueueResource(t *testing.T) {
 							name = "%s"
 						}
 						resource "buildkite_cluster_queue" "cluster" {
-							key = "default"
+							key = "new"
 							cluster_id = buildkite_cluster.cluster.id
 						}
 						resource "buildkite_cluster_default_queue" "cluster" {
 							cluster_id = buildkite_cluster.cluster.id
 							queue_id = buildkite_cluster_queue.cluster.id
 						}
-						resource "buildkite_cluster_queue" "extra" {
-							key = "extra"
-							cluster_id = buildkite_cluster.cluster.id
-						}
-						resource "buildkite_cluster_default_queue" "extra" {
-							cluster_id = buildkite_cluster.cluster.id
-							queue_id = buildkite_cluster_queue.extra.id
-						}
 					`, clusterName),
-					ConfigPlanChecks: resource.ConfigPlanChecks{
-						PostApplyPostRefresh: []plancheck.PlanCheck{
-							plancheck.ExpectResourceAction("buildkite_cluster_default_queue.extra", plancheck.ResourceActionCreate),
-							plancheck.ExpectResourceAction("buildkite_cluster_default_queue.cluster", plancheck.ResourceActionNoop),
-						},
+					Check: func(s *terraform.State) error {
+						cluster := s.RootModule().Resources["buildkite_cluster.cluster"].Primary
+						queue := s.RootModule().Resources["buildkite_cluster_queue.cluster"].Primary
+						// load the cluster from the api and ensure the correct queue is default
+						r, err := getNode(context.Background(), genqlientGraphql, cluster.ID)
+						if clusterNode, ok := r.GetNode().(*getNodeNodeCluster); ok {
+							if clusterNode.DefaultQueue.Id != queue.ID {
+								return errors.New("Default queue does not match")
+							}
+						}
+						return err
 					},
-					ExpectError: regexp.MustCompile("Cluster already has a default"),
 				},
 			},
 		})

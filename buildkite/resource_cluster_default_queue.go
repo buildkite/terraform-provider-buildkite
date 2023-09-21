@@ -172,52 +172,6 @@ func (c *clusterDefaultQueueResource) ImportState(ctx context.Context, req resou
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
 
-// ModifyPlan implements resource.ResourceWithModifyPlan.
-func (c *clusterDefaultQueueResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
-	if req.Plan.Raw.IsNull() {
-		return
-	}
-	if req.Config.Raw.IsNull() {
-		return
-	}
-	if req.State.Raw.IsNull() {
-		return
-	}
-	// load the cluster and check if it already has a default queue attached. fail if it does
-	timeout, diags := c.client.timeouts.Read(ctx, DefaultTimeout)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	var clusterId, queueId types.String
-	resp.Diagnostics.Append(req.Config.GetAttribute(ctx, path.Root("cluster_id"), &clusterId)...)
-	resp.Diagnostics.Append(req.Plan.GetAttribute(ctx, path.Root("queue_id"), &queueId)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	var r *getNodeResponse
-	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-		var err error
-		r, err = getNode(ctx, c.client.genqlient, clusterId.ValueString())
-
-		return retryContextError(err)
-	})
-	if err != nil {
-		resp.Diagnostics.AddError("Could not load cluster", err.Error())
-		return
-	}
-
-	if clusterNode, ok := r.Node.(*getNodeNodeCluster); ok {
-		if clusterNode == nil {
-			return
-		}
-		if clusterNode.DefaultQueue.Id != queueId.ValueString() {
-			resp.Diagnostics.AddAttributeError(path.Root("cluster_id"), "Cannot add default queue", "Cluster already has a default")
-		}
-	}
-}
-
 // Schema implements resource.Resource.
 func (c *clusterDefaultQueueResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
@@ -253,6 +207,40 @@ func (c *clusterDefaultQueueResource) Schema(ctx context.Context, req resource.S
 }
 
 // Update implements resource.Resource.
-func (c *clusterDefaultQueueResource) Update(context.Context, resource.UpdateRequest, *resource.UpdateResponse) {
-	panic("unimplemented")
+func (c *clusterDefaultQueueResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	var plan clusterDefaultQueueResourceModel
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	timeout, diags := c.client.timeouts.Update(ctx, DefaultTimeout)
+	resp.Diagnostics.Append(diags...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// modify cluster to set default
+	var r *setClusterDefaultQueueResponse
+	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+		var err error
+		r, err = setClusterDefaultQueue(ctx, c.client.genqlient, c.client.organizationId, plan.ClusterId.ValueString(), plan.QueueId.ValueString())
+
+		return retryContextError(err)
+	})
+
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Unable to attach default queue",
+			fmt.Sprintf("Unable to attach default queue: %s", err.Error()),
+		)
+		return
+	}
+
+	plan.ID = types.StringValue(r.ClusterUpdate.Cluster.Id)
+	plan.UUID = types.StringValue(r.ClusterUpdate.Cluster.Uuid)
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 }

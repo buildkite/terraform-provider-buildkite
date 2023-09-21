@@ -76,6 +76,9 @@ func (ClusterQueueResource) Schema(ctx context.Context, req resource.SchemaReque
 			"key": resource_schema.StringAttribute{
 				Required:            true,
 				MarkdownDescription: "The key of the cluster queue.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"description": resource_schema.StringAttribute{
 				Optional:            true,
