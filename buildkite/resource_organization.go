@@ -109,10 +109,10 @@ func (o *organizationResource) Create(ctx context.Context, req resource.CreateRe
 		return
 	}
 
-	if plan.Enforce2FA.ValueBool() {
-		_, err = setOrganization2FA(ctx, o.client.genqlient, o.client.organizationId, true)
+	if !plan.Enforce2FA.IsNull() && !plan.Enforce2FA.IsUnknown() {
+		_, err = setOrganization2FA(ctx, o.client.genqlient, o.client.organizationId, plan.Enforce2FA.ValueBool())
 		if err != nil {
-			resp.Diagnostics.AddError("Unable to set 2FA enforced", err.Error())
+			resp.Diagnostics.AddError("Unable to set 2FA", err.Error())
 			return
 		}
 	}
@@ -197,10 +197,13 @@ func (o *organizationResource) Update(ctx context.Context, req resource.UpdateRe
 		return
 	}
 
-	_, err = setOrganization2FA(ctx, o.client.genqlient, o.client.organizationId, plan.Enforce2FA.ValueBool())
-	if err != nil {
-		resp.Diagnostics.AddError("Unable to set 2FA", err.Error())
-		return
+	if !plan.Enforce2FA.IsNull() && !plan.Enforce2FA.IsUnknown() {
+		twoFAResponse, err := setOrganization2FA(ctx, o.client.genqlient, o.client.organizationId, plan.Enforce2FA.ValueBool())
+		if err != nil {
+			resp.Diagnostics.AddError("Unable to set 2FA", err.Error())
+			return
+		}
+		state.Enforce2FA = types.BoolValue(twoFAResponse.OrganizationEnforceTwoFactorAuthenticationForMembersUpdate.Organization.MembersRequireTwoFactorAuthentication)
 	}
 
 	state.ID = types.StringValue(apiResponse.OrganizationApiIpAllowlistUpdate.Organization.Id)

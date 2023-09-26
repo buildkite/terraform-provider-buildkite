@@ -47,7 +47,6 @@ func TestAccOrganization_update(t *testing.T) {
 					resource.TestCheckResourceAttr("buildkite_organization.let_them_in", "allowed_api_ip_addresses.2", "1.0.0.1/32"),
 				),
 			},
-
 			{
 				Config: testAccOrganizationConfigBasic([]string{"0.0.0.0/0", "4.4.4.4/32"}),
 				Check: resource.ComposeAggregateTestCheckFunc(
