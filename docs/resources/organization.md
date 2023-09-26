@@ -16,9 +16,10 @@ The user of your API token must be an organization administrator to manage organ
 ## Example Usage
 
 ```terraform
-# allow api access only from 1.1.1.1
+# allow api access only from 1.1.1.1 and enforce 2fa for all members
 resource "buildkite_organization" "settings" {
   allowed_api_ip_addresses = ["1.1.1.1/32"]
+  enforce_2fa              = true
 }
 ```
 
@@ -30,6 +31,7 @@ resource "buildkite_organization" "settings" {
 - `allowed_api_ip_addresses` (List of String) A list of IP addresses in CIDR format that are allowed to access the Buildkite API.If not set, all IP addresses are allowed (the same as setting 0.0.0.0/0).
 
 -> The "Allowed API IP Addresses" feature must be enabled on your organization in order to manage the `allowed_api_ip_addresses` attribute.
+- `enforce_2fa` (Boolean) Sets whether the organization requires two-factor authentication for all members.
 
 ### Read-Only
 
