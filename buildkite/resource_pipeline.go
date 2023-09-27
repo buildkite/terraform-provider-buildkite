@@ -337,7 +337,7 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 		MarkdownDescription: heredoc.Doc(`
 			This resource allows you to create and manage pipelines for repositories.
 
-			More information on pipelines can be found in the documentation](https://buildkite.com/docs/pipelines).
+			More information on pipelines can be found in the [documentation](https://buildkite.com/docs/pipelines).
 		`),
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{

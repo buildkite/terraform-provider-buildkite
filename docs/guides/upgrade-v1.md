@@ -5,7 +5,8 @@ page_title: Upgrading to v1.0
 # Upgrading to v1.0
 
 The Buildkite Terraform provider 1.0 is considered stable and ready for production use. If you have been using the
-provider prior to the 1.0 release, this guides you through upgrading.
+provider prior to the 1.0 release, this guides you through upgrading.  
+If you are starting a new terraform project with this provider, you can start at https://registry.terraform.io/providers/buildkite/buildkite/latest/docs.
 
 ## New Features
 
@@ -13,11 +14,11 @@ provider prior to the 1.0 release, this guides you through upgrading.
 The provider has been upgraded to protocol v6. It is therefor only compatible with terraform CLI version 1.0 and later.
 
 ### Cluster resources
-You are now able to manage cluster resources with the provider. This includes `cluster`, `cluster_queue`, and
-`cluster_agent_token`.
+You are now able to manage cluster resources with the provider. This includes [`buildkite_cluster`](../resources/cluster)., [`buildkite_cluster_queue`](../resources/cluster_queue), and
+[`buildkite_cluster_agent_token`](../resources/cluster_agent_token).
 
 ### Test Analytics resources
-You can now create test suites and assign teams access to them with `test_suite`, and `test_suite_team`.
+You can now create test suites and assign teams access to them with [`buildkite_test_suite`](../resources/test_suite), and [`buildkite_test_suite_team`](../resources/test_suite_team).
 
 ### Configurable API retry timeouts
 API retries and timeouts have been implemented in the majority of resources. This adds reliability to the provider
@@ -76,14 +77,12 @@ resource "buildkite_pipeline" "pipeline" {
 }
 ```
 
-~> The upgrade for a pipeline's `provider_settings` as part of 1.0 from a block to nested attribute is designed to be a forward moving event. However, if you require moving back to using a Buildkite Terraform provider version earlier than 1.0 after upgrading your pipeline resources with nested attributed `provider_settings`, various options exist. If you have access to state files, you can roll back to a backup managing pipelines using the older block `provider_settings` (with `"schema_version": 0`), converting each pipeline resource's `provider_settings` configuration back to a block and planning against the older provider version. Alternatively, you can remove the pipeline from state and re-import it once the provider downgrade has occurred.
-
 ### Consistent IDs across resources
 All resources now use their GraphQL IDs as the primary ID in the schema.
 
 ## Removed Features
 
-- `team` attribute on pipeline resource has been removed.
+- `team` attribute on pipeline resource has been removed. It is replaced by the separate resource [`buildkite_pipeline_team`](../resources/pipeline_team).
 
 ## Upgrade Guide
 
@@ -91,9 +90,16 @@ All resources now use their GraphQL IDs as the primary ID in the schema.
 you **must** upgrade to version 0.27.0 prior to upgrading to v1.0. See [Migrate pipeline.team usage to pipeline_team
 resource](./upgrade-v1#migrate-pipelineteam-usage-to-pipeline_team-resource) for more info.
 
+### Backup the state file
+
+State file backups are created automatically by terraform. You should inspect your state storage location and ensure
+there is a valid backup available in the event of corruption from upgrading the provider.
+
+Refer to https://developer.hashicorp.com/terraform/cli/state/recover for more information.
+
 ### Pin provider version
 
-You should pin your provider installation to the 1.x releases.
+You should pin your provider installation to the 1.x releases so you can upgrade as new versions are released.
 
 ```tf
 terraform {
@@ -118,7 +124,7 @@ The next step is to refresh your state file: `terraform refresh`.
 ### Migrate `pipeline.team` usage to `pipeline_team` resource
 
 The `team` attribute on the `pipeline` resource was removed in v1.0 in favour of a separate resource:
-[`pipeline_team`](../resources/pipeline_team).
+[`buildkite_pipeline_team`](../resources/pipeline_team).
 
 You'll need to upgrade your provider to version `0.27.0` and switch over to the new resource prior to upgrading to v1.0.
 
@@ -205,3 +211,17 @@ Terraform will perform the following actions:
 
 Plan: 1 to add, 1 to change, 0 to destroy.
 ```
+
+### Migrate `pipeline.provider_settings` block to a nested attribute
+
+This is as simple as adding an equal sign (`=`) to the `provider_settings` attribute and running `terraform apply`.
+
+The provider will transparently update the state file to the new schema version. This operation is not automatically
+reversible. If you run into issues from upgrading, please raise an issue on GitHub.
+
+See [Pipeline resource `provider_settings` type change](./upgrade-v1#pipeline-resource-provider_settings-type-change) for an example.
+
+#### Rolling back
+
+If you experience issues with the automatic upgrade you can revert your changes and re-instate the backup terraform
+state file. Follow the instructions from Terraform on disaster recovery: https://developer.hashicorp.com/terraform/cli/state/recover.
