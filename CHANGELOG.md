@@ -2,6 +2,13 @@
  
 ## [v1.0.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v0.27.0...v1.0.0) 🎉
 
+We are thrilled to release v1.0 of the Buildkite Terraform provider. This is the culmination of years of development and
+refactors to improve developer experience.
+
+### Upgrading to v1.0
+Please refer to the [Upgrade Guide](https://registry.terraform.io/providers/buildkite/buildkite/latest/docs/guides/upgrade-v1)
+
+### Changes
 - SUP-1394 Add validation to provider_settings [[PR #387](https://github.com/buildkite/terraform-provider-buildkite/pull/387)] @jradtilbrook
 - SUP-1382: Remove the deprecated team block from pipelines [[PR #391](https://github.com/buildkite/terraform-provider-buildkite/pull/391)] @lizrabuya
 - retryContextError util resource switch [[PR #394](https://github.com/buildkite/terraform-provider-buildkite/pull/394)] @james2791
@@ -13,12 +20,6 @@
 - SUP-1395 Change timeouts to nested attribute [[PR #402](https://github.com/buildkite/terraform-provider-buildkite/pull/402)] @jradtilbrook
 - SUP-1444 Add cluster_default_queue resource [[PR #404](https://github.com/buildkite/terraform-provider-buildkite/pull/404)] @jradtilbrook
 - SUP-1446 Add enforce_2fa to organization resource [[PR #406](https://github.com/buildkite/terraform-provider-buildkite/pull/406)] @jradtilbrook
-
-The `team` block from the `buildkite_pipeline` resource has been removed. Please use the resource `buildkite_pipeline_team` to create and manage team configuration in a pipeline.
-
-### Upgrading to v1.0
-
-Please refer to the [Upgrade Guide](https://registry.terraform.io/providers/buildkite/buildkite/latest/docs/guides/upgrade-v1)
 
 ## [v0.27.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v0.26.0...v0.27.0)
 
