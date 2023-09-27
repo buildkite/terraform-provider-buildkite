@@ -3,13 +3,10 @@
 page_title: "buildkite Provider"
 subcategory: ""
 description: |-
-  ~> You are viewing documentation for a pre-release version of the provider. Please see the latest stable docs at https://registry.terraform.io/providers/buildkite/buildkite/0.27.0/docs
   This provider can be used to manage resources on buildkite.com https://buildkite.com.
 ---
 
 # buildkite Provider
-
-~> You are viewing documentation for a pre-release version of the provider. Please see the latest stable docs at https://registry.terraform.io/providers/buildkite/buildkite/0.27.0/docs
 
 This provider can be used to manage resources on [buildkite.com](https://buildkite.com).
 

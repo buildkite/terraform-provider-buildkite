@@ -146,8 +146,6 @@ func (tf *terraformProvider) Resources(context.Context) []func() resource.Resour
 func (*terraformProvider) Schema(ctx context.Context, req provider.SchemaRequest, resp *provider.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		MarkdownDescription: heredoc.Doc(`
-			~> You are viewing documentation for a pre-release version of the provider. Please see the latest stable docs at https://registry.terraform.io/providers/buildkite/buildkite/0.27.0/docs
-
 			This provider can be used to manage resources on [buildkite.com](https://buildkite.com).
 		`),
 		Attributes: map[string]schema.Attribute{
