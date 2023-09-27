@@ -1,9 +1,6 @@
 # Changelog
  
-## Unreleased 
-All notable changes to this project will be documented in this file.
-
-## v1.0.0-beta
+## [v1.0.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v0.27.0...v1.0.0) 🎉
 
 - SUP-1394 Add validation to provider_settings [[PR #387](https://github.com/buildkite/terraform-provider-buildkite/pull/387)] @jradtilbrook
 - SUP-1382: Remove the deprecated team block from pipelines [[PR #391](https://github.com/buildkite/terraform-provider-buildkite/pull/391)] @lizrabuya
@@ -18,6 +15,10 @@ All notable changes to this project will be documented in this file.
 - SUP-1446 Add enforce_2fa to organization resource [[PR #406](https://github.com/buildkite/terraform-provider-buildkite/pull/406)] @jradtilbrook
 
 The `team` block from the `buildkite_pipeline` resource has been removed. Please use the resource `buildkite_pipeline_team` to create and manage team configuration in a pipeline.
+
+### Upgrading to v1.0
+
+Please refer to the [Upgrade Guide](https://registry.terraform.io/providers/buildkite/buildkite/latest/docs/guides/upgrade-v1)
 
 ## [v0.27.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v0.26.0...v0.27.0)
 

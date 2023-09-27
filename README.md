@@ -2,44 +2,19 @@
 
 [![Build status](https://badge.buildkite.com/7224047dadf711cab2facd75939ea39848850d7c5c5a765acd.svg?branch=main)](https://buildkite.com/buildkite/terraform-provider-buildkite-main)
 
-This is the official Terraform provider for [Buildkite](https://buildkite.com). The provider is listed in the [Terraform Registry](https://registry.terraform.io/) and supports terraform >= 0.13.
+This is the official Terraform provider for [Buildkite](https://buildkite.com). The provider is listed in the [Terraform Registry](https://registry.terraform.io/) and supports Terraform >= 1.0.
 
 The provider allows you to manage resources in your Buildkite organization.
 
 Two configuration values are required:
 
--   An API token, generated at https://buildkite.com/user/api-access-tokens. The
-    token must have the `write_pipelines`, `read_pipelines` and `write_suites` REST API scopes and be enabled for GraphQL API access.
--   A Buildkite organization slug, available by signing into buildkite.com and
-    examining the URL: https://buildkite.com/<org-slug>.
+-   An API token, generated at https://buildkite.com/user/api-access-tokens. The token must have the `write_pipelines`, `read_pipelines` and `write_suites` REST API scopes and be enabled for GraphQL API access.
+-   A Buildkite organization slug, available by signing into buildkite.com and examining the URL: https://buildkite.com/<org-slug>.
 
 ## Documentation
 
-The reference documentation on [the terraform registry](https://registry.terraform.io/providers/buildkite/buildkite/latest/docs)
-is the recommended location for guidance on using this provider.
+The reference documentation on [the terraform registry](https://registry.terraform.io/providers/buildkite/buildkite/latest/docs) is the recommended location for guidance on using this provider.
 
-## Installation
-
-**NOTE**: This provider is built with the assumption that teams are enabled for your Buildkite organization. Most resources should work without, but we can't guarantee compatibility. Check out our [documentation regarding teams](https://buildkite.com/docs/pipelines/permissions#permissions-with-teams) for more information.
-
-To use the provider, add the following terraform:
-
-```hcl
-terraform {
-  required_providers {
-    buildkite = {
-      source = "buildkite/buildkite"
-      version = "0.27.0"
-    }
-  }
-}
-
-provider "buildkite" {
-  # Configuration options
-  api_token = "token" # can also be set from env: BUILDKITE_API_TOKEN
-  organization = "slug" # can also be set from env: BUILDKITE_ORGANIZATION_SLUG
-}
-```
 
 ## Thanks :heart:
 
@@ -70,15 +45,8 @@ Buildkite has two APIs: REST and GraphQL. New resources should use the GraphQL A
 The repo contains a tf-proj/ directory that can be used to quickly test a compiled version of the provider from the current branch.
 
 1. Update tf-proj/main.tf to use the resource or property you're developing
-2. Compile the provider and copy it into the filesystem cache in tf-proj
-
-    ```bash
-      go build -o terraform-provider-buildkite . && \
-        mkdir -p tf-proj/terraform.d/plugins/registry.terraform.io/buildkite/buildkite/0.5.0/$(arch)/ && \
-        mv terraform-provider-buildkite tf-proj/terraform.d/plugins/registry.terraform.io/buildkite/buildkite/0.5.0/$(arch)/
-    ```
-
-3. Ensure the version number in the above command and in tf-proj/main.tf match
+2. Compile the provider with `make build`
+3. Add a `.terraformrc` configuration file to override the provider binary. See below: [Overriding the provider for local development](#overriding-the-provider-for-local-development)
 4. Run `terraform plan` in the tf-proj directory
 
     ```bash
