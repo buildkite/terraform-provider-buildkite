@@ -4,14 +4,14 @@ page_title: "buildkite_pipeline Resource - terraform-provider-buildkite"
 subcategory: ""
 description: |-
   This resource allows you to create and manage pipelines for repositories.
-  More information on pipelines can be found in the documentation](https://buildkite.com/docs/pipelines).
+  More information on pipelines can be found in the documentation https://buildkite.com/docs/pipelines.
 ---
 
 # buildkite_pipeline (Resource)
 
 This resource allows you to create and manage pipelines for repositories.
 
-More information on pipelines can be found in the documentation](https://buildkite.com/docs/pipelines).
+More information on pipelines can be found in the [documentation](https://buildkite.com/docs/pipelines).
 
 ## Example Usage
 
