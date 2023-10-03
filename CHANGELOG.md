@@ -1,5 +1,9 @@
 # Changelog
  
+## [v1.0.1](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.0.0...v1.0.1)
+
+- Dont set provider_settings if not defined [[PR #411](https://github.com/buildkite/terraform-provider-buildkite/pull/411)] @jradtilbrook
+
 ## [v1.0.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v0.27.0...v1.0.0) 🎉
 
 We are thrilled to release v1.0 of the Buildkite Terraform provider. This is the culmination of years of development and
