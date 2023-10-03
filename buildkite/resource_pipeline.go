@@ -764,7 +764,6 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 			return
 		}
 		state.BadgeUrl = types.StringValue(extraInfo.BadgeUrl)
-		state.ProviderSettings = new(providerSettingsModel)
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
