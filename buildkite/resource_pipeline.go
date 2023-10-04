@@ -9,10 +9,8 @@ import (
 
 	"github.com/MakeNowJust/heredoc"
 	"github.com/buildkite/terraform-provider-buildkite/internal/boolvalidation"
-	"github.com/buildkite/terraform-provider-buildkite/internal/pipelinevalidation"
 	custom_modifier "github.com/buildkite/terraform-provider-buildkite/internal/planmodifier"
 	"github.com/buildkite/terraform-provider-buildkite/internal/stringvalidation"
-	"github.com/hashicorp/terraform-plugin-framework-validators/boolvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -491,8 +489,10 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 							"`none` will not create any builds based on GitHub activity.",
 							"`trigger_mode`",
 						),
+						PlanModifiers: []planmodifier.String{
+							custom_modifier.WhenRepositoryProviderIs(custom_modifier.RepositoryProviderGitHub),
+						},
 						Validators: []validator.String{
-							pipelinevalidation.WhenRepositoryProviderIs(pipelinevalidation.RepositoryProviderGitHub),
 							stringvalidator.OneOf("code", "deployment", "fork", "none"),
 						},
 					},
@@ -501,14 +501,11 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 						Computed: true,
 						MarkdownDescription: "Whether to create builds for commits that are part part of a pull request." +
 							"Only valid for Bitbucket or GitHub using a `trigger_mode = \"code\"`",
+						PlanModifiers: []planmodifier.Bool{
+							custom_modifier.WhenRepositoryProviderIs(custom_modifier.RepositoryProviderBitbucket, custom_modifier.RepositoryProviderGitHub),
+						},
 						Validators: []validator.Bool{
-							boolvalidator.Any(
-								pipelinevalidation.WhenRepositoryProviderIs(pipelinevalidation.RepositoryProviderBitbucket),
-								boolvalidator.All(
-									pipelinevalidation.WhenRepositoryProviderIs(pipelinevalidation.RepositoryProviderGitHub),
-									boolvalidation.WhenString(path.MatchRoot("provider_settings").AtName("trigger_mode"), "code"),
-								),
-							),
+							boolvalidation.WhenString(path.MatchRoot("provider_settings").AtName("trigger_mode"), "code"),
 						},
 					},
 					"pull_request_branch_filter_enabled": schema.BoolAttribute{
@@ -532,8 +529,8 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 						Computed: true,
 						MarkdownDescription: "Whether to skip creating a new build if an existing build for the commit and branch already exists." +
 							"Only valid for GitHub repositories.",
-						Validators: []validator.Bool{
-							pipelinevalidation.WhenRepositoryProviderIs(pipelinevalidation.RepositoryProviderGitHub),
+						PlanModifiers: []planmodifier.Bool{
+							custom_modifier.WhenRepositoryProviderIs(custom_modifier.RepositoryProviderGitHub),
 						},
 					},
 					"skip_pull_request_builds_for_existing_commits": schema.BoolAttribute{
@@ -550,8 +547,10 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 						Optional: true,
 						MarkdownDescription: "Whether to create a build when a pull request changes to \"Ready for review\"." +
 							"Only valid for GitHub repositories that have `trigger_mode = \"code\"` and `build_pull_requests = true`.",
+						PlanModifiers: []planmodifier.Bool{
+							custom_modifier.WhenRepositoryProviderIs(custom_modifier.RepositoryProviderGitHub),
+						},
 						Validators: []validator.Bool{
-							pipelinevalidation.WhenRepositoryProviderIs(pipelinevalidation.RepositoryProviderGitHub),
 							boolvalidation.WhenString(path.MatchRoot("provider_settings").AtName("trigger_mode"), "code"),
 							boolvalidation.WhenBool(path.MatchRoot("provider_settings").AtName("build_pull_requests"), true),
 						},
@@ -561,8 +560,10 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 						Optional: true,
 						MarkdownDescription: "Whether to create builds for pull requests when labels are added or removed." +
 							"Only valid for GitHub repositories that have `trigger_mode = \"code\"` and `build_pull_requests = true`.",
+						PlanModifiers: []planmodifier.Bool{
+							custom_modifier.WhenRepositoryProviderIs(custom_modifier.RepositoryProviderGitHub),
+						},
 						Validators: []validator.Bool{
-							pipelinevalidation.WhenRepositoryProviderIs(pipelinevalidation.RepositoryProviderGitHub),
 							boolvalidation.WhenString(path.MatchRoot("provider_settings").AtName("trigger_mode"), "code"),
 							boolvalidation.WhenBool(path.MatchRoot("provider_settings").AtName("build_pull_requests"), true),
 						},
@@ -572,8 +573,10 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 						Optional: true,
 						MarkdownDescription: "Whether to create builds for pull requests from third-party forks." +
 							"Only valid for GitHub repositories that have `trigger_mode = \"code\"` and `build_pull_requests = true`.",
+						PlanModifiers: []planmodifier.Bool{
+							custom_modifier.WhenRepositoryProviderIs(custom_modifier.RepositoryProviderGitHub),
+						},
 						Validators: []validator.Bool{
-							pipelinevalidation.WhenRepositoryProviderIs(pipelinevalidation.RepositoryProviderGitHub),
 							boolvalidation.WhenString(path.MatchRoot("provider_settings").AtName("trigger_mode"), "code"),
 							boolvalidation.WhenBool(path.MatchRoot("provider_settings").AtName("build_pull_requests"), true),
 						},
@@ -592,24 +595,26 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 						Optional:            true,
 						Computed:            true,
 						MarkdownDescription: "Whether to create builds when branches are pushed. Only valid for GitHub and Bitbucket repositories.",
-						Validators: []validator.Bool{
-							pipelinevalidation.WhenRepositoryProviderIs(pipelinevalidation.RepositoryProviderGitHub, pipelinevalidation.RepositoryProviderBitbucket),
+						PlanModifiers: []planmodifier.Bool{
+							custom_modifier.WhenRepositoryProviderIs(custom_modifier.RepositoryProviderGitHub, custom_modifier.RepositoryProviderBitbucket),
 						},
 					},
 					"build_tags": schema.BoolAttribute{
 						Computed:            true,
 						Optional:            true,
 						MarkdownDescription: "Whether to create builds when tags are pushed. Only valid for GitHub and Bitbucket repositories.",
-						Validators: []validator.Bool{
-							pipelinevalidation.WhenRepositoryProviderIs(pipelinevalidation.RepositoryProviderGitHub, pipelinevalidation.RepositoryProviderBitbucket),
+						PlanModifiers: []planmodifier.Bool{
+							custom_modifier.WhenRepositoryProviderIs(custom_modifier.RepositoryProviderGitHub, custom_modifier.RepositoryProviderBitbucket),
 						},
 					},
 					"cancel_deleted_branch_builds": schema.BoolAttribute{
 						Computed:            true,
 						Optional:            true,
 						MarkdownDescription: "Automatically cancel running builds for a branch if the branch is deleted. Only valid for GitHub repositories when `trigger_mode = \"code\"`.",
+						PlanModifiers: []planmodifier.Bool{
+							custom_modifier.WhenRepositoryProviderIs(custom_modifier.RepositoryProviderGitHub),
+						},
 						Validators: []validator.Bool{
-							pipelinevalidation.WhenRepositoryProviderIs(pipelinevalidation.RepositoryProviderGitHub),
 							boolvalidation.WhenString(path.MatchRoot("provider_settings").AtName("trigger_mode"), "code"),
 						},
 					},
@@ -618,8 +623,10 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 						Optional: true,
 						MarkdownDescription: "Whether to filter builds to only run when the condition in `filter_condition` is true." +
 							"Only valid for GitHub repositories when `trigger_mode = \"code\"`.",
+						PlanModifiers: []planmodifier.Bool{
+							custom_modifier.WhenRepositoryProviderIs(custom_modifier.RepositoryProviderGitHub),
+						},
 						Validators: []validator.Bool{
-							pipelinevalidation.WhenRepositoryProviderIs(pipelinevalidation.RepositoryProviderGitHub),
 							boolvalidation.WhenString(path.MatchRoot("provider_settings").AtName("trigger_mode"), "code"),
 						},
 					},
@@ -638,14 +645,11 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 						Computed: true,
 						MarkdownDescription: "Whether to update the status of commits in Bitbucket or GitHub." +
 							"Only valid for Bitbucket, or GitHub repositories when `trigger_mode = \"code\"`.",
+						PlanModifiers: []planmodifier.Bool{
+							custom_modifier.WhenRepositoryProviderIs(custom_modifier.RepositoryProviderBitbucket, custom_modifier.RepositoryProviderGitHub),
+						},
 						Validators: []validator.Bool{
-							boolvalidator.Any(
-								pipelinevalidation.WhenRepositoryProviderIs(pipelinevalidation.RepositoryProviderBitbucket),
-								boolvalidator.All(
-									pipelinevalidation.WhenRepositoryProviderIs(pipelinevalidation.RepositoryProviderGitHub),
-									boolvalidation.WhenString(path.MatchRoot("provider_settings").AtName("trigger_mode"), "code"),
-								),
-							),
+							boolvalidation.WhenString(path.MatchRoot("provider_settings").AtName("trigger_mode"), "code"),
 						},
 					},
 					"publish_blocked_as_pending": schema.BoolAttribute{
@@ -653,8 +657,10 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 						Optional: true,
 						MarkdownDescription: "The status to use for blocked builds. Pending can be used with [required status checks](https://help.github.com/en/articles/enabling-required-status-checks)" +
 							"to prevent merging pull requests with blocked builds. Only valid for GitHub repositories when `publish_commit_statue = true`.",
+						PlanModifiers: []planmodifier.Bool{
+							custom_modifier.WhenRepositoryProviderIs(custom_modifier.RepositoryProviderGitHub),
+						},
 						Validators: []validator.Bool{
-							pipelinevalidation.WhenRepositoryProviderIs(pipelinevalidation.RepositoryProviderGitHub),
 							boolvalidation.WhenBool(path.MatchRoot("provider_settings").AtName("publish_commit_status"), true),
 						},
 					},
@@ -662,8 +668,10 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 						Computed:            true,
 						Optional:            true,
 						MarkdownDescription: "Whether to create a separate status for each job in a build, allowing you to see the status of each job directly in Bitbucket or GitHub.",
+						PlanModifiers: []planmodifier.Bool{
+							custom_modifier.WhenRepositoryProviderIs(custom_modifier.RepositoryProviderGitHub, custom_modifier.RepositoryProviderBitbucket),
+						},
 						Validators: []validator.Bool{
-							pipelinevalidation.WhenRepositoryProviderIs(pipelinevalidation.RepositoryProviderGitHub, pipelinevalidation.RepositoryProviderBitbucket),
 							boolvalidation.WhenBool(path.MatchRoot("provider_settings").AtName("publish_commit_status"), true),
 						},
 					},
@@ -672,8 +680,10 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 						Optional: true,
 						MarkdownDescription: "Whether to create a separate status for pull request builds, allowing you to require a passing pull request" +
 							"build in your [required status checks](https://help.github.com/en/articles/enabling-required-status-checks) in GitHub.",
+						PlanModifiers: []planmodifier.Bool{
+							custom_modifier.WhenRepositoryProviderIs(custom_modifier.RepositoryProviderGitHub),
+						},
 						Validators: []validator.Bool{
-							pipelinevalidation.WhenRepositoryProviderIs(pipelinevalidation.RepositoryProviderGitHub),
 							boolvalidation.WhenBool(path.MatchRoot("provider_settings").AtName("publish_commit_status"), true),
 						},
 					},
