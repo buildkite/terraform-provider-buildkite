@@ -1,4 +1,4 @@
-package pipelinevalidation
+package planmodifier
 
 import (
 	"context"
@@ -6,7 +6,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/provider/schema"
-	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-go/tftypes"
@@ -17,14 +17,14 @@ func TestWhenRepositoryProviderIs(t *testing.T) {
 
 	testCases := map[string]struct {
 		expected    RepositoryProvider
-		request     validator.BoolRequest
+		request     planmodifier.BoolRequest
 		expectError bool
 	}{
 		"valid when needs github": {
 			expected: RepositoryProviderGitHub,
-			request: validator.BoolRequest{
+			request: planmodifier.BoolRequest{
 				ConfigValue: types.BoolValue(true),
-				Config: tfsdk.Config{
+				Plan: tfsdk.Plan{
 					Raw: tftypes.NewValue(tftypes.Object{
 						AttributeTypes: map[string]tftypes.Type{
 							"repository": tftypes.String,
@@ -45,9 +45,9 @@ func TestWhenRepositoryProviderIs(t *testing.T) {
 		"invalid when doesnt match": {
 			expectError: true,
 			expected:    RepositoryProviderBitbucket,
-			request: validator.BoolRequest{
+			request: planmodifier.BoolRequest{
 				ConfigValue: types.BoolValue(true),
-				Config: tfsdk.Config{
+				Plan: tfsdk.Plan{
 					Raw: tftypes.NewValue(tftypes.Object{
 						AttributeTypes: map[string]tftypes.Type{
 							"repository": tftypes.String,
@@ -65,17 +65,39 @@ func TestWhenRepositoryProviderIs(t *testing.T) {
 				},
 			},
 		},
+		"interpolation": {
+			expected: RepositoryProviderBitbucket,
+			request: planmodifier.BoolRequest{
+				ConfigValue: types.BoolValue(true),
+				Plan: tfsdk.Plan{
+					Raw: tftypes.NewValue(tftypes.Object{
+						AttributeTypes: map[string]tftypes.Type{
+							"repository": tftypes.String,
+						},
+					}, map[string]tftypes.Value{
+						"repository": tftypes.NewValue(tftypes.String, "git@github.com:${var.repository}.git"),
+					}),
+					Schema: schema.Schema{
+						Attributes: map[string]schema.Attribute{
+							"repository": schema.StringAttribute{
+								Required: true,
+							},
+						},
+					},
+				},
+			},
+		},
 		"does nothing if not configured": {},
 	}
 	for name, testCase := range testCases {
 		name, testCase := name, testCase
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-			resp := validator.BoolResponse{
+			resp := planmodifier.BoolResponse{
 				Diagnostics: diag.Diagnostics{},
 			}
 
-			WhenRepositoryProviderIs(testCase.expected).ValidateBool(context.Background(), testCase.request, &resp)
+			WhenRepositoryProviderIs(testCase.expected).PlanModifyBool(context.Background(), testCase.request, &resp)
 
 			if testCase.expectError != resp.Diagnostics.HasError() {
 				t.Error(resp.Diagnostics[len(resp.Diagnostics)-1].Detail())
