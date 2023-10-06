@@ -81,7 +81,7 @@ Optional:
 - `build_tags` (Boolean) Whether to create builds when tags are pushed. Only valid for GitHub and Bitbucket repositories.
 - `cancel_deleted_branch_builds` (Boolean) Automatically cancel running builds for a branch if the branch is deleted. Only valid for GitHub repositories when `trigger_mode = "code"`.
 - `filter_condition` (String) The condition to evaluate when deciding if a build should run.More details available in [the documentation](https://buildkite.com/docs/pipelines/conditionals#conditionals-in-pipelines).Only valid if `filter_enabled = true`.
-- `filter_enabled` (Boolean) Whether to filter builds to only run when the condition in `filter_condition` is true.Only valid for GitHub repositories when `trigger_mode = "code"`.
+- `filter_enabled` (Boolean) Whether to filter builds to only run when the condition in `filter_condition` is true.Only valid for Bitbucket, or GitHub repositories when `trigger_mode = "code"`.
 - `prefix_pull_request_fork_branch_names` (Boolean) Prefix branch names for third-party fork builds to ensure they don't trigger branch conditions.For example, the master branch from some-user will become some-user:master.Only valid when `build_pull_request_forks = true`.
 - `publish_blocked_as_pending` (Boolean) The status to use for blocked builds. Pending can be used with [required status checks](https://help.github.com/en/articles/enabling-required-status-checks)to prevent merging pull requests with blocked builds. Only valid for GitHub repositories when `publish_commit_statue = true`.
 - `publish_commit_status` (Boolean) Whether to update the status of commits in Bitbucket or GitHub.Only valid for Bitbucket, or GitHub repositories when `trigger_mode = "code"`.

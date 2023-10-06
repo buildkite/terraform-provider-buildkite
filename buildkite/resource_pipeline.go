@@ -622,9 +622,9 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 						Computed: true,
 						Optional: true,
 						MarkdownDescription: "Whether to filter builds to only run when the condition in `filter_condition` is true." +
-							"Only valid for GitHub repositories when `trigger_mode = \"code\"`.",
+							"Only valid for Bitbucket, or GitHub repositories when `trigger_mode = \"code\"`.",
 						PlanModifiers: []planmodifier.Bool{
-							custom_modifier.WhenRepositoryProviderIs(custom_modifier.RepositoryProviderGitHub),
+							custom_modifier.WhenRepositoryProviderIs(custom_modifier.RepositoryProviderGitHub, custom_modifier.RepositoryProviderBitbucket),
 						},
 						Validators: []validator.Bool{
 							boolvalidation.WhenString(path.MatchRoot("provider_settings").AtName("trigger_mode"), "code"),
