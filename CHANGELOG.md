@@ -2,7 +2,7 @@
  
 ## [v1.0.3](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.0.2...v1.0.3)
 
-- Allow filter_condition on bitbucket [[PR #414](https://github.com/buildkite/terraform-provider-buildkite/pull/414)] @jradtilbrook
+- Remove validation on provider_settings [[PR #414](https://github.com/buildkite/terraform-provider-buildkite/pull/414)] @jradtilbrook
 
 ## [v1.0.2](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.0.1...v1.0.2)
 
