@@ -73,24 +73,24 @@ resource "buildkite_pipeline" "pipeline" {
 
 Optional:
 
-- `build_branches` (Boolean) Whether to create builds when branches are pushed. Only valid for GitHub and Bitbucket repositories.
-- `build_pull_request_forks` (Boolean) Whether to create builds for pull requests from third-party forks.Only valid for GitHub repositories that have `trigger_mode = "code"` and `build_pull_requests = true`.
-- `build_pull_request_labels_changed` (Boolean) Whether to create builds for pull requests when labels are added or removed.Only valid for GitHub repositories that have `trigger_mode = "code"` and `build_pull_requests = true`.
-- `build_pull_request_ready_for_review` (Boolean) Whether to create a build when a pull request changes to "Ready for review".Only valid for GitHub repositories that have `trigger_mode = "code"` and `build_pull_requests = true`.
-- `build_pull_requests` (Boolean) Whether to create builds for commits that are part part of a pull request.Only valid for Bitbucket or GitHub using a `trigger_mode = "code"`
-- `build_tags` (Boolean) Whether to create builds when tags are pushed. Only valid for GitHub and Bitbucket repositories.
-- `cancel_deleted_branch_builds` (Boolean) Automatically cancel running builds for a branch if the branch is deleted. Only valid for GitHub repositories when `trigger_mode = "code"`.
-- `filter_condition` (String) The condition to evaluate when deciding if a build should run.More details available in [the documentation](https://buildkite.com/docs/pipelines/conditionals#conditionals-in-pipelines).Only valid if `filter_enabled = true`.
-- `filter_enabled` (Boolean) Whether to filter builds to only run when the condition in `filter_condition` is true.Only valid for Bitbucket, or GitHub repositories when `trigger_mode = "code"`.
-- `prefix_pull_request_fork_branch_names` (Boolean) Prefix branch names for third-party fork builds to ensure they don't trigger branch conditions.For example, the master branch from some-user will become some-user:master.Only valid when `build_pull_request_forks = true`.
-- `publish_blocked_as_pending` (Boolean) The status to use for blocked builds. Pending can be used with [required status checks](https://help.github.com/en/articles/enabling-required-status-checks)to prevent merging pull requests with blocked builds. Only valid for GitHub repositories when `publish_commit_statue = true`.
-- `publish_commit_status` (Boolean) Whether to update the status of commits in Bitbucket or GitHub.Only valid for Bitbucket, or GitHub repositories when `trigger_mode = "code"`.
+- `build_branches` (Boolean) Whether to create builds when branches are pushed.
+- `build_pull_request_forks` (Boolean) Whether to create builds for pull requests from third-party forks.
+- `build_pull_request_labels_changed` (Boolean) Whether to create builds for pull requests when labels are added or removed.
+- `build_pull_request_ready_for_review` (Boolean) Whether to create a build when a pull request changes to "Ready for review".
+- `build_pull_requests` (Boolean) Whether to create builds for commits that are part of a pull request.
+- `build_tags` (Boolean) Whether to create builds when tags are pushed.
+- `cancel_deleted_branch_builds` (Boolean) Automatically cancel running builds for a branch if the branch is deleted.
+- `filter_condition` (String) The condition to evaluate when deciding if a build should run. More details available in [the documentation](https://buildkite.com/docs/pipelines/conditionals#conditionals-in-pipelines).
+- `filter_enabled` (Boolean) Whether to filter builds to only run when the condition in `filter_condition` is true.
+- `prefix_pull_request_fork_branch_names` (Boolean) Prefix branch names for third-party fork builds to ensure they don't trigger branch conditions. For example, the main branch from some-user will become some-user:main.
+- `publish_blocked_as_pending` (Boolean) The status to use for blocked builds. Pending can be used with [required status checks](https://help.github.com/en/articles/enabling-required-status-checks) to prevent merging pull requests with blocked builds.
+- `publish_commit_status` (Boolean) Whether to update the status of commits in Bitbucket or GitHub.
 - `publish_commit_status_per_step` (Boolean) Whether to create a separate status for each job in a build, allowing you to see the status of each job directly in Bitbucket or GitHub.
-- `pull_request_branch_filter_configuration` (String) Filter pull requests builds by the branch filter. Only valid if `pull_request_branch_filter_enabled = true`.
-- `pull_request_branch_filter_enabled` (Boolean) Filter pull request builds. Only valid if `build_pull_requests = true`.
-- `separate_pull_request_statuses` (Boolean) Whether to create a separate status for pull request builds, allowing you to require a passing pull requestbuild in your [required status checks](https://help.github.com/en/articles/enabling-required-status-checks) in GitHub.
-- `skip_builds_for_existing_commits` (Boolean) Whether to skip creating a new build if an existing build for the commit and branch already exists.Only valid for GitHub repositories.
-- `skip_pull_request_builds_for_existing_commits` (Boolean) Whether to skip creating a new build for a pull request if an existing build for the commit and branch already exists.Only valid if `build_pull_requests = true`.
+- `pull_request_branch_filter_configuration` (String) Filter pull requests builds by the branch filter.
+- `pull_request_branch_filter_enabled` (Boolean) Filter pull request builds.
+- `separate_pull_request_statuses` (Boolean) Whether to create a separate status for pull request builds, allowing you to require a passing pull request build in your [required status checks](https://help.github.com/en/articles/enabling-required-status-checks) in GitHub.
+- `skip_builds_for_existing_commits` (Boolean) Whether to skip creating a new build if an existing build for the commit and branch already exists.
+- `skip_pull_request_builds_for_existing_commits` (Boolean) Whether to skip creating a new build for a pull request if an existing build for the commit and branch already exists.
 - `trigger_mode` (String) What type of event to trigger builds on. Must be one of:
 	- `code` will create builds when code is pushed to GitHub.
 	- `deployment` will create builds when a deployment is created in GitHub.
