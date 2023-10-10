@@ -1,5 +1,9 @@
 # Changelog
  
+## [v1.0.3](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.0.2...v1.0.3)
+
+- Remove validation on provider_settings [[PR #414](https://github.com/buildkite/terraform-provider-buildkite/pull/414)] @jradtilbrook
+
 ## [v1.0.2](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.0.1...v1.0.2)
 
 - SUP-1460 Fix provider_settings validation [[PR #412](https://github.com/buildkite/terraform-provider-buildkite/pull/412)] @jradtilbrook
