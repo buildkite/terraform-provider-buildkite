@@ -216,7 +216,7 @@ func (cq *ClusterQueueResource) ImportState(ctx context.Context, req resource.Im
 
 func (cq *ClusterQueueResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	var state ClusterQueueResourceModel
-	var description string
+	var description types.String
 
 	diagsState := req.State.Get(ctx, &state)
 	diagsDescription := req.Plan.GetAttribute(ctx, path.Root("description"), &description)
@@ -245,7 +245,7 @@ func (cq *ClusterQueueResource) Update(ctx context.Context, req resource.UpdateR
 			cq.client.genqlient,
 			cq.client.organizationId,
 			state.Id.ValueString(),
-			&description,
+			description.ValueStringPointer(),
 		)
 
 		return retryContextError(err)
