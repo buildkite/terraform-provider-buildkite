@@ -1,7 +1,9 @@
 package buildkite
 
 import (
+	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"time"
@@ -24,7 +26,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/lestrrat-go/jwx/v2/jwk"
+	"github.com/moskyb/agent/v3/pipeline"
 	"github.com/shurcooL/graphql"
+	"gopkg.in/yaml.v3"
 )
 
 const defaultSteps = `steps:
@@ -89,6 +94,8 @@ type pipelineResourceModel struct {
 	Steps                                types.String           `tfsdk:"steps"`
 	Tags                                 []types.String         `tfsdk:"tags"`
 	WebhookUrl                           types.String           `tfsdk:"webhook_url"`
+	SigningJWKS                          types.String           `tfsdk:"signing_jwks"`
+	SigningKeyID                         types.String           `tfsdk:"signing_key_id"`
 }
 
 type providerSettingsModel struct {
@@ -341,6 +348,141 @@ func (p *pipelineResource) Read(ctx context.Context, req resource.ReadRequest, r
 	}
 }
 
+var _ resource.ResourceWithModifyPlan = (*pipelineResource)(nil)
+
+func (p *pipelineResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
+	var plan, state pipelineResourceModel
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+
+	var maybeState *pipelineResourceModel
+	resp.Diagnostics.Append(req.State.Get(ctx, &maybeState)...)
+
+	if maybeState != nil {
+		state = *maybeState
+	}
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	if req.Plan.Raw.IsNull() {
+		return // we don't need to update signing stuff if the resource is getting destroyed
+	}
+
+	newPlan, err := maybeSignPipeline(plan, state)
+	if err != nil {
+		resp.Diagnostics.AddError("Unable to sign pipeline", err.Error())
+		return
+	}
+
+	resp.Diagnostics.Append(resp.Plan.Set(ctx, newPlan)...)
+}
+
+func maybeSignPipeline(plan, state pipelineResourceModel) (pipelineResourceModel, error) {
+	newPlan := plan
+
+	planSteps, err := pipeline.Parse(bytes.NewBuffer([]byte(plan.Steps.ValueString())))
+	if err != nil {
+		return newPlan, fmt.Errorf("parsing pipeline steps: %w", err)
+	}
+
+	switch {
+	// Misconfigurations: If signing_jwks is set, signing_key_id must be set, and vice versa
+	case plan.SigningJWKS.ValueString() == "" && plan.SigningKeyID.ValueString() != "":
+		return newPlan, errors.New("signing_jwks must be set if signing_key_id is set")
+	case plan.SigningJWKS.ValueString() != "" && plan.SigningKeyID.ValueString() == "":
+		return newPlan, errors.New("signing_key_id must be set if signing_jwks is set")
+
+	// No signing info: If neither signing_jwks nor signing_key_id are set, we need to strip signatures _out of_ the steps
+	// They may already be gone, but we have to be sure
+	case plan.SigningJWKS.ValueString() == "" && plan.SigningKeyID.ValueString() == "":
+		for _, step := range planSteps.Steps {
+			switch step := step.(type) {
+			case *pipeline.CommandStep:
+				step.Signature = nil
+			case *pipeline.GroupStep:
+				for _, groupedStep := range step.Steps {
+					if commandStep, ok := groupedStep.(*pipeline.CommandStep); ok {
+						commandStep.Signature = nil
+					}
+				}
+			}
+		}
+
+		y, err := yaml.Marshal(planSteps)
+		if err != nil {
+			return newPlan, fmt.Errorf("marshaling pipeline steps to yaml: %w", err)
+		}
+
+		newPlan.Steps = types.StringValue(string(y))
+		return newPlan, nil
+
+	// Siging info (either JWKS value or key ID) has changed: we have to recompute all of the signatures
+	case plan.SigningJWKS.ValueString() != state.SigningJWKS.ValueString():
+		fallthrough // mostly to avoid having a super long line
+	case plan.SigningKeyID.ValueString() != state.SigningKeyID.ValueString():
+		jwks, err := jwk.Parse([]byte(plan.SigningJWKS.ValueString()))
+		if err != nil {
+			return newPlan, fmt.Errorf("parsing signing JWKS: %w", err)
+		}
+
+		key, ok := jwks.LookupKeyID(plan.SigningKeyID.ValueString())
+		if !ok {
+			return newPlan, fmt.Errorf("signing key ID %s not found in JWKS", plan.SigningKeyID.ValueString())
+		}
+
+		err = planSteps.Sign(key)
+		if err != nil {
+			return newPlan, fmt.Errorf("signing pipeline steps: %w", err)
+		}
+
+		y, err := yaml.Marshal(planSteps)
+		if err != nil {
+			return newPlan, fmt.Errorf("marshaling pipeline steps to yaml: %w", err)
+		}
+
+		newPlan.Steps = types.StringValue(string(y))
+
+		return newPlan, nil
+
+	// Signing info is the same, but the steps have changed, so we need to re-sign them. At this point, we know that the
+	// signing info hasn't changed and that it's not nil, so we can safely use it
+	case plan.Steps.ValueString() != state.Steps.ValueString():
+		// Ideally we could only re-sign the steps that have actually changed, but that's a lot of work. the nature of JWS
+		// is that all asymmetric signatures are non-deterministic, so unfortunately this will mean that whenever the steps
+		// change, all of the signatures will change. this isn't super awesome optics, but it's hard to avoid for now.
+
+		// One way around this is that we could some sort of diff checking - ie, comparing the parsed pipelines to see what
+		// was added/removed/changed and where, and then only re-signing those steps, but that sounds like it would be kind of a pain.
+		// Potentially, that's a problem for future travellers to solve.
+
+		jwks, err := jwk.Parse([]byte(plan.SigningJWKS.ValueString()))
+		if err != nil {
+			return newPlan, fmt.Errorf("parsing signing JWKS: %w", err)
+		}
+
+		key, ok := jwks.LookupKeyID(plan.SigningKeyID.ValueString())
+		if !ok {
+			return newPlan, fmt.Errorf("signing key ID %s not found in JWKS", plan.SigningKeyID.ValueString())
+		}
+
+		err = planSteps.Sign(key)
+		if err != nil {
+			return newPlan, fmt.Errorf("signing pipeline steps: %w", err)
+		}
+
+		y, err := yaml.Marshal(planSteps)
+		if err != nil {
+			return newPlan, fmt.Errorf("marshaling pipeline steps to yaml: %w", err)
+		}
+
+		newPlan.Steps = types.StringValue(string(y))
+		return newPlan, nil
+	}
+
+	return newPlan, nil
+}
+
 func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Version: 1,
@@ -486,6 +628,15 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
+			},
+			"signing_key_id": schema.StringAttribute{
+				Optional:            true,
+				MarkdownDescription: "The ID of the signing key used to sign the steps of the pipeline prior to creation. Key with this ID must exist in `signing_jwks`.",
+			},
+			"signing_jwks": schema.StringAttribute{
+				Optional:            true,
+				Sensitive:           true,
+				MarkdownDescription: "The JWKS used to sign the steps of the pipeline prior to creation",
 			},
 			"provider_settings": schema.SingleNestedAttribute{
 				Optional:            true,

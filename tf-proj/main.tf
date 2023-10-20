@@ -7,12 +7,18 @@ terraform {
   }
 }
 
-provider "buildkite" {
-  organization = "testkite"
-}
+provider "buildkite" {}
 
+resource "buildkite_pipeline" "test-signing-pipeline" {
+  name       = "test-signing-pipeline"
+  repository = "https://github.com/moskyb/bash-example"
 
-resource "buildkite_cluster" "test_cluster" {
-  name = "cluster-test"
-  description = "test cluster"
+  steps = <<EOF
+steps:
+  - label: ":bash:"
+    command: "echo 'i love signed pipelines!'"
+EOF
+
+  signing_jwks   = file("/Users/ben/signing.json")
+  signing_key_id = "eduardo"
 }
