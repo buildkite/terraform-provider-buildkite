@@ -32,8 +32,7 @@ const (
 )
 
 type terraformProvider struct {
-	version                 string
-	archivePipelineOnDelete bool
+	version string
 }
 
 type providerModel struct {
@@ -48,7 +47,6 @@ type providerModel struct {
 func (tf *terraformProvider) Configure(ctx context.Context, req provider.ConfigureRequest, resp *provider.ConfigureResponse) {
 	var data providerModel
 	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
-	tf.archivePipelineOnDelete = data.ArchivePipelineOnDelete.ValueBool()
 
 	apiToken := os.Getenv("BUILDKITE_API_TOKEN")
 	graphqlUrl := defaultGraphqlEndpoint
@@ -73,12 +71,13 @@ func (tf *terraformProvider) Configure(ctx context.Context, req provider.Configu
 	}
 
 	config := clientConfig{
-		apiToken:   apiToken,
-		graphqlURL: graphqlUrl,
-		org:        organization,
-		restURL:    restUrl,
-		timeouts:   data.Timeouts,
-		userAgent:  userAgent("buildkite", tf.version, req.TerraformVersion),
+		apiToken:                apiToken,
+		graphqlURL:              graphqlUrl,
+		org:                     organization,
+		restURL:                 restUrl,
+		timeouts:                data.Timeouts,
+		userAgent:               userAgent("buildkite", tf.version, req.TerraformVersion),
+		archivePipelineOnDelete: data.ArchivePipelineOnDelete.ValueBool(),
 	}
 	client, err := NewClient(&config)
 
@@ -134,7 +133,7 @@ func (tf *terraformProvider) Resources(context.Context) []func() resource.Resour
 		newClusterResource,
 		newDefaultQueueClusterResource,
 		newOrganizationResource,
-		newPipelineResource(tf.archivePipelineOnDelete),
+		newPipelineResource,
 		newTeamMemberResource,
 		newTeamResource,
 		newTestSuiteResource,

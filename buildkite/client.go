@@ -18,22 +18,24 @@ import (
 
 // Client can be used to interact with the Buildkite API
 type Client struct {
-	graphql        *graphql.Client
-	genqlient      genqlient.Client
-	http           *http.Client
-	organization   string
-	organizationId string
-	restUrl        string
-	timeouts       timeouts.Value
+	graphql                 *graphql.Client
+	genqlient               genqlient.Client
+	http                    *http.Client
+	organization            string
+	organizationId          string
+	restUrl                 string
+	timeouts                timeouts.Value
+	archivePipelineOnDelete bool
 }
 
 type clientConfig struct {
-	org        string
-	apiToken   string
-	graphqlURL string
-	restURL    string
-	userAgent  string
-	timeouts   timeouts.Value
+	org                     string
+	apiToken                string
+	graphqlURL              string
+	restURL                 string
+	userAgent               string
+	timeouts                timeouts.Value
+	archivePipelineOnDelete bool
 }
 
 type headerRoundTripper struct {
@@ -64,13 +66,14 @@ func NewClient(config *clientConfig) (*Client, error) {
 	}
 
 	return &Client{
-		graphql:        graphqlClient,
-		genqlient:      genqlient.NewClient(config.graphqlURL, httpClient),
-		http:           httpClient,
-		organization:   config.org,
-		organizationId: orgId,
-		restUrl:        config.restURL,
-		timeouts:       config.timeouts,
+		graphql:                 graphqlClient,
+		genqlient:               genqlient.NewClient(config.graphqlURL, httpClient),
+		http:                    httpClient,
+		organization:            config.org,
+		organizationId:          orgId,
+		restUrl:                 config.restURL,
+		timeouts:                config.timeouts,
+		archivePipelineOnDelete: config.archivePipelineOnDelete,
 	}, nil
 }
 
