@@ -1,4 +1,13 @@
 # Changelog
+
+## [v1.0.6](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.0.5...v1.0.6)
+
+- SUP-1514 Change boolean flag to pointer [[PR #426](https://github.com/buildkite/terraform-provider-buildkite/pull/426)] @jradtilbrook
+
+## [v1.0.5](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.0.4...v1.0.5)
+
+- Bump github.com/google/go-cmp from 0.5.9 to 0.6.0 [[PR #419](https://github.com/buildkite/terraform-provider-buildkite/pull/419)]
+- Bump google.golang.org/grpc from 1.56.1 to 1.56.3 [[PR #423](https://github.com/buildkite/terraform-provider-buildkite/pull/423)]
  
 ## [v1.0.4](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.0.3...v1.0.4)
 
