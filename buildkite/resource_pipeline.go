@@ -72,10 +72,12 @@ type pipelineResourceModel struct {
 	BranchConfiguration                  types.String           `tfsdk:"branch_configuration"`
 	CancelIntermediateBuilds             types.Bool             `tfsdk:"cancel_intermediate_builds"`
 	CancelIntermediateBuildsBranchFilter types.String           `tfsdk:"cancel_intermediate_builds_branch_filter"`
+	Color                                types.String           `tfsdk:"color"`
 	ClusterId                            types.String           `tfsdk:"cluster_id"`
 	DefaultBranch                        types.String           `tfsdk:"default_branch"`
 	DefaultTimeoutInMinutes              types.Int64            `tfsdk:"default_timeout_in_minutes"`
 	Description                          types.String           `tfsdk:"description"`
+	Emoji                                types.String           `tfsdk:"emoji"`
 	Id                                   types.String           `tfsdk:"id"`
 	MaximumTimeoutInMinutes              types.Int64            `tfsdk:"maximum_timeout_in_minutes"`
 	Name                                 types.String           `tfsdk:"name"`
@@ -123,10 +125,12 @@ type pipelineResponse interface {
 	GetCancelIntermediateBuilds() bool
 	GetCancelIntermediateBuildsBranchFilter() string
 	GetCluster() PipelineValuesCluster
+	GetColor() *string
 	GetDefaultBranch() string
 	GetDefaultTimeoutInMinutes() *int
 	GetMaximumTimeoutInMinutes() *int
 	GetDescription() string
+	GetEmoji() *string
 	GetName() string
 	GetRepository() PipelineValuesRepository
 	GetSkipIntermediateBuilds() bool
@@ -172,8 +176,10 @@ func (p *pipelineResource) Create(ctx context.Context, req resource.CreateReques
 		CancelIntermediateBuilds:             plan.CancelIntermediateBuilds.ValueBool(),
 		CancelIntermediateBuildsBranchFilter: plan.CancelIntermediateBuildsBranchFilter.ValueString(),
 		ClusterId:                            plan.ClusterId.ValueStringPointer(),
+		Color:                                plan.Color.ValueStringPointer(),
 		DefaultBranch:                        plan.DefaultBranch.ValueString(),
 		DefaultTimeoutInMinutes:              defaultTimeoutInMinutes,
+		Emoji:                                plan.Emoji.ValueStringPointer(),
 		MaximumTimeoutInMinutes:              maxTimeoutInMinutes,
 		Description:                          plan.Description.ValueString(),
 		Name:                                 plan.Name.ValueString(),
@@ -348,6 +354,10 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 				Default:             booldefault.StaticBool(true),
 				MarkdownDescription: "Whether rebuilds are allowed for this pipeline.",
 			},
+			"branch_configuration": schema.StringAttribute{
+				MarkdownDescription: "Configure the pipeline to only build on this branch conditional.",
+				Optional:            true,
+			},
 			"cancel_intermediate_builds": schema.BoolAttribute{
 				Computed:            true,
 				Optional:            true,
@@ -364,9 +374,9 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
-			"branch_configuration": schema.StringAttribute{
-				MarkdownDescription: "Configure the pipeline to only build on this branch conditional.",
+			"color": schema.StringAttribute{
 				Optional:            true,
+				MarkdownDescription: "A color hex code to represent this pipeline.",
 			},
 			"cluster_id": schema.StringAttribute{
 				MarkdownDescription: "Attach this pipeline to the given cluster GraphQL ID.",
@@ -388,6 +398,10 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 				PlanModifiers: []planmodifier.Int64{
 					int64planmodifier.UseStateForUnknown(),
 				},
+			},
+			"emoji": schema.StringAttribute{
+				Optional:            true,
+				MarkdownDescription: "An emoji that represents this pipeline.",
 			},
 			"maximum_timeout_in_minutes": schema.Int64Attribute{
 				Computed:            true,
@@ -617,9 +631,11 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 		BranchConfiguration:                  plan.BranchConfiguration.ValueStringPointer(),
 		CancelIntermediateBuilds:             plan.CancelIntermediateBuilds.ValueBool(),
 		CancelIntermediateBuildsBranchFilter: plan.CancelIntermediateBuildsBranchFilter.ValueString(),
+		Color:                                plan.Color.ValueStringPointer(),
 		ClusterId:                            plan.ClusterId.ValueStringPointer(),
 		DefaultBranch:                        plan.DefaultBranch.ValueString(),
 		DefaultTimeoutInMinutes:              defaultTimeoutInMinutes,
+		Emoji:                                plan.Emoji.ValueStringPointer(),
 		MaximumTimeoutInMinutes:              maxTimeoutInMinutes,
 		Description:                          plan.Description.ValueString(),
 		Id:                                   plan.Id.ValueString(),
@@ -686,9 +702,11 @@ func setPipelineModel(model *pipelineResourceModel, data pipelineResponse) {
 	model.CancelIntermediateBuilds = types.BoolValue(data.GetCancelIntermediateBuilds())
 	model.CancelIntermediateBuildsBranchFilter = types.StringValue(data.GetCancelIntermediateBuildsBranchFilter())
 	model.ClusterId = types.StringPointerValue(data.GetCluster().Id)
+	model.Color = types.StringPointerValue(data.GetColor())
 	model.DefaultBranch = types.StringValue(data.GetDefaultBranch())
 	model.DefaultTimeoutInMinutes = types.Int64PointerValue(defaultTimeoutInMinutes)
 	model.Description = types.StringValue(data.GetDescription())
+	model.Emoji = types.StringPointerValue(data.GetEmoji())
 	model.Id = types.StringValue(data.GetId())
 	model.MaximumTimeoutInMinutes = types.Int64PointerValue(maximumTimeoutInMinutes)
 	model.Name = types.StringValue(data.GetName())

@@ -6,9 +6,11 @@ resource "buildkite_pipeline" "pipeline" {
 
 # with github provider settings
 resource "buildkite_pipeline" "pipeline" {
+  color      = "#000000"
+  emoji      = ":buildkite:"
   name       = "repo"
   repository = "git@github.com:org/repo"
-
+  
   provider_settings = {
     build_branches      = false
     build_tags          = true

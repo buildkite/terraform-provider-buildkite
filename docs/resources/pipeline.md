@@ -24,9 +24,11 @@ resource "buildkite_pipeline" "pipeline" {
 
 # with github provider settings
 resource "buildkite_pipeline" "pipeline" {
+  color      = "#000000"
+  emoji      = ":buildkite:"
   name       = "repo"
   repository = "git@github.com:org/repo"
-
+  
   provider_settings = {
     build_branches      = false
     build_tags          = true
@@ -51,9 +53,11 @@ resource "buildkite_pipeline" "pipeline" {
 - `cancel_intermediate_builds` (Boolean) Whether to cancel builds when a new commit is pushed to a matching branch.
 - `cancel_intermediate_builds_branch_filter` (String) Filter the `cancel_intermediate_builds` setting based on this branch condition.
 - `cluster_id` (String) Attach this pipeline to the given cluster GraphQL ID.
+- `color` (String) A color hex code to represent this pipeline.
 - `default_branch` (String) Default branch of the pipeline.
 - `default_timeout_in_minutes` (Number) Set pipeline wide timeout for command steps.
 - `description` (String) Description for the pipeline. Can include emoji 🙌.
+- `emoji` (String) An emoji that represents this pipeline.
 - `maximum_timeout_in_minutes` (Number) Set pipeline wide maximum timeout for command steps.
 - `provider_settings` (Attributes) Control settings depending on the VCS provider used in `repository`. (see [below for nested schema](#nestedatt--provider_settings))
 - `skip_intermediate_builds` (Boolean) Whether to skip queued builds if a new commit is pushed to a matching branch.

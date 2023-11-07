@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- SUP-1534: Color/Emoji attributes for Pipeline resources [[PR #427](https://github.com/buildkite/terraform-provider-buildkite/pull/427)] @james2791 
+
 ## [v1.0.6](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.0.5...v1.0.6)
 
 - SUP-1514 Change boolean flag to pointer [[PR #426](https://github.com/buildkite/terraform-provider-buildkite/pull/426)] @jradtilbrook
