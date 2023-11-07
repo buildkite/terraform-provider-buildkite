@@ -1,5 +1,9 @@
 # Changelog
- 
+
+## Unreleased
+
+- SUP-1534: Color/Emoji attributes for Pipeline resources [[PR #427](https://github.com/buildkite/terraform-provider-buildkite/pull/427)] @james2791 
+
 ## [v1.0.4](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.0.3...v1.0.4)
 
 - SUP-1492 Fix cluster queue description pointer [[PR #418](https://github.com/buildkite/terraform-provider-buildkite/pull/418)] @jradtilbrook
