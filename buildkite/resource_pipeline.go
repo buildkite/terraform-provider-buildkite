@@ -115,7 +115,7 @@ type providerSettingsModel struct {
 
 type pipelineResource struct {
 	client          *Client
-	archiveOnDelete bool
+	archiveOnDelete *bool
 }
 
 type pipelineResponse interface {
@@ -141,7 +141,7 @@ type pipelineResponse interface {
 	GetWebhookURL() string
 }
 
-func newPipelineResource(archiveOnDelete bool) func() resource.Resource {
+func newPipelineResource(archiveOnDelete *bool) func() resource.Resource {
 	return func() resource.Resource {
 		return &pipelineResource{
 			archiveOnDelete: archiveOnDelete,
@@ -248,7 +248,7 @@ func (p *pipelineResource) Delete(ctx context.Context, req resource.DeleteReques
 		return
 	}
 
-	if p.archiveOnDelete {
+	if *p.archiveOnDelete {
 		log.Printf("Pipeline %s set to archive on delete. Archiving...", state.Name.ValueString())
 
 		err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
