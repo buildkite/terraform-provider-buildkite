@@ -9,10 +9,12 @@ fragment PipelineValues on Pipeline {
         # @genqlient(pointer: true)
         id
     }
+    # @genqlient(pointer: true)
     color
     defaultBranch
     # @genqlient(pointer: true)
     defaultTimeoutInMinutes
+    # @genqlient(pointer: true)
     emoji
     # @genqlient(pointer: true)
     maximumTimeoutInMinutes
@@ -41,6 +43,8 @@ query getPipeline($slug: ID!) {
 
 # @genqlient(for: "PipelineCreateInput.branchConfiguration", pointer: true)
 # @genqlient(for: "PipelineCreateInput.clusterId", pointer: true)
+# @genqlient(for: "PipelineCreateInput.color", pointer: true)
+# @genqlient(for: "PipelineCreateInput.emoji", pointer: true)
 # @genqlient(for: "PipelineCreateInput.nextBuildNumber", omitempty: true)
 # @genqlient(for: "PipelineCreateInput.pipelineTemplateId", omitempty: true)
 # @genqlient(for: "PipelineCreateInput.visibility", omitempty: true)
@@ -57,6 +61,8 @@ mutation createPipeline(
 }
 
 # @genqlient(for: "PipelineUpdateInput.clusterId", pointer: true)
+# @genqlient(for: "PipelineUpdateInput.color", pointer: true)
+# @genqlient(for: "PipelineUpdateInput.emoji", pointer: true)
 # @genqlient(for: "PipelineUpdateInput.visibility", omitempty: true)
 # @genqlient(for: "PipelineUpdateInput.branchConfiguration", pointer:true)
 # @genqlient(for: "PipelineUpdateInput.pipelineTemplateId", omitempty: true)

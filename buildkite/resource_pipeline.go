@@ -125,12 +125,12 @@ type pipelineResponse interface {
 	GetCancelIntermediateBuilds() bool
 	GetCancelIntermediateBuildsBranchFilter() string
 	GetCluster() PipelineValuesCluster
-	GetColor() string
+	GetColor() *string
 	GetDefaultBranch() string
 	GetDefaultTimeoutInMinutes() *int
 	GetMaximumTimeoutInMinutes() *int
 	GetDescription() string
-	GetEmoji() string
+	GetEmoji() *string
 	GetName() string
 	GetRepository() PipelineValuesRepository
 	GetSkipIntermediateBuilds() bool
@@ -176,10 +176,10 @@ func (p *pipelineResource) Create(ctx context.Context, req resource.CreateReques
 		CancelIntermediateBuilds:             plan.CancelIntermediateBuilds.ValueBool(),
 		CancelIntermediateBuildsBranchFilter: plan.CancelIntermediateBuildsBranchFilter.ValueString(),
 		ClusterId:                            plan.ClusterId.ValueStringPointer(),
-		Color:                                plan.Color.ValueString(),
+		Color:                                plan.Color.ValueStringPointer(),
 		DefaultBranch:                        plan.DefaultBranch.ValueString(),
 		DefaultTimeoutInMinutes:              defaultTimeoutInMinutes,
-		Emoji:                                plan.Emoji.ValueString(),
+		Emoji:                                plan.Emoji.ValueStringPointer(),
 		MaximumTimeoutInMinutes:              maxTimeoutInMinutes,
 		Description:                          plan.Description.ValueString(),
 		Name:                                 plan.Name.ValueString(),
@@ -631,11 +631,11 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 		BranchConfiguration:                  plan.BranchConfiguration.ValueStringPointer(),
 		CancelIntermediateBuilds:             plan.CancelIntermediateBuilds.ValueBool(),
 		CancelIntermediateBuildsBranchFilter: plan.CancelIntermediateBuildsBranchFilter.ValueString(),
-		Color:                                plan.Color.ValueString(),
+		Color:                                plan.Color.ValueStringPointer(),
 		ClusterId:                            plan.ClusterId.ValueStringPointer(),
 		DefaultBranch:                        plan.DefaultBranch.ValueString(),
 		DefaultTimeoutInMinutes:              defaultTimeoutInMinutes,
-		Emoji:                                plan.Emoji.ValueString(),
+		Emoji:                                plan.Emoji.ValueStringPointer(),
 		MaximumTimeoutInMinutes:              maxTimeoutInMinutes,
 		Description:                          plan.Description.ValueString(),
 		Id:                                   plan.Id.ValueString(),
@@ -702,11 +702,11 @@ func setPipelineModel(model *pipelineResourceModel, data pipelineResponse) {
 	model.CancelIntermediateBuilds = types.BoolValue(data.GetCancelIntermediateBuilds())
 	model.CancelIntermediateBuildsBranchFilter = types.StringValue(data.GetCancelIntermediateBuildsBranchFilter())
 	model.ClusterId = types.StringPointerValue(data.GetCluster().Id)
-	model.Color = types.StringValue(data.GetColor())
+	model.Color = types.StringPointerValue(data.GetColor())
 	model.DefaultBranch = types.StringValue(data.GetDefaultBranch())
 	model.DefaultTimeoutInMinutes = types.Int64PointerValue(defaultTimeoutInMinutes)
 	model.Description = types.StringValue(data.GetDescription())
-	model.Emoji = types.StringValue(data.GetEmoji())
+	model.Emoji = types.StringPointerValue(data.GetEmoji())
 	model.Id = types.StringValue(data.GetId())
 	model.MaximumTimeoutInMinutes = types.Int64PointerValue(maximumTimeoutInMinutes)
 	model.Name = types.StringValue(data.GetName())
