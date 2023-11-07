@@ -161,9 +161,11 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 				allow_rebuilds = false
 				cancel_intermediate_builds = true
 				cancel_intermediate_builds_branch_filter = "!main"
+				color = "#ebd8f0"
 				branch_configuration = "main"
 				default_branch = "main"
 				default_timeout_in_minutes = 20
+				emoji = ":buildkite:"
 				maximum_timeout_in_minutes = 30
 				description = "terraform test"
 				skip_intermediate_builds = true
@@ -200,10 +202,12 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "cancel_intermediate_builds", "true"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "cancel_intermediate_builds_branch_filter", "!main"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "branch_configuration", "main"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "color", "#ebd8f0"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "default_branch", "main"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "default_timeout_in_minutes", "20"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "maximum_timeout_in_minutes", "30"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "description", "terraform test"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "emoji", ":buildkite:"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "skip_intermediate_builds", "true"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "skip_intermediate_builds_branch_filter", "!main"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.trigger_mode", "code"),

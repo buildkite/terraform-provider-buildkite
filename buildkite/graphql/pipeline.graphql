@@ -9,9 +9,11 @@ fragment PipelineValues on Pipeline {
         # @genqlient(pointer: true)
         id
     }
+    color
     defaultBranch
     # @genqlient(pointer: true)
     defaultTimeoutInMinutes
+    emoji
     # @genqlient(pointer: true)
     maximumTimeoutInMinutes
     description
