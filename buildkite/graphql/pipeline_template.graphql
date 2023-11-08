@@ -1,0 +1,75 @@
+fragment PipelineTemplateValues on PipelineTemplate {
+    id
+    uuid
+    available
+	configuration
+    # @genqlient(pointer: true)
+	description
+	name
+}
+
+mutation createPipelineTemplate(
+    $organizationId: ID!, 
+    $name: String!,
+    $configuration: String!,
+    # @genqlient(pointer: true)
+    $description: String,
+    # @genqlient(omitempty: true)
+    $available: Boolean
+) {
+    pipelineTemplateCreate(
+        input: {
+            organizationId: $organizationId
+            name: $name,
+            configuration: $configuration
+            description: $description
+            available: $available
+        }
+    ) {
+        pipelineTemplate {
+            ...PipelineTemplateValues
+        }
+    }
+}
+
+mutation updatePipelineTemplate(
+    $organizationId: ID!, 
+    $id: ID!,
+    # @genqlient(omitempty: true)
+    $name: String,
+    # @genqlient(omitempty: true)
+    $configuration: String,
+    # @genqlient(omitempty: true)
+    $description: String,
+    # @genqlient(omitempty: true)
+    $available: Boolean
+) {
+    pipelineTemplateUpdate(
+        input: {
+            organizationId: $organizationId
+            id: $id
+            name: $name,
+            configuration: $configuration
+            description: $description
+            available: $available
+        }
+    ) {
+        pipelineTemplate {
+            ...PipelineTemplateValues
+        }
+    }
+}
+
+mutation deletePipelineTemplate(
+    $organizationId: ID!, 
+    $id: ID!
+) {
+    pipelineTemplateDelete(
+        input: {
+            organizationId: $organizationId
+            id: $id
+        }
+     ) {
+        clientMutationId
+    }
+}
