@@ -34,12 +34,12 @@ resource "buildkite_pipeline_template" "template_full" {
 
 ### Required
 
+- `configuration` (String) The YAML step configuration for the pipeline template.
 - `name` (String) The name of the pipeline template.
 
 ### Optional
 
 - `available` (Boolean) If the pipeline template is available for assignment by non admin users.
-- `configuration` (String) The YAML step configuration for the pipeline template.
 - `description` (String) A description for the pipeline template.
 
 ### Read-Only

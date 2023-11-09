@@ -73,7 +73,7 @@ func (PipelineTemplateResource) Schema(ctx context.Context, req resource.SchemaR
 				MarkdownDescription: "If the pipeline template is available for assignment by non admin users. ",
 			},
 			"configuration": resource_schema.StringAttribute{
-				Optional:            true,
+				Required:            true,
 				MarkdownDescription: "The YAML step configuration for the pipeline template. ",
 			},
 			"description": resource_schema.StringAttribute{
