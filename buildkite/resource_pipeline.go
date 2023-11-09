@@ -662,7 +662,10 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 	})
 
 	if err != nil {
-		resp.Diagnostics.AddError("Unable to update pipeline %s", state.Name.ValueString())
+		resp.Diagnostics.AddError(
+			"Unable to update Pipeline",
+			fmt.Sprintf("Unable to update Pipeline: %s", err.Error()),
+		)
 		return
 	}
 
