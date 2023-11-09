@@ -16,7 +16,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
-type PipelineTemplateResourceModel struct {
+type pipelineTemplateResourceModel struct {
 	ID            types.String `tfsdk:"id"`
 	UUID          types.String `tfsdk:"uuid"`
 	Available     types.Bool   `tfsdk:"available"`
@@ -25,19 +25,19 @@ type PipelineTemplateResourceModel struct {
 	Name          types.String `tfsdk:"name"`
 }
 
-type PipelineTemplateResource struct {
+type pipelineTemplateResource struct {
 	client *Client
 }
 
-func NewPipelineTemplateResource() resource.Resource {
-	return &PipelineTemplateResource{}
+func newPipelineTemplateResource() resource.Resource {
+	return &pipelineTemplateResource{}
 }
 
-func (PipelineTemplateResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
+func (pipelineTemplateResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
 	resp.TypeName = req.ProviderTypeName + "_pipeline_template"
 }
 
-func (pt *PipelineTemplateResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
+func (pt *pipelineTemplateResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
 	if req.ProviderData == nil {
 		return
 	}
@@ -45,7 +45,7 @@ func (pt *PipelineTemplateResource) Configure(ctx context.Context, req resource.
 	pt.client = req.ProviderData.(*Client)
 }
 
-func (PipelineTemplateResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
+func (pipelineTemplateResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = resource_schema.Schema{
 		MarkdownDescription: heredoc.Doc(`
 			This resource allows for standardized step configurations that can be used within various pipelines of an organization.
@@ -88,8 +88,8 @@ func (PipelineTemplateResource) Schema(ctx context.Context, req resource.SchemaR
 	}
 }
 
-func (pt *PipelineTemplateResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	var plan, state PipelineTemplateResourceModel
+func (pt *pipelineTemplateResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	var plan, state pipelineTemplateResourceModel
 
 	diags := req.Plan.Get(ctx, &plan)
 	resp.Diagnostics.Append(diags...)
@@ -140,8 +140,8 @@ func (pt *PipelineTemplateResource) Create(ctx context.Context, req resource.Cre
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
-func (pt *PipelineTemplateResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var state PipelineTemplateResourceModel
+func (pt *pipelineTemplateResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	var state pipelineTemplateResourceModel
 
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 
@@ -195,12 +195,12 @@ func (pt *PipelineTemplateResource) Read(ctx context.Context, req resource.ReadR
 	}
 }
 
-func (pt *PipelineTemplateResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+func (pt *pipelineTemplateResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
 
-func (pt *PipelineTemplateResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	var plan, state PipelineTemplateResourceModel
+func (pt *pipelineTemplateResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	var plan, state pipelineTemplateResourceModel
 
 	diagsState := req.State.Get(ctx, &state)
 	diagsPlan := req.Plan.Get(ctx, &plan)
@@ -253,8 +253,8 @@ func (pt *PipelineTemplateResource) Update(ctx context.Context, req resource.Upd
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
-func (pt *PipelineTemplateResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var plan PipelineTemplateResourceModel
+func (pt *pipelineTemplateResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	var plan pipelineTemplateResourceModel
 
 	diags := req.State.Get(ctx, &plan)
 	resp.Diagnostics.Append(diags...)
@@ -292,7 +292,7 @@ func (pt *PipelineTemplateResource) Delete(ctx context.Context, req resource.Del
 	}
 }
 
-func updatePipelineTemplateResourceState(ptr *PipelineTemplateResourceModel, ptn getNodeNodePipelineTemplate) {
+func updatePipelineTemplateResourceState(ptr *pipelineTemplateResourceModel, ptn getNodeNodePipelineTemplate) {
 	ptr.ID = types.StringValue(ptn.Id)
 	ptr.UUID = types.StringValue(ptn.Uuid)
 	ptr.Available = types.BoolValue(ptn.Available)

@@ -1,4 +1,4 @@
-fragment PipelineTemplateValues on PipelineTemplate {
+fragment PipelineTemplateFields on PipelineTemplate {
     id
     uuid
     available
@@ -27,7 +27,7 @@ mutation createPipelineTemplate(
         }
     ) {
         pipelineTemplate {
-            ...PipelineTemplateValues
+            ...PipelineTemplateFields
         }
     }
 }
@@ -55,7 +55,7 @@ mutation updatePipelineTemplate(
         }
     ) {
         pipelineTemplate {
-            ...PipelineTemplateValues
+            ...PipelineTemplateFields
         }
     }
 }

@@ -46,7 +46,7 @@ func TestAccBuildkitePipelineTemplateResource(t *testing.T) {
 
 	t.Run("creates a pipeline template with required attributes", func(t *testing.T) {
 		randName := acctest.RandString(12)
-		var ptr PipelineTemplateResourceModel
+		var ptr pipelineTemplateResourceModel
 
 		check := resource.ComposeAggregateTestCheckFunc(
 			// Confirm the pipeline template exists in the buildkite API
@@ -75,7 +75,7 @@ func TestAccBuildkitePipelineTemplateResource(t *testing.T) {
 
 	t.Run("creates a pipeline template with all attributes", func(t *testing.T) {
 		randName := acctest.RandString(12)
-		var ptr PipelineTemplateResourceModel
+		var ptr pipelineTemplateResourceModel
 
 		check := resource.ComposeAggregateTestCheckFunc(
 			// Confirm the pipeline template exists in the buildkite API
@@ -106,7 +106,7 @@ func TestAccBuildkitePipelineTemplateResource(t *testing.T) {
 
 	t.Run("updates a pipeline template", func(t *testing.T) {
 		randName := acctest.RandString(12)
-		var ptr PipelineTemplateResourceModel
+		var ptr pipelineTemplateResourceModel
 
 		check := resource.ComposeAggregateTestCheckFunc(
 			// Confirm the pipeline template exists in the buildkite API
@@ -150,7 +150,7 @@ func TestAccBuildkitePipelineTemplateResource(t *testing.T) {
 
 	t.Run("imports a pipeline template", func(t *testing.T) {
 		randName := acctest.RandString(12)
-		var ptr PipelineTemplateResourceModel
+		var ptr pipelineTemplateResourceModel
 
 		check := resource.ComposeAggregateTestCheckFunc(
 			// Confirm the pipeline template exists in the buildkite API
@@ -185,7 +185,7 @@ func TestAccBuildkitePipelineTemplateResource(t *testing.T) {
 	})
 }
 
-func testAccCheckPipelineTemplateExists(ptr *PipelineTemplateResourceModel, name string) resource.TestCheckFunc {
+func testAccCheckPipelineTemplateExists(ptr *pipelineTemplateResourceModel, name string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[name]
 
@@ -214,7 +214,7 @@ func testAccCheckPipelineTemplateExists(ptr *PipelineTemplateResourceModel, name
 	}
 }
 
-func testAccCheckPipelineTemplateRemoteValues(ptr *PipelineTemplateResourceModel, name string, available bool) resource.TestCheckFunc {
+func testAccCheckPipelineTemplateRemoteValues(ptr *pipelineTemplateResourceModel, name string, available bool) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 
 		if ptr.Name.ValueString() != name {
