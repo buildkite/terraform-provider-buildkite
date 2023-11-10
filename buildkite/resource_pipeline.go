@@ -206,7 +206,10 @@ func (p *pipelineResource) Create(ctx context.Context, req resource.CreateReques
 	})
 
 	if err != nil {
-		resp.Diagnostics.AddError("Failed to create pipeline", err.Error())
+		resp.Diagnostics.AddError(
+			"Failed to create pipeline",
+			fmt.Sprintf("Failed to create pipeline: %s", err.Error()),
+		)
 		return
 	}
 	log.Printf("Successfully created pipeline with id '%s'.", response.PipelineCreate.Pipeline.Id)
@@ -256,7 +259,10 @@ func (p *pipelineResource) Delete(ctx context.Context, req resource.DeleteReques
 			return retryContextError(err)
 		})
 		if err != nil {
-			resp.Diagnostics.AddError("Could not archive pipeline", err.Error())
+			resp.Diagnostics.AddError(
+				"Could not archive pipeline",
+				fmt.Sprintf("Could not archive pipeline %s", err.Error()),
+			)
 		}
 		return
 	}
@@ -268,7 +274,10 @@ func (p *pipelineResource) Delete(ctx context.Context, req resource.DeleteReques
 	})
 
 	if err != nil {
-		resp.Diagnostics.AddError("Could not delete pipeline", err.Error())
+		resp.Diagnostics.AddError(
+			"Could not delete pipeline",
+			fmt.Sprintf("Could not delete pipeline: %s", err.Error()),
+		)
 	}
 }
 
@@ -662,7 +671,10 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 	})
 
 	if err != nil {
-		resp.Diagnostics.AddError("Unable to update pipeline %s", state.Name.ValueString())
+		resp.Diagnostics.AddError(
+			"Unable to update Pipeline",
+			fmt.Sprintf("Unable to update Pipeline: %s", err.Error()),
+		)
 		return
 	}
 
