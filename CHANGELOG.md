@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- SUP-1540: Diagnostic error addition standardisation [[PR #431](https://github.com/buildkite/terraform-provider-buildkite/pull/431)] @james2791 
 - SUP-1534: Color/Emoji attributes for Pipeline resources [[PR #427](https://github.com/buildkite/terraform-provider-buildkite/pull/427)] @james2791 
 
 ## [v1.0.6](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.0.5...v1.0.6)
