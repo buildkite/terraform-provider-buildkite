@@ -117,7 +117,48 @@ func (ob *organizationBannerResource) Create(ctx context.Context, req resource.C
 }
 
 func (ob *organizationBannerResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	var state organizationBannerResourceModel
 
+	diags := req.State.Get(ctx, &state)
+	resp.Diagnostics.Append(diags...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	timeout, diags := ob.client.timeouts.Read(ctx, DefaultTimeout)
+	resp.Diagnostics.Append(diags...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	var r *getOrganiztionBannerResponse
+	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+		var err error
+
+		log.Printf("Getting organization banner %s ...", state.ID.ValueString())
+		r, err = getOrganiztionBanner(ctx,
+			ob.client.genqlient,
+			ob.client.organization,
+		)
+
+		return retryContextError(err)
+	})
+
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Unable to read organization banner",
+			fmt.Sprintf("Unable to read organization banner: %s", err.Error()),
+		)
+		return
+	}
+
+	log.Printf("Found organization banner %s", state.ID.ValueString())
+	// Update organizationBannerResourceModel with the first element in the response Edges (only one banner can exist)
+	updateOrganizationBannerResource(r.Organization.Banners.Edges[0].Node, &state)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+	return
 }
 
 func (ob *organizationBannerResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
@@ -204,4 +245,10 @@ func (ob *organizationBannerResource) Delete(ctx context.Context, req resource.D
 		)
 		return
 	}
+}
+
+func updateOrganizationBannerResource(obn getOrganiztionBannerOrganizationBannersOrganizationBannerConnectionEdgesOrganizationBannerEdgeNodeOrganizationBanner, ob *organizationBannerResourceModel) {
+	ob.ID = types.StringValue(obn.Id)
+	ob.UUID = types.StringValue(obn.Uuid)
+	ob.Message = types.StringValue(obn.Message)
 }
