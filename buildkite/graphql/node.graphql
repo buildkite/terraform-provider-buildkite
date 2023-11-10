@@ -5,6 +5,9 @@ query getNode(
         ... on Pipeline {
             ...PipelineValues
         }
+        ... on PipelineTemplate {
+            ...PipelineTemplateFields
+        }
         ... on TeamMember {
             ...TeamMemberValues
         }
