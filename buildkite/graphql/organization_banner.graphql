@@ -1,0 +1,44 @@
+fragment OrganizationBannerFields on OrganizationBanner {
+    id
+    uuid
+    message
+}
+
+query getOrganiztionBanner($orgSlug: ID!) {
+    organization(slug: $orgSlug) {
+        banners(first: 1) {
+            edges {
+                node {
+                    ...OrganizationBannerFields
+                }
+            }
+        }
+    }
+}
+
+mutation upsertBanner(
+    $organizationId: ID!
+    $message: String!
+) {
+    organizationBannerUpsert(
+        input: { 
+            organizationId: $organizationId, 
+            message: $message
+        }
+    ) {
+        clientMutationId
+        banner {
+            ...OrganizationBannerFields
+        }
+    }
+}
+
+mutation deleteBanner($organizationId: ID!) {
+    organizationBannerDelete(
+        input: { 
+            organizationId: $organizationId
+        }
+    ) {
+        clientMutationId
+    }
+}
