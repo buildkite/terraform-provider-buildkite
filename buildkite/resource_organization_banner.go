@@ -2,25 +2,22 @@ package buildkite
 
 import (
 	"context"
-	//"fmt"
-	//"log"
-	//"strings"
+	"fmt"
+	"log"
 
 	"github.com/MakeNowJust/heredoc"
-	//"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	resource_schema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	//"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
 type organizationBannerResourceModel struct {
-	ID          types.String `tfsdk:"id"`
-	UUID        types.String `tfsdk:"uuid"`
-	Message     types.String `tfsdk:"message"`
-
+	ID      types.String `tfsdk:"id"`
+	UUID    types.String `tfsdk:"uuid"`
+	Message types.String `tfsdk:"message"`
 }
 
 type organizationBannerResource struct {
@@ -74,11 +71,53 @@ func (organizationBannerResource) Schema(ctx context.Context, req resource.Schem
 }
 
 func (ob *organizationBannerResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	
+	var plan, state organizationBannerResourceModel
+
+	diags := req.Plan.Get(ctx, &plan)
+	resp.Diagnostics.Append(diags...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	timeout, diags := ob.client.timeouts.Create(ctx, DefaultTimeout)
+	resp.Diagnostics.Append(diags...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	var r *upsertBannerResponse
+	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+		var err error
+
+		log.Printf("Creating organization banner ...")
+		r, err = upsertBanner(ctx,
+			ob.client.genqlient,
+			ob.client.organizationId,
+			plan.Message.ValueString(),
+		)
+
+		return retryContextError(err)
+	})
+
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Unable to create organization banner",
+			fmt.Sprintf("Unable to create organization banner %s", err.Error()),
+		)
+		return
+	}
+
+	state.ID = types.StringValue(r.OrganizationBannerUpsert.Banner.Id)
+	state.UUID = types.StringValue(r.OrganizationBannerUpsert.Banner.Uuid)
+	state.Message = types.StringValue(r.OrganizationBannerUpsert.Banner.Message)
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
 func (ob *organizationBannerResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	
+
 }
 
 func (ob *organizationBannerResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
@@ -86,9 +125,83 @@ func (ob *organizationBannerResource) ImportState(ctx context.Context, req resou
 }
 
 func (ob *organizationBannerResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	var plan, state organizationBannerResourceModel
 
+	diags := req.Plan.Get(ctx, &plan)
+	resp.Diagnostics.Append(diags...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	timeout, diags := ob.client.timeouts.Update(ctx, DefaultTimeout)
+	resp.Diagnostics.Append(diags...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	var r *upsertBannerResponse
+	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+		var err error
+
+		log.Printf("Updating organization banner %s ...", state.ID.ValueString())
+		r, err = upsertBanner(ctx,
+			ob.client.genqlient,
+			ob.client.organizationId,
+			plan.Message.ValueString(),
+		)
+
+		return retryContextError(err)
+	})
+
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Unable to update organization banner",
+			fmt.Sprintf("Unable to update organization banner %s", err.Error()),
+		)
+		return
+	}
+
+	state.Message = types.StringValue(r.OrganizationBannerUpsert.Banner.Message)
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
 func (ob *organizationBannerResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	var state organizationBannerResourceModel
 
+	diags := req.State.Get(ctx, &state)
+	resp.Diagnostics.Append(diags...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	timeout, diags := ob.client.timeouts.Delete(ctx, DefaultTimeout)
+	resp.Diagnostics.Append(diags...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+		var err error
+
+		log.Printf("Deleting organization banner %s ...", state.ID.ValueString())
+		_, err = deleteBanner(ctx,
+			ob.client.genqlient,
+			ob.client.organizationId,
+		)
+
+		return retryContextError(err)
+	})
+
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Unable to delete organization banner",
+			fmt.Sprintf("Unable to delete organization banner %s", err.Error()),
+		)
+		return
+	}
 }
