@@ -3,10 +3,10 @@ query getNode(
 ) {
     node(id: $id){
         ... on Pipeline {
-            ...PipelineValues
+            ...PipelineFields
         }
         ... on TeamMember {
-            ...TeamMemberValues
+            ...TeamMemberFields
         }
         ... on Team {
             ...TeamFields

@@ -37,7 +37,7 @@ func TestAccBuildkiteClusterQueueResource(t *testing.T) {
 	}
 
 	t.Run("creates a cluster queue", func(t *testing.T) {
-		var cq ClusterQueueResourceModel
+		var cq clusterQueueResourceModel
 		clusterName := acctest.RandString(10)
 		queueKey := acctest.RandString(10)
 		queueDesc := acctest.RandString(10)
@@ -76,7 +76,7 @@ func TestAccBuildkiteClusterQueueResource(t *testing.T) {
 	})
 
 	t.Run("updates a cluster queue", func(t *testing.T) {
-		var cq ClusterQueueResourceModel
+		var cq clusterQueueResourceModel
 		clusterName := acctest.RandString(10)
 		queueKey := acctest.RandString(10)
 		queueDesc := acctest.RandString(10)
@@ -120,7 +120,7 @@ func TestAccBuildkiteClusterQueueResource(t *testing.T) {
 	})
 
 	t.Run("imports a cluster queue", func(t *testing.T) {
-		var cq ClusterQueueResourceModel
+		var cq clusterQueueResourceModel
 		clusterName := acctest.RandString(10)
 		queueKey := acctest.RandString(10)
 		queueDesc := acctest.RandString(10)
@@ -154,7 +154,7 @@ func TestAccBuildkiteClusterQueueResource(t *testing.T) {
 	})
 }
 
-func testAccCheckClusterQueueExists(resourceName string, clusterQueueResourceModel *ClusterQueueResourceModel) resource.TestCheckFunc {
+func testAccCheckClusterQueueExists(resourceName string, clusterQueueResourceModel *clusterQueueResourceModel) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		resourceState, ok := s.RootModule().Resources[resourceName]
 
@@ -196,7 +196,7 @@ func testAccCheckClusterQueueExists(resourceName string, clusterQueueResourceMod
 	}
 }
 
-func testAccCheckClusterQueueRemoteValues(cq *ClusterQueueResourceModel, description, key string) resource.TestCheckFunc {
+func testAccCheckClusterQueueRemoteValues(cq *clusterQueueResourceModel, description, key string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 
 		if cq.Key.ValueString() != key {
@@ -211,7 +211,7 @@ func testAccCheckClusterQueueRemoteValues(cq *ClusterQueueResourceModel, descrip
 	}
 }
 
-func testAccGetImportClusterQueueId(cq *ClusterQueueResourceModel) resource.ImportStateIdFunc {
+func testAccGetImportClusterQueueId(cq *clusterQueueResourceModel) resource.ImportStateIdFunc {
 	return func(s *terraform.State) (string, error) {
 		// Obtain trimmed cluster ID and cluster UUID
 		clusterUuid := strings.Trim(cq.Id.ValueString(), "\"")

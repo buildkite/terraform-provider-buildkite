@@ -113,10 +113,10 @@ func userAgent(providerName, providerVersion, tfVersion string) string {
 func (*terraformProvider) DataSources(context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
 		newClusterDatasource,
-		newOrganizationDatasource,
 		newMetaDatasource,
-		newTeamDatasource,
+		newOrganizationDatasource,
 		newPipelineDatasource,
+		newTeamDatasource,
 	}
 }
 
@@ -127,18 +127,18 @@ func (tf *terraformProvider) Metadata(ctx context.Context, req provider.Metadata
 
 func (tf *terraformProvider) Resources(context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
-		NewClusterQueueResource,
-		NewPipelineScheduleResource,
 		newAgentTokenResource,
 		newClusterAgentTokenResource,
+		newClusterQueueResource,
 		newClusterResource,
 		newDefaultQueueClusterResource,
 		newOrganizationResource,
+		newPipelineScheduleResource,
+		newPipelineTeamResource,
 		newPipelineResource(&tf.archivePipelineOnDelete),
 		newTeamMemberResource,
 		newTeamResource,
 		newTestSuiteResource,
-		newPipelineTeamResource,
 		newTestSuiteTeamResource,
 	}
 }

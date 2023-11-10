@@ -14,11 +14,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
-type ClusterAgentToken struct {
+type clusterAgentToken struct {
 	client *Client
 }
 
-type ClusterAgentTokenResourceModel struct {
+type clusterAgentTokenResourceModel struct {
 	Id          types.String `tfsdk:"id"`
 	Uuid        types.String `tfsdk:"uuid"`
 	Description types.String `tfsdk:"description"`
@@ -28,21 +28,21 @@ type ClusterAgentTokenResourceModel struct {
 }
 
 func newClusterAgentTokenResource() resource.Resource {
-	return &ClusterAgentToken{}
+	return &clusterAgentToken{}
 }
 
-func (ct *ClusterAgentToken) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
+func (ct *clusterAgentToken) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
 	resp.TypeName = req.ProviderTypeName + "_cluster_agent_token"
 }
 
-func (ct *ClusterAgentToken) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
+func (ct *clusterAgentToken) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
 	if req.ProviderData == nil {
 		return
 	}
 	ct.client = req.ProviderData.(*Client)
 }
 
-func (ct *ClusterAgentToken) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
+func (ct *clusterAgentToken) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		MarkdownDescription: "A Cluster Agent Token is a token used to connect an agent to a cluster in Buildkite.",
 		Attributes: map[string]resource_schema.Attribute{
@@ -84,8 +84,8 @@ func (ct *ClusterAgentToken) Schema(_ context.Context, _ resource.SchemaRequest,
 	}
 }
 
-func (ct *ClusterAgentToken) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	var plan, state ClusterAgentTokenResourceModel
+func (ct *clusterAgentToken) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	var plan, state clusterAgentTokenResourceModel
 
 	diags := req.Plan.Get(ctx, &plan)
 	resp.Diagnostics.Append(diags...)
@@ -134,8 +134,8 @@ func (ct *ClusterAgentToken) Create(ctx context.Context, req resource.CreateRequ
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
-func (ct *ClusterAgentToken) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var state ClusterAgentTokenResourceModel
+func (ct *clusterAgentToken) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	var state clusterAgentTokenResourceModel
 
 	diags := req.State.Get(ctx, &state)
 	resp.Diagnostics.Append(diags...)
@@ -183,8 +183,8 @@ func (ct *ClusterAgentToken) Read(ctx context.Context, req resource.ReadRequest,
 	}
 }
 
-func (ct *ClusterAgentToken) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	var state, plan ClusterAgentTokenResourceModel
+func (ct *clusterAgentToken) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	var state, plan clusterAgentTokenResourceModel
 
 	diagsState := req.State.Get(ctx, &state)
 	diagsPlan := req.Plan.Get(ctx, &plan)
@@ -231,8 +231,8 @@ func (ct *ClusterAgentToken) Update(ctx context.Context, req resource.UpdateRequ
 
 }
 
-func (ct *ClusterAgentToken) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var plan ClusterAgentTokenResourceModel
+func (ct *clusterAgentToken) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	var plan clusterAgentTokenResourceModel
 
 	diags := req.State.Get(ctx, &plan)
 	resp.Diagnostics.Append(diags...)

@@ -396,6 +396,158 @@ func (v *PipelineCreateInput) GetTags() []PipelineTagInput { return v.Tags }
 // GetBranchConfiguration returns PipelineCreateInput.BranchConfiguration, and is useful for accessing the field via an interface.
 func (v *PipelineCreateInput) GetBranchConfiguration() *string { return v.BranchConfiguration }
 
+// PipelineFields includes the GraphQL fields of Pipeline requested by the fragment PipelineFields.
+// The GraphQL type's documentation follows.
+//
+// A pipeline
+type PipelineFields struct {
+	Id string `json:"id"`
+	// Whether existing builds can be rebuilt as new builds.
+	AllowRebuilds bool `json:"allowRebuilds"`
+	// A branch filter pattern to limit which pushed branches trigger builds on this pipeline.
+	BranchConfiguration *string `json:"branchConfiguration"`
+	// When a new build is created on a branch, any previous builds that are running on the same branch will be automatically cancelled
+	CancelIntermediateBuilds bool `json:"cancelIntermediateBuilds"`
+	// Limit which branches build cancelling applies to, for example `!main` will ensure that the main branch won't have it's builds automatically cancelled.
+	CancelIntermediateBuildsBranchFilter string                `json:"cancelIntermediateBuildsBranchFilter"`
+	Cluster                              PipelineFieldsCluster `json:"cluster"`
+	// The color of the pipeline
+	Color *string `json:"color"`
+	// The default branch for this pipeline
+	DefaultBranch string `json:"defaultBranch"`
+	// The default timeout in minutes for all command steps in this pipeline. This can still be overridden in any command step
+	DefaultTimeoutInMinutes *int `json:"defaultTimeoutInMinutes"`
+	// The emoji of the pipeline
+	Emoji *string `json:"emoji"`
+	// The maximum timeout in minutes for all command steps in this pipeline. Any command step without a timeout or with a timeout greater than this value will be set to this value.
+	MaximumTimeoutInMinutes *int `json:"maximumTimeoutInMinutes"`
+	// The short description of the pipeline
+	Description string `json:"description"`
+	// The name of the pipeline
+	Name string `json:"name"`
+	// The repository for this pipeline
+	Repository PipelineFieldsRepository `json:"repository"`
+	// When a new build is created on a branch, any previous builds that haven't yet started on the same branch will be automatically marked as skipped.
+	SkipIntermediateBuilds bool `json:"skipIntermediateBuilds"`
+	// Limit which branches build skipping applies to, for example `!main` will ensure that the main branch won't have it's builds automatically skipped.
+	SkipIntermediateBuildsBranchFilter string `json:"skipIntermediateBuildsBranchFilter"`
+	// The slug of the pipeline
+	Slug  string                           `json:"slug"`
+	Steps PipelineFieldsStepsPipelineSteps `json:"steps"`
+	// Tags that have been given to this pipeline
+	Tags []PipelineFieldsTagsPipelineTag `json:"tags"`
+	// The URL to use in your repository settings for commit webhooks
+	WebhookURL string `json:"webhookURL"`
+}
+
+// GetId returns PipelineFields.Id, and is useful for accessing the field via an interface.
+func (v *PipelineFields) GetId() string { return v.Id }
+
+// GetAllowRebuilds returns PipelineFields.AllowRebuilds, and is useful for accessing the field via an interface.
+func (v *PipelineFields) GetAllowRebuilds() bool { return v.AllowRebuilds }
+
+// GetBranchConfiguration returns PipelineFields.BranchConfiguration, and is useful for accessing the field via an interface.
+func (v *PipelineFields) GetBranchConfiguration() *string { return v.BranchConfiguration }
+
+// GetCancelIntermediateBuilds returns PipelineFields.CancelIntermediateBuilds, and is useful for accessing the field via an interface.
+func (v *PipelineFields) GetCancelIntermediateBuilds() bool { return v.CancelIntermediateBuilds }
+
+// GetCancelIntermediateBuildsBranchFilter returns PipelineFields.CancelIntermediateBuildsBranchFilter, and is useful for accessing the field via an interface.
+func (v *PipelineFields) GetCancelIntermediateBuildsBranchFilter() string {
+	return v.CancelIntermediateBuildsBranchFilter
+}
+
+// GetCluster returns PipelineFields.Cluster, and is useful for accessing the field via an interface.
+func (v *PipelineFields) GetCluster() PipelineFieldsCluster { return v.Cluster }
+
+// GetColor returns PipelineFields.Color, and is useful for accessing the field via an interface.
+func (v *PipelineFields) GetColor() *string { return v.Color }
+
+// GetDefaultBranch returns PipelineFields.DefaultBranch, and is useful for accessing the field via an interface.
+func (v *PipelineFields) GetDefaultBranch() string { return v.DefaultBranch }
+
+// GetDefaultTimeoutInMinutes returns PipelineFields.DefaultTimeoutInMinutes, and is useful for accessing the field via an interface.
+func (v *PipelineFields) GetDefaultTimeoutInMinutes() *int { return v.DefaultTimeoutInMinutes }
+
+// GetEmoji returns PipelineFields.Emoji, and is useful for accessing the field via an interface.
+func (v *PipelineFields) GetEmoji() *string { return v.Emoji }
+
+// GetMaximumTimeoutInMinutes returns PipelineFields.MaximumTimeoutInMinutes, and is useful for accessing the field via an interface.
+func (v *PipelineFields) GetMaximumTimeoutInMinutes() *int { return v.MaximumTimeoutInMinutes }
+
+// GetDescription returns PipelineFields.Description, and is useful for accessing the field via an interface.
+func (v *PipelineFields) GetDescription() string { return v.Description }
+
+// GetName returns PipelineFields.Name, and is useful for accessing the field via an interface.
+func (v *PipelineFields) GetName() string { return v.Name }
+
+// GetRepository returns PipelineFields.Repository, and is useful for accessing the field via an interface.
+func (v *PipelineFields) GetRepository() PipelineFieldsRepository { return v.Repository }
+
+// GetSkipIntermediateBuilds returns PipelineFields.SkipIntermediateBuilds, and is useful for accessing the field via an interface.
+func (v *PipelineFields) GetSkipIntermediateBuilds() bool { return v.SkipIntermediateBuilds }
+
+// GetSkipIntermediateBuildsBranchFilter returns PipelineFields.SkipIntermediateBuildsBranchFilter, and is useful for accessing the field via an interface.
+func (v *PipelineFields) GetSkipIntermediateBuildsBranchFilter() string {
+	return v.SkipIntermediateBuildsBranchFilter
+}
+
+// GetSlug returns PipelineFields.Slug, and is useful for accessing the field via an interface.
+func (v *PipelineFields) GetSlug() string { return v.Slug }
+
+// GetSteps returns PipelineFields.Steps, and is useful for accessing the field via an interface.
+func (v *PipelineFields) GetSteps() PipelineFieldsStepsPipelineSteps { return v.Steps }
+
+// GetTags returns PipelineFields.Tags, and is useful for accessing the field via an interface.
+func (v *PipelineFields) GetTags() []PipelineFieldsTagsPipelineTag { return v.Tags }
+
+// GetWebhookURL returns PipelineFields.WebhookURL, and is useful for accessing the field via an interface.
+func (v *PipelineFields) GetWebhookURL() string { return v.WebhookURL }
+
+// PipelineFieldsCluster includes the requested fields of the GraphQL type Cluster.
+type PipelineFieldsCluster struct {
+	Id *string `json:"id"`
+}
+
+// GetId returns PipelineFieldsCluster.Id, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsCluster) GetId() *string { return v.Id }
+
+// PipelineFieldsRepository includes the requested fields of the GraphQL type Repository.
+// The GraphQL type's documentation follows.
+//
+// A repository associated with a pipeline
+type PipelineFieldsRepository struct {
+	// The git URL for this repository
+	Url string `json:"url"`
+}
+
+// GetUrl returns PipelineFieldsRepository.Url, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsRepository) GetUrl() string { return v.Url }
+
+// PipelineFieldsStepsPipelineSteps includes the requested fields of the GraphQL type PipelineSteps.
+// The GraphQL type's documentation follows.
+//
+// Steps defined on a pipeline
+type PipelineFieldsStepsPipelineSteps struct {
+	// A YAML representation of the pipeline steps
+	Yaml string `json:"yaml"`
+}
+
+// GetYaml returns PipelineFieldsStepsPipelineSteps.Yaml, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsStepsPipelineSteps) GetYaml() string { return v.Yaml }
+
+// PipelineFieldsTagsPipelineTag includes the requested fields of the GraphQL type PipelineTag.
+// The GraphQL type's documentation follows.
+//
+// A tag associated with a pipeline
+type PipelineFieldsTagsPipelineTag struct {
+	// The label for this tag
+	Label string `json:"label"`
+}
+
+// GetLabel returns PipelineFieldsTagsPipelineTag.Label, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsTagsPipelineTag) GetLabel() string { return v.Label }
+
 // Repository information for a pipeline
 type PipelineRepositoryInput struct {
 	// Repository information for a pipeline
@@ -675,158 +827,6 @@ func (v *PipelineUpdateInput) GetTags() []PipelineTagInput { return v.Tags }
 // GetBranchConfiguration returns PipelineUpdateInput.BranchConfiguration, and is useful for accessing the field via an interface.
 func (v *PipelineUpdateInput) GetBranchConfiguration() *string { return v.BranchConfiguration }
 
-// PipelineValues includes the GraphQL fields of Pipeline requested by the fragment PipelineValues.
-// The GraphQL type's documentation follows.
-//
-// A pipeline
-type PipelineValues struct {
-	Id string `json:"id"`
-	// Whether existing builds can be rebuilt as new builds.
-	AllowRebuilds bool `json:"allowRebuilds"`
-	// A branch filter pattern to limit which pushed branches trigger builds on this pipeline.
-	BranchConfiguration *string `json:"branchConfiguration"`
-	// When a new build is created on a branch, any previous builds that are running on the same branch will be automatically cancelled
-	CancelIntermediateBuilds bool `json:"cancelIntermediateBuilds"`
-	// Limit which branches build cancelling applies to, for example `!main` will ensure that the main branch won't have it's builds automatically cancelled.
-	CancelIntermediateBuildsBranchFilter string                `json:"cancelIntermediateBuildsBranchFilter"`
-	Cluster                              PipelineValuesCluster `json:"cluster"`
-	// The color of the pipeline
-	Color *string `json:"color"`
-	// The default branch for this pipeline
-	DefaultBranch string `json:"defaultBranch"`
-	// The default timeout in minutes for all command steps in this pipeline. This can still be overridden in any command step
-	DefaultTimeoutInMinutes *int `json:"defaultTimeoutInMinutes"`
-	// The emoji of the pipeline
-	Emoji *string `json:"emoji"`
-	// The maximum timeout in minutes for all command steps in this pipeline. Any command step without a timeout or with a timeout greater than this value will be set to this value.
-	MaximumTimeoutInMinutes *int `json:"maximumTimeoutInMinutes"`
-	// The short description of the pipeline
-	Description string `json:"description"`
-	// The name of the pipeline
-	Name string `json:"name"`
-	// The repository for this pipeline
-	Repository PipelineValuesRepository `json:"repository"`
-	// When a new build is created on a branch, any previous builds that haven't yet started on the same branch will be automatically marked as skipped.
-	SkipIntermediateBuilds bool `json:"skipIntermediateBuilds"`
-	// Limit which branches build skipping applies to, for example `!main` will ensure that the main branch won't have it's builds automatically skipped.
-	SkipIntermediateBuildsBranchFilter string `json:"skipIntermediateBuildsBranchFilter"`
-	// The slug of the pipeline
-	Slug  string                           `json:"slug"`
-	Steps PipelineValuesStepsPipelineSteps `json:"steps"`
-	// Tags that have been given to this pipeline
-	Tags []PipelineValuesTagsPipelineTag `json:"tags"`
-	// The URL to use in your repository settings for commit webhooks
-	WebhookURL string `json:"webhookURL"`
-}
-
-// GetId returns PipelineValues.Id, and is useful for accessing the field via an interface.
-func (v *PipelineValues) GetId() string { return v.Id }
-
-// GetAllowRebuilds returns PipelineValues.AllowRebuilds, and is useful for accessing the field via an interface.
-func (v *PipelineValues) GetAllowRebuilds() bool { return v.AllowRebuilds }
-
-// GetBranchConfiguration returns PipelineValues.BranchConfiguration, and is useful for accessing the field via an interface.
-func (v *PipelineValues) GetBranchConfiguration() *string { return v.BranchConfiguration }
-
-// GetCancelIntermediateBuilds returns PipelineValues.CancelIntermediateBuilds, and is useful for accessing the field via an interface.
-func (v *PipelineValues) GetCancelIntermediateBuilds() bool { return v.CancelIntermediateBuilds }
-
-// GetCancelIntermediateBuildsBranchFilter returns PipelineValues.CancelIntermediateBuildsBranchFilter, and is useful for accessing the field via an interface.
-func (v *PipelineValues) GetCancelIntermediateBuildsBranchFilter() string {
-	return v.CancelIntermediateBuildsBranchFilter
-}
-
-// GetCluster returns PipelineValues.Cluster, and is useful for accessing the field via an interface.
-func (v *PipelineValues) GetCluster() PipelineValuesCluster { return v.Cluster }
-
-// GetColor returns PipelineValues.Color, and is useful for accessing the field via an interface.
-func (v *PipelineValues) GetColor() *string { return v.Color }
-
-// GetDefaultBranch returns PipelineValues.DefaultBranch, and is useful for accessing the field via an interface.
-func (v *PipelineValues) GetDefaultBranch() string { return v.DefaultBranch }
-
-// GetDefaultTimeoutInMinutes returns PipelineValues.DefaultTimeoutInMinutes, and is useful for accessing the field via an interface.
-func (v *PipelineValues) GetDefaultTimeoutInMinutes() *int { return v.DefaultTimeoutInMinutes }
-
-// GetEmoji returns PipelineValues.Emoji, and is useful for accessing the field via an interface.
-func (v *PipelineValues) GetEmoji() *string { return v.Emoji }
-
-// GetMaximumTimeoutInMinutes returns PipelineValues.MaximumTimeoutInMinutes, and is useful for accessing the field via an interface.
-func (v *PipelineValues) GetMaximumTimeoutInMinutes() *int { return v.MaximumTimeoutInMinutes }
-
-// GetDescription returns PipelineValues.Description, and is useful for accessing the field via an interface.
-func (v *PipelineValues) GetDescription() string { return v.Description }
-
-// GetName returns PipelineValues.Name, and is useful for accessing the field via an interface.
-func (v *PipelineValues) GetName() string { return v.Name }
-
-// GetRepository returns PipelineValues.Repository, and is useful for accessing the field via an interface.
-func (v *PipelineValues) GetRepository() PipelineValuesRepository { return v.Repository }
-
-// GetSkipIntermediateBuilds returns PipelineValues.SkipIntermediateBuilds, and is useful for accessing the field via an interface.
-func (v *PipelineValues) GetSkipIntermediateBuilds() bool { return v.SkipIntermediateBuilds }
-
-// GetSkipIntermediateBuildsBranchFilter returns PipelineValues.SkipIntermediateBuildsBranchFilter, and is useful for accessing the field via an interface.
-func (v *PipelineValues) GetSkipIntermediateBuildsBranchFilter() string {
-	return v.SkipIntermediateBuildsBranchFilter
-}
-
-// GetSlug returns PipelineValues.Slug, and is useful for accessing the field via an interface.
-func (v *PipelineValues) GetSlug() string { return v.Slug }
-
-// GetSteps returns PipelineValues.Steps, and is useful for accessing the field via an interface.
-func (v *PipelineValues) GetSteps() PipelineValuesStepsPipelineSteps { return v.Steps }
-
-// GetTags returns PipelineValues.Tags, and is useful for accessing the field via an interface.
-func (v *PipelineValues) GetTags() []PipelineValuesTagsPipelineTag { return v.Tags }
-
-// GetWebhookURL returns PipelineValues.WebhookURL, and is useful for accessing the field via an interface.
-func (v *PipelineValues) GetWebhookURL() string { return v.WebhookURL }
-
-// PipelineValuesCluster includes the requested fields of the GraphQL type Cluster.
-type PipelineValuesCluster struct {
-	Id *string `json:"id"`
-}
-
-// GetId returns PipelineValuesCluster.Id, and is useful for accessing the field via an interface.
-func (v *PipelineValuesCluster) GetId() *string { return v.Id }
-
-// PipelineValuesRepository includes the requested fields of the GraphQL type Repository.
-// The GraphQL type's documentation follows.
-//
-// A repository associated with a pipeline
-type PipelineValuesRepository struct {
-	// The git URL for this repository
-	Url string `json:"url"`
-}
-
-// GetUrl returns PipelineValuesRepository.Url, and is useful for accessing the field via an interface.
-func (v *PipelineValuesRepository) GetUrl() string { return v.Url }
-
-// PipelineValuesStepsPipelineSteps includes the requested fields of the GraphQL type PipelineSteps.
-// The GraphQL type's documentation follows.
-//
-// Steps defined on a pipeline
-type PipelineValuesStepsPipelineSteps struct {
-	// A YAML representation of the pipeline steps
-	Yaml string `json:"yaml"`
-}
-
-// GetYaml returns PipelineValuesStepsPipelineSteps.Yaml, and is useful for accessing the field via an interface.
-func (v *PipelineValuesStepsPipelineSteps) GetYaml() string { return v.Yaml }
-
-// PipelineValuesTagsPipelineTag includes the requested fields of the GraphQL type PipelineTag.
-// The GraphQL type's documentation follows.
-//
-// A tag associated with a pipeline
-type PipelineValuesTagsPipelineTag struct {
-	// The label for this tag
-	Label string `json:"label"`
-}
-
-// GetLabel returns PipelineValuesTagsPipelineTag.Label, and is useful for accessing the field via an interface.
-func (v *PipelineValuesTagsPipelineTag) GetLabel() string { return v.Label }
-
 // The visibility of the pipeline
 type PipelineVisibility string
 
@@ -898,58 +898,58 @@ func (v *TeamFields) GetDefaultMemberRole() string { return v.DefaultMemberRole 
 // GetMembersCanCreatePipelines returns TeamFields.MembersCanCreatePipelines, and is useful for accessing the field via an interface.
 func (v *TeamFields) GetMembersCanCreatePipelines() bool { return v.MembersCanCreatePipelines }
 
-// TeamMemberValues includes the GraphQL fields of TeamMember requested by the fragment TeamMemberValues.
+// TeamMemberFields includes the GraphQL fields of TeamMember requested by the fragment TeamMemberFields.
 // The GraphQL type's documentation follows.
 //
 // An member of a team
-type TeamMemberValues struct {
+type TeamMemberFields struct {
 	Id string `json:"id"`
 	// The public UUID for this team member
 	Uuid string `json:"uuid"`
 	// The team associated with this team member
-	Team TeamMemberValuesTeam `json:"team"`
+	Team TeamMemberFieldsTeam `json:"team"`
 	// The user associated with this team member
-	User TeamMemberValuesUser `json:"user"`
+	User TeamMemberFieldsUser `json:"user"`
 	// The users role within the team
 	Role string `json:"role"`
 }
 
-// GetId returns TeamMemberValues.Id, and is useful for accessing the field via an interface.
-func (v *TeamMemberValues) GetId() string { return v.Id }
+// GetId returns TeamMemberFields.Id, and is useful for accessing the field via an interface.
+func (v *TeamMemberFields) GetId() string { return v.Id }
 
-// GetUuid returns TeamMemberValues.Uuid, and is useful for accessing the field via an interface.
-func (v *TeamMemberValues) GetUuid() string { return v.Uuid }
+// GetUuid returns TeamMemberFields.Uuid, and is useful for accessing the field via an interface.
+func (v *TeamMemberFields) GetUuid() string { return v.Uuid }
 
-// GetTeam returns TeamMemberValues.Team, and is useful for accessing the field via an interface.
-func (v *TeamMemberValues) GetTeam() TeamMemberValuesTeam { return v.Team }
+// GetTeam returns TeamMemberFields.Team, and is useful for accessing the field via an interface.
+func (v *TeamMemberFields) GetTeam() TeamMemberFieldsTeam { return v.Team }
 
-// GetUser returns TeamMemberValues.User, and is useful for accessing the field via an interface.
-func (v *TeamMemberValues) GetUser() TeamMemberValuesUser { return v.User }
+// GetUser returns TeamMemberFields.User, and is useful for accessing the field via an interface.
+func (v *TeamMemberFields) GetUser() TeamMemberFieldsUser { return v.User }
 
-// GetRole returns TeamMemberValues.Role, and is useful for accessing the field via an interface.
-func (v *TeamMemberValues) GetRole() string { return v.Role }
+// GetRole returns TeamMemberFields.Role, and is useful for accessing the field via an interface.
+func (v *TeamMemberFields) GetRole() string { return v.Role }
 
-// TeamMemberValuesTeam includes the requested fields of the GraphQL type Team.
+// TeamMemberFieldsTeam includes the requested fields of the GraphQL type Team.
 // The GraphQL type's documentation follows.
 //
 // An organization team
-type TeamMemberValuesTeam struct {
+type TeamMemberFieldsTeam struct {
 	Id string `json:"id"`
 }
 
-// GetId returns TeamMemberValuesTeam.Id, and is useful for accessing the field via an interface.
-func (v *TeamMemberValuesTeam) GetId() string { return v.Id }
+// GetId returns TeamMemberFieldsTeam.Id, and is useful for accessing the field via an interface.
+func (v *TeamMemberFieldsTeam) GetId() string { return v.Id }
 
-// TeamMemberValuesUser includes the requested fields of the GraphQL type User.
+// TeamMemberFieldsUser includes the requested fields of the GraphQL type User.
 // The GraphQL type's documentation follows.
 //
 // A user
-type TeamMemberValuesUser struct {
+type TeamMemberFieldsUser struct {
 	Id string `json:"id"`
 }
 
-// GetId returns TeamMemberValuesUser.Id, and is useful for accessing the field via an interface.
-func (v *TeamMemberValuesUser) GetId() string { return v.Id }
+// GetId returns TeamMemberFieldsUser.Id, and is useful for accessing the field via an interface.
+func (v *TeamMemberFieldsUser) GetId() string { return v.Id }
 
 // TeamPipelineFields includes the GraphQL fields of TeamPipeline requested by the fragment TeamPipelineFields.
 // The GraphQL type's documentation follows.
@@ -2125,107 +2125,107 @@ func (v *createPipelinePipelineCreatePipelineCreatePayload) GetPipeline() create
 //
 // A pipeline
 type createPipelinePipelineCreatePipelineCreatePayloadPipeline struct {
-	PipelineValues `json:"-"`
+	PipelineFields `json:"-"`
 }
 
 // GetId returns createPipelinePipelineCreatePipelineCreatePayloadPipeline.Id, and is useful for accessing the field via an interface.
 func (v *createPipelinePipelineCreatePipelineCreatePayloadPipeline) GetId() string {
-	return v.PipelineValues.Id
+	return v.PipelineFields.Id
 }
 
 // GetAllowRebuilds returns createPipelinePipelineCreatePipelineCreatePayloadPipeline.AllowRebuilds, and is useful for accessing the field via an interface.
 func (v *createPipelinePipelineCreatePipelineCreatePayloadPipeline) GetAllowRebuilds() bool {
-	return v.PipelineValues.AllowRebuilds
+	return v.PipelineFields.AllowRebuilds
 }
 
 // GetBranchConfiguration returns createPipelinePipelineCreatePipelineCreatePayloadPipeline.BranchConfiguration, and is useful for accessing the field via an interface.
 func (v *createPipelinePipelineCreatePipelineCreatePayloadPipeline) GetBranchConfiguration() *string {
-	return v.PipelineValues.BranchConfiguration
+	return v.PipelineFields.BranchConfiguration
 }
 
 // GetCancelIntermediateBuilds returns createPipelinePipelineCreatePipelineCreatePayloadPipeline.CancelIntermediateBuilds, and is useful for accessing the field via an interface.
 func (v *createPipelinePipelineCreatePipelineCreatePayloadPipeline) GetCancelIntermediateBuilds() bool {
-	return v.PipelineValues.CancelIntermediateBuilds
+	return v.PipelineFields.CancelIntermediateBuilds
 }
 
 // GetCancelIntermediateBuildsBranchFilter returns createPipelinePipelineCreatePipelineCreatePayloadPipeline.CancelIntermediateBuildsBranchFilter, and is useful for accessing the field via an interface.
 func (v *createPipelinePipelineCreatePipelineCreatePayloadPipeline) GetCancelIntermediateBuildsBranchFilter() string {
-	return v.PipelineValues.CancelIntermediateBuildsBranchFilter
+	return v.PipelineFields.CancelIntermediateBuildsBranchFilter
 }
 
 // GetCluster returns createPipelinePipelineCreatePipelineCreatePayloadPipeline.Cluster, and is useful for accessing the field via an interface.
-func (v *createPipelinePipelineCreatePipelineCreatePayloadPipeline) GetCluster() PipelineValuesCluster {
-	return v.PipelineValues.Cluster
+func (v *createPipelinePipelineCreatePipelineCreatePayloadPipeline) GetCluster() PipelineFieldsCluster {
+	return v.PipelineFields.Cluster
 }
 
 // GetColor returns createPipelinePipelineCreatePipelineCreatePayloadPipeline.Color, and is useful for accessing the field via an interface.
 func (v *createPipelinePipelineCreatePipelineCreatePayloadPipeline) GetColor() *string {
-	return v.PipelineValues.Color
+	return v.PipelineFields.Color
 }
 
 // GetDefaultBranch returns createPipelinePipelineCreatePipelineCreatePayloadPipeline.DefaultBranch, and is useful for accessing the field via an interface.
 func (v *createPipelinePipelineCreatePipelineCreatePayloadPipeline) GetDefaultBranch() string {
-	return v.PipelineValues.DefaultBranch
+	return v.PipelineFields.DefaultBranch
 }
 
 // GetDefaultTimeoutInMinutes returns createPipelinePipelineCreatePipelineCreatePayloadPipeline.DefaultTimeoutInMinutes, and is useful for accessing the field via an interface.
 func (v *createPipelinePipelineCreatePipelineCreatePayloadPipeline) GetDefaultTimeoutInMinutes() *int {
-	return v.PipelineValues.DefaultTimeoutInMinutes
+	return v.PipelineFields.DefaultTimeoutInMinutes
 }
 
 // GetEmoji returns createPipelinePipelineCreatePipelineCreatePayloadPipeline.Emoji, and is useful for accessing the field via an interface.
 func (v *createPipelinePipelineCreatePipelineCreatePayloadPipeline) GetEmoji() *string {
-	return v.PipelineValues.Emoji
+	return v.PipelineFields.Emoji
 }
 
 // GetMaximumTimeoutInMinutes returns createPipelinePipelineCreatePipelineCreatePayloadPipeline.MaximumTimeoutInMinutes, and is useful for accessing the field via an interface.
 func (v *createPipelinePipelineCreatePipelineCreatePayloadPipeline) GetMaximumTimeoutInMinutes() *int {
-	return v.PipelineValues.MaximumTimeoutInMinutes
+	return v.PipelineFields.MaximumTimeoutInMinutes
 }
 
 // GetDescription returns createPipelinePipelineCreatePipelineCreatePayloadPipeline.Description, and is useful for accessing the field via an interface.
 func (v *createPipelinePipelineCreatePipelineCreatePayloadPipeline) GetDescription() string {
-	return v.PipelineValues.Description
+	return v.PipelineFields.Description
 }
 
 // GetName returns createPipelinePipelineCreatePipelineCreatePayloadPipeline.Name, and is useful for accessing the field via an interface.
 func (v *createPipelinePipelineCreatePipelineCreatePayloadPipeline) GetName() string {
-	return v.PipelineValues.Name
+	return v.PipelineFields.Name
 }
 
 // GetRepository returns createPipelinePipelineCreatePipelineCreatePayloadPipeline.Repository, and is useful for accessing the field via an interface.
-func (v *createPipelinePipelineCreatePipelineCreatePayloadPipeline) GetRepository() PipelineValuesRepository {
-	return v.PipelineValues.Repository
+func (v *createPipelinePipelineCreatePipelineCreatePayloadPipeline) GetRepository() PipelineFieldsRepository {
+	return v.PipelineFields.Repository
 }
 
 // GetSkipIntermediateBuilds returns createPipelinePipelineCreatePipelineCreatePayloadPipeline.SkipIntermediateBuilds, and is useful for accessing the field via an interface.
 func (v *createPipelinePipelineCreatePipelineCreatePayloadPipeline) GetSkipIntermediateBuilds() bool {
-	return v.PipelineValues.SkipIntermediateBuilds
+	return v.PipelineFields.SkipIntermediateBuilds
 }
 
 // GetSkipIntermediateBuildsBranchFilter returns createPipelinePipelineCreatePipelineCreatePayloadPipeline.SkipIntermediateBuildsBranchFilter, and is useful for accessing the field via an interface.
 func (v *createPipelinePipelineCreatePipelineCreatePayloadPipeline) GetSkipIntermediateBuildsBranchFilter() string {
-	return v.PipelineValues.SkipIntermediateBuildsBranchFilter
+	return v.PipelineFields.SkipIntermediateBuildsBranchFilter
 }
 
 // GetSlug returns createPipelinePipelineCreatePipelineCreatePayloadPipeline.Slug, and is useful for accessing the field via an interface.
 func (v *createPipelinePipelineCreatePipelineCreatePayloadPipeline) GetSlug() string {
-	return v.PipelineValues.Slug
+	return v.PipelineFields.Slug
 }
 
 // GetSteps returns createPipelinePipelineCreatePipelineCreatePayloadPipeline.Steps, and is useful for accessing the field via an interface.
-func (v *createPipelinePipelineCreatePipelineCreatePayloadPipeline) GetSteps() PipelineValuesStepsPipelineSteps {
-	return v.PipelineValues.Steps
+func (v *createPipelinePipelineCreatePipelineCreatePayloadPipeline) GetSteps() PipelineFieldsStepsPipelineSteps {
+	return v.PipelineFields.Steps
 }
 
 // GetTags returns createPipelinePipelineCreatePipelineCreatePayloadPipeline.Tags, and is useful for accessing the field via an interface.
-func (v *createPipelinePipelineCreatePipelineCreatePayloadPipeline) GetTags() []PipelineValuesTagsPipelineTag {
-	return v.PipelineValues.Tags
+func (v *createPipelinePipelineCreatePipelineCreatePayloadPipeline) GetTags() []PipelineFieldsTagsPipelineTag {
+	return v.PipelineFields.Tags
 }
 
 // GetWebhookURL returns createPipelinePipelineCreatePipelineCreatePayloadPipeline.WebhookURL, and is useful for accessing the field via an interface.
 func (v *createPipelinePipelineCreatePipelineCreatePayloadPipeline) GetWebhookURL() string {
-	return v.PipelineValues.WebhookURL
+	return v.PipelineFields.WebhookURL
 }
 
 func (v *createPipelinePipelineCreatePipelineCreatePayloadPipeline) UnmarshalJSON(b []byte) error {
@@ -2246,7 +2246,7 @@ func (v *createPipelinePipelineCreatePipelineCreatePayloadPipeline) UnmarshalJSO
 	}
 
 	err = json.Unmarshal(
-		b, &v.PipelineValues)
+		b, &v.PipelineFields)
 	if err != nil {
 		return err
 	}
@@ -2264,7 +2264,7 @@ type __premarshalcreatePipelinePipelineCreatePipelineCreatePayloadPipeline struc
 
 	CancelIntermediateBuildsBranchFilter string `json:"cancelIntermediateBuildsBranchFilter"`
 
-	Cluster PipelineValuesCluster `json:"cluster"`
+	Cluster PipelineFieldsCluster `json:"cluster"`
 
 	Color *string `json:"color"`
 
@@ -2280,7 +2280,7 @@ type __premarshalcreatePipelinePipelineCreatePipelineCreatePayloadPipeline struc
 
 	Name string `json:"name"`
 
-	Repository PipelineValuesRepository `json:"repository"`
+	Repository PipelineFieldsRepository `json:"repository"`
 
 	SkipIntermediateBuilds bool `json:"skipIntermediateBuilds"`
 
@@ -2288,9 +2288,9 @@ type __premarshalcreatePipelinePipelineCreatePipelineCreatePayloadPipeline struc
 
 	Slug string `json:"slug"`
 
-	Steps PipelineValuesStepsPipelineSteps `json:"steps"`
+	Steps PipelineFieldsStepsPipelineSteps `json:"steps"`
 
-	Tags []PipelineValuesTagsPipelineTag `json:"tags"`
+	Tags []PipelineFieldsTagsPipelineTag `json:"tags"`
 
 	WebhookURL string `json:"webhookURL"`
 }
@@ -2306,26 +2306,26 @@ func (v *createPipelinePipelineCreatePipelineCreatePayloadPipeline) MarshalJSON(
 func (v *createPipelinePipelineCreatePipelineCreatePayloadPipeline) __premarshalJSON() (*__premarshalcreatePipelinePipelineCreatePipelineCreatePayloadPipeline, error) {
 	var retval __premarshalcreatePipelinePipelineCreatePipelineCreatePayloadPipeline
 
-	retval.Id = v.PipelineValues.Id
-	retval.AllowRebuilds = v.PipelineValues.AllowRebuilds
-	retval.BranchConfiguration = v.PipelineValues.BranchConfiguration
-	retval.CancelIntermediateBuilds = v.PipelineValues.CancelIntermediateBuilds
-	retval.CancelIntermediateBuildsBranchFilter = v.PipelineValues.CancelIntermediateBuildsBranchFilter
-	retval.Cluster = v.PipelineValues.Cluster
-	retval.Color = v.PipelineValues.Color
-	retval.DefaultBranch = v.PipelineValues.DefaultBranch
-	retval.DefaultTimeoutInMinutes = v.PipelineValues.DefaultTimeoutInMinutes
-	retval.Emoji = v.PipelineValues.Emoji
-	retval.MaximumTimeoutInMinutes = v.PipelineValues.MaximumTimeoutInMinutes
-	retval.Description = v.PipelineValues.Description
-	retval.Name = v.PipelineValues.Name
-	retval.Repository = v.PipelineValues.Repository
-	retval.SkipIntermediateBuilds = v.PipelineValues.SkipIntermediateBuilds
-	retval.SkipIntermediateBuildsBranchFilter = v.PipelineValues.SkipIntermediateBuildsBranchFilter
-	retval.Slug = v.PipelineValues.Slug
-	retval.Steps = v.PipelineValues.Steps
-	retval.Tags = v.PipelineValues.Tags
-	retval.WebhookURL = v.PipelineValues.WebhookURL
+	retval.Id = v.PipelineFields.Id
+	retval.AllowRebuilds = v.PipelineFields.AllowRebuilds
+	retval.BranchConfiguration = v.PipelineFields.BranchConfiguration
+	retval.CancelIntermediateBuilds = v.PipelineFields.CancelIntermediateBuilds
+	retval.CancelIntermediateBuildsBranchFilter = v.PipelineFields.CancelIntermediateBuildsBranchFilter
+	retval.Cluster = v.PipelineFields.Cluster
+	retval.Color = v.PipelineFields.Color
+	retval.DefaultBranch = v.PipelineFields.DefaultBranch
+	retval.DefaultTimeoutInMinutes = v.PipelineFields.DefaultTimeoutInMinutes
+	retval.Emoji = v.PipelineFields.Emoji
+	retval.MaximumTimeoutInMinutes = v.PipelineFields.MaximumTimeoutInMinutes
+	retval.Description = v.PipelineFields.Description
+	retval.Name = v.PipelineFields.Name
+	retval.Repository = v.PipelineFields.Repository
+	retval.SkipIntermediateBuilds = v.PipelineFields.SkipIntermediateBuilds
+	retval.SkipIntermediateBuildsBranchFilter = v.PipelineFields.SkipIntermediateBuildsBranchFilter
+	retval.Slug = v.PipelineFields.Slug
+	retval.Steps = v.PipelineFields.Steps
+	retval.Tags = v.PipelineFields.Tags
+	retval.WebhookURL = v.PipelineFields.WebhookURL
 	return &retval, nil
 }
 
@@ -2561,32 +2561,32 @@ func (v *createTeamMemberTeamMemberCreateTeamMemberCreatePayloadTeamMemberEdge) 
 //
 // An member of a team
 type createTeamMemberTeamMemberCreateTeamMemberCreatePayloadTeamMemberEdgeNodeTeamMember struct {
-	TeamMemberValues `json:"-"`
+	TeamMemberFields `json:"-"`
 }
 
 // GetId returns createTeamMemberTeamMemberCreateTeamMemberCreatePayloadTeamMemberEdgeNodeTeamMember.Id, and is useful for accessing the field via an interface.
 func (v *createTeamMemberTeamMemberCreateTeamMemberCreatePayloadTeamMemberEdgeNodeTeamMember) GetId() string {
-	return v.TeamMemberValues.Id
+	return v.TeamMemberFields.Id
 }
 
 // GetUuid returns createTeamMemberTeamMemberCreateTeamMemberCreatePayloadTeamMemberEdgeNodeTeamMember.Uuid, and is useful for accessing the field via an interface.
 func (v *createTeamMemberTeamMemberCreateTeamMemberCreatePayloadTeamMemberEdgeNodeTeamMember) GetUuid() string {
-	return v.TeamMemberValues.Uuid
+	return v.TeamMemberFields.Uuid
 }
 
 // GetTeam returns createTeamMemberTeamMemberCreateTeamMemberCreatePayloadTeamMemberEdgeNodeTeamMember.Team, and is useful for accessing the field via an interface.
-func (v *createTeamMemberTeamMemberCreateTeamMemberCreatePayloadTeamMemberEdgeNodeTeamMember) GetTeam() TeamMemberValuesTeam {
-	return v.TeamMemberValues.Team
+func (v *createTeamMemberTeamMemberCreateTeamMemberCreatePayloadTeamMemberEdgeNodeTeamMember) GetTeam() TeamMemberFieldsTeam {
+	return v.TeamMemberFields.Team
 }
 
 // GetUser returns createTeamMemberTeamMemberCreateTeamMemberCreatePayloadTeamMemberEdgeNodeTeamMember.User, and is useful for accessing the field via an interface.
-func (v *createTeamMemberTeamMemberCreateTeamMemberCreatePayloadTeamMemberEdgeNodeTeamMember) GetUser() TeamMemberValuesUser {
-	return v.TeamMemberValues.User
+func (v *createTeamMemberTeamMemberCreateTeamMemberCreatePayloadTeamMemberEdgeNodeTeamMember) GetUser() TeamMemberFieldsUser {
+	return v.TeamMemberFields.User
 }
 
 // GetRole returns createTeamMemberTeamMemberCreateTeamMemberCreatePayloadTeamMemberEdgeNodeTeamMember.Role, and is useful for accessing the field via an interface.
 func (v *createTeamMemberTeamMemberCreateTeamMemberCreatePayloadTeamMemberEdgeNodeTeamMember) GetRole() string {
-	return v.TeamMemberValues.Role
+	return v.TeamMemberFields.Role
 }
 
 func (v *createTeamMemberTeamMemberCreateTeamMemberCreatePayloadTeamMemberEdgeNodeTeamMember) UnmarshalJSON(b []byte) error {
@@ -2607,7 +2607,7 @@ func (v *createTeamMemberTeamMemberCreateTeamMemberCreatePayloadTeamMemberEdgeNo
 	}
 
 	err = json.Unmarshal(
-		b, &v.TeamMemberValues)
+		b, &v.TeamMemberFields)
 	if err != nil {
 		return err
 	}
@@ -2619,9 +2619,9 @@ type __premarshalcreateTeamMemberTeamMemberCreateTeamMemberCreatePayloadTeamMemb
 
 	Uuid string `json:"uuid"`
 
-	Team TeamMemberValuesTeam `json:"team"`
+	Team TeamMemberFieldsTeam `json:"team"`
 
-	User TeamMemberValuesUser `json:"user"`
+	User TeamMemberFieldsUser `json:"user"`
 
 	Role string `json:"role"`
 }
@@ -2637,11 +2637,11 @@ func (v *createTeamMemberTeamMemberCreateTeamMemberCreatePayloadTeamMemberEdgeNo
 func (v *createTeamMemberTeamMemberCreateTeamMemberCreatePayloadTeamMemberEdgeNodeTeamMember) __premarshalJSON() (*__premarshalcreateTeamMemberTeamMemberCreateTeamMemberCreatePayloadTeamMemberEdgeNodeTeamMember, error) {
 	var retval __premarshalcreateTeamMemberTeamMemberCreateTeamMemberCreatePayloadTeamMemberEdgeNodeTeamMember
 
-	retval.Id = v.TeamMemberValues.Id
-	retval.Uuid = v.TeamMemberValues.Uuid
-	retval.Team = v.TeamMemberValues.Team
-	retval.User = v.TeamMemberValues.User
-	retval.Role = v.TeamMemberValues.Role
+	retval.Id = v.TeamMemberFields.Id
+	retval.Uuid = v.TeamMemberFields.Uuid
+	retval.Team = v.TeamMemberFields.Team
+	retval.User = v.TeamMemberFields.User
+	retval.Role = v.TeamMemberFields.Role
 	return &retval, nil
 }
 
@@ -4849,89 +4849,89 @@ func (v *getNodeNodeOrganizationMember) GetTypename() string { return v.Typename
 // A pipeline
 type getNodeNodePipeline struct {
 	Typename       string `json:"__typename"`
-	PipelineValues `json:"-"`
+	PipelineFields `json:"-"`
 }
 
 // GetTypename returns getNodeNodePipeline.Typename, and is useful for accessing the field via an interface.
 func (v *getNodeNodePipeline) GetTypename() string { return v.Typename }
 
 // GetId returns getNodeNodePipeline.Id, and is useful for accessing the field via an interface.
-func (v *getNodeNodePipeline) GetId() string { return v.PipelineValues.Id }
+func (v *getNodeNodePipeline) GetId() string { return v.PipelineFields.Id }
 
 // GetAllowRebuilds returns getNodeNodePipeline.AllowRebuilds, and is useful for accessing the field via an interface.
-func (v *getNodeNodePipeline) GetAllowRebuilds() bool { return v.PipelineValues.AllowRebuilds }
+func (v *getNodeNodePipeline) GetAllowRebuilds() bool { return v.PipelineFields.AllowRebuilds }
 
 // GetBranchConfiguration returns getNodeNodePipeline.BranchConfiguration, and is useful for accessing the field via an interface.
 func (v *getNodeNodePipeline) GetBranchConfiguration() *string {
-	return v.PipelineValues.BranchConfiguration
+	return v.PipelineFields.BranchConfiguration
 }
 
 // GetCancelIntermediateBuilds returns getNodeNodePipeline.CancelIntermediateBuilds, and is useful for accessing the field via an interface.
 func (v *getNodeNodePipeline) GetCancelIntermediateBuilds() bool {
-	return v.PipelineValues.CancelIntermediateBuilds
+	return v.PipelineFields.CancelIntermediateBuilds
 }
 
 // GetCancelIntermediateBuildsBranchFilter returns getNodeNodePipeline.CancelIntermediateBuildsBranchFilter, and is useful for accessing the field via an interface.
 func (v *getNodeNodePipeline) GetCancelIntermediateBuildsBranchFilter() string {
-	return v.PipelineValues.CancelIntermediateBuildsBranchFilter
+	return v.PipelineFields.CancelIntermediateBuildsBranchFilter
 }
 
 // GetCluster returns getNodeNodePipeline.Cluster, and is useful for accessing the field via an interface.
-func (v *getNodeNodePipeline) GetCluster() PipelineValuesCluster { return v.PipelineValues.Cluster }
+func (v *getNodeNodePipeline) GetCluster() PipelineFieldsCluster { return v.PipelineFields.Cluster }
 
 // GetColor returns getNodeNodePipeline.Color, and is useful for accessing the field via an interface.
-func (v *getNodeNodePipeline) GetColor() *string { return v.PipelineValues.Color }
+func (v *getNodeNodePipeline) GetColor() *string { return v.PipelineFields.Color }
 
 // GetDefaultBranch returns getNodeNodePipeline.DefaultBranch, and is useful for accessing the field via an interface.
-func (v *getNodeNodePipeline) GetDefaultBranch() string { return v.PipelineValues.DefaultBranch }
+func (v *getNodeNodePipeline) GetDefaultBranch() string { return v.PipelineFields.DefaultBranch }
 
 // GetDefaultTimeoutInMinutes returns getNodeNodePipeline.DefaultTimeoutInMinutes, and is useful for accessing the field via an interface.
 func (v *getNodeNodePipeline) GetDefaultTimeoutInMinutes() *int {
-	return v.PipelineValues.DefaultTimeoutInMinutes
+	return v.PipelineFields.DefaultTimeoutInMinutes
 }
 
 // GetEmoji returns getNodeNodePipeline.Emoji, and is useful for accessing the field via an interface.
-func (v *getNodeNodePipeline) GetEmoji() *string { return v.PipelineValues.Emoji }
+func (v *getNodeNodePipeline) GetEmoji() *string { return v.PipelineFields.Emoji }
 
 // GetMaximumTimeoutInMinutes returns getNodeNodePipeline.MaximumTimeoutInMinutes, and is useful for accessing the field via an interface.
 func (v *getNodeNodePipeline) GetMaximumTimeoutInMinutes() *int {
-	return v.PipelineValues.MaximumTimeoutInMinutes
+	return v.PipelineFields.MaximumTimeoutInMinutes
 }
 
 // GetDescription returns getNodeNodePipeline.Description, and is useful for accessing the field via an interface.
-func (v *getNodeNodePipeline) GetDescription() string { return v.PipelineValues.Description }
+func (v *getNodeNodePipeline) GetDescription() string { return v.PipelineFields.Description }
 
 // GetName returns getNodeNodePipeline.Name, and is useful for accessing the field via an interface.
-func (v *getNodeNodePipeline) GetName() string { return v.PipelineValues.Name }
+func (v *getNodeNodePipeline) GetName() string { return v.PipelineFields.Name }
 
 // GetRepository returns getNodeNodePipeline.Repository, and is useful for accessing the field via an interface.
-func (v *getNodeNodePipeline) GetRepository() PipelineValuesRepository {
-	return v.PipelineValues.Repository
+func (v *getNodeNodePipeline) GetRepository() PipelineFieldsRepository {
+	return v.PipelineFields.Repository
 }
 
 // GetSkipIntermediateBuilds returns getNodeNodePipeline.SkipIntermediateBuilds, and is useful for accessing the field via an interface.
 func (v *getNodeNodePipeline) GetSkipIntermediateBuilds() bool {
-	return v.PipelineValues.SkipIntermediateBuilds
+	return v.PipelineFields.SkipIntermediateBuilds
 }
 
 // GetSkipIntermediateBuildsBranchFilter returns getNodeNodePipeline.SkipIntermediateBuildsBranchFilter, and is useful for accessing the field via an interface.
 func (v *getNodeNodePipeline) GetSkipIntermediateBuildsBranchFilter() string {
-	return v.PipelineValues.SkipIntermediateBuildsBranchFilter
+	return v.PipelineFields.SkipIntermediateBuildsBranchFilter
 }
 
 // GetSlug returns getNodeNodePipeline.Slug, and is useful for accessing the field via an interface.
-func (v *getNodeNodePipeline) GetSlug() string { return v.PipelineValues.Slug }
+func (v *getNodeNodePipeline) GetSlug() string { return v.PipelineFields.Slug }
 
 // GetSteps returns getNodeNodePipeline.Steps, and is useful for accessing the field via an interface.
-func (v *getNodeNodePipeline) GetSteps() PipelineValuesStepsPipelineSteps {
-	return v.PipelineValues.Steps
+func (v *getNodeNodePipeline) GetSteps() PipelineFieldsStepsPipelineSteps {
+	return v.PipelineFields.Steps
 }
 
 // GetTags returns getNodeNodePipeline.Tags, and is useful for accessing the field via an interface.
-func (v *getNodeNodePipeline) GetTags() []PipelineValuesTagsPipelineTag { return v.PipelineValues.Tags }
+func (v *getNodeNodePipeline) GetTags() []PipelineFieldsTagsPipelineTag { return v.PipelineFields.Tags }
 
 // GetWebhookURL returns getNodeNodePipeline.WebhookURL, and is useful for accessing the field via an interface.
-func (v *getNodeNodePipeline) GetWebhookURL() string { return v.PipelineValues.WebhookURL }
+func (v *getNodeNodePipeline) GetWebhookURL() string { return v.PipelineFields.WebhookURL }
 
 func (v *getNodeNodePipeline) UnmarshalJSON(b []byte) error {
 
@@ -4951,7 +4951,7 @@ func (v *getNodeNodePipeline) UnmarshalJSON(b []byte) error {
 	}
 
 	err = json.Unmarshal(
-		b, &v.PipelineValues)
+		b, &v.PipelineFields)
 	if err != nil {
 		return err
 	}
@@ -4971,7 +4971,7 @@ type __premarshalgetNodeNodePipeline struct {
 
 	CancelIntermediateBuildsBranchFilter string `json:"cancelIntermediateBuildsBranchFilter"`
 
-	Cluster PipelineValuesCluster `json:"cluster"`
+	Cluster PipelineFieldsCluster `json:"cluster"`
 
 	Color *string `json:"color"`
 
@@ -4987,7 +4987,7 @@ type __premarshalgetNodeNodePipeline struct {
 
 	Name string `json:"name"`
 
-	Repository PipelineValuesRepository `json:"repository"`
+	Repository PipelineFieldsRepository `json:"repository"`
 
 	SkipIntermediateBuilds bool `json:"skipIntermediateBuilds"`
 
@@ -4995,9 +4995,9 @@ type __premarshalgetNodeNodePipeline struct {
 
 	Slug string `json:"slug"`
 
-	Steps PipelineValuesStepsPipelineSteps `json:"steps"`
+	Steps PipelineFieldsStepsPipelineSteps `json:"steps"`
 
-	Tags []PipelineValuesTagsPipelineTag `json:"tags"`
+	Tags []PipelineFieldsTagsPipelineTag `json:"tags"`
 
 	WebhookURL string `json:"webhookURL"`
 }
@@ -5014,26 +5014,26 @@ func (v *getNodeNodePipeline) __premarshalJSON() (*__premarshalgetNodeNodePipeli
 	var retval __premarshalgetNodeNodePipeline
 
 	retval.Typename = v.Typename
-	retval.Id = v.PipelineValues.Id
-	retval.AllowRebuilds = v.PipelineValues.AllowRebuilds
-	retval.BranchConfiguration = v.PipelineValues.BranchConfiguration
-	retval.CancelIntermediateBuilds = v.PipelineValues.CancelIntermediateBuilds
-	retval.CancelIntermediateBuildsBranchFilter = v.PipelineValues.CancelIntermediateBuildsBranchFilter
-	retval.Cluster = v.PipelineValues.Cluster
-	retval.Color = v.PipelineValues.Color
-	retval.DefaultBranch = v.PipelineValues.DefaultBranch
-	retval.DefaultTimeoutInMinutes = v.PipelineValues.DefaultTimeoutInMinutes
-	retval.Emoji = v.PipelineValues.Emoji
-	retval.MaximumTimeoutInMinutes = v.PipelineValues.MaximumTimeoutInMinutes
-	retval.Description = v.PipelineValues.Description
-	retval.Name = v.PipelineValues.Name
-	retval.Repository = v.PipelineValues.Repository
-	retval.SkipIntermediateBuilds = v.PipelineValues.SkipIntermediateBuilds
-	retval.SkipIntermediateBuildsBranchFilter = v.PipelineValues.SkipIntermediateBuildsBranchFilter
-	retval.Slug = v.PipelineValues.Slug
-	retval.Steps = v.PipelineValues.Steps
-	retval.Tags = v.PipelineValues.Tags
-	retval.WebhookURL = v.PipelineValues.WebhookURL
+	retval.Id = v.PipelineFields.Id
+	retval.AllowRebuilds = v.PipelineFields.AllowRebuilds
+	retval.BranchConfiguration = v.PipelineFields.BranchConfiguration
+	retval.CancelIntermediateBuilds = v.PipelineFields.CancelIntermediateBuilds
+	retval.CancelIntermediateBuildsBranchFilter = v.PipelineFields.CancelIntermediateBuildsBranchFilter
+	retval.Cluster = v.PipelineFields.Cluster
+	retval.Color = v.PipelineFields.Color
+	retval.DefaultBranch = v.PipelineFields.DefaultBranch
+	retval.DefaultTimeoutInMinutes = v.PipelineFields.DefaultTimeoutInMinutes
+	retval.Emoji = v.PipelineFields.Emoji
+	retval.MaximumTimeoutInMinutes = v.PipelineFields.MaximumTimeoutInMinutes
+	retval.Description = v.PipelineFields.Description
+	retval.Name = v.PipelineFields.Name
+	retval.Repository = v.PipelineFields.Repository
+	retval.SkipIntermediateBuilds = v.PipelineFields.SkipIntermediateBuilds
+	retval.SkipIntermediateBuildsBranchFilter = v.PipelineFields.SkipIntermediateBuildsBranchFilter
+	retval.Slug = v.PipelineFields.Slug
+	retval.Steps = v.PipelineFields.Steps
+	retval.Tags = v.PipelineFields.Tags
+	retval.WebhookURL = v.PipelineFields.WebhookURL
 	return &retval, nil
 }
 
@@ -5232,26 +5232,26 @@ func (v *getNodeNodeTeam) __premarshalJSON() (*__premarshalgetNodeNodeTeam, erro
 // An member of a team
 type getNodeNodeTeamMember struct {
 	Typename         string `json:"__typename"`
-	TeamMemberValues `json:"-"`
+	TeamMemberFields `json:"-"`
 }
 
 // GetTypename returns getNodeNodeTeamMember.Typename, and is useful for accessing the field via an interface.
 func (v *getNodeNodeTeamMember) GetTypename() string { return v.Typename }
 
 // GetId returns getNodeNodeTeamMember.Id, and is useful for accessing the field via an interface.
-func (v *getNodeNodeTeamMember) GetId() string { return v.TeamMemberValues.Id }
+func (v *getNodeNodeTeamMember) GetId() string { return v.TeamMemberFields.Id }
 
 // GetUuid returns getNodeNodeTeamMember.Uuid, and is useful for accessing the field via an interface.
-func (v *getNodeNodeTeamMember) GetUuid() string { return v.TeamMemberValues.Uuid }
+func (v *getNodeNodeTeamMember) GetUuid() string { return v.TeamMemberFields.Uuid }
 
 // GetTeam returns getNodeNodeTeamMember.Team, and is useful for accessing the field via an interface.
-func (v *getNodeNodeTeamMember) GetTeam() TeamMemberValuesTeam { return v.TeamMemberValues.Team }
+func (v *getNodeNodeTeamMember) GetTeam() TeamMemberFieldsTeam { return v.TeamMemberFields.Team }
 
 // GetUser returns getNodeNodeTeamMember.User, and is useful for accessing the field via an interface.
-func (v *getNodeNodeTeamMember) GetUser() TeamMemberValuesUser { return v.TeamMemberValues.User }
+func (v *getNodeNodeTeamMember) GetUser() TeamMemberFieldsUser { return v.TeamMemberFields.User }
 
 // GetRole returns getNodeNodeTeamMember.Role, and is useful for accessing the field via an interface.
-func (v *getNodeNodeTeamMember) GetRole() string { return v.TeamMemberValues.Role }
+func (v *getNodeNodeTeamMember) GetRole() string { return v.TeamMemberFields.Role }
 
 func (v *getNodeNodeTeamMember) UnmarshalJSON(b []byte) error {
 
@@ -5271,7 +5271,7 @@ func (v *getNodeNodeTeamMember) UnmarshalJSON(b []byte) error {
 	}
 
 	err = json.Unmarshal(
-		b, &v.TeamMemberValues)
+		b, &v.TeamMemberFields)
 	if err != nil {
 		return err
 	}
@@ -5285,9 +5285,9 @@ type __premarshalgetNodeNodeTeamMember struct {
 
 	Uuid string `json:"uuid"`
 
-	Team TeamMemberValuesTeam `json:"team"`
+	Team TeamMemberFieldsTeam `json:"team"`
 
-	User TeamMemberValuesUser `json:"user"`
+	User TeamMemberFieldsUser `json:"user"`
 
 	Role string `json:"role"`
 }
@@ -5304,11 +5304,11 @@ func (v *getNodeNodeTeamMember) __premarshalJSON() (*__premarshalgetNodeNodeTeam
 	var retval __premarshalgetNodeNodeTeamMember
 
 	retval.Typename = v.Typename
-	retval.Id = v.TeamMemberValues.Id
-	retval.Uuid = v.TeamMemberValues.Uuid
-	retval.Team = v.TeamMemberValues.Team
-	retval.User = v.TeamMemberValues.User
-	retval.Role = v.TeamMemberValues.Role
+	retval.Id = v.TeamMemberFields.Id
+	retval.Uuid = v.TeamMemberFields.Uuid
+	retval.Team = v.TeamMemberFields.Team
+	retval.User = v.TeamMemberFields.User
+	retval.Role = v.TeamMemberFields.Role
 	return &retval, nil
 }
 
@@ -5630,86 +5630,86 @@ func (v *getOrganizationResponse) GetOrganization() getOrganizationOrganization 
 //
 // A pipeline
 type getPipelinePipeline struct {
-	PipelineValues `json:"-"`
+	PipelineFields `json:"-"`
 }
 
 // GetId returns getPipelinePipeline.Id, and is useful for accessing the field via an interface.
-func (v *getPipelinePipeline) GetId() string { return v.PipelineValues.Id }
+func (v *getPipelinePipeline) GetId() string { return v.PipelineFields.Id }
 
 // GetAllowRebuilds returns getPipelinePipeline.AllowRebuilds, and is useful for accessing the field via an interface.
-func (v *getPipelinePipeline) GetAllowRebuilds() bool { return v.PipelineValues.AllowRebuilds }
+func (v *getPipelinePipeline) GetAllowRebuilds() bool { return v.PipelineFields.AllowRebuilds }
 
 // GetBranchConfiguration returns getPipelinePipeline.BranchConfiguration, and is useful for accessing the field via an interface.
 func (v *getPipelinePipeline) GetBranchConfiguration() *string {
-	return v.PipelineValues.BranchConfiguration
+	return v.PipelineFields.BranchConfiguration
 }
 
 // GetCancelIntermediateBuilds returns getPipelinePipeline.CancelIntermediateBuilds, and is useful for accessing the field via an interface.
 func (v *getPipelinePipeline) GetCancelIntermediateBuilds() bool {
-	return v.PipelineValues.CancelIntermediateBuilds
+	return v.PipelineFields.CancelIntermediateBuilds
 }
 
 // GetCancelIntermediateBuildsBranchFilter returns getPipelinePipeline.CancelIntermediateBuildsBranchFilter, and is useful for accessing the field via an interface.
 func (v *getPipelinePipeline) GetCancelIntermediateBuildsBranchFilter() string {
-	return v.PipelineValues.CancelIntermediateBuildsBranchFilter
+	return v.PipelineFields.CancelIntermediateBuildsBranchFilter
 }
 
 // GetCluster returns getPipelinePipeline.Cluster, and is useful for accessing the field via an interface.
-func (v *getPipelinePipeline) GetCluster() PipelineValuesCluster { return v.PipelineValues.Cluster }
+func (v *getPipelinePipeline) GetCluster() PipelineFieldsCluster { return v.PipelineFields.Cluster }
 
 // GetColor returns getPipelinePipeline.Color, and is useful for accessing the field via an interface.
-func (v *getPipelinePipeline) GetColor() *string { return v.PipelineValues.Color }
+func (v *getPipelinePipeline) GetColor() *string { return v.PipelineFields.Color }
 
 // GetDefaultBranch returns getPipelinePipeline.DefaultBranch, and is useful for accessing the field via an interface.
-func (v *getPipelinePipeline) GetDefaultBranch() string { return v.PipelineValues.DefaultBranch }
+func (v *getPipelinePipeline) GetDefaultBranch() string { return v.PipelineFields.DefaultBranch }
 
 // GetDefaultTimeoutInMinutes returns getPipelinePipeline.DefaultTimeoutInMinutes, and is useful for accessing the field via an interface.
 func (v *getPipelinePipeline) GetDefaultTimeoutInMinutes() *int {
-	return v.PipelineValues.DefaultTimeoutInMinutes
+	return v.PipelineFields.DefaultTimeoutInMinutes
 }
 
 // GetEmoji returns getPipelinePipeline.Emoji, and is useful for accessing the field via an interface.
-func (v *getPipelinePipeline) GetEmoji() *string { return v.PipelineValues.Emoji }
+func (v *getPipelinePipeline) GetEmoji() *string { return v.PipelineFields.Emoji }
 
 // GetMaximumTimeoutInMinutes returns getPipelinePipeline.MaximumTimeoutInMinutes, and is useful for accessing the field via an interface.
 func (v *getPipelinePipeline) GetMaximumTimeoutInMinutes() *int {
-	return v.PipelineValues.MaximumTimeoutInMinutes
+	return v.PipelineFields.MaximumTimeoutInMinutes
 }
 
 // GetDescription returns getPipelinePipeline.Description, and is useful for accessing the field via an interface.
-func (v *getPipelinePipeline) GetDescription() string { return v.PipelineValues.Description }
+func (v *getPipelinePipeline) GetDescription() string { return v.PipelineFields.Description }
 
 // GetName returns getPipelinePipeline.Name, and is useful for accessing the field via an interface.
-func (v *getPipelinePipeline) GetName() string { return v.PipelineValues.Name }
+func (v *getPipelinePipeline) GetName() string { return v.PipelineFields.Name }
 
 // GetRepository returns getPipelinePipeline.Repository, and is useful for accessing the field via an interface.
-func (v *getPipelinePipeline) GetRepository() PipelineValuesRepository {
-	return v.PipelineValues.Repository
+func (v *getPipelinePipeline) GetRepository() PipelineFieldsRepository {
+	return v.PipelineFields.Repository
 }
 
 // GetSkipIntermediateBuilds returns getPipelinePipeline.SkipIntermediateBuilds, and is useful for accessing the field via an interface.
 func (v *getPipelinePipeline) GetSkipIntermediateBuilds() bool {
-	return v.PipelineValues.SkipIntermediateBuilds
+	return v.PipelineFields.SkipIntermediateBuilds
 }
 
 // GetSkipIntermediateBuildsBranchFilter returns getPipelinePipeline.SkipIntermediateBuildsBranchFilter, and is useful for accessing the field via an interface.
 func (v *getPipelinePipeline) GetSkipIntermediateBuildsBranchFilter() string {
-	return v.PipelineValues.SkipIntermediateBuildsBranchFilter
+	return v.PipelineFields.SkipIntermediateBuildsBranchFilter
 }
 
 // GetSlug returns getPipelinePipeline.Slug, and is useful for accessing the field via an interface.
-func (v *getPipelinePipeline) GetSlug() string { return v.PipelineValues.Slug }
+func (v *getPipelinePipeline) GetSlug() string { return v.PipelineFields.Slug }
 
 // GetSteps returns getPipelinePipeline.Steps, and is useful for accessing the field via an interface.
-func (v *getPipelinePipeline) GetSteps() PipelineValuesStepsPipelineSteps {
-	return v.PipelineValues.Steps
+func (v *getPipelinePipeline) GetSteps() PipelineFieldsStepsPipelineSteps {
+	return v.PipelineFields.Steps
 }
 
 // GetTags returns getPipelinePipeline.Tags, and is useful for accessing the field via an interface.
-func (v *getPipelinePipeline) GetTags() []PipelineValuesTagsPipelineTag { return v.PipelineValues.Tags }
+func (v *getPipelinePipeline) GetTags() []PipelineFieldsTagsPipelineTag { return v.PipelineFields.Tags }
 
 // GetWebhookURL returns getPipelinePipeline.WebhookURL, and is useful for accessing the field via an interface.
-func (v *getPipelinePipeline) GetWebhookURL() string { return v.PipelineValues.WebhookURL }
+func (v *getPipelinePipeline) GetWebhookURL() string { return v.PipelineFields.WebhookURL }
 
 func (v *getPipelinePipeline) UnmarshalJSON(b []byte) error {
 
@@ -5729,7 +5729,7 @@ func (v *getPipelinePipeline) UnmarshalJSON(b []byte) error {
 	}
 
 	err = json.Unmarshal(
-		b, &v.PipelineValues)
+		b, &v.PipelineFields)
 	if err != nil {
 		return err
 	}
@@ -5747,7 +5747,7 @@ type __premarshalgetPipelinePipeline struct {
 
 	CancelIntermediateBuildsBranchFilter string `json:"cancelIntermediateBuildsBranchFilter"`
 
-	Cluster PipelineValuesCluster `json:"cluster"`
+	Cluster PipelineFieldsCluster `json:"cluster"`
 
 	Color *string `json:"color"`
 
@@ -5763,7 +5763,7 @@ type __premarshalgetPipelinePipeline struct {
 
 	Name string `json:"name"`
 
-	Repository PipelineValuesRepository `json:"repository"`
+	Repository PipelineFieldsRepository `json:"repository"`
 
 	SkipIntermediateBuilds bool `json:"skipIntermediateBuilds"`
 
@@ -5771,9 +5771,9 @@ type __premarshalgetPipelinePipeline struct {
 
 	Slug string `json:"slug"`
 
-	Steps PipelineValuesStepsPipelineSteps `json:"steps"`
+	Steps PipelineFieldsStepsPipelineSteps `json:"steps"`
 
-	Tags []PipelineValuesTagsPipelineTag `json:"tags"`
+	Tags []PipelineFieldsTagsPipelineTag `json:"tags"`
 
 	WebhookURL string `json:"webhookURL"`
 }
@@ -5789,26 +5789,26 @@ func (v *getPipelinePipeline) MarshalJSON() ([]byte, error) {
 func (v *getPipelinePipeline) __premarshalJSON() (*__premarshalgetPipelinePipeline, error) {
 	var retval __premarshalgetPipelinePipeline
 
-	retval.Id = v.PipelineValues.Id
-	retval.AllowRebuilds = v.PipelineValues.AllowRebuilds
-	retval.BranchConfiguration = v.PipelineValues.BranchConfiguration
-	retval.CancelIntermediateBuilds = v.PipelineValues.CancelIntermediateBuilds
-	retval.CancelIntermediateBuildsBranchFilter = v.PipelineValues.CancelIntermediateBuildsBranchFilter
-	retval.Cluster = v.PipelineValues.Cluster
-	retval.Color = v.PipelineValues.Color
-	retval.DefaultBranch = v.PipelineValues.DefaultBranch
-	retval.DefaultTimeoutInMinutes = v.PipelineValues.DefaultTimeoutInMinutes
-	retval.Emoji = v.PipelineValues.Emoji
-	retval.MaximumTimeoutInMinutes = v.PipelineValues.MaximumTimeoutInMinutes
-	retval.Description = v.PipelineValues.Description
-	retval.Name = v.PipelineValues.Name
-	retval.Repository = v.PipelineValues.Repository
-	retval.SkipIntermediateBuilds = v.PipelineValues.SkipIntermediateBuilds
-	retval.SkipIntermediateBuildsBranchFilter = v.PipelineValues.SkipIntermediateBuildsBranchFilter
-	retval.Slug = v.PipelineValues.Slug
-	retval.Steps = v.PipelineValues.Steps
-	retval.Tags = v.PipelineValues.Tags
-	retval.WebhookURL = v.PipelineValues.WebhookURL
+	retval.Id = v.PipelineFields.Id
+	retval.AllowRebuilds = v.PipelineFields.AllowRebuilds
+	retval.BranchConfiguration = v.PipelineFields.BranchConfiguration
+	retval.CancelIntermediateBuilds = v.PipelineFields.CancelIntermediateBuilds
+	retval.CancelIntermediateBuildsBranchFilter = v.PipelineFields.CancelIntermediateBuildsBranchFilter
+	retval.Cluster = v.PipelineFields.Cluster
+	retval.Color = v.PipelineFields.Color
+	retval.DefaultBranch = v.PipelineFields.DefaultBranch
+	retval.DefaultTimeoutInMinutes = v.PipelineFields.DefaultTimeoutInMinutes
+	retval.Emoji = v.PipelineFields.Emoji
+	retval.MaximumTimeoutInMinutes = v.PipelineFields.MaximumTimeoutInMinutes
+	retval.Description = v.PipelineFields.Description
+	retval.Name = v.PipelineFields.Name
+	retval.Repository = v.PipelineFields.Repository
+	retval.SkipIntermediateBuilds = v.PipelineFields.SkipIntermediateBuilds
+	retval.SkipIntermediateBuildsBranchFilter = v.PipelineFields.SkipIntermediateBuildsBranchFilter
+	retval.Slug = v.PipelineFields.Slug
+	retval.Steps = v.PipelineFields.Steps
+	retval.Tags = v.PipelineFields.Tags
+	retval.WebhookURL = v.PipelineFields.WebhookURL
 	return &retval, nil
 }
 
@@ -9977,107 +9977,107 @@ func (v *updatePipelinePipelineUpdatePipelineUpdatePayload) GetPipeline() update
 //
 // A pipeline
 type updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline struct {
-	PipelineValues `json:"-"`
+	PipelineFields `json:"-"`
 }
 
 // GetId returns updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline.Id, and is useful for accessing the field via an interface.
 func (v *updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline) GetId() string {
-	return v.PipelineValues.Id
+	return v.PipelineFields.Id
 }
 
 // GetAllowRebuilds returns updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline.AllowRebuilds, and is useful for accessing the field via an interface.
 func (v *updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline) GetAllowRebuilds() bool {
-	return v.PipelineValues.AllowRebuilds
+	return v.PipelineFields.AllowRebuilds
 }
 
 // GetBranchConfiguration returns updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline.BranchConfiguration, and is useful for accessing the field via an interface.
 func (v *updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline) GetBranchConfiguration() *string {
-	return v.PipelineValues.BranchConfiguration
+	return v.PipelineFields.BranchConfiguration
 }
 
 // GetCancelIntermediateBuilds returns updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline.CancelIntermediateBuilds, and is useful for accessing the field via an interface.
 func (v *updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline) GetCancelIntermediateBuilds() bool {
-	return v.PipelineValues.CancelIntermediateBuilds
+	return v.PipelineFields.CancelIntermediateBuilds
 }
 
 // GetCancelIntermediateBuildsBranchFilter returns updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline.CancelIntermediateBuildsBranchFilter, and is useful for accessing the field via an interface.
 func (v *updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline) GetCancelIntermediateBuildsBranchFilter() string {
-	return v.PipelineValues.CancelIntermediateBuildsBranchFilter
+	return v.PipelineFields.CancelIntermediateBuildsBranchFilter
 }
 
 // GetCluster returns updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline.Cluster, and is useful for accessing the field via an interface.
-func (v *updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline) GetCluster() PipelineValuesCluster {
-	return v.PipelineValues.Cluster
+func (v *updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline) GetCluster() PipelineFieldsCluster {
+	return v.PipelineFields.Cluster
 }
 
 // GetColor returns updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline.Color, and is useful for accessing the field via an interface.
 func (v *updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline) GetColor() *string {
-	return v.PipelineValues.Color
+	return v.PipelineFields.Color
 }
 
 // GetDefaultBranch returns updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline.DefaultBranch, and is useful for accessing the field via an interface.
 func (v *updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline) GetDefaultBranch() string {
-	return v.PipelineValues.DefaultBranch
+	return v.PipelineFields.DefaultBranch
 }
 
 // GetDefaultTimeoutInMinutes returns updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline.DefaultTimeoutInMinutes, and is useful for accessing the field via an interface.
 func (v *updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline) GetDefaultTimeoutInMinutes() *int {
-	return v.PipelineValues.DefaultTimeoutInMinutes
+	return v.PipelineFields.DefaultTimeoutInMinutes
 }
 
 // GetEmoji returns updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline.Emoji, and is useful for accessing the field via an interface.
 func (v *updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline) GetEmoji() *string {
-	return v.PipelineValues.Emoji
+	return v.PipelineFields.Emoji
 }
 
 // GetMaximumTimeoutInMinutes returns updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline.MaximumTimeoutInMinutes, and is useful for accessing the field via an interface.
 func (v *updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline) GetMaximumTimeoutInMinutes() *int {
-	return v.PipelineValues.MaximumTimeoutInMinutes
+	return v.PipelineFields.MaximumTimeoutInMinutes
 }
 
 // GetDescription returns updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline.Description, and is useful for accessing the field via an interface.
 func (v *updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline) GetDescription() string {
-	return v.PipelineValues.Description
+	return v.PipelineFields.Description
 }
 
 // GetName returns updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline.Name, and is useful for accessing the field via an interface.
 func (v *updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline) GetName() string {
-	return v.PipelineValues.Name
+	return v.PipelineFields.Name
 }
 
 // GetRepository returns updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline.Repository, and is useful for accessing the field via an interface.
-func (v *updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline) GetRepository() PipelineValuesRepository {
-	return v.PipelineValues.Repository
+func (v *updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline) GetRepository() PipelineFieldsRepository {
+	return v.PipelineFields.Repository
 }
 
 // GetSkipIntermediateBuilds returns updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline.SkipIntermediateBuilds, and is useful for accessing the field via an interface.
 func (v *updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline) GetSkipIntermediateBuilds() bool {
-	return v.PipelineValues.SkipIntermediateBuilds
+	return v.PipelineFields.SkipIntermediateBuilds
 }
 
 // GetSkipIntermediateBuildsBranchFilter returns updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline.SkipIntermediateBuildsBranchFilter, and is useful for accessing the field via an interface.
 func (v *updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline) GetSkipIntermediateBuildsBranchFilter() string {
-	return v.PipelineValues.SkipIntermediateBuildsBranchFilter
+	return v.PipelineFields.SkipIntermediateBuildsBranchFilter
 }
 
 // GetSlug returns updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline.Slug, and is useful for accessing the field via an interface.
 func (v *updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline) GetSlug() string {
-	return v.PipelineValues.Slug
+	return v.PipelineFields.Slug
 }
 
 // GetSteps returns updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline.Steps, and is useful for accessing the field via an interface.
-func (v *updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline) GetSteps() PipelineValuesStepsPipelineSteps {
-	return v.PipelineValues.Steps
+func (v *updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline) GetSteps() PipelineFieldsStepsPipelineSteps {
+	return v.PipelineFields.Steps
 }
 
 // GetTags returns updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline.Tags, and is useful for accessing the field via an interface.
-func (v *updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline) GetTags() []PipelineValuesTagsPipelineTag {
-	return v.PipelineValues.Tags
+func (v *updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline) GetTags() []PipelineFieldsTagsPipelineTag {
+	return v.PipelineFields.Tags
 }
 
 // GetWebhookURL returns updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline.WebhookURL, and is useful for accessing the field via an interface.
 func (v *updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline) GetWebhookURL() string {
-	return v.PipelineValues.WebhookURL
+	return v.PipelineFields.WebhookURL
 }
 
 func (v *updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline) UnmarshalJSON(b []byte) error {
@@ -10098,7 +10098,7 @@ func (v *updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline) UnmarshalJSO
 	}
 
 	err = json.Unmarshal(
-		b, &v.PipelineValues)
+		b, &v.PipelineFields)
 	if err != nil {
 		return err
 	}
@@ -10116,7 +10116,7 @@ type __premarshalupdatePipelinePipelineUpdatePipelineUpdatePayloadPipeline struc
 
 	CancelIntermediateBuildsBranchFilter string `json:"cancelIntermediateBuildsBranchFilter"`
 
-	Cluster PipelineValuesCluster `json:"cluster"`
+	Cluster PipelineFieldsCluster `json:"cluster"`
 
 	Color *string `json:"color"`
 
@@ -10132,7 +10132,7 @@ type __premarshalupdatePipelinePipelineUpdatePipelineUpdatePayloadPipeline struc
 
 	Name string `json:"name"`
 
-	Repository PipelineValuesRepository `json:"repository"`
+	Repository PipelineFieldsRepository `json:"repository"`
 
 	SkipIntermediateBuilds bool `json:"skipIntermediateBuilds"`
 
@@ -10140,9 +10140,9 @@ type __premarshalupdatePipelinePipelineUpdatePipelineUpdatePayloadPipeline struc
 
 	Slug string `json:"slug"`
 
-	Steps PipelineValuesStepsPipelineSteps `json:"steps"`
+	Steps PipelineFieldsStepsPipelineSteps `json:"steps"`
 
-	Tags []PipelineValuesTagsPipelineTag `json:"tags"`
+	Tags []PipelineFieldsTagsPipelineTag `json:"tags"`
 
 	WebhookURL string `json:"webhookURL"`
 }
@@ -10158,26 +10158,26 @@ func (v *updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline) MarshalJSON(
 func (v *updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline) __premarshalJSON() (*__premarshalupdatePipelinePipelineUpdatePipelineUpdatePayloadPipeline, error) {
 	var retval __premarshalupdatePipelinePipelineUpdatePipelineUpdatePayloadPipeline
 
-	retval.Id = v.PipelineValues.Id
-	retval.AllowRebuilds = v.PipelineValues.AllowRebuilds
-	retval.BranchConfiguration = v.PipelineValues.BranchConfiguration
-	retval.CancelIntermediateBuilds = v.PipelineValues.CancelIntermediateBuilds
-	retval.CancelIntermediateBuildsBranchFilter = v.PipelineValues.CancelIntermediateBuildsBranchFilter
-	retval.Cluster = v.PipelineValues.Cluster
-	retval.Color = v.PipelineValues.Color
-	retval.DefaultBranch = v.PipelineValues.DefaultBranch
-	retval.DefaultTimeoutInMinutes = v.PipelineValues.DefaultTimeoutInMinutes
-	retval.Emoji = v.PipelineValues.Emoji
-	retval.MaximumTimeoutInMinutes = v.PipelineValues.MaximumTimeoutInMinutes
-	retval.Description = v.PipelineValues.Description
-	retval.Name = v.PipelineValues.Name
-	retval.Repository = v.PipelineValues.Repository
-	retval.SkipIntermediateBuilds = v.PipelineValues.SkipIntermediateBuilds
-	retval.SkipIntermediateBuildsBranchFilter = v.PipelineValues.SkipIntermediateBuildsBranchFilter
-	retval.Slug = v.PipelineValues.Slug
-	retval.Steps = v.PipelineValues.Steps
-	retval.Tags = v.PipelineValues.Tags
-	retval.WebhookURL = v.PipelineValues.WebhookURL
+	retval.Id = v.PipelineFields.Id
+	retval.AllowRebuilds = v.PipelineFields.AllowRebuilds
+	retval.BranchConfiguration = v.PipelineFields.BranchConfiguration
+	retval.CancelIntermediateBuilds = v.PipelineFields.CancelIntermediateBuilds
+	retval.CancelIntermediateBuildsBranchFilter = v.PipelineFields.CancelIntermediateBuildsBranchFilter
+	retval.Cluster = v.PipelineFields.Cluster
+	retval.Color = v.PipelineFields.Color
+	retval.DefaultBranch = v.PipelineFields.DefaultBranch
+	retval.DefaultTimeoutInMinutes = v.PipelineFields.DefaultTimeoutInMinutes
+	retval.Emoji = v.PipelineFields.Emoji
+	retval.MaximumTimeoutInMinutes = v.PipelineFields.MaximumTimeoutInMinutes
+	retval.Description = v.PipelineFields.Description
+	retval.Name = v.PipelineFields.Name
+	retval.Repository = v.PipelineFields.Repository
+	retval.SkipIntermediateBuilds = v.PipelineFields.SkipIntermediateBuilds
+	retval.SkipIntermediateBuildsBranchFilter = v.PipelineFields.SkipIntermediateBuildsBranchFilter
+	retval.Slug = v.PipelineFields.Slug
+	retval.Steps = v.PipelineFields.Steps
+	retval.Tags = v.PipelineFields.Tags
+	retval.WebhookURL = v.PipelineFields.WebhookURL
 	return &retval, nil
 }
 
@@ -10374,32 +10374,32 @@ func (v *updateTeamMemberTeamMemberUpdateTeamMemberUpdatePayload) GetTeamMember(
 //
 // An member of a team
 type updateTeamMemberTeamMemberUpdateTeamMemberUpdatePayloadTeamMember struct {
-	TeamMemberValues `json:"-"`
+	TeamMemberFields `json:"-"`
 }
 
 // GetId returns updateTeamMemberTeamMemberUpdateTeamMemberUpdatePayloadTeamMember.Id, and is useful for accessing the field via an interface.
 func (v *updateTeamMemberTeamMemberUpdateTeamMemberUpdatePayloadTeamMember) GetId() string {
-	return v.TeamMemberValues.Id
+	return v.TeamMemberFields.Id
 }
 
 // GetUuid returns updateTeamMemberTeamMemberUpdateTeamMemberUpdatePayloadTeamMember.Uuid, and is useful for accessing the field via an interface.
 func (v *updateTeamMemberTeamMemberUpdateTeamMemberUpdatePayloadTeamMember) GetUuid() string {
-	return v.TeamMemberValues.Uuid
+	return v.TeamMemberFields.Uuid
 }
 
 // GetTeam returns updateTeamMemberTeamMemberUpdateTeamMemberUpdatePayloadTeamMember.Team, and is useful for accessing the field via an interface.
-func (v *updateTeamMemberTeamMemberUpdateTeamMemberUpdatePayloadTeamMember) GetTeam() TeamMemberValuesTeam {
-	return v.TeamMemberValues.Team
+func (v *updateTeamMemberTeamMemberUpdateTeamMemberUpdatePayloadTeamMember) GetTeam() TeamMemberFieldsTeam {
+	return v.TeamMemberFields.Team
 }
 
 // GetUser returns updateTeamMemberTeamMemberUpdateTeamMemberUpdatePayloadTeamMember.User, and is useful for accessing the field via an interface.
-func (v *updateTeamMemberTeamMemberUpdateTeamMemberUpdatePayloadTeamMember) GetUser() TeamMemberValuesUser {
-	return v.TeamMemberValues.User
+func (v *updateTeamMemberTeamMemberUpdateTeamMemberUpdatePayloadTeamMember) GetUser() TeamMemberFieldsUser {
+	return v.TeamMemberFields.User
 }
 
 // GetRole returns updateTeamMemberTeamMemberUpdateTeamMemberUpdatePayloadTeamMember.Role, and is useful for accessing the field via an interface.
 func (v *updateTeamMemberTeamMemberUpdateTeamMemberUpdatePayloadTeamMember) GetRole() string {
-	return v.TeamMemberValues.Role
+	return v.TeamMemberFields.Role
 }
 
 func (v *updateTeamMemberTeamMemberUpdateTeamMemberUpdatePayloadTeamMember) UnmarshalJSON(b []byte) error {
@@ -10420,7 +10420,7 @@ func (v *updateTeamMemberTeamMemberUpdateTeamMemberUpdatePayloadTeamMember) Unma
 	}
 
 	err = json.Unmarshal(
-		b, &v.TeamMemberValues)
+		b, &v.TeamMemberFields)
 	if err != nil {
 		return err
 	}
@@ -10432,9 +10432,9 @@ type __premarshalupdateTeamMemberTeamMemberUpdateTeamMemberUpdatePayloadTeamMemb
 
 	Uuid string `json:"uuid"`
 
-	Team TeamMemberValuesTeam `json:"team"`
+	Team TeamMemberFieldsTeam `json:"team"`
 
-	User TeamMemberValuesUser `json:"user"`
+	User TeamMemberFieldsUser `json:"user"`
 
 	Role string `json:"role"`
 }
@@ -10450,11 +10450,11 @@ func (v *updateTeamMemberTeamMemberUpdateTeamMemberUpdatePayloadTeamMember) Mars
 func (v *updateTeamMemberTeamMemberUpdateTeamMemberUpdatePayloadTeamMember) __premarshalJSON() (*__premarshalupdateTeamMemberTeamMemberUpdateTeamMemberUpdatePayloadTeamMember, error) {
 	var retval __premarshalupdateTeamMemberTeamMemberUpdateTeamMemberUpdatePayloadTeamMember
 
-	retval.Id = v.TeamMemberValues.Id
-	retval.Uuid = v.TeamMemberValues.Uuid
-	retval.Team = v.TeamMemberValues.Team
-	retval.User = v.TeamMemberValues.User
-	retval.Role = v.TeamMemberValues.Role
+	retval.Id = v.TeamMemberFields.Id
+	retval.Uuid = v.TeamMemberFields.Uuid
+	retval.Team = v.TeamMemberFields.Team
+	retval.User = v.TeamMemberFields.User
+	retval.Role = v.TeamMemberFields.Role
 	return &retval, nil
 }
 
@@ -10916,11 +10916,11 @@ const createPipeline_Operation = `
 mutation createPipeline ($input: PipelineCreateInput!) {
 	pipelineCreate(input: $input) {
 		pipeline {
-			... PipelineValues
+			... PipelineFields
 		}
 	}
 }
-fragment PipelineValues on Pipeline {
+fragment PipelineFields on Pipeline {
 	id
 	allowRebuilds
 	branchConfiguration
@@ -11054,12 +11054,12 @@ mutation createTeamMember ($teamID: ID!, $userID: ID!, $role: TeamMemberRole) {
 	teamMemberCreate(input: {teamID:$teamID,userID:$userID,role:$role}) {
 		teamMemberEdge {
 			node {
-				... TeamMemberValues
+				... TeamMemberFields
 			}
 		}
 	}
 }
-fragment TeamMemberValues on TeamMember {
+fragment TeamMemberFields on TeamMember {
 	id
 	uuid
 	team {
@@ -11687,10 +11687,10 @@ query getNode ($id: ID!) {
 	node(id: $id) {
 		__typename
 		... on Pipeline {
-			... PipelineValues
+			... PipelineFields
 		}
 		... on TeamMember {
-			... TeamMemberValues
+			... TeamMemberFields
 		}
 		... on Team {
 			... TeamFields
@@ -11706,7 +11706,7 @@ query getNode ($id: ID!) {
 		}
 	}
 }
-fragment PipelineValues on Pipeline {
+fragment PipelineFields on Pipeline {
 	id
 	allowRebuilds
 	branchConfiguration
@@ -11736,7 +11736,7 @@ fragment PipelineValues on Pipeline {
 	}
 	webhookURL
 }
-fragment TeamMemberValues on TeamMember {
+fragment TeamMemberFields on TeamMember {
 	id
 	uuid
 	team {
@@ -11864,10 +11864,10 @@ func getOrganization(
 const getPipeline_Operation = `
 query getPipeline ($slug: ID!) {
 	pipeline(slug: $slug) {
-		... PipelineValues
+		... PipelineFields
 	}
 }
-fragment PipelineValues on Pipeline {
+fragment PipelineFields on Pipeline {
 	id
 	allowRebuilds
 	branchConfiguration
@@ -12681,11 +12681,11 @@ const updatePipeline_Operation = `
 mutation updatePipeline ($input: PipelineUpdateInput!) {
 	pipelineUpdate(input: $input) {
 		pipeline {
-			... PipelineValues
+			... PipelineFields
 		}
 	}
 }
-fragment PipelineValues on Pipeline {
+fragment PipelineFields on Pipeline {
 	id
 	allowRebuilds
 	branchConfiguration
@@ -12799,11 +12799,11 @@ const updateTeamMember_Operation = `
 mutation updateTeamMember ($id: ID!, $role: TeamMemberRole!) {
 	teamMemberUpdate(input: {id:$id,role:$role}) {
 		teamMember {
-			... TeamMemberValues
+			... TeamMemberFields
 		}
 	}
 }
-fragment TeamMemberValues on TeamMember {
+fragment TeamMemberFields on TeamMember {
 	id
 	uuid
 	team {
