@@ -10,6 +10,8 @@ import (
 	"unsafe"
 
 	"github.com/MakeNowJust/heredoc"
+	"github.com/buildkite/go-pipeline"
+	"github.com/buildkite/go-pipeline/signature"
 	custom_modifier "github.com/buildkite/terraform-provider-buildkite/internal/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -27,7 +29,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/lestrrat-go/jwx/v2/jwk"
-	"github.com/moskyb/agent/v3/pipeline"
 	"github.com/shurcooL/graphql"
 	"gopkg.in/yaml.v3"
 )
@@ -95,8 +96,8 @@ type pipelineResourceModel struct {
 	SignedStepsInput                     types.String           `tfsdk:"signed_steps_input"`
 	Tags                                 []types.String         `tfsdk:"tags"`
 	WebhookUrl                           types.String           `tfsdk:"webhook_url"`
-	SigningJWKS                          types.String           `tfsdk:"signing_jwks"`
-	SigningKeyID                         types.String           `tfsdk:"signing_key_id"`
+	JWKSFile                             types.String           `tfsdk:"jwks_file"`
+	JWKSKeyID                            types.String           `tfsdk:"jwks_key_id"`
 }
 
 type providerSettingsModel struct {
@@ -225,8 +226,8 @@ func (p *pipelineResource) Create(ctx context.Context, req resource.CreateReques
 	setPipelineModel(&state, &response.PipelineCreate.Pipeline)
 
 	state.SignedStepsInput = plan.SignedStepsInput
-	state.SigningJWKS = plan.SigningJWKS
-	state.SigningKeyID = plan.SigningKeyID
+	state.JWKSFile = plan.JWKSFile
+	state.JWKSKeyID = plan.JWKSKeyID
 
 	if plan.ProviderSettings != nil {
 		pipelineExtraInfo, err := updatePipelineExtraInfo(ctx, response.PipelineCreate.Pipeline.Slug, plan.ProviderSettings, p.client, timeouts)
@@ -367,7 +368,7 @@ func (p *pipelineResource) ModifyPlan(ctx context.Context, req resource.ModifyPl
 		return
 	}
 
-	if anyPresent(plan.SigningJWKS.ValueString(), plan.SigningKeyID.ValueString(), plan.SignedStepsInput.ValueString()) {
+	if anyPresent(plan.JWKSFile.ValueString(), plan.JWKSKeyID.ValueString(), plan.SignedStepsInput.ValueString()) {
 		newPlan, err := signPipeline(plan)
 		if err != nil {
 			resp.Diagnostics.AddError("Unable to sign pipeline", err.Error())
@@ -399,7 +400,7 @@ func anyPresent(s ...string) bool {
 func signPipeline(plan pipelineResourceModel) (pipelineResourceModel, error) {
 	newPlan := plan
 
-	if !allPresent(plan.SigningJWKS.ValueString(), plan.SigningKeyID.ValueString(), plan.SignedStepsInput.ValueString()) {
+	if !allPresent(plan.JWKSFile.ValueString(), plan.JWKSKeyID.ValueString(), plan.SignedStepsInput.ValueString()) {
 		return newPlan, errors.New("signing_jwks, signing_key_id, and signed_steps_input must all be set or all be empty")
 	}
 
@@ -411,17 +412,17 @@ func signPipeline(plan pipelineResourceModel) (pipelineResourceModel, error) {
 		return newPlan, fmt.Errorf("parsing pipeline steps: %w", err)
 	}
 
-	jwks, err := jwk.Parse([]byte(plan.SigningJWKS.ValueString()))
+	jwks, err := jwk.Parse([]byte(plan.JWKSFile.ValueString()))
 	if err != nil {
 		return newPlan, fmt.Errorf("parsing signing JWKS: %w", err)
 	}
 
-	key, ok := jwks.LookupKeyID(plan.SigningKeyID.ValueString())
+	key, ok := jwks.LookupKeyID(plan.JWKSKeyID.ValueString())
 	if !ok {
-		return newPlan, fmt.Errorf("signing key ID %s not found in JWKS", plan.SigningKeyID.ValueString())
+		return newPlan, fmt.Errorf("signing key ID %s not found in JWKS", plan.JWKSKeyID.ValueString())
 	}
 
-	err = pl.Sign(key)
+	err = signature.SignPipeline(pl, key, plan.Repository.ValueString())
 	if err != nil {
 		return newPlan, fmt.Errorf("signing pipeline steps: %w", err)
 	}
@@ -434,7 +435,6 @@ func signPipeline(plan pipelineResourceModel) (pipelineResourceModel, error) {
 	newPlan.Steps = types.StringValue(string(y))
 
 	return newPlan, nil
-
 }
 
 func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
@@ -587,14 +587,14 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
-			"signing_key_id": schema.StringAttribute{
+			"jwks_key_id": schema.StringAttribute{
 				Optional:            true,
-				MarkdownDescription: "The ID of the signing key used to sign the steps of the pipeline prior to creation. Key with this ID must exist in `signing_jwks`.",
+				MarkdownDescription: "The ID of the signing key used to sign the steps of the pipeline prior to creation. Key with this ID must exist in `jwks_file`.",
 			},
-			"signing_jwks": schema.StringAttribute{
+			"jwks_file": schema.StringAttribute{
 				Optional:            true,
 				Sensitive:           true,
-				MarkdownDescription: "The JWKS used to sign the steps of the pipeline prior to creation",
+				MarkdownDescription: "A file that contains a JSON Web Key Set that contains the private key used to sign the steps of the pipeline. The key withing this set will be chosen by `jwks_key_id`.",
 			},
 			"provider_settings": schema.SingleNestedAttribute{
 				Optional:            true,
@@ -790,8 +790,8 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 	setPipelineModel(&state, &response.PipelineUpdate.Pipeline)
 
 	state.SignedStepsInput = plan.SignedStepsInput
-	state.SigningJWKS = plan.SigningJWKS
-	state.SigningKeyID = plan.SigningKeyID
+	state.JWKSFile = plan.JWKSFile
+	state.JWKSKeyID = plan.JWKSKeyID
 
 	if plan.ProviderSettings != nil {
 		pipelineExtraInfo, err := updatePipelineExtraInfo(ctx, response.PipelineUpdate.Pipeline.Slug, plan.ProviderSettings, p.client, timeouts)
