@@ -212,7 +212,7 @@ func (pt *pipelineTemplateResource) Update(ctx context.Context, req resource.Upd
 		return
 	}
 
-	timeout, diags := pt.client.timeouts.Create(ctx, DefaultTimeout)
+	timeout, diags := pt.client.timeouts.Update(ctx, DefaultTimeout)
 	resp.Diagnostics.Append(diags...)
 
 	if resp.Diagnostics.HasError() {
