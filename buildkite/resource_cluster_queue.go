@@ -15,7 +15,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
-type ClusterQueueResourceModel struct {
+type clusterQueueResourceModel struct {
 	Id          types.String `tfsdk:"id"`
 	Uuid        types.String `tfsdk:"uuid"`
 	ClusterId   types.String `tfsdk:"cluster_id"`
@@ -24,19 +24,19 @@ type ClusterQueueResourceModel struct {
 	Description types.String `tfsdk:"description"`
 }
 
-type ClusterQueueResource struct {
+type clusterQueueResource struct {
 	client *Client
 }
 
-func NewClusterQueueResource() resource.Resource {
-	return &ClusterQueueResource{}
+func newClusterQueueResource() resource.Resource {
+	return &clusterQueueResource{}
 }
 
-func (ClusterQueueResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
+func (clusterQueueResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
 	resp.TypeName = req.ProviderTypeName + "_cluster_queue"
 }
 
-func (cq *ClusterQueueResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
+func (cq *clusterQueueResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
 	if req.ProviderData == nil {
 		return
 	}
@@ -44,7 +44,7 @@ func (cq *ClusterQueueResource) Configure(ctx context.Context, req resource.Conf
 	cq.client = req.ProviderData.(*Client)
 }
 
-func (ClusterQueueResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
+func (clusterQueueResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = resource_schema.Schema{
 		MarkdownDescription: "A Cluster Queue is a queue belonging to a specific Cluster for its Agents to target builds on. ",
 		Attributes: map[string]resource_schema.Attribute{
@@ -88,8 +88,8 @@ func (ClusterQueueResource) Schema(ctx context.Context, req resource.SchemaReque
 	}
 }
 
-func (cq *ClusterQueueResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	var plan, state ClusterQueueResourceModel
+func (cq *clusterQueueResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	var plan, state clusterQueueResourceModel
 
 	diags := req.Plan.Get(ctx, &plan)
 	resp.Diagnostics.Append(diags...)
@@ -139,8 +139,8 @@ func (cq *ClusterQueueResource) Create(ctx context.Context, req resource.CreateR
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
-func (cq *ClusterQueueResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var state ClusterQueueResourceModel
+func (cq *clusterQueueResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	var state clusterQueueResourceModel
 
 	diags := req.State.Get(ctx, &state)
 	resp.Diagnostics.Append(diags...)
@@ -197,7 +197,7 @@ func (cq *ClusterQueueResource) Read(ctx context.Context, req resource.ReadReque
 	return
 }
 
-func (cq *ClusterQueueResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+func (cq *clusterQueueResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	importComponents := strings.Split(req.ID, ",")
 
 	if len(importComponents) != 2 || importComponents[0] == "" || importComponents[1] == "" {
@@ -214,8 +214,8 @@ func (cq *ClusterQueueResource) ImportState(ctx context.Context, req resource.Im
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("cluster_uuid"), importComponents[1])...)
 }
 
-func (cq *ClusterQueueResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	var state ClusterQueueResourceModel
+func (cq *clusterQueueResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	var state clusterQueueResourceModel
 	var description types.String
 
 	diagsState := req.State.Get(ctx, &state)
@@ -264,8 +264,8 @@ func (cq *ClusterQueueResource) Update(ctx context.Context, req resource.UpdateR
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
-func (cq *ClusterQueueResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var plan ClusterQueueResourceModel
+func (cq *clusterQueueResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	var plan clusterQueueResourceModel
 
 	diags := req.State.Get(ctx, &plan)
 	resp.Diagnostics.Append(diags...)
@@ -303,7 +303,7 @@ func (cq *ClusterQueueResource) Delete(ctx context.Context, req resource.DeleteR
 	}
 }
 
-func updateClusterQueueResource(clusterQueueNode getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue, cq *ClusterQueueResourceModel) {
+func updateClusterQueueResource(clusterQueueNode getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue, cq *clusterQueueResourceModel) {
 	cq.Id = types.StringValue(clusterQueueNode.Id)
 	cq.Uuid = types.StringValue(clusterQueueNode.Uuid)
 	cq.Key = types.StringValue(clusterQueueNode.Key)

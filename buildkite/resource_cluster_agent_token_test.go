@@ -37,7 +37,7 @@ func TestAccBuildkiteClusterAgentTokenResource(t *testing.T) {
 	}
 
 	t.Run("creates a cluster agent token", func(t *testing.T) {
-		var ct ClusterAgentTokenResourceModel
+		var ct clusterAgentTokenResourceModel
 		clusterName := acctest.RandString(10)
 		tokenDesc := acctest.RandString(10)
 
@@ -72,7 +72,7 @@ func TestAccBuildkiteClusterAgentTokenResource(t *testing.T) {
 	})
 
 	t.Run("updates a cluster agent token", func(t *testing.T) {
-		var ct ClusterAgentTokenResourceModel
+		var ct clusterAgentTokenResourceModel
 		clusterName := acctest.RandString(10)
 		tokenDesc := acctest.RandString(10)
 		updatedTokenDesc := acctest.RandString(10)
@@ -113,7 +113,7 @@ func TestAccBuildkiteClusterAgentTokenResource(t *testing.T) {
 	})
 }
 
-func testAccCheckClusterAgentTokenExists(resourceName string, ct *ClusterAgentTokenResourceModel) resource.TestCheckFunc {
+func testAccCheckClusterAgentTokenExists(resourceName string, ct *clusterAgentTokenResourceModel) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		resourceState, ok := s.RootModule().Resources[resourceName]
 
@@ -155,7 +155,7 @@ func testAccCheckClusterAgentTokenExists(resourceName string, ct *ClusterAgentTo
 	}
 }
 
-func testAccCheckClusterAgentTokenRemoteValues(ct *ClusterAgentTokenResourceModel, description string) resource.TestCheckFunc {
+func testAccCheckClusterAgentTokenRemoteValues(ct *clusterAgentTokenResourceModel, description string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 
 		if ct.Description.ValueString() != description {
