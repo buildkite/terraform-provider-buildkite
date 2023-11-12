@@ -44,7 +44,7 @@ func TestAccBuildkiteOrganizationBannerResource(t *testing.T) {
 			resource.TestCheckResourceAttrSet("buildkite_organization_banner.banner_foo", "message"),
 		)
 
-		resource.ParallelTest(t, resource.TestCase{
+		resource.Test(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },
 			ProtoV6ProviderFactories: protoV6ProviderFactories(),
 			CheckDestroy:             testAccCheckOrganizationBannerDestroy,
@@ -58,7 +58,6 @@ func TestAccBuildkiteOrganizationBannerResource(t *testing.T) {
 	})
 
 	t.Run("updates an organization banner", func(t *testing.T) {
-		t.Skip()
 		message := acctest.RandString(12)
 		updatedMessage := acctest.RandString(12)
 		var obr organizationBannerResourceModel
@@ -83,7 +82,7 @@ func TestAccBuildkiteOrganizationBannerResource(t *testing.T) {
 			resource.TestCheckResourceAttrSet("buildkite_organization_banner.banner_foo", "message"),
 		)
 
-		resource.ParallelTest(t, resource.TestCase{
+		resource.Test(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },
 			ProtoV6ProviderFactories: protoV6ProviderFactories(),
 			CheckDestroy:             testAccCheckOrganizationBannerDestroy,
@@ -101,7 +100,6 @@ func TestAccBuildkiteOrganizationBannerResource(t *testing.T) {
 	})
 
 	t.Run("imports an organization banner", func(t *testing.T) {
-		t.Skip()
 		message := acctest.RandString(12)
 		var obr organizationBannerResourceModel
 
@@ -116,7 +114,7 @@ func TestAccBuildkiteOrganizationBannerResource(t *testing.T) {
 			resource.TestCheckResourceAttrSet("buildkite_organization_banner.banner_foo", "message"),
 		)
 
-		resource.ParallelTest(t, resource.TestCase{
+		resource.Test(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },
 			ProtoV6ProviderFactories: protoV6ProviderFactories(),
 			CheckDestroy:             testAccCheckOrganizationBannerDestroy,
