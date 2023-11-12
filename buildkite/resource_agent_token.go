@@ -23,30 +23,30 @@ type AgentTokenNode struct {
 	RevokedAt   graphql.String
 }
 
-type AgentTokenStateModel struct {
+type agentTokenStateModel struct {
 	Description types.String `tfsdk:"description"`
 	Id          types.String `tfsdk:"id"`
 	Token       types.String `tfsdk:"token"`
 	Uuid        types.String `tfsdk:"uuid"`
 }
 
-type AgentTokenResource struct {
+type agentTokenResource struct {
 	client *Client
 }
 
 func newAgentTokenResource() resource.Resource {
-	return &AgentTokenResource{}
+	return &agentTokenResource{}
 }
 
-func (at *AgentTokenResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
+func (at *agentTokenResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
 	if req.ProviderData == nil {
 		return
 	}
 	at.client = req.ProviderData.(*Client)
 }
 
-func (at *AgentTokenResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	var plan, state AgentTokenStateModel
+func (at *agentTokenResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	var plan, state agentTokenStateModel
 
 	diags := req.Plan.Get(ctx, &plan)
 	resp.Diagnostics.Append(diags...)
@@ -90,8 +90,8 @@ func (at *AgentTokenResource) Create(ctx context.Context, req resource.CreateReq
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
-func (at *AgentTokenResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var state AgentTokenStateModel
+func (at *agentTokenResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	var state agentTokenStateModel
 
 	diags := req.State.Get(ctx, &state)
 	resp.Diagnostics.Append(diags...)
@@ -126,12 +126,12 @@ func (at *AgentTokenResource) Delete(ctx context.Context, req resource.DeleteReq
 	}
 }
 
-func (AgentTokenResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
+func (agentTokenResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
 	resp.TypeName = "buildkite_agent_token"
 }
 
-func (at *AgentTokenResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var plan, state AgentTokenStateModel
+func (at *agentTokenResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	var plan, state agentTokenStateModel
 
 	diags := req.State.Get(ctx, &plan)
 	resp.Diagnostics.Append(diags...)
@@ -179,7 +179,7 @@ func (at *AgentTokenResource) Read(ctx context.Context, req resource.ReadRequest
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
-func (AgentTokenResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
+func (agentTokenResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = resource_schema.Schema{
 		MarkdownDescription: heredoc.Doc(`
 			This resource allows you to create and manage non-clustered agent tokens.
@@ -213,7 +213,7 @@ func (AgentTokenResource) Schema(ctx context.Context, req resource.SchemaRequest
 	}
 }
 
-func (AgentTokenResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+func (agentTokenResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	resp.Diagnostics.AddError("Cannot update an agent token", "A new agent token must be created")
 	panic("cannot update an agent token")
 }

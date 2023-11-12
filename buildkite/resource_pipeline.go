@@ -124,7 +124,7 @@ type pipelineResponse interface {
 	GetBranchConfiguration() *string
 	GetCancelIntermediateBuilds() bool
 	GetCancelIntermediateBuildsBranchFilter() string
-	GetCluster() PipelineValuesCluster
+	GetCluster() PipelineFieldsCluster
 	GetColor() *string
 	GetDefaultBranch() string
 	GetDefaultTimeoutInMinutes() *int
@@ -132,12 +132,12 @@ type pipelineResponse interface {
 	GetDescription() string
 	GetEmoji() *string
 	GetName() string
-	GetRepository() PipelineValuesRepository
+	GetRepository() PipelineFieldsRepository
 	GetSkipIntermediateBuilds() bool
 	GetSkipIntermediateBuildsBranchFilter() string
 	GetSlug() string
-	GetSteps() PipelineValuesStepsPipelineSteps
-	GetTags() []PipelineValuesTagsPipelineTag
+	GetSteps() PipelineFieldsStepsPipelineSteps
+	GetTags() []PipelineFieldsTagsPipelineTag
 	GetWebhookURL() string
 }
 

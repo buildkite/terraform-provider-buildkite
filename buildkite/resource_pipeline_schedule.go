@@ -35,7 +35,7 @@ type pipelineScheduleResourceModel struct {
 	PipelineId types.String `tfsdk:"pipeline_id"`
 }
 
-func NewPipelineScheduleResource() resource.Resource {
+func newPipelineScheduleResource() resource.Resource {
 	return &pipelineSchedule{}
 }
 

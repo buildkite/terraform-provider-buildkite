@@ -1,4 +1,4 @@
-fragment PipelineValues on Pipeline {
+fragment PipelineFields on Pipeline {
     id
     allowRebuilds
     # @genqlient(pointer: true)
@@ -37,7 +37,7 @@ fragment PipelineValues on Pipeline {
 
 query getPipeline($slug: ID!) {
     pipeline(slug: $slug) {
-        ...PipelineValues
+        ...PipelineFields
     }
 }
 
@@ -55,7 +55,7 @@ mutation createPipeline(
 ) {
     pipelineCreate(input: $input) {
         pipeline {
-            ...PipelineValues
+            ...PipelineFields
         }
     }
 }
@@ -75,7 +75,7 @@ mutation updatePipeline(
 ) {
     pipelineUpdate(input: $input) {
         pipeline {
-            ...PipelineValues
+            ...PipelineFields
         }
     }
 }
