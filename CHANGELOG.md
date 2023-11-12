@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- SUP-1445: Organization Banner resource implementation [[PR #433](https://github.com/buildkite/terraform-provider-buildkite/pull/433)] @james2791 
 - SUP-1544: GraphQL Fragment naming and type export consolidation [[PR #432](https://github.com/buildkite/terraform-provider-buildkite/pull/432)] @james2791 
 - SUP-1312: Pipeline Template resource implementation [[PR #429](https://github.com/buildkite/terraform-provider-buildkite/pull/429)] @james2791 
 - SUP-1534: Color/Emoji attributes for Pipeline resources [[PR #427](https://github.com/buildkite/terraform-provider-buildkite/pull/427)] @james2791 
