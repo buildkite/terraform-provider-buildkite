@@ -2,6 +2,7 @@ package buildkite
 
 import (
 	"context"
+	"fmt"
 	"sort"
 
 	"github.com/MakeNowJust/heredoc"
@@ -42,7 +43,10 @@ func (m *metaDatasource) Read(ctx context.Context, req datasource.ReadRequest, r
 	meta := MetaResponse{}
 	err := m.client.makeRequest(ctx, "GET", "/v2/meta", nil, &meta)
 	if err != nil {
-		resp.Diagnostics.AddError("Failed to read meta", err.Error())
+		resp.Diagnostics.AddError(
+			"Failed to read meta",
+			fmt.Sprintf("Failed to read meta %s", err.Error()),
+		)
 		return
 	}
 

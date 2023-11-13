@@ -81,8 +81,8 @@ func (ts *testSuiteResource) Create(ctx context.Context, req resource.CreateRequ
 
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Failed to find team",
-			err.Error(),
+			"Failed to find owning team",
+			fmt.Sprintf("Failed to find owning team: %s", err.Error()),
 		)
 		return
 	}
@@ -115,7 +115,7 @@ func (ts *testSuiteResource) Create(ctx context.Context, req resource.CreateRequ
 	if createErr != nil {
 		resp.Diagnostics.AddError(
 			"Failed to create test suite",
-			createErr.Error(),
+			fmt.Sprintf("Failed to create test suite: %s", createErr.Error()),
 		)
 		return
 	}
@@ -155,7 +155,7 @@ func (ts *testSuiteResource) Delete(ctx context.Context, req resource.DeleteRequ
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Failed to delete test suite",
-			err.Error(),
+			fmt.Sprintf("Failed to delete test suite: %s", err.Error()),
 		)
 		return
 	}
@@ -196,7 +196,7 @@ func (ts *testSuiteResource) Read(ctx context.Context, req resource.ReadRequest,
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Failed to load test suite from GraphQL",
-			err.Error(),
+			fmt.Sprintf("Failed to load test suite from GraphQL: %s", err.Error()),
 		)
 		return
 	}
@@ -322,7 +322,7 @@ func (ts *testSuiteResource) Update(ctx context.Context, req resource.UpdateRequ
 	if updateErr != nil {
 		resp.Diagnostics.AddError(
 			"Failed to update test suite",
-			updateErr.Error(),
+			fmt.Sprintf("Failed to update test suite: %s", updateErr.Error()),
 		)
 		return
 	}
@@ -349,7 +349,7 @@ func (ts *testSuiteResource) Update(ctx context.Context, req resource.UpdateRequ
 		if err != nil {
 			resp.Diagnostics.AddError(
 				"Could not add new owner team",
-				err.Error(),
+				fmt.Sprintf("Could not add new owner team: %s", err.Error()),
 			)
 			return
 		}
@@ -369,7 +369,7 @@ func (ts *testSuiteResource) Update(ctx context.Context, req resource.UpdateRequ
 				if err != nil {
 					resp.Diagnostics.AddError(
 						"Failed to delete team owner",
-						err.Error(),
+						fmt.Sprintf("Failed to delete team owner: %s", err.Error()),
 					)
 					return
 				}
