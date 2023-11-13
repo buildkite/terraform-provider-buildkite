@@ -254,9 +254,9 @@ func (pt *pipelineTemplateResource) Update(ctx context.Context, req resource.Upd
 }
 
 func (pt *pipelineTemplateResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var plan pipelineTemplateResourceModel
+	var state pipelineTemplateResourceModel
 
-	diags := req.State.Get(ctx, &plan)
+	diags := req.State.Get(ctx, &state)
 	resp.Diagnostics.Append(diags...)
 
 	if resp.Diagnostics.HasError() {
@@ -273,11 +273,11 @@ func (pt *pipelineTemplateResource) Delete(ctx context.Context, req resource.Del
 	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		var err error
 
-		log.Printf("Deleting pipeline template %s with ID %s ...", plan.Name.ValueString(), plan.ID.ValueString())
+		log.Printf("Deleting pipeline template %s with ID %s ...", state.Name.ValueString(), state.ID.ValueString())
 		_, err = deletePipelineTemplate(ctx,
 			pt.client.genqlient,
 			pt.client.organizationId,
-			plan.ID.ValueString(),
+			state.ID.ValueString(),
 		)
 
 		return retryContextError(err)
