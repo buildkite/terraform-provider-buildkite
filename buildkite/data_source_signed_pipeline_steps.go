@@ -16,11 +16,11 @@ import (
 )
 
 type signedPipelineStepsDataSource struct {
-	Steps       types.String `tfsdk:"steps"`
-	Repository  types.String `tfsdk:"repository"`
-	JWKS        types.String `tfsdk:"jwks"`
-	JWKSKeyID   types.String `tfsdk:"jwks_key_id"`
-	SignedSteps types.String `tfsdk:"signed_steps"`
+	UnisignedSteps types.String `tfsdk:"unsigned_steps"`
+	Repository     types.String `tfsdk:"repository"`
+	JWKS           types.String `tfsdk:"jwks"`
+	JWKSKeyID      types.String `tfsdk:"jwks_key_id"`
+	Steps          types.String `tfsdk:"steps"`
 }
 
 func newSignedPipelineStepsDataSource() datasource.DataSource {
@@ -48,7 +48,7 @@ func (s *signedPipelineStepsDataSource) Schema(
 			More info in the Buildkite [documentation](https://buildkite.com/docs/pipelines).
 		`),
 		Attributes: map[string]schema.Attribute{
-			"steps": schema.StringAttribute{
+			"unsigned_steps": schema.StringAttribute{
 				Description: "The steps to sign in YAML format.",
 				Required:    true,
 			},
@@ -65,8 +65,8 @@ func (s *signedPipelineStepsDataSource) Schema(
 				Required:    false,
 				Optional:    true,
 			},
-			"signed_steps": schema.StringAttribute{
 				Description: "The signed steps",
+			"steps": schema.StringAttribute{
 				Computed:    true,
 			},
 		},
@@ -84,7 +84,7 @@ func (s *signedPipelineStepsDataSource) Read(
 		return
 	}
 
-	p, err := pipeline.Parse(strings.NewReader(data.Steps.ValueString()))
+	p, err := pipeline.Parse(strings.NewReader(data.UnisignedSteps.ValueString()))
 	if err != nil {
 		resp.Diagnostics.AddError("Unable to parse pipeline steps", err.Error())
 		return
@@ -123,6 +123,6 @@ func (s *signedPipelineStepsDataSource) Read(
 		return
 	}
 
-	data.SignedSteps = types.StringValue(string(signedSteps))
+	data.Steps = types.StringValue(string(signedSteps))
 	resp.Diagnostics.Append(resp.State.Set(ctx, data)...)
 }
