@@ -42,17 +42,46 @@ func (s *signedPipelineStepsDataSource) Schema(
 ) {
 	resp.Schema = schema.Schema{
 		Description: "A data source that can be used to sign pipeline steps with a JWKS key",
-		MarkdownDescription: heredoc.Doc(`
-			Use this data source to sign pipeline steps with a JWKS key. You will need to have the
-			corresponding verification key present on the agents that run this the steps in this
-			pipeline. You can use then use these steps in a buildkite_pipeline resource.
+		MarkdownDescription: heredoc.Docf(
+			`
+				Use this data source to sign pipeline steps with a JWKS key. You will need to have the
+				corresponding verification key present on the agents that run this the steps in this
+				pipeline. You can use then use these steps in a buildkite_pipeline resource.
 
-			~> **Security Notice** The secret key required to use this data source will be stored
-			*unencrypted* in your Terraform state file. If you wish to avoid this, you can manually
-			sign the pipeline line steps using the [buildkite agent CLI](https://buildkite.com/docs/agent/v3/cli-tool#sign-a-step).
+				~> **Security Notice** The secret key required to use this data source will be stored
+				*unencrypted* in your Terraform state file. If you wish to avoid this, you can manually
+				sign the pipeline line steps using the [buildkite agent CLI](https://buildkite.com/docs/agent/v3/cli-tool#sign-a-step).
 
-			More info in the Buildkite [documentation](https://buildkite.com/docs/agent/v3/signed_pipelines).
-		`),
+				## Example Usage
+				%s
+				locals {
+				  repository = "git@github.com:my-org/my-repo.git"
+				}
+
+				resource "buildkite_pipeline" "my-pipeline" {
+				  name       = "my-pipeline"
+				  repository = local.repository
+				  steps      = data.buildkite_signed_pipeline_steps.my-signed-steps.steps
+				}
+
+				data "buildkite_signed_pipeline_steps" "my-signed-steps" {
+				  repository  = local.repository
+				  jwks        = file(var.jwks_file)
+				  jwks_key_id = var.jwks_key_id
+
+				  unsigned_steps = <<YAML
+				steps:
+				- label: ":pipeline:"
+				  command: buildkite-agent pipeline upload
+				YAML
+				}
+				%s
+
+				More info in the Buildkite [documentation](https://buildkite.com/docs/agent/v3/signed_pipelines).
+			`,
+			"```terraform",
+			"```",
+		),
 		Attributes: map[string]schema.Attribute{
 			"unsigned_steps": schema.StringAttribute{
 				Description: "The steps to sign in YAML format.",
@@ -64,10 +93,11 @@ func (s *signedPipelineStepsDataSource) Schema(
 			},
 			"jwks": schema.StringAttribute{
 				Description: "The JSON Web Key Set (JWKS) to use for signing. If the `jwks_key_id` is not specified, and the set contains exactly one key, that key will be used.",
-				MarkdownDescription: heredoc.Docf(`
-					The JSON Web Key Set (JWKS) to use for signing. See [RFC 7517](https://datatracker.ietf.org/doc/html/rfc7517) for more information.
-					If the %s is not specified, and the set contains exactly one key, that key will be used.
-				`,
+				MarkdownDescription: heredoc.Docf(
+					`
+						The JSON Web Key Set (JWKS) to use for signing. See [RFC 7517](https://datatracker.ietf.org/doc/html/rfc7517) for more information.
+						If the %s is not specified, and the set contains exactly one key, that key will be used.
+					`,
 					"`jwks_key_id`",
 				),
 				Required:  true,
@@ -76,11 +106,13 @@ func (s *signedPipelineStepsDataSource) Schema(
 			"jwks_key_id": schema.StringAttribute{
 				Description: "The ID of the key in the JSON Web Key Set (JWKS) to use for signing. If this is not specified, and the JWKS contains exactly one key, that key will be used.",
 
-				MarkdownDescription: heredoc.Docf(`
-					The ID of the key in the JSON Web Key Set (JWKS) to use for signing. See [RFC 7517](https://datatracker.ietf.org/doc/html/rfc7517) for more information.
+				MarkdownDescription: heredoc.Docf(
+					`
+						The ID of the key in the JSON Web Key Set (JWKS) to use for signing.
+						See [RFC 7517](https://datatracker.ietf.org/doc/html/rfc7517) for more information.
 
-					If this is not specified, and the key set in %s contains exactly one key, that key will be used.
-				`,
+						If this is not specified, and the key set in %s contains exactly one key, that key will be used.
+					`,
 					"`jwks`",
 				),
 				Required: false,
