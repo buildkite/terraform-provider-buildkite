@@ -9,6 +9,27 @@ description: |-
   ~> Security Notice The secret key required to use this data source will be stored
   unencrypted in your Terraform state file. If you wish to avoid this, you can manually
   sign the pipeline line steps using the buildkite agent CLI https://buildkite.com/docs/agent/v3/cli-tool#sign-a-step.
+  Example Usage
+  ```terraform
+  locals {
+    repository = "git@github.com:my-org/my-repo.git"
+  }
+  resource "buildkitepipeline" "my-pipeline" {
+    name       = "my-pipeline"
+    repository = local.repository
+    steps      = data.buildkitesignedpipelinesteps.my-signed-steps.steps
+  }
+  data "buildkitesignedpipelinesteps" "my-signed-steps" {
+    repository  = local.repository
+    jwks        = file(var.jwksfile)
+    jwkskeyid = var.jwkskeyid
+  unsigned_steps = <<YAML
+  steps:
+  - label: ":pipeline:"
+    command: buildkite-agent pipeline upload
+  YAML
+  }
+  ```
   More info in the Buildkite documentation https://buildkite.com/docs/agent/v3/signed_pipelines.
 ---
 
@@ -21,6 +42,31 @@ pipeline. You can use then use these steps in a buildkite_pipeline resource.
 ~> **Security Notice** The secret key required to use this data source will be stored
 *unencrypted* in your Terraform state file. If you wish to avoid this, you can manually
 sign the pipeline line steps using the [buildkite agent CLI](https://buildkite.com/docs/agent/v3/cli-tool#sign-a-step).
+
+## Example Usage
+```terraform
+locals {
+  repository = "git@github.com:my-org/my-repo.git"
+}
+
+resource "buildkite_pipeline" "my-pipeline" {
+  name       = "my-pipeline"
+  repository = local.repository
+  steps      = data.buildkite_signed_pipeline_steps.my-signed-steps.steps
+}
+
+data "buildkite_signed_pipeline_steps" "my-signed-steps" {
+  repository  = local.repository
+  jwks        = file(var.jwks_file)
+  jwks_key_id = var.jwks_key_id
+
+  unsigned_steps = <<YAML
+steps:
+- label: ":pipeline:"
+  command: buildkite-agent pipeline upload
+YAML
+}
+```
 
 More info in the Buildkite [documentation](https://buildkite.com/docs/agent/v3/signed_pipelines).
 
@@ -38,7 +84,8 @@ If the `jwks_key_id` is not specified, and the set contains exactly one key, tha
 
 ### Optional
 
-- `jwks_key_id` (String) The ID of the key in the JSON Web Key Set (JWKS) to use for signing. See [RFC 7517](https://datatracker.ietf.org/doc/html/rfc7517) for more information.
+- `jwks_key_id` (String) The ID of the key in the JSON Web Key Set (JWKS) to use for signing.
+See [RFC 7517](https://datatracker.ietf.org/doc/html/rfc7517) for more information.
 
 If this is not specified, and the key set in `jwks` contains exactly one key, that key will be used.
 
