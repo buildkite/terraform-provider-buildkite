@@ -43,9 +43,15 @@ func (s *signedPipelineStepsDataSource) Schema(
 	resp.Schema = schema.Schema{
 		Description: "A data source that can be used to sign pipeline steps with a JWKS key",
 		MarkdownDescription: heredoc.Doc(`
-			Use this data source to look up properties on a specific pipeline. This is particularly useful for looking up the webhook URL for each pipeline.
+			Use this data source to sign pipeline steps with a JWKS key. You will need to have the
+			corresponding verification key present on the agents that run this the steps in this
+			pipeline. You can use then use these steps in a buildkite_pipeline resource.
 
-			More info in the Buildkite [documentation](https://buildkite.com/docs/pipelines).
+			~> **Security Notice** The secret key required to use this data source will be stored
+			*unencrypted* in your Terraform state file. If you wish to avoid this, you can manually
+			sign the pipeline line steps using the [buildkite agent CLI](https://buildkite.com/docs/agent/v3/cli-tool#sign-a-step).
+
+			More info in the Buildkite [documentation](https://buildkite.com/docs/agent/v3/signed_pipelines).
 		`),
 		Attributes: map[string]schema.Attribute{
 			"unsigned_steps": schema.StringAttribute{
@@ -57,17 +63,31 @@ func (s *signedPipelineStepsDataSource) Schema(
 				Required:    true,
 			},
 			"jwks": schema.StringAttribute{
-				Description: "The JWKS to use for signing. If the `jwks_key_id` is not specified, and the set contains exactly one key, that key will be used.",
-				Required:    true,
-				Sensitive:   true,
+				Description: "The JSON Web Key Set (JWKS) to use for signing. If the `jwks_key_id` is not specified, and the set contains exactly one key, that key will be used.",
+				MarkdownDescription: heredoc.Docf(`
+					The JSON Web Key Set (JWKS) to use for signing. See [RFC 7517](https://datatracker.ietf.org/doc/html/rfc7517) for more information.
+					If the %s is not specified, and the set contains exactly one key, that key will be used.
+				`,
+					"`jwks_key_id`",
+				),
+				Required:  true,
+				Sensitive: true,
 			},
 			"jwks_key_id": schema.StringAttribute{
-				Description: "The ID of the key in the JWKS to use for signing.",
-				Required:    false,
-				Optional:    true,
+				Description: "The ID of the key in the JSON Web Key Set (JWKS) to use for signing. If this is not specified, and the JWKS contains exactly one key, that key will be used.",
+
+				MarkdownDescription: heredoc.Docf(`
+					The ID of the key in the JSON Web Key Set (JWKS) to use for signing. See [RFC 7517](https://datatracker.ietf.org/doc/html/rfc7517) for more information.
+
+					If this is not specified, and the key set in %s contains exactly one key, that key will be used.
+				`,
+					"`jwks`",
+				),
+				Required: false,
+				Optional: true,
 			},
-				Description: "The signed steps",
 			"steps": schema.StringAttribute{
+				Description: "The signed steps in YAML format.",
 				Computed:    true,
 			},
 		},
