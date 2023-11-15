@@ -59,6 +59,7 @@ func (s *signedPipelineStepsDataSource) Schema(
 			"jwks": schema.StringAttribute{
 				Description: "The JWKS to use for signing. If the `jwks_key_id` is not specified, and the set contains exactly one key, that key will be used.",
 				Required:    true,
+				Sensitive:   true,
 			},
 			"jwks_key_id": schema.StringAttribute{
 				Description: "The ID of the key in the JWKS to use for signing.",
