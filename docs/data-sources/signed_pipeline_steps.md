@@ -14,20 +14,20 @@ description: |-
   locals {
     repository = "git@github.com:my-org/my-repo.git"
   }
-  resource "buildkitepipeline" "my-pipeline" {
-    name       = "my-pipeline"
-    repository = local.repository
-    steps      = data.buildkitesignedpipelinesteps.my-signed-steps.steps
-  }
-  data "buildkitesignedpipelinesteps" "my-signed-steps" {
+  data "buildkitesignedpipelinesteps" "my-steps" {
     repository  = local.repository
-    jwks        = file(var.jwksfile)
-    jwkskeyid = var.jwkskeyid
+    jwks        = file("/path/to/my/jwks.json")
+    jwkskey_id = "my-key"
   unsigned_steps = <<YAML
   steps:
   - label: ":pipeline:"
     command: buildkite-agent pipeline upload
   YAML
+  }
+  resource "buildkitepipeline" "my-pipeline" {
+    name       = "my-pipeline"
+    repository = local.repository
+    steps      = data.buildkitesignedpipelinesteps.my-steps.steps
   }
   ```
   More info in the Buildkite documentation https://buildkite.com/docs/agent/v3/signed_pipelines.
@@ -49,22 +49,22 @@ locals {
   repository = "git@github.com:my-org/my-repo.git"
 }
 
-resource "buildkite_pipeline" "my-pipeline" {
-  name       = "my-pipeline"
-  repository = local.repository
-  steps      = data.buildkite_signed_pipeline_steps.my-signed-steps.steps
-}
-
-data "buildkite_signed_pipeline_steps" "my-signed-steps" {
+data "buildkite_signed_pipeline_steps" "my-steps" {
   repository  = local.repository
-  jwks        = file(var.jwks_file)
-  jwks_key_id = var.jwks_key_id
+  jwks        = file("/path/to/my/jwks.json")
+  jwks_key_id = "my-key"
 
   unsigned_steps = <<YAML
 steps:
 - label: ":pipeline:"
   command: buildkite-agent pipeline upload
 YAML
+}
+
+resource "buildkite_pipeline" "my-pipeline" {
+  name       = "my-pipeline"
+  repository = local.repository
+  steps      = data.buildkite_signed_pipeline_steps.my-steps.steps
 }
 ```
 
