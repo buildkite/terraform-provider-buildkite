@@ -16,11 +16,11 @@ import (
 )
 
 type signedPipelineStepsDataSource struct {
-	UnisignedSteps types.String `tfsdk:"unsigned_steps"`
-	Repository     types.String `tfsdk:"repository"`
-	JWKS           types.String `tfsdk:"jwks"`
-	JWKSKeyID      types.String `tfsdk:"jwks_key_id"`
-	Steps          types.String `tfsdk:"steps"`
+	UnsignedSteps types.String `tfsdk:"unsigned_steps"`
+	Repository    types.String `tfsdk:"repository"`
+	JWKS          types.String `tfsdk:"jwks"`
+	JWKSKeyID     types.String `tfsdk:"jwks_key_id"`
+	Steps         types.String `tfsdk:"steps"`
 }
 
 func newSignedPipelineStepsDataSource() datasource.DataSource {
@@ -137,7 +137,7 @@ func (s *signedPipelineStepsDataSource) Read(
 		return
 	}
 
-	p, err := pipeline.Parse(strings.NewReader(data.UnisignedSteps.ValueString()))
+	p, err := pipeline.Parse(strings.NewReader(data.UnsignedSteps.ValueString()))
 	if err != nil {
 		resp.Diagnostics.AddError("Unable to parse pipeline steps", err.Error())
 		return
