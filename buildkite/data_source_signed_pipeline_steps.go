@@ -7,6 +7,7 @@ import (
 
 	"github.com/MakeNowJust/heredoc"
 	"github.com/buildkite/go-pipeline"
+	"github.com/buildkite/go-pipeline/jwkutil"
 	"github.com/buildkite/go-pipeline/signature"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
@@ -19,6 +20,7 @@ type signedPipelineStepsDataSource struct {
 	UnsignedSteps types.String `tfsdk:"unsigned_steps"`
 	Repository    types.String `tfsdk:"repository"`
 	JWKS          types.String `tfsdk:"jwks"`
+	JWKSFile      types.String `tfsdk:"jwks_file"`
 	JWKSKeyID     types.String `tfsdk:"jwks_key_id"`
 	Steps         types.String `tfsdk:"steps"`
 }
@@ -44,13 +46,9 @@ func (s *signedPipelineStepsDataSource) Schema(
 		Description: "A data source that can be used to sign pipeline steps with a JWKS key",
 		MarkdownDescription: heredoc.Docf(
 			`
-				Use this data source to sign pipeline steps with a JWKS key. You will need to have the
-				corresponding verification key present on the agents that run this the steps in this
-				pipeline. You can use then use these steps in a buildkite_pipeline resource.
-
-				~> **Security Notice** The secret key required to use this data source will be stored
-				*unencrypted* in your Terraform state file. If you wish to avoid this, you can manually
-				sign the pipeline line steps using the [buildkite agent CLI](https://buildkite.com/docs/agent/v3/cli-tool#sign-a-step).
+				Use this data source to sign pipeline steps with a JWKS key. You will need to have
+				the corresponding verification key present on the agents that run this the steps in
+				this pipeline. You can use then use these steps in a %s resource.
 
 				## Example Usage
 				%s
@@ -60,7 +58,7 @@ func (s *signedPipelineStepsDataSource) Schema(
 
 				data "buildkite_signed_pipeline_steps" "my-steps" {
 				  repository  = local.repository
-				  jwks        = file("/path/to/my/jwks.json")
+				  jwks_file   = "/path/to/my/jwks.json"
 				  jwks_key_id = "my-key"
 
 				  unsigned_steps = <<YAML
@@ -77,8 +75,12 @@ func (s *signedPipelineStepsDataSource) Schema(
 				}
 				%s
 
-				More info in the Buildkite [documentation](https://buildkite.com/docs/agent/v3/signed_pipelines).
+				See [RFC 7517](https://datatracker.ietf.org/doc/html/rfc7517) for more information
+				about the JWKS format.
+				See the Buildkite [documentation](https://buildkite.com/docs/agent/v3/signed_pipelines)
+				for more info about signed pipelines.
 			`,
+			"`buildkite_pipeline`",
 			"```terraform",
 			"```",
 		),
@@ -91,31 +93,65 @@ func (s *signedPipelineStepsDataSource) Schema(
 				Description: "The repository that will be checked out in a build of the pipeline.",
 				Required:    true,
 			},
+			"jwks_file": schema.StringAttribute{
+				Description: "The path to a local file containing the JWKS to use for signing. This will be ignored if `jwks` is set. If `jwks_key_id` is not specified, and the set contains exactly one key, that key will be used.",
+				MarkdownDescription: heredoc.Docf(
+					`
+						The path to a file containing the JSON Web Key Set (JWKS) to use for
+						signing. Users will have to ensure that the JWKS file is present on systems
+						running Terraform.
+
+						~> **Security Notice** The secret key referenced in this attribute is
+						expected to be stored *unencrypted* as a file on the system running
+						Terraform. You are responsible for securing it on this system while
+						Terraform is running, and cleaning it up after it has finished running.
+
+						If %s is specified, this will be ignored and the JWKS will be parsed from
+						that value instead. If %s is not specified, and the set contains exactly
+						one key, that key will be used.
+
+						See [RFC 7517](https://datatracker.ietf.org/doc/html/rfc7517) for more
+						information about the JWKS format.
+					`,
+					"`jwks`",
+					"`jwks_key_id`",
+				),
+				Optional: true,
+			},
 			"jwks": schema.StringAttribute{
 				Description: "The JSON Web Key Set (JWKS) to use for signing. If the `jwks_key_id` is not specified, and the set contains exactly one key, that key will be used.",
 				MarkdownDescription: heredoc.Docf(
 					`
-						The JSON Web Key Set (JWKS) to use for signing. See [RFC 7517](https://datatracker.ietf.org/doc/html/rfc7517) for more information.
-						If the %s is not specified, and the set contains exactly one key, that key will be used.
+						The JSON Web Key Set (JWKS) to use for signing.
+						If %s is not specified, and the set contains exactly one key, that key will
+						be used.
+
+						~> **Security Notice** The secret key in this attribute will be stored
+						*unencrypted* in your Terraform state file. This attribute is designed for
+						users that have systems to to securely manage their state files. If you wish
+						to avoid this, use the %s attribute instead.
+
+						See [RFC 7517](https://datatracker.ietf.org/doc/html/rfc7517) for more
+						information about the JWKS format.
 					`,
 					"`jwks_key_id`",
+					"`jwks_file`",
 				),
-				Required:  true,
+				Optional:  true,
 				Sensitive: true,
 			},
 			"jwks_key_id": schema.StringAttribute{
 				Description: "The ID of the key in the JSON Web Key Set (JWKS) to use for signing. If this is not specified, and the JWKS contains exactly one key, that key will be used.",
-
-				MarkdownDescription: heredoc.Docf(
+				MarkdownDescription: heredoc.Doc(
 					`
 						The ID of the key in the JSON Web Key Set (JWKS) to use for signing.
-						See [RFC 7517](https://datatracker.ietf.org/doc/html/rfc7517) for more information.
+						If this is not specified, and the key set contains exactly one key, that key
+						will be used.
 
-						If this is not specified, and the key set in %s contains exactly one key, that key will be used.
+						See [RFC 7517](https://datatracker.ietf.org/doc/html/rfc7517) for more
+						information.
 					`,
-					"`jwks`",
 				),
-				Required: false,
 				Optional: true,
 			},
 			"steps": schema.StringAttribute{
@@ -143,25 +179,52 @@ func (s *signedPipelineStepsDataSource) Read(
 		return
 	}
 
-	jwks, err := jwk.Parse([]byte(data.JWKS.ValueString()))
-	if err != nil {
-		resp.Diagnostics.AddError("Unable to parse JWKS", err.Error())
-		return
-	}
+	jwksIsNull := data.JWKS.IsNull()
+	jwksFileIsNull := data.JWKSFile.IsNull()
 
 	var key jwk.Key
-	if data.JWKSKeyID.IsNull() {
-		if jwks.Len() != 1 {
-			resp.Diagnostics.AddError("Cannot find key", "JWKS does not contain exactly one key, but no key ID was specified")
+	switch {
+	case jwksIsNull && jwksFileIsNull:
+		resp.Diagnostics.AddError("Exactly one of `jwks` and `jwks_file` needs to be set", "Neither were set.")
+		return
+
+	case !jwksIsNull && !jwksFileIsNull:
+		resp.Diagnostics.AddError("Exactly one of `jwks` and `jwks_file` needs to be set", "Both were set.")
+		return
+
+	case jwksIsNull && !jwksFileIsNull:
+		jwksFile := data.JWKSFile.ValueString()
+		jwksKeyID := data.JWKSKeyID.ValueString()
+
+		key, err = jwkutil.LoadKey(jwksFile, jwksKeyID)
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Unable to load JWKS from file",
+				fmt.Sprintf("file: %q, key_id: %q, error: %s", jwksFile, jwksKeyID, err),
+			)
 			return
 		}
-		key, _ = jwks.Key(0)
-	} else {
-		ok := false
-		keyID := data.JWKSKeyID.ValueString()
-		if key, ok = jwks.LookupKeyID(keyID); !ok {
-			resp.Diagnostics.AddError("Cannot find key", fmt.Sprintf("The key with ID %q was not found in the JWKS", keyID))
+
+	case !jwksIsNull && jwksFileIsNull:
+		jwks, err := jwk.Parse([]byte(data.JWKS.ValueString()))
+		if err != nil {
+			resp.Diagnostics.AddError("Unable to parse JWKS", err.Error())
 			return
+		}
+
+		if data.JWKSKeyID.IsNull() {
+			if jwks.Len() != 1 {
+				resp.Diagnostics.AddError("Cannot find key", "JWKS does not contain exactly one key, but no key ID was specified")
+				return
+			}
+			key, _ = jwks.Key(0)
+		} else {
+			ok := false
+			keyID := data.JWKSKeyID.ValueString()
+			if key, ok = jwks.LookupKeyID(keyID); !ok {
+				resp.Diagnostics.AddError("Cannot find key", fmt.Sprintf("The key with ID %q was not found in the JWKS", keyID))
+				return
+			}
 		}
 	}
 

@@ -3,12 +3,9 @@
 page_title: "buildkite_signed_pipeline_steps Data Source - terraform-provider-buildkite"
 subcategory: ""
 description: |-
-  Use this data source to sign pipeline steps with a JWKS key. You will need to have the
-  corresponding verification key present on the agents that run this the steps in this
-  pipeline. You can use then use these steps in a buildkite_pipeline resource.
-  ~> Security Notice The secret key required to use this data source will be stored
-  unencrypted in your Terraform state file. If you wish to avoid this, you can manually
-  sign the pipeline line steps using the buildkite agent CLI https://buildkite.com/docs/agent/v3/cli-tool#sign-a-step.
+  Use this data source to sign pipeline steps with a JWKS key. You will need to have
+  the corresponding verification key present on the agents that run this the steps in
+  this pipeline. You can use then use these steps in a buildkite_pipeline resource.
   Example Usage
   ```terraform
   locals {
@@ -16,8 +13,8 @@ description: |-
   }
   data "buildkitesignedpipelinesteps" "my-steps" {
     repository  = local.repository
-    jwks        = file("/path/to/my/jwks.json")
-    jwkskey_id = "my-key"
+    jwksfile   = "/path/to/my/jwks.json"
+    jwkskeyid = "my-key"
   unsigned_steps = <<YAML
   steps:
   - label: ":pipeline:"
@@ -30,18 +27,17 @@ description: |-
     steps      = data.buildkitesignedpipelinesteps.my-steps.steps
   }
   ```
-  More info in the Buildkite documentation https://buildkite.com/docs/agent/v3/signed_pipelines.
+  See RFC 7517 https://datatracker.ietf.org/doc/html/rfc7517 for more information
+  about the JWKS format.
+  See the Buildkite documentation https://buildkite.com/docs/agent/v3/signed_pipelines
+  for more info about signed pipelines.
 ---
 
 # buildkite_signed_pipeline_steps (Data Source)
 
-Use this data source to sign pipeline steps with a JWKS key. You will need to have the
-corresponding verification key present on the agents that run this the steps in this
-pipeline. You can use then use these steps in a buildkite_pipeline resource.
-
-~> **Security Notice** The secret key required to use this data source will be stored
-*unencrypted* in your Terraform state file. If you wish to avoid this, you can manually
-sign the pipeline line steps using the [buildkite agent CLI](https://buildkite.com/docs/agent/v3/cli-tool#sign-a-step).
+Use this data source to sign pipeline steps with a JWKS key. You will need to have
+the corresponding verification key present on the agents that run this the steps in
+this pipeline. You can use then use these steps in a `buildkite_pipeline` resource.
 
 ## Example Usage
 ```terraform
@@ -51,7 +47,7 @@ locals {
 
 data "buildkite_signed_pipeline_steps" "my-steps" {
   repository  = local.repository
-  jwks        = file("/path/to/my/jwks.json")
+  jwks_file   = "/path/to/my/jwks.json"
   jwks_key_id = "my-key"
 
   unsigned_steps = <<YAML
@@ -68,7 +64,10 @@ resource "buildkite_pipeline" "my-pipeline" {
 }
 ```
 
-More info in the Buildkite [documentation](https://buildkite.com/docs/agent/v3/signed_pipelines).
+See [RFC 7517](https://datatracker.ietf.org/doc/html/rfc7517) for more information
+about the JWKS format.
+See the Buildkite [documentation](https://buildkite.com/docs/agent/v3/signed_pipelines)
+for more info about signed pipelines.
 
 
 
@@ -77,17 +76,43 @@ More info in the Buildkite [documentation](https://buildkite.com/docs/agent/v3/s
 
 ### Required
 
-- `jwks` (String, Sensitive) The JSON Web Key Set (JWKS) to use for signing. See [RFC 7517](https://datatracker.ietf.org/doc/html/rfc7517) for more information.
-If the `jwks_key_id` is not specified, and the set contains exactly one key, that key will be used.
 - `repository` (String) The repository that will be checked out in a build of the pipeline.
 - `unsigned_steps` (String) The steps to sign in YAML format.
 
 ### Optional
 
-- `jwks_key_id` (String) The ID of the key in the JSON Web Key Set (JWKS) to use for signing.
-See [RFC 7517](https://datatracker.ietf.org/doc/html/rfc7517) for more information.
+- `jwks` (String, Sensitive) The JSON Web Key Set (JWKS) to use for signing.
+If `jwks_key_id` is not specified, and the set contains exactly one key, that key will
+be used.
 
-If this is not specified, and the key set in `jwks` contains exactly one key, that key will be used.
+~> **Security Notice** The secret key in this attribute will be stored
+*unencrypted* in your Terraform state file. This attribute is designed for
+users that have systems to to securely manage their state files. If you wish
+to avoid this, use the `jwks_file` attribute instead.
+
+See [RFC 7517](https://datatracker.ietf.org/doc/html/rfc7517) for more
+information about the JWKS format.
+- `jwks_file` (String) The path to a file containing the JSON Web Key Set (JWKS) to use for
+signing. Users will have to ensure that the JWKS file is present on systems
+running Terraform.
+
+~> **Security Notice** The secret key referenced in this attribute is
+expected to be stored *unencrypted* as a file on the system running
+Terraform. You are responsible for securing it on this system while
+Terraform is running, and cleaning it up after it has finished running.
+
+If `jwks` is specified, this will be ignored and the JWKS will be parsed from
+that value instead. If `jwks_key_id` is not specified, and the set contains exactly
+one key, that key will be used.
+
+See [RFC 7517](https://datatracker.ietf.org/doc/html/rfc7517) for more
+information about the JWKS format.
+- `jwks_key_id` (String) The ID of the key in the JSON Web Key Set (JWKS) to use for signing.
+If this is not specified, and the key set contains exactly one key, that key
+will be used.
+
+See [RFC 7517](https://datatracker.ietf.org/doc/html/rfc7517) for more
+information.
 
 ### Read-Only
 
