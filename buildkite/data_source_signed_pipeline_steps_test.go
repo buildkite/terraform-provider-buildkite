@@ -2,6 +2,7 @@ package buildkite
 
 import (
 	"encoding/json"
+	"os"
 	"strings"
 	"testing"
 
@@ -55,7 +56,7 @@ func TestAccBuildkiteSignedPipelineStepsDataSource(t *testing.T) {
 		t.Fatalf("Failed to marshal signed steps: %v", err)
 	}
 
-	t.Run("signed pipeline steps datasource signs the steps", func(t *testing.T) {
+	t.Run("signed pipeline steps with a jwks attribute signs the steps", func(t *testing.T) {
 		resource.ParallelTest(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },
 			ProtoV6ProviderFactories: protoV6ProviderFactories(),
@@ -72,6 +73,52 @@ func TestAccBuildkiteSignedPipelineStepsDataSource(t *testing.T) {
 						`,
 						repository,
 						jwks,
+						jwks_key_id,
+						steps,
+					),
+					Check: resource.ComposeAggregateTestCheckFunc(
+						resource.TestCheckResourceAttr(
+							"data.buildkite_signed_pipeline_steps.my_signed_steps",
+							"steps",
+							string(signedSteps),
+						),
+					),
+				},
+			},
+		})
+	})
+
+	t.Run("signed pipeline steps with a jwks file attribute signs the steps", func(t *testing.T) {
+		jwks_file, err := os.CreateTemp("", "test-jwks-*.json")
+		if err != nil {
+			t.Fatalf("Failed to create temporary file: %v", err)
+		}
+		defer os.Remove(jwks_file.Name())
+
+		if _, err := jwks_file.Write(jwks); err != nil {
+			t.Fatalf("Failed to write to temporary file: %v", err)
+		}
+
+		if err := jwks_file.Close(); err != nil {
+			t.Fatalf("Failed to close temporary file: %v", err)
+		}
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			Steps: []resource.TestStep{
+				{
+					Config: heredoc.Docf(
+						`
+							data "buildkite_signed_pipeline_steps" "my_signed_steps" {
+							  repository     = %q
+							  jwks_file      = %q
+							  jwks_key_id    = %q
+							  unsigned_steps = %q
+							}
+						`,
+						repository,
+						jwks_file.Name(),
 						jwks_key_id,
 						steps,
 					),
