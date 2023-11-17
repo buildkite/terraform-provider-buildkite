@@ -257,7 +257,11 @@ func (v *jwksValidator) ValidateString(
 	req validator.StringRequest,
 	resp *validator.StringResponse,
 ) {
-	if _, err := jwk.Parse([]byte(req.ConfigValue.String())); err != nil {
+	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
+		return
+	}
+
+	if _, err := jwk.Parse([]byte(req.ConfigValue.ValueString())); err != nil {
 		// we should not print the error as it may contain a sensitive value
 		resp.Diagnostics.AddError(
 			"Unable to parse JWKS",
