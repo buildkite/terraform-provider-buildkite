@@ -122,6 +122,7 @@ func (s *signedPipelineStepsDataSource) Schema(
 				Optional: true,
 				Validators: []validator.String{
 					stringvalidator.ExactlyOneOf(path.MatchRoot("jwks"), path.MatchRoot("jwks_file")),
+					stringvalidator.LengthAtLeast(1),
 				},
 			},
 			"jwks": schema.StringAttribute{
