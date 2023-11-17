@@ -146,6 +146,9 @@ func (s *signedPipelineStepsDataSource) Schema(
 				),
 				Optional:  true,
 				Sensitive: true,
+				Validators: []validator.String{
+					&jwksValidator{},
+				},
 			},
 			"jwks_key_id": schema.StringAttribute{
 				Description: "The ID of the key in the JSON Web Key Set (JWKS) to use for signing. If this is not specified, and the JWKS contains exactly one key, that key will be used.",
@@ -237,4 +240,29 @@ func (s *signedPipelineStepsDataSource) Read(
 
 	data.Steps = types.StringValue(string(signedSteps))
 	resp.Diagnostics.Append(resp.State.Set(ctx, data)...)
+}
+
+type jwksValidator struct{}
+
+func (v *jwksValidator) Description(ctx context.Context) string {
+	return "Validates JSON Web Key Set (JWKS)"
+}
+
+func (v *jwksValidator) MarkdownDescription(ctx context.Context) string {
+	return "Validates JSON Web Key Set (JWKS)"
+}
+
+func (v *jwksValidator) ValidateString(
+	ctx context.Context,
+	req validator.StringRequest,
+	resp *validator.StringResponse,
+) {
+	if _, err := jwk.Parse([]byte(req.ConfigValue.String())); err != nil {
+		// we should not print the error as it may contain a sensitive value
+		resp.Diagnostics.AddError(
+			"Unable to parse JWKS",
+			"Please provide a valid JSON Web Key Set per RFC 7517",
+		)
+		return
+	}
 }
