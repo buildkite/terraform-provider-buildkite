@@ -3,14 +3,17 @@ package buildkite
 import (
 	"context"
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/MakeNowJust/heredoc"
 	"github.com/buildkite/go-pipeline"
-	"github.com/buildkite/go-pipeline/jwkutil"
 	"github.com/buildkite/go-pipeline/signature"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/path"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/lestrrat-go/jwx/v2/jwk"
 	"gopkg.in/yaml.v3"
@@ -117,6 +120,9 @@ func (s *signedPipelineStepsDataSource) Schema(
 					"`jwks_key_id`",
 				),
 				Optional: true,
+				Validators: []validator.String{
+					stringvalidator.ExactlyOneOf(path.MatchRoot("jwks"), path.MatchRoot("jwks_file")),
+				},
 			},
 			"jwks": schema.StringAttribute{
 				Description: "The JSON Web Key Set (JWKS) to use for signing. If the `jwks_key_id` is not specified, and the set contains exactly one key, that key will be used.",
@@ -179,52 +185,41 @@ func (s *signedPipelineStepsDataSource) Read(
 		return
 	}
 
-	jwksIsNull := data.JWKS.IsNull()
-	jwksFileIsNull := data.JWKSFile.IsNull()
+	// validators ensure that only one of `jwks` or `jwks_file` is set
+	jwksContents := []byte(data.JWKS.ValueString())
+	if len(jwksContents) == 0 {
+		jwksContents, err = os.ReadFile(data.JWKSFile.ValueString())
+		if err != nil {
+			resp.Diagnostics.AddError("Unable to read JWKS file", err.Error())
+			return
+		}
+	}
+
+	jwks, err := jwk.Parse(jwksContents)
+	if err != nil {
+		resp.Diagnostics.AddError("Unable to parse JWKS", err.Error())
+		return
+	}
 
 	var key jwk.Key
-	switch {
-	case jwksIsNull && jwksFileIsNull:
-		resp.Diagnostics.AddError("Exactly one of `jwks` and `jwks_file` needs to be set", "Neither were set.")
-		return
-
-	case !jwksIsNull && !jwksFileIsNull:
-		resp.Diagnostics.AddError("Exactly one of `jwks` and `jwks_file` needs to be set", "Both were set.")
-		return
-
-	case jwksIsNull && !jwksFileIsNull:
-		jwksFile := data.JWKSFile.ValueString()
-		jwksKeyID := data.JWKSKeyID.ValueString()
-
-		key, err = jwkutil.LoadKey(jwksFile, jwksKeyID)
-		if err != nil {
+	if data.JWKSKeyID.IsNull() {
+		if jwks.Len() != 1 {
 			resp.Diagnostics.AddError(
-				"Unable to load JWKS from file",
-				fmt.Sprintf("file: %q, key_id: %q, error: %s", jwksFile, jwksKeyID, err),
+				"Cannot find key",
+				"JWKS does not contain exactly one key, but no key ID was specified",
 			)
 			return
 		}
-
-	case !jwksIsNull && jwksFileIsNull:
-		jwks, err := jwk.Parse([]byte(data.JWKS.ValueString()))
-		if err != nil {
-			resp.Diagnostics.AddError("Unable to parse JWKS", err.Error())
+		key, _ = jwks.Key(0)
+	} else {
+		ok := false
+		keyID := data.JWKSKeyID.ValueString()
+		if key, ok = jwks.LookupKeyID(keyID); !ok {
+			resp.Diagnostics.AddError(
+				"Cannot find key",
+				fmt.Sprintf("The key with ID %q was not found in the JWKS", keyID),
+			)
 			return
-		}
-
-		if data.JWKSKeyID.IsNull() {
-			if jwks.Len() != 1 {
-				resp.Diagnostics.AddError("Cannot find key", "JWKS does not contain exactly one key, but no key ID was specified")
-				return
-			}
-			key, _ = jwks.Key(0)
-		} else {
-			ok := false
-			keyID := data.JWKSKeyID.ValueString()
-			if key, ok = jwks.LookupKeyID(keyID); !ok {
-				resp.Diagnostics.AddError("Cannot find key", fmt.Sprintf("The key with ID %q was not found in the JWKS", keyID))
-				return
-			}
 		}
 	}
 
