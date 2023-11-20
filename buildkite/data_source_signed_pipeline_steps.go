@@ -76,22 +76,20 @@ func (s *signedPipelineStepsDataSource) Schema(
 					`
 						The path to a file containing the JSON Web Key Set (JWKS) to use for
 						signing. Users will have to ensure that the JWKS file is present on systems
-						running Terraform.
+						running Terraform. If %s is specified, this will be ignored and the
+						JWKS will be parsed from that value instead. If %s is not specified, and the
+						set contains exactly one key, that key will be used.
+						See [RFC 7517](https://datatracker.ietf.org/doc/html/rfc7517) for more
+						information about the JWKS format.
 
-						~> **Security Notice** The secret key referenced in this attribute is
+						~> **Security Notice** The secret key referenced in the %s attribute is
 						expected to be stored *unencrypted* as a file on the system running
 						Terraform. You are responsible for securing it on this system while
 						Terraform is running, and cleaning it up after it has finished running.
-
-						If %s is specified, this will be ignored and the JWKS will be parsed from
-						that value instead. If %s is not specified, and the set contains exactly
-						one key, that key will be used.
-
-						See [RFC 7517](https://datatracker.ietf.org/doc/html/rfc7517) for more
-						information about the JWKS format.
 					`,
 					"`jwks`",
 					"`jwks_key_id`",
+					"`jwks_file`",
 				),
 				Optional: true,
 				Validators: []validator.String{
@@ -105,17 +103,16 @@ func (s *signedPipelineStepsDataSource) Schema(
 					`
 						The JSON Web Key Set (JWKS) to use for signing.
 						If %s is not specified, and the set contains exactly one key, that key will
-						be used.
+						be used. See [RFC 7517](https://datatracker.ietf.org/doc/html/rfc7517) for
+						more information about the JWKS format.
 
-						~> **Security Notice** The secret key in this attribute will be stored
+						~> **Security Notice** The secret key in the %s attribute will be stored
 						*unencrypted* in your Terraform state file. This attribute is designed for
 						users that have systems to to securely manage their state files. If you wish
 						to avoid this, use the %s attribute instead.
-
-						See [RFC 7517](https://datatracker.ietf.org/doc/html/rfc7517) for more
-						information about the JWKS format.
 					`,
 					"`jwks_key_id`",
+					"`jwks`",
 					"`jwks_file`",
 				),
 				Optional:  true,
