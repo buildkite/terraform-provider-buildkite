@@ -9,6 +9,7 @@ import (
 	"github.com/MakeNowJust/heredoc"
 	"github.com/buildkite/go-pipeline"
 	"github.com/buildkite/go-pipeline/signature"
+	"github.com/buildkite/terraform-provider-buildkite/internal/datasourcevalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
@@ -147,7 +148,7 @@ func (s *signedPipelineStepsDataSource) Schema(
 				Optional:  true,
 				Sensitive: true,
 				Validators: []validator.String{
-					&jwksValidator{},
+					&datasourcevalidator.JWKSValidator{},
 				},
 			},
 			"jwks_key_id": schema.StringAttribute{
@@ -240,33 +241,4 @@ func (s *signedPipelineStepsDataSource) Read(
 
 	data.Steps = types.StringValue(string(signedSteps))
 	resp.Diagnostics.Append(resp.State.Set(ctx, data)...)
-}
-
-type jwksValidator struct{}
-
-func (v *jwksValidator) Description(ctx context.Context) string {
-	return "Validates JSON Web Key Set (JWKS)"
-}
-
-func (v *jwksValidator) MarkdownDescription(ctx context.Context) string {
-	return "Validates JSON Web Key Set (JWKS)"
-}
-
-func (v *jwksValidator) ValidateString(
-	ctx context.Context,
-	req validator.StringRequest,
-	resp *validator.StringResponse,
-) {
-	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
-		return
-	}
-
-	if _, err := jwk.Parse([]byte(req.ConfigValue.ValueString())); err != nil {
-		// we should not print the error as it may contain a sensitive value
-		resp.Diagnostics.AddError(
-			"Unable to parse JWKS",
-			"Please provide a valid JSON Web Key Set per RFC 7517",
-		)
-		return
-	}
 }
