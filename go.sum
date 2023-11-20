@@ -16,8 +16,6 @@ github.com/apparentlymart/go-textseg/v12 v12.0.0/go.mod h1:S/4uRK2UtaQttw1GenVJE
 github.com/apparentlymart/go-textseg/v13 v13.0.0 h1:Y+KvPE1NYz0xl601PVImeQfFyEy6iT90AvPUL1NNfNw=
 github.com/apparentlymart/go-textseg/v13 v13.0.0/go.mod h1:ZK2fH7c4NqDTLtiYLvIkEghdlcqw7yxLeM89kiTRPUo=
 github.com/arbovm/levenshtein v0.0.0-20160628152529-48b4e1c0c4d0/go.mod h1:t2tdKJDJF9BV14lnkjHmOQgcvEKgtqs5a1N3LNdJhGE=
-github.com/buildkite/go-pipeline v0.2.0 h1:+abnWSScMhJscxYgom2z0dzuXbjnYOz4RPeHmrfy31k=
-github.com/buildkite/go-pipeline v0.2.0/go.mod h1:Wkiq1SFvic/GcDem1mg4o8BrtA8JJubTlsBMLPHYoSQ=
 github.com/buildkite/go-pipeline v0.2.1 h1:uNePBUeLvL/xRx9IHOoIM1rCUFFFZTPXkccIqsj+VN4=
 github.com/buildkite/go-pipeline v0.2.1/go.mod h1:Wkiq1SFvic/GcDem1mg4o8BrtA8JJubTlsBMLPHYoSQ=
 github.com/buildkite/interpolate v0.0.0-20200526001904-07f35b4ae251 h1:k6UDF1uPYOs0iy1HPeotNa155qXRWrzKnqAaGXHLZCE=
