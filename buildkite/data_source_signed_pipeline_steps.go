@@ -54,39 +54,12 @@ func (s *signedPipelineStepsDataSource) Schema(
 				the corresponding verification key present on the agents that run this the steps in
 				this pipeline. You can use then use these steps in a %s resource.
 
-				## Example Usage
-				%s
-				locals {
-				  repository = "git@github.com:my-org/my-repo.git"
-				}
-
-				data "buildkite_signed_pipeline_steps" "my-steps" {
-				  repository  = local.repository
-				  jwks_file   = "/path/to/my/jwks.json"
-				  jwks_key_id = "my-key"
-
-				  unsigned_steps = <<YAML
-				steps:
-				- label: ":pipeline:"
-				  command: buildkite-agent pipeline upload
-				YAML
-				}
-
-				resource "buildkite_pipeline" "my-pipeline" {
-				  name       = "my-pipeline"
-				  repository = local.repository
-				  steps      = data.buildkite_signed_pipeline_steps.my-steps.steps
-				}
-				%s
-
 				See [RFC 7517](https://datatracker.ietf.org/doc/html/rfc7517) for more information
 				about the JWKS format.
 				See the Buildkite [documentation](https://buildkite.com/docs/agent/v3/signed_pipelines)
 				for more info about signed pipelines.
 			`,
 			"`buildkite_pipeline`",
-			"```terraform",
-			"```",
 		),
 		Attributes: map[string]schema.Attribute{
 			"unsigned_steps": schema.StringAttribute{
