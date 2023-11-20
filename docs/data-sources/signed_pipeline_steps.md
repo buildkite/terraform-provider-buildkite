@@ -20,6 +20,7 @@ this pipeline. You can use then use these steps in a `buildkite_pipeline` resour
 
 See [RFC 7517](https://datatracker.ietf.org/doc/html/rfc7517) for more information
 about the JWKS format.
+
 See the Buildkite [documentation](https://buildkite.com/docs/agent/v3/signed_pipelines)
 for more info about signed pipelines.
 
@@ -63,34 +64,23 @@ resource "buildkite_pipeline" "my-pipeline" {
 If `jwks_key_id` is not specified, and the set contains exactly one key, that key will
 be used.
 
-~> **Security Notice** The secret key in this attribute will be stored
+~> **Security Notice** The secret key in the `jwks` attribute will be stored
 *unencrypted* in your Terraform state file. This attribute is designed for
 users that have systems to to securely manage their state files. If you wish
 to avoid this, use the `jwks_file` attribute instead.
-
-See [RFC 7517](https://datatracker.ietf.org/doc/html/rfc7517) for more
-information about the JWKS format.
 - `jwks_file` (String) The path to a file containing the JSON Web Key Set (JWKS) to use for
 signing. Users will have to ensure that the JWKS file is present on systems
-running Terraform.
+running Terraform. If `jwks` is specified, this will be ignored and the
+JWKS will be parsed from that value instead. If `jwks_key_id` is not specified, and the
+set contains exactly one key, that key will be used.
 
-~> **Security Notice** The secret key referenced in this attribute is
+~> **Security Notice** The secret key referenced in the `jwks_file` attribute is
 expected to be stored *unencrypted* as a file on the system running
 Terraform. You are responsible for securing it on this system while
 Terraform is running, and cleaning it up after it has finished running.
-
-If `jwks` is specified, this will be ignored and the JWKS will be parsed from
-that value instead. If `jwks_key_id` is not specified, and the set contains exactly
-one key, that key will be used.
-
-See [RFC 7517](https://datatracker.ietf.org/doc/html/rfc7517) for more
-information about the JWKS format.
 - `jwks_key_id` (String) The ID of the key in the JSON Web Key Set (JWKS) to use for signing.
 If this is not specified, and the key set contains exactly one key, that key
 will be used.
-
-See [RFC 7517](https://datatracker.ietf.org/doc/html/rfc7517) for more
-information.
 
 ### Read-Only
 
