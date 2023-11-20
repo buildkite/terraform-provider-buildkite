@@ -17,8 +17,8 @@ import (
 
 func TestAccBuildkiteSignedPipelineStepsDataSource(t *testing.T) {
 	const (
-		repository  = "my-repo"
-		jwks_key_id = "my-key"
+		repository = "my-repo"
+		jwksKeyID  = "my-key"
 	)
 
 	steps := heredoc.Doc(`
@@ -27,7 +27,7 @@ func TestAccBuildkiteSignedPipelineStepsDataSource(t *testing.T) {
 		  command: buildkite-agent pipeline upload
 	`)
 
-	privateJWKS, _, err := jwkutil.NewKeyPair(jwks_key_id, jwa.EdDSA)
+	privateJWKS, _, err := jwkutil.NewKeyPair(jwksKeyID, jwa.EdDSA)
 	if err != nil {
 		t.Fatalf("Failed to generate key pair: %v", err)
 	}
@@ -56,6 +56,20 @@ func TestAccBuildkiteSignedPipelineStepsDataSource(t *testing.T) {
 		t.Fatalf("Failed to marshal signed steps: %v", err)
 	}
 
+	jwksFile, err := os.CreateTemp("", "test-jwks-*.json")
+	if err != nil {
+		t.Fatalf("Failed to create temporary file: %v", err)
+	}
+	defer os.Remove(jwksFile.Name())
+
+	if _, err := jwksFile.Write(jwks); err != nil {
+		t.Fatalf("Failed to write to temporary file: %v", err)
+	}
+
+	if err := jwksFile.Close(); err != nil {
+		t.Fatalf("Failed to close temporary file: %v", err)
+	}
+
 	t.Run("signed pipeline steps with a jwks attribute signs the steps", func(t *testing.T) {
 		resource.ParallelTest(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },
@@ -73,7 +87,7 @@ func TestAccBuildkiteSignedPipelineStepsDataSource(t *testing.T) {
 						`,
 						repository,
 						jwks,
-						jwks_key_id,
+						jwksKeyID,
 						steps,
 					),
 					Check: resource.ComposeAggregateTestCheckFunc(
@@ -89,20 +103,6 @@ func TestAccBuildkiteSignedPipelineStepsDataSource(t *testing.T) {
 	})
 
 	t.Run("signed pipeline steps with a jwks file attribute signs the steps", func(t *testing.T) {
-		jwks_file, err := os.CreateTemp("", "test-jwks-*.json")
-		if err != nil {
-			t.Fatalf("Failed to create temporary file: %v", err)
-		}
-		defer os.Remove(jwks_file.Name())
-
-		if _, err := jwks_file.Write(jwks); err != nil {
-			t.Fatalf("Failed to write to temporary file: %v", err)
-		}
-
-		if err := jwks_file.Close(); err != nil {
-			t.Fatalf("Failed to close temporary file: %v", err)
-		}
-
 		resource.ParallelTest(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },
 			ProtoV6ProviderFactories: protoV6ProviderFactories(),
@@ -118,8 +118,8 @@ func TestAccBuildkiteSignedPipelineStepsDataSource(t *testing.T) {
 							}
 						`,
 						repository,
-						jwks_file.Name(),
-						jwks_key_id,
+						jwksFile.Name(),
+						jwksKeyID,
 						steps,
 					),
 					Check: resource.ComposeAggregateTestCheckFunc(
