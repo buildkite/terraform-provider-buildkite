@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## [v1.1.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.0.6...v1.1.0)
+
+- Bump google.golang.org/grpc from 1.58.2 to 1.58.3 [[PR #435](https://github.com/buildkite/terraform-provider-buildkite/pull/435)]
+- Add data source to sign pipelines [[PR #420](https://github.com/buildkite/terraform-provider-buildkite/pull/420)]
 - SUP-1445: Organization Banner resource implementation [[PR #433](https://github.com/buildkite/terraform-provider-buildkite/pull/433)] @james2791 
 - SUP-1540: Diagnostic error addition standardisation [[PR #431](https://github.com/buildkite/terraform-provider-buildkite/pull/431)] @james2791 
 - SUP-1544: GraphQL Fragment naming and type export consolidation [[PR #432](https://github.com/buildkite/terraform-provider-buildkite/pull/432)] @james2791 

@@ -85,5 +85,3 @@ will be used.
 ### Read-Only
 
 - `steps` (String) The signed steps in YAML format.
-
-
