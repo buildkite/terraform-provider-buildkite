@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## [v1.1.1](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.1.1...v1.1.1)
+
+- Fix a typo in the signed pipelines data source [[PR #438](https://github.com/buildkite/terraform-provider-buildkite/pull/438)]
+
 ## [v1.1.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.0.6...v1.1.0)
 
 - Bump google.golang.org/grpc from 1.58.2 to 1.58.3 [[PR #435](https://github.com/buildkite/terraform-provider-buildkite/pull/435)]
