@@ -5,7 +5,7 @@ subcategory: ""
 description: |-
   Use this data source to sign pipeline steps with a JWKS key. You will need to have
   the corresponding verification key present on the agents that run this the steps in
-  this pipeline. You can use then use these steps in a buildkite_pipeline resource.
+  this pipeline. You can then use these steps in a buildkite_pipeline resource.
   See RFC 7517 https://datatracker.ietf.org/doc/html/rfc7517 for more information
   about the JWKS format.
   See the Buildkite documentation https://buildkite.com/docs/agent/v3/signed_pipelines
@@ -16,7 +16,7 @@ description: |-
 
 Use this data source to sign pipeline steps with a JWKS key. You will need to have
 the corresponding verification key present on the agents that run this the steps in
-this pipeline. You can use then use these steps in a `buildkite_pipeline` resource.
+this pipeline. You can then use these steps in a `buildkite_pipeline` resource.
 
 See [RFC 7517](https://datatracker.ietf.org/doc/html/rfc7517) for more information
 about the JWKS format.
