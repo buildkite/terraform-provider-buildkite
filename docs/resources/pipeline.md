@@ -93,7 +93,7 @@ Optional:
 - `pull_request_branch_filter_configuration` (String) Filter pull requests builds by the branch filter.
 - `pull_request_branch_filter_enabled` (Boolean) Filter pull request builds.
 - `separate_pull_request_statuses` (Boolean) Whether to create a separate status for pull request builds, allowing you to require a passing pull request build in your [required status checks](https://help.github.com/en/articles/enabling-required-status-checks) in GitHub.
-- `skip_builds_for_existing_commits` (Boolean) Whether to skip creating a new build if an existing build for the commit and branch already exists.
+- `skip_builds_for_existing_commits` (Boolean) Whether to skip creating a new build if an existing build for the commit and branch already exists. This option is only valid if the pipeline uses a GitHub repository.
 - `skip_pull_request_builds_for_existing_commits` (Boolean) Whether to skip creating a new build for a pull request if an existing build for the commit and branch already exists.
 - `trigger_mode` (String) What type of event to trigger builds on. Must be one of:
 	- `code` will create builds when code is pushed to GitHub.
