@@ -528,7 +528,7 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 					"skip_builds_for_existing_commits": schema.BoolAttribute{
 						Optional:            true,
 						Computed:            true,
-						MarkdownDescription: "Whether to skip creating a new build if an existing build for the commit and branch already exists.",
+						MarkdownDescription: "Whether to skip creating a new build if an existing build for the commit and branch already exists. This option is only valid if the pipeline uses a GitHub repository.",
 					},
 					"skip_pull_request_builds_for_existing_commits": schema.BoolAttribute{
 						Optional:            true,
