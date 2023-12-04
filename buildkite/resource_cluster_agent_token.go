@@ -19,12 +19,13 @@ type clusterAgentToken struct {
 }
 
 type clusterAgentTokenResourceModel struct {
-	Id          types.String `tfsdk:"id"`
-	Uuid        types.String `tfsdk:"uuid"`
-	Description types.String `tfsdk:"description"`
-	Token       types.String `tfsdk:"token"`
-	ClusterId   types.String `tfsdk:"cluster_id"`
-	ClusterUuid types.String `tfsdk:"cluster_uuid"`
+	Id                 types.String `tfsdk:"id"`
+	Uuid               types.String `tfsdk:"uuid"`
+	Description        types.String `tfsdk:"description"`
+	Token              types.String `tfsdk:"token"`
+	ClusterId          types.String `tfsdk:"cluster_id"`
+	ClusterUuid        types.String `tfsdk:"cluster_uuid"`
+	AllowedIpAddresses types.String `tfsdk:"allowed_ip_addresses"`
 }
 
 func newClusterAgentTokenResource() resource.Resource {
@@ -49,10 +50,16 @@ func (ct *clusterAgentToken) Schema(_ context.Context, _ resource.SchemaRequest,
 			"id": resource_schema.StringAttribute{
 				Computed:            true,
 				MarkdownDescription: "The GraphQL ID of the token.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"uuid": resource_schema.StringAttribute{
 				Computed:            true,
 				MarkdownDescription: "The UUID of the token.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"description": resource_schema.StringAttribute{
 				Required:            true,
@@ -79,6 +86,10 @@ func (ct *clusterAgentToken) Schema(_ context.Context, _ resource.SchemaRequest,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
+			},
+			"allowed_ip_addresses": resource_schema.StringAttribute{
+				Optional:            true,
+				MarkdownDescription: "A list of CIDR-notation IPv4 addresses from which agents can use this Cluster Agent Token.",
 			},
 		},
 	}
@@ -111,6 +122,7 @@ func (ct *clusterAgentToken) Create(ctx context.Context, req resource.CreateRequ
 			ct.client.organizationId,
 			plan.ClusterId.ValueString(),
 			plan.Description.ValueString(),
+			plan.AllowedIpAddresses.ValueStringPointer(),
 		)
 
 		return retryContextError(err)
@@ -130,6 +142,7 @@ func (ct *clusterAgentToken) Create(ctx context.Context, req resource.CreateRequ
 	state.Token = types.StringValue(r.ClusterAgentTokenCreate.TokenValue)
 	state.ClusterId = types.StringValue(r.ClusterAgentTokenCreate.ClusterAgentToken.Cluster.Id)
 	state.ClusterUuid = types.StringValue(r.ClusterAgentTokenCreate.ClusterAgentToken.Cluster.Uuid)
+	state.AllowedIpAddresses = types.StringPointerValue(r.ClusterAgentTokenCreate.ClusterAgentToken.AllowedIpAddresses)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
@@ -213,6 +226,7 @@ func (ct *clusterAgentToken) Update(ctx context.Context, req resource.UpdateRequ
 			ct.client.organizationId,
 			state.Id.ValueString(),
 			plan.Description.ValueString(),
+			plan.AllowedIpAddresses.ValueStringPointer(),
 		)
 
 		return retryContextError(err)
@@ -225,7 +239,9 @@ func (ct *clusterAgentToken) Update(ctx context.Context, req resource.UpdateRequ
 		)
 		return
 	}
+
 	state.Description = types.StringValue(r.ClusterAgentTokenUpdate.ClusterAgentToken.Description)
+	state.AllowedIpAddresses = types.StringPointerValue(r.ClusterAgentTokenUpdate.ClusterAgentToken.AllowedIpAddresses)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 

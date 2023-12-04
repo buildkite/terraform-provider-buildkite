@@ -1,4 +1,6 @@
 fragment ClusterAgentTokenValues on ClusterToken {
+    # @genqlient(pointer: true)
+    allowedIpAddresses
     cluster {
         id
         uuid
@@ -26,11 +28,14 @@ mutation createClusterAgentToken(
     $organizationId: ID!
     $clusterId: ID!
     $description: String!
+    # @genqlient(pointer: true)
+    $allowedIpAddresses: String
 ) {
         clusterAgentTokenCreate(input:{
             organizationId: $organizationId
             clusterId: $clusterId
             description: $description
+            allowedIpAddresses: $allowedIpAddresses
         }) {
             clusterAgentToken {
                 ... ClusterAgentTokenValues
@@ -58,11 +63,14 @@ mutation updateClusterAgentToken(
     $organizationId: ID!
     $id: ID!
     $description: String!
+    # @genqlient(pointer: true)
+    $allowedIpAddresses: String
 ) {
     clusterAgentTokenUpdate(input: {
         organizationId: $organizationId
         id: $id
         description: $description
+        allowedIpAddresses: $allowedIpAddresses
     }) {
         clusterAgentToken {
             ... ClusterAgentTokenValues
