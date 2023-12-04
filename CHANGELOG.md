@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- Allowed IP Addresses attribute addition for Cluster Agent Token resources [[PR #4xx](https://github.com/buildkite/terraform-provider-buildkite/pull/4xx)] @james2791 
 
 ## [v1.1.1](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.1.1...v1.1.1)
 

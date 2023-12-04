@@ -47,6 +47,10 @@ resource "buildkite_cluster_queue" "default" {
 - `cluster_id` (String) The GraphQL ID of the Cluster that this Cluster Agent Token belongs to.
 - `description` (String) A description about what this cluster agent token is used for.
 
+### Optional
+
+- `allowed_ip_addresses` (String) A list of CIDR-notation IPv4 addresses from which agents can use this Cluster Agent Token.
+
 ### Read-Only
 
 - `cluster_uuid` (String) The UUID of the Cluster that this token belongs to.
