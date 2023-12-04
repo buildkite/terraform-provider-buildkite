@@ -215,6 +215,7 @@ func (p *pipelineResource) Create(ctx context.Context, req resource.CreateReques
 	log.Printf("Successfully created pipeline with id '%s'.", response.PipelineCreate.Pipeline.Id)
 
 	setPipelineModel(&state, &response.PipelineCreate.Pipeline)
+	state.WebhookUrl = types.StringValue(response.PipelineCreate.Pipeline.GetWebhookURL())
 
 	if plan.ProviderSettings != nil {
 		pipelineExtraInfo, err := updatePipelineExtraInfo(ctx, response.PipelineCreate.Pipeline.Slug, plan.ProviderSettings, p.client, timeouts)
@@ -727,7 +728,6 @@ func setPipelineModel(model *pipelineResourceModel, data pipelineResponse) {
 	model.SkipIntermediateBuildsBranchFilter = types.StringValue(data.GetSkipIntermediateBuildsBranchFilter())
 	model.Slug = types.StringValue(data.GetSlug())
 	model.Steps = types.StringValue(data.GetSteps().Yaml)
-	model.WebhookUrl = types.StringValue(data.GetWebhookURL())
 
 	tags := make([]types.String, len(data.GetTags()))
 	for i, tag := range data.GetTags() {
