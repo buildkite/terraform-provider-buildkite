@@ -130,7 +130,7 @@ func TestAccBuildkitePipelineSchedule(t *testing.T) {
 			ProtoV6ProviderFactories: protoV6ProviderFactories(),
 			Steps: []resource.TestStep{
 				{
-					Config: config(pipelineName, "0 * * * *", label, ""),
+					Config: config(pipelineName, "0 * * * *", label, "FOO = \"bar\""),
 					Check: resource.ComposeAggregateTestCheckFunc(
 						// Schedules need a pipeline
 						loadPipeline(pipelineName, &pipeline),
@@ -153,10 +153,11 @@ func TestAccBuildkitePipelineSchedule(t *testing.T) {
 						resource.TestCheckResourceAttr("buildkite_pipeline_schedule.pipeline", "label", label),
 						resource.TestCheckResourceAttr("buildkite_pipeline_schedule.pipeline", "cronline", "0 * * * *"),
 						resource.TestCheckResourceAttr("buildkite_pipeline_schedule.pipeline", "branch", "main"),
+						resource.TestCheckResourceAttr("buildkite_pipeline_schedule.pipeline", "env.FOO", "bar"),
 					),
 				},
 				{
-					Config: config(pipelineName, "0 1 * * *", label, ""),
+					Config: config(pipelineName, "0 1 * * *", label, "FOO = \"bar\""),
 					Check: resource.ComposeAggregateTestCheckFunc(
 						// Confirm the schedule exists in the buildkite API
 						loadPipelineSchedule(&schedule),
@@ -177,6 +178,7 @@ func TestAccBuildkitePipelineSchedule(t *testing.T) {
 						resource.TestCheckResourceAttr("buildkite_pipeline_schedule.pipeline", "label", label),
 						resource.TestCheckResourceAttr("buildkite_pipeline_schedule.pipeline", "cronline", "0 1 * * *"),
 						resource.TestCheckResourceAttr("buildkite_pipeline_schedule.pipeline", "branch", "main"),
+						resource.TestCheckResourceAttr("buildkite_pipeline_schedule.pipeline", "env.FOO", "bar"),
 					),
 				},
 			},
