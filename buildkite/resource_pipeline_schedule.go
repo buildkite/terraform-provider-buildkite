@@ -321,8 +321,8 @@ func envVarsArrayToMap(ctx context.Context, envVars []*string) types.Map {
 	envVarsMap := make(map[string]string)
 	for _, envVar := range envVars {
 		if envVar != nil {
-			envVarSplit := strings.Split(*envVar, "=")
-			envVarsMap[envVarSplit[0]] = envVarSplit[1]
+			key, value, _ := strings.Cut(*envVar, "=")
+			envVarsMap[key] = value
 		}
 	}
 	if len(envVarsMap) == 0 {
