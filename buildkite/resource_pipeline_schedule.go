@@ -167,7 +167,7 @@ func (ps *pipelineSchedule) Create(ctx context.Context, req resource.CreateReque
 	state.Cronline = types.StringPointerValue(apiResponse.PipelineScheduleCreate.PipelineScheduleEdge.Node.Cronline)
 	state.Message = types.StringPointerValue(apiResponse.PipelineScheduleCreate.PipelineScheduleEdge.Node.Message)
 	state.Enabled = types.BoolValue(apiResponse.PipelineScheduleCreate.PipelineScheduleEdge.Node.Enabled)
-	state.Env = envVarsArrayToMap(ctx, apiResponse.PipelineScheduleCreate.PipelineScheduleEdge.Node.Env)
+	state.Env = plan.Env
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 
