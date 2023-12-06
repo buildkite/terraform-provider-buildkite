@@ -336,13 +336,7 @@ func envVarsArrayToMap(ctx context.Context, envVars []*string) types.Map {
 func envVarsMapFromTfToString(ctx context.Context, m types.Map) string {
 	b := new(bytes.Buffer)
 
-	envVarsMap := make(map[string]string)
-	// read from the terraform data into the map
-	if diags := m.ElementsAs(ctx, &envVarsMap, false); diags != nil {
-		return ""
-	}
-
-	for key, value := range envVarsMap {
+	for key, value := range m.Elements() {
 		fmt.Fprintf(b, "%s=%s\n", key, value)
 	}
 	return b.String()
