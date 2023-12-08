@@ -167,7 +167,7 @@ func (ps *pipelineSchedule) Create(ctx context.Context, req resource.CreateReque
 	state.Cronline = types.StringPointerValue(apiResponse.PipelineScheduleCreate.PipelineScheduleEdge.Node.Cronline)
 	state.Message = types.StringPointerValue(apiResponse.PipelineScheduleCreate.PipelineScheduleEdge.Node.Message)
 	state.Enabled = types.BoolValue(apiResponse.PipelineScheduleCreate.PipelineScheduleEdge.Node.Enabled)
-	state.Env = envVarsArrayToMap(ctx, apiResponse.PipelineScheduleCreate.PipelineScheduleEdge.Node.Env)
+	state.Env = plan.Env
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 
@@ -321,8 +321,8 @@ func envVarsArrayToMap(ctx context.Context, envVars []*string) types.Map {
 	envVarsMap := make(map[string]string)
 	for _, envVar := range envVars {
 		if envVar != nil {
-			envVarSplit := strings.Split(*envVar, "=")
-			envVarsMap[envVarSplit[0]] = envVarSplit[1]
+			key, value, _ := strings.Cut(*envVar, "=")
+			envVarsMap[key] = value
 		}
 	}
 	if len(envVarsMap) == 0 {
@@ -336,13 +336,7 @@ func envVarsArrayToMap(ctx context.Context, envVars []*string) types.Map {
 func envVarsMapFromTfToString(ctx context.Context, m types.Map) string {
 	b := new(bytes.Buffer)
 
-	envVarsMap := make(map[string]string)
-	// read from the terraform data into the map
-	if diags := m.ElementsAs(ctx, &envVarsMap, false); diags != nil {
-		return ""
-	}
-
-	for key, value := range envVarsMap {
+	for key, value := range m.Elements() {
 		fmt.Fprintf(b, "%s=%s\n", key, value)
 	}
 	return b.String()

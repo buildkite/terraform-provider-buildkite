@@ -1,10 +1,12 @@
 module github.com/buildkite/terraform-provider-buildkite
 
-go 1.20
+go 1.21
+
+toolchain go1.21.0
 
 require (
 	github.com/Khan/genqlient v0.6.0
-	github.com/buildkite/go-pipeline v0.2.1
+	github.com/buildkite/go-pipeline v0.3.0
 	github.com/hashicorp/terraform-plugin-framework v1.3.5
 	github.com/hashicorp/terraform-plugin-framework-validators v0.12.0
 	github.com/hashicorp/terraform-plugin-go v0.18.0
