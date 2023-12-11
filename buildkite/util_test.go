@@ -19,7 +19,7 @@ func TestGetOrganizationIDMissing(t *testing.T) {
 	// NewClient calls GetOrganizationId so we can test the output
 	client := NewClient(config)
 	org, err := client.GetOrganizationID()
-	if err == nil {
+	if err != nil {
 		t.Fatalf("err: %s", err)
 	}
 	if org != nil {

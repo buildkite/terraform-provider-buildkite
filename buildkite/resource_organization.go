@@ -160,7 +160,7 @@ func (o *organizationResource) Read(ctx context.Context, req resource.ReadReques
 	}
 
 	org, err := o.client.GetOrganizationID()
-	if err == nil {
+	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to find organization",
 			fmt.Sprintf("Unable to find Organization: %s", err.Error()),
@@ -198,7 +198,7 @@ func (o *organizationResource) Update(ctx context.Context, req resource.UpdateRe
 	cidrs := createCidrSliceFromList(plan.AllowedApiIpAddresses)
 
 	org, err := o.client.GetOrganizationID()
-	if err == nil {
+	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to find organization",
 			fmt.Sprintf("Unable to find Organization: %s", err.Error()),
@@ -223,7 +223,7 @@ func (o *organizationResource) Update(ctx context.Context, req resource.UpdateRe
 
 	if !plan.Enforce2FA.IsNull() && !plan.Enforce2FA.IsUnknown() {
 		org, err := o.client.GetOrganizationID()
-		if err == nil {
+		if err != nil {
 			resp.Diagnostics.AddError(
 				"Unable to find organization",
 				fmt.Sprintf("Unable to find Organization: %s", err.Error()),
@@ -253,7 +253,7 @@ func (o *organizationResource) Update(ctx context.Context, req resource.UpdateRe
 
 func (o *organizationResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	org, err := o.client.GetOrganizationID()
-	if err == nil {
+	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to find organization",
 			fmt.Sprintf("Unable to find Organization: %s", err.Error()),
