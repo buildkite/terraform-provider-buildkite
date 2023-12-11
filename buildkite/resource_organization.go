@@ -102,7 +102,7 @@ func (o *organizationResource) Create(ctx context.Context, req resource.CreateRe
 		)
 		return
 	}
-	log.Printf("Creating settings for organization %s ...", &org)
+	log.Printf("Creating settings for organization %s ...", *org)
 	apiResponse, err := setApiIpAddresses(
 		ctx,
 		o.client.genqlient,
