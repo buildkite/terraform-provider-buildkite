@@ -155,6 +155,13 @@ func (c *clusterDefaultQueueResource) Read(ctx context.Context, req resource.Rea
 			)
 			return
 		}
+		if clusterNode.DefaultQueue == nil {
+			resp.Diagnostics.AddError(
+				"Cannot import a default queue for this cluster",
+				"No default queue is assigned to the cluster",
+			)
+			return
+		}
 		state.ClusterId = types.StringValue(clusterNode.Id)
 		state.UUID = types.StringValue(clusterNode.Uuid)
 		state.QueueId = types.StringValue(clusterNode.DefaultQueue.Id)
