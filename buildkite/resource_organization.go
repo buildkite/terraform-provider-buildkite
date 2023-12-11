@@ -94,11 +94,19 @@ func (o *organizationResource) Create(ctx context.Context, req resource.CreateRe
 	// Create CIDR slice from AllowedApiIpAddresses
 	cidrs := createCidrSliceFromList(plan.AllowedApiIpAddresses)
 
-	log.Printf("Creating settings for organization %s ...", o.client.organizationId)
+	org, err := o.client.GetOrganizationID()
+	if err == nil {
+		resp.Diagnostics.AddError(
+			"Unable to find organization",
+			fmt.Sprintf("Unable to find Organization: %s", err.Error()),
+		)
+		return
+	}
+	log.Printf("Creating settings for organization %s ...", &org)
 	apiResponse, err := setApiIpAddresses(
 		ctx,
 		o.client.genqlient,
-		o.client.organizationId,
+		*org,
 		strings.Join(cidrs, " "),
 	)
 	if err != nil {
@@ -110,7 +118,15 @@ func (o *organizationResource) Create(ctx context.Context, req resource.CreateRe
 	}
 
 	if !plan.Enforce2FA.IsNull() && !plan.Enforce2FA.IsUnknown() {
-		_, err = setOrganization2FA(ctx, o.client.genqlient, o.client.organizationId, plan.Enforce2FA.ValueBool())
+		org, err := o.client.GetOrganizationID()
+		if err == nil {
+			resp.Diagnostics.AddError(
+				"Unable to find organization",
+				fmt.Sprintf("Unable to find Organization: %s", err.Error()),
+			)
+			return
+		}
+		_, err = setOrganization2FA(ctx, o.client.genqlient, *org, plan.Enforce2FA.ValueBool())
 		if err != nil {
 			resp.Diagnostics.AddError("Unable to set 2FA", err.Error())
 			return
@@ -151,7 +167,15 @@ func (o *organizationResource) Read(ctx context.Context, req resource.ReadReques
 		return
 	}
 
-	state.ID = types.StringValue(o.client.organizationId)
+	org, err := o.client.GetOrganizationID()
+	if err == nil {
+		resp.Diagnostics.AddError(
+			"Unable to find organization",
+			fmt.Sprintf("Unable to find Organization: %s", err.Error()),
+		)
+		return
+	}
+	state.ID = types.StringValue(*org)
 	state.UUID = types.StringValue(response.Organization.Uuid)
 	state.Enforce2FA = types.BoolValue(response.Organization.MembersRequireTwoFactorAuthentication)
 	ips, diag := types.ListValueFrom(ctx, types.StringType, strings.Split(response.Organization.AllowedApiIpAddresses, " "))
@@ -181,11 +205,19 @@ func (o *organizationResource) Update(ctx context.Context, req resource.UpdateRe
 	// Create CIDR slice from AllowedApiIpAddresses
 	cidrs := createCidrSliceFromList(plan.AllowedApiIpAddresses)
 
-	log.Printf("Updating settings for organization %s ...", o.client.organizationId)
+	org, err := o.client.GetOrganizationID()
+	if err == nil {
+		resp.Diagnostics.AddError(
+			"Unable to find organization",
+			fmt.Sprintf("Unable to find Organization: %s", err.Error()),
+		)
+		return
+	}
+	log.Printf("Updating settings for organization %s ...", *org)
 	apiResponse, err := setApiIpAddresses(
 		ctx,
 		o.client.genqlient,
-		o.client.organizationId,
+		*org,
 		strings.Join(cidrs, " "),
 	)
 
@@ -198,7 +230,15 @@ func (o *organizationResource) Update(ctx context.Context, req resource.UpdateRe
 	}
 
 	if !plan.Enforce2FA.IsNull() && !plan.Enforce2FA.IsUnknown() {
-		twoFAResponse, err := setOrganization2FA(ctx, o.client.genqlient, o.client.organizationId, plan.Enforce2FA.ValueBool())
+		org, err := o.client.GetOrganizationID()
+		if err == nil {
+			resp.Diagnostics.AddError(
+				"Unable to find organization",
+				fmt.Sprintf("Unable to find Organization: %s", err.Error()),
+			)
+			return
+		}
+		twoFAResponse, err := setOrganization2FA(ctx, o.client.genqlient, *org, plan.Enforce2FA.ValueBool())
 		if err != nil {
 			resp.Diagnostics.AddError("Unable to set 2FA", err.Error())
 			return
@@ -220,9 +260,16 @@ func (o *organizationResource) Update(ctx context.Context, req resource.UpdateRe
 }
 
 func (o *organizationResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	log.Printf("Deleting settings for organization %s ...", o.client.organizationId)
-
-	_, err := setApiIpAddresses(ctx, o.client.genqlient, o.client.organizationId, "")
+	org, err := o.client.GetOrganizationID()
+	if err == nil {
+		resp.Diagnostics.AddError(
+			"Unable to find organization",
+			fmt.Sprintf("Unable to find Organization: %s", err.Error()),
+		)
+		return
+	}
+	log.Printf("Deleting settings for organization %s ...", *org)
+	_, err = setApiIpAddresses(ctx, o.client.genqlient, *org, "")
 
 	if err != nil {
 		resp.Diagnostics.AddError(

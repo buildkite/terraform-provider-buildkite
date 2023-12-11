@@ -103,15 +103,17 @@ func (ct *clusterAgentToken) Create(ctx context.Context, req resource.CreateRequ
 
 	var r *createClusterAgentTokenResponse
 	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-		var err error
+		org, err := ct.client.GetOrganizationID()
+		if err == nil {
 
-		log.Printf("Creating cluster agent token with description %s into cluster %s ...", plan.Description.ValueString(), plan.ClusterId.ValueString())
-		r, err = createClusterAgentToken(ctx,
-			ct.client.genqlient,
-			ct.client.organizationId,
-			plan.ClusterId.ValueString(),
-			plan.Description.ValueString(),
-		)
+			log.Printf("Creating cluster agent token with description %s into cluster %s ...", plan.Description.ValueString(), plan.ClusterId.ValueString())
+			r, err = createClusterAgentToken(ctx,
+				ct.client.genqlient,
+				*org,
+				plan.ClusterId.ValueString(),
+				plan.Description.ValueString(),
+			)
+		}
 
 		return retryContextError(err)
 	})
@@ -205,15 +207,16 @@ func (ct *clusterAgentToken) Update(ctx context.Context, req resource.UpdateRequ
 
 	var r *updateClusterAgentTokenResponse
 	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-		var err error
-
-		log.Printf("Updating cluster token %s", state.Id.ValueString())
-		r, err = updateClusterAgentToken(ctx,
-			ct.client.genqlient,
-			ct.client.organizationId,
-			state.Id.ValueString(),
-			plan.Description.ValueString(),
-		)
+		org, err := ct.client.GetOrganizationID()
+		if err == nil {
+			log.Printf("Updating cluster token %s", state.Id.ValueString())
+			r, err = updateClusterAgentToken(ctx,
+				ct.client.genqlient,
+				*org,
+				state.Id.ValueString(),
+				plan.Description.ValueString(),
+			)
+		}
 
 		return retryContextError(err)
 	})
@@ -249,14 +252,15 @@ func (ct *clusterAgentToken) Delete(ctx context.Context, req resource.DeleteRequ
 	}
 
 	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-		var err error
-
-		log.Printf("Revoking Cluster Agent Token %s ...", plan.Id.ValueString())
-		_, err = revokeClusterAgentToken(ctx,
-			ct.client.genqlient,
-			ct.client.organizationId,
-			plan.Id.ValueString(),
-		)
+		org, err := ct.client.GetOrganizationID()
+		if err == nil {
+			log.Printf("Revoking Cluster Agent Token %s ...", plan.Id.ValueString())
+			_, err = revokeClusterAgentToken(ctx,
+				ct.client.genqlient,
+				*org,
+				plan.Id.ValueString(),
+			)
+		}
 
 		return retryContextError(err)
 	})

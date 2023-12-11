@@ -64,12 +64,14 @@ func (at *agentTokenResource) Create(ctx context.Context, req resource.CreateReq
 
 	var r *createAgentTokenResponse
 	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-		var err error
-		r, err = createAgentToken(ctx,
-			at.client.genqlient,
-			at.client.organizationId,
-			plan.Description.ValueStringPointer(),
-		)
+		org, err := at.client.GetOrganizationID()
+		if err == nil {
+			r, err = createAgentToken(ctx,
+				at.client.genqlient,
+				*org,
+				plan.Description.ValueStringPointer(),
+			)
+		}
 
 		return retryContextError(err)
 	})
