@@ -3,6 +3,8 @@
 ## Unreleased
 - SUP-1607: Allowed IP Addresses attribute addition for Cluster Agent Token resources [[PR #447](https://github.com/buildkite/terraform-provider-buildkite/pull/447)] @james2791 
 
+- SUP-1608 Pipeline schedule env escaping [[PR #449](https://github.com/buildkite/terraform-provider-buildkite/pull/449)] @jradtilbrook
+
 ## [v1.1.1](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.1.1...v1.1.1)
 
 - Fix a typo in the signed pipelines data source [[PR #438](https://github.com/buildkite/terraform-provider-buildkite/pull/438)]
