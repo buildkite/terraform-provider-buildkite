@@ -157,7 +157,7 @@ func (c *clusterDefaultQueueResource) Read(ctx context.Context, req resource.Rea
 		}
 		if clusterNode.DefaultQueue == nil {
 			resp.Diagnostics.AddError(
-				"Cannot import a default queue for this cluster",
+				"Cannot find a default queue for this cluster",
 				"No default queue is assigned to the cluster",
 			)
 			return
