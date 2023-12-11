@@ -95,7 +95,7 @@ func (o *organizationResource) Create(ctx context.Context, req resource.CreateRe
 	cidrs := createCidrSliceFromList(plan.AllowedApiIpAddresses)
 
 	org, err := o.client.GetOrganizationID()
-	if err == nil {
+	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to find organization",
 			fmt.Sprintf("Unable to find Organization: %s", err.Error()),
@@ -118,14 +118,6 @@ func (o *organizationResource) Create(ctx context.Context, req resource.CreateRe
 	}
 
 	if !plan.Enforce2FA.IsNull() && !plan.Enforce2FA.IsUnknown() {
-		org, err := o.client.GetOrganizationID()
-		if err == nil {
-			resp.Diagnostics.AddError(
-				"Unable to find organization",
-				fmt.Sprintf("Unable to find Organization: %s", err.Error()),
-			)
-			return
-		}
 		_, err = setOrganization2FA(ctx, o.client.genqlient, *org, plan.Enforce2FA.ValueBool())
 		if err != nil {
 			resp.Diagnostics.AddError("Unable to set 2FA", err.Error())
