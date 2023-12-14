@@ -141,6 +141,28 @@ type pipelineResponse interface {
 	GetWebhookURL() string
 }
 
+type pipelineUpdateResponse interface {
+	GetId() string
+	GetAllowRebuilds() bool
+	GetBranchConfiguration() *string
+	GetCancelIntermediateBuilds() bool
+	GetCancelIntermediateBuildsBranchFilter() string
+	GetCluster() PipelineUpdateFieldsCluster
+	GetColor() *string
+	GetDefaultBranch() string
+	GetDefaultTimeoutInMinutes() *int
+	GetMaximumTimeoutInMinutes() *int
+	GetDescription() string
+	GetEmoji() *string
+	GetName() string
+	GetRepository() PipelineUpdateFieldsRepository
+	GetSkipIntermediateBuilds() bool
+	GetSkipIntermediateBuildsBranchFilter() string
+	GetSlug() string
+	GetSteps() PipelineUpdateFieldsStepsPipelineSteps
+	GetTags() []PipelineUpdateFieldsTagsPipelineTag
+}
+
 func newPipelineResource(archiveOnDelete *bool) func() resource.Resource {
 	return func() resource.Resource {
 		return &pipelineResource{
@@ -679,7 +701,7 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 		return
 	}
 
-	setPipelineModel(&state, &response.PipelineUpdate.Pipeline)
+	updatePipelineModel(&state, &response.PipelineUpdate.Pipeline)
 
 	if plan.ProviderSettings != nil {
 		pipelineExtraInfo, err := updatePipelineExtraInfo(ctx, response.PipelineUpdate.Pipeline.Slug, plan.ProviderSettings, p.client, timeouts)
@@ -707,6 +729,36 @@ func (*pipelineResource) ImportState(ctx context.Context, req resource.ImportSta
 }
 
 func setPipelineModel(model *pipelineResourceModel, data pipelineResponse) {
+	defaultTimeoutInMinutes := (*int64)(unsafe.Pointer(data.GetDefaultTimeoutInMinutes()))
+	maximumTimeoutInMinutes := (*int64)(unsafe.Pointer(data.GetMaximumTimeoutInMinutes()))
+
+	model.AllowRebuilds = types.BoolValue(data.GetAllowRebuilds())
+	model.BranchConfiguration = types.StringPointerValue(data.GetBranchConfiguration())
+	model.CancelIntermediateBuilds = types.BoolValue(data.GetCancelIntermediateBuilds())
+	model.CancelIntermediateBuildsBranchFilter = types.StringValue(data.GetCancelIntermediateBuildsBranchFilter())
+	model.ClusterId = types.StringPointerValue(data.GetCluster().Id)
+	model.Color = types.StringPointerValue(data.GetColor())
+	model.DefaultBranch = types.StringValue(data.GetDefaultBranch())
+	model.DefaultTimeoutInMinutes = types.Int64PointerValue(defaultTimeoutInMinutes)
+	model.Description = types.StringValue(data.GetDescription())
+	model.Emoji = types.StringPointerValue(data.GetEmoji())
+	model.Id = types.StringValue(data.GetId())
+	model.MaximumTimeoutInMinutes = types.Int64PointerValue(maximumTimeoutInMinutes)
+	model.Name = types.StringValue(data.GetName())
+	model.Repository = types.StringValue(data.GetRepository().Url)
+	model.SkipIntermediateBuilds = types.BoolValue(data.GetSkipIntermediateBuilds())
+	model.SkipIntermediateBuildsBranchFilter = types.StringValue(data.GetSkipIntermediateBuildsBranchFilter())
+	model.Slug = types.StringValue(data.GetSlug())
+	model.Steps = types.StringValue(data.GetSteps().Yaml)
+
+	tags := make([]types.String, len(data.GetTags()))
+	for i, tag := range data.GetTags() {
+		tags[i] = types.StringValue(tag.Label)
+	}
+	model.Tags = tags
+}
+
+func updatePipelineModel(model *pipelineResourceModel, data pipelineUpdateResponse) {
 	defaultTimeoutInMinutes := (*int64)(unsafe.Pointer(data.GetDefaultTimeoutInMinutes()))
 	maximumTimeoutInMinutes := (*int64)(unsafe.Pointer(data.GetMaximumTimeoutInMinutes()))
 
