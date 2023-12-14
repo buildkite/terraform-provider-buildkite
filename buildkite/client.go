@@ -22,7 +22,7 @@ type Client struct {
 	genqlient      genqlient.Client
 	http           *http.Client
 	organization   string
-	organizationId string
+	organizationId *string
 	restUrl        string
 	timeouts       timeouts.Value
 }
@@ -41,8 +41,21 @@ type headerRoundTripper struct {
 	Header http.Header
 }
 
+func (client Client) GetOrganizationID() (*string, error) {
+	if client.organizationId != nil {
+		return client.organizationId, nil
+	}
+	orgId, err := GetOrganizationID(client.organization, client.graphql)
+	client.organizationId = &orgId
+	if err != nil {
+		return nil, err
+	}
+
+	return client.organizationId, nil
+}
+
 // NewClient creates a client to use for interacting with the Buildkite API
-func NewClient(config *clientConfig) (*Client, error) {
+func NewClient(config *clientConfig) *Client {
 
 	// Setup a HTTP Client that can be used by all REST and graphql API calls,
 	// with suitable headers for authentication and user agent identification
@@ -57,21 +70,16 @@ func NewClient(config *clientConfig) (*Client, error) {
 	}
 
 	graphqlClient := graphql.NewClient(config.graphqlURL, httpClient)
-	orgId, err := GetOrganizationID(config.org, graphqlClient)
-
-	if err != nil {
-		return nil, err
-	}
 
 	return &Client{
 		graphql:        graphqlClient,
 		genqlient:      genqlient.NewClient(config.graphqlURL, httpClient),
 		http:           httpClient,
 		organization:   config.org,
-		organizationId: orgId,
+		organizationId: nil,
 		restUrl:        config.restURL,
 		timeouts:       config.timeouts,
-	}, nil
+	}
 }
 
 func isRetryableError(err error) bool {

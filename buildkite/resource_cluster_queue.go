@@ -107,16 +107,17 @@ func (cq *clusterQueueResource) Create(ctx context.Context, req resource.CreateR
 
 	var r *createClusterQueueResponse
 	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-		var err error
-
-		log.Printf("Creating cluster queue with key %s into cluster %s ...", plan.Key.ValueString(), plan.ClusterId.ValueString())
-		r, err = createClusterQueue(ctx,
-			cq.client.genqlient,
-			cq.client.organizationId,
-			plan.ClusterId.ValueString(),
-			plan.Key.ValueString(),
-			plan.Description.ValueStringPointer(),
-		)
+		org, err := cq.client.GetOrganizationID()
+		if err == nil {
+			log.Printf("Creating cluster queue with key %s into cluster %s ...", plan.Key.ValueString(), plan.ClusterId.ValueString())
+			r, err = createClusterQueue(ctx,
+				cq.client.genqlient,
+				*org,
+				plan.ClusterId.ValueString(),
+				plan.Key.ValueString(),
+				plan.Description.ValueStringPointer(),
+			)
+		}
 
 		return retryContextError(err)
 	})
@@ -238,15 +239,16 @@ func (cq *clusterQueueResource) Update(ctx context.Context, req resource.UpdateR
 
 	var r *updateClusterQueueResponse
 	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-		var err error
-
-		log.Printf("Updating cluster queue %s ...", state.Id.ValueString())
-		r, err = updateClusterQueue(ctx,
-			cq.client.genqlient,
-			cq.client.organizationId,
-			state.Id.ValueString(),
-			description.ValueStringPointer(),
-		)
+		org, err := cq.client.GetOrganizationID()
+		if err == nil {
+			log.Printf("Updating cluster queue %s ...", state.Id.ValueString())
+			r, err = updateClusterQueue(ctx,
+				cq.client.genqlient,
+				*org,
+				state.Id.ValueString(),
+				description.ValueStringPointer(),
+			)
+		}
 
 		return retryContextError(err)
 	})
@@ -282,14 +284,15 @@ func (cq *clusterQueueResource) Delete(ctx context.Context, req resource.DeleteR
 	}
 
 	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-		var err error
-
-		log.Printf("Deleting cluster queue %s ...", plan.Id.ValueString())
-		_, err = deleteClusterQueue(ctx,
-			cq.client.genqlient,
-			cq.client.organizationId,
-			plan.Id.ValueString(),
-		)
+		org, err := cq.client.GetOrganizationID()
+		if err == nil {
+			log.Printf("Deleting cluster queue %s ...", plan.Id.ValueString())
+			_, err = deleteClusterQueue(ctx,
+				cq.client.genqlient,
+				*org,
+				plan.Id.ValueString(),
+			)
+		}
 
 		return retryContextError(err)
 	})

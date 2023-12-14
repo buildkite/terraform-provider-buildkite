@@ -80,11 +80,7 @@ func (tf *terraformProvider) Configure(ctx context.Context, req provider.Configu
 		timeouts:   data.Timeouts,
 		userAgent:  userAgent("buildkite", tf.version, req.TerraformVersion),
 	}
-	client, err := NewClient(&config)
-
-	if err != nil {
-		resp.Diagnostics.AddError(err.Error(), fmt.Sprintf("... details ... %s", err))
-	}
+	client := NewClient(&config)
 
 	resp.ResourceData = client
 	resp.DataSourceData = client

@@ -49,7 +49,7 @@ func (pipelineTemplateResource) Schema(ctx context.Context, req resource.SchemaR
 	resp.Schema = resource_schema.Schema{
 		MarkdownDescription: heredoc.Doc(`
 			This resource allows for standardized step configurations that can be used within various pipelines of an organization.
-		
+
 			More information on pipeline templates can be found in the [documentation](https://buildkite.com/docs/pipelines/templates).
 		`),
 		Attributes: map[string]resource_schema.Attribute{
@@ -107,17 +107,18 @@ func (pt *pipelineTemplateResource) Create(ctx context.Context, req resource.Cre
 
 	var r *createPipelineTemplateResponse
 	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-		var err error
-
-		log.Printf("Creating pipeline template %s ...", plan.Name.ValueString())
-		r, err = createPipelineTemplate(ctx,
-			pt.client.genqlient,
-			pt.client.organizationId,
-			plan.Name.ValueString(),
-			plan.Configuration.ValueString(),
-			plan.Description.ValueStringPointer(),
-			plan.Available.ValueBool(),
-		)
+		org, err := pt.client.GetOrganizationID()
+		if err == nil {
+			log.Printf("Creating pipeline template %s ...", plan.Name.ValueString())
+			r, err = createPipelineTemplate(ctx,
+				pt.client.genqlient,
+				*org,
+				plan.Name.ValueString(),
+				plan.Configuration.ValueString(),
+				plan.Description.ValueStringPointer(),
+				plan.Available.ValueBool(),
+			)
+		}
 
 		return retryContextError(err)
 	})
@@ -221,18 +222,19 @@ func (pt *pipelineTemplateResource) Update(ctx context.Context, req resource.Upd
 
 	var r *updatePipelineTemplateResponse
 	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-		var err error
-
-		log.Printf("Updating pipeline template %s with ID %s ...", plan.Name.ValueString(), plan.ID.ValueString())
-		r, err = updatePipelineTemplate(ctx,
-			pt.client.genqlient,
-			pt.client.organizationId,
-			plan.ID.ValueString(),
-			plan.Name.ValueString(),
-			plan.Configuration.ValueString(),
-			plan.Description.ValueString(),
-			plan.Available.ValueBool(),
-		)
+		org, err := pt.client.GetOrganizationID()
+		if err == nil {
+			log.Printf("Updating pipeline template %s with ID %s ...", plan.Name.ValueString(), plan.ID.ValueString())
+			r, err = updatePipelineTemplate(ctx,
+				pt.client.genqlient,
+				*org,
+				plan.ID.ValueString(),
+				plan.Name.ValueString(),
+				plan.Configuration.ValueString(),
+				plan.Description.ValueString(),
+				plan.Available.ValueBool(),
+			)
+		}
 
 		return retryContextError(err)
 	})
@@ -271,14 +273,15 @@ func (pt *pipelineTemplateResource) Delete(ctx context.Context, req resource.Del
 	}
 
 	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-		var err error
-
-		log.Printf("Deleting pipeline template %s with ID %s ...", state.Name.ValueString(), state.ID.ValueString())
-		_, err = deletePipelineTemplate(ctx,
-			pt.client.genqlient,
-			pt.client.organizationId,
-			state.ID.ValueString(),
-		)
+		org, err := pt.client.GetOrganizationID()
+		if err == nil {
+			log.Printf("Deleting pipeline template %s with ID %s ...", state.Name.ValueString(), state.ID.ValueString())
+			_, err = deletePipelineTemplate(ctx,
+				pt.client.genqlient,
+				*org,
+				state.ID.ValueString(),
+			)
+		}
 
 		return retryContextError(err)
 	})
