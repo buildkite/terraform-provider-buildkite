@@ -300,7 +300,7 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 							return nil
 						},
 						resource.TestCheckResourceAttrPair("buildkite_pipeline.pipeline", "cluster_id", "buildkite_cluster.cluster", "id"),
-						resource.TestCheckResourceAttrSet("buildkite_pipeline.pipeline", "webhook_url"),
+						resource.TestCheckNoResourceAttr("buildkite_pipeline.pipeline", "webhook_url"),
 						aggregateRemoteCheck(&pipeline),
 					),
 				},
