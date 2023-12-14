@@ -16,7 +16,7 @@ import (
 // A token used to connect an agent in cluster to Buildkite
 type ClusterAgentTokenValues struct {
 	// A list of CIDR-notation IPv4 addresses from which agents can use this token. Please note that this feature is not yet available to all organizations
-	AllowedIpAddresses *string                        `json:"allowedIpAddresses"`
+	AllowedIpAddresses string                         `json:"allowedIpAddresses"`
 	Cluster            ClusterAgentTokenValuesCluster `json:"cluster"`
 	// A description about what this cluster agent token is used for
 	Description string `json:"description"`
@@ -26,7 +26,7 @@ type ClusterAgentTokenValues struct {
 }
 
 // GetAllowedIpAddresses returns ClusterAgentTokenValues.AllowedIpAddresses, and is useful for accessing the field via an interface.
-func (v *ClusterAgentTokenValues) GetAllowedIpAddresses() *string { return v.AllowedIpAddresses }
+func (v *ClusterAgentTokenValues) GetAllowedIpAddresses() string { return v.AllowedIpAddresses }
 
 // GetCluster returns ClusterAgentTokenValues.Cluster, and is useful for accessing the field via an interface.
 func (v *ClusterAgentTokenValues) GetCluster() ClusterAgentTokenValuesCluster { return v.Cluster }
@@ -1151,10 +1151,10 @@ func (v *__createAgentTokenInput) GetDescription() *string { return v.Descriptio
 
 // __createClusterAgentTokenInput is used internally by genqlient
 type __createClusterAgentTokenInput struct {
-	OrganizationId     string  `json:"organizationId"`
-	ClusterId          string  `json:"clusterId"`
-	Description        string  `json:"description"`
-	AllowedIpAddresses *string `json:"allowedIpAddresses"`
+	OrganizationId     string `json:"organizationId"`
+	ClusterId          string `json:"clusterId"`
+	Description        string `json:"description"`
+	AllowedIpAddresses string `json:"allowedIpAddresses"`
 }
 
 // GetOrganizationId returns __createClusterAgentTokenInput.OrganizationId, and is useful for accessing the field via an interface.
@@ -1167,7 +1167,7 @@ func (v *__createClusterAgentTokenInput) GetClusterId() string { return v.Cluste
 func (v *__createClusterAgentTokenInput) GetDescription() string { return v.Description }
 
 // GetAllowedIpAddresses returns __createClusterAgentTokenInput.AllowedIpAddresses, and is useful for accessing the field via an interface.
-func (v *__createClusterAgentTokenInput) GetAllowedIpAddresses() *string { return v.AllowedIpAddresses }
+func (v *__createClusterAgentTokenInput) GetAllowedIpAddresses() string { return v.AllowedIpAddresses }
 
 // __createClusterInput is used internally by genqlient
 type __createClusterInput struct {
@@ -1667,10 +1667,10 @@ func (v *__teamUpdateInput) GetMembersCanCreatePipelines() bool { return v.Membe
 
 // __updateClusterAgentTokenInput is used internally by genqlient
 type __updateClusterAgentTokenInput struct {
-	OrganizationId     string  `json:"organizationId"`
-	Id                 string  `json:"id"`
-	Description        string  `json:"description"`
-	AllowedIpAddresses *string `json:"allowedIpAddresses"`
+	OrganizationId     string `json:"organizationId"`
+	Id                 string `json:"id"`
+	Description        string `json:"description"`
+	AllowedIpAddresses string `json:"allowedIpAddresses"`
 }
 
 // GetOrganizationId returns __updateClusterAgentTokenInput.OrganizationId, and is useful for accessing the field via an interface.
@@ -1683,7 +1683,7 @@ func (v *__updateClusterAgentTokenInput) GetId() string { return v.Id }
 func (v *__updateClusterAgentTokenInput) GetDescription() string { return v.Description }
 
 // GetAllowedIpAddresses returns __updateClusterAgentTokenInput.AllowedIpAddresses, and is useful for accessing the field via an interface.
-func (v *__updateClusterAgentTokenInput) GetAllowedIpAddresses() *string { return v.AllowedIpAddresses }
+func (v *__updateClusterAgentTokenInput) GetAllowedIpAddresses() string { return v.AllowedIpAddresses }
 
 // __updateClusterInput is used internally by genqlient
 type __updateClusterInput struct {
@@ -1943,7 +1943,7 @@ type createClusterAgentTokenClusterAgentTokenCreateClusterAgentTokenCreatePayloa
 }
 
 // GetAllowedIpAddresses returns createClusterAgentTokenClusterAgentTokenCreateClusterAgentTokenCreatePayloadClusterAgentTokenClusterToken.AllowedIpAddresses, and is useful for accessing the field via an interface.
-func (v *createClusterAgentTokenClusterAgentTokenCreateClusterAgentTokenCreatePayloadClusterAgentTokenClusterToken) GetAllowedIpAddresses() *string {
+func (v *createClusterAgentTokenClusterAgentTokenCreateClusterAgentTokenCreatePayloadClusterAgentTokenClusterToken) GetAllowedIpAddresses() string {
 	return v.ClusterAgentTokenValues.AllowedIpAddresses
 }
 
@@ -1993,7 +1993,7 @@ func (v *createClusterAgentTokenClusterAgentTokenCreateClusterAgentTokenCreatePa
 }
 
 type __premarshalcreateClusterAgentTokenClusterAgentTokenCreateClusterAgentTokenCreatePayloadClusterAgentTokenClusterToken struct {
-	AllowedIpAddresses *string `json:"allowedIpAddresses"`
+	AllowedIpAddresses string `json:"allowedIpAddresses"`
 
 	Cluster ClusterAgentTokenValuesCluster `json:"cluster"`
 
@@ -3585,7 +3585,7 @@ type getClusterAgentTokensOrganizationClusterAgentTokensClusterAgentTokenConnect
 }
 
 // GetAllowedIpAddresses returns getClusterAgentTokensOrganizationClusterAgentTokensClusterAgentTokenConnectionEdgesClusterAgentTokenEdgeNodeClusterToken.AllowedIpAddresses, and is useful for accessing the field via an interface.
-func (v *getClusterAgentTokensOrganizationClusterAgentTokensClusterAgentTokenConnectionEdgesClusterAgentTokenEdgeNodeClusterToken) GetAllowedIpAddresses() *string {
+func (v *getClusterAgentTokensOrganizationClusterAgentTokensClusterAgentTokenConnectionEdgesClusterAgentTokenEdgeNodeClusterToken) GetAllowedIpAddresses() string {
 	return v.ClusterAgentTokenValues.AllowedIpAddresses
 }
 
@@ -3635,7 +3635,7 @@ func (v *getClusterAgentTokensOrganizationClusterAgentTokensClusterAgentTokenCon
 }
 
 type __premarshalgetClusterAgentTokensOrganizationClusterAgentTokensClusterAgentTokenConnectionEdgesClusterAgentTokenEdgeNodeClusterToken struct {
-	AllowedIpAddresses *string `json:"allowedIpAddresses"`
+	AllowedIpAddresses string `json:"allowedIpAddresses"`
 
 	Cluster ClusterAgentTokenValuesCluster `json:"cluster"`
 
@@ -10270,7 +10270,7 @@ type updateClusterAgentTokenClusterAgentTokenUpdateClusterAgentTokenUpdatePayloa
 }
 
 // GetAllowedIpAddresses returns updateClusterAgentTokenClusterAgentTokenUpdateClusterAgentTokenUpdatePayloadClusterAgentTokenClusterToken.AllowedIpAddresses, and is useful for accessing the field via an interface.
-func (v *updateClusterAgentTokenClusterAgentTokenUpdateClusterAgentTokenUpdatePayloadClusterAgentTokenClusterToken) GetAllowedIpAddresses() *string {
+func (v *updateClusterAgentTokenClusterAgentTokenUpdateClusterAgentTokenUpdatePayloadClusterAgentTokenClusterToken) GetAllowedIpAddresses() string {
 	return v.ClusterAgentTokenValues.AllowedIpAddresses
 }
 
@@ -10320,7 +10320,7 @@ func (v *updateClusterAgentTokenClusterAgentTokenUpdateClusterAgentTokenUpdatePa
 }
 
 type __premarshalupdateClusterAgentTokenClusterAgentTokenUpdateClusterAgentTokenUpdatePayloadClusterAgentTokenClusterToken struct {
-	AllowedIpAddresses *string `json:"allowedIpAddresses"`
+	AllowedIpAddresses string `json:"allowedIpAddresses"`
 
 	Cluster ClusterAgentTokenValuesCluster `json:"cluster"`
 
@@ -11705,7 +11705,7 @@ func createClusterAgentToken(
 	organizationId string,
 	clusterId string,
 	description string,
-	allowedIpAddresses *string,
+	allowedIpAddresses string,
 ) (*createClusterAgentTokenResponse, error) {
 	req := &graphql.Request{
 		OpName: "createClusterAgentToken",
@@ -13658,7 +13658,7 @@ func updateClusterAgentToken(
 	organizationId string,
 	id string,
 	description string,
-	allowedIpAddresses *string,
+	allowedIpAddresses string,
 ) (*updateClusterAgentTokenResponse, error) {
 	req := &graphql.Request{
 		OpName: "updateClusterAgentToken",

@@ -234,12 +234,3 @@ func (o *organizationResource) Delete(ctx context.Context, req resource.DeleteRe
 
 	resp.Diagnostics.AddAttributeWarning(path.Root("enforce_2fa"), "Enforce 2FA setting left intact", "Use the web UI if you wish to change the value")
 }
-
-func createCidrSliceFromList(cidrList types.List) []string {
-	cidrs := make([]string, len(cidrList.Elements()))
-	for i, v := range cidrList.Elements() {
-		cidrs[i] = strings.Trim(v.String(), "\"")
-	}
-
-	return cidrs
-}

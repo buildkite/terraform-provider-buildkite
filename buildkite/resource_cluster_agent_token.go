@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -25,7 +26,7 @@ type clusterAgentTokenResourceModel struct {
 	Token              types.String `tfsdk:"token"`
 	ClusterId          types.String `tfsdk:"cluster_id"`
 	ClusterUuid        types.String `tfsdk:"cluster_uuid"`
-	AllowedIpAddresses types.String `tfsdk:"allowed_ip_addresses"`
+	AllowedIpAddresses types.List   `tfsdk:"allowed_ip_addresses"`
 }
 
 func newClusterAgentTokenResource() resource.Resource {
@@ -87,9 +88,11 @@ func (ct *clusterAgentToken) Schema(_ context.Context, _ resource.SchemaRequest,
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
-			"allowed_ip_addresses": resource_schema.StringAttribute{
+			"allowed_ip_addresses": schema.ListAttribute{				
 				Optional:            true,
-				MarkdownDescription: "A list of CIDR-notation IPv4 addresses from which agents can use this Cluster Agent Token.",
+				ElementType: 		 types.StringType,
+				MarkdownDescription: "A list of CIDR-notation IPv4 addresses from which agents can use this Cluster Agent Token." +
+					"If not set, all IP addresses are allowed (the same as setting 0.0.0.0/0).",
 			},
 		},
 	}
@@ -112,6 +115,9 @@ func (ct *clusterAgentToken) Create(ctx context.Context, req resource.CreateRequ
 		return
 	}
 
+	// Create CIDR slice from AllowedApiIpAddresses in the plan
+	cidrs := createCidrSliceFromList(plan.AllowedIpAddresses)
+
 	var r *createClusterAgentTokenResponse
 	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		var err error
@@ -122,7 +128,7 @@ func (ct *clusterAgentToken) Create(ctx context.Context, req resource.CreateRequ
 			ct.client.organizationId,
 			plan.ClusterId.ValueString(),
 			plan.Description.ValueString(),
-			plan.AllowedIpAddresses.ValueStringPointer(),
+			strings.Join(cidrs, " "),
 		)
 
 		return retryContextError(err)
@@ -142,7 +148,8 @@ func (ct *clusterAgentToken) Create(ctx context.Context, req resource.CreateRequ
 	state.Token = types.StringValue(r.ClusterAgentTokenCreate.TokenValue)
 	state.ClusterId = types.StringValue(r.ClusterAgentTokenCreate.ClusterAgentToken.Cluster.Id)
 	state.ClusterUuid = types.StringValue(r.ClusterAgentTokenCreate.ClusterAgentToken.Cluster.Uuid)
-	state.AllowedIpAddresses = types.StringPointerValue(r.ClusterAgentTokenCreate.ClusterAgentToken.AllowedIpAddresses)
+	state.AllowedIpAddresses = plan.AllowedIpAddresses
+	//state.AllowedIpAddresses = types.ListNull(types.StringType)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
@@ -216,6 +223,9 @@ func (ct *clusterAgentToken) Update(ctx context.Context, req resource.UpdateRequ
 		return
 	}
 
+	// Create CIDR slice from AllowedApiIpAddresses in the plan
+	cidrs := createCidrSliceFromList(plan.AllowedIpAddresses)
+
 	var r *updateClusterAgentTokenResponse
 	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		var err error
@@ -226,7 +236,7 @@ func (ct *clusterAgentToken) Update(ctx context.Context, req resource.UpdateRequ
 			ct.client.organizationId,
 			state.Id.ValueString(),
 			plan.Description.ValueString(),
-			plan.AllowedIpAddresses.ValueStringPointer(),
+			strings.Join(cidrs, " "),
 		)
 
 		return retryContextError(err)
@@ -241,7 +251,7 @@ func (ct *clusterAgentToken) Update(ctx context.Context, req resource.UpdateRequ
 	}
 
 	state.Description = types.StringValue(r.ClusterAgentTokenUpdate.ClusterAgentToken.Description)
-	state.AllowedIpAddresses = types.StringPointerValue(r.ClusterAgentTokenUpdate.ClusterAgentToken.AllowedIpAddresses)
+	state.AllowedIpAddresses = plan.AllowedIpAddresses
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 
