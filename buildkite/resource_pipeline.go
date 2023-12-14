@@ -169,27 +169,6 @@ func (p *pipelineResource) Create(ctx context.Context, req resource.CreateReques
 	defaultTimeoutInMinutes := (*int)(unsafe.Pointer(plan.DefaultTimeoutInMinutes.ValueInt64Pointer()))
 	maxTimeoutInMinutes := (*int)(unsafe.Pointer(plan.MaximumTimeoutInMinutes.ValueInt64Pointer()))
 
-	input := PipelineCreateInput{
-		AllowRebuilds:                        plan.AllowRebuilds.ValueBool(),
-		BranchConfiguration:                  plan.BranchConfiguration.ValueStringPointer(),
-		CancelIntermediateBuilds:             plan.CancelIntermediateBuilds.ValueBool(),
-		CancelIntermediateBuildsBranchFilter: plan.CancelIntermediateBuildsBranchFilter.ValueString(),
-		ClusterId:                            plan.ClusterId.ValueStringPointer(),
-		Color:                                plan.Color.ValueStringPointer(),
-		DefaultBranch:                        plan.DefaultBranch.ValueString(),
-		DefaultTimeoutInMinutes:              defaultTimeoutInMinutes,
-		Emoji:                                plan.Emoji.ValueStringPointer(),
-		MaximumTimeoutInMinutes:              maxTimeoutInMinutes,
-		Description:                          plan.Description.ValueString(),
-		Name:                                 plan.Name.ValueString(),
-		OrganizationId:                       p.client.organizationId,
-		Repository:                           PipelineRepositoryInput{Url: plan.Repository.ValueString()},
-		SkipIntermediateBuilds:               plan.SkipIntermediateBuilds.ValueBool(),
-		SkipIntermediateBuildsBranchFilter:   plan.SkipIntermediateBuildsBranchFilter.ValueString(),
-		Steps:                                PipelineStepsInput{Yaml: plan.Steps.ValueString()},
-		Tags:                                 getTagsFromSchema(&plan),
-	}
-
 	timeouts, diags := p.client.timeouts.Create(ctx, DefaultTimeout)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
@@ -199,8 +178,30 @@ func (p *pipelineResource) Create(ctx context.Context, req resource.CreateReques
 	var response *createPipelineResponse
 	log.Printf("Creating pipeline %s ...", plan.Name.ValueString())
 	err := retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
-		var err error
-		response, err = createPipeline(ctx, p.client.genqlient, input)
+		org, err := p.client.GetOrganizationID()
+		if err == nil {
+			input := PipelineCreateInput{
+				AllowRebuilds:                        plan.AllowRebuilds.ValueBool(),
+				BranchConfiguration:                  plan.BranchConfiguration.ValueStringPointer(),
+				CancelIntermediateBuilds:             plan.CancelIntermediateBuilds.ValueBool(),
+				CancelIntermediateBuildsBranchFilter: plan.CancelIntermediateBuildsBranchFilter.ValueString(),
+				ClusterId:                            plan.ClusterId.ValueStringPointer(),
+				Color:                                plan.Color.ValueStringPointer(),
+				DefaultBranch:                        plan.DefaultBranch.ValueString(),
+				DefaultTimeoutInMinutes:              defaultTimeoutInMinutes,
+				Emoji:                                plan.Emoji.ValueStringPointer(),
+				MaximumTimeoutInMinutes:              maxTimeoutInMinutes,
+				Description:                          plan.Description.ValueString(),
+				Name:                                 plan.Name.ValueString(),
+				OrganizationId:                       *org,
+				Repository:                           PipelineRepositoryInput{Url: plan.Repository.ValueString()},
+				SkipIntermediateBuilds:               plan.SkipIntermediateBuilds.ValueBool(),
+				SkipIntermediateBuildsBranchFilter:   plan.SkipIntermediateBuildsBranchFilter.ValueString(),
+				Steps:                                PipelineStepsInput{Yaml: plan.Steps.ValueString()},
+				Tags:                                 getTagsFromSchema(&plan),
+			}
+			response, err = createPipeline(ctx, p.client.genqlient, input)
+		}
 		return retryContextError(err)
 	})
 

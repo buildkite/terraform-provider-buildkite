@@ -112,16 +112,18 @@ func (c *clusterResource) Create(ctx context.Context, req resource.CreateRequest
 
 	var r *createClusterResponse
 	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-		var err error
-		r, err = createCluster(
-			ctx,
-			c.client.genqlient,
-			c.client.organizationId,
-			state.Name.ValueString(),
-			state.Description.ValueStringPointer(),
-			state.Emoji.ValueStringPointer(),
-			state.Color.ValueStringPointer(),
-		)
+		org, err := c.client.GetOrganizationID()
+		if err == nil {
+			r, err = createCluster(
+				ctx,
+				c.client.genqlient,
+				*org,
+				state.Name.ValueString(),
+				state.Description.ValueStringPointer(),
+				state.Emoji.ValueStringPointer(),
+				state.Color.ValueStringPointer(),
+			)
+		}
 
 		return retryContextError(err)
 	})
@@ -213,16 +215,18 @@ func (c *clusterResource) Update(ctx context.Context, req resource.UpdateRequest
 	}
 
 	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-		var err error
-		_, err = updateCluster(ctx,
-			c.client.genqlient,
-			c.client.organizationId,
-			state.ID.ValueString(),
-			plan.Name.ValueString(),
-			plan.Description.ValueStringPointer(),
-			plan.Emoji.ValueStringPointer(),
-			plan.Color.ValueStringPointer(),
-		)
+		org, err := c.client.GetOrganizationID()
+		if err == nil {
+			_, err = updateCluster(ctx,
+				c.client.genqlient,
+				*org,
+				state.ID.ValueString(),
+				plan.Name.ValueString(),
+				plan.Description.ValueStringPointer(),
+				plan.Emoji.ValueStringPointer(),
+				plan.Color.ValueStringPointer(),
+			)
+		}
 
 		return retryContextError(err)
 	})
@@ -258,8 +262,10 @@ func (c *clusterResource) Delete(ctx context.Context, req resource.DeleteRequest
 	}
 
 	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-		var err error
-		_, err = deleteCluster(ctx, c.client.genqlient, c.client.organizationId, state.ID.ValueString())
+		org, err := c.client.GetOrganizationID()
+		if err == nil {
+			_, err = deleteCluster(ctx, c.client.genqlient, *org, state.ID.ValueString())
+		}
 
 		return retryContextError(err)
 	})

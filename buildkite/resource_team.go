@@ -148,17 +148,19 @@ func (t *teamResource) Create(ctx context.Context, req resource.CreateRequest, r
 
 	var r *teamCreateResponse
 	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-		var err error
-		r, err = teamCreate(ctx,
-			t.client.genqlient,
-			t.client.organizationId,
-			state.Name.ValueString(),
-			state.Description.ValueStringPointer(),
-			state.Privacy.ValueString(),
-			state.IsDefaultTeam.ValueBool(),
-			state.DefaultMemberRole.ValueString(),
-			state.MembersCanCreatePipelines.ValueBool(),
-		)
+		org, err := t.client.GetOrganizationID()
+		if err == nil {
+			r, err = teamCreate(ctx,
+				t.client.genqlient,
+				*org,
+				state.Name.ValueString(),
+				state.Description.ValueStringPointer(),
+				state.Privacy.ValueString(),
+				state.IsDefaultTeam.ValueBool(),
+				state.DefaultMemberRole.ValueString(),
+				state.MembersCanCreatePipelines.ValueBool(),
+			)
+		}
 
 		return retryContextError(err)
 	})
