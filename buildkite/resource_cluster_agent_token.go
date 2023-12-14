@@ -88,9 +88,9 @@ func (ct *clusterAgentToken) Schema(_ context.Context, _ resource.SchemaRequest,
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
-			"allowed_ip_addresses": schema.ListAttribute{				
-				Optional:            true,
-				ElementType: 		 types.StringType,
+			"allowed_ip_addresses": schema.ListAttribute{
+				Optional:    true,
+				ElementType: types.StringType,
 				MarkdownDescription: "A list of CIDR-notation IPv4 addresses from which agents can use this Cluster Agent Token." +
 					"If not set, all IP addresses are allowed (the same as setting 0.0.0.0/0).",
 			},

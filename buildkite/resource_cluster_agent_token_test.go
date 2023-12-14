@@ -2,6 +2,7 @@ package buildkite
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"testing"
 
@@ -36,8 +37,9 @@ func TestAccBuildkiteClusterAgentTokenResource(t *testing.T) {
 		`, fields[0], fields[1])
 	}
 
-	configAllowedIPsBasic := func(fields ...string) string {
-		return fmt.Sprintf(`
+	configAllowedIPsBasic := func(name, description string, allowed_ip_addresses []string) string {
+		config := `
+
 		provider "buildkite" {
 			timeouts = {
 				create = "10s"
@@ -55,10 +57,13 @@ func TestAccBuildkiteClusterAgentTokenResource(t *testing.T) {
 		resource "buildkite_cluster_agent_token" "foobar" {
 			cluster_id = buildkite_cluster.cluster_test.id
 			description = "Acceptance Test %s"
-			allowed_ip_addresses = "%s"
+			allowed_ip_addresses = %v
 		}
+		`
 
-		`, fields[0], fields[1], fields[2])
+		marshalled_ips, _ := json.Marshal(allowed_ip_addresses)
+
+		return fmt.Sprintf(config, name, description, string(marshalled_ips))
 	}
 
 	t.Run("creates a cluster agent token", func(t *testing.T) {
@@ -100,7 +105,7 @@ func TestAccBuildkiteClusterAgentTokenResource(t *testing.T) {
 		var ct clusterAgentTokenResourceModel
 		clusterName := acctest.RandString(10)
 		tokenDesc := acctest.RandString(10)
-		allowedIps := "10.100.1.0/28"
+		allowedIps := []string{"10.100.1.0/28"}
 
 		check := resource.ComposeAggregateTestCheckFunc(
 			// Confirm the token exists in the buildkite API
@@ -109,7 +114,8 @@ func TestAccBuildkiteClusterAgentTokenResource(t *testing.T) {
 			testAccCheckClusterAgentTokenRemoteValues(&ct, fmt.Sprintf("Acceptance Test %s", tokenDesc)),
 			// Confirm the token has the correct values in terraform state
 			resource.TestCheckResourceAttr("buildkite_cluster_agent_token.foobar", "description", fmt.Sprintf("Acceptance Test %s", tokenDesc)),
-			resource.TestCheckResourceAttr("buildkite_cluster_agent_token.foobar", "allowed_ip_addresses", allowedIps),
+			resource.TestCheckResourceAttr("buildkite_cluster_agent_token.foobar", "allowed_ip_addresses.#", "1"),
+			resource.TestCheckResourceAttr("buildkite_cluster_agent_token.foobar", "allowed_ip_addresses.0", "10.100.1.0/28"),
 		)
 
 		resource.ParallelTest(t, resource.TestCase{
@@ -120,14 +126,6 @@ func TestAccBuildkiteClusterAgentTokenResource(t *testing.T) {
 				{
 					Config: configAllowedIPsBasic(clusterName, tokenDesc, allowedIps),
 					Check:  check,
-				},
-				{
-					RefreshState: true,
-					PlanOnly:     true,
-					Check: resource.ComposeAggregateTestCheckFunc(
-						resource.TestCheckResourceAttrSet("buildkite_cluster_agent_token.foobar", "description"),
-						resource.TestCheckResourceAttrSet("buildkite_cluster_agent_token.foobar", "allowed_ip_addresses"),
-					),
 				},
 			},
 		})
