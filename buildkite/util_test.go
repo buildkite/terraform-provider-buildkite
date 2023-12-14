@@ -16,12 +16,12 @@ func TestGetOrganizationIDMissing(t *testing.T) {
 		userAgent:  "test-user-agent",
 	}
 
-	// NewClient calls GetOrganizationId so we can test the output
-	client, err := NewClient(config)
+	client := NewClient(config)
+	org, err := client.GetOrganizationID()
 	if err == nil {
-		t.Fatalf("err: %s", err)
+		t.Fatal("No error occurred")
 	}
-	if client != nil {
+	if org != nil {
 		t.Fatalf("Nonexistent organization found")
 	}
 }

@@ -48,8 +48,10 @@ func (c *clusterDefaultQueueResource) Create(ctx context.Context, req resource.C
 	// modify cluster to set default
 	var r *setClusterDefaultQueueResponse
 	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-		var err error
-		r, err = setClusterDefaultQueue(ctx, c.client.genqlient, c.client.organizationId, plan.ClusterId.ValueString(), plan.QueueId.ValueString())
+		org, err := c.client.GetOrganizationID()
+		if err == nil {
+			r, err = setClusterDefaultQueue(ctx, c.client.genqlient, *org, plan.ClusterId.ValueString(), plan.QueueId.ValueString())
+		}
 
 		return retryContextError(err)
 	})
@@ -85,8 +87,10 @@ func (c *clusterDefaultQueueResource) Delete(ctx context.Context, req resource.D
 	}
 
 	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-		var err error
-		_, err = removeClusterDefaultQueue(ctx, c.client.genqlient, c.client.organizationId, state.ClusterId.ValueString())
+		org, err := c.client.GetOrganizationID()
+		if err == nil {
+			_, err = removeClusterDefaultQueue(ctx, c.client.genqlient, *org, state.ClusterId.ValueString())
+		}
 
 		return retryContextError(err)
 	})
@@ -232,8 +236,10 @@ func (c *clusterDefaultQueueResource) Update(ctx context.Context, req resource.U
 	// modify cluster to set default
 	var r *setClusterDefaultQueueResponse
 	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-		var err error
-		r, err = setClusterDefaultQueue(ctx, c.client.genqlient, c.client.organizationId, plan.ClusterId.ValueString(), plan.QueueId.ValueString())
+		org, err := c.client.GetOrganizationID()
+		if err == nil {
+			r, err = setClusterDefaultQueue(ctx, c.client.genqlient, *org, plan.ClusterId.ValueString(), plan.QueueId.ValueString())
+		}
 
 		return retryContextError(err)
 	})

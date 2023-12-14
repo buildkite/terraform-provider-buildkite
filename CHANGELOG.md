@@ -4,6 +4,7 @@
 
 - SUP-1608 Pipeline schedule env escaping [[PR #449](https://github.com/buildkite/terraform-provider-buildkite/pull/449)] @jradtilbrook
 - SUP-1612 Check default queue exists [[PR #451](https://github.com/buildkite/terraform-provider-buildkite/pull/451)] @jradtilbrook
+- SUP-1556 Prevent calls to Buildkite API [[PR #452](https://github.com/buildkite/terraform-provider-buildkite/pull/452)] @jradtilbrook
 
 ## [v1.1.1](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.1.1...v1.1.1)
 

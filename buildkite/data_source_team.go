@@ -131,7 +131,7 @@ func (t *teamDatasource) Read(ctx context.Context, req datasource.ReadRequest, r
 			if !ok {
 				resp.Diagnostics.AddError(
 					"Unable to get team",
-					fmt.Sprintf("Error getting team. Please create a new issue with any log output from the error here: https://github.com/buildkite/terraform-provider-buildkite/issues/new"),
+					"Error getting team. Please create a new issue with any log output from the error here: https://github.com/buildkite/terraform-provider-buildkite/issues/new",
 				)
 				return
 			}
