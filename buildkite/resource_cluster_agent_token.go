@@ -151,7 +151,6 @@ func (ct *clusterAgentToken) Create(ctx context.Context, req resource.CreateRequ
 	state.ClusterId = types.StringValue(r.ClusterAgentTokenCreate.ClusterAgentToken.Cluster.Id)
 	state.ClusterUuid = types.StringValue(r.ClusterAgentTokenCreate.ClusterAgentToken.Cluster.Uuid)
 	state.AllowedIpAddresses = plan.AllowedIpAddresses
-	//state.AllowedIpAddresses = types.ListNull(types.StringType)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
