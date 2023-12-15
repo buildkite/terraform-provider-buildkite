@@ -1,4 +1,5 @@
 fragment ClusterAgentTokenValues on ClusterToken {
+    allowedIpAddresses
     cluster {
         id
         uuid
@@ -26,11 +27,13 @@ mutation createClusterAgentToken(
     $organizationId: ID!
     $clusterId: ID!
     $description: String!
+    $allowedIpAddresses: String
 ) {
         clusterAgentTokenCreate(input:{
             organizationId: $organizationId
             clusterId: $clusterId
             description: $description
+            allowedIpAddresses: $allowedIpAddresses
         }) {
             clusterAgentToken {
                 ... ClusterAgentTokenValues
@@ -58,11 +61,13 @@ mutation updateClusterAgentToken(
     $organizationId: ID!
     $id: ID!
     $description: String!
+    $allowedIpAddresses: String
 ) {
     clusterAgentTokenUpdate(input: {
         organizationId: $organizationId
         id: $id
         description: $description
+        allowedIpAddresses: $allowedIpAddresses
     }) {
         clusterAgentToken {
             ... ClusterAgentTokenValues

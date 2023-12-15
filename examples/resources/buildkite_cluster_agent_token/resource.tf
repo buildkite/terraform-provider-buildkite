@@ -12,6 +12,12 @@ resource "buildkite_cluster_agent_token" "default" {
   cluster_id  = buildkite_cluster.primary.id
 }
 
+resource "buildkite_cluster_agent_token" "ip_limited_token" {
+  description = "Token with allowed IP range"
+  cluster_id  = buildkite_cluster.primary.id
+  allowed_ip_addresses = ["10.100.1.0/28"]
+}
+
 resource "buildkite_pipeline" "monolith" {
   name       = "Monolith"
   repository = "https://github.com/..."

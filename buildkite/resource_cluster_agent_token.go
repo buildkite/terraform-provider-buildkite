@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -19,12 +20,13 @@ type clusterAgentToken struct {
 }
 
 type clusterAgentTokenResourceModel struct {
-	Id          types.String `tfsdk:"id"`
-	Uuid        types.String `tfsdk:"uuid"`
-	Description types.String `tfsdk:"description"`
-	Token       types.String `tfsdk:"token"`
-	ClusterId   types.String `tfsdk:"cluster_id"`
-	ClusterUuid types.String `tfsdk:"cluster_uuid"`
+	Id                 types.String `tfsdk:"id"`
+	Uuid               types.String `tfsdk:"uuid"`
+	Description        types.String `tfsdk:"description"`
+	Token              types.String `tfsdk:"token"`
+	ClusterId          types.String `tfsdk:"cluster_id"`
+	ClusterUuid        types.String `tfsdk:"cluster_uuid"`
+	AllowedIpAddresses types.List   `tfsdk:"allowed_ip_addresses"`
 }
 
 func newClusterAgentTokenResource() resource.Resource {
@@ -49,10 +51,16 @@ func (ct *clusterAgentToken) Schema(_ context.Context, _ resource.SchemaRequest,
 			"id": resource_schema.StringAttribute{
 				Computed:            true,
 				MarkdownDescription: "The GraphQL ID of the token.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"uuid": resource_schema.StringAttribute{
 				Computed:            true,
 				MarkdownDescription: "The UUID of the token.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"description": resource_schema.StringAttribute{
 				Required:            true,
@@ -80,6 +88,12 @@ func (ct *clusterAgentToken) Schema(_ context.Context, _ resource.SchemaRequest,
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
+			"allowed_ip_addresses": schema.ListAttribute{
+				Optional:    true,
+				ElementType: types.StringType,
+				MarkdownDescription: "A list of CIDR-notation IPv4 addresses from which agents can use this Cluster Agent Token." +
+					"If not set, all IP addresses are allowed (the same as setting 0.0.0.0/0).",
+			},
 		},
 	}
 }
@@ -101,6 +115,9 @@ func (ct *clusterAgentToken) Create(ctx context.Context, req resource.CreateRequ
 		return
 	}
 
+	// Create CIDR slice from AllowedApiIpAddresses in the plan
+	cidrs := createCidrSliceFromList(plan.AllowedIpAddresses)
+
 	var r *createClusterAgentTokenResponse
 	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		org, err := ct.client.GetOrganizationID()
@@ -112,6 +129,7 @@ func (ct *clusterAgentToken) Create(ctx context.Context, req resource.CreateRequ
 				*org,
 				plan.ClusterId.ValueString(),
 				plan.Description.ValueString(),
+				strings.Join(cidrs, " "),
 			)
 		}
 
@@ -132,6 +150,7 @@ func (ct *clusterAgentToken) Create(ctx context.Context, req resource.CreateRequ
 	state.Token = types.StringValue(r.ClusterAgentTokenCreate.TokenValue)
 	state.ClusterId = types.StringValue(r.ClusterAgentTokenCreate.ClusterAgentToken.Cluster.Id)
 	state.ClusterUuid = types.StringValue(r.ClusterAgentTokenCreate.ClusterAgentToken.Cluster.Uuid)
+	state.AllowedIpAddresses = plan.AllowedIpAddresses
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
@@ -205,6 +224,9 @@ func (ct *clusterAgentToken) Update(ctx context.Context, req resource.UpdateRequ
 		return
 	}
 
+	// Create CIDR slice from AllowedApiIpAddresses in the plan
+	cidrs := createCidrSliceFromList(plan.AllowedIpAddresses)
+
 	var r *updateClusterAgentTokenResponse
 	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		org, err := ct.client.GetOrganizationID()
@@ -215,6 +237,7 @@ func (ct *clusterAgentToken) Update(ctx context.Context, req resource.UpdateRequ
 				*org,
 				state.Id.ValueString(),
 				plan.Description.ValueString(),
+				strings.Join(cidrs, " "),
 			)
 		}
 
@@ -228,7 +251,9 @@ func (ct *clusterAgentToken) Update(ctx context.Context, req resource.UpdateRequ
 		)
 		return
 	}
+
 	state.Description = types.StringValue(r.ClusterAgentTokenUpdate.ClusterAgentToken.Description)
+	state.AllowedIpAddresses = plan.AllowedIpAddresses
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 
