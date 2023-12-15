@@ -27,6 +27,12 @@ resource "buildkite_cluster_agent_token" "default" {
   cluster_id  = buildkite_cluster.primary.id
 }
 
+resource "buildkite_cluster_agent_token" "ip_limited_token" {
+  description = "Token with allowed IP range"
+  cluster_id  = buildkite_cluster.primary.id
+  allowed_ip_addresses = ["10.100.1.0/28"]
+}
+
 resource "buildkite_pipeline" "monolith" {
   name       = "Monolith"
   repository = "https://github.com/..."
@@ -46,6 +52,10 @@ resource "buildkite_cluster_queue" "default" {
 
 - `cluster_id` (String) The GraphQL ID of the Cluster that this Cluster Agent Token belongs to.
 - `description` (String) A description about what this cluster agent token is used for.
+
+### Optional
+
+- `allowed_ip_addresses` (List of String) A list of CIDR-notation IPv4 addresses from which agents can use this Cluster Agent Token.If not set, all IP addresses are allowed (the same as setting 0.0.0.0/0).
 
 ### Read-Only
 

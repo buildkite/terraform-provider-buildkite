@@ -7,6 +7,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/shurcooL/graphql"
 )
@@ -62,6 +63,15 @@ func getenv(key string) string {
 		return os.Getenv("BUILDKITE_ORGANIZATION")
 	}
 	return val
+}
+
+func createCidrSliceFromList(cidrList types.List) []string {
+	cidrs := make([]string, len(cidrList.Elements()))
+	for i, v := range cidrList.Elements() {
+		cidrs[i] = strings.Trim(v.String(), "\"")
+	}
+
+	return cidrs
 }
 
 func retryContextError(err error) *retry.RetryError {
