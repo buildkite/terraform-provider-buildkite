@@ -31,49 +31,13 @@ fragment PipelineFields on Pipeline {
     }
     tags {
         label
-    }
-    webhookURL
-}
-
-fragment PipelineUpdateFields on Pipeline {
-    id
-    allowRebuilds
-    # @genqlient(pointer: true)
-    branchConfiguration
-    cancelIntermediateBuilds
-    cancelIntermediateBuildsBranchFilter
-    cluster {
-        # @genqlient(pointer: true)
-        id
-    }
-    # @genqlient(pointer: true)
-    color
-    defaultBranch
-    # @genqlient(pointer: true)
-    defaultTimeoutInMinutes
-    # @genqlient(pointer: true)
-    emoji
-    # @genqlient(pointer: true)
-    maximumTimeoutInMinutes
-    description
-    name
-    repository {
-        url
-    }
-    skipIntermediateBuilds
-    skipIntermediateBuildsBranchFilter
-    slug
-    steps {
-        yaml
-    }
-    tags {
-        label
     } 
 }
-
+ 
 query getPipeline($slug: ID!) {
     pipeline(slug: $slug) {
         ...PipelineFields
+        webhookURL
     }
 }
 
@@ -92,6 +56,7 @@ mutation createPipeline(
     pipelineCreate(input: $input) {
         pipeline {
             ...PipelineFields
+            webhookURL
         }
     }
 }
@@ -111,7 +76,7 @@ mutation updatePipeline(
 ) {
     pipelineUpdate(input: $input) {
         pipeline {
-            ...PipelineUpdateFields
+            ...PipelineFields
         }
     }
 }
