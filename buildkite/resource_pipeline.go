@@ -657,7 +657,7 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 		Tags:                                 getTagsFromSchema(&plan),
 	}
 
-	timeouts, diags := p.client.timeouts.Read(ctx, DefaultTimeout)
+	timeouts, diags := p.client.timeouts.Update(ctx, DefaultTimeout)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
