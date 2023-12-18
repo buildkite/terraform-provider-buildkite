@@ -462,8 +462,6 @@ type PipelineFields struct {
 	Steps PipelineFieldsStepsPipelineSteps `json:"steps"`
 	// Tags that have been given to this pipeline
 	Tags []PipelineFieldsTagsPipelineTag `json:"tags"`
-	// The URL to use in your repository settings for commit webhooks
-	WebhookURL string `json:"webhookURL"`
 }
 
 // GetId returns PipelineFields.Id, and is useful for accessing the field via an interface.
@@ -526,9 +524,6 @@ func (v *PipelineFields) GetSteps() PipelineFieldsStepsPipelineSteps { return v.
 
 // GetTags returns PipelineFields.Tags, and is useful for accessing the field via an interface.
 func (v *PipelineFields) GetTags() []PipelineFieldsTagsPipelineTag { return v.Tags }
-
-// GetWebhookURL returns PipelineFields.WebhookURL, and is useful for accessing the field via an interface.
-func (v *PipelineFields) GetWebhookURL() string { return v.WebhookURL }
 
 // PipelineFieldsCluster includes the requested fields of the GraphQL type Cluster.
 type PipelineFieldsCluster struct {
@@ -2296,6 +2291,13 @@ func (v *createPipelinePipelineCreatePipelineCreatePayload) GetPipeline() create
 // A pipeline
 type createPipelinePipelineCreatePipelineCreatePayloadPipeline struct {
 	PipelineFields `json:"-"`
+	// The URL to use in your repository settings for commit webhooks
+	WebhookURL string `json:"webhookURL"`
+}
+
+// GetWebhookURL returns createPipelinePipelineCreatePipelineCreatePayloadPipeline.WebhookURL, and is useful for accessing the field via an interface.
+func (v *createPipelinePipelineCreatePipelineCreatePayloadPipeline) GetWebhookURL() string {
+	return v.WebhookURL
 }
 
 // GetId returns createPipelinePipelineCreatePipelineCreatePayloadPipeline.Id, and is useful for accessing the field via an interface.
@@ -2393,11 +2395,6 @@ func (v *createPipelinePipelineCreatePipelineCreatePayloadPipeline) GetTags() []
 	return v.PipelineFields.Tags
 }
 
-// GetWebhookURL returns createPipelinePipelineCreatePipelineCreatePayloadPipeline.WebhookURL, and is useful for accessing the field via an interface.
-func (v *createPipelinePipelineCreatePipelineCreatePayloadPipeline) GetWebhookURL() string {
-	return v.PipelineFields.WebhookURL
-}
-
 func (v *createPipelinePipelineCreatePipelineCreatePayloadPipeline) UnmarshalJSON(b []byte) error {
 
 	if string(b) == "null" {
@@ -2424,6 +2421,8 @@ func (v *createPipelinePipelineCreatePipelineCreatePayloadPipeline) UnmarshalJSO
 }
 
 type __premarshalcreatePipelinePipelineCreatePipelineCreatePayloadPipeline struct {
+	WebhookURL string `json:"webhookURL"`
+
 	Id string `json:"id"`
 
 	AllowRebuilds bool `json:"allowRebuilds"`
@@ -2461,8 +2460,6 @@ type __premarshalcreatePipelinePipelineCreatePipelineCreatePayloadPipeline struc
 	Steps PipelineFieldsStepsPipelineSteps `json:"steps"`
 
 	Tags []PipelineFieldsTagsPipelineTag `json:"tags"`
-
-	WebhookURL string `json:"webhookURL"`
 }
 
 func (v *createPipelinePipelineCreatePipelineCreatePayloadPipeline) MarshalJSON() ([]byte, error) {
@@ -2476,6 +2473,7 @@ func (v *createPipelinePipelineCreatePipelineCreatePayloadPipeline) MarshalJSON(
 func (v *createPipelinePipelineCreatePipelineCreatePayloadPipeline) __premarshalJSON() (*__premarshalcreatePipelinePipelineCreatePipelineCreatePayloadPipeline, error) {
 	var retval __premarshalcreatePipelinePipelineCreatePipelineCreatePayloadPipeline
 
+	retval.WebhookURL = v.WebhookURL
 	retval.Id = v.PipelineFields.Id
 	retval.AllowRebuilds = v.PipelineFields.AllowRebuilds
 	retval.BranchConfiguration = v.PipelineFields.BranchConfiguration
@@ -2495,7 +2493,6 @@ func (v *createPipelinePipelineCreatePipelineCreatePayloadPipeline) __premarshal
 	retval.Slug = v.PipelineFields.Slug
 	retval.Steps = v.PipelineFields.Steps
 	retval.Tags = v.PipelineFields.Tags
-	retval.WebhookURL = v.PipelineFields.WebhookURL
 	return &retval, nil
 }
 
@@ -5307,9 +5304,6 @@ func (v *getNodeNodePipeline) GetSteps() PipelineFieldsStepsPipelineSteps {
 // GetTags returns getNodeNodePipeline.Tags, and is useful for accessing the field via an interface.
 func (v *getNodeNodePipeline) GetTags() []PipelineFieldsTagsPipelineTag { return v.PipelineFields.Tags }
 
-// GetWebhookURL returns getNodeNodePipeline.WebhookURL, and is useful for accessing the field via an interface.
-func (v *getNodeNodePipeline) GetWebhookURL() string { return v.PipelineFields.WebhookURL }
-
 func (v *getNodeNodePipeline) UnmarshalJSON(b []byte) error {
 
 	if string(b) == "null" {
@@ -5375,8 +5369,6 @@ type __premarshalgetNodeNodePipeline struct {
 	Steps PipelineFieldsStepsPipelineSteps `json:"steps"`
 
 	Tags []PipelineFieldsTagsPipelineTag `json:"tags"`
-
-	WebhookURL string `json:"webhookURL"`
 }
 
 func (v *getNodeNodePipeline) MarshalJSON() ([]byte, error) {
@@ -5410,7 +5402,6 @@ func (v *getNodeNodePipeline) __premarshalJSON() (*__premarshalgetNodeNodePipeli
 	retval.Slug = v.PipelineFields.Slug
 	retval.Steps = v.PipelineFields.Steps
 	retval.Tags = v.PipelineFields.Tags
-	retval.WebhookURL = v.PipelineFields.WebhookURL
 	return &retval, nil
 }
 
@@ -6219,7 +6210,12 @@ func (v *getOrganiztionBannerResponse) GetOrganization() getOrganiztionBannerOrg
 // A pipeline
 type getPipelinePipeline struct {
 	PipelineFields `json:"-"`
+	// The URL to use in your repository settings for commit webhooks
+	WebhookURL string `json:"webhookURL"`
 }
+
+// GetWebhookURL returns getPipelinePipeline.WebhookURL, and is useful for accessing the field via an interface.
+func (v *getPipelinePipeline) GetWebhookURL() string { return v.WebhookURL }
 
 // GetId returns getPipelinePipeline.Id, and is useful for accessing the field via an interface.
 func (v *getPipelinePipeline) GetId() string { return v.PipelineFields.Id }
@@ -6296,9 +6292,6 @@ func (v *getPipelinePipeline) GetSteps() PipelineFieldsStepsPipelineSteps {
 // GetTags returns getPipelinePipeline.Tags, and is useful for accessing the field via an interface.
 func (v *getPipelinePipeline) GetTags() []PipelineFieldsTagsPipelineTag { return v.PipelineFields.Tags }
 
-// GetWebhookURL returns getPipelinePipeline.WebhookURL, and is useful for accessing the field via an interface.
-func (v *getPipelinePipeline) GetWebhookURL() string { return v.PipelineFields.WebhookURL }
-
 func (v *getPipelinePipeline) UnmarshalJSON(b []byte) error {
 
 	if string(b) == "null" {
@@ -6325,6 +6318,8 @@ func (v *getPipelinePipeline) UnmarshalJSON(b []byte) error {
 }
 
 type __premarshalgetPipelinePipeline struct {
+	WebhookURL string `json:"webhookURL"`
+
 	Id string `json:"id"`
 
 	AllowRebuilds bool `json:"allowRebuilds"`
@@ -6362,8 +6357,6 @@ type __premarshalgetPipelinePipeline struct {
 	Steps PipelineFieldsStepsPipelineSteps `json:"steps"`
 
 	Tags []PipelineFieldsTagsPipelineTag `json:"tags"`
-
-	WebhookURL string `json:"webhookURL"`
 }
 
 func (v *getPipelinePipeline) MarshalJSON() ([]byte, error) {
@@ -6377,6 +6370,7 @@ func (v *getPipelinePipeline) MarshalJSON() ([]byte, error) {
 func (v *getPipelinePipeline) __premarshalJSON() (*__premarshalgetPipelinePipeline, error) {
 	var retval __premarshalgetPipelinePipeline
 
+	retval.WebhookURL = v.WebhookURL
 	retval.Id = v.PipelineFields.Id
 	retval.AllowRebuilds = v.PipelineFields.AllowRebuilds
 	retval.BranchConfiguration = v.PipelineFields.BranchConfiguration
@@ -6396,7 +6390,6 @@ func (v *getPipelinePipeline) __premarshalJSON() (*__premarshalgetPipelinePipeli
 	retval.Slug = v.PipelineFields.Slug
 	retval.Steps = v.PipelineFields.Steps
 	retval.Tags = v.PipelineFields.Tags
-	retval.WebhookURL = v.PipelineFields.WebhookURL
 	return &retval, nil
 }
 
@@ -10720,11 +10713,6 @@ func (v *updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline) GetTags() []
 	return v.PipelineFields.Tags
 }
 
-// GetWebhookURL returns updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline.WebhookURL, and is useful for accessing the field via an interface.
-func (v *updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline) GetWebhookURL() string {
-	return v.PipelineFields.WebhookURL
-}
-
 func (v *updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline) UnmarshalJSON(b []byte) error {
 
 	if string(b) == "null" {
@@ -10788,8 +10776,6 @@ type __premarshalupdatePipelinePipelineUpdatePipelineUpdatePayloadPipeline struc
 	Steps PipelineFieldsStepsPipelineSteps `json:"steps"`
 
 	Tags []PipelineFieldsTagsPipelineTag `json:"tags"`
-
-	WebhookURL string `json:"webhookURL"`
 }
 
 func (v *updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline) MarshalJSON() ([]byte, error) {
@@ -10822,7 +10808,6 @@ func (v *updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline) __premarshal
 	retval.Slug = v.PipelineFields.Slug
 	retval.Steps = v.PipelineFields.Steps
 	retval.Tags = v.PipelineFields.Tags
-	retval.WebhookURL = v.PipelineFields.WebhookURL
 	return &retval, nil
 }
 
@@ -11790,6 +11775,7 @@ mutation createPipeline ($input: PipelineCreateInput!) {
 	pipelineCreate(input: $input) {
 		pipeline {
 			... PipelineFields
+			webhookURL
 		}
 	}
 }
@@ -11821,7 +11807,6 @@ fragment PipelineFields on Pipeline {
 	tags {
 		label
 	}
-	webhookURL
 }
 `
 
@@ -12736,7 +12721,6 @@ fragment PipelineFields on Pipeline {
 	tags {
 		label
 	}
-	webhookURL
 }
 fragment PipelineTemplateFields on PipelineTemplate {
 	id
@@ -12921,6 +12905,7 @@ const getPipeline_Operation = `
 query getPipeline ($slug: ID!) {
 	pipeline(slug: $slug) {
 		... PipelineFields
+		webhookURL
 	}
 }
 fragment PipelineFields on Pipeline {
@@ -12951,7 +12936,6 @@ fragment PipelineFields on Pipeline {
 	tags {
 		label
 	}
-	webhookURL
 }
 `
 
@@ -13772,7 +13756,6 @@ fragment PipelineFields on Pipeline {
 	tags {
 		label
 	}
-	webhookURL
 }
 `
 

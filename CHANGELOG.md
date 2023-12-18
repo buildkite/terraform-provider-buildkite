@@ -1,6 +1,7 @@
 # Changelog
 
-## Unreleased
+## Unreleased 
+- SUP-1539: Limit the setting of Webhook url on Create only [[PR #450](https://github.com/buildkite/terraform-provider-buildkite/pull/450)]
 - SUP-1607: Allowed IP Addresses attribute addition for Cluster Agent Token resources [[PR #447](https://github.com/buildkite/terraform-provider-buildkite/pull/447)] @james2791 
 - SUP-1608 Pipeline schedule env escaping [[PR #449](https://github.com/buildkite/terraform-provider-buildkite/pull/449)] @jradtilbrook
 - SUP-1612 Check default queue exists [[PR #451](https://github.com/buildkite/terraform-provider-buildkite/pull/451)] @jradtilbrook
