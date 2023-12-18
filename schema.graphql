@@ -556,8 +556,9 @@ type AuditSubject {
 union AuditSubjectNode =APIAccessToken | AgentToken | AuthorizationBitbucket | AuthorizationGitHub | AuthorizationGitHubEnterprise | Cluster | ClusterPermission | ClusterQueue | ClusterQueueToken | ClusterToken | Email | NotificationServiceSlack | NotificationServiceWebhook | Organization | OrganizationBanner | OrganizationInvitation | OrganizationMember | Pipeline | PipelineSchedule | PipelineTemplate | SCMPipelineSettings | SCMRepositoryHost | SCMService | SSOProviderGitHubApp | SSOProviderGoogleGSuite | SSOProviderSAML | Subscription | Suite | TOTP | Team | TeamMember | TeamPipeline | TeamSuite | User
 
 """All the possible types of subjects in an Audit Event"""
-enum AuditSubjectType {
-	SSO_PROVIDER
+enum AuditSubjectType { 
+	TEAM
+	ORGANIZATION_MEMBER 
 	AGENT_TOKEN
 	API_ACCESS_TOKEN
 	CLUSTER_QUEUE
@@ -566,7 +567,7 @@ enum AuditSubjectType {
 	NOTIFICATION_SERVICE
 	ORGANIZATION_BANNER
 	ORGANIZATION_INVITATION
-	PIPELINE_SCHEDULE
+	PIPELINE_SCHEDULE 
 	CLUSTER_PERMISSION
 	PIPELINE_TEMPLATE
 	TEAM_MEMBER
@@ -586,7 +587,7 @@ enum AuditSubjectType {
 	TEAM
 	ORGANIZATION_MEMBER
 	AUTHORIZATION
-	CLUSTER
+	CLUSTER 
 }
 
 """Context for an audit event created during a web request"""
