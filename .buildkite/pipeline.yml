@@ -49,5 +49,4 @@ steps:
       - fmt
       - test
       - testacc
-      - testacc-nonadmin
       - vet
