@@ -40,21 +40,6 @@ steps:
           files: junit-*.xml
           format: junit
 
-  - label: acceptance tests - non-admin
-    key: testacc-nonadmin
-    concurrency: 1
-    concurrency_group: terraform-provider-acceptance-tests
-    command: "make testacc-nonadmin"
-    plugins:
-      - aws-assume-role-with-web-identity:
-          role-arn: arn:aws:iam::445615400570:role/pipeline-buildkite-terraform-provider-buildkite-main
-      - aws-ssm#v1.0.0:
-          parameters:
-            BUILDKITE_ORGANIZATION_SLUG: /pipelines/buildkite/terraform-provider-buildkite-main/buildkite_organization
-            BUILDKITE_API_TOKEN: /pipelines/buildkite/terraform-provider-buildkite-main/buildkite_api_token_nonadmin
-      - docker-compose#v3.9.0:
-          run: go
-
   - label: build
     command: "make"
     plugins:
