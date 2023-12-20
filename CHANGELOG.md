@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased 
+- SUP-1657: Removal of non-admin tests [[PR #457](https://github.com/buildkite/terraform-provider-buildkite/pull/457)] @james2791 
 
 ## [v1.2.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.1.1...v1.2.0)
 
