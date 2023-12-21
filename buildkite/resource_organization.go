@@ -128,13 +128,7 @@ func (o *organizationResource) Create(ctx context.Context, req resource.CreateRe
 	state.ID = types.StringValue(apiResponse.OrganizationApiIpAllowlistUpdate.Organization.Id)
 	state.UUID = types.StringValue(apiResponse.OrganizationApiIpAllowlistUpdate.Organization.Uuid)
 	state.Enforce2FA = plan.Enforce2FA
-	ips, diag := types.ListValueFrom(ctx, types.StringType, strings.Split(apiResponse.OrganizationApiIpAllowlistUpdate.Organization.AllowedApiIpAddresses, " "))
-	state.AllowedApiIpAddresses = ips
-
-	if diag.HasError() {
-		resp.Diagnostics.Append(diag...)
-		return
-	}
+	state.AllowedApiIpAddresses = plan.AllowedApiIpAddresses
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }
@@ -240,13 +234,7 @@ func (o *organizationResource) Update(ctx context.Context, req resource.UpdateRe
 
 	state.ID = types.StringValue(apiResponse.OrganizationApiIpAllowlistUpdate.Organization.Id)
 	state.UUID = types.StringValue(apiResponse.OrganizationApiIpAllowlistUpdate.Organization.Uuid)
-	ips, diag := types.ListValueFrom(ctx, types.StringType, strings.Split(apiResponse.OrganizationApiIpAllowlistUpdate.Organization.AllowedApiIpAddresses, " "))
-	state.AllowedApiIpAddresses = ips
-
-	if diag.HasError() {
-		resp.Diagnostics.Append(diag...)
-		return
-	}
+	state.AllowedApiIpAddresses = plan.AllowedApiIpAddresses
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }
