@@ -107,7 +107,7 @@ func TestAccBuildkiteOrganizationResource(t *testing.T) {
 		})
 	})
 
-	t.Run("updates an organization with unset allowed API IP address list", func(t *testing.T) {
+	t.Run("updates an organization with an empty string allowed API IP address list", func(t *testing.T) {
 		check := resource.ComposeAggregateTestCheckFunc(
 			// Confirm that the allowed IP addresses are set correctly in Buildkite's system
 			testAccCheckOrganizationRemoteValues([]string{"0.0.0.0/0", "1.1.1.1/32", "1.0.0.1/32"}),
@@ -141,7 +141,7 @@ func TestAccBuildkiteOrganizationResource(t *testing.T) {
 		})
 	})
 
-	t.Run("updates an organization with cleared allowed API IP address list", func(t *testing.T) {
+	t.Run("updates an organization by removing the allowed API IP address list property", func(t *testing.T) {
 		check := resource.ComposeAggregateTestCheckFunc(
 			// Confirm that the allowed IP addresses are set correctly in Buildkite's system
 			testAccCheckOrganizationRemoteValues([]string{"0.0.0.0/0", "1.1.1.1/32", "1.0.0.1/32"}),
@@ -169,6 +169,8 @@ func TestAccBuildkiteOrganizationResource(t *testing.T) {
 				{
 					Config: configNoAllowedIPs(),
 					Check:  ckeckUpdated,
+					// After clearing the IPs, state will be set to null and refresh will restore the attribute to an empty-string list of length 1
+					ExpectNonEmptyPlan: true,
 				},
 			},
 		})
