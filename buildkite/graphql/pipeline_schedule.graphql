@@ -82,7 +82,7 @@ mutation createPipelineSchedule(
 # @genqlient(for: "PipelineScheduleUpdateInput.commit", pointer: true)
 # @genqlient(for: "PipelineScheduleUpdateInput.branch", pointer: true)
 # @genqlient(for: "PipelineScheduleUpdateInput.env", pointer: true)
-# @genqlient(for: "PipelineScheduleUpdateInput.enabled", omitempty: true)
+# @genqlient(for: "PipelineScheduleUpdateInput.enabled", pointer: true)
 mutation updatePipelineSchedule( 
     $input: PipelineScheduleUpdateInput!
 ){
