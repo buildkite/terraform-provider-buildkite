@@ -1,6 +1,9 @@
 # Changelog
 
 ## Unreleased 
+
+## [v1.3.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.2.0...v1.3.0)
+
 - SUP-1657: Removal of non-admin tests [[PR #457](https://github.com/buildkite/terraform-provider-buildkite/pull/457)] @james2791 
 - SUP-1628: Adjustment of Organization resource Allowed API IP address state persistence [[PR #458](https://github.com/buildkite/terraform-provider-buildkite/pull/458)] @james2791 
 - SUP-1672: Switched enabled attribute of PipelineScheduleUpdateInputs to a pointer [[PR #459](https://github.com/buildkite/terraform-provider-buildkite/pull/459)] @james2791 
@@ -13,7 +16,7 @@
 - SUP-1612 Check default queue exists [[PR #451](https://github.com/buildkite/terraform-provider-buildkite/pull/451)] @jradtilbrook
 - SUP-1556 Prevent calls to Buildkite API [[PR #452](https://github.com/buildkite/terraform-provider-buildkite/pull/452)] @jradtilbrook
 
-## [v1.1.1](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.1.1...v1.1.1)
+## [v1.1.1](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.1.0...v1.1.1)
 
 - Fix a typo in the signed pipelines data source [[PR #438](https://github.com/buildkite/terraform-provider-buildkite/pull/438)]
 
