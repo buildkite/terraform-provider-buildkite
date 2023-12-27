@@ -257,7 +257,7 @@ func (ps *pipelineSchedule) Update(ctx context.Context, req resource.UpdateReque
 		Commit:   plan.Commit.ValueStringPointer(),
 		Message:  plan.Message.ValueStringPointer(),
 		Env:      &envVars,
-		Enabled:  plan.Enabled.ValueBool(),
+		Enabled:  plan.Enabled.ValueBoolPointer(),
 	}
 
 	err := retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
