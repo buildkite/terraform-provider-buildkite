@@ -3,12 +3,12 @@
 page_title: "buildkite_team Resource - terraform-provider-buildkite"
 subcategory: ""
 description: |-
-  A Cluster is a group of Agents that can be used to run your builds. Clusters are useful for grouping Agents by their capabilities, such as operating system, hardware, or location.
+  A Team is a group of users that can be given permissions for using Pipelines.This feature is only available to Business and Enterprise customers.  You can find out more about Teams in the Buildkite documentation https://buildkite.com/docs/team-management/permissions.
 ---
 
 # buildkite_team (Resource)
 
-A Cluster is a group of Agents that can be used to run your builds. Clusters are useful for grouping Agents by their capabilities, such as operating system, hardware, or location.
+A Team is a group of users that can be given permissions for using Pipelines.This feature is only available to Business and Enterprise customers.  You can find out more about Teams in the Buildkite [documentation](https://buildkite.com/docs/team-management/permissions).
 
 ## Example Usage
 
