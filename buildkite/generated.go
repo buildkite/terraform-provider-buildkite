@@ -428,6 +428,8 @@ func (v *PipelineCreateInput) GetBranchConfiguration() *string { return v.Branch
 // A pipeline
 type PipelineFields struct {
 	Id string `json:"id"`
+	// The UUID of the pipeline
+	PipelineUuid string `json:"pipelineUuid"`
 	// Whether existing builds can be rebuilt as new builds.
 	AllowRebuilds bool `json:"allowRebuilds"`
 	// A branch filter pattern to limit which pushed branches trigger builds on this pipeline.
@@ -466,6 +468,9 @@ type PipelineFields struct {
 
 // GetId returns PipelineFields.Id, and is useful for accessing the field via an interface.
 func (v *PipelineFields) GetId() string { return v.Id }
+
+// GetPipelineUuid returns PipelineFields.PipelineUuid, and is useful for accessing the field via an interface.
+func (v *PipelineFields) GetPipelineUuid() string { return v.PipelineUuid }
 
 // GetAllowRebuilds returns PipelineFields.AllowRebuilds, and is useful for accessing the field via an interface.
 func (v *PipelineFields) GetAllowRebuilds() bool { return v.AllowRebuilds }
@@ -2305,6 +2310,11 @@ func (v *createPipelinePipelineCreatePipelineCreatePayloadPipeline) GetId() stri
 	return v.PipelineFields.Id
 }
 
+// GetPipelineUuid returns createPipelinePipelineCreatePipelineCreatePayloadPipeline.PipelineUuid, and is useful for accessing the field via an interface.
+func (v *createPipelinePipelineCreatePipelineCreatePayloadPipeline) GetPipelineUuid() string {
+	return v.PipelineFields.PipelineUuid
+}
+
 // GetAllowRebuilds returns createPipelinePipelineCreatePipelineCreatePayloadPipeline.AllowRebuilds, and is useful for accessing the field via an interface.
 func (v *createPipelinePipelineCreatePipelineCreatePayloadPipeline) GetAllowRebuilds() bool {
 	return v.PipelineFields.AllowRebuilds
@@ -2425,6 +2435,8 @@ type __premarshalcreatePipelinePipelineCreatePipelineCreatePayloadPipeline struc
 
 	Id string `json:"id"`
 
+	PipelineUuid string `json:"pipelineUuid"`
+
 	AllowRebuilds bool `json:"allowRebuilds"`
 
 	BranchConfiguration *string `json:"branchConfiguration"`
@@ -2475,6 +2487,7 @@ func (v *createPipelinePipelineCreatePipelineCreatePayloadPipeline) __premarshal
 
 	retval.WebhookURL = v.WebhookURL
 	retval.Id = v.PipelineFields.Id
+	retval.PipelineUuid = v.PipelineFields.PipelineUuid
 	retval.AllowRebuilds = v.PipelineFields.AllowRebuilds
 	retval.BranchConfiguration = v.PipelineFields.BranchConfiguration
 	retval.CancelIntermediateBuilds = v.PipelineFields.CancelIntermediateBuilds
@@ -5232,6 +5245,9 @@ func (v *getNodeNodePipeline) GetTypename() string { return v.Typename }
 // GetId returns getNodeNodePipeline.Id, and is useful for accessing the field via an interface.
 func (v *getNodeNodePipeline) GetId() string { return v.PipelineFields.Id }
 
+// GetPipelineUuid returns getNodeNodePipeline.PipelineUuid, and is useful for accessing the field via an interface.
+func (v *getNodeNodePipeline) GetPipelineUuid() string { return v.PipelineFields.PipelineUuid }
+
 // GetAllowRebuilds returns getNodeNodePipeline.AllowRebuilds, and is useful for accessing the field via an interface.
 func (v *getNodeNodePipeline) GetAllowRebuilds() bool { return v.PipelineFields.AllowRebuilds }
 
@@ -5334,6 +5350,8 @@ type __premarshalgetNodeNodePipeline struct {
 
 	Id string `json:"id"`
 
+	PipelineUuid string `json:"pipelineUuid"`
+
 	AllowRebuilds bool `json:"allowRebuilds"`
 
 	BranchConfiguration *string `json:"branchConfiguration"`
@@ -5384,6 +5402,7 @@ func (v *getNodeNodePipeline) __premarshalJSON() (*__premarshalgetNodeNodePipeli
 
 	retval.Typename = v.Typename
 	retval.Id = v.PipelineFields.Id
+	retval.PipelineUuid = v.PipelineFields.PipelineUuid
 	retval.AllowRebuilds = v.PipelineFields.AllowRebuilds
 	retval.BranchConfiguration = v.PipelineFields.BranchConfiguration
 	retval.CancelIntermediateBuilds = v.PipelineFields.CancelIntermediateBuilds
@@ -6220,6 +6239,9 @@ func (v *getPipelinePipeline) GetWebhookURL() string { return v.WebhookURL }
 // GetId returns getPipelinePipeline.Id, and is useful for accessing the field via an interface.
 func (v *getPipelinePipeline) GetId() string { return v.PipelineFields.Id }
 
+// GetPipelineUuid returns getPipelinePipeline.PipelineUuid, and is useful for accessing the field via an interface.
+func (v *getPipelinePipeline) GetPipelineUuid() string { return v.PipelineFields.PipelineUuid }
+
 // GetAllowRebuilds returns getPipelinePipeline.AllowRebuilds, and is useful for accessing the field via an interface.
 func (v *getPipelinePipeline) GetAllowRebuilds() bool { return v.PipelineFields.AllowRebuilds }
 
@@ -6322,6 +6344,8 @@ type __premarshalgetPipelinePipeline struct {
 
 	Id string `json:"id"`
 
+	PipelineUuid string `json:"pipelineUuid"`
+
 	AllowRebuilds bool `json:"allowRebuilds"`
 
 	BranchConfiguration *string `json:"branchConfiguration"`
@@ -6372,6 +6396,7 @@ func (v *getPipelinePipeline) __premarshalJSON() (*__premarshalgetPipelinePipeli
 
 	retval.WebhookURL = v.WebhookURL
 	retval.Id = v.PipelineFields.Id
+	retval.PipelineUuid = v.PipelineFields.PipelineUuid
 	retval.AllowRebuilds = v.PipelineFields.AllowRebuilds
 	retval.BranchConfiguration = v.PipelineFields.BranchConfiguration
 	retval.CancelIntermediateBuilds = v.PipelineFields.CancelIntermediateBuilds
@@ -10623,6 +10648,11 @@ func (v *updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline) GetId() stri
 	return v.PipelineFields.Id
 }
 
+// GetPipelineUuid returns updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline.PipelineUuid, and is useful for accessing the field via an interface.
+func (v *updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline) GetPipelineUuid() string {
+	return v.PipelineFields.PipelineUuid
+}
+
 // GetAllowRebuilds returns updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline.AllowRebuilds, and is useful for accessing the field via an interface.
 func (v *updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline) GetAllowRebuilds() bool {
 	return v.PipelineFields.AllowRebuilds
@@ -10741,6 +10771,8 @@ func (v *updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline) UnmarshalJSO
 type __premarshalupdatePipelinePipelineUpdatePipelineUpdatePayloadPipeline struct {
 	Id string `json:"id"`
 
+	PipelineUuid string `json:"pipelineUuid"`
+
 	AllowRebuilds bool `json:"allowRebuilds"`
 
 	BranchConfiguration *string `json:"branchConfiguration"`
@@ -10790,6 +10822,7 @@ func (v *updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline) __premarshal
 	var retval __premarshalupdatePipelinePipelineUpdatePipelineUpdatePayloadPipeline
 
 	retval.Id = v.PipelineFields.Id
+	retval.PipelineUuid = v.PipelineFields.PipelineUuid
 	retval.AllowRebuilds = v.PipelineFields.AllowRebuilds
 	retval.BranchConfiguration = v.PipelineFields.BranchConfiguration
 	retval.CancelIntermediateBuilds = v.PipelineFields.CancelIntermediateBuilds
@@ -11781,6 +11814,7 @@ mutation createPipeline ($input: PipelineCreateInput!) {
 }
 fragment PipelineFields on Pipeline {
 	id
+	pipelineUuid: uuid
 	allowRebuilds
 	branchConfiguration
 	cancelIntermediateBuilds
@@ -12695,6 +12729,7 @@ query getNode ($id: ID!) {
 }
 fragment PipelineFields on Pipeline {
 	id
+	pipelineUuid: uuid
 	allowRebuilds
 	branchConfiguration
 	cancelIntermediateBuilds
@@ -12910,6 +12945,7 @@ query getPipeline ($slug: ID!) {
 }
 fragment PipelineFields on Pipeline {
 	id
+	pipelineUuid: uuid
 	allowRebuilds
 	branchConfiguration
 	cancelIntermediateBuilds
@@ -13730,6 +13766,7 @@ mutation updatePipeline ($input: PipelineUpdateInput!) {
 }
 fragment PipelineFields on Pipeline {
 	id
+	pipelineUuid: uuid
 	allowRebuilds
 	branchConfiguration
 	cancelIntermediateBuilds

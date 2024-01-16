@@ -70,6 +70,7 @@ resource "buildkite_pipeline" "pipeline" {
 - `badge_url` (String) The badge URL showing build state.
 - `id` (String) The GraphQL ID of the pipeline.
 - `slug` (String) The slug generated for the pipeline.
+- `uuid` (String) The UUID of the pipeline.
 - `webhook_url` (String) The webhook URL used to trigger builds from VCS providers.
 
 <a id="nestedatt--provider_settings"></a>

@@ -18,6 +18,7 @@ type pipelineDataSourceModel struct {
 	Description   types.String `tfsdk:"description"`
 	Repository    types.String `tfsdk:"repository"`
 	Slug          types.String `tfsdk:"slug"`
+	UUID          types.String `tfsdk:"uuid"`
 	WebhookUrl    types.String `tfsdk:"webhook_url"`
 }
 
@@ -73,6 +74,10 @@ func (*pipelineDatasource) Schema(ctx context.Context, req datasource.SchemaRequ
 				Required:            true,
 				MarkdownDescription: "The slug of the pipeline.",
 			},
+			"uuid": schema.StringAttribute{
+				Computed:            true,
+				MarkdownDescription: "The UUID of the pipeline.",
+			},
 			"webhook_url": schema.StringAttribute{
 				Computed:            true,
 				MarkdownDescription: "The Buildkite webhook URL that triggers builds on this pipeline.",
@@ -117,6 +122,7 @@ func (c *pipelineDatasource) Read(ctx context.Context, req datasource.ReadReques
 	state.Name = types.StringValue(pipeline.Pipeline.Name)
 	state.Repository = types.StringValue(pipeline.Pipeline.Repository.Url)
 	state.Slug = types.StringValue(pipeline.Pipeline.Slug)
+	state.UUID = types.StringValue(pipeline.Pipeline.PipelineUuid)
 	state.WebhookUrl = types.StringValue(pipeline.Pipeline.WebhookURL)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
