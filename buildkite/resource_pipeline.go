@@ -54,6 +54,7 @@ type PipelineNode struct {
 	ID                                   graphql.String
 	Name                                 graphql.String
 	Repository                           Repository
+	PipelineUuid                         graphql.String
 	SkipIntermediateBuilds               graphql.Boolean
 	SkipIntermediateBuildsBranchFilter   graphql.String
 	Slug                                 graphql.String
@@ -88,6 +89,7 @@ type pipelineResourceModel struct {
 	Slug                                 types.String           `tfsdk:"slug"`
 	Steps                                types.String           `tfsdk:"steps"`
 	Tags                                 []types.String         `tfsdk:"tags"`
+	UUID                                 types.String           `tfsdk:"uuid"`
 	WebhookUrl                           types.String           `tfsdk:"webhook_url"`
 }
 
@@ -120,6 +122,7 @@ type pipelineResource struct {
 
 type pipelineResponse interface {
 	GetId() string
+	GetPipelineUuid() string
 	GetAllowRebuilds() bool
 	GetBranchConfiguration() *string
 	GetCancelIntermediateBuilds() bool
@@ -474,6 +477,13 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 				Default:             setdefault.StaticValue(types.SetValueMust(types.StringType, []attr.Value{})),
 				MarkdownDescription: "Tags to attribute to the pipeline. Useful for searching by in the UI.",
 			},
+			"uuid": schema.StringAttribute{
+				Computed:            true,
+				MarkdownDescription: "The UUID of the pipeline.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
 			"webhook_url": schema.StringAttribute{
 				Computed:            true,
 				MarkdownDescription: "The webhook URL used to trigger builds from VCS providers.",
@@ -728,6 +738,7 @@ func setPipelineModel(model *pipelineResourceModel, data pipelineResponse) {
 	model.SkipIntermediateBuildsBranchFilter = types.StringValue(data.GetSkipIntermediateBuildsBranchFilter())
 	model.Slug = types.StringValue(data.GetSlug())
 	model.Steps = types.StringValue(data.GetSteps().Yaml)
+	model.UUID = types.StringValue(data.GetPipelineUuid())
 
 	tags := make([]types.String, len(data.GetTags()))
 	for i, tag := range data.GetTags() {
