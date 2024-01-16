@@ -1,10 +1,9 @@
 steps:
-  - label: fmt
-    key: fmt
-    command: "make testfmt"
+  - name: ":golangci-lint: lint"
     plugins:
-      docker-compose#v3.9.0:
-        run: go
+      docker-compose#v4.16.0:
+        config: .buildkite/docker-compose.yaml
+        run: lint
 
   - label: vet
     key: vet

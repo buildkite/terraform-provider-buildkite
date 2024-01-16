@@ -20,3 +20,12 @@ services:
       - BUILDKITE_TAG
       - GITHUB_TOKEN
       - GPG_SECRET_KEY_BASE64
+  lint:
+    image: golangci/golangci-lint:v1.55
+    working_dir: /app
+    volumes:
+      - ..:/app
+      - ~/.cache/golangci-lint/v1.55:/root/.cache
+    command:
+      - golangci-lint
+      - run

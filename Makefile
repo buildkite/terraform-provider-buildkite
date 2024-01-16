@@ -7,9 +7,6 @@ build:
 docs:
 	go run github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs
 
-lint:
-	golangci-lint run
-
 testfmt:
 	@test -z $(shell gofmt -l . buildkite | tee /dev/stderr)
 
