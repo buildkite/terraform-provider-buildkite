@@ -1,20 +1,19 @@
 steps:
   - name: ":golangci-lint: lint"  
+    key: lint
     plugins:
       - docker#v5.9.0:
-          image: "golangci/golangci-lint:v1.55"
-          always-pull: true
-          volumes:
-            - "/workspace:cached"
-          workdir: "/workspace/."
+          image: "golangci/golangci-lint:v1.55" 
           command: ["golangci-lint", "run"]
-
+    
   - label: vet
     key: vet
     command: "make vet"
     plugins:
       docker-compose#v3.9.0:
         run: go
+    depends_on:
+      - lint
 
   - label: test
     key: test
@@ -22,6 +21,8 @@ steps:
     plugins:
       docker-compose#v3.9.0:
         run: go
+    depends_on:
+      - lint
 
   - label: acceptance tests
     key: testacc
@@ -42,6 +43,8 @@ steps:
       - test-collector#v1.8.0:
           files: junit-*.xml
           format: junit
+    depends_on:
+      - lint
 
   - label: build
     command: "make"
