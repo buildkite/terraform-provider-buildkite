@@ -1,16 +1,13 @@
 steps:
   - name: ":golangci-lint: lint"  
     key: lint
+    command : golangci-lint run
     plugins:
       - docker#v5.9.0:
-          image: "golangci/golangci-lint:v1.54.1" 
-          always-pull: true
-          workdir: /app
-          volumes:
-            - ".:/app"
-            - "~/.cache/golangci-lint/v1.54.1:/root/.cache"
-          command: ["golangci-lint", "run"]
-    
+          image: "golangci/golangci-lint:v1.55" 
+          always-pull: true 
+          volumes: 
+            - "/.cache/golangci-lint/v1.55:/root/.cache" 
   - label: vet
     key: vet
     command: "make vet"
