@@ -2,8 +2,8 @@ steps:
   - name: ":golangci-lint: lint"
     plugins:
       docker-compose#v4.16.0:
-        config: .buildkite/docker-compose.yaml
         run: lint
+    key: lint
 
   - label: vet
     key: vet
@@ -45,7 +45,7 @@ steps:
       docker-compose#v3.9.0:
         run: go
     depends_on:
-      - fmt
+      - lint
       - test
       - testacc
       - vet

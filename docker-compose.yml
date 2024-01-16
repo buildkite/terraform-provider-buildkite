@@ -19,7 +19,7 @@ services:
       - BUILDKITE_ORGANIZATION_SLUG
       - BUILDKITE_TAG
       - GITHUB_TOKEN
-      - GPG_SECRET_KEY_BASE64
+      - GPG_SECRET_KEY_BASE64      
   lint:
     image: golangci/golangci-lint:v1.55
     working_dir: /app
