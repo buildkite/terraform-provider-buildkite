@@ -160,7 +160,6 @@ func (ob *organizationBannerResource) Read(ctx context.Context, req resource.Rea
 	// Update organizationBannerResourceModel with the first element in the response Edges (only one banner can exist)
 	updateOrganizationBannerResource(r.Organization.Banners.Edges[0].Node, &state)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
-	return
 }
 
 func (ob *organizationBannerResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {

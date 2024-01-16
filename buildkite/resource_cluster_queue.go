@@ -195,7 +195,6 @@ func (cq *clusterQueueResource) Read(ctx context.Context, req resource.ReadReque
 		"Unable to find Cluster Queue",
 		fmt.Sprintf("Unable to find Cluster Queue: %s", err.Error()),
 	)
-	return
 }
 
 func (cq *clusterQueueResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
