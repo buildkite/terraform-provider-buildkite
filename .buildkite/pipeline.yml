@@ -1,9 +1,13 @@
 steps:
-  - name: ":golangci-lint: lint"
+  - name: ":golangci-lint: lint"  
     plugins:
-      docker-compose#v4.16.0:
-        run: lint
-    key: lint
+      - docker#v5.9.0:
+          image: "golangci/golangci-lint:v1.55"
+          always-pull: true
+          volumes:
+            - "/workspace:cached"
+          workdir: "/workspace/."
+          command: ["golangci-lint", "run"]
 
   - label: vet
     key: vet
