@@ -1,7 +1,7 @@
 steps:
   - name: ":golangci-lint: lint"  
     key: lint
-    command : golangci-lint run
+    command : golangci-lint run --timeout 2m0s
     plugins:
       - docker#v5.9.0:
           image: "golangci/golangci-lint:v1.54.1" 
@@ -13,18 +13,14 @@ steps:
     command: "make vet"
     plugins:
       docker-compose#v3.9.0:
-        run: go
-    depends_on:
-      - lint
+        run: go 
 
   - label: test
     key: test
     command: "make test"
     plugins:
       docker-compose#v3.9.0:
-        run: go
-    depends_on:
-      - lint
+        run: go 
 
   - label: acceptance tests
     key: testacc
@@ -45,8 +41,6 @@ steps:
       - test-collector#v1.8.0:
           files: junit-*.xml
           format: junit
-    depends_on:
-      - lint
 
   - label: build
     command: "make"
