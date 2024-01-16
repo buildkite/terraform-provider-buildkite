@@ -1,7 +1,7 @@
 steps:
   - name: ":golangci-lint: lint"  
     key: lint
-    command : golangci-lint run --timout 2m0s
+    command : golangci-lint run --timeout 2m0s
     plugins:
       - docker#v5.9.0:
           image: "golangci/golangci-lint:v1.54.1" 
