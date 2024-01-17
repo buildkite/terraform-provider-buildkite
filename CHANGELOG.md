@@ -1,4 +1,5 @@
 # Changelog
+- SUP-1696: Add golangci-lint[[PR #468](https://github.com/buildkite/terraform-provider-buildkite/pull/468)]@lizrabuya
 
 ## Unreleased
 
