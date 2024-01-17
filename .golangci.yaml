@@ -1,7 +1,9 @@
 linters:
   enable:
   - gofmt
-  - nolintlint
+  - nolintlint 
+  - nilerr
+  - nilnil
 
 issues:
   max-issues-per-linter: 0
