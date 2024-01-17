@@ -1,5 +1,6 @@
 fragment PipelineFields on Pipeline {
     id
+    pipelineUuid: uuid
     allowRebuilds
     # @genqlient(pointer: true)
     branchConfiguration
@@ -31,9 +32,9 @@ fragment PipelineFields on Pipeline {
     }
     tags {
         label
-    } 
+    }
 }
- 
+
 query getPipeline($slug: ID!) {
     pipeline(slug: $slug) {
         ...PipelineFields

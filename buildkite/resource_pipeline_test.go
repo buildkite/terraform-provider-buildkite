@@ -60,6 +60,7 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 						resource.TestCheckResourceAttrSet("buildkite_pipeline.pipeline", "badge_url"),
 						resource.TestCheckResourceAttrSet("buildkite_pipeline.pipeline", "id"),
 						resource.TestCheckResourceAttrSet("buildkite_pipeline.pipeline", "slug"),
+						resource.TestCheckResourceAttrSet("buildkite_pipeline.pipeline", "uuid"),
 						resource.TestCheckResourceAttrSet("buildkite_pipeline.pipeline", "webhook_url"),
 						// check api values are expected
 						func(s *terraform.State) error {
