@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"regexp"
 	"strconv"
@@ -151,13 +150,13 @@ func (client *Client) makeRequest(ctx context.Context, method string, path strin
 		return fmt.Errorf("failed to send request: %w", err)
 	}
 	if resp.StatusCode >= 400 {
-		return fmt.Errorf("Buildkite API request failed: %s %s (returned error %d)", method, url, resp.StatusCode)
+		return fmt.Errorf("the Buildkite API request failed: %s %s (returned error %d)", method, url, resp.StatusCode)
 	} else if resp.StatusCode == 204 {
 		return nil
 	}
 	defer resp.Body.Close()
 
-	responseBody, err := ioutil.ReadAll(resp.Body)
+	responseBody, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return fmt.Errorf("failed to read response: %w", err)
 	}

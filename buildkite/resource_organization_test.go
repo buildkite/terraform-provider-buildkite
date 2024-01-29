@@ -49,7 +49,7 @@ func TestAccBuildkiteOrganizationResource(t *testing.T) {
 		resource "buildkite_organization" "let_them_in" {}
 		`
 
-		return fmt.Sprintf(config)
+		return config
 	}
 
 	t.Run("creates an organization", func(t *testing.T) {

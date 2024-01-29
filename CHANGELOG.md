@@ -1,4 +1,9 @@
 # Changelog
+- SUP-1696: Add golangci-lint[[PR #468](https://github.com/buildkite/terraform-provider-buildkite/pull/468)]@lizrabuya
+
+## Unreleased
+
+- Expose pipeline UUID [[PR #469](https://github.com/buildkite/terraform-provider-buildkite/pull/469)] @drcapulet
 
 ## [v1.3.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.2.0...v1.3.0)
 

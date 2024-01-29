@@ -35,4 +35,5 @@ data "buildkite_pipeline" "pipeline" {
 - `id` (String) The GraphQL ID of the pipeline.
 - `name` (String) The name of the pipeline.
 - `repository` (String) The git URL of the repository.
+- `uuid` (String) The UUID of the pipeline.
 - `webhook_url` (String) The Buildkite webhook URL that triggers builds on this pipeline.

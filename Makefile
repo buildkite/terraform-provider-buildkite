@@ -7,9 +7,6 @@ build:
 docs:
 	go run github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs
 
-fmt:
-	go fmt ./...
-
 testfmt:
 	@test -z $(shell gofmt -l . buildkite | tee /dev/stderr)
 
