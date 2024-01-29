@@ -111,7 +111,7 @@ func (c *pipelineDatasource) Read(ctx context.Context, req datasource.ReadReques
 	if pipeline.Pipeline.Id == "" {
 		resp.Diagnostics.AddError(
 			"Unable to find pipeline",
-			fmt.Sprintf("Pipeline not found: %s", err.Error()),
+			fmt.Sprintf("Could not find pipeline with slug \"%s\"", orgPipelineSlug),
 		)
 		return
 	}
