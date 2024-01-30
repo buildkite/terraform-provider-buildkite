@@ -5,6 +5,7 @@
 
 - Expose pipeline UUID [[PR #469](https://github.com/buildkite/terraform-provider-buildkite/pull/469)] @drcapulet
 - SUP-1690: Fixed error dereferencing for pipeline datasources (nonexistent pipelines) [[PR #472](https://github.com/buildkite/terraform-provider-buildkite/pull/472)] @james2791  
+- SUP-1665: SUP-1665: v1.0.0 upgrade note on Administrator bound API access tokens & buildkite_pipeline_team resources [[PR #473](https://github.com/buildkite/terraform-provider-buildkite/pull/473)] @james2791  
 
 ## [v1.3.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.2.0...v1.3.0)
 
