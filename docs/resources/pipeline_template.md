@@ -10,7 +10,7 @@ description: |-
 # buildkite_pipeline_template (Resource)
 
 This resource allows for standardized step configurations that can be used within various pipelines of an organization.
-		
+
 More information on pipeline templates can be found in the [documentation](https://buildkite.com/docs/pipelines/templates).
 
 ## Example Usage
