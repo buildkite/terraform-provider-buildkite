@@ -454,7 +454,8 @@ type PipelineFields struct {
 	// The name of the pipeline
 	Name string `json:"name"`
 	// The repository for this pipeline
-	Repository PipelineFieldsRepository `json:"repository"`
+	Repository       PipelineFieldsRepository       `json:"repository"`
+	PipelineTemplate PipelineFieldsPipelineTemplate `json:"pipelineTemplate"`
 	// When a new build is created on a branch, any previous builds that haven't yet started on the same branch will be automatically marked as skipped.
 	SkipIntermediateBuilds bool `json:"skipIntermediateBuilds"`
 	// Limit which branches build skipping applies to, for example `!main` will ensure that the main branch won't have it's builds automatically skipped.
@@ -513,6 +514,11 @@ func (v *PipelineFields) GetName() string { return v.Name }
 // GetRepository returns PipelineFields.Repository, and is useful for accessing the field via an interface.
 func (v *PipelineFields) GetRepository() PipelineFieldsRepository { return v.Repository }
 
+// GetPipelineTemplate returns PipelineFields.PipelineTemplate, and is useful for accessing the field via an interface.
+func (v *PipelineFields) GetPipelineTemplate() PipelineFieldsPipelineTemplate {
+	return v.PipelineTemplate
+}
+
 // GetSkipIntermediateBuilds returns PipelineFields.SkipIntermediateBuilds, and is useful for accessing the field via an interface.
 func (v *PipelineFields) GetSkipIntermediateBuilds() bool { return v.SkipIntermediateBuilds }
 
@@ -537,6 +543,17 @@ type PipelineFieldsCluster struct {
 
 // GetId returns PipelineFieldsCluster.Id, and is useful for accessing the field via an interface.
 func (v *PipelineFieldsCluster) GetId() *string { return v.Id }
+
+// PipelineFieldsPipelineTemplate includes the requested fields of the GraphQL type PipelineTemplate.
+// The GraphQL type's documentation follows.
+//
+// A template defining a fixed step configuration for a pipeline
+type PipelineFieldsPipelineTemplate struct {
+	Id *string `json:"id"`
+}
+
+// GetId returns PipelineFieldsPipelineTemplate.Id, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsPipelineTemplate) GetId() *string { return v.Id }
 
 // PipelineFieldsRepository includes the requested fields of the GraphQL type Repository.
 // The GraphQL type's documentation follows.
@@ -2380,6 +2397,11 @@ func (v *createPipelinePipelineCreatePipelineCreatePayloadPipeline) GetRepositor
 	return v.PipelineFields.Repository
 }
 
+// GetPipelineTemplate returns createPipelinePipelineCreatePipelineCreatePayloadPipeline.PipelineTemplate, and is useful for accessing the field via an interface.
+func (v *createPipelinePipelineCreatePipelineCreatePayloadPipeline) GetPipelineTemplate() PipelineFieldsPipelineTemplate {
+	return v.PipelineFields.PipelineTemplate
+}
+
 // GetSkipIntermediateBuilds returns createPipelinePipelineCreatePipelineCreatePayloadPipeline.SkipIntermediateBuilds, and is useful for accessing the field via an interface.
 func (v *createPipelinePipelineCreatePipelineCreatePayloadPipeline) GetSkipIntermediateBuilds() bool {
 	return v.PipelineFields.SkipIntermediateBuilds
@@ -2463,6 +2485,8 @@ type __premarshalcreatePipelinePipelineCreatePipelineCreatePayloadPipeline struc
 
 	Repository PipelineFieldsRepository `json:"repository"`
 
+	PipelineTemplate PipelineFieldsPipelineTemplate `json:"pipelineTemplate"`
+
 	SkipIntermediateBuilds bool `json:"skipIntermediateBuilds"`
 
 	SkipIntermediateBuildsBranchFilter string `json:"skipIntermediateBuildsBranchFilter"`
@@ -2501,6 +2525,7 @@ func (v *createPipelinePipelineCreatePipelineCreatePayloadPipeline) __premarshal
 	retval.Description = v.PipelineFields.Description
 	retval.Name = v.PipelineFields.Name
 	retval.Repository = v.PipelineFields.Repository
+	retval.PipelineTemplate = v.PipelineFields.PipelineTemplate
 	retval.SkipIntermediateBuilds = v.PipelineFields.SkipIntermediateBuilds
 	retval.SkipIntermediateBuildsBranchFilter = v.PipelineFields.SkipIntermediateBuildsBranchFilter
 	retval.Slug = v.PipelineFields.Slug
@@ -5299,6 +5324,11 @@ func (v *getNodeNodePipeline) GetRepository() PipelineFieldsRepository {
 	return v.PipelineFields.Repository
 }
 
+// GetPipelineTemplate returns getNodeNodePipeline.PipelineTemplate, and is useful for accessing the field via an interface.
+func (v *getNodeNodePipeline) GetPipelineTemplate() PipelineFieldsPipelineTemplate {
+	return v.PipelineFields.PipelineTemplate
+}
+
 // GetSkipIntermediateBuilds returns getNodeNodePipeline.SkipIntermediateBuilds, and is useful for accessing the field via an interface.
 func (v *getNodeNodePipeline) GetSkipIntermediateBuilds() bool {
 	return v.PipelineFields.SkipIntermediateBuilds
@@ -5378,6 +5408,8 @@ type __premarshalgetNodeNodePipeline struct {
 
 	Repository PipelineFieldsRepository `json:"repository"`
 
+	PipelineTemplate PipelineFieldsPipelineTemplate `json:"pipelineTemplate"`
+
 	SkipIntermediateBuilds bool `json:"skipIntermediateBuilds"`
 
 	SkipIntermediateBuildsBranchFilter string `json:"skipIntermediateBuildsBranchFilter"`
@@ -5416,6 +5448,7 @@ func (v *getNodeNodePipeline) __premarshalJSON() (*__premarshalgetNodeNodePipeli
 	retval.Description = v.PipelineFields.Description
 	retval.Name = v.PipelineFields.Name
 	retval.Repository = v.PipelineFields.Repository
+	retval.PipelineTemplate = v.PipelineFields.PipelineTemplate
 	retval.SkipIntermediateBuilds = v.PipelineFields.SkipIntermediateBuilds
 	retval.SkipIntermediateBuildsBranchFilter = v.PipelineFields.SkipIntermediateBuildsBranchFilter
 	retval.Slug = v.PipelineFields.Slug
@@ -6293,6 +6326,11 @@ func (v *getPipelinePipeline) GetRepository() PipelineFieldsRepository {
 	return v.PipelineFields.Repository
 }
 
+// GetPipelineTemplate returns getPipelinePipeline.PipelineTemplate, and is useful for accessing the field via an interface.
+func (v *getPipelinePipeline) GetPipelineTemplate() PipelineFieldsPipelineTemplate {
+	return v.PipelineFields.PipelineTemplate
+}
+
 // GetSkipIntermediateBuilds returns getPipelinePipeline.SkipIntermediateBuilds, and is useful for accessing the field via an interface.
 func (v *getPipelinePipeline) GetSkipIntermediateBuilds() bool {
 	return v.PipelineFields.SkipIntermediateBuilds
@@ -6372,6 +6410,8 @@ type __premarshalgetPipelinePipeline struct {
 
 	Repository PipelineFieldsRepository `json:"repository"`
 
+	PipelineTemplate PipelineFieldsPipelineTemplate `json:"pipelineTemplate"`
+
 	SkipIntermediateBuilds bool `json:"skipIntermediateBuilds"`
 
 	SkipIntermediateBuildsBranchFilter string `json:"skipIntermediateBuildsBranchFilter"`
@@ -6410,6 +6450,7 @@ func (v *getPipelinePipeline) __premarshalJSON() (*__premarshalgetPipelinePipeli
 	retval.Description = v.PipelineFields.Description
 	retval.Name = v.PipelineFields.Name
 	retval.Repository = v.PipelineFields.Repository
+	retval.PipelineTemplate = v.PipelineFields.PipelineTemplate
 	retval.SkipIntermediateBuilds = v.PipelineFields.SkipIntermediateBuilds
 	retval.SkipIntermediateBuildsBranchFilter = v.PipelineFields.SkipIntermediateBuildsBranchFilter
 	retval.Slug = v.PipelineFields.Slug
@@ -10718,6 +10759,11 @@ func (v *updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline) GetRepositor
 	return v.PipelineFields.Repository
 }
 
+// GetPipelineTemplate returns updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline.PipelineTemplate, and is useful for accessing the field via an interface.
+func (v *updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline) GetPipelineTemplate() PipelineFieldsPipelineTemplate {
+	return v.PipelineFields.PipelineTemplate
+}
+
 // GetSkipIntermediateBuilds returns updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline.SkipIntermediateBuilds, and is useful for accessing the field via an interface.
 func (v *updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline) GetSkipIntermediateBuilds() bool {
 	return v.PipelineFields.SkipIntermediateBuilds
@@ -10799,6 +10845,8 @@ type __premarshalupdatePipelinePipelineUpdatePipelineUpdatePayloadPipeline struc
 
 	Repository PipelineFieldsRepository `json:"repository"`
 
+	PipelineTemplate PipelineFieldsPipelineTemplate `json:"pipelineTemplate"`
+
 	SkipIntermediateBuilds bool `json:"skipIntermediateBuilds"`
 
 	SkipIntermediateBuildsBranchFilter string `json:"skipIntermediateBuildsBranchFilter"`
@@ -10836,6 +10884,7 @@ func (v *updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline) __premarshal
 	retval.Description = v.PipelineFields.Description
 	retval.Name = v.PipelineFields.Name
 	retval.Repository = v.PipelineFields.Repository
+	retval.PipelineTemplate = v.PipelineFields.PipelineTemplate
 	retval.SkipIntermediateBuilds = v.PipelineFields.SkipIntermediateBuilds
 	retval.SkipIntermediateBuildsBranchFilter = v.PipelineFields.SkipIntermediateBuildsBranchFilter
 	retval.Slug = v.PipelineFields.Slug
@@ -11832,6 +11881,9 @@ fragment PipelineFields on Pipeline {
 	repository {
 		url
 	}
+	pipelineTemplate {
+		id
+	}
 	skipIntermediateBuilds
 	skipIntermediateBuildsBranchFilter
 	slug
@@ -12747,6 +12799,9 @@ fragment PipelineFields on Pipeline {
 	repository {
 		url
 	}
+	pipelineTemplate {
+		id
+	}
 	skipIntermediateBuilds
 	skipIntermediateBuildsBranchFilter
 	slug
@@ -12962,6 +13017,9 @@ fragment PipelineFields on Pipeline {
 	name
 	repository {
 		url
+	}
+	pipelineTemplate {
+		id
 	}
 	skipIntermediateBuilds
 	skipIntermediateBuildsBranchFilter
@@ -13783,6 +13841,9 @@ fragment PipelineFields on Pipeline {
 	name
 	repository {
 		url
+	}
+	pipelineTemplate {
+		id
 	}
 	skipIntermediateBuilds
 	skipIntermediateBuildsBranchFilter

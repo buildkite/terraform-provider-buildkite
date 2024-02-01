@@ -82,6 +82,7 @@ type pipelineResourceModel struct {
 	Id                                   types.String           `tfsdk:"id"`
 	MaximumTimeoutInMinutes              types.Int64            `tfsdk:"maximum_timeout_in_minutes"`
 	Name                                 types.String           `tfsdk:"name"`
+	PipelineTemplateId					 types.String			`tfsdk:"pipeline_template_id"`
 	ProviderSettings                     *providerSettingsModel `tfsdk:"provider_settings"`
 	Repository                           types.String           `tfsdk:"repository"`
 	SkipIntermediateBuilds               types.Bool             `tfsdk:"skip_intermediate_builds"`
@@ -136,6 +137,7 @@ type pipelineResponse interface {
 	GetEmoji() *string
 	GetName() string
 	GetRepository() PipelineFieldsRepository
+	GetPipelineTemplate() PipelineFieldsPipelineTemplate
 	GetSkipIntermediateBuilds() bool
 	GetSkipIntermediateBuildsBranchFilter() string
 	GetSlug() string
@@ -197,6 +199,7 @@ func (p *pipelineResource) Create(ctx context.Context, req resource.CreateReques
 				Description:                          plan.Description.ValueString(),
 				Name:                                 plan.Name.ValueString(),
 				OrganizationId:                       *org,
+				PipelineTemplateId: 				  plan.PipelineTemplateId.ValueString(),
 				Repository:                           PipelineRepositoryInput{Url: plan.Repository.ValueString()},
 				SkipIntermediateBuilds:               plan.SkipIntermediateBuilds.ValueBool(),
 				SkipIntermediateBuildsBranchFilter:   plan.SkipIntermediateBuildsBranchFilter.ValueString(),
@@ -437,6 +440,10 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 				Required:            true,
 				MarkdownDescription: "Name to give the pipeline.",
 			},
+			"pipeline_template_id": schema.StringAttribute{
+				Optional:            true,
+				MarkdownDescription: "The GraphQL ID of the pipeline template applied to this pipeline.",
+			},
 			"repository": schema.StringAttribute{
 				Required:            true,
 				MarkdownDescription: "URL to the repository this pipeline is configured for.",
@@ -467,8 +474,11 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 			"steps": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Default:             stringdefault.StaticString(defaultSteps),
+
 				MarkdownDescription: "The YAML steps to configure for the pipeline. Defaults to `buildkite-agent pipeline upload`.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"tags": schema.SetAttribute{
 				Optional:            true,
@@ -660,6 +670,7 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 		Description:                          plan.Description.ValueString(),
 		Id:                                   plan.Id.ValueString(),
 		Name:                                 plan.Name.ValueString(),
+		PipelineTemplateId: 				  plan.PipelineTemplateId.ValueString(),
 		Repository:                           PipelineRepositoryInput{Url: plan.Repository.ValueString()},
 		SkipIntermediateBuilds:               plan.SkipIntermediateBuilds.ValueBool(),
 		SkipIntermediateBuildsBranchFilter:   plan.SkipIntermediateBuildsBranchFilter.ValueString(),
@@ -734,6 +745,7 @@ func setPipelineModel(model *pipelineResourceModel, data pipelineResponse) {
 	model.MaximumTimeoutInMinutes = types.Int64PointerValue(maximumTimeoutInMinutes)
 	model.Name = types.StringValue(data.GetName())
 	model.Repository = types.StringValue(data.GetRepository().Url)
+	model.PipelineTemplateId = types.StringPointerValue(data.GetPipelineTemplate().Id)
 	model.SkipIntermediateBuilds = types.BoolValue(data.GetSkipIntermediateBuilds())
 	model.SkipIntermediateBuildsBranchFilter = types.StringValue(data.GetSkipIntermediateBuildsBranchFilter())
 	model.Slug = types.StringValue(data.GetSlug())
