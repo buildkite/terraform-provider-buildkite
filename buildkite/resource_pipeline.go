@@ -82,7 +82,7 @@ type pipelineResourceModel struct {
 	Id                                   types.String           `tfsdk:"id"`
 	MaximumTimeoutInMinutes              types.Int64            `tfsdk:"maximum_timeout_in_minutes"`
 	Name                                 types.String           `tfsdk:"name"`
-	PipelineTemplateId					 types.String			`tfsdk:"pipeline_template_id"`
+	PipelineTemplateId                   types.String           `tfsdk:"pipeline_template_id"`
 	ProviderSettings                     *providerSettingsModel `tfsdk:"provider_settings"`
 	Repository                           types.String           `tfsdk:"repository"`
 	SkipIntermediateBuilds               types.Bool             `tfsdk:"skip_intermediate_builds"`
@@ -199,7 +199,7 @@ func (p *pipelineResource) Create(ctx context.Context, req resource.CreateReques
 				Description:                          plan.Description.ValueString(),
 				Name:                                 plan.Name.ValueString(),
 				OrganizationId:                       *org,
-				PipelineTemplateId: 				  plan.PipelineTemplateId.ValueString(),
+				PipelineTemplateId:                   plan.PipelineTemplateId.ValueString(),
 				Repository:                           PipelineRepositoryInput{Url: plan.Repository.ValueString()},
 				SkipIntermediateBuilds:               plan.SkipIntermediateBuilds.ValueBool(),
 				SkipIntermediateBuildsBranchFilter:   plan.SkipIntermediateBuildsBranchFilter.ValueString(),
@@ -474,7 +474,6 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 			"steps": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-
 				MarkdownDescription: "The YAML steps to configure for the pipeline. Defaults to `buildkite-agent pipeline upload`.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
@@ -670,7 +669,7 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 		Description:                          plan.Description.ValueString(),
 		Id:                                   plan.Id.ValueString(),
 		Name:                                 plan.Name.ValueString(),
-		PipelineTemplateId: 				  plan.PipelineTemplateId.ValueString(),
+		PipelineTemplateId:                   plan.PipelineTemplateId.ValueString(),
 		Repository:                           PipelineRepositoryInput{Url: plan.Repository.ValueString()},
 		SkipIntermediateBuilds:               plan.SkipIntermediateBuilds.ValueBool(),
 		SkipIntermediateBuildsBranchFilter:   plan.SkipIntermediateBuildsBranchFilter.ValueString(),
