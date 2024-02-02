@@ -66,7 +66,7 @@ func (*pipelineTemplateDatasource) Schema(ctx context.Context, req datasource.Sc
 			},
 			"description": schema.StringAttribute{
 				Computed:            true,
-				MarkdownDescription: "A description for the pipeline template.",
+				MarkdownDescription: "The description for the pipeline template.",
 			},
 			"name": schema.StringAttribute{
 				Computed:            true,
