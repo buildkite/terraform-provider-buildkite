@@ -1522,6 +1522,18 @@ type __getPipelineScheduleInput struct {
 // GetId returns __getPipelineScheduleInput.Id, and is useful for accessing the field via an interface.
 func (v *__getPipelineScheduleInput) GetId() string { return v.Id }
 
+// __getPipelineTemplatesInput is used internally by genqlient
+type __getPipelineTemplatesInput struct {
+	OrgSlug string  `json:"orgSlug"`
+	Cursor  *string `json:"cursor"`
+}
+
+// GetOrgSlug returns __getPipelineTemplatesInput.OrgSlug, and is useful for accessing the field via an interface.
+func (v *__getPipelineTemplatesInput) GetOrgSlug() string { return v.OrgSlug }
+
+// GetCursor returns __getPipelineTemplatesInput.Cursor, and is useful for accessing the field via an interface.
+func (v *__getPipelineTemplatesInput) GetCursor() *string { return v.Cursor }
+
 // __getTestSuiteInput is used internally by genqlient
 type __getTestSuiteInput struct {
 	Id        string `json:"id"`
@@ -8101,6 +8113,175 @@ func (v *getPipelineScheduleResponse) __premarshalJSON() (*__premarshalgetPipeli
 	return &retval, nil
 }
 
+// getPipelineTemplatesOrganization includes the requested fields of the GraphQL type Organization.
+// The GraphQL type's documentation follows.
+//
+// An organization
+type getPipelineTemplatesOrganization struct {
+	// Return all the pipeline templates the current user has access to for this organization
+	PipelineTemplates getPipelineTemplatesOrganizationPipelineTemplatesPipelineTemplateConnection `json:"pipelineTemplates"`
+}
+
+// GetPipelineTemplates returns getPipelineTemplatesOrganization.PipelineTemplates, and is useful for accessing the field via an interface.
+func (v *getPipelineTemplatesOrganization) GetPipelineTemplates() getPipelineTemplatesOrganizationPipelineTemplatesPipelineTemplateConnection {
+	return v.PipelineTemplates
+}
+
+// getPipelineTemplatesOrganizationPipelineTemplatesPipelineTemplateConnection includes the requested fields of the GraphQL type PipelineTemplateConnection.
+type getPipelineTemplatesOrganizationPipelineTemplatesPipelineTemplateConnection struct {
+	PageInfo getPipelineTemplatesOrganizationPipelineTemplatesPipelineTemplateConnectionPageInfo                    `json:"pageInfo"`
+	Edges    []getPipelineTemplatesOrganizationPipelineTemplatesPipelineTemplateConnectionEdgesPipelineTemplateEdge `json:"edges"`
+}
+
+// GetPageInfo returns getPipelineTemplatesOrganizationPipelineTemplatesPipelineTemplateConnection.PageInfo, and is useful for accessing the field via an interface.
+func (v *getPipelineTemplatesOrganizationPipelineTemplatesPipelineTemplateConnection) GetPageInfo() getPipelineTemplatesOrganizationPipelineTemplatesPipelineTemplateConnectionPageInfo {
+	return v.PageInfo
+}
+
+// GetEdges returns getPipelineTemplatesOrganizationPipelineTemplatesPipelineTemplateConnection.Edges, and is useful for accessing the field via an interface.
+func (v *getPipelineTemplatesOrganizationPipelineTemplatesPipelineTemplateConnection) GetEdges() []getPipelineTemplatesOrganizationPipelineTemplatesPipelineTemplateConnectionEdgesPipelineTemplateEdge {
+	return v.Edges
+}
+
+// getPipelineTemplatesOrganizationPipelineTemplatesPipelineTemplateConnectionEdgesPipelineTemplateEdge includes the requested fields of the GraphQL type PipelineTemplateEdge.
+type getPipelineTemplatesOrganizationPipelineTemplatesPipelineTemplateConnectionEdgesPipelineTemplateEdge struct {
+	Node getPipelineTemplatesOrganizationPipelineTemplatesPipelineTemplateConnectionEdgesPipelineTemplateEdgeNodePipelineTemplate `json:"node"`
+}
+
+// GetNode returns getPipelineTemplatesOrganizationPipelineTemplatesPipelineTemplateConnectionEdgesPipelineTemplateEdge.Node, and is useful for accessing the field via an interface.
+func (v *getPipelineTemplatesOrganizationPipelineTemplatesPipelineTemplateConnectionEdgesPipelineTemplateEdge) GetNode() getPipelineTemplatesOrganizationPipelineTemplatesPipelineTemplateConnectionEdgesPipelineTemplateEdgeNodePipelineTemplate {
+	return v.Node
+}
+
+// getPipelineTemplatesOrganizationPipelineTemplatesPipelineTemplateConnectionEdgesPipelineTemplateEdgeNodePipelineTemplate includes the requested fields of the GraphQL type PipelineTemplate.
+// The GraphQL type's documentation follows.
+//
+// A template defining a fixed step configuration for a pipeline
+type getPipelineTemplatesOrganizationPipelineTemplatesPipelineTemplateConnectionEdgesPipelineTemplateEdgeNodePipelineTemplate struct {
+	PipelineTemplateFields `json:"-"`
+}
+
+// GetId returns getPipelineTemplatesOrganizationPipelineTemplatesPipelineTemplateConnectionEdgesPipelineTemplateEdgeNodePipelineTemplate.Id, and is useful for accessing the field via an interface.
+func (v *getPipelineTemplatesOrganizationPipelineTemplatesPipelineTemplateConnectionEdgesPipelineTemplateEdgeNodePipelineTemplate) GetId() string {
+	return v.PipelineTemplateFields.Id
+}
+
+// GetUuid returns getPipelineTemplatesOrganizationPipelineTemplatesPipelineTemplateConnectionEdgesPipelineTemplateEdgeNodePipelineTemplate.Uuid, and is useful for accessing the field via an interface.
+func (v *getPipelineTemplatesOrganizationPipelineTemplatesPipelineTemplateConnectionEdgesPipelineTemplateEdgeNodePipelineTemplate) GetUuid() string {
+	return v.PipelineTemplateFields.Uuid
+}
+
+// GetAvailable returns getPipelineTemplatesOrganizationPipelineTemplatesPipelineTemplateConnectionEdgesPipelineTemplateEdgeNodePipelineTemplate.Available, and is useful for accessing the field via an interface.
+func (v *getPipelineTemplatesOrganizationPipelineTemplatesPipelineTemplateConnectionEdgesPipelineTemplateEdgeNodePipelineTemplate) GetAvailable() bool {
+	return v.PipelineTemplateFields.Available
+}
+
+// GetConfiguration returns getPipelineTemplatesOrganizationPipelineTemplatesPipelineTemplateConnectionEdgesPipelineTemplateEdgeNodePipelineTemplate.Configuration, and is useful for accessing the field via an interface.
+func (v *getPipelineTemplatesOrganizationPipelineTemplatesPipelineTemplateConnectionEdgesPipelineTemplateEdgeNodePipelineTemplate) GetConfiguration() string {
+	return v.PipelineTemplateFields.Configuration
+}
+
+// GetDescription returns getPipelineTemplatesOrganizationPipelineTemplatesPipelineTemplateConnectionEdgesPipelineTemplateEdgeNodePipelineTemplate.Description, and is useful for accessing the field via an interface.
+func (v *getPipelineTemplatesOrganizationPipelineTemplatesPipelineTemplateConnectionEdgesPipelineTemplateEdgeNodePipelineTemplate) GetDescription() *string {
+	return v.PipelineTemplateFields.Description
+}
+
+// GetName returns getPipelineTemplatesOrganizationPipelineTemplatesPipelineTemplateConnectionEdgesPipelineTemplateEdgeNodePipelineTemplate.Name, and is useful for accessing the field via an interface.
+func (v *getPipelineTemplatesOrganizationPipelineTemplatesPipelineTemplateConnectionEdgesPipelineTemplateEdgeNodePipelineTemplate) GetName() string {
+	return v.PipelineTemplateFields.Name
+}
+
+func (v *getPipelineTemplatesOrganizationPipelineTemplatesPipelineTemplateConnectionEdgesPipelineTemplateEdgeNodePipelineTemplate) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*getPipelineTemplatesOrganizationPipelineTemplatesPipelineTemplateConnectionEdgesPipelineTemplateEdgeNodePipelineTemplate
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.getPipelineTemplatesOrganizationPipelineTemplatesPipelineTemplateConnectionEdgesPipelineTemplateEdgeNodePipelineTemplate = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	err = json.Unmarshal(
+		b, &v.PipelineTemplateFields)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+type __premarshalgetPipelineTemplatesOrganizationPipelineTemplatesPipelineTemplateConnectionEdgesPipelineTemplateEdgeNodePipelineTemplate struct {
+	Id string `json:"id"`
+
+	Uuid string `json:"uuid"`
+
+	Available bool `json:"available"`
+
+	Configuration string `json:"configuration"`
+
+	Description *string `json:"description"`
+
+	Name string `json:"name"`
+}
+
+func (v *getPipelineTemplatesOrganizationPipelineTemplatesPipelineTemplateConnectionEdgesPipelineTemplateEdgeNodePipelineTemplate) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *getPipelineTemplatesOrganizationPipelineTemplatesPipelineTemplateConnectionEdgesPipelineTemplateEdgeNodePipelineTemplate) __premarshalJSON() (*__premarshalgetPipelineTemplatesOrganizationPipelineTemplatesPipelineTemplateConnectionEdgesPipelineTemplateEdgeNodePipelineTemplate, error) {
+	var retval __premarshalgetPipelineTemplatesOrganizationPipelineTemplatesPipelineTemplateConnectionEdgesPipelineTemplateEdgeNodePipelineTemplate
+
+	retval.Id = v.PipelineTemplateFields.Id
+	retval.Uuid = v.PipelineTemplateFields.Uuid
+	retval.Available = v.PipelineTemplateFields.Available
+	retval.Configuration = v.PipelineTemplateFields.Configuration
+	retval.Description = v.PipelineTemplateFields.Description
+	retval.Name = v.PipelineTemplateFields.Name
+	return &retval, nil
+}
+
+// getPipelineTemplatesOrganizationPipelineTemplatesPipelineTemplateConnectionPageInfo includes the requested fields of the GraphQL type PageInfo.
+// The GraphQL type's documentation follows.
+//
+// Information about pagination in a connection.
+type getPipelineTemplatesOrganizationPipelineTemplatesPipelineTemplateConnectionPageInfo struct {
+	// When paginating forwards, the cursor to continue.
+	EndCursor string `json:"endCursor"`
+	// When paginating forwards, are there more items?
+	HasNextPage bool `json:"hasNextPage"`
+}
+
+// GetEndCursor returns getPipelineTemplatesOrganizationPipelineTemplatesPipelineTemplateConnectionPageInfo.EndCursor, and is useful for accessing the field via an interface.
+func (v *getPipelineTemplatesOrganizationPipelineTemplatesPipelineTemplateConnectionPageInfo) GetEndCursor() string {
+	return v.EndCursor
+}
+
+// GetHasNextPage returns getPipelineTemplatesOrganizationPipelineTemplatesPipelineTemplateConnectionPageInfo.HasNextPage, and is useful for accessing the field via an interface.
+func (v *getPipelineTemplatesOrganizationPipelineTemplatesPipelineTemplateConnectionPageInfo) GetHasNextPage() bool {
+	return v.HasNextPage
+}
+
+// getPipelineTemplatesResponse is returned by getPipelineTemplates on success.
+type getPipelineTemplatesResponse struct {
+	// Find an organization
+	Organization getPipelineTemplatesOrganization `json:"organization"`
+}
+
+// GetOrganization returns getPipelineTemplatesResponse.Organization, and is useful for accessing the field via an interface.
+func (v *getPipelineTemplatesResponse) GetOrganization() getPipelineTemplatesOrganization {
+	return v.Organization
+}
+
 // getTestSuiteResponse is returned by getTestSuite on success.
 type getTestSuiteResponse struct {
 	// Fetches an object given its ID.
@@ -13149,6 +13330,61 @@ func getPipelineScheduleBySlug(
 	var err error
 
 	var data getPipelineScheduleBySlugResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		ctx,
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
+// The query or mutation executed by getPipelineTemplates.
+const getPipelineTemplates_Operation = `
+query getPipelineTemplates ($orgSlug: ID!, $cursor: String) {
+	organization(slug: $orgSlug) {
+		pipelineTemplates(order: NAME, first: 50, after: $cursor) {
+			pageInfo {
+				endCursor
+				hasNextPage
+			}
+			edges {
+				node {
+					... PipelineTemplateFields
+				}
+			}
+		}
+	}
+}
+fragment PipelineTemplateFields on PipelineTemplate {
+	id
+	uuid
+	available
+	configuration
+	description
+	name
+}
+`
+
+func getPipelineTemplates(
+	ctx context.Context,
+	client graphql.Client,
+	orgSlug string,
+	cursor *string,
+) (*getPipelineTemplatesResponse, error) {
+	req := &graphql.Request{
+		OpName: "getPipelineTemplates",
+		Query:  getPipelineTemplates_Operation,
+		Variables: &__getPipelineTemplatesInput{
+			OrgSlug: orgSlug,
+			Cursor:  cursor,
+		},
+	}
+	var err error
+
+	var data getPipelineTemplatesResponse
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(

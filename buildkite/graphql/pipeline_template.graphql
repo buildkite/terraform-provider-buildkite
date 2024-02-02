@@ -8,6 +8,26 @@ fragment PipelineTemplateFields on PipelineTemplate {
 	name
 }
 
+query getPipelineTemplates(
+    $orgSlug: ID!,
+    # @genqlient(pointer: true)
+    $cursor: String
+) {
+    organization(slug: $orgSlug) {
+        pipelineTemplates(order: NAME, first: 50, after: $cursor) {
+            pageInfo {
+                endCursor
+                hasNextPage
+            }
+            edges {
+                node {
+                    ...PipelineTemplateFields
+                }
+            }
+        }
+    }
+}
+
 mutation createPipelineTemplate(
     $organizationId: ID!, 
     $name: String!,
