@@ -3,7 +3,6 @@ package buildkite
 import (
 	"context"
 	"fmt"
-	"log"
 
 	"github.com/MakeNowJust/heredoc"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
@@ -46,7 +45,7 @@ func (pt *pipelineTemplateDatasource) Configure(ctx context.Context, req datasou
 func (*pipelineTemplateDatasource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		MarkdownDescription: heredoc.Doc(`
-		Use this data source to retrieve a pipeline template by its ID.
+		Use this data source to retrieve a pipeline template by its ID or name.
 		
 		More information on pipeline templates can be found in the [documentation](https://buildkite.com/docs/pipelines/templates).
 		`),
@@ -107,13 +106,7 @@ func (pt *pipelineTemplateDatasource) Read(ctx context.Context, req datasource.R
 		var apiResponse *getNodeResponse
 		err := retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
 			var err error
-
-			log.Printf("Reading pipeline template with ID %s ...", state.ID.ValueString())
-			apiResponse, err = getNode(ctx,
-				pt.client.genqlient,
-				state.ID.ValueString(),
-			)
-
+			apiResponse, err = getNode(ctx, pt.client.genqlient, state.ID.ValueString())
 			return retryContextError(err)
 		})
 
@@ -135,7 +128,6 @@ func (pt *pipelineTemplateDatasource) Read(ctx context.Context, req datasource.R
 				return
 			}
 			updatePipelineTemplateDatasourceState(&state, *pipelineTemplateNode)
-			resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 		}
 	} else if !state.Name.IsNull() {
 		matchFound := false
@@ -162,7 +154,6 @@ func (pt *pipelineTemplateDatasource) Read(ctx context.Context, req datasource.R
 					if template.Node.Name == state.Name.ValueString() {
 						matchFound = true
 						updatePipelineTemplateDatasourceFromNode(&state, template.Node)
-						resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 						break
 					}
 				}
@@ -189,6 +180,7 @@ func (pt *pipelineTemplateDatasource) Read(ctx context.Context, req datasource.R
 			return
 		}
 	}
+	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
 func updatePipelineTemplateDatasourceState(ptds *pipelineTemplateDatasourceModel, ptn getNodeNodePipelineTemplate) {
