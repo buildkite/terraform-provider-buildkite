@@ -27,7 +27,7 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 			p := s.RootModule().Resources["buildkite_pipeline.pipeline"]
 
 			err = errors.Join(compareRemoteValue(func() any { return pipeline.Name }, p.Primary.Attributes["name"])(s), err)
-			err = errors.Join(compareRemoteValue(func() any { return pipeline.Steps.Yaml }, defaultSteps)(s), err)
+			err = errors.Join(compareRemoteValue(func() any { return pipeline.Steps.Yaml }, "")(s), err)
 			err = errors.Join(compareRemoteValue(func() any { return pipeline.Repository.Url }, "https://github.com/buildkite/terraform-provider-buildkite.git")(s), err)
 			err = errors.Join(compareRemoteValue(func() any { return pipeline.AllowRebuilds }, true)(s), err)
 			err = errors.Join(compareRemoteValue(func() any { return *pipeline.DefaultTimeoutInMinutes }, 0)(s), err)
@@ -84,7 +84,7 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "repository", "https://github.com/buildkite/terraform-provider-buildkite.git"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "skip_intermediate_builds", "false"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "skip_intermediate_builds_branch_filter", ""),
-						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "steps", defaultSteps),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "steps", ""),
 						// check lists are empty
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "tags.#", "0"),
 						resource.TestCheckNoResourceAttr("buildkite_pipeline.pipeline", "tags.#"),

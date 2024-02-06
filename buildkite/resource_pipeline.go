@@ -474,10 +474,7 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 			"steps": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				MarkdownDescription: "The YAML steps to configure for the pipeline. Defaults to `buildkite-agent pipeline upload`.",
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
-				},
+				MarkdownDescription: "The YAML steps to configure for the pipeline.",
 			},
 			"tags": schema.SetAttribute{
 				Optional:            true,
