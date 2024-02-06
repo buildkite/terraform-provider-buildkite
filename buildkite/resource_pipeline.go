@@ -10,6 +10,7 @@ import (
 	"github.com/MakeNowJust/heredoc"
 	custom_modifier "github.com/buildkite/terraform-provider-buildkite/internal/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -474,7 +475,13 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 			"steps": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				MarkdownDescription: "The YAML steps to configure for the pipeline.",
+				MarkdownDescription: "The YAML steps to configure for the pipeline. Defaults to `buildkite-agent pipeline upload`.",
+				Validators: []validator.String{
+					stringvalidator.ConflictsWith(path.Expressions{
+						path.MatchRoot("steps"),
+						path.MatchRoot("pipeline_template_id"),
+					}...),
+				},
 			},
 			"tags": schema.SetAttribute{
 				Optional:            true,
@@ -636,6 +643,26 @@ func (p *pipelineResource) UpgradeState(ctx context.Context) map[int64]resource.
 			PriorSchema:   &pipelineV0,
 			StateUpgrader: upgradePipelineStateV0toV1,
 		},
+	}
+}
+
+func (p *pipelineResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
+	// Only modify plan on pipeline creation
+	if req.State.Raw.IsNull() {
+		var template, steps types.String
+
+		// Load pipeline_template_id and steps (if defined)
+		req.Plan.GetAttribute(ctx, path.Root("pipeline_template_id"), &template)
+		req.Plan.GetAttribute(ctx, path.Root("steps"), &steps)
+
+		// Set default steps only if there is no template oe defined steps
+		if template.IsNull() && (steps.IsUnknown() || steps.IsNull()) {
+			resp.Diagnostics.Append(resp.Plan.SetAttribute(ctx, path.Root("steps"), defaultSteps)...)
+			return
+		}
+	} else {
+		// Do nothing on other plan operations (update, delete)
+		return
 	}
 }
 
