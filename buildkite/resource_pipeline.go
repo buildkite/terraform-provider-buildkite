@@ -477,8 +477,7 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 				Computed:            true,
 				MarkdownDescription: "The YAML steps to configure for the pipeline. Defaults to `buildkite-agent pipeline upload`.",
 				Validators: []validator.String{
-					stringvalidator.ConflictsWith(path.Expressions{
-						path.MatchRoot("steps"),
+					stringvalidator.ConflictsWith(path.Expressions{	
 						path.MatchRoot("pipeline_template_id"),
 					}...),
 				},
