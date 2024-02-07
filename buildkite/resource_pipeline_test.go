@@ -39,6 +39,24 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 		}
 	}
 
+	aggregateRemoteCheckWithTemplateSteps := func(pipeline *getPipelinePipeline) resource.TestCheckFunc {
+		return func(s *terraform.State) error {
+			var err error
+			p := s.RootModule().Resources["buildkite_pipeline.pipeline"]
+
+			err = errors.Join(compareRemoteValue(func() any { return pipeline.Name }, p.Primary.Attributes["name"])(s), err)
+			err = errors.Join(compareRemoteValue(func() any { return pipeline.Steps.Yaml }, p.Primary.Attributes["steps"])(s), err)
+			err = errors.Join(compareRemoteValue(func() any { return pipeline.Repository.Url }, "https://github.com/buildkite/terraform-provider-buildkite.git")(s), err)
+			err = errors.Join(compareRemoteValue(func() any { return pipeline.AllowRebuilds }, true)(s), err)
+			err = errors.Join(compareRemoteValue(func() any { return *pipeline.DefaultTimeoutInMinutes }, 0)(s), err)
+			err = errors.Join(compareRemoteValue(func() any { return *pipeline.MaximumTimeoutInMinutes }, 0)(s), err)
+			err = errors.Join(compareRemoteValue(func() any { return pipeline.BranchConfiguration }, (*string)(nil))(s), err)
+			err = errors.Join(compareRemoteValue(func() any { return pipeline.Cluster.Id }, (*string)(nil))(s), err)
+
+			return err
+		}
+	}
+
 	t.Run("create pipeline with only required attributes", func(t *testing.T) {
 		var pipeline getPipelinePipeline
 		pipelineName := acctest.RandString(12)
@@ -96,6 +114,75 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 					ResourceName:  "buildkite_pipeline.pipeline",
 					ImportState:   true,
 					ImportStateId: pipeline.Id,
+				},
+			},
+		})
+	})
+
+	t.Run("create pipeline with a pipeline template", func(t *testing.T) {
+		var pipeline getPipelinePipeline
+		pipelineName := acctest.RandString(12)
+		templateName := acctest.RandString(12)
+		config := fmt.Sprintf(`
+			resource "buildkite_pipeline_template" "template_foo" {
+				name = "Template %s"
+				configuration = "steps:\n  - label: \":pipeline:\"\n    command: \"buildkite-agent pipeline upload .buildkite/dev.yaml\""
+				available = true
+			}
+
+			resource "buildkite_pipeline" "pipeline" {
+				depends_on = [buildkite_pipeline_template.template_foo]
+				name = "%s"
+				repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
+				pipeline_template_id = buildkite_pipeline_template.template_foo.id
+			}
+		`, templateName, pipelineName)
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			Steps: []resource.TestStep{
+				{
+					Config: config,
+					Check: resource.ComposeAggregateTestCheckFunc(
+						// check computed values get set
+						resource.TestCheckResourceAttrSet("buildkite_pipeline.pipeline", "badge_url"),
+						resource.TestCheckResourceAttrSet("buildkite_pipeline.pipeline", "id"),
+						resource.TestCheckResourceAttrSet("buildkite_pipeline.pipeline", "steps"),
+						resource.TestCheckResourceAttrSet("buildkite_pipeline.pipeline", "slug"),
+						resource.TestCheckResourceAttrSet("buildkite_pipeline.pipeline", "uuid"),
+						resource.TestCheckResourceAttrSet("buildkite_pipeline.pipeline", "webhook_url"),
+						resource.TestCheckResourceAttrSet("buildkite_pipeline.pipeline", "pipeline_template_id"),
+
+						// check api values are expected
+						func(s *terraform.State) error {
+							slug := fmt.Sprintf("%s/%s", getenv("BUILDKITE_ORGANIZATION_SLUG"), pipelineName)
+							resp, err := getPipeline(context.Background(), genqlientGraphql, slug)
+							pipeline = resp.Pipeline
+							return err
+						},
+						aggregateRemoteCheckWithTemplateSteps(&pipeline),
+						// check state values are correct
+						resource.TestCheckNoResourceAttr("buildkite_pipeline.pipeline", "branch_configuration"),
+						resource.TestCheckNoResourceAttr("buildkite_pipeline.pipeline", "cluster_id"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "allow_rebuilds", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "cancel_intermediate_builds", "false"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "cancel_intermediate_builds_branch_filter", ""),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "default_branch", ""),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "default_timeout_in_minutes", "0"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "description", ""),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "maximum_timeout_in_minutes", "0"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "name", pipelineName),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "repository", "https://github.com/buildkite/terraform-provider-buildkite.git"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "skip_intermediate_builds", "false"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "skip_intermediate_builds_branch_filter", ""),
+
+						// check lists are empty
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "tags.#", "0"),
+						resource.TestCheckNoResourceAttr("buildkite_pipeline.pipeline", "tags.#"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.#", "0"),
+						resource.TestCheckNoResourceAttr("buildkite_pipeline.pipeline", "provider_settings.#"),
+					),
 				},
 			},
 		})
