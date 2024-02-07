@@ -25,7 +25,7 @@ data "buildkite_pipeline_template" "dev_template" {
 }
 
 data "buildkite_pipeline_template" "frontend_template" {
-	name = "Frontend app template"
+  name = "Frontend app template"
 }
 
 
