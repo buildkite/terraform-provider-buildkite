@@ -24,6 +24,10 @@ fragment PipelineFields on Pipeline {
     repository {
         url
     }
+    pipelineTemplate {
+        # @genqlient(pointer: true)
+        id
+    }
     skipIntermediateBuilds
     skipIntermediateBuildsBranchFilter
     slug

@@ -112,6 +112,7 @@ func (*terraformProvider) DataSources(context.Context) []func() datasource.DataS
 		newMetaDatasource,
 		newOrganizationDatasource,
 		newPipelineDatasource,
+		newPipelineTemplateDatasource,
 		newTeamDatasource,
 		newSignedPipelineStepsDataSource,
 	}

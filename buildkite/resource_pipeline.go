@@ -10,6 +10,7 @@ import (
 	"github.com/MakeNowJust/heredoc"
 	custom_modifier "github.com/buildkite/terraform-provider-buildkite/internal/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -82,6 +83,7 @@ type pipelineResourceModel struct {
 	Id                                   types.String           `tfsdk:"id"`
 	MaximumTimeoutInMinutes              types.Int64            `tfsdk:"maximum_timeout_in_minutes"`
 	Name                                 types.String           `tfsdk:"name"`
+	PipelineTemplateId                   types.String           `tfsdk:"pipeline_template_id"`
 	ProviderSettings                     *providerSettingsModel `tfsdk:"provider_settings"`
 	Repository                           types.String           `tfsdk:"repository"`
 	SkipIntermediateBuilds               types.Bool             `tfsdk:"skip_intermediate_builds"`
@@ -136,6 +138,7 @@ type pipelineResponse interface {
 	GetEmoji() *string
 	GetName() string
 	GetRepository() PipelineFieldsRepository
+	GetPipelineTemplate() PipelineFieldsPipelineTemplate
 	GetSkipIntermediateBuilds() bool
 	GetSkipIntermediateBuildsBranchFilter() string
 	GetSlug() string
@@ -197,6 +200,7 @@ func (p *pipelineResource) Create(ctx context.Context, req resource.CreateReques
 				Description:                          plan.Description.ValueString(),
 				Name:                                 plan.Name.ValueString(),
 				OrganizationId:                       *org,
+				PipelineTemplateId:                   plan.PipelineTemplateId.ValueString(),
 				Repository:                           PipelineRepositoryInput{Url: plan.Repository.ValueString()},
 				SkipIntermediateBuilds:               plan.SkipIntermediateBuilds.ValueBool(),
 				SkipIntermediateBuildsBranchFilter:   plan.SkipIntermediateBuildsBranchFilter.ValueString(),
@@ -437,6 +441,10 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 				Required:            true,
 				MarkdownDescription: "Name to give the pipeline.",
 			},
+			"pipeline_template_id": schema.StringAttribute{
+				Optional:            true,
+				MarkdownDescription: "The GraphQL ID of the pipeline template applied to this pipeline.",
+			},
 			"repository": schema.StringAttribute{
 				Required:            true,
 				MarkdownDescription: "URL to the repository this pipeline is configured for.",
@@ -467,8 +475,12 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 			"steps": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Default:             stringdefault.StaticString(defaultSteps),
 				MarkdownDescription: "The YAML steps to configure for the pipeline. Defaults to `buildkite-agent pipeline upload`.",
+				Validators: []validator.String{
+					stringvalidator.ConflictsWith(path.Expressions{
+						path.MatchRoot("pipeline_template_id"),
+					}...),
+				},
 			},
 			"tags": schema.SetAttribute{
 				Optional:            true,
@@ -633,6 +645,26 @@ func (p *pipelineResource) UpgradeState(ctx context.Context) map[int64]resource.
 	}
 }
 
+func (p *pipelineResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
+	// Only modify plan on pipeline creation
+	if req.State.Raw.IsNull() {
+		var template, steps types.String
+
+		// Load pipeline_template_id and steps (if defined)
+		req.Plan.GetAttribute(ctx, path.Root("pipeline_template_id"), &template)
+		req.Plan.GetAttribute(ctx, path.Root("steps"), &steps)
+
+		// Set default steps only if there is no template oe defined steps
+		if template.IsNull() && (steps.IsUnknown() || steps.IsNull()) {
+			resp.Diagnostics.Append(resp.Plan.SetAttribute(ctx, path.Root("steps"), defaultSteps)...)
+			return
+		}
+	} else {
+		// Do nothing on other plan operations (update, delete)
+		return
+	}
+}
+
 func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	var plan, state pipelineResourceModel
 
@@ -660,6 +692,7 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 		Description:                          plan.Description.ValueString(),
 		Id:                                   plan.Id.ValueString(),
 		Name:                                 plan.Name.ValueString(),
+		PipelineTemplateId:                   plan.PipelineTemplateId.ValueString(),
 		Repository:                           PipelineRepositoryInput{Url: plan.Repository.ValueString()},
 		SkipIntermediateBuilds:               plan.SkipIntermediateBuilds.ValueBool(),
 		SkipIntermediateBuildsBranchFilter:   plan.SkipIntermediateBuildsBranchFilter.ValueString(),
@@ -734,6 +767,7 @@ func setPipelineModel(model *pipelineResourceModel, data pipelineResponse) {
 	model.MaximumTimeoutInMinutes = types.Int64PointerValue(maximumTimeoutInMinutes)
 	model.Name = types.StringValue(data.GetName())
 	model.Repository = types.StringValue(data.GetRepository().Url)
+	model.PipelineTemplateId = types.StringPointerValue(data.GetPipelineTemplate().Id)
 	model.SkipIntermediateBuilds = types.BoolValue(data.GetSkipIntermediateBuilds())
 	model.SkipIntermediateBuildsBranchFilter = types.StringValue(data.GetSkipIntermediateBuildsBranchFilter())
 	model.Slug = types.StringValue(data.GetSlug())
