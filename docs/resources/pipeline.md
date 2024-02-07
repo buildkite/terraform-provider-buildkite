@@ -59,6 +59,7 @@ resource "buildkite_pipeline" "pipeline" {
 - `description` (String) Description for the pipeline. Can include emoji 🙌.
 - `emoji` (String) An emoji that represents this pipeline.
 - `maximum_timeout_in_minutes` (Number) Set pipeline wide maximum timeout for command steps.
+- `pipeline_template_id` (String) The GraphQL ID of the pipeline template applied to this pipeline.
 - `provider_settings` (Attributes) Control settings depending on the VCS provider used in `repository`. (see [below for nested schema](#nestedatt--provider_settings))
 - `skip_intermediate_builds` (Boolean) Whether to skip queued builds if a new commit is pushed to a matching branch.
 - `skip_intermediate_builds_branch_filter` (String) Filter the `skip_intermediate_builds` setting based on this branch condition.
