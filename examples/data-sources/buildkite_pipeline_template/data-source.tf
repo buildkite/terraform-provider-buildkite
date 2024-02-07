@@ -3,11 +3,11 @@ locals {
 }
 
 data "buildkite_pipeline_template" "dev_template" {
-	  id = buildkite_pipeline_template.template_dev.id
+  id = buildkite_pipeline_template.template_dev.id
 }
 
 data "buildkite_pipeline_template" "frontend_template" {
-	  name = "Frontend app template"
+	name = "Frontend app template"
 }
 
 
