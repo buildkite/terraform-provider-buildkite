@@ -76,6 +76,7 @@ type pipelineResourceModel struct {
 	CancelIntermediateBuildsBranchFilter types.String           `tfsdk:"cancel_intermediate_builds_branch_filter"`
 	Color                                types.String           `tfsdk:"color"`
 	ClusterId                            types.String           `tfsdk:"cluster_id"`
+	DefaultTeamId                        types.String           `tfsdk:"default_team_id"`
 	DefaultBranch                        types.String           `tfsdk:"default_branch"`
 	DefaultTimeoutInMinutes              types.Int64            `tfsdk:"default_timeout_in_minutes"`
 	Description                          types.String           `tfsdk:"description"`
@@ -207,6 +208,17 @@ func (p *pipelineResource) Create(ctx context.Context, req resource.CreateReques
 				Steps:                                PipelineStepsInput{Yaml: plan.Steps.ValueString()},
 				Tags:                                 getTagsFromSchema(&plan),
 			}
+
+			// if a team has been specified, add that to the graphql payload
+			if !plan.DefaultTeamId.IsNull() {
+				input.Teams = []PipelineTeamAssignmentInput{
+					{
+						Id:          plan.DefaultTeamId.ValueString(),
+						AccessLevel: PipelineAccessLevelsManageBuildAndRead,
+					},
+				}
+			}
+
 			response, err = createPipeline(ctx, p.client.genqlient, input)
 		}
 		return retryContextError(err)
@@ -223,6 +235,7 @@ func (p *pipelineResource) Create(ctx context.Context, req resource.CreateReques
 
 	setPipelineModel(&state, &response.PipelineCreate.Pipeline)
 	state.WebhookUrl = types.StringValue(response.PipelineCreate.Pipeline.GetWebhookURL())
+	state.DefaultTeamId = plan.DefaultTeamId
 
 	if plan.ProviderSettings != nil {
 		pipelineExtraInfo, err := updatePipelineExtraInfo(ctx, response.PipelineCreate.Pipeline.Slug, plan.ProviderSettings, p.client, timeouts)
@@ -397,6 +410,10 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 			},
 			"cluster_id": schema.StringAttribute{
 				MarkdownDescription: "Attach this pipeline to the given cluster GraphQL ID.",
+				Optional:            true,
+			},
+			"default_team_id": schema.StringAttribute{
+				MarkdownDescription: "The GraphQL ID of the team to use as the default owner of the pipeline.",
 				Optional:            true,
 			},
 			"default_branch": schema.StringAttribute{
