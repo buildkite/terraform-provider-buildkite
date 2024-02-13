@@ -465,6 +465,8 @@ type PipelineFields struct {
 	Steps PipelineFieldsStepsPipelineSteps `json:"steps"`
 	// Tags that have been given to this pipeline
 	Tags []PipelineFieldsTagsPipelineTag `json:"tags"`
+	// Teams associated with this pipeline
+	Teams PipelineFieldsTeamsTeamPipelineConnection `json:"teams"`
 }
 
 // GetId returns PipelineFields.Id, and is useful for accessing the field via an interface.
@@ -536,6 +538,9 @@ func (v *PipelineFields) GetSteps() PipelineFieldsStepsPipelineSteps { return v.
 // GetTags returns PipelineFields.Tags, and is useful for accessing the field via an interface.
 func (v *PipelineFields) GetTags() []PipelineFieldsTagsPipelineTag { return v.Tags }
 
+// GetTeams returns PipelineFields.Teams, and is useful for accessing the field via an interface.
+func (v *PipelineFields) GetTeams() PipelineFieldsTeamsTeamPipelineConnection { return v.Teams }
+
 // PipelineFieldsCluster includes the requested fields of the GraphQL type Cluster.
 type PipelineFieldsCluster struct {
 	Id *string `json:"id"`
@@ -590,6 +595,104 @@ type PipelineFieldsTagsPipelineTag struct {
 
 // GetLabel returns PipelineFieldsTagsPipelineTag.Label, and is useful for accessing the field via an interface.
 func (v *PipelineFieldsTagsPipelineTag) GetLabel() string { return v.Label }
+
+// PipelineFieldsTeamsTeamPipelineConnection includes the requested fields of the GraphQL type TeamPipelineConnection.
+// The GraphQL type's documentation follows.
+//
+// A collection of TeamPipeline records
+type PipelineFieldsTeamsTeamPipelineConnection struct {
+	PageInfo PipelineFieldsTeamsTeamPipelineConnectionPageInfo                `json:"pageInfo"`
+	Count    int                                                              `json:"count"`
+	Edges    []PipelineFieldsTeamsTeamPipelineConnectionEdgesTeamPipelineEdge `json:"edges"`
+}
+
+// GetPageInfo returns PipelineFieldsTeamsTeamPipelineConnection.PageInfo, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsTeamsTeamPipelineConnection) GetPageInfo() PipelineFieldsTeamsTeamPipelineConnectionPageInfo {
+	return v.PageInfo
+}
+
+// GetCount returns PipelineFieldsTeamsTeamPipelineConnection.Count, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsTeamsTeamPipelineConnection) GetCount() int { return v.Count }
+
+// GetEdges returns PipelineFieldsTeamsTeamPipelineConnection.Edges, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsTeamsTeamPipelineConnection) GetEdges() []PipelineFieldsTeamsTeamPipelineConnectionEdgesTeamPipelineEdge {
+	return v.Edges
+}
+
+// PipelineFieldsTeamsTeamPipelineConnectionEdgesTeamPipelineEdge includes the requested fields of the GraphQL type TeamPipelineEdge.
+type PipelineFieldsTeamsTeamPipelineConnectionEdgesTeamPipelineEdge struct {
+	Cursor string                                                                         `json:"cursor"`
+	Node   PipelineFieldsTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipeline `json:"node"`
+}
+
+// GetCursor returns PipelineFieldsTeamsTeamPipelineConnectionEdgesTeamPipelineEdge.Cursor, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsTeamsTeamPipelineConnectionEdgesTeamPipelineEdge) GetCursor() string {
+	return v.Cursor
+}
+
+// GetNode returns PipelineFieldsTeamsTeamPipelineConnectionEdgesTeamPipelineEdge.Node, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsTeamsTeamPipelineConnectionEdgesTeamPipelineEdge) GetNode() PipelineFieldsTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipeline {
+	return v.Node
+}
+
+// PipelineFieldsTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipeline includes the requested fields of the GraphQL type TeamPipeline.
+// The GraphQL type's documentation follows.
+//
+// An pipeline that's been assigned to a team
+type PipelineFieldsTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipeline struct {
+	Id string `json:"id"`
+	// The access level users have to this pipeline
+	AccessLevel PipelineAccessLevels `json:"accessLevel"`
+	// The team associated with this team member
+	Team PipelineFieldsTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipelineTeam `json:"team"`
+}
+
+// GetId returns PipelineFieldsTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipeline.Id, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipeline) GetId() string {
+	return v.Id
+}
+
+// GetAccessLevel returns PipelineFieldsTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipeline.AccessLevel, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipeline) GetAccessLevel() PipelineAccessLevels {
+	return v.AccessLevel
+}
+
+// GetTeam returns PipelineFieldsTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipeline.Team, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipeline) GetTeam() PipelineFieldsTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipelineTeam {
+	return v.Team
+}
+
+// PipelineFieldsTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipelineTeam includes the requested fields of the GraphQL type Team.
+// The GraphQL type's documentation follows.
+//
+// An organization team
+type PipelineFieldsTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipelineTeam struct {
+	Id string `json:"id"`
+}
+
+// GetId returns PipelineFieldsTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipelineTeam.Id, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipelineTeam) GetId() string {
+	return v.Id
+}
+
+// PipelineFieldsTeamsTeamPipelineConnectionPageInfo includes the requested fields of the GraphQL type PageInfo.
+// The GraphQL type's documentation follows.
+//
+// Information about pagination in a connection.
+type PipelineFieldsTeamsTeamPipelineConnectionPageInfo struct {
+	// When paginating forwards, the cursor to continue.
+	EndCursor string `json:"endCursor"`
+	// When paginating forwards, are there more items?
+	HasNextPage bool `json:"hasNextPage"`
+}
+
+// GetEndCursor returns PipelineFieldsTeamsTeamPipelineConnectionPageInfo.EndCursor, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsTeamsTeamPipelineConnectionPageInfo) GetEndCursor() string { return v.EndCursor }
+
+// GetHasNextPage returns PipelineFieldsTeamsTeamPipelineConnectionPageInfo.HasNextPage, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsTeamsTeamPipelineConnectionPageInfo) GetHasNextPage() bool {
+	return v.HasNextPage
+}
 
 // Repository information for a pipeline
 type PipelineRepositoryInput struct {
@@ -2439,6 +2542,11 @@ func (v *createPipelinePipelineCreatePipelineCreatePayloadPipeline) GetTags() []
 	return v.PipelineFields.Tags
 }
 
+// GetTeams returns createPipelinePipelineCreatePipelineCreatePayloadPipeline.Teams, and is useful for accessing the field via an interface.
+func (v *createPipelinePipelineCreatePipelineCreatePayloadPipeline) GetTeams() PipelineFieldsTeamsTeamPipelineConnection {
+	return v.PipelineFields.Teams
+}
+
 func (v *createPipelinePipelineCreatePipelineCreatePayloadPipeline) UnmarshalJSON(b []byte) error {
 
 	if string(b) == "null" {
@@ -2508,6 +2616,8 @@ type __premarshalcreatePipelinePipelineCreatePipelineCreatePayloadPipeline struc
 	Steps PipelineFieldsStepsPipelineSteps `json:"steps"`
 
 	Tags []PipelineFieldsTagsPipelineTag `json:"tags"`
+
+	Teams PipelineFieldsTeamsTeamPipelineConnection `json:"teams"`
 }
 
 func (v *createPipelinePipelineCreatePipelineCreatePayloadPipeline) MarshalJSON() ([]byte, error) {
@@ -2543,6 +2653,7 @@ func (v *createPipelinePipelineCreatePipelineCreatePayloadPipeline) __premarshal
 	retval.Slug = v.PipelineFields.Slug
 	retval.Steps = v.PipelineFields.Steps
 	retval.Tags = v.PipelineFields.Tags
+	retval.Teams = v.PipelineFields.Teams
 	return &retval, nil
 }
 
@@ -5362,6 +5473,11 @@ func (v *getNodeNodePipeline) GetSteps() PipelineFieldsStepsPipelineSteps {
 // GetTags returns getNodeNodePipeline.Tags, and is useful for accessing the field via an interface.
 func (v *getNodeNodePipeline) GetTags() []PipelineFieldsTagsPipelineTag { return v.PipelineFields.Tags }
 
+// GetTeams returns getNodeNodePipeline.Teams, and is useful for accessing the field via an interface.
+func (v *getNodeNodePipeline) GetTeams() PipelineFieldsTeamsTeamPipelineConnection {
+	return v.PipelineFields.Teams
+}
+
 func (v *getNodeNodePipeline) UnmarshalJSON(b []byte) error {
 
 	if string(b) == "null" {
@@ -5431,6 +5547,8 @@ type __premarshalgetNodeNodePipeline struct {
 	Steps PipelineFieldsStepsPipelineSteps `json:"steps"`
 
 	Tags []PipelineFieldsTagsPipelineTag `json:"tags"`
+
+	Teams PipelineFieldsTeamsTeamPipelineConnection `json:"teams"`
 }
 
 func (v *getNodeNodePipeline) MarshalJSON() ([]byte, error) {
@@ -5466,6 +5584,7 @@ func (v *getNodeNodePipeline) __premarshalJSON() (*__premarshalgetNodeNodePipeli
 	retval.Slug = v.PipelineFields.Slug
 	retval.Steps = v.PipelineFields.Steps
 	retval.Tags = v.PipelineFields.Tags
+	retval.Teams = v.PipelineFields.Teams
 	return &retval, nil
 }
 
@@ -6364,6 +6483,11 @@ func (v *getPipelinePipeline) GetSteps() PipelineFieldsStepsPipelineSteps {
 // GetTags returns getPipelinePipeline.Tags, and is useful for accessing the field via an interface.
 func (v *getPipelinePipeline) GetTags() []PipelineFieldsTagsPipelineTag { return v.PipelineFields.Tags }
 
+// GetTeams returns getPipelinePipeline.Teams, and is useful for accessing the field via an interface.
+func (v *getPipelinePipeline) GetTeams() PipelineFieldsTeamsTeamPipelineConnection {
+	return v.PipelineFields.Teams
+}
+
 func (v *getPipelinePipeline) UnmarshalJSON(b []byte) error {
 
 	if string(b) == "null" {
@@ -6433,6 +6557,8 @@ type __premarshalgetPipelinePipeline struct {
 	Steps PipelineFieldsStepsPipelineSteps `json:"steps"`
 
 	Tags []PipelineFieldsTagsPipelineTag `json:"tags"`
+
+	Teams PipelineFieldsTeamsTeamPipelineConnection `json:"teams"`
 }
 
 func (v *getPipelinePipeline) MarshalJSON() ([]byte, error) {
@@ -6468,6 +6594,7 @@ func (v *getPipelinePipeline) __premarshalJSON() (*__premarshalgetPipelinePipeli
 	retval.Slug = v.PipelineFields.Slug
 	retval.Steps = v.PipelineFields.Steps
 	retval.Tags = v.PipelineFields.Tags
+	retval.Teams = v.PipelineFields.Teams
 	return &retval, nil
 }
 
@@ -10970,6 +11097,11 @@ func (v *updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline) GetTags() []
 	return v.PipelineFields.Tags
 }
 
+// GetTeams returns updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline.Teams, and is useful for accessing the field via an interface.
+func (v *updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline) GetTeams() PipelineFieldsTeamsTeamPipelineConnection {
+	return v.PipelineFields.Teams
+}
+
 func (v *updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline) UnmarshalJSON(b []byte) error {
 
 	if string(b) == "null" {
@@ -11037,6 +11169,8 @@ type __premarshalupdatePipelinePipelineUpdatePipelineUpdatePayloadPipeline struc
 	Steps PipelineFieldsStepsPipelineSteps `json:"steps"`
 
 	Tags []PipelineFieldsTagsPipelineTag `json:"tags"`
+
+	Teams PipelineFieldsTeamsTeamPipelineConnection `json:"teams"`
 }
 
 func (v *updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline) MarshalJSON() ([]byte, error) {
@@ -11071,6 +11205,7 @@ func (v *updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline) __premarshal
 	retval.Slug = v.PipelineFields.Slug
 	retval.Steps = v.PipelineFields.Steps
 	retval.Tags = v.PipelineFields.Tags
+	retval.Teams = v.PipelineFields.Teams
 	return &retval, nil
 }
 
@@ -12074,6 +12209,23 @@ fragment PipelineFields on Pipeline {
 	tags {
 		label
 	}
+	teams(first: 5, order: NAME) {
+		pageInfo {
+			endCursor
+			hasNextPage
+		}
+		count
+		edges {
+			cursor
+			node {
+				id
+				accessLevel
+				team {
+					id
+				}
+			}
+		}
+	}
 }
 `
 
@@ -12992,6 +13144,23 @@ fragment PipelineFields on Pipeline {
 	tags {
 		label
 	}
+	teams(first: 5, order: NAME) {
+		pageInfo {
+			endCursor
+			hasNextPage
+		}
+		count
+		edges {
+			cursor
+			node {
+				id
+				accessLevel
+				team {
+					id
+				}
+			}
+		}
+	}
 }
 fragment PipelineTemplateFields on PipelineTemplate {
 	id
@@ -13210,6 +13379,23 @@ fragment PipelineFields on Pipeline {
 	}
 	tags {
 		label
+	}
+	teams(first: 5, order: NAME) {
+		pageInfo {
+			endCursor
+			hasNextPage
+		}
+		count
+		edges {
+			cursor
+			node {
+				id
+				accessLevel
+				team {
+					id
+				}
+			}
+		}
 	}
 }
 `
@@ -14089,6 +14275,23 @@ fragment PipelineFields on Pipeline {
 	}
 	tags {
 		label
+	}
+	teams(first: 5, order: NAME) {
+		pageInfo {
+			endCursor
+			hasNextPage
+		}
+		count
+		edges {
+			cursor
+			node {
+				id
+				accessLevel
+				team {
+					id
+				}
+			}
+		}
 	}
 }
 `

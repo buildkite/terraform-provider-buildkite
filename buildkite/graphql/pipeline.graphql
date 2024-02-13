@@ -37,6 +37,23 @@ fragment PipelineFields on Pipeline {
     tags {
         label
     }
+    teams(first: 5, order: NAME) {
+        pageInfo {
+            endCursor
+            hasNextPage
+        }
+        count
+        edges {
+            cursor
+            node {
+                id
+                accessLevel
+                team {
+                    id
+                }
+            }
+        }
+    }
 }
 
 query getPipeline($slug: ID!) {
