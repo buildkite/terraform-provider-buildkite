@@ -55,6 +55,7 @@ resource "buildkite_pipeline" "pipeline" {
 - `cluster_id` (String) Attach this pipeline to the given cluster GraphQL ID.
 - `color` (String) A color hex code to represent this pipeline.
 - `default_branch` (String) Default branch of the pipeline.
+- `default_team_id` (String) The GraphQL ID of the team to use as the default owner of the pipeline.
 - `default_timeout_in_minutes` (Number) Set pipeline wide timeout for command steps.
 - `description` (String) Description for the pipeline. Can include emoji 🙌.
 - `emoji` (String) An emoji that represents this pipeline.
