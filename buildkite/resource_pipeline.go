@@ -353,13 +353,58 @@ func (p *pipelineResource) Read(ctx context.Context, req resource.ReadRequest, r
 		if state.ProviderSettings != nil {
 			updatePipelineResourceExtraInfo(&state, extraInfo)
 		}
+
+		// pipeline default team is a terraform concept only so it takes some coercing
+		err = p.setDefaultTeamIfExists(ctx, &state, &pipelineNode.Teams.PipelineTeam)
+		if err != nil {
+			resp.Diagnostics.AddError("Error encountered trying to read teams for pipeline", err.Error())
+		}
+
 		state.BadgeUrl = types.StringValue(extraInfo.BadgeUrl)
+
 		resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 	} else {
 		// no pipeline was found so remove it from state
 		resp.Diagnostics.AddWarning("Pipeline not found", "Removing pipeline from state")
 		resp.State.RemoveResource(ctx)
 	}
+}
+
+// setDefaultTeamIfExists will try to find a team for the pipeline to set as default
+// if we got here from a terraform import, we will have no idea what (if any) team to assign as the default, it
+// will need to be done manually by the user
+// however, if this is a normal read operation, we will have access to the previous state which is a reliable
+// source of default team ID. so if it is set in state, we need to ensure the permission level is correct,
+// otherwise it cannot be the default owner if it has lower permissions
+func (p *pipelineResource) setDefaultTeamIfExists(ctx context.Context, state *pipelineResourceModel, pipelineTeam *PipelineTeam) error {
+	if !state.DefaultTeamId.IsNull() {
+		var foundAccessLevel *PipelineAccessLevels
+		// loop over all attached teams to ensure its connected with the correct permissions
+		for _, team := range pipelineTeam.Edges {
+			if state.DefaultTeamId.ValueString() == team.Node.Team.Id {
+				foundAccessLevel = &team.Node.AccessLevel
+				break
+			}
+		}
+
+		// if the team was not found, and there are more to load, then load more and recurse to find a matching one
+		if foundAccessLevel == nil && pipelineTeam.PageInfo.HasNextPage {
+			resp, err := getPipelineTeams(ctx, p.client.genqlient, state.Slug.ValueString(), pipelineTeam.PageInfo.EndCursor)
+			if err != nil {
+				return err
+			}
+			pt := resp.Pipeline.Teams.PipelineTeam
+			return p.setDefaultTeamIfExists(ctx, state, &pt)
+		}
+
+		// after checking all teams, if a matching one was still not found or the permission was wrong, then update
+		// the state
+		if foundAccessLevel == nil || *foundAccessLevel != PipelineAccessLevelsManageBuildAndRead {
+			state.DefaultTeamId = types.StringUnknown()
+		}
+	}
+
+	return nil
 }
 
 func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
