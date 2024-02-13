@@ -38,19 +38,23 @@ fragment PipelineFields on Pipeline {
         label
     }
     teams(first: 5, order: NAME) {
-        pageInfo {
-            endCursor
-            hasNextPage
-        }
-        count
-        edges {
-            cursor
-            node {
+        ...PipelineTeam
+    }
+}
+
+fragment PipelineTeam on TeamPipelineConnection {
+    pageInfo {
+        endCursor
+        hasNextPage
+    }
+    count
+    edges {
+        cursor
+        node {
+            id
+            accessLevel
+            team {
                 id
-                accessLevel
-                team {
-                    id
-                }
             }
         }
     }
@@ -60,6 +64,14 @@ query getPipeline($slug: ID!) {
     pipeline(slug: $slug) {
         ...PipelineFields
         webhookURL
+    }
+}
+
+query getPipelineTeams($slug: ID!, $cursor: String) {
+    pipeline(slug: $slug) {
+        teams(order: NAME, first: 50, after: $cursor) {
+            ...PipelineTeam
+        }
     }
 }
 
