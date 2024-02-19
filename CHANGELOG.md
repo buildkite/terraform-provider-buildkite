@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## [v1.4.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.3.0...v1.4.0)
 
 - SUP-1696: Add golangci-lint[[PR #468](https://github.com/buildkite/terraform-provider-buildkite/pull/468)]@lizrabuya
 - Expose pipeline UUID [[PR #469](https://github.com/buildkite/terraform-provider-buildkite/pull/469)] @drcapulet
@@ -82,6 +82,10 @@ Please refer to the [Upgrade Guide](https://registry.terraform.io/providers/buil
 - SUP-1395 Change timeouts to nested attribute [[PR #402](https://github.com/buildkite/terraform-provider-buildkite/pull/402)] @jradtilbrook
 - SUP-1444 Add cluster_default_queue resource [[PR #404](https://github.com/buildkite/terraform-provider-buildkite/pull/404)] @jradtilbrook
 - SUP-1446 Add enforce_2fa to organization resource [[PR #406](https://github.com/buildkite/terraform-provider-buildkite/pull/406)] @jradtilbrook
+
+## [v0.27.1](https://github.com/buildkite/terraform-provider-buildkite/compare/v0.27.0...v0.27.1)
+
+- SUP-1853 backport default_team_id to 0.27 [[PR #481](https://github.com/buildkite/terraform-provider-buildkite/pull/481)] @jradtilbrook
 
 ## [v0.27.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v0.26.0...v0.27.0)
 
