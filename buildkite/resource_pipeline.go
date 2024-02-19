@@ -793,6 +793,8 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 			resp.Diagnostics.AddError("Could not remove default team", err.Error())
 			return
 		}
+
+		state.DefaultTeamId = types.StringNull()
 	} else if plan.DefaultTeamId.ValueString() != state.DefaultTeamId.ValueString() {
 		// If the planned default_team_id differs from the state, add the new one and remove the old one
 		var r *createTeamPipelineResponse
