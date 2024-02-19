@@ -805,20 +805,10 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 		state.DefaultTeamId = types.StringValue(r.TeamPipelineCreate.TeamPipelineEdge.Node.Team.Id)
 
 		// remove the old team
-		teams, err := getPipelineTeams(ctx, p.client.genqlient, state.Slug.ValueString(), "")
+		err = p.findAndRemoveTeam(ctx, previousTeamID, state.Slug.ValueString(), "")
 		if err != nil {
-			resp.Diagnostics.AddError("Failed to retrieve pipeline teams", err.Error())
+			resp.Diagnostics.AddError("Could not remove previous default team", err.Error())
 			return
-		}
-
-		for _, team := range teams.Pipeline.Teams.Edges {
-			if team.Node.Team.Id == previousTeamID {
-				_, err := deleteTeamPipeline(ctx, p.client.genqlient, team.Node.Id)
-				if err != nil {
-					resp.Diagnostics.AddError("Failed to remove previous default team", err.Error())
-				}
-				break
-			}
 		}
 	}
 
@@ -841,6 +831,37 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+}
+
+// setDefaultTeamIfExists will try to find a team for the pipeline to set as default
+// if we got here from a terraform import, we will have no idea what (if any) team to assign as the default, it
+// will need to be done manually by the user
+// however, if this is a normal read operation, we will have access to the previous state which is a reliable
+// source of default team ID. so if it is set in state, we need to ensure the permission level is correct,
+// otherwise it cannot be the default owner if it has lower permissions
+// findAndRemoveTeam will try to find a team and remove its access from the pipeline
+// we only know the teams ID but the API request to remove access requies the pipeline team connection ID, so we need to
+// query all connected teams and check their ID matches
+func (p *pipelineResource) findAndRemoveTeam(ctx context.Context, teamID string, pipelineSlug string, cursor string) error {
+	teams, err := getPipelineTeams(ctx, p.client.genqlient, pipelineSlug, cursor)
+	if err != nil {
+		return err
+	}
+
+	for _, team := range teams.Pipeline.Teams.Edges {
+		if team.Node.Team.Id == teamID {
+			_, err := deleteTeamPipeline(ctx, p.client.genqlient, team.Node.Id)
+			if err != nil {
+				return err
+			}
+			break
+		}
+	}
+
+	if teams.Pipeline.Teams.PageInfo.HasNextPage {
+		return p.findAndRemoveTeam(ctx, teamID, pipelineSlug, teams.Pipeline.Teams.PageInfo.EndCursor)
+	}
+	return nil
 }
 
 func (*pipelineResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
