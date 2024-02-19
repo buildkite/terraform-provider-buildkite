@@ -833,12 +833,6 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
-// setDefaultTeamIfExists will try to find a team for the pipeline to set as default
-// if we got here from a terraform import, we will have no idea what (if any) team to assign as the default, it
-// will need to be done manually by the user
-// however, if this is a normal read operation, we will have access to the previous state which is a reliable
-// source of default team ID. so if it is set in state, we need to ensure the permission level is correct,
-// otherwise it cannot be the default owner if it has lower permissions
 // findAndRemoveTeam will try to find a team and remove its access from the pipeline
 // we only know the teams ID but the API request to remove access requies the pipeline team connection ID, so we need to
 // query all connected teams and check their ID matches
