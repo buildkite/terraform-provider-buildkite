@@ -786,6 +786,27 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 
 	setPipelineModel(&state, &response.PipelineUpdate.Pipeline)
 
+	// If the planned default_team_id differs from the state, add the new one and remove the old one
+	if plan.DefaultTeamId.ValueString() != state.DefaultTeamId.ValueString() {
+		var r *createTeamPipelineResponse
+		err := retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
+			var err error
+			r, err = createTeamPipeline(ctx, p.client.genqlient, plan.DefaultTeamId.ValueString(), state.Id.ValueString(), PipelineAccessLevelsManageBuildAndRead)
+			return retryContextError(err)
+		})
+
+		if err != nil {
+			resp.Diagnostics.AddError("Could not attach new default team to pipeline", err.Error())
+			return
+		}
+
+		// update default team in state
+		// previousTeamID := state.DefaultTeamId.ValueString()
+		state.DefaultTeamId = types.StringValue(r.TeamPipelineCreate.TeamPipelineEdge.Node.Team.Id)
+
+		// remove the old team
+	}
+
 	if plan.ProviderSettings != nil {
 		pipelineExtraInfo, err := updatePipelineExtraInfo(ctx, response.PipelineUpdate.Pipeline.Slug, plan.ProviderSettings, p.client, timeouts)
 		if err != nil {
