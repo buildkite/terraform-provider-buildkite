@@ -588,10 +588,15 @@ func (v *PipelineTeamEdgesTeamPipelineEdgeNodeTeamPipeline) GetTeam() PipelineTe
 // An organization team
 type PipelineTeamEdgesTeamPipelineEdgeNodeTeamPipelineTeam struct {
 	Id string `json:"id"`
+	// The slug of the team
+	Slug string `json:"slug"`
 }
 
 // GetId returns PipelineTeamEdgesTeamPipelineEdgeNodeTeamPipelineTeam.Id, and is useful for accessing the field via an interface.
 func (v *PipelineTeamEdgesTeamPipelineEdgeNodeTeamPipelineTeam) GetId() string { return v.Id }
+
+// GetSlug returns PipelineTeamEdgesTeamPipelineEdgeNodeTeamPipelineTeam.Slug, and is useful for accessing the field via an interface.
+func (v *PipelineTeamEdgesTeamPipelineEdgeNodeTeamPipelineTeam) GetSlug() string { return v.Slug }
 
 // PipelineTeamPageInfo includes the requested fields of the GraphQL type PageInfo.
 // The GraphQL type's documentation follows.
@@ -885,118 +890,70 @@ func (v *PipelineValuesTagsPipelineTag) GetLabel() string { return v.Label }
 //
 // A collection of TeamPipeline records
 type PipelineValuesTeamsTeamPipelineConnection struct {
-	Edges []PipelineValuesTeamsTeamPipelineConnectionEdgesTeamPipelineEdge `json:"edges"`
+	PipelineTeam `json:"-"`
 }
+
+// GetPageInfo returns PipelineValuesTeamsTeamPipelineConnection.PageInfo, and is useful for accessing the field via an interface.
+func (v *PipelineValuesTeamsTeamPipelineConnection) GetPageInfo() PipelineTeamPageInfo {
+	return v.PipelineTeam.PageInfo
+}
+
+// GetCount returns PipelineValuesTeamsTeamPipelineConnection.Count, and is useful for accessing the field via an interface.
+func (v *PipelineValuesTeamsTeamPipelineConnection) GetCount() int { return v.PipelineTeam.Count }
 
 // GetEdges returns PipelineValuesTeamsTeamPipelineConnection.Edges, and is useful for accessing the field via an interface.
-func (v *PipelineValuesTeamsTeamPipelineConnection) GetEdges() []PipelineValuesTeamsTeamPipelineConnectionEdgesTeamPipelineEdge {
-	return v.Edges
+func (v *PipelineValuesTeamsTeamPipelineConnection) GetEdges() []PipelineTeamEdgesTeamPipelineEdge {
+	return v.PipelineTeam.Edges
 }
 
-// PipelineValuesTeamsTeamPipelineConnectionEdgesTeamPipelineEdge includes the requested fields of the GraphQL type TeamPipelineEdge.
-type PipelineValuesTeamsTeamPipelineConnectionEdgesTeamPipelineEdge struct {
-	Node PipelineValuesTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipeline `json:"node"`
+func (v *PipelineValuesTeamsTeamPipelineConnection) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*PipelineValuesTeamsTeamPipelineConnection
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.PipelineValuesTeamsTeamPipelineConnection = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	err = json.Unmarshal(
+		b, &v.PipelineTeam)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
-// GetNode returns PipelineValuesTeamsTeamPipelineConnectionEdgesTeamPipelineEdge.Node, and is useful for accessing the field via an interface.
-func (v *PipelineValuesTeamsTeamPipelineConnectionEdgesTeamPipelineEdge) GetNode() PipelineValuesTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipeline {
-	return v.Node
+type __premarshalPipelineValuesTeamsTeamPipelineConnection struct {
+	PageInfo PipelineTeamPageInfo `json:"pageInfo"`
+
+	Count int `json:"count"`
+
+	Edges []PipelineTeamEdgesTeamPipelineEdge `json:"edges"`
 }
 
-// PipelineValuesTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipeline includes the requested fields of the GraphQL type TeamPipeline.
-// The GraphQL type's documentation follows.
-//
-// An pipeline that's been assigned to a team
-type PipelineValuesTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipeline struct {
-	// The access level users have to this pipeline
-	AccessLevel PipelineAccessLevels `json:"accessLevel"`
-	Id          string               `json:"id"`
-	// The team associated with this team member
-	Team PipelineValuesTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipelineTeam `json:"team"`
+func (v *PipelineValuesTeamsTeamPipelineConnection) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
 }
 
-// GetAccessLevel returns PipelineValuesTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipeline.AccessLevel, and is useful for accessing the field via an interface.
-func (v *PipelineValuesTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipeline) GetAccessLevel() PipelineAccessLevels {
-	return v.AccessLevel
-}
+func (v *PipelineValuesTeamsTeamPipelineConnection) __premarshalJSON() (*__premarshalPipelineValuesTeamsTeamPipelineConnection, error) {
+	var retval __premarshalPipelineValuesTeamsTeamPipelineConnection
 
-// GetId returns PipelineValuesTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipeline.Id, and is useful for accessing the field via an interface.
-func (v *PipelineValuesTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipeline) GetId() string {
-	return v.Id
-}
-
-// GetTeam returns PipelineValuesTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipeline.Team, and is useful for accessing the field via an interface.
-func (v *PipelineValuesTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipeline) GetTeam() PipelineValuesTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipelineTeam {
-	return v.Team
-}
-
-// PipelineValuesTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipelineTeam includes the requested fields of the GraphQL type Team.
-// The GraphQL type's documentation follows.
-//
-// An organization team
-type PipelineValuesTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipelineTeam struct {
-	// A description of the team
-	Description string `json:"description"`
-	Id          string `json:"id"`
-	// Add new organization members to this team by default
-	IsDefaultTeam bool `json:"isDefaultTeam"`
-	// New organization members will be granted this role on this team
-	DefaultMemberRole string `json:"defaultMemberRole"`
-	// The name of the team
-	Name string `json:"name"`
-	// Whether or not team members can create new pipelines in this team
-	MembersCanCreatePipelines bool `json:"membersCanCreatePipelines"`
-	// The privacy setting for this team
-	Privacy string `json:"privacy"`
-	// The slug of the team
-	Slug string `json:"slug"`
-	// The public UUID for this team
-	Uuid string `json:"uuid"`
-}
-
-// GetDescription returns PipelineValuesTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipelineTeam.Description, and is useful for accessing the field via an interface.
-func (v *PipelineValuesTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipelineTeam) GetDescription() string {
-	return v.Description
-}
-
-// GetId returns PipelineValuesTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipelineTeam.Id, and is useful for accessing the field via an interface.
-func (v *PipelineValuesTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipelineTeam) GetId() string {
-	return v.Id
-}
-
-// GetIsDefaultTeam returns PipelineValuesTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipelineTeam.IsDefaultTeam, and is useful for accessing the field via an interface.
-func (v *PipelineValuesTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipelineTeam) GetIsDefaultTeam() bool {
-	return v.IsDefaultTeam
-}
-
-// GetDefaultMemberRole returns PipelineValuesTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipelineTeam.DefaultMemberRole, and is useful for accessing the field via an interface.
-func (v *PipelineValuesTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipelineTeam) GetDefaultMemberRole() string {
-	return v.DefaultMemberRole
-}
-
-// GetName returns PipelineValuesTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipelineTeam.Name, and is useful for accessing the field via an interface.
-func (v *PipelineValuesTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipelineTeam) GetName() string {
-	return v.Name
-}
-
-// GetMembersCanCreatePipelines returns PipelineValuesTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipelineTeam.MembersCanCreatePipelines, and is useful for accessing the field via an interface.
-func (v *PipelineValuesTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipelineTeam) GetMembersCanCreatePipelines() bool {
-	return v.MembersCanCreatePipelines
-}
-
-// GetPrivacy returns PipelineValuesTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipelineTeam.Privacy, and is useful for accessing the field via an interface.
-func (v *PipelineValuesTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipelineTeam) GetPrivacy() string {
-	return v.Privacy
-}
-
-// GetSlug returns PipelineValuesTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipelineTeam.Slug, and is useful for accessing the field via an interface.
-func (v *PipelineValuesTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipelineTeam) GetSlug() string {
-	return v.Slug
-}
-
-// GetUuid returns PipelineValuesTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipelineTeam.Uuid, and is useful for accessing the field via an interface.
-func (v *PipelineValuesTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipelineTeam) GetUuid() string {
-	return v.Uuid
+	retval.PageInfo = v.PipelineTeam.PageInfo
+	retval.Count = v.PipelineTeam.Count
+	retval.Edges = v.PipelineTeam.Edges
+	return &retval, nil
 }
 
 // The visibility of the pipeline
@@ -10990,25 +10947,27 @@ fragment PipelineValues on Pipeline {
 		label
 	}
 	teams(first: 50) {
-		edges {
-			node {
-				accessLevel
+		... PipelineTeam
+	}
+	webhookURL
+}
+fragment PipelineTeam on TeamPipelineConnection {
+	pageInfo {
+		endCursor
+		hasNextPage
+	}
+	count
+	edges {
+		cursor
+		node {
+			id
+			accessLevel
+			team {
 				id
-				team {
-					description
-					id
-					isDefaultTeam
-					defaultMemberRole
-					name
-					membersCanCreatePipelines
-					privacy
-					slug
-					uuid
-				}
+				slug
 			}
 		}
 	}
-	webhookURL
 }
 `
 
@@ -11787,23 +11746,7 @@ fragment PipelineValues on Pipeline {
 		label
 	}
 	teams(first: 50) {
-		edges {
-			node {
-				accessLevel
-				id
-				team {
-					description
-					id
-					isDefaultTeam
-					defaultMemberRole
-					name
-					membersCanCreatePipelines
-					privacy
-					slug
-					uuid
-				}
-			}
-		}
+		... PipelineTeam
 	}
 	webhookURL
 }
@@ -11858,6 +11801,24 @@ fragment ClusterFields on Cluster {
 	description
 	emoji
 	color
+}
+fragment PipelineTeam on TeamPipelineConnection {
+	pageInfo {
+		endCursor
+		hasNextPage
+	}
+	count
+	edges {
+		cursor
+		node {
+			id
+			accessLevel
+			team {
+				id
+				slug
+			}
+		}
+	}
 }
 `
 
@@ -11958,25 +11919,27 @@ fragment PipelineValues on Pipeline {
 		label
 	}
 	teams(first: 50) {
-		edges {
-			node {
-				accessLevel
+		... PipelineTeam
+	}
+	webhookURL
+}
+fragment PipelineTeam on TeamPipelineConnection {
+	pageInfo {
+		endCursor
+		hasNextPage
+	}
+	count
+	edges {
+		cursor
+		node {
+			id
+			accessLevel
+			team {
 				id
-				team {
-					description
-					id
-					isDefaultTeam
-					defaultMemberRole
-					name
-					membersCanCreatePipelines
-					privacy
-					slug
-					uuid
-				}
+				slug
 			}
 		}
 	}
-	webhookURL
 }
 `
 
@@ -12129,6 +12092,7 @@ fragment PipelineTeam on TeamPipelineConnection {
 			accessLevel
 			team {
 				id
+				slug
 			}
 		}
 	}
@@ -12802,25 +12766,27 @@ fragment PipelineValues on Pipeline {
 		label
 	}
 	teams(first: 50) {
-		edges {
-			node {
-				accessLevel
+		... PipelineTeam
+	}
+	webhookURL
+}
+fragment PipelineTeam on TeamPipelineConnection {
+	pageInfo {
+		endCursor
+		hasNextPage
+	}
+	count
+	edges {
+		cursor
+		node {
+			id
+			accessLevel
+			team {
 				id
-				team {
-					description
-					id
-					isDefaultTeam
-					defaultMemberRole
-					name
-					membersCanCreatePipelines
-					privacy
-					slug
-					uuid
-				}
+				slug
 			}
 		}
 	}
-	webhookURL
 }
 `
 
