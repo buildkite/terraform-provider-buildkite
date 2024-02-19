@@ -85,6 +85,7 @@ type pipelineResourceModel struct {
 	CancelIntermediateBuilds             types.Bool               `tfsdk:"cancel_intermediate_builds"`
 	CancelIntermediateBuildsBranchFilter types.String             `tfsdk:"cancel_intermediate_builds_branch_filter"`
 	ClusterId                            types.String             `tfsdk:"cluster_id"`
+	DefaultTeamId                        types.String             `tfsdk:"default_team_id"`
 	DefaultBranch                        types.String             `tfsdk:"default_branch"`
 	DefaultTimeoutInMinutes              types.Int64              `tfsdk:"default_timeout_in_minutes"`
 	Description                          types.String             `tfsdk:"description"`
@@ -216,6 +217,16 @@ func (p *pipelineResource) Create(ctx context.Context, req resource.CreateReques
 		Tags:                                 getTagsFromSchema(&plan),
 	}
 
+	// if a team has been specified, add that to the graphql payload
+	if !plan.DefaultTeamId.IsNull() {
+		input.Teams = []PipelineTeamAssignmentInput{
+			{
+				Id:          plan.DefaultTeamId.ValueString(),
+				AccessLevel: PipelineAccessLevelsManageBuildAndRead,
+			},
+		}
+	}
+
 	timeouts, diags := p.client.timeouts.Create(ctx, DefaultTimeout)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
@@ -237,6 +248,7 @@ func (p *pipelineResource) Create(ctx context.Context, req resource.CreateReques
 	log.Printf("Successfully created pipeline with id '%s'.", response.PipelineCreate.Pipeline.Id)
 
 	setPipelineModel(&state, &response.PipelineCreate.Pipeline)
+	state.DefaultTeamId = plan.DefaultTeamId
 	teamsFromApi := response.PipelineCreate.Pipeline.GetTeams().Edges
 	teams := make([]*pipelineTeamModel, len(teamsFromApi))
 	for i, teamEdge := range teamsFromApi {
