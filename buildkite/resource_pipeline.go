@@ -843,7 +843,8 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 // we only know the teams ID but the API request to remove access requies the pipeline team connection ID, so we need to
 // query all connected teams and check their ID matches
 func (p *pipelineResource) findAndRemoveTeam(ctx context.Context, teamID string, pipelineSlug string, cursor string) error {
-	teams, err := getPipelineTeams(ctx, p.client.genqlient, pipelineSlug, cursor)
+	slug := fmt.Sprintf("%s/%s", p.client.organization, pipelineSlug)
+	teams, err := getPipelineTeams(ctx, p.client.genqlient, slug, cursor)
 	if err != nil {
 		return err
 	}
