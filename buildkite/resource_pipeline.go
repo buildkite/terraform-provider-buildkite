@@ -1037,6 +1037,7 @@ func upgradePipelineStateV0toV1(ctx context.Context, req resource.UpgradeStateRe
 		CancelIntermediateBuildsBranchFilter types.String             `tfsdk:"cancel_intermediate_builds_branch_filter"`
 		ClusterId                            types.String             `tfsdk:"cluster_id"`
 		DefaultBranch                        types.String             `tfsdk:"default_branch"`
+		DefaultTeamId                        types.String             `tfsdk:"default_team_id"`
 		DefaultTimeoutInMinutes              types.Int64              `tfsdk:"default_timeout_in_minutes"`
 		Description                          types.String             `tfsdk:"description"`
 		Id                                   types.String             `tfsdk:"id"`
@@ -1069,6 +1070,7 @@ func upgradePipelineStateV0toV1(ctx context.Context, req resource.UpgradeStateRe
 		CancelIntermediateBuildsBranchFilter: priorPipelineStateData.CancelIntermediateBuildsBranchFilter,
 		ClusterId:                            priorPipelineStateData.ClusterId,
 		DefaultBranch:                        priorPipelineStateData.DefaultBranch,
+		DefaultTeamId:                        priorPipelineStateData.DefaultTeamId,
 		DefaultTimeoutInMinutes:              priorPipelineStateData.DefaultTimeoutInMinutes,
 		Description:                          priorPipelineStateData.Description,
 		Id:                                   priorPipelineStateData.Id,
@@ -1126,6 +1128,10 @@ func pipelineSchemaV0() schema.Schema {
 			"default_branch": schema.StringAttribute{
 				Computed: true,
 				Optional: true,
+			},
+			"default_team_id": schema.StringAttribute{
+				MarkdownDescription: "The GraphQL ID of the team to use as the default owner of the pipeline.",
+				Optional:            true,
 			},
 			"default_timeout_in_minutes": schema.Int64Attribute{
 				Computed: true,
