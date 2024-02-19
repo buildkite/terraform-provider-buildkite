@@ -1,6 +1,8 @@
 module github.com/buildkite/terraform-provider-buildkite
 
-go 1.20
+go 1.21
+
+toolchain go1.21.3
 
 require (
 	github.com/Khan/genqlient v0.6.0
