@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v0.27.1](https://github.com/buildkite/terraform-provider-buildkite/compare/v0.27.0...v0.27.1)
+
+- SUP-1853 backport default_team_id to 0.27 [[PR #481](https://github.com/buildkite/terraform-provider-buildkite/pull/481)] @jradtilbrook
+
 ## [v0.27.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v0.26.0...v0.27.0)
 
 - SUP-805: SUP-805: Team resource retries [[PR #360](https://github.com/buildkite/terraform-provider-buildkite/pull/360)] @james2791
