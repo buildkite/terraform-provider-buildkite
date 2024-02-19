@@ -801,10 +801,25 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 		}
 
 		// update default team in state
-		// previousTeamID := state.DefaultTeamId.ValueString()
+		previousTeamID := state.DefaultTeamId.ValueString()
 		state.DefaultTeamId = types.StringValue(r.TeamPipelineCreate.TeamPipelineEdge.Node.Team.Id)
 
 		// remove the old team
+		teams, err := getPipelineTeams(ctx, p.client.genqlient, state.Slug.ValueString(), "")
+		if err != nil {
+			resp.Diagnostics.AddError("Failed to retrieve pipeline teams", err.Error())
+			return
+		}
+
+		for _, team := range teams.Pipeline.Teams.Edges {
+			if team.Node.Team.Id == previousTeamID {
+				_, err := deleteTeamPipeline(ctx, p.client.genqlient, team.Node.Id)
+				if err != nil {
+					resp.Diagnostics.AddError("Failed to remove previous default team", err.Error())
+				}
+				break
+			}
+		}
 	}
 
 	if plan.ProviderSettings != nil {
