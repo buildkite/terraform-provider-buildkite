@@ -89,6 +89,7 @@ resource "buildkite_pipeline" "repo2-release" {
 -   `steps` - (Optional) The string YAML steps to run the pipeline. Defaults to `buildkite-agent pipeline upload` if not specified.
 -   `description` - (Optional) A description of the pipeline.
 -   `default_branch` - (Optional) The default branch to prefill when new builds are created or triggered, usually main or master but can be anything.
+-   `default_team_id` - (Optional) The GraphQL ID of the team to use as the default owner of the pipeline.
 -   `default_timeout_in_minutes` - (Optional) The default timeout for commands in this pipeline, in minutes.
 -   `maximum_timeout_in_minutes` - (Optional) The maximum timeout for commands in this pipeline, in minutes.
 -   `branch_configuration` - (Optional) Limit which branches and tags cause new builds to be created, either via a code push or via the Builds REST API.

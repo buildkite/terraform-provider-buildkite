@@ -29,30 +29,41 @@ fragment PipelineValues on Pipeline {
         label
     }
     teams (first: 50) {
-        edges {
-            node {
-                accessLevel
+        ...PipelineTeam
+    }
+    webhookURL
+}
+
+fragment PipelineTeam on TeamPipelineConnection {
+    pageInfo {
+        endCursor
+        hasNextPage
+    }
+    count
+    edges {
+        cursor
+        node {
+            id
+            accessLevel
+            team {
                 id
-                team {
-                    description
-                    id
-                    isDefaultTeam
-                    defaultMemberRole
-                    name
-                    membersCanCreatePipelines
-                    privacy
-                    slug
-                    uuid
-                }
+                slug
             }
         }
     }
-    webhookURL
 }
 
 query getPipeline($slug: ID!) {
     pipeline(slug: $slug) {
         ...PipelineValues
+    }
+}
+
+query getPipelineTeams($slug: ID!, $cursor: String) {
+    pipeline(slug: $slug) {
+        teams(order: NAME, first: 50, after: $cursor) {
+            ...PipelineTeam
+        }
     }
 }
 

@@ -1,4 +1,4 @@
-FROM 445615400570.dkr.ecr.us-east-1.amazonaws.com/ecr-public/docker/library/golang:1.20@sha256:f7099345b8e4a93c62dc5102e7eb19a9cdbad12e7e322644eeaba355d70e616d
+FROM public.ecr.aws/docker/library/golang:1.21.6@sha256:4d1942cb703999c3acd03b8efe5cc588cb5e39bace931d876de170e16d44e2cd
 
 RUN apt-get update \
     && apt-get install -y unzip

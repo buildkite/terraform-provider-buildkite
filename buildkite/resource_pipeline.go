@@ -85,6 +85,7 @@ type pipelineResourceModel struct {
 	CancelIntermediateBuilds             types.Bool               `tfsdk:"cancel_intermediate_builds"`
 	CancelIntermediateBuildsBranchFilter types.String             `tfsdk:"cancel_intermediate_builds_branch_filter"`
 	ClusterId                            types.String             `tfsdk:"cluster_id"`
+	DefaultTeamId                        types.String             `tfsdk:"default_team_id"`
 	DefaultBranch                        types.String             `tfsdk:"default_branch"`
 	DefaultTimeoutInMinutes              types.Int64              `tfsdk:"default_timeout_in_minutes"`
 	Description                          types.String             `tfsdk:"description"`
@@ -216,6 +217,16 @@ func (p *pipelineResource) Create(ctx context.Context, req resource.CreateReques
 		Tags:                                 getTagsFromSchema(&plan),
 	}
 
+	// if a team has been specified, add that to the graphql payload
+	if !plan.DefaultTeamId.IsNull() {
+		input.Teams = []PipelineTeamAssignmentInput{
+			{
+				Id:          plan.DefaultTeamId.ValueString(),
+				AccessLevel: PipelineAccessLevelsManageBuildAndRead,
+			},
+		}
+	}
+
 	timeouts, diags := p.client.timeouts.Create(ctx, DefaultTimeout)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
@@ -237,6 +248,7 @@ func (p *pipelineResource) Create(ctx context.Context, req resource.CreateReques
 	log.Printf("Successfully created pipeline with id '%s'.", response.PipelineCreate.Pipeline.Id)
 
 	setPipelineModel(&state, &response.PipelineCreate.Pipeline)
+	state.DefaultTeamId = plan.DefaultTeamId
 	teamsFromApi := response.PipelineCreate.Pipeline.GetTeams().Edges
 	teams := make([]*pipelineTeamModel, len(teamsFromApi))
 	for i, teamEdge := range teamsFromApi {
@@ -356,6 +368,11 @@ func (p *pipelineResource) Read(ctx context.Context, req resource.ReadRequest, r
 
 		setPipelineModel(&state, pipelineNode)
 		reconcileTeamPipelinesToState(&state, pipelineNode)
+		// pipeline default team is a terraform concept only so it takes some coercing
+		err = p.setDefaultTeamIfExists(ctx, &state, &pipelineNode.Teams.PipelineTeam)
+		if err != nil {
+			resp.Diagnostics.AddError("Error encountered trying to read teams for pipeline", err.Error())
+		}
 
 		if len(state.ProviderSettings) > 0 {
 			updatePipelineResourceExtraInfo(&state, extraInfo)
@@ -367,6 +384,43 @@ func (p *pipelineResource) Read(ctx context.Context, req resource.ReadRequest, r
 		resp.Diagnostics.AddWarning("Pipeline not found", "Removing pipeline from state")
 		resp.State.RemoveResource(ctx)
 	}
+}
+
+// setDefaultTeamIfExists will try to find a team for the pipeline to set as default
+// if we got here from a terraform import, we will have no idea what (if any) team to assign as the default, it
+// will need to be done manually by the user
+// however, if this is a normal read operation, we will have access to the previous state which is a reliable
+// source of default team ID. so if it is set in state, we need to ensure the permission level is correct,
+// otherwise it cannot be the default owner if it has lower permissions
+func (p *pipelineResource) setDefaultTeamIfExists(ctx context.Context, state *pipelineResourceModel, pipelineTeam *PipelineTeam) error {
+	if !state.DefaultTeamId.IsNull() {
+		var foundAccessLevel *PipelineAccessLevels
+		// loop over all attached teams to ensure its connected with the correct permissions
+		for _, team := range pipelineTeam.Edges {
+			if state.DefaultTeamId.ValueString() == team.Node.Team.Id {
+				foundAccessLevel = &team.Node.AccessLevel
+				break
+			}
+		}
+
+		// if the team was not found, and there are more to load, then load more and recurse to find a matching one
+		if foundAccessLevel == nil && pipelineTeam.PageInfo.HasNextPage {
+			resp, err := getPipelineTeams(ctx, p.client.genqlient, state.Slug.ValueString(), pipelineTeam.PageInfo.EndCursor)
+			if err != nil {
+				return err
+			}
+			pt := resp.Pipeline.Teams.PipelineTeam
+			return p.setDefaultTeamIfExists(ctx, state, &pt)
+		}
+
+		// after checking all teams, if a matching one was still not found or the permission was wrong, then update
+		// the state
+		if foundAccessLevel == nil || *foundAccessLevel != PipelineAccessLevelsManageBuildAndRead {
+			state.DefaultTeamId = types.StringUnknown()
+		}
+	}
+
+	return nil
 }
 
 func reconcileTeamPipelinesToState(model *pipelineResourceModel, data pipelineResponse) {
@@ -419,6 +473,10 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 			},
 			"cluster_id": schema.StringAttribute{
 				Optional: true,
+			},
+			"default_team_id": schema.StringAttribute{
+				MarkdownDescription: "The GraphQL ID of the team to use as the default owner of the pipeline.",
+				Optional:            true,
 			},
 			"default_branch": schema.StringAttribute{
 				Computed: true,
@@ -672,6 +730,41 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 
 	setPipelineModel(&state, &response.PipelineUpdate.Pipeline)
 
+	if plan.DefaultTeamId.IsNull() && !state.DefaultTeamId.IsNull() {
+		// if the plan is empty but was previously set, just remove the team
+		err = p.findAndRemoveTeam(ctx, state.DefaultTeamId.ValueString(), state.Slug.ValueString(), "")
+		if err != nil {
+			resp.Diagnostics.AddError("Could not remove default team", err.Error())
+			return
+		}
+
+		state.DefaultTeamId = types.StringNull()
+	} else if plan.DefaultTeamId.ValueString() != state.DefaultTeamId.ValueString() {
+		// If the planned default_team_id differs from the state, add the new one and remove the old one
+		var r *createTeamPipelineResponse
+		err := retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
+			var err error
+			r, err = createTeamPipeline(ctx, p.client.genqlient, plan.DefaultTeamId.ValueString(), state.Id.ValueString(), PipelineAccessLevelsManageBuildAndRead)
+			return retryContextError(err)
+		})
+
+		if err != nil {
+			resp.Diagnostics.AddError("Could not attach new default team to pipeline", err.Error())
+			return
+		}
+
+		// update default team in state
+		previousTeamID := state.DefaultTeamId.ValueString()
+		state.DefaultTeamId = types.StringValue(r.TeamPipelineCreate.TeamPipelineEdge.Node.Team.Id)
+
+		// remove the old team
+		err = p.findAndRemoveTeam(ctx, previousTeamID, state.Slug.ValueString(), "")
+		if err != nil {
+			resp.Diagnostics.AddError("Could not remove previous default team", err.Error())
+			return
+		}
+	}
+
 	// plan.Teams has what we want. state.Teams has what exists on the server. we need to make them match
 	err = p.reconcileTeamPipelinesToPlan(ctx, plan.Teams, state.Teams, &response.PipelineUpdate.Pipeline, response.PipelineUpdate.Pipeline.Id, timeouts)
 	if err != nil {
@@ -700,6 +793,33 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+}
+
+// findAndRemoveTeam will try to find a team and remove its access from the pipeline
+// we only know the teams ID but the API request to remove access requies the pipeline team connection ID, so we need to
+// query all connected teams and check their ID matches
+func (p *pipelineResource) findAndRemoveTeam(ctx context.Context, teamID string, pipelineSlug string, cursor string) error {
+	slug := fmt.Sprintf("%s/%s", p.client.organization, pipelineSlug)
+	teams, err := getPipelineTeams(ctx, p.client.genqlient, slug, cursor)
+	if err != nil {
+		return err
+	}
+
+	for _, team := range teams.Pipeline.Teams.Edges {
+		if team.Node.Team.Id == teamID {
+			_, err := deleteTeamPipeline(ctx, p.client.genqlient, team.Node.Id)
+			if err != nil {
+				return err
+			}
+			break
+		}
+	}
+
+	// if there are more teams, recurse again with the next page
+	if teams.Pipeline.Teams.PageInfo.HasNextPage {
+		return p.findAndRemoveTeam(ctx, teamID, pipelineSlug, teams.Pipeline.Teams.PageInfo.EndCursor)
+	}
+	return nil
 }
 
 func (*pipelineResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
