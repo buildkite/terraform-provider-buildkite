@@ -510,6 +510,25 @@ type PipelineTagInput struct {
 // GetLabel returns PipelineTagInput.Label, and is useful for accessing the field via an interface.
 func (v *PipelineTagInput) GetLabel() string { return v.Label }
 
+// PipelineTeam includes the GraphQL fields of TeamPipelineConnection requested by the fragment PipelineTeam.
+// The GraphQL type's documentation follows.
+//
+// A collection of TeamPipeline records
+type PipelineTeam struct {
+	PageInfo PipelineTeamPageInfo                `json:"pageInfo"`
+	Count    int                                 `json:"count"`
+	Edges    []PipelineTeamEdgesTeamPipelineEdge `json:"edges"`
+}
+
+// GetPageInfo returns PipelineTeam.PageInfo, and is useful for accessing the field via an interface.
+func (v *PipelineTeam) GetPageInfo() PipelineTeamPageInfo { return v.PageInfo }
+
+// GetCount returns PipelineTeam.Count, and is useful for accessing the field via an interface.
+func (v *PipelineTeam) GetCount() int { return v.Count }
+
+// GetEdges returns PipelineTeam.Edges, and is useful for accessing the field via an interface.
+func (v *PipelineTeam) GetEdges() []PipelineTeamEdgesTeamPipelineEdge { return v.Edges }
+
 // Used to assign teams to pipelines
 type PipelineTeamAssignmentInput struct {
 	// Used to assign teams to pipelines
@@ -523,6 +542,73 @@ func (v *PipelineTeamAssignmentInput) GetId() string { return v.Id }
 
 // GetAccessLevel returns PipelineTeamAssignmentInput.AccessLevel, and is useful for accessing the field via an interface.
 func (v *PipelineTeamAssignmentInput) GetAccessLevel() PipelineAccessLevels { return v.AccessLevel }
+
+// PipelineTeamEdgesTeamPipelineEdge includes the requested fields of the GraphQL type TeamPipelineEdge.
+type PipelineTeamEdgesTeamPipelineEdge struct {
+	Cursor string                                            `json:"cursor"`
+	Node   PipelineTeamEdgesTeamPipelineEdgeNodeTeamPipeline `json:"node"`
+}
+
+// GetCursor returns PipelineTeamEdgesTeamPipelineEdge.Cursor, and is useful for accessing the field via an interface.
+func (v *PipelineTeamEdgesTeamPipelineEdge) GetCursor() string { return v.Cursor }
+
+// GetNode returns PipelineTeamEdgesTeamPipelineEdge.Node, and is useful for accessing the field via an interface.
+func (v *PipelineTeamEdgesTeamPipelineEdge) GetNode() PipelineTeamEdgesTeamPipelineEdgeNodeTeamPipeline {
+	return v.Node
+}
+
+// PipelineTeamEdgesTeamPipelineEdgeNodeTeamPipeline includes the requested fields of the GraphQL type TeamPipeline.
+// The GraphQL type's documentation follows.
+//
+// An pipeline that's been assigned to a team
+type PipelineTeamEdgesTeamPipelineEdgeNodeTeamPipeline struct {
+	Id string `json:"id"`
+	// The access level users have to this pipeline
+	AccessLevel PipelineAccessLevels `json:"accessLevel"`
+	// The team associated with this team member
+	Team PipelineTeamEdgesTeamPipelineEdgeNodeTeamPipelineTeam `json:"team"`
+}
+
+// GetId returns PipelineTeamEdgesTeamPipelineEdgeNodeTeamPipeline.Id, and is useful for accessing the field via an interface.
+func (v *PipelineTeamEdgesTeamPipelineEdgeNodeTeamPipeline) GetId() string { return v.Id }
+
+// GetAccessLevel returns PipelineTeamEdgesTeamPipelineEdgeNodeTeamPipeline.AccessLevel, and is useful for accessing the field via an interface.
+func (v *PipelineTeamEdgesTeamPipelineEdgeNodeTeamPipeline) GetAccessLevel() PipelineAccessLevels {
+	return v.AccessLevel
+}
+
+// GetTeam returns PipelineTeamEdgesTeamPipelineEdgeNodeTeamPipeline.Team, and is useful for accessing the field via an interface.
+func (v *PipelineTeamEdgesTeamPipelineEdgeNodeTeamPipeline) GetTeam() PipelineTeamEdgesTeamPipelineEdgeNodeTeamPipelineTeam {
+	return v.Team
+}
+
+// PipelineTeamEdgesTeamPipelineEdgeNodeTeamPipelineTeam includes the requested fields of the GraphQL type Team.
+// The GraphQL type's documentation follows.
+//
+// An organization team
+type PipelineTeamEdgesTeamPipelineEdgeNodeTeamPipelineTeam struct {
+	Id string `json:"id"`
+}
+
+// GetId returns PipelineTeamEdgesTeamPipelineEdgeNodeTeamPipelineTeam.Id, and is useful for accessing the field via an interface.
+func (v *PipelineTeamEdgesTeamPipelineEdgeNodeTeamPipelineTeam) GetId() string { return v.Id }
+
+// PipelineTeamPageInfo includes the requested fields of the GraphQL type PageInfo.
+// The GraphQL type's documentation follows.
+//
+// Information about pagination in a connection.
+type PipelineTeamPageInfo struct {
+	// When paginating forwards, the cursor to continue.
+	EndCursor string `json:"endCursor"`
+	// When paginating forwards, are there more items?
+	HasNextPage bool `json:"hasNextPage"`
+}
+
+// GetEndCursor returns PipelineTeamPageInfo.EndCursor, and is useful for accessing the field via an interface.
+func (v *PipelineTeamPageInfo) GetEndCursor() string { return v.EndCursor }
+
+// GetHasNextPage returns PipelineTeamPageInfo.HasNextPage, and is useful for accessing the field via an interface.
+func (v *PipelineTeamPageInfo) GetHasNextPage() bool { return v.HasNextPage }
 
 // Autogenerated input type of PipelineUpdate
 type PipelineUpdateInput struct {
@@ -1472,6 +1558,18 @@ type __getPipelineScheduleInput struct {
 
 // GetId returns __getPipelineScheduleInput.Id, and is useful for accessing the field via an interface.
 func (v *__getPipelineScheduleInput) GetId() string { return v.Id }
+
+// __getPipelineTeamsInput is used internally by genqlient
+type __getPipelineTeamsInput struct {
+	Slug   string `json:"slug"`
+	Cursor string `json:"cursor"`
+}
+
+// GetSlug returns __getPipelineTeamsInput.Slug, and is useful for accessing the field via an interface.
+func (v *__getPipelineTeamsInput) GetSlug() string { return v.Slug }
+
+// GetCursor returns __getPipelineTeamsInput.Cursor, and is useful for accessing the field via an interface.
+func (v *__getPipelineTeamsInput) GetCursor() string { return v.Cursor }
 
 // __getTestSuiteInput is used internally by genqlient
 type __getTestSuiteInput struct {
@@ -3721,6 +3819,7 @@ func (v *getClusterQueuesResponse) GetOrganization() getClusterQueuesOrganizatio
 // getNodeNodeChangelog
 // getNodeNodeCluster
 // getNodeNodeClusterQueue
+// getNodeNodeClusterQueueToken
 // getNodeNodeClusterToken
 // getNodeNodeEmail
 // getNodeNodeJobEventAssigned
@@ -3736,6 +3835,7 @@ func (v *getClusterQueuesResponse) GetOrganization() getClusterQueuesOrganizatio
 // getNodeNodeJobTypeWait
 // getNodeNodeNotificationServiceSlack
 // getNodeNodeOrganization
+// getNodeNodeOrganizationBanner
 // getNodeNodeOrganizationInvitation
 // getNodeNodeOrganizationMember
 // getNodeNodePipeline
@@ -3779,6 +3879,7 @@ func (v *getNodeNodeBuild) implementsGraphQLInterfacegetNodeNode()              
 func (v *getNodeNodeChangelog) implementsGraphQLInterfacegetNodeNode()                      {}
 func (v *getNodeNodeCluster) implementsGraphQLInterfacegetNodeNode()                        {}
 func (v *getNodeNodeClusterQueue) implementsGraphQLInterfacegetNodeNode()                   {}
+func (v *getNodeNodeClusterQueueToken) implementsGraphQLInterfacegetNodeNode()              {}
 func (v *getNodeNodeClusterToken) implementsGraphQLInterfacegetNodeNode()                   {}
 func (v *getNodeNodeEmail) implementsGraphQLInterfacegetNodeNode()                          {}
 func (v *getNodeNodeJobEventAssigned) implementsGraphQLInterfacegetNodeNode()               {}
@@ -3794,6 +3895,7 @@ func (v *getNodeNodeJobTypeTrigger) implementsGraphQLInterfacegetNodeNode()     
 func (v *getNodeNodeJobTypeWait) implementsGraphQLInterfacegetNodeNode()                    {}
 func (v *getNodeNodeNotificationServiceSlack) implementsGraphQLInterfacegetNodeNode()       {}
 func (v *getNodeNodeOrganization) implementsGraphQLInterfacegetNodeNode()                   {}
+func (v *getNodeNodeOrganizationBanner) implementsGraphQLInterfacegetNodeNode()             {}
 func (v *getNodeNodeOrganizationInvitation) implementsGraphQLInterfacegetNodeNode()         {}
 func (v *getNodeNodeOrganizationMember) implementsGraphQLInterfacegetNodeNode()             {}
 func (v *getNodeNodePipeline) implementsGraphQLInterfacegetNodeNode()                       {}
@@ -3879,6 +3981,9 @@ func __unmarshalgetNodeNode(b []byte, v *getNodeNode) error {
 	case "ClusterQueue":
 		*v = new(getNodeNodeClusterQueue)
 		return json.Unmarshal(b, *v)
+	case "ClusterQueueToken":
+		*v = new(getNodeNodeClusterQueueToken)
+		return json.Unmarshal(b, *v)
 	case "ClusterToken":
 		*v = new(getNodeNodeClusterToken)
 		return json.Unmarshal(b, *v)
@@ -3923,6 +4028,9 @@ func __unmarshalgetNodeNode(b []byte, v *getNodeNode) error {
 		return json.Unmarshal(b, *v)
 	case "Organization":
 		*v = new(getNodeNodeOrganization)
+		return json.Unmarshal(b, *v)
+	case "OrganizationBanner":
+		*v = new(getNodeNodeOrganizationBanner)
 		return json.Unmarshal(b, *v)
 	case "OrganizationInvitation":
 		*v = new(getNodeNodeOrganizationInvitation)
@@ -4133,6 +4241,14 @@ func __marshalgetNodeNode(v *getNodeNode) ([]byte, error) {
 			*getNodeNodeClusterQueue
 		}{typename, v}
 		return json.Marshal(result)
+	case *getNodeNodeClusterQueueToken:
+		typename = "ClusterQueueToken"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getNodeNodeClusterQueueToken
+		}{typename, v}
+		return json.Marshal(result)
 	case *getNodeNodeClusterToken:
 		typename = "ClusterToken"
 
@@ -4251,6 +4367,14 @@ func __marshalgetNodeNode(v *getNodeNode) ([]byte, error) {
 		result := struct {
 			TypeName string `json:"__typename"`
 			*getNodeNodeOrganization
+		}{typename, v}
+		return json.Marshal(result)
+	case *getNodeNodeOrganizationBanner:
+		typename = "OrganizationBanner"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getNodeNodeOrganizationBanner
 		}{typename, v}
 		return json.Marshal(result)
 	case *getNodeNodeOrganizationInvitation:
@@ -4682,6 +4806,17 @@ type getNodeNodeClusterQueue struct {
 // GetTypename returns getNodeNodeClusterQueue.Typename, and is useful for accessing the field via an interface.
 func (v *getNodeNodeClusterQueue) GetTypename() string { return v.Typename }
 
+// getNodeNodeClusterQueueToken includes the requested fields of the GraphQL type ClusterQueueToken.
+// The GraphQL type's documentation follows.
+//
+// A token used to register an agent with a Buildkite cluster queue
+type getNodeNodeClusterQueueToken struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getNodeNodeClusterQueueToken.Typename, and is useful for accessing the field via an interface.
+func (v *getNodeNodeClusterQueueToken) GetTypename() string { return v.Typename }
+
 // getNodeNodeClusterToken includes the requested fields of the GraphQL type ClusterToken.
 // The GraphQL type's documentation follows.
 //
@@ -4846,6 +4981,17 @@ type getNodeNodeOrganization struct {
 
 // GetTypename returns getNodeNodeOrganization.Typename, and is useful for accessing the field via an interface.
 func (v *getNodeNodeOrganization) GetTypename() string { return v.Typename }
+
+// getNodeNodeOrganizationBanner includes the requested fields of the GraphQL type OrganizationBanner.
+// The GraphQL type's documentation follows.
+//
+// System banner of an organization
+type getNodeNodeOrganizationBanner struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getNodeNodeOrganizationBanner.Typename, and is useful for accessing the field via an interface.
+func (v *getNodeNodeOrganizationBanner) GetTypename() string { return v.Typename }
 
 // getNodeNodeOrganizationInvitation includes the requested fields of the GraphQL type OrganizationInvitation.
 // The GraphQL type's documentation follows.
@@ -5993,6 +6139,7 @@ func (v *getPipelineScheduleBySlugResponse) GetPipelineSchedule() getPipelineSch
 // getPipelineScheduleNodeChangelog
 // getPipelineScheduleNodeCluster
 // getPipelineScheduleNodeClusterQueue
+// getPipelineScheduleNodeClusterQueueToken
 // getPipelineScheduleNodeClusterToken
 // getPipelineScheduleNodeEmail
 // getPipelineScheduleNodeJobEventAssigned
@@ -6008,6 +6155,7 @@ func (v *getPipelineScheduleBySlugResponse) GetPipelineSchedule() getPipelineSch
 // getPipelineScheduleNodeJobTypeWait
 // getPipelineScheduleNodeNotificationServiceSlack
 // getPipelineScheduleNodeOrganization
+// getPipelineScheduleNodeOrganizationBanner
 // getPipelineScheduleNodeOrganizationInvitation
 // getPipelineScheduleNodeOrganizationMember
 // getPipelineScheduleNodePipeline
@@ -6058,6 +6206,8 @@ func (v *getPipelineScheduleNodeBuild) implementsGraphQLInterfacegetPipelineSche
 func (v *getPipelineScheduleNodeChangelog) implementsGraphQLInterfacegetPipelineScheduleNode()    {}
 func (v *getPipelineScheduleNodeCluster) implementsGraphQLInterfacegetPipelineScheduleNode()      {}
 func (v *getPipelineScheduleNodeClusterQueue) implementsGraphQLInterfacegetPipelineScheduleNode() {}
+func (v *getPipelineScheduleNodeClusterQueueToken) implementsGraphQLInterfacegetPipelineScheduleNode() {
+}
 func (v *getPipelineScheduleNodeClusterToken) implementsGraphQLInterfacegetPipelineScheduleNode() {}
 func (v *getPipelineScheduleNodeEmail) implementsGraphQLInterfacegetPipelineScheduleNode()        {}
 func (v *getPipelineScheduleNodeJobEventAssigned) implementsGraphQLInterfacegetPipelineScheduleNode() {
@@ -6081,6 +6231,8 @@ func (v *getPipelineScheduleNodeJobTypeWait) implementsGraphQLInterfacegetPipeli
 func (v *getPipelineScheduleNodeNotificationServiceSlack) implementsGraphQLInterfacegetPipelineScheduleNode() {
 }
 func (v *getPipelineScheduleNodeOrganization) implementsGraphQLInterfacegetPipelineScheduleNode() {}
+func (v *getPipelineScheduleNodeOrganizationBanner) implementsGraphQLInterfacegetPipelineScheduleNode() {
+}
 func (v *getPipelineScheduleNodeOrganizationInvitation) implementsGraphQLInterfacegetPipelineScheduleNode() {
 }
 func (v *getPipelineScheduleNodeOrganizationMember) implementsGraphQLInterfacegetPipelineScheduleNode() {
@@ -6173,6 +6325,9 @@ func __unmarshalgetPipelineScheduleNode(b []byte, v *getPipelineScheduleNode) er
 	case "ClusterQueue":
 		*v = new(getPipelineScheduleNodeClusterQueue)
 		return json.Unmarshal(b, *v)
+	case "ClusterQueueToken":
+		*v = new(getPipelineScheduleNodeClusterQueueToken)
+		return json.Unmarshal(b, *v)
 	case "ClusterToken":
 		*v = new(getPipelineScheduleNodeClusterToken)
 		return json.Unmarshal(b, *v)
@@ -6217,6 +6372,9 @@ func __unmarshalgetPipelineScheduleNode(b []byte, v *getPipelineScheduleNode) er
 		return json.Unmarshal(b, *v)
 	case "Organization":
 		*v = new(getPipelineScheduleNodeOrganization)
+		return json.Unmarshal(b, *v)
+	case "OrganizationBanner":
+		*v = new(getPipelineScheduleNodeOrganizationBanner)
 		return json.Unmarshal(b, *v)
 	case "OrganizationInvitation":
 		*v = new(getPipelineScheduleNodeOrganizationInvitation)
@@ -6423,6 +6581,14 @@ func __marshalgetPipelineScheduleNode(v *getPipelineScheduleNode) ([]byte, error
 			*getPipelineScheduleNodeClusterQueue
 		}{typename, v}
 		return json.Marshal(result)
+	case *getPipelineScheduleNodeClusterQueueToken:
+		typename = "ClusterQueueToken"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getPipelineScheduleNodeClusterQueueToken
+		}{typename, v}
+		return json.Marshal(result)
 	case *getPipelineScheduleNodeClusterToken:
 		typename = "ClusterToken"
 
@@ -6541,6 +6707,14 @@ func __marshalgetPipelineScheduleNode(v *getPipelineScheduleNode) ([]byte, error
 		result := struct {
 			TypeName string `json:"__typename"`
 			*getPipelineScheduleNodeOrganization
+		}{typename, v}
+		return json.Marshal(result)
+	case *getPipelineScheduleNodeOrganizationBanner:
+		typename = "OrganizationBanner"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getPipelineScheduleNodeOrganizationBanner
 		}{typename, v}
 		return json.Marshal(result)
 	case *getPipelineScheduleNodeOrganizationInvitation:
@@ -6877,6 +7051,17 @@ type getPipelineScheduleNodeClusterQueue struct {
 // GetTypename returns getPipelineScheduleNodeClusterQueue.Typename, and is useful for accessing the field via an interface.
 func (v *getPipelineScheduleNodeClusterQueue) GetTypename() string { return v.Typename }
 
+// getPipelineScheduleNodeClusterQueueToken includes the requested fields of the GraphQL type ClusterQueueToken.
+// The GraphQL type's documentation follows.
+//
+// A token used to register an agent with a Buildkite cluster queue
+type getPipelineScheduleNodeClusterQueueToken struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getPipelineScheduleNodeClusterQueueToken.Typename, and is useful for accessing the field via an interface.
+func (v *getPipelineScheduleNodeClusterQueueToken) GetTypename() string { return v.Typename }
+
 // getPipelineScheduleNodeClusterToken includes the requested fields of the GraphQL type ClusterToken.
 // The GraphQL type's documentation follows.
 //
@@ -7043,6 +7228,17 @@ type getPipelineScheduleNodeOrganization struct {
 
 // GetTypename returns getPipelineScheduleNodeOrganization.Typename, and is useful for accessing the field via an interface.
 func (v *getPipelineScheduleNodeOrganization) GetTypename() string { return v.Typename }
+
+// getPipelineScheduleNodeOrganizationBanner includes the requested fields of the GraphQL type OrganizationBanner.
+// The GraphQL type's documentation follows.
+//
+// System banner of an organization
+type getPipelineScheduleNodeOrganizationBanner struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getPipelineScheduleNodeOrganizationBanner.Typename, and is useful for accessing the field via an interface.
+func (v *getPipelineScheduleNodeOrganizationBanner) GetTypename() string { return v.Typename }
 
 // getPipelineScheduleNodeOrganizationInvitation includes the requested fields of the GraphQL type OrganizationInvitation.
 // The GraphQL type's documentation follows.
@@ -7415,6 +7611,102 @@ func (v *getPipelineScheduleResponse) __premarshalJSON() (*__premarshalgetPipeli
 	return &retval, nil
 }
 
+// getPipelineTeamsPipeline includes the requested fields of the GraphQL type Pipeline.
+// The GraphQL type's documentation follows.
+//
+// A pipeline
+type getPipelineTeamsPipeline struct {
+	// Teams associated with this pipeline
+	Teams getPipelineTeamsPipelineTeamsTeamPipelineConnection `json:"teams"`
+}
+
+// GetTeams returns getPipelineTeamsPipeline.Teams, and is useful for accessing the field via an interface.
+func (v *getPipelineTeamsPipeline) GetTeams() getPipelineTeamsPipelineTeamsTeamPipelineConnection {
+	return v.Teams
+}
+
+// getPipelineTeamsPipelineTeamsTeamPipelineConnection includes the requested fields of the GraphQL type TeamPipelineConnection.
+// The GraphQL type's documentation follows.
+//
+// A collection of TeamPipeline records
+type getPipelineTeamsPipelineTeamsTeamPipelineConnection struct {
+	PipelineTeam `json:"-"`
+}
+
+// GetPageInfo returns getPipelineTeamsPipelineTeamsTeamPipelineConnection.PageInfo, and is useful for accessing the field via an interface.
+func (v *getPipelineTeamsPipelineTeamsTeamPipelineConnection) GetPageInfo() PipelineTeamPageInfo {
+	return v.PipelineTeam.PageInfo
+}
+
+// GetCount returns getPipelineTeamsPipelineTeamsTeamPipelineConnection.Count, and is useful for accessing the field via an interface.
+func (v *getPipelineTeamsPipelineTeamsTeamPipelineConnection) GetCount() int {
+	return v.PipelineTeam.Count
+}
+
+// GetEdges returns getPipelineTeamsPipelineTeamsTeamPipelineConnection.Edges, and is useful for accessing the field via an interface.
+func (v *getPipelineTeamsPipelineTeamsTeamPipelineConnection) GetEdges() []PipelineTeamEdgesTeamPipelineEdge {
+	return v.PipelineTeam.Edges
+}
+
+func (v *getPipelineTeamsPipelineTeamsTeamPipelineConnection) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*getPipelineTeamsPipelineTeamsTeamPipelineConnection
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.getPipelineTeamsPipelineTeamsTeamPipelineConnection = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	err = json.Unmarshal(
+		b, &v.PipelineTeam)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+type __premarshalgetPipelineTeamsPipelineTeamsTeamPipelineConnection struct {
+	PageInfo PipelineTeamPageInfo `json:"pageInfo"`
+
+	Count int `json:"count"`
+
+	Edges []PipelineTeamEdgesTeamPipelineEdge `json:"edges"`
+}
+
+func (v *getPipelineTeamsPipelineTeamsTeamPipelineConnection) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *getPipelineTeamsPipelineTeamsTeamPipelineConnection) __premarshalJSON() (*__premarshalgetPipelineTeamsPipelineTeamsTeamPipelineConnection, error) {
+	var retval __premarshalgetPipelineTeamsPipelineTeamsTeamPipelineConnection
+
+	retval.PageInfo = v.PipelineTeam.PageInfo
+	retval.Count = v.PipelineTeam.Count
+	retval.Edges = v.PipelineTeam.Edges
+	return &retval, nil
+}
+
+// getPipelineTeamsResponse is returned by getPipelineTeams on success.
+type getPipelineTeamsResponse struct {
+	// Find a pipeline
+	Pipeline getPipelineTeamsPipeline `json:"pipeline"`
+}
+
+// GetPipeline returns getPipelineTeamsResponse.Pipeline, and is useful for accessing the field via an interface.
+func (v *getPipelineTeamsResponse) GetPipeline() getPipelineTeamsPipeline { return v.Pipeline }
+
 // getTestSuiteResponse is returned by getTestSuite on success.
 type getTestSuiteResponse struct {
 	// Fetches an object given its ID.
@@ -7718,6 +8010,17 @@ type getTestSuiteSuiteClusterQueue struct {
 // GetTypename returns getTestSuiteSuiteClusterQueue.Typename, and is useful for accessing the field via an interface.
 func (v *getTestSuiteSuiteClusterQueue) GetTypename() string { return v.Typename }
 
+// getTestSuiteSuiteClusterQueueToken includes the requested fields of the GraphQL type ClusterQueueToken.
+// The GraphQL type's documentation follows.
+//
+// A token used to register an agent with a Buildkite cluster queue
+type getTestSuiteSuiteClusterQueueToken struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getTestSuiteSuiteClusterQueueToken.Typename, and is useful for accessing the field via an interface.
+func (v *getTestSuiteSuiteClusterQueueToken) GetTypename() string { return v.Typename }
+
 // getTestSuiteSuiteClusterToken includes the requested fields of the GraphQL type ClusterToken.
 // The GraphQL type's documentation follows.
 //
@@ -7882,6 +8185,7 @@ func (v *getTestSuiteSuiteJobTypeWait) GetTypename() string { return v.Typename 
 // getTestSuiteSuiteChangelog
 // getTestSuiteSuiteCluster
 // getTestSuiteSuiteClusterQueue
+// getTestSuiteSuiteClusterQueueToken
 // getTestSuiteSuiteClusterToken
 // getTestSuiteSuiteEmail
 // getTestSuiteSuiteJobEventAssigned
@@ -7897,6 +8201,7 @@ func (v *getTestSuiteSuiteJobTypeWait) GetTypename() string { return v.Typename 
 // getTestSuiteSuiteJobTypeWait
 // getTestSuiteSuiteNotificationServiceSlack
 // getTestSuiteSuiteOrganization
+// getTestSuiteSuiteOrganizationBanner
 // getTestSuiteSuiteOrganizationInvitation
 // getTestSuiteSuiteOrganizationMember
 // getTestSuiteSuitePipeline
@@ -7941,6 +8246,7 @@ func (v *getTestSuiteSuiteBuild) implementsGraphQLInterfacegetTestSuiteSuiteNode
 func (v *getTestSuiteSuiteChangelog) implementsGraphQLInterfacegetTestSuiteSuiteNode()           {}
 func (v *getTestSuiteSuiteCluster) implementsGraphQLInterfacegetTestSuiteSuiteNode()             {}
 func (v *getTestSuiteSuiteClusterQueue) implementsGraphQLInterfacegetTestSuiteSuiteNode()        {}
+func (v *getTestSuiteSuiteClusterQueueToken) implementsGraphQLInterfacegetTestSuiteSuiteNode()   {}
 func (v *getTestSuiteSuiteClusterToken) implementsGraphQLInterfacegetTestSuiteSuiteNode()        {}
 func (v *getTestSuiteSuiteEmail) implementsGraphQLInterfacegetTestSuiteSuiteNode()               {}
 func (v *getTestSuiteSuiteJobEventAssigned) implementsGraphQLInterfacegetTestSuiteSuiteNode()    {}
@@ -7958,6 +8264,7 @@ func (v *getTestSuiteSuiteJobTypeWait) implementsGraphQLInterfacegetTestSuiteSui
 func (v *getTestSuiteSuiteNotificationServiceSlack) implementsGraphQLInterfacegetTestSuiteSuiteNode() {
 }
 func (v *getTestSuiteSuiteOrganization) implementsGraphQLInterfacegetTestSuiteSuiteNode()           {}
+func (v *getTestSuiteSuiteOrganizationBanner) implementsGraphQLInterfacegetTestSuiteSuiteNode()     {}
 func (v *getTestSuiteSuiteOrganizationInvitation) implementsGraphQLInterfacegetTestSuiteSuiteNode() {}
 func (v *getTestSuiteSuiteOrganizationMember) implementsGraphQLInterfacegetTestSuiteSuiteNode()     {}
 func (v *getTestSuiteSuitePipeline) implementsGraphQLInterfacegetTestSuiteSuiteNode()               {}
@@ -8044,6 +8351,9 @@ func __unmarshalgetTestSuiteSuiteNode(b []byte, v *getTestSuiteSuiteNode) error 
 	case "ClusterQueue":
 		*v = new(getTestSuiteSuiteClusterQueue)
 		return json.Unmarshal(b, *v)
+	case "ClusterQueueToken":
+		*v = new(getTestSuiteSuiteClusterQueueToken)
+		return json.Unmarshal(b, *v)
 	case "ClusterToken":
 		*v = new(getTestSuiteSuiteClusterToken)
 		return json.Unmarshal(b, *v)
@@ -8088,6 +8398,9 @@ func __unmarshalgetTestSuiteSuiteNode(b []byte, v *getTestSuiteSuiteNode) error 
 		return json.Unmarshal(b, *v)
 	case "Organization":
 		*v = new(getTestSuiteSuiteOrganization)
+		return json.Unmarshal(b, *v)
+	case "OrganizationBanner":
+		*v = new(getTestSuiteSuiteOrganizationBanner)
 		return json.Unmarshal(b, *v)
 	case "OrganizationInvitation":
 		*v = new(getTestSuiteSuiteOrganizationInvitation)
@@ -8294,6 +8607,14 @@ func __marshalgetTestSuiteSuiteNode(v *getTestSuiteSuiteNode) ([]byte, error) {
 			*getTestSuiteSuiteClusterQueue
 		}{typename, v}
 		return json.Marshal(result)
+	case *getTestSuiteSuiteClusterQueueToken:
+		typename = "ClusterQueueToken"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getTestSuiteSuiteClusterQueueToken
+		}{typename, v}
+		return json.Marshal(result)
 	case *getTestSuiteSuiteClusterToken:
 		typename = "ClusterToken"
 
@@ -8412,6 +8733,14 @@ func __marshalgetTestSuiteSuiteNode(v *getTestSuiteSuiteNode) ([]byte, error) {
 		result := struct {
 			TypeName string `json:"__typename"`
 			*getTestSuiteSuiteOrganization
+		}{typename, v}
+		return json.Marshal(result)
+	case *getTestSuiteSuiteOrganizationBanner:
+		typename = "OrganizationBanner"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getTestSuiteSuiteOrganizationBanner
 		}{typename, v}
 		return json.Marshal(result)
 	case *getTestSuiteSuiteOrganizationInvitation:
@@ -8571,6 +8900,17 @@ type getTestSuiteSuiteOrganization struct {
 
 // GetTypename returns getTestSuiteSuiteOrganization.Typename, and is useful for accessing the field via an interface.
 func (v *getTestSuiteSuiteOrganization) GetTypename() string { return v.Typename }
+
+// getTestSuiteSuiteOrganizationBanner includes the requested fields of the GraphQL type OrganizationBanner.
+// The GraphQL type's documentation follows.
+//
+// System banner of an organization
+type getTestSuiteSuiteOrganizationBanner struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getTestSuiteSuiteOrganizationBanner.Typename, and is useful for accessing the field via an interface.
+func (v *getTestSuiteSuiteOrganizationBanner) GetTypename() string { return v.Typename }
 
 // getTestSuiteSuiteOrganizationInvitation includes the requested fields of the GraphQL type OrganizationInvitation.
 // The GraphQL type's documentation follows.
@@ -11756,6 +12096,62 @@ func getPipelineScheduleBySlug(
 	var err error
 
 	var data getPipelineScheduleBySlugResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		ctx,
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
+// The query or mutation executed by getPipelineTeams.
+const getPipelineTeams_Operation = `
+query getPipelineTeams ($slug: ID!, $cursor: String) {
+	pipeline(slug: $slug) {
+		teams(order: NAME, first: 50, after: $cursor) {
+			... PipelineTeam
+		}
+	}
+}
+fragment PipelineTeam on TeamPipelineConnection {
+	pageInfo {
+		endCursor
+		hasNextPage
+	}
+	count
+	edges {
+		cursor
+		node {
+			id
+			accessLevel
+			team {
+				id
+			}
+		}
+	}
+}
+`
+
+func getPipelineTeams(
+	ctx context.Context,
+	client graphql.Client,
+	slug string,
+	cursor string,
+) (*getPipelineTeamsResponse, error) {
+	req := &graphql.Request{
+		OpName: "getPipelineTeams",
+		Query:  getPipelineTeams_Operation,
+		Variables: &__getPipelineTeamsInput{
+			Slug:   slug,
+			Cursor: cursor,
+		},
+	}
+	var err error
+
+	var data getPipelineTeamsResponse
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(

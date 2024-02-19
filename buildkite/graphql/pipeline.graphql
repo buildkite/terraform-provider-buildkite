@@ -50,9 +50,35 @@ fragment PipelineValues on Pipeline {
     webhookURL
 }
 
+fragment PipelineTeam on TeamPipelineConnection {
+    pageInfo {
+        endCursor
+        hasNextPage
+    }
+    count
+    edges {
+        cursor
+        node {
+            id
+            accessLevel
+            team {
+                id
+            }
+        }
+    }
+}
+
 query getPipeline($slug: ID!) {
     pipeline(slug: $slug) {
         ...PipelineValues
+    }
+}
+
+query getPipelineTeams($slug: ID!, $cursor: String) {
+    pipeline(slug: $slug) {
+        teams(order: NAME, first: 50, after: $cursor) {
+            ...PipelineTeam
+        }
     }
 }
 
