@@ -786,8 +786,15 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 
 	setPipelineModel(&state, &response.PipelineUpdate.Pipeline)
 
-	// If the planned default_team_id differs from the state, add the new one and remove the old one
-	if plan.DefaultTeamId.ValueString() != state.DefaultTeamId.ValueString() {
+	if plan.DefaultTeamId.IsNull() && !state.DefaultTeamId.IsNull() {
+		// if the plan is empty but was previously set, just remove the team
+		err = p.findAndRemoveTeam(ctx, state.DefaultTeamId.ValueString(), state.Slug.ValueString(), "")
+		if err != nil {
+			resp.Diagnostics.AddError("Could not remove default team", err.Error())
+			return
+		}
+	} else if plan.DefaultTeamId.ValueString() != state.DefaultTeamId.ValueString() {
+		// If the planned default_team_id differs from the state, add the new one and remove the old one
 		var r *createTeamPipelineResponse
 		err := retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
 			var err error
@@ -853,6 +860,7 @@ func (p *pipelineResource) findAndRemoveTeam(ctx context.Context, teamID string,
 		}
 	}
 
+	// if there are more teams, recurse again with the next page
 	if teams.Pipeline.Teams.PageInfo.HasNextPage {
 		return p.findAndRemoveTeam(ctx, teamID, pipelineSlug, teams.Pipeline.Teams.PageInfo.EndCursor)
 	}
