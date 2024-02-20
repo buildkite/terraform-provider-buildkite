@@ -1,5 +1,9 @@
 # Changelog
 
+## [v1.4.1](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.4.0...v1.4.1)
+
+- Update state upgrade functionality to match v0.27.1 [[PR #483](https://github.com/buildkite/terraform-provider-buildkite/pull/483)] @jradtilbrook
+
 ## [v1.4.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.3.0...v1.4.0)
 
 - SUP-1696: Add golangci-lint[[PR #468](https://github.com/buildkite/terraform-provider-buildkite/pull/468)]@lizrabuya
