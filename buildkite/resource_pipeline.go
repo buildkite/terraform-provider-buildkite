@@ -250,14 +250,18 @@ func (p *pipelineResource) Create(ctx context.Context, req resource.CreateReques
 	setPipelineModel(&state, &response.PipelineCreate.Pipeline)
 	state.DefaultTeamId = plan.DefaultTeamId
 	teamsFromApi := response.PipelineCreate.Pipeline.GetTeams().Edges
-	teams := make([]*pipelineTeamModel, len(teamsFromApi))
-	for i, teamEdge := range teamsFromApi {
-		teams[i] = &pipelineTeamModel{
+	var teams []*pipelineTeamModel
+	for _, teamEdge := range teamsFromApi {
+		// dont include the default team here
+		if plan.DefaultTeamId.ValueString() == teamEdge.Node.Team.Id {
+			continue
+		}
+		teams = append(teams, &pipelineTeamModel{
 			Slug:           types.StringValue(teamEdge.Node.Team.Slug),
 			AccessLevel:    types.StringValue(string(teamEdge.Node.AccessLevel)),
 			TeamId:         types.StringValue(teamEdge.Node.Team.Id),
 			PipelineTeamId: types.StringValue(teamEdge.Node.Id),
-		}
+		})
 	}
 	state.Teams = teams
 
@@ -367,12 +371,12 @@ func (p *pipelineResource) Read(ctx context.Context, req resource.ReadRequest, r
 		}
 
 		setPipelineModel(&state, pipelineNode)
-		reconcileTeamPipelinesToState(&state, pipelineNode)
 		// pipeline default team is a terraform concept only so it takes some coercing
 		err = p.setDefaultTeamIfExists(ctx, &state, &pipelineNode.Teams.PipelineTeam)
 		if err != nil {
 			resp.Diagnostics.AddError("Error encountered trying to read teams for pipeline", err.Error())
 		}
+		reconcileTeamPipelinesToState(&state, pipelineNode)
 
 		if len(state.ProviderSettings) > 0 {
 			updatePipelineResourceExtraInfo(&state, extraInfo)
@@ -425,10 +429,11 @@ func (p *pipelineResource) setDefaultTeamIfExists(ctx context.Context, state *pi
 
 func reconcileTeamPipelinesToState(model *pipelineResourceModel, data pipelineResponse) {
 	var stateTeams []*pipelineTeamModel
+	defaultTeam := model.DefaultTeamId.ValueString()
 
 	for _, team := range model.Teams {
 		for _, teamEdge := range data.GetTeams().Edges {
-			if team.Slug.ValueString() == string(teamEdge.Node.Team.Slug) {
+			if team.Slug.ValueString() == string(teamEdge.Node.Team.Slug) && teamEdge.Node.Team.Id != defaultTeam {
 				// make sure we update all values in state for users migrating from an old version
 				team.TeamId = types.StringValue(teamEdge.Node.Team.Id)
 				team.PipelineTeamId = types.StringValue(teamEdge.Node.Id)
@@ -762,6 +767,14 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 		if err != nil {
 			resp.Diagnostics.AddError("Could not remove previous default team", err.Error())
 			return
+		}
+	}
+
+	// ensure the default team id is not in plan or state teams
+	for i, team := range state.Teams {
+		if team.TeamId.ValueString() == state.DefaultTeamId.ValueString() {
+			state.Teams = append(state.Teams[:i], state.Teams[i+1:]...)
+			break
 		}
 	}
 
