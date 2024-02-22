@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- SUP-1851 Get pipeline webhook from REST API [[PR #485](https://github.com/buildkite/terraform-provider-buildkite/pull/485)] @jradtilbrook
+
 ## [v1.4.1](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.4.0...v1.4.1)
 
 - Update state upgrade functionality to match v0.27.1 [[PR #483](https://github.com/buildkite/terraform-provider-buildkite/pull/483)] @jradtilbrook
