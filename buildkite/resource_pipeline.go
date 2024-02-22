@@ -350,6 +350,13 @@ func (p *pipelineResource) Read(ctx context.Context, req resource.ReadRequest, r
 
 		setPipelineModel(&state, pipelineNode)
 
+		// set the webhook url if its not empty
+		// the value can be empty if not using a token with appropriate permissions. in this case, we just leave the
+		// state value alone assuming it was previously set correctly
+		if extraInfo.Provider.WebhookUrl != "" {
+			state.WebhookUrl = types.StringValue(extraInfo.Provider.WebhookUrl)
+		}
+
 		if state.ProviderSettings != nil {
 			updatePipelineResourceExtraInfo(&state, extraInfo)
 		}
@@ -829,6 +836,12 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 		}
 
 		updatePipelineResourceExtraInfo(&state, &pipelineExtraInfo)
+		// set the webhook url if its not empty
+		// the value can be empty if not using a token with appropriate permissions. in this case, we just leave the
+		// state value alone assuming it was previously set correctly
+		if pipelineExtraInfo.Provider.WebhookUrl != "" {
+			state.WebhookUrl = types.StringValue(pipelineExtraInfo.Provider.WebhookUrl)
+		}
 	} else {
 		// no provider_settings provided, but we still need to read in the badge url
 		extraInfo, err := getPipelineExtraInfo(ctx, p.client, response.PipelineUpdate.Pipeline.Slug, timeouts)
@@ -837,6 +850,12 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 			return
 		}
 		state.BadgeUrl = types.StringValue(extraInfo.BadgeUrl)
+		// set the webhook url if its not empty
+		// the value can be empty if not using a token with appropriate permissions. in this case, we just leave the
+		// state value alone assuming it was previously set correctly
+		if extraInfo.Provider.WebhookUrl != "" {
+			state.WebhookUrl = types.StringValue(extraInfo.Provider.WebhookUrl)
+		}
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
@@ -914,7 +933,8 @@ func setPipelineModel(model *pipelineResourceModel, data pipelineResponse) {
 type PipelineExtraInfo struct {
 	BadgeUrl string `json:"badge_url"`
 	Provider struct {
-		Settings PipelineExtraSettings `json:"settings"`
+		WebhookUrl string                `json:"webhook_url"`
+		Settings   PipelineExtraSettings `json:"settings"`
 	} `json:"provider"`
 }
 type PipelineExtraSettings struct {
