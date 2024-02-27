@@ -53,7 +53,7 @@ func (t *teamDatasource) Schema(ctx context.Context, req datasource.SchemaReques
 		`),
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
-				MarkdownDescription: "The ID of the team to find. Use either ID or slug.",
+				MarkdownDescription: "The GraphQL ID of the team to find.",
 				Optional:            true,
 				Computed:            true,
 				Validators: []validator.String{
@@ -68,7 +68,7 @@ func (t *teamDatasource) Schema(ctx context.Context, req datasource.SchemaReques
 				Computed:            true,
 			},
 			"slug": schema.StringAttribute{
-				MarkdownDescription: "The slug of the team to find. Use either ID or slug.",
+				MarkdownDescription: "The slug of the team to find.",
 				Computed:            true,
 				Optional:            true,
 			},

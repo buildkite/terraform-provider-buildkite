@@ -15,8 +15,12 @@ Use this data source to retrieve a team by slug or id. You can find out more abo
 ## Example Usage
 
 ```terraform
+data "buildkite_team" "team-dev" {
+  id = buildkite_team.team_dev.id
+}
+
 data "buildkite_team" "team" {
-  id = "Everyone"
+  slug = "Everyone"
 }
 ```
 
@@ -25,8 +29,8 @@ data "buildkite_team" "team" {
 
 ### Optional
 
-- `id` (String) The ID of the team to find. Use either ID or slug.
-- `slug` (String) The slug of the team to find. Use either ID or slug.
+- `id` (String) The GraphQL ID of the team to find.
+- `slug` (String) The slug of the team to find.
 
 ### Read-Only
 
