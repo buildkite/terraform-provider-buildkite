@@ -15,7 +15,7 @@ Use this data source to retrieve a team by slug or id. You can find out more abo
 ## Example Usage
 
 ```terraform
-data "buildkite_team" "team-dev" {
+data "buildkite_team" "team_dev" {
   id = buildkite_team.team_dev.id
 }
 

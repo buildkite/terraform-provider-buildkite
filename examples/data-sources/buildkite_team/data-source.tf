@@ -1,4 +1,4 @@
-data "buildkite_team" "team-dev" {
+data "buildkite_team" "team_dev" {
   id = buildkite_team.team_dev.id
 }
 
