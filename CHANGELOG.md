@@ -1,5 +1,8 @@
 # Changelog
 
+## Unreleased
+- SUP-1877: Team datasource docs/example tweaks [[PR #487](https://github.com/buildkite/terraform-provider-buildkite/pull/487)] @james2791
+
 ## [v1.4.1](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.4.0...v1.4.1)
 
 - Update state upgrade functionality to match v0.27.1 [[PR #483](https://github.com/buildkite/terraform-provider-buildkite/pull/483)] @jradtilbrook
