@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- SUP-1851 Get pipeline webhook from REST API [[PR #485](https://github.com/buildkite/terraform-provider-buildkite/pull/485)] @jradtilbrook
 - SUP-1877: Team datasource docs/example tweaks [[PR #487](https://github.com/buildkite/terraform-provider-buildkite/pull/487)] @james2791
 
 ## [v1.4.1](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.4.0...v1.4.1)
