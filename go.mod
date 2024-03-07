@@ -6,7 +6,7 @@ toolchain go1.21.0
 
 require (
 	github.com/Khan/genqlient v0.6.0
-	github.com/buildkite/go-pipeline v0.3.1
+	github.com/buildkite/go-pipeline v0.4.1
 	github.com/hashicorp/terraform-plugin-framework v1.3.5
 	github.com/hashicorp/terraform-plugin-framework-validators v0.12.0
 	github.com/hashicorp/terraform-plugin-go v0.19.1
