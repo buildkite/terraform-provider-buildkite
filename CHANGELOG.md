@@ -1,6 +1,10 @@
 # Changelog
 
-## Unreleased
+## [v1.5.1](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.5.0...v1.5.1)
+- Update go-pipeline version to fix `wait:` step parsing [[PR #492](http://github.com/buildkite/terraform-provider-buildkite/pull/492)] @mcncl
+
+## [v1.5.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.4.1...v1.5.0)
+- SUP-1851 Get pipeline webhook from REST API [[PR #485](https://github.com/buildkite/terraform-provider-buildkite/pull/485)] @jradtilbrook
 - SUP-1877: Team datasource docs/example tweaks [[PR #487](https://github.com/buildkite/terraform-provider-buildkite/pull/487)] @james2791
 
 ## [v1.4.1](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.4.0...v1.4.1)
