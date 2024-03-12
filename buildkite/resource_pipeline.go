@@ -593,19 +593,21 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 								- %s
 								- %s
 
-								-> %s is only valid if the pipeline uses a GitHub repository.
+								-> %s is only valid if the pipeline uses a GitHub repository. 
+								-> If not set, the default value is %s and other provider settings defaults are applied.
 						`,
 							"`code` will create builds when code is pushed to GitHub.",
 							"`deployment` will create builds when a deployment is created in GitHub.",
 							"`fork` will create builds when the GitHub repository is forked.",
 							"`none` will not create any builds based on GitHub activity.",
 							"`trigger_mode`",
+							"`code`",
 						),
 					},
 					"build_pull_requests": schema.BoolAttribute{
 						Optional:            true,
 						Computed:            true,
-						MarkdownDescription: "Whether to create builds for commits that are part of a pull request.",
+						MarkdownDescription: "Whether to create builds for commits that are part of a pull request. Defaults to `true` when `trigger_mode` is `code`.",
 					},
 					"pull_request_branch_filter_enabled": schema.BoolAttribute{
 						Computed:            true,
@@ -625,7 +627,7 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 					"skip_pull_request_builds_for_existing_commits": schema.BoolAttribute{
 						Optional:            true,
 						Computed:            true,
-						MarkdownDescription: "Whether to skip creating a new build for a pull request if an existing build for the commit and branch already exists.",
+						MarkdownDescription: "Whether to skip creating a new build for a pull request if an existing build for the commit and branch already exists.  Defaults to `true` when `trigger_mode` is set to `code`.",
 					},
 					"build_pull_request_ready_for_review": schema.BoolAttribute{
 						Computed:            true,
@@ -651,7 +653,7 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 					"build_branches": schema.BoolAttribute{
 						Optional:            true,
 						Computed:            true,
-						MarkdownDescription: "Whether to create builds when branches are pushed.",
+						MarkdownDescription: "Whether to create builds when branches are pushed. Defaults to `true` when `trigger_mode` is `code`.",
 					},
 					"build_tags": schema.BoolAttribute{
 						Computed:            true,
@@ -677,7 +679,7 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 					"publish_commit_status": schema.BoolAttribute{
 						Optional:            true,
 						Computed:            true,
-						MarkdownDescription: "Whether to update the status of commits in Bitbucket or GitHub.",
+						MarkdownDescription: "Whether to update the status of commits in Bitbucket or GitHub. Defaults to `true` when `trigger_mode` is set to `code`.",
 					},
 					"publish_blocked_as_pending": schema.BoolAttribute{
 						Computed: true,

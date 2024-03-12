@@ -80,11 +80,11 @@ resource "buildkite_pipeline" "pipeline" {
 
 Optional:
 
-- `build_branches` (Boolean) Whether to create builds when branches are pushed. Defaults to `true` when `trigger_mode` is set to `code`.
+- `build_branches` (Boolean) Whether to create builds when branches are pushed. Defaults to `true` when `trigger_mode` is `code`.
 - `build_pull_request_forks` (Boolean) Whether to create builds for pull requests from third-party forks.
 - `build_pull_request_labels_changed` (Boolean) Whether to create builds for pull requests when labels are added or removed.
 - `build_pull_request_ready_for_review` (Boolean) Whether to create a build when a pull request changes to "Ready for review".
-- `build_pull_requests` (Boolean) Whether to create builds for commits that are part of a pull request. Defaults to `true` when `trigger_mode` is set to `code`.
+- `build_pull_requests` (Boolean) Whether to create builds for commits that are part of a pull request. Defaults to `true` when `trigger_mode` is `code`.
 - `build_tags` (Boolean) Whether to create builds when tags are pushed.
 - `cancel_deleted_branch_builds` (Boolean) Automatically cancel running builds for a branch if the branch is deleted.
 - `filter_condition` (String) The condition to evaluate when deciding if a build should run. More details available in [the documentation](https://buildkite.com/docs/pipelines/conditionals#conditionals-in-pipelines).
@@ -97,7 +97,7 @@ Optional:
 - `pull_request_branch_filter_enabled` (Boolean) Filter pull request builds.
 - `separate_pull_request_statuses` (Boolean) Whether to create a separate status for pull request builds, allowing you to require a passing pull request build in your [required status checks](https://help.github.com/en/articles/enabling-required-status-checks) in GitHub.
 - `skip_builds_for_existing_commits` (Boolean) Whether to skip creating a new build if an existing build for the commit and branch already exists. This option is only valid if the pipeline uses a GitHub repository.
-- `skip_pull_request_builds_for_existing_commits` (Boolean) Whether to skip creating a new build for a pull request if an existing build for the commit and branch already exists. Defaults to `true` when `trigger_mode` is set to `code`.
+- `skip_pull_request_builds_for_existing_commits` (Boolean) Whether to skip creating a new build for a pull request if an existing build for the commit and branch already exists.  Defaults to `true` when `trigger_mode` is set to `code`.
 - `trigger_mode` (String) What type of event to trigger builds on. Must be one of:
 	- `code` will create builds when code is pushed to GitHub.
 	- `deployment` will create builds when a deployment is created in GitHub.
@@ -105,6 +105,7 @@ Optional:
 	- `none` will not create any builds based on GitHub activity.
 
 	-> `trigger_mode` is only valid if the pipeline uses a GitHub repository. 
+	-> If not set, the default value is `code` and other provider settings defaults are applied.
 
 ## Import
 
