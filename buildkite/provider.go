@@ -13,6 +13,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
 	"github.com/hashicorp/terraform-plugin-framework/provider/schema"
+	pluginSchema "github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -141,6 +143,40 @@ func (tf *terraformProvider) Resources(context.Context) []func() resource.Resour
 		newTestSuiteResource,
 		newTestSuiteTeamResource,
 	}
+}
+
+func Provider() *pluginSchema.Provider {
+	provider := &pluginSchema.Provider{
+		Schema: map[string]*pluginSchema.Schema{
+			"organization": {
+				Type:        pluginSchema.TypeString,
+				Optional:    true,
+				Description: "The Buildkite organization slug. This can be found on the [settings](https://buildkite.com/organizations/~/settings) page. If not provided, the value is taken from the `BUILDKITE_ORGANIZATION_SLUG` environment variable.",
+			},
+			"api_token": {
+				Type:        pluginSchema.TypeString,
+				Optional:    true,
+				Sensitive:   true,
+				Description: "API token with GraphQL access and `write_pipelines`, `read_pipelines` and `write_suites` REST API scopes. You can generate a token from [your settings page](https://buildkite.com/user/api-access-tokens/new?description=terraform&scopes[]=write_pipelines&scopes[]=write_suites&scopes[]=read_pipelines&scopes[]=graphql). If not provided, the value is taken from the `BUILDKITE_API_TOKEN` environment variable.",
+			},
+			"graphql_url": {
+				Type:        pluginSchema.TypeString,
+				Optional:    true,
+				Description: "Base URL for the GraphQL API to use. If not provided, the value is taken from the `BUILDKITE_GRAPHQL_URL` environment variable.",
+			},
+			"rest_url": {
+				Type:        pluginSchema.TypeString,
+				Optional:    true,
+				Description: "Base URL for the REST API to use. If not provided, the value is taken from the `BUILDKITE_REST_URL` environment variable.",
+			},
+			"archive_pipeline_on_delete": {
+				Type:        pluginSchema.TypeBool,
+				Optional:    true,
+				Description: "Enable this to archive pipelines when destroying the resource. This is opposed to completely deleting pipelines.",
+			},
+		}
+	}
+	return provider
 }
 
 func (*terraformProvider) Schema(ctx context.Context, req provider.SchemaRequest, resp *provider.SchemaResponse) {
