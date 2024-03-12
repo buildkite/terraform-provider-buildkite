@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Update docs with default values for `provider_settings` attributes [[PR #494](https://github.com/buildkite/terraform-provider-buildkite/pull/494)] @lizrabuya
+
 ## [v1.5.1](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.5.0...v1.5.1)
 - Update go-pipeline version to fix `wait:` step parsing [[PR #492](http://github.com/buildkite/terraform-provider-buildkite/pull/492)] @mcncl
 
