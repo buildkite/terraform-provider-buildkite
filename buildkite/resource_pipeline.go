@@ -607,7 +607,7 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 					"build_pull_requests": schema.BoolAttribute{
 						Optional:            true,
 						Computed:            true,
-						MarkdownDescription: "Whether to create builds for commits that are part of a pull request. Defaults to `true` when `trigger_mode` is `code`.",
+						MarkdownDescription: "Whether to create builds for commits that are part of a pull request. Defaults to `true` when `trigger_mode` is set to `code`.",
 					},
 					"pull_request_branch_filter_enabled": schema.BoolAttribute{
 						Computed:            true,
@@ -653,7 +653,7 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 					"build_branches": schema.BoolAttribute{
 						Optional:            true,
 						Computed:            true,
-						MarkdownDescription: "Whether to create builds when branches are pushed. Defaults to `true` when `trigger_mode` is `code`.",
+						MarkdownDescription: "Whether to create builds when branches are pushed. Defaults to `true` when `trigger_mode` is set to `code`.",
 					},
 					"build_tags": schema.BoolAttribute{
 						Computed:            true,
