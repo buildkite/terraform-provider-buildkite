@@ -3,6 +3,8 @@
 ## [v1.5.2](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.5.1...v1.5.2)
 
 - Update docs with default values for `provider_settings` attributes [[PR #494](https://github.com/buildkite/terraform-provider-buildkite/pull/494)] @lizrabuya
+- Bump github.com/lestrrat-go/jwx/v2 from 2.0.19 to 2.0.21 [[PR #495](https://github.com/buildkite/terraform-provider-buildkite/pull/495)] @dependabot
+- Bump google.golang.org/protobuf from 1.31.0 to 1.33.0 [[PR #498](https://github.com/buildkite/terraform-provider-buildkite/pull/498)] @dependabot
 
 ## [v1.5.1](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.5.0...v1.5.1)
 - Update go-pipeline version to fix `wait:` step parsing [[PR #492](http://github.com/buildkite/terraform-provider-buildkite/pull/492)] @mcncl
