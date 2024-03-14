@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## [v1.5.2](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.5.1...v1.5.2)
 
 - Update docs with default values for `provider_settings` attributes [[PR #494](https://github.com/buildkite/terraform-provider-buildkite/pull/494)] @lizrabuya
 
