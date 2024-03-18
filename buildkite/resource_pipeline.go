@@ -725,8 +725,8 @@ func (p *pipelineResource) ModifyPlan(ctx context.Context, req resource.ModifyPl
 		req.Plan.GetAttribute(ctx, path.Root("pipeline_template_id"), &template)
 		req.Plan.GetAttribute(ctx, path.Root("steps"), &steps)
 
-		// Set default steps only if there is no template oe defined steps
-		if template.IsNull() && (steps.IsUnknown() || steps.IsNull()) {
+		// Set default steps only if there is no template or defined steps
+		if template.IsNull() && steps.IsNull() {
 			resp.Diagnostics.Append(resp.Plan.SetAttribute(ctx, path.Root("steps"), defaultSteps)...)
 			return
 		}
