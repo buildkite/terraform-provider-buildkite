@@ -725,7 +725,7 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 							resource "buildkite_pipeline" "pipeline" {
 								name = "%s"
 								repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
-								steps = data.buildkite_signed_pipeline_steps.my_signed_steps.signed_steps
+								steps = data.buildkite_signed_pipeline_steps.my_signed_steps.steps
 							}
 						`,
 						repository,
