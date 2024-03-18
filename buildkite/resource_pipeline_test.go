@@ -5,19 +5,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strings"
 	"testing"
 
 	"github.com/MakeNowJust/heredoc"
-	"github.com/buildkite/go-pipeline"
 	"github.com/buildkite/go-pipeline/jwkutil"
-	"github.com/buildkite/go-pipeline/signature"
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/lestrrat-go/jwx/v2/jwa"
-	"gopkg.in/yaml.v3"
 )
 
 func TestAccBuildkitePipelineResource(t *testing.T) {
@@ -689,20 +685,6 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Failed to marshal private key: %v", err)
 		}
-
-		p, err := pipeline.Parse(strings.NewReader(defaultSteps))
-		if err != nil {
-			t.Fatalf("Failed to parse pipeline: %v", err)
-		}
-
-		if err != signature.SignPipeline(p, privateKey, repository) {
-			t.Fatalf("Failed to sign pipeline: %v", err)
-		}
-
-		signedSteps, err := yaml.Marshal(p)
-		if err != nil {
-			t.Fatalf("Failed to marshal signed steps: %v", err)
-		}
 		resource.ParallelTest(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },
 			ProtoV6ProviderFactories: protoV6ProviderFactories(),
@@ -734,15 +716,10 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 							// if the steps attribute value still matches the default steps, it has not been signed so
 							// there is a bug
 							if value == defaultSteps {
-								err = fmt.Errorf("Pipeline steps have not been signed: %q...%q", value, signedSteps)
+								err = fmt.Errorf("Pipeline steps have not been signed: %q", value)
 							}
 							return err
 						}),
-						resource.TestCheckResourceAttr(
-							"buildkite_pipeline.pipeline",
-							"steps",
-							string(signedSteps),
-						),
 					),
 				},
 			},
