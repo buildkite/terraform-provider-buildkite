@@ -728,11 +728,7 @@ func (p *pipelineResource) ModifyPlan(ctx context.Context, req resource.ModifyPl
 		// Set default steps only if there is no template or defined steps
 		if template.IsNull() && steps.IsNull() {
 			resp.Diagnostics.Append(resp.Plan.SetAttribute(ctx, path.Root("steps"), defaultSteps)...)
-			return
 		}
-	} else {
-		// Do nothing on other plan operations (update, delete)
-		return
 	}
 }
 
