@@ -734,7 +734,7 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 							// if the steps attribute value still matches the default steps, it has not been signed so
 							// there is a bug
 							if value == defaultSteps {
-								err = errors.New(fmt.Sprintf("Pipeline steps have not been signed: %q...%q", value, signedSteps))
+								err = fmt.Errorf("Pipeline steps have not been signed: %q...%q", value, signedSteps)
 							}
 							return err
 						}),
