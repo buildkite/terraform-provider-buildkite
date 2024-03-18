@@ -675,12 +675,6 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 
 		pipelineName := acctest.RandString(12)
 
-		steps := heredoc.Doc(`
-			steps:
-			- label: ":pipeline:"
-			  command: buildkite-agent pipeline upload
-		`)
-
 		privateJWKS, _, err := jwkutil.NewKeyPair(jwksKeyID, jwa.EdDSA)
 		if err != nil {
 			t.Fatalf("Failed to generate key pair: %v", err)
@@ -696,7 +690,7 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 			t.Fatalf("Failed to marshal private key: %v", err)
 		}
 
-		p, err := pipeline.Parse(strings.NewReader(steps))
+		p, err := pipeline.Parse(strings.NewReader(defaultSteps))
 		if err != nil {
 			t.Fatalf("Failed to parse pipeline: %v", err)
 		}
@@ -731,10 +725,19 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 						repository,
 						jwks,
 						jwksKeyID,
-						steps,
+						defaultSteps,
 						pipelineName,
 					),
 					Check: resource.ComposeAggregateTestCheckFunc(
+						resource.TestCheckResourceAttrWith("buildkite_pipeline.pipeline", "steps", func(value string) error {
+							var err error
+							// if the steps attribute value still matches the default steps, it has not been signed so
+							// there is a bug
+							if value == defaultSteps {
+								err = errors.New(fmt.Sprintf("Pipeline steps have not been signed: %q...%q", value, signedSteps))
+							}
+							return err
+						}),
 						resource.TestCheckResourceAttr(
 							"buildkite_pipeline.pipeline",
 							"steps",
