@@ -2,14 +2,22 @@ package buildkite
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 	"testing"
 
+	"github.com/MakeNowJust/heredoc"
+	"github.com/buildkite/go-pipeline"
+	"github.com/buildkite/go-pipeline/jwkutil"
+	"github.com/buildkite/go-pipeline/signature"
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
+	"github.com/lestrrat-go/jwx/v2/jwa"
+	"gopkg.in/yaml.v3"
 )
 
 func TestAccBuildkitePipelineResource(t *testing.T) {
@@ -654,6 +662,85 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 							plancheck.ExpectResourceAction("buildkite_pipeline.pipeline", plancheck.ResourceActionNoop),
 						},
 					},
+				},
+			},
+		})
+	})
+
+	t.Run("create a pipeline with signed steps", func(t *testing.T) {
+		const (
+			repository = "my-repo"
+			jwksKeyID  = "my-key"
+		)
+
+		pipelineName := acctest.RandString(12)
+
+		steps := heredoc.Doc(`
+			steps:
+			- label: ":pipeline:"
+			  command: buildkite-agent pipeline upload
+		`)
+
+		privateJWKS, _, err := jwkutil.NewKeyPair(jwksKeyID, jwa.EdDSA)
+		if err != nil {
+			t.Fatalf("Failed to generate key pair: %v", err)
+		}
+
+		privateKey, ok := privateJWKS.Key(0)
+		if !ok {
+			t.Fatalf("Failed to get private key from JWKS")
+		}
+
+		jwks, err := json.Marshal(privateKey)
+		if err != nil {
+			t.Fatalf("Failed to marshal private key: %v", err)
+		}
+
+		p, err := pipeline.Parse(strings.NewReader(steps))
+		if err != nil {
+			t.Fatalf("Failed to parse pipeline: %v", err)
+		}
+
+		if err != signature.SignPipeline(p, privateKey, repository) {
+			t.Fatalf("Failed to sign pipeline: %v", err)
+		}
+
+		signedSteps, err := yaml.Marshal(p)
+		if err != nil {
+			t.Fatalf("Failed to marshal signed steps: %v", err)
+		}
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			Steps: []resource.TestStep{
+				{
+					Config: heredoc.Docf(
+						`
+							data "buildkite_signed_pipeline_steps" "my_signed_steps" {
+							  repository     = %q
+							  jwks           = %q
+							  jwks_key_id    = %q
+							  unsigned_steps = %q
+							}
+							resource "buildkite_pipeline" "pipeline" {
+								name = "%s"
+								repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
+								steps = data.buildkite_signed_pipeline_steps.my_signed_steps.signed_steps
+							}
+						`,
+						repository,
+						jwks,
+						jwksKeyID,
+						steps,
+						pipelineName,
+					),
+					Check: resource.ComposeAggregateTestCheckFunc(
+						resource.TestCheckResourceAttr(
+							"buildkite_pipeline.pipeline",
+							"steps",
+							string(signedSteps),
+						),
+					),
 				},
 			},
 		})
