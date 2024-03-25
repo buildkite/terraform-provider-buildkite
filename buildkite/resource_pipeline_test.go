@@ -695,6 +695,7 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 							name = "%s"
 							repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
 							cluster_id = buildkite_cluster.cluster.id   
+							provider_settings = {}							
 						}
 					`, clusterName, pipelineName),
 					ConfigPlanChecks: resource.ConfigPlanChecks{
