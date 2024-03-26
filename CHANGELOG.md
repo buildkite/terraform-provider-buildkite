@@ -1,5 +1,8 @@
 # Changelog
 
+# Unreleased changes
+- Update tests resolving an error when `provider_settings` attribute is omitted or set to null [[PR #510](https://github.com/buildkite/terraform-provider-buildkite/pull/510)] @lizrabuya
+
 ## [v1.5.2](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.5.1...v1.5.2)
 
 - Update docs with default values for `provider_settings` attributes [[PR #494](https://github.com/buildkite/terraform-provider-buildkite/pull/494)] @lizrabuya

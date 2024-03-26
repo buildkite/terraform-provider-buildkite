@@ -658,4 +658,55 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 			},
 		})
 	})
+
+	t.Run("provider_settings attributes can be removed without state change", func(t *testing.T) {
+		pipelineName := acctest.RandString(12)
+		clusterName := acctest.RandString(12)
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			Steps: []resource.TestStep{
+				{
+					Config: fmt.Sprintf(`
+						resource "buildkite_cluster" "cluster" {
+							name = "%s"
+						}					
+						resource "buildkite_pipeline" "pipeline" {
+							name = "%s"
+							repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
+							provider_settings = {
+								trigger_mode = "none" 
+							}
+						}
+					`, clusterName, pipelineName),
+					Check: resource.ComposeAggregateTestCheckFunc(
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "name", pipelineName),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "repository", "https://github.com/buildkite/terraform-provider-buildkite.git"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.trigger_mode", "none"),
+					),
+				},
+				{
+					Config: fmt.Sprintf(`
+						resource "buildkite_cluster" "cluster" {
+							name = "%s"
+						}
+						resource "buildkite_pipeline" "pipeline" {
+							name = "%s"
+							repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
+							cluster_id = buildkite_cluster.cluster.id   
+							provider_settings = {}							
+						}
+					`, clusterName, pipelineName),
+					ConfigPlanChecks: resource.ConfigPlanChecks{
+						PostApplyPostRefresh: []plancheck.PlanCheck{
+							plancheck.ExpectEmptyPlan(),
+							plancheck.ExpectResourceAction("buildkite_pipeline.pipeline", plancheck.ResourceActionNoop),
+						},
+					},
+				},
+			},
+		})
+	})
+
 }
