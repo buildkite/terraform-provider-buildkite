@@ -1,4 +1,4 @@
-FROM public.ecr.aws/docker/library/golang:1.22.0@sha256:7b297d9abee021bab9046e492506b3c2da8a3722cbf301653186545ecc1e00bb
+FROM public.ecr.aws/docker/library/golang:1.22.1@sha256:0b55ab82ac2a54a6f8f85ec8b943b9e470c39e32c109b766bbc1b801f3fa8d3b
 
 RUN apt-get update \
     && apt-get install -y unzip
