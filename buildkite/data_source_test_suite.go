@@ -36,7 +36,7 @@ func (t *testSuiteDatasource) Configure(_ context.Context, req datasource.Config
 
 // Metadata implements datasource.DataSource.
 func (t *testSuiteDatasource) Metadata(_ context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
-	resp.TypeName = req.ProviderTypeName + "_team"
+	resp.TypeName = req.ProviderTypeName + "_test_suite"
 }
 
 // Read implements datasource.DataSource.
@@ -83,7 +83,6 @@ func (t *testSuiteDatasource) Schema(ctx context.Context, req datasource.SchemaR
 				MarkdownDescription: "The UUID of the test suite.",
 			},
 			"slug": schema.StringAttribute{
-				Computed:            true,
 				MarkdownDescription: "The generated slug of the test suite.",
 				Required:            true,
 			},
