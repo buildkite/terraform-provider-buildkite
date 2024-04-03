@@ -2,6 +2,7 @@
 
 # Unreleased changes
 - Update tests resolving an error when `provider_settings` attribute is omitted or set to null [[PR #510](https://github.com/buildkite/terraform-provider-buildkite/pull/510)] @lizrabuya
+- SUP-2021 Add Test Suite Datasource [[PR #512](https://github.com/buildkite/terraform-provider-buildkite/pull/512)] @jradtilbrook
 
 ## [v1.5.2](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.5.1...v1.5.2)
 
