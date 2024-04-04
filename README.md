@@ -8,7 +8,7 @@ The provider allows you to manage resources in your Buildkite organization.
 
 Two configuration values are required:
 
--   An API token, generated at https://buildkite.com/user/api-access-tokens. The token must have the `write_pipelines`, `read_pipelines` and `write_suites` REST API scopes and be enabled for GraphQL API access.
+-   An API token, with `write_pipelines`, `read_pipelines` and `write_suites` REST API scopes and be enabled for GraphQL API access. You can generate one [here](https://buildkite.com/user/api-access-tokens/new?description=terraform&scopes[]=write_pipelines&scopes[]=write_suites&scopes[]=read_pipelines&scopes[]=graphql)
 -   A Buildkite organization slug, available by signing into buildkite.com and examining the URL: https://buildkite.com/<org-slug>.
 
 ## Documentation
@@ -28,7 +28,7 @@ Buildkite Terraform Provider is licensed under the MIT license.
 
 Contributions are welcome.
 
-If you wish to work on the provider, you'll first need Go installed on your machine (version 1.14+ is required). Dependencies are managed via gomodules and installed automatically as required.
+If you wish to work on the provider, you'll first need Go installed on your machine (version 1.21+ is required). Dependencies are managed via gomodules and installed automatically as required.
 
 To compile the provider:
 

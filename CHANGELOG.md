@@ -1,7 +1,8 @@
 # Changelog
 
-# Unreleased changes
+## [v1.6.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.5.2...v1.6.0)
 - Update tests resolving an error when `provider_settings` attribute is omitted or set to null [[PR #510](https://github.com/buildkite/terraform-provider-buildkite/pull/510)] @lizrabuya
+- Bump docker/library/golang from 1.22.0 to 1.22.1 [[PR #511](https://github.com/buildkite/terraform-provider-buildkite/pull/511)] @lizrabuya
 - SUP-2021 Add Test Suite Datasource [[PR #512](https://github.com/buildkite/terraform-provider-buildkite/pull/512)] @jradtilbrook
 
 ## [v1.5.2](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.5.1...v1.5.2)
