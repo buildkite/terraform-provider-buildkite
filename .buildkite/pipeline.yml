@@ -23,8 +23,6 @@ steps:
         run: go
 
   - label: acceptance tests
-    agents:
-      queue: "oss-deploy"
     key: testacc
     concurrency: 1
     concurrency_group: terraform-provider-acceptance-tests
