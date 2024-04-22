@@ -27,7 +27,7 @@ then
       exit 1
 fi
 
-echo "${GPG_SECRET_KEY_ASCII}" | gpg --import --no-tty --batch --yes
+echo -e "${GPG_SECRET_KEY_ASCII}" | gpg --import --no-tty --batch --yes
 
 gpg --list-secret-keys
 
