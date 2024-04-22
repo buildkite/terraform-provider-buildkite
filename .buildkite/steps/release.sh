@@ -21,13 +21,13 @@ git fetch origin
 
 echo "--- importing GPG Secret Key"
 
-if [ -z "$GPG_SECRET_KEY_BASE64" ]
+if [ -z "$GPG_SECRET_KEY_ASCII" ]
 then
-      echo "\$GPG_SECRET_KEY_BASE64 env variable must contain a base64 encoded GPG secret key"
+      echo "\$GPG_SECRET_KEY_ASCII env variable must contain ascii armored GPG secret key"
       exit 1
 fi
 
-echo "${GPG_SECRET_KEY_BASE64}" | base64 -d | gpg --import --no-tty --batch --yes
+echo "${GPG_SECRET_KEY_ASCII}" | gpg --import --no-tty --batch --yes
 
 gpg --list-secret-keys
 
