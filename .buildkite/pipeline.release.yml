@@ -10,7 +10,7 @@ steps:
       - aws-ssm#v1.0.0:
           parameters:
             GITHUB_TOKEN: /pipelines/buildkite/terraform-provider-buildkite-release/github-token
-            GPG_SECRET_KEY_ASCII: /pipelines/buildkite/terraform-provider-buildkite-release/gpg-secret-key-ascii
+            GPG_SECRET_KEY_BASE64: /pipelines/buildkite/terraform-provider-buildkite-release/gpg-secret-key-base64
       - docker-compose#v2.2.0:
           run: go
     agents:
