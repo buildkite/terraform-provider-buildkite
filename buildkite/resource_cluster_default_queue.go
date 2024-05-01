@@ -21,6 +21,7 @@ type clusterDefaultQueueResource struct {
 type clusterDefaultQueueResourceModel struct {
 	ClusterId types.String `tfsdk:"cluster_id"`
 	ID        types.String `tfsdk:"id"`
+	Key       types.String `tfsdk:"key"`
 	QueueId   types.String `tfsdk:"queue_id"`
 	UUID      types.String `tfsdk:"uuid"`
 }
@@ -66,6 +67,7 @@ func (c *clusterDefaultQueueResource) Create(ctx context.Context, req resource.C
 
 	plan.ID = types.StringValue(r.ClusterUpdate.Cluster.Id)
 	plan.UUID = types.StringValue(r.ClusterUpdate.Cluster.Uuid)
+	plan.Key = types.StringValue(r.ClusterUpdate.Cluster.DefaultQueue.Key)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 }
@@ -169,6 +171,7 @@ func (c *clusterDefaultQueueResource) Read(ctx context.Context, req resource.Rea
 		state.ClusterId = types.StringValue(clusterNode.Id)
 		state.UUID = types.StringValue(clusterNode.Uuid)
 		state.QueueId = types.StringValue(clusterNode.DefaultQueue.Id)
+		state.Key = types.StringValue(clusterNode.DefaultQueue.Key)
 		resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 	} else {
 		resp.Diagnostics.AddWarning(
@@ -212,6 +215,13 @@ func (c *clusterDefaultQueueResource) Schema(ctx context.Context, req resource.S
 			"queue_id": schema.StringAttribute{
 				Required:            true,
 				MarkdownDescription: "The GraphQL ID of the cluster queue to set as default on the cluster.",
+			},
+			"key": schema.StringAttribute{
+				Computed: true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+				MarkdownDescription: "The Key for the cluster queue; its unique identifier",
 			},
 		},
 	}

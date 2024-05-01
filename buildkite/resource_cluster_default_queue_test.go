@@ -106,4 +106,36 @@ func TestAccBuildkiteClusterDefaultQueueResource(t *testing.T) {
 			},
 		})
 	})
+
+	t.Run("it ensures the key for the default queue is set", func(t *testing.T) {
+		var cq clusterQueueResourceModel
+		clusterName := acctest.RandString(5)
+		check := resource.ComposeAggregateTestCheckFunc(
+			testAccCheckClusterQueueExists("buildkite_cluster_queue.cluster", &cq),
+			resource.TestCheckResourceAttr("buildkite_cluster_default_queue.cluster", "key", "new"),
+		)
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			CheckDestroy:             testAccCheckClusterDestroy,
+			Steps: []resource.TestStep{
+				{
+					Config: fmt.Sprintf(`
+						resource "buildkite_cluster" "cluster" {
+							name = "%s"
+						}
+						resource "buildkite_cluster_queue" "cluster" {
+							key = "new"
+							cluster_id = buildkite_cluster.cluster.id
+						}
+						resource "buildkite_cluster_default_queue" "cluster" {
+							cluster_id = buildkite_cluster.cluster.id
+							queue_id = buildkite_cluster_queue.cluster.id
+						}
+					`, clusterName),
+					Check: check,
+				},
+			},
+		})
+	})
 }
