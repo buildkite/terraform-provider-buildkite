@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## [v1.7.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.6.0...v1.7.0)
 - Expose the `key` for default_cluster_queue [[PR
   #521](https://github.com/buildkite/terraform-provider-buildkite/pull/521) @mcncl
 
