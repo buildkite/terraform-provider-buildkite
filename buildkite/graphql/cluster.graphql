@@ -93,6 +93,7 @@ mutation setClusterDefaultQueue($organizationId: ID!, $clusterId: ID!, $queueId:
             defaultQueue {
                 id
                 uuid
+                key
             }
         }
     }
@@ -105,6 +106,7 @@ mutation removeClusterDefaultQueue($organizationId: ID!, $clusterId: ID!) {
             defaultQueue {
                 id
                 uuid
+                key
             }
         }
     }

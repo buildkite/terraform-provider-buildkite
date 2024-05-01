@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+- Expose the `key` for default_cluster_queue [[PR
+  #521](https://github.com/buildkite/terraform-provider-buildkite/pull/521) @mcncl
+
 ## [v1.6.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.5.2...v1.6.0)
 - Update tests resolving an error when `provider_settings` attribute is omitted or set to null [[PR #510](https://github.com/buildkite/terraform-provider-buildkite/pull/510)] @lizrabuya
 - Bump docker/library/golang from 1.22.0 to 1.22.1 [[PR #511](https://github.com/buildkite/terraform-provider-buildkite/pull/511)] @lizrabuya
