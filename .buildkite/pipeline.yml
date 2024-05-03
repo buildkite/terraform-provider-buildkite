@@ -2,6 +2,8 @@ steps:
   - name: ":golangci-lint: lint"
     key: lint
     command : golangci-lint run --timeout 2m0s
+    agents:
+      queue: "hosted"
     plugins:
       - docker#v5.9.0:
           image: "golangci/golangci-lint:v1.54.1"
@@ -11,6 +13,8 @@ steps:
   - label: vet
     key: vet
     command: "make vet"
+    agents:
+      queue: "hosted"
     plugins:
       docker-compose#v3.9.0:
         run: go
@@ -18,6 +22,8 @@ steps:
   - label: test
     key: test
     command: "make test"
+    agents:
+      queue: "hosted"
     plugins:
       docker-compose#v3.9.0:
         run: go
@@ -44,6 +50,8 @@ steps:
 
   - label: build
     command: "make"
+    agents:
+      queue: "hosted"
     plugins:
       docker-compose#v3.9.0:
         run: go
