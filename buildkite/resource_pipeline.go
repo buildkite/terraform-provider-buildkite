@@ -717,22 +717,18 @@ func (p *pipelineResource) UpgradeState(ctx context.Context) map[int64]resource.
 }
 
 func (p *pipelineResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
-	// Only modify plan on pipeline creation
-	if req.State.Raw.IsNull() {
+	// Don't modify on destroy, but otherwise make sure the steps default is preserved
+	if !req.Plan.Raw.IsNull() {
 		var template, steps types.String
 
 		// Load pipeline_template_id and steps (if defined)
 		req.Plan.GetAttribute(ctx, path.Root("pipeline_template_id"), &template)
 		req.Plan.GetAttribute(ctx, path.Root("steps"), &steps)
 
-		// Set default steps only if there is no template oe defined steps
+		// Set default steps only if there is no template or defined steps
 		if template.IsNull() && (steps.IsUnknown() || steps.IsNull()) {
 			resp.Diagnostics.Append(resp.Plan.SetAttribute(ctx, path.Root("steps"), defaultSteps)...)
-			return
 		}
-	} else {
-		// Do nothing on other plan operations (update, delete)
-		return
 	}
 }
 

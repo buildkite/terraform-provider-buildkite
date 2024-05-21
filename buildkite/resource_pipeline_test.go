@@ -119,6 +119,55 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 		})
 	})
 
+	t.Run("update pipeline with only required attributes", func(t *testing.T) {
+		var pipeline getPipelinePipeline
+		pipelineName := acctest.RandString(12)
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			Steps: []resource.TestStep{
+				{
+					Config: fmt.Sprintf(`
+						resource "buildkite_pipeline" "pipeline" {
+							name = "%s"
+							repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
+						}
+					`, pipelineName),
+					Check: resource.ComposeAggregateTestCheckFunc(
+						// check api values are expected
+						func(s *terraform.State) error {
+							slug := fmt.Sprintf("%s/%s", getenv("BUILDKITE_ORGANIZATION_SLUG"), pipelineName)
+							resp, err := getPipeline(context.Background(), genqlientGraphql, slug)
+							pipeline = resp.Pipeline
+							return err
+						},
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "steps", defaultSteps),
+					),
+				},
+				{
+					Config: fmt.Sprintf(`
+						resource "buildkite_pipeline" "pipeline" {
+							name = "%s"
+							repository = "https://github.com/buildkite/terraform-provider.git"
+						}
+					`, pipelineName),
+					Check: resource.ComposeAggregateTestCheckFunc(
+						// check the pipeline IDs are the same (so it wasn't recreated)
+						func(s *terraform.State) error {
+							p := s.RootModule().Resources["buildkite_pipeline.pipeline"]
+							if p.Primary.ID != pipeline.Id {
+								return fmt.Errorf("Pipelines do not match: %s %s", pipeline.Id, p.Primary.ID)
+							}
+							return nil
+						},
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "steps", defaultSteps),
+					),
+				},
+			},
+		})
+	})
+
 	t.Run("create pipeline with a pipeline template", func(t *testing.T) {
 		var pipeline getPipelinePipeline
 		pipelineName := acctest.RandString(12)
