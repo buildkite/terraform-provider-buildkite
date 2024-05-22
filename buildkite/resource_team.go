@@ -154,7 +154,7 @@ func (t *teamResource) Create(ctx context.Context, req resource.CreateRequest, r
 				t.client.genqlient,
 				*org,
 				state.Name.ValueString(),
-				state.Description.ValueStringPointer(),
+				state.Description.ValueString(),
 				state.Privacy.ValueString(),
 				state.IsDefaultTeam.ValueBool(),
 				state.DefaultMemberRole.ValueString(),
@@ -259,7 +259,7 @@ func (t *teamResource) Update(ctx context.Context, req resource.UpdateRequest, r
 			t.client.genqlient,
 			state.ID.ValueString(),
 			plan.Name.ValueString(),
-			plan.Description.ValueStringPointer(),
+			plan.Description.ValueString(),
 			plan.Privacy.ValueString(),
 			plan.IsDefaultTeam.ValueBool(),
 			plan.DefaultMemberRole.ValueString(),
@@ -322,7 +322,7 @@ func updateTeamResourceState(state *teamResourceModel, res getNodeNodeTeam) {
 	state.Slug = types.StringValue(res.Slug)
 	state.Name = types.StringValue(res.Name)
 	state.Privacy = types.StringValue(string(res.GetPrivacy()))
-	state.Description = types.StringPointerValue(res.Description)
+	state.Description = types.StringValue(res.Description)
 	state.IsDefaultTeam = types.BoolValue(res.IsDefaultTeam)
 	state.DefaultMemberRole = types.StringValue(string(res.GetDefaultMemberRole()))
 	state.MembersCanCreatePipelines = types.BoolValue(res.MembersCanCreatePipelines)
