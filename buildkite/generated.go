@@ -5867,7 +5867,7 @@ func (v *getNodeNodeTeam) GetUuid() string { return v.TeamFields.Uuid }
 func (v *getNodeNodeTeam) GetName() string { return v.TeamFields.Name }
 
 // GetDescription returns getNodeNodeTeam.Description, and is useful for accessing the field via an interface.
-func (v *getNodeNodeTeam) GetDescription() *string { return v.TeamFields.Description }
+func (v *getNodeNodeTeam) GetDescription() string { return v.TeamFields.Description }
 
 // GetSlug returns getNodeNodeTeam.Slug, and is useful for accessing the field via an interface.
 func (v *getNodeNodeTeam) GetSlug() string { return v.TeamFields.Slug }
