@@ -2,7 +2,6 @@ fragment TeamFields on Team {
 	id
 	uuid
 	name
-	# @genqlient(pointer: true)
 	description
 	slug
 	privacy
@@ -20,7 +19,6 @@ query GetTeamFromSlug($slug: ID!){
 mutation teamCreate(
 	$organizationID: ID!
 	$name: String!
-	# @genqlient(pointer: true)
 	$description: String
 	$privacy: TeamPrivacy!
 	$isDefaultTeam: Boolean!
@@ -49,7 +47,6 @@ mutation teamCreate(
 mutation teamUpdate(
 	$id: ID!
 	$name: String!
-	# @genqlient(pointer: true)
 	$description: String
 	$privacy: TeamPrivacy!
 	$isDefaultTeam: Boolean!

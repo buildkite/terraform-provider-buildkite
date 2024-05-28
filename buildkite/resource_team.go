@@ -11,6 +11,7 @@ import (
 	resource_schema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -87,6 +88,8 @@ func (t *teamResource) Schema(ctx context.Context, req resource.SchemaRequest, r
 				Required:            true,
 			},
 			"description": resource_schema.StringAttribute{
+				Computed:            true,
+				Default:             stringdefault.StaticString(""),
 				Optional:            true,
 				MarkdownDescription: "A description for the team. This is displayed in the Buildkite UI.",
 			},
@@ -154,7 +157,7 @@ func (t *teamResource) Create(ctx context.Context, req resource.CreateRequest, r
 				t.client.genqlient,
 				*org,
 				state.Name.ValueString(),
-				state.Description.ValueStringPointer(),
+				state.Description.ValueString(),
 				state.Privacy.ValueString(),
 				state.IsDefaultTeam.ValueBool(),
 				state.DefaultMemberRole.ValueString(),
@@ -259,7 +262,7 @@ func (t *teamResource) Update(ctx context.Context, req resource.UpdateRequest, r
 			t.client.genqlient,
 			state.ID.ValueString(),
 			plan.Name.ValueString(),
-			plan.Description.ValueStringPointer(),
+			plan.Description.ValueString(),
 			plan.Privacy.ValueString(),
 			plan.IsDefaultTeam.ValueBool(),
 			plan.DefaultMemberRole.ValueString(),
@@ -322,7 +325,7 @@ func updateTeamResourceState(state *teamResourceModel, res getNodeNodeTeam) {
 	state.Slug = types.StringValue(res.Slug)
 	state.Name = types.StringValue(res.Name)
 	state.Privacy = types.StringValue(string(res.GetPrivacy()))
-	state.Description = types.StringPointerValue(res.Description)
+	state.Description = types.StringValue(res.Description)
 	state.IsDefaultTeam = types.BoolValue(res.IsDefaultTeam)
 	state.DefaultMemberRole = types.StringValue(string(res.GetDefaultMemberRole()))
 	state.MembersCanCreatePipelines = types.BoolValue(res.MembersCanCreatePipelines)

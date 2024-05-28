@@ -179,7 +179,7 @@ func (v *GetTeamFromSlugTeam) GetUuid() string { return v.TeamFields.Uuid }
 func (v *GetTeamFromSlugTeam) GetName() string { return v.TeamFields.Name }
 
 // GetDescription returns GetTeamFromSlugTeam.Description, and is useful for accessing the field via an interface.
-func (v *GetTeamFromSlugTeam) GetDescription() *string { return v.TeamFields.Description }
+func (v *GetTeamFromSlugTeam) GetDescription() string { return v.TeamFields.Description }
 
 // GetSlug returns GetTeamFromSlugTeam.Slug, and is useful for accessing the field via an interface.
 func (v *GetTeamFromSlugTeam) GetSlug() string { return v.TeamFields.Slug }
@@ -230,7 +230,7 @@ type __premarshalGetTeamFromSlugTeam struct {
 
 	Name string `json:"name"`
 
-	Description *string `json:"description"`
+	Description string `json:"description"`
 
 	Slug string `json:"slug"`
 
@@ -1099,7 +1099,7 @@ type TeamFields struct {
 	// The name of the team
 	Name string `json:"name"`
 	// A description of the team
-	Description *string `json:"description"`
+	Description string `json:"description"`
 	// The slug of the team
 	Slug string `json:"slug"`
 	// The privacy setting for this team
@@ -1122,7 +1122,7 @@ func (v *TeamFields) GetUuid() string { return v.Uuid }
 func (v *TeamFields) GetName() string { return v.Name }
 
 // GetDescription returns TeamFields.Description, and is useful for accessing the field via an interface.
-func (v *TeamFields) GetDescription() *string { return v.Description }
+func (v *TeamFields) GetDescription() string { return v.Description }
 
 // GetSlug returns TeamFields.Slug, and is useful for accessing the field via an interface.
 func (v *TeamFields) GetSlug() string { return v.Slug }
@@ -1798,13 +1798,13 @@ func (v *__setOrganization2FAInput) GetValue() bool { return v.Value }
 
 // __teamCreateInput is used internally by genqlient
 type __teamCreateInput struct {
-	OrganizationID            string  `json:"organizationID"`
-	Name                      string  `json:"name"`
-	Description               *string `json:"description"`
-	Privacy                   string  `json:"privacy"`
-	IsDefaultTeam             bool    `json:"isDefaultTeam"`
-	DefaultMemberRole         string  `json:"defaultMemberRole"`
-	MembersCanCreatePipelines bool    `json:"membersCanCreatePipelines"`
+	OrganizationID            string `json:"organizationID"`
+	Name                      string `json:"name"`
+	Description               string `json:"description"`
+	Privacy                   string `json:"privacy"`
+	IsDefaultTeam             bool   `json:"isDefaultTeam"`
+	DefaultMemberRole         string `json:"defaultMemberRole"`
+	MembersCanCreatePipelines bool   `json:"membersCanCreatePipelines"`
 }
 
 // GetOrganizationID returns __teamCreateInput.OrganizationID, and is useful for accessing the field via an interface.
@@ -1814,7 +1814,7 @@ func (v *__teamCreateInput) GetOrganizationID() string { return v.OrganizationID
 func (v *__teamCreateInput) GetName() string { return v.Name }
 
 // GetDescription returns __teamCreateInput.Description, and is useful for accessing the field via an interface.
-func (v *__teamCreateInput) GetDescription() *string { return v.Description }
+func (v *__teamCreateInput) GetDescription() string { return v.Description }
 
 // GetPrivacy returns __teamCreateInput.Privacy, and is useful for accessing the field via an interface.
 func (v *__teamCreateInput) GetPrivacy() string { return v.Privacy }
@@ -1838,13 +1838,13 @@ func (v *__teamDeleteInput) GetId() string { return v.Id }
 
 // __teamUpdateInput is used internally by genqlient
 type __teamUpdateInput struct {
-	Id                        string  `json:"id"`
-	Name                      string  `json:"name"`
-	Description               *string `json:"description"`
-	Privacy                   string  `json:"privacy"`
-	IsDefaultTeam             bool    `json:"isDefaultTeam"`
-	DefaultMemberRole         string  `json:"defaultMemberRole"`
-	MembersCanCreatePipelines bool    `json:"membersCanCreatePipelines"`
+	Id                        string `json:"id"`
+	Name                      string `json:"name"`
+	Description               string `json:"description"`
+	Privacy                   string `json:"privacy"`
+	IsDefaultTeam             bool   `json:"isDefaultTeam"`
+	DefaultMemberRole         string `json:"defaultMemberRole"`
+	MembersCanCreatePipelines bool   `json:"membersCanCreatePipelines"`
 }
 
 // GetId returns __teamUpdateInput.Id, and is useful for accessing the field via an interface.
@@ -1854,7 +1854,7 @@ func (v *__teamUpdateInput) GetId() string { return v.Id }
 func (v *__teamUpdateInput) GetName() string { return v.Name }
 
 // GetDescription returns __teamUpdateInput.Description, and is useful for accessing the field via an interface.
-func (v *__teamUpdateInput) GetDescription() *string { return v.Description }
+func (v *__teamUpdateInput) GetDescription() string { return v.Description }
 
 // GetPrivacy returns __teamUpdateInput.Privacy, and is useful for accessing the field via an interface.
 func (v *__teamUpdateInput) GetPrivacy() string { return v.Privacy }
@@ -5867,7 +5867,7 @@ func (v *getNodeNodeTeam) GetUuid() string { return v.TeamFields.Uuid }
 func (v *getNodeNodeTeam) GetName() string { return v.TeamFields.Name }
 
 // GetDescription returns getNodeNodeTeam.Description, and is useful for accessing the field via an interface.
-func (v *getNodeNodeTeam) GetDescription() *string { return v.TeamFields.Description }
+func (v *getNodeNodeTeam) GetDescription() string { return v.TeamFields.Description }
 
 // GetSlug returns getNodeNodeTeam.Slug, and is useful for accessing the field via an interface.
 func (v *getNodeNodeTeam) GetSlug() string { return v.TeamFields.Slug }
@@ -5920,7 +5920,7 @@ type __premarshalgetNodeNodeTeam struct {
 
 	Name string `json:"name"`
 
-	Description *string `json:"description"`
+	Description string `json:"description"`
 
 	Slug string `json:"slug"`
 
@@ -10612,7 +10612,7 @@ func (v *teamCreateTeamCreateTeamCreatePayloadTeamEdgeNodeTeam) GetName() string
 }
 
 // GetDescription returns teamCreateTeamCreateTeamCreatePayloadTeamEdgeNodeTeam.Description, and is useful for accessing the field via an interface.
-func (v *teamCreateTeamCreateTeamCreatePayloadTeamEdgeNodeTeam) GetDescription() *string {
+func (v *teamCreateTeamCreateTeamCreatePayloadTeamEdgeNodeTeam) GetDescription() string {
 	return v.TeamFields.Description
 }
 
@@ -10673,7 +10673,7 @@ type __premarshalteamCreateTeamCreateTeamCreatePayloadTeamEdgeNodeTeam struct {
 
 	Name string `json:"name"`
 
-	Description *string `json:"description"`
+	Description string `json:"description"`
 
 	Slug string `json:"slug"`
 
@@ -10773,7 +10773,7 @@ func (v *teamUpdateTeamUpdateTeamUpdatePayloadTeam) GetUuid() string { return v.
 func (v *teamUpdateTeamUpdateTeamUpdatePayloadTeam) GetName() string { return v.TeamFields.Name }
 
 // GetDescription returns teamUpdateTeamUpdateTeamUpdatePayloadTeam.Description, and is useful for accessing the field via an interface.
-func (v *teamUpdateTeamUpdateTeamUpdatePayloadTeam) GetDescription() *string {
+func (v *teamUpdateTeamUpdateTeamUpdatePayloadTeam) GetDescription() string {
 	return v.TeamFields.Description
 }
 
@@ -10830,7 +10830,7 @@ type __premarshalteamUpdateTeamUpdateTeamUpdatePayloadTeam struct {
 
 	Name string `json:"name"`
 
-	Description *string `json:"description"`
+	Description string `json:"description"`
 
 	Slug string `json:"slug"`
 
@@ -14259,7 +14259,7 @@ func teamCreate(
 	client graphql.Client,
 	organizationID string,
 	name string,
-	description *string,
+	description string,
 	privacy string,
 	isDefaultTeam bool,
 	defaultMemberRole string,
@@ -14354,7 +14354,7 @@ func teamUpdate(
 	client graphql.Client,
 	id string,
 	name string,
-	description *string,
+	description string,
 	privacy string,
 	isDefaultTeam bool,
 	defaultMemberRole string,
