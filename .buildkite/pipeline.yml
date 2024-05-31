@@ -49,7 +49,7 @@ steps:
           format: junit
 
   - label: build
-    command: "make"
+    command: "make build-snapshot"
     agents:
       queue: "hosted"
     plugins:

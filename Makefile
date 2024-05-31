@@ -3,6 +3,10 @@ default: build
 build:
 	go build -o terraform-provider-buildkite -ldflags="-s -w -X main.version=$(shell git describe --tag)" .
 
+.PHONY: build-snapshot
+build-snapshot:
+	goreleaser build --snapshot --clean
+
 .PHONY: docs
 docs:
 	go run github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs
