@@ -27,6 +27,8 @@ github.com/buildkite/interpolate v0.0.0-20200526001904-07f35b4ae251 h1:k6UDF1uPY
 github.com/buildkite/interpolate v0.0.0-20200526001904-07f35b4ae251/go.mod h1:gbPR1gPu9dB96mucYIR7T3B7p/78hRVSOuzIWLHK2Y4=
 github.com/buildkite/interpolate v0.1.0 h1:2D/u1862qOHnN+WdPy+cKELnSafVLLrg/XTVQ+afLOw=
 github.com/buildkite/interpolate v0.1.0/go.mod h1:LRq4yvspl2FVewLIoZYUV9VQXNsT7qNV6iqP1r7Qt0o=
+github.com/buildkite/interpolate v0.1.2 h1:mVbMCphpu2MHUr1qLdjq9xc3NjNWYg/w/CbrGS5ckzg=
+github.com/buildkite/interpolate v0.1.2/go.mod h1:UNVe6A+UfiBNKbhAySrBbZFZFxQ+DXr9nWen6WVt/A8=
 github.com/bwesterb/go-ristretto v1.2.3/go.mod h1:fUIoIZaG73pV5biE2Blr2xEzDoMj7NFEuV9ekS419A0=
 github.com/cloudflare/circl v1.3.3/go.mod h1:5XYMA4rFBvNIrhs50XuiBJ15vF2pZn4nnUKZrLbUZFA=
 github.com/cloudflare/circl v1.3.7 h1:qlCDlTPz2n9fu58M0Nh1J/JzcFpfgkFHHX3O35r5vcU=
