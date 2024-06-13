@@ -757,7 +757,7 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 		})
 	})
 
-	t.Run("create in template mode and change to explicit steps", func(t *testing.T) {
+	t.Run("create in template mode and change to explicit steps mode", func(t *testing.T) {
 		templateName := acctest.RandString(12)
 		pipelineName := acctest.RandString(12)
 
@@ -796,6 +796,50 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 					`, templateName, pipelineName),
 					Check: resource.ComposeAggregateTestCheckFunc(
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "steps", "steps: []"),
+					),
+				},
+			},
+		})
+	})
+
+	t.Run("create in template mode and change to implicit steps mode", func(t *testing.T) {
+		templateName := acctest.RandString(12)
+		pipelineName := acctest.RandString(12)
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			Steps: []resource.TestStep{
+				{
+					Config: fmt.Sprintf(`
+						resource "buildkite_pipeline_template" "template" {
+							name = "%s"
+							configuration = "steps: []"
+							available = true
+						}
+						resource "buildkite_pipeline" "pipeline" {
+							name = "%s"
+							repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
+							pipeline_template_id = buildkite_pipeline_template.template.id
+						}
+					`, templateName, pipelineName),
+					Check: resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "name", pipelineName),
+				},
+				{
+					// now remove the template and steps which should use the default
+					Config: fmt.Sprintf(`
+						resource "buildkite_pipeline_template" "template" {
+							name = "%s"
+							configuration = "steps: []"
+							available = true
+						}
+						resource "buildkite_pipeline" "pipeline" {
+							name = "%s"
+							repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
+						}
+					`, templateName, pipelineName),
+					Check: resource.ComposeAggregateTestCheckFunc(
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "steps", defaultSteps),
 					),
 				},
 			},
