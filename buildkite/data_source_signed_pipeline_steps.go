@@ -9,6 +9,7 @@ import (
 	"github.com/MakeNowJust/heredoc"
 	"github.com/buildkite/go-pipeline"
 	"github.com/buildkite/go-pipeline/signature"
+	"github.com/buildkite/interpolate"
 	"github.com/buildkite/terraform-provider-buildkite/internal/datasourcevalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
@@ -149,7 +150,29 @@ func (s *signedPipelineStepsDataSource) Read(
 		return
 	}
 
-	p, err := pipeline.Parse(strings.NewReader(data.UnsignedSteps.ValueString()))
+	unsignedSteps := data.UnsignedSteps.ValueString()
+	expansions, err := interpolate.Identifiers(unsignedSteps)
+	if err != nil {
+		resp.Diagnostics.AddError("Failed to discover environment expansions in unsigned steps", err.Error())
+		return
+	}
+
+	if len(expansions) > 0 {
+		for i, e := range expansions {
+			// in interpolate, the identifiers of expansions don't have the $ prefix, and escaped expansions only have one
+			expansions[i] = "$" + e
+		}
+
+		err = fmt.Errorf("pipeline contains environment interpolations, which are only supported when dynamically "+
+			"uploading a pipeline, and not when statically signing pipelines using this tool. "+
+			"Note that terraform interpolations (eg `${var.some_variable}`) are fully supported, but environment interpolations "+
+			"(eg `$SOME_VARIABLE`) are not. "+
+			"Please remove the following interpolation directives from the `unsigned_steps` input: %s", strings.Join(expansions, ", "))
+		resp.Diagnostics.AddError("Environment interpolations are not allowed", err.Error())
+		return
+	}
+
+	p, err := pipeline.Parse(strings.NewReader(unsignedSteps))
 	if err != nil {
 		resp.Diagnostics.AddError("Unable to parse pipeline steps", err.Error())
 		return

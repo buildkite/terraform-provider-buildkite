@@ -89,6 +89,39 @@ func TestAccBuildkiteSignedPipelineStepsDataSource(t *testing.T) {
 		})
 	})
 
+	t.Run("signed pipeline steps with interpolations fails validation", func(t *testing.T) {
+		pipelineWithInterpolations := heredoc.Doc(`
+			steps:
+			- label: ":pipeline:"
+				command: 'echo "$INTERPOLATE and $$ESCAPED"'
+		`)
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			Steps: []resource.TestStep{
+				{
+					Config: heredoc.Docf(
+						`
+							data "buildkite_signed_pipeline_steps" "my_signed_steps" {
+							  repository     = %q
+							  jwks           = %q
+							  jwks_key_id    = %q
+							  unsigned_steps = %q
+							}
+						`,
+						repository,
+						jwks,
+						jwksKeyID,
+						pipelineWithInterpolations,
+					),
+					ExpectError: regexp.MustCompile(regexp.QuoteMeta("Environment interpolations are not allowed")),
+				},
+			},
+		})
+
+	})
+
 	t.Run("signed pipeline steps with a jwks file attribute signs the steps", func(t *testing.T) {
 		jwksFile := writeToTempFile(t, jwks)
 
@@ -169,8 +202,7 @@ func TestAccBuildkiteSignedPipelineStepsDataSource(t *testing.T) {
 						repository,
 						steps,
 					),
-					ExpectError: regexp.MustCompile(regexp.QuoteMeta("Error: Invalid Attribute Combination")),
-				},
+					ExpectError: regexp.MustCompile(regexp.QuoteMeta("Error: Invalid Attribute Combination"))},
 			},
 		})
 	})
