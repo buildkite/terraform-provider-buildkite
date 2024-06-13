@@ -671,12 +671,12 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 					Config: fmt.Sprintf(`
 						resource "buildkite_cluster" "cluster" {
 							name = "%s"
-						}					
+						}
 						resource "buildkite_pipeline" "pipeline" {
 							name = "%s"
 							repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
 							provider_settings = {
-								trigger_mode = "none" 
+								trigger_mode = "none"
 							}
 						}
 					`, clusterName, pipelineName),
@@ -694,8 +694,8 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 						resource "buildkite_pipeline" "pipeline" {
 							name = "%s"
 							repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
-							cluster_id = buildkite_cluster.cluster.id   
-							provider_settings = {}							
+							cluster_id = buildkite_cluster.cluster.id
+							provider_settings = {}
 						}
 					`, clusterName, pipelineName),
 					ConfigPlanChecks: resource.ConfigPlanChecks{
@@ -709,4 +709,51 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 		})
 	})
 
+	t.Run("create in template mode and change template configuration afterwards", func(t *testing.T) {
+		templateName := acctest.RandString(12)
+		pipelineName := acctest.RandString(12)
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			Steps: []resource.TestStep{
+				{
+					Config: fmt.Sprintf(`
+						resource "buildkite_pipeline_template" "template" {
+							name = "%s"
+							configuration = "steps: []"
+							available = true
+						}
+						resource "buildkite_pipeline" "pipeline" {
+							name = "%s"
+							repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
+							pipeline_template_id = buildkite_pipeline_template.template.id
+						}
+					`, templateName, pipelineName),
+					Check: resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "name", pipelineName),
+				},
+				{
+					// now change the template steps, we dont expect the pipeline to change at all
+					Config: fmt.Sprintf(`
+						resource "buildkite_pipeline_template" "template" {
+							name = "%s"
+							configuration = "steps: [command: echo hello]"
+							available = true
+						}
+						resource "buildkite_pipeline" "pipeline" {
+							name = "%s"
+							repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
+							pipeline_template_id = buildkite_pipeline_template.template.id
+						}
+					`, templateName, pipelineName),
+					ConfigPlanChecks: resource.ConfigPlanChecks{
+						PreApply: []plancheck.PlanCheck{
+							plancheck.ExpectResourceAction("buildkite_pipeline_template.template", plancheck.ResourceActionUpdate),
+							plancheck.ExpectResourceAction("buildkite_pipeline.pipeline", plancheck.ResourceActionNoop),
+						},
+					},
+				},
+			},
+		})
+	})
 }
