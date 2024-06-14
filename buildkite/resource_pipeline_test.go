@@ -894,4 +894,46 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 			},
 		})
 	})
+
+	t.Run("create in implicit steps mode and change to template mode", func(t *testing.T) {
+		templateName := acctest.RandString(12)
+		pipelineName := acctest.RandString(12)
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			Steps: []resource.TestStep{
+				{
+					Config: fmt.Sprintf(`
+						resource "buildkite_pipeline" "pipeline" {
+							name = "%s"
+							repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
+						}
+					`, pipelineName),
+					Check: resource.ComposeAggregateTestCheckFunc(
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "steps", defaultSteps),
+					),
+				},
+				// now convert to using a template and confirm steps are empty
+				{
+					Config: fmt.Sprintf(`
+						resource "buildkite_pipeline_template" "template" {
+							name = "%s"
+							configuration = "steps: []"
+							available = true
+						}
+						resource "buildkite_pipeline" "pipeline" {
+							name = "%s"
+							repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
+							pipeline_template_id = buildkite_pipeline_template.template.id
+						}
+					`, templateName, pipelineName),
+					Check: resource.ComposeAggregateTestCheckFunc(
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "steps", ""),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "name", pipelineName),
+					),
+				},
+			},
+		})
+	})
 }
