@@ -1,5 +1,20 @@
 # Changelog
 
+## [v1.9.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.8.0...v1.9.0)
+
+- Don't allow interpolations in signed steps input [[PR #534](https://github.com/buildkite/terraform-provider-buildkite/pull/534)] @moskyb
+- Bump docker/library/golang from 1.22.3 to 1.22.4 [[PR #538](https://github.com/buildkite/terraform-provider-buildkite/pull/538)] @dependabot
+- Bump github.com/vektah/gqlparser/v2 from 2.5.8 to 2.5.15 [[PR #537](https://github.com/buildkite/terraform-provider-buildkite/pull/537)] @dependabot
+
+## [v1.8.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.7.0...v1.8.0)
+
+- Windows ARM64 is deprecated in GoReleaser [[PR #523](https://github.com/buildkite/terraform-provider-buildkite/pull/523)] @mcncl
+- Bump docker/library/golang from 1.22.1 to 1.22.2 [[PR #524](https://github.com/buildkite/terraform-provider-buildkite/pull/524)] @dependabot
+- chore: Add tomowatt to CODEOWNERS [[PR #525](https://github.com/buildkite/terraform-provider-buildkite/pull/525)] @tomowatt
+- Switch some steps over to a hosted queue [[PR #526](https://github.com/buildkite/terraform-provider-buildkite/pull/526)] @yob
+- SUP-1996: Fix infinite drift with Team Description [[PR #531](https://github.com/buildkite/terraform-provider-buildkite/pull/531)] @tomowatt
+- Refactor to remove hard coded goreleaser architecture [[PR #532](https://github.com/buildkite/terraform-provider-buildkite/pull/532)] @wolfeidau
+
 ## [v1.7.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.6.0...v1.7.0)
 - Expose the `key` for default_cluster_queue [[PR
   #521](https://github.com/buildkite/terraform-provider-buildkite/pull/521) @mcncl
