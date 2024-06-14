@@ -593,7 +593,7 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 								- %s
 								- %s
 
-								-> %s is only valid if the pipeline uses a GitHub repository. 
+								-> %s is only valid if the pipeline uses a GitHub repository.
 								-> If not set, the default value is %s and other provider settings defaults are applied.
 						`,
 							"`code` will create builds when code is pushed to GitHub.",
@@ -763,7 +763,7 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 		Description:                          plan.Description.ValueString(),
 		Id:                                   plan.Id.ValueString(),
 		Name:                                 plan.Name.ValueString(),
-		PipelineTemplateId:                   plan.PipelineTemplateId.ValueString(),
+		PipelineTemplateId:                   plan.PipelineTemplateId.ValueStringPointer(),
 		Repository:                           PipelineRepositoryInput{Url: plan.Repository.ValueString()},
 		SkipIntermediateBuilds:               plan.SkipIntermediateBuilds.ValueBool(),
 		SkipIntermediateBuildsBranchFilter:   plan.SkipIntermediateBuildsBranchFilter.ValueString(),
