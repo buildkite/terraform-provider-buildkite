@@ -593,7 +593,7 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 								- %s
 								- %s
 
-								-> %s is only valid if the pipeline uses a GitHub repository. 
+								-> %s is only valid if the pipeline uses a GitHub repository.
 								-> If not set, the default value is %s and other provider settings defaults are applied.
 						`,
 							"`code` will create builds when code is pushed to GitHub.",
@@ -716,24 +716,59 @@ func (p *pipelineResource) UpgradeState(ctx context.Context) map[int64]resource.
 	}
 }
 
+// ModifyPlan will modify the plan for the pipeline resource to handle setting the steps and pipeline_template_id
+// attributes.
+//
+// These attributes are mutually exclusive and steps has a default value which must be handled.
+// The mutal exclusion is already validated on the schema, so this function needs to determine which mode is being used;
+// either "template" mode or "steps" mode. "template" mode is only ever enabled explicitly if the value for the
+// pipeline_template_id is non-null, whereas "steps" mode can be implied with both attributes being null or explicit
+// with "steps" being non-null.
+//
+// To further complicate things, this function is called twice per run: first during the planning phase before TF prints
+// out a diff to the user for confirmation. The req.Config may contain unknown values at this point that derive from
+// other unknowns (think string interpolation, etc.). If the user accepts the plan, this is called again with
+// wholly-known req.Config values with any unknowns that can be resolved. Note: there may still be unknowns.
+//
+// Reference: https://github.com/hashicorp/terraform/blob/55600d815e0cde1a19e9cd319f52e1247033b8e0/docs/resource-instance-change-lifecycle.md
 func (p *pipelineResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
-	// Only modify plan on pipeline creation
-	if req.State.Raw.IsNull() {
-		var template, steps types.String
+	// if the entire plan is null, the resource is planned for destruction and we dont need to do anything
+	if req.Plan.Raw.IsNull() {
+		return
+	}
 
-		// Load pipeline_template_id and steps (if defined)
-		req.Plan.GetAttribute(ctx, path.Root("pipeline_template_id"), &template)
-		req.Plan.GetAttribute(ctx, path.Root("steps"), &steps)
+	var configTemplate, configSteps types.String
+	resp.Diagnostics.Append(req.Config.GetAttribute(ctx, path.Root("pipeline_template_id"), &configTemplate)...)
+	resp.Diagnostics.Append(req.Config.GetAttribute(ctx, path.Root("steps"), &configSteps)...)
 
-		// Set default steps only if there is no template oe defined steps
-		if template.IsNull() && (steps.IsUnknown() || steps.IsNull()) {
+	// if we don't know either, return early
+	if configTemplate.IsUnknown() || configSteps.IsUnknown() {
+		return
+	}
+
+	// we are in "template" mode if the value is known (not null, ie a literal string) or unknown (derived from another
+	// resource)
+	templateMode := !configTemplate.IsNull()
+	// explict steps if the value is not null
+	explicitStepsMode := !templateMode && (!configSteps.IsNull())
+
+	// "template" mode is enabled explicitly, but the value can be derived from other resources, meaning its value could be
+	// "unknown". But if it is "null", we know the user has elected not to use a template. This means we are in one of the
+	// "steps" modes.
+	if !templateMode {
+		resp.Diagnostics.Append(resp.Plan.SetAttribute(ctx, path.Root("pipeline_template_id"), types.StringNull())...)
+		// if steps is not supplied, we are in "implicit steps mode" and we can set the value to the default
+		if !explicitStepsMode {
+			log.Println("`steps` and `pipeline_template_id` are both null. Using implicit steps mode.")
 			resp.Diagnostics.Append(resp.Plan.SetAttribute(ctx, path.Root("steps"), defaultSteps)...)
 			return
 		}
-	} else {
-		// Do nothing on other plan operations (update, delete)
 		return
 	}
+
+	// reaching here, we know we are in "template" mode. the value could be known or unknown (derived). either way, we
+	// do not need to change it. but we do need to empty out the steps
+	resp.Diagnostics.Append(resp.Plan.SetAttribute(ctx, path.Root("steps"), types.StringNull())...)
 }
 
 func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
@@ -763,7 +798,7 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 		Description:                          plan.Description.ValueString(),
 		Id:                                   plan.Id.ValueString(),
 		Name:                                 plan.Name.ValueString(),
-		PipelineTemplateId:                   plan.PipelineTemplateId.ValueString(),
+		PipelineTemplateId:                   plan.PipelineTemplateId.ValueStringPointer(),
 		Repository:                           PipelineRepositoryInput{Url: plan.Repository.ValueString()},
 		SkipIntermediateBuilds:               plan.SkipIntermediateBuilds.ValueBool(),
 		SkipIntermediateBuildsBranchFilter:   plan.SkipIntermediateBuildsBranchFilter.ValueString(),
@@ -912,12 +947,20 @@ func setPipelineModel(model *pipelineResourceModel, data pipelineResponse) {
 	model.MaximumTimeoutInMinutes = types.Int64PointerValue(maximumTimeoutInMinutes)
 	model.Name = types.StringValue(data.GetName())
 	model.Repository = types.StringValue(data.GetRepository().Url)
-	model.PipelineTemplateId = types.StringPointerValue(data.GetPipelineTemplate().Id)
 	model.SkipIntermediateBuilds = types.BoolValue(data.GetSkipIntermediateBuilds())
 	model.SkipIntermediateBuildsBranchFilter = types.StringValue(data.GetSkipIntermediateBuildsBranchFilter())
 	model.Slug = types.StringValue(data.GetSlug())
-	model.Steps = types.StringValue(data.GetSteps().Yaml)
 	model.UUID = types.StringValue(data.GetPipelineUuid())
+
+	// only set template or steps. steps is always updated even if using a template, but its redundant and creates
+	// complications later
+	if data.GetPipelineTemplate().Id != nil {
+		model.PipelineTemplateId = types.StringPointerValue(data.GetPipelineTemplate().Id)
+		model.Steps = types.StringNull()
+	} else {
+		model.Steps = types.StringValue(data.GetSteps().Yaml)
+		model.PipelineTemplateId = types.StringNull()
+	}
 
 	tags := make([]types.String, len(data.GetTags()))
 	for i, tag := range data.GetTags() {

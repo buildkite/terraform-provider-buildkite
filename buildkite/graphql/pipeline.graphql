@@ -100,7 +100,7 @@ mutation createPipeline(
 # @genqlient(for: "PipelineUpdateInput.emoji", pointer: true)
 # @genqlient(for: "PipelineUpdateInput.visibility", omitempty: true)
 # @genqlient(for: "PipelineUpdateInput.branchConfiguration", pointer:true)
-# @genqlient(for: "PipelineUpdateInput.pipelineTemplateId", omitempty: true)
+# @genqlient(for: "PipelineUpdateInput.pipelineTemplateId", pointer: true)
 # @genqlient(for: "PipelineUpdateInput.archived", omitempty: true)
 # @genqlient(for: "PipelineUpdateInput.nextBuildNumber", omitempty: true)
 # @genqlient(for: "PipelineUpdateInput.defaultTimeoutInMinutes", pointer: true)

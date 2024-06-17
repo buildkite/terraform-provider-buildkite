@@ -45,7 +45,6 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 			p := s.RootModule().Resources["buildkite_pipeline.pipeline"]
 
 			err = errors.Join(compareRemoteValue(func() any { return pipeline.Name }, p.Primary.Attributes["name"])(s), err)
-			err = errors.Join(compareRemoteValue(func() any { return pipeline.Steps.Yaml }, p.Primary.Attributes["steps"])(s), err)
 			err = errors.Join(compareRemoteValue(func() any { return pipeline.Repository.Url }, "https://github.com/buildkite/terraform-provider-buildkite.git")(s), err)
 			err = errors.Join(compareRemoteValue(func() any { return pipeline.AllowRebuilds }, true)(s), err)
 			err = errors.Join(compareRemoteValue(func() any { return *pipeline.DefaultTimeoutInMinutes }, 0)(s), err)
@@ -119,6 +118,55 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 		})
 	})
 
+	t.Run("update pipeline with only required attributes", func(t *testing.T) {
+		var pipeline getPipelinePipeline
+		pipelineName := acctest.RandString(12)
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			Steps: []resource.TestStep{
+				{
+					Config: fmt.Sprintf(`
+						resource "buildkite_pipeline" "pipeline" {
+							name = "%s"
+							repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
+						}
+					`, pipelineName),
+					Check: resource.ComposeAggregateTestCheckFunc(
+						// check api values are expected
+						func(s *terraform.State) error {
+							slug := fmt.Sprintf("%s/%s", getenv("BUILDKITE_ORGANIZATION_SLUG"), pipelineName)
+							resp, err := getPipeline(context.Background(), genqlientGraphql, slug)
+							pipeline = resp.Pipeline
+							return err
+						},
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "steps", defaultSteps),
+					),
+				},
+				{
+					Config: fmt.Sprintf(`
+						resource "buildkite_pipeline" "pipeline" {
+							name = "%s"
+							repository = "https://github.com/buildkite/terraform-provider.git"
+						}
+					`, pipelineName),
+					Check: resource.ComposeAggregateTestCheckFunc(
+						// check the pipeline IDs are the same (so it wasn't recreated)
+						func(s *terraform.State) error {
+							p := s.RootModule().Resources["buildkite_pipeline.pipeline"]
+							if p.Primary.ID != pipeline.Id {
+								return fmt.Errorf("Pipelines do not match: %s %s", pipeline.Id, p.Primary.ID)
+							}
+							return nil
+						},
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "steps", defaultSteps),
+					),
+				},
+			},
+		})
+	})
+
 	t.Run("create pipeline with a pipeline template", func(t *testing.T) {
 		var pipeline getPipelinePipeline
 		pipelineName := acctest.RandString(12)
@@ -148,7 +196,7 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 						// check computed values get set
 						resource.TestCheckResourceAttrSet("buildkite_pipeline.pipeline", "badge_url"),
 						resource.TestCheckResourceAttrSet("buildkite_pipeline.pipeline", "id"),
-						resource.TestCheckResourceAttrSet("buildkite_pipeline.pipeline", "steps"),
+						resource.TestCheckNoResourceAttr("buildkite_pipeline.pipeline", "steps"),
 						resource.TestCheckResourceAttrSet("buildkite_pipeline.pipeline", "slug"),
 						resource.TestCheckResourceAttrSet("buildkite_pipeline.pipeline", "uuid"),
 						resource.TestCheckResourceAttrSet("buildkite_pipeline.pipeline", "webhook_url"),
@@ -671,12 +719,12 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 					Config: fmt.Sprintf(`
 						resource "buildkite_cluster" "cluster" {
 							name = "%s"
-						}					
+						}
 						resource "buildkite_pipeline" "pipeline" {
 							name = "%s"
 							repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
 							provider_settings = {
-								trigger_mode = "none" 
+								trigger_mode = "none"
 							}
 						}
 					`, clusterName, pipelineName),
@@ -694,8 +742,8 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 						resource "buildkite_pipeline" "pipeline" {
 							name = "%s"
 							repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
-							cluster_id = buildkite_cluster.cluster.id   
-							provider_settings = {}							
+							cluster_id = buildkite_cluster.cluster.id
+							provider_settings = {}
 						}
 					`, clusterName, pipelineName),
 					ConfigPlanChecks: resource.ConfigPlanChecks{
@@ -709,4 +757,228 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 		})
 	})
 
+	t.Run("create in template mode and change template configuration afterwards", func(t *testing.T) {
+		templateName := acctest.RandString(12)
+		pipelineName := acctest.RandString(12)
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			Steps: []resource.TestStep{
+				{
+					Config: fmt.Sprintf(`
+						resource "buildkite_pipeline_template" "template" {
+							name = "%s"
+							configuration = "steps: []"
+							available = true
+						}
+						resource "buildkite_pipeline" "pipeline" {
+							name = "%s"
+							repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
+							pipeline_template_id = buildkite_pipeline_template.template.id
+						}
+					`, templateName, pipelineName),
+					Check: resource.ComposeAggregateTestCheckFunc(
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "name", pipelineName),
+						resource.TestCheckNoResourceAttr("buildkite_pipeline.pipeline", "steps"),
+					),
+				},
+				{
+					// now change the template steps, we dont expect the pipeline to change at all
+					Config: fmt.Sprintf(`
+						resource "buildkite_pipeline_template" "template" {
+							name = "%s"
+							configuration = "steps: [command: echo hello]"
+							available = true
+						}
+						resource "buildkite_pipeline" "pipeline" {
+							name = "%s"
+							repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
+							pipeline_template_id = buildkite_pipeline_template.template.id
+						}
+					`, templateName, pipelineName),
+					ConfigPlanChecks: resource.ConfigPlanChecks{
+						PreApply: []plancheck.PlanCheck{
+							plancheck.ExpectResourceAction("buildkite_pipeline_template.template", plancheck.ResourceActionUpdate),
+							plancheck.ExpectResourceAction("buildkite_pipeline.pipeline", plancheck.ResourceActionNoop),
+						},
+					},
+				},
+			},
+		})
+	})
+
+	t.Run("create in template mode and change to explicit steps mode", func(t *testing.T) {
+		templateName := acctest.RandString(12)
+		pipelineName := acctest.RandString(12)
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			Steps: []resource.TestStep{
+				{
+					Config: fmt.Sprintf(`
+						resource "buildkite_pipeline_template" "template" {
+							name = "%s"
+							configuration = "steps: []"
+							available = true
+						}
+						resource "buildkite_pipeline" "pipeline" {
+							name = "%s"
+							repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
+							pipeline_template_id = buildkite_pipeline_template.template.id
+						}
+					`, templateName, pipelineName),
+					Check: resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "name", pipelineName),
+				},
+				{
+					// now remove the template and set steps
+					Config: fmt.Sprintf(`
+						resource "buildkite_pipeline_template" "template" {
+							name = "%s"
+							configuration = "steps: []"
+							available = true
+						}
+						resource "buildkite_pipeline" "pipeline" {
+							name = "%s"
+							repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
+							steps = "steps: []"
+						}
+					`, templateName, pipelineName),
+					Check: resource.ComposeAggregateTestCheckFunc(
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "steps", "steps: []"),
+					),
+				},
+			},
+		})
+	})
+
+	t.Run("create in template mode and change to implicit steps mode", func(t *testing.T) {
+		templateName := acctest.RandString(12)
+		pipelineName := acctest.RandString(12)
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			Steps: []resource.TestStep{
+				{
+					Config: fmt.Sprintf(`
+						resource "buildkite_pipeline_template" "template" {
+							name = "%s"
+							configuration = "steps: []"
+							available = true
+						}
+						resource "buildkite_pipeline" "pipeline" {
+							name = "%s"
+							repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
+							pipeline_template_id = buildkite_pipeline_template.template.id
+						}
+					`, templateName, pipelineName),
+					Check: resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "name", pipelineName),
+				},
+				{
+					// now remove the template and steps which should use the default
+					Config: fmt.Sprintf(`
+						resource "buildkite_pipeline_template" "template" {
+							name = "%s"
+							configuration = "steps: []"
+							available = true
+						}
+						resource "buildkite_pipeline" "pipeline" {
+							name = "%s"
+							repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
+						}
+					`, templateName, pipelineName),
+					Check: resource.ComposeAggregateTestCheckFunc(
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "steps", defaultSteps),
+					),
+				},
+			},
+		})
+	})
+
+	t.Run("create in implicit steps mode and change to template mode", func(t *testing.T) {
+		templateName := acctest.RandString(12)
+		pipelineName := acctest.RandString(12)
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			Steps: []resource.TestStep{
+				{
+					Config: fmt.Sprintf(`
+						resource "buildkite_pipeline" "pipeline" {
+							name = "%s"
+							repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
+						}
+					`, pipelineName),
+					Check: resource.ComposeAggregateTestCheckFunc(
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "steps", defaultSteps),
+					),
+				},
+				// now convert to using a template and confirm steps are empty
+				{
+					Config: fmt.Sprintf(`
+						resource "buildkite_pipeline_template" "template" {
+							name = "%s"
+							configuration = "steps: []"
+							available = true
+						}
+						resource "buildkite_pipeline" "pipeline" {
+							name = "%s"
+							repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
+							pipeline_template_id = buildkite_pipeline_template.template.id
+						}
+					`, templateName, pipelineName),
+					Check: resource.ComposeAggregateTestCheckFunc(
+						resource.TestCheckNoResourceAttr("buildkite_pipeline.pipeline", "steps"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "name", pipelineName),
+					),
+				},
+			},
+		})
+	})
+
+	t.Run("create in explicit steps mode and change to template mode", func(t *testing.T) {
+		templateName := acctest.RandString(12)
+		pipelineName := acctest.RandString(12)
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			Steps: []resource.TestStep{
+				{
+					Config: fmt.Sprintf(`
+						resource "buildkite_pipeline" "pipeline" {
+							name = "%s"
+							repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
+							steps = "steps: []"
+						}
+					`, pipelineName),
+					Check: resource.ComposeAggregateTestCheckFunc(
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "steps", "steps: []"),
+					),
+				},
+				// now convert to using a template and confirm steps are empty
+				{
+					Config: fmt.Sprintf(`
+						resource "buildkite_pipeline_template" "template" {
+							name = "%s"
+							configuration = "steps: [command: echo hello]"
+							available = true
+						}
+						resource "buildkite_pipeline" "pipeline" {
+							name = "%s"
+							repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
+							pipeline_template_id = buildkite_pipeline_template.template.id
+						}
+					`, templateName, pipelineName),
+					Check: resource.ComposeAggregateTestCheckFunc(
+						resource.TestCheckNoResourceAttr("buildkite_pipeline.pipeline", "steps"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "name", pipelineName),
+					),
+				},
+			},
+		})
+	})
 }
