@@ -908,12 +908,21 @@ func setPipelineModel(model *pipelineResourceModel, data pipelineResponse) {
 	model.MaximumTimeoutInMinutes = types.Int64PointerValue(maximumTimeoutInMinutes)
 	model.Name = types.StringValue(data.GetName())
 	model.Repository = types.StringValue(data.GetRepository().Url)
-	model.PipelineTemplateId = types.StringPointerValue(data.GetPipelineTemplate().Id)
 	model.SkipIntermediateBuilds = types.BoolValue(data.GetSkipIntermediateBuilds())
 	model.SkipIntermediateBuildsBranchFilter = types.StringValue(data.GetSkipIntermediateBuildsBranchFilter())
 	model.Slug = types.StringValue(data.GetSlug())
-	model.Steps = types.StringValue(data.GetSteps().Yaml)
 	model.UUID = types.StringValue(data.GetPipelineUuid())
+
+	// only set template or steps. steps is always updated even if using a template, but its redundant and creates
+	// complications later
+	if data.GetPipelineTemplate().Id != nil {
+		model.PipelineTemplateId = types.StringValue(*data.GetPipelineTemplate().Id)
+		// also empty out the steps if using a template
+		model.Steps = types.StringValue("")
+	} else {
+		model.Steps = types.StringValue(data.GetSteps().Yaml)
+		model.PipelineTemplateId = types.StringPointerValue(nil)
+	}
 
 	tags := make([]types.String, len(data.GetTags()))
 	for i, tag := range data.GetTags() {
