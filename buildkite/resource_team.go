@@ -121,7 +121,6 @@ func (t *teamResource) Schema(ctx context.Context, req resource.SchemaRequest, r
 			"members_can_create_pipelines": resource_schema.BoolAttribute{
 				Optional:            true,
 				Computed:            true,
-				Default:             booldefault.StaticBool(false),
 				MarkdownDescription: "Whether members of the team can create Pipelines.",
 			},
 		},
