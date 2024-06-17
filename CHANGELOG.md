@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Improve handling of steps and changing outside TF [[PR #539](https://github.com/buildkite/terraform-provider-buildkite/pull/539)] @jradtilbrook
+
 ## [v1.9.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.8.0...v1.9.0)
 
 - Don't allow interpolations in signed steps input [[PR #534](https://github.com/buildkite/terraform-provider-buildkite/pull/534)] @moskyb
