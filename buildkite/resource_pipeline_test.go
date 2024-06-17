@@ -45,7 +45,6 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 			p := s.RootModule().Resources["buildkite_pipeline.pipeline"]
 
 			err = errors.Join(compareRemoteValue(func() any { return pipeline.Name }, p.Primary.Attributes["name"])(s), err)
-			err = errors.Join(compareRemoteValue(func() any { return pipeline.Steps.Yaml }, p.Primary.Attributes["steps"])(s), err)
 			err = errors.Join(compareRemoteValue(func() any { return pipeline.Repository.Url }, "https://github.com/buildkite/terraform-provider-buildkite.git")(s), err)
 			err = errors.Join(compareRemoteValue(func() any { return pipeline.AllowRebuilds }, true)(s), err)
 			err = errors.Join(compareRemoteValue(func() any { return *pipeline.DefaultTimeoutInMinutes }, 0)(s), err)
@@ -197,7 +196,7 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 						// check computed values get set
 						resource.TestCheckResourceAttrSet("buildkite_pipeline.pipeline", "badge_url"),
 						resource.TestCheckResourceAttrSet("buildkite_pipeline.pipeline", "id"),
-						resource.TestCheckResourceAttrSet("buildkite_pipeline.pipeline", "steps"),
+						resource.TestCheckNoResourceAttr("buildkite_pipeline.pipeline", "steps"),
 						resource.TestCheckResourceAttrSet("buildkite_pipeline.pipeline", "slug"),
 						resource.TestCheckResourceAttrSet("buildkite_pipeline.pipeline", "uuid"),
 						resource.TestCheckResourceAttrSet("buildkite_pipeline.pipeline", "webhook_url"),
@@ -932,7 +931,7 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 						}
 					`, templateName, pipelineName),
 					Check: resource.ComposeAggregateTestCheckFunc(
-						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "steps", ""),
+						resource.TestCheckNoResourceAttr("buildkite_pipeline.pipeline", "steps"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "name", pipelineName),
 					),
 				},
@@ -975,7 +974,7 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 						}
 					`, templateName, pipelineName),
 					Check: resource.ComposeAggregateTestCheckFunc(
-						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "steps", ""),
+						resource.TestCheckNoResourceAttr("buildkite_pipeline.pipeline", "steps"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "name", pipelineName),
 					),
 				},

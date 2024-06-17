@@ -716,20 +716,59 @@ func (p *pipelineResource) UpgradeState(ctx context.Context) map[int64]resource.
 	}
 }
 
+// ModifyPlan will modify the plan for the pipeline resource to handle setting the steps and pipeline_template_id
+// attributes.
+//
+// These attributes are mutually exclusive and steps has a default value which must be handled.
+// The mutal exclusion is already validated on the schema, so this function needs to determine which mode is being used;
+// either "template" mode or "steps" mode. "template" mode is only ever enabled explicitly if the value for the
+// pipeline_template_id is non-null, whereas "steps" mode can be implied with both attributes being null or explicit
+// with "steps" being non-null.
+//
+// To further complicate things, this function is called twice per run: first during the planning phase before TF prints
+// out a diff to the user for confirmation. The req.Config may contain unknown values at this point that derive from
+// other unknowns (think string interpolation, etc.). If the user accepts the plan, this is called again with
+// wholly-known req.Config values with any unknowns that can be resolved. Note: there may still be unknowns.
+//
+// Reference: https://github.com/hashicorp/terraform/blob/55600d815e0cde1a19e9cd319f52e1247033b8e0/docs/resource-instance-change-lifecycle.md
 func (p *pipelineResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
-	// Don't modify on destroy, but otherwise make sure the steps default is preserved
-	if !req.Plan.Raw.IsNull() {
-		var template, steps types.String
-
-		// Load pipeline_template_id and steps (if defined)
-		req.Plan.GetAttribute(ctx, path.Root("pipeline_template_id"), &template)
-		req.Plan.GetAttribute(ctx, path.Root("steps"), &steps)
-
-		// Set default steps only if there is no template or defined steps
-		if template.IsNull() && (steps.IsUnknown() || steps.IsNull()) {
-			resp.Diagnostics.Append(resp.Plan.SetAttribute(ctx, path.Root("steps"), defaultSteps)...)
-		}
+	// if the entire plan is null, the resource is planned for destruction and we dont need to do anything
+	if req.Plan.Raw.IsNull() {
+		return
 	}
+
+	var configTemplate, configSteps types.String
+	resp.Diagnostics.Append(req.Config.GetAttribute(ctx, path.Root("pipeline_template_id"), &configTemplate)...)
+	resp.Diagnostics.Append(req.Config.GetAttribute(ctx, path.Root("steps"), &configSteps)...)
+
+	// if we don't know either, return early
+	if configTemplate.IsUnknown() || configSteps.IsUnknown() {
+		return
+	}
+
+	// we are in "template" mode if the value is known (not null, ie a literal string) or unknown (derived from another
+	// resource)
+	templateMode := !configTemplate.IsNull()
+	// explict steps if the value is not null
+	explicitStepsMode := !templateMode && (!configSteps.IsNull())
+
+	// "template" mode is enabled explicitly, but the value can be derived from other resources, meaning its value could be
+	// "unknown". But if it is "null", we know the user has elected not to use a template. This means we are in one of the
+	// "steps" modes.
+	if !templateMode {
+		resp.Diagnostics.Append(resp.Plan.SetAttribute(ctx, path.Root("pipeline_template_id"), types.StringNull())...)
+		// if steps is not supplied, we are in "implicit steps mode" and we can set the value to the default
+		if !explicitStepsMode {
+			log.Println("`steps` and `pipeline_template_id` are both null. Using implicit steps mode.")
+			resp.Diagnostics.Append(resp.Plan.SetAttribute(ctx, path.Root("steps"), defaultSteps)...)
+			return
+		}
+		return
+	}
+
+	// reaching here, we know we are in "template" mode. the value could be known or unknown (derived). either way, we
+	// do not need to change it. but we do need to empty out the steps
+	resp.Diagnostics.Append(resp.Plan.SetAttribute(ctx, path.Root("steps"), types.StringNull())...)
 }
 
 func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
