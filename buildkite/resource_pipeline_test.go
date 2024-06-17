@@ -779,7 +779,10 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 							pipeline_template_id = buildkite_pipeline_template.template.id
 						}
 					`, templateName, pipelineName),
-					Check: resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "name", pipelineName),
+					Check: resource.ComposeAggregateTestCheckFunc(
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "name", pipelineName),
+						resource.TestCheckNoResourceAttr("buildkite_pipeline.pipeline", "steps"),
+					),
 				},
 				{
 					// now change the template steps, we dont expect the pipeline to change at all

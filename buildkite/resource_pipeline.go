@@ -916,12 +916,11 @@ func setPipelineModel(model *pipelineResourceModel, data pipelineResponse) {
 	// only set template or steps. steps is always updated even if using a template, but its redundant and creates
 	// complications later
 	if data.GetPipelineTemplate().Id != nil {
-		model.PipelineTemplateId = types.StringValue(*data.GetPipelineTemplate().Id)
-		// also empty out the steps if using a template
-		model.Steps = types.StringValue("")
+		model.PipelineTemplateId = types.StringPointerValue(data.GetPipelineTemplate().Id)
+		model.Steps = types.StringNull()
 	} else {
 		model.Steps = types.StringValue(data.GetSteps().Yaml)
-		model.PipelineTemplateId = types.StringPointerValue(nil)
+		model.PipelineTemplateId = types.StringNull()
 	}
 
 	tags := make([]types.String, len(data.GetTags()))
