@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## [v1.10.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.9.0...v1.10.0)
 
 - Improve handling of steps and changing outside TF [[PR #539](https://github.com/buildkite/terraform-provider-buildkite/pull/539)] @jradtilbrook
 
