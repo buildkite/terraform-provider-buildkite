@@ -4,7 +4,7 @@ go 1.22.3
 
 require (
 	github.com/Khan/genqlient v0.6.0
-	github.com/buildkite/go-pipeline v0.4.1
+	github.com/buildkite/go-pipeline v0.9.0
 	github.com/buildkite/interpolate v0.1.2
 	github.com/hashicorp/terraform-plugin-framework v1.3.5
 	github.com/hashicorp/terraform-plugin-framework-validators v0.12.0
