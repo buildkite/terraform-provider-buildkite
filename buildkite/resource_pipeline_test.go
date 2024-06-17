@@ -954,7 +954,7 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 						}
 					`, pipelineName),
 					Check: resource.ComposeAggregateTestCheckFunc(
-						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "steps", defaultSteps),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "steps", "steps: []"),
 					),
 				},
 				// now convert to using a template and confirm steps are empty
@@ -962,7 +962,7 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 					Config: fmt.Sprintf(`
 						resource "buildkite_pipeline_template" "template" {
 							name = "%s"
-							configuration = "steps: []"
+							configuration = "steps: [command: echo hello]"
 							available = true
 						}
 						resource "buildkite_pipeline" "pipeline" {
