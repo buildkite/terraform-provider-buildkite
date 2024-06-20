@@ -193,7 +193,8 @@ func (cq *clusterQueueResource) Read(ctx context.Context, req resource.ReadReque
 	// This is a tradeoff of the current getClusterQueues Genqlient query (searches for 50 queues via the cluster UUID in state)
 	resp.Diagnostics.AddError(
 		"Unable to find Cluster Queue",
-		fmt.Sprintf("Unable to find Cluster Queue: %s", err.Error()),
+		// Now that clusters are in GA, it should be safe to get the ID of the cluster as default
+		fmt.Sprintf("Unable to find any queues for cluster: %s", state.ClusterId),
 	)
 }
 
