@@ -125,9 +125,9 @@ func TestAccBuildkiteSignedPipelineStepsDataSource(t *testing.T) {
 	t.Run("signed pipeline steps with escaped interpolations regex", func(t *testing.T) {
 		pipelineWithEscapedInterpolations := heredoc.Doc(`
 			steps:
-			- label: ":pipeline:"	
-				command: buildkite-agent pipeline upload
-				if: 'pipeline.slug !~ /^.+-main\$/'
+			- label: ":pipeline:"
+			  command: buildkite-agent pipeline upload
+			  if: 'pipeline.slug !~ /^.+-main\$/'
 		`)
 
 		resource.ParallelTest(t, resource.TestCase{
