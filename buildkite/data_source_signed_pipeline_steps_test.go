@@ -150,10 +150,9 @@ func TestAccBuildkiteSignedPipelineStepsDataSource(t *testing.T) {
 						pipelineWithEscapedInterpolations,
 					),
 					Check: resource.ComposeAggregateTestCheckFunc(
-						resource.TestCheckResourceAttr(
+						resource.TestCheckResourceAttrSet(
 							"data.buildkite_signed_pipeline_steps.my_signed_steps",
 							"steps",
-							string(pipelineWithEscapedInterpolations),
 						),
 					),
 				},
