@@ -122,6 +122,45 @@ func TestAccBuildkiteSignedPipelineStepsDataSource(t *testing.T) {
 
 	})
 
+	t.Run("signed pipeline steps with escaped interpolations regex", func(t *testing.T) {
+		pipelineWithEscapedInterpolations := heredoc.Doc(`
+			steps:
+			- label: ":pipeline:"	
+  			  command: buildkite-agent pipeline upload
+			  if: pipeline.slug !~ /^.+-main\$/
+		`)
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			Steps: []resource.TestStep{
+				{
+					Config: heredoc.Docf(
+						`
+							data "buildkite_signed_pipeline_steps" "my_signed_steps" {
+							  repository     = %q
+							  jwks           = %q
+							  jwks_key_id    = %q
+							  unsigned_steps = %q
+							}
+						`,
+						repository,
+						jwks,
+						jwksKeyID,
+						pipelineWithEscapedInterpolations,
+					),
+					Check: resource.ComposeAggregateTestCheckFunc(
+						resource.TestCheckResourceAttr(
+							"data.buildkite_signed_pipeline_steps.my_signed_steps",
+							"steps",
+							string(pipelineWithEscapedInterpolations),
+						),
+					),
+				},
+			},
+		})
+	})
+
 	t.Run("signed pipeline steps with a jwks file attribute signs the steps", func(t *testing.T) {
 		jwksFile := writeToTempFile(t, jwks)
 
