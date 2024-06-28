@@ -3,7 +3,7 @@ module github.com/buildkite/terraform-provider-buildkite
 go 1.22.3
 
 require (
-	github.com/Khan/genqlient v0.6.0
+	github.com/Khan/genqlient v0.7.0
 	github.com/buildkite/go-pipeline v0.4.1
 	github.com/buildkite/interpolate v0.1.3
 	github.com/hashicorp/terraform-plugin-framework v1.3.5
