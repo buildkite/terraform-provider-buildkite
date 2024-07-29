@@ -211,6 +211,9 @@ func (c *clusterDefaultQueueResource) Schema(ctx context.Context, req resource.S
 			"cluster_id": schema.StringAttribute{
 				Required:            true,
 				MarkdownDescription: "The GraphQL ID of the cluster to which to add a default queue.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"queue_id": schema.StringAttribute{
 				Required:            true,
