@@ -72,6 +72,9 @@ func (clusterQueueResource) Schema(ctx context.Context, req resource.SchemaReque
 			"cluster_id": resource_schema.StringAttribute{
 				Required:            true,
 				MarkdownDescription: "The ID of the cluster that this cluster queue belongs to.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"key": resource_schema.StringAttribute{
 				Required:            true,
