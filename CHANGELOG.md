@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Adding a feature request template for better issue management/submission [[PR #549](https://github.com/buildkite/terraform-provider-buildkite/pull/549)] @mcncl
+- SUP-2495: Update Resources to be replaced if Cluster ID changes [[PR #554](https://github.com/buildkite/terraform-provider-buildkite/pull/554)] @tomowatt
+
 ## [v1.10.1](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.10.0...v1.10.1)
 
 - Fix nil reference error when err may be nil [[PR #546](https://github.com/buildkite/terraform-provider-buildkite/pull/546)] @mcncl

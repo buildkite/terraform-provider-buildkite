@@ -80,6 +80,9 @@ func (ct *clusterAgentToken) Schema(_ context.Context, _ resource.SchemaRequest,
 			"cluster_id": resource_schema.StringAttribute{
 				Required:            true,
 				MarkdownDescription: "The GraphQL ID of the Cluster that this Cluster Agent Token belongs to.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"cluster_uuid": resource_schema.StringAttribute{
 				Computed:            true,
