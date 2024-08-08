@@ -1,0 +1,34 @@
+fragment OrganizationRuleFields on Rule {
+    id
+    sourceType
+    targetType
+    action
+    source {
+        ... on Pipeline {
+            uuid
+        }
+    }
+    target {
+        ... on Pipeline {
+            uuid
+        }
+    }
+}
+
+mutation createOrganizationRule(
+    $organizationId: ID!, 
+    $name: String!,
+    $value: JSON!,
+) {
+    ruleCreate(
+        input: {
+            organizationId: $organizationId
+            name: $name,
+            value: $value
+        }
+    ) {
+        rule {
+            ...OrganizationRuleFields
+        }
+    }
+}

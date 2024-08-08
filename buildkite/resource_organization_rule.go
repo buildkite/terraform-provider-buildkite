@@ -17,7 +17,6 @@ import (
 
 type organizationRuleResourceModel struct {
 	Id          types.String `tfsdk:"id"`
-	Uuid        types.String `tfsdk:"uuid"`
     Name        types.String `tfsdk:"name"` 
 	Value       types.String `tfsdk:"value"` 
 	SourceType  types.String `tfsdk:"source_type"`
@@ -55,13 +54,6 @@ func (organizationRuleResource) Schema(ctx context.Context, req resource.SchemaR
 			"id": resource_schema.StringAttribute{
 				Computed:            true,
 				MarkdownDescription: "The GraphQL ID of the organization rule.",
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
-				},
-			},
-			"uuid": resource_schema.StringAttribute{
-				Computed:            true,
-				MarkdownDescription: "The UUID of the organization rule.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
@@ -123,22 +115,22 @@ func (organizationRuleResource) Schema(ctx context.Context, req resource.SchemaR
 	}
 }
 
-func (cq *organizationRuleResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+func (or *organizationRuleResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 
 }
 
-func (cq *organizationRuleResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+func (or *organizationRuleResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 
 }
 
-func (cq *organizationRuleResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+func (or *organizationRuleResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 
 }
 
-func (cq *organizationRuleResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+func (or *organizationRuleResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 
 }
 
-func (cq *organizationRuleResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+func (or *organizationRuleResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	
 }
