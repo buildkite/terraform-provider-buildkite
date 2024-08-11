@@ -1,7 +1,9 @@
 fragment OrganizationRuleFields on Rule {
     id
+    name
     sourceType
     targetType
+    effect
     action
     source {
         ... on Pipeline {
@@ -30,5 +32,19 @@ mutation createOrganizationRule(
         rule {
             ...OrganizationRuleFields
         }
+    }
+}
+
+mutation deleteOrganizationRule(
+    $organizationId: ID!, 
+    $id: ID!,
+) {
+    ruleDelete(
+        input: {
+            organizationId: $organizationId
+            id: $id,
+        }
+    ) {
+        clientMutationId
     }
 }

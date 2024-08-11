@@ -290,10 +290,14 @@ func (v *OrganizationBannerFields) GetMessage() string { return v.Message }
 // OrganizationRuleFields includes the GraphQL fields of Rule requested by the fragment OrganizationRuleFields.
 type OrganizationRuleFields struct {
 	Id string `json:"id"`
+	// Name of the rule
+	Name string `json:"name"`
 	// Source type for the rule
 	SourceType RuleSourceType `json:"sourceType"`
 	// Target type for the rule
 	TargetType RuleTargetType `json:"targetType"`
+	// Effect for the rule
+	Effect RuleEffect `json:"effect"`
 	// Action for the rule
 	Action RuleAction `json:"action"`
 	// The source for the rule
@@ -305,11 +309,17 @@ type OrganizationRuleFields struct {
 // GetId returns OrganizationRuleFields.Id, and is useful for accessing the field via an interface.
 func (v *OrganizationRuleFields) GetId() string { return v.Id }
 
+// GetName returns OrganizationRuleFields.Name, and is useful for accessing the field via an interface.
+func (v *OrganizationRuleFields) GetName() string { return v.Name }
+
 // GetSourceType returns OrganizationRuleFields.SourceType, and is useful for accessing the field via an interface.
 func (v *OrganizationRuleFields) GetSourceType() RuleSourceType { return v.SourceType }
 
 // GetTargetType returns OrganizationRuleFields.TargetType, and is useful for accessing the field via an interface.
 func (v *OrganizationRuleFields) GetTargetType() RuleTargetType { return v.TargetType }
+
+// GetEffect returns OrganizationRuleFields.Effect, and is useful for accessing the field via an interface.
+func (v *OrganizationRuleFields) GetEffect() RuleEffect { return v.Effect }
 
 // GetAction returns OrganizationRuleFields.Action, and is useful for accessing the field via an interface.
 func (v *OrganizationRuleFields) GetAction() RuleAction { return v.Action }
@@ -370,9 +380,13 @@ func (v *OrganizationRuleFields) UnmarshalJSON(b []byte) error {
 type __premarshalOrganizationRuleFields struct {
 	Id string `json:"id"`
 
+	Name string `json:"name"`
+
 	SourceType RuleSourceType `json:"sourceType"`
 
 	TargetType RuleTargetType `json:"targetType"`
+
+	Effect RuleEffect `json:"effect"`
 
 	Action RuleAction `json:"action"`
 
@@ -393,8 +407,10 @@ func (v *OrganizationRuleFields) __premarshalJSON() (*__premarshalOrganizationRu
 	var retval __premarshalOrganizationRuleFields
 
 	retval.Id = v.Id
+	retval.Name = v.Name
 	retval.SourceType = v.SourceType
 	retval.TargetType = v.TargetType
+	retval.Effect = v.Effect
 	retval.Action = v.Action
 	{
 
@@ -1378,6 +1394,14 @@ const (
 	RuleActionTriggerBuild RuleAction = "TRIGGER_BUILD"
 )
 
+// The effect a rule has
+type RuleEffect string
+
+const (
+	// Allow
+	RuleEffectAllow RuleEffect = "ALLOW"
+)
+
 // The source type for a rule
 type RuleSourceType string
 
@@ -1871,6 +1895,18 @@ func (v *__deleteClusterQueueInput) GetOrganizationId() string { return v.Organi
 
 // GetId returns __deleteClusterQueueInput.Id, and is useful for accessing the field via an interface.
 func (v *__deleteClusterQueueInput) GetId() string { return v.Id }
+
+// __deleteOrganizationRuleInput is used internally by genqlient
+type __deleteOrganizationRuleInput struct {
+	OrganizationId string `json:"organizationId"`
+	Id             string `json:"id"`
+}
+
+// GetOrganizationId returns __deleteOrganizationRuleInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__deleteOrganizationRuleInput) GetOrganizationId() string { return v.OrganizationId }
+
+// GetId returns __deleteOrganizationRuleInput.Id, and is useful for accessing the field via an interface.
+func (v *__deleteOrganizationRuleInput) GetId() string { return v.Id }
 
 // __deletePipelineInput is used internally by genqlient
 type __deletePipelineInput struct {
@@ -2846,6 +2882,11 @@ func (v *createOrganizationRuleRuleCreateRuleCreatePayloadRule) GetId() string {
 	return v.OrganizationRuleFields.Id
 }
 
+// GetName returns createOrganizationRuleRuleCreateRuleCreatePayloadRule.Name, and is useful for accessing the field via an interface.
+func (v *createOrganizationRuleRuleCreateRuleCreatePayloadRule) GetName() string {
+	return v.OrganizationRuleFields.Name
+}
+
 // GetSourceType returns createOrganizationRuleRuleCreateRuleCreatePayloadRule.SourceType, and is useful for accessing the field via an interface.
 func (v *createOrganizationRuleRuleCreateRuleCreatePayloadRule) GetSourceType() RuleSourceType {
 	return v.OrganizationRuleFields.SourceType
@@ -2854,6 +2895,11 @@ func (v *createOrganizationRuleRuleCreateRuleCreatePayloadRule) GetSourceType() 
 // GetTargetType returns createOrganizationRuleRuleCreateRuleCreatePayloadRule.TargetType, and is useful for accessing the field via an interface.
 func (v *createOrganizationRuleRuleCreateRuleCreatePayloadRule) GetTargetType() RuleTargetType {
 	return v.OrganizationRuleFields.TargetType
+}
+
+// GetEffect returns createOrganizationRuleRuleCreateRuleCreatePayloadRule.Effect, and is useful for accessing the field via an interface.
+func (v *createOrganizationRuleRuleCreateRuleCreatePayloadRule) GetEffect() RuleEffect {
+	return v.OrganizationRuleFields.Effect
 }
 
 // GetAction returns createOrganizationRuleRuleCreateRuleCreatePayloadRule.Action, and is useful for accessing the field via an interface.
@@ -2899,9 +2945,13 @@ func (v *createOrganizationRuleRuleCreateRuleCreatePayloadRule) UnmarshalJSON(b 
 type __premarshalcreateOrganizationRuleRuleCreateRuleCreatePayloadRule struct {
 	Id string `json:"id"`
 
+	Name string `json:"name"`
+
 	SourceType RuleSourceType `json:"sourceType"`
 
 	TargetType RuleTargetType `json:"targetType"`
+
+	Effect RuleEffect `json:"effect"`
 
 	Action RuleAction `json:"action"`
 
@@ -2922,8 +2972,10 @@ func (v *createOrganizationRuleRuleCreateRuleCreatePayloadRule) __premarshalJSON
 	var retval __premarshalcreateOrganizationRuleRuleCreateRuleCreatePayloadRule
 
 	retval.Id = v.OrganizationRuleFields.Id
+	retval.Name = v.OrganizationRuleFields.Name
 	retval.SourceType = v.OrganizationRuleFields.SourceType
 	retval.TargetType = v.OrganizationRuleFields.TargetType
+	retval.Effect = v.OrganizationRuleFields.Effect
 	retval.Action = v.OrganizationRuleFields.Action
 	{
 
@@ -4029,6 +4081,31 @@ type deleteClusterResponse struct {
 // GetClusterDelete returns deleteClusterResponse.ClusterDelete, and is useful for accessing the field via an interface.
 func (v *deleteClusterResponse) GetClusterDelete() deleteClusterClusterDeleteClusterDeletePayload {
 	return v.ClusterDelete
+}
+
+// deleteOrganizationRuleResponse is returned by deleteOrganizationRule on success.
+type deleteOrganizationRuleResponse struct {
+	// Delete a rule.
+	RuleDelete deleteOrganizationRuleRuleDeleteRuleDeletePayload `json:"ruleDelete"`
+}
+
+// GetRuleDelete returns deleteOrganizationRuleResponse.RuleDelete, and is useful for accessing the field via an interface.
+func (v *deleteOrganizationRuleResponse) GetRuleDelete() deleteOrganizationRuleRuleDeleteRuleDeletePayload {
+	return v.RuleDelete
+}
+
+// deleteOrganizationRuleRuleDeleteRuleDeletePayload includes the requested fields of the GraphQL type RuleDeletePayload.
+// The GraphQL type's documentation follows.
+//
+// Autogenerated return type of RuleDelete.
+type deleteOrganizationRuleRuleDeleteRuleDeletePayload struct {
+	// A unique identifier for the client performing the mutation.
+	ClientMutationId string `json:"clientMutationId"`
+}
+
+// GetClientMutationId returns deleteOrganizationRuleRuleDeleteRuleDeletePayload.ClientMutationId, and is useful for accessing the field via an interface.
+func (v *deleteOrganizationRuleRuleDeleteRuleDeletePayload) GetClientMutationId() string {
+	return v.ClientMutationId
 }
 
 // deletePipelinePipelineDeletePipelineDeletePayload includes the requested fields of the GraphQL type PipelineDeletePayload.
@@ -6376,11 +6453,17 @@ func (v *getNodeNodeRule) GetTypename() string { return v.Typename }
 // GetId returns getNodeNodeRule.Id, and is useful for accessing the field via an interface.
 func (v *getNodeNodeRule) GetId() string { return v.OrganizationRuleFields.Id }
 
+// GetName returns getNodeNodeRule.Name, and is useful for accessing the field via an interface.
+func (v *getNodeNodeRule) GetName() string { return v.OrganizationRuleFields.Name }
+
 // GetSourceType returns getNodeNodeRule.SourceType, and is useful for accessing the field via an interface.
 func (v *getNodeNodeRule) GetSourceType() RuleSourceType { return v.OrganizationRuleFields.SourceType }
 
 // GetTargetType returns getNodeNodeRule.TargetType, and is useful for accessing the field via an interface.
 func (v *getNodeNodeRule) GetTargetType() RuleTargetType { return v.OrganizationRuleFields.TargetType }
+
+// GetEffect returns getNodeNodeRule.Effect, and is useful for accessing the field via an interface.
+func (v *getNodeNodeRule) GetEffect() RuleEffect { return v.OrganizationRuleFields.Effect }
 
 // GetAction returns getNodeNodeRule.Action, and is useful for accessing the field via an interface.
 func (v *getNodeNodeRule) GetAction() RuleAction { return v.OrganizationRuleFields.Action }
@@ -6425,9 +6508,13 @@ type __premarshalgetNodeNodeRule struct {
 
 	Id string `json:"id"`
 
+	Name string `json:"name"`
+
 	SourceType RuleSourceType `json:"sourceType"`
 
 	TargetType RuleTargetType `json:"targetType"`
+
+	Effect RuleEffect `json:"effect"`
 
 	Action RuleAction `json:"action"`
 
@@ -6449,8 +6536,10 @@ func (v *getNodeNodeRule) __premarshalJSON() (*__premarshalgetNodeNodeRule, erro
 
 	retval.Typename = v.Typename
 	retval.Id = v.OrganizationRuleFields.Id
+	retval.Name = v.OrganizationRuleFields.Name
 	retval.SourceType = v.OrganizationRuleFields.SourceType
 	retval.TargetType = v.OrganizationRuleFields.TargetType
+	retval.Effect = v.OrganizationRuleFields.Effect
 	retval.Action = v.OrganizationRuleFields.Action
 	{
 
@@ -13364,8 +13453,10 @@ mutation createOrganizationRule ($organizationId: ID!, $name: String!, $value: J
 }
 fragment OrganizationRuleFields on Rule {
 	id
+	name
 	sourceType
 	targetType
+	effect
 	action
 	source {
 		__typename
@@ -13908,6 +13999,43 @@ func deleteClusterQueue(
 	return &data, err
 }
 
+// The query or mutation executed by deleteOrganizationRule.
+const deleteOrganizationRule_Operation = `
+mutation deleteOrganizationRule ($organizationId: ID!, $id: ID!) {
+	ruleDelete(input: {organizationId:$organizationId,id:$id}) {
+		clientMutationId
+	}
+}
+`
+
+func deleteOrganizationRule(
+	ctx context.Context,
+	client graphql.Client,
+	organizationId string,
+	id string,
+) (*deleteOrganizationRuleResponse, error) {
+	req := &graphql.Request{
+		OpName: "deleteOrganizationRule",
+		Query:  deleteOrganizationRule_Operation,
+		Variables: &__deleteOrganizationRuleInput{
+			OrganizationId: organizationId,
+			Id:             id,
+		},
+	}
+	var err error
+
+	var data deleteOrganizationRuleResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		ctx,
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
 // The query or mutation executed by deletePipeline.
 const deletePipeline_Operation = `
 mutation deletePipeline ($id: ID!) {
@@ -14409,8 +14537,10 @@ fragment PipelineTemplateFields on PipelineTemplate {
 }
 fragment OrganizationRuleFields on Rule {
 	id
+	name
 	sourceType
 	targetType
+	effect
 	action
 	source {
 		__typename
