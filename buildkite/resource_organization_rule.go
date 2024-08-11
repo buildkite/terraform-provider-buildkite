@@ -3,6 +3,7 @@ package buildkite
 import (
 	"context"
 	"fmt"
+	"log"
 
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -187,6 +188,59 @@ func (or *organizationRuleResource) Create(ctx context.Context, req resource.Cre
 }
 
 func (or *organizationRuleResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	var state organizationRuleResourceModel
+
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	timeouts, diags := or.client.timeouts.Read(ctx, DefaultTimeout)
+	resp.Diagnostics.Append(diags...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	var apiResponse *getNodeResponse
+	err := retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
+		var err error
+
+		log.Printf("Reading organization rule with ID %s ...", state.Id.ValueString())
+		apiResponse, err = getNode(ctx,
+			or.client.genqlient,
+			state.Id.ValueString(),
+		)
+
+		return retryContextError(err)
+	})
+
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Unable to read organization rule",
+			fmt.Sprintf("Unable to read organmization rule: %s", err.Error()),
+		)
+		return
+	}
+
+	// Convert fron Node to getNodeTeamMember type
+	if organizationRule, ok := apiResponse.GetNode().(*getNodeNodeOrganizationRule); ok {
+		if organizationRule == nil {
+			resp.Diagnostics.AddError(
+				"Unable to get organization rule",
+				"Error getting organization rule: nil response",
+			)
+			return
+		}
+		// Update state here with organization rule from API
+		resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+	} else {
+		// Remove from state if not found
+		resp.Diagnostics.AddWarning("Organization rule not found", "Removing from state")
+		resp.State.RemoveResource(ctx)
+		return
+	}
 
 }
 
