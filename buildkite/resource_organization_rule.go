@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -145,7 +146,11 @@ func (or *organizationRuleResource) Create(ctx context.Context, req resource.Cre
 		org, err := or.client.GetOrganizationID()
 		fmt.Println("Creating Organization rule")
 
-		typeCon := fmt.Sprintf("%s.%s.%s", plan.SourceType.ValueString(), plan.Action.ValueString(), plan.TargetType.ValueString())
+		typeCon := strings.ToLower(fmt.Sprintf("%s.%s.%s", 
+			plan.SourceType.ValueString(), 
+			plan.Action.ValueString(), 
+			plan.TargetType.ValueString(),
+		))
 
 		fmt.Println(typeCon)
 		if err == nil {
@@ -174,12 +179,14 @@ func (or *organizationRuleResource) Create(ctx context.Context, req resource.Cre
 		return
 	}
 
+	
+
 	state.Id = types.StringValue(r.RuleCreate.Rule.Id)
 	state.Name = types.StringValue(r.RuleCreate.Rule.Name)
 	state.Value = types.StringValue(value)
-	state.SourceType = types.StringValue(plan.SourceType.ValueString())
+	state.SourceType = types.StringValue(string(r.RuleCreate.Rule.SourceType))
 	state.SourceUuid = types.StringValue(plan.SourceUuid.ValueString())
-	state.TargetType = types.StringValue(plan.TargetType.ValueString())
+	state.TargetType = types.StringValue(string(r.RuleCreate.Rule.TargetType))
 	state.TargetUuid = types.StringValue(plan.TargetUuid.ValueString())
 	state.Effect = types.StringValue(string(r.RuleCreate.Rule.Effect))
 	state.Action = types.StringValue(string(r.RuleCreate.Rule.Action))
@@ -225,7 +232,7 @@ func (or *organizationRuleResource) Read(ctx context.Context, req resource.ReadR
 	}
 
 	// Convert fron Node to getNodeTeamMember type
-	if organizationRule, ok := apiResponse.GetNode().(*getNodeNodeOrganizationRule); ok {
+	if organizationRule, ok := apiResponse.GetNode().(*getNodeNodeOrganization); ok {
 		if organizationRule == nil {
 			resp.Diagnostics.AddError(
 				"Unable to get organization rule",
