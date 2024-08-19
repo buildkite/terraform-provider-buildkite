@@ -3,9 +3,8 @@ package buildkite
 import (
 	"context"
 	"fmt"
-	"log"
-	"strings"
-
+	//"log"
+	
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	resource_schema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -24,14 +23,6 @@ type organizationRuleResourceModel struct {
 	TargetType types.String `tfsdk:"target_type"`
 	TargetUuid types.String `tfsdk:"target_uuid"`
 	Effect     types.String `tfsdk:"effect"`
-	Action     types.String `tfsdk:"action"`
-}
-
-type organizationRuleCreateResourceModel struct {
-	SourceType types.String `tfsdk:"source_type"`
-	SourceUuid types.String `tfsdk:"source_uuid"`
-	TargetType types.String `tfsdk:"target_type"`
-	TargetUuid types.String `tfsdk:"target_uuid"`
 	Action     types.String `tfsdk:"action"`
 }
 
@@ -67,45 +58,45 @@ func (organizationRuleResource) Schema(ctx context.Context, req resource.SchemaR
 				},
 			},
 			"name": resource_schema.StringAttribute{
-				Computed:            true,
+				Required:            true,
 				MarkdownDescription: "The name that is given to this organization rule.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
 			"value": resource_schema.StringAttribute{
-				Computed:            true,
+				Required:            true,
 				MarkdownDescription: "The JSON rule that this organization rule implements.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
 			"source_type": resource_schema.StringAttribute{
-				Required:            true,
+				Computed:            true,
 				MarkdownDescription: "The source resource type that this organization rule allows or denies to invoke its defined action. ",
 				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.RequiresReplace(),
+					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
 			"source_uuid": resource_schema.StringAttribute{
-				Required:            true,
+				Computed:            true,
 				MarkdownDescription: "The UUID of the resource that this organization rule allows or denies invocating its defined action. ",
 				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.RequiresReplace(),
+					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
 			"target_type": resource_schema.StringAttribute{
-				Required:            true,
+				Computed:            true,
 				MarkdownDescription: "The target resource type that this organization rule allows or denies the source to respective action. ",
 				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.RequiresReplace(),
+					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
 			"target_uuid": resource_schema.StringAttribute{
-				Required:            true,
+				Computed:            true,
 				MarkdownDescription: "The UUID of the target resourcee that this organization rule allows or denies invocation its respective action. ",
 				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.RequiresReplace(),
+					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
 			"effect": resource_schema.StringAttribute{
@@ -116,8 +107,11 @@ func (organizationRuleResource) Schema(ctx context.Context, req resource.SchemaR
 				},
 			},
 			"action": resource_schema.StringAttribute{
-				Required:            true,
+				Computed:            true,
 				MarkdownDescription: "The action defined between source and target resources. ",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 		},
 	}
@@ -138,34 +132,18 @@ func (or *organizationRuleResource) Create(ctx context.Context, req resource.Cre
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	var r *createOrganizationRuleResponse
-	fmt.Println(r)
-	value := "{\"triggering_pipeline_uuid\":\"019135b4-046c-4dbc-aa1f-8880087b07f2\", \"triggered_pipeline_uuid\": \"019135b4-06dd-40a0-9caa-12f1cb6b3fdf\"}"
 
+	var r *createOrganizationRuleResponse
 	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		org, err := or.client.GetOrganizationID()
-		fmt.Println("Creating Organization rule")
-
-		typeCon := strings.ToLower(fmt.Sprintf("%s.%s.%s", 
-			plan.SourceType.ValueString(), 
-			plan.Action.ValueString(), 
-			plan.TargetType.ValueString(),
-		))
-
-		fmt.Println(typeCon)
-		if err == nil {
-			fmt.Sprintf("Org: %s", org)
-			fmt.Sprintf("Type: %s", typeCon)
-			fmt.Println(fmt.Sprintf("Val: %s", value))
-
+		if err == nil { 
 			r, err = createOrganizationRule(
 				ctx,
 				or.client.genqlient,
 				*org,
-				typeCon,
-				value,
+				plan.Name.ValueString(),
+				plan.Value.ValueString(),
 			)
-			fmt.Println("Resp", r)
 		}
 
 		return retryContextError(err)
@@ -173,28 +151,35 @@ func (or *organizationRuleResource) Create(ctx context.Context, req resource.Cre
 
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Unable to create Organization rule Queue",
+			"Unable to create Organization rule",
 			fmt.Sprintf("Unable to create organization rule: %s", err.Error()),
 		)
 		return
 	}
 
-	
-
 	state.Id = types.StringValue(r.RuleCreate.Rule.Id)
 	state.Name = types.StringValue(r.RuleCreate.Rule.Name)
-	state.Value = types.StringValue(value)
+	state.Value = types.StringValue(plan.Value.ValueString())
 	state.SourceType = types.StringValue(string(r.RuleCreate.Rule.SourceType))
-	state.SourceUuid = types.StringValue(plan.SourceUuid.ValueString())
 	state.TargetType = types.StringValue(string(r.RuleCreate.Rule.TargetType))
-	state.TargetUuid = types.StringValue(plan.TargetUuid.ValueString())
 	state.Effect = types.StringValue(string(r.RuleCreate.Rule.Effect))
 	state.Action = types.StringValue(string(r.RuleCreate.Rule.Action))
+
+	// Determine source UUID based on type
+	if ruleCreateSourcePipeline, ok := r.RuleCreate.Rule.Source.(*OrganizationRuleFieldsSourcePipeline); ok {
+		state.SourceUuid = types.StringValue(ruleCreateSourcePipeline.Uuid)
+	}
+
+	// Determine source UUID based on type
+	if ruleCreateTargetPipeline, ok := r.RuleCreate.Rule.Target.(*OrganizationRuleFieldsTargetPipeline); ok {
+		state.TargetUuid = types.StringValue(ruleCreateTargetPipeline.Uuid)
+	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
 func (or *organizationRuleResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	/*
 	var state organizationRuleResourceModel
 
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
@@ -243,12 +228,12 @@ func (or *organizationRuleResource) Read(ctx context.Context, req resource.ReadR
 		// Update state here with organization rule from API
 		resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 	} else {
-		// Remove from state if not found
+		// Remove from state if not found{{}}
 		resp.Diagnostics.AddWarning("Organization rule not found", "Removing from state")
 		resp.State.RemoveResource(ctx)
 		return
 	}
-
+	*/
 }
 
 func (or *organizationRuleResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
