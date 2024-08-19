@@ -1,9 +1,11 @@
 # Changelog
 
-## Unreleased
+## [v1.10.2](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.10.1...v1.10.2)
 
 - Adding a feature request template for better issue management/submission [[PR #549](https://github.com/buildkite/terraform-provider-buildkite/pull/549)] @mcncl
 - SUP-2495: Update Resources to be replaced if Cluster ID changes [[PR #554](https://github.com/buildkite/terraform-provider-buildkite/pull/554)] @tomowatt
+- Bump github.com/Khan/genqlient from 0.6.0 to 0.7.0 [[PR #544](https://github.com/buildkite/terraform-provider-buildkite/pull/544)] @dependabot
+- Bump docker/library/golang from 1.22.4 to 1.22.5 [[PR #555](https://github.com/buildkite/terraform-provider-buildkite/pull/555)] @dependabot
 
 ## [v1.10.1](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.10.0...v1.10.1)
 
