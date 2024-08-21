@@ -1,5 +1,6 @@
 fragment OrganizationRuleFields on Rule {
     id
+    uuid
     name
     sourceType
     targetType

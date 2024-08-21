@@ -3,7 +3,7 @@ package buildkite
 import (
 	"context"
 	"fmt"
-	//"log"
+	"log"
 	
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -15,7 +15,8 @@ import (
 )
 
 type organizationRuleResourceModel struct {
-	Id         types.String `tfsdk:"id"`
+	ID         types.String `tfsdk:"id"`
+	UUID	   types.String `tfsdk:"uuid"`
 	Name       types.String `tfsdk:"name"`
 	Value      types.String `tfsdk:"value"`
 	SourceType types.String `tfsdk:"source_type"`
@@ -53,6 +54,13 @@ func (organizationRuleResource) Schema(ctx context.Context, req resource.SchemaR
 			"id": resource_schema.StringAttribute{
 				Computed:            true,
 				MarkdownDescription: "The GraphQL ID of the organization rule.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"uuid": resource_schema.StringAttribute{
+				Computed:            true,
+				MarkdownDescription: "The UUID of the organization rule.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
@@ -157,7 +165,8 @@ func (or *organizationRuleResource) Create(ctx context.Context, req resource.Cre
 		return
 	}
 
-	state.Id = types.StringValue(r.RuleCreate.Rule.Id)
+	state.ID = types.StringValue(r.RuleCreate.Rule.Id)
+	state.UUID = types.StringValue(r.RuleCreate.Rule.Uuid)
 	state.Name = types.StringValue(r.RuleCreate.Rule.Name)
 	state.Value = types.StringValue(plan.Value.ValueString())
 	state.SourceType = types.StringValue(string(r.RuleCreate.Rule.SourceType))
@@ -179,7 +188,6 @@ func (or *organizationRuleResource) Create(ctx context.Context, req resource.Cre
 }
 
 func (or *organizationRuleResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	/*
 	var state organizationRuleResourceModel
 
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
@@ -199,10 +207,10 @@ func (or *organizationRuleResource) Read(ctx context.Context, req resource.ReadR
 	err := retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
 		var err error
 
-		log.Printf("Reading organization rule with ID %s ...", state.Id.ValueString())
+		log.Printf("Reading organization rule with UUID %s ...", state.UUID.ValueString())
 		apiResponse, err = getNode(ctx,
 			or.client.genqlient,
-			state.Id.ValueString(),
+			state.ID.ValueString(),
 		)
 
 		return retryContextError(err)
@@ -217,7 +225,7 @@ func (or *organizationRuleResource) Read(ctx context.Context, req resource.ReadR
 	}
 
 	// Convert fron Node to getNodeTeamMember type
-	if organizationRule, ok := apiResponse.GetNode().(*getNodeNodeOrganization); ok {
+	if organizationRule, ok := apiResponse.GetNode().(*getNodeNodeRule); ok {
 		if organizationRule == nil {
 			resp.Diagnostics.AddError(
 				"Unable to get organization rule",
@@ -225,7 +233,7 @@ func (or *organizationRuleResource) Read(ctx context.Context, req resource.ReadR
 			)
 			return
 		}
-		// Update state here with organization rule from API
+		updateOrganizatonRuleResourceState(&state, *organizationRule)
 		resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 	} else {
 		// Remove from state if not found{{}}
@@ -233,7 +241,6 @@ func (or *organizationRuleResource) Read(ctx context.Context, req resource.ReadR
 		resp.State.RemoveResource(ctx)
 		return
 	}
-	*/
 }
 
 func (or *organizationRuleResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
@@ -268,7 +275,7 @@ func (or *organizationRuleResource) Delete(ctx context.Context, req resource.Del
 				ctx,
 				or.client.genqlient,
 				*org,
-				state.Id.ValueString(),
+				state.ID.ValueString(),
 			)
 		}
 
@@ -282,4 +289,14 @@ func (or *organizationRuleResource) Delete(ctx context.Context, req resource.Del
 		)
 		return
 	}
+}
+
+func updateOrganizatonRuleResourceState(or *organizationRuleResourceModel, orn getNodeNodeRule) {
+	or.ID = types.StringValue(orn.Id)
+	or.UUID = types.StringValue(orn.Uuid)
+	or.Name = types.StringValue(orn.Name)
+	or.SourceType = types.StringValue(string(orn.SourceType))
+	or.TargetType = types.StringValue(string(orn.TargetType))
+	or.Effect = types.StringValue(string(orn.Effect))
+	or.Action = types.StringValue(string(orn.Action))
 }
