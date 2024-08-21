@@ -61,10 +61,10 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 		randdNameOne := acctest.RandString(12)
 		randNameTwo := acctest.RandString(12)
 		var orr organizationRuleResourceModel
-	
+
 		check := resource.ComposeAggregateTestCheckFunc(
-			
-			// Confirm the organization exists 
+
+			// Confirm the organization exists
 			testAccCheckOrganizationRuleExists(&orr, "buildkite_organization_rule.cluster_one_two_trigger"),
 			// Confirm the organization rule has the correct values in Buildkite's system
 			testAccCheckOrganizationRuleRemoteValues(&orr, "PIPELINE", "PIPELINE", "TRIGGER_BUILD", "ALLOW"),
@@ -113,7 +113,7 @@ func testAccCheckOrganizationRuleExists(orr *organizationRuleResourceModel, name
 			}
 			updateOrganizatonRuleResourceState(orr, *organizationRule)
 			fmt.Println(orr)
-		} 
+		}
 
 		return nil
 	}
@@ -157,7 +157,7 @@ func testAccCheckOrganizationRuleeDestroy(s *terraform.State) error {
 			if organizationRule != nil {
 				return fmt.Errorf("Organization rule still exists")
 			}
-		} 
+		}
 	}
 	return nil
 }

@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
-	
+
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	resource_schema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -16,7 +16,7 @@ import (
 
 type organizationRuleResourceModel struct {
 	ID         types.String `tfsdk:"id"`
-	UUID	   types.String `tfsdk:"uuid"`
+	UUID       types.String `tfsdk:"uuid"`
 	Name       types.String `tfsdk:"name"`
 	Value      types.String `tfsdk:"value"`
 	SourceType types.String `tfsdk:"source_type"`
@@ -144,7 +144,7 @@ func (or *organizationRuleResource) Create(ctx context.Context, req resource.Cre
 	var r *createOrganizationRuleResponse
 	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		org, err := or.client.GetOrganizationID()
-		if err == nil { 
+		if err == nil {
 			r, err = createOrganizationRule(
 				ctx,
 				or.client.genqlient,
@@ -207,7 +207,7 @@ func (or *organizationRuleResource) Read(ctx context.Context, req resource.ReadR
 	err := retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
 		var err error
 
-		log.Printf("Reading organization rule with UUID %s ...", state.UUID.ValueString())
+		log.Printf("Reading organization rule with ID %s ...", state.UUID.ValueString())
 		apiResponse, err = getNode(ctx,
 			or.client.genqlient,
 			state.ID.ValueString(),
@@ -224,7 +224,7 @@ func (or *organizationRuleResource) Read(ctx context.Context, req resource.ReadR
 		return
 	}
 
-	// Convert fron Node to getNodeTeamMember type
+	// Convert fron Node to getNodeNodeRule type
 	if organizationRule, ok := apiResponse.GetNode().(*getNodeNodeRule); ok {
 		if organizationRule == nil {
 			resp.Diagnostics.AddError(
