@@ -8,8 +8,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	resource_schema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
@@ -148,8 +146,7 @@ func (or *organizationRuleDatasource) Read(ctx context.Context, req datasource.R
 }
 
 func updateOrganizatonRuleDatasourceState(or *organizationRuleResourceModel, orn getNodeNodeRule) {
-	// Determine source UUID based on type
-	fmt.Println(orn.Source)
+	// Determine source UUID based on type	
 	var sourceUuid, targetUuid string
 
 	// Determine source UUID based on type

@@ -2,6 +2,7 @@ package buildkite
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 
@@ -127,6 +128,7 @@ func (organizationRuleResource) Schema(ctx context.Context, req resource.SchemaR
 
 func (or *organizationRuleResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var plan, state organizationRuleResourceModel
+
 	diags := req.Plan.Get(ctx, &plan)
 	resp.Diagnostics.Append(diags...)
 
@@ -165,24 +167,33 @@ func (or *organizationRuleResource) Create(ctx context.Context, req resource.Cre
 		return
 	}
 
+	// Obtain the source UUID of the created organization rule based on the API response.
+	sourceUUID, err := obtainSourceUuidOnCreate(r)
+
+	if err != nil {
+		resp.Diagnostics.AddError( "Unable to create Organization rule", fmt.Sprintf("%s", err.Error()))
+		return
+	}
+
+	// Obtain the target UUID of the created organization rule based on the API response.
+	targetUUID, err := obtainTargetUuidOnCreate(r)
+
+	if err != nil {
+		resp.Diagnostics.AddError( "Unable to create Organization rule", fmt.Sprintf("%s", err.Error()))
+		return
+	}
+
 	state.ID = types.StringValue(r.RuleCreate.Rule.Id)
 	state.UUID = types.StringValue(r.RuleCreate.Rule.Uuid)
 	state.Name = types.StringValue(r.RuleCreate.Rule.Name)
 	state.Value = types.StringValue(plan.Value.ValueString())
 	state.SourceType = types.StringValue(string(r.RuleCreate.Rule.SourceType))
+	state.SourceUuid = types.StringValue(*sourceUUID)
 	state.TargetType = types.StringValue(string(r.RuleCreate.Rule.TargetType))
+	state.TargetUuid = types.StringValue(*targetUUID)
 	state.Effect = types.StringValue(string(r.RuleCreate.Rule.Effect))
 	state.Action = types.StringValue(string(r.RuleCreate.Rule.Action))
 
-	// Determine source UUID based on type
-	if ruleCreateSourcePipeline, ok := r.RuleCreate.Rule.Source.(*OrganizationRuleFieldsSourcePipeline); ok {
-		state.SourceUuid = types.StringValue(ruleCreateSourcePipeline.Uuid)
-	}
-
-	// Determine source UUID based on type
-	if ruleCreateTargetPipeline, ok := r.RuleCreate.Rule.Target.(*OrganizationRuleFieldsTargetPipeline); ok {
-		state.TargetUuid = types.StringValue(ruleCreateTargetPipeline.Uuid)
-	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
@@ -288,6 +299,32 @@ func (or *organizationRuleResource) Delete(ctx context.Context, req resource.Del
 			fmt.Sprintf("Unable to delete organization rule: %s", err.Error()),
 		)
 		return
+	}
+}
+
+func obtainSourceUuidOnCreate(r *createOrganizationRuleResponse) (*string, error) {
+	/*
+	The provider will try and determine the source UUID based on type that is returned in the createOrganizationRuleResponse
+	Otherwise, it will create and throw an error stating that it cannot obtain the source type from what is returned
+	by the API.
+	*/
+	if ruleCreateSourcePipeline, ok := r.RuleCreate.Rule.Source.(*OrganizationRuleFieldsSourcePipeline); ok {
+		return &ruleCreateSourcePipeline.Uuid, nil
+	} else {
+		return nil, errors.New("Error obtaining source type upon creating the organization rule.")
+	}
+}
+
+func obtainTargetUuidOnCreate(r *createOrganizationRuleResponse) (*string, error) {
+	/*
+	The provider will try and determine the target UUID based on type that is returned in the createOrganizationRuleResponse
+	Otherwise, it will create and throw an error stating that it cannot obtain the target type from what is returned
+	by the API.
+	*/
+	if ruleCreateTargetPipeline, ok := r.RuleCreate.Rule.Target.(*OrganizationRuleFieldsTargetPipeline); ok {
+		return &ruleCreateTargetPipeline.Uuid, nil
+	} else {
+		return nil, errors.New("Error obtaining target type upon creating the organization rule.")
 	}
 }
 
