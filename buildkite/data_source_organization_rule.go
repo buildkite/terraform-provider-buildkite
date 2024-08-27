@@ -18,9 +18,9 @@ type organizationRuleDatasourceModel struct {
 	Name       types.String `tfsdk:"name"`
 	Value      types.String `tfsdk:"value"`
 	SourceType types.String `tfsdk:"source_type"`
-	SourceUuid types.String `tfsdk:"source_uuid"`
+	SourceUUID types.String `tfsdk:"source_uuid"`
 	TargetType types.String `tfsdk:"target_type"`
-	TargetUuid types.String `tfsdk:"target_uuid"`
+	TargetUUID types.String `tfsdk:"target_uuid"`
 	Effect     types.String `tfsdk:"effect"`
 	Action     types.String `tfsdk:"action"`
 }
@@ -146,29 +146,17 @@ func (or *organizationRuleDatasource) Read(ctx context.Context, req datasource.R
 }
 
 func updateOrganizatonRuleDatasourceState(or *organizationRuleResourceModel, orn getNodeNodeRule) {
-	// Determine source UUID based on type	
-	var sourceUuid, targetUuid string
-
-	// Determine source UUID based on type
-	if ruleCreateSourcePipeline, ok := orn.Source.(*OrganizationRuleFieldsSourcePipeline); ok {
-		sourceUuid = ruleCreateSourcePipeline.Uuid
-	}
-
-	// Determine source UUID based on type
-	if ruleCreateTargetPipeline, ok := orn.Source.(*OrganizationRuleFieldsSourcePipeline); ok {
-		targetUuid = ruleCreateTargetPipeline.Uuid
-	}
-
-	value := fmt.Sprintf("{\"triggered_pipeline_uuid\":\"%s\",\"triggering_pipeline_uuid\":\"%s\"}", targetUuid, sourceUuid)
+	sourceUUID, targetUUID := obtainReadUUIDs(orn)
+	value := obtainValueJSON(sourceUUID, targetUUID, string(orn.Action))
 
 	or.ID = types.StringValue(orn.Id)
 	or.UUID = types.StringValue(orn.Uuid)
 	or.Name = types.StringValue(orn.Name)
+	or.Value = types.StringValue(value)
 	or.SourceType = types.StringValue(string(orn.SourceType))
-	or.SourceUuid = types.StringValue(sourceUuid)
+	or.SourceUUID = types.StringValue(sourceUUID)
 	or.TargetType = types.StringValue(string(orn.TargetType))
-	or.TargetUuid = types.StringValue(targetUuid)
+	or.TargetUUID = types.StringValue(targetUUID)
 	or.Effect = types.StringValue(string(orn.Effect))
 	or.Action = types.StringValue(string(orn.Action))
-	or.Value = types.StringValue(value)
 }
