@@ -183,7 +183,7 @@ func (or *organizationRuleResource) Create(ctx context.Context, req resource.Cre
 	state.SourceType = types.StringValue(string(r.RuleCreate.Rule.SourceType))
 	state.SourceUUID = types.StringValue(*sourceUUID)
 	state.TargetType = types.StringValue(string(r.RuleCreate.Rule.TargetType))
-	state.TargetType = types.StringValue(*targetUUID)
+	state.TargetUUID = types.StringValue(*targetUUID)
 	state.Effect = types.StringValue(string(r.RuleCreate.Rule.Effect))
 	state.Action = types.StringValue(string(r.RuleCreate.Rule.Action))
 
@@ -346,6 +346,8 @@ func obtainValueJSON(sourceUUID, targetUUID, action string) string {
 	switch action {
 	case "TRIGGER_BUILD":
 		value, _ = json.Marshal(map[string]string{"triggered_pipeline_uuid": targetUUID, "triggering_pipeline_uuid": sourceUUID})
+	case "ARTIFACTS_READ":
+		value, _ = json.Marshal(map[string]string{"source_pipeline_uuid": sourceUUID, "target_pipeline_uuid": targetUUID})
 	}
 
 	return string(value)
