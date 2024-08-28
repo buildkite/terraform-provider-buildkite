@@ -27,7 +27,7 @@ func TestAccBuildkitePipelineTemplateDatasource(t *testing.T) {
 			configuration = "steps:\n  - label: \":pipeline:\"\n    command: \"buildkite-agent pipeline upload\""
 		}
 
-		data "buildkite_pipeline_template" "data_template_foo" {
+		data "buildkite_pipeline_template" "template_foo" {
 			depends_on = [buildkite_pipeline_template.template_foo]
 			id = buildkite_pipeline_template.template_foo.id
 		}
@@ -50,7 +50,7 @@ func TestAccBuildkitePipelineTemplateDatasource(t *testing.T) {
 			configuration = "steps:\n  - label: \":pipeline:\"\n    command: \"buildkite-agent pipeline upload\""
 		}
 
-		data "buildkite_pipeline_template" "data_template_bar" {
+		data "buildkite_pipeline_template" "template_bar" {
 			depends_on = [buildkite_pipeline_template.template_bar]
 			name = "Template %s"
 		}
@@ -73,7 +73,7 @@ func TestAccBuildkitePipelineTemplateDatasource(t *testing.T) {
 			configuration = "steps:\n  - label: \":pipeline:\"\n    command: \"buildkite-agent pipeline upload\""
 		}
 
-		data "buildkite_pipeline_template" "data_template_bar" {
+		data "buildkite_pipeline_template" "template_bar" {
 			depends_on = [buildkite_pipeline_template.template_bar]
 			name = "Template %s"
 		}
@@ -96,7 +96,7 @@ func TestAccBuildkitePipelineTemplateDatasource(t *testing.T) {
 			configuration = "steps:\n  - label: \":pipeline:\"\n    command: \"buildkite-agent pipeline upload\""
 		}
 
-		data "buildkite_pipeline_template" "data_template_bar" {
+		data "buildkite_pipeline_template" "template_bar" {
 			depends_on = [buildkite_pipeline_template.template_bar]
 			id = buildkite_pipeline_template.template_bar.id
 			name = "Template %s"
@@ -114,10 +114,10 @@ func TestAccBuildkitePipelineTemplateDatasource(t *testing.T) {
 			// Confirm the pipeline template has the correct values in Buildkite's system
 			testAccCheckPipelineTemplateRemoteValues(&ptr, fmt.Sprintf("Template %s", randName), false),
 			// Check all pipeline template resource attributes are set in state (required attributes)
-			resource.TestCheckResourceAttrSet("buildkite_pipeline_template.template_foo", "id"),
-			resource.TestCheckResourceAttrSet("buildkite_pipeline_template.template_foo", "uuid"),
-			resource.TestCheckResourceAttrSet("buildkite_pipeline_template.template_foo", "name"),
-			resource.TestCheckResourceAttrSet("buildkite_pipeline_template.template_foo", "configuration"),
+			resource.TestCheckResourceAttrSet("data.buildkite_pipeline_template.template_foo", "id"),
+			resource.TestCheckResourceAttrSet("data.buildkite_pipeline_template.template_foo", "uuid"),
+			resource.TestCheckResourceAttrSet("data.buildkite_pipeline_template.template_foo", "name"),
+			resource.TestCheckResourceAttrSet("data.buildkite_pipeline_template.template_foo", "configuration"),
 		)
 
 		resource.ParallelTest(t, resource.TestCase{
@@ -143,10 +143,10 @@ func TestAccBuildkitePipelineTemplateDatasource(t *testing.T) {
 			// Confirm the pipeline template has the correct values in Buildkite's system
 			testAccCheckPipelineTemplateRemoteValues(&ptr, fmt.Sprintf("Template %s", randName), false),
 			// Check all pipeline template resource attributes are set in state (required attributes)
-			resource.TestCheckResourceAttrSet("buildkite_pipeline_template.template_bar", "id"),
-			resource.TestCheckResourceAttrSet("buildkite_pipeline_template.template_bar", "uuid"),
-			resource.TestCheckResourceAttrSet("buildkite_pipeline_template.template_bar", "name"),
-			resource.TestCheckResourceAttrSet("buildkite_pipeline_template.template_bar", "configuration"),
+			resource.TestCheckResourceAttrSet("data.buildkite_pipeline_template.template_bar", "id"),
+			resource.TestCheckResourceAttrSet("data.buildkite_pipeline_template.template_bar", "uuid"),
+			resource.TestCheckResourceAttrSet("data.buildkite_pipeline_template.template_bar", "name"),
+			resource.TestCheckResourceAttrSet("data.buildkite_pipeline_template.template_bar", "configuration"),
 		)
 
 		resource.ParallelTest(t, resource.TestCase{
