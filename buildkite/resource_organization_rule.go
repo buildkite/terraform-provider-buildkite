@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/MakeNowJust/heredoc"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	resource_schema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -51,7 +52,11 @@ func (or *organizationRuleResource) Configure(ctx context.Context, req resource.
 
 func (organizationRuleResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = resource_schema.Schema{
-		MarkdownDescription: "An Organization Rule allows specifying explicit rules between two Buildkite resources and the desired effect/action. ",
+		MarkdownDescription: heredoc.Doc(`
+		An Organization Rule allows specifying explicit rules between two Buildkite resources and the desired effect/action. 
+
+		More information on pipelines can be found in the [documentation](https://buildkite.com/docs/pipelines/rules/overview).
+	`),
 		Attributes: map[string]resource_schema.Attribute{
 			"id": resource_schema.StringAttribute{
 				Computed:            true,

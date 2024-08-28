@@ -4,11 +4,14 @@ page_title: "buildkite_organization_rule Resource - terraform-provider-buildkite
 subcategory: ""
 description: |-
   An Organization Rule allows specifying explicit rules between two Buildkite resources and the desired effect/action.
+  More information on pipelines can be found in the documentation https://buildkite.com/docs/pipelines/rules/overview.
 ---
 
 # buildkite_organization_rule (Resource)
 
-An Organization Rule allows specifying explicit rules between two Buildkite resources and the desired effect/action.
+An Organization Rule allows specifying explicit rules between two Buildkite resources and the desired effect/action. 
+
+More information on pipelines can be found in the [documentation](https://buildkite.com/docs/pipelines/rules/overview).
 
 ## Example Usage
 

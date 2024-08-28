@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/MakeNowJust/heredoc"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	resource_schema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -47,7 +48,11 @@ func (or *organizationRuleDatasource) Configure(ctx context.Context, req datasou
 
 func (organizationRuleDatasource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		MarkdownDescription: "An Organization Rule allows specifying explicit rules between two Buildkite resources and desired effect and actions. ",
+		MarkdownDescription: heredoc.Doc(`
+		Use this data source to retrieve an organization rule by its ID.
+		
+		More information on pipeline templates can be found in the [documentation](https://buildkite.com/docs/pipelines/rules/overview).
+		`),
 		Attributes: map[string]schema.Attribute{
 			"id": resource_schema.StringAttribute{
 				Required:            true,
