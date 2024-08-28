@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- Fix: Pipeliine template datasource tests asserting datasource attributes
+- SUP-2536: Asserting pipeline template datasource attributes on tests [[PR #559](https://github.com/buildkite/terraform-provider-buildkite/pull/559)] @james2791
 
 ## [v1.10.2](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.10.1...v1.10.2)
 
