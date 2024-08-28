@@ -51,7 +51,7 @@ func (or *organizationRuleResource) Configure(ctx context.Context, req resource.
 
 func (organizationRuleResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = resource_schema.Schema{
-		MarkdownDescription: "An Organization Rule allows specifying explicit rules between two Buildkite resources and desired effect and actions. ",
+		MarkdownDescription: "An Organization Rule allows specifying explicit rules between two Buildkite resources and the desired effect/action. ",
 		Attributes: map[string]resource_schema.Attribute{
 			"id": resource_schema.StringAttribute{
 				Computed:            true,

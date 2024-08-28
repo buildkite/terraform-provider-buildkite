@@ -45,8 +45,8 @@ resource "buildkite_cluster_default_queue" "primary" {
 ### Read-Only
 
 - `id` (String) The GraphQL ID of the cluster.
+- `key` (String) The Key for the cluster queue; its unique identifier
 - `uuid` (String) The UUID of the cluster.
-- `key` (String) The key of the cluster queue.
 
 ## Import
 
