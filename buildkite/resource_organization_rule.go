@@ -167,31 +167,22 @@ func (or *organizationRuleResource) Create(ctx context.Context, req resource.Cre
 
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Unable to create Organization rule",
+			"Unable to create organization rule",
 			fmt.Sprintf("Unable to create organization rule: %s", err.Error()),
 		)
 		return
 	}
 
 	// Obtain the source and target UUIDs of the created organization rule based on the API response.
-	sourceUUID, targetUUID, err := obtainCreationUuids(r)
+	sourceUUID, targetUUID, err := obtainCreationUUIDs(r)
 
 	if err != nil {
 		resp.Diagnostics.AddError("Unable to create organization rule", fmt.Sprintf("%s", err.Error()))
 		return
 	}
 
-	state.ID = types.StringValue(r.RuleCreate.Rule.Id)
-	state.UUID = types.StringValue(r.RuleCreate.Rule.Uuid)
-	state.Type = types.StringValue(r.RuleCreate.Rule.Type)
-	state.Value = types.StringValue(plan.Value.ValueString())
-	state.SourceType = types.StringValue(string(r.RuleCreate.Rule.SourceType))
-	state.SourceUUID = types.StringValue(*sourceUUID)
-	state.TargetType = types.StringValue(string(r.RuleCreate.Rule.TargetType))
-	state.TargetUUID = types.StringValue(*targetUUID)
-	state.Effect = types.StringValue(string(r.RuleCreate.Rule.Effect))
-	state.Action = types.StringValue(string(r.RuleCreate.Rule.Action))
-
+	// Update organization rule model and set in state
+	updateOrganizatonRuleCreateState(&state, *r, *sourceUUID, *targetUUID, plan.Value.ValueString() )
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
@@ -238,7 +229,8 @@ func (or *organizationRuleResource) Read(ctx context.Context, req resource.ReadR
 			)
 			return
 		}
-		updateOrganizatonRuleResourceState(&state, *organizationRule)
+		// Update organization rule model and set in state
+		updateOrganizatonRuleReadState(&state, *organizationRule)
 		resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 	} else {
 		// Remove from state if not found{{}}
@@ -296,7 +288,7 @@ func (or *organizationRuleResource) Delete(ctx context.Context, req resource.Del
 	}
 }
 
-func obtainCreationUuids(r *createOrganizationRuleResponse) (*string, *string, error) {
+func obtainCreationUUIDs(r *createOrganizationRuleResponse) (*string, *string, error) {
 	var sourceUUID, targetUUID string
 	/*
 		The provider will try and determine the source UUID based on type that is returned in the *createOrganizationRuleResponse
@@ -350,7 +342,20 @@ func obtainValueJSON(sourceUUID, targetUUID, action string) string {
 	return string(value)
 }
 
-func updateOrganizatonRuleResourceState(or *organizationRuleResourceModel, orn getNodeNodeRule) {
+func updateOrganizatonRuleCreateState(or *organizationRuleResourceModel, ruleCreate createOrganizationRuleResponse, sourceUUID, targetUUID, value string){
+	or.ID = types.StringValue(ruleCreate.RuleCreate.Rule.Id)
+	or.UUID = types.StringValue(ruleCreate.RuleCreate.Rule.Uuid)
+	or.Type = types.StringValue(ruleCreate.RuleCreate.Rule.Type)
+	or.Value = types.StringValue(value)
+	or.SourceType = types.StringValue(string(ruleCreate.RuleCreate.Rule.SourceType))
+	or.SourceUUID = types.StringValue(sourceUUID)
+	or.TargetType = types.StringValue(string(ruleCreate.RuleCreate.Rule.TargetType))
+	or.TargetUUID = types.StringValue(targetUUID)
+	or.Effect = types.StringValue(string(ruleCreate.RuleCreate.Rule.Effect))
+	or.Action = types.StringValue(string(ruleCreate.RuleCreate.Rule.Action))
+}
+
+func updateOrganizatonRuleReadState(or *organizationRuleResourceModel, orn getNodeNodeRule) {
 	sourceUUID, targetUUID := obtainReadUUIDs(orn)
 	value := obtainValueJSON(sourceUUID, targetUUID, string(orn.Action))
 
