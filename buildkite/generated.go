@@ -292,8 +292,8 @@ type OrganizationRuleFields struct {
 	Id string `json:"id"`
 	// The public UUID for the rule
 	Uuid string `json:"uuid"`
-	// Name of the rule
-	Name string `json:"name"`
+	// The type of rule
+	Type string `json:"type"`
 	// Source type for the rule
 	SourceType RuleSourceType `json:"sourceType"`
 	// Target type for the rule
@@ -314,8 +314,8 @@ func (v *OrganizationRuleFields) GetId() string { return v.Id }
 // GetUuid returns OrganizationRuleFields.Uuid, and is useful for accessing the field via an interface.
 func (v *OrganizationRuleFields) GetUuid() string { return v.Uuid }
 
-// GetName returns OrganizationRuleFields.Name, and is useful for accessing the field via an interface.
-func (v *OrganizationRuleFields) GetName() string { return v.Name }
+// GetType returns OrganizationRuleFields.Type, and is useful for accessing the field via an interface.
+func (v *OrganizationRuleFields) GetType() string { return v.Type }
 
 // GetSourceType returns OrganizationRuleFields.SourceType, and is useful for accessing the field via an interface.
 func (v *OrganizationRuleFields) GetSourceType() RuleSourceType { return v.SourceType }
@@ -387,7 +387,7 @@ type __premarshalOrganizationRuleFields struct {
 
 	Uuid string `json:"uuid"`
 
-	Name string `json:"name"`
+	Type string `json:"type"`
 
 	SourceType RuleSourceType `json:"sourceType"`
 
@@ -415,7 +415,7 @@ func (v *OrganizationRuleFields) __premarshalJSON() (*__premarshalOrganizationRu
 
 	retval.Id = v.Id
 	retval.Uuid = v.Uuid
-	retval.Name = v.Name
+	retval.Type = v.Type
 	retval.SourceType = v.SourceType
 	retval.TargetType = v.TargetType
 	retval.Effect = v.Effect
@@ -1745,15 +1745,15 @@ func (v *__createClusterQueueInput) GetDescription() *string { return v.Descript
 // __createOrganizationRuleInput is used internally by genqlient
 type __createOrganizationRuleInput struct {
 	OrganizationId string `json:"organizationId"`
-	Name           string `json:"name"`
+	RuleType       string `json:"ruleType"`
 	Value          string `json:"value"`
 }
 
 // GetOrganizationId returns __createOrganizationRuleInput.OrganizationId, and is useful for accessing the field via an interface.
 func (v *__createOrganizationRuleInput) GetOrganizationId() string { return v.OrganizationId }
 
-// GetName returns __createOrganizationRuleInput.Name, and is useful for accessing the field via an interface.
-func (v *__createOrganizationRuleInput) GetName() string { return v.Name }
+// GetRuleType returns __createOrganizationRuleInput.RuleType, and is useful for accessing the field via an interface.
+func (v *__createOrganizationRuleInput) GetRuleType() string { return v.RuleType }
 
 // GetValue returns __createOrganizationRuleInput.Value, and is useful for accessing the field via an interface.
 func (v *__createOrganizationRuleInput) GetValue() string { return v.Value }
@@ -2897,9 +2897,9 @@ func (v *createOrganizationRuleRuleCreateRuleCreatePayloadRule) GetUuid() string
 	return v.OrganizationRuleFields.Uuid
 }
 
-// GetName returns createOrganizationRuleRuleCreateRuleCreatePayloadRule.Name, and is useful for accessing the field via an interface.
-func (v *createOrganizationRuleRuleCreateRuleCreatePayloadRule) GetName() string {
-	return v.OrganizationRuleFields.Name
+// GetType returns createOrganizationRuleRuleCreateRuleCreatePayloadRule.Type, and is useful for accessing the field via an interface.
+func (v *createOrganizationRuleRuleCreateRuleCreatePayloadRule) GetType() string {
+	return v.OrganizationRuleFields.Type
 }
 
 // GetSourceType returns createOrganizationRuleRuleCreateRuleCreatePayloadRule.SourceType, and is useful for accessing the field via an interface.
@@ -2962,7 +2962,7 @@ type __premarshalcreateOrganizationRuleRuleCreateRuleCreatePayloadRule struct {
 
 	Uuid string `json:"uuid"`
 
-	Name string `json:"name"`
+	Type string `json:"type"`
 
 	SourceType RuleSourceType `json:"sourceType"`
 
@@ -2990,7 +2990,7 @@ func (v *createOrganizationRuleRuleCreateRuleCreatePayloadRule) __premarshalJSON
 
 	retval.Id = v.OrganizationRuleFields.Id
 	retval.Uuid = v.OrganizationRuleFields.Uuid
-	retval.Name = v.OrganizationRuleFields.Name
+	retval.Type = v.OrganizationRuleFields.Type
 	retval.SourceType = v.OrganizationRuleFields.SourceType
 	retval.TargetType = v.OrganizationRuleFields.TargetType
 	retval.Effect = v.OrganizationRuleFields.Effect
@@ -6474,8 +6474,8 @@ func (v *getNodeNodeRule) GetId() string { return v.OrganizationRuleFields.Id }
 // GetUuid returns getNodeNodeRule.Uuid, and is useful for accessing the field via an interface.
 func (v *getNodeNodeRule) GetUuid() string { return v.OrganizationRuleFields.Uuid }
 
-// GetName returns getNodeNodeRule.Name, and is useful for accessing the field via an interface.
-func (v *getNodeNodeRule) GetName() string { return v.OrganizationRuleFields.Name }
+// GetType returns getNodeNodeRule.Type, and is useful for accessing the field via an interface.
+func (v *getNodeNodeRule) GetType() string { return v.OrganizationRuleFields.Type }
 
 // GetSourceType returns getNodeNodeRule.SourceType, and is useful for accessing the field via an interface.
 func (v *getNodeNodeRule) GetSourceType() RuleSourceType { return v.OrganizationRuleFields.SourceType }
@@ -6531,7 +6531,7 @@ type __premarshalgetNodeNodeRule struct {
 
 	Uuid string `json:"uuid"`
 
-	Name string `json:"name"`
+	Type string `json:"type"`
 
 	SourceType RuleSourceType `json:"sourceType"`
 
@@ -6560,7 +6560,7 @@ func (v *getNodeNodeRule) __premarshalJSON() (*__premarshalgetNodeNodeRule, erro
 	retval.Typename = v.Typename
 	retval.Id = v.OrganizationRuleFields.Id
 	retval.Uuid = v.OrganizationRuleFields.Uuid
-	retval.Name = v.OrganizationRuleFields.Name
+	retval.Type = v.OrganizationRuleFields.Type
 	retval.SourceType = v.OrganizationRuleFields.SourceType
 	retval.TargetType = v.OrganizationRuleFields.TargetType
 	retval.Effect = v.OrganizationRuleFields.Effect
@@ -13468,8 +13468,8 @@ func createClusterQueue(
 
 // The query or mutation executed by createOrganizationRule.
 const createOrganizationRule_Operation = `
-mutation createOrganizationRule ($organizationId: ID!, $name: String!, $value: JSON!) {
-	ruleCreate(input: {organizationId:$organizationId,name:$name,value:$value}) {
+mutation createOrganizationRule ($organizationId: ID!, $ruleType: String!, $value: JSON!) {
+	ruleCreate(input: {organizationId:$organizationId,type:$ruleType,value:$value}) {
 		rule {
 			... OrganizationRuleFields
 		}
@@ -13478,7 +13478,7 @@ mutation createOrganizationRule ($organizationId: ID!, $name: String!, $value: J
 fragment OrganizationRuleFields on Rule {
 	id
 	uuid
-	name
+	type
 	sourceType
 	targetType
 	effect
@@ -13502,7 +13502,7 @@ func createOrganizationRule(
 	ctx_ context.Context,
 	client_ graphql.Client,
 	organizationId string,
-	name string,
+	ruleType string,
 	value string,
 ) (*createOrganizationRuleResponse, error) {
 	req_ := &graphql.Request{
@@ -13510,7 +13510,7 @@ func createOrganizationRule(
 		Query:  createOrganizationRule_Operation,
 		Variables: &__createOrganizationRuleInput{
 			OrganizationId: organizationId,
-			Name:           name,
+			RuleType:       ruleType,
 			Value:          value,
 		},
 	}
@@ -14563,7 +14563,7 @@ fragment PipelineTemplateFields on PipelineTemplate {
 fragment OrganizationRuleFields on Rule {
 	id
 	uuid
-	name
+	type
 	sourceType
 	targetType
 	effect

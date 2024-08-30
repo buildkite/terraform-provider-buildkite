@@ -38,8 +38,8 @@ resource "buildkite_organization_rule" "artifacts_read_test_dev" {
 
 ### Required
 
-- `name` (String) The name that is given to this organization rule.
-- `value` (String) The JSON rule that this organization rule implements.
+- `type` (String) The type of organization rule.
+- `value` (String) The JSON document that this organization rule implements.
 
 ### Read-Only
 

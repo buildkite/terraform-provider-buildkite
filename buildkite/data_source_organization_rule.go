@@ -16,7 +16,7 @@ import (
 type organizationRuleDatasourceModel struct {
 	ID         types.String `tfsdk:"id"`
 	UUID       types.String `tfsdk:"uuid"`
-	Name       types.String `tfsdk:"name"`
+	Type       types.String `tfsdk:"type"`
 	Value      types.String `tfsdk:"value"`
 	SourceType types.String `tfsdk:"source_type"`
 	SourceUUID types.String `tfsdk:"source_uuid"`
@@ -56,19 +56,19 @@ func (organizationRuleDatasource) Schema(ctx context.Context, req datasource.Sch
 		Attributes: map[string]schema.Attribute{
 			"id": resource_schema.StringAttribute{
 				Required:            true,
-				MarkdownDescription: "The GraphQL ID of the organization rule.",
+				MarkdownDescription: "The GraphQL ID of the organization rule. ",
 			},
 			"uuid": resource_schema.StringAttribute{
 				Computed:            true,
-				MarkdownDescription: "The UUID of the organization rule.",
+				MarkdownDescription: "The UUID of the organization rule. ",
 			},
-			"name": resource_schema.StringAttribute{
+			"type": resource_schema.StringAttribute{
 				Computed:            true,
-				MarkdownDescription: "The name that is given to this organization rule.",
+				MarkdownDescription: "The type of organization rule. ",
 			},
 			"value": resource_schema.StringAttribute{
 				Computed:            true,
-				MarkdownDescription: "The JSON rule that this organization rule implements.",
+				MarkdownDescription: "The JSON document that this organization rule implements. ",
 			},
 			"source_type": resource_schema.StringAttribute{
 				Computed:            true,
@@ -156,7 +156,7 @@ func updateOrganizatonRuleDatasourceState(or *organizationRuleResourceModel, orn
 
 	or.ID = types.StringValue(orn.Id)
 	or.UUID = types.StringValue(orn.Uuid)
-	or.Name = types.StringValue(orn.Name)
+	or.Type = types.StringValue(orn.Type)
 	or.Value = types.StringValue(value)
 	or.SourceType = types.StringValue(string(orn.SourceType))
 	or.SourceUUID = types.StringValue(sourceUUID)

@@ -1,7 +1,7 @@
 fragment OrganizationRuleFields on Rule {
     id
     uuid
-    name
+    type 
     sourceType
     targetType
     effect
@@ -20,13 +20,13 @@ fragment OrganizationRuleFields on Rule {
 
 mutation createOrganizationRule(
     $organizationId: ID!, 
-    $name: String!,
+    $ruleType: String!,
     $value: JSON!,
 ) {
     ruleCreate(
         input: {
             organizationId: $organizationId
-            name: $name,
+            type: $ruleType,
             value: $value
         }
     ) {

@@ -20,7 +20,7 @@ import (
 type organizationRuleResourceModel struct {
 	ID         types.String `tfsdk:"id"`
 	UUID       types.String `tfsdk:"uuid"`
-	Name       types.String `tfsdk:"name"`
+	Type       types.String `tfsdk:"type"`
 	Value      types.String `tfsdk:"value"`
 	SourceType types.String `tfsdk:"source_type"`
 	SourceUUID types.String `tfsdk:"source_uuid"`
@@ -72,16 +72,16 @@ func (organizationRuleResource) Schema(ctx context.Context, req resource.SchemaR
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
-			"name": resource_schema.StringAttribute{
+			"type": resource_schema.StringAttribute{
 				Required:            true,
-				MarkdownDescription: "The name that is given to this organization rule.",
+				MarkdownDescription: "The type of organization rule. ",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
 			"value": resource_schema.StringAttribute{
 				Required:            true,
-				MarkdownDescription: "The JSON rule that this organization rule implements.",
+				MarkdownDescription: "The JSON document that this organization rule implements. ",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
@@ -157,7 +157,7 @@ func (or *organizationRuleResource) Create(ctx context.Context, req resource.Cre
 				ctx,
 				or.client.genqlient,
 				*org,
-				plan.Name.ValueString(),
+				plan.Type.ValueString(),
 				plan.Value.ValueString(),
 			)
 		}
@@ -183,7 +183,7 @@ func (or *organizationRuleResource) Create(ctx context.Context, req resource.Cre
 
 	state.ID = types.StringValue(r.RuleCreate.Rule.Id)
 	state.UUID = types.StringValue(r.RuleCreate.Rule.Uuid)
-	state.Name = types.StringValue(r.RuleCreate.Rule.Name)
+	state.Type = types.StringValue(r.RuleCreate.Rule.Type)
 	state.Value = types.StringValue(plan.Value.ValueString())
 	state.SourceType = types.StringValue(string(r.RuleCreate.Rule.SourceType))
 	state.SourceUUID = types.StringValue(*sourceUUID)
@@ -346,15 +346,7 @@ func obtainReadUUIDs(nr getNodeNodeRule) (string, string) {
 }
 
 func obtainValueJSON(sourceUUID, targetUUID, action string) string {
-	var value []byte
-
-	switch action {
-	case "TRIGGER_BUILD":
-		value, _ = json.Marshal(map[string]string{"triggered_pipeline_uuid": targetUUID, "triggering_pipeline_uuid": sourceUUID})
-	case "ARTIFACTS_READ":
-		value, _ = json.Marshal(map[string]string{"source_pipeline_uuid": sourceUUID, "target_pipeline_uuid": targetUUID})
-	}
-
+	value, _ := json.Marshal(map[string]string{"source_pipeline_uuid": sourceUUID, "target_pipeline_uuid": targetUUID})
 	return string(value)
 }
 
@@ -364,7 +356,7 @@ func updateOrganizatonRuleResourceState(or *organizationRuleResourceModel, orn g
 
 	or.ID = types.StringValue(orn.Id)
 	or.UUID = types.StringValue(orn.Uuid)
-	or.Name = types.StringValue(orn.Name)
+	or.Type = types.StringValue(orn.Type)
 	or.Value = types.StringValue(value)
 	or.SourceType = types.StringValue(string(orn.SourceType))
 	or.SourceUUID = types.StringValue(sourceUUID)

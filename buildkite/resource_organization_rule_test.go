@@ -25,31 +25,31 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 
 		resource "buildkite_cluster" "cluster_one" {
 			name        = "Cluster %s"
-			description = "A test cluster containing a triggering pipeline."
+			description = "A test cluster containing a source pipeline."
 		}
 
 		resource "buildkite_cluster" "cluster_two" {
 			name        = "Cluster %s"
-			description = "A test cluster containing a to-be-triggered pipeline."
+			description = "A test cluster containing a target pipeline for triggering builds."
 		}
 
-		resource "buildkite_pipeline" "pipeline_triggerer" {
+		resource "buildkite_pipeline" "pipeline_source" {
 			name                 = "Pipeline %s"
 			repository           = "https://github.com/buildkite/terraform-provider-buildkite.git"
 			cluster_id			 = buildkite_cluster.cluster_one.id
 		}
 
-		resource "buildkite_pipeline" "pipeline_triggered" {
+		resource "buildkite_pipeline" "pipeline_target" {
 			name                 = "Pipeline %s"
 			repository           = "https://github.com/buildkite/terraform-provider-buildkite.git"
 			cluster_id           = buildkite_cluster.cluster_two.id
 		}	
 
 		resource "buildkite_organization_rule" "pipeline_trigger_build_rule" {
-			name = "pipeline.trigger_build.pipeline"
+			type = "pipeline.trigger_build.pipeline"
 			value = jsonencode({
-				triggering_pipeline_uuid = buildkite_pipeline.pipeline_triggerer.uuid
-				triggered_pipeline_uuid = buildkite_pipeline.pipeline_triggered.uuid
+				source_pipeline_uuid = buildkite_pipeline.pipeline_source.uuid
+				target_pipeline_uuid = buildkite_pipeline.pipeline_target.uuid
 			})
 		}
 
@@ -91,10 +91,10 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 		}	
 
 		resource "buildkite_organization_rule" "artifacts_read_rule" {
-			name = "pipeline.artifacts_read.pipeline"
+			type = "pipeline.artifacts_read.pipeline"
 			value = jsonencode({
-				target_pipeline_uuid = buildkite_pipeline.pipeline_target.uuid
-				source_pipeline_uuid = buildkite_pipeline.pipeline_source.uuid
+				source_pipeline_uuid = buildkite_pipeline.pipeline_target.uuid
+				target_pipeline_uuid = buildkite_pipeline.pipeline_source.uuid
 			})
 		}
 
@@ -114,7 +114,7 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 			// Check the organization rule resource's attributes are set in state
 			resource.TestCheckResourceAttrSet("buildkite_organization_rule.pipeline_trigger_build_rule", "id"),
 			resource.TestCheckResourceAttrSet("buildkite_organization_rule.pipeline_trigger_build_rule", "uuid"),
-			resource.TestCheckResourceAttrSet("buildkite_organization_rule.pipeline_trigger_build_rule", "name"),
+			resource.TestCheckResourceAttrSet("buildkite_organization_rule.pipeline_trigger_build_rule", "type"),
 			resource.TestCheckResourceAttrSet("buildkite_organization_rule.pipeline_trigger_build_rule", "value"),
 		)
 
@@ -144,7 +144,7 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 			// Check the organization rule resource's attributes are set in state
 			resource.TestCheckResourceAttrSet("buildkite_organization_rule.artifacts_read_rule", "id"),
 			resource.TestCheckResourceAttrSet("buildkite_organization_rule.artifacts_read_rule", "uuid"),
-			resource.TestCheckResourceAttrSet("buildkite_organization_rule.artifacts_read_rule", "name"),
+			resource.TestCheckResourceAttrSet("buildkite_organization_rule.artifacts_read_rule", "type"),
 			resource.TestCheckResourceAttrSet("buildkite_organization_rule.artifacts_read_rule", "value"),
 		)
 
@@ -245,7 +245,6 @@ func testAccCheckOrganizationRuleExists(orr *organizationRuleResourceModel, name
 				return fmt.Errorf("Organization rule not found: nil response")
 			}
 			updateOrganizatonRuleResourceState(orr, *organizationRule)
-			fmt.Println(orr)
 		}
 
 		return nil
