@@ -244,7 +244,7 @@ func testAccCheckOrganizationRuleExists(orr *organizationRuleResourceModel, name
 			if organizationRule == nil {
 				return fmt.Errorf("Organization rule not found: nil response")
 			}
-			updateOrganizatonRuleResourceState(orr, *organizationRule)
+			updateOrganizatonRuleReadState(orr, *organizationRule)
 		}
 
 		return nil
