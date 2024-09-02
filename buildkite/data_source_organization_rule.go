@@ -51,7 +51,7 @@ func (organizationRuleDatasource) Schema(ctx context.Context, req datasource.Sch
 		MarkdownDescription: heredoc.Doc(`
 		Use this data source to retrieve an organization rule by its ID.
 		
-		More information on pipeline templates can be found in the [documentation](https://buildkite.com/docs/pipelines/rules/overview).
+		More information on organization rules can be found in the [documentation](https://buildkite.com/docs/pipelines/rules/overview).
 		`),
 		Attributes: map[string]schema.Attribute{
 			"id": resource_schema.StringAttribute{

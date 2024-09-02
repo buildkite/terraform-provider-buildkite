@@ -55,7 +55,7 @@ func (organizationRuleResource) Schema(ctx context.Context, req resource.SchemaR
 		MarkdownDescription: heredoc.Doc(`
 		An Organization Rule allows specifying explicit rules between two Buildkite resources and the desired effect/action. 
 
-		More information on pipelines can be found in the [documentation](https://buildkite.com/docs/pipelines/rules/overview).
+		More information on organization rules can be found in the [documentation](https://buildkite.com/docs/pipelines/rules/overview).
 	`),
 		Attributes: map[string]resource_schema.Attribute{
 			"id": resource_schema.StringAttribute{
@@ -75,16 +75,10 @@ func (organizationRuleResource) Schema(ctx context.Context, req resource.SchemaR
 			"type": resource_schema.StringAttribute{
 				Required:            true,
 				MarkdownDescription: "The type of organization rule. ",
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
-				},
 			},
 			"value": resource_schema.StringAttribute{
 				Required:            true,
 				MarkdownDescription: "The JSON document that this organization rule implements. ",
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
-				},
 			},
 			"source_type": resource_schema.StringAttribute{
 				Computed:            true,
@@ -109,7 +103,7 @@ func (organizationRuleResource) Schema(ctx context.Context, req resource.SchemaR
 			},
 			"target_uuid": resource_schema.StringAttribute{
 				Computed:            true,
-				MarkdownDescription: "The UUID of the target resourcee that this organization rule allows or denies invocation its respective action. ",
+				MarkdownDescription: "The UUID of the target resource that this organization rule allows or denies invocation its respective action. ",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
@@ -118,14 +112,14 @@ func (organizationRuleResource) Schema(ctx context.Context, req resource.SchemaR
 				Computed:            true,
 				MarkdownDescription: "Whether this organization rule allows or denys the action to take place between source and target resources. ",
 				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.RequiresReplace(),
+					stringplanmodifier.UseStateForUnknown(),				
 				},
 			},
 			"action": resource_schema.StringAttribute{
 				Computed:            true,
 				MarkdownDescription: "The action defined between source and target resources. ",
 				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.RequiresReplace(),
+					stringplanmodifier.UseStateForUnknown(),				
 				},
 			},
 		},
@@ -338,6 +332,7 @@ func obtainReadUUIDs(nr getNodeNodeRule) (string, string) {
 }
 
 func obtainValueJSON(sourceUUID, targetUUID, action string) string {
+	// Construct and marshal the JSON representation of an organization rules' value
 	value, _ := json.Marshal(map[string]string{"source_pipeline_uuid": sourceUUID, "target_pipeline_uuid": targetUUID})
 	return string(value)
 }
