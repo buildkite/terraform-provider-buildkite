@@ -128,7 +128,7 @@ func TestAccBuildkiteOrganizationRuleDatasource(t *testing.T) {
 		resource.ParallelTest(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },
 			ProtoV6ProviderFactories: protoV6ProviderFactories(),
-			CheckDestroy:             testAccCheckOrganizationRuleeDestroy,
+			CheckDestroy:             testAccCheckOrganizationRuleDestroy,
 			Steps: []resource.TestStep{
 				{
 					Config: configTriggerBuildDatasource(randdNameOne, randNameTwo),
@@ -158,7 +158,7 @@ func TestAccBuildkiteOrganizationRuleDatasource(t *testing.T) {
 		resource.ParallelTest(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },
 			ProtoV6ProviderFactories: protoV6ProviderFactories(),
-			CheckDestroy:             testAccCheckOrganizationRuleeDestroy,
+			CheckDestroy:             testAccCheckOrganizationRuleDestroy,
 			Steps: []resource.TestStep{
 				{
 					Config: configArtifactsReadDatasource(randdNameOne, randNameTwo),

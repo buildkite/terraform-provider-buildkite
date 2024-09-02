@@ -3,6 +3,7 @@ package buildkite
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
@@ -101,8 +102,40 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 		`, fields[0], fields[1], fields[0], fields[1])
 	}
 
+	configNonExistentAction := func(fields ...string) string {
+		return fmt.Sprintf(`
+		provider "buildkite" {
+			timeouts = {
+				create = "10s"
+				read = "10s"
+				update = "10s"
+				delete = "10s"
+			}
+		}
+
+		resource "buildkite_pipeline" "pipeline_source" {
+			name                 = "Pipeline %s"
+			repository           = "https://github.com/buildkite/terraform-provider-buildkite.git"
+		}
+
+		resource "buildkite_pipeline" "pipeline_target" {
+			name                 = "Pipeline %s"
+			repository           = "https://github.com/buildkite/terraform-provider-buildkite.git"
+		}	
+
+		resource "buildkite_organization_rule" "non_existent_action_rule" {
+			type = "pipeline.non_existent_action.pipeline"
+			value = jsonencode({
+				source_pipeline_uuid = buildkite_pipeline.pipeline_target.uuid
+				target_pipeline_uuid = buildkite_pipeline.pipeline_source.uuid
+			})
+		}
+
+		`, fields[0], fields[1])
+	}
+
 	t.Run("creates a pipeline.trigger_build.pipeline organization rule", func(t *testing.T) {
-		randdNameOne := acctest.RandString(12)
+		randNameOne := acctest.RandString(12)
 		randNameTwo := acctest.RandString(12)
 		var orr organizationRuleResourceModel
 
@@ -121,10 +154,10 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 		resource.ParallelTest(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },
 			ProtoV6ProviderFactories: protoV6ProviderFactories(),
-			CheckDestroy:             testAccCheckOrganizationRuleeDestroy,
+			CheckDestroy:             testAccCheckOrganizationRuleDestroy,
 			Steps: []resource.TestStep{
 				{
-					Config: configTriggerBuild(randdNameOne, randNameTwo),
+					Config: configTriggerBuild(randNameOne, randNameTwo),
 					Check:  check,
 				},
 			},
@@ -132,7 +165,7 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 	})
 
 	t.Run("creates a pipeline.artifacts_read.pipeline organization rule", func(t *testing.T) {
-		randdNameOne := acctest.RandString(12)
+		randNameOne := acctest.RandString(12)
 		randNameTwo := acctest.RandString(12)
 		var orr organizationRuleResourceModel
 
@@ -151,10 +184,10 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 		resource.ParallelTest(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },
 			ProtoV6ProviderFactories: protoV6ProviderFactories(),
-			CheckDestroy:             testAccCheckOrganizationRuleeDestroy,
+			CheckDestroy:             testAccCheckOrganizationRuleDestroy,
 			Steps: []resource.TestStep{
 				{
-					Config: configArtifactsRead(randdNameOne, randNameTwo),
+					Config: configArtifactsRead(randNameOne, randNameTwo),
 					Check:  check,
 				},
 			},
@@ -162,7 +195,7 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 	})
 
 	t.Run("imports a pipeline.trigger_build.pipeline organization rule", func(t *testing.T) {
-		randdNameOne := acctest.RandString(12)
+		randNameOne := acctest.RandString(12)
 		randNameTwo := acctest.RandString(12)
 		var orr organizationRuleResourceModel
 
@@ -176,10 +209,10 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 		resource.ParallelTest(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },
 			ProtoV6ProviderFactories: protoV6ProviderFactories(),
-			CheckDestroy:             testAccCheckOrganizationRuleeDestroy,
+			CheckDestroy:             testAccCheckOrganizationRuleDestroy,
 			Steps: []resource.TestStep{
 				{
-					Config: configTriggerBuild(randdNameOne, randNameTwo),
+					Config: configTriggerBuild(randNameOne, randNameTwo),
 					Check:  check,
 				},
 				{
@@ -192,7 +225,7 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 	})
 	
 	t.Run("imports a pipeline.artifacts_read.pipeline organization rule", func(t *testing.T) {
-		randdNameOne := acctest.RandString(12)
+		randNameOne := acctest.RandString(12)
 		randNameTwo := acctest.RandString(12)
 		var orr organizationRuleResourceModel
 
@@ -206,16 +239,32 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 		resource.ParallelTest(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },
 			ProtoV6ProviderFactories: protoV6ProviderFactories(),
-			CheckDestroy:             testAccCheckOrganizationRuleeDestroy,
+			CheckDestroy:             testAccCheckOrganizationRuleDestroy,
 			Steps: []resource.TestStep{
 				{
-					Config: configArtifactsRead(randdNameOne, randNameTwo),
+					Config: configArtifactsRead(randNameOne, randNameTwo),
 					Check:  check,
 				},
 				{
 					ResourceName:      "buildkite_organization_rule.artifacts_read_rule",
 					ImportState:       true,
 					ImportStateVerify: true,
+				},
+			},
+		})
+	})
+
+	t.Run("errors when an unknown action is specified within an organization rules type", func(t *testing.T) {
+		randNameOne := acctest.RandString(12)
+		randNameTwo := acctest.RandString(12)
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			CheckDestroy:             testAccCheckOrganizationRuleDestroy,
+			Steps: []resource.TestStep{
+				{
+					Config:      configNonExistentAction(randNameOne, randNameTwo),
+					ExpectError: regexp.MustCompile("input: Rule type is unknown"),
 				},
 			},
 		})
@@ -273,7 +322,7 @@ func testAccCheckOrganizationRuleRemoteValues(orr *organizationRuleResourceModel
 	}
 }
 
-func testAccCheckOrganizationRuleeDestroy(s *terraform.State) error {
+func testAccCheckOrganizationRuleDestroy(s *terraform.State) error {
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "buildkite_organization_rule" {
 			continue
