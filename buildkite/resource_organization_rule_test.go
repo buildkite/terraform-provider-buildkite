@@ -134,6 +134,113 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 		`, fields[0], fields[1])
 	}
 
+	configNoSourcePipelineUUID := func(targetName string) string {
+		return fmt.Sprintf(`
+		provider "buildkite" {
+			timeouts = {
+				create = "10s"
+				read = "10s"
+				update = "10s"
+				delete = "10s"
+			}
+		}
+
+		resource "buildkite_pipeline" "pipeline_target" {
+			name                 = "Pipeline %s"
+			repository           = "https://github.com/buildkite/terraform-provider-buildkite.git"
+		}	
+
+		resource "buildkite_organization_rule" "no_source_pipeline_uuid_rule" {
+			type = "pipeline.trigger_build.pipeline"
+			value = jsonencode({
+				target_pipeline_uuid = buildkite_pipeline.pipeline_target.uuid
+			})
+		}
+
+		`, targetName)
+	}
+
+	configNoTargetPipelineUUID := func(sourceName string) string {
+		return fmt.Sprintf(`
+		provider "buildkite" {
+			timeouts = {
+				create = "10s"
+				read = "10s"
+				update = "10s"
+				delete = "10s"
+			}
+		}
+
+		resource "buildkite_pipeline" "pipeline_source" {
+			name                 = "Pipeline %s"
+			repository           = "https://github.com/buildkite/terraform-provider-buildkite.git"
+		}
+
+		resource "buildkite_organization_rule" "no_target_pipeline_uuid_rule" {
+			type = "pipeline.trigger_build.pipeline"
+			value = jsonencode({
+				source_pipeline_uuid = buildkite_pipeline.pipeline_source.uuid
+			})
+		}
+
+		`, sourceName)
+	}
+
+	configSourceUUIDInvalid := func(targetName string) string {
+		return fmt.Sprintf(`
+		provider "buildkite" {
+			timeouts = {
+				create = "10s"
+				read = "10s"
+				update = "10s"
+				delete = "10s"
+			}
+		}
+
+		resource "buildkite_pipeline" "pipeline_target" {
+			name                 = "Pipeline %s"
+			repository           = "https://github.com/buildkite/terraform-provider-buildkite.git"
+		}	
+
+		resource "buildkite_organization_rule" "rule_without_a_source" {
+			type = "pipeline.trigger_build.pipeline"
+			value = jsonencode({
+				source_pipeline_uuid = "non_existent"
+				target_pipeline_uuid = buildkite_pipeline.pipeline_target.uuid
+			})
+		}
+
+		`, targetName)
+	}
+
+	configTargetUUIDInvalid := func(sourceName string) string {
+		return fmt.Sprintf(`
+		provider "buildkite" {
+			timeouts = {
+				create = "10s"
+				read = "10s"
+				update = "10s"
+				delete = "10s"
+			}
+		}
+
+		resource "buildkite_pipeline" "pipeline_source" {
+			name                 = "Pipeline %s"
+			repository           = "https://github.com/buildkite/terraform-provider-buildkite.git"
+		}	
+
+		resource "buildkite_organization_rule" "rule_without_a_source" {
+			type = "pipeline.trigger_build.pipeline"
+			value = jsonencode({
+				source_pipeline_uuid = buildkite_pipeline.pipeline_source.uuid
+				target_pipeline_uuid = "non-existent"
+			})
+		}
+
+		`, sourceName)
+	}
+
+
 	t.Run("creates a pipeline.trigger_build.pipeline organization rule", func(t *testing.T) {
 		randNameOne := acctest.RandString(12)
 		randNameTwo := acctest.RandString(12)
@@ -254,7 +361,7 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 		})
 	})
 
-	t.Run("errors when an unknown action is specified within an organization rules type", func(t *testing.T) {
+	t.Run("errors when an organization rule is specified with an unknown action", func(t *testing.T) {
 		randNameOne := acctest.RandString(12)
 		randNameTwo := acctest.RandString(12)
 		resource.ParallelTest(t, resource.TestCase{
@@ -265,6 +372,66 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 				{
 					Config:      configNonExistentAction(randNameOne, randNameTwo),
 					ExpectError: regexp.MustCompile("input: Rule type is unknown"),
+				},
+			},
+		})
+	})
+
+	t.Run("errors when no source_pipeline_uuid key exists within an organization rules' value", func(t *testing.T) {
+		randName := acctest.RandString(12)
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			CheckDestroy:             testAccCheckOrganizationRuleDestroy,
+			Steps: []resource.TestStep{
+				{
+					Config:      configNoSourcePipelineUUID(randName),
+					ExpectError: regexp.MustCompile("pipeline.trigger_build.pipeline: missing source_pipeline_uuid"),
+				},
+			},
+		})
+	})
+
+	t.Run("errors when no target_pipeline_uuid key exists within an organization rules' value", func(t *testing.T) {
+		randName := acctest.RandString(12)
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			CheckDestroy:             testAccCheckOrganizationRuleDestroy,
+			Steps: []resource.TestStep{
+				{
+					Config:      configNoTargetPipelineUUID(randName),
+					ExpectError: regexp.MustCompile("pipeline.trigger_build.pipeline: missing target_pipeline_uuid"),
+				},
+			},
+		})
+	})
+
+	t.Run("errors when the pipeline defined in source_pipeline_uuid is invalid", func(t *testing.T) {
+		randName := acctest.RandString(12)
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			CheckDestroy:             testAccCheckOrganizationRuleDestroy,
+			Steps: []resource.TestStep{
+				{
+					Config:      configSourceUUIDInvalid(randName),
+					ExpectError: regexp.MustCompile("pipeline.trigger_build.pipeline: source_pipeline_uuid not a valid UUID"),
+				},
+			},
+		})
+	})
+
+	t.Run("errors when the pipeline defined in target_pipeline_uuid is invalid", func(t *testing.T) {
+		randName := acctest.RandString(12)
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			CheckDestroy:             testAccCheckOrganizationRuleDestroy,
+			Steps: []resource.TestStep{
+				{
+					Config:      configTargetUUIDInvalid(randName),
+					ExpectError: regexp.MustCompile("pipeline.trigger_build.pipeline: target_pipeline_uuid not a valid UUID"),
 				},
 			},
 		})
