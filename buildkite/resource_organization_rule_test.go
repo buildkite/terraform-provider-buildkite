@@ -24,29 +24,35 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 			}
 		}
 
-		resource "buildkite_cluster" "cluster_one" {
+		resource "buildkite_cluster" "cluster_source" {
 			name        = "Cluster %s"
 			description = "A test cluster containing a source pipeline."
 		}
 
-		resource "buildkite_cluster" "cluster_two" {
+		resource "buildkite_cluster" "cluster_target" {
 			name        = "Cluster %s"
 			description = "A test cluster containing a target pipeline for triggering builds."
 		}
 
 		resource "buildkite_pipeline" "pipeline_source" {
+			depends_on 			 = [buildkite_cluster.cluster_source]
 			name                 = "Pipeline %s"
 			repository           = "https://github.com/buildkite/terraform-provider-buildkite.git"
-			cluster_id			 = buildkite_cluster.cluster_one.id
+			cluster_id			 = buildkite_cluster.cluster_source.id
 		}
 
 		resource "buildkite_pipeline" "pipeline_target" {
+			depends_on 			 = [buildkite_cluster.cluster_target]
 			name                 = "Pipeline %s"
 			repository           = "https://github.com/buildkite/terraform-provider-buildkite.git"
-			cluster_id           = buildkite_cluster.cluster_two.id
+			cluster_id           = buildkite_cluster.cluster_target.id
 		}	
 
 		resource "buildkite_organization_rule" "pipeline_trigger_build_rule" {
+			depends_on = [
+				buildkite_pipeline.pipeline_source,
+				buildkite_pipeline.pipeline_target
+			]
 			type = "pipeline.trigger_build.pipeline"
 			value = jsonencode({
 				source_pipeline_uuid = buildkite_pipeline.pipeline_source.uuid
@@ -79,18 +85,24 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 		}
 
 		resource "buildkite_pipeline" "pipeline_source" {
+			depends_on 			 = [buildkite_cluster.cluster_source]
 			name                 = "Pipeline %s"
 			repository           = "https://github.com/buildkite/terraform-provider-buildkite.git"
 			cluster_id			 = buildkite_cluster.cluster_source.id
 		}
 
 		resource "buildkite_pipeline" "pipeline_target" {
+			depends_on 			 = [buildkite_cluster.cluster_target]
 			name                 = "Pipeline %s"
 			repository           = "https://github.com/buildkite/terraform-provider-buildkite.git"
 			cluster_id           = buildkite_cluster.cluster_target.id
 		}	
 
 		resource "buildkite_organization_rule" "artifacts_read_rule" {
+			depends_on = [
+				buildkite_pipeline.pipeline_source,
+				buildkite_pipeline.pipeline_target
+			]
 			type = "pipeline.artifacts_read.pipeline"
 			value = jsonencode({
 				source_pipeline_uuid = buildkite_pipeline.pipeline_target.uuid
@@ -123,6 +135,10 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 		}	
 
 		resource "buildkite_organization_rule" "non_existent_action_rule" {
+			depends_on = [
+				buildkite_pipeline.pipeline_source,
+				buildkite_pipeline.pipeline_target
+			]
 			type = "pipeline.non_existent_action.pipeline"
 			value = jsonencode({
 				source_pipeline_uuid = buildkite_pipeline.pipeline_target.uuid
@@ -150,6 +166,7 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 		}	
 
 		resource "buildkite_organization_rule" "no_source_pipeline_uuid_rule" {
+			depends_on = [buildkite_pipeline.pipeline_target]
 			type = "pipeline.trigger_build.pipeline"
 			value = jsonencode({
 				target_pipeline_uuid = buildkite_pipeline.pipeline_target.uuid
@@ -176,6 +193,7 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 		}
 
 		resource "buildkite_organization_rule" "no_target_pipeline_uuid_rule" {
+			depends_on = [buildkite_pipeline.pipeline_source]
 			type = "pipeline.trigger_build.pipeline"
 			value = jsonencode({
 				source_pipeline_uuid = buildkite_pipeline.pipeline_source.uuid
@@ -202,6 +220,7 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 		}	
 
 		resource "buildkite_organization_rule" "rule_without_a_source" {
+			depends_on = [buildkite_pipeline.pipeline_target]
 			type = "pipeline.trigger_build.pipeline"
 			value = jsonencode({
 				source_pipeline_uuid = "non_existent"
@@ -228,7 +247,8 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 			repository           = "https://github.com/buildkite/terraform-provider-buildkite.git"
 		}	
 
-		resource "buildkite_organization_rule" "rule_without_a_source" {
+		resource "buildkite_organization_rule" "rule_without_a_target" {
+			depends_on = [buildkite_pipeline.pipeline_source]
 			type = "pipeline.trigger_build.pipeline"
 			value = jsonencode({
 				source_pipeline_uuid = buildkite_pipeline.pipeline_source.uuid
