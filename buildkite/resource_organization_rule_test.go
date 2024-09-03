@@ -57,7 +57,6 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 		`, fields[0], fields[1], fields[0], fields[1])
 	}
 
-
 	configArtifactsRead := func(fields ...string) string {
 		return fmt.Sprintf(`
 		provider "buildkite" {
@@ -240,7 +239,6 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 		`, sourceName)
 	}
 
-
 	t.Run("creates a pipeline.trigger_build.pipeline organization rule", func(t *testing.T) {
 		randNameOne := acctest.RandString(12)
 		randNameTwo := acctest.RandString(12)
@@ -330,7 +328,7 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 			},
 		})
 	})
-	
+
 	t.Run("imports a pipeline.artifacts_read.pipeline organization rule", func(t *testing.T) {
 		randNameOne := acctest.RandString(12)
 		randNameTwo := acctest.RandString(12)

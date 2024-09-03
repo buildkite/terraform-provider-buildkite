@@ -99,7 +99,7 @@ func (organizationRuleDatasource) Schema(ctx context.Context, req datasource.Sch
 }
 
 func (or *organizationRuleDatasource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
-	var state organizationRuleResourceModel
+	var state organizationRuleDatasourceModel
 
 	resp.Diagnostics.Append(req.Config.Get(ctx, &state)...)
 
@@ -150,7 +150,7 @@ func (or *organizationRuleDatasource) Read(ctx context.Context, req datasource.R
 	}
 }
 
-func updateOrganizatonRuleDatasourceState(or *organizationRuleResourceModel, orn getNodeNodeRule) {
+func updateOrganizatonRuleDatasourceState(or *organizationRuleDatasourceModel, orn getNodeNodeRule) {
 	sourceUUID, targetUUID := obtainReadUUIDs(orn)
 	value := obtainValueJSON(sourceUUID, targetUUID, string(orn.Action))
 

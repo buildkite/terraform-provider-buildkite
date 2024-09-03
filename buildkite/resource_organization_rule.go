@@ -112,14 +112,14 @@ func (organizationRuleResource) Schema(ctx context.Context, req resource.SchemaR
 				Computed:            true,
 				MarkdownDescription: "Whether this organization rule allows or denys the action to take place between source and target resources. ",
 				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),				
+					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
 			"action": resource_schema.StringAttribute{
 				Computed:            true,
 				MarkdownDescription: "The action defined between source and target resources. ",
 				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),				
+					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
 		},
@@ -176,7 +176,7 @@ func (or *organizationRuleResource) Create(ctx context.Context, req resource.Cre
 	}
 
 	// Update organization rule model and set in state
-	updateOrganizatonRuleCreateState(&state, *r, *sourceUUID, *targetUUID, plan.Value.ValueString() )
+	updateOrganizatonRuleCreateState(&state, *r, *sourceUUID, *targetUUID, plan.Value.ValueString())
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
@@ -299,9 +299,9 @@ func obtainCreationUUIDs(r *createOrganizationRuleResponse) (*string, *string, e
 	}
 
 	/*
-	 	Now, like above - the provider will try and determine the target UUID based on the *createOrganizationRuleResponse. It will
-		switch based on the TargetType returned in the response and extract the UUID of the respective source based on this.
-		Otherwise, it will create and throw an error stating that it cannot obtain the source type from the returned API response.
+		 	Now, like above - the provider will try and determine the target UUID based on the *createOrganizationRuleResponse. It will
+			switch based on the TargetType returned in the response and extract the UUID of the respective source based on this.
+			Otherwise, it will create and throw an error stating that it cannot obtain the source type from the returned API response.
 	*/
 	switch r.RuleCreate.Rule.TargetType {
 	case "PIPELINE":
@@ -337,7 +337,7 @@ func obtainValueJSON(sourceUUID, targetUUID, action string) string {
 	return string(value)
 }
 
-func updateOrganizatonRuleCreateState(or *organizationRuleResourceModel, ruleCreate createOrganizationRuleResponse, sourceUUID, targetUUID, value string){
+func updateOrganizatonRuleCreateState(or *organizationRuleResourceModel, ruleCreate createOrganizationRuleResponse, sourceUUID, targetUUID, value string) {
 	or.ID = types.StringValue(ruleCreate.RuleCreate.Rule.Id)
 	or.UUID = types.StringValue(ruleCreate.RuleCreate.Rule.Uuid)
 	or.Type = types.StringValue(ruleCreate.RuleCreate.Rule.Type)
