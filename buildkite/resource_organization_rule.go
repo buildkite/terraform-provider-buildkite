@@ -162,7 +162,7 @@ func (or *organizationRuleResource) Create(ctx context.Context, req resource.Cre
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to create organization rule",
-			fmt.Sprintf("Unable to create organization rule: %s", err.Error()),
+			fmt.Sprintf("Unable to create organization rule: %s ", err.Error()),
 		)
 		return
 	}
@@ -171,7 +171,10 @@ func (or *organizationRuleResource) Create(ctx context.Context, req resource.Cre
 	sourceUUID, targetUUID, err := obtainCreationUUIDs(r)
 
 	if err != nil {
-		resp.Diagnostics.AddError("Unable to create organization rule", fmt.Sprintf("%s", err.Error()))
+		resp.Diagnostics.AddError(
+			"Unable to create organization rule",
+			fmt.Sprintf("Unable to obtain source/target UUIDs: %s ", err.Error()),
+		)
 		return
 	}
 
