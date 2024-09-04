@@ -9,7 +9,7 @@ description: |-
 
 # buildkite_organization_rule (Data Source)
 
-~> Utilization of this data source is currently opt-in and enabled on request. To have this functionality enabled, please reach out to Buildkite's [Support Team](https://buildkite.com/support) to have Organization Rules enabled for your organization.
+~> Organization rules is currently a feature in development and enabled on an opt-in basis. To have early access enabled for your organization to utilise this data source, please reach out to Buildkite's [Support Team](https://buildkite.com/support).
 
 Use this data source to retrieve an organization rule by its ID.
 
