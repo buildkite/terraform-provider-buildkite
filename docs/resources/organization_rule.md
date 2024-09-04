@@ -9,7 +9,7 @@ description: |-
 
 # buildkite_organization_rule (Resource)
 
-~> Organization rules is currently a feature in development and enabled on an opt-in basis. To have early access enabled for your organization to utilise this resource, please reach out to Buildkite's [Support Team](https://buildkite.com/support).
+~> Rules is a feature that is currently in development and enabled on an opt-in basis for early access. To have this enabled for your organization for utilizing this resource, please reach out to Buildkite's [Support Team](https://buildkite.com/support).
 
 An Organization Rule allows specifying explicit rules between two Buildkite resources and the desired effect/action. 
 
