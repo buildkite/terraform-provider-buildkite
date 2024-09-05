@@ -110,7 +110,7 @@ func (organizationRuleResource) Schema(ctx context.Context, req resource.SchemaR
 			},
 			"effect": resource_schema.StringAttribute{
 				Computed:            true,
-				MarkdownDescription: "Whether this organization rule allows or denys the action to take place between source and target resources. ",
+				MarkdownDescription: "Whether this organization rule allows or denies the action to take place between source and target resources. ",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
@@ -299,7 +299,10 @@ func obtainCreationUUIDs(r *createOrganizationRuleResponse) (*string, *string, e
 		} else {
 			return nil, nil, errors.New("Error obtaining source type upon creating the organization rule.")
 		}
-	}
+	default:
+		// We can't determine the source type - return an error
+		return nil, nil, errors.New("Error determining source type upon creating the organization rule.")
+	} 
 
 	/*
 		 	Now, like above - the provider will try and determine the target UUID based on the *createOrganizationRuleResponse. It will
@@ -313,6 +316,9 @@ func obtainCreationUUIDs(r *createOrganizationRuleResponse) (*string, *string, e
 		} else {
 			return nil, nil, errors.New("Error obtaining target type upon creating the organization rule.")
 		}
+	default:
+		// We can't determine the source type - return an error
+		return nil, nil, errors.New("Error determining target type upon creating the organization rule.")
 	}
 
 	return &sourceUUID, &targetUUID, nil
