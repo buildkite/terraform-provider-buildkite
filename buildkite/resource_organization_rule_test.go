@@ -351,7 +351,7 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 		})
 	})
 
-	t.Run("creates all pipeline.trigger_build.pipeline organization rule with all attributes", func(t *testing.T) {
+	t.Run("creates all pipeline.artifacts_read.pipeline organization rule with all attributes", func(t *testing.T) {
 		randNameOne := acctest.RandString(12)
 		randNameTwo := acctest.RandString(12)
 		var orr organizationRuleResourceModel
