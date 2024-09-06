@@ -287,11 +287,12 @@ func (or *organizationRuleResource) Delete(ctx context.Context, req resource.Del
 
 func obtainCreationUUIDs(r *createOrganizationRuleResponse) (*string, *string, error) {
 	var sourceUUID, targetUUID string
-	/*
-		The provider will try and determine the source UUID based on type that is returned in the *createOrganizationRuleResponse
-		It will switch based on the SourceType returned in the response and extract the UUID of the respective source based on this.
-		Otherwise, it will create and throw an error stating that it cannot obtain the source type from the returned API response.
-	*/
+
+	// The provider will try and determine the source UUID based on type that is returned in the *createOrganizationRuleResponse
+	// It will switch based on the SourceType returned in the response and extract the UUID of the respective source based on this.
+	// Otherwise, it will create and throw an error stating that it cannot obtain the source type from the returned API response.
+	// In all cases exhausted, it'll throw an error stating that the rule's source type can't be determined after creation.
+
 	switch r.RuleCreate.Rule.SourceType {
 	case "PIPELINE":
 		if ruleCreateSourcePipeline, ok := r.RuleCreate.Rule.Source.(*OrganizationRuleFieldsSourcePipeline); ok {
@@ -302,13 +303,13 @@ func obtainCreationUUIDs(r *createOrganizationRuleResponse) (*string, *string, e
 	default:
 		// We can't determine the source type - return an error
 		return nil, nil, errors.New("Error determining source type upon creating the organization rule.")
-	} 
+	}
 
-	/*
-		 	Now, like above - the provider will try and determine the target UUID based on the *createOrganizationRuleResponse. It will
-			switch based on the TargetType returned in the response and extract the UUID of the respective source based on this.
-			Otherwise, it will create and throw an error stating that it cannot obtain the source type from the returned API response.
-	*/
+	// Now, like above - the provider will try and determine the target UUID based on the *createOrganizationRuleResponse. It will
+	// switch based on the TargetType returned in the response and extract the UUID of the respective source based on this. Otherwise,
+	// it will create and throw an error stating that it cannot obtain the source type from the returned API response.
+	// In all cases exhausted, it'll throw an error stating that the rule's target type can't be determined after creation.
+
 	switch r.RuleCreate.Rule.TargetType {
 	case "PIPELINE":
 		if ruleCreateTargetPipeline, ok := r.RuleCreate.Rule.Target.(*OrganizationRuleFieldsTargetPipeline); ok {
@@ -317,7 +318,7 @@ func obtainCreationUUIDs(r *createOrganizationRuleResponse) (*string, *string, e
 			return nil, nil, errors.New("Error obtaining target type upon creating the organization rule.")
 		}
 	default:
-		// We can't determine the source type - return an error
+		// We can't determine the target type - return an error
 		return nil, nil, errors.New("Error determining target type upon creating the organization rule.")
 	}
 
