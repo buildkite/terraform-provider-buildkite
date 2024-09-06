@@ -1,6 +1,8 @@
 fragment OrganizationRuleFields on Rule {
     id
     uuid
+    # @genqlient(pointer: true)
+    description
     type 
     sourceType
     targetType
@@ -20,12 +22,15 @@ fragment OrganizationRuleFields on Rule {
 
 mutation createOrganizationRule(
     $organizationId: ID!, 
+    # @genqlient(pointer: true)
+    $description: String,
     $ruleType: String!,
     $value: JSON!,
 ) {
     ruleCreate(
         input: {
             organizationId: $organizationId
+            description: $description
             type: $ruleType,
             value: $value
         }

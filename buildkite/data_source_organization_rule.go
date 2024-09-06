@@ -8,22 +8,22 @@ import (
 	"github.com/MakeNowJust/heredoc"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
-	resource_schema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
 type organizationRuleDatasourceModel struct {
-	ID         types.String `tfsdk:"id"`
-	UUID       types.String `tfsdk:"uuid"`
-	Type       types.String `tfsdk:"type"`
-	Value      types.String `tfsdk:"value"`
-	SourceType types.String `tfsdk:"source_type"`
-	SourceUUID types.String `tfsdk:"source_uuid"`
-	TargetType types.String `tfsdk:"target_type"`
-	TargetUUID types.String `tfsdk:"target_uuid"`
-	Effect     types.String `tfsdk:"effect"`
-	Action     types.String `tfsdk:"action"`
+	ID          types.String `tfsdk:"id"`
+	UUID        types.String `tfsdk:"uuid"`
+	Description types.String `tfsdk:"description"`
+	Type        types.String `tfsdk:"type"`
+	Value       types.String `tfsdk:"value"`
+	SourceType  types.String `tfsdk:"source_type"`
+	SourceUUID  types.String `tfsdk:"source_uuid"`
+	TargetType  types.String `tfsdk:"target_type"`
+	TargetUUID  types.String `tfsdk:"target_uuid"`
+	Effect      types.String `tfsdk:"effect"`
+	Action      types.String `tfsdk:"action"`
 }
 
 type organizationRuleDatasource struct {
@@ -54,43 +54,47 @@ func (organizationRuleDatasource) Schema(ctx context.Context, req datasource.Sch
 		More information on organization rules can be found in the [documentation](https://buildkite.com/docs/pipelines/rules/overview).
 		`),
 		Attributes: map[string]schema.Attribute{
-			"id": resource_schema.StringAttribute{
+			"id": schema.StringAttribute{
 				Required:            true,
 				MarkdownDescription: "The GraphQL ID of the organization rule. ",
 			},
-			"uuid": resource_schema.StringAttribute{
+			"uuid": schema.StringAttribute{
 				Computed:            true,
 				MarkdownDescription: "The UUID of the organization rule. ",
 			},
-			"type": resource_schema.StringAttribute{
+			"description": schema.StringAttribute{
+				Optional:            true,
+				MarkdownDescription: "The description of the organization rule. ",
+			},
+			"type": schema.StringAttribute{
 				Computed:            true,
 				MarkdownDescription: "The type of organization rule. ",
 			},
-			"value": resource_schema.StringAttribute{
+			"value": schema.StringAttribute{
 				Computed:            true,
 				MarkdownDescription: "The JSON document that this organization rule implements. ",
 			},
-			"source_type": resource_schema.StringAttribute{
+			"source_type": schema.StringAttribute{
 				Computed:            true,
 				MarkdownDescription: "The source resource type that this organization rule allows or denies to invoke its defined action. ",
 			},
-			"source_uuid": resource_schema.StringAttribute{
+			"source_uuid": schema.StringAttribute{
 				Computed:            true,
 				MarkdownDescription: "The UUID of the resource that this organization rule allows or denies invocating its defined action. ",
 			},
-			"target_type": resource_schema.StringAttribute{
+			"target_type": schema.StringAttribute{
 				Computed:            true,
 				MarkdownDescription: "The target resource type that this organization rule allows or denies the source to respective action. ",
 			},
-			"target_uuid": resource_schema.StringAttribute{
+			"target_uuid": schema.StringAttribute{
 				Computed:            true,
 				MarkdownDescription: "The UUID of the target resourcee that this organization rule allows or denies invocation its respective action. ",
 			},
-			"effect": resource_schema.StringAttribute{
+			"effect": schema.StringAttribute{
 				Computed:            true,
 				MarkdownDescription: "Whether this organization rule allows or denys the action to take place between source and target resources. ",
 			},
-			"action": resource_schema.StringAttribute{
+			"action": schema.StringAttribute{
 				Computed:            true,
 				MarkdownDescription: "The action defined between source and target resources. ",
 			},
@@ -156,6 +160,7 @@ func updateOrganizatonRuleDatasourceState(or *organizationRuleDatasourceModel, o
 
 	or.ID = types.StringValue(orn.Id)
 	or.UUID = types.StringValue(orn.Uuid)
+	or.Description = types.StringPointerValue(orn.Description)
 	or.Type = types.StringValue(orn.Type)
 	or.Value = types.StringValue(value)
 	or.SourceType = types.StringValue(string(orn.SourceType))

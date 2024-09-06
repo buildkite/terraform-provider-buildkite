@@ -18,16 +18,17 @@ import (
 )
 
 type organizationRuleResourceModel struct {
-	ID         types.String `tfsdk:"id"`
-	UUID       types.String `tfsdk:"uuid"`
-	Type       types.String `tfsdk:"type"`
-	Value      types.String `tfsdk:"value"`
-	SourceType types.String `tfsdk:"source_type"`
-	SourceUUID types.String `tfsdk:"source_uuid"`
-	TargetType types.String `tfsdk:"target_type"`
-	TargetUUID types.String `tfsdk:"target_uuid"`
-	Effect     types.String `tfsdk:"effect"`
-	Action     types.String `tfsdk:"action"`
+	ID          types.String `tfsdk:"id"`
+	UUID        types.String `tfsdk:"uuid"`
+	Description types.String `tfsdk:"description"`
+	Type        types.String `tfsdk:"type"`
+	Value       types.String `tfsdk:"value"`
+	SourceType  types.String `tfsdk:"source_type"`
+	SourceUUID  types.String `tfsdk:"source_uuid"`
+	TargetType  types.String `tfsdk:"target_type"`
+	TargetUUID  types.String `tfsdk:"target_uuid"`
+	Effect      types.String `tfsdk:"effect"`
+	Action      types.String `tfsdk:"action"`
 }
 
 type organizationRuleResource struct {
@@ -71,6 +72,10 @@ func (organizationRuleResource) Schema(ctx context.Context, req resource.SchemaR
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
+			},
+			"description": resource_schema.StringAttribute{
+				Optional:            true,
+				MarkdownDescription: "The description of the organization rule. ",
 			},
 			"type": resource_schema.StringAttribute{
 				Required:            true,
@@ -151,6 +156,7 @@ func (or *organizationRuleResource) Create(ctx context.Context, req resource.Cre
 				ctx,
 				or.client.genqlient,
 				*org,
+				plan.Description.ValueStringPointer(),
 				plan.Type.ValueString(),
 				plan.Value.ValueString(),
 			)
@@ -350,6 +356,7 @@ func obtainValueJSON(sourceUUID, targetUUID, action string) string {
 func updateOrganizatonRuleCreateState(or *organizationRuleResourceModel, ruleCreate createOrganizationRuleResponse, sourceUUID, targetUUID, value string) {
 	or.ID = types.StringValue(ruleCreate.RuleCreate.Rule.Id)
 	or.UUID = types.StringValue(ruleCreate.RuleCreate.Rule.Uuid)
+	or.Description = types.StringPointerValue(ruleCreate.RuleCreate.Rule.Description)
 	or.Type = types.StringValue(ruleCreate.RuleCreate.Rule.Type)
 	or.Value = types.StringValue(value)
 	or.SourceType = types.StringValue(string(ruleCreate.RuleCreate.Rule.SourceType))
@@ -366,6 +373,7 @@ func updateOrganizatonRuleReadState(or *organizationRuleResourceModel, orn getNo
 
 	or.ID = types.StringValue(orn.Id)
 	or.UUID = types.StringValue(orn.Uuid)
+	or.Description = types.StringPointerValue(orn.Description)
 	or.Type = types.StringValue(orn.Type)
 	or.Value = types.StringValue(value)
 	or.SourceType = types.StringValue(string(orn.SourceType))
