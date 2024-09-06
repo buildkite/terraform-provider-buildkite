@@ -290,7 +290,7 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 		})
 	})
 
-	t.Run("creates a pipeline.artifacts_read.pipeline organization rule with required attributes ", func(t *testing.T) {
+	t.Run("creates a pipeline.artifacts_read.pipeline organization rule with required attributes", func(t *testing.T) {
 		randNameOne := acctest.RandString(12)
 		randNameTwo := acctest.RandString(12)
 		var orr organizationRuleResourceModel

@@ -63,7 +63,7 @@ func (organizationRuleDatasource) Schema(ctx context.Context, req datasource.Sch
 				MarkdownDescription: "The UUID of the organization rule. ",
 			},
 			"description": schema.StringAttribute{
-				Optional:            true,
+				Computed:            true,
 				MarkdownDescription: "The description of the organization rule. ",
 			},
 			"type": schema.StringAttribute{
