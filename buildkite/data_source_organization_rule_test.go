@@ -210,22 +210,22 @@ func TestAccBuildkiteOrganizationRuleDatasource(t *testing.T) {
 		`, fields[0], fields[1], fields[0], fields[1], fields[2], fields[2], fields[2], fields[2], fields[2], fields[2])
 	}
 
-	for _, ruleType := range ruleActions {
-		t.Run(fmt.Sprintf("loads a pipeline.%s.pipeline organization rule with required attributes by id", ruleType), func(t *testing.T) {
+	for _, action := range ruleActions {
+		t.Run(fmt.Sprintf("loads a pipeline.%s.pipeline organization rule with required attributes by id", action), func(t *testing.T) {
 			randdNameOne := acctest.RandString(12)
 			randNameTwo := acctest.RandString(12)
 			var orr organizationRuleResourceModel
 
 			check := resource.ComposeAggregateTestCheckFunc(
 				// Confirm the organization rule exists
-				testAccCheckOrganizationRuleExists(&orr, fmt.Sprintf("buildkite_organization_rule.%s_rule", ruleType)),
+				testAccCheckOrganizationRuleExists(&orr, fmt.Sprintf("buildkite_organization_rule.%s_rule", action)),
 				// Confirm the organization rule has the correct values in Buildkite's system
-				testAccCheckOrganizationRuleRemoteValues(&orr, "PIPELINE", "PIPELINE", strings.ToUpper(ruleType), "ALLOW"),
+				testAccCheckOrganizationRuleRemoteValues(&orr, "PIPELINE", "PIPELINE", strings.ToUpper(action), "ALLOW"),
 				// Check the organization rule data source's attributes are set in state
-				resource.TestCheckResourceAttrSet(fmt.Sprintf("data.buildkite_organization_rule.%s_rule", ruleType), "id"),
-				resource.TestCheckResourceAttrSet(fmt.Sprintf("data.buildkite_organization_rule.%s_rule", ruleType), "uuid"),
-				resource.TestCheckResourceAttrSet(fmt.Sprintf("data.buildkite_organization_rule.%s_rule", ruleType), "type"),
-				resource.TestCheckResourceAttrSet(fmt.Sprintf("data.buildkite_organization_rule.%s_rule", ruleType), "value"),
+				resource.TestCheckResourceAttrSet(fmt.Sprintf("data.buildkite_organization_rule.%s_rule", action), "id"),
+				resource.TestCheckResourceAttrSet(fmt.Sprintf("data.buildkite_organization_rule.%s_rule", action), "uuid"),
+				resource.TestCheckResourceAttrSet(fmt.Sprintf("data.buildkite_organization_rule.%s_rule", action), "type"),
+				resource.TestCheckResourceAttrSet(fmt.Sprintf("data.buildkite_organization_rule.%s_rule", action), "value"),
 			)
 
 			resource.ParallelTest(t, resource.TestCase{
@@ -234,29 +234,29 @@ func TestAccBuildkiteOrganizationRuleDatasource(t *testing.T) {
 				CheckDestroy:             testAccCheckOrganizationRuleDestroy,
 				Steps: []resource.TestStep{
 					{
-						Config: configRequiredByID(randdNameOne, randNameTwo, ruleType),
+						Config: configRequiredByID(randdNameOne, randNameTwo, action),
 						Check:  check,
 					},
 				},
 			})
 		})
 
-		t.Run(fmt.Sprintf("loads a pipeline.%s.pipeline organization rule with all attributes by id", ruleType), func(t *testing.T) {
+		t.Run(fmt.Sprintf("loads a pipeline.%s.pipeline organization rule with all attributes by id", action), func(t *testing.T) {
 			randdNameOne := acctest.RandString(12)
 			randNameTwo := acctest.RandString(12)
 			var orr organizationRuleResourceModel
 
 			check := resource.ComposeAggregateTestCheckFunc(
 				// Confirm the organization rule exists
-				testAccCheckOrganizationRuleExists(&orr, fmt.Sprintf("buildkite_organization_rule.%s_rule", ruleType)),
+				testAccCheckOrganizationRuleExists(&orr, fmt.Sprintf("buildkite_organization_rule.%s_rule", action)),
 				// Confirm the organization rule has the correct values in Buildkite's system
-				testAccCheckOrganizationRuleRemoteValues(&orr, "PIPELINE", "PIPELINE", strings.ToUpper(ruleType), "ALLOW"),
+				testAccCheckOrganizationRuleRemoteValues(&orr, "PIPELINE", "PIPELINE", strings.ToUpper(action), "ALLOW"),
 				// Check the organization rule data source's attributes are set in state
-				resource.TestCheckResourceAttrSet(fmt.Sprintf("data.buildkite_organization_rule.%s_rule", ruleType), "id"),
-				resource.TestCheckResourceAttrSet(fmt.Sprintf("data.buildkite_organization_rule.%s_rule", ruleType), "uuid"),
-				resource.TestCheckResourceAttrSet(fmt.Sprintf("data.buildkite_organization_rule.%s_rule", ruleType), "type"),
-				resource.TestCheckResourceAttrSet(fmt.Sprintf("data.buildkite_organization_rule.%s_rule", ruleType), "description"),
-				resource.TestCheckResourceAttrSet(fmt.Sprintf("data.buildkite_organization_rule.%s_rule", ruleType), "value"),
+				resource.TestCheckResourceAttrSet(fmt.Sprintf("data.buildkite_organization_rule.%s_rule", action), "id"),
+				resource.TestCheckResourceAttrSet(fmt.Sprintf("data.buildkite_organization_rule.%s_rule", action), "uuid"),
+				resource.TestCheckResourceAttrSet(fmt.Sprintf("data.buildkite_organization_rule.%s_rule", action), "type"),
+				resource.TestCheckResourceAttrSet(fmt.Sprintf("data.buildkite_organization_rule.%s_rule", action), "description"),
+				resource.TestCheckResourceAttrSet(fmt.Sprintf("data.buildkite_organization_rule.%s_rule", action), "value"),
 			)
 
 			resource.ParallelTest(t, resource.TestCase{
@@ -265,28 +265,28 @@ func TestAccBuildkiteOrganizationRuleDatasource(t *testing.T) {
 				CheckDestroy:             testAccCheckOrganizationRuleDestroy,
 				Steps: []resource.TestStep{
 					{
-						Config: configAllByID(randdNameOne, randNameTwo, ruleType),
+						Config: configAllByID(randdNameOne, randNameTwo, action),
 						Check:  check,
 					},
 				},
 			})
 		})
 
-		t.Run(fmt.Sprintf("loads a pipeline.%s.pipeline organization rule with required attributes by uuid", ruleType), func(t *testing.T) {
+		t.Run(fmt.Sprintf("loads a pipeline.%s.pipeline organization rule with required attributes by uuid", action), func(t *testing.T) {
 			randdNameOne := acctest.RandString(12)
 			randNameTwo := acctest.RandString(12)
 			var orr organizationRuleResourceModel
 
 			check := resource.ComposeAggregateTestCheckFunc(
 				// Confirm the organization rule exists
-				testAccCheckOrganizationRuleExists(&orr, fmt.Sprintf("buildkite_organization_rule.%s_rule", ruleType)),
+				testAccCheckOrganizationRuleExists(&orr, fmt.Sprintf("buildkite_organization_rule.%s_rule", action)),
 				// Confirm the organization rule has the correct values in Buildkite's system
-				testAccCheckOrganizationRuleRemoteValues(&orr, "PIPELINE", "PIPELINE", strings.ToUpper(ruleType), "ALLOW"),
+				testAccCheckOrganizationRuleRemoteValues(&orr, "PIPELINE", "PIPELINE", strings.ToUpper(action), "ALLOW"),
 				// Check the organization rule data source's attributes are set in state
-				resource.TestCheckResourceAttrSet(fmt.Sprintf("data.buildkite_organization_rule.%s_rule", ruleType), "id"),
-				resource.TestCheckResourceAttrSet(fmt.Sprintf("data.buildkite_organization_rule.%s_rule", ruleType), "uuid"),
-				resource.TestCheckResourceAttrSet(fmt.Sprintf("data.buildkite_organization_rule.%s_rule", ruleType), "type"),
-				resource.TestCheckResourceAttrSet(fmt.Sprintf("data.buildkite_organization_rule.%s_rule", ruleType), "value"),
+				resource.TestCheckResourceAttrSet(fmt.Sprintf("data.buildkite_organization_rule.%s_rule", action), "id"),
+				resource.TestCheckResourceAttrSet(fmt.Sprintf("data.buildkite_organization_rule.%s_rule", action), "uuid"),
+				resource.TestCheckResourceAttrSet(fmt.Sprintf("data.buildkite_organization_rule.%s_rule", action), "type"),
+				resource.TestCheckResourceAttrSet(fmt.Sprintf("data.buildkite_organization_rule.%s_rule", action), "value"),
 			)
 
 			resource.ParallelTest(t, resource.TestCase{
@@ -295,29 +295,29 @@ func TestAccBuildkiteOrganizationRuleDatasource(t *testing.T) {
 				CheckDestroy:             testAccCheckOrganizationRuleDestroy,
 				Steps: []resource.TestStep{
 					{
-						Config: configRequiredByUUID(randdNameOne, randNameTwo, ruleType),
+						Config: configRequiredByUUID(randdNameOne, randNameTwo, action),
 						Check:  check,
 					},
 				},
 			})
 		})
 
-		t.Run(fmt.Sprintf("loads a pipeline.%s.pipeline organization rule with all attributes by uuid", ruleType), func(t *testing.T) {
+		t.Run(fmt.Sprintf("loads a pipeline.%s.pipeline organization rule with all attributes by uuid", action), func(t *testing.T) {
 			randdNameOne := acctest.RandString(12)
 			randNameTwo := acctest.RandString(12)
 			var orr organizationRuleResourceModel
 
 			check := resource.ComposeAggregateTestCheckFunc(
 				// Confirm the organization rule exists
-				testAccCheckOrganizationRuleExists(&orr, fmt.Sprintf("buildkite_organization_rule.%s_rule", ruleType)),
+				testAccCheckOrganizationRuleExists(&orr, fmt.Sprintf("buildkite_organization_rule.%s_rule", action)),
 				// Confirm the organization rule has the correct values in Buildkite's system
-				testAccCheckOrganizationRuleRemoteValues(&orr, "PIPELINE", "PIPELINE", strings.ToUpper(ruleType), "ALLOW"),
+				testAccCheckOrganizationRuleRemoteValues(&orr, "PIPELINE", "PIPELINE", strings.ToUpper(action), "ALLOW"),
 				// Check the organization rule data source's attributes are set in state
-				resource.TestCheckResourceAttrSet(fmt.Sprintf("data.buildkite_organization_rule.%s_rule", ruleType), "id"),
-				resource.TestCheckResourceAttrSet(fmt.Sprintf("data.buildkite_organization_rule.%s_rule", ruleType), "uuid"),
-				resource.TestCheckResourceAttrSet(fmt.Sprintf("data.buildkite_organization_rule.%s_rule", ruleType), "type"),
-				resource.TestCheckResourceAttrSet(fmt.Sprintf("data.buildkite_organization_rule.%s_rule", ruleType), "description"),
-				resource.TestCheckResourceAttrSet(fmt.Sprintf("data.buildkite_organization_rule.%s_rule", ruleType), "value"),
+				resource.TestCheckResourceAttrSet(fmt.Sprintf("data.buildkite_organization_rule.%s_rule", action), "id"),
+				resource.TestCheckResourceAttrSet(fmt.Sprintf("data.buildkite_organization_rule.%s_rule", action), "uuid"),
+				resource.TestCheckResourceAttrSet(fmt.Sprintf("data.buildkite_organization_rule.%s_rule", action), "type"),
+				resource.TestCheckResourceAttrSet(fmt.Sprintf("data.buildkite_organization_rule.%s_rule", action), "description"),
+				resource.TestCheckResourceAttrSet(fmt.Sprintf("data.buildkite_organization_rule.%s_rule", action), "value"),
 			)
 
 			resource.ParallelTest(t, resource.TestCase{
@@ -326,7 +326,7 @@ func TestAccBuildkiteOrganizationRuleDatasource(t *testing.T) {
 				CheckDestroy:             testAccCheckOrganizationRuleDestroy,
 				Steps: []resource.TestStep{
 					{
-						Config: configAllByUUID(randdNameOne, randNameTwo, ruleType),
+						Config: configAllByUUID(randdNameOne, randNameTwo, action),
 						Check:  check,
 					},
 				},
