@@ -2042,6 +2042,18 @@ type __getOrganizationInput struct {
 // GetSlug returns __getOrganizationInput.Slug, and is useful for accessing the field via an interface.
 func (v *__getOrganizationInput) GetSlug() string { return v.Slug }
 
+// __getOrganizationRulesInput is used internally by genqlient
+type __getOrganizationRulesInput struct {
+	OrgSlug string  `json:"orgSlug"`
+	Cursor  *string `json:"cursor"`
+}
+
+// GetOrgSlug returns __getOrganizationRulesInput.OrgSlug, and is useful for accessing the field via an interface.
+func (v *__getOrganizationRulesInput) GetOrgSlug() string { return v.OrgSlug }
+
+// GetCursor returns __getOrganizationRulesInput.Cursor, and is useful for accessing the field via an interface.
+func (v *__getOrganizationRulesInput) GetCursor() *string { return v.Cursor }
+
 // __getOrganiztionBannerInput is used internally by genqlient
 type __getOrganiztionBannerInput struct {
 	OrgSlug string `json:"orgSlug"`
@@ -7192,6 +7204,226 @@ type getOrganizationResponse struct {
 
 // GetOrganization returns getOrganizationResponse.Organization, and is useful for accessing the field via an interface.
 func (v *getOrganizationResponse) GetOrganization() getOrganizationOrganization {
+	return v.Organization
+}
+
+// getOrganizationRulesOrganization includes the requested fields of the GraphQL type Organization.
+// The GraphQL type's documentation follows.
+//
+// An organization
+type getOrganizationRulesOrganization struct {
+	// Returns rules for an Organization
+	Rules getOrganizationRulesOrganizationRulesRuleConnection `json:"rules"`
+}
+
+// GetRules returns getOrganizationRulesOrganization.Rules, and is useful for accessing the field via an interface.
+func (v *getOrganizationRulesOrganization) GetRules() getOrganizationRulesOrganizationRulesRuleConnection {
+	return v.Rules
+}
+
+// getOrganizationRulesOrganizationRulesRuleConnection includes the requested fields of the GraphQL type RuleConnection.
+type getOrganizationRulesOrganizationRulesRuleConnection struct {
+	PageInfo getOrganizationRulesOrganizationRulesRuleConnectionPageInfo        `json:"pageInfo"`
+	Edges    []getOrganizationRulesOrganizationRulesRuleConnectionEdgesRuleEdge `json:"edges"`
+}
+
+// GetPageInfo returns getOrganizationRulesOrganizationRulesRuleConnection.PageInfo, and is useful for accessing the field via an interface.
+func (v *getOrganizationRulesOrganizationRulesRuleConnection) GetPageInfo() getOrganizationRulesOrganizationRulesRuleConnectionPageInfo {
+	return v.PageInfo
+}
+
+// GetEdges returns getOrganizationRulesOrganizationRulesRuleConnection.Edges, and is useful for accessing the field via an interface.
+func (v *getOrganizationRulesOrganizationRulesRuleConnection) GetEdges() []getOrganizationRulesOrganizationRulesRuleConnectionEdgesRuleEdge {
+	return v.Edges
+}
+
+// getOrganizationRulesOrganizationRulesRuleConnectionEdgesRuleEdge includes the requested fields of the GraphQL type RuleEdge.
+type getOrganizationRulesOrganizationRulesRuleConnectionEdgesRuleEdge struct {
+	Node getOrganizationRulesOrganizationRulesRuleConnectionEdgesRuleEdgeNodeRule `json:"node"`
+}
+
+// GetNode returns getOrganizationRulesOrganizationRulesRuleConnectionEdgesRuleEdge.Node, and is useful for accessing the field via an interface.
+func (v *getOrganizationRulesOrganizationRulesRuleConnectionEdgesRuleEdge) GetNode() getOrganizationRulesOrganizationRulesRuleConnectionEdgesRuleEdgeNodeRule {
+	return v.Node
+}
+
+// getOrganizationRulesOrganizationRulesRuleConnectionEdgesRuleEdgeNodeRule includes the requested fields of the GraphQL type Rule.
+type getOrganizationRulesOrganizationRulesRuleConnectionEdgesRuleEdgeNodeRule struct {
+	OrganizationRuleFields `json:"-"`
+}
+
+// GetId returns getOrganizationRulesOrganizationRulesRuleConnectionEdgesRuleEdgeNodeRule.Id, and is useful for accessing the field via an interface.
+func (v *getOrganizationRulesOrganizationRulesRuleConnectionEdgesRuleEdgeNodeRule) GetId() string {
+	return v.OrganizationRuleFields.Id
+}
+
+// GetUuid returns getOrganizationRulesOrganizationRulesRuleConnectionEdgesRuleEdgeNodeRule.Uuid, and is useful for accessing the field via an interface.
+func (v *getOrganizationRulesOrganizationRulesRuleConnectionEdgesRuleEdgeNodeRule) GetUuid() string {
+	return v.OrganizationRuleFields.Uuid
+}
+
+// GetDescription returns getOrganizationRulesOrganizationRulesRuleConnectionEdgesRuleEdgeNodeRule.Description, and is useful for accessing the field via an interface.
+func (v *getOrganizationRulesOrganizationRulesRuleConnectionEdgesRuleEdgeNodeRule) GetDescription() *string {
+	return v.OrganizationRuleFields.Description
+}
+
+// GetType returns getOrganizationRulesOrganizationRulesRuleConnectionEdgesRuleEdgeNodeRule.Type, and is useful for accessing the field via an interface.
+func (v *getOrganizationRulesOrganizationRulesRuleConnectionEdgesRuleEdgeNodeRule) GetType() string {
+	return v.OrganizationRuleFields.Type
+}
+
+// GetSourceType returns getOrganizationRulesOrganizationRulesRuleConnectionEdgesRuleEdgeNodeRule.SourceType, and is useful for accessing the field via an interface.
+func (v *getOrganizationRulesOrganizationRulesRuleConnectionEdgesRuleEdgeNodeRule) GetSourceType() RuleSourceType {
+	return v.OrganizationRuleFields.SourceType
+}
+
+// GetTargetType returns getOrganizationRulesOrganizationRulesRuleConnectionEdgesRuleEdgeNodeRule.TargetType, and is useful for accessing the field via an interface.
+func (v *getOrganizationRulesOrganizationRulesRuleConnectionEdgesRuleEdgeNodeRule) GetTargetType() RuleTargetType {
+	return v.OrganizationRuleFields.TargetType
+}
+
+// GetEffect returns getOrganizationRulesOrganizationRulesRuleConnectionEdgesRuleEdgeNodeRule.Effect, and is useful for accessing the field via an interface.
+func (v *getOrganizationRulesOrganizationRulesRuleConnectionEdgesRuleEdgeNodeRule) GetEffect() RuleEffect {
+	return v.OrganizationRuleFields.Effect
+}
+
+// GetAction returns getOrganizationRulesOrganizationRulesRuleConnectionEdgesRuleEdgeNodeRule.Action, and is useful for accessing the field via an interface.
+func (v *getOrganizationRulesOrganizationRulesRuleConnectionEdgesRuleEdgeNodeRule) GetAction() RuleAction {
+	return v.OrganizationRuleFields.Action
+}
+
+// GetSource returns getOrganizationRulesOrganizationRulesRuleConnectionEdgesRuleEdgeNodeRule.Source, and is useful for accessing the field via an interface.
+func (v *getOrganizationRulesOrganizationRulesRuleConnectionEdgesRuleEdgeNodeRule) GetSource() OrganizationRuleFieldsSourceRuleSource {
+	return v.OrganizationRuleFields.Source
+}
+
+// GetTarget returns getOrganizationRulesOrganizationRulesRuleConnectionEdgesRuleEdgeNodeRule.Target, and is useful for accessing the field via an interface.
+func (v *getOrganizationRulesOrganizationRulesRuleConnectionEdgesRuleEdgeNodeRule) GetTarget() OrganizationRuleFieldsTargetRuleTarget {
+	return v.OrganizationRuleFields.Target
+}
+
+func (v *getOrganizationRulesOrganizationRulesRuleConnectionEdgesRuleEdgeNodeRule) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*getOrganizationRulesOrganizationRulesRuleConnectionEdgesRuleEdgeNodeRule
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.getOrganizationRulesOrganizationRulesRuleConnectionEdgesRuleEdgeNodeRule = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	err = json.Unmarshal(
+		b, &v.OrganizationRuleFields)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+type __premarshalgetOrganizationRulesOrganizationRulesRuleConnectionEdgesRuleEdgeNodeRule struct {
+	Id string `json:"id"`
+
+	Uuid string `json:"uuid"`
+
+	Description *string `json:"description"`
+
+	Type string `json:"type"`
+
+	SourceType RuleSourceType `json:"sourceType"`
+
+	TargetType RuleTargetType `json:"targetType"`
+
+	Effect RuleEffect `json:"effect"`
+
+	Action RuleAction `json:"action"`
+
+	Source json.RawMessage `json:"source"`
+
+	Target json.RawMessage `json:"target"`
+}
+
+func (v *getOrganizationRulesOrganizationRulesRuleConnectionEdgesRuleEdgeNodeRule) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *getOrganizationRulesOrganizationRulesRuleConnectionEdgesRuleEdgeNodeRule) __premarshalJSON() (*__premarshalgetOrganizationRulesOrganizationRulesRuleConnectionEdgesRuleEdgeNodeRule, error) {
+	var retval __premarshalgetOrganizationRulesOrganizationRulesRuleConnectionEdgesRuleEdgeNodeRule
+
+	retval.Id = v.OrganizationRuleFields.Id
+	retval.Uuid = v.OrganizationRuleFields.Uuid
+	retval.Description = v.OrganizationRuleFields.Description
+	retval.Type = v.OrganizationRuleFields.Type
+	retval.SourceType = v.OrganizationRuleFields.SourceType
+	retval.TargetType = v.OrganizationRuleFields.TargetType
+	retval.Effect = v.OrganizationRuleFields.Effect
+	retval.Action = v.OrganizationRuleFields.Action
+	{
+
+		dst := &retval.Source
+		src := v.OrganizationRuleFields.Source
+		var err error
+		*dst, err = __marshalOrganizationRuleFieldsSourceRuleSource(
+			&src)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"unable to marshal getOrganizationRulesOrganizationRulesRuleConnectionEdgesRuleEdgeNodeRule.OrganizationRuleFields.Source: %w", err)
+		}
+	}
+	{
+
+		dst := &retval.Target
+		src := v.OrganizationRuleFields.Target
+		var err error
+		*dst, err = __marshalOrganizationRuleFieldsTargetRuleTarget(
+			&src)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"unable to marshal getOrganizationRulesOrganizationRulesRuleConnectionEdgesRuleEdgeNodeRule.OrganizationRuleFields.Target: %w", err)
+		}
+	}
+	return &retval, nil
+}
+
+// getOrganizationRulesOrganizationRulesRuleConnectionPageInfo includes the requested fields of the GraphQL type PageInfo.
+// The GraphQL type's documentation follows.
+//
+// Information about pagination in a connection.
+type getOrganizationRulesOrganizationRulesRuleConnectionPageInfo struct {
+	// When paginating forwards, the cursor to continue.
+	EndCursor string `json:"endCursor"`
+	// When paginating forwards, are there more items?
+	HasNextPage bool `json:"hasNextPage"`
+}
+
+// GetEndCursor returns getOrganizationRulesOrganizationRulesRuleConnectionPageInfo.EndCursor, and is useful for accessing the field via an interface.
+func (v *getOrganizationRulesOrganizationRulesRuleConnectionPageInfo) GetEndCursor() string {
+	return v.EndCursor
+}
+
+// GetHasNextPage returns getOrganizationRulesOrganizationRulesRuleConnectionPageInfo.HasNextPage, and is useful for accessing the field via an interface.
+func (v *getOrganizationRulesOrganizationRulesRuleConnectionPageInfo) GetHasNextPage() bool {
+	return v.HasNextPage
+}
+
+// getOrganizationRulesResponse is returned by getOrganizationRules on success.
+type getOrganizationRulesResponse struct {
+	// Find an organization
+	Organization getOrganizationRulesOrganization `json:"organization"`
+}
+
+// GetOrganization returns getOrganizationRulesResponse.Organization, and is useful for accessing the field via an interface.
+func (v *getOrganizationRulesResponse) GetOrganization() getOrganizationRulesOrganization {
 	return v.Organization
 }
 
@@ -14741,6 +14973,75 @@ func getOrganization(
 	var err_ error
 
 	var data_ getOrganizationResponse
+	resp_ := &graphql.Response{Data: &data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return &data_, err_
+}
+
+// The query or mutation executed by getOrganizationRules.
+const getOrganizationRules_Operation = `
+query getOrganizationRules ($orgSlug: ID!, $cursor: String) {
+	organization(slug: $orgSlug) {
+		rules(first: 50, after: $cursor) {
+			pageInfo {
+				endCursor
+				hasNextPage
+			}
+			edges {
+				node {
+					... OrganizationRuleFields
+				}
+			}
+		}
+	}
+}
+fragment OrganizationRuleFields on Rule {
+	id
+	uuid
+	description
+	type
+	sourceType
+	targetType
+	effect
+	action
+	source {
+		__typename
+		... on Pipeline {
+			uuid
+		}
+	}
+	target {
+		__typename
+		... on Pipeline {
+			uuid
+		}
+	}
+}
+`
+
+func getOrganizationRules(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	orgSlug string,
+	cursor *string,
+) (*getOrganizationRulesResponse, error) {
+	req_ := &graphql.Request{
+		OpName: "getOrganizationRules",
+		Query:  getOrganizationRules_Operation,
+		Variables: &__getOrganizationRulesInput{
+			OrgSlug: orgSlug,
+			Cursor:  cursor,
+		},
+	}
+	var err_ error
+
+	var data_ getOrganizationRulesResponse
 	resp_ := &graphql.Response{Data: &data_}
 
 	err_ = client_.MakeRequest(

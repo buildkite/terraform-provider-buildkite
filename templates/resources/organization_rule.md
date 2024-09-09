@@ -28,6 +28,7 @@ resource "buildkite_organization_rule" "trigger_build_test_dev" {
 
 resource "buildkite_organization_rule" "artifacts_read_test_dev" {
     type = "pipeline.artifacts_read.pipeline"
+    description = "A rule to allow artifact reads by app_test_ci to app_dev_deploy"
     value = jsonencode({
         source_pipeline_uuid = buildkite_pipeline.app_test_ci.uuid
         target_pipeline_uuid = buildkite_pipeline.app_dev_deploy.uuid
@@ -42,10 +43,14 @@ resource "buildkite_organization_rule" "artifacts_read_test_dev" {
 - `type` (String) The type of organization rule.
 - `value` (String) The JSON document that this organization rule implements.
 
+### Optional
+
+- `description` (String) The description of the organization rule.
+
 ### Read-Only
 
 - `action` (String) The action defined between source and target resources.
-- `effect` (String) Whether this organization rule allows or denys the action to take place between source and target resources.
+- `effect` (String) Whether this organization rule allows or denies the action to take place between source and target resources.
 - `id` (String) The GraphQL ID of the organization rule.
 - `source_type` (String) The source resource type that this organization rule allows or denies to invoke its defined action.
 - `source_uuid` (String) The UUID of the resource that this organization rule allows or denies invocating its defined action.

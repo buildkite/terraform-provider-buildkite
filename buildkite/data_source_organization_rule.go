@@ -55,11 +55,11 @@ func (organizationRuleDatasource) Schema(ctx context.Context, req datasource.Sch
 		`),
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
-				Required:            true,
+				Optional:            true,
 				MarkdownDescription: "The GraphQL ID of the organization rule. ",
 			},
 			"uuid": schema.StringAttribute{
-				Computed:            true,
+				Optional:            true,
 				MarkdownDescription: "The UUID of the organization rule. ",
 			},
 			"description": schema.StringAttribute{
@@ -106,7 +106,6 @@ func (or *organizationRuleDatasource) Read(ctx context.Context, req datasource.R
 	var state organizationRuleDatasourceModel
 
 	resp.Diagnostics.Append(req.Config.Get(ctx, &state)...)
-
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -118,44 +117,131 @@ func (or *organizationRuleDatasource) Read(ctx context.Context, req datasource.R
 		return
 	}
 
-	var apiResponse *getNodeResponse
-	err := retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
-		var err error
+	// If a UUID is entered through an organization rule data source
+	if !state.UUID.IsNull() {
+		matchFound := false
+		err := retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
+			var cursor *string
+			for {
+				r, err := getOrganizationRules(
+					ctx,
+					or.client.genqlient,
+					or.client.organization,
+					cursor)
+				if err != nil {
+					if isRetryableError(err) {
+						return retry.RetryableError(err)
+					}
+					resp.Diagnostics.AddError(
+						"Unable to read organizatiion rules",
+						fmt.Sprintf("Unable to read organizatiion rules: %s", err.Error()),
+					)
+					return retry.NonRetryableError(err)
+				}
 
-		log.Printf("Reading organization rule with ID %s ...", state.UUID.ValueString())
-		apiResponse, err = getNode(ctx,
-			or.client.genqlient,
-			state.ID.ValueString(),
-		)
+				for _, rule := range r.Organization.Rules.Edges {
+					if rule.Node.Uuid == state.UUID.ValueString() {
+						matchFound = true
+						// Update data source state from the found rule
+						updateOrganizatonRuleDatasourceFromNode(&state, rule.Node)
+						break
+					}
+				}
 
-		return retryContextError(err)
-	})
+				// If there is a match, or there is no next page, break
+				if matchFound || !r.Organization.Rules.PageInfo.HasNextPage {
+					break
+				}
 
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Unable to read organization rule",
-			fmt.Sprintf("Unable to read organmization rule: %s", err.Error()),
-		)
-		return
-	}
+				// Move to the next cursor
+				cursor = &r.Organization.Rules.PageInfo.EndCursor
+			}
+			return nil
+		})
 
-	// Convert fron Node to getNodeNodeRule type
-	if organizationRule, ok := apiResponse.GetNode().(*getNodeNodeRule); ok {
-		if organizationRule == nil {
+		if err != nil {
+			resp.Diagnostics.AddError("Unable to find organization rule", err.Error())
+			return
+		}
+
+		if !matchFound {
+			resp.Diagnostics.AddError("Unable to find organization rule",
+				fmt.Sprintf("Could not find an organization rule with UUID \"%s\"", state.UUID.ValueString()))
+			return
+		}
+		// Otherwise if a ID is specified
+	} else if !state.ID.IsNull() {
+		var apiResponse *getNodeResponse
+		err := retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
+			var err error
+
+			log.Printf("Reading organization rule with ID %s ...", state.UUID.ValueString())
+			apiResponse, err = getNode(ctx,
+				or.client.genqlient,
+				state.ID.ValueString(),
+			)
+
+			return retryContextError(err)
+		})
+
+		if err != nil {
 			resp.Diagnostics.AddError(
-				"Unable to get organization rule",
-				"Error getting organization rule: nil response",
+				"Unable to read organization rule",
+				fmt.Sprintf("Unable to read organmization rule: %s", err.Error()),
 			)
 			return
 		}
 
-		updateOrganizatonRuleDatasourceState(&state, *organizationRule)
-		resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+		// Convert fron Node to getNodeNodeRule type
+		if organizationRule, ok := apiResponse.GetNode().(*getNodeNodeRule); ok {
+			if organizationRule == nil {
+				resp.Diagnostics.AddError(
+					"Unable to get organization rule",
+					"Error getting organization rule: nil response",
+				)
+				return
+			}
+			updateOrganizatonRuleDatasourceState(&state, *organizationRule)
+		}
 	}
+	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+}
+
+func obtainDatasourceReadUUIDs(orn getOrganizationRulesOrganizationRulesRuleConnectionEdgesRuleEdgeNodeRule) (string, string) {
+	var sourceUUID, targetUUID string
+
+	switch orn.SourceType {
+	case "PIPELINE":
+		sourceUUID = orn.Source.(*OrganizationRuleFieldsSourcePipeline).Uuid
+	}
+
+	switch orn.TargetType {
+	case "PIPELINE":
+		targetUUID = orn.Target.(*OrganizationRuleFieldsTargetPipeline).Uuid
+	}
+
+	return sourceUUID, targetUUID
 }
 
 func updateOrganizatonRuleDatasourceState(or *organizationRuleDatasourceModel, orn getNodeNodeRule) {
 	sourceUUID, targetUUID := obtainReadUUIDs(orn)
+	value := obtainValueJSON(sourceUUID, targetUUID, string(orn.Action))
+
+	or.ID = types.StringValue(orn.Id)
+	or.UUID = types.StringValue(orn.Uuid)
+	or.Description = types.StringPointerValue(orn.Description)
+	or.Type = types.StringValue(orn.Type)
+	or.Value = types.StringValue(value)
+	or.SourceType = types.StringValue(string(orn.SourceType))
+	or.SourceUUID = types.StringValue(sourceUUID)
+	or.TargetType = types.StringValue(string(orn.TargetType))
+	or.TargetUUID = types.StringValue(targetUUID)
+	or.Effect = types.StringValue(string(orn.Effect))
+	or.Action = types.StringValue(string(orn.Action))
+}
+
+func updateOrganizatonRuleDatasourceFromNode(or *organizationRuleDatasourceModel, orn getOrganizationRulesOrganizationRulesRuleConnectionEdgesRuleEdgeNodeRule) {
+	sourceUUID, targetUUID := obtainDatasourceReadUUIDs(orn)
 	value := obtainValueJSON(sourceUUID, targetUUID, string(orn.Action))
 
 	or.ID = types.StringValue(orn.Id)

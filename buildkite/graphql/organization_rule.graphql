@@ -20,6 +20,26 @@ fragment OrganizationRuleFields on Rule {
     }
 }
 
+query getOrganizationRules(
+    $orgSlug: ID!,
+    # @genqlient(pointer: true)
+    $cursor: String
+) {
+    organization(slug: $orgSlug) {
+        rules(first: 50, after: $cursor) {
+            pageInfo {
+                endCursor
+                hasNextPage
+            }
+            edges {
+                node {
+                    ...OrganizationRuleFields
+                }
+            }
+        }
+    }
+}
+
 mutation createOrganizationRule(
     $organizationId: ID!, 
     # @genqlient(pointer: true)
