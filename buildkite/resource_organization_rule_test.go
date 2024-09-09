@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"regexp"
+	"strings"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
@@ -12,6 +13,7 @@ import (
 )
 
 func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
+	ruleActions := []string{"trigger_build", "artifacts_read"}
 
 	configRequired := func(fields ...string) string {
 		return fmt.Sprintf(`
@@ -260,187 +262,98 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 		`, sourceName)
 	}
 
-	t.Run("creates a pipeline.trigger_build.pipeline organization rule with required attributes", func(t *testing.T) {
-		randNameOne := acctest.RandString(12)
-		randNameTwo := acctest.RandString(12)
-		var orr organizationRuleResourceModel
+	for _, action := range ruleActions {
+		t.Run(fmt.Sprintf("creates a pipeline.%s.pipeline organization rule with required attributes", action), func(t *testing.T) {
+			randNameOne := acctest.RandString(12)
+			randNameTwo := acctest.RandString(12)
+			var orr organizationRuleResourceModel
 
-		check := resource.ComposeAggregateTestCheckFunc(
-			// Confirm the organization rule exists
-			testAccCheckOrganizationRuleExists(&orr, "buildkite_organization_rule.trigger_build_rule"),
-			// Confirm the organization rule has the correct values in Buildkite's system
-			testAccCheckOrganizationRuleRemoteValues(&orr, "PIPELINE", "PIPELINE", "TRIGGER_BUILD", "ALLOW"),
-			// Check the organization rule resource's attributes are set in state
-			resource.TestCheckResourceAttrSet("buildkite_organization_rule.trigger_build_rule", "id"),
-			resource.TestCheckResourceAttrSet("buildkite_organization_rule.trigger_build_rule", "uuid"),
-			resource.TestCheckResourceAttrSet("buildkite_organization_rule.trigger_build_rule", "type"),
-			resource.TestCheckResourceAttrSet("buildkite_organization_rule.trigger_build_rule", "value"),
-		)
+			check := resource.ComposeAggregateTestCheckFunc(
+				// Confirm the organization rule exists
+				testAccCheckOrganizationRuleExists(&orr, fmt.Sprintf("buildkite_organization_rule.%s_rule", action)),
+				// Confirm the organization rule has the correct values in Buildkite's system
+				testAccCheckOrganizationRuleRemoteValues(&orr, "PIPELINE", "PIPELINE", strings.ToUpper(action), "ALLOW"),
+				// Check the organization rule resource's attributes are set in state
+				resource.TestCheckResourceAttrSet(fmt.Sprintf("buildkite_organization_rule.%s_rule", action), "id"),
+				resource.TestCheckResourceAttrSet(fmt.Sprintf("buildkite_organization_rule.%s_rule", action), "uuid"),
+				resource.TestCheckResourceAttrSet(fmt.Sprintf("buildkite_organization_rule.%s_rule", action), "type"),
+				resource.TestCheckResourceAttrSet(fmt.Sprintf("buildkite_organization_rule.%s_rule", action), "value"),
+			)
 
-		resource.ParallelTest(t, resource.TestCase{
-			PreCheck:                 func() { testAccPreCheck(t) },
-			ProtoV6ProviderFactories: protoV6ProviderFactories(),
-			CheckDestroy:             testAccCheckOrganizationRuleDestroy,
-			Steps: []resource.TestStep{
-				{
-					Config: configRequired(randNameOne, randNameTwo, "trigger_build"),
-					Check:  check,
+			resource.ParallelTest(t, resource.TestCase{
+				PreCheck:                 func() { testAccPreCheck(t) },
+				ProtoV6ProviderFactories: protoV6ProviderFactories(),
+				CheckDestroy:             testAccCheckOrganizationRuleDestroy,
+				Steps: []resource.TestStep{
+					{
+						Config: configRequired(randNameOne, randNameTwo, action),
+						Check:  check,
+					},
 				},
-			},
+			})
 		})
-	})
 
-	t.Run("creates a pipeline.artifacts_read.pipeline organization rule with required attributes", func(t *testing.T) {
-		randNameOne := acctest.RandString(12)
-		randNameTwo := acctest.RandString(12)
-		var orr organizationRuleResourceModel
+		t.Run(fmt.Sprintf("creates a pipeline.%s.pipeline organization rule with all attributes", action), func(t *testing.T) {
+			randNameOne := acctest.RandString(12)
+			randNameTwo := acctest.RandString(12)
+			var orr organizationRuleResourceModel
 
-		check := resource.ComposeAggregateTestCheckFunc(
-			// Confirm the organization rule exists
-			testAccCheckOrganizationRuleExists(&orr, "buildkite_organization_rule.artifacts_read_rule"),
-			// Confirm the organization rule has the correct values in Buildkite's system
-			testAccCheckOrganizationRuleRemoteValues(&orr, "PIPELINE", "PIPELINE", "ARTIFACTS_READ", "ALLOW"),
-			// Check the organization rule resource's attributes are set in state
-			resource.TestCheckResourceAttrSet("buildkite_organization_rule.artifacts_read_rule", "id"),
-			resource.TestCheckResourceAttrSet("buildkite_organization_rule.artifacts_read_rule", "uuid"),
-			resource.TestCheckResourceAttrSet("buildkite_organization_rule.artifacts_read_rule", "type"),
-			resource.TestCheckResourceAttrSet("buildkite_organization_rule.artifacts_read_rule", "value"),
-		)
+			check := resource.ComposeAggregateTestCheckFunc(
+				// Confirm the organization rule exists
+				testAccCheckOrganizationRuleExists(&orr, fmt.Sprintf("buildkite_organization_rule.%s_rule", action)),
+				// Confirm the organization rule has the correct values in Buildkite's system
+				testAccCheckOrganizationRuleRemoteValues(&orr, "PIPELINE", "PIPELINE", strings.ToUpper(action), "ALLOW"),
+				// Check the organization rule resource's attributes are set in state
+				resource.TestCheckResourceAttrSet(fmt.Sprintf("buildkite_organization_rule.%s_rule", action), "id"),
+				resource.TestCheckResourceAttrSet(fmt.Sprintf("buildkite_organization_rule.%s_rule", action), "uuid"),
+				resource.TestCheckResourceAttrSet(fmt.Sprintf("buildkite_organization_rule.%s_rule", action), "type"),
+				resource.TestCheckResourceAttrSet(fmt.Sprintf("buildkite_organization_rule.%s_rule", action), "description"),
+				resource.TestCheckResourceAttrSet(fmt.Sprintf("buildkite_organization_rule.%s_rule", action), "value"),
+			)
 
-		resource.ParallelTest(t, resource.TestCase{
-			PreCheck:                 func() { testAccPreCheck(t) },
-			ProtoV6ProviderFactories: protoV6ProviderFactories(),
-			CheckDestroy:             testAccCheckOrganizationRuleDestroy,
-			Steps: []resource.TestStep{
-				{
-					Config: configRequired(randNameOne, randNameTwo, "artifacts_read"),
-					Check:  check,
+			resource.ParallelTest(t, resource.TestCase{
+				PreCheck:                 func() { testAccPreCheck(t) },
+				ProtoV6ProviderFactories: protoV6ProviderFactories(),
+				CheckDestroy:             testAccCheckOrganizationRuleDestroy,
+				Steps: []resource.TestStep{
+					{
+						Config: configAll(randNameOne, randNameTwo, action),
+						Check:  check,
+					},
 				},
-			},
+			})
 		})
-	})
 
-	t.Run("creates all pipeline.trigger_build.pipeline organization rule with all attributes", func(t *testing.T) {
-		randNameOne := acctest.RandString(12)
-		randNameTwo := acctest.RandString(12)
-		var orr organizationRuleResourceModel
+		t.Run(fmt.Sprintf("imports a pipeline.%s.pipeline organization rule", action), func(t *testing.T) {
+			randNameOne := acctest.RandString(12)
+			randNameTwo := acctest.RandString(12)
+			var orr organizationRuleResourceModel
 
-		check := resource.ComposeAggregateTestCheckFunc(
-			// Confirm the organization rule exists
-			testAccCheckOrganizationRuleExists(&orr, "buildkite_organization_rule.trigger_build_rule"),
-			// Confirm the organization rule has the correct values in Buildkite's system
-			testAccCheckOrganizationRuleRemoteValues(&orr, "PIPELINE", "PIPELINE", "TRIGGER_BUILD", "ALLOW"),
-			// Check the organization rule resource's attributes are set in state
-			resource.TestCheckResourceAttrSet("buildkite_organization_rule.trigger_build_rule", "id"),
-			resource.TestCheckResourceAttrSet("buildkite_organization_rule.trigger_build_rule", "uuid"),
-			resource.TestCheckResourceAttrSet("buildkite_organization_rule.trigger_build_rule", "description"),
-			resource.TestCheckResourceAttrSet("buildkite_organization_rule.trigger_build_rule", "type"),
-			resource.TestCheckResourceAttrSet("buildkite_organization_rule.trigger_build_rule", "value"),
-		)
+			check := resource.ComposeAggregateTestCheckFunc(
+				// Confirm the organization rule exists
+				testAccCheckOrganizationRuleExists(&orr, fmt.Sprintf("buildkite_organization_rule.%s_rule", action)),
+				// Confirm the organization rule has the correct values in Buildkite's system
+				testAccCheckOrganizationRuleRemoteValues(&orr, "PIPELINE", "PIPELINE", strings.ToUpper(action), "ALLOW"),
+			)
 
-		resource.ParallelTest(t, resource.TestCase{
-			PreCheck:                 func() { testAccPreCheck(t) },
-			ProtoV6ProviderFactories: protoV6ProviderFactories(),
-			CheckDestroy:             testAccCheckOrganizationRuleDestroy,
-			Steps: []resource.TestStep{
-				{
-					Config: configAll(randNameOne, randNameTwo, "trigger_build"),
-					Check:  check,
+			resource.ParallelTest(t, resource.TestCase{
+				PreCheck:                 func() { testAccPreCheck(t) },
+				ProtoV6ProviderFactories: protoV6ProviderFactories(),
+				CheckDestroy:             testAccCheckOrganizationRuleDestroy,
+				Steps: []resource.TestStep{
+					{
+						Config: configAll(randNameOne, randNameTwo, action),
+						Check:  check,
+					},
+					{
+						ResourceName:      fmt.Sprintf("buildkite_organization_rule.%s_rule", action),
+						ImportState:       true,
+						ImportStateVerify: true,
+					},
 				},
-			},
+			})
 		})
-	})
-
-	t.Run("creates all pipeline.artifacts_read.pipeline organization rule with all attributes", func(t *testing.T) {
-		randNameOne := acctest.RandString(12)
-		randNameTwo := acctest.RandString(12)
-		var orr organizationRuleResourceModel
-
-		check := resource.ComposeAggregateTestCheckFunc(
-			// Confirm the organization rule exists
-			testAccCheckOrganizationRuleExists(&orr, "buildkite_organization_rule.artifacts_read_rule"),
-			// Confirm the organization rule has the correct values in Buildkite's system
-			testAccCheckOrganizationRuleRemoteValues(&orr, "PIPELINE", "PIPELINE", "ARTIFACTS_READ", "ALLOW"),
-			// Check the organization rule resource's attributes are set in state
-			resource.TestCheckResourceAttrSet("buildkite_organization_rule.artifacts_read_rule", "id"),
-			resource.TestCheckResourceAttrSet("buildkite_organization_rule.artifacts_read_rule", "uuid"),
-			resource.TestCheckResourceAttrSet("buildkite_organization_rule.artifacts_read_rule", "description"),
-			resource.TestCheckResourceAttrSet("buildkite_organization_rule.artifacts_read_rule", "type"),
-			resource.TestCheckResourceAttrSet("buildkite_organization_rule.artifacts_read_rule", "value"),
-		)
-
-		resource.ParallelTest(t, resource.TestCase{
-			PreCheck:                 func() { testAccPreCheck(t) },
-			ProtoV6ProviderFactories: protoV6ProviderFactories(),
-			CheckDestroy:             testAccCheckOrganizationRuleDestroy,
-			Steps: []resource.TestStep{
-				{
-					Config: configAll(randNameOne, randNameTwo, "artifacts_read"),
-					Check:  check,
-				},
-			},
-		})
-	})
-
-	t.Run("imports a pipeline.trigger_build.pipeline organization rule", func(t *testing.T) {
-		randNameOne := acctest.RandString(12)
-		randNameTwo := acctest.RandString(12)
-		var orr organizationRuleResourceModel
-
-		check := resource.ComposeAggregateTestCheckFunc(
-			// Confirm the organization rule exists
-			testAccCheckOrganizationRuleExists(&orr, "buildkite_organization_rule.trigger_build_rule"),
-			// Confirm the organization rule has the correct values in Buildkite's system
-			testAccCheckOrganizationRuleRemoteValues(&orr, "PIPELINE", "PIPELINE", "TRIGGER_BUILD", "ALLOW"),
-		)
-
-		resource.ParallelTest(t, resource.TestCase{
-			PreCheck:                 func() { testAccPreCheck(t) },
-			ProtoV6ProviderFactories: protoV6ProviderFactories(),
-			CheckDestroy:             testAccCheckOrganizationRuleDestroy,
-			Steps: []resource.TestStep{
-				{
-					Config: configAll(randNameOne, randNameTwo, "trigger_build"),
-					Check:  check,
-				},
-				{
-					ResourceName:      "buildkite_organization_rule.trigger_build_rule",
-					ImportState:       true,
-					ImportStateVerify: true,
-				},
-			},
-		})
-	})
-
-	t.Run("imports a pipeline.artifacts_read.pipeline organization rule", func(t *testing.T) {
-		randNameOne := acctest.RandString(12)
-		randNameTwo := acctest.RandString(12)
-		var orr organizationRuleResourceModel
-
-		check := resource.ComposeAggregateTestCheckFunc(
-			// Confirm the organization rule exists
-			testAccCheckOrganizationRuleExists(&orr, "buildkite_organization_rule.artifacts_read_rule"),
-			// Confirm the organization rule has the correct values in Buildkite's system
-			testAccCheckOrganizationRuleRemoteValues(&orr, "PIPELINE", "PIPELINE", "ARTIFACTS_READ", "ALLOW"),
-		)
-
-		resource.ParallelTest(t, resource.TestCase{
-			PreCheck:                 func() { testAccPreCheck(t) },
-			ProtoV6ProviderFactories: protoV6ProviderFactories(),
-			CheckDestroy:             testAccCheckOrganizationRuleDestroy,
-			Steps: []resource.TestStep{
-				{
-					Config: configAll(randNameOne, randNameTwo, "artifacts_read"),
-					Check:  check,
-				},
-				{
-					ResourceName:      "buildkite_organization_rule.artifacts_read_rule",
-					ImportState:       true,
-					ImportStateVerify: true,
-				},
-			},
-		})
-	})
+	}
 
 	t.Run("errors when an organization rule is specified with an unknown action", func(t *testing.T) {
 		randNameOne := acctest.RandString(12)
