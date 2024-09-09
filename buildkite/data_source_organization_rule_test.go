@@ -211,7 +211,7 @@ func TestAccBuildkiteOrganizationRuleDatasource(t *testing.T) {
 	}
 
 	for _, ruleType := range ruleActions {
-		t.Run(fmt.Sprintf("loads a pipeline.%s.pipeline organization rule with required attributes by id ", ruleType), func(t *testing.T) {
+		t.Run(fmt.Sprintf("loads a pipeline.%s.pipeline organization rule with required attributes by id", ruleType), func(t *testing.T) {
 			randdNameOne := acctest.RandString(12)
 			randNameTwo := acctest.RandString(12)
 			var orr organizationRuleResourceModel
