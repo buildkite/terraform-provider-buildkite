@@ -57,8 +57,8 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 			]
 			type = "pipeline.%s.pipeline"
 			value = jsonencode({
-				source_pipeline_uuid = buildkite_pipeline.pipeline_source.uuid
-				target_pipeline_uuid = buildkite_pipeline.pipeline_target.uuid
+				source_pipeline = buildkite_pipeline.pipeline_source.uuid
+				target_pipeline = buildkite_pipeline.pipeline_target.uuid
 			})
 		}
 
@@ -108,8 +108,8 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 			type = "pipeline.%s.pipeline"
 			description = "A pipeline.%s.pipeline rule"
 			value = jsonencode({
-				source_pipeline_uuid = buildkite_pipeline.pipeline_source.uuid
-				target_pipeline_uuid = buildkite_pipeline.pipeline_target.uuid
+				source_pipeline = buildkite_pipeline.pipeline_source.uuid
+				target_pipeline = buildkite_pipeline.pipeline_target.uuid
 			})
 		}
 
@@ -144,8 +144,8 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 			]
 			type = "pipeline.non_existent_action.pipeline"
 			value = jsonencode({
-				source_pipeline_uuid = buildkite_pipeline.pipeline_target.uuid
-				target_pipeline_uuid = buildkite_pipeline.pipeline_source.uuid
+				source_pipeline = buildkite_pipeline.pipeline_target.uuid
+				target_pipeline = buildkite_pipeline.pipeline_source.uuid
 			})
 		}
 
@@ -168,11 +168,11 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 			repository           = "https://github.com/buildkite/terraform-provider-buildkite.git"
 		}	
 
-		resource "buildkite_organization_rule" "no_source_pipeline_uuid_rule" {
+		resource "buildkite_organization_rule" "no_source_pipeline_rule" {
 			depends_on = [buildkite_pipeline.pipeline_target]
 			type = "pipeline.trigger_build.pipeline"
 			value = jsonencode({
-				target_pipeline_uuid = buildkite_pipeline.pipeline_target.uuid
+				target_pipeline = buildkite_pipeline.pipeline_target.uuid
 			})
 		}
 
@@ -195,11 +195,11 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 			repository           = "https://github.com/buildkite/terraform-provider-buildkite.git"
 		}
 
-		resource "buildkite_organization_rule" "no_target_pipeline_uuid_rule" {
+		resource "buildkite_organization_rule" "no_target_pipeline_rule" {
 			depends_on = [buildkite_pipeline.pipeline_source]
 			type = "pipeline.trigger_build.pipeline"
 			value = jsonencode({
-				source_pipeline_uuid = buildkite_pipeline.pipeline_source.uuid
+				source_pipeline = buildkite_pipeline.pipeline_source.uuid
 			})
 		}
 
@@ -226,8 +226,8 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 			depends_on = [buildkite_pipeline.pipeline_target]
 			type = "pipeline.trigger_build.pipeline"
 			value = jsonencode({
-				source_pipeline_uuid = "non_existent"
-				target_pipeline_uuid = buildkite_pipeline.pipeline_target.uuid
+				source_pipeline = "non_existent"
+				target_pipeline = buildkite_pipeline.pipeline_target.uuid
 			})
 		}
 
@@ -254,8 +254,8 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 			depends_on = [buildkite_pipeline.pipeline_source]
 			type = "pipeline.trigger_build.pipeline"
 			value = jsonencode({
-				source_pipeline_uuid = buildkite_pipeline.pipeline_source.uuid
-				target_pipeline_uuid = "non-existent"
+				source_pipeline = buildkite_pipeline.pipeline_source.uuid
+				target_pipeline = "non-existent"
 			})
 		}
 
@@ -371,7 +371,7 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 		})
 	})
 
-	t.Run("errors when no source_pipeline_uuid key exists within an organization rule's value", func(t *testing.T) {
+	t.Run("errors when no source_pipeline key exists within an organization rule's value", func(t *testing.T) {
 		randName := acctest.RandString(12)
 		resource.ParallelTest(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },
@@ -380,13 +380,13 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 			Steps: []resource.TestStep{
 				{
 					Config:      configNoSourcePipelineUUID(randName),
-					ExpectError: regexp.MustCompile("pipeline.trigger_build.pipeline: missing source_pipeline_uuid"),
+					ExpectError: regexp.MustCompile("pipeline.trigger_build.pipeline: missing source_pipeline"),
 				},
 			},
 		})
 	})
 
-	t.Run("errors when no target_pipeline_uuid key exists within an organization rule's value", func(t *testing.T) {
+	t.Run("errors when no target_pipeline key exists within an organization rule's value", func(t *testing.T) {
 		randName := acctest.RandString(12)
 		resource.ParallelTest(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },
@@ -395,13 +395,13 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 			Steps: []resource.TestStep{
 				{
 					Config:      configNoTargetPipelineUUID(randName),
-					ExpectError: regexp.MustCompile("pipeline.trigger_build.pipeline: missing target_pipeline_uuid"),
+					ExpectError: regexp.MustCompile("pipeline.trigger_build.pipeline: missing target_pipeline"),
 				},
 			},
 		})
 	})
 
-	t.Run("errors when the pipeline defined in source_pipeline_uuid is invalid", func(t *testing.T) {
+	t.Run("errors when the pipeline defined in source_pipeline is invalid", func(t *testing.T) {
 		randName := acctest.RandString(12)
 		resource.ParallelTest(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },
@@ -410,13 +410,13 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 			Steps: []resource.TestStep{
 				{
 					Config:      configSourceUUIDInvalid(randName),
-					ExpectError: regexp.MustCompile("pipeline.trigger_build.pipeline: source_pipeline_uuid not a valid UUID"),
+					ExpectError: regexp.MustCompile("pipeline.trigger_build.pipeline: source_pipeline not a valid UUID"),
 				},
 			},
 		})
 	})
 
-	t.Run("errors when the pipeline defined in target_pipeline_uuid is invalid", func(t *testing.T) {
+	t.Run("errors when the pipeline defined in target_pipeline is invalid", func(t *testing.T) {
 		randName := acctest.RandString(12)
 		resource.ParallelTest(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },
@@ -425,7 +425,7 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 			Steps: []resource.TestStep{
 				{
 					Config:      configTargetUUIDInvalid(randName),
-					ExpectError: regexp.MustCompile("pipeline.trigger_build.pipeline: target_pipeline_uuid not a valid UUID"),
+					ExpectError: regexp.MustCompile("pipeline.trigger_build.pipeline: target_pipeline not a valid UUID"),
 				},
 			},
 		})

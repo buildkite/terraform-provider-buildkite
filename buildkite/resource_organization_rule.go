@@ -349,7 +349,7 @@ func obtainReadUUIDs(nr getNodeNodeRule) (string, string) {
 
 func obtainValueJSON(sourceUUID, targetUUID, action string) string {
 	// Construct and marshal the JSON representation of an organization rules' value
-	value, _ := json.Marshal(map[string]string{"source_pipeline_uuid": sourceUUID, "target_pipeline_uuid": targetUUID})
+	value, _ := json.Marshal(map[string]string{"source_pipeline": sourceUUID, "target_pipeline": targetUUID})
 	return string(value)
 }
 

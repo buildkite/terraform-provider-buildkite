@@ -48,8 +48,8 @@ func TestAccBuildkiteOrganizationRuleDatasource(t *testing.T) {
 		resource "buildkite_organization_rule" "%s_rule" {
 			type = "pipeline.%s.pipeline"
 			value = jsonencode({
-				source_pipeline_uuid = buildkite_pipeline.pipeline_source.uuid
-				target_pipeline_uuid = buildkite_pipeline.pipeline_target.uuid
+				source_pipeline = buildkite_pipeline.pipeline_source.uuid
+				target_pipeline = buildkite_pipeline.pipeline_target.uuid
 			})
 		}
 
@@ -97,8 +97,8 @@ func TestAccBuildkiteOrganizationRuleDatasource(t *testing.T) {
 		resource "buildkite_organization_rule" "%s_rule" {
 			type = "pipeline.%s.pipeline"
 			value = jsonencode({
-				source_pipeline_uuid = buildkite_pipeline.pipeline_source.uuid
-				target_pipeline_uuid = buildkite_pipeline.pipeline_target.uuid
+				source_pipeline = buildkite_pipeline.pipeline_source.uuid
+				target_pipeline = buildkite_pipeline.pipeline_target.uuid
 			})
 		}
 
@@ -147,8 +147,8 @@ func TestAccBuildkiteOrganizationRuleDatasource(t *testing.T) {
 			type = "pipeline.%s.pipeline"
 			description = "A %s organization rule"
 			value = jsonencode({
-				source_pipeline_uuid = buildkite_pipeline.pipeline_source.uuid
-				target_pipeline_uuid = buildkite_pipeline.pipeline_target.uuid
+				source_pipeline = buildkite_pipeline.pipeline_source.uuid
+				target_pipeline = buildkite_pipeline.pipeline_target.uuid
 			})
 		}
 
@@ -197,8 +197,8 @@ func TestAccBuildkiteOrganizationRuleDatasource(t *testing.T) {
 			type = "pipeline.%s.pipeline"
 			description = "A %s organization rule"
 			value = jsonencode({
-				source_pipeline_uuid = buildkite_pipeline.pipeline_source.uuid
-				target_pipeline_uuid = buildkite_pipeline.pipeline_target.uuid
+				source_pipeline = buildkite_pipeline.pipeline_source.uuid
+				target_pipeline = buildkite_pipeline.pipeline_target.uuid
 			})
 		}
 
