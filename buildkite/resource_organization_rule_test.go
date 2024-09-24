@@ -401,7 +401,7 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 		})
 	})
 
-	t.Run("errors when the pipeline defined in source_pipeline is invalid", func(t *testing.T) {
+	t.Run("errors when the pipeline defined in source_pipeline is an invalid uuid", func(t *testing.T) {
 		randName := acctest.RandString(12)
 		resource.ParallelTest(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },
@@ -410,13 +410,13 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 			Steps: []resource.TestStep{
 				{
 					Config:      configSourceUUIDInvalid(randName),
-					ExpectError: regexp.MustCompile("pipeline.trigger_build.pipeline: source_pipeline not a valid UUID"),
+					ExpectError: regexp.MustCompile("pipeline.trigger_build.pipeline: source_pipeline is an invalid UUID."),
 				},
 			},
 		})
 	})
 
-	t.Run("errors when the pipeline defined in target_pipeline is invalid", func(t *testing.T) {
+	t.Run("errors when the pipeline defined in target_pipeline is an invalid uuid", func(t *testing.T) {
 		randName := acctest.RandString(12)
 		resource.ParallelTest(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },
@@ -425,7 +425,7 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 			Steps: []resource.TestStep{
 				{
 					Config:      configTargetUUIDInvalid(randName),
-					ExpectError: regexp.MustCompile("pipeline.trigger_build.pipeline: target_pipeline not a valid UUID"),
+					ExpectError: regexp.MustCompile("pipeline.trigger_build.pipeline: target_pipeline is an invalid UUID."),
 				},
 			},
 		})

@@ -31,6 +31,11 @@ type organizationRuleResourceModel struct {
 	Action      types.String `tfsdk:"action"`
 }
 
+type ruleValue struct {
+	Source     string   `json:"source_pipeline"`
+	Target     string   `json:"target_pipeline"`
+}
+
 type organizationRuleResource struct {
 	client *Client
 }
@@ -54,7 +59,7 @@ func (or *organizationRuleResource) Configure(ctx context.Context, req resource.
 func (organizationRuleResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = resource_schema.Schema{
 		MarkdownDescription: heredoc.Doc(`
-		An Organization Rule allows specifying explicit rules between two Buildkite resources and the desired effect/action. 
+		An Organization Rule allows specifying explicit rules between two Buildkite resources and the desired effect/action.
 
 		More information on organization rules can be found in the [documentation](https://buildkite.com/docs/pipelines/rules/overview).
 	`),
@@ -133,6 +138,7 @@ func (organizationRuleResource) Schema(ctx context.Context, req resource.SchemaR
 
 func (or *organizationRuleResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var plan, state organizationRuleResourceModel
+	var plannedValue ruleValue
 
 	diags := req.Plan.Get(ctx, &plan)
 	resp.Diagnostics.Append(diags...)
@@ -148,8 +154,35 @@ func (or *organizationRuleResource) Create(ctx context.Context, req resource.Cre
 		return
 	}
 
+	// Unmarshall the plan's value into a ruleValue struct instance 
+	err := json.Unmarshal([]byte(plan.Value.ValueString()), &plannedValue)
+
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Unable to create organization rule",
+			fmt.Sprintf("Unable to create organization rule: %s ", err.Error()),
+		)
+		return
+	}
+
+	// Confirm that both the source|target pipelines specified in the value attribute of a buildkite_organization_rule are valid UUID strings.
+	// If either is not a valid UUID and not empty, the provider will return an error stating this and abort creation of the rule.
+	if !isUUID(plannedValue.Source) && len(plannedValue.Source) > 0 {
+		resp.Diagnostics.AddError( 
+			"Unable to create organization rule", 
+			fmt.Sprintf("%s: source_pipeline is an invalid UUID.", plan.Type.ValueString()),
+		)
+		return
+	} else if !isUUID(plannedValue.Target) && len(plannedValue.Target) > 0 {
+		resp.Diagnostics.AddError( 
+			"Unable to create organization rule", 
+			fmt.Sprintf("%s: target_pipeline is an invalid UUID.", plan.Type.ValueString()),
+		)
+		return
+	}
+
 	var r *createOrganizationRuleResponse
-	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+	err = retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		org, err := or.client.GetOrganizationID()
 		if err == nil {
 			r, err = createOrganizationRule(
