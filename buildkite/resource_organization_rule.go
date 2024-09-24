@@ -32,8 +32,8 @@ type organizationRuleResourceModel struct {
 }
 
 type ruleValue struct {
-	Source     string   `json:"source_pipeline"`
-	Target     string   `json:"target_pipeline"`
+	Source string `json:"source_pipeline"`
+	Target string `json:"target_pipeline"`
 }
 
 type organizationRuleResource struct {
@@ -154,7 +154,7 @@ func (or *organizationRuleResource) Create(ctx context.Context, req resource.Cre
 		return
 	}
 
-	// Unmarshall the plan's value into a ruleValue struct instance 
+	// Unmarshall the plan's value into a ruleValue struct instance
 	err := json.Unmarshal([]byte(plan.Value.ValueString()), &plannedValue)
 
 	if err != nil {
@@ -168,14 +168,14 @@ func (or *organizationRuleResource) Create(ctx context.Context, req resource.Cre
 	// Confirm that both the source|target pipelines specified in the value attribute of a buildkite_organization_rule are valid UUID strings.
 	// If either is not a valid UUID and not empty, the provider will return an error stating this and abort creation of the rule.
 	if !isUUID(plannedValue.Source) && len(plannedValue.Source) > 0 {
-		resp.Diagnostics.AddError( 
-			"Unable to create organization rule", 
+		resp.Diagnostics.AddError(
+			"Unable to create organization rule",
 			fmt.Sprintf("%s: source_pipeline is an invalid UUID.", plan.Type.ValueString()),
 		)
 		return
 	} else if !isUUID(plannedValue.Target) && len(plannedValue.Target) > 0 {
-		resp.Diagnostics.AddError( 
-			"Unable to create organization rule", 
+		resp.Diagnostics.AddError(
+			"Unable to create organization rule",
 			fmt.Sprintf("%s: target_pipeline is an invalid UUID.", plan.Type.ValueString()),
 		)
 		return
