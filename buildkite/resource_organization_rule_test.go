@@ -110,6 +110,10 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 			value = jsonencode({
 				source_pipeline = buildkite_pipeline.pipeline_source.uuid
 				target_pipeline = buildkite_pipeline.pipeline_target.uuid
+				conditions = [
+					"source.build.creator.teams includes 'deploy'",
+					"source.build.branch == 'main'"
+				]
 			})
 		}
 
@@ -293,7 +297,7 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 			})
 		})
 
-		t.Run(fmt.Sprintf("creates a pipeline.%s.pipeline organization rule with all attributes", action), func(t *testing.T) {
+		t.Run(fmt.Sprintf("creates 1 a pipeline.%s.pipeline organization rule with all attributes", action), func(t *testing.T) {
 			randNameOne := acctest.RandString(12)
 			randNameTwo := acctest.RandString(12)
 			var orr organizationRuleResourceModel

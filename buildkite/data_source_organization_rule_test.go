@@ -149,6 +149,10 @@ func TestAccBuildkiteOrganizationRuleDatasource(t *testing.T) {
 			value = jsonencode({
 				source_pipeline = buildkite_pipeline.pipeline_source.uuid
 				target_pipeline = buildkite_pipeline.pipeline_target.uuid
+				conditions = [
+					"source.build.creator.teams includes 'deploy'",
+					"source.build.branch == 'main'"
+				]
 			})
 		}
 
@@ -199,6 +203,10 @@ func TestAccBuildkiteOrganizationRuleDatasource(t *testing.T) {
 			value = jsonencode({
 				source_pipeline = buildkite_pipeline.pipeline_source.uuid
 				target_pipeline = buildkite_pipeline.pipeline_target.uuid
+				conditions = [
+					"source.build.creator.teams includes 'deploy'",
+					"source.build.branch == 'main'"
+				]
 			})
 		}
 
