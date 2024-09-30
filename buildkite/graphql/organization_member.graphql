@@ -1,0 +1,58 @@
+fragment OrganizationMemberFields on OrganizationMember {
+    id
+    memberUuid: uuid
+    memberRole: role
+    memberUser: user {
+        email
+    }
+    complimentary
+    sso {
+        mode
+    }
+}
+
+query getOrganiztionMembers(
+    $orgSlug: ID!,
+    # @genqlient(pointer: true)
+    $cursor: String
+) {
+    organization(slug: $orgSlug) {
+        members(first: 50, after: $cursor) {
+            pageInfo {
+                endCursor
+                hasNextPage
+            }
+            edges {
+                node {
+                    ... OrganizationMemberFields
+                }
+            }
+        }
+    }
+}
+
+mutation updateOrganiztionMember(
+    $memberId: ID!
+    $memberRole: OrganizationMemberRole!
+) {
+    organizationMemberUpdate(
+        input: { 
+            id: $memberId,
+            role: $memberRole
+        }
+    ) {
+        organizationMember {
+            ... OrganizationMemberFields
+        }
+    }
+}
+
+mutation deleteOrganizationMember($memberId: ID!) {
+    organizationMemberDelete(
+        input: { 
+            id: $memberId
+        }
+    ) {
+        clientMutationId
+    }
+}
