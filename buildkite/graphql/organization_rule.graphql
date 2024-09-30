@@ -3,6 +3,7 @@ fragment OrganizationRuleFields on Rule {
     uuid
     # @genqlient(pointer: true)
     description
+    document
     type 
     sourceType
     targetType

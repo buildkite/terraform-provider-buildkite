@@ -31,9 +31,15 @@ type organizationRuleResourceModel struct {
 	Action      types.String `tfsdk:"action"`
 }
 
+type ruleDocument struct {
+	Rule  string          `json:"rule"`
+	Value json.RawMessage `json:"value"`
+}
+
 type ruleValue struct {
-	Source string `json:"source_pipeline"`
-	Target string `json:"target_pipeline"`
+	Source     string   `json:"source_pipeline"`
+	Target     string   `json:"target_pipeline"`
+	Conditions []string `json:"conditions"`
 }
 
 type organizationRuleResource struct {
@@ -265,8 +271,20 @@ func (or *organizationRuleResource) Read(ctx context.Context, req resource.ReadR
 			)
 			return
 		}
+
+		// Get the returned rule's sorted value JSON object from its Document field
+		value, err := obtainValueJSON(organizationRule.Document)
+
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Unable to read organization rule",
+				fmt.Sprintf("Unable to read organmization rule: %s", err.Error()),
+			)
+			return
+		}
+
 		// Update organization rule model and set in state
-		updateOrganizatonRuleReadState(&state, *organizationRule)
+		updateOrganizatonRuleReadState(&state, *organizationRule, *value)
 		resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 	} else {
 		// Remove from state if not found{{}}
@@ -380,10 +398,31 @@ func obtainReadUUIDs(nr getNodeNodeRule) (string, string) {
 	return sourceUUID, targetUUID
 }
 
-func obtainValueJSON(sourceUUID, targetUUID, action string) string {
-	// Construct and marshal the JSON representation of an organization rules' value
-	value, _ := json.Marshal(map[string]string{"source_pipeline": sourceUUID, "target_pipeline": targetUUID})
-	return string(value)
+func obtainValueJSON(document string) (*string, error) {
+	var rd ruleDocument
+	valueMap := make(map[string]interface{})
+
+	// Unmarshall the API obtained document into a ruleDocument struct instance
+	err := json.Unmarshal([]byte(document), &rd)
+	if err != nil {
+		return nil, errors.New("Error unmarshalling the organization rule's JSON document.")
+	}
+
+	// Unmarshall the ruleDocument's value into a [string]interface{} map
+	err = json.Unmarshal([]byte(string(rd.Value)), &valueMap)
+	if err != nil {
+		return nil, errors.New("Error unmarshalling the organization rule's value.")
+	}
+
+	// Marshall the value map back into a byte slice (sorted)
+	valueMarshalled, err := json.Marshal(valueMap)
+	if err != nil {
+		return nil, errors.New("Error marshalling the organization rule's sorted value JSON.")
+	}
+
+	// Convert and return sorted and serialized value string
+	value := string(valueMarshalled)
+	return &value, nil
 }
 
 func updateOrganizatonRuleCreateState(or *organizationRuleResourceModel, ruleCreate createOrganizationRuleResponse, sourceUUID, targetUUID, value string) {
@@ -400,9 +439,8 @@ func updateOrganizatonRuleCreateState(or *organizationRuleResourceModel, ruleCre
 	or.Action = types.StringValue(string(ruleCreate.RuleCreate.Rule.Action))
 }
 
-func updateOrganizatonRuleReadState(or *organizationRuleResourceModel, orn getNodeNodeRule) {
+func updateOrganizatonRuleReadState(or *organizationRuleResourceModel, orn getNodeNodeRule, value string) {
 	sourceUUID, targetUUID := obtainReadUUIDs(orn)
-	value := obtainValueJSON(sourceUUID, targetUUID, string(orn.Action))
 
 	or.ID = types.StringValue(orn.Id)
 	or.UUID = types.StringValue(orn.Uuid)

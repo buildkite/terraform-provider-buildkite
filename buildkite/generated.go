@@ -294,6 +294,8 @@ type OrganizationRuleFields struct {
 	Uuid string `json:"uuid"`
 	// Description of the rule
 	Description *string `json:"description"`
+	// A formatted JSON document of the Rule
+	Document string `json:"document"`
 	// The type of rule
 	Type string `json:"type"`
 	// Source type for the rule
@@ -318,6 +320,9 @@ func (v *OrganizationRuleFields) GetUuid() string { return v.Uuid }
 
 // GetDescription returns OrganizationRuleFields.Description, and is useful for accessing the field via an interface.
 func (v *OrganizationRuleFields) GetDescription() *string { return v.Description }
+
+// GetDocument returns OrganizationRuleFields.Document, and is useful for accessing the field via an interface.
+func (v *OrganizationRuleFields) GetDocument() string { return v.Document }
 
 // GetType returns OrganizationRuleFields.Type, and is useful for accessing the field via an interface.
 func (v *OrganizationRuleFields) GetType() string { return v.Type }
@@ -394,6 +399,8 @@ type __premarshalOrganizationRuleFields struct {
 
 	Description *string `json:"description"`
 
+	Document string `json:"document"`
+
 	Type string `json:"type"`
 
 	SourceType RuleSourceType `json:"sourceType"`
@@ -423,6 +430,7 @@ func (v *OrganizationRuleFields) __premarshalJSON() (*__premarshalOrganizationRu
 	retval.Id = v.Id
 	retval.Uuid = v.Uuid
 	retval.Description = v.Description
+	retval.Document = v.Document
 	retval.Type = v.Type
 	retval.SourceType = v.SourceType
 	retval.TargetType = v.TargetType
@@ -2926,6 +2934,11 @@ func (v *createOrganizationRuleRuleCreateRuleCreatePayloadRule) GetDescription()
 	return v.OrganizationRuleFields.Description
 }
 
+// GetDocument returns createOrganizationRuleRuleCreateRuleCreatePayloadRule.Document, and is useful for accessing the field via an interface.
+func (v *createOrganizationRuleRuleCreateRuleCreatePayloadRule) GetDocument() string {
+	return v.OrganizationRuleFields.Document
+}
+
 // GetType returns createOrganizationRuleRuleCreateRuleCreatePayloadRule.Type, and is useful for accessing the field via an interface.
 func (v *createOrganizationRuleRuleCreateRuleCreatePayloadRule) GetType() string {
 	return v.OrganizationRuleFields.Type
@@ -2993,6 +3006,8 @@ type __premarshalcreateOrganizationRuleRuleCreateRuleCreatePayloadRule struct {
 
 	Description *string `json:"description"`
 
+	Document string `json:"document"`
+
 	Type string `json:"type"`
 
 	SourceType RuleSourceType `json:"sourceType"`
@@ -3022,6 +3037,7 @@ func (v *createOrganizationRuleRuleCreateRuleCreatePayloadRule) __premarshalJSON
 	retval.Id = v.OrganizationRuleFields.Id
 	retval.Uuid = v.OrganizationRuleFields.Uuid
 	retval.Description = v.OrganizationRuleFields.Description
+	retval.Document = v.OrganizationRuleFields.Document
 	retval.Type = v.OrganizationRuleFields.Type
 	retval.SourceType = v.OrganizationRuleFields.SourceType
 	retval.TargetType = v.OrganizationRuleFields.TargetType
@@ -6509,6 +6525,9 @@ func (v *getNodeNodeRule) GetUuid() string { return v.OrganizationRuleFields.Uui
 // GetDescription returns getNodeNodeRule.Description, and is useful for accessing the field via an interface.
 func (v *getNodeNodeRule) GetDescription() *string { return v.OrganizationRuleFields.Description }
 
+// GetDocument returns getNodeNodeRule.Document, and is useful for accessing the field via an interface.
+func (v *getNodeNodeRule) GetDocument() string { return v.OrganizationRuleFields.Document }
+
 // GetType returns getNodeNodeRule.Type, and is useful for accessing the field via an interface.
 func (v *getNodeNodeRule) GetType() string { return v.OrganizationRuleFields.Type }
 
@@ -6568,6 +6587,8 @@ type __premarshalgetNodeNodeRule struct {
 
 	Description *string `json:"description"`
 
+	Document string `json:"document"`
+
 	Type string `json:"type"`
 
 	SourceType RuleSourceType `json:"sourceType"`
@@ -6598,6 +6619,7 @@ func (v *getNodeNodeRule) __premarshalJSON() (*__premarshalgetNodeNodeRule, erro
 	retval.Id = v.OrganizationRuleFields.Id
 	retval.Uuid = v.OrganizationRuleFields.Uuid
 	retval.Description = v.OrganizationRuleFields.Description
+	retval.Document = v.OrganizationRuleFields.Document
 	retval.Type = v.OrganizationRuleFields.Type
 	retval.SourceType = v.OrganizationRuleFields.SourceType
 	retval.TargetType = v.OrganizationRuleFields.TargetType
@@ -7267,6 +7289,11 @@ func (v *getOrganizationRulesOrganizationRulesRuleConnectionEdgesRuleEdgeNodeRul
 	return v.OrganizationRuleFields.Description
 }
 
+// GetDocument returns getOrganizationRulesOrganizationRulesRuleConnectionEdgesRuleEdgeNodeRule.Document, and is useful for accessing the field via an interface.
+func (v *getOrganizationRulesOrganizationRulesRuleConnectionEdgesRuleEdgeNodeRule) GetDocument() string {
+	return v.OrganizationRuleFields.Document
+}
+
 // GetType returns getOrganizationRulesOrganizationRulesRuleConnectionEdgesRuleEdgeNodeRule.Type, and is useful for accessing the field via an interface.
 func (v *getOrganizationRulesOrganizationRulesRuleConnectionEdgesRuleEdgeNodeRule) GetType() string {
 	return v.OrganizationRuleFields.Type
@@ -7334,6 +7361,8 @@ type __premarshalgetOrganizationRulesOrganizationRulesRuleConnectionEdgesRuleEdg
 
 	Description *string `json:"description"`
 
+	Document string `json:"document"`
+
 	Type string `json:"type"`
 
 	SourceType RuleSourceType `json:"sourceType"`
@@ -7363,6 +7392,7 @@ func (v *getOrganizationRulesOrganizationRulesRuleConnectionEdgesRuleEdgeNodeRul
 	retval.Id = v.OrganizationRuleFields.Id
 	retval.Uuid = v.OrganizationRuleFields.Uuid
 	retval.Description = v.OrganizationRuleFields.Description
+	retval.Document = v.OrganizationRuleFields.Document
 	retval.Type = v.OrganizationRuleFields.Type
 	retval.SourceType = v.OrganizationRuleFields.SourceType
 	retval.TargetType = v.OrganizationRuleFields.TargetType
@@ -13737,6 +13767,7 @@ fragment OrganizationRuleFields on Rule {
 	id
 	uuid
 	description
+	document
 	type
 	sourceType
 	targetType
@@ -14825,6 +14856,7 @@ fragment OrganizationRuleFields on Rule {
 	id
 	uuid
 	description
+	document
 	type
 	sourceType
 	targetType
@@ -15005,6 +15037,7 @@ fragment OrganizationRuleFields on Rule {
 	id
 	uuid
 	description
+	document
 	type
 	sourceType
 	targetType

@@ -143,7 +143,14 @@ func (or *organizationRuleDatasource) Read(ctx context.Context, req datasource.R
 					if rule.Node.Uuid == state.UUID.ValueString() {
 						matchFound = true
 						// Update data source state from the found rule
-						updateOrganizatonRuleDatasourceFromNode(&state, rule.Node)
+						value, err := obtainValueJSON(rule.Node.Document)
+						if err != nil {
+							resp.Diagnostics.AddError(
+								"Unable to read organization rule",
+								fmt.Sprintf("Unable to read organmization rule: %s", err.Error()),
+							)
+						}
+						updateOrganizatonRuleDatasourceFromNode(&state, rule.Node, *value)
 						break
 					}
 				}
@@ -201,7 +208,15 @@ func (or *organizationRuleDatasource) Read(ctx context.Context, req datasource.R
 				)
 				return
 			}
-			updateOrganizatonRuleDatasourceState(&state, *organizationRule)
+			// Update data source state from the found rule
+			value, err := obtainValueJSON(organizationRule.Document)
+			if err != nil {
+				resp.Diagnostics.AddError(
+					"Unable to read organization rule",
+					fmt.Sprintf("Unable to read organmization rule: %s", err.Error()),
+				)
+			}
+			updateOrganizatonRuleDatasourceState(&state, *organizationRule, *value)
 		}
 	}
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
@@ -223,9 +238,8 @@ func obtainDatasourceReadUUIDs(orn getOrganizationRulesOrganizationRulesRuleConn
 	return sourceUUID, targetUUID
 }
 
-func updateOrganizatonRuleDatasourceState(or *organizationRuleDatasourceModel, orn getNodeNodeRule) {
+func updateOrganizatonRuleDatasourceState(or *organizationRuleDatasourceModel, orn getNodeNodeRule, value string) {
 	sourceUUID, targetUUID := obtainReadUUIDs(orn)
-	value := obtainValueJSON(sourceUUID, targetUUID, string(orn.Action))
 
 	or.ID = types.StringValue(orn.Id)
 	or.UUID = types.StringValue(orn.Uuid)
@@ -240,9 +254,8 @@ func updateOrganizatonRuleDatasourceState(or *organizationRuleDatasourceModel, o
 	or.Action = types.StringValue(string(orn.Action))
 }
 
-func updateOrganizatonRuleDatasourceFromNode(or *organizationRuleDatasourceModel, orn getOrganizationRulesOrganizationRulesRuleConnectionEdgesRuleEdgeNodeRule) {
+func updateOrganizatonRuleDatasourceFromNode(or *organizationRuleDatasourceModel, orn getOrganizationRulesOrganizationRulesRuleConnectionEdgesRuleEdgeNodeRule, value string) {
 	sourceUUID, targetUUID := obtainDatasourceReadUUIDs(orn)
-	value := obtainValueJSON(sourceUUID, targetUUID, string(orn.Action))
 
 	or.ID = types.StringValue(orn.Id)
 	or.UUID = types.StringValue(orn.Uuid)

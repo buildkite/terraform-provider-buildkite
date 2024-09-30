@@ -454,7 +454,11 @@ func testAccCheckOrganizationRuleExists(orr *organizationRuleResourceModel, name
 			if organizationRule == nil {
 				return fmt.Errorf("Organization rule not found: nil response")
 			}
-			updateOrganizatonRuleReadState(orr, *organizationRule)
+			value, err := obtainValueJSON(organizationRule.Document)
+			if err != nil {
+				return fmt.Errorf("Error constructing sorted value JSON to store in state")
+			}
+			updateOrganizatonRuleReadState(orr, *organizationRule, *value)
 		}
 
 		return nil
