@@ -156,6 +156,45 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 		`, fields[0], fields[1])
 	}
 
+	configInvalidConditional := func(fields ...string) string {
+		return fmt.Sprintf(`
+		provider "buildkite" {
+			timeouts = {
+				create = "10s"
+				read = "10s"
+				update = "10s"
+				delete = "10s"
+			}
+		}
+
+		resource "buildkite_pipeline" "pipeline_source" {
+			name                 = "Pipeline %s"
+			repository           = "https://github.com/buildkite/terraform-provider-buildkite.git"
+		}
+
+		resource "buildkite_pipeline" "pipeline_target" {
+			name                 = "Pipeline %s"
+			repository           = "https://github.com/buildkite/terraform-provider-buildkite.git"
+		}	
+
+		resource "buildkite_organization_rule" "non_existent_condition" {
+			depends_on = [
+				buildkite_pipeline.pipeline_source,
+				buildkite_pipeline.pipeline_target
+			]
+			type = "pipeline.trigger_build.pipeline"
+			value = jsonencode({
+				source_pipeline = buildkite_pipeline.pipeline_target.uuid
+				target_pipeline = buildkite_pipeline.pipeline_source.uuid
+				conditions = [
+					"source.nonexistent_condition includes 'idontexist'"
+				]
+			})
+		}
+
+		`, fields[0], fields[1])
+	}
+
 	configNoSourcePipelineUUID := func(targetName string) string {
 		return fmt.Sprintf(`
 		provider "buildkite" {
@@ -297,7 +336,7 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 			})
 		})
 
-		t.Run(fmt.Sprintf("creates 1 a pipeline.%s.pipeline organization rule with all attributes", action), func(t *testing.T) {
+		t.Run(fmt.Sprintf("creates a pipeline.%s.pipeline organization rule with all attributes", action), func(t *testing.T) {
 			randNameOne := acctest.RandString(12)
 			randNameTwo := acctest.RandString(12)
 			var orr organizationRuleResourceModel
@@ -370,6 +409,22 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 				{
 					Config:      configNonExistentAction(randNameOne, randNameTwo),
 					ExpectError: regexp.MustCompile("input: Rule type is unknown"),
+				},
+			},
+		})
+	})
+
+	t.Run("errors when an organization rule is specified with an invalid conditional", func(t *testing.T) {
+		randNameOne := acctest.RandString(12)
+		randNameTwo := acctest.RandString(12)
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			CheckDestroy:             testAccCheckOrganizationRuleDestroy,
+			Steps: []resource.TestStep{
+				{
+					Config:      configInvalidConditional(randNameOne, randNameTwo),
+					ExpectError: regexp.MustCompile("conditional is invalid:\n`source.nonexistent_condition` is not a variable"),
 				},
 			},
 		})

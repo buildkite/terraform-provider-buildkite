@@ -223,8 +223,19 @@ func (or *organizationRuleResource) Create(ctx context.Context, req resource.Cre
 		return
 	}
 
+	// Obtain the sorted value JSON from the API response (document field in RuleCreatePayload's rule)
+	value, err := obtainValueJSON(r.RuleCreate.Rule.Document)
+
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Unable to create organization rule",
+			fmt.Sprintf("Unable to create organmization rule: %s", err.Error()),
+		)
+		return
+	}
+
 	// Update organization rule model and set in state
-	updateOrganizatonRuleCreateState(&state, *r, *sourceUUID, *targetUUID, plan.Value.ValueString())
+	updateOrganizatonRuleCreateState(&state, *r, *sourceUUID, *targetUUID, *value)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
