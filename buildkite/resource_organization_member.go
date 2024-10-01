@@ -97,7 +97,6 @@ func (organizationMemberResource) Schema(ctx context.Context, req resource.Schem
 
 func (om *organizationMemberResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	resp.Diagnostics.AddError("Cannot create an organization member", "Organization membership is created via accepted invitations/signed in users via SCIM provisioning.")
-	return
 }
 
 func (om *organizationMemberResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
