@@ -2038,8 +2038,9 @@ func (v *__updateClusterQueueInput) GetDescription() *string { return v.Descript
 
 // __updateOrganiztionMemberInput is used internally by genqlient
 type __updateOrganiztionMemberInput struct {
-	MemberId   string                 `json:"memberId"`
-	MemberRole OrganizationMemberRole `json:"memberRole"`
+	MemberId   string                        `json:"memberId"`
+	MemberRole OrganizationMemberRole        `json:"memberRole"`
+	SsoMode    OrganizationMemberSSOModeEnum `json:"ssoMode"`
 }
 
 // GetMemberId returns __updateOrganiztionMemberInput.MemberId, and is useful for accessing the field via an interface.
@@ -2047,6 +2048,9 @@ func (v *__updateOrganiztionMemberInput) GetMemberId() string { return v.MemberI
 
 // GetMemberRole returns __updateOrganiztionMemberInput.MemberRole, and is useful for accessing the field via an interface.
 func (v *__updateOrganiztionMemberInput) GetMemberRole() OrganizationMemberRole { return v.MemberRole }
+
+// GetSsoMode returns __updateOrganiztionMemberInput.SsoMode, and is useful for accessing the field via an interface.
+func (v *__updateOrganiztionMemberInput) GetSsoMode() OrganizationMemberSSOModeEnum { return v.SsoMode }
 
 // __updatePipelineInput is used internally by genqlient
 type __updatePipelineInput struct {
@@ -15542,8 +15546,8 @@ func updateClusterQueue(
 
 // The query or mutation executed by updateOrganiztionMember.
 const updateOrganiztionMember_Operation = `
-mutation updateOrganiztionMember ($memberId: ID!, $memberRole: OrganizationMemberRole!) {
-	organizationMemberUpdate(input: {id:$memberId,role:$memberRole}) {
+mutation updateOrganiztionMember ($memberId: ID!, $memberRole: OrganizationMemberRole, $ssoMode: OrganizationMemberSSOModeEnum!) {
+	organizationMemberUpdate(input: {id:$memberId,role:$memberRole,sso:{mode:$ssoMode}}) {
 		organizationMember {
 			... OrganizationMemberFields
 		}
@@ -15568,6 +15572,7 @@ func updateOrganiztionMember(
 	client_ graphql.Client,
 	memberId string,
 	memberRole OrganizationMemberRole,
+	ssoMode OrganizationMemberSSOModeEnum,
 ) (*updateOrganiztionMemberResponse, error) {
 	req_ := &graphql.Request{
 		OpName: "updateOrganiztionMember",
@@ -15575,6 +15580,7 @@ func updateOrganiztionMember(
 		Variables: &__updateOrganiztionMemberInput{
 			MemberId:   memberId,
 			MemberRole: memberRole,
+			SsoMode:    ssoMode,
 		},
 	}
 	var err_ error

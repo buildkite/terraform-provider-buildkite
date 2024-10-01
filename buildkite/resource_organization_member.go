@@ -22,7 +22,7 @@ type organizationMemberResourceModel struct {
 	Role          types.String `tfsdk:"role"`
 	Email         types.String `tfsdk:"email"`
 	Complimentary types.Bool   `tfsdk:"complimentary"`
-	SSOMode       types.String `tfsdk:"sso_mode"`
+	SSO           types.String `tfsdk:"sso"`
 }
 
 type organizationMemberResource struct {
@@ -87,7 +87,7 @@ func (organizationMemberResource) Schema(ctx context.Context, req resource.Schem
 					boolplanmodifier.UseStateForUnknown(),
 				},
 			},
-			"sso_mode": resource_schema.StringAttribute{
+			"sso": resource_schema.StringAttribute{
 				Optional:            true,
 				MarkdownDescription: "The SSO mode of the organization member. Either `REQUIRED` or `OPTIONAL`. ",
 			},
@@ -186,6 +186,7 @@ func (om *organizationMemberResource) Update(ctx context.Context, req resource.U
 			om.client.genqlient,
 			state.ID.ValueString(),
 			OrganizationMemberRole(plan.Role.ValueString()),
+			OrganizationMemberSSOModeEnum(plan.SSO.ValueString()),
 		)
 
 		return retryContextError(err)
@@ -240,5 +241,5 @@ func updateOrganizatonMemberResourceRead(om *organizationMemberResourceModel, om
 	om.Role = types.StringValue(string(omn.MemberRole))
 	om.Email = types.StringValue(omn.MemberUser.Email)
 	om.Complimentary = types.BoolValue(omn.Complimentary)
-	om.SSOMode = types.StringPointerValue((*string)(&omn.Sso.Mode))
+	om.SSO = types.StringPointerValue((*string)(&omn.Sso.Mode))
 }

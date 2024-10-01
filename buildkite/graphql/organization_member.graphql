@@ -33,12 +33,16 @@ query getOrganiztionMembers(
 
 mutation updateOrganiztionMember(
     $memberId: ID!
-    $memberRole: OrganizationMemberRole!
+    $memberRole: OrganizationMemberRole
+    $ssoMode: OrganizationMemberSSOModeEnum!
 ) {
     organizationMemberUpdate(
         input: { 
             id: $memberId,
-            role: $memberRole
+            role: $memberRole,
+            sso: {
+                mode: $ssoMode
+            }
         }
     ) {
         organizationMember {
