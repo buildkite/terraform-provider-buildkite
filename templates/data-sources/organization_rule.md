@@ -4,7 +4,7 @@ page_title: "buildkite_organization_rule Data Source - terraform-provider-buildk
 subcategory: ""
 description: |-
   Use this data source to retrieve an organization rule by its ID.
-  More information on organization rules can be found in the documentation https://buildkite.com/docs/pipelines/rules/overview.
+  More information on organization rules can be found in the documentation https://buildkite.com/docs/pipelines/rules.
 ---
 
 # buildkite_organization_rule (Data Source)
@@ -13,7 +13,7 @@ description: |-
 
 Use this data source to retrieve an organization rule by its ID.
 
-More information on organization rules can be found in the [documentation](https://buildkite.com/docs/pipelines/rules/overview).
+More information on organization rules can be found in the [documentation](https://buildkite.com/docs/pipelines/rules).
 
 ## Example Usage
 

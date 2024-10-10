@@ -67,7 +67,7 @@ func (organizationRuleResource) Schema(ctx context.Context, req resource.SchemaR
 		MarkdownDescription: heredoc.Doc(`
 		An Organization Rule allows specifying explicit rules between two Buildkite resources and the desired effect/action.
 
-		More information on organization rules can be found in the [documentation](https://buildkite.com/docs/pipelines/rules/overview).
+		More information on organization rules can be found in the [documentation](https://buildkite.com/docs/pipelines/rules).
 	`),
 		Attributes: map[string]resource_schema.Attribute{
 			"id": resource_schema.StringAttribute{
