@@ -104,7 +104,7 @@ Optional:
 	- `fork` will create builds when the GitHub repository is forked.
 	- `none` will not create any builds based on GitHub activity.
 
-	-> `trigger_mode` is only valid if the pipeline uses a GitHub repository. 
+	-> `trigger_mode` is only valid if the pipeline uses a GitHub repository.
 	-> If not set, the default value is `code` and other provider settings defaults are applied.
 
 ## Import

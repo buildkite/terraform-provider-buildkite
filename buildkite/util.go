@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"regexp"
 	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -55,6 +56,11 @@ func GetTeamID(slug string, client *Client) (string, error) {
 	id := string(query.Team.ID)
 	log.Printf("Found id '%s' for team '%s'.", id, slug)
 	return id, nil
+}
+
+func isUUID(uuid string) bool {
+	r := regexp.MustCompile("^[a-f0-9]{8}(-[a-f0-9]{4}){3}-[a-f0-9]{12}$")
+	return r.MatchString(uuid)
 }
 
 func getenv(key string) string {

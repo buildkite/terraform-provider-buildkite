@@ -1,0 +1,77 @@
+fragment OrganizationRuleFields on Rule {
+    id
+    uuid
+    # @genqlient(pointer: true)
+    description
+    document
+    type 
+    sourceType
+    targetType
+    effect
+    action
+    source {
+        ... on Pipeline {
+            uuid
+        }
+    }
+    target {
+        ... on Pipeline {
+            uuid
+        }
+    }
+}
+
+query getOrganizationRules(
+    $orgSlug: ID!,
+    # @genqlient(pointer: true)
+    $cursor: String
+) {
+    organization(slug: $orgSlug) {
+        rules(first: 50, after: $cursor) {
+            pageInfo {
+                endCursor
+                hasNextPage
+            }
+            edges {
+                node {
+                    ...OrganizationRuleFields
+                }
+            }
+        }
+    }
+}
+
+mutation createOrganizationRule(
+    $organizationId: ID!, 
+    # @genqlient(pointer: true)
+    $description: String,
+    $ruleType: String!,
+    $value: JSON!,
+) {
+    ruleCreate(
+        input: {
+            organizationId: $organizationId
+            description: $description
+            type: $ruleType,
+            value: $value
+        }
+    ) {
+        rule {
+            ...OrganizationRuleFields
+        }
+    }
+}
+
+mutation deleteOrganizationRule(
+    $organizationId: ID!, 
+    $id: ID!,
+) {
+    ruleDelete(
+        input: {
+            organizationId: $organizationId
+            id: $id,
+        }
+    ) {
+        clientMutationId
+    }
+}
