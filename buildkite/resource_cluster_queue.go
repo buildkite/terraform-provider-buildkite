@@ -192,13 +192,12 @@ func (cq *clusterQueueResource) Read(ctx context.Context, req resource.ReadReque
 		}
 	}
 
-	// If not returned by this point, the cluster queue could not be found
-	// This is a tradeoff of the current getClusterQueues Genqlient query (searches for 50 queues via the cluster UUID in state)
-	resp.Diagnostics.AddError(
-		"Unable to find Cluster Queue",
-		// Now that clusters are in GA, it should be safe to get the ID of the cluster as default
-		fmt.Sprintf("Unable to find any queues for cluster: %s", state.ClusterId),
+	// Cluster queue could not be found in returned queues and should be removed from state
+	resp.Diagnostics.AddWarning(
+		"Cluster Queue not found",
+		"Removing Cluster Queue from state...",
 	)
+	resp.State.RemoveResource(ctx)
 }
 
 func (cq *clusterQueueResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
