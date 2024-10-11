@@ -13505,7 +13505,7 @@ const getClusterQueues_Operation = `
 query getClusterQueues ($orgSlug: ID!, $id: ID!) {
 	organization(slug: $orgSlug) {
 		cluster(id: $id) {
-			queues(first: 50) {
+			queues(first: 100) {
 				edges {
 					node {
 						... ClusterQueueValues
