@@ -2,8 +2,13 @@
 
 ## Unreleased
 
-- SUP-2536: Asserting pipeline template datasource attributes on its tests [[PR #559](https://github.com/buildkite/terraform-provider-buildkite/pull/559)] @james2791
 - SUP-2506: Organization rule resource and data source implementation [[PR #562](https://github.com/buildkite/terraform-provider-buildkite/pull/562)] @james2791
+
+## [v1.11.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.10.2...v1.11.0)
+
+- SUP-2536: Asserting pipeline template datasource attributes on its tests [[PR #559](https://github.com/buildkite/terraform-provider-buildkite/pull/559)] @james2791
+- Increase cluster queues returned in API response [[PR #568](https://github.com/buildkite/terraform-provider-buildkite/pull/568)] @petetomasik
+- Remove cluster queues from state if not included in API response [[PR #569](https://github.com/buildkite/terraform-provider-buildkite/pull/569)] @petetomasik
 
 ## [v1.10.2](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.10.1...v1.10.2)
 
