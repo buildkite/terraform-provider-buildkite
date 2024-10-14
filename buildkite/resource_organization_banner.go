@@ -135,12 +135,12 @@ func (ob *organizationBannerResource) Read(ctx context.Context, req resource.Rea
 		return
 	}
 
-	var r *getOrganiztionBannerResponse
+	var r *getOrganizationBannerResponse
 	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		var err error
 
 		log.Printf("Getting organization banner %s ...", state.ID.ValueString())
-		r, err = getOrganiztionBanner(ctx,
+		r, err = getOrganizationBanner(ctx,
 			ob.client.genqlient,
 			ob.client.organization,
 		)
@@ -250,7 +250,7 @@ func (ob *organizationBannerResource) Delete(ctx context.Context, req resource.D
 	}
 }
 
-func updateOrganizationBannerResource(obn getOrganiztionBannerOrganizationBannersOrganizationBannerConnectionEdgesOrganizationBannerEdgeNodeOrganizationBanner, ob *organizationBannerResourceModel) {
+func updateOrganizationBannerResource(obn getOrganizationBannerOrganizationBannersOrganizationBannerConnectionEdgesOrganizationBannerEdgeNodeOrganizationBanner, ob *organizationBannerResourceModel) {
 	ob.ID = types.StringValue(obn.Id)
 	ob.UUID = types.StringValue(obn.Uuid)
 	ob.Message = types.StringValue(obn.Message)

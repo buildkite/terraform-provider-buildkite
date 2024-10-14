@@ -145,7 +145,7 @@ func testAccCheckOrganizationBannerExists(obr *organizationBannerResourceModel, 
 			return fmt.Errorf("No ID is set in state")
 		}
 
-		r, err := getOrganiztionBanner(
+		r, err := getOrganizationBanner(
 			context.Background(),
 			genqlientGraphql,
 			getenv("BUILDKITE_ORGANIZATION_SLUG"),
@@ -183,7 +183,7 @@ func testAccCheckOrganizationBannerDestroy(s *terraform.State) error {
 			continue
 		}
 
-		r, err := getOrganiztionBanner(
+		r, err := getOrganizationBanner(
 			context.Background(),
 			genqlientGraphql,
 			getenv("BUILDKITE_ORGANIZATION_SLUG"),
@@ -202,7 +202,7 @@ func testAccCheckOrganizationBannerDestroy(s *terraform.State) error {
 	return nil
 }
 
-func getBannerNode(r *getOrganiztionBannerResponse) (*getOrganiztionBannerOrganizationBannersOrganizationBannerConnectionEdgesOrganizationBannerEdgeNodeOrganizationBanner, bool) {
+func getBannerNode(r *getOrganizationBannerResponse) (*getOrganizationBannerOrganizationBannersOrganizationBannerConnectionEdgesOrganizationBannerEdgeNodeOrganizationBanner, bool) {
 	if len(r.Organization.Banners.Edges) == 1 {
 		return &r.Organization.Banners.Edges[0].Node, true
 	} else {

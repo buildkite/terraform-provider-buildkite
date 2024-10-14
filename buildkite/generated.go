@@ -1652,13 +1652,13 @@ type __getOrganizationInput struct {
 // GetSlug returns __getOrganizationInput.Slug, and is useful for accessing the field via an interface.
 func (v *__getOrganizationInput) GetSlug() string { return v.Slug }
 
-// __getOrganiztionBannerInput is used internally by genqlient
-type __getOrganiztionBannerInput struct {
+// __getOrganizationBannerInput is used internally by genqlient
+type __getOrganizationBannerInput struct {
 	OrgSlug string `json:"orgSlug"`
 }
 
-// GetOrgSlug returns __getOrganiztionBannerInput.OrgSlug, and is useful for accessing the field via an interface.
-func (v *__getOrganiztionBannerInput) GetOrgSlug() string { return v.OrgSlug }
+// GetOrgSlug returns __getOrganizationBannerInput.OrgSlug, and is useful for accessing the field via an interface.
+func (v *__getOrganizationBannerInput) GetOrgSlug() string { return v.OrgSlug }
 
 // __getPipelineInput is used internally by genqlient
 type __getPipelineInput struct {
@@ -6428,82 +6428,82 @@ func (v *getOrganizationResponse) GetOrganization() getOrganizationOrganization 
 	return v.Organization
 }
 
-// getOrganiztionBannerOrganization includes the requested fields of the GraphQL type Organization.
+// getOrganizationBannerOrganization includes the requested fields of the GraphQL type Organization.
 // The GraphQL type's documentation follows.
 //
 // An organization
-type getOrganiztionBannerOrganization struct {
+type getOrganizationBannerOrganization struct {
 	// Returns active banners for this organization.
-	Banners getOrganiztionBannerOrganizationBannersOrganizationBannerConnection `json:"banners"`
+	Banners getOrganizationBannerOrganizationBannersOrganizationBannerConnection `json:"banners"`
 }
 
-// GetBanners returns getOrganiztionBannerOrganization.Banners, and is useful for accessing the field via an interface.
-func (v *getOrganiztionBannerOrganization) GetBanners() getOrganiztionBannerOrganizationBannersOrganizationBannerConnection {
+// GetBanners returns getOrganizationBannerOrganization.Banners, and is useful for accessing the field via an interface.
+func (v *getOrganizationBannerOrganization) GetBanners() getOrganizationBannerOrganizationBannersOrganizationBannerConnection {
 	return v.Banners
 }
 
-// getOrganiztionBannerOrganizationBannersOrganizationBannerConnection includes the requested fields of the GraphQL type OrganizationBannerConnection.
+// getOrganizationBannerOrganizationBannersOrganizationBannerConnection includes the requested fields of the GraphQL type OrganizationBannerConnection.
 // The GraphQL type's documentation follows.
 //
 // The connection type for OrganizationBanner.
-type getOrganiztionBannerOrganizationBannersOrganizationBannerConnection struct {
+type getOrganizationBannerOrganizationBannersOrganizationBannerConnection struct {
 	// A list of edges.
-	Edges []getOrganiztionBannerOrganizationBannersOrganizationBannerConnectionEdgesOrganizationBannerEdge `json:"edges"`
+	Edges []getOrganizationBannerOrganizationBannersOrganizationBannerConnectionEdgesOrganizationBannerEdge `json:"edges"`
 }
 
-// GetEdges returns getOrganiztionBannerOrganizationBannersOrganizationBannerConnection.Edges, and is useful for accessing the field via an interface.
-func (v *getOrganiztionBannerOrganizationBannersOrganizationBannerConnection) GetEdges() []getOrganiztionBannerOrganizationBannersOrganizationBannerConnectionEdgesOrganizationBannerEdge {
+// GetEdges returns getOrganizationBannerOrganizationBannersOrganizationBannerConnection.Edges, and is useful for accessing the field via an interface.
+func (v *getOrganizationBannerOrganizationBannersOrganizationBannerConnection) GetEdges() []getOrganizationBannerOrganizationBannersOrganizationBannerConnectionEdgesOrganizationBannerEdge {
 	return v.Edges
 }
 
-// getOrganiztionBannerOrganizationBannersOrganizationBannerConnectionEdgesOrganizationBannerEdge includes the requested fields of the GraphQL type OrganizationBannerEdge.
+// getOrganizationBannerOrganizationBannersOrganizationBannerConnectionEdgesOrganizationBannerEdge includes the requested fields of the GraphQL type OrganizationBannerEdge.
 // The GraphQL type's documentation follows.
 //
 // An edge in a connection.
-type getOrganiztionBannerOrganizationBannersOrganizationBannerConnectionEdgesOrganizationBannerEdge struct {
+type getOrganizationBannerOrganizationBannersOrganizationBannerConnectionEdgesOrganizationBannerEdge struct {
 	// The item at the end of the edge.
-	Node getOrganiztionBannerOrganizationBannersOrganizationBannerConnectionEdgesOrganizationBannerEdgeNodeOrganizationBanner `json:"node"`
+	Node getOrganizationBannerOrganizationBannersOrganizationBannerConnectionEdgesOrganizationBannerEdgeNodeOrganizationBanner `json:"node"`
 }
 
-// GetNode returns getOrganiztionBannerOrganizationBannersOrganizationBannerConnectionEdgesOrganizationBannerEdge.Node, and is useful for accessing the field via an interface.
-func (v *getOrganiztionBannerOrganizationBannersOrganizationBannerConnectionEdgesOrganizationBannerEdge) GetNode() getOrganiztionBannerOrganizationBannersOrganizationBannerConnectionEdgesOrganizationBannerEdgeNodeOrganizationBanner {
+// GetNode returns getOrganizationBannerOrganizationBannersOrganizationBannerConnectionEdgesOrganizationBannerEdge.Node, and is useful for accessing the field via an interface.
+func (v *getOrganizationBannerOrganizationBannersOrganizationBannerConnectionEdgesOrganizationBannerEdge) GetNode() getOrganizationBannerOrganizationBannersOrganizationBannerConnectionEdgesOrganizationBannerEdgeNodeOrganizationBanner {
 	return v.Node
 }
 
-// getOrganiztionBannerOrganizationBannersOrganizationBannerConnectionEdgesOrganizationBannerEdgeNodeOrganizationBanner includes the requested fields of the GraphQL type OrganizationBanner.
+// getOrganizationBannerOrganizationBannersOrganizationBannerConnectionEdgesOrganizationBannerEdgeNodeOrganizationBanner includes the requested fields of the GraphQL type OrganizationBanner.
 // The GraphQL type's documentation follows.
 //
 // System banner of an organization
-type getOrganiztionBannerOrganizationBannersOrganizationBannerConnectionEdgesOrganizationBannerEdgeNodeOrganizationBanner struct {
+type getOrganizationBannerOrganizationBannersOrganizationBannerConnectionEdgesOrganizationBannerEdgeNodeOrganizationBanner struct {
 	OrganizationBannerFields `json:"-"`
 }
 
-// GetId returns getOrganiztionBannerOrganizationBannersOrganizationBannerConnectionEdgesOrganizationBannerEdgeNodeOrganizationBanner.Id, and is useful for accessing the field via an interface.
-func (v *getOrganiztionBannerOrganizationBannersOrganizationBannerConnectionEdgesOrganizationBannerEdgeNodeOrganizationBanner) GetId() string {
+// GetId returns getOrganizationBannerOrganizationBannersOrganizationBannerConnectionEdgesOrganizationBannerEdgeNodeOrganizationBanner.Id, and is useful for accessing the field via an interface.
+func (v *getOrganizationBannerOrganizationBannersOrganizationBannerConnectionEdgesOrganizationBannerEdgeNodeOrganizationBanner) GetId() string {
 	return v.OrganizationBannerFields.Id
 }
 
-// GetUuid returns getOrganiztionBannerOrganizationBannersOrganizationBannerConnectionEdgesOrganizationBannerEdgeNodeOrganizationBanner.Uuid, and is useful for accessing the field via an interface.
-func (v *getOrganiztionBannerOrganizationBannersOrganizationBannerConnectionEdgesOrganizationBannerEdgeNodeOrganizationBanner) GetUuid() string {
+// GetUuid returns getOrganizationBannerOrganizationBannersOrganizationBannerConnectionEdgesOrganizationBannerEdgeNodeOrganizationBanner.Uuid, and is useful for accessing the field via an interface.
+func (v *getOrganizationBannerOrganizationBannersOrganizationBannerConnectionEdgesOrganizationBannerEdgeNodeOrganizationBanner) GetUuid() string {
 	return v.OrganizationBannerFields.Uuid
 }
 
-// GetMessage returns getOrganiztionBannerOrganizationBannersOrganizationBannerConnectionEdgesOrganizationBannerEdgeNodeOrganizationBanner.Message, and is useful for accessing the field via an interface.
-func (v *getOrganiztionBannerOrganizationBannersOrganizationBannerConnectionEdgesOrganizationBannerEdgeNodeOrganizationBanner) GetMessage() string {
+// GetMessage returns getOrganizationBannerOrganizationBannersOrganizationBannerConnectionEdgesOrganizationBannerEdgeNodeOrganizationBanner.Message, and is useful for accessing the field via an interface.
+func (v *getOrganizationBannerOrganizationBannersOrganizationBannerConnectionEdgesOrganizationBannerEdgeNodeOrganizationBanner) GetMessage() string {
 	return v.OrganizationBannerFields.Message
 }
 
-func (v *getOrganiztionBannerOrganizationBannersOrganizationBannerConnectionEdgesOrganizationBannerEdgeNodeOrganizationBanner) UnmarshalJSON(b []byte) error {
+func (v *getOrganizationBannerOrganizationBannersOrganizationBannerConnectionEdgesOrganizationBannerEdgeNodeOrganizationBanner) UnmarshalJSON(b []byte) error {
 
 	if string(b) == "null" {
 		return nil
 	}
 
 	var firstPass struct {
-		*getOrganiztionBannerOrganizationBannersOrganizationBannerConnectionEdgesOrganizationBannerEdgeNodeOrganizationBanner
+		*getOrganizationBannerOrganizationBannersOrganizationBannerConnectionEdgesOrganizationBannerEdgeNodeOrganizationBanner
 		graphql.NoUnmarshalJSON
 	}
-	firstPass.getOrganiztionBannerOrganizationBannersOrganizationBannerConnectionEdgesOrganizationBannerEdgeNodeOrganizationBanner = v
+	firstPass.getOrganizationBannerOrganizationBannersOrganizationBannerConnectionEdgesOrganizationBannerEdgeNodeOrganizationBanner = v
 
 	err := json.Unmarshal(b, &firstPass)
 	if err != nil {
@@ -6518,7 +6518,7 @@ func (v *getOrganiztionBannerOrganizationBannersOrganizationBannerConnectionEdge
 	return nil
 }
 
-type __premarshalgetOrganiztionBannerOrganizationBannersOrganizationBannerConnectionEdgesOrganizationBannerEdgeNodeOrganizationBanner struct {
+type __premarshalgetOrganizationBannerOrganizationBannersOrganizationBannerConnectionEdgesOrganizationBannerEdgeNodeOrganizationBanner struct {
 	Id string `json:"id"`
 
 	Uuid string `json:"uuid"`
@@ -6526,7 +6526,7 @@ type __premarshalgetOrganiztionBannerOrganizationBannersOrganizationBannerConnec
 	Message string `json:"message"`
 }
 
-func (v *getOrganiztionBannerOrganizationBannersOrganizationBannerConnectionEdgesOrganizationBannerEdgeNodeOrganizationBanner) MarshalJSON() ([]byte, error) {
+func (v *getOrganizationBannerOrganizationBannersOrganizationBannerConnectionEdgesOrganizationBannerEdgeNodeOrganizationBanner) MarshalJSON() ([]byte, error) {
 	premarshaled, err := v.__premarshalJSON()
 	if err != nil {
 		return nil, err
@@ -6534,8 +6534,8 @@ func (v *getOrganiztionBannerOrganizationBannersOrganizationBannerConnectionEdge
 	return json.Marshal(premarshaled)
 }
 
-func (v *getOrganiztionBannerOrganizationBannersOrganizationBannerConnectionEdgesOrganizationBannerEdgeNodeOrganizationBanner) __premarshalJSON() (*__premarshalgetOrganiztionBannerOrganizationBannersOrganizationBannerConnectionEdgesOrganizationBannerEdgeNodeOrganizationBanner, error) {
-	var retval __premarshalgetOrganiztionBannerOrganizationBannersOrganizationBannerConnectionEdgesOrganizationBannerEdgeNodeOrganizationBanner
+func (v *getOrganizationBannerOrganizationBannersOrganizationBannerConnectionEdgesOrganizationBannerEdgeNodeOrganizationBanner) __premarshalJSON() (*__premarshalgetOrganizationBannerOrganizationBannersOrganizationBannerConnectionEdgesOrganizationBannerEdgeNodeOrganizationBanner, error) {
+	var retval __premarshalgetOrganizationBannerOrganizationBannersOrganizationBannerConnectionEdgesOrganizationBannerEdgeNodeOrganizationBanner
 
 	retval.Id = v.OrganizationBannerFields.Id
 	retval.Uuid = v.OrganizationBannerFields.Uuid
@@ -6543,14 +6543,14 @@ func (v *getOrganiztionBannerOrganizationBannersOrganizationBannerConnectionEdge
 	return &retval, nil
 }
 
-// getOrganiztionBannerResponse is returned by getOrganiztionBanner on success.
-type getOrganiztionBannerResponse struct {
+// getOrganizationBannerResponse is returned by getOrganizationBanner on success.
+type getOrganizationBannerResponse struct {
 	// Find an organization
-	Organization getOrganiztionBannerOrganization `json:"organization"`
+	Organization getOrganizationBannerOrganization `json:"organization"`
 }
 
-// GetOrganization returns getOrganiztionBannerResponse.Organization, and is useful for accessing the field via an interface.
-func (v *getOrganiztionBannerResponse) GetOrganization() getOrganiztionBannerOrganization {
+// GetOrganization returns getOrganizationBannerResponse.Organization, and is useful for accessing the field via an interface.
+func (v *getOrganizationBannerResponse) GetOrganization() getOrganizationBannerOrganization {
 	return v.Organization
 }
 
@@ -13768,9 +13768,9 @@ func getOrganization(
 	return &data, err
 }
 
-// The query or mutation executed by getOrganiztionBanner.
-const getOrganiztionBanner_Operation = `
-query getOrganiztionBanner ($orgSlug: ID!) {
+// The query or mutation executed by getOrganizationBanner.
+const getOrganizationBanner_Operation = `
+query getOrganizationBanner ($orgSlug: ID!) {
 	organization(slug: $orgSlug) {
 		banners(first: 1) {
 			edges {
@@ -13788,21 +13788,21 @@ fragment OrganizationBannerFields on OrganizationBanner {
 }
 `
 
-func getOrganiztionBanner(
+func getOrganizationBanner(
 	ctx context.Context,
 	client graphql.Client,
 	orgSlug string,
-) (*getOrganiztionBannerResponse, error) {
+) (*getOrganizationBannerResponse, error) {
 	req := &graphql.Request{
-		OpName: "getOrganiztionBanner",
-		Query:  getOrganiztionBanner_Operation,
-		Variables: &__getOrganiztionBannerInput{
+		OpName: "getOrganizationBanner",
+		Query:  getOrganizationBanner_Operation,
+		Variables: &__getOrganizationBannerInput{
 			OrgSlug: orgSlug,
 		},
 	}
 	var err error
 
-	var data getOrganiztionBannerResponse
+	var data getOrganizationBannerResponse
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(

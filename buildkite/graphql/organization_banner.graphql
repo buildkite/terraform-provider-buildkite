@@ -4,7 +4,7 @@ fragment OrganizationBannerFields on OrganizationBanner {
     message
 }
 
-query getOrganiztionBanner($orgSlug: ID!) {
+query getOrganizationBanner($orgSlug: ID!) {
     organization(slug: $orgSlug) {
         banners(first: 1) {
             edges {
