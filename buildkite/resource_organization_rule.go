@@ -191,6 +191,7 @@ func (or *organizationRuleResource) Create(ctx context.Context, req resource.Cre
 	err = retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		org, err := or.client.GetOrganizationID()
 		if err == nil {
+			log.Printf("Creating organization rule ...")
 			r, err = createOrganizationRule(
 				ctx,
 				or.client.genqlient,
@@ -259,7 +260,7 @@ func (or *organizationRuleResource) Read(ctx context.Context, req resource.ReadR
 	err := retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
 		var err error
 
-		log.Printf("Reading organization rule with ID %s ...", state.UUID.ValueString())
+		log.Printf("Reading organization rule with ID %s ...", state.ID.ValueString())
 		apiResponse, err = getNode(ctx, or.client.genqlient, state.ID.ValueString())
 
 		return retryContextError(err)
@@ -333,6 +334,7 @@ func (or *organizationRuleResource) Delete(ctx context.Context, req resource.Del
 	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		org, err := or.client.GetOrganizationID()
 		if err == nil {
+			log.Printf("Deleting organization rule with ID %s ...", state.ID.ValueString())
 			_, err = deleteOrganizationRule(
 				ctx,
 				or.client.genqlient,

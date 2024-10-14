@@ -182,7 +182,7 @@ func (or *organizationRuleDatasource) Read(ctx context.Context, req datasource.R
 		err := retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
 			var err error
 
-			log.Printf("Reading organization rule with ID %s ...", state.UUID.ValueString())
+			log.Printf("Reading organization rule with ID %s ...", state.ID.ValueString())
 			apiResponse, err = getNode(ctx,
 				or.client.genqlient,
 				state.ID.ValueString(),
