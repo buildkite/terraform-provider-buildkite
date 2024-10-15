@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## [v1.12.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.11.0...v1.12.0)
 
 - SUP-2506: Organization rule resource and data source implementation [[PR #562](https://github.com/buildkite/terraform-provider-buildkite/pull/562)] @james2791
 
@@ -74,18 +74,18 @@
 - SUP-1690: Fixed error dereferencing for pipeline datasources (nonexistent pipelines) [[PR #472](https://github.com/buildkite/terraform-provider-buildkite/pull/472)] @james2791
 - SUP-1665: v1.0.0 upgrade note on Administrator bound API access tokens & buildkite_pipeline_team resources [[PR #473](https://github.com/buildkite/terraform-provider-buildkite/pull/473)] @james2791
 - SUP-1711: Pipeline template attribute (pipeline resources) and data source addition [[PR #474](https://github.com/buildkite/terraform-provider-buildkite/pull/474)] @james2791
-- SUP-1609 Add default team attribute to pipeline resource [[PR #479](https://github.com/buildkite/terraform-provider-buildkite/pull/479)] @jradtilbrook 
+- SUP-1609 Add default team attribute to pipeline resource [[PR #479](https://github.com/buildkite/terraform-provider-buildkite/pull/479)] @jradtilbrook
 
 ## [v1.3.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.2.0...v1.3.0)
 
-- SUP-1657: Removal of non-admin tests [[PR #457](https://github.com/buildkite/terraform-provider-buildkite/pull/457)] @james2791 
-- SUP-1628: Adjustment of Organization resource Allowed API IP address state persistence [[PR #458](https://github.com/buildkite/terraform-provider-buildkite/pull/458)] @james2791 
-- SUP-1672: Switched enabled attribute of PipelineScheduleUpdateInputs to a pointer [[PR #459](https://github.com/buildkite/terraform-provider-buildkite/pull/459)] @james2791 
+- SUP-1657: Removal of non-admin tests [[PR #457](https://github.com/buildkite/terraform-provider-buildkite/pull/457)] @james2791
+- SUP-1628: Adjustment of Organization resource Allowed API IP address state persistence [[PR #458](https://github.com/buildkite/terraform-provider-buildkite/pull/458)] @james2791
+- SUP-1672: Switched enabled attribute of PipelineScheduleUpdateInputs to a pointer [[PR #459](https://github.com/buildkite/terraform-provider-buildkite/pull/459)] @james2791
 
 ## [v1.2.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.1.1...v1.2.0)
 
 - SUP-1539: Limit the setting of Webhook url on Create only [[PR #450](https://github.com/buildkite/terraform-provider-buildkite/pull/450)]
-- SUP-1607: Allowed IP Addresses attribute addition for Cluster Agent Token resources [[PR #447](https://github.com/buildkite/terraform-provider-buildkite/pull/447)] @james2791 
+- SUP-1607: Allowed IP Addresses attribute addition for Cluster Agent Token resources [[PR #447](https://github.com/buildkite/terraform-provider-buildkite/pull/447)] @james2791
 - SUP-1608 Pipeline schedule env escaping [[PR #449](https://github.com/buildkite/terraform-provider-buildkite/pull/449)] @jradtilbrook
 - SUP-1612 Check default queue exists [[PR #451](https://github.com/buildkite/terraform-provider-buildkite/pull/451)] @jradtilbrook
 - SUP-1556 Prevent calls to Buildkite API [[PR #452](https://github.com/buildkite/terraform-provider-buildkite/pull/452)] @jradtilbrook
@@ -98,11 +98,11 @@
 
 - Bump google.golang.org/grpc from 1.58.2 to 1.58.3 [[PR #435](https://github.com/buildkite/terraform-provider-buildkite/pull/435)]
 - Add data source to sign pipelines [[PR #420](https://github.com/buildkite/terraform-provider-buildkite/pull/420)]
-- SUP-1445: Organization Banner resource implementation [[PR #433](https://github.com/buildkite/terraform-provider-buildkite/pull/433)] @james2791 
-- SUP-1540: Diagnostic error addition standardisation [[PR #431](https://github.com/buildkite/terraform-provider-buildkite/pull/431)] @james2791 
-- SUP-1544: GraphQL Fragment naming and type export consolidation [[PR #432](https://github.com/buildkite/terraform-provider-buildkite/pull/432)] @james2791 
-- SUP-1312: Pipeline Template resource implementation [[PR #429](https://github.com/buildkite/terraform-provider-buildkite/pull/429)] @james2791 
-- SUP-1534: Color/Emoji attributes for Pipeline resources [[PR #427](https://github.com/buildkite/terraform-provider-buildkite/pull/427)] @james2791 
+- SUP-1445: Organization Banner resource implementation [[PR #433](https://github.com/buildkite/terraform-provider-buildkite/pull/433)] @james2791
+- SUP-1540: Diagnostic error addition standardisation [[PR #431](https://github.com/buildkite/terraform-provider-buildkite/pull/431)] @james2791
+- SUP-1544: GraphQL Fragment naming and type export consolidation [[PR #432](https://github.com/buildkite/terraform-provider-buildkite/pull/432)] @james2791
+- SUP-1312: Pipeline Template resource implementation [[PR #429](https://github.com/buildkite/terraform-provider-buildkite/pull/429)] @james2791
+- SUP-1534: Color/Emoji attributes for Pipeline resources [[PR #427](https://github.com/buildkite/terraform-provider-buildkite/pull/427)] @james2791
 
 ## [v1.0.6](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.0.5...v1.0.6)
 
@@ -112,7 +112,7 @@
 
 - Bump github.com/google/go-cmp from 0.5.9 to 0.6.0 [[PR #419](https://github.com/buildkite/terraform-provider-buildkite/pull/419)]
 - Bump google.golang.org/grpc from 1.56.1 to 1.56.3 [[PR #423](https://github.com/buildkite/terraform-provider-buildkite/pull/423)]
- 
+
 ## [v1.0.4](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.0.3...v1.0.4)
 
 - SUP-1492 Fix cluster queue description pointer [[PR #418](https://github.com/buildkite/terraform-provider-buildkite/pull/418)] @jradtilbrook
@@ -229,7 +229,7 @@ functionality to [lifecycles](https://developer.hashicorp.com/terraform/language
 
 ## [v0.22.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v0.21.2...v0.22.0)
 
-### Added 
+### Added
 
 - SUP-1281: Pipeline resource ReadPipeline conversion to Genqlient[[PR #319](https://github.com/buildkite/terraform-provider-buildkite/pull/319)] @james2791
 - Convert CreatePipeline to genqlient [[PR #334](https://github.com/buildkite/terraform-provider-buildkite/pull/334)] @jradtilbrook
@@ -310,7 +310,7 @@ PR [#318](https://github.com/buildkite/terraform-provider-buildkite/pull/318) in
 
 ### Breaking changes
 
-This release removes the ability to import Agent tokens.  
+This release removes the ability to import Agent tokens.
 As per https://buildkite.com/changelog/207-agent-token-being-deprecated-from-graphql-apis, it will soon not be possible
 to read the agent token value after creation, making importing Agent tokens impossible.
 
