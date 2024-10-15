@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- SUP-2506: Organization rule resource and data source implementation [[PR #562](https://github.com/buildkite/terraform-provider-buildkite/pull/562)] @james2791
+
 ## [v1.11.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.10.2...v1.11.0)
 
 - SUP-2536: Asserting pipeline template datasource attributes on its tests [[PR #559](https://github.com/buildkite/terraform-provider-buildkite/pull/559)] @james2791

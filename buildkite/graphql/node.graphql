@@ -8,6 +8,9 @@ query getNode(
         ... on PipelineTemplate {
             ...PipelineTemplateFields
         }
+        ... on Rule {
+            ...OrganizationRuleFields
+        }
         ... on TeamMember {
             ...TeamMemberFields
         }
