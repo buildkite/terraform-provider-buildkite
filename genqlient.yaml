@@ -12,3 +12,5 @@ bindings:
     type: string
   TeamMemberRole:
     type: string
+  DateTime:
+    type: time.Time
