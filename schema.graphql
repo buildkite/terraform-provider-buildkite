@@ -74,6 +74,7 @@ enum APIAccessTokenScopes {
 	READ_PIPELINE_TEMPLATES
 	READ_PIPELINES
 	READ_REGISTRIES
+	READ_RULES
 	READ_SUITES
 	READ_TEAMS
 	READ_TEST_PLAN
@@ -88,6 +89,7 @@ enum APIAccessTokenScopes {
 	WRITE_PIPELINE_TEMPLATES
 	WRITE_PIPELINES
 	WRITE_REGISTRIES
+	WRITE_RULES
 	WRITE_SUITES
 	WRITE_TEAMS
 	WRITE_TEST_PLAN
@@ -507,6 +509,8 @@ enum AuditEventType {
 	ORGANIZATION_BUILD_EXPORT_UPDATED
 	ORGANIZATION_CREATED
 	ORGANIZATION_DELETED
+	ORGANIZATION_IMPERSONATION_REQUEST_APPROVED
+	ORGANIZATION_IMPERSONATION_REQUEST_REVOKED
 	ORGANIZATION_INVITATION_ACCEPTED
 	ORGANIZATION_INVITATION_CREATED
 	ORGANIZATION_INVITATION_RESENT
@@ -530,7 +534,13 @@ enum AuditEventType {
 	PIPELINE_WEBHOOK_URL_ROTATED
 	REGISTRY_CREATED
 	REGISTRY_DELETED
+	REGISTRY_TOKEN_CREATED
+	REGISTRY_TOKEN_DELETED
+	REGISTRY_TOKEN_UPDATED
 	REGISTRY_UPDATED
+	REGISTRY_VISIBILITY_CHANGED
+	RULE_CREATED
+	RULE_DELETED
 	SCM_PIPELINE_SETTINGS_CREATED
 	SCM_PIPELINE_SETTINGS_DELETED
 	SCM_PIPELINE_SETTINGS_UPDATED
@@ -552,8 +562,11 @@ enum AuditEventType {
 	SECRET_UPDATED
 	STORAGE_CREATED
 	SUBSCRIPTION_PLAN_ADDED
+	SUBSCRIPTION_PLAN_CANCELATION_SCHEDULED
+	SUBSCRIPTION_PLAN_CANCELED
 	SUBSCRIPTION_PLAN_CHANGE_SCHEDULED
 	SUBSCRIPTION_PLAN_CHANGED
+	SUBSCRIPTION_SCHEDULED_PLAN_CHANGE_CANCELED
 	SUITE_API_TOKEN_REGENERATED
 	SUITE_CREATED
 	SUITE_DELETED
@@ -583,6 +596,7 @@ enum AuditEventType {
 	USER_EMAIL_DELETED
 	USER_EMAIL_MARKED_PRIMARY
 	USER_EMAIL_VERIFIED
+	USER_IMPERSONATED
 	USER_PASSWORD_RESET
 	USER_PASSWORD_RESET_REQUESTED
 	USER_TOTP_ACTIVATED
@@ -606,44 +620,47 @@ type AuditSubject {
 }
 
 """Kinds of subjects which can have audit events performed on them"""
-union AuditSubjectNode =APIAccessToken | AgentToken | AuthorizationBitbucket | AuthorizationGitHub | AuthorizationGitHubEnterprise | Cluster | ClusterPermission | ClusterQueue | ClusterQueueToken | ClusterToken | Email | JobTypeBlock | JobTypeCommand | JobTypeTrigger | JobTypeWait | NotificationServiceSlack | NotificationServiceWebhook | Organization | OrganizationBanner | OrganizationInvitation | OrganizationMember | Pipeline | PipelineSchedule | PipelineTemplate | Registry | SCMPipelineSettings | SCMRepositoryHost | SCMService | SSOProviderGitHubApp | SSOProviderGoogleGSuite | SSOProviderSAML | Secret | Subscription | Suite | TOTP | Team | TeamMember | TeamPipeline | TeamRegistry | TeamSuite | User
+union AuditSubjectNode =APIAccessToken | AgentToken | AuthorizationBitbucket | AuthorizationGitHub | AuthorizationGitHubEnterprise | Cluster | ClusterPermission | ClusterQueue | ClusterQueueToken | ClusterToken | Email | JobTypeBlock | JobTypeCommand | JobTypeTrigger | JobTypeWait | NotificationServiceSlack | NotificationServiceWebhook | Organization | OrganizationBanner | OrganizationImpersonationRequest | OrganizationInvitation | OrganizationMember | Pipeline | PipelineSchedule | PipelineTemplate | Registry | RegistryToken | Rule | SCMPipelineSettings | SCMRepositoryHost | SCMService | SSOProviderGitHubApp | SSOProviderGoogleGSuite | SSOProviderSAML | Secret | Subscription | Suite | TOTP | Team | TeamMember | TeamPipeline | TeamRegistry | TeamSuite | User
 
 """All the possible types of subjects in an Audit Event"""
 enum AuditSubjectType {
+	SCM_PIPELINE_SETTINGS
+	USER_EMAIL
+	SUBSCRIPTION
 	SUITE
-	ORGANIZATION
-	CLUSTER_PERMISSION
 	TEAM
-	USER
 	SECRET
-	PIPELINE
-	REGISTRY
-	ORGANIZATION_MEMBER
+	USER_TOTP
+	SUITE_MONITOR
+	AUTHORIZATION
+	RULE
 	JOB
-	CLUSTER_QUEUE
+	PIPELINE
+	USER
+	CLUSTER
+	CLUSTER_PERMISSION
 	CLUSTER_TOKEN
 	CLUSTER_QUEUE_TOKEN
+	AGENT_TOKEN
+	API_ACCESS_TOKEN
+	CLUSTER_QUEUE
 	NOTIFICATION_SERVICE
 	ORGANIZATION_BANNER
 	ORGANIZATION_INVITATION
+	ORGANIZATION_MEMBER
+	ORGANIZATION_IMPERSONATION_REQUEST
 	PIPELINE_SCHEDULE
 	PIPELINE_TEMPLATE
-	AUTHORIZATION
 	TEAM_MEMBER
-	TEAM_REGISTRY
-	TEAM_SUITE
 	TEAM_PIPELINE
-	CLUSTER
-	API_ACCESS_TOKEN
-	SCM_SERVICE
-	SCM_PIPELINE_SETTINGS
-	SCM_REPOSITORY_HOST
-	SUITE_MONITOR
-	AGENT_TOKEN
-	USER_TOTP
-	SUBSCRIPTION
-	USER_EMAIL
+	TEAM_REGISTRY
+	ORGANIZATION
+	TEAM_SUITE
+	REGISTRY_TOKEN
 	SSO_PROVIDER
+	SCM_SERVICE
+	REGISTRY
+	SCM_REPOSITORY_HOST
 }
 
 """Context for an audit event created during a web request"""
@@ -1535,6 +1552,18 @@ type EmailResendVerificationPayload {
 """A unique identifier for the client performing the mutation."""
 	clientMutationId: String
 	email: Email!
+}
+
+"""GitHub App Installation Rate Limit (limits set by GitHub)"""
+type GitHubRateLimit {
+"""The maximum number of requests that Buildkite is permitted to make per hour, as set by GitHub."""
+	limit: Int!
+"""The number of requests remaining in the current rate limit window."""
+	remaining: Int!
+"""The time at which the current rate limit window resets"""
+	resetAt: DateTime!
+"""The number of requests remaining in the current rate limit window."""
+	used: Int!
 }
 
 """A shared GraphQL query"""
@@ -2474,6 +2503,16 @@ Note that the old webhook URL will stop working immediately and so must be updat
 """Parameters for PipelineUpdate"""
 		input: PipelineUpdateInput!
 	): PipelineUpdatePayload
+"""Create a rule."""
+	ruleCreate(
+"""Parameters for RuleCreate"""
+		input: RuleCreateInput!
+	): RuleCreatePayload
+"""Delete a rule."""
+	ruleDelete(
+"""Parameters for RuleDelete"""
+		input: RuleDeleteInput!
+	): RuleDeletePayload
 """Create a SSO provider."""
 	ssoProviderCreate(
 """Parameters for SSOProviderCreate"""
@@ -2904,8 +2943,29 @@ type Organization implements Node{
 		createdAtFrom: DateTime
 		createdAtTo: DateTime
 	): RegistryConnection
+"""Returns the repository providers for this organization"""
+	repositoryProviders: [OrganizationRepositoryProvider]
 """API tokens with access to this organization will be automatically revoked after this many seconds of inactivity. A `null` value indicates never revoke inactive tokens."""
 	revokeInactiveTokensAfter: RevokeInactiveTokenPeriod
+"""Returns rules for an Organization"""
+	rules(
+"""Returns the first _n_ elements from the list."""
+		first: Int
+"""Returns the elements in the list that come after the specified cursor."""
+		after: String
+"""Returns the last _n_ elements from the list."""
+		last: Int
+"""Returns the elements in the list that come before the specified cursor."""
+		before: String
+"""Order the rules"""
+		order: RuleOrder
+"""Filter the rules by source type"""
+		sourceType: [RuleSourceType!]
+"""Filter the rules by target type"""
+		targetType: [RuleTargetType!]
+"""Filter the rules by action"""
+		action: [RuleAction!]
+	): RuleConnection
 """The slug used to represent the organization in URLs"""
 	slug: String!
 """The single sign-on configuration of this organization"""
@@ -3150,6 +3210,15 @@ type OrganizationEnforceTwoFactorAuthenticationForMembersUpdateMutationPayload {
 """A unique identifier for the client performing the mutation."""
 	clientMutationId: String
 	organization: Organization!
+}
+
+"""A request made by Buildkite to impersonate a user in an organization"""
+type OrganizationImpersonationRequest {
+	approvedAt: DateTime
+	createdAt: DateTime
+	duration: String
+	reason: String
+	uuid: String!
 }
 
 """A pending invitation to a user to join this organization"""
@@ -3546,6 +3615,37 @@ type OrganizationPermissions {
 	teamView: Permission
 }
 
+interface OrganizationRepositoryProvider {
+	name: String!
+}
+
+"""GitHub installation associated with this organization"""
+type OrganizationRepositoryProviderGitHub implements Node & OrganizationRepositoryProvider{
+"""The ID of the provider"""
+	id: ID!
+"""The name of the OrganizationRepositoryProvider"""
+	name: String!
+"""Rate limit for this GitHub Installation"""
+	rateLimit: OrganizationRepositoryProviderGitHubRateLimit
+}
+
+"""GitHub Enterprise Server associated with this organization"""
+type OrganizationRepositoryProviderGitHubEnterpriseServer implements Node & OrganizationRepositoryProvider{
+"""The ID of the provider"""
+	id: ID!
+"""The name of the OrganizationRepositoryProvider"""
+	name: String!
+"""Rate limit for GitHub Installation (GitHub App only)"""
+	rateLimit: OrganizationRepositoryProviderGitHubRateLimit
+"""URL of the GitHub Enterprise Server"""
+	url: String
+}
+
+type OrganizationRepositoryProviderGitHubRateLimit {
+"""The most recent rate limit data from GitHub"""
+	mostRecent: GitHubRateLimit
+}
+
 """Autogenerated input type of OrganizationRevokeInactiveTokensAfterUpdateMutation"""
 input OrganizationRevokeInactiveTokensAfterUpdateMutationInput {
 """Autogenerated input type of OrganizationRevokeInactiveTokensAfterUpdateMutation"""
@@ -3680,7 +3780,7 @@ type Pipeline implements Node{
 	): PipelineMetricConnection
 """The name of the pipeline"""
 	name: String!
-"""The next build number in the sequence"""
+"""The next build number"""
 	nextBuildNumber: Int!
 	organization: Organization!
 	permissions: PipelinePermissions!
@@ -4391,6 +4491,13 @@ type Query {
 """The UUID of the pipeline template"""
 		uuid: ID!
 	): PipelineTemplate
+"""Find a registry"""
+	registry(
+"""The slug of the registry, prefixed with its organization. i.e. `acme-inc/my-registry`"""
+		slug: ID
+"""The UUID of the registry"""
+		uuid: ID
+	): Registry
 """Find a secret via its uuid. This does not contain the value of the secret or encrypted material."""
 	secret(
 """The UUID for the secret i.e. `0bd5ea7c-89b3-4f40-8ca3-ffac805771eb`"""
@@ -4498,6 +4605,24 @@ enum RegistryOrders {
 	RECENTLY_CREATED
 """Order by relevance when searching for registries"""
 	RELEVANCE
+}
+
+"""A registry token"""
+type RegistryToken implements Node{
+"""The time when this token was created"""
+	createdAt: DateTime
+"""The user who created this token"""
+	createdBy: User
+"""The description of the purpose for this registry token"""
+	description: String
+	id: ID!
+	organization: Organization!
+	registry: Registry!
+"""The time when this token was last updated"""
+	updatedAt: DateTime
+"""The user who last updated this token"""
+	updatedBy: User
+	uuid: String!
 }
 
 """A repository associated with a pipeline"""
@@ -4811,6 +4936,120 @@ enum RevokeInactiveTokenPeriod {
 	DAYS_365
 """Never revoke organization access from inactive API tokens"""
 	NEVER
+}
+
+type Rule implements Node{
+"""Action for the rule"""
+	action: RuleAction
+"""User who created the rule"""
+	createdBy: User
+"""Description of the rule"""
+	description: String
+"""A formatted JSON document of the Rule"""
+	document: String
+"""Effect for the rule"""
+	effect: RuleEffect
+	id: ID!
+	organization: Organization
+"""The source for the rule"""
+	source: RuleSource
+"""Source type for the rule"""
+	sourceType: RuleSourceType
+"""The target for the rule"""
+	target: RuleTarget
+"""Target type for the rule"""
+	targetType: RuleTargetType
+"""The type of rule"""
+	type: String!
+"""The public UUID for the rule"""
+	uuid: ID!
+}
+
+"""The action a rule enforces"""
+enum RuleAction {
+"""Trigger build"""
+	TRIGGER_BUILD
+"""Artifacts read"""
+	ARTIFACTS_READ
+}
+
+type RuleConnection implements Connection{
+	count: Int!
+	edges: [RuleEdge]
+	pageInfo: PageInfo
+}
+
+"""Autogenerated input type of RuleCreate"""
+input RuleCreateInput {
+"""Autogenerated input type of RuleCreate"""
+	clientMutationId: String
+"""Autogenerated input type of RuleCreate"""
+	organizationId: ID!
+"""Autogenerated input type of RuleCreate"""
+	description: String
+"""Autogenerated input type of RuleCreate"""
+	type: String!
+"""Autogenerated input type of RuleCreate"""
+	value: JSON!
+}
+
+"""Autogenerated return type of RuleCreate."""
+type RuleCreatePayload {
+"""A unique identifier for the client performing the mutation."""
+	clientMutationId: String
+	rule: Rule!
+}
+
+"""Autogenerated input type of RuleDelete"""
+input RuleDeleteInput {
+"""Autogenerated input type of RuleDelete"""
+	clientMutationId: String
+"""Autogenerated input type of RuleDelete"""
+	organizationId: ID!
+"""Autogenerated input type of RuleDelete"""
+	id: ID!
+}
+
+"""Autogenerated return type of RuleDelete."""
+type RuleDeletePayload {
+"""A unique identifier for the client performing the mutation."""
+	clientMutationId: String
+	deletedRuleId: ID!
+}
+
+type RuleEdge {
+	cursor: String!
+	node: Rule
+}
+
+"""The effect a rule has"""
+enum RuleEffect {
+"""Allow"""
+	ALLOW
+}
+
+"""The different orders you can sort rules by"""
+enum RuleOrder {
+"""Order by the most recently created rules first"""
+	RECENTLY_CREATED
+}
+
+"""Kinds of sources for a rule"""
+union RuleSource =Pipeline
+
+"""The source type for a rule"""
+enum RuleSourceType {
+"""Pipeline"""
+	PIPELINE
+}
+
+"""Kinds of targets for a rule"""
+union RuleTarget =Pipeline
+
+"""The target type for a rule"""
+enum RuleTargetType {
+"""Pipeline"""
+	PIPELINE
 }
 
 type SCMPipelineSettings {

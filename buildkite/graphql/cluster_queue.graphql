@@ -3,7 +3,7 @@ fragment ClusterQueueValues on ClusterQueue {
     uuid
     key
     # @genqlient(pointer: true)
-    description             
+    description
     cluster {
         id
         uuid
@@ -17,6 +17,15 @@ query getClusterQueues($orgSlug: ID!, $id: ID!) {
                 edges {
                     node {
                         ...ClusterQueueValues
+                        dispatchPaused
+                        # @genqlient(pointer: true)
+                        dispatchPausedAt
+                        # @genqlient(pointer: true)
+                        dispatchPausedBy {
+                            id
+                        }
+                        # @genqlient(pointer: true)
+                        dispatchPausedNote
                     }
                 }
             }
@@ -25,7 +34,7 @@ query getClusterQueues($orgSlug: ID!, $id: ID!) {
 }
 
 mutation createClusterQueue(
-    $organizationId: ID!, 
+    $organizationId: ID!,
     $clusterId: ID!,
     $key: String!,
     # @genqlient(pointer: true)
@@ -46,7 +55,7 @@ mutation createClusterQueue(
 }
 
 mutation updateClusterQueue(
-    $organizationId: ID!, 
+    $organizationId: ID!,
     $id: ID!,
     # @genqlient(pointer: true)
     $description: String
@@ -60,12 +69,21 @@ mutation updateClusterQueue(
     ) {
         clusterQueue {
             ...ClusterQueueValues
+            dispatchPaused
+            # @genqlient(pointer: true)
+            dispatchPausedAt
+            # @genqlient(pointer: true)
+            dispatchPausedBy {
+                id
+            }
+            # @genqlient(pointer: true)
+            dispatchPausedNote
         }
     }
 }
 
 mutation deleteClusterQueue(
-    $organizationId: ID!, 
+    $organizationId: ID!,
     $id: ID!,
 ){
     clusterQueueDelete(
@@ -77,3 +95,28 @@ mutation deleteClusterQueue(
         clientMutationId
     }
 }
+
+mutation pauseDispatchClusterQueue (
+    $id: ID!,
+) {
+    clusterQueuePauseDispatch(
+        input: {
+            id: $id
+        }
+    ) {
+        clientMutationId
+    }
+}
+
+mutation resumeDispatchClusterQueue (
+    $id: ID!
+) {
+    clusterQueueResumeDispatch(
+        input: {
+            id: $id
+        }
+    ){
+        clientMutationId
+    }
+}
+

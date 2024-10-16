@@ -11,7 +11,6 @@ import (
 )
 
 func TestAccBuildkiteOrganizationBannerResource(t *testing.T) {
-
 	config := func(name string) string {
 		return fmt.Sprintf(`
 		provider "buildkite" {
@@ -150,14 +149,13 @@ func testAccCheckOrganizationBannerExists(obr *organizationBannerResourceModel, 
 			genqlientGraphql,
 			getenv("BUILDKITE_ORGANIZATION_SLUG"),
 		)
-
 		if err != nil {
 			return fmt.Errorf("Error fetching organization banners from GraphQL API: %v", err)
 		}
 
 		if bannerNode, ok := getBannerNode(r); ok {
 			if bannerNode.Id == "" {
-				return fmt.Errorf(fmt.Sprintf("No organization banner found in organiztaion %s", getenv("BUILDKITE_ORGANIZATION_SLUG")))
+				return fmt.Errorf("No organization banner found in organiztaion %s", getenv("BUILDKITE_ORGANIZATION_SLUG"))
 			}
 			updateOrganizationBannerResource(*bannerNode, obr)
 		}
@@ -168,7 +166,6 @@ func testAccCheckOrganizationBannerExists(obr *organizationBannerResourceModel, 
 
 func testAccCheckOrganizationBannerRemoteValues(obr *organizationBannerResourceModel, message string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
-
 		if obr.Message.ValueString() != message {
 			return fmt.Errorf("Remote organization banner message (%s) doesn't match expected value (%s)", obr.Message, message)
 		}
@@ -188,7 +185,6 @@ func testAccCheckOrganizationBannerDestroy(s *terraform.State) error {
 			genqlientGraphql,
 			getenv("BUILDKITE_ORGANIZATION_SLUG"),
 		)
-
 		if err != nil {
 			return fmt.Errorf("Error fetching organization banners from GraphQL API: %v", err)
 		}
