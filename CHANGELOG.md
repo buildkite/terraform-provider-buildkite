@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Support cluster queue dispatch pausing [[PR #573](https://github.com/buildkite/terraform-provider-buildkite/pull/573)] @mcncl
+
 ## [v1.12.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.11.0...v1.12.0)
 
 - SUP-2506: Organization rule resource and data source implementation [[PR #562](https://github.com/buildkite/terraform-provider-buildkite/pull/562)] @james2791
