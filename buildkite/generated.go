@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/Khan/genqlient/graphql"
 )
@@ -1414,10 +1415,10 @@ const (
 type RuleAction string
 
 const (
-	// Artifacts read
-	RuleActionArtifactsRead RuleAction = "ARTIFACTS_READ"
 	// Trigger build
 	RuleActionTriggerBuild RuleAction = "TRIGGER_BUILD"
+	// Artifacts read
+	RuleActionArtifactsRead RuleAction = "ARTIFACTS_READ"
 )
 
 // The effect a rule has
@@ -2130,6 +2131,14 @@ func (v *__getTestSuiteInput) GetId() string { return v.Id }
 // GetTeamCount returns __getTestSuiteInput.TeamCount, and is useful for accessing the field via an interface.
 func (v *__getTestSuiteInput) GetTeamCount() int { return v.TeamCount }
 
+// __pauseDispatchClusterQueueInput is used internally by genqlient
+type __pauseDispatchClusterQueueInput struct {
+	Id string `json:"id"`
+}
+
+// GetId returns __pauseDispatchClusterQueueInput.Id, and is useful for accessing the field via an interface.
+func (v *__pauseDispatchClusterQueueInput) GetId() string { return v.Id }
+
 // __removeClusterDefaultQueueInput is used internally by genqlient
 type __removeClusterDefaultQueueInput struct {
 	OrganizationId string `json:"organizationId"`
@@ -2141,6 +2150,14 @@ func (v *__removeClusterDefaultQueueInput) GetOrganizationId() string { return v
 
 // GetClusterId returns __removeClusterDefaultQueueInput.ClusterId, and is useful for accessing the field via an interface.
 func (v *__removeClusterDefaultQueueInput) GetClusterId() string { return v.ClusterId }
+
+// __resumeDispatchClusterQueueInput is used internally by genqlient
+type __resumeDispatchClusterQueueInput struct {
+	Id string `json:"id"`
+}
+
+// GetId returns __resumeDispatchClusterQueueInput.Id, and is useful for accessing the field via an interface.
+func (v *__resumeDispatchClusterQueueInput) GetId() string { return v.Id }
 
 // __revokeAgentTokenInput is used internally by genqlient
 type __revokeAgentTokenInput struct {
@@ -4741,6 +4758,34 @@ func (v *getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClu
 // getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue includes the requested fields of the GraphQL type ClusterQueue.
 type getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue struct {
 	ClusterQueueValues `json:"-"`
+	// States whether job dispatch is paused for this cluster queue
+	DispatchPaused bool `json:"dispatchPaused"`
+	// The time this queue was paused
+	DispatchPausedAt *time.Time `json:"dispatchPausedAt"`
+	// The user who paused this cluster queue
+	DispatchPausedBy *getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueueDispatchPausedByUser `json:"dispatchPausedBy"`
+	// Note describing why job dispatch was paused for this cluster queue
+	DispatchPausedNote *string `json:"dispatchPausedNote"`
+}
+
+// GetDispatchPaused returns getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue.DispatchPaused, and is useful for accessing the field via an interface.
+func (v *getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue) GetDispatchPaused() bool {
+	return v.DispatchPaused
+}
+
+// GetDispatchPausedAt returns getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue.DispatchPausedAt, and is useful for accessing the field via an interface.
+func (v *getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue) GetDispatchPausedAt() *time.Time {
+	return v.DispatchPausedAt
+}
+
+// GetDispatchPausedBy returns getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue.DispatchPausedBy, and is useful for accessing the field via an interface.
+func (v *getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue) GetDispatchPausedBy() *getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueueDispatchPausedByUser {
+	return v.DispatchPausedBy
+}
+
+// GetDispatchPausedNote returns getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue.DispatchPausedNote, and is useful for accessing the field via an interface.
+func (v *getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue) GetDispatchPausedNote() *string {
+	return v.DispatchPausedNote
 }
 
 // GetId returns getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue.Id, and is useful for accessing the field via an interface.
@@ -4794,6 +4839,14 @@ func (v *getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClu
 }
 
 type __premarshalgetClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue struct {
+	DispatchPaused bool `json:"dispatchPaused"`
+
+	DispatchPausedAt *time.Time `json:"dispatchPausedAt"`
+
+	DispatchPausedBy *getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueueDispatchPausedByUser `json:"dispatchPausedBy"`
+
+	DispatchPausedNote *string `json:"dispatchPausedNote"`
+
 	Id string `json:"id"`
 
 	Uuid string `json:"uuid"`
@@ -4816,12 +4869,29 @@ func (v *getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClu
 func (v *getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue) __premarshalJSON() (*__premarshalgetClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue, error) {
 	var retval __premarshalgetClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue
 
+	retval.DispatchPaused = v.DispatchPaused
+	retval.DispatchPausedAt = v.DispatchPausedAt
+	retval.DispatchPausedBy = v.DispatchPausedBy
+	retval.DispatchPausedNote = v.DispatchPausedNote
 	retval.Id = v.ClusterQueueValues.Id
 	retval.Uuid = v.ClusterQueueValues.Uuid
 	retval.Key = v.ClusterQueueValues.Key
 	retval.Description = v.ClusterQueueValues.Description
 	retval.Cluster = v.ClusterQueueValues.Cluster
 	return &retval, nil
+}
+
+// getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueueDispatchPausedByUser includes the requested fields of the GraphQL type User.
+// The GraphQL type's documentation follows.
+//
+// A user
+type getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueueDispatchPausedByUser struct {
+	Id string `json:"id"`
+}
+
+// GetId returns getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueueDispatchPausedByUser.Id, and is useful for accessing the field via an interface.
+func (v *getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueueDispatchPausedByUser) GetId() string {
+	return v.Id
 }
 
 // getClusterQueuesResponse is returned by getClusterQueues on success.
@@ -4876,6 +4946,8 @@ func (v *getClusterQueuesResponse) GetOrganization() getClusterQueuesOrganizatio
 // getNodeNodeOrganizationBanner
 // getNodeNodeOrganizationInvitation
 // getNodeNodeOrganizationMember
+// getNodeNodeOrganizationRepositoryProviderGitHub
+// getNodeNodeOrganizationRepositoryProviderGitHubEnterpriseServer
 // getNodeNodePipeline
 // getNodeNodePipelineMetric
 // getNodeNodePipelineSchedule
@@ -4904,63 +4976,66 @@ type getNodeNode interface {
 	GetTypename() string
 }
 
-func (v *getNodeNodeAPIAccessToken) implementsGraphQLInterfacegetNodeNode()                 {}
-func (v *getNodeNodeAPIAccessTokenCode) implementsGraphQLInterfacegetNodeNode()             {}
-func (v *getNodeNodeAPIApplication) implementsGraphQLInterfacegetNodeNode()                 {}
-func (v *getNodeNodeAgent) implementsGraphQLInterfacegetNodeNode()                          {}
-func (v *getNodeNodeAgentToken) implementsGraphQLInterfacegetNodeNode()                     {}
-func (v *getNodeNodeAnnotation) implementsGraphQLInterfacegetNodeNode()                     {}
-func (v *getNodeNodeArtifact) implementsGraphQLInterfacegetNodeNode()                       {}
-func (v *getNodeNodeAuditEvent) implementsGraphQLInterfacegetNodeNode()                     {}
-func (v *getNodeNodeAuthorizationBitbucket) implementsGraphQLInterfacegetNodeNode()         {}
-func (v *getNodeNodeAuthorizationGitHub) implementsGraphQLInterfacegetNodeNode()            {}
-func (v *getNodeNodeAuthorizationGitHubApp) implementsGraphQLInterfacegetNodeNode()         {}
-func (v *getNodeNodeAuthorizationGitHubEnterprise) implementsGraphQLInterfacegetNodeNode()  {}
-func (v *getNodeNodeAuthorizationGoogle) implementsGraphQLInterfacegetNodeNode()            {}
-func (v *getNodeNodeAuthorizationSAML) implementsGraphQLInterfacegetNodeNode()              {}
-func (v *getNodeNodeBuild) implementsGraphQLInterfacegetNodeNode()                          {}
-func (v *getNodeNodeChangelog) implementsGraphQLInterfacegetNodeNode()                      {}
-func (v *getNodeNodeCluster) implementsGraphQLInterfacegetNodeNode()                        {}
-func (v *getNodeNodeClusterQueue) implementsGraphQLInterfacegetNodeNode()                   {}
-func (v *getNodeNodeClusterQueueToken) implementsGraphQLInterfacegetNodeNode()              {}
-func (v *getNodeNodeClusterToken) implementsGraphQLInterfacegetNodeNode()                   {}
-func (v *getNodeNodeEmail) implementsGraphQLInterfacegetNodeNode()                          {}
-func (v *getNodeNodeJobEventAssigned) implementsGraphQLInterfacegetNodeNode()               {}
-func (v *getNodeNodeJobEventBuildStepUploadCreated) implementsGraphQLInterfacegetNodeNode() {}
-func (v *getNodeNodeJobEventCanceled) implementsGraphQLInterfacegetNodeNode()               {}
-func (v *getNodeNodeJobEventFinished) implementsGraphQLInterfacegetNodeNode()               {}
-func (v *getNodeNodeJobEventGeneric) implementsGraphQLInterfacegetNodeNode()                {}
-func (v *getNodeNodeJobEventRetried) implementsGraphQLInterfacegetNodeNode()                {}
-func (v *getNodeNodeJobEventRetryFailed) implementsGraphQLInterfacegetNodeNode()            {}
-func (v *getNodeNodeJobEventTimedOut) implementsGraphQLInterfacegetNodeNode()               {}
-func (v *getNodeNodeJobTypeBlock) implementsGraphQLInterfacegetNodeNode()                   {}
-func (v *getNodeNodeJobTypeCommand) implementsGraphQLInterfacegetNodeNode()                 {}
-func (v *getNodeNodeJobTypeTrigger) implementsGraphQLInterfacegetNodeNode()                 {}
-func (v *getNodeNodeJobTypeWait) implementsGraphQLInterfacegetNodeNode()                    {}
-func (v *getNodeNodeNotificationServiceSlack) implementsGraphQLInterfacegetNodeNode()       {}
-func (v *getNodeNodeOrganization) implementsGraphQLInterfacegetNodeNode()                   {}
-func (v *getNodeNodeOrganizationBanner) implementsGraphQLInterfacegetNodeNode()             {}
-func (v *getNodeNodeOrganizationInvitation) implementsGraphQLInterfacegetNodeNode()         {}
-func (v *getNodeNodeOrganizationMember) implementsGraphQLInterfacegetNodeNode()             {}
-func (v *getNodeNodePipeline) implementsGraphQLInterfacegetNodeNode()                       {}
-func (v *getNodeNodePipelineMetric) implementsGraphQLInterfacegetNodeNode()                 {}
-func (v *getNodeNodePipelineSchedule) implementsGraphQLInterfacegetNodeNode()               {}
-func (v *getNodeNodePipelineTemplate) implementsGraphQLInterfacegetNodeNode()               {}
-func (v *getNodeNodeRegistry) implementsGraphQLInterfacegetNodeNode()                       {}
-func (v *getNodeNodeRegistryToken) implementsGraphQLInterfacegetNodeNode()                  {}
-func (v *getNodeNodeRule) implementsGraphQLInterfacegetNodeNode()                           {}
-func (v *getNodeNodeSSOProviderGitHubApp) implementsGraphQLInterfacegetNodeNode()           {}
-func (v *getNodeNodeSSOProviderGoogleGSuite) implementsGraphQLInterfacegetNodeNode()        {}
-func (v *getNodeNodeSSOProviderSAML) implementsGraphQLInterfacegetNodeNode()                {}
-func (v *getNodeNodeSecret) implementsGraphQLInterfacegetNodeNode()                         {}
-func (v *getNodeNodeSuite) implementsGraphQLInterfacegetNodeNode()                          {}
-func (v *getNodeNodeTeam) implementsGraphQLInterfacegetNodeNode()                           {}
-func (v *getNodeNodeTeamMember) implementsGraphQLInterfacegetNodeNode()                     {}
-func (v *getNodeNodeTeamPipeline) implementsGraphQLInterfacegetNodeNode()                   {}
-func (v *getNodeNodeTeamRegistry) implementsGraphQLInterfacegetNodeNode()                   {}
-func (v *getNodeNodeTeamSuite) implementsGraphQLInterfacegetNodeNode()                      {}
-func (v *getNodeNodeUser) implementsGraphQLInterfacegetNodeNode()                           {}
-func (v *getNodeNodeViewer) implementsGraphQLInterfacegetNodeNode()                         {}
+func (v *getNodeNodeAPIAccessToken) implementsGraphQLInterfacegetNodeNode()                       {}
+func (v *getNodeNodeAPIAccessTokenCode) implementsGraphQLInterfacegetNodeNode()                   {}
+func (v *getNodeNodeAPIApplication) implementsGraphQLInterfacegetNodeNode()                       {}
+func (v *getNodeNodeAgent) implementsGraphQLInterfacegetNodeNode()                                {}
+func (v *getNodeNodeAgentToken) implementsGraphQLInterfacegetNodeNode()                           {}
+func (v *getNodeNodeAnnotation) implementsGraphQLInterfacegetNodeNode()                           {}
+func (v *getNodeNodeArtifact) implementsGraphQLInterfacegetNodeNode()                             {}
+func (v *getNodeNodeAuditEvent) implementsGraphQLInterfacegetNodeNode()                           {}
+func (v *getNodeNodeAuthorizationBitbucket) implementsGraphQLInterfacegetNodeNode()               {}
+func (v *getNodeNodeAuthorizationGitHub) implementsGraphQLInterfacegetNodeNode()                  {}
+func (v *getNodeNodeAuthorizationGitHubApp) implementsGraphQLInterfacegetNodeNode()               {}
+func (v *getNodeNodeAuthorizationGitHubEnterprise) implementsGraphQLInterfacegetNodeNode()        {}
+func (v *getNodeNodeAuthorizationGoogle) implementsGraphQLInterfacegetNodeNode()                  {}
+func (v *getNodeNodeAuthorizationSAML) implementsGraphQLInterfacegetNodeNode()                    {}
+func (v *getNodeNodeBuild) implementsGraphQLInterfacegetNodeNode()                                {}
+func (v *getNodeNodeChangelog) implementsGraphQLInterfacegetNodeNode()                            {}
+func (v *getNodeNodeCluster) implementsGraphQLInterfacegetNodeNode()                              {}
+func (v *getNodeNodeClusterQueue) implementsGraphQLInterfacegetNodeNode()                         {}
+func (v *getNodeNodeClusterQueueToken) implementsGraphQLInterfacegetNodeNode()                    {}
+func (v *getNodeNodeClusterToken) implementsGraphQLInterfacegetNodeNode()                         {}
+func (v *getNodeNodeEmail) implementsGraphQLInterfacegetNodeNode()                                {}
+func (v *getNodeNodeJobEventAssigned) implementsGraphQLInterfacegetNodeNode()                     {}
+func (v *getNodeNodeJobEventBuildStepUploadCreated) implementsGraphQLInterfacegetNodeNode()       {}
+func (v *getNodeNodeJobEventCanceled) implementsGraphQLInterfacegetNodeNode()                     {}
+func (v *getNodeNodeJobEventFinished) implementsGraphQLInterfacegetNodeNode()                     {}
+func (v *getNodeNodeJobEventGeneric) implementsGraphQLInterfacegetNodeNode()                      {}
+func (v *getNodeNodeJobEventRetried) implementsGraphQLInterfacegetNodeNode()                      {}
+func (v *getNodeNodeJobEventRetryFailed) implementsGraphQLInterfacegetNodeNode()                  {}
+func (v *getNodeNodeJobEventTimedOut) implementsGraphQLInterfacegetNodeNode()                     {}
+func (v *getNodeNodeJobTypeBlock) implementsGraphQLInterfacegetNodeNode()                         {}
+func (v *getNodeNodeJobTypeCommand) implementsGraphQLInterfacegetNodeNode()                       {}
+func (v *getNodeNodeJobTypeTrigger) implementsGraphQLInterfacegetNodeNode()                       {}
+func (v *getNodeNodeJobTypeWait) implementsGraphQLInterfacegetNodeNode()                          {}
+func (v *getNodeNodeNotificationServiceSlack) implementsGraphQLInterfacegetNodeNode()             {}
+func (v *getNodeNodeOrganization) implementsGraphQLInterfacegetNodeNode()                         {}
+func (v *getNodeNodeOrganizationBanner) implementsGraphQLInterfacegetNodeNode()                   {}
+func (v *getNodeNodeOrganizationInvitation) implementsGraphQLInterfacegetNodeNode()               {}
+func (v *getNodeNodeOrganizationMember) implementsGraphQLInterfacegetNodeNode()                   {}
+func (v *getNodeNodeOrganizationRepositoryProviderGitHub) implementsGraphQLInterfacegetNodeNode() {}
+func (v *getNodeNodeOrganizationRepositoryProviderGitHubEnterpriseServer) implementsGraphQLInterfacegetNodeNode() {
+}
+func (v *getNodeNodePipeline) implementsGraphQLInterfacegetNodeNode()                {}
+func (v *getNodeNodePipelineMetric) implementsGraphQLInterfacegetNodeNode()          {}
+func (v *getNodeNodePipelineSchedule) implementsGraphQLInterfacegetNodeNode()        {}
+func (v *getNodeNodePipelineTemplate) implementsGraphQLInterfacegetNodeNode()        {}
+func (v *getNodeNodeRegistry) implementsGraphQLInterfacegetNodeNode()                {}
+func (v *getNodeNodeRegistryToken) implementsGraphQLInterfacegetNodeNode()           {}
+func (v *getNodeNodeRule) implementsGraphQLInterfacegetNodeNode()                    {}
+func (v *getNodeNodeSSOProviderGitHubApp) implementsGraphQLInterfacegetNodeNode()    {}
+func (v *getNodeNodeSSOProviderGoogleGSuite) implementsGraphQLInterfacegetNodeNode() {}
+func (v *getNodeNodeSSOProviderSAML) implementsGraphQLInterfacegetNodeNode()         {}
+func (v *getNodeNodeSecret) implementsGraphQLInterfacegetNodeNode()                  {}
+func (v *getNodeNodeSuite) implementsGraphQLInterfacegetNodeNode()                   {}
+func (v *getNodeNodeTeam) implementsGraphQLInterfacegetNodeNode()                    {}
+func (v *getNodeNodeTeamMember) implementsGraphQLInterfacegetNodeNode()              {}
+func (v *getNodeNodeTeamPipeline) implementsGraphQLInterfacegetNodeNode()            {}
+func (v *getNodeNodeTeamRegistry) implementsGraphQLInterfacegetNodeNode()            {}
+func (v *getNodeNodeTeamSuite) implementsGraphQLInterfacegetNodeNode()               {}
+func (v *getNodeNodeUser) implementsGraphQLInterfacegetNodeNode()                    {}
+func (v *getNodeNodeViewer) implementsGraphQLInterfacegetNodeNode()                  {}
 
 func __unmarshalgetNodeNode(b []byte, v *getNodeNode) error {
 	if string(b) == "null" {
@@ -5089,6 +5164,12 @@ func __unmarshalgetNodeNode(b []byte, v *getNodeNode) error {
 		return json.Unmarshal(b, *v)
 	case "OrganizationMember":
 		*v = new(getNodeNodeOrganizationMember)
+		return json.Unmarshal(b, *v)
+	case "OrganizationRepositoryProviderGitHub":
+		*v = new(getNodeNodeOrganizationRepositoryProviderGitHub)
+		return json.Unmarshal(b, *v)
+	case "OrganizationRepositoryProviderGitHubEnterpriseServer":
+		*v = new(getNodeNodeOrganizationRepositoryProviderGitHubEnterpriseServer)
 		return json.Unmarshal(b, *v)
 	case "Pipeline":
 		*v = new(getNodeNodePipeline)
@@ -5466,6 +5547,22 @@ func __marshalgetNodeNode(v *getNodeNode) ([]byte, error) {
 		result := struct {
 			TypeName string `json:"__typename"`
 			*getNodeNodeOrganizationMember
+		}{typename, v}
+		return json.Marshal(result)
+	case *getNodeNodeOrganizationRepositoryProviderGitHub:
+		typename = "OrganizationRepositoryProviderGitHub"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getNodeNodeOrganizationRepositoryProviderGitHub
+		}{typename, v}
+		return json.Marshal(result)
+	case *getNodeNodeOrganizationRepositoryProviderGitHubEnterpriseServer:
+		typename = "OrganizationRepositoryProviderGitHubEnterpriseServer"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getNodeNodeOrganizationRepositoryProviderGitHubEnterpriseServer
 		}{typename, v}
 		return json.Marshal(result)
 	case *getNodeNodePipeline:
@@ -6156,6 +6253,30 @@ type getNodeNodeOrganizationMember struct {
 
 // GetTypename returns getNodeNodeOrganizationMember.Typename, and is useful for accessing the field via an interface.
 func (v *getNodeNodeOrganizationMember) GetTypename() string { return v.Typename }
+
+// getNodeNodeOrganizationRepositoryProviderGitHub includes the requested fields of the GraphQL type OrganizationRepositoryProviderGitHub.
+// The GraphQL type's documentation follows.
+//
+// GitHub installation associated with this organization
+type getNodeNodeOrganizationRepositoryProviderGitHub struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getNodeNodeOrganizationRepositoryProviderGitHub.Typename, and is useful for accessing the field via an interface.
+func (v *getNodeNodeOrganizationRepositoryProviderGitHub) GetTypename() string { return v.Typename }
+
+// getNodeNodeOrganizationRepositoryProviderGitHubEnterpriseServer includes the requested fields of the GraphQL type OrganizationRepositoryProviderGitHubEnterpriseServer.
+// The GraphQL type's documentation follows.
+//
+// GitHub Enterprise Server associated with this organization
+type getNodeNodeOrganizationRepositoryProviderGitHubEnterpriseServer struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getNodeNodeOrganizationRepositoryProviderGitHubEnterpriseServer.Typename, and is useful for accessing the field via an interface.
+func (v *getNodeNodeOrganizationRepositoryProviderGitHubEnterpriseServer) GetTypename() string {
+	return v.Typename
+}
 
 // getNodeNodePipeline includes the requested fields of the GraphQL type Pipeline.
 // The GraphQL type's documentation follows.
@@ -7984,6 +8105,8 @@ func (v *getPipelineScheduleBySlugResponse) GetPipelineSchedule() getPipelineSch
 // getPipelineScheduleNodeOrganizationBanner
 // getPipelineScheduleNodeOrganizationInvitation
 // getPipelineScheduleNodeOrganizationMember
+// getPipelineScheduleNodeOrganizationRepositoryProviderGitHub
+// getPipelineScheduleNodeOrganizationRepositoryProviderGitHubEnterpriseServer
 // getPipelineScheduleNodePipeline
 // getPipelineScheduleNodePipelineMetric
 // getPipelineScheduleNodePipelineSchedule
@@ -8069,6 +8192,10 @@ func (v *getPipelineScheduleNodeOrganizationBanner) implementsGraphQLInterfacege
 func (v *getPipelineScheduleNodeOrganizationInvitation) implementsGraphQLInterfacegetPipelineScheduleNode() {
 }
 func (v *getPipelineScheduleNodeOrganizationMember) implementsGraphQLInterfacegetPipelineScheduleNode() {
+}
+func (v *getPipelineScheduleNodeOrganizationRepositoryProviderGitHub) implementsGraphQLInterfacegetPipelineScheduleNode() {
+}
+func (v *getPipelineScheduleNodeOrganizationRepositoryProviderGitHubEnterpriseServer) implementsGraphQLInterfacegetPipelineScheduleNode() {
 }
 func (v *getPipelineScheduleNodePipeline) implementsGraphQLInterfacegetPipelineScheduleNode()       {}
 func (v *getPipelineScheduleNodePipelineMetric) implementsGraphQLInterfacegetPipelineScheduleNode() {}
@@ -8222,6 +8349,12 @@ func __unmarshalgetPipelineScheduleNode(b []byte, v *getPipelineScheduleNode) er
 		return json.Unmarshal(b, *v)
 	case "OrganizationMember":
 		*v = new(getPipelineScheduleNodeOrganizationMember)
+		return json.Unmarshal(b, *v)
+	case "OrganizationRepositoryProviderGitHub":
+		*v = new(getPipelineScheduleNodeOrganizationRepositoryProviderGitHub)
+		return json.Unmarshal(b, *v)
+	case "OrganizationRepositoryProviderGitHubEnterpriseServer":
+		*v = new(getPipelineScheduleNodeOrganizationRepositoryProviderGitHubEnterpriseServer)
 		return json.Unmarshal(b, *v)
 	case "Pipeline":
 		*v = new(getPipelineScheduleNodePipeline)
@@ -8595,6 +8728,22 @@ func __marshalgetPipelineScheduleNode(v *getPipelineScheduleNode) ([]byte, error
 		result := struct {
 			TypeName string `json:"__typename"`
 			*getPipelineScheduleNodeOrganizationMember
+		}{typename, v}
+		return json.Marshal(result)
+	case *getPipelineScheduleNodeOrganizationRepositoryProviderGitHub:
+		typename = "OrganizationRepositoryProviderGitHub"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getPipelineScheduleNodeOrganizationRepositoryProviderGitHub
+		}{typename, v}
+		return json.Marshal(result)
+	case *getPipelineScheduleNodeOrganizationRepositoryProviderGitHubEnterpriseServer:
+		typename = "OrganizationRepositoryProviderGitHubEnterpriseServer"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getPipelineScheduleNodeOrganizationRepositoryProviderGitHubEnterpriseServer
 		}{typename, v}
 		return json.Marshal(result)
 	case *getPipelineScheduleNodePipeline:
@@ -9176,6 +9325,32 @@ type getPipelineScheduleNodeOrganizationMember struct {
 
 // GetTypename returns getPipelineScheduleNodeOrganizationMember.Typename, and is useful for accessing the field via an interface.
 func (v *getPipelineScheduleNodeOrganizationMember) GetTypename() string { return v.Typename }
+
+// getPipelineScheduleNodeOrganizationRepositoryProviderGitHub includes the requested fields of the GraphQL type OrganizationRepositoryProviderGitHub.
+// The GraphQL type's documentation follows.
+//
+// GitHub installation associated with this organization
+type getPipelineScheduleNodeOrganizationRepositoryProviderGitHub struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getPipelineScheduleNodeOrganizationRepositoryProviderGitHub.Typename, and is useful for accessing the field via an interface.
+func (v *getPipelineScheduleNodeOrganizationRepositoryProviderGitHub) GetTypename() string {
+	return v.Typename
+}
+
+// getPipelineScheduleNodeOrganizationRepositoryProviderGitHubEnterpriseServer includes the requested fields of the GraphQL type OrganizationRepositoryProviderGitHubEnterpriseServer.
+// The GraphQL type's documentation follows.
+//
+// GitHub Enterprise Server associated with this organization
+type getPipelineScheduleNodeOrganizationRepositoryProviderGitHubEnterpriseServer struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getPipelineScheduleNodeOrganizationRepositoryProviderGitHubEnterpriseServer.Typename, and is useful for accessing the field via an interface.
+func (v *getPipelineScheduleNodeOrganizationRepositoryProviderGitHubEnterpriseServer) GetTypename() string {
+	return v.Typename
+}
 
 // getPipelineScheduleNodePipeline includes the requested fields of the GraphQL type Pipeline.
 // The GraphQL type's documentation follows.
@@ -10352,6 +10527,8 @@ func (v *getTestSuiteSuiteJobTypeWait) GetTypename() string { return v.Typename 
 // getTestSuiteSuiteOrganizationBanner
 // getTestSuiteSuiteOrganizationInvitation
 // getTestSuiteSuiteOrganizationMember
+// getTestSuiteSuiteOrganizationRepositoryProviderGitHub
+// getTestSuiteSuiteOrganizationRepositoryProviderGitHubEnterpriseServer
 // getTestSuiteSuitePipeline
 // getTestSuiteSuitePipelineMetric
 // getTestSuiteSuitePipelineSchedule
@@ -10421,14 +10598,18 @@ func (v *getTestSuiteSuiteOrganization) implementsGraphQLInterfacegetTestSuiteSu
 func (v *getTestSuiteSuiteOrganizationBanner) implementsGraphQLInterfacegetTestSuiteSuiteNode()     {}
 func (v *getTestSuiteSuiteOrganizationInvitation) implementsGraphQLInterfacegetTestSuiteSuiteNode() {}
 func (v *getTestSuiteSuiteOrganizationMember) implementsGraphQLInterfacegetTestSuiteSuiteNode()     {}
-func (v *getTestSuiteSuitePipeline) implementsGraphQLInterfacegetTestSuiteSuiteNode()               {}
-func (v *getTestSuiteSuitePipelineMetric) implementsGraphQLInterfacegetTestSuiteSuiteNode()         {}
-func (v *getTestSuiteSuitePipelineSchedule) implementsGraphQLInterfacegetTestSuiteSuiteNode()       {}
-func (v *getTestSuiteSuitePipelineTemplate) implementsGraphQLInterfacegetTestSuiteSuiteNode()       {}
-func (v *getTestSuiteSuiteRegistry) implementsGraphQLInterfacegetTestSuiteSuiteNode()               {}
-func (v *getTestSuiteSuiteRegistryToken) implementsGraphQLInterfacegetTestSuiteSuiteNode()          {}
-func (v *getTestSuiteSuiteRule) implementsGraphQLInterfacegetTestSuiteSuiteNode()                   {}
-func (v *getTestSuiteSuiteSSOProviderGitHubApp) implementsGraphQLInterfacegetTestSuiteSuiteNode()   {}
+func (v *getTestSuiteSuiteOrganizationRepositoryProviderGitHub) implementsGraphQLInterfacegetTestSuiteSuiteNode() {
+}
+func (v *getTestSuiteSuiteOrganizationRepositoryProviderGitHubEnterpriseServer) implementsGraphQLInterfacegetTestSuiteSuiteNode() {
+}
+func (v *getTestSuiteSuitePipeline) implementsGraphQLInterfacegetTestSuiteSuiteNode()             {}
+func (v *getTestSuiteSuitePipelineMetric) implementsGraphQLInterfacegetTestSuiteSuiteNode()       {}
+func (v *getTestSuiteSuitePipelineSchedule) implementsGraphQLInterfacegetTestSuiteSuiteNode()     {}
+func (v *getTestSuiteSuitePipelineTemplate) implementsGraphQLInterfacegetTestSuiteSuiteNode()     {}
+func (v *getTestSuiteSuiteRegistry) implementsGraphQLInterfacegetTestSuiteSuiteNode()             {}
+func (v *getTestSuiteSuiteRegistryToken) implementsGraphQLInterfacegetTestSuiteSuiteNode()        {}
+func (v *getTestSuiteSuiteRule) implementsGraphQLInterfacegetTestSuiteSuiteNode()                 {}
+func (v *getTestSuiteSuiteSSOProviderGitHubApp) implementsGraphQLInterfacegetTestSuiteSuiteNode() {}
 func (v *getTestSuiteSuiteSSOProviderGoogleGSuite) implementsGraphQLInterfacegetTestSuiteSuiteNode() {
 }
 func (v *getTestSuiteSuiteSSOProviderSAML) implementsGraphQLInterfacegetTestSuiteSuiteNode() {}
@@ -10569,6 +10750,12 @@ func __unmarshalgetTestSuiteSuiteNode(b []byte, v *getTestSuiteSuiteNode) error 
 		return json.Unmarshal(b, *v)
 	case "OrganizationMember":
 		*v = new(getTestSuiteSuiteOrganizationMember)
+		return json.Unmarshal(b, *v)
+	case "OrganizationRepositoryProviderGitHub":
+		*v = new(getTestSuiteSuiteOrganizationRepositoryProviderGitHub)
+		return json.Unmarshal(b, *v)
+	case "OrganizationRepositoryProviderGitHubEnterpriseServer":
+		*v = new(getTestSuiteSuiteOrganizationRepositoryProviderGitHubEnterpriseServer)
 		return json.Unmarshal(b, *v)
 	case "Pipeline":
 		*v = new(getTestSuiteSuitePipeline)
@@ -10944,6 +11131,22 @@ func __marshalgetTestSuiteSuiteNode(v *getTestSuiteSuiteNode) ([]byte, error) {
 			*getTestSuiteSuiteOrganizationMember
 		}{typename, v}
 		return json.Marshal(result)
+	case *getTestSuiteSuiteOrganizationRepositoryProviderGitHub:
+		typename = "OrganizationRepositoryProviderGitHub"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getTestSuiteSuiteOrganizationRepositoryProviderGitHub
+		}{typename, v}
+		return json.Marshal(result)
+	case *getTestSuiteSuiteOrganizationRepositoryProviderGitHubEnterpriseServer:
+		typename = "OrganizationRepositoryProviderGitHubEnterpriseServer"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getTestSuiteSuiteOrganizationRepositoryProviderGitHubEnterpriseServer
+		}{typename, v}
+		return json.Marshal(result)
 	case *getTestSuiteSuitePipeline:
 		typename = "Pipeline"
 
@@ -11158,6 +11361,32 @@ type getTestSuiteSuiteOrganizationMember struct {
 
 // GetTypename returns getTestSuiteSuiteOrganizationMember.Typename, and is useful for accessing the field via an interface.
 func (v *getTestSuiteSuiteOrganizationMember) GetTypename() string { return v.Typename }
+
+// getTestSuiteSuiteOrganizationRepositoryProviderGitHub includes the requested fields of the GraphQL type OrganizationRepositoryProviderGitHub.
+// The GraphQL type's documentation follows.
+//
+// GitHub installation associated with this organization
+type getTestSuiteSuiteOrganizationRepositoryProviderGitHub struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getTestSuiteSuiteOrganizationRepositoryProviderGitHub.Typename, and is useful for accessing the field via an interface.
+func (v *getTestSuiteSuiteOrganizationRepositoryProviderGitHub) GetTypename() string {
+	return v.Typename
+}
+
+// getTestSuiteSuiteOrganizationRepositoryProviderGitHubEnterpriseServer includes the requested fields of the GraphQL type OrganizationRepositoryProviderGitHubEnterpriseServer.
+// The GraphQL type's documentation follows.
+//
+// GitHub Enterprise Server associated with this organization
+type getTestSuiteSuiteOrganizationRepositoryProviderGitHubEnterpriseServer struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getTestSuiteSuiteOrganizationRepositoryProviderGitHubEnterpriseServer.Typename, and is useful for accessing the field via an interface.
+func (v *getTestSuiteSuiteOrganizationRepositoryProviderGitHubEnterpriseServer) GetTypename() string {
+	return v.Typename
+}
 
 // getTestSuiteSuitePipeline includes the requested fields of the GraphQL type Pipeline.
 // The GraphQL type's documentation follows.
@@ -11417,6 +11646,31 @@ type getTestSuiteSuiteViewer struct {
 // GetTypename returns getTestSuiteSuiteViewer.Typename, and is useful for accessing the field via an interface.
 func (v *getTestSuiteSuiteViewer) GetTypename() string { return v.Typename }
 
+// pauseDispatchClusterQueueClusterQueuePauseDispatchClusterQueuePauseDispatchPayload includes the requested fields of the GraphQL type ClusterQueuePauseDispatchPayload.
+// The GraphQL type's documentation follows.
+//
+// Autogenerated return type of ClusterQueuePauseDispatch.
+type pauseDispatchClusterQueueClusterQueuePauseDispatchClusterQueuePauseDispatchPayload struct {
+	// A unique identifier for the client performing the mutation.
+	ClientMutationId string `json:"clientMutationId"`
+}
+
+// GetClientMutationId returns pauseDispatchClusterQueueClusterQueuePauseDispatchClusterQueuePauseDispatchPayload.ClientMutationId, and is useful for accessing the field via an interface.
+func (v *pauseDispatchClusterQueueClusterQueuePauseDispatchClusterQueuePauseDispatchPayload) GetClientMutationId() string {
+	return v.ClientMutationId
+}
+
+// pauseDispatchClusterQueueResponse is returned by pauseDispatchClusterQueue on success.
+type pauseDispatchClusterQueueResponse struct {
+	// This will prevent dispatch of jobs to agents on this queue. You can add an optional note describing the reason for pausing.
+	ClusterQueuePauseDispatch pauseDispatchClusterQueueClusterQueuePauseDispatchClusterQueuePauseDispatchPayload `json:"clusterQueuePauseDispatch"`
+}
+
+// GetClusterQueuePauseDispatch returns pauseDispatchClusterQueueResponse.ClusterQueuePauseDispatch, and is useful for accessing the field via an interface.
+func (v *pauseDispatchClusterQueueResponse) GetClusterQueuePauseDispatch() pauseDispatchClusterQueueClusterQueuePauseDispatchClusterQueuePauseDispatchPayload {
+	return v.ClusterQueuePauseDispatch
+}
+
 // removeClusterDefaultQueueClusterUpdateClusterUpdatePayload includes the requested fields of the GraphQL type ClusterUpdatePayload.
 // The GraphQL type's documentation follows.
 //
@@ -11566,6 +11820,31 @@ type removeClusterDefaultQueueResponse struct {
 // GetClusterUpdate returns removeClusterDefaultQueueResponse.ClusterUpdate, and is useful for accessing the field via an interface.
 func (v *removeClusterDefaultQueueResponse) GetClusterUpdate() removeClusterDefaultQueueClusterUpdateClusterUpdatePayload {
 	return v.ClusterUpdate
+}
+
+// resumeDispatchClusterQueueClusterQueueResumeDispatchClusterQueueResumeDispatchPayload includes the requested fields of the GraphQL type ClusterQueueResumeDispatchPayload.
+// The GraphQL type's documentation follows.
+//
+// Autogenerated return type of ClusterQueueResumeDispatch.
+type resumeDispatchClusterQueueClusterQueueResumeDispatchClusterQueueResumeDispatchPayload struct {
+	// A unique identifier for the client performing the mutation.
+	ClientMutationId string `json:"clientMutationId"`
+}
+
+// GetClientMutationId returns resumeDispatchClusterQueueClusterQueueResumeDispatchClusterQueueResumeDispatchPayload.ClientMutationId, and is useful for accessing the field via an interface.
+func (v *resumeDispatchClusterQueueClusterQueueResumeDispatchClusterQueueResumeDispatchPayload) GetClientMutationId() string {
+	return v.ClientMutationId
+}
+
+// resumeDispatchClusterQueueResponse is returned by resumeDispatchClusterQueue on success.
+type resumeDispatchClusterQueueResponse struct {
+	// This will resume dispatch of jobs on this queue.
+	ClusterQueueResumeDispatch resumeDispatchClusterQueueClusterQueueResumeDispatchClusterQueueResumeDispatchPayload `json:"clusterQueueResumeDispatch"`
+}
+
+// GetClusterQueueResumeDispatch returns resumeDispatchClusterQueueResponse.ClusterQueueResumeDispatch, and is useful for accessing the field via an interface.
+func (v *resumeDispatchClusterQueueResponse) GetClusterQueueResumeDispatch() resumeDispatchClusterQueueClusterQueueResumeDispatchClusterQueueResumeDispatchPayload {
+	return v.ClusterQueueResumeDispatch
 }
 
 // revokeAgentTokenAgentTokenRevokeAgentTokenRevokePayload includes the requested fields of the GraphQL type AgentTokenRevokePayload.
@@ -12453,6 +12732,34 @@ func (v *updateClusterQueueClusterQueueUpdateClusterQueueUpdatePayload) GetClust
 // updateClusterQueueClusterQueueUpdateClusterQueueUpdatePayloadClusterQueue includes the requested fields of the GraphQL type ClusterQueue.
 type updateClusterQueueClusterQueueUpdateClusterQueueUpdatePayloadClusterQueue struct {
 	ClusterQueueValues `json:"-"`
+	// States whether job dispatch is paused for this cluster queue
+	DispatchPaused bool `json:"dispatchPaused"`
+	// The time this queue was paused
+	DispatchPausedAt *time.Time `json:"dispatchPausedAt"`
+	// The user who paused this cluster queue
+	DispatchPausedBy *updateClusterQueueClusterQueueUpdateClusterQueueUpdatePayloadClusterQueueDispatchPausedByUser `json:"dispatchPausedBy"`
+	// Note describing why job dispatch was paused for this cluster queue
+	DispatchPausedNote *string `json:"dispatchPausedNote"`
+}
+
+// GetDispatchPaused returns updateClusterQueueClusterQueueUpdateClusterQueueUpdatePayloadClusterQueue.DispatchPaused, and is useful for accessing the field via an interface.
+func (v *updateClusterQueueClusterQueueUpdateClusterQueueUpdatePayloadClusterQueue) GetDispatchPaused() bool {
+	return v.DispatchPaused
+}
+
+// GetDispatchPausedAt returns updateClusterQueueClusterQueueUpdateClusterQueueUpdatePayloadClusterQueue.DispatchPausedAt, and is useful for accessing the field via an interface.
+func (v *updateClusterQueueClusterQueueUpdateClusterQueueUpdatePayloadClusterQueue) GetDispatchPausedAt() *time.Time {
+	return v.DispatchPausedAt
+}
+
+// GetDispatchPausedBy returns updateClusterQueueClusterQueueUpdateClusterQueueUpdatePayloadClusterQueue.DispatchPausedBy, and is useful for accessing the field via an interface.
+func (v *updateClusterQueueClusterQueueUpdateClusterQueueUpdatePayloadClusterQueue) GetDispatchPausedBy() *updateClusterQueueClusterQueueUpdateClusterQueueUpdatePayloadClusterQueueDispatchPausedByUser {
+	return v.DispatchPausedBy
+}
+
+// GetDispatchPausedNote returns updateClusterQueueClusterQueueUpdateClusterQueueUpdatePayloadClusterQueue.DispatchPausedNote, and is useful for accessing the field via an interface.
+func (v *updateClusterQueueClusterQueueUpdateClusterQueueUpdatePayloadClusterQueue) GetDispatchPausedNote() *string {
+	return v.DispatchPausedNote
 }
 
 // GetId returns updateClusterQueueClusterQueueUpdateClusterQueueUpdatePayloadClusterQueue.Id, and is useful for accessing the field via an interface.
@@ -12506,6 +12813,14 @@ func (v *updateClusterQueueClusterQueueUpdateClusterQueueUpdatePayloadClusterQue
 }
 
 type __premarshalupdateClusterQueueClusterQueueUpdateClusterQueueUpdatePayloadClusterQueue struct {
+	DispatchPaused bool `json:"dispatchPaused"`
+
+	DispatchPausedAt *time.Time `json:"dispatchPausedAt"`
+
+	DispatchPausedBy *updateClusterQueueClusterQueueUpdateClusterQueueUpdatePayloadClusterQueueDispatchPausedByUser `json:"dispatchPausedBy"`
+
+	DispatchPausedNote *string `json:"dispatchPausedNote"`
+
 	Id string `json:"id"`
 
 	Uuid string `json:"uuid"`
@@ -12528,12 +12843,29 @@ func (v *updateClusterQueueClusterQueueUpdateClusterQueueUpdatePayloadClusterQue
 func (v *updateClusterQueueClusterQueueUpdateClusterQueueUpdatePayloadClusterQueue) __premarshalJSON() (*__premarshalupdateClusterQueueClusterQueueUpdateClusterQueueUpdatePayloadClusterQueue, error) {
 	var retval __premarshalupdateClusterQueueClusterQueueUpdateClusterQueueUpdatePayloadClusterQueue
 
+	retval.DispatchPaused = v.DispatchPaused
+	retval.DispatchPausedAt = v.DispatchPausedAt
+	retval.DispatchPausedBy = v.DispatchPausedBy
+	retval.DispatchPausedNote = v.DispatchPausedNote
 	retval.Id = v.ClusterQueueValues.Id
 	retval.Uuid = v.ClusterQueueValues.Uuid
 	retval.Key = v.ClusterQueueValues.Key
 	retval.Description = v.ClusterQueueValues.Description
 	retval.Cluster = v.ClusterQueueValues.Cluster
 	return &retval, nil
+}
+
+// updateClusterQueueClusterQueueUpdateClusterQueueUpdatePayloadClusterQueueDispatchPausedByUser includes the requested fields of the GraphQL type User.
+// The GraphQL type's documentation follows.
+//
+// A user
+type updateClusterQueueClusterQueueUpdateClusterQueueUpdatePayloadClusterQueueDispatchPausedByUser struct {
+	Id string `json:"id"`
+}
+
+// GetId returns updateClusterQueueClusterQueueUpdateClusterQueueUpdatePayloadClusterQueueDispatchPausedByUser.Id, and is useful for accessing the field via an interface.
+func (v *updateClusterQueueClusterQueueUpdateClusterQueueUpdatePayloadClusterQueueDispatchPausedByUser) GetId() string {
+	return v.Id
 }
 
 // updateClusterQueueResponse is returned by updateClusterQueue on success.
@@ -14727,10 +15059,16 @@ const getClusterQueues_Operation = `
 query getClusterQueues ($orgSlug: ID!, $id: ID!) {
 	organization(slug: $orgSlug) {
 		cluster(id: $id) {
-			queues(first: 100) {
+			queues(first: 50) {
 				edges {
 					node {
 						... ClusterQueueValues
+						dispatchPaused
+						dispatchPausedAt
+						dispatchPausedBy {
+							id
+						}
+						dispatchPausedNote
 					}
 				}
 			}
@@ -15488,6 +15826,41 @@ func getTestSuite(
 	return &data_, err_
 }
 
+// The query or mutation executed by pauseDispatchClusterQueue.
+const pauseDispatchClusterQueue_Operation = `
+mutation pauseDispatchClusterQueue ($id: ID!) {
+	clusterQueuePauseDispatch(input: {id:$id}) {
+		clientMutationId
+	}
+}
+`
+
+func pauseDispatchClusterQueue(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	id string,
+) (*pauseDispatchClusterQueueResponse, error) {
+	req_ := &graphql.Request{
+		OpName: "pauseDispatchClusterQueue",
+		Query:  pauseDispatchClusterQueue_Operation,
+		Variables: &__pauseDispatchClusterQueueInput{
+			Id: id,
+		},
+	}
+	var err_ error
+
+	var data_ pauseDispatchClusterQueueResponse
+	resp_ := &graphql.Response{Data: &data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return &data_, err_
+}
+
 // The query or mutation executed by removeClusterDefaultQueue.
 const removeClusterDefaultQueue_Operation = `
 mutation removeClusterDefaultQueue ($organizationId: ID!, $clusterId: ID!) {
@@ -15535,6 +15908,41 @@ func removeClusterDefaultQueue(
 	var err_ error
 
 	var data_ removeClusterDefaultQueueResponse
+	resp_ := &graphql.Response{Data: &data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return &data_, err_
+}
+
+// The query or mutation executed by resumeDispatchClusterQueue.
+const resumeDispatchClusterQueue_Operation = `
+mutation resumeDispatchClusterQueue ($id: ID!) {
+	clusterQueueResumeDispatch(input: {id:$id}) {
+		clientMutationId
+	}
+}
+`
+
+func resumeDispatchClusterQueue(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	id string,
+) (*resumeDispatchClusterQueueResponse, error) {
+	req_ := &graphql.Request{
+		OpName: "resumeDispatchClusterQueue",
+		Query:  resumeDispatchClusterQueue_Operation,
+		Variables: &__resumeDispatchClusterQueueInput{
+			Id: id,
+		},
+	}
+	var err_ error
+
+	var data_ resumeDispatchClusterQueueResponse
 	resp_ := &graphql.Response{Data: &data_}
 
 	err_ = client_.MakeRequest(
@@ -16043,6 +16451,12 @@ mutation updateClusterQueue ($organizationId: ID!, $id: ID!, $description: Strin
 	clusterQueueUpdate(input: {organizationId:$organizationId,id:$id,description:$description}) {
 		clusterQueue {
 			... ClusterQueueValues
+			dispatchPaused
+			dispatchPausedAt
+			dispatchPausedBy {
+				id
+			}
+			dispatchPausedNote
 		}
 	}
 }

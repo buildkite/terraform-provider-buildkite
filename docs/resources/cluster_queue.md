@@ -31,6 +31,8 @@ resource "buildkite_pipeline" "monolith" {
 resource "buildkite_cluster_queue" "default" {
   cluster_id = buildkite_cluster.primary.id
   key        = "default"
+  # Pause dispatch to this queue after create
+  dispatch_paused = true
 }
 ```
 
@@ -45,6 +47,7 @@ resource "buildkite_cluster_queue" "default" {
 ### Optional
 
 - `description` (String) A description for the cluster queue.
+- `dispatch_paused` (Boolean) Set whether or not dispatch to this queue is paused.
 
 ### Read-Only
 

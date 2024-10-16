@@ -92,7 +92,7 @@ func TestAccBuildkiteClusterQueueResource(t *testing.T) {
 			resource.TestCheckResourceAttr("buildkite_cluster_queue.foobar", "description", fmt.Sprintf("Acceptance test %s", queueDesc)),
 		)
 
-		ckecUpdated := resource.ComposeAggregateTestCheckFunc(
+		checkUpdated := resource.ComposeAggregateTestCheckFunc(
 			// Confirm the cluster queue exists in the buildkite API
 			testAccCheckClusterQueueExists("buildkite_cluster_queue.foobar", &cq),
 			// Confirm the cluster queue has the correct values in Buildkite's system
@@ -113,7 +113,9 @@ func TestAccBuildkiteClusterQueueResource(t *testing.T) {
 				},
 				{
 					Config: configBasic(clusterName, queueKey, updatedQueueDesc),
-					Check:  ckecUpdated,
+					Check:  checkUpdated,
+					// Destroying a queue will pause its dispatch
+					ExpectNonEmptyPlan: true,
 				},
 			},
 		})
@@ -173,7 +175,6 @@ func testAccCheckClusterQueueExists(resourceName string, clusterQueueResourceMod
 			getenv("BUILDKITE_ORGANIZATION_SLUG"),
 			resourceState.Primary.Attributes["cluster_uuid"],
 		)
-
 		// If cluster queues were not able to be fetched by Genqlient
 		if err != nil {
 			return fmt.Errorf("Error fetching Cluster queues from graphql API: %v", err)
@@ -198,7 +199,6 @@ func testAccCheckClusterQueueExists(resourceName string, clusterQueueResourceMod
 
 func testAccCheckClusterQueueRemoteValues(cq *clusterQueueResourceModel, description, key string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
-
 		if cq.Key.ValueString() != key {
 			return fmt.Errorf("Remote Cluster queue key (%s) doesn't match expected value (%s)", cq.Key, key)
 		}
