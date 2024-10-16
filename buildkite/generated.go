@@ -288,6 +288,338 @@ func (v *OrganizationBannerFields) GetUuid() string { return v.Uuid }
 // GetMessage returns OrganizationBannerFields.Message, and is useful for accessing the field via an interface.
 func (v *OrganizationBannerFields) GetMessage() string { return v.Message }
 
+// OrganizationRuleFields includes the GraphQL fields of Rule requested by the fragment OrganizationRuleFields.
+type OrganizationRuleFields struct {
+	Id string `json:"id"`
+	// The public UUID for the rule
+	Uuid string `json:"uuid"`
+	// Description of the rule
+	Description *string `json:"description"`
+	// A formatted JSON document of the Rule
+	Document string `json:"document"`
+	// The type of rule
+	Type string `json:"type"`
+	// Source type for the rule
+	SourceType RuleSourceType `json:"sourceType"`
+	// Target type for the rule
+	TargetType RuleTargetType `json:"targetType"`
+	// Effect for the rule
+	Effect RuleEffect `json:"effect"`
+	// Action for the rule
+	Action RuleAction `json:"action"`
+	// The source for the rule
+	Source OrganizationRuleFieldsSourceRuleSource `json:"-"`
+	// The target for the rule
+	Target OrganizationRuleFieldsTargetRuleTarget `json:"-"`
+}
+
+// GetId returns OrganizationRuleFields.Id, and is useful for accessing the field via an interface.
+func (v *OrganizationRuleFields) GetId() string { return v.Id }
+
+// GetUuid returns OrganizationRuleFields.Uuid, and is useful for accessing the field via an interface.
+func (v *OrganizationRuleFields) GetUuid() string { return v.Uuid }
+
+// GetDescription returns OrganizationRuleFields.Description, and is useful for accessing the field via an interface.
+func (v *OrganizationRuleFields) GetDescription() *string { return v.Description }
+
+// GetDocument returns OrganizationRuleFields.Document, and is useful for accessing the field via an interface.
+func (v *OrganizationRuleFields) GetDocument() string { return v.Document }
+
+// GetType returns OrganizationRuleFields.Type, and is useful for accessing the field via an interface.
+func (v *OrganizationRuleFields) GetType() string { return v.Type }
+
+// GetSourceType returns OrganizationRuleFields.SourceType, and is useful for accessing the field via an interface.
+func (v *OrganizationRuleFields) GetSourceType() RuleSourceType { return v.SourceType }
+
+// GetTargetType returns OrganizationRuleFields.TargetType, and is useful for accessing the field via an interface.
+func (v *OrganizationRuleFields) GetTargetType() RuleTargetType { return v.TargetType }
+
+// GetEffect returns OrganizationRuleFields.Effect, and is useful for accessing the field via an interface.
+func (v *OrganizationRuleFields) GetEffect() RuleEffect { return v.Effect }
+
+// GetAction returns OrganizationRuleFields.Action, and is useful for accessing the field via an interface.
+func (v *OrganizationRuleFields) GetAction() RuleAction { return v.Action }
+
+// GetSource returns OrganizationRuleFields.Source, and is useful for accessing the field via an interface.
+func (v *OrganizationRuleFields) GetSource() OrganizationRuleFieldsSourceRuleSource { return v.Source }
+
+// GetTarget returns OrganizationRuleFields.Target, and is useful for accessing the field via an interface.
+func (v *OrganizationRuleFields) GetTarget() OrganizationRuleFieldsTargetRuleTarget { return v.Target }
+
+func (v *OrganizationRuleFields) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*OrganizationRuleFields
+		Source json.RawMessage `json:"source"`
+		Target json.RawMessage `json:"target"`
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.OrganizationRuleFields = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	{
+		dst := &v.Source
+		src := firstPass.Source
+		if len(src) != 0 && string(src) != "null" {
+			err = __unmarshalOrganizationRuleFieldsSourceRuleSource(
+				src, dst)
+			if err != nil {
+				return fmt.Errorf(
+					"unable to unmarshal OrganizationRuleFields.Source: %w", err)
+			}
+		}
+	}
+
+	{
+		dst := &v.Target
+		src := firstPass.Target
+		if len(src) != 0 && string(src) != "null" {
+			err = __unmarshalOrganizationRuleFieldsTargetRuleTarget(
+				src, dst)
+			if err != nil {
+				return fmt.Errorf(
+					"unable to unmarshal OrganizationRuleFields.Target: %w", err)
+			}
+		}
+	}
+	return nil
+}
+
+type __premarshalOrganizationRuleFields struct {
+	Id string `json:"id"`
+
+	Uuid string `json:"uuid"`
+
+	Description *string `json:"description"`
+
+	Document string `json:"document"`
+
+	Type string `json:"type"`
+
+	SourceType RuleSourceType `json:"sourceType"`
+
+	TargetType RuleTargetType `json:"targetType"`
+
+	Effect RuleEffect `json:"effect"`
+
+	Action RuleAction `json:"action"`
+
+	Source json.RawMessage `json:"source"`
+
+	Target json.RawMessage `json:"target"`
+}
+
+func (v *OrganizationRuleFields) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *OrganizationRuleFields) __premarshalJSON() (*__premarshalOrganizationRuleFields, error) {
+	var retval __premarshalOrganizationRuleFields
+
+	retval.Id = v.Id
+	retval.Uuid = v.Uuid
+	retval.Description = v.Description
+	retval.Document = v.Document
+	retval.Type = v.Type
+	retval.SourceType = v.SourceType
+	retval.TargetType = v.TargetType
+	retval.Effect = v.Effect
+	retval.Action = v.Action
+	{
+
+		dst := &retval.Source
+		src := v.Source
+		var err error
+		*dst, err = __marshalOrganizationRuleFieldsSourceRuleSource(
+			&src)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"unable to marshal OrganizationRuleFields.Source: %w", err)
+		}
+	}
+	{
+
+		dst := &retval.Target
+		src := v.Target
+		var err error
+		*dst, err = __marshalOrganizationRuleFieldsTargetRuleTarget(
+			&src)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"unable to marshal OrganizationRuleFields.Target: %w", err)
+		}
+	}
+	return &retval, nil
+}
+
+// OrganizationRuleFieldsSourcePipeline includes the requested fields of the GraphQL type Pipeline.
+// The GraphQL type's documentation follows.
+//
+// A pipeline
+type OrganizationRuleFieldsSourcePipeline struct {
+	Typename string `json:"__typename"`
+	// The UUID of the pipeline
+	Uuid string `json:"uuid"`
+}
+
+// GetTypename returns OrganizationRuleFieldsSourcePipeline.Typename, and is useful for accessing the field via an interface.
+func (v *OrganizationRuleFieldsSourcePipeline) GetTypename() string { return v.Typename }
+
+// GetUuid returns OrganizationRuleFieldsSourcePipeline.Uuid, and is useful for accessing the field via an interface.
+func (v *OrganizationRuleFieldsSourcePipeline) GetUuid() string { return v.Uuid }
+
+// OrganizationRuleFieldsSourceRuleSource includes the requested fields of the GraphQL interface RuleSource.
+//
+// OrganizationRuleFieldsSourceRuleSource is implemented by the following types:
+// OrganizationRuleFieldsSourcePipeline
+// The GraphQL type's documentation follows.
+//
+// Kinds of sources for a rule
+type OrganizationRuleFieldsSourceRuleSource interface {
+	implementsGraphQLInterfaceOrganizationRuleFieldsSourceRuleSource()
+	// GetTypename returns the receiver's concrete GraphQL type-name (see interface doc for possible values).
+	GetTypename() string
+}
+
+func (v *OrganizationRuleFieldsSourcePipeline) implementsGraphQLInterfaceOrganizationRuleFieldsSourceRuleSource() {
+}
+
+func __unmarshalOrganizationRuleFieldsSourceRuleSource(b []byte, v *OrganizationRuleFieldsSourceRuleSource) error {
+	if string(b) == "null" {
+		return nil
+	}
+
+	var tn struct {
+		TypeName string `json:"__typename"`
+	}
+	err := json.Unmarshal(b, &tn)
+	if err != nil {
+		return err
+	}
+
+	switch tn.TypeName {
+	case "Pipeline":
+		*v = new(OrganizationRuleFieldsSourcePipeline)
+		return json.Unmarshal(b, *v)
+	case "":
+		return fmt.Errorf(
+			"response was missing RuleSource.__typename")
+	default:
+		return fmt.Errorf(
+			`unexpected concrete type for OrganizationRuleFieldsSourceRuleSource: "%v"`, tn.TypeName)
+	}
+}
+
+func __marshalOrganizationRuleFieldsSourceRuleSource(v *OrganizationRuleFieldsSourceRuleSource) ([]byte, error) {
+
+	var typename string
+	switch v := (*v).(type) {
+	case *OrganizationRuleFieldsSourcePipeline:
+		typename = "Pipeline"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*OrganizationRuleFieldsSourcePipeline
+		}{typename, v}
+		return json.Marshal(result)
+	case nil:
+		return []byte("null"), nil
+	default:
+		return nil, fmt.Errorf(
+			`unexpected concrete type for OrganizationRuleFieldsSourceRuleSource: "%T"`, v)
+	}
+}
+
+// OrganizationRuleFieldsTargetPipeline includes the requested fields of the GraphQL type Pipeline.
+// The GraphQL type's documentation follows.
+//
+// A pipeline
+type OrganizationRuleFieldsTargetPipeline struct {
+	Typename string `json:"__typename"`
+	// The UUID of the pipeline
+	Uuid string `json:"uuid"`
+}
+
+// GetTypename returns OrganizationRuleFieldsTargetPipeline.Typename, and is useful for accessing the field via an interface.
+func (v *OrganizationRuleFieldsTargetPipeline) GetTypename() string { return v.Typename }
+
+// GetUuid returns OrganizationRuleFieldsTargetPipeline.Uuid, and is useful for accessing the field via an interface.
+func (v *OrganizationRuleFieldsTargetPipeline) GetUuid() string { return v.Uuid }
+
+// OrganizationRuleFieldsTargetRuleTarget includes the requested fields of the GraphQL interface RuleTarget.
+//
+// OrganizationRuleFieldsTargetRuleTarget is implemented by the following types:
+// OrganizationRuleFieldsTargetPipeline
+// The GraphQL type's documentation follows.
+//
+// Kinds of targets for a rule
+type OrganizationRuleFieldsTargetRuleTarget interface {
+	implementsGraphQLInterfaceOrganizationRuleFieldsTargetRuleTarget()
+	// GetTypename returns the receiver's concrete GraphQL type-name (see interface doc for possible values).
+	GetTypename() string
+}
+
+func (v *OrganizationRuleFieldsTargetPipeline) implementsGraphQLInterfaceOrganizationRuleFieldsTargetRuleTarget() {
+}
+
+func __unmarshalOrganizationRuleFieldsTargetRuleTarget(b []byte, v *OrganizationRuleFieldsTargetRuleTarget) error {
+	if string(b) == "null" {
+		return nil
+	}
+
+	var tn struct {
+		TypeName string `json:"__typename"`
+	}
+	err := json.Unmarshal(b, &tn)
+	if err != nil {
+		return err
+	}
+
+	switch tn.TypeName {
+	case "Pipeline":
+		*v = new(OrganizationRuleFieldsTargetPipeline)
+		return json.Unmarshal(b, *v)
+	case "":
+		return fmt.Errorf(
+			"response was missing RuleTarget.__typename")
+	default:
+		return fmt.Errorf(
+			`unexpected concrete type for OrganizationRuleFieldsTargetRuleTarget: "%v"`, tn.TypeName)
+	}
+}
+
+func __marshalOrganizationRuleFieldsTargetRuleTarget(v *OrganizationRuleFieldsTargetRuleTarget) ([]byte, error) {
+
+	var typename string
+	switch v := (*v).(type) {
+	case *OrganizationRuleFieldsTargetPipeline:
+		typename = "Pipeline"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*OrganizationRuleFieldsTargetPipeline
+		}{typename, v}
+		return json.Marshal(result)
+	case nil:
+		return []byte("null"), nil
+	default:
+		return nil, fmt.Errorf(
+			`unexpected concrete type for OrganizationRuleFieldsTargetRuleTarget: "%T"`, v)
+	}
+}
+
 // The access levels that can be assigned to a pipeline
 type PipelineAccessLevels string
 
@@ -1079,6 +1411,40 @@ const (
 	PipelineVisibilityPrivate PipelineVisibility = "PRIVATE"
 )
 
+// The action a rule enforces
+type RuleAction string
+
+const (
+	// Trigger build
+	RuleActionTriggerBuild RuleAction = "TRIGGER_BUILD"
+	// Artifacts read
+	RuleActionArtifactsRead RuleAction = "ARTIFACTS_READ"
+)
+
+// The effect a rule has
+type RuleEffect string
+
+const (
+	// Allow
+	RuleEffectAllow RuleEffect = "ALLOW"
+)
+
+// The source type for a rule
+type RuleSourceType string
+
+const (
+	// Pipeline
+	RuleSourceTypePipeline RuleSourceType = "PIPELINE"
+)
+
+// The target type for a rule
+type RuleTargetType string
+
+const (
+	// Pipeline
+	RuleTargetTypePipeline RuleTargetType = "PIPELINE"
+)
+
 // The access levels that can be assigned to a suite
 type SuiteAccessLevels string
 
@@ -1393,6 +1759,26 @@ func (v *__createClusterQueueInput) GetKey() string { return v.Key }
 // GetDescription returns __createClusterQueueInput.Description, and is useful for accessing the field via an interface.
 func (v *__createClusterQueueInput) GetDescription() *string { return v.Description }
 
+// __createOrganizationRuleInput is used internally by genqlient
+type __createOrganizationRuleInput struct {
+	OrganizationId string  `json:"organizationId"`
+	Description    *string `json:"description"`
+	RuleType       string  `json:"ruleType"`
+	Value          string  `json:"value"`
+}
+
+// GetOrganizationId returns __createOrganizationRuleInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__createOrganizationRuleInput) GetOrganizationId() string { return v.OrganizationId }
+
+// GetDescription returns __createOrganizationRuleInput.Description, and is useful for accessing the field via an interface.
+func (v *__createOrganizationRuleInput) GetDescription() *string { return v.Description }
+
+// GetRuleType returns __createOrganizationRuleInput.RuleType, and is useful for accessing the field via an interface.
+func (v *__createOrganizationRuleInput) GetRuleType() string { return v.RuleType }
+
+// GetValue returns __createOrganizationRuleInput.Value, and is useful for accessing the field via an interface.
+func (v *__createOrganizationRuleInput) GetValue() string { return v.Value }
+
 // __createPipelineInput is used internally by genqlient
 type __createPipelineInput struct {
 	Input PipelineCreateInput `json:"input"`
@@ -1541,6 +1927,18 @@ func (v *__deleteClusterQueueInput) GetOrganizationId() string { return v.Organi
 // GetId returns __deleteClusterQueueInput.Id, and is useful for accessing the field via an interface.
 func (v *__deleteClusterQueueInput) GetId() string { return v.Id }
 
+// __deleteOrganizationRuleInput is used internally by genqlient
+type __deleteOrganizationRuleInput struct {
+	OrganizationId string `json:"organizationId"`
+	Id             string `json:"id"`
+}
+
+// GetOrganizationId returns __deleteOrganizationRuleInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__deleteOrganizationRuleInput) GetOrganizationId() string { return v.OrganizationId }
+
+// GetId returns __deleteOrganizationRuleInput.Id, and is useful for accessing the field via an interface.
+func (v *__deleteOrganizationRuleInput) GetId() string { return v.Id }
+
 // __deletePipelineInput is used internally by genqlient
 type __deletePipelineInput struct {
 	Id string `json:"id"`
@@ -1652,6 +2050,18 @@ type __getOrganizationInput struct {
 
 // GetSlug returns __getOrganizationInput.Slug, and is useful for accessing the field via an interface.
 func (v *__getOrganizationInput) GetSlug() string { return v.Slug }
+
+// __getOrganizationRulesInput is used internally by genqlient
+type __getOrganizationRulesInput struct {
+	OrgSlug string  `json:"orgSlug"`
+	Cursor  *string `json:"cursor"`
+}
+
+// GetOrgSlug returns __getOrganizationRulesInput.OrgSlug, and is useful for accessing the field via an interface.
+func (v *__getOrganizationRulesInput) GetOrgSlug() string { return v.OrgSlug }
+
+// GetCursor returns __getOrganizationRulesInput.Cursor, and is useful for accessing the field via an interface.
+func (v *__getOrganizationRulesInput) GetCursor() *string { return v.Cursor }
 
 // __getOrganiztionBannerInput is used internally by genqlient
 type __getOrganiztionBannerInput struct {
@@ -2495,6 +2905,186 @@ type createClusterResponse struct {
 // GetClusterCreate returns createClusterResponse.ClusterCreate, and is useful for accessing the field via an interface.
 func (v *createClusterResponse) GetClusterCreate() createClusterClusterCreateClusterCreatePayload {
 	return v.ClusterCreate
+}
+
+// createOrganizationRuleResponse is returned by createOrganizationRule on success.
+type createOrganizationRuleResponse struct {
+	// Create a rule.
+	RuleCreate createOrganizationRuleRuleCreateRuleCreatePayload `json:"ruleCreate"`
+}
+
+// GetRuleCreate returns createOrganizationRuleResponse.RuleCreate, and is useful for accessing the field via an interface.
+func (v *createOrganizationRuleResponse) GetRuleCreate() createOrganizationRuleRuleCreateRuleCreatePayload {
+	return v.RuleCreate
+}
+
+// createOrganizationRuleRuleCreateRuleCreatePayload includes the requested fields of the GraphQL type RuleCreatePayload.
+// The GraphQL type's documentation follows.
+//
+// Autogenerated return type of RuleCreate.
+type createOrganizationRuleRuleCreateRuleCreatePayload struct {
+	Rule createOrganizationRuleRuleCreateRuleCreatePayloadRule `json:"rule"`
+}
+
+// GetRule returns createOrganizationRuleRuleCreateRuleCreatePayload.Rule, and is useful for accessing the field via an interface.
+func (v *createOrganizationRuleRuleCreateRuleCreatePayload) GetRule() createOrganizationRuleRuleCreateRuleCreatePayloadRule {
+	return v.Rule
+}
+
+// createOrganizationRuleRuleCreateRuleCreatePayloadRule includes the requested fields of the GraphQL type Rule.
+type createOrganizationRuleRuleCreateRuleCreatePayloadRule struct {
+	OrganizationRuleFields `json:"-"`
+}
+
+// GetId returns createOrganizationRuleRuleCreateRuleCreatePayloadRule.Id, and is useful for accessing the field via an interface.
+func (v *createOrganizationRuleRuleCreateRuleCreatePayloadRule) GetId() string {
+	return v.OrganizationRuleFields.Id
+}
+
+// GetUuid returns createOrganizationRuleRuleCreateRuleCreatePayloadRule.Uuid, and is useful for accessing the field via an interface.
+func (v *createOrganizationRuleRuleCreateRuleCreatePayloadRule) GetUuid() string {
+	return v.OrganizationRuleFields.Uuid
+}
+
+// GetDescription returns createOrganizationRuleRuleCreateRuleCreatePayloadRule.Description, and is useful for accessing the field via an interface.
+func (v *createOrganizationRuleRuleCreateRuleCreatePayloadRule) GetDescription() *string {
+	return v.OrganizationRuleFields.Description
+}
+
+// GetDocument returns createOrganizationRuleRuleCreateRuleCreatePayloadRule.Document, and is useful for accessing the field via an interface.
+func (v *createOrganizationRuleRuleCreateRuleCreatePayloadRule) GetDocument() string {
+	return v.OrganizationRuleFields.Document
+}
+
+// GetType returns createOrganizationRuleRuleCreateRuleCreatePayloadRule.Type, and is useful for accessing the field via an interface.
+func (v *createOrganizationRuleRuleCreateRuleCreatePayloadRule) GetType() string {
+	return v.OrganizationRuleFields.Type
+}
+
+// GetSourceType returns createOrganizationRuleRuleCreateRuleCreatePayloadRule.SourceType, and is useful for accessing the field via an interface.
+func (v *createOrganizationRuleRuleCreateRuleCreatePayloadRule) GetSourceType() RuleSourceType {
+	return v.OrganizationRuleFields.SourceType
+}
+
+// GetTargetType returns createOrganizationRuleRuleCreateRuleCreatePayloadRule.TargetType, and is useful for accessing the field via an interface.
+func (v *createOrganizationRuleRuleCreateRuleCreatePayloadRule) GetTargetType() RuleTargetType {
+	return v.OrganizationRuleFields.TargetType
+}
+
+// GetEffect returns createOrganizationRuleRuleCreateRuleCreatePayloadRule.Effect, and is useful for accessing the field via an interface.
+func (v *createOrganizationRuleRuleCreateRuleCreatePayloadRule) GetEffect() RuleEffect {
+	return v.OrganizationRuleFields.Effect
+}
+
+// GetAction returns createOrganizationRuleRuleCreateRuleCreatePayloadRule.Action, and is useful for accessing the field via an interface.
+func (v *createOrganizationRuleRuleCreateRuleCreatePayloadRule) GetAction() RuleAction {
+	return v.OrganizationRuleFields.Action
+}
+
+// GetSource returns createOrganizationRuleRuleCreateRuleCreatePayloadRule.Source, and is useful for accessing the field via an interface.
+func (v *createOrganizationRuleRuleCreateRuleCreatePayloadRule) GetSource() OrganizationRuleFieldsSourceRuleSource {
+	return v.OrganizationRuleFields.Source
+}
+
+// GetTarget returns createOrganizationRuleRuleCreateRuleCreatePayloadRule.Target, and is useful for accessing the field via an interface.
+func (v *createOrganizationRuleRuleCreateRuleCreatePayloadRule) GetTarget() OrganizationRuleFieldsTargetRuleTarget {
+	return v.OrganizationRuleFields.Target
+}
+
+func (v *createOrganizationRuleRuleCreateRuleCreatePayloadRule) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*createOrganizationRuleRuleCreateRuleCreatePayloadRule
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.createOrganizationRuleRuleCreateRuleCreatePayloadRule = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	err = json.Unmarshal(
+		b, &v.OrganizationRuleFields)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+type __premarshalcreateOrganizationRuleRuleCreateRuleCreatePayloadRule struct {
+	Id string `json:"id"`
+
+	Uuid string `json:"uuid"`
+
+	Description *string `json:"description"`
+
+	Document string `json:"document"`
+
+	Type string `json:"type"`
+
+	SourceType RuleSourceType `json:"sourceType"`
+
+	TargetType RuleTargetType `json:"targetType"`
+
+	Effect RuleEffect `json:"effect"`
+
+	Action RuleAction `json:"action"`
+
+	Source json.RawMessage `json:"source"`
+
+	Target json.RawMessage `json:"target"`
+}
+
+func (v *createOrganizationRuleRuleCreateRuleCreatePayloadRule) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *createOrganizationRuleRuleCreateRuleCreatePayloadRule) __premarshalJSON() (*__premarshalcreateOrganizationRuleRuleCreateRuleCreatePayloadRule, error) {
+	var retval __premarshalcreateOrganizationRuleRuleCreateRuleCreatePayloadRule
+
+	retval.Id = v.OrganizationRuleFields.Id
+	retval.Uuid = v.OrganizationRuleFields.Uuid
+	retval.Description = v.OrganizationRuleFields.Description
+	retval.Document = v.OrganizationRuleFields.Document
+	retval.Type = v.OrganizationRuleFields.Type
+	retval.SourceType = v.OrganizationRuleFields.SourceType
+	retval.TargetType = v.OrganizationRuleFields.TargetType
+	retval.Effect = v.OrganizationRuleFields.Effect
+	retval.Action = v.OrganizationRuleFields.Action
+	{
+
+		dst := &retval.Source
+		src := v.OrganizationRuleFields.Source
+		var err error
+		*dst, err = __marshalOrganizationRuleFieldsSourceRuleSource(
+			&src)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"unable to marshal createOrganizationRuleRuleCreateRuleCreatePayloadRule.OrganizationRuleFields.Source: %w", err)
+		}
+	}
+	{
+
+		dst := &retval.Target
+		src := v.OrganizationRuleFields.Target
+		var err error
+		*dst, err = __marshalOrganizationRuleFieldsTargetRuleTarget(
+			&src)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"unable to marshal createOrganizationRuleRuleCreateRuleCreatePayloadRule.OrganizationRuleFields.Target: %w", err)
+		}
+	}
+	return &retval, nil
 }
 
 // createPipelinePipelineCreatePipelineCreatePayload includes the requested fields of the GraphQL type PipelineCreatePayload.
@@ -3574,6 +4164,31 @@ type deleteClusterResponse struct {
 // GetClusterDelete returns deleteClusterResponse.ClusterDelete, and is useful for accessing the field via an interface.
 func (v *deleteClusterResponse) GetClusterDelete() deleteClusterClusterDeleteClusterDeletePayload {
 	return v.ClusterDelete
+}
+
+// deleteOrganizationRuleResponse is returned by deleteOrganizationRule on success.
+type deleteOrganizationRuleResponse struct {
+	// Delete a rule.
+	RuleDelete deleteOrganizationRuleRuleDeleteRuleDeletePayload `json:"ruleDelete"`
+}
+
+// GetRuleDelete returns deleteOrganizationRuleResponse.RuleDelete, and is useful for accessing the field via an interface.
+func (v *deleteOrganizationRuleResponse) GetRuleDelete() deleteOrganizationRuleRuleDeleteRuleDeletePayload {
+	return v.RuleDelete
+}
+
+// deleteOrganizationRuleRuleDeleteRuleDeletePayload includes the requested fields of the GraphQL type RuleDeletePayload.
+// The GraphQL type's documentation follows.
+//
+// Autogenerated return type of RuleDelete.
+type deleteOrganizationRuleRuleDeleteRuleDeletePayload struct {
+	// A unique identifier for the client performing the mutation.
+	ClientMutationId string `json:"clientMutationId"`
+}
+
+// GetClientMutationId returns deleteOrganizationRuleRuleDeleteRuleDeletePayload.ClientMutationId, and is useful for accessing the field via an interface.
+func (v *deleteOrganizationRuleRuleDeleteRuleDeletePayload) GetClientMutationId() string {
+	return v.ClientMutationId
 }
 
 // deletePipelinePipelineDeletePipelineDeletePayload includes the requested fields of the GraphQL type PipelineDeletePayload.
@@ -5009,10 +5624,14 @@ func __marshalgetNodeNode(v *getNodeNode) ([]byte, error) {
 	case *getNodeNodeRule:
 		typename = "Rule"
 
+		premarshaled, err := v.__premarshalJSON()
+		if err != nil {
+			return nil, err
+		}
 		result := struct {
 			TypeName string `json:"__typename"`
-			*getNodeNodeRule
-		}{typename, v}
+			*__premarshalgetNodeNodeRule
+		}{typename, premarshaled}
 		return json.Marshal(result)
 	case *getNodeNodeSSOProviderGitHubApp:
 		typename = "SSOProviderGitHubApp"
@@ -6011,11 +6630,148 @@ func (v *getNodeNodeRegistryToken) GetTypename() string { return v.Typename }
 
 // getNodeNodeRule includes the requested fields of the GraphQL type Rule.
 type getNodeNodeRule struct {
-	Typename string `json:"__typename"`
+	Typename               string `json:"__typename"`
+	OrganizationRuleFields `json:"-"`
 }
 
 // GetTypename returns getNodeNodeRule.Typename, and is useful for accessing the field via an interface.
 func (v *getNodeNodeRule) GetTypename() string { return v.Typename }
+
+// GetId returns getNodeNodeRule.Id, and is useful for accessing the field via an interface.
+func (v *getNodeNodeRule) GetId() string { return v.OrganizationRuleFields.Id }
+
+// GetUuid returns getNodeNodeRule.Uuid, and is useful for accessing the field via an interface.
+func (v *getNodeNodeRule) GetUuid() string { return v.OrganizationRuleFields.Uuid }
+
+// GetDescription returns getNodeNodeRule.Description, and is useful for accessing the field via an interface.
+func (v *getNodeNodeRule) GetDescription() *string { return v.OrganizationRuleFields.Description }
+
+// GetDocument returns getNodeNodeRule.Document, and is useful for accessing the field via an interface.
+func (v *getNodeNodeRule) GetDocument() string { return v.OrganizationRuleFields.Document }
+
+// GetType returns getNodeNodeRule.Type, and is useful for accessing the field via an interface.
+func (v *getNodeNodeRule) GetType() string { return v.OrganizationRuleFields.Type }
+
+// GetSourceType returns getNodeNodeRule.SourceType, and is useful for accessing the field via an interface.
+func (v *getNodeNodeRule) GetSourceType() RuleSourceType { return v.OrganizationRuleFields.SourceType }
+
+// GetTargetType returns getNodeNodeRule.TargetType, and is useful for accessing the field via an interface.
+func (v *getNodeNodeRule) GetTargetType() RuleTargetType { return v.OrganizationRuleFields.TargetType }
+
+// GetEffect returns getNodeNodeRule.Effect, and is useful for accessing the field via an interface.
+func (v *getNodeNodeRule) GetEffect() RuleEffect { return v.OrganizationRuleFields.Effect }
+
+// GetAction returns getNodeNodeRule.Action, and is useful for accessing the field via an interface.
+func (v *getNodeNodeRule) GetAction() RuleAction { return v.OrganizationRuleFields.Action }
+
+// GetSource returns getNodeNodeRule.Source, and is useful for accessing the field via an interface.
+func (v *getNodeNodeRule) GetSource() OrganizationRuleFieldsSourceRuleSource {
+	return v.OrganizationRuleFields.Source
+}
+
+// GetTarget returns getNodeNodeRule.Target, and is useful for accessing the field via an interface.
+func (v *getNodeNodeRule) GetTarget() OrganizationRuleFieldsTargetRuleTarget {
+	return v.OrganizationRuleFields.Target
+}
+
+func (v *getNodeNodeRule) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*getNodeNodeRule
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.getNodeNodeRule = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	err = json.Unmarshal(
+		b, &v.OrganizationRuleFields)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+type __premarshalgetNodeNodeRule struct {
+	Typename string `json:"__typename"`
+
+	Id string `json:"id"`
+
+	Uuid string `json:"uuid"`
+
+	Description *string `json:"description"`
+
+	Document string `json:"document"`
+
+	Type string `json:"type"`
+
+	SourceType RuleSourceType `json:"sourceType"`
+
+	TargetType RuleTargetType `json:"targetType"`
+
+	Effect RuleEffect `json:"effect"`
+
+	Action RuleAction `json:"action"`
+
+	Source json.RawMessage `json:"source"`
+
+	Target json.RawMessage `json:"target"`
+}
+
+func (v *getNodeNodeRule) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *getNodeNodeRule) __premarshalJSON() (*__premarshalgetNodeNodeRule, error) {
+	var retval __premarshalgetNodeNodeRule
+
+	retval.Typename = v.Typename
+	retval.Id = v.OrganizationRuleFields.Id
+	retval.Uuid = v.OrganizationRuleFields.Uuid
+	retval.Description = v.OrganizationRuleFields.Description
+	retval.Document = v.OrganizationRuleFields.Document
+	retval.Type = v.OrganizationRuleFields.Type
+	retval.SourceType = v.OrganizationRuleFields.SourceType
+	retval.TargetType = v.OrganizationRuleFields.TargetType
+	retval.Effect = v.OrganizationRuleFields.Effect
+	retval.Action = v.OrganizationRuleFields.Action
+	{
+
+		dst := &retval.Source
+		src := v.OrganizationRuleFields.Source
+		var err error
+		*dst, err = __marshalOrganizationRuleFieldsSourceRuleSource(
+			&src)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"unable to marshal getNodeNodeRule.OrganizationRuleFields.Source: %w", err)
+		}
+	}
+	{
+
+		dst := &retval.Target
+		src := v.OrganizationRuleFields.Target
+		var err error
+		*dst, err = __marshalOrganizationRuleFieldsTargetRuleTarget(
+			&src)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"unable to marshal getNodeNodeRule.OrganizationRuleFields.Target: %w", err)
+		}
+	}
+	return &retval, nil
+}
 
 // getNodeNodeSSOProviderGitHubApp includes the requested fields of the GraphQL type SSOProviderGitHubApp.
 // The GraphQL type's documentation follows.
@@ -6591,6 +7347,234 @@ type getOrganizationResponse struct {
 
 // GetOrganization returns getOrganizationResponse.Organization, and is useful for accessing the field via an interface.
 func (v *getOrganizationResponse) GetOrganization() getOrganizationOrganization {
+	return v.Organization
+}
+
+// getOrganizationRulesOrganization includes the requested fields of the GraphQL type Organization.
+// The GraphQL type's documentation follows.
+//
+// An organization
+type getOrganizationRulesOrganization struct {
+	// Returns rules for an Organization
+	Rules getOrganizationRulesOrganizationRulesRuleConnection `json:"rules"`
+}
+
+// GetRules returns getOrganizationRulesOrganization.Rules, and is useful for accessing the field via an interface.
+func (v *getOrganizationRulesOrganization) GetRules() getOrganizationRulesOrganizationRulesRuleConnection {
+	return v.Rules
+}
+
+// getOrganizationRulesOrganizationRulesRuleConnection includes the requested fields of the GraphQL type RuleConnection.
+type getOrganizationRulesOrganizationRulesRuleConnection struct {
+	PageInfo getOrganizationRulesOrganizationRulesRuleConnectionPageInfo        `json:"pageInfo"`
+	Edges    []getOrganizationRulesOrganizationRulesRuleConnectionEdgesRuleEdge `json:"edges"`
+}
+
+// GetPageInfo returns getOrganizationRulesOrganizationRulesRuleConnection.PageInfo, and is useful for accessing the field via an interface.
+func (v *getOrganizationRulesOrganizationRulesRuleConnection) GetPageInfo() getOrganizationRulesOrganizationRulesRuleConnectionPageInfo {
+	return v.PageInfo
+}
+
+// GetEdges returns getOrganizationRulesOrganizationRulesRuleConnection.Edges, and is useful for accessing the field via an interface.
+func (v *getOrganizationRulesOrganizationRulesRuleConnection) GetEdges() []getOrganizationRulesOrganizationRulesRuleConnectionEdgesRuleEdge {
+	return v.Edges
+}
+
+// getOrganizationRulesOrganizationRulesRuleConnectionEdgesRuleEdge includes the requested fields of the GraphQL type RuleEdge.
+type getOrganizationRulesOrganizationRulesRuleConnectionEdgesRuleEdge struct {
+	Node getOrganizationRulesOrganizationRulesRuleConnectionEdgesRuleEdgeNodeRule `json:"node"`
+}
+
+// GetNode returns getOrganizationRulesOrganizationRulesRuleConnectionEdgesRuleEdge.Node, and is useful for accessing the field via an interface.
+func (v *getOrganizationRulesOrganizationRulesRuleConnectionEdgesRuleEdge) GetNode() getOrganizationRulesOrganizationRulesRuleConnectionEdgesRuleEdgeNodeRule {
+	return v.Node
+}
+
+// getOrganizationRulesOrganizationRulesRuleConnectionEdgesRuleEdgeNodeRule includes the requested fields of the GraphQL type Rule.
+type getOrganizationRulesOrganizationRulesRuleConnectionEdgesRuleEdgeNodeRule struct {
+	OrganizationRuleFields `json:"-"`
+}
+
+// GetId returns getOrganizationRulesOrganizationRulesRuleConnectionEdgesRuleEdgeNodeRule.Id, and is useful for accessing the field via an interface.
+func (v *getOrganizationRulesOrganizationRulesRuleConnectionEdgesRuleEdgeNodeRule) GetId() string {
+	return v.OrganizationRuleFields.Id
+}
+
+// GetUuid returns getOrganizationRulesOrganizationRulesRuleConnectionEdgesRuleEdgeNodeRule.Uuid, and is useful for accessing the field via an interface.
+func (v *getOrganizationRulesOrganizationRulesRuleConnectionEdgesRuleEdgeNodeRule) GetUuid() string {
+	return v.OrganizationRuleFields.Uuid
+}
+
+// GetDescription returns getOrganizationRulesOrganizationRulesRuleConnectionEdgesRuleEdgeNodeRule.Description, and is useful for accessing the field via an interface.
+func (v *getOrganizationRulesOrganizationRulesRuleConnectionEdgesRuleEdgeNodeRule) GetDescription() *string {
+	return v.OrganizationRuleFields.Description
+}
+
+// GetDocument returns getOrganizationRulesOrganizationRulesRuleConnectionEdgesRuleEdgeNodeRule.Document, and is useful for accessing the field via an interface.
+func (v *getOrganizationRulesOrganizationRulesRuleConnectionEdgesRuleEdgeNodeRule) GetDocument() string {
+	return v.OrganizationRuleFields.Document
+}
+
+// GetType returns getOrganizationRulesOrganizationRulesRuleConnectionEdgesRuleEdgeNodeRule.Type, and is useful for accessing the field via an interface.
+func (v *getOrganizationRulesOrganizationRulesRuleConnectionEdgesRuleEdgeNodeRule) GetType() string {
+	return v.OrganizationRuleFields.Type
+}
+
+// GetSourceType returns getOrganizationRulesOrganizationRulesRuleConnectionEdgesRuleEdgeNodeRule.SourceType, and is useful for accessing the field via an interface.
+func (v *getOrganizationRulesOrganizationRulesRuleConnectionEdgesRuleEdgeNodeRule) GetSourceType() RuleSourceType {
+	return v.OrganizationRuleFields.SourceType
+}
+
+// GetTargetType returns getOrganizationRulesOrganizationRulesRuleConnectionEdgesRuleEdgeNodeRule.TargetType, and is useful for accessing the field via an interface.
+func (v *getOrganizationRulesOrganizationRulesRuleConnectionEdgesRuleEdgeNodeRule) GetTargetType() RuleTargetType {
+	return v.OrganizationRuleFields.TargetType
+}
+
+// GetEffect returns getOrganizationRulesOrganizationRulesRuleConnectionEdgesRuleEdgeNodeRule.Effect, and is useful for accessing the field via an interface.
+func (v *getOrganizationRulesOrganizationRulesRuleConnectionEdgesRuleEdgeNodeRule) GetEffect() RuleEffect {
+	return v.OrganizationRuleFields.Effect
+}
+
+// GetAction returns getOrganizationRulesOrganizationRulesRuleConnectionEdgesRuleEdgeNodeRule.Action, and is useful for accessing the field via an interface.
+func (v *getOrganizationRulesOrganizationRulesRuleConnectionEdgesRuleEdgeNodeRule) GetAction() RuleAction {
+	return v.OrganizationRuleFields.Action
+}
+
+// GetSource returns getOrganizationRulesOrganizationRulesRuleConnectionEdgesRuleEdgeNodeRule.Source, and is useful for accessing the field via an interface.
+func (v *getOrganizationRulesOrganizationRulesRuleConnectionEdgesRuleEdgeNodeRule) GetSource() OrganizationRuleFieldsSourceRuleSource {
+	return v.OrganizationRuleFields.Source
+}
+
+// GetTarget returns getOrganizationRulesOrganizationRulesRuleConnectionEdgesRuleEdgeNodeRule.Target, and is useful for accessing the field via an interface.
+func (v *getOrganizationRulesOrganizationRulesRuleConnectionEdgesRuleEdgeNodeRule) GetTarget() OrganizationRuleFieldsTargetRuleTarget {
+	return v.OrganizationRuleFields.Target
+}
+
+func (v *getOrganizationRulesOrganizationRulesRuleConnectionEdgesRuleEdgeNodeRule) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*getOrganizationRulesOrganizationRulesRuleConnectionEdgesRuleEdgeNodeRule
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.getOrganizationRulesOrganizationRulesRuleConnectionEdgesRuleEdgeNodeRule = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	err = json.Unmarshal(
+		b, &v.OrganizationRuleFields)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+type __premarshalgetOrganizationRulesOrganizationRulesRuleConnectionEdgesRuleEdgeNodeRule struct {
+	Id string `json:"id"`
+
+	Uuid string `json:"uuid"`
+
+	Description *string `json:"description"`
+
+	Document string `json:"document"`
+
+	Type string `json:"type"`
+
+	SourceType RuleSourceType `json:"sourceType"`
+
+	TargetType RuleTargetType `json:"targetType"`
+
+	Effect RuleEffect `json:"effect"`
+
+	Action RuleAction `json:"action"`
+
+	Source json.RawMessage `json:"source"`
+
+	Target json.RawMessage `json:"target"`
+}
+
+func (v *getOrganizationRulesOrganizationRulesRuleConnectionEdgesRuleEdgeNodeRule) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *getOrganizationRulesOrganizationRulesRuleConnectionEdgesRuleEdgeNodeRule) __premarshalJSON() (*__premarshalgetOrganizationRulesOrganizationRulesRuleConnectionEdgesRuleEdgeNodeRule, error) {
+	var retval __premarshalgetOrganizationRulesOrganizationRulesRuleConnectionEdgesRuleEdgeNodeRule
+
+	retval.Id = v.OrganizationRuleFields.Id
+	retval.Uuid = v.OrganizationRuleFields.Uuid
+	retval.Description = v.OrganizationRuleFields.Description
+	retval.Document = v.OrganizationRuleFields.Document
+	retval.Type = v.OrganizationRuleFields.Type
+	retval.SourceType = v.OrganizationRuleFields.SourceType
+	retval.TargetType = v.OrganizationRuleFields.TargetType
+	retval.Effect = v.OrganizationRuleFields.Effect
+	retval.Action = v.OrganizationRuleFields.Action
+	{
+
+		dst := &retval.Source
+		src := v.OrganizationRuleFields.Source
+		var err error
+		*dst, err = __marshalOrganizationRuleFieldsSourceRuleSource(
+			&src)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"unable to marshal getOrganizationRulesOrganizationRulesRuleConnectionEdgesRuleEdgeNodeRule.OrganizationRuleFields.Source: %w", err)
+		}
+	}
+	{
+
+		dst := &retval.Target
+		src := v.OrganizationRuleFields.Target
+		var err error
+		*dst, err = __marshalOrganizationRuleFieldsTargetRuleTarget(
+			&src)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"unable to marshal getOrganizationRulesOrganizationRulesRuleConnectionEdgesRuleEdgeNodeRule.OrganizationRuleFields.Target: %w", err)
+		}
+	}
+	return &retval, nil
+}
+
+// getOrganizationRulesOrganizationRulesRuleConnectionPageInfo includes the requested fields of the GraphQL type PageInfo.
+// The GraphQL type's documentation follows.
+//
+// Information about pagination in a connection.
+type getOrganizationRulesOrganizationRulesRuleConnectionPageInfo struct {
+	// When paginating forwards, the cursor to continue.
+	EndCursor string `json:"endCursor"`
+	// When paginating forwards, are there more items?
+	HasNextPage bool `json:"hasNextPage"`
+}
+
+// GetEndCursor returns getOrganizationRulesOrganizationRulesRuleConnectionPageInfo.EndCursor, and is useful for accessing the field via an interface.
+func (v *getOrganizationRulesOrganizationRulesRuleConnectionPageInfo) GetEndCursor() string {
+	return v.EndCursor
+}
+
+// GetHasNextPage returns getOrganizationRulesOrganizationRulesRuleConnectionPageInfo.HasNextPage, and is useful for accessing the field via an interface.
+func (v *getOrganizationRulesOrganizationRulesRuleConnectionPageInfo) GetHasNextPage() bool {
+	return v.HasNextPage
+}
+
+// getOrganizationRulesResponse is returned by getOrganizationRules on success.
+type getOrganizationRulesResponse struct {
+	// Find an organization
+	Organization getOrganizationRulesOrganization `json:"organization"`
+}
+
+// GetOrganization returns getOrganizationRulesResponse.Organization, and is useful for accessing the field via an interface.
+func (v *getOrganizationRulesResponse) GetOrganization() getOrganizationRulesOrganization {
 	return v.Organization
 }
 
@@ -13102,6 +14086,72 @@ func createClusterQueue(
 	return &data_, err_
 }
 
+// The query or mutation executed by createOrganizationRule.
+const createOrganizationRule_Operation = `
+mutation createOrganizationRule ($organizationId: ID!, $description: String, $ruleType: String!, $value: JSON!) {
+	ruleCreate(input: {organizationId:$organizationId,description:$description,type:$ruleType,value:$value}) {
+		rule {
+			... OrganizationRuleFields
+		}
+	}
+}
+fragment OrganizationRuleFields on Rule {
+	id
+	uuid
+	description
+	document
+	type
+	sourceType
+	targetType
+	effect
+	action
+	source {
+		__typename
+		... on Pipeline {
+			uuid
+		}
+	}
+	target {
+		__typename
+		... on Pipeline {
+			uuid
+		}
+	}
+}
+`
+
+func createOrganizationRule(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	organizationId string,
+	description *string,
+	ruleType string,
+	value string,
+) (*createOrganizationRuleResponse, error) {
+	req_ := &graphql.Request{
+		OpName: "createOrganizationRule",
+		Query:  createOrganizationRule_Operation,
+		Variables: &__createOrganizationRuleInput{
+			OrganizationId: organizationId,
+			Description:    description,
+			RuleType:       ruleType,
+			Value:          value,
+		},
+	}
+	var err_ error
+
+	var data_ createOrganizationRuleResponse
+	resp_ := &graphql.Response{Data: &data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return &data_, err_
+}
+
 // The query or mutation executed by createPipeline.
 const createPipeline_Operation = `
 mutation createPipeline ($input: PipelineCreateInput!) {
@@ -13598,6 +14648,43 @@ func deleteClusterQueue(
 	return &data_, err_
 }
 
+// The query or mutation executed by deleteOrganizationRule.
+const deleteOrganizationRule_Operation = `
+mutation deleteOrganizationRule ($organizationId: ID!, $id: ID!) {
+	ruleDelete(input: {organizationId:$organizationId,id:$id}) {
+		clientMutationId
+	}
+}
+`
+
+func deleteOrganizationRule(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	organizationId string,
+	id string,
+) (*deleteOrganizationRuleResponse, error) {
+	req_ := &graphql.Request{
+		OpName: "deleteOrganizationRule",
+		Query:  deleteOrganizationRule_Operation,
+		Variables: &__deleteOrganizationRuleInput{
+			OrganizationId: organizationId,
+			Id:             id,
+		},
+	}
+	var err_ error
+
+	var data_ deleteOrganizationRuleResponse
+	resp_ := &graphql.Response{Data: &data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return &data_, err_
+}
+
 // The query or mutation executed by deletePipeline.
 const deletePipeline_Operation = `
 mutation deletePipeline ($id: ID!) {
@@ -14039,6 +15126,9 @@ query getNode ($id: ID!) {
 		... on PipelineTemplate {
 			... PipelineTemplateFields
 		}
+		... on Rule {
+			... OrganizationRuleFields
+		}
 		... on TeamMember {
 			... TeamMemberFields
 		}
@@ -14099,6 +15189,29 @@ fragment PipelineTemplateFields on PipelineTemplate {
 	configuration
 	description
 	name
+}
+fragment OrganizationRuleFields on Rule {
+	id
+	uuid
+	description
+	document
+	type
+	sourceType
+	targetType
+	effect
+	action
+	source {
+		__typename
+		... on Pipeline {
+			uuid
+		}
+	}
+	target {
+		__typename
+		... on Pipeline {
+			uuid
+		}
+	}
 }
 fragment TeamMemberFields on TeamMember {
 	id
@@ -14230,6 +15343,76 @@ func getOrganization(
 	var err_ error
 
 	var data_ getOrganizationResponse
+	resp_ := &graphql.Response{Data: &data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return &data_, err_
+}
+
+// The query or mutation executed by getOrganizationRules.
+const getOrganizationRules_Operation = `
+query getOrganizationRules ($orgSlug: ID!, $cursor: String) {
+	organization(slug: $orgSlug) {
+		rules(first: 50, after: $cursor) {
+			pageInfo {
+				endCursor
+				hasNextPage
+			}
+			edges {
+				node {
+					... OrganizationRuleFields
+				}
+			}
+		}
+	}
+}
+fragment OrganizationRuleFields on Rule {
+	id
+	uuid
+	description
+	document
+	type
+	sourceType
+	targetType
+	effect
+	action
+	source {
+		__typename
+		... on Pipeline {
+			uuid
+		}
+	}
+	target {
+		__typename
+		... on Pipeline {
+			uuid
+		}
+	}
+}
+`
+
+func getOrganizationRules(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	orgSlug string,
+	cursor *string,
+) (*getOrganizationRulesResponse, error) {
+	req_ := &graphql.Request{
+		OpName: "getOrganizationRules",
+		Query:  getOrganizationRules_Operation,
+		Variables: &__getOrganizationRulesInput{
+			OrgSlug: orgSlug,
+			Cursor:  cursor,
+		},
+	}
+	var err_ error
+
+	var data_ getOrganizationRulesResponse
 	resp_ := &graphql.Response{Data: &data_}
 
 	err_ = client_.MakeRequest(
