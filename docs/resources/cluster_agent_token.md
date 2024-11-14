@@ -28,8 +28,8 @@ resource "buildkite_cluster_agent_token" "default" {
 }
 
 resource "buildkite_cluster_agent_token" "ip_limited_token" {
-  description = "Token with allowed IP range"
-  cluster_id  = buildkite_cluster.primary.id
+  description          = "Token with allowed IP range"
+  cluster_id           = buildkite_cluster.primary.id
   allowed_ip_addresses = ["10.100.1.0/28"]
 }
 
