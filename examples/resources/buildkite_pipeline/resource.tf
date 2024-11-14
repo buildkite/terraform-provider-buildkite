@@ -10,7 +10,7 @@ resource "buildkite_pipeline" "pipeline" {
   emoji      = ":buildkite:"
   name       = "repo"
   repository = "git@github.com:org/repo"
-  
+
   provider_settings = {
     build_branches      = false
     build_tags          = true
