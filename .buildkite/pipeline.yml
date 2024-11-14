@@ -1,5 +1,5 @@
 steps:
-  - name: ":golangci-lint: lint"
+  - label: ":golangci-lint: lint"
     key: lint
     command : golangci-lint run --timeout 2m0s
     agents:
@@ -10,9 +10,19 @@ steps:
           always-pull: true
           volumes:
             - "/.cache/golangci-lint/v1.54.1:/root/.cache"
+
   - label: vet
     key: vet
     command: "make vet"
+    agents:
+      queue: "hosted"
+    plugins:
+      docker-compose#v3.9.0:
+        run: go
+
+  - label: docs
+    key: docs
+    command: .buildkite/steps/documentation.sh
     agents:
       queue: "hosted"
     plugins:
@@ -60,3 +70,4 @@ steps:
       - test
       - testacc
       - vet
+      - docs
