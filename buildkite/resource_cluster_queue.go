@@ -9,6 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	resource_schema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -16,12 +17,13 @@ import (
 )
 
 type clusterQueueResourceModel struct {
-	Id          types.String `tfsdk:"id"`
-	Uuid        types.String `tfsdk:"uuid"`
-	ClusterId   types.String `tfsdk:"cluster_id"`
-	ClusterUuid types.String `tfsdk:"cluster_uuid"`
-	Key         types.String `tfsdk:"key"`
-	Description types.String `tfsdk:"description"`
+	Id             types.String `tfsdk:"id"`
+	Uuid           types.String `tfsdk:"uuid"`
+	ClusterId      types.String `tfsdk:"cluster_id"`
+	ClusterUuid    types.String `tfsdk:"cluster_uuid"`
+	Key            types.String `tfsdk:"key"`
+	Description    types.String `tfsdk:"description"`
+	DispatchPaused types.Bool   `tfsdk:"dispatch_paused"`
 }
 
 type clusterQueueResource struct {
@@ -85,7 +87,13 @@ func (clusterQueueResource) Schema(ctx context.Context, req resource.SchemaReque
 			},
 			"description": resource_schema.StringAttribute{
 				Optional:            true,
-				MarkdownDescription: "A description for the cluster queue. ",
+				MarkdownDescription: "A description for the cluster queue.",
+			},
+			"dispatch_paused": resource_schema.BoolAttribute{
+				Optional:            true,
+				Computed:            true,
+				MarkdownDescription: "The dispatch state of a cluster queue.",
+				Default:             booldefault.StaticBool(false),
 			},
 		},
 	}
@@ -124,7 +132,6 @@ func (cq *clusterQueueResource) Create(ctx context.Context, req resource.CreateR
 
 		return retryContextError(err)
 	})
-
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to create Cluster Queue",
@@ -139,6 +146,7 @@ func (cq *clusterQueueResource) Create(ctx context.Context, req resource.CreateR
 	state.ClusterUuid = types.StringValue(r.ClusterQueueCreate.ClusterQueue.Cluster.Uuid)
 	state.Key = types.StringValue(r.ClusterQueueCreate.ClusterQueue.Key)
 	state.Description = types.StringPointerValue(r.ClusterQueueCreate.ClusterQueue.Description)
+	state.DispatchPaused = plan.DispatchPaused
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
@@ -172,7 +180,6 @@ func (cq *clusterQueueResource) Read(ctx context.Context, req resource.ReadReque
 
 		return retryContextError(err)
 	})
-
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to read Cluster Queues",
@@ -192,13 +199,12 @@ func (cq *clusterQueueResource) Read(ctx context.Context, req resource.ReadReque
 		}
 	}
 
-	// If not returned by this point, the cluster queue could not be found
-	// This is a tradeoff of the current getClusterQueues Genqlient query (searches for 50 queues via the cluster UUID in state)
-	resp.Diagnostics.AddError(
-		"Unable to find Cluster Queue",
-		// Now that clusters are in GA, it should be safe to get the ID of the cluster as default
-		fmt.Sprintf("Unable to find any queues for cluster: %s", state.ClusterId),
+	// Cluster queue could not be found in returned queues and should be removed from state
+	resp.Diagnostics.AddWarning(
+		"Cluster Queue not found",
+		"Removing Cluster Queue from state...",
 	)
+	resp.State.RemoveResource(ctx)
 }
 
 func (cq *clusterQueueResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
@@ -221,11 +227,12 @@ func (cq *clusterQueueResource) ImportState(ctx context.Context, req resource.Im
 func (cq *clusterQueueResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	var state clusterQueueResourceModel
 	var description types.String
+	var isPausible bool
 
 	diagsState := req.State.Get(ctx, &state)
 	diagsDescription := req.Plan.GetAttribute(ctx, path.Root("description"), &description)
 
-	//Load state and ontain description from plan (singularly)
+	// Load state and ontain description from plan (singularly)
 	resp.Diagnostics.Append(diagsState...)
 	resp.Diagnostics.Append(diagsDescription...)
 
@@ -240,7 +247,51 @@ func (cq *clusterQueueResource) Update(ctx context.Context, req resource.UpdateR
 		return
 	}
 
+	if !state.DispatchPaused.ValueBool() {
+		isPausible = true
+	}
+
 	var r *updateClusterQueueResponse
+
+	if isPausible {
+		err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+			log.Printf("Pausing dispatch for cluster queue %s", state.Key)
+			_, err := pauseDispatchClusterQueue(
+				ctx,
+				cq.client.genqlient,
+				state.Id.ValueString(),
+			)
+
+			return retryContextError(err)
+		})
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Unable to pause cluster queue dispatch",
+				fmt.Sprintf("Unable to pause dispatch for cluster queue: %s", err.Error()),
+			)
+			return
+		}
+	} else {
+		err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+			log.Printf("Resuming dispatch for cluster queue %s", state.Key)
+			_, err := resumeDispatchClusterQueue(
+				ctx,
+				cq.client.genqlient,
+				state.Id.ValueString(),
+			)
+
+			return retryContextError(err)
+		})
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Unable to resume cluster queue dispatch",
+				fmt.Sprintf("Unable to resume dispatch for cluster queue: %s", err.Error()),
+			)
+			return
+		}
+		state.DispatchPaused = types.BoolValue(r.ClusterQueueUpdate.ClusterQueue.DispatchPaused)
+	}
+
 	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		org, err := cq.client.GetOrganizationID()
 		if err == nil {
@@ -255,7 +306,6 @@ func (cq *clusterQueueResource) Update(ctx context.Context, req resource.UpdateR
 
 		return retryContextError(err)
 	})
-
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to update Cluster Queue",
@@ -299,7 +349,6 @@ func (cq *clusterQueueResource) Delete(ctx context.Context, req resource.DeleteR
 
 		return retryContextError(err)
 	})
-
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to create Cluster Queue",
@@ -316,4 +365,5 @@ func updateClusterQueueResource(clusterQueueNode getClusterQueuesOrganizationClu
 	cq.Description = types.StringPointerValue(clusterQueueNode.Description)
 	cq.ClusterId = types.StringValue(clusterQueueNode.Cluster.Id)
 	cq.ClusterUuid = types.StringValue(clusterQueueNode.Cluster.Uuid)
+	cq.DispatchPaused = types.BoolValue(clusterQueueNode.DispatchPaused)
 }

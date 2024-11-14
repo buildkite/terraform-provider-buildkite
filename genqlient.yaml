@@ -6,9 +6,13 @@ operations:
 generated: buildkite/generated.go
 
 bindings:
+  JSON:
+    type: string
   YAML:
     type: string
   TeamPrivacy:
     type: string
   TeamMemberRole:
     type: string
+  DateTime:
+    type: time.Time

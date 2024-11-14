@@ -16,4 +16,6 @@ resource "buildkite_pipeline" "monolith" {
 resource "buildkite_cluster_queue" "default" {
   cluster_id = buildkite_cluster.primary.id
   key        = "default"
+  # Pause dispatch after create
+  dispatch_paused = true
 }
