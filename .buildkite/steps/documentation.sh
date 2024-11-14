@@ -7,7 +7,7 @@ echo "--- :terraform: Running make docs"
 make docs
 
 echo "--- :git: Checking for changes"
-git diff --exit-code &>/dev/null && true
+git diff --exit-code docs &>/dev/null && true
 
 docs_changes="$?"
 
