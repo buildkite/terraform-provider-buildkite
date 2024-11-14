@@ -10,7 +10,7 @@ build-snapshot:
 .PHONY: docs
 docs:
 	go get github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs
-	go run github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs generate --tf-version 1.9.8
+	go run github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs
 
 testfmt:
 	@test -z $(shell gofmt -l . buildkite | tee /dev/stderr)
