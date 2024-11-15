@@ -30,15 +30,15 @@ data "buildkite_pipeline_template" "frontend_template" {
 
 
 resource "buildkite_pipeline" "apiv2_dev" {
-  name       = "API v2"
-  repository = local.repository
+  name                 = "API v2"
+  repository           = local.repository
   pipeline_template_id = data.buildkite_pipeline_template.dev_template.id
 }
 
 
 resource "buildkite_pipeline" "frontend" {
-  name       = "Frontend"
-  repository = local.repository
+  name                 = "Frontend"
+  repository           = local.repository
   pipeline_template_id = data.buildkite_pipeline_template.frontend_template.id
 }
 ```
