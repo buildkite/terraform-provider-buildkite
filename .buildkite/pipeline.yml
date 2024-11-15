@@ -28,6 +28,7 @@ steps:
     plugins:
       docker-compose#v3.9.0:
         run: go
+        mount-buildkite-agent: true
 
   - label: test
     key: test
