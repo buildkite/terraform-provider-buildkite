@@ -17,8 +17,12 @@ github.com/apparentlymart/go-textseg/v13 v13.0.0 h1:Y+KvPE1NYz0xl601PVImeQfFyEy6
 github.com/apparentlymart/go-textseg/v13 v13.0.0/go.mod h1:ZK2fH7c4NqDTLtiYLvIkEghdlcqw7yxLeM89kiTRPUo=
 github.com/apparentlymart/go-textseg/v15 v15.0.0 h1:uYvfpb3DyLSCGWnctWKGj857c6ew1u1fNQOlOtuGxQY=
 github.com/apparentlymart/go-textseg/v15 v15.0.0/go.mod h1:K8XmNZdhEBkdlyDdvbmmsvpAG721bKi0joRfFdHIWJ4=
+github.com/buildkite/go-pipeline v0.13.1 h1:Y9p8pQIwPtauVwNrcmTDH6+XK7jE1nLuvWVaK8oymA8=
+github.com/buildkite/go-pipeline v0.13.1/go.mod h1:2HHqlSFTYgHFhzedJu0LhLs9n5c9XkYnHiQFVN5HE4U=
 github.com/buildkite/go-pipeline v0.13.2 h1:M378/FoxOVvu7F5J+iG4/p3jQDMl3VNP1i/Nc4eWF0o=
 github.com/buildkite/go-pipeline v0.13.2/go.mod h1:Lbtal6Q/xxLC1PZFygMqtXzM7ppSkiclll0kVqY8yNQ=
+github.com/buildkite/interpolate v0.1.3 h1:OFEhqji1rNTRg0u9DsSodg63sjJQEb1uWbENq9fUOBM=
+github.com/buildkite/interpolate v0.1.3/go.mod h1:UNVe6A+UfiBNKbhAySrBbZFZFxQ+DXr9nWen6WVt/A8=
 github.com/buildkite/interpolate v0.1.4 h1:qacB5WR+7+Ol1xiJ4xZajHh/CGDdhcMesXR+V3thZPA=
 github.com/buildkite/interpolate v0.1.4/go.mod h1:dHnrwHew5O8VNOAgMDpwRlFnhL5VSN6M1bHVmRZ9Ccc=
 github.com/cloudflare/circl v1.3.7 h1:qlCDlTPz2n9fu58M0Nh1J/JzcFpfgkFHHX3O35r5vcU=
