@@ -1,6 +1,7 @@
 package buildkite
 
 import (
+	"context"
 	"encoding/json"
 	"os"
 	"regexp"
@@ -48,7 +49,7 @@ func TestAccBuildkiteSignedPipelineStepsDataSource(t *testing.T) {
 		t.Fatalf("Failed to parse pipeline: %v", err)
 	}
 
-	if err != signature.SignPipeline(p, privateKey, repository) {
+	if err := signature.SignSteps(context.Background(), p.Steps, privateKey, repository); err != nil {
 		t.Fatalf("Failed to sign pipeline: %v", err)
 	}
 
