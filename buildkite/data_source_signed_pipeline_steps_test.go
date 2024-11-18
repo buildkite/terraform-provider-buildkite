@@ -20,7 +20,7 @@ import (
 func TestAccBuildkiteSignedPipelineStepsDataSource(t *testing.T) {
 	const (
 		repository = "my-repo"
-		jwksKeyID  = "my-key"
+		jwksKeyID  = "my-key-id"
 	)
 
 	steps := heredoc.Doc(`
