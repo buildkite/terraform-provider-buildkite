@@ -6,10 +6,10 @@ steps:
       queue: "hosted"
     plugins:
       - docker#v5.9.0:
-          image: "golangci/golangci-lint:v1.54.1"
+          image: "golangci/golangci-lint:v1.62.0"
           always-pull: true
           volumes:
-            - "/.cache/golangci-lint/v1.54.1:/root/.cache"
+            - "/.cache/golangci-lint/v1.62.0:/root/.cache"
 
   - label: vet
     key: vet
