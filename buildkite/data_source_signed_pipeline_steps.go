@@ -60,6 +60,9 @@ func (s *signedPipelineStepsDataSource) Schema(
 
 				See the Buildkite [documentation](https://buildkite.com/docs/agent/v3/signed_pipelines)
 				for more info about signed pipelines.
+
+				Note that the PS512 and ES512 signature algorithms are nondeterministic and
+				will result in the signature changing on each run. Use EdDSA to avoid drift.
 			`,
 			"`buildkite_pipeline`",
 		),
