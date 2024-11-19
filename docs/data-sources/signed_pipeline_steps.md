@@ -10,6 +10,8 @@ description: |-
   about the JWKS format.
   See the Buildkite documentation https://buildkite.com/docs/agent/v3/signed_pipelines
   for more info about signed pipelines.
+  Note that the PS512 and ES512 signature algorithms are nondeterministic and
+  will result in the signature changing on each run. Use EdDSA to avoid drift.
 ---
 
 # buildkite_signed_pipeline_steps (Data Source)
@@ -23,6 +25,9 @@ about the JWKS format.
 
 See the Buildkite [documentation](https://buildkite.com/docs/agent/v3/signed_pipelines)
 for more info about signed pipelines.
+
+Note that the PS512 and ES512 signature algorithms are nondeterministic and
+will result in the signature changing on each run. Use EdDSA to avoid drift.
 
 ## Example Usage
 
