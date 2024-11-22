@@ -19,7 +19,7 @@ More information on pipelines can be found in the [documentation](https://buildk
 # minimal repository
 resource "buildkite_pipeline" "pipeline" {
   name       = "repo"
-  repository = "git@github.com:org/repo"
+  repository = "git@github.com:my-org/my-repo"
 }
 
 # with github provider settings
@@ -27,7 +27,7 @@ resource "buildkite_pipeline" "pipeline" {
   color      = "#000000"
   emoji      = ":buildkite:"
   name       = "repo"
-  repository = "git@github.com:org/repo"
+  repository = "git@github.com:my-org/my-repo"
 
   provider_settings = {
     build_branches      = false
@@ -35,6 +35,29 @@ resource "buildkite_pipeline" "pipeline" {
     build_pull_requests = false
     trigger_mode        = "code"
   }
+}
+
+# signed pipeline
+locals {
+  repository = "git@github.com:my-org/my-repo.git"
+}
+
+data "buildkite_signed_pipeline_steps" "signed-steps" {
+  repository  = local.repository
+  jwks_file   = "/path/to/my/jwks-private.json"
+  jwks_key_id = "my-key-id"
+
+  unsigned_steps = <<YAML
+steps:
+- label: ":pipeline:"
+  command: buildkite-agent pipeline upload
+YAML
+}
+
+resource "buildkite_pipeline" "signed-pipeline" {
+  name       = "my-signed-pipeline"
+  repository = local.repository
+  steps      = data.buildkite_signed_pipeline_steps.signed-steps.steps
 }
 ```
 
@@ -64,7 +87,7 @@ resource "buildkite_pipeline" "pipeline" {
 - `provider_settings` (Attributes) Control settings depending on the VCS provider used in `repository`. (see [below for nested schema](#nestedatt--provider_settings))
 - `skip_intermediate_builds` (Boolean) Whether to skip queued builds if a new commit is pushed to a matching branch.
 - `skip_intermediate_builds_branch_filter` (String) Filter the `skip_intermediate_builds` setting based on this branch condition.
-- `steps` (String) The YAML steps to configure for the pipeline. Defaults to `buildkite-agent pipeline upload`.
+- `steps` (String) The YAML steps to configure for the pipeline. Can also accept the `steps` attribute from the [`buildkite_signed_pipeline_steps`](/docs/data-sources/signed_pipeline_steps) data source to enable a signed pipeline. Defaults to `buildkite-agent pipeline upload`.
 - `tags` (Set of String) Tags to attribute to the pipeline. Useful for searching by in the UI.
 
 ### Read-Only

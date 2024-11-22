@@ -101,10 +101,11 @@ func (s *signedPipelineStepsDataSource) Schema(
 				},
 			},
 			"jwks": schema.StringAttribute{
-				Description: "The JSON Web Key Set (JWKS) to use for signing. If the `jwks_key_id` is not specified, and the set contains exactly one key, that key will be used.",
+				Description: "The JSON Web Key Set (JWKS) to use for signing. All double-quotes in the JSON object must be escaped `\\\"`. If the `jwks_key_id` is not specified, and the set contains exactly one key, that key will be used.",
 				MarkdownDescription: heredoc.Docf(
 					`
 						The JSON Web Key Set (JWKS) to use for signing.
+						All double-quotes in the JSON object must be escaped %s.
 						If %s is not specified, and the set contains exactly one key, that key will
 						be used.
 
@@ -113,6 +114,7 @@ func (s *signedPipelineStepsDataSource) Schema(
 						users that have systems to to securely manage their state files. If you wish
 						to avoid this, use the %s attribute instead.
 					`,
+					"`\\\"`",
 					"`jwks_key_id`",
 					"`jwks`",
 					"`jwks_file`",

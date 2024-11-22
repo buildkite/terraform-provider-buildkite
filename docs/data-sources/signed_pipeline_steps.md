@@ -32,14 +32,15 @@ will result in the signature changing on each run. Use EdDSA to avoid drift.
 ## Example Usage
 
 ```terraform
+# JWKS via file
 locals {
   repository = "git@github.com:my-org/my-repo.git"
 }
 
-data "buildkite_signed_pipeline_steps" "my-steps" {
+data "buildkite_signed_pipeline_steps" "signed-steps" {
   repository  = local.repository
-  jwks_file   = "/path/to/my/jwks.json"
-  jwks_key_id = "my-key"
+  jwks_file   = "/path/to/my/jwks-private.json"
+  jwks_key_id = "my-key-id"
 
   unsigned_steps = <<YAML
 steps:
@@ -48,10 +49,32 @@ steps:
 YAML
 }
 
-resource "buildkite_pipeline" "my-pipeline" {
-  name       = "my-pipeline"
+resource "buildkite_pipeline" "signed-pipeline" {
+  name       = "my-signed-pipeline"
   repository = local.repository
-  steps      = data.buildkite_signed_pipeline_steps.my-steps.steps
+  steps      = data.buildkite_signed_pipeline_steps.signed-steps.steps
+}
+
+# JWKS (JSON) string via Hashicorp Vault secret
+data "vault_generic_secret" "pipeline-jwks" {
+  path = "secret/pipelines/jwks"
+}
+
+data "buildkite_signed_pipeline_steps" "signed-steps" {
+  repository = "git@github.com:my-org/my-repo.git"
+  jwks       = data.vault_generic_secret.pipeline-jwks.data["private_key"]
+
+  unsigned_steps = <<YAML
+steps:
+- label: ":pipeline:"
+  command: buildkite-agent pipeline upload
+YAML
+}
+
+resource "buildkite_pipeline" "signed-pipeline" {
+  name       = "my-signed-pipeline"
+  repository = "git@github.com:my-org/my-repo.git"
+  steps      = data.buildkite_signed_pipeline_steps.signed-steps.steps
 }
 ```
 
@@ -66,6 +89,7 @@ resource "buildkite_pipeline" "my-pipeline" {
 ### Optional
 
 - `jwks` (String, Sensitive) The JSON Web Key Set (JWKS) to use for signing.
+All double-quotes in the JSON object must be escaped `\"`.
 If `jwks_key_id` is not specified, and the set contains exactly one key, that key will
 be used.
 
