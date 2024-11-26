@@ -1,8 +1,9 @@
 # Changelog
 
-## Unreleased
+## [v1.13.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.12.0...v1.13.0)
 
 - Support cluster queue dispatch pausing [[PR #573](https://github.com/buildkite/terraform-provider-buildkite/pull/573)] @mcncl
+- Update go-pipeline to v0.13.2 [[PR #577](https://github.com/buildkite/terraform-provider-buildkite/pull/577)] @steveh
 
 ## [v1.12.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.11.0...v1.12.0)
 

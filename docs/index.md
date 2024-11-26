@@ -14,6 +14,8 @@ This provider can be used to manage resources on [buildkite.com](https://buildki
 
 ```terraform
 terraform {
+  required_version = ">= 1.0"
+
   required_providers {
     buildkite = {
       source  = "buildkite/buildkite"

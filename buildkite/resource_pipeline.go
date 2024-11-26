@@ -544,7 +544,7 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 			"steps": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				MarkdownDescription: "The YAML steps to configure for the pipeline. Defaults to `buildkite-agent pipeline upload`.",
+				MarkdownDescription: "The YAML steps to configure for the pipeline. Can also accept the `steps` attribute from the [`buildkite_signed_pipeline_steps`](/docs/data-sources/signed_pipeline_steps) data source to enable a signed pipeline. Defaults to `buildkite-agent pipeline upload`.",
 				Validators: []validator.String{
 					stringvalidator.ConflictsWith(path.Expressions{
 						path.MatchRoot("pipeline_template_id"),

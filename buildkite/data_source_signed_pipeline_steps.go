@@ -60,6 +60,9 @@ func (s *signedPipelineStepsDataSource) Schema(
 
 				See the Buildkite [documentation](https://buildkite.com/docs/agent/v3/signed_pipelines)
 				for more info about signed pipelines.
+
+				Note that the PS512 and ES512 signature algorithms are nondeterministic and
+				will result in the signature changing on each run. Use EdDSA to avoid drift.
 			`,
 			"`buildkite_pipeline`",
 		),
@@ -98,10 +101,11 @@ func (s *signedPipelineStepsDataSource) Schema(
 				},
 			},
 			"jwks": schema.StringAttribute{
-				Description: "The JSON Web Key Set (JWKS) to use for signing. If the `jwks_key_id` is not specified, and the set contains exactly one key, that key will be used.",
+				Description: "The JSON Web Key Set (JWKS) to use for signing. All double-quotes in the JSON object must be escaped `\\\"`. If the `jwks_key_id` is not specified, and the set contains exactly one key, that key will be used.",
 				MarkdownDescription: heredoc.Docf(
 					`
 						The JSON Web Key Set (JWKS) to use for signing.
+						All double-quotes in the JSON object must be escaped %s.
 						If %s is not specified, and the set contains exactly one key, that key will
 						be used.
 
@@ -110,6 +114,7 @@ func (s *signedPipelineStepsDataSource) Schema(
 						users that have systems to to securely manage their state files. If you wish
 						to avoid this, use the %s attribute instead.
 					`,
+					"`\\\"`",
 					"`jwks_key_id`",
 					"`jwks`",
 					"`jwks_file`",
@@ -216,7 +221,7 @@ func (s *signedPipelineStepsDataSource) Read(
 		}
 	}
 
-	if err := signature.SignPipeline(p, key, data.Repository.ValueString()); err != nil {
+	if err := signature.SignSteps(ctx, p.Steps, key, data.Repository.ValueString()); err != nil {
 		resp.Diagnostics.AddError("Failed to sign pipeline", err.Error())
 		return
 	}
