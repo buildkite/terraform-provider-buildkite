@@ -1,5 +1,8 @@
 # Changelog
 
+## Unreleased
+- SUP-2744: Stop panicking on organization rule updates [[PR #584](https://github.com/buildkite/terraform-provider-buildkite/pull/584)] @james2791
+
 ## [v1.13.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.12.0...v1.13.0)
 
 - Support cluster queue dispatch pausing [[PR #573](https://github.com/buildkite/terraform-provider-buildkite/pull/573)] @mcncl
