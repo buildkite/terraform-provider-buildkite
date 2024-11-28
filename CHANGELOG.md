@@ -1,6 +1,9 @@
 # Changelog
 
-## Unreleased
+## [v1.13.1](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.13.0...v1.13.1)
+
+- SUP-1816 - Signed pipeline steps documentation updates [[PR #579](https://github.com/buildkite/terraform-provider-buildkite/pull/579)] @petetomasik
+- Document that the PS512 and ES512 algorithms are nondeterministic [[PR #583](https://github.com/buildkite/terraform-provider-buildkite/pull/583)] @petetomasik 
 - SUP-2774: Stop panicking on organization rule updates [[PR #584](https://github.com/buildkite/terraform-provider-buildkite/pull/584)] @james2791
 
 ## [v1.13.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.12.0...v1.13.0)
