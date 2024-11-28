@@ -312,7 +312,6 @@ func (or *organizationRuleResource) ImportState(ctx context.Context, req resourc
 
 func (or *organizationRuleResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	resp.Diagnostics.AddError("Cannot update an organization rule", "An existing rule must be deleted/re-created")
-	panic("cannot update an organization rule")
 }
 
 func (or *organizationRuleResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
