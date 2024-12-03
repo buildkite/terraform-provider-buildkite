@@ -44,8 +44,7 @@ resource "buildkite_test_suite_team" "main_everyone" {
 
 ## Import
 
-Import is supported using the following syntax:
-
+Using `terraform import`, import resources using the `id`. For example:
 ```shell
 # import a test suite team resource using the GraphQL ID
 #
@@ -74,4 +73,12 @@ Import is supported using the following syntax:
 #   }
 # }
 terraform import buildkite_test_suite_team.main_everyone VGVhbvDf4eRef20tMzIxMGEfYTctNzEF5g00M8f5s6E2YjYtODNlOGNlZgD6HcBi
+```
+
+In Terraform v1.5.0 and later, use an [`import` block](https://developer.hashicorp.com/terraform/language/import) to import instances using the `id`. For example:
+```terraform
+import {
+  to = buildkite_test_suite_team.main_everyone
+  id = "VGVhbvDf4eRef20tMzIxMGEfYTctNzEF5g00M8f5s6E2YjYtODNlOGNlZgD6HcBi"
+}
 ```

@@ -43,8 +43,7 @@ resource "buildkite_team_member" "a_smith" {
 
 ## Import
 
-Import is supported using the following syntax:
-
+Using `terraform import`, import resources using the `id`. For example:
 ```shell
 # import a team member resource using the GraphQL ID
 #
@@ -67,4 +66,12 @@ Import is supported using the following syntax:
 #   }
 # }
 terraform import buildkite_team_member.a_smith VGVhbU1lbWJlci0tLTVlZDEyMmY2LTM2NjQtNDI1MS04YzMwLTc4NjRiMDdiZDQ4Zg==
+```
+
+In Terraform v1.5.0 and later, use an [`import` block](https://developer.hashicorp.com/terraform/language/import) to import instances using the `id`. For example:
+```terraform
+import {
+  to = buildkite_team_member.a_smith
+  id = "VGVhbU1lbWJlci0tLTVlZDEyMmY2LTM2NjQtNDI1MS04YzMwLTc4NjRiMDdiZDQ4Zg=="
+}
 ```

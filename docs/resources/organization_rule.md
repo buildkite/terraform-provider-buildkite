@@ -77,8 +77,7 @@ resource "buildkite_organization_rule" "trigger_build_test_dev_cond" {
 
 ## Import
 
-Import is supported using the following syntax:
-
+Using `terraform import`, import resources using the `id`. For example:
 ```shell
 # import an organization rule resource using the rules GraphQL ID
 #
@@ -125,6 +124,13 @@ Import is supported using the following syntax:
 #     }
 #   }
 # }
-
 terraform import buildkite_organization_rule.artifact_read UnVsZS0tLTAxOTE5NmU2LWNiNjctNzZiZi1iYzAyLTVhYzFiNzhhMWMyOA==
+```
+
+In Terraform v1.5.0 and later, use an [`import` block](https://developer.hashicorp.com/terraform/language/import) to import instances using the `id`. For example:
+```terraform
+import {
+  to = buildkite_organization_rule.artifact_read
+  id = "UnVsZS0tLTAxOTE5NmU2LWNiNjctNzZiZi1iYzAyLTVhYzFiNzhhMWMyOA=="
+}
 ```

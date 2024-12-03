@@ -49,8 +49,7 @@ resource "buildkite_pipeline_template" "template_full" {
 
 ## Import
 
-Import is supported using the following syntax:
-
+Using `terraform import`, import resources using the `id`. For example:
 ```shell
 # import a pipeline template resource using the templates GraphQL ID
 #
@@ -68,4 +67,12 @@ Import is supported using the following syntax:
 #   }
 # }
 terraform import buildkite_pipeline_template.template UGlwZWxpbmVUZW1wbGF0ZS0tLWU0YWQ3YjdjLTljZDYtNGM0MS1hYWE0LTY2ZmI3ODY0MTMwNw==
+```
+
+In Terraform v1.5.0 and later, use an [`import` block](https://developer.hashicorp.com/terraform/language/import) to import instances using the `id`. For example:
+```terraform
+import {
+  to = buildkite_pipeline_template.template
+  id = "UGlwZWxpbmVUZW1wbGF0ZS0tLWU0YWQ3YjdjLTljZDYtNGM0MS1hYWE0LTY2ZmI3ODY0MTMwNw=="
+}
 ```

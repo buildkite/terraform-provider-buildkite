@@ -55,8 +55,7 @@ resource "buildkite_pipeline_schedule" "nightly" {
 
 ## Import
 
-Import is supported using the following syntax:
-
+Using `terraform import`, import resources using the `id`. For example:
 ```shell
 # import a pipeline schedule resource using the schedules GraphQL ID
 #
@@ -80,4 +79,12 @@ Import is supported using the following syntax:
 #   }
 # }
 terraform import buildkite_pipeline_schedule.test UGlwZWxpgm5Tf2hhZHVsZ35tLWRk4DdmN7c4LTA5M2ItNDM9YS0gMWE0LTAwZDUgYTAxYvRf49==
+```
+
+In Terraform v1.5.0 and later, use an [`import` block](https://developer.hashicorp.com/terraform/language/import) to import instances using the `id`. For example:
+```terraform
+import {
+  to = buildkite_pipeline_schedule.test
+  id = "UGlwZWxpgm5Tf2hhZHVsZ35tLWRk4DdmN7c4LTA5M2ItNDM9YS0gMWE0LTAwZDUgYTAxYvRf49=="
+}
 ```
