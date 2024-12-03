@@ -23,7 +23,9 @@ description: |-
 
 ## Import
 
-Import is supported using the following syntax:
-
+Using `terraform import`, import resources using the `id`. For example:
 {{codefile "shell" .ImportFile }}
+
+In Terraform v1.5.0 and later, use an [`import` block](https://developer.hashicorp.com/terraform/language/import) to import instances using the `id`. For example:
+{{ $tfImportBlock := print "examples/resources/" .Name "/import.tf" }}{{tffile $tfImportBlock }}
 {{- end }}
