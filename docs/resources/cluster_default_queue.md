@@ -50,8 +50,7 @@ resource "buildkite_cluster_default_queue" "primary" {
 
 ## Import
 
-Import is supported using the following syntax:
-
+Using `terraform import`, import resources using the `id`. For example:
 ```shell
 # import a clusters default queue resource using the GraphQL ID of the cluster itself
 #
@@ -69,4 +68,12 @@ Import is supported using the following syntax:
 #   }
 # }
 terraform import buildkite_cluster_default_queue.primary Q2x1c3Rlci0tLTI3ZmFmZjA4LTA3OWEtNDk5ZC1hMmIwLTIzNmY3NWFkMWZjYg==
+```
+
+In Terraform v1.5.0 and later, use an [`import` block](https://developer.hashicorp.com/terraform/language/import) to import instances using the `id`. For example:
+```terraform
+import {
+  to = buildkite_cluster_default_queue.primary
+  id = "Q2x1c3Rlci0tLTI3ZmFmZjA4LTA3OWEtNDk5ZC1hMmIwLTIzNmY3NWFkMWZjYg=="
+}
 ```

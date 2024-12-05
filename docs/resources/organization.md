@@ -40,9 +40,16 @@ resource "buildkite_organization" "settings" {
 
 ## Import
 
-Import is supported using the following syntax:
-
+Using `terraform import`, import resources using the `organization-slug`. For example:
 ```shell
 # import the organization settings via the organization slug
-terraform import buildkite_organization.settings <organization slug>
+terraform import buildkite_organization.settings my-buildkite-organization
+```
+
+In Terraform v1.5.0 and later, use an [`import` block](https://developer.hashicorp.com/terraform/language/import) to import instances using the `organization-slug`. For example:
+```terraform
+import {
+  to = buildkite_organization.settings
+  id = "my-buildkite-organization"
+}
 ```

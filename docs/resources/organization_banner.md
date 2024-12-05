@@ -35,8 +35,7 @@ resource "buildkite_organization_banner" "banner" {
 
 ## Import
 
-Import is supported using the following syntax:
-
+Using `terraform import`, import resources using the `id`. For example:
 ```shell
 # import an organization banner resource using the banner's GraphQL ID
 #
@@ -52,6 +51,13 @@ Import is supported using the following syntax:
 #     }
 #   }
 # }
-
 terraform import buildkite_organization_banner.banner T3JnYW5pemF0aW9uQmFubmVyLS0tNjZlMmE5YzktM2IzMy00OGE5LTk1NjItMzY2YzMwNzYzN2Uz
+```
+
+In Terraform v1.5.0 and later, use an [`import` block](https://developer.hashicorp.com/terraform/language/import) to import instances using the `id`. For example:
+```terraform
+import {
+  to = buildkite_organization_banner.banner
+  id = "T3JnYW5pemF0aW9uQmFubmVyLS0tNjZlMmE5YzktM2IzMy00OGE5LTk1NjItMzY2YzMwNzYzN2Uz"
+}
 ```

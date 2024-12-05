@@ -36,3 +36,33 @@ resource "buildkite_test_suite" "main" {
 - `id` (String) The GraphQL ID of the test suite.
 - `slug` (String) The generated slug of the test suite.
 - `uuid` (String) The UUID of the test suite.
+
+## Import
+
+Using `terraform import`, import resources using the `id`. For example:
+```shell
+# import a test suite resource using the GraphQL ID
+#
+# you can use this query to find the ID:
+# query getSuiteIds {
+#   organization(slug: "ORGANIZATION_SLUG") {
+#     suites(first: 1, search:"SUITE_SEARCH_TERM") {
+#       edges {
+#         node {
+#           id
+#           name
+#         }
+#       }
+#     }
+#   }
+# }
+terraform import buildkite_test_suite.acceptance VGVhbvDf4eRef20tMzIxMGEfYTctNzEF5g00M8f5s6E2YjYtODNlOGNlZgD6HcBi
+```
+
+In Terraform v1.5.0 and later, use an [`import` block](https://developer.hashicorp.com/terraform/language/import) to import instances using the `id`. For example:
+```terraform
+import {
+  to = buildkite_test_suite.acceptance
+  id = "VGVhbvDf4eRef20tMzIxMGEfYTctNzEF5g00M8f5s6E2YjYtODNlOGNlZgD6HcBi"
+}
+```
