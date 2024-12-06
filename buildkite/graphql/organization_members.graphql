@@ -1,0 +1,16 @@
+query GetOrganizationMembers($slug: ID!) {
+    organization(slug: $slug) {
+        members(first: 50) {
+            edges {
+                node {
+                    user {
+                        id
+                        uuid
+                        name
+                        email
+                    }
+                }
+            }
+        }
+    }
+}
