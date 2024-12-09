@@ -631,45 +631,45 @@ union AuditSubjectNode =APIAccessToken | AgentToken | AuthorizationBitbucket | A
 
 """All the possible types of subjects in an Audit Event"""
 enum AuditSubjectType {
-	USER_TOTP
-	REGISTRY
 	SUBSCRIPTION
+	REGISTRY
 	JOB
 	CLUSTER_PERMISSION
 	AGENT_TOKEN
 	API_ACCESS_TOKEN
 	CLUSTER_QUEUE
+	CLUSTER_TOKEN
 	NOTIFICATION_SERVICE
 	ORGANIZATION_BANNER
-	ORGANIZATION_INVITATION
+	PIPELINE
 	ORGANIZATION_MEMBER
-	ORGANIZATION_IMPERSONATION_REQUEST
 	PIPELINE_SCHEDULE
 	PIPELINE_TEMPLATE
 	PORTAL
-	PIPELINE
 	TEAM_MEMBER
 	TEAM_PIPELINE
-	TEAM_REGISTRY
-	CLUSTER_TOKEN
-	COMPOSITE_REGISTRY_UPSTREAM
 	CLUSTER_QUEUE_TOKEN
 	AUTHORIZATION
+	ORGANIZATION_INVITATION
+	TEAM_REGISTRY
+	ORGANIZATION_IMPERSONATION_REQUEST
+	ORGANIZATION
 	REGISTRY_TOKEN
 	TEAM_SUITE
+	COMPOSITE_REGISTRY_UPSTREAM
 	RULE
-	SCM_PIPELINE_SETTINGS
-	CLUSTER
-	ORGANIZATION
-	USER_EMAIL
-	SCM_REPOSITORY_HOST
 	SSO_PROVIDER
+	CLUSTER
+	SCM_PIPELINE_SETTINGS
 	SECRET
-	USER
 	SUITE_MONITOR
 	SCM_SERVICE
 	SUITE
 	TEAM
+	USER_EMAIL
+	USER
+	SCM_REPOSITORY_HOST
+	USER_TOTP
 }
 
 """Context for an audit event created during a web request"""
@@ -1659,26 +1659,14 @@ type HostedAgentInstanceShape {
 
 """Possible instance shapes for the hosted agent instance"""
 enum HostedAgentInstanceShapeName {
-"""Linux 2 vCPU x 4 GB Memory"""
-	LINUX_ARM64_2X4
-"""Linux 4 vCPU x 16 GB Memory"""
-	LINUX_ARM64_4X16
-"""Linux 8 vCPU x 32 GB Memory"""
-	LINUX_ARM64_8X32
-"""Linux 8 vCPU x 16 GB Memory (Deprecated)"""
-	LINUX_ARM64_8X16
-"""Linux 16 vCPU x 64 GB Memory"""
-	LINUX_ARM64_16X64
-"""macOS 4 vCPU x 7 GB Memory"""
-	MACOS_M2_4X7
-"""macOS 6 vCPU x 14 GB Memory"""
-	MACOS_M2_6X14
 """macOS 12 vCPU x 28 GB Memory"""
 	MACOS_M2_12X28
 """macOS 12 vCPU x 56 GB Memory"""
 	MACOS_M4_12X56
 """Linux 4 vCPU x 8 GB Memory (Deprecated)"""
 	LINUX_ARM64_4X8
+"""Linux 8 vCPU x 16 GB Memory (Deprecated)"""
+	LINUX_ARM64_8X16
 """Linux 2 vCPU x 4 GB Memory"""
 	LINUX_AMD64_2X4
 """Linux 4 vCPU x 16 GB Memory"""
@@ -1691,6 +1679,18 @@ enum HostedAgentInstanceShapeName {
 	LINUX_AMD64_8X16
 """Linux 16 vCPU x 64 GB Memory"""
 	LINUX_AMD64_16X64
+"""Linux 2 vCPU x 4 GB Memory"""
+	LINUX_ARM64_2X4
+"""Linux 4 vCPU x 16 GB Memory"""
+	LINUX_ARM64_4X16
+"""Linux 8 vCPU x 32 GB Memory"""
+	LINUX_ARM64_8X32
+"""Linux 16 vCPU x 64 GB Memory"""
+	LINUX_ARM64_16X64
+"""macOS 4 vCPU x 7 GB Memory"""
+	MACOS_M2_4X7
+"""macOS 6 vCPU x 14 GB Memory"""
+	MACOS_M2_6X14
 }
 
 """Configuration options specific to Linux hosted agent instances."""

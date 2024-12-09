@@ -29,7 +29,7 @@ func testAccCheckOrganizationMembersExist(resourceName string) resource.TestChec
 	return func(s *terraform.State) error {
 		// retrieve the resource by name from state
 		_, err := s.RootModule().Resources[resourceName]
-		if err != nil {
+		if err {
 			return fmt.Errorf("Not found: %s", resourceName)
 		}
 		return nil

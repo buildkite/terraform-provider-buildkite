@@ -169,7 +169,13 @@ func (v *GetOrganizationMembersOrganization) GetMembers() GetOrganizationMembers
 
 // GetOrganizationMembersOrganizationMembersOrganizationMemberConnection includes the requested fields of the GraphQL type OrganizationMemberConnection.
 type GetOrganizationMembersOrganizationMembersOrganizationMemberConnection struct {
-	Edges []GetOrganizationMembersOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdge `json:"edges"`
+	PageInfo GetOrganizationMembersOrganizationMembersOrganizationMemberConnectionPageInfo                      `json:"pageInfo"`
+	Edges    []GetOrganizationMembersOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdge `json:"edges"`
+}
+
+// GetPageInfo returns GetOrganizationMembersOrganizationMembersOrganizationMemberConnection.PageInfo, and is useful for accessing the field via an interface.
+func (v *GetOrganizationMembersOrganizationMembersOrganizationMemberConnection) GetPageInfo() GetOrganizationMembersOrganizationMembersOrganizationMemberConnectionPageInfo {
+	return v.PageInfo
 }
 
 // GetEdges returns GetOrganizationMembersOrganizationMembersOrganizationMemberConnection.Edges, and is useful for accessing the field via an interface.
@@ -232,6 +238,27 @@ func (v *GetOrganizationMembersOrganizationMembersOrganizationMemberConnectionEd
 // GetEmail returns GetOrganizationMembersOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdgeNodeOrganizationMemberUser.Email, and is useful for accessing the field via an interface.
 func (v *GetOrganizationMembersOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdgeNodeOrganizationMemberUser) GetEmail() string {
 	return v.Email
+}
+
+// GetOrganizationMembersOrganizationMembersOrganizationMemberConnectionPageInfo includes the requested fields of the GraphQL type PageInfo.
+// The GraphQL type's documentation follows.
+//
+// Information about pagination in a connection.
+type GetOrganizationMembersOrganizationMembersOrganizationMemberConnectionPageInfo struct {
+	// When paginating forwards, the cursor to continue.
+	EndCursor string `json:"endCursor"`
+	// When paginating forwards, are there more items?
+	HasNextPage bool `json:"hasNextPage"`
+}
+
+// GetEndCursor returns GetOrganizationMembersOrganizationMembersOrganizationMemberConnectionPageInfo.EndCursor, and is useful for accessing the field via an interface.
+func (v *GetOrganizationMembersOrganizationMembersOrganizationMemberConnectionPageInfo) GetEndCursor() string {
+	return v.EndCursor
+}
+
+// GetHasNextPage returns GetOrganizationMembersOrganizationMembersOrganizationMemberConnectionPageInfo.HasNextPage, and is useful for accessing the field via an interface.
+func (v *GetOrganizationMembersOrganizationMembersOrganizationMemberConnectionPageInfo) GetHasNextPage() bool {
+	return v.HasNextPage
 }
 
 // GetOrganizationMembersResponse is returned by GetOrganizationMembers on success.
@@ -1761,11 +1788,15 @@ func (v *TeamSuiteFieldsTeam) GetId() string { return v.Id }
 
 // __GetOrganizationMembersInput is used internally by genqlient
 type __GetOrganizationMembersInput struct {
-	Slug string `json:"slug"`
+	Slug   string  `json:"slug"`
+	Cursor *string `json:"cursor"`
 }
 
 // GetSlug returns __GetOrganizationMembersInput.Slug, and is useful for accessing the field via an interface.
 func (v *__GetOrganizationMembersInput) GetSlug() string { return v.Slug }
+
+// GetCursor returns __GetOrganizationMembersInput.Cursor, and is useful for accessing the field via an interface.
+func (v *__GetOrganizationMembersInput) GetCursor() *string { return v.Cursor }
 
 // __GetTeamFromSlugInput is used internally by genqlient
 type __GetTeamFromSlugInput struct {
@@ -13970,9 +14001,13 @@ func (v *upsertBannerResponse) GetOrganizationBannerUpsert() upsertBannerOrganiz
 
 // The query or mutation executed by GetOrganizationMembers.
 const GetOrganizationMembers_Operation = `
-query GetOrganizationMembers ($slug: ID!) {
+query GetOrganizationMembers ($slug: ID!, $cursor: String) {
 	organization(slug: $slug) {
-		members(first: 50) {
+		members(first: 100, after: $cursor) {
+			pageInfo {
+				endCursor
+				hasNextPage
+			}
 			edges {
 				node {
 					user {
@@ -13992,12 +14027,14 @@ func GetOrganizationMembers(
 	ctx_ context.Context,
 	client_ graphql.Client,
 	slug string,
+	cursor *string,
 ) (*GetOrganizationMembersResponse, error) {
 	req_ := &graphql.Request{
 		OpName: "GetOrganizationMembers",
 		Query:  GetOrganizationMembers_Operation,
 		Variables: &__GetOrganizationMembersInput{
-			Slug: slug,
+			Slug:   slug,
+			Cursor: cursor,
 		},
 	}
 	var err_ error

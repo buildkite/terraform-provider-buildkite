@@ -83,25 +83,34 @@ func (o *organizationMembersDatasource) Read(ctx context.Context, req datasource
 		return
 	}
 
-	res, err := GetOrganizationMembers(ctx, o.client.genqlient, o.client.organization)
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Unable to get organization members",
-			fmt.Sprintf("Error getting members: %s", err.Error()),
-		)
-		return
-	}
+	var cursor *string
+	for {
+		res, err := GetOrganizationMembers(ctx, o.client.genqlient, o.client.organization, cursor)
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Unable to get organization members",
+				fmt.Sprintf("Error getting members: %s", err.Error()),
+			)
+			return
+		}
 
-	if len(res.Organization.Members.Edges) == 0 {
-		resp.Diagnostics.AddError(
-			"No organization members found",
-			fmt.Sprintf("Error getting members for organization: %s", o.client.organization),
-		)
-		return
-	}
+		if len(res.Organization.Members.Edges) == 0 {
+			resp.Diagnostics.AddError(
+				"No organization members found",
+				fmt.Sprintf("Error getting members for organization: %s", o.client.organization),
+			)
+			return
+		}
 
-	for _, member := range res.Organization.Members.Edges {
-		updateOrganizationMembersDatasourceState(&state, member)
+		for _, member := range res.Organization.Members.Edges {
+			updateOrganizationMembersDatasourceState(&state, member)
+		}
+
+		if !res.Organization.Members.PageInfo.HasNextPage {
+			break
+		}
+
+		cursor = &res.Organization.Members.PageInfo.EndCursor
 	}
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
