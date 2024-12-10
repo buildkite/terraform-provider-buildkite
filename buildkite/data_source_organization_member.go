@@ -40,7 +40,7 @@ func (o *organizationMemberDatasource) Metadata(ctx context.Context, req datasou
 func (o *organizationMemberDatasource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		MarkdownDescription: heredoc.Doc(`
-			Use this data source to retrieve a specific organization  member, using their UUID or email. You can find out more about organization members in the Buildkite
+			Use this data source to retrieve a specific organization member, using their email. You can find out more about organization members in the Buildkite
 			[documentation](https://buildkite.com/docs/platform/team-management).
 		`),
 		Attributes: map[string]schema.Attribute{
@@ -76,7 +76,7 @@ func (o *organizationMemberDatasource) Read(ctx context.Context, req datasource.
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to get organization member",
-			fmt.Sprintf("Error getting member: %s", err.Error()),
+			fmt.Sprintf("Error getting organization member: %s", err.Error()),
 		)
 		return
 	}
@@ -84,7 +84,7 @@ func (o *organizationMemberDatasource) Read(ctx context.Context, req datasource.
 	if len(res.Organization.Members.Edges) == 0 {
 		resp.Diagnostics.AddError(
 			"No organization member found",
-			fmt.Sprintf("Error getting organization member: %s", state.Email.ValueString()),
+			fmt.Sprintf("Organization member not found: %s", state.Email.ValueString()),
 		)
 		return
 	}

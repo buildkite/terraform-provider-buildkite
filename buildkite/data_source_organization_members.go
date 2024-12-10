@@ -53,19 +53,19 @@ func (o *organizationMembersDatasource) Schema(ctx context.Context, req datasour
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
 						"id": schema.StringAttribute{
-							MarkdownDescription: "The GraphQL ID of the to find.",
+							MarkdownDescription: "The GraphQL ID of the organization member.",
 							Computed:            true,
 						},
 						"uuid": schema.StringAttribute{
-							MarkdownDescription: "The UUID of the organization members.",
+							MarkdownDescription: "The UUID of the organization member.",
 							Computed:            true,
 						},
 						"name": schema.StringAttribute{
-							MarkdownDescription: "The name of the organization members.",
+							MarkdownDescription: "The name of the organization member.",
 							Computed:            true,
 						},
 						"email": schema.StringAttribute{
-							MarkdownDescription: "The email address of the organization members.",
+							MarkdownDescription: "The email address of the organization member.",
 							Computed:            true,
 						},
 					},
@@ -89,7 +89,7 @@ func (o *organizationMembersDatasource) Read(ctx context.Context, req datasource
 		if err != nil {
 			resp.Diagnostics.AddError(
 				"Unable to get organization members",
-				fmt.Sprintf("Error getting members: %s", err.Error()),
+				fmt.Sprintf("Error getting organization members: %s", err.Error()),
 			)
 			return
 		}
