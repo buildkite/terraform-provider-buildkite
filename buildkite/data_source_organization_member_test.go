@@ -9,13 +9,13 @@ import (
 )
 
 func testDatasourceOrganizationMemberConfig() string {
-	return fmt.Sprint(`
+	return `
 	  data "buildkite_organization_members" "members" {}
 
 		data "buildkite_organization_member" "member" {
 			email = data.buildkite_organization_members.members.members[0].email
 		}
-	`)
+	`
 }
 
 func TestAccBuildkiteOrganizationMemberDatasource(t *testing.T) {
