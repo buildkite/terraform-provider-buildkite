@@ -3,13 +3,13 @@
 page_title: "buildkite_organization_member Data Source - terraform-provider-buildkite"
 subcategory: ""
 description: |-
-  Use this data source to retrieve a specific organization  member, using their UUID or email. You can find out more about organization members in the Buildkite
+  Use this data source to retrieve a specific organization member, using their email. You can find out more about organization members in the Buildkite
   documentation https://buildkite.com/docs/platform/team-management.
 ---
 
 # buildkite_organization_member (Data Source)
 
-Use this data source to retrieve a specific organization  member, using their UUID or email. You can find out more about organization members in the Buildkite
+Use this data source to retrieve a specific organization member, using their email. You can find out more about organization members in the Buildkite
 [documentation](https://buildkite.com/docs/platform/team-management).
 
 ## Example Usage

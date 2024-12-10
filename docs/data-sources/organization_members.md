@@ -30,7 +30,7 @@ data "buildkite_organization_members" "members" {}
 
 Read-Only:
 
-- `email` (String) The email address of the organization members.
-- `id` (String) The GraphQL ID of the to find.
-- `name` (String) The name of the organization members.
-- `uuid` (String) The UUID of the organization members.
+- `email` (String) The email address of the organization member.
+- `id` (String) The GraphQL ID of the organization member.
+- `name` (String) The name of the organization member.
+- `uuid` (String) The UUID of the organization member.
