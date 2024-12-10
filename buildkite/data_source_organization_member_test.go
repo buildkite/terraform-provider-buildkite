@@ -17,7 +17,7 @@ func testDatasourceOrganizationMemberConfig() string {
 }
 
 func TestAccBuildkiteOrganizationMemberDatasource(t *testing.T) {
-	t.Run("organization members data source can be loaded with defaults", func(t *testing.T) {
+	t.Run("loads an organization member data source with required attribute", func(t *testing.T) {
 		resource.ParallelTest(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },
 			ProtoV6ProviderFactories: protoV6ProviderFactories(),
