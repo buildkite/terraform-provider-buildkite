@@ -27,7 +27,7 @@ func TestAccBuildkiteOrganizationMemberDatasource(t *testing.T) {
 				{
 					Config: testDatasourceOrganizationMemberConfig(),
 					Check: resource.ComposeTestCheckFunc(
-						testAccCheckOrganizationMemberExists("data.buildkite_organization_member.member"),
+						resource.TestCheckResourceAttrSet("data.buildkite_organization_member.member", "id"),
 					),
 				},
 			},
