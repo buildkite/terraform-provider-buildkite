@@ -1,11 +1,9 @@
 package buildkite
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
-	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
 func TestAccBuildkiteOrganizationMembersDatasource(t *testing.T) {
@@ -23,15 +21,4 @@ func TestAccBuildkiteOrganizationMembersDatasource(t *testing.T) {
 			},
 		})
 	})
-}
-
-func testAccCheckOrganizationMembersExist(resourceName string) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		// retrieve the resource by name from state
-		_, err := s.RootModule().Resources[resourceName]
-		if err {
-			return fmt.Errorf("Not found: %s", resourceName)
-		}
-		return nil
-	}
 }
