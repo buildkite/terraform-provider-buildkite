@@ -4,7 +4,7 @@ query GetOrganizationMembers(
     $cursor: String
 ) {
     organization(slug: $slug) {
-        members(first: 100, after: $cursor) {
+        members(first: 500, after: $cursor) {
             pageInfo {
                 endCursor
                 hasNextPage

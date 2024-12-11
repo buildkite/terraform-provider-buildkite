@@ -14155,7 +14155,7 @@ func GetOrganizationMemberByEmail(
 const GetOrganizationMembers_Operation = `
 query GetOrganizationMembers ($slug: ID!, $cursor: String) {
 	organization(slug: $slug) {
-		members(first: 100, after: $cursor) {
+		members(first: 500, after: $cursor) {
 			pageInfo {
 				endCursor
 				hasNextPage
