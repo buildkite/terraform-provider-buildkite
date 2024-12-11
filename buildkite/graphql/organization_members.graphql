@@ -1,0 +1,24 @@
+query GetOrganizationMembers(
+    $slug: ID!,
+    # @genqlient(pointer: true)
+    $cursor: String
+) {
+    organization(slug: $slug) {
+        members(first: 500, after: $cursor) {
+            pageInfo {
+                endCursor
+                hasNextPage
+            }
+            edges {
+                node {
+                    user {
+                        id
+                        uuid
+                        name
+                        email
+                    }
+                }
+            }
+        }
+    }
+}

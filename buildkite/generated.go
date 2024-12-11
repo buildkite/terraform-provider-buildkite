@@ -153,6 +153,217 @@ func (v *ClusterQueueValuesCluster) GetId() string { return v.Id }
 // GetUuid returns ClusterQueueValuesCluster.Uuid, and is useful for accessing the field via an interface.
 func (v *ClusterQueueValuesCluster) GetUuid() string { return v.Uuid }
 
+// GetOrganizationMemberByEmailOrganization includes the requested fields of the GraphQL type Organization.
+// The GraphQL type's documentation follows.
+//
+// An organization
+type GetOrganizationMemberByEmailOrganization struct {
+	// Returns users within the organization
+	Members GetOrganizationMemberByEmailOrganizationMembersOrganizationMemberConnection `json:"members"`
+}
+
+// GetMembers returns GetOrganizationMemberByEmailOrganization.Members, and is useful for accessing the field via an interface.
+func (v *GetOrganizationMemberByEmailOrganization) GetMembers() GetOrganizationMemberByEmailOrganizationMembersOrganizationMemberConnection {
+	return v.Members
+}
+
+// GetOrganizationMemberByEmailOrganizationMembersOrganizationMemberConnection includes the requested fields of the GraphQL type OrganizationMemberConnection.
+type GetOrganizationMemberByEmailOrganizationMembersOrganizationMemberConnection struct {
+	Edges []GetOrganizationMemberByEmailOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdge `json:"edges"`
+}
+
+// GetEdges returns GetOrganizationMemberByEmailOrganizationMembersOrganizationMemberConnection.Edges, and is useful for accessing the field via an interface.
+func (v *GetOrganizationMemberByEmailOrganizationMembersOrganizationMemberConnection) GetEdges() []GetOrganizationMemberByEmailOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdge {
+	return v.Edges
+}
+
+// GetOrganizationMemberByEmailOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdge includes the requested fields of the GraphQL type OrganizationMemberEdge.
+type GetOrganizationMemberByEmailOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdge struct {
+	Node GetOrganizationMemberByEmailOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdgeNodeOrganizationMember `json:"node"`
+}
+
+// GetNode returns GetOrganizationMemberByEmailOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdge.Node, and is useful for accessing the field via an interface.
+func (v *GetOrganizationMemberByEmailOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdge) GetNode() GetOrganizationMemberByEmailOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdgeNodeOrganizationMember {
+	return v.Node
+}
+
+// GetOrganizationMemberByEmailOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdgeNodeOrganizationMember includes the requested fields of the GraphQL type OrganizationMember.
+// The GraphQL type's documentation follows.
+//
+// A member of an organization
+type GetOrganizationMemberByEmailOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdgeNodeOrganizationMember struct {
+	User GetOrganizationMemberByEmailOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdgeNodeOrganizationMemberUser `json:"user"`
+}
+
+// GetUser returns GetOrganizationMemberByEmailOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdgeNodeOrganizationMember.User, and is useful for accessing the field via an interface.
+func (v *GetOrganizationMemberByEmailOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdgeNodeOrganizationMember) GetUser() GetOrganizationMemberByEmailOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdgeNodeOrganizationMemberUser {
+	return v.User
+}
+
+// GetOrganizationMemberByEmailOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdgeNodeOrganizationMemberUser includes the requested fields of the GraphQL type User.
+// The GraphQL type's documentation follows.
+//
+// A user
+type GetOrganizationMemberByEmailOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdgeNodeOrganizationMemberUser struct {
+	Id string `json:"id"`
+	// The public UUID of the user
+	Uuid string `json:"uuid"`
+	// The name of the user
+	Name string `json:"name"`
+	// The primary email for the user
+	Email string `json:"email"`
+}
+
+// GetId returns GetOrganizationMemberByEmailOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdgeNodeOrganizationMemberUser.Id, and is useful for accessing the field via an interface.
+func (v *GetOrganizationMemberByEmailOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdgeNodeOrganizationMemberUser) GetId() string {
+	return v.Id
+}
+
+// GetUuid returns GetOrganizationMemberByEmailOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdgeNodeOrganizationMemberUser.Uuid, and is useful for accessing the field via an interface.
+func (v *GetOrganizationMemberByEmailOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdgeNodeOrganizationMemberUser) GetUuid() string {
+	return v.Uuid
+}
+
+// GetName returns GetOrganizationMemberByEmailOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdgeNodeOrganizationMemberUser.Name, and is useful for accessing the field via an interface.
+func (v *GetOrganizationMemberByEmailOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdgeNodeOrganizationMemberUser) GetName() string {
+	return v.Name
+}
+
+// GetEmail returns GetOrganizationMemberByEmailOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdgeNodeOrganizationMemberUser.Email, and is useful for accessing the field via an interface.
+func (v *GetOrganizationMemberByEmailOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdgeNodeOrganizationMemberUser) GetEmail() string {
+	return v.Email
+}
+
+// GetOrganizationMemberByEmailResponse is returned by GetOrganizationMemberByEmail on success.
+type GetOrganizationMemberByEmailResponse struct {
+	// Find an organization
+	Organization GetOrganizationMemberByEmailOrganization `json:"organization"`
+}
+
+// GetOrganization returns GetOrganizationMemberByEmailResponse.Organization, and is useful for accessing the field via an interface.
+func (v *GetOrganizationMemberByEmailResponse) GetOrganization() GetOrganizationMemberByEmailOrganization {
+	return v.Organization
+}
+
+// GetOrganizationMembersOrganization includes the requested fields of the GraphQL type Organization.
+// The GraphQL type's documentation follows.
+//
+// An organization
+type GetOrganizationMembersOrganization struct {
+	// Returns users within the organization
+	Members GetOrganizationMembersOrganizationMembersOrganizationMemberConnection `json:"members"`
+}
+
+// GetMembers returns GetOrganizationMembersOrganization.Members, and is useful for accessing the field via an interface.
+func (v *GetOrganizationMembersOrganization) GetMembers() GetOrganizationMembersOrganizationMembersOrganizationMemberConnection {
+	return v.Members
+}
+
+// GetOrganizationMembersOrganizationMembersOrganizationMemberConnection includes the requested fields of the GraphQL type OrganizationMemberConnection.
+type GetOrganizationMembersOrganizationMembersOrganizationMemberConnection struct {
+	PageInfo GetOrganizationMembersOrganizationMembersOrganizationMemberConnectionPageInfo                      `json:"pageInfo"`
+	Edges    []GetOrganizationMembersOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdge `json:"edges"`
+}
+
+// GetPageInfo returns GetOrganizationMembersOrganizationMembersOrganizationMemberConnection.PageInfo, and is useful for accessing the field via an interface.
+func (v *GetOrganizationMembersOrganizationMembersOrganizationMemberConnection) GetPageInfo() GetOrganizationMembersOrganizationMembersOrganizationMemberConnectionPageInfo {
+	return v.PageInfo
+}
+
+// GetEdges returns GetOrganizationMembersOrganizationMembersOrganizationMemberConnection.Edges, and is useful for accessing the field via an interface.
+func (v *GetOrganizationMembersOrganizationMembersOrganizationMemberConnection) GetEdges() []GetOrganizationMembersOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdge {
+	return v.Edges
+}
+
+// GetOrganizationMembersOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdge includes the requested fields of the GraphQL type OrganizationMemberEdge.
+type GetOrganizationMembersOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdge struct {
+	Node GetOrganizationMembersOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdgeNodeOrganizationMember `json:"node"`
+}
+
+// GetNode returns GetOrganizationMembersOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdge.Node, and is useful for accessing the field via an interface.
+func (v *GetOrganizationMembersOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdge) GetNode() GetOrganizationMembersOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdgeNodeOrganizationMember {
+	return v.Node
+}
+
+// GetOrganizationMembersOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdgeNodeOrganizationMember includes the requested fields of the GraphQL type OrganizationMember.
+// The GraphQL type's documentation follows.
+//
+// A member of an organization
+type GetOrganizationMembersOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdgeNodeOrganizationMember struct {
+	User GetOrganizationMembersOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdgeNodeOrganizationMemberUser `json:"user"`
+}
+
+// GetUser returns GetOrganizationMembersOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdgeNodeOrganizationMember.User, and is useful for accessing the field via an interface.
+func (v *GetOrganizationMembersOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdgeNodeOrganizationMember) GetUser() GetOrganizationMembersOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdgeNodeOrganizationMemberUser {
+	return v.User
+}
+
+// GetOrganizationMembersOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdgeNodeOrganizationMemberUser includes the requested fields of the GraphQL type User.
+// The GraphQL type's documentation follows.
+//
+// A user
+type GetOrganizationMembersOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdgeNodeOrganizationMemberUser struct {
+	Id string `json:"id"`
+	// The public UUID of the user
+	Uuid string `json:"uuid"`
+	// The name of the user
+	Name string `json:"name"`
+	// The primary email for the user
+	Email string `json:"email"`
+}
+
+// GetId returns GetOrganizationMembersOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdgeNodeOrganizationMemberUser.Id, and is useful for accessing the field via an interface.
+func (v *GetOrganizationMembersOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdgeNodeOrganizationMemberUser) GetId() string {
+	return v.Id
+}
+
+// GetUuid returns GetOrganizationMembersOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdgeNodeOrganizationMemberUser.Uuid, and is useful for accessing the field via an interface.
+func (v *GetOrganizationMembersOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdgeNodeOrganizationMemberUser) GetUuid() string {
+	return v.Uuid
+}
+
+// GetName returns GetOrganizationMembersOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdgeNodeOrganizationMemberUser.Name, and is useful for accessing the field via an interface.
+func (v *GetOrganizationMembersOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdgeNodeOrganizationMemberUser) GetName() string {
+	return v.Name
+}
+
+// GetEmail returns GetOrganizationMembersOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdgeNodeOrganizationMemberUser.Email, and is useful for accessing the field via an interface.
+func (v *GetOrganizationMembersOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdgeNodeOrganizationMemberUser) GetEmail() string {
+	return v.Email
+}
+
+// GetOrganizationMembersOrganizationMembersOrganizationMemberConnectionPageInfo includes the requested fields of the GraphQL type PageInfo.
+// The GraphQL type's documentation follows.
+//
+// Information about pagination in a connection.
+type GetOrganizationMembersOrganizationMembersOrganizationMemberConnectionPageInfo struct {
+	// When paginating forwards, the cursor to continue.
+	EndCursor string `json:"endCursor"`
+	// When paginating forwards, are there more items?
+	HasNextPage bool `json:"hasNextPage"`
+}
+
+// GetEndCursor returns GetOrganizationMembersOrganizationMembersOrganizationMemberConnectionPageInfo.EndCursor, and is useful for accessing the field via an interface.
+func (v *GetOrganizationMembersOrganizationMembersOrganizationMemberConnectionPageInfo) GetEndCursor() string {
+	return v.EndCursor
+}
+
+// GetHasNextPage returns GetOrganizationMembersOrganizationMembersOrganizationMemberConnectionPageInfo.HasNextPage, and is useful for accessing the field via an interface.
+func (v *GetOrganizationMembersOrganizationMembersOrganizationMemberConnectionPageInfo) GetHasNextPage() bool {
+	return v.HasNextPage
+}
+
+// GetOrganizationMembersResponse is returned by GetOrganizationMembers on success.
+type GetOrganizationMembersResponse struct {
+	// Find an organization
+	Organization GetOrganizationMembersOrganization `json:"organization"`
+}
+
+// GetOrganization returns GetOrganizationMembersResponse.Organization, and is useful for accessing the field via an interface.
+func (v *GetOrganizationMembersResponse) GetOrganization() GetOrganizationMembersOrganization {
+	return v.Organization
+}
+
 // GetTeamFromSlugResponse is returned by GetTeamFromSlug on success.
 type GetTeamFromSlugResponse struct {
 	// Find a team
@@ -1415,10 +1626,10 @@ const (
 type RuleAction string
 
 const (
-	// Trigger build
-	RuleActionTriggerBuild RuleAction = "TRIGGER_BUILD"
 	// Artifacts read
 	RuleActionArtifactsRead RuleAction = "ARTIFACTS_READ"
+	// Trigger build
+	RuleActionTriggerBuild RuleAction = "TRIGGER_BUILD"
 )
 
 // The effect a rule has
@@ -1666,6 +1877,30 @@ type TeamSuiteFieldsTeam struct {
 
 // GetId returns TeamSuiteFieldsTeam.Id, and is useful for accessing the field via an interface.
 func (v *TeamSuiteFieldsTeam) GetId() string { return v.Id }
+
+// __GetOrganizationMemberByEmailInput is used internally by genqlient
+type __GetOrganizationMemberByEmailInput struct {
+	Slug  string `json:"slug"`
+	Email string `json:"email"`
+}
+
+// GetSlug returns __GetOrganizationMemberByEmailInput.Slug, and is useful for accessing the field via an interface.
+func (v *__GetOrganizationMemberByEmailInput) GetSlug() string { return v.Slug }
+
+// GetEmail returns __GetOrganizationMemberByEmailInput.Email, and is useful for accessing the field via an interface.
+func (v *__GetOrganizationMemberByEmailInput) GetEmail() string { return v.Email }
+
+// __GetOrganizationMembersInput is used internally by genqlient
+type __GetOrganizationMembersInput struct {
+	Slug   string  `json:"slug"`
+	Cursor *string `json:"cursor"`
+}
+
+// GetSlug returns __GetOrganizationMembersInput.Slug, and is useful for accessing the field via an interface.
+func (v *__GetOrganizationMembersInput) GetSlug() string { return v.Slug }
+
+// GetCursor returns __GetOrganizationMembersInput.Cursor, and is useful for accessing the field via an interface.
+func (v *__GetOrganizationMembersInput) GetCursor() *string { return v.Cursor }
 
 // __GetTeamFromSlugInput is used internally by genqlient
 type __GetTeamFromSlugInput struct {
@@ -4928,6 +5163,7 @@ func (v *getClusterQueuesResponse) GetOrganization() getClusterQueuesOrganizatio
 // getNodeNodeClusterQueue
 // getNodeNodeClusterQueueToken
 // getNodeNodeClusterToken
+// getNodeNodeCompositeRegistryUpstream
 // getNodeNodeEmail
 // getNodeNodeJobEventAssigned
 // getNodeNodeJobEventBuildStepUploadCreated
@@ -4996,6 +5232,7 @@ func (v *getNodeNodeCluster) implementsGraphQLInterfacegetNodeNode()            
 func (v *getNodeNodeClusterQueue) implementsGraphQLInterfacegetNodeNode()                         {}
 func (v *getNodeNodeClusterQueueToken) implementsGraphQLInterfacegetNodeNode()                    {}
 func (v *getNodeNodeClusterToken) implementsGraphQLInterfacegetNodeNode()                         {}
+func (v *getNodeNodeCompositeRegistryUpstream) implementsGraphQLInterfacegetNodeNode()            {}
 func (v *getNodeNodeEmail) implementsGraphQLInterfacegetNodeNode()                                {}
 func (v *getNodeNodeJobEventAssigned) implementsGraphQLInterfacegetNodeNode()                     {}
 func (v *getNodeNodeJobEventBuildStepUploadCreated) implementsGraphQLInterfacegetNodeNode()       {}
@@ -5110,6 +5347,9 @@ func __unmarshalgetNodeNode(b []byte, v *getNodeNode) error {
 		return json.Unmarshal(b, *v)
 	case "ClusterToken":
 		*v = new(getNodeNodeClusterToken)
+		return json.Unmarshal(b, *v)
+	case "CompositeRegistryUpstream":
+		*v = new(getNodeNodeCompositeRegistryUpstream)
 		return json.Unmarshal(b, *v)
 	case "Email":
 		*v = new(getNodeNodeEmail)
@@ -5403,6 +5643,14 @@ func __marshalgetNodeNode(v *getNodeNode) ([]byte, error) {
 		result := struct {
 			TypeName string `json:"__typename"`
 			*getNodeNodeClusterToken
+		}{typename, v}
+		return json.Marshal(result)
+	case *getNodeNodeCompositeRegistryUpstream:
+		typename = "CompositeRegistryUpstream"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getNodeNodeCompositeRegistryUpstream
 		}{typename, v}
 		return json.Marshal(result)
 	case *getNodeNodeEmail:
@@ -6055,6 +6303,17 @@ type getNodeNodeClusterToken struct {
 
 // GetTypename returns getNodeNodeClusterToken.Typename, and is useful for accessing the field via an interface.
 func (v *getNodeNodeClusterToken) GetTypename() string { return v.Typename }
+
+// getNodeNodeCompositeRegistryUpstream includes the requested fields of the GraphQL type CompositeRegistryUpstream.
+// The GraphQL type's documentation follows.
+//
+// A composite registry's upstream
+type getNodeNodeCompositeRegistryUpstream struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getNodeNodeCompositeRegistryUpstream.Typename, and is useful for accessing the field via an interface.
+func (v *getNodeNodeCompositeRegistryUpstream) GetTypename() string { return v.Typename }
 
 // getNodeNodeEmail includes the requested fields of the GraphQL type Email.
 // The GraphQL type's documentation follows.
@@ -8087,6 +8346,7 @@ func (v *getPipelineScheduleBySlugResponse) GetPipelineSchedule() getPipelineSch
 // getPipelineScheduleNodeClusterQueue
 // getPipelineScheduleNodeClusterQueueToken
 // getPipelineScheduleNodeClusterToken
+// getPipelineScheduleNodeCompositeRegistryUpstream
 // getPipelineScheduleNodeEmail
 // getPipelineScheduleNodeJobEventAssigned
 // getPipelineScheduleNodeJobEventBuildStepUploadCreated
@@ -8163,7 +8423,9 @@ func (v *getPipelineScheduleNodeClusterQueue) implementsGraphQLInterfacegetPipel
 func (v *getPipelineScheduleNodeClusterQueueToken) implementsGraphQLInterfacegetPipelineScheduleNode() {
 }
 func (v *getPipelineScheduleNodeClusterToken) implementsGraphQLInterfacegetPipelineScheduleNode() {}
-func (v *getPipelineScheduleNodeEmail) implementsGraphQLInterfacegetPipelineScheduleNode()        {}
+func (v *getPipelineScheduleNodeCompositeRegistryUpstream) implementsGraphQLInterfacegetPipelineScheduleNode() {
+}
+func (v *getPipelineScheduleNodeEmail) implementsGraphQLInterfacegetPipelineScheduleNode() {}
 func (v *getPipelineScheduleNodeJobEventAssigned) implementsGraphQLInterfacegetPipelineScheduleNode() {
 }
 func (v *getPipelineScheduleNodeJobEventBuildStepUploadCreated) implementsGraphQLInterfacegetPipelineScheduleNode() {
@@ -8295,6 +8557,9 @@ func __unmarshalgetPipelineScheduleNode(b []byte, v *getPipelineScheduleNode) er
 		return json.Unmarshal(b, *v)
 	case "ClusterToken":
 		*v = new(getPipelineScheduleNodeClusterToken)
+		return json.Unmarshal(b, *v)
+	case "CompositeRegistryUpstream":
+		*v = new(getPipelineScheduleNodeCompositeRegistryUpstream)
 		return json.Unmarshal(b, *v)
 	case "Email":
 		*v = new(getPipelineScheduleNodeEmail)
@@ -8584,6 +8849,14 @@ func __marshalgetPipelineScheduleNode(v *getPipelineScheduleNode) ([]byte, error
 		result := struct {
 			TypeName string `json:"__typename"`
 			*getPipelineScheduleNodeClusterToken
+		}{typename, v}
+		return json.Marshal(result)
+	case *getPipelineScheduleNodeCompositeRegistryUpstream:
+		typename = "CompositeRegistryUpstream"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getPipelineScheduleNodeCompositeRegistryUpstream
 		}{typename, v}
 		return json.Marshal(result)
 	case *getPipelineScheduleNodeEmail:
@@ -9125,6 +9398,17 @@ type getPipelineScheduleNodeClusterToken struct {
 
 // GetTypename returns getPipelineScheduleNodeClusterToken.Typename, and is useful for accessing the field via an interface.
 func (v *getPipelineScheduleNodeClusterToken) GetTypename() string { return v.Typename }
+
+// getPipelineScheduleNodeCompositeRegistryUpstream includes the requested fields of the GraphQL type CompositeRegistryUpstream.
+// The GraphQL type's documentation follows.
+//
+// A composite registry's upstream
+type getPipelineScheduleNodeCompositeRegistryUpstream struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getPipelineScheduleNodeCompositeRegistryUpstream.Typename, and is useful for accessing the field via an interface.
+func (v *getPipelineScheduleNodeCompositeRegistryUpstream) GetTypename() string { return v.Typename }
 
 // getPipelineScheduleNodeEmail includes the requested fields of the GraphQL type Email.
 // The GraphQL type's documentation follows.
@@ -10343,6 +10627,17 @@ type getTestSuiteSuiteClusterToken struct {
 // GetTypename returns getTestSuiteSuiteClusterToken.Typename, and is useful for accessing the field via an interface.
 func (v *getTestSuiteSuiteClusterToken) GetTypename() string { return v.Typename }
 
+// getTestSuiteSuiteCompositeRegistryUpstream includes the requested fields of the GraphQL type CompositeRegistryUpstream.
+// The GraphQL type's documentation follows.
+//
+// A composite registry's upstream
+type getTestSuiteSuiteCompositeRegistryUpstream struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getTestSuiteSuiteCompositeRegistryUpstream.Typename, and is useful for accessing the field via an interface.
+func (v *getTestSuiteSuiteCompositeRegistryUpstream) GetTypename() string { return v.Typename }
+
 // getTestSuiteSuiteEmail includes the requested fields of the GraphQL type Email.
 // The GraphQL type's documentation follows.
 //
@@ -10509,6 +10804,7 @@ func (v *getTestSuiteSuiteJobTypeWait) GetTypename() string { return v.Typename 
 // getTestSuiteSuiteClusterQueue
 // getTestSuiteSuiteClusterQueueToken
 // getTestSuiteSuiteClusterToken
+// getTestSuiteSuiteCompositeRegistryUpstream
 // getTestSuiteSuiteEmail
 // getTestSuiteSuiteJobEventAssigned
 // getTestSuiteSuiteJobEventBuildStepUploadCreated
@@ -10578,8 +10874,10 @@ func (v *getTestSuiteSuiteCluster) implementsGraphQLInterfacegetTestSuiteSuiteNo
 func (v *getTestSuiteSuiteClusterQueue) implementsGraphQLInterfacegetTestSuiteSuiteNode()        {}
 func (v *getTestSuiteSuiteClusterQueueToken) implementsGraphQLInterfacegetTestSuiteSuiteNode()   {}
 func (v *getTestSuiteSuiteClusterToken) implementsGraphQLInterfacegetTestSuiteSuiteNode()        {}
-func (v *getTestSuiteSuiteEmail) implementsGraphQLInterfacegetTestSuiteSuiteNode()               {}
-func (v *getTestSuiteSuiteJobEventAssigned) implementsGraphQLInterfacegetTestSuiteSuiteNode()    {}
+func (v *getTestSuiteSuiteCompositeRegistryUpstream) implementsGraphQLInterfacegetTestSuiteSuiteNode() {
+}
+func (v *getTestSuiteSuiteEmail) implementsGraphQLInterfacegetTestSuiteSuiteNode()            {}
+func (v *getTestSuiteSuiteJobEventAssigned) implementsGraphQLInterfacegetTestSuiteSuiteNode() {}
 func (v *getTestSuiteSuiteJobEventBuildStepUploadCreated) implementsGraphQLInterfacegetTestSuiteSuiteNode() {
 }
 func (v *getTestSuiteSuiteJobEventCanceled) implementsGraphQLInterfacegetTestSuiteSuiteNode()    {}
@@ -10696,6 +10994,9 @@ func __unmarshalgetTestSuiteSuiteNode(b []byte, v *getTestSuiteSuiteNode) error 
 		return json.Unmarshal(b, *v)
 	case "ClusterToken":
 		*v = new(getTestSuiteSuiteClusterToken)
+		return json.Unmarshal(b, *v)
+	case "CompositeRegistryUpstream":
+		*v = new(getTestSuiteSuiteCompositeRegistryUpstream)
 		return json.Unmarshal(b, *v)
 	case "Email":
 		*v = new(getTestSuiteSuiteEmail)
@@ -10985,6 +11286,14 @@ func __marshalgetTestSuiteSuiteNode(v *getTestSuiteSuiteNode) ([]byte, error) {
 		result := struct {
 			TypeName string `json:"__typename"`
 			*getTestSuiteSuiteClusterToken
+		}{typename, v}
+		return json.Marshal(result)
+	case *getTestSuiteSuiteCompositeRegistryUpstream:
+		typename = "CompositeRegistryUpstream"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getTestSuiteSuiteCompositeRegistryUpstream
 		}{typename, v}
 		return json.Marshal(result)
 	case *getTestSuiteSuiteEmail:
@@ -13792,6 +14101,106 @@ type upsertBannerResponse struct {
 // GetOrganizationBannerUpsert returns upsertBannerResponse.OrganizationBannerUpsert, and is useful for accessing the field via an interface.
 func (v *upsertBannerResponse) GetOrganizationBannerUpsert() upsertBannerOrganizationBannerUpsertOrganizationBannerUpsertPayload {
 	return v.OrganizationBannerUpsert
+}
+
+// The query or mutation executed by GetOrganizationMemberByEmail.
+const GetOrganizationMemberByEmail_Operation = `
+query GetOrganizationMemberByEmail ($slug: ID!, $email: String) {
+	organization(slug: $slug) {
+		members(first: 1, email: $email) {
+			edges {
+				node {
+					user {
+						id
+						uuid
+						name
+						email
+					}
+				}
+			}
+		}
+	}
+}
+`
+
+func GetOrganizationMemberByEmail(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	slug string,
+	email string,
+) (*GetOrganizationMemberByEmailResponse, error) {
+	req_ := &graphql.Request{
+		OpName: "GetOrganizationMemberByEmail",
+		Query:  GetOrganizationMemberByEmail_Operation,
+		Variables: &__GetOrganizationMemberByEmailInput{
+			Slug:  slug,
+			Email: email,
+		},
+	}
+	var err_ error
+
+	var data_ GetOrganizationMemberByEmailResponse
+	resp_ := &graphql.Response{Data: &data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return &data_, err_
+}
+
+// The query or mutation executed by GetOrganizationMembers.
+const GetOrganizationMembers_Operation = `
+query GetOrganizationMembers ($slug: ID!, $cursor: String) {
+	organization(slug: $slug) {
+		members(first: 500, after: $cursor) {
+			pageInfo {
+				endCursor
+				hasNextPage
+			}
+			edges {
+				node {
+					user {
+						id
+						uuid
+						name
+						email
+					}
+				}
+			}
+		}
+	}
+}
+`
+
+func GetOrganizationMembers(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	slug string,
+	cursor *string,
+) (*GetOrganizationMembersResponse, error) {
+	req_ := &graphql.Request{
+		OpName: "GetOrganizationMembers",
+		Query:  GetOrganizationMembers_Operation,
+		Variables: &__GetOrganizationMembersInput{
+			Slug:   slug,
+			Cursor: cursor,
+		},
+	}
+	var err_ error
+
+	var data_ GetOrganizationMembersResponse
+	resp_ := &graphql.Response{Data: &data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return &data_, err_
 }
 
 // The query or mutation executed by GetTeamFromSlug.

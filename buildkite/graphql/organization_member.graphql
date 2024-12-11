@@ -1,0 +1,19 @@
+query GetOrganizationMemberByEmail(
+    $slug: ID!,
+    $email: String
+) {
+    organization(slug: $slug) {
+        members(first: 1, email: $email) {
+            edges {
+                node {
+                    user {
+                        id
+                        uuid
+                        name
+                        email
+                    }
+                }
+            }
+        }
+    }
+}
