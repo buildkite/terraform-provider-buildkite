@@ -1,5 +1,12 @@
 # Changelog
 
+## [v1.14.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.13.1...v1.14.0)
+
+- Bump docker/library/golang from 1.23.2 to 1.23.3 [[PR #587](https://github.com/buildkite/terraform-provider-buildkite/pull/587)] @dependabot
+- SUP-2388 - Update docs with templates, import blocks [[PR #588](https://github.com/buildkite/terraform-provider-buildkite/pull/588)] @petetomasik
+- chore: update CODEOWNERS to GitHub Team [[PR #589](https://github.com/buildkite/terraform-provider-buildkite/pull/589)] @tomowatt
+- SUP-2214 - Create data sources for `organization_members` and `organization_member` [[PR #590](https://github.com/buildkite/terraform-provider-buildkite/pull/590)] @petetomasik
+
 ## [v1.13.1](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.13.0...v1.13.1)
 
 - SUP-1816 - Signed pipeline steps documentation updates [[PR #579](https://github.com/buildkite/terraform-provider-buildkite/pull/579)] @petetomasik
