@@ -123,6 +123,10 @@ type ClusterQueueValues struct {
 	Key         string                    `json:"key"`
 	Description *string                   `json:"description"`
 	Cluster     ClusterQueueValuesCluster `json:"cluster"`
+	// Whether this queue powers by hosted or self-hosted agents
+	Hosted bool `json:"hosted"`
+	// Settings for hosted agents used for jobs in this queue
+	HostedAgents ClusterQueueValuesHostedAgentsHostedAgentQueueSettings `json:"hostedAgents"`
 }
 
 // GetId returns ClusterQueueValues.Id, and is useful for accessing the field via an interface.
@@ -140,6 +144,14 @@ func (v *ClusterQueueValues) GetDescription() *string { return v.Description }
 // GetCluster returns ClusterQueueValues.Cluster, and is useful for accessing the field via an interface.
 func (v *ClusterQueueValues) GetCluster() ClusterQueueValuesCluster { return v.Cluster }
 
+// GetHosted returns ClusterQueueValues.Hosted, and is useful for accessing the field via an interface.
+func (v *ClusterQueueValues) GetHosted() bool { return v.Hosted }
+
+// GetHostedAgents returns ClusterQueueValues.HostedAgents, and is useful for accessing the field via an interface.
+func (v *ClusterQueueValues) GetHostedAgents() ClusterQueueValuesHostedAgentsHostedAgentQueueSettings {
+	return v.HostedAgents
+}
+
 // ClusterQueueValuesCluster includes the requested fields of the GraphQL type Cluster.
 type ClusterQueueValuesCluster struct {
 	Id string `json:"id"`
@@ -152,6 +164,71 @@ func (v *ClusterQueueValuesCluster) GetId() string { return v.Id }
 
 // GetUuid returns ClusterQueueValuesCluster.Uuid, and is useful for accessing the field via an interface.
 func (v *ClusterQueueValuesCluster) GetUuid() string { return v.Uuid }
+
+// ClusterQueueValuesHostedAgentsHostedAgentQueueSettings includes the requested fields of the GraphQL type HostedAgentQueueSettings.
+// The GraphQL type's documentation follows.
+//
+// Platform-specific configuration for hosted agent instances.
+type ClusterQueueValuesHostedAgentsHostedAgentQueueSettings struct {
+	HostedAgentsQueueSettingsValues `json:"-"`
+}
+
+// GetInstanceShape returns ClusterQueueValuesHostedAgentsHostedAgentQueueSettings.InstanceShape, and is useful for accessing the field via an interface.
+func (v *ClusterQueueValuesHostedAgentsHostedAgentQueueSettings) GetInstanceShape() HostedAgentsQueueSettingsValuesInstanceShapeHostedAgentInstanceShape {
+	return v.HostedAgentsQueueSettingsValues.InstanceShape
+}
+
+// GetPlatformSettings returns ClusterQueueValuesHostedAgentsHostedAgentQueueSettings.PlatformSettings, and is useful for accessing the field via an interface.
+func (v *ClusterQueueValuesHostedAgentsHostedAgentQueueSettings) GetPlatformSettings() HostedAgentsQueueSettingsValuesPlatformSettingsHostedAgentPlatformSettings {
+	return v.HostedAgentsQueueSettingsValues.PlatformSettings
+}
+
+func (v *ClusterQueueValuesHostedAgentsHostedAgentQueueSettings) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*ClusterQueueValuesHostedAgentsHostedAgentQueueSettings
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.ClusterQueueValuesHostedAgentsHostedAgentQueueSettings = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	err = json.Unmarshal(
+		b, &v.HostedAgentsQueueSettingsValues)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+type __premarshalClusterQueueValuesHostedAgentsHostedAgentQueueSettings struct {
+	InstanceShape HostedAgentsQueueSettingsValuesInstanceShapeHostedAgentInstanceShape `json:"instanceShape"`
+
+	PlatformSettings HostedAgentsQueueSettingsValuesPlatformSettingsHostedAgentPlatformSettings `json:"platformSettings"`
+}
+
+func (v *ClusterQueueValuesHostedAgentsHostedAgentQueueSettings) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *ClusterQueueValuesHostedAgentsHostedAgentQueueSettings) __premarshalJSON() (*__premarshalClusterQueueValuesHostedAgentsHostedAgentQueueSettings, error) {
+	var retval __premarshalClusterQueueValuesHostedAgentsHostedAgentQueueSettings
+
+	retval.InstanceShape = v.HostedAgentsQueueSettingsValues.InstanceShape
+	retval.PlatformSettings = v.HostedAgentsQueueSettingsValues.PlatformSettings
+	return &retval, nil
+}
 
 // GetTeamFromSlugResponse is returned by GetTeamFromSlug on success.
 type GetTeamFromSlugResponse struct {
@@ -265,6 +342,216 @@ func (v *GetTeamFromSlugTeam) __premarshalJSON() (*__premarshalGetTeamFromSlugTe
 	retval.DefaultMemberRole = v.TeamFields.DefaultMemberRole
 	retval.MembersCanCreatePipelines = v.TeamFields.MembersCanCreatePipelines
 	return &retval, nil
+}
+
+// Possible machine architectures for the hosted agent instance
+type HostedAgentArchitecture string
+
+const (
+	// AMD64
+	HostedAgentArchitectureAmd64 HostedAgentArchitecture = "AMD64"
+	// ARM64
+	HostedAgentArchitectureArm64 HostedAgentArchitecture = "ARM64"
+)
+
+// Possible instance shapes for the hosted agent instance
+type HostedAgentInstanceShapeName string
+
+const (
+	// Linux 2 vCPU x 4 GB Memory
+	HostedAgentInstanceShapeNameLinuxAmd642x4 HostedAgentInstanceShapeName = "LINUX_AMD64_2X4"
+	// Linux 4 vCPU x 16 GB Memory
+	HostedAgentInstanceShapeNameLinuxAmd644x16 HostedAgentInstanceShapeName = "LINUX_AMD64_4X16"
+	// Linux 8 vCPU x 32 GB Memory
+	HostedAgentInstanceShapeNameLinuxAmd648x32 HostedAgentInstanceShapeName = "LINUX_AMD64_8X32"
+	// Linux 16 vCPU x 64 GB Memory
+	HostedAgentInstanceShapeNameLinuxAmd6416x64 HostedAgentInstanceShapeName = "LINUX_AMD64_16X64"
+	// Linux 2 vCPU x 4 GB Memory
+	HostedAgentInstanceShapeNameLinuxArm642x4 HostedAgentInstanceShapeName = "LINUX_ARM64_2X4"
+	// Linux 4 vCPU x 16 GB Memory
+	HostedAgentInstanceShapeNameLinuxArm644x16 HostedAgentInstanceShapeName = "LINUX_ARM64_4X16"
+	// Linux 8 vCPU x 32 GB Memory
+	HostedAgentInstanceShapeNameLinuxArm648x32 HostedAgentInstanceShapeName = "LINUX_ARM64_8X32"
+	// Linux 16 vCPU x 64 GB Memory
+	HostedAgentInstanceShapeNameLinuxArm6416x64 HostedAgentInstanceShapeName = "LINUX_ARM64_16X64"
+	// macOS 4 vCPU x 7 GB Memory
+	HostedAgentInstanceShapeNameMacosM24x7 HostedAgentInstanceShapeName = "MACOS_M2_4X7"
+	// macOS 6 vCPU x 14 GB Memory
+	HostedAgentInstanceShapeNameMacosM26x14 HostedAgentInstanceShapeName = "MACOS_M2_6X14"
+	// macOS 12 vCPU x 28 GB Memory
+	HostedAgentInstanceShapeNameMacosM212x28 HostedAgentInstanceShapeName = "MACOS_M2_12X28"
+	// macOS 12 vCPU x 56 GB Memory
+	HostedAgentInstanceShapeNameMacosM412x56 HostedAgentInstanceShapeName = "MACOS_M4_12X56"
+)
+
+// Possible machine types for the hosted agent instance
+type HostedAgentMachineType string
+
+const (
+	// Linux
+	HostedAgentMachineTypeLinux HostedAgentMachineType = "LINUX"
+	// macOS
+	HostedAgentMachineTypeMacos HostedAgentMachineType = "MACOS"
+)
+
+// Possible sizes for the hosted agent instance, specifying vCPU and memory allocations.
+type HostedAgentSize string
+
+const (
+	// Small capacity size: 2 vCPU, 4GB RAM (Linux); 4 vCPU, 7GB RAM (macOS).
+	HostedAgentSizeSmall HostedAgentSize = "SMALL"
+	// Medium capacity size: 4 vCPU, 16GB RAM (Linux); 6 vCPU, 14GB RAM (macOS).
+	HostedAgentSizeMedium HostedAgentSize = "MEDIUM"
+	// Large capacity size: 8 vCPU, 32GB RAM (Linux); 12 vCPU, 28GB RAM (macOS).
+	HostedAgentSizeLarge HostedAgentSize = "LARGE"
+	// Extra large capacity size: 12 vCPU, 28GB RAM (Linux); Not applicable for macOS.
+	HostedAgentSizeExtraLarge HostedAgentSize = "EXTRA_LARGE"
+)
+
+// Settings for hosted agents on this queue
+type HostedAgentsQueueSettingsCreateInput struct {
+	// Settings for hosted agents on this queue
+	InstanceShape HostedAgentInstanceShapeName `json:"instanceShape"`
+}
+
+// GetInstanceShape returns HostedAgentsQueueSettingsCreateInput.InstanceShape, and is useful for accessing the field via an interface.
+func (v *HostedAgentsQueueSettingsCreateInput) GetInstanceShape() HostedAgentInstanceShapeName {
+	return v.InstanceShape
+}
+
+// Settings for hosted agents on this queue
+type HostedAgentsQueueSettingsUpdateInput struct {
+	// Settings for hosted agents on this queue
+	InstanceShape HostedAgentInstanceShapeName `json:"instanceShape"`
+	// Settings for hosted agents on this queue
+	AgentImageRef string `json:"agentImageRef"`
+}
+
+// GetInstanceShape returns HostedAgentsQueueSettingsUpdateInput.InstanceShape, and is useful for accessing the field via an interface.
+func (v *HostedAgentsQueueSettingsUpdateInput) GetInstanceShape() HostedAgentInstanceShapeName {
+	return v.InstanceShape
+}
+
+// GetAgentImageRef returns HostedAgentsQueueSettingsUpdateInput.AgentImageRef, and is useful for accessing the field via an interface.
+func (v *HostedAgentsQueueSettingsUpdateInput) GetAgentImageRef() string { return v.AgentImageRef }
+
+// HostedAgentsQueueSettingsValues includes the GraphQL fields of HostedAgentQueueSettings requested by the fragment HostedAgentsQueueSettingsValues.
+// The GraphQL type's documentation follows.
+//
+// Platform-specific configuration for hosted agent instances.
+type HostedAgentsQueueSettingsValues struct {
+	// The hardware specifications of the hosted agent instance, such as CPU and memory
+	InstanceShape HostedAgentsQueueSettingsValuesInstanceShapeHostedAgentInstanceShape `json:"instanceShape"`
+	// Platform-specific configuration for Linux and macOS hosted agents.
+	PlatformSettings HostedAgentsQueueSettingsValuesPlatformSettingsHostedAgentPlatformSettings `json:"platformSettings"`
+}
+
+// GetInstanceShape returns HostedAgentsQueueSettingsValues.InstanceShape, and is useful for accessing the field via an interface.
+func (v *HostedAgentsQueueSettingsValues) GetInstanceShape() HostedAgentsQueueSettingsValuesInstanceShapeHostedAgentInstanceShape {
+	return v.InstanceShape
+}
+
+// GetPlatformSettings returns HostedAgentsQueueSettingsValues.PlatformSettings, and is useful for accessing the field via an interface.
+func (v *HostedAgentsQueueSettingsValues) GetPlatformSettings() HostedAgentsQueueSettingsValuesPlatformSettingsHostedAgentPlatformSettings {
+	return v.PlatformSettings
+}
+
+// HostedAgentsQueueSettingsValuesInstanceShapeHostedAgentInstanceShape includes the requested fields of the GraphQL type HostedAgentInstanceShape.
+// The GraphQL type's documentation follows.
+//
+// The hosted agent instance configuration for this cluster queue
+type HostedAgentsQueueSettingsValuesInstanceShapeHostedAgentInstanceShape struct {
+	// Specifies the architecture of the hosted agent instance, such as AMD64 (x86_64) or ARM64 (AArch64), used in this cluster queue.
+	Architecture HostedAgentArchitecture `json:"architecture"`
+	// Specifies the type of machine used for the hosted agent instance in this cluster queue (e.g., Linux or MacOS).
+	MachineType HostedAgentMachineType `json:"machineType"`
+	// The amount of memory (in GB) available on each hosted agent instance in this cluster queue.
+	Memory int `json:"memory"`
+	// Name of the instance shape
+	Name HostedAgentInstanceShapeName `json:"name"`
+	// The overall size classification of the hosted agent instance, combining vCPU and memory, used in this cluster queue.
+	Size HostedAgentSize `json:"size"`
+	// The number of CPU cores allocated to the hosted agent instance in this cluster queue.
+	Vcpu int `json:"vcpu"`
+}
+
+// GetArchitecture returns HostedAgentsQueueSettingsValuesInstanceShapeHostedAgentInstanceShape.Architecture, and is useful for accessing the field via an interface.
+func (v *HostedAgentsQueueSettingsValuesInstanceShapeHostedAgentInstanceShape) GetArchitecture() HostedAgentArchitecture {
+	return v.Architecture
+}
+
+// GetMachineType returns HostedAgentsQueueSettingsValuesInstanceShapeHostedAgentInstanceShape.MachineType, and is useful for accessing the field via an interface.
+func (v *HostedAgentsQueueSettingsValuesInstanceShapeHostedAgentInstanceShape) GetMachineType() HostedAgentMachineType {
+	return v.MachineType
+}
+
+// GetMemory returns HostedAgentsQueueSettingsValuesInstanceShapeHostedAgentInstanceShape.Memory, and is useful for accessing the field via an interface.
+func (v *HostedAgentsQueueSettingsValuesInstanceShapeHostedAgentInstanceShape) GetMemory() int {
+	return v.Memory
+}
+
+// GetName returns HostedAgentsQueueSettingsValuesInstanceShapeHostedAgentInstanceShape.Name, and is useful for accessing the field via an interface.
+func (v *HostedAgentsQueueSettingsValuesInstanceShapeHostedAgentInstanceShape) GetName() HostedAgentInstanceShapeName {
+	return v.Name
+}
+
+// GetSize returns HostedAgentsQueueSettingsValuesInstanceShapeHostedAgentInstanceShape.Size, and is useful for accessing the field via an interface.
+func (v *HostedAgentsQueueSettingsValuesInstanceShapeHostedAgentInstanceShape) GetSize() HostedAgentSize {
+	return v.Size
+}
+
+// GetVcpu returns HostedAgentsQueueSettingsValuesInstanceShapeHostedAgentInstanceShape.Vcpu, and is useful for accessing the field via an interface.
+func (v *HostedAgentsQueueSettingsValuesInstanceShapeHostedAgentInstanceShape) GetVcpu() int {
+	return v.Vcpu
+}
+
+// HostedAgentsQueueSettingsValuesPlatformSettingsHostedAgentPlatformSettings includes the requested fields of the GraphQL type HostedAgentPlatformSettings.
+// The GraphQL type's documentation follows.
+//
+// Platform-specific configuration for hosted agent instances.
+type HostedAgentsQueueSettingsValuesPlatformSettingsHostedAgentPlatformSettings struct {
+	// Configuration options specific to Linux hosted agent instances.
+	Linux HostedAgentsQueueSettingsValuesPlatformSettingsHostedAgentPlatformSettingsLinuxHostedAgentLinuxSettings `json:"linux"`
+	// Configuration options specific to macOS hosted agent instances.
+	Macos HostedAgentsQueueSettingsValuesPlatformSettingsHostedAgentPlatformSettingsMacosHostedAgentMacOSSettingsType `json:"macos"`
+}
+
+// GetLinux returns HostedAgentsQueueSettingsValuesPlatformSettingsHostedAgentPlatformSettings.Linux, and is useful for accessing the field via an interface.
+func (v *HostedAgentsQueueSettingsValuesPlatformSettingsHostedAgentPlatformSettings) GetLinux() HostedAgentsQueueSettingsValuesPlatformSettingsHostedAgentPlatformSettingsLinuxHostedAgentLinuxSettings {
+	return v.Linux
+}
+
+// GetMacos returns HostedAgentsQueueSettingsValuesPlatformSettingsHostedAgentPlatformSettings.Macos, and is useful for accessing the field via an interface.
+func (v *HostedAgentsQueueSettingsValuesPlatformSettingsHostedAgentPlatformSettings) GetMacos() HostedAgentsQueueSettingsValuesPlatformSettingsHostedAgentPlatformSettingsMacosHostedAgentMacOSSettingsType {
+	return v.Macos
+}
+
+// HostedAgentsQueueSettingsValuesPlatformSettingsHostedAgentPlatformSettingsLinuxHostedAgentLinuxSettings includes the requested fields of the GraphQL type HostedAgentLinuxSettings.
+// The GraphQL type's documentation follows.
+//
+// Configuration options specific to Linux hosted agent instances.
+type HostedAgentsQueueSettingsValuesPlatformSettingsHostedAgentPlatformSettingsLinuxHostedAgentLinuxSettings struct {
+	// The image reference of a custom agent base image used by the hosted agent instances in this cluster queue. Note: this must be a public image, or image stored within the hosted agents internal registry.
+	AgentImageRef string `json:"agentImageRef"`
+}
+
+// GetAgentImageRef returns HostedAgentsQueueSettingsValuesPlatformSettingsHostedAgentPlatformSettingsLinuxHostedAgentLinuxSettings.AgentImageRef, and is useful for accessing the field via an interface.
+func (v *HostedAgentsQueueSettingsValuesPlatformSettingsHostedAgentPlatformSettingsLinuxHostedAgentLinuxSettings) GetAgentImageRef() string {
+	return v.AgentImageRef
+}
+
+// HostedAgentsQueueSettingsValuesPlatformSettingsHostedAgentPlatformSettingsMacosHostedAgentMacOSSettingsType includes the requested fields of the GraphQL type HostedAgentMacOSSettingsType.
+// The GraphQL type's documentation follows.
+//
+// Configuration options for the base image of hosted agent instances on macOS platforms.
+type HostedAgentsQueueSettingsValuesPlatformSettingsHostedAgentPlatformSettingsMacosHostedAgentMacOSSettingsType struct {
+	// The Xcode version to pre-select (via xcode-select) on macOS hosted agent instances for this cluster queue.
+	BaseImageXcodeVersion string `json:"baseImageXcodeVersion"`
+}
+
+// GetBaseImageXcodeVersion returns HostedAgentsQueueSettingsValuesPlatformSettingsHostedAgentPlatformSettingsMacosHostedAgentMacOSSettingsType.BaseImageXcodeVersion, and is useful for accessing the field via an interface.
+func (v *HostedAgentsQueueSettingsValuesPlatformSettingsHostedAgentPlatformSettingsMacosHostedAgentMacOSSettingsType) GetBaseImageXcodeVersion() string {
+	return v.BaseImageXcodeVersion
 }
 
 // OrganizationBannerFields includes the GraphQL fields of OrganizationBanner requested by the fragment OrganizationBannerFields.
@@ -1741,10 +2028,12 @@ func (v *__createClusterInput) GetColor() *string { return v.Color }
 
 // __createClusterQueueInput is used internally by genqlient
 type __createClusterQueueInput struct {
-	OrganizationId string  `json:"organizationId"`
-	ClusterId      string  `json:"clusterId"`
-	Key            string  `json:"key"`
-	Description    *string `json:"description"`
+	OrganizationId string                                `json:"organizationId"`
+	ClusterId      string                                `json:"clusterId"`
+	Key            string                                `json:"key"`
+	Description    *string                               `json:"description"`
+	Hosted         bool                                  `json:"hosted"`
+	HostedAgents   *HostedAgentsQueueSettingsCreateInput `json:"hostedAgents"`
 }
 
 // GetOrganizationId returns __createClusterQueueInput.OrganizationId, and is useful for accessing the field via an interface.
@@ -1758,6 +2047,14 @@ func (v *__createClusterQueueInput) GetKey() string { return v.Key }
 
 // GetDescription returns __createClusterQueueInput.Description, and is useful for accessing the field via an interface.
 func (v *__createClusterQueueInput) GetDescription() *string { return v.Description }
+
+// GetHosted returns __createClusterQueueInput.Hosted, and is useful for accessing the field via an interface.
+func (v *__createClusterQueueInput) GetHosted() bool { return v.Hosted }
+
+// GetHostedAgents returns __createClusterQueueInput.HostedAgents, and is useful for accessing the field via an interface.
+func (v *__createClusterQueueInput) GetHostedAgents() *HostedAgentsQueueSettingsCreateInput {
+	return v.HostedAgents
+}
 
 // __createOrganizationRuleInput is used internally by genqlient
 type __createOrganizationRuleInput struct {
@@ -2345,9 +2642,10 @@ func (v *__updateClusterInput) GetColor() *string { return v.Color }
 
 // __updateClusterQueueInput is used internally by genqlient
 type __updateClusterQueueInput struct {
-	OrganizationId string  `json:"organizationId"`
-	Id             string  `json:"id"`
-	Description    *string `json:"description"`
+	OrganizationId string                               `json:"organizationId"`
+	Id             string                               `json:"id"`
+	Description    *string                              `json:"description"`
+	HostedAgents   HostedAgentsQueueSettingsUpdateInput `json:"hostedAgents"`
 }
 
 // GetOrganizationId returns __updateClusterQueueInput.OrganizationId, and is useful for accessing the field via an interface.
@@ -2358,6 +2656,11 @@ func (v *__updateClusterQueueInput) GetId() string { return v.Id }
 
 // GetDescription returns __updateClusterQueueInput.Description, and is useful for accessing the field via an interface.
 func (v *__updateClusterQueueInput) GetDescription() *string { return v.Description }
+
+// GetHostedAgents returns __updateClusterQueueInput.HostedAgents, and is useful for accessing the field via an interface.
+func (v *__updateClusterQueueInput) GetHostedAgents() HostedAgentsQueueSettingsUpdateInput {
+	return v.HostedAgents
+}
 
 // __updatePipelineInput is used internally by genqlient
 type __updatePipelineInput struct {
@@ -2829,6 +3132,16 @@ func (v *createClusterQueueClusterQueueCreateClusterQueueCreatePayloadClusterQue
 	return v.ClusterQueueValues.Cluster
 }
 
+// GetHosted returns createClusterQueueClusterQueueCreateClusterQueueCreatePayloadClusterQueue.Hosted, and is useful for accessing the field via an interface.
+func (v *createClusterQueueClusterQueueCreateClusterQueueCreatePayloadClusterQueue) GetHosted() bool {
+	return v.ClusterQueueValues.Hosted
+}
+
+// GetHostedAgents returns createClusterQueueClusterQueueCreateClusterQueueCreatePayloadClusterQueue.HostedAgents, and is useful for accessing the field via an interface.
+func (v *createClusterQueueClusterQueueCreateClusterQueueCreatePayloadClusterQueue) GetHostedAgents() ClusterQueueValuesHostedAgentsHostedAgentQueueSettings {
+	return v.ClusterQueueValues.HostedAgents
+}
+
 func (v *createClusterQueueClusterQueueCreateClusterQueueCreatePayloadClusterQueue) UnmarshalJSON(b []byte) error {
 
 	if string(b) == "null" {
@@ -2864,6 +3177,10 @@ type __premarshalcreateClusterQueueClusterQueueCreateClusterQueueCreatePayloadCl
 	Description *string `json:"description"`
 
 	Cluster ClusterQueueValuesCluster `json:"cluster"`
+
+	Hosted bool `json:"hosted"`
+
+	HostedAgents ClusterQueueValuesHostedAgentsHostedAgentQueueSettings `json:"hostedAgents"`
 }
 
 func (v *createClusterQueueClusterQueueCreateClusterQueueCreatePayloadClusterQueue) MarshalJSON() ([]byte, error) {
@@ -2882,6 +3199,8 @@ func (v *createClusterQueueClusterQueueCreateClusterQueueCreatePayloadClusterQue
 	retval.Key = v.ClusterQueueValues.Key
 	retval.Description = v.ClusterQueueValues.Description
 	retval.Cluster = v.ClusterQueueValues.Cluster
+	retval.Hosted = v.ClusterQueueValues.Hosted
+	retval.HostedAgents = v.ClusterQueueValues.HostedAgents
 	return &retval, nil
 }
 
@@ -4813,6 +5132,16 @@ func (v *getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClu
 	return v.ClusterQueueValues.Cluster
 }
 
+// GetHosted returns getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue.Hosted, and is useful for accessing the field via an interface.
+func (v *getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue) GetHosted() bool {
+	return v.ClusterQueueValues.Hosted
+}
+
+// GetHostedAgents returns getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue.HostedAgents, and is useful for accessing the field via an interface.
+func (v *getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue) GetHostedAgents() ClusterQueueValuesHostedAgentsHostedAgentQueueSettings {
+	return v.ClusterQueueValues.HostedAgents
+}
+
 func (v *getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue) UnmarshalJSON(b []byte) error {
 
 	if string(b) == "null" {
@@ -4856,6 +5185,10 @@ type __premarshalgetClusterQueuesOrganizationClusterQueuesClusterQueueConnection
 	Description *string `json:"description"`
 
 	Cluster ClusterQueueValuesCluster `json:"cluster"`
+
+	Hosted bool `json:"hosted"`
+
+	HostedAgents ClusterQueueValuesHostedAgentsHostedAgentQueueSettings `json:"hostedAgents"`
 }
 
 func (v *getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue) MarshalJSON() ([]byte, error) {
@@ -4878,6 +5211,8 @@ func (v *getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClu
 	retval.Key = v.ClusterQueueValues.Key
 	retval.Description = v.ClusterQueueValues.Description
 	retval.Cluster = v.ClusterQueueValues.Cluster
+	retval.Hosted = v.ClusterQueueValues.Hosted
+	retval.HostedAgents = v.ClusterQueueValues.HostedAgents
 	return &retval, nil
 }
 
@@ -4928,6 +5263,7 @@ func (v *getClusterQueuesResponse) GetOrganization() getClusterQueuesOrganizatio
 // getNodeNodeClusterQueue
 // getNodeNodeClusterQueueToken
 // getNodeNodeClusterToken
+// getNodeNodeCompositeRegistryUpstream
 // getNodeNodeEmail
 // getNodeNodeJobEventAssigned
 // getNodeNodeJobEventBuildStepUploadCreated
@@ -4996,6 +5332,7 @@ func (v *getNodeNodeCluster) implementsGraphQLInterfacegetNodeNode()            
 func (v *getNodeNodeClusterQueue) implementsGraphQLInterfacegetNodeNode()                         {}
 func (v *getNodeNodeClusterQueueToken) implementsGraphQLInterfacegetNodeNode()                    {}
 func (v *getNodeNodeClusterToken) implementsGraphQLInterfacegetNodeNode()                         {}
+func (v *getNodeNodeCompositeRegistryUpstream) implementsGraphQLInterfacegetNodeNode()            {}
 func (v *getNodeNodeEmail) implementsGraphQLInterfacegetNodeNode()                                {}
 func (v *getNodeNodeJobEventAssigned) implementsGraphQLInterfacegetNodeNode()                     {}
 func (v *getNodeNodeJobEventBuildStepUploadCreated) implementsGraphQLInterfacegetNodeNode()       {}
@@ -5110,6 +5447,9 @@ func __unmarshalgetNodeNode(b []byte, v *getNodeNode) error {
 		return json.Unmarshal(b, *v)
 	case "ClusterToken":
 		*v = new(getNodeNodeClusterToken)
+		return json.Unmarshal(b, *v)
+	case "CompositeRegistryUpstream":
+		*v = new(getNodeNodeCompositeRegistryUpstream)
 		return json.Unmarshal(b, *v)
 	case "Email":
 		*v = new(getNodeNodeEmail)
@@ -5403,6 +5743,14 @@ func __marshalgetNodeNode(v *getNodeNode) ([]byte, error) {
 		result := struct {
 			TypeName string `json:"__typename"`
 			*getNodeNodeClusterToken
+		}{typename, v}
+		return json.Marshal(result)
+	case *getNodeNodeCompositeRegistryUpstream:
+		typename = "CompositeRegistryUpstream"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getNodeNodeCompositeRegistryUpstream
 		}{typename, v}
 		return json.Marshal(result)
 	case *getNodeNodeEmail:
@@ -6055,6 +6403,17 @@ type getNodeNodeClusterToken struct {
 
 // GetTypename returns getNodeNodeClusterToken.Typename, and is useful for accessing the field via an interface.
 func (v *getNodeNodeClusterToken) GetTypename() string { return v.Typename }
+
+// getNodeNodeCompositeRegistryUpstream includes the requested fields of the GraphQL type CompositeRegistryUpstream.
+// The GraphQL type's documentation follows.
+//
+// A composite registry's upstream
+type getNodeNodeCompositeRegistryUpstream struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getNodeNodeCompositeRegistryUpstream.Typename, and is useful for accessing the field via an interface.
+func (v *getNodeNodeCompositeRegistryUpstream) GetTypename() string { return v.Typename }
 
 // getNodeNodeEmail includes the requested fields of the GraphQL type Email.
 // The GraphQL type's documentation follows.
@@ -8087,6 +8446,7 @@ func (v *getPipelineScheduleBySlugResponse) GetPipelineSchedule() getPipelineSch
 // getPipelineScheduleNodeClusterQueue
 // getPipelineScheduleNodeClusterQueueToken
 // getPipelineScheduleNodeClusterToken
+// getPipelineScheduleNodeCompositeRegistryUpstream
 // getPipelineScheduleNodeEmail
 // getPipelineScheduleNodeJobEventAssigned
 // getPipelineScheduleNodeJobEventBuildStepUploadCreated
@@ -8163,7 +8523,9 @@ func (v *getPipelineScheduleNodeClusterQueue) implementsGraphQLInterfacegetPipel
 func (v *getPipelineScheduleNodeClusterQueueToken) implementsGraphQLInterfacegetPipelineScheduleNode() {
 }
 func (v *getPipelineScheduleNodeClusterToken) implementsGraphQLInterfacegetPipelineScheduleNode() {}
-func (v *getPipelineScheduleNodeEmail) implementsGraphQLInterfacegetPipelineScheduleNode()        {}
+func (v *getPipelineScheduleNodeCompositeRegistryUpstream) implementsGraphQLInterfacegetPipelineScheduleNode() {
+}
+func (v *getPipelineScheduleNodeEmail) implementsGraphQLInterfacegetPipelineScheduleNode() {}
 func (v *getPipelineScheduleNodeJobEventAssigned) implementsGraphQLInterfacegetPipelineScheduleNode() {
 }
 func (v *getPipelineScheduleNodeJobEventBuildStepUploadCreated) implementsGraphQLInterfacegetPipelineScheduleNode() {
@@ -8295,6 +8657,9 @@ func __unmarshalgetPipelineScheduleNode(b []byte, v *getPipelineScheduleNode) er
 		return json.Unmarshal(b, *v)
 	case "ClusterToken":
 		*v = new(getPipelineScheduleNodeClusterToken)
+		return json.Unmarshal(b, *v)
+	case "CompositeRegistryUpstream":
+		*v = new(getPipelineScheduleNodeCompositeRegistryUpstream)
 		return json.Unmarshal(b, *v)
 	case "Email":
 		*v = new(getPipelineScheduleNodeEmail)
@@ -8584,6 +8949,14 @@ func __marshalgetPipelineScheduleNode(v *getPipelineScheduleNode) ([]byte, error
 		result := struct {
 			TypeName string `json:"__typename"`
 			*getPipelineScheduleNodeClusterToken
+		}{typename, v}
+		return json.Marshal(result)
+	case *getPipelineScheduleNodeCompositeRegistryUpstream:
+		typename = "CompositeRegistryUpstream"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getPipelineScheduleNodeCompositeRegistryUpstream
 		}{typename, v}
 		return json.Marshal(result)
 	case *getPipelineScheduleNodeEmail:
@@ -9125,6 +9498,17 @@ type getPipelineScheduleNodeClusterToken struct {
 
 // GetTypename returns getPipelineScheduleNodeClusterToken.Typename, and is useful for accessing the field via an interface.
 func (v *getPipelineScheduleNodeClusterToken) GetTypename() string { return v.Typename }
+
+// getPipelineScheduleNodeCompositeRegistryUpstream includes the requested fields of the GraphQL type CompositeRegistryUpstream.
+// The GraphQL type's documentation follows.
+//
+// A composite registry's upstream
+type getPipelineScheduleNodeCompositeRegistryUpstream struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getPipelineScheduleNodeCompositeRegistryUpstream.Typename, and is useful for accessing the field via an interface.
+func (v *getPipelineScheduleNodeCompositeRegistryUpstream) GetTypename() string { return v.Typename }
 
 // getPipelineScheduleNodeEmail includes the requested fields of the GraphQL type Email.
 // The GraphQL type's documentation follows.
@@ -10343,6 +10727,17 @@ type getTestSuiteSuiteClusterToken struct {
 // GetTypename returns getTestSuiteSuiteClusterToken.Typename, and is useful for accessing the field via an interface.
 func (v *getTestSuiteSuiteClusterToken) GetTypename() string { return v.Typename }
 
+// getTestSuiteSuiteCompositeRegistryUpstream includes the requested fields of the GraphQL type CompositeRegistryUpstream.
+// The GraphQL type's documentation follows.
+//
+// A composite registry's upstream
+type getTestSuiteSuiteCompositeRegistryUpstream struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getTestSuiteSuiteCompositeRegistryUpstream.Typename, and is useful for accessing the field via an interface.
+func (v *getTestSuiteSuiteCompositeRegistryUpstream) GetTypename() string { return v.Typename }
+
 // getTestSuiteSuiteEmail includes the requested fields of the GraphQL type Email.
 // The GraphQL type's documentation follows.
 //
@@ -10509,6 +10904,7 @@ func (v *getTestSuiteSuiteJobTypeWait) GetTypename() string { return v.Typename 
 // getTestSuiteSuiteClusterQueue
 // getTestSuiteSuiteClusterQueueToken
 // getTestSuiteSuiteClusterToken
+// getTestSuiteSuiteCompositeRegistryUpstream
 // getTestSuiteSuiteEmail
 // getTestSuiteSuiteJobEventAssigned
 // getTestSuiteSuiteJobEventBuildStepUploadCreated
@@ -10578,8 +10974,10 @@ func (v *getTestSuiteSuiteCluster) implementsGraphQLInterfacegetTestSuiteSuiteNo
 func (v *getTestSuiteSuiteClusterQueue) implementsGraphQLInterfacegetTestSuiteSuiteNode()        {}
 func (v *getTestSuiteSuiteClusterQueueToken) implementsGraphQLInterfacegetTestSuiteSuiteNode()   {}
 func (v *getTestSuiteSuiteClusterToken) implementsGraphQLInterfacegetTestSuiteSuiteNode()        {}
-func (v *getTestSuiteSuiteEmail) implementsGraphQLInterfacegetTestSuiteSuiteNode()               {}
-func (v *getTestSuiteSuiteJobEventAssigned) implementsGraphQLInterfacegetTestSuiteSuiteNode()    {}
+func (v *getTestSuiteSuiteCompositeRegistryUpstream) implementsGraphQLInterfacegetTestSuiteSuiteNode() {
+}
+func (v *getTestSuiteSuiteEmail) implementsGraphQLInterfacegetTestSuiteSuiteNode()            {}
+func (v *getTestSuiteSuiteJobEventAssigned) implementsGraphQLInterfacegetTestSuiteSuiteNode() {}
 func (v *getTestSuiteSuiteJobEventBuildStepUploadCreated) implementsGraphQLInterfacegetTestSuiteSuiteNode() {
 }
 func (v *getTestSuiteSuiteJobEventCanceled) implementsGraphQLInterfacegetTestSuiteSuiteNode()    {}
@@ -10696,6 +11094,9 @@ func __unmarshalgetTestSuiteSuiteNode(b []byte, v *getTestSuiteSuiteNode) error 
 		return json.Unmarshal(b, *v)
 	case "ClusterToken":
 		*v = new(getTestSuiteSuiteClusterToken)
+		return json.Unmarshal(b, *v)
+	case "CompositeRegistryUpstream":
+		*v = new(getTestSuiteSuiteCompositeRegistryUpstream)
 		return json.Unmarshal(b, *v)
 	case "Email":
 		*v = new(getTestSuiteSuiteEmail)
@@ -10985,6 +11386,14 @@ func __marshalgetTestSuiteSuiteNode(v *getTestSuiteSuiteNode) ([]byte, error) {
 		result := struct {
 			TypeName string `json:"__typename"`
 			*getTestSuiteSuiteClusterToken
+		}{typename, v}
+		return json.Marshal(result)
+	case *getTestSuiteSuiteCompositeRegistryUpstream:
+		typename = "CompositeRegistryUpstream"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getTestSuiteSuiteCompositeRegistryUpstream
 		}{typename, v}
 		return json.Marshal(result)
 	case *getTestSuiteSuiteEmail:
@@ -12787,6 +13196,16 @@ func (v *updateClusterQueueClusterQueueUpdateClusterQueueUpdatePayloadClusterQue
 	return v.ClusterQueueValues.Cluster
 }
 
+// GetHosted returns updateClusterQueueClusterQueueUpdateClusterQueueUpdatePayloadClusterQueue.Hosted, and is useful for accessing the field via an interface.
+func (v *updateClusterQueueClusterQueueUpdateClusterQueueUpdatePayloadClusterQueue) GetHosted() bool {
+	return v.ClusterQueueValues.Hosted
+}
+
+// GetHostedAgents returns updateClusterQueueClusterQueueUpdateClusterQueueUpdatePayloadClusterQueue.HostedAgents, and is useful for accessing the field via an interface.
+func (v *updateClusterQueueClusterQueueUpdateClusterQueueUpdatePayloadClusterQueue) GetHostedAgents() ClusterQueueValuesHostedAgentsHostedAgentQueueSettings {
+	return v.ClusterQueueValues.HostedAgents
+}
+
 func (v *updateClusterQueueClusterQueueUpdateClusterQueueUpdatePayloadClusterQueue) UnmarshalJSON(b []byte) error {
 
 	if string(b) == "null" {
@@ -12830,6 +13249,10 @@ type __premarshalupdateClusterQueueClusterQueueUpdateClusterQueueUpdatePayloadCl
 	Description *string `json:"description"`
 
 	Cluster ClusterQueueValuesCluster `json:"cluster"`
+
+	Hosted bool `json:"hosted"`
+
+	HostedAgents ClusterQueueValuesHostedAgentsHostedAgentQueueSettings `json:"hostedAgents"`
 }
 
 func (v *updateClusterQueueClusterQueueUpdateClusterQueueUpdatePayloadClusterQueue) MarshalJSON() ([]byte, error) {
@@ -12852,6 +13275,8 @@ func (v *updateClusterQueueClusterQueueUpdateClusterQueueUpdatePayloadClusterQue
 	retval.Key = v.ClusterQueueValues.Key
 	retval.Description = v.ClusterQueueValues.Description
 	retval.Cluster = v.ClusterQueueValues.Cluster
+	retval.Hosted = v.ClusterQueueValues.Hosted
+	retval.HostedAgents = v.ClusterQueueValues.HostedAgents
 	return &retval, nil
 }
 
@@ -14035,8 +14460,8 @@ func createClusterAgentToken(
 
 // The query or mutation executed by createClusterQueue.
 const createClusterQueue_Operation = `
-mutation createClusterQueue ($organizationId: ID!, $clusterId: ID!, $key: String!, $description: String) {
-	clusterQueueCreate(input: {organizationId:$organizationId,clusterId:$clusterId,key:$key,description:$description}) {
+mutation createClusterQueue ($organizationId: ID!, $clusterId: ID!, $key: String!, $description: String, $hosted: Boolean, $hostedAgents: HostedAgentsQueueSettingsCreateInput) {
+	clusterQueueCreate(input: {organizationId:$organizationId,clusterId:$clusterId,key:$key,description:$description,hosted:$hosted,hostedAgents:$hostedAgents}) {
 		clusterQueue {
 			... ClusterQueueValues
 		}
@@ -14051,6 +14476,28 @@ fragment ClusterQueueValues on ClusterQueue {
 		id
 		uuid
 	}
+	hosted
+	hostedAgents {
+		... HostedAgentsQueueSettingsValues
+	}
+}
+fragment HostedAgentsQueueSettingsValues on HostedAgentQueueSettings {
+	instanceShape {
+		architecture
+		machineType
+		memory
+		name
+		size
+		vcpu
+	}
+	platformSettings {
+		linux {
+			agentImageRef
+		}
+		macos {
+			baseImageXcodeVersion
+		}
+	}
 }
 `
 
@@ -14061,6 +14508,8 @@ func createClusterQueue(
 	clusterId string,
 	key string,
 	description *string,
+	hosted bool,
+	hostedAgents *HostedAgentsQueueSettingsCreateInput,
 ) (*createClusterQueueResponse, error) {
 	req_ := &graphql.Request{
 		OpName: "createClusterQueue",
@@ -14070,6 +14519,8 @@ func createClusterQueue(
 			ClusterId:      clusterId,
 			Key:            key,
 			Description:    description,
+			Hosted:         hosted,
+			HostedAgents:   hostedAgents,
 		},
 	}
 	var err_ error
@@ -15083,6 +15534,28 @@ fragment ClusterQueueValues on ClusterQueue {
 	cluster {
 		id
 		uuid
+	}
+	hosted
+	hostedAgents {
+		... HostedAgentsQueueSettingsValues
+	}
+}
+fragment HostedAgentsQueueSettingsValues on HostedAgentQueueSettings {
+	instanceShape {
+		architecture
+		machineType
+		memory
+		name
+		size
+		vcpu
+	}
+	platformSettings {
+		linux {
+			agentImageRef
+		}
+		macos {
+			baseImageXcodeVersion
+		}
 	}
 }
 `
@@ -16447,8 +16920,8 @@ func updateClusterAgentToken(
 
 // The query or mutation executed by updateClusterQueue.
 const updateClusterQueue_Operation = `
-mutation updateClusterQueue ($organizationId: ID!, $id: ID!, $description: String) {
-	clusterQueueUpdate(input: {organizationId:$organizationId,id:$id,description:$description}) {
+mutation updateClusterQueue ($organizationId: ID!, $id: ID!, $description: String, $hostedAgents: HostedAgentsQueueSettingsUpdateInput) {
+	clusterQueueUpdate(input: {organizationId:$organizationId,id:$id,description:$description,hostedAgents:$hostedAgents}) {
 		clusterQueue {
 			... ClusterQueueValues
 			dispatchPaused
@@ -16469,6 +16942,28 @@ fragment ClusterQueueValues on ClusterQueue {
 		id
 		uuid
 	}
+	hosted
+	hostedAgents {
+		... HostedAgentsQueueSettingsValues
+	}
+}
+fragment HostedAgentsQueueSettingsValues on HostedAgentQueueSettings {
+	instanceShape {
+		architecture
+		machineType
+		memory
+		name
+		size
+		vcpu
+	}
+	platformSettings {
+		linux {
+			agentImageRef
+		}
+		macos {
+			baseImageXcodeVersion
+		}
+	}
 }
 `
 
@@ -16478,6 +16973,7 @@ func updateClusterQueue(
 	organizationId string,
 	id string,
 	description *string,
+	hostedAgents HostedAgentsQueueSettingsUpdateInput,
 ) (*updateClusterQueueResponse, error) {
 	req_ := &graphql.Request{
 		OpName: "updateClusterQueue",
@@ -16486,6 +16982,7 @@ func updateClusterQueue(
 			OrganizationId: organizationId,
 			Id:             id,
 			Description:    description,
+			HostedAgents:   hostedAgents,
 		},
 	}
 	var err_ error

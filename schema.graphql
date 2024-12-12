@@ -632,45 +632,45 @@ union AuditSubjectNode =APIAccessToken | AgentToken | AuthorizationBitbucket | A
 
 """All the possible types of subjects in an Audit Event"""
 enum AuditSubjectType {
-	PIPELINE
+	PORTAL
+	TEAM_MEMBER
+	TEAM_PIPELINE
+	TEAM_REGISTRY
+	CLUSTER_PERMISSION
+	TEAM_SUITE
 	REGISTRY
-	CLUSTER_TOKEN
+	REGISTRY_TOKEN
+	COMPOSITE_REGISTRY_UPSTREAM
+	SCM_SERVICE
+	SSO_PROVIDER
+	SCM_REPOSITORY_HOST
+	JOB
+	RULE
+	SUITE_MONITOR
+	SCM_PIPELINE_SETTINGS
+	USER_TOTP
+	CLUSTER_QUEUE_TOKEN
+	SECRET
 	USER
+	CLUSTER
+	USER_EMAIL
+	PIPELINE
 	AUTHORIZATION
+	ORGANIZATION
+	CLUSTER_TOKEN
+	SUBSCRIPTION
+	SUITE
+	TEAM
 	AGENT_TOKEN
 	API_ACCESS_TOKEN
 	CLUSTER_QUEUE
 	NOTIFICATION_SERVICE
-	CLUSTER_QUEUE_TOKEN
-	ORGANIZATION
+	ORGANIZATION_BANNER
 	ORGANIZATION_INVITATION
+	ORGANIZATION_MEMBER
 	ORGANIZATION_IMPERSONATION_REQUEST
 	PIPELINE_SCHEDULE
-	ORGANIZATION_MEMBER
-	ORGANIZATION_BANNER
-	CLUSTER
 	PIPELINE_TEMPLATE
-	TEAM_PIPELINE
-	TEAM_MEMBER
-	TEAM_SUITE
-	PORTAL
-	TEAM
-	COMPOSITE_REGISTRY_UPSTREAM
-	TEAM_REGISTRY
-	SSO_PROVIDER
-	SCM_SERVICE
-	REGISTRY_TOKEN
-	SECRET
-	SUITE_MONITOR
-	SCM_PIPELINE_SETTINGS
-	SCM_REPOSITORY_HOST
-	SUBSCRIPTION
-	USER_EMAIL
-	SUITE
-	USER_TOTP
-	JOB
-	CLUSTER_PERMISSION
-	RULE
 }
 
 """Context for an audit event created during a web request"""
@@ -1659,13 +1659,19 @@ type HostedAgentInstanceShape {
 """Possible instance shapes for the hosted agent instance"""
 enum HostedAgentInstanceShapeName {
 """Linux 2 vCPU x 4 GB Memory"""
+	LINUX_AMD64_2X4
+"""Linux 4 vCPU x 16 GB Memory"""
+	LINUX_AMD64_4X16
+"""Linux 8 vCPU x 32 GB Memory"""
+	LINUX_AMD64_8X32
+"""Linux 16 vCPU x 64 GB Memory"""
+	LINUX_AMD64_16X64
+"""Linux 2 vCPU x 4 GB Memory"""
 	LINUX_ARM64_2X4
 """Linux 4 vCPU x 16 GB Memory"""
 	LINUX_ARM64_4X16
 """Linux 8 vCPU x 32 GB Memory"""
 	LINUX_ARM64_8X32
-"""Linux 8 vCPU x 16 GB Memory (Deprecated)"""
-	LINUX_ARM64_8X16
 """Linux 16 vCPU x 64 GB Memory"""
 	LINUX_ARM64_16X64
 """macOS 4 vCPU x 7 GB Memory"""
@@ -1676,20 +1682,6 @@ enum HostedAgentInstanceShapeName {
 	MACOS_M2_12X28
 """macOS 12 vCPU x 56 GB Memory"""
 	MACOS_M4_12X56
-"""Linux 4 vCPU x 8 GB Memory (Deprecated)"""
-	LINUX_ARM64_4X8
-"""Linux 2 vCPU x 4 GB Memory"""
-	LINUX_AMD64_2X4
-"""Linux 4 vCPU x 16 GB Memory"""
-	LINUX_AMD64_4X16
-"""Linux 4 vCPU x 8 GB Memory (Deprecated)"""
-	LINUX_AMD64_4X8
-"""Linux 8 vCPU x 32 GB Memory"""
-	LINUX_AMD64_8X32
-"""Linux 8 vCPU x 16 GB Memory (Deprecated)"""
-	LINUX_AMD64_8X16
-"""Linux 16 vCPU x 64 GB Memory"""
-	LINUX_AMD64_16X64
 }
 
 """Configuration options specific to Linux hosted agent instances."""
@@ -5125,10 +5117,10 @@ type Rule implements Node{
 
 """The action a rule enforces"""
 enum RuleAction {
-"""Artifacts read"""
-	ARTIFACTS_READ
 """Trigger build"""
 	TRIGGER_BUILD
+"""Artifacts read"""
+	ARTIFACTS_READ
 }
 
 type RuleConnection implements Connection{
