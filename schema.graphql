@@ -568,6 +568,7 @@ enum AuditEventType {
 	SECRET_UPDATED
 	STORAGE_CREATED
 	SUBSCRIPTION_ACTIVATED
+	SUBSCRIPTION_CANCELED
 	SUBSCRIPTION_PLAN_ADDED
 	SUBSCRIPTION_PLAN_CANCELATION_SCHEDULED
 	SUBSCRIPTION_PLAN_CANCELED
@@ -631,10 +632,19 @@ union AuditSubjectNode =APIAccessToken | AgentToken | AuthorizationBitbucket | A
 
 """All the possible types of subjects in an Audit Event"""
 enum AuditSubjectType {
-	CLUSTER_TOKEN
 	ORGANIZATION_BANNER
+	PIPELINE
+	REGISTRY
+	CLUSTER_TOKEN
+	USER
+	AUTHORIZATION
+	AGENT_TOKEN
+	API_ACCESS_TOKEN
+	CLUSTER_QUEUE
+	NOTIFICATION_SERVICE
+	CLUSTER_QUEUE_TOKEN
+	ORGANIZATION
 	ORGANIZATION_INVITATION
-	ORGANIZATION_MEMBER
 	ORGANIZATION_IMPERSONATION_REQUEST
 	PIPELINE
 	PIPELINE_TEMPLATE
@@ -1657,10 +1667,14 @@ type HostedAgentInstanceShape {
 
 """Possible instance shapes for the hosted agent instance"""
 enum HostedAgentInstanceShapeName {
+"""Linux 2 vCPU x 4 GB Memory"""
+	LINUX_ARM64_2X4
 """Linux 4 vCPU x 16 GB Memory"""
 	LINUX_ARM64_4X16
 """Linux 8 vCPU x 32 GB Memory"""
 	LINUX_ARM64_8X32
+"""Linux 8 vCPU x 16 GB Memory (Deprecated)"""
+	LINUX_ARM64_8X16
 """Linux 16 vCPU x 64 GB Memory"""
 	LINUX_ARM64_16X64
 """macOS 4 vCPU x 7 GB Memory"""
@@ -6693,5 +6707,3 @@ scalar XML
 
 """A blob of YAML"""
 scalar YAML
-
-
