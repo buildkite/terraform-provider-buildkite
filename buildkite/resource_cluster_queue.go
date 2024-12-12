@@ -225,15 +225,16 @@ func (cq *clusterQueueResource) ImportState(ctx context.Context, req resource.Im
 }
 
 func (cq *clusterQueueResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	var state clusterQueueResourceModel
+	var plan, state clusterQueueResourceModel
 	var description types.String
-	var isPausible bool
+	var planDispatchPaused, stateDispatchPaused bool
 
 	diagsState := req.State.Get(ctx, &state)
 	diagsDescription := req.Plan.GetAttribute(ctx, path.Root("description"), &description)
 
-	// Load state and ontain description from plan (singularly)
+	// Load state and obtain description from plan (singularly)
 	resp.Diagnostics.Append(diagsState...)
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	resp.Diagnostics.Append(diagsDescription...)
 
 	if resp.Diagnostics.HasError() {
@@ -247,13 +248,17 @@ func (cq *clusterQueueResource) Update(ctx context.Context, req resource.UpdateR
 		return
 	}
 
-	if !state.DispatchPaused.ValueBool() {
-		isPausible = true
-	}
-
 	var r *updateClusterQueueResponse
 
-	if isPausible {
+	// Extract the planned and state values for DispatchPaused attribute
+	// to compare if the Queue should be paused or resumed
+	// if neither do nothing
+	planDispatchPaused = plan.DispatchPaused.ValueBool()
+	stateDispatchPaused = state.DispatchPaused.ValueBool()
+
+	// Check the planned value against the current state value
+	// Planned to be true (changing from false to true)
+	if planDispatchPaused && !stateDispatchPaused {
 		err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 			log.Printf("Pausing dispatch for cluster queue %s", state.Key)
 			_, err := pauseDispatchClusterQueue(
@@ -271,7 +276,12 @@ func (cq *clusterQueueResource) Update(ctx context.Context, req resource.UpdateR
 			)
 			return
 		}
-	} else {
+		state.DispatchPaused = types.BoolValue(plan.DispatchPaused.ValueBool())
+
+	}
+
+	// Planned to be false (changing from true to false)
+	if !planDispatchPaused && stateDispatchPaused {
 		err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 			log.Printf("Resuming dispatch for cluster queue %s", state.Key)
 			_, err := resumeDispatchClusterQueue(
@@ -289,7 +299,7 @@ func (cq *clusterQueueResource) Update(ctx context.Context, req resource.UpdateR
 			)
 			return
 		}
-		state.DispatchPaused = types.BoolValue(r.ClusterQueueUpdate.ClusterQueue.DispatchPaused)
+		state.DispatchPaused = types.BoolValue(plan.DispatchPaused.ValueBool())
 	}
 
 	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
