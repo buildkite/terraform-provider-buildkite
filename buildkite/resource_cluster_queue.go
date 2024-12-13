@@ -204,6 +204,10 @@ func (cq *clusterQueueResource) Create(ctx context.Context, req resource.CreateR
 		return
 	}
 
+	hosted := HostedAgentsQueueSettingsCreateInput{
+		InstanceShape: HostedAgentInstanceShapeName(plan.HostedAgents.InstanceShape.ValueString()),
+	}
+
 	var r *createClusterQueueResponse
 	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		org, err := cq.client.GetOrganizationID()
@@ -215,6 +219,10 @@ func (cq *clusterQueueResource) Create(ctx context.Context, req resource.CreateR
 				plan.ClusterId.ValueString(),
 				plan.Key.ValueString(),
 				plan.Description.ValueStringPointer(),
+
+				// Boolean value of if hosted agents is set in the plan
+				plan.HostedAgents != nil,
+				&hosted,
 			)
 		}
 
@@ -374,6 +382,10 @@ func (cq *clusterQueueResource) Update(ctx context.Context, req resource.UpdateR
 				*org,
 				state.Id.ValueString(),
 				plan.Description.ValueStringPointer(),
+				HostedAgentsQueueSettingsUpdateInput{
+					InstanceShape: HostedAgentInstanceShapeName(state.HostedAgents.InstanceShape.ValueString()),
+					AgentImageRef: state.HostedAgents.Linux.ImageAgentRef.ValueString(),
+				},
 			)
 		}
 
