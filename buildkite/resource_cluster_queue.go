@@ -244,62 +244,60 @@ func (cq *clusterQueueResource) Update(ctx context.Context, req resource.UpdateR
 
 	var r *updateClusterQueueResponse
 
-	// Extract the planned and state values for DispatchPaused attribute
-	// to compare if the Queue should be paused or resumed
-	// if neither do nothing
-	planDispatchPaused = plan.DispatchPaused.ValueBool()
-	stateDispatchPaused = state.DispatchPaused.ValueBool()
-
-	// Check the planned value against the current state value
-	// Planned to be true (changing from false to true)
-	if planDispatchPaused && !stateDispatchPaused {
-		err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-			log.Printf("Pausing dispatch for cluster queue %s", state.Key)
-			_, err := pauseDispatchClusterQueue(
-				ctx,
-				cq.client.genqlient,
-				state.Id.ValueString(),
-			)
-
-			return retryContextError(err)
-		})
-		if err != nil {
-			resp.Diagnostics.AddError(
-				"Unable to pause cluster queue dispatch",
-				fmt.Sprintf("Unable to pause dispatch for cluster queue: %s", err.Error()),
-			)
-			return
-		}
-		state.DispatchPaused = types.BoolValue(plan.DispatchPaused.ValueBool())
-
-	}
-
-	// Planned to be false (changing from true to false)
-	if !planDispatchPaused && stateDispatchPaused {
-		err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-			log.Printf("Resuming dispatch for cluster queue %s", state.Key)
-			_, err := resumeDispatchClusterQueue(
-				ctx,
-				cq.client.genqlient,
-				state.Id.ValueString(),
-			)
-
-			return retryContextError(err)
-		})
-		if err != nil {
-			resp.Diagnostics.AddError(
-				"Unable to resume cluster queue dispatch",
-				fmt.Sprintf("Unable to resume dispatch for cluster queue: %s", err.Error()),
-			)
-			return
-		}
-		state.DispatchPaused = types.BoolValue(plan.DispatchPaused.ValueBool())
-	}
-
 	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		org, err := cq.client.GetOrganizationID()
 		if err == nil {
 			log.Printf("Updating cluster queue %s ...", state.Id.ValueString())
+
+			// Extract the planned and state values for DispatchPaused attribute
+			// to compare if the Queue should be paused or resumed
+			// if neither do nothing
+			planDispatchPaused = plan.DispatchPaused.ValueBool()
+			stateDispatchPaused = state.DispatchPaused.ValueBool()
+
+			// Check the planned value against the current state value
+			// Planned to be true (changing from false to true)
+			if planDispatchPaused && !stateDispatchPaused {
+				err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+					log.Printf("Pausing dispatch for cluster queue %s", state.Key)
+					_, err := pauseDispatchClusterQueue(
+						ctx,
+						cq.client.genqlient,
+						state.Id.ValueString(),
+					)
+
+					return retryContextError(err)
+				})
+				if err != nil {
+					resp.Diagnostics.AddError(
+						"Unable to pause cluster queue dispatch",
+						fmt.Sprintf("Unable to pause dispatch for cluster queue: %s", err.Error()),
+					)
+					return retryContextError(err)
+				}
+			}
+
+			// Planned to be false (changing from true to false)
+			if !planDispatchPaused && stateDispatchPaused {
+				err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+					log.Printf("Resuming dispatch for cluster queue %s", state.Key)
+					_, err := resumeDispatchClusterQueue(
+						ctx,
+						cq.client.genqlient,
+						state.Id.ValueString(),
+					)
+
+					return retryContextError(err)
+				})
+				if err != nil {
+					resp.Diagnostics.AddError(
+						"Unable to resume cluster queue dispatch",
+						fmt.Sprintf("Unable to resume dispatch for cluster queue: %s", err.Error()),
+					)
+					return retryContextError(err)
+				}
+			}
+
 			r, err = updateClusterQueue(ctx,
 				cq.client.genqlient,
 				*org,
@@ -319,6 +317,7 @@ func (cq *clusterQueueResource) Update(ctx context.Context, req resource.UpdateR
 	}
 
 	state.Description = types.StringPointerValue(r.ClusterQueueUpdate.ClusterQueue.Description)
+	state.DispatchPaused = types.BoolValue(r.ClusterQueueUpdate.ClusterQueue.DispatchPaused)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
