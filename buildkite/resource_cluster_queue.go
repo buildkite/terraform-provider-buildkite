@@ -226,16 +226,10 @@ func (cq *clusterQueueResource) ImportState(ctx context.Context, req resource.Im
 
 func (cq *clusterQueueResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	var plan, state clusterQueueResourceModel
-	var description types.String
 	var planDispatchPaused, stateDispatchPaused bool
 
-	diagsState := req.State.Get(ctx, &state)
-	diagsDescription := req.Plan.GetAttribute(ctx, path.Root("description"), &description)
-
-	// Load state and obtain description from plan (singularly)
-	resp.Diagnostics.Append(diagsState...)
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
-	resp.Diagnostics.Append(diagsDescription...)
 
 	if resp.Diagnostics.HasError() {
 		return
@@ -310,7 +304,7 @@ func (cq *clusterQueueResource) Update(ctx context.Context, req resource.UpdateR
 				cq.client.genqlient,
 				*org,
 				state.Id.ValueString(),
-				description.ValueStringPointer(),
+				plan.Description.ValueStringPointer(),
 			)
 		}
 
