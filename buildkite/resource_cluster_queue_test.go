@@ -114,8 +114,6 @@ func TestAccBuildkiteClusterQueueResource(t *testing.T) {
 				{
 					Config: configBasic(clusterName, queueKey, updatedQueueDesc),
 					Check:  checkUpdated,
-					// Destroying a queue will pause its dispatch
-					ExpectNonEmptyPlan: true,
 				},
 			},
 		})
