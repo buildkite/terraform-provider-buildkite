@@ -146,8 +146,15 @@ func (cq *clusterQueueResource) Create(ctx context.Context, req resource.CreateR
 	state.ClusterUuid = types.StringValue(r.ClusterQueueCreate.ClusterQueue.Cluster.Uuid)
 	state.Key = types.StringValue(r.ClusterQueueCreate.ClusterQueue.Key)
 	state.Description = types.StringPointerValue(r.ClusterQueueCreate.ClusterQueue.Description)
-	state.DispatchPaused = plan.DispatchPaused
 
+	// GraphQL API does not allow Cluster Queue to be created with Dispatch Paused
+	if plan.DispatchPaused.ValueBool() {
+		resp.Diagnostics.AddWarning(
+			"Cluster Queue cannot be created with Dispatch Paused",
+			"Setting dispatch_paused in State to 'true' but requires re-run of Apply",
+		)
+	}
+	state.DispatchPaused = plan.DispatchPaused
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
