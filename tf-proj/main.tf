@@ -17,8 +17,9 @@ resource "buildkite_cluster" "test_cluster" {
 }
 
 resource "buildkite_cluster_queue" "hosted_macos_small" {
-  cluster_id = buildkite_cluster.test_cluster.id
-  key        = "hosted-macos-small"
+  cluster_id  = buildkite_cluster.test_cluster.id
+  key         = "hosted-macos-small"
+  description = "Terraform'd queue for Hosted Linux"
 
   hosted_agents = {
     instance_shape = "LINUX_ARM64_2X4"
@@ -32,5 +33,5 @@ resource "buildkite_cluster_queue" "hosted_macos_small" {
 resource "buildkite_cluster_queue" "self_hosted" {
   cluster_id  = buildkite_cluster.test_cluster.id
   key         = "self-hosted-queue"
-  description = "A self-hosted TF queue"
+  description = "A self-hosted Terraform'd queue"
 }

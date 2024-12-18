@@ -360,6 +360,17 @@ func (cq *clusterQueueResource) Update(ctx context.Context, req resource.UpdateR
 	}
 
 	var r *updateClusterQueueResponse
+	var hosted *HostedAgentsQueueSettingsUpdateInput
+	if state.HostedAgents != nil {
+		hosted = &HostedAgentsQueueSettingsUpdateInput{
+			InstanceShape: HostedAgentInstanceShapeName(state.HostedAgents.InstanceShape.ValueString()),
+			PlatformSettings: HostedAgentsPlatformSettingsInput{
+				Linux: HostedAgentsLinuxPlatformSettingsInput{
+					AgentImageRef: state.HostedAgents.Linux.ImageAgentRef.ValueString(),
+				},
+			},
+		}
+	}
 
 	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		org, err := cq.client.GetOrganizationID()
@@ -392,10 +403,7 @@ func (cq *clusterQueueResource) Update(ctx context.Context, req resource.UpdateR
 				*org,
 				state.Id.ValueString(),
 				plan.Description.ValueStringPointer(),
-				HostedAgentsQueueSettingsUpdateInput{
-					InstanceShape: HostedAgentInstanceShapeName(state.HostedAgents.InstanceShape.ValueString()),
-					AgentImageRef: state.HostedAgents.Linux.ImageAgentRef.ValueString(),
-				},
+				hosted,
 			)
 		}
 

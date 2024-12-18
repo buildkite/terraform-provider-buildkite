@@ -2910,7 +2910,7 @@ type __updateClusterQueueInput struct {
 	OrganizationId string                               `json:"organizationId"`
 	Id             string                               `json:"id"`
 	Description    *string                              `json:"description"`
-	HostedAgents   HostedAgentsQueueSettingsUpdateInput `json:"hostedAgents"`
+	HostedAgents   *HostedAgentsQueueSettingsUpdateInput `json:"hostedAgents"`
 }
 
 // GetOrganizationId returns __updateClusterQueueInput.OrganizationId, and is useful for accessing the field via an interface.
@@ -2923,7 +2923,7 @@ func (v *__updateClusterQueueInput) GetId() string { return v.Id }
 func (v *__updateClusterQueueInput) GetDescription() *string { return v.Description }
 
 // GetHostedAgents returns __updateClusterQueueInput.HostedAgents, and is useful for accessing the field via an interface.
-func (v *__updateClusterQueueInput) GetHostedAgents() HostedAgentsQueueSettingsUpdateInput {
+func (v *__updateClusterQueueInput) GetHostedAgents() *HostedAgentsQueueSettingsUpdateInput {
 	return v.HostedAgents
 }
 
@@ -17336,7 +17336,7 @@ func updateClusterQueue(
 	organizationId string,
 	id string,
 	description *string,
-	hostedAgents HostedAgentsQueueSettingsUpdateInput,
+	hostedAgents *HostedAgentsQueueSettingsUpdateInput,
 ) (*updateClusterQueueResponse, error) {
 	req_ := &graphql.Request{
 		OpName: "updateClusterQueue",
