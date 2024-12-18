@@ -23,7 +23,7 @@ const (
 	// Available instance shapes
 	MacInstanceSmall         string = "MACOS_M2_4X7"
 	MacInstanceMedium        string = "MACOS_M2_6X14"
-	MacInstanceLarge         string = "MACOS_M2_12X18"
+	MacInstanceLarge         string = "MACOS_M2_12X28"
 	MacInstanceXLarge        string = "MACOS_M4_12x56"
 	LinuxAMD64InstanceSmall  string = "LINUX_AMD64_2X4"
 	LinuxAMD64InstanceMedium string = "LINUX_AMD64_4X16"
@@ -43,7 +43,6 @@ type clusterQueueResourceModel struct {
 	Key            types.String              `tfsdk:"key"`
 	Description    types.String              `tfsdk:"description"`
 	DispatchPaused types.Bool                `tfsdk:"dispatch_paused"`
-	Hosted         types.Bool                `tfsdk:"hosted"`
 	HostedAgents   *hostedAgentResourceModel `tfsdk:"hosted_agents"`
 }
 
@@ -130,11 +129,6 @@ func (clusterQueueResource) Schema(ctx context.Context, req resource.SchemaReque
 				MarkdownDescription: "The dispatch state of a cluster queue.",
 				Default:             booldefault.StaticBool(false),
 			},
-			"hosted": resource_schema.BoolAttribute{
-				Optional:            true,
-				Computed:            true,
-				MarkdownDescription: "Whether the cluster queue is hosted by Buildkite.",
-			},
 			"hosted_agents": resource_schema.SingleNestedAttribute{
 				Optional:            true,
 				MarkdownDescription: "Control the settings for the Buildkite hosted agents.",
@@ -202,8 +196,16 @@ func (cq *clusterQueueResource) Create(ctx context.Context, req resource.CreateR
 		return
 	}
 
-	hosted := HostedAgentsQueueSettingsCreateInput{
-		InstanceShape: HostedAgentInstanceShapeName(plan.HostedAgents.InstanceShape.ValueString()),
+	var hosted *HostedAgentsQueueSettingsCreateInput
+	if plan.HostedAgents != nil {
+		hosted = &HostedAgentsQueueSettingsCreateInput{
+			InstanceShape: HostedAgentInstanceShapeName(plan.HostedAgents.InstanceShape.ValueString()),
+			PlatformSettings: HostedAgentsPlatformSettingsInput{
+				Linux: HostedAgentsLinuxPlatformSettingsInput{
+					AgentImageRef: plan.HostedAgents.Linux.ImageAgentRef.ValueString(),
+				},
+			},
+		}
 	}
 
 	var r *createClusterQueueResponse
@@ -211,16 +213,14 @@ func (cq *clusterQueueResource) Create(ctx context.Context, req resource.CreateR
 		org, err := cq.client.GetOrganizationID()
 		if err == nil {
 			log.Printf("Creating cluster queue with key %s into cluster %s ...", plan.Key.ValueString(), plan.ClusterId.ValueString())
+
 			r, err = createClusterQueue(ctx,
 				cq.client.genqlient,
 				*org,
 				plan.ClusterId.ValueString(),
 				plan.Key.ValueString(),
 				plan.Description.ValueStringPointer(),
-
-				// Boolean value of if hosted agents is set in the plan
-				plan.HostedAgents != nil,
-				&hosted,
+				hosted,
 			)
 		}
 
@@ -241,6 +241,15 @@ func (cq *clusterQueueResource) Create(ctx context.Context, req resource.CreateR
 	state.Key = types.StringValue(r.ClusterQueueCreate.ClusterQueue.Key)
 	state.Description = types.StringPointerValue(r.ClusterQueueCreate.ClusterQueue.Description)
 	state.DispatchPaused = plan.DispatchPaused
+
+	if plan.HostedAgents != nil {
+		state.HostedAgents = &hostedAgentResourceModel{
+			Linux: &linuxConfigModel{
+				ImageAgentRef: types.StringValue(r.ClusterQueueCreate.ClusterQueue.HostedAgents.PlatformSettings.Linux.AgentImageRef),
+			},
+			InstanceShape: types.StringValue(string(r.ClusterQueueCreate.ClusterQueue.HostedAgents.InstanceShape.Name)),
+		}
+	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }

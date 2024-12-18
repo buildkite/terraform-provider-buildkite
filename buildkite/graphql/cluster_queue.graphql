@@ -62,7 +62,6 @@ mutation createClusterQueue(
     $key: String!
     # @genqlient(pointer: true)
     $description: String
-    $hosted: Boolean
     # @genqlient(pointer: true)
     $hostedAgents: HostedAgentsQueueSettingsCreateInput
 ) {
@@ -72,7 +71,6 @@ mutation createClusterQueue(
             clusterId: $clusterId
             key: $key
             description: $description
-            hosted: $hosted
             hostedAgents: $hostedAgents
         }
     ) {

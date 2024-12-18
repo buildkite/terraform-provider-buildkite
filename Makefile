@@ -31,7 +31,7 @@ schema:
 	go get github.com/suessflorian/gqlfetch/gqlfetch
 	go get github.com/Khan/genqlient/generate@v0.7.0
 	go get github.com/vektah/gqlparser/v2/validator@v2.5.15
-	go run github.com/suessflorian/gqlfetch/gqlfetch -endpoint https://graphql.buildkite.com/v1 -header "Authorization=Bearer $${BUILDKITE_GRAPHQL_TOKEN}" > schema.graphql
+	go run github.com/suessflorian/gqlfetch/gqlfetch -endpoint "$${BUILDKITE_GRAPHQL_URL:-https://graphql.buildkite.com/v1}" -header "Authorization=Bearer $${BUILDKITE_API_TOKEN:-$$BUILDKITE_GRAPHQL_TOKEN}" > schema.graphql
 
 # Generate the GraphQL code
 generate: schema

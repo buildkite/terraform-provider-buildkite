@@ -408,15 +408,42 @@ const (
 	HostedAgentSizeExtraLarge HostedAgentSize = "EXTRA_LARGE"
 )
 
+// Settings for Linux hosted agents on this queue
+type HostedAgentsLinuxPlatformSettingsInput struct {
+	// Settings for Linux hosted agents on this queue
+	AgentImageRef string `json:"agentImageRef"`
+}
+
+// GetAgentImageRef returns HostedAgentsLinuxPlatformSettingsInput.AgentImageRef, and is useful for accessing the field via an interface.
+func (v *HostedAgentsLinuxPlatformSettingsInput) GetAgentImageRef() string { return v.AgentImageRef }
+
+// Settings for hosted agents on this queue
+type HostedAgentsPlatformSettingsInput struct {
+	// Settings for hosted agents on this queue
+	Linux HostedAgentsLinuxPlatformSettingsInput `json:"linux"`
+}
+
+// GetLinux returns HostedAgentsPlatformSettingsInput.Linux, and is useful for accessing the field via an interface.
+func (v *HostedAgentsPlatformSettingsInput) GetLinux() HostedAgentsLinuxPlatformSettingsInput {
+	return v.Linux
+}
+
 // Settings for hosted agents on this queue
 type HostedAgentsQueueSettingsCreateInput struct {
 	// Settings for hosted agents on this queue
 	InstanceShape HostedAgentInstanceShapeName `json:"instanceShape"`
+	// Settings for hosted agents on this queue
+	PlatformSettings HostedAgentsPlatformSettingsInput `json:"platformSettings"`
 }
 
 // GetInstanceShape returns HostedAgentsQueueSettingsCreateInput.InstanceShape, and is useful for accessing the field via an interface.
 func (v *HostedAgentsQueueSettingsCreateInput) GetInstanceShape() HostedAgentInstanceShapeName {
 	return v.InstanceShape
+}
+
+// GetPlatformSettings returns HostedAgentsQueueSettingsCreateInput.PlatformSettings, and is useful for accessing the field via an interface.
+func (v *HostedAgentsQueueSettingsCreateInput) GetPlatformSettings() HostedAgentsPlatformSettingsInput {
+	return v.PlatformSettings
 }
 
 // Settings for hosted agents on this queue
@@ -425,6 +452,8 @@ type HostedAgentsQueueSettingsUpdateInput struct {
 	InstanceShape HostedAgentInstanceShapeName `json:"instanceShape"`
 	// Settings for hosted agents on this queue
 	AgentImageRef string `json:"agentImageRef"`
+	// Settings for hosted agents on this queue
+	PlatformSettings HostedAgentsPlatformSettingsInput `json:"platformSettings"`
 }
 
 // GetInstanceShape returns HostedAgentsQueueSettingsUpdateInput.InstanceShape, and is useful for accessing the field via an interface.
@@ -434,6 +463,11 @@ func (v *HostedAgentsQueueSettingsUpdateInput) GetInstanceShape() HostedAgentIns
 
 // GetAgentImageRef returns HostedAgentsQueueSettingsUpdateInput.AgentImageRef, and is useful for accessing the field via an interface.
 func (v *HostedAgentsQueueSettingsUpdateInput) GetAgentImageRef() string { return v.AgentImageRef }
+
+// GetPlatformSettings returns HostedAgentsQueueSettingsUpdateInput.PlatformSettings, and is useful for accessing the field via an interface.
+func (v *HostedAgentsQueueSettingsUpdateInput) GetPlatformSettings() HostedAgentsPlatformSettingsInput {
+	return v.PlatformSettings
+}
 
 // HostedAgentsQueueSettingsValues includes the GraphQL fields of HostedAgentQueueSettings requested by the fragment HostedAgentsQueueSettingsValues.
 // The GraphQL type's documentation follows.
@@ -1702,10 +1736,10 @@ const (
 type RuleAction string
 
 const (
-	// Trigger build
-	RuleActionTriggerBuild RuleAction = "TRIGGER_BUILD"
 	// Artifacts read
 	RuleActionArtifactsRead RuleAction = "ARTIFACTS_READ"
+	// Trigger build
+	RuleActionTriggerBuild RuleAction = "TRIGGER_BUILD"
 )
 
 // The effect a rule has
@@ -2032,7 +2066,6 @@ type __createClusterQueueInput struct {
 	ClusterId      string                                `json:"clusterId"`
 	Key            string                                `json:"key"`
 	Description    *string                               `json:"description"`
-	Hosted         bool                                  `json:"hosted"`
 	HostedAgents   *HostedAgentsQueueSettingsCreateInput `json:"hostedAgents"`
 }
 
@@ -2047,9 +2080,6 @@ func (v *__createClusterQueueInput) GetKey() string { return v.Key }
 
 // GetDescription returns __createClusterQueueInput.Description, and is useful for accessing the field via an interface.
 func (v *__createClusterQueueInput) GetDescription() *string { return v.Description }
-
-// GetHosted returns __createClusterQueueInput.Hosted, and is useful for accessing the field via an interface.
-func (v *__createClusterQueueInput) GetHosted() bool { return v.Hosted }
 
 // GetHostedAgents returns __createClusterQueueInput.HostedAgents, and is useful for accessing the field via an interface.
 func (v *__createClusterQueueInput) GetHostedAgents() *HostedAgentsQueueSettingsCreateInput {
@@ -14460,8 +14490,8 @@ func createClusterAgentToken(
 
 // The query or mutation executed by createClusterQueue.
 const createClusterQueue_Operation = `
-mutation createClusterQueue ($organizationId: ID!, $clusterId: ID!, $key: String!, $description: String, $hosted: Boolean, $hostedAgents: HostedAgentsQueueSettingsCreateInput) {
-	clusterQueueCreate(input: {organizationId:$organizationId,clusterId:$clusterId,key:$key,description:$description,hosted:$hosted,hostedAgents:$hostedAgents}) {
+mutation createClusterQueue ($organizationId: ID!, $clusterId: ID!, $key: String!, $description: String, $hostedAgents: HostedAgentsQueueSettingsCreateInput) {
+	clusterQueueCreate(input: {organizationId:$organizationId,clusterId:$clusterId,key:$key,description:$description,hostedAgents:$hostedAgents}) {
 		clusterQueue {
 			... ClusterQueueValues
 		}
@@ -14508,7 +14538,6 @@ func createClusterQueue(
 	clusterId string,
 	key string,
 	description *string,
-	hosted bool,
 	hostedAgents *HostedAgentsQueueSettingsCreateInput,
 ) (*createClusterQueueResponse, error) {
 	req_ := &graphql.Request{
@@ -14519,7 +14548,6 @@ func createClusterQueue(
 			ClusterId:      clusterId,
 			Key:            key,
 			Description:    description,
-			Hosted:         hosted,
 			HostedAgents:   hostedAgents,
 		},
 	}
