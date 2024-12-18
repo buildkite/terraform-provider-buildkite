@@ -1741,7 +1741,7 @@ type HostedAgentLinuxSettings {
 """Configuration options for the base image of hosted agent instances on macOS platforms."""
 type HostedAgentMacOSSettingsType {
 """The Xcode version to pre-select (via xcode-select) on macOS hosted agent instances for this cluster queue."""
-	baseImageXcodeVersion: String
+	xcodeVersion: String
 }
 
 """Possible machine types for the hosted agent instance"""
@@ -1786,10 +1786,18 @@ input HostedAgentsLinuxPlatformSettingsInput {
 	agentImageRef: String
 }
 
+"""Settings for Mac hosted agents on this queue"""
+input HostedAgentsMacosPlatformSettingsInput {
+"""Settings for Mac hosted agents on this queue"""
+	xcodeVersion: String
+}
+
 """Settings for hosted agents on this queue"""
 input HostedAgentsPlatformSettingsInput {
 """Settings for hosted agents on this queue"""
 	linux: HostedAgentsLinuxPlatformSettingsInput
+"""Settings for hosted agents on this queue"""
+	macos: HostedAgentsMacosPlatformSettingsInput
 }
 
 """Settings for hosted agents on this queue"""

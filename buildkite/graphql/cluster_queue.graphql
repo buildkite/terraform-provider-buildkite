@@ -12,7 +12,7 @@ fragment HostedAgentsQueueSettingsValues on HostedAgentQueueSettings {
             agentImageRef
         }
         macos {
-            baseImageXcodeVersion
+            xcodeVersion
         }
     }
 }
@@ -85,6 +85,7 @@ mutation updateClusterQueue(
     $id: ID!
     # @genqlient(pointer: true)
     $description: String
+    # @genqlient(pointer: true)
     $hostedAgents: HostedAgentsQueueSettingsUpdateInput
 ) {
     clusterQueueUpdate(

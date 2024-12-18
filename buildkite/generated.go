@@ -628,15 +628,31 @@ type HostedAgentsLinuxPlatformSettingsInput struct {
 // GetAgentImageRef returns HostedAgentsLinuxPlatformSettingsInput.AgentImageRef, and is useful for accessing the field via an interface.
 func (v *HostedAgentsLinuxPlatformSettingsInput) GetAgentImageRef() string { return v.AgentImageRef }
 
+// Settings for Mac hosted agents on this queue
+type HostedAgentsMacosPlatformSettingsInput struct {
+	// Settings for Mac hosted agents on this queue
+	XcodeVersion string `json:"xcodeVersion"`
+}
+
+// GetXcodeVersion returns HostedAgentsMacosPlatformSettingsInput.XcodeVersion, and is useful for accessing the field via an interface.
+func (v *HostedAgentsMacosPlatformSettingsInput) GetXcodeVersion() string { return v.XcodeVersion }
+
 // Settings for hosted agents on this queue
 type HostedAgentsPlatformSettingsInput struct {
 	// Settings for hosted agents on this queue
 	Linux HostedAgentsLinuxPlatformSettingsInput `json:"linux"`
+	// Settings for hosted agents on this queue
+	Macos HostedAgentsMacosPlatformSettingsInput `json:"macos"`
 }
 
 // GetLinux returns HostedAgentsPlatformSettingsInput.Linux, and is useful for accessing the field via an interface.
 func (v *HostedAgentsPlatformSettingsInput) GetLinux() HostedAgentsLinuxPlatformSettingsInput {
 	return v.Linux
+}
+
+// GetMacos returns HostedAgentsPlatformSettingsInput.Macos, and is useful for accessing the field via an interface.
+func (v *HostedAgentsPlatformSettingsInput) GetMacos() HostedAgentsMacosPlatformSettingsInput {
+	return v.Macos
 }
 
 // Settings for hosted agents on this queue
@@ -791,12 +807,12 @@ func (v *HostedAgentsQueueSettingsValuesPlatformSettingsHostedAgentPlatformSetti
 // Configuration options for the base image of hosted agent instances on macOS platforms.
 type HostedAgentsQueueSettingsValuesPlatformSettingsHostedAgentPlatformSettingsMacosHostedAgentMacOSSettingsType struct {
 	// The Xcode version to pre-select (via xcode-select) on macOS hosted agent instances for this cluster queue.
-	BaseImageXcodeVersion string `json:"baseImageXcodeVersion"`
+	XcodeVersion string `json:"xcodeVersion"`
 }
 
-// GetBaseImageXcodeVersion returns HostedAgentsQueueSettingsValuesPlatformSettingsHostedAgentPlatformSettingsMacosHostedAgentMacOSSettingsType.BaseImageXcodeVersion, and is useful for accessing the field via an interface.
-func (v *HostedAgentsQueueSettingsValuesPlatformSettingsHostedAgentPlatformSettingsMacosHostedAgentMacOSSettingsType) GetBaseImageXcodeVersion() string {
-	return v.BaseImageXcodeVersion
+// GetXcodeVersion returns HostedAgentsQueueSettingsValuesPlatformSettingsHostedAgentPlatformSettingsMacosHostedAgentMacOSSettingsType.XcodeVersion, and is useful for accessing the field via an interface.
+func (v *HostedAgentsQueueSettingsValuesPlatformSettingsHostedAgentPlatformSettingsMacosHostedAgentMacOSSettingsType) GetXcodeVersion() string {
+	return v.XcodeVersion
 }
 
 // OrganizationBannerFields includes the GraphQL fields of OrganizationBanner requested by the fragment OrganizationBannerFields.
@@ -2907,9 +2923,9 @@ func (v *__updateClusterInput) GetColor() *string { return v.Color }
 
 // __updateClusterQueueInput is used internally by genqlient
 type __updateClusterQueueInput struct {
-	OrganizationId string                               `json:"organizationId"`
-	Id             string                               `json:"id"`
-	Description    *string                              `json:"description"`
+	OrganizationId string                                `json:"organizationId"`
+	Id             string                                `json:"id"`
+	Description    *string                               `json:"description"`
 	HostedAgents   *HostedAgentsQueueSettingsUpdateInput `json:"hostedAgents"`
 }
 
@@ -14860,7 +14876,7 @@ fragment HostedAgentsQueueSettingsValues on HostedAgentQueueSettings {
 			agentImageRef
 		}
 		macos {
-			baseImageXcodeVersion
+			xcodeVersion
 		}
 	}
 }
@@ -15917,7 +15933,7 @@ fragment HostedAgentsQueueSettingsValues on HostedAgentQueueSettings {
 			agentImageRef
 		}
 		macos {
-			baseImageXcodeVersion
+			xcodeVersion
 		}
 	}
 }
@@ -17324,7 +17340,7 @@ fragment HostedAgentsQueueSettingsValues on HostedAgentQueueSettings {
 			agentImageRef
 		}
 		macos {
-			baseImageXcodeVersion
+			xcodeVersion
 		}
 	}
 }
