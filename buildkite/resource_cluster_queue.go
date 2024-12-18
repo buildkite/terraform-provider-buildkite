@@ -330,7 +330,6 @@ func (cq *clusterQueueResource) ImportState(ctx context.Context, req resource.Im
 func (cq *clusterQueueResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	var state clusterQueueResourceModel
 	var description types.String
-	var isPausible bool
 
 	diagsState := req.State.Get(ctx, &state)
 	diagsDescription := req.Plan.GetAttribute(ctx, path.Root("description"), &description)
@@ -350,64 +349,30 @@ func (cq *clusterQueueResource) Update(ctx context.Context, req resource.UpdateR
 		return
 	}
 
-	if !state.DispatchPaused.ValueBool() {
-		isPausible = true
-	}
-
 	var r *updateClusterQueueResponse
-
-	if isPausible {
-		err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-			log.Printf("Pausing dispatch for cluster queue %s", state.Key)
-			_, err := pauseDispatchClusterQueue(
-				ctx,
-				cq.client.genqlient,
-				state.Id.ValueString(),
-			)
-
-			return retryContextError(err)
-		})
-		if err != nil {
-			resp.Diagnostics.AddError(
-				"Unable to pause cluster queue dispatch",
-				fmt.Sprintf("Unable to pause dispatch for cluster queue: %s", err.Error()),
-			)
-			return
+	var hosted *HostedAgentsQueueSettingsUpdateInput
+	if state.HostedAgents != nil {
+		hosted = &HostedAgentsQueueSettingsUpdateInput{
+			InstanceShape: HostedAgentInstanceShapeName(state.HostedAgents.InstanceShape.ValueString()),
+			PlatformSettings: HostedAgentsPlatformSettingsInput{
+				Linux: HostedAgentsLinuxPlatformSettingsInput{
+					AgentImageRef: state.HostedAgents.Linux.ImageAgentRef.ValueString(),
+				},
+			},
 		}
-	} else {
-		err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-			log.Printf("Resuming dispatch for cluster queue %s", state.Key)
-			_, err := resumeDispatchClusterQueue(
-				ctx,
-				cq.client.genqlient,
-				state.Id.ValueString(),
-			)
-
-			return retryContextError(err)
-		})
-		if err != nil {
-			resp.Diagnostics.AddError(
-				"Unable to resume cluster queue dispatch",
-				fmt.Sprintf("Unable to resume dispatch for cluster queue: %s", err.Error()),
-			)
-			return
-		}
-		state.DispatchPaused = types.BoolValue(r.ClusterQueueUpdate.ClusterQueue.DispatchPaused)
 	}
 
 	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		org, err := cq.client.GetOrganizationID()
 		if err == nil {
 			log.Printf("Updating cluster queue %s ...", state.Id.ValueString())
+
 			r, err = updateClusterQueue(ctx,
 				cq.client.genqlient,
 				*org,
 				state.Id.ValueString(),
 				description.ValueStringPointer(),
-				HostedAgentsQueueSettingsUpdateInput{
-					InstanceShape: HostedAgentInstanceShapeName(state.HostedAgents.InstanceShape.ValueString()),
-					AgentImageRef: state.HostedAgents.Linux.ImageAgentRef.ValueString(),
-				},
+				hosted,
 			)
 		}
 
