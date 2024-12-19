@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"time"
 
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	resource_schema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -265,42 +267,14 @@ func (cq *clusterQueueResource) Update(ctx context.Context, req resource.UpdateR
 			// Check the planned value against the current state value
 			// Planned to be true (changing from false to true)
 			if planDispatchPaused && !stateDispatchPaused {
-				err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-					log.Printf("Pausing dispatch for cluster queue %s", state.Key)
-					_, err := pauseDispatchClusterQueue(
-						ctx,
-						cq.client.genqlient,
-						state.Id.ValueString(),
-					)
-
-					return retryContextError(err)
-				})
-				if err != nil {
-					resp.Diagnostics.AddError(
-						"Unable to pause cluster queue dispatch",
-						fmt.Sprintf("Unable to pause dispatch for cluster queue: %s", err.Error()),
-					)
+				if err := cq.pauseDispatch(ctx, timeout, state, &resp.Diagnostics); err != nil {
 					return retryContextError(err)
 				}
 			}
 
 			// Planned to be false (changing from true to false)
 			if !planDispatchPaused && stateDispatchPaused {
-				err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-					log.Printf("Resuming dispatch for cluster queue %s", state.Key)
-					_, err := resumeDispatchClusterQueue(
-						ctx,
-						cq.client.genqlient,
-						state.Id.ValueString(),
-					)
-
-					return retryContextError(err)
-				})
-				if err != nil {
-					resp.Diagnostics.AddError(
-						"Unable to resume cluster queue dispatch",
-						fmt.Sprintf("Unable to resume dispatch for cluster queue: %s", err.Error()),
-					)
+				if err := cq.resumeDispatch(ctx, timeout, state, &resp.Diagnostics); err != nil {
 					return retryContextError(err)
 				}
 			}
@@ -376,4 +350,38 @@ func updateClusterQueueResource(clusterQueueNode getClusterQueuesOrganizationClu
 	cq.ClusterId = types.StringValue(clusterQueueNode.Cluster.Id)
 	cq.ClusterUuid = types.StringValue(clusterQueueNode.Cluster.Uuid)
 	cq.DispatchPaused = types.BoolValue(clusterQueueNode.DispatchPaused)
+}
+
+func (cq *clusterQueueResource) pauseDispatch(ctx context.Context, timeout time.Duration, state clusterQueueResourceModel, diag *diag.Diagnostics) error {
+	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+		log.Printf("Pausing dispatch for cluster queue %s", state.Key)
+		_, err := pauseDispatchClusterQueue(ctx, cq.client.genqlient, state.Id.ValueString())
+		return retryContextError(err)
+	})
+
+	if err != nil {
+		diag.AddError(
+			"Unable to pause cluster queue dispatch",
+			fmt.Sprintf("Unable to pause dispatch for cluster queue: %s", err.Error()),
+		)
+	}
+
+	return err
+}
+
+func (cq *clusterQueueResource) resumeDispatch(ctx context.Context, timeout time.Duration, state clusterQueueResourceModel, diag *diag.Diagnostics) error {
+	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+		log.Printf("Resuming dispatch for cluster queue %s", state.Key)
+		_, err := resumeDispatchClusterQueue(ctx, cq.client.genqlient, state.Id.ValueString())
+		return retryContextError(err)
+	})
+
+	if err != nil {
+		diag.AddError(
+			"Unable to resume cluster queue dispatch",
+			fmt.Sprintf("Unable to resume dispatch for cluster queue: %s", err.Error()),
+		)
+	}
+
+	return err
 }
