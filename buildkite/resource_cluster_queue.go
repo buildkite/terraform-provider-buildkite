@@ -152,11 +152,13 @@ func (cq *clusterQueueResource) Create(ctx context.Context, req resource.CreateR
 	// GraphQL API does not allow Cluster Queue to be created with Dispatch Paused
 	// so Pause Dispatch after creation
 	if plan.DispatchPaused.ValueBool() {
-		retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+		err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 			log.Printf("Pausing dispatch on cluster queue with key %s", plan.Key.ValueString())
-			err = cq.pauseDispatch(ctx, timeout, state, &resp.Diagnostics)
-			return retryContextError(err)
+			return retryContextError(cq.pauseDispatch(ctx, timeout, state, &resp.Diagnostics))
 		})
+		if err != nil {
+			return
+		}
 	}
 	state.DispatchPaused = plan.DispatchPaused
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
