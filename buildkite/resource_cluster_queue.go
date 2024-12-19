@@ -201,12 +201,19 @@ func (cq *clusterQueueResource) Create(ctx context.Context, req resource.CreateR
 	var hosted *HostedAgentsQueueSettingsCreateInput
 	if plan.HostedAgents != nil {
 		hosted = &HostedAgentsQueueSettingsCreateInput{
-			InstanceShape: HostedAgentInstanceShapeName(plan.HostedAgents.InstanceShape.ValueString()),
-			PlatformSettings: HostedAgentsPlatformSettingsInput{
-				Linux: HostedAgentsLinuxPlatformSettingsInput{
-					AgentImageRef: plan.HostedAgents.Linux.ImageAgentRef.ValueString(),
-				},
-			},
+			InstanceShape:    HostedAgentInstanceShapeName(plan.HostedAgents.InstanceShape.ValueString()),
+			PlatformSettings: HostedAgentsPlatformSettingsInput{},
+		}
+
+		if plan.HostedAgents.Linux != nil {
+			hosted.PlatformSettings.Linux = HostedAgentsLinuxPlatformSettingsInput{
+				AgentImageRef: plan.HostedAgents.Linux.ImageAgentRef.ValueString(),
+			}
+		}
+		if plan.HostedAgents.Mac != nil {
+			hosted.PlatformSettings.Macos = HostedAgentsMacosPlatformSettingsInput{
+				XcodeVersion: plan.HostedAgents.Mac.XcodeVersion.ValueString(),
+			}
 		}
 	}
 
@@ -258,10 +265,18 @@ func (cq *clusterQueueResource) Create(ctx context.Context, req resource.CreateR
 
 	if plan.HostedAgents != nil {
 		state.HostedAgents = &hostedAgentResourceModel{
-			Linux: &linuxConfigModel{
-				ImageAgentRef: types.StringValue(r.ClusterQueueCreate.ClusterQueue.HostedAgents.PlatformSettings.Linux.AgentImageRef),
-			},
 			InstanceShape: types.StringValue(string(r.ClusterQueueCreate.ClusterQueue.HostedAgents.InstanceShape.Name)),
+		}
+
+		if plan.HostedAgents.Linux != nil {
+			state.HostedAgents.Linux = &linuxConfigModel{
+				ImageAgentRef: types.StringValue(r.ClusterQueueCreate.ClusterQueue.HostedAgents.PlatformSettings.Linux.AgentImageRef),
+			}
+		}
+		if plan.HostedAgents.Mac != nil {
+			state.HostedAgents.Mac = &macConfigModel{
+				XcodeVersion: plan.HostedAgents.Mac.XcodeVersion,
+			}
 		}
 	}
 
@@ -363,12 +378,19 @@ func (cq *clusterQueueResource) Update(ctx context.Context, req resource.UpdateR
 	var hosted *HostedAgentsQueueSettingsUpdateInput
 	if state.HostedAgents != nil {
 		hosted = &HostedAgentsQueueSettingsUpdateInput{
-			InstanceShape: HostedAgentInstanceShapeName(state.HostedAgents.InstanceShape.ValueString()),
-			PlatformSettings: HostedAgentsPlatformSettingsInput{
-				Linux: HostedAgentsLinuxPlatformSettingsInput{
-					AgentImageRef: state.HostedAgents.Linux.ImageAgentRef.ValueString(),
-				},
-			},
+			InstanceShape:    HostedAgentInstanceShapeName(plan.HostedAgents.InstanceShape.ValueString()),
+			PlatformSettings: HostedAgentsPlatformSettingsInput{},
+		}
+
+		if plan.HostedAgents.Linux != nil {
+			hosted.PlatformSettings.Linux = HostedAgentsLinuxPlatformSettingsInput{
+				AgentImageRef: plan.HostedAgents.Linux.ImageAgentRef.ValueString(),
+			}
+		}
+		if plan.HostedAgents.Mac != nil {
+			hosted.PlatformSettings.Macos = HostedAgentsMacosPlatformSettingsInput{
+				XcodeVersion: plan.HostedAgents.Mac.XcodeVersion.ValueString(),
+			}
 		}
 	}
 
