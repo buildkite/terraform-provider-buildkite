@@ -103,7 +103,7 @@ Optional:
 
 Optional:
 
-- `agent_image_ref` (String) A URL reference to a container image that will be used for jobs running within the queue. This URL is required to be publicly available, or pushed to the internal registry available within the cluster.
+- `agent_image_ref` (String) A URL reference to a container image that will be used for jobs running within the queue. This URL is required to be publicly available, or pushed to the internal registry available within the cluster. Please note that this value is currently experimental and in preview. Please contact support@buildkite.com to enable this functionality for your organization.
 
 
 <a id="nestedatt--hosted_agents--mac"></a>
