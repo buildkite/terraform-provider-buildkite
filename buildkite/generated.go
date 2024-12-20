@@ -165,6 +165,71 @@ func (v *ClusterQueueValuesCluster) GetId() string { return v.Id }
 // GetUuid returns ClusterQueueValuesCluster.Uuid, and is useful for accessing the field via an interface.
 func (v *ClusterQueueValuesCluster) GetUuid() string { return v.Uuid }
 
+// ClusterQueueValuesHostedAgentsHostedAgentQueueSettings includes the requested fields of the GraphQL type HostedAgentQueueSettings.
+// The GraphQL type's documentation follows.
+//
+// Platform-specific configuration for hosted agent instances.
+type ClusterQueueValuesHostedAgentsHostedAgentQueueSettings struct {
+	HostedAgentsQueueSettingsValues `json:"-"`
+}
+
+// GetInstanceShape returns ClusterQueueValuesHostedAgentsHostedAgentQueueSettings.InstanceShape, and is useful for accessing the field via an interface.
+func (v *ClusterQueueValuesHostedAgentsHostedAgentQueueSettings) GetInstanceShape() HostedAgentsQueueSettingsValuesInstanceShapeHostedAgentInstanceShape {
+	return v.HostedAgentsQueueSettingsValues.InstanceShape
+}
+
+// GetPlatformSettings returns ClusterQueueValuesHostedAgentsHostedAgentQueueSettings.PlatformSettings, and is useful for accessing the field via an interface.
+func (v *ClusterQueueValuesHostedAgentsHostedAgentQueueSettings) GetPlatformSettings() HostedAgentsQueueSettingsValuesPlatformSettingsHostedAgentPlatformSettings {
+	return v.HostedAgentsQueueSettingsValues.PlatformSettings
+}
+
+func (v *ClusterQueueValuesHostedAgentsHostedAgentQueueSettings) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*ClusterQueueValuesHostedAgentsHostedAgentQueueSettings
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.ClusterQueueValuesHostedAgentsHostedAgentQueueSettings = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	err = json.Unmarshal(
+		b, &v.HostedAgentsQueueSettingsValues)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+type __premarshalClusterQueueValuesHostedAgentsHostedAgentQueueSettings struct {
+	InstanceShape HostedAgentsQueueSettingsValuesInstanceShapeHostedAgentInstanceShape `json:"instanceShape"`
+
+	PlatformSettings HostedAgentsQueueSettingsValuesPlatformSettingsHostedAgentPlatformSettings `json:"platformSettings"`
+}
+
+func (v *ClusterQueueValuesHostedAgentsHostedAgentQueueSettings) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *ClusterQueueValuesHostedAgentsHostedAgentQueueSettings) __premarshalJSON() (*__premarshalClusterQueueValuesHostedAgentsHostedAgentQueueSettings, error) {
+	var retval __premarshalClusterQueueValuesHostedAgentsHostedAgentQueueSettings
+
+	retval.InstanceShape = v.HostedAgentsQueueSettingsValues.InstanceShape
+	retval.PlatformSettings = v.HostedAgentsQueueSettingsValues.PlatformSettings
+	return &retval, nil
+}
+
 // GetOrganizationMemberByEmailOrganization includes the requested fields of the GraphQL type Organization.
 // The GraphQL type's documentation follows.
 //
@@ -374,71 +439,6 @@ type GetOrganizationMembersResponse struct {
 // GetOrganization returns GetOrganizationMembersResponse.Organization, and is useful for accessing the field via an interface.
 func (v *GetOrganizationMembersResponse) GetOrganization() GetOrganizationMembersOrganization {
 	return v.Organization
-}
-
-// ClusterQueueValuesHostedAgentsHostedAgentQueueSettings includes the requested fields of the GraphQL type HostedAgentQueueSettings.
-// The GraphQL type's documentation follows.
-//
-// Platform-specific configuration for hosted agent instances.
-type ClusterQueueValuesHostedAgentsHostedAgentQueueSettings struct {
-	HostedAgentsQueueSettingsValues `json:"-"`
-}
-
-// GetInstanceShape returns ClusterQueueValuesHostedAgentsHostedAgentQueueSettings.InstanceShape, and is useful for accessing the field via an interface.
-func (v *ClusterQueueValuesHostedAgentsHostedAgentQueueSettings) GetInstanceShape() HostedAgentsQueueSettingsValuesInstanceShapeHostedAgentInstanceShape {
-	return v.HostedAgentsQueueSettingsValues.InstanceShape
-}
-
-// GetPlatformSettings returns ClusterQueueValuesHostedAgentsHostedAgentQueueSettings.PlatformSettings, and is useful for accessing the field via an interface.
-func (v *ClusterQueueValuesHostedAgentsHostedAgentQueueSettings) GetPlatformSettings() HostedAgentsQueueSettingsValuesPlatformSettingsHostedAgentPlatformSettings {
-	return v.HostedAgentsQueueSettingsValues.PlatformSettings
-}
-
-func (v *ClusterQueueValuesHostedAgentsHostedAgentQueueSettings) UnmarshalJSON(b []byte) error {
-
-	if string(b) == "null" {
-		return nil
-	}
-
-	var firstPass struct {
-		*ClusterQueueValuesHostedAgentsHostedAgentQueueSettings
-		graphql.NoUnmarshalJSON
-	}
-	firstPass.ClusterQueueValuesHostedAgentsHostedAgentQueueSettings = v
-
-	err := json.Unmarshal(b, &firstPass)
-	if err != nil {
-		return err
-	}
-
-	err = json.Unmarshal(
-		b, &v.HostedAgentsQueueSettingsValues)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-type __premarshalClusterQueueValuesHostedAgentsHostedAgentQueueSettings struct {
-	InstanceShape HostedAgentsQueueSettingsValuesInstanceShapeHostedAgentInstanceShape `json:"instanceShape"`
-
-	PlatformSettings HostedAgentsQueueSettingsValuesPlatformSettingsHostedAgentPlatformSettings `json:"platformSettings"`
-}
-
-func (v *ClusterQueueValuesHostedAgentsHostedAgentQueueSettings) MarshalJSON() ([]byte, error) {
-	premarshaled, err := v.__premarshalJSON()
-	if err != nil {
-		return nil, err
-	}
-	return json.Marshal(premarshaled)
-}
-
-func (v *ClusterQueueValuesHostedAgentsHostedAgentQueueSettings) __premarshalJSON() (*__premarshalClusterQueueValuesHostedAgentsHostedAgentQueueSettings, error) {
-	var retval __premarshalClusterQueueValuesHostedAgentsHostedAgentQueueSettings
-
-	retval.InstanceShape = v.HostedAgentsQueueSettingsValues.InstanceShape
-	retval.PlatformSettings = v.HostedAgentsQueueSettingsValues.PlatformSettings
-	return &retval, nil
 }
 
 // GetTeamFromSlugResponse is returned by GetTeamFromSlug on success.
