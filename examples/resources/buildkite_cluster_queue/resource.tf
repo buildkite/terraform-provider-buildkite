@@ -19,3 +19,33 @@ resource "buildkite_cluster_queue" "default" {
   # Pause dispatch after create
   dispatch_paused = true
 }
+
+# create a hosted agent queue with macos agents
+resource "buildkite_cluster_queue" "hosted_agents_macos" {
+  cluster_id = buildkite_cluster.primary.id
+  key        = "hosted-agents-macos"
+
+  # Pause dispatch after create
+  dispatch_paused = true
+
+  hosted_agents = {
+    instance_shape = "MACOS_M2_4X7"
+  }
+}
+
+# create a hosted agent queue with linux agents
+resource "buildkite_cluster_queue" "hosted_agents_macos" {
+  cluster_id = buildkite_cluster.primary.id
+  key        = "hosted-agents-linux"
+
+  # Pause dispatch after create
+  dispatch_paused = true
+
+  hosted_agents = {
+    instance_shape = "LINUX_AMD64_2X4"
+
+    linux = {
+      agent_image_ref = "ubuntu:24.04"
+    }
+  }
+}
