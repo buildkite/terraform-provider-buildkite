@@ -73,7 +73,7 @@ Optional:
 
 Optional:
 
-- `image_agent_ref` (String)
+- `agent_image_ref` (String)
 
 
 <a id="nestedatt--hosted_agents--mac"></a>

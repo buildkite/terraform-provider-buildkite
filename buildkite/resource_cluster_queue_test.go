@@ -116,7 +116,7 @@ func TestAccBuildkiteClusterQueueResource(t *testing.T) {
 
         hosted_agents = {
             linux {
-                image_agent_ref = "buildkite/agent:latest"
+                agent_image_ref = "buildkite/agent:latest"
             }
             instance_shape = "LINUX_ARM64_2X4"
         }
@@ -180,7 +180,7 @@ func TestAccBuildkiteClusterQueueResource(t *testing.T) {
 
         hosted_agents = {
             linux {
-                image_agent_ref = "buildkite/agent:latest"
+                agent_image_ref = "buildkite/agent:latest"
             }
             instance_shape = "MACOS_M2_4X7"
         }
@@ -215,7 +215,7 @@ func TestAccBuildkiteClusterQueueResource(t *testing.T) {
                 xcode_version = "14.3.1"
             }
             linux {
-                image_agent_ref = "buildkite/agent:latest"
+                agent_image_ref = "buildkite/agent:latest"
             }
             instance_shape = "MACOS_M2_4X7"
         }
@@ -417,7 +417,7 @@ func TestAccBuildkiteClusterQueueResource(t *testing.T) {
 		check := resource.ComposeAggregateTestCheckFunc(
 			testAccCheckClusterQueueExists("buildkite_cluster_queue.foobar", &cq),
 			resource.TestCheckResourceAttr("buildkite_cluster_queue.foobar", "hosted", "true"),
-			resource.TestCheckResourceAttr("buildkite_cluster_queue.foobar", "hosted_agents.linux.image_agent_ref", "buildkite/agent:latest"),
+			resource.TestCheckResourceAttr("buildkite_cluster_queue.foobar", "hosted_agents.linux.agent_image_ref", "buildkite/agent:latest"),
 			resource.TestCheckResourceAttr("buildkite_cluster_queue.foobar", "hosted_agents.instance_shape", "LINUX_ARM64_2X4"),
 		)
 

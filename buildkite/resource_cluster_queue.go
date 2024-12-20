@@ -59,7 +59,7 @@ type macConfigModel struct {
 }
 
 type linuxConfigModel struct {
-	ImageAgentRef types.String `tfsdk:"image_agent_ref"`
+	ImageAgentRef types.String `tfsdk:"agent_image_ref"`
 }
 
 type clusterQueueResource struct {
@@ -150,7 +150,7 @@ func (clusterQueueResource) Schema(ctx context.Context, req resource.SchemaReque
 					"linux": resource_schema.SingleNestedAttribute{
 						Optional: true,
 						Attributes: map[string]resource_schema.Attribute{
-							"image_agent_ref": resource_schema.StringAttribute{
+							"agent_image_ref": resource_schema.StringAttribute{
 								Optional: true,
 								Computed: true,
 							},

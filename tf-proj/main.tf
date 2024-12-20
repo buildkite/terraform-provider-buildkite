@@ -31,7 +31,7 @@ resource "buildkite_cluster_queue" "hosted_linux_small" {
     instance_shape = "LINUX_ARM64_2X4"
 
     linux = {
-      image_agent_ref = "elixir:1.17.3-slim"
+      agent_image_ref = "elixir:1.17.3-slim"
     }
   }
 }
