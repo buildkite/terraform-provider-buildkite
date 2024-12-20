@@ -159,8 +159,6 @@ func (clusterQueueResource) Schema(ctx context.Context, req resource.SchemaReque
 						}
 
 						rrifr.RequiresReplace = false
-						return
-
 					}, "Recreates the resource if the hosted_agents attribute is added or removed.", "Recreates the resource if the hosted_agents attribute is added or removed."),
 				},
 				Attributes: map[string]resource_schema.Attribute{
