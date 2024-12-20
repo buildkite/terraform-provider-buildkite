@@ -80,7 +80,6 @@ func TestAccBuildkiteClusterQueueResource(t *testing.T) {
         cluster_id = buildkite_cluster.cluster_test.id
         key = "queue-%s"
         description = "Acceptance test %s"
-        hosted = true
 
         hosted_agents = {
             mac = {
@@ -112,10 +111,9 @@ func TestAccBuildkiteClusterQueueResource(t *testing.T) {
         cluster_id = buildkite_cluster.cluster_test.id
         key = "queue-%s"
         description = "Acceptance test %s"
-        hosted = true
 
         hosted_agents = {
-            linux {
+            linux = {
                 agent_image_ref = "buildkite/agent:latest"
             }
             instance_shape = "LINUX_ARM64_2X4"
@@ -144,10 +142,9 @@ func TestAccBuildkiteClusterQueueResource(t *testing.T) {
         cluster_id = buildkite_cluster.cluster_test.id
         key = "queue-%s"
         description = "Acceptance test %s"
-        hosted = true
 
         hosted_agents = {
-            mac {
+            mac = {
                 xcode_version = "14.3.1"
             }
             instance_shape = "LINUX_ARM64_2X4"
@@ -176,10 +173,9 @@ func TestAccBuildkiteClusterQueueResource(t *testing.T) {
         cluster_id = buildkite_cluster.cluster_test.id
         key = "queue-%s"
         description = "Acceptance test %s"
-        hosted = true
 
         hosted_agents = {
-            linux {
+            linux = {
                 agent_image_ref = "buildkite/agent:latest"
             }
             instance_shape = "MACOS_M2_4X7"
@@ -208,13 +204,12 @@ func TestAccBuildkiteClusterQueueResource(t *testing.T) {
         cluster_id = buildkite_cluster.cluster_test.id
         key = "queue-%s"
         description = "Acceptance test %s"
-        hosted = true
 
         hosted_agents = {
-            mac {
+            mac = {
                 xcode_version = "14.3.1"
             }
-            linux {
+            linux = {
                 agent_image_ref = "buildkite/agent:latest"
             }
             instance_shape = "MACOS_M2_4X7"
@@ -390,7 +385,6 @@ func TestAccBuildkiteClusterQueueResource(t *testing.T) {
 
 		check := resource.ComposeAggregateTestCheckFunc(
 			testAccCheckClusterQueueExists("buildkite_cluster_queue.foobar", &cq),
-			resource.TestCheckResourceAttr("buildkite_cluster_queue.foobar", "hosted", "true"),
 			resource.TestCheckResourceAttr("buildkite_cluster_queue.foobar", "hosted_agents.mac.xcode_version", "14.3.1"),
 			resource.TestCheckResourceAttr("buildkite_cluster_queue.foobar", "hosted_agents.instance_shape", "MACOS_M2_4X7"),
 		)
@@ -416,7 +410,6 @@ func TestAccBuildkiteClusterQueueResource(t *testing.T) {
 
 		check := resource.ComposeAggregateTestCheckFunc(
 			testAccCheckClusterQueueExists("buildkite_cluster_queue.foobar", &cq),
-			resource.TestCheckResourceAttr("buildkite_cluster_queue.foobar", "hosted", "true"),
 			resource.TestCheckResourceAttr("buildkite_cluster_queue.foobar", "hosted_agents.linux.agent_image_ref", "buildkite/agent:latest"),
 			resource.TestCheckResourceAttr("buildkite_cluster_queue.foobar", "hosted_agents.instance_shape", "LINUX_ARM64_2X4"),
 		)
@@ -482,7 +475,7 @@ func TestAccBuildkiteClusterQueueResource(t *testing.T) {
 			Steps: []resource.TestStep{
 				{
 					Config:      configBothPlatforms(clusterName, queueKey, queueDesc),
-					ExpectError: regexp.MustCompile("Only one platform \\(mac or linux\\) can be specified at a time"),
+					ExpectError: regexp.MustCompile(`Invalid platform configuration`),
 				},
 			},
 		})
