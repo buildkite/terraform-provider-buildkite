@@ -3,6 +3,7 @@
 ## Unreleased
 
 - SUP-2813: correct logic for pausing/resuming Dispatch on Queues and remove error with Default Cluster Queues [[PR #593](https://github.com/buildkite/terraform-provider-buildkite/pull/593)] @tomowatt
+- Adding cluster queue support for hosted agents [[PR #596](https://github.com/buildkite/terraform-provider-buildkite/pull/596)] @CerealBoy
 
 ## [v1.14.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.13.1...v1.14.0)
 
