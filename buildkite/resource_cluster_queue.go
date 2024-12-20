@@ -139,7 +139,29 @@ func (clusterQueueResource) Schema(ctx context.Context, req resource.SchemaReque
 					&hostedAgentValidator{},
 				},
 				PlanModifiers: []planmodifier.Object{
-					objectplanmodifier.RequiresReplace(),
+					objectplanmodifier.RequiresReplaceIf(func(ctx context.Context, or planmodifier.ObjectRequest, rrifr *objectplanmodifier.RequiresReplaceIfFuncResponse) {
+						var data *struct {
+							Mac           types.Object `tfsdk:"mac"`
+							Linux         types.Object `tfsdk:"linux"`
+							InstanceShape types.String `tfsdk:"instance_shape"`
+						}
+
+						rrifr.Diagnostics.Append(or.ConfigValue.As(ctx, &data, basetypes.ObjectAsOptions{})...)
+
+						if rrifr.Diagnostics.HasError() {
+							return
+						}
+
+						// If the hosted_agents attribute is added or removed e.g., change from a Hosted Agent to Self-Hosted Agent Queue
+						if or.StateValue.IsNull() && !or.PlanValue.IsNull() || or.ConfigValue.IsNull() {
+							rrifr.RequiresReplace = true
+							return
+						}
+
+						rrifr.RequiresReplace = false
+						return
+
+					}, "Recreates the resource if the hosted_agents attribute is added or removed.", "Recreates the resource if the hosted_agents attribute is added or removed."),
 				},
 				Attributes: map[string]resource_schema.Attribute{
 					"mac": resource_schema.SingleNestedAttribute{
