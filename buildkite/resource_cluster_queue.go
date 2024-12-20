@@ -441,6 +441,15 @@ func (cq *clusterQueueResource) Update(ctx context.Context, req resource.UpdateR
 
 	state.Description = types.StringPointerValue(r.ClusterQueueUpdate.ClusterQueue.Description)
 	state.DispatchPaused = types.BoolValue(r.ClusterQueueUpdate.ClusterQueue.DispatchPaused)
+	if state.HostedAgents != nil {
+		state.HostedAgents.InstanceShape = types.StringValue(string(r.ClusterQueueUpdate.ClusterQueue.HostedAgents.InstanceShape.Name))
+		if state.HostedAgents.Mac != nil {
+			state.HostedAgents.Mac.XcodeVersion = types.StringValue(r.ClusterQueueUpdate.ClusterQueue.HostedAgents.PlatformSettings.Macos.XcodeVersion)
+		}
+		if state.HostedAgents.Linux != nil {
+			state.HostedAgents.Linux.ImageAgentRef = types.StringValue(r.ClusterQueueUpdate.ClusterQueue.HostedAgents.PlatformSettings.Linux.AgentImageRef)
+		}
+	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
