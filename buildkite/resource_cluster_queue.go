@@ -142,8 +142,9 @@ func (clusterQueueResource) Schema(ctx context.Context, req resource.SchemaReque
 						Optional: true,
 						Attributes: map[string]resource_schema.Attribute{
 							"xcode_version": resource_schema.StringAttribute{
-								Optional: true,
-								Computed: true,
+								Optional:    true,
+								Computed:    true,
+								Description: "Optional selection of a specific XCode version to be selected for jobs in the queue to have available. Please note that this value is currently experimental and may not function as expected.",
 							},
 						},
 					},
@@ -151,8 +152,9 @@ func (clusterQueueResource) Schema(ctx context.Context, req resource.SchemaReque
 						Optional: true,
 						Attributes: map[string]resource_schema.Attribute{
 							"agent_image_ref": resource_schema.StringAttribute{
-								Optional: true,
-								Computed: true,
+								Optional:    true,
+								Computed:    true,
+								Description: "A URL reference to a container image that will be used for jobs running within the queue. This URL is required to be publicly available, or pushed to the internal registry available within the cluster. Please note that this value is currently experimental and in preview. Please contact support@buildkite.com to enable this functionality for your organization.",
 							},
 						},
 					},
