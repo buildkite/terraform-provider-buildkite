@@ -3,6 +3,7 @@ package buildkite
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -57,6 +58,164 @@ func TestAccBuildkiteClusterQueueResource(t *testing.T) {
 			dispatch_paused = "%s"
 		}
 		`, fields[0], fields[1], fields[2], fields[3])
+	}
+
+	configHostedMac := func(fields ...string) string {
+		return fmt.Sprintf(`
+    provider "buildkite" {
+        timeouts = {
+            create = "10s"
+            read = "10s"
+            update = "10s"
+            delete = "10s"
+        }
+    }
+
+    resource "buildkite_cluster" "cluster_test" {
+        name = "Test cluster %s"
+        description = "Acceptance testing cluster"
+    }
+
+    resource "buildkite_cluster_queue" "foobar" {
+        cluster_id = buildkite_cluster.cluster_test.id
+        key = "queue-%s"
+        description = "Acceptance test %s"
+
+        hosted_agents = {
+            mac = {
+                xcode_version = "14.3.1"
+            }
+            instance_shape = "MACOS_M2_4X7"
+        }
+    }
+    `, fields[0], fields[1], fields[2])
+	}
+
+	configHostedLinux := func(fields ...string) string {
+		return fmt.Sprintf(`
+    provider "buildkite" {
+        timeouts = {
+            create = "10s"
+            read = "10s"
+            update = "10s"
+            delete = "10s"
+        }
+    }
+
+    resource "buildkite_cluster" "cluster_test" {
+        name = "Test cluster %s"
+        description = "Acceptance testing cluster"
+    }
+
+    resource "buildkite_cluster_queue" "foobar" {
+        cluster_id = buildkite_cluster.cluster_test.id
+        key = "queue-%s"
+        description = "Acceptance test %s"
+
+        hosted_agents = {
+            linux = {
+                agent_image_ref = "buildkite/agent:latest"
+            }
+            instance_shape = "LINUX_ARM64_2X4"
+        }
+    }
+    `, fields[0], fields[1], fields[2])
+	}
+
+	configInvalidMacShape := func(fields ...string) string {
+		return fmt.Sprintf(`
+    provider "buildkite" {
+        timeouts = {
+            create = "10s"
+            read = "10s"
+            update = "10s"
+            delete = "10s"
+        }
+    }
+
+    resource "buildkite_cluster" "cluster_test" {
+        name = "Test cluster %s"
+        description = "Acceptance testing cluster"
+    }
+
+    resource "buildkite_cluster_queue" "foobar" {
+        cluster_id = buildkite_cluster.cluster_test.id
+        key = "queue-%s"
+        description = "Acceptance test %s"
+
+        hosted_agents = {
+            mac = {
+                xcode_version = "14.3.1"
+            }
+            instance_shape = "LINUX_ARM64_2X4"
+        }
+    }
+    `, fields[0], fields[1], fields[2])
+	}
+
+	configInvalidLinuxShape := func(fields ...string) string {
+		return fmt.Sprintf(`
+    provider "buildkite" {
+        timeouts = {
+            create = "10s"
+            read = "10s"
+            update = "10s"
+            delete = "10s"
+        }
+    }
+
+    resource "buildkite_cluster" "cluster_test" {
+        name = "Test cluster %s"
+        description = "Acceptance testing cluster"
+    }
+
+    resource "buildkite_cluster_queue" "foobar" {
+        cluster_id = buildkite_cluster.cluster_test.id
+        key = "queue-%s"
+        description = "Acceptance test %s"
+
+        hosted_agents = {
+            linux = {
+                agent_image_ref = "buildkite/agent:latest"
+            }
+            instance_shape = "MACOS_M2_4X7"
+        }
+    }
+    `, fields[0], fields[1], fields[2])
+	}
+
+	configBothPlatforms := func(fields ...string) string {
+		return fmt.Sprintf(`
+    provider "buildkite" {
+        timeouts = {
+            create = "10s"
+            read = "10s"
+            update = "10s"
+            delete = "10s"
+        }
+    }
+
+    resource "buildkite_cluster" "cluster_test" {
+        name = "Test cluster %s"
+        description = "Acceptance testing cluster"
+    }
+
+    resource "buildkite_cluster_queue" "foobar" {
+        cluster_id = buildkite_cluster.cluster_test.id
+        key = "queue-%s"
+        description = "Acceptance test %s"
+
+        hosted_agents = {
+            mac = {
+                xcode_version = "14.3.1"
+            }
+            linux = {
+                agent_image_ref = "buildkite/agent:latest"
+            }
+            instance_shape = "MACOS_M2_4X7"
+        }
+    }
+    `, fields[0], fields[1], fields[2])
 	}
 
 	t.Run("creates a cluster queue", func(t *testing.T) {
@@ -213,6 +372,110 @@ func TestAccBuildkiteClusterQueueResource(t *testing.T) {
 					ImportStateIdFunc: testAccGetImportClusterQueueId(&cq),
 					ImportState:       true,
 					ImportStateVerify: true,
+				},
+			},
+		})
+	})
+
+	t.Run("creates a hosted mac queue", func(t *testing.T) {
+		var cq clusterQueueResourceModel
+		clusterName := acctest.RandString(10)
+		queueKey := acctest.RandString(10)
+		queueDesc := acctest.RandString(10)
+
+		check := resource.ComposeAggregateTestCheckFunc(
+			testAccCheckClusterQueueExists("buildkite_cluster_queue.foobar", &cq),
+			resource.TestCheckResourceAttr("buildkite_cluster_queue.foobar", "hosted_agents.mac.xcode_version", "14.3.1"),
+			resource.TestCheckResourceAttr("buildkite_cluster_queue.foobar", "hosted_agents.instance_shape", "MACOS_M2_4X7"),
+		)
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			CheckDestroy:             testAccCheckClusterQueueDestroy,
+			Steps: []resource.TestStep{
+				{
+					Config: configHostedMac(clusterName, queueKey, queueDesc),
+					Check:  check,
+				},
+			},
+		})
+	})
+
+	t.Run("creates a hosted linux queue", func(t *testing.T) {
+		var cq clusterQueueResourceModel
+		clusterName := acctest.RandString(10)
+		queueKey := acctest.RandString(10)
+		queueDesc := acctest.RandString(10)
+
+		check := resource.ComposeAggregateTestCheckFunc(
+			testAccCheckClusterQueueExists("buildkite_cluster_queue.foobar", &cq),
+			resource.TestCheckResourceAttr("buildkite_cluster_queue.foobar", "hosted_agents.linux.agent_image_ref", "buildkite/agent:latest"),
+			resource.TestCheckResourceAttr("buildkite_cluster_queue.foobar", "hosted_agents.instance_shape", "LINUX_ARM64_2X4"),
+		)
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			CheckDestroy:             testAccCheckClusterQueueDestroy,
+			Steps: []resource.TestStep{
+				{
+					Config: configHostedLinux(clusterName, queueKey, queueDesc),
+					Check:  check,
+				},
+			},
+		})
+	})
+
+	t.Run("fails with invalid mac instance shape", func(t *testing.T) {
+		clusterName := acctest.RandString(10)
+		queueKey := acctest.RandString(10)
+		queueDesc := acctest.RandString(10)
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			CheckDestroy:             testAccCheckClusterQueueDestroy,
+			Steps: []resource.TestStep{
+				{
+					Config:      configInvalidMacShape(clusterName, queueKey, queueDesc),
+					ExpectError: regexp.MustCompile("Invalid instance shape for Mac platform"),
+				},
+			},
+		})
+	})
+
+	t.Run("fails with invalid linux instance shape", func(t *testing.T) {
+		clusterName := acctest.RandString(10)
+		queueKey := acctest.RandString(10)
+		queueDesc := acctest.RandString(10)
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			CheckDestroy:             testAccCheckClusterQueueDestroy,
+			Steps: []resource.TestStep{
+				{
+					Config:      configInvalidLinuxShape(clusterName, queueKey, queueDesc),
+					ExpectError: regexp.MustCompile("Invalid instance shape for Linux platform"),
+				},
+			},
+		})
+	})
+
+	t.Run("fails with both platforms specified", func(t *testing.T) {
+		clusterName := acctest.RandString(10)
+		queueKey := acctest.RandString(10)
+		queueDesc := acctest.RandString(10)
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			CheckDestroy:             testAccCheckClusterQueueDestroy,
+			Steps: []resource.TestStep{
+				{
+					Config:      configBothPlatforms(clusterName, queueKey, queueDesc),
+					ExpectError: regexp.MustCompile(`Invalid platform configuration`),
 				},
 			},
 		})

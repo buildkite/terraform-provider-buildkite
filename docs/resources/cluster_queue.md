@@ -48,12 +48,40 @@ resource "buildkite_cluster_queue" "default" {
 
 - `description` (String) A description for the cluster queue.
 - `dispatch_paused` (Boolean) The dispatch state of a cluster queue.
+- `hosted_agents` (Attributes) Control the settings for the Buildkite hosted agents. (see [below for nested schema](#nestedatt--hosted_agents))
 
 ### Read-Only
 
 - `cluster_uuid` (String) The UUID of the cluster this queue belongs to.
 - `id` (String) The GraphQL ID of the cluster queue.
 - `uuid` (String) The UUID of the cluster queue.
+
+<a id="nestedatt--hosted_agents"></a>
+### Nested Schema for `hosted_agents`
+
+Required:
+
+- `instance_shape` (String)
+
+Optional:
+
+- `linux` (Attributes) (see [below for nested schema](#nestedatt--hosted_agents--linux))
+- `mac` (Attributes) (see [below for nested schema](#nestedatt--hosted_agents--mac))
+
+<a id="nestedatt--hosted_agents--linux"></a>
+### Nested Schema for `hosted_agents.linux`
+
+Optional:
+
+- `agent_image_ref` (String)
+
+
+<a id="nestedatt--hosted_agents--mac"></a>
+### Nested Schema for `hosted_agents.mac`
+
+Optional:
+
+- `xcode_version` (String)
 
 ## Import
 

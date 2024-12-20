@@ -1,3 +1,22 @@
+fragment HostedAgentsQueueSettingsValues on HostedAgentQueueSettings {
+    instanceShape {
+        architecture
+        machineType
+        memory
+        name
+        size
+        vcpu
+    }
+    platformSettings {
+        linux {
+            agentImageRef
+        }
+        macos {
+            xcodeVersion
+        }
+    }
+}
+
 fragment ClusterQueueValues on ClusterQueue {
     id
     uuid
@@ -7,6 +26,10 @@ fragment ClusterQueueValues on ClusterQueue {
     cluster {
         id
         uuid
+    }
+    hosted
+    hostedAgents {
+        ...HostedAgentsQueueSettingsValues
     }
 }
 
@@ -34,18 +57,21 @@ query getClusterQueues($orgSlug: ID!, $id: ID!) {
 }
 
 mutation createClusterQueue(
-    $organizationId: ID!,
-    $clusterId: ID!,
-    $key: String!,
+    $organizationId: ID!
+    $clusterId: ID!
+    $key: String!
     # @genqlient(pointer: true)
     $description: String
+    # @genqlient(pointer: true)
+    $hostedAgents: HostedAgentsQueueSettingsCreateInput
 ) {
     clusterQueueCreate(
         input: {
             organizationId: $organizationId
-            clusterId: $clusterId,
+            clusterId: $clusterId
             key: $key
             description: $description
+            hostedAgents: $hostedAgents
         }
     ) {
         clusterQueue {
@@ -55,16 +81,19 @@ mutation createClusterQueue(
 }
 
 mutation updateClusterQueue(
-    $organizationId: ID!,
-    $id: ID!,
+    $organizationId: ID!
+    $id: ID!
     # @genqlient(pointer: true)
     $description: String
+    # @genqlient(pointer: true)
+    $hostedAgents: HostedAgentsQueueSettingsUpdateInput
 ) {
     clusterQueueUpdate(
         input: {
             organizationId: $organizationId
             id: $id
             description: $description
+            hostedAgents: $hostedAgents
         }
     ) {
         clusterQueue {
@@ -82,41 +111,20 @@ mutation updateClusterQueue(
     }
 }
 
-mutation deleteClusterQueue(
-    $organizationId: ID!,
-    $id: ID!,
-){
-    clusterQueueDelete(
-        input: {
-            organizationId: $organizationId
-            id: $id
-        }
-    ) {
+mutation deleteClusterQueue($organizationId: ID!, $id: ID!) {
+    clusterQueueDelete(input: { organizationId: $organizationId, id: $id }) {
         clientMutationId
     }
 }
 
-mutation pauseDispatchClusterQueue (
-    $id: ID!,
-) {
-    clusterQueuePauseDispatch(
-        input: {
-            id: $id
-        }
-    ) {
+mutation pauseDispatchClusterQueue($id: ID!) {
+    clusterQueuePauseDispatch(input: { id: $id }) {
         clientMutationId
     }
 }
 
-mutation resumeDispatchClusterQueue (
-    $id: ID!
-) {
-    clusterQueueResumeDispatch(
-        input: {
-            id: $id
-        }
-    ){
+mutation resumeDispatchClusterQueue($id: ID!) {
+    clusterQueueResumeDispatch(input: { id: $id }) {
         clientMutationId
     }
 }
-

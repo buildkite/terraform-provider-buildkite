@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -14,18 +15,51 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
+const (
+	// Available instance shapes
+	MacInstanceSmall         string = "MACOS_M2_4X7"
+	MacInstanceMedium        string = "MACOS_M2_6X14"
+	MacInstanceLarge         string = "MACOS_M2_12X28"
+	MacInstanceXLarge        string = "MACOS_M4_12x56"
+	LinuxAMD64InstanceSmall  string = "LINUX_AMD64_2X4"
+	LinuxAMD64InstanceMedium string = "LINUX_AMD64_4X16"
+	LinuxAMD64InstanceLarge  string = "LINUX_AMD64_8X32"
+	LinuxAMD64InstanceXLarge string = "LINUX_AMD64_16X64"
+	LinuxARM64InstanceSmall  string = "LINUX_ARM64_2X4"
+	LinuxARM64InstanceMedium string = "LINUX_ARM64_4X16"
+	LinuxARM64InstanceLarge  string = "LINUX_ARM64_8X32"
+	LinuxARM64InstanceXLarge string = "LINUX_ARM64_16X64"
+)
+
 type clusterQueueResourceModel struct {
-	Id             types.String `tfsdk:"id"`
-	Uuid           types.String `tfsdk:"uuid"`
-	ClusterId      types.String `tfsdk:"cluster_id"`
-	ClusterUuid    types.String `tfsdk:"cluster_uuid"`
-	Key            types.String `tfsdk:"key"`
-	Description    types.String `tfsdk:"description"`
-	DispatchPaused types.Bool   `tfsdk:"dispatch_paused"`
+	Id             types.String              `tfsdk:"id"`
+	Uuid           types.String              `tfsdk:"uuid"`
+	ClusterId      types.String              `tfsdk:"cluster_id"`
+	ClusterUuid    types.String              `tfsdk:"cluster_uuid"`
+	Key            types.String              `tfsdk:"key"`
+	Description    types.String              `tfsdk:"description"`
+	DispatchPaused types.Bool                `tfsdk:"dispatch_paused"`
+	HostedAgents   *hostedAgentResourceModel `tfsdk:"hosted_agents"`
+}
+
+type hostedAgentResourceModel struct {
+	Mac           *macConfigModel   `tfsdk:"mac"`
+	Linux         *linuxConfigModel `tfsdk:"linux"`
+	InstanceShape types.String      `tfsdk:"instance_shape"`
+}
+
+type macConfigModel struct {
+	XcodeVersion types.String `tfsdk:"xcode_version"`
+}
+
+type linuxConfigModel struct {
+	ImageAgentRef types.String `tfsdk:"agent_image_ref"`
 }
 
 type clusterQueueResource struct {
@@ -97,6 +131,52 @@ func (clusterQueueResource) Schema(ctx context.Context, req resource.SchemaReque
 				MarkdownDescription: "The dispatch state of a cluster queue.",
 				Default:             booldefault.StaticBool(false),
 			},
+			"hosted_agents": resource_schema.SingleNestedAttribute{
+				Optional:            true,
+				MarkdownDescription: "Control the settings for the Buildkite hosted agents.",
+				Validators: []validator.Object{
+					&hostedAgentValidator{},
+				},
+				Attributes: map[string]resource_schema.Attribute{
+					"mac": resource_schema.SingleNestedAttribute{
+						Optional: true,
+						Attributes: map[string]resource_schema.Attribute{
+							"xcode_version": resource_schema.StringAttribute{
+								Optional: true,
+								Computed: true,
+							},
+						},
+					},
+					"linux": resource_schema.SingleNestedAttribute{
+						Optional: true,
+						Attributes: map[string]resource_schema.Attribute{
+							"agent_image_ref": resource_schema.StringAttribute{
+								Optional: true,
+								Computed: true,
+							},
+						},
+					},
+					"instance_shape": resource_schema.StringAttribute{
+						Required: true,
+						Validators: []validator.String{
+							stringvalidator.OneOf(
+								MacInstanceSmall,
+								MacInstanceMedium,
+								MacInstanceLarge,
+								MacInstanceXLarge,
+								LinuxAMD64InstanceSmall,
+								LinuxAMD64InstanceMedium,
+								LinuxAMD64InstanceLarge,
+								LinuxAMD64InstanceXLarge,
+								LinuxARM64InstanceSmall,
+								LinuxARM64InstanceMedium,
+								LinuxARM64InstanceLarge,
+								LinuxARM64InstanceXLarge,
+							),
+						},
+					},
+				},
+			},
 		},
 	}
 }
@@ -118,17 +198,38 @@ func (cq *clusterQueueResource) Create(ctx context.Context, req resource.CreateR
 		return
 	}
 
+	var hosted *HostedAgentsQueueSettingsCreateInput
+	if plan.HostedAgents != nil {
+		hosted = &HostedAgentsQueueSettingsCreateInput{
+			InstanceShape:    HostedAgentInstanceShapeName(plan.HostedAgents.InstanceShape.ValueString()),
+			PlatformSettings: HostedAgentsPlatformSettingsInput{},
+		}
+
+		if plan.HostedAgents.Linux != nil {
+			hosted.PlatformSettings.Linux = HostedAgentsLinuxPlatformSettingsInput{
+				AgentImageRef: plan.HostedAgents.Linux.ImageAgentRef.ValueString(),
+			}
+		}
+		if plan.HostedAgents.Mac != nil {
+			hosted.PlatformSettings.Macos = HostedAgentsMacosPlatformSettingsInput{
+				XcodeVersion: plan.HostedAgents.Mac.XcodeVersion.ValueString(),
+			}
+		}
+	}
+
 	var r *createClusterQueueResponse
 	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		org, err := cq.client.GetOrganizationID()
 		if err == nil {
 			log.Printf("Creating cluster queue with key %s into cluster %s ...", plan.Key.ValueString(), plan.ClusterId.ValueString())
+
 			r, err = createClusterQueue(ctx,
 				cq.client.genqlient,
 				*org,
 				plan.ClusterId.ValueString(),
 				plan.Key.ValueString(),
 				plan.Description.ValueStringPointer(),
+				hosted,
 			)
 		}
 
@@ -161,6 +262,24 @@ func (cq *clusterQueueResource) Create(ctx context.Context, req resource.CreateR
 		}
 	}
 	state.DispatchPaused = plan.DispatchPaused
+
+	if plan.HostedAgents != nil {
+		state.HostedAgents = &hostedAgentResourceModel{
+			InstanceShape: types.StringValue(string(r.ClusterQueueCreate.ClusterQueue.HostedAgents.InstanceShape.Name)),
+		}
+
+		if plan.HostedAgents.Linux != nil {
+			state.HostedAgents.Linux = &linuxConfigModel{
+				ImageAgentRef: types.StringValue(r.ClusterQueueCreate.ClusterQueue.HostedAgents.PlatformSettings.Linux.AgentImageRef),
+			}
+		}
+		if plan.HostedAgents.Mac != nil {
+			state.HostedAgents.Mac = &macConfigModel{
+				XcodeVersion: plan.HostedAgents.Mac.XcodeVersion,
+			}
+		}
+	}
+
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
@@ -256,6 +375,24 @@ func (cq *clusterQueueResource) Update(ctx context.Context, req resource.UpdateR
 	}
 
 	var r *updateClusterQueueResponse
+	var hosted *HostedAgentsQueueSettingsUpdateInput
+	if state.HostedAgents != nil {
+		hosted = &HostedAgentsQueueSettingsUpdateInput{
+			InstanceShape:    HostedAgentInstanceShapeName(plan.HostedAgents.InstanceShape.ValueString()),
+			PlatformSettings: HostedAgentsPlatformSettingsInput{},
+		}
+
+		if plan.HostedAgents.Linux != nil {
+			hosted.PlatformSettings.Linux = HostedAgentsLinuxPlatformSettingsInput{
+				AgentImageRef: plan.HostedAgents.Linux.ImageAgentRef.ValueString(),
+			}
+		}
+		if plan.HostedAgents.Mac != nil {
+			hosted.PlatformSettings.Macos = HostedAgentsMacosPlatformSettingsInput{
+				XcodeVersion: plan.HostedAgents.Mac.XcodeVersion.ValueString(),
+			}
+		}
+	}
 
 	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		org, err := cq.client.GetOrganizationID()
@@ -288,6 +425,7 @@ func (cq *clusterQueueResource) Update(ctx context.Context, req resource.UpdateR
 				*org,
 				state.Id.ValueString(),
 				plan.Description.ValueStringPointer(),
+				hosted,
 			)
 		}
 
@@ -303,6 +441,15 @@ func (cq *clusterQueueResource) Update(ctx context.Context, req resource.UpdateR
 
 	state.Description = types.StringPointerValue(r.ClusterQueueUpdate.ClusterQueue.Description)
 	state.DispatchPaused = types.BoolValue(r.ClusterQueueUpdate.ClusterQueue.DispatchPaused)
+	if state.HostedAgents != nil {
+		state.HostedAgents.InstanceShape = types.StringValue(string(r.ClusterQueueUpdate.ClusterQueue.HostedAgents.InstanceShape.Name))
+		if state.HostedAgents.Mac != nil {
+			state.HostedAgents.Mac.XcodeVersion = types.StringValue(r.ClusterQueueUpdate.ClusterQueue.HostedAgents.PlatformSettings.Macos.XcodeVersion)
+		}
+		if state.HostedAgents.Linux != nil {
+			state.HostedAgents.Linux.ImageAgentRef = types.StringValue(r.ClusterQueueUpdate.ClusterQueue.HostedAgents.PlatformSettings.Linux.AgentImageRef)
+		}
+	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
@@ -343,6 +490,98 @@ func (cq *clusterQueueResource) Delete(ctx context.Context, req resource.DeleteR
 			fmt.Sprintf("Unable to delete Cluster Queue: %s", err.Error()),
 		)
 		return
+	}
+}
+
+type hostedAgentValidator struct{}
+
+func (v hostedAgentValidator) Description(ctx context.Context) string {
+	return "validates platform and instance shape compatibility"
+}
+
+func (v hostedAgentValidator) MarkdownDescription(ctx context.Context) string {
+	return "Validates that the instance shape is compatible with the selected platform"
+}
+
+func (v hostedAgentValidator) ValidateObject(ctx context.Context, req validator.ObjectRequest, resp *validator.ObjectResponse) {
+	// Skip validation if config is null
+	if req.ConfigValue.IsNull() {
+		return
+	}
+
+	var data struct {
+		Mac           types.Object `tfsdk:"mac"`
+		Linux         types.Object `tfsdk:"linux"`
+		InstanceShape types.String `tfsdk:"instance_shape"`
+	}
+
+	diags := req.ConfigValue.As(ctx, &data, basetypes.ObjectAsOptions{})
+	resp.Diagnostics.Append(diags...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// Skip if no instance shape is specified
+	if data.InstanceShape.IsNull() || data.InstanceShape.IsUnknown() {
+		return
+	}
+
+	shape := data.InstanceShape.ValueString()
+	hasMac := !data.Mac.IsNull() && !data.Mac.IsUnknown()
+	hasLinux := !data.Linux.IsNull() && !data.Linux.IsUnknown()
+
+	// Validate that only one platform is specified
+	if hasMac && hasLinux {
+		resp.Diagnostics.AddAttributeError(
+			path.Root("hosted_agents"),
+			"Invalid platform configuration",
+			"Only one platform (mac or linux) can be specified at a time",
+		)
+		return
+	}
+
+	// Validate Mac shapes
+	if hasMac {
+		validShapes := []string{
+			MacInstanceSmall, MacInstanceMedium, MacInstanceLarge,
+		}
+		isValid := false
+		for _, validShape := range validShapes {
+			if shape == validShape {
+				isValid = true
+				break
+			}
+		}
+		if !isValid {
+			resp.Diagnostics.AddAttributeError(
+				path.Root("instance_shape"),
+				"Invalid instance shape for Mac platform",
+				fmt.Sprintf("Instance shape %s is not valid for Mac platform. Valid shapes are: %v", shape, validShapes),
+			)
+		}
+	}
+
+	// Validate Linux shapes
+	if hasLinux {
+		validShapes := []string{
+			LinuxAMD64InstanceSmall, LinuxAMD64InstanceMedium, LinuxAMD64InstanceLarge, LinuxAMD64InstanceXLarge,
+			LinuxARM64InstanceSmall, LinuxARM64InstanceMedium, LinuxARM64InstanceLarge, LinuxARM64InstanceXLarge,
+		}
+		isValid := false
+		for _, validShape := range validShapes {
+			if shape == validShape {
+				isValid = true
+				break
+			}
+		}
+		if !isValid {
+			resp.Diagnostics.AddAttributeError(
+				path.Root("instance_shape"),
+				"Invalid instance shape for Linux platform",
+				fmt.Sprintf("Instance shape %s is not valid for Linux platform. Valid shapes are: %v", shape, validShapes),
+			)
+		}
 	}
 }
 
