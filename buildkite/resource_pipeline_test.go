@@ -356,7 +356,7 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 					Check: resource.ComposeAggregateTestCheckFunc(
 						// check api values are expected
 						func(s *terraform.State) error {
-							slug := fmt.Sprintf("%s/%s", getenv("BUILDKITE_ORGANIZATION_SLUG"), pipelineName)
+							slug := fmt.Sprintf("%s/%s", getenv("BUILDKITE_ORGANIZATION_SLUG"), slugName)
 							resp, err := getPipeline(context.Background(), genqlientGraphql, slug)
 							pipeline = resp.Pipeline
 							return err
