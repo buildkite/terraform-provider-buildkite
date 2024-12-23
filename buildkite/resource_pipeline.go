@@ -269,6 +269,7 @@ func (p *pipelineResource) Create(ctx context.Context, req resource.CreateReques
 			resp.Diagnostics.AddError("Unable to read pipeline info from REST", err.Error())
 			return
 		}
+		state.Slug = types.StringValue(extraInfo.Slug)
 		state.BadgeUrl = types.StringValue(extraInfo.BadgeUrl)
 		state.ProviderSettings = plan.ProviderSettings
 	}
