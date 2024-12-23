@@ -87,6 +87,7 @@ resource "buildkite_pipeline" "signed-pipeline" {
 - `provider_settings` (Attributes) Control settings depending on the VCS provider used in `repository`. (see [below for nested schema](#nestedatt--provider_settings))
 - `skip_intermediate_builds` (Boolean) Whether to skip queued builds if a new commit is pushed to a matching branch.
 - `skip_intermediate_builds_branch_filter` (String) Filter the `skip_intermediate_builds` setting based on this branch condition.
+- `slug` (String) A custom identifier for the pipeline. If provided, this slug will be used as the pipeline's URL path instead of automatically converting the pipeline name. If not provided, the slug will be [derived](https://buildkite.com/docs/apis/graphql/cookbooks/pipelines#create-a-pipeline-deriving-a-pipeline-slug-from-the-pipelines-name) from the pipeline `name`.
 - `steps` (String) The YAML steps to configure for the pipeline. Can also accept the `steps` attribute from the [`buildkite_signed_pipeline_steps`](/docs/data-sources/signed_pipeline_steps) data source to enable a signed pipeline. Defaults to `buildkite-agent pipeline upload`.
 - `tags` (Set of String) Tags to attribute to the pipeline. Useful for searching by in the UI.
 
@@ -94,7 +95,6 @@ resource "buildkite_pipeline" "signed-pipeline" {
 
 - `badge_url` (String) The badge URL showing build state.
 - `id` (String) The GraphQL ID of the pipeline.
-- `slug` (String) The slug generated for the pipeline.
 - `uuid` (String) The UUID of the pipeline.
 - `webhook_url` (String) The webhook URL used to trigger builds from VCS providers.
 
