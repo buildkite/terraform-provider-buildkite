@@ -27,7 +27,7 @@ const (
 	MacInstanceSmall         string = "MACOS_M2_4X7"
 	MacInstanceMedium        string = "MACOS_M2_6X14"
 	MacInstanceLarge         string = "MACOS_M2_12X28"
-	MacInstanceXLarge        string = "MACOS_M4_12x56"
+	MacInstanceXLarge        string = "MACOS_M4_12X56"
 	LinuxAMD64InstanceSmall  string = "LINUX_AMD64_2X4"
 	LinuxAMD64InstanceMedium string = "LINUX_AMD64_4X16"
 	LinuxAMD64InstanceLarge  string = "LINUX_AMD64_8X32"
