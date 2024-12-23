@@ -2,9 +2,20 @@
 
 ## Unreleased
 
+- Update golang.org/x/net [[PR #599](https://github.com/buildkite/terraform-provider-buildkite/pull/599)] @yob
+- Fix state management on updating the hosted_agents configuration of a cluster queue [[PR #600](https://github.com/buildkite/terraform-provider-buildkite/pull/600)] @CerealBoy
+- SUP-2591: add PlanModifiers when Hosted Agent attributes [[PR #598](https://github.com/buildkite/terraform-provider-buildkite/pull/598)] @tomowatt
+
+## [v1.15.1]()
+
+- SUP-2591: add PlanModifiers when Hosted Agent attributes [[PR #598](https://github.com/buildkite/terraform-provider-buildkite/pull/598)] @tomowatt
+- Adding more examples for working with cluster queues [[PR #597](https://github.com/buildkite/terraform-provider-buildkite/pull/597)] @CerealBoy
+
+## [v1.15.0]()
+
+- Bump golang.org/x/crypto from 0.25.0 to 0.31.0 [[PR #594](https://github.com/buildkite/terraform-provider-buildkite/pull/594)] @dependabot
 - SUP-2813: correct logic for pausing/resuming Dispatch on Queues and remove error with Default Cluster Queues [[PR #593](https://github.com/buildkite/terraform-provider-buildkite/pull/593)] @tomowatt
 - Adding cluster queue support for hosted agents [[PR #596](https://github.com/buildkite/terraform-provider-buildkite/pull/596)] @CerealBoy
-- Adding more examples for working with cluster queues [[PR #597](https://github.com/buildkite/terraform-provider-buildkite/pull/597)] @CerealBoy
 
 ## [v1.14.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.13.1...v1.14.0)
 
