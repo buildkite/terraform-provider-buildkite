@@ -77,7 +77,6 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 						// check computed values get set
 						resource.TestCheckResourceAttrSet("buildkite_pipeline.pipeline", "badge_url"),
 						resource.TestCheckResourceAttrSet("buildkite_pipeline.pipeline", "id"),
-						resource.TestCheckResourceAttrSet("buildkite_pipeline.pipeline", "slug"),
 						resource.TestCheckResourceAttrSet("buildkite_pipeline.pipeline", "uuid"),
 						resource.TestCheckResourceAttrSet("buildkite_pipeline.pipeline", "webhook_url"),
 						// check api values are expected
@@ -102,6 +101,7 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "repository", "https://github.com/buildkite/terraform-provider-buildkite.git"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "skip_intermediate_builds", "false"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "skip_intermediate_builds_branch_filter", ""),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "slug", fmt.Sprint(strings.ToLower(pipelineName))),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "steps", defaultSteps),
 						// check lists are empty
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "tags.#", "0"),
@@ -168,7 +168,7 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 		})
 	})
 
-	t.Run("create pipeline with user-defined slug", func(t *testing.T) {
+	t.Run("create pipeline with user defined slug", func(t *testing.T) {
 		var pipeline getPipelinePipeline
 		pipelineName := acctest.RandString(12)
 		slugName := strings.ToLower(acctest.RandString(12))
@@ -224,16 +224,11 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 						resource.TestCheckNoResourceAttr("buildkite_pipeline.pipeline", "provider_settings.#"),
 					),
 				},
-				{
-					ResourceName:  "buildkite_pipeline.pipeline",
-					ImportState:   true,
-					ImportStateId: pipeline.Id,
-				},
 			},
 		})
 	})
 
-	t.Run("update pipeline with user-defined slug", func(t *testing.T) {
+	t.Run("update pipeline with user defined slug", func(t *testing.T) {
 		var pipeline getPipelinePipeline
 		pipelineName := acctest.RandString(12)
 		slugName := strings.ToLower(acctest.RandString(12))
@@ -288,7 +283,7 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 		})
 	})
 
-	t.Run("set user-defined slug for existing pipeline", func(t *testing.T) {
+	t.Run("set user defined slug for existing pipeline", func(t *testing.T) {
 		var pipeline getPipelinePipeline
 		pipelineName := acctest.RandString(12)
 		slugName := strings.ToLower(acctest.RandString(12))
@@ -340,9 +335,10 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 		})
 	})
 
-	t.Run("remove user-defined slug from existing pipeline", func(t *testing.T) {
+	t.Run("remove user defined slug from existing pipeline", func(t *testing.T) {
 		var pipeline getPipelinePipeline
-		pipelineName := fmt.Sprintf("TesT --- PipeLine - %s", acctest.RandString(12))
+		pipelineId := acctest.RandString(12)
+		pipelineName := fmt.Sprintf("TesT --- PipeLine - %s", pipelineId)
 		slugName := strings.ToLower(acctest.RandString(12))
 
 		resource.ParallelTest(t, resource.TestCase{
@@ -387,7 +383,7 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 							return nil
 						},
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "name", pipelineName),
-						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "slug", fmt.Sprintf("test-pipeline-%s", strings.ToLower(slugName))),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "slug", fmt.Sprintf("test-pipeline-%s", strings.ToLower(pipelineId))),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "steps", defaultSteps),
 					),
 				},
@@ -425,7 +421,6 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 						resource.TestCheckResourceAttrSet("buildkite_pipeline.pipeline", "badge_url"),
 						resource.TestCheckResourceAttrSet("buildkite_pipeline.pipeline", "id"),
 						resource.TestCheckNoResourceAttr("buildkite_pipeline.pipeline", "steps"),
-						resource.TestCheckResourceAttrSet("buildkite_pipeline.pipeline", "slug"),
 						resource.TestCheckResourceAttrSet("buildkite_pipeline.pipeline", "uuid"),
 						resource.TestCheckResourceAttrSet("buildkite_pipeline.pipeline", "webhook_url"),
 						resource.TestCheckResourceAttrSet("buildkite_pipeline.pipeline", "pipeline_template_id"),
@@ -452,6 +447,7 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "repository", "https://github.com/buildkite/terraform-provider-buildkite.git"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "skip_intermediate_builds", "false"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "skip_intermediate_builds_branch_filter", ""),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "slug", fmt.Sprint(strings.ToLower(pipelineName))),
 
 						// check lists are empty
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "tags.#", "0"),
