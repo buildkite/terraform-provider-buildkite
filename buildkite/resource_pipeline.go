@@ -1019,10 +1019,11 @@ func setPipelineModel(model *pipelineResourceModel, data pipelineResponse) {
 	model.Tags = tags
 }
 
-// As of May 21, 2021, GraphQL Pipeline is lacking support for the following properties:
+// As of December 23, 2024, `pipelineCreate` and `pipelineUpdate` GraphQL Mutations are lacking support the following properties:
 // - badge_url
 // - provider_settings
-// We fallback to REST API
+// - slug
+// We fallback to REST API for secondary calls to set/update these properties.
 
 // PipelineExtraInfo is used to manage pipeline attributes that are not exposed via GraphQL API.
 type PipelineExtraInfo struct {

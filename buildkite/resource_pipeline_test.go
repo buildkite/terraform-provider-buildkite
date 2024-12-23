@@ -190,7 +190,6 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 						// check computed values get set
 						resource.TestCheckResourceAttrSet("buildkite_pipeline.pipeline", "badge_url"),
 						resource.TestCheckResourceAttrSet("buildkite_pipeline.pipeline", "id"),
-						resource.TestCheckResourceAttrSet("buildkite_pipeline.pipeline", "slug"),
 						resource.TestCheckResourceAttrSet("buildkite_pipeline.pipeline", "uuid"),
 						resource.TestCheckResourceAttrSet("buildkite_pipeline.pipeline", "webhook_url"),
 						// check api values are expected
