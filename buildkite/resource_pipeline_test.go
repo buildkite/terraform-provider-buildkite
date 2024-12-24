@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
@@ -76,7 +77,6 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 						// check computed values get set
 						resource.TestCheckResourceAttrSet("buildkite_pipeline.pipeline", "badge_url"),
 						resource.TestCheckResourceAttrSet("buildkite_pipeline.pipeline", "id"),
-						resource.TestCheckResourceAttrSet("buildkite_pipeline.pipeline", "slug"),
 						resource.TestCheckResourceAttrSet("buildkite_pipeline.pipeline", "uuid"),
 						resource.TestCheckResourceAttrSet("buildkite_pipeline.pipeline", "webhook_url"),
 						// check api values are expected
@@ -101,6 +101,7 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "repository", "https://github.com/buildkite/terraform-provider-buildkite.git"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "skip_intermediate_builds", "false"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "skip_intermediate_builds_branch_filter", ""),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "slug", fmt.Sprint(strings.ToLower(pipelineName))),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "steps", defaultSteps),
 						// check lists are empty
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "tags.#", "0"),
@@ -167,6 +168,228 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 		})
 	})
 
+	t.Run("create pipeline with user defined slug", func(t *testing.T) {
+		var pipeline getPipelinePipeline
+		pipelineName := acctest.RandString(12)
+		slugName := strings.ToLower(acctest.RandString(12))
+		config := fmt.Sprintf(`
+			resource "buildkite_pipeline" "pipeline" {
+				name = "%s"
+				slug = "%s"
+				repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
+			}
+		`, pipelineName, slugName)
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			Steps: []resource.TestStep{
+				{
+					Config: config,
+					Check: resource.ComposeAggregateTestCheckFunc(
+						// check computed values get set
+						resource.TestCheckResourceAttrSet("buildkite_pipeline.pipeline", "badge_url"),
+						resource.TestCheckResourceAttrSet("buildkite_pipeline.pipeline", "id"),
+						resource.TestCheckResourceAttrSet("buildkite_pipeline.pipeline", "uuid"),
+						resource.TestCheckResourceAttrSet("buildkite_pipeline.pipeline", "webhook_url"),
+						// check api values are expected
+						func(s *terraform.State) error {
+							slug := fmt.Sprintf("%s/%s", getenv("BUILDKITE_ORGANIZATION_SLUG"), pipelineName)
+							resp, err := getPipeline(context.Background(), genqlientGraphql, slug)
+							pipeline = resp.Pipeline
+							return err
+						},
+						aggregateRemoteCheck(&pipeline),
+						// check state values are correct
+						resource.TestCheckNoResourceAttr("buildkite_pipeline.pipeline", "branch_configuration"),
+						resource.TestCheckNoResourceAttr("buildkite_pipeline.pipeline", "cluster_id"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "allow_rebuilds", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "cancel_intermediate_builds", "false"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "cancel_intermediate_builds_branch_filter", ""),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "default_branch", ""),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "default_timeout_in_minutes", "0"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "description", ""),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "maximum_timeout_in_minutes", "0"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "name", pipelineName),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "repository", "https://github.com/buildkite/terraform-provider-buildkite.git"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "skip_intermediate_builds", "false"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "skip_intermediate_builds_branch_filter", ""),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "slug", slugName),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "steps", defaultSteps),
+						// check lists are empty
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "tags.#", "0"),
+						resource.TestCheckNoResourceAttr("buildkite_pipeline.pipeline", "tags.#"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.#", "0"),
+						resource.TestCheckNoResourceAttr("buildkite_pipeline.pipeline", "provider_settings.#"),
+					),
+				},
+			},
+		})
+	})
+
+	t.Run("update pipeline with user defined slug", func(t *testing.T) {
+		var pipeline getPipelinePipeline
+		pipelineName := acctest.RandString(12)
+		slugName := strings.ToLower(acctest.RandString(12))
+		updatedSlugName := strings.ToLower(acctest.RandString(12))
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			Steps: []resource.TestStep{
+				{
+					Config: fmt.Sprintf(`
+						resource "buildkite_pipeline" "pipeline" {
+							name = "%s"
+							slug = "%s"
+							repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
+						}
+					`, pipelineName, slugName),
+					Check: resource.ComposeAggregateTestCheckFunc(
+						// check api values are expected
+						func(s *terraform.State) error {
+							slug := fmt.Sprintf("%s/%s", getenv("BUILDKITE_ORGANIZATION_SLUG"), pipelineName)
+							resp, err := getPipeline(context.Background(), genqlientGraphql, slug)
+							pipeline = resp.Pipeline
+							return err
+						},
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "slug", slugName),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "steps", defaultSteps),
+					),
+				},
+				{
+					Config: fmt.Sprintf(`
+						resource "buildkite_pipeline" "pipeline" {
+							name = "%s"
+							slug = "%s"
+							repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
+						}
+					`, pipelineName, updatedSlugName),
+					Check: resource.ComposeAggregateTestCheckFunc(
+						// check the pipeline IDs are the same (so it wasn't recreated)
+						func(s *terraform.State) error {
+							p := s.RootModule().Resources["buildkite_pipeline.pipeline"]
+							if p.Primary.ID != pipeline.Id {
+								return fmt.Errorf("Pipelines do not match: %s %s", pipeline.Id, p.Primary.ID)
+							}
+							return nil
+						},
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "slug", updatedSlugName),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "steps", defaultSteps),
+					),
+				},
+			},
+		})
+	})
+
+	t.Run("set user defined slug for existing pipeline", func(t *testing.T) {
+		var pipeline getPipelinePipeline
+		pipelineName := acctest.RandString(12)
+		slugName := strings.ToLower(acctest.RandString(12))
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			Steps: []resource.TestStep{
+				{
+					Config: fmt.Sprintf(`
+						resource "buildkite_pipeline" "pipeline" {
+							name = "%s"
+							repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
+						}
+					`, pipelineName),
+					Check: resource.ComposeAggregateTestCheckFunc(
+						// check api values are expected
+						func(s *terraform.State) error {
+							slug := fmt.Sprintf("%s/%s", getenv("BUILDKITE_ORGANIZATION_SLUG"), pipelineName)
+							resp, err := getPipeline(context.Background(), genqlientGraphql, slug)
+							pipeline = resp.Pipeline
+							return err
+						},
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "steps", defaultSteps),
+					),
+				},
+				{
+					Config: fmt.Sprintf(`
+						resource "buildkite_pipeline" "pipeline" {
+							name = "%s"
+							slug = "%s"
+							repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
+						}
+					`, pipelineName, slugName),
+					Check: resource.ComposeAggregateTestCheckFunc(
+						// check the pipeline IDs are the same (so it wasn't recreated)
+						func(s *terraform.State) error {
+							p := s.RootModule().Resources["buildkite_pipeline.pipeline"]
+							if p.Primary.ID != pipeline.Id {
+								return fmt.Errorf("Pipelines do not match: %s %s", pipeline.Id, p.Primary.ID)
+							}
+							return nil
+						},
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "slug", slugName),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "steps", defaultSteps),
+					),
+				},
+			},
+		})
+	})
+
+	t.Run("remove user defined slug from existing pipeline", func(t *testing.T) {
+		var pipeline getPipelinePipeline
+		pipelineId := acctest.RandString(12)
+		pipelineName := fmt.Sprintf("TesT --- PipeLine - %s", pipelineId)
+		slugName := strings.ToLower(acctest.RandString(12))
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			Steps: []resource.TestStep{
+				{
+					Config: fmt.Sprintf(`
+						resource "buildkite_pipeline" "pipeline" {
+							name = "%s"
+							slug = "%s"
+							repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
+						}
+					`, pipelineName, slugName),
+					Check: resource.ComposeAggregateTestCheckFunc(
+						// check api values are expected
+						func(s *terraform.State) error {
+							slug := fmt.Sprintf("%s/%s", getenv("BUILDKITE_ORGANIZATION_SLUG"), slugName)
+							resp, err := getPipeline(context.Background(), genqlientGraphql, slug)
+							pipeline = resp.Pipeline
+							return err
+						},
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "name", pipelineName),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "slug", slugName),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "steps", defaultSteps),
+					),
+				},
+				{
+					Config: fmt.Sprintf(`
+						resource "buildkite_pipeline" "pipeline" {
+							name = "%s"
+							repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
+						}
+					`, pipelineName),
+					Check: resource.ComposeAggregateTestCheckFunc(
+						// check the pipeline IDs are the same (so it wasn't recreated)
+						func(s *terraform.State) error {
+							p := s.RootModule().Resources["buildkite_pipeline.pipeline"]
+							if p.Primary.ID != pipeline.Id {
+								return fmt.Errorf("Pipelines do not match: %s %s", pipeline.Id, p.Primary.ID)
+							}
+							return nil
+						},
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "name", pipelineName),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "slug", fmt.Sprintf("test-pipeline-%s", strings.ToLower(pipelineId))),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "steps", defaultSteps),
+					),
+				},
+			},
+		})
+	})
+
 	t.Run("create pipeline with a pipeline template", func(t *testing.T) {
 		var pipeline getPipelinePipeline
 		pipelineName := acctest.RandString(12)
@@ -197,7 +420,6 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 						resource.TestCheckResourceAttrSet("buildkite_pipeline.pipeline", "badge_url"),
 						resource.TestCheckResourceAttrSet("buildkite_pipeline.pipeline", "id"),
 						resource.TestCheckNoResourceAttr("buildkite_pipeline.pipeline", "steps"),
-						resource.TestCheckResourceAttrSet("buildkite_pipeline.pipeline", "slug"),
 						resource.TestCheckResourceAttrSet("buildkite_pipeline.pipeline", "uuid"),
 						resource.TestCheckResourceAttrSet("buildkite_pipeline.pipeline", "webhook_url"),
 						resource.TestCheckResourceAttrSet("buildkite_pipeline.pipeline", "pipeline_template_id"),
@@ -224,6 +446,7 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "repository", "https://github.com/buildkite/terraform-provider-buildkite.git"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "skip_intermediate_builds", "false"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "skip_intermediate_builds_branch_filter", ""),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "slug", fmt.Sprint(strings.ToLower(pipelineName))),
 
 						// check lists are empty
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "tags.#", "0"),

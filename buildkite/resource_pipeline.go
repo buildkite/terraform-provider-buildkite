@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"regexp"
 	"time"
 	"unsafe"
 
@@ -236,6 +237,22 @@ func (p *pipelineResource) Create(ctx context.Context, req resource.CreateReques
 	setPipelineModel(&state, &response.PipelineCreate.Pipeline)
 	state.WebhookUrl = types.StringValue(response.PipelineCreate.Pipeline.GetWebhookURL())
 	state.DefaultTeamId = plan.DefaultTeamId
+	resp.Diagnostics.Append(resp.Private.SetKey(ctx, "slugSource", []byte(`{"source": "api"}`))...)
+
+	var useSlugValue string
+	if len(plan.Slug.ValueString()) > 0 {
+		useSlugValue = plan.Slug.ValueString()
+
+		pipelineExtraInfo, err := updatePipelineSlug(ctx, response.PipelineCreate.Pipeline.Slug, useSlugValue, p.client, timeouts)
+		if err != nil {
+			resp.Diagnostics.AddError("Unable to set pipeline slug from REST", err.Error())
+			return
+		}
+
+		updatePipelineResourceExtraInfo(&state, &pipelineExtraInfo)
+		state.Slug = types.StringValue(useSlugValue)
+		resp.Diagnostics.Append(resp.Private.SetKey(ctx, "slugSource", []byte(`{"source": "user"}`))...)
+	}
 
 	if plan.ProviderSettings != nil {
 		pipelineExtraInfo, err := updatePipelineExtraInfo(ctx, response.PipelineCreate.Pipeline.Slug, plan.ProviderSettings, p.client, timeouts)
@@ -252,7 +269,9 @@ func (p *pipelineResource) Create(ctx context.Context, req resource.CreateReques
 			resp.Diagnostics.AddError("Unable to read pipeline info from REST", err.Error())
 			return
 		}
+		state.Slug = types.StringValue(extraInfo.Slug)
 		state.BadgeUrl = types.StringValue(extraInfo.BadgeUrl)
+		state.ProviderSettings = plan.ProviderSettings
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
@@ -536,9 +555,17 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 			},
 			"slug": schema.StringAttribute{
 				Computed:            true,
-				MarkdownDescription: "The slug generated for the pipeline.",
+				Optional:            true,
+				MarkdownDescription: "A custom identifier for the pipeline. If provided, this slug will be used as the pipeline's URL path instead of automatically converting the pipeline name. If not provided, the slug will be [derived](https://buildkite.com/docs/apis/graphql/cookbooks/pipelines#create-a-pipeline-deriving-a-pipeline-slug-from-the-pipelines-name) from the pipeline `name`.",
+				Validators: []validator.String{
+					stringvalidator.LengthBetween(1, 100),
+					stringvalidator.RegexMatches(
+						regexp.MustCompile(`^[a-z0-9\-]+$`),
+						"can only contain lowercase characters, numbers and hyphens",
+					),
+				},
 				PlanModifiers: []planmodifier.String{
-					custom_modifier.UseStateIfUnchanged("name"),
+					custom_modifier.UseDerivedPipelineSlug(),
 				},
 			},
 			"steps": schema.StringAttribute{
@@ -828,7 +855,29 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 		return
 	}
 
+	var useSlugValue string
+	if len(plan.Slug.ValueString()) > 0 {
+		useSlugValue = plan.Slug.ValueString()
+	} else {
+		useSlugValue = response.PipelineUpdate.Pipeline.Slug
+	}
+
+	pipelineExtraInfo, err := updatePipelineSlug(ctx, response.PipelineUpdate.Pipeline.Slug, useSlugValue, p.client, timeouts)
+
+	if err != nil {
+		resp.Diagnostics.AddError("Unable to set pipeline slug from REST", err.Error())
+		return
+	}
+
+	updatePipelineResourceExtraInfo(&state, &pipelineExtraInfo)
 	setPipelineModel(&state, &response.PipelineUpdate.Pipeline)
+
+	state.Slug = types.StringValue(useSlugValue)
+	if len(plan.Slug.ValueString()) > 0 {
+		resp.Diagnostics.Append(resp.Private.SetKey(ctx, "slugSource", []byte(`{"source": "user"}`))...)
+	} else {
+		resp.Diagnostics.Append(resp.Private.SetKey(ctx, "slugSource", []byte(`{"source": "api"}`))...)
+	}
 
 	if plan.DefaultTeamId.IsNull() && !state.DefaultTeamId.IsNull() {
 		// if the plan is empty but was previously set, just remove the team
@@ -881,12 +930,14 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 		}
 	} else {
 		// no provider_settings provided, but we still need to read in the badge url
+
 		extraInfo, err := getPipelineExtraInfo(ctx, p.client, response.PipelineUpdate.Pipeline.Slug, timeouts)
 		if err != nil {
 			resp.Diagnostics.AddError("Unable to read pipeline info from REST", err.Error())
 			return
 		}
 		state.BadgeUrl = types.StringValue(extraInfo.BadgeUrl)
+		state.ProviderSettings = plan.ProviderSettings
 		// set the webhook url if its not empty
 		// the value can be empty if not using a token with appropriate permissions. in this case, we just leave the
 		// state value alone assuming it was previously set correctly
@@ -949,7 +1000,6 @@ func setPipelineModel(model *pipelineResourceModel, data pipelineResponse) {
 	model.Repository = types.StringValue(data.GetRepository().Url)
 	model.SkipIntermediateBuilds = types.BoolValue(data.GetSkipIntermediateBuilds())
 	model.SkipIntermediateBuildsBranchFilter = types.StringValue(data.GetSkipIntermediateBuildsBranchFilter())
-	model.Slug = types.StringValue(data.GetSlug())
 	model.UUID = types.StringValue(data.GetPipelineUuid())
 
 	// only set template or steps. steps is always updated even if using a template, but its redundant and creates
@@ -969,10 +1019,11 @@ func setPipelineModel(model *pipelineResourceModel, data pipelineResponse) {
 	model.Tags = tags
 }
 
-// As of May 21, 2021, GraphQL Pipeline is lacking support for the following properties:
+// As of December 23, 2024, `pipelineCreate` and `pipelineUpdate` GraphQL Mutations are lacking support the following properties:
 // - badge_url
 // - provider_settings
-// We fallback to REST API
+// - slug
+// We fallback to REST API for secondary calls to set/update these properties.
 
 // PipelineExtraInfo is used to manage pipeline attributes that are not exposed via GraphQL API.
 type PipelineExtraInfo struct {
@@ -981,7 +1032,13 @@ type PipelineExtraInfo struct {
 		WebhookUrl string                `json:"webhook_url"`
 		Settings   PipelineExtraSettings `json:"settings"`
 	} `json:"provider"`
+	Slug string `json:"slug"`
 }
+
+type PipelineSlug struct {
+	Slug string `json:"slug"`
+}
+
 type PipelineExtraSettings struct {
 	TriggerMode                             *string `json:"trigger_mode,omitempty"`
 	BuildPullRequests                       *bool   `json:"build_pull_requests,omitempty"`
@@ -1018,6 +1075,27 @@ func getPipelineExtraInfo(ctx context.Context, client *Client, slug string, time
 
 	return &pipelineExtraInfo, nil
 }
+
+func updatePipelineSlug(ctx context.Context, slug string, updatedSlug string, client *Client, timeouts time.Duration) (PipelineExtraInfo, error) {
+	payload := PipelineSlug{
+		Slug: updatedSlug,
+	}
+
+	pipelineExtraInfo := PipelineExtraInfo{}
+
+	if len(updatedSlug) > 0 {
+		err := retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
+			err := client.makeRequest(ctx, "PATCH", fmt.Sprintf("/v2/organizations/%s/pipelines/%s", client.organization, slug), payload, &pipelineExtraInfo)
+			return retryContextError(err)
+		})
+
+		if err != nil {
+			return pipelineExtraInfo, err
+		}
+	}
+	return pipelineExtraInfo, nil
+}
+
 func updatePipelineExtraInfo(ctx context.Context, slug string, settings *providerSettingsModel, client *Client, timeouts time.Duration) (PipelineExtraInfo, error) {
 	payload := map[string]any{
 		"provider_settings": PipelineExtraSettings{
