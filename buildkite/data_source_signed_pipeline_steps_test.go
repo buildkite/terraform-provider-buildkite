@@ -27,6 +27,10 @@ func TestAccBuildkiteSignedPipelineStepsDataSource(t *testing.T) {
 		steps:
 		- label: ":pipeline:"
 		  command: buildkite-agent pipeline upload
+		  env:
+		    LOCAL_ENV: "bar"
+		env:
+		  GLOBAL_ENV: "foo"
 	`)
 
 	privateJWKS, _, err := jwkutil.NewKeyPair(jwksKeyID, jwa.EdDSA)
@@ -49,7 +53,7 @@ func TestAccBuildkiteSignedPipelineStepsDataSource(t *testing.T) {
 		t.Fatalf("Failed to parse pipeline: %v", err)
 	}
 
-	if err := signature.SignSteps(context.Background(), p.Steps, privateKey, repository); err != nil {
+	if err := signature.SignSteps(context.Background(), p.Steps, privateKey, repository, signature.WithEnv(p.Env.ToMap())); err != nil {
 		t.Fatalf("Failed to sign pipeline: %v", err)
 	}
 

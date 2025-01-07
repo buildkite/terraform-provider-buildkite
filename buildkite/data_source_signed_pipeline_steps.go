@@ -221,7 +221,7 @@ func (s *signedPipelineStepsDataSource) Read(
 		}
 	}
 
-	if err := signature.SignSteps(ctx, p.Steps, key, data.Repository.ValueString()); err != nil {
+	if err := signature.SignSteps(ctx, p.Steps, key, data.Repository.ValueString(), signature.WithEnv(p.Env.ToMap())); err != nil {
 		resp.Diagnostics.AddError("Failed to sign pipeline", err.Error())
 		return
 	}
