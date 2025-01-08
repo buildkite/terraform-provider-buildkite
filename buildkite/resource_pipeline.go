@@ -19,6 +19,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/objectdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
@@ -233,47 +234,35 @@ func (p *pipelineResource) Create(ctx context.Context, req resource.CreateReques
 		return
 	}
 	log.Printf("Successfully created pipeline with id '%s'.", response.PipelineCreate.Pipeline.Id)
-
 	setPipelineModel(&state, &response.PipelineCreate.Pipeline)
-	state.WebhookUrl = types.StringValue(response.PipelineCreate.Pipeline.GetWebhookURL())
-	state.DefaultTeamId = plan.DefaultTeamId
-	resp.Diagnostics.Append(resp.Private.SetKey(ctx, "slugSource", []byte(`{"source": "api"}`))...)
 
+	resp.Diagnostics.Append(resp.Private.SetKey(ctx, "slugSource", []byte(`{"source": "api"}`))...)
 	var useSlugValue string
 	if len(plan.Slug.ValueString()) > 0 {
 		useSlugValue = plan.Slug.ValueString()
 
-		pipelineExtraInfo, err := updatePipelineSlug(ctx, response.PipelineCreate.Pipeline.Slug, useSlugValue, p.client, timeouts)
+		_, err := updatePipelineSlug(ctx, response.PipelineCreate.Pipeline.Slug, useSlugValue, p.client, timeouts)
 		if err != nil {
 			resp.Diagnostics.AddError("Unable to set pipeline slug from REST", err.Error())
 			return
 		}
 
-		updatePipelineResourceExtraInfo(&state, &pipelineExtraInfo)
 		state.Slug = types.StringValue(useSlugValue)
 		resp.Diagnostics.Append(resp.Private.SetKey(ctx, "slugSource", []byte(`{"source": "user"}`))...)
 	}
 
-	if plan.ProviderSettings != nil {
-		pipelineExtraInfo, err := updatePipelineExtraInfo(ctx, response.PipelineCreate.Pipeline.Slug, plan.ProviderSettings, p.client, timeouts)
-		if err != nil {
-			resp.Diagnostics.AddError("Unable to set pipeline info from REST", err.Error())
-			return
-		}
-
-		updatePipelineResourceExtraInfo(&state, &pipelineExtraInfo)
-	} else {
-		// no provider_settings provided, but we still need to read in the badge url
-		extraInfo, err := getPipelineExtraInfo(ctx, p.client, response.PipelineCreate.Pipeline.Slug, timeouts)
-		if err != nil {
-			resp.Diagnostics.AddError("Unable to read pipeline info from REST", err.Error())
-			return
-		}
-		state.Slug = types.StringValue(extraInfo.Slug)
-		state.BadgeUrl = types.StringValue(extraInfo.BadgeUrl)
-		state.ProviderSettings = plan.ProviderSettings
+	pipelineExtraInfo, err := updatePipelineExtraInfo(ctx, response.PipelineCreate.Pipeline.Slug, plan.ProviderSettings, p.client, timeouts)
+	if err != nil {
+		resp.Diagnostics.AddError("Unable to set pipeline info from REST", err.Error())
+		return
 	}
 
+	state.DefaultTeamId = plan.DefaultTeamId
+	state.BadgeUrl = types.StringValue(pipelineExtraInfo.BadgeUrl)
+	state.WebhookUrl = types.StringValue(pipelineExtraInfo.Provider.WebhookUrl)
+	state.Slug = types.StringValue(pipelineExtraInfo.Slug)
+
+	updatePipelineResourceExtraInfo(&state, &pipelineExtraInfo)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
@@ -607,8 +596,56 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 				},
 			},
 			"provider_settings": schema.SingleNestedAttribute{
+				Computed:            true,
 				Optional:            true,
 				MarkdownDescription: "Control settings depending on the VCS provider used in `repository`.",
+
+				Default: objectdefault.StaticValue( //bad, causes issues
+					types.ObjectValueMust(
+						map[string]attr.Type{
+							"build_pull_request_forks":                      types.BoolType,
+							"build_pull_request_labels_changed":             types.BoolType,
+							"build_pull_request_ready_for_review":           types.BoolType,
+							"build_pull_requests":                           types.BoolType,
+							"build_branches":                                types.BoolType,
+							"build_tags":                                    types.BoolType,
+							"cancel_deleted_branch_builds":                  types.BoolType,
+							"filter_condition":                              types.StringType,
+							"filter_enabled":                                types.BoolType,
+							"prefix_pull_request_fork_branch_names":         types.BoolType,
+							"publish_blocked_as_pending":                    types.BoolType,
+							"publish_commit_status":                         types.BoolType,
+							"publish_commit_status_per_step":                types.BoolType,
+							"pull_request_branch_filter_configuration":      types.StringType,
+							"pull_request_branch_filter_enabled":            types.BoolType,
+							"separate_pull_request_statuses":                types.BoolType,
+							"skip_builds_for_existing_commits":              types.BoolType,
+							"skip_pull_request_builds_for_existing_commits": types.BoolType,
+							"trigger_mode":                                  types.StringType,
+						},
+						map[string]attr.Value{
+							"build_pull_request_forks":                      types.BoolValue(false),
+							"build_pull_request_labels_changed":             types.BoolValue(false),
+							"build_pull_request_ready_for_review":           types.BoolValue(false),
+							"build_pull_requests":                           types.BoolValue(false),
+							"build_branches":                                types.BoolValue(false),
+							"build_tags":                                    types.BoolValue(false),
+							"cancel_deleted_branch_builds":                  types.BoolValue(false),
+							"filter_condition":                              types.StringValue(""),
+							"filter_enabled":                                types.BoolValue(false),
+							"prefix_pull_request_fork_branch_names":         types.BoolValue(false),
+							"publish_blocked_as_pending":                    types.BoolValue(false),
+							"publish_commit_status":                         types.BoolValue(false),
+							"publish_commit_status_per_step":                types.BoolValue(false),
+							"pull_request_branch_filter_configuration":      types.StringValue(""),
+							"pull_request_branch_filter_enabled":            types.BoolValue(false),
+							"separate_pull_request_statuses":                types.BoolValue(false),
+							"skip_builds_for_existing_commits":              types.BoolValue(false),
+							"skip_pull_request_builds_for_existing_commits": types.BoolValue(false),
+							"trigger_mode":                                  types.StringValue("none"),
+						},
+					),
+				),
 				Attributes: map[string]schema.Attribute{
 					"trigger_mode": schema.StringAttribute{
 						Computed: true,
@@ -628,102 +665,121 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 							"`fork` will create builds when the GitHub repository is forked.",
 							"`none` will not create any builds based on GitHub activity.",
 							"`trigger_mode`",
-							"`code`",
+							"`none`",
 						),
+						Default: stringdefault.StaticString("none"), //good, known after apply
 					},
 					"build_pull_requests": schema.BoolAttribute{
 						Optional:            true,
 						Computed:            true,
-						MarkdownDescription: "Whether to create builds for commits that are part of a pull request. Defaults to `true` when `trigger_mode` is set to `code`.",
+						MarkdownDescription: "Whether to create builds for commits that are part of a pull request. Defaults to `false`.",
+						Default:             booldefault.StaticBool(false),
 					},
 					"pull_request_branch_filter_enabled": schema.BoolAttribute{
 						Computed:            true,
 						Optional:            true,
-						MarkdownDescription: "Filter pull request builds.",
+						MarkdownDescription: "Filter pull request builds. Defaults to `false`.",
+						Default:             booldefault.StaticBool(false),
 					},
 					"pull_request_branch_filter_configuration": schema.StringAttribute{
 						Computed:            true,
 						Optional:            true,
 						MarkdownDescription: "Filter pull requests builds by the branch filter.",
+						Default:             stringdefault.StaticString(""),
 					},
 					"skip_builds_for_existing_commits": schema.BoolAttribute{
 						Optional:            true,
 						Computed:            true,
-						MarkdownDescription: "Whether to skip creating a new build if an existing build for the commit and branch already exists. This option is only valid if the pipeline uses a GitHub repository.",
+						MarkdownDescription: "Whether to skip creating a new build if an existing build for the commit and branch already exists. This option is only valid if the pipeline uses a GitHub repository. Defaults to `false`.",
+						Default:             booldefault.StaticBool(false),
 					},
 					"skip_pull_request_builds_for_existing_commits": schema.BoolAttribute{
 						Optional:            true,
 						Computed:            true,
-						MarkdownDescription: "Whether to skip creating a new build for a pull request if an existing build for the commit and branch already exists.  Defaults to `true` when `trigger_mode` is set to `code`.",
+						MarkdownDescription: "Whether to skip creating a new build for a pull request if an existing build for the commit and branch already exists. Defaults to `false`.",
+						Default:             booldefault.StaticBool(false),
 					},
 					"build_pull_request_ready_for_review": schema.BoolAttribute{
 						Computed:            true,
 						Optional:            true,
-						MarkdownDescription: "Whether to create a build when a pull request changes to \"Ready for review\".",
+						MarkdownDescription: "Whether to create a build when a pull request changes to \"Ready for review\". Defaults to `false`.",
+						Default:             booldefault.StaticBool(false),
 					},
 					"build_pull_request_labels_changed": schema.BoolAttribute{
 						Computed:            true,
 						Optional:            true,
-						MarkdownDescription: "Whether to create builds for pull requests when labels are added or removed.",
+						MarkdownDescription: "Whether to create builds for pull requests when labels are added or removed. Defaults to `false`.",
+						Default:             booldefault.StaticBool(false),
 					},
 					"build_pull_request_forks": schema.BoolAttribute{
 						Computed:            true,
 						Optional:            true,
-						MarkdownDescription: "Whether to create builds for pull requests from third-party forks.",
+						MarkdownDescription: "Whether to create builds for pull requests from third-party forks. Defaults to `false`.",
+						Default:             booldefault.StaticBool(false),
 					},
 					"prefix_pull_request_fork_branch_names": schema.BoolAttribute{
 						Computed: true,
 						Optional: true,
 						MarkdownDescription: "Prefix branch names for third-party fork builds to ensure they don't trigger branch conditions." +
-							" For example, the main branch from some-user will become some-user:main.",
+							" For example, the main branch from some-user will become some-user:main. Defaults to `false`.",
+						Default: booldefault.StaticBool(false),
 					},
 					"build_branches": schema.BoolAttribute{
 						Optional:            true,
 						Computed:            true,
-						MarkdownDescription: "Whether to create builds when branches are pushed. Defaults to `true` when `trigger_mode` is set to `code`.",
+						MarkdownDescription: "Whether to create builds when branches are pushed. Defaults to `false`.",
+						Default:             booldefault.StaticBool(false),
 					},
 					"build_tags": schema.BoolAttribute{
 						Computed:            true,
 						Optional:            true,
-						MarkdownDescription: "Whether to create builds when tags are pushed.",
+						MarkdownDescription: "Whether to create builds when tags are pushed. Defaults to `false`.",
+						Default:             booldefault.StaticBool(false),
 					},
 					"cancel_deleted_branch_builds": schema.BoolAttribute{
 						Computed:            true,
 						Optional:            true,
-						MarkdownDescription: "Automatically cancel running builds for a branch if the branch is deleted.",
+						MarkdownDescription: "Automatically cancel running builds for a branch if the branch is deleted. Defaults to `false`.",
+						Default:             booldefault.StaticBool(false),
 					},
 					"filter_enabled": schema.BoolAttribute{
 						Computed:            true,
 						Optional:            true,
-						MarkdownDescription: "Whether to filter builds to only run when the condition in `filter_condition` is true.",
+						MarkdownDescription: "Whether to filter builds to only run when the condition in `filter_condition` is true. Defaults to `false`.",
+						Default:             booldefault.StaticBool(false),
 					},
 					"filter_condition": schema.StringAttribute{
 						Computed: true,
 						Optional: true,
 						MarkdownDescription: "The condition to evaluate when deciding if a build should run." +
-							" More details available in [the documentation](https://buildkite.com/docs/pipelines/conditionals#conditionals-in-pipelines).",
+							" More details available in the [documentation](https://buildkite.com/docs/pipelines/conditionals#conditionals-in-pipelines).",
+						Default: stringdefault.StaticString(""),
 					},
 					"publish_commit_status": schema.BoolAttribute{
 						Optional:            true,
 						Computed:            true,
-						MarkdownDescription: "Whether to update the status of commits in Bitbucket or GitHub. Defaults to `true` when `trigger_mode` is set to `code`.",
+						MarkdownDescription: "Whether to update the status of commits in Bitbucket or GitHub. Defaults to `false`.",
+						Default:             booldefault.StaticBool(false),
 					},
 					"publish_blocked_as_pending": schema.BoolAttribute{
 						Computed: true,
 						Optional: true,
 						MarkdownDescription: "The status to use for blocked builds. Pending can be used with [required status checks](https://help.github.com/en/articles/enabling-required-status-checks)" +
-							" to prevent merging pull requests with blocked builds.",
+							" to prevent merging pull requests with blocked builds. Defaults to `false`.",
+						Default: booldefault.StaticBool(false),
 					},
 					"publish_commit_status_per_step": schema.BoolAttribute{
 						Computed:            true,
 						Optional:            true,
-						MarkdownDescription: "Whether to create a separate status for each job in a build, allowing you to see the status of each job directly in Bitbucket or GitHub.",
+						MarkdownDescription: "Whether to create a separate status for each job in a build, allowing you to see the status of each job directly in Bitbucket or GitHub. Defaults to `false`.",
+						Default:             booldefault.StaticBool(false),
 					},
 					"separate_pull_request_statuses": schema.BoolAttribute{
 						Computed: true,
 						Optional: true,
 						MarkdownDescription: "Whether to create a separate status for pull request builds, allowing you to require a passing pull request" +
-							" build in your [required status checks](https://help.github.com/en/articles/enabling-required-status-checks) in GitHub.",
+							" build in your [required status checks](https://help.github.com/en/articles/enabling-required-status-checks) in GitHub. Defaults to `false`.",
+						Default: booldefault.StaticBool(false),
 					},
 				},
 			},
@@ -854,29 +910,27 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 		)
 		return
 	}
+	setPipelineModel(&state, &response.PipelineUpdate.Pipeline)
 
+	resp.Diagnostics.Append(resp.Private.SetKey(ctx, "slugSource", []byte(`{"source": "api"}`))...)
 	var useSlugValue string
 	if len(plan.Slug.ValueString()) > 0 {
 		useSlugValue = plan.Slug.ValueString()
-	} else {
-		useSlugValue = response.PipelineUpdate.Pipeline.Slug
-	}
 
-	pipelineExtraInfo, err := updatePipelineSlug(ctx, response.PipelineUpdate.Pipeline.Slug, useSlugValue, p.client, timeouts)
+		_, err := updatePipelineSlug(ctx, response.PipelineUpdate.Pipeline.Slug, useSlugValue, p.client, timeouts)
+		if err != nil {
+			resp.Diagnostics.AddError("Unable to set pipeline slug from REST", err.Error())
+			return
+		}
 
-	if err != nil {
-		resp.Diagnostics.AddError("Unable to set pipeline slug from REST", err.Error())
-		return
-	}
-
-	updatePipelineResourceExtraInfo(&state, &pipelineExtraInfo)
-	setPipelineModel(&state, &response.PipelineUpdate.Pipeline)
-
-	state.Slug = types.StringValue(useSlugValue)
-	if len(plan.Slug.ValueString()) > 0 {
+		state.Slug = types.StringValue(useSlugValue)
 		resp.Diagnostics.Append(resp.Private.SetKey(ctx, "slugSource", []byte(`{"source": "user"}`))...)
-	} else {
-		resp.Diagnostics.Append(resp.Private.SetKey(ctx, "slugSource", []byte(`{"source": "api"}`))...)
+	}
+
+	pipelineExtraInfo, err := updatePipelineExtraInfo(ctx, response.PipelineUpdate.Pipeline.Slug, plan.ProviderSettings, p.client, timeouts)
+	if err != nil {
+		resp.Diagnostics.AddError("Unable to set pipeline info from REST", err.Error())
+		return
 	}
 
 	if plan.DefaultTeamId.IsNull() && !state.DefaultTeamId.IsNull() {
@@ -914,38 +968,11 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 		}
 	}
 
-	if plan.ProviderSettings != nil {
-		pipelineExtraInfo, err := updatePipelineExtraInfo(ctx, response.PipelineUpdate.Pipeline.Slug, plan.ProviderSettings, p.client, timeouts)
-		if err != nil {
-			resp.Diagnostics.AddError("Unable to set pipeline info from REST", err.Error())
-			return
-		}
+	state.BadgeUrl = types.StringValue(pipelineExtraInfo.BadgeUrl)
+	state.WebhookUrl = types.StringValue(pipelineExtraInfo.Provider.WebhookUrl)
+	state.Slug = types.StringValue(pipelineExtraInfo.Slug)
 
-		updatePipelineResourceExtraInfo(&state, &pipelineExtraInfo)
-		// set the webhook url if its not empty
-		// the value can be empty if not using a token with appropriate permissions. in this case, we just leave the
-		// state value alone assuming it was previously set correctly
-		if pipelineExtraInfo.Provider.WebhookUrl != "" {
-			state.WebhookUrl = types.StringValue(pipelineExtraInfo.Provider.WebhookUrl)
-		}
-	} else {
-		// no provider_settings provided, but we still need to read in the badge url
-
-		extraInfo, err := getPipelineExtraInfo(ctx, p.client, response.PipelineUpdate.Pipeline.Slug, timeouts)
-		if err != nil {
-			resp.Diagnostics.AddError("Unable to read pipeline info from REST", err.Error())
-			return
-		}
-		state.BadgeUrl = types.StringValue(extraInfo.BadgeUrl)
-		state.ProviderSettings = plan.ProviderSettings
-		// set the webhook url if its not empty
-		// the value can be empty if not using a token with appropriate permissions. in this case, we just leave the
-		// state value alone assuming it was previously set correctly
-		if extraInfo.Provider.WebhookUrl != "" {
-			state.WebhookUrl = types.StringValue(extraInfo.Provider.WebhookUrl)
-		}
-	}
-
+	updatePipelineResourceExtraInfo(&state, &pipelineExtraInfo)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
@@ -1243,7 +1270,7 @@ func pipelineSchemaV0() schema.Schema {
 		MarkdownDescription: heredoc.Doc(`
 			This resource allows you to create and manage pipelines for repositories.
 
-			More information on pipelines can be found in the documentation](https://buildkite.com/docs/pipelines).
+			More information on pipelines can be found in the [documentation](https://buildkite.com/docs/pipelines).
 		`),
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
