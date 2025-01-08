@@ -237,9 +237,9 @@ func (p *pipelineResource) Create(ctx context.Context, req resource.CreateReques
 	setPipelineModel(&state, &response.PipelineCreate.Pipeline)
 	state.WebhookUrl = types.StringValue(response.PipelineCreate.Pipeline.GetWebhookURL())
 	state.DefaultTeamId = plan.DefaultTeamId
-	resp.Diagnostics.Append(resp.Private.SetKey(ctx, "slugSource", []byte(`{"source": "api"}`))...)
 
-	var useSlugValue string
+	useSlugValue := response.PipelineCreate.Pipeline.Slug
+	resp.Diagnostics.Append(resp.Private.SetKey(ctx, "slugSource", []byte(`{"source": "api"}`))...)
 	if len(plan.Slug.ValueString()) > 0 {
 		useSlugValue = plan.Slug.ValueString()
 
@@ -250,12 +250,11 @@ func (p *pipelineResource) Create(ctx context.Context, req resource.CreateReques
 		}
 
 		updatePipelineResourceExtraInfo(&state, &pipelineExtraInfo)
-		state.Slug = types.StringValue(useSlugValue)
 		resp.Diagnostics.Append(resp.Private.SetKey(ctx, "slugSource", []byte(`{"source": "user"}`))...)
 	}
 
 	if plan.ProviderSettings != nil {
-		pipelineExtraInfo, err := updatePipelineExtraInfo(ctx, response.PipelineCreate.Pipeline.Slug, plan.ProviderSettings, p.client, timeouts)
+		pipelineExtraInfo, err := updatePipelineExtraInfo(ctx, useSlugValue, plan.ProviderSettings, p.client, timeouts)
 		if err != nil {
 			resp.Diagnostics.AddError("Unable to set pipeline info from REST", err.Error())
 			return
@@ -264,16 +263,16 @@ func (p *pipelineResource) Create(ctx context.Context, req resource.CreateReques
 		updatePipelineResourceExtraInfo(&state, &pipelineExtraInfo)
 	} else {
 		// no provider_settings provided, but we still need to read in the badge url
-		extraInfo, err := getPipelineExtraInfo(ctx, p.client, response.PipelineCreate.Pipeline.Slug, timeouts)
+		extraInfo, err := getPipelineExtraInfo(ctx, p.client, useSlugValue, timeouts)
 		if err != nil {
 			resp.Diagnostics.AddError("Unable to read pipeline info from REST", err.Error())
 			return
 		}
-		state.Slug = types.StringValue(extraInfo.Slug)
 		state.BadgeUrl = types.StringValue(extraInfo.BadgeUrl)
 		state.ProviderSettings = plan.ProviderSettings
 	}
 
+	state.Slug = types.StringValue(useSlugValue)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
@@ -634,7 +633,7 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 					"build_pull_requests": schema.BoolAttribute{
 						Optional:            true,
 						Computed:            true,
-						MarkdownDescription: "Whether to create builds for commits that are part of a pull request. Defaults to `true` when `trigger_mode` is set to `code`.",
+						MarkdownDescription: "Whether to create builds for commits that are part of a pull request.",
 					},
 					"pull_request_branch_filter_enabled": schema.BoolAttribute{
 						Computed:            true,
@@ -654,7 +653,7 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 					"skip_pull_request_builds_for_existing_commits": schema.BoolAttribute{
 						Optional:            true,
 						Computed:            true,
-						MarkdownDescription: "Whether to skip creating a new build for a pull request if an existing build for the commit and branch already exists.  Defaults to `true` when `trigger_mode` is set to `code`.",
+						MarkdownDescription: "Whether to skip creating a new build for a pull request if an existing build for the commit and branch already exists.",
 					},
 					"build_pull_request_ready_for_review": schema.BoolAttribute{
 						Computed:            true,
@@ -680,7 +679,7 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 					"build_branches": schema.BoolAttribute{
 						Optional:            true,
 						Computed:            true,
-						MarkdownDescription: "Whether to create builds when branches are pushed. Defaults to `true` when `trigger_mode` is set to `code`.",
+						MarkdownDescription: "Whether to create builds when branches are pushed.",
 					},
 					"build_tags": schema.BoolAttribute{
 						Computed:            true,
@@ -706,7 +705,7 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 					"publish_commit_status": schema.BoolAttribute{
 						Optional:            true,
 						Computed:            true,
-						MarkdownDescription: "Whether to update the status of commits in Bitbucket or GitHub. Defaults to `true` when `trigger_mode` is set to `code`.",
+						MarkdownDescription: "Whether to update the status of commits in Bitbucket or GitHub.",
 					},
 					"publish_blocked_as_pending": schema.BoolAttribute{
 						Computed: true,
@@ -855,29 +854,29 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 		return
 	}
 
-	var useSlugValue string
+	useSlugValue := response.PipelineUpdate.Pipeline.Slug
+	resp.Diagnostics.Append(resp.Private.SetKey(ctx, "slugSource", []byte(`{"source": "api"}`))...)
 	if len(plan.Slug.ValueString()) > 0 {
 		useSlugValue = plan.Slug.ValueString()
-	} else {
-		useSlugValue = response.PipelineUpdate.Pipeline.Slug
-	}
+		resp.Diagnostics.Append(resp.Private.SetKey(ctx, "slugSource", []byte(`{"source": "user"}`))...)
+		if plan.Slug != state.Slug {
 
-	pipelineExtraInfo, err := updatePipelineSlug(ctx, response.PipelineUpdate.Pipeline.Slug, useSlugValue, p.client, timeouts)
+			_, err := updatePipelineSlug(ctx, response.PipelineUpdate.Pipeline.Slug, useSlugValue, p.client, timeouts)
+			if err != nil {
+				resp.Diagnostics.AddError("Unable to set pipeline slug from REST", err.Error())
+				return
+			}
+
+			resp.Diagnostics.Append(resp.Private.SetKey(ctx, "slugSource", []byte(`{"source": "user"}`))...)
+		}
+	}
 
 	if err != nil {
 		resp.Diagnostics.AddError("Unable to set pipeline slug from REST", err.Error())
 		return
 	}
 
-	updatePipelineResourceExtraInfo(&state, &pipelineExtraInfo)
 	setPipelineModel(&state, &response.PipelineUpdate.Pipeline)
-
-	state.Slug = types.StringValue(useSlugValue)
-	if len(plan.Slug.ValueString()) > 0 {
-		resp.Diagnostics.Append(resp.Private.SetKey(ctx, "slugSource", []byte(`{"source": "user"}`))...)
-	} else {
-		resp.Diagnostics.Append(resp.Private.SetKey(ctx, "slugSource", []byte(`{"source": "api"}`))...)
-	}
 
 	if plan.DefaultTeamId.IsNull() && !state.DefaultTeamId.IsNull() {
 		// if the plan is empty but was previously set, just remove the team
@@ -915,7 +914,7 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 	}
 
 	if plan.ProviderSettings != nil {
-		pipelineExtraInfo, err := updatePipelineExtraInfo(ctx, response.PipelineUpdate.Pipeline.Slug, plan.ProviderSettings, p.client, timeouts)
+		pipelineExtraInfo, err := updatePipelineExtraInfo(ctx, useSlugValue, plan.ProviderSettings, p.client, timeouts)
 		if err != nil {
 			resp.Diagnostics.AddError("Unable to set pipeline info from REST", err.Error())
 			return
@@ -931,7 +930,7 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 	} else {
 		// no provider_settings provided, but we still need to read in the badge url
 
-		extraInfo, err := getPipelineExtraInfo(ctx, p.client, response.PipelineUpdate.Pipeline.Slug, timeouts)
+		extraInfo, err := getPipelineExtraInfo(ctx, p.client, useSlugValue, timeouts)
 		if err != nil {
 			resp.Diagnostics.AddError("Unable to read pipeline info from REST", err.Error())
 			return
@@ -946,6 +945,7 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 		}
 	}
 
+	state.Slug = types.StringValue(useSlugValue)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
