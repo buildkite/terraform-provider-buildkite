@@ -237,9 +237,8 @@ func (p *pipelineResource) Create(ctx context.Context, req resource.CreateReques
 	setPipelineModel(&state, &response.PipelineCreate.Pipeline)
 
 	resp.Diagnostics.Append(resp.Private.SetKey(ctx, "slugSource", []byte(`{"source": "api"}`))...)
-	var useSlugValue string
 	if len(plan.Slug.ValueString()) > 0 {
-		useSlugValue = plan.Slug.ValueString()
+		useSlugValue := plan.Slug.ValueString()
 
 		_, err := updatePipelineSlug(ctx, response.PipelineCreate.Pipeline.Slug, useSlugValue, p.client, timeouts)
 		if err != nil {
@@ -600,7 +599,7 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 				Optional:            true,
 				MarkdownDescription: "Control settings depending on the VCS provider used in `repository`.",
 
-				Default: objectdefault.StaticValue( //bad, causes issues
+				Default: objectdefault.StaticValue(
 					types.ObjectValueMust(
 						map[string]attr.Type{
 							"build_pull_request_forks":                      types.BoolType,
@@ -667,7 +666,7 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 							"`trigger_mode`",
 							"`none`",
 						),
-						Default: stringdefault.StaticString("none"), //good, known after apply
+						Default: stringdefault.StaticString("none"),
 					},
 					"build_pull_requests": schema.BoolAttribute{
 						Optional:            true,
@@ -913,9 +912,8 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 	setPipelineModel(&state, &response.PipelineUpdate.Pipeline)
 
 	resp.Diagnostics.Append(resp.Private.SetKey(ctx, "slugSource", []byte(`{"source": "api"}`))...)
-	var useSlugValue string
-	if len(plan.Slug.ValueString()) > 0 {
-		useSlugValue = plan.Slug.ValueString()
+	if len(plan.Slug.ValueString()) > 0 && plan.Slug != state.Slug {
+		useSlugValue := plan.Slug.ValueString()
 
 		_, err := updatePipelineSlug(ctx, response.PipelineUpdate.Pipeline.Slug, useSlugValue, p.client, timeouts)
 		if err != nil {

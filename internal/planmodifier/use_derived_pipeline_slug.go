@@ -28,10 +28,17 @@ func (m useDerivedPipelineSlugModifier) PlanModifyString(ctx context.Context, re
 		return
 	}
 
+	// Do nothing if there is a known planned value.
+	if !req.PlanValue.IsUnknown() {
+		return
+	}
+
 	privateSlugSource, _ := req.Private.GetKey(ctx, "slugSource")
 
 	var slugSource map[string]interface{}
 	if err := json.Unmarshal(privateSlugSource, &slugSource); err != nil {
+		// Return unknown if slugSource missing from private state
+		resp.PlanValue = types.StringUnknown()
 		return
 	}
 	slugSourceVal := slugSource["source"].(string)
@@ -50,13 +57,16 @@ func (m useDerivedPipelineSlugModifier) PlanModifyString(ctx context.Context, re
 		// Return unknown if name is changing (re-generate slug from API)
 		if planValueName != stateValueName {
 			resp.PlanValue = types.StringUnknown()
+			return
 		}
 		// Return unknown if slug not defined and previous slug source not API (re-generate slug from API)
 		if slugSourceVal != "api" {
 			resp.PlanValue = types.StringUnknown()
+			return
 		}
-		return
 	}
+	// Default to value in state
+	resp.PlanValue = req.StateValue
 }
 
 func UseDerivedPipelineSlug() planmodifier.String {
