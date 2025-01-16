@@ -175,6 +175,58 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 		`, fields[0], fields[1], fields[0], fields[1], fields[2], fields[2], fields[2], fields[3])
 	}
 
+	configAllCustomConditions := func(fields ...string) string {
+		return fmt.Sprintf(`
+		provider "buildkite" {
+			timeouts = {
+				create = "10s"
+				read = "10s"
+				update = "10s"
+				delete = "10s"
+			}
+		}
+
+		resource "buildkite_cluster" "cluster_source" {
+			name        = "Cluster %s"
+			description = "A test cluster containing a source pipeline."
+		}
+
+		resource "buildkite_cluster" "cluster_target" {
+			name        = "Cluster %s"
+			description = "A test cluster containing a target pipeline for triggering builds."
+		}
+
+		resource "buildkite_pipeline" "pipeline_source" {
+			depends_on 			 = [buildkite_cluster.cluster_source]
+			name                 = "Pipeline %s"
+			repository           = "https://github.com/buildkite/terraform-provider-buildkite.git"
+			cluster_id			 = buildkite_cluster.cluster_source.id
+		}
+
+		resource "buildkite_pipeline" "pipeline_target" {
+			depends_on 			 = [buildkite_cluster.cluster_target]
+			name                 = "Pipeline %s"
+			repository           = "https://github.com/buildkite/terraform-provider-buildkite.git"
+			cluster_id           = buildkite_cluster.cluster_target.id
+		}	
+
+		resource "buildkite_organization_rule" "%s_rule" {
+			depends_on = [
+				buildkite_pipeline.pipeline_source,
+				buildkite_pipeline.pipeline_target
+			]
+			type = "pipeline.%s.pipeline"
+			description = "A pipeline.%s.pipeline rule with a custom description"
+			value = jsonencode({
+				source_pipeline = buildkite_pipeline.pipeline_source.uuid
+				target_pipeline = buildkite_pipeline.pipeline_target.uuid
+				conditions = [%s]
+			})
+		}
+
+		`, fields[0], fields[1], fields[0], fields[1], fields[2], fields[2], fields[2], fields[3])
+	}
+
 	configNonExistentAction := func(fields ...string) string {
 		return fmt.Sprintf(`
 		provider "buildkite" {
@@ -422,7 +474,7 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 			})
 		})
 
-		t.Run("errors when a pipeline.%s.pipeline organization rule is updated", func(t *testing.T) {
+		t.Run(fmt.Sprintf("updates a pipeline.%s.pipeline organization rules description", action), func(t *testing.T) {
 			randNameOne := acctest.RandString(12)
 			randNameTwo := acctest.RandString(12)
 			description := acctest.RandString(12)
@@ -430,6 +482,19 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 			var orr organizationRuleResourceModel
 
 			check := resource.ComposeAggregateTestCheckFunc(
+				// Confirm the organization rule exists
+				testAccCheckOrganizationRuleExists(&orr, fmt.Sprintf("buildkite_organization_rule.%s_rule", action)),
+				// Confirm the organization rule has the correct values in Buildkite's system
+				testAccCheckOrganizationRuleRemoteValues(&orr, "PIPELINE", "PIPELINE", strings.ToUpper(action), "ALLOW"),
+				// Check the organization rule resource's attributes are set in state
+				resource.TestCheckResourceAttrSet(fmt.Sprintf("buildkite_organization_rule.%s_rule", action), "id"),
+				resource.TestCheckResourceAttrSet(fmt.Sprintf("buildkite_organization_rule.%s_rule", action), "uuid"),
+				resource.TestCheckResourceAttrSet(fmt.Sprintf("buildkite_organization_rule.%s_rule", action), "type"),
+				resource.TestCheckResourceAttrSet(fmt.Sprintf("buildkite_organization_rule.%s_rule", action), "description"),
+				resource.TestCheckResourceAttrSet(fmt.Sprintf("buildkite_organization_rule.%s_rule", action), "value"),
+			)
+
+			checkUpdated := resource.ComposeAggregateTestCheckFunc(
 				// Confirm the organization rule exists
 				testAccCheckOrganizationRuleExists(&orr, fmt.Sprintf("buildkite_organization_rule.%s_rule", action)),
 				// Confirm the organization rule has the correct values in Buildkite's system
@@ -452,8 +517,67 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 						Check:  check,
 					},
 					{
-						Config:      configAllCustomDescription(randNameOne, randNameTwo, action, updatedDescription),
-						ExpectError: regexp.MustCompile("An existing rule must be deleted/re-created"),
+						Config: configAllCustomDescription(randNameOne, randNameTwo, action, updatedDescription),
+						Check:  checkUpdated,
+					},
+				},
+			})
+		})
+
+		t.Run(fmt.Sprintf("updates a pipeline.%s.pipeline organization rules conditions", action), func(t *testing.T) {
+			randNameOne := acctest.RandString(12)
+			randNameTwo := acctest.RandString(12)
+			var orr organizationRuleResourceModel
+
+			initConditions := `
+      			"source.build.branch == 'develop'",
+      			"source.pipeline.slug == 'monorepo-core'"
+			`
+
+			updatedConditions := `
+      			"source.build.branch == 'develop'",
+      			"source.pipeline.slug == 'monorepo-core'",
+				"source.build.creator.teams includes 'monorepo'"
+			`
+
+			check := resource.ComposeAggregateTestCheckFunc(
+				// Confirm the organization rule exists
+				testAccCheckOrganizationRuleExists(&orr, fmt.Sprintf("buildkite_organization_rule.%s_rule", action)),
+				// Confirm the organization rule has the correct values in Buildkite's system
+				testAccCheckOrganizationRuleRemoteValues(&orr, "PIPELINE", "PIPELINE", strings.ToUpper(action), "ALLOW"),
+				// Check the organization rule resource's attributes are set in state
+				resource.TestCheckResourceAttrSet(fmt.Sprintf("buildkite_organization_rule.%s_rule", action), "id"),
+				resource.TestCheckResourceAttrSet(fmt.Sprintf("buildkite_organization_rule.%s_rule", action), "uuid"),
+				resource.TestCheckResourceAttrSet(fmt.Sprintf("buildkite_organization_rule.%s_rule", action), "type"),
+				resource.TestCheckResourceAttrSet(fmt.Sprintf("buildkite_organization_rule.%s_rule", action), "description"),
+				resource.TestCheckResourceAttrSet(fmt.Sprintf("buildkite_organization_rule.%s_rule", action), "value"),
+			)
+
+			checkUpdated := resource.ComposeAggregateTestCheckFunc(
+				// Confirm the organization rule exists
+				testAccCheckOrganizationRuleExists(&orr, fmt.Sprintf("buildkite_organization_rule.%s_rule", action)),
+				// Confirm the organization rule has the correct values in Buildkite's system
+				testAccCheckOrganizationRuleRemoteValues(&orr, "PIPELINE", "PIPELINE", strings.ToUpper(action), "ALLOW"),
+				// Check the organization rule resource's attributes are set in state
+				resource.TestCheckResourceAttrSet(fmt.Sprintf("buildkite_organization_rule.%s_rule", action), "id"),
+				resource.TestCheckResourceAttrSet(fmt.Sprintf("buildkite_organization_rule.%s_rule", action), "uuid"),
+				resource.TestCheckResourceAttrSet(fmt.Sprintf("buildkite_organization_rule.%s_rule", action), "type"),
+				resource.TestCheckResourceAttrSet(fmt.Sprintf("buildkite_organization_rule.%s_rule", action), "description"),
+				resource.TestCheckResourceAttrSet(fmt.Sprintf("buildkite_organization_rule.%s_rule", action), "value"),
+			)
+
+			resource.ParallelTest(t, resource.TestCase{
+				PreCheck:                 func() { testAccPreCheck(t) },
+				ProtoV6ProviderFactories: protoV6ProviderFactories(),
+				CheckDestroy:             testAccCheckOrganizationRuleDestroy,
+				Steps: []resource.TestStep{
+					{
+						Config: configAllCustomConditions(randNameOne, randNameTwo, action, initConditions),
+						Check:  check,
+					},
+					{
+						Config: configAllCustomConditions(randNameOne, randNameTwo, action, updatedConditions),
+						Check:  checkUpdated,
 					},
 				},
 			})

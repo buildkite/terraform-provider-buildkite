@@ -8,11 +8,13 @@ import (
 	"log"
 
 	"github.com/MakeNowJust/heredoc"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	resource_schema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
@@ -91,6 +93,12 @@ func (organizationRuleResource) Schema(ctx context.Context, req resource.SchemaR
 			"type": resource_schema.StringAttribute{
 				Required:            true,
 				MarkdownDescription: "The type of organization rule. ",
+				Validators: []validator.String{
+					stringvalidator.OneOf(
+						"pipeline.trigger_build.pipeline",
+						"pipeline.artifacts_read.pipeline",
+					),
+				},
 			},
 			"value": resource_schema.StringAttribute{
 				Required:            true,
@@ -106,9 +114,6 @@ func (organizationRuleResource) Schema(ctx context.Context, req resource.SchemaR
 			"source_uuid": resource_schema.StringAttribute{
 				Computed:            true,
 				MarkdownDescription: "The UUID of the resource that this organization rule allows or denies invocating its defined action. ",
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
-				},
 			},
 			"target_type": resource_schema.StringAttribute{
 				Computed:            true,
@@ -120,9 +125,6 @@ func (organizationRuleResource) Schema(ctx context.Context, req resource.SchemaR
 			"target_uuid": resource_schema.StringAttribute{
 				Computed:            true,
 				MarkdownDescription: "The UUID of the target resource that this organization rule allows or denies invocation its respective action. ",
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
-				},
 			},
 			"effect": resource_schema.StringAttribute{
 				Computed:            true,
@@ -311,7 +313,70 @@ func (or *organizationRuleResource) ImportState(ctx context.Context, req resourc
 }
 
 func (or *organizationRuleResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	resp.Diagnostics.AddError("Cannot update an organization rule", "An existing rule must be deleted/re-created")
+	var plan, state organizationRuleResourceModel
+
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	timeout, diags := or.client.timeouts.Update(ctx, DefaultTimeout)
+
+	resp.Diagnostics.Append(diags...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	var r *updateOrganizationRuleResponse
+	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+		org, err := or.client.GetOrganizationID()
+		if err == nil {
+			r, err = updateOrganizationRule(ctx,
+				or.client.genqlient,
+				*org,
+				state.ID.ValueString(),
+				plan.Description.ValueStringPointer(),
+				*plan.Value.ValueStringPointer(),
+			)
+		}
+
+		return retryContextError(err)
+	})
+
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Unable to update organization rule",
+			fmt.Sprintf("Unable to update organization rule: %s", err.Error()),
+		)
+	}
+
+	// Obtain the source and target UUIDs of the created organization rule based on the API response.
+	sourceUUID, targetUUID, err := obtainUpdateUUIDs(r)
+
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Unable to update organization rule",
+			fmt.Sprintf("Unable to obtain source/target UUIDs: %s ", err.Error()),
+		)
+		return
+	}
+
+	// Obtain the sorted value JSON from the API response (document field in RuleCreatePayload's rule)
+	value, err := obtainValueJSON(r.RuleUpdate.Rule.Document)
+
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Unable to update organization rule",
+			fmt.Sprintf("Unable to update organmization rule: %s", err.Error()),
+		)
+		return
+	}
+
+	updateOrganizationRuleUpdateState(&state, *r, *sourceUUID, *targetUUID, *value)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
 func (or *organizationRuleResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
@@ -394,6 +459,34 @@ func obtainCreationUUIDs(r *createOrganizationRuleResponse) (*string, *string, e
 	return &sourceUUID, &targetUUID, nil
 }
 
+func obtainUpdateUUIDs(r *updateOrganizationRuleResponse) (*string, *string, error) {
+	var sourceUUID, targetUUID string
+
+	switch r.RuleUpdate.Rule.SourceType {
+	case "PIPELINE":
+		if ruleCreateSourcePipeline, ok := r.RuleUpdate.Rule.Source.(*OrganizationRuleFieldsSourcePipeline); ok {
+			sourceUUID = ruleCreateSourcePipeline.Uuid
+		} else {
+			return nil, nil, errors.New("Error obtaining source type upon updating the organization rule.")
+		}
+	default:
+		return nil, nil, errors.New("Error determining source type upon updating the organization rule.")
+	}
+
+	switch r.RuleUpdate.Rule.TargetType {
+	case "PIPELINE":
+		if ruleCreateTargetPipeline, ok := r.RuleUpdate.Rule.Target.(*OrganizationRuleFieldsTargetPipeline); ok {
+			targetUUID = ruleCreateTargetPipeline.Uuid
+		} else {
+			return nil, nil, errors.New("Error obtaining target type upon updating the organization rule.")
+		}
+	default:
+		return nil, nil, errors.New("Error determining target type upon updating the organization rule.")
+	}
+
+	return &sourceUUID, &targetUUID, nil
+}
+
 func obtainReadUUIDs(nr getNodeNodeRule) (string, string) {
 	var sourceUUID, targetUUID string
 
@@ -449,6 +542,13 @@ func updateOrganizatonRuleCreateState(or *organizationRuleResourceModel, ruleCre
 	or.TargetUUID = types.StringValue(targetUUID)
 	or.Effect = types.StringValue(string(ruleCreate.RuleCreate.Rule.Effect))
 	or.Action = types.StringValue(string(ruleCreate.RuleCreate.Rule.Action))
+}
+
+func updateOrganizationRuleUpdateState(or *organizationRuleResourceModel, ruleUpdate updateOrganizationRuleResponse, sourceUUID, targetUUID, value string) {
+	or.Description = types.StringPointerValue(ruleUpdate.RuleUpdate.Rule.Description)
+	or.Value = types.StringValue(value)
+	or.SourceUUID = types.StringValue(sourceUUID)
+	or.TargetUUID = types.StringValue(targetUUID)
 }
 
 func updateOrganizatonRuleReadState(or *organizationRuleResourceModel, orn getNodeNodeRule, value string) {
