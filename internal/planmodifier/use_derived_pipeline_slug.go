@@ -28,11 +28,6 @@ func (m useDerivedPipelineSlugModifier) PlanModifyString(ctx context.Context, re
 		return
 	}
 
-	// Do nothing if there is a known planned value.
-	if !req.PlanValue.IsUnknown() {
-		return
-	}
-
 	privateSlugSource, _ := req.Private.GetKey(ctx, "slugSource")
 
 	var slugSource map[string]interface{}
