@@ -412,6 +412,117 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 		`, sourceName)
 	}
 
+	configUpdateErrorInvalidSource := func(fields ...string) string {
+		return fmt.Sprintf(`
+		provider "buildkite" {
+			timeouts = {
+				create = "10s"
+				read = "10s"
+				update = "10s"
+				delete = "10s"
+			}
+		}
+
+		resource "buildkite_cluster" "cluster_source" {
+			name        = "Cluster %s"
+			description = "A test cluster containing a source pipeline."
+		}
+
+		resource "buildkite_cluster" "cluster_target" {
+			name        = "Cluster %s"
+			description = "A test cluster containing a target pipeline for triggering builds."
+		}
+
+		resource "buildkite_pipeline" "pipeline_source" {
+			depends_on 			 = [buildkite_cluster.cluster_source]
+			name                 = "Pipeline %s"
+			repository           = "https://github.com/buildkite/terraform-provider-buildkite.git"
+			cluster_id			 = buildkite_cluster.cluster_source.id
+		}
+
+		resource "buildkite_pipeline" "pipeline_target" {
+			depends_on 			 = [buildkite_cluster.cluster_target]
+			name                 = "Pipeline %s"
+			repository           = "https://github.com/buildkite/terraform-provider-buildkite.git"
+			cluster_id           = buildkite_cluster.cluster_target.id
+		}	
+
+		resource "buildkite_organization_rule" "%s_rule" {
+			depends_on = [
+				buildkite_pipeline.pipeline_source,
+				buildkite_pipeline.pipeline_target
+			]
+			type = "pipeline.%s.pipeline"
+			description = "A pipeline.%s.pipeline rule loler"
+			value = jsonencode({
+				source_pipeline = "nonexistent"
+				target_pipeline = buildkite_pipeline.pipeline_target.uuid
+				conditions = [
+					"source.build.creator.teams includes 'deploy'",
+					"source.build.branch == 'main'"
+				]
+			})
+		}
+
+		`, fields[0], fields[1], fields[0], fields[1], fields[2], fields[2], fields[2])
+	}
+
+	configUpdateErrorInvalidTarget := func(fields ...string) string {
+		return fmt.Sprintf(`
+		provider "buildkite" {
+			timeouts = {
+				create = "10s"
+				read = "10s"
+				update = "10s"
+				delete = "10s"
+			}
+		}
+
+		resource "buildkite_cluster" "cluster_source" {
+			name        = "Cluster %s"
+			description = "A test cluster containing a source pipeline."
+		}
+
+		resource "buildkite_cluster" "cluster_target" {
+			name        = "Cluster %s"
+			description = "A test cluster containing a target pipeline for triggering builds."
+		}
+
+		resource "buildkite_pipeline" "pipeline_source" {
+			depends_on 			 = [buildkite_cluster.cluster_source]
+			name                 = "Pipeline %s"
+			repository           = "https://github.com/buildkite/terraform-provider-buildkite.git"
+			cluster_id			 = buildkite_cluster.cluster_source.id
+		}
+
+		resource "buildkite_pipeline" "pipeline_target" {
+			depends_on 			 = [buildkite_cluster.cluster_target]
+			name                 = "Pipeline %s"
+			repository           = "https://github.com/buildkite/terraform-provider-buildkite.git"
+			cluster_id           = buildkite_cluster.cluster_target.id
+		}	
+
+		resource "buildkite_organization_rule" "%s_rule" {
+			depends_on = [
+				buildkite_pipeline.pipeline_source,
+				buildkite_pipeline.pipeline_target
+			]
+			type = "pipeline.%s.pipeline"
+			description = "A pipeline.%s.pipeline rule loler"
+			value = jsonencode({
+				source_pipeline = buildkite_pipeline.pipeline_target.uuid
+				target_pipeline = "nonexistent"
+				conditions = [
+					"source.build.creator.teams includes 'deploy'",
+					"source.build.branch == 'main'"
+				]
+			})
+		}
+
+		`, fields[0], fields[1], fields[0], fields[1], fields[2], fields[2], fields[2])
+	}
+
+
 	configUpdateErrorNoSource := func(fields ...string) string {
 		return fmt.Sprintf(`
 		provider "buildkite" {
@@ -855,7 +966,7 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 		})
 	})
 
-	t.Run("errors when an organization rule is updated with no source_pipeline UUID", func(t *testing.T) {
+	t.Run("errors2 when an organization rule is updated with an invalid source_pipeline UUID", func(t *testing.T) {
 		randNameOne := acctest.RandString(12)
 		randNameTwo := acctest.RandString(12)
 		var orr organizationRuleResourceModel
@@ -874,7 +985,61 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 					Check:  check,
 				},
 				{
-					Config:      configUpdateErrorNoSource(randNameOne, randNameTwo, "trigger_build"),
+					Config:      configUpdateErrorInvalidSource(randNameOne, randNameTwo, "trigger_build"),
+					ExpectError: regexp.MustCompile("pipeline.trigger_build.pipeline: source_pipeline not found"),
+				},
+			},
+		})
+	})
+
+	t.Run("errors2 when an organization rule is updated with an invalid target_pipeline UUID", func(t *testing.T) {
+		randNameOne := acctest.RandString(12)
+		randNameTwo := acctest.RandString(12)
+		var orr organizationRuleResourceModel
+
+		check := resource.ComposeAggregateTestCheckFunc(
+			testAccCheckOrganizationRuleExists(&orr, fmt.Sprintf("buildkite_organization_rule.%s_rule", "trigger_build")),
+		)
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			CheckDestroy:             testAccCheckOrganizationRuleDestroy,
+			Steps: []resource.TestStep{
+				{
+					Config: configAll(randNameOne, randNameTwo, "trigger_build"),
+					Check:  check,
+				},
+				{
+					Config:      configUpdateErrorInvalidTarget(randNameOne, randNameTwo, "trigger_build"),
+					ExpectError: regexp.MustCompile("pipeline.trigger_build.pipeline: target_pipeline not found"),
+				},
+			},
+		})
+	})
+
+
+	t.Run("errors when an organization rule is updated with no source_pipeline UUID", func(t *testing.T) {
+		ruleType := "trigger_build"
+		randNameOne := acctest.RandString(12)
+		randNameTwo := acctest.RandString(12)
+		var orr organizationRuleResourceModel
+
+		check := resource.ComposeAggregateTestCheckFunc(
+			testAccCheckOrganizationRuleExists(&orr, fmt.Sprintf("buildkite_organization_rule.%s_rule", ruleType)),
+		)
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			CheckDestroy:             testAccCheckOrganizationRuleDestroy,
+			Steps: []resource.TestStep{
+				{
+					Config: configAll(randNameOne, randNameTwo, ruleType),
+					Check:  check,
+				},
+				{
+					Config:      configUpdateErrorNoSource(randNameOne, randNameTwo, ruleType),
 					ExpectError: regexp.MustCompile("pipeline.trigger_build.pipeline: missing source_pipeline"),
 				},
 			},
