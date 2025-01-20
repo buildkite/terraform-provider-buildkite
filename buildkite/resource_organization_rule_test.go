@@ -455,7 +455,7 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 			type = "pipeline.%s.pipeline"
 			description = "A pipeline.%s.pipeline rule loler"
 			value = jsonencode({
-				source_pipeline = "nonexistent"
+				source_pipeline = "non-existent"
 				target_pipeline = buildkite_pipeline.pipeline_target.uuid
 				conditions = [
 					"source.build.creator.teams includes 'deploy'",
@@ -511,7 +511,7 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 			description = "A pipeline.%s.pipeline rule loler"
 			value = jsonencode({
 				source_pipeline = buildkite_pipeline.pipeline_target.uuid
-				target_pipeline = "nonexistent"
+				target_pipeline = "non-existent"
 				conditions = [
 					"source.build.creator.teams includes 'deploy'",
 					"source.build.branch == 'main'"
@@ -966,7 +966,7 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 		})
 	})
 
-	t.Run("errors2 when an organization rule is updated with an invalid source_pipeline UUID", func(t *testing.T) {
+	t.Run("errors when an organization rule is updated with an invalid source_pipeline UUID", func(t *testing.T) {
 		randNameOne := acctest.RandString(12)
 		randNameTwo := acctest.RandString(12)
 		var orr organizationRuleResourceModel
@@ -992,7 +992,7 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 		})
 	})
 
-	t.Run("errors2 when an organization rule is updated with an invalid target_pipeline UUID", func(t *testing.T) {
+	t.Run("errors when an organization rule is updated with an invalid target_pipeline UUID", func(t *testing.T) {
 		randNameOne := acctest.RandString(12)
 		randNameTwo := acctest.RandString(12)
 		var orr organizationRuleResourceModel
@@ -1067,6 +1067,43 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 				{
 					Config:      configUpdateErrorNoTarget(randNameOne, randNameTwo, "trigger_build"),
 					ExpectError: regexp.MustCompile("pipeline.trigger_build.pipeline: missing target_pipeline"),
+				},
+			},
+		})
+	})
+
+	t.Run("errors when an organization rule is updated with invalid conditions", func(t *testing.T) {
+		randNameOne := acctest.RandString(12)
+		randNameTwo := acctest.RandString(12)
+		var orr organizationRuleResourceModel
+
+		initConditions := `
+			"source.build.branch == 'develop'",
+			"source.pipeline.slug == 'monorepo-core'"
+  		`
+
+		nonExistentConditions := `
+			"source.build.branch == 'develop'",
+			"source.pipeline.slug == 'monorepo-core'",
+			"source.build.polisher includes 'monorepo'"
+		`
+
+		check := resource.ComposeAggregateTestCheckFunc(
+			testAccCheckOrganizationRuleExists(&orr, fmt.Sprintf("buildkite_organization_rule.%s_rule", "trigger_build")),
+		)
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			CheckDestroy:             testAccCheckOrganizationRuleDestroy,
+			Steps: []resource.TestStep{
+				{
+					Config: configAllCustomConditions(randNameOne, randNameTwo, "trigger_build", initConditions),
+					Check:  check,
+				},
+				{
+					Config:      configAllCustomConditions(randNameOne, randNameTwo, "trigger_build", nonExistentConditions),
+					ExpectError: regexp.MustCompile("pipeline.trigger_build.pipeline: conditional is invalid"),
 				},
 			},
 		})
