@@ -334,6 +334,7 @@ func (or *organizationRuleResource) Update(ctx context.Context, req resource.Upd
 	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		org, err := or.client.GetOrganizationID()
 		if err == nil {
+			log.Printf("Updating organization rule with ID %s ...", state.ID.ValueString())
 			r, err = updateOrganizationRule(ctx,
 				or.client.genqlient,
 				*org,
@@ -351,6 +352,7 @@ func (or *organizationRuleResource) Update(ctx context.Context, req resource.Upd
 			"Unable to update organization rule",
 			fmt.Sprintf("Unable to update organization rule: %s", err.Error()),
 		)
+		return
 	}
 
 	// Obtain the source and target UUIDs of the created organization rule based on the API response.
