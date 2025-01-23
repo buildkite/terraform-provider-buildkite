@@ -1,17 +1,30 @@
 # Changelog
 
-## Unreleased
+## [v1.15.5](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.15.4...v1.15.5)
+
+- Implement default `provider_settings`, adjust `slug` attribute logic  [[PR #607](https://github.com/buildkite/terraform-provider-buildkite/pull/607)] @petetomasik
+- Bump docker/library/golang from 1.23.3 to 1.23.4 [[PR #604](https://github.com/buildkite/terraform-provider-buildkite/pull/604)] @dependabot
+
+## [v1.15.4](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.15.3...v1.15.4)
+
+- Ensure global `env` are signed with steps [[PR #605](https://github.com/buildkite/terraform-provider-buildkite/pull/605)] @petetomasik
+
+## [v1.15.3](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.15.2...v1.15.3)
+
+- Fix hosted agents Mac XL instance casing [[PR #602](https://github.com/buildkite/terraform-provider-buildkite/pull/602)] @isaacparker-at
+- SUP-2777 - Allow configurable pipeline slugs [[PR #603](https://github.com/buildkite/terraform-provider-buildkite/pull/603)] @petetomasik
+
+## [v1.15.2](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.15.1...v1.15.2)
 
 - Update golang.org/x/net [[PR #599](https://github.com/buildkite/terraform-provider-buildkite/pull/599)] @yob
 - Fix state management on updating the hosted_agents configuration of a cluster queue [[PR #600](https://github.com/buildkite/terraform-provider-buildkite/pull/600)] @CerealBoy
-- SUP-2591: add PlanModifiers when Hosted Agent attributes [[PR #598](https://github.com/buildkite/terraform-provider-buildkite/pull/598)] @tomowatt
 
-## [v1.15.1]()
+## [v1.15.1](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.15.0...v1.15.1)
 
 - SUP-2591: add PlanModifiers when Hosted Agent attributes [[PR #598](https://github.com/buildkite/terraform-provider-buildkite/pull/598)] @tomowatt
 - Adding more examples for working with cluster queues [[PR #597](https://github.com/buildkite/terraform-provider-buildkite/pull/597)] @CerealBoy
 
-## [v1.15.0]()
+## [v1.15.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.14.0...v1.15.0)
 
 - Bump golang.org/x/crypto from 0.25.0 to 0.31.0 [[PR #594](https://github.com/buildkite/terraform-provider-buildkite/pull/594)] @dependabot
 - SUP-2813: correct logic for pausing/resuming Dispatch on Queues and remove error with Default Cluster Queues [[PR #593](https://github.com/buildkite/terraform-provider-buildkite/pull/593)] @tomowatt
