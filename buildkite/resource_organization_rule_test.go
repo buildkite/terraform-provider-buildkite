@@ -522,7 +522,6 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 		`, fields[0], fields[1], fields[0], fields[1], fields[2], fields[2], fields[2])
 	}
 
-
 	configUpdateErrorNoSource := func(fields ...string) string {
 		return fmt.Sprintf(`
 		provider "buildkite" {
@@ -1017,7 +1016,6 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 			},
 		})
 	})
-
 
 	t.Run("errors when an organization rule is updated with no source_pipeline UUID", func(t *testing.T) {
 		ruleType := "trigger_build"

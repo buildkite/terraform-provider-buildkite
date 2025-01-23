@@ -8,13 +8,11 @@ import (
 	"log"
 
 	"github.com/MakeNowJust/heredoc"
-	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	resource_schema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
-	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
@@ -93,12 +91,6 @@ func (organizationRuleResource) Schema(ctx context.Context, req resource.SchemaR
 			"type": resource_schema.StringAttribute{
 				Required:            true,
 				MarkdownDescription: "The type of organization rule. ",
-				Validators: []validator.String{
-					stringvalidator.OneOf(
-						"pipeline.trigger_build.pipeline",
-						"pipeline.artifacts_read.pipeline",
-					),
-				},
 			},
 			"value": resource_schema.StringAttribute{
 				Required:            true,
