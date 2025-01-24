@@ -453,7 +453,7 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 				buildkite_pipeline.pipeline_target
 			]
 			type = "pipeline.%s.pipeline"
-			description = "A pipeline.%s.pipeline rule loler"
+			description = "A pipeline.%s.pipeline rule description"
 			value = jsonencode({
 				source_pipeline = "non-existent"
 				target_pipeline = buildkite_pipeline.pipeline_target.uuid
@@ -508,7 +508,7 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 				buildkite_pipeline.pipeline_target
 			]
 			type = "pipeline.%s.pipeline"
-			description = "A pipeline.%s.pipeline rule loler"
+			description = "A pipeline.%s.pipeline rule description"
 			value = jsonencode({
 				source_pipeline = buildkite_pipeline.pipeline_target.uuid
 				target_pipeline = "non-existent"
@@ -563,7 +563,7 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 				buildkite_pipeline.pipeline_target
 			]
 			type = "pipeline.%s.pipeline"
-			description = "A pipeline.%s.pipeline rule loler"
+			description = "A pipeline.%s.pipeline rule description"
 			value = jsonencode({
 				target_pipeline = buildkite_pipeline.pipeline_target.uuid
 				conditions = [
@@ -617,7 +617,7 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 				buildkite_pipeline.pipeline_target
 			]
 			type = "pipeline.%s.pipeline"
-			description = "A pipeline.%s.pipeline rule loler"
+			description = "A pipeline.%s.pipeline rule description"
 			value = jsonencode({
 				source_pipeline = buildkite_pipeline.pipeline_source.uuid
 				conditions = [
@@ -671,7 +671,7 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 				buildkite_pipeline.pipeline_target
 			]
 			type = "pipeline.%s.pipeline"
-			description = "A pipeline.%s.pipeline rule loler"
+			description = "A pipeline.%s.pipeline rule description"
 			value = jsonencode({
 				sourc_pipeline = buildkite_pipeline.pipeline_source.uuid
 				target_pipeline = buildkite_pipeline.pipeline_target.uuid
@@ -726,7 +726,7 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 				buildkite_pipeline.pipeline_target
 			]
 			type = "pipeline.%s.pipeline"
-			description = "A pipeline.%s.pipeline rule loler"
+			description = "A pipeline.%s.pipeline rule description"
 			value = jsonencode({
 				source_pipeline = buildkite_pipeline.pipeline_source.uuid
 				target_pipelin = buildkite_pipeline.pipeline_target.uuid
