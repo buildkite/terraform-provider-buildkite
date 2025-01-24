@@ -32,8 +32,6 @@ func (m useDerivedPipelineSlugModifier) PlanModifyString(ctx context.Context, re
 
 	var slugSource map[string]interface{}
 	if err := json.Unmarshal(privateSlugSource, &slugSource); err != nil {
-		// Return unknown if slugSource missing from private state
-		resp.PlanValue = types.StringUnknown()
 		return
 	}
 	slugSourceVal := slugSource["source"].(string)
@@ -49,20 +47,15 @@ func (m useDerivedPipelineSlugModifier) PlanModifyString(ctx context.Context, re
 
 	// Check if slug is user-provided attribute
 	if req.ConfigValue.IsNull() {
-		// Return unknown if slug not defined and previous slug source not API (re-generate slug from API)
-		if slugSourceVal != "api" {
-			resp.PlanValue = types.StringUnknown()
-			return
-		}
 		// Return unknown if name is changing (re-generate slug from API)
 		if planValueName != stateValueName {
 			resp.PlanValue = types.StringUnknown()
-			return
-		} else {
-			// Name not changed, Config provided matches value in state, set value to state (NoOp)
-			resp.PlanValue = req.StateValue
-			return
 		}
+		// Return unknown if slug not defined and previous slug source not API (re-generate slug from API)
+		if slugSourceVal != "api" {
+			resp.PlanValue = types.StringUnknown()
+		}
+		return
 	}
 }
 

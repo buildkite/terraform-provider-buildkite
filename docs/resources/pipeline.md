@@ -103,24 +103,24 @@ resource "buildkite_pipeline" "signed-pipeline" {
 
 Optional:
 
-- `build_branches` (Boolean) Whether to create builds when branches are pushed. Defaults to `false`.
-- `build_pull_request_forks` (Boolean) Whether to create builds for pull requests from third-party forks. Defaults to `false`.
-- `build_pull_request_labels_changed` (Boolean) Whether to create builds for pull requests when labels are added or removed. Defaults to `false`.
-- `build_pull_request_ready_for_review` (Boolean) Whether to create a build when a pull request changes to "Ready for review". Defaults to `false`.
-- `build_pull_requests` (Boolean) Whether to create builds for commits that are part of a pull request. Defaults to `false`.
-- `build_tags` (Boolean) Whether to create builds when tags are pushed. Defaults to `false`.
-- `cancel_deleted_branch_builds` (Boolean) Automatically cancel running builds for a branch if the branch is deleted. Defaults to `false`.
-- `filter_condition` (String) The condition to evaluate when deciding if a build should run. More details available in the [documentation](https://buildkite.com/docs/pipelines/conditionals#conditionals-in-pipelines).
-- `filter_enabled` (Boolean) Whether to filter builds to only run when the condition in `filter_condition` is true. Defaults to `false`.
-- `prefix_pull_request_fork_branch_names` (Boolean) Prefix branch names for third-party fork builds to ensure they don't trigger branch conditions. For example, the main branch from some-user will become some-user:main. Defaults to `false`.
-- `publish_blocked_as_pending` (Boolean) The status to use for blocked builds. Pending can be used with [required status checks](https://help.github.com/en/articles/enabling-required-status-checks) to prevent merging pull requests with blocked builds. Defaults to `false`.
-- `publish_commit_status` (Boolean) Whether to update the status of commits in Bitbucket or GitHub. Defaults to `false`.
-- `publish_commit_status_per_step` (Boolean) Whether to create a separate status for each job in a build, allowing you to see the status of each job directly in Bitbucket or GitHub. Defaults to `false`.
+- `build_branches` (Boolean) Whether to create builds when branches are pushed. Defaults to `true` when `trigger_mode` is set to `code`.
+- `build_pull_request_forks` (Boolean) Whether to create builds for pull requests from third-party forks.
+- `build_pull_request_labels_changed` (Boolean) Whether to create builds for pull requests when labels are added or removed.
+- `build_pull_request_ready_for_review` (Boolean) Whether to create a build when a pull request changes to "Ready for review".
+- `build_pull_requests` (Boolean) Whether to create builds for commits that are part of a pull request. Defaults to `true` when `trigger_mode` is set to `code`.
+- `build_tags` (Boolean) Whether to create builds when tags are pushed.
+- `cancel_deleted_branch_builds` (Boolean) Automatically cancel running builds for a branch if the branch is deleted.
+- `filter_condition` (String) The condition to evaluate when deciding if a build should run. More details available in [the documentation](https://buildkite.com/docs/pipelines/conditionals#conditionals-in-pipelines).
+- `filter_enabled` (Boolean) Whether to filter builds to only run when the condition in `filter_condition` is true.
+- `prefix_pull_request_fork_branch_names` (Boolean) Prefix branch names for third-party fork builds to ensure they don't trigger branch conditions. For example, the main branch from some-user will become some-user:main.
+- `publish_blocked_as_pending` (Boolean) The status to use for blocked builds. Pending can be used with [required status checks](https://help.github.com/en/articles/enabling-required-status-checks) to prevent merging pull requests with blocked builds.
+- `publish_commit_status` (Boolean) Whether to update the status of commits in Bitbucket or GitHub. Defaults to `true` when `trigger_mode` is set to `code`.
+- `publish_commit_status_per_step` (Boolean) Whether to create a separate status for each job in a build, allowing you to see the status of each job directly in Bitbucket or GitHub.
 - `pull_request_branch_filter_configuration` (String) Filter pull requests builds by the branch filter.
-- `pull_request_branch_filter_enabled` (Boolean) Filter pull request builds. Defaults to `false`.
-- `separate_pull_request_statuses` (Boolean) Whether to create a separate status for pull request builds, allowing you to require a passing pull request build in your [required status checks](https://help.github.com/en/articles/enabling-required-status-checks) in GitHub. Defaults to `false`.
-- `skip_builds_for_existing_commits` (Boolean) Whether to skip creating a new build if an existing build for the commit and branch already exists. This option is only valid if the pipeline uses a GitHub repository. Defaults to `false`.
-- `skip_pull_request_builds_for_existing_commits` (Boolean) Whether to skip creating a new build for a pull request if an existing build for the commit and branch already exists. Defaults to `false`.
+- `pull_request_branch_filter_enabled` (Boolean) Filter pull request builds.
+- `separate_pull_request_statuses` (Boolean) Whether to create a separate status for pull request builds, allowing you to require a passing pull request build in your [required status checks](https://help.github.com/en/articles/enabling-required-status-checks) in GitHub.
+- `skip_builds_for_existing_commits` (Boolean) Whether to skip creating a new build if an existing build for the commit and branch already exists. This option is only valid if the pipeline uses a GitHub repository.
+- `skip_pull_request_builds_for_existing_commits` (Boolean) Whether to skip creating a new build for a pull request if an existing build for the commit and branch already exists.  Defaults to `true` when `trigger_mode` is set to `code`.
 - `trigger_mode` (String) What type of event to trigger builds on. Must be one of:
 	- `code` will create builds when code is pushed to GitHub.
 	- `deployment` will create builds when a deployment is created in GitHub.
@@ -128,7 +128,7 @@ Optional:
 	- `none` will not create any builds based on GitHub activity.
 
 	-> `trigger_mode` is only valid if the pipeline uses a GitHub repository.
-	-> If not set, the default value is `none` and other provider settings defaults are applied.
+	-> If not set, the default value is `code` and other provider settings defaults are applied.
 
 ## Import
 
