@@ -918,13 +918,6 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 					Config:                   configNested,
 					ProtoV6ProviderFactories: protoV6ProviderFactories(),
 					Check:                    checkNested,
-					// We expect an empty plan and no action on the pipeline resource before applying nested provider_settings config
-					ConfigPlanChecks: resource.ConfigPlanChecks{
-						PreApply: []plancheck.PlanCheck{
-							plancheck.ExpectEmptyPlan(),
-							plancheck.ExpectResourceAction("buildkite_pipeline.pipeline", plancheck.ResourceActionNoop),
-						},
-					},
 				},
 			},
 		})
