@@ -32,7 +32,7 @@ func (m useDerivedPipelineSlugModifier) PlanModifyString(ctx context.Context, re
 
 	var slugSource map[string]interface{}
 	if err := json.Unmarshal(privateSlugSource, &slugSource); err != nil {
-		// Return unknown if slugSource missing from private state
+		// Return unknown if slugSource missing from private state and state is different
 		resp.PlanValue = types.StringUnknown()
 		return
 	}
