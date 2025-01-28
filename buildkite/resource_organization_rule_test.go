@@ -741,10 +741,12 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 	}
 
 	for _, action := range ruleActions {
+		// Formatted resource name used for all create/update/import test cases
+		resourceName := fmt.Sprintf("buildkite_organization_rule.%s_rule", action)
+
 		t.Run(fmt.Sprintf("creates a pipeline.%s.pipeline organization rule with required attributes", action), func(t *testing.T) {
 			randNameOne := acctest.RandString(12)
 			randNameTwo := acctest.RandString(12)
-			resourceName := fmt.Sprintf("buildkite_organization_rule.%s_rule", action)
 			var orr organizationRuleResourceModel
 
 			check := resource.ComposeAggregateTestCheckFunc(
@@ -783,7 +785,6 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 		t.Run(fmt.Sprintf("creates a pipeline.%s.pipeline organization rule with all attributes", action), func(t *testing.T) {
 			randNameOne := acctest.RandString(12)
 			randNameTwo := acctest.RandString(12)
-			resourceName := fmt.Sprintf("buildkite_organization_rule.%s_rule", action)
 			var orr organizationRuleResourceModel
 
 			check := resource.ComposeAggregateTestCheckFunc(
@@ -826,7 +827,6 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 			randNameTwo := acctest.RandString(12)
 			description := acctest.RandString(12)
 			updatedDescription := acctest.RandString(12)
-			resourceName := fmt.Sprintf("buildkite_organization_rule.%s_rule", action)
 			var orr organizationRuleResourceModel
 
 			check := resource.ComposeAggregateTestCheckFunc(
@@ -879,7 +879,6 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 		t.Run(fmt.Sprintf("updates a pipeline.%s.pipeline organization rule by inserting new conditions", action), func(t *testing.T) {
 			randNameOne := acctest.RandString(12)
 			randNameTwo := acctest.RandString(12)
-			resourceName := fmt.Sprintf("buildkite_organization_rule.%s_rule", action)
 			var orr organizationRuleResourceModel
 
 			initConditions := `
@@ -939,7 +938,6 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 		t.Run(fmt.Sprintf("updates a pipeline.%s.pipeline organization rule by removing conditions", action), func(t *testing.T) {
 			randNameOne := acctest.RandString(12)
 			randNameTwo := acctest.RandString(12)
-			resourceName := fmt.Sprintf("buildkite_organization_rule.%s_rule", action)
 			var orr organizationRuleResourceModel
 
 			initConditions := `
@@ -999,7 +997,6 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 		t.Run(fmt.Sprintf("updates a pipeline.%s.pipeline organization rule by editing its current conditions", action), func(t *testing.T) {
 			randNameOne := acctest.RandString(12)
 			randNameTwo := acctest.RandString(12)
-			resourceName := fmt.Sprintf("buildkite_organization_rule.%s_rule", action)
 			var orr organizationRuleResourceModel
 
 			initConditions := `
@@ -1033,7 +1030,7 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 
 			checkUpdated := resource.ComposeAggregateTestCheckFunc(
 				// Confirm the organization rule exists
-				testAccCheckOrganizationRuleExists(&orr, resourceName),				
+				testAccCheckOrganizationRuleExists(&orr, resourceName),
 				// Confirm the organization rule has the correct values in Buildkite's system
 				testAccCheckOrganizationRuleRemoteValues(&orr, "PIPELINE", "PIPELINE", strings.ToUpper(action), "ALLOW"),
 				// Check the organization rule resource's value attribute is set in state
@@ -1060,7 +1057,6 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 		t.Run(fmt.Sprintf("imports a pipeline.%s.pipeline organization rule with required attributes", action), func(t *testing.T) {
 			randNameOne := acctest.RandString(12)
 			randNameTwo := acctest.RandString(12)
-			resourceName := fmt.Sprintf("buildkite_organization_rule.%s_rule", action)
 			var orr organizationRuleResourceModel
 
 			check := resource.ComposeAggregateTestCheckFunc(
@@ -1100,7 +1096,6 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 		t.Run(fmt.Sprintf("imports a pipeline.%s.pipeline organization rule with all attributes", action), func(t *testing.T) {
 			randNameOne := acctest.RandString(12)
 			randNameTwo := acctest.RandString(12)
-			resourceName := fmt.Sprintf("buildkite_organization_rule.%s_rule", action)
 			var orr organizationRuleResourceModel
 
 			check := resource.ComposeAggregateTestCheckFunc(
