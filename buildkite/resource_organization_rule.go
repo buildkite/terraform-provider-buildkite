@@ -475,7 +475,7 @@ func obtainUpdateUUIDs(r *updateOrganizationRuleResponse) (*string, *string, err
 	}
 
 	// Now, like above - the provider will try and determine the target UUID based on the *updateOrganizationRuleResponse. notably
-	// if it has been been changed during a plan->apply sequence. This logic will switch based on the TargetType returned in the update
+	// if it has been changed during a plan->apply sequence. This logic will switch based on the TargetType returned in the update
 	// response and extract the UUID of the respective target based on this (i.e "PIPELINE").
 	// Otherwise, it will create and throw an error stating that it cannot obtain the target type from the returned API response.
 	// In all cases exhausted, it'll throw an error stating that the rule's target type can't be determined after an update.
