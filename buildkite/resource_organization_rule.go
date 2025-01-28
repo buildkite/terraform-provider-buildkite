@@ -429,13 +429,13 @@ func obtainCreationUUIDs(r *createOrganizationRuleResponse) (*string, *string, e
 			return nil, nil, errors.New("Error obtaining source type upon creating the organization rule.")
 		}
 	default:
-		// We can't determine the source type - return an error
+		// We can't determine the source type from the RuleCreate object - return an error
 		return nil, nil, errors.New("Error determining source type upon creating the organization rule.")
 	}
 
 	// Now, like above - the provider will try and determine the target UUID based on the *createOrganizationRuleResponse. It will
-	// switch based on the TargetType returned in the response and extract the UUID of the respective source based on this. Otherwise,
-	// it will create and throw an error stating that it cannot obtain the source type from the returned API response.
+	// switch based on the TargetType returned in the response and extract the UUID of the respective target based on this. Otherwise,
+	// it will create and throw an error stating that it cannot obtain the target type from the returned API response.
 	// In all cases exhausted, it'll throw an error stating that the rule's target type can't be determined after creation.
 
 	switch r.RuleCreate.Rule.TargetType {
@@ -446,7 +446,7 @@ func obtainCreationUUIDs(r *createOrganizationRuleResponse) (*string, *string, e
 			return nil, nil, errors.New("Error obtaining target type upon creating the organization rule.")
 		}
 	default:
-		// We can't determine the target type - return an error
+		// We can't determine the target type from the RuleCreate object - return an error
 		return nil, nil, errors.New("Error determining target type upon creating the organization rule.")
 	}
 
@@ -456,6 +456,12 @@ func obtainCreationUUIDs(r *createOrganizationRuleResponse) (*string, *string, e
 func obtainUpdateUUIDs(r *updateOrganizationRuleResponse) (*string, *string, error) {
 	var sourceUUID, targetUUID string
 
+	// The provider will try and determine the source UUID based on type that is returned in the *updateOrganizationRuleResponse, notably
+	// if it has been changed during a plan->apply sequence. This logic will switch based on the SourceType returned in the update
+	// response and extract the UUID of the respective source based on this (i.e "PIPELINE").
+	// Otherwise, it will create and throw an error stating that it cannot obtain the source type from the returned API response.
+	// In all cases exhausted, it'll throw an error stating that the rule's source type can't be determined after an update.
+
 	switch r.RuleUpdate.Rule.SourceType {
 	case "PIPELINE":
 		if ruleCreateSourcePipeline, ok := r.RuleUpdate.Rule.Source.(*OrganizationRuleFieldsSourcePipeline); ok {
@@ -464,8 +470,15 @@ func obtainUpdateUUIDs(r *updateOrganizationRuleResponse) (*string, *string, err
 			return nil, nil, errors.New("Error obtaining source type upon updating the organization rule.")
 		}
 	default:
+		// We can't determine the source type from the RuleUpdate object - return an error
 		return nil, nil, errors.New("Error determining source type upon updating the organization rule.")
 	}
+
+	// Now, like above - the provider will try and determine the target UUID based on the *updateOrganizationRuleResponse. notably
+	// if it has been been changed during a plan->apply sequence. This logic will switch based on the TargetType returned in the update
+	// response and extract the UUID of the respective target based on this (i.e "PIPELINE").
+	// Otherwise, it will create and throw an error stating that it cannot obtain the target type from the returned API response.
+	// In all cases exhausted, it'll throw an error stating that the rule's target type can't be determined after an update.
 
 	switch r.RuleUpdate.Rule.TargetType {
 	case "PIPELINE":
@@ -475,6 +488,7 @@ func obtainUpdateUUIDs(r *updateOrganizationRuleResponse) (*string, *string, err
 			return nil, nil, errors.New("Error obtaining target type upon updating the organization rule.")
 		}
 	default:
+		// We can't determine the target type from the RuleUpdate object - return an error
 		return nil, nil, errors.New("Error determining target type upon updating the organization rule.")
 	}
 
