@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- SUP-2533: Organization rule updates [[PR #855](https://github.com/buildkite/terraform-provider-buildkite/pull/855)] @james2791
+
 ## [v1.15.5](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.15.4...v1.15.5)
 
 - Implement default `provider_settings`, adjust `slug` attribute logic  [[PR #607](https://github.com/buildkite/terraform-provider-buildkite/pull/607)] @petetomasik
