@@ -876,7 +876,60 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 			})
 		})
 
-		t.Run(fmt.Sprintf("updates a pipeline.%s.pipeline organization rule by inserting new conditions", action), func(t *testing.T) {
+		t.Run(fmt.Sprintf("updates a pipeline.%s.pipeline organization rule by adding conditions", action), func(t *testing.T) {
+			randNameOne := acctest.RandString(12)
+			randNameTwo := acctest.RandString(12)
+			var orr organizationRuleResourceModel
+
+			conditions := `
+      			"source.build.branch == 'develop'",
+      			"source.pipeline.slug == 'monorepo-core'",
+				"source.build.creator.teams includes 'monorepo'"
+			`
+
+			check := resource.ComposeAggregateTestCheckFunc(
+				// Confirm the organization rule exists
+				testAccCheckOrganizationRuleExists(&orr, resourceName),
+				// Confirm the organization rule has the correct values in Buildkite's system
+				testAccCheckOrganizationRuleRemoteValues(&orr, "PIPELINE", "PIPELINE", strings.ToUpper(action), "ALLOW"),
+				// Check the organization rule resource's attributes are set in state
+				resource.TestCheckResourceAttrSet(resourceName, "id"),
+				resource.TestCheckResourceAttrSet(resourceName, "uuid"),
+				resource.TestCheckResourceAttrSet(resourceName, "type"),
+				resource.TestCheckResourceAttrSet(resourceName, "source_type"),
+				resource.TestCheckResourceAttrSet(resourceName, "source_uuid"),
+				resource.TestCheckResourceAttrSet(resourceName, "target_type"),
+				resource.TestCheckResourceAttrSet(resourceName, "target_uuid"),
+				resource.TestCheckResourceAttrSet(resourceName, "value"),
+			)
+
+			checkUpdated := resource.ComposeAggregateTestCheckFunc(
+				// Confirm the organization rule exists
+				testAccCheckOrganizationRuleExists(&orr, resourceName),
+				// Confirm the organization rule has the correct values in Buildkite's system
+				testAccCheckOrganizationRuleRemoteValues(&orr, "PIPELINE", "PIPELINE", strings.ToUpper(action), "ALLOW"),
+				// Check the organization rule resource's value attribute is set in state
+				resource.TestCheckResourceAttrSet(resourceName, "value"),
+			)
+
+			resource.ParallelTest(t, resource.TestCase{
+				PreCheck:                 func() { testAccPreCheck(t) },
+				ProtoV6ProviderFactories: protoV6ProviderFactories(),
+				CheckDestroy:             testAccCheckOrganizationRuleDestroy,
+				Steps: []resource.TestStep{
+					{
+						Config: configRequired(randNameOne, randNameTwo, action),
+						Check:  check,
+					},
+					{
+						Config: configAllCustomConditions(randNameOne, randNameTwo, action, conditions),
+						Check:  checkUpdated,
+					},
+				},
+			})
+		})
+
+		t.Run(fmt.Sprintf("updates a pipeline.%s.pipeline organization rule by inserting additional conditions", action), func(t *testing.T) {
 			randNameOne := acctest.RandString(12)
 			randNameTwo := acctest.RandString(12)
 			var orr organizationRuleResourceModel
@@ -935,7 +988,7 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 			})
 		})
 
-		t.Run(fmt.Sprintf("updates a pipeline.%s.pipeline organization rule by removing conditions", action), func(t *testing.T) {
+		t.Run(fmt.Sprintf("updates a pipeline.%s.pipeline organization rule by removing some conditions", action), func(t *testing.T) {
 			randNameOne := acctest.RandString(12)
 			randNameTwo := acctest.RandString(12)
 			var orr organizationRuleResourceModel
@@ -988,6 +1041,60 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 					},
 					{
 						Config: configAllCustomConditions(randNameOne, randNameTwo, action, updatedConditions),
+						Check:  checkUpdated,
+					},
+				},
+			})
+		})
+
+		t.Run(fmt.Sprintf("updates a pipeline.%s.pipeline organization rule by removing all conditions", action), func(t *testing.T) {
+			randNameOne := acctest.RandString(12)
+			randNameTwo := acctest.RandString(12)
+			var orr organizationRuleResourceModel
+
+			existingConditions := `
+      			"source.build.branch == 'develop'",
+      			"source.pipeline.slug == 'monorepo-core'",
+				"source.build.creator.teams includes 'monorepo'"
+			`
+
+			check := resource.ComposeAggregateTestCheckFunc(
+				// Confirm the organization rule exists
+				testAccCheckOrganizationRuleExists(&orr, resourceName),
+				// Confirm the organization rule has the correct values in Buildkite's system
+				testAccCheckOrganizationRuleRemoteValues(&orr, "PIPELINE", "PIPELINE", strings.ToUpper(action), "ALLOW"),
+				// Check the organization rule resource's attributes are set in state
+				resource.TestCheckResourceAttrSet(resourceName, "id"),
+				resource.TestCheckResourceAttrSet(resourceName, "uuid"),
+				resource.TestCheckResourceAttrSet(resourceName, "type"),
+				resource.TestCheckResourceAttrSet(resourceName, "description"),
+				resource.TestCheckResourceAttrSet(resourceName, "source_type"),
+				resource.TestCheckResourceAttrSet(resourceName, "source_uuid"),
+				resource.TestCheckResourceAttrSet(resourceName, "target_type"),
+				resource.TestCheckResourceAttrSet(resourceName, "target_uuid"),
+				resource.TestCheckResourceAttrSet(resourceName, "value"),
+			)
+
+			checkUpdated := resource.ComposeAggregateTestCheckFunc(
+				// Confirm the organization rule exists
+				testAccCheckOrganizationRuleExists(&orr, resourceName),
+				// Confirm the organization rule has the correct values in Buildkite's system
+				testAccCheckOrganizationRuleRemoteValues(&orr, "PIPELINE", "PIPELINE", strings.ToUpper(action), "ALLOW"),
+				// Check the organization rule resource's value attribute is set in state
+				resource.TestCheckResourceAttrSet(resourceName, "value"),
+			)
+
+			resource.ParallelTest(t, resource.TestCase{
+				PreCheck:                 func() { testAccPreCheck(t) },
+				ProtoV6ProviderFactories: protoV6ProviderFactories(),
+				CheckDestroy:             testAccCheckOrganizationRuleDestroy,
+				Steps: []resource.TestStep{
+					{
+						Config: configAllCustomConditions(randNameOne, randNameTwo, action, existingConditions),
+						Check:  check,
+					},
+					{
+						Config: configRequired(randNameOne, randNameTwo, action),
 						Check:  checkUpdated,
 					},
 				},
