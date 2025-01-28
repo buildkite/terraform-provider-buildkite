@@ -341,6 +341,56 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 		`, fields[0], fields[1], fields[0], fields[1], fields[2], fields[3], fields[3])
 	}
 
+	configRequiredSwap := func(fields ...string) string {
+		return fmt.Sprintf(`
+		provider "buildkite" {
+			timeouts = {
+				create = "10s"
+				read = "10s"
+				update = "10s"
+				delete = "10s"
+			}
+		}
+
+		resource "buildkite_cluster" "cluster_source" {
+			name        = "Cluster %s"
+			description = "A test cluster containing a source pipeline."
+		}
+
+		resource "buildkite_cluster" "cluster_target" {
+			name        = "Cluster %s"
+			description = "A test cluster containing a target pipeline for triggering builds."
+		}
+
+		resource "buildkite_pipeline" "pipeline_source" {
+			depends_on 			 = [buildkite_cluster.cluster_source]
+			name                 = "Pipeline %s"
+			repository           = "https://github.com/buildkite/terraform-provider-buildkite.git"
+			cluster_id			 = buildkite_cluster.cluster_source.id
+		}
+
+		resource "buildkite_pipeline" "pipeline_target" {
+			depends_on 			 = [buildkite_cluster.cluster_target]
+			name                 = "Pipeline %s"
+			repository           = "https://github.com/buildkite/terraform-provider-buildkite.git"
+			cluster_id           = buildkite_cluster.cluster_target.id
+		}
+
+		resource "buildkite_organization_rule" "%s_rule" {
+			depends_on = [
+				buildkite_pipeline.pipeline_source,
+				buildkite_pipeline.pipeline_target
+			]
+			type = "pipeline.%s.pipeline"
+			value = jsonencode({
+				source_pipeline = buildkite_pipeline.pipeline_target.uuid
+				target_pipeline = buildkite_pipeline.pipeline_source.uuid
+			})
+		}
+
+		`, fields[0], fields[1], fields[0], fields[1], fields[2], fields[2])
+	}
+
 	configNonExistentAction := func(fields ...string) string {
 		return fmt.Sprintf(`
 		provider "buildkite" {
@@ -1084,6 +1134,57 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 					},
 					{
 						Config: configRequiredNewTarget(randNameOne, randNameTwo, randNameThree, action),
+						Check:  checkUpdated,
+					},
+				},
+			})
+		})
+
+		t.Run(fmt.Sprintf("updates a pipeline.%s.pipeline organization rule by changing both source_pipeline and target_pipeline", action), func(t *testing.T) {
+			randNameOne := acctest.RandString(12)
+			randNameTwo := acctest.RandString(12)
+			var orr organizationRuleResourceModel
+
+			check := resource.ComposeAggregateTestCheckFunc(
+				// Confirm the organization rule exists
+				testAccCheckOrganizationRuleExists(&orr, resourceName),
+				// Confirm the organization rule has the correct values in Buildkite's system
+				testAccCheckOrganizationRuleRemoteValues(&orr, "PIPELINE", "PIPELINE", strings.ToUpper(action), "ALLOW"),
+				// Check the organization rule resource's attributes are set in state
+				resource.TestCheckResourceAttrSet(resourceName, "id"),
+				resource.TestCheckResourceAttrSet(resourceName, "uuid"),
+				resource.TestCheckResourceAttrSet(resourceName, "type"),
+				resource.TestCheckResourceAttrSet(resourceName, "source_type"),
+				resource.TestCheckResourceAttrSet(resourceName, "source_uuid"),
+				resource.TestCheckResourceAttrSet(resourceName, "target_type"),
+				resource.TestCheckResourceAttrSet(resourceName, "target_uuid"),
+				resource.TestCheckResourceAttrSet(resourceName, "value"),
+			)
+
+			checkUpdated := resource.ComposeAggregateTestCheckFunc(
+				// Confirm the organization rule exists
+				testAccCheckOrganizationRuleExists(&orr, resourceName),
+				// Confirm the organization rule has the correct values in Buildkite's system
+				testAccCheckOrganizationRuleRemoteValues(&orr, "PIPELINE", "PIPELINE", strings.ToUpper(action), "ALLOW"),
+				// Check the organization rule resource's source, target and value attributes are set in state
+				resource.TestCheckResourceAttrSet(resourceName, "source_type"),
+				resource.TestCheckResourceAttrSet(resourceName, "source_uuid"),
+				resource.TestCheckResourceAttrSet(resourceName, "target_type"),
+				resource.TestCheckResourceAttrSet(resourceName, "target_uuid"),
+				resource.TestCheckResourceAttrSet(resourceName, "value"),
+			)
+
+			resource.ParallelTest(t, resource.TestCase{
+				PreCheck:                 func() { testAccPreCheck(t) },
+				ProtoV6ProviderFactories: protoV6ProviderFactories(),
+				CheckDestroy:             testAccCheckOrganizationRuleDestroy,
+				Steps: []resource.TestStep{
+					{
+						Config: configRequired(randNameOne, randNameTwo, action),
+						Check:  check,
+					},
+					{
+						Config: configRequiredSwap(randNameOne, randNameTwo, action),
 						Check:  checkUpdated,
 					},
 				},
