@@ -1,5 +1,9 @@
 # Changelog
 
+## [v1.15.6](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.15.5...v1.15.6)
+
+- SUP-3241 - Revert explicit default `provider_settings`, keep fixes to `slug` logic [[PR #856](https://github.com/buildkite/terraform-provider-buildkite/pull/856)] @petetomasik
+
 ## [v1.15.5](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.15.4...v1.15.5)
 
 - Implement default `provider_settings`, adjust `slug` attribute logic  [[PR #607](https://github.com/buildkite/terraform-provider-buildkite/pull/607)] @petetomasik
