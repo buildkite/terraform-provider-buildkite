@@ -1814,7 +1814,19 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 		var orr organizationRuleResourceModel
 
 		check := resource.ComposeAggregateTestCheckFunc(
-			testAccCheckOrganizationRuleExists(&orr, fmt.Sprintf("buildkite_organization_rule.%s_rule", "trigger_build")),
+			testAccCheckOrganizationRuleExists(&orr, "buildkite_organization_rule.trigger_build_rule"),
+			// Confirm the organization rule has the correct values in Buildkite's system
+			testAccCheckOrganizationRuleRemoteValues(&orr, "PIPELINE", "PIPELINE", "TRIGGER_BUILD", "ALLOW"),
+			// Check the organization rule resource's attributes are set in state
+			resource.TestCheckResourceAttrSet("buildkite_organization_rule.trigger_build_rule", "id"),
+			resource.TestCheckResourceAttrSet("buildkite_organization_rule.trigger_build_rule", "uuid"),
+			resource.TestCheckResourceAttrSet("buildkite_organization_rule.trigger_build_rule", "type"),
+			resource.TestCheckResourceAttrSet("buildkite_organization_rule.trigger_build_rule", "description"),
+			resource.TestCheckResourceAttrSet("buildkite_organization_rule.trigger_build_rule", "source_type"),
+			resource.TestCheckResourceAttrSet("buildkite_organization_rule.trigger_build_rule", "source_uuid"),
+			resource.TestCheckResourceAttrSet("buildkite_organization_rule.trigger_build_rule", "target_type"),
+			resource.TestCheckResourceAttrSet("buildkite_organization_rule.trigger_build_rule", "target_uuid"),
+			resource.TestCheckResourceAttrSet("buildkite_organization_rule.trigger_build_rule", "value"),
 		)
 
 		resource.ParallelTest(t, resource.TestCase{
@@ -1840,7 +1852,19 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 		var orr organizationRuleResourceModel
 
 		check := resource.ComposeAggregateTestCheckFunc(
-			testAccCheckOrganizationRuleExists(&orr, fmt.Sprintf("buildkite_organization_rule.%s_rule", "trigger_build")),
+			testAccCheckOrganizationRuleExists(&orr, "buildkite_organization_rule.trigger_build_rule"),
+			// Confirm the organization rule has the correct values in Buildkite's system
+			testAccCheckOrganizationRuleRemoteValues(&orr, "PIPELINE", "PIPELINE", "TRIGGER_BUILD", "ALLOW"),
+			// Check the organization rule resource's attributes are set in state
+			resource.TestCheckResourceAttrSet("buildkite_organization_rule.trigger_build_rule", "id"),
+			resource.TestCheckResourceAttrSet("buildkite_organization_rule.trigger_build_rule", "uuid"),
+			resource.TestCheckResourceAttrSet("buildkite_organization_rule.trigger_build_rule", "type"),
+			resource.TestCheckResourceAttrSet("buildkite_organization_rule.trigger_build_rule", "description"),
+			resource.TestCheckResourceAttrSet("buildkite_organization_rule.trigger_build_rule", "source_type"),
+			resource.TestCheckResourceAttrSet("buildkite_organization_rule.trigger_build_rule", "source_uuid"),
+			resource.TestCheckResourceAttrSet("buildkite_organization_rule.trigger_build_rule", "target_type"),
+			resource.TestCheckResourceAttrSet("buildkite_organization_rule.trigger_build_rule", "target_uuid"),
+			resource.TestCheckResourceAttrSet("buildkite_organization_rule.trigger_build_rule", "value"),
 		)
 
 		resource.ParallelTest(t, resource.TestCase{
@@ -1866,7 +1890,19 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 		var orr organizationRuleResourceModel
 
 		check := resource.ComposeAggregateTestCheckFunc(
-			testAccCheckOrganizationRuleExists(&orr, fmt.Sprintf("buildkite_organization_rule.%s_rule", "trigger_build")),
+			testAccCheckOrganizationRuleExists(&orr, "buildkite_organization_rule.trigger_build_rule"),
+			// Confirm the organization rule has the correct values in Buildkite's system
+			testAccCheckOrganizationRuleRemoteValues(&orr, "PIPELINE", "PIPELINE", "TRIGGER_BUILD", "ALLOW"),
+			// Check the organization rule resource's attributes are set in state
+			resource.TestCheckResourceAttrSet("buildkite_organization_rule.trigger_build_rule", "id"),
+			resource.TestCheckResourceAttrSet("buildkite_organization_rule.trigger_build_rule", "uuid"),
+			resource.TestCheckResourceAttrSet("buildkite_organization_rule.trigger_build_rule", "type"),
+			resource.TestCheckResourceAttrSet("buildkite_organization_rule.trigger_build_rule", "description"),
+			resource.TestCheckResourceAttrSet("buildkite_organization_rule.trigger_build_rule", "source_type"),
+			resource.TestCheckResourceAttrSet("buildkite_organization_rule.trigger_build_rule", "source_uuid"),
+			resource.TestCheckResourceAttrSet("buildkite_organization_rule.trigger_build_rule", "target_type"),
+			resource.TestCheckResourceAttrSet("buildkite_organization_rule.trigger_build_rule", "target_uuid"),
+			resource.TestCheckResourceAttrSet("buildkite_organization_rule.trigger_build_rule", "value"),
 		)
 
 		resource.ParallelTest(t, resource.TestCase{
@@ -1892,7 +1928,19 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 		var orr organizationRuleResourceModel
 
 		check := resource.ComposeAggregateTestCheckFunc(
-			testAccCheckOrganizationRuleExists(&orr, fmt.Sprintf("buildkite_organization_rule.%s_rule", "trigger_build")),
+			testAccCheckOrganizationRuleExists(&orr, "buildkite_organization_rule.trigger_build_rule"),
+			// Confirm the organization rule has the correct values in Buildkite's system
+			testAccCheckOrganizationRuleRemoteValues(&orr, "PIPELINE", "PIPELINE", "TRIGGER_BUILD", "ALLOW"),
+			// Check the organization rule resource's attributes are set in state
+			resource.TestCheckResourceAttrSet("buildkite_organization_rule.trigger_build_rule", "id"),
+			resource.TestCheckResourceAttrSet("buildkite_organization_rule.trigger_build_rule", "uuid"),
+			resource.TestCheckResourceAttrSet("buildkite_organization_rule.trigger_build_rule", "type"),
+			resource.TestCheckResourceAttrSet("buildkite_organization_rule.trigger_build_rule", "description"),
+			resource.TestCheckResourceAttrSet("buildkite_organization_rule.trigger_build_rule", "source_type"),
+			resource.TestCheckResourceAttrSet("buildkite_organization_rule.trigger_build_rule", "source_uuid"),
+			resource.TestCheckResourceAttrSet("buildkite_organization_rule.trigger_build_rule", "target_type"),
+			resource.TestCheckResourceAttrSet("buildkite_organization_rule.trigger_build_rule", "target_uuid"),
+			resource.TestCheckResourceAttrSet("buildkite_organization_rule.trigger_build_rule", "value"),
 		)
 
 		resource.ParallelTest(t, resource.TestCase{
@@ -1919,7 +1967,19 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 		var orr organizationRuleResourceModel
 
 		check := resource.ComposeAggregateTestCheckFunc(
-			testAccCheckOrganizationRuleExists(&orr, fmt.Sprintf("buildkite_organization_rule.%s_rule", ruleType)),
+			testAccCheckOrganizationRuleExists(&orr, "buildkite_organization_rule.trigger_build_rule"),
+			// Confirm the organization rule has the correct values in Buildkite's system
+			testAccCheckOrganizationRuleRemoteValues(&orr, "PIPELINE", "PIPELINE", "TRIGGER_BUILD", "ALLOW"),
+			// Check the organization rule resource's attributes are set in state
+			resource.TestCheckResourceAttrSet("buildkite_organization_rule.trigger_build_rule", "id"),
+			resource.TestCheckResourceAttrSet("buildkite_organization_rule.trigger_build_rule", "uuid"),
+			resource.TestCheckResourceAttrSet("buildkite_organization_rule.trigger_build_rule", "type"),
+			resource.TestCheckResourceAttrSet("buildkite_organization_rule.trigger_build_rule", "description"),
+			resource.TestCheckResourceAttrSet("buildkite_organization_rule.trigger_build_rule", "source_type"),
+			resource.TestCheckResourceAttrSet("buildkite_organization_rule.trigger_build_rule", "source_uuid"),
+			resource.TestCheckResourceAttrSet("buildkite_organization_rule.trigger_build_rule", "target_type"),
+			resource.TestCheckResourceAttrSet("buildkite_organization_rule.trigger_build_rule", "target_uuid"),
+			resource.TestCheckResourceAttrSet("buildkite_organization_rule.trigger_build_rule", "value"),
 		)
 
 		resource.ParallelTest(t, resource.TestCase{
@@ -1945,7 +2005,19 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 		var orr organizationRuleResourceModel
 
 		check := resource.ComposeAggregateTestCheckFunc(
-			testAccCheckOrganizationRuleExists(&orr, fmt.Sprintf("buildkite_organization_rule.%s_rule", "trigger_build")),
+			testAccCheckOrganizationRuleExists(&orr, "buildkite_organization_rule.trigger_build_rule"),
+			// Confirm the organization rule has the correct values in Buildkite's system
+			testAccCheckOrganizationRuleRemoteValues(&orr, "PIPELINE", "PIPELINE", "TRIGGER_BUILD", "ALLOW"),
+			// Check the organization rule resource's attributes are set in state
+			resource.TestCheckResourceAttrSet("buildkite_organization_rule.trigger_build_rule", "id"),
+			resource.TestCheckResourceAttrSet("buildkite_organization_rule.trigger_build_rule", "uuid"),
+			resource.TestCheckResourceAttrSet("buildkite_organization_rule.trigger_build_rule", "type"),
+			resource.TestCheckResourceAttrSet("buildkite_organization_rule.trigger_build_rule", "description"),
+			resource.TestCheckResourceAttrSet("buildkite_organization_rule.trigger_build_rule", "source_type"),
+			resource.TestCheckResourceAttrSet("buildkite_organization_rule.trigger_build_rule", "source_uuid"),
+			resource.TestCheckResourceAttrSet("buildkite_organization_rule.trigger_build_rule", "target_type"),
+			resource.TestCheckResourceAttrSet("buildkite_organization_rule.trigger_build_rule", "target_uuid"),
+			resource.TestCheckResourceAttrSet("buildkite_organization_rule.trigger_build_rule", "value"),
 		)
 
 		resource.ParallelTest(t, resource.TestCase{
@@ -1982,7 +2054,19 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 		`
 
 		check := resource.ComposeAggregateTestCheckFunc(
-			testAccCheckOrganizationRuleExists(&orr, fmt.Sprintf("buildkite_organization_rule.%s_rule", "trigger_build")),
+			testAccCheckOrganizationRuleExists(&orr, "buildkite_organization_rule.trigger_build_rule"),
+			// Confirm the organization rule has the correct values in Buildkite's system
+			testAccCheckOrganizationRuleRemoteValues(&orr, "PIPELINE", "PIPELINE", "TRIGGER_BUILD", "ALLOW"),
+			// Check the organization rule resource's attributes are set in state
+			resource.TestCheckResourceAttrSet("buildkite_organization_rule.trigger_build_rule", "id"),
+			resource.TestCheckResourceAttrSet("buildkite_organization_rule.trigger_build_rule", "uuid"),
+			resource.TestCheckResourceAttrSet("buildkite_organization_rule.trigger_build_rule", "type"),
+			resource.TestCheckResourceAttrSet("buildkite_organization_rule.trigger_build_rule", "description"),
+			resource.TestCheckResourceAttrSet("buildkite_organization_rule.trigger_build_rule", "source_type"),
+			resource.TestCheckResourceAttrSet("buildkite_organization_rule.trigger_build_rule", "source_uuid"),
+			resource.TestCheckResourceAttrSet("buildkite_organization_rule.trigger_build_rule", "target_type"),
+			resource.TestCheckResourceAttrSet("buildkite_organization_rule.trigger_build_rule", "target_uuid"),
+			resource.TestCheckResourceAttrSet("buildkite_organization_rule.trigger_build_rule", "value"),
 		)
 
 		resource.ParallelTest(t, resource.TestCase{
