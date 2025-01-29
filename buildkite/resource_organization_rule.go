@@ -434,7 +434,7 @@ func obtainCreationUUIDs(r *createOrganizationRuleResponse) (*string, *string, e
 	}
 
 	// Now, like above - the provider will try and determine the target UUID based on the *createOrganizationRuleResponse. It will
-	// switch based on the TargetType returned in the response and extract the UUID of the respective target based on this. 
+	// switch based on the TargetType returned in the response and extract the UUID of the respective target based on this.
 	// Otherwise, the provider will create and throw an error stating that it cannot obtain the target type from the returned API response.
 	// In all cases exhausted, the provider will throw an error stating that the rule's target type can't be determined after creation.
 
