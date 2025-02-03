@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- SUP-2533: Organization rule updates [[PR #855](https://github.com/buildkite/terraform-provider-buildkite/pull/855)] @james2791
+- Organization rule resource update functionality [[PR #855](https://github.com/buildkite/terraform-provider-buildkite/pull/855)] @james2791
 
 ## [v1.15.6](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.15.5...v1.15.6)
 
