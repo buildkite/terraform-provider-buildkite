@@ -55,7 +55,6 @@ func TestAccBuildkiteClusterDefaultQueueResource(t *testing.T) {
 
 	t.Run("change default queue", func(t *testing.T) {
 		clusterName := acctest.RandString(5)
-
 		resource.ParallelTest(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },
 			ProtoV6ProviderFactories: protoV6ProviderFactories(),
@@ -90,18 +89,22 @@ func TestAccBuildkiteClusterDefaultQueueResource(t *testing.T) {
 							queue_id = buildkite_cluster_queue.cluster.id
 						}
 					`, clusterName),
-					Check: func(s *terraform.State) error {
-						cluster := s.RootModule().Resources["buildkite_cluster.cluster"].Primary
-						queue := s.RootModule().Resources["buildkite_cluster_queue.cluster"].Primary
-						// load the cluster from the api and ensure the correct queue is default
-						r, err := getNode(context.Background(), genqlientGraphql, cluster.ID)
-						if clusterNode, ok := r.GetNode().(*getNodeNodeCluster); ok {
-							if clusterNode.DefaultQueue.Id != queue.ID {
-								return errors.New("Default queue does not match")
+					Check: resource.ComposeAggregateTestCheckFunc(
+						func(s *terraform.State) error {
+							cluster := s.RootModule().Resources["buildkite_cluster.cluster"].Primary
+							queue := s.RootModule().Resources["buildkite_cluster_queue.cluster"].Primary
+							// load the cluster from the api and ensure the correct queue is default
+							r, err := getNode(context.Background(), genqlientGraphql, cluster.ID)
+							if clusterNode, ok := r.GetNode().(*getNodeNodeCluster); ok {
+								if clusterNode.DefaultQueue.Id != queue.ID {
+									return errors.New("Default queue does not match")
+								}
 							}
-						}
-						return err
-					},
+							return err
+						},
+						resource.TestCheckResourceAttr("buildkite_cluster_default_queue.cluster", "name", clusterName),
+						resource.TestCheckResourceAttr("buildkite_cluster_default_queue.cluster", "key", "new"),
+					),
 				},
 			},
 		})
