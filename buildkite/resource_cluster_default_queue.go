@@ -163,8 +163,15 @@ func (c *clusterDefaultQueueResource) Read(ctx context.Context, req resource.Rea
 		}
 		state.ClusterId = types.StringValue(clusterNode.Id)
 		state.UUID = types.StringValue(clusterNode.Uuid)
-		state.QueueId = types.StringValue(clusterNode.DefaultQueue.Id)
-		state.Key = types.StringValue(clusterNode.DefaultQueue.Key)
+
+		if clusterNode.DefaultQueue != nil && state.QueueId == types.StringValue(clusterNode.DefaultQueue.Id) {
+			state.QueueId = types.StringValue(clusterNode.DefaultQueue.Id)
+			state.Key = types.StringValue(clusterNode.DefaultQueue.Key)
+		} else {
+			state.QueueId = types.StringNull()
+			state.Key = types.StringNull()
+		}
+
 		resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 	} else {
 		resp.Diagnostics.AddWarning(
@@ -260,6 +267,8 @@ func (c *clusterDefaultQueueResource) Update(ctx context.Context, req resource.U
 
 	plan.ID = types.StringValue(r.ClusterUpdate.Cluster.Id)
 	plan.UUID = types.StringValue(r.ClusterUpdate.Cluster.Uuid)
+	plan.QueueId = types.StringValue(r.ClusterUpdate.Cluster.DefaultQueue.Id)
+	plan.Key = types.StringValue(r.ClusterUpdate.Cluster.DefaultQueue.Key)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 }
