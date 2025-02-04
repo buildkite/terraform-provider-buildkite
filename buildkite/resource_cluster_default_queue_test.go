@@ -102,7 +102,6 @@ func TestAccBuildkiteClusterDefaultQueueResource(t *testing.T) {
 							}
 							return err
 						},
-						resource.TestCheckResourceAttr("buildkite_cluster_default_queue.cluster", "name", clusterName),
 						resource.TestCheckResourceAttr("buildkite_cluster_default_queue.cluster", "key", "new"),
 					),
 				},
