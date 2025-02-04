@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## [v1.16.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.15.6...v1.16.0)
 
 - Organization rule resource update functionality [[PR #855](https://github.com/buildkite/terraform-provider-buildkite/pull/855)] @james2791
 
