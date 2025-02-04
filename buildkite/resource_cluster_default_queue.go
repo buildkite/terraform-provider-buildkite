@@ -164,7 +164,7 @@ func (c *clusterDefaultQueueResource) Read(ctx context.Context, req resource.Rea
 		state.ClusterId = types.StringValue(clusterNode.Id)
 		state.UUID = types.StringValue(clusterNode.Uuid)
 
-		if clusterNode.DefaultQueue != nil && state.QueueId == types.StringValue(clusterNode.DefaultQueue.Id) {
+		if clusterNode.DefaultQueue != nil {
 			state.QueueId = types.StringValue(clusterNode.DefaultQueue.Id)
 			state.Key = types.StringValue(clusterNode.DefaultQueue.Key)
 		} else {
@@ -220,10 +220,7 @@ func (c *clusterDefaultQueueResource) Schema(ctx context.Context, req resource.S
 				MarkdownDescription: "The GraphQL ID of the cluster queue to set as default on the cluster.",
 			},
 			"key": schema.StringAttribute{
-				Computed: true,
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
-				},
+				Computed:            true,
 				MarkdownDescription: "The Key for the cluster queue; its unique identifier",
 			},
 		},
