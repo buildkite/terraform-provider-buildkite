@@ -62,6 +62,27 @@ mutation createOrganizationRule(
     }
 }
 
+mutation updateOrganizationRule(
+    $organizationId: ID!, 
+    $id: ID!
+    # @genqlient(pointer: true)
+    $description: String
+    $value: JSON!,
+) {
+    ruleUpdate(
+        input: {
+            organizationId: $organizationId
+            id: $id
+            description: $description
+            value: $value
+        }
+    ) {
+        rule {
+            ...OrganizationRuleFields
+        }
+    }
+}
+
 mutation deleteOrganizationRule(
     $organizationId: ID!, 
     $id: ID!,

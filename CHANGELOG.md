@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Organization rule resource update functionality [[PR #855](https://github.com/buildkite/terraform-provider-buildkite/pull/855)] @james2791
+
 ## [v1.15.6](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.15.5...v1.15.6)
 
 - SUP-3241 - Revert explicit default `provider_settings`, keep fixes to `slug` logic [[PR #856](https://github.com/buildkite/terraform-provider-buildkite/pull/856)] @petetomasik
