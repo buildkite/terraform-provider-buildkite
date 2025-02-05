@@ -1,5 +1,11 @@
 # Changelog
 
+## [v1.16.1](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.16.0...v1.16.1)
+
+- SUP-3318 - Fix cluster default queue state [[PR #873](https://github.com/buildkite/terraform-provider-buildkite/pull/873)] @petetomasik
+- SUP-3317 - Fix hosted agent attributes state mismatch [[PR #872](https://github.com/buildkite/terraform-provider-buildkite/pull/872)] @petetomasik
+
+
 ## [v1.16.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.15.6...v1.16.0)
 
 - Organization rule resource update functionality [[PR #855](https://github.com/buildkite/terraform-provider-buildkite/pull/855)] @james2791
