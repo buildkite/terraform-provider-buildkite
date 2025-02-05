@@ -304,7 +304,7 @@ func (cq *clusterQueueResource) Create(ctx context.Context, req resource.CreateR
 		}
 		if plan.HostedAgents.Mac != nil {
 			state.HostedAgents.Mac = &macConfigModel{
-				XcodeVersion: types.StringValue(r.ClusterQueueCreate.ClusterQueue.HostedAgents.PlatformSettings.Macos.XcodeVersion),
+				XcodeVersion: plan.HostedAgents.Mac.XcodeVersion,
 			}
 		}
 	}
