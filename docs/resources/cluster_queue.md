@@ -49,7 +49,7 @@ resource "buildkite_cluster_queue" "hosted_agents_macos" {
 }
 
 # create a hosted agent queue with linux agents
-resource "buildkite_cluster_queue" "hosted_agents_macos" {
+resource "buildkite_cluster_queue" "hosted_agents_linux" {
   cluster_id = buildkite_cluster.primary.id
   key        = "hosted-agents-linux"
 
