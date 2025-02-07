@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Fix: Hosted Linux cluster queue resource example / docs alignment [[PR #875](https://github.com/buildkite/terraform-provider-buildkite/pull/875)] @james2791
+
 ## [v1.16.1](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.16.0...v1.16.1)
 
 - SUP-3318 - Fix cluster default queue state [[PR #873](https://github.com/buildkite/terraform-provider-buildkite/pull/873)] @petetomasik
