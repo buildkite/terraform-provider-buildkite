@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
@@ -495,23 +496,47 @@ func testAccCheckClusterQueueExists(resourceName string, clusterQueueResourceMod
 		}
 
 		// Obtain queues of the queue's cluster from its cluster UUID
-		queues, err := getClusterQueues(
-			context.Background(),
-			genqlientGraphql,
-			getenv("BUILDKITE_ORGANIZATION_SLUG"),
-			resourceState.Primary.Attributes["cluster_uuid"],
-		)
-		// If cluster queues were not able to be fetched by Genqlient
+		var matchFound bool
+		ctx := context.Background()
+		err := retry.RetryContext(ctx, DefaultTimeout, func() *retry.RetryError {
+			var cursor *string
+			for {
+				queues, err := getClusterQueues(
+					ctx,
+					genqlientGraphql,
+					getenv("BUILDKITE_ORGANIZATION_SLUG"),
+					resourceState.Primary.Attributes["cluster_uuid"],
+					cursor,
+				)
+
+				// If cluster queues were not able to be fetched by Genqlient
+				if err != nil {
+					if isRetryableError(err) {
+						return retry.RetryableError(err)
+					}
+					return retryContextError(err)
+				}
+
+				// Obtain the ClusterQueueResourceModel from the queues slice
+				for _, edge := range queues.Organization.Cluster.Queues.Edges {
+					if edge.Node.Id == resourceState.Primary.ID {
+						matchFound = true
+						updateClusterQueueResource(edge.Node, clusterQueueResourceModel)
+						break
+					}
+				}
+
+				// End here if we found a match or there are no more pages to search
+				if matchFound || !queues.Organization.Cluster.Queues.PageInfo.HasNextPage {
+					break
+				}
+				cursor = &queues.Organization.Cluster.Queues.PageInfo.EndCursor
+			}
+			return nil
+		})
+
 		if err != nil {
 			return fmt.Errorf("Error fetching Cluster queues from graphql API: %v", err)
-		}
-
-		// Obtain the ClusterQueueResourceModel from the queues slice
-		for _, edge := range queues.Organization.Cluster.Queues.Edges {
-			if edge.Node.Id == resourceState.Primary.ID {
-				updateClusterQueueResource(edge.Node, clusterQueueResourceModel)
-				break
-			}
 		}
 
 		// If clusterQueueResourceModel isnt set from the queues slice
