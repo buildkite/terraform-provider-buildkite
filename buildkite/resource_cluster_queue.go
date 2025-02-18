@@ -367,8 +367,8 @@ func (cq *clusterQueueResource) Read(ctx context.Context, req resource.ReadReque
 		return nil
 	})
 
-	if err != nil {
-		// Cluster queue could not be found in returned queues and should be removed from state
+	// Cluster queue could not be found in returned queues and should be removed from state
+	if !matchFound || err != nil {
 		resp.Diagnostics.AddWarning(
 			"Cluster Queue not found",
 			"Removing Cluster Queue from state...",
