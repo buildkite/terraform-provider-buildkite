@@ -329,43 +329,52 @@ func (cq *clusterQueueResource) Read(ctx context.Context, req resource.ReadReque
 		return
 	}
 
-	var r *getClusterQueuesResponse
+	var matchFound bool
 	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-		var err error
+		var cursor *string
+		for {
+			log.Printf("Getting cluster queues for cluster %s ...", state.ClusterUuid.ValueString())
+			r, err := getClusterQueues(ctx, cq.client.genqlient, cq.client.organization, state.ClusterUuid.ValueString(), cursor)
+			if err != nil {
+				if isRetryableError(err) {
+					return retry.RetryableError(err)
+				}
+				resp.Diagnostics.AddError(
+					"Unable to read Cluster Queues",
+					fmt.Sprintf("Unable to read Cluster Queues: %s", err.Error()),
+				)
+				return retry.NonRetryableError(err)
+			}
 
-		log.Printf("Getting cluster queues for cluster %s ...", state.ClusterUuid.ValueString())
-		r, err = getClusterQueues(ctx,
-			cq.client.genqlient,
-			cq.client.organization, state.ClusterUuid.ValueString(),
-		)
+			// Find the cluster queue from the returned queues to update state
+			for _, edge := range r.Organization.Cluster.Queues.Edges {
+				if edge.Node.Id == state.Id.ValueString() {
+					matchFound = true
+					log.Printf("Found cluster queue with ID %s in cluster %s", edge.Node.Id, state.ClusterUuid.ValueString())
+					// Update ClusterQueueResourceModel with Node values and append
+					updateClusterQueueResource(edge.Node, &state)
+					resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+					break
+				}
+			}
 
-		return retryContextError(err)
-	})
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Unable to read Cluster Queues",
-			fmt.Sprintf("Unable to read Cluster Queues: %s", err.Error()),
-		)
-		return
-	}
-
-	// Find the cluster queue from the returned queues to update state
-	for _, edge := range r.Organization.Cluster.Queues.Edges {
-		if edge.Node.Id == state.Id.ValueString() {
-			log.Printf("Found cluster queue with ID %s in cluster %s", edge.Node.Id, state.ClusterUuid.ValueString())
-			// Update ClusterQueueResourceModel with Node values and append
-			updateClusterQueueResource(edge.Node, &state)
-			resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
-			return
+			// end here if we found a match or there are no more pages to search
+			if matchFound || !r.Organization.Cluster.Queues.PageInfo.HasNextPage {
+				break
+			}
+			cursor = &r.Organization.Cluster.Queues.PageInfo.EndCursor
 		}
-	}
+		return nil
+	})
 
 	// Cluster queue could not be found in returned queues and should be removed from state
-	resp.Diagnostics.AddWarning(
-		"Cluster Queue not found",
-		"Removing Cluster Queue from state...",
-	)
-	resp.State.RemoveResource(ctx)
+	if !matchFound || err != nil {
+		resp.Diagnostics.AddWarning(
+			"Cluster Queue not found",
+			"Removing Cluster Queue from state...",
+		)
+		resp.State.RemoveResource(ctx)
+	}
 }
 
 func (cq *clusterQueueResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
