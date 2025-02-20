@@ -1,14 +1,17 @@
 # Changelog
 
-## Unreleased
+## [v1.16.2](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.16.1...v1.16.2)
 
 - Fix: Hosted Linux cluster queue resource example / docs alignment [[PR #875](https://github.com/buildkite/terraform-provider-buildkite/pull/875)] @james2791
+- SUP-3359: clean go modules [[PR #877](https://github.com/buildkite/terraform-provider-buildkite/pull/877)] @tomowatt
+- Bump docker/library/golang from 1.23.4 to 1.23.5 [[PR #867](https://github.com/buildkite/terraform-provider-buildkite/pull/867)] @dependabot
+- Bump hashicorp package versions together [[PR #879](https://github.com/buildkite/terraform-provider-buildkite/pull/879)] @petetomasik
+- SUP-3383: API response pagination for cluster queues [[PR #880](https://github.com/buildkite/terraform-provider-buildkite/pull/880)] @petetomasik
 
 ## [v1.16.1](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.16.0...v1.16.1)
 
 - SUP-3318 - Fix cluster default queue state [[PR #873](https://github.com/buildkite/terraform-provider-buildkite/pull/873)] @petetomasik
 - SUP-3317 - Fix hosted agent attributes state mismatch [[PR #872](https://github.com/buildkite/terraform-provider-buildkite/pull/872)] @petetomasik
-
 
 ## [v1.16.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.15.6...v1.16.0)
 
