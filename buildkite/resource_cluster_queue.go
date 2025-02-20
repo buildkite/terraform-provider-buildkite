@@ -637,7 +637,7 @@ func updateClusterQueueResource(clusterQueueNode getClusterQueuesOrganizationClu
 	cq.ClusterUuid = types.StringValue(clusterQueueNode.Cluster.Uuid)
 	cq.DispatchPaused = types.BoolValue(clusterQueueNode.DispatchPaused)
 
-	if clusterQueueNode.Hosted == true {
+	if clusterQueueNode.Hosted {
 		cq.HostedAgents = &hostedAgentResourceModel{
 			InstanceShape: types.StringValue(string(clusterQueueNode.HostedAgents.InstanceShape.Name)),
 		}
