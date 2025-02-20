@@ -296,7 +296,6 @@ func (cq *clusterQueueResource) Create(ctx context.Context, req resource.CreateR
 		state.HostedAgents = &hostedAgentResourceModel{
 			InstanceShape: types.StringValue(string(r.ClusterQueueCreate.ClusterQueue.HostedAgents.InstanceShape.Name)),
 		}
-
 		if plan.HostedAgents.Linux != nil {
 			state.HostedAgents.Linux = &linuxConfigModel{
 				ImageAgentRef: types.StringValue(r.ClusterQueueCreate.ClusterQueue.HostedAgents.PlatformSettings.Linux.AgentImageRef),
@@ -637,6 +636,22 @@ func updateClusterQueueResource(clusterQueueNode getClusterQueuesOrganizationClu
 	cq.ClusterId = types.StringValue(clusterQueueNode.Cluster.Id)
 	cq.ClusterUuid = types.StringValue(clusterQueueNode.Cluster.Uuid)
 	cq.DispatchPaused = types.BoolValue(clusterQueueNode.DispatchPaused)
+
+	if clusterQueueNode.Hosted == true {
+		cq.HostedAgents = &hostedAgentResourceModel{
+			InstanceShape: types.StringValue(string(clusterQueueNode.HostedAgents.InstanceShape.Name)),
+		}
+		if len(clusterQueueNode.HostedAgents.PlatformSettings.Linux.AgentImageRef) > 0 {
+			cq.HostedAgents.Linux = &linuxConfigModel{
+				ImageAgentRef: types.StringValue(clusterQueueNode.HostedAgents.PlatformSettings.Linux.AgentImageRef),
+			}
+		}
+		if len(clusterQueueNode.HostedAgents.PlatformSettings.Macos.XcodeVersion) > 0 {
+			cq.HostedAgents.Mac = &macConfigModel{
+				XcodeVersion: types.StringValue(clusterQueueNode.HostedAgents.PlatformSettings.Macos.XcodeVersion),
+			}
+		}
+	}
 }
 
 func (cq *clusterQueueResource) pauseDispatch(ctx context.Context, timeout time.Duration, state clusterQueueResourceModel, diag *diag.Diagnostics) error {
