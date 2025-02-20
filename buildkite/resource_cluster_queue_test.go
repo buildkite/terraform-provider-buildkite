@@ -83,9 +83,11 @@ func TestAccBuildkiteClusterQueueResource(t *testing.T) {
         description = "Acceptance test %s"
 
         hosted_agents = {
-            mac = {
-                xcode_version = "14.3.1"
-            }
+            # re-enable when macos hosted cluster queue creation is fixed
+            # https://github.com/buildkite/terraform-provider-buildkite/issues/869
+            # mac = {
+            #     xcode_version = "14.3.1"
+            # }
             instance_shape = "MACOS_M2_4X7"
         }
     }
