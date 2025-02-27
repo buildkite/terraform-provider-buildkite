@@ -91,6 +91,9 @@ func (organizationRuleResource) Schema(ctx context.Context, req resource.SchemaR
 			"type": resource_schema.StringAttribute{
 				Required:            true,
 				MarkdownDescription: "The type of organization rule. ",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"value": resource_schema.StringAttribute{
 				Required:            true,
