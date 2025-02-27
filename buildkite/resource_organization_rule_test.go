@@ -281,6 +281,56 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 		`, fields[0], fields[1], fields[0], fields[1], fields[2], fields[2], fields[2], fields[3])
 	}
 
+	configRequiredRuleTypeChange := func(fields ...string) string {
+		return fmt.Sprintf(`
+		provider "buildkite" {
+			timeouts = {
+				create = "10s"
+				read = "10s"
+				update = "10s"
+				delete = "10s"
+			}
+		}
+
+		resource "buildkite_cluster" "cluster_source" {
+			name        = "Cluster %s"
+			description = "A test cluster containing a source pipeline."
+		}
+
+		resource "buildkite_cluster" "cluster_target" {
+			name        = "Cluster %s"
+			description = "A test cluster containing a target pipeline for triggering builds."
+		}
+
+		resource "buildkite_pipeline" "pipeline_source" {
+			depends_on 			 = [buildkite_cluster.cluster_source]
+			name                 = "Pipeline %s"
+			repository           = "https://github.com/buildkite/terraform-provider-buildkite.git"
+			cluster_id			 = buildkite_cluster.cluster_source.id
+		}
+
+		resource "buildkite_pipeline" "pipeline_target" {
+			depends_on 			 = [buildkite_cluster.cluster_target]
+			name                 = "Pipeline %s"
+			repository           = "https://github.com/buildkite/terraform-provider-buildkite.git"
+			cluster_id           = buildkite_cluster.cluster_target.id
+		}	
+
+		resource "buildkite_organization_rule" "type_replace" {
+			depends_on = [
+				buildkite_pipeline.pipeline_source,
+				buildkite_pipeline.pipeline_target
+			]
+			type = "pipeline.%s.pipeline"
+			value = jsonencode({
+				source_pipeline = buildkite_pipeline.pipeline_source.uuid
+				target_pipeline = buildkite_pipeline.pipeline_target.uuid
+			})
+		}
+
+		`, fields[0], fields[1], fields[0], fields[1], fields[2])
+	}
+
 	configRequiredNewSource := func(fields ...string) string {
 		return fmt.Sprintf(`
 		provider "buildkite" {
@@ -1715,6 +1765,64 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 			})
 		})
 	}
+
+	t.Run("replaces an orgnanization rule when updating its type", func(t *testing.T) {
+		randNameOne := acctest.RandString(12)
+		randNameTwo := acctest.RandString(12)
+		var orr organizationRuleResourceModel
+
+		check := resource.ComposeAggregateTestCheckFunc(
+			// Confirm the organization rule exists
+			testAccCheckOrganizationRuleExists(&orr, "buildkite_organization_rule.type_replace"),
+			// Confirm the organization rule has the correct values in Buildkite's system
+			testAccCheckOrganizationRuleRemoteValues(&orr, "PIPELINE", "PIPELINE", "TRIGGER_BUILD", "ALLOW"),
+			// Check the organization rule resource's attributes are set in state
+			resource.TestCheckResourceAttrSet("buildkite_organization_rule.type_replace", "id"),
+			resource.TestCheckResourceAttrSet("buildkite_organization_rule.type_replace", "uuid"),
+			resource.TestCheckResourceAttrSet("buildkite_organization_rule.type_replace", "type"),
+			resource.TestCheckResourceAttrSet("buildkite_organization_rule.type_replace", "source_type"),
+			resource.TestCheckResourceAttrSet("buildkite_organization_rule.type_replace", "source_uuid"),
+			resource.TestCheckResourceAttrSet("buildkite_organization_rule.type_replace", "target_type"),
+			resource.TestCheckResourceAttrSet("buildkite_organization_rule.type_replace", "target_uuid"),
+			resource.TestCheckResourceAttrSet("buildkite_organization_rule.type_replace", "value"),
+			// Assert organization rule resource's state values
+			resource.TestCheckResourceAttr("buildkite_organization_rule.type_replace", "type", "pipeline.trigger_build.pipeline"),
+		)
+
+		checkUpdated := resource.ComposeAggregateTestCheckFunc(
+			// Confirm the organization rule exists
+			testAccCheckOrganizationRuleExists(&orr, "buildkite_organization_rule.type_replace"),
+			// Confirm the organization rule has the correct values in Buildkite's system
+			testAccCheckOrganizationRuleRemoteValues(&orr, "PIPELINE", "PIPELINE", "ARTIFACTS_READ", "ALLOW"),
+			// Check the organization rule resource's attributes are set in state
+			resource.TestCheckResourceAttrSet("buildkite_organization_rule.type_replace", "id"),
+			resource.TestCheckResourceAttrSet("buildkite_organization_rule.type_replace", "uuid"),
+			resource.TestCheckResourceAttrSet("buildkite_organization_rule.type_replace", "type"),
+			resource.TestCheckResourceAttrSet("buildkite_organization_rule.type_replace", "source_type"),
+			resource.TestCheckResourceAttrSet("buildkite_organization_rule.type_replace", "source_uuid"),
+			resource.TestCheckResourceAttrSet("buildkite_organization_rule.type_replace", "target_type"),
+			resource.TestCheckResourceAttrSet("buildkite_organization_rule.type_replace", "target_uuid"),
+			resource.TestCheckResourceAttrSet("buildkite_organization_rule.type_replace", "value"),
+			// Assert organization rule resource's state values
+			resource.TestCheckResourceAttr("buildkite_organization_rule.type_replace", "type", "pipeline.artifacts_read.pipeline"),
+		)
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			CheckDestroy:             testAccCheckOrganizationRuleDestroy,
+			Steps: []resource.TestStep{
+				{
+					Config: configRequiredRuleTypeChange(randNameOne, randNameTwo, "trigger_build"),
+					Check:  check,
+				},
+				{
+					Config: configRequiredRuleTypeChange(randNameOne, randNameTwo, "artifacts_read"),
+					Check:  checkUpdated,
+				},
+			},
+		})
+	})
 
 	t.Run("errors when an organization rule is created with an unknown action", func(t *testing.T) {
 		randNameOne := acctest.RandString(12)
