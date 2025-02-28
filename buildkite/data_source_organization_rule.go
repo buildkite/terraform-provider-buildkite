@@ -141,7 +141,7 @@ func (or *organizationRuleDatasource) Read(ctx context.Context, req datasource.R
 			)
 		}
 		updateOrganizatonRuleDatasource(&state, apiResponse.Rule, *value)
-	// Otherwise if a ID is specified
+		// Otherwise if a ID is specified
 	} else if !state.ID.IsNull() {
 		var apiResponse *getNodeResponse
 		err := retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
@@ -234,4 +234,3 @@ func updateOrganizatonRuleDatasourceStateFromNode(or *organizationRuleDatasource
 	or.Effect = types.StringValue(string(orn.Effect))
 	or.Action = types.StringValue(string(orn.Action))
 }
-

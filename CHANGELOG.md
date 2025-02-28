@@ -3,6 +3,7 @@
 ## Unreleased
 
 - Rule replacement upon changing its type [[PR #885](https://github.com/buildkite/terraform-provider-buildkite/pull/885)] @james2791
+- Simplified organization rule datasource reads via UUID [[PR #886](https://github.com/buildkite/terraform-provider-buildkite/pull/886)] @james2791
 
 ## [v1.16.2](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.16.1...v1.16.2)
 
