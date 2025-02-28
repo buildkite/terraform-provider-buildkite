@@ -21,6 +21,14 @@ fragment OrganizationRuleFields on Rule {
     }
 }
 
+query getOrganizationRule(
+    $uuid: ID!
+) {
+    rule(uuid: $uuid) {
+        ...OrganizationRuleFields
+    }
+}
+
 query getOrganizationRules(
     $orgSlug: ID!,
     # @genqlient(pointer: true)
