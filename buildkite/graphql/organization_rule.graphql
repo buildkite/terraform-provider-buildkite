@@ -21,23 +21,11 @@ fragment OrganizationRuleFields on Rule {
     }
 }
 
-query getOrganizationRules(
-    $orgSlug: ID!,
-    # @genqlient(pointer: true)
-    $cursor: String
+query getOrganizationRule(
+    $uuid: ID!
 ) {
-    organization(slug: $orgSlug) {
-        rules(first: 50, after: $cursor) {
-            pageInfo {
-                endCursor
-                hasNextPage
-            }
-            edges {
-                node {
-                    ...OrganizationRuleFields
-                }
-            }
-        }
+    rule(uuid: $uuid) {
+        ...OrganizationRuleFields
     }
 }
 
