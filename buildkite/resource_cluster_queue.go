@@ -38,6 +38,24 @@ const (
 	LinuxARM64InstanceXLarge string = "LINUX_ARM64_16X64"
 )
 
+var MacInstanceShapes = []string{
+	MacInstanceSmall,
+	MacInstanceMedium,
+	MacInstanceLarge,
+	MacInstanceXLarge,
+}
+
+var LinuxInstanceShapes = []string{
+	LinuxAMD64InstanceSmall,
+	LinuxAMD64InstanceMedium,
+	LinuxAMD64InstanceLarge,
+	LinuxAMD64InstanceXLarge,
+	LinuxARM64InstanceSmall,
+	LinuxARM64InstanceMedium,
+	LinuxARM64InstanceLarge,
+	LinuxARM64InstanceXLarge,
+}
+
 type clusterQueueResourceModel struct {
 	Id             types.String              `tfsdk:"id"`
 	Uuid           types.String              `tfsdk:"uuid"`
@@ -186,18 +204,7 @@ func (clusterQueueResource) Schema(ctx context.Context, req resource.SchemaReque
 						Required: true,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
-								MacInstanceSmall,
-								MacInstanceMedium,
-								MacInstanceLarge,
-								MacInstanceXLarge,
-								LinuxAMD64InstanceSmall,
-								LinuxAMD64InstanceMedium,
-								LinuxAMD64InstanceLarge,
-								LinuxAMD64InstanceXLarge,
-								LinuxARM64InstanceSmall,
-								LinuxARM64InstanceMedium,
-								LinuxARM64InstanceLarge,
-								LinuxARM64InstanceXLarge,
+								append(MacInstanceShapes, LinuxInstanceShapes...)...,
 							),
 						},
 						PlanModifiers: []planmodifier.String{
@@ -586,11 +593,8 @@ func (v hostedAgentValidator) ValidateObject(ctx context.Context, req validator.
 
 	// Validate Mac shapes
 	if hasMac {
-		validShapes := []string{
-			MacInstanceSmall, MacInstanceMedium, MacInstanceLarge,
-		}
 		isValid := false
-		for _, validShape := range validShapes {
+		for _, validShape := range MacInstanceShapes {
 			if shape == validShape {
 				isValid = true
 				break
@@ -600,19 +604,15 @@ func (v hostedAgentValidator) ValidateObject(ctx context.Context, req validator.
 			resp.Diagnostics.AddAttributeError(
 				path.Root("instance_shape"),
 				"Invalid instance shape for Mac platform",
-				fmt.Sprintf("Instance shape %s is not valid for Mac platform. Valid shapes are: %v", shape, validShapes),
+				fmt.Sprintf("Instance shape %s is not valid for Mac platform. Valid shapes are: %v", shape, MacInstanceShapes),
 			)
 		}
 	}
 
 	// Validate Linux shapes
 	if hasLinux {
-		validShapes := []string{
-			LinuxAMD64InstanceSmall, LinuxAMD64InstanceMedium, LinuxAMD64InstanceLarge, LinuxAMD64InstanceXLarge,
-			LinuxARM64InstanceSmall, LinuxARM64InstanceMedium, LinuxARM64InstanceLarge, LinuxARM64InstanceXLarge,
-		}
 		isValid := false
-		for _, validShape := range validShapes {
+		for _, validShape := range LinuxInstanceShapes {
 			if shape == validShape {
 				isValid = true
 				break
@@ -622,7 +622,7 @@ func (v hostedAgentValidator) ValidateObject(ctx context.Context, req validator.
 			resp.Diagnostics.AddAttributeError(
 				path.Root("instance_shape"),
 				"Invalid instance shape for Linux platform",
-				fmt.Sprintf("Instance shape %s is not valid for Linux platform. Valid shapes are: %v", shape, validShapes),
+				fmt.Sprintf("Instance shape %s is not valid for Linux platform. Valid shapes are: %v", shape, LinuxInstanceShapes),
 			)
 		}
 	}
