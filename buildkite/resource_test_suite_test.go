@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
@@ -255,6 +256,9 @@ func testTestSuiteDestroy(s *terraform.State) error {
 		suite, err := getTestSuite(context.Background(), genqlientGraphql, rs.Primary.Attributes["id"], 1)
 
 		if err != nil {
+			if strings.Contains(err.Error(), "not found") || strings.Contains(err.Error(), "does not exist") {
+				continue // Consider this a success - resource doesn't exist
+			}
 			return fmt.Errorf("Error fetching test suite from graphql API: %v", err)
 		}
 

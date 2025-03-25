@@ -13,6 +13,24 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
+func standardPipelineCheckDestroy(pipelineName string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		resp, err := getPipeline(context.Background(), genqlientGraphql, fmt.Sprintf("%s/%s", getenv("BUILDKITE_ORGANIZATION_SLUG"), pipelineName))
+		if err != nil {
+			if strings.Contains(err.Error(), "not found") || strings.Contains(err.Error(), "No such pipeline") {
+				return nil
+			}
+			return fmt.Errorf("Error checking if pipeline exists: %v", err)
+		}
+
+		if resp.Pipeline.Name == pipelineName {
+			return fmt.Errorf("Pipeline still exists: %s", pipelineName)
+		}
+
+		return nil
+	}
+}
+
 func TestAccBuildkitePipelineResource(t *testing.T) {
 	compareRemoteValue := func(prop func() any, value any) resource.TestCheckFunc {
 		return func(s *terraform.State) error {
@@ -705,13 +723,7 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 		resource.ParallelTest(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },
 			ProtoV6ProviderFactories: protoV6ProviderFactories(),
-			CheckDestroy: func(s *terraform.State) error {
-				resp, err := getPipeline(context.Background(), genqlientGraphql, fmt.Sprintf("%s/%s", getenv("BUILDKITE_ORGANIZATION_SLUG"), pipelineName))
-				if resp.Pipeline.Name == pipelineName {
-					return fmt.Errorf("Pipeline still exists: %s", pipelineName)
-				}
-				return err
-			},
+			CheckDestroy:             standardPipelineCheckDestroy(pipelineName),
 			Steps: []resource.TestStep{
 				{
 					Config: fmt.Sprintf(`
@@ -732,16 +744,7 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 		resource.ParallelTest(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },
 			ProtoV6ProviderFactories: protoV6ProviderFactories(),
-			CheckDestroy: func(s *terraform.State) error {
-				resp, err := getPipeline(context.Background(), genqlientGraphql, fmt.Sprintf("%s/%s", getenv("BUILDKITE_ORGANIZATION_SLUG"), pipelineName))
-				if err != nil {
-					return err
-				}
-				if resp.Pipeline.Name == pipelineName {
-					return fmt.Errorf("Pipeline still exists: %s", pipelineName)
-				}
-				return err
-			},
+			CheckDestroy:             standardPipelineCheckDestroy(pipelineName),
 			Steps: []resource.TestStep{
 				{
 					Config: fmt.Sprintf(`

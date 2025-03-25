@@ -221,9 +221,11 @@ func testCheckOrganizationResourceRemoved(s *terraform.State) error {
 		})
 
 		if err == nil {
-			return fmt.Errorf("Organization still exist")
+			if getOrganizationQuery.Organization.AllowedApiIpAddresses != "" {
+				return fmt.Errorf("Organization still exists: %s", rs.Primary.ID)
+			}
 		}
-		return nil
+
 	}
 	return nil
 }

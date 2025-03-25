@@ -3,6 +3,7 @@ package buildkite
 import (
 	"context"
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
@@ -232,7 +233,10 @@ func testAccCheckTeamResourceDestroy(s *terraform.State) error {
 		r, err := getNode(context.Background(), genqlientGraphql, rs.Primary.ID)
 
 		if err != nil {
-			return err
+			if strings.Contains(err.Error(), "not found") {
+				continue // Consider this a success - resource doesn't exist
+			}
+			return fmt.Errorf("Error checking if team exists: %v", err)
 		}
 
 		if teamNode, ok := r.GetNode().(*getNodeNodeTeam); ok {
