@@ -31,7 +31,6 @@ func main() {
 		providerserver.NewProtocol6(buildkite.New(version)),
 		serveOpts...,
 	)
-
 	if err != nil {
 		log.Fatal(err)
 	}
