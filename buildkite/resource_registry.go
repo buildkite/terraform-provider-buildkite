@@ -123,13 +123,13 @@ func (p *registryResource) Create(ctx context.Context, req resource.CreateReques
 
 	diags := req.Plan.Get(ctx, &state)
 
-	timeout, diags := p.client.timeouts.Create(ctx, DefaultTimeout)
-
 	resp.Diagnostics.Append(diags...)
 
 	if resp.Diagnostics.HasError() {
 		return
 	}
+
+	timeout, diags := p.client.timeouts.Create(ctx, DefaultTimeout)
 
 	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		url := fmt.Sprintf("%s/v2/packages/organizations/%s/registries", p.client.restURL, p.client.organization)
