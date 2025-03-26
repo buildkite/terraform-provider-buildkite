@@ -246,7 +246,6 @@ func (p *registryResource) Create(ctx context.Context, req resource.CreateReques
 
 		return nil
 	})
-
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error creating registry",
@@ -543,7 +542,7 @@ func (p *registryResource) Update(ctx context.Context, req resource.UpdateReques
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	
+
 	// Check if ecosystem is being changed and add an error
 	if !plan.Ecosystem.Equal(state.Ecosystem) {
 		resp.Diagnostics.AddError(
@@ -593,7 +592,7 @@ func (p *registryResource) Update(ctx context.Context, req resource.UpdateReques
 			}
 
 			var registries []struct {
-				GraphqlID   string   `json:"graphql_id"`
+				GraphqlID string `json:"graphql_id"`
 				ID        string `json:"id"`
 				Slug      string `json:"slug"`
 				Name      string `json:"name"`
@@ -616,7 +615,6 @@ func (p *registryResource) Update(ctx context.Context, req resource.UpdateReques
 			// If we didn't find the registry, it might not exist
 			return retry.NonRetryableError(fmt.Errorf("registry %s not found", state.Name.ValueString()))
 		})
-
 		if err != nil {
 			resp.Diagnostics.AddError(
 				"Error retrieving registry UUID",
@@ -750,7 +748,7 @@ func (p *registryResource) Update(ctx context.Context, req resource.UpdateReques
 		}
 
 		var result struct {
-			GraphQLID      string `json:"graphql_id"`
+			GraphQLID   string   `json:"graphql_id"`
 			ID          string   `json:"id"`
 			Name        string   `json:"name"`
 			Slug        string   `json:"slug"`
@@ -802,7 +800,6 @@ func (p *registryResource) Update(ctx context.Context, req resource.UpdateReques
 
 		return nil
 	})
-
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error updating registry",
@@ -886,7 +883,7 @@ func (p *registryResource) Delete(ctx context.Context, req resource.DeleteReques
 			}
 
 			var registries []struct {
-				GraphQLID      string `json:"graphql_id"`
+				GraphQLID string `json:"graphql_id"`
 				ID        string `json:"id"`
 				Slug      string `json:"slug"`
 				Name      string `json:"name"`
@@ -900,7 +897,7 @@ func (p *registryResource) Delete(ctx context.Context, req resource.DeleteReques
 			// Find registry by name
 			for _, registry := range registries {
 				if registry.Name == state.Name.ValueString() {
-					state.Slug	= types.StringValue(registry.Slug)
+					state.Slug = types.StringValue(registry.Slug)
 					return nil
 				}
 			}
@@ -952,7 +949,6 @@ func (p *registryResource) Delete(ctx context.Context, req resource.DeleteReques
 
 		return nil
 	})
-
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error deleting registry",

@@ -55,7 +55,6 @@ func (client Client) GetOrganizationID() (*string, error) {
 
 // NewClient creates a client to use for interacting with the Buildkite API
 func NewClient(config *clientConfig) *Client {
-
 	// Setup a HTTP Client that can be used by all REST and graphql API calls,
 	// with suitable headers for authentication and user agent identification
 	rt := http.DefaultTransport

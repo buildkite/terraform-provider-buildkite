@@ -660,7 +660,6 @@ func (cq *clusterQueueResource) pauseDispatch(ctx context.Context, timeout time.
 		_, err := pauseDispatchClusterQueue(ctx, cq.client.genqlient, state.Id.ValueString())
 		return retryContextError(err)
 	})
-
 	if err != nil {
 		diag.AddError(
 			"Unable to pause cluster queue dispatch",
@@ -677,7 +676,6 @@ func (cq *clusterQueueResource) resumeDispatch(ctx context.Context, timeout time
 		_, err := resumeDispatchClusterQueue(ctx, cq.client.genqlient, state.Id.ValueString())
 		return retryContextError(err)
 	})
-
 	if err != nil {
 		diag.AddError(
 			"Unable to resume cluster queue dispatch",

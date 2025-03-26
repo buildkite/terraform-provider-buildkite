@@ -157,7 +157,6 @@ func testAccCheckAgentTokenExists(resourceName string, resourceToken *AgentToken
 
 func testAccCheckAgentTokenRemoteValues(resourceToken *AgentTokenNode, description string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
-
 		if string(resourceToken.Description) != description {
 			return fmt.Errorf("remote agent token description (%s) doesn't match expected value (%s)", resourceToken.Description, description)
 		}
@@ -190,7 +189,6 @@ func testAccCheckAgentTokenResourceDestroy(s *terraform.State) error {
 			} else {
 				return err
 			}
-
 		}
 		if string(query.Node.AgentToken.ID) == "" {
 			return fmt.Errorf("Token not found, expected to find it in a revoked state")

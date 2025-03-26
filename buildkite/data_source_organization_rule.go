@@ -125,7 +125,6 @@ func (or *organizationRuleDatasource) Read(ctx context.Context, req datasource.R
 			apiResponse, err = getOrganizationRule(ctx, or.client.genqlient, state.UUID.ValueString())
 			return retryContextError(err)
 		})
-
 		if err != nil {
 			resp.Diagnostics.AddError("Unable to find organization rule", err.Error())
 			return
@@ -133,7 +132,6 @@ func (or *organizationRuleDatasource) Read(ctx context.Context, req datasource.R
 
 		// Update data source state from the found rule
 		value, err := obtainValueJSON(apiResponse.Rule.Document)
-
 		if err != nil {
 			resp.Diagnostics.AddError(
 				"Unable to read organization rule",
@@ -155,7 +153,6 @@ func (or *organizationRuleDatasource) Read(ctx context.Context, req datasource.R
 
 			return retryContextError(err)
 		})
-
 		if err != nil {
 			resp.Diagnostics.AddError(
 				"Unable to read organization rule",

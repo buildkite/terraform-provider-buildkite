@@ -128,7 +128,6 @@ func TestAccBuildkitePipelineTeam(t *testing.T) {
 			},
 		})
 	})
-
 }
 
 func testAccPipelineTeamConfigBasic(teamName string, accessLevel string) string {
@@ -170,7 +169,6 @@ func testAccCheckPipelineTeamExists(resourceName string, tp *pipelineTeamResourc
 		}
 
 		apiResponse, err := getNode(context.Background(), genqlientGraphql, resourceState.Primary.ID)
-
 		if err != nil {
 			return fmt.Errorf("Error fetching team pipeline from graphql API: %v", err)
 		}
@@ -194,7 +192,6 @@ func testCheckPipelineTeamResourceRemoved(s *terraform.State) error {
 		}
 
 		apiResponse, err := getNode(context.Background(), genqlientGraphql, rs.Primary.ID)
-
 		if err != nil {
 			return fmt.Errorf("Error fetching team pipeline from graphql API: %v", err)
 		}
@@ -210,7 +207,6 @@ func testCheckPipelineTeamResourceRemoved(s *terraform.State) error {
 
 func testAccCheckPipelineTeamRemoteValues(accessLevel string, tp *pipelineTeamResourceModel) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
-
 		if tp.AccessLevel.ValueString() != accessLevel {
 			return fmt.Errorf("remote team pipeline access level (%s) doesn't match expected value (%s)", tp.AccessLevel.ValueString(), accessLevel)
 		}

@@ -99,7 +99,6 @@ func (c *pipelineDatasource) Read(ctx context.Context, req datasource.ReadReques
 
 	log.Printf("Obtaining pipeline with slug %s ...", orgPipelineSlug)
 	pipeline, err := getPipeline(ctx, c.client.genqlient, orgPipelineSlug)
-
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to read pipeline",
