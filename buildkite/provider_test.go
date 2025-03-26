@@ -23,22 +23,19 @@ var testResourcePrefix string
 
 const defaultApiEndpoint = "https://api.buildkite.com"
 
-// Helper function to determine if a resource name matches our test patterns
 func isTestResource(name string) bool {
-	return strings.HasPrefix(name, testResourcePrefix) || // Current test run resources
-		strings.HasPrefix(name, "tfacc-") || // Previous test run resources
-		strings.Contains(name, "test") || // Generic test resources
+	return strings.HasPrefix(name, testResourcePrefix) ||
+		strings.HasPrefix(name, "tfacc-") ||
+		strings.Contains(name, "test") ||
 		strings.Contains(name, "Test") ||
 		strings.Contains(name, "-team") ||
 		strings.Contains(name, "cluster")
 }
 
-// TestMain runs before all tests in the package and sets up global fixtures
 func TestMain(m *testing.M) {
-	// Run all tests
+
 	exitCode := m.Run()
 
-	// Execute cleanup after all tests have completed
 	log.Printf("[INFO] Running final cleanup from TestMain")
 	cleanupTestResources(nil)
 
@@ -77,7 +74,6 @@ func testAccPreCheck(t *testing.T) {
 	if v := os.Getenv("BUILDKITE_API_TOKEN"); v == "" {
 		t.Fatal("BUILDKITE_API_TOKEN must be set for acceptance tests")
 	}
-	// Cleanup will happen automatically after all tests in TestMain
 }
 
 type ResourceCounts struct {
@@ -95,7 +91,6 @@ func countTestResources(ctx context.Context) ResourceCounts {
 	var counts ResourceCounts
 	orgSlug := getenv("BUILDKITE_ORGANIZATION_SLUG")
 
-	// Count test suites
 	var getTestSuitesQuery struct {
 		Organization struct {
 			TestSuites struct {
@@ -210,7 +205,6 @@ func cleanupTestResources(t *testing.T) {
 	fmt.Println("CLEANUP VERIFICATION: STARTING")
 	fmt.Printf("Test resources before cleanup: %+v\n", beforeCounts)
 
-	// Clean up in reverse dependency order
 	cleanupTestSuites(ctx, t)
 	cleanupTestPipelines(ctx, t, orgSlug)
 	cleanupTestTeams(ctx, t)
@@ -273,7 +267,6 @@ func testSuiteDelete(ctx context.Context, client genqlient.Client, id string) (*
 		return nil, fmt.Errorf("failed to create delete request: %v", err)
 	}
 
-	// Set up HTTP client with auth headers (same as we do elsewhere)
 	rt := http.DefaultTransport
 	header := make(http.Header)
 	header.Set("Authorization", "Bearer "+os.Getenv("BUILDKITE_API_TOKEN"))
@@ -296,9 +289,8 @@ func testSuiteDelete(ctx context.Context, client genqlient.Client, id string) (*
 	return &struct{}{}, nil
 }
 
-// cleanupTestSuites cleans up test suites created during acceptance tests
 func cleanupTestSuites(ctx context.Context, t *testing.T) {
-	// Query for test suites that match our test naming pattern
+
 	var getTestSuitesQuery struct {
 		Organization struct {
 			TestSuites struct {
@@ -322,7 +314,6 @@ func cleanupTestSuites(ctx context.Context, t *testing.T) {
 		return
 	}
 
-	// Delete any test suites that look like they were created by tests
 	for _, edge := range getTestSuitesQuery.Organization.TestSuites.Edges {
 		testSuite := edge.Node
 		if isTestResource(testSuite.Name) {
@@ -335,7 +326,6 @@ func cleanupTestSuites(ctx context.Context, t *testing.T) {
 	}
 }
 
-// cleanupTestPipelines cleans up test pipelines created during acceptance tests
 func cleanupTestPipelines(ctx context.Context, t *testing.T, orgSlug string) {
 	var getPipelinesQuery struct {
 		Organization struct {
@@ -361,7 +351,6 @@ func cleanupTestPipelines(ctx context.Context, t *testing.T, orgSlug string) {
 		return
 	}
 
-	// Delete any pipelines that look like they were created by tests
 	for _, edge := range getPipelinesQuery.Organization.Pipelines.Edges {
 		pipeline := edge.Node
 		if isTestResource(pipeline.Name) {
@@ -413,7 +402,6 @@ func cleanupTestTeams(ctx context.Context, t *testing.T) {
 	}
 }
 
-// cleanupTestClusters cleans up test clusters created during acceptance tests
 func cleanupTestClusters(ctx context.Context, t *testing.T) {
 	var getClustersQuery struct {
 		Organization struct {
