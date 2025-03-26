@@ -15,6 +15,9 @@ import (
 
 func TestAccBuildkiteTestSuiteResource(t *testing.T) {
 	basicTestSuite := func(name string) string {
+		teamName := testResourcePrefix + "test-suite-team"
+		suiteName := testResourcePrefix + "suite-" + name
+
 		return fmt.Sprintf(`
 		provider "buildkite" {
 			timeouts = {
@@ -26,20 +29,25 @@ func TestAccBuildkiteTestSuiteResource(t *testing.T) {
 		}
 
 		resource "buildkite_team" "team" {
-			name = "test suite team"
+			name = "%s"
 			default_team = false
 			privacy = "VISIBLE"
 			default_member_role = "MAINTAINER"
 		}
 		resource "buildkite_test_suite" "suite" {
-			name = "test suite %s"
+			name = "%s"
 			default_branch = "main"
 			team_owner_id = resource.buildkite_team.team.id
 		}
-		`, name)
+		`, teamName, suiteName)
 	}
 
 	testSuiteWithTwoTeams := func(name string) string {
+		// Use the testResourcePrefix to create unique, identifiable resources
+		ateamName := testResourcePrefix + "a-team"
+		bteamName := testResourcePrefix + "b-team"
+		suiteName := testResourcePrefix + "suite-update-" + name
+
 		return fmt.Sprintf(`
 		provider "buildkite" {
 			timeouts = {
@@ -51,26 +59,31 @@ func TestAccBuildkiteTestSuiteResource(t *testing.T) {
 		}
 
 		resource "buildkite_team" "ateam" {
-			name = "a team"
+			name = "%s"
 			default_team = false
 			privacy = "VISIBLE"
 			default_member_role = "MAINTAINER"
 		}
 		resource "buildkite_team" "bteam" {
-			name = "b team"
+			name = "%s"
 			default_team = false
 			privacy = "VISIBLE"
 			default_member_role = "MAINTAINER"
 		}
 		resource "buildkite_test_suite" "suite" {
-			name = "test suite update %s"
+			name = "%s"
 			default_branch = "main"
 			team_owner_id = resource.buildkite_team.bteam.id
 		}
-		`, name)
+		`, ateamName, bteamName, suiteName)
 	}
 
 	testSuiteTeamAddition := func(name string) string {
+		// Use the testResourcePrefix to create unique, identifiable resources
+		ateamName := testResourcePrefix + "a-team"
+		bteamName := testResourcePrefix + "b-team"
+		suiteName := testResourcePrefix + "suite-update-" + name
+
 		return fmt.Sprintf(`
 		provider "buildkite" {
 			timeouts = {
@@ -82,19 +95,19 @@ func TestAccBuildkiteTestSuiteResource(t *testing.T) {
 		}
 
 		resource "buildkite_team" "ateam" {
-			name = "a team"
+			name = "%s"
 			default_team = false
 			privacy = "VISIBLE"
 			default_member_role = "MAINTAINER"
 		}
 		resource "buildkite_team" "bteam" {
-			name = "b team"
+			name = "%s"
 			default_team = false
 			privacy = "VISIBLE"
 			default_member_role = "MAINTAINER"
 		}
 		resource "buildkite_test_suite" "suite" {
-			name = "test suite update %s"
+			name = "%s"
 			default_branch = "main"
 			team_owner_id = resource.buildkite_team.bteam.id
 		}
@@ -103,21 +116,22 @@ func TestAccBuildkiteTestSuiteResource(t *testing.T) {
 			team_id = buildkite_team.ateam.id
 			access_level = "MANAGE_AND_READ"
 		}
-		`, name)
+		`, ateamName, bteamName, suiteName)
 	}
 
 	t.Run("creates a test suite", func(t *testing.T) {
 		var suite getTestSuiteSuite
 		randName := acctest.RandString(10)
+		suiteName := testResourcePrefix + "suite-" + randName
 
 		check := resource.ComposeAggregateTestCheckFunc(
 			checkTestSuiteExists("buildkite_test_suite.suite", &suite),
-			checkTestSuiteRemoteValue(&suite, "Name", fmt.Sprintf("test suite %s", randName)),
+			checkTestSuiteRemoteValue(&suite, "Name", suiteName),
 			checkTestSuiteRemoteValue(&suite, "DefaultBranch", "main"),
 			resource.TestCheckResourceAttrSet("buildkite_test_suite.suite", "id"),
 			resource.TestCheckResourceAttrSet("buildkite_test_suite.suite", "api_token"),
 			resource.TestCheckResourceAttr("buildkite_test_suite.suite", "default_branch", "main"),
-			resource.TestCheckResourceAttr("buildkite_test_suite.suite", "name", fmt.Sprintf("test suite %s", randName)),
+			resource.TestCheckResourceAttr("buildkite_test_suite.suite", "name", suiteName),
 			resource.TestCheckResourceAttrSet("buildkite_test_suite.suite", "team_owner_id"),
 		)
 
@@ -137,15 +151,16 @@ func TestAccBuildkiteTestSuiteResource(t *testing.T) {
 	t.Run("updates a test suite", func(t *testing.T) {
 		var suite getTestSuiteSuite
 		randName := acctest.RandString(10)
+		suiteName := testResourcePrefix + "suite-" + randName
 
 		check := resource.ComposeAggregateTestCheckFunc(
 			resource.TestCheckResourceAttrSet("buildkite_test_suite.suite", "id"),
 			resource.TestCheckResourceAttrSet("buildkite_test_suite.suite", "api_token"),
 			resource.TestCheckResourceAttr("buildkite_test_suite.suite", "default_branch", "main"),
-			resource.TestCheckResourceAttr("buildkite_test_suite.suite", "name", fmt.Sprintf("test suite %s", randName)),
+			resource.TestCheckResourceAttr("buildkite_test_suite.suite", "name", suiteName),
 			resource.TestCheckResourceAttrSet("buildkite_test_suite.suite", "team_owner_id"),
 			checkTestSuiteExists("buildkite_test_suite.suite", &suite),
-			checkTestSuiteRemoteValue(&suite, "Name", fmt.Sprintf("test suite %s", randName)),
+			checkTestSuiteRemoteValue(&suite, "Name", suiteName),
 			checkTestSuiteRemoteValue(&suite, "DefaultBranch", "main"),
 		)
 
@@ -170,16 +185,17 @@ func TestAccBuildkiteTestSuiteResource(t *testing.T) {
 	t.Run("creates and handles test suite team owner resolution", func(t *testing.T) {
 		var suite getTestSuiteSuite
 		randName := acctest.RandString(10)
+		suiteName := testResourcePrefix + "suite-update-" + randName
 
 		check := resource.ComposeAggregateTestCheckFunc(
 			resource.TestCheckResourceAttrSet("buildkite_test_suite.suite", "id"),
 			resource.TestCheckResourceAttrSet("buildkite_test_suite.suite", "api_token"),
 			resource.TestCheckResourceAttr("buildkite_test_suite.suite", "default_branch", "main"),
-			resource.TestCheckResourceAttr("buildkite_test_suite.suite", "name", fmt.Sprintf("test suite update %s", randName)),
+			resource.TestCheckResourceAttr("buildkite_test_suite.suite", "name", suiteName),
 			resource.TestCheckResourceAttrSet("buildkite_test_suite.suite", "team_owner_id"),
 			resource.TestCheckResourceAttrPair("buildkite_test_suite.suite", "team_owner_id", "buildkite_team.bteam", "id"),
 			checkTestSuiteExists("buildkite_test_suite.suite", &suite),
-			checkTestSuiteRemoteValue(&suite, "Name", fmt.Sprintf("test suite update %s", randName)),
+			checkTestSuiteRemoteValue(&suite, "Name", suiteName),
 			checkTestSuiteRemoteValue(&suite, "DefaultBranch", "main"),
 		)
 

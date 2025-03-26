@@ -15,7 +15,7 @@ func TestAccBuildkiteClusterDefaultQueueResource(t *testing.T) {
 	t.Parallel()
 
 	t.Run("attach a default queue to a cluster", func(t *testing.T) {
-		clusterName := acctest.RandString(5)
+		clusterName := testResourcePrefix + "cluster-" + acctest.RandString(5)
 
 		resource.ParallelTest(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },
@@ -54,7 +54,7 @@ func TestAccBuildkiteClusterDefaultQueueResource(t *testing.T) {
 	})
 
 	t.Run("change default queue", func(t *testing.T) {
-		clusterName := acctest.RandString(5)
+		clusterName := testResourcePrefix + "cluster-" + acctest.RandString(5)
 		resource.ParallelTest(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },
 			ProtoV6ProviderFactories: protoV6ProviderFactories(),
@@ -111,7 +111,7 @@ func TestAccBuildkiteClusterDefaultQueueResource(t *testing.T) {
 
 	t.Run("it ensures the key for the default queue is set", func(t *testing.T) {
 		var cq clusterQueueResourceModel
-		clusterName := acctest.RandString(5)
+		clusterName := testResourcePrefix + "cluster-" + acctest.RandString(5)
 		check := resource.ComposeAggregateTestCheckFunc(
 			testAccCheckClusterQueueExists("buildkite_cluster_queue.cluster", &cq),
 			resource.TestCheckResourceAttr("buildkite_cluster_default_queue.cluster", "key", "new"),

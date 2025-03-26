@@ -88,21 +88,46 @@ func (c *clusterDefaultQueueResource) Delete(ctx context.Context, req resource.D
 		return
 	}
 
-	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-		org, err := c.client.GetOrganizationID()
-		if err == nil {
-			_, err = removeClusterDefaultQueue(ctx, c.client.genqlient, *org, state.ClusterId.ValueString())
-		}
+	var clusterExists bool
+	var checkErr error
 
-		return retryContextError(err)
+	checkErr = retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+		var r *getNodeResponse
+		r, checkErr = getNode(ctx, c.client.genqlient, state.ClusterId.ValueString())
+		if checkErr == nil {
+			if _, ok := r.GetNode().(*getNodeNodeCluster); ok {
+				clusterExists = true
+			}
+		}
+		return retryContextError(checkErr)
 	})
 
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Unable to remove default queue",
-			fmt.Sprintf("Unable to remove default queue: %s", err.Error()),
+	if clusterExists {
+		err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+			org, err := c.client.GetOrganizationID()
+			if err == nil {
+				_, err = removeClusterDefaultQueue(ctx, c.client.genqlient, *org, state.ClusterId.ValueString())
+			}
+			return retryContextError(err)
+		})
+
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Unable to remove default queue",
+				fmt.Sprintf("Unable to remove default queue: %s", err.Error()),
+			)
+			return
+		}
+	} else if checkErr != nil {
+		resp.Diagnostics.AddWarning(
+			"Unable to verify cluster existence",
+			fmt.Sprintf("Cluster may have been deleted already: %s", checkErr.Error()),
 		)
-		return
+	} else {
+		resp.Diagnostics.AddWarning(
+			"Cluster not found",
+			"Cluster may have been deleted already, skipping default queue removal",
+		)
 	}
 }
 
