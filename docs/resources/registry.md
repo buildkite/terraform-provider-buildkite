@@ -14,20 +14,3 @@ resource "buildkite_registry" "maven" {
   team_ids    = [buildkite_team.example.id, buildkite_team.example2.id]
 }
 ```
-
-## Import
-
-Registries can be imported using the `slug` of the registry. For example:
-
-```shell
-terraform import buildkite_registry.maven maven-registry
-```
-
-In Terraform v1.5.0 and later, use an [`import` block](https://developer.hashicorp.com/terraform/language/import) to import instances using the `id`. For example:
-
-```terraform
-import {
-  to = buildkite_registry.maven
-  id = "maven-registry"
-}
-```

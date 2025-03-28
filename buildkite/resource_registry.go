@@ -9,6 +9,7 @@ import (
 	"net/http"
 
 	"github.com/MakeNowJust/heredoc"
+	bkplanmodifier "github.com/buildkite/terraform-provider-buildkite/internal/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -17,7 +18,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
-	bkplanmodifier "github.com/buildkite/terraform-provider-buildkite/internal/planmodifier"
 )
 
 type registryResource struct {
