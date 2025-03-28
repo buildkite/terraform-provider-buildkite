@@ -11,9 +11,11 @@ import (
 	"github.com/shurcooL/graphql"
 )
 
-var graphqlClient *graphql.Client
-var genqlientGraphql genqlient.Client
-var organizationID string
+var (
+	graphqlClient    *graphql.Client
+	genqlientGraphql genqlient.Client
+	organizationID   string
+)
 
 func init() {
 	rt := http.DefaultTransport

@@ -174,7 +174,6 @@ func testAccCheckClusterExists(name string, c *clusterResourceModel) resource.Te
 		}
 
 		r, err := getNode(context.Background(), genqlientGraphql, rs.Primary.ID)
-
 		if err != nil {
 			return err
 		}
@@ -191,7 +190,6 @@ func testAccCheckClusterExists(name string, c *clusterResourceModel) resource.Te
 
 func testAccCheckClusterRemoteValues(c *clusterResourceModel, name string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
-
 		if c.Name.ValueString() != name {
 			return fmt.Errorf("unexpected name: %s, wanted: %s", c.Name, name)
 		}
@@ -206,7 +204,6 @@ func testAccCheckClusterDestroy(s *terraform.State) error {
 		}
 
 		r, err := getNode(context.Background(), genqlientGraphql, rs.Primary.ID)
-
 		if err != nil {
 			return err
 		}

@@ -12,7 +12,6 @@ import (
 )
 
 func TestAccBuildkiteOrganizationResource(t *testing.T) {
-
 	config := func(ip_addresses []string) string {
 		config := `
 
@@ -231,7 +230,6 @@ func testCheckOrganizationResourceRemoved(s *terraform.State) error {
 func testAccCheckOrganizationRemoteValues(ip_addresses []string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		resp, err := getOrganization(context.Background(), genqlientGraphql, getenv("BUILDKITE_ORGANIZATION_SLUG"))
-
 		if err != nil {
 			return err
 		}

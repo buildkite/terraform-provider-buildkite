@@ -198,7 +198,6 @@ func testAccCheckTeamExists(name string, tr *teamResourceModel) resource.TestChe
 		}
 
 		r, err := getNode(context.Background(), genqlientGraphql, rs.Primary.ID)
-
 		if err != nil {
 			return err
 		}
@@ -215,7 +214,6 @@ func testAccCheckTeamExists(name string, tr *teamResourceModel) resource.TestChe
 
 func testAccCheckTeamRemoteValues(name string, tr *teamResourceModel) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
-
 		if tr.Name.ValueString() != name {
 			return fmt.Errorf("remote team name (%s) doesn't match expected value (%s)", tr.Name, name)
 		}
@@ -230,7 +228,6 @@ func testAccCheckTeamResourceDestroy(s *terraform.State) error {
 		}
 
 		r, err := getNode(context.Background(), genqlientGraphql, rs.Primary.ID)
-
 		if err != nil {
 			return err
 		}

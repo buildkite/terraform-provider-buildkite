@@ -56,7 +56,6 @@ func (c *clusterDefaultQueueResource) Create(ctx context.Context, req resource.C
 
 		return retryContextError(err)
 	})
-
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to attach default queue",
@@ -96,7 +95,6 @@ func (c *clusterDefaultQueueResource) Delete(ctx context.Context, req resource.D
 
 		return retryContextError(err)
 	})
-
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to remove default queue",
@@ -144,7 +142,6 @@ func (c *clusterDefaultQueueResource) Read(ctx context.Context, req resource.Rea
 
 		return retryContextError(err)
 	})
-
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to read cluster",
@@ -253,7 +250,6 @@ func (c *clusterDefaultQueueResource) Update(ctx context.Context, req resource.U
 
 		return retryContextError(err)
 	})
-
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to attach default queue",

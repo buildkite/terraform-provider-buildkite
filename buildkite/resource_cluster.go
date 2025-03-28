@@ -127,7 +127,6 @@ func (c *clusterResource) Create(ctx context.Context, req resource.CreateRequest
 
 		return retryContextError(err)
 	})
-
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to create Cluster",
@@ -168,7 +167,6 @@ func (c *clusterResource) Read(ctx context.Context, req resource.ReadRequest, re
 
 		return retryContextError(err)
 	})
-
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to read Cluster",
@@ -230,7 +228,6 @@ func (c *clusterResource) Update(ctx context.Context, req resource.UpdateRequest
 
 		return retryContextError(err)
 	})
-
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to update Cluster",
@@ -269,7 +266,6 @@ func (c *clusterResource) Delete(ctx context.Context, req resource.DeleteRequest
 
 		return retryContextError(err)
 	})
-
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to delete Cluster",

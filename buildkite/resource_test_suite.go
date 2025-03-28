@@ -78,7 +78,6 @@ func (ts *testSuiteResource) Create(ctx context.Context, req resource.CreateRequ
 
 		return retryContextError(err)
 	})
-
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Failed to find owning team",
@@ -151,7 +150,6 @@ func (ts *testSuiteResource) Delete(ctx context.Context, req resource.DeleteRequ
 
 		return retryContextError(err)
 	})
-
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Failed to delete test suite",
@@ -192,7 +190,6 @@ func (ts *testSuiteResource) Read(ctx context.Context, req resource.ReadRequest,
 
 		return retryContextError(err)
 	})
-
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Failed to load test suite from GraphQL",
@@ -345,7 +342,6 @@ func (ts *testSuiteResource) Update(ctx context.Context, req resource.UpdateRequ
 
 			return retryContextError(err)
 		})
-
 		if err != nil {
 			resp.Diagnostics.AddError(
 				"Could not add new owner team",
@@ -365,7 +361,6 @@ func (ts *testSuiteResource) Update(ctx context.Context, req resource.UpdateRequ
 
 					return retryContextError(err)
 				})
-
 				if err != nil {
 					resp.Diagnostics.AddError(
 						"Failed to delete team owner",

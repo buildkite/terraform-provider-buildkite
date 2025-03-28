@@ -22,7 +22,7 @@ type Client struct {
 	http           *http.Client
 	organization   string
 	organizationId *string
-	restUrl        string
+	restURL        string
 	timeouts       timeouts.Value
 }
 
@@ -55,7 +55,6 @@ func (client Client) GetOrganizationID() (*string, error) {
 
 // NewClient creates a client to use for interacting with the Buildkite API
 func NewClient(config *clientConfig) *Client {
-
 	// Setup a HTTP Client that can be used by all REST and graphql API calls,
 	// with suitable headers for authentication and user agent identification
 	rt := http.DefaultTransport
@@ -76,7 +75,7 @@ func NewClient(config *clientConfig) *Client {
 		http:           httpClient,
 		organization:   config.org,
 		organizationId: nil,
-		restUrl:        config.restURL,
+		restURL:        config.restURL,
 		timeouts:       config.timeouts,
 	}
 }
@@ -138,7 +137,7 @@ func (client *Client) makeRequest(ctx context.Context, method string, path strin
 		bodyBytes = bytes.NewBuffer(jsonPayload)
 	}
 
-	url := fmt.Sprintf("%s%s", client.restUrl, path)
+	url := fmt.Sprintf("%s%s", client.restURL, path)
 
 	req, err := http.NewRequestWithContext(ctx, method, url, bodyBytes)
 	if err != nil {

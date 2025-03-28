@@ -111,7 +111,6 @@ func (tst *testSuiteTeamResource) Create(ctx context.Context, req resource.Creat
 
 		return retryContextError(err)
 	})
-
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to create test suite team",
@@ -155,7 +154,6 @@ func (tst *testSuiteTeamResource) Read(ctx context.Context, req resource.ReadReq
 
 		return retryContextError(err)
 	})
-
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to read test suite team",
@@ -220,7 +218,6 @@ func (tst *testSuiteTeamResource) Update(ctx context.Context, req resource.Updat
 
 		return retryContextError(err)
 	})
-
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to update test suite team",
@@ -261,7 +258,6 @@ func (tst *testSuiteTeamResource) Delete(ctx context.Context, req resource.Delet
 
 		return retryContextError(err)
 	})
-
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to delete test suite team",

@@ -159,7 +159,6 @@ func (or *organizationRuleResource) Create(ctx context.Context, req resource.Cre
 
 	// Unmarshall the plan's value into a ruleValue struct instance
 	err := json.Unmarshal([]byte(plan.Value.ValueString()), &plannedValue)
-
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to create organization rule",
@@ -201,7 +200,6 @@ func (or *organizationRuleResource) Create(ctx context.Context, req resource.Cre
 
 		return retryContextError(err)
 	})
-
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to create organization rule",
@@ -212,7 +210,6 @@ func (or *organizationRuleResource) Create(ctx context.Context, req resource.Cre
 
 	// Obtain the source and target UUIDs of the created organization rule based on the API response.
 	sourceUUID, targetUUID, err := obtainCreationUUIDs(r)
-
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to create organization rule",
@@ -223,7 +220,6 @@ func (or *organizationRuleResource) Create(ctx context.Context, req resource.Cre
 
 	// Obtain the sorted value JSON from the API response (document field in RuleCreatePayload's rule)
 	value, err := obtainValueJSON(r.RuleCreate.Rule.Document)
-
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to create organization rule",
@@ -262,7 +258,6 @@ func (or *organizationRuleResource) Read(ctx context.Context, req resource.ReadR
 
 		return retryContextError(err)
 	})
-
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to read organization rule",
@@ -283,7 +278,6 @@ func (or *organizationRuleResource) Read(ctx context.Context, req resource.ReadR
 
 		// Get the returned rule's sorted value JSON object from its Document field
 		value, err := obtainValueJSON(organizationRule.Document)
-
 		if err != nil {
 			resp.Diagnostics.AddError(
 				"Unable to read organization rule",
@@ -341,7 +335,6 @@ func (or *organizationRuleResource) Update(ctx context.Context, req resource.Upd
 
 		return retryContextError(err)
 	})
-
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to update organization rule",
@@ -352,7 +345,6 @@ func (or *organizationRuleResource) Update(ctx context.Context, req resource.Upd
 
 	// Obtain the source and target UUIDs of the created organization rule based on the API response.
 	sourceUUID, targetUUID, err := obtainUpdateUUIDs(r)
-
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to update organization rule",
@@ -363,7 +355,6 @@ func (or *organizationRuleResource) Update(ctx context.Context, req resource.Upd
 
 	// Obtain the sorted value JSON from the API response (document field in RuleCreatePayload's rule)
 	value, err := obtainValueJSON(r.RuleUpdate.Rule.Document)
-
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to update organization rule",
@@ -406,7 +397,6 @@ func (or *organizationRuleResource) Delete(ctx context.Context, req resource.Del
 
 		return retryContextError(err)
 	})
-
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to delete organization rule",

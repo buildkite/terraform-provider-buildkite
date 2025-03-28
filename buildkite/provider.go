@@ -41,7 +41,7 @@ type providerModel struct {
 	ArchivePipelineOnDelete types.Bool     `tfsdk:"archive_pipeline_on_delete"`
 	GraphqlUrl              types.String   `tfsdk:"graphql_url"`
 	Organization            types.String   `tfsdk:"organization"`
-	RestUrl                 types.String   `tfsdk:"rest_url"`
+	RestURL                 types.String   `tfsdk:"rest_url"`
 	Timeouts                timeouts.Value `tfsdk:"timeouts"`
 }
 
@@ -53,7 +53,7 @@ func (tf *terraformProvider) Configure(ctx context.Context, req provider.Configu
 	apiToken := os.Getenv("BUILDKITE_API_TOKEN")
 	graphqlUrl := defaultGraphqlEndpoint
 	organization := getenv("BUILDKITE_ORGANIZATION_SLUG")
-	restUrl := defaultRestEndpoint
+	restURL := defaultRestEndpoint
 
 	if data.ApiToken.ValueString() != "" {
 		apiToken = data.ApiToken.ValueString()
@@ -66,17 +66,17 @@ func (tf *terraformProvider) Configure(ctx context.Context, req provider.Configu
 	if data.Organization.ValueString() != "" {
 		organization = data.Organization.ValueString()
 	}
-	if data.RestUrl.ValueString() != "" {
-		restUrl = data.RestUrl.ValueString()
+	if data.RestURL.ValueString() != "" {
+		restURL = data.RestURL.ValueString()
 	} else if v, ok := os.LookupEnv("BUILDKITE_REST_URL"); ok {
-		restUrl = v
+		restURL = v
 	}
 
 	config := clientConfig{
 		apiToken:   apiToken,
 		graphqlURL: graphqlUrl,
 		org:        organization,
-		restURL:    restUrl,
+		restURL:    restURL,
 		timeouts:   data.Timeouts,
 		userAgent:  userAgent("buildkite", tf.version, req.TerraformVersion),
 	}
@@ -141,6 +141,7 @@ func (tf *terraformProvider) Resources(context.Context) []func() resource.Resour
 		newPipelineTeamResource,
 		newPipelineTemplateResource,
 		newPipelineResource(&tf.archivePipelineOnDelete),
+		newRegistryResource,
 		newTeamMemberResource,
 		newTeamResource,
 		newTestSuiteResource,

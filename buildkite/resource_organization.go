@@ -144,7 +144,6 @@ func (o *organizationResource) Read(ctx context.Context, req resource.ReadReques
 
 	log.Printf("Reading settings for organization ...")
 	response, err := getOrganization(ctx, o.client.genqlient, o.client.organization)
-
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to obtain Organization",
@@ -206,7 +205,6 @@ func (o *organizationResource) Update(ctx context.Context, req resource.UpdateRe
 		*org,
 		strings.Join(cidrs, " "),
 	)
-
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to update Organization settings",
@@ -250,7 +248,6 @@ func (o *organizationResource) Delete(ctx context.Context, req resource.DeleteRe
 	}
 	log.Printf("Deleting settings for organization %s ...", *org)
 	_, err = setApiIpAddresses(ctx, o.client.genqlient, *org, "")
-
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to delete Organization settings",

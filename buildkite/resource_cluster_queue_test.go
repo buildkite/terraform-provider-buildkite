@@ -391,7 +391,7 @@ func TestAccBuildkiteClusterQueueResource(t *testing.T) {
 			resource.TestCheckResourceAttr("buildkite_cluster_queue.foobar", "hosted_agents.instance_shape", "MACOS_M2_4X7"),
 			// re-enable when macos hosted cluster queue creation is fixed
 			// https://github.com/buildkite/terraform-provider-buildkite/issues/869
-			//resource.TestCheckResourceAttr("buildkite_cluster_queue.foobar", "hosted_agents.mac.xcode_version", "14.3.1"),
+			// resource.TestCheckResourceAttr("buildkite_cluster_queue.foobar", "hosted_agents.mac.xcode_version", "14.3.1"),
 		)
 
 		resource.ParallelTest(t, resource.TestCase{
@@ -512,7 +512,6 @@ func testAccCheckClusterQueueExists(resourceName string, clusterQueueResourceMod
 					resourceState.Primary.Attributes["cluster_uuid"],
 					cursor,
 				)
-
 				// If cluster queues were not able to be fetched by Genqlient
 				if err != nil {
 					if isRetryableError(err) {
@@ -538,7 +537,6 @@ func testAccCheckClusterQueueExists(resourceName string, clusterQueueResourceMod
 			}
 			return nil
 		})
-
 		if err != nil {
 			return fmt.Errorf("Error fetching Cluster queues from graphql API: %v", err)
 		}

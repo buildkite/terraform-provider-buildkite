@@ -111,7 +111,6 @@ func (tm *teamMemberResource) Create(ctx context.Context, req resource.CreateReq
 
 		return retryContextError(err)
 	})
-
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to create team member",
@@ -157,7 +156,6 @@ func (tm *teamMemberResource) Read(ctx context.Context, req resource.ReadRequest
 
 		return retryContextError(err)
 	})
-
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to read team member",
@@ -221,7 +219,6 @@ func (tm *teamMemberResource) Update(ctx context.Context, req resource.UpdateReq
 
 		return retryContextError(err)
 	})
-
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to update Team member",
@@ -261,7 +258,6 @@ func (tm *teamMemberResource) Delete(ctx context.Context, req resource.DeleteReq
 
 		return retryContextError(err)
 	})
-
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to delete team member",

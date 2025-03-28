@@ -10,7 +10,6 @@ import (
 )
 
 func TestAccBuildkitePipelineTemplateDatasource(t *testing.T) {
-
 	configId := func(name string) string {
 		return fmt.Sprintf(`
 		provider "buildkite" {

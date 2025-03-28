@@ -5,6 +5,7 @@
 - SUP-3550: Refactor Hosted Instance Types for Maintenance [[PR #891](https://github.com/buildkite/terraform-provider-buildkite/pull/891)] @tomowatt
 - Rule replacement upon changing its type [[PR #885](https://github.com/buildkite/terraform-provider-buildkite/pull/885)] @james2791
 - Simplified organization rule datasource reads via UUID [[PR #886](https://github.com/buildkite/terraform-provider-buildkite/pull/886)] @james2791
+- SUP-3599: Add a registry resource [[PR #894](https://github.com/buildkite/terraform-provider-buildkite/pull/894)] @mcncl
 
 ## [v1.16.2](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.16.1...v1.16.2)
 

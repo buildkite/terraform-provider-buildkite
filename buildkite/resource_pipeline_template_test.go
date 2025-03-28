@@ -11,7 +11,6 @@ import (
 )
 
 func TestAccBuildkitePipelineTemplateResource(t *testing.T) {
-
 	configRequired := func(name string) string {
 		return fmt.Sprintf(`
 		provider "buildkite" {
@@ -204,7 +203,6 @@ func testAccCheckPipelineTemplateExists(ptr *pipelineTemplateResourceModel, name
 		}
 
 		r, err := getNode(context.Background(), genqlientGraphql, rs.Primary.ID)
-
 		if err != nil {
 			return err
 		}
@@ -222,7 +220,6 @@ func testAccCheckPipelineTemplateExists(ptr *pipelineTemplateResourceModel, name
 
 func testAccCheckPipelineTemplateRemoteValues(ptr *pipelineTemplateResourceModel, name string, available bool) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
-
 		if ptr.Name.ValueString() != name {
 			return fmt.Errorf("Remote pipeline template name (%s) doesn't match expected value (%s)", ptr.Name, name)
 		}
@@ -242,7 +239,6 @@ func testAccCheckPipelineTemplateDestroy(s *terraform.State) error {
 		}
 
 		r, err := getNode(context.Background(), genqlientGraphql, rs.Primary.ID)
-
 		if err != nil {
 			return err
 		}

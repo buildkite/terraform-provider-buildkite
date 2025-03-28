@@ -124,7 +124,6 @@ func TestAccBuildkiteSignedPipelineStepsDataSource(t *testing.T) {
 				},
 			},
 		})
-
 	})
 
 	t.Run("signed pipeline steps with escaped interpolations regex", func(t *testing.T) {
@@ -245,7 +244,8 @@ func TestAccBuildkiteSignedPipelineStepsDataSource(t *testing.T) {
 						repository,
 						steps,
 					),
-					ExpectError: regexp.MustCompile(regexp.QuoteMeta("Error: Invalid Attribute Combination"))},
+					ExpectError: regexp.MustCompile(regexp.QuoteMeta("Error: Invalid Attribute Combination")),
+				},
 			},
 		})
 	})

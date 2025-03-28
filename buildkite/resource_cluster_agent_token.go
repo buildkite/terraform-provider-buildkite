@@ -138,7 +138,6 @@ func (ct *clusterAgentToken) Create(ctx context.Context, req resource.CreateRequ
 
 		return retryContextError(err)
 	})
-
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to create Cluster Agent Token",
@@ -188,7 +187,6 @@ func (ct *clusterAgentToken) Read(ctx context.Context, req resource.ReadRequest,
 
 		return retryContextError(err)
 	})
-
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to read Cluster Agent Tokens",
@@ -246,7 +244,6 @@ func (ct *clusterAgentToken) Update(ctx context.Context, req resource.UpdateRequ
 
 		return retryContextError(err)
 	})
-
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to update Cluster Agent Token",
@@ -259,7 +256,6 @@ func (ct *clusterAgentToken) Update(ctx context.Context, req resource.UpdateRequ
 	state.AllowedIpAddresses = plan.AllowedIpAddresses
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
-
 }
 
 func (ct *clusterAgentToken) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
@@ -292,7 +288,6 @@ func (ct *clusterAgentToken) Delete(ctx context.Context, req resource.DeleteRequ
 
 		return retryContextError(err)
 	})
-
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to revoke Cluster Agent Token",
