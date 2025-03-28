@@ -811,7 +811,7 @@ func (p *registryResource) Update(ctx context.Context, req resource.UpdateReques
 
 	// Before setting the final state, ensure the plan's slug value is correctly set from the API response
 	// This prevents "Provider produced inconsistent result after apply" errors with slug values
-	if !plan.Slug.IsNull() && !plan.Slug.IsUnknown() {
+	if !plan.Slug.IsNull() {
 		// We use the value from the API response (already set in plan.Slug above)
 		// No additional action needed as long as we don't override it
 	}
