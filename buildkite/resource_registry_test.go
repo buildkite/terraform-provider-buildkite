@@ -74,6 +74,42 @@ func TestAccResourceRegistry(t *testing.T) {
 			},
 		})
 	})
+
+	t.Run("import", func(t *testing.T) {
+		var r registryResourceModel
+		randName := acctest.RandString(5)
+		ecosystem := "java"
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			CheckDestroy:             testAccCheckRegistryDestroy,
+			Steps: []resource.TestStep{
+				{
+					Config: config(randName, ecosystem, ":bazel:"),
+					Check: resource.ComposeAggregateTestCheckFunc(
+						testAccCheckRegistryExists("buildkite_registry.test", &r),
+						resource.TestCheckResourceAttr("buildkite_registry.test", "name", randName),
+					),
+				},
+				{
+					ResourceName: "buildkite_registry.test",
+					ImportState:  true,
+					ImportStateIdFunc: func(s *terraform.State) (string, error) {
+						// Get the slug from the state to use for import
+						rs, ok := s.RootModule().Resources["buildkite_registry.test"]
+						if !ok {
+							return "", fmt.Errorf("resource not found: %s", "buildkite_registry.test")
+						}
+						// Use the slug as the import ID
+						return rs.Primary.Attributes["slug"], nil
+					},
+					ImportStateVerify:       true,
+					ImportStateVerifyIgnore: []string{"team_ids"},
+				},
+			},
+		})
+	})
 }
 
 func testAccCheckRegistryDestroy(s *terraform.State) error {
@@ -126,4 +162,24 @@ func testAccCheckRegistryDestroy(s *terraform.State) error {
 	}
 
 	return nil
+}
+
+func testAccCheckRegistryExists(n string, r *registryResourceModel) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[n]
+		if !ok {
+			return fmt.Errorf("not found: %s", n)
+		}
+
+		if rs.Primary.ID == "" {
+			return fmt.Errorf("no ID is set")
+		}
+
+		// Ensure the slug is set, which is critical for import
+		if rs.Primary.Attributes["slug"] == "" {
+			return fmt.Errorf("slug attribute is not set")
+		}
+
+		return nil
+	}
 }
