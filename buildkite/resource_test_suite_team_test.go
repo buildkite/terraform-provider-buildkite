@@ -262,7 +262,6 @@ func testAccCheckTestSuiteTeamExists(resourceName string, tst *testSuiteTeamMode
 		}
 
 		apiResponse, err := getNode(context.Background(), genqlientGraphql, resourceState.Primary.ID)
-
 		if err != nil {
 			return fmt.Errorf("Error fetching test suite team from graphql API: %v", err)
 		}
@@ -285,7 +284,6 @@ func testAccCheckTestSuiteTeamDestroy(s *terraform.State) error {
 		}
 
 		apiResponse, err := getNode(context.Background(), genqlientGraphql, rs.Primary.ID)
-
 		if err != nil {
 			return fmt.Errorf("Error fetching test suite team from graphql API: %v", err)
 		}

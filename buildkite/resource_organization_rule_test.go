@@ -2208,7 +2208,6 @@ func testAccCheckOrganizationRuleExists(orr *organizationRuleResourceModel, name
 		}
 
 		r, err := getNode(context.Background(), genqlientGraphql, rs.Primary.ID)
-
 		if err != nil {
 			return err
 		}
@@ -2257,7 +2256,6 @@ func testAccCheckOrganizationRuleDestroy(s *terraform.State) error {
 		}
 
 		r, err := getNode(context.Background(), genqlientGraphql, rs.Primary.ID)
-
 		if err != nil {
 			return err
 		}

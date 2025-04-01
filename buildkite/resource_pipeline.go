@@ -224,7 +224,6 @@ func (p *pipelineResource) Create(ctx context.Context, req resource.CreateReques
 		}
 		return retryContextError(err)
 	})
-
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Failed to create pipeline",
@@ -311,7 +310,6 @@ func (p *pipelineResource) Delete(ctx context.Context, req resource.DeleteReques
 		_, err := deletePipeline(ctx, p.client.genqlient, state.Id.ValueString())
 		return retryContextError(err)
 	})
-
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Could not delete pipeline",
@@ -344,7 +342,6 @@ func (p *pipelineResource) Read(ctx context.Context, req resource.ReadRequest, r
 		response, err = getNode(ctx, p.client.genqlient, state.Id.ValueString())
 		return retryContextError(err)
 	})
-
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to read pipeline",
@@ -845,7 +842,6 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 		response, err = updatePipeline(ctx, p.client.genqlient, input)
 		return retryContextError(err)
 	})
-
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to update Pipeline",
@@ -893,7 +889,6 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 			r, err = createTeamPipeline(ctx, p.client.genqlient, plan.DefaultTeamId.ValueString(), state.Id.ValueString(), PipelineAccessLevelsManageBuildAndRead)
 			return retryContextError(err)
 		})
-
 		if err != nil {
 			resp.Diagnostics.AddError("Could not attach new default team to pipeline", err.Error())
 			return
@@ -1066,7 +1061,6 @@ func getPipelineExtraInfo(ctx context.Context, client *Client, slug string, time
 		err := client.makeRequest(ctx, "GET", fmt.Sprintf("/v2/organizations/%s/pipelines/%s", client.organization, slug), nil, &pipelineExtraInfo)
 		return retryContextError(err)
 	})
-
 	if err != nil {
 		return nil, err
 	}
@@ -1086,7 +1080,6 @@ func updatePipelineSlug(ctx context.Context, slug string, updatedSlug string, cl
 			err := client.makeRequest(ctx, "PATCH", fmt.Sprintf("/v2/organizations/%s/pipelines/%s", client.organization, slug), payload, &pipelineExtraInfo)
 			return retryContextError(err)
 		})
-
 		if err != nil {
 			return pipelineExtraInfo, err
 		}
@@ -1124,7 +1117,6 @@ func updatePipelineExtraInfo(ctx context.Context, slug string, settings *provide
 		err := client.makeRequest(ctx, "PATCH", fmt.Sprintf("/v2/organizations/%s/pipelines/%s", client.organization, slug), payload, &pipelineExtraInfo)
 		return retryContextError(err)
 	})
-
 	if err != nil {
 		return pipelineExtraInfo, err
 	}

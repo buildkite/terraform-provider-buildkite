@@ -253,7 +253,6 @@ func testTestSuiteDestroy(s *terraform.State) error {
 		}
 
 		suite, err := getTestSuite(context.Background(), genqlientGraphql, rs.Primary.Attributes["id"], 1)
-
 		if err != nil {
 			return fmt.Errorf("Error fetching test suite from graphql API: %v", err)
 		}

@@ -82,7 +82,6 @@ func (c *clusterDatasource) Read(ctx context.Context, req datasource.ReadRequest
 		}
 		return nil
 	})
-
 	if err != nil {
 		resp.Diagnostics.AddError("Unable to find Cluster", err.Error())
 		return
