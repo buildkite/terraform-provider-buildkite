@@ -55,9 +55,9 @@ func TestAccBuildkitePipelineSchedule(t *testing.T) {
 	loadPipelineSchedule := func(schedule *PipelineScheduleValues) resource.TestCheckFunc {
 		return func(s *terraform.State) error {
 			scheduleRes := s.RootModule().Resources["buildkite_pipeline_schedule.pipeline"]
-			
+
 			TrackResource("buildkite_pipeline_schedule", scheduleRes.Primary.ID)
-			
+
 			resp, err := getPipelineSchedule(context.Background(), genqlientGraphql, scheduleRes.Primary.ID)
 			if err != nil {
 				return err
@@ -80,7 +80,7 @@ func TestAccBuildkitePipelineSchedule(t *testing.T) {
 		resource.ParallelTest(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },
 			ProtoV6ProviderFactories: protoV6ProviderFactories(),
-			CheckDestroy: testAccCheckPipelineScheduleDestroy,
+			CheckDestroy:             testAccCheckPipelineScheduleDestroy,
 			Steps: []resource.TestStep{
 				{
 					Config: config(pipelineName, cronline, label, "FOO = \"BAR=2f\"", true),

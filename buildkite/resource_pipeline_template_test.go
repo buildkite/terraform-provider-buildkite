@@ -204,7 +204,7 @@ func testAccCheckPipelineTemplateExists(ptr *pipelineTemplateResourceModel, name
 		if rs.Primary.ID == "" {
 			return fmt.Errorf("No ID is set in state")
 		}
-		
+
 		TrackResource("buildkite_pipeline_template", rs.Primary.ID)
 
 		r, err := getNode(context.Background(), genqlientGraphql, rs.Primary.ID)

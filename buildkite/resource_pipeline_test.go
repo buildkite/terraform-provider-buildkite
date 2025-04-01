@@ -18,27 +18,27 @@ func testAccCheckPipelineDestroy(s *terraform.State) error {
 		if rs.Type != "buildkite_pipeline" {
 			continue
 		}
-		
+
 		pipelineSlug := rs.Primary.Attributes["slug"]
 		if pipelineSlug == "" {
 			pipelineName := rs.Primary.Attributes["name"]
 			pipelineSlug = fmt.Sprintf("%s/%s", getenv("BUILDKITE_ORGANIZATION_SLUG"), strings.ToLower(pipelineName))
 		}
-		
+
 		resp, err := getPipeline(context.Background(), genqlientGraphql, pipelineSlug)
 		if err != nil {
-			if !strings.Contains(err.Error(), "not found") && 
-			   !strings.Contains(err.Error(), "pipeline not found") {
+			if !strings.Contains(err.Error(), "not found") &&
+				!strings.Contains(err.Error(), "pipeline not found") {
 				return fmt.Errorf("error checking if pipeline exists: %v", err)
 			}
 			continue
 		}
-		
+
 		if resp.Pipeline.Id != "" {
 			return fmt.Errorf("pipeline still exists: %s", pipelineSlug)
 		}
 	}
-	
+
 	return nil
 }
 
@@ -57,7 +57,7 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 	aggregateRemoteCheck := func(pipeline *getPipelinePipeline) resource.TestCheckFunc {
 		return func(s *terraform.State) error {
 			RegisterResourceTracking(t, s, "buildkite_pipeline")
-			
+
 			var err error
 			p := s.RootModule().Resources["buildkite_pipeline.pipeline"]
 
@@ -77,7 +77,7 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 	aggregateRemoteCheckWithTemplateSteps := func(pipeline *getPipelinePipeline) resource.TestCheckFunc {
 		return func(s *terraform.State) error {
 			RegisterResourceTracking(t, s, "buildkite_pipeline")
-			
+
 			var err error
 			p := s.RootModule().Resources["buildkite_pipeline.pipeline"]
 
@@ -752,7 +752,7 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 		resource.ParallelTest(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },
 			ProtoV6ProviderFactories: protoV6ProviderFactories(),
-			CheckDestroy: testAccCheckPipelineDestroyFunc,
+			CheckDestroy:             testAccCheckPipelineDestroyFunc,
 			Steps: []resource.TestStep{
 				{
 					Config: fmt.Sprintf(`
@@ -773,7 +773,7 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 		resource.ParallelTest(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },
 			ProtoV6ProviderFactories: protoV6ProviderFactories(),
-			CheckDestroy: testAccCheckPipelineDestroyFunc,
+			CheckDestroy:             testAccCheckPipelineDestroyFunc,
 			Steps: []resource.TestStep{
 				{
 					Config: fmt.Sprintf(`

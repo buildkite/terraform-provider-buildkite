@@ -2209,7 +2209,7 @@ func testAccCheckOrganizationRuleExists(orr *organizationRuleResourceModel, name
 		if rs.Primary.ID == "" {
 			return fmt.Errorf("No ID is set in state")
 		}
-		
+
 		TrackResource("buildkite_organization_rule", rs.Primary.ID)
 
 		r, err := getNode(context.Background(), genqlientGraphql, rs.Primary.ID)
@@ -2274,7 +2274,7 @@ func testAccCheckOrganizationRuleDestroy(s *terraform.State) error {
 				return fmt.Errorf("Organization rule still exists")
 			}
 		}
-		
+
 		UntrackResource("buildkite_organization_rule", rs.Primary.ID)
 	}
 	return nil

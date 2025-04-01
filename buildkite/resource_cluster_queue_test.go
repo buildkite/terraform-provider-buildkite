@@ -501,7 +501,7 @@ func testAccCheckClusterQueueExists(resourceName string, clusterQueueResourceMod
 		if resourceState.Primary.ID == "" {
 			return fmt.Errorf("No ID is set in state")
 		}
-		
+
 		// Track this resource for cleanup in case of test failure
 		TrackResource("buildkite_cluster_queue", resourceState.Primary.ID)
 
