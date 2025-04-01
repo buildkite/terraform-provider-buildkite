@@ -14,9 +14,7 @@ import (
 )
 
 func TestAccBuildkiteClusterQueueResource(t *testing.T) {
-	t.Cleanup(func() {
-		CleanupResources(t)
-	})
+	RegisterResourceTracking(t)
 	configBasic := func(fields ...string) string {
 		return fmt.Sprintf(`
 		provider "buildkite" {

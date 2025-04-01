@@ -12,9 +12,7 @@ import (
 )
 
 func TestAccBuildkitePipelineSchedule(t *testing.T) {
-	t.Cleanup(func() {
-		CleanupResources(t)
-	})
+	RegisterResourceTracking(t)
 	config := func(name, cronline, label, env string, enabled bool) string {
 		return fmt.Sprintf(`
 			provider "buildkite" {

@@ -49,9 +49,7 @@ func testAccCheckPipelineDestroyFunc(s *terraform.State) error {
 }
 
 func TestAccBuildkitePipelineResource(t *testing.T) {
-	t.Cleanup(func() {
-		CleanupResources(t)
-	})
+	RegisterResourceTracking(t)
 	compareRemoteValue := func(prop func() any, value any) resource.TestCheckFunc {
 		return func(s *terraform.State) error {
 			if v := prop(); v != value {

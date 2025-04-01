@@ -12,9 +12,7 @@ import (
 )
 
 func TestAccBuildkitePipelineTemplateResource(t *testing.T) {
-	t.Cleanup(func() {
-		CleanupResources(t)
-	})
+	RegisterResourceTracking(t)
 	configRequired := func(name string) string {
 		return fmt.Sprintf(`
 		provider "buildkite" {
@@ -246,9 +244,8 @@ func testAccCheckPipelineTemplateDestroy(s *terraform.State) error {
 
 		r, err := getNode(context.Background(), genqlientGraphql, rs.Primary.ID)
 		if err != nil {
-			// Not found error is expected
 			if strings.Contains(err.Error(), "not found") {
-				// Resource was deleted as expected
+
 				UntrackResource("buildkite_pipeline_template", rs.Primary.ID)
 				continue
 			}
