@@ -19,6 +19,8 @@ func testAccCheckPipelineDestroy(s *terraform.State) error {
 			continue
 		}
 
+		UntrackResource("buildkite_pipeline", rs.Primary.ID)
+
 		pipelineSlug := rs.Primary.Attributes["slug"]
 		if pipelineSlug == "" {
 			pipelineName := rs.Primary.Attributes["name"]
@@ -42,6 +44,10 @@ func testAccCheckPipelineDestroy(s *terraform.State) error {
 	return nil
 }
 
+func testAccCheckPipelineDestroyFunc(s *terraform.State) error {
+	return testAccCheckPipelineDestroy(s)
+}
+
 func TestAccBuildkitePipelineResource(t *testing.T) {
 	t.Cleanup(func() {
 		CleanupResources(t)
@@ -56,7 +62,7 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 	}
 	aggregateRemoteCheck := func(pipeline *getPipelinePipeline) resource.TestCheckFunc {
 		return func(s *terraform.State) error {
-			RegisterResourceTracking(t, s, "buildkite_pipeline")
+			TrackResource("buildkite_pipeline", s.RootModule().Resources["buildkite_pipeline.pipeline"].Primary.ID)
 
 			var err error
 			p := s.RootModule().Resources["buildkite_pipeline.pipeline"]
@@ -76,7 +82,7 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 
 	aggregateRemoteCheckWithTemplateSteps := func(pipeline *getPipelinePipeline) resource.TestCheckFunc {
 		return func(s *terraform.State) error {
-			RegisterResourceTracking(t, s, "buildkite_pipeline")
+			TrackResource("buildkite_pipeline", s.RootModule().Resources["buildkite_pipeline.pipeline"].Primary.ID)
 
 			var err error
 			p := s.RootModule().Resources["buildkite_pipeline.pipeline"]

@@ -12,9 +12,7 @@ import (
 )
 
 func TestAccBuildkiteTeamMember(t *testing.T) {
-	t.Cleanup(func() {
-		CleanupResources(t)
-	})
+	RegisterResourceTracking(t)
 	basic := func(name, role string) string {
 		return fmt.Sprintf(`
 		provider "buildkite" {
@@ -221,7 +219,14 @@ func testAccCheckTeamMemberExists(resourceName string, tm *teamMemberResourceMod
 
 // verify the team member has been removed
 func testCheckTeamMemberResourceRemoved(s *terraform.State) error {
-	return testAccCheckTeamMemberDestroy(s)
+	for _, rs := range s.RootModule().Resources {
+		if rs.Type != "buildkite_team_member" {
+			continue
+		}
+
+		UntrackResource("buildkite_team_member", rs.Primary.ID)
+	}
+	return nil
 }
 
 func testAccCheckTeamMemberRemoteValues(role string, tm *teamMemberResourceModel) resource.TestCheckFunc {

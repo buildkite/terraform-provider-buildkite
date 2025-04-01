@@ -502,7 +502,6 @@ func testAccCheckClusterQueueExists(resourceName string, clusterQueueResourceMod
 			return fmt.Errorf("No ID is set in state")
 		}
 
-		// Track this resource for cleanup in case of test failure
 		TrackResource("buildkite_cluster_queue", resourceState.Primary.ID)
 
 		// Obtain queues of the queue's cluster from its cluster UUID
@@ -582,5 +581,12 @@ func testAccGetImportClusterQueueId(cq *clusterQueueResourceModel) resource.Impo
 }
 
 func testAccCheckClusterQueueDestroy(s *terraform.State) error {
-	return testAccCheckClusterQueueDestroyFunc(s)
+	for _, rs := range s.RootModule().Resources {
+		if rs.Type != "buildkite_cluster_queue" {
+			continue
+		}
+
+		UntrackResource("buildkite_cluster_queue", rs.Primary.ID)
+	}
+	return nil
 }

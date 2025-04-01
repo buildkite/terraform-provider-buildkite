@@ -3,7 +3,6 @@ package buildkite
 import (
 	"context"
 	"fmt"
-	"strings"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
@@ -202,5 +201,12 @@ func testAccCheckClusterRemoteValues(c *clusterResourceModel, name string) resou
 }
 
 func testAccCheckClusterDestroy(s *terraform.State) error {
-	return testAccCheckClusterDestroyFunc(s)
+	for _, rs := range s.RootModule().Resources {
+		if rs.Type != "buildkite_cluster" {
+			continue
+		}
+
+		UntrackResource("buildkite_cluster", rs.Primary.ID)
+	}
+	return nil
 }

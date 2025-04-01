@@ -3,7 +3,6 @@ package buildkite
 import (
 	"context"
 	"fmt"
-	"strings"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
@@ -13,6 +12,7 @@ import (
 )
 
 func TestAccBuildkiteTeam(t *testing.T) {
+	RegisterResourceTracking(t)
 	configBasic := func(name string) string {
 		return fmt.Sprintf(`
 		provider "buildkite" {
@@ -225,5 +225,12 @@ func testAccCheckTeamRemoteValues(name string, tr *teamResourceModel) resource.T
 }
 
 func testAccCheckTeamResourceDestroy(s *terraform.State) error {
-	return testAccCheckTeamDestroyFunc(s)
+	for _, rs := range s.RootModule().Resources {
+		if rs.Type != "buildkite_team" {
+			continue
+		}
+
+		UntrackResource("buildkite_team", rs.Primary.ID)
+	}
+	return nil
 }

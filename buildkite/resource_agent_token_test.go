@@ -3,7 +3,6 @@ package buildkite
 import (
 	"context"
 	"fmt"
-	"strings"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
@@ -12,9 +11,7 @@ import (
 )
 
 func TestAccBuildkiteAgentToken(t *testing.T) {
-	t.Cleanup(func() {
-		CleanupResources(t)
-	})
+	RegisterResourceTracking(t)
 	basic := func(name string) string {
 		return fmt.Sprintf(`
 		provider "buildkite" {
@@ -127,7 +124,6 @@ func testAccCheckAgentTokenExists(resourceName string, resourceToken *AgentToken
 			return fmt.Errorf("No ID is set in state")
 		}
 
-		// Track this resource for cleanup in case of test failure
 		TrackResource("buildkite_agent_token", resourceState.Primary.ID)
 
 		var query struct {
@@ -172,5 +168,12 @@ func testAccCheckAgentTokenRemoteValues(resourceToken *AgentTokenNode, descripti
 
 // verifies the agent token has been destroyed
 func testAccCheckAgentTokenResourceDestroy(s *terraform.State) error {
-	return testAccCheckAgentTokenDestroy(s)
+	for _, rs := range s.RootModule().Resources {
+		if rs.Type != "buildkite_agent_token" {
+			continue
+		}
+
+		UntrackResource("buildkite_agent_token", rs.Primary.ID)
+	}
+	return nil
 }

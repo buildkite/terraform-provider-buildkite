@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
-	"strings"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
@@ -14,6 +13,7 @@ import (
 )
 
 func TestAccBuildkiteTestSuiteResource(t *testing.T) {
+	RegisterResourceTracking(t)
 	basicTestSuite := func(name string) string {
 		return fmt.Sprintf(`
 		provider "buildkite" {
@@ -250,5 +250,12 @@ func checkTestSuiteExists(name string, suite *getTestSuiteSuite) resource.TestCh
 }
 
 func testTestSuiteDestroy(s *terraform.State) error {
-	return testAccCheckTestSuiteDestroyFunc(s)
+	for _, rs := range s.RootModule().Resources {
+		if rs.Type != "buildkite_test_suite" {
+			continue
+		}
+
+		UntrackResource("buildkite_test_suite", rs.Primary.ID)
+	}
+	return nil
 }

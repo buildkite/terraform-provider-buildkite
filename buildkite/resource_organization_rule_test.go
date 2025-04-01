@@ -13,9 +13,7 @@ import (
 )
 
 func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
-	t.Cleanup(func() {
-		CleanupResources(t)
-	})
+	RegisterResourceTracking(t)
 	ruleActions := []string{"trigger_build", "artifacts_read"}
 
 	configRequired := func(fields ...string) string {

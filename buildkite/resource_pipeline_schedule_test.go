@@ -219,3 +219,15 @@ func TestAccBuildkitePipelineSchedule(t *testing.T) {
 		})
 	})
 }
+
+// Testcase destroyer function
+func testAccCheckPipelineScheduleDestroy(s *terraform.State) error {
+	for _, rs := range s.RootModule().Resources {
+		if rs.Type != "buildkite_pipeline_schedule" {
+			continue
+		}
+
+		UntrackResource("buildkite_pipeline_schedule", rs.Primary.ID)
+	}
+	return nil
+}

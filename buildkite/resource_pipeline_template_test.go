@@ -3,6 +3,7 @@ package buildkite
 import (
 	"context"
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
@@ -238,5 +239,27 @@ func testAccCheckPipelineTemplateRemoteValues(ptr *pipelineTemplateResourceModel
 }
 
 func testAccCheckPipelineTemplateDestroy(s *terraform.State) error {
-	return testAccCheckPipelineTemplateDestroyFunc(s)
+	for _, rs := range s.RootModule().Resources {
+		if rs.Type != "buildkite_pipeline_template" {
+			continue
+		}
+
+		r, err := getNode(context.Background(), genqlientGraphql, rs.Primary.ID)
+		if err != nil {
+			// Not found error is expected
+			if strings.Contains(err.Error(), "not found") {
+				// Resource was deleted as expected
+				UntrackResource("buildkite_pipeline_template", rs.Primary.ID)
+				continue
+			}
+			return err
+		}
+
+		if pipelineTemplateNode, ok := r.GetNode().(*getNodeNodePipelineTemplate); ok && pipelineTemplateNode != nil {
+			return fmt.Errorf("Pipeline template still exists: %v", pipelineTemplateNode.Id)
+		}
+
+		UntrackResource("buildkite_pipeline_template", rs.Primary.ID)
+	}
+	return nil
 }
