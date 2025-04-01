@@ -3,6 +3,7 @@ package buildkite
 import (
 	"context"
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
@@ -197,6 +198,8 @@ func testAccCheckTeamExists(name string, tr *teamResourceModel) resource.TestChe
 			return fmt.Errorf("No ID is set in state")
 		}
 
+		TrackResource("buildkite_team", rs.Primary.ID)
+
 		r, err := getNode(context.Background(), genqlientGraphql, rs.Primary.ID)
 		if err != nil {
 			return err
@@ -222,21 +225,5 @@ func testAccCheckTeamRemoteValues(name string, tr *teamResourceModel) resource.T
 }
 
 func testAccCheckTeamResourceDestroy(s *terraform.State) error {
-	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "buildkite_team" {
-			continue
-		}
-
-		r, err := getNode(context.Background(), genqlientGraphql, rs.Primary.ID)
-		if err != nil {
-			return err
-		}
-
-		if teamNode, ok := r.GetNode().(*getNodeNodeTeam); ok {
-			if teamNode != nil {
-				return fmt.Errorf("Team still exists: %v", teamNode)
-			}
-		}
-	}
-	return nil
+	return testAccCheckTeamDestroyFunc(s)
 }

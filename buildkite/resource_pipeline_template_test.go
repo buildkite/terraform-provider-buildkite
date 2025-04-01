@@ -11,6 +11,9 @@ import (
 )
 
 func TestAccBuildkitePipelineTemplateResource(t *testing.T) {
+	t.Cleanup(func() {
+		CleanupResources(t)
+	})
 	configRequired := func(name string) string {
 		return fmt.Sprintf(`
 		provider "buildkite" {
@@ -201,6 +204,8 @@ func testAccCheckPipelineTemplateExists(ptr *pipelineTemplateResourceModel, name
 		if rs.Primary.ID == "" {
 			return fmt.Errorf("No ID is set in state")
 		}
+		
+		TrackResource("buildkite_pipeline_template", rs.Primary.ID)
 
 		r, err := getNode(context.Background(), genqlientGraphql, rs.Primary.ID)
 		if err != nil {
@@ -233,21 +238,5 @@ func testAccCheckPipelineTemplateRemoteValues(ptr *pipelineTemplateResourceModel
 }
 
 func testAccCheckPipelineTemplateDestroy(s *terraform.State) error {
-	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "buildkite_pipeline_template" {
-			continue
-		}
-
-		r, err := getNode(context.Background(), genqlientGraphql, rs.Primary.ID)
-		if err != nil {
-			return err
-		}
-
-		if pipelineTemplateNode, ok := r.GetNode().(*getNodeNodePipelineTemplate); ok {
-			if pipelineTemplateNode == nil {
-				return fmt.Errorf("Pipeline template still exists: %v", pipelineTemplateNode)
-			}
-		}
-	}
-	return nil
+	return testAccCheckPipelineTemplateDestroyFunc(s)
 }

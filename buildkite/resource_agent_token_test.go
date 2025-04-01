@@ -12,6 +12,9 @@ import (
 )
 
 func TestAccBuildkiteAgentToken(t *testing.T) {
+	t.Cleanup(func() {
+		CleanupResources(t)
+	})
 	basic := func(name string) string {
 		return fmt.Sprintf(`
 		provider "buildkite" {
@@ -124,6 +127,9 @@ func testAccCheckAgentTokenExists(resourceName string, resourceToken *AgentToken
 			return fmt.Errorf("No ID is set in state")
 		}
 
+		// Track this resource for cleanup in case of test failure
+		TrackResource("buildkite_agent_token", resourceState.Primary.ID)
+
 		var query struct {
 			Node struct {
 				AgentToken AgentTokenNode `graphql:"... on AgentToken"`
@@ -166,40 +172,5 @@ func testAccCheckAgentTokenRemoteValues(resourceToken *AgentTokenNode, descripti
 
 // verifies the agent token has been destroyed
 func testAccCheckAgentTokenResourceDestroy(s *terraform.State) error {
-	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "buildkite_agent_token" {
-			continue
-		}
-
-		var query struct {
-			Node struct {
-				AgentToken AgentTokenNode `graphql:"... on AgentToken"`
-			} `graphql:"node(id: $id)"`
-		}
-
-		vars := map[string]interface{}{
-			"id": rs.Primary.ID,
-		}
-
-		err := graphqlClient.Query(context.Background(), &query, vars)
-		if err != nil {
-			if strings.Contains(err.Error(), "This agent registration token was already revoked") {
-				// not sure why it's already revoked, but fine by us. It's the state we need
-				continue
-			} else {
-				return err
-			}
-		}
-		if string(query.Node.AgentToken.ID) == "" {
-			return fmt.Errorf("Token not found, expected to find it in a revoked state")
-		}
-		if string(query.Node.AgentToken.ID) != rs.Primary.ID {
-			return fmt.Errorf("Found unexpected token")
-		}
-		if string(query.Node.AgentToken.RevokedAt) == "" {
-			return fmt.Errorf("Agent token found but not revoked as expected")
-		}
-	}
-
-	return nil
+	return testAccCheckAgentTokenDestroy(s)
 }

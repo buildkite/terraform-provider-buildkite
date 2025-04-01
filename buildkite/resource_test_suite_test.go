@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
@@ -229,6 +230,8 @@ func checkTestSuiteExists(name string, suite *getTestSuiteSuite) resource.TestCh
 			return errors.New("Test suite not found in state")
 		}
 
+		TrackResource("buildkite_test_suite", rs.Primary.ID)
+
 		_suite := loadRemoteTestSuite(rs.Primary.Attributes["id"])
 
 		if _suite == nil {
@@ -247,19 +250,5 @@ func checkTestSuiteExists(name string, suite *getTestSuiteSuite) resource.TestCh
 }
 
 func testTestSuiteDestroy(s *terraform.State) error {
-	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "buildkite_test_suite" {
-			continue
-		}
-
-		suite, err := getTestSuite(context.Background(), genqlientGraphql, rs.Primary.Attributes["id"], 1)
-		if err != nil {
-			return fmt.Errorf("Error fetching test suite from graphql API: %v", err)
-		}
-
-		if suite.Suite != nil {
-			return fmt.Errorf("Test suite still exists: %v", suite)
-		}
-	}
-	return nil
+	return testAccCheckTestSuiteDestroyFunc(s)
 }

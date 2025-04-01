@@ -14,6 +14,9 @@ import (
 )
 
 func TestAccBuildkiteClusterQueueResource(t *testing.T) {
+	t.Cleanup(func() {
+		CleanupResources(t)
+	})
 	configBasic := func(fields ...string) string {
 		return fmt.Sprintf(`
 		provider "buildkite" {
@@ -498,6 +501,9 @@ func testAccCheckClusterQueueExists(resourceName string, clusterQueueResourceMod
 		if resourceState.Primary.ID == "" {
 			return fmt.Errorf("No ID is set in state")
 		}
+		
+		// Track this resource for cleanup in case of test failure
+		TrackResource("buildkite_cluster_queue", resourceState.Primary.ID)
 
 		// Obtain queues of the queue's cluster from its cluster UUID
 		var matchFound bool
@@ -576,18 +582,5 @@ func testAccGetImportClusterQueueId(cq *clusterQueueResourceModel) resource.Impo
 }
 
 func testAccCheckClusterQueueDestroy(s *terraform.State) error {
-	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "buildkite_cluster_queue" {
-			continue
-		}
-		// Try to obtain the queues' cluster by its ID
-		resp, err := getNode(context.Background(), genqlientGraphql, rs.Primary.Attributes["cluster_id"])
-		// If exists a getNodeNodeCluster, cluster still exists, error
-		if clusterNode, ok := resp.GetNode().(*getNodeNodeCluster); ok {
-			// Cluster still exists
-			return fmt.Errorf("Cluster still exists: %v", clusterNode)
-		}
-		return err
-	}
-	return nil
+	return testAccCheckClusterQueueDestroyFunc(s)
 }

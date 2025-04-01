@@ -12,6 +12,9 @@ import (
 )
 
 func TestAccBuildkitePipelineSchedule(t *testing.T) {
+	t.Cleanup(func() {
+		CleanupResources(t)
+	})
 	config := func(name, cronline, label, env string, enabled bool) string {
 		return fmt.Sprintf(`
 			provider "buildkite" {
@@ -52,6 +55,9 @@ func TestAccBuildkitePipelineSchedule(t *testing.T) {
 	loadPipelineSchedule := func(schedule *PipelineScheduleValues) resource.TestCheckFunc {
 		return func(s *terraform.State) error {
 			scheduleRes := s.RootModule().Resources["buildkite_pipeline_schedule.pipeline"]
+			
+			TrackResource("buildkite_pipeline_schedule", scheduleRes.Primary.ID)
+			
 			resp, err := getPipelineSchedule(context.Background(), genqlientGraphql, scheduleRes.Primary.ID)
 			if err != nil {
 				return err
@@ -74,13 +80,7 @@ func TestAccBuildkitePipelineSchedule(t *testing.T) {
 		resource.ParallelTest(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },
 			ProtoV6ProviderFactories: protoV6ProviderFactories(),
-			CheckDestroy: func(s *terraform.State) error {
-				resp, err := getPipeline(context.Background(), genqlientGraphql, fmt.Sprintf("%s/%s", getenv("BUILDKITE_ORGANIZATION_SLUG"), pipelineName))
-				if resp.Pipeline.Name == pipelineName {
-					return fmt.Errorf("Pipeline still exists: %s", pipelineName)
-				}
-				return err
-			},
+			CheckDestroy: testAccCheckPipelineScheduleDestroy,
 			Steps: []resource.TestStep{
 				{
 					Config: config(pipelineName, cronline, label, "FOO = \"BAR=2f\"", true),
@@ -130,6 +130,7 @@ func TestAccBuildkitePipelineSchedule(t *testing.T) {
 		resource.ParallelTest(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },
 			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			CheckDestroy:             testAccCheckPipelineScheduleDestroy,
 			Steps: []resource.TestStep{
 				{
 					Config: config(pipelineName, "0 * * * *", label, "FOO = \"bar\"", true),
@@ -196,6 +197,7 @@ func TestAccBuildkitePipelineSchedule(t *testing.T) {
 		resource.ParallelTest(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },
 			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			CheckDestroy:             testAccCheckPipelineScheduleDestroy,
 			Steps: []resource.TestStep{
 				{
 					Config: config(pipelineName, "0 * * * *", label, "", true),

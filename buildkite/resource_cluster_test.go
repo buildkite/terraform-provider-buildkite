@@ -3,6 +3,7 @@ package buildkite
 import (
 	"context"
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
@@ -173,6 +174,9 @@ func testAccCheckClusterExists(name string, c *clusterResourceModel) resource.Te
 			return fmt.Errorf("No ID is set in state")
 		}
 
+		// Track this cluster for cleanup in case of test failure
+		TrackResource("buildkite_cluster", rs.Primary.ID)
+
 		r, err := getNode(context.Background(), genqlientGraphql, rs.Primary.ID)
 		if err != nil {
 			return err
@@ -180,7 +184,7 @@ func testAccCheckClusterExists(name string, c *clusterResourceModel) resource.Te
 
 		if clusterNode, ok := r.GetNode().(*getNodeNodeCluster); ok {
 			if clusterNode == nil {
-				return fmt.Errorf("Team not found: nil response")
+				return fmt.Errorf("Cluster not found: nil response")
 			}
 			updateClusterResourceState(c, *clusterNode)
 		}
@@ -198,21 +202,5 @@ func testAccCheckClusterRemoteValues(c *clusterResourceModel, name string) resou
 }
 
 func testAccCheckClusterDestroy(s *terraform.State) error {
-	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "buildkite_cluster" {
-			continue
-		}
-
-		r, err := getNode(context.Background(), genqlientGraphql, rs.Primary.ID)
-		if err != nil {
-			return err
-		}
-
-		if clusterNode, ok := r.GetNode().(*getNodeNodeCluster); ok {
-			if clusterNode != nil {
-				return fmt.Errorf("Cluster still exists: %v", clusterNode)
-			}
-		}
-	}
-	return nil
+	return testAccCheckClusterDestroyFunc(s)
 }
