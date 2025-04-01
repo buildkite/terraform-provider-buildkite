@@ -640,18 +640,18 @@ func (v *HostedAgentsMacosPlatformSettingsInput) GetXcodeVersion() *string { ret
 // Settings for hosted agents on this queue
 type HostedAgentsPlatformSettingsInput struct {
 	// Settings for hosted agents on this queue
-	Linux HostedAgentsLinuxPlatformSettingsInput `json:"linux"`
+	Linux *HostedAgentsLinuxPlatformSettingsInput `json:"linux"`
 	// Settings for hosted agents on this queue
-	Macos HostedAgentsMacosPlatformSettingsInput `json:"macos"`
+	Macos *HostedAgentsMacosPlatformSettingsInput `json:"macos"`
 }
 
 // GetLinux returns HostedAgentsPlatformSettingsInput.Linux, and is useful for accessing the field via an interface.
-func (v *HostedAgentsPlatformSettingsInput) GetLinux() HostedAgentsLinuxPlatformSettingsInput {
+func (v *HostedAgentsPlatformSettingsInput) GetLinux() *HostedAgentsLinuxPlatformSettingsInput {
 	return v.Linux
 }
 
 // GetMacos returns HostedAgentsPlatformSettingsInput.Macos, and is useful for accessing the field via an interface.
-func (v *HostedAgentsPlatformSettingsInput) GetMacos() HostedAgentsMacosPlatformSettingsInput {
+func (v *HostedAgentsPlatformSettingsInput) GetMacos() *HostedAgentsMacosPlatformSettingsInput {
 	return v.Macos
 }
 

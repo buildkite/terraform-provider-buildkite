@@ -235,52 +235,29 @@ func (cq *clusterQueueResource) Create(ctx context.Context, req resource.CreateR
 	var hosted *HostedAgentsQueueSettingsCreateInput
 	if plan.HostedAgents != nil {
 		hosted = &HostedAgentsQueueSettingsCreateInput{
-			InstanceShape:    HostedAgentInstanceShapeName(plan.HostedAgents.InstanceShape.ValueString()),
-			PlatformSettings: HostedAgentsPlatformSettingsInput{},
+			InstanceShape: HostedAgentInstanceShapeName(plan.HostedAgents.InstanceShape.ValueString()),
 		}
 
 		if plan.HostedAgents.Linux != nil {
-			hosted.PlatformSettings.Linux = HostedAgentsLinuxPlatformSettingsInput{
-				AgentImageRef: plan.HostedAgents.Linux.ImageAgentRef,
+			hosted.PlatformSettings = HostedAgentsPlatformSettingsInput{
+				Linux: &HostedAgentsLinuxPlatformSettingsInput{
+					AgentImageRef: plan.HostedAgents.Linux.ImageAgentRef,
+				},
 			}
-		}
-		if plan.HostedAgents.Mac != nil {
-			hosted.PlatformSettings.Macos = HostedAgentsMacosPlatformSettingsInput{
-				XcodeVersion: plan.HostedAgents.Mac.XcodeVersion,
+		} else if plan.HostedAgents.Mac != nil {
+			hosted.PlatformSettings = HostedAgentsPlatformSettingsInput{
+				Macos: &HostedAgentsMacosPlatformSettingsInput{
+					XcodeVersion: plan.HostedAgents.Mac.XcodeVersion,
+				},
 			}
 		}
 	}
-
-	resp.Diagnostics.AddWarning(
-		"CREATE - plan.HostedAgents.Linux",
-		fmt.Sprint(plan.HostedAgents.Linux),
-	)
-
-	resp.Diagnostics.AddWarning(
-		"CREATE - hosted.PlatformSettings.Linux",
-		fmt.Sprint(hosted.PlatformSettings.Linux),
-	)
-
-	resp.Diagnostics.AddWarning(
-		"CREATE - plan.HostedAgents.Mac",
-		fmt.Sprint(plan.HostedAgents.Mac),
-	)
-
-	resp.Diagnostics.AddWarning(
-		"CREATE - hosted.PlatformSettings.Macos",
-		fmt.Sprint(hosted.PlatformSettings.Macos),
-	)
 
 	var r *createClusterQueueResponse
 	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		org, err := cq.client.GetOrganizationID()
 		if err == nil {
 			log.Printf("Creating cluster queue with key %s into cluster %s ...", plan.Key.ValueString(), plan.ClusterId.ValueString())
-
-			resp.Diagnostics.AddWarning(
-				"CREATE - createClusterQueue - hosted",
-				fmt.Sprint(hosted.PlatformSettings),
-			)
 
 			r, err = createClusterQueue(ctx,
 				cq.client.genqlient,
@@ -291,11 +268,6 @@ func (cq *clusterQueueResource) Create(ctx context.Context, req resource.CreateR
 				hosted,
 			)
 		}
-
-		resp.Diagnostics.AddWarning(
-			"CREATE - createClusterQueue - response",
-			fmt.Sprint(r.ClusterQueueCreate.ClusterQueue.HostedAgents.PlatformSettings),
-		)
 
 		return retryContextError(err)
 	})
@@ -388,12 +360,6 @@ func (cq *clusterQueueResource) Read(ctx context.Context, req resource.ReadReque
 					// Update ClusterQueueResourceModel with Node values and append
 					updateClusterQueueResource(edge.Node, &state)
 					resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
-
-					resp.Diagnostics.AddWarning(
-						"READ - updateClusterQueueResource - state",
-						fmt.Sprint(state.HostedAgents),
-					)
-
 					break
 				}
 			}
@@ -456,17 +422,24 @@ func (cq *clusterQueueResource) Update(ctx context.Context, req resource.UpdateR
 	var hosted *HostedAgentsQueueSettingsUpdateInput
 	if state.HostedAgents != nil {
 		hosted = &HostedAgentsQueueSettingsUpdateInput{
-			InstanceShape:    HostedAgentInstanceShapeName(plan.HostedAgents.InstanceShape.ValueString()),
-			PlatformSettings: HostedAgentsPlatformSettingsInput{},
+			InstanceShape: HostedAgentInstanceShapeName(plan.HostedAgents.InstanceShape.ValueString()),
+			PlatformSettings: HostedAgentsPlatformSettingsInput{
+				Linux: &HostedAgentsLinuxPlatformSettingsInput{
+					AgentImageRef: nil,
+				},
+				Macos: &HostedAgentsMacosPlatformSettingsInput{
+					XcodeVersion: nil,
+				},
+			},
 		}
 
 		if plan.HostedAgents.Linux != nil {
-			hosted.PlatformSettings.Linux = HostedAgentsLinuxPlatformSettingsInput{
+			hosted.PlatformSettings.Linux = &HostedAgentsLinuxPlatformSettingsInput{
 				AgentImageRef: plan.HostedAgents.Linux.ImageAgentRef,
 			}
 		}
 		if plan.HostedAgents.Mac != nil {
-			hosted.PlatformSettings.Macos = HostedAgentsMacosPlatformSettingsInput{
+			hosted.PlatformSettings.Macos = &HostedAgentsMacosPlatformSettingsInput{
 				XcodeVersion: plan.HostedAgents.Mac.XcodeVersion,
 			}
 		}
@@ -498,15 +471,6 @@ func (cq *clusterQueueResource) Update(ctx context.Context, req resource.UpdateR
 				}
 			}
 
-			resp.Diagnostics.AddWarning(
-				"UPDATE - updateClusterQueue - hosted.PlatformSettings.Linux",
-				fmt.Sprint(hosted.PlatformSettings.Linux),
-			)
-			resp.Diagnostics.AddWarning(
-				"UPDATE - updateClusterQueue - hosted.PlatformSettings.Macos",
-				fmt.Sprint(hosted.PlatformSettings.Macos),
-			)
-
 			r, err = updateClusterQueue(ctx,
 				cq.client.genqlient,
 				*org,
@@ -515,12 +479,6 @@ func (cq *clusterQueueResource) Update(ctx context.Context, req resource.UpdateR
 				hosted,
 			)
 		}
-
-		resp.Diagnostics.AddWarning(
-			"UPDATE - updateClusterQueue - response",
-			fmt.Sprint(r.ClusterQueueUpdate.ClusterQueue.HostedAgents.PlatformSettings),
-		)
-
 		return retryContextError(err)
 	})
 	if err != nil {
