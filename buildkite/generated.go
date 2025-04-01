@@ -622,20 +622,20 @@ const (
 // Settings for Linux hosted agents on this queue
 type HostedAgentsLinuxPlatformSettingsInput struct {
 	// Settings for Linux hosted agents on this queue
-	AgentImageRef string `json:"agentImageRef"`
+	AgentImageRef *string `json:"agentImageRef"`
 }
 
 // GetAgentImageRef returns HostedAgentsLinuxPlatformSettingsInput.AgentImageRef, and is useful for accessing the field via an interface.
-func (v *HostedAgentsLinuxPlatformSettingsInput) GetAgentImageRef() string { return v.AgentImageRef }
+func (v *HostedAgentsLinuxPlatformSettingsInput) GetAgentImageRef() *string { return v.AgentImageRef }
 
 // Settings for Mac hosted agents on this queue
 type HostedAgentsMacosPlatformSettingsInput struct {
 	// Settings for Mac hosted agents on this queue
-	XcodeVersion string `json:"xcodeVersion"`
+	XcodeVersion *string `json:"xcodeVersion"`
 }
 
 // GetXcodeVersion returns HostedAgentsMacosPlatformSettingsInput.XcodeVersion, and is useful for accessing the field via an interface.
-func (v *HostedAgentsMacosPlatformSettingsInput) GetXcodeVersion() string { return v.XcodeVersion }
+func (v *HostedAgentsMacosPlatformSettingsInput) GetXcodeVersion() *string { return v.XcodeVersion }
 
 // Settings for hosted agents on this queue
 type HostedAgentsPlatformSettingsInput struct {
@@ -793,11 +793,11 @@ func (v *HostedAgentsQueueSettingsValuesPlatformSettingsHostedAgentPlatformSetti
 // Configuration options specific to Linux hosted agent instances.
 type HostedAgentsQueueSettingsValuesPlatformSettingsHostedAgentPlatformSettingsLinuxHostedAgentLinuxSettings struct {
 	// The image reference of a custom agent base image used by the hosted agent instances in this cluster queue. Note: this must be a public image, or image stored within the hosted agents internal registry.
-	AgentImageRef string `json:"agentImageRef"`
+	AgentImageRef *string `json:"agentImageRef"`
 }
 
 // GetAgentImageRef returns HostedAgentsQueueSettingsValuesPlatformSettingsHostedAgentPlatformSettingsLinuxHostedAgentLinuxSettings.AgentImageRef, and is useful for accessing the field via an interface.
-func (v *HostedAgentsQueueSettingsValuesPlatformSettingsHostedAgentPlatformSettingsLinuxHostedAgentLinuxSettings) GetAgentImageRef() string {
+func (v *HostedAgentsQueueSettingsValuesPlatformSettingsHostedAgentPlatformSettingsLinuxHostedAgentLinuxSettings) GetAgentImageRef() *string {
 	return v.AgentImageRef
 }
 
@@ -807,11 +807,11 @@ func (v *HostedAgentsQueueSettingsValuesPlatformSettingsHostedAgentPlatformSetti
 // Configuration options for the base image of hosted agent instances on macOS platforms.
 type HostedAgentsQueueSettingsValuesPlatformSettingsHostedAgentPlatformSettingsMacosHostedAgentMacOSSettingsType struct {
 	// The Xcode version to pre-select (via xcode-select) on macOS hosted agent instances for this cluster queue.
-	XcodeVersion string `json:"xcodeVersion"`
+	XcodeVersion *string `json:"xcodeVersion"`
 }
 
 // GetXcodeVersion returns HostedAgentsQueueSettingsValuesPlatformSettingsHostedAgentPlatformSettingsMacosHostedAgentMacOSSettingsType.XcodeVersion, and is useful for accessing the field via an interface.
-func (v *HostedAgentsQueueSettingsValuesPlatformSettingsHostedAgentPlatformSettingsMacosHostedAgentMacOSSettingsType) GetXcodeVersion() string {
+func (v *HostedAgentsQueueSettingsValuesPlatformSettingsHostedAgentPlatformSettingsMacosHostedAgentMacOSSettingsType) GetXcodeVersion() *string {
 	return v.XcodeVersion
 }
 
