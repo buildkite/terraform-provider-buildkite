@@ -648,13 +648,11 @@ func updateClusterQueueResource(clusterQueueNode getClusterQueuesOrganizationClu
 			InstanceShape: types.StringValue(string(clusterQueueNode.HostedAgents.InstanceShape.Name)),
 		}
 		if clusterQueueNode.HostedAgents.PlatformSettings.Linux.AgentImageRef != nil {
-			//if len(clusterQueueNode.HostedAgents.PlatformSettings.Linux.AgentImageRef) > 0 {
 			cq.HostedAgents.Linux = &linuxConfigModel{
 				ImageAgentRef: clusterQueueNode.HostedAgents.PlatformSettings.Linux.AgentImageRef,
 			}
 		}
 		if clusterQueueNode.HostedAgents.PlatformSettings.Macos.XcodeVersion != nil {
-			//if len(clusterQueueNode.HostedAgents.PlatformSettings.Macos.XcodeVersion) > 0 {
 			cq.HostedAgents.Mac = &macConfigModel{
 				XcodeVersion: clusterQueueNode.HostedAgents.PlatformSettings.Macos.XcodeVersion,
 			}
