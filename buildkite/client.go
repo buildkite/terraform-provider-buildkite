@@ -175,13 +175,6 @@ func isRateLimited(err error) bool {
 		}
 	}
 
-	// Check for other rate limit indications in the error message
-	if strings.Contains(strings.ToLower(err.Error()), "rate limit") ||
-		strings.Contains(strings.ToLower(err.Error()), "too many requests") {
-		log.Printf("[DEBUG] Rate limited detected from error text: %s", err.Error())
-		return true
-	}
-
 	return false
 }
 
