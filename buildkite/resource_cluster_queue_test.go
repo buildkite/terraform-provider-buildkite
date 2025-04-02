@@ -387,8 +387,6 @@ func TestAccBuildkiteClusterQueueResource(t *testing.T) {
 		check := resource.ComposeAggregateTestCheckFunc(
 			testAccCheckClusterQueueExists("buildkite_cluster_queue.foobar", &cq),
 			resource.TestCheckResourceAttr("buildkite_cluster_queue.foobar", "hosted_agents.instance_shape", "MACOS_M2_4X7"),
-			// re-enable when macos hosted cluster queue creation is fixed
-			// https://github.com/buildkite/terraform-provider-buildkite/issues/869
 			resource.TestCheckResourceAttr("buildkite_cluster_queue.foobar", "hosted_agents.mac.xcode_version", "14.3.1"),
 		)
 

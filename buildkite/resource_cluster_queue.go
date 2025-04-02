@@ -423,6 +423,10 @@ func (cq *clusterQueueResource) Update(ctx context.Context, req resource.UpdateR
 	if state.HostedAgents != nil {
 		hosted = &HostedAgentsQueueSettingsUpdateInput{
 			InstanceShape: HostedAgentInstanceShapeName(plan.HostedAgents.InstanceShape.ValueString()),
+
+			// Set Hosted Agents input fields to nil to account for when
+			// hosted_agents.linux or hosted_agents.mac attributes are removed
+			// and a null can be sent in the clusterQueueUpdate mutation API call
 			PlatformSettings: HostedAgentsPlatformSettingsInput{
 				Linux: &HostedAgentsLinuxPlatformSettingsInput{
 					AgentImageRef: nil,
@@ -437,8 +441,7 @@ func (cq *clusterQueueResource) Update(ctx context.Context, req resource.UpdateR
 			hosted.PlatformSettings.Linux = &HostedAgentsLinuxPlatformSettingsInput{
 				AgentImageRef: plan.HostedAgents.Linux.ImageAgentRef,
 			}
-		}
-		if plan.HostedAgents.Mac != nil {
+		} else if plan.HostedAgents.Mac != nil {
 			hosted.PlatformSettings.Macos = &HostedAgentsMacosPlatformSettingsInput{
 				XcodeVersion: plan.HostedAgents.Mac.XcodeVersion,
 			}
