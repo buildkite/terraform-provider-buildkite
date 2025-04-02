@@ -11,7 +11,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
 type clusterResource struct {
@@ -102,31 +101,26 @@ func (c *clusterResource) Create(ctx context.Context, req resource.CreateRequest
 		return
 	}
 
-	timeout, diags := c.client.timeouts.Create(ctx, DefaultTimeout)
+	var r *createClusterResponse
 
-	resp.Diagnostics.Append(diags...)
-
-	if resp.Diagnostics.HasError() {
+	org, err := c.client.GetOrganizationID()
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Unable to get Organization ID",
+			fmt.Sprintf("Unable to get Organization ID: %s", err.Error()),
+		)
 		return
 	}
 
-	var r *createClusterResponse
-	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-		org, err := c.client.GetOrganizationID()
-		if err == nil {
-			r, err = createCluster(
-				ctx,
-				c.client.genqlient,
-				*org,
-				state.Name.ValueString(),
-				state.Description.ValueStringPointer(),
-				state.Emoji.ValueStringPointer(),
-				state.Color.ValueStringPointer(),
-			)
-		}
-
-		return retryContextError(err)
-	})
+	r, err = createCluster(
+		ctx,
+		c.client.genqlient,
+		*org,
+		state.Name.ValueString(),
+		state.Description.ValueStringPointer(),
+		state.Emoji.ValueStringPointer(),
+		state.Color.ValueStringPointer(),
+	)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to create Cluster",
@@ -152,21 +146,9 @@ func (c *clusterResource) Read(ctx context.Context, req resource.ReadRequest, re
 		return
 	}
 
-	timeout, diags := c.client.timeouts.Read(ctx, DefaultTimeout)
-
-	resp.Diagnostics.Append(diags...)
-
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
 	var r *getNodeResponse
-	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-		var err error
-		r, err = getNode(ctx, c.client.genqlient, state.ID.ValueString())
 
-		return retryContextError(err)
-	})
+	r, err := getNode(ctx, c.client.genqlient, state.ID.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to read Cluster",
@@ -204,30 +186,24 @@ func (c *clusterResource) Update(ctx context.Context, req resource.UpdateRequest
 		return
 	}
 
-	timeout, diags := c.client.timeouts.Update(ctx, DefaultTimeout)
-
-	resp.Diagnostics.Append(diags...)
-
-	if resp.Diagnostics.HasError() {
+	org, err := c.client.GetOrganizationID()
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Unable to get Organization ID",
+			fmt.Sprintf("Unable to get Organization ID: %s", err.Error()),
+		)
 		return
 	}
 
-	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-		org, err := c.client.GetOrganizationID()
-		if err == nil {
-			_, err = updateCluster(ctx,
-				c.client.genqlient,
-				*org,
-				state.ID.ValueString(),
-				plan.Name.ValueString(),
-				plan.Description.ValueStringPointer(),
-				plan.Emoji.ValueStringPointer(),
-				plan.Color.ValueStringPointer(),
-			)
-		}
-
-		return retryContextError(err)
-	})
+	_, err = updateCluster(ctx,
+		c.client.genqlient,
+		*org,
+		state.ID.ValueString(),
+		plan.Name.ValueString(),
+		plan.Description.ValueStringPointer(),
+		plan.Emoji.ValueStringPointer(),
+		plan.Color.ValueStringPointer(),
+	)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to update Cluster",
@@ -250,22 +226,16 @@ func (c *clusterResource) Delete(ctx context.Context, req resource.DeleteRequest
 		return
 	}
 
-	timeout, diags := c.client.timeouts.Delete(ctx, DefaultTimeout)
-
-	resp.Diagnostics.Append(diags...)
-
-	if resp.Diagnostics.HasError() {
+	org, err := c.client.GetOrganizationID()
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Unable to get Organization ID",
+			fmt.Sprintf("Unable to get Organization ID: %s", err.Error()),
+		)
 		return
 	}
 
-	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-		org, err := c.client.GetOrganizationID()
-		if err == nil {
-			_, err = deleteCluster(ctx, c.client.genqlient, *org, state.ID.ValueString())
-		}
-
-		return retryContextError(err)
-	})
+	_, err = deleteCluster(ctx, c.client.genqlient, *org, state.ID.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to delete Cluster",

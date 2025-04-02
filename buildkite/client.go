@@ -6,11 +6,15 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"regexp"
 	"strconv"
+	"strings"
+	"time"
 
 	genqlient "github.com/Khan/genqlient/graphql"
+	"github.com/hashicorp/go-retryablehttp"
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/shurcooL/graphql"
 )
@@ -53,19 +57,91 @@ func (client Client) GetOrganizationID() (*string, error) {
 	return client.organizationId, nil
 }
 
-// NewClient creates a client to use for interacting with the Buildkite API
+// NewClient creates a client for interacting with the Buildkite API with rate limit handling
+//
+// https://buildkite.com/docs/apis/rest-api/limits
+//  1. The client uses hashicorp/go-retryablehttp to provide automatic retries with exponential backoff
+//  2. Maximum of 5 retry attempts for any request that fails with a retryable error
+//  3. For rate limited requests (HTTP 429), the client will:
+//     - Check RateLimit-Reset header to check when the rate limit will be reset
+//     - Wait until the reset time (plus a small buffer) before retrying
+//     - Add jitter to avoid "thundering herd" issue when we'd retry multiple requests at the same time
+//  4. For server errors (HTTP 502-504), the client will retry with exponential backoff
+//  5. All retryable requests have a minimum wait of 1 second and maximum of 30 seconds
+
 func NewClient(config *clientConfig) *Client {
-	// Setup a HTTP Client that can be used by all REST and graphql API calls,
-	// with suitable headers for authentication and user agent identification
-	rt := http.DefaultTransport
+	retryClient := retryablehttp.NewClient()
+
+	// TODO: Make configurable?
+	retryClient.RetryMax = 5
+	retryClient.RetryWaitMin = 1 * time.Second // Start with 1 second wait
+	retryClient.RetryWaitMax = 30 * time.Second
+	retryClient.Logger = nil
+
+	// Determines how long to wait before retrying a request
+	retryClient.Backoff = func(min, max time.Duration, attemptNum int, resp *http.Response) time.Duration {
+		// https://buildkite.com/docs/apis/rest-api/limits
+		if resp != nil && resp.StatusCode == http.StatusTooManyRequests {
+			// Check for RateLimit-Reset header
+			if resetHeader := resp.Header.Get("RateLimit-Reset"); resetHeader != "" {
+				if resetTime, err := strconv.ParseInt(resetHeader, 10, 64); err == nil {
+					// If we have a reset time, calculate wait time plus a small buffer
+					waitTime := time.Until(time.Unix(resetTime, 0)) + (500 * time.Millisecond)
+					log.Printf("[DEBUG] Rate limit hit, reset at: %v (waiting: %v)",
+						time.Unix(resetTime, 0), waitTime)
+
+					// Return the wait time, but ensure it's within min-max bounds
+					if waitTime < min {
+						return min
+					}
+					if waitTime > max {
+						return max
+					}
+					return waitTime
+				}
+			}
+
+			// Check for Retry-After header as fallback
+			if retryAfter := resp.Header.Get("Retry-After"); retryAfter != "" {
+				if seconds, err := strconv.ParseInt(retryAfter, 10, 64); err == nil {
+					waitTime := time.Duration(seconds) * time.Second
+					log.Printf("[DEBUG] Rate limit hit, retry after: %v", waitTime)
+
+					if waitTime < min {
+						return min
+					}
+					if waitTime > max {
+						return max
+					}
+					return waitTime
+				}
+			}
+		}
+		return retryablehttp.DefaultBackoff(min, max, attemptNum, resp)
+	}
+
+	retryClient.CheckRetry = func(ctx context.Context, resp *http.Response, err error) (bool, error) {
+		if err != nil || resp == nil {
+			return retryablehttp.DefaultRetryPolicy(ctx, resp, err)
+		}
+
+		if resp.StatusCode == http.StatusTooManyRequests || (resp.StatusCode >= 500 && resp.StatusCode < 600) {
+			remaining := resp.Header.Get("RateLimit-Remaining")
+			reset := resp.Header.Get("RateLimit-Reset")
+			log.Printf("[DEBUG] Buildkite API returned %d - retrying (Remaining: %s, Reset: %s)",
+				resp.StatusCode, remaining, reset)
+			return true, nil
+		}
+
+		return false, nil
+	}
+
 	header := make(http.Header)
 	header.Set("Authorization", "Bearer "+config.apiToken)
 	header.Set("User-Agent", config.userAgent)
-	rt = newHeaderRoundTripper(rt, header)
+	retryClient.HTTPClient.Transport = newHeaderRoundTripper(retryClient.HTTPClient.Transport, header)
 
-	httpClient := &http.Client{
-		Transport: rt,
-	}
+	httpClient := retryClient.StandardClient()
 
 	graphqlClient := graphql.NewClient(config.graphqlURL, httpClient)
 
@@ -85,26 +161,52 @@ func isRetryableError(err error) bool {
 }
 
 func isRateLimited(err error) bool {
+	if err == nil {
+		return false
+	}
+
 	// see: https://github.com/Khan/genqlient/blob/main/graphql/client.go#L167
 	r := regexp.MustCompile(`returned error (\d{3}):`)
-	if match := r.FindString(err.Error()); match != "" {
-		code, _ := strconv.Atoi(match)
-		if code == http.StatusTooManyRequests {
+	if matches := r.FindStringSubmatch(err.Error()); len(matches) >= 2 {
+		code, err := strconv.Atoi(matches[1])
+		if err == nil && code == http.StatusTooManyRequests {
+			log.Printf("[DEBUG] Rate limited detected from error message: %s", err.Error())
 			return true
 		}
 	}
+
+	// Check for other rate limit indications in the error message
+	if strings.Contains(strings.ToLower(err.Error()), "rate limit") ||
+		strings.Contains(strings.ToLower(err.Error()), "too many requests") {
+		log.Printf("[DEBUG] Rate limited detected from error text: %s", err.Error())
+		return true
+	}
+
 	return false
 }
 
 func isServerError(err error) bool {
+	if err == nil {
+		return false
+	}
+
 	// see: https://github.com/Khan/genqlient/blob/main/graphql/client.go#L167
 	r := regexp.MustCompile(`returned error (\d{3}):`)
-	if match := r.FindString(err.Error()); match != "" {
-		code, _ := strconv.Atoi(match)
-		if code >= http.StatusBadGateway && code <= http.StatusGatewayTimeout {
+	if matches := r.FindStringSubmatch(err.Error()); len(matches) >= 2 {
+		code, err := strconv.Atoi(matches[1])
+		if err == nil && code >= http.StatusBadGateway && code <= http.StatusGatewayTimeout {
+			log.Printf("[DEBUG] Server error detected from error message: %s", err.Error())
 			return true
 		}
 	}
+
+	if strings.Contains(strings.ToLower(err.Error()), "server error") ||
+		strings.Contains(strings.ToLower(err.Error()), "gateway") ||
+		strings.Contains(strings.ToLower(err.Error()), "unavailable") {
+		log.Printf("[DEBUG] Server error detected from error text: %s", err.Error())
+		return true
+	}
+
 	return false
 }
 
@@ -144,15 +246,53 @@ func (client *Client) makeRequest(ctx context.Context, method string, path strin
 		return fmt.Errorf("failed to create request: %w", err)
 	}
 
+	// Add content-type header for POST/PUT requests with body
+	if (method == http.MethodPost || method == http.MethodPut) && bodyBytes != nil {
+		req.Header.Set("Content-Type", "application/json")
+	}
+
 	resp, err := client.http.Do(req)
 	if err != nil {
 		return fmt.Errorf("failed to send request: %w", err)
 	}
+
 	if resp.StatusCode >= 400 {
-		return fmt.Errorf("the Buildkite API request failed: %s %s (returned error %d)", method, url, resp.StatusCode)
+		defer resp.Body.Close()
+
+		// Try to read the error body for better error messages
+		errorBody, readErr := io.ReadAll(resp.Body)
+		errorMsg := ""
+		if readErr == nil && len(errorBody) > 0 {
+			errorMsg = string(errorBody)
+		}
+
+		if resp.StatusCode == http.StatusTooManyRequests {
+			remaining := resp.Header.Get("RateLimit-Remaining")
+			reset := resp.Header.Get("RateLimit-Reset")
+			retryAfter := resp.Header.Get("Retry-After")
+
+			log.Printf("[DEBUG] Rate limit hit on REST API: %s %s (Remaining: %s, Reset: %s, Retry-After: %s)",
+				method, url, remaining, reset, retryAfter)
+
+			if errorMsg != "" {
+				return fmt.Errorf("rate limit exceeded: %s %s (status: %d): %s",
+					method, url, resp.StatusCode, errorMsg)
+			}
+			return fmt.Errorf("rate limit exceeded: %s %s (status: %d)",
+				method, url, resp.StatusCode)
+		}
+
+		if errorMsg != "" {
+			return fmt.Errorf("the Buildkite API request failed: %s %s (status: %d): %s",
+				method, url, resp.StatusCode, errorMsg)
+		}
+		return fmt.Errorf("the Buildkite API request failed: %s %s (status: %d)",
+			method, url, resp.StatusCode)
 	} else if resp.StatusCode == 204 {
+		resp.Body.Close()
 		return nil
 	}
+
 	defer resp.Body.Close()
 
 	responseBody, err := io.ReadAll(resp.Body)
