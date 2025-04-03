@@ -37,12 +37,6 @@ func (c *clusterDatasource) Read(ctx context.Context, req datasource.ReadRequest
 		return
 	}
 
-	_, diags := c.client.timeouts.Read(ctx, DefaultTimeout)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
 	var r *getClusterByNameResponse
 	var err error
 	var cursor *string

@@ -95,13 +95,6 @@ func (pt *pipelineTemplateDatasource) Read(ctx context.Context, req datasource.R
 		return
 	}
 
-	_, diags := pt.client.timeouts.Read(ctx, DefaultTimeout)
-	resp.Diagnostics.Append(diags...)
-
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
 	if !state.ID.IsNull() {
 		apiResponse, err := getNode(ctx, pt.client.genqlient, state.ID.ValueString())
 		if err != nil {
