@@ -149,7 +149,6 @@ func (ps *pipelineSchedule) Create(ctx context.Context, req resource.CreateReque
 
 		return retryContextError(err)
 	})
-
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to create Pipeline schedule",
@@ -170,7 +169,6 @@ func (ps *pipelineSchedule) Create(ctx context.Context, req resource.CreateReque
 	state.Env = plan.Env
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
-
 }
 
 func (ps *pipelineSchedule) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
@@ -200,7 +198,6 @@ func (ps *pipelineSchedule) Read(ctx context.Context, req resource.ReadRequest, 
 
 		return retryContextError(err)
 	})
-
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to read Pipeline schedule",
@@ -226,7 +223,6 @@ func (ps *pipelineSchedule) Read(ctx context.Context, req resource.ReadRequest, 
 		)
 		resp.State.RemoveResource(ctx)
 	}
-
 }
 
 func (ps *pipelineSchedule) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
@@ -269,7 +265,6 @@ func (ps *pipelineSchedule) Update(ctx context.Context, req resource.UpdateReque
 
 		return retryContextError(err)
 	})
-
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to update Pipeline schedule",
@@ -303,7 +298,6 @@ func (ps *pipelineSchedule) Delete(ctx context.Context, req resource.DeleteReque
 
 		return retryContextError(err)
 	})
-
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to delete Pipeline schedule",
@@ -340,11 +334,9 @@ func envVarsMapFromTfToString(ctx context.Context, m types.Map) string {
 		fmt.Fprintf(b, "%s=%s\n", key, value)
 	}
 	return b.String()
-
 }
 
 func updatePipelineScheduleNode(ctx context.Context, psState *pipelineScheduleResourceModel, psNode getPipelineScheduleNodePipelineSchedule) {
-
 	psState.Uuid = types.StringValue(psNode.Uuid)
 	psState.Label = types.StringPointerValue(psNode.Label)
 	psState.Branch = types.StringPointerValue(psNode.Branch)

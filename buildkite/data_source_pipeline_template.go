@@ -42,6 +42,7 @@ func (pt *pipelineTemplateDatasource) Configure(ctx context.Context, req datasou
 
 	pt.client = req.ProviderData.(*Client)
 }
+
 func (*pipelineTemplateDatasource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		MarkdownDescription: heredoc.Doc(`
@@ -109,7 +110,6 @@ func (pt *pipelineTemplateDatasource) Read(ctx context.Context, req datasource.R
 			apiResponse, err = getNode(ctx, pt.client.genqlient, state.ID.ValueString())
 			return retryContextError(err)
 		})
-
 		if err != nil {
 			resp.Diagnostics.AddError(
 				"Unable to get pipeline template",
@@ -168,7 +168,6 @@ func (pt *pipelineTemplateDatasource) Read(ctx context.Context, req datasource.R
 			}
 			return nil
 		})
-
 		if err != nil {
 			resp.Diagnostics.AddError("Unable to find pipeline template", err.Error())
 			return

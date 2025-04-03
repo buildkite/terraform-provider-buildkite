@@ -122,7 +122,6 @@ func (pt *pipelineTemplateResource) Create(ctx context.Context, req resource.Cre
 
 		return retryContextError(err)
 	})
-
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to create pipeline template",
@@ -169,7 +168,6 @@ func (pt *pipelineTemplateResource) Read(ctx context.Context, req resource.ReadR
 
 		return retryContextError(err)
 	})
-
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to read pipeline pipeline",
@@ -238,7 +236,6 @@ func (pt *pipelineTemplateResource) Update(ctx context.Context, req resource.Upd
 
 		return retryContextError(err)
 	})
-
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to create pipeline template",
@@ -285,7 +282,6 @@ func (pt *pipelineTemplateResource) Delete(ctx context.Context, req resource.Del
 
 		return retryContextError(err)
 	})
-
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to delete pipeline template",

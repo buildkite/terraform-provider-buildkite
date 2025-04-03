@@ -110,7 +110,6 @@ func (tp *pipelineTeamResource) Create(ctx context.Context, req resource.CreateR
 
 		return retryContextError(err)
 	})
-
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to create team pipeline",
@@ -153,7 +152,6 @@ func (tp *pipelineTeamResource) Read(ctx context.Context, req resource.ReadReque
 
 		return retryContextError(err)
 	})
-
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to read team pipeline",
@@ -178,7 +176,6 @@ func (tp *pipelineTeamResource) Read(ctx context.Context, req resource.ReadReque
 		resp.Diagnostics.AddWarning("Team pipeline resource not found", "Removing team pipeline from state")
 		resp.State.RemoveResource(ctx)
 	}
-
 }
 
 func (tp *pipelineTeamResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
@@ -210,7 +207,6 @@ func (tp *pipelineTeamResource) Update(ctx context.Context, req resource.UpdateR
 
 		return retryContextError(err)
 	})
-
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to update team pipeline",
@@ -245,7 +241,6 @@ func (tp *pipelineTeamResource) Delete(ctx context.Context, req resource.DeleteR
 
 		return retryContextError(err)
 	})
-
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to delete team pipeline",

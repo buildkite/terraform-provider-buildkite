@@ -191,7 +191,6 @@ func testAccCheckClusterAgentTokenExists(resourceName string, ct *clusterAgentTo
 			getenv("BUILDKITE_ORGANIZATION_SLUG"),
 			resourceState.Primary.Attributes["cluster_uuid"],
 		)
-
 		if err != nil {
 			return fmt.Errorf("Error fetching Cluster Agent Tokens from graphql API: %v", err)
 		}
@@ -217,7 +216,6 @@ func testAccCheckClusterAgentTokenExists(resourceName string, ct *clusterAgentTo
 
 func testAccCheckClusterAgentTokenRemoteValues(ct *clusterAgentTokenResourceModel, description string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
-
 		if ct.Description.ValueString() != description {
 			return fmt.Errorf("Remote Cluster agent token description (%s) doesn't match expected value (%s)", ct.Description, description)
 		}

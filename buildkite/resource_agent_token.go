@@ -75,7 +75,6 @@ func (at *agentTokenResource) Create(ctx context.Context, req resource.CreateReq
 
 		return retryContextError(err)
 	})
-
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to create agent token",
@@ -118,7 +117,6 @@ func (at *agentTokenResource) Delete(ctx context.Context, req resource.DeleteReq
 
 		return retryContextError(err)
 	})
-
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to revoke agent token",
@@ -159,7 +157,6 @@ func (at *agentTokenResource) Read(ctx context.Context, req resource.ReadRequest
 
 		return retryContextError(err)
 	})
-
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to read agent token",

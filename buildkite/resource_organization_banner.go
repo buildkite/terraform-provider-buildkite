@@ -102,7 +102,6 @@ func (ob *organizationBannerResource) Create(ctx context.Context, req resource.C
 
 		return retryContextError(err)
 	})
-
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to create organization banner",
@@ -147,7 +146,6 @@ func (ob *organizationBannerResource) Read(ctx context.Context, req resource.Rea
 
 		return retryContextError(err)
 	})
-
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to read organization banner",
@@ -197,7 +195,6 @@ func (ob *organizationBannerResource) Update(ctx context.Context, req resource.U
 
 		return retryContextError(err)
 	})
-
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to update organization banner",
@@ -240,7 +237,6 @@ func (ob *organizationBannerResource) Delete(ctx context.Context, req resource.D
 
 		return retryContextError(err)
 	})
-
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to delete organization banner",

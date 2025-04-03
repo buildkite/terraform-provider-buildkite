@@ -199,7 +199,6 @@ func testAccCheckTeamMemberExists(resourceName string, tm *teamMemberResourceMod
 		}
 
 		apiResponse, err := getNode(context.Background(), genqlientGraphql, resourceState.Primary.ID)
-
 		if err != nil {
 			return fmt.Errorf("Error fetching team member from graphql API: %v", err)
 		}
@@ -223,7 +222,6 @@ func testCheckTeamMemberResourceRemoved(s *terraform.State) error {
 		}
 
 		apiResponse, err := getNode(context.Background(), genqlientGraphql, rs.Primary.ID)
-
 		if err != nil {
 			return fmt.Errorf("Error fetching team member from graphql API: %v", err)
 		}
@@ -239,7 +237,6 @@ func testCheckTeamMemberResourceRemoved(s *terraform.State) error {
 
 func testAccCheckTeamMemberRemoteValues(role string, tm *teamMemberResourceModel) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
-
 		if string(tm.Role.ValueString()) != role {
 			return fmt.Errorf("remote team member role (%s) doesn't match expected value (%s)", tm.Role.ValueString(), role)
 		}
