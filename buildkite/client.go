@@ -6,16 +6,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
-	"regexp"
 	"strconv"
-	"strings"
 	"time"
 
 	genqlient "github.com/Khan/genqlient/graphql"
 	"github.com/hashicorp/go-retryablehttp"
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/shurcooL/graphql"
 )
 
@@ -85,10 +83,11 @@ func NewClient(config *clientConfig) *Client {
 			// Check for RateLimit-Reset header
 			if resetHeader := resp.Header.Get("RateLimit-Reset"); resetHeader != "" {
 				if resetTime, err := strconv.ParseInt(resetHeader, 10, 64); err == nil {
-					// If we have a reset time, calculate wait time plus a small buffer
-					waitTime := time.Until(time.Unix(resetTime, 0)) + (500 * time.Millisecond)
-					log.Printf("[DEBUG] Rate limit hit, reset at: %v (waiting: %v)",
-						time.Unix(resetTime, 0), waitTime)
+					// If we have a reset time, calculate wait time plus a small buffer.
+					// Use a background context for logging as the request context might be cancelled.
+					resetAt := time.Unix(resetTime, 0)
+					waitTime := time.Until(resetAt) + (500 * time.Millisecond)
+					tflog.Debug(context.Background(), fmt.Sprintf("Rate limit hit, reset at: %v (waiting: %v)", resetAt, waitTime))
 
 					// Return the wait time, but ensure it's within min-max bounds
 					if waitTime < min {
@@ -102,10 +101,12 @@ func NewClient(config *clientConfig) *Client {
 			}
 
 			// Check for Retry-After header as fallback
+			// Check for Retry-After header as fallback.
+			// Use a background context for logging as the request context might be cancelled.
 			if retryAfter := resp.Header.Get("Retry-After"); retryAfter != "" {
 				if seconds, err := strconv.ParseInt(retryAfter, 10, 64); err == nil {
 					waitTime := time.Duration(seconds) * time.Second
-					log.Printf("[DEBUG] Rate limit hit, retry after: %v", waitTime)
+					tflog.Debug(context.Background(), fmt.Sprintf("Rate limit hit, retry after: %v", waitTime))
 
 					if waitTime < min {
 						return min
@@ -126,10 +127,11 @@ func NewClient(config *clientConfig) *Client {
 		}
 
 		if resp.StatusCode == http.StatusTooManyRequests || (resp.StatusCode >= 500 && resp.StatusCode < 600) {
+			// Use the request context for logging here as it's still valid within CheckRetry.
 			remaining := resp.Header.Get("RateLimit-Remaining")
 			reset := resp.Header.Get("RateLimit-Reset")
-			log.Printf("[DEBUG] Buildkite API returned %d - retrying (Remaining: %s, Reset: %s)",
-				resp.StatusCode, remaining, reset)
+			tflog.Debug(ctx, fmt.Sprintf("Buildkite API returned %d - retrying (Remaining: %s, Reset: %s)",
+				resp.StatusCode, remaining, reset))
 			return true, nil
 		}
 
@@ -154,53 +156,6 @@ func NewClient(config *clientConfig) *Client {
 		restURL:        config.restURL,
 		timeouts:       config.timeouts,
 	}
-}
-
-func isRetryableError(err error) bool {
-	return isRateLimited(err) || isServerError(err)
-}
-
-func isRateLimited(err error) bool {
-	if err == nil {
-		return false
-	}
-
-	// see: https://github.com/Khan/genqlient/blob/main/graphql/client.go#L167
-	r := regexp.MustCompile(`returned error (\d{3}):`)
-	if matches := r.FindStringSubmatch(err.Error()); len(matches) >= 2 {
-		code, err := strconv.Atoi(matches[1])
-		if err == nil && code == http.StatusTooManyRequests {
-			log.Printf("[DEBUG] Rate limited detected from error message: %s", err.Error())
-			return true
-		}
-	}
-
-	return false
-}
-
-func isServerError(err error) bool {
-	if err == nil {
-		return false
-	}
-
-	// see: https://github.com/Khan/genqlient/blob/main/graphql/client.go#L167
-	r := regexp.MustCompile(`returned error (\d{3}):`)
-	if matches := r.FindStringSubmatch(err.Error()); len(matches) >= 2 {
-		code, err := strconv.Atoi(matches[1])
-		if err == nil && code >= http.StatusBadGateway && code <= http.StatusGatewayTimeout {
-			log.Printf("[DEBUG] Server error detected from error message: %s", err.Error())
-			return true
-		}
-	}
-
-	if strings.Contains(strings.ToLower(err.Error()), "server error") ||
-		strings.Contains(strings.ToLower(err.Error()), "gateway") ||
-		strings.Contains(strings.ToLower(err.Error()), "unavailable") {
-		log.Printf("[DEBUG] Server error detected from error text: %s", err.Error())
-		return true
-	}
-
-	return false
 }
 
 func newHeaderRoundTripper(next http.RoundTripper, header http.Header) *headerRoundTripper {
@@ -264,8 +219,8 @@ func (client *Client) makeRequest(ctx context.Context, method string, path strin
 			reset := resp.Header.Get("RateLimit-Reset")
 			retryAfter := resp.Header.Get("Retry-After")
 
-			log.Printf("[DEBUG] Rate limit hit on REST API: %s %s (Remaining: %s, Reset: %s, Retry-After: %s)",
-				method, url, remaining, reset, retryAfter)
+			tflog.Warn(ctx, fmt.Sprintf("Rate limit hit on REST API: %s %s (Remaining: %s, Reset: %s, Retry-After: %s)",
+				method, url, remaining, reset, retryAfter))
 
 			if errorMsg != "" {
 				return fmt.Errorf("rate limit exceeded: %s %s (status: %d): %s",
