@@ -76,6 +76,13 @@ func NewClient(config *clientConfig) *Client {
 	retryClient.RetryWaitMax = 30 * time.Second
 	retryClient.Logger = nil
 
+	readTimeout, diags := config.timeouts.Read(context.Background(), DefaultTimeout)
+	if !diags.HasError() {
+		// Set timeout for any valid duration, including 0ms
+		// This ensures the test with "read = 0ms" will fail as expected
+		retryClient.HTTPClient.Timeout = readTimeout
+	}
+
 	// Determines how long to wait before retrying a request
 	retryClient.Backoff = func(min, max time.Duration, attemptNum int, resp *http.Response) time.Duration {
 		// https://buildkite.com/docs/apis/rest-api/limits
@@ -177,6 +184,13 @@ func (rt *headerRoundTripper) RoundTrip(req *http.Request) (*http.Response, erro
 }
 
 func (client *Client) makeRequest(ctx context.Context, method string, path string, postData interface{}, responseObject interface{}) error {
+	readTimeout, diags := client.timeouts.Read(ctx, DefaultTimeout)
+	if !diags.HasError() {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, readTimeout)
+		defer cancel()
+	}
+
 	var bodyBytes io.Reader
 	if postData != nil {
 		jsonPayload, err := json.Marshal(postData)
