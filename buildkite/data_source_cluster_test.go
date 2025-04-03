@@ -20,7 +20,7 @@ func TestAccBuildkiteClusterDatasource(t *testing.T) {
 					Config: fmt.Sprintf(`
 						provider "buildkite" {
 							timeouts = {
-								read = "0ms"
+								read = "1ms"
 							}
 						}
 						resource "buildkite_cluster" "cluster" {
