@@ -160,7 +160,6 @@ func (pt *pipelineTemplateDatasource) Read(ctx context.Context, req datasource.R
 				// Move to next cursor
 				cursor = &r.Organization.PipelineTemplates.PageInfo.EndCursor
 			}
-		}
 
 		if !matchFound {
 			resp.Diagnostics.AddError("Unable to find pipeline template",

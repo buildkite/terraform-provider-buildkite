@@ -367,7 +367,6 @@ func (cq *clusterQueueResource) Read(ctx context.Context, req resource.ReadReque
 			}
 			cursor = &r.Organization.Cluster.Queues.PageInfo.EndCursor
 		}
-	}
 
 	// Cluster queue could not be found in returned queues and should be removed from state
 	if !matchFound {
