@@ -55,22 +55,22 @@ func (c *clusterDatasource) Read(ctx context.Context, req datasource.ReadRequest
 
 		// loop over this page of results to try find the matching cluster
 		for _, cluster := range r.Organization.Clusters.Edges {
-				if cluster.Node.Name == state.Name.ValueString() {
-					matchFound = true
-					state.Color = types.StringPointerValue(cluster.Node.Color)
-					state.Description = types.StringPointerValue(cluster.Node.Description)
-					state.Emoji = types.StringPointerValue(cluster.Node.Emoji)
-					state.ID = types.StringValue(cluster.Node.Id)
-					state.Name = types.StringValue(cluster.Node.Name)
-					state.UUID = types.StringValue(cluster.Node.Uuid)
-					break
-				}
-			}
-
-			// end here if we found a match or there are no more pages to search
-			if matchFound || !r.Organization.Clusters.PageInfo.HasNextPage {
+			if cluster.Node.Name == state.Name.ValueString() {
+				matchFound = true
+				state.Color = types.StringPointerValue(cluster.Node.Color)
+				state.Description = types.StringPointerValue(cluster.Node.Description)
+				state.Emoji = types.StringPointerValue(cluster.Node.Emoji)
+				state.ID = types.StringValue(cluster.Node.Id)
+				state.Name = types.StringValue(cluster.Node.Name)
+				state.UUID = types.StringValue(cluster.Node.Uuid)
 				break
 			}
+		}
+
+		// end here if we found a match or there are no more pages to search
+		if matchFound || !r.Organization.Clusters.PageInfo.HasNextPage {
+			break
+		}
 		cursor = &r.Organization.Clusters.PageInfo.EndCursor
 	}
 

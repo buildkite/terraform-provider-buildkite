@@ -100,7 +100,6 @@ func NewClient(config *clientConfig) *Client {
 				}
 			}
 
-			// Check for Retry-After header as fallback
 			// Check for Retry-After header as fallback.
 			// Use a background context for logging as the request context might be cancelled.
 			if retryAfter := resp.Header.Get("Retry-After"); retryAfter != "" {

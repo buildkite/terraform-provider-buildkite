@@ -137,21 +137,21 @@ func (pt *pipelineTemplateDatasource) Read(ctx context.Context, req datasource.R
 			}
 
 			for _, template := range r.Organization.PipelineTemplates.Edges {
-					if template.Node.Name == state.Name.ValueString() {
-						matchFound = true
-						updatePipelineTemplateDatasourceFromNode(&state, template.Node)
-						break
-					}
-				}
-
-				// If no match found and at the last page, break
-				if matchFound || !r.Organization.PipelineTemplates.PageInfo.HasNextPage {
+				if template.Node.Name == state.Name.ValueString() {
+					matchFound = true
+					updatePipelineTemplateDatasourceFromNode(&state, template.Node)
 					break
 				}
-
-				// Move to next cursor
-				cursor = &r.Organization.PipelineTemplates.PageInfo.EndCursor
 			}
+
+			// If no match found and at the last page, break
+			if matchFound || !r.Organization.PipelineTemplates.PageInfo.HasNextPage {
+				break
+			}
+
+			// Move to next cursor
+			cursor = &r.Organization.PipelineTemplates.PageInfo.EndCursor
+		}
 
 		if !matchFound {
 			resp.Diagnostics.AddError("Unable to find pipeline template",

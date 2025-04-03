@@ -349,22 +349,22 @@ func (cq *clusterQueueResource) Read(ctx context.Context, req resource.ReadReque
 
 		// Find the cluster queue from the returned queues to update state
 		for _, edge := range r.Organization.Cluster.Queues.Edges {
-				if edge.Node.Id == state.Id.ValueString() {
-					matchFound = true
-					log.Printf("Found cluster queue with ID %s in cluster %s", edge.Node.Id, state.ClusterUuid.ValueString())
-					// Update ClusterQueueResourceModel with Node values and append
-					updateClusterQueueResource(edge.Node, &state)
-					resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
-					break
-				}
-			}
-
-			// end here if we found a match or there are no more pages to search
-			if matchFound || !r.Organization.Cluster.Queues.PageInfo.HasNextPage {
+			if edge.Node.Id == state.Id.ValueString() {
+				matchFound = true
+				log.Printf("Found cluster queue with ID %s in cluster %s", edge.Node.Id, state.ClusterUuid.ValueString())
+				// Update ClusterQueueResourceModel with Node values and append
+				updateClusterQueueResource(edge.Node, &state)
+				resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 				break
 			}
-			cursor = &r.Organization.Cluster.Queues.PageInfo.EndCursor
 		}
+
+		// end here if we found a match or there are no more pages to search
+		if matchFound || !r.Organization.Cluster.Queues.PageInfo.HasNextPage {
+			break
+		}
+		cursor = &r.Organization.Cluster.Queues.PageInfo.EndCursor
+	}
 
 	// Cluster queue could not be found in returned queues and should be removed from state
 	if !matchFound {
