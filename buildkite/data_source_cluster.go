@@ -44,24 +44,24 @@ func (c *clusterDatasource) Read(ctx context.Context, req datasource.ReadRequest
 		return
 	}
 
+	var r *getClusterByNameResponse
+	var err error
+	var cursor *string
 	var matchFound bool
-	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-		var cursor *string
-		for {
-			r, err := getClusterByName(ctx, c.client.genqlient, c.client.organization, cursor)
-			if err != nil {
-				if isRetryableError(err) {
-					return retry.RetryableError(err)
-				}
-				resp.Diagnostics.AddError(
-					"Unable to read Cluster",
-					fmt.Sprintf("Unable to read Cluster: %s", err.Error()),
-				)
-				return retry.NonRetryableError(err)
-			}
 
-			// loop over this page of results to try find the matching cluster
-			for _, cluster := range r.Organization.Clusters.Edges {
+	// Loop through all pages until a match is found or we run out of pages
+	for {
+		r, err = getClusterByName(ctx, c.client.genqlient, c.client.organization, cursor)
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Unable to read Cluster",
+				fmt.Sprintf("Unable to read Cluster: %s", err.Error()),
+			)
+			return
+		}
+
+		// loop over this page of results to try find the matching cluster
+		for _, cluster := range r.Organization.Clusters.Edges {
 				if cluster.Node.Name == state.Name.ValueString() {
 					matchFound = true
 					state.Color = types.StringPointerValue(cluster.Node.Color)
@@ -78,16 +78,10 @@ func (c *clusterDatasource) Read(ctx context.Context, req datasource.ReadRequest
 			if matchFound || !r.Organization.Clusters.PageInfo.HasNextPage {
 				break
 			}
-			cursor = &r.Organization.Clusters.PageInfo.EndCursor
-		}
-		return nil
-	})
-	if err != nil {
-		resp.Diagnostics.AddError("Unable to find Cluster", err.Error())
-		return
+		cursor = &r.Organization.Clusters.PageInfo.EndCursor
 	}
 
-	// if there is no match found by here then the cluster doesn't exist
+	// If there is no match found by here then the cluster doesn't exist
 	if !matchFound {
 		resp.Diagnostics.AddError("Unable to find Cluster", fmt.Sprintf("Could not find cluster with name \"%s\"", state.Name.ValueString()))
 		return
