@@ -11,7 +11,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
 type pipelineTemplateDatasourceModel struct {
@@ -47,7 +46,7 @@ func (*pipelineTemplateDatasource) Schema(ctx context.Context, req datasource.Sc
 	resp.Schema = schema.Schema{
 		MarkdownDescription: heredoc.Doc(`
 		Use this data source to retrieve a pipeline template by its ID or name.
-		
+
 		More information on pipeline templates can be found in the [documentation](https://buildkite.com/docs/pipelines/templates).
 		`),
 		Attributes: map[string]schema.Attribute{
@@ -96,7 +95,7 @@ func (pt *pipelineTemplateDatasource) Read(ctx context.Context, req datasource.R
 		return
 	}
 
-	timeouts, diags := pt.client.timeouts.Read(ctx, DefaultTimeout)
+	_, diags := pt.client.timeouts.Read(ctx, DefaultTimeout)
 	resp.Diagnostics.Append(diags...)
 
 	if resp.Diagnostics.HasError() {

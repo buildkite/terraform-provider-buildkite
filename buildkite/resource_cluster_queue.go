@@ -19,7 +19,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
 const (
@@ -326,7 +325,6 @@ func (cq *clusterQueueResource) Read(ctx context.Context, req resource.ReadReque
 		return
 	}
 
-	timeout, diags := cq.client.timeouts.Read(ctx, DefaultTimeout)
 	resp.Diagnostics.Append(diags...)
 
 	if resp.Diagnostics.HasError() {
@@ -504,13 +502,6 @@ func (cq *clusterQueueResource) Delete(ctx context.Context, req resource.DeleteR
 	var plan clusterQueueResourceModel
 
 	diags := req.State.Get(ctx, &plan)
-	resp.Diagnostics.Append(diags...)
-
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	timeout, diags := cq.client.timeouts.Delete(ctx, DefaultTimeout)
 	resp.Diagnostics.Append(diags...)
 
 	if resp.Diagnostics.HasError() {

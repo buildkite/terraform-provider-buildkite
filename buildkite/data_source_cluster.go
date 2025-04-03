@@ -7,7 +7,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
 type clusterDatasource struct {
@@ -38,7 +37,7 @@ func (c *clusterDatasource) Read(ctx context.Context, req datasource.ReadRequest
 		return
 	}
 
-	timeout, diags := c.client.timeouts.Read(ctx, DefaultTimeout)
+	_, diags := c.client.timeouts.Read(ctx, DefaultTimeout)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
