@@ -419,11 +419,11 @@ func obtainCreationUUIDs(r *createOrganizationRuleResponse) (*string, *string, e
 		if ruleCreateSourcePipeline, ok := r.RuleCreate.Rule.Source.(*OrganizationRuleFieldsSourcePipeline); ok {
 			sourceUUID = ruleCreateSourcePipeline.Uuid
 		} else {
-			return nil, nil, errors.New("Error obtaining source type upon creating the organization rule.")
+			return nil, nil, errors.New("error obtaining source type upon creating the organization rule")
 		}
 	default:
 		// We can't determine the source type from the RuleCreate object - return an error
-		return nil, nil, errors.New("Error determining source type upon creating the organization rule.")
+		return nil, nil, errors.New("error determining source type upon creating the organization rule")
 	}
 
 	// Now, like above - the provider will try and determine the target UUID based on the *createOrganizationRuleResponse. It will
@@ -436,11 +436,11 @@ func obtainCreationUUIDs(r *createOrganizationRuleResponse) (*string, *string, e
 		if ruleCreateTargetPipeline, ok := r.RuleCreate.Rule.Target.(*OrganizationRuleFieldsTargetPipeline); ok {
 			targetUUID = ruleCreateTargetPipeline.Uuid
 		} else {
-			return nil, nil, errors.New("Error obtaining target type upon creating the organization rule.")
+			return nil, nil, errors.New("error obtaining target type upon creating the organization rule")
 		}
 	default:
 		// We can't determine the target type from the RuleCreate object - return an error
-		return nil, nil, errors.New("Error determining target type upon creating the organization rule.")
+		return nil, nil, errors.New("error determining target type upon creating the organization rule")
 	}
 
 	return &sourceUUID, &targetUUID, nil
@@ -460,11 +460,11 @@ func obtainUpdateUUIDs(r *updateOrganizationRuleResponse) (*string, *string, err
 		if ruleCreateSourcePipeline, ok := r.RuleUpdate.Rule.Source.(*OrganizationRuleFieldsSourcePipeline); ok {
 			sourceUUID = ruleCreateSourcePipeline.Uuid
 		} else {
-			return nil, nil, errors.New("Error obtaining source type upon updating the organization rule.")
+			return nil, nil, errors.New("error obtaining source type upon updating the organization rule")
 		}
 	default:
 		// We can't determine the source type from the RuleUpdate object - return an error
-		return nil, nil, errors.New("Error determining source type upon updating the organization rule.")
+		return nil, nil, errors.New("error determining source type upon updating the organization rule")
 	}
 
 	// Now, like above - the provider will try and determine the target UUID based on the *updateOrganizationRuleResponse. notably
@@ -478,11 +478,11 @@ func obtainUpdateUUIDs(r *updateOrganizationRuleResponse) (*string, *string, err
 		if ruleCreateTargetPipeline, ok := r.RuleUpdate.Rule.Target.(*OrganizationRuleFieldsTargetPipeline); ok {
 			targetUUID = ruleCreateTargetPipeline.Uuid
 		} else {
-			return nil, nil, errors.New("Error obtaining target type upon updating the organization rule.")
+			return nil, nil, errors.New("error obtaining target type upon updating the organization rule")
 		}
 	default:
 		// We can't determine the target type from the RuleUpdate object - return an error
-		return nil, nil, errors.New("Error determining target type upon updating the organization rule.")
+		return nil, nil, errors.New("error determining target type upon updating the organization rule")
 	}
 
 	return &sourceUUID, &targetUUID, nil
@@ -511,19 +511,19 @@ func obtainValueJSON(document string) (*string, error) {
 	// Unmarshall the API obtained document into a ruleDocument struct instance
 	err := json.Unmarshal([]byte(document), &rd)
 	if err != nil {
-		return nil, errors.New("Error unmarshalling the organization rule's JSON document.")
+		return nil, errors.New("error unmarshalling the organization rule's JSON document")
 	}
 
 	// Unmarshall the ruleDocument's value into a [string]interface{} map
 	err = json.Unmarshal([]byte(string(rd.Value)), &valueMap)
 	if err != nil {
-		return nil, errors.New("Error unmarshalling the organization rule's value.")
+		return nil, errors.New("error unmarshalling the organization rule's value")
 	}
 
 	// Marshall the value map back into a byte slice (sorted)
 	valueMarshalled, err := json.Marshal(valueMap)
 	if err != nil {
-		return nil, errors.New("Error marshalling the organization rule's sorted value JSON.")
+		return nil, errors.New("error marshalling the organization rule's sorted value JSON")
 	}
 
 	// Convert and return sorted and serialized value string
