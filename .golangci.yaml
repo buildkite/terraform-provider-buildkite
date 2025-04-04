@@ -1,10 +1,40 @@
+version: "2"
 linters:
+  settings:
+    staticcheck:
+      checks:
+        - all
+        ## We will occasionally need to dual import a package, so disable this check
+        - '-ST1019'
+        ## I'm not fixing this for now but it should be fixed
+        ## TODO: remove this when we have a better solution
+        - '-ST1003'
+        ## This is kind of a TF thing and we want the clarity of the resource initial
+        - '-ST1016'
   enable:
-  - gofmt
-  - nolintlint 
-  - nilerr
-  - nilnil
-
+    - nilerr
+    - nilnil
+    - nolintlint
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
 issues:
   max-issues-per-linter: 0
   max-same-issues: 0
+formatters:
+  enable:
+    - gofmt
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$

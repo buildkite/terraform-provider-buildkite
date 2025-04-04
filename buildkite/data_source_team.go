@@ -143,15 +143,15 @@ func (t *teamDatasource) Read(ctx context.Context, req datasource.ReadRequest, r
 }
 
 func updateTeamDatasourceStateFromSlug(state *teamDatasourceModel, data GetTeamFromSlugResponse) {
-	state.ID = types.StringValue(data.Team.TeamFields.Id)
-	state.UUID = types.StringValue(data.Team.TeamFields.Uuid)
-	state.Slug = types.StringValue(data.Team.TeamFields.Slug)
-	state.Name = types.StringValue(data.Team.TeamFields.Name)
-	state.Privacy = types.StringValue(data.Team.TeamFields.Privacy)
-	state.Description = types.StringValue(data.Team.TeamFields.Description)
-	state.IsDefaultTeam = types.BoolValue(data.Team.TeamFields.IsDefaultTeam)
-	state.DefaultMemberRole = types.StringValue(data.Team.TeamFields.DefaultMemberRole)
-	state.MembersCanCreatePipelines = types.BoolValue(data.Team.TeamFields.MembersCanCreatePipelines)
+	state.ID = types.StringValue(data.Team.Id)
+	state.UUID = types.StringValue(data.Team.Uuid)
+	state.Slug = types.StringValue(data.Team.Slug)
+	state.Name = types.StringValue(data.Team.Name)
+	state.Privacy = types.StringValue(data.Team.Privacy)
+	state.Description = types.StringValue(data.Team.Description)
+	state.IsDefaultTeam = types.BoolValue(data.Team.IsDefaultTeam)
+	state.DefaultMemberRole = types.StringValue(data.Team.DefaultMemberRole)
+	state.MembersCanCreatePipelines = types.BoolValue(data.Team.MembersCanCreatePipelines)
 }
 
 func updateTeamDatasourceState(state *teamDatasourceModel, data getNodeNodeTeam) {
