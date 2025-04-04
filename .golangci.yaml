@@ -6,6 +6,11 @@ linters:
         - all
         ## We will occasionally need to dual import a package, so disable this check
         - '-ST1019'
+        ## I'm not fixing this for now but it should be fixed
+        ## TODO: remove this when we have a better solution
+        - '-ST1003'
+        ## This is kind of a TF thing and we want the clarity of the resource initial
+        - '-ST1016'
   enable:
     - nilerr
     - nilnil
