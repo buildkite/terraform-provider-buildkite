@@ -1,5 +1,11 @@
 version: "2"
 linters:
+  settings:
+    staticcheck:
+      checks:
+        - all
+        ## We will occasionally need to dual import a package, so disable this check
+        - '-ST1019'
   enable:
     - nilerr
     - nilnil
