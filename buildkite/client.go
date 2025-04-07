@@ -268,21 +268,8 @@ func (client *Client) makeRequest(ctx context.Context, method string, path strin
 			errorMsg = string(errorBody)
 		}
 
-		if resp.StatusCode == http.StatusTooManyRequests {
-			remaining := resp.Header.Get("RateLimit-Remaining")
-			reset := resp.Header.Get("RateLimit-Reset")
-			retryAfter := resp.Header.Get("Retry-After")
-
-			tflog.Warn(ctx, fmt.Sprintf("Rate limit hit on REST API: %s %s (Remaining: %s, Reset: %s, Retry-After: %s)",
-				method, url, remaining, reset, retryAfter))
-
-			if errorMsg != "" {
-				return fmt.Errorf("rate limit exceeded: %s %s (status: %d): %s",
-					method, url, resp.StatusCode, errorMsg)
-			}
-			return fmt.Errorf("rate limit exceeded: %s %s (status: %d)",
-				method, url, resp.StatusCode)
-		}
+		// If we get here with a 429 status, it means we've exhausted our retries
+		// The retryablehttp client should have already handled retries before this point
 
 		if errorMsg != "" {
 			return fmt.Errorf("the Buildkite API request failed: %s %s (status: %d): %s",
