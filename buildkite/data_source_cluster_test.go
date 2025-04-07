@@ -20,7 +20,7 @@ func TestAccBuildkiteClusterDatasource(t *testing.T) {
 					Config: fmt.Sprintf(`
 						provider "buildkite" {
 							timeouts = {
-								read = "1ms"
+								read = "0ms"
 							}
 						}
 						resource "buildkite_cluster" "cluster" {
@@ -29,8 +29,7 @@ func TestAccBuildkiteClusterDatasource(t *testing.T) {
 						data "buildkite_cluster" "default" {
 							name = buildkite_cluster.cluster.name
 						}`, clusterName),
-					ExpectError: regexp.MustCompile(`(Client.Timeout exceeded|context deadline exceeded|timeout while)`),
-				},
+					ExpectError: regexp.MustCompile(`timeout while waiting for state to become 'success'`)},
 			},
 		})
 	})

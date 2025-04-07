@@ -19,6 +19,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
 const (
@@ -252,21 +253,24 @@ func (cq *clusterQueueResource) Create(ctx context.Context, req resource.CreateR
 		}
 	}
 
-	org, err := cq.client.GetOrganizationID()
-	if err != nil {
-		resp.Diagnostics.AddError("Unable to get organization ID", fmt.Sprintf("Failed to get organization ID: %s", err.Error()))
-		return
-	}
+	var r *createClusterQueueResponse
+	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+		org, err := cq.client.GetOrganizationID()
+		if err == nil {
+			log.Printf("Creating cluster queue with key %s into cluster %s ...", plan.Key.ValueString(), plan.ClusterId.ValueString())
 
-	log.Printf("Creating cluster queue with key %s into cluster %s ...", plan.Key.ValueString(), plan.ClusterId.ValueString())
-	r, err := createClusterQueue(ctx,
-		cq.client.genqlient,
-		*org,
-		plan.ClusterId.ValueString(),
-		plan.Key.ValueString(),
-		plan.Description.ValueStringPointer(),
-		hosted,
-	)
+			r, err = createClusterQueue(ctx,
+				cq.client.genqlient,
+				*org,
+				plan.ClusterId.ValueString(),
+				plan.Key.ValueString(),
+				plan.Description.ValueStringPointer(),
+				hosted,
+			)
+		}
+
+		return retryContextError(err)
+	})
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to create Cluster Queue",
@@ -282,19 +286,18 @@ func (cq *clusterQueueResource) Create(ctx context.Context, req resource.CreateR
 	state.Key = types.StringValue(r.ClusterQueueCreate.ClusterQueue.Key)
 	state.Description = types.StringPointerValue(r.ClusterQueueCreate.ClusterQueue.Description)
 
-	state.DispatchPaused = types.BoolValue(false) // Start with false, update below if needed
-
 	// GraphQL API does not allow Cluster Queue to be created with Dispatch Paused
-	// so Pause Dispatch after creation if required
+	// so Pause Dispatch after creation
 	if plan.DispatchPaused.ValueBool() {
-		log.Printf("Pausing dispatch on cluster queue with key %s", plan.Key.ValueString())
-		err = cq.pauseDispatch(ctx, timeout, state, &resp.Diagnostics)
+		err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+			log.Printf("Pausing dispatch on cluster queue with key %s", plan.Key.ValueString())
+			return retryContextError(cq.pauseDispatch(ctx, timeout, state, &resp.Diagnostics))
+		})
 		if err != nil {
-			// Error is added to diagnostics within pauseDispatch
 			return
 		}
-		state.DispatchPaused = types.BoolValue(true)
 	}
+	state.DispatchPaused = plan.DispatchPaused
 
 	if plan.HostedAgents != nil {
 		state.HostedAgents = &hostedAgentResourceModel{
@@ -325,49 +328,53 @@ func (cq *clusterQueueResource) Read(ctx context.Context, req resource.ReadReque
 		return
 	}
 
+	timeout, diags := cq.client.timeouts.Read(ctx, DefaultTimeout)
 	resp.Diagnostics.Append(diags...)
 
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	var r *getClusterQueuesResponse
-	var err error
-	var cursor *string
 	var matchFound bool
+	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+		var cursor *string
+		for {
+			log.Printf("Getting cluster queues for cluster %s ...", state.ClusterUuid.ValueString())
+			r, err := getClusterQueues(ctx, cq.client.genqlient, cq.client.organization, state.ClusterUuid.ValueString(), cursor)
+			if err != nil {
+				if isRetryableError(err) {
+					return retry.RetryableError(err)
+				}
+				resp.Diagnostics.AddError(
+					"Unable to read Cluster Queues",
+					fmt.Sprintf("Unable to read Cluster Queues: %s", err.Error()),
+				)
+				return retry.NonRetryableError(err)
+			}
 
-	for {
-		log.Printf("Getting cluster queues for cluster %s ...", state.ClusterUuid.ValueString())
-		r, err = getClusterQueues(ctx, cq.client.genqlient, cq.client.organization, state.ClusterUuid.ValueString(), cursor)
-		if err != nil {
-			resp.Diagnostics.AddError(
-				"Unable to read Cluster Queues",
-				fmt.Sprintf("Unable to read Cluster Queues: %s", err.Error()),
-			)
-			return
-		}
+			// Find the cluster queue from the returned queues to update state
+			for _, edge := range r.Organization.Cluster.Queues.Edges {
+				if edge.Node.Id == state.Id.ValueString() {
+					matchFound = true
+					log.Printf("Found cluster queue with ID %s in cluster %s", edge.Node.Id, state.ClusterUuid.ValueString())
+					// Update ClusterQueueResourceModel with Node values and append
+					updateClusterQueueResource(edge.Node, &state)
+					resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+					break
+				}
+			}
 
-		// Find the cluster queue from the returned queues to update state
-		for _, edge := range r.Organization.Cluster.Queues.Edges {
-			if edge.Node.Id == state.Id.ValueString() {
-				matchFound = true
-				log.Printf("Found cluster queue with ID %s in cluster %s", edge.Node.Id, state.ClusterUuid.ValueString())
-				// Update ClusterQueueResourceModel with Node values and append
-				updateClusterQueueResource(edge.Node, &state)
-				resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+			// end here if we found a match or there are no more pages to search
+			if matchFound || !r.Organization.Cluster.Queues.PageInfo.HasNextPage {
 				break
 			}
+			cursor = &r.Organization.Cluster.Queues.PageInfo.EndCursor
 		}
-
-		// end here if we found a match or there are no more pages to search
-		if matchFound || !r.Organization.Cluster.Queues.PageInfo.HasNextPage {
-			break
-		}
-		cursor = &r.Organization.Cluster.Queues.PageInfo.EndCursor
-	}
+		return nil
+	})
 
 	// Cluster queue could not be found in returned queues and should be removed from state
-	if !matchFound {
+	if !matchFound || err != nil {
 		resp.Diagnostics.AddWarning(
 			"Cluster Queue not found",
 			"Removing Cluster Queue from state...",
@@ -431,44 +438,43 @@ func (cq *clusterQueueResource) Update(ctx context.Context, req resource.UpdateR
 		}
 	}
 
-	org, err := cq.client.GetOrganizationID()
-	if err != nil {
-		resp.Diagnostics.AddError("Unable to get organization ID", fmt.Sprintf("Failed to get organization ID: %s", err.Error()))
-		return
-	}
+	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+		org, err := cq.client.GetOrganizationID()
+		if err == nil {
+			log.Printf("Updating cluster queue %s ...", state.Id.ValueString())
 
-	log.Printf("Updating cluster queue %s ...", state.Id.ValueString())
+			// Extract the planned and state values for DispatchPaused attribute
+			// to compare if the Queue should be paused or resumed
+			// if neither do nothing
+			planDispatchPaused = plan.DispatchPaused.ValueBool()
+			stateDispatchPaused = state.DispatchPaused.ValueBool()
 
-	// Extract the planned and state values for DispatchPaused attribute
-	// to compare if the Queue should be paused or resumed
-	// if neither do nothing
-	planDispatchPaused = plan.DispatchPaused.ValueBool()
-	stateDispatchPaused = state.DispatchPaused.ValueBool()
+			// Check the planned value against the current state value
+			// Planned to be true (changing from false to true)
+			if planDispatchPaused && !stateDispatchPaused {
+				if err := cq.pauseDispatch(ctx, timeout, state, &resp.Diagnostics); err != nil {
+					return retryContextError(err)
+				}
+			}
 
-	// Check the planned value against the current state value
-	// Planned to be true (changing from false to true)
-	if planDispatchPaused && !stateDispatchPaused {
-		if err := cq.pauseDispatch(ctx, timeout, state, &resp.Diagnostics); err != nil {
-			// Error added to diagnostics within pauseDispatch
-			return
+			// Planned to be false (changing from true to false)
+			if !planDispatchPaused && stateDispatchPaused {
+				if err := cq.resumeDispatch(ctx, timeout, state, &resp.Diagnostics); err != nil {
+					return retryContextError(err)
+				}
+			}
+
+			r, err = updateClusterQueue(ctx,
+				cq.client.genqlient,
+				*org,
+				state.Id.ValueString(),
+				plan.Description.ValueStringPointer(),
+				hosted,
+			)
 		}
-	}
 
-	// Planned to be false (changing from true to false)
-	if !planDispatchPaused && stateDispatchPaused {
-		if err := cq.resumeDispatch(ctx, timeout, state, &resp.Diagnostics); err != nil {
-			// Error added to diagnostics within resumeDispatch
-			return
-		}
-	}
-
-	r, err = updateClusterQueue(ctx,
-		cq.client.genqlient,
-		*org,
-		state.Id.ValueString(),
-		plan.Description.ValueStringPointer(),
-		hosted,
-	)
+		return retryContextError(err)
+	})
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to update Cluster Queue",
@@ -508,21 +514,29 @@ func (cq *clusterQueueResource) Delete(ctx context.Context, req resource.DeleteR
 		return
 	}
 
-	org, err := cq.client.GetOrganizationID()
-	if err != nil {
-		resp.Diagnostics.AddError("Unable to get organization ID", fmt.Sprintf("Failed to get organization ID: %s", err.Error()))
+	timeout, diags := cq.client.timeouts.Delete(ctx, DefaultTimeout)
+	resp.Diagnostics.Append(diags...)
+
+	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	log.Printf("Deleting cluster queue %s ...", plan.Id.ValueString())
-	_, err = deleteClusterQueue(ctx,
-		cq.client.genqlient,
-		*org,
-		plan.Id.ValueString(),
-	)
+	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+		org, err := cq.client.GetOrganizationID()
+		if err == nil {
+			log.Printf("Deleting cluster queue %s ...", plan.Id.ValueString())
+			_, err = deleteClusterQueue(ctx,
+				cq.client.genqlient,
+				*org,
+				plan.Id.ValueString(),
+			)
+		}
+
+		return retryContextError(err)
+	})
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Unable to delete Cluster Queue",
+			"Unable to create Cluster Queue",
 			fmt.Sprintf("Unable to delete Cluster Queue: %s", err.Error()),
 		)
 		return
@@ -641,11 +655,14 @@ func updateClusterQueueResource(clusterQueueNode getClusterQueuesOrganizationClu
 }
 
 func (cq *clusterQueueResource) pauseDispatch(ctx context.Context, timeout time.Duration, state clusterQueueResourceModel, diag *diag.Diagnostics) error {
-	log.Printf("Pausing dispatch for cluster queue %s", state.Key.ValueString())
-	_, err := pauseDispatchClusterQueue(ctx, cq.client.genqlient, state.Id.ValueString())
+	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+		log.Printf("Pausing dispatch for cluster queue %s", state.Key)
+		_, err := pauseDispatchClusterQueue(ctx, cq.client.genqlient, state.Id.ValueString())
+		return retryContextError(err)
+	})
 	if err != nil {
 		diag.AddError(
-			"Unable to pause Cluster Queue dispatch",
+			"Unable to pause cluster queue dispatch",
 			fmt.Sprintf("Unable to pause dispatch for cluster queue: %s", err.Error()),
 		)
 	}
@@ -654,11 +671,14 @@ func (cq *clusterQueueResource) pauseDispatch(ctx context.Context, timeout time.
 }
 
 func (cq *clusterQueueResource) resumeDispatch(ctx context.Context, timeout time.Duration, state clusterQueueResourceModel, diag *diag.Diagnostics) error {
-	log.Printf("Resuming dispatch for cluster queue %s", state.Key.ValueString())
-	_, err := resumeDispatchClusterQueue(ctx, cq.client.genqlient, state.Id.ValueString())
+	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+		log.Printf("Resuming dispatch for cluster queue %s", state.Key)
+		_, err := resumeDispatchClusterQueue(ctx, cq.client.genqlient, state.Id.ValueString())
+		return retryContextError(err)
+	})
 	if err != nil {
 		diag.AddError(
-			"Unable to resume Cluster Queue dispatch",
+			"Unable to resume cluster queue dispatch",
 			fmt.Sprintf("Unable to resume dispatch for cluster queue: %s", err.Error()),
 		)
 	}
