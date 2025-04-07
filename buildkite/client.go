@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"regexp"
 	"strconv"
 	"time"
 
@@ -55,48 +56,60 @@ func (client Client) GetOrganizationID() (*string, error) {
 	return client.organizationId, nil
 }
 
-// NewClient creates a client for interacting with the Buildkite API with rate limit handling
+// NewClient creates a client for interacting with the Buildkite API.
 //
 // https://buildkite.com/docs/apis/rest-api/limits
-//  1. The client uses hashicorp/go-retryablehttp to provide automatic retries with exponential backoff
-//  2. Maximum of 5 retry attempts for any request that fails with a retryable error
-//  3. For rate limited requests (HTTP 429), the client will:
-//     - Check RateLimit-Reset header to check when the rate limit will be reset
-//     - Wait until the reset time (plus a small buffer) before retrying
-//     - Add jitter to avoid "thundering herd" issue when we'd retry multiple requests at the same time
-//  4. For server errors (HTTP 502-504), the client will retry with exponential backoff
+//
+// For REST API calls:
+//  1. Uses hashicorp/go-retryablehttp to provide automatic retries with exponential backoff
+//  2. Maximum of 5 retry attempts for requests that fail with retryable errors
+//  3. Rate limiting strategy:
+//     - Checks RateLimit-Reset header to determine when the rate limit will be reset
+//     - Waits until the reset time plus a small buffer before retrying
+//     - Falls back to Retry-After header if reset time isn't available
+//  4. Also retries server errors (HTTP 502-504) with exponential backoff
 //  5. All retryable requests have a minimum wait of 1 second and maximum of 30 seconds
 
 func NewClient(config *clientConfig) *Client {
+	// Create standard HTTP client for GraphQL
+	standardHttpClient := &http.Client{}
+
+	// Set timeout if configured
+	readTimeout, diags := config.timeouts.Read(context.Background(), DefaultTimeout)
+	if !diags.HasError() {
+		standardHttpClient.Timeout = readTimeout
+	}
+
+	// Set up authentication and user agent headers
+	header := make(http.Header)
+	header.Set("Authorization", "Bearer "+config.apiToken)
+	header.Set("User-Agent", config.userAgent)
+	standardHttpClient.Transport = newHeaderRoundTripper(standardHttpClient.Transport, header)
+
+	// Create retryable client with rate limit handling for REST API calls
 	retryClient := retryablehttp.NewClient()
 
 	// TODO: Make configurable?
 	retryClient.RetryMax = 5
-	retryClient.RetryWaitMin = 1 * time.Second // Start with 1 second wait
+	retryClient.RetryWaitMin = 1 * time.Second
 	retryClient.RetryWaitMax = 30 * time.Second
 	retryClient.Logger = nil
 
-	readTimeout, diags := config.timeouts.Read(context.Background(), DefaultTimeout)
 	if !diags.HasError() {
-		// Set timeout for any valid duration, including 0ms
-		// This ensures the test with "read = 0ms" will fail as expected
 		retryClient.HTTPClient.Timeout = readTimeout
 	}
 
-	// Determines how long to wait before retrying a request
+	// Configure smart backoff strategy for rate limits
 	retryClient.Backoff = func(min, max time.Duration, attemptNum int, resp *http.Response) time.Duration {
-		// https://buildkite.com/docs/apis/rest-api/limits
 		if resp != nil && resp.StatusCode == http.StatusTooManyRequests {
-			// Check for RateLimit-Reset header
+			// Try to use RateLimit-Reset header first
 			if resetHeader := resp.Header.Get("RateLimit-Reset"); resetHeader != "" {
 				if resetTime, err := strconv.ParseInt(resetHeader, 10, 64); err == nil {
-					// If we have a reset time, calculate wait time plus a small buffer.
-					// Use a background context for logging as the request context might be cancelled.
 					resetAt := time.Unix(resetTime, 0)
 					waitTime := time.Until(resetAt) + (500 * time.Millisecond)
 					tflog.Debug(context.Background(), fmt.Sprintf("Rate limit hit, reset at: %v (waiting: %v)", resetAt, waitTime))
 
-					// Return the wait time, but ensure it's within min-max bounds
+					// Return the wait time within min-max bounds
 					if waitTime < min {
 						return min
 					}
@@ -107,8 +120,7 @@ func NewClient(config *clientConfig) *Client {
 				}
 			}
 
-			// Check for Retry-After header as fallback.
-			// Use a background context for logging as the request context might be cancelled.
+			// Fall back to Retry-After header if available
 			if retryAfter := resp.Header.Get("Retry-After"); retryAfter != "" {
 				if seconds, err := strconv.ParseInt(retryAfter, 10, 64); err == nil {
 					waitTime := time.Duration(seconds) * time.Second
@@ -133,7 +145,6 @@ func NewClient(config *clientConfig) *Client {
 		}
 
 		if resp.StatusCode == http.StatusTooManyRequests || (resp.StatusCode >= 500 && resp.StatusCode < 600) {
-			// Use the request context for logging here as it's still valid within CheckRetry.
 			remaining := resp.Header.Get("RateLimit-Remaining")
 			reset := resp.Header.Get("RateLimit-Reset")
 			tflog.Debug(ctx, fmt.Sprintf("Buildkite API returned %d - retrying (Remaining: %s, Reset: %s)",
@@ -144,19 +155,17 @@ func NewClient(config *clientConfig) *Client {
 		return false, nil
 	}
 
-	header := make(http.Header)
-	header.Set("Authorization", "Bearer "+config.apiToken)
-	header.Set("User-Agent", config.userAgent)
+	// Apply the same headers to retry client
 	retryClient.HTTPClient.Transport = newHeaderRoundTripper(retryClient.HTTPClient.Transport, header)
+	restHttpClient := retryClient.StandardClient()
 
-	httpClient := retryClient.StandardClient()
-
-	graphqlClient := graphql.NewClient(config.graphqlURL, httpClient)
+	// Create GraphQL client with standard HTTP client (no rate limit handling)
+	graphqlClient := graphql.NewClient(config.graphqlURL, standardHttpClient)
 
 	return &Client{
 		graphql:        graphqlClient,
-		genqlient:      genqlient.NewClient(config.graphqlURL, httpClient),
-		http:           httpClient,
+		genqlient:      genqlient.NewClient(config.graphqlURL, standardHttpClient),
+		http:           restHttpClient, // For REST API calls with rate limit handling
 		organization:   config.org,
 		organizationId: nil,
 		restURL:        config.restURL,
@@ -182,6 +191,38 @@ func (rt *headerRoundTripper) RoundTrip(req *http.Request) (*http.Response, erro
 	}
 	return rt.next.RoundTrip(req)
 }
+
+// GraphQL-specific retry functions
+
+func isRetryableError(err error) bool {
+	return isRateLimited(err) || isServerError(err)
+}
+
+func isRateLimited(err error) bool {
+	// see: https://github.com/Khan/genqlient/blob/main/graphql/client.go#L167
+	r := regexp.MustCompile(`returned error (\d{3}):`)
+	if match := r.FindString(err.Error()); match != "" {
+		code, _ := strconv.Atoi(match)
+		if code == http.StatusTooManyRequests {
+			return true
+		}
+	}
+	return false
+}
+
+func isServerError(err error) bool {
+	// see: https://github.com/Khan/genqlient/blob/main/graphql/client.go#L167
+	r := regexp.MustCompile(`returned error (\d{3}):`)
+	if match := r.FindString(err.Error()); match != "" {
+		code, _ := strconv.Atoi(match)
+		if code >= http.StatusBadGateway && code <= http.StatusGatewayTimeout {
+			return true
+		}
+	}
+	return false
+}
+
+// NOTE: retryContextError function is defined in util.go and used for GraphQL retries
 
 func (client *Client) makeRequest(ctx context.Context, method string, path string, postData interface{}, responseObject interface{}) error {
 	readTimeout, diags := client.timeouts.Read(ctx, DefaultTimeout)
