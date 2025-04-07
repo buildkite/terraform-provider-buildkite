@@ -92,7 +92,7 @@ func NewClient(config *clientConfig) *Client {
 	// TODO: Make configurable?
 	retryClient.RetryMax = 5
 	retryClient.RetryWaitMin = 1 * time.Second
-	retryClient.RetryWaitMax = 30 * time.Second
+	retryClient.RetryWaitMax = 60 * time.Second
 	retryClient.Logger = nil
 
 	if !diags.HasError() {
@@ -267,9 +267,6 @@ func (client *Client) makeRequest(ctx context.Context, method string, path strin
 		if readErr == nil && len(errorBody) > 0 {
 			errorMsg = string(errorBody)
 		}
-
-		// If we get here with a 429 status, it means we've exhausted our retries
-		// The retryablehttp client should have already handled retries before this point
 
 		if errorMsg != "" {
 			return fmt.Errorf("the Buildkite API request failed: %s %s (status: %d): %s",
