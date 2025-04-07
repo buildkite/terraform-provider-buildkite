@@ -514,6 +514,9 @@ func testAccCheckClusterQueueExists(resourceName string, clusterQueueResourceMod
 				)
 				// If cluster queues were not able to be fetched by Genqlient
 				if err != nil {
+					if isRetryableError(err) {
+						return retry.RetryableError(err)
+					}
 					return retryContextError(err)
 				}
 
