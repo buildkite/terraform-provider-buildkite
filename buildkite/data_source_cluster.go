@@ -7,7 +7,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
 type clusterDatasource struct {
@@ -38,7 +37,7 @@ func (c *clusterDatasource) Read(ctx context.Context, req datasource.ReadRequest
 		return
 	}
 
-	timeout, diags := c.client.timeouts.Read(ctx, DefaultTimeout)
+	_, diags := c.client.timeouts.Read(ctx, DefaultTimeout)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -62,22 +61,22 @@ func (c *clusterDatasource) Read(ctx context.Context, req datasource.ReadRequest
 
 		// loop over this page of results to try find the matching cluster
 		for _, cluster := range r.Organization.Clusters.Edges {
-				if cluster.Node.Name == state.Name.ValueString() {
-					matchFound = true
-					state.Color = types.StringPointerValue(cluster.Node.Color)
-					state.Description = types.StringPointerValue(cluster.Node.Description)
-					state.Emoji = types.StringPointerValue(cluster.Node.Emoji)
-					state.ID = types.StringValue(cluster.Node.Id)
-					state.Name = types.StringValue(cluster.Node.Name)
-					state.UUID = types.StringValue(cluster.Node.Uuid)
-					break
-				}
-			}
-
-			// end here if we found a match or there are no more pages to search
-			if matchFound || !r.Organization.Clusters.PageInfo.HasNextPage {
+			if cluster.Node.Name == state.Name.ValueString() {
+				matchFound = true
+				state.Color = types.StringPointerValue(cluster.Node.Color)
+				state.Description = types.StringPointerValue(cluster.Node.Description)
+				state.Emoji = types.StringPointerValue(cluster.Node.Emoji)
+				state.ID = types.StringValue(cluster.Node.Id)
+				state.Name = types.StringValue(cluster.Node.Name)
+				state.UUID = types.StringValue(cluster.Node.Uuid)
 				break
 			}
+		}
+
+		// end here if we found a match or there are no more pages to search
+		if matchFound || !r.Organization.Clusters.PageInfo.HasNextPage {
+			break
+		}
 		cursor = &r.Organization.Clusters.PageInfo.EndCursor
 	}
 

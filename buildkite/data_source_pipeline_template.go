@@ -11,7 +11,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
 type pipelineTemplateDatasourceModel struct {
@@ -96,7 +95,7 @@ func (pt *pipelineTemplateDatasource) Read(ctx context.Context, req datasource.R
 		return
 	}
 
-	timeouts, diags := pt.client.timeouts.Read(ctx, DefaultTimeout)
+	_, diags := pt.client.timeouts.Read(ctx, DefaultTimeout)
 	resp.Diagnostics.Append(diags...)
 
 	if resp.Diagnostics.HasError() {
@@ -145,21 +144,20 @@ func (pt *pipelineTemplateDatasource) Read(ctx context.Context, req datasource.R
 			}
 
 			for _, template := range r.Organization.PipelineTemplates.Edges {
-					if template.Node.Name == state.Name.ValueString() {
-						matchFound = true
-						updatePipelineTemplateDatasourceFromNode(&state, template.Node)
-						break
-					}
-				}
-
-				// If no match found and at the last page, break
-				if matchFound || !r.Organization.PipelineTemplates.PageInfo.HasNextPage {
+				if template.Node.Name == state.Name.ValueString() {
+					matchFound = true
+					updatePipelineTemplateDatasourceFromNode(&state, template.Node)
 					break
 				}
-
-				// Move to next cursor
-				cursor = &r.Organization.PipelineTemplates.PageInfo.EndCursor
 			}
+
+			// If no match found and at the last page, break
+			if matchFound || !r.Organization.PipelineTemplates.PageInfo.HasNextPage {
+				break
+			}
+
+			// Move to next cursor
+			cursor = &r.Organization.PipelineTemplates.PageInfo.EndCursor
 		}
 
 		if !matchFound {
@@ -168,6 +166,7 @@ func (pt *pipelineTemplateDatasource) Read(ctx context.Context, req datasource.R
 			return
 		}
 	}
+
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 

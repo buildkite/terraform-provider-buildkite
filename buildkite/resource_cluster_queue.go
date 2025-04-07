@@ -19,7 +19,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
 const (
@@ -326,8 +325,9 @@ func (cq *clusterQueueResource) Read(ctx context.Context, req resource.ReadReque
 		return
 	}
 
-	timeout, diags := cq.client.timeouts.Read(ctx, DefaultTimeout)
-	resp.Diagnostics.Append(diags...)
+	// Timeout is not used here
+	_, readDiags := cq.client.timeouts.Read(ctx, DefaultTimeout)
+	resp.Diagnostics.Append(readDiags...)
 
 	if resp.Diagnostics.HasError() {
 		return
@@ -351,22 +351,21 @@ func (cq *clusterQueueResource) Read(ctx context.Context, req resource.ReadReque
 
 		// Find the cluster queue from the returned queues to update state
 		for _, edge := range r.Organization.Cluster.Queues.Edges {
-				if edge.Node.Id == state.Id.ValueString() {
-					matchFound = true
-					log.Printf("Found cluster queue with ID %s in cluster %s", edge.Node.Id, state.ClusterUuid.ValueString())
-					// Update ClusterQueueResourceModel with Node values and append
-					updateClusterQueueResource(edge.Node, &state)
-					resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
-					break
-				}
-			}
-
-			// end here if we found a match or there are no more pages to search
-			if matchFound || !r.Organization.Cluster.Queues.PageInfo.HasNextPage {
+			if edge.Node.Id == state.Id.ValueString() {
+				matchFound = true
+				log.Printf("Found cluster queue with ID %s in cluster %s", edge.Node.Id, state.ClusterUuid.ValueString())
+				// Update ClusterQueueResourceModel with Node values and append
+				updateClusterQueueResource(edge.Node, &state)
+				resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 				break
 			}
-			cursor = &r.Organization.Cluster.Queues.PageInfo.EndCursor
 		}
+
+		// end here if we found a match or there are no more pages to search
+		if matchFound || !r.Organization.Cluster.Queues.PageInfo.HasNextPage {
+			break
+		}
+		cursor = &r.Organization.Cluster.Queues.PageInfo.EndCursor
 	}
 
 	// Cluster queue could not be found in returned queues and should be removed from state
@@ -521,8 +520,8 @@ func (cq *clusterQueueResource) Delete(ctx context.Context, req resource.DeleteR
 		return
 	}
 
-	timeout, diags := cq.client.timeouts.Delete(ctx, DefaultTimeout)
-	resp.Diagnostics.Append(diags...)
+	_, deleteDiags := cq.client.timeouts.Delete(ctx, DefaultTimeout)
+	resp.Diagnostics.Append(deleteDiags...)
 
 	if resp.Diagnostics.HasError() {
 		return
