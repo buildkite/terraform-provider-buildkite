@@ -239,13 +239,16 @@ func (cq *clusterQueueResource) Create(ctx context.Context, req resource.CreateR
 		}
 
 		if plan.HostedAgents.Linux != nil {
-			hosted.PlatformSettings.Linux = HostedAgentsLinuxPlatformSettingsInput{
-				AgentImageRef: plan.HostedAgents.Linux.ImageAgentRef.ValueString(),
+			hosted.PlatformSettings = HostedAgentsPlatformSettingsInput{
+				Linux: &HostedAgentsLinuxPlatformSettingsInput{
+					AgentImageRef: plan.HostedAgents.Linux.ImageAgentRef,
+				},
 			}
-		}
-		if plan.HostedAgents.Mac != nil {
-			hosted.PlatformSettings.Macos = HostedAgentsMacosPlatformSettingsInput{
-				XcodeVersion: plan.HostedAgents.Mac.XcodeVersion.ValueString(),
+		} else if plan.HostedAgents.Mac != nil {
+			hosted.PlatformSettings = HostedAgentsPlatformSettingsInput{
+				Macos: &HostedAgentsMacosPlatformSettingsInput{
+					XcodeVersion: plan.HostedAgents.Mac.XcodeVersion,
+				},
 			}
 		}
 	}
