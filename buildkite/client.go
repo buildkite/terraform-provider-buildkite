@@ -89,8 +89,9 @@ func NewClient(config *clientConfig) *Client {
 	// Create retryable client with rate limit handling for REST API calls
 	retryClient := retryablehttp.NewClient()
 
+	// TODO: Make configurable?
 	retryClient.RetryMax = 5
-	retryClient.RetryWaitMin = 1 * time.Second
+	retryClient.RetryWaitMin = 5 * time.Second
 	retryClient.RetryWaitMax = 60 * time.Second
 	retryClient.Logger = nil
 
@@ -105,7 +106,7 @@ func NewClient(config *clientConfig) *Client {
 			if resetHeader := resp.Header.Get("RateLimit-Reset"); resetHeader != "" {
 				if resetTime, err := strconv.ParseInt(resetHeader, 10, 64); err == nil {
 					resetAt := time.Unix(resetTime, 0)
-					waitTime := time.Until(resetAt) + (500 * time.Millisecond)
+					waitTime := time.Until(resetAt) + (1 * time.Second)
 					tflog.Debug(context.Background(), fmt.Sprintf("Rate limit hit, reset at: %v (waiting: %v)", resetAt, waitTime))
 
 					// Return the wait time within min-max bounds
