@@ -89,24 +89,24 @@ func NewClient(config *clientConfig) *Client {
 	// Create retryable client with rate limit handling for REST API calls
 	retryClient := retryablehttp.NewClient()
 
-	// TODO: Make configurable?
-	retryClient.RetryMax = 5
-	retryClient.RetryWaitMin = 5 * time.Second
-	retryClient.RetryWaitMax = 60 * time.Second
+	retryClient.RetryMax = 10
+	retryClient.RetryWaitMin = 15 * time.Second
+	retryClient.RetryWaitMax = 180 * time.Second
 	retryClient.Logger = nil
 
 	if !diags.HasError() && readTimeout > 0 {
 		retryClient.HTTPClient.Timeout = readTimeout
 	}
 
-	// Configure smart backoff strategy for rate limits
+	// Use LinearJitterBackoff with RateLimit-Reset header support for better distribution of requests
 	retryClient.Backoff = func(min, max time.Duration, attemptNum int, resp *http.Response) time.Duration {
 		if resp != nil && resp.StatusCode == http.StatusTooManyRequests {
 			// Try to use RateLimit-Reset header first
 			if resetHeader := resp.Header.Get("RateLimit-Reset"); resetHeader != "" {
 				if resetTime, err := strconv.ParseInt(resetHeader, 10, 64); err == nil {
 					resetAt := time.Unix(resetTime, 0)
-					waitTime := time.Until(resetAt) + (1 * time.Second)
+					// Add a 2-second buffer to ensure we're past the reset time
+					waitTime := time.Until(resetAt) + (2 * time.Second)
 					tflog.Debug(context.Background(), fmt.Sprintf("Rate limit hit, reset at: %v (waiting: %v)", resetAt, waitTime))
 
 					// Return the wait time within min-max bounds
@@ -125,18 +125,12 @@ func NewClient(config *clientConfig) *Client {
 				if seconds, err := strconv.ParseInt(retryAfter, 10, 64); err == nil {
 					waitTime := time.Duration(seconds) * time.Second
 					tflog.Debug(context.Background(), fmt.Sprintf("Rate limit hit, retry after: %v", waitTime))
-
-					if waitTime < min {
-						return min
-					}
-					if waitTime > max {
-						return max
-					}
-					return waitTime
 				}
 			}
 		}
-		return retryablehttp.DefaultBackoff(min, max, attemptNum, resp)
+
+		// Use linear backoff with jitter to spread out requests when retrying
+		return retryablehttp.LinearJitterBackoff(min, max, attemptNum, resp)
 	}
 
 	retryClient.CheckRetry = func(ctx context.Context, resp *http.Response, err error) (bool, error) {
