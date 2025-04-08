@@ -61,14 +61,14 @@ func (client Client) GetOrganizationID() (*string, error) {
 // https://buildkite.com/docs/apis/rest-api/limits
 //
 // For REST API calls:
-//  1. Uses hashicorp/go-retryablehttp to provide automatic retries with exponential backoff
-//  2. Maximum of 5 retry attempts for requests that fail with retryable errors
+//  1. Uses hashicorp/go-retryablehttp to provide automatic retries with smart backoff
+//  2. Maximum of 10 retry attempts for requests that fail with retryable errors
 //  3. Rate limiting strategy:
 //     - Checks RateLimit-Reset header to determine when the rate limit will be reset
 //     - Waits until the reset time plus a small buffer before retrying
 //     - Falls back to Retry-After header if reset time isn't available
-//  4. Also retries server errors (HTTP 502-504) with exponential backoff
-//  5. All retryable requests have a minimum wait of 1 second and maximum of 30 seconds
+//  4. Also retries server errors (HTTP 500-599) with linear jitter backoff
+//  5. All retryable requests have a minimum wait of 15 seconds and maximum of 180 seconds
 
 func NewClient(config *clientConfig) *Client {
 	// Create standard HTTP client for GraphQL
