@@ -76,7 +76,7 @@ func NewClient(config *clientConfig) *Client {
 
 	// Set timeout if configured
 	readTimeout, diags := config.timeouts.Read(context.Background(), DefaultTimeout)
-	if !diags.HasError() {
+	if !diags.HasError() && readTimeout > 0 {
 		standardHttpClient.Timeout = readTimeout
 	}
 
@@ -95,7 +95,7 @@ func NewClient(config *clientConfig) *Client {
 	retryClient.RetryWaitMax = 60 * time.Second
 	retryClient.Logger = nil
 
-	if !diags.HasError() {
+	if !diags.HasError() && readTimeout > 0 {
 		retryClient.HTTPClient.Timeout = readTimeout
 	}
 
