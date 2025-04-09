@@ -126,7 +126,7 @@ func (pt *pipelineTemplateDatasource) Read(ctx context.Context, req datasource.R
 	} else if !state.Name.IsNull() {
 		var r *getPipelineTemplatesResponse
 		var err error
-		var cursor *string
+		cursor := (*string)(nil)
 		matchFound := false
 
 		for {

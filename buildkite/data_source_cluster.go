@@ -45,8 +45,8 @@ func (c *clusterDatasource) Read(ctx context.Context, req datasource.ReadRequest
 
 	var r *getClusterByNameResponse
 	var err error
-	var cursor *string
-	var matchFound bool
+	cursor := (*string)(nil)
+	matchFound := false
 
 	// Loop through all pages until a match is found or we run out of pages
 	for {

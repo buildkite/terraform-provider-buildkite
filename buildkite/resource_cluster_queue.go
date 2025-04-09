@@ -231,7 +231,7 @@ func (cq *clusterQueueResource) Create(ctx context.Context, req resource.CreateR
 		return
 	}
 
-	var hosted *HostedAgentsQueueSettingsCreateInput
+	hosted := (*HostedAgentsQueueSettingsCreateInput)(nil)
 	if plan.HostedAgents != nil {
 		hosted = &HostedAgentsQueueSettingsCreateInput{
 			InstanceShape: HostedAgentInstanceShapeName(plan.HostedAgents.InstanceShape.ValueString()),
@@ -335,8 +335,8 @@ func (cq *clusterQueueResource) Read(ctx context.Context, req resource.ReadReque
 
 	var r *getClusterQueuesResponse
 	var err error
-	var cursor *string
-	var matchFound bool
+	cursor := (*string)(nil)
+	matchFound := false
 
 	for {
 		log.Printf("Getting cluster queues for cluster %s ...", state.ClusterUuid.ValueString())
@@ -414,7 +414,7 @@ func (cq *clusterQueueResource) Update(ctx context.Context, req resource.UpdateR
 	}
 
 	var r *updateClusterQueueResponse
-	var hosted *HostedAgentsQueueSettingsUpdateInput
+	hosted := (*HostedAgentsQueueSettingsUpdateInput)(nil)
 	if state.HostedAgents != nil {
 		hosted = &HostedAgentsQueueSettingsUpdateInput{
 			InstanceShape: HostedAgentInstanceShapeName(plan.HostedAgents.InstanceShape.ValueString()),

@@ -125,7 +125,7 @@ func NewClient(config *clientConfig) *Client {
 				if seconds, err := strconv.ParseInt(retryAfter, 10, 64); err == nil {
 					waitTime := time.Duration(seconds) * time.Second
 					tflog.Debug(context.Background(), fmt.Sprintf("Rate limit hit, retry after: %v", waitTime))
-					
+
 					// Return the wait time within min-max bounds
 					if waitTime < min {
 						return min
@@ -235,7 +235,7 @@ func (client *Client) makeRequest(ctx context.Context, method string, path strin
 		defer cancel()
 	}
 
-	var bodyBytes io.Reader
+	bodyBytes := io.Reader(nil)
 	if postData != nil {
 		jsonPayload, err := json.Marshal(postData)
 		if err != nil {
