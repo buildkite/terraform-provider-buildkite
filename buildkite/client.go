@@ -244,7 +244,7 @@ func (client *Client) makeRequest(ctx context.Context, method string, path strin
 		bodyBytes = bytes.NewBuffer(jsonPayload)
 	}
 
-	url := fmt.Sprintf("%s%s", client.restURL, path)
+	var url = fmt.Sprintf("%s%s", client.restURL, path)
 
 	req, err := http.NewRequestWithContext(ctx, method, url, bodyBytes)
 	if err != nil {
@@ -265,8 +265,8 @@ func (client *Client) makeRequest(ctx context.Context, method string, path strin
 		defer resp.Body.Close()
 
 		// Try to read the error body for better error messages
+		var errorMsg string
 		errorBody, readErr := io.ReadAll(resp.Body)
-		errorMsg := ""
 		if readErr == nil && len(errorBody) > 0 {
 			errorMsg = string(errorBody)
 		}
