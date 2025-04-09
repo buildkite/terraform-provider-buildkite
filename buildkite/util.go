@@ -80,11 +80,12 @@ func createCidrSliceFromList(cidrList types.List) []string {
 	return cidrs
 }
 
+// retryContextError wraps an error for use with hashicorp/terraform-plugin-sdk/v2/helper/retry.
+// Since the underlying http client now handles retries, we always treat errors as non-retryable
+// at this layer to avoid duplicate retries.
 func retryContextError(err error) *retry.RetryError {
 	if err != nil {
-		if isRetryableError(err) {
-			return retry.RetryableError(err)
-		}
+		// Always return NonRetryableError as the http client handles retries
 		return retry.NonRetryableError(err)
 	}
 	return nil
