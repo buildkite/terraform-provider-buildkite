@@ -1055,10 +1055,10 @@ type PipelineExtraSettings struct {
 }
 
 func getPipelineExtraInfo(ctx context.Context, client *Client, slug string, timeouts time.Duration) (*PipelineExtraInfo, error) {
-	pipelineExtraInfo := PipelineExtraInfo{}
+	var pipelineExtraInfo PipelineExtraInfo
 
-	err := retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
-		err := client.makeRequest(ctx, "GET", fmt.Sprintf("/v2/organizations/%s/pipelines/%s", client.organization, slug), nil, &pipelineExtraInfo)
+	var err = retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
+		var err = client.makeRequest(ctx, "GET", fmt.Sprintf("/v2/organizations/%s/pipelines/%s", client.organization, slug), nil, &pipelineExtraInfo)
 		return retryContextError(err)
 	})
 	if err != nil {
@@ -1073,11 +1073,11 @@ func updatePipelineSlug(ctx context.Context, slug string, updatedSlug string, cl
 		Slug: updatedSlug,
 	}
 
-	pipelineExtraInfo := PipelineExtraInfo{}
+	var pipelineExtraInfo PipelineExtraInfo
 
 	if len(updatedSlug) > 0 {
-		err := retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
-			err := client.makeRequest(ctx, "PATCH", fmt.Sprintf("/v2/organizations/%s/pipelines/%s", client.organization, slug), payload, &pipelineExtraInfo)
+		var err = retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
+			var err = client.makeRequest(ctx, "PATCH", fmt.Sprintf("/v2/organizations/%s/pipelines/%s", client.organization, slug), payload, &pipelineExtraInfo)
 			return retryContextError(err)
 		})
 		if err != nil {
@@ -1112,9 +1112,9 @@ func updatePipelineExtraInfo(ctx context.Context, slug string, settings *provide
 		},
 	}
 
-	pipelineExtraInfo := PipelineExtraInfo{}
-	err := retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
-		err := client.makeRequest(ctx, "PATCH", fmt.Sprintf("/v2/organizations/%s/pipelines/%s", client.organization, slug), payload, &pipelineExtraInfo)
+	var pipelineExtraInfo PipelineExtraInfo
+	var err = retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
+		var err = client.makeRequest(ctx, "PATCH", fmt.Sprintf("/v2/organizations/%s/pipelines/%s", client.organization, slug), payload, &pipelineExtraInfo)
 		return retryContextError(err)
 	})
 	if err != nil {

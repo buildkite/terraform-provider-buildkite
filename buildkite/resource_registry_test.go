@@ -136,7 +136,7 @@ func testAccCheckRegistryDestroy(s *terraform.State) error {
 		slug := rs.Primary.Attributes["slug"]
 
 		// Make API call to check if the registry still exists
-		url := fmt.Sprintf("%s/v2/packages/organizations/%s/registries/%s", baseURL, orgSlug, slug)
+		var url = fmt.Sprintf("%s/v2/packages/organizations/%s/registries/%s", baseURL, orgSlug, slug)
 
 		req, err := http.NewRequest(http.MethodGet, url, nil)
 		if err != nil {
