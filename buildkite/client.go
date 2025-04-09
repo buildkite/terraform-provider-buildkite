@@ -125,6 +125,15 @@ func NewClient(config *clientConfig) *Client {
 				if seconds, err := strconv.ParseInt(retryAfter, 10, 64); err == nil {
 					waitTime := time.Duration(seconds) * time.Second
 					tflog.Debug(context.Background(), fmt.Sprintf("Rate limit hit, retry after: %v", waitTime))
+					
+					// Return the wait time within min-max bounds
+					if waitTime < min {
+						return min
+					}
+					if waitTime > max {
+						return max
+					}
+					return waitTime
 				}
 			}
 		}
