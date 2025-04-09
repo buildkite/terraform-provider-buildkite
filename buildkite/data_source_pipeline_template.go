@@ -103,7 +103,9 @@ func (pt *pipelineTemplateDatasource) Read(ctx context.Context, req datasource.R
 	}
 
 	if !state.ID.IsNull() {
-		apiResponse, err := getNode(ctx, pt.client.genqlient, state.ID.ValueString())
+		var apiResponse *getNodeResponse
+		var err error
+		apiResponse, err = getNode(ctx, pt.client.genqlient, state.ID.ValueString())
 		if err != nil {
 			resp.Diagnostics.AddError(
 				"Unable to get Pipeline Template by ID",
