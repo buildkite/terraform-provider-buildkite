@@ -29,14 +29,6 @@ provider "buildkite" {
   organization = "buildkite"
   # Use the `BUILDKITE_API_TOKEN` environment variable so the token is not committed
   # api_token = ""
-  
-  # Optional: Configure custom timeouts (default is 180 seconds)
-  timeouts = {
-    read   = "180s"
-    create = "180s"
-    update = "180s"
-    delete = "180s"
-  }
 }
 
 # Add a pipeline
@@ -55,7 +47,7 @@ resource "buildkite_pipeline" "pipeline" {
 - `graphql_url` (String) Base URL for the GraphQL API to use. If not provided, the value is taken from the `BUILDKITE_GRAPHQL_URL` environment variable.
 - `organization` (String) The Buildkite organization slug. This can be found on the [settings](https://buildkite.com/organizations/~/settings) page. If not provided, the value is taken from the `BUILDKITE_ORGANIZATION_SLUG` environment variable.
 - `rest_url` (String) Base URL for the REST API to use. If not provided, the value is taken from the `BUILDKITE_REST_URL` environment variable.
-- `timeouts` (Attributes) Configuration options for request timeouts. The default timeout is 180 seconds. (see [below for nested schema](#nestedatt--timeouts))
+- `timeouts` (Attributes) (see [below for nested schema](#nestedatt--timeouts))
 
 <a id="nestedatt--timeouts"></a>
 ### Nested Schema for `timeouts`
