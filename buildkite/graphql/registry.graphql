@@ -1,5 +1,9 @@
-query GetRegistryID ($slug: String!) {
-  registry(slug: $slug) {
+query GetRegistryID (
+  $slug: ID
+) {
+  registry(
+    slug: $slug
+  ) {
     id
   }
 }
