@@ -441,6 +441,26 @@ func (v *GetOrganizationMembersResponse) GetOrganization() GetOrganizationMember
 	return v.Organization
 }
 
+// GetRegistryIDRegistry includes the requested fields of the GraphQL type Registry.
+// The GraphQL type's documentation follows.
+//
+// A registry
+type GetRegistryIDRegistry struct {
+	Id string `json:"id"`
+}
+
+// GetId returns GetRegistryIDRegistry.Id, and is useful for accessing the field via an interface.
+func (v *GetRegistryIDRegistry) GetId() string { return v.Id }
+
+// GetRegistryIDResponse is returned by GetRegistryID on success.
+type GetRegistryIDResponse struct {
+	// Find a registry
+	Registry GetRegistryIDRegistry `json:"registry"`
+}
+
+// GetRegistry returns GetRegistryIDResponse.Registry, and is useful for accessing the field via an interface.
+func (v *GetRegistryIDResponse) GetRegistry() GetRegistryIDRegistry { return v.Registry }
+
 // GetTeamFromSlugResponse is returned by GetTeamFromSlug on success.
 type GetTeamFromSlugResponse struct {
 	// Find a team
@@ -2238,6 +2258,14 @@ func (v *__GetOrganizationMembersInput) GetSlug() string { return v.Slug }
 
 // GetCursor returns __GetOrganizationMembersInput.Cursor, and is useful for accessing the field via an interface.
 func (v *__GetOrganizationMembersInput) GetCursor() *string { return v.Cursor }
+
+// __GetRegistryIDInput is used internally by genqlient
+type __GetRegistryIDInput struct {
+	Slug string `json:"slug"`
+}
+
+// GetSlug returns __GetRegistryIDInput.Slug, and is useful for accessing the field via an interface.
+func (v *__GetRegistryIDInput) GetSlug() string { return v.Slug }
 
 // __GetTeamFromSlugInput is used internally by genqlient
 type __GetTeamFromSlugInput struct {
@@ -14752,6 +14780,41 @@ func GetOrganizationMembers(
 	return &data_, err_
 }
 
+// The query or mutation executed by GetRegistryID.
+const GetRegistryID_Operation = `
+query GetRegistryID ($slug: ID) {
+	registry(slug: $slug) {
+		id
+	}
+}
+`
+
+func GetRegistryID(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	slug string,
+) (*GetRegistryIDResponse, error) {
+	req_ := &graphql.Request{
+		OpName: "GetRegistryID",
+		Query:  GetRegistryID_Operation,
+		Variables: &__GetRegistryIDInput{
+			Slug: slug,
+		},
+	}
+	var err_ error
+
+	var data_ GetRegistryIDResponse
+	resp_ := &graphql.Response{Data: &data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return &data_, err_
+}
+
 // The query or mutation executed by GetTeamFromSlug.
 const GetTeamFromSlug_Operation = `
 query GetTeamFromSlug ($slug: ID!) {
@@ -16041,7 +16104,7 @@ const getClusterQueues_Operation = `
 query getClusterQueues ($orgSlug: ID!, $id: ID!, $cursor: String) {
 	organization(slug: $orgSlug) {
 		cluster(id: $id) {
-			queues(order: KEY, first: 50, after: $cursor) {
+			queues(order: KEY, first: 100, after: $cursor) {
 				pageInfo {
 					endCursor
 					hasNextPage

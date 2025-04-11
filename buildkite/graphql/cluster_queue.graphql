@@ -43,7 +43,7 @@ query getClusterQueues(
 ) {
     organization(slug: $orgSlug) {
         cluster(id: $id) {
-            queues(order: KEY, first: 50, after: $cursor) {
+            queues(order: KEY, first: 100, after: $cursor) {
                 pageInfo {
                     endCursor
                     hasNextPage
