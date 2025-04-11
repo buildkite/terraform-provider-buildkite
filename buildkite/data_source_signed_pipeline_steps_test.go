@@ -131,7 +131,7 @@ func TestAccBuildkiteSignedPipelineStepsDataSource(t *testing.T) {
 			steps:
 			- label: ":pipeline:"
 			  command: buildkite-agent pipeline upload
-			  if: 'pipeline.slug !~ /^.+-main\$/'
+			  if: 'pipeline.slug !~ /^.+-main\z/'
 		`)
 
 		resource.ParallelTest(t, resource.TestCase{
