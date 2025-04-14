@@ -7,7 +7,7 @@ require (
 	github.com/buildkite/go-pipeline v0.13.1
 	github.com/buildkite/interpolate v0.1.5
 	github.com/hashicorp/go-retryablehttp v0.7.7
-	github.com/hashicorp/terraform-plugin-framework v1.14.0
+	github.com/hashicorp/terraform-plugin-framework v1.14.1
 	github.com/hashicorp/terraform-plugin-framework-validators v0.17.0
 	github.com/hashicorp/terraform-plugin-go v0.26.0
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.36.1
