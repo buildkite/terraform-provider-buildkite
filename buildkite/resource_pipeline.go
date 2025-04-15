@@ -308,6 +308,10 @@ func (p *pipelineResource) Delete(ctx context.Context, req resource.DeleteReques
 	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		log.Printf("Deleting pipeline %s ...", state.Name.ValueString())
 		_, err := deletePipeline(ctx, p.client.genqlient, state.Id.ValueString())
+		if err != nil && isResourceNotFoundError(err) {
+            return nil
+        }
+
 		return retryContextError(err)
 	})
 	if err != nil {

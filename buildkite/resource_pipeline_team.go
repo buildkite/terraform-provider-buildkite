@@ -238,6 +238,9 @@ func (tp *pipelineTeamResource) Delete(ctx context.Context, req resource.DeleteR
 
 	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		_, err := deleteTeamPipeline(ctx, tp.client.genqlient, state.Id.ValueString())
+		if err != nil && isResourceNotFoundError(err) {
+			return nil
+		}
 
 		return retryContextError(err)
 	})
