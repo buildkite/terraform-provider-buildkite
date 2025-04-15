@@ -49,8 +49,8 @@ func (t *testSuiteDatasource) Read(ctx context.Context, req datasource.ReadReque
 	}
 
 	var suite testSuiteResponse
-	var url = fmt.Sprintf("/v2/analytics/organizations/%s/suites/%s", t.client.organization, state.Slug.ValueString())
-	var err = t.client.makeRequest(ctx, "GET", url, nil, &suite)
+	url := fmt.Sprintf("/v2/analytics/organizations/%s/suites/%s", t.client.organization, state.Slug.ValueString())
+	err := t.client.makeRequest(ctx, "GET", url, nil, &suite)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Failed to read test suite",

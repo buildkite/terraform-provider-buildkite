@@ -52,7 +52,7 @@ func (ts *testSuiteResource) Configure(ctx context.Context, req resource.Configu
 func (ts *testSuiteResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var plan, state testSuiteModel
 	var response testSuiteResponse
-	var payload = map[string]interface{}{}
+	payload := map[string]interface{}{}
 	var teamOwnerUuid string
 
 	diags := req.Plan.Get(ctx, &plan)
@@ -99,7 +99,7 @@ func (ts *testSuiteResource) Create(ctx context.Context, req resource.CreateRequ
 	payload["team_ids"] = []string{teamOwnerUuid}
 
 	// Construct URL to call to the REST API
-	var url = fmt.Sprintf("/v2/analytics/organizations/%s/suites", ts.client.organization)
+	url := fmt.Sprintf("/v2/analytics/organizations/%s/suites", ts.client.organization)
 
 	// Use the Create timeout for test suite creation
 	timeout, diags = ts.client.timeouts.Create(ctx, DefaultTimeout)
@@ -144,9 +144,9 @@ func (ts *testSuiteResource) Delete(ctx context.Context, req resource.DeleteRequ
 	resp.Diagnostics.Append(diags...)
 
 	// Construct URL to call to the REST API
-	var url = fmt.Sprintf("/v2/analytics/organizations/%s/suites/%s", ts.client.organization, state.Slug.ValueString())
-	var err = retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-		var err = ts.client.makeRequest(ctx, "DELETE", url, nil, nil)
+	url := fmt.Sprintf("/v2/analytics/organizations/%s/suites/%s", ts.client.organization, state.Slug.ValueString())
+	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+		err := ts.client.makeRequest(ctx, "DELETE", url, nil, nil)
 
 		return retryContextError(err)
 	})
@@ -286,7 +286,7 @@ func (ts *testSuiteResource) Schema(ctx context.Context, req resource.SchemaRequ
 func (ts *testSuiteResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	var plan, state testSuiteModel
 	var response testSuiteResponse
-	var payload = map[string]interface{}{}
+	payload := map[string]interface{}{}
 
 	diagsPlan := req.Plan.Get(ctx, &plan)
 	diagsState := req.State.Get(ctx, &state)
@@ -309,9 +309,9 @@ func (ts *testSuiteResource) Update(ctx context.Context, req resource.UpdateRequ
 	payload["default_branch"] = plan.DefaultBranch.ValueString()
 
 	// Construct URL to call to the REST API
-	var url = fmt.Sprintf("/v2/analytics/organizations/%s/suites/%s", ts.client.organization, state.Slug.ValueString())
-	var updateErr = retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-		var err = ts.client.makeRequest(ctx, "PATCH", url, payload, &response)
+	url := fmt.Sprintf("/v2/analytics/organizations/%s/suites/%s", ts.client.organization, state.Slug.ValueString())
+	updateErr := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+		err := ts.client.makeRequest(ctx, "PATCH", url, payload, &response)
 
 		return retryContextError(err)
 	})

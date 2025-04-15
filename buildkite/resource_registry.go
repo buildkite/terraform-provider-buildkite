@@ -133,7 +133,7 @@ func (p *registryResource) Create(ctx context.Context, req resource.CreateReques
 	}
 
 	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-		var url = fmt.Sprintf("%s/v2/packages/organizations/%s/registries", p.client.restURL, p.client.organization)
+		url := fmt.Sprintf("%s/v2/packages/organizations/%s/registries", p.client.restURL, p.client.organization)
 
 		reqBody := map[string]interface{}{
 			"name":      state.Name.ValueString(),
@@ -283,7 +283,7 @@ func (p *registryResource) Read(ctx context.Context, req resource.ReadRequest, r
 		if state.Slug.IsNull() || state.Slug.ValueString() == "" {
 			// If no slug is found, we need to fetch all registries and find by name
 			// This handles the case during import or when slug isn't in state
-			var url = fmt.Sprintf("%s/v2/packages/organizations/%s/registries", p.client.restURL, p.client.organization)
+			url := fmt.Sprintf("%s/v2/packages/organizations/%s/registries", p.client.restURL, p.client.organization)
 
 			req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 			if err != nil {
@@ -378,7 +378,7 @@ func (p *registryResource) Read(ctx context.Context, req resource.ReadRequest, r
 		}
 
 		// We have a UUID, use it to directly fetch the registry
-		var url = fmt.Sprintf("%s/v2/packages/organizations/%s/registries/%s", p.client.restURL, p.client.organization, state.Slug.ValueString())
+		url := fmt.Sprintf("%s/v2/packages/organizations/%s/registries/%s", p.client.restURL, p.client.organization, state.Slug.ValueString())
 
 		req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 		if err != nil {
@@ -567,7 +567,7 @@ func (p *registryResource) Update(ctx context.Context, req resource.UpdateReques
 		readTimeout, _ := p.client.timeouts.Read(ctx, DefaultTimeout)
 
 		err := retry.RetryContext(ctx, readTimeout, func() *retry.RetryError {
-			var url = fmt.Sprintf("%s/v2/packages/organizations/%s/registries", p.client.restURL, p.client.organization)
+			url := fmt.Sprintf("%s/v2/packages/organizations/%s/registries", p.client.restURL, p.client.organization)
 
 			req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 			if err != nil {
@@ -636,7 +636,7 @@ func (p *registryResource) Update(ctx context.Context, req resource.UpdateReques
 			return retry.NonRetryableError(fmt.Errorf("no valid ID or UUID available for registry lookup"))
 		}
 
-		var url = fmt.Sprintf("%s/v2/packages/organizations/%s/registries/%s", p.client.restURL, p.client.organization, lookupID)
+		url := fmt.Sprintf("%s/v2/packages/organizations/%s/registries/%s", p.client.restURL, p.client.organization, lookupID)
 
 		reqBody := map[string]interface{}{
 			"name":      plan.Name.ValueString(),
@@ -858,7 +858,7 @@ func (p *registryResource) Delete(ctx context.Context, req resource.DeleteReques
 		readTimeout, _ := p.client.timeouts.Read(ctx, DefaultTimeout)
 
 		_ = retry.RetryContext(ctx, readTimeout, func() *retry.RetryError {
-			var url = fmt.Sprintf("%s/v2/packages/organizations/%s/registries", p.client.restURL, p.client.organization)
+			url := fmt.Sprintf("%s/v2/packages/organizations/%s/registries", p.client.restURL, p.client.organization)
 
 			req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 			if err != nil {
@@ -922,7 +922,7 @@ func (p *registryResource) Delete(ctx context.Context, req resource.DeleteReques
 			return nil
 		}
 
-		var url = fmt.Sprintf("%s/v2/packages/organizations/%s/registries/%s", p.client.restURL, p.client.organization, lookupID)
+		url := fmt.Sprintf("%s/v2/packages/organizations/%s/registries/%s", p.client.restURL, p.client.organization, lookupID)
 
 		// Create the HTTP request
 		req, err := http.NewRequestWithContext(ctx, http.MethodDelete, url, nil)

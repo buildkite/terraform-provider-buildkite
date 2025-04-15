@@ -309,8 +309,8 @@ func (p *pipelineResource) Delete(ctx context.Context, req resource.DeleteReques
 		log.Printf("Deleting pipeline %s ...", state.Name.ValueString())
 		_, err := deletePipeline(ctx, p.client.genqlient, state.Id.ValueString())
 		if err != nil && isResourceNotFoundError(err) {
-            return nil
-        }
+			return nil
+		}
 
 		return retryContextError(err)
 	})
@@ -1061,8 +1061,8 @@ type PipelineExtraSettings struct {
 func getPipelineExtraInfo(ctx context.Context, client *Client, slug string, timeouts time.Duration) (*PipelineExtraInfo, error) {
 	var pipelineExtraInfo PipelineExtraInfo
 
-	var err = retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
-		var err = client.makeRequest(ctx, "GET", fmt.Sprintf("/v2/organizations/%s/pipelines/%s", client.organization, slug), nil, &pipelineExtraInfo)
+	err := retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
+		err := client.makeRequest(ctx, "GET", fmt.Sprintf("/v2/organizations/%s/pipelines/%s", client.organization, slug), nil, &pipelineExtraInfo)
 		return retryContextError(err)
 	})
 	if err != nil {
@@ -1080,8 +1080,8 @@ func updatePipelineSlug(ctx context.Context, slug string, updatedSlug string, cl
 	var pipelineExtraInfo PipelineExtraInfo
 
 	if len(updatedSlug) > 0 {
-		var err = retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
-			var err = client.makeRequest(ctx, "PATCH", fmt.Sprintf("/v2/organizations/%s/pipelines/%s", client.organization, slug), payload, &pipelineExtraInfo)
+		err := retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
+			err := client.makeRequest(ctx, "PATCH", fmt.Sprintf("/v2/organizations/%s/pipelines/%s", client.organization, slug), payload, &pipelineExtraInfo)
 			return retryContextError(err)
 		})
 		if err != nil {
@@ -1117,8 +1117,8 @@ func updatePipelineExtraInfo(ctx context.Context, slug string, settings *provide
 	}
 
 	var pipelineExtraInfo PipelineExtraInfo
-	var err = retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
-		var err = client.makeRequest(ctx, "PATCH", fmt.Sprintf("/v2/organizations/%s/pipelines/%s", client.organization, slug), payload, &pipelineExtraInfo)
+	err := retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
+		err := client.makeRequest(ctx, "PATCH", fmt.Sprintf("/v2/organizations/%s/pipelines/%s", client.organization, slug), payload, &pipelineExtraInfo)
 		return retryContextError(err)
 	})
 	if err != nil {
