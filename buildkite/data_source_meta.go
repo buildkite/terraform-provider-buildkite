@@ -41,7 +41,7 @@ func (*metaDatasource) Metadata(ctx context.Context, req datasource.MetadataRequ
 func (m *metaDatasource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
 	var state metaDatasourceModel
 	var meta MetaResponse
-	var err = m.client.makeRequest(ctx, "GET", "/v2/meta", nil, &meta)
+	err := m.client.makeRequest(ctx, "GET", "/v2/meta", nil, &meta)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Failed to read meta",
