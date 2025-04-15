@@ -4,10 +4,15 @@ services:
   go:
     build:
       context: .
+      dockerfile: Dockerfile
     volumes:
       - .:/work
+      - go-pkg-mod:/go/pkg/mod
+      - go-build-cache:/root/.cache/go-build
     working_dir: /work
     environment:
+      - BUILDKIT_PROGRESS=plain
+      - DOCKER_BUILDKIT=1
       - BUILDKITE_ANALYTICS_TOKEN
       - BUILDKITE_API_TOKEN
       - BUILDKITE_BRANCH
@@ -20,3 +25,7 @@ services:
       - BUILDKITE_TAG
       - GITHUB_TOKEN
       - GPG_SECRET_KEY_BASE64
+
+volumes:
+  go-pkg-mod:
+  go-build-cache:

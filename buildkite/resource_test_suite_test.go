@@ -25,7 +25,7 @@ func TestAccBuildkiteTestSuiteResource(t *testing.T) {
 		}
 
 		resource "buildkite_team" "team" {
-			name = "test suite team"
+			name = "test suite team %s"
 			default_team = false
 			privacy = "VISIBLE"
 			default_member_role = "MAINTAINER"
@@ -35,7 +35,7 @@ func TestAccBuildkiteTestSuiteResource(t *testing.T) {
 			default_branch = "main"
 			team_owner_id = resource.buildkite_team.team.id
 		}
-		`, name)
+		`, name, name)
 	}
 
 	testSuiteWithTwoTeams := func(name string) string {
@@ -50,13 +50,13 @@ func TestAccBuildkiteTestSuiteResource(t *testing.T) {
 		}
 
 		resource "buildkite_team" "ateam" {
-			name = "a team"
+			name = "a team %s-a"
 			default_team = false
 			privacy = "VISIBLE"
 			default_member_role = "MAINTAINER"
 		}
 		resource "buildkite_team" "bteam" {
-			name = "b team"
+			name = "b team %s-b"
 			default_team = false
 			privacy = "VISIBLE"
 			default_member_role = "MAINTAINER"
@@ -66,7 +66,7 @@ func TestAccBuildkiteTestSuiteResource(t *testing.T) {
 			default_branch = "main"
 			team_owner_id = resource.buildkite_team.bteam.id
 		}
-		`, name)
+		`, name, name, name)
 	}
 
 	testSuiteTeamAddition := func(name string) string {
@@ -81,13 +81,13 @@ func TestAccBuildkiteTestSuiteResource(t *testing.T) {
 		}
 
 		resource "buildkite_team" "ateam" {
-			name = "a team"
+			name = "a team %s-a"
 			default_team = false
 			privacy = "VISIBLE"
 			default_member_role = "MAINTAINER"
 		}
 		resource "buildkite_team" "bteam" {
-			name = "b team"
+			name = "b team %s-b"
 			default_team = false
 			privacy = "VISIBLE"
 			default_member_role = "MAINTAINER"
@@ -102,7 +102,7 @@ func TestAccBuildkiteTestSuiteResource(t *testing.T) {
 			team_id = buildkite_team.ateam.id
 			access_level = "MANAGE_AND_READ"
 		}
-		`, name)
+		`, name, name, name)
 	}
 
 	t.Run("creates a test suite", func(t *testing.T) {

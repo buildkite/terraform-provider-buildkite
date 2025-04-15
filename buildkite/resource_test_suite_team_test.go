@@ -24,14 +24,14 @@ func TestAccBuildkiteTestSuiteTeamResource(t *testing.T) {
 		}
 
 		resource "buildkite_team" "ownerteam" {
-			name = "Test Suite Team %s"
+			name = "Test Suite Owner Team %s"
 			default_team = false
 			privacy = "VISIBLE"
 			default_member_role = "MAINTAINER"
 		}
 
 		resource "buildkite_team" "newteam" {
-			name = "Test Suite Team %s"
+			name = "Test Suite New Team %s"
 			default_team = false
 			privacy = "VISIBLE"
 			default_member_role = "MAINTAINER"
