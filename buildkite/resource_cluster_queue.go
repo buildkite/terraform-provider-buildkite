@@ -73,11 +73,11 @@ type hostedAgentResourceModel struct {
 }
 
 type macConfigModel struct {
-	XcodeVersion *string `tfsdk:"xcode_version"`
+	XcodeVersion types.String `tfsdk:"xcode_version"`
 }
 
 type linuxConfigModel struct {
-	ImageAgentRef *string `tfsdk:"agent_image_ref"`
+	ImageAgentRef types.String `tfsdk:"agent_image_ref"`
 }
 
 type clusterQueueResource struct {
@@ -240,13 +240,13 @@ func (cq *clusterQueueResource) Create(ctx context.Context, req resource.CreateR
 		if plan.HostedAgents.Linux != nil {
 			hosted.PlatformSettings = HostedAgentsPlatformSettingsInput{
 				Linux: &HostedAgentsLinuxPlatformSettingsInput{
-					AgentImageRef: plan.HostedAgents.Linux.ImageAgentRef,
+					AgentImageRef: plan.HostedAgents.Linux.ImageAgentRef.ValueStringPointer(),
 				},
 			}
 		} else if plan.HostedAgents.Mac != nil {
 			hosted.PlatformSettings = HostedAgentsPlatformSettingsInput{
 				Macos: &HostedAgentsMacosPlatformSettingsInput{
-					XcodeVersion: plan.HostedAgents.Mac.XcodeVersion,
+					XcodeVersion: plan.HostedAgents.Mac.XcodeVersion.ValueStringPointer(),
 				},
 			}
 		}
@@ -302,12 +302,12 @@ func (cq *clusterQueueResource) Create(ctx context.Context, req resource.CreateR
 		}
 		if plan.HostedAgents.Linux != nil {
 			state.HostedAgents.Linux = &linuxConfigModel{
-				ImageAgentRef: r.ClusterQueueCreate.ClusterQueue.HostedAgents.PlatformSettings.Linux.AgentImageRef,
+				ImageAgentRef: types.StringValue(r.ClusterQueueCreate.ClusterQueue.HostedAgents.PlatformSettings.Linux.AgentImageRef),
 			}
 		}
 		if plan.HostedAgents.Mac != nil {
 			state.HostedAgents.Mac = &macConfigModel{
-				XcodeVersion: r.ClusterQueueCreate.ClusterQueue.HostedAgents.PlatformSettings.Macos.XcodeVersion,
+				XcodeVersion: types.StringValue(r.ClusterQueueCreate.ClusterQueue.HostedAgents.PlatformSettings.Macos.XcodeVersion),
 			}
 		}
 	}
@@ -418,27 +418,32 @@ func (cq *clusterQueueResource) Update(ctx context.Context, req resource.UpdateR
 	if state.HostedAgents != nil {
 		hosted = &HostedAgentsQueueSettingsUpdateInput{
 			InstanceShape: HostedAgentInstanceShapeName(plan.HostedAgents.InstanceShape.ValueString()),
+		}
 
-			// Set Hosted Agents input fields to nil to account for when
-			// hosted_agents.linux or hosted_agents.mac attributes are removed
-			// and a null can be sent in the clusterQueueUpdate mutation API call
-			PlatformSettings: HostedAgentsPlatformSettingsInput{
+		// Set Hosted Agents input fields to nil to account for when
+		// hosted_agents.linux or hosted_agents.mac attributes are removed
+		// and a null can be sent in the clusterQueueUpdate mutation API call
+		if state.HostedAgents.Linux != nil {
+			hosted.PlatformSettings = HostedAgentsPlatformSettingsInput{
 				Linux: &HostedAgentsLinuxPlatformSettingsInput{
 					AgentImageRef: nil,
 				},
+			}
+		} else if state.HostedAgents.Mac != nil {
+			hosted.PlatformSettings = HostedAgentsPlatformSettingsInput{
 				Macos: &HostedAgentsMacosPlatformSettingsInput{
 					XcodeVersion: nil,
 				},
-			},
+			}
 		}
 
 		if plan.HostedAgents.Linux != nil {
 			hosted.PlatformSettings.Linux = &HostedAgentsLinuxPlatformSettingsInput{
-				AgentImageRef: plan.HostedAgents.Linux.ImageAgentRef,
+				AgentImageRef: plan.HostedAgents.Linux.ImageAgentRef.ValueStringPointer(),
 			}
 		} else if plan.HostedAgents.Mac != nil {
 			hosted.PlatformSettings.Macos = &HostedAgentsMacosPlatformSettingsInput{
-				XcodeVersion: plan.HostedAgents.Mac.XcodeVersion,
+				XcodeVersion: plan.HostedAgents.Mac.XcodeVersion.ValueStringPointer(),
 			}
 		}
 	}
@@ -497,12 +502,12 @@ func (cq *clusterQueueResource) Update(ctx context.Context, req resource.UpdateR
 		}
 		if plan.HostedAgents.Mac != nil {
 			state.HostedAgents.Mac = &macConfigModel{
-				XcodeVersion: r.ClusterQueueUpdate.ClusterQueue.HostedAgents.PlatformSettings.Macos.XcodeVersion,
+				XcodeVersion: types.StringValue(r.ClusterQueueUpdate.ClusterQueue.HostedAgents.PlatformSettings.Macos.XcodeVersion),
 			}
 		}
 		if plan.HostedAgents.Linux != nil {
 			state.HostedAgents.Linux = &linuxConfigModel{
-				ImageAgentRef: r.ClusterQueueUpdate.ClusterQueue.HostedAgents.PlatformSettings.Linux.AgentImageRef,
+				ImageAgentRef: types.StringValue(r.ClusterQueueUpdate.ClusterQueue.HostedAgents.PlatformSettings.Linux.AgentImageRef),
 			}
 		}
 	}
@@ -646,14 +651,14 @@ func updateClusterQueueResource(clusterQueueNode getClusterQueuesOrganizationClu
 		cq.HostedAgents = &hostedAgentResourceModel{
 			InstanceShape: types.StringValue(string(clusterQueueNode.HostedAgents.InstanceShape.Name)),
 		}
-		if clusterQueueNode.HostedAgents.PlatformSettings.Linux.AgentImageRef != nil {
+		if clusterQueueNode.HostedAgents.PlatformSettings.Linux.AgentImageRef != "" {
 			cq.HostedAgents.Linux = &linuxConfigModel{
-				ImageAgentRef: clusterQueueNode.HostedAgents.PlatformSettings.Linux.AgentImageRef,
+				ImageAgentRef: types.StringValue(clusterQueueNode.HostedAgents.PlatformSettings.Linux.AgentImageRef),
 			}
 		}
-		if clusterQueueNode.HostedAgents.PlatformSettings.Macos.XcodeVersion != nil {
+		if clusterQueueNode.HostedAgents.PlatformSettings.Macos.XcodeVersion != "" {
 			cq.HostedAgents.Mac = &macConfigModel{
-				XcodeVersion: clusterQueueNode.HostedAgents.PlatformSettings.Macos.XcodeVersion,
+				XcodeVersion: types.StringValue(clusterQueueNode.HostedAgents.PlatformSettings.Macos.XcodeVersion),
 			}
 		}
 	}

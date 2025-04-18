@@ -1,5 +1,3 @@
-# @genqlient(for: "HostedAgentLinuxSettings.agentImageRef", pointer: true)
-# @genqlient(for: "HostedAgentMacOSSettingsType.xcodeVersion", pointer: true)
 fragment HostedAgentsQueueSettingsValues on HostedAgentQueueSettings {
     instanceShape {
         architecture
@@ -67,8 +65,8 @@ query getClusterQueues(
     }
 }
 
-# @genqlient(for: "HostedAgentsPlatformSettingsInput.linux", pointer: true)
-# @genqlient(for: "HostedAgentsPlatformSettingsInput.macos", pointer: true)
+# @genqlient(for: "HostedAgentsPlatformSettingsInput.linux", pointer: true, omitempty: true)
+# @genqlient(for: "HostedAgentsPlatformSettingsInput.macos", pointer: true, omitempty: true)
 # @genqlient(for: "HostedAgentsLinuxPlatformSettingsInput.agentImageRef", pointer: true)
 # @genqlient(for: "HostedAgentsMacosPlatformSettingsInput.xcodeVersion", pointer: true)
 mutation createClusterQueue(
@@ -95,8 +93,8 @@ mutation createClusterQueue(
     }
 }
 
-# @genqlient(for: "HostedAgentsPlatformSettingsInput.linux", pointer: true)
-# @genqlient(for: "HostedAgentsPlatformSettingsInput.macos", pointer: true)
+# @genqlient(for: "HostedAgentsPlatformSettingsInput.linux", pointer: true, omitempty: true)
+# @genqlient(for: "HostedAgentsPlatformSettingsInput.macos", pointer: true, omitempty: true)
 # @genqlient(for: "HostedAgentsLinuxPlatformSettingsInput.agentImageRef", pointer: true)
 # @genqlient(for: "HostedAgentsMacosPlatformSettingsInput.xcodeVersion", pointer: true)
 mutation updateClusterQueue(
