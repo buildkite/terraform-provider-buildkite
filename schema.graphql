@@ -586,6 +586,7 @@ enum AuditEventType {
 	PORTAL_CREATED
 	PORTAL_DELETED
 	PORTAL_SECRET_CREATED
+	PORTAL_SECRET_DELETED
 	PORTAL_TOKEN_CODE_AUTHORIZED
 	PORTAL_TOKEN_CREATED
 	PORTAL_TOKEN_DELETED
@@ -648,6 +649,9 @@ enum AuditEventType {
 	TEAM_REGISTRY_CREATED
 	TEAM_REGISTRY_DELETED
 	TEAM_REGISTRY_UPDATED
+	TEAM_SECRET_CREATED
+	TEAM_SECRET_DELETED
+	TEAM_SECRET_UPDATED
 	TEAM_SUITE_CREATED
 	TEAM_SUITE_DELETED
 	TEAM_SUITE_UPDATED
@@ -686,48 +690,49 @@ union AuditSubjectNode =APIAccessToken | AgentToken | AuthorizationBitbucket | A
 
 """All the possible types of subjects in an Audit Event"""
 enum AuditSubjectType {
-	ORGANIZATION_IMPERSONATION_REQUEST
-	PIPELINE_SCHEDULE
-	PIPELINE_TEMPLATE
-	PORTAL
-	PORTAL_TOKEN_CODE
-	AUTHORIZATION
-	TEAM_MEMBER
 	TEAM_PIPELINE
-	ORGANIZATION_INVITATION
+	CLUSTER_PERMISSION
 	TEAM_SUITE
+	TEAM_SECRET
 	TEAM_REGISTRY
 	REGISTRY_TOKEN
+	AUTHORIZATION
 	COMPOSITE_REGISTRY_UPSTREAM
-	CLUSTER_QUEUE_TOKEN
-	REGISTRY
 	RULE
-	PORTAL_TOKEN
-	PORTAL_SECRET
+	SECRET
 	SCM_SERVICE
-	PIPELINE
-	JOB
-	SSO_PROVIDER
-	CLUSTER_PERMISSION
 	SCM_PIPELINE_SETTINGS
 	SCM_REPOSITORY_HOST
+	SSO_PROVIDER
+	USER_EMAIL
+	USER_TOTP
 	SUITE_MONITOR
 	SUBSCRIPTION
-	USER_TOTP
-	USER
-	SECRET
-	USER_EMAIL
-	CLUSTER
 	SUITE
-	ORGANIZATION
 	TEAM
+	CLUSTER_QUEUE_TOKEN
+	CLUSTER_TOKEN
+	PORTAL_TOKEN
+	PORTAL_SECRET
+	ORGANIZATION
+	USER
+	REGISTRY
 	AGENT_TOKEN
 	API_ACCESS_TOKEN
 	CLUSTER_QUEUE
-	CLUSTER_TOKEN
 	NOTIFICATION_SERVICE
 	ORGANIZATION_BANNER
+	ORGANIZATION_INVITATION
 	ORGANIZATION_MEMBER
+	ORGANIZATION_IMPERSONATION_REQUEST
+	PIPELINE_SCHEDULE
+	PIPELINE_TEMPLATE
+	PIPELINE
+	PORTAL_TOKEN_CODE
+	CLUSTER
+	PORTAL
+	JOB
+	TEAM_MEMBER
 }
 
 """Context for an audit event created during a web request"""
@@ -1122,40 +1127,6 @@ type BuildStepUploadDefinition {
 	json: String!
 """The uploaded step definition rendered as YAML"""
 	yaml: String!
-}
-
-"""A changelog"""
-type Changelog implements Node{
-	author: ChangelogAuthor
-"""The body of this changelog"""
-	body: String
-	id: ID!
-"""The date and time this changelog was published"""
-	publishedAt: DateTime
-"""The tag for this changelog"""
-	tag: String!
-"""The title for this changelog"""
-	title: String!
-"""The public UUID for this changelog"""
-	uuid: String!
-}
-
-"""The author of the changelog"""
-type ChangelogAuthor {
-	avatar: Avatar!
-"""The name of the author"""
-	name: String!
-}
-
-type ChangelogConnection implements Connection{
-	count: Int!
-	edges: [ChangelogEdge]
-	pageInfo: PageInfo
-}
-
-type ChangelogEdge {
-	cursor: String!
-	node: Changelog
 }
 
 type Cluster implements Node{
@@ -3115,6 +3086,10 @@ type Organization implements Node{
 		clusterQueue: [ID!]
 """Pass `false` to exclude jobs that belong to a cluster queue"""
 		clustered: Boolean
+"""Filter jobs by created at from, ISO8601 format"""
+		createdAtFrom: DateTime
+"""Filter jobs by created at to, ISO8601 format"""
+		createdAtTo: DateTime
 	): JobConnection
 """Returns users within the organization"""
 	members(
@@ -4966,6 +4941,8 @@ type RepositoryProviderBitbucketSettings implements RepositoryProviderSettings{
 	filterCondition: String
 """Whether the filter is enabled"""
 	filterEnabled: Boolean
+"""Ensure that even if Build Pull Requests is disabled, all commits to the default branch will trigger a build."""
+	ignoreDefaultBranchPullRequests: Boolean!
 """Whether to update the status of commits in Bitbucket."""
 	publishCommitStatus: Boolean!
 """Whether to create a separate status for each job in a build, allowing you to see the status of each job directly in Bitbucket."""
@@ -5014,6 +4991,8 @@ type RepositoryProviderGitHubEnterpriseSettings implements RepositoryProviderSet
 	filterCondition: String
 """Whether the filter is enabled"""
 	filterEnabled: Boolean
+"""Ensure that even if Build Pull Requests is disabled, all commits to the default branch will trigger a build."""
+	ignoreDefaultBranchPullRequests: Boolean!
 """Whether to update the status of commits in Bitbucket or GitHub."""
 	publishCommitStatus: Boolean!
 """Whether to create a separate status for each job in a build, allowing you to see the status of each job directly in GitHub."""
@@ -5048,6 +5027,8 @@ type RepositoryProviderGitHubSettings implements RepositoryProviderSettings{
 	filterCondition: String
 """Whether the filter is enabled"""
 	filterEnabled: Boolean
+"""Ensure that even if Build Pull Requests is disabled, all commits to the default branch will trigger a build."""
+	ignoreDefaultBranchPullRequests: Boolean!
 """Prefix branch names for third-party fork builds to ensure they don't trigger branch conditions. For example, the main branch from some-user will become some-user:main."""
 	prefixPullRequestForkBranchNames: Boolean!
 """The status to use for blocked builds. Pending can be used with required status checks to prevent merging pull requests with blocked builds."""
@@ -5106,7 +5087,7 @@ type RepositoryProviderGitlab implements RepositoryProvider{
 	webhookUrl: String
 }
 
-"""A pipeline's repository is being provided by GitLab Community Edition"""
+"""Deprecated: Use RepositoryProviderGitlabEnterpriseType instead. This type represented GitLab Community Edition."""
 type RepositoryProviderGitlabCommunity implements RepositoryProvider{
 """The name of the provider"""
 	name: String!
@@ -5118,7 +5099,7 @@ type RepositoryProviderGitlabCommunity implements RepositoryProvider{
 	webhookUrl: String
 }
 
-"""A pipeline's repository is being provided by GitLab Enterprise Edition"""
+"""A pipeline's repository is being provided by a GitLab Self-Managed instance."""
 type RepositoryProviderGitlabEnterprise implements RepositoryProvider{
 """The name of the provider"""
 	name: String!
@@ -6748,11 +6729,6 @@ type Viewer implements Node{
 		branch: String
 		metaData: [String!]
 	): BuildConnection
-	changelogs(
-		first: Int
-		last: Int
-		read: Boolean
-	): ChangelogConnection
 """Emails associated with the current user"""
 	emails(
 """Returns the elements in the list that come after the specified cursor."""

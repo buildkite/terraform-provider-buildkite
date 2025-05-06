@@ -38,6 +38,32 @@ func TestAccBuildkiteTestSuiteResource(t *testing.T) {
 		`, name, name)
 	}
 
+	basicTestSuiteWithEmoji := func(name string) string {
+		return fmt.Sprintf(`
+		provider "buildkite" {
+			timeouts = {
+				create = "10s"
+				read = "10s"
+				update = "10s"
+				delete = "10s"
+			}
+		}
+
+		resource "buildkite_team" "team" {
+			name = "test suite team %s"
+			default_team = false
+			privacy = "VISIBLE"
+			default_member_role = "MAINTAINER"
+		}
+		resource "buildkite_test_suite" "suite" {
+			name = "test suite %s"
+			default_branch = "main"
+			emoji = ":buildkite:"
+			team_owner_id = resource.buildkite_team.team.id
+		}
+		`, name, name)
+	}
+
 	testSuiteWithTwoTeams := func(name string) string {
 		return fmt.Sprintf(`
 		provider "buildkite" {
@@ -127,6 +153,35 @@ func TestAccBuildkiteTestSuiteResource(t *testing.T) {
 			Steps: []resource.TestStep{
 				{
 					Config: basicTestSuite(randName),
+					Check:  check,
+				},
+			},
+		})
+	})
+
+	t.Run("creates a test suite with an emoji set", func(t *testing.T) {
+		var suite getTestSuiteSuite
+		randName := acctest.RandString(10)
+
+		check := resource.ComposeAggregateTestCheckFunc(
+			checkTestSuiteExists("buildkite_test_suite.suite", &suite),
+			checkTestSuiteRemoteValue(&suite, "Name", fmt.Sprintf("test suite %s", randName)),
+			checkTestSuiteRemoteValue(&suite, "DefaultBranch", "main"),
+			resource.TestCheckResourceAttrSet("buildkite_test_suite.suite", "id"),
+			resource.TestCheckResourceAttrSet("buildkite_test_suite.suite", "api_token"),
+			resource.TestCheckResourceAttr("buildkite_test_suite.suite", "default_branch", "main"),
+			resource.TestCheckResourceAttr("buildkite_test_suite.suite", "emoji", ":buildkite:"),
+			resource.TestCheckResourceAttr("buildkite_test_suite.suite", "name", fmt.Sprintf("test suite %s", randName)),
+			resource.TestCheckResourceAttrSet("buildkite_test_suite.suite", "team_owner_id"),
+		)
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			CheckDestroy:             testTestSuiteDestroy,
+			Steps: []resource.TestStep{
+				{
+					Config: basicTestSuiteWithEmoji(randName),
 					Check:  check,
 				},
 			},

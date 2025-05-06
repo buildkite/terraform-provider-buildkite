@@ -4,6 +4,7 @@ query getTestSuite($id: ID!, $teamCount: Int) {
             id
             uuid
             defaultBranch
+            emoji
             name
             slug
             teams(first: $teamCount, order: NAME) {
@@ -20,4 +21,3 @@ query getTestSuite($id: ID!, $teamCount: Int) {
         }
     }
 }
-

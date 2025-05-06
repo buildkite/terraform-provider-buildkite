@@ -17,6 +17,7 @@ import (
 type testSuiteModel struct {
 	ApiToken      types.String `tfsdk:"api_token"`
 	DefaultBranch types.String `tfsdk:"default_branch"`
+	Emoji         types.String `tfsdk:"emoji"`
 	ID            types.String `tfsdk:"id"`
 	UUID          types.String `tfsdk:"uuid"`
 	TeamOwnerId   types.String `tfsdk:"team_owner_id"`
@@ -95,6 +96,7 @@ func (ts *testSuiteResource) Create(ctx context.Context, req resource.CreateRequ
 
 	payload["name"] = plan.Name.ValueString()
 	payload["default_branch"] = plan.DefaultBranch.ValueString()
+	payload["emoji"] = plan.Emoji.ValueString()
 	payload["show_api_token"] = true
 	payload["team_ids"] = []string{teamOwnerUuid}
 
@@ -121,6 +123,7 @@ func (ts *testSuiteResource) Create(ctx context.Context, req resource.CreateRequ
 
 	state.ApiToken = types.StringValue(response.ApiToken)
 	state.DefaultBranch = types.StringValue(response.DefaultBranch)
+	state.Emoji = plan.Emoji
 	state.ID = types.StringValue(response.GraphqlID)
 	state.UUID = types.StringValue(response.UUID)
 	state.Name = types.StringValue(response.Name)
@@ -279,6 +282,10 @@ func (ts *testSuiteResource) Schema(ctx context.Context, req resource.SchemaRequ
 				MarkdownDescription: "The default branch for the repository this test suite is for.",
 				Required:            true,
 			},
+			"emoji": schema.StringAttribute{
+				MarkdownDescription: "The emoji associated with this test suite, eg :buildkite:",
+				Optional:            true,
+			},
 		},
 	}
 }
@@ -307,6 +314,7 @@ func (ts *testSuiteResource) Update(ctx context.Context, req resource.UpdateRequ
 
 	payload["name"] = plan.Name.ValueString()
 	payload["default_branch"] = plan.DefaultBranch.ValueString()
+	payload["emoji"] = plan.Emoji.ValueString()
 
 	// Construct URL to call to the REST API
 	url := fmt.Sprintf("/v2/analytics/organizations/%s/suites/%s", ts.client.organization, state.Slug.ValueString())
@@ -326,6 +334,7 @@ func (ts *testSuiteResource) Update(ctx context.Context, req resource.UpdateRequ
 
 	state.Name = plan.Name
 	state.DefaultBranch = plan.DefaultBranch
+	state.Emoji = plan.Emoji
 	state.Slug = types.StringValue(response.Slug)
 
 	// If the planned team_owner_id differs from the state, add the new one and remove the old one
