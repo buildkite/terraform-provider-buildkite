@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- 🙂 Support emojis in `test_suite` resources by @mcncl in
+https://github.com/buildkite/terraform-provider-buildkite/pull/917
+
 ## [v1.17.2](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.17.1...v1.17.2)
 
 - Bump github.com/lestrrat-go/jwx/v2 from 2.1.1 to 2.1.4 by @dependabot in https://github.com/buildkite/terraform-provider-buildkite/pull/896
