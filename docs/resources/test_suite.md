@@ -17,6 +17,7 @@ A test suite is a collection of tests. A run is to a suite what a build is to a 
 resource "buildkite_test_suite" "main" {
   name           = "main"
   default_branch = "main"
+  emoji          = ":buildkite:"
   team_owner_id  = "VGVhbvDf4eRef20tMzIxMGEfYTctNzEF5g00M8f5s6E2YjYtODNlOGNlZgD6HcBi"
 }
 ```
@@ -29,6 +30,10 @@ resource "buildkite_test_suite" "main" {
 - `default_branch` (String) The default branch for the repository this test suite is for.
 - `name` (String) The name to give the test suite.
 - `team_owner_id` (String) The GraphQL ID of the team to mark as the owner/admin of the test suite.
+
+### Optional
+
+- `emoji` (String) The emoji associated with this test suite, eg :buildkite:
 
 ### Read-Only
 
