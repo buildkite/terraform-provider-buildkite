@@ -117,6 +117,7 @@ type providerSettingsModel struct {
 	PublishBlockedAsPending                 types.Bool   `tfsdk:"publish_blocked_as_pending"`
 	PublishCommitStatusPerStep              types.Bool   `tfsdk:"publish_commit_status_per_step"`
 	SeparatePullRequestStatuses             types.Bool   `tfsdk:"separate_pull_request_statuses"`
+	IgnoreDefaultBranchPullRequests         types.Bool   `tfsdk:"ignore_default_branch_pull_requests"`
 }
 
 type pipelineResource struct {
@@ -725,6 +726,11 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 						MarkdownDescription: "Whether to create a separate status for pull request builds, allowing you to require a passing pull request" +
 							" build in your [required status checks](https://help.github.com/en/articles/enabling-required-status-checks) in GitHub.",
 					},
+					"ignore_default_branch_pull_requests": schema.BoolAttribute{
+						Computed:            true,
+						Optional:            true,
+						MarkdownDescription: "Whether to prevent caching pull requests with the source branch matching the default branch.",
+					},
 				},
 			},
 		},
@@ -1056,6 +1062,7 @@ type PipelineExtraSettings struct {
 	PublishBlockedAsPending                 *bool   `json:"publish_blocked_as_pending,omitempty"`
 	PublishCommitStatusPerStep              *bool   `json:"publish_commit_status_per_step,omitempty"`
 	SeparatePullRequestStatuses             *bool   `json:"separate_pull_request_statuses,omitempty"`
+	IgnoreDefaultBranchPullRequests         *bool   `json:"ignore_default_branch_pull_requests"`
 }
 
 func getPipelineExtraInfo(ctx context.Context, client *Client, slug string, timeouts time.Duration) (*PipelineExtraInfo, error) {
@@ -1113,6 +1120,7 @@ func updatePipelineExtraInfo(ctx context.Context, slug string, settings *provide
 			PublishBlockedAsPending:                 settings.PublishBlockedAsPending.ValueBoolPointer(),
 			PublishCommitStatusPerStep:              settings.PublishCommitStatusPerStep.ValueBoolPointer(),
 			SeparatePullRequestStatuses:             settings.SeparatePullRequestStatuses.ValueBoolPointer(),
+			IgnoreDefaultBranchPullRequests:         settings.IgnoreDefaultBranchPullRequests.ValueBoolPointer(),
 		},
 	}
 
@@ -1399,6 +1407,10 @@ func pipelineSchemaV0() schema.Schema {
 							Optional: true,
 						},
 						"separate_pull_request_statuses": schema.BoolAttribute{
+							Computed: true,
+							Optional: true,
+						},
+						"ignore_default_branch_pull_requests": schema.BoolAttribute{
 							Computed: true,
 							Optional: true,
 						},
