@@ -3,7 +3,7 @@ module github.com/buildkite/terraform-provider-buildkite
 go 1.24.0
 
 require (
-	github.com/Khan/genqlient v0.7.0
+	github.com/Khan/genqlient v0.8.1
 	github.com/buildkite/go-pipeline v0.13.3
 	github.com/buildkite/interpolate v0.1.5
 	github.com/hashicorp/go-retryablehttp v0.7.7
@@ -21,6 +21,7 @@ require (
 	github.com/apparentlymart/go-textseg/v15 v15.0.0 // indirect
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.4.0 // indirect
 	github.com/goccy/go-json v0.10.3 // indirect
+	github.com/google/uuid v1.6.0 // indirect
 	github.com/gowebpki/jcs v1.0.1 // indirect
 	github.com/kr/pretty v0.3.0 // indirect
 	github.com/lestrrat-go/blackmagic v1.0.3 // indirect
@@ -32,7 +33,7 @@ require (
 	github.com/rogpeppe/go-internal v1.13.1 // indirect
 	github.com/segmentio/asm v1.2.0 // indirect
 	golang.org/x/sync v0.12.0 // indirect
-	golang.org/x/tools v0.22.0 // indirect
+	golang.org/x/tools v0.24.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20241015192408-796eee8c2d53 // indirect
 )
 
@@ -71,7 +72,7 @@ require (
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/oklog/run v1.0.0 // indirect
-	github.com/vektah/gqlparser/v2 v2.5.15 // indirect
+	github.com/vektah/gqlparser/v2 v2.5.19 // indirect
 	github.com/vmihailenco/msgpack v4.0.4+incompatible // indirect
 	github.com/vmihailenco/msgpack/v5 v5.4.1 // indirect
 	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
