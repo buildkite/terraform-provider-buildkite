@@ -1170,6 +1170,7 @@ func updatePipelineResourceExtraInfo(state *pipelineResourceModel, pipeline *Pip
 		PublishBlockedAsPending:                 types.BoolPointerValue(s.PublishBlockedAsPending),
 		PublishCommitStatusPerStep:              types.BoolPointerValue(s.PublishCommitStatusPerStep),
 		SeparatePullRequestStatuses:             types.BoolPointerValue(s.SeparatePullRequestStatuses),
+		IgnoreDefaultBranchPullRequests:         types.BoolPointerValue(s.IgnoreDefaultBranchPullRequests),
 	}
 }
 
