@@ -1,9 +1,16 @@
 # Changelog
 
-## Unreleased
+## [v1.18.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.17.2...v1.18.0)
 
-- 🙂 Support emojis in `test_suite` resources by @mcncl in
-https://github.com/buildkite/terraform-provider-buildkite/pull/917
+- Bump github.com/buildkite/go-pipeline from 0.13.1 to 0.13.3 by @dependabot https://github.com/buildkite/terraform-provider-buildkite/pull/912
+- Bump github.com/lestrrat-go/jwx/v2 from 2.1.4 to 2.1.5 by @dependabot https://github.com/buildkite/terraform-provider-buildkite/pull/911
+- chore(deps): bump docker/library/golang from 1ecc479 to 30baaea by @dependabot https://github.com/buildkite/terraform-provider-buildkite/pull/915
+- feat: support setting emoji on test suite by @mcncl https://github.com/buildkite/terraform-provider-buildkite/pull/917
+- chore(deps): bump github.com/Khan/genqlient from 0.7.0 to 0.8.1 by @dependabot https://github.com/buildkite/terraform-provider-buildkite/pull/919
+- chore(deps): bump github.com/lestrrat-go/jwx/v2 from 2.1.5 to 2.1.6 by @dependabot https://github.com/buildkite/terraform-provider-buildkite/pull/916
+- chore: add make docs to pre-commit hooks by @scadu https://github.com/buildkite/terraform-provider-buildkite/pull/920
+- add ignore_default_branch_pull_requests to provider settings by @patrobinson https://github.com/buildkite/terraform-provider-buildkite/pull/918
+
 
 ## [v1.17.2](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.17.1...v1.17.2)
 
