@@ -646,6 +646,7 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 								publish_blocked_as_pending = true
 								publish_commit_status_per_step = true
 								separate_pull_request_statuses = true
+								ignore_default_branch_pull_requests = true
 							}
 						}
 					`, clusterName, pipelineName),
@@ -659,6 +660,7 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 							return nil
 						},
 						resource.TestCheckResourceAttrPair("buildkite_pipeline.pipeline", "cluster_id", "buildkite_cluster.cluster", "id"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.ignore_default_branch_pull_requests", "true"),
 						aggregateRemoteCheck(&pipeline),
 					),
 				},
