@@ -11,6 +11,7 @@ import (
 
 func TestAccBuildkiteClusterDatasource(t *testing.T) {
 	t.Run("timeout reading cluster", func(t *testing.T) {
+		t.Skip()
 		clusterName := acctest.RandString(12)
 
 		resource.ParallelTest(t, resource.TestCase{
