@@ -7,6 +7,8 @@ terraform {
   }
 }
 
+#adding to the repo to enable terracotta AI PR review
+
 provider "buildkite" {
   organization = "testkite"
 }
