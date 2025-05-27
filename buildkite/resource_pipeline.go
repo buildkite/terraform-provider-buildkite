@@ -479,6 +479,12 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 			"color": schema.StringAttribute{
 				Optional:            true,
 				MarkdownDescription: "A color hex code to represent this pipeline.",
+				Validators: []validator.String{
+					stringvalidator.RegexMatches(
+						regexp.MustCompile(`^\#[a-zA-Z0-9]{6}$`),
+						"must be a valid color hex code (#000000)",
+					),
+				},
 			},
 			"cluster_id": schema.StringAttribute{
 				MarkdownDescription: "Attach this pipeline to the given cluster GraphQL ID.",
