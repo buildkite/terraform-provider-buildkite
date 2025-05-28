@@ -1,5 +1,12 @@
 # Changelog
 
+## [v1.19.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.18.0...v1.19.0)
+
+chore(docs): update changelog by @mcncl in https://github.com/buildkite/terraform-provider-buildkite/pull/921
+Skip flaky cluster timeout test by @mcncl in https://github.com/buildkite/terraform-provider-buildkite/pull/922
+Validate pipeline color as hex color format by @petetomasik in https://github.com/buildkite/terraform-provider-buildkite/pull/925
+Add cluster attributes to pipeline resource, data source by @petetomasik in https://github.com/buildkite/terraform-provider-buildkite/pull/927
+
 ## [v1.18.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.17.2...v1.18.0)
 
 - Bump github.com/buildkite/go-pipeline from 0.13.1 to 0.13.3 by @dependabot https://github.com/buildkite/terraform-provider-buildkite/pull/912
