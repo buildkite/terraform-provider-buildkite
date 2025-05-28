@@ -90,6 +90,7 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 						// check state values are correct
 						resource.TestCheckNoResourceAttr("buildkite_pipeline.pipeline", "branch_configuration"),
 						resource.TestCheckNoResourceAttr("buildkite_pipeline.pipeline", "cluster_id"),
+						resource.TestCheckNoResourceAttr("buildkite_pipeline.pipeline", "cluster_name"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "allow_rebuilds", "true"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "cancel_intermediate_builds", "false"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "cancel_intermediate_builds_branch_filter", ""),
@@ -203,6 +204,7 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 						// check state values are correct
 						resource.TestCheckNoResourceAttr("buildkite_pipeline.pipeline", "branch_configuration"),
 						resource.TestCheckNoResourceAttr("buildkite_pipeline.pipeline", "cluster_id"),
+						resource.TestCheckNoResourceAttr("buildkite_pipeline.pipeline", "cluster_name"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "allow_rebuilds", "true"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "cancel_intermediate_builds", "false"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "cancel_intermediate_builds_branch_filter", ""),
@@ -435,6 +437,7 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 						// check state values are correct
 						resource.TestCheckNoResourceAttr("buildkite_pipeline.pipeline", "branch_configuration"),
 						resource.TestCheckNoResourceAttr("buildkite_pipeline.pipeline", "cluster_id"),
+						resource.TestCheckNoResourceAttr("buildkite_pipeline.pipeline", "cluster_name"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "allow_rebuilds", "true"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "cancel_intermediate_builds", "false"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "cancel_intermediate_builds_branch_filter", ""),
@@ -556,6 +559,7 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 					Config: config,
 					Check: resource.ComposeAggregateTestCheckFunc(
 						resource.TestCheckResourceAttrPair("buildkite_pipeline.pipeline", "cluster_id", "buildkite_cluster.cluster", "id"),
+						resource.TestCheckResourceAttrPair("buildkite_pipeline.pipeline", "cluster_name", "buildkite_cluster.cluster", "name"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "tags.0", "llama"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "allow_rebuilds", "false"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "cancel_intermediate_builds", "true"),
@@ -660,6 +664,7 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 							return nil
 						},
 						resource.TestCheckResourceAttrPair("buildkite_pipeline.pipeline", "cluster_id", "buildkite_cluster.cluster", "id"),
+						resource.TestCheckResourceAttrPair("buildkite_pipeline.pipeline", "cluster_name", "buildkite_cluster.cluster", "name"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.ignore_default_branch_pull_requests", "true"),
 						aggregateRemoteCheck(&pipeline),
 					),

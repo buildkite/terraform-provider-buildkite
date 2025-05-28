@@ -1445,10 +1445,15 @@ func (v *PipelineFields) GetTeams() PipelineFieldsTeamsTeamPipelineConnection { 
 // PipelineFieldsCluster includes the requested fields of the GraphQL type Cluster.
 type PipelineFieldsCluster struct {
 	Id *string `json:"id"`
+	// Name of the cluster
+	Name *string `json:"name"`
 }
 
 // GetId returns PipelineFieldsCluster.Id, and is useful for accessing the field via an interface.
 func (v *PipelineFieldsCluster) GetId() *string { return v.Id }
+
+// GetName returns PipelineFieldsCluster.Name, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsCluster) GetName() *string { return v.Name }
 
 // PipelineFieldsPipelineTemplate includes the requested fields of the GraphQL type PipelineTemplate.
 // The GraphQL type's documentation follows.
@@ -15149,6 +15154,7 @@ fragment PipelineFields on Pipeline {
 	cancelIntermediateBuildsBranchFilter
 	cluster {
 		id
+		name
 	}
 	color
 	defaultBranch
@@ -16161,6 +16167,7 @@ fragment PipelineFields on Pipeline {
 	cancelIntermediateBuildsBranchFilter
 	cluster {
 		id
+		name
 	}
 	color
 	defaultBranch
@@ -16481,6 +16488,7 @@ fragment PipelineFields on Pipeline {
 	cancelIntermediateBuildsBranchFilter
 	cluster {
 		id
+		name
 	}
 	color
 	defaultBranch
@@ -17605,6 +17613,7 @@ fragment PipelineFields on Pipeline {
 	cancelIntermediateBuildsBranchFilter
 	cluster {
 		id
+		name
 	}
 	color
 	defaultBranch

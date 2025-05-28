@@ -159,6 +159,7 @@ resource "github_repository_webhook" "my_webhook" {
 ### Read-Only
 
 - `badge_url` (String) The badge URL showing build state.
+- `cluster_name` (String) The name of the cluster the pipeline is (optionally) attached to.
 - `id` (String) The GraphQL ID of the pipeline.
 - `uuid` (String) The UUID of the pipeline.
 - `webhook_url` (String) The webhook URL used to trigger builds from VCS providers.
