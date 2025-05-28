@@ -77,6 +77,7 @@ type pipelineResourceModel struct {
 	CancelIntermediateBuildsBranchFilter types.String           `tfsdk:"cancel_intermediate_builds_branch_filter"`
 	Color                                types.String           `tfsdk:"color"`
 	ClusterId                            types.String           `tfsdk:"cluster_id"`
+	ClusterName                          types.String           `tfsdk:"cluster_name"`
 	DefaultTeamId                        types.String           `tfsdk:"default_team_id"`
 	DefaultBranch                        types.String           `tfsdk:"default_branch"`
 	DefaultTimeoutInMinutes              types.Int64            `tfsdk:"default_timeout_in_minutes"`
@@ -489,6 +490,10 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 			"cluster_id": schema.StringAttribute{
 				MarkdownDescription: "Attach this pipeline to the given cluster GraphQL ID.",
 				Optional:            true,
+			},
+			"cluster_name": schema.StringAttribute{
+				MarkdownDescription: "The name of the cluster the pipeline is (optionally) attached to.",
+				Computed:            true,
 			},
 			"default_team_id": schema.StringAttribute{
 				MarkdownDescription: "The GraphQL ID of the team to use as the default owner of the pipeline.",
@@ -998,6 +1003,7 @@ func setPipelineModel(model *pipelineResourceModel, data pipelineResponse) {
 	model.CancelIntermediateBuilds = types.BoolValue(data.GetCancelIntermediateBuilds())
 	model.CancelIntermediateBuildsBranchFilter = types.StringValue(data.GetCancelIntermediateBuildsBranchFilter())
 	model.ClusterId = types.StringPointerValue(data.GetCluster().Id)
+	model.ClusterName = types.StringPointerValue(data.GetCluster().Name)
 	model.Color = types.StringPointerValue(data.GetColor())
 	model.DefaultBranch = types.StringValue(data.GetDefaultBranch())
 	model.DefaultTimeoutInMinutes = types.Int64PointerValue(defaultTimeoutInMinutes)

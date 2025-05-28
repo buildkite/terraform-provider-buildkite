@@ -9,6 +9,8 @@ fragment PipelineFields on Pipeline {
     cluster {
         # @genqlient(pointer: true)
         id
+        # @genqlient(pointer: true)
+        name
     }
     # @genqlient(pointer: true)
     color
