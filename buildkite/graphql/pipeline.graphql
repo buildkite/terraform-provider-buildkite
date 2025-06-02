@@ -2,6 +2,7 @@ fragment PipelineFields on Pipeline {
     id
     pipelineUuid: uuid
     allowRebuilds
+    badgeURL
     # @genqlient(pointer: true)
     branchConfiguration
     cancelIntermediateBuilds
@@ -42,6 +43,7 @@ fragment PipelineFields on Pipeline {
     teams(first: 5, order: NAME) {
         ...PipelineTeam
     }
+    webhookURL
 }
 
 fragment PipelineTeam on TeamPipelineConnection {
