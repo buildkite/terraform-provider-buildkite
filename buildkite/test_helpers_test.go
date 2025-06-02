@@ -5,6 +5,11 @@ import (
 )
 
 func TestResourceTracking(t *testing.T) {
+	// Clear any existing tracked resources
+	trackedMutex.Lock()
+	trackedResources = make(map[string]map[string]bool)
+	trackedMutex.Unlock()
+
 	RegisterResourceTracking(t)
 
 	TrackResource("test_resource", "1")

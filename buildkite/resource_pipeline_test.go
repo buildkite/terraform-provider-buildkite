@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"strings"
 	"testing"
 
@@ -19,24 +20,37 @@ func testAccCheckPipelineDestroy(s *terraform.State) error {
 			continue
 		}
 
+		log.Printf("[DEBUG] Checking pipeline resource: %s (ID: %s)", rs.Primary.Attributes["name"], rs.Primary.ID)
 		UntrackResource("buildkite_pipeline", rs.Primary.ID)
 
 		pipelineSlug := rs.Primary.Attributes["slug"]
 		if pipelineSlug == "" {
 			pipelineName := rs.Primary.Attributes["name"]
-			pipelineSlug = fmt.Sprintf("%s/%s", getOrgEnv(), strings.ToLower(pipelineName))
+			if pipelineName == "" {
+				log.Printf("[WARN] Pipeline resource has no name, skipping")
+				continue
+			}
+			orgSlug := getOrgEnv()
+			if orgSlug == "" {
+				return fmt.Errorf("BUILDKITE_ORGANIZATION_SLUG environment variable is not set")
+			}
+			pipelineSlug = fmt.Sprintf("%s/%s", orgSlug, strings.ToLower(pipelineName))
 		}
 
+		log.Printf("[DEBUG] Checking pipeline with slug: %s", pipelineSlug)
 		resp, err := getPipeline(context.Background(), genqlientGraphql, pipelineSlug)
 		if err != nil {
-			if !strings.Contains(err.Error(), "not found") &&
-				!strings.Contains(err.Error(), "pipeline not found") {
-				return fmt.Errorf("error checking if pipeline exists: %v", err)
+			if strings.Contains(err.Error(), "not found") ||
+				strings.Contains(err.Error(), "pipeline not found") {
+				log.Printf("[DEBUG] Pipeline not found (expected): %s", pipelineSlug)
+				continue
 			}
-			continue
+			log.Printf("[ERROR] Error checking pipeline %s: %v", pipelineSlug, err)
+			return fmt.Errorf("error checking if pipeline exists: %v", err)
 		}
 
 		if resp.Pipeline.Id != "" {
+			log.Printf("[ERROR] Pipeline still exists: %s (ID: %s)", pipelineSlug, resp.Pipeline.Id)
 			return fmt.Errorf("pipeline still exists: %s", pipelineSlug)
 		}
 	}
