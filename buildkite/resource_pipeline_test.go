@@ -15,6 +15,11 @@ import (
 )
 
 func testAccCheckPipelineDestroy(s *terraform.State) error {
+	orgSlug := getOrgEnv()
+	if orgSlug == "" {
+		return fmt.Errorf("BUILDKITE_ORGANIZATION_SLUG environment variable is not set")
+	}
+
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "buildkite_pipeline" {
 			continue
@@ -30,11 +35,10 @@ func testAccCheckPipelineDestroy(s *terraform.State) error {
 				log.Printf("[WARN] Pipeline resource has no name, skipping")
 				continue
 			}
-			orgSlug := getOrgEnv()
-			if orgSlug == "" {
-				return fmt.Errorf("BUILDKITE_ORGANIZATION_SLUG environment variable is not set")
-			}
 			pipelineSlug = fmt.Sprintf("%s/%s", orgSlug, strings.ToLower(pipelineName))
+		} else if !strings.Contains(pipelineSlug, "/") {
+			// If the slug doesn't contain a '/', prepend the organization slug
+			pipelineSlug = fmt.Sprintf("%s/%s", orgSlug, pipelineSlug)
 		}
 
 		log.Printf("[DEBUG] Checking pipeline with slug: %s", pipelineSlug)
