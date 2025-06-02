@@ -45,6 +45,7 @@ type Steps struct {
 }
 type PipelineNode struct {
 	AllowRebuilds                        graphql.Boolean
+	BadgeUrl                             graphql.String `graphql:"badgeURL"`
 	BranchConfiguration                  graphql.String
 	CancelIntermediateBuilds             graphql.Boolean
 	CancelIntermediateBuildsBranchFilter graphql.String
@@ -130,6 +131,7 @@ type pipelineResponse interface {
 	GetId() string
 	GetPipelineUuid() string
 	GetAllowRebuilds() bool
+	GetBadgeURL() string
 	GetBranchConfiguration() *string
 	GetCancelIntermediateBuilds() bool
 	GetCancelIntermediateBuildsBranchFilter() string
@@ -148,6 +150,7 @@ type pipelineResponse interface {
 	GetSlug() string
 	GetSteps() PipelineFieldsStepsPipelineSteps
 	GetTags() []PipelineFieldsTagsPipelineTag
+	GetWebhookURL() string
 }
 
 func newPipelineResource(archiveOnDelete *bool) func() resource.Resource {
@@ -236,7 +239,6 @@ func (p *pipelineResource) Create(ctx context.Context, req resource.CreateReques
 	log.Printf("Successfully created pipeline with id '%s'.", response.PipelineCreate.Pipeline.Id)
 
 	setPipelineModel(&state, &response.PipelineCreate.Pipeline)
-	state.WebhookUrl = types.StringValue(response.PipelineCreate.Pipeline.GetWebhookURL())
 	state.DefaultTeamId = plan.DefaultTeamId
 
 	useSlugValue := response.PipelineCreate.Pipeline.Slug
@@ -263,13 +265,7 @@ func (p *pipelineResource) Create(ctx context.Context, req resource.CreateReques
 
 		updatePipelineResourceExtraInfo(&state, &pipelineExtraInfo)
 	} else {
-		// no provider_settings provided, but we still need to read in the badge url
-		extraInfo, err := getPipelineExtraInfo(ctx, p.client, useSlugValue, timeouts)
-		if err != nil {
-			resp.Diagnostics.AddError("Unable to read pipeline info from REST", err.Error())
-			return
-		}
-		state.BadgeUrl = types.StringValue(extraInfo.BadgeUrl)
+		// no provider_settings provided
 		state.ProviderSettings = plan.ProviderSettings
 	}
 
@@ -371,13 +367,6 @@ func (p *pipelineResource) Read(ctx context.Context, req resource.ReadRequest, r
 
 		setPipelineModel(&state, pipelineNode)
 
-		// set the webhook url if its not empty
-		// the value can be empty if not using a token with appropriate permissions. in this case, we just leave the
-		// state value alone assuming it was previously set correctly
-		if extraInfo.Provider.WebhookUrl != "" {
-			state.WebhookUrl = types.StringValue(extraInfo.Provider.WebhookUrl)
-		}
-
 		if state.ProviderSettings != nil {
 			updatePipelineResourceExtraInfo(&state, extraInfo)
 		}
@@ -387,8 +376,6 @@ func (p *pipelineResource) Read(ctx context.Context, req resource.ReadRequest, r
 		if err != nil {
 			resp.Diagnostics.AddError("Error encountered trying to read teams for pipeline", err.Error())
 		}
-
-		state.BadgeUrl = types.StringValue(extraInfo.BadgeUrl)
 
 		resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 	} else {
@@ -935,28 +922,9 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 		}
 
 		updatePipelineResourceExtraInfo(&state, &pipelineExtraInfo)
-		// set the webhook url if its not empty
-		// the value can be empty if not using a token with appropriate permissions. in this case, we just leave the
-		// state value alone assuming it was previously set correctly
-		if pipelineExtraInfo.Provider.WebhookUrl != "" {
-			state.WebhookUrl = types.StringValue(pipelineExtraInfo.Provider.WebhookUrl)
-		}
 	} else {
-		// no provider_settings provided, but we still need to read in the badge url
-
-		extraInfo, err := getPipelineExtraInfo(ctx, p.client, useSlugValue, timeouts)
-		if err != nil {
-			resp.Diagnostics.AddError("Unable to read pipeline info from REST", err.Error())
-			return
-		}
-		state.BadgeUrl = types.StringValue(extraInfo.BadgeUrl)
+		// no provider_settings provided
 		state.ProviderSettings = plan.ProviderSettings
-		// set the webhook url if its not empty
-		// the value can be empty if not using a token with appropriate permissions. in this case, we just leave the
-		// state value alone assuming it was previously set correctly
-		if extraInfo.Provider.WebhookUrl != "" {
-			state.WebhookUrl = types.StringValue(extraInfo.Provider.WebhookUrl)
-		}
 	}
 
 	state.Slug = types.StringValue(useSlugValue)
@@ -999,6 +967,7 @@ func setPipelineModel(model *pipelineResourceModel, data pipelineResponse) {
 	maximumTimeoutInMinutes := (*int64)(unsafe.Pointer(data.GetMaximumTimeoutInMinutes()))
 
 	model.AllowRebuilds = types.BoolValue(data.GetAllowRebuilds())
+	model.BadgeUrl = types.StringValue(data.GetBadgeURL())
 	model.BranchConfiguration = types.StringPointerValue(data.GetBranchConfiguration())
 	model.CancelIntermediateBuilds = types.BoolValue(data.GetCancelIntermediateBuilds())
 	model.CancelIntermediateBuildsBranchFilter = types.StringValue(data.GetCancelIntermediateBuildsBranchFilter())
@@ -1016,6 +985,7 @@ func setPipelineModel(model *pipelineResourceModel, data pipelineResponse) {
 	model.SkipIntermediateBuilds = types.BoolValue(data.GetSkipIntermediateBuilds())
 	model.SkipIntermediateBuildsBranchFilter = types.StringValue(data.GetSkipIntermediateBuildsBranchFilter())
 	model.UUID = types.StringValue(data.GetPipelineUuid())
+	model.WebhookUrl = types.StringValue(data.GetWebhookURL())
 
 	// only set template or steps. steps is always updated even if using a template, but its redundant and creates
 	// complications later
@@ -1035,17 +1005,14 @@ func setPipelineModel(model *pipelineResourceModel, data pipelineResponse) {
 }
 
 // As of December 23, 2024, `pipelineCreate` and `pipelineUpdate` GraphQL Mutations are lacking support the following properties:
-// - badge_url
 // - provider_settings
 // - slug
 // We fallback to REST API for secondary calls to set/update these properties.
 
 // PipelineExtraInfo is used to manage pipeline attributes that are not exposed via GraphQL API.
 type PipelineExtraInfo struct {
-	BadgeUrl string `json:"badge_url"`
 	Provider struct {
-		WebhookUrl string                `json:"webhook_url"`
-		Settings   PipelineExtraSettings `json:"settings"`
+		Settings PipelineExtraSettings `json:"settings"`
 	} `json:"provider"`
 	Slug string `json:"slug"`
 }
@@ -1159,7 +1126,6 @@ func getTagsFromSchema(plan *pipelineResourceModel) []PipelineTagInput {
 
 // updatePipelineResourceExtraInfo updates the terraform resource with data received from Buildkite REST API
 func updatePipelineResourceExtraInfo(state *pipelineResourceModel, pipeline *PipelineExtraInfo) {
-	state.BadgeUrl = types.StringValue(pipeline.BadgeUrl)
 	s := pipeline.Provider.Settings
 
 	state.ProviderSettings = &providerSettingsModel{
