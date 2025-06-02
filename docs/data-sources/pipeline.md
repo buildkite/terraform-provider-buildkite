@@ -30,6 +30,8 @@ data "buildkite_pipeline" "pipeline" {
 
 ### Read-Only
 
+- `cluster_id` (String) The GraphQL ID of the cluster the pipeline is (optionally) attached to.
+- `cluster_name` (String) The name of the cluster the pipeline is (optionally) attached to.
 - `default_branch` (String) The default branch to prefill when new builds are created or triggered.
 - `description` (String) The description of the pipeline.
 - `id` (String) The GraphQL ID of the pipeline.

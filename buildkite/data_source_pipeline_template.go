@@ -11,7 +11,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
 type pipelineTemplateDatasourceModel struct {
@@ -96,7 +95,7 @@ func (pt *pipelineTemplateDatasource) Read(ctx context.Context, req datasource.R
 		return
 	}
 
-	timeouts, diags := pt.client.timeouts.Read(ctx, DefaultTimeout)
+	_, diags := pt.client.timeouts.Read(ctx, DefaultTimeout)
 	resp.Diagnostics.Append(diags...)
 
 	if resp.Diagnostics.HasError() {
@@ -105,14 +104,11 @@ func (pt *pipelineTemplateDatasource) Read(ctx context.Context, req datasource.R
 
 	if !state.ID.IsNull() {
 		var apiResponse *getNodeResponse
-		err := retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
-			var err error
-			apiResponse, err = getNode(ctx, pt.client.genqlient, state.ID.ValueString())
-			return retryContextError(err)
-		})
+		var err error
+		apiResponse, err = getNode(ctx, pt.client.genqlient, state.ID.ValueString())
 		if err != nil {
 			resp.Diagnostics.AddError(
-				"Unable to get pipeline template",
+				"Unable to get Pipeline Template by ID",
 				fmt.Sprintf("Error getting pipeline template: %s", err.Error()),
 			)
 			return
@@ -130,47 +126,40 @@ func (pt *pipelineTemplateDatasource) Read(ctx context.Context, req datasource.R
 			updatePipelineTemplateDatasourceState(&state, *pipelineTemplateNode)
 		}
 	} else if !state.Name.IsNull() {
+		var r *getPipelineTemplatesResponse
+		var err error
+		cursor := (*string)(nil)
 		matchFound := false
-		err := retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
-			var cursor *string
-			for {
-				r, err := getPipelineTemplates(
-					ctx,
-					pt.client.genqlient,
-					pt.client.organization,
-					cursor)
-				if err != nil {
-					if isRetryableError(err) {
-						return retry.RetryableError(err)
-					}
-					resp.Diagnostics.AddError(
-						"Unable to read pipeline templates",
-						fmt.Sprintf("Unable to read pipeline templates: %s", err.Error()),
-					)
-					return retry.NonRetryableError(err)
-				}
 
-				for _, template := range r.Organization.PipelineTemplates.Edges {
-					if template.Node.Name == state.Name.ValueString() {
-						matchFound = true
-						updatePipelineTemplateDatasourceFromNode(&state, template.Node)
-						break
-					}
-				}
+		for {
+			r, err = getPipelineTemplates(
+				ctx,
+				pt.client.genqlient,
+				pt.client.organization,
+				cursor)
+			if err != nil {
+				resp.Diagnostics.AddError(
+					"Unable to read pipeline templates",
+					fmt.Sprintf("Unable to read pipeline templates: %s", err.Error()),
+				)
+				return
+			}
 
-				// If no match found and at the last page, break
-				if matchFound || !r.Organization.PipelineTemplates.PageInfo.HasNextPage {
+			for _, template := range r.Organization.PipelineTemplates.Edges {
+				if template.Node.Name == state.Name.ValueString() {
+					matchFound = true
+					updatePipelineTemplateDatasourceFromNode(&state, template.Node)
 					break
 				}
-
-				// Move to next cursor
-				cursor = &r.Organization.PipelineTemplates.PageInfo.EndCursor
 			}
-			return nil
-		})
-		if err != nil {
-			resp.Diagnostics.AddError("Unable to find pipeline template", err.Error())
-			return
+
+			// If no match found and at the last page, break
+			if matchFound || !r.Organization.PipelineTemplates.PageInfo.HasNextPage {
+				break
+			}
+
+			// Move to next cursor
+			cursor = &r.Organization.PipelineTemplates.PageInfo.EndCursor
 		}
 
 		if !matchFound {
@@ -179,6 +168,7 @@ func (pt *pipelineTemplateDatasource) Read(ctx context.Context, req datasource.R
 			return
 		}
 	}
+
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 

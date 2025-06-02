@@ -441,6 +441,26 @@ func (v *GetOrganizationMembersResponse) GetOrganization() GetOrganizationMember
 	return v.Organization
 }
 
+// GetRegistryIDRegistry includes the requested fields of the GraphQL type Registry.
+// The GraphQL type's documentation follows.
+//
+// A registry
+type GetRegistryIDRegistry struct {
+	Id string `json:"id"`
+}
+
+// GetId returns GetRegistryIDRegistry.Id, and is useful for accessing the field via an interface.
+func (v *GetRegistryIDRegistry) GetId() string { return v.Id }
+
+// GetRegistryIDResponse is returned by GetRegistryID on success.
+type GetRegistryIDResponse struct {
+	// Find a registry
+	Registry GetRegistryIDRegistry `json:"registry"`
+}
+
+// GetRegistry returns GetRegistryIDResponse.Registry, and is useful for accessing the field via an interface.
+func (v *GetRegistryIDResponse) GetRegistry() GetRegistryIDRegistry { return v.Registry }
+
 // GetTeamFromSlugResponse is returned by GetTeamFromSlug on success.
 type GetTeamFromSlugResponse struct {
 	// Find a team
@@ -622,36 +642,36 @@ const (
 // Settings for Linux hosted agents on this queue
 type HostedAgentsLinuxPlatformSettingsInput struct {
 	// Settings for Linux hosted agents on this queue
-	AgentImageRef string `json:"agentImageRef"`
+	AgentImageRef *string `json:"agentImageRef"`
 }
 
 // GetAgentImageRef returns HostedAgentsLinuxPlatformSettingsInput.AgentImageRef, and is useful for accessing the field via an interface.
-func (v *HostedAgentsLinuxPlatformSettingsInput) GetAgentImageRef() string { return v.AgentImageRef }
+func (v *HostedAgentsLinuxPlatformSettingsInput) GetAgentImageRef() *string { return v.AgentImageRef }
 
 // Settings for Mac hosted agents on this queue
 type HostedAgentsMacosPlatformSettingsInput struct {
 	// Settings for Mac hosted agents on this queue
-	XcodeVersion string `json:"xcodeVersion"`
+	XcodeVersion *string `json:"xcodeVersion"`
 }
 
 // GetXcodeVersion returns HostedAgentsMacosPlatformSettingsInput.XcodeVersion, and is useful for accessing the field via an interface.
-func (v *HostedAgentsMacosPlatformSettingsInput) GetXcodeVersion() string { return v.XcodeVersion }
+func (v *HostedAgentsMacosPlatformSettingsInput) GetXcodeVersion() *string { return v.XcodeVersion }
 
 // Settings for hosted agents on this queue
 type HostedAgentsPlatformSettingsInput struct {
 	// Settings for hosted agents on this queue
-	Linux HostedAgentsLinuxPlatformSettingsInput `json:"linux"`
+	Linux *HostedAgentsLinuxPlatformSettingsInput `json:"linux,omitempty"`
 	// Settings for hosted agents on this queue
-	Macos HostedAgentsMacosPlatformSettingsInput `json:"macos"`
+	Macos *HostedAgentsMacosPlatformSettingsInput `json:"macos,omitempty"`
 }
 
 // GetLinux returns HostedAgentsPlatformSettingsInput.Linux, and is useful for accessing the field via an interface.
-func (v *HostedAgentsPlatformSettingsInput) GetLinux() HostedAgentsLinuxPlatformSettingsInput {
+func (v *HostedAgentsPlatformSettingsInput) GetLinux() *HostedAgentsLinuxPlatformSettingsInput {
 	return v.Linux
 }
 
 // GetMacos returns HostedAgentsPlatformSettingsInput.Macos, and is useful for accessing the field via an interface.
-func (v *HostedAgentsPlatformSettingsInput) GetMacos() HostedAgentsMacosPlatformSettingsInput {
+func (v *HostedAgentsPlatformSettingsInput) GetMacos() *HostedAgentsMacosPlatformSettingsInput {
 	return v.Macos
 }
 
@@ -1425,10 +1445,15 @@ func (v *PipelineFields) GetTeams() PipelineFieldsTeamsTeamPipelineConnection { 
 // PipelineFieldsCluster includes the requested fields of the GraphQL type Cluster.
 type PipelineFieldsCluster struct {
 	Id *string `json:"id"`
+	// Name of the cluster
+	Name *string `json:"name"`
 }
 
 // GetId returns PipelineFieldsCluster.Id, and is useful for accessing the field via an interface.
 func (v *PipelineFieldsCluster) GetId() *string { return v.Id }
+
+// GetName returns PipelineFieldsCluster.Name, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsCluster) GetName() *string { return v.Name }
 
 // PipelineFieldsPipelineTemplate includes the requested fields of the GraphQL type PipelineTemplate.
 // The GraphQL type's documentation follows.
@@ -2238,6 +2263,14 @@ func (v *__GetOrganizationMembersInput) GetSlug() string { return v.Slug }
 
 // GetCursor returns __GetOrganizationMembersInput.Cursor, and is useful for accessing the field via an interface.
 func (v *__GetOrganizationMembersInput) GetCursor() *string { return v.Cursor }
+
+// __GetRegistryIDInput is used internally by genqlient
+type __GetRegistryIDInput struct {
+	Slug string `json:"slug"`
+}
+
+// GetSlug returns __GetRegistryIDInput.Slug, and is useful for accessing the field via an interface.
+func (v *__GetRegistryIDInput) GetSlug() string { return v.Slug }
 
 // __GetTeamFromSlugInput is used internally by genqlient
 type __GetTeamFromSlugInput struct {
@@ -5586,7 +5619,6 @@ func (v *getClusterQueuesResponse) GetOrganization() getClusterQueuesOrganizatio
 // getNodeNodeAuthorizationGoogle
 // getNodeNodeAuthorizationSAML
 // getNodeNodeBuild
-// getNodeNodeChangelog
 // getNodeNodeCluster
 // getNodeNodeClusterQueue
 // getNodeNodeClusterQueueToken
@@ -5655,7 +5687,6 @@ func (v *getNodeNodeAuthorizationGitHubEnterprise) implementsGraphQLInterfaceget
 func (v *getNodeNodeAuthorizationGoogle) implementsGraphQLInterfacegetNodeNode()                  {}
 func (v *getNodeNodeAuthorizationSAML) implementsGraphQLInterfacegetNodeNode()                    {}
 func (v *getNodeNodeBuild) implementsGraphQLInterfacegetNodeNode()                                {}
-func (v *getNodeNodeChangelog) implementsGraphQLInterfacegetNodeNode()                            {}
 func (v *getNodeNodeCluster) implementsGraphQLInterfacegetNodeNode()                              {}
 func (v *getNodeNodeClusterQueue) implementsGraphQLInterfacegetNodeNode()                         {}
 func (v *getNodeNodeClusterQueueToken) implementsGraphQLInterfacegetNodeNode()                    {}
@@ -5760,9 +5791,6 @@ func __unmarshalgetNodeNode(b []byte, v *getNodeNode) error {
 		return json.Unmarshal(b, *v)
 	case "Build":
 		*v = new(getNodeNodeBuild)
-		return json.Unmarshal(b, *v)
-	case "Changelog":
-		*v = new(getNodeNodeChangelog)
 		return json.Unmarshal(b, *v)
 	case "Cluster":
 		*v = new(getNodeNodeCluster)
@@ -6027,14 +6055,6 @@ func __marshalgetNodeNode(v *getNodeNode) ([]byte, error) {
 		result := struct {
 			TypeName string `json:"__typename"`
 			*getNodeNodeBuild
-		}{typename, v}
-		return json.Marshal(result)
-	case *getNodeNodeChangelog:
-		typename = "Changelog"
-
-		result := struct {
-			TypeName string `json:"__typename"`
-			*getNodeNodeChangelog
 		}{typename, v}
 		return json.Marshal(result)
 	case *getNodeNodeCluster:
@@ -6593,17 +6613,6 @@ type getNodeNodeBuild struct {
 
 // GetTypename returns getNodeNodeBuild.Typename, and is useful for accessing the field via an interface.
 func (v *getNodeNodeBuild) GetTypename() string { return v.Typename }
-
-// getNodeNodeChangelog includes the requested fields of the GraphQL type Changelog.
-// The GraphQL type's documentation follows.
-//
-// A changelog
-type getNodeNodeChangelog struct {
-	Typename string `json:"__typename"`
-}
-
-// GetTypename returns getNodeNodeChangelog.Typename, and is useful for accessing the field via an interface.
-func (v *getNodeNodeChangelog) GetTypename() string { return v.Typename }
 
 // getNodeNodeCluster includes the requested fields of the GraphQL type Cluster.
 type getNodeNodeCluster struct {
@@ -8694,7 +8703,6 @@ func (v *getPipelineScheduleBySlugResponse) GetPipelineSchedule() getPipelineSch
 // getPipelineScheduleNodeAuthorizationGoogle
 // getPipelineScheduleNodeAuthorizationSAML
 // getPipelineScheduleNodeBuild
-// getPipelineScheduleNodeChangelog
 // getPipelineScheduleNodeCluster
 // getPipelineScheduleNodeClusterQueue
 // getPipelineScheduleNodeClusterQueueToken
@@ -8770,7 +8778,6 @@ func (v *getPipelineScheduleNodeAuthorizationGoogle) implementsGraphQLInterfaceg
 func (v *getPipelineScheduleNodeAuthorizationSAML) implementsGraphQLInterfacegetPipelineScheduleNode() {
 }
 func (v *getPipelineScheduleNodeBuild) implementsGraphQLInterfacegetPipelineScheduleNode()        {}
-func (v *getPipelineScheduleNodeChangelog) implementsGraphQLInterfacegetPipelineScheduleNode()    {}
 func (v *getPipelineScheduleNodeCluster) implementsGraphQLInterfacegetPipelineScheduleNode()      {}
 func (v *getPipelineScheduleNodeClusterQueue) implementsGraphQLInterfacegetPipelineScheduleNode() {}
 func (v *getPipelineScheduleNodeClusterQueueToken) implementsGraphQLInterfacegetPipelineScheduleNode() {
@@ -8895,9 +8902,6 @@ func __unmarshalgetPipelineScheduleNode(b []byte, v *getPipelineScheduleNode) er
 		return json.Unmarshal(b, *v)
 	case "Build":
 		*v = new(getPipelineScheduleNodeBuild)
-		return json.Unmarshal(b, *v)
-	case "Changelog":
-		*v = new(getPipelineScheduleNodeChangelog)
 		return json.Unmarshal(b, *v)
 	case "Cluster":
 		*v = new(getPipelineScheduleNodeCluster)
@@ -9162,14 +9166,6 @@ func __marshalgetPipelineScheduleNode(v *getPipelineScheduleNode) ([]byte, error
 		result := struct {
 			TypeName string `json:"__typename"`
 			*getPipelineScheduleNodeBuild
-		}{typename, v}
-		return json.Marshal(result)
-	case *getPipelineScheduleNodeChangelog:
-		typename = "Changelog"
-
-		result := struct {
-			TypeName string `json:"__typename"`
-			*getPipelineScheduleNodeChangelog
 		}{typename, v}
 		return json.Marshal(result)
 	case *getPipelineScheduleNodeCluster:
@@ -9702,17 +9698,6 @@ type getPipelineScheduleNodeBuild struct {
 
 // GetTypename returns getPipelineScheduleNodeBuild.Typename, and is useful for accessing the field via an interface.
 func (v *getPipelineScheduleNodeBuild) GetTypename() string { return v.Typename }
-
-// getPipelineScheduleNodeChangelog includes the requested fields of the GraphQL type Changelog.
-// The GraphQL type's documentation follows.
-//
-// A changelog
-type getPipelineScheduleNodeChangelog struct {
-	Typename string `json:"__typename"`
-}
-
-// GetTypename returns getPipelineScheduleNodeChangelog.Typename, and is useful for accessing the field via an interface.
-func (v *getPipelineScheduleNodeChangelog) GetTypename() string { return v.Typename }
 
 // getPipelineScheduleNodeCluster includes the requested fields of the GraphQL type Cluster.
 type getPipelineScheduleNodeCluster struct {
@@ -10737,6 +10722,8 @@ type getTestSuiteSuite struct {
 	Uuid     string `json:"uuid"`
 	// The default branch for this suite
 	DefaultBranch string `json:"defaultBranch"`
+	// The emoji that will display as a suite navatar in the Test Suites page
+	Emoji string `json:"emoji"`
 	// The name of the suite
 	Name string `json:"name"`
 	// The slug of the suite
@@ -10756,6 +10743,9 @@ func (v *getTestSuiteSuite) GetUuid() string { return v.Uuid }
 
 // GetDefaultBranch returns getTestSuiteSuite.DefaultBranch, and is useful for accessing the field via an interface.
 func (v *getTestSuiteSuite) GetDefaultBranch() string { return v.DefaultBranch }
+
+// GetEmoji returns getTestSuiteSuite.Emoji, and is useful for accessing the field via an interface.
+func (v *getTestSuiteSuite) GetEmoji() string { return v.Emoji }
 
 // GetName returns getTestSuiteSuite.Name, and is useful for accessing the field via an interface.
 func (v *getTestSuiteSuite) GetName() string { return v.Name }
@@ -10930,17 +10920,6 @@ type getTestSuiteSuiteBuild struct {
 
 // GetTypename returns getTestSuiteSuiteBuild.Typename, and is useful for accessing the field via an interface.
 func (v *getTestSuiteSuiteBuild) GetTypename() string { return v.Typename }
-
-// getTestSuiteSuiteChangelog includes the requested fields of the GraphQL type Changelog.
-// The GraphQL type's documentation follows.
-//
-// A changelog
-type getTestSuiteSuiteChangelog struct {
-	Typename string `json:"__typename"`
-}
-
-// GetTypename returns getTestSuiteSuiteChangelog.Typename, and is useful for accessing the field via an interface.
-func (v *getTestSuiteSuiteChangelog) GetTypename() string { return v.Typename }
 
 // getTestSuiteSuiteCluster includes the requested fields of the GraphQL type Cluster.
 type getTestSuiteSuiteCluster struct {
@@ -11152,7 +11131,6 @@ func (v *getTestSuiteSuiteJobTypeWait) GetTypename() string { return v.Typename 
 // getTestSuiteSuiteAuthorizationGoogle
 // getTestSuiteSuiteAuthorizationSAML
 // getTestSuiteSuiteBuild
-// getTestSuiteSuiteChangelog
 // getTestSuiteSuiteCluster
 // getTestSuiteSuiteClusterQueue
 // getTestSuiteSuiteClusterQueueToken
@@ -11222,7 +11200,6 @@ func (v *getTestSuiteSuiteAuthorizationGitHubEnterprise) implementsGraphQLInterf
 func (v *getTestSuiteSuiteAuthorizationGoogle) implementsGraphQLInterfacegetTestSuiteSuiteNode() {}
 func (v *getTestSuiteSuiteAuthorizationSAML) implementsGraphQLInterfacegetTestSuiteSuiteNode()   {}
 func (v *getTestSuiteSuiteBuild) implementsGraphQLInterfacegetTestSuiteSuiteNode()               {}
-func (v *getTestSuiteSuiteChangelog) implementsGraphQLInterfacegetTestSuiteSuiteNode()           {}
 func (v *getTestSuiteSuiteCluster) implementsGraphQLInterfacegetTestSuiteSuiteNode()             {}
 func (v *getTestSuiteSuiteClusterQueue) implementsGraphQLInterfacegetTestSuiteSuiteNode()        {}
 func (v *getTestSuiteSuiteClusterQueueToken) implementsGraphQLInterfacegetTestSuiteSuiteNode()   {}
@@ -11332,9 +11309,6 @@ func __unmarshalgetTestSuiteSuiteNode(b []byte, v *getTestSuiteSuiteNode) error 
 		return json.Unmarshal(b, *v)
 	case "Build":
 		*v = new(getTestSuiteSuiteBuild)
-		return json.Unmarshal(b, *v)
-	case "Changelog":
-		*v = new(getTestSuiteSuiteChangelog)
 		return json.Unmarshal(b, *v)
 	case "Cluster":
 		*v = new(getTestSuiteSuiteCluster)
@@ -11599,14 +11573,6 @@ func __marshalgetTestSuiteSuiteNode(v *getTestSuiteSuiteNode) ([]byte, error) {
 		result := struct {
 			TypeName string `json:"__typename"`
 			*getTestSuiteSuiteBuild
-		}{typename, v}
-		return json.Marshal(result)
-	case *getTestSuiteSuiteChangelog:
-		typename = "Changelog"
-
-		result := struct {
-			TypeName string `json:"__typename"`
-			*getTestSuiteSuiteChangelog
 		}{typename, v}
 		return json.Marshal(result)
 	case *getTestSuiteSuiteCluster:
@@ -14752,6 +14718,41 @@ func GetOrganizationMembers(
 	return &data_, err_
 }
 
+// The query or mutation executed by GetRegistryID.
+const GetRegistryID_Operation = `
+query GetRegistryID ($slug: ID) {
+	registry(slug: $slug) {
+		id
+	}
+}
+`
+
+func GetRegistryID(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	slug string,
+) (*GetRegistryIDResponse, error) {
+	req_ := &graphql.Request{
+		OpName: "GetRegistryID",
+		Query:  GetRegistryID_Operation,
+		Variables: &__GetRegistryIDInput{
+			Slug: slug,
+		},
+	}
+	var err_ error
+
+	var data_ GetRegistryIDResponse
+	resp_ := &graphql.Response{Data: &data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return &data_, err_
+}
+
 // The query or mutation executed by GetTeamFromSlug.
 const GetTeamFromSlug_Operation = `
 query GetTeamFromSlug ($slug: ID!) {
@@ -15153,6 +15154,7 @@ fragment PipelineFields on Pipeline {
 	cancelIntermediateBuildsBranchFilter
 	cluster {
 		id
+		name
 	}
 	color
 	defaultBranch
@@ -16041,7 +16043,7 @@ const getClusterQueues_Operation = `
 query getClusterQueues ($orgSlug: ID!, $id: ID!, $cursor: String) {
 	organization(slug: $orgSlug) {
 		cluster(id: $id) {
-			queues(order: KEY, first: 50, after: $cursor) {
+			queues(order: KEY, first: 100, after: $cursor) {
 				pageInfo {
 					endCursor
 					hasNextPage
@@ -16165,6 +16167,7 @@ fragment PipelineFields on Pipeline {
 	cancelIntermediateBuildsBranchFilter
 	cluster {
 		id
+		name
 	}
 	color
 	defaultBranch
@@ -16485,6 +16488,7 @@ fragment PipelineFields on Pipeline {
 	cancelIntermediateBuildsBranchFilter
 	cluster {
 		id
+		name
 	}
 	color
 	defaultBranch
@@ -16778,6 +16782,7 @@ query getTestSuite ($id: ID!, $teamCount: Int) {
 			id
 			uuid
 			defaultBranch
+			emoji
 			name
 			slug
 			teams(first: $teamCount, order: NAME) {
@@ -17608,6 +17613,7 @@ fragment PipelineFields on Pipeline {
 	cancelIntermediateBuildsBranchFilter
 	cluster {
 		id
+		name
 	}
 	color
 	defaultBranch

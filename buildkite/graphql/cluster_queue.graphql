@@ -41,7 +41,7 @@ query getClusterQueues(
 ) {
     organization(slug: $orgSlug) {
         cluster(id: $id) {
-            queues(order: KEY, first: 50, after: $cursor) {
+            queues(order: KEY, first: 100, after: $cursor) {
                 pageInfo {
                     endCursor
                     hasNextPage
@@ -65,6 +65,10 @@ query getClusterQueues(
     }
 }
 
+# @genqlient(for: "HostedAgentsPlatformSettingsInput.linux", pointer: true, omitempty: true)
+# @genqlient(for: "HostedAgentsPlatformSettingsInput.macos", pointer: true, omitempty: true)
+# @genqlient(for: "HostedAgentsLinuxPlatformSettingsInput.agentImageRef", pointer: true)
+# @genqlient(for: "HostedAgentsMacosPlatformSettingsInput.xcodeVersion", pointer: true)
 mutation createClusterQueue(
     $organizationId: ID!
     $clusterId: ID!
@@ -89,6 +93,10 @@ mutation createClusterQueue(
     }
 }
 
+# @genqlient(for: "HostedAgentsPlatformSettingsInput.linux", pointer: true, omitempty: true)
+# @genqlient(for: "HostedAgentsPlatformSettingsInput.macos", pointer: true, omitempty: true)
+# @genqlient(for: "HostedAgentsLinuxPlatformSettingsInput.agentImageRef", pointer: true)
+# @genqlient(for: "HostedAgentsMacosPlatformSettingsInput.xcodeVersion", pointer: true)
 mutation updateClusterQueue(
     $organizationId: ID!
     $id: ID!

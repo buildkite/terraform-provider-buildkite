@@ -19,7 +19,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
 const (
@@ -184,8 +183,7 @@ func (clusterQueueResource) Schema(ctx context.Context, req resource.SchemaReque
 						Optional: true,
 						Attributes: map[string]resource_schema.Attribute{
 							"xcode_version": resource_schema.StringAttribute{
-								Optional:    true,
-								Computed:    true,
+								Required:    true,
 								Description: "Optional selection of a specific XCode version to be selected for jobs in the queue to have available. Please note that this value is currently experimental and may not function as expected.",
 							},
 						},
@@ -194,8 +192,7 @@ func (clusterQueueResource) Schema(ctx context.Context, req resource.SchemaReque
 						Optional: true,
 						Attributes: map[string]resource_schema.Attribute{
 							"agent_image_ref": resource_schema.StringAttribute{
-								Optional:    true,
-								Computed:    true,
+								Required:    true,
 								Description: "A URL reference to a container image that will be used for jobs running within the queue. This URL is required to be publicly available, or pushed to the internal registry available within the cluster. Please note that this value is currently experimental and in preview. Please contact support@buildkite.com to enable this functionality for your organization.",
 							},
 						},
@@ -234,43 +231,42 @@ func (cq *clusterQueueResource) Create(ctx context.Context, req resource.CreateR
 		return
 	}
 
-	var hosted *HostedAgentsQueueSettingsCreateInput
+	hosted := (*HostedAgentsQueueSettingsCreateInput)(nil)
 	if plan.HostedAgents != nil {
 		hosted = &HostedAgentsQueueSettingsCreateInput{
-			InstanceShape:    HostedAgentInstanceShapeName(plan.HostedAgents.InstanceShape.ValueString()),
-			PlatformSettings: HostedAgentsPlatformSettingsInput{},
+			InstanceShape: HostedAgentInstanceShapeName(plan.HostedAgents.InstanceShape.ValueString()),
 		}
 
 		if plan.HostedAgents.Linux != nil {
-			hosted.PlatformSettings.Linux = HostedAgentsLinuxPlatformSettingsInput{
-				AgentImageRef: plan.HostedAgents.Linux.ImageAgentRef.ValueString(),
+			hosted.PlatformSettings = HostedAgentsPlatformSettingsInput{
+				Linux: &HostedAgentsLinuxPlatformSettingsInput{
+					AgentImageRef: plan.HostedAgents.Linux.ImageAgentRef.ValueStringPointer(),
+				},
 			}
-		}
-		if plan.HostedAgents.Mac != nil {
-			hosted.PlatformSettings.Macos = HostedAgentsMacosPlatformSettingsInput{
-				XcodeVersion: plan.HostedAgents.Mac.XcodeVersion.ValueString(),
+		} else if plan.HostedAgents.Mac != nil {
+			hosted.PlatformSettings = HostedAgentsPlatformSettingsInput{
+				Macos: &HostedAgentsMacosPlatformSettingsInput{
+					XcodeVersion: plan.HostedAgents.Mac.XcodeVersion.ValueStringPointer(),
+				},
 			}
 		}
 	}
 
-	var r *createClusterQueueResponse
-	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-		org, err := cq.client.GetOrganizationID()
-		if err == nil {
-			log.Printf("Creating cluster queue with key %s into cluster %s ...", plan.Key.ValueString(), plan.ClusterId.ValueString())
+	org, err := cq.client.GetOrganizationID()
+	if err != nil {
+		resp.Diagnostics.AddError("Unable to get organization ID", fmt.Sprintf("Failed to get organization ID: %s", err.Error()))
+		return
+	}
 
-			r, err = createClusterQueue(ctx,
-				cq.client.genqlient,
-				*org,
-				plan.ClusterId.ValueString(),
-				plan.Key.ValueString(),
-				plan.Description.ValueStringPointer(),
-				hosted,
-			)
-		}
-
-		return retryContextError(err)
-	})
+	log.Printf("Creating cluster queue with key %s into cluster %s ...", plan.Key.ValueString(), plan.ClusterId.ValueString())
+	r, err := createClusterQueue(ctx,
+		cq.client.genqlient,
+		*org,
+		plan.ClusterId.ValueString(),
+		plan.Key.ValueString(),
+		plan.Description.ValueStringPointer(),
+		hosted,
+	)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to create Cluster Queue",
@@ -286,18 +282,19 @@ func (cq *clusterQueueResource) Create(ctx context.Context, req resource.CreateR
 	state.Key = types.StringValue(r.ClusterQueueCreate.ClusterQueue.Key)
 	state.Description = types.StringPointerValue(r.ClusterQueueCreate.ClusterQueue.Description)
 
+	state.DispatchPaused = types.BoolValue(false) // Start with false, update below if needed
+
 	// GraphQL API does not allow Cluster Queue to be created with Dispatch Paused
-	// so Pause Dispatch after creation
+	// so Pause Dispatch after creation if required
 	if plan.DispatchPaused.ValueBool() {
-		err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-			log.Printf("Pausing dispatch on cluster queue with key %s", plan.Key.ValueString())
-			return retryContextError(cq.pauseDispatch(ctx, timeout, state, &resp.Diagnostics))
-		})
+		log.Printf("Pausing dispatch on cluster queue with key %s", plan.Key.ValueString())
+		err = cq.pauseDispatch(ctx, timeout, state, &resp.Diagnostics)
 		if err != nil {
+			// Error is added to diagnostics within pauseDispatch
 			return
 		}
+		state.DispatchPaused = types.BoolValue(true)
 	}
-	state.DispatchPaused = plan.DispatchPaused
 
 	if plan.HostedAgents != nil {
 		state.HostedAgents = &hostedAgentResourceModel{
@@ -310,7 +307,7 @@ func (cq *clusterQueueResource) Create(ctx context.Context, req resource.CreateR
 		}
 		if plan.HostedAgents.Mac != nil {
 			state.HostedAgents.Mac = &macConfigModel{
-				XcodeVersion: plan.HostedAgents.Mac.XcodeVersion,
+				XcodeVersion: types.StringValue(r.ClusterQueueCreate.ClusterQueue.HostedAgents.PlatformSettings.Macos.XcodeVersion),
 			}
 		}
 	}
@@ -328,53 +325,51 @@ func (cq *clusterQueueResource) Read(ctx context.Context, req resource.ReadReque
 		return
 	}
 
-	timeout, diags := cq.client.timeouts.Read(ctx, DefaultTimeout)
-	resp.Diagnostics.Append(diags...)
+	// Timeout is not used here
+	_, readDiags := cq.client.timeouts.Read(ctx, DefaultTimeout)
+	resp.Diagnostics.Append(readDiags...)
 
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	var matchFound bool
-	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-		var cursor *string
-		for {
-			log.Printf("Getting cluster queues for cluster %s ...", state.ClusterUuid.ValueString())
-			r, err := getClusterQueues(ctx, cq.client.genqlient, cq.client.organization, state.ClusterUuid.ValueString(), cursor)
-			if err != nil {
-				if isRetryableError(err) {
-					return retry.RetryableError(err)
-				}
-				resp.Diagnostics.AddError(
-					"Unable to read Cluster Queues",
-					fmt.Sprintf("Unable to read Cluster Queues: %s", err.Error()),
-				)
-				return retry.NonRetryableError(err)
-			}
+	var r *getClusterQueuesResponse
+	var err error
+	cursor := (*string)(nil)
+	matchFound := false
 
-			// Find the cluster queue from the returned queues to update state
-			for _, edge := range r.Organization.Cluster.Queues.Edges {
-				if edge.Node.Id == state.Id.ValueString() {
-					matchFound = true
-					log.Printf("Found cluster queue with ID %s in cluster %s", edge.Node.Id, state.ClusterUuid.ValueString())
-					// Update ClusterQueueResourceModel with Node values and append
-					updateClusterQueueResource(edge.Node, &state)
-					resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
-					break
-				}
-			}
+	for {
+		log.Printf("Getting cluster queues for cluster %s ...", state.ClusterUuid.ValueString())
+		r, err = getClusterQueues(ctx, cq.client.genqlient, cq.client.organization, state.ClusterUuid.ValueString(), cursor)
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Unable to read Cluster Queues",
+				fmt.Sprintf("Unable to read Cluster Queues: %s", err.Error()),
+			)
+			return
+		}
 
-			// end here if we found a match or there are no more pages to search
-			if matchFound || !r.Organization.Cluster.Queues.PageInfo.HasNextPage {
+		// Find the cluster queue from the returned queues to update state
+		for _, edge := range r.Organization.Cluster.Queues.Edges {
+			if edge.Node.Id == state.Id.ValueString() {
+				matchFound = true
+				log.Printf("Found cluster queue with ID %s in cluster %s", edge.Node.Id, state.ClusterUuid.ValueString())
+				// Update ClusterQueueResourceModel with Node values and append
+				updateClusterQueueResource(edge.Node, &state)
+				resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 				break
 			}
-			cursor = &r.Organization.Cluster.Queues.PageInfo.EndCursor
 		}
-		return nil
-	})
+
+		// end here if we found a match or there are no more pages to search
+		if matchFound || !r.Organization.Cluster.Queues.PageInfo.HasNextPage {
+			break
+		}
+		cursor = &r.Organization.Cluster.Queues.PageInfo.EndCursor
+	}
 
 	// Cluster queue could not be found in returned queues and should be removed from state
-	if !matchFound || err != nil {
+	if !matchFound {
 		resp.Diagnostics.AddWarning(
 			"Cluster Queue not found",
 			"Removing Cluster Queue from state...",
@@ -419,62 +414,78 @@ func (cq *clusterQueueResource) Update(ctx context.Context, req resource.UpdateR
 	}
 
 	var r *updateClusterQueueResponse
-	var hosted *HostedAgentsQueueSettingsUpdateInput
+	hosted := (*HostedAgentsQueueSettingsUpdateInput)(nil)
 	if state.HostedAgents != nil {
 		hosted = &HostedAgentsQueueSettingsUpdateInput{
-			InstanceShape:    HostedAgentInstanceShapeName(plan.HostedAgents.InstanceShape.ValueString()),
-			PlatformSettings: HostedAgentsPlatformSettingsInput{},
+			InstanceShape: HostedAgentInstanceShapeName(plan.HostedAgents.InstanceShape.ValueString()),
+		}
+
+		// Set Hosted Agents input fields to nil to account for when
+		// hosted_agents.linux or hosted_agents.mac attributes are removed
+		// and a null can be sent in the clusterQueueUpdate mutation API call
+		if state.HostedAgents.Linux != nil {
+			hosted.PlatformSettings = HostedAgentsPlatformSettingsInput{
+				Linux: &HostedAgentsLinuxPlatformSettingsInput{
+					AgentImageRef: nil,
+				},
+			}
+		} else if state.HostedAgents.Mac != nil {
+			hosted.PlatformSettings = HostedAgentsPlatformSettingsInput{
+				Macos: &HostedAgentsMacosPlatformSettingsInput{
+					XcodeVersion: nil,
+				},
+			}
 		}
 
 		if plan.HostedAgents.Linux != nil {
-			hosted.PlatformSettings.Linux = HostedAgentsLinuxPlatformSettingsInput{
-				AgentImageRef: plan.HostedAgents.Linux.ImageAgentRef.ValueString(),
+			hosted.PlatformSettings.Linux = &HostedAgentsLinuxPlatformSettingsInput{
+				AgentImageRef: plan.HostedAgents.Linux.ImageAgentRef.ValueStringPointer(),
 			}
-		}
-		if plan.HostedAgents.Mac != nil {
-			hosted.PlatformSettings.Macos = HostedAgentsMacosPlatformSettingsInput{
-				XcodeVersion: plan.HostedAgents.Mac.XcodeVersion.ValueString(),
+		} else if plan.HostedAgents.Mac != nil {
+			hosted.PlatformSettings.Macos = &HostedAgentsMacosPlatformSettingsInput{
+				XcodeVersion: plan.HostedAgents.Mac.XcodeVersion.ValueStringPointer(),
 			}
 		}
 	}
 
-	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-		org, err := cq.client.GetOrganizationID()
-		if err == nil {
-			log.Printf("Updating cluster queue %s ...", state.Id.ValueString())
+	org, err := cq.client.GetOrganizationID()
+	if err != nil {
+		resp.Diagnostics.AddError("Unable to get organization ID", fmt.Sprintf("Failed to get organization ID: %s", err.Error()))
+		return
+	}
 
-			// Extract the planned and state values for DispatchPaused attribute
-			// to compare if the Queue should be paused or resumed
-			// if neither do nothing
-			planDispatchPaused = plan.DispatchPaused.ValueBool()
-			stateDispatchPaused = state.DispatchPaused.ValueBool()
+	log.Printf("Updating cluster queue %s ...", state.Id.ValueString())
 
-			// Check the planned value against the current state value
-			// Planned to be true (changing from false to true)
-			if planDispatchPaused && !stateDispatchPaused {
-				if err := cq.pauseDispatch(ctx, timeout, state, &resp.Diagnostics); err != nil {
-					return retryContextError(err)
-				}
-			}
+	// Extract the planned and state values for DispatchPaused attribute
+	// to compare if the Queue should be paused or resumed
+	// if neither do nothing
+	planDispatchPaused = plan.DispatchPaused.ValueBool()
+	stateDispatchPaused = state.DispatchPaused.ValueBool()
 
-			// Planned to be false (changing from true to false)
-			if !planDispatchPaused && stateDispatchPaused {
-				if err := cq.resumeDispatch(ctx, timeout, state, &resp.Diagnostics); err != nil {
-					return retryContextError(err)
-				}
-			}
-
-			r, err = updateClusterQueue(ctx,
-				cq.client.genqlient,
-				*org,
-				state.Id.ValueString(),
-				plan.Description.ValueStringPointer(),
-				hosted,
-			)
+	// Check the planned value against the current state value
+	// Planned to be true (changing from false to true)
+	if planDispatchPaused && !stateDispatchPaused {
+		if err := cq.pauseDispatch(ctx, timeout, state, &resp.Diagnostics); err != nil {
+			// Error added to diagnostics within pauseDispatch
+			return
 		}
+	}
 
-		return retryContextError(err)
-	})
+	// Planned to be false (changing from true to false)
+	if !planDispatchPaused && stateDispatchPaused {
+		if err := cq.resumeDispatch(ctx, timeout, state, &resp.Diagnostics); err != nil {
+			// Error added to diagnostics within resumeDispatch
+			return
+		}
+	}
+
+	r, err = updateClusterQueue(ctx,
+		cq.client.genqlient,
+		*org,
+		state.Id.ValueString(),
+		plan.Description.ValueStringPointer(),
+		hosted,
+	)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to update Cluster Queue",
@@ -514,29 +525,28 @@ func (cq *clusterQueueResource) Delete(ctx context.Context, req resource.DeleteR
 		return
 	}
 
-	timeout, diags := cq.client.timeouts.Delete(ctx, DefaultTimeout)
-	resp.Diagnostics.Append(diags...)
+	_, deleteDiags := cq.client.timeouts.Delete(ctx, DefaultTimeout)
+	resp.Diagnostics.Append(deleteDiags...)
 
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-		org, err := cq.client.GetOrganizationID()
-		if err == nil {
-			log.Printf("Deleting cluster queue %s ...", plan.Id.ValueString())
-			_, err = deleteClusterQueue(ctx,
-				cq.client.genqlient,
-				*org,
-				plan.Id.ValueString(),
-			)
-		}
+	org, err := cq.client.GetOrganizationID()
+	if err != nil {
+		resp.Diagnostics.AddError("Unable to get organization ID", fmt.Sprintf("Failed to get organization ID: %s", err.Error()))
+		return
+	}
 
-		return retryContextError(err)
-	})
+	log.Printf("Deleting cluster queue %s ...", plan.Id.ValueString())
+	_, err = deleteClusterQueue(ctx,
+		cq.client.genqlient,
+		*org,
+		plan.Id.ValueString(),
+	)
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Unable to create Cluster Queue",
+			"Unable to delete Cluster Queue",
 			fmt.Sprintf("Unable to delete Cluster Queue: %s", err.Error()),
 		)
 		return
@@ -641,12 +651,12 @@ func updateClusterQueueResource(clusterQueueNode getClusterQueuesOrganizationClu
 		cq.HostedAgents = &hostedAgentResourceModel{
 			InstanceShape: types.StringValue(string(clusterQueueNode.HostedAgents.InstanceShape.Name)),
 		}
-		if len(clusterQueueNode.HostedAgents.PlatformSettings.Linux.AgentImageRef) > 0 {
+		if clusterQueueNode.HostedAgents.PlatformSettings.Linux.AgentImageRef != "" {
 			cq.HostedAgents.Linux = &linuxConfigModel{
 				ImageAgentRef: types.StringValue(clusterQueueNode.HostedAgents.PlatformSettings.Linux.AgentImageRef),
 			}
 		}
-		if len(clusterQueueNode.HostedAgents.PlatformSettings.Macos.XcodeVersion) > 0 {
+		if clusterQueueNode.HostedAgents.PlatformSettings.Macos.XcodeVersion != "" {
 			cq.HostedAgents.Mac = &macConfigModel{
 				XcodeVersion: types.StringValue(clusterQueueNode.HostedAgents.PlatformSettings.Macos.XcodeVersion),
 			}
@@ -655,14 +665,11 @@ func updateClusterQueueResource(clusterQueueNode getClusterQueuesOrganizationClu
 }
 
 func (cq *clusterQueueResource) pauseDispatch(ctx context.Context, timeout time.Duration, state clusterQueueResourceModel, diag *diag.Diagnostics) error {
-	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-		log.Printf("Pausing dispatch for cluster queue %s", state.Key)
-		_, err := pauseDispatchClusterQueue(ctx, cq.client.genqlient, state.Id.ValueString())
-		return retryContextError(err)
-	})
+	log.Printf("Pausing dispatch for cluster queue %s", state.Key.ValueString())
+	_, err := pauseDispatchClusterQueue(ctx, cq.client.genqlient, state.Id.ValueString())
 	if err != nil {
 		diag.AddError(
-			"Unable to pause cluster queue dispatch",
+			"Unable to pause Cluster Queue dispatch",
 			fmt.Sprintf("Unable to pause dispatch for cluster queue: %s", err.Error()),
 		)
 	}
@@ -671,14 +678,11 @@ func (cq *clusterQueueResource) pauseDispatch(ctx context.Context, timeout time.
 }
 
 func (cq *clusterQueueResource) resumeDispatch(ctx context.Context, timeout time.Duration, state clusterQueueResourceModel, diag *diag.Diagnostics) error {
-	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-		log.Printf("Resuming dispatch for cluster queue %s", state.Key)
-		_, err := resumeDispatchClusterQueue(ctx, cq.client.genqlient, state.Id.ValueString())
-		return retryContextError(err)
-	})
+	log.Printf("Resuming dispatch for cluster queue %s", state.Key.ValueString())
+	_, err := resumeDispatchClusterQueue(ctx, cq.client.genqlient, state.Id.ValueString())
 	if err != nil {
 		diag.AddError(
-			"Unable to resume cluster queue dispatch",
+			"Unable to resume Cluster Queue dispatch",
 			fmt.Sprintf("Unable to resume dispatch for cluster queue: %s", err.Error()),
 		)
 	}

@@ -48,7 +48,7 @@ func (t *testSuiteDatasource) Read(ctx context.Context, req datasource.ReadReque
 		return
 	}
 
-	suite := testSuiteResponse{}
+	var suite testSuiteResponse
 	url := fmt.Sprintf("/v2/analytics/organizations/%s/suites/%s", t.client.organization, state.Slug.ValueString())
 	err := t.client.makeRequest(ctx, "GET", url, nil, &suite)
 	if err != nil {

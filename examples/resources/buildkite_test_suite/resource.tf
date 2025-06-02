@@ -2,5 +2,6 @@
 resource "buildkite_test_suite" "main" {
   name           = "main"
   default_branch = "main"
+  emoji          = ":buildkite:"
   team_owner_id  = "VGVhbvDf4eRef20tMzIxMGEfYTctNzEF5g00M8f5s6E2YjYtODNlOGNlZgD6HcBi"
 }

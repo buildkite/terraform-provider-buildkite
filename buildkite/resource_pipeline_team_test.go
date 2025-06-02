@@ -169,7 +169,9 @@ func testAccCheckPipelineTeamExists(resourceName string, tp *pipelineTeamResourc
 			return fmt.Errorf("No ID is set in state")
 		}
 
-		apiResponse, err := getNode(context.Background(), genqlientGraphql, resourceState.Primary.ID)
+		var apiResponse *getNodeResponse
+		var err error
+		apiResponse, err = getNode(context.Background(), genqlientGraphql, resourceState.Primary.ID)
 		if err != nil {
 			return fmt.Errorf("Error fetching team pipeline from graphql API: %v", err)
 		}
@@ -192,7 +194,9 @@ func testCheckPipelineTeamResourceRemoved(s *terraform.State) error {
 			continue
 		}
 
-		apiResponse, err := getNode(context.Background(), genqlientGraphql, rs.Primary.ID)
+		var apiResponse *getNodeResponse
+		var err error
+		apiResponse, err = getNode(context.Background(), genqlientGraphql, rs.Primary.ID)
 		if err != nil {
 			return fmt.Errorf("Error fetching team pipeline from graphql API: %v", err)
 		}

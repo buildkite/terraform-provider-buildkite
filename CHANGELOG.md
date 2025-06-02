@@ -1,11 +1,61 @@
 # Changelog
 
-## Unreleased
+## [v1.19.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.18.0...v1.19.0)
 
-- SUP-3550: Refactor Hosted Instance Types for Maintenance [[PR #891](https://github.com/buildkite/terraform-provider-buildkite/pull/891)] @tomowatt
-- Rule replacement upon changing its type [[PR #885](https://github.com/buildkite/terraform-provider-buildkite/pull/885)] @james2791
-- Simplified organization rule datasource reads via UUID [[PR #886](https://github.com/buildkite/terraform-provider-buildkite/pull/886)] @james2791
-- SUP-3599: Add a registry resource [[PR #894](https://github.com/buildkite/terraform-provider-buildkite/pull/894)] @mcncl
+- chore(docs): update changelog by @mcncl in https://github.com/buildkite/terraform-provider-buildkite/pull/921
+- Skip flaky cluster timeout test by @mcncl in https://github.com/buildkite/terraform-provider-buildkite/pull/922
+- Validate pipeline color as hex color format by @petetomasik in https://github.com/buildkite/terraform-provider-buildkite/pull/925
+- Add cluster attributes to pipeline resource, data source by @petetomasik in https://github.com/buildkite/terraform-provider-buildkite/pull/927
+
+## [v1.18.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.17.2...v1.18.0)
+
+- Bump github.com/buildkite/go-pipeline from 0.13.1 to 0.13.3 by @dependabot https://github.com/buildkite/terraform-provider-buildkite/pull/912
+- Bump github.com/lestrrat-go/jwx/v2 from 2.1.4 to 2.1.5 by @dependabot https://github.com/buildkite/terraform-provider-buildkite/pull/911
+- chore(deps): bump docker/library/golang from 1ecc479 to 30baaea by @dependabot https://github.com/buildkite/terraform-provider-buildkite/pull/915
+- feat: support setting emoji on test suite by @mcncl https://github.com/buildkite/terraform-provider-buildkite/pull/917
+- chore(deps): bump github.com/Khan/genqlient from 0.7.0 to 0.8.1 by @dependabot https://github.com/buildkite/terraform-provider-buildkite/pull/919
+- chore(deps): bump github.com/lestrrat-go/jwx/v2 from 2.1.5 to 2.1.6 by @dependabot https://github.com/buildkite/terraform-provider-buildkite/pull/916
+- chore: add make docs to pre-commit hooks by @scadu https://github.com/buildkite/terraform-provider-buildkite/pull/920
+- add ignore_default_branch_pull_requests to provider settings by @patrobinson https://github.com/buildkite/terraform-provider-buildkite/pull/918
+
+
+## [v1.17.2](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.17.1...v1.17.2)
+
+- Bump github.com/lestrrat-go/jwx/v2 from 2.1.1 to 2.1.4 by @dependabot in https://github.com/buildkite/terraform-provider-buildkite/pull/896
+- Bump github.com/buildkite/interpolate from 0.1.3 to 0.1.5 by @dependabot in https://github.com/buildkite/terraform-provider-buildkite/pull/884
+- Bump docker/library/golang from 1.24.0 to 1.24.1 by @dependabot in https://github.com/buildkite/terraform-provider-buildkite/pull/897
+- Update cluster queue results, fix registry arguments by @petetomasik in https://github.com/buildkite/terraform-provider-buildkite/pull/902
+- Bump github.com/hashicorp/terraform-plugin-framework from 1.14.0 to 1.14.1 by @dependabot in https://github.com/buildkite/terraform-provider-buildkite/pull/904
+- Bump github.com/hashicorp/terraform-plugin-testing from 1.5.1 to 1.12.0 by @dependabot in https://github.com/buildkite/terraform-provider-buildkite/pull/905
+- chore: enable parallelism by @mcncl in https://github.com/buildkite/terraform-provider-buildkite/pull/906
+- Bump golang.org/x/net from 0.37.0 to 0.38.0 by @dependabot in https://github.com/buildkite/terraform-provider-buildkite/pull/907
+- Set Hosted Agent OS shapes to `null` for `cluster_queue`, use `omitempty` to align with GQL processing by @petetomasik in https://github.com/buildkite/terraform-provider-buildkite/pull/908
+- Extra logic around missing private state by @petetomasik in https://github.com/buildkite/terraform-provider-buildkite/pull/909
+
+## [v1.17.1](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.17.0...v1.17.1)
+
+- chore: use disable: true for changelog by @mcncl in https://github.com/buildkite/terraform-provider-buildkite/pull/899
+- 🧹 General housekeeping by @mcncl in https://github.com/buildkite/terraform-provider-buildkite/pull/900
+- feat: add rate limit handling for REST API calls by @scadu in https://github.com/buildkite/terraform-provider-buildkite/pull/901
+
+## [v1.17.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.16.3...v1.17.0)
+
+- Bump github.com/hashicorp/terraform-plugin-sdk/v2 from 2.36.0 to 2.36.1 by @dependabot in https://github.com/buildkite/terraform-provider-buildkite/pull/892
+- Bump github.com/google/go-cmp from 0.6.0 to 0.7.0 by @dependabot in https://github.com/buildkite/terraform-provider-buildkite/pull/893
+- update buildkite_pipeline docs by @Damilola-obasa in https://github.com/buildkite/terraform-provider-buildkite/pull/895
+- Add a registry resource by @mcncl in https://github.com/buildkite/terraform-provider-buildkite/pull/894
+- Fix cluster queue attribute processing for hosted agents by @petetomasik in https://github.com/buildkite/terraform-provider-buildkite/pull/898
+
+## [v1.16.3](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.16.2...v1.16.3)
+
+- SUP-3312: Ensure hosted agent configuration is imported by @petetomasik in https://github.com/buildkite/terraform-provider-buildkite/pull/882
+- Bump github.com/hashicorp/terraform-plugin-framework-validators from 0.12.0 to 0.17.0 by @dependabot in https://github.com/buildkite/terraform-provider-buildkite/pull/883
+- Rule replacement upon changing its type by @james2791 in https://github.com/buildkite/terraform-provider-buildkite/pull/885
+- Simplified organization rule datasource reads via UUID by @james2791 in https://github.com/buildkite/terraform-provider-buildkite/pull/886
+- Bump github.com/hashicorp/terraform-plugin-framework-timeouts from 0.4.1 to 0.5.0 by @dependabot in https://github.com/buildkite/terraform-provider-buildkite/pull/888
+- Bump docker/library/golang from 1.23.5 to 1.24.0 by @dependabot in https://github.com/buildkite/terraform-provider-buildkite/pull/887
+- Bump golang.org/x/net from 0.34.0 to 0.36.0 by @dependabot in https://github.com/buildkite/terraform-provider-buildkite/pull/890
+- SUP-3550: Refactor Hosted Instance Types for Maintenance by @tomowatt in https://github.com/buildkite/terraform-provider-buildkite/pull/891
 
 ## [v1.16.2](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.16.1...v1.16.2)
 

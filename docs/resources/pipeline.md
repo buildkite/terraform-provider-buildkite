@@ -159,6 +159,7 @@ resource "github_repository_webhook" "my_webhook" {
 ### Read-Only
 
 - `badge_url` (String) The badge URL showing build state.
+- `cluster_name` (String) The name of the cluster the pipeline is (optionally) attached to.
 - `id` (String) The GraphQL ID of the pipeline.
 - `uuid` (String) The UUID of the pipeline.
 - `webhook_url` (String) The webhook URL used to trigger builds from VCS providers.
@@ -177,6 +178,7 @@ Optional:
 - `cancel_deleted_branch_builds` (Boolean) Automatically cancel running builds for a branch if the branch is deleted.
 - `filter_condition` (String) The condition to evaluate when deciding if a build should run. More details available in [the documentation](https://buildkite.com/docs/pipelines/conditionals#conditionals-in-pipelines).
 - `filter_enabled` (Boolean) Whether to filter builds to only run when the condition in `filter_condition` is true.
+- `ignore_default_branch_pull_requests` (Boolean) Whether to prevent caching pull requests with the source branch matching the default branch.
 - `prefix_pull_request_fork_branch_names` (Boolean) Prefix branch names for third-party fork builds to ensure they don't trigger branch conditions. For example, the main branch from some-user will become some-user:main.
 - `publish_blocked_as_pending` (Boolean) The status to use for blocked builds. Pending can be used with [required status checks](https://help.github.com/en/articles/enabling-required-status-checks) to prevent merging pull requests with blocked builds.
 - `publish_commit_status` (Boolean) Whether to update the status of commits in Bitbucket or GitHub.

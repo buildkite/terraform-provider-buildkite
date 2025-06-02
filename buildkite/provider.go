@@ -21,7 +21,7 @@ const (
 	defaultGraphqlEndpoint = "https://graphql.buildkite.com/v1"
 	defaultRestEndpoint    = "https://api.buildkite.com"
 
-	DefaultTimeout = 30 * time.Second
+	DefaultTimeout = 180 * time.Second
 )
 
 const (

@@ -3,3 +3,9 @@ pre-commit:
     gofmt:
       glob: "*.go"
       run: gofmt -s -w buildkite
+    docs:
+      glob: "*.go"
+      run: make docs
+    gomodtidy:
+      glob: "*.go"
+      run: go mod tidy

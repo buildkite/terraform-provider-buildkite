@@ -77,6 +77,7 @@ type pipelineResourceModel struct {
 	CancelIntermediateBuildsBranchFilter types.String           `tfsdk:"cancel_intermediate_builds_branch_filter"`
 	Color                                types.String           `tfsdk:"color"`
 	ClusterId                            types.String           `tfsdk:"cluster_id"`
+	ClusterName                          types.String           `tfsdk:"cluster_name"`
 	DefaultTeamId                        types.String           `tfsdk:"default_team_id"`
 	DefaultBranch                        types.String           `tfsdk:"default_branch"`
 	DefaultTimeoutInMinutes              types.Int64            `tfsdk:"default_timeout_in_minutes"`
@@ -117,6 +118,7 @@ type providerSettingsModel struct {
 	PublishBlockedAsPending                 types.Bool   `tfsdk:"publish_blocked_as_pending"`
 	PublishCommitStatusPerStep              types.Bool   `tfsdk:"publish_commit_status_per_step"`
 	SeparatePullRequestStatuses             types.Bool   `tfsdk:"separate_pull_request_statuses"`
+	IgnoreDefaultBranchPullRequests         types.Bool   `tfsdk:"ignore_default_branch_pull_requests"`
 }
 
 type pipelineResource struct {
@@ -308,6 +310,10 @@ func (p *pipelineResource) Delete(ctx context.Context, req resource.DeleteReques
 	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		log.Printf("Deleting pipeline %s ...", state.Name.ValueString())
 		_, err := deletePipeline(ctx, p.client.genqlient, state.Id.ValueString())
+		if err != nil && isResourceNotFoundError(err) {
+			return nil
+		}
+
 		return retryContextError(err)
 	})
 	if err != nil {
@@ -474,10 +480,20 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 			"color": schema.StringAttribute{
 				Optional:            true,
 				MarkdownDescription: "A color hex code to represent this pipeline.",
+				Validators: []validator.String{
+					stringvalidator.RegexMatches(
+						regexp.MustCompile(`^\#[a-zA-Z0-9]{6}$`),
+						"must be a valid color hex code (#000000)",
+					),
+				},
 			},
 			"cluster_id": schema.StringAttribute{
 				MarkdownDescription: "Attach this pipeline to the given cluster GraphQL ID.",
 				Optional:            true,
+			},
+			"cluster_name": schema.StringAttribute{
+				MarkdownDescription: "The name of the cluster the pipeline is (optionally) attached to.",
+				Computed:            true,
 			},
 			"default_team_id": schema.StringAttribute{
 				MarkdownDescription: "The GraphQL ID of the team to use as the default owner of the pipeline.",
@@ -720,6 +736,11 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 						Optional: true,
 						MarkdownDescription: "Whether to create a separate status for pull request builds, allowing you to require a passing pull request" +
 							" build in your [required status checks](https://help.github.com/en/articles/enabling-required-status-checks) in GitHub.",
+					},
+					"ignore_default_branch_pull_requests": schema.BoolAttribute{
+						Computed:            true,
+						Optional:            true,
+						MarkdownDescription: "Whether to prevent caching pull requests with the source branch matching the default branch.",
 					},
 				},
 			},
@@ -982,6 +1003,7 @@ func setPipelineModel(model *pipelineResourceModel, data pipelineResponse) {
 	model.CancelIntermediateBuilds = types.BoolValue(data.GetCancelIntermediateBuilds())
 	model.CancelIntermediateBuildsBranchFilter = types.StringValue(data.GetCancelIntermediateBuildsBranchFilter())
 	model.ClusterId = types.StringPointerValue(data.GetCluster().Id)
+	model.ClusterName = types.StringPointerValue(data.GetCluster().Name)
 	model.Color = types.StringPointerValue(data.GetColor())
 	model.DefaultBranch = types.StringValue(data.GetDefaultBranch())
 	model.DefaultTimeoutInMinutes = types.Int64PointerValue(defaultTimeoutInMinutes)
@@ -1052,10 +1074,11 @@ type PipelineExtraSettings struct {
 	PublishBlockedAsPending                 *bool   `json:"publish_blocked_as_pending,omitempty"`
 	PublishCommitStatusPerStep              *bool   `json:"publish_commit_status_per_step,omitempty"`
 	SeparatePullRequestStatuses             *bool   `json:"separate_pull_request_statuses,omitempty"`
+	IgnoreDefaultBranchPullRequests         *bool   `json:"ignore_default_branch_pull_requests"`
 }
 
 func getPipelineExtraInfo(ctx context.Context, client *Client, slug string, timeouts time.Duration) (*PipelineExtraInfo, error) {
-	pipelineExtraInfo := PipelineExtraInfo{}
+	var pipelineExtraInfo PipelineExtraInfo
 
 	err := retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
 		err := client.makeRequest(ctx, "GET", fmt.Sprintf("/v2/organizations/%s/pipelines/%s", client.organization, slug), nil, &pipelineExtraInfo)
@@ -1073,7 +1096,7 @@ func updatePipelineSlug(ctx context.Context, slug string, updatedSlug string, cl
 		Slug: updatedSlug,
 	}
 
-	pipelineExtraInfo := PipelineExtraInfo{}
+	var pipelineExtraInfo PipelineExtraInfo
 
 	if len(updatedSlug) > 0 {
 		err := retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
@@ -1109,10 +1132,11 @@ func updatePipelineExtraInfo(ctx context.Context, slug string, settings *provide
 			PublishBlockedAsPending:                 settings.PublishBlockedAsPending.ValueBoolPointer(),
 			PublishCommitStatusPerStep:              settings.PublishCommitStatusPerStep.ValueBoolPointer(),
 			SeparatePullRequestStatuses:             settings.SeparatePullRequestStatuses.ValueBoolPointer(),
+			IgnoreDefaultBranchPullRequests:         settings.IgnoreDefaultBranchPullRequests.ValueBoolPointer(),
 		},
 	}
 
-	pipelineExtraInfo := PipelineExtraInfo{}
+	var pipelineExtraInfo PipelineExtraInfo
 	err := retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
 		err := client.makeRequest(ctx, "PATCH", fmt.Sprintf("/v2/organizations/%s/pipelines/%s", client.organization, slug), payload, &pipelineExtraInfo)
 		return retryContextError(err)
@@ -1158,6 +1182,7 @@ func updatePipelineResourceExtraInfo(state *pipelineResourceModel, pipeline *Pip
 		PublishBlockedAsPending:                 types.BoolPointerValue(s.PublishBlockedAsPending),
 		PublishCommitStatusPerStep:              types.BoolPointerValue(s.PublishCommitStatusPerStep),
 		SeparatePullRequestStatuses:             types.BoolPointerValue(s.SeparatePullRequestStatuses),
+		IgnoreDefaultBranchPullRequests:         types.BoolPointerValue(s.IgnoreDefaultBranchPullRequests),
 	}
 }
 
@@ -1395,6 +1420,10 @@ func pipelineSchemaV0() schema.Schema {
 							Optional: true,
 						},
 						"separate_pull_request_statuses": schema.BoolAttribute{
+							Computed: true,
+							Optional: true,
+						},
+						"ignore_default_branch_pull_requests": schema.BoolAttribute{
 							Computed: true,
 							Optional: true,
 						},

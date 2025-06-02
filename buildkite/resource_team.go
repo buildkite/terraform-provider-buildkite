@@ -303,6 +303,9 @@ func (t *teamResource) Delete(ctx context.Context, req resource.DeleteRequest, r
 			t.client.genqlient,
 			state.ID.ValueString(),
 		)
+		if err != nil && isResourceNotFoundError(err) {
+			return nil
+		}
 
 		return retryContextError(err)
 	})
