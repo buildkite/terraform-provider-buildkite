@@ -8,12 +8,9 @@ import (
 	"strings"
 	"sync"
 	"testing"
-	"time"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
-
-const defaultTestSweepTimeout = 15 * time.Minute
 
 // We're using existing endpoints and getenv defined in provider.go and util.go
 // const defaultGraphqlEndpoint = "https://graphql.buildkite.com/v1"
@@ -92,6 +89,31 @@ func init() {
 	resource.AddTestSweepers("buildkite_test_suite_team", &resource.Sweeper{
 		Name: "buildkite_test_suite_team",
 		F:    sweepTestSuiteTeams,
+	})
+
+	resource.AddTestSweepers("buildkite_organization_banner", &resource.Sweeper{
+		Name: "buildkite_organization_banner",
+		F:    sweepOrganizationBanners,
+	})
+
+	resource.AddTestSweepers("buildkite_organization_rule", &resource.Sweeper{
+		Name: "buildkite_organization_rule",
+		F:    sweepOrganizationRules,
+	})
+
+	resource.AddTestSweepers("buildkite_pipeline_team", &resource.Sweeper{
+		Name: "buildkite_pipeline_team",
+		F:    sweepPipelineTeams,
+	})
+
+	resource.AddTestSweepers("buildkite_registry", &resource.Sweeper{
+		Name: "buildkite_registry",
+		F:    sweepRegistries,
+	})
+
+	resource.AddTestSweepers("buildkite_cluster_default_queue", &resource.Sweeper{
+		Name: "buildkite_cluster_default_queue",
+		F:    sweepClusterDefaultQueues,
 	})
 }
 
@@ -243,6 +265,82 @@ func sweepTestSuiteTeams(region string) error {
 	return nil
 }
 
+// sweepOrganizationBanners removes organization banners created during testing
+func sweepOrganizationBanners(region string) error {
+	log.Printf("[INFO] Sweeping buildkite_organization_banner resources...")
+	ctx := context.Background()
+
+	client := NewClient(&clientConfig{
+		org:        getOrgEnv(),
+		apiToken:   getApiTokenEnv(),
+		graphqlURL: defaultGraphqlEndpoint,
+		restURL:    defaultRestEndpoint,
+		userAgent:  "testing",
+	})
+
+	// Get the current organization banner
+	resp, err := getOrganiztionBanner(ctx, client.genqlient, getOrgEnv())
+	if err != nil {
+		return fmt.Errorf("error fetching organization banner: %w", err)
+	}
+
+	// Only delete if the banner exists and is a test resource
+	if len(resp.Organization.Banners.Edges) > 0 {
+		bannerNode := resp.Organization.Banners.Edges[0].Node
+		// Check if the banner message is a test resource
+		if isTestResource(bannerNode.Message) {
+			log.Printf("[INFO] Deleting test organization banner")
+			// To delete a banner, we can set an empty message
+			_, err = upsertBanner(ctx, client.genqlient, getOrgEnv(), "")
+			if err != nil {
+				return fmt.Errorf("error deleting organization banner: %w", err)
+			}
+		}
+	}
+
+	return nil
+}
+
+// sweepOrganizationRules removes organization rules created during testing
+func sweepOrganizationRules(region string) error {
+	log.Printf("[INFO] Sweeping buildkite_organization_rule resources...")
+	// Implementation would require listing and deleting organization rules
+	// but the necessary GraphQL queries are not available in the current codebase
+	// This is a placeholder for future implementation
+	log.Printf("[WARN] Organization rules sweeping is not yet implemented")
+	return nil
+}
+
+// sweepPipelineTeams removes pipeline team associations created during testing
+func sweepPipelineTeams(region string) error {
+	log.Printf("[INFO] Sweeping buildkite_pipeline_team resources...")
+	// Implementation would require listing pipelines and their team associations
+	// but the necessary GraphQL queries are not available in the current codebase
+	// This is a placeholder for future implementation
+	log.Printf("[WARN] Pipeline teams sweeping is not yet implemented")
+	return nil
+}
+
+// sweepRegistries removes registries created during testing
+func sweepRegistries(region string) error {
+	log.Printf("[INFO] Sweeping buildkite_registry resources...")
+	// Implementation would require listing and deleting registries
+	// but the necessary GraphQL queries are not available in the current codebase
+	// This is a placeholder for future implementation
+	log.Printf("[WARN] Registries sweeping is not yet implemented")
+	return nil
+}
+
+// sweepClusterDefaultQueues removes cluster default queue settings created during testing
+func sweepClusterDefaultQueues(region string) error {
+	log.Printf("[INFO] Sweeping buildkite_cluster_default_queue resources...")
+	// Implementation would require listing clusters and their default queues
+	// but the necessary GraphQL queries are not available in the current codebase
+	// This is a placeholder for future implementation
+	log.Printf("[WARN] Cluster default queues sweeping is not yet implemented")
+	return nil
+}
+
 var (
 	trackedResources = make(map[string]map[string]bool)
 	trackedMutex     sync.RWMutex
@@ -318,26 +416,4 @@ func isTestResource(name string) bool {
 	}
 
 	return false
-}
-
-func runSweepWithTimeout(name string, f func(string) error, timeout time.Duration) error {
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
-	defer cancel()
-
-	done := make(chan error)
-
-	go func() {
-		err := f(name)
-		done <- err
-	}()
-
-	select {
-	case <-ctx.Done():
-		return fmt.Errorf("sweeper for %s timed out after %v", name, timeout)
-	case err := <-done:
-		if err != nil {
-			return fmt.Errorf("sweeper for %s encountered an error: %w", name, err)
-		}
-		return nil
-	}
 }

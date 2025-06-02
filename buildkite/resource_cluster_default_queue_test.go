@@ -12,6 +12,7 @@ import (
 )
 
 func TestAccBuildkiteClusterDefaultQueueResource(t *testing.T) {
+	RegisterResourceTracking(t)
 	t.Parallel()
 
 	t.Run("attach a default queue to a cluster", func(t *testing.T) {
