@@ -24,7 +24,7 @@ func testAccCheckPipelineDestroy(s *terraform.State) error {
 		pipelineSlug := rs.Primary.Attributes["slug"]
 		if pipelineSlug == "" {
 			pipelineName := rs.Primary.Attributes["name"]
-			pipelineSlug = fmt.Sprintf("%s/%s", getenv("BUILDKITE_ORGANIZATION_SLUG"), strings.ToLower(pipelineName))
+			pipelineSlug = fmt.Sprintf("%s/%s", getOrgEnv(), strings.ToLower(pipelineName))
 		}
 
 		resp, err := getPipeline(context.Background(), genqlientGraphql, pipelineSlug)
