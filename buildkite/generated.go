@@ -1333,6 +1333,8 @@ type PipelineFields struct {
 	PipelineUuid string `json:"pipelineUuid"`
 	// Whether existing builds can be rebuilt as new builds.
 	AllowRebuilds bool `json:"allowRebuilds"`
+	// The URL for build badge to the show the current build state for a pipeline.
+	BadgeURL string `json:"badgeURL"`
 	// A branch filter pattern to limit which pushed branches trigger builds on this pipeline.
 	BranchConfiguration *string `json:"branchConfiguration"`
 	// When a new build is created on a branch, any previous builds that are running on the same branch will be automatically cancelled
@@ -1368,6 +1370,8 @@ type PipelineFields struct {
 	Tags []PipelineFieldsTagsPipelineTag `json:"tags"`
 	// Teams associated with this pipeline
 	Teams PipelineFieldsTeamsTeamPipelineConnection `json:"teams"`
+	// The URL to use in your repository settings for commit webhooks
+	WebhookURL string `json:"webhookURL"`
 }
 
 // GetId returns PipelineFields.Id, and is useful for accessing the field via an interface.
@@ -1378,6 +1382,9 @@ func (v *PipelineFields) GetPipelineUuid() string { return v.PipelineUuid }
 
 // GetAllowRebuilds returns PipelineFields.AllowRebuilds, and is useful for accessing the field via an interface.
 func (v *PipelineFields) GetAllowRebuilds() bool { return v.AllowRebuilds }
+
+// GetBadgeURL returns PipelineFields.BadgeURL, and is useful for accessing the field via an interface.
+func (v *PipelineFields) GetBadgeURL() string { return v.BadgeURL }
 
 // GetBranchConfiguration returns PipelineFields.BranchConfiguration, and is useful for accessing the field via an interface.
 func (v *PipelineFields) GetBranchConfiguration() *string { return v.BranchConfiguration }
@@ -1441,6 +1448,9 @@ func (v *PipelineFields) GetTags() []PipelineFieldsTagsPipelineTag { return v.Ta
 
 // GetTeams returns PipelineFields.Teams, and is useful for accessing the field via an interface.
 func (v *PipelineFields) GetTeams() PipelineFieldsTeamsTeamPipelineConnection { return v.Teams }
+
+// GetWebhookURL returns PipelineFields.WebhookURL, and is useful for accessing the field via an interface.
+func (v *PipelineFields) GetWebhookURL() string { return v.WebhookURL }
 
 // PipelineFieldsCluster includes the requested fields of the GraphQL type Cluster.
 type PipelineFieldsCluster struct {
@@ -1988,10 +1998,10 @@ const (
 type RuleAction string
 
 const (
-	// Trigger build
-	RuleActionTriggerBuild RuleAction = "TRIGGER_BUILD"
 	// Artifacts read
 	RuleActionArtifactsRead RuleAction = "ARTIFACTS_READ"
+	// Trigger build
+	RuleActionTriggerBuild RuleAction = "TRIGGER_BUILD"
 )
 
 // The effect a rule has
@@ -3783,6 +3793,11 @@ func (v *createPipelinePipelineCreatePipelineCreatePayloadPipeline) GetAllowRebu
 	return v.PipelineFields.AllowRebuilds
 }
 
+// GetBadgeURL returns createPipelinePipelineCreatePipelineCreatePayloadPipeline.BadgeURL, and is useful for accessing the field via an interface.
+func (v *createPipelinePipelineCreatePipelineCreatePayloadPipeline) GetBadgeURL() string {
+	return v.PipelineFields.BadgeURL
+}
+
 // GetBranchConfiguration returns createPipelinePipelineCreatePipelineCreatePayloadPipeline.BranchConfiguration, and is useful for accessing the field via an interface.
 func (v *createPipelinePipelineCreatePipelineCreatePayloadPipeline) GetBranchConfiguration() *string {
 	return v.PipelineFields.BranchConfiguration
@@ -3912,6 +3927,8 @@ type __premarshalcreatePipelinePipelineCreatePipelineCreatePayloadPipeline struc
 
 	AllowRebuilds bool `json:"allowRebuilds"`
 
+	BadgeURL string `json:"badgeURL"`
+
 	BranchConfiguration *string `json:"branchConfiguration"`
 
 	CancelIntermediateBuilds bool `json:"cancelIntermediateBuilds"`
@@ -3966,6 +3983,7 @@ func (v *createPipelinePipelineCreatePipelineCreatePayloadPipeline) __premarshal
 	retval.Id = v.PipelineFields.Id
 	retval.PipelineUuid = v.PipelineFields.PipelineUuid
 	retval.AllowRebuilds = v.PipelineFields.AllowRebuilds
+	retval.BadgeURL = v.PipelineFields.BadgeURL
 	retval.BranchConfiguration = v.PipelineFields.BranchConfiguration
 	retval.CancelIntermediateBuilds = v.PipelineFields.CancelIntermediateBuilds
 	retval.CancelIntermediateBuildsBranchFilter = v.PipelineFields.CancelIntermediateBuildsBranchFilter
@@ -6995,6 +7013,9 @@ func (v *getNodeNodePipeline) GetPipelineUuid() string { return v.PipelineFields
 // GetAllowRebuilds returns getNodeNodePipeline.AllowRebuilds, and is useful for accessing the field via an interface.
 func (v *getNodeNodePipeline) GetAllowRebuilds() bool { return v.PipelineFields.AllowRebuilds }
 
+// GetBadgeURL returns getNodeNodePipeline.BadgeURL, and is useful for accessing the field via an interface.
+func (v *getNodeNodePipeline) GetBadgeURL() string { return v.PipelineFields.BadgeURL }
+
 // GetBranchConfiguration returns getNodeNodePipeline.BranchConfiguration, and is useful for accessing the field via an interface.
 func (v *getNodeNodePipeline) GetBranchConfiguration() *string {
 	return v.PipelineFields.BranchConfiguration
@@ -7074,6 +7095,9 @@ func (v *getNodeNodePipeline) GetTeams() PipelineFieldsTeamsTeamPipelineConnecti
 	return v.PipelineFields.Teams
 }
 
+// GetWebhookURL returns getNodeNodePipeline.WebhookURL, and is useful for accessing the field via an interface.
+func (v *getNodeNodePipeline) GetWebhookURL() string { return v.PipelineFields.WebhookURL }
+
 func (v *getNodeNodePipeline) UnmarshalJSON(b []byte) error {
 
 	if string(b) == "null" {
@@ -7107,6 +7131,8 @@ type __premarshalgetNodeNodePipeline struct {
 	PipelineUuid string `json:"pipelineUuid"`
 
 	AllowRebuilds bool `json:"allowRebuilds"`
+
+	BadgeURL string `json:"badgeURL"`
 
 	BranchConfiguration *string `json:"branchConfiguration"`
 
@@ -7145,6 +7171,8 @@ type __premarshalgetNodeNodePipeline struct {
 	Tags []PipelineFieldsTagsPipelineTag `json:"tags"`
 
 	Teams PipelineFieldsTeamsTeamPipelineConnection `json:"teams"`
+
+	WebhookURL string `json:"webhookURL"`
 }
 
 func (v *getNodeNodePipeline) MarshalJSON() ([]byte, error) {
@@ -7162,6 +7190,7 @@ func (v *getNodeNodePipeline) __premarshalJSON() (*__premarshalgetNodeNodePipeli
 	retval.Id = v.PipelineFields.Id
 	retval.PipelineUuid = v.PipelineFields.PipelineUuid
 	retval.AllowRebuilds = v.PipelineFields.AllowRebuilds
+	retval.BadgeURL = v.PipelineFields.BadgeURL
 	retval.BranchConfiguration = v.PipelineFields.BranchConfiguration
 	retval.CancelIntermediateBuilds = v.PipelineFields.CancelIntermediateBuilds
 	retval.CancelIntermediateBuildsBranchFilter = v.PipelineFields.CancelIntermediateBuildsBranchFilter
@@ -7181,6 +7210,7 @@ func (v *getNodeNodePipeline) __premarshalJSON() (*__premarshalgetNodeNodePipeli
 	retval.Steps = v.PipelineFields.Steps
 	retval.Tags = v.PipelineFields.Tags
 	retval.Teams = v.PipelineFields.Teams
+	retval.WebhookURL = v.PipelineFields.WebhookURL
 	return &retval, nil
 }
 
@@ -8347,6 +8377,9 @@ func (v *getPipelinePipeline) GetPipelineUuid() string { return v.PipelineFields
 // GetAllowRebuilds returns getPipelinePipeline.AllowRebuilds, and is useful for accessing the field via an interface.
 func (v *getPipelinePipeline) GetAllowRebuilds() bool { return v.PipelineFields.AllowRebuilds }
 
+// GetBadgeURL returns getPipelinePipeline.BadgeURL, and is useful for accessing the field via an interface.
+func (v *getPipelinePipeline) GetBadgeURL() string { return v.PipelineFields.BadgeURL }
+
 // GetBranchConfiguration returns getPipelinePipeline.BranchConfiguration, and is useful for accessing the field via an interface.
 func (v *getPipelinePipeline) GetBranchConfiguration() *string {
 	return v.PipelineFields.BranchConfiguration
@@ -8460,6 +8493,8 @@ type __premarshalgetPipelinePipeline struct {
 
 	AllowRebuilds bool `json:"allowRebuilds"`
 
+	BadgeURL string `json:"badgeURL"`
+
 	BranchConfiguration *string `json:"branchConfiguration"`
 
 	CancelIntermediateBuilds bool `json:"cancelIntermediateBuilds"`
@@ -8514,6 +8549,7 @@ func (v *getPipelinePipeline) __premarshalJSON() (*__premarshalgetPipelinePipeli
 	retval.Id = v.PipelineFields.Id
 	retval.PipelineUuid = v.PipelineFields.PipelineUuid
 	retval.AllowRebuilds = v.PipelineFields.AllowRebuilds
+	retval.BadgeURL = v.PipelineFields.BadgeURL
 	retval.BranchConfiguration = v.PipelineFields.BranchConfiguration
 	retval.CancelIntermediateBuilds = v.PipelineFields.CancelIntermediateBuilds
 	retval.CancelIntermediateBuildsBranchFilter = v.PipelineFields.CancelIntermediateBuildsBranchFilter
@@ -13750,6 +13786,11 @@ func (v *updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline) GetAllowRebu
 	return v.PipelineFields.AllowRebuilds
 }
 
+// GetBadgeURL returns updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline.BadgeURL, and is useful for accessing the field via an interface.
+func (v *updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline) GetBadgeURL() string {
+	return v.PipelineFields.BadgeURL
+}
+
 // GetBranchConfiguration returns updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline.BranchConfiguration, and is useful for accessing the field via an interface.
 func (v *updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline) GetBranchConfiguration() *string {
 	return v.PipelineFields.BranchConfiguration
@@ -13845,6 +13886,11 @@ func (v *updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline) GetTeams() P
 	return v.PipelineFields.Teams
 }
 
+// GetWebhookURL returns updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline.WebhookURL, and is useful for accessing the field via an interface.
+func (v *updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline) GetWebhookURL() string {
+	return v.PipelineFields.WebhookURL
+}
+
 func (v *updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline) UnmarshalJSON(b []byte) error {
 
 	if string(b) == "null" {
@@ -13876,6 +13922,8 @@ type __premarshalupdatePipelinePipelineUpdatePipelineUpdatePayloadPipeline struc
 	PipelineUuid string `json:"pipelineUuid"`
 
 	AllowRebuilds bool `json:"allowRebuilds"`
+
+	BadgeURL string `json:"badgeURL"`
 
 	BranchConfiguration *string `json:"branchConfiguration"`
 
@@ -13914,6 +13962,8 @@ type __premarshalupdatePipelinePipelineUpdatePipelineUpdatePayloadPipeline struc
 	Tags []PipelineFieldsTagsPipelineTag `json:"tags"`
 
 	Teams PipelineFieldsTeamsTeamPipelineConnection `json:"teams"`
+
+	WebhookURL string `json:"webhookURL"`
 }
 
 func (v *updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline) MarshalJSON() ([]byte, error) {
@@ -13930,6 +13980,7 @@ func (v *updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline) __premarshal
 	retval.Id = v.PipelineFields.Id
 	retval.PipelineUuid = v.PipelineFields.PipelineUuid
 	retval.AllowRebuilds = v.PipelineFields.AllowRebuilds
+	retval.BadgeURL = v.PipelineFields.BadgeURL
 	retval.BranchConfiguration = v.PipelineFields.BranchConfiguration
 	retval.CancelIntermediateBuilds = v.PipelineFields.CancelIntermediateBuilds
 	retval.CancelIntermediateBuildsBranchFilter = v.PipelineFields.CancelIntermediateBuildsBranchFilter
@@ -13949,6 +14000,7 @@ func (v *updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline) __premarshal
 	retval.Steps = v.PipelineFields.Steps
 	retval.Tags = v.PipelineFields.Tags
 	retval.Teams = v.PipelineFields.Teams
+	retval.WebhookURL = v.PipelineFields.WebhookURL
 	return &retval, nil
 }
 
@@ -15149,6 +15201,7 @@ fragment PipelineFields on Pipeline {
 	id
 	pipelineUuid: uuid
 	allowRebuilds
+	badgeURL
 	branchConfiguration
 	cancelIntermediateBuilds
 	cancelIntermediateBuildsBranchFilter
@@ -15181,6 +15234,7 @@ fragment PipelineFields on Pipeline {
 	teams(first: 5, order: NAME) {
 		... PipelineTeam
 	}
+	webhookURL
 }
 fragment PipelineTeam on TeamPipelineConnection {
 	pageInfo {
@@ -16162,6 +16216,7 @@ fragment PipelineFields on Pipeline {
 	id
 	pipelineUuid: uuid
 	allowRebuilds
+	badgeURL
 	branchConfiguration
 	cancelIntermediateBuilds
 	cancelIntermediateBuildsBranchFilter
@@ -16194,6 +16249,7 @@ fragment PipelineFields on Pipeline {
 	teams(first: 5, order: NAME) {
 		... PipelineTeam
 	}
+	webhookURL
 }
 fragment PipelineTemplateFields on PipelineTemplate {
 	id
@@ -16483,6 +16539,7 @@ fragment PipelineFields on Pipeline {
 	id
 	pipelineUuid: uuid
 	allowRebuilds
+	badgeURL
 	branchConfiguration
 	cancelIntermediateBuilds
 	cancelIntermediateBuildsBranchFilter
@@ -16515,6 +16572,7 @@ fragment PipelineFields on Pipeline {
 	teams(first: 5, order: NAME) {
 		... PipelineTeam
 	}
+	webhookURL
 }
 fragment PipelineTeam on TeamPipelineConnection {
 	pageInfo {
@@ -17608,6 +17666,7 @@ fragment PipelineFields on Pipeline {
 	id
 	pipelineUuid: uuid
 	allowRebuilds
+	badgeURL
 	branchConfiguration
 	cancelIntermediateBuilds
 	cancelIntermediateBuildsBranchFilter
@@ -17640,6 +17699,7 @@ fragment PipelineFields on Pipeline {
 	teams(first: 5, order: NAME) {
 		... PipelineTeam
 	}
+	webhookURL
 }
 fragment PipelineTeam on TeamPipelineConnection {
 	pageInfo {
