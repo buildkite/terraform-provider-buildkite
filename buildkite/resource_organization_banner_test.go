@@ -11,7 +11,6 @@ import (
 )
 
 func TestAccBuildkiteOrganizationBannerResource(t *testing.T) {
-	RegisterResourceTracking(t)
 	config := func(name string) string {
 		return fmt.Sprintf(`
 		provider "buildkite" {

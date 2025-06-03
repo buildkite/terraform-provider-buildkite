@@ -12,7 +12,6 @@ import (
 )
 
 func TestAccBuildkitePipelineTemplateResource(t *testing.T) {
-	RegisterResourceTracking(t)
 	configRequired := func(name string) string {
 		return fmt.Sprintf(`
 		provider "buildkite" {
@@ -203,9 +202,6 @@ func testAccCheckPipelineTemplateExists(ptr *pipelineTemplateResourceModel, name
 		if rs.Primary.ID == "" {
 			return fmt.Errorf("No ID is set in state")
 		}
-
-		TrackResource("buildkite_pipeline_template", rs.Primary.ID)
-
 		r, err := getNode(context.Background(), genqlientGraphql, rs.Primary.ID)
 		if err != nil {
 			return err
@@ -246,7 +242,6 @@ func testAccCheckPipelineTemplateDestroy(s *terraform.State) error {
 		if err != nil {
 			if strings.Contains(err.Error(), "not found") {
 
-				UntrackResource("buildkite_pipeline_template", rs.Primary.ID)
 				continue
 			}
 			return err
@@ -256,7 +251,6 @@ func testAccCheckPipelineTemplateDestroy(s *terraform.State) error {
 			return fmt.Errorf("Pipeline template still exists: %v", pipelineTemplateNode.Id)
 		}
 
-		UntrackResource("buildkite_pipeline_template", rs.Primary.ID)
 	}
 	return nil
 }

@@ -12,7 +12,6 @@ import (
 )
 
 func TestAccBuildkitePipelineSchedule(t *testing.T) {
-	RegisterResourceTracking(t)
 	config := func(name, cronline, label, env string, enabled bool) string {
 		return fmt.Sprintf(`
 			provider "buildkite" {
@@ -53,9 +52,6 @@ func TestAccBuildkitePipelineSchedule(t *testing.T) {
 	loadPipelineSchedule := func(schedule *PipelineScheduleValues) resource.TestCheckFunc {
 		return func(s *terraform.State) error {
 			scheduleRes := s.RootModule().Resources["buildkite_pipeline_schedule.pipeline"]
-
-			TrackResource("buildkite_pipeline_schedule", scheduleRes.Primary.ID)
-
 			resp, err := getPipelineSchedule(context.Background(), genqlientGraphql, scheduleRes.Primary.ID)
 			if err != nil {
 				return err
@@ -225,7 +221,6 @@ func testAccCheckPipelineScheduleDestroy(s *terraform.State) error {
 			continue
 		}
 
-		UntrackResource("buildkite_pipeline_schedule", rs.Primary.ID)
 	}
 	return nil
 }

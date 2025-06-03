@@ -14,7 +14,6 @@ import (
 )
 
 func TestAccBuildkiteClusterQueueResource(t *testing.T) {
-	RegisterResourceTracking(t)
 	configBasic := func(fields ...string) string {
 		return fmt.Sprintf(`
 		provider "buildkite" {
@@ -495,9 +494,6 @@ func testAccCheckClusterQueueExists(resourceName string, clusterQueueResourceMod
 		if resourceState.Primary.ID == "" {
 			return fmt.Errorf("No ID is set in state")
 		}
-
-		TrackResource("buildkite_cluster_queue", resourceState.Primary.ID)
-
 		// Obtain queues of the queue's cluster from its cluster UUID
 		var matchFound bool
 		ctx := context.Background()
@@ -580,7 +576,6 @@ func testAccCheckClusterQueueDestroy(s *terraform.State) error {
 			continue
 		}
 
-		UntrackResource("buildkite_cluster_queue", rs.Primary.ID)
 	}
 	return nil
 }

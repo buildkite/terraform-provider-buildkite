@@ -13,7 +13,6 @@ import (
 )
 
 func TestAccBuildkiteTestSuiteResource(t *testing.T) {
-	RegisterResourceTracking(t)
 	basicTestSuite := func(name string) string {
 		return fmt.Sprintf(`
 		provider "buildkite" {
@@ -284,9 +283,6 @@ func checkTestSuiteExists(name string, suite *getTestSuiteSuite) resource.TestCh
 		if !ok {
 			return errors.New("Test suite not found in state")
 		}
-
-		TrackResource("buildkite_test_suite", rs.Primary.ID)
-
 		_suite := loadRemoteTestSuite(rs.Primary.Attributes["id"])
 
 		if _suite == nil {
@@ -310,7 +306,6 @@ func testTestSuiteDestroy(s *terraform.State) error {
 			continue
 		}
 
-		UntrackResource("buildkite_test_suite", rs.Primary.ID)
 	}
 	return nil
 }

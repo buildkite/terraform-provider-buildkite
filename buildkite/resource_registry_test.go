@@ -13,7 +13,6 @@ import (
 )
 
 func TestAccResourceRegistry(t *testing.T) {
-	RegisterResourceTracking(t)
 	config := func(name, ecosystem, emoji string) string {
 		return fmt.Sprintf(`
 		provider "buildkite" {}

@@ -13,7 +13,6 @@ import (
 )
 
 func TestAccBuildkiteClusterAgentTokenResource(t *testing.T) {
-	RegisterResourceTracking(t)
 	configBasic := func(fields ...string) string {
 		return fmt.Sprintf(`
 		provider "buildkite" {
@@ -84,7 +83,7 @@ func TestAccBuildkiteClusterAgentTokenResource(t *testing.T) {
 		resource.ParallelTest(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },
 			ProtoV6ProviderFactories: protoV6ProviderFactories(),
-			CheckDestroy:             testAccCheckAgentTokenDestroyWithUntracking,
+			CheckDestroy:             testAccCheckClusterAgentTokenDestroy,
 			Steps: []resource.TestStep{
 				{
 					Config: configBasic(clusterName, tokenDesc),
@@ -122,7 +121,7 @@ func TestAccBuildkiteClusterAgentTokenResource(t *testing.T) {
 		resource.ParallelTest(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },
 			ProtoV6ProviderFactories: protoV6ProviderFactories(),
-			CheckDestroy:             testAccCheckAgentTokenDestroyWithUntracking,
+			CheckDestroy:             testAccCheckClusterAgentTokenDestroy,
 			Steps: []resource.TestStep{
 				{
 					Config: configAllowedIPsBasic(clusterName, tokenDesc, allowedIps),
@@ -159,7 +158,7 @@ func TestAccBuildkiteClusterAgentTokenResource(t *testing.T) {
 		resource.ParallelTest(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },
 			ProtoV6ProviderFactories: protoV6ProviderFactories(),
-			CheckDestroy:             testAccCheckAgentTokenDestroyWithUntracking,
+			CheckDestroy:             testAccCheckClusterAgentTokenDestroy,
 			Steps: []resource.TestStep{
 				{
 					Config: configBasic(clusterName, tokenDesc),
@@ -185,9 +184,6 @@ func testAccCheckClusterAgentTokenExists(resourceName string, ct *clusterAgentTo
 		if resourceState.Primary.ID == "" {
 			return fmt.Errorf("No ID is set in state")
 		}
-
-		TrackResource("buildkite_cluster_agent_token", resourceState.Primary.ID)
-
 		clusterTokens, err := getClusterAgentTokens(
 			context.Background(),
 			genqlientGraphql,
@@ -227,14 +223,12 @@ func testAccCheckClusterAgentTokenRemoteValues(ct *clusterAgentTokenResourceMode
 	}
 }
 
-// Modify function name to prevent recursion
-func testAccCheckAgentTokenDestroyWithUntracking(s *terraform.State) error {
+func testAccCheckClusterAgentTokenDestroy(s *terraform.State) error {
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "buildkite_cluster_agent_token" {
 			continue
 		}
 
-		UntrackResource("buildkite_cluster_agent_token", rs.Primary.ID)
 	}
 	return nil
 }

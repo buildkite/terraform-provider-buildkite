@@ -13,7 +13,6 @@ import (
 )
 
 func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
-	RegisterResourceTracking(t)
 	ruleActions := []string{"trigger_build", "artifacts_read"}
 
 	configRequired := func(fields ...string) string {
@@ -2207,9 +2206,6 @@ func testAccCheckOrganizationRuleExists(orr *organizationRuleResourceModel, name
 		if rs.Primary.ID == "" {
 			return fmt.Errorf("No ID is set in state")
 		}
-
-		TrackResource("buildkite_organization_rule", rs.Primary.ID)
-
 		r, err := getNode(context.Background(), genqlientGraphql, rs.Primary.ID)
 		if err != nil {
 			return err
@@ -2261,7 +2257,6 @@ func testAccCheckOrganizationRuleDestroy(s *terraform.State) error {
 		r, err := getNode(context.Background(), genqlientGraphql, rs.Primary.ID)
 		if err != nil {
 			if strings.Contains(err.Error(), "not found") {
-				UntrackResource("buildkite_organization_rule", rs.Primary.ID)
 				continue
 			}
 			return fmt.Errorf("error checking if organization rule exists: %v", err)
@@ -2273,7 +2268,6 @@ func testAccCheckOrganizationRuleDestroy(s *terraform.State) error {
 			}
 		}
 
-		UntrackResource("buildkite_organization_rule", rs.Primary.ID)
 	}
 	return nil
 }

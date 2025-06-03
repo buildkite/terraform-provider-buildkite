@@ -12,7 +12,6 @@ import (
 )
 
 func TestAccBuildkiteTeam(t *testing.T) {
-	RegisterResourceTracking(t)
 	configBasic := func(name string) string {
 		return fmt.Sprintf(`
 		provider "buildkite" {
@@ -197,9 +196,6 @@ func testAccCheckTeamExists(name string, tr *teamResourceModel) resource.TestChe
 		if rs.Primary.ID == "" {
 			return fmt.Errorf("No ID is set in state")
 		}
-
-		TrackResource("buildkite_team", rs.Primary.ID)
-
 		r, err := getNode(context.Background(), genqlientGraphql, rs.Primary.ID)
 		if err != nil {
 			return err
@@ -230,7 +226,6 @@ func testAccCheckTeamResourceDestroy(s *terraform.State) error {
 			continue
 		}
 
-		UntrackResource("buildkite_team", rs.Primary.ID)
 	}
 	return nil
 }

@@ -24,7 +24,10 @@ test:
 # Acceptance tests. This will create, manage and delete real resources in a real
 # Buildkite organization!
 testacc:
-	SWEEP=1 TF_ACC=1 go run gotest.tools/gotestsum --format testname --junitfile "junit-${BUILDKITE_JOB_ID}.xml" -- -parallel=4 ./...
+	@echo "--- Running acceptance tests..."
+	-TF_ACC=1 go run gotest.tools/gotestsum --format testname --junitfile "junit-${BUILDKITE_JOB_ID}.xml" -- -parallel=4 ./buildkite
+	@echo "--- Running sweepers..."
+	TF_ACC=1 go test ./buildkite -v -sweep=global -sweep-run=.
 
 # Generate the Buildkite GraphQL schema file
 schema:

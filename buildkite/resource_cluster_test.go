@@ -172,10 +172,6 @@ func testAccCheckClusterExists(name string, c *clusterResourceModel) resource.Te
 		if rs.Primary.ID == "" {
 			return fmt.Errorf("No ID is set in state")
 		}
-
-		// Track this cluster for cleanup in case of test failure
-		TrackResource("buildkite_cluster", rs.Primary.ID)
-
 		r, err := getNode(context.Background(), genqlientGraphql, rs.Primary.ID)
 		if err != nil {
 			return err
@@ -206,7 +202,6 @@ func testAccCheckClusterDestroy(s *terraform.State) error {
 			continue
 		}
 
-		UntrackResource("buildkite_cluster", rs.Primary.ID)
 	}
 	return nil
 }

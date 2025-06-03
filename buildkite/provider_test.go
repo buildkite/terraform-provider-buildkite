@@ -8,6 +8,7 @@ import (
 	genqlient "github.com/Khan/genqlient/graphql"
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/shurcooL/graphql"
 )
 
@@ -16,6 +17,10 @@ var (
 	genqlientGraphql genqlient.Client
 	organizationID   string
 )
+
+func TestMain(m *testing.M) {
+	resource.TestMain(m)
+}
 
 func init() {
 	rt := http.DefaultTransport

@@ -11,7 +11,7 @@ import (
 )
 
 func TestAccBuildkiteAgentToken(t *testing.T) {
-	RegisterResourceTracking(t)
+
 	basic := func(name string) string {
 		return fmt.Sprintf(`
 		provider "buildkite" {
@@ -124,8 +124,6 @@ func testAccCheckAgentTokenExists(resourceName string, resourceToken *AgentToken
 			return fmt.Errorf("No ID is set in state")
 		}
 
-		TrackResource("buildkite_agent_token", resourceState.Primary.ID)
-
 		var query struct {
 			Node struct {
 				AgentToken AgentTokenNode `graphql:"... on AgentToken"`
@@ -172,8 +170,6 @@ func testAccCheckAgentTokenResourceDestroy(s *terraform.State) error {
 		if rs.Type != "buildkite_agent_token" {
 			continue
 		}
-
-		UntrackResource("buildkite_agent_token", rs.Primary.ID)
 	}
 	return nil
 }

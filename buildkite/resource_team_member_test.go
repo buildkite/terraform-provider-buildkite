@@ -12,7 +12,6 @@ import (
 )
 
 func TestAccBuildkiteTeamMember(t *testing.T) {
-	RegisterResourceTracking(t)
 	basic := func(name, role string) string {
 		return fmt.Sprintf(`
 		provider "buildkite" {
@@ -198,9 +197,6 @@ func testAccCheckTeamMemberExists(resourceName string, tm *teamMemberResourceMod
 		if resourceState.Primary.ID == "" {
 			return fmt.Errorf("No ID is set in state")
 		}
-
-		TrackResource("buildkite_team_member", resourceState.Primary.ID)
-
 		apiResponse, err := getNode(context.Background(), genqlientGraphql, resourceState.Primary.ID)
 		if err != nil {
 			return fmt.Errorf("Error fetching team member from graphql API: %v", err)
@@ -224,7 +220,6 @@ func testCheckTeamMemberResourceRemoved(s *terraform.State) error {
 			continue
 		}
 
-		UntrackResource("buildkite_team_member", rs.Primary.ID)
 	}
 	return nil
 }
