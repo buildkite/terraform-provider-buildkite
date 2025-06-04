@@ -67,7 +67,6 @@ fragment PipelineTeam on TeamPipelineConnection {
 query getPipeline($slug: ID!) {
     pipeline(slug: $slug) {
         ...PipelineFields
-        webhookURL
     }
 }
 
@@ -94,7 +93,6 @@ mutation createPipeline(
     pipelineCreate(input: $input) {
         pipeline {
             ...PipelineFields
-            webhookURL
         }
     }
 }
