@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"os"
 	"strings"
 	"testing"
 
@@ -15,7 +16,7 @@ import (
 )
 
 func testAccCheckPipelineDestroy(s *terraform.State) error {
-	orgSlug := getOrgEnv()
+	orgSlug := os.Getenv("BUILDKITE_ORGANIZATION_SLUG")
 	if orgSlug == "" {
 		return fmt.Errorf("BUILDKITE_ORGANIZATION_SLUG environment variable is not set")
 	}
