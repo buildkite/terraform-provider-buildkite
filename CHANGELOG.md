@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- SUP-2308: Use GraphQL for Pipeline webhookURL and badgeURL by @tomowatt in https://github.com/buildkite/terraform-provider-buildkite/pull/931
+
 ## [v1.19.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.18.0...v1.19.0)
 
 - chore(docs): update changelog by @mcncl in https://github.com/buildkite/terraform-provider-buildkite/pull/921

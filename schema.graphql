@@ -620,6 +620,7 @@ enum AuditEventType {
 	SECRET_QUERIED
 	SECRET_READ
 	SECRET_UPDATED
+	SECRET_VALUE_UPDATED
 	STORAGE_CREATED
 	SUBSCRIPTION_ACTIVATED
 	SUBSCRIPTION_CANCELED
@@ -690,33 +691,11 @@ union AuditSubjectNode =APIAccessToken | AgentToken | AuthorizationBitbucket | A
 
 """All the possible types of subjects in an Audit Event"""
 enum AuditSubjectType {
-	TEAM_PIPELINE
-	CLUSTER_PERMISSION
-	TEAM_SUITE
-	TEAM_SECRET
-	TEAM_REGISTRY
-	REGISTRY_TOKEN
-	AUTHORIZATION
-	COMPOSITE_REGISTRY_UPSTREAM
-	RULE
-	SECRET
-	SCM_SERVICE
-	SCM_PIPELINE_SETTINGS
-	SCM_REPOSITORY_HOST
-	SSO_PROVIDER
-	USER_EMAIL
-	USER_TOTP
-	SUITE_MONITOR
-	SUBSCRIPTION
-	SUITE
-	TEAM
-	CLUSTER_QUEUE_TOKEN
-	CLUSTER_TOKEN
-	PORTAL_TOKEN
-	PORTAL_SECRET
-	ORGANIZATION
-	USER
 	REGISTRY
+	PIPELINE
+	RULE
+	CLUSTER
+	JOB
 	AGENT_TOKEN
 	API_ACCESS_TOKEN
 	CLUSTER_QUEUE
@@ -727,12 +706,34 @@ enum AuditSubjectType {
 	ORGANIZATION_IMPERSONATION_REQUEST
 	PIPELINE_SCHEDULE
 	PIPELINE_TEMPLATE
-	PIPELINE
-	PORTAL_TOKEN_CODE
-	CLUSTER
 	PORTAL
-	JOB
+	PORTAL_TOKEN_CODE
 	TEAM_MEMBER
+	CLUSTER_QUEUE_TOKEN
+	CLUSTER_TOKEN
+	TEAM_REGISTRY
+	TEAM_PIPELINE
+	PORTAL_TOKEN
+	TEAM_SUITE
+	PORTAL_SECRET
+	ORGANIZATION
+	REGISTRY_TOKEN
+	TEAM_SECRET
+	COMPOSITE_REGISTRY_UPSTREAM
+	TEAM
+	SSO_PROVIDER
+	SCM_SERVICE
+	SECRET
+	SCM_REPOSITORY_HOST
+	SUITE_MONITOR
+	USER
+	SCM_PIPELINE_SETTINGS
+	CLUSTER_PERMISSION
+	USER_TOTP
+	SUBSCRIPTION
+	USER_EMAIL
+	SUITE
+	AUTHORIZATION
 }
 
 """Context for an audit event created during a web request"""
@@ -3109,6 +3110,8 @@ type Organization implements Node{
 		sso: OrganizationMemberSSOInput
 """Order the members"""
 		order: OrganizationMemberOrder
+"""Filter to members with a 'last seen at' value that is nil or before the given date"""
+		inactiveSince: DateTime
 	): OrganizationMemberConnection
 """Whether this organization requires 2FA to access (Please note that this is a beta feature and is not yet available to all organizations.)"""
 	membersRequireTwoFactorAuthentication: Boolean!
@@ -3624,6 +3627,8 @@ type OrganizationMember implements Node{
 """The user that added invited this user"""
 	createdBy: User
 	id: ID!
+"""The time this member was last active within the organization"""
+	lastSeenAt: DateTime
 	organization: Organization!
 	permissions: OrganizationMemberPermissions!
 """Pipelines the user has access to within the organization"""
