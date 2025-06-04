@@ -1998,10 +1998,10 @@ const (
 type RuleAction string
 
 const (
-	// Artifacts read
-	RuleActionArtifactsRead RuleAction = "ARTIFACTS_READ"
 	// Trigger build
 	RuleActionTriggerBuild RuleAction = "TRIGGER_BUILD"
+	// Artifacts read
+	RuleActionArtifactsRead RuleAction = "ARTIFACTS_READ"
 )
 
 // The effect a rule has
@@ -3769,13 +3769,6 @@ func (v *createPipelinePipelineCreatePipelineCreatePayload) GetPipeline() create
 // A pipeline
 type createPipelinePipelineCreatePipelineCreatePayloadPipeline struct {
 	PipelineFields `json:"-"`
-	// The URL to use in your repository settings for commit webhooks
-	WebhookURL string `json:"webhookURL"`
-}
-
-// GetWebhookURL returns createPipelinePipelineCreatePipelineCreatePayloadPipeline.WebhookURL, and is useful for accessing the field via an interface.
-func (v *createPipelinePipelineCreatePipelineCreatePayloadPipeline) GetWebhookURL() string {
-	return v.WebhookURL
 }
 
 // GetId returns createPipelinePipelineCreatePipelineCreatePayloadPipeline.Id, and is useful for accessing the field via an interface.
@@ -3893,6 +3886,11 @@ func (v *createPipelinePipelineCreatePipelineCreatePayloadPipeline) GetTeams() P
 	return v.PipelineFields.Teams
 }
 
+// GetWebhookURL returns createPipelinePipelineCreatePipelineCreatePayloadPipeline.WebhookURL, and is useful for accessing the field via an interface.
+func (v *createPipelinePipelineCreatePipelineCreatePayloadPipeline) GetWebhookURL() string {
+	return v.PipelineFields.WebhookURL
+}
+
 func (v *createPipelinePipelineCreatePipelineCreatePayloadPipeline) UnmarshalJSON(b []byte) error {
 
 	if string(b) == "null" {
@@ -3919,8 +3917,6 @@ func (v *createPipelinePipelineCreatePipelineCreatePayloadPipeline) UnmarshalJSO
 }
 
 type __premarshalcreatePipelinePipelineCreatePipelineCreatePayloadPipeline struct {
-	WebhookURL string `json:"webhookURL"`
-
 	Id string `json:"id"`
 
 	PipelineUuid string `json:"pipelineUuid"`
@@ -3966,6 +3962,8 @@ type __premarshalcreatePipelinePipelineCreatePipelineCreatePayloadPipeline struc
 	Tags []PipelineFieldsTagsPipelineTag `json:"tags"`
 
 	Teams PipelineFieldsTeamsTeamPipelineConnection `json:"teams"`
+
+	WebhookURL string `json:"webhookURL"`
 }
 
 func (v *createPipelinePipelineCreatePipelineCreatePayloadPipeline) MarshalJSON() ([]byte, error) {
@@ -3979,7 +3977,6 @@ func (v *createPipelinePipelineCreatePipelineCreatePayloadPipeline) MarshalJSON(
 func (v *createPipelinePipelineCreatePipelineCreatePayloadPipeline) __premarshalJSON() (*__premarshalcreatePipelinePipelineCreatePipelineCreatePayloadPipeline, error) {
 	var retval __premarshalcreatePipelinePipelineCreatePipelineCreatePayloadPipeline
 
-	retval.WebhookURL = v.WebhookURL
 	retval.Id = v.PipelineFields.Id
 	retval.PipelineUuid = v.PipelineFields.PipelineUuid
 	retval.AllowRebuilds = v.PipelineFields.AllowRebuilds
@@ -4003,6 +4000,7 @@ func (v *createPipelinePipelineCreatePipelineCreatePayloadPipeline) __premarshal
 	retval.Steps = v.PipelineFields.Steps
 	retval.Tags = v.PipelineFields.Tags
 	retval.Teams = v.PipelineFields.Teams
+	retval.WebhookURL = v.PipelineFields.WebhookURL
 	return &retval, nil
 }
 
@@ -8361,12 +8359,7 @@ func (v *getOrganiztionBannerResponse) GetOrganization() getOrganiztionBannerOrg
 // A pipeline
 type getPipelinePipeline struct {
 	PipelineFields `json:"-"`
-	// The URL to use in your repository settings for commit webhooks
-	WebhookURL string `json:"webhookURL"`
 }
-
-// GetWebhookURL returns getPipelinePipeline.WebhookURL, and is useful for accessing the field via an interface.
-func (v *getPipelinePipeline) GetWebhookURL() string { return v.WebhookURL }
 
 // GetId returns getPipelinePipeline.Id, and is useful for accessing the field via an interface.
 func (v *getPipelinePipeline) GetId() string { return v.PipelineFields.Id }
@@ -8459,6 +8452,9 @@ func (v *getPipelinePipeline) GetTeams() PipelineFieldsTeamsTeamPipelineConnecti
 	return v.PipelineFields.Teams
 }
 
+// GetWebhookURL returns getPipelinePipeline.WebhookURL, and is useful for accessing the field via an interface.
+func (v *getPipelinePipeline) GetWebhookURL() string { return v.PipelineFields.WebhookURL }
+
 func (v *getPipelinePipeline) UnmarshalJSON(b []byte) error {
 
 	if string(b) == "null" {
@@ -8485,8 +8481,6 @@ func (v *getPipelinePipeline) UnmarshalJSON(b []byte) error {
 }
 
 type __premarshalgetPipelinePipeline struct {
-	WebhookURL string `json:"webhookURL"`
-
 	Id string `json:"id"`
 
 	PipelineUuid string `json:"pipelineUuid"`
@@ -8532,6 +8526,8 @@ type __premarshalgetPipelinePipeline struct {
 	Tags []PipelineFieldsTagsPipelineTag `json:"tags"`
 
 	Teams PipelineFieldsTeamsTeamPipelineConnection `json:"teams"`
+
+	WebhookURL string `json:"webhookURL"`
 }
 
 func (v *getPipelinePipeline) MarshalJSON() ([]byte, error) {
@@ -8545,7 +8541,6 @@ func (v *getPipelinePipeline) MarshalJSON() ([]byte, error) {
 func (v *getPipelinePipeline) __premarshalJSON() (*__premarshalgetPipelinePipeline, error) {
 	var retval __premarshalgetPipelinePipeline
 
-	retval.WebhookURL = v.WebhookURL
 	retval.Id = v.PipelineFields.Id
 	retval.PipelineUuid = v.PipelineFields.PipelineUuid
 	retval.AllowRebuilds = v.PipelineFields.AllowRebuilds
@@ -8569,6 +8564,7 @@ func (v *getPipelinePipeline) __premarshalJSON() (*__premarshalgetPipelinePipeli
 	retval.Steps = v.PipelineFields.Steps
 	retval.Tags = v.PipelineFields.Tags
 	retval.Teams = v.PipelineFields.Teams
+	retval.WebhookURL = v.PipelineFields.WebhookURL
 	return &retval, nil
 }
 
@@ -15193,7 +15189,6 @@ mutation createPipeline ($input: PipelineCreateInput!) {
 	pipelineCreate(input: $input) {
 		pipeline {
 			... PipelineFields
-			webhookURL
 		}
 	}
 }
@@ -16532,7 +16527,6 @@ const getPipeline_Operation = `
 query getPipeline ($slug: ID!) {
 	pipeline(slug: $slug) {
 		... PipelineFields
-		webhookURL
 	}
 }
 fragment PipelineFields on Pipeline {
