@@ -3,6 +3,7 @@ package buildkite
 import (
 	"context"
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
@@ -201,7 +202,6 @@ func testAccCheckPipelineTemplateExists(ptr *pipelineTemplateResourceModel, name
 		if rs.Primary.ID == "" {
 			return fmt.Errorf("No ID is set in state")
 		}
-
 		r, err := getNode(context.Background(), genqlientGraphql, rs.Primary.ID)
 		if err != nil {
 			return err
@@ -240,14 +240,17 @@ func testAccCheckPipelineTemplateDestroy(s *terraform.State) error {
 
 		r, err := getNode(context.Background(), genqlientGraphql, rs.Primary.ID)
 		if err != nil {
+			if strings.Contains(err.Error(), "not found") {
+
+				continue
+			}
 			return err
 		}
 
-		if pipelineTemplateNode, ok := r.GetNode().(*getNodeNodePipelineTemplate); ok {
-			if pipelineTemplateNode == nil {
-				return fmt.Errorf("Pipeline template still exists: %v", pipelineTemplateNode)
-			}
+		if pipelineTemplateNode, ok := r.GetNode().(*getNodeNodePipelineTemplate); ok && pipelineTemplateNode != nil {
+			return fmt.Errorf("Pipeline template still exists: %v", pipelineTemplateNode.Id)
 		}
+
 	}
 	return nil
 }

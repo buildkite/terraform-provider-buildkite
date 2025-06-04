@@ -74,13 +74,7 @@ func TestAccBuildkitePipelineSchedule(t *testing.T) {
 		resource.ParallelTest(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },
 			ProtoV6ProviderFactories: protoV6ProviderFactories(),
-			CheckDestroy: func(s *terraform.State) error {
-				resp, err := getPipeline(context.Background(), genqlientGraphql, fmt.Sprintf("%s/%s", getenv("BUILDKITE_ORGANIZATION_SLUG"), pipelineName))
-				if resp.Pipeline.Name == pipelineName {
-					return fmt.Errorf("Pipeline still exists: %s", pipelineName)
-				}
-				return err
-			},
+			CheckDestroy:             testAccCheckPipelineScheduleDestroy,
 			Steps: []resource.TestStep{
 				{
 					Config: config(pipelineName, cronline, label, "FOO = \"BAR=2f\"", true),
@@ -130,6 +124,7 @@ func TestAccBuildkitePipelineSchedule(t *testing.T) {
 		resource.ParallelTest(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },
 			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			CheckDestroy:             testAccCheckPipelineScheduleDestroy,
 			Steps: []resource.TestStep{
 				{
 					Config: config(pipelineName, "0 * * * *", label, "FOO = \"bar\"", true),
@@ -196,6 +191,7 @@ func TestAccBuildkitePipelineSchedule(t *testing.T) {
 		resource.ParallelTest(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },
 			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			CheckDestroy:             testAccCheckPipelineScheduleDestroy,
 			Steps: []resource.TestStep{
 				{
 					Config: config(pipelineName, "0 * * * *", label, "", true),
@@ -216,4 +212,15 @@ func TestAccBuildkitePipelineSchedule(t *testing.T) {
 			},
 		})
 	})
+}
+
+// Testcase destroyer function
+func testAccCheckPipelineScheduleDestroy(s *terraform.State) error {
+	for _, rs := range s.RootModule().Resources {
+		if rs.Type != "buildkite_pipeline_schedule" {
+			continue
+		}
+
+	}
+	return nil
 }

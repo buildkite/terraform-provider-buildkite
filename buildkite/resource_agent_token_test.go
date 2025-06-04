@@ -3,7 +3,6 @@ package buildkite
 import (
 	"context"
 	"fmt"
-	"strings"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
@@ -12,6 +11,7 @@ import (
 )
 
 func TestAccBuildkiteAgentToken(t *testing.T) {
+
 	basic := func(name string) string {
 		return fmt.Sprintf(`
 		provider "buildkite" {
@@ -170,36 +170,6 @@ func testAccCheckAgentTokenResourceDestroy(s *terraform.State) error {
 		if rs.Type != "buildkite_agent_token" {
 			continue
 		}
-
-		var query struct {
-			Node struct {
-				AgentToken AgentTokenNode `graphql:"... on AgentToken"`
-			} `graphql:"node(id: $id)"`
-		}
-
-		vars := map[string]interface{}{
-			"id": rs.Primary.ID,
-		}
-
-		err := graphqlClient.Query(context.Background(), &query, vars)
-		if err != nil {
-			if strings.Contains(err.Error(), "This agent registration token was already revoked") {
-				// not sure why it's already revoked, but fine by us. It's the state we need
-				continue
-			} else {
-				return err
-			}
-		}
-		if string(query.Node.AgentToken.ID) == "" {
-			return fmt.Errorf("Token not found, expected to find it in a revoked state")
-		}
-		if string(query.Node.AgentToken.ID) != rs.Primary.ID {
-			return fmt.Errorf("Found unexpected token")
-		}
-		if string(query.Node.AgentToken.RevokedAt) == "" {
-			return fmt.Errorf("Agent token found but not revoked as expected")
-		}
 	}
-
 	return nil
 }

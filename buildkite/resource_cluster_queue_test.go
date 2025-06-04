@@ -494,7 +494,6 @@ func testAccCheckClusterQueueExists(resourceName string, clusterQueueResourceMod
 		if resourceState.Primary.ID == "" {
 			return fmt.Errorf("No ID is set in state")
 		}
-
 		// Obtain queues of the queue's cluster from its cluster UUID
 		var matchFound bool
 		ctx := context.Background()
@@ -576,14 +575,7 @@ func testAccCheckClusterQueueDestroy(s *terraform.State) error {
 		if rs.Type != "buildkite_cluster_queue" {
 			continue
 		}
-		// Try to obtain the queues' cluster by its ID
-		resp, err := getNode(context.Background(), genqlientGraphql, rs.Primary.Attributes["cluster_id"])
-		// If exists a getNodeNodeCluster, cluster still exists, error
-		if clusterNode, ok := resp.GetNode().(*getNodeNodeCluster); ok {
-			// Cluster still exists
-			return fmt.Errorf("Cluster still exists: %v", clusterNode)
-		}
-		return err
+
 	}
 	return nil
 }

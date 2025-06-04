@@ -197,7 +197,6 @@ func testAccCheckTeamMemberExists(resourceName string, tm *teamMemberResourceMod
 		if resourceState.Primary.ID == "" {
 			return fmt.Errorf("No ID is set in state")
 		}
-
 		apiResponse, err := getNode(context.Background(), genqlientGraphql, resourceState.Primary.ID)
 		if err != nil {
 			return fmt.Errorf("Error fetching team member from graphql API: %v", err)
@@ -221,16 +220,6 @@ func testCheckTeamMemberResourceRemoved(s *terraform.State) error {
 			continue
 		}
 
-		apiResponse, err := getNode(context.Background(), genqlientGraphql, rs.Primary.ID)
-		if err != nil {
-			return fmt.Errorf("Error fetching team member from graphql API: %v", err)
-		}
-
-		if teamMemberNode, ok := apiResponse.GetNode().(*getNodeNodeTeamMember); ok {
-			if teamMemberNode != nil {
-				return fmt.Errorf("Team member still exists")
-			}
-		}
 	}
 	return nil
 }

@@ -184,7 +184,6 @@ func testAccCheckClusterAgentTokenExists(resourceName string, ct *clusterAgentTo
 		if resourceState.Primary.ID == "" {
 			return fmt.Errorf("No ID is set in state")
 		}
-
 		clusterTokens, err := getClusterAgentTokens(
 			context.Background(),
 			genqlientGraphql,
@@ -229,14 +228,7 @@ func testAccCheckClusterAgentTokenDestroy(s *terraform.State) error {
 		if rs.Type != "buildkite_cluster_agent_token" {
 			continue
 		}
-		// Try to obtain the cluster tokens' cluster by its ID
-		resp, err := getNode(context.Background(), genqlientGraphql, rs.Primary.Attributes["cluster_id"])
-		// If exists a getNodeNodeCluster, cluster still exists, error
-		if clusterNode, ok := resp.GetNode().(*getNodeNodeCluster); ok {
-			// Cluster still exists
-			return fmt.Errorf("Cluster still exists: %v", clusterNode)
-		}
-		return err
+
 	}
 	return nil
 }

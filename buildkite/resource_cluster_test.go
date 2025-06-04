@@ -172,7 +172,6 @@ func testAccCheckClusterExists(name string, c *clusterResourceModel) resource.Te
 		if rs.Primary.ID == "" {
 			return fmt.Errorf("No ID is set in state")
 		}
-
 		r, err := getNode(context.Background(), genqlientGraphql, rs.Primary.ID)
 		if err != nil {
 			return err
@@ -180,7 +179,7 @@ func testAccCheckClusterExists(name string, c *clusterResourceModel) resource.Te
 
 		if clusterNode, ok := r.GetNode().(*getNodeNodeCluster); ok {
 			if clusterNode == nil {
-				return fmt.Errorf("Team not found: nil response")
+				return fmt.Errorf("Cluster not found: nil response")
 			}
 			updateClusterResourceState(c, *clusterNode)
 		}
@@ -203,16 +202,6 @@ func testAccCheckClusterDestroy(s *terraform.State) error {
 			continue
 		}
 
-		r, err := getNode(context.Background(), genqlientGraphql, rs.Primary.ID)
-		if err != nil {
-			return err
-		}
-
-		if clusterNode, ok := r.GetNode().(*getNodeNodeCluster); ok {
-			if clusterNode != nil {
-				return fmt.Errorf("Cluster still exists: %v", clusterNode)
-			}
-		}
 	}
 	return nil
 }

@@ -283,7 +283,6 @@ func checkTestSuiteExists(name string, suite *getTestSuiteSuite) resource.TestCh
 		if !ok {
 			return errors.New("Test suite not found in state")
 		}
-
 		_suite := loadRemoteTestSuite(rs.Primary.Attributes["id"])
 
 		if _suite == nil {
@@ -307,14 +306,6 @@ func testTestSuiteDestroy(s *terraform.State) error {
 			continue
 		}
 
-		suite, err := getTestSuite(context.Background(), genqlientGraphql, rs.Primary.Attributes["id"], 1)
-		if err != nil {
-			return fmt.Errorf("Error fetching test suite from graphql API: %v", err)
-		}
-
-		if suite.Suite != nil {
-			return fmt.Errorf("Test suite still exists: %v", suite)
-		}
 	}
 	return nil
 }

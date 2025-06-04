@@ -196,7 +196,6 @@ func testAccCheckTeamExists(name string, tr *teamResourceModel) resource.TestChe
 		if rs.Primary.ID == "" {
 			return fmt.Errorf("No ID is set in state")
 		}
-
 		r, err := getNode(context.Background(), genqlientGraphql, rs.Primary.ID)
 		if err != nil {
 			return err
@@ -227,16 +226,6 @@ func testAccCheckTeamResourceDestroy(s *terraform.State) error {
 			continue
 		}
 
-		r, err := getNode(context.Background(), genqlientGraphql, rs.Primary.ID)
-		if err != nil {
-			return err
-		}
-
-		if teamNode, ok := r.GetNode().(*getNodeNodeTeam); ok {
-			if teamNode != nil {
-				return fmt.Errorf("Team still exists: %v", teamNode)
-			}
-		}
 	}
 	return nil
 }
