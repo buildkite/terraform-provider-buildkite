@@ -47,7 +47,18 @@ resource "buildkite_pipeline" "pipeline" {
 - `graphql_url` (String) Base URL for the GraphQL API to use. If not provided, the value is taken from the `BUILDKITE_GRAPHQL_URL` environment variable.
 - `organization` (String) The Buildkite organization slug. This can be found on the [settings](https://buildkite.com/organizations/~/settings) page. If not provided, the value is taken from the `BUILDKITE_ORGANIZATION_SLUG` environment variable.
 - `rest_url` (String) Base URL for the REST API to use. If not provided, the value is taken from the `BUILDKITE_REST_URL` environment variable.
+- `retries` (Attributes) Configuration for retry behavior when API requests fail. (see [below for nested schema](#nestedatt--retries))
 - `timeouts` (Attributes) (see [below for nested schema](#nestedatt--timeouts))
+
+<a id="nestedatt--retries"></a>
+### Nested Schema for `retries`
+
+Optional:
+
+- `max_attempts` (Number) Maximum number of retry attempts for retryable HTTP requests. Defaults to 10.
+- `wait_max_seconds` (Number) Maximum wait time in seconds between retry attempts. Defaults to 180.
+- `wait_min_seconds` (Number) Minimum wait time in seconds between retry attempts. Defaults to 15.
+
 
 <a id="nestedatt--timeouts"></a>
 ### Nested Schema for `timeouts`

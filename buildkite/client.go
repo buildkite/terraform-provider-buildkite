@@ -36,6 +36,7 @@ type clientConfig struct {
 	restURL    string
 	userAgent  string
 	timeouts   timeouts.Value
+	retries    *retryConfig
 }
 
 type headerRoundTripper struct {
@@ -131,9 +132,15 @@ func NewClient(config *clientConfig) *Client {
 
 	// REST Client Setup
 	restRetryClient := retryablehttp.NewClient()
-	restRetryClient.RetryMax = 10
-	restRetryClient.RetryWaitMin = 15 * time.Second
-	restRetryClient.RetryWaitMax = 180 * time.Second
+	if config.retries != nil {
+		restRetryClient.RetryMax = config.retries.GetMaxAttempts()
+		restRetryClient.RetryWaitMin = time.Duration(config.retries.GetWaitMinSeconds()) * time.Second
+		restRetryClient.RetryWaitMax = time.Duration(config.retries.GetWaitMaxSeconds()) * time.Second
+	} else {
+		restRetryClient.RetryMax = DefaultRetryMaxAttempts
+		restRetryClient.RetryWaitMin = DefaultRetryWaitMinSeconds * time.Second
+		restRetryClient.RetryWaitMax = DefaultRetryWaitMaxSeconds * time.Second
+	}
 	restRetryClient.Logger = nil // Using tflog directly
 	restRetryClient.Backoff = sharedBackoff
 	restRetryClient.CheckRetry = sharedCheckRetry
@@ -146,9 +153,15 @@ func NewClient(config *clientConfig) *Client {
 
 	// GraphQL Client Setup
 	graphqlRetryClient := retryablehttp.NewClient()
-	graphqlRetryClient.RetryMax = 10 // Same retry policy as REST
-	graphqlRetryClient.RetryWaitMin = 15 * time.Second
-	graphqlRetryClient.RetryWaitMax = 180 * time.Second
+	if config.retries != nil {
+		graphqlRetryClient.RetryMax = config.retries.GetMaxAttempts() // Same retry policy as REST
+		graphqlRetryClient.RetryWaitMin = time.Duration(config.retries.GetWaitMinSeconds()) * time.Second
+		graphqlRetryClient.RetryWaitMax = time.Duration(config.retries.GetWaitMaxSeconds()) * time.Second
+	} else {
+		graphqlRetryClient.RetryMax = DefaultRetryMaxAttempts
+		graphqlRetryClient.RetryWaitMin = DefaultRetryWaitMinSeconds * time.Second
+		graphqlRetryClient.RetryWaitMax = DefaultRetryWaitMaxSeconds * time.Second
+	}
 	graphqlRetryClient.Logger = nil // Using tflog directly
 	graphqlRetryClient.Backoff = sharedBackoff
 	graphqlRetryClient.CheckRetry = sharedCheckRetry
