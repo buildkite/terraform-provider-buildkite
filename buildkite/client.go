@@ -149,7 +149,7 @@ func NewClient(config *clientConfig) *Client {
 	graphqlRetryClient := retryablehttp.NewClient()
 	graphqlRetryClient.RetryMax = config.maxRetries // Same retry policy as REST
 	graphqlRetryClient.RetryWaitMin = DefaultRetryWaitMinSeconds * time.Second
-	graphqlRetryClient.RetryWaitMax = DefaultRetryWaitMaxSeconds * time.Second
+	graphqlRetryClient.RetryWaitMax = DefaultGraphQLWaitMaxSeconds * time.Second
 	graphqlRetryClient.Logger = nil // Using tflog directly
 	graphqlRetryClient.Backoff = sharedBackoff
 	graphqlRetryClient.CheckRetry = sharedCheckRetry

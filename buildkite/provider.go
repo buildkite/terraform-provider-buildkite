@@ -21,10 +21,11 @@ const (
 	defaultGraphqlEndpoint = "https://graphql.buildkite.com/v1"
 	defaultRestEndpoint    = "https://api.buildkite.com"
 
-	DefaultTimeout             = 180 * time.Second
-	DefaultRetryMaxAttempts    = 10
-	DefaultRetryWaitMinSeconds = 15
-	DefaultRetryWaitMaxSeconds = 180
+	DefaultTimeout               = 180 * time.Second
+	DefaultRetryMaxAttempts      = 10
+	DefaultRetryWaitMinSeconds   = 15
+	DefaultRetryWaitMaxSeconds   = 180
+	DefaultGraphQLWaitMaxSeconds = 600
 )
 
 const (
