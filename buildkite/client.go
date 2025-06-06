@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"regexp"
 	"strconv"
 	"time"
 
@@ -36,7 +35,7 @@ type clientConfig struct {
 	restURL    string
 	userAgent  string
 	timeouts   timeouts.Value
-	retries    *retryConfig
+	maxRetries int
 }
 
 type headerRoundTripper struct {
@@ -87,7 +86,7 @@ func NewClient(config *clientConfig) *Client {
 					resetAt := time.Unix(resetTime, 0)
 					// Add a 2-second buffer to ensure we're past the reset time
 					waitTime := time.Until(resetAt) + (2 * time.Second)
-					tflog.Debug(context.Background(), fmt.Sprintf("Rate limit 429 hit, reset at: %v (waiting: %v)", resetAt, waitTime))
+					tflog.Debug(context.Background(), fmt.Sprintf("Rate limit hit, retry after: %v", waitTime))
 					if waitTime < min {
 						return min
 					}
@@ -101,7 +100,7 @@ func NewClient(config *clientConfig) *Client {
 			if retryAfter := resp.Header.Get("Retry-After"); retryAfter != "" {
 				if seconds, err := strconv.ParseInt(retryAfter, 10, 64); err == nil {
 					waitTime := time.Duration(seconds)*time.Second + (2 * time.Second)
-					tflog.Debug(context.Background(), fmt.Sprintf("Rate limit 429 hit, retry after: %v", waitTime))
+					tflog.Debug(context.Background(), fmt.Sprintf("Rate limit hit, retry after: %v", waitTime))
 					if waitTime < min {
 						return min
 					}
@@ -132,15 +131,10 @@ func NewClient(config *clientConfig) *Client {
 
 	// REST Client Setup
 	restRetryClient := retryablehttp.NewClient()
-	if config.retries != nil {
-		restRetryClient.RetryMax = config.retries.GetMaxAttempts()
-		restRetryClient.RetryWaitMin = time.Duration(config.retries.GetWaitMinSeconds()) * time.Second
-		restRetryClient.RetryWaitMax = time.Duration(config.retries.GetWaitMaxSeconds()) * time.Second
-	} else {
-		restRetryClient.RetryMax = DefaultRetryMaxAttempts
-		restRetryClient.RetryWaitMin = DefaultRetryWaitMinSeconds * time.Second
-		restRetryClient.RetryWaitMax = DefaultRetryWaitMaxSeconds * time.Second
-	}
+	restRetryClient.RetryMax = config.maxRetries
+	// Hardcode wait times following AWS provider pattern
+	restRetryClient.RetryWaitMin = DefaultRetryWaitMinSeconds * time.Second
+	restRetryClient.RetryWaitMax = DefaultRetryWaitMaxSeconds * time.Second
 	restRetryClient.Logger = nil // Using tflog directly
 	restRetryClient.Backoff = sharedBackoff
 	restRetryClient.CheckRetry = sharedCheckRetry
@@ -153,15 +147,9 @@ func NewClient(config *clientConfig) *Client {
 
 	// GraphQL Client Setup
 	graphqlRetryClient := retryablehttp.NewClient()
-	if config.retries != nil {
-		graphqlRetryClient.RetryMax = config.retries.GetMaxAttempts() // Same retry policy as REST
-		graphqlRetryClient.RetryWaitMin = time.Duration(config.retries.GetWaitMinSeconds()) * time.Second
-		graphqlRetryClient.RetryWaitMax = time.Duration(config.retries.GetWaitMaxSeconds()) * time.Second
-	} else {
-		graphqlRetryClient.RetryMax = DefaultRetryMaxAttempts
-		graphqlRetryClient.RetryWaitMin = DefaultRetryWaitMinSeconds * time.Second
-		graphqlRetryClient.RetryWaitMax = DefaultRetryWaitMaxSeconds * time.Second
-	}
+	graphqlRetryClient.RetryMax = config.maxRetries // Same retry policy as REST
+	graphqlRetryClient.RetryWaitMin = DefaultRetryWaitMinSeconds * time.Second
+	graphqlRetryClient.RetryWaitMax = DefaultRetryWaitMaxSeconds * time.Second
 	graphqlRetryClient.Logger = nil // Using tflog directly
 	graphqlRetryClient.Backoff = sharedBackoff
 	graphqlRetryClient.CheckRetry = sharedCheckRetry
@@ -203,38 +191,6 @@ func (rt *headerRoundTripper) RoundTrip(req *http.Request) (*http.Response, erro
 	}
 	return rt.next.RoundTrip(req)
 }
-
-// GraphQL-specific retry functions
-
-func isRetryableError(err error) bool {
-	return isRateLimited(err) || isServerError(err)
-}
-
-func isRateLimited(err error) bool {
-	// see: https://github.com/Khan/genqlient/blob/main/graphql/client.go#L167
-	r := regexp.MustCompile(`returned error (\d{3}):`)
-	if match := r.FindString(err.Error()); match != "" {
-		code, _ := strconv.Atoi(match)
-		if code == http.StatusTooManyRequests {
-			return true
-		}
-	}
-	return false
-}
-
-func isServerError(err error) bool {
-	// see: https://github.com/Khan/genqlient/blob/main/graphql/client.go#L167
-	r := regexp.MustCompile(`returned error (\d{3}):`)
-	if match := r.FindString(err.Error()); match != "" {
-		code, _ := strconv.Atoi(match)
-		if code >= http.StatusBadGateway && code <= http.StatusGatewayTimeout {
-			return true
-		}
-	}
-	return false
-}
-
-// NOTE: retryContextError function is defined in util.go and used for GraphQL retries
 
 func (client *Client) makeRequest(ctx context.Context, method string, path string, postData interface{}, responseObject interface{}) error {
 	readTimeout, diags := client.timeouts.Read(ctx, DefaultTimeout)

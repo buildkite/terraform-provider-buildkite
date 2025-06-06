@@ -34,33 +34,6 @@ const (
 	SchemaKeyRestURL      = "rest_url"
 )
 
-type retryConfig struct {
-	MaxAttempts    types.Int64 `tfsdk:"max_attempts"`
-	WaitMinSeconds types.Int64 `tfsdk:"wait_min_seconds"`
-	WaitMaxSeconds types.Int64 `tfsdk:"wait_max_seconds"`
-}
-
-func (r *retryConfig) GetMaxAttempts() int {
-	if r.MaxAttempts.IsNull() {
-		return DefaultRetryMaxAttempts
-	}
-	return int(r.MaxAttempts.ValueInt64())
-}
-
-func (r *retryConfig) GetWaitMinSeconds() int {
-	if r.WaitMinSeconds.IsNull() {
-		return DefaultRetryWaitMinSeconds
-	}
-	return int(r.WaitMinSeconds.ValueInt64())
-}
-
-func (r *retryConfig) GetWaitMaxSeconds() int {
-	if r.WaitMaxSeconds.IsNull() {
-		return DefaultRetryWaitMaxSeconds
-	}
-	return int(r.WaitMaxSeconds.ValueInt64())
-}
-
 type terraformProvider struct {
 	version                 string
 	archivePipelineOnDelete bool
@@ -70,10 +43,10 @@ type providerModel struct {
 	ApiToken                types.String   `tfsdk:"api_token"`
 	ArchivePipelineOnDelete types.Bool     `tfsdk:"archive_pipeline_on_delete"`
 	GraphqlUrl              types.String   `tfsdk:"graphql_url"`
+	MaxRetries              types.Int64    `tfsdk:"max_retries"`
 	Organization            types.String   `tfsdk:"organization"`
 	RestURL                 types.String   `tfsdk:"rest_url"`
 	Timeouts                timeouts.Value `tfsdk:"timeouts"`
-	Retries                 *retryConfig   `tfsdk:"retries"`
 }
 
 func (tf *terraformProvider) Configure(ctx context.Context, req provider.ConfigureRequest, resp *provider.ConfigureResponse) {
@@ -103,6 +76,11 @@ func (tf *terraformProvider) Configure(ctx context.Context, req provider.Configu
 		restURL = v
 	}
 
+	maxRetries := DefaultRetryMaxAttempts
+	if !data.MaxRetries.IsNull() {
+		maxRetries = int(data.MaxRetries.ValueInt64())
+	}
+
 	config := clientConfig{
 		apiToken:   apiToken,
 		graphqlURL: graphqlUrl,
@@ -110,7 +88,7 @@ func (tf *terraformProvider) Configure(ctx context.Context, req provider.Configu
 		restURL:    restURL,
 		timeouts:   data.Timeouts,
 		userAgent:  userAgent("buildkite", tf.version, req.TerraformVersion),
-		retries:    data.Retries,
+		maxRetries: maxRetries,
 	}
 	client := NewClient(&config)
 
@@ -208,23 +186,9 @@ func (*terraformProvider) Schema(ctx context.Context, req provider.SchemaRequest
 				Optional:            true,
 				MarkdownDescription: "Enable this to archive pipelines when destroying the resource. This is opposed to completely deleting pipelines.",
 			},
-			"retries": schema.SingleNestedAttribute{
+			"max_retries": schema.Int64Attribute{
 				Optional:            true,
-				MarkdownDescription: "Configuration for retry behavior when API requests fail.",
-				Attributes: map[string]schema.Attribute{
-					"max_attempts": schema.Int64Attribute{
-						Optional:            true,
-						MarkdownDescription: "Maximum number of retry attempts for retryable HTTP requests. Defaults to 10.",
-					},
-					"wait_min_seconds": schema.Int64Attribute{
-						Optional:            true,
-						MarkdownDescription: "Minimum wait time in seconds between retry attempts. Defaults to 15.",
-					},
-					"wait_max_seconds": schema.Int64Attribute{
-						Optional:            true,
-						MarkdownDescription: "Maximum wait time in seconds between retry attempts. Defaults to 180.",
-					},
-				},
+				MarkdownDescription: "Maximum number of retry attempts for retryable HTTP requests. Defaults to 10.",
 			},
 			"timeouts": timeouts.AttributesAll(ctx),
 		},
