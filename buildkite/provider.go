@@ -21,7 +21,11 @@ const (
 	defaultGraphqlEndpoint = "https://graphql.buildkite.com/v1"
 	defaultRestEndpoint    = "https://api.buildkite.com"
 
-	DefaultTimeout = 180 * time.Second
+	DefaultTimeout               = 180 * time.Second
+	DefaultRetryMaxAttempts      = 10
+	DefaultRetryWaitMinSeconds   = 15
+	DefaultRetryWaitMaxSeconds   = 180
+	DefaultGraphQLWaitMaxSeconds = 600
 )
 
 const (
@@ -40,6 +44,7 @@ type providerModel struct {
 	ApiToken                types.String   `tfsdk:"api_token"`
 	ArchivePipelineOnDelete types.Bool     `tfsdk:"archive_pipeline_on_delete"`
 	GraphqlUrl              types.String   `tfsdk:"graphql_url"`
+	MaxRetries              types.Int64    `tfsdk:"max_retries"`
 	Organization            types.String   `tfsdk:"organization"`
 	RestURL                 types.String   `tfsdk:"rest_url"`
 	Timeouts                timeouts.Value `tfsdk:"timeouts"`
@@ -72,6 +77,11 @@ func (tf *terraformProvider) Configure(ctx context.Context, req provider.Configu
 		restURL = v
 	}
 
+	maxRetries := DefaultRetryMaxAttempts
+	if !data.MaxRetries.IsNull() {
+		maxRetries = int(data.MaxRetries.ValueInt64())
+	}
+
 	config := clientConfig{
 		apiToken:   apiToken,
 		graphqlURL: graphqlUrl,
@@ -79,6 +89,7 @@ func (tf *terraformProvider) Configure(ctx context.Context, req provider.Configu
 		restURL:    restURL,
 		timeouts:   data.Timeouts,
 		userAgent:  userAgent("buildkite", tf.version, req.TerraformVersion),
+		maxRetries: maxRetries,
 	}
 	client := NewClient(&config)
 
@@ -175,6 +186,10 @@ func (*terraformProvider) Schema(ctx context.Context, req provider.SchemaRequest
 			"archive_pipeline_on_delete": schema.BoolAttribute{
 				Optional:            true,
 				MarkdownDescription: "Enable this to archive pipelines when destroying the resource. This is opposed to completely deleting pipelines.",
+			},
+			"max_retries": schema.Int64Attribute{
+				Optional:            true,
+				MarkdownDescription: "Maximum number of retry attempts for retryable HTTP requests. Defaults to 10.",
 			},
 			"timeouts": timeouts.AttributesAll(ctx),
 		},
