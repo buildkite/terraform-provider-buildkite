@@ -1,8 +1,13 @@
 # Changelog
 
-## Unreleased
+## [v1.20.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.19.0...v1.20.0)
 
-- SUP-2308: Use GraphQL for Pipeline webhookURL and badgeURL by @tomowatt in https://github.com/buildkite/terraform-provider-buildkite/pull/931
+- chore(deps): bump github.com/hashicorp/terraform-plugin-framework from 1.14.1 to 1.15.0 [[PR #924](https://github.com/buildkite/terraform-provider-buildkite/pull/924)] @dependabot
+- chore(deps): bump golang from 1.24.2 to 1.24.3 [[PR #929](https://github.com/buildkite/terraform-provider-buildkite/pull/929)] @dependabot
+- chore(deps): bump github.com/hashicorp/terraform-plugin-go from 0.26.0 to 0.28.0 [[PR #923](https://github.com/buildkite/terraform-provider-buildkite/pull/923)] @dependabot
+- fix: destroy resources created during acceptance tests [[PR #930](https://github.com/buildkite/terraform-provider-buildkite/pull/930)] @scadu
+- feat: add rate limit handling for GraphQL client [[PR #932](https://github.com/buildkite/terraform-provider-buildkite/pull/932)] @scadu
+- SUP-2308: Use GraphQL for Pipeline webhookURL and badgeURL [[PR #931](https://github.com/buildkite/terraform-provider-buildkite/pull/931)] @tomowatt
 
 ## [v1.19.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.18.0...v1.19.0)
 
@@ -21,7 +26,6 @@
 - chore(deps): bump github.com/lestrrat-go/jwx/v2 from 2.1.5 to 2.1.6 by @dependabot https://github.com/buildkite/terraform-provider-buildkite/pull/916
 - chore: add make docs to pre-commit hooks by @scadu https://github.com/buildkite/terraform-provider-buildkite/pull/920
 - add ignore_default_branch_pull_requests to provider settings by @patrobinson https://github.com/buildkite/terraform-provider-buildkite/pull/918
-
 
 ## [v1.17.2](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.17.1...v1.17.2)
 
