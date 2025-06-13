@@ -4,6 +4,7 @@ query getTestSuite($id: ID!, $teamCount: Int) {
             id
             uuid
             defaultBranch
+            # @genqlient(pointer: true)
             emoji
             name
             slug
