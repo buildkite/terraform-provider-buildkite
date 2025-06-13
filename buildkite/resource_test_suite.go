@@ -383,3 +383,8 @@ func (ts *testSuiteResource) Update(ctx context.Context, req resource.UpdateRequ
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
+
+func (ts *testSuiteResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+}
+
