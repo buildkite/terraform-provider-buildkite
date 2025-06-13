@@ -221,16 +221,39 @@ func (ts *testSuiteResource) Read(ctx context.Context, req resource.ReadRequest,
 			// and we didnt find another team with MANAGE_AND_READ
 			state.TeamOwnerId = types.StringUnknown()
 		}
+
+		if state.TeamOwnerId.IsUnknown() {
+			resp.Diagnostics.AddAttributeError(path.Root("team_owner_id"), "Could not find owning team", "No team matching")
+			return
+		}
+
+		setTestSuiteModel(&state, suite)
+
 	} else {
 		// Test suite was removed - remove from state
 		resp.Diagnostics.AddWarning("Test suite not found", "Removing test suite from state")
 		resp.State.RemoveResource(ctx)
-		return
 	}
 
-	if state.TeamOwnerId.IsUnknown() {
-		resp.Diagnostics.AddAttributeError(path.Root("team_owner_id"), "Could not find owning team", "No team matching")
-		return
+	// If Test Suite Imported, API Token will be null, so need to fetch it to set it in State
+	if state.ApiToken.IsNull() {
+		var response testSuiteResponse
+
+		// Construct URL to call to the REST API
+		url := fmt.Sprintf("/v2/analytics/organizations/%s/suites/%s?show_api_token=true", ts.client.organization, state.Slug.ValueString())
+		err = retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+			err := ts.client.makeRequest(ctx, "GET", url, nil, &response)
+
+			return retryContextError(err)
+		})
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Failed to read test suite API token",
+				fmt.Sprintf("Failed to read test suite API token: %s", err.Error()),
+			)
+			return
+		}
+		state.ApiToken = types.StringValue(response.ApiToken)
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
