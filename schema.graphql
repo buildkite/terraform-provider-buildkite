@@ -637,6 +637,8 @@ enum AuditEventType {
 	SUITE_MONITOR_CREATED
 	SUITE_MONITOR_DELETED
 	SUITE_MONITOR_UPDATED
+	SUITE_SAVED_VIEW_CREATED
+	SUITE_SAVED_VIEW_DELETED
 	SUITE_UPDATED
 	SUITE_VISIBILITY_CHANGED
 	TEAM_CREATED
@@ -691,49 +693,50 @@ union AuditSubjectNode =APIAccessToken | AgentToken | AuthorizationBitbucket | A
 
 """All the possible types of subjects in an Audit Event"""
 enum AuditSubjectType {
-	REGISTRY
-	PIPELINE
-	RULE
-	CLUSTER
 	JOB
+	CLUSTER_QUEUE_TOKEN
+	CLUSTER_TOKEN
+	SUITE
+	PORTAL_TOKEN
+	PORTAL_SECRET
 	AGENT_TOKEN
+	SUBSCRIPTION
 	API_ACCESS_TOKEN
 	CLUSTER_QUEUE
 	NOTIFICATION_SERVICE
 	ORGANIZATION_BANNER
-	ORGANIZATION_INVITATION
+	SECRET
 	ORGANIZATION_MEMBER
-	ORGANIZATION_IMPERSONATION_REQUEST
+	ORGANIZATION_INVITATION
 	PIPELINE_SCHEDULE
-	PIPELINE_TEMPLATE
 	PORTAL
 	PORTAL_TOKEN_CODE
 	TEAM_MEMBER
-	CLUSTER_QUEUE_TOKEN
-	CLUSTER_TOKEN
-	TEAM_REGISTRY
 	TEAM_PIPELINE
-	PORTAL_TOKEN
+	TEAM_REGISTRY
 	TEAM_SUITE
-	PORTAL_SECRET
-	ORGANIZATION
-	REGISTRY_TOKEN
 	TEAM_SECRET
 	COMPOSITE_REGISTRY_UPSTREAM
-	TEAM
+	REGISTRY_TOKEN
+	REGISTRY
 	SSO_PROVIDER
-	SCM_SERVICE
-	SECRET
+	SCM_PIPELINE_SETTINGS
 	SCM_REPOSITORY_HOST
+	SCM_SERVICE
 	SUITE_MONITOR
 	USER
-	SCM_PIPELINE_SETTINGS
-	CLUSTER_PERMISSION
-	USER_TOTP
-	SUBSCRIPTION
 	USER_EMAIL
-	SUITE
+	SUITE_SAVED_VIEW
+	ORGANIZATION_IMPERSONATION_REQUEST
+	USER_TOTP
+	PIPELINE_TEMPLATE
 	AUTHORIZATION
+	ORGANIZATION
+	RULE
+	CLUSTER
+	TEAM
+	CLUSTER_PERMISSION
+	PIPELINE
 }
 
 """Context for an audit event created during a web request"""
@@ -2027,6 +2030,8 @@ enum JobEventSignalReason {
 	AGENT_REFUSED
 """The agent refused the job because the signature could not be verified. Note that in this case, no signal was sent to the process, the job was not run at all."""
 	SIGNATURE_REJECTED
+"""The job couldn't be launched by the stack controlling agents. This could be due to a misconfiguration of the job, or due to a lack of resources."""
+	STACK_ERROR
 }
 
 """An event created when the job is timed out"""
@@ -4986,6 +4991,14 @@ type RepositoryProviderCodebaseSettings implements RepositoryProviderSettings{
 type RepositoryProviderGitHubEnterpriseSettings implements RepositoryProviderSettings{
 """Whether to create builds when branches are pushed."""
 	buildBranches: Boolean!
+"""Whether to create builds for pull requests when the base branch is changed."""
+	buildPullRequestBaseBranchChanged: Boolean!
+"""Whether to create builds for pull requests from third-party forks."""
+	buildPullRequestForks: Boolean!
+"""Whether to create builds for pull requests when labels are added or removed."""
+	buildPullRequestLabelsChanged: Boolean!
+"""Whether to create builds for pull requests that are ready for review."""
+	buildPullRequestReadyForReview: Boolean!
 """Whether to create builds for commits that are part of a Pull Request."""
 	buildPullRequests: Boolean!
 """Whether to create builds when tags are pushed."""
@@ -4998,6 +5011,10 @@ type RepositoryProviderGitHubEnterpriseSettings implements RepositoryProviderSet
 	filterEnabled: Boolean
 """Ensure that even if Build Pull Requests is disabled, all commits to the default branch will trigger a build."""
 	ignoreDefaultBranchPullRequests: Boolean!
+"""Prefix branch names for third-party fork builds to ensure they don't trigger branch conditions. For example, the main branch from some-user will become some-user:main."""
+	prefixPullRequestForkBranchNames: Boolean!
+"""The status to use for blocked builds. Pending can be used with required status checks to prevent merging pull requests with blocked builds."""
+	publishBlockedAsPending: Boolean!
 """Whether to update the status of commits in Bitbucket or GitHub."""
 	publishCommitStatus: Boolean!
 """Whether to create a separate status for each job in a build, allowing you to see the status of each job directly in GitHub."""
@@ -5006,16 +5023,22 @@ type RepositoryProviderGitHubEnterpriseSettings implements RepositoryProviderSet
 	pullRequestBranchFilterConfiguration: String
 """Whether to limit the creation of builds to specific branches or patterns."""
 	pullRequestBranchFilterEnabled: Boolean!
+"""Whether to create a separate status for pull request builds, allowing you to require a passing pull request build in your required status checks in GitHub."""
+	separatePullRequestStatuses: Boolean!
 """Whether to skip creating a new build if a build for the commit and branch already exists."""
 	skipBuildsForExistingCommits: Boolean!
 """Whether to skip creating a new build for a pull request if an existing build for the commit and branch already exists."""
 	skipPullRequestBuildsForExistingCommits: Boolean!
+"""What type of event to trigger builds on."""
+	triggerMode: String!
 }
 
 """Settings for a GitHub repository."""
 type RepositoryProviderGitHubSettings implements RepositoryProviderSettings{
 """Whether to create builds when branches are pushed."""
 	buildBranches: Boolean!
+"""Whether to create builds for pull requests when the base branch is changed."""
+	buildPullRequestBaseBranchChanged: Boolean!
 """Whether to create builds for pull requests from third-party forks."""
 	buildPullRequestForks: Boolean!
 """Whether to create builds for pull requests when labels are added or removed."""
@@ -5208,10 +5231,10 @@ type Rule implements Node{
 
 """The action a rule enforces"""
 enum RuleAction {
-"""Trigger build"""
-	TRIGGER_BUILD
 """Artifacts read"""
 	ARTIFACTS_READ
+"""Trigger build"""
+	TRIGGER_BUILD
 }
 
 type RuleConnection implements Connection{
