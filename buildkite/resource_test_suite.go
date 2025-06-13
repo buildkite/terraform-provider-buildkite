@@ -388,3 +388,10 @@ func (ts *testSuiteResource) ImportState(ctx context.Context, req resource.Impor
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
 
+func setTestSuiteModel(testSuiteModel *testSuiteModel, suite *getTestSuiteSuite) {
+	testSuiteModel.Name = types.StringValue(suite.Name)
+	testSuiteModel.Slug = types.StringValue(suite.Slug)
+	testSuiteModel.UUID = types.StringValue(suite.Uuid)
+	testSuiteModel.DefaultBranch = types.StringValue(suite.DefaultBranch)
+	testSuiteModel.Emoji = types.StringPointerValue(suite.Emoji)
+}
