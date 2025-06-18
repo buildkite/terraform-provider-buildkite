@@ -266,7 +266,7 @@ func TestAccBuildkiteTestSuiteResource(t *testing.T) {
 			resource.TestCheckResourceAttrSet("buildkite_test_suite.suite", "slug"),
 			resource.TestCheckResourceAttr("buildkite_test_suite.suite", "default_branch", "main"),
 			resource.TestCheckResourceAttrSet("buildkite_test_suite.suite", "team_owner_id"),
-			resource.TestCheckResourceAttrWith("buildkite_test_suite.suite", "emoji", nil),
+			resource.TestCheckNoResourceAttr("buildkite_test_suite.suite", "emoji"),
 			resource.TestCheckResourceAttrSet("buildkite_test_suite.suite", "api_token"),
 		)
 
