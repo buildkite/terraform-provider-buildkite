@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- SUP-3991: Add ImportState to Test Suite Resource [[PR #934](https://github.com/buildkite/terraform-provider-buildkite/pull/934)] @tomowatt
+
 ## [v1.20.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.19.0...v1.20.0)
 
 - chore(deps): bump github.com/hashicorp/terraform-plugin-framework from 1.14.1 to 1.15.0 [[PR #924](https://github.com/buildkite/terraform-provider-buildkite/pull/924)] @dependabot

@@ -253,6 +253,40 @@ func TestAccBuildkiteTestSuiteResource(t *testing.T) {
 			},
 		})
 	})
+
+	t.Run("import a test suite", func(t *testing.T) {
+		var suite getTestSuiteSuite
+		resName := acctest.RandString(10)
+
+		check := resource.ComposeAggregateTestCheckFunc(
+			checkTestSuiteExists("buildkite_test_suite.suite", &suite),
+			resource.TestCheckResourceAttrSet("buildkite_test_suite.suite", "id"),
+			resource.TestCheckResourceAttrSet("buildkite_test_suite.suite", "uuid"),
+			resource.TestCheckResourceAttr("buildkite_test_suite.suite", "name", fmt.Sprintf("test suite %s", resName)),
+			resource.TestCheckResourceAttrSet("buildkite_test_suite.suite", "slug"),
+			resource.TestCheckResourceAttr("buildkite_test_suite.suite", "default_branch", "main"),
+			resource.TestCheckResourceAttrSet("buildkite_test_suite.suite", "team_owner_id"),
+			resource.TestCheckNoResourceAttr("buildkite_test_suite.suite", "emoji"),
+			resource.TestCheckResourceAttrSet("buildkite_test_suite.suite", "api_token"),
+		)
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			CheckDestroy:             testTestSuiteDestroy,
+			Steps: []resource.TestStep{
+				{
+					Config: basicTestSuite(resName),
+					Check:  check,
+				},
+				{
+					ResourceName:      "buildkite_test_suite.suite",
+					ImportState:       true,
+					ImportStateVerify: true,
+				},
+			},
+		})
+	})
 }
 
 func checkTestSuiteRemoteValue(suite *getTestSuiteSuite, property, value string) resource.TestCheckFunc {
