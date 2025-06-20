@@ -5,6 +5,7 @@ subcategory: ""
 description: |-
   This resource allows you to create and manage pipelines for repositories.
   More information on pipelines can be found in the documentation https://buildkite.com/docs/pipelines.
+  -> Note: When creating a new pipeline, the Buildkite API requires at least one team to be associated with it. You must use the 'default_team_id' attribute to specify this initial team. The 'buildkite_pipeline_team' resource can then be used to manage team access for existing pipelines.
 ---
 
 # buildkite_pipeline (Resource)
@@ -12,6 +13,8 @@ description: |-
 This resource allows you to create and manage pipelines for repositories.
 
 More information on pipelines can be found in the [documentation](https://buildkite.com/docs/pipelines).
+
+-> **Note:** When creating a new pipeline, the Buildkite API requires at least one team to be associated with it. You must use the 'default_team_id' attribute to specify this initial team. The 'buildkite_pipeline_team' resource can then be used to manage team access for existing pipelines.
 
 ## Example Usage
 
@@ -143,7 +146,7 @@ resource "github_repository_webhook" "my_webhook" {
 - `cluster_id` (String) Attach this pipeline to the given cluster GraphQL ID.
 - `color` (String) A color hex code to represent this pipeline.
 - `default_branch` (String) Default branch of the pipeline.
-- `default_team_id` (String) The GraphQL ID of the team to use as the default owner of the pipeline.
+- `default_team_id` (String) The GraphQL ID of a team to initially assign to the pipeline. This is required by the Buildkite API when creating a new pipeline. The team assigned here will be given 'Manage Build and Read' access. Further team associations can be managed with the `buildkite_pipeline_team` resource after the pipeline is created.
 - `default_timeout_in_minutes` (Number) Set pipeline wide timeout for command steps.
 - `description` (String) Description for the pipeline. Can include emoji 🙌.
 - `emoji` (String) An emoji that represents this pipeline.

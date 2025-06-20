@@ -429,6 +429,8 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 			This resource allows you to create and manage pipelines for repositories.
 
 			More information on pipelines can be found in the [documentation](https://buildkite.com/docs/pipelines).
+
+			-> **Note:** When creating a new pipeline, the Buildkite API requires at least one team to be associated with it. You must use the 'default_team_id' attribute to specify this initial team. The 'buildkite_pipeline_team' resource can then be used to manage team access for existing pipelines.
 		`),
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
@@ -483,7 +485,7 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 				Computed:            true,
 			},
 			"default_team_id": schema.StringAttribute{
-				MarkdownDescription: "The GraphQL ID of the team to use as the default owner of the pipeline.",
+				MarkdownDescription: "The GraphQL ID of a team to initially assign to the pipeline. This is required by the Buildkite API when creating a new pipeline. The team assigned here will be given 'Manage Build and Read' access. Further team associations can be managed with the `buildkite_pipeline_team` resource after the pipeline is created.",
 				Optional:            true,
 			},
 			"default_branch": schema.StringAttribute{
