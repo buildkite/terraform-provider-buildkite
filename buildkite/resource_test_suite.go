@@ -221,16 +221,45 @@ func (ts *testSuiteResource) Read(ctx context.Context, req resource.ReadRequest,
 			// and we didnt find another team with MANAGE_AND_READ
 			state.TeamOwnerId = types.StringUnknown()
 		}
+
+		if state.TeamOwnerId.IsUnknown() {
+			resp.Diagnostics.AddAttributeError(path.Root("team_owner_id"), "Could not find owning team", "No team matching")
+			return
+		}
+
+		setTestSuiteModel(&state, suite)
+
 	} else {
 		// Test suite was removed - remove from state
 		resp.Diagnostics.AddWarning("Test suite not found", "Removing test suite from state")
 		resp.State.RemoveResource(ctx)
+	}
+
+	// API Token only available from REST API
+	var response testSuiteResponse
+
+	// Construct URL to call to the REST API to get the API Token
+	url := fmt.Sprintf("/v2/analytics/organizations/%s/suites/%s?show_api_token=true", ts.client.organization, state.Slug.ValueString())
+	err = retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+		err := ts.client.makeRequest(ctx, "GET", url, nil, &response)
+		return retryContextError(err)
+	})
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Failed to read test suite API token",
+			fmt.Sprintf("Failed to read test suite API token: %s", err.Error()),
+		)
 		return
 	}
 
-	if state.TeamOwnerId.IsUnknown() {
-		resp.Diagnostics.AddAttributeError(path.Root("team_owner_id"), "Could not find owning team", "No team matching")
-		return
+	// Update API Token in State if it has changed or if it is null from importing into State
+	if response.ApiToken != state.ApiToken.ValueString() || state.ApiToken.IsNull() {
+		// The API Token can be regenerated, but 'terraform refresh' or 'terraform apply' is required to update State
+		// don't need a warning if it is null from importing into State
+		if !state.ApiToken.IsNull() {
+			resp.Diagnostics.AddAttributeWarning(path.Root("api_token"), "Test Suite API Token has changed", "Test Suite API Token has changed, \"run terraform refresh\" or \"terraform apply\" to update State")
+		}
+		state.ApiToken = types.StringValue(response.ApiToken)
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
@@ -382,4 +411,16 @@ func (ts *testSuiteResource) Update(ctx context.Context, req resource.UpdateRequ
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+}
+
+func (ts *testSuiteResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+}
+
+func setTestSuiteModel(testSuiteModel *testSuiteModel, suite *getTestSuiteSuite) {
+	testSuiteModel.Name = types.StringValue(suite.Name)
+	testSuiteModel.Slug = types.StringValue(suite.Slug)
+	testSuiteModel.UUID = types.StringValue(suite.Uuid)
+	testSuiteModel.DefaultBranch = types.StringValue(suite.DefaultBranch)
+	testSuiteModel.Emoji = types.StringPointerValue(suite.Emoji)
 }

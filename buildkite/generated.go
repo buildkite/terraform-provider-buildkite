@@ -1998,10 +1998,10 @@ const (
 type RuleAction string
 
 const (
-	// Trigger build
-	RuleActionTriggerBuild RuleAction = "TRIGGER_BUILD"
 	// Artifacts read
 	RuleActionArtifactsRead RuleAction = "ARTIFACTS_READ"
+	// Trigger build
+	RuleActionTriggerBuild RuleAction = "TRIGGER_BUILD"
 )
 
 // The effect a rule has
@@ -10755,7 +10755,7 @@ type getTestSuiteSuite struct {
 	// The default branch for this suite
 	DefaultBranch string `json:"defaultBranch"`
 	// The emoji that will display as a suite navatar in the Test Suites page
-	Emoji string `json:"emoji"`
+	Emoji *string `json:"emoji"`
 	// The name of the suite
 	Name string `json:"name"`
 	// The slug of the suite
@@ -10777,7 +10777,7 @@ func (v *getTestSuiteSuite) GetUuid() string { return v.Uuid }
 func (v *getTestSuiteSuite) GetDefaultBranch() string { return v.DefaultBranch }
 
 // GetEmoji returns getTestSuiteSuite.Emoji, and is useful for accessing the field via an interface.
-func (v *getTestSuiteSuite) GetEmoji() string { return v.Emoji }
+func (v *getTestSuiteSuite) GetEmoji() *string { return v.Emoji }
 
 // GetName returns getTestSuiteSuite.Name, and is useful for accessing the field via an interface.
 func (v *getTestSuiteSuite) GetName() string { return v.Name }
