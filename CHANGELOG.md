@@ -3,6 +3,7 @@
 ## [v1.21.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.20.0...v1.21.0)
 
 - SUP-3991: Add ImportState to Test Suite Resource [[PR #934](https://github.com/buildkite/terraform-provider-buildkite/pull/934)] @tomowatt
+- add buildkite_registry data resource [[PR #937](https://github.com/buildkite/terraform-provider-buildkite/pull/937)] @scadu
 
 ## [v1.20.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.19.0...v1.20.0)
 
