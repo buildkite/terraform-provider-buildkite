@@ -6,25 +6,21 @@ page_title: Upgrading to v1.0
 
 The Buildkite Terraform provider 1.0 is considered stable and ready for production use. If you have been using the
 provider prior to the 1.0 release, this guides you through upgrading.  
-If you are starting a new terraform project with this provider, you can start at <https://registry.terraform.io/providers/buildkite/buildkite/latest/docs>.
+If you are starting a new terraform project with this provider, you can start at https://registry.terraform.io/providers/buildkite/buildkite/latest/docs.
 
 ## New Features
 
 ### Protocol version 6
-
 The provider has been upgraded to protocol v6. It is therefor only compatible with terraform CLI version 1.0 and later.
 
 ### Cluster resources
-
-You are now able to manage cluster resources with the provider. This includes [`buildkite_cluster`](../resources/cluster.md), [`buildkite_cluster_queue`](../resources/cluster_queue.md), and
-[`buildkite_cluster_agent_token`](../resources/cluster_agent_token.md).
+You are now able to manage cluster resources with the provider. This includes [`buildkite_cluster`](../resources/cluster)., [`buildkite_cluster_queue`](../resources/cluster_queue), and
+[`buildkite_cluster_agent_token`](../resources/cluster_agent_token).
 
 ### Test Analytics resources
-
-You can now create test suites and assign teams access to them with [`buildkite_test_suite`](../resources/test_suite.md), and [`buildkite_test_suite_team`](../resources/test_suite_team.md).
+You can now create test suites and assign teams access to them with [`buildkite_test_suite`](../resources/test_suite), and [`buildkite_test_suite_team`](../resources/test_suite_team).
 
 ### Configurable API retry timeouts
-
 API retries and timeouts have been implemented in the majority of resources. This adds reliability to the provider
 around API latency and outages.
 
@@ -41,7 +37,6 @@ provider "buildkite" {
 ```
 
 ### Archive pipeline on delete
-
 Pipeline resources can now be archived instead of deleted when the resource is destroyed. This might be useful for users
 who wish to keep the history around but disable the pipeline. This is configurable at the provider level:
 
@@ -55,7 +50,6 @@ provider "buildkite" {
 ## Changed Features
 
 ### Pipeline resource `provider_settings` type change
-
 The `provider_settings` attribute on the pipeline resource has been completely overhauled. It is now a nested attribute
 (thanks to protocol v6) and has validation on its inner attributes.
 
@@ -84,25 +78,24 @@ resource "buildkite_pipeline" "pipeline" {
 ```
 
 ### Consistent IDs across resources
-
 All resources now use their GraphQL IDs as the primary ID in the schema.
 
 ## Removed Features
 
-- `team` attribute on pipeline resource has been removed. It is replaced by the separate resource [`buildkite_pipeline_team`](../resources/pipeline_team.md).
+- `team` attribute on pipeline resource has been removed. It is replaced by the separate resource [`buildkite_pipeline_team`](../resources/pipeline_team).
 
 ## Upgrade Guide
 
 ~> If you are coming from a 0.x release of the provider and using `buildkite_pipeline.team` attribute on your resources,
-you **must** upgrade to version 0.27.0 with the newer resource **using an Administrator scoped API Access Token** prior to upgrading to v1.0.
-See [Migrate pipeline.team usage to buildkite_pipeline_team resource](#migrate-pipelineteam-usage-to-buildkite_pipeline_team-resource) for more info.
+you **must** upgrade to version 0.27.0 with the newer resource **using an Administrator scoped API Access Token** prior to upgrading to v1.0. 
+See [Migrate pipeline.team usage to buildkite_pipeline_team resource](./upgrade-v1#migrate-pipelineteam-usage-to-buildkite_pipeline_team-resource) for more info.
 
 ### Backup the state file
 
 State file backups are created automatically by terraform. You should inspect your state storage location and ensure
 there is a valid backup available in the event of corruption from upgrading the provider.
 
-Refer to <https://developer.hashicorp.com/terraform/cli/state/recover> for more information.
+Refer to https://developer.hashicorp.com/terraform/cli/state/recover for more information.
 
 ### Pin provider version
 
@@ -131,7 +124,7 @@ The next step is to refresh your state file: `terraform refresh`.
 ### Migrate `pipeline.team` usage to `buildkite_pipeline_team` resource
 
 The `team` attribute on the `pipeline` resource was removed in v1.0 in favour of a separate resource:
-[`buildkite_pipeline_team`](../resources/pipeline_team.md).
+[`buildkite_pipeline_team`](../resources/pipeline_team).
 
 You'll need to upgrade your provider to version `0.27.0` and switch over to the new resource prior to upgrading to v1.0.
 
@@ -226,9 +219,9 @@ This is as simple as adding an equal sign (`=`) to the `provider_settings` attri
 The provider will transparently update the state file to the new schema version. This operation is not automatically
 reversible. If you run into issues from upgrading, please raise an issue on GitHub.
 
-See [Pipeline resource `provider_settings` type change](#pipeline-resource-provider_settings-type-change) for an example.
+See [Pipeline resource `provider_settings` type change](./upgrade-v1#pipeline-resource-provider_settings-type-change) for an example.
 
 #### Rolling back
 
 If you experience issues with the automatic upgrade you can revert your changes and re-instate the backup terraform
-state file. Follow the instructions from Terraform on disaster recovery: <https://developer.hashicorp.com/terraform/cli/state/recover>.
+state file. Follow the instructions from Terraform on disaster recovery: https://developer.hashicorp.com/terraform/cli/state/recover.
