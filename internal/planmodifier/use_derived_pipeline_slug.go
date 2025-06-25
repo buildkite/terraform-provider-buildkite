@@ -2,12 +2,27 @@ package planmodifier
 
 import (
 	"context"
-	"encoding/json"
+	"regexp"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
+
+var (
+	slugInvalidChars = regexp.MustCompile(`[^a-z0-9]+`)
+	slugRepeatHyphen = regexp.MustCompile(`-+`)
+)
+
+// Slugify generates a slug from a string, suitable for use in Buildkite URLs.
+func Slugify(s string) string {
+	s = strings.ToLower(s)
+	s = slugInvalidChars.ReplaceAllString(s, "-")
+	s = slugRepeatHyphen.ReplaceAllString(s, "-")
+	s = strings.Trim(s, "-")
+	return s
+}
 
 type useDerivedPipelineSlugModifier struct{}
 
@@ -23,50 +38,28 @@ func (useDerivedPipelineSlugModifier) MarkdownDescription(context.Context) strin
 
 // PlanModifyString implements planmodifier.String.
 func (m useDerivedPipelineSlugModifier) PlanModifyString(ctx context.Context, req planmodifier.StringRequest, resp *planmodifier.StringResponse) {
-	// Do nothing if there is no state value (new resource creation)
-	if req.StateValue.IsNull() {
+	// If the user has explicitly set a slug in their configuration, we don't need to do anything.
+	if !req.ConfigValue.IsNull() {
 		return
 	}
 
-	// Retrieve slugSource from private state
-	privateSlugSource, _ := req.Private.GetKey(ctx, "slugSource")
-
-	var slugSource map[string]interface{}
-	if err := json.Unmarshal(privateSlugSource, &slugSource); err != nil {
-		// Return unknown if slugSource missing from private state AND not user-defined
-		if req.ConfigValue.IsNull() {
-			resp.PlanValue = types.StringUnknown()
-		}
-		return
-	}
-	slugSourceVal := slugSource["source"].(string)
-
-	// Retrieve name from state, plan
-	var planValueName, stateValueName string
-	resp.Diagnostics.Append(req.State.GetAttribute(ctx, path.Root("name"), &stateValueName)...)
-	resp.Diagnostics.Append(req.Plan.GetAttribute(ctx, path.Root("name"), &planValueName)...)
-
-	if resp.Diagnostics.HasError() {
+	// If the plan already has a known slug for any other reason, do nothing.
+	if !req.PlanValue.IsUnknown() {
 		return
 	}
 
-	// Check if slug is user-provided attribute
-	if req.ConfigValue.IsNull() {
-		// Return unknown if slug not defined and previous slug source not API (re-generate slug from API)
-		if slugSourceVal != "api" {
-			resp.PlanValue = types.StringUnknown()
-			return
-		}
-		// Return unknown if name is changing (re-generate slug from API)
-		if planValueName != stateValueName {
-			resp.PlanValue = types.StringUnknown()
-			return
-		} else {
-			// Name not changed, Config provided matches value in state, set value to state (NoOp)
-			resp.PlanValue = req.StateValue
-			return
-		}
+	// Get pipeline name from plan
+	var planName types.String
+	diags := req.Plan.GetAttribute(ctx, path.Root("name"), &planName)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() || planName.IsUnknown() || planName.IsNull() {
+		return
 	}
+
+	// If the user has not specified a slug, we will derive it from the name.
+	// This handles creation, updates where the name changes, and updates
+	// where a user-defined slug is removed.
+	resp.PlanValue = types.StringValue(Slugify(planName.ValueString()))
 }
 
 func UseDerivedPipelineSlug() planmodifier.String {

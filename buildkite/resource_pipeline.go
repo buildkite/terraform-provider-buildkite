@@ -338,6 +338,11 @@ func (p *pipelineResource) Read(ctx context.Context, req resource.ReadRequest, r
 		return
 	}
 
+	// To support legacy state, if the slug is not set, we can derive it from the name
+	if (state.Slug.IsNull() || state.Slug.IsUnknown()) && !state.Name.IsUnknown() {
+		state.Slug = types.StringValue(custom_modifier.Slugify(state.Name.ValueString()))
+	}
+
 	var response *getNodeResponse
 	err := retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
 		var err error
@@ -567,6 +572,7 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 				},
 				PlanModifiers: []planmodifier.String{
 					custom_modifier.UseDerivedPipelineSlug(),
+					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
 			"steps": schema.StringAttribute{
@@ -865,19 +871,13 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 	if len(plan.Slug.ValueString()) > 0 {
 		useSlugValue = plan.Slug.ValueString()
 		if plan.Slug != state.Slug {
-			_, err := updatePipelineSlug(ctx, response.PipelineUpdate.Pipeline.Slug, useSlugValue, p.client, timeouts)
-			if err != nil {
+			if _, err := updatePipelineSlug(ctx, response.PipelineUpdate.Pipeline.Slug, useSlugValue, p.client, timeouts); err != nil {
 				resp.Diagnostics.AddError("Unable to set pipeline slug from REST", err.Error())
 				return
 			}
 
 			resp.Diagnostics.Append(resp.Private.SetKey(ctx, "slugSource", []byte(`{"source": "user"}`))...)
 		}
-	}
-
-	if err != nil {
-		resp.Diagnostics.AddError("Unable to set pipeline slug from REST", err.Error())
-		return
 	}
 
 	setPipelineModel(&state, &response.PipelineUpdate.Pipeline)
