@@ -13,6 +13,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -161,6 +162,26 @@ func newPipelineResource(archiveOnDelete *bool) func() resource.Resource {
 	}
 }
 
+// validateFilterConditionWithTriggerMode checks if filter_condition or filter_enabled is set
+// when trigger_mode is "none" and adds a warning if so
+func validateFilterConditionWithTriggerMode(providerSettings *providerSettingsModel, diagnostics *diag.Diagnostics) {
+	if providerSettings == nil {
+		return
+	}
+
+	filterConditionSet := !providerSettings.FilterCondition.IsNull() && providerSettings.FilterCondition.ValueString() != ""
+	filterEnabledSet := !providerSettings.FilterEnabled.IsNull() && providerSettings.FilterEnabled.ValueBool()
+
+	if filterConditionSet || filterEnabledSet {
+		if providerSettings.TriggerMode.IsNull() || providerSettings.TriggerMode.ValueString() == "none" {
+			diagnostics.AddWarning(
+				"`filter_condition` requires `trigger_mode` to be `code`",
+				"The `filter_condition` and `filter_enabled` attributes are only applicable when `trigger_mode` is set to `code`. They will be ignored when `trigger_mode` is `none` or not configured.",
+			)
+		}
+	}
+}
+
 func (p *pipelineResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
 	if req.ProviderData == nil {
 		return
@@ -176,6 +197,8 @@ func (p *pipelineResource) Create(ctx context.Context, req resource.CreateReques
 	if resp.Diagnostics.HasError() {
 		return
 	}
+
+	validateFilterConditionWithTriggerMode(plan.ProviderSettings, &resp.Diagnostics)
 
 	// use the unsafe module to convert to an int. this is fine because the absolute max accepted by the API is much
 	// less than an int
@@ -701,8 +724,8 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 					"filter_condition": schema.StringAttribute{
 						Computed: true,
 						Optional: true,
-						MarkdownDescription: "The condition to evaluate when deciding if a build should run." +
-							" More details available in [the documentation](https://buildkite.com/docs/pipelines/conditionals#conditionals-in-pipelines).",
+						MarkdownDescription: "The condition to evaluate when deciding if a build should run. This is only valid when `trigger_mode` is `code`. " +
+							"More details available in [the documentation](https://buildkite.com/docs/pipelines/conditionals#conditionals-in-pipelines).",
 					},
 					"publish_commit_status": schema.BoolAttribute{
 						Optional:            true,
@@ -814,6 +837,8 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 		return
 	}
 
+	validateFilterConditionWithTriggerMode(plan.ProviderSettings, &resp.Diagnostics)
+
 	defaultTimeoutInMinutes := (*int)(unsafe.Pointer(plan.DefaultTimeoutInMinutes.ValueInt64Pointer()))
 	maxTimeoutInMinutes := (*int)(unsafe.Pointer(plan.MaximumTimeoutInMinutes.ValueInt64Pointer()))
 
@@ -873,11 +898,6 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 
 			resp.Diagnostics.Append(resp.Private.SetKey(ctx, "slugSource", []byte(`{"source": "user"}`))...)
 		}
-	}
-
-	if err != nil {
-		resp.Diagnostics.AddError("Unable to set pipeline slug from REST", err.Error())
-		return
 	}
 
 	setPipelineModel(&state, &response.PipelineUpdate.Pipeline)
