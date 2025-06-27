@@ -184,7 +184,7 @@ Optional:
 - `ignore_default_branch_pull_requests` (Boolean) Whether to prevent caching pull requests with the source branch matching the default branch.
 - `prefix_pull_request_fork_branch_names` (Boolean) Prefix branch names for third-party fork builds to ensure they don't trigger branch conditions. For example, the main branch from some-user will become some-user:main.
 - `publish_blocked_as_pending` (Boolean) The status to use for blocked builds. Pending can be used with [required status checks](https://help.github.com/en/articles/enabling-required-status-checks) to prevent merging pull requests with blocked builds.
-- `publish_commit_status` (Boolean) Whether to update the status of commits in Bitbucket or GitHub.
+- `publish_commit_status` (Boolean) Whether to update the status of commits in Bitbucket, GitHub, or GitLab.
 - `publish_commit_status_per_step` (Boolean) Whether to create a separate status for each job in a build, allowing you to see the status of each job directly in Bitbucket or GitHub.
 - `pull_request_branch_filter_configuration` (String) Filter pull requests builds by the branch filter.
 - `pull_request_branch_filter_enabled` (Boolean) Filter pull request builds.

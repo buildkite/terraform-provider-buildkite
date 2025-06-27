@@ -707,7 +707,7 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 					"publish_commit_status": schema.BoolAttribute{
 						Optional:            true,
 						Computed:            true,
-						MarkdownDescription: "Whether to update the status of commits in Bitbucket or GitHub.",
+						MarkdownDescription: "Whether to update the status of commits in Bitbucket, GitHub, or GitLab.",
 					},
 					"publish_blocked_as_pending": schema.BoolAttribute{
 						Computed: true,
