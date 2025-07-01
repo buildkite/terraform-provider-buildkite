@@ -31,12 +31,7 @@ steps:
         docker-compose#v3.9.0:
           run: go
 
-  - label: "🔍 OSSF Scan"
-    plugins:
-      - ossf-scorecard#v1.0.0:
-          github_token: $$GITHUB_TOKEN
-
-  - label: docs
+ - label: docs
     key: docs
     command: .buildkite/steps/documentation.sh
     agents:
