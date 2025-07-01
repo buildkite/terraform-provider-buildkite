@@ -1,6 +1,6 @@
 steps:
   - group:
-    key: ":go: Setup"
+    key: "Setup"
     steps:
     - label: ":golangci-lint: lint"
       key: lint
