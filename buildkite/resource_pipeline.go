@@ -329,17 +329,26 @@ func (p *pipelineResource) Delete(ctx context.Context, req resource.DeleteReques
 	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		log.Printf("Deleting pipeline %s ...", state.Name.ValueString())
 		_, err := deletePipeline(ctx, p.client.genqlient, state.Id.ValueString())
+
 		if err != nil && isResourceNotFoundError(err) {
 			return nil
 		}
 
+		if err != nil && isActiveJobsError(err) {
+			log.Printf("Pipeline %s has active jobs, retrying deletion...", state.Name.ValueString())
+			return retry.RetryableError(err)
+		}
+
 		return retryContextError(err)
 	})
+
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Could not delete pipeline",
-			fmt.Sprintf("Could not delete pipeline: %s", err.Error()),
-		)
+		errorMsg := fmt.Sprintf("Could not delete pipeline: %s", err.Error())
+		if isActiveJobsError(err) {
+			errorMsg = fmt.Sprintf("Could not delete pipeline %s due to active jobs/builds: %s. Please wait for jobs to complete or cancel them manually before retrying.",
+				state.Name.ValueString(), err.Error())
+		}
+		resp.Diagnostics.AddError("Could not delete pipeline", errorMsg)
 	}
 }
 
