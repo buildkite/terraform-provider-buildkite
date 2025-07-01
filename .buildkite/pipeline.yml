@@ -1,7 +1,7 @@
 steps:
   - group: ":go: Setup"
     steps:
-    - label: ":golangci-lint: lint"
+    - label: ":golangci-lint: Lint"
       key: lint
       command : golangci-lint run --timeout 2m0s
       agents:
@@ -13,7 +13,7 @@ steps:
             volumes:
               - "/.cache/golangci-lint/v2.0.2:/root/.cache"
 
-    - label: vet
+    - label: ":go-gopher: Vet"
       key: vet
       command: "make vet"
       agents:
@@ -22,7 +22,7 @@ steps:
         docker-compose#v3.9.0:
           run: go
 
-    - label: test
+    - label: "🧪 Test"
       key: test
       command: "make test"
       agents:
