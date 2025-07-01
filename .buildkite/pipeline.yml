@@ -1,24 +1,41 @@
 steps:
-  - label: ":golangci-lint: lint"
-    key: lint
-    command : golangci-lint run --timeout 2m0s
-    agents:
-      queue: "hosted"
-    plugins:
-      - docker#v5.9.0:
-          image: "golangci/golangci-lint:v2.0.2"
-          always-pull: true
-          volumes:
-            - "/.cache/golangci-lint/v2.0.2:/root/.cache"
+  - group:
+    key: ":go: Setup"
+    steps:
+    - label: ":golangci-lint: lint"
+      key: lint
+      command : golangci-lint run --timeout 2m0s
+      agents:
+        queue: "hosted"
+      plugins:
+        - docker#v5.9.0:
+            image: "golangci/golangci-lint:v2.0.2"
+            always-pull: true
+            volumes:
+              - "/.cache/golangci-lint/v2.0.2:/root/.cache"
 
-  - label: vet
-    key: vet
-    command: "make vet"
-    agents:
-      queue: "hosted"
+    - label: vet
+      key: vet
+      command: "make vet"
+      agents:
+        queue: "hosted"
+      plugins:
+        docker-compose#v3.9.0:
+          run: go
+
+    - label: test
+      key: test
+      command: "make test"
+      agents:
+        queue: "hosted"
+      plugins:
+        docker-compose#v3.9.0:
+          run: go
+
+  - label: "🔍 OSSF Scan"
     plugins:
-      docker-compose#v3.9.0:
-        run: go
+      - ossf-scorecard#v1.0.0:
+          github_token: "$GITHUB_TOKEN"
 
   - label: docs
     key: docs
@@ -29,15 +46,6 @@ steps:
       docker-compose#v3.9.0:
         run: go
         mount-buildkite-agent: true
-
-  - label: test
-    key: test
-    command: "make test"
-    agents:
-      queue: "hosted"
-    plugins:
-      docker-compose#v3.9.0:
-        run: go
 
   - label: acceptance tests
     key: testacc
