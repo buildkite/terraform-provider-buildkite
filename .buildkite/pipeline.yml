@@ -31,7 +31,7 @@ steps:
         docker-compose#v3.9.0:
           run: go
 
- - label: docs
+  - label: docs
     key: docs
     command: .buildkite/steps/documentation.sh
     agents:
