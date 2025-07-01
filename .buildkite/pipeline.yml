@@ -1,6 +1,5 @@
 steps:
-  - group:
-    key: "Setup"
+  - group: ":go: Setup"
     steps:
     - label: ":golangci-lint: lint"
       key: lint
@@ -35,7 +34,7 @@ steps:
   - label: "🔍 OSSF Scan"
     plugins:
       - ossf-scorecard#v1.0.0:
-          github_token: "$GITHUB_TOKEN"
+          github_token: $$GITHUB_TOKEN
 
   - label: docs
     key: docs
