@@ -4,12 +4,8 @@ updates:
     directory: "/"
     schedule:
       interval: "monthly"
-    reviewers:
-      - "@buildkite/terraform-technical-services"
   - package-ecosystem: "gomod"
     directory: /
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 2
-    reviewers:
-      - "@buildkite/terraform-technical-services"
