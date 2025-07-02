@@ -14,6 +14,7 @@ import (
 )
 
 var resourceNotFoundRegex = regexp.MustCompile(`(?i)(No\s+\w+(\s+\w+)*\s+found|not\s+found|no\s+longer\s+exists)`)
+var activeJobsRegex = regexp.MustCompile(`(?i)(active\s+(builds|jobs)|running\s+(builds|jobs)|builds?\s+are\s+running|jobs?\s+are\s+running)`)
 
 // isResourceNotFoundError returns true if the error indicates the resource was not found
 func isResourceNotFoundError(err error) bool {
@@ -21,6 +22,14 @@ func isResourceNotFoundError(err error) bool {
 		return false
 	}
 	return resourceNotFoundRegex.MatchString(err.Error())
+}
+
+// isActiveJobsError returns true if the error indicates the pipeline has active jobs/builds preventing deletion
+func isActiveJobsError(err error) bool {
+	if err == nil {
+		return false
+	}
+	return activeJobsRegex.MatchString(err.Error())
 }
 
 // GetOrganizationID retrieves the Buildkite organization ID associated with the supplied slug
