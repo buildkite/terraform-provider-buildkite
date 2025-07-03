@@ -27,6 +27,8 @@ const (
 	MacInstanceMedium        string = "MACOS_M2_6X14"
 	MacInstanceLarge         string = "MACOS_M2_12X28"
 	MacInstanceXLarge        string = "MACOS_M4_12X56"
+	MacARM64InstanceM4Medium string = "MACOS_ARM64_M4_6X28"
+	MacARM64InstanceM4Large  string = "MACOS_ARM64_M4_12X56"
 	LinuxAMD64InstanceSmall  string = "LINUX_AMD64_2X4"
 	LinuxAMD64InstanceMedium string = "LINUX_AMD64_4X16"
 	LinuxAMD64InstanceLarge  string = "LINUX_AMD64_8X32"
@@ -42,6 +44,8 @@ var MacInstanceShapes = []string{
 	MacInstanceMedium,
 	MacInstanceLarge,
 	MacInstanceXLarge,
+	MacARM64InstanceM4Medium,
+	MacARM64InstanceM4Large,
 }
 
 var LinuxInstanceShapes = []string{

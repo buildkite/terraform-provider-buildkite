@@ -28,24 +28,24 @@ resource "buildkite_cluster_queue" "hosted_linux_small" {
   description = "Terraform queue for Hosted Linux"
 
   hosted_agents = {
-    instance_shape = "LINUX_ARM64_2X4"
+    instance_shape = "LINUX_AMD64_2X4"
 
     linux = {
-      agent_image_ref = "elixir:1.17.3-slim"
+      agent_image_ref = "ubuntu:24.04"
     }
   }
 }
 
-resource "buildkite_cluster_queue" "hosted_macos_small" {
+resource "buildkite_cluster_queue" "hosted_macos_medium" {
   cluster_id  = buildkite_cluster.test_cluster.id
-  key         = "hosted-macos-small"
+  key         = "hosted-macos-medium"
   description = "MacOS hosted agents via Terraform"
 
   hosted_agents = {
-    instance_shape = "MACOS_M2_4X7"
+    instance_shape = "MACOS_ARM64_M4_6X28"
 
     mac = {
-      xcode_version = "16.2"
+      xcode_version = "16.3"
     }
   }
 }
