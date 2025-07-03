@@ -24,10 +24,6 @@ import (
 
 const (
 	// Available instance shapes
-	MacInstanceSmall         string = "MACOS_M2_4X7"
-	MacInstanceMedium        string = "MACOS_M2_6X14"
-	MacInstanceLarge         string = "MACOS_M2_12X28"
-	MacInstanceXLarge        string = "MACOS_M4_12X56"
 	MacARM64InstanceM4Medium string = "MACOS_ARM64_M4_6X28"
 	MacARM64InstanceM4Large  string = "MACOS_ARM64_M4_12X56"
 	LinuxAMD64InstanceSmall  string = "LINUX_AMD64_2X4"
@@ -46,10 +42,6 @@ const (
 )
 
 var MacInstanceShapes = []string{
-	MacInstanceSmall,
-	MacInstanceMedium,
-	MacInstanceLarge,
-	MacInstanceXLarge,
 	MacARM64InstanceM4Medium,
 	MacARM64InstanceM4Large,
 }
