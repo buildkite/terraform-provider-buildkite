@@ -201,7 +201,6 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 							return err
 						},
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "steps", defaultSteps),
-						resource.TestCheckResourceAttrSet("buildkite_pipeline.pipeline", "slug"),
 					),
 				},
 				{
@@ -221,6 +220,7 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 							return nil
 						},
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "steps", defaultSteps),
+						resource.TestCheckResourceAttrSet("buildkite_pipeline.pipeline", "slug"),
 					),
 				},
 			},
