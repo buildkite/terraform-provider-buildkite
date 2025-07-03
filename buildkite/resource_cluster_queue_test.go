@@ -86,7 +86,7 @@ func TestAccBuildkiteClusterQueueResource(t *testing.T) {
             mac = {
                 xcode_version = "14.3.1"
             }
-            instance_shape = "MACOS_M2_4X7"
+            instance_shape = "MACOS_ARM64_M4_6X28"
         }
     }
     `, fields[0], fields[1], fields[2])
@@ -179,7 +179,7 @@ func TestAccBuildkiteClusterQueueResource(t *testing.T) {
             linux = {
                 agent_image_ref = "buildkite/agent:latest"
             }
-            instance_shape = "MACOS_M2_4X7"
+            instance_shape = "MACOS_ARM64_M4_6X28"
         }
     }
     `, fields[0], fields[1], fields[2])
@@ -213,7 +213,7 @@ func TestAccBuildkiteClusterQueueResource(t *testing.T) {
             linux = {
                 agent_image_ref = "buildkite/agent:latest"
             }
-            instance_shape = "MACOS_M2_4X7"
+            instance_shape = "MACOS_ARM64_M4_6X28"
         }
     }
     `, fields[0], fields[1], fields[2])
@@ -386,7 +386,7 @@ func TestAccBuildkiteClusterQueueResource(t *testing.T) {
 
 		check := resource.ComposeAggregateTestCheckFunc(
 			testAccCheckClusterQueueExists("buildkite_cluster_queue.foobar", &cq),
-			resource.TestCheckResourceAttr("buildkite_cluster_queue.foobar", "hosted_agents.instance_shape", "MACOS_M2_4X7"),
+			resource.TestCheckResourceAttr("buildkite_cluster_queue.foobar", "hosted_agents.instance_shape", "MACOS_ARM64_M4_6X28"),
 			resource.TestCheckResourceAttr("buildkite_cluster_queue.foobar", "hosted_agents.mac.xcode_version", "14.3.1"),
 		)
 
