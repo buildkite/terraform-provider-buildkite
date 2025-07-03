@@ -1125,6 +1125,7 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 					`, templateName, pipelineName),
 					Check: resource.ComposeAggregateTestCheckFunc(
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "steps", "steps: []"),
+						resource.TestCheckResourceAttrSet("buildkite_pipeline.pipeline", "slug"),
 					),
 				},
 			},
@@ -1170,6 +1171,7 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 					`, templateName, pipelineName),
 					Check: resource.ComposeAggregateTestCheckFunc(
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "steps", defaultSteps),
+						resource.TestCheckResourceAttrSet("buildkite_pipeline.pipeline", "slug"),
 					),
 				},
 			},
@@ -1213,6 +1215,7 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 					Check: resource.ComposeAggregateTestCheckFunc(
 						resource.TestCheckNoResourceAttr("buildkite_pipeline.pipeline", "steps"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "name", pipelineName),
+						resource.TestCheckResourceAttrSet("buildkite_pipeline.pipeline", "slug"),
 					),
 				},
 			},
@@ -1257,6 +1260,7 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 					Check: resource.ComposeAggregateTestCheckFunc(
 						resource.TestCheckNoResourceAttr("buildkite_pipeline.pipeline", "steps"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "name", pipelineName),
+						resource.TestCheckResourceAttrSet("buildkite_pipeline.pipeline", "slug"),
 					),
 				},
 			},
