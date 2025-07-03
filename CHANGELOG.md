@@ -1,5 +1,19 @@
 # Changelog
 
+## [v1.22.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.21.0...v1.22.0)
+
+- chore: Update CODEOWNERS by @tomowatt in https://github.com/buildkite/terraform-provider-buildkite/pull/942
+- feat(docs): add GitLab to list of platforms supporting commit statuses by @scadu in https://github.com/buildkite/terraform-provider-buildkite/pull/944
+- fix: update documentation for filter condition and trigger mode by @scadu in https://github.com/buildkite/terraform-provider-buildkite/pull/943
+- chore(deps): bump github.com/buildkite/go-pipeline from 0.13.3 to 0.14.0 by @dependabot in https://github.com/buildkite/terraform-provider-buildkite/pull/939
+- chore(deps): bump github.com/hashicorp/go-retryablehttp from 0.7.7 to 0.7.8 by @dependabot in https://github.com/buildkite/terraform-provider-buildkite/pull/938
+- chore: remove deprecated dependabot reviewers and annotation fixes by @tomowatt in https://github.com/buildkite/terraform-provider-buildkite/pull/947
+- feat(pipeline): add retry logic for delete with active jobs by @scadu in https://github.com/buildkite/terraform-provider-buildkite/pull/945
+- Convert the generate and schema commands to use go tool by @CerealBoy in https://github.com/buildkite/terraform-provider-buildkite/pull/948
+- Update the Graph with the latest definitions by @CerealBoy in https://github.com/buildkite/terraform-provider-buildkite/pull/949
+- chore(deps): bump golang from 1.24.3 to 1.24.4 by @dependabot in https://github.com/buildkite/terraform-provider-buildkite/pull/946
+- Ensure new macOS shapes are actually usable by @CerealBoy in https://github.com/buildkite/terraform-provider-buildkite/pull/950
+
 ## [v1.21.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.20.0...v1.21.0)
 
 - SUP-3991: Add ImportState to Test Suite Resource [[PR #934](https://github.com/buildkite/terraform-provider-buildkite/pull/934)] @tomowatt
