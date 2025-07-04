@@ -1,5 +1,10 @@
 # Changelog
 
+## [v1.22.1](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.22.0...v1.22.1)
+
+- Release v1.22.0 by @scadu in https://github.com/buildkite/terraform-provider-buildkite/pull/951
+- SUP-4151: Add description for instance_shape with deprecation notice  by @tomowatt in https://github.com/buildkite/terraform-provider-buildkite/pull/952
+
 ## [v1.22.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.21.0...v1.22.0)
 
 - chore: Update CODEOWNERS by @tomowatt in https://github.com/buildkite/terraform-provider-buildkite/pull/942
