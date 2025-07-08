@@ -898,15 +898,13 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 	resp.Diagnostics.Append(resp.Private.SetKey(ctx, "slugSource", []byte(`{"source": "api"}`))...)
 	if len(plan.Slug.ValueString()) > 0 {
 		useSlugValue = plan.Slug.ValueString()
-		if plan.Slug != state.Slug {
-			_, err := updatePipelineSlug(ctx, response.PipelineUpdate.Pipeline.Slug, useSlugValue, p.client, timeouts)
-			if err != nil {
-				resp.Diagnostics.AddError("Unable to set pipeline slug from REST", err.Error())
-				return
-			}
-
-			resp.Diagnostics.Append(resp.Private.SetKey(ctx, "slugSource", []byte(`{"source": "user"}`))...)
+		_, err := updatePipelineSlug(ctx, response.PipelineUpdate.Pipeline.Slug, useSlugValue, p.client, timeouts)
+		if err != nil {
+			resp.Diagnostics.AddError("Unable to set pipeline slug from REST", err.Error())
+			return
 		}
+
+		resp.Diagnostics.Append(resp.Private.SetKey(ctx, "slugSource", []byte(`{"source": "user"}`))...)
 	}
 
 	setPipelineModel(&state, &response.PipelineUpdate.Pipeline)

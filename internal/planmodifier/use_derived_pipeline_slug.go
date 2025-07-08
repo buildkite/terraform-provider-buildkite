@@ -57,13 +57,9 @@ func (m useDerivedPipelineSlugModifier) PlanModifyString(ctx context.Context, re
 			resp.PlanValue = types.StringUnknown()
 			return
 		}
-		// Return unknown if name is changing (re-generate slug from API)
+		// Return unknown if pipeline name is changing (re-generate slug from API)
 		if planValueName != stateValueName {
 			resp.PlanValue = types.StringUnknown()
-			return
-		} else {
-			// Name not changed, Config provided matches value in state, set value to state (NoOp)
-			resp.PlanValue = req.StateValue
 			return
 		}
 	}
