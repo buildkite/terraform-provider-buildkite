@@ -29,7 +29,7 @@ resource "buildkite_cluster_queue" "hosted_agents_macos" {
   dispatch_paused = true
 
   hosted_agents = {
-    instance_shape = "MACOS_M2_4X7"
+    instance_shape = "MACOS_ARM64_M4_6X28"
   }
 }
 
