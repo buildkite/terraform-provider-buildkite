@@ -45,8 +45,12 @@ steps:
     concurrency_group: terraform-provider-acceptance-tests
     command: .buildkite/steps/annotate.sh
     plugins:
-      - aws-assume-role-with-web-identity:
+      - aws-assume-role-with-web-identity#v1.4.0:
           role-arn: arn:aws:iam::445615400570:role/pipeline-buildkite-terraform-provider-buildkite-main
+          session-tags:
+            - organization_slug
+            - organization_id
+            - pipeline_slug
       - aws-ssm#v1.0.0:
           parameters:
             BUILDKITE_ORGANIZATION_SLUG: /pipelines/buildkite/terraform-provider-buildkite-main/buildkite_organization
