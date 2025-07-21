@@ -78,9 +78,118 @@ func (m providerSettingPlanModifier) PlanModifyString(ctx context.Context, req p
 type Cluster struct {
 	ID graphql.String
 }
-type Repository struct {
-	URL graphql.String
+
+// Common provider settings that are shared across multiple repository providers
+type CommonProviderSettings struct {
+	FilterCondition graphql.String
+	FilterEnabled   graphql.Boolean
 }
+
+// GitHub provider settings
+type GitHubProviderSettings struct {
+	CommonProviderSettings
+	BuildBranlers                           graphql.Boolean
+	BuildPullRequestBaseBranchChanged       graphql.Boolean
+	BuildPullRequestForks                   graphql.Boolean
+	BuildPullRequestLabelsChanged           graphql.Boolean
+	BuildPullRequestReadyForReview          graphql.Boolean
+	BuildPullRequests                       graphql.Boolean
+	BuildTags                               graphql.Boolean
+	CancelDeletedBranchBuilds               graphql.Boolean
+	IgnoreDefaultBranchPullRequests         graphql.Boolean
+	PrefixPullRequestForkBranchNames        graphql.Boolean
+	PublishBlockedAsPending                 graphql.Boolean
+	PublishCommitStatus                     graphql.Boolean
+	PublishCommitStatusPerStep              graphql.Boolean
+	PullRequestBranchFilterConfiguration    graphql.String
+	PullRequestBranchFilterEnabled          graphql.Boolean
+	SeparatePullRequestStatuses             graphql.Boolean
+	SkipBuildsForExistingCommits            graphql.Boolean
+	SkipPullRequestBuildsForExistingCommits graphql.Boolean
+	TriggerMode                             graphql.String
+}
+
+// GitLab provider settings
+type GitLabProviderSettings struct {
+	CommonProviderSettings
+}
+
+// Bitbucket provider settings (with aliases for some fields)
+type BitbucketProviderSettings struct {
+	CommonProviderSettings
+	BuildBranches                           graphql.Boolean
+	BuildPullRequests                       graphql.Boolean
+	BuildTags                               graphql.Boolean
+	CancelDeletedBranchBuilds               graphql.Boolean `graphql:"canceldeletedbranchbuilds"`
+	IgnoreDefaultBranchPullRequests         graphql.Boolean
+	PublishCommitStatus                     graphql.Boolean
+	PublishCommitStatusPerStep              graphql.Boolean
+	PullRequestBranchFilterConfiguration    graphql.String
+	PullRequestBranchFilterEnabled          graphql.Boolean
+	SkipBuildsForExistingCommits            graphql.Boolean `graphql:"skipbuildsforexistingcommits"`
+	SkipPullRequestBuildsForExistingCommits graphql.Boolean
+}
+
+// Bitbucket Server provider settings
+type BitbucketServerProviderSettings struct {
+	CommonProviderSettings
+	BuildBranches     graphql.Boolean
+	BuildPullRequests graphql.Boolean
+	BuildTags         graphql.Boolean
+}
+
+// Beanstalk provider settings
+type BeanstalkProviderSettings struct {
+	CommonProviderSettings
+}
+
+// Codebase provider settings
+type CodebaseProviderSettings struct {
+	CommonProviderSettings
+}
+
+// GitHub Enterprise provider settings (same as GitHub)
+type GitHubEnterpriseProviderSettings struct {
+	GitHubProviderSettings
+}
+
+// Unknown provider settings
+type UnknownProviderSettings struct {
+	CommonProviderSettings
+}
+
+// Repository represents the repository information from the GraphQL API
+type Repository struct {
+	URL      graphql.String
+	Provider struct {
+		Typename graphql.String `graphql:"__typename"`
+		Github   *struct {
+			Settings *GitHubProviderSettings `graphql:"... on RepositoryProviderGithub"`
+		} `graphql:"... on RepositoryProviderGithub"`
+		Gitlab *struct {
+			Settings *GitLabProviderSettings `graphql:"... on RepositoryProviderGitlab"`
+		} `graphql:"... on RepositoryProviderGitlab"`
+		Bitbucket *struct {
+			Settings *BitbucketProviderSettings `graphql:"... on RepositoryProviderBitbucket"`
+		} `graphql:"... on RepositoryProviderBitbucket"`
+		BitbucketServer *struct {
+			Settings *BitbucketServerProviderSettings `graphql:"... on RepositoryProviderBitbucketServer"`
+		} `graphql:"... on RepositoryProviderBitbucketServer"`
+		Beanstalk *struct {
+			Settings *BeanstalkProviderSettings `graphql:"... on RepositoryProviderBeanstalk"`
+		} `graphql:"... on RepositoryProviderBeanstalk"`
+		Codebase *struct {
+			Settings *CodebaseProviderSettings `graphql:"... on RepositoryProviderCodebase"`
+		} `graphql:"... on RepositoryProviderCodebase"`
+		GithubEnterprise *struct {
+			Settings *GitHubEnterpriseProviderSettings `graphql:"... on RepositoryProviderGithubEnterprise"`
+		} `graphql:"... on RepositoryProviderGithubEnterprise"`
+		Unknown *struct {
+			Settings *UnknownProviderSettings `graphql:"... on RepositoryProviderUnknown"`
+		} `graphql:"... on RepositoryProviderUnknown"`
+	} `graphql:"provider"`
+}
+
 type Steps struct {
 	YAML graphql.String
 }
@@ -427,21 +536,14 @@ func (p *pipelineResource) Read(ctx context.Context, req resource.ReadRequest, r
 	if pipelineNode, ok := response.Node.(*getNodeNodePipeline); ok {
 		// no pipeline with given ID found, set empty state
 		if pipelineNode == nil {
-			resp.Diagnostics.AddError("Unable to get pipeline", fmt.Sprintf("Unable to get pipeline with ID %s (%v)", state.Id.ValueString(), err))
-			return
-		}
-
-		extraInfo, err := getPipelineExtraInfo(ctx, p.client, pipelineNode.Slug, timeouts)
-		if err != nil {
-			resp.Diagnostics.AddError("Unable to read pipeline info from REST", err.Error())
+			resp.Diagnostics.AddError(
+				"Unable to get pipeline",
+				fmt.Sprintf("Unable to get pipeline with ID %s (%v)", state.Id.ValueString(), err),
+			)
 			return
 		}
 
 		setPipelineModel(&state, pipelineNode)
-
-		if state.ProviderSettings != nil {
-			updatePipelineResourceExtraInfo(&state, extraInfo)
-		}
 
 		// pipeline default team is a terraform concept only so it takes some coercing
 		err = p.setDefaultTeamIfExists(ctx, &state, &pipelineNode.Teams.PipelineTeam)
@@ -1117,6 +1219,113 @@ func setPipelineModel(model *pipelineResourceModel, data pipelineResponse) {
 	model.UUID = types.StringValue(data.GetPipelineUuid())
 	model.WebhookUrl = types.StringValue(data.GetWebhookURL())
 
+	// Set provider settings from GraphQL response if available
+	if model.ProviderSettings == nil {
+		model.ProviderSettings = &providerSettingsModel{}
+	}
+
+	// Check if we have provider settings from GraphQL
+	repo := data.GetRepository()
+
+	// Initialize provider settings if nil
+	if model.ProviderSettings == nil {
+		model.ProviderSettings = &providerSettingsModel{}
+	}
+
+	switch provider := repo.Provider.(type) {
+	case *PipelineFieldsRepositoryProviderRepositoryProviderGithub:
+		// GitHub provider settings
+		settings := provider.Settings
+		model.ProviderSettings.TriggerMode = types.StringPointerValue(&settings.TriggerMode)
+		model.ProviderSettings.BuildPullRequests = types.BoolPointerValue(&settings.BuildPullRequests)
+		model.ProviderSettings.BuildPullRequestForks = types.BoolPointerValue(&settings.BuildPullRequestForks)
+		model.ProviderSettings.BuildPullRequestLabelsChanged = types.BoolPointerValue(&settings.BuildPullRequestLabelsChanged)
+		model.ProviderSettings.BuildPullRequestReadyForReview = types.BoolPointerValue(&settings.BuildPullRequestReadyForReview)
+		model.ProviderSettings.BuildBranches = types.BoolPointerValue(&settings.BuildBranches)
+		model.ProviderSettings.BuildTags = types.BoolPointerValue(&settings.BuildTags)
+		model.ProviderSettings.CancelDeletedBranchBuilds = types.BoolPointerValue(&settings.CancelDeletedBranchBuilds)
+		model.ProviderSettings.FilterEnabled = types.BoolPointerValue(&settings.FilterEnabled)
+		model.ProviderSettings.FilterCondition = types.StringPointerValue(&settings.FilterCondition)
+		model.ProviderSettings.PublishCommitStatus = types.BoolPointerValue(&settings.PublishCommitStatus)
+		model.ProviderSettings.PublishBlockedAsPending = types.BoolPointerValue(&settings.PublishBlockedAsPending)
+		model.ProviderSettings.PublishCommitStatusPerStep = types.BoolPointerValue(&settings.PublishCommitStatusPerStep)
+		model.ProviderSettings.PullRequestBranchFilterEnabled = types.BoolPointerValue(&settings.PullRequestBranchFilterEnabled)
+		model.ProviderSettings.PullRequestBranchFilterConfiguration = types.StringPointerValue(&settings.PullRequestBranchFilterConfiguration)
+		model.ProviderSettings.SkipBuildsForExistingCommits = types.BoolPointerValue(&settings.SkipBuildsForExistingCommits)
+		model.ProviderSettings.SkipPullRequestBuildsForExistingCommits = types.BoolPointerValue(&settings.SkipPullRequestBuildsForExistingCommits)
+
+	case *PipelineFieldsRepositoryProviderRepositoryProviderGithubEnterprise:
+		// GitHub Enterprise provider settings (same as GitHub)
+		settings := provider.Settings
+		model.ProviderSettings.TriggerMode = types.StringPointerValue(&settings.TriggerMode)
+		model.ProviderSettings.BuildPullRequests = types.BoolPointerValue(&settings.BuildPullRequests)
+		model.ProviderSettings.BuildPullRequestForks = types.BoolPointerValue(&settings.BuildPullRequestForks)
+		model.ProviderSettings.BuildPullRequestLabelsChanged = types.BoolPointerValue(&settings.BuildPullRequestLabelsChanged)
+		model.ProviderSettings.BuildPullRequestReadyForReview = types.BoolPointerValue(&settings.BuildPullRequestReadyForReview)
+		model.ProviderSettings.BuildBranches = types.BoolPointerValue(&settings.BuildBranches)
+		model.ProviderSettings.BuildTags = types.BoolPointerValue(&settings.BuildTags)
+		model.ProviderSettings.CancelDeletedBranchBuilds = types.BoolPointerValue(&settings.CancelDeletedBranchBuilds)
+		model.ProviderSettings.FilterEnabled = types.BoolPointerValue(&settings.FilterEnabled)
+		model.ProviderSettings.FilterCondition = types.StringPointerValue(&settings.FilterCondition)
+		model.ProviderSettings.PublishCommitStatus = types.BoolPointerValue(&settings.PublishCommitStatus)
+		model.ProviderSettings.PublishBlockedAsPending = types.BoolPointerValue(&settings.PublishBlockedAsPending)
+		model.ProviderSettings.PublishCommitStatusPerStep = types.BoolPointerValue(&settings.PublishCommitStatusPerStep)
+		model.ProviderSettings.PullRequestBranchFilterEnabled = types.BoolPointerValue(&settings.PullRequestBranchFilterEnabled)
+		model.ProviderSettings.PullRequestBranchFilterConfiguration = types.StringPointerValue(&settings.PullRequestBranchFilterConfiguration)
+		model.ProviderSettings.SkipBuildsForExistingCommits = types.BoolPointerValue(&settings.SkipBuildsForExistingCommits)
+		model.ProviderSettings.SkipPullRequestBuildsForExistingCommits = types.BoolPointerValue(&settings.SkipPullRequestBuildsForExistingCommits)
+
+	case *PipelineFieldsRepositoryProviderRepositoryProviderGitlab:
+		// GitLab provider settings
+		settings := provider.Settings // Not a pointer for GitLab
+		model.ProviderSettings.FilterEnabled = types.BoolValue(settings.FilterEnabled)
+		model.ProviderSettings.FilterCondition = types.StringValue(settings.FilterCondition)
+
+	case *PipelineFieldsRepositoryProviderRepositoryProviderBitbucket:
+		// Bitbucket provider settings
+		settings := provider.Settings
+		model.ProviderSettings.BuildBranches = types.BoolPointerValue(&settings.BuildBranches)
+		model.ProviderSettings.BuildPullRequests = types.BoolPointerValue(&settings.BuildPullRequests)
+		model.ProviderSettings.BuildTags = types.BoolPointerValue(&settings.BuildTags)
+		// Use the aliased field name from the GraphQL query
+		model.ProviderSettings.CancelDeletedBranchBuilds = types.BoolPointerValue(&settings.Canceldeletedbranchbuilds)
+		model.ProviderSettings.FilterEnabled = types.BoolPointerValue(&settings.FilterEnabled)
+		model.ProviderSettings.FilterCondition = types.StringPointerValue(&settings.FilterCondition)
+		model.ProviderSettings.IgnoreDefaultBranchPullRequests = types.BoolPointerValue(&settings.IgnoreDefaultBranchPullRequests)
+		model.ProviderSettings.PublishCommitStatus = types.BoolPointerValue(&settings.PublishCommitStatus)
+		model.ProviderSettings.PublishCommitStatusPerStep = types.BoolPointerValue(&settings.PublishCommitStatusPerStep)
+		model.ProviderSettings.PullRequestBranchFilterEnabled = types.BoolPointerValue(&settings.PullRequestBranchFilterEnabled)
+		model.ProviderSettings.PullRequestBranchFilterConfiguration = types.StringPointerValue(&settings.PullRequestBranchFilterConfiguration)
+		// Use the aliased field name from the GraphQL query
+		model.ProviderSettings.SkipBuildsForExistingCommits = types.BoolPointerValue(&settings.Skipbuildsforexistingcommits)
+		model.ProviderSettings.SkipPullRequestBuildsForExistingCommits = types.BoolPointerValue(&settings.SkipPullRequestBuildsForExistingCommits)
+
+	case *PipelineFieldsRepositoryProviderRepositoryProviderBitbucketServer:
+		// Bitbucket Server provider settings
+		settings := provider.Settings
+		model.ProviderSettings.BuildBranches = types.BoolPointerValue(&settings.BuildBranches)
+		model.ProviderSettings.BuildPullRequests = types.BoolPointerValue(&settings.BuildPullRequests)
+		model.ProviderSettings.BuildTags = types.BoolPointerValue(&settings.BuildTags)
+		model.ProviderSettings.FilterEnabled = types.BoolPointerValue(&settings.FilterEnabled)
+		model.ProviderSettings.FilterCondition = types.StringPointerValue(&settings.FilterCondition)
+
+	case *PipelineFieldsRepositoryProviderRepositoryProviderBeanstalk,
+		*PipelineFieldsRepositoryProviderRepositoryProviderCodebase,
+		*PipelineFieldsRepositoryProviderRepositoryProviderUnknown:
+		// These providers only have filter settings
+		switch s := provider.(type) {
+		case *PipelineFieldsRepositoryProviderRepositoryProviderBeanstalk:
+			model.ProviderSettings.FilterEnabled = types.BoolValue(s.Settings.FilterEnabled)
+			model.ProviderSettings.FilterCondition = types.StringValue(s.Settings.FilterCondition)
+		case *PipelineFieldsRepositoryProviderRepositoryProviderCodebase:
+			model.ProviderSettings.FilterEnabled = types.BoolValue(s.Settings.FilterEnabled)
+			model.ProviderSettings.FilterCondition = types.StringValue(s.Settings.FilterCondition)
+		case *PipelineFieldsRepositoryProviderRepositoryProviderUnknown:
+			model.ProviderSettings.FilterEnabled = types.BoolValue(s.Settings.FilterEnabled)
+			model.ProviderSettings.FilterCondition = types.StringValue(s.Settings.FilterCondition)
+		}
+	}
+
 	// only set template or steps. steps is always updated even if using a template, but its redundant and creates
 	// complications later
 	if data.GetPipelineTemplate().Id != nil {
@@ -1172,20 +1381,6 @@ type PipelineExtraSettings struct {
 	PublishCommitStatusPerStep              *bool   `json:"publish_commit_status_per_step,omitempty"`
 	SeparatePullRequestStatuses             *bool   `json:"separate_pull_request_statuses,omitempty"`
 	IgnoreDefaultBranchPullRequests         *bool   `json:"ignore_default_branch_pull_requests"`
-}
-
-func getPipelineExtraInfo(ctx context.Context, client *Client, slug string, timeouts time.Duration) (*PipelineExtraInfo, error) {
-	var pipelineExtraInfo PipelineExtraInfo
-
-	err := retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
-		err := client.makeRequest(ctx, "GET", fmt.Sprintf("/v2/organizations/%s/pipelines/%s", client.organization, slug), nil, &pipelineExtraInfo)
-		return retryContextError(err)
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return &pipelineExtraInfo, nil
 }
 
 func updatePipelineSlug(ctx context.Context, slug string, updatedSlug string, client *Client, timeouts time.Duration) (PipelineExtraInfo, error) {
