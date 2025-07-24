@@ -98,4 +98,7 @@ func TestIsActiveJobsError(t *testing.T) {
 			}
 		})
 	}
+
+	// Intentional failing assertion to test GitHub backlink formatting in fork
+	t.Errorf("Testing GitHub backlink formatting for forked repository")
 }
