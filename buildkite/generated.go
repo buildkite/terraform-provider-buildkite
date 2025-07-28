@@ -656,6 +656,24 @@ var AllHostedAgentMachineType = []HostedAgentMachineType{
 	HostedAgentMachineTypeMacos,
 }
 
+// Possible macOS versions for the Hosted Agent instance
+type HostedAgentMacosVersion string
+
+const (
+	// macOS Sonoma (14.6.1)
+	HostedAgentMacosVersionSonoma HostedAgentMacosVersion = "SONOMA"
+	// macOS Sequoia (15.5)
+	HostedAgentMacosVersionSequoia HostedAgentMacosVersion = "SEQUOIA"
+	// macOS Tahoe (26.0)
+	HostedAgentMacosVersionTahoe HostedAgentMacosVersion = "TAHOE"
+)
+
+var AllHostedAgentMacosVersion = []HostedAgentMacosVersion{
+	HostedAgentMacosVersionSonoma,
+	HostedAgentMacosVersionSequoia,
+	HostedAgentMacosVersionTahoe,
+}
+
 // Possible sizes for the hosted agent instance, specifying vCPU and memory allocations.
 type HostedAgentSize string
 
@@ -690,10 +708,17 @@ func (v *HostedAgentsLinuxPlatformSettingsInput) GetAgentImageRef() *string { re
 type HostedAgentsMacosPlatformSettingsInput struct {
 	// Settings for Mac hosted agents on this queue
 	XcodeVersion *string `json:"xcodeVersion"`
+	// Settings for Mac hosted agents on this queue
+	MacosVersion HostedAgentMacosVersion `json:"macosVersion"`
 }
 
 // GetXcodeVersion returns HostedAgentsMacosPlatformSettingsInput.XcodeVersion, and is useful for accessing the field via an interface.
 func (v *HostedAgentsMacosPlatformSettingsInput) GetXcodeVersion() *string { return v.XcodeVersion }
+
+// GetMacosVersion returns HostedAgentsMacosPlatformSettingsInput.MacosVersion, and is useful for accessing the field via an interface.
+func (v *HostedAgentsMacosPlatformSettingsInput) GetMacosVersion() HostedAgentMacosVersion {
+	return v.MacosVersion
+}
 
 // Settings for hosted agents on this queue
 type HostedAgentsPlatformSettingsInput struct {
@@ -866,11 +891,18 @@ func (v *HostedAgentsQueueSettingsValuesPlatformSettingsHostedAgentPlatformSetti
 type HostedAgentsQueueSettingsValuesPlatformSettingsHostedAgentPlatformSettingsMacosHostedAgentMacOSSettingsType struct {
 	// The Xcode version to pre-select (via xcode-select) on macOS hosted agent instances for this cluster queue.
 	XcodeVersion string `json:"xcodeVersion"`
+	// The macOS version to use for macOS hosted agent instances for this cluster queue.
+	MacosVersion *string `json:"macosVersion"`
 }
 
 // GetXcodeVersion returns HostedAgentsQueueSettingsValuesPlatformSettingsHostedAgentPlatformSettingsMacosHostedAgentMacOSSettingsType.XcodeVersion, and is useful for accessing the field via an interface.
 func (v *HostedAgentsQueueSettingsValuesPlatformSettingsHostedAgentPlatformSettingsMacosHostedAgentMacOSSettingsType) GetXcodeVersion() string {
 	return v.XcodeVersion
+}
+
+// GetMacosVersion returns HostedAgentsQueueSettingsValuesPlatformSettingsHostedAgentPlatformSettingsMacosHostedAgentMacOSSettingsType.MacosVersion, and is useful for accessing the field via an interface.
+func (v *HostedAgentsQueueSettingsValuesPlatformSettingsHostedAgentPlatformSettingsMacosHostedAgentMacOSSettingsType) GetMacosVersion() *string {
+	return v.MacosVersion
 }
 
 // OrganizationBannerFields includes the GraphQL fields of OrganizationBanner requested by the fragment OrganizationBannerFields.
@@ -15141,6 +15173,7 @@ fragment HostedAgentsQueueSettingsValues on HostedAgentQueueSettings {
 		}
 		macos {
 			xcodeVersion
+			macosVersion
 		}
 	}
 }
@@ -16183,6 +16216,7 @@ fragment HostedAgentsQueueSettingsValues on HostedAgentQueueSettings {
 		}
 		macos {
 			xcodeVersion
+			macosVersion
 		}
 	}
 }
@@ -17562,6 +17596,7 @@ fragment HostedAgentsQueueSettingsValues on HostedAgentQueueSettings {
 		}
 		macos {
 			xcodeVersion
+			macosVersion
 		}
 	}
 }

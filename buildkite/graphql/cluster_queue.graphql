@@ -13,6 +13,8 @@ fragment HostedAgentsQueueSettingsValues on HostedAgentQueueSettings {
         }
         macos {
             xcodeVersion
+            # @genqlient(pointer: true)
+            macosVersion
         }
     }
 }
