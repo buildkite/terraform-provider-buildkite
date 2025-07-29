@@ -217,9 +217,6 @@ func (clusterQueueResource) Schema(ctx context.Context, req resource.SchemaReque
 								append(MacInstanceShapes, LinuxInstanceShapes...)...,
 							),
 						},
-						PlanModifiers: []planmodifier.String{
-							stringplanmodifier.RequiresReplace(),
-						},
 					},
 				},
 			},
