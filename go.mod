@@ -4,7 +4,7 @@ go 1.24.0
 
 require (
 	github.com/Khan/genqlient v0.8.1
-	github.com/buildkite/go-pipeline v0.14.0
+	github.com/buildkite/go-pipeline v0.15.0
 	github.com/buildkite/interpolate v0.1.5
 	github.com/hashicorp/go-retryablehttp v0.7.8
 	github.com/hashicorp/terraform-plugin-framework v1.15.0
