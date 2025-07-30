@@ -63,6 +63,15 @@ steps:
           files: junit-*.xml
           format: junit
 
+  - label: "Security Scan"
+    key: security_scan
+    plugins:
+      - secrets#v1.0.0:
+          variables:
+            SCORECARD_TOKEN: GITHUB_TOKEN
+      - ossf-scorecard#v1.0.0:
+          github_token: $$SCORECARD_TOKEN
+
   - label: build
     command: "make build-snapshot"
     agents:
