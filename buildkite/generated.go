@@ -641,6 +641,24 @@ var AllHostedAgentInstanceShapeName = []HostedAgentInstanceShapeName{
 	HostedAgentInstanceShapeNameMacosArm64M412x56,
 }
 
+// Possible macOS versions for the Hosted Agent instance
+type HostedAgentMacOSVersion string
+
+const (
+	// macOS Sonoma (14.6.1)
+	HostedAgentMacOSVersionSonoma HostedAgentMacOSVersion = "SONOMA"
+	// macOS Sequoia (15.5)
+	HostedAgentMacOSVersionSequoia HostedAgentMacOSVersion = "SEQUOIA"
+	// macOS Tahoe (26.0)
+	HostedAgentMacOSVersionTahoe HostedAgentMacOSVersion = "TAHOE"
+)
+
+var AllHostedAgentMacOSVersion = []HostedAgentMacOSVersion{
+	HostedAgentMacOSVersionSonoma,
+	HostedAgentMacOSVersionSequoia,
+	HostedAgentMacOSVersionTahoe,
+}
+
 // Possible machine types for the hosted agent instance
 type HostedAgentMachineType string
 
@@ -654,24 +672,6 @@ const (
 var AllHostedAgentMachineType = []HostedAgentMachineType{
 	HostedAgentMachineTypeLinux,
 	HostedAgentMachineTypeMacos,
-}
-
-// Possible macOS versions for the Hosted Agent instance
-type HostedAgentMacosVersion string
-
-const (
-	// macOS Sonoma (14.6.1)
-	HostedAgentMacosVersionSonoma HostedAgentMacosVersion = "SONOMA"
-	// macOS Sequoia (15.5)
-	HostedAgentMacosVersionSequoia HostedAgentMacosVersion = "SEQUOIA"
-	// macOS Tahoe (26.0)
-	HostedAgentMacosVersionTahoe HostedAgentMacosVersion = "TAHOE"
-)
-
-var AllHostedAgentMacosVersion = []HostedAgentMacosVersion{
-	HostedAgentMacosVersionSonoma,
-	HostedAgentMacosVersionSequoia,
-	HostedAgentMacosVersionTahoe,
 }
 
 // Possible sizes for the hosted agent instance, specifying vCPU and memory allocations.
@@ -709,14 +709,14 @@ type HostedAgentsMacosPlatformSettingsInput struct {
 	// Settings for Mac hosted agents on this queue
 	XcodeVersion *string `json:"xcodeVersion"`
 	// Settings for Mac hosted agents on this queue
-	MacosVersion HostedAgentMacosVersion `json:"macosVersion"`
+	MacosVersion HostedAgentMacOSVersion `json:"macosVersion"`
 }
 
 // GetXcodeVersion returns HostedAgentsMacosPlatformSettingsInput.XcodeVersion, and is useful for accessing the field via an interface.
 func (v *HostedAgentsMacosPlatformSettingsInput) GetXcodeVersion() *string { return v.XcodeVersion }
 
 // GetMacosVersion returns HostedAgentsMacosPlatformSettingsInput.MacosVersion, and is useful for accessing the field via an interface.
-func (v *HostedAgentsMacosPlatformSettingsInput) GetMacosVersion() HostedAgentMacosVersion {
+func (v *HostedAgentsMacosPlatformSettingsInput) GetMacosVersion() HostedAgentMacOSVersion {
 	return v.MacosVersion
 }
 
@@ -892,7 +892,7 @@ type HostedAgentsQueueSettingsValuesPlatformSettingsHostedAgentPlatformSettingsM
 	// The Xcode version to pre-select (via xcode-select) on macOS hosted agent instances for this cluster queue.
 	XcodeVersion string `json:"xcodeVersion"`
 	// The macOS version to use for macOS hosted agent instances for this cluster queue.
-	MacosVersion *string `json:"macosVersion"`
+	MacosVersion *HostedAgentMacOSVersion `json:"macosVersion"`
 }
 
 // GetXcodeVersion returns HostedAgentsQueueSettingsValuesPlatformSettingsHostedAgentPlatformSettingsMacosHostedAgentMacOSSettingsType.XcodeVersion, and is useful for accessing the field via an interface.
@@ -901,7 +901,7 @@ func (v *HostedAgentsQueueSettingsValuesPlatformSettingsHostedAgentPlatformSetti
 }
 
 // GetMacosVersion returns HostedAgentsQueueSettingsValuesPlatformSettingsHostedAgentPlatformSettingsMacosHostedAgentMacOSSettingsType.MacosVersion, and is useful for accessing the field via an interface.
-func (v *HostedAgentsQueueSettingsValuesPlatformSettingsHostedAgentPlatformSettingsMacosHostedAgentMacOSSettingsType) GetMacosVersion() *string {
+func (v *HostedAgentsQueueSettingsValuesPlatformSettingsHostedAgentPlatformSettingsMacosHostedAgentMacOSSettingsType) GetMacosVersion() *HostedAgentMacOSVersion {
 	return v.MacosVersion
 }
 

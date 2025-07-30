@@ -2765,11 +2765,29 @@ type HostedAgentMacOSSettingsType {
 """
 The macOS version to use for macOS hosted agent instances for this cluster queue.
 """
-	macosVersion: String
+	macosVersion: HostedAgentMacOSVersion
 """
 The Xcode version to pre-select (via xcode-select) on macOS hosted agent instances for this cluster queue.
 """
 	xcodeVersion: String
+}
+
+"""
+Possible macOS versions for the Hosted Agent instance
+"""
+enum HostedAgentMacOSVersion {
+"""
+macOS Sonoma (14.6.1)
+"""
+	SONOMA
+"""
+macOS Sequoia (15.5)
+"""
+	SEQUOIA
+"""
+macOS Tahoe (26.0)
+"""
+	TAHOE
 }
 
 """
@@ -2784,24 +2802,6 @@ Linux
 macOS
 """
 	MACOS
-}
-
-"""
-Possible macOS versions for the Hosted Agent instance
-"""
-enum HostedAgentMacosVersion {
-"""
-macOS Sonoma (14.6.1)
-"""
-	SONOMA
-"""
-macOS Sequoia (15.5)
-"""
-	SEQUOIA
-"""
-macOS Tahoe (26.0)
-"""
-	TAHOE
 }
 
 """
@@ -2875,7 +2875,7 @@ Settings for Mac hosted agents on this queue
 """
 Settings for Mac hosted agents on this queue
 """
-	macosVersion: HostedAgentMacosVersion
+	macosVersion: HostedAgentMacOSVersion
 }
 
 """
