@@ -491,7 +491,7 @@ func (cq *clusterQueueResource) Update(ctx context.Context, req resource.UpdateR
 			}
 
 			if !plan.HostedAgents.Mac.MacosVersion.IsNull() {
-				var version HostedAgentMacOSVersion = HostedAgentMacOSVersion(plan.HostedAgents.Mac.MacosVersion.ValueString())
+				version := HostedAgentMacOSVersion(plan.HostedAgents.Mac.MacosVersion.ValueString())
 				hosted.PlatformSettings.Macos.MacosVersion = &version
 			}
 		}
