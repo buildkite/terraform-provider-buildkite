@@ -45,6 +45,7 @@ resource "buildkite_cluster_queue" "hosted_macos_medium" {
     instance_shape = "MACOS_ARM64_M4_6X28"
 
     mac = {
+      macos_version = "SEQUOIA"
       xcode_version = "16.3"
     }
   }

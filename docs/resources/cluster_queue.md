@@ -128,7 +128,11 @@ Required:
 
 Required:
 
-- `xcode_version` (String) Optional selection of a specific XCode version to be selected for jobs in the queue to have available. Please note that this value is currently experimental and may not function as expected.
+- `xcode_version` (String) Required selection of a specific XCode version to be selected for jobs in the queue to have available. Please note that this value is currently experimental and may not function as expected.
+
+Optional:
+
+- `macos_version` (String) Optional selection of a specific macOS version to be selected for jobs in the queue to have available. Please note that this value is currently experimental and may not function as expected.
 
 ## Import
 
