@@ -709,14 +709,14 @@ type HostedAgentsMacosPlatformSettingsInput struct {
 	// Settings for Mac hosted agents on this queue
 	XcodeVersion *string `json:"xcodeVersion"`
 	// Settings for Mac hosted agents on this queue
-	MacosVersion HostedAgentMacOSVersion `json:"macosVersion"`
+	MacosVersion *HostedAgentMacOSVersion `json:"macosVersion"`
 }
 
 // GetXcodeVersion returns HostedAgentsMacosPlatformSettingsInput.XcodeVersion, and is useful for accessing the field via an interface.
 func (v *HostedAgentsMacosPlatformSettingsInput) GetXcodeVersion() *string { return v.XcodeVersion }
 
 // GetMacosVersion returns HostedAgentsMacosPlatformSettingsInput.MacosVersion, and is useful for accessing the field via an interface.
-func (v *HostedAgentsMacosPlatformSettingsInput) GetMacosVersion() HostedAgentMacOSVersion {
+func (v *HostedAgentsMacosPlatformSettingsInput) GetMacosVersion() *HostedAgentMacOSVersion {
 	return v.MacosVersion
 }
 

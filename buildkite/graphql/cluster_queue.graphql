@@ -71,6 +71,7 @@ query getClusterQueues(
 # @genqlient(for: "HostedAgentsPlatformSettingsInput.macos", pointer: true, omitempty: true)
 # @genqlient(for: "HostedAgentsLinuxPlatformSettingsInput.agentImageRef", pointer: true)
 # @genqlient(for: "HostedAgentsMacosPlatformSettingsInput.xcodeVersion", pointer: true)
+# @genqlient(for: "HostedAgentsMacosPlatformSettingsInput.macosVersion", pointer: true)
 mutation createClusterQueue(
     $organizationId: ID!
     $clusterId: ID!
@@ -99,6 +100,7 @@ mutation createClusterQueue(
 # @genqlient(for: "HostedAgentsPlatformSettingsInput.macos", pointer: true, omitempty: true)
 # @genqlient(for: "HostedAgentsLinuxPlatformSettingsInput.agentImageRef", pointer: true)
 # @genqlient(for: "HostedAgentsMacosPlatformSettingsInput.xcodeVersion", pointer: true)
+# @genqlient(for: "HostedAgentsMacosPlatformSettingsInput.macosVersion", pointer: true)
 mutation updateClusterQueue(
     $organizationId: ID!
     $id: ID!

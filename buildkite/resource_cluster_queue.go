@@ -40,9 +40,9 @@ const (
 	LinuxARM64InstanceXLarge string = "LINUX_ARM64_16X64"
 
 	// Available macOS versions
-	MacosSonoma  string = "SONOMA"
-	MacosSequoia string = "SEQUOIA"
-	MacosTahoe   string = "TAHOE"
+	MacOSSonoma  string = "SONOMA"
+	MacOSSequoia string = "SEQUOIA"
+	MacOSTahoe   string = "TAHOE"
 )
 
 var MacInstanceShapes = []string{
@@ -65,10 +65,10 @@ var LinuxInstanceShapes = []string{
 	LinuxARM64InstanceXLarge,
 }
 
-var MacosVersions = []string{
-	MacosSonoma,
-	MacosSequoia,
-	MacosTahoe,
+var MacOSVersions = []string{
+	MacOSSonoma,
+	MacOSSequoia,
+	MacOSTahoe,
 }
 
 type clusterQueueResourceModel struct {
@@ -270,11 +270,21 @@ func (cq *clusterQueueResource) Create(ctx context.Context, req resource.CreateR
 				},
 			}
 		} else if plan.HostedAgents.Mac != nil {
-			hosted.PlatformSettings = HostedAgentsPlatformSettingsInput{
-				Macos: &HostedAgentsMacosPlatformSettingsInput{
-					XcodeVersion: plan.HostedAgents.Mac.XcodeVersion.ValueStringPointer(),
-					MacosVersion: HostedAgentMacosVersion(plan.HostedAgents.Mac.MacosVersion.ValueString()),
-				},
+			if plan.HostedAgents.Mac.MacosVersion.IsNull() {
+				hosted.PlatformSettings = HostedAgentsPlatformSettingsInput{
+					Macos: &HostedAgentsMacosPlatformSettingsInput{
+						XcodeVersion: plan.HostedAgents.Mac.XcodeVersion.ValueStringPointer(),
+					},
+				}
+			} else {
+				version := HostedAgentMacOSVersion(plan.HostedAgents.Mac.MacosVersion.ValueString())
+
+				hosted.PlatformSettings = HostedAgentsPlatformSettingsInput{
+					Macos: &HostedAgentsMacosPlatformSettingsInput{
+						XcodeVersion: plan.HostedAgents.Mac.XcodeVersion.ValueStringPointer(),
+						MacosVersion: &version,
+					},
+				}
 			}
 		}
 	}
@@ -333,9 +343,15 @@ func (cq *clusterQueueResource) Create(ctx context.Context, req resource.CreateR
 			}
 		}
 		if plan.HostedAgents.Mac != nil {
-			state.HostedAgents.Mac = &macConfigModel{
-				XcodeVersion: types.StringValue(r.ClusterQueueCreate.ClusterQueue.HostedAgents.PlatformSettings.Macos.XcodeVersion),
-				MacosVersion: types.StringPointerValue(r.ClusterQueueCreate.ClusterQueue.HostedAgents.PlatformSettings.Macos.MacosVersion),
+			if r.ClusterQueueCreate.ClusterQueue.HostedAgents.PlatformSettings.Macos.MacosVersion == nil {
+				state.HostedAgents.Mac = &macConfigModel{
+					XcodeVersion: types.StringValue(r.ClusterQueueCreate.ClusterQueue.HostedAgents.PlatformSettings.Macos.XcodeVersion),
+				}
+			} else {
+				state.HostedAgents.Mac = &macConfigModel{
+					XcodeVersion: types.StringValue(r.ClusterQueueCreate.ClusterQueue.HostedAgents.PlatformSettings.Macos.XcodeVersion),
+					MacosVersion: types.StringValue(string(*r.ClusterQueueCreate.ClusterQueue.HostedAgents.PlatformSettings.Macos.MacosVersion)),
+				}
 			}
 		}
 	}
@@ -475,7 +491,8 @@ func (cq *clusterQueueResource) Update(ctx context.Context, req resource.UpdateR
 			}
 
 			if !plan.HostedAgents.Mac.MacosVersion.IsNull() {
-				hosted.PlatformSettings.Macos.MacosVersion = HostedAgentMacosVersion(plan.HostedAgents.Mac.MacosVersion.ValueString())
+				var version HostedAgentMacOSVersion = HostedAgentMacOSVersion(plan.HostedAgents.Mac.MacosVersion.ValueString())
+				hosted.PlatformSettings.Macos.MacosVersion = &version
 			}
 		}
 	}
@@ -533,9 +550,15 @@ func (cq *clusterQueueResource) Update(ctx context.Context, req resource.UpdateR
 			InstanceShape: types.StringValue(string(r.ClusterQueueUpdate.ClusterQueue.HostedAgents.InstanceShape.Name)),
 		}
 		if plan.HostedAgents.Mac != nil {
+			var version types.String
+
+			if r.ClusterQueueUpdate.ClusterQueue.HostedAgents.PlatformSettings.Macos.MacosVersion != nil {
+				version = types.StringValue(string(*r.ClusterQueueUpdate.ClusterQueue.HostedAgents.PlatformSettings.Macos.MacosVersion))
+			}
+
 			state.HostedAgents.Mac = &macConfigModel{
 				XcodeVersion: types.StringValue(r.ClusterQueueUpdate.ClusterQueue.HostedAgents.PlatformSettings.Macos.XcodeVersion),
-				MacosVersion: types.StringPointerValue(r.ClusterQueueUpdate.ClusterQueue.HostedAgents.PlatformSettings.Macos.MacosVersion),
+				MacosVersion: version,
 			}
 		}
 		if plan.HostedAgents.Linux != nil {
@@ -690,9 +713,15 @@ func updateClusterQueueResource(clusterQueueNode getClusterQueuesOrganizationClu
 			}
 		}
 		if clusterQueueNode.HostedAgents.PlatformSettings.Macos.XcodeVersion != "" {
-			cq.HostedAgents.Mac = &macConfigModel{
-				XcodeVersion: types.StringValue(clusterQueueNode.HostedAgents.PlatformSettings.Macos.XcodeVersion),
-				MacosVersion: types.StringPointerValue(clusterQueueNode.HostedAgents.PlatformSettings.Macos.MacosVersion),
+			if clusterQueueNode.HostedAgents.PlatformSettings.Macos.MacosVersion != nil {
+				cq.HostedAgents.Mac = &macConfigModel{
+					XcodeVersion: types.StringValue(clusterQueueNode.HostedAgents.PlatformSettings.Macos.XcodeVersion),
+					MacosVersion: types.StringValue(string(*clusterQueueNode.HostedAgents.PlatformSettings.Macos.MacosVersion)),
+				}
+			} else {
+				cq.HostedAgents.Mac = &macConfigModel{
+					XcodeVersion: types.StringValue(clusterQueueNode.HostedAgents.PlatformSettings.Macos.XcodeVersion),
+				}
 			}
 		}
 	}
