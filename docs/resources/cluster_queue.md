@@ -44,7 +44,7 @@ resource "buildkite_cluster_queue" "hosted_agents_macos" {
   dispatch_paused = true
 
   hosted_agents = {
-    instance_shape = "MACOS_M2_4X7"
+    instance_shape = "MACOS_ARM64_M4_6X28"
   }
 }
 
@@ -93,10 +93,6 @@ Required:
 
 - `instance_shape` (String) The instance shape to use for the Hosted Agent cluster queue. This can be a MacOS instance shape or a Linux instance shape.
 Valid values are:
-- MACOS_M2_4X7
-- MACOS_M2_6X14
-- MACOS_M2_12X28
-- MACOS_M4_12X56
 - MACOS_ARM64_M4_6X28
 - MACOS_ARM64_M4_12X56
 - LINUX_AMD64_2X4
@@ -107,8 +103,6 @@ Valid values are:
 - LINUX_ARM64_4X16
 - LINUX_ARM64_8X32
 - LINUX_ARM64_16X64
-
-MacOS M4-based shapes (MACOS_ARM64_M4_6X28 and MACOS_ARM64_M4_12X56) supersede the legacy M2-based shapes (MACOS_M2_4X7, MACOS_M2_6X14, MACOS_M2_12X28, MACOS_M4_12X56), which will be deprecated on **July 31 2025**. We advise to update any existing queues to use the new M4 shapes ahead of time to avoid disruption. The legacy M2-based shapes options will be removed in future versions of this Provider. Check the [Buildkite CHANGELOG](https://buildkite.com/resources/changelog/293-mac-hosted-agents-now-running-on-m4-pro-hardware/) for more details.
 
 Optional:
 
