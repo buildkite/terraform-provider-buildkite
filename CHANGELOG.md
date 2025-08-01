@@ -1,8 +1,14 @@
 # Changelog
 
-## Unreleased
+## [v1.23.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.22.1...v1.23.0)
 
-- chore: add assf scanning to repo by @mcncl in https://github.com/buildkite/terraform-provider-buildkite/pull/966 
+- Fix wrong `slug` value set during pipeline updates by @petetomasik in https://github.com/buildkite/terraform-provider-buildkite/pull/956
+- Update to use OIDC session tokens on AWS role assumption by @duckalini in https://github.com/buildkite/terraform-provider-buildkite/pull/957
+- Allow for the InstanceShape of a Queue to not require re-creation by @CerealBoy in https://github.com/buildkite/terraform-provider-buildkite/pull/963
+- chore(deps): bump github.com/buildkite/go-pipeline from 0.14.0 to 0.15.0 by @dependabot[bot] in https://github.com/buildkite/terraform-provider-buildkite/pull/964
+- Add OSSF scan to TF provider by @mcncl in https://github.com/buildkite/terraform-provider-buildkite/pull/966
+- Supporting the macOS version for Hosted macOS Cluster Queues by @CerealBoy in https://github.com/buildkite/terraform-provider-buildkite/pull/962
+- SUP-4151: Remove deprecated Mac Instance shapes by @tomowatt in https://github.com/buildkite/terraform-provider-buildkite/pull/953
 
 ## [v1.22.1](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.22.0...v1.22.1)
 
