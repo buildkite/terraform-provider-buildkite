@@ -1,0 +1,35 @@
+query GetOrganizationClusters(
+    $slug: ID!,
+    # @genqlient(pointer: true)
+    $cursor: String
+) {
+    organization(slug: $slug) {
+        clusters(first: 500, after: $cursor) {
+            pageInfo {
+                endCursor
+                hasNextPage
+            }
+            edges {
+                node {
+                    id
+                    uuid
+                    name
+                    # @genqlient(pointer: true)
+                    description
+                    # @genqlient(pointer: true)
+                    emoji
+                    # @genqlient(pointer: true)
+                    color
+                    # @genqlient(pointer: true)
+                    defaultQueue {
+                        id
+                        uuid
+                        key
+                        # @genqlient(pointer: true)
+                        description
+                    }
+                }
+            }
+        }
+    }
+}
