@@ -406,7 +406,17 @@ func (p *pipelineResource) Read(ctx context.Context, req resource.ReadRequest, r
 		// pipeline default team is a terraform concept only so it takes some coercing
 		teamResult, err := p.setDefaultTeamIfExists(ctx, &state, &pipelineNode.Teams.PipelineTeam)
 		if err != nil {
-			resp.Diagnostics.AddError("Error encountered trying to read teams for pipeline", err.Error())
+			resp.Diagnostics.AddError("Error with default team configuration", err.Error())
+			return
+		}
+
+		// Add warning if team was added back to enforce Terraform configuration
+		if teamResult != nil && teamResult.teamAddedBack {
+			resp.Diagnostics.AddWarning(
+				"Default team added back to pipeline",
+				fmt.Sprintf("The default team (ID: %s) was missing from the pipeline but exists in your organization. It has been automatically added back with Full Access to match your Terraform configuration.",
+					teamResult.originalTeamId),
+			)
 		}
 
 		// Add warning if team permissions were reduced
@@ -415,15 +425,6 @@ func (p *pipelineResource) Read(ctx context.Context, req resource.ReadRequest, r
 				"Default team permission level reduced",
 				fmt.Sprintf("The default team (ID: %s) no longer has Full Access. Current access level: %s. The team will remain as the default team, but some operations may fail if your API token user doesn't have sufficient permissions.",
 					teamResult.originalTeamId, teamResult.accessLevel),
-			)
-		}
-
-		// Add info message if team was auto-switched (this will happen if the original default team was removed and there's another "Full Access" team available)
-		if teamResult != nil && teamResult.switched {
-			resp.Diagnostics.AddWarning(
-				"Default team automatically switched",
-				fmt.Sprintf("The original default team (ID: %s) was removed from the pipeline. Automatically switched to team (ID: %s) which has Full Access.",
-					teamResult.originalTeamId, teamResult.newTeamId),
 			)
 		}
 
@@ -436,43 +437,58 @@ func (p *pipelineResource) Read(ctx context.Context, req resource.ReadRequest, r
 }
 
 type teamResult struct {
-	switched          bool
 	reducedPermission bool
+	teamAddedBack     bool
 	originalTeamId    string
-	newTeamId         string
 	accessLevel       string
 }
 
-// setDefaultTeamIfExists will try to find a team for the pipeline to set as default
-// if we got here from a terraform import, we will have no idea what (if any) team to assign as the default, it
-// will need to be done manually by the user
-// however, if this is a normal read operation, we will have access to the previous state which is a reliable
-// source of default team ID. so if it is set in state, we need to ensure the permission level is correct,
-// otherwise it cannot be the default owner if it has lower permissions
+// setDefaultTeamIfExists enforces the terraform configuration as the source of truth for team assignments
+// - If no team is configured (null or unset), it does nothing, preserving user choice
+// - If the configured team doesn't exist globally, it explicity fails
+// - If the team exists but was removed from the pipeline, it gets added back with full permissions
+// - If the team exists on the pipeline but with reduced permissions, it warns but keeps the team
 func (p *pipelineResource) setDefaultTeamIfExists(ctx context.Context, state *pipelineResourceModel, pipelineTeam *PipelineTeam) (*teamResult, error) {
 	return p.setDefaultTeamIfExistsWithCandidate(ctx, state, pipelineTeam, "")
 }
 
-// setDefaultTeamIfExistsWithCandidate handles the logic with candidate teams that have MANAGE_BUILD_AND_READ (Full Access) permissions
+// setDefaultTeamIfExistsWithCandidate handles the logic for enforcing the Terraform configuration as source of truth
 func (p *pipelineResource) setDefaultTeamIfExistsWithCandidate(ctx context.Context, state *pipelineResourceModel, pipelineTeam *PipelineTeam, fallbackTeamId string) (*teamResult, error) {
 	result := &teamResult{}
 
+	// Only enforce team validation if the user has explicitly configured a team ID
+	// This preserves cases where users have set default_team_id = null or haven't set it at all
 	if !state.DefaultTeamId.IsNull() {
 		result.originalTeamId = state.DefaultTeamId.ValueString()
+
+		// First, check if the team exists globally using getNode
+		teamResponse, err := getNode(ctx, p.client.genqlient, result.originalTeamId)
+		if err != nil {
+			return nil, fmt.Errorf("failed to check if team exists: %w", err)
+		}
+
+		// If the team doesn't exist globally, fail the operation
+		if teamResponse.Node == nil {
+			return nil, fmt.Errorf("team with ID %s does not exist in the organization", result.originalTeamId)
+		}
+
+		// Check if it's actually a team node
+		if _, ok := teamResponse.Node.(*getNodeNodeTeam); !ok {
+			return nil, fmt.Errorf("ID %s does not refer to a team", result.originalTeamId)
+		}
+
+		// Check if the team is attached to the pipeline
 		var foundAccessLevel *PipelineAccessLevels
 
-		// loop over all attached teams to find the current default team and the first team with Full Access
+		// Loop over all attached teams to find the current default team
 		for _, team := range pipelineTeam.Edges {
 			if state.DefaultTeamId.ValueString() == team.Node.Team.Id {
 				foundAccessLevel = &team.Node.AccessLevel
-			}
-			// Find the first team with Full Access permissions (if we don't have one yet)
-			if fallbackTeamId == "" && team.Node.AccessLevel == PipelineAccessLevelsManageBuildAndRead {
-				fallbackTeamId = team.Node.Team.Id
+				break
 			}
 		}
 
-		// if the team was not found, and there are more to load, then load more and recurse to find a matching one
+		// If there are multiple pages of teams, keep checking until we find the team or exhaust all pages
 		if foundAccessLevel == nil && pipelineTeam.PageInfo.HasNextPage {
 			resp, err := getPipelineTeams(ctx, p.client.genqlient, state.Slug.ValueString(), pipelineTeam.PageInfo.EndCursor)
 			if err != nil {
@@ -482,30 +498,20 @@ func (p *pipelineResource) setDefaultTeamIfExistsWithCandidate(ctx context.Conte
 			return p.setDefaultTeamIfExistsWithCandidate(ctx, state, &pt, fallbackTeamId)
 		}
 
-		// after checking all teams, handle the different scenarios:
+		// Handle the different scenarios based on what we found
 		if foundAccessLevel == nil {
-			// The current default team is completely removed from the pipeline
-			if fallbackTeamId != "" {
-				// Switch to the first team that has Full Access
-				// This maintains functionality for both admin and non-admin users
-				result.switched = true
-				result.newTeamId = fallbackTeamId
-				state.DefaultTeamId = types.StringValue(fallbackTeamId)
-			} else {
-				// No team with required permissions available
-				// Set to null to allow refresh to complete - admin users can have teamless pipelines
-				// Non-admin users may get API errors on subsequent operations, but this preserves
-				// backward compatibility with existing configurations, we warn in this case
-				state.DefaultTeamId = types.StringNull()
+			// Team exists globally but is not attached to the pipeline, so we will enforce the Terraform configuration
+			_, err := createTeamPipeline(ctx, p.client.genqlient, result.originalTeamId, state.Id.ValueString(), PipelineAccessLevelsManageBuildAndRead)
+			if err != nil {
+				return nil, fmt.Errorf("failed to add team back to pipeline: %w", err)
 			}
+			result.teamAddedBack = true
 		} else if *foundAccessLevel != PipelineAccessLevelsManageBuildAndRead {
-			// The current default team still exists but no longer has Full Access
-			// Keep the current team but it now has reduced permissions
-			// This allows the refresh to succeed while preserving user's choice
+			// The team exists on the pipeline but no longer has Full Access, so we will warn the user and respect the UI configuration
 			result.reducedPermission = true
 			result.accessLevel = string(*foundAccessLevel)
 		}
-		// If foundAccessLevel == MANAGE_BUILD_AND_READ, keep the current team
+		// No changes needed
 	}
 
 	return result, nil
