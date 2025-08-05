@@ -15,13 +15,13 @@ type clustersDatasourceModel struct {
 }
 
 type clustersModel struct {
-	ID           types.String                    `tfsdk:"id"`
-	UUID         types.String                    `tfsdk:"uuid"`
-	Name         types.String                    `tfsdk:"name"`
-	Description  types.String                    `tfsdk:"description"`
-	Emoji        types.String                    `tfsdk:"emoji"`
-	Color        types.String                    `tfsdk:"color"`
-	DefaultQueue *clustersDefaultQueueModel     `tfsdk:"default_queue"`
+	ID           types.String               `tfsdk:"id"`
+	UUID         types.String               `tfsdk:"uuid"`
+	Name         types.String               `tfsdk:"name"`
+	Description  types.String               `tfsdk:"description"`
+	Emoji        types.String               `tfsdk:"emoji"`
+	Color        types.String               `tfsdk:"color"`
+	DefaultQueue *clustersDefaultQueueModel `tfsdk:"default_queue"`
 }
 
 type clustersDefaultQueueModel struct {
