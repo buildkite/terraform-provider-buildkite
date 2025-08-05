@@ -413,8 +413,8 @@ func (p *pipelineResource) Read(ctx context.Context, req resource.ReadRequest, r
 		// Add warning if team was added back to enforce Terraform configuration
 		if teamResult != nil && teamResult.teamAddedBack {
 			resp.Diagnostics.AddWarning(
-				"Default team added back to pipeline",
-				fmt.Sprintf("The default team (ID: %s) was missing from the pipeline but exists in your organization. It has been automatically added back with Full Access to match your Terraform configuration.",
+				"Default team missing from pipeline",
+				fmt.Sprintf("The default team (ID: %s) is missing from the pipeline but exists in your organization. The team has been removed from state - run 'terraform apply' to add it back with Full Access.",
 					teamResult.originalTeamId),
 			)
 		}
@@ -423,7 +423,7 @@ func (p *pipelineResource) Read(ctx context.Context, req resource.ReadRequest, r
 		if teamResult != nil && teamResult.reducedPermission {
 			resp.Diagnostics.AddWarning(
 				"Default team permission level reduced",
-				fmt.Sprintf("The default team (ID: %s) no longer has Full Access. Current access level: %s. The team will remain as the default team, but some operations may fail if your API token user doesn't have sufficient permissions.",
+				fmt.Sprintf("The default team (ID: %s) no longer has Full Access (current level: %s). This may cause issues with pipeline updates, team management, or build triggering. Consider updating the team's permissions in the Buildkite UI or using a different team with Full Access as the default.",
 					teamResult.originalTeamId, teamResult.accessLevel),
 			)
 		}
@@ -446,14 +446,14 @@ type teamResult struct {
 // setDefaultTeamIfExists enforces the terraform configuration as the source of truth for team assignments
 // - If no team is configured (null or unset), it does nothing, preserving user choice
 // - If the configured team doesn't exist globally, it explicity fails
-// - If the team exists but was removed from the pipeline, it gets added back with full permissions
+// - If the team exists but was removed from the pipeline, it sets state to null to trigger update
 // - If the team exists on the pipeline but with reduced permissions, it warns but keeps the team
 func (p *pipelineResource) setDefaultTeamIfExists(ctx context.Context, state *pipelineResourceModel, pipelineTeam *PipelineTeam) (*teamResult, error) {
-	return p.setDefaultTeamIfExistsWithCandidate(ctx, state, pipelineTeam, "")
+	return p.setDefaultTeamIfExistsWithCandidate(ctx, state, pipelineTeam)
 }
 
 // setDefaultTeamIfExistsWithCandidate handles the logic for enforcing the Terraform configuration as source of truth
-func (p *pipelineResource) setDefaultTeamIfExistsWithCandidate(ctx context.Context, state *pipelineResourceModel, pipelineTeam *PipelineTeam, fallbackTeamId string) (*teamResult, error) {
+func (p *pipelineResource) setDefaultTeamIfExistsWithCandidate(ctx context.Context, state *pipelineResourceModel, pipelineTeam *PipelineTeam) (*teamResult, error) {
 	result := &teamResult{}
 
 	// Only enforce team validation if the user has explicitly configured a team ID
@@ -495,16 +495,13 @@ func (p *pipelineResource) setDefaultTeamIfExistsWithCandidate(ctx context.Conte
 				return nil, err
 			}
 			pt := resp.Pipeline.Teams.PipelineTeam
-			return p.setDefaultTeamIfExistsWithCandidate(ctx, state, &pt, fallbackTeamId)
+			return p.setDefaultTeamIfExistsWithCandidate(ctx, state, &pt)
 		}
 
 		// Handle the different scenarios based on what we found
 		if foundAccessLevel == nil {
-			// Team exists globally but is not attached to the pipeline, so we will enforce the Terraform configuration
-			_, err := createTeamPipeline(ctx, p.client.genqlient, result.originalTeamId, state.Id.ValueString(), PipelineAccessLevelsManageBuildAndRead)
-			if err != nil {
-				return nil, fmt.Errorf("failed to add team back to pipeline: %w", err)
-			}
+			// Team exists globally but is not attached to the pipeline, mark state as requiring drift correction
+			state.DefaultTeamId = types.StringNull()
 			result.teamAddedBack = true
 		} else if *foundAccessLevel != PipelineAccessLevelsManageBuildAndRead {
 			// The team exists on the pipeline but no longer has Full Access, so we will warn the user and respect the UI configuration
