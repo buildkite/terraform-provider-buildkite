@@ -149,3 +149,20 @@ mutation resumeDispatchClusterQueue($id: ID!) {
         clientMutationId
     }
 }
+
+query getClusterQueueByNode($id: ID!) {
+    node(id: $id) {
+        ... on ClusterQueue {
+            ...ClusterQueueValues
+            dispatchPaused
+            # @genqlient(pointer: true)
+            dispatchPausedAt
+            # @genqlient(pointer: true)
+            dispatchPausedBy {
+                id
+            }
+            # @genqlient(pointer: true)
+            dispatchPausedNote
+        }
+    }
+}

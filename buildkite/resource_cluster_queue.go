@@ -367,49 +367,39 @@ func (cq *clusterQueueResource) Read(ctx context.Context, req resource.ReadReque
 		return
 	}
 
-	var r *getClusterQueuesResponse
-	var err error
-	cursor := (*string)(nil)
-	matchFound := false
-
-	for {
-		log.Printf("Getting cluster queues for cluster %s ...", state.ClusterUuid.ValueString())
-		r, err = getClusterQueues(ctx, cq.client.genqlient, cq.client.organization, state.ClusterUuid.ValueString(), cursor)
-		if err != nil {
-			resp.Diagnostics.AddError(
-				"Unable to read Cluster Queues",
-				fmt.Sprintf("Unable to read Cluster Queues: %s", err.Error()),
-			)
-			return
-		}
-
-		// Find the cluster queue from the returned queues to update state
-		for _, edge := range r.Organization.Cluster.Queues.Edges {
-			if edge.Node.Id == state.Id.ValueString() {
-				matchFound = true
-				log.Printf("Found cluster queue with ID %s in cluster %s", edge.Node.Id, state.ClusterUuid.ValueString())
-				// Update ClusterQueueResourceModel with Node values and append
-				updateClusterQueueResource(edge.Node, &state)
-				resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
-				break
-			}
-		}
-
-		// end here if we found a match or there are no more pages to search
-		if matchFound || !r.Organization.Cluster.Queues.PageInfo.HasNextPage {
-			break
-		}
-		cursor = &r.Organization.Cluster.Queues.PageInfo.EndCursor
+	log.Printf("Getting cluster queue with ID %s using Node interface...", state.Id.ValueString())
+	r, err := getClusterQueueByNode(ctx, cq.client.genqlient, state.Id.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Unable to read Cluster Queue",
+			fmt.Sprintf("Unable to read Cluster Queue: %s", err.Error()),
+		)
+		return
 	}
 
-	// Cluster queue could not be found in returned queues and should be removed from state
-	if !matchFound {
+	// Check if the node exists and is a ClusterQueue
+	if r.Node == nil {
 		resp.Diagnostics.AddWarning(
 			"Cluster Queue not found",
 			"Removing Cluster Queue from state...",
 		)
 		resp.State.RemoveResource(ctx)
+		return
 	}
+
+	clusterQueue, ok := r.Node.(*getClusterQueueByNodeNodeClusterQueue)
+	if !ok {
+		resp.Diagnostics.AddError(
+			"Invalid node type",
+			"The returned node is not a ClusterQueue",
+		)
+		return
+	}
+
+	log.Printf("Found cluster queue with ID %s", clusterQueue.Id)
+	// Update ClusterQueueResourceModel with Node values
+	updateClusterQueueResourceFromNode(*clusterQueue, &state)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
 func (cq *clusterQueueResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
@@ -684,7 +674,7 @@ func (v hostedAgentValidator) ValidateObject(ctx context.Context, req validator.
 	}
 }
 
-func updateClusterQueueResource(clusterQueueNode getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue, cq *clusterQueueResourceModel) {
+func updateClusterQueueResourceFromNode(clusterQueueNode getClusterQueueByNodeNodeClusterQueue, cq *clusterQueueResourceModel) {
 	cq.Id = types.StringValue(clusterQueueNode.Id)
 	cq.Uuid = types.StringValue(clusterQueueNode.Uuid)
 	cq.Key = types.StringValue(clusterQueueNode.Key)
