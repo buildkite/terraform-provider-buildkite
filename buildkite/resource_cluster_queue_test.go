@@ -494,46 +494,33 @@ func testAccCheckClusterQueueExists(resourceName string, clusterQueueResourceMod
 		if resourceState.Primary.ID == "" {
 			return fmt.Errorf("No ID is set in state")
 		}
-		// Obtain queues of the queue's cluster from its cluster UUID
-		var matchFound bool
+
 		ctx := context.Background()
 		err := retry.RetryContext(ctx, DefaultTimeout, func() *retry.RetryError {
-			var cursor *string
-			for {
-				queues, err := getClusterQueues(
-					ctx,
-					genqlientGraphql,
-					getenv("BUILDKITE_ORGANIZATION_SLUG"),
-					resourceState.Primary.Attributes["cluster_uuid"],
-					cursor,
-				)
-				// If cluster queues were not able to be fetched by Genqlient
-				if err != nil {
-					return retryContextError(err)
-				}
-
-				// Obtain the ClusterQueueResourceModel from the queues slice
-				for _, edge := range queues.Organization.Cluster.Queues.Edges {
-					if edge.Node.Id == resourceState.Primary.ID {
-						matchFound = true
-						updateClusterQueueResource(edge.Node, clusterQueueResourceModel)
-						break
-					}
-				}
-
-				// End here if we found a match or there are no more pages to search
-				if matchFound || !queues.Organization.Cluster.Queues.PageInfo.HasNextPage {
-					break
-				}
-				cursor = &queues.Organization.Cluster.Queues.PageInfo.EndCursor
+			r, err := getClusterQueueByNode(ctx, genqlientGraphql, resourceState.Primary.ID)
+			if err != nil {
+				return retryContextError(err)
 			}
+
+			// Check if the node exists and is a ClusterQueue
+			if r.Node == nil {
+				return retry.NonRetryableError(fmt.Errorf("Cluster queue not found with ID: %s", resourceState.Primary.ID))
+			}
+
+			clusterQueue, ok := r.Node.(*getClusterQueueByNodeNodeClusterQueue)
+			if !ok {
+				return retry.NonRetryableError(fmt.Errorf("Invalid node type returned"))
+			}
+
+			// Update ClusterQueueResourceModel with Node values
+			updateClusterQueueResourceFromNode(*clusterQueue, clusterQueueResourceModel)
 			return nil
 		})
 		if err != nil {
-			return fmt.Errorf("Error fetching Cluster queues from graphql API: %v", err)
+			return fmt.Errorf("Error fetching Cluster queue from graphql API: %v", err)
 		}
 
-		// If clusterQueueResourceModel isnt set from the queues slice
+		// If clusterQueueResourceModel isnt set
 		if clusterQueueResourceModel.Id.ValueString() == "" {
 			return fmt.Errorf("No Cluster queue found with graphql id: %s", resourceState.Primary.ID)
 		}
