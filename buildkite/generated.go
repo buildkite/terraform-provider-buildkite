@@ -230,6 +230,159 @@ func (v *ClusterQueueValuesHostedAgentsHostedAgentQueueSettings) __premarshalJSO
 	return &retval, nil
 }
 
+// GetOrganizationClustersOrganization includes the requested fields of the GraphQL type Organization.
+// The GraphQL type's documentation follows.
+//
+// An organization
+type GetOrganizationClustersOrganization struct {
+	// Returns clusters for an Organization
+	Clusters GetOrganizationClustersOrganizationClustersClusterConnection `json:"clusters"`
+}
+
+// GetClusters returns GetOrganizationClustersOrganization.Clusters, and is useful for accessing the field via an interface.
+func (v *GetOrganizationClustersOrganization) GetClusters() GetOrganizationClustersOrganizationClustersClusterConnection {
+	return v.Clusters
+}
+
+// GetOrganizationClustersOrganizationClustersClusterConnection includes the requested fields of the GraphQL type ClusterConnection.
+type GetOrganizationClustersOrganizationClustersClusterConnection struct {
+	PageInfo GetOrganizationClustersOrganizationClustersClusterConnectionPageInfo           `json:"pageInfo"`
+	Edges    []GetOrganizationClustersOrganizationClustersClusterConnectionEdgesClusterEdge `json:"edges"`
+}
+
+// GetPageInfo returns GetOrganizationClustersOrganizationClustersClusterConnection.PageInfo, and is useful for accessing the field via an interface.
+func (v *GetOrganizationClustersOrganizationClustersClusterConnection) GetPageInfo() GetOrganizationClustersOrganizationClustersClusterConnectionPageInfo {
+	return v.PageInfo
+}
+
+// GetEdges returns GetOrganizationClustersOrganizationClustersClusterConnection.Edges, and is useful for accessing the field via an interface.
+func (v *GetOrganizationClustersOrganizationClustersClusterConnection) GetEdges() []GetOrganizationClustersOrganizationClustersClusterConnectionEdgesClusterEdge {
+	return v.Edges
+}
+
+// GetOrganizationClustersOrganizationClustersClusterConnectionEdgesClusterEdge includes the requested fields of the GraphQL type ClusterEdge.
+type GetOrganizationClustersOrganizationClustersClusterConnectionEdgesClusterEdge struct {
+	Node GetOrganizationClustersOrganizationClustersClusterConnectionEdgesClusterEdgeNodeCluster `json:"node"`
+}
+
+// GetNode returns GetOrganizationClustersOrganizationClustersClusterConnectionEdgesClusterEdge.Node, and is useful for accessing the field via an interface.
+func (v *GetOrganizationClustersOrganizationClustersClusterConnectionEdgesClusterEdge) GetNode() GetOrganizationClustersOrganizationClustersClusterConnectionEdgesClusterEdgeNodeCluster {
+	return v.Node
+}
+
+// GetOrganizationClustersOrganizationClustersClusterConnectionEdgesClusterEdgeNodeCluster includes the requested fields of the GraphQL type Cluster.
+type GetOrganizationClustersOrganizationClustersClusterConnectionEdgesClusterEdgeNodeCluster struct {
+	Id string `json:"id"`
+	// The public UUID for this cluster
+	Uuid string `json:"uuid"`
+	// Name of the cluster
+	Name string `json:"name"`
+	// Description of the cluster
+	Description *string `json:"description"`
+	// Emoji for the cluster using Buildkite emoji syntax
+	Emoji *string `json:"emoji"`
+	// Color hex code for the cluster
+	Color *string `json:"color"`
+	// The default queue that agents connecting to the cluster without specifying a queue will accept jobs from
+	DefaultQueue *GetOrganizationClustersOrganizationClustersClusterConnectionEdgesClusterEdgeNodeClusterDefaultQueueClusterQueue `json:"defaultQueue"`
+}
+
+// GetId returns GetOrganizationClustersOrganizationClustersClusterConnectionEdgesClusterEdgeNodeCluster.Id, and is useful for accessing the field via an interface.
+func (v *GetOrganizationClustersOrganizationClustersClusterConnectionEdgesClusterEdgeNodeCluster) GetId() string {
+	return v.Id
+}
+
+// GetUuid returns GetOrganizationClustersOrganizationClustersClusterConnectionEdgesClusterEdgeNodeCluster.Uuid, and is useful for accessing the field via an interface.
+func (v *GetOrganizationClustersOrganizationClustersClusterConnectionEdgesClusterEdgeNodeCluster) GetUuid() string {
+	return v.Uuid
+}
+
+// GetName returns GetOrganizationClustersOrganizationClustersClusterConnectionEdgesClusterEdgeNodeCluster.Name, and is useful for accessing the field via an interface.
+func (v *GetOrganizationClustersOrganizationClustersClusterConnectionEdgesClusterEdgeNodeCluster) GetName() string {
+	return v.Name
+}
+
+// GetDescription returns GetOrganizationClustersOrganizationClustersClusterConnectionEdgesClusterEdgeNodeCluster.Description, and is useful for accessing the field via an interface.
+func (v *GetOrganizationClustersOrganizationClustersClusterConnectionEdgesClusterEdgeNodeCluster) GetDescription() *string {
+	return v.Description
+}
+
+// GetEmoji returns GetOrganizationClustersOrganizationClustersClusterConnectionEdgesClusterEdgeNodeCluster.Emoji, and is useful for accessing the field via an interface.
+func (v *GetOrganizationClustersOrganizationClustersClusterConnectionEdgesClusterEdgeNodeCluster) GetEmoji() *string {
+	return v.Emoji
+}
+
+// GetColor returns GetOrganizationClustersOrganizationClustersClusterConnectionEdgesClusterEdgeNodeCluster.Color, and is useful for accessing the field via an interface.
+func (v *GetOrganizationClustersOrganizationClustersClusterConnectionEdgesClusterEdgeNodeCluster) GetColor() *string {
+	return v.Color
+}
+
+// GetDefaultQueue returns GetOrganizationClustersOrganizationClustersClusterConnectionEdgesClusterEdgeNodeCluster.DefaultQueue, and is useful for accessing the field via an interface.
+func (v *GetOrganizationClustersOrganizationClustersClusterConnectionEdgesClusterEdgeNodeCluster) GetDefaultQueue() *GetOrganizationClustersOrganizationClustersClusterConnectionEdgesClusterEdgeNodeClusterDefaultQueueClusterQueue {
+	return v.DefaultQueue
+}
+
+// GetOrganizationClustersOrganizationClustersClusterConnectionEdgesClusterEdgeNodeClusterDefaultQueueClusterQueue includes the requested fields of the GraphQL type ClusterQueue.
+type GetOrganizationClustersOrganizationClustersClusterConnectionEdgesClusterEdgeNodeClusterDefaultQueueClusterQueue struct {
+	Id string `json:"id"`
+	// The public UUID for this cluster queue
+	Uuid        string  `json:"uuid"`
+	Key         string  `json:"key"`
+	Description *string `json:"description"`
+}
+
+// GetId returns GetOrganizationClustersOrganizationClustersClusterConnectionEdgesClusterEdgeNodeClusterDefaultQueueClusterQueue.Id, and is useful for accessing the field via an interface.
+func (v *GetOrganizationClustersOrganizationClustersClusterConnectionEdgesClusterEdgeNodeClusterDefaultQueueClusterQueue) GetId() string {
+	return v.Id
+}
+
+// GetUuid returns GetOrganizationClustersOrganizationClustersClusterConnectionEdgesClusterEdgeNodeClusterDefaultQueueClusterQueue.Uuid, and is useful for accessing the field via an interface.
+func (v *GetOrganizationClustersOrganizationClustersClusterConnectionEdgesClusterEdgeNodeClusterDefaultQueueClusterQueue) GetUuid() string {
+	return v.Uuid
+}
+
+// GetKey returns GetOrganizationClustersOrganizationClustersClusterConnectionEdgesClusterEdgeNodeClusterDefaultQueueClusterQueue.Key, and is useful for accessing the field via an interface.
+func (v *GetOrganizationClustersOrganizationClustersClusterConnectionEdgesClusterEdgeNodeClusterDefaultQueueClusterQueue) GetKey() string {
+	return v.Key
+}
+
+// GetDescription returns GetOrganizationClustersOrganizationClustersClusterConnectionEdgesClusterEdgeNodeClusterDefaultQueueClusterQueue.Description, and is useful for accessing the field via an interface.
+func (v *GetOrganizationClustersOrganizationClustersClusterConnectionEdgesClusterEdgeNodeClusterDefaultQueueClusterQueue) GetDescription() *string {
+	return v.Description
+}
+
+// GetOrganizationClustersOrganizationClustersClusterConnectionPageInfo includes the requested fields of the GraphQL type PageInfo.
+// The GraphQL type's documentation follows.
+//
+// Information about pagination in a connection.
+type GetOrganizationClustersOrganizationClustersClusterConnectionPageInfo struct {
+	// When paginating forwards, the cursor to continue.
+	EndCursor string `json:"endCursor"`
+	// When paginating forwards, are there more items?
+	HasNextPage bool `json:"hasNextPage"`
+}
+
+// GetEndCursor returns GetOrganizationClustersOrganizationClustersClusterConnectionPageInfo.EndCursor, and is useful for accessing the field via an interface.
+func (v *GetOrganizationClustersOrganizationClustersClusterConnectionPageInfo) GetEndCursor() string {
+	return v.EndCursor
+}
+
+// GetHasNextPage returns GetOrganizationClustersOrganizationClustersClusterConnectionPageInfo.HasNextPage, and is useful for accessing the field via an interface.
+func (v *GetOrganizationClustersOrganizationClustersClusterConnectionPageInfo) GetHasNextPage() bool {
+	return v.HasNextPage
+}
+
+// GetOrganizationClustersResponse is returned by GetOrganizationClusters on success.
+type GetOrganizationClustersResponse struct {
+	// Find an organization
+	Organization GetOrganizationClustersOrganization `json:"organization"`
+}
+
+// GetOrganization returns GetOrganizationClustersResponse.Organization, and is useful for accessing the field via an interface.
+func (v *GetOrganizationClustersResponse) GetOrganization() GetOrganizationClustersOrganization {
+	return v.Organization
+}
+
 // GetOrganizationMemberByEmailOrganization includes the requested fields of the GraphQL type Organization.
 // The GraphQL type's documentation follows.
 //
@@ -438,6 +591,147 @@ type GetOrganizationMembersResponse struct {
 
 // GetOrganization returns GetOrganizationMembersResponse.Organization, and is useful for accessing the field via an interface.
 func (v *GetOrganizationMembersResponse) GetOrganization() GetOrganizationMembersOrganization {
+	return v.Organization
+}
+
+// GetOrganizationTeamsOrganization includes the requested fields of the GraphQL type Organization.
+// The GraphQL type's documentation follows.
+//
+// An organization
+type GetOrganizationTeamsOrganization struct {
+	// Returns teams within the organization that the viewer can see
+	Teams GetOrganizationTeamsOrganizationTeamsTeamConnection `json:"teams"`
+}
+
+// GetTeams returns GetOrganizationTeamsOrganization.Teams, and is useful for accessing the field via an interface.
+func (v *GetOrganizationTeamsOrganization) GetTeams() GetOrganizationTeamsOrganizationTeamsTeamConnection {
+	return v.Teams
+}
+
+// GetOrganizationTeamsOrganizationTeamsTeamConnection includes the requested fields of the GraphQL type TeamConnection.
+type GetOrganizationTeamsOrganizationTeamsTeamConnection struct {
+	PageInfo GetOrganizationTeamsOrganizationTeamsTeamConnectionPageInfo        `json:"pageInfo"`
+	Edges    []GetOrganizationTeamsOrganizationTeamsTeamConnectionEdgesTeamEdge `json:"edges"`
+}
+
+// GetPageInfo returns GetOrganizationTeamsOrganizationTeamsTeamConnection.PageInfo, and is useful for accessing the field via an interface.
+func (v *GetOrganizationTeamsOrganizationTeamsTeamConnection) GetPageInfo() GetOrganizationTeamsOrganizationTeamsTeamConnectionPageInfo {
+	return v.PageInfo
+}
+
+// GetEdges returns GetOrganizationTeamsOrganizationTeamsTeamConnection.Edges, and is useful for accessing the field via an interface.
+func (v *GetOrganizationTeamsOrganizationTeamsTeamConnection) GetEdges() []GetOrganizationTeamsOrganizationTeamsTeamConnectionEdgesTeamEdge {
+	return v.Edges
+}
+
+// GetOrganizationTeamsOrganizationTeamsTeamConnectionEdgesTeamEdge includes the requested fields of the GraphQL type TeamEdge.
+type GetOrganizationTeamsOrganizationTeamsTeamConnectionEdgesTeamEdge struct {
+	Node GetOrganizationTeamsOrganizationTeamsTeamConnectionEdgesTeamEdgeNodeTeam `json:"node"`
+}
+
+// GetNode returns GetOrganizationTeamsOrganizationTeamsTeamConnectionEdgesTeamEdge.Node, and is useful for accessing the field via an interface.
+func (v *GetOrganizationTeamsOrganizationTeamsTeamConnectionEdgesTeamEdge) GetNode() GetOrganizationTeamsOrganizationTeamsTeamConnectionEdgesTeamEdgeNodeTeam {
+	return v.Node
+}
+
+// GetOrganizationTeamsOrganizationTeamsTeamConnectionEdgesTeamEdgeNodeTeam includes the requested fields of the GraphQL type Team.
+// The GraphQL type's documentation follows.
+//
+// An organization team
+type GetOrganizationTeamsOrganizationTeamsTeamConnectionEdgesTeamEdgeNodeTeam struct {
+	Id string `json:"id"`
+	// The public UUID for this team
+	Uuid string `json:"uuid"`
+	// The name of the team
+	Name string `json:"name"`
+	// A description of the team
+	Description string `json:"description"`
+	// The slug of the team
+	Slug string `json:"slug"`
+	// The privacy setting for this team
+	Privacy string `json:"privacy"`
+	// Add new organization members to this team by default
+	IsDefaultTeam bool `json:"isDefaultTeam"`
+	// New organization members will be granted this role on this team
+	DefaultMemberRole string `json:"defaultMemberRole"`
+	// Whether or not team members can create new pipelines in this team
+	MembersCanCreatePipelines bool `json:"membersCanCreatePipelines"`
+}
+
+// GetId returns GetOrganizationTeamsOrganizationTeamsTeamConnectionEdgesTeamEdgeNodeTeam.Id, and is useful for accessing the field via an interface.
+func (v *GetOrganizationTeamsOrganizationTeamsTeamConnectionEdgesTeamEdgeNodeTeam) GetId() string {
+	return v.Id
+}
+
+// GetUuid returns GetOrganizationTeamsOrganizationTeamsTeamConnectionEdgesTeamEdgeNodeTeam.Uuid, and is useful for accessing the field via an interface.
+func (v *GetOrganizationTeamsOrganizationTeamsTeamConnectionEdgesTeamEdgeNodeTeam) GetUuid() string {
+	return v.Uuid
+}
+
+// GetName returns GetOrganizationTeamsOrganizationTeamsTeamConnectionEdgesTeamEdgeNodeTeam.Name, and is useful for accessing the field via an interface.
+func (v *GetOrganizationTeamsOrganizationTeamsTeamConnectionEdgesTeamEdgeNodeTeam) GetName() string {
+	return v.Name
+}
+
+// GetDescription returns GetOrganizationTeamsOrganizationTeamsTeamConnectionEdgesTeamEdgeNodeTeam.Description, and is useful for accessing the field via an interface.
+func (v *GetOrganizationTeamsOrganizationTeamsTeamConnectionEdgesTeamEdgeNodeTeam) GetDescription() string {
+	return v.Description
+}
+
+// GetSlug returns GetOrganizationTeamsOrganizationTeamsTeamConnectionEdgesTeamEdgeNodeTeam.Slug, and is useful for accessing the field via an interface.
+func (v *GetOrganizationTeamsOrganizationTeamsTeamConnectionEdgesTeamEdgeNodeTeam) GetSlug() string {
+	return v.Slug
+}
+
+// GetPrivacy returns GetOrganizationTeamsOrganizationTeamsTeamConnectionEdgesTeamEdgeNodeTeam.Privacy, and is useful for accessing the field via an interface.
+func (v *GetOrganizationTeamsOrganizationTeamsTeamConnectionEdgesTeamEdgeNodeTeam) GetPrivacy() string {
+	return v.Privacy
+}
+
+// GetIsDefaultTeam returns GetOrganizationTeamsOrganizationTeamsTeamConnectionEdgesTeamEdgeNodeTeam.IsDefaultTeam, and is useful for accessing the field via an interface.
+func (v *GetOrganizationTeamsOrganizationTeamsTeamConnectionEdgesTeamEdgeNodeTeam) GetIsDefaultTeam() bool {
+	return v.IsDefaultTeam
+}
+
+// GetDefaultMemberRole returns GetOrganizationTeamsOrganizationTeamsTeamConnectionEdgesTeamEdgeNodeTeam.DefaultMemberRole, and is useful for accessing the field via an interface.
+func (v *GetOrganizationTeamsOrganizationTeamsTeamConnectionEdgesTeamEdgeNodeTeam) GetDefaultMemberRole() string {
+	return v.DefaultMemberRole
+}
+
+// GetMembersCanCreatePipelines returns GetOrganizationTeamsOrganizationTeamsTeamConnectionEdgesTeamEdgeNodeTeam.MembersCanCreatePipelines, and is useful for accessing the field via an interface.
+func (v *GetOrganizationTeamsOrganizationTeamsTeamConnectionEdgesTeamEdgeNodeTeam) GetMembersCanCreatePipelines() bool {
+	return v.MembersCanCreatePipelines
+}
+
+// GetOrganizationTeamsOrganizationTeamsTeamConnectionPageInfo includes the requested fields of the GraphQL type PageInfo.
+// The GraphQL type's documentation follows.
+//
+// Information about pagination in a connection.
+type GetOrganizationTeamsOrganizationTeamsTeamConnectionPageInfo struct {
+	// When paginating forwards, the cursor to continue.
+	EndCursor string `json:"endCursor"`
+	// When paginating forwards, are there more items?
+	HasNextPage bool `json:"hasNextPage"`
+}
+
+// GetEndCursor returns GetOrganizationTeamsOrganizationTeamsTeamConnectionPageInfo.EndCursor, and is useful for accessing the field via an interface.
+func (v *GetOrganizationTeamsOrganizationTeamsTeamConnectionPageInfo) GetEndCursor() string {
+	return v.EndCursor
+}
+
+// GetHasNextPage returns GetOrganizationTeamsOrganizationTeamsTeamConnectionPageInfo.HasNextPage, and is useful for accessing the field via an interface.
+func (v *GetOrganizationTeamsOrganizationTeamsTeamConnectionPageInfo) GetHasNextPage() bool {
+	return v.HasNextPage
+}
+
+// GetOrganizationTeamsResponse is returned by GetOrganizationTeams on success.
+type GetOrganizationTeamsResponse struct {
+	// Find an organization
+	Organization GetOrganizationTeamsOrganization `json:"organization"`
+}
+
+// GetOrganization returns GetOrganizationTeamsResponse.Organization, and is useful for accessing the field via an interface.
+func (v *GetOrganizationTeamsResponse) GetOrganization() GetOrganizationTeamsOrganization {
 	return v.Organization
 }
 
@@ -2353,6 +2647,18 @@ type TeamSuiteFieldsTeam struct {
 // GetId returns TeamSuiteFieldsTeam.Id, and is useful for accessing the field via an interface.
 func (v *TeamSuiteFieldsTeam) GetId() string { return v.Id }
 
+// __GetOrganizationClustersInput is used internally by genqlient
+type __GetOrganizationClustersInput struct {
+	Slug   string  `json:"slug"`
+	Cursor *string `json:"cursor"`
+}
+
+// GetSlug returns __GetOrganizationClustersInput.Slug, and is useful for accessing the field via an interface.
+func (v *__GetOrganizationClustersInput) GetSlug() string { return v.Slug }
+
+// GetCursor returns __GetOrganizationClustersInput.Cursor, and is useful for accessing the field via an interface.
+func (v *__GetOrganizationClustersInput) GetCursor() *string { return v.Cursor }
+
 // __GetOrganizationMemberByEmailInput is used internally by genqlient
 type __GetOrganizationMemberByEmailInput struct {
 	Slug  string `json:"slug"`
@@ -2376,6 +2682,18 @@ func (v *__GetOrganizationMembersInput) GetSlug() string { return v.Slug }
 
 // GetCursor returns __GetOrganizationMembersInput.Cursor, and is useful for accessing the field via an interface.
 func (v *__GetOrganizationMembersInput) GetCursor() *string { return v.Cursor }
+
+// __GetOrganizationTeamsInput is used internally by genqlient
+type __GetOrganizationTeamsInput struct {
+	Slug   string  `json:"slug"`
+	Cursor *string `json:"cursor"`
+}
+
+// GetSlug returns __GetOrganizationTeamsInput.Slug, and is useful for accessing the field via an interface.
+func (v *__GetOrganizationTeamsInput) GetSlug() string { return v.Slug }
+
+// GetCursor returns __GetOrganizationTeamsInput.Cursor, and is useful for accessing the field via an interface.
+func (v *__GetOrganizationTeamsInput) GetCursor() *string { return v.Cursor }
 
 // __GetRegistryIDInput is used internally by genqlient
 type __GetRegistryIDInput struct {
@@ -16499,6 +16817,63 @@ func (v *upsertBannerResponse) GetOrganizationBannerUpsert() upsertBannerOrganiz
 	return v.OrganizationBannerUpsert
 }
 
+// The query executed by GetOrganizationClusters.
+const GetOrganizationClusters_Operation = `
+query GetOrganizationClusters ($slug: ID!, $cursor: String) {
+	organization(slug: $slug) {
+		clusters(first: 500, after: $cursor) {
+			pageInfo {
+				endCursor
+				hasNextPage
+			}
+			edges {
+				node {
+					id
+					uuid
+					name
+					description
+					emoji
+					color
+					defaultQueue {
+						id
+						uuid
+						key
+						description
+					}
+				}
+			}
+		}
+	}
+}
+`
+
+func GetOrganizationClusters(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	slug string,
+	cursor *string,
+) (data_ *GetOrganizationClustersResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "GetOrganizationClusters",
+		Query:  GetOrganizationClusters_Operation,
+		Variables: &__GetOrganizationClustersInput{
+			Slug:   slug,
+			Cursor: cursor,
+		},
+	}
+
+	data_ = &GetOrganizationClustersResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
 // The query executed by GetOrganizationMemberByEmail.
 const GetOrganizationMemberByEmail_Operation = `
 query GetOrganizationMemberByEmail ($slug: ID!, $email: String) {
@@ -16586,6 +16961,60 @@ func GetOrganizationMembers(
 	}
 
 	data_ = &GetOrganizationMembersResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
+// The query executed by GetOrganizationTeams.
+const GetOrganizationTeams_Operation = `
+query GetOrganizationTeams ($slug: ID!, $cursor: String) {
+	organization(slug: $slug) {
+		teams(first: 500, after: $cursor) {
+			pageInfo {
+				endCursor
+				hasNextPage
+			}
+			edges {
+				node {
+					id
+					uuid
+					name
+					description
+					slug
+					privacy
+					isDefaultTeam
+					defaultMemberRole
+					membersCanCreatePipelines
+				}
+			}
+		}
+	}
+}
+`
+
+func GetOrganizationTeams(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	slug string,
+	cursor *string,
+) (data_ *GetOrganizationTeamsResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "GetOrganizationTeams",
+		Query:  GetOrganizationTeams_Operation,
+		Variables: &__GetOrganizationTeamsInput{
+			Slug:   slug,
+			Cursor: cursor,
+		},
+	}
+
+	data_ = &GetOrganizationTeamsResponse{}
 	resp_ := &graphql.Response{Data: data_}
 
 	err_ = client_.MakeRequest(

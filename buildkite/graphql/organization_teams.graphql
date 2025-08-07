@@ -1,0 +1,27 @@
+query GetOrganizationTeams(
+    $slug: ID!,
+    # @genqlient(pointer: true)
+    $cursor: String
+) {
+    organization(slug: $slug) {
+        teams(first: 500, after: $cursor) {
+            pageInfo {
+                endCursor
+                hasNextPage
+            }
+            edges {
+                node {
+                    id
+                    uuid
+                    name
+                    description
+                    slug
+                    privacy
+                    isDefaultTeam
+                    defaultMemberRole
+                    membersCanCreatePipelines
+                }
+            }
+        }
+    }
+}
