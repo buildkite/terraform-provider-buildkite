@@ -120,6 +120,7 @@ func userAgent(providerName, providerVersion, tfVersion string) string {
 func (*terraformProvider) DataSources(context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
 		newClusterDatasource,
+		newClustersDatasource,
 		newMetaDatasource,
 		newOrganizationDatasource,
 		newOrganizationMemberDatasource,
@@ -130,6 +131,7 @@ func (*terraformProvider) DataSources(context.Context) []func() datasource.DataS
 		newRegistryDatasource,
 		newSignedPipelineStepsDataSource,
 		newTeamDatasource,
+		newTeamsDatasource,
 		newTestSuiteDatasource,
 	}
 }
