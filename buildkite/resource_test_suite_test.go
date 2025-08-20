@@ -339,7 +339,6 @@ func testTestSuiteDestroy(s *terraform.State) error {
 		if rs.Type != "buildkite_test_suite" {
 			continue
 		}
-
 	}
 	return nil
 }

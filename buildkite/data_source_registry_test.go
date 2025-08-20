@@ -10,8 +10,8 @@ import (
 
 func TestAccDataSourceRegistry_Basic(t *testing.T) {
 	randName := acctest.RandString(10)
-	var resourceName = "buildkite_registry.test_reg"
-	var dataSourceName = "data.buildkite_registry.data_test_reg"
+	resourceName := "buildkite_registry.test_reg"
+	dataSourceName := "data.buildkite_registry.data_test_reg"
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
