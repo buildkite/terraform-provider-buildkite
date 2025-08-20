@@ -1297,7 +1297,7 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 				},
 				{
 					Config:      configDuplicate,
-					ExpectError: regexp.MustCompile(fmt.Sprintf("Pipeline name already exists.*%s", pipelineName)),
+					ExpectError: regexp.MustCompile(fmt.Sprintf("(?s)Pipeline name already exists.*%s", pipelineName)),
 					PlanOnly:    true,
 				},
 			},
