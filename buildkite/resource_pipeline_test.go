@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -77,7 +78,6 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 	}
 	aggregateRemoteCheck := func(pipeline *getPipelinePipeline) resource.TestCheckFunc {
 		return func(s *terraform.State) error {
-
 			var err error
 			p := s.RootModule().Resources["buildkite_pipeline.pipeline"]
 
@@ -96,7 +96,6 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 
 	aggregateRemoteCheckWithTemplateSteps := func(pipeline *getPipelinePipeline) resource.TestCheckFunc {
 		return func(s *terraform.State) error {
-
 			var err error
 			p := s.RootModule().Resources["buildkite_pipeline.pipeline"]
 
@@ -1257,6 +1256,49 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 						resource.TestCheckNoResourceAttr("buildkite_pipeline.pipeline", "steps"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "name", pipelineName),
 					),
+				},
+			},
+		})
+	})
+
+	t.Run("detect duplicate pipeline names during plan", func(t *testing.T) {
+		pipelineName := acctest.RandString(12)
+
+		// First, create a pipeline with a unique name
+		configOriginal := fmt.Sprintf(`
+			resource "buildkite_pipeline" "original" {
+				name = "%s"
+				repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
+			}
+		`, pipelineName)
+
+		// Then, try to create another pipeline with the same name
+		configDuplicate := fmt.Sprintf(`
+			resource "buildkite_pipeline" "original" {
+				name = "%s"
+				repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
+			}
+			resource "buildkite_pipeline" "duplicate" {
+				name = "%s"
+				repository = "https://github.com/buildkite/terraform-provider-buildkite2.git"
+			}
+		`, pipelineName, pipelineName)
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			CheckDestroy:             testAccCheckPipelineDestroyFunc,
+			Steps: []resource.TestStep{
+				{
+					Config: configOriginal,
+					Check: resource.ComposeAggregateTestCheckFunc(
+						resource.TestCheckResourceAttr("buildkite_pipeline.original", "name", pipelineName),
+					),
+				},
+				{
+					Config:      configDuplicate,
+					ExpectError: regexp.MustCompile(fmt.Sprintf("Pipeline name already exists.*%s", pipelineName)),
+					PlanOnly:    true,
 				},
 			},
 		})

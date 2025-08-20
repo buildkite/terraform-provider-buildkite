@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"regexp"
+	"strings"
 	"time"
 	"unsafe"
 
@@ -341,7 +342,6 @@ func (p *pipelineResource) Delete(ctx context.Context, req resource.DeleteReques
 
 		return retryContextError(err)
 	})
-
 	if err != nil {
 		errorMsg := fmt.Sprintf("Could not delete pipeline: %s", err.Error())
 		if isActiveJobsError(err) {
@@ -862,6 +862,36 @@ func (p *pipelineResource) ModifyPlan(ctx context.Context, req resource.ModifyPl
 		return
 	}
 
+	// Check for duplicate pipeline names during creation
+	if req.State.Raw.IsNull() {
+		// This is a create operation
+		var planName, planSlug types.String
+		resp.Diagnostics.Append(req.Plan.GetAttribute(ctx, path.Root("name"), &planName)...)
+		resp.Diagnostics.Append(req.Plan.GetAttribute(ctx, path.Root("slug"), &planSlug)...)
+
+		if !planName.IsNull() && !planName.IsUnknown() {
+			// Derive slug from name if not provided
+			slugToCheck := deriveSlugFromName(planName.ValueString())
+			if !planSlug.IsNull() && !planSlug.IsUnknown() {
+				// Use the provided slug instead
+				slugToCheck = planSlug.ValueString()
+			}
+
+			// Check if a pipeline with this slug already exists
+			orgPipelineSlug := fmt.Sprintf("%s/%s", p.client.organization, slugToCheck)
+			existingPipeline, err := getPipeline(ctx, p.client.genqlient, orgPipelineSlug)
+			if err == nil && existingPipeline != nil && existingPipeline.Pipeline.Id != "" {
+				// Pipeline with this name/slug already exists
+				resp.Diagnostics.AddError(
+					"Pipeline name already exists",
+					fmt.Sprintf("A pipeline with the name '%s' (slug: '%s') already exists in the organization '%s'. Please choose a different name or slug.",
+						planName.ValueString(), slugToCheck, p.client.organization),
+				)
+				return
+			}
+		}
+	}
+
 	var configTemplate, configSteps types.String
 	resp.Diagnostics.Append(req.Config.GetAttribute(ctx, path.Root("pipeline_template_id"), &configTemplate)...)
 	resp.Diagnostics.Append(req.Config.GetAttribute(ctx, path.Root("steps"), &configSteps)...)
@@ -1211,6 +1241,26 @@ func getTagsFromSchema(plan *pipelineResourceModel) []PipelineTagInput {
 		}
 	}
 	return tags
+}
+
+// deriveSlugFromName converts a pipeline name to a slug following Buildkite's conventions
+// This mimics the API behavior: lowercase, replace spaces and special chars with hyphens
+func deriveSlugFromName(name string) string {
+	// Convert to lowercase
+	slug := strings.ToLower(name)
+
+	// Replace spaces and special characters with hyphens
+	reg := regexp.MustCompile(`[^a-z0-9-]+`)
+	slug = reg.ReplaceAllString(slug, "-")
+
+	// Remove leading/trailing hyphens
+	slug = strings.Trim(slug, "-")
+
+	// Collapse multiple hyphens into one
+	reg = regexp.MustCompile(`-+`)
+	slug = reg.ReplaceAllString(slug, "-")
+
+	return slug
 }
 
 // updatePipelineResourceExtraInfo updates the terraform resource with data received from Buildkite REST API

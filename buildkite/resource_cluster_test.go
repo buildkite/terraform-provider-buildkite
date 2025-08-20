@@ -201,7 +201,6 @@ func testAccCheckClusterDestroy(s *terraform.State) error {
 		if rs.Type != "buildkite_cluster" {
 			continue
 		}
-
 	}
 	return nil
 }
