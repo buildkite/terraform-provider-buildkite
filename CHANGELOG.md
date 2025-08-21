@@ -1,9 +1,5 @@
 # Changelog
 
-## [v1.24.1](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.24.0...v1.24.1)
-
-- Warn on `plan` when a pipeline with the same name already exists by @mcncl in https://github.com/buildkite/terraform-provider-buildkite/pull/975
-
 ## [v1.24.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.23.0...v1.24.0)
 
 - Improve default team handling for pipeline resource by @JoeColeman95 in https://github.com/buildkite/terraform-provider-buildkite/pull/969

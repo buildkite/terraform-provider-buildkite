@@ -219,6 +219,7 @@ func testCheckTeamMemberResourceRemoved(s *terraform.State) error {
 		if rs.Type != "buildkite_team_member" {
 			continue
 		}
+
 	}
 	return nil
 }

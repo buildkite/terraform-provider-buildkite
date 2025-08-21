@@ -228,6 +228,7 @@ func testAccCheckClusterAgentTokenDestroy(s *terraform.State) error {
 		if rs.Type != "buildkite_cluster_agent_token" {
 			continue
 		}
+
 	}
 	return nil
 }
