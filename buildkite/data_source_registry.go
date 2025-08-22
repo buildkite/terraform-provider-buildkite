@@ -17,10 +17,8 @@ import (
 )
 
 // Ensure provider defined types fully satisfy framework interfaces
-var (
-	_ datasource.DataSource              = &registryDatasource{}
-	_ datasource.DataSourceWithConfigure = &registryDatasource{}
-)
+var _ datasource.DataSource = &registryDatasource{}
+var _ datasource.DataSourceWithConfigure = &registryDatasource{}
 
 func newRegistryDatasource() datasource.DataSource {
 	return &registryDatasource{}
@@ -220,6 +218,7 @@ func (d *registryDatasource) Read(ctx context.Context, req datasource.ReadReques
 
 		return nil
 	})
+
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to query Registry", fmt.Sprintf("Failed to query Registry with slug '%s' after multiple attempts: %s", state.Slug.ValueString(), err.Error()))
 		return

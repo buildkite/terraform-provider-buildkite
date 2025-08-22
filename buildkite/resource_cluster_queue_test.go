@@ -559,6 +559,7 @@ func testAccCheckClusterQueueDestroy(s *terraform.State) error {
 		if rs.Type != "buildkite_cluster_queue" {
 			continue
 		}
+
 	}
 	return nil
 }

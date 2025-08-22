@@ -225,6 +225,7 @@ func testAccCheckTeamResourceDestroy(s *terraform.State) error {
 		if rs.Type != "buildkite_team" {
 			continue
 		}
+
 	}
 	return nil
 }

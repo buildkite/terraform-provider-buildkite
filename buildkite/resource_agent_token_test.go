@@ -11,6 +11,7 @@ import (
 )
 
 func TestAccBuildkiteAgentToken(t *testing.T) {
+
 	basic := func(name string) string {
 		return fmt.Sprintf(`
 		provider "buildkite" {

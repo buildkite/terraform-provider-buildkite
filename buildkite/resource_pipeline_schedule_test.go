@@ -220,6 +220,7 @@ func testAccCheckPipelineScheduleDestroy(s *terraform.State) error {
 		if rs.Type != "buildkite_pipeline_schedule" {
 			continue
 		}
+
 	}
 	return nil
 }
