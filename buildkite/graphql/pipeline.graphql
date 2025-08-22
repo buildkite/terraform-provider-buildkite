@@ -26,6 +26,110 @@ fragment PipelineFields on Pipeline {
     name
     repository {
         url
+        provider {
+            __typename
+            ... on RepositoryProviderGithub {
+                settings {
+                    buildBranches
+                    buildPullRequestBaseBranchChanged
+                    buildPullRequestForks
+                    buildPullRequestLabelsChanged
+                    buildPullRequestReadyForReview
+                    buildPullRequests
+                    buildTags
+                    cancelDeletedBranchBuilds
+                    filterCondition
+                    filterEnabled
+                    ignoreDefaultBranchPullRequests
+                    prefixPullRequestForkBranchNames
+                    publishBlockedAsPending
+                    publishCommitStatus
+                    publishCommitStatusPerStep
+                    pullRequestBranchFilterConfiguration
+                    pullRequestBranchFilterEnabled
+                    separatePullRequestStatuses
+                    skipBuildsForExistingCommits
+                    skipPullRequestBuildsForExistingCommits
+                    triggerMode
+                }
+            }
+            ... on RepositoryProviderGitlab {
+                settings {
+                    filterCondition
+                    filterEnabled
+                }
+            }
+            ... on RepositoryProviderBeanstalk {
+                settings {
+                    filterCondition
+                    filterEnabled
+                }
+            }
+            ... on RepositoryProviderBitbucket {
+                settings {
+                    buildBranches
+                    buildPullRequests
+                    buildTags
+                    # alias due to mismatch between other providers types
+                    canceldeletedbranchbuilds: cancelDeletedBranchBuilds
+                    filterCondition
+                    filterEnabled
+                    ignoreDefaultBranchPullRequests
+                    publishCommitStatus
+                    publishCommitStatusPerStep
+                    pullRequestBranchFilterConfiguration
+                    pullRequestBranchFilterEnabled
+                    skipbuildsforexistingcommits: skipBuildsForExistingCommits
+                    skipPullRequestBuildsForExistingCommits
+                }
+            }
+            ... on RepositoryProviderBitbucketServer {
+                settings {
+                    buildBranches
+                    buildPullRequests
+                    buildTags
+                    filterCondition
+                    filterEnabled
+                }
+            }
+            ... on RepositoryProviderCodebase {
+                settings {
+                    filterCondition
+                    filterEnabled
+                }
+            }
+            ... on RepositoryProviderGithubEnterprise {
+                settings {
+                    buildBranches
+                    buildPullRequestBaseBranchChanged
+                    buildPullRequestForks
+                    buildPullRequestLabelsChanged
+                    buildPullRequestReadyForReview
+                    buildPullRequests
+                    buildTags                    
+                    cancelDeletedBranchBuilds
+                    filterCondition
+                    filterEnabled
+                    ignoreDefaultBranchPullRequests
+                    prefixPullRequestForkBranchNames
+                    publishBlockedAsPending
+                    publishCommitStatus
+                    publishCommitStatusPerStep
+                    pullRequestBranchFilterConfiguration
+                    pullRequestBranchFilterEnabled
+                    separatePullRequestStatuses
+                    skipBuildsForExistingCommits
+                    skipPullRequestBuildsForExistingCommits
+                    triggerMode
+                }
+            }
+            ... on RepositoryProviderUnknown {
+                settings {
+                    filterCondition
+                    filterEnabled
+                }
+            }
+        }
     }
     pipelineTemplate {
         # @genqlient(pointer: true)
