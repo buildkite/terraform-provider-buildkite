@@ -261,7 +261,7 @@ func (p *pipelineResource) Create(ctx context.Context, req resource.CreateReques
 	}
 	log.Printf("Successfully created pipeline with id '%s'.", response.PipelineCreate.Pipeline.Id)
 
-	setPipelineModel(&state, &response.PipelineCreate.Pipeline)
+	setPipelineModel(&state, &response.PipelineCreate.Pipeline, &plan)
 	state.DefaultTeamId = plan.DefaultTeamId
 
 	useSlugValue := response.PipelineCreate.Pipeline.Slug
@@ -397,7 +397,7 @@ func (p *pipelineResource) Read(ctx context.Context, req resource.ReadRequest, r
 			return
 		}
 
-		setPipelineModel(&state, pipelineNode)
+		setPipelineModel(&state, pipelineNode, nil)
 
 		if state.ProviderSettings != nil {
 			updatePipelineResourceExtraInfo(&state, extraInfo)
@@ -600,7 +600,6 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 			"emoji": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Default:             stringdefault.StaticString(""),
 				MarkdownDescription: "An emoji that represents this pipeline.",
 			},
 			"maximum_timeout_in_minutes": schema.Int64Attribute{
@@ -969,7 +968,7 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 		resp.Diagnostics.Append(resp.Private.SetKey(ctx, "slugSource", []byte(`{"source": "user"}`))...)
 	}
 
-	setPipelineModel(&state, &response.PipelineUpdate.Pipeline)
+	setPipelineModel(&state, &response.PipelineUpdate.Pipeline, &plan)
 
 	if plan.DefaultTeamId.IsNull() && !state.DefaultTeamId.IsNull() {
 		// if the plan is empty but was previously set, just remove the team
@@ -1053,7 +1052,7 @@ func (*pipelineResource) ImportState(ctx context.Context, req resource.ImportSta
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
 
-func setPipelineModel(model *pipelineResourceModel, data pipelineResponse) {
+func setPipelineModel(model *pipelineResourceModel, data pipelineResponse, plan *pipelineResourceModel) {
 	defaultTimeoutInMinutes := (*int64)(unsafe.Pointer(data.GetDefaultTimeoutInMinutes()))
 	maximumTimeoutInMinutes := (*int64)(unsafe.Pointer(data.GetMaximumTimeoutInMinutes()))
 
@@ -1068,11 +1067,13 @@ func setPipelineModel(model *pipelineResourceModel, data pipelineResponse) {
 	model.DefaultBranch = types.StringValue(data.GetDefaultBranch())
 	model.DefaultTimeoutInMinutes = types.Int64PointerValue(defaultTimeoutInMinutes)
 	model.Description = types.StringValue(data.GetDescription())
-	// Normalize null emoji from API to empty string to match schema default
+	// Handle emoji: API returns null for empty strings, but preserve empty string if user explicitly set it
 	if emoji := data.GetEmoji(); emoji != nil {
 		model.Emoji = types.StringValue(*emoji)
+	} else if plan != nil && !plan.Emoji.IsNull() && plan.Emoji.ValueString() == "" {
+		model.Emoji = types.StringValue("") // Preserve explicit empty string from config
 	} else {
-		model.Emoji = types.StringValue("")
+		model.Emoji = types.StringNull()
 	}
 	model.Id = types.StringValue(data.GetId())
 	model.MaximumTimeoutInMinutes = types.Int64PointerValue(maximumTimeoutInMinutes)
