@@ -708,6 +708,8 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 								build_branches = true
 								build_tags = true
 								build_pull_request_ready_for_review = true
+								build_pull_request_labels_changed = true
+								build_pull_request_base_branch_changed = true
 								cancel_deleted_branch_builds = true
 								filter_enabled = true
 								filter_condition = "true"
@@ -731,6 +733,8 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 						resource.TestCheckResourceAttrPair("buildkite_pipeline.pipeline", "cluster_id", "buildkite_cluster.cluster", "id"),
 						resource.TestCheckResourceAttrPair("buildkite_pipeline.pipeline", "cluster_name", "buildkite_cluster.cluster", "name"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.ignore_default_branch_pull_requests", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_pull_request_labels_changed", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_pull_request_base_branch_changed", "true"),
 						aggregateRemoteCheck(&pipeline),
 					),
 				},

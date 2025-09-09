@@ -175,6 +175,7 @@ Optional:
 - `build_branches` (Boolean) Whether to create builds when branches are pushed.
 - `build_pull_request_forks` (Boolean) Whether to create builds for pull requests from third-party forks.
 - `build_pull_request_labels_changed` (Boolean) Whether to create builds for pull requests when labels are added or removed.
+- `build_pull_request_base_branch_changed` (Boolean) Whether to create builds for pull requests when its base branch changes.
 - `build_pull_request_ready_for_review` (Boolean) Whether to create a build when a pull request changes to "Ready for review".
 - `build_pull_requests` (Boolean) Whether to create builds for commits that are part of a pull request.
 - `build_tags` (Boolean) Whether to create builds when tags are pushed.
