@@ -599,6 +599,8 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 			},
 			"emoji": schema.StringAttribute{
 				Optional:            true,
+				Computed:            true,
+				Default:             stringdefault.StaticString(""),
 				MarkdownDescription: "An emoji that represents this pipeline.",
 			},
 			"maximum_timeout_in_minutes": schema.Int64Attribute{
@@ -1066,7 +1068,12 @@ func setPipelineModel(model *pipelineResourceModel, data pipelineResponse) {
 	model.DefaultBranch = types.StringValue(data.GetDefaultBranch())
 	model.DefaultTimeoutInMinutes = types.Int64PointerValue(defaultTimeoutInMinutes)
 	model.Description = types.StringValue(data.GetDescription())
-	model.Emoji = types.StringPointerValue(data.GetEmoji())
+	// Normalize null emoji from API to empty string to match schema default
+	if emoji := data.GetEmoji(); emoji != nil {
+		model.Emoji = types.StringValue(*emoji)
+	} else {
+		model.Emoji = types.StringValue("")
+	}
 	model.Id = types.StringValue(data.GetId())
 	model.MaximumTimeoutInMinutes = types.Int64PointerValue(maximumTimeoutInMinutes)
 	model.Name = types.StringValue(data.GetName())
