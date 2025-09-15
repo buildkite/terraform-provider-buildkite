@@ -54,6 +54,38 @@ resource "buildkite_pipeline" "signed-pipeline" {
   steps      = data.buildkite_signed_pipeline_steps.signed-steps.steps
 }
 
+# Example showing proper metadata validation handling
+# Note: `required = false` only affects the UI. If you also set `default = ""`,
+# the metadata key will exist with an empty string. Some buildkite-agent commands
+# (e.g., `meta-data set`) reject empty/whitespace-only values and fail at runtime.
+# Safe approaches:
+#   • Make the field `required: true` (no default), OR
+#   • Keep it optional but provide a non-empty default.
+
+resource "buildkite_pipeline" "metadata_example" {
+  name       = "metadata-validation-example"
+  repository = "git@github.com:my-org/my-repo"
+  cluster_id = data.buildkite_cluster.default.id
+
+  steps = <<YAML
+steps:
+  # Block step showing the problematic pattern
+  - block: "Deploy to Production"
+    fields:
+      - text: "VERSION"
+        key: "version"
+        default: "1.0.0"
+        required: false    # ensures a non-empty value even if the user leaves it blank 
+
+  - wait
+
+  - label: ":rocket: Deploy with version"
+    command: |
+      set -euo pipefail
+      VERSION="$(buildkite-agent meta-data get version)"
+      echo "Deploying version: $VERSION"
+YAML
+}
 
 # Advanced example using Github provider to create repository webhook for Buildkite pipeline
 
