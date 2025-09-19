@@ -1523,16 +1523,16 @@ func pipelineSchemaV0() schema.Schema {
 							Optional: true,
 						},
 						"build_merge_group_checks_requested": schema.BoolAttribute{
-							Computed:            true,
-							Optional:            true,
+							Computed: true,
+							Optional: true,
 						},
 						"cancel_when_merge_group_destroyed": schema.BoolAttribute{
-							Computed:            true,
-							Optional:            true,
+							Computed: true,
+							Optional: true,
 						},
 						"use_merge_group_base_commit_for_git_diff_base": schema.BoolAttribute{
-							Computed:            true,
-							Optional:            true,
+							Computed: true,
+							Optional: true,
 						},
 					},
 				},
