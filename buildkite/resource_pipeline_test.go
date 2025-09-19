@@ -716,6 +716,9 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 								publish_commit_status_per_step = true
 								separate_pull_request_statuses = true
 								ignore_default_branch_pull_requests = true
+								build_merge_group_checks_requested = true
+								cancel_when_merge_group_destroyed = true
+								use_merge_group_base_commit_for_git_diff_base = true
 							}
 						}
 					`, clusterName, pipelineName),
@@ -731,6 +734,9 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 						resource.TestCheckResourceAttrPair("buildkite_pipeline.pipeline", "cluster_id", "buildkite_cluster.cluster", "id"),
 						resource.TestCheckResourceAttrPair("buildkite_pipeline.pipeline", "cluster_name", "buildkite_cluster.cluster", "name"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.ignore_default_branch_pull_requests", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_merge_group_checks_requested", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.cancel_when_merge_group_destroyed", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.use_merge_group_base_commit_for_git_diff_base", "true"),
 						aggregateRemoteCheck(&pipeline),
 					),
 				},
