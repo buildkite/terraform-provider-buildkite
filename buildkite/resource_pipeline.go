@@ -835,17 +835,18 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 					"build_merge_group_checks_requested": schema.BoolAttribute{
 						Computed:            true,
 						Optional:            true,
-						MarkdownDescription: "Whether to create builds for merge group check runs.",
+						MarkdownDescription: "Whether to create builds when merge queues and checks are requested for a merge group.",
 					},
 					"cancel_when_merge_group_destroyed": schema.BoolAttribute{
 						Computed:            true,
 						Optional:            true,
-						MarkdownDescription: "Whether to cancel running builds when a merge group is destroyed.",
+						MarkdownDescription: "Whether to cancel any running builds belonging to a removed merge group.",
 					},
 					"use_merge_group_base_commit_for_git_diff_base": schema.BoolAttribute{
-						Computed:            true,
-						Optional:            true,
-						MarkdownDescription: "Whether to use the merge group base commit for git diff base.",
+						Computed: true,
+						Optional: true,
+						MarkdownDescription: "When enabled, agents performing a git diff to determine steps to upload based on [`if_changed`](https://buildkite.com/docs/pipelines/configure/step-types/command-step#agent-applied-attributes)" +
+							"comparisons will use the base commit that points to the previous merge group rather than the base branch",
 					},
 				},
 			},
