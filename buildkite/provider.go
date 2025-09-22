@@ -83,10 +83,10 @@ func (tf *terraformProvider) Configure(ctx context.Context, req provider.Configu
 	}
 
 	config := clientConfig{
-		apiToken:   apiToken,
-		graphqlURL: graphqlUrl,
-		org:        organization,
-		restURL:    restURL,
+		apiToken:   strings.TrimSpace(apiToken),
+		graphqlURL: strings.TrimSpace(graphqlUrl),
+		org:        strings.TrimSpace(organization),
+		restURL:    strings.TrimSpace(restURL),
 		timeouts:   data.Timeouts,
 		userAgent:  userAgent("buildkite", tf.version, req.TerraformVersion),
 		maxRetries: maxRetries,
@@ -120,6 +120,7 @@ func userAgent(providerName, providerVersion, tfVersion string) string {
 func (*terraformProvider) DataSources(context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
 		newClusterDatasource,
+		newClustersDatasource,
 		newMetaDatasource,
 		newOrganizationDatasource,
 		newOrganizationMemberDatasource,
@@ -130,6 +131,7 @@ func (*terraformProvider) DataSources(context.Context) []func() datasource.DataS
 		newRegistryDatasource,
 		newSignedPipelineStepsDataSource,
 		newTeamDatasource,
+		newTeamsDatasource,
 		newTestSuiteDatasource,
 	}
 }

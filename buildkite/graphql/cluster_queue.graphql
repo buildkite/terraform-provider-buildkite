@@ -13,6 +13,8 @@ fragment HostedAgentsQueueSettingsValues on HostedAgentQueueSettings {
         }
         macos {
             xcodeVersion
+            # @genqlient(pointer: true)
+            macosVersion
         }
     }
 }
@@ -69,6 +71,7 @@ query getClusterQueues(
 # @genqlient(for: "HostedAgentsPlatformSettingsInput.macos", pointer: true, omitempty: true)
 # @genqlient(for: "HostedAgentsLinuxPlatformSettingsInput.agentImageRef", pointer: true)
 # @genqlient(for: "HostedAgentsMacosPlatformSettingsInput.xcodeVersion", pointer: true)
+# @genqlient(for: "HostedAgentsMacosPlatformSettingsInput.macosVersion", pointer: true)
 mutation createClusterQueue(
     $organizationId: ID!
     $clusterId: ID!
@@ -97,6 +100,7 @@ mutation createClusterQueue(
 # @genqlient(for: "HostedAgentsPlatformSettingsInput.macos", pointer: true, omitempty: true)
 # @genqlient(for: "HostedAgentsLinuxPlatformSettingsInput.agentImageRef", pointer: true)
 # @genqlient(for: "HostedAgentsMacosPlatformSettingsInput.xcodeVersion", pointer: true)
+# @genqlient(for: "HostedAgentsMacosPlatformSettingsInput.macosVersion", pointer: true)
 mutation updateClusterQueue(
     $organizationId: ID!
     $id: ID!
@@ -143,5 +147,22 @@ mutation pauseDispatchClusterQueue($id: ID!) {
 mutation resumeDispatchClusterQueue($id: ID!) {
     clusterQueueResumeDispatch(input: { id: $id }) {
         clientMutationId
+    }
+}
+
+query getClusterQueueByNode($id: ID!) {
+    node(id: $id) {
+        ... on ClusterQueue {
+            ...ClusterQueueValues
+            dispatchPaused
+            # @genqlient(pointer: true)
+            dispatchPausedAt
+            # @genqlient(pointer: true)
+            dispatchPausedBy {
+                id
+            }
+            # @genqlient(pointer: true)
+            dispatchPausedNote
+        }
     }
 }

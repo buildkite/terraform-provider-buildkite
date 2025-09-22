@@ -881,6 +881,9 @@ enum AuditEventType {
 	AGENT_TOKEN_UPDATED
 	AUTHORIZATION_CREATED
 	AUTHORIZATION_DELETED
+	CACHE_REGISTRY_CREATED
+	CACHE_REGISTRY_DELETED
+	CACHE_REGISTRY_UPDATED
 	CLUSTER_CREATED
 	CLUSTER_DELETED
 	CLUSTER_PERMISSION_CREATED
@@ -1063,52 +1066,53 @@ union AuditSubjectNode =APIAccessToken | AgentToken | AuthorizationBitbucket | A
 All the possible types of subjects in an Audit Event
 """
 enum AuditSubjectType {
-	SSO_PROVIDER
-	SCM_SERVICE
-	SCM_PIPELINE_SETTINGS
-	SCM_REPOSITORY_HOST
-	SUITE_MONITOR
-	SUITE_SAVED_VIEW
-	SUITE_WORKFLOW
-	SUITE
-	PORTAL_TOKEN
-	USER_TOTP
-	PORTAL_SECRET
-	TEAM_SUITE
-	PORTAL
-	USER_EMAIL
-	ORGANIZATION
-	PIPELINE
 	CLUSTER_PERMISSION
-	TEAM
-	SUBSCRIPTION
-	REGISTRY
-	USER
-	RULE
 	CLUSTER
 	SECRET
+	AUTHORIZATION
 	CLUSTER_QUEUE_TOKEN
 	CLUSTER_TOKEN
+	PORTAL_TOKEN
+	PORTAL_SECRET
+	TEAM
+	REGISTRY
+	RULE
+	SUBSCRIPTION
 	AGENT_TOKEN
 	API_ACCESS_TOKEN
+	CACHE_REGISTRY
 	CLUSTER_QUEUE
 	NOTIFICATION_SERVICE
 	ORGANIZATION_BANNER
-	AUTHORIZATION
-	JOB
-	ORGANIZATION_INVITATION
 	ORGANIZATION_BILLING_SETTING
-	ORGANIZATION_IMPERSONATION_REQUEST
+	ORGANIZATION_INVITATION
 	ORGANIZATION_MEMBER
+	ORGANIZATION_IMPERSONATION_REQUEST
+	PIPELINE
 	PIPELINE_TEMPLATE
+	PORTAL
 	PIPELINE_SCHEDULE
 	PORTAL_TOKEN_CODE
 	TEAM_PIPELINE
 	TEAM_REGISTRY
 	TEAM_MEMBER
+	TEAM_SUITE
 	TEAM_SECRET
 	COMPOSITE_REGISTRY_UPSTREAM
 	REGISTRY_TOKEN
+	SCM_SERVICE
+	SCM_PIPELINE_SETTINGS
+	SCM_REPOSITORY_HOST
+	SUITE_MONITOR
+	SUITE_SAVED_VIEW
+	SSO_PROVIDER
+	SUITE_WORKFLOW
+	USER_EMAIL
+	USER_TOTP
+	JOB
+	ORGANIZATION
+	SUITE
+	USER
 }
 
 """
@@ -2102,6 +2106,14 @@ Settings for hosted agents used for jobs in this queue
 	id: ID!
 	key: String!
 """
+Latest metrics for this cluster queue (only if advanced queue metrics are enabled)
+"""
+	metrics: ClusterQueueMetrics
+"""
+The health status of stacks associated with this queue
+"""
+	stackHealth: String
+"""
 The public UUID for this cluster queue
 """
 	uuid: ID!
@@ -2186,6 +2198,28 @@ A unique identifier for the client performing the mutation.
 type ClusterQueueEdge {
 	cursor: String!
 	node: ClusterQueue
+}
+
+"""
+Latest metrics for a cluster queue (time bucket, agent/job counts)
+"""
+type ClusterQueueMetrics {
+"""
+Number of connected agents in the latest bucket
+"""
+	connectedAgentsCount: Int!
+"""
+Number of running jobs in the latest bucket
+"""
+	runningJobsCount: Int!
+"""
+The timestamp (start of the most recent time bucket, in UTC)
+"""
+	timestamp: DateTime!
+"""
+Number of waiting (scheduled) jobs in the latest bucket
+"""
+	waitingJobsCount: Int!
 }
 
 """
@@ -2763,9 +2797,31 @@ Configuration options for the base image of hosted agent instances on macOS plat
 """
 type HostedAgentMacOSSettingsType {
 """
+The macOS version to use for macOS hosted agent instances for this cluster queue.
+"""
+	macosVersion: HostedAgentMacOSVersion
+"""
 The Xcode version to pre-select (via xcode-select) on macOS hosted agent instances for this cluster queue.
 """
 	xcodeVersion: String
+}
+
+"""
+Possible macOS versions for the Hosted Agent instance
+"""
+enum HostedAgentMacOSVersion {
+"""
+macOS Sonoma (14.6.1)
+"""
+	SONOMA
+"""
+macOS Sequoia (15.5)
+"""
+	SEQUOIA
+"""
+macOS Tahoe (26.0)
+"""
+	TAHOE
 }
 
 """
@@ -2850,6 +2906,10 @@ input HostedAgentsMacosPlatformSettingsInput {
 Settings for Mac hosted agents on this queue
 """
 	xcodeVersion: String
+"""
+Settings for Mac hosted agents on this queue
+"""
+	macosVersion: HostedAgentMacOSVersion
 }
 
 """
@@ -2902,11 +2962,6 @@ Settings for hosted agents on this queue
 Represents a unique identifier that is Base64 obfuscated. It is often used to refetch an object or as key for a cache. The ID type appears in a JSON response as a String; however, it is not intended to be human-readable. When expected as an input type, any string (such as `"VXNlci0xMA=="`) or integer (such as `4`) input value will be accepted as an ID.
 """
 scalar ID
-
-"""
-An ISO 8601-encoded date
-"""
-scalar ISO8601Date
 
 """
 Represents non-fractional signed whole numeric values. Int can represent values between -(2^31) and 2^31 - 1.
@@ -3410,6 +3465,14 @@ The agent was lost while processing this job
 The job log exceeded the limit
 """
 	LOG_SIZE_LIMIT_EXCEEDED
+"""
+The Job was reserved by a stack for later execution
+"""
+	RESERVED
+"""
+The Job was reserved by a stack but the stack took too long to spin up agent
+"""
+	RESERVED_EXPIRED
 }
 
 interface JobInterface {
@@ -3419,19 +3482,6 @@ interface JobInterface {
 	retrySource: Job
 	retryType: JobRetryTypes
 	uuid: String!
-}
-
-"""
-A record of job minutes usage, aggregated by day and pipeline.
-"""
-type JobMinutesUsage implements ResourceUsageInterface{
-	aggregatedOn: ISO8601Date!
-	pipeline: Pipeline
-	pipelineId: ID!
-"""
-The recorded usage in seconds. For billing purposes, seconds are summed for a billing period and rounded down to the nearest minute.
-"""
-	seconds: Int!
 }
 
 """
@@ -3531,6 +3581,10 @@ The job is waiting on a concurrency group check before becoming either `LIMITED`
 The job is waiting for jobs with the same concurrency group to finish
 """
 	LIMITED
+"""
+The job is reserved by a stack for later execution
+"""
+	RESERVED
 """
 The job is scheduled and waiting for an agent
 """
@@ -5430,47 +5484,6 @@ Order the teams
 """
 		order: TeamOrder
 	): TeamConnection
-"""
-Returns the resource usage data for this organization.
-"""
-	usage(
-"""
-Returns the elements in the list that come after the specified cursor.
-"""
-		after: String
-"""
-Returns the elements in the list that come before the specified cursor.
-"""
-		before: String
-"""
-Returns the first _n_ elements from the list.
-"""
-		first: Int
-"""
-Returns the last _n_ elements from the list.
-"""
-		last: Int
-"""
-Filter aggregations performed from this date
-"""
-		aggregatedOnFrom: ISO8601Date
-"""
-Filter aggregations performed until this date
-"""
-		aggregatedOnTo: ISO8601Date
-"""
-Filter results by resource type
-"""
-		resource: [ResourceUsageType!]
-"""
-Filter results by the associated Pipeline ID
-"""
-		pipelineIds: [ID!]
-"""
-Filter results by the associated Suite ID
-"""
-		suiteIds: [ID!]
-	): UsageUnionConnection!
 """
 The public UUID for this organization
 """
@@ -8750,30 +8763,6 @@ Whether the filter is enabled
 }
 
 """
-An aggregate of resource usage, grouped by day and resource.
-"""
-interface ResourceUsageInterface {
-"""
-An aggregate of resource usage, grouped by day and resource.
-"""
-	aggregatedOn: ISO8601Date!
-}
-
-"""
-All types of billable resources
-"""
-enum ResourceUsageType {
-"""
-These records represent a pipeline's job minutes usage for a single day
-"""
-	JOB_MINUTES
-"""
-These records represent a suite's test executions usage for a single day
-"""
-	TEST_EXECUTIONS
-}
-
-"""
 API tokens with access to this organization will be automatically revoked after this many days of inactivity.
 """
 enum RevokeInactiveTokenPeriod {
@@ -11284,19 +11273,6 @@ A unique identifier for the client performing the mutation.
 }
 
 """
-A record of test executions usage, aggregated by day and test suite.
-"""
-type TestExecutionsUsage implements ResourceUsageInterface{
-	aggregatedOn: ISO8601Date!
-"""
-The recorded usage.
-"""
-	executions: Int!
-	suite: Suite
-	suiteId: ID!
-}
-
-"""
 A person who hasn’t signed up to Buildkite
 """
 type UnregisteredUser {
@@ -11309,43 +11285,6 @@ The email for the user
 The name of the user
 """
 	name: String
-}
-
-"""
-The possible resource usage types
-"""
-union UsageUnion =JobMinutesUsage | TestExecutionsUsage
-
-"""
-The connection type for UsageUnion.
-"""
-type UsageUnionConnection {
-"""
-A list of edges.
-"""
-	edges: [UsageUnionEdge]
-"""
-A list of nodes.
-"""
-	nodes: [UsageUnion]
-"""
-Information to aid in pagination.
-"""
-	pageInfo: PageInfo!
-}
-
-"""
-An edge in a connection.
-"""
-type UsageUnionEdge {
-"""
-A cursor for use in pagination.
-"""
-	cursor: String!
-"""
-The item at the end of the edge.
-"""
-	node: UsageUnion
 }
 
 """

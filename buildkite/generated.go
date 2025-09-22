@@ -230,6 +230,159 @@ func (v *ClusterQueueValuesHostedAgentsHostedAgentQueueSettings) __premarshalJSO
 	return &retval, nil
 }
 
+// GetOrganizationClustersOrganization includes the requested fields of the GraphQL type Organization.
+// The GraphQL type's documentation follows.
+//
+// An organization
+type GetOrganizationClustersOrganization struct {
+	// Returns clusters for an Organization
+	Clusters GetOrganizationClustersOrganizationClustersClusterConnection `json:"clusters"`
+}
+
+// GetClusters returns GetOrganizationClustersOrganization.Clusters, and is useful for accessing the field via an interface.
+func (v *GetOrganizationClustersOrganization) GetClusters() GetOrganizationClustersOrganizationClustersClusterConnection {
+	return v.Clusters
+}
+
+// GetOrganizationClustersOrganizationClustersClusterConnection includes the requested fields of the GraphQL type ClusterConnection.
+type GetOrganizationClustersOrganizationClustersClusterConnection struct {
+	PageInfo GetOrganizationClustersOrganizationClustersClusterConnectionPageInfo           `json:"pageInfo"`
+	Edges    []GetOrganizationClustersOrganizationClustersClusterConnectionEdgesClusterEdge `json:"edges"`
+}
+
+// GetPageInfo returns GetOrganizationClustersOrganizationClustersClusterConnection.PageInfo, and is useful for accessing the field via an interface.
+func (v *GetOrganizationClustersOrganizationClustersClusterConnection) GetPageInfo() GetOrganizationClustersOrganizationClustersClusterConnectionPageInfo {
+	return v.PageInfo
+}
+
+// GetEdges returns GetOrganizationClustersOrganizationClustersClusterConnection.Edges, and is useful for accessing the field via an interface.
+func (v *GetOrganizationClustersOrganizationClustersClusterConnection) GetEdges() []GetOrganizationClustersOrganizationClustersClusterConnectionEdgesClusterEdge {
+	return v.Edges
+}
+
+// GetOrganizationClustersOrganizationClustersClusterConnectionEdgesClusterEdge includes the requested fields of the GraphQL type ClusterEdge.
+type GetOrganizationClustersOrganizationClustersClusterConnectionEdgesClusterEdge struct {
+	Node GetOrganizationClustersOrganizationClustersClusterConnectionEdgesClusterEdgeNodeCluster `json:"node"`
+}
+
+// GetNode returns GetOrganizationClustersOrganizationClustersClusterConnectionEdgesClusterEdge.Node, and is useful for accessing the field via an interface.
+func (v *GetOrganizationClustersOrganizationClustersClusterConnectionEdgesClusterEdge) GetNode() GetOrganizationClustersOrganizationClustersClusterConnectionEdgesClusterEdgeNodeCluster {
+	return v.Node
+}
+
+// GetOrganizationClustersOrganizationClustersClusterConnectionEdgesClusterEdgeNodeCluster includes the requested fields of the GraphQL type Cluster.
+type GetOrganizationClustersOrganizationClustersClusterConnectionEdgesClusterEdgeNodeCluster struct {
+	Id string `json:"id"`
+	// The public UUID for this cluster
+	Uuid string `json:"uuid"`
+	// Name of the cluster
+	Name string `json:"name"`
+	// Description of the cluster
+	Description *string `json:"description"`
+	// Emoji for the cluster using Buildkite emoji syntax
+	Emoji *string `json:"emoji"`
+	// Color hex code for the cluster
+	Color *string `json:"color"`
+	// The default queue that agents connecting to the cluster without specifying a queue will accept jobs from
+	DefaultQueue *GetOrganizationClustersOrganizationClustersClusterConnectionEdgesClusterEdgeNodeClusterDefaultQueueClusterQueue `json:"defaultQueue"`
+}
+
+// GetId returns GetOrganizationClustersOrganizationClustersClusterConnectionEdgesClusterEdgeNodeCluster.Id, and is useful for accessing the field via an interface.
+func (v *GetOrganizationClustersOrganizationClustersClusterConnectionEdgesClusterEdgeNodeCluster) GetId() string {
+	return v.Id
+}
+
+// GetUuid returns GetOrganizationClustersOrganizationClustersClusterConnectionEdgesClusterEdgeNodeCluster.Uuid, and is useful for accessing the field via an interface.
+func (v *GetOrganizationClustersOrganizationClustersClusterConnectionEdgesClusterEdgeNodeCluster) GetUuid() string {
+	return v.Uuid
+}
+
+// GetName returns GetOrganizationClustersOrganizationClustersClusterConnectionEdgesClusterEdgeNodeCluster.Name, and is useful for accessing the field via an interface.
+func (v *GetOrganizationClustersOrganizationClustersClusterConnectionEdgesClusterEdgeNodeCluster) GetName() string {
+	return v.Name
+}
+
+// GetDescription returns GetOrganizationClustersOrganizationClustersClusterConnectionEdgesClusterEdgeNodeCluster.Description, and is useful for accessing the field via an interface.
+func (v *GetOrganizationClustersOrganizationClustersClusterConnectionEdgesClusterEdgeNodeCluster) GetDescription() *string {
+	return v.Description
+}
+
+// GetEmoji returns GetOrganizationClustersOrganizationClustersClusterConnectionEdgesClusterEdgeNodeCluster.Emoji, and is useful for accessing the field via an interface.
+func (v *GetOrganizationClustersOrganizationClustersClusterConnectionEdgesClusterEdgeNodeCluster) GetEmoji() *string {
+	return v.Emoji
+}
+
+// GetColor returns GetOrganizationClustersOrganizationClustersClusterConnectionEdgesClusterEdgeNodeCluster.Color, and is useful for accessing the field via an interface.
+func (v *GetOrganizationClustersOrganizationClustersClusterConnectionEdgesClusterEdgeNodeCluster) GetColor() *string {
+	return v.Color
+}
+
+// GetDefaultQueue returns GetOrganizationClustersOrganizationClustersClusterConnectionEdgesClusterEdgeNodeCluster.DefaultQueue, and is useful for accessing the field via an interface.
+func (v *GetOrganizationClustersOrganizationClustersClusterConnectionEdgesClusterEdgeNodeCluster) GetDefaultQueue() *GetOrganizationClustersOrganizationClustersClusterConnectionEdgesClusterEdgeNodeClusterDefaultQueueClusterQueue {
+	return v.DefaultQueue
+}
+
+// GetOrganizationClustersOrganizationClustersClusterConnectionEdgesClusterEdgeNodeClusterDefaultQueueClusterQueue includes the requested fields of the GraphQL type ClusterQueue.
+type GetOrganizationClustersOrganizationClustersClusterConnectionEdgesClusterEdgeNodeClusterDefaultQueueClusterQueue struct {
+	Id string `json:"id"`
+	// The public UUID for this cluster queue
+	Uuid        string  `json:"uuid"`
+	Key         string  `json:"key"`
+	Description *string `json:"description"`
+}
+
+// GetId returns GetOrganizationClustersOrganizationClustersClusterConnectionEdgesClusterEdgeNodeClusterDefaultQueueClusterQueue.Id, and is useful for accessing the field via an interface.
+func (v *GetOrganizationClustersOrganizationClustersClusterConnectionEdgesClusterEdgeNodeClusterDefaultQueueClusterQueue) GetId() string {
+	return v.Id
+}
+
+// GetUuid returns GetOrganizationClustersOrganizationClustersClusterConnectionEdgesClusterEdgeNodeClusterDefaultQueueClusterQueue.Uuid, and is useful for accessing the field via an interface.
+func (v *GetOrganizationClustersOrganizationClustersClusterConnectionEdgesClusterEdgeNodeClusterDefaultQueueClusterQueue) GetUuid() string {
+	return v.Uuid
+}
+
+// GetKey returns GetOrganizationClustersOrganizationClustersClusterConnectionEdgesClusterEdgeNodeClusterDefaultQueueClusterQueue.Key, and is useful for accessing the field via an interface.
+func (v *GetOrganizationClustersOrganizationClustersClusterConnectionEdgesClusterEdgeNodeClusterDefaultQueueClusterQueue) GetKey() string {
+	return v.Key
+}
+
+// GetDescription returns GetOrganizationClustersOrganizationClustersClusterConnectionEdgesClusterEdgeNodeClusterDefaultQueueClusterQueue.Description, and is useful for accessing the field via an interface.
+func (v *GetOrganizationClustersOrganizationClustersClusterConnectionEdgesClusterEdgeNodeClusterDefaultQueueClusterQueue) GetDescription() *string {
+	return v.Description
+}
+
+// GetOrganizationClustersOrganizationClustersClusterConnectionPageInfo includes the requested fields of the GraphQL type PageInfo.
+// The GraphQL type's documentation follows.
+//
+// Information about pagination in a connection.
+type GetOrganizationClustersOrganizationClustersClusterConnectionPageInfo struct {
+	// When paginating forwards, the cursor to continue.
+	EndCursor string `json:"endCursor"`
+	// When paginating forwards, are there more items?
+	HasNextPage bool `json:"hasNextPage"`
+}
+
+// GetEndCursor returns GetOrganizationClustersOrganizationClustersClusterConnectionPageInfo.EndCursor, and is useful for accessing the field via an interface.
+func (v *GetOrganizationClustersOrganizationClustersClusterConnectionPageInfo) GetEndCursor() string {
+	return v.EndCursor
+}
+
+// GetHasNextPage returns GetOrganizationClustersOrganizationClustersClusterConnectionPageInfo.HasNextPage, and is useful for accessing the field via an interface.
+func (v *GetOrganizationClustersOrganizationClustersClusterConnectionPageInfo) GetHasNextPage() bool {
+	return v.HasNextPage
+}
+
+// GetOrganizationClustersResponse is returned by GetOrganizationClusters on success.
+type GetOrganizationClustersResponse struct {
+	// Find an organization
+	Organization GetOrganizationClustersOrganization `json:"organization"`
+}
+
+// GetOrganization returns GetOrganizationClustersResponse.Organization, and is useful for accessing the field via an interface.
+func (v *GetOrganizationClustersResponse) GetOrganization() GetOrganizationClustersOrganization {
+	return v.Organization
+}
+
 // GetOrganizationMemberByEmailOrganization includes the requested fields of the GraphQL type Organization.
 // The GraphQL type's documentation follows.
 //
@@ -441,6 +594,147 @@ func (v *GetOrganizationMembersResponse) GetOrganization() GetOrganizationMember
 	return v.Organization
 }
 
+// GetOrganizationTeamsOrganization includes the requested fields of the GraphQL type Organization.
+// The GraphQL type's documentation follows.
+//
+// An organization
+type GetOrganizationTeamsOrganization struct {
+	// Returns teams within the organization that the viewer can see
+	Teams GetOrganizationTeamsOrganizationTeamsTeamConnection `json:"teams"`
+}
+
+// GetTeams returns GetOrganizationTeamsOrganization.Teams, and is useful for accessing the field via an interface.
+func (v *GetOrganizationTeamsOrganization) GetTeams() GetOrganizationTeamsOrganizationTeamsTeamConnection {
+	return v.Teams
+}
+
+// GetOrganizationTeamsOrganizationTeamsTeamConnection includes the requested fields of the GraphQL type TeamConnection.
+type GetOrganizationTeamsOrganizationTeamsTeamConnection struct {
+	PageInfo GetOrganizationTeamsOrganizationTeamsTeamConnectionPageInfo        `json:"pageInfo"`
+	Edges    []GetOrganizationTeamsOrganizationTeamsTeamConnectionEdgesTeamEdge `json:"edges"`
+}
+
+// GetPageInfo returns GetOrganizationTeamsOrganizationTeamsTeamConnection.PageInfo, and is useful for accessing the field via an interface.
+func (v *GetOrganizationTeamsOrganizationTeamsTeamConnection) GetPageInfo() GetOrganizationTeamsOrganizationTeamsTeamConnectionPageInfo {
+	return v.PageInfo
+}
+
+// GetEdges returns GetOrganizationTeamsOrganizationTeamsTeamConnection.Edges, and is useful for accessing the field via an interface.
+func (v *GetOrganizationTeamsOrganizationTeamsTeamConnection) GetEdges() []GetOrganizationTeamsOrganizationTeamsTeamConnectionEdgesTeamEdge {
+	return v.Edges
+}
+
+// GetOrganizationTeamsOrganizationTeamsTeamConnectionEdgesTeamEdge includes the requested fields of the GraphQL type TeamEdge.
+type GetOrganizationTeamsOrganizationTeamsTeamConnectionEdgesTeamEdge struct {
+	Node GetOrganizationTeamsOrganizationTeamsTeamConnectionEdgesTeamEdgeNodeTeam `json:"node"`
+}
+
+// GetNode returns GetOrganizationTeamsOrganizationTeamsTeamConnectionEdgesTeamEdge.Node, and is useful for accessing the field via an interface.
+func (v *GetOrganizationTeamsOrganizationTeamsTeamConnectionEdgesTeamEdge) GetNode() GetOrganizationTeamsOrganizationTeamsTeamConnectionEdgesTeamEdgeNodeTeam {
+	return v.Node
+}
+
+// GetOrganizationTeamsOrganizationTeamsTeamConnectionEdgesTeamEdgeNodeTeam includes the requested fields of the GraphQL type Team.
+// The GraphQL type's documentation follows.
+//
+// An organization team
+type GetOrganizationTeamsOrganizationTeamsTeamConnectionEdgesTeamEdgeNodeTeam struct {
+	Id string `json:"id"`
+	// The public UUID for this team
+	Uuid string `json:"uuid"`
+	// The name of the team
+	Name string `json:"name"`
+	// A description of the team
+	Description string `json:"description"`
+	// The slug of the team
+	Slug string `json:"slug"`
+	// The privacy setting for this team
+	Privacy string `json:"privacy"`
+	// Add new organization members to this team by default
+	IsDefaultTeam bool `json:"isDefaultTeam"`
+	// New organization members will be granted this role on this team
+	DefaultMemberRole string `json:"defaultMemberRole"`
+	// Whether or not team members can create new pipelines in this team
+	MembersCanCreatePipelines bool `json:"membersCanCreatePipelines"`
+}
+
+// GetId returns GetOrganizationTeamsOrganizationTeamsTeamConnectionEdgesTeamEdgeNodeTeam.Id, and is useful for accessing the field via an interface.
+func (v *GetOrganizationTeamsOrganizationTeamsTeamConnectionEdgesTeamEdgeNodeTeam) GetId() string {
+	return v.Id
+}
+
+// GetUuid returns GetOrganizationTeamsOrganizationTeamsTeamConnectionEdgesTeamEdgeNodeTeam.Uuid, and is useful for accessing the field via an interface.
+func (v *GetOrganizationTeamsOrganizationTeamsTeamConnectionEdgesTeamEdgeNodeTeam) GetUuid() string {
+	return v.Uuid
+}
+
+// GetName returns GetOrganizationTeamsOrganizationTeamsTeamConnectionEdgesTeamEdgeNodeTeam.Name, and is useful for accessing the field via an interface.
+func (v *GetOrganizationTeamsOrganizationTeamsTeamConnectionEdgesTeamEdgeNodeTeam) GetName() string {
+	return v.Name
+}
+
+// GetDescription returns GetOrganizationTeamsOrganizationTeamsTeamConnectionEdgesTeamEdgeNodeTeam.Description, and is useful for accessing the field via an interface.
+func (v *GetOrganizationTeamsOrganizationTeamsTeamConnectionEdgesTeamEdgeNodeTeam) GetDescription() string {
+	return v.Description
+}
+
+// GetSlug returns GetOrganizationTeamsOrganizationTeamsTeamConnectionEdgesTeamEdgeNodeTeam.Slug, and is useful for accessing the field via an interface.
+func (v *GetOrganizationTeamsOrganizationTeamsTeamConnectionEdgesTeamEdgeNodeTeam) GetSlug() string {
+	return v.Slug
+}
+
+// GetPrivacy returns GetOrganizationTeamsOrganizationTeamsTeamConnectionEdgesTeamEdgeNodeTeam.Privacy, and is useful for accessing the field via an interface.
+func (v *GetOrganizationTeamsOrganizationTeamsTeamConnectionEdgesTeamEdgeNodeTeam) GetPrivacy() string {
+	return v.Privacy
+}
+
+// GetIsDefaultTeam returns GetOrganizationTeamsOrganizationTeamsTeamConnectionEdgesTeamEdgeNodeTeam.IsDefaultTeam, and is useful for accessing the field via an interface.
+func (v *GetOrganizationTeamsOrganizationTeamsTeamConnectionEdgesTeamEdgeNodeTeam) GetIsDefaultTeam() bool {
+	return v.IsDefaultTeam
+}
+
+// GetDefaultMemberRole returns GetOrganizationTeamsOrganizationTeamsTeamConnectionEdgesTeamEdgeNodeTeam.DefaultMemberRole, and is useful for accessing the field via an interface.
+func (v *GetOrganizationTeamsOrganizationTeamsTeamConnectionEdgesTeamEdgeNodeTeam) GetDefaultMemberRole() string {
+	return v.DefaultMemberRole
+}
+
+// GetMembersCanCreatePipelines returns GetOrganizationTeamsOrganizationTeamsTeamConnectionEdgesTeamEdgeNodeTeam.MembersCanCreatePipelines, and is useful for accessing the field via an interface.
+func (v *GetOrganizationTeamsOrganizationTeamsTeamConnectionEdgesTeamEdgeNodeTeam) GetMembersCanCreatePipelines() bool {
+	return v.MembersCanCreatePipelines
+}
+
+// GetOrganizationTeamsOrganizationTeamsTeamConnectionPageInfo includes the requested fields of the GraphQL type PageInfo.
+// The GraphQL type's documentation follows.
+//
+// Information about pagination in a connection.
+type GetOrganizationTeamsOrganizationTeamsTeamConnectionPageInfo struct {
+	// When paginating forwards, the cursor to continue.
+	EndCursor string `json:"endCursor"`
+	// When paginating forwards, are there more items?
+	HasNextPage bool `json:"hasNextPage"`
+}
+
+// GetEndCursor returns GetOrganizationTeamsOrganizationTeamsTeamConnectionPageInfo.EndCursor, and is useful for accessing the field via an interface.
+func (v *GetOrganizationTeamsOrganizationTeamsTeamConnectionPageInfo) GetEndCursor() string {
+	return v.EndCursor
+}
+
+// GetHasNextPage returns GetOrganizationTeamsOrganizationTeamsTeamConnectionPageInfo.HasNextPage, and is useful for accessing the field via an interface.
+func (v *GetOrganizationTeamsOrganizationTeamsTeamConnectionPageInfo) GetHasNextPage() bool {
+	return v.HasNextPage
+}
+
+// GetOrganizationTeamsResponse is returned by GetOrganizationTeams on success.
+type GetOrganizationTeamsResponse struct {
+	// Find an organization
+	Organization GetOrganizationTeamsOrganization `json:"organization"`
+}
+
+// GetOrganization returns GetOrganizationTeamsResponse.Organization, and is useful for accessing the field via an interface.
+func (v *GetOrganizationTeamsResponse) GetOrganization() GetOrganizationTeamsOrganization {
+	return v.Organization
+}
+
 // GetRegistryIDRegistry includes the requested fields of the GraphQL type Registry.
 // The GraphQL type's documentation follows.
 //
@@ -641,6 +935,24 @@ var AllHostedAgentInstanceShapeName = []HostedAgentInstanceShapeName{
 	HostedAgentInstanceShapeNameMacosArm64M412x56,
 }
 
+// Possible macOS versions for the Hosted Agent instance
+type HostedAgentMacOSVersion string
+
+const (
+	// macOS Sonoma (14.6.1)
+	HostedAgentMacOSVersionSonoma HostedAgentMacOSVersion = "SONOMA"
+	// macOS Sequoia (15.5)
+	HostedAgentMacOSVersionSequoia HostedAgentMacOSVersion = "SEQUOIA"
+	// macOS Tahoe (26.0)
+	HostedAgentMacOSVersionTahoe HostedAgentMacOSVersion = "TAHOE"
+)
+
+var AllHostedAgentMacOSVersion = []HostedAgentMacOSVersion{
+	HostedAgentMacOSVersionSonoma,
+	HostedAgentMacOSVersionSequoia,
+	HostedAgentMacOSVersionTahoe,
+}
+
 // Possible machine types for the hosted agent instance
 type HostedAgentMachineType string
 
@@ -690,10 +1002,17 @@ func (v *HostedAgentsLinuxPlatformSettingsInput) GetAgentImageRef() *string { re
 type HostedAgentsMacosPlatformSettingsInput struct {
 	// Settings for Mac hosted agents on this queue
 	XcodeVersion *string `json:"xcodeVersion"`
+	// Settings for Mac hosted agents on this queue
+	MacosVersion *HostedAgentMacOSVersion `json:"macosVersion"`
 }
 
 // GetXcodeVersion returns HostedAgentsMacosPlatformSettingsInput.XcodeVersion, and is useful for accessing the field via an interface.
 func (v *HostedAgentsMacosPlatformSettingsInput) GetXcodeVersion() *string { return v.XcodeVersion }
+
+// GetMacosVersion returns HostedAgentsMacosPlatformSettingsInput.MacosVersion, and is useful for accessing the field via an interface.
+func (v *HostedAgentsMacosPlatformSettingsInput) GetMacosVersion() *HostedAgentMacOSVersion {
+	return v.MacosVersion
+}
 
 // Settings for hosted agents on this queue
 type HostedAgentsPlatformSettingsInput struct {
@@ -866,11 +1185,18 @@ func (v *HostedAgentsQueueSettingsValuesPlatformSettingsHostedAgentPlatformSetti
 type HostedAgentsQueueSettingsValuesPlatformSettingsHostedAgentPlatformSettingsMacosHostedAgentMacOSSettingsType struct {
 	// The Xcode version to pre-select (via xcode-select) on macOS hosted agent instances for this cluster queue.
 	XcodeVersion string `json:"xcodeVersion"`
+	// The macOS version to use for macOS hosted agent instances for this cluster queue.
+	MacosVersion *HostedAgentMacOSVersion `json:"macosVersion"`
 }
 
 // GetXcodeVersion returns HostedAgentsQueueSettingsValuesPlatformSettingsHostedAgentPlatformSettingsMacosHostedAgentMacOSSettingsType.XcodeVersion, and is useful for accessing the field via an interface.
 func (v *HostedAgentsQueueSettingsValuesPlatformSettingsHostedAgentPlatformSettingsMacosHostedAgentMacOSSettingsType) GetXcodeVersion() string {
 	return v.XcodeVersion
+}
+
+// GetMacosVersion returns HostedAgentsQueueSettingsValuesPlatformSettingsHostedAgentPlatformSettingsMacosHostedAgentMacOSSettingsType.MacosVersion, and is useful for accessing the field via an interface.
+func (v *HostedAgentsQueueSettingsValuesPlatformSettingsHostedAgentPlatformSettingsMacosHostedAgentMacOSSettingsType) GetMacosVersion() *HostedAgentMacOSVersion {
+	return v.MacosVersion
 }
 
 // OrganizationBannerFields includes the GraphQL fields of OrganizationBanner requested by the fragment OrganizationBannerFields.
@@ -3295,6 +3621,18 @@ type TeamSuiteFieldsTeam struct {
 // GetId returns TeamSuiteFieldsTeam.Id, and is useful for accessing the field via an interface.
 func (v *TeamSuiteFieldsTeam) GetId() string { return v.Id }
 
+// __GetOrganizationClustersInput is used internally by genqlient
+type __GetOrganizationClustersInput struct {
+	Slug   string  `json:"slug"`
+	Cursor *string `json:"cursor"`
+}
+
+// GetSlug returns __GetOrganizationClustersInput.Slug, and is useful for accessing the field via an interface.
+func (v *__GetOrganizationClustersInput) GetSlug() string { return v.Slug }
+
+// GetCursor returns __GetOrganizationClustersInput.Cursor, and is useful for accessing the field via an interface.
+func (v *__GetOrganizationClustersInput) GetCursor() *string { return v.Cursor }
+
 // __GetOrganizationMemberByEmailInput is used internally by genqlient
 type __GetOrganizationMemberByEmailInput struct {
 	Slug  string `json:"slug"`
@@ -3318,6 +3656,18 @@ func (v *__GetOrganizationMembersInput) GetSlug() string { return v.Slug }
 
 // GetCursor returns __GetOrganizationMembersInput.Cursor, and is useful for accessing the field via an interface.
 func (v *__GetOrganizationMembersInput) GetCursor() *string { return v.Cursor }
+
+// __GetOrganizationTeamsInput is used internally by genqlient
+type __GetOrganizationTeamsInput struct {
+	Slug   string  `json:"slug"`
+	Cursor *string `json:"cursor"`
+}
+
+// GetSlug returns __GetOrganizationTeamsInput.Slug, and is useful for accessing the field via an interface.
+func (v *__GetOrganizationTeamsInput) GetSlug() string { return v.Slug }
+
+// GetCursor returns __GetOrganizationTeamsInput.Cursor, and is useful for accessing the field via an interface.
+func (v *__GetOrganizationTeamsInput) GetCursor() *string { return v.Cursor }
 
 // __GetRegistryIDInput is used internally by genqlient
 type __GetRegistryIDInput struct {
@@ -3688,6 +4038,14 @@ func (v *__getClusterByNameInput) GetOrgSlug() string { return v.OrgSlug }
 
 // GetCursor returns __getClusterByNameInput.Cursor, and is useful for accessing the field via an interface.
 func (v *__getClusterByNameInput) GetCursor() *string { return v.Cursor }
+
+// __getClusterQueueByNodeInput is used internally by genqlient
+type __getClusterQueueByNodeInput struct {
+	Id string `json:"id"`
+}
+
+// GetId returns __getClusterQueueByNodeInput.Id, and is useful for accessing the field via an interface.
+func (v *__getClusterQueueByNodeInput) GetId() string { return v.Id }
 
 // __getClusterQueuesInput is used internally by genqlient
 type __getClusterQueuesInput struct {
@@ -6423,6 +6781,1728 @@ type getClusterByNameResponse struct {
 // GetOrganization returns getClusterByNameResponse.Organization, and is useful for accessing the field via an interface.
 func (v *getClusterByNameResponse) GetOrganization() getClusterByNameOrganization {
 	return v.Organization
+}
+
+// getClusterQueueByNodeNode includes the requested fields of the GraphQL interface Node.
+//
+// getClusterQueueByNodeNode is implemented by the following types:
+// getClusterQueueByNodeNodeAPIAccessToken
+// getClusterQueueByNodeNodeAPIAccessTokenCode
+// getClusterQueueByNodeNodeAPIApplication
+// getClusterQueueByNodeNodeAgent
+// getClusterQueueByNodeNodeAgentToken
+// getClusterQueueByNodeNodeAnnotation
+// getClusterQueueByNodeNodeArtifact
+// getClusterQueueByNodeNodeAuditEvent
+// getClusterQueueByNodeNodeAuthorizationBitbucket
+// getClusterQueueByNodeNodeAuthorizationGitHub
+// getClusterQueueByNodeNodeAuthorizationGitHubApp
+// getClusterQueueByNodeNodeAuthorizationGitHubEnterprise
+// getClusterQueueByNodeNodeAuthorizationGoogle
+// getClusterQueueByNodeNodeAuthorizationSAML
+// getClusterQueueByNodeNodeBuild
+// getClusterQueueByNodeNodeCluster
+// getClusterQueueByNodeNodeClusterQueue
+// getClusterQueueByNodeNodeClusterQueueToken
+// getClusterQueueByNodeNodeClusterToken
+// getClusterQueueByNodeNodeCompositeRegistryUpstream
+// getClusterQueueByNodeNodeEmail
+// getClusterQueueByNodeNodeJobEventAssigned
+// getClusterQueueByNodeNodeJobEventBuildStepUploadCreated
+// getClusterQueueByNodeNodeJobEventCanceled
+// getClusterQueueByNodeNodeJobEventFinished
+// getClusterQueueByNodeNodeJobEventGeneric
+// getClusterQueueByNodeNodeJobEventRetried
+// getClusterQueueByNodeNodeJobEventRetryFailed
+// getClusterQueueByNodeNodeJobEventTimedOut
+// getClusterQueueByNodeNodeJobTypeBlock
+// getClusterQueueByNodeNodeJobTypeCommand
+// getClusterQueueByNodeNodeJobTypeTrigger
+// getClusterQueueByNodeNodeJobTypeWait
+// getClusterQueueByNodeNodeNotificationServiceSlack
+// getClusterQueueByNodeNodeOrganization
+// getClusterQueueByNodeNodeOrganizationBanner
+// getClusterQueueByNodeNodeOrganizationInvitation
+// getClusterQueueByNodeNodeOrganizationMember
+// getClusterQueueByNodeNodeOrganizationRepositoryProviderGitHub
+// getClusterQueueByNodeNodeOrganizationRepositoryProviderGitHubEnterpriseServer
+// getClusterQueueByNodeNodePipeline
+// getClusterQueueByNodeNodePipelineMetric
+// getClusterQueueByNodeNodePipelineSchedule
+// getClusterQueueByNodeNodePipelineTemplate
+// getClusterQueueByNodeNodeRegistry
+// getClusterQueueByNodeNodeRegistryToken
+// getClusterQueueByNodeNodeRule
+// getClusterQueueByNodeNodeSSOProviderGitHubApp
+// getClusterQueueByNodeNodeSSOProviderGoogleGSuite
+// getClusterQueueByNodeNodeSSOProviderSAML
+// getClusterQueueByNodeNodeSecret
+// getClusterQueueByNodeNodeSuite
+// getClusterQueueByNodeNodeTeam
+// getClusterQueueByNodeNodeTeamMember
+// getClusterQueueByNodeNodeTeamPipeline
+// getClusterQueueByNodeNodeTeamRegistry
+// getClusterQueueByNodeNodeTeamSuite
+// getClusterQueueByNodeNodeUser
+// getClusterQueueByNodeNodeViewer
+// The GraphQL type's documentation follows.
+//
+// An object with an ID.
+type getClusterQueueByNodeNode interface {
+	implementsGraphQLInterfacegetClusterQueueByNodeNode()
+	// GetTypename returns the receiver's concrete GraphQL type-name (see interface doc for possible values).
+	GetTypename() string
+}
+
+func (v *getClusterQueueByNodeNodeAPIAccessToken) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
+}
+func (v *getClusterQueueByNodeNodeAPIAccessTokenCode) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
+}
+func (v *getClusterQueueByNodeNodeAPIApplication) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
+}
+func (v *getClusterQueueByNodeNodeAgent) implementsGraphQLInterfacegetClusterQueueByNodeNode()      {}
+func (v *getClusterQueueByNodeNodeAgentToken) implementsGraphQLInterfacegetClusterQueueByNodeNode() {}
+func (v *getClusterQueueByNodeNodeAnnotation) implementsGraphQLInterfacegetClusterQueueByNodeNode() {}
+func (v *getClusterQueueByNodeNodeArtifact) implementsGraphQLInterfacegetClusterQueueByNodeNode()   {}
+func (v *getClusterQueueByNodeNodeAuditEvent) implementsGraphQLInterfacegetClusterQueueByNodeNode() {}
+func (v *getClusterQueueByNodeNodeAuthorizationBitbucket) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
+}
+func (v *getClusterQueueByNodeNodeAuthorizationGitHub) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
+}
+func (v *getClusterQueueByNodeNodeAuthorizationGitHubApp) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
+}
+func (v *getClusterQueueByNodeNodeAuthorizationGitHubEnterprise) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
+}
+func (v *getClusterQueueByNodeNodeAuthorizationGoogle) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
+}
+func (v *getClusterQueueByNodeNodeAuthorizationSAML) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
+}
+func (v *getClusterQueueByNodeNodeBuild) implementsGraphQLInterfacegetClusterQueueByNodeNode()   {}
+func (v *getClusterQueueByNodeNodeCluster) implementsGraphQLInterfacegetClusterQueueByNodeNode() {}
+func (v *getClusterQueueByNodeNodeClusterQueue) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
+}
+func (v *getClusterQueueByNodeNodeClusterQueueToken) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
+}
+func (v *getClusterQueueByNodeNodeClusterToken) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
+}
+func (v *getClusterQueueByNodeNodeCompositeRegistryUpstream) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
+}
+func (v *getClusterQueueByNodeNodeEmail) implementsGraphQLInterfacegetClusterQueueByNodeNode() {}
+func (v *getClusterQueueByNodeNodeJobEventAssigned) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
+}
+func (v *getClusterQueueByNodeNodeJobEventBuildStepUploadCreated) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
+}
+func (v *getClusterQueueByNodeNodeJobEventCanceled) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
+}
+func (v *getClusterQueueByNodeNodeJobEventFinished) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
+}
+func (v *getClusterQueueByNodeNodeJobEventGeneric) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
+}
+func (v *getClusterQueueByNodeNodeJobEventRetried) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
+}
+func (v *getClusterQueueByNodeNodeJobEventRetryFailed) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
+}
+func (v *getClusterQueueByNodeNodeJobEventTimedOut) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
+}
+func (v *getClusterQueueByNodeNodeJobTypeBlock) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
+}
+func (v *getClusterQueueByNodeNodeJobTypeCommand) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
+}
+func (v *getClusterQueueByNodeNodeJobTypeTrigger) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
+}
+func (v *getClusterQueueByNodeNodeJobTypeWait) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
+}
+func (v *getClusterQueueByNodeNodeNotificationServiceSlack) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
+}
+func (v *getClusterQueueByNodeNodeOrganization) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
+}
+func (v *getClusterQueueByNodeNodeOrganizationBanner) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
+}
+func (v *getClusterQueueByNodeNodeOrganizationInvitation) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
+}
+func (v *getClusterQueueByNodeNodeOrganizationMember) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
+}
+func (v *getClusterQueueByNodeNodeOrganizationRepositoryProviderGitHub) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
+}
+func (v *getClusterQueueByNodeNodeOrganizationRepositoryProviderGitHubEnterpriseServer) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
+}
+func (v *getClusterQueueByNodeNodePipeline) implementsGraphQLInterfacegetClusterQueueByNodeNode() {}
+func (v *getClusterQueueByNodeNodePipelineMetric) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
+}
+func (v *getClusterQueueByNodeNodePipelineSchedule) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
+}
+func (v *getClusterQueueByNodeNodePipelineTemplate) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
+}
+func (v *getClusterQueueByNodeNodeRegistry) implementsGraphQLInterfacegetClusterQueueByNodeNode() {}
+func (v *getClusterQueueByNodeNodeRegistryToken) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
+}
+func (v *getClusterQueueByNodeNodeRule) implementsGraphQLInterfacegetClusterQueueByNodeNode() {}
+func (v *getClusterQueueByNodeNodeSSOProviderGitHubApp) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
+}
+func (v *getClusterQueueByNodeNodeSSOProviderGoogleGSuite) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
+}
+func (v *getClusterQueueByNodeNodeSSOProviderSAML) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
+}
+func (v *getClusterQueueByNodeNodeSecret) implementsGraphQLInterfacegetClusterQueueByNodeNode()     {}
+func (v *getClusterQueueByNodeNodeSuite) implementsGraphQLInterfacegetClusterQueueByNodeNode()      {}
+func (v *getClusterQueueByNodeNodeTeam) implementsGraphQLInterfacegetClusterQueueByNodeNode()       {}
+func (v *getClusterQueueByNodeNodeTeamMember) implementsGraphQLInterfacegetClusterQueueByNodeNode() {}
+func (v *getClusterQueueByNodeNodeTeamPipeline) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
+}
+func (v *getClusterQueueByNodeNodeTeamRegistry) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
+}
+func (v *getClusterQueueByNodeNodeTeamSuite) implementsGraphQLInterfacegetClusterQueueByNodeNode() {}
+func (v *getClusterQueueByNodeNodeUser) implementsGraphQLInterfacegetClusterQueueByNodeNode()      {}
+func (v *getClusterQueueByNodeNodeViewer) implementsGraphQLInterfacegetClusterQueueByNodeNode()    {}
+
+func __unmarshalgetClusterQueueByNodeNode(b []byte, v *getClusterQueueByNodeNode) error {
+	if string(b) == "null" {
+		return nil
+	}
+
+	var tn struct {
+		TypeName string `json:"__typename"`
+	}
+	err := json.Unmarshal(b, &tn)
+	if err != nil {
+		return err
+	}
+
+	switch tn.TypeName {
+	case "APIAccessToken":
+		*v = new(getClusterQueueByNodeNodeAPIAccessToken)
+		return json.Unmarshal(b, *v)
+	case "APIAccessTokenCode":
+		*v = new(getClusterQueueByNodeNodeAPIAccessTokenCode)
+		return json.Unmarshal(b, *v)
+	case "APIApplication":
+		*v = new(getClusterQueueByNodeNodeAPIApplication)
+		return json.Unmarshal(b, *v)
+	case "Agent":
+		*v = new(getClusterQueueByNodeNodeAgent)
+		return json.Unmarshal(b, *v)
+	case "AgentToken":
+		*v = new(getClusterQueueByNodeNodeAgentToken)
+		return json.Unmarshal(b, *v)
+	case "Annotation":
+		*v = new(getClusterQueueByNodeNodeAnnotation)
+		return json.Unmarshal(b, *v)
+	case "Artifact":
+		*v = new(getClusterQueueByNodeNodeArtifact)
+		return json.Unmarshal(b, *v)
+	case "AuditEvent":
+		*v = new(getClusterQueueByNodeNodeAuditEvent)
+		return json.Unmarshal(b, *v)
+	case "AuthorizationBitbucket":
+		*v = new(getClusterQueueByNodeNodeAuthorizationBitbucket)
+		return json.Unmarshal(b, *v)
+	case "AuthorizationGitHub":
+		*v = new(getClusterQueueByNodeNodeAuthorizationGitHub)
+		return json.Unmarshal(b, *v)
+	case "AuthorizationGitHubApp":
+		*v = new(getClusterQueueByNodeNodeAuthorizationGitHubApp)
+		return json.Unmarshal(b, *v)
+	case "AuthorizationGitHubEnterprise":
+		*v = new(getClusterQueueByNodeNodeAuthorizationGitHubEnterprise)
+		return json.Unmarshal(b, *v)
+	case "AuthorizationGoogle":
+		*v = new(getClusterQueueByNodeNodeAuthorizationGoogle)
+		return json.Unmarshal(b, *v)
+	case "AuthorizationSAML":
+		*v = new(getClusterQueueByNodeNodeAuthorizationSAML)
+		return json.Unmarshal(b, *v)
+	case "Build":
+		*v = new(getClusterQueueByNodeNodeBuild)
+		return json.Unmarshal(b, *v)
+	case "Cluster":
+		*v = new(getClusterQueueByNodeNodeCluster)
+		return json.Unmarshal(b, *v)
+	case "ClusterQueue":
+		*v = new(getClusterQueueByNodeNodeClusterQueue)
+		return json.Unmarshal(b, *v)
+	case "ClusterQueueToken":
+		*v = new(getClusterQueueByNodeNodeClusterQueueToken)
+		return json.Unmarshal(b, *v)
+	case "ClusterToken":
+		*v = new(getClusterQueueByNodeNodeClusterToken)
+		return json.Unmarshal(b, *v)
+	case "CompositeRegistryUpstream":
+		*v = new(getClusterQueueByNodeNodeCompositeRegistryUpstream)
+		return json.Unmarshal(b, *v)
+	case "Email":
+		*v = new(getClusterQueueByNodeNodeEmail)
+		return json.Unmarshal(b, *v)
+	case "JobEventAssigned":
+		*v = new(getClusterQueueByNodeNodeJobEventAssigned)
+		return json.Unmarshal(b, *v)
+	case "JobEventBuildStepUploadCreated":
+		*v = new(getClusterQueueByNodeNodeJobEventBuildStepUploadCreated)
+		return json.Unmarshal(b, *v)
+	case "JobEventCanceled":
+		*v = new(getClusterQueueByNodeNodeJobEventCanceled)
+		return json.Unmarshal(b, *v)
+	case "JobEventFinished":
+		*v = new(getClusterQueueByNodeNodeJobEventFinished)
+		return json.Unmarshal(b, *v)
+	case "JobEventGeneric":
+		*v = new(getClusterQueueByNodeNodeJobEventGeneric)
+		return json.Unmarshal(b, *v)
+	case "JobEventRetried":
+		*v = new(getClusterQueueByNodeNodeJobEventRetried)
+		return json.Unmarshal(b, *v)
+	case "JobEventRetryFailed":
+		*v = new(getClusterQueueByNodeNodeJobEventRetryFailed)
+		return json.Unmarshal(b, *v)
+	case "JobEventTimedOut":
+		*v = new(getClusterQueueByNodeNodeJobEventTimedOut)
+		return json.Unmarshal(b, *v)
+	case "JobTypeBlock":
+		*v = new(getClusterQueueByNodeNodeJobTypeBlock)
+		return json.Unmarshal(b, *v)
+	case "JobTypeCommand":
+		*v = new(getClusterQueueByNodeNodeJobTypeCommand)
+		return json.Unmarshal(b, *v)
+	case "JobTypeTrigger":
+		*v = new(getClusterQueueByNodeNodeJobTypeTrigger)
+		return json.Unmarshal(b, *v)
+	case "JobTypeWait":
+		*v = new(getClusterQueueByNodeNodeJobTypeWait)
+		return json.Unmarshal(b, *v)
+	case "NotificationServiceSlack":
+		*v = new(getClusterQueueByNodeNodeNotificationServiceSlack)
+		return json.Unmarshal(b, *v)
+	case "Organization":
+		*v = new(getClusterQueueByNodeNodeOrganization)
+		return json.Unmarshal(b, *v)
+	case "OrganizationBanner":
+		*v = new(getClusterQueueByNodeNodeOrganizationBanner)
+		return json.Unmarshal(b, *v)
+	case "OrganizationInvitation":
+		*v = new(getClusterQueueByNodeNodeOrganizationInvitation)
+		return json.Unmarshal(b, *v)
+	case "OrganizationMember":
+		*v = new(getClusterQueueByNodeNodeOrganizationMember)
+		return json.Unmarshal(b, *v)
+	case "OrganizationRepositoryProviderGitHub":
+		*v = new(getClusterQueueByNodeNodeOrganizationRepositoryProviderGitHub)
+		return json.Unmarshal(b, *v)
+	case "OrganizationRepositoryProviderGitHubEnterpriseServer":
+		*v = new(getClusterQueueByNodeNodeOrganizationRepositoryProviderGitHubEnterpriseServer)
+		return json.Unmarshal(b, *v)
+	case "Pipeline":
+		*v = new(getClusterQueueByNodeNodePipeline)
+		return json.Unmarshal(b, *v)
+	case "PipelineMetric":
+		*v = new(getClusterQueueByNodeNodePipelineMetric)
+		return json.Unmarshal(b, *v)
+	case "PipelineSchedule":
+		*v = new(getClusterQueueByNodeNodePipelineSchedule)
+		return json.Unmarshal(b, *v)
+	case "PipelineTemplate":
+		*v = new(getClusterQueueByNodeNodePipelineTemplate)
+		return json.Unmarshal(b, *v)
+	case "Registry":
+		*v = new(getClusterQueueByNodeNodeRegistry)
+		return json.Unmarshal(b, *v)
+	case "RegistryToken":
+		*v = new(getClusterQueueByNodeNodeRegistryToken)
+		return json.Unmarshal(b, *v)
+	case "Rule":
+		*v = new(getClusterQueueByNodeNodeRule)
+		return json.Unmarshal(b, *v)
+	case "SSOProviderGitHubApp":
+		*v = new(getClusterQueueByNodeNodeSSOProviderGitHubApp)
+		return json.Unmarshal(b, *v)
+	case "SSOProviderGoogleGSuite":
+		*v = new(getClusterQueueByNodeNodeSSOProviderGoogleGSuite)
+		return json.Unmarshal(b, *v)
+	case "SSOProviderSAML":
+		*v = new(getClusterQueueByNodeNodeSSOProviderSAML)
+		return json.Unmarshal(b, *v)
+	case "Secret":
+		*v = new(getClusterQueueByNodeNodeSecret)
+		return json.Unmarshal(b, *v)
+	case "Suite":
+		*v = new(getClusterQueueByNodeNodeSuite)
+		return json.Unmarshal(b, *v)
+	case "Team":
+		*v = new(getClusterQueueByNodeNodeTeam)
+		return json.Unmarshal(b, *v)
+	case "TeamMember":
+		*v = new(getClusterQueueByNodeNodeTeamMember)
+		return json.Unmarshal(b, *v)
+	case "TeamPipeline":
+		*v = new(getClusterQueueByNodeNodeTeamPipeline)
+		return json.Unmarshal(b, *v)
+	case "TeamRegistry":
+		*v = new(getClusterQueueByNodeNodeTeamRegistry)
+		return json.Unmarshal(b, *v)
+	case "TeamSuite":
+		*v = new(getClusterQueueByNodeNodeTeamSuite)
+		return json.Unmarshal(b, *v)
+	case "User":
+		*v = new(getClusterQueueByNodeNodeUser)
+		return json.Unmarshal(b, *v)
+	case "Viewer":
+		*v = new(getClusterQueueByNodeNodeViewer)
+		return json.Unmarshal(b, *v)
+	case "":
+		return fmt.Errorf(
+			"response was missing Node.__typename")
+	default:
+		return fmt.Errorf(
+			`unexpected concrete type for getClusterQueueByNodeNode: "%v"`, tn.TypeName)
+	}
+}
+
+func __marshalgetClusterQueueByNodeNode(v *getClusterQueueByNodeNode) ([]byte, error) {
+
+	var typename string
+	switch v := (*v).(type) {
+	case *getClusterQueueByNodeNodeAPIAccessToken:
+		typename = "APIAccessToken"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterQueueByNodeNodeAPIAccessToken
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterQueueByNodeNodeAPIAccessTokenCode:
+		typename = "APIAccessTokenCode"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterQueueByNodeNodeAPIAccessTokenCode
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterQueueByNodeNodeAPIApplication:
+		typename = "APIApplication"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterQueueByNodeNodeAPIApplication
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterQueueByNodeNodeAgent:
+		typename = "Agent"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterQueueByNodeNodeAgent
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterQueueByNodeNodeAgentToken:
+		typename = "AgentToken"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterQueueByNodeNodeAgentToken
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterQueueByNodeNodeAnnotation:
+		typename = "Annotation"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterQueueByNodeNodeAnnotation
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterQueueByNodeNodeArtifact:
+		typename = "Artifact"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterQueueByNodeNodeArtifact
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterQueueByNodeNodeAuditEvent:
+		typename = "AuditEvent"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterQueueByNodeNodeAuditEvent
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterQueueByNodeNodeAuthorizationBitbucket:
+		typename = "AuthorizationBitbucket"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterQueueByNodeNodeAuthorizationBitbucket
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterQueueByNodeNodeAuthorizationGitHub:
+		typename = "AuthorizationGitHub"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterQueueByNodeNodeAuthorizationGitHub
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterQueueByNodeNodeAuthorizationGitHubApp:
+		typename = "AuthorizationGitHubApp"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterQueueByNodeNodeAuthorizationGitHubApp
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterQueueByNodeNodeAuthorizationGitHubEnterprise:
+		typename = "AuthorizationGitHubEnterprise"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterQueueByNodeNodeAuthorizationGitHubEnterprise
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterQueueByNodeNodeAuthorizationGoogle:
+		typename = "AuthorizationGoogle"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterQueueByNodeNodeAuthorizationGoogle
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterQueueByNodeNodeAuthorizationSAML:
+		typename = "AuthorizationSAML"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterQueueByNodeNodeAuthorizationSAML
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterQueueByNodeNodeBuild:
+		typename = "Build"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterQueueByNodeNodeBuild
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterQueueByNodeNodeCluster:
+		typename = "Cluster"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterQueueByNodeNodeCluster
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterQueueByNodeNodeClusterQueue:
+		typename = "ClusterQueue"
+
+		premarshaled, err := v.__premarshalJSON()
+		if err != nil {
+			return nil, err
+		}
+		result := struct {
+			TypeName string `json:"__typename"`
+			*__premarshalgetClusterQueueByNodeNodeClusterQueue
+		}{typename, premarshaled}
+		return json.Marshal(result)
+	case *getClusterQueueByNodeNodeClusterQueueToken:
+		typename = "ClusterQueueToken"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterQueueByNodeNodeClusterQueueToken
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterQueueByNodeNodeClusterToken:
+		typename = "ClusterToken"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterQueueByNodeNodeClusterToken
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterQueueByNodeNodeCompositeRegistryUpstream:
+		typename = "CompositeRegistryUpstream"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterQueueByNodeNodeCompositeRegistryUpstream
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterQueueByNodeNodeEmail:
+		typename = "Email"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterQueueByNodeNodeEmail
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterQueueByNodeNodeJobEventAssigned:
+		typename = "JobEventAssigned"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterQueueByNodeNodeJobEventAssigned
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterQueueByNodeNodeJobEventBuildStepUploadCreated:
+		typename = "JobEventBuildStepUploadCreated"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterQueueByNodeNodeJobEventBuildStepUploadCreated
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterQueueByNodeNodeJobEventCanceled:
+		typename = "JobEventCanceled"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterQueueByNodeNodeJobEventCanceled
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterQueueByNodeNodeJobEventFinished:
+		typename = "JobEventFinished"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterQueueByNodeNodeJobEventFinished
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterQueueByNodeNodeJobEventGeneric:
+		typename = "JobEventGeneric"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterQueueByNodeNodeJobEventGeneric
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterQueueByNodeNodeJobEventRetried:
+		typename = "JobEventRetried"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterQueueByNodeNodeJobEventRetried
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterQueueByNodeNodeJobEventRetryFailed:
+		typename = "JobEventRetryFailed"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterQueueByNodeNodeJobEventRetryFailed
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterQueueByNodeNodeJobEventTimedOut:
+		typename = "JobEventTimedOut"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterQueueByNodeNodeJobEventTimedOut
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterQueueByNodeNodeJobTypeBlock:
+		typename = "JobTypeBlock"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterQueueByNodeNodeJobTypeBlock
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterQueueByNodeNodeJobTypeCommand:
+		typename = "JobTypeCommand"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterQueueByNodeNodeJobTypeCommand
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterQueueByNodeNodeJobTypeTrigger:
+		typename = "JobTypeTrigger"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterQueueByNodeNodeJobTypeTrigger
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterQueueByNodeNodeJobTypeWait:
+		typename = "JobTypeWait"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterQueueByNodeNodeJobTypeWait
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterQueueByNodeNodeNotificationServiceSlack:
+		typename = "NotificationServiceSlack"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterQueueByNodeNodeNotificationServiceSlack
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterQueueByNodeNodeOrganization:
+		typename = "Organization"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterQueueByNodeNodeOrganization
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterQueueByNodeNodeOrganizationBanner:
+		typename = "OrganizationBanner"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterQueueByNodeNodeOrganizationBanner
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterQueueByNodeNodeOrganizationInvitation:
+		typename = "OrganizationInvitation"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterQueueByNodeNodeOrganizationInvitation
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterQueueByNodeNodeOrganizationMember:
+		typename = "OrganizationMember"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterQueueByNodeNodeOrganizationMember
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterQueueByNodeNodeOrganizationRepositoryProviderGitHub:
+		typename = "OrganizationRepositoryProviderGitHub"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterQueueByNodeNodeOrganizationRepositoryProviderGitHub
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterQueueByNodeNodeOrganizationRepositoryProviderGitHubEnterpriseServer:
+		typename = "OrganizationRepositoryProviderGitHubEnterpriseServer"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterQueueByNodeNodeOrganizationRepositoryProviderGitHubEnterpriseServer
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterQueueByNodeNodePipeline:
+		typename = "Pipeline"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterQueueByNodeNodePipeline
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterQueueByNodeNodePipelineMetric:
+		typename = "PipelineMetric"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterQueueByNodeNodePipelineMetric
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterQueueByNodeNodePipelineSchedule:
+		typename = "PipelineSchedule"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterQueueByNodeNodePipelineSchedule
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterQueueByNodeNodePipelineTemplate:
+		typename = "PipelineTemplate"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterQueueByNodeNodePipelineTemplate
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterQueueByNodeNodeRegistry:
+		typename = "Registry"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterQueueByNodeNodeRegistry
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterQueueByNodeNodeRegistryToken:
+		typename = "RegistryToken"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterQueueByNodeNodeRegistryToken
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterQueueByNodeNodeRule:
+		typename = "Rule"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterQueueByNodeNodeRule
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterQueueByNodeNodeSSOProviderGitHubApp:
+		typename = "SSOProviderGitHubApp"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterQueueByNodeNodeSSOProviderGitHubApp
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterQueueByNodeNodeSSOProviderGoogleGSuite:
+		typename = "SSOProviderGoogleGSuite"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterQueueByNodeNodeSSOProviderGoogleGSuite
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterQueueByNodeNodeSSOProviderSAML:
+		typename = "SSOProviderSAML"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterQueueByNodeNodeSSOProviderSAML
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterQueueByNodeNodeSecret:
+		typename = "Secret"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterQueueByNodeNodeSecret
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterQueueByNodeNodeSuite:
+		typename = "Suite"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterQueueByNodeNodeSuite
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterQueueByNodeNodeTeam:
+		typename = "Team"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterQueueByNodeNodeTeam
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterQueueByNodeNodeTeamMember:
+		typename = "TeamMember"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterQueueByNodeNodeTeamMember
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterQueueByNodeNodeTeamPipeline:
+		typename = "TeamPipeline"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterQueueByNodeNodeTeamPipeline
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterQueueByNodeNodeTeamRegistry:
+		typename = "TeamRegistry"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterQueueByNodeNodeTeamRegistry
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterQueueByNodeNodeTeamSuite:
+		typename = "TeamSuite"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterQueueByNodeNodeTeamSuite
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterQueueByNodeNodeUser:
+		typename = "User"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterQueueByNodeNodeUser
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterQueueByNodeNodeViewer:
+		typename = "Viewer"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterQueueByNodeNodeViewer
+		}{typename, v}
+		return json.Marshal(result)
+	case nil:
+		return []byte("null"), nil
+	default:
+		return nil, fmt.Errorf(
+			`unexpected concrete type for getClusterQueueByNodeNode: "%T"`, v)
+	}
+}
+
+// getClusterQueueByNodeNodeAPIAccessToken includes the requested fields of the GraphQL type APIAccessToken.
+// The GraphQL type's documentation follows.
+//
+// API access tokens for authentication with the Buildkite API
+type getClusterQueueByNodeNodeAPIAccessToken struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterQueueByNodeNodeAPIAccessToken.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterQueueByNodeNodeAPIAccessToken) GetTypename() string { return v.Typename }
+
+// getClusterQueueByNodeNodeAPIAccessTokenCode includes the requested fields of the GraphQL type APIAccessTokenCode.
+// The GraphQL type's documentation follows.
+//
+// A code that is used by an API Application to request an API Access Token
+type getClusterQueueByNodeNodeAPIAccessTokenCode struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterQueueByNodeNodeAPIAccessTokenCode.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterQueueByNodeNodeAPIAccessTokenCode) GetTypename() string { return v.Typename }
+
+// getClusterQueueByNodeNodeAPIApplication includes the requested fields of the GraphQL type APIApplication.
+// The GraphQL type's documentation follows.
+//
+// An API Application
+type getClusterQueueByNodeNodeAPIApplication struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterQueueByNodeNodeAPIApplication.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterQueueByNodeNodeAPIApplication) GetTypename() string { return v.Typename }
+
+// getClusterQueueByNodeNodeAgent includes the requested fields of the GraphQL type Agent.
+// The GraphQL type's documentation follows.
+//
+// An agent
+type getClusterQueueByNodeNodeAgent struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterQueueByNodeNodeAgent.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterQueueByNodeNodeAgent) GetTypename() string { return v.Typename }
+
+// getClusterQueueByNodeNodeAgentToken includes the requested fields of the GraphQL type AgentToken.
+// The GraphQL type's documentation follows.
+//
+// A token used to connect an agent to Buildkite
+type getClusterQueueByNodeNodeAgentToken struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterQueueByNodeNodeAgentToken.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterQueueByNodeNodeAgentToken) GetTypename() string { return v.Typename }
+
+// getClusterQueueByNodeNodeAnnotation includes the requested fields of the GraphQL type Annotation.
+// The GraphQL type's documentation follows.
+//
+// An annotation allows you to add arbitrary content to the top of a build page in the Buildkite UI
+type getClusterQueueByNodeNodeAnnotation struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterQueueByNodeNodeAnnotation.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterQueueByNodeNodeAnnotation) GetTypename() string { return v.Typename }
+
+// getClusterQueueByNodeNodeArtifact includes the requested fields of the GraphQL type Artifact.
+// The GraphQL type's documentation follows.
+//
+// A file uploaded from the agent whilst running a job
+type getClusterQueueByNodeNodeArtifact struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterQueueByNodeNodeArtifact.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterQueueByNodeNodeArtifact) GetTypename() string { return v.Typename }
+
+// getClusterQueueByNodeNodeAuditEvent includes the requested fields of the GraphQL type AuditEvent.
+// The GraphQL type's documentation follows.
+//
+// Audit record of an event which occurred in the system
+type getClusterQueueByNodeNodeAuditEvent struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterQueueByNodeNodeAuditEvent.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterQueueByNodeNodeAuditEvent) GetTypename() string { return v.Typename }
+
+// getClusterQueueByNodeNodeAuthorizationBitbucket includes the requested fields of the GraphQL type AuthorizationBitbucket.
+// The GraphQL type's documentation follows.
+//
+// A Bitbucket account authorized with a Buildkite account
+type getClusterQueueByNodeNodeAuthorizationBitbucket struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterQueueByNodeNodeAuthorizationBitbucket.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterQueueByNodeNodeAuthorizationBitbucket) GetTypename() string { return v.Typename }
+
+// getClusterQueueByNodeNodeAuthorizationGitHub includes the requested fields of the GraphQL type AuthorizationGitHub.
+// The GraphQL type's documentation follows.
+//
+// A GitHub account authorized with a Buildkite account
+type getClusterQueueByNodeNodeAuthorizationGitHub struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterQueueByNodeNodeAuthorizationGitHub.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterQueueByNodeNodeAuthorizationGitHub) GetTypename() string { return v.Typename }
+
+// getClusterQueueByNodeNodeAuthorizationGitHubApp includes the requested fields of the GraphQL type AuthorizationGitHubApp.
+// The GraphQL type's documentation follows.
+//
+// A GitHub app authorized with a Buildkite account
+type getClusterQueueByNodeNodeAuthorizationGitHubApp struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterQueueByNodeNodeAuthorizationGitHubApp.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterQueueByNodeNodeAuthorizationGitHubApp) GetTypename() string { return v.Typename }
+
+// getClusterQueueByNodeNodeAuthorizationGitHubEnterprise includes the requested fields of the GraphQL type AuthorizationGitHubEnterprise.
+// The GraphQL type's documentation follows.
+//
+// A GitHub Enterprise account authorized with a Buildkite account
+type getClusterQueueByNodeNodeAuthorizationGitHubEnterprise struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterQueueByNodeNodeAuthorizationGitHubEnterprise.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterQueueByNodeNodeAuthorizationGitHubEnterprise) GetTypename() string {
+	return v.Typename
+}
+
+// getClusterQueueByNodeNodeAuthorizationGoogle includes the requested fields of the GraphQL type AuthorizationGoogle.
+// The GraphQL type's documentation follows.
+//
+// A Google account authorized with a Buildkite account
+type getClusterQueueByNodeNodeAuthorizationGoogle struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterQueueByNodeNodeAuthorizationGoogle.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterQueueByNodeNodeAuthorizationGoogle) GetTypename() string { return v.Typename }
+
+// getClusterQueueByNodeNodeAuthorizationSAML includes the requested fields of the GraphQL type AuthorizationSAML.
+// The GraphQL type's documentation follows.
+//
+// A SAML account authorized with a Buildkite account
+type getClusterQueueByNodeNodeAuthorizationSAML struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterQueueByNodeNodeAuthorizationSAML.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterQueueByNodeNodeAuthorizationSAML) GetTypename() string { return v.Typename }
+
+// getClusterQueueByNodeNodeBuild includes the requested fields of the GraphQL type Build.
+// The GraphQL type's documentation follows.
+//
+// A build from a pipeline
+type getClusterQueueByNodeNodeBuild struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterQueueByNodeNodeBuild.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterQueueByNodeNodeBuild) GetTypename() string { return v.Typename }
+
+// getClusterQueueByNodeNodeCluster includes the requested fields of the GraphQL type Cluster.
+type getClusterQueueByNodeNodeCluster struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterQueueByNodeNodeCluster.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterQueueByNodeNodeCluster) GetTypename() string { return v.Typename }
+
+// getClusterQueueByNodeNodeClusterQueue includes the requested fields of the GraphQL type ClusterQueue.
+type getClusterQueueByNodeNodeClusterQueue struct {
+	Typename           string `json:"__typename"`
+	ClusterQueueValues `json:"-"`
+	// States whether job dispatch is paused for this cluster queue
+	DispatchPaused bool `json:"dispatchPaused"`
+	// The time this queue was paused
+	DispatchPausedAt *time.Time `json:"dispatchPausedAt"`
+	// The user who paused this cluster queue
+	DispatchPausedBy *getClusterQueueByNodeNodeClusterQueueDispatchPausedByUser `json:"dispatchPausedBy"`
+	// Note describing why job dispatch was paused for this cluster queue
+	DispatchPausedNote *string `json:"dispatchPausedNote"`
+}
+
+// GetTypename returns getClusterQueueByNodeNodeClusterQueue.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterQueueByNodeNodeClusterQueue) GetTypename() string { return v.Typename }
+
+// GetDispatchPaused returns getClusterQueueByNodeNodeClusterQueue.DispatchPaused, and is useful for accessing the field via an interface.
+func (v *getClusterQueueByNodeNodeClusterQueue) GetDispatchPaused() bool { return v.DispatchPaused }
+
+// GetDispatchPausedAt returns getClusterQueueByNodeNodeClusterQueue.DispatchPausedAt, and is useful for accessing the field via an interface.
+func (v *getClusterQueueByNodeNodeClusterQueue) GetDispatchPausedAt() *time.Time {
+	return v.DispatchPausedAt
+}
+
+// GetDispatchPausedBy returns getClusterQueueByNodeNodeClusterQueue.DispatchPausedBy, and is useful for accessing the field via an interface.
+func (v *getClusterQueueByNodeNodeClusterQueue) GetDispatchPausedBy() *getClusterQueueByNodeNodeClusterQueueDispatchPausedByUser {
+	return v.DispatchPausedBy
+}
+
+// GetDispatchPausedNote returns getClusterQueueByNodeNodeClusterQueue.DispatchPausedNote, and is useful for accessing the field via an interface.
+func (v *getClusterQueueByNodeNodeClusterQueue) GetDispatchPausedNote() *string {
+	return v.DispatchPausedNote
+}
+
+// GetId returns getClusterQueueByNodeNodeClusterQueue.Id, and is useful for accessing the field via an interface.
+func (v *getClusterQueueByNodeNodeClusterQueue) GetId() string { return v.ClusterQueueValues.Id }
+
+// GetUuid returns getClusterQueueByNodeNodeClusterQueue.Uuid, and is useful for accessing the field via an interface.
+func (v *getClusterQueueByNodeNodeClusterQueue) GetUuid() string { return v.ClusterQueueValues.Uuid }
+
+// GetKey returns getClusterQueueByNodeNodeClusterQueue.Key, and is useful for accessing the field via an interface.
+func (v *getClusterQueueByNodeNodeClusterQueue) GetKey() string { return v.ClusterQueueValues.Key }
+
+// GetDescription returns getClusterQueueByNodeNodeClusterQueue.Description, and is useful for accessing the field via an interface.
+func (v *getClusterQueueByNodeNodeClusterQueue) GetDescription() *string {
+	return v.ClusterQueueValues.Description
+}
+
+// GetCluster returns getClusterQueueByNodeNodeClusterQueue.Cluster, and is useful for accessing the field via an interface.
+func (v *getClusterQueueByNodeNodeClusterQueue) GetCluster() ClusterQueueValuesCluster {
+	return v.ClusterQueueValues.Cluster
+}
+
+// GetHosted returns getClusterQueueByNodeNodeClusterQueue.Hosted, and is useful for accessing the field via an interface.
+func (v *getClusterQueueByNodeNodeClusterQueue) GetHosted() bool { return v.ClusterQueueValues.Hosted }
+
+// GetHostedAgents returns getClusterQueueByNodeNodeClusterQueue.HostedAgents, and is useful for accessing the field via an interface.
+func (v *getClusterQueueByNodeNodeClusterQueue) GetHostedAgents() ClusterQueueValuesHostedAgentsHostedAgentQueueSettings {
+	return v.ClusterQueueValues.HostedAgents
+}
+
+func (v *getClusterQueueByNodeNodeClusterQueue) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*getClusterQueueByNodeNodeClusterQueue
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.getClusterQueueByNodeNodeClusterQueue = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	err = json.Unmarshal(
+		b, &v.ClusterQueueValues)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+type __premarshalgetClusterQueueByNodeNodeClusterQueue struct {
+	Typename string `json:"__typename"`
+
+	DispatchPaused bool `json:"dispatchPaused"`
+
+	DispatchPausedAt *time.Time `json:"dispatchPausedAt"`
+
+	DispatchPausedBy *getClusterQueueByNodeNodeClusterQueueDispatchPausedByUser `json:"dispatchPausedBy"`
+
+	DispatchPausedNote *string `json:"dispatchPausedNote"`
+
+	Id string `json:"id"`
+
+	Uuid string `json:"uuid"`
+
+	Key string `json:"key"`
+
+	Description *string `json:"description"`
+
+	Cluster ClusterQueueValuesCluster `json:"cluster"`
+
+	Hosted bool `json:"hosted"`
+
+	HostedAgents ClusterQueueValuesHostedAgentsHostedAgentQueueSettings `json:"hostedAgents"`
+}
+
+func (v *getClusterQueueByNodeNodeClusterQueue) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *getClusterQueueByNodeNodeClusterQueue) __premarshalJSON() (*__premarshalgetClusterQueueByNodeNodeClusterQueue, error) {
+	var retval __premarshalgetClusterQueueByNodeNodeClusterQueue
+
+	retval.Typename = v.Typename
+	retval.DispatchPaused = v.DispatchPaused
+	retval.DispatchPausedAt = v.DispatchPausedAt
+	retval.DispatchPausedBy = v.DispatchPausedBy
+	retval.DispatchPausedNote = v.DispatchPausedNote
+	retval.Id = v.ClusterQueueValues.Id
+	retval.Uuid = v.ClusterQueueValues.Uuid
+	retval.Key = v.ClusterQueueValues.Key
+	retval.Description = v.ClusterQueueValues.Description
+	retval.Cluster = v.ClusterQueueValues.Cluster
+	retval.Hosted = v.ClusterQueueValues.Hosted
+	retval.HostedAgents = v.ClusterQueueValues.HostedAgents
+	return &retval, nil
+}
+
+// getClusterQueueByNodeNodeClusterQueueDispatchPausedByUser includes the requested fields of the GraphQL type User.
+// The GraphQL type's documentation follows.
+//
+// A user
+type getClusterQueueByNodeNodeClusterQueueDispatchPausedByUser struct {
+	Id string `json:"id"`
+}
+
+// GetId returns getClusterQueueByNodeNodeClusterQueueDispatchPausedByUser.Id, and is useful for accessing the field via an interface.
+func (v *getClusterQueueByNodeNodeClusterQueueDispatchPausedByUser) GetId() string { return v.Id }
+
+// getClusterQueueByNodeNodeClusterQueueToken includes the requested fields of the GraphQL type ClusterQueueToken.
+// The GraphQL type's documentation follows.
+//
+// A token used to register an agent with a Buildkite cluster queue
+type getClusterQueueByNodeNodeClusterQueueToken struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterQueueByNodeNodeClusterQueueToken.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterQueueByNodeNodeClusterQueueToken) GetTypename() string { return v.Typename }
+
+// getClusterQueueByNodeNodeClusterToken includes the requested fields of the GraphQL type ClusterToken.
+// The GraphQL type's documentation follows.
+//
+// A token used to connect an agent in cluster to Buildkite
+type getClusterQueueByNodeNodeClusterToken struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterQueueByNodeNodeClusterToken.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterQueueByNodeNodeClusterToken) GetTypename() string { return v.Typename }
+
+// getClusterQueueByNodeNodeCompositeRegistryUpstream includes the requested fields of the GraphQL type CompositeRegistryUpstream.
+// The GraphQL type's documentation follows.
+//
+// A composite registry's upstream
+type getClusterQueueByNodeNodeCompositeRegistryUpstream struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterQueueByNodeNodeCompositeRegistryUpstream.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterQueueByNodeNodeCompositeRegistryUpstream) GetTypename() string { return v.Typename }
+
+// getClusterQueueByNodeNodeEmail includes the requested fields of the GraphQL type Email.
+// The GraphQL type's documentation follows.
+//
+// An email address
+type getClusterQueueByNodeNodeEmail struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterQueueByNodeNodeEmail.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterQueueByNodeNodeEmail) GetTypename() string { return v.Typename }
+
+// getClusterQueueByNodeNodeJobEventAssigned includes the requested fields of the GraphQL type JobEventAssigned.
+// The GraphQL type's documentation follows.
+//
+// An event created when the dispatcher assigns the job to an agent
+type getClusterQueueByNodeNodeJobEventAssigned struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterQueueByNodeNodeJobEventAssigned.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterQueueByNodeNodeJobEventAssigned) GetTypename() string { return v.Typename }
+
+// getClusterQueueByNodeNodeJobEventBuildStepUploadCreated includes the requested fields of the GraphQL type JobEventBuildStepUploadCreated.
+// The GraphQL type's documentation follows.
+//
+// An event created when the job creates new build steps via pipeline upload
+type getClusterQueueByNodeNodeJobEventBuildStepUploadCreated struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterQueueByNodeNodeJobEventBuildStepUploadCreated.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterQueueByNodeNodeJobEventBuildStepUploadCreated) GetTypename() string {
+	return v.Typename
+}
+
+// getClusterQueueByNodeNodeJobEventCanceled includes the requested fields of the GraphQL type JobEventCanceled.
+// The GraphQL type's documentation follows.
+//
+// An event created when the job is canceled
+type getClusterQueueByNodeNodeJobEventCanceled struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterQueueByNodeNodeJobEventCanceled.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterQueueByNodeNodeJobEventCanceled) GetTypename() string { return v.Typename }
+
+// getClusterQueueByNodeNodeJobEventFinished includes the requested fields of the GraphQL type JobEventFinished.
+// The GraphQL type's documentation follows.
+//
+// An event created when the job is finished
+type getClusterQueueByNodeNodeJobEventFinished struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterQueueByNodeNodeJobEventFinished.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterQueueByNodeNodeJobEventFinished) GetTypename() string { return v.Typename }
+
+// getClusterQueueByNodeNodeJobEventGeneric includes the requested fields of the GraphQL type JobEventGeneric.
+// The GraphQL type's documentation follows.
+//
+// A generic event type that doesn't have any additional meta-information associated with the event
+type getClusterQueueByNodeNodeJobEventGeneric struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterQueueByNodeNodeJobEventGeneric.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterQueueByNodeNodeJobEventGeneric) GetTypename() string { return v.Typename }
+
+// getClusterQueueByNodeNodeJobEventRetried includes the requested fields of the GraphQL type JobEventRetried.
+// The GraphQL type's documentation follows.
+//
+// An event created when the job is retried
+type getClusterQueueByNodeNodeJobEventRetried struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterQueueByNodeNodeJobEventRetried.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterQueueByNodeNodeJobEventRetried) GetTypename() string { return v.Typename }
+
+// getClusterQueueByNodeNodeJobEventRetryFailed includes the requested fields of the GraphQL type JobEventRetryFailed.
+// The GraphQL type's documentation follows.
+//
+// An event created when job fails to retry
+type getClusterQueueByNodeNodeJobEventRetryFailed struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterQueueByNodeNodeJobEventRetryFailed.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterQueueByNodeNodeJobEventRetryFailed) GetTypename() string { return v.Typename }
+
+// getClusterQueueByNodeNodeJobEventTimedOut includes the requested fields of the GraphQL type JobEventTimedOut.
+// The GraphQL type's documentation follows.
+//
+// An event created when the job is timed out
+type getClusterQueueByNodeNodeJobEventTimedOut struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterQueueByNodeNodeJobEventTimedOut.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterQueueByNodeNodeJobEventTimedOut) GetTypename() string { return v.Typename }
+
+// getClusterQueueByNodeNodeJobTypeBlock includes the requested fields of the GraphQL type JobTypeBlock.
+// The GraphQL type's documentation follows.
+//
+// A type of job that requires a user to unblock it before proceeding in a build pipeline
+type getClusterQueueByNodeNodeJobTypeBlock struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterQueueByNodeNodeJobTypeBlock.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterQueueByNodeNodeJobTypeBlock) GetTypename() string { return v.Typename }
+
+// getClusterQueueByNodeNodeJobTypeCommand includes the requested fields of the GraphQL type JobTypeCommand.
+// The GraphQL type's documentation follows.
+//
+// A type of job that runs a command on an agent
+type getClusterQueueByNodeNodeJobTypeCommand struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterQueueByNodeNodeJobTypeCommand.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterQueueByNodeNodeJobTypeCommand) GetTypename() string { return v.Typename }
+
+// getClusterQueueByNodeNodeJobTypeTrigger includes the requested fields of the GraphQL type JobTypeTrigger.
+// The GraphQL type's documentation follows.
+//
+// A type of job that triggers another build on a pipeline
+type getClusterQueueByNodeNodeJobTypeTrigger struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterQueueByNodeNodeJobTypeTrigger.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterQueueByNodeNodeJobTypeTrigger) GetTypename() string { return v.Typename }
+
+// getClusterQueueByNodeNodeJobTypeWait includes the requested fields of the GraphQL type JobTypeWait.
+// The GraphQL type's documentation follows.
+//
+// A type of job that waits for all previous jobs to pass before proceeding the build pipeline
+type getClusterQueueByNodeNodeJobTypeWait struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterQueueByNodeNodeJobTypeWait.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterQueueByNodeNodeJobTypeWait) GetTypename() string { return v.Typename }
+
+// getClusterQueueByNodeNodeNotificationServiceSlack includes the requested fields of the GraphQL type NotificationServiceSlack.
+// The GraphQL type's documentation follows.
+//
+// Deliver notifications to Slack
+type getClusterQueueByNodeNodeNotificationServiceSlack struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterQueueByNodeNodeNotificationServiceSlack.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterQueueByNodeNodeNotificationServiceSlack) GetTypename() string { return v.Typename }
+
+// getClusterQueueByNodeNodeOrganization includes the requested fields of the GraphQL type Organization.
+// The GraphQL type's documentation follows.
+//
+// An organization
+type getClusterQueueByNodeNodeOrganization struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterQueueByNodeNodeOrganization.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterQueueByNodeNodeOrganization) GetTypename() string { return v.Typename }
+
+// getClusterQueueByNodeNodeOrganizationBanner includes the requested fields of the GraphQL type OrganizationBanner.
+// The GraphQL type's documentation follows.
+//
+// System banner of an organization
+type getClusterQueueByNodeNodeOrganizationBanner struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterQueueByNodeNodeOrganizationBanner.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterQueueByNodeNodeOrganizationBanner) GetTypename() string { return v.Typename }
+
+// getClusterQueueByNodeNodeOrganizationInvitation includes the requested fields of the GraphQL type OrganizationInvitation.
+// The GraphQL type's documentation follows.
+//
+// A pending invitation to a user to join this organization
+type getClusterQueueByNodeNodeOrganizationInvitation struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterQueueByNodeNodeOrganizationInvitation.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterQueueByNodeNodeOrganizationInvitation) GetTypename() string { return v.Typename }
+
+// getClusterQueueByNodeNodeOrganizationMember includes the requested fields of the GraphQL type OrganizationMember.
+// The GraphQL type's documentation follows.
+//
+// A member of an organization
+type getClusterQueueByNodeNodeOrganizationMember struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterQueueByNodeNodeOrganizationMember.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterQueueByNodeNodeOrganizationMember) GetTypename() string { return v.Typename }
+
+// getClusterQueueByNodeNodeOrganizationRepositoryProviderGitHub includes the requested fields of the GraphQL type OrganizationRepositoryProviderGitHub.
+// The GraphQL type's documentation follows.
+//
+// GitHub installation associated with this organization
+type getClusterQueueByNodeNodeOrganizationRepositoryProviderGitHub struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterQueueByNodeNodeOrganizationRepositoryProviderGitHub.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterQueueByNodeNodeOrganizationRepositoryProviderGitHub) GetTypename() string {
+	return v.Typename
+}
+
+// getClusterQueueByNodeNodeOrganizationRepositoryProviderGitHubEnterpriseServer includes the requested fields of the GraphQL type OrganizationRepositoryProviderGitHubEnterpriseServer.
+// The GraphQL type's documentation follows.
+//
+// GitHub Enterprise Server associated with this organization
+type getClusterQueueByNodeNodeOrganizationRepositoryProviderGitHubEnterpriseServer struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterQueueByNodeNodeOrganizationRepositoryProviderGitHubEnterpriseServer.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterQueueByNodeNodeOrganizationRepositoryProviderGitHubEnterpriseServer) GetTypename() string {
+	return v.Typename
+}
+
+// getClusterQueueByNodeNodePipeline includes the requested fields of the GraphQL type Pipeline.
+// The GraphQL type's documentation follows.
+//
+// A pipeline
+type getClusterQueueByNodeNodePipeline struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterQueueByNodeNodePipeline.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterQueueByNodeNodePipeline) GetTypename() string { return v.Typename }
+
+// getClusterQueueByNodeNodePipelineMetric includes the requested fields of the GraphQL type PipelineMetric.
+// The GraphQL type's documentation follows.
+//
+// A metric for a pipeline
+type getClusterQueueByNodeNodePipelineMetric struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterQueueByNodeNodePipelineMetric.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterQueueByNodeNodePipelineMetric) GetTypename() string { return v.Typename }
+
+// getClusterQueueByNodeNodePipelineSchedule includes the requested fields of the GraphQL type PipelineSchedule.
+// The GraphQL type's documentation follows.
+//
+// A schedule of when a build should automatically triggered for a Pipeline
+type getClusterQueueByNodeNodePipelineSchedule struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterQueueByNodeNodePipelineSchedule.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterQueueByNodeNodePipelineSchedule) GetTypename() string { return v.Typename }
+
+// getClusterQueueByNodeNodePipelineTemplate includes the requested fields of the GraphQL type PipelineTemplate.
+// The GraphQL type's documentation follows.
+//
+// A template defining a fixed step configuration for a pipeline
+type getClusterQueueByNodeNodePipelineTemplate struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterQueueByNodeNodePipelineTemplate.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterQueueByNodeNodePipelineTemplate) GetTypename() string { return v.Typename }
+
+// getClusterQueueByNodeNodeRegistry includes the requested fields of the GraphQL type Registry.
+// The GraphQL type's documentation follows.
+//
+// A registry
+type getClusterQueueByNodeNodeRegistry struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterQueueByNodeNodeRegistry.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterQueueByNodeNodeRegistry) GetTypename() string { return v.Typename }
+
+// getClusterQueueByNodeNodeRegistryToken includes the requested fields of the GraphQL type RegistryToken.
+// The GraphQL type's documentation follows.
+//
+// A registry token
+type getClusterQueueByNodeNodeRegistryToken struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterQueueByNodeNodeRegistryToken.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterQueueByNodeNodeRegistryToken) GetTypename() string { return v.Typename }
+
+// getClusterQueueByNodeNodeRule includes the requested fields of the GraphQL type Rule.
+type getClusterQueueByNodeNodeRule struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterQueueByNodeNodeRule.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterQueueByNodeNodeRule) GetTypename() string { return v.Typename }
+
+// getClusterQueueByNodeNodeSSOProviderGitHubApp includes the requested fields of the GraphQL type SSOProviderGitHubApp.
+// The GraphQL type's documentation follows.
+//
+// Single sign-on provided by GitHub
+type getClusterQueueByNodeNodeSSOProviderGitHubApp struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterQueueByNodeNodeSSOProviderGitHubApp.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterQueueByNodeNodeSSOProviderGitHubApp) GetTypename() string { return v.Typename }
+
+// getClusterQueueByNodeNodeSSOProviderGoogleGSuite includes the requested fields of the GraphQL type SSOProviderGoogleGSuite.
+// The GraphQL type's documentation follows.
+//
+// Single sign-on provided by Google
+type getClusterQueueByNodeNodeSSOProviderGoogleGSuite struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterQueueByNodeNodeSSOProviderGoogleGSuite.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterQueueByNodeNodeSSOProviderGoogleGSuite) GetTypename() string { return v.Typename }
+
+// getClusterQueueByNodeNodeSSOProviderSAML includes the requested fields of the GraphQL type SSOProviderSAML.
+// The GraphQL type's documentation follows.
+//
+// Single sign-on provided via SAML
+type getClusterQueueByNodeNodeSSOProviderSAML struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterQueueByNodeNodeSSOProviderSAML.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterQueueByNodeNodeSSOProviderSAML) GetTypename() string { return v.Typename }
+
+// getClusterQueueByNodeNodeSecret includes the requested fields of the GraphQL type Secret.
+// The GraphQL type's documentation follows.
+//
+// A secret hosted by Buildkite. This does not contain the secret value or encrypted material.
+type getClusterQueueByNodeNodeSecret struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterQueueByNodeNodeSecret.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterQueueByNodeNodeSecret) GetTypename() string { return v.Typename }
+
+// getClusterQueueByNodeNodeSuite includes the requested fields of the GraphQL type Suite.
+// The GraphQL type's documentation follows.
+//
+// A suite
+type getClusterQueueByNodeNodeSuite struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterQueueByNodeNodeSuite.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterQueueByNodeNodeSuite) GetTypename() string { return v.Typename }
+
+// getClusterQueueByNodeNodeTeam includes the requested fields of the GraphQL type Team.
+// The GraphQL type's documentation follows.
+//
+// An organization team
+type getClusterQueueByNodeNodeTeam struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterQueueByNodeNodeTeam.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterQueueByNodeNodeTeam) GetTypename() string { return v.Typename }
+
+// getClusterQueueByNodeNodeTeamMember includes the requested fields of the GraphQL type TeamMember.
+// The GraphQL type's documentation follows.
+//
+// An member of a team
+type getClusterQueueByNodeNodeTeamMember struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterQueueByNodeNodeTeamMember.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterQueueByNodeNodeTeamMember) GetTypename() string { return v.Typename }
+
+// getClusterQueueByNodeNodeTeamPipeline includes the requested fields of the GraphQL type TeamPipeline.
+// The GraphQL type's documentation follows.
+//
+// An pipeline that's been assigned to a team
+type getClusterQueueByNodeNodeTeamPipeline struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterQueueByNodeNodeTeamPipeline.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterQueueByNodeNodeTeamPipeline) GetTypename() string { return v.Typename }
+
+// getClusterQueueByNodeNodeTeamRegistry includes the requested fields of the GraphQL type TeamRegistry.
+// The GraphQL type's documentation follows.
+//
+// A registry that's been assigned to a team
+type getClusterQueueByNodeNodeTeamRegistry struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterQueueByNodeNodeTeamRegistry.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterQueueByNodeNodeTeamRegistry) GetTypename() string { return v.Typename }
+
+// getClusterQueueByNodeNodeTeamSuite includes the requested fields of the GraphQL type TeamSuite.
+// The GraphQL type's documentation follows.
+//
+// A suite that's been assigned to a team
+type getClusterQueueByNodeNodeTeamSuite struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterQueueByNodeNodeTeamSuite.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterQueueByNodeNodeTeamSuite) GetTypename() string { return v.Typename }
+
+// getClusterQueueByNodeNodeUser includes the requested fields of the GraphQL type User.
+// The GraphQL type's documentation follows.
+//
+// A user
+type getClusterQueueByNodeNodeUser struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterQueueByNodeNodeUser.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterQueueByNodeNodeUser) GetTypename() string { return v.Typename }
+
+// getClusterQueueByNodeNodeViewer includes the requested fields of the GraphQL type Viewer.
+// The GraphQL type's documentation follows.
+//
+// Represents the current user session
+type getClusterQueueByNodeNodeViewer struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterQueueByNodeNodeViewer.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterQueueByNodeNodeViewer) GetTypename() string { return v.Typename }
+
+// getClusterQueueByNodeResponse is returned by getClusterQueueByNode on success.
+type getClusterQueueByNodeResponse struct {
+	// Fetches an object given its ID.
+	Node getClusterQueueByNodeNode `json:"-"`
+}
+
+// GetNode returns getClusterQueueByNodeResponse.Node, and is useful for accessing the field via an interface.
+func (v *getClusterQueueByNodeResponse) GetNode() getClusterQueueByNodeNode { return v.Node }
+
+func (v *getClusterQueueByNodeResponse) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*getClusterQueueByNodeResponse
+		Node json.RawMessage `json:"node"`
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.getClusterQueueByNodeResponse = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	{
+		dst := &v.Node
+		src := firstPass.Node
+		if len(src) != 0 && string(src) != "null" {
+			err = __unmarshalgetClusterQueueByNodeNode(
+				src, dst)
+			if err != nil {
+				return fmt.Errorf(
+					"unable to unmarshal getClusterQueueByNodeResponse.Node: %w", err)
+			}
+		}
+	}
+	return nil
+}
+
+type __premarshalgetClusterQueueByNodeResponse struct {
+	Node json.RawMessage `json:"node"`
+}
+
+func (v *getClusterQueueByNodeResponse) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *getClusterQueueByNodeResponse) __premarshalJSON() (*__premarshalgetClusterQueueByNodeResponse, error) {
+	var retval __premarshalgetClusterQueueByNodeResponse
+
+	{
+
+		dst := &retval.Node
+		src := v.Node
+		var err error
+		*dst, err = __marshalgetClusterQueueByNodeNode(
+			&src)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"unable to marshal getClusterQueueByNodeResponse.Node: %w", err)
+		}
+	}
+	return &retval, nil
 }
 
 // getClusterQueuesOrganization includes the requested fields of the GraphQL type Organization.
@@ -15711,6 +17791,63 @@ func (v *upsertBannerResponse) GetOrganizationBannerUpsert() upsertBannerOrganiz
 	return v.OrganizationBannerUpsert
 }
 
+// The query executed by GetOrganizationClusters.
+const GetOrganizationClusters_Operation = `
+query GetOrganizationClusters ($slug: ID!, $cursor: String) {
+	organization(slug: $slug) {
+		clusters(first: 500, after: $cursor) {
+			pageInfo {
+				endCursor
+				hasNextPage
+			}
+			edges {
+				node {
+					id
+					uuid
+					name
+					description
+					emoji
+					color
+					defaultQueue {
+						id
+						uuid
+						key
+						description
+					}
+				}
+			}
+		}
+	}
+}
+`
+
+func GetOrganizationClusters(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	slug string,
+	cursor *string,
+) (data_ *GetOrganizationClustersResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "GetOrganizationClusters",
+		Query:  GetOrganizationClusters_Operation,
+		Variables: &__GetOrganizationClustersInput{
+			Slug:   slug,
+			Cursor: cursor,
+		},
+	}
+
+	data_ = &GetOrganizationClustersResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
 // The query executed by GetOrganizationMemberByEmail.
 const GetOrganizationMemberByEmail_Operation = `
 query GetOrganizationMemberByEmail ($slug: ID!, $email: String) {
@@ -15798,6 +17935,60 @@ func GetOrganizationMembers(
 	}
 
 	data_ = &GetOrganizationMembersResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
+// The query executed by GetOrganizationTeams.
+const GetOrganizationTeams_Operation = `
+query GetOrganizationTeams ($slug: ID!, $cursor: String) {
+	organization(slug: $slug) {
+		teams(first: 500, after: $cursor) {
+			pageInfo {
+				endCursor
+				hasNextPage
+			}
+			edges {
+				node {
+					id
+					uuid
+					name
+					description
+					slug
+					privacy
+					isDefaultTeam
+					defaultMemberRole
+					membersCanCreatePipelines
+				}
+			}
+		}
+	}
+}
+`
+
+func GetOrganizationTeams(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	slug string,
+	cursor *string,
+) (data_ *GetOrganizationTeamsResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "GetOrganizationTeams",
+		Query:  GetOrganizationTeams_Operation,
+		Variables: &__GetOrganizationTeamsInput{
+			Slug:   slug,
+			Cursor: cursor,
+		},
+	}
+
+	data_ = &GetOrganizationTeamsResponse{}
 	resp_ := &graphql.Response{Data: data_}
 
 	err_ = client_.MakeRequest(
@@ -16115,6 +18306,7 @@ fragment HostedAgentsQueueSettingsValues on HostedAgentQueueSettings {
 		}
 		macos {
 			xcodeVersion
+			macosVersion
 		}
 	}
 }
@@ -17206,6 +19398,82 @@ func getClusterByName(
 	return data_, err_
 }
 
+// The query executed by getClusterQueueByNode.
+const getClusterQueueByNode_Operation = `
+query getClusterQueueByNode ($id: ID!) {
+	node(id: $id) {
+		__typename
+		... on ClusterQueue {
+			... ClusterQueueValues
+			dispatchPaused
+			dispatchPausedAt
+			dispatchPausedBy {
+				id
+			}
+			dispatchPausedNote
+		}
+	}
+}
+fragment ClusterQueueValues on ClusterQueue {
+	id
+	uuid
+	key
+	description
+	cluster {
+		id
+		uuid
+	}
+	hosted
+	hostedAgents {
+		... HostedAgentsQueueSettingsValues
+	}
+}
+fragment HostedAgentsQueueSettingsValues on HostedAgentQueueSettings {
+	instanceShape {
+		architecture
+		machineType
+		memory
+		name
+		size
+		vcpu
+	}
+	platformSettings {
+		linux {
+			agentImageRef
+		}
+		macos {
+			xcodeVersion
+			macosVersion
+		}
+	}
+}
+`
+
+func getClusterQueueByNode(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	id string,
+) (data_ *getClusterQueueByNodeResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "getClusterQueueByNode",
+		Query:  getClusterQueueByNode_Operation,
+		Variables: &__getClusterQueueByNodeInput{
+			Id: id,
+		},
+	}
+
+	data_ = &getClusterQueueByNodeResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
 // The query executed by getClusterQueues.
 const getClusterQueues_Operation = `
 query getClusterQueues ($orgSlug: ID!, $id: ID!, $cursor: String) {
@@ -17260,6 +19528,7 @@ fragment HostedAgentsQueueSettingsValues on HostedAgentQueueSettings {
 		}
 		macos {
 			xcodeVersion
+			macosVersion
 		}
 	}
 }
@@ -18845,6 +21114,7 @@ fragment HostedAgentsQueueSettingsValues on HostedAgentQueueSettings {
 		}
 		macos {
 			xcodeVersion
+			macosVersion
 		}
 	}
 }

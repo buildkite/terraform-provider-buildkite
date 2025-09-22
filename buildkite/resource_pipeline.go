@@ -546,9 +546,28 @@ func (p *pipelineResource) Read(ctx context.Context, req resource.ReadRequest, r
 		setPipelineModel(&state, pipelineNode)
 
 		// pipeline default team is a terraform concept only so it takes some coercing
-		err = p.setDefaultTeamIfExists(ctx, &state, &pipelineNode.Teams.PipelineTeam)
+		teamResult, err := p.setDefaultTeamIfExists(ctx, &state, &pipelineNode.Teams.PipelineTeam)
 		if err != nil {
-			resp.Diagnostics.AddError("Error encountered trying to read teams for pipeline", err.Error())
+			resp.Diagnostics.AddError("Error with default team configuration", err.Error())
+			return
+		}
+
+		// Add warning if team was added back to enforce Terraform configuration
+		if teamResult != nil && teamResult.teamAddedBack {
+			resp.Diagnostics.AddWarning(
+				"Default team missing from pipeline",
+				fmt.Sprintf("The default team (ID: %s) is missing from the pipeline but exists in your organization. The team has been removed from state - run 'terraform apply' to add it back with Full Access.",
+					teamResult.originalTeamId),
+			)
+		}
+
+		// Add warning if team permissions were reduced
+		if teamResult != nil && teamResult.reducedPermission {
+			resp.Diagnostics.AddWarning(
+				"Default team permission level reduced",
+				fmt.Sprintf("The default team (ID: %s) no longer has Full Access (current level: %s). This may cause issues with pipeline updates, team management, or build triggering. Consider updating the team's permissions in the Buildkite UI or using a different team with Full Access as the default.",
+					teamResult.originalTeamId, teamResult.accessLevel),
+			)
 		}
 
 		resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
@@ -559,16 +578,51 @@ func (p *pipelineResource) Read(ctx context.Context, req resource.ReadRequest, r
 	}
 }
 
-// setDefaultTeamIfExists will try to find a team for the pipeline to set as default
-// if we got here from a terraform import, we will have no idea what (if any) team to assign as the default, it
-// will need to be done manually by the user
-// however, if this is a normal read operation, we will have access to the previous state which is a reliable
-// source of default team ID. so if it is set in state, we need to ensure the permission level is correct,
-// otherwise it cannot be the default owner if it has lower permissions
-func (p *pipelineResource) setDefaultTeamIfExists(ctx context.Context, state *pipelineResourceModel, pipelineTeam *PipelineTeam) error {
+type teamResult struct {
+	reducedPermission bool
+	teamAddedBack     bool
+	originalTeamId    string
+	accessLevel       string
+}
+
+// setDefaultTeamIfExists enforces the terraform configuration as the source of truth for team assignments
+// - If no team is configured (null or unset), it does nothing, preserving user choice
+// - If the configured team doesn't exist globally, it explicity fails
+// - If the team exists but was removed from the pipeline, it sets state to null to trigger update
+// - If the team exists on the pipeline but with reduced permissions, it warns but keeps the team
+func (p *pipelineResource) setDefaultTeamIfExists(ctx context.Context, state *pipelineResourceModel, pipelineTeam *PipelineTeam) (*teamResult, error) {
+	return p.setDefaultTeamIfExistsWithCandidate(ctx, state, pipelineTeam)
+}
+
+// setDefaultTeamIfExistsWithCandidate handles the logic for enforcing the Terraform configuration as source of truth
+func (p *pipelineResource) setDefaultTeamIfExistsWithCandidate(ctx context.Context, state *pipelineResourceModel, pipelineTeam *PipelineTeam) (*teamResult, error) {
+	result := &teamResult{}
+
+	// Only enforce team validation if the user has explicitly configured a team ID
+	// This preserves cases where users have set default_team_id = null or haven't set it at all
 	if !state.DefaultTeamId.IsNull() {
+		result.originalTeamId = state.DefaultTeamId.ValueString()
+
+		// First, check if the team exists globally using getNode
+		teamResponse, err := getNode(ctx, p.client.genqlient, result.originalTeamId)
+		if err != nil {
+			return nil, fmt.Errorf("failed to check if team exists: %w", err)
+		}
+
+		// If the team doesn't exist globally, fail the operation
+		if teamResponse.Node == nil {
+			return nil, fmt.Errorf("team with ID %s does not exist in the organization", result.originalTeamId)
+		}
+
+		// Check if it's actually a team node
+		if _, ok := teamResponse.Node.(*getNodeNodeTeam); !ok {
+			return nil, fmt.Errorf("ID %s does not refer to a team", result.originalTeamId)
+		}
+
+		// Check if the team is attached to the pipeline
 		var foundAccessLevel *PipelineAccessLevels
-		// loop over all attached teams to ensure its connected with the correct permissions
+
+		// Loop over all attached teams to find the current default team
 		for _, team := range pipelineTeam.Edges {
 			if state.DefaultTeamId.ValueString() == team.Node.Team.Id {
 				foundAccessLevel = &team.Node.AccessLevel
@@ -576,24 +630,30 @@ func (p *pipelineResource) setDefaultTeamIfExists(ctx context.Context, state *pi
 			}
 		}
 
-		// if the team was not found, and there are more to load, then load more and recurse to find a matching one
+		// If there are multiple pages of teams, keep checking until we find the team or exhaust all pages
 		if foundAccessLevel == nil && pipelineTeam.PageInfo.HasNextPage {
 			resp, err := getPipelineTeams(ctx, p.client.genqlient, state.Slug.ValueString(), pipelineTeam.PageInfo.EndCursor)
 			if err != nil {
-				return err
+				return nil, err
 			}
 			pt := resp.Pipeline.Teams.PipelineTeam
-			return p.setDefaultTeamIfExists(ctx, state, &pt)
+			return p.setDefaultTeamIfExistsWithCandidate(ctx, state, &pt)
 		}
 
-		// after checking all teams, if a matching one was still not found or the permission was wrong, then update
-		// the state
-		if foundAccessLevel == nil || *foundAccessLevel != PipelineAccessLevelsManageBuildAndRead {
-			state.DefaultTeamId = types.StringUnknown()
+		// Handle the different scenarios based on what we found
+		if foundAccessLevel == nil {
+			// Team exists globally but is not attached to the pipeline, mark state as requiring drift correction
+			state.DefaultTeamId = types.StringNull()
+			result.teamAddedBack = true
+		} else if *foundAccessLevel != PipelineAccessLevelsManageBuildAndRead {
+			// The team exists on the pipeline but no longer has Full Access, so we will warn the user and respect the UI configuration
+			result.reducedPermission = true
+			result.accessLevel = string(*foundAccessLevel)
 		}
+		// No changes needed
 	}
 
-	return nil
+	return result, nil
 }
 
 func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {

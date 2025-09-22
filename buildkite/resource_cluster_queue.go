@@ -24,10 +24,6 @@ import (
 
 const (
 	// Available instance shapes
-	MacInstanceSmall         string = "MACOS_M2_4X7"
-	MacInstanceMedium        string = "MACOS_M2_6X14"
-	MacInstanceLarge         string = "MACOS_M2_12X28"
-	MacInstanceXLarge        string = "MACOS_M4_12X56"
 	MacARM64InstanceM4Medium string = "MACOS_ARM64_M4_6X28"
 	MacARM64InstanceM4Large  string = "MACOS_ARM64_M4_12X56"
 	LinuxAMD64InstanceSmall  string = "LINUX_AMD64_2X4"
@@ -38,13 +34,14 @@ const (
 	LinuxARM64InstanceMedium string = "LINUX_ARM64_4X16"
 	LinuxARM64InstanceLarge  string = "LINUX_ARM64_8X32"
 	LinuxARM64InstanceXLarge string = "LINUX_ARM64_16X64"
+
+	// Available macOS versions
+	MacOSSonoma  string = "SONOMA"
+	MacOSSequoia string = "SEQUOIA"
+	MacOSTahoe   string = "TAHOE"
 )
 
 var MacInstanceShapes = []string{
-	MacInstanceSmall,
-	MacInstanceMedium,
-	MacInstanceLarge,
-	MacInstanceXLarge,
 	MacARM64InstanceM4Medium,
 	MacARM64InstanceM4Large,
 }
@@ -58,6 +55,12 @@ var LinuxInstanceShapes = []string{
 	LinuxARM64InstanceMedium,
 	LinuxARM64InstanceLarge,
 	LinuxARM64InstanceXLarge,
+}
+
+var MacOSVersions = []string{
+	MacOSSonoma,
+	MacOSSequoia,
+	MacOSTahoe,
 }
 
 type clusterQueueResourceModel struct {
@@ -79,6 +82,7 @@ type hostedAgentResourceModel struct {
 
 type macConfigModel struct {
 	XcodeVersion types.String `tfsdk:"xcode_version"`
+	MacosVersion types.String `tfsdk:"macos_version"`
 }
 
 type linuxConfigModel struct {
@@ -189,7 +193,11 @@ func (clusterQueueResource) Schema(ctx context.Context, req resource.SchemaReque
 						Attributes: map[string]resource_schema.Attribute{
 							"xcode_version": resource_schema.StringAttribute{
 								Required:    true,
-								Description: "Optional selection of a specific XCode version to be selected for jobs in the queue to have available. Please note that this value is currently experimental and may not function as expected.",
+								Description: "Required selection of a specific XCode version to be selected for jobs in the queue to have available. Please note that this value is currently experimental and may not function as expected.",
+							},
+							"macos_version": resource_schema.StringAttribute{
+								Optional:    true,
+								Description: "Optional selection of a specific macOS version to be selected for jobs in the queue to have available. Please note that this value is currently experimental and may not function as expected.",
 							},
 						},
 					},
@@ -209,16 +217,11 @@ func (clusterQueueResource) Schema(ctx context.Context, req resource.SchemaReque
 								Valid values are:
 								- ` + strings.Join(MacInstanceShapes, "\n								- ") + `
 								- ` + strings.Join(LinuxInstanceShapes, "\n								- ") + `
-
-								MacOS M4-based shapes (MACOS_ARM64_M4_6X28 and MACOS_ARM64_M4_12X56) supersede the legacy M2-based shapes (MACOS_M2_4X7, MACOS_M2_6X14, MACOS_M2_12X28, MACOS_M4_12X56), which will be deprecated on **July 31 2025**. We advise to update any existing queues to use the new M4 shapes ahead of time to avoid disruption. The legacy M2-based shapes options will be removed in future versions of this Provider. Check the [Buildkite CHANGELOG](https://buildkite.com/resources/changelog/293-mac-hosted-agents-now-running-on-m4-pro-hardware/) for more details.
 							`),
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								append(MacInstanceShapes, LinuxInstanceShapes...)...,
 							),
-						},
-						PlanModifiers: []planmodifier.String{
-							stringplanmodifier.RequiresReplace(),
 						},
 					},
 				},
@@ -257,10 +260,21 @@ func (cq *clusterQueueResource) Create(ctx context.Context, req resource.CreateR
 				},
 			}
 		} else if plan.HostedAgents.Mac != nil {
-			hosted.PlatformSettings = HostedAgentsPlatformSettingsInput{
-				Macos: &HostedAgentsMacosPlatformSettingsInput{
-					XcodeVersion: plan.HostedAgents.Mac.XcodeVersion.ValueStringPointer(),
-				},
+			if plan.HostedAgents.Mac.MacosVersion.IsNull() {
+				hosted.PlatformSettings = HostedAgentsPlatformSettingsInput{
+					Macos: &HostedAgentsMacosPlatformSettingsInput{
+						XcodeVersion: plan.HostedAgents.Mac.XcodeVersion.ValueStringPointer(),
+					},
+				}
+			} else {
+				version := HostedAgentMacOSVersion(plan.HostedAgents.Mac.MacosVersion.ValueString())
+
+				hosted.PlatformSettings = HostedAgentsPlatformSettingsInput{
+					Macos: &HostedAgentsMacosPlatformSettingsInput{
+						XcodeVersion: plan.HostedAgents.Mac.XcodeVersion.ValueStringPointer(),
+						MacosVersion: &version,
+					},
+				}
 			}
 		}
 	}
@@ -319,8 +333,15 @@ func (cq *clusterQueueResource) Create(ctx context.Context, req resource.CreateR
 			}
 		}
 		if plan.HostedAgents.Mac != nil {
-			state.HostedAgents.Mac = &macConfigModel{
-				XcodeVersion: types.StringValue(r.ClusterQueueCreate.ClusterQueue.HostedAgents.PlatformSettings.Macos.XcodeVersion),
+			if r.ClusterQueueCreate.ClusterQueue.HostedAgents.PlatformSettings.Macos.MacosVersion == nil {
+				state.HostedAgents.Mac = &macConfigModel{
+					XcodeVersion: types.StringValue(r.ClusterQueueCreate.ClusterQueue.HostedAgents.PlatformSettings.Macos.XcodeVersion),
+				}
+			} else {
+				state.HostedAgents.Mac = &macConfigModel{
+					XcodeVersion: types.StringValue(r.ClusterQueueCreate.ClusterQueue.HostedAgents.PlatformSettings.Macos.XcodeVersion),
+					MacosVersion: types.StringValue(string(*r.ClusterQueueCreate.ClusterQueue.HostedAgents.PlatformSettings.Macos.MacosVersion)),
+				}
 			}
 		}
 	}
@@ -346,49 +367,39 @@ func (cq *clusterQueueResource) Read(ctx context.Context, req resource.ReadReque
 		return
 	}
 
-	var r *getClusterQueuesResponse
-	var err error
-	cursor := (*string)(nil)
-	matchFound := false
-
-	for {
-		log.Printf("Getting cluster queues for cluster %s ...", state.ClusterUuid.ValueString())
-		r, err = getClusterQueues(ctx, cq.client.genqlient, cq.client.organization, state.ClusterUuid.ValueString(), cursor)
-		if err != nil {
-			resp.Diagnostics.AddError(
-				"Unable to read Cluster Queues",
-				fmt.Sprintf("Unable to read Cluster Queues: %s", err.Error()),
-			)
-			return
-		}
-
-		// Find the cluster queue from the returned queues to update state
-		for _, edge := range r.Organization.Cluster.Queues.Edges {
-			if edge.Node.Id == state.Id.ValueString() {
-				matchFound = true
-				log.Printf("Found cluster queue with ID %s in cluster %s", edge.Node.Id, state.ClusterUuid.ValueString())
-				// Update ClusterQueueResourceModel with Node values and append
-				updateClusterQueueResource(edge.Node, &state)
-				resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
-				break
-			}
-		}
-
-		// end here if we found a match or there are no more pages to search
-		if matchFound || !r.Organization.Cluster.Queues.PageInfo.HasNextPage {
-			break
-		}
-		cursor = &r.Organization.Cluster.Queues.PageInfo.EndCursor
+	log.Printf("Getting cluster queue with ID %s using Node interface...", state.Id.ValueString())
+	r, err := getClusterQueueByNode(ctx, cq.client.genqlient, state.Id.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Unable to read Cluster Queue",
+			fmt.Sprintf("Unable to read Cluster Queue: %s", err.Error()),
+		)
+		return
 	}
 
-	// Cluster queue could not be found in returned queues and should be removed from state
-	if !matchFound {
+	// Check if the node exists and is a ClusterQueue
+	if r.Node == nil {
 		resp.Diagnostics.AddWarning(
 			"Cluster Queue not found",
 			"Removing Cluster Queue from state...",
 		)
 		resp.State.RemoveResource(ctx)
+		return
 	}
+
+	clusterQueue, ok := r.Node.(*getClusterQueueByNodeNodeClusterQueue)
+	if !ok {
+		resp.Diagnostics.AddError(
+			"Invalid node type",
+			"The returned node is not a ClusterQueue",
+		)
+		return
+	}
+
+	log.Printf("Found cluster queue with ID %s", clusterQueue.Id)
+	// Update ClusterQueueResourceModel with Node values
+	updateClusterQueueResourceFromNode(*clusterQueue, &state)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
 func (cq *clusterQueueResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
@@ -458,6 +469,11 @@ func (cq *clusterQueueResource) Update(ctx context.Context, req resource.UpdateR
 			hosted.PlatformSettings.Macos = &HostedAgentsMacosPlatformSettingsInput{
 				XcodeVersion: plan.HostedAgents.Mac.XcodeVersion.ValueStringPointer(),
 			}
+
+			if !plan.HostedAgents.Mac.MacosVersion.IsNull() {
+				version := HostedAgentMacOSVersion(plan.HostedAgents.Mac.MacosVersion.ValueString())
+				hosted.PlatformSettings.Macos.MacosVersion = &version
+			}
 		}
 	}
 
@@ -514,8 +530,15 @@ func (cq *clusterQueueResource) Update(ctx context.Context, req resource.UpdateR
 			InstanceShape: types.StringValue(string(r.ClusterQueueUpdate.ClusterQueue.HostedAgents.InstanceShape.Name)),
 		}
 		if plan.HostedAgents.Mac != nil {
+			var version types.String
+
+			if r.ClusterQueueUpdate.ClusterQueue.HostedAgents.PlatformSettings.Macos.MacosVersion != nil {
+				version = types.StringValue(string(*r.ClusterQueueUpdate.ClusterQueue.HostedAgents.PlatformSettings.Macos.MacosVersion))
+			}
+
 			state.HostedAgents.Mac = &macConfigModel{
 				XcodeVersion: types.StringValue(r.ClusterQueueUpdate.ClusterQueue.HostedAgents.PlatformSettings.Macos.XcodeVersion),
+				MacosVersion: version,
 			}
 		}
 		if plan.HostedAgents.Linux != nil {
@@ -651,7 +674,7 @@ func (v hostedAgentValidator) ValidateObject(ctx context.Context, req validator.
 	}
 }
 
-func updateClusterQueueResource(clusterQueueNode getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue, cq *clusterQueueResourceModel) {
+func updateClusterQueueResourceFromNode(clusterQueueNode getClusterQueueByNodeNodeClusterQueue, cq *clusterQueueResourceModel) {
 	cq.Id = types.StringValue(clusterQueueNode.Id)
 	cq.Uuid = types.StringValue(clusterQueueNode.Uuid)
 	cq.Key = types.StringValue(clusterQueueNode.Key)
@@ -670,8 +693,15 @@ func updateClusterQueueResource(clusterQueueNode getClusterQueuesOrganizationClu
 			}
 		}
 		if clusterQueueNode.HostedAgents.PlatformSettings.Macos.XcodeVersion != "" {
-			cq.HostedAgents.Mac = &macConfigModel{
-				XcodeVersion: types.StringValue(clusterQueueNode.HostedAgents.PlatformSettings.Macos.XcodeVersion),
+			if clusterQueueNode.HostedAgents.PlatformSettings.Macos.MacosVersion != nil {
+				cq.HostedAgents.Mac = &macConfigModel{
+					XcodeVersion: types.StringValue(clusterQueueNode.HostedAgents.PlatformSettings.Macos.XcodeVersion),
+					MacosVersion: types.StringValue(string(*clusterQueueNode.HostedAgents.PlatformSettings.Macos.MacosVersion)),
+				}
+			} else {
+				cq.HostedAgents.Mac = &macConfigModel{
+					XcodeVersion: types.StringValue(clusterQueueNode.HostedAgents.PlatformSettings.Macos.XcodeVersion),
+				}
 			}
 		}
 	}

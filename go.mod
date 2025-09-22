@@ -4,14 +4,14 @@ go 1.24.0
 
 require (
 	github.com/Khan/genqlient v0.8.1
-	github.com/buildkite/go-pipeline v0.14.0
+	github.com/buildkite/go-pipeline v0.16.0
 	github.com/buildkite/interpolate v0.1.5
 	github.com/hashicorp/go-retryablehttp v0.7.8
-	github.com/hashicorp/terraform-plugin-framework v1.15.0
+	github.com/hashicorp/terraform-plugin-framework v1.15.1
 	github.com/hashicorp/terraform-plugin-framework-validators v0.18.0
 	github.com/hashicorp/terraform-plugin-go v0.28.0
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.37.0
-	github.com/hashicorp/terraform-plugin-testing v1.13.2
+	github.com/hashicorp/terraform-plugin-testing v1.13.3
 	github.com/lestrrat-go/jwx/v2 v2.1.6
 	github.com/shurcooL/graphql v0.0.0-20230722043721-ed46e5a46466
 	gopkg.in/yaml.v3 v3.0.1

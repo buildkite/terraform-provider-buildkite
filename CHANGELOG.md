@@ -1,5 +1,21 @@
 # Changelog
 
+## [v1.24.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.23.0...v1.24.0)
+
+- Improve default team handling for pipeline resource by @JoeColeman95 in https://github.com/buildkite/terraform-provider-buildkite/pull/969
+- New data sources - buildkite_clusters, buildkite_teams by @petetomasik in https://github.com/buildkite/terraform-provider-buildkite/pull/971
+- Switch buildkite_cluster_queue read to use Node ID by @petetomasik in https://github.com/buildkite/terraform-provider-buildkite/pull/972
+
+## [v1.23.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.22.1...v1.23.0)
+
+- Fix wrong `slug` value set during pipeline updates by @petetomasik in https://github.com/buildkite/terraform-provider-buildkite/pull/956
+- Update to use OIDC session tokens on AWS role assumption by @duckalini in https://github.com/buildkite/terraform-provider-buildkite/pull/957
+- Allow for the InstanceShape of a Queue to not require re-creation by @CerealBoy in https://github.com/buildkite/terraform-provider-buildkite/pull/963
+- chore(deps): bump github.com/buildkite/go-pipeline from 0.14.0 to 0.15.0 by @dependabot[bot] in https://github.com/buildkite/terraform-provider-buildkite/pull/964
+- Add OSSF scan to TF provider by @mcncl in https://github.com/buildkite/terraform-provider-buildkite/pull/966
+- Supporting the macOS version for Hosted macOS Cluster Queues by @CerealBoy in https://github.com/buildkite/terraform-provider-buildkite/pull/962
+- SUP-4151: Remove deprecated Mac Instance shapes by @tomowatt in https://github.com/buildkite/terraform-provider-buildkite/pull/953
+
 ## [v1.22.1](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.22.0...v1.22.1)
 
 - SUP-4151: Add description for instance_shape with deprecation notice  by @tomowatt in https://github.com/buildkite/terraform-provider-buildkite/pull/952
@@ -149,7 +165,7 @@
 ## [v1.13.1](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.13.0...v1.13.1)
 
 - SUP-1816 - Signed pipeline steps documentation updates [[PR #579](https://github.com/buildkite/terraform-provider-buildkite/pull/579)] @petetomasik
-- Document that the PS512 and ES512 algorithms are nondeterministic [[PR #583](https://github.com/buildkite/terraform-provider-buildkite/pull/583)] @petetomasik 
+- Document that the PS512 and ES512 algorithms are nondeterministic [[PR #583](https://github.com/buildkite/terraform-provider-buildkite/pull/583)] @petetomasik
 - SUP-2774: Stop panicking on organization rule updates [[PR #584](https://github.com/buildkite/terraform-provider-buildkite/pull/584)] @james2791
 
 ## [v1.13.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.12.0...v1.13.0)
