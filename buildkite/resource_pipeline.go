@@ -835,7 +835,7 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 					"build_merge_group_checks_requested": schema.BoolAttribute{
 						Computed:            true,
 						Optional:            true,
-						MarkdownDescription: "Whether to create builds when merge queues and checks are requested for a merge group.",
+						MarkdownDescription: "Whether to create merge queue builds for a merge queue enabled GitHub repository with required status checks",
 					},
 					"cancel_when_merge_group_destroyed": schema.BoolAttribute{
 						Computed:            true,
