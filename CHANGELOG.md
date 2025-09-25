@@ -1,5 +1,15 @@
 # Changelog
 
+## [v1.25.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.24.0...v1.25.0)
+
+- Trim white space for provider config string values by @aryounce in https://github.com/buildkite/terraform-provider-buildkite/pull/974
+- warn on plan for duplicate pipeline name by @mcncl in https://github.com/buildkite/terraform-provider-buildkite/pull/975
+- Revert "warn on plan for duplicate pipeline name" by @mcncl in https://github.com/buildkite/terraform-provider-buildkite/pull/976
+- chore(deps): bump github.com/hashicorp/terraform-plugin-testing from 1.13.2 to 1.13.3 by @dependabot[bot] in https://github.com/buildkite/terraform-provider-buildkite/pull/977
+- chore(deps): bump golang from 1.24.5 to 1.25.0 by @dependabot[bot] in https://github.com/buildkite/terraform-provider-buildkite/pull/978
+- chore(deps): bump github.com/buildkite/go-pipeline from 0.15.0 to 0.16.0 by @dependabot[bot] in https://github.com/buildkite/terraform-provider-buildkite/pull/980
+- [feat]: Add Pipeline Github Provider Setting to build pull requests when its base branch changes by @RKTMN in https://github.com/buildkite/terraform-provider-buildkite/pull/985
+
 ## [v1.24.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.23.0...v1.24.0)
 
 - Improve default team handling for pipeline resource by @JoeColeman95 in https://github.com/buildkite/terraform-provider-buildkite/pull/969
