@@ -401,9 +401,12 @@ func (c *Client) listClusterMaintainers(ctx context.Context, orgSlug, clusterID 
 	var apiResponse []clusterMaintainerAPIResponse
 	err := c.makeRequest(ctx, http.MethodGet, path, nil, &apiResponse)
 	if err != nil {
-		// If we get a 403, it might be due to insufficient permissions, return empty list
+		// Handle different error types appropriately
 		if strings.Contains(err.Error(), "status: 403") {
-			return []maintainerModel{}, nil
+			return []maintainerModel{}, fmt.Errorf("insufficient permissions to read cluster maintainers (requires manage_cluster permission): %w", err)
+		}
+		if strings.Contains(err.Error(), "status: 404") {
+			return []maintainerModel{}, fmt.Errorf("cluster not found: %w", err)
 		}
 		return nil, fmt.Errorf("error listing cluster maintainers: %w", err)
 	}

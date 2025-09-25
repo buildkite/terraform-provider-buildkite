@@ -176,7 +176,7 @@ func (c *clustersDatasource) Read(ctx context.Context, req datasource.ReadReques
 		}
 
 		for _, cluster := range res.Organization.Clusters.Edges {
-			updateClustersDatasourceState(ctx, c.client, &state, cluster)
+			updateClustersDatasourceState(ctx, c.client, resp, &state, cluster)
 		}
 
 		if !res.Organization.Clusters.PageInfo.HasNextPage {
@@ -188,7 +188,7 @@ func (c *clustersDatasource) Read(ctx context.Context, req datasource.ReadReques
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
-func updateClustersDatasourceState(ctx context.Context, client *Client, state *clustersDatasourceModel, data GetOrganizationClustersOrganizationClustersClusterConnectionEdgesClusterEdge) {
+func updateClustersDatasourceState(ctx context.Context, client *Client, resp *datasource.ReadResponse, state *clustersDatasourceModel, data GetOrganizationClustersOrganizationClustersClusterConnectionEdgesClusterEdge) {
 	clusterState := clustersModel{
 		ID:          types.StringValue(data.Node.Id),
 		UUID:        types.StringValue(data.Node.Uuid),
@@ -210,7 +210,11 @@ func updateClustersDatasourceState(ctx context.Context, client *Client, state *c
 	// Fetch maintainers for this cluster
 	maintainers, err := client.listClusterMaintainers(ctx, client.organization, data.Node.Uuid)
 	if err != nil {
-		// Set empty list if there's an error - don't fail the entire request
+		// Log warning but don't fail the entire request - maintainers might not be accessible
+		resp.Diagnostics.AddWarning(
+			"Unable to fetch cluster maintainers",
+			fmt.Sprintf("Could not fetch maintainers for cluster %s: %s", data.Node.Name, err.Error()),
+		)
 		clusterState.Maintainers = []maintainerModel{}
 	} else {
 		clusterState.Maintainers = maintainers
