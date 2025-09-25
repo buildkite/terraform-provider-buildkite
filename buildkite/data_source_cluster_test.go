@@ -53,6 +53,7 @@ func TestAccBuildkiteClusterDatasource(t *testing.T) {
 					Check: resource.ComposeTestCheckFunc(
 						resource.TestCheckResourceAttrPair("data.buildkite_cluster.cluster", "id", "buildkite_cluster.cluster", "id"),
 						resource.TestCheckResourceAttr("data.buildkite_cluster.cluster", "color", "#f1efff"),
+						resource.TestCheckResourceAttrSet("data.buildkite_cluster.cluster", "maintainers.#"),
 					),
 				},
 			},

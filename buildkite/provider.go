@@ -145,6 +145,7 @@ func (tf *terraformProvider) Resources(context.Context) []func() resource.Resour
 	return []func() resource.Resource{
 		newAgentTokenResource,
 		newClusterAgentTokenResource,
+		newClusterMaintainerResource,
 		newClusterQueueResource,
 		newClusterResource,
 		newDefaultQueueClusterResource,
