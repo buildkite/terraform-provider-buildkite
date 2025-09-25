@@ -34,7 +34,7 @@ func TestAccBuildkiteClusterMaintainerResource_User(t *testing.T) {
 	}
 
 	clusterName := acctest.RandString(12)
-	userID := "VXNlci0tLThkYjI5MjBlLTNjNjAtNDhhNy1hM2Y4LTI1ODRiZTM3NGJhYw=="
+	userID := "8db2920e-3c60-48a7-a3f8-2584be374bac" // Real user UUID from test environment (decoded from GraphQL ID)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
@@ -83,7 +83,7 @@ func TestAccBuildkiteClusterMaintainerResource_Team(t *testing.T) {
 
 		resource "buildkite_cluster_maintainer" "test_team" {
 			cluster_id = buildkite_cluster.test_cluster.uuid
-			team_id    = buildkite_team.test_team.id
+			team_id    = buildkite_team.test_team.uuid
 		}
 		`, clusterName, clusterName)
 	}
@@ -134,7 +134,7 @@ func TestAccBuildkiteClusterMaintainerResource_Import(t *testing.T) {
 	}
 
 	clusterName := acctest.RandString(12)
-	userID := "VXNlci0tLThkYjI5MjBlLTNjNjAtNDhhNy1hM2Y4LTI1ODRiZTM3NGJhYw=="
+	userID := "8db2920e-3c60-48a7-a3f8-2584be374bac" // Real user UUID from test environment (decoded from GraphQL ID)
 	resourceName := "buildkite_cluster_maintainer.test_user"
 
 	resource.ParallelTest(t, resource.TestCase{
