@@ -109,6 +109,7 @@ type providerSettingsModel struct {
 	SkipPullRequestBuildsForExistingCommits types.Bool   `tfsdk:"skip_pull_request_builds_for_existing_commits"`
 	BuildPullRequestReadyForReview          types.Bool   `tfsdk:"build_pull_request_ready_for_review"`
 	BuildPullRequestLabelsChanged           types.Bool   `tfsdk:"build_pull_request_labels_changed"`
+	BuildPullRequestBaseBranchChanged       types.Bool   `tfsdk:"build_pull_request_base_branch_changed"`
 	BuildPullRequestForks                   types.Bool   `tfsdk:"build_pull_request_forks"`
 	PrefixPullRequestForkBranchNames        types.Bool   `tfsdk:"prefix_pull_request_fork_branch_names"`
 	BuildBranches                           types.Bool   `tfsdk:"build_branches"`
@@ -759,6 +760,11 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 						Optional:            true,
 						MarkdownDescription: "Whether to create builds for pull requests when labels are added or removed.",
 					},
+					"build_pull_request_base_branch_changed": schema.BoolAttribute{
+						Computed:            true,
+						Optional:            true,
+						MarkdownDescription: "Whether to create builds for pull requests when its base branch changes.",
+					},
 					"build_pull_request_forks": schema.BoolAttribute{
 						Computed:            true,
 						Optional:            true,
@@ -1021,7 +1027,7 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 }
 
 // findAndRemoveTeam will try to find a team and remove its access from the pipeline
-// we only know the teams ID but the API request to remove access requies the pipeline team connection ID, so we need to
+// we only know the teams ID but the API request to remove access requires the pipeline team connection ID, so we need to
 // query all connected teams and check their ID matches
 func (p *pipelineResource) findAndRemoveTeam(ctx context.Context, teamID string, pipelineSlug string, cursor string) error {
 	slug := fmt.Sprintf("%s/%s", p.client.organization, pipelineSlug)
@@ -1118,6 +1124,7 @@ type PipelineExtraSettings struct {
 	SkipBuildsForExistingCommits            *bool   `json:"skip_builds_for_existing_commits,omitempty"`
 	SkipPullRequestBuildsForExistingCommits *bool   `json:"skip_pull_request_builds_for_existing_commits,omitempty"`
 	BuildPullRequestReadyForReview          *bool   `json:"build_pull_request_ready_for_review,omitempty"`
+	BuildPullRequestBaseBranchChanged       *bool   `json:"build_pull_request_base_branch_changed,omitempty"`
 	BuildPullRequestLabelsChanged           *bool   `json:"build_pull_request_labels_changed,omitempty"`
 	BuildPullRequestForks                   *bool   `json:"build_pull_request_forks,omitempty"`
 	PrefixPullRequestForkBranchNames        *bool   `json:"prefix_pull_request_fork_branch_names,omitempty"`
@@ -1177,6 +1184,7 @@ func updatePipelineExtraInfo(ctx context.Context, slug string, settings *provide
 			SkipPullRequestBuildsForExistingCommits: settings.SkipPullRequestBuildsForExistingCommits.ValueBoolPointer(),
 			BuildPullRequestReadyForReview:          settings.BuildPullRequestReadyForReview.ValueBoolPointer(),
 			BuildPullRequestLabelsChanged:           settings.BuildPullRequestLabelsChanged.ValueBoolPointer(),
+			BuildPullRequestBaseBranchChanged:       settings.BuildPullRequestBaseBranchChanged.ValueBoolPointer(),
 			BuildPullRequestForks:                   settings.BuildPullRequestForks.ValueBoolPointer(),
 			PrefixPullRequestForkBranchNames:        settings.PrefixPullRequestForkBranchNames.ValueBoolPointer(),
 			BuildBranches:                           settings.BuildBranches.ValueBoolPointer(),
@@ -1226,6 +1234,7 @@ func updatePipelineResourceExtraInfo(state *pipelineResourceModel, pipeline *Pip
 		SkipPullRequestBuildsForExistingCommits: types.BoolPointerValue(s.SkipPullRequestBuildsForExistingCommits),
 		BuildPullRequestReadyForReview:          types.BoolPointerValue(s.BuildPullRequestReadyForReview),
 		BuildPullRequestLabelsChanged:           types.BoolPointerValue(s.BuildPullRequestLabelsChanged),
+		BuildPullRequestBaseBranchChanged:       types.BoolPointerValue(s.BuildPullRequestBaseBranchChanged),
 		BuildPullRequestForks:                   types.BoolPointerValue(s.BuildPullRequestForks),
 		PrefixPullRequestForkBranchNames:        types.BoolPointerValue(s.PrefixPullRequestForkBranchNames),
 		BuildBranches:                           types.BoolPointerValue(s.BuildBranches),
@@ -1431,6 +1440,10 @@ func pipelineSchemaV0() schema.Schema {
 							Optional: true,
 						},
 						"build_pull_request_labels_changed": schema.BoolAttribute{
+							Computed: true,
+							Optional: true,
+						},
+						"build_pull_request_base_branch_changed": schema.BoolAttribute{
 							Computed: true,
 							Optional: true,
 						},
