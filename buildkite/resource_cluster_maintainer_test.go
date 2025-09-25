@@ -1,8 +1,12 @@
 package buildkite
 
 import (
+	"context"
 	"fmt"
+	"net/http"
+	"os"
 	"regexp"
+	"strings"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
@@ -221,6 +225,24 @@ func TestAccBuildkiteClusterMaintainerResource_InvalidConfiguration(t *testing.T
 	})
 }
 
+func getTestClient() *Client {
+	header := make(http.Header)
+	header.Set("Authorization", "Bearer "+os.Getenv("BUILDKITE_API_TOKEN"))
+	header.Set("User-Agent", "terraform-provider-buildkite-test")
+
+	httpClient := &http.Client{
+		Transport: newHeaderRoundTripper(http.DefaultTransport, header),
+	}
+
+	client := &Client{
+		http:         httpClient,
+		organization: getenv("BUILDKITE_ORGANIZATION_SLUG"),
+		restURL:      defaultRestEndpoint,
+	}
+
+	return client
+}
+
 func testAccCheckClusterMaintainerExists(resourceName string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[resourceName]
@@ -232,9 +254,8 @@ func testAccCheckClusterMaintainerExists(resourceName string) resource.TestCheck
 			return fmt.Errorf("no cluster maintainer ID is set")
 		}
 
-		// Here we would normally make an API call to verify the resource exists
-		// For now, we'll just check that required attributes are set
-		if rs.Primary.Attributes["cluster_id"] == "" {
+		clusterID := rs.Primary.Attributes["cluster_id"]
+		if clusterID == "" {
 			return fmt.Errorf("cluster_id not set")
 		}
 
@@ -246,13 +267,61 @@ func testAccCheckClusterMaintainerExists(resourceName string) resource.TestCheck
 			return fmt.Errorf("exactly one of user_id or team_id must be set")
 		}
 
+		// Make an API call to verify the cluster maintainer exists
+		client := getTestClient()
+		path := fmt.Sprintf("/v2/organizations/%s/clusters/%s/maintainers/%s",
+			client.organization,
+			clusterID,
+			rs.Primary.ID,
+		)
+
+		var result clusterMaintainerAPIResponse
+		err := client.makeRequest(context.Background(), http.MethodGet, path, nil, &result)
+		if err != nil {
+			if strings.Contains(err.Error(), "404") {
+				return fmt.Errorf("cluster maintainer %s not found in API", rs.Primary.ID)
+			}
+			return fmt.Errorf("error fetching cluster maintainer from API: %v", err)
+		}
+
+		// Verify the maintainer details match
+		if result.ID != rs.Primary.ID {
+			return fmt.Errorf("cluster maintainer ID mismatch: API returned %s, expected %s", result.ID, rs.Primary.ID)
+		}
+
 		return nil
 	}
 }
 
 func testAccCheckClusterMaintainerDestroy(s *terraform.State) error {
-	// Here we would normally check that the cluster maintainer has been deleted
-	// by making an API call. For now, we'll just return nil.
+	client := getTestClient()
+
+	for _, rs := range s.RootModule().Resources {
+		if rs.Type != "buildkite_cluster_maintainer" {
+			continue
+		}
+
+		clusterID := rs.Primary.Attributes["cluster_id"]
+		path := fmt.Sprintf("/v2/organizations/%s/clusters/%s/maintainers/%s",
+			client.organization,
+			clusterID,
+			rs.Primary.ID,
+		)
+
+		var result clusterMaintainerAPIResponse
+		err := client.makeRequest(context.Background(), http.MethodGet, path, nil, &result)
+		if err != nil {
+			// If we get a 404, the maintainer was successfully deleted
+			if strings.Contains(err.Error(), "404") {
+				continue
+			}
+			return fmt.Errorf("error checking if cluster maintainer still exists: %v", err)
+		}
+
+		// If we get here, the maintainer still exists, which means destroy failed
+		return fmt.Errorf("cluster maintainer %s still exists", rs.Primary.ID)
+	}
+
 	return nil
 }
 
