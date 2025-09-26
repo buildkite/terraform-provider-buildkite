@@ -2373,15 +2373,15 @@ var AllPipelineVisibility = []PipelineVisibility{
 type RuleAction string
 
 const (
-	// Trigger build
-	RuleActionTriggerBuild RuleAction = "TRIGGER_BUILD"
 	// Artifacts read
 	RuleActionArtifactsRead RuleAction = "ARTIFACTS_READ"
+	// Trigger build
+	RuleActionTriggerBuild RuleAction = "TRIGGER_BUILD"
 )
 
 var AllRuleAction = []RuleAction{
-	RuleActionTriggerBuild,
 	RuleActionArtifactsRead,
+	RuleActionTriggerBuild,
 }
 
 // The effect a rule has
@@ -5838,8 +5838,11 @@ func (v *getClusterByNameResponse) GetOrganization() getClusterByNameOrganizatio
 // getClusterQueueByNodeNodeJobEventCanceled
 // getClusterQueueByNodeNodeJobEventFinished
 // getClusterQueueByNodeNodeJobEventGeneric
+// getClusterQueueByNodeNodeJobEventReprioritized
 // getClusterQueueByNodeNodeJobEventRetried
 // getClusterQueueByNodeNodeJobEventRetryFailed
+// getClusterQueueByNodeNodeJobEventStackError
+// getClusterQueueByNodeNodeJobEventStackNotification
 // getClusterQueueByNodeNodeJobEventTimedOut
 // getClusterQueueByNodeNodeJobTypeBlock
 // getClusterQueueByNodeNodeJobTypeCommand
@@ -5924,9 +5927,15 @@ func (v *getClusterQueueByNodeNodeJobEventFinished) implementsGraphQLInterfacege
 }
 func (v *getClusterQueueByNodeNodeJobEventGeneric) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
+func (v *getClusterQueueByNodeNodeJobEventReprioritized) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
+}
 func (v *getClusterQueueByNodeNodeJobEventRetried) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
 func (v *getClusterQueueByNodeNodeJobEventRetryFailed) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
+}
+func (v *getClusterQueueByNodeNodeJobEventStackError) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
+}
+func (v *getClusterQueueByNodeNodeJobEventStackNotification) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
 func (v *getClusterQueueByNodeNodeJobEventTimedOut) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
@@ -6073,11 +6082,20 @@ func __unmarshalgetClusterQueueByNodeNode(b []byte, v *getClusterQueueByNodeNode
 	case "JobEventGeneric":
 		*v = new(getClusterQueueByNodeNodeJobEventGeneric)
 		return json.Unmarshal(b, *v)
+	case "JobEventReprioritized":
+		*v = new(getClusterQueueByNodeNodeJobEventReprioritized)
+		return json.Unmarshal(b, *v)
 	case "JobEventRetried":
 		*v = new(getClusterQueueByNodeNodeJobEventRetried)
 		return json.Unmarshal(b, *v)
 	case "JobEventRetryFailed":
 		*v = new(getClusterQueueByNodeNodeJobEventRetryFailed)
+		return json.Unmarshal(b, *v)
+	case "JobEventStackError":
+		*v = new(getClusterQueueByNodeNodeJobEventStackError)
+		return json.Unmarshal(b, *v)
+	case "JobEventStackNotification":
+		*v = new(getClusterQueueByNodeNodeJobEventStackNotification)
 		return json.Unmarshal(b, *v)
 	case "JobEventTimedOut":
 		*v = new(getClusterQueueByNodeNodeJobEventTimedOut)
@@ -6397,6 +6415,14 @@ func __marshalgetClusterQueueByNodeNode(v *getClusterQueueByNodeNode) ([]byte, e
 			*getClusterQueueByNodeNodeJobEventGeneric
 		}{typename, v}
 		return json.Marshal(result)
+	case *getClusterQueueByNodeNodeJobEventReprioritized:
+		typename = "JobEventReprioritized"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterQueueByNodeNodeJobEventReprioritized
+		}{typename, v}
+		return json.Marshal(result)
 	case *getClusterQueueByNodeNodeJobEventRetried:
 		typename = "JobEventRetried"
 
@@ -6411,6 +6437,22 @@ func __marshalgetClusterQueueByNodeNode(v *getClusterQueueByNodeNode) ([]byte, e
 		result := struct {
 			TypeName string `json:"__typename"`
 			*getClusterQueueByNodeNodeJobEventRetryFailed
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterQueueByNodeNodeJobEventStackError:
+		typename = "JobEventStackError"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterQueueByNodeNodeJobEventStackError
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterQueueByNodeNodeJobEventStackNotification:
+		typename = "JobEventStackNotification"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterQueueByNodeNodeJobEventStackNotification
 		}{typename, v}
 		return json.Marshal(result)
 	case *getClusterQueueByNodeNodeJobEventTimedOut:
@@ -7095,6 +7137,17 @@ type getClusterQueueByNodeNodeJobEventGeneric struct {
 // GetTypename returns getClusterQueueByNodeNodeJobEventGeneric.Typename, and is useful for accessing the field via an interface.
 func (v *getClusterQueueByNodeNodeJobEventGeneric) GetTypename() string { return v.Typename }
 
+// getClusterQueueByNodeNodeJobEventReprioritized includes the requested fields of the GraphQL type JobEventReprioritized.
+// The GraphQL type's documentation follows.
+//
+// A job event for when a job's priority has been changed
+type getClusterQueueByNodeNodeJobEventReprioritized struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterQueueByNodeNodeJobEventReprioritized.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterQueueByNodeNodeJobEventReprioritized) GetTypename() string { return v.Typename }
+
 // getClusterQueueByNodeNodeJobEventRetried includes the requested fields of the GraphQL type JobEventRetried.
 // The GraphQL type's documentation follows.
 //
@@ -7116,6 +7169,28 @@ type getClusterQueueByNodeNodeJobEventRetryFailed struct {
 
 // GetTypename returns getClusterQueueByNodeNodeJobEventRetryFailed.Typename, and is useful for accessing the field via an interface.
 func (v *getClusterQueueByNodeNodeJobEventRetryFailed) GetTypename() string { return v.Typename }
+
+// getClusterQueueByNodeNodeJobEventStackError includes the requested fields of the GraphQL type JobEventStackError.
+// The GraphQL type's documentation follows.
+//
+// An event created when a stack error is reported
+type getClusterQueueByNodeNodeJobEventStackError struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterQueueByNodeNodeJobEventStackError.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterQueueByNodeNodeJobEventStackError) GetTypename() string { return v.Typename }
+
+// getClusterQueueByNodeNodeJobEventStackNotification includes the requested fields of the GraphQL type JobEventStackNotification.
+// The GraphQL type's documentation follows.
+//
+// An event created when a stack notification is triggered
+type getClusterQueueByNodeNodeJobEventStackNotification struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterQueueByNodeNodeJobEventStackNotification.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterQueueByNodeNodeJobEventStackNotification) GetTypename() string { return v.Typename }
 
 // getClusterQueueByNodeNodeJobEventTimedOut includes the requested fields of the GraphQL type JobEventTimedOut.
 // The GraphQL type's documentation follows.
@@ -7797,8 +7872,11 @@ func (v *getClusterQueuesResponse) GetOrganization() getClusterQueuesOrganizatio
 // getNodeNodeJobEventCanceled
 // getNodeNodeJobEventFinished
 // getNodeNodeJobEventGeneric
+// getNodeNodeJobEventReprioritized
 // getNodeNodeJobEventRetried
 // getNodeNodeJobEventRetryFailed
+// getNodeNodeJobEventStackError
+// getNodeNodeJobEventStackNotification
 // getNodeNodeJobEventTimedOut
 // getNodeNodeJobTypeBlock
 // getNodeNodeJobTypeCommand
@@ -7865,8 +7943,11 @@ func (v *getNodeNodeJobEventBuildStepUploadCreated) implementsGraphQLInterfacege
 func (v *getNodeNodeJobEventCanceled) implementsGraphQLInterfacegetNodeNode()                     {}
 func (v *getNodeNodeJobEventFinished) implementsGraphQLInterfacegetNodeNode()                     {}
 func (v *getNodeNodeJobEventGeneric) implementsGraphQLInterfacegetNodeNode()                      {}
+func (v *getNodeNodeJobEventReprioritized) implementsGraphQLInterfacegetNodeNode()                {}
 func (v *getNodeNodeJobEventRetried) implementsGraphQLInterfacegetNodeNode()                      {}
 func (v *getNodeNodeJobEventRetryFailed) implementsGraphQLInterfacegetNodeNode()                  {}
+func (v *getNodeNodeJobEventStackError) implementsGraphQLInterfacegetNodeNode()                   {}
+func (v *getNodeNodeJobEventStackNotification) implementsGraphQLInterfacegetNodeNode()            {}
 func (v *getNodeNodeJobEventTimedOut) implementsGraphQLInterfacegetNodeNode()                     {}
 func (v *getNodeNodeJobTypeBlock) implementsGraphQLInterfacegetNodeNode()                         {}
 func (v *getNodeNodeJobTypeCommand) implementsGraphQLInterfacegetNodeNode()                       {}
@@ -7992,11 +8073,20 @@ func __unmarshalgetNodeNode(b []byte, v *getNodeNode) error {
 	case "JobEventGeneric":
 		*v = new(getNodeNodeJobEventGeneric)
 		return json.Unmarshal(b, *v)
+	case "JobEventReprioritized":
+		*v = new(getNodeNodeJobEventReprioritized)
+		return json.Unmarshal(b, *v)
 	case "JobEventRetried":
 		*v = new(getNodeNodeJobEventRetried)
 		return json.Unmarshal(b, *v)
 	case "JobEventRetryFailed":
 		*v = new(getNodeNodeJobEventRetryFailed)
+		return json.Unmarshal(b, *v)
+	case "JobEventStackError":
+		*v = new(getNodeNodeJobEventStackError)
+		return json.Unmarshal(b, *v)
+	case "JobEventStackNotification":
+		*v = new(getNodeNodeJobEventStackNotification)
 		return json.Unmarshal(b, *v)
 	case "JobEventTimedOut":
 		*v = new(getNodeNodeJobEventTimedOut)
@@ -8316,6 +8406,14 @@ func __marshalgetNodeNode(v *getNodeNode) ([]byte, error) {
 			*getNodeNodeJobEventGeneric
 		}{typename, v}
 		return json.Marshal(result)
+	case *getNodeNodeJobEventReprioritized:
+		typename = "JobEventReprioritized"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getNodeNodeJobEventReprioritized
+		}{typename, v}
+		return json.Marshal(result)
 	case *getNodeNodeJobEventRetried:
 		typename = "JobEventRetried"
 
@@ -8330,6 +8428,22 @@ func __marshalgetNodeNode(v *getNodeNode) ([]byte, error) {
 		result := struct {
 			TypeName string `json:"__typename"`
 			*getNodeNodeJobEventRetryFailed
+		}{typename, v}
+		return json.Marshal(result)
+	case *getNodeNodeJobEventStackError:
+		typename = "JobEventStackError"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getNodeNodeJobEventStackError
+		}{typename, v}
+		return json.Marshal(result)
+	case *getNodeNodeJobEventStackNotification:
+		typename = "JobEventStackNotification"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getNodeNodeJobEventStackNotification
 		}{typename, v}
 		return json.Marshal(result)
 	case *getNodeNodeJobEventTimedOut:
@@ -8985,6 +9099,17 @@ type getNodeNodeJobEventGeneric struct {
 // GetTypename returns getNodeNodeJobEventGeneric.Typename, and is useful for accessing the field via an interface.
 func (v *getNodeNodeJobEventGeneric) GetTypename() string { return v.Typename }
 
+// getNodeNodeJobEventReprioritized includes the requested fields of the GraphQL type JobEventReprioritized.
+// The GraphQL type's documentation follows.
+//
+// A job event for when a job's priority has been changed
+type getNodeNodeJobEventReprioritized struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getNodeNodeJobEventReprioritized.Typename, and is useful for accessing the field via an interface.
+func (v *getNodeNodeJobEventReprioritized) GetTypename() string { return v.Typename }
+
 // getNodeNodeJobEventRetried includes the requested fields of the GraphQL type JobEventRetried.
 // The GraphQL type's documentation follows.
 //
@@ -9006,6 +9131,28 @@ type getNodeNodeJobEventRetryFailed struct {
 
 // GetTypename returns getNodeNodeJobEventRetryFailed.Typename, and is useful for accessing the field via an interface.
 func (v *getNodeNodeJobEventRetryFailed) GetTypename() string { return v.Typename }
+
+// getNodeNodeJobEventStackError includes the requested fields of the GraphQL type JobEventStackError.
+// The GraphQL type's documentation follows.
+//
+// An event created when a stack error is reported
+type getNodeNodeJobEventStackError struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getNodeNodeJobEventStackError.Typename, and is useful for accessing the field via an interface.
+func (v *getNodeNodeJobEventStackError) GetTypename() string { return v.Typename }
+
+// getNodeNodeJobEventStackNotification includes the requested fields of the GraphQL type JobEventStackNotification.
+// The GraphQL type's documentation follows.
+//
+// An event created when a stack notification is triggered
+type getNodeNodeJobEventStackNotification struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getNodeNodeJobEventStackNotification.Typename, and is useful for accessing the field via an interface.
+func (v *getNodeNodeJobEventStackNotification) GetTypename() string { return v.Typename }
 
 // getNodeNodeJobEventTimedOut includes the requested fields of the GraphQL type JobEventTimedOut.
 // The GraphQL type's documentation follows.
@@ -10897,8 +11044,11 @@ func (v *getPipelineScheduleBySlugResponse) GetPipelineSchedule() getPipelineSch
 // getPipelineScheduleNodeJobEventCanceled
 // getPipelineScheduleNodeJobEventFinished
 // getPipelineScheduleNodeJobEventGeneric
+// getPipelineScheduleNodeJobEventReprioritized
 // getPipelineScheduleNodeJobEventRetried
 // getPipelineScheduleNodeJobEventRetryFailed
+// getPipelineScheduleNodeJobEventStackError
+// getPipelineScheduleNodeJobEventStackNotification
 // getPipelineScheduleNodeJobEventTimedOut
 // getPipelineScheduleNodeJobTypeBlock
 // getPipelineScheduleNodeJobTypeCommand
@@ -10979,9 +11129,15 @@ func (v *getPipelineScheduleNodeJobEventFinished) implementsGraphQLInterfacegetP
 }
 func (v *getPipelineScheduleNodeJobEventGeneric) implementsGraphQLInterfacegetPipelineScheduleNode() {
 }
+func (v *getPipelineScheduleNodeJobEventReprioritized) implementsGraphQLInterfacegetPipelineScheduleNode() {
+}
 func (v *getPipelineScheduleNodeJobEventRetried) implementsGraphQLInterfacegetPipelineScheduleNode() {
 }
 func (v *getPipelineScheduleNodeJobEventRetryFailed) implementsGraphQLInterfacegetPipelineScheduleNode() {
+}
+func (v *getPipelineScheduleNodeJobEventStackError) implementsGraphQLInterfacegetPipelineScheduleNode() {
+}
+func (v *getPipelineScheduleNodeJobEventStackNotification) implementsGraphQLInterfacegetPipelineScheduleNode() {
 }
 func (v *getPipelineScheduleNodeJobEventTimedOut) implementsGraphQLInterfacegetPipelineScheduleNode() {
 }
@@ -11119,11 +11275,20 @@ func __unmarshalgetPipelineScheduleNode(b []byte, v *getPipelineScheduleNode) er
 	case "JobEventGeneric":
 		*v = new(getPipelineScheduleNodeJobEventGeneric)
 		return json.Unmarshal(b, *v)
+	case "JobEventReprioritized":
+		*v = new(getPipelineScheduleNodeJobEventReprioritized)
+		return json.Unmarshal(b, *v)
 	case "JobEventRetried":
 		*v = new(getPipelineScheduleNodeJobEventRetried)
 		return json.Unmarshal(b, *v)
 	case "JobEventRetryFailed":
 		*v = new(getPipelineScheduleNodeJobEventRetryFailed)
+		return json.Unmarshal(b, *v)
+	case "JobEventStackError":
+		*v = new(getPipelineScheduleNodeJobEventStackError)
+		return json.Unmarshal(b, *v)
+	case "JobEventStackNotification":
+		*v = new(getPipelineScheduleNodeJobEventStackNotification)
 		return json.Unmarshal(b, *v)
 	case "JobEventTimedOut":
 		*v = new(getPipelineScheduleNodeJobEventTimedOut)
@@ -11439,6 +11604,14 @@ func __marshalgetPipelineScheduleNode(v *getPipelineScheduleNode) ([]byte, error
 			*getPipelineScheduleNodeJobEventGeneric
 		}{typename, v}
 		return json.Marshal(result)
+	case *getPipelineScheduleNodeJobEventReprioritized:
+		typename = "JobEventReprioritized"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getPipelineScheduleNodeJobEventReprioritized
+		}{typename, v}
+		return json.Marshal(result)
 	case *getPipelineScheduleNodeJobEventRetried:
 		typename = "JobEventRetried"
 
@@ -11453,6 +11626,22 @@ func __marshalgetPipelineScheduleNode(v *getPipelineScheduleNode) ([]byte, error
 		result := struct {
 			TypeName string `json:"__typename"`
 			*getPipelineScheduleNodeJobEventRetryFailed
+		}{typename, v}
+		return json.Marshal(result)
+	case *getPipelineScheduleNodeJobEventStackError:
+		typename = "JobEventStackError"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getPipelineScheduleNodeJobEventStackError
+		}{typename, v}
+		return json.Marshal(result)
+	case *getPipelineScheduleNodeJobEventStackNotification:
+		typename = "JobEventStackNotification"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getPipelineScheduleNodeJobEventStackNotification
 		}{typename, v}
 		return json.Marshal(result)
 	case *getPipelineScheduleNodeJobEventTimedOut:
@@ -11999,6 +12188,17 @@ type getPipelineScheduleNodeJobEventGeneric struct {
 // GetTypename returns getPipelineScheduleNodeJobEventGeneric.Typename, and is useful for accessing the field via an interface.
 func (v *getPipelineScheduleNodeJobEventGeneric) GetTypename() string { return v.Typename }
 
+// getPipelineScheduleNodeJobEventReprioritized includes the requested fields of the GraphQL type JobEventReprioritized.
+// The GraphQL type's documentation follows.
+//
+// A job event for when a job's priority has been changed
+type getPipelineScheduleNodeJobEventReprioritized struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getPipelineScheduleNodeJobEventReprioritized.Typename, and is useful for accessing the field via an interface.
+func (v *getPipelineScheduleNodeJobEventReprioritized) GetTypename() string { return v.Typename }
+
 // getPipelineScheduleNodeJobEventRetried includes the requested fields of the GraphQL type JobEventRetried.
 // The GraphQL type's documentation follows.
 //
@@ -12020,6 +12220,28 @@ type getPipelineScheduleNodeJobEventRetryFailed struct {
 
 // GetTypename returns getPipelineScheduleNodeJobEventRetryFailed.Typename, and is useful for accessing the field via an interface.
 func (v *getPipelineScheduleNodeJobEventRetryFailed) GetTypename() string { return v.Typename }
+
+// getPipelineScheduleNodeJobEventStackError includes the requested fields of the GraphQL type JobEventStackError.
+// The GraphQL type's documentation follows.
+//
+// An event created when a stack error is reported
+type getPipelineScheduleNodeJobEventStackError struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getPipelineScheduleNodeJobEventStackError.Typename, and is useful for accessing the field via an interface.
+func (v *getPipelineScheduleNodeJobEventStackError) GetTypename() string { return v.Typename }
+
+// getPipelineScheduleNodeJobEventStackNotification includes the requested fields of the GraphQL type JobEventStackNotification.
+// The GraphQL type's documentation follows.
+//
+// An event created when a stack notification is triggered
+type getPipelineScheduleNodeJobEventStackNotification struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getPipelineScheduleNodeJobEventStackNotification.Typename, and is useful for accessing the field via an interface.
+func (v *getPipelineScheduleNodeJobEventStackNotification) GetTypename() string { return v.Typename }
 
 // getPipelineScheduleNodeJobEventTimedOut includes the requested fields of the GraphQL type JobEventTimedOut.
 // The GraphQL type's documentation follows.
@@ -13219,6 +13441,17 @@ type getTestSuiteSuiteJobEventGeneric struct {
 // GetTypename returns getTestSuiteSuiteJobEventGeneric.Typename, and is useful for accessing the field via an interface.
 func (v *getTestSuiteSuiteJobEventGeneric) GetTypename() string { return v.Typename }
 
+// getTestSuiteSuiteJobEventReprioritized includes the requested fields of the GraphQL type JobEventReprioritized.
+// The GraphQL type's documentation follows.
+//
+// A job event for when a job's priority has been changed
+type getTestSuiteSuiteJobEventReprioritized struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getTestSuiteSuiteJobEventReprioritized.Typename, and is useful for accessing the field via an interface.
+func (v *getTestSuiteSuiteJobEventReprioritized) GetTypename() string { return v.Typename }
+
 // getTestSuiteSuiteJobEventRetried includes the requested fields of the GraphQL type JobEventRetried.
 // The GraphQL type's documentation follows.
 //
@@ -13240,6 +13473,28 @@ type getTestSuiteSuiteJobEventRetryFailed struct {
 
 // GetTypename returns getTestSuiteSuiteJobEventRetryFailed.Typename, and is useful for accessing the field via an interface.
 func (v *getTestSuiteSuiteJobEventRetryFailed) GetTypename() string { return v.Typename }
+
+// getTestSuiteSuiteJobEventStackError includes the requested fields of the GraphQL type JobEventStackError.
+// The GraphQL type's documentation follows.
+//
+// An event created when a stack error is reported
+type getTestSuiteSuiteJobEventStackError struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getTestSuiteSuiteJobEventStackError.Typename, and is useful for accessing the field via an interface.
+func (v *getTestSuiteSuiteJobEventStackError) GetTypename() string { return v.Typename }
+
+// getTestSuiteSuiteJobEventStackNotification includes the requested fields of the GraphQL type JobEventStackNotification.
+// The GraphQL type's documentation follows.
+//
+// An event created when a stack notification is triggered
+type getTestSuiteSuiteJobEventStackNotification struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getTestSuiteSuiteJobEventStackNotification.Typename, and is useful for accessing the field via an interface.
+func (v *getTestSuiteSuiteJobEventStackNotification) GetTypename() string { return v.Typename }
 
 // getTestSuiteSuiteJobEventTimedOut includes the requested fields of the GraphQL type JobEventTimedOut.
 // The GraphQL type's documentation follows.
@@ -13325,8 +13580,11 @@ func (v *getTestSuiteSuiteJobTypeWait) GetTypename() string { return v.Typename 
 // getTestSuiteSuiteJobEventCanceled
 // getTestSuiteSuiteJobEventFinished
 // getTestSuiteSuiteJobEventGeneric
+// getTestSuiteSuiteJobEventReprioritized
 // getTestSuiteSuiteJobEventRetried
 // getTestSuiteSuiteJobEventRetryFailed
+// getTestSuiteSuiteJobEventStackError
+// getTestSuiteSuiteJobEventStackNotification
 // getTestSuiteSuiteJobEventTimedOut
 // getTestSuiteSuiteJobTypeBlock
 // getTestSuiteSuiteJobTypeCommand
@@ -13393,16 +13651,20 @@ func (v *getTestSuiteSuiteEmail) implementsGraphQLInterfacegetTestSuiteSuiteNode
 func (v *getTestSuiteSuiteJobEventAssigned) implementsGraphQLInterfacegetTestSuiteSuiteNode() {}
 func (v *getTestSuiteSuiteJobEventBuildStepUploadCreated) implementsGraphQLInterfacegetTestSuiteSuiteNode() {
 }
-func (v *getTestSuiteSuiteJobEventCanceled) implementsGraphQLInterfacegetTestSuiteSuiteNode()    {}
-func (v *getTestSuiteSuiteJobEventFinished) implementsGraphQLInterfacegetTestSuiteSuiteNode()    {}
-func (v *getTestSuiteSuiteJobEventGeneric) implementsGraphQLInterfacegetTestSuiteSuiteNode()     {}
-func (v *getTestSuiteSuiteJobEventRetried) implementsGraphQLInterfacegetTestSuiteSuiteNode()     {}
-func (v *getTestSuiteSuiteJobEventRetryFailed) implementsGraphQLInterfacegetTestSuiteSuiteNode() {}
-func (v *getTestSuiteSuiteJobEventTimedOut) implementsGraphQLInterfacegetTestSuiteSuiteNode()    {}
-func (v *getTestSuiteSuiteJobTypeBlock) implementsGraphQLInterfacegetTestSuiteSuiteNode()        {}
-func (v *getTestSuiteSuiteJobTypeCommand) implementsGraphQLInterfacegetTestSuiteSuiteNode()      {}
-func (v *getTestSuiteSuiteJobTypeTrigger) implementsGraphQLInterfacegetTestSuiteSuiteNode()      {}
-func (v *getTestSuiteSuiteJobTypeWait) implementsGraphQLInterfacegetTestSuiteSuiteNode()         {}
+func (v *getTestSuiteSuiteJobEventCanceled) implementsGraphQLInterfacegetTestSuiteSuiteNode()      {}
+func (v *getTestSuiteSuiteJobEventFinished) implementsGraphQLInterfacegetTestSuiteSuiteNode()      {}
+func (v *getTestSuiteSuiteJobEventGeneric) implementsGraphQLInterfacegetTestSuiteSuiteNode()       {}
+func (v *getTestSuiteSuiteJobEventReprioritized) implementsGraphQLInterfacegetTestSuiteSuiteNode() {}
+func (v *getTestSuiteSuiteJobEventRetried) implementsGraphQLInterfacegetTestSuiteSuiteNode()       {}
+func (v *getTestSuiteSuiteJobEventRetryFailed) implementsGraphQLInterfacegetTestSuiteSuiteNode()   {}
+func (v *getTestSuiteSuiteJobEventStackError) implementsGraphQLInterfacegetTestSuiteSuiteNode()    {}
+func (v *getTestSuiteSuiteJobEventStackNotification) implementsGraphQLInterfacegetTestSuiteSuiteNode() {
+}
+func (v *getTestSuiteSuiteJobEventTimedOut) implementsGraphQLInterfacegetTestSuiteSuiteNode() {}
+func (v *getTestSuiteSuiteJobTypeBlock) implementsGraphQLInterfacegetTestSuiteSuiteNode()     {}
+func (v *getTestSuiteSuiteJobTypeCommand) implementsGraphQLInterfacegetTestSuiteSuiteNode()   {}
+func (v *getTestSuiteSuiteJobTypeTrigger) implementsGraphQLInterfacegetTestSuiteSuiteNode()   {}
+func (v *getTestSuiteSuiteJobTypeWait) implementsGraphQLInterfacegetTestSuiteSuiteNode()      {}
 func (v *getTestSuiteSuiteNotificationServiceSlack) implementsGraphQLInterfacegetTestSuiteSuiteNode() {
 }
 func (v *getTestSuiteSuiteOrganization) implementsGraphQLInterfacegetTestSuiteSuiteNode()           {}
@@ -13526,11 +13788,20 @@ func __unmarshalgetTestSuiteSuiteNode(b []byte, v *getTestSuiteSuiteNode) error 
 	case "JobEventGeneric":
 		*v = new(getTestSuiteSuiteJobEventGeneric)
 		return json.Unmarshal(b, *v)
+	case "JobEventReprioritized":
+		*v = new(getTestSuiteSuiteJobEventReprioritized)
+		return json.Unmarshal(b, *v)
 	case "JobEventRetried":
 		*v = new(getTestSuiteSuiteJobEventRetried)
 		return json.Unmarshal(b, *v)
 	case "JobEventRetryFailed":
 		*v = new(getTestSuiteSuiteJobEventRetryFailed)
+		return json.Unmarshal(b, *v)
+	case "JobEventStackError":
+		*v = new(getTestSuiteSuiteJobEventStackError)
+		return json.Unmarshal(b, *v)
+	case "JobEventStackNotification":
+		*v = new(getTestSuiteSuiteJobEventStackNotification)
 		return json.Unmarshal(b, *v)
 	case "JobEventTimedOut":
 		*v = new(getTestSuiteSuiteJobEventTimedOut)
@@ -13846,6 +14117,14 @@ func __marshalgetTestSuiteSuiteNode(v *getTestSuiteSuiteNode) ([]byte, error) {
 			*getTestSuiteSuiteJobEventGeneric
 		}{typename, v}
 		return json.Marshal(result)
+	case *getTestSuiteSuiteJobEventReprioritized:
+		typename = "JobEventReprioritized"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getTestSuiteSuiteJobEventReprioritized
+		}{typename, v}
+		return json.Marshal(result)
 	case *getTestSuiteSuiteJobEventRetried:
 		typename = "JobEventRetried"
 
@@ -13860,6 +14139,22 @@ func __marshalgetTestSuiteSuiteNode(v *getTestSuiteSuiteNode) ([]byte, error) {
 		result := struct {
 			TypeName string `json:"__typename"`
 			*getTestSuiteSuiteJobEventRetryFailed
+		}{typename, v}
+		return json.Marshal(result)
+	case *getTestSuiteSuiteJobEventStackError:
+		typename = "JobEventStackError"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getTestSuiteSuiteJobEventStackError
+		}{typename, v}
+		return json.Marshal(result)
+	case *getTestSuiteSuiteJobEventStackNotification:
+		typename = "JobEventStackNotification"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getTestSuiteSuiteJobEventStackNotification
 		}{typename, v}
 		return json.Marshal(result)
 	case *getTestSuiteSuiteJobEventTimedOut:
