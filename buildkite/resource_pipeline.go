@@ -122,6 +122,9 @@ type providerSettingsModel struct {
 	PublishCommitStatusPerStep              types.Bool   `tfsdk:"publish_commit_status_per_step"`
 	SeparatePullRequestStatuses             types.Bool   `tfsdk:"separate_pull_request_statuses"`
 	IgnoreDefaultBranchPullRequests         types.Bool   `tfsdk:"ignore_default_branch_pull_requests"`
+	BuildMergeGroupChecksRequested          types.Bool   `tfsdk:"build_merge_group_checks_requested"`
+	CancelWhenMergeGroupDestroyed           types.Bool   `tfsdk:"cancel_when_merge_group_destroyed"`
+	UseMergeGroupBaseCommitForGitDiffBase   types.Bool   `tfsdk:"use_merge_group_base_commit_for_git_diff_base"`
 }
 
 type pipelineResource struct {
@@ -829,6 +832,22 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 						Optional:            true,
 						MarkdownDescription: "Whether to prevent caching pull requests with the source branch matching the default branch.",
 					},
+					"build_merge_group_checks_requested": schema.BoolAttribute{
+						Computed:            true,
+						Optional:            true,
+						MarkdownDescription: "Whether to create merge queue builds for a merge queue enabled GitHub repository with required status checks",
+					},
+					"cancel_when_merge_group_destroyed": schema.BoolAttribute{
+						Computed:            true,
+						Optional:            true,
+						MarkdownDescription: "Whether to cancel any running builds belonging to a removed merge group.",
+					},
+					"use_merge_group_base_commit_for_git_diff_base": schema.BoolAttribute{
+						Computed: true,
+						Optional: true,
+						MarkdownDescription: "When enabled, agents performing a git diff to determine steps to upload based on [`if_changed`](https://buildkite.com/docs/pipelines/configure/step-types/command-step#agent-applied-attributes)" +
+							"comparisons will use the base commit that points to the previous merge group rather than the base branch",
+					},
 				},
 			},
 		},
@@ -1137,7 +1156,10 @@ type PipelineExtraSettings struct {
 	PublishBlockedAsPending                 *bool   `json:"publish_blocked_as_pending,omitempty"`
 	PublishCommitStatusPerStep              *bool   `json:"publish_commit_status_per_step,omitempty"`
 	SeparatePullRequestStatuses             *bool   `json:"separate_pull_request_statuses,omitempty"`
-	IgnoreDefaultBranchPullRequests         *bool   `json:"ignore_default_branch_pull_requests"`
+	IgnoreDefaultBranchPullRequests         *bool   `json:"ignore_default_branch_pull_requests,omitempty"`
+	BuildMergeGroupChecksRequested          *bool   `json:"build_merge_group_checks_requested,omitempty"`
+	CancelWhenMergeGroupDestroyed           *bool   `json:"cancel_when_merge_group_destroyed,omitempty"`
+	UseMergeGroupBaseCommitForGitDiffBase   *bool   `json:"use_merge_group_base_commit_for_git_diff_base,omitempty"`
 }
 
 func getPipelineExtraInfo(ctx context.Context, client *Client, slug string, timeouts time.Duration) (*PipelineExtraInfo, error) {
@@ -1197,6 +1219,9 @@ func updatePipelineExtraInfo(ctx context.Context, slug string, settings *provide
 			PublishCommitStatusPerStep:              settings.PublishCommitStatusPerStep.ValueBoolPointer(),
 			SeparatePullRequestStatuses:             settings.SeparatePullRequestStatuses.ValueBoolPointer(),
 			IgnoreDefaultBranchPullRequests:         settings.IgnoreDefaultBranchPullRequests.ValueBoolPointer(),
+			BuildMergeGroupChecksRequested:          settings.BuildMergeGroupChecksRequested.ValueBoolPointer(),
+			CancelWhenMergeGroupDestroyed:           settings.CancelWhenMergeGroupDestroyed.ValueBoolPointer(),
+			UseMergeGroupBaseCommitForGitDiffBase:   settings.UseMergeGroupBaseCommitForGitDiffBase.ValueBoolPointer(),
 		},
 	}
 
@@ -1247,6 +1272,9 @@ func updatePipelineResourceExtraInfo(state *pipelineResourceModel, pipeline *Pip
 		PublishCommitStatusPerStep:              types.BoolPointerValue(s.PublishCommitStatusPerStep),
 		SeparatePullRequestStatuses:             types.BoolPointerValue(s.SeparatePullRequestStatuses),
 		IgnoreDefaultBranchPullRequests:         types.BoolPointerValue(s.IgnoreDefaultBranchPullRequests),
+		BuildMergeGroupChecksRequested:          types.BoolPointerValue(s.BuildMergeGroupChecksRequested),
+		CancelWhenMergeGroupDestroyed:           types.BoolPointerValue(s.CancelWhenMergeGroupDestroyed),
+		UseMergeGroupBaseCommitForGitDiffBase:   types.BoolPointerValue(s.UseMergeGroupBaseCommitForGitDiffBase),
 	}
 }
 
@@ -1492,6 +1520,18 @@ func pipelineSchemaV0() schema.Schema {
 							Optional: true,
 						},
 						"ignore_default_branch_pull_requests": schema.BoolAttribute{
+							Computed: true,
+							Optional: true,
+						},
+						"build_merge_group_checks_requested": schema.BoolAttribute{
+							Computed: true,
+							Optional: true,
+						},
+						"cancel_when_merge_group_destroyed": schema.BoolAttribute{
+							Computed: true,
+							Optional: true,
+						},
+						"use_merge_group_base_commit_for_git_diff_base": schema.BoolAttribute{
 							Computed: true,
 							Optional: true,
 						},
