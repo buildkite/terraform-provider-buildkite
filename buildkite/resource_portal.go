@@ -22,7 +22,7 @@ type portalResourceModel struct {
 	Name               types.String `tfsdk:"name"`
 	Description        types.String `tfsdk:"description"`
 	Query              types.String `tfsdk:"query"`
-	AllowedIPAddresses types.List   `tfsdk:"allowed_ip_addresses"`
+	AllowedIPAddresses types.String `tfsdk:"allowed_ip_addresses"`
 	UserInvokable      types.Bool   `tfsdk:"user_invokable"`
 	Token              types.String `tfsdk:"token"`
 	CreatedAt          types.String `tfsdk:"created_at"`
@@ -30,16 +30,16 @@ type portalResourceModel struct {
 }
 
 type portalAPIResponse struct {
-	UUID               string   `json:"uuid"`
-	Slug               string   `json:"slug"`
-	OrganizationUUID   string   `json:"organization_uuid"`
-	Name               string   `json:"name"`
-	Description        *string  `json:"description"`
-	Query              string   `json:"query"`
-	AllowedIPAddresses []string `json:"allowed_ip_addresses"`
-	UserInvokable      bool     `json:"user_invokable"`
-	Token              *string  `json:"token,omitempty"`
-	CreatedAt          string   `json:"created_at"`
+	UUID               string  `json:"uuid"`
+	Slug               string  `json:"slug"`
+	OrganizationUUID   string  `json:"organization_uuid"`
+	Name               string  `json:"name"`
+	Description        *string `json:"description"`
+	Query              string  `json:"query"`
+	AllowedIPAddresses *string `json:"allowed_ip_addresses"`
+	UserInvokable      bool    `json:"user_invokable"`
+	Token              *string `json:"token,omitempty"`
+	CreatedAt          string  `json:"created_at"`
 	CreatedBy          *struct {
 		UUID  string `json:"uuid"`
 		Name  string `json:"name"`
@@ -48,12 +48,12 @@ type portalAPIResponse struct {
 }
 
 type portalCreateUpdateRequest struct {
-	Name               string   `json:"name"`
-	Slug               string   `json:"slug"`
-	Description        *string  `json:"description,omitempty"`
-	Query              string   `json:"query"`
-	AllowedIPAddresses []string `json:"allowed_ip_addresses,omitempty"`
-	UserInvokable      bool     `json:"user_invokable"`
+	Name               string  `json:"name"`
+	Slug               string  `json:"slug"`
+	Description        *string `json:"description,omitempty"`
+	Query              string  `json:"query"`
+	AllowedIPAddresses *string `json:"allowed_ip_addresses,omitempty"`
+	UserInvokable      bool    `json:"user_invokable"`
 }
 
 type portalResource struct {
@@ -110,11 +110,9 @@ func (p *portalResource) Schema(ctx context.Context, req resource.SchemaRequest,
 				Required:            true,
 				MarkdownDescription: "The GraphQL query that the portal executes.",
 			},
-			"allowed_ip_addresses": resource_schema.ListAttribute{
-				ElementType:         types.StringType,
+			"allowed_ip_addresses": resource_schema.StringAttribute{
 				Optional:            true,
-				Computed:            true,
-				MarkdownDescription: "List of IP addresses (in CIDR notation) allowed to invoke this portal. If not specified, all IP addresses are allowed.",
+				MarkdownDescription: "Space-delimited list of IP addresses (in CIDR notation) allowed to invoke this portal. If not specified, all IP addresses are allowed.",
 			},
 			"user_invokable": resource_schema.BoolAttribute{
 				Optional:            true,
@@ -190,15 +188,10 @@ func (p *portalResource) Create(ctx context.Context, req resource.CreateRequest,
 		plan.Token = types.StringValue(*result.Token)
 	}
 
-	if len(result.AllowedIPAddresses) > 0 {
-		ipList, d := types.ListValueFrom(ctx, types.StringType, result.AllowedIPAddresses)
-		resp.Diagnostics.Append(d...)
-		plan.AllowedIPAddresses = ipList
-	} else if !plan.AllowedIPAddresses.IsNull() && !plan.AllowedIPAddresses.IsUnknown() {
-		// API returned null but plan has values - preserve them
-		// This happens because the API doesn't return IP restrictions in the response
+	if result.AllowedIPAddresses != nil {
+		plan.AllowedIPAddresses = types.StringValue(*result.AllowedIPAddresses)
 	} else {
-		plan.AllowedIPAddresses = types.ListNull(types.StringType)
+		plan.AllowedIPAddresses = types.StringNull()
 	}
 
 	if result.CreatedBy != nil {
@@ -268,15 +261,10 @@ func (p *portalResource) Read(ctx context.Context, req resource.ReadRequest, res
 		state.Token = types.StringValue(*result.Token)
 	}
 
-	if len(result.AllowedIPAddresses) > 0 {
-		ipList, d := types.ListValueFrom(ctx, types.StringType, result.AllowedIPAddresses)
-		resp.Diagnostics.Append(d...)
-		state.AllowedIPAddresses = ipList
-	} else if !state.AllowedIPAddresses.IsNull() && !state.AllowedIPAddresses.IsUnknown() {
-		// API returned null but state has values - preserve them
-		// This happens because the API doesn't return IP restrictions in the response
+	if result.AllowedIPAddresses != nil {
+		state.AllowedIPAddresses = types.StringValue(*result.AllowedIPAddresses)
 	} else {
-		state.AllowedIPAddresses = types.ListNull(types.StringType)
+		state.AllowedIPAddresses = types.StringNull()
 	}
 
 	if result.CreatedBy != nil {
@@ -338,15 +326,10 @@ func (p *portalResource) Update(ctx context.Context, req resource.UpdateRequest,
 		plan.Token = types.StringValue(*result.Token)
 	}
 
-	if len(result.AllowedIPAddresses) > 0 {
-		ipList, d := types.ListValueFrom(ctx, types.StringType, result.AllowedIPAddresses)
-		resp.Diagnostics.Append(d...)
-		plan.AllowedIPAddresses = ipList
-	} else if !plan.AllowedIPAddresses.IsNull() && !plan.AllowedIPAddresses.IsUnknown() {
-		// API returned null but plan has values - preserve them
-		// This happens because the API doesn't return IP restrictions in the response
+	if result.AllowedIPAddresses != nil {
+		plan.AllowedIPAddresses = types.StringValue(*result.AllowedIPAddresses)
 	} else {
-		plan.AllowedIPAddresses = types.ListNull(types.StringType)
+		plan.AllowedIPAddresses = types.StringNull()
 	}
 
 	if result.CreatedBy != nil {
@@ -412,11 +395,8 @@ func (p *portalResource) createPortal(ctx context.Context, plan *portalResourceM
 	}
 
 	if !plan.AllowedIPAddresses.IsNull() {
-		var ipAddresses []string
-		diags := plan.AllowedIPAddresses.ElementsAs(ctx, &ipAddresses, false)
-		if !diags.HasError() {
-			reqBody.AllowedIPAddresses = ipAddresses
-		}
+		ipString := plan.AllowedIPAddresses.ValueString()
+		reqBody.AllowedIPAddresses = &ipString
 	}
 
 	var result portalAPIResponse
@@ -456,11 +436,8 @@ func (p *portalResource) updatePortal(ctx context.Context, plan *portalResourceM
 	}
 
 	if !plan.AllowedIPAddresses.IsNull() {
-		var ipAddresses []string
-		diags := plan.AllowedIPAddresses.ElementsAs(ctx, &ipAddresses, false)
-		if !diags.HasError() {
-			reqBody.AllowedIPAddresses = ipAddresses
-		}
+		ipString := plan.AllowedIPAddresses.ValueString()
+		reqBody.AllowedIPAddresses = &ipString
 	}
 
 	var result portalAPIResponse

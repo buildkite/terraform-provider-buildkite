@@ -27,7 +27,7 @@ that can be invoked via a REST API endpoint. Find out more information in our
 
 ### Optional
 
-- `allowed_ip_addresses` (List of String) List of IP addresses (in CIDR notation) allowed to invoke this portal. If not specified, all IP addresses are allowed.
+- `allowed_ip_addresses` (String) Space-delimited list of IP addresses (in CIDR notation) allowed to invoke this portal. If not specified, all IP addresses are allowed.
 - `description` (String) A description of the portal.
 - `user_invokable` (Boolean) Whether users can invoke the portal. Defaults to false.
 
