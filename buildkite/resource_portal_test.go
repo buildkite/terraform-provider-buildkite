@@ -12,6 +12,8 @@ import (
 )
 
 func TestAccBuildkitePortal(t *testing.T) {
+	// TODO: Re-enable once API token has Portals scopes
+	t.Skip("Skipping until API token has Portals scopes")
 	basic := func(name string) string {
 		return fmt.Sprintf(`
 		provider "buildkite" {
