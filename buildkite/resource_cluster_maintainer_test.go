@@ -31,8 +31,8 @@ func TestAccBuildkiteClusterMaintainerResource_User(t *testing.T) {
 		}
 
 		resource "buildkite_cluster_maintainer" "test_user" {
-			cluster_id = buildkite_cluster.test_cluster.uuid
-			user_id          = "%s"
+			cluster_uuid = buildkite_cluster.test_cluster.uuid
+			user_uuid    = "%s"
 		}
 		`, clusterName, userID)
 	}
@@ -49,11 +49,11 @@ func TestAccBuildkiteClusterMaintainerResource_User(t *testing.T) {
 				Config: basic(clusterName, userID),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckClusterMaintainerExists("buildkite_cluster_maintainer.test_user"),
-					resource.TestCheckResourceAttr("buildkite_cluster_maintainer.test_user", "user_id", userID),
+					resource.TestCheckResourceAttr("buildkite_cluster_maintainer.test_user", "user_uuid", userID),
 					resource.TestCheckResourceAttr("buildkite_cluster_maintainer.test_user", "actor_type", "user"),
-					resource.TestCheckResourceAttr("buildkite_cluster_maintainer.test_user", "actor_id", userID),
+					resource.TestCheckResourceAttr("buildkite_cluster_maintainer.test_user", "actor_uuid", userID),
 					resource.TestCheckResourceAttrSet("buildkite_cluster_maintainer.test_user", "id"),
-					resource.TestCheckResourceAttrSet("buildkite_cluster_maintainer.test_user", "cluster_id"),
+					resource.TestCheckResourceAttrSet("buildkite_cluster_maintainer.test_user", "cluster_uuid"),
 				),
 			},
 		},
@@ -86,8 +86,8 @@ func TestAccBuildkiteClusterMaintainerResource_Team(t *testing.T) {
 		}
 
 		resource "buildkite_cluster_maintainer" "test_team" {
-			cluster_id = buildkite_cluster.test_cluster.uuid
-			team_id    = buildkite_team.test_team.uuid
+			cluster_uuid = buildkite_cluster.test_cluster.uuid
+			team_uuid    = buildkite_team.test_team.uuid
 		}
 		`, clusterName, clusterName)
 	}
@@ -103,11 +103,11 @@ func TestAccBuildkiteClusterMaintainerResource_Team(t *testing.T) {
 				Config: basic(clusterName),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckClusterMaintainerExists("buildkite_cluster_maintainer.test_team"),
-					resource.TestCheckResourceAttrSet("buildkite_cluster_maintainer.test_team", "team_id"),
+					resource.TestCheckResourceAttrSet("buildkite_cluster_maintainer.test_team", "team_uuid"),
 					resource.TestCheckResourceAttr("buildkite_cluster_maintainer.test_team", "actor_type", "team"),
-					resource.TestCheckResourceAttrSet("buildkite_cluster_maintainer.test_team", "actor_id"),
+					resource.TestCheckResourceAttrSet("buildkite_cluster_maintainer.test_team", "actor_uuid"),
 					resource.TestCheckResourceAttrSet("buildkite_cluster_maintainer.test_team", "id"),
-					resource.TestCheckResourceAttrSet("buildkite_cluster_maintainer.test_team", "cluster_id"),
+					resource.TestCheckResourceAttrSet("buildkite_cluster_maintainer.test_team", "cluster_uuid"),
 				),
 			},
 		},
@@ -131,8 +131,8 @@ func TestAccBuildkiteClusterMaintainerResource_Import(t *testing.T) {
 		}
 
 		resource "buildkite_cluster_maintainer" "test_user" {
-			cluster_id = buildkite_cluster.test_cluster.uuid
-			user_id          = "%s"
+			cluster_uuid = buildkite_cluster.test_cluster.uuid
+			user_uuid    = "%s"
 		}
 		`, clusterName, userID)
 	}
@@ -179,9 +179,9 @@ func TestAccBuildkiteClusterMaintainerResource_InvalidConfiguration(t *testing.T
 		}
 
 		resource "buildkite_cluster_maintainer" "invalid" {
-			cluster_id = buildkite_cluster.test_cluster.uuid
-			user_id          = "test-user-id"
-			team_id          = "test-team-id"
+			cluster_uuid = buildkite_cluster.test_cluster.uuid
+			user_uuid    = "test-user-id"
+			team_uuid    = "test-team-id"
 		}
 		`, clusterName)
 	}
@@ -202,7 +202,7 @@ func TestAccBuildkiteClusterMaintainerResource_InvalidConfiguration(t *testing.T
 		}
 
 		resource "buildkite_cluster_maintainer" "invalid" {
-			cluster_id = buildkite_cluster.test_cluster.uuid
+			cluster_uuid = buildkite_cluster.test_cluster.uuid
 		}
 		`, clusterName)
 	}
@@ -215,11 +215,11 @@ func TestAccBuildkiteClusterMaintainerResource_InvalidConfiguration(t *testing.T
 		Steps: []resource.TestStep{
 			{
 				Config:      bothUserAndTeam(clusterName),
-				ExpectError: regexp.MustCompile("Only one of user_id or team_id can be specified"),
+				ExpectError: regexp.MustCompile("Only one of user_uuid or team_uuid can be specified"),
 			},
 			{
 				Config:      neitherUserNorTeam(clusterName),
-				ExpectError: regexp.MustCompile("Either user_id or team_id must be specified"),
+				ExpectError: regexp.MustCompile("Either user_uuid or team_uuid must be specified"),
 			},
 		},
 	})
@@ -254,24 +254,24 @@ func testAccCheckClusterMaintainerExists(resourceName string) resource.TestCheck
 			return fmt.Errorf("no cluster maintainer ID is set")
 		}
 
-		clusterID := rs.Primary.Attributes["cluster_id"]
-		if clusterID == "" {
-			return fmt.Errorf("cluster_id not set")
+		clusterUUID := rs.Primary.Attributes["cluster_uuid"]
+		if clusterUUID == "" {
+			return fmt.Errorf("cluster_uuid not set")
 		}
 
-		// Check that either user_id or team_id is set, but not both
-		userID := rs.Primary.Attributes["user_id"]
-		teamID := rs.Primary.Attributes["team_id"]
+		// Check that either user_uuid or team_uuid is set, but not both
+		userUUID := rs.Primary.Attributes["user_uuid"]
+		teamUUID := rs.Primary.Attributes["team_uuid"]
 
-		if (userID == "" && teamID == "") || (userID != "" && teamID != "") {
-			return fmt.Errorf("exactly one of user_id or team_id must be set")
+		if (userUUID == "" && teamUUID == "") || (userUUID != "" && teamUUID != "") {
+			return fmt.Errorf("exactly one of user_uuid or team_uuid must be set")
 		}
 
 		// Make an API call to verify the cluster maintainer exists
 		client := getTestClient()
 		path := fmt.Sprintf("/v2/organizations/%s/clusters/%s/maintainers/%s",
 			client.organization,
-			clusterID,
+			clusterUUID,
 			rs.Primary.ID,
 		)
 
@@ -301,10 +301,10 @@ func testAccCheckClusterMaintainerDestroy(s *terraform.State) error {
 			continue
 		}
 
-		clusterID := rs.Primary.Attributes["cluster_id"]
+		clusterUUID := rs.Primary.Attributes["cluster_uuid"]
 		path := fmt.Sprintf("/v2/organizations/%s/clusters/%s/maintainers/%s",
 			client.organization,
-			clusterID,
+			clusterUUID,
 			rs.Primary.ID,
 		)
 
@@ -332,9 +332,69 @@ func testAccClusterMaintainerImportStateIdFunc(resourceName string) resource.Imp
 			return "", fmt.Errorf("not found: %s", resourceName)
 		}
 
-		clusterID := rs.Primary.Attributes["cluster_id"]
+		clusterUUID := rs.Primary.Attributes["cluster_uuid"]
 		permissionID := rs.Primary.ID
 
-		return fmt.Sprintf("%s/%s", clusterID, permissionID), nil
+		return fmt.Sprintf("%s/%s", clusterUUID, permissionID), nil
 	}
+}
+
+func TestAccBuildkiteClusterMaintainerResource_StateUpgradeV0toV1(t *testing.T) {
+	// Test that state upgrade from v0 to v1 works correctly
+	// This ensures existing resources with cluster_id, user_id, team_id, and actor_id
+	// are automatically migrated to cluster_uuid, user_uuid, team_uuid, and actor_uuid
+
+	basic := func(clusterName, userID string) string {
+		return fmt.Sprintf(`
+		provider "buildkite" {
+			timeouts = {
+				create = "10s"
+				read = "10s"
+				update = "10s"
+				delete = "10s"
+			}
+		}
+
+		resource "buildkite_cluster" "test_cluster" {
+			name = "%s_test_cluster"
+		}
+
+		resource "buildkite_cluster_maintainer" "test_user" {
+			cluster_uuid = buildkite_cluster.test_cluster.uuid
+			user_uuid    = "%s"
+		}
+		`, clusterName, userID)
+	}
+
+	clusterName := acctest.RandString(12)
+	userID := "8db2920e-3c60-48a7-a3f8-2584be374bac" // Real user UUID from test environment
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		CheckDestroy: testAccCheckClusterMaintainerDestroy,
+		Steps: []resource.TestStep{
+			{
+				ExternalProviders: map[string]resource.ExternalProvider{
+					"buildkite": {
+						VersionConstraint: "1.26.0", // Version before the rename
+						Source:            "buildkite/buildkite",
+					},
+				},
+				Config: basic(clusterName, userID),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccCheckClusterMaintainerExists("buildkite_cluster_maintainer.test_user"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: protoV6ProviderFactories(),
+				Config:                   basic(clusterName, userID),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccCheckClusterMaintainerExists("buildkite_cluster_maintainer.test_user"),
+					resource.TestCheckResourceAttr("buildkite_cluster_maintainer.test_user", "user_uuid", userID),
+					resource.TestCheckResourceAttrSet("buildkite_cluster_maintainer.test_user", "cluster_uuid"),
+					resource.TestCheckResourceAttrSet("buildkite_cluster_maintainer.test_user", "actor_uuid"),
+				),
+			},
+		},
+	})
 }

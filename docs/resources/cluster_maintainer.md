@@ -19,14 +19,14 @@ that have permission to manage a specific cluster. Find out more information in 
 ```terraform
 # Add a user as a cluster maintainer
 resource "buildkite_cluster_maintainer" "user_maintainer" {
-  cluster_id = buildkite_cluster.primary.uuid
-  user_id    = "01234567-89ab-cdef-0123-456789abcdef"
+  cluster_uuid = buildkite_cluster.primary.uuid
+  user_uuid    = "01234567-89ab-cdef-0123-456789abcdef"
 }
 
 # Add a team as a cluster maintainer
 resource "buildkite_cluster_maintainer" "team_maintainer" {
-  cluster_id = buildkite_cluster.primary.uuid
-  team_id    = "01234567-89ab-cdef-0123-456789abcdef"
+  cluster_uuid = buildkite_cluster.primary.uuid
+  team_uuid    = "01234567-89ab-cdef-0123-456789abcdef"
 }
 ```
 
@@ -35,34 +35,34 @@ resource "buildkite_cluster_maintainer" "team_maintainer" {
 
 ### Required
 
-- `cluster_id` (String) The UUID of the cluster.
+- `cluster_uuid` (String) The UUID of the cluster.
 
 ### Optional
 
-- `team_id` (String) The UUID of the team to add as a maintainer. This is mutually exclusive with user_id.
-Only one of user_id or team_id can be specified.
-- `user_id` (String) The UUID of the user to add as a maintainer. This is mutually exclusive with team_id.
-Only one of user_id or team_id can be specified.
+- `team_uuid` (String) The UUID of the team to add as a maintainer. This is mutually exclusive with user_uuid.
+Only one of user_uuid or team_uuid can be specified.
+- `user_uuid` (String) The UUID of the user to add as a maintainer. This is mutually exclusive with team_uuid.
+Only one of user_uuid or team_uuid can be specified.
 
 ### Read-Only
 
 - `actor_email` (String) The email of the actor (only for users).
-- `actor_id` (String) The UUID of the actor (user or team) that is the maintainer.
 - `actor_name` (String) The name of the actor.
 - `actor_slug` (String) The slug of the actor (only for teams).
 - `actor_type` (String) The type of the actor (user or team).
+- `actor_uuid` (String) The UUID of the actor (user or team) that is the maintainer.
 - `id` (String) The permission ID of the cluster maintainer.
 
 ## Import
 
 Using `terraform import`, import resources using the `id`. For example:
 ```shell
-# Import a cluster maintainer using {cluster_id}/{permission_id}
+# Import a cluster maintainer using {cluster_uuid}/{permission_uuid}
 #
-# You can find the cluster_id (cluster UUID) and the permission_id
+# You can find the cluster_uuid and the permission_uuid
 # from the maintainers list using the cluster data source or REST
 # API response from:
-# GET /v2/organizations/{org_slug}/clusters/{cluster_id}/maintainers
+# GET /v2/organizations/{org_slug}/clusters/{cluster_uuid}/maintainers
 terraform import buildkite_cluster_maintainer.user_maintainer 01234567-89ab-cdef-0123-456789abcdef/977b68d3-f8fe-4784-8d43-5bc857e10541
 ```
 
