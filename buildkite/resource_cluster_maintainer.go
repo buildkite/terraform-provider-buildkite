@@ -492,15 +492,15 @@ func clusterMaintainerSchemaV0() resource_schema.Schema {
 // upgradeClusterMaintainerStateV0toV1 migrates state from version 0 to version 1
 func upgradeClusterMaintainerStateV0toV1(ctx context.Context, req resource.UpgradeStateRequest, resp *resource.UpgradeStateResponse) {
 	type clusterMaintainerResourceModelV0 struct {
-		ID          types.String `tfsdk:"id"`
-		ClusterID   types.String `tfsdk:"cluster_id"`
-		UserID      types.String `tfsdk:"user_id"`
-		TeamID      types.String `tfsdk:"team_id"`
-		ActorID     types.String `tfsdk:"actor_id"`
-		ActorType   types.String `tfsdk:"actor_type"`
-		ActorName   types.String `tfsdk:"actor_name"`
-		ActorEmail  types.String `tfsdk:"actor_email"`
-		ActorSlug   types.String `tfsdk:"actor_slug"`
+		ID         types.String `tfsdk:"id"`
+		ClusterID  types.String `tfsdk:"cluster_id"`
+		UserID     types.String `tfsdk:"user_id"`
+		TeamID     types.String `tfsdk:"team_id"`
+		ActorID    types.String `tfsdk:"actor_id"`
+		ActorType  types.String `tfsdk:"actor_type"`
+		ActorName  types.String `tfsdk:"actor_name"`
+		ActorEmail types.String `tfsdk:"actor_email"`
+		ActorSlug  types.String `tfsdk:"actor_slug"`
 	}
 
 	var modelV0 clusterMaintainerResourceModelV0
