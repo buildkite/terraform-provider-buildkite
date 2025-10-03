@@ -16,6 +16,18 @@ type portalDatasource struct {
 	client *Client
 }
 
+type portalDatasourceModel struct {
+	UUID               types.String `tfsdk:"uuid"`
+	Slug               types.String `tfsdk:"slug"`
+	Name               types.String `tfsdk:"name"`
+	Description        types.String `tfsdk:"description"`
+	Query              types.String `tfsdk:"query"`
+	AllowedIPAddresses types.String `tfsdk:"allowed_ip_addresses"`
+	UserInvokable      types.Bool   `tfsdk:"user_invokable"`
+	CreatedAt          types.String `tfsdk:"created_at"`
+	CreatedBy          types.Object `tfsdk:"created_by"`
+}
+
 func newPortalDatasource() datasource.DataSource {
 	return &portalDatasource{}
 }
@@ -33,7 +45,7 @@ func (p *portalDatasource) Metadata(ctx context.Context, req datasource.Metadata
 }
 
 func (p *portalDatasource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
-	var config portalsModel
+	var config portalDatasourceModel
 
 	resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
 	if resp.Diagnostics.HasError() {
@@ -59,7 +71,7 @@ func (p *portalDatasource) Read(ctx context.Context, req datasource.ReadRequest,
 		return
 	}
 
-	state := portalsModel{
+	state := portalDatasourceModel{
 		UUID:          types.StringValue(result.UUID),
 		Slug:          types.StringValue(result.Slug),
 		Name:          types.StringValue(result.Name),
@@ -106,7 +118,7 @@ func (p *portalDatasource) Read(ctx context.Context, req datasource.ReadRequest,
 
 func (p *portalDatasource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		MarkdownDescription: "Use this data source to retrieve a portal by slug.",
+		MarkdownDescription: "Use this data source to retrieve a portal by slug. You can find out more about portals in the Buildkite [documentation](https://buildkite.com/docs/apis/portals).",
 		Attributes: map[string]schema.Attribute{
 			"uuid": schema.StringAttribute{
 				Computed:            true,
