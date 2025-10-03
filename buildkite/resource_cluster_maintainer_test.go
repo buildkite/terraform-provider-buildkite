@@ -14,214 +14,310 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
-func TestAccBuildkiteClusterMaintainerResource_User(t *testing.T) {
-	basic := func(clusterName, userID string) string {
-		return fmt.Sprintf(`
-		provider "buildkite" {
-			timeouts = {
-				create = "10s"
-				read = "10s"
-				update = "10s"
-				delete = "10s"
+func TestAccBuildkiteClusterMaintainerResource(t *testing.T) {
+	t.Run("adds a user as maintainer", func(t *testing.T) {
+		config := func(clusterName, userID string) string {
+			return fmt.Sprintf(`
+			provider "buildkite" {
+				timeouts = {
+					create = "10s"
+					read = "10s"
+					update = "10s"
+					delete = "10s"
+				}
 			}
+
+			resource "buildkite_cluster" "test_cluster" {
+				name = "%s_test_cluster"
+			}
+
+			resource "buildkite_cluster_maintainer" "test_user" {
+				cluster_uuid = buildkite_cluster.test_cluster.uuid
+				user_uuid    = "%s"
+			}
+			`, clusterName, userID)
 		}
 
-		resource "buildkite_cluster" "test_cluster" {
-			name = "%s_test_cluster"
+		clusterName := acctest.RandString(12)
+		userID := "8db2920e-3c60-48a7-a3f8-2584be374bac" // Real user UUID from test environment (decoded from GraphQL ID)
+
+		check := resource.ComposeAggregateTestCheckFunc(
+			testAccCheckClusterMaintainerExists("buildkite_cluster_maintainer.test_user"),
+			resource.TestCheckResourceAttr("buildkite_cluster_maintainer.test_user", "user_uuid", userID),
+			resource.TestCheckResourceAttr("buildkite_cluster_maintainer.test_user", "actor_type", "user"),
+			resource.TestCheckResourceAttr("buildkite_cluster_maintainer.test_user", "actor_uuid", userID),
+			resource.TestCheckResourceAttrSet("buildkite_cluster_maintainer.test_user", "id"),
+			resource.TestCheckResourceAttrSet("buildkite_cluster_maintainer.test_user", "cluster_uuid"),
+		)
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			CheckDestroy:             testAccCheckClusterMaintainerDestroy,
+			Steps: []resource.TestStep{
+				{
+					Config: config(clusterName, userID),
+					Check:  check,
+				},
+			},
+		})
+	})
+
+	t.Run("adds a team as maintainer", func(t *testing.T) {
+		config := func(clusterName string) string {
+			return fmt.Sprintf(`
+			provider "buildkite" {
+				timeouts = {
+					create = "10s"
+					read = "10s"
+					update = "10s"
+					delete = "10s"
+				}
+			}
+
+			resource "buildkite_cluster" "test_cluster" {
+				name = "%s_test_cluster"
+			}
+
+			resource "buildkite_team" "test_team" {
+				name = "%s_test_team"
+				description = "Test team for cluster maintainer tests"
+				privacy = "VISIBLE"
+				default_team = false
+				default_member_role = "MEMBER"
+				members_can_create_pipelines = false
+			}
+
+			resource "buildkite_cluster_maintainer" "test_team" {
+				cluster_uuid = buildkite_cluster.test_cluster.uuid
+				team_uuid    = buildkite_team.test_team.uuid
+			}
+			`, clusterName, clusterName)
 		}
 
-		resource "buildkite_cluster_maintainer" "test_user" {
-			cluster_uuid = buildkite_cluster.test_cluster.uuid
-			user_uuid    = "%s"
+		clusterName := acctest.RandString(12)
+
+		check := resource.ComposeAggregateTestCheckFunc(
+			testAccCheckClusterMaintainerExists("buildkite_cluster_maintainer.test_team"),
+			resource.TestCheckResourceAttrSet("buildkite_cluster_maintainer.test_team", "team_uuid"),
+			resource.TestCheckResourceAttr("buildkite_cluster_maintainer.test_team", "actor_type", "team"),
+			resource.TestCheckResourceAttrSet("buildkite_cluster_maintainer.test_team", "actor_uuid"),
+			resource.TestCheckResourceAttrSet("buildkite_cluster_maintainer.test_team", "id"),
+			resource.TestCheckResourceAttrSet("buildkite_cluster_maintainer.test_team", "cluster_uuid"),
+		)
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			CheckDestroy:             testAccCheckClusterMaintainerDestroy,
+			Steps: []resource.TestStep{
+				{
+					Config: config(clusterName),
+					Check:  check,
+				},
+			},
+		})
+	})
+
+	t.Run("imports a cluster maintainer", func(t *testing.T) {
+		config := func(clusterName, userID string) string {
+			return fmt.Sprintf(`
+			provider "buildkite" {
+				timeouts = {
+					create = "10s"
+					read = "10s"
+					update = "10s"
+					delete = "10s"
+				}
+			}
+
+			resource "buildkite_cluster" "test_cluster" {
+				name = "%s_test_cluster"
+			}
+
+			resource "buildkite_cluster_maintainer" "test_user" {
+				cluster_uuid = buildkite_cluster.test_cluster.uuid
+				user_uuid    = "%s"
+			}
+			`, clusterName, userID)
 		}
+
+		clusterName := acctest.RandString(12)
+		userID := "8db2920e-3c60-48a7-a3f8-2584be374bac" // Real user UUID from test environment (decoded from GraphQL ID)
+		resourceName := "buildkite_cluster_maintainer.test_user"
+
+		check := resource.ComposeAggregateTestCheckFunc(
+			testAccCheckClusterMaintainerExists(resourceName),
+		)
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			CheckDestroy:             testAccCheckClusterMaintainerDestroy,
+			Steps: []resource.TestStep{
+				{
+					Config: config(clusterName, userID),
+					Check:  check,
+				},
+				{
+					ResourceName:      resourceName,
+					ImportState:       true,
+					ImportStateVerify: true,
+					ImportStateIdFunc: testAccClusterMaintainerImportStateIdFunc(resourceName),
+				},
+			},
+		})
+	})
+
+	t.Run("validates configuration", func(t *testing.T) {
+		configBothUserAndTeam := func(clusterName string) string {
+			return fmt.Sprintf(`
+			provider "buildkite" {
+				timeouts = {
+					create = "10s"
+					read = "10s"
+					update = "10s"
+					delete = "10s"
+				}
+			}
+
+			resource "buildkite_cluster" "test_cluster" {
+				name = "%s_test_cluster"
+			}
+
+			resource "buildkite_cluster_maintainer" "invalid" {
+				cluster_uuid = buildkite_cluster.test_cluster.uuid
+				user_uuid    = "test-user-id"
+				team_uuid    = "test-team-id"
+			}
+			`, clusterName)
+		}
+
+		configNeitherUserNorTeam := func(clusterName string) string {
+			return fmt.Sprintf(`
+			provider "buildkite" {
+				timeouts = {
+					create = "10s"
+					read = "10s"
+					update = "10s"
+					delete = "10s"
+				}
+			}
+
+			resource "buildkite_cluster" "test_cluster" {
+				name = "%s_test_cluster"
+			}
+
+			resource "buildkite_cluster_maintainer" "invalid" {
+				cluster_uuid = buildkite_cluster.test_cluster.uuid
+			}
+			`, clusterName)
+		}
+
+		clusterName := acctest.RandString(12)
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			Steps: []resource.TestStep{
+				{
+					Config:      configBothUserAndTeam(clusterName),
+					ExpectError: regexp.MustCompile("Only one of user_uuid or team_uuid can be specified"),
+				},
+				{
+					Config:      configNeitherUserNorTeam(clusterName),
+					ExpectError: regexp.MustCompile("Either user_uuid or team_uuid must be specified"),
+				},
+			},
+		})
+	})
+
+	t.Run("upgrades state from v0 to v1", func(t *testing.T) {
+		// Test that state upgrade from v0 to v1 works correctly
+		// This ensures existing resources with cluster_id, user_id, team_id, and actor_id
+		// are automatically migrated to cluster_uuid, user_uuid, team_uuid, and actor_uuid
+
+		clusterName := acctest.RandString(12)
+		userID := "8db2920e-3c60-48a7-a3f8-2584be374bac" // Real user UUID from test environment
+
+		// Config for old provider version (uses old attribute names)
+		configV0 := fmt.Sprintf(`
+			provider "buildkite" {
+				timeouts = {
+					create = "10s"
+					read = "10s"
+					update = "10s"
+					delete = "10s"
+				}
+			}
+
+			resource "buildkite_cluster" "test_cluster" {
+				name = "%s_test_cluster"
+			}
+
+			resource "buildkite_cluster_maintainer" "test_user" {
+				cluster_id = buildkite_cluster.test_cluster.uuid
+				user_id    = "%s"
+			}
 		`, clusterName, userID)
-	}
 
-	clusterName := acctest.RandString(12)
-	userID := "8db2920e-3c60-48a7-a3f8-2584be374bac" // Real user UUID from test environment (decoded from GraphQL ID)
-
-	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: protoV6ProviderFactories(),
-		CheckDestroy:             testAccCheckClusterMaintainerDestroy,
-		Steps: []resource.TestStep{
-			{
-				Config: basic(clusterName, userID),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckClusterMaintainerExists("buildkite_cluster_maintainer.test_user"),
-					resource.TestCheckResourceAttr("buildkite_cluster_maintainer.test_user", "user_uuid", userID),
-					resource.TestCheckResourceAttr("buildkite_cluster_maintainer.test_user", "actor_type", "user"),
-					resource.TestCheckResourceAttr("buildkite_cluster_maintainer.test_user", "actor_uuid", userID),
-					resource.TestCheckResourceAttrSet("buildkite_cluster_maintainer.test_user", "id"),
-					resource.TestCheckResourceAttrSet("buildkite_cluster_maintainer.test_user", "cluster_uuid"),
-				),
-			},
-		},
-	})
-}
-
-func TestAccBuildkiteClusterMaintainerResource_Team(t *testing.T) {
-	basic := func(clusterName string) string {
-		return fmt.Sprintf(`
-		provider "buildkite" {
-			timeouts = {
-				create = "10s"
-				read = "10s"
-				update = "10s"
-				delete = "10s"
+		// Config for new provider version (uses new attribute names)
+		configV1 := fmt.Sprintf(`
+			provider "buildkite" {
+				timeouts = {
+					create = "10s"
+					read = "10s"
+					update = "10s"
+					delete = "10s"
+				}
 			}
-		}
 
-		resource "buildkite_cluster" "test_cluster" {
-			name = "%s_test_cluster"
-		}
-
-		resource "buildkite_team" "test_team" {
-			name = "%s_test_team"
-			description = "Test team for cluster maintainer tests"
-			privacy = "VISIBLE"
-			default_team = false
-			default_member_role = "MEMBER"
-			members_can_create_pipelines = false
-		}
-
-		resource "buildkite_cluster_maintainer" "test_team" {
-			cluster_uuid = buildkite_cluster.test_cluster.uuid
-			team_uuid    = buildkite_team.test_team.uuid
-		}
-		`, clusterName, clusterName)
-	}
-
-	clusterName := acctest.RandString(12)
-
-	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: protoV6ProviderFactories(),
-		CheckDestroy:             testAccCheckClusterMaintainerDestroy,
-		Steps: []resource.TestStep{
-			{
-				Config: basic(clusterName),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckClusterMaintainerExists("buildkite_cluster_maintainer.test_team"),
-					resource.TestCheckResourceAttrSet("buildkite_cluster_maintainer.test_team", "team_uuid"),
-					resource.TestCheckResourceAttr("buildkite_cluster_maintainer.test_team", "actor_type", "team"),
-					resource.TestCheckResourceAttrSet("buildkite_cluster_maintainer.test_team", "actor_uuid"),
-					resource.TestCheckResourceAttrSet("buildkite_cluster_maintainer.test_team", "id"),
-					resource.TestCheckResourceAttrSet("buildkite_cluster_maintainer.test_team", "cluster_uuid"),
-				),
-			},
-		},
-	})
-}
-
-func TestAccBuildkiteClusterMaintainerResource_Import(t *testing.T) {
-	basic := func(clusterName, userID string) string {
-		return fmt.Sprintf(`
-		provider "buildkite" {
-			timeouts = {
-				create = "10s"
-				read = "10s"
-				update = "10s"
-				delete = "10s"
+			resource "buildkite_cluster" "test_cluster" {
+				name = "%s_test_cluster"
 			}
-		}
 
-		resource "buildkite_cluster" "test_cluster" {
-			name = "%s_test_cluster"
-		}
-
-		resource "buildkite_cluster_maintainer" "test_user" {
-			cluster_uuid = buildkite_cluster.test_cluster.uuid
-			user_uuid    = "%s"
-		}
+			resource "buildkite_cluster_maintainer" "test_user" {
+				cluster_uuid = buildkite_cluster.test_cluster.uuid
+				user_uuid    = "%s"
+			}
 		`, clusterName, userID)
-	}
 
-	clusterName := acctest.RandString(12)
-	userID := "8db2920e-3c60-48a7-a3f8-2584be374bac" // Real user UUID from test environment (decoded from GraphQL ID)
-	resourceName := "buildkite_cluster_maintainer.test_user"
+		// Check for v0 - validates old attribute names
+		checkV0 := resource.ComposeAggregateTestCheckFunc(
+			resource.TestCheckResourceAttr("buildkite_cluster_maintainer.test_user", "user_id", userID),
+			resource.TestCheckResourceAttrSet("buildkite_cluster_maintainer.test_user", "cluster_id"),
+			resource.TestCheckResourceAttrSet("buildkite_cluster_maintainer.test_user", "actor_id"),
+			resource.TestCheckResourceAttrSet("buildkite_cluster_maintainer.test_user", "id"),
+		)
 
-	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: protoV6ProviderFactories(),
-		CheckDestroy:             testAccCheckClusterMaintainerDestroy,
-		Steps: []resource.TestStep{
-			{
-				Config: basic(clusterName, userID),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckClusterMaintainerExists(resourceName),
-				),
+		// Check for v1 - validates new attribute names after migration
+		checkV1 := resource.ComposeAggregateTestCheckFunc(
+			resource.TestCheckResourceAttr("buildkite_cluster_maintainer.test_user", "user_uuid", userID),
+			resource.TestCheckResourceAttrSet("buildkite_cluster_maintainer.test_user", "cluster_uuid"),
+			resource.TestCheckResourceAttrSet("buildkite_cluster_maintainer.test_user", "actor_uuid"),
+			resource.TestCheckResourceAttrSet("buildkite_cluster_maintainer.test_user", "id"),
+		)
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck: func() { testAccPreCheck(t) },
+			Steps: []resource.TestStep{
+				{
+					ExternalProviders: map[string]resource.ExternalProvider{
+						"buildkite": {
+							VersionConstraint: "1.26.0", // Version before the rename
+							Source:            "buildkite/buildkite",
+						},
+					},
+					Config: configV0,
+					Check:  checkV0,
+				},
+				{
+					ProtoV6ProviderFactories: protoV6ProviderFactories(),
+					Config:                   configV1,
+					Check:                    checkV1,
+				},
 			},
-			{
-				ResourceName:      resourceName,
-				ImportState:       true,
-				ImportStateVerify: true,
-				ImportStateIdFunc: testAccClusterMaintainerImportStateIdFunc(resourceName),
-			},
-		},
-	})
-}
-
-func TestAccBuildkiteClusterMaintainerResource_InvalidConfiguration(t *testing.T) {
-	bothUserAndTeam := func(clusterName string) string {
-		return fmt.Sprintf(`
-		provider "buildkite" {
-			timeouts = {
-				create = "10s"
-				read = "10s"
-				update = "10s"
-				delete = "10s"
-			}
-		}
-
-		resource "buildkite_cluster" "test_cluster" {
-			name = "%s_test_cluster"
-		}
-
-		resource "buildkite_cluster_maintainer" "invalid" {
-			cluster_uuid = buildkite_cluster.test_cluster.uuid
-			user_uuid    = "test-user-id"
-			team_uuid    = "test-team-id"
-		}
-		`, clusterName)
-	}
-
-	neitherUserNorTeam := func(clusterName string) string {
-		return fmt.Sprintf(`
-		provider "buildkite" {
-			timeouts = {
-				create = "10s"
-				read = "10s"
-				update = "10s"
-				delete = "10s"
-			}
-		}
-
-		resource "buildkite_cluster" "test_cluster" {
-			name = "%s_test_cluster"
-		}
-
-		resource "buildkite_cluster_maintainer" "invalid" {
-			cluster_uuid = buildkite_cluster.test_cluster.uuid
-		}
-		`, clusterName)
-	}
-
-	clusterName := acctest.RandString(12)
-
-	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: protoV6ProviderFactories(),
-		Steps: []resource.TestStep{
-			{
-				Config:      bothUserAndTeam(clusterName),
-				ExpectError: regexp.MustCompile("Only one of user_uuid or team_uuid can be specified"),
-			},
-			{
-				Config:      neitherUserNorTeam(clusterName),
-				ExpectError: regexp.MustCompile("Either user_uuid or team_uuid must be specified"),
-			},
-		},
+		})
 	})
 }
 
@@ -337,88 +433,4 @@ func testAccClusterMaintainerImportStateIdFunc(resourceName string) resource.Imp
 
 		return fmt.Sprintf("%s/%s", clusterUUID, permissionID), nil
 	}
-}
-
-func TestAccBuildkiteClusterMaintainerResource_StateUpgradeV0toV1(t *testing.T) {
-	// Test that state upgrade from v0 to v1 works correctly
-	// This ensures existing resources with cluster_id, user_id, team_id, and actor_id
-	// are automatically migrated to cluster_uuid, user_uuid, team_uuid, and actor_uuid
-
-	// Config for old provider version (uses old attribute names)
-	basicV0 := func(clusterName, userID string) string {
-		return fmt.Sprintf(`
-		provider "buildkite" {
-			timeouts = {
-				create = "10s"
-				read = "10s"
-				update = "10s"
-				delete = "10s"
-			}
-		}
-
-		resource "buildkite_cluster" "test_cluster" {
-			name = "%s_test_cluster"
-		}
-
-		resource "buildkite_cluster_maintainer" "test_user" {
-			cluster_id = buildkite_cluster.test_cluster.uuid
-			user_id    = "%s"
-		}
-		`, clusterName, userID)
-	}
-
-	// Config for new provider version (uses new attribute names)
-	basicV1 := func(clusterName, userID string) string {
-		return fmt.Sprintf(`
-		provider "buildkite" {
-			timeouts = {
-				create = "10s"
-				read = "10s"
-				update = "10s"
-				delete = "10s"
-			}
-		}
-
-		resource "buildkite_cluster" "test_cluster" {
-			name = "%s_test_cluster"
-		}
-
-		resource "buildkite_cluster_maintainer" "test_user" {
-			cluster_uuid = buildkite_cluster.test_cluster.uuid
-			user_uuid    = "%s"
-		}
-		`, clusterName, userID)
-	}
-
-	clusterName := acctest.RandString(12)
-	userID := "8db2920e-3c60-48a7-a3f8-2584be374bac" // Real user UUID from test environment
-
-	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		CheckDestroy: testAccCheckClusterMaintainerDestroy,
-		Steps: []resource.TestStep{
-			{
-				ExternalProviders: map[string]resource.ExternalProvider{
-					"buildkite": {
-						VersionConstraint: "1.26.0", // Version before the rename
-						Source:            "buildkite/buildkite",
-					},
-				},
-				Config: basicV0(clusterName, userID),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckClusterMaintainerExists("buildkite_cluster_maintainer.test_user"),
-				),
-			},
-			{
-				ProtoV6ProviderFactories: protoV6ProviderFactories(),
-				Config:                   basicV1(clusterName, userID),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckClusterMaintainerExists("buildkite_cluster_maintainer.test_user"),
-					resource.TestCheckResourceAttr("buildkite_cluster_maintainer.test_user", "user_uuid", userID),
-					resource.TestCheckResourceAttrSet("buildkite_cluster_maintainer.test_user", "cluster_uuid"),
-					resource.TestCheckResourceAttrSet("buildkite_cluster_maintainer.test_user", "actor_uuid"),
-				),
-			},
-		},
-	})
 }
