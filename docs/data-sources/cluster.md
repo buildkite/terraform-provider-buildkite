@@ -48,8 +48,8 @@ resource "buildkite_pipeline" "terraform-provider-buildkite" {
 Read-Only:
 
 - `actor_email` (String) The email of the actor (only for users).
-- `actor_id` (String) The UUID of the actor (user or team).
 - `actor_name` (String) The name of the actor.
 - `actor_slug` (String) The slug of the actor (only for teams).
 - `actor_type` (String) The type of the actor (user or team).
-- `permission_id` (String) The permission ID of the maintainer.
+- `actor_uuid` (String) The UUID of the actor (user or team).
+- `permission_uuid` (String) The UUID of the maintainer permission.

@@ -18,12 +18,12 @@ import (
 
 // Shared maintainer types for data sources
 type maintainerModel struct {
-	PermissionID types.String `tfsdk:"permission_id"`
-	ActorID      types.String `tfsdk:"actor_id"`
-	ActorType    types.String `tfsdk:"actor_type"`
-	ActorName    types.String `tfsdk:"actor_name"`
-	ActorEmail   types.String `tfsdk:"actor_email"`
-	ActorSlug    types.String `tfsdk:"actor_slug"`
+	PermissionUUID types.String `tfsdk:"permission_uuid"`
+	ActorUUID      types.String `tfsdk:"actor_uuid"`
+	ActorType      types.String `tfsdk:"actor_type"`
+	ActorName      types.String `tfsdk:"actor_name"`
+	ActorEmail     types.String `tfsdk:"actor_email"`
+	ActorSlug      types.String `tfsdk:"actor_slug"`
 }
 
 type clusterMaintainerResource struct {
@@ -31,15 +31,15 @@ type clusterMaintainerResource struct {
 }
 
 type clusterMaintainerResourceModel struct {
-	ID         types.String `tfsdk:"id"`
-	ClusterID  types.String `tfsdk:"cluster_id"`
-	UserID     types.String `tfsdk:"user_id"`
-	TeamID     types.String `tfsdk:"team_id"`
-	ActorID    types.String `tfsdk:"actor_id"`
-	ActorType  types.String `tfsdk:"actor_type"`
-	ActorName  types.String `tfsdk:"actor_name"`
-	ActorEmail types.String `tfsdk:"actor_email"`
-	ActorSlug  types.String `tfsdk:"actor_slug"`
+	ID          types.String `tfsdk:"id"`
+	ClusterUUID types.String `tfsdk:"cluster_uuid"`
+	UserUUID    types.String `tfsdk:"user_uuid"`
+	TeamUUID    types.String `tfsdk:"team_uuid"`
+	ActorUUID   types.String `tfsdk:"actor_uuid"`
+	ActorType   types.String `tfsdk:"actor_type"`
+	ActorName   types.String `tfsdk:"actor_name"`
+	ActorEmail  types.String `tfsdk:"actor_email"`
+	ActorSlug   types.String `tfsdk:"actor_slug"`
 }
 
 type clusterMaintainerAPIResponse struct {
@@ -77,6 +77,7 @@ func (c *clusterMaintainerResource) Configure(ctx context.Context, req resource.
 
 func (c *clusterMaintainerResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = resource_schema.Schema{
+		Version: 1,
 		MarkdownDescription: heredoc.Doc(`
 			This resource allows you to manage cluster maintainers in Buildkite. Maintainers can be either users or teams
 			that have permission to manage a specific cluster. Find out more information in our
@@ -90,34 +91,34 @@ func (c *clusterMaintainerResource) Schema(ctx context.Context, req resource.Sch
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
-			"cluster_id": resource_schema.StringAttribute{
+			"cluster_uuid": resource_schema.StringAttribute{
 				MarkdownDescription: "The UUID of the cluster.",
 				Required:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
-			"user_id": resource_schema.StringAttribute{
+			"user_uuid": resource_schema.StringAttribute{
 				MarkdownDescription: heredoc.Doc(`
-					The UUID of the user to add as a maintainer. This is mutually exclusive with team_id.
-					Only one of user_id or team_id can be specified.
+					The UUID of the user to add as a maintainer. This is mutually exclusive with team_uuid.
+					Only one of user_uuid or team_uuid can be specified.
 				`),
 				Optional: true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
-			"team_id": resource_schema.StringAttribute{
+			"team_uuid": resource_schema.StringAttribute{
 				MarkdownDescription: heredoc.Doc(`
-					The UUID of the team to add as a maintainer. This is mutually exclusive with user_id.
-					Only one of user_id or team_id can be specified.
+					The UUID of the team to add as a maintainer. This is mutually exclusive with user_uuid.
+					Only one of user_uuid or team_uuid can be specified.
 				`),
 				Optional: true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
-			"actor_id": resource_schema.StringAttribute{
+			"actor_uuid": resource_schema.StringAttribute{
 				Computed:            true,
 				MarkdownDescription: "The UUID of the actor (user or team) that is the maintainer.",
 			},
@@ -150,22 +151,22 @@ func (c *clusterMaintainerResource) Create(ctx context.Context, req resource.Cre
 		return
 	}
 
-	// Validate that exactly one of user_id or team_id is specified
-	userIDSet := !state.UserID.IsNull() && !state.UserID.IsUnknown() && state.UserID.ValueString() != ""
-	teamIDSet := !state.TeamID.IsNull() && !state.TeamID.IsUnknown() && state.TeamID.ValueString() != ""
+	// Validate that exactly one of user_uuid or team_uuid is specified
+	userUUIDSet := !state.UserUUID.IsNull() && !state.UserUUID.IsUnknown() && state.UserUUID.ValueString() != ""
+	teamUUIDSet := !state.TeamUUID.IsNull() && !state.TeamUUID.IsUnknown() && state.TeamUUID.ValueString() != ""
 
-	if !userIDSet && !teamIDSet {
+	if !userUUIDSet && !teamUUIDSet {
 		resp.Diagnostics.AddError(
 			"Invalid configuration",
-			"Either user_id or team_id must be specified",
+			"Either user_uuid or team_uuid must be specified",
 		)
 		return
 	}
 
-	if userIDSet && teamIDSet {
+	if userUUIDSet && teamUUIDSet {
 		resp.Diagnostics.AddError(
 			"Invalid configuration",
-			"Only one of user_id or team_id can be specified, not both",
+			"Only one of user_uuid or team_uuid can be specified, not both",
 		)
 		return
 	}
@@ -286,20 +287,31 @@ func (c *clusterMaintainerResource) Delete(ctx context.Context, req resource.Del
 }
 
 func (c *clusterMaintainerResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	// Import format: {cluster_id}/{permission_id}
+	// Import format: {cluster_uuid}/{permission_uuid}
 	parts := strings.Split(req.ID, "/")
 	if len(parts) != 2 {
 		resp.Diagnostics.AddError(
 			"Invalid import format",
-			"Expected format: {cluster_id}/{permission_id}",
+			"Expected format: {cluster_uuid}/{permission_uuid}",
 		)
 		return
 	}
 
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("cluster_id"), parts[0])...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("cluster_uuid"), parts[0])...)
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), parts[1])...)
 
 	// The Read method will populate the rest of the state
+}
+
+func (c *clusterMaintainerResource) UpgradeState(ctx context.Context) map[int64]resource.StateUpgrader {
+	schemaV0 := clusterMaintainerSchemaV0()
+	return map[int64]resource.StateUpgrader{
+		// State upgrade from Version 0 (cluster_id, user_id, team_id, actor_id) to Version 1 (cluster_uuid, user_uuid, team_uuid, actor_uuid)
+		0: {
+			PriorSchema:   &schemaV0,
+			StateUpgrader: upgradeClusterMaintainerStateV0toV1,
+		},
+	}
 }
 
 // API helper functions
@@ -307,17 +319,17 @@ func (c *clusterMaintainerResource) ImportState(ctx context.Context, req resourc
 func (c *clusterMaintainerResource) createClusterMaintainer(ctx context.Context, state *clusterMaintainerResourceModel) (*clusterMaintainerAPIResponse, error) {
 	path := fmt.Sprintf("/v2/organizations/%s/clusters/%s/maintainers",
 		c.client.organization,
-		state.ClusterID.ValueString(),
+		state.ClusterUUID.ValueString(),
 	)
 
 	reqBody := clusterMaintainerCreateRequest{}
-	if !state.UserID.IsNull() && state.UserID.ValueString() != "" {
-		userID := state.UserID.ValueString()
-		reqBody.User = &userID
+	if !state.UserUUID.IsNull() && state.UserUUID.ValueString() != "" {
+		userUUID := state.UserUUID.ValueString()
+		reqBody.User = &userUUID
 	}
-	if !state.TeamID.IsNull() && state.TeamID.ValueString() != "" {
-		teamID := state.TeamID.ValueString()
-		reqBody.Team = &teamID
+	if !state.TeamUUID.IsNull() && state.TeamUUID.ValueString() != "" {
+		teamUUID := state.TeamUUID.ValueString()
+		reqBody.Team = &teamUUID
 	}
 
 	var result clusterMaintainerAPIResponse
@@ -332,7 +344,7 @@ func (c *clusterMaintainerResource) createClusterMaintainer(ctx context.Context,
 func (c *clusterMaintainerResource) getClusterMaintainer(ctx context.Context, state *clusterMaintainerResourceModel) (*clusterMaintainerAPIResponse, error) {
 	path := fmt.Sprintf("/v2/organizations/%s/clusters/%s/maintainers/%s",
 		c.client.organization,
-		state.ClusterID.ValueString(),
+		state.ClusterUUID.ValueString(),
 		state.ID.ValueString(),
 	)
 
@@ -348,7 +360,7 @@ func (c *clusterMaintainerResource) getClusterMaintainer(ctx context.Context, st
 func (c *clusterMaintainerResource) deleteClusterMaintainer(ctx context.Context, state *clusterMaintainerResourceModel) error {
 	path := fmt.Sprintf("/v2/organizations/%s/clusters/%s/maintainers/%s",
 		c.client.organization,
-		state.ClusterID.ValueString(),
+		state.ClusterUUID.ValueString(),
 		state.ID.ValueString(),
 	)
 
@@ -362,7 +374,7 @@ func (c *clusterMaintainerResource) deleteClusterMaintainer(ctx context.Context,
 
 func (c *clusterMaintainerResource) updateStateFromAPIResponse(state *clusterMaintainerResourceModel, result *clusterMaintainerAPIResponse) {
 	state.ID = types.StringValue(result.ID)
-	state.ActorID = types.StringValue(result.Actor.ID)
+	state.ActorUUID = types.StringValue(result.Actor.ID)
 	state.ActorType = types.StringValue(result.Actor.Type)
 
 	if result.Actor.Name != nil {
@@ -383,14 +395,14 @@ func (c *clusterMaintainerResource) updateStateFromAPIResponse(state *clusterMai
 		state.ActorSlug = types.StringNull()
 	}
 
-	// Ensure the correct user_id or team_id is set based on actor type
+	// Ensure the correct user_uuid or team_uuid is set based on actor type
 	switch result.Actor.Type {
 	case "user":
-		state.UserID = types.StringValue(result.Actor.ID)
-		state.TeamID = types.StringNull()
+		state.UserUUID = types.StringValue(result.Actor.ID)
+		state.TeamUUID = types.StringNull()
 	case "team":
-		state.TeamID = types.StringValue(result.Actor.ID)
-		state.UserID = types.StringNull()
+		state.TeamUUID = types.StringValue(result.Actor.ID)
+		state.UserUUID = types.StringNull()
 	}
 }
 
@@ -415,9 +427,9 @@ func (c *Client) listClusterMaintainers(ctx context.Context, orgSlug, clusterID 
 	maintainers := make([]maintainerModel, len(apiResponse))
 	for i, maintainer := range apiResponse {
 		maintainers[i] = maintainerModel{
-			PermissionID: types.StringValue(maintainer.ID),
-			ActorID:      types.StringValue(maintainer.Actor.ID),
-			ActorType:    types.StringValue(maintainer.Actor.Type),
+			PermissionUUID: types.StringValue(maintainer.ID),
+			ActorUUID:      types.StringValue(maintainer.Actor.ID),
+			ActorType:      types.StringValue(maintainer.Actor.Type),
 		}
 
 		if maintainer.Actor.Name != nil {
@@ -440,4 +452,76 @@ func (c *Client) listClusterMaintainers(ctx context.Context, orgSlug, clusterID 
 	}
 
 	return maintainers, nil
+}
+
+// clusterMaintainerSchemaV0 returns the schema for version 0 of the cluster maintainer resource
+func clusterMaintainerSchemaV0() resource_schema.Schema {
+	return resource_schema.Schema{
+		Attributes: map[string]resource_schema.Attribute{
+			"id": resource_schema.StringAttribute{
+				Computed: true,
+			},
+			"cluster_id": resource_schema.StringAttribute{
+				Required: true,
+			},
+			"user_id": resource_schema.StringAttribute{
+				Optional: true,
+			},
+			"team_id": resource_schema.StringAttribute{
+				Optional: true,
+			},
+			"actor_id": resource_schema.StringAttribute{
+				Computed: true,
+			},
+			"actor_type": resource_schema.StringAttribute{
+				Computed: true,
+			},
+			"actor_name": resource_schema.StringAttribute{
+				Computed: true,
+			},
+			"actor_email": resource_schema.StringAttribute{
+				Computed: true,
+			},
+			"actor_slug": resource_schema.StringAttribute{
+				Computed: true,
+			},
+		},
+	}
+}
+
+// upgradeClusterMaintainerStateV0toV1 migrates state from version 0 to version 1
+func upgradeClusterMaintainerStateV0toV1(ctx context.Context, req resource.UpgradeStateRequest, resp *resource.UpgradeStateResponse) {
+	type clusterMaintainerResourceModelV0 struct {
+		ID         types.String `tfsdk:"id"`
+		ClusterID  types.String `tfsdk:"cluster_id"`
+		UserID     types.String `tfsdk:"user_id"`
+		TeamID     types.String `tfsdk:"team_id"`
+		ActorID    types.String `tfsdk:"actor_id"`
+		ActorType  types.String `tfsdk:"actor_type"`
+		ActorName  types.String `tfsdk:"actor_name"`
+		ActorEmail types.String `tfsdk:"actor_email"`
+		ActorSlug  types.String `tfsdk:"actor_slug"`
+	}
+
+	var modelV0 clusterMaintainerResourceModelV0
+
+	resp.Diagnostics.Append(req.State.Get(ctx, &modelV0)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// Map old attribute names to new attribute names
+	modelV1 := clusterMaintainerResourceModel{
+		ID:          modelV0.ID,
+		ClusterUUID: modelV0.ClusterID,
+		UserUUID:    modelV0.UserID,
+		TeamUUID:    modelV0.TeamID,
+		ActorUUID:   modelV0.ActorID,
+		ActorType:   modelV0.ActorType,
+		ActorName:   modelV0.ActorName,
+		ActorEmail:  modelV0.ActorEmail,
+		ActorSlug:   modelV0.ActorSlug,
+	}
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, modelV1)...)
 }

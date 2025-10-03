@@ -1,7 +1,7 @@
 resource "buildkite_registry" "example" {
-  name = "example"
+  name        = "example"
   description = "super cool ruby registry"
-  ecosystem = "ruby"
-  emoji = ":ruby:"
-  color = "#ff0000"
+  ecosystem   = "ruby"
+  emoji       = ":ruby:"
+  color       = "#ff0000"
 }
