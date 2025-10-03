@@ -55,8 +55,15 @@ func TestAccBuildkitePortal(t *testing.T) {
 					Check:  check,
 				},
 				{
-					ResourceName:      "buildkite_portal.test",
-					ImportState:       true,
+					ResourceName: "buildkite_portal.test",
+					ImportState:  true,
+					ImportStateIdFunc: func(s *terraform.State) (string, error) {
+						rs, ok := s.RootModule().Resources["buildkite_portal.test"]
+						if !ok {
+							return "", fmt.Errorf("resource not found: %s", "buildkite_portal.test")
+						}
+						return rs.Primary.Attributes["slug"], nil
+					},
 					ImportStateVerify: true,
 				},
 			},
