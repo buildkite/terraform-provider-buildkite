@@ -344,7 +344,31 @@ func TestAccBuildkiteClusterMaintainerResource_StateUpgradeV0toV1(t *testing.T) 
 	// This ensures existing resources with cluster_id, user_id, team_id, and actor_id
 	// are automatically migrated to cluster_uuid, user_uuid, team_uuid, and actor_uuid
 
-	basic := func(clusterName, userID string) string {
+	// Config for old provider version (uses old attribute names)
+	basicV0 := func(clusterName, userID string) string {
+		return fmt.Sprintf(`
+		provider "buildkite" {
+			timeouts = {
+				create = "10s"
+				read = "10s"
+				update = "10s"
+				delete = "10s"
+			}
+		}
+
+		resource "buildkite_cluster" "test_cluster" {
+			name = "%s_test_cluster"
+		}
+
+		resource "buildkite_cluster_maintainer" "test_user" {
+			cluster_id = buildkite_cluster.test_cluster.uuid
+			user_id    = "%s"
+		}
+		`, clusterName, userID)
+	}
+
+	// Config for new provider version (uses new attribute names)
+	basicV1 := func(clusterName, userID string) string {
 		return fmt.Sprintf(`
 		provider "buildkite" {
 			timeouts = {
@@ -380,14 +404,14 @@ func TestAccBuildkiteClusterMaintainerResource_StateUpgradeV0toV1(t *testing.T) 
 						Source:            "buildkite/buildkite",
 					},
 				},
-				Config: basic(clusterName, userID),
+				Config: basicV0(clusterName, userID),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckClusterMaintainerExists("buildkite_cluster_maintainer.test_user"),
 				),
 			},
 			{
 				ProtoV6ProviderFactories: protoV6ProviderFactories(),
-				Config:                   basic(clusterName, userID),
+				Config:                   basicV1(clusterName, userID),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckClusterMaintainerExists("buildkite_cluster_maintainer.test_user"),
 					resource.TestCheckResourceAttr("buildkite_cluster_maintainer.test_user", "user_uuid", userID),
