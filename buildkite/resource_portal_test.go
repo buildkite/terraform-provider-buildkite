@@ -54,6 +54,11 @@ func TestAccBuildkitePortal(t *testing.T) {
 					Config: basic(randName),
 					Check:  check,
 				},
+				{
+					ResourceName:      "buildkite_portal.test",
+					ImportState:       true,
+					ImportStateVerify: true,
+				},
 			},
 		})
 	})
