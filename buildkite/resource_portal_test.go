@@ -64,7 +64,8 @@ func TestAccBuildkitePortal(t *testing.T) {
 						}
 						return rs.Primary.Attributes["slug"], nil
 					},
-					ImportStateVerify: true,
+					ImportStateVerify:                    true,
+					ImportStateVerifyIdentifierAttribute: "slug",
 				},
 			},
 		})
