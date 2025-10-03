@@ -66,6 +66,7 @@ func TestAccBuildkitePortal(t *testing.T) {
 					},
 					ImportStateVerify:                    true,
 					ImportStateVerifyIdentifierAttribute: "slug",
+					ImportStateVerifyIgnore:              []string{"token"},
 				},
 			},
 		})
