@@ -3,12 +3,12 @@
 page_title: "buildkite_portal Data Source - terraform-provider-buildkite"
 subcategory: ""
 description: |-
-  Use this data source to retrieve a portal by slug.
+  Use this data source to retrieve a portal by slug. You can find out more about portals in the Buildkite documentation https://buildkite.com/docs/apis/portals.
 ---
 
 # buildkite_portal (Data Source)
 
-Use this data source to retrieve a portal by slug.
+Use this data source to retrieve a portal by slug. You can find out more about portals in the Buildkite [documentation](https://buildkite.com/docs/apis/portals).
 
 ## Example Usage
 

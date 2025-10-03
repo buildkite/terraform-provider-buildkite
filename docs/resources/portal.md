@@ -97,3 +97,25 @@ Read-Only:
 - `email` (String) The email of the user.
 - `name` (String) The name of the user.
 - `uuid` (String) The UUID of the user.
+
+## Import
+
+Using `terraform import`, import resources using the `id`. For example:
+```shell
+# import a portal resource using the portal slug
+#
+# you can find the slug from the Buildkite web UI in the portal's URL:
+# https://buildkite.com/organizations/{org}/portals/{slug}
+#
+# or by listing all portals via the REST API:
+# GET https://api.buildkite.com/v2/organizations/{org}/portals
+terraform import buildkite_portal.viewer viewer-info
+```
+
+In Terraform v1.5.0 and later, use an [`import` block](https://developer.hashicorp.com/terraform/language/import) to import instances using the `id`. For example:
+```terraform
+import {
+  to = buildkite_portal.viewer
+  id = "viewer-info"
+}
+```
