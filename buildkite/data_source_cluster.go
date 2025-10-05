@@ -145,11 +145,11 @@ func (*clusterDatasource) Schema(ctx context.Context, req datasource.SchemaReque
 				MarkdownDescription: "List of maintainers (users and teams) for this cluster.",
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
-						"permission_id": schema.StringAttribute{
+						"permission_uuid": schema.StringAttribute{
 							Computed:            true,
-							MarkdownDescription: "The permission ID of the maintainer.",
+							MarkdownDescription: "The UUID of the maintainer permission.",
 						},
-						"actor_id": schema.StringAttribute{
+						"actor_uuid": schema.StringAttribute{
 							Computed:            true,
 							MarkdownDescription: "The UUID of the actor (user or team).",
 						},
