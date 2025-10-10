@@ -249,6 +249,7 @@ func (ob *organizationBannerResource) Delete(ctx context.Context, req resource.D
 		// Handle the case where banner was already deleted (doesn't exist)
 		if strings.Contains(err.Error(), "does not have an active banner") {
 			log.Printf("Organization banner %s already deleted", state.ID.ValueString())
+			resp.State.RemoveResource(ctx)
 			return
 		}
 		resp.Diagnostics.AddError(
