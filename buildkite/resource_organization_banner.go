@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/MakeNowJust/heredoc"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -154,6 +155,13 @@ func (ob *organizationBannerResource) Read(ctx context.Context, req resource.Rea
 		return
 	}
 
+	// Check if banner exists (drift detection)
+	if len(r.Organization.Banners.Edges) == 0 {
+		log.Printf("Organization banner %s no longer exists, removing from state", state.ID.ValueString())
+		resp.State.RemoveResource(ctx)
+		return
+	}
+
 	log.Printf("Found organization banner %s", state.ID.ValueString())
 	// Update organizationBannerResourceModel with the first element in the response Edges (only one banner can exist)
 	updateOrganizationBannerResource(r.Organization.Banners.Edges[0].Node, &state)
@@ -238,6 +246,12 @@ func (ob *organizationBannerResource) Delete(ctx context.Context, req resource.D
 		return retryContextError(err)
 	})
 	if err != nil {
+		// Handle the case where banner was already deleted (doesn't exist)
+		if strings.Contains(err.Error(), "does not have an active banner") {
+			log.Printf("Organization banner %s already deleted", state.ID.ValueString())
+			resp.State.RemoveResource(ctx)
+			return
+		}
 		resp.Diagnostics.AddError(
 			"Unable to delete organization banner",
 			fmt.Sprintf("Unable to delete organization banner %s", err.Error()),
