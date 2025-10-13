@@ -1,5 +1,15 @@
 # Changelog
 
+## [v1.26.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.25.0...v1.26.0)
+
+### Features
+- Create cluster maintainer resource, data source attributes by @petetomasik in https://github.com/buildkite/terraform-provider-buildkite/pull/987
+- Add support for merge queue settings to terraform provider by @jonathanly in https://github.com/buildkite/terraform-provider-buildkite/pull/982
+
+### Dependencies
+- chore(deps): bump github.com/hashicorp/terraform-plugin-framework-timeouts from 0.5.0 to 0.6.0 by @dependabot[bot] in https://github.com/buildkite/terraform-provider-buildkite/pull/984
+- chore(deps): bump github.com/hashicorp/terraform-plugin-sdk/v2 from 2.37.0 to 2.38.1 by @dependabot[bot] in https://github.com/buildkite/terraform-provider-buildkite/pull/983
+
 ## [v1.25.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.24.0...v1.25.0)
 
 - Trim white space for provider config string values by @aryounce in https://github.com/buildkite/terraform-provider-buildkite/pull/974
