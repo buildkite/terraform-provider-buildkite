@@ -195,14 +195,9 @@ If you encounter any issues or have suggestions for improvements, please open an
 
 ## Getting API Tokens
 
-To develop and test the provider, you'll need an API token with:
+To develop and test the provider, you'll need an API token with permissions suitable for the actions you want to perform. It's recommended that you create a dedicated organization for Terraform plugin development, given the broad range of permissions required.
 
-- `write_pipelines` scope
-- `read_pipelines` scope
-- `write_suites` scope
-- GraphQL API access enabled
-
-You can generate one here: https://buildkite.com/user/api-access-tokens/new?description=terraform&scopes[]=write_pipelines&scopes[]=write_suites&scopes[]=read_pipelines&scopes[]=graphql
+You can generate one here: https://buildkite.com/user/api-access-tokens/new?description=terraform
 
 ## Contact
 
