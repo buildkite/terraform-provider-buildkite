@@ -64,10 +64,18 @@ func (pipelineTeamResource) Schema(ctx context.Context, req resource.SchemaReque
 			"team_id": resource_schema.StringAttribute{
 				Required:            true,
 				MarkdownDescription: "The GraphQL ID of the team.",
+				// GraphQL Query teamPipelineUpdate cannot change Team ID used for pipeline team relationship
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"pipeline_id": resource_schema.StringAttribute{
 				Required:            true,
 				MarkdownDescription: "The GraphQL ID of the pipeline.",
+				// GraphQL Query teamPipelineUpdate cannot change Pipeline ID used for pipeline team relationship
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"access_level": resource_schema.StringAttribute{
 				Required:            true,
