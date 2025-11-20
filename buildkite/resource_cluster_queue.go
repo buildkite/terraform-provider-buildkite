@@ -323,18 +323,25 @@ func (cq *clusterQueueResource) Create(ctx context.Context, req resource.CreateR
 	state.Key = types.StringValue(r.ClusterQueueCreate.ClusterQueue.Key)
 	state.Description = types.StringPointerValue(r.ClusterQueueCreate.ClusterQueue.Description)
 
-	state.DispatchPaused = types.BoolValue(false) // Start with false, update below if needed
+	state.DispatchPaused = types.BoolValue(false)
 
-	retryAffinity, err := cq.syncRetryAgentAffinity(ctx, &plan, &state)
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Unable to set retry_agent_affinity",
-			fmt.Sprintf("Queue %s created but couldn't set retry_agent_affinity: %s", state.Key.ValueString(), err.Error()),
-		)
-		resp.State.Set(ctx, &state)
-		return
+	desiredAffinity := RetryAgentAffinityPreferWarmest
+	if !plan.RetryAgentAffinity.IsNull() && !plan.RetryAgentAffinity.IsUnknown() {
+		desiredAffinity = plan.RetryAgentAffinity.ValueString()
 	}
-	state.RetryAgentAffinity = retryAffinity
+
+	if desiredAffinity != RetryAgentAffinityPreferWarmest {
+		err := cq.updateClusterQueueViaREST(ctx, state.ClusterUuid.ValueString(), state.Uuid.ValueString(), desiredAffinity)
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Unable to set retry_agent_affinity",
+				fmt.Sprintf("Queue %s created but retry_agent_affinity could not be set: %s", state.Key.ValueString(), err.Error()),
+			)
+			resp.State.Set(ctx, &state)
+			return
+		}
+	}
+	state.RetryAgentAffinity = types.StringValue(desiredAffinity)
 
 	// GraphQL API does not allow Cluster Queue to be created with Dispatch Paused
 	// so Pause Dispatch after creation if required
@@ -422,18 +429,18 @@ func (cq *clusterQueueResource) Read(ctx context.Context, req resource.ReadReque
 	}
 
 	log.Printf("Found cluster queue with ID %s", clusterQueue.Id)
-	// Update ClusterQueueResourceModel with Node values
 	updateClusterQueueResourceFromNode(*clusterQueue, &state)
 
 	restResponse, err := cq.getClusterQueueViaREST(ctx, state.ClusterUuid.ValueString(), state.Uuid.ValueString())
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Unable to read cluster queue",
-			fmt.Sprintf("Failed to fetch cluster queue %s: %s", state.Key.ValueString(), err.Error()),
+		resp.Diagnostics.AddWarning(
+			"Unable to read retry_agent_affinity",
+			fmt.Sprintf("Queue %s read successfully but retry_agent_affinity is unavailable: %s. Defaulting to prefer-warmest.", state.Key.ValueString(), err.Error()),
 		)
-		return
+		state.RetryAgentAffinity = types.StringValue(RetryAgentAffinityPreferWarmest)
+	} else {
+		state.RetryAgentAffinity = types.StringValue(restResponse.RetryAgentAffinity)
 	}
-	state.RetryAgentAffinity = types.StringValue(restResponse.RetryAgentAffinity)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
@@ -562,16 +569,19 @@ func (cq *clusterQueueResource) Update(ctx context.Context, req resource.UpdateR
 	state.Description = types.StringPointerValue(r.ClusterQueueUpdate.ClusterQueue.Description)
 	state.DispatchPaused = types.BoolValue(r.ClusterQueueUpdate.ClusterQueue.DispatchPaused)
 
-	retryAffinity, err := cq.syncRetryAgentAffinity(ctx, &plan, &state)
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Unable to update retry_agent_affinity",
-			fmt.Sprintf("Couldn't update retry_agent_affinity for queue %s: %s", state.Key.ValueString(), err.Error()),
-		)
-		resp.State.Set(ctx, &state)
-		return
+	if !plan.RetryAgentAffinity.Equal(state.RetryAgentAffinity) {
+		desiredAffinity := plan.RetryAgentAffinity.ValueString()
+		err := cq.updateClusterQueueViaREST(ctx, state.ClusterUuid.ValueString(), state.Uuid.ValueString(), desiredAffinity)
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Unable to update retry_agent_affinity",
+				fmt.Sprintf("Unable to update retry_agent_affinity for queue %s: %s", state.Key.ValueString(), err.Error()),
+			)
+			resp.State.Set(ctx, &state)
+			return
+		}
+		state.RetryAgentAffinity = types.StringValue(desiredAffinity)
 	}
-	state.RetryAgentAffinity = retryAffinity
 
 	if state.HostedAgents != nil {
 		state.HostedAgents = &hostedAgentResourceModel{
@@ -802,8 +812,8 @@ func (cq *clusterQueueResource) updateClusterQueueViaREST(ctx context.Context, c
 	if clusterUuid == "" || queueUuid == "" {
 		return fmt.Errorf("clusterUuid and queueUuid must not be empty")
 	}
-	if retryAgentAffinity == "" {
-		return fmt.Errorf("retryAgentAffinity must not be empty")
+	if retryAgentAffinity != RetryAgentAffinityPreferWarmest && retryAgentAffinity != RetryAgentAffinityPreferDifferent {
+		return fmt.Errorf("invalid retry_agent_affinity value: %s", retryAgentAffinity)
 	}
 	path := fmt.Sprintf("/v2/organizations/%s/clusters/%s/queues/%s", cq.client.organization, clusterUuid, queueUuid)
 	payload := map[string]interface{}{
@@ -811,26 +821,4 @@ func (cq *clusterQueueResource) updateClusterQueueViaREST(ctx context.Context, c
 	}
 	var response clusterQueueRestResponse
 	return cq.client.makeRequest(ctx, "PATCH", path, payload, &response)
-}
-
-func (cq *clusterQueueResource) syncRetryAgentAffinity(ctx context.Context, plan, state *clusterQueueResourceModel) (types.String, error) {
-	if state.ClusterUuid.IsNull() || state.Uuid.IsNull() {
-		return types.StringNull(), fmt.Errorf("cluster_uuid and uuid must be set before syncing retry_agent_affinity")
-	}
-
-	desiredValue := RetryAgentAffinityPreferWarmest
-	if !plan.RetryAgentAffinity.IsNull() && !plan.RetryAgentAffinity.IsUnknown() {
-		desiredValue = plan.RetryAgentAffinity.ValueString()
-	}
-
-	currentValue := state.RetryAgentAffinity.ValueString()
-
-	if currentValue == "" || currentValue != desiredValue {
-		err := cq.updateClusterQueueViaREST(ctx, state.ClusterUuid.ValueString(), state.Uuid.ValueString(), desiredValue)
-		if err != nil {
-			return types.StringNull(), err
-		}
-	}
-
-	return types.StringValue(desiredValue), nil
 }
