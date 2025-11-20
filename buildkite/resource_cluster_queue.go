@@ -812,7 +812,8 @@ func (cq *clusterQueueResource) updateClusterQueueViaREST(ctx context.Context, c
 	payload := map[string]interface{}{
 		"retry_agent_affinity": retryAgentAffinity,
 	}
-	return cq.client.makeRequest(ctx, "PATCH", path, payload, nil)
+	var response clusterQueueRestResponse
+	return cq.client.makeRequest(ctx, "PATCH", path, payload, &response)
 }
 
 func (cq *clusterQueueResource) syncRetryAgentAffinity(ctx context.Context, plan, state *clusterQueueResourceModel) (types.String, error) {
