@@ -795,9 +795,6 @@ func (cq *clusterQueueResource) getClusterQueueViaREST(ctx context.Context, clus
 	if err != nil {
 		return nil, err
 	}
-	if response.RetryAgentAffinity != RetryAgentAffinityPreferWarmest && response.RetryAgentAffinity != RetryAgentAffinityPreferDifferent {
-		return nil, fmt.Errorf("invalid retry_agent_affinity value: %s", response.RetryAgentAffinity)
-	}
 	return &response, nil
 }
 
