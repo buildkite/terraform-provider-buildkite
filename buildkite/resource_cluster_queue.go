@@ -746,3 +746,59 @@ func (cq *clusterQueueResource) resumeDispatch(ctx context.Context, timeout time
 
 	return err
 }
+
+type clusterQueueRestResponse struct {
+	RetryAgentAffinity string `json:"retry_agent_affinity"`
+}
+
+func (cq *clusterQueueResource) getClusterQueueViaREST(ctx context.Context, clusterUuid, queueUuid string) (*clusterQueueRestResponse, error) {
+	if clusterUuid == "" || queueUuid == "" {
+		return nil, fmt.Errorf("clusterUuid and queueUuid must not be empty")
+	}
+	path := fmt.Sprintf("/v2/organizations/%s/clusters/%s/queues/%s", cq.client.organization, clusterUuid, queueUuid)
+	var response clusterQueueRestResponse
+	err := cq.client.makeRequest(ctx, "GET", path, nil, &response)
+	if err != nil {
+		return nil, err
+	}
+	if response.RetryAgentAffinity != RetryAgentAffinityPreferWarmest && response.RetryAgentAffinity != RetryAgentAffinityPreferDifferent {
+		return nil, fmt.Errorf("invalid retry_agent_affinity value: %s", response.RetryAgentAffinity)
+	}
+	return &response, nil
+}
+
+func (cq *clusterQueueResource) updateClusterQueueViaREST(ctx context.Context, clusterUuid, queueUuid string, retryAgentAffinity string) error {
+	if clusterUuid == "" || queueUuid == "" {
+		return fmt.Errorf("clusterUuid and queueUuid must not be empty")
+	}
+	if retryAgentAffinity == "" {
+		return fmt.Errorf("retryAgentAffinity must not be empty")
+	}
+	path := fmt.Sprintf("/v2/organizations/%s/clusters/%s/queues/%s", cq.client.organization, clusterUuid, queueUuid)
+	payload := map[string]interface{}{
+		"retry_agent_affinity": retryAgentAffinity,
+	}
+	return cq.client.makeRequest(ctx, "PATCH", path, payload, nil)
+}
+
+func (cq *clusterQueueResource) syncRetryAgentAffinity(ctx context.Context, plan, state *clusterQueueResourceModel) (types.String, error) {
+	if state.ClusterUuid.IsNull() || state.Uuid.IsNull() {
+		return types.StringNull(), fmt.Errorf("cluster_uuid and uuid must be set before syncing retry_agent_affinity")
+	}
+
+	desiredValue := RetryAgentAffinityPreferWarmest
+	if !plan.RetryAgentAffinity.IsNull() && !plan.RetryAgentAffinity.IsUnknown() {
+		desiredValue = plan.RetryAgentAffinity.ValueString()
+	}
+
+	currentValue := state.RetryAgentAffinity.ValueString()
+
+	if currentValue == "" || currentValue != desiredValue {
+		err := cq.updateClusterQueueViaREST(ctx, state.ClusterUuid.ValueString(), state.Uuid.ValueString(), desiredValue)
+		if err != nil {
+			return types.StringNull(), err
+		}
+	}
+
+	return types.StringValue(desiredValue), nil
+}
