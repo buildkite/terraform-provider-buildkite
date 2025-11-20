@@ -325,13 +325,24 @@ func (cq *clusterQueueResource) Create(ctx context.Context, req resource.CreateR
 
 	state.DispatchPaused = types.BoolValue(false) // Start with false, update below if needed
 
+	retryAffinity, err := cq.syncRetryAgentAffinity(ctx, &plan, &state)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Unable to set retry_agent_affinity",
+			fmt.Sprintf("Queue %s created but couldn't set retry_agent_affinity: %s", state.Key.ValueString(), err.Error()),
+		)
+		resp.State.Set(ctx, &state)
+		return
+	}
+	state.RetryAgentAffinity = retryAffinity
+
 	// GraphQL API does not allow Cluster Queue to be created with Dispatch Paused
 	// so Pause Dispatch after creation if required
 	if plan.DispatchPaused.ValueBool() {
 		log.Printf("Pausing dispatch on cluster queue with key %s", plan.Key.ValueString())
 		err = cq.pauseDispatch(ctx, timeout, state, &resp.Diagnostics)
 		if err != nil {
-			// Error is added to diagnostics within pauseDispatch
+			resp.State.Set(ctx, &state)
 			return
 		}
 		state.DispatchPaused = types.BoolValue(true)
@@ -413,6 +424,17 @@ func (cq *clusterQueueResource) Read(ctx context.Context, req resource.ReadReque
 	log.Printf("Found cluster queue with ID %s", clusterQueue.Id)
 	// Update ClusterQueueResourceModel with Node values
 	updateClusterQueueResourceFromNode(*clusterQueue, &state)
+
+	restResponse, err := cq.getClusterQueueViaREST(ctx, state.ClusterUuid.ValueString(), state.Uuid.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Unable to read cluster queue",
+			fmt.Sprintf("Failed to fetch cluster queue %s: %s", state.Key.ValueString(), err.Error()),
+		)
+		return
+	}
+	state.RetryAgentAffinity = types.StringValue(restResponse.RetryAgentAffinity)
+
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
@@ -539,6 +561,18 @@ func (cq *clusterQueueResource) Update(ctx context.Context, req resource.UpdateR
 
 	state.Description = types.StringPointerValue(r.ClusterQueueUpdate.ClusterQueue.Description)
 	state.DispatchPaused = types.BoolValue(r.ClusterQueueUpdate.ClusterQueue.DispatchPaused)
+
+	retryAffinity, err := cq.syncRetryAgentAffinity(ctx, &plan, &state)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Unable to update retry_agent_affinity",
+			fmt.Sprintf("Couldn't update retry_agent_affinity for queue %s: %s", state.Key.ValueString(), err.Error()),
+		)
+		resp.State.Set(ctx, &state)
+		return
+	}
+	state.RetryAgentAffinity = retryAffinity
+
 	if state.HostedAgents != nil {
 		state.HostedAgents = &hostedAgentResourceModel{
 			InstanceShape: types.StringValue(string(r.ClusterQueueUpdate.ClusterQueue.HostedAgents.InstanceShape.Name)),
