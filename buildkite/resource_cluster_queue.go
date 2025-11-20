@@ -16,6 +16,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/objectplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -39,6 +40,9 @@ const (
 	MacOSSonoma  string = "SONOMA"
 	MacOSSequoia string = "SEQUOIA"
 	MacOSTahoe   string = "TAHOE"
+
+	RetryAgentAffinityPreferWarmest   string = "prefer-warmest"
+	RetryAgentAffinityPreferDifferent string = "prefer-different"
 )
 
 var MacInstanceShapes = []string{
@@ -64,14 +68,15 @@ var MacOSVersions = []string{
 }
 
 type clusterQueueResourceModel struct {
-	Id             types.String              `tfsdk:"id"`
-	Uuid           types.String              `tfsdk:"uuid"`
-	ClusterId      types.String              `tfsdk:"cluster_id"`
-	ClusterUuid    types.String              `tfsdk:"cluster_uuid"`
-	Key            types.String              `tfsdk:"key"`
-	Description    types.String              `tfsdk:"description"`
-	DispatchPaused types.Bool                `tfsdk:"dispatch_paused"`
-	HostedAgents   *hostedAgentResourceModel `tfsdk:"hosted_agents"`
+	Id                 types.String              `tfsdk:"id"`
+	Uuid               types.String              `tfsdk:"uuid"`
+	ClusterId          types.String              `tfsdk:"cluster_id"`
+	ClusterUuid        types.String              `tfsdk:"cluster_uuid"`
+	Key                types.String              `tfsdk:"key"`
+	Description        types.String              `tfsdk:"description"`
+	DispatchPaused     types.Bool                `tfsdk:"dispatch_paused"`
+	RetryAgentAffinity types.String              `tfsdk:"retry_agent_affinity"`
+	HostedAgents       *hostedAgentResourceModel `tfsdk:"hosted_agents"`
 }
 
 type hostedAgentResourceModel struct {
@@ -157,6 +162,15 @@ func (clusterQueueResource) Schema(ctx context.Context, req resource.SchemaReque
 				Computed:            true,
 				MarkdownDescription: "The dispatch state of a cluster queue.",
 				Default:             booldefault.StaticBool(false),
+			},
+			"retry_agent_affinity": resource_schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				MarkdownDescription: "Specifies which agent should be preferred when a job is retried. Valid values are `prefer-warmest` (prefer agents that have recently finished jobs) and `prefer-different` (prefer a different agent if available). Defaults to `prefer-warmest`.",
+				Default:             stringdefault.StaticString(RetryAgentAffinityPreferWarmest),
+				Validators: []validator.String{
+					stringvalidator.OneOf(RetryAgentAffinityPreferWarmest, RetryAgentAffinityPreferDifferent),
+				},
 			},
 			"hosted_agents": resource_schema.SingleNestedAttribute{
 				Optional:            true,
