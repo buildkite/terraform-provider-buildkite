@@ -61,6 +61,29 @@ func TestAccBuildkiteClusterQueueResource(t *testing.T) {
 		`, fields[0], fields[1], fields[2], fields[3])
 	}
 
+	configRetryAffinity := func(fields ...string) string {
+		return fmt.Sprintf(`
+		provider "buildkite" {
+			timeouts = {
+				create = "10s"
+				read = "10s"
+				update = "10s"
+				delete = "10s"
+			}
+		}
+		resource "buildkite_cluster" "cluster_test" {
+			name = "Test cluster %s"
+			description = "Acceptance testing cluster"
+		}
+		resource "buildkite_cluster_queue" "foobar" {
+			cluster_id = buildkite_cluster.cluster_test.id
+			key = "queue-%s"
+			description = "Acceptance test %s"
+			retry_agent_affinity = "%s"
+		}
+		`, fields[0], fields[1], fields[2], fields[3])
+	}
+
 	configHostedMac := func(fields ...string) string {
 		return fmt.Sprintf(`
     provider "buildkite" {
@@ -477,6 +500,79 @@ func TestAccBuildkiteClusterQueueResource(t *testing.T) {
 				{
 					Config:      configBothPlatforms(clusterName, queueKey, queueDesc),
 					ExpectError: regexp.MustCompile(`Invalid platform configuration`),
+				},
+			},
+		})
+	})
+
+	t.Run("creates a cluster queue with retry_agent_affinity", func(t *testing.T) {
+		var cq clusterQueueResourceModel
+		clusterName := acctest.RandString(10)
+		queueKey := acctest.RandString(10)
+		queueDesc := acctest.RandString(10)
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			CheckDestroy:             testAccCheckClusterQueueDestroy,
+			Steps: []resource.TestStep{
+				{
+					Config: configRetryAffinity(clusterName, queueKey, queueDesc, "prefer-different"),
+					Check: resource.ComposeAggregateTestCheckFunc(
+						testAccCheckClusterQueueExists("buildkite_cluster_queue.foobar", &cq),
+						resource.TestCheckResourceAttr("buildkite_cluster_queue.foobar", "retry_agent_affinity", "prefer-different"),
+					),
+				},
+			},
+		})
+	})
+
+	t.Run("defaults retry_agent_affinity to prefer-warmest when omitted", func(t *testing.T) {
+		var cq clusterQueueResourceModel
+		clusterName := acctest.RandString(10)
+		queueKey := acctest.RandString(10)
+		queueDesc := acctest.RandString(10)
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			CheckDestroy:             testAccCheckClusterQueueDestroy,
+			Steps: []resource.TestStep{
+				{
+					Config: configBasic(clusterName, queueKey, queueDesc),
+					Check: resource.ComposeAggregateTestCheckFunc(
+						testAccCheckClusterQueueExists("buildkite_cluster_queue.foobar", &cq),
+						resource.TestCheckResourceAttr("buildkite_cluster_queue.foobar", "retry_agent_affinity", "prefer-warmest"),
+					),
+				},
+			},
+		})
+	})
+
+	t.Run("updates retry_agent_affinity value", func(t *testing.T) {
+		var cq clusterQueueResourceModel
+		clusterName := acctest.RandString(10)
+		queueKey := acctest.RandString(10)
+		queueDesc := acctest.RandString(10)
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			CheckDestroy:             testAccCheckClusterQueueDestroy,
+			Steps: []resource.TestStep{
+				{
+					Config: configRetryAffinity(clusterName, queueKey, queueDesc, "prefer-warmest"),
+					Check: resource.ComposeAggregateTestCheckFunc(
+						testAccCheckClusterQueueExists("buildkite_cluster_queue.foobar", &cq),
+						resource.TestCheckResourceAttr("buildkite_cluster_queue.foobar", "retry_agent_affinity", "prefer-warmest"),
+					),
+				},
+				{
+					Config: configRetryAffinity(clusterName, queueKey, queueDesc, "prefer-different"),
+					Check: resource.ComposeAggregateTestCheckFunc(
+						testAccCheckClusterQueueExists("buildkite_cluster_queue.foobar", &cq),
+						resource.TestCheckResourceAttr("buildkite_cluster_queue.foobar", "retry_agent_affinity", "prefer-different"),
+					),
 				},
 			},
 		})

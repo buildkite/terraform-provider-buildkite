@@ -79,6 +79,7 @@ resource "buildkite_cluster_queue" "hosted_agents_linux" {
 - `description` (String) A description for the cluster queue.
 - `dispatch_paused` (Boolean) The dispatch state of a cluster queue.
 - `hosted_agents` (Attributes) Control the settings for the Buildkite hosted agents. (see [below for nested schema](#nestedatt--hosted_agents))
+- `retry_agent_affinity` (String) Specifies which agent should be preferred when a job is retried. Valid values are `prefer-warmest` (prefer agents that have recently finished jobs) and `prefer-different` (prefer a different agent if available). Defaults to `prefer-warmest`.
 
 ### Read-Only
 

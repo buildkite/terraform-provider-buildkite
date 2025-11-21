@@ -16,6 +16,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/objectplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -39,6 +40,9 @@ const (
 	MacOSSonoma  string = "SONOMA"
 	MacOSSequoia string = "SEQUOIA"
 	MacOSTahoe   string = "TAHOE"
+
+	RetryAgentAffinityPreferWarmest   string = "prefer-warmest"
+	RetryAgentAffinityPreferDifferent string = "prefer-different"
 )
 
 var MacInstanceShapes = []string{
@@ -64,14 +68,15 @@ var MacOSVersions = []string{
 }
 
 type clusterQueueResourceModel struct {
-	Id             types.String              `tfsdk:"id"`
-	Uuid           types.String              `tfsdk:"uuid"`
-	ClusterId      types.String              `tfsdk:"cluster_id"`
-	ClusterUuid    types.String              `tfsdk:"cluster_uuid"`
-	Key            types.String              `tfsdk:"key"`
-	Description    types.String              `tfsdk:"description"`
-	DispatchPaused types.Bool                `tfsdk:"dispatch_paused"`
-	HostedAgents   *hostedAgentResourceModel `tfsdk:"hosted_agents"`
+	Id                 types.String              `tfsdk:"id"`
+	Uuid               types.String              `tfsdk:"uuid"`
+	ClusterId          types.String              `tfsdk:"cluster_id"`
+	ClusterUuid        types.String              `tfsdk:"cluster_uuid"`
+	Key                types.String              `tfsdk:"key"`
+	Description        types.String              `tfsdk:"description"`
+	DispatchPaused     types.Bool                `tfsdk:"dispatch_paused"`
+	RetryAgentAffinity types.String              `tfsdk:"retry_agent_affinity"`
+	HostedAgents       *hostedAgentResourceModel `tfsdk:"hosted_agents"`
 }
 
 type hostedAgentResourceModel struct {
@@ -157,6 +162,15 @@ func (clusterQueueResource) Schema(ctx context.Context, req resource.SchemaReque
 				Computed:            true,
 				MarkdownDescription: "The dispatch state of a cluster queue.",
 				Default:             booldefault.StaticBool(false),
+			},
+			"retry_agent_affinity": resource_schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				MarkdownDescription: "Specifies which agent should be preferred when a job is retried. Valid values are `prefer-warmest` (prefer agents that have recently finished jobs) and `prefer-different` (prefer a different agent if available). Defaults to `prefer-warmest`.",
+				Default:             stringdefault.StaticString(RetryAgentAffinityPreferWarmest),
+				Validators: []validator.String{
+					stringvalidator.OneOf(RetryAgentAffinityPreferWarmest, RetryAgentAffinityPreferDifferent),
+				},
 			},
 			"hosted_agents": resource_schema.SingleNestedAttribute{
 				Optional:            true,
@@ -309,7 +323,25 @@ func (cq *clusterQueueResource) Create(ctx context.Context, req resource.CreateR
 	state.Key = types.StringValue(r.ClusterQueueCreate.ClusterQueue.Key)
 	state.Description = types.StringPointerValue(r.ClusterQueueCreate.ClusterQueue.Description)
 
-	state.DispatchPaused = types.BoolValue(false) // Start with false, update below if needed
+	state.DispatchPaused = types.BoolValue(false)
+
+	desiredAffinity := RetryAgentAffinityPreferWarmest
+	if !plan.RetryAgentAffinity.IsNull() && !plan.RetryAgentAffinity.IsUnknown() {
+		desiredAffinity = plan.RetryAgentAffinity.ValueString()
+	}
+
+	if desiredAffinity != RetryAgentAffinityPreferWarmest {
+		err := cq.updateClusterQueueViaREST(ctx, state.ClusterUuid.ValueString(), state.Uuid.ValueString(), desiredAffinity)
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Unable to set retry_agent_affinity",
+				fmt.Sprintf("Queue %s created but retry_agent_affinity could not be set: %s", state.Key.ValueString(), err.Error()),
+			)
+			resp.State.Set(ctx, &state)
+			return
+		}
+	}
+	state.RetryAgentAffinity = types.StringValue(desiredAffinity)
 
 	// GraphQL API does not allow Cluster Queue to be created with Dispatch Paused
 	// so Pause Dispatch after creation if required
@@ -317,7 +349,7 @@ func (cq *clusterQueueResource) Create(ctx context.Context, req resource.CreateR
 		log.Printf("Pausing dispatch on cluster queue with key %s", plan.Key.ValueString())
 		err = cq.pauseDispatch(ctx, timeout, state, &resp.Diagnostics)
 		if err != nil {
-			// Error is added to diagnostics within pauseDispatch
+			resp.State.Set(ctx, &state)
 			return
 		}
 		state.DispatchPaused = types.BoolValue(true)
@@ -397,8 +429,19 @@ func (cq *clusterQueueResource) Read(ctx context.Context, req resource.ReadReque
 	}
 
 	log.Printf("Found cluster queue with ID %s", clusterQueue.Id)
-	// Update ClusterQueueResourceModel with Node values
 	updateClusterQueueResourceFromNode(*clusterQueue, &state)
+
+	restResponse, err := cq.getClusterQueueViaREST(ctx, state.ClusterUuid.ValueString(), state.Uuid.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddWarning(
+			"Unable to read retry_agent_affinity",
+			fmt.Sprintf("Queue %s read successfully but retry_agent_affinity is unavailable: %s. Defaulting to prefer-warmest.", state.Key.ValueString(), err.Error()),
+		)
+		state.RetryAgentAffinity = types.StringValue(RetryAgentAffinityPreferWarmest)
+	} else {
+		state.RetryAgentAffinity = types.StringValue(restResponse.RetryAgentAffinity)
+	}
+
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
@@ -525,6 +568,21 @@ func (cq *clusterQueueResource) Update(ctx context.Context, req resource.UpdateR
 
 	state.Description = types.StringPointerValue(r.ClusterQueueUpdate.ClusterQueue.Description)
 	state.DispatchPaused = types.BoolValue(r.ClusterQueueUpdate.ClusterQueue.DispatchPaused)
+
+	if !plan.RetryAgentAffinity.Equal(state.RetryAgentAffinity) {
+		desiredAffinity := plan.RetryAgentAffinity.ValueString()
+		err := cq.updateClusterQueueViaREST(ctx, state.ClusterUuid.ValueString(), state.Uuid.ValueString(), desiredAffinity)
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Unable to update retry_agent_affinity",
+				fmt.Sprintf("Unable to update retry_agent_affinity for queue %s: %s", state.Key.ValueString(), err.Error()),
+			)
+			resp.State.Set(ctx, &state)
+			return
+		}
+		state.RetryAgentAffinity = types.StringValue(desiredAffinity)
+	}
+
 	if state.HostedAgents != nil {
 		state.HostedAgents = &hostedAgentResourceModel{
 			InstanceShape: types.StringValue(string(r.ClusterQueueUpdate.ClusterQueue.HostedAgents.InstanceShape.Name)),
@@ -731,4 +789,36 @@ func (cq *clusterQueueResource) resumeDispatch(ctx context.Context, timeout time
 	}
 
 	return err
+}
+
+type clusterQueueRestResponse struct {
+	RetryAgentAffinity string `json:"retry_agent_affinity"`
+}
+
+func (cq *clusterQueueResource) getClusterQueueViaREST(ctx context.Context, clusterUuid, queueUuid string) (*clusterQueueRestResponse, error) {
+	if clusterUuid == "" || queueUuid == "" {
+		return nil, fmt.Errorf("clusterUuid and queueUuid must not be empty")
+	}
+	path := fmt.Sprintf("/v2/organizations/%s/clusters/%s/queues/%s", cq.client.organization, clusterUuid, queueUuid)
+	var response clusterQueueRestResponse
+	err := cq.client.makeRequest(ctx, "GET", path, nil, &response)
+	if err != nil {
+		return nil, err
+	}
+	return &response, nil
+}
+
+func (cq *clusterQueueResource) updateClusterQueueViaREST(ctx context.Context, clusterUuid, queueUuid string, retryAgentAffinity string) error {
+	if clusterUuid == "" || queueUuid == "" {
+		return fmt.Errorf("clusterUuid and queueUuid must not be empty")
+	}
+	if retryAgentAffinity != RetryAgentAffinityPreferWarmest && retryAgentAffinity != RetryAgentAffinityPreferDifferent {
+		return fmt.Errorf("invalid retry_agent_affinity value: %s", retryAgentAffinity)
+	}
+	path := fmt.Sprintf("/v2/organizations/%s/clusters/%s/queues/%s", cq.client.organization, clusterUuid, queueUuid)
+	payload := map[string]interface{}{
+		"retry_agent_affinity": retryAgentAffinity,
+	}
+	var response clusterQueueRestResponse
+	return cq.client.makeRequest(ctx, "PATCH", path, payload, &response)
 }
