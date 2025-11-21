@@ -1,5 +1,34 @@
 # Changelog
 
+## [v1.27.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.26.0...v1.27.0)
+
+### Features
+
+- Change all cluster maintainer-related IDs to UUIDs by @petetomasik in https://github.com/buildkite/terraform-provider-buildkite/pull/993
+- Add support for Portals by @scadu in https://github.com/buildkite/terraform-provider-buildkite/pull/992
+- Handle Org banner modifications outside TF by @petetomasik in https://github.com/buildkite/terraform-provider-buildkite/pull/994
+- Adding retry_agent_affinity attribute to cluster resource by @JoeColeman95 in https://github.com/buildkite/terraform-provider-buildkite/pull/1003
+
+### Fixes
+
+- SUP-4969: Add RequiresReplace Modifiers as cannot modify Team/Pipeline by @tomowatt in https://github.com/buildkite/terraform-provider-buildkite/pull/998
+
+### Dependencies
+
+- chore(deps): bump golang from 1.25.0 to 1.25.1 by @dependabot[bot] in https://github.com/buildkite/terraform-provider-buildkite/pull/990
+- chore(deps): bump github.com/hashicorp/terraform-plugin-framework-validators from 0.18.0 to 0.19.0 by @dependabot[bot] in https://github.com/buildkite/terraform-provider-buildkite/
+-ull/997
+- chore(deps): bump github.com/hashicorp/terraform-plugin-framework-timeouts from 0.6.0 to 0.7.0 by @dependabot[bot] in https://github.com/buildkite/terraform-provider-buildkite/pull/-999
+- chore(deps): bump golang from 1.25.1 to 1.25.3 by @dependabot[bot] in https://github.com/buildkite/terraform-provider-buildkite/pull/1000
+- chore(deps): bump github.com/hashicorp/terraform-plugin-log from 0.9.0 to 0.10.0 by @dependabot[bot] in https://github.com/buildkite/terraform-provider-buildkite/pull/1001
+- chore(deps): bump golang.org/x/crypto from 0.42.0 to 0.45.0 by @dependabot[bot] in https://github.com/buildkite/terraform-provider-buildkite/pull/1002
+
+
+### Internal
+
+- feat: add CONTRIBUTING.md by @mcncl in https://github.com/buildkite/terraform-provider-buildkite/pull/995
+- drop backup golangci-lint file by @tylerauerbeck in https://github.com/buildkite/terraform-provider-buildkite/pull/991
+
 ## [v1.26.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.25.0...v1.26.0)
 
 ### Features
