@@ -8,7 +8,8 @@ terraform {
 }
 
 provider "buildkite" {
-  organization = "testkite"
+  organization = "atte-test-org-1"
+  api_token    = "bkua_200ac873954e8339bcab393de15dcd909ab9d900"
 }
 
 resource "buildkite_cluster" "test_cluster" {
@@ -49,4 +50,20 @@ resource "buildkite_cluster_queue" "hosted_macos_medium" {
       xcode_version = "16.3"
     }
   }
+}
+
+resource "buildkite_cluster_secret" "test_cluster" {
+  cluster_id  = buildkite_cluster.test_cluster.uuid 
+  key         = "MY_TEST_SECRET"
+  value       = "my-secret-value"
+  description = "Test secret created by Terraform"
+  
+  policy = <<-EOT
+    - pipeline_slug: my-pipeline
+      build_branch: main
+  EOT
+}
+
+output "secret_id" {
+  value = buildkite_cluster_secret.test_cluster.id
 }
