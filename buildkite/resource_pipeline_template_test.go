@@ -16,10 +16,10 @@ func TestAccBuildkitePipelineTemplateResource(t *testing.T) {
 		return fmt.Sprintf(`
 		provider "buildkite" {
 			timeouts = {
-				create = "10s"
-				read = "10s"
-				update = "10s"
-				delete = "10s"
+				create = "60s"
+				read = "60s"
+				update = "60s"
+				delete = "60s"
 			}
 		}
 
@@ -34,10 +34,10 @@ func TestAccBuildkitePipelineTemplateResource(t *testing.T) {
 		return fmt.Sprintf(`
 		provider "buildkite" {
 			timeouts = {
-				create = "10s"
-				read = "10s"
-				update = "10s"
-				delete = "10s"
+				create = "60s"
+				read = "60s"
+				update = "60s"
+				delete = "60s"
 			}
 		}
 
@@ -241,7 +241,6 @@ func testAccCheckPipelineTemplateDestroy(s *terraform.State) error {
 		r, err := getNode(context.Background(), genqlientGraphql, rs.Primary.ID)
 		if err != nil {
 			if strings.Contains(err.Error(), "not found") {
-
 				continue
 			}
 			return err

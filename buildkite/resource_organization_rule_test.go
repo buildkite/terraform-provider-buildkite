@@ -19,10 +19,10 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 		return fmt.Sprintf(`
 		provider "buildkite" {
 			timeouts = {
-				create = "10s"
-				read = "10s"
-				update = "10s"
-				delete = "10s"
+				create = "60s"
+				read = "60s"
+				update = "60s"
+				delete = "60s"
 			}
 		}
 
@@ -69,10 +69,10 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 		return fmt.Sprintf(`
 		provider "buildkite" {
 			timeouts = {
-				create = "10s"
-				read = "10s"
-				update = "10s"
-				delete = "10s"
+				create = "60s"
+				read = "60s"
+				update = "60s"
+				delete = "60s"
 			}
 		}
 
@@ -124,10 +124,10 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 		return fmt.Sprintf(`
 		provider "buildkite" {
 			timeouts = {
-				create = "10s"
-				read = "10s"
-				update = "10s"
-				delete = "10s"
+				create = "60s"
+				read = "60s"
+				update = "60s"
+				delete = "60s"
 			}
 		}
 
@@ -179,10 +179,10 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 		return fmt.Sprintf(`
 		provider "buildkite" {
 			timeouts = {
-				create = "10s"
-				read = "10s"
-				update = "10s"
-				delete = "10s"
+				create = "60s"
+				read = "60s"
+				update = "60s"
+				delete = "60s"
 			}
 		}
 
@@ -233,10 +233,10 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 		return fmt.Sprintf(`
 		provider "buildkite" {
 			timeouts = {
-				create = "10s"
-				read = "10s"
-				update = "10s"
-				delete = "10s"
+				create = "60s"
+				read = "60s"
+				update = "60s"
+				delete = "60s"
 			}
 		}
 
@@ -285,10 +285,10 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 		return fmt.Sprintf(`
 		provider "buildkite" {
 			timeouts = {
-				create = "10s"
-				read = "10s"
-				update = "10s"
-				delete = "10s"
+				create = "60s"
+				read = "60s"
+				update = "60s"
+				delete = "60s"
 			}
 		}
 
@@ -335,10 +335,10 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 		return fmt.Sprintf(`
 		provider "buildkite" {
 			timeouts = {
-				create = "10s"
-				read = "10s"
-				update = "10s"
-				delete = "10s"
+				create = "60s"
+				read = "60s"
+				update = "60s"
+				delete = "60s"
 			}
 		}
 
@@ -392,10 +392,10 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 		return fmt.Sprintf(`
 		provider "buildkite" {
 			timeouts = {
-				create = "10s"
-				read = "10s"
-				update = "10s"
-				delete = "10s"
+				create = "60s"
+				read = "60s"
+				update = "60s"
+				delete = "60s"
 			}
 		}
 
@@ -449,10 +449,10 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 		return fmt.Sprintf(`
 		provider "buildkite" {
 			timeouts = {
-				create = "10s"
-				read = "10s"
-				update = "10s"
-				delete = "10s"
+				create = "60s"
+				read = "60s"
+				update = "60s"
+				delete = "60s"
 			}
 		}
 
@@ -499,10 +499,10 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 		return fmt.Sprintf(`
 		provider "buildkite" {
 			timeouts = {
-				create = "10s"
-				read = "10s"
-				update = "10s"
-				delete = "10s"
+				create = "60s"
+				read = "60s"
+				update = "60s"
+				delete = "60s"
 			}
 		}
 
@@ -535,10 +535,10 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 		return fmt.Sprintf(`
 		provider "buildkite" {
 			timeouts = {
-				create = "10s"
-				read = "10s"
-				update = "10s"
-				delete = "10s"
+				create = "60s"
+				read = "60s"
+				update = "60s"
+				delete = "60s"
 			}
 		}
 
@@ -574,10 +574,10 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 		return fmt.Sprintf(`
 		provider "buildkite" {
 			timeouts = {
-				create = "10s"
-				read = "10s"
-				update = "10s"
-				delete = "10s"
+				create = "60s"
+				read = "60s"
+				update = "60s"
+				delete = "60s"
 			}
 		}
 
@@ -601,10 +601,10 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 		return fmt.Sprintf(`
 		provider "buildkite" {
 			timeouts = {
-				create = "10s"
-				read = "10s"
-				update = "10s"
-				delete = "10s"
+				create = "60s"
+				read = "60s"
+				update = "60s"
+				delete = "60s"
 			}
 		}
 
@@ -628,10 +628,10 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 		return fmt.Sprintf(`
 		provider "buildkite" {
 			timeouts = {
-				create = "10s"
-				read = "10s"
-				update = "10s"
-				delete = "10s"
+				create = "60s"
+				read = "60s"
+				update = "60s"
+				delete = "60s"
 			}
 		}
 
@@ -656,10 +656,10 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 		return fmt.Sprintf(`
 		provider "buildkite" {
 			timeouts = {
-				create = "10s"
-				read = "10s"
-				update = "10s"
-				delete = "10s"
+				create = "60s"
+				read = "60s"
+				update = "60s"
+				delete = "60s"
 			}
 		}
 
@@ -684,10 +684,10 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 		return fmt.Sprintf(`
 		provider "buildkite" {
 			timeouts = {
-				create = "10s"
-				read = "10s"
-				update = "10s"
-				delete = "10s"
+				create = "60s"
+				read = "60s"
+				update = "60s"
+				delete = "60s"
 			}
 		}
 
@@ -739,10 +739,10 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 		return fmt.Sprintf(`
 		provider "buildkite" {
 			timeouts = {
-				create = "10s"
-				read = "10s"
-				update = "10s"
-				delete = "10s"
+				create = "60s"
+				read = "60s"
+				update = "60s"
+				delete = "60s"
 			}
 		}
 
@@ -794,10 +794,10 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 		return fmt.Sprintf(`
 		provider "buildkite" {
 			timeouts = {
-				create = "10s"
-				read = "10s"
-				update = "10s"
-				delete = "10s"
+				create = "60s"
+				read = "60s"
+				update = "60s"
+				delete = "60s"
 			}
 		}
 
@@ -848,10 +848,10 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 		return fmt.Sprintf(`
 		provider "buildkite" {
 			timeouts = {
-				create = "10s"
-				read = "10s"
-				update = "10s"
-				delete = "10s"
+				create = "60s"
+				read = "60s"
+				update = "60s"
+				delete = "60s"
 			}
 		}
 
@@ -902,10 +902,10 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 		return fmt.Sprintf(`
 		provider "buildkite" {
 			timeouts = {
-				create = "10s"
-				read = "10s"
-				update = "10s"
-				delete = "10s"
+				create = "60s"
+				read = "60s"
+				update = "60s"
+				delete = "60s"
 			}
 		}
 
@@ -957,10 +957,10 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 		return fmt.Sprintf(`
 		provider "buildkite" {
 			timeouts = {
-				create = "10s"
-				read = "10s"
-				update = "10s"
-				delete = "10s"
+				create = "60s"
+				read = "60s"
+				update = "60s"
+				delete = "60s"
 			}
 		}
 

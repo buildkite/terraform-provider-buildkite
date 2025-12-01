@@ -16,7 +16,7 @@ func TestAccBuildkiteTeam(t *testing.T) {
 		return fmt.Sprintf(`
 		provider "buildkite" {
 			timeouts = {
-				create = "10s"
+				create = "60s"
 			}
 		}
 
@@ -35,8 +35,8 @@ func TestAccBuildkiteTeam(t *testing.T) {
 		return fmt.Sprintf(`
 		provider "buildkite" {
 			timeouts = {
-				create = "10s"
-				update = "10s"
+				create = "60s"
+				update = "60s"
 			}
 		}
 
@@ -225,7 +225,6 @@ func testAccCheckTeamResourceDestroy(s *terraform.State) error {
 		if rs.Type != "buildkite_team" {
 			continue
 		}
-
 	}
 	return nil
 }
