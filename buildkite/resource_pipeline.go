@@ -933,6 +933,9 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 						Computed:            true,
 						Optional:            true,
 						MarkdownDescription: "Whether to create builds for pull requests when its base branch changes.",
+						PlanModifiers: []planmodifier.Bool{
+							providerSettingPlanModifier{},
+						},
 					},
 					"build_pull_request_forks": schema.BoolAttribute{
 						Computed:            true,
@@ -1038,17 +1041,26 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 						Computed:            true,
 						Optional:            true,
 						MarkdownDescription: "Whether to create merge queue builds for a merge queue enabled GitHub repository with required status checks",
+						PlanModifiers: []planmodifier.Bool{
+							providerSettingPlanModifier{},
+						},
 					},
 					"cancel_when_merge_group_destroyed": schema.BoolAttribute{
 						Computed:            true,
 						Optional:            true,
 						MarkdownDescription: "Whether to cancel any running builds belonging to a removed merge group.",
+						PlanModifiers: []planmodifier.Bool{
+							providerSettingPlanModifier{},
+						},
 					},
 					"use_merge_group_base_commit_for_git_diff_base": schema.BoolAttribute{
 						Computed: true,
 						Optional: true,
 						MarkdownDescription: "When enabled, agents performing a git diff to determine steps to upload based on [`if_changed`](https://buildkite.com/docs/pipelines/configure/step-types/command-step#agent-applied-attributes)" +
 							"comparisons will use the base commit that points to the previous merge group rather than the base branch",
+						PlanModifiers: []planmodifier.Bool{
+							providerSettingPlanModifier{},
+						},
 					},
 				},
 			},
