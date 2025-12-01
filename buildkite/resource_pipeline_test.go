@@ -77,7 +77,6 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 	}
 	aggregateRemoteCheck := func(pipeline *getPipelinePipeline) resource.TestCheckFunc {
 		return func(s *terraform.State) error {
-
 			var err error
 			p := s.RootModule().Resources["buildkite_pipeline.pipeline"]
 
@@ -96,7 +95,6 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 
 	aggregateRemoteCheckWithTemplateSteps := func(pipeline *getPipelinePipeline) resource.TestCheckFunc {
 		return func(s *terraform.State) error {
-
 			var err error
 			p := s.RootModule().Resources["buildkite_pipeline.pipeline"]
 

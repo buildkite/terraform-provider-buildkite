@@ -184,7 +184,6 @@ func (v *ClusterQueueValuesHostedAgentsHostedAgentQueueSettings) GetPlatformSett
 }
 
 func (v *ClusterQueueValuesHostedAgentsHostedAgentQueueSettings) UnmarshalJSON(b []byte) error {
-
 	if string(b) == "null" {
 		return nil
 	}
@@ -802,7 +801,6 @@ func (v *GetTeamFromSlugTeam) GetMembersCanCreatePipelines() bool {
 }
 
 func (v *GetTeamFromSlugTeam) UnmarshalJSON(b []byte) error {
-
 	if string(b) == "null" {
 		return nil
 	}
@@ -1279,7 +1277,6 @@ func (v *OrganizationRuleFields) GetSource() OrganizationRuleFieldsSourceRuleSou
 func (v *OrganizationRuleFields) GetTarget() OrganizationRuleFieldsTargetRuleTarget { return v.Target }
 
 func (v *OrganizationRuleFields) UnmarshalJSON(b []byte) error {
-
 	if string(b) == "null" {
 		return nil
 	}
@@ -1455,7 +1452,6 @@ func __unmarshalOrganizationRuleFieldsSourceRuleSource(b []byte, v *Organization
 }
 
 func __marshalOrganizationRuleFieldsSourceRuleSource(v *OrganizationRuleFieldsSourceRuleSource) ([]byte, error) {
-
 	var typename string
 	switch v := (*v).(type) {
 	case *OrganizationRuleFieldsSourcePipeline:
@@ -1533,7 +1529,6 @@ func __unmarshalOrganizationRuleFieldsTargetRuleTarget(b []byte, v *Organization
 }
 
 func __marshalOrganizationRuleFieldsTargetRuleTarget(v *OrganizationRuleFieldsTargetRuleTarget) ([]byte, error) {
-
 	var typename string
 	switch v := (*v).(type) {
 	case *OrganizationRuleFieldsTargetPipeline:
@@ -1904,7 +1899,6 @@ func (v *PipelineFieldsTeamsTeamPipelineConnection) GetEdges() []PipelineTeamEdg
 }
 
 func (v *PipelineFieldsTeamsTeamPipelineConnection) UnmarshalJSON(b []byte) error {
-
 	if string(b) == "null" {
 		return nil
 	}
@@ -3674,7 +3668,6 @@ func (v *createClusterAgentTokenClusterAgentTokenCreateClusterAgentTokenCreatePa
 }
 
 func (v *createClusterAgentTokenClusterAgentTokenCreateClusterAgentTokenCreatePayloadClusterAgentTokenClusterToken) UnmarshalJSON(b []byte) error {
-
 	if string(b) == "null" {
 		return nil
 	}
@@ -3801,7 +3794,6 @@ func (v *createClusterClusterCreateClusterCreatePayloadCluster) GetDefaultQueue(
 }
 
 func (v *createClusterClusterCreateClusterCreatePayloadCluster) UnmarshalJSON(b []byte) error {
-
 	if string(b) == "null" {
 		return nil
 	}
@@ -3916,7 +3908,6 @@ func (v *createClusterQueueClusterQueueCreateClusterQueueCreatePayloadClusterQue
 }
 
 func (v *createClusterQueueClusterQueueCreateClusterQueueCreatePayloadClusterQueue) UnmarshalJSON(b []byte) error {
-
 	if string(b) == "null" {
 		return nil
 	}
@@ -4084,7 +4075,6 @@ func (v *createOrganizationRuleRuleCreateRuleCreatePayloadRule) GetTarget() Orga
 }
 
 func (v *createOrganizationRuleRuleCreateRuleCreatePayloadRule) UnmarshalJSON(b []byte) error {
-
 	if string(b) == "null" {
 		return nil
 	}
@@ -4321,7 +4311,6 @@ func (v *createPipelinePipelineCreatePipelineCreatePayloadPipeline) GetWebhookUR
 }
 
 func (v *createPipelinePipelineCreatePipelineCreatePayloadPipeline) UnmarshalJSON(b []byte) error {
-
 	if string(b) == "null" {
 		return nil
 	}
@@ -4545,7 +4534,6 @@ func (v *createPipelineSchedulePipelineScheduleCreatePipelineScheduleCreatePaylo
 }
 
 func (v *createPipelineSchedulePipelineScheduleCreatePipelineScheduleCreatePayloadPipelineScheduleEdgeNodePipelineSchedule) UnmarshalJSON(b []byte) error {
-
 	if string(b) == "null" {
 		return nil
 	}
@@ -4678,7 +4666,6 @@ func (v *createPipelineTemplatePipelineTemplateCreatePipelineTemplateCreatePaylo
 }
 
 func (v *createPipelineTemplatePipelineTemplateCreatePipelineTemplateCreatePayloadPipelineTemplate) UnmarshalJSON(b []byte) error {
-
 	if string(b) == "null" {
 		return nil
 	}
@@ -4815,7 +4802,6 @@ func (v *createTeamMemberTeamMemberCreateTeamMemberCreatePayloadTeamMemberEdgeNo
 }
 
 func (v *createTeamMemberTeamMemberCreateTeamMemberCreatePayloadTeamMemberEdgeNodeTeamMember) UnmarshalJSON(b []byte) error {
-
 	if string(b) == "null" {
 		return nil
 	}
@@ -4938,7 +4924,6 @@ func (v *createTeamPipelineTeamPipelineCreateTeamPipelineCreatePayloadTeamPipeli
 }
 
 func (v *createTeamPipelineTeamPipelineCreateTeamPipelineCreatePayloadTeamPipelineEdgeNodeTeamPipeline) UnmarshalJSON(b []byte) error {
-
 	if string(b) == "null" {
 		return nil
 	}
@@ -5134,7 +5119,6 @@ func (v *createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadTeamSuite) GetS
 }
 
 func (v *createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadTeamSuite) UnmarshalJSON(b []byte) error {
-
 	if string(b) == "null" {
 		return nil
 	}
@@ -5569,7 +5553,6 @@ func (v *getClusterAgentTokensOrganizationClusterAgentTokensClusterAgentTokenCon
 }
 
 func (v *getClusterAgentTokensOrganizationClusterAgentTokensClusterAgentTokenConnectionEdgesClusterAgentTokenEdgeNodeClusterToken) UnmarshalJSON(b []byte) error {
-
 	if string(b) == "null" {
 		return nil
 	}
@@ -5716,7 +5699,6 @@ func (v *getClusterByNameOrganizationClustersClusterConnectionEdgesClusterEdgeNo
 }
 
 func (v *getClusterByNameOrganizationClustersClusterConnectionEdgesClusterEdgeNodeCluster) UnmarshalJSON(b []byte) error {
-
 	if string(b) == "null" {
 		return nil
 	}
@@ -5885,8 +5867,10 @@ type getClusterQueueByNodeNode interface {
 
 func (v *getClusterQueueByNodeNodeAPIAccessToken) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
+
 func (v *getClusterQueueByNodeNodeAPIAccessTokenCode) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
+
 func (v *getClusterQueueByNodeNodeAPIApplication) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
 func (v *getClusterQueueByNodeNodeAgent) implementsGraphQLInterfacegetClusterQueueByNodeNode()      {}
@@ -5896,76 +5880,107 @@ func (v *getClusterQueueByNodeNodeArtifact) implementsGraphQLInterfacegetCluster
 func (v *getClusterQueueByNodeNodeAuditEvent) implementsGraphQLInterfacegetClusterQueueByNodeNode() {}
 func (v *getClusterQueueByNodeNodeAuthorizationBitbucket) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
+
 func (v *getClusterQueueByNodeNodeAuthorizationGitHub) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
+
 func (v *getClusterQueueByNodeNodeAuthorizationGitHubApp) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
+
 func (v *getClusterQueueByNodeNodeAuthorizationGitHubEnterprise) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
+
 func (v *getClusterQueueByNodeNodeAuthorizationGoogle) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
+
 func (v *getClusterQueueByNodeNodeAuthorizationSAML) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
 func (v *getClusterQueueByNodeNodeBuild) implementsGraphQLInterfacegetClusterQueueByNodeNode()   {}
 func (v *getClusterQueueByNodeNodeCluster) implementsGraphQLInterfacegetClusterQueueByNodeNode() {}
 func (v *getClusterQueueByNodeNodeClusterQueue) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
+
 func (v *getClusterQueueByNodeNodeClusterQueueToken) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
+
 func (v *getClusterQueueByNodeNodeClusterToken) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
+
 func (v *getClusterQueueByNodeNodeCompositeRegistryUpstream) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
 func (v *getClusterQueueByNodeNodeEmail) implementsGraphQLInterfacegetClusterQueueByNodeNode() {}
 func (v *getClusterQueueByNodeNodeJobEventAssigned) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
+
 func (v *getClusterQueueByNodeNodeJobEventBuildStepUploadCreated) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
+
 func (v *getClusterQueueByNodeNodeJobEventCanceled) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
+
 func (v *getClusterQueueByNodeNodeJobEventFinished) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
+
 func (v *getClusterQueueByNodeNodeJobEventGeneric) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
+
 func (v *getClusterQueueByNodeNodeJobEventReprioritized) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
+
 func (v *getClusterQueueByNodeNodeJobEventRetried) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
+
 func (v *getClusterQueueByNodeNodeJobEventRetryFailed) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
+
 func (v *getClusterQueueByNodeNodeJobEventStackError) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
+
 func (v *getClusterQueueByNodeNodeJobEventStackNotification) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
+
 func (v *getClusterQueueByNodeNodeJobEventTimedOut) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
+
 func (v *getClusterQueueByNodeNodeJobTypeBlock) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
+
 func (v *getClusterQueueByNodeNodeJobTypeCommand) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
+
 func (v *getClusterQueueByNodeNodeJobTypeTrigger) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
+
 func (v *getClusterQueueByNodeNodeJobTypeWait) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
+
 func (v *getClusterQueueByNodeNodeNotificationServiceSlack) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
+
 func (v *getClusterQueueByNodeNodeOrganization) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
+
 func (v *getClusterQueueByNodeNodeOrganizationBanner) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
+
 func (v *getClusterQueueByNodeNodeOrganizationInvitation) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
+
 func (v *getClusterQueueByNodeNodeOrganizationMember) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
+
 func (v *getClusterQueueByNodeNodeOrganizationRepositoryProviderGitHub) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
+
 func (v *getClusterQueueByNodeNodeOrganizationRepositoryProviderGitHubEnterpriseServer) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
 func (v *getClusterQueueByNodeNodePipeline) implementsGraphQLInterfacegetClusterQueueByNodeNode() {}
 func (v *getClusterQueueByNodeNodePipelineMetric) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
+
 func (v *getClusterQueueByNodeNodePipelineSchedule) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
+
 func (v *getClusterQueueByNodeNodePipelineTemplate) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
 func (v *getClusterQueueByNodeNodeRegistry) implementsGraphQLInterfacegetClusterQueueByNodeNode() {}
@@ -5974,8 +5989,10 @@ func (v *getClusterQueueByNodeNodeRegistryToken) implementsGraphQLInterfacegetCl
 func (v *getClusterQueueByNodeNodeRule) implementsGraphQLInterfacegetClusterQueueByNodeNode() {}
 func (v *getClusterQueueByNodeNodeSSOProviderGitHubApp) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
+
 func (v *getClusterQueueByNodeNodeSSOProviderGoogleGSuite) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
+
 func (v *getClusterQueueByNodeNodeSSOProviderSAML) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
 func (v *getClusterQueueByNodeNodeSecret) implementsGraphQLInterfacegetClusterQueueByNodeNode()     {}
@@ -5984,6 +6001,7 @@ func (v *getClusterQueueByNodeNodeTeam) implementsGraphQLInterfacegetClusterQueu
 func (v *getClusterQueueByNodeNodeTeamMember) implementsGraphQLInterfacegetClusterQueueByNodeNode() {}
 func (v *getClusterQueueByNodeNodeTeamPipeline) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
+
 func (v *getClusterQueueByNodeNodeTeamRegistry) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
 func (v *getClusterQueueByNodeNodeTeamSuite) implementsGraphQLInterfacegetClusterQueueByNodeNode() {}
@@ -6200,7 +6218,6 @@ func __unmarshalgetClusterQueueByNodeNode(b []byte, v *getClusterQueueByNodeNode
 }
 
 func __marshalgetClusterQueueByNodeNode(v *getClusterQueueByNodeNode) ([]byte, error) {
-
 	var typename string
 	switch v := (*v).(type) {
 	case *getClusterQueueByNodeNodeAPIAccessToken:
@@ -6949,7 +6966,6 @@ func (v *getClusterQueueByNodeNodeClusterQueue) GetHostedAgents() ClusterQueueVa
 }
 
 func (v *getClusterQueueByNodeNodeClusterQueue) UnmarshalJSON(b []byte) error {
-
 	if string(b) == "null" {
 		return nil
 	}
@@ -7544,7 +7560,6 @@ type getClusterQueueByNodeResponse struct {
 func (v *getClusterQueueByNodeResponse) GetNode() getClusterQueueByNodeNode { return v.Node }
 
 func (v *getClusterQueueByNodeResponse) UnmarshalJSON(b []byte) error {
-
 	if string(b) == "null" {
 		return nil
 	}
@@ -7725,7 +7740,6 @@ func (v *getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClu
 }
 
 func (v *getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue) UnmarshalJSON(b []byte) error {
-
 	if string(b) == "null" {
 		return nil
 	}
@@ -8191,7 +8205,6 @@ func __unmarshalgetNodeNode(b []byte, v *getNodeNode) error {
 }
 
 func __marshalgetNodeNode(v *getNodeNode) ([]byte, error) {
-
 	var typename string
 	switch v := (*v).(type) {
 	case *getNodeNodeAPIAccessToken:
@@ -8928,7 +8941,6 @@ func (v *getNodeNodeCluster) GetDefaultQueue() *ClusterFieldsDefaultQueueCluster
 }
 
 func (v *getNodeNodeCluster) UnmarshalJSON(b []byte) error {
-
 	if string(b) == "null" {
 		return nil
 	}
@@ -9395,7 +9407,6 @@ func (v *getNodeNodePipeline) GetTeams() PipelineFieldsTeamsTeamPipelineConnecti
 func (v *getNodeNodePipeline) GetWebhookURL() string { return v.PipelineFields.WebhookURL }
 
 func (v *getNodeNodePipeline) UnmarshalJSON(b []byte) error {
-
 	if string(b) == "null" {
 		return nil
 	}
@@ -9567,7 +9578,6 @@ func (v *getNodeNodePipelineTemplate) GetDescription() *string {
 func (v *getNodeNodePipelineTemplate) GetName() string { return v.PipelineTemplateFields.Name }
 
 func (v *getNodeNodePipelineTemplate) UnmarshalJSON(b []byte) error {
-
 	if string(b) == "null" {
 		return nil
 	}
@@ -9697,7 +9707,6 @@ func (v *getNodeNodeRule) GetTarget() OrganizationRuleFieldsTargetRuleTarget {
 }
 
 func (v *getNodeNodeRule) UnmarshalJSON(b []byte) error {
-
 	if string(b) == "null" {
 		return nil
 	}
@@ -9892,7 +9901,6 @@ func (v *getNodeNodeTeam) GetMembersCanCreatePipelines() bool {
 }
 
 func (v *getNodeNodeTeam) UnmarshalJSON(b []byte) error {
-
 	if string(b) == "null" {
 		return nil
 	}
@@ -9990,7 +9998,6 @@ func (v *getNodeNodeTeamMember) GetUser() TeamMemberFieldsUser { return v.TeamMe
 func (v *getNodeNodeTeamMember) GetRole() string { return v.TeamMemberFields.Role }
 
 func (v *getNodeNodeTeamMember) UnmarshalJSON(b []byte) error {
-
 	if string(b) == "null" {
 		return nil
 	}
@@ -10080,7 +10087,6 @@ func (v *getNodeNodeTeamPipeline) GetPipeline() TeamPipelineFieldsPipeline {
 }
 
 func (v *getNodeNodeTeamPipeline) UnmarshalJSON(b []byte) error {
-
 	if string(b) == "null" {
 		return nil
 	}
@@ -10179,7 +10185,6 @@ func (v *getNodeNodeTeamSuite) GetTeam() TeamSuiteFieldsTeam { return v.TeamSuit
 func (v *getNodeNodeTeamSuite) GetSuite() TeamSuiteFieldsSuite { return v.TeamSuiteFields.Suite }
 
 func (v *getNodeNodeTeamSuite) UnmarshalJSON(b []byte) error {
-
 	if string(b) == "null" {
 		return nil
 	}
@@ -10269,7 +10274,6 @@ type getNodeResponse struct {
 func (v *getNodeResponse) GetNode() getNodeNode { return v.Node }
 
 func (v *getNodeResponse) UnmarshalJSON(b []byte) error {
-
 	if string(b) == "null" {
 		return nil
 	}
@@ -10430,7 +10434,6 @@ func (v *getOrganizationRuleRule) GetTarget() OrganizationRuleFieldsTargetRuleTa
 }
 
 func (v *getOrganizationRuleRule) UnmarshalJSON(b []byte) error {
-
 	if string(b) == "null" {
 		return nil
 	}
@@ -10591,7 +10594,6 @@ func (v *getOrganiztionBannerOrganizationBannersOrganizationBannerConnectionEdge
 }
 
 func (v *getOrganiztionBannerOrganizationBannersOrganizationBannerConnectionEdgesOrganizationBannerEdgeNodeOrganizationBanner) UnmarshalJSON(b []byte) error {
-
 	if string(b) == "null" {
 		return nil
 	}
@@ -10754,7 +10756,6 @@ func (v *getPipelinePipeline) GetTeams() PipelineFieldsTeamsTeamPipelineConnecti
 func (v *getPipelinePipeline) GetWebhookURL() string { return v.PipelineFields.WebhookURL }
 
 func (v *getPipelinePipeline) UnmarshalJSON(b []byte) error {
-
 	if string(b) == "null" {
 		return nil
 	}
@@ -10934,7 +10935,6 @@ func (v *getPipelineScheduleBySlugPipelineSchedule) GetPipeline() PipelineSchedu
 }
 
 func (v *getPipelineScheduleBySlugPipelineSchedule) UnmarshalJSON(b []byte) error {
-
 	if string(b) == "null" {
 		return nil
 	}
@@ -11100,14 +11100,19 @@ func (v *getPipelineScheduleNodeArtifact) implementsGraphQLInterfacegetPipelineS
 func (v *getPipelineScheduleNodeAuditEvent) implementsGraphQLInterfacegetPipelineScheduleNode()     {}
 func (v *getPipelineScheduleNodeAuthorizationBitbucket) implementsGraphQLInterfacegetPipelineScheduleNode() {
 }
+
 func (v *getPipelineScheduleNodeAuthorizationGitHub) implementsGraphQLInterfacegetPipelineScheduleNode() {
 }
+
 func (v *getPipelineScheduleNodeAuthorizationGitHubApp) implementsGraphQLInterfacegetPipelineScheduleNode() {
 }
+
 func (v *getPipelineScheduleNodeAuthorizationGitHubEnterprise) implementsGraphQLInterfacegetPipelineScheduleNode() {
 }
+
 func (v *getPipelineScheduleNodeAuthorizationGoogle) implementsGraphQLInterfacegetPipelineScheduleNode() {
 }
+
 func (v *getPipelineScheduleNodeAuthorizationSAML) implementsGraphQLInterfacegetPipelineScheduleNode() {
 }
 func (v *getPipelineScheduleNodeBuild) implementsGraphQLInterfacegetPipelineScheduleNode()        {}
@@ -11121,24 +11126,34 @@ func (v *getPipelineScheduleNodeCompositeRegistryUpstream) implementsGraphQLInte
 func (v *getPipelineScheduleNodeEmail) implementsGraphQLInterfacegetPipelineScheduleNode() {}
 func (v *getPipelineScheduleNodeJobEventAssigned) implementsGraphQLInterfacegetPipelineScheduleNode() {
 }
+
 func (v *getPipelineScheduleNodeJobEventBuildStepUploadCreated) implementsGraphQLInterfacegetPipelineScheduleNode() {
 }
+
 func (v *getPipelineScheduleNodeJobEventCanceled) implementsGraphQLInterfacegetPipelineScheduleNode() {
 }
+
 func (v *getPipelineScheduleNodeJobEventFinished) implementsGraphQLInterfacegetPipelineScheduleNode() {
 }
+
 func (v *getPipelineScheduleNodeJobEventGeneric) implementsGraphQLInterfacegetPipelineScheduleNode() {
 }
+
 func (v *getPipelineScheduleNodeJobEventReprioritized) implementsGraphQLInterfacegetPipelineScheduleNode() {
 }
+
 func (v *getPipelineScheduleNodeJobEventRetried) implementsGraphQLInterfacegetPipelineScheduleNode() {
 }
+
 func (v *getPipelineScheduleNodeJobEventRetryFailed) implementsGraphQLInterfacegetPipelineScheduleNode() {
 }
+
 func (v *getPipelineScheduleNodeJobEventStackError) implementsGraphQLInterfacegetPipelineScheduleNode() {
 }
+
 func (v *getPipelineScheduleNodeJobEventStackNotification) implementsGraphQLInterfacegetPipelineScheduleNode() {
 }
+
 func (v *getPipelineScheduleNodeJobEventTimedOut) implementsGraphQLInterfacegetPipelineScheduleNode() {
 }
 func (v *getPipelineScheduleNodeJobTypeBlock) implementsGraphQLInterfacegetPipelineScheduleNode()   {}
@@ -11150,18 +11165,23 @@ func (v *getPipelineScheduleNodeNotificationServiceSlack) implementsGraphQLInter
 func (v *getPipelineScheduleNodeOrganization) implementsGraphQLInterfacegetPipelineScheduleNode() {}
 func (v *getPipelineScheduleNodeOrganizationBanner) implementsGraphQLInterfacegetPipelineScheduleNode() {
 }
+
 func (v *getPipelineScheduleNodeOrganizationInvitation) implementsGraphQLInterfacegetPipelineScheduleNode() {
 }
+
 func (v *getPipelineScheduleNodeOrganizationMember) implementsGraphQLInterfacegetPipelineScheduleNode() {
 }
+
 func (v *getPipelineScheduleNodeOrganizationRepositoryProviderGitHub) implementsGraphQLInterfacegetPipelineScheduleNode() {
 }
+
 func (v *getPipelineScheduleNodeOrganizationRepositoryProviderGitHubEnterpriseServer) implementsGraphQLInterfacegetPipelineScheduleNode() {
 }
 func (v *getPipelineScheduleNodePipeline) implementsGraphQLInterfacegetPipelineScheduleNode()       {}
 func (v *getPipelineScheduleNodePipelineMetric) implementsGraphQLInterfacegetPipelineScheduleNode() {}
 func (v *getPipelineScheduleNodePipelineSchedule) implementsGraphQLInterfacegetPipelineScheduleNode() {
 }
+
 func (v *getPipelineScheduleNodePipelineTemplate) implementsGraphQLInterfacegetPipelineScheduleNode() {
 }
 func (v *getPipelineScheduleNodeRegistry) implementsGraphQLInterfacegetPipelineScheduleNode()      {}
@@ -11169,8 +11189,10 @@ func (v *getPipelineScheduleNodeRegistryToken) implementsGraphQLInterfacegetPipe
 func (v *getPipelineScheduleNodeRule) implementsGraphQLInterfacegetPipelineScheduleNode()          {}
 func (v *getPipelineScheduleNodeSSOProviderGitHubApp) implementsGraphQLInterfacegetPipelineScheduleNode() {
 }
+
 func (v *getPipelineScheduleNodeSSOProviderGoogleGSuite) implementsGraphQLInterfacegetPipelineScheduleNode() {
 }
+
 func (v *getPipelineScheduleNodeSSOProviderSAML) implementsGraphQLInterfacegetPipelineScheduleNode() {
 }
 func (v *getPipelineScheduleNodeSecret) implementsGraphQLInterfacegetPipelineScheduleNode()       {}
@@ -11393,7 +11415,6 @@ func __unmarshalgetPipelineScheduleNode(b []byte, v *getPipelineScheduleNode) er
 }
 
 func __marshalgetPipelineScheduleNode(v *getPipelineScheduleNode) ([]byte, error) {
-
 	var typename string
 	switch v := (*v).(type) {
 	case *getPipelineScheduleNodeAPIAccessToken:
@@ -12462,7 +12483,6 @@ func (v *getPipelineScheduleNodePipelineSchedule) GetPipeline() PipelineSchedule
 }
 
 func (v *getPipelineScheduleNodePipelineSchedule) UnmarshalJSON(b []byte) error {
-
 	if string(b) == "null" {
 		return nil
 	}
@@ -12718,7 +12738,6 @@ type getPipelineScheduleResponse struct {
 func (v *getPipelineScheduleResponse) GetNode() getPipelineScheduleNode { return v.Node }
 
 func (v *getPipelineScheduleResponse) UnmarshalJSON(b []byte) error {
-
 	if string(b) == "null" {
 		return nil
 	}
@@ -12818,7 +12837,6 @@ func (v *getPipelineTeamsPipelineTeamsTeamPipelineConnection) GetEdges() []Pipel
 }
 
 func (v *getPipelineTeamsPipelineTeamsTeamPipelineConnection) UnmarshalJSON(b []byte) error {
-
 	if string(b) == "null" {
 		return nil
 	}
@@ -12955,7 +12973,6 @@ func (v *getPipelineTemplatesOrganizationPipelineTemplatesPipelineTemplateConnec
 }
 
 func (v *getPipelineTemplatesOrganizationPipelineTemplatesPipelineTemplateConnectionEdgesPipelineTemplateEdgeNodePipelineTemplate) UnmarshalJSON(b []byte) error {
-
 	if string(b) == "null" {
 		return nil
 	}
@@ -13055,7 +13072,6 @@ type getTestSuiteResponse struct {
 func (v *getTestSuiteResponse) GetSuite() getTestSuiteSuiteNode { return v.Suite }
 
 func (v *getTestSuiteResponse) UnmarshalJSON(b []byte) error {
-
 	if string(b) == "null" {
 		return nil
 	}
@@ -13673,6 +13689,7 @@ func (v *getTestSuiteSuiteOrganizationInvitation) implementsGraphQLInterfacegetT
 func (v *getTestSuiteSuiteOrganizationMember) implementsGraphQLInterfacegetTestSuiteSuiteNode()     {}
 func (v *getTestSuiteSuiteOrganizationRepositoryProviderGitHub) implementsGraphQLInterfacegetTestSuiteSuiteNode() {
 }
+
 func (v *getTestSuiteSuiteOrganizationRepositoryProviderGitHubEnterpriseServer) implementsGraphQLInterfacegetTestSuiteSuiteNode() {
 }
 func (v *getTestSuiteSuitePipeline) implementsGraphQLInterfacegetTestSuiteSuiteNode()             {}
@@ -13906,7 +13923,6 @@ func __unmarshalgetTestSuiteSuiteNode(b []byte, v *getTestSuiteSuiteNode) error 
 }
 
 func __marshalgetTestSuiteSuiteNode(v *getTestSuiteSuiteNode) ([]byte, error) {
-
 	var typename string
 	switch v := (*v).(type) {
 	case *getTestSuiteSuiteAPIAccessToken:
@@ -14833,7 +14849,6 @@ func (v *removeClusterDefaultQueueClusterUpdateClusterUpdatePayloadCluster) GetC
 }
 
 func (v *removeClusterDefaultQueueClusterUpdateClusterUpdatePayloadCluster) UnmarshalJSON(b []byte) error {
-
 	if string(b) == "null" {
 		return nil
 	}
@@ -15142,7 +15157,6 @@ func (v *setClusterDefaultQueueClusterUpdateClusterUpdatePayloadCluster) GetColo
 }
 
 func (v *setClusterDefaultQueueClusterUpdateClusterUpdatePayloadCluster) UnmarshalJSON(b []byte) error {
-
 	if string(b) == "null" {
 		return nil
 	}
@@ -15363,7 +15377,6 @@ func (v *teamCreateTeamCreateTeamCreatePayloadTeamEdgeNodeTeam) GetMembersCanCre
 }
 
 func (v *teamCreateTeamCreateTeamCreatePayloadTeamEdgeNodeTeam) UnmarshalJSON(b []byte) error {
-
 	if string(b) == "null" {
 		return nil
 	}
@@ -15520,7 +15533,6 @@ func (v *teamUpdateTeamUpdateTeamUpdatePayloadTeam) GetMembersCanCreatePipelines
 }
 
 func (v *teamUpdateTeamUpdateTeamUpdatePayloadTeam) UnmarshalJSON(b []byte) error {
-
 	if string(b) == "null" {
 		return nil
 	}
@@ -15634,7 +15646,6 @@ func (v *updateClusterAgentTokenClusterAgentTokenUpdateClusterAgentTokenUpdatePa
 }
 
 func (v *updateClusterAgentTokenClusterAgentTokenUpdateClusterAgentTokenUpdatePayloadClusterAgentTokenClusterToken) UnmarshalJSON(b []byte) error {
-
 	if string(b) == "null" {
 		return nil
 	}
@@ -15761,7 +15772,6 @@ func (v *updateClusterClusterUpdateClusterUpdatePayloadCluster) GetDefaultQueue(
 }
 
 func (v *updateClusterClusterUpdateClusterUpdatePayloadCluster) UnmarshalJSON(b []byte) error {
-
 	if string(b) == "null" {
 		return nil
 	}
@@ -15904,7 +15914,6 @@ func (v *updateClusterQueueClusterQueueUpdateClusterQueueUpdatePayloadClusterQue
 }
 
 func (v *updateClusterQueueClusterQueueUpdateClusterQueueUpdatePayloadClusterQueue) UnmarshalJSON(b []byte) error {
-
 	if string(b) == "null" {
 		return nil
 	}
@@ -16097,7 +16106,6 @@ func (v *updateOrganizationRuleRuleUpdateRuleUpdatePayloadRule) GetTarget() Orga
 }
 
 func (v *updateOrganizationRuleRuleUpdateRuleUpdatePayloadRule) UnmarshalJSON(b []byte) error {
-
 	if string(b) == "null" {
 		return nil
 	}
@@ -16334,7 +16342,6 @@ func (v *updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline) GetWebhookUR
 }
 
 func (v *updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline) UnmarshalJSON(b []byte) error {
-
 	if string(b) == "null" {
 		return nil
 	}
@@ -16529,7 +16536,6 @@ func (v *updatePipelineSchedulePipelineScheduleUpdatePipelineScheduleUpdatePaylo
 }
 
 func (v *updatePipelineSchedulePipelineScheduleUpdatePipelineScheduleUpdatePayloadPipelineSchedule) UnmarshalJSON(b []byte) error {
-
 	if string(b) == "null" {
 		return nil
 	}
@@ -16662,7 +16668,6 @@ func (v *updatePipelineTemplatePipelineTemplateUpdatePipelineTemplateUpdatePaylo
 }
 
 func (v *updatePipelineTemplatePipelineTemplateUpdatePipelineTemplateUpdatePayloadPipelineTemplate) UnmarshalJSON(b []byte) error {
-
 	if string(b) == "null" {
 		return nil
 	}
@@ -16789,7 +16794,6 @@ func (v *updateTeamMemberTeamMemberUpdateTeamMemberUpdatePayloadTeamMember) GetR
 }
 
 func (v *updateTeamMemberTeamMemberUpdateTeamMemberUpdatePayloadTeamMember) UnmarshalJSON(b []byte) error {
-
 	if string(b) == "null" {
 		return nil
 	}
@@ -16902,7 +16906,6 @@ func (v *updateTeamPipelineTeamPipelineUpdateTeamPipelineUpdatePayloadTeamPipeli
 }
 
 func (v *updateTeamPipelineTeamPipelineUpdateTeamPipelineUpdatePayloadTeamPipeline) UnmarshalJSON(b []byte) error {
-
 	if string(b) == "null" {
 		return nil
 	}
@@ -17052,7 +17055,6 @@ func (v *upsertBannerOrganizationBannerUpsertOrganizationBannerUpsertPayloadBann
 }
 
 func (v *upsertBannerOrganizationBannerUpsertOrganizationBannerUpsertPayloadBannerOrganizationBanner) UnmarshalJSON(b []byte) error {
-
 	if string(b) == "null" {
 		return nil
 	}

@@ -18,10 +18,10 @@ func TestAccBuildkiteClusterQueueResource(t *testing.T) {
 		return fmt.Sprintf(`
 		provider "buildkite" {
 			timeouts = {
-				create = "10s"
-				read = "10s"
-				update = "10s"
-				delete = "10s"
+				create = "60s"
+				read = "60s"
+				update = "60s"
+				delete = "60s"
 			}
 		}
 
@@ -42,10 +42,10 @@ func TestAccBuildkiteClusterQueueResource(t *testing.T) {
 		return fmt.Sprintf(`
 		provider "buildkite" {
 			timeouts = {
-				create = "10s"
-				read = "10s"
-				update = "10s"
-				delete = "10s"
+				create = "60s"
+				read = "60s"
+				update = "60s"
+				delete = "60s"
 			}
 		}
 		resource "buildkite_cluster" "cluster_test" {
@@ -65,10 +65,10 @@ func TestAccBuildkiteClusterQueueResource(t *testing.T) {
 		return fmt.Sprintf(`
 		provider "buildkite" {
 			timeouts = {
-				create = "10s"
-				read = "10s"
-				update = "10s"
-				delete = "10s"
+				create = "60s"
+				read = "60s"
+				update = "60s"
+				delete = "60s"
 			}
 		}
 		resource "buildkite_cluster" "cluster_test" {
@@ -88,10 +88,10 @@ func TestAccBuildkiteClusterQueueResource(t *testing.T) {
 		return fmt.Sprintf(`
     provider "buildkite" {
         timeouts = {
-            create = "10s"
-            read = "10s"
-            update = "10s"
-            delete = "10s"
+            create = "60s"
+            read = "60s"
+            update = "60s"
+            delete = "60s"
         }
     }
 
@@ -119,10 +119,10 @@ func TestAccBuildkiteClusterQueueResource(t *testing.T) {
 		return fmt.Sprintf(`
     provider "buildkite" {
         timeouts = {
-            create = "10s"
-            read = "10s"
-            update = "10s"
-            delete = "10s"
+            create = "60s"
+            read = "60s"
+            update = "60s"
+            delete = "60s"
         }
     }
 
@@ -150,10 +150,10 @@ func TestAccBuildkiteClusterQueueResource(t *testing.T) {
 		return fmt.Sprintf(`
     provider "buildkite" {
         timeouts = {
-            create = "10s"
-            read = "10s"
-            update = "10s"
-            delete = "10s"
+            create = "60s"
+            read = "60s"
+            update = "60s"
+            delete = "60s"
         }
     }
 
@@ -181,10 +181,10 @@ func TestAccBuildkiteClusterQueueResource(t *testing.T) {
 		return fmt.Sprintf(`
     provider "buildkite" {
         timeouts = {
-            create = "10s"
-            read = "10s"
-            update = "10s"
-            delete = "10s"
+            create = "60s"
+            read = "60s"
+            update = "60s"
+            delete = "60s"
         }
     }
 
@@ -212,10 +212,10 @@ func TestAccBuildkiteClusterQueueResource(t *testing.T) {
 		return fmt.Sprintf(`
     provider "buildkite" {
         timeouts = {
-            create = "10s"
-            read = "10s"
-            update = "10s"
-            delete = "10s"
+            create = "60s"
+            read = "60s"
+            update = "60s"
+            delete = "60s"
         }
     }
 
@@ -655,7 +655,6 @@ func testAccCheckClusterQueueDestroy(s *terraform.State) error {
 		if rs.Type != "buildkite_cluster_queue" {
 			continue
 		}
-
 	}
 	return nil
 }

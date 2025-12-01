@@ -345,7 +345,6 @@ func (p *pipelineResource) Delete(ctx context.Context, req resource.DeleteReques
 
 		return retryContextError(err)
 	})
-
 	if err != nil {
 		errorMsg := fmt.Sprintf("Could not delete pipeline: %s", err.Error())
 		if isActiveJobsError(err) {

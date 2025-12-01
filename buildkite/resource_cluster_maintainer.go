@@ -183,7 +183,6 @@ func (c *clusterMaintainerResource) Create(ctx context.Context, req resource.Cre
 		result, err = c.createClusterMaintainer(ctx, state)
 		return retryContextError(err)
 	})
-
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to create cluster maintainer",
@@ -226,7 +225,6 @@ func (c *clusterMaintainerResource) Read(ctx context.Context, req resource.ReadR
 		}
 		return nil
 	})
-
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to read cluster maintainer",
@@ -276,7 +274,6 @@ func (c *clusterMaintainerResource) Delete(ctx context.Context, req resource.Del
 		err := c.deleteClusterMaintainer(ctx, &state)
 		return retryContextError(err)
 	})
-
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to delete cluster maintainer",
