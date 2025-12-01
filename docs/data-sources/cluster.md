@@ -39,4 +39,17 @@ resource "buildkite_pipeline" "terraform-provider-buildkite" {
 - `description` (String) The description of the cluster.
 - `emoji` (String) The emoji of the cluster.
 - `id` (String) The GraphQL ID of the cluster.
+- `maintainers` (Attributes List) List of maintainers (users and teams) for this cluster. (see [below for nested schema](#nestedatt--maintainers))
 - `uuid` (String) The UUID of the cluster
+
+<a id="nestedatt--maintainers"></a>
+### Nested Schema for `maintainers`
+
+Read-Only:
+
+- `actor_email` (String) The email of the actor (only for users).
+- `actor_name` (String) The name of the actor.
+- `actor_slug` (String) The slug of the actor (only for teams).
+- `actor_type` (String) The type of the actor (user or team).
+- `actor_uuid` (String) The UUID of the actor (user or team).
+- `permission_uuid` (String) The UUID of the maintainer permission.

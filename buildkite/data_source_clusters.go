@@ -22,6 +22,7 @@ type clustersModel struct {
 	Emoji        types.String               `tfsdk:"emoji"`
 	Color        types.String               `tfsdk:"color"`
 	DefaultQueue *clustersDefaultQueueModel `tfsdk:"default_queue"`
+	Maintainers  []maintainerModel          `tfsdk:"maintainers"`
 }
 
 type clustersDefaultQueueModel struct {
@@ -108,6 +109,38 @@ func (c *clustersDatasource) Schema(ctx context.Context, req datasource.SchemaRe
 								},
 							},
 						},
+						"maintainers": schema.ListNestedAttribute{
+							Computed:            true,
+							MarkdownDescription: "List of maintainers (users and teams) for this cluster.",
+							NestedObject: schema.NestedAttributeObject{
+								Attributes: map[string]schema.Attribute{
+									"permission_uuid": schema.StringAttribute{
+										Computed:            true,
+										MarkdownDescription: "The UUID of the maintainer permission.",
+									},
+									"actor_uuid": schema.StringAttribute{
+										Computed:            true,
+										MarkdownDescription: "The UUID of the actor (user or team).",
+									},
+									"actor_type": schema.StringAttribute{
+										Computed:            true,
+										MarkdownDescription: "The type of the actor (user or team).",
+									},
+									"actor_name": schema.StringAttribute{
+										Computed:            true,
+										MarkdownDescription: "The name of the actor.",
+									},
+									"actor_email": schema.StringAttribute{
+										Computed:            true,
+										MarkdownDescription: "The email of the actor (only for users).",
+									},
+									"actor_slug": schema.StringAttribute{
+										Computed:            true,
+										MarkdownDescription: "The slug of the actor (only for teams).",
+									},
+								},
+							},
+						},
 					},
 				},
 			},
@@ -143,7 +176,7 @@ func (c *clustersDatasource) Read(ctx context.Context, req datasource.ReadReques
 		}
 
 		for _, cluster := range res.Organization.Clusters.Edges {
-			updateClustersDatasourceState(&state, cluster)
+			updateClustersDatasourceState(ctx, c.client, resp, &state, cluster)
 		}
 
 		if !res.Organization.Clusters.PageInfo.HasNextPage {
@@ -155,7 +188,7 @@ func (c *clustersDatasource) Read(ctx context.Context, req datasource.ReadReques
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
-func updateClustersDatasourceState(state *clustersDatasourceModel, data GetOrganizationClustersOrganizationClustersClusterConnectionEdgesClusterEdge) {
+func updateClustersDatasourceState(ctx context.Context, client *Client, resp *datasource.ReadResponse, state *clustersDatasourceModel, data GetOrganizationClustersOrganizationClustersClusterConnectionEdgesClusterEdge) {
 	clusterState := clustersModel{
 		ID:          types.StringValue(data.Node.Id),
 		UUID:        types.StringValue(data.Node.Uuid),
@@ -172,6 +205,19 @@ func updateClustersDatasourceState(state *clustersDatasourceModel, data GetOrgan
 			Key:         types.StringValue(data.Node.DefaultQueue.Key),
 			Description: types.StringPointerValue(data.Node.DefaultQueue.Description),
 		}
+	}
+
+	// Fetch maintainers for this cluster
+	maintainers, err := client.listClusterMaintainers(ctx, client.organization, data.Node.Uuid)
+	if err != nil {
+		// Log warning but don't fail the entire request - maintainers might not be accessible
+		resp.Diagnostics.AddWarning(
+			"Unable to fetch cluster maintainers",
+			fmt.Sprintf("Could not fetch maintainers for cluster %s: %s", data.Node.Name, err.Error()),
+		)
+		clusterState.Maintainers = []maintainerModel{}
+	} else {
+		clusterState.Maintainers = maintainers
 	}
 
 	state.Clusters = append(state.Clusters, clusterState)

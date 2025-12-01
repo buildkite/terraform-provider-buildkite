@@ -16,6 +16,7 @@ func TestAccBuildkiteClustersDatasource(t *testing.T) {
 					Config: `data "buildkite_clusters" "clusters" {}`,
 					Check: resource.ComposeTestCheckFunc(
 						resource.TestCheckResourceAttrSet("data.buildkite_clusters.clusters", "clusters.0.name"),
+						resource.TestCheckResourceAttrSet("data.buildkite_clusters.clusters", "clusters.0.maintainers.#"),
 					),
 				},
 			},

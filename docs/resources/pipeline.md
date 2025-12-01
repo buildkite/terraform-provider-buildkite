@@ -173,12 +173,15 @@ resource "github_repository_webhook" "my_webhook" {
 Optional:
 
 - `build_branches` (Boolean) Whether to create builds when branches are pushed.
+- `build_merge_group_checks_requested` (Boolean) Whether to create merge queue builds for a merge queue enabled GitHub repository with required status checks
+- `build_pull_request_base_branch_changed` (Boolean) Whether to create builds for pull requests when its base branch changes.
 - `build_pull_request_forks` (Boolean) Whether to create builds for pull requests from third-party forks.
 - `build_pull_request_labels_changed` (Boolean) Whether to create builds for pull requests when labels are added or removed.
 - `build_pull_request_ready_for_review` (Boolean) Whether to create a build when a pull request changes to "Ready for review".
 - `build_pull_requests` (Boolean) Whether to create builds for commits that are part of a pull request.
 - `build_tags` (Boolean) Whether to create builds when tags are pushed.
 - `cancel_deleted_branch_builds` (Boolean) Automatically cancel running builds for a branch if the branch is deleted.
+- `cancel_when_merge_group_destroyed` (Boolean) Whether to cancel any running builds belonging to a removed merge group.
 - `filter_condition` (String) The condition to evaluate when deciding if a build should run. This is only valid when `trigger_mode` is `code`. More details available in [the documentation](https://buildkite.com/docs/pipelines/conditionals#conditionals-in-pipelines).
 - `filter_enabled` (Boolean) Whether to filter builds to only run when the condition in `filter_condition` is true.
 - `ignore_default_branch_pull_requests` (Boolean) Whether to prevent caching pull requests with the source branch matching the default branch.
@@ -199,6 +202,7 @@ Optional:
 
 	-> `trigger_mode` is only valid if the pipeline uses a GitHub repository.
 	-> If not set, the default value is `code` and other provider settings defaults are applied.
+- `use_merge_group_base_commit_for_git_diff_base` (Boolean) When enabled, agents performing a git diff to determine steps to upload based on [`if_changed`](https://buildkite.com/docs/pipelines/configure/step-types/command-step#agent-applied-attributes)comparisons will use the base commit that points to the previous merge group rather than the base branch
 
 ## Import
 

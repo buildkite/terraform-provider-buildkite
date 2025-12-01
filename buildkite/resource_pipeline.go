@@ -258,6 +258,7 @@ type providerSettingsModel struct {
 	SkipPullRequestBuildsForExistingCommits types.Bool   `tfsdk:"skip_pull_request_builds_for_existing_commits"`
 	BuildPullRequestReadyForReview          types.Bool   `tfsdk:"build_pull_request_ready_for_review"`
 	BuildPullRequestLabelsChanged           types.Bool   `tfsdk:"build_pull_request_labels_changed"`
+	BuildPullRequestBaseBranchChanged       types.Bool   `tfsdk:"build_pull_request_base_branch_changed"`
 	BuildPullRequestForks                   types.Bool   `tfsdk:"build_pull_request_forks"`
 	PrefixPullRequestForkBranchNames        types.Bool   `tfsdk:"prefix_pull_request_fork_branch_names"`
 	BuildBranches                           types.Bool   `tfsdk:"build_branches"`
@@ -270,6 +271,9 @@ type providerSettingsModel struct {
 	PublishCommitStatusPerStep              types.Bool   `tfsdk:"publish_commit_status_per_step"`
 	SeparatePullRequestStatuses             types.Bool   `tfsdk:"separate_pull_request_statuses"`
 	IgnoreDefaultBranchPullRequests         types.Bool   `tfsdk:"ignore_default_branch_pull_requests"`
+	BuildMergeGroupChecksRequested          types.Bool   `tfsdk:"build_merge_group_checks_requested"`
+	CancelWhenMergeGroupDestroyed           types.Bool   `tfsdk:"cancel_when_merge_group_destroyed"`
+	UseMergeGroupBaseCommitForGitDiffBase   types.Bool   `tfsdk:"use_merge_group_base_commit_for_git_diff_base"`
 }
 
 type pipelineResource struct {
@@ -490,7 +494,6 @@ func (p *pipelineResource) Delete(ctx context.Context, req resource.DeleteReques
 
 		return retryContextError(err)
 	})
-
 	if err != nil {
 		errorMsg := fmt.Sprintf("Could not delete pipeline: %s", err.Error())
 		if isActiveJobsError(err) {
@@ -926,6 +929,11 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 							providerSettingPlanModifier{},
 						},
 					},
+					"build_pull_request_base_branch_changed": schema.BoolAttribute{
+						Computed:            true,
+						Optional:            true,
+						MarkdownDescription: "Whether to create builds for pull requests when its base branch changes.",
+					},
 					"build_pull_request_forks": schema.BoolAttribute{
 						Computed:            true,
 						Optional:            true,
@@ -1025,6 +1033,22 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 							providerSettingPlanModifier{},
 						},
 						MarkdownDescription: "Whether to prevent caching pull requests with the source branch matching the default branch.",
+					},
+					"build_merge_group_checks_requested": schema.BoolAttribute{
+						Computed:            true,
+						Optional:            true,
+						MarkdownDescription: "Whether to create merge queue builds for a merge queue enabled GitHub repository with required status checks",
+					},
+					"cancel_when_merge_group_destroyed": schema.BoolAttribute{
+						Computed:            true,
+						Optional:            true,
+						MarkdownDescription: "Whether to cancel any running builds belonging to a removed merge group.",
+					},
+					"use_merge_group_base_commit_for_git_diff_base": schema.BoolAttribute{
+						Computed: true,
+						Optional: true,
+						MarkdownDescription: "When enabled, agents performing a git diff to determine steps to upload based on [`if_changed`](https://buildkite.com/docs/pipelines/configure/step-types/command-step#agent-applied-attributes)" +
+							"comparisons will use the base commit that points to the previous merge group rather than the base branch",
 					},
 				},
 			},
@@ -1224,7 +1248,7 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 }
 
 // findAndRemoveTeam will try to find a team and remove its access from the pipeline
-// we only know the teams ID but the API request to remove access requies the pipeline team connection ID, so we need to
+// we only know the teams ID but the API request to remove access requires the pipeline team connection ID, so we need to
 // query all connected teams and check their ID matches
 func (p *pipelineResource) findAndRemoveTeam(ctx context.Context, teamID string, pipelineSlug string, cursor string) error {
 	slug := fmt.Sprintf("%s/%s", p.client.organization, pipelineSlug)
@@ -1428,6 +1452,7 @@ type PipelineExtraSettings struct {
 	SkipBuildsForExistingCommits            *bool   `json:"skip_builds_for_existing_commits,omitempty"`
 	SkipPullRequestBuildsForExistingCommits *bool   `json:"skip_pull_request_builds_for_existing_commits,omitempty"`
 	BuildPullRequestReadyForReview          *bool   `json:"build_pull_request_ready_for_review,omitempty"`
+	BuildPullRequestBaseBranchChanged       *bool   `json:"build_pull_request_base_branch_changed,omitempty"`
 	BuildPullRequestLabelsChanged           *bool   `json:"build_pull_request_labels_changed,omitempty"`
 	BuildPullRequestForks                   *bool   `json:"build_pull_request_forks,omitempty"`
 	PrefixPullRequestForkBranchNames        *bool   `json:"prefix_pull_request_fork_branch_names,omitempty"`
@@ -1440,7 +1465,10 @@ type PipelineExtraSettings struct {
 	PublishBlockedAsPending                 *bool   `json:"publish_blocked_as_pending,omitempty"`
 	PublishCommitStatusPerStep              *bool   `json:"publish_commit_status_per_step,omitempty"`
 	SeparatePullRequestStatuses             *bool   `json:"separate_pull_request_statuses,omitempty"`
-	IgnoreDefaultBranchPullRequests         *bool   `json:"ignore_default_branch_pull_requests"`
+	IgnoreDefaultBranchPullRequests         *bool   `json:"ignore_default_branch_pull_requests,omitempty"`
+	BuildMergeGroupChecksRequested          *bool   `json:"build_merge_group_checks_requested,omitempty"`
+	CancelWhenMergeGroupDestroyed           *bool   `json:"cancel_when_merge_group_destroyed,omitempty"`
+	UseMergeGroupBaseCommitForGitDiffBase   *bool   `json:"use_merge_group_base_commit_for_git_diff_base,omitempty"`
 }
 
 func updatePipelineSlug(ctx context.Context, slug string, updatedSlug string, client *Client, timeouts time.Duration) (PipelineExtraInfo, error) {
@@ -1473,6 +1501,7 @@ func updatePipelineExtraInfo(ctx context.Context, slug string, settings *provide
 			SkipPullRequestBuildsForExistingCommits: settings.SkipPullRequestBuildsForExistingCommits.ValueBoolPointer(),
 			BuildPullRequestReadyForReview:          settings.BuildPullRequestReadyForReview.ValueBoolPointer(),
 			BuildPullRequestLabelsChanged:           settings.BuildPullRequestLabelsChanged.ValueBoolPointer(),
+			BuildPullRequestBaseBranchChanged:       settings.BuildPullRequestBaseBranchChanged.ValueBoolPointer(),
 			BuildPullRequestForks:                   settings.BuildPullRequestForks.ValueBoolPointer(),
 			PrefixPullRequestForkBranchNames:        settings.PrefixPullRequestForkBranchNames.ValueBoolPointer(),
 			BuildBranches:                           settings.BuildBranches.ValueBoolPointer(),
@@ -1485,6 +1514,9 @@ func updatePipelineExtraInfo(ctx context.Context, slug string, settings *provide
 			PublishCommitStatusPerStep:              settings.PublishCommitStatusPerStep.ValueBoolPointer(),
 			SeparatePullRequestStatuses:             settings.SeparatePullRequestStatuses.ValueBoolPointer(),
 			IgnoreDefaultBranchPullRequests:         settings.IgnoreDefaultBranchPullRequests.ValueBoolPointer(),
+			BuildMergeGroupChecksRequested:          settings.BuildMergeGroupChecksRequested.ValueBoolPointer(),
+			CancelWhenMergeGroupDestroyed:           settings.CancelWhenMergeGroupDestroyed.ValueBoolPointer(),
+			UseMergeGroupBaseCommitForGitDiffBase:   settings.UseMergeGroupBaseCommitForGitDiffBase.ValueBoolPointer(),
 		},
 	}
 
@@ -1522,6 +1554,7 @@ func updatePipelineResourceExtraInfo(state *pipelineResourceModel, pipeline *Pip
 		SkipPullRequestBuildsForExistingCommits: types.BoolPointerValue(s.SkipPullRequestBuildsForExistingCommits),
 		BuildPullRequestReadyForReview:          types.BoolPointerValue(s.BuildPullRequestReadyForReview),
 		BuildPullRequestLabelsChanged:           types.BoolPointerValue(s.BuildPullRequestLabelsChanged),
+		BuildPullRequestBaseBranchChanged:       types.BoolPointerValue(s.BuildPullRequestBaseBranchChanged),
 		BuildPullRequestForks:                   types.BoolPointerValue(s.BuildPullRequestForks),
 		PrefixPullRequestForkBranchNames:        types.BoolPointerValue(s.PrefixPullRequestForkBranchNames),
 		BuildBranches:                           types.BoolPointerValue(s.BuildBranches),
@@ -1534,6 +1567,9 @@ func updatePipelineResourceExtraInfo(state *pipelineResourceModel, pipeline *Pip
 		PublishCommitStatusPerStep:              types.BoolPointerValue(s.PublishCommitStatusPerStep),
 		SeparatePullRequestStatuses:             types.BoolPointerValue(s.SeparatePullRequestStatuses),
 		IgnoreDefaultBranchPullRequests:         types.BoolPointerValue(s.IgnoreDefaultBranchPullRequests),
+		BuildMergeGroupChecksRequested:          types.BoolPointerValue(s.BuildMergeGroupChecksRequested),
+		CancelWhenMergeGroupDestroyed:           types.BoolPointerValue(s.CancelWhenMergeGroupDestroyed),
+		UseMergeGroupBaseCommitForGitDiffBase:   types.BoolPointerValue(s.UseMergeGroupBaseCommitForGitDiffBase),
 	}
 }
 
@@ -1730,6 +1766,10 @@ func pipelineSchemaV0() schema.Schema {
 							Computed: true,
 							Optional: true,
 						},
+						"build_pull_request_base_branch_changed": schema.BoolAttribute{
+							Computed: true,
+							Optional: true,
+						},
 						"build_pull_request_forks": schema.BoolAttribute{
 							Computed: true,
 							Optional: true,
@@ -1775,6 +1815,18 @@ func pipelineSchemaV0() schema.Schema {
 							Optional: true,
 						},
 						"ignore_default_branch_pull_requests": schema.BoolAttribute{
+							Computed: true,
+							Optional: true,
+						},
+						"build_merge_group_checks_requested": schema.BoolAttribute{
+							Computed: true,
+							Optional: true,
+						},
+						"cancel_when_merge_group_destroyed": schema.BoolAttribute{
+							Computed: true,
+							Optional: true,
+						},
+						"use_merge_group_base_commit_for_git_diff_base": schema.BoolAttribute{
 							Computed: true,
 							Optional: true,
 						},

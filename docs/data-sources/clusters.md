@@ -31,6 +31,7 @@ Read-Only:
 - `description` (String) The description of the cluster.
 - `emoji` (String) The emoji for the cluster.
 - `id` (String) The GraphQL ID of the cluster.
+- `maintainers` (Attributes List) List of maintainers (users and teams) for this cluster. (see [below for nested schema](#nestedatt--clusters--maintainers))
 - `name` (String) The name of the cluster.
 - `uuid` (String) The UUID of the cluster.
 
@@ -43,3 +44,16 @@ Read-Only:
 - `id` (String) The GraphQL ID of the default queue.
 - `key` (String) The key of the default queue.
 - `uuid` (String) The UUID of the default queue.
+
+
+<a id="nestedatt--clusters--maintainers"></a>
+### Nested Schema for `clusters.maintainers`
+
+Read-Only:
+
+- `actor_email` (String) The email of the actor (only for users).
+- `actor_name` (String) The name of the actor.
+- `actor_slug` (String) The slug of the actor (only for teams).
+- `actor_type` (String) The type of the actor (user or team).
+- `actor_uuid` (String) The UUID of the actor (user or team).
+- `permission_uuid` (String) The UUID of the maintainer permission.

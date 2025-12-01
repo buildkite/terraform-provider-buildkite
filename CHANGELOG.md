@@ -1,5 +1,54 @@
 # Changelog
 
+## [v1.27.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.26.0...v1.27.0)
+
+### Features
+
+- Change all cluster maintainer-related IDs to UUIDs by @petetomasik in https://github.com/buildkite/terraform-provider-buildkite/pull/993
+- Add support for Portals by @scadu in https://github.com/buildkite/terraform-provider-buildkite/pull/992
+- Handle Org banner modifications outside TF by @petetomasik in https://github.com/buildkite/terraform-provider-buildkite/pull/994
+- Adding retry_agent_affinity attribute to cluster resource by @JoeColeman95 in https://github.com/buildkite/terraform-provider-buildkite/pull/1003
+
+### Fixes
+
+- SUP-4969: Add RequiresReplace Modifiers as cannot modify Team/Pipeline by @tomowatt in https://github.com/buildkite/terraform-provider-buildkite/pull/998
+
+### Dependencies
+
+- chore(deps): bump golang from 1.25.0 to 1.25.1 by @dependabot[bot] in https://github.com/buildkite/terraform-provider-buildkite/pull/990
+- chore(deps): bump github.com/hashicorp/terraform-plugin-framework-validators from 0.18.0 to 0.19.0 by @dependabot[bot] in https://github.com/buildkite/terraform-provider-buildkite/
+-ull/997
+- chore(deps): bump github.com/hashicorp/terraform-plugin-framework-timeouts from 0.6.0 to 0.7.0 by @dependabot[bot] in https://github.com/buildkite/terraform-provider-buildkite/pull/-999
+- chore(deps): bump golang from 1.25.1 to 1.25.3 by @dependabot[bot] in https://github.com/buildkite/terraform-provider-buildkite/pull/1000
+- chore(deps): bump github.com/hashicorp/terraform-plugin-log from 0.9.0 to 0.10.0 by @dependabot[bot] in https://github.com/buildkite/terraform-provider-buildkite/pull/1001
+- chore(deps): bump golang.org/x/crypto from 0.42.0 to 0.45.0 by @dependabot[bot] in https://github.com/buildkite/terraform-provider-buildkite/pull/1002
+
+
+### Internal
+
+- feat: add CONTRIBUTING.md by @mcncl in https://github.com/buildkite/terraform-provider-buildkite/pull/995
+- drop backup golangci-lint file by @tylerauerbeck in https://github.com/buildkite/terraform-provider-buildkite/pull/991
+
+## [v1.26.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.25.0...v1.26.0)
+
+### Features
+- Create cluster maintainer resource, data source attributes by @petetomasik in https://github.com/buildkite/terraform-provider-buildkite/pull/987
+- Add support for merge queue settings to terraform provider by @jonathanly in https://github.com/buildkite/terraform-provider-buildkite/pull/982
+
+### Dependencies
+- chore(deps): bump github.com/hashicorp/terraform-plugin-framework-timeouts from 0.5.0 to 0.6.0 by @dependabot[bot] in https://github.com/buildkite/terraform-provider-buildkite/pull/984
+- chore(deps): bump github.com/hashicorp/terraform-plugin-sdk/v2 from 2.37.0 to 2.38.1 by @dependabot[bot] in https://github.com/buildkite/terraform-provider-buildkite/pull/983
+
+## [v1.25.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.24.0...v1.25.0)
+
+- Trim white space for provider config string values by @aryounce in https://github.com/buildkite/terraform-provider-buildkite/pull/974
+- warn on plan for duplicate pipeline name by @mcncl in https://github.com/buildkite/terraform-provider-buildkite/pull/975
+- Revert "warn on plan for duplicate pipeline name" by @mcncl in https://github.com/buildkite/terraform-provider-buildkite/pull/976
+- chore(deps): bump github.com/hashicorp/terraform-plugin-testing from 1.13.2 to 1.13.3 by @dependabot[bot] in https://github.com/buildkite/terraform-provider-buildkite/pull/977
+- chore(deps): bump golang from 1.24.5 to 1.25.0 by @dependabot[bot] in https://github.com/buildkite/terraform-provider-buildkite/pull/978
+- chore(deps): bump github.com/buildkite/go-pipeline from 0.15.0 to 0.16.0 by @dependabot[bot] in https://github.com/buildkite/terraform-provider-buildkite/pull/980
+- [feat]: Add Pipeline Github Provider Setting to build pull requests when its base branch changes by @RKTMN in https://github.com/buildkite/terraform-provider-buildkite/pull/985
+
 ## [v1.24.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.23.0...v1.24.0)
 
 - Improve default team handling for pipeline resource by @JoeColeman95 in https://github.com/buildkite/terraform-provider-buildkite/pull/969

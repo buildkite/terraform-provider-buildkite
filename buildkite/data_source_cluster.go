@@ -13,6 +13,16 @@ type clusterDatasource struct {
 	client *Client
 }
 
+type clusterDatasourceModel struct {
+	ID          types.String      `tfsdk:"id"`
+	UUID        types.String      `tfsdk:"uuid"`
+	Name        types.String      `tfsdk:"name"`
+	Description types.String      `tfsdk:"description"`
+	Emoji       types.String      `tfsdk:"emoji"`
+	Color       types.String      `tfsdk:"color"`
+	Maintainers []maintainerModel `tfsdk:"maintainers"`
+}
+
 func newClusterDatasource() datasource.DataSource {
 	return &clusterDatasource{}
 }
@@ -30,7 +40,7 @@ func (*clusterDatasource) Metadata(ctx context.Context, req datasource.MetadataR
 }
 
 func (c *clusterDatasource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
-	var state clusterResourceModel
+	var state clusterDatasourceModel
 
 	resp.Diagnostics.Append(req.Config.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
@@ -69,6 +79,19 @@ func (c *clusterDatasource) Read(ctx context.Context, req datasource.ReadRequest
 				state.ID = types.StringValue(cluster.Node.Id)
 				state.Name = types.StringValue(cluster.Node.Name)
 				state.UUID = types.StringValue(cluster.Node.Uuid)
+
+				// Fetch maintainers for this cluster
+				maintainers, err := c.client.listClusterMaintainers(ctx, c.client.organization, cluster.Node.Uuid)
+				if err != nil {
+					// Log warning but don't fail the entire request - maintainers might not be accessible
+					resp.Diagnostics.AddWarning(
+						"Unable to fetch cluster maintainers",
+						fmt.Sprintf("Could not fetch maintainers for cluster %s: %s", cluster.Node.Name, err.Error()),
+					)
+					state.Maintainers = []maintainerModel{}
+				} else {
+					state.Maintainers = maintainers
+				}
 				break
 			}
 		}
@@ -116,6 +139,38 @@ func (*clusterDatasource) Schema(ctx context.Context, req datasource.SchemaReque
 			"color": schema.StringAttribute{
 				Computed:            true,
 				MarkdownDescription: "The color of the cluster.",
+			},
+			"maintainers": schema.ListNestedAttribute{
+				Computed:            true,
+				MarkdownDescription: "List of maintainers (users and teams) for this cluster.",
+				NestedObject: schema.NestedAttributeObject{
+					Attributes: map[string]schema.Attribute{
+						"permission_uuid": schema.StringAttribute{
+							Computed:            true,
+							MarkdownDescription: "The UUID of the maintainer permission.",
+						},
+						"actor_uuid": schema.StringAttribute{
+							Computed:            true,
+							MarkdownDescription: "The UUID of the actor (user or team).",
+						},
+						"actor_type": schema.StringAttribute{
+							Computed:            true,
+							MarkdownDescription: "The type of the actor (user or team).",
+						},
+						"actor_name": schema.StringAttribute{
+							Computed:            true,
+							MarkdownDescription: "The name of the actor.",
+						},
+						"actor_email": schema.StringAttribute{
+							Computed:            true,
+							MarkdownDescription: "The email of the actor (only for users).",
+						},
+						"actor_slug": schema.StringAttribute{
+							Computed:            true,
+							MarkdownDescription: "The slug of the actor (only for teams).",
+						},
+					},
+				},
 			},
 		},
 	}

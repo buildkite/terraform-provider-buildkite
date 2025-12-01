@@ -1066,18 +1066,15 @@ union AuditSubjectNode =APIAccessToken | AgentToken | AuthorizationBitbucket | A
 All the possible types of subjects in an Audit Event
 """
 enum AuditSubjectType {
+	SUITE
+	USER
+	SUBSCRIPTION
 	CLUSTER_PERMISSION
 	CLUSTER
-	SECRET
-	AUTHORIZATION
-	CLUSTER_QUEUE_TOKEN
-	CLUSTER_TOKEN
-	PORTAL_TOKEN
-	PORTAL_SECRET
-	TEAM
 	REGISTRY
+	TEAM
+	AUTHORIZATION
 	RULE
-	SUBSCRIPTION
 	AGENT_TOKEN
 	API_ACCESS_TOKEN
 	CACHE_REGISTRY
@@ -1088,31 +1085,34 @@ enum AuditSubjectType {
 	ORGANIZATION_INVITATION
 	ORGANIZATION_MEMBER
 	ORGANIZATION_IMPERSONATION_REQUEST
-	PIPELINE
-	PIPELINE_TEMPLATE
-	PORTAL
 	PIPELINE_SCHEDULE
+	PIPELINE
+	PORTAL
 	PORTAL_TOKEN_CODE
-	TEAM_PIPELINE
-	TEAM_REGISTRY
+	PIPELINE_TEMPLATE
 	TEAM_MEMBER
+	TEAM_REGISTRY
 	TEAM_SUITE
+	TEAM_PIPELINE
+	CLUSTER_QUEUE_TOKEN
+	CLUSTER_TOKEN
 	TEAM_SECRET
 	COMPOSITE_REGISTRY_UPSTREAM
-	REGISTRY_TOKEN
-	SCM_SERVICE
-	SCM_PIPELINE_SETTINGS
-	SCM_REPOSITORY_HOST
-	SUITE_MONITOR
-	SUITE_SAVED_VIEW
+	PORTAL_TOKEN
 	SSO_PROVIDER
-	SUITE_WORKFLOW
-	USER_EMAIL
-	USER_TOTP
+	PORTAL_SECRET
 	JOB
 	ORGANIZATION
-	SUITE
-	USER
+	SUITE_MONITOR
+	SCM_PIPELINE_SETTINGS
+	REGISTRY_TOKEN
+	USER_EMAIL
+	SUITE_SAVED_VIEW
+	SUITE_WORKFLOW
+	SCM_REPOSITORY_HOST
+	USER_TOTP
+	SCM_SERVICE
+	SECRET
 }
 
 """
@@ -3248,6 +3248,41 @@ The public UUID for this job event
 }
 
 """
+A job event for when a job's priority has been changed
+"""
+type JobEventReprioritized implements JobEvent & Node{
+"""
+The actor that caused this event to occur
+"""
+	actor: JobEventActor!
+"""
+The priority value after the change
+"""
+	changedPriorityAfterValue: Int
+"""
+The priority value before the change
+"""
+	changedPriorityBeforeValue: Int
+	id: ID!
+"""
+The job that this event belongs to
+"""
+	job: JobTypeCommand!
+"""
+The time when the event occurred
+"""
+	timestamp: DateTime!
+"""
+The type of event
+"""
+	type: JobEventType!
+"""
+The public UUID for this job event
+"""
+	uuid: ID!
+}
+
+"""
 An event created when the job is retried
 """
 type JobEventRetried implements JobEvent & Node{
@@ -3328,6 +3363,10 @@ The agent refused the job. Note that in this case, no signal was sent to the pro
 """
 	AGENT_REFUSED
 """
+The agent was incompatible with the job requirements (e.g., version too old to support required features). Note that in this case, no signal was sent to the process, the job was not run at all.
+"""
+	AGENT_INCOMPATIBLE
+"""
 The agent refused the job because the signature could not be verified. Note that in this case, no signal was sent to the process, the job was not run at all.
 """
 	SIGNATURE_REJECTED
@@ -3335,6 +3374,68 @@ The agent refused the job because the signature could not be verified. Note that
 The job couldn't be launched by the stack controlling agents. This could be due to a misconfiguration of the job, or due to a lack of resources.
 """
 	STACK_ERROR
+}
+
+"""
+An event created when a stack error is reported
+"""
+type JobEventStackError implements JobEvent & Node{
+"""
+The actor that caused this event to occur
+"""
+	actor: JobEventActor!
+"""
+Details about the stack error
+"""
+	errorDetail: String
+	id: ID!
+"""
+The job that this event belongs to
+"""
+	job: JobTypeCommand!
+"""
+The time when the event occurred
+"""
+	timestamp: DateTime!
+"""
+The type of event
+"""
+	type: JobEventType!
+"""
+The public UUID for this job event
+"""
+	uuid: ID!
+}
+
+"""
+An event created when a stack notification is triggered
+"""
+type JobEventStackNotification implements JobEvent & Node{
+"""
+The actor that caused this event to occur
+"""
+	actor: JobEventActor!
+	id: ID!
+"""
+The job that this event belongs to
+"""
+	job: JobTypeCommand!
+"""
+Message from the stack notification
+"""
+	message: String
+"""
+The time when the event occurred
+"""
+	timestamp: DateTime!
+"""
+The type of event
+"""
+	type: JobEventType!
+"""
+The public UUID for this job event
+"""
+	uuid: ID!
 }
 
 """
@@ -3442,6 +3543,10 @@ The Job is limited by a concurrency group
 """
 	LIMITED
 """
+The Job is limited by a platform limit
+"""
+	PLATFORM_LIMITED
+"""
 The Job uploaded steps to the current build
 """
 	BUILD_STEP_UPLOAD_CREATED
@@ -3473,6 +3578,18 @@ The Job was reserved by a stack for later execution
 The Job was reserved by a stack but the stack took too long to spin up agent
 """
 	RESERVED_EXPIRED
+"""
+Stack sent a notification for this job
+"""
+	STACK_NOTIFICATION
+"""
+Stack encountered an error handling this job
+"""
+	STACK_ERRORED
+"""
+The Job's priority was changed
+"""
+	REPRIORITIZED
 }
 
 interface JobInterface {
@@ -3581,6 +3698,14 @@ The job is waiting on a concurrency group check before becoming either `LIMITED`
 The job is waiting for jobs with the same concurrency group to finish
 """
 	LIMITED
+"""
+The job is waiting on platform-wide concurrency/resource limits before becoming either `PLATFORM_LIMITED` or `SCHEDULED`
+"""
+	PLATFORM_LIMITING
+"""
+The job is blocked by platform-wide concurrency/resource limits
+"""
+	PLATFORM_LIMITED
 """
 The job is reserved by a stack for later execution
 """
@@ -8426,6 +8551,10 @@ Whether to create builds when branches are pushed.
 """
 	buildBranches: Boolean!
 """
+Whether to create builds for merge group check runs.
+"""
+	buildMergeGroupChecksRequested: Boolean!
+"""
 Whether to create builds for pull requests when the base branch is changed.
 """
 	buildPullRequestBaseBranchChanged: Boolean!
@@ -8453,6 +8582,10 @@ Whether to create builds when tags are pushed.
 A boolean to enable automatically cancelling any running builds for a branch if the branch is deleted.
 """
 	cancelDeletedBranchBuilds: Boolean!
+"""
+Whether to cancel running builds when a merge group is destroyed.
+"""
+	cancelWhenMergeGroupDestroyed: Boolean!
 """
 The conditions under which this pipeline will trigger a build.
 """
@@ -8505,6 +8638,10 @@ Whether to skip creating a new build for a pull request if an existing build for
 What type of event to trigger builds on.
 """
 	triggerMode: String!
+"""
+Whether to use the merge group base commit for git diff base.
+"""
+	useMergeGroupBaseCommitForGitDiffBase: Boolean!
 }
 
 """
@@ -8516,6 +8653,10 @@ Whether to create builds when branches are pushed.
 """
 	buildBranches: Boolean!
 """
+Whether to create builds for merge group check runs.
+"""
+	buildMergeGroupChecksRequested: Boolean!
+"""
 Whether to create builds for pull requests when the base branch is changed.
 """
 	buildPullRequestBaseBranchChanged: Boolean!
@@ -8543,6 +8684,10 @@ Whether to create builds when tags are pushed.
 A boolean to enable automatically cancelling any running builds for a branch if the branch is deleted.
 """
 	cancelDeletedBranchBuilds: Boolean!
+"""
+Whether to cancel running builds when a merge group is destroyed.
+"""
+	cancelWhenMergeGroupDestroyed: Boolean!
 """
 The conditions under which this pipeline will trigger a build.
 """
@@ -8595,6 +8740,10 @@ Whether to skip creating a new build for a pull request if an existing build for
 What type of event to trigger builds on.
 """
 	triggerMode: String!
+"""
+Whether to use the merge group base commit for git diff base.
+"""
+	useMergeGroupBaseCommitForGitDiffBase: Boolean!
 }
 
 """
@@ -8846,13 +8995,13 @@ The action a rule enforces
 """
 enum RuleAction {
 """
-Trigger build
-"""
-	TRIGGER_BUILD
-"""
 Artifacts read
 """
 	ARTIFACTS_READ
+"""
+Trigger build
+"""
+	TRIGGER_BUILD
 }
 
 type RuleConnection implements Connection{
