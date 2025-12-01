@@ -47,4 +47,4 @@ cd /work
 
 echo "--- running goreleaser"
 
-goreleaser release --rm-dist
+goreleaser release --clean
