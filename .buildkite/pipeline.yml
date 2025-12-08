@@ -1,15 +1,11 @@
 steps:
   - label: ":golangci-lint: lint"
     key: lint
-    command : golangci-lint run --timeout 2m0s
     agents:
       queue: "hosted"
     plugins:
-      - docker#v5.9.0:
-          image: "golangci/golangci-lint:v2.0.2"
-          always-pull: true
-          volumes:
-            - "/.cache/golangci-lint/v2.0.2:/root/.cache"
+      - golangci-lint#v1.0.0:
+          config: .golangci.yaml
 
   - label: vet
     key: vet
