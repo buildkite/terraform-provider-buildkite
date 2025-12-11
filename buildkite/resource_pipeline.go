@@ -1590,6 +1590,7 @@ func (v branchFilterValidator) ValidateString(ctx context.Context, req validator
 	}{
 		{regexp.MustCompile(`build\.`), "variable references (e.g., build.branch)"},
 		{regexp.MustCompile(`pipeline\.`), "variable references (e.g., pipeline.slug)"},
+		{regexp.MustCompile(`organization\.`), "variable references (e.g., organization.slug)"},
 		{regexp.MustCompile(`env\(`), "env() function calls"},
 		{regexp.MustCompile(`(==|!=|=~|!~)`), "comparison operators (==, !=, =~, !~)"},
 		{regexp.MustCompile(`(&&|\|\|)`), "logical operators (&& or ||)"},
