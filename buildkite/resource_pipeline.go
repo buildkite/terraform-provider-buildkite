@@ -544,6 +544,9 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 			"branch_configuration": schema.StringAttribute{
 				MarkdownDescription: "Configure the pipeline to only build on this branch conditional.",
 				Optional:            true,
+				Validators: []validator.String{
+					branchFilterValidator{},
+				},
 			},
 			"cancel_intermediate_builds": schema.BoolAttribute{
 				Computed:            true,
@@ -559,6 +562,9 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 				MarkdownDescription: "Filter the `cancel_intermediate_builds` setting based on this branch condition.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
+				},
+				Validators: []validator.String{
+					branchFilterValidator{},
 				},
 			},
 			"color": schema.StringAttribute{
@@ -647,6 +653,9 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 				MarkdownDescription: "Filter the `skip_intermediate_builds` setting based on this branch condition.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
+				},
+				Validators: []validator.String{
+					branchFilterValidator{},
 				},
 			},
 			"slug": schema.StringAttribute{
@@ -741,6 +750,9 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 						Computed:            true,
 						Optional:            true,
 						MarkdownDescription: "Filter pull requests builds by the branch filter.",
+						Validators: []validator.String{
+							branchFilterValidator{},
+						},
 					},
 					"skip_builds_for_existing_commits": schema.BoolAttribute{
 						Optional:            true,
@@ -802,7 +814,10 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 						Computed: true,
 						Optional: true,
 						MarkdownDescription: "The condition to evaluate when deciding if a build should run. This is only valid when `trigger_mode` is `code`. " +
-							"More details available in [the documentation](https://buildkite.com/docs/pipelines/conditionals#conditionals-in-pipelines).",
+							"More details available in [the documentation](https://buildkite.com/docs/pipelines/conditionals).",
+						Validators: []validator.String{
+							filterConditionValidator{},
+						},
 					},
 					"publish_commit_status": schema.BoolAttribute{
 						Optional:            true,
@@ -1538,5 +1553,129 @@ func pipelineSchemaV0() schema.Schema {
 				},
 			},
 		},
+	}
+}
+
+// branchFilterValidator rejects conditional expression syntax in branch filter fields
+// Branch filters only support glob patterns (e.g., "!main", "feature/*")
+// For conditional expressions, users should use filter_condition instead
+type branchFilterValidator struct{}
+
+func (v branchFilterValidator) Description(ctx context.Context) string {
+	return "rejects conditional expression syntax in branch filter fields"
+}
+
+func (v branchFilterValidator) MarkdownDescription(ctx context.Context) string {
+	return "Branch filter fields only support glob patterns. Use filter_condition for conditional expressions."
+}
+
+func (v branchFilterValidator) ValidateString(ctx context.Context, req validator.StringRequest, resp *validator.StringResponse) {
+	// Skip validation if value is null or unknown
+	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
+		return
+	}
+
+	value := req.ConfigValue.ValueString()
+
+	// Skip empty strings
+	if value == "" {
+		return
+	}
+
+	// Check for conditional expression syntax
+	// These indicate the user is trying to use filter_condition syntax in a branch filter field
+	conditionalPatterns := []struct {
+		pattern *regexp.Regexp
+		hint    string
+	}{
+		{regexp.MustCompile(`build\.`), "variable references (e.g., build.branch)"},
+		{regexp.MustCompile(`pipeline\.`), "variable references (e.g., pipeline.slug)"},
+		{regexp.MustCompile(`organization\.`), "variable references (e.g., organization.slug)"},
+		{regexp.MustCompile(`env\(`), "env() function calls"},
+		{regexp.MustCompile(`(==|!=|=~|!~)`), "comparison operators (==, !=, =~, !~)"},
+		{regexp.MustCompile(`(&&|\|\|)`), "logical operators (&& or ||)"},
+	}
+
+	for _, cp := range conditionalPatterns {
+		if cp.pattern.MatchString(value) {
+			resp.Diagnostics.AddAttributeError(
+				req.Path,
+				"Invalid branch filter pattern",
+				fmt.Sprintf(
+					"Branch filter fields only support glob patterns (e.g., '!main', 'feature/*'). "+
+						"Your value contains %s, which is conditional expression syntax. "+
+						"See: https://buildkite.com/docs/pipelines/configure/workflows/branch-configuration",
+					cp.hint,
+				),
+			)
+			return
+		}
+	}
+}
+
+// filterConditionValidator validates conditional expression syntax in filter_condition
+// This provides early client-side validation before the API validates it
+type filterConditionValidator struct{}
+
+func (v filterConditionValidator) Description(ctx context.Context) string {
+	return "validates regex pattern syntax in filter_condition"
+}
+
+func (v filterConditionValidator) MarkdownDescription(ctx context.Context) string {
+	return "Validates that regex patterns used with =~ or !~ operators are properly wrapped in forward slashes"
+}
+
+func (v filterConditionValidator) ValidateString(ctx context.Context, req validator.StringRequest, resp *validator.StringResponse) {
+	// Skip validation if value is null or unknown
+	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
+		return
+	}
+
+	value := req.ConfigValue.ValueString()
+
+	// Skip empty strings
+	if value == "" {
+		return
+	}
+
+	// Check for regex operators
+	hasRegexMatch := regexp.MustCompile(`=~`).MatchString(value)
+	hasRegexNotMatch := regexp.MustCompile(`!~`).MatchString(value)
+
+	if !hasRegexMatch && !hasRegexNotMatch {
+		// No regex operators found, skip validation
+		return
+	}
+
+	// Extract the pattern after the operator and validate it's wrapped in forward slashes
+	// Pattern should be: something =~ /pattern/ or something !~ /pattern/
+	regexPattern := regexp.MustCompile(`[!=]~\s*([^/\s]\S*)`)
+	matches := regexPattern.FindStringSubmatch(value)
+
+	if len(matches) > 1 {
+		// Found a pattern that's not starting with /
+		resp.Diagnostics.AddAttributeError(
+			req.Path,
+			"Invalid regex pattern syntax",
+			"When using regex operators (=~ or !~), the pattern must be wrapped in forward slashes. "+
+				"For example: 'build.branch !~ /foo/' instead of 'build.branch !~ foo'. "+
+				"See: https://buildkite.com/docs/pipelines/conditionals",
+		)
+		return
+	}
+
+	// Validate that if we have a forward slash, it's properly closed
+	slashPattern := regexp.MustCompile(`[!=]~\s*/([^/]*?)(?:/|$)`)
+	slashMatches := slashPattern.FindStringSubmatch(value)
+	if len(slashMatches) > 0 {
+		// Check if the pattern is properly closed with /
+		if !regexp.MustCompile(`[!=]~\s*/[^/]+/`).MatchString(value) {
+			resp.Diagnostics.AddAttributeError(
+				req.Path,
+				"Invalid regex pattern syntax",
+				"Regex pattern must be wrapped in forward slashes. For example: 'build.branch !~ /foo/'. "+
+					"See: https://buildkite.com/docs/pipelines/conditionals",
+			)
+		}
 	}
 }

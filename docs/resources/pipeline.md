@@ -182,7 +182,7 @@ Optional:
 - `build_tags` (Boolean) Whether to create builds when tags are pushed.
 - `cancel_deleted_branch_builds` (Boolean) Automatically cancel running builds for a branch if the branch is deleted.
 - `cancel_when_merge_group_destroyed` (Boolean) Whether to cancel any running builds belonging to a removed merge group.
-- `filter_condition` (String) The condition to evaluate when deciding if a build should run. This is only valid when `trigger_mode` is `code`. More details available in [the documentation](https://buildkite.com/docs/pipelines/conditionals#conditionals-in-pipelines).
+- `filter_condition` (String) The condition to evaluate when deciding if a build should run. This is only valid when `trigger_mode` is `code`. More details available in [the documentation](https://buildkite.com/docs/pipelines/conditionals).
 - `filter_enabled` (Boolean) Whether to filter builds to only run when the condition in `filter_condition` is true.
 - `ignore_default_branch_pull_requests` (Boolean) Whether to prevent caching pull requests with the source branch matching the default branch.
 - `prefix_pull_request_fork_branch_names` (Boolean) Prefix branch names for third-party fork builds to ensure they don't trigger branch conditions. For example, the main branch from some-user will become some-user:main.
