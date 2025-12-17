@@ -20,6 +20,10 @@ query GetOrganizationTeams(
                     isDefaultTeam
                     defaultMemberRole
                     membersCanCreatePipelines
+                    membersCanCreateSuites
+                    membersCanCreateRegistries
+                    membersCanDestroyRegistries
+                    membersCanDestroyPackages
                 }
             }
         }
