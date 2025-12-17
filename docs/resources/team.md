@@ -35,6 +35,10 @@ resource "buildkite_team" "everyone" {
 
 - `description` (String) A description for the team. This is displayed in the Buildkite UI.
 - `members_can_create_pipelines` (Boolean) Whether members of the team can create Pipelines.
+- `members_can_create_registries` (Boolean) Whether members of the team can create registries.
+- `members_can_create_suites` (Boolean) Whether members of the team can create test suites.
+- `members_can_destroy_packages` (Boolean) Whether members of the team can destroy packages.
+- `members_can_destroy_registries` (Boolean) Whether members of the team can destroy registries.
 
 ### Read-Only
 
