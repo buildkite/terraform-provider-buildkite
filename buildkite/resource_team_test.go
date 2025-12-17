@@ -51,6 +51,96 @@ func TestAccBuildkiteTeam(t *testing.T) {
 		`, name, name)
 	}
 
+	configWithAllPermissions := func(name string) string {
+		return fmt.Sprintf(`
+		provider "buildkite" {
+			timeouts = {
+				create = "60s"
+				update = "60s"
+			}
+		}
+
+		resource "buildkite_team" "acc_tests" {
+			name = "%s"
+			description = "team with all permissions enabled"
+			privacy = "VISIBLE"
+			default_team = false
+			default_member_role = "MEMBER"
+			members_can_create_pipelines = true
+			members_can_create_suites = true
+			members_can_create_registries = true
+			members_can_destroy_registries = true
+			members_can_destroy_packages = true
+		}
+		`, name)
+	}
+
+	configWithNoPermissions := func(name string) string {
+		return fmt.Sprintf(`
+		provider "buildkite" {
+			timeouts = {
+				create = "60s"
+				update = "60s"
+			}
+		}
+
+		resource "buildkite_team" "acc_tests" {
+			name = "%s"
+			description = "team with no permissions"
+			privacy = "VISIBLE"
+			default_team = false
+			default_member_role = "MEMBER"
+			members_can_create_pipelines = false
+			members_can_create_suites = false
+			members_can_create_registries = false
+			members_can_destroy_registries = false
+			members_can_destroy_packages = false
+		}
+		`, name)
+	}
+
+	configWithMixedPermissions := func(name string) string {
+		return fmt.Sprintf(`
+		provider "buildkite" {
+			timeouts = {
+				create = "60s"
+				update = "60s"
+			}
+		}
+
+		resource "buildkite_team" "acc_tests" {
+			name = "%s"
+			description = "team with mixed permissions"
+			privacy = "VISIBLE"
+			default_team = false
+			default_member_role = "MEMBER"
+			members_can_create_pipelines = true
+			members_can_create_suites = false
+			members_can_create_registries = true
+			members_can_destroy_registries = false
+			members_can_destroy_packages = false
+		}
+		`, name)
+	}
+
+	configWithDefaultPermissions := func(name string) string {
+		return fmt.Sprintf(`
+		provider "buildkite" {
+			timeouts = {
+				create = "60s"
+			}
+		}
+
+		resource "buildkite_team" "acc_tests" {
+			name = "%s"
+			description = "team with default permissions"
+			privacy = "VISIBLE"
+			default_team = false
+			default_member_role = "MEMBER"
+		}
+		`, name)
+	}
+
 	t.Run("creates a team", func(t *testing.T) {
 		resName := acctest.RandString(12)
 		var tr teamResourceModel
@@ -179,6 +269,146 @@ func TestAccBuildkiteTeam(t *testing.T) {
 							plancheck.ExpectResourceAction("buildkite_team.acc_tests", plancheck.ResourceActionCreate),
 						},
 					},
+				},
+			},
+		})
+	})
+
+	t.Run("creates a team with all permissions enabled", func(t *testing.T) {
+		resName := acctest.RandString(12)
+		var tr teamResourceModel
+
+		check := resource.ComposeAggregateTestCheckFunc(
+			testAccCheckTeamExists("buildkite_team.acc_tests", &tr),
+			resource.TestCheckResourceAttr("buildkite_team.acc_tests", "name", resName),
+			resource.TestCheckResourceAttr("buildkite_team.acc_tests", "members_can_create_pipelines", "true"),
+			resource.TestCheckResourceAttr("buildkite_team.acc_tests", "members_can_create_suites", "true"),
+			resource.TestCheckResourceAttr("buildkite_team.acc_tests", "members_can_create_registries", "true"),
+			resource.TestCheckResourceAttr("buildkite_team.acc_tests", "members_can_destroy_registries", "true"),
+			resource.TestCheckResourceAttr("buildkite_team.acc_tests", "members_can_destroy_packages", "true"),
+		)
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			CheckDestroy:             testAccCheckTeamResourceDestroy,
+			Steps: []resource.TestStep{
+				{
+					Config: configWithAllPermissions(resName),
+					Check:  check,
+				},
+			},
+		})
+	})
+
+	t.Run("creates a team with no permissions", func(t *testing.T) {
+		resName := acctest.RandString(12)
+		var tr teamResourceModel
+
+		check := resource.ComposeAggregateTestCheckFunc(
+			testAccCheckTeamExists("buildkite_team.acc_tests", &tr),
+			resource.TestCheckResourceAttr("buildkite_team.acc_tests", "name", resName),
+			resource.TestCheckResourceAttr("buildkite_team.acc_tests", "members_can_create_pipelines", "false"),
+			resource.TestCheckResourceAttr("buildkite_team.acc_tests", "members_can_create_suites", "false"),
+			resource.TestCheckResourceAttr("buildkite_team.acc_tests", "members_can_create_registries", "false"),
+			resource.TestCheckResourceAttr("buildkite_team.acc_tests", "members_can_destroy_registries", "false"),
+			resource.TestCheckResourceAttr("buildkite_team.acc_tests", "members_can_destroy_packages", "false"),
+		)
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			CheckDestroy:             testAccCheckTeamResourceDestroy,
+			Steps: []resource.TestStep{
+				{
+					Config: configWithNoPermissions(resName),
+					Check:  check,
+				},
+			},
+		})
+	})
+
+	t.Run("updates team permissions", func(t *testing.T) {
+		resName := acctest.RandString(12)
+		var tr teamResourceModel
+
+		checkNoPermissions := resource.ComposeAggregateTestCheckFunc(
+			testAccCheckTeamExists("buildkite_team.acc_tests", &tr),
+			resource.TestCheckResourceAttr("buildkite_team.acc_tests", "name", resName),
+			resource.TestCheckResourceAttr("buildkite_team.acc_tests", "members_can_create_pipelines", "false"),
+			resource.TestCheckResourceAttr("buildkite_team.acc_tests", "members_can_create_suites", "false"),
+			resource.TestCheckResourceAttr("buildkite_team.acc_tests", "members_can_create_registries", "false"),
+			resource.TestCheckResourceAttr("buildkite_team.acc_tests", "members_can_destroy_registries", "false"),
+			resource.TestCheckResourceAttr("buildkite_team.acc_tests", "members_can_destroy_packages", "false"),
+		)
+
+		checkMixedPermissions := resource.ComposeAggregateTestCheckFunc(
+			testAccCheckTeamExists("buildkite_team.acc_tests", &tr),
+			resource.TestCheckResourceAttr("buildkite_team.acc_tests", "name", resName),
+			resource.TestCheckResourceAttr("buildkite_team.acc_tests", "members_can_create_pipelines", "true"),
+			resource.TestCheckResourceAttr("buildkite_team.acc_tests", "members_can_create_suites", "false"),
+			resource.TestCheckResourceAttr("buildkite_team.acc_tests", "members_can_create_registries", "true"),
+			resource.TestCheckResourceAttr("buildkite_team.acc_tests", "members_can_destroy_registries", "false"),
+			resource.TestCheckResourceAttr("buildkite_team.acc_tests", "members_can_destroy_packages", "false"),
+		)
+
+		checkAllPermissions := resource.ComposeAggregateTestCheckFunc(
+			testAccCheckTeamExists("buildkite_team.acc_tests", &tr),
+			resource.TestCheckResourceAttr("buildkite_team.acc_tests", "name", resName),
+			resource.TestCheckResourceAttr("buildkite_team.acc_tests", "members_can_create_pipelines", "true"),
+			resource.TestCheckResourceAttr("buildkite_team.acc_tests", "members_can_create_suites", "true"),
+			resource.TestCheckResourceAttr("buildkite_team.acc_tests", "members_can_create_registries", "true"),
+			resource.TestCheckResourceAttr("buildkite_team.acc_tests", "members_can_destroy_registries", "true"),
+			resource.TestCheckResourceAttr("buildkite_team.acc_tests", "members_can_destroy_packages", "true"),
+		)
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			CheckDestroy:             testAccCheckTeamResourceDestroy,
+			Steps: []resource.TestStep{
+				{
+					Config: configWithNoPermissions(resName),
+					Check:  checkNoPermissions,
+				},
+				{
+					Config: configWithMixedPermissions(resName),
+					Check:  checkMixedPermissions,
+				},
+				{
+					Config: configWithAllPermissions(resName),
+					Check:  checkAllPermissions,
+				},
+				{
+					Config: configWithNoPermissions(resName),
+					Check:  checkNoPermissions,
+				},
+			},
+		})
+	})
+
+	t.Run("creates a team with default permissions when not specified", func(t *testing.T) {
+		resName := acctest.RandString(12)
+		var tr teamResourceModel
+
+		check := resource.ComposeAggregateTestCheckFunc(
+			testAccCheckTeamExists("buildkite_team.acc_tests", &tr),
+			resource.TestCheckResourceAttr("buildkite_team.acc_tests", "name", resName),
+			resource.TestCheckResourceAttr("buildkite_team.acc_tests", "members_can_create_pipelines", "false"),
+			resource.TestCheckResourceAttr("buildkite_team.acc_tests", "members_can_create_suites", "false"),
+			resource.TestCheckResourceAttr("buildkite_team.acc_tests", "members_can_create_registries", "false"),
+			resource.TestCheckResourceAttr("buildkite_team.acc_tests", "members_can_destroy_registries", "false"),
+			resource.TestCheckResourceAttr("buildkite_team.acc_tests", "members_can_destroy_packages", "false"),
+		)
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			CheckDestroy:             testAccCheckTeamResourceDestroy,
+			Steps: []resource.TestStep{
+				{
+					Config: configWithDefaultPermissions(resName),
+					Check:  check,
 				},
 			},
 		})

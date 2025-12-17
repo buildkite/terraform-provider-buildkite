@@ -38,6 +38,10 @@ data "buildkite_team" "team" {
 - `default_team` (Boolean) Whether the team is the default team.
 - `description` (String) The description of the team.
 - `members_can_create_pipelines` (Boolean) Whether members can create pipelines.
+- `members_can_create_registries` (Boolean) Whether members can create registries.
+- `members_can_create_suites` (Boolean) Whether members can create test suites.
+- `members_can_destroy_packages` (Boolean) Whether members can destroy packages.
+- `members_can_destroy_registries` (Boolean) Whether members can destroy registries.
 - `name` (String) The name of the team.
 - `privacy` (String) The privacy setting of the team.
 - `uuid` (String) The UUID of the team.

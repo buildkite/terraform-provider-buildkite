@@ -184,6 +184,7 @@ func (v *ClusterQueueValuesHostedAgentsHostedAgentQueueSettings) GetPlatformSett
 }
 
 func (v *ClusterQueueValuesHostedAgentsHostedAgentQueueSettings) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -655,6 +656,14 @@ type GetOrganizationTeamsOrganizationTeamsTeamConnectionEdgesTeamEdgeNodeTeam st
 	DefaultMemberRole string `json:"defaultMemberRole"`
 	// Whether or not team members can create new pipelines in this team
 	MembersCanCreatePipelines bool `json:"membersCanCreatePipelines"`
+	// Whether or not team members can create new test suites in this team
+	MembersCanCreateSuites bool `json:"membersCanCreateSuites"`
+	// Whether or not team members can create new registries in this team
+	MembersCanCreateRegistries bool `json:"membersCanCreateRegistries"`
+	// Whether or not team members can delete registries in this team
+	MembersCanDestroyRegistries bool `json:"membersCanDestroyRegistries"`
+	// Whether or not team members can delete packages in this team
+	MembersCanDestroyPackages bool `json:"membersCanDestroyPackages"`
 }
 
 // GetId returns GetOrganizationTeamsOrganizationTeamsTeamConnectionEdgesTeamEdgeNodeTeam.Id, and is useful for accessing the field via an interface.
@@ -700,6 +709,26 @@ func (v *GetOrganizationTeamsOrganizationTeamsTeamConnectionEdgesTeamEdgeNodeTea
 // GetMembersCanCreatePipelines returns GetOrganizationTeamsOrganizationTeamsTeamConnectionEdgesTeamEdgeNodeTeam.MembersCanCreatePipelines, and is useful for accessing the field via an interface.
 func (v *GetOrganizationTeamsOrganizationTeamsTeamConnectionEdgesTeamEdgeNodeTeam) GetMembersCanCreatePipelines() bool {
 	return v.MembersCanCreatePipelines
+}
+
+// GetMembersCanCreateSuites returns GetOrganizationTeamsOrganizationTeamsTeamConnectionEdgesTeamEdgeNodeTeam.MembersCanCreateSuites, and is useful for accessing the field via an interface.
+func (v *GetOrganizationTeamsOrganizationTeamsTeamConnectionEdgesTeamEdgeNodeTeam) GetMembersCanCreateSuites() bool {
+	return v.MembersCanCreateSuites
+}
+
+// GetMembersCanCreateRegistries returns GetOrganizationTeamsOrganizationTeamsTeamConnectionEdgesTeamEdgeNodeTeam.MembersCanCreateRegistries, and is useful for accessing the field via an interface.
+func (v *GetOrganizationTeamsOrganizationTeamsTeamConnectionEdgesTeamEdgeNodeTeam) GetMembersCanCreateRegistries() bool {
+	return v.MembersCanCreateRegistries
+}
+
+// GetMembersCanDestroyRegistries returns GetOrganizationTeamsOrganizationTeamsTeamConnectionEdgesTeamEdgeNodeTeam.MembersCanDestroyRegistries, and is useful for accessing the field via an interface.
+func (v *GetOrganizationTeamsOrganizationTeamsTeamConnectionEdgesTeamEdgeNodeTeam) GetMembersCanDestroyRegistries() bool {
+	return v.MembersCanDestroyRegistries
+}
+
+// GetMembersCanDestroyPackages returns GetOrganizationTeamsOrganizationTeamsTeamConnectionEdgesTeamEdgeNodeTeam.MembersCanDestroyPackages, and is useful for accessing the field via an interface.
+func (v *GetOrganizationTeamsOrganizationTeamsTeamConnectionEdgesTeamEdgeNodeTeam) GetMembersCanDestroyPackages() bool {
+	return v.MembersCanDestroyPackages
 }
 
 // GetOrganizationTeamsOrganizationTeamsTeamConnectionPageInfo includes the requested fields of the GraphQL type PageInfo.
@@ -800,7 +829,28 @@ func (v *GetTeamFromSlugTeam) GetMembersCanCreatePipelines() bool {
 	return v.TeamFields.MembersCanCreatePipelines
 }
 
+// GetMembersCanCreateSuites returns GetTeamFromSlugTeam.MembersCanCreateSuites, and is useful for accessing the field via an interface.
+func (v *GetTeamFromSlugTeam) GetMembersCanCreateSuites() bool {
+	return v.TeamFields.MembersCanCreateSuites
+}
+
+// GetMembersCanCreateRegistries returns GetTeamFromSlugTeam.MembersCanCreateRegistries, and is useful for accessing the field via an interface.
+func (v *GetTeamFromSlugTeam) GetMembersCanCreateRegistries() bool {
+	return v.TeamFields.MembersCanCreateRegistries
+}
+
+// GetMembersCanDestroyRegistries returns GetTeamFromSlugTeam.MembersCanDestroyRegistries, and is useful for accessing the field via an interface.
+func (v *GetTeamFromSlugTeam) GetMembersCanDestroyRegistries() bool {
+	return v.TeamFields.MembersCanDestroyRegistries
+}
+
+// GetMembersCanDestroyPackages returns GetTeamFromSlugTeam.MembersCanDestroyPackages, and is useful for accessing the field via an interface.
+func (v *GetTeamFromSlugTeam) GetMembersCanDestroyPackages() bool {
+	return v.TeamFields.MembersCanDestroyPackages
+}
+
 func (v *GetTeamFromSlugTeam) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -842,6 +892,14 @@ type __premarshalGetTeamFromSlugTeam struct {
 	DefaultMemberRole string `json:"defaultMemberRole"`
 
 	MembersCanCreatePipelines bool `json:"membersCanCreatePipelines"`
+
+	MembersCanCreateSuites bool `json:"membersCanCreateSuites"`
+
+	MembersCanCreateRegistries bool `json:"membersCanCreateRegistries"`
+
+	MembersCanDestroyRegistries bool `json:"membersCanDestroyRegistries"`
+
+	MembersCanDestroyPackages bool `json:"membersCanDestroyPackages"`
 }
 
 func (v *GetTeamFromSlugTeam) MarshalJSON() ([]byte, error) {
@@ -864,6 +922,10 @@ func (v *GetTeamFromSlugTeam) __premarshalJSON() (*__premarshalGetTeamFromSlugTe
 	retval.IsDefaultTeam = v.TeamFields.IsDefaultTeam
 	retval.DefaultMemberRole = v.TeamFields.DefaultMemberRole
 	retval.MembersCanCreatePipelines = v.TeamFields.MembersCanCreatePipelines
+	retval.MembersCanCreateSuites = v.TeamFields.MembersCanCreateSuites
+	retval.MembersCanCreateRegistries = v.TeamFields.MembersCanCreateRegistries
+	retval.MembersCanDestroyRegistries = v.TeamFields.MembersCanDestroyRegistries
+	retval.MembersCanDestroyPackages = v.TeamFields.MembersCanDestroyPackages
 	return &retval, nil
 }
 
@@ -1277,6 +1339,7 @@ func (v *OrganizationRuleFields) GetSource() OrganizationRuleFieldsSourceRuleSou
 func (v *OrganizationRuleFields) GetTarget() OrganizationRuleFieldsTargetRuleTarget { return v.Target }
 
 func (v *OrganizationRuleFields) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -1452,6 +1515,7 @@ func __unmarshalOrganizationRuleFieldsSourceRuleSource(b []byte, v *Organization
 }
 
 func __marshalOrganizationRuleFieldsSourceRuleSource(v *OrganizationRuleFieldsSourceRuleSource) ([]byte, error) {
+
 	var typename string
 	switch v := (*v).(type) {
 	case *OrganizationRuleFieldsSourcePipeline:
@@ -1529,6 +1593,7 @@ func __unmarshalOrganizationRuleFieldsTargetRuleTarget(b []byte, v *Organization
 }
 
 func __marshalOrganizationRuleFieldsTargetRuleTarget(v *OrganizationRuleFieldsTargetRuleTarget) ([]byte, error) {
+
 	var typename string
 	switch v := (*v).(type) {
 	case *OrganizationRuleFieldsTargetPipeline:
@@ -1899,6 +1964,7 @@ func (v *PipelineFieldsTeamsTeamPipelineConnection) GetEdges() []PipelineTeamEdg
 }
 
 func (v *PipelineFieldsTeamsTeamPipelineConnection) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -2451,6 +2517,14 @@ type TeamFields struct {
 	DefaultMemberRole string `json:"defaultMemberRole"`
 	// Whether or not team members can create new pipelines in this team
 	MembersCanCreatePipelines bool `json:"membersCanCreatePipelines"`
+	// Whether or not team members can create new test suites in this team
+	MembersCanCreateSuites bool `json:"membersCanCreateSuites"`
+	// Whether or not team members can create new registries in this team
+	MembersCanCreateRegistries bool `json:"membersCanCreateRegistries"`
+	// Whether or not team members can delete registries in this team
+	MembersCanDestroyRegistries bool `json:"membersCanDestroyRegistries"`
+	// Whether or not team members can delete packages in this team
+	MembersCanDestroyPackages bool `json:"membersCanDestroyPackages"`
 }
 
 // GetId returns TeamFields.Id, and is useful for accessing the field via an interface.
@@ -2479,6 +2553,18 @@ func (v *TeamFields) GetDefaultMemberRole() string { return v.DefaultMemberRole 
 
 // GetMembersCanCreatePipelines returns TeamFields.MembersCanCreatePipelines, and is useful for accessing the field via an interface.
 func (v *TeamFields) GetMembersCanCreatePipelines() bool { return v.MembersCanCreatePipelines }
+
+// GetMembersCanCreateSuites returns TeamFields.MembersCanCreateSuites, and is useful for accessing the field via an interface.
+func (v *TeamFields) GetMembersCanCreateSuites() bool { return v.MembersCanCreateSuites }
+
+// GetMembersCanCreateRegistries returns TeamFields.MembersCanCreateRegistries, and is useful for accessing the field via an interface.
+func (v *TeamFields) GetMembersCanCreateRegistries() bool { return v.MembersCanCreateRegistries }
+
+// GetMembersCanDestroyRegistries returns TeamFields.MembersCanDestroyRegistries, and is useful for accessing the field via an interface.
+func (v *TeamFields) GetMembersCanDestroyRegistries() bool { return v.MembersCanDestroyRegistries }
+
+// GetMembersCanDestroyPackages returns TeamFields.MembersCanDestroyPackages, and is useful for accessing the field via an interface.
+func (v *TeamFields) GetMembersCanDestroyPackages() bool { return v.MembersCanDestroyPackages }
 
 // TeamMemberFields includes the GraphQL fields of TeamMember requested by the fragment TeamMemberFields.
 // The GraphQL type's documentation follows.
@@ -3269,13 +3355,17 @@ func (v *__setOrganization2FAInput) GetValue() bool { return v.Value }
 
 // __teamCreateInput is used internally by genqlient
 type __teamCreateInput struct {
-	OrganizationID            string `json:"organizationID"`
-	Name                      string `json:"name"`
-	Description               string `json:"description"`
-	Privacy                   string `json:"privacy"`
-	IsDefaultTeam             bool   `json:"isDefaultTeam"`
-	DefaultMemberRole         string `json:"defaultMemberRole"`
-	MembersCanCreatePipelines bool   `json:"membersCanCreatePipelines"`
+	OrganizationID              string `json:"organizationID"`
+	Name                        string `json:"name"`
+	Description                 string `json:"description"`
+	Privacy                     string `json:"privacy"`
+	IsDefaultTeam               bool   `json:"isDefaultTeam"`
+	DefaultMemberRole           string `json:"defaultMemberRole"`
+	MembersCanCreatePipelines   bool   `json:"membersCanCreatePipelines"`
+	MembersCanCreateSuites      bool   `json:"membersCanCreateSuites"`
+	MembersCanCreateRegistries  bool   `json:"membersCanCreateRegistries"`
+	MembersCanDestroyRegistries bool   `json:"membersCanDestroyRegistries"`
+	MembersCanDestroyPackages   bool   `json:"membersCanDestroyPackages"`
 }
 
 // GetOrganizationID returns __teamCreateInput.OrganizationID, and is useful for accessing the field via an interface.
@@ -3299,6 +3389,20 @@ func (v *__teamCreateInput) GetDefaultMemberRole() string { return v.DefaultMemb
 // GetMembersCanCreatePipelines returns __teamCreateInput.MembersCanCreatePipelines, and is useful for accessing the field via an interface.
 func (v *__teamCreateInput) GetMembersCanCreatePipelines() bool { return v.MembersCanCreatePipelines }
 
+// GetMembersCanCreateSuites returns __teamCreateInput.MembersCanCreateSuites, and is useful for accessing the field via an interface.
+func (v *__teamCreateInput) GetMembersCanCreateSuites() bool { return v.MembersCanCreateSuites }
+
+// GetMembersCanCreateRegistries returns __teamCreateInput.MembersCanCreateRegistries, and is useful for accessing the field via an interface.
+func (v *__teamCreateInput) GetMembersCanCreateRegistries() bool { return v.MembersCanCreateRegistries }
+
+// GetMembersCanDestroyRegistries returns __teamCreateInput.MembersCanDestroyRegistries, and is useful for accessing the field via an interface.
+func (v *__teamCreateInput) GetMembersCanDestroyRegistries() bool {
+	return v.MembersCanDestroyRegistries
+}
+
+// GetMembersCanDestroyPackages returns __teamCreateInput.MembersCanDestroyPackages, and is useful for accessing the field via an interface.
+func (v *__teamCreateInput) GetMembersCanDestroyPackages() bool { return v.MembersCanDestroyPackages }
+
 // __teamDeleteInput is used internally by genqlient
 type __teamDeleteInput struct {
 	Id string `json:"id"`
@@ -3309,13 +3413,17 @@ func (v *__teamDeleteInput) GetId() string { return v.Id }
 
 // __teamUpdateInput is used internally by genqlient
 type __teamUpdateInput struct {
-	Id                        string `json:"id"`
-	Name                      string `json:"name"`
-	Description               string `json:"description"`
-	Privacy                   string `json:"privacy"`
-	IsDefaultTeam             bool   `json:"isDefaultTeam"`
-	DefaultMemberRole         string `json:"defaultMemberRole"`
-	MembersCanCreatePipelines bool   `json:"membersCanCreatePipelines"`
+	Id                          string `json:"id"`
+	Name                        string `json:"name"`
+	Description                 string `json:"description"`
+	Privacy                     string `json:"privacy"`
+	IsDefaultTeam               bool   `json:"isDefaultTeam"`
+	DefaultMemberRole           string `json:"defaultMemberRole"`
+	MembersCanCreatePipelines   bool   `json:"membersCanCreatePipelines"`
+	MembersCanCreateSuites      bool   `json:"membersCanCreateSuites"`
+	MembersCanCreateRegistries  bool   `json:"membersCanCreateRegistries"`
+	MembersCanDestroyRegistries bool   `json:"membersCanDestroyRegistries"`
+	MembersCanDestroyPackages   bool   `json:"membersCanDestroyPackages"`
 }
 
 // GetId returns __teamUpdateInput.Id, and is useful for accessing the field via an interface.
@@ -3338,6 +3446,20 @@ func (v *__teamUpdateInput) GetDefaultMemberRole() string { return v.DefaultMemb
 
 // GetMembersCanCreatePipelines returns __teamUpdateInput.MembersCanCreatePipelines, and is useful for accessing the field via an interface.
 func (v *__teamUpdateInput) GetMembersCanCreatePipelines() bool { return v.MembersCanCreatePipelines }
+
+// GetMembersCanCreateSuites returns __teamUpdateInput.MembersCanCreateSuites, and is useful for accessing the field via an interface.
+func (v *__teamUpdateInput) GetMembersCanCreateSuites() bool { return v.MembersCanCreateSuites }
+
+// GetMembersCanCreateRegistries returns __teamUpdateInput.MembersCanCreateRegistries, and is useful for accessing the field via an interface.
+func (v *__teamUpdateInput) GetMembersCanCreateRegistries() bool { return v.MembersCanCreateRegistries }
+
+// GetMembersCanDestroyRegistries returns __teamUpdateInput.MembersCanDestroyRegistries, and is useful for accessing the field via an interface.
+func (v *__teamUpdateInput) GetMembersCanDestroyRegistries() bool {
+	return v.MembersCanDestroyRegistries
+}
+
+// GetMembersCanDestroyPackages returns __teamUpdateInput.MembersCanDestroyPackages, and is useful for accessing the field via an interface.
+func (v *__teamUpdateInput) GetMembersCanDestroyPackages() bool { return v.MembersCanDestroyPackages }
 
 // __updateClusterAgentTokenInput is used internally by genqlient
 type __updateClusterAgentTokenInput struct {
@@ -3668,6 +3790,7 @@ func (v *createClusterAgentTokenClusterAgentTokenCreateClusterAgentTokenCreatePa
 }
 
 func (v *createClusterAgentTokenClusterAgentTokenCreateClusterAgentTokenCreatePayloadClusterAgentTokenClusterToken) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -3794,6 +3917,7 @@ func (v *createClusterClusterCreateClusterCreatePayloadCluster) GetDefaultQueue(
 }
 
 func (v *createClusterClusterCreateClusterCreatePayloadCluster) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -3908,6 +4032,7 @@ func (v *createClusterQueueClusterQueueCreateClusterQueueCreatePayloadClusterQue
 }
 
 func (v *createClusterQueueClusterQueueCreateClusterQueueCreatePayloadClusterQueue) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -4075,6 +4200,7 @@ func (v *createOrganizationRuleRuleCreateRuleCreatePayloadRule) GetTarget() Orga
 }
 
 func (v *createOrganizationRuleRuleCreateRuleCreatePayloadRule) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -4311,6 +4437,7 @@ func (v *createPipelinePipelineCreatePipelineCreatePayloadPipeline) GetWebhookUR
 }
 
 func (v *createPipelinePipelineCreatePipelineCreatePayloadPipeline) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -4534,6 +4661,7 @@ func (v *createPipelineSchedulePipelineScheduleCreatePipelineScheduleCreatePaylo
 }
 
 func (v *createPipelineSchedulePipelineScheduleCreatePipelineScheduleCreatePayloadPipelineScheduleEdgeNodePipelineSchedule) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -4666,6 +4794,7 @@ func (v *createPipelineTemplatePipelineTemplateCreatePipelineTemplateCreatePaylo
 }
 
 func (v *createPipelineTemplatePipelineTemplateCreatePipelineTemplateCreatePayloadPipelineTemplate) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -4802,6 +4931,7 @@ func (v *createTeamMemberTeamMemberCreateTeamMemberCreatePayloadTeamMemberEdgeNo
 }
 
 func (v *createTeamMemberTeamMemberCreateTeamMemberCreatePayloadTeamMemberEdgeNodeTeamMember) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -4924,6 +5054,7 @@ func (v *createTeamPipelineTeamPipelineCreateTeamPipelineCreatePayloadTeamPipeli
 }
 
 func (v *createTeamPipelineTeamPipelineCreateTeamPipelineCreatePayloadTeamPipelineEdgeNodeTeamPipeline) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -5119,6 +5250,7 @@ func (v *createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadTeamSuite) GetS
 }
 
 func (v *createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadTeamSuite) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -5553,6 +5685,7 @@ func (v *getClusterAgentTokensOrganizationClusterAgentTokensClusterAgentTokenCon
 }
 
 func (v *getClusterAgentTokensOrganizationClusterAgentTokensClusterAgentTokenConnectionEdgesClusterAgentTokenEdgeNodeClusterToken) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -5699,6 +5832,7 @@ func (v *getClusterByNameOrganizationClustersClusterConnectionEdgesClusterEdgeNo
 }
 
 func (v *getClusterByNameOrganizationClustersClusterConnectionEdgesClusterEdgeNodeCluster) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -5824,6 +5958,7 @@ func (v *getClusterByNameResponse) GetOrganization() getClusterByNameOrganizatio
 // getClusterQueueByNodeNodeJobEventRetried
 // getClusterQueueByNodeNodeJobEventRetryFailed
 // getClusterQueueByNodeNodeJobEventStackError
+// getClusterQueueByNodeNodeJobEventStackFinished
 // getClusterQueueByNodeNodeJobEventStackNotification
 // getClusterQueueByNodeNodeJobEventTimedOut
 // getClusterQueueByNodeNodeJobTypeBlock
@@ -5867,10 +6002,8 @@ type getClusterQueueByNodeNode interface {
 
 func (v *getClusterQueueByNodeNodeAPIAccessToken) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
-
 func (v *getClusterQueueByNodeNodeAPIAccessTokenCode) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
-
 func (v *getClusterQueueByNodeNodeAPIApplication) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
 func (v *getClusterQueueByNodeNodeAgent) implementsGraphQLInterfacegetClusterQueueByNodeNode()      {}
@@ -5880,107 +6013,78 @@ func (v *getClusterQueueByNodeNodeArtifact) implementsGraphQLInterfacegetCluster
 func (v *getClusterQueueByNodeNodeAuditEvent) implementsGraphQLInterfacegetClusterQueueByNodeNode() {}
 func (v *getClusterQueueByNodeNodeAuthorizationBitbucket) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
-
 func (v *getClusterQueueByNodeNodeAuthorizationGitHub) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
-
 func (v *getClusterQueueByNodeNodeAuthorizationGitHubApp) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
-
 func (v *getClusterQueueByNodeNodeAuthorizationGitHubEnterprise) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
-
 func (v *getClusterQueueByNodeNodeAuthorizationGoogle) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
-
 func (v *getClusterQueueByNodeNodeAuthorizationSAML) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
 func (v *getClusterQueueByNodeNodeBuild) implementsGraphQLInterfacegetClusterQueueByNodeNode()   {}
 func (v *getClusterQueueByNodeNodeCluster) implementsGraphQLInterfacegetClusterQueueByNodeNode() {}
 func (v *getClusterQueueByNodeNodeClusterQueue) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
-
 func (v *getClusterQueueByNodeNodeClusterQueueToken) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
-
 func (v *getClusterQueueByNodeNodeClusterToken) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
-
 func (v *getClusterQueueByNodeNodeCompositeRegistryUpstream) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
 func (v *getClusterQueueByNodeNodeEmail) implementsGraphQLInterfacegetClusterQueueByNodeNode() {}
 func (v *getClusterQueueByNodeNodeJobEventAssigned) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
-
 func (v *getClusterQueueByNodeNodeJobEventBuildStepUploadCreated) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
-
 func (v *getClusterQueueByNodeNodeJobEventCanceled) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
-
 func (v *getClusterQueueByNodeNodeJobEventFinished) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
-
 func (v *getClusterQueueByNodeNodeJobEventGeneric) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
-
 func (v *getClusterQueueByNodeNodeJobEventReprioritized) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
-
 func (v *getClusterQueueByNodeNodeJobEventRetried) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
-
 func (v *getClusterQueueByNodeNodeJobEventRetryFailed) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
-
 func (v *getClusterQueueByNodeNodeJobEventStackError) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
-
+func (v *getClusterQueueByNodeNodeJobEventStackFinished) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
+}
 func (v *getClusterQueueByNodeNodeJobEventStackNotification) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
-
 func (v *getClusterQueueByNodeNodeJobEventTimedOut) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
-
 func (v *getClusterQueueByNodeNodeJobTypeBlock) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
-
 func (v *getClusterQueueByNodeNodeJobTypeCommand) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
-
 func (v *getClusterQueueByNodeNodeJobTypeTrigger) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
-
 func (v *getClusterQueueByNodeNodeJobTypeWait) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
-
 func (v *getClusterQueueByNodeNodeNotificationServiceSlack) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
-
 func (v *getClusterQueueByNodeNodeOrganization) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
-
 func (v *getClusterQueueByNodeNodeOrganizationBanner) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
-
 func (v *getClusterQueueByNodeNodeOrganizationInvitation) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
-
 func (v *getClusterQueueByNodeNodeOrganizationMember) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
-
 func (v *getClusterQueueByNodeNodeOrganizationRepositoryProviderGitHub) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
-
 func (v *getClusterQueueByNodeNodeOrganizationRepositoryProviderGitHubEnterpriseServer) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
 func (v *getClusterQueueByNodeNodePipeline) implementsGraphQLInterfacegetClusterQueueByNodeNode() {}
 func (v *getClusterQueueByNodeNodePipelineMetric) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
-
 func (v *getClusterQueueByNodeNodePipelineSchedule) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
-
 func (v *getClusterQueueByNodeNodePipelineTemplate) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
 func (v *getClusterQueueByNodeNodeRegistry) implementsGraphQLInterfacegetClusterQueueByNodeNode() {}
@@ -5989,10 +6093,8 @@ func (v *getClusterQueueByNodeNodeRegistryToken) implementsGraphQLInterfacegetCl
 func (v *getClusterQueueByNodeNodeRule) implementsGraphQLInterfacegetClusterQueueByNodeNode() {}
 func (v *getClusterQueueByNodeNodeSSOProviderGitHubApp) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
-
 func (v *getClusterQueueByNodeNodeSSOProviderGoogleGSuite) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
-
 func (v *getClusterQueueByNodeNodeSSOProviderSAML) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
 func (v *getClusterQueueByNodeNodeSecret) implementsGraphQLInterfacegetClusterQueueByNodeNode()     {}
@@ -6001,7 +6103,6 @@ func (v *getClusterQueueByNodeNodeTeam) implementsGraphQLInterfacegetClusterQueu
 func (v *getClusterQueueByNodeNodeTeamMember) implementsGraphQLInterfacegetClusterQueueByNodeNode() {}
 func (v *getClusterQueueByNodeNodeTeamPipeline) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
-
 func (v *getClusterQueueByNodeNodeTeamRegistry) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
 func (v *getClusterQueueByNodeNodeTeamSuite) implementsGraphQLInterfacegetClusterQueueByNodeNode() {}
@@ -6112,6 +6213,9 @@ func __unmarshalgetClusterQueueByNodeNode(b []byte, v *getClusterQueueByNodeNode
 	case "JobEventStackError":
 		*v = new(getClusterQueueByNodeNodeJobEventStackError)
 		return json.Unmarshal(b, *v)
+	case "JobEventStackFinished":
+		*v = new(getClusterQueueByNodeNodeJobEventStackFinished)
+		return json.Unmarshal(b, *v)
 	case "JobEventStackNotification":
 		*v = new(getClusterQueueByNodeNodeJobEventStackNotification)
 		return json.Unmarshal(b, *v)
@@ -6218,6 +6322,7 @@ func __unmarshalgetClusterQueueByNodeNode(b []byte, v *getClusterQueueByNodeNode
 }
 
 func __marshalgetClusterQueueByNodeNode(v *getClusterQueueByNodeNode) ([]byte, error) {
+
 	var typename string
 	switch v := (*v).(type) {
 	case *getClusterQueueByNodeNodeAPIAccessToken:
@@ -6462,6 +6567,14 @@ func __marshalgetClusterQueueByNodeNode(v *getClusterQueueByNodeNode) ([]byte, e
 		result := struct {
 			TypeName string `json:"__typename"`
 			*getClusterQueueByNodeNodeJobEventStackError
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterQueueByNodeNodeJobEventStackFinished:
+		typename = "JobEventStackFinished"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterQueueByNodeNodeJobEventStackFinished
 		}{typename, v}
 		return json.Marshal(result)
 	case *getClusterQueueByNodeNodeJobEventStackNotification:
@@ -6966,6 +7079,7 @@ func (v *getClusterQueueByNodeNodeClusterQueue) GetHostedAgents() ClusterQueueVa
 }
 
 func (v *getClusterQueueByNodeNodeClusterQueue) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -7196,6 +7310,17 @@ type getClusterQueueByNodeNodeJobEventStackError struct {
 
 // GetTypename returns getClusterQueueByNodeNodeJobEventStackError.Typename, and is useful for accessing the field via an interface.
 func (v *getClusterQueueByNodeNodeJobEventStackError) GetTypename() string { return v.Typename }
+
+// getClusterQueueByNodeNodeJobEventStackFinished includes the requested fields of the GraphQL type JobEventStackFinished.
+// The GraphQL type's documentation follows.
+//
+// An event created when a stack finishes a job and marks it as success
+type getClusterQueueByNodeNodeJobEventStackFinished struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterQueueByNodeNodeJobEventStackFinished.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterQueueByNodeNodeJobEventStackFinished) GetTypename() string { return v.Typename }
 
 // getClusterQueueByNodeNodeJobEventStackNotification includes the requested fields of the GraphQL type JobEventStackNotification.
 // The GraphQL type's documentation follows.
@@ -7560,6 +7685,7 @@ type getClusterQueueByNodeResponse struct {
 func (v *getClusterQueueByNodeResponse) GetNode() getClusterQueueByNodeNode { return v.Node }
 
 func (v *getClusterQueueByNodeResponse) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -7740,6 +7866,7 @@ func (v *getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClu
 }
 
 func (v *getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -7890,6 +8017,7 @@ func (v *getClusterQueuesResponse) GetOrganization() getClusterQueuesOrganizatio
 // getNodeNodeJobEventRetried
 // getNodeNodeJobEventRetryFailed
 // getNodeNodeJobEventStackError
+// getNodeNodeJobEventStackFinished
 // getNodeNodeJobEventStackNotification
 // getNodeNodeJobEventTimedOut
 // getNodeNodeJobTypeBlock
@@ -7961,6 +8089,7 @@ func (v *getNodeNodeJobEventReprioritized) implementsGraphQLInterfacegetNodeNode
 func (v *getNodeNodeJobEventRetried) implementsGraphQLInterfacegetNodeNode()                      {}
 func (v *getNodeNodeJobEventRetryFailed) implementsGraphQLInterfacegetNodeNode()                  {}
 func (v *getNodeNodeJobEventStackError) implementsGraphQLInterfacegetNodeNode()                   {}
+func (v *getNodeNodeJobEventStackFinished) implementsGraphQLInterfacegetNodeNode()                {}
 func (v *getNodeNodeJobEventStackNotification) implementsGraphQLInterfacegetNodeNode()            {}
 func (v *getNodeNodeJobEventTimedOut) implementsGraphQLInterfacegetNodeNode()                     {}
 func (v *getNodeNodeJobTypeBlock) implementsGraphQLInterfacegetNodeNode()                         {}
@@ -8099,6 +8228,9 @@ func __unmarshalgetNodeNode(b []byte, v *getNodeNode) error {
 	case "JobEventStackError":
 		*v = new(getNodeNodeJobEventStackError)
 		return json.Unmarshal(b, *v)
+	case "JobEventStackFinished":
+		*v = new(getNodeNodeJobEventStackFinished)
+		return json.Unmarshal(b, *v)
 	case "JobEventStackNotification":
 		*v = new(getNodeNodeJobEventStackNotification)
 		return json.Unmarshal(b, *v)
@@ -8205,6 +8337,7 @@ func __unmarshalgetNodeNode(b []byte, v *getNodeNode) error {
 }
 
 func __marshalgetNodeNode(v *getNodeNode) ([]byte, error) {
+
 	var typename string
 	switch v := (*v).(type) {
 	case *getNodeNodeAPIAccessToken:
@@ -8449,6 +8582,14 @@ func __marshalgetNodeNode(v *getNodeNode) ([]byte, error) {
 		result := struct {
 			TypeName string `json:"__typename"`
 			*getNodeNodeJobEventStackError
+		}{typename, v}
+		return json.Marshal(result)
+	case *getNodeNodeJobEventStackFinished:
+		typename = "JobEventStackFinished"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getNodeNodeJobEventStackFinished
 		}{typename, v}
 		return json.Marshal(result)
 	case *getNodeNodeJobEventStackNotification:
@@ -8941,6 +9082,7 @@ func (v *getNodeNodeCluster) GetDefaultQueue() *ClusterFieldsDefaultQueueCluster
 }
 
 func (v *getNodeNodeCluster) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -9154,6 +9296,17 @@ type getNodeNodeJobEventStackError struct {
 
 // GetTypename returns getNodeNodeJobEventStackError.Typename, and is useful for accessing the field via an interface.
 func (v *getNodeNodeJobEventStackError) GetTypename() string { return v.Typename }
+
+// getNodeNodeJobEventStackFinished includes the requested fields of the GraphQL type JobEventStackFinished.
+// The GraphQL type's documentation follows.
+//
+// An event created when a stack finishes a job and marks it as success
+type getNodeNodeJobEventStackFinished struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getNodeNodeJobEventStackFinished.Typename, and is useful for accessing the field via an interface.
+func (v *getNodeNodeJobEventStackFinished) GetTypename() string { return v.Typename }
 
 // getNodeNodeJobEventStackNotification includes the requested fields of the GraphQL type JobEventStackNotification.
 // The GraphQL type's documentation follows.
@@ -9407,6 +9560,7 @@ func (v *getNodeNodePipeline) GetTeams() PipelineFieldsTeamsTeamPipelineConnecti
 func (v *getNodeNodePipeline) GetWebhookURL() string { return v.PipelineFields.WebhookURL }
 
 func (v *getNodeNodePipeline) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -9578,6 +9732,7 @@ func (v *getNodeNodePipelineTemplate) GetDescription() *string {
 func (v *getNodeNodePipelineTemplate) GetName() string { return v.PipelineTemplateFields.Name }
 
 func (v *getNodeNodePipelineTemplate) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -9707,6 +9862,7 @@ func (v *getNodeNodeRule) GetTarget() OrganizationRuleFieldsTargetRuleTarget {
 }
 
 func (v *getNodeNodeRule) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -9900,7 +10056,28 @@ func (v *getNodeNodeTeam) GetMembersCanCreatePipelines() bool {
 	return v.TeamFields.MembersCanCreatePipelines
 }
 
+// GetMembersCanCreateSuites returns getNodeNodeTeam.MembersCanCreateSuites, and is useful for accessing the field via an interface.
+func (v *getNodeNodeTeam) GetMembersCanCreateSuites() bool {
+	return v.TeamFields.MembersCanCreateSuites
+}
+
+// GetMembersCanCreateRegistries returns getNodeNodeTeam.MembersCanCreateRegistries, and is useful for accessing the field via an interface.
+func (v *getNodeNodeTeam) GetMembersCanCreateRegistries() bool {
+	return v.TeamFields.MembersCanCreateRegistries
+}
+
+// GetMembersCanDestroyRegistries returns getNodeNodeTeam.MembersCanDestroyRegistries, and is useful for accessing the field via an interface.
+func (v *getNodeNodeTeam) GetMembersCanDestroyRegistries() bool {
+	return v.TeamFields.MembersCanDestroyRegistries
+}
+
+// GetMembersCanDestroyPackages returns getNodeNodeTeam.MembersCanDestroyPackages, and is useful for accessing the field via an interface.
+func (v *getNodeNodeTeam) GetMembersCanDestroyPackages() bool {
+	return v.TeamFields.MembersCanDestroyPackages
+}
+
 func (v *getNodeNodeTeam) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -9944,6 +10121,14 @@ type __premarshalgetNodeNodeTeam struct {
 	DefaultMemberRole string `json:"defaultMemberRole"`
 
 	MembersCanCreatePipelines bool `json:"membersCanCreatePipelines"`
+
+	MembersCanCreateSuites bool `json:"membersCanCreateSuites"`
+
+	MembersCanCreateRegistries bool `json:"membersCanCreateRegistries"`
+
+	MembersCanDestroyRegistries bool `json:"membersCanDestroyRegistries"`
+
+	MembersCanDestroyPackages bool `json:"membersCanDestroyPackages"`
 }
 
 func (v *getNodeNodeTeam) MarshalJSON() ([]byte, error) {
@@ -9967,6 +10152,10 @@ func (v *getNodeNodeTeam) __premarshalJSON() (*__premarshalgetNodeNodeTeam, erro
 	retval.IsDefaultTeam = v.TeamFields.IsDefaultTeam
 	retval.DefaultMemberRole = v.TeamFields.DefaultMemberRole
 	retval.MembersCanCreatePipelines = v.TeamFields.MembersCanCreatePipelines
+	retval.MembersCanCreateSuites = v.TeamFields.MembersCanCreateSuites
+	retval.MembersCanCreateRegistries = v.TeamFields.MembersCanCreateRegistries
+	retval.MembersCanDestroyRegistries = v.TeamFields.MembersCanDestroyRegistries
+	retval.MembersCanDestroyPackages = v.TeamFields.MembersCanDestroyPackages
 	return &retval, nil
 }
 
@@ -9998,6 +10187,7 @@ func (v *getNodeNodeTeamMember) GetUser() TeamMemberFieldsUser { return v.TeamMe
 func (v *getNodeNodeTeamMember) GetRole() string { return v.TeamMemberFields.Role }
 
 func (v *getNodeNodeTeamMember) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -10087,6 +10277,7 @@ func (v *getNodeNodeTeamPipeline) GetPipeline() TeamPipelineFieldsPipeline {
 }
 
 func (v *getNodeNodeTeamPipeline) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -10185,6 +10376,7 @@ func (v *getNodeNodeTeamSuite) GetTeam() TeamSuiteFieldsTeam { return v.TeamSuit
 func (v *getNodeNodeTeamSuite) GetSuite() TeamSuiteFieldsSuite { return v.TeamSuiteFields.Suite }
 
 func (v *getNodeNodeTeamSuite) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -10274,6 +10466,7 @@ type getNodeResponse struct {
 func (v *getNodeResponse) GetNode() getNodeNode { return v.Node }
 
 func (v *getNodeResponse) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -10434,6 +10627,7 @@ func (v *getOrganizationRuleRule) GetTarget() OrganizationRuleFieldsTargetRuleTa
 }
 
 func (v *getOrganizationRuleRule) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -10594,6 +10788,7 @@ func (v *getOrganiztionBannerOrganizationBannersOrganizationBannerConnectionEdge
 }
 
 func (v *getOrganiztionBannerOrganizationBannersOrganizationBannerConnectionEdgesOrganizationBannerEdgeNodeOrganizationBanner) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -10756,6 +10951,7 @@ func (v *getPipelinePipeline) GetTeams() PipelineFieldsTeamsTeamPipelineConnecti
 func (v *getPipelinePipeline) GetWebhookURL() string { return v.PipelineFields.WebhookURL }
 
 func (v *getPipelinePipeline) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -10935,6 +11131,7 @@ func (v *getPipelineScheduleBySlugPipelineSchedule) GetPipeline() PipelineSchedu
 }
 
 func (v *getPipelineScheduleBySlugPipelineSchedule) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -11048,6 +11245,7 @@ func (v *getPipelineScheduleBySlugResponse) GetPipelineSchedule() getPipelineSch
 // getPipelineScheduleNodeJobEventRetried
 // getPipelineScheduleNodeJobEventRetryFailed
 // getPipelineScheduleNodeJobEventStackError
+// getPipelineScheduleNodeJobEventStackFinished
 // getPipelineScheduleNodeJobEventStackNotification
 // getPipelineScheduleNodeJobEventTimedOut
 // getPipelineScheduleNodeJobTypeBlock
@@ -11100,19 +11298,14 @@ func (v *getPipelineScheduleNodeArtifact) implementsGraphQLInterfacegetPipelineS
 func (v *getPipelineScheduleNodeAuditEvent) implementsGraphQLInterfacegetPipelineScheduleNode()     {}
 func (v *getPipelineScheduleNodeAuthorizationBitbucket) implementsGraphQLInterfacegetPipelineScheduleNode() {
 }
-
 func (v *getPipelineScheduleNodeAuthorizationGitHub) implementsGraphQLInterfacegetPipelineScheduleNode() {
 }
-
 func (v *getPipelineScheduleNodeAuthorizationGitHubApp) implementsGraphQLInterfacegetPipelineScheduleNode() {
 }
-
 func (v *getPipelineScheduleNodeAuthorizationGitHubEnterprise) implementsGraphQLInterfacegetPipelineScheduleNode() {
 }
-
 func (v *getPipelineScheduleNodeAuthorizationGoogle) implementsGraphQLInterfacegetPipelineScheduleNode() {
 }
-
 func (v *getPipelineScheduleNodeAuthorizationSAML) implementsGraphQLInterfacegetPipelineScheduleNode() {
 }
 func (v *getPipelineScheduleNodeBuild) implementsGraphQLInterfacegetPipelineScheduleNode()        {}
@@ -11126,34 +11319,26 @@ func (v *getPipelineScheduleNodeCompositeRegistryUpstream) implementsGraphQLInte
 func (v *getPipelineScheduleNodeEmail) implementsGraphQLInterfacegetPipelineScheduleNode() {}
 func (v *getPipelineScheduleNodeJobEventAssigned) implementsGraphQLInterfacegetPipelineScheduleNode() {
 }
-
 func (v *getPipelineScheduleNodeJobEventBuildStepUploadCreated) implementsGraphQLInterfacegetPipelineScheduleNode() {
 }
-
 func (v *getPipelineScheduleNodeJobEventCanceled) implementsGraphQLInterfacegetPipelineScheduleNode() {
 }
-
 func (v *getPipelineScheduleNodeJobEventFinished) implementsGraphQLInterfacegetPipelineScheduleNode() {
 }
-
 func (v *getPipelineScheduleNodeJobEventGeneric) implementsGraphQLInterfacegetPipelineScheduleNode() {
 }
-
 func (v *getPipelineScheduleNodeJobEventReprioritized) implementsGraphQLInterfacegetPipelineScheduleNode() {
 }
-
 func (v *getPipelineScheduleNodeJobEventRetried) implementsGraphQLInterfacegetPipelineScheduleNode() {
 }
-
 func (v *getPipelineScheduleNodeJobEventRetryFailed) implementsGraphQLInterfacegetPipelineScheduleNode() {
 }
-
 func (v *getPipelineScheduleNodeJobEventStackError) implementsGraphQLInterfacegetPipelineScheduleNode() {
 }
-
+func (v *getPipelineScheduleNodeJobEventStackFinished) implementsGraphQLInterfacegetPipelineScheduleNode() {
+}
 func (v *getPipelineScheduleNodeJobEventStackNotification) implementsGraphQLInterfacegetPipelineScheduleNode() {
 }
-
 func (v *getPipelineScheduleNodeJobEventTimedOut) implementsGraphQLInterfacegetPipelineScheduleNode() {
 }
 func (v *getPipelineScheduleNodeJobTypeBlock) implementsGraphQLInterfacegetPipelineScheduleNode()   {}
@@ -11165,23 +11350,18 @@ func (v *getPipelineScheduleNodeNotificationServiceSlack) implementsGraphQLInter
 func (v *getPipelineScheduleNodeOrganization) implementsGraphQLInterfacegetPipelineScheduleNode() {}
 func (v *getPipelineScheduleNodeOrganizationBanner) implementsGraphQLInterfacegetPipelineScheduleNode() {
 }
-
 func (v *getPipelineScheduleNodeOrganizationInvitation) implementsGraphQLInterfacegetPipelineScheduleNode() {
 }
-
 func (v *getPipelineScheduleNodeOrganizationMember) implementsGraphQLInterfacegetPipelineScheduleNode() {
 }
-
 func (v *getPipelineScheduleNodeOrganizationRepositoryProviderGitHub) implementsGraphQLInterfacegetPipelineScheduleNode() {
 }
-
 func (v *getPipelineScheduleNodeOrganizationRepositoryProviderGitHubEnterpriseServer) implementsGraphQLInterfacegetPipelineScheduleNode() {
 }
 func (v *getPipelineScheduleNodePipeline) implementsGraphQLInterfacegetPipelineScheduleNode()       {}
 func (v *getPipelineScheduleNodePipelineMetric) implementsGraphQLInterfacegetPipelineScheduleNode() {}
 func (v *getPipelineScheduleNodePipelineSchedule) implementsGraphQLInterfacegetPipelineScheduleNode() {
 }
-
 func (v *getPipelineScheduleNodePipelineTemplate) implementsGraphQLInterfacegetPipelineScheduleNode() {
 }
 func (v *getPipelineScheduleNodeRegistry) implementsGraphQLInterfacegetPipelineScheduleNode()      {}
@@ -11189,10 +11369,8 @@ func (v *getPipelineScheduleNodeRegistryToken) implementsGraphQLInterfacegetPipe
 func (v *getPipelineScheduleNodeRule) implementsGraphQLInterfacegetPipelineScheduleNode()          {}
 func (v *getPipelineScheduleNodeSSOProviderGitHubApp) implementsGraphQLInterfacegetPipelineScheduleNode() {
 }
-
 func (v *getPipelineScheduleNodeSSOProviderGoogleGSuite) implementsGraphQLInterfacegetPipelineScheduleNode() {
 }
-
 func (v *getPipelineScheduleNodeSSOProviderSAML) implementsGraphQLInterfacegetPipelineScheduleNode() {
 }
 func (v *getPipelineScheduleNodeSecret) implementsGraphQLInterfacegetPipelineScheduleNode()       {}
@@ -11309,6 +11487,9 @@ func __unmarshalgetPipelineScheduleNode(b []byte, v *getPipelineScheduleNode) er
 	case "JobEventStackError":
 		*v = new(getPipelineScheduleNodeJobEventStackError)
 		return json.Unmarshal(b, *v)
+	case "JobEventStackFinished":
+		*v = new(getPipelineScheduleNodeJobEventStackFinished)
+		return json.Unmarshal(b, *v)
 	case "JobEventStackNotification":
 		*v = new(getPipelineScheduleNodeJobEventStackNotification)
 		return json.Unmarshal(b, *v)
@@ -11415,6 +11596,7 @@ func __unmarshalgetPipelineScheduleNode(b []byte, v *getPipelineScheduleNode) er
 }
 
 func __marshalgetPipelineScheduleNode(v *getPipelineScheduleNode) ([]byte, error) {
+
 	var typename string
 	switch v := (*v).(type) {
 	case *getPipelineScheduleNodeAPIAccessToken:
@@ -11655,6 +11837,14 @@ func __marshalgetPipelineScheduleNode(v *getPipelineScheduleNode) ([]byte, error
 		result := struct {
 			TypeName string `json:"__typename"`
 			*getPipelineScheduleNodeJobEventStackError
+		}{typename, v}
+		return json.Marshal(result)
+	case *getPipelineScheduleNodeJobEventStackFinished:
+		typename = "JobEventStackFinished"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getPipelineScheduleNodeJobEventStackFinished
 		}{typename, v}
 		return json.Marshal(result)
 	case *getPipelineScheduleNodeJobEventStackNotification:
@@ -12253,6 +12443,17 @@ type getPipelineScheduleNodeJobEventStackError struct {
 // GetTypename returns getPipelineScheduleNodeJobEventStackError.Typename, and is useful for accessing the field via an interface.
 func (v *getPipelineScheduleNodeJobEventStackError) GetTypename() string { return v.Typename }
 
+// getPipelineScheduleNodeJobEventStackFinished includes the requested fields of the GraphQL type JobEventStackFinished.
+// The GraphQL type's documentation follows.
+//
+// An event created when a stack finishes a job and marks it as success
+type getPipelineScheduleNodeJobEventStackFinished struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getPipelineScheduleNodeJobEventStackFinished.Typename, and is useful for accessing the field via an interface.
+func (v *getPipelineScheduleNodeJobEventStackFinished) GetTypename() string { return v.Typename }
+
 // getPipelineScheduleNodeJobEventStackNotification includes the requested fields of the GraphQL type JobEventStackNotification.
 // The GraphQL type's documentation follows.
 //
@@ -12483,6 +12684,7 @@ func (v *getPipelineScheduleNodePipelineSchedule) GetPipeline() PipelineSchedule
 }
 
 func (v *getPipelineScheduleNodePipelineSchedule) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -12738,6 +12940,7 @@ type getPipelineScheduleResponse struct {
 func (v *getPipelineScheduleResponse) GetNode() getPipelineScheduleNode { return v.Node }
 
 func (v *getPipelineScheduleResponse) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -12837,6 +13040,7 @@ func (v *getPipelineTeamsPipelineTeamsTeamPipelineConnection) GetEdges() []Pipel
 }
 
 func (v *getPipelineTeamsPipelineTeamsTeamPipelineConnection) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -12973,6 +13177,7 @@ func (v *getPipelineTemplatesOrganizationPipelineTemplatesPipelineTemplateConnec
 }
 
 func (v *getPipelineTemplatesOrganizationPipelineTemplatesPipelineTemplateConnectionEdgesPipelineTemplateEdgeNodePipelineTemplate) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -13072,6 +13277,7 @@ type getTestSuiteResponse struct {
 func (v *getTestSuiteResponse) GetSuite() getTestSuiteSuiteNode { return v.Suite }
 
 func (v *getTestSuiteResponse) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -13501,6 +13707,17 @@ type getTestSuiteSuiteJobEventStackError struct {
 // GetTypename returns getTestSuiteSuiteJobEventStackError.Typename, and is useful for accessing the field via an interface.
 func (v *getTestSuiteSuiteJobEventStackError) GetTypename() string { return v.Typename }
 
+// getTestSuiteSuiteJobEventStackFinished includes the requested fields of the GraphQL type JobEventStackFinished.
+// The GraphQL type's documentation follows.
+//
+// An event created when a stack finishes a job and marks it as success
+type getTestSuiteSuiteJobEventStackFinished struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getTestSuiteSuiteJobEventStackFinished.Typename, and is useful for accessing the field via an interface.
+func (v *getTestSuiteSuiteJobEventStackFinished) GetTypename() string { return v.Typename }
+
 // getTestSuiteSuiteJobEventStackNotification includes the requested fields of the GraphQL type JobEventStackNotification.
 // The GraphQL type's documentation follows.
 //
@@ -13600,6 +13817,7 @@ func (v *getTestSuiteSuiteJobTypeWait) GetTypename() string { return v.Typename 
 // getTestSuiteSuiteJobEventRetried
 // getTestSuiteSuiteJobEventRetryFailed
 // getTestSuiteSuiteJobEventStackError
+// getTestSuiteSuiteJobEventStackFinished
 // getTestSuiteSuiteJobEventStackNotification
 // getTestSuiteSuiteJobEventTimedOut
 // getTestSuiteSuiteJobTypeBlock
@@ -13674,6 +13892,7 @@ func (v *getTestSuiteSuiteJobEventReprioritized) implementsGraphQLInterfacegetTe
 func (v *getTestSuiteSuiteJobEventRetried) implementsGraphQLInterfacegetTestSuiteSuiteNode()       {}
 func (v *getTestSuiteSuiteJobEventRetryFailed) implementsGraphQLInterfacegetTestSuiteSuiteNode()   {}
 func (v *getTestSuiteSuiteJobEventStackError) implementsGraphQLInterfacegetTestSuiteSuiteNode()    {}
+func (v *getTestSuiteSuiteJobEventStackFinished) implementsGraphQLInterfacegetTestSuiteSuiteNode() {}
 func (v *getTestSuiteSuiteJobEventStackNotification) implementsGraphQLInterfacegetTestSuiteSuiteNode() {
 }
 func (v *getTestSuiteSuiteJobEventTimedOut) implementsGraphQLInterfacegetTestSuiteSuiteNode() {}
@@ -13689,7 +13908,6 @@ func (v *getTestSuiteSuiteOrganizationInvitation) implementsGraphQLInterfacegetT
 func (v *getTestSuiteSuiteOrganizationMember) implementsGraphQLInterfacegetTestSuiteSuiteNode()     {}
 func (v *getTestSuiteSuiteOrganizationRepositoryProviderGitHub) implementsGraphQLInterfacegetTestSuiteSuiteNode() {
 }
-
 func (v *getTestSuiteSuiteOrganizationRepositoryProviderGitHubEnterpriseServer) implementsGraphQLInterfacegetTestSuiteSuiteNode() {
 }
 func (v *getTestSuiteSuitePipeline) implementsGraphQLInterfacegetTestSuiteSuiteNode()             {}
@@ -13817,6 +14035,9 @@ func __unmarshalgetTestSuiteSuiteNode(b []byte, v *getTestSuiteSuiteNode) error 
 	case "JobEventStackError":
 		*v = new(getTestSuiteSuiteJobEventStackError)
 		return json.Unmarshal(b, *v)
+	case "JobEventStackFinished":
+		*v = new(getTestSuiteSuiteJobEventStackFinished)
+		return json.Unmarshal(b, *v)
 	case "JobEventStackNotification":
 		*v = new(getTestSuiteSuiteJobEventStackNotification)
 		return json.Unmarshal(b, *v)
@@ -13923,6 +14144,7 @@ func __unmarshalgetTestSuiteSuiteNode(b []byte, v *getTestSuiteSuiteNode) error 
 }
 
 func __marshalgetTestSuiteSuiteNode(v *getTestSuiteSuiteNode) ([]byte, error) {
+
 	var typename string
 	switch v := (*v).(type) {
 	case *getTestSuiteSuiteAPIAccessToken:
@@ -14163,6 +14385,14 @@ func __marshalgetTestSuiteSuiteNode(v *getTestSuiteSuiteNode) ([]byte, error) {
 		result := struct {
 			TypeName string `json:"__typename"`
 			*getTestSuiteSuiteJobEventStackError
+		}{typename, v}
+		return json.Marshal(result)
+	case *getTestSuiteSuiteJobEventStackFinished:
+		typename = "JobEventStackFinished"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getTestSuiteSuiteJobEventStackFinished
 		}{typename, v}
 		return json.Marshal(result)
 	case *getTestSuiteSuiteJobEventStackNotification:
@@ -14849,6 +15079,7 @@ func (v *removeClusterDefaultQueueClusterUpdateClusterUpdatePayloadCluster) GetC
 }
 
 func (v *removeClusterDefaultQueueClusterUpdateClusterUpdatePayloadCluster) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -15157,6 +15388,7 @@ func (v *setClusterDefaultQueueClusterUpdateClusterUpdatePayloadCluster) GetColo
 }
 
 func (v *setClusterDefaultQueueClusterUpdateClusterUpdatePayloadCluster) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -15376,7 +15608,28 @@ func (v *teamCreateTeamCreateTeamCreatePayloadTeamEdgeNodeTeam) GetMembersCanCre
 	return v.TeamFields.MembersCanCreatePipelines
 }
 
+// GetMembersCanCreateSuites returns teamCreateTeamCreateTeamCreatePayloadTeamEdgeNodeTeam.MembersCanCreateSuites, and is useful for accessing the field via an interface.
+func (v *teamCreateTeamCreateTeamCreatePayloadTeamEdgeNodeTeam) GetMembersCanCreateSuites() bool {
+	return v.TeamFields.MembersCanCreateSuites
+}
+
+// GetMembersCanCreateRegistries returns teamCreateTeamCreateTeamCreatePayloadTeamEdgeNodeTeam.MembersCanCreateRegistries, and is useful for accessing the field via an interface.
+func (v *teamCreateTeamCreateTeamCreatePayloadTeamEdgeNodeTeam) GetMembersCanCreateRegistries() bool {
+	return v.TeamFields.MembersCanCreateRegistries
+}
+
+// GetMembersCanDestroyRegistries returns teamCreateTeamCreateTeamCreatePayloadTeamEdgeNodeTeam.MembersCanDestroyRegistries, and is useful for accessing the field via an interface.
+func (v *teamCreateTeamCreateTeamCreatePayloadTeamEdgeNodeTeam) GetMembersCanDestroyRegistries() bool {
+	return v.TeamFields.MembersCanDestroyRegistries
+}
+
+// GetMembersCanDestroyPackages returns teamCreateTeamCreateTeamCreatePayloadTeamEdgeNodeTeam.MembersCanDestroyPackages, and is useful for accessing the field via an interface.
+func (v *teamCreateTeamCreateTeamCreatePayloadTeamEdgeNodeTeam) GetMembersCanDestroyPackages() bool {
+	return v.TeamFields.MembersCanDestroyPackages
+}
+
 func (v *teamCreateTeamCreateTeamCreatePayloadTeamEdgeNodeTeam) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -15418,6 +15671,14 @@ type __premarshalteamCreateTeamCreateTeamCreatePayloadTeamEdgeNodeTeam struct {
 	DefaultMemberRole string `json:"defaultMemberRole"`
 
 	MembersCanCreatePipelines bool `json:"membersCanCreatePipelines"`
+
+	MembersCanCreateSuites bool `json:"membersCanCreateSuites"`
+
+	MembersCanCreateRegistries bool `json:"membersCanCreateRegistries"`
+
+	MembersCanDestroyRegistries bool `json:"membersCanDestroyRegistries"`
+
+	MembersCanDestroyPackages bool `json:"membersCanDestroyPackages"`
 }
 
 func (v *teamCreateTeamCreateTeamCreatePayloadTeamEdgeNodeTeam) MarshalJSON() ([]byte, error) {
@@ -15440,6 +15701,10 @@ func (v *teamCreateTeamCreateTeamCreatePayloadTeamEdgeNodeTeam) __premarshalJSON
 	retval.IsDefaultTeam = v.TeamFields.IsDefaultTeam
 	retval.DefaultMemberRole = v.TeamFields.DefaultMemberRole
 	retval.MembersCanCreatePipelines = v.TeamFields.MembersCanCreatePipelines
+	retval.MembersCanCreateSuites = v.TeamFields.MembersCanCreateSuites
+	retval.MembersCanCreateRegistries = v.TeamFields.MembersCanCreateRegistries
+	retval.MembersCanDestroyRegistries = v.TeamFields.MembersCanDestroyRegistries
+	retval.MembersCanDestroyPackages = v.TeamFields.MembersCanDestroyPackages
 	return &retval, nil
 }
 
@@ -15532,7 +15797,28 @@ func (v *teamUpdateTeamUpdateTeamUpdatePayloadTeam) GetMembersCanCreatePipelines
 	return v.TeamFields.MembersCanCreatePipelines
 }
 
+// GetMembersCanCreateSuites returns teamUpdateTeamUpdateTeamUpdatePayloadTeam.MembersCanCreateSuites, and is useful for accessing the field via an interface.
+func (v *teamUpdateTeamUpdateTeamUpdatePayloadTeam) GetMembersCanCreateSuites() bool {
+	return v.TeamFields.MembersCanCreateSuites
+}
+
+// GetMembersCanCreateRegistries returns teamUpdateTeamUpdateTeamUpdatePayloadTeam.MembersCanCreateRegistries, and is useful for accessing the field via an interface.
+func (v *teamUpdateTeamUpdateTeamUpdatePayloadTeam) GetMembersCanCreateRegistries() bool {
+	return v.TeamFields.MembersCanCreateRegistries
+}
+
+// GetMembersCanDestroyRegistries returns teamUpdateTeamUpdateTeamUpdatePayloadTeam.MembersCanDestroyRegistries, and is useful for accessing the field via an interface.
+func (v *teamUpdateTeamUpdateTeamUpdatePayloadTeam) GetMembersCanDestroyRegistries() bool {
+	return v.TeamFields.MembersCanDestroyRegistries
+}
+
+// GetMembersCanDestroyPackages returns teamUpdateTeamUpdateTeamUpdatePayloadTeam.MembersCanDestroyPackages, and is useful for accessing the field via an interface.
+func (v *teamUpdateTeamUpdateTeamUpdatePayloadTeam) GetMembersCanDestroyPackages() bool {
+	return v.TeamFields.MembersCanDestroyPackages
+}
+
 func (v *teamUpdateTeamUpdateTeamUpdatePayloadTeam) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -15574,6 +15860,14 @@ type __premarshalteamUpdateTeamUpdateTeamUpdatePayloadTeam struct {
 	DefaultMemberRole string `json:"defaultMemberRole"`
 
 	MembersCanCreatePipelines bool `json:"membersCanCreatePipelines"`
+
+	MembersCanCreateSuites bool `json:"membersCanCreateSuites"`
+
+	MembersCanCreateRegistries bool `json:"membersCanCreateRegistries"`
+
+	MembersCanDestroyRegistries bool `json:"membersCanDestroyRegistries"`
+
+	MembersCanDestroyPackages bool `json:"membersCanDestroyPackages"`
 }
 
 func (v *teamUpdateTeamUpdateTeamUpdatePayloadTeam) MarshalJSON() ([]byte, error) {
@@ -15596,6 +15890,10 @@ func (v *teamUpdateTeamUpdateTeamUpdatePayloadTeam) __premarshalJSON() (*__prema
 	retval.IsDefaultTeam = v.TeamFields.IsDefaultTeam
 	retval.DefaultMemberRole = v.TeamFields.DefaultMemberRole
 	retval.MembersCanCreatePipelines = v.TeamFields.MembersCanCreatePipelines
+	retval.MembersCanCreateSuites = v.TeamFields.MembersCanCreateSuites
+	retval.MembersCanCreateRegistries = v.TeamFields.MembersCanCreateRegistries
+	retval.MembersCanDestroyRegistries = v.TeamFields.MembersCanDestroyRegistries
+	retval.MembersCanDestroyPackages = v.TeamFields.MembersCanDestroyPackages
 	return &retval, nil
 }
 
@@ -15646,6 +15944,7 @@ func (v *updateClusterAgentTokenClusterAgentTokenUpdateClusterAgentTokenUpdatePa
 }
 
 func (v *updateClusterAgentTokenClusterAgentTokenUpdateClusterAgentTokenUpdatePayloadClusterAgentTokenClusterToken) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -15772,6 +16071,7 @@ func (v *updateClusterClusterUpdateClusterUpdatePayloadCluster) GetDefaultQueue(
 }
 
 func (v *updateClusterClusterUpdateClusterUpdatePayloadCluster) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -15914,6 +16214,7 @@ func (v *updateClusterQueueClusterQueueUpdateClusterQueueUpdatePayloadClusterQue
 }
 
 func (v *updateClusterQueueClusterQueueUpdateClusterQueueUpdatePayloadClusterQueue) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -16106,6 +16407,7 @@ func (v *updateOrganizationRuleRuleUpdateRuleUpdatePayloadRule) GetTarget() Orga
 }
 
 func (v *updateOrganizationRuleRuleUpdateRuleUpdatePayloadRule) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -16342,6 +16644,7 @@ func (v *updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline) GetWebhookUR
 }
 
 func (v *updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -16536,6 +16839,7 @@ func (v *updatePipelineSchedulePipelineScheduleUpdatePipelineScheduleUpdatePaylo
 }
 
 func (v *updatePipelineSchedulePipelineScheduleUpdatePipelineScheduleUpdatePayloadPipelineSchedule) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -16668,6 +16972,7 @@ func (v *updatePipelineTemplatePipelineTemplateUpdatePipelineTemplateUpdatePaylo
 }
 
 func (v *updatePipelineTemplatePipelineTemplateUpdatePipelineTemplateUpdatePayloadPipelineTemplate) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -16794,6 +17099,7 @@ func (v *updateTeamMemberTeamMemberUpdateTeamMemberUpdatePayloadTeamMember) GetR
 }
 
 func (v *updateTeamMemberTeamMemberUpdateTeamMemberUpdatePayloadTeamMember) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -16906,6 +17212,7 @@ func (v *updateTeamPipelineTeamPipelineUpdateTeamPipelineUpdatePayloadTeamPipeli
 }
 
 func (v *updateTeamPipelineTeamPipelineUpdateTeamPipelineUpdatePayloadTeamPipeline) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -17055,6 +17362,7 @@ func (v *upsertBannerOrganizationBannerUpsertOrganizationBannerUpsertPayloadBann
 }
 
 func (v *upsertBannerOrganizationBannerUpsertOrganizationBannerUpsertPayloadBannerOrganizationBanner) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -17289,6 +17597,10 @@ query GetOrganizationTeams ($slug: ID!, $cursor: String) {
 					isDefaultTeam
 					defaultMemberRole
 					membersCanCreatePipelines
+					membersCanCreateSuites
+					membersCanCreateRegistries
+					membersCanDestroyRegistries
+					membersCanDestroyPackages
 				}
 			}
 		}
@@ -17374,6 +17686,10 @@ fragment TeamFields on Team {
 	isDefaultTeam
 	defaultMemberRole
 	membersCanCreatePipelines
+	membersCanCreateSuites
+	membersCanCreateRegistries
+	membersCanDestroyRegistries
+	membersCanDestroyPackages
 }
 `
 
@@ -18905,6 +19221,10 @@ fragment TeamFields on Team {
 	isDefaultTeam
 	defaultMemberRole
 	membersCanCreatePipelines
+	membersCanCreateSuites
+	membersCanCreateRegistries
+	membersCanDestroyRegistries
+	membersCanDestroyPackages
 }
 fragment TeamSuiteFields on TeamSuite {
 	id
@@ -19819,8 +20139,8 @@ func setOrganization2FA(
 
 // The mutation executed by teamCreate.
 const teamCreate_Operation = `
-mutation teamCreate ($organizationID: ID!, $name: String!, $description: String, $privacy: TeamPrivacy!, $isDefaultTeam: Boolean!, $defaultMemberRole: TeamMemberRole!, $membersCanCreatePipelines: Boolean) {
-	teamCreate(input: {organizationID:$organizationID,name:$name,description:$description,privacy:$privacy,isDefaultTeam:$isDefaultTeam,defaultMemberRole:$defaultMemberRole,membersCanCreatePipelines:$membersCanCreatePipelines}) {
+mutation teamCreate ($organizationID: ID!, $name: String!, $description: String, $privacy: TeamPrivacy!, $isDefaultTeam: Boolean!, $defaultMemberRole: TeamMemberRole!, $membersCanCreatePipelines: Boolean, $membersCanCreateSuites: Boolean, $membersCanCreateRegistries: Boolean, $membersCanDestroyRegistries: Boolean, $membersCanDestroyPackages: Boolean) {
+	teamCreate(input: {organizationID:$organizationID,name:$name,description:$description,privacy:$privacy,isDefaultTeam:$isDefaultTeam,defaultMemberRole:$defaultMemberRole,membersCanCreatePipelines:$membersCanCreatePipelines,membersCanCreateSuites:$membersCanCreateSuites,membersCanCreateRegistries:$membersCanCreateRegistries,membersCanDestroyRegistries:$membersCanDestroyRegistries,membersCanDestroyPackages:$membersCanDestroyPackages}) {
 		teamEdge {
 			node {
 				... TeamFields
@@ -19838,6 +20158,10 @@ fragment TeamFields on Team {
 	isDefaultTeam
 	defaultMemberRole
 	membersCanCreatePipelines
+	membersCanCreateSuites
+	membersCanCreateRegistries
+	membersCanDestroyRegistries
+	membersCanDestroyPackages
 }
 `
 
@@ -19851,18 +20175,26 @@ func teamCreate(
 	isDefaultTeam bool,
 	defaultMemberRole string,
 	membersCanCreatePipelines bool,
+	membersCanCreateSuites bool,
+	membersCanCreateRegistries bool,
+	membersCanDestroyRegistries bool,
+	membersCanDestroyPackages bool,
 ) (data_ *teamCreateResponse, err_ error) {
 	req_ := &graphql.Request{
 		OpName: "teamCreate",
 		Query:  teamCreate_Operation,
 		Variables: &__teamCreateInput{
-			OrganizationID:            organizationID,
-			Name:                      name,
-			Description:               description,
-			Privacy:                   privacy,
-			IsDefaultTeam:             isDefaultTeam,
-			DefaultMemberRole:         defaultMemberRole,
-			MembersCanCreatePipelines: membersCanCreatePipelines,
+			OrganizationID:              organizationID,
+			Name:                        name,
+			Description:                 description,
+			Privacy:                     privacy,
+			IsDefaultTeam:               isDefaultTeam,
+			DefaultMemberRole:           defaultMemberRole,
+			MembersCanCreatePipelines:   membersCanCreatePipelines,
+			MembersCanCreateSuites:      membersCanCreateSuites,
+			MembersCanCreateRegistries:  membersCanCreateRegistries,
+			MembersCanDestroyRegistries: membersCanDestroyRegistries,
+			MembersCanDestroyPackages:   membersCanDestroyPackages,
 		},
 	}
 
@@ -19914,8 +20246,8 @@ func teamDelete(
 
 // The mutation executed by teamUpdate.
 const teamUpdate_Operation = `
-mutation teamUpdate ($id: ID!, $name: String!, $description: String, $privacy: TeamPrivacy!, $isDefaultTeam: Boolean!, $defaultMemberRole: TeamMemberRole!, $membersCanCreatePipelines: Boolean) {
-	teamUpdate(input: {id:$id,name:$name,description:$description,privacy:$privacy,isDefaultTeam:$isDefaultTeam,defaultMemberRole:$defaultMemberRole,membersCanCreatePipelines:$membersCanCreatePipelines}) {
+mutation teamUpdate ($id: ID!, $name: String!, $description: String, $privacy: TeamPrivacy!, $isDefaultTeam: Boolean!, $defaultMemberRole: TeamMemberRole!, $membersCanCreatePipelines: Boolean, $membersCanCreateSuites: Boolean, $membersCanCreateRegistries: Boolean, $membersCanDestroyRegistries: Boolean, $membersCanDestroyPackages: Boolean) {
+	teamUpdate(input: {id:$id,name:$name,description:$description,privacy:$privacy,isDefaultTeam:$isDefaultTeam,defaultMemberRole:$defaultMemberRole,membersCanCreatePipelines:$membersCanCreatePipelines,membersCanCreateSuites:$membersCanCreateSuites,membersCanCreateRegistries:$membersCanCreateRegistries,membersCanDestroyRegistries:$membersCanDestroyRegistries,membersCanDestroyPackages:$membersCanDestroyPackages}) {
 		team {
 			... TeamFields
 		}
@@ -19931,6 +20263,10 @@ fragment TeamFields on Team {
 	isDefaultTeam
 	defaultMemberRole
 	membersCanCreatePipelines
+	membersCanCreateSuites
+	membersCanCreateRegistries
+	membersCanDestroyRegistries
+	membersCanDestroyPackages
 }
 `
 
@@ -19944,18 +20280,26 @@ func teamUpdate(
 	isDefaultTeam bool,
 	defaultMemberRole string,
 	membersCanCreatePipelines bool,
+	membersCanCreateSuites bool,
+	membersCanCreateRegistries bool,
+	membersCanDestroyRegistries bool,
+	membersCanDestroyPackages bool,
 ) (data_ *teamUpdateResponse, err_ error) {
 	req_ := &graphql.Request{
 		OpName: "teamUpdate",
 		Query:  teamUpdate_Operation,
 		Variables: &__teamUpdateInput{
-			Id:                        id,
-			Name:                      name,
-			Description:               description,
-			Privacy:                   privacy,
-			IsDefaultTeam:             isDefaultTeam,
-			DefaultMemberRole:         defaultMemberRole,
-			MembersCanCreatePipelines: membersCanCreatePipelines,
+			Id:                          id,
+			Name:                        name,
+			Description:                 description,
+			Privacy:                     privacy,
+			IsDefaultTeam:               isDefaultTeam,
+			DefaultMemberRole:           defaultMemberRole,
+			MembersCanCreatePipelines:   membersCanCreatePipelines,
+			MembersCanCreateSuites:      membersCanCreateSuites,
+			MembersCanCreateRegistries:  membersCanCreateRegistries,
+			MembersCanDestroyRegistries: membersCanDestroyRegistries,
+			MembersCanDestroyPackages:   membersCanDestroyPackages,
 		},
 	}
 

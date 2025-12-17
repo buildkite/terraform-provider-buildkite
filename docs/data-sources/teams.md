@@ -31,6 +31,10 @@ Read-Only:
 - `id` (String) The GraphQL ID of the team.
 - `is_default_team` (Boolean) Whether this is the default team for the organization.
 - `members_can_create_pipelines` (Boolean) Whether team members can create pipelines.
+- `members_can_create_registries` (Boolean) Whether team members can create registries.
+- `members_can_create_suites` (Boolean) Whether team members can create test suites.
+- `members_can_destroy_packages` (Boolean) Whether team members can destroy packages.
+- `members_can_destroy_registries` (Boolean) Whether team members can destroy registries.
 - `name` (String) The name of the team.
 - `privacy` (String) The privacy setting of the team.
 - `slug` (String) The slug of the team.
