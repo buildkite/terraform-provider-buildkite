@@ -22,9 +22,13 @@ require (
 	github.com/alexflint/go-arg v1.5.1 // indirect
 	github.com/alexflint/go-scalar v1.2.0 // indirect
 	github.com/apparentlymart/go-textseg/v15 v15.0.0 // indirect
+	github.com/bitfield/gotestdox v0.2.2 // indirect
 	github.com/bmatcuk/doublestar/v4 v4.9.1 // indirect
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.4.0 // indirect
+	github.com/dnephin/pflag v1.0.7 // indirect
+	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/goccy/go-json v0.10.5 // indirect
+	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/gowebpki/jcs v1.0.1 // indirect
 	github.com/lestrrat-go/blackmagic v1.0.3 // indirect
@@ -36,9 +40,11 @@ require (
 	github.com/segmentio/asm v1.2.0 // indirect
 	github.com/suessflorian/gqlfetch v0.7.0 // indirect
 	golang.org/x/sync v0.18.0 // indirect
+	golang.org/x/term v0.37.0 // indirect
 	golang.org/x/tools v0.38.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250707201910-8d1bb00bc6a7 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
+	gotest.tools/gotestsum v1.13.0 // indirect
 )
 
 require (
