@@ -61,7 +61,7 @@ func (r *clusterSecretResource) Schema(ctx context.Context, req resource.SchemaR
 			},
 			"cluster_id": schema.StringAttribute{
 				Required:            true,
-				MarkdownDescription: "The ID of the cluster this secret belongs to.",
+				MarkdownDescription: "The UUID of the cluster this secret belongs to.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
@@ -77,6 +77,9 @@ func (r *clusterSecretResource) Schema(ctx context.Context, req resource.SchemaR
 				Required:            true,
 				Sensitive:           true,
 				MarkdownDescription: "The secret value. Must be less than 8KB.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"description": schema.StringAttribute{
 				Optional:            true,
@@ -89,10 +92,16 @@ func (r *clusterSecretResource) Schema(ctx context.Context, req resource.SchemaR
 			"created_at": schema.StringAttribute{
 				Computed:            true,
 				MarkdownDescription: "The time when the secret was created.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"updated_at": schema.StringAttribute{
 				Computed:            true,
 				MarkdownDescription: "The time when the secret was last updated.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 		},
 	}
@@ -148,6 +157,8 @@ func (r *clusterSecretResource) Read(ctx context.Context, req resource.ReadReque
 	if resp.Diagnostics.HasError() {
 		return
 	}
+	// Preserve existing value since API never returns it
+	existingValue := state.Value
 
 	timeout, diags := r.client.timeouts.Read(ctx, DefaultTimeout)
 	resp.Diagnostics.Append(diags...)
@@ -175,8 +186,22 @@ func (r *clusterSecretResource) Read(ctx context.Context, req resource.ReadReque
 	}
 
 	state.Key = types.StringValue(secret.Key)
-	state.Description = types.StringValue(secret.Description)
-	state.Policy = types.StringValue(secret.Policy)
+	state.Value = existingValue // Keep value from state
+
+	// Handle description - preserve null vs empty string
+	if secret.Description == "" && state.Description.IsNull() {
+		state.Description = types.StringNull()
+	} else {
+		state.Description = types.StringValue(secret.Description)
+	}
+
+	// Handle policy - preserve null vs empty string
+	if secret.Policy == "" && state.Policy.IsNull() {
+		state.Policy = types.StringNull()
+	} else {
+		state.Policy = types.StringValue(secret.Policy)
+	}
+
 	state.CreatedAt = types.StringValue(secret.CreatedAt)
 	state.UpdatedAt = types.StringValue(secret.UpdatedAt)
 	// Note: Value is never returned by API, so we keep the plan value
@@ -254,23 +279,8 @@ func (r *clusterSecretResource) Update(ctx context.Context, req resource.UpdateR
 		return
 	}
 
-	// Read the updated secret to get the new updated_at timestamp
-	var updated *ClusterSecret
-	err = retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-		var err error
-		updated, err = r.client.GetClusterSecret(ctx, r.client.organization, plan.ClusterID.ValueString(), plan.ID.ValueString())
-		return retryContextError(err)
-	})
-
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Unable to read updated cluster secret",
-			fmt.Sprintf("Unable to read updated cluster secret: %s", err.Error()),
-		)
-		return
-	}
-
-	plan.UpdatedAt = types.StringValue(updated.UpdatedAt)
+	// Preserve created_at from state, Terraform will call Read to refresh updated_at
+	plan.CreatedAt = state.CreatedAt
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 }
 
