@@ -8,8 +8,7 @@ terraform {
 }
 
 provider "buildkite" {
-  organization = "atte-test-org-1"
-  api_token    = "bkua_200ac873954e8339bcab393de15dcd909ab9d900"
+  organization = "testkite"
 }
 
 resource "buildkite_cluster" "test_cluster" {
@@ -51,6 +50,7 @@ resource "buildkite_cluster_queue" "hosted_macos_medium" {
     }
   }
 }
+
 resource "buildkite_cluster_secret" "my_secret" {
   cluster_id  = buildkite_cluster.test_cluster.uuid 
   key         = "my_secret"

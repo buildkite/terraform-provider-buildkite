@@ -135,10 +135,11 @@ func testAccCheckClusterSecretDestroy(s *terraform.State) error {
 
 	return nil
 }
-
 func testAccClusterSecretConfig(clusterName, key, value, description string) string {
 	return fmt.Sprintf(`
 provider "buildkite" {
+	organization = "%s"
+	api_token    = "%s"
 	timeouts = {
 		create = "10s"
 		read = "10s"
@@ -158,12 +159,14 @@ resource "buildkite_cluster_secret" "test" {
 	value       = "%s"
 	description = "%s"
 }
-`, clusterName, key, value, description)
+`, getenv("BUILDKITE_ORGANIZATION_SLUG"), os.Getenv("BUILDKITE_API_TOKEN"), clusterName, key, value, description)
 }
 
 func testAccClusterSecretConfigWithPolicy(clusterName, key, value, pipeline, branch string) string {
 	return fmt.Sprintf(`
 provider "buildkite" {
+	organization = "%s"
+	api_token    = "%s"
 	timeouts = {
 		create = "10s"
 		read = "10s"
@@ -188,5 +191,5 @@ resource "buildkite_cluster_secret" "test" {
   build_branch: %s
 EOT
 }
-`, clusterName, key, value, pipeline, branch)
+`, getenv("BUILDKITE_ORGANIZATION_SLUG"), os.Getenv("BUILDKITE_API_TOKEN"), clusterName, key, value, pipeline, branch)
 }
