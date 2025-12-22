@@ -299,8 +299,7 @@ func (r *clusterSecretResource) Delete(ctx context.Context, req resource.DeleteR
 	}
 
 	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-		var err error
-		err = r.client.DeleteClusterSecret(ctx, r.client.organization, state.ClusterID.ValueString(), state.ID.ValueString())
+		err := r.client.DeleteClusterSecret(ctx, r.client.organization, state.ClusterID.ValueString(), state.ID.ValueString())
 		return retryContextError(err)
 	})
 

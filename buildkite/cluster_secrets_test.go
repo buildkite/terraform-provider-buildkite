@@ -25,7 +25,9 @@ func TestGetClusterSecret(t *testing.T) {
 			CreatedAt:   "2024-01-01T00:00:00Z",
 			UpdatedAt:   "2024-01-01T00:00:00Z",
 		}
-		json.NewEncoder(w).Encode(secret)
+		if err := json.NewEncoder(w).Encode(secret); err != nil {
+			t.Fatalf("failed to encode secret: %v", err)
+		}
 	}))
 	defer server.Close()
 
@@ -75,7 +77,9 @@ func TestCreateClusterSecret(t *testing.T) {
 			CreatedAt:   "2024-01-01T00:00:00Z",
 			UpdatedAt:   "2024-01-01T00:00:00Z",
 		}
-		json.NewEncoder(w).Encode(created)
+		if err := json.NewEncoder(w).Encode(created); err != nil {
+			t.Fatalf("failed to encode created: %v", err)
+		}
 	}))
 	defer server.Close()
 
@@ -130,7 +134,9 @@ func TestUpdateClusterSecret(t *testing.T) {
 			Policy:      updates["policy"],
 			UpdatedAt:   "2024-01-02T00:00:00Z",
 		}
-		json.NewEncoder(w).Encode(updated)
+		if err := json.NewEncoder(w).Encode(updated); err != nil {
+			t.Fatalf("failed to encode updated: %v", err)
+		}
 	}))
 	defer server.Close()
 
@@ -178,7 +184,9 @@ func TestUpdateClusterSecretValue(t *testing.T) {
 			Key:       "MY_SECRET",
 			UpdatedAt: "2024-01-02T00:00:00Z",
 		}
-		json.NewEncoder(w).Encode(updated)
+		if err := json.NewEncoder(w).Encode(updated); err != nil {
+			t.Fatalf("failed to encode updated: %v", err)
+		}
 	}))
 	defer server.Close()
 
