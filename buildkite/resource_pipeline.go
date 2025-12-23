@@ -382,7 +382,7 @@ func (p *pipelineResource) Read(ctx context.Context, req resource.ReadRequest, r
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to read pipeline",
-			fmt.Sprintf("Unable to pipeline: %s", err.Error()),
+			fmt.Sprintf("Unable to read pipeline: %s", err.Error()),
 		)
 		return
 	}
