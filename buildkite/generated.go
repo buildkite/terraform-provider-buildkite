@@ -230,6 +230,78 @@ func (v *ClusterQueueValuesHostedAgentsHostedAgentQueueSettings) __premarshalJSO
 	return &retval, nil
 }
 
+// ClusterSecretValues includes the GraphQL fields of Secret requested by the fragment ClusterSecretValues.
+// The GraphQL type's documentation follows.
+//
+// A secret hosted by Buildkite. This does not contain the secret value or encrypted material.
+type ClusterSecretValues struct {
+	Id string `json:"id"`
+	// The public UUID for the secret
+	Uuid string `json:"uuid"`
+	// The key value used to name the secret
+	Key string `json:"key"`
+	// A description about what this secret is used for
+	Description string `json:"description"`
+	// The YAML policy defining access rules for this secret
+	Policy string `json:"policy"`
+	// The cluster that the secret belongs to
+	Cluster ClusterSecretValuesCluster `json:"cluster"`
+	// The organization that the secret belongs to
+	Organization ClusterSecretValuesOrganization `json:"organization"`
+}
+
+// GetId returns ClusterSecretValues.Id, and is useful for accessing the field via an interface.
+func (v *ClusterSecretValues) GetId() string { return v.Id }
+
+// GetUuid returns ClusterSecretValues.Uuid, and is useful for accessing the field via an interface.
+func (v *ClusterSecretValues) GetUuid() string { return v.Uuid }
+
+// GetKey returns ClusterSecretValues.Key, and is useful for accessing the field via an interface.
+func (v *ClusterSecretValues) GetKey() string { return v.Key }
+
+// GetDescription returns ClusterSecretValues.Description, and is useful for accessing the field via an interface.
+func (v *ClusterSecretValues) GetDescription() string { return v.Description }
+
+// GetPolicy returns ClusterSecretValues.Policy, and is useful for accessing the field via an interface.
+func (v *ClusterSecretValues) GetPolicy() string { return v.Policy }
+
+// GetCluster returns ClusterSecretValues.Cluster, and is useful for accessing the field via an interface.
+func (v *ClusterSecretValues) GetCluster() ClusterSecretValuesCluster { return v.Cluster }
+
+// GetOrganization returns ClusterSecretValues.Organization, and is useful for accessing the field via an interface.
+func (v *ClusterSecretValues) GetOrganization() ClusterSecretValuesOrganization {
+	return v.Organization
+}
+
+// ClusterSecretValuesCluster includes the requested fields of the GraphQL type Cluster.
+type ClusterSecretValuesCluster struct {
+	Id string `json:"id"`
+	// The public UUID for this cluster
+	Uuid string `json:"uuid"`
+}
+
+// GetId returns ClusterSecretValuesCluster.Id, and is useful for accessing the field via an interface.
+func (v *ClusterSecretValuesCluster) GetId() string { return v.Id }
+
+// GetUuid returns ClusterSecretValuesCluster.Uuid, and is useful for accessing the field via an interface.
+func (v *ClusterSecretValuesCluster) GetUuid() string { return v.Uuid }
+
+// ClusterSecretValuesOrganization includes the requested fields of the GraphQL type Organization.
+// The GraphQL type's documentation follows.
+//
+// An organization
+type ClusterSecretValuesOrganization struct {
+	Id string `json:"id"`
+	// The public UUID for this organization
+	Uuid string `json:"uuid"`
+}
+
+// GetId returns ClusterSecretValuesOrganization.Id, and is useful for accessing the field via an interface.
+func (v *ClusterSecretValuesOrganization) GetId() string { return v.Id }
+
+// GetUuid returns ClusterSecretValuesOrganization.Uuid, and is useful for accessing the field via an interface.
+func (v *ClusterSecretValuesOrganization) GetUuid() string { return v.Uuid }
+
 // GetOrganizationClustersOrganization includes the requested fields of the GraphQL type Organization.
 // The GraphQL type's documentation follows.
 //
@@ -2881,6 +2953,34 @@ func (v *__createClusterQueueInput) GetHostedAgents() *HostedAgentsQueueSettings
 	return v.HostedAgents
 }
 
+// __createClusterSecretInput is used internally by genqlient
+type __createClusterSecretInput struct {
+	OrganizationId string `json:"organizationId"`
+	ClusterId      string `json:"clusterId"`
+	Key            string `json:"key"`
+	Value          string `json:"value"`
+	Description    string `json:"description"`
+	Policy         string `json:"policy"`
+}
+
+// GetOrganizationId returns __createClusterSecretInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__createClusterSecretInput) GetOrganizationId() string { return v.OrganizationId }
+
+// GetClusterId returns __createClusterSecretInput.ClusterId, and is useful for accessing the field via an interface.
+func (v *__createClusterSecretInput) GetClusterId() string { return v.ClusterId }
+
+// GetKey returns __createClusterSecretInput.Key, and is useful for accessing the field via an interface.
+func (v *__createClusterSecretInput) GetKey() string { return v.Key }
+
+// GetValue returns __createClusterSecretInput.Value, and is useful for accessing the field via an interface.
+func (v *__createClusterSecretInput) GetValue() string { return v.Value }
+
+// GetDescription returns __createClusterSecretInput.Description, and is useful for accessing the field via an interface.
+func (v *__createClusterSecretInput) GetDescription() string { return v.Description }
+
+// GetPolicy returns __createClusterSecretInput.Policy, and is useful for accessing the field via an interface.
+func (v *__createClusterSecretInput) GetPolicy() string { return v.Policy }
+
 // __createOrganizationRuleInput is used internally by genqlient
 type __createOrganizationRuleInput struct {
 	OrganizationId string  `json:"organizationId"`
@@ -3048,6 +3148,18 @@ func (v *__deleteClusterQueueInput) GetOrganizationId() string { return v.Organi
 
 // GetId returns __deleteClusterQueueInput.Id, and is useful for accessing the field via an interface.
 func (v *__deleteClusterQueueInput) GetId() string { return v.Id }
+
+// __deleteClusterSecretInput is used internally by genqlient
+type __deleteClusterSecretInput struct {
+	OrganizationId string `json:"organizationId"`
+	Id             string `json:"id"`
+}
+
+// GetOrganizationId returns __deleteClusterSecretInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__deleteClusterSecretInput) GetOrganizationId() string { return v.OrganizationId }
+
+// GetId returns __deleteClusterSecretInput.Id, and is useful for accessing the field via an interface.
+func (v *__deleteClusterSecretInput) GetId() string { return v.Id }
 
 // __deleteOrganizationRuleInput is used internally by genqlient
 type __deleteOrganizationRuleInput struct {
@@ -3530,6 +3642,42 @@ func (v *__updateClusterQueueInput) GetDescription() *string { return v.Descript
 func (v *__updateClusterQueueInput) GetHostedAgents() *HostedAgentsQueueSettingsUpdateInput {
 	return v.HostedAgents
 }
+
+// __updateClusterSecretInput is used internally by genqlient
+type __updateClusterSecretInput struct {
+	OrganizationId string `json:"organizationId"`
+	Id             string `json:"id"`
+	Description    string `json:"description"`
+	Policy         string `json:"policy"`
+}
+
+// GetOrganizationId returns __updateClusterSecretInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__updateClusterSecretInput) GetOrganizationId() string { return v.OrganizationId }
+
+// GetId returns __updateClusterSecretInput.Id, and is useful for accessing the field via an interface.
+func (v *__updateClusterSecretInput) GetId() string { return v.Id }
+
+// GetDescription returns __updateClusterSecretInput.Description, and is useful for accessing the field via an interface.
+func (v *__updateClusterSecretInput) GetDescription() string { return v.Description }
+
+// GetPolicy returns __updateClusterSecretInput.Policy, and is useful for accessing the field via an interface.
+func (v *__updateClusterSecretInput) GetPolicy() string { return v.Policy }
+
+// __updateClusterSecretValueInput is used internally by genqlient
+type __updateClusterSecretValueInput struct {
+	OrganizationId string `json:"organizationId"`
+	Id             string `json:"id"`
+	Value          string `json:"value"`
+}
+
+// GetOrganizationId returns __updateClusterSecretValueInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__updateClusterSecretValueInput) GetOrganizationId() string { return v.OrganizationId }
+
+// GetId returns __updateClusterSecretValueInput.Id, and is useful for accessing the field via an interface.
+func (v *__updateClusterSecretValueInput) GetId() string { return v.Id }
+
+// GetValue returns __updateClusterSecretValueInput.Value, and is useful for accessing the field via an interface.
+func (v *__updateClusterSecretValueInput) GetValue() string { return v.Value }
 
 // __updateOrganizationRuleInput is used internally by genqlient
 type __updateOrganizationRuleInput struct {
@@ -4113,6 +4261,135 @@ type createClusterResponse struct {
 // GetClusterCreate returns createClusterResponse.ClusterCreate, and is useful for accessing the field via an interface.
 func (v *createClusterResponse) GetClusterCreate() createClusterClusterCreateClusterCreatePayload {
 	return v.ClusterCreate
+}
+
+// createClusterSecretClusterSecretCreateClusterSecretCreatePayload includes the requested fields of the GraphQL type ClusterSecretCreatePayload.
+// The GraphQL type's documentation follows.
+//
+// Autogenerated return type of ClusterSecretCreate.
+type createClusterSecretClusterSecretCreateClusterSecretCreatePayload struct {
+	Secret createClusterSecretClusterSecretCreateClusterSecretCreatePayloadSecret `json:"secret"`
+}
+
+// GetSecret returns createClusterSecretClusterSecretCreateClusterSecretCreatePayload.Secret, and is useful for accessing the field via an interface.
+func (v *createClusterSecretClusterSecretCreateClusterSecretCreatePayload) GetSecret() createClusterSecretClusterSecretCreateClusterSecretCreatePayloadSecret {
+	return v.Secret
+}
+
+// createClusterSecretClusterSecretCreateClusterSecretCreatePayloadSecret includes the requested fields of the GraphQL type Secret.
+// The GraphQL type's documentation follows.
+//
+// A secret hosted by Buildkite. This does not contain the secret value or encrypted material.
+type createClusterSecretClusterSecretCreateClusterSecretCreatePayloadSecret struct {
+	ClusterSecretValues `json:"-"`
+}
+
+// GetId returns createClusterSecretClusterSecretCreateClusterSecretCreatePayloadSecret.Id, and is useful for accessing the field via an interface.
+func (v *createClusterSecretClusterSecretCreateClusterSecretCreatePayloadSecret) GetId() string {
+	return v.ClusterSecretValues.Id
+}
+
+// GetUuid returns createClusterSecretClusterSecretCreateClusterSecretCreatePayloadSecret.Uuid, and is useful for accessing the field via an interface.
+func (v *createClusterSecretClusterSecretCreateClusterSecretCreatePayloadSecret) GetUuid() string {
+	return v.ClusterSecretValues.Uuid
+}
+
+// GetKey returns createClusterSecretClusterSecretCreateClusterSecretCreatePayloadSecret.Key, and is useful for accessing the field via an interface.
+func (v *createClusterSecretClusterSecretCreateClusterSecretCreatePayloadSecret) GetKey() string {
+	return v.ClusterSecretValues.Key
+}
+
+// GetDescription returns createClusterSecretClusterSecretCreateClusterSecretCreatePayloadSecret.Description, and is useful for accessing the field via an interface.
+func (v *createClusterSecretClusterSecretCreateClusterSecretCreatePayloadSecret) GetDescription() string {
+	return v.ClusterSecretValues.Description
+}
+
+// GetPolicy returns createClusterSecretClusterSecretCreateClusterSecretCreatePayloadSecret.Policy, and is useful for accessing the field via an interface.
+func (v *createClusterSecretClusterSecretCreateClusterSecretCreatePayloadSecret) GetPolicy() string {
+	return v.ClusterSecretValues.Policy
+}
+
+// GetCluster returns createClusterSecretClusterSecretCreateClusterSecretCreatePayloadSecret.Cluster, and is useful for accessing the field via an interface.
+func (v *createClusterSecretClusterSecretCreateClusterSecretCreatePayloadSecret) GetCluster() ClusterSecretValuesCluster {
+	return v.ClusterSecretValues.Cluster
+}
+
+// GetOrganization returns createClusterSecretClusterSecretCreateClusterSecretCreatePayloadSecret.Organization, and is useful for accessing the field via an interface.
+func (v *createClusterSecretClusterSecretCreateClusterSecretCreatePayloadSecret) GetOrganization() ClusterSecretValuesOrganization {
+	return v.ClusterSecretValues.Organization
+}
+
+func (v *createClusterSecretClusterSecretCreateClusterSecretCreatePayloadSecret) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*createClusterSecretClusterSecretCreateClusterSecretCreatePayloadSecret
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.createClusterSecretClusterSecretCreateClusterSecretCreatePayloadSecret = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	err = json.Unmarshal(
+		b, &v.ClusterSecretValues)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+type __premarshalcreateClusterSecretClusterSecretCreateClusterSecretCreatePayloadSecret struct {
+	Id string `json:"id"`
+
+	Uuid string `json:"uuid"`
+
+	Key string `json:"key"`
+
+	Description string `json:"description"`
+
+	Policy string `json:"policy"`
+
+	Cluster ClusterSecretValuesCluster `json:"cluster"`
+
+	Organization ClusterSecretValuesOrganization `json:"organization"`
+}
+
+func (v *createClusterSecretClusterSecretCreateClusterSecretCreatePayloadSecret) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *createClusterSecretClusterSecretCreateClusterSecretCreatePayloadSecret) __premarshalJSON() (*__premarshalcreateClusterSecretClusterSecretCreateClusterSecretCreatePayloadSecret, error) {
+	var retval __premarshalcreateClusterSecretClusterSecretCreateClusterSecretCreatePayloadSecret
+
+	retval.Id = v.ClusterSecretValues.Id
+	retval.Uuid = v.ClusterSecretValues.Uuid
+	retval.Key = v.ClusterSecretValues.Key
+	retval.Description = v.ClusterSecretValues.Description
+	retval.Policy = v.ClusterSecretValues.Policy
+	retval.Cluster = v.ClusterSecretValues.Cluster
+	retval.Organization = v.ClusterSecretValues.Organization
+	return &retval, nil
+}
+
+// createClusterSecretResponse is returned by createClusterSecret on success.
+type createClusterSecretResponse struct {
+	// Create a secret for a cluster.
+	ClusterSecretCreate createClusterSecretClusterSecretCreateClusterSecretCreatePayload `json:"clusterSecretCreate"`
+}
+
+// GetClusterSecretCreate returns createClusterSecretResponse.ClusterSecretCreate, and is useful for accessing the field via an interface.
+func (v *createClusterSecretResponse) GetClusterSecretCreate() createClusterSecretClusterSecretCreateClusterSecretCreatePayload {
+	return v.ClusterSecretCreate
 }
 
 // createOrganizationRuleResponse is returned by createOrganizationRule on success.
@@ -5378,6 +5655,30 @@ type deleteClusterResponse struct {
 // GetClusterDelete returns deleteClusterResponse.ClusterDelete, and is useful for accessing the field via an interface.
 func (v *deleteClusterResponse) GetClusterDelete() deleteClusterClusterDeleteClusterDeletePayload {
 	return v.ClusterDelete
+}
+
+// deleteClusterSecretClusterSecretDeleteClusterSecretDeletePayload includes the requested fields of the GraphQL type ClusterSecretDeletePayload.
+// The GraphQL type's documentation follows.
+//
+// Autogenerated return type of ClusterSecretDelete.
+type deleteClusterSecretClusterSecretDeleteClusterSecretDeletePayload struct {
+	DeletedClusterSecretId string `json:"deletedClusterSecretId"`
+}
+
+// GetDeletedClusterSecretId returns deleteClusterSecretClusterSecretDeleteClusterSecretDeletePayload.DeletedClusterSecretId, and is useful for accessing the field via an interface.
+func (v *deleteClusterSecretClusterSecretDeleteClusterSecretDeletePayload) GetDeletedClusterSecretId() string {
+	return v.DeletedClusterSecretId
+}
+
+// deleteClusterSecretResponse is returned by deleteClusterSecret on success.
+type deleteClusterSecretResponse struct {
+	// Delete a cluster secret. This permanently destroys the secret and its encrypted value.
+	ClusterSecretDelete deleteClusterSecretClusterSecretDeleteClusterSecretDeletePayload `json:"clusterSecretDelete"`
+}
+
+// GetClusterSecretDelete returns deleteClusterSecretResponse.ClusterSecretDelete, and is useful for accessing the field via an interface.
+func (v *deleteClusterSecretResponse) GetClusterSecretDelete() deleteClusterSecretClusterSecretDeleteClusterSecretDeletePayload {
+	return v.ClusterSecretDelete
 }
 
 // deleteOrganizationRuleResponse is returned by deleteOrganizationRule on success.
@@ -8791,10 +9092,14 @@ func __marshalgetNodeNode(v *getNodeNode) ([]byte, error) {
 	case *getNodeNodeSecret:
 		typename = "Secret"
 
+		premarshaled, err := v.__premarshalJSON()
+		if err != nil {
+			return nil, err
+		}
 		result := struct {
 			TypeName string `json:"__typename"`
-			*getNodeNodeSecret
-		}{typename, v}
+			*__premarshalgetNodeNodeSecret
+		}{typename, premarshaled}
 		return json.Marshal(result)
 	case *getNodeNodeSuite:
 		typename = "Suite"
@@ -9998,11 +10303,102 @@ func (v *getNodeNodeSSOProviderSAML) GetTypename() string { return v.Typename }
 //
 // A secret hosted by Buildkite. This does not contain the secret value or encrypted material.
 type getNodeNodeSecret struct {
-	Typename string `json:"__typename"`
+	Typename            string `json:"__typename"`
+	ClusterSecretValues `json:"-"`
 }
 
 // GetTypename returns getNodeNodeSecret.Typename, and is useful for accessing the field via an interface.
 func (v *getNodeNodeSecret) GetTypename() string { return v.Typename }
+
+// GetId returns getNodeNodeSecret.Id, and is useful for accessing the field via an interface.
+func (v *getNodeNodeSecret) GetId() string { return v.ClusterSecretValues.Id }
+
+// GetUuid returns getNodeNodeSecret.Uuid, and is useful for accessing the field via an interface.
+func (v *getNodeNodeSecret) GetUuid() string { return v.ClusterSecretValues.Uuid }
+
+// GetKey returns getNodeNodeSecret.Key, and is useful for accessing the field via an interface.
+func (v *getNodeNodeSecret) GetKey() string { return v.ClusterSecretValues.Key }
+
+// GetDescription returns getNodeNodeSecret.Description, and is useful for accessing the field via an interface.
+func (v *getNodeNodeSecret) GetDescription() string { return v.ClusterSecretValues.Description }
+
+// GetPolicy returns getNodeNodeSecret.Policy, and is useful for accessing the field via an interface.
+func (v *getNodeNodeSecret) GetPolicy() string { return v.ClusterSecretValues.Policy }
+
+// GetCluster returns getNodeNodeSecret.Cluster, and is useful for accessing the field via an interface.
+func (v *getNodeNodeSecret) GetCluster() ClusterSecretValuesCluster {
+	return v.ClusterSecretValues.Cluster
+}
+
+// GetOrganization returns getNodeNodeSecret.Organization, and is useful for accessing the field via an interface.
+func (v *getNodeNodeSecret) GetOrganization() ClusterSecretValuesOrganization {
+	return v.ClusterSecretValues.Organization
+}
+
+func (v *getNodeNodeSecret) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*getNodeNodeSecret
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.getNodeNodeSecret = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	err = json.Unmarshal(
+		b, &v.ClusterSecretValues)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+type __premarshalgetNodeNodeSecret struct {
+	Typename string `json:"__typename"`
+
+	Id string `json:"id"`
+
+	Uuid string `json:"uuid"`
+
+	Key string `json:"key"`
+
+	Description string `json:"description"`
+
+	Policy string `json:"policy"`
+
+	Cluster ClusterSecretValuesCluster `json:"cluster"`
+
+	Organization ClusterSecretValuesOrganization `json:"organization"`
+}
+
+func (v *getNodeNodeSecret) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *getNodeNodeSecret) __premarshalJSON() (*__premarshalgetNodeNodeSecret, error) {
+	var retval __premarshalgetNodeNodeSecret
+
+	retval.Typename = v.Typename
+	retval.Id = v.ClusterSecretValues.Id
+	retval.Uuid = v.ClusterSecretValues.Uuid
+	retval.Key = v.ClusterSecretValues.Key
+	retval.Description = v.ClusterSecretValues.Description
+	retval.Policy = v.ClusterSecretValues.Policy
+	retval.Cluster = v.ClusterSecretValues.Cluster
+	retval.Organization = v.ClusterSecretValues.Organization
+	return &retval, nil
+}
 
 // getNodeNodeSuite includes the requested fields of the GraphQL type Suite.
 // The GraphQL type's documentation follows.
@@ -16322,6 +16718,264 @@ func (v *updateClusterResponse) GetClusterUpdate() updateClusterClusterUpdateClu
 	return v.ClusterUpdate
 }
 
+// updateClusterSecretClusterSecretUpdateClusterSecretUpdatePayload includes the requested fields of the GraphQL type ClusterSecretUpdatePayload.
+// The GraphQL type's documentation follows.
+//
+// Autogenerated return type of ClusterSecretUpdate.
+type updateClusterSecretClusterSecretUpdateClusterSecretUpdatePayload struct {
+	Secret updateClusterSecretClusterSecretUpdateClusterSecretUpdatePayloadSecret `json:"secret"`
+}
+
+// GetSecret returns updateClusterSecretClusterSecretUpdateClusterSecretUpdatePayload.Secret, and is useful for accessing the field via an interface.
+func (v *updateClusterSecretClusterSecretUpdateClusterSecretUpdatePayload) GetSecret() updateClusterSecretClusterSecretUpdateClusterSecretUpdatePayloadSecret {
+	return v.Secret
+}
+
+// updateClusterSecretClusterSecretUpdateClusterSecretUpdatePayloadSecret includes the requested fields of the GraphQL type Secret.
+// The GraphQL type's documentation follows.
+//
+// A secret hosted by Buildkite. This does not contain the secret value or encrypted material.
+type updateClusterSecretClusterSecretUpdateClusterSecretUpdatePayloadSecret struct {
+	ClusterSecretValues `json:"-"`
+}
+
+// GetId returns updateClusterSecretClusterSecretUpdateClusterSecretUpdatePayloadSecret.Id, and is useful for accessing the field via an interface.
+func (v *updateClusterSecretClusterSecretUpdateClusterSecretUpdatePayloadSecret) GetId() string {
+	return v.ClusterSecretValues.Id
+}
+
+// GetUuid returns updateClusterSecretClusterSecretUpdateClusterSecretUpdatePayloadSecret.Uuid, and is useful for accessing the field via an interface.
+func (v *updateClusterSecretClusterSecretUpdateClusterSecretUpdatePayloadSecret) GetUuid() string {
+	return v.ClusterSecretValues.Uuid
+}
+
+// GetKey returns updateClusterSecretClusterSecretUpdateClusterSecretUpdatePayloadSecret.Key, and is useful for accessing the field via an interface.
+func (v *updateClusterSecretClusterSecretUpdateClusterSecretUpdatePayloadSecret) GetKey() string {
+	return v.ClusterSecretValues.Key
+}
+
+// GetDescription returns updateClusterSecretClusterSecretUpdateClusterSecretUpdatePayloadSecret.Description, and is useful for accessing the field via an interface.
+func (v *updateClusterSecretClusterSecretUpdateClusterSecretUpdatePayloadSecret) GetDescription() string {
+	return v.ClusterSecretValues.Description
+}
+
+// GetPolicy returns updateClusterSecretClusterSecretUpdateClusterSecretUpdatePayloadSecret.Policy, and is useful for accessing the field via an interface.
+func (v *updateClusterSecretClusterSecretUpdateClusterSecretUpdatePayloadSecret) GetPolicy() string {
+	return v.ClusterSecretValues.Policy
+}
+
+// GetCluster returns updateClusterSecretClusterSecretUpdateClusterSecretUpdatePayloadSecret.Cluster, and is useful for accessing the field via an interface.
+func (v *updateClusterSecretClusterSecretUpdateClusterSecretUpdatePayloadSecret) GetCluster() ClusterSecretValuesCluster {
+	return v.ClusterSecretValues.Cluster
+}
+
+// GetOrganization returns updateClusterSecretClusterSecretUpdateClusterSecretUpdatePayloadSecret.Organization, and is useful for accessing the field via an interface.
+func (v *updateClusterSecretClusterSecretUpdateClusterSecretUpdatePayloadSecret) GetOrganization() ClusterSecretValuesOrganization {
+	return v.ClusterSecretValues.Organization
+}
+
+func (v *updateClusterSecretClusterSecretUpdateClusterSecretUpdatePayloadSecret) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*updateClusterSecretClusterSecretUpdateClusterSecretUpdatePayloadSecret
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.updateClusterSecretClusterSecretUpdateClusterSecretUpdatePayloadSecret = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	err = json.Unmarshal(
+		b, &v.ClusterSecretValues)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+type __premarshalupdateClusterSecretClusterSecretUpdateClusterSecretUpdatePayloadSecret struct {
+	Id string `json:"id"`
+
+	Uuid string `json:"uuid"`
+
+	Key string `json:"key"`
+
+	Description string `json:"description"`
+
+	Policy string `json:"policy"`
+
+	Cluster ClusterSecretValuesCluster `json:"cluster"`
+
+	Organization ClusterSecretValuesOrganization `json:"organization"`
+}
+
+func (v *updateClusterSecretClusterSecretUpdateClusterSecretUpdatePayloadSecret) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *updateClusterSecretClusterSecretUpdateClusterSecretUpdatePayloadSecret) __premarshalJSON() (*__premarshalupdateClusterSecretClusterSecretUpdateClusterSecretUpdatePayloadSecret, error) {
+	var retval __premarshalupdateClusterSecretClusterSecretUpdateClusterSecretUpdatePayloadSecret
+
+	retval.Id = v.ClusterSecretValues.Id
+	retval.Uuid = v.ClusterSecretValues.Uuid
+	retval.Key = v.ClusterSecretValues.Key
+	retval.Description = v.ClusterSecretValues.Description
+	retval.Policy = v.ClusterSecretValues.Policy
+	retval.Cluster = v.ClusterSecretValues.Cluster
+	retval.Organization = v.ClusterSecretValues.Organization
+	return &retval, nil
+}
+
+// updateClusterSecretResponse is returned by updateClusterSecret on success.
+type updateClusterSecretResponse struct {
+	// Update a cluster secret's description and access policy. To update the secret value, use clusterSecretValueUpdate.
+	ClusterSecretUpdate updateClusterSecretClusterSecretUpdateClusterSecretUpdatePayload `json:"clusterSecretUpdate"`
+}
+
+// GetClusterSecretUpdate returns updateClusterSecretResponse.ClusterSecretUpdate, and is useful for accessing the field via an interface.
+func (v *updateClusterSecretResponse) GetClusterSecretUpdate() updateClusterSecretClusterSecretUpdateClusterSecretUpdatePayload {
+	return v.ClusterSecretUpdate
+}
+
+// updateClusterSecretValueClusterSecretValueUpdateClusterSecretValueUpdatePayload includes the requested fields of the GraphQL type ClusterSecretValueUpdatePayload.
+// The GraphQL type's documentation follows.
+//
+// Autogenerated return type of ClusterSecretValueUpdate.
+type updateClusterSecretValueClusterSecretValueUpdateClusterSecretValueUpdatePayload struct {
+	Secret updateClusterSecretValueClusterSecretValueUpdateClusterSecretValueUpdatePayloadSecret `json:"secret"`
+}
+
+// GetSecret returns updateClusterSecretValueClusterSecretValueUpdateClusterSecretValueUpdatePayload.Secret, and is useful for accessing the field via an interface.
+func (v *updateClusterSecretValueClusterSecretValueUpdateClusterSecretValueUpdatePayload) GetSecret() updateClusterSecretValueClusterSecretValueUpdateClusterSecretValueUpdatePayloadSecret {
+	return v.Secret
+}
+
+// updateClusterSecretValueClusterSecretValueUpdateClusterSecretValueUpdatePayloadSecret includes the requested fields of the GraphQL type Secret.
+// The GraphQL type's documentation follows.
+//
+// A secret hosted by Buildkite. This does not contain the secret value or encrypted material.
+type updateClusterSecretValueClusterSecretValueUpdateClusterSecretValueUpdatePayloadSecret struct {
+	ClusterSecretValues `json:"-"`
+}
+
+// GetId returns updateClusterSecretValueClusterSecretValueUpdateClusterSecretValueUpdatePayloadSecret.Id, and is useful for accessing the field via an interface.
+func (v *updateClusterSecretValueClusterSecretValueUpdateClusterSecretValueUpdatePayloadSecret) GetId() string {
+	return v.ClusterSecretValues.Id
+}
+
+// GetUuid returns updateClusterSecretValueClusterSecretValueUpdateClusterSecretValueUpdatePayloadSecret.Uuid, and is useful for accessing the field via an interface.
+func (v *updateClusterSecretValueClusterSecretValueUpdateClusterSecretValueUpdatePayloadSecret) GetUuid() string {
+	return v.ClusterSecretValues.Uuid
+}
+
+// GetKey returns updateClusterSecretValueClusterSecretValueUpdateClusterSecretValueUpdatePayloadSecret.Key, and is useful for accessing the field via an interface.
+func (v *updateClusterSecretValueClusterSecretValueUpdateClusterSecretValueUpdatePayloadSecret) GetKey() string {
+	return v.ClusterSecretValues.Key
+}
+
+// GetDescription returns updateClusterSecretValueClusterSecretValueUpdateClusterSecretValueUpdatePayloadSecret.Description, and is useful for accessing the field via an interface.
+func (v *updateClusterSecretValueClusterSecretValueUpdateClusterSecretValueUpdatePayloadSecret) GetDescription() string {
+	return v.ClusterSecretValues.Description
+}
+
+// GetPolicy returns updateClusterSecretValueClusterSecretValueUpdateClusterSecretValueUpdatePayloadSecret.Policy, and is useful for accessing the field via an interface.
+func (v *updateClusterSecretValueClusterSecretValueUpdateClusterSecretValueUpdatePayloadSecret) GetPolicy() string {
+	return v.ClusterSecretValues.Policy
+}
+
+// GetCluster returns updateClusterSecretValueClusterSecretValueUpdateClusterSecretValueUpdatePayloadSecret.Cluster, and is useful for accessing the field via an interface.
+func (v *updateClusterSecretValueClusterSecretValueUpdateClusterSecretValueUpdatePayloadSecret) GetCluster() ClusterSecretValuesCluster {
+	return v.ClusterSecretValues.Cluster
+}
+
+// GetOrganization returns updateClusterSecretValueClusterSecretValueUpdateClusterSecretValueUpdatePayloadSecret.Organization, and is useful for accessing the field via an interface.
+func (v *updateClusterSecretValueClusterSecretValueUpdateClusterSecretValueUpdatePayloadSecret) GetOrganization() ClusterSecretValuesOrganization {
+	return v.ClusterSecretValues.Organization
+}
+
+func (v *updateClusterSecretValueClusterSecretValueUpdateClusterSecretValueUpdatePayloadSecret) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*updateClusterSecretValueClusterSecretValueUpdateClusterSecretValueUpdatePayloadSecret
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.updateClusterSecretValueClusterSecretValueUpdateClusterSecretValueUpdatePayloadSecret = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	err = json.Unmarshal(
+		b, &v.ClusterSecretValues)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+type __premarshalupdateClusterSecretValueClusterSecretValueUpdateClusterSecretValueUpdatePayloadSecret struct {
+	Id string `json:"id"`
+
+	Uuid string `json:"uuid"`
+
+	Key string `json:"key"`
+
+	Description string `json:"description"`
+
+	Policy string `json:"policy"`
+
+	Cluster ClusterSecretValuesCluster `json:"cluster"`
+
+	Organization ClusterSecretValuesOrganization `json:"organization"`
+}
+
+func (v *updateClusterSecretValueClusterSecretValueUpdateClusterSecretValueUpdatePayloadSecret) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *updateClusterSecretValueClusterSecretValueUpdateClusterSecretValueUpdatePayloadSecret) __premarshalJSON() (*__premarshalupdateClusterSecretValueClusterSecretValueUpdateClusterSecretValueUpdatePayloadSecret, error) {
+	var retval __premarshalupdateClusterSecretValueClusterSecretValueUpdateClusterSecretValueUpdatePayloadSecret
+
+	retval.Id = v.ClusterSecretValues.Id
+	retval.Uuid = v.ClusterSecretValues.Uuid
+	retval.Key = v.ClusterSecretValues.Key
+	retval.Description = v.ClusterSecretValues.Description
+	retval.Policy = v.ClusterSecretValues.Policy
+	retval.Cluster = v.ClusterSecretValues.Cluster
+	retval.Organization = v.ClusterSecretValues.Organization
+	return &retval, nil
+}
+
+// updateClusterSecretValueResponse is returned by updateClusterSecretValue on success.
+type updateClusterSecretValueResponse struct {
+	// Update a cluster secret's encrypted value. To update description or policy, use clusterSecretUpdate.
+	ClusterSecretValueUpdate updateClusterSecretValueClusterSecretValueUpdateClusterSecretValueUpdatePayload `json:"clusterSecretValueUpdate"`
+}
+
+// GetClusterSecretValueUpdate returns updateClusterSecretValueResponse.ClusterSecretValueUpdate, and is useful for accessing the field via an interface.
+func (v *updateClusterSecretValueResponse) GetClusterSecretValueUpdate() updateClusterSecretValueClusterSecretValueUpdateClusterSecretValueUpdatePayload {
+	return v.ClusterSecretValueUpdate
+}
+
 // updateOrganizationRuleResponse is returned by updateOrganizationRule on success.
 type updateOrganizationRuleResponse struct {
 	// Update a rule.
@@ -17984,6 +18638,67 @@ func createClusterQueue(
 	return data_, err_
 }
 
+// The mutation executed by createClusterSecret.
+const createClusterSecret_Operation = `
+mutation createClusterSecret ($organizationId: ID!, $clusterId: ID!, $key: String!, $value: String!, $description: String, $policy: String) {
+	clusterSecretCreate(input: {organizationId:$organizationId,clusterId:$clusterId,key:$key,value:$value,description:$description,policy:$policy}) {
+		secret {
+			... ClusterSecretValues
+		}
+	}
+}
+fragment ClusterSecretValues on Secret {
+	id
+	uuid
+	key
+	description
+	policy
+	cluster {
+		id
+		uuid
+	}
+	organization {
+		id
+		uuid
+	}
+}
+`
+
+func createClusterSecret(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	organizationId string,
+	clusterId string,
+	key string,
+	value string,
+	description string,
+	policy string,
+) (data_ *createClusterSecretResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "createClusterSecret",
+		Query:  createClusterSecret_Operation,
+		Variables: &__createClusterSecretInput{
+			OrganizationId: organizationId,
+			ClusterId:      clusterId,
+			Key:            key,
+			Value:          value,
+			Description:    description,
+			Policy:         policy,
+		},
+	}
+
+	data_ = &createClusterSecretResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
 // The mutation executed by createOrganizationRule.
 const createOrganizationRule_Operation = `
 mutation createOrganizationRule ($organizationId: ID!, $description: String, $ruleType: String!, $value: JSON!) {
@@ -18527,6 +19242,42 @@ func deleteClusterQueue(
 	}
 
 	data_ = &deleteClusterQueueResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
+// The mutation executed by deleteClusterSecret.
+const deleteClusterSecret_Operation = `
+mutation deleteClusterSecret ($organizationId: ID!, $id: ID!) {
+	clusterSecretDelete(input: {organizationId:$organizationId,id:$id}) {
+		deletedClusterSecretId
+	}
+}
+`
+
+func deleteClusterSecret(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	organizationId string,
+	id string,
+) (data_ *deleteClusterSecretResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "deleteClusterSecret",
+		Query:  deleteClusterSecret_Operation,
+		Variables: &__deleteClusterSecretInput{
+			OrganizationId: organizationId,
+			Id:             id,
+		},
+	}
+
+	data_ = &deleteClusterSecretResponse{}
 	resp_ := &graphql.Response{Data: data_}
 
 	err_ = client_.MakeRequest(
@@ -19128,6 +19879,9 @@ query getNode ($id: ID!) {
 		... on Cluster {
 			... ClusterFields
 		}
+		... on Secret {
+			... ClusterSecretValues
+		}
 	}
 }
 fragment PipelineFields on Pipeline {
@@ -19260,6 +20014,21 @@ fragment ClusterFields on Cluster {
 		uuid
 		key
 		description
+	}
+}
+fragment ClusterSecretValues on Secret {
+	id
+	uuid
+	key
+	description
+	policy
+	cluster {
+		id
+		uuid
+	}
+	organization {
+		id
+		uuid
 	}
 }
 fragment PipelineTeam on TeamPipelineConnection {
@@ -20498,6 +21267,118 @@ func updateClusterQueue(
 	}
 
 	data_ = &updateClusterQueueResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
+// The mutation executed by updateClusterSecret.
+const updateClusterSecret_Operation = `
+mutation updateClusterSecret ($organizationId: ID!, $id: ID!, $description: String, $policy: String) {
+	clusterSecretUpdate(input: {organizationId:$organizationId,id:$id,description:$description,policy:$policy}) {
+		secret {
+			... ClusterSecretValues
+		}
+	}
+}
+fragment ClusterSecretValues on Secret {
+	id
+	uuid
+	key
+	description
+	policy
+	cluster {
+		id
+		uuid
+	}
+	organization {
+		id
+		uuid
+	}
+}
+`
+
+func updateClusterSecret(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	organizationId string,
+	id string,
+	description string,
+	policy string,
+) (data_ *updateClusterSecretResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "updateClusterSecret",
+		Query:  updateClusterSecret_Operation,
+		Variables: &__updateClusterSecretInput{
+			OrganizationId: organizationId,
+			Id:             id,
+			Description:    description,
+			Policy:         policy,
+		},
+	}
+
+	data_ = &updateClusterSecretResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
+// The mutation executed by updateClusterSecretValue.
+const updateClusterSecretValue_Operation = `
+mutation updateClusterSecretValue ($organizationId: ID!, $id: ID!, $value: String!) {
+	clusterSecretValueUpdate(input: {organizationId:$organizationId,id:$id,value:$value}) {
+		secret {
+			... ClusterSecretValues
+		}
+	}
+}
+fragment ClusterSecretValues on Secret {
+	id
+	uuid
+	key
+	description
+	policy
+	cluster {
+		id
+		uuid
+	}
+	organization {
+		id
+		uuid
+	}
+}
+`
+
+func updateClusterSecretValue(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	organizationId string,
+	id string,
+	value string,
+) (data_ *updateClusterSecretValueResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "updateClusterSecretValue",
+		Query:  updateClusterSecretValue_Operation,
+		Variables: &__updateClusterSecretValueInput{
+			OrganizationId: organizationId,
+			Id:             id,
+			Value:          value,
+		},
+	}
+
+	data_ = &updateClusterSecretValueResponse{}
 	resp_ := &graphql.Response{Data: data_}
 
 	err_ = client_.MakeRequest(

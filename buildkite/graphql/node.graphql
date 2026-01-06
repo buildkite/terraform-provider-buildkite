@@ -26,5 +26,8 @@ query getNode(
         ... on Cluster {
             ... ClusterFields
         }
+        ... on Secret {
+            ... ClusterSecretValues
+        }
     }
 }
