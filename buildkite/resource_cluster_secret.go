@@ -3,14 +3,16 @@ package buildkite
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"strings"
-
 	"github.com/MakeNowJust/heredoc"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
@@ -54,7 +56,7 @@ func (r *clusterSecretResource) Schema(ctx context.Context, req resource.SchemaR
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:            true,
-				MarkdownDescription: "The GraphQL ID of the cluster secret.",
+				MarkdownDescription: "The UUID of the cluster secret.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
@@ -72,13 +74,20 @@ func (r *clusterSecretResource) Schema(ctx context.Context, req resource.SchemaR
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
+				Validators: []validator.String{
+					stringvalidator.LengthAtMost(255),
+					stringvalidator.RegexMatches(
+						regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9_]*$`),
+						"must start with a letter and only contain letters, numbers, and underscores",
+					),
+				},
 			},
 			"value": schema.StringAttribute{
 				Required:            true,
 				Sensitive:           true,
 				MarkdownDescription: "The secret value. Must be less than 8KB.",
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
+				Validators: []validator.String{
+					stringvalidator.LengthAtMost(8192), // 8KB = 8192 bytes
 				},
 			},
 			"description": schema.StringAttribute{
@@ -125,10 +134,17 @@ func (r *clusterSecretResource) Create(ctx context.Context, req resource.CreateR
 	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		var err error
 		secret := &ClusterSecret{
-			Key:         plan.Key.ValueString(),
-			Value:       plan.Value.ValueString(),
-			Description: plan.Description.ValueString(),
-			Policy:      plan.Policy.ValueString(),
+			Key:   plan.Key.ValueString(),
+			Value: plan.Value.ValueString(),
+		}
+		// Handle optional fields - preserve null vs empty string
+		if !plan.Description.IsNull() {
+			desc := plan.Description.ValueString()
+			secret.Description = &desc
+		}
+		if !plan.Policy.IsNull() {
+			pol := plan.Policy.ValueString()
+			secret.Policy = &pol
 		}
 
 		created, err = r.client.CreateClusterSecret(ctx, r.client.organization, plan.ClusterID.ValueString(), secret)
@@ -189,17 +205,21 @@ func (r *clusterSecretResource) Read(ctx context.Context, req resource.ReadReque
 	state.Value = existingValue // Keep value from state
 
 	// Handle description - preserve null vs empty string
-	if secret.Description == "" && state.Description.IsNull() {
+	if secret.Description == nil {
+		state.Description = types.StringNull()
+	} else if *secret.Description == "" && state.Description.IsNull() {
 		state.Description = types.StringNull()
 	} else {
-		state.Description = types.StringValue(secret.Description)
+		state.Description = types.StringValue(*secret.Description)
 	}
 
 	// Handle policy - preserve null vs empty string
-	if secret.Policy == "" && state.Policy.IsNull() {
+	if secret.Policy == nil {
+		state.Policy = types.StringNull()
+	} else if *secret.Policy == "" && state.Policy.IsNull() {
 		state.Policy = types.StringNull()
 	} else {
-		state.Policy = types.StringValue(secret.Policy)
+		state.Policy = types.StringValue(*secret.Policy)
 	}
 
 	state.CreatedAt = types.StringValue(secret.CreatedAt)
@@ -250,10 +270,18 @@ func (r *clusterSecretResource) Update(ctx context.Context, req resource.UpdateR
 		if !plan.Description.Equal(state.Description) || !plan.Policy.Equal(state.Policy) {
 			updates := map[string]string{}
 			if !plan.Description.Equal(state.Description) {
-				updates["description"] = plan.Description.ValueString()
+				if plan.Description.IsNull() {
+					updates["description"] = ""
+				} else {
+					updates["description"] = plan.Description.ValueString()
+				}
 			}
 			if !plan.Policy.Equal(state.Policy) {
-				updates["policy"] = plan.Policy.ValueString()
+				if plan.Policy.IsNull() {
+					updates["policy"] = ""
+				} else {
+					updates["policy"] = plan.Policy.ValueString()
+				}
 			}
 
 			_, err = r.client.UpdateClusterSecret(
@@ -313,5 +341,16 @@ func (r *clusterSecretResource) Delete(ctx context.Context, req resource.DeleteR
 }
 
 func (r *clusterSecretResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+    // Expected format: cluster_id/secret_id
+    parts := strings.Split(req.ID, "/")
+    if len(parts) != 2 {
+        resp.Diagnostics.AddError(
+            "Invalid import ID format",
+            fmt.Sprintf("Expected format: cluster_id/secret_id, got: %s", req.ID),
+        )
+        return
+    }
+
+    resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("cluster_id"), parts[0])...)
+    resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), parts[1])...)
 }

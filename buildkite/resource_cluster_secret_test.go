@@ -138,26 +138,26 @@ func testAccCheckClusterSecretDestroy(s *terraform.State) error {
 func testAccClusterSecretConfig(clusterName, key, value, description string) string {
 	return fmt.Sprintf(`
 provider "buildkite" {
-	organization = "%s"
-	api_token    = "%s"
-	timeouts = {
-		create = "10s"
-		read = "10s"
-		update = "10s"
-		delete = "10s"
-	}
+    organization = "%s"
+    api_token    = "%s"
+    timeouts = {
+        create = "10s"
+        read = "10s"
+        update = "10s"
+        delete = "10s"
+    }
 }
 
 resource "buildkite_cluster" "test" {
-	name        = "Test Cluster %s"
-	description = "Test cluster for secrets"
+    name        = "Test Cluster %s"
+    description = "Test cluster for secrets"
 }
 
 resource "buildkite_cluster_secret" "test" {
-	cluster_id  = buildkite_cluster.test.uuid
-	key         = "%s"
-	value       = "%s"
-	description = "%s"
+    cluster_id  = buildkite_cluster.test.uuid
+    key         = "%s"
+    value       = "%s"
+    description = "%s"
 }
 `, getenv("BUILDKITE_ORGANIZATION_SLUG"), os.Getenv("BUILDKITE_API_TOKEN"), clusterName, key, value, description)
 }
@@ -165,28 +165,28 @@ resource "buildkite_cluster_secret" "test" {
 func testAccClusterSecretConfigWithPolicy(clusterName, key, value, pipeline, branch string) string {
 	return fmt.Sprintf(`
 provider "buildkite" {
-	organization = "%s"
-	api_token    = "%s"
-	timeouts = {
-		create = "10s"
-		read = "10s"
-		update = "10s"
-		delete = "10s"
-	}
+    organization = "%s"
+    api_token    = "%s"
+    timeouts = {
+        create = "10s"
+        read = "10s"
+        update = "10s"
+        delete = "10s"
+    }
 }
 
 resource "buildkite_cluster" "test" {
-	name        = "Test Cluster %s"
-	description = "Test cluster for secrets"
+    name        = "Test Cluster %s"
+    description = "Test cluster for secrets"
 }
 
 resource "buildkite_cluster_secret" "test" {
-	cluster_id  = buildkite_cluster.test.uuid
-	key         = "%s"
-	value       = "%s"
-	description = "Secret with policy"
-	
-	policy = <<-EOT
+    cluster_id  = buildkite_cluster.test.uuid
+    key         = "%s"
+    value       = "%s"
+    description = "Secret with policy"
+    
+    policy = <<-EOT
 - pipeline_slug: %s
   build_branch: %s
 EOT

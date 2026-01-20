@@ -11,11 +11,12 @@ type ClusterSecret struct {
 	ID          string `json:"id,omitempty"`
 	Key         string `json:"key"`
 	Value       string `json:"value,omitempty"`
-	Description string `json:"description,omitempty"`
-	Policy      string `json:"policy,omitempty"`
+	Description *string `json:"description,omitempty"`
+	Policy      *string `json:"policy,omitempty"`
 	CreatedAt   string `json:"created_at,omitempty"`
 	UpdatedAt   string `json:"updated_at,omitempty"`
 	ClusterURL  string `json:"cluster_url,omitempty"`
+	
 }
 
 // GetClusterSecret retrieves a cluster secret by ID

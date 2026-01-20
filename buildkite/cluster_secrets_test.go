@@ -17,11 +17,13 @@ func TestGetClusterSecret(t *testing.T) {
 			t.Errorf("Expected path /v2/organizations/test-org/clusters/cluster-123/secrets/secret-456, got %s", r.URL.Path)
 		}
 
+		desc := "Test secret"
+		pol := "- pipeline_slug: my-pipeline"
 		secret := ClusterSecret{
 			ID:          "secret-456",
 			Key:         "MY_SECRET",
-			Description: "Test secret",
-			Policy:      "- pipeline_slug: my-pipeline",
+			Description: &desc,
+			Policy:      &pol,
 			CreatedAt:   "2024-01-01T00:00:00Z",
 			UpdatedAt:   "2024-01-01T00:00:00Z",
 		}
@@ -89,11 +91,13 @@ func TestCreateClusterSecret(t *testing.T) {
 		organization: "test-org",
 	}
 
+	desc := "Test secret"
+	pol := "- pipeline_slug: my-pipeline"
 	secret := &ClusterSecret{
 		Key:         "MY_SECRET",
 		Value:       "secret-value",
-		Description: "Test secret",
-		Policy:      "- pipeline_slug: my-pipeline",
+		Description: &desc,
+		Policy:      &pol,
 	}
 
 	created, err := client.CreateClusterSecret(context.Background(), "test-org", "cluster-123", secret)
@@ -127,11 +131,13 @@ func TestUpdateClusterSecret(t *testing.T) {
 			t.Errorf("Expected description 'Updated description', got %s", updates["description"])
 		}
 
+		desc := updates["description"]
+		pol := updates["policy"]
 		updated := ClusterSecret{
 			ID:          "secret-456",
 			Key:         "MY_SECRET",
-			Description: updates["description"],
-			Policy:      updates["policy"],
+			Description: &desc,
+			Policy:      &pol,
 			UpdatedAt:   "2024-01-02T00:00:00Z",
 		}
 		if err := json.NewEncoder(w).Encode(updated); err != nil {
@@ -156,8 +162,10 @@ func TestUpdateClusterSecret(t *testing.T) {
 		t.Fatalf("UpdateClusterSecret failed: %v", err)
 	}
 
-	if updated.Description != "Updated description" {
-		t.Errorf("Expected description 'Updated description', got %s", updated.Description)
+	if updated.Description == nil {
+		t.Errorf("Expected description 'Updated description', got nil")
+	} else if *updated.Description != "Updated description" {
+		t.Errorf("Expected description 'Updated description', got %s", *updated.Description)
 	}
 }
 
