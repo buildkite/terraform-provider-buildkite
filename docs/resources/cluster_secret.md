@@ -5,12 +5,19 @@ subcategory: ""
 description: |-
   A Cluster Secret is an encrypted key-value pair that can be accessed by agents within a cluster.
   Secrets are encrypted and can only be accessed by agents that match the access policy.
+  Note: Secret values are write-only and cannot be retrieved from the API. When importing an existing
+  cluster secret, you must manually set the 'value' attribute in your configuration to match the secret's
+  actual value, as Terraform cannot read it from the Buildkite API.
 ---
 
 # buildkite_cluster_secret (Resource)
 
 A Cluster Secret is an encrypted key-value pair that can be accessed by agents within a cluster.
 Secrets are encrypted and can only be accessed by agents that match the access policy.
+
+**Note:** Secret values are write-only and cannot be retrieved from the API. When importing an existing
+cluster secret, you must manually set the 'value' attribute in your configuration to match the secret's
+actual value, as Terraform cannot read it from the Buildkite API.
 
 ## Example Usage
 
@@ -21,8 +28,8 @@ resource "buildkite_cluster_secret" "example" {
   value       = "super-secret-password"
   description = "Production database password"
   policy      = <<-EOT
-    pipeline_slug: my-pipeline
-    branch: main
+    - pipeline_slug: my-pipeline
+      build_branch: main
   EOT
 }
 ```
@@ -46,3 +53,24 @@ resource "buildkite_cluster_secret" "example" {
 - `created_at` (String) The time when the secret was created.
 - `id` (String) The UUID of the cluster secret.
 - `updated_at` (String) The time when the secret was last updated.
+
+## Import
+
+Using `terraform import`, import resources using the `id`. For example:
+```shell
+# Import a cluster secret using {cluster_id}/{secret_id}
+#
+# You can find the cluster_id under cluster settings in the UI
+# and find the secret_id from the secrets list using the
+# REST API response from:
+# GET /v2/organizations/{org_slug}/clusters/{cluster_id}/secrets
+terraform import buildkite_cluster_secret.example 01234567-89ab-cdef-0123-456789abcdef/fedcba98-7654-3210-fedc-ba9876543210
+```
+
+In Terraform v1.5.0 and later, use an [`import` block](https://developer.hashicorp.com/terraform/language/import) to import instances using the `id`. For example:
+```terraform
+import {
+  to = buildkite_cluster_secret.example
+  id = "01234567-89ab-cdef-0123-456789abcdef/fedcba98-7654-3210-fedc-ba9876543210"
+}
+```

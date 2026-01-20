@@ -52,6 +52,10 @@ func (r *clusterSecretResource) Schema(ctx context.Context, req resource.SchemaR
 		MarkdownDescription: heredoc.Doc(`
 			A Cluster Secret is an encrypted key-value pair that can be accessed by agents within a cluster.
 			Secrets are encrypted and can only be accessed by agents that match the access policy.
+
+			**Note:** Secret values are write-only and cannot be retrieved from the API. When importing an existing
+			cluster secret, you must manually set the 'value' attribute in your configuration to match the secret's
+			actual value, as Terraform cannot read it from the Buildkite API.
 		`),
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{

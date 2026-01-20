@@ -58,7 +58,7 @@ resource "buildkite_cluster_secret" "my_secret" {
   key         = "MY_SECRET"
   value       = "secret-value"
   description = "Test secret was created by Terraform"
-  
+
   policy = <<-EOT
     - pipeline_slug: my-pipeline
       build_branch: main
