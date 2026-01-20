@@ -50,3 +50,17 @@ resource "buildkite_cluster_queue" "hosted_macos_medium" {
     }
   }
 }
+
+
+
+resource "buildkite_cluster_secret" "my_secret" {
+  cluster_id  = buildkite_cluster.test_cluster.uuid
+  key         = "MY_SECRET"
+  value       = "secret-value"
+  description = "Test secret was created by Terraform"
+
+  policy = <<-EOT
+    - pipeline_slug: my-pipeline
+      build_branch: main
+  EOT
+}
