@@ -3,8 +3,6 @@ package buildkite
 import (
 	"context"
 	"fmt"
-	"regexp"
-	"strings"
 	"github.com/MakeNowJust/heredoc"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -15,6 +13,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"regexp"
+	"strings"
 )
 
 type clusterSecretResource struct {
@@ -341,16 +341,16 @@ func (r *clusterSecretResource) Delete(ctx context.Context, req resource.DeleteR
 }
 
 func (r *clusterSecretResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-    // Expected format: cluster_id/secret_id
-    parts := strings.Split(req.ID, "/")
-    if len(parts) != 2 {
-        resp.Diagnostics.AddError(
-            "Invalid import ID format",
-            fmt.Sprintf("Expected format: cluster_id/secret_id, got: %s", req.ID),
-        )
-        return
-    }
+	// Expected format: cluster_id/secret_id
+	parts := strings.Split(req.ID, "/")
+	if len(parts) != 2 {
+		resp.Diagnostics.AddError(
+			"Invalid import ID format",
+			fmt.Sprintf("Expected format: cluster_id/secret_id, got: %s", req.ID),
+		)
+		return
+	}
 
-    resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("cluster_id"), parts[0])...)
-    resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), parts[1])...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("cluster_id"), parts[0])...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), parts[1])...)
 }
