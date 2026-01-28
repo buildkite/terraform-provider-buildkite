@@ -271,7 +271,19 @@ func (p *pipelineResource) Create(ctx context.Context, req resource.CreateReques
 	setPipelineModel(&state, &response.PipelineCreate.Pipeline)
 	state.DefaultTeamId = plan.DefaultTeamId
 	state.CreateWebhook = plan.CreateWebhook
-	state.WebhookCreated = types.BoolValue(response.PipelineCreate.WebhookCreated)
+
+	// Set webhook_created only if create_webhook was requested
+	if plan.CreateWebhook.ValueBool() {
+		state.WebhookCreated = types.BoolValue(response.PipelineCreate.WebhookCreated)
+		if !response.PipelineCreate.WebhookCreated {
+			resp.Diagnostics.AddWarning(
+				"Webhook creation failed",
+				"Pipeline was created but the webhook could not be created. Ensure a GitHub App integration is configured for your organization and has access to the repository.",
+			)
+		}
+	} else {
+		state.WebhookCreated = types.BoolNull()
+	}
 
 	useSlugValue := response.PipelineCreate.Pipeline.Slug
 	resp.Diagnostics.Append(resp.Private.SetKey(ctx, "slugSource", []byte(`{"source": "api"}`))...)
@@ -706,7 +718,10 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 				Optional:            true,
 				Computed:            true,
 				Default:             booldefault.StaticBool(false),
-				MarkdownDescription: "If true, automatically create a webhook on the repository to trigger builds. Requires a GitHub App integration to be configured for the organization.",
+				MarkdownDescription: "If true, automatically create a webhook on the repository to trigger builds. Requires a GitHub App integration to be configured for the organization. This is only applied at pipeline creation time; changing this value will force a new pipeline to be created.",
+				PlanModifiers: []planmodifier.Bool{
+					boolplanmodifier.RequiresReplace(),
+				},
 			},
 			"webhook_created": schema.BoolAttribute{
 				Computed:            true,
