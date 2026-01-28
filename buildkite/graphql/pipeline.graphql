@@ -87,6 +87,7 @@ query getPipelineTeams($slug: ID!, $cursor: String) {
 # @genqlient(for: "PipelineCreateInput.visibility", omitempty: true)
 # @genqlient(for: "PipelineCreateInput.defaultTimeoutInMinutes", pointer: true)
 # @genqlient(for: "PipelineCreateInput.maximumTimeoutInMinutes", pointer: true)
+# @genqlient(for: "PipelineCreateInput.createWebhook", omitempty: true)
 mutation createPipeline(
     $input: PipelineCreateInput!
 ) {
@@ -94,6 +95,7 @@ mutation createPipeline(
         pipeline {
             ...PipelineFields
         }
+        webhookCreated
     }
 }
 
