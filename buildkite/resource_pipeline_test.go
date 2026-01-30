@@ -161,8 +161,10 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 						// check lists are empty
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "tags.#", "0"),
 						resource.TestCheckNoResourceAttr("buildkite_pipeline.pipeline", "tags.#"),
-						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.#", "0"),
-						resource.TestCheckNoResourceAttr("buildkite_pipeline.pipeline", "provider_settings.#"),
+						// provider_settings should be populated from GraphQL with Buildkite API defaults
+						resource.TestCheckResourceAttrSet("buildkite_pipeline.pipeline", "provider_settings.trigger_mode"),
+						resource.TestCheckResourceAttrSet("buildkite_pipeline.pipeline", "provider_settings.build_pull_requests"),
+						resource.TestCheckResourceAttrSet("buildkite_pipeline.pipeline", "provider_settings.build_branches"),
 					),
 				},
 				{
@@ -277,8 +279,10 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 						// check lists are empty
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "tags.#", "0"),
 						resource.TestCheckNoResourceAttr("buildkite_pipeline.pipeline", "tags.#"),
-						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.#", "0"),
-						resource.TestCheckNoResourceAttr("buildkite_pipeline.pipeline", "provider_settings.#"),
+						// provider_settings should be populated from GraphQL with Buildkite API defaults
+						resource.TestCheckResourceAttrSet("buildkite_pipeline.pipeline", "provider_settings.trigger_mode"),
+						resource.TestCheckResourceAttrSet("buildkite_pipeline.pipeline", "provider_settings.build_pull_requests"),
+						resource.TestCheckResourceAttrSet("buildkite_pipeline.pipeline", "provider_settings.build_branches"),
 					),
 				},
 			},
@@ -514,8 +518,10 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 						// check lists are empty
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "tags.#", "0"),
 						resource.TestCheckNoResourceAttr("buildkite_pipeline.pipeline", "tags.#"),
-						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.#", "0"),
-						resource.TestCheckNoResourceAttr("buildkite_pipeline.pipeline", "provider_settings.#"),
+						// provider_settings should be populated from GraphQL with Buildkite API defaults
+						resource.TestCheckResourceAttrSet("buildkite_pipeline.pipeline", "provider_settings.trigger_mode"),
+						resource.TestCheckResourceAttrSet("buildkite_pipeline.pipeline", "provider_settings.build_pull_requests"),
+						resource.TestCheckResourceAttrSet("buildkite_pipeline.pipeline", "provider_settings.build_branches"),
 					),
 				},
 			},
@@ -852,15 +858,16 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 		check := resource.ComposeAggregateTestCheckFunc(
 			resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "name", pipelineName),
 			resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "repository", "https://github.com/buildkite/terraform-provider-buildkite.git"),
-			// Ensure that v0 pipeline's provider_settings is a list of length 1 in state & defaulted attributes are at index 0
-			resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.#", "0"),
+			// Ensure that v0 pipeline's provider_settings are populated with defaults
+			resource.TestCheckResourceAttrSet("buildkite_pipeline.pipeline", "provider_settings.trigger_mode"),
 		)
 
 		checkNested := resource.ComposeAggregateTestCheckFunc(
 			resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "name", pipelineName),
 			resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "repository", "https://github.com/buildkite/terraform-Provider-buildkite.git"),
-			// Ensure that v1 pipeline's provider_settings defaulted attributes are nested in state when upgraded from v0
-			resource.TestCheckNoResourceAttr("buildkite_pipeline.pipeline", "provider_settings"),
+			// Ensure that v1 pipeline's provider_settings are populated in state after upgrade from v0
+			resource.TestCheckResourceAttrSet("buildkite_pipeline.pipeline", "provider_settings.trigger_mode"),
+			resource.TestCheckResourceAttrSet("buildkite_pipeline.pipeline", "provider_settings.build_pull_requests"),
 		)
 
 		resource.ParallelTest(t, resource.TestCase{
