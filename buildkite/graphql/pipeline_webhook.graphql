@@ -1,3 +1,11 @@
+fragment WebhookFields on RepositoryProviderWebhook {
+    externalId
+    url
+    provider {
+        name
+    }
+}
+
 query getPipelineWebhook($id: ID!) {
     node(id: $id) {
         ... on Pipeline {
@@ -7,20 +15,12 @@ query getPipelineWebhook($id: ID!) {
                 provider {
                     ... on RepositoryProviderGithub {
                         webhook {
-                            externalId
-                            url
-                            provider {
-                                name
-                            }
+                            ...WebhookFields
                         }
                     }
                     ... on RepositoryProviderGithubEnterprise {
                         webhook {
-                            externalId
-                            url
-                            provider {
-                                name
-                            }
+                            ...WebhookFields
                         }
                     }
                 }
@@ -33,13 +33,12 @@ mutation createPipelineWebhook($pipelineId: ID!) {
     pipelineCreateWebhook(input: { id: $pipelineId }) {
         pipeline {
             id
+            repository {
+                url
+            }
         }
         webhook {
-            externalId
-            url
-            provider {
-                name
-            }
+            ...WebhookFields
         }
     }
 }
