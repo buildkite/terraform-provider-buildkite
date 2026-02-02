@@ -2,10 +2,28 @@ query getPipelineWebhook($id: ID!) {
     node(id: $id) {
         ... on Pipeline {
             id
-            repositoryWebhook {
-                id
-                provider
-                repositoryUrl
+            repository {
+                url
+                provider {
+                    ... on RepositoryProviderGithub {
+                        webhook {
+                            externalId
+                            url
+                            provider {
+                                name
+                            }
+                        }
+                    }
+                    ... on RepositoryProviderGithubEnterprise {
+                        webhook {
+                            externalId
+                            url
+                            provider {
+                                name
+                            }
+                        }
+                    }
+                }
             }
         }
     }
@@ -17,9 +35,11 @@ mutation createPipelineWebhook($pipelineId: ID!) {
             id
         }
         webhook {
-            id
-            provider
-            repositoryUrl
+            externalId
+            url
+            provider {
+                name
+            }
         }
     }
 }
@@ -29,6 +49,6 @@ mutation deletePipelineWebhook($pipelineId: ID!) {
         pipeline {
             id
         }
-        deletedWebhookId
+        deletedWebhookExternalId
     }
 }
