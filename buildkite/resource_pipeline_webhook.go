@@ -107,20 +107,23 @@ func (pw *pipelineWebhook) Create(ctx context.Context, req resource.CreateReques
 				if readErr != nil {
 					return retry.NonRetryableError(fmt.Errorf("webhook exists but failed to read: %w", readErr))
 				}
-				if pipeline, ok := readResp.GetNode().(*getPipelineWebhookNodePipeline); ok && pipeline != nil && pipeline.RepositoryWebhook.Id != "" {
-					state.Id = types.StringValue(pipeline.RepositoryWebhook.Id)
-					state.Provider = types.StringValue(pipeline.RepositoryWebhook.Provider)
-					state.RepositoryUrl = types.StringValue(pipeline.RepositoryWebhook.RepositoryUrl)
+				if pipeline, ok := readResp.GetNode().(*getPipelineWebhookNodePipeline); ok {
+					if info := extractWebhookFromPipeline(pipeline); info != nil {
+						state.Id = types.StringValue(info.ExternalId)
+						state.Provider = types.StringValue(info.ProviderName)
+						state.RepositoryUrl = types.StringValue(info.RepositoryUrl)
+					}
 				}
 				return nil
 			}
 			return retryContextError(err)
 		}
 
-		if apiResponse.PipelineCreateWebhook.Webhook.Id != "" {
-			state.Id = types.StringValue(apiResponse.PipelineCreateWebhook.Webhook.Id)
-			state.Provider = types.StringValue(apiResponse.PipelineCreateWebhook.Webhook.Provider)
-			state.RepositoryUrl = types.StringValue(apiResponse.PipelineCreateWebhook.Webhook.RepositoryUrl)
+		webhook := apiResponse.PipelineCreateWebhook.Webhook
+		if webhook != nil && webhook.GetExternalId() != "" {
+			state.Id = types.StringValue(webhook.GetExternalId())
+			state.Provider = types.StringValue(webhook.GetProvider().GetName())
+			state.RepositoryUrl = types.StringValue(apiResponse.PipelineCreateWebhook.Pipeline.Repository.Url)
 		}
 		return nil
 	})
@@ -165,26 +168,30 @@ func (pw *pipelineWebhook) Read(ctx context.Context, req resource.ReadRequest, r
 		return
 	}
 
-	if pipeline, ok := apiResponse.GetNode().(*getPipelineWebhookNodePipeline); ok && pipeline != nil {
-		if pipeline.RepositoryWebhook.Id == "" {
-			resp.Diagnostics.AddWarning(
-				"Pipeline webhook not found",
-				"Removing pipeline webhook from state...",
-			)
-			resp.State.RemoveResource(ctx)
-			return
-		}
-		state.Id = types.StringValue(pipeline.RepositoryWebhook.Id)
-		state.Provider = types.StringValue(pipeline.RepositoryWebhook.Provider)
-		state.RepositoryUrl = types.StringValue(pipeline.RepositoryWebhook.RepositoryUrl)
-		resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
-	} else {
+	pipeline, ok := apiResponse.GetNode().(*getPipelineWebhookNodePipeline)
+	if !ok || pipeline == nil {
 		resp.Diagnostics.AddWarning(
 			"Pipeline not found",
 			"Removing pipeline webhook from state...",
 		)
 		resp.State.RemoveResource(ctx)
+		return
 	}
+
+	info := extractWebhookFromPipeline(pipeline)
+	if info == nil {
+		resp.Diagnostics.AddWarning(
+			"Pipeline webhook not found",
+			"Removing pipeline webhook from state...",
+		)
+		resp.State.RemoveResource(ctx)
+		return
+	}
+
+	state.Id = types.StringValue(info.ExternalId)
+	state.Provider = types.StringValue(info.ProviderName)
+	state.RepositoryUrl = types.StringValue(info.RepositoryUrl)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
 func (pw *pipelineWebhook) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
@@ -230,4 +237,50 @@ func (pw *pipelineWebhook) Delete(ctx context.Context, req resource.DeleteReques
 
 func (pw *pipelineWebhook) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("pipeline_id"), req, resp)
+}
+
+// webhookInfo holds the extracted webhook information from a pipeline
+type webhookInfo struct {
+	ExternalId    string
+	Url           string
+	ProviderName  string
+	RepositoryUrl string
+}
+
+// extractWebhookFromPipeline extracts webhook information from a pipeline response.
+// Returns nil if no webhook exists.
+func extractWebhookFromPipeline(pipeline *getPipelineWebhookNodePipeline) *webhookInfo {
+	if pipeline == nil {
+		return nil
+	}
+
+	repositoryUrl := pipeline.Repository.Url
+	provider := pipeline.Repository.Provider
+
+	switch p := provider.(type) {
+	case *getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGithub:
+		webhook := p.Webhook
+		if webhook.GetExternalId() == "" {
+			return nil
+		}
+		return &webhookInfo{
+			ExternalId:    webhook.GetExternalId(),
+			Url:           webhook.GetUrl(),
+			ProviderName:  webhook.GetProvider().GetName(),
+			RepositoryUrl: repositoryUrl,
+		}
+	case *getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGithubEnterprise:
+		webhook := p.Webhook
+		if webhook.GetExternalId() == "" {
+			return nil
+		}
+		return &webhookInfo{
+			ExternalId:    webhook.GetExternalId(),
+			Url:           webhook.GetUrl(),
+			ProviderName:  webhook.GetProvider().GetName(),
+			RepositoryUrl: repositoryUrl,
+		}
+	default:
+		return nil
+	}
 }
