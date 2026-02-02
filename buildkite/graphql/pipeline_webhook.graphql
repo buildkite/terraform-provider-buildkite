@@ -1,0 +1,34 @@
+query getPipelineWebhook($id: ID!) {
+    node(id: $id) {
+        ... on Pipeline {
+            id
+            repositoryWebhook {
+                id
+                provider
+                repositoryUrl
+            }
+        }
+    }
+}
+
+mutation createPipelineWebhook($pipelineId: ID!) {
+    pipelineCreateWebhook(input: { id: $pipelineId }) {
+        pipeline {
+            id
+        }
+        webhook {
+            id
+            provider
+            repositoryUrl
+        }
+    }
+}
+
+mutation deletePipelineWebhook($pipelineId: ID!) {
+    pipelineDeleteWebhook(input: { id: $pipelineId }) {
+        pipeline {
+            id
+        }
+        deletedWebhookId
+    }
+}

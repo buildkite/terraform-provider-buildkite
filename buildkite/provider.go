@@ -157,6 +157,7 @@ func (tf *terraformProvider) Resources(context.Context) []func() resource.Resour
 		newOrganizationResource,
 		newPipelineScheduleResource,
 		newPipelineTeamResource,
+		newPipelineWebhookResource,
 		newPipelineTemplateResource,
 		newPipelineResource(&tf.archivePipelineOnDelete),
 		newPortalResource,
