@@ -75,20 +75,19 @@ resource "buildkite_pipeline" "signed-pipeline" {
   steps      = data.buildkite_signed_pipeline_steps.signed-steps.steps
 }
 
+# Automatically create a webhook for this repository (supported using a GitHub App integration only). See `buildkite_pipeline_webhook`.
 
-# with automatic webhook creation (requires GitHub App integration)
-data "buildkite_cluster" "default" {
-  name = "Default cluster"
+resource "buildkite_pipeline" "pipeline" {
+  name       = "my pipeline"
+  repository = "https://github.com/my-org/my-repo.git"
 }
-resource "buildkite_pipeline" "pipeline_with_webhook" {
-  name           = "repo"
-  repository     = "git@github.com:my-org/my-repo"
-  cluster_id     = data.buildkite_cluster.default.id
-  create_webhook = true
+
+# create a webhook to automatically trigger builds on push
+resource "buildkite_pipeline_webhook" "webhook" {
+  pipeline_id = buildkite_pipeline.pipeline.id
 }
 
 # Advanced example using Github provider to create repository webhook for Buildkite pipeline
-# Note: The example above using create_webhook is preferred when a GitHub App integration is available.
 
 terraform {
   required_providers {
@@ -157,7 +156,6 @@ resource "github_repository_webhook" "my_webhook" {
 - `cancel_intermediate_builds_branch_filter` (String) Filter the `cancel_intermediate_builds` setting based on this branch condition.
 - `cluster_id` (String) Attach this pipeline to the given cluster GraphQL ID.
 - `color` (String) A color hex code to represent this pipeline.
-- `create_webhook` (Boolean) If true, automatically create a webhook on the repository to trigger builds. Requires a GitHub App integration to be configured for the organization. This is only applied at pipeline creation time; changing this value will force a new pipeline to be created.
 - `default_branch` (String) Default branch of the pipeline.
 - `default_team_id` (String) The GraphQL ID of a team to initially assign to the pipeline. This is required by the Buildkite API when creating a new pipeline. The team assigned here will be given 'Manage Build and Read' access. Further team associations can be managed with the `buildkite_pipeline_team` resource after the pipeline is created.
 - `default_timeout_in_minutes` (Number) Set pipeline wide timeout for command steps.
@@ -178,7 +176,6 @@ resource "github_repository_webhook" "my_webhook" {
 - `cluster_name` (String) The name of the cluster the pipeline is (optionally) attached to.
 - `id` (String) The GraphQL ID of the pipeline.
 - `uuid` (String) The UUID of the pipeline.
-- `webhook_created` (Boolean) Whether a webhook was successfully created on the repository. Only set when `create_webhook` is true.
 - `webhook_url` (String) The webhook URL used to trigger builds from VCS providers.
 
 <a id="nestedatt--provider_settings"></a>
