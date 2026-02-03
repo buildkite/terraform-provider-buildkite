@@ -22,7 +22,6 @@ type pipelineWebhook struct {
 type pipelineWebhookResourceModel struct {
 	Id            types.String `tfsdk:"id"`
 	PipelineId    types.String `tfsdk:"pipeline_id"`
-	Provider      types.String `tfsdk:"provider_name"`
 	RepositoryUrl types.String `tfsdk:"repository_url"`
 	WebhookUrl    types.String `tfsdk:"webhook_url"`
 }
@@ -63,13 +62,6 @@ func (pw *pipelineWebhook) Schema(ctx context.Context, req resource.SchemaReques
 				MarkdownDescription: "The GraphQL ID of the pipeline.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
-				},
-			},
-			"provider_name": resource_schema.StringAttribute{
-				Computed:            true,
-				MarkdownDescription: "The SCM provider for the webhook (e.g., `github`, `github_enterprise`).",
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
 			"repository_url": resource_schema.StringAttribute{
@@ -118,7 +110,6 @@ func (pw *pipelineWebhook) Create(ctx context.Context, req resource.CreateReques
 				if pipeline, ok := readResp.GetNode().(*getPipelineWebhookNodePipeline); ok {
 					if info := extractWebhookFromPipeline(pipeline); info != nil {
 						state.Id = types.StringValue(info.ExternalId)
-						state.Provider = types.StringValue(info.ProviderName)
 						state.RepositoryUrl = types.StringValue(info.RepositoryUrl)
 						state.WebhookUrl = types.StringValue(info.Url)
 					}
@@ -131,7 +122,6 @@ func (pw *pipelineWebhook) Create(ctx context.Context, req resource.CreateReques
 		webhook := apiResponse.PipelineCreateWebhook.Webhook
 		if webhook != nil && webhook.GetExternalId() != "" {
 			state.Id = types.StringValue(webhook.GetExternalId())
-			state.Provider = types.StringValue(webhook.GetProvider().GetName())
 			state.RepositoryUrl = types.StringValue(apiResponse.PipelineCreateWebhook.Pipeline.Repository.Url)
 			state.WebhookUrl = types.StringValue(webhook.GetUrl())
 		}
@@ -199,7 +189,6 @@ func (pw *pipelineWebhook) Read(ctx context.Context, req resource.ReadRequest, r
 	}
 
 	state.Id = types.StringValue(info.ExternalId)
-	state.Provider = types.StringValue(info.ProviderName)
 	state.RepositoryUrl = types.StringValue(info.RepositoryUrl)
 	state.WebhookUrl = types.StringValue(info.Url)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
@@ -254,7 +243,6 @@ func (pw *pipelineWebhook) ImportState(ctx context.Context, req resource.ImportS
 type webhookInfo struct {
 	ExternalId    string
 	Url           string
-	ProviderName  string
 	RepositoryUrl string
 }
 
@@ -277,7 +265,6 @@ func extractWebhookFromPipeline(pipeline *getPipelineWebhookNodePipeline) *webho
 		return &webhookInfo{
 			ExternalId:    webhook.GetExternalId(),
 			Url:           webhook.GetUrl(),
-			ProviderName:  webhook.GetProvider().GetName(),
 			RepositoryUrl: repositoryUrl,
 		}
 	case *getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGithubEnterprise:
@@ -288,7 +275,6 @@ func extractWebhookFromPipeline(pipeline *getPipelineWebhookNodePipeline) *webho
 		return &webhookInfo{
 			ExternalId:    webhook.GetExternalId(),
 			Url:           webhook.GetUrl(),
-			ProviderName:  webhook.GetProvider().GetName(),
 			RepositoryUrl: repositoryUrl,
 		}
 	default:

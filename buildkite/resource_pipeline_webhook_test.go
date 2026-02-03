@@ -64,7 +64,6 @@ func TestAccBuildkitePipelineWebhook(t *testing.T) {
 					Config: configBasic(pipelineName),
 					Check: resource.ComposeAggregateTestCheckFunc(
 						resource.TestCheckResourceAttrSet("buildkite_pipeline_webhook.webhook", "id"),
-						resource.TestCheckResourceAttrSet("buildkite_pipeline_webhook.webhook", "provider_name"),
 						resource.TestCheckResourceAttrSet("buildkite_pipeline_webhook.webhook", "repository_url"),
 						resource.TestCheckResourceAttrSet("buildkite_pipeline_webhook.webhook", "webhook_url"),
 						resource.TestCheckResourceAttrPair(

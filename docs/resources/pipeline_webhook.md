@@ -40,8 +40,8 @@ resource "buildkite_pipeline_webhook" "webhook" {
 ### Read-Only
 
 - `id` (String) The ID of the webhook.
-- `provider_name` (String) The SCM provider for the webhook (e.g., `github`, `github_enterprise`).
 - `repository_url` (String) The repository URL the webhook is configured for.
+- `webhook_url` (String) The Buildkite webhook URL that receives events from the repository.
 
 ## Import
 
