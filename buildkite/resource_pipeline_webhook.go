@@ -24,6 +24,7 @@ type pipelineWebhookResourceModel struct {
 	PipelineId    types.String `tfsdk:"pipeline_id"`
 	Provider      types.String `tfsdk:"provider_name"`
 	RepositoryUrl types.String `tfsdk:"repository_url"`
+	WebhookUrl    types.String `tfsdk:"webhook_url"`
 }
 
 func newPipelineWebhookResource() resource.Resource {
@@ -78,6 +79,13 @@ func (pw *pipelineWebhook) Schema(ctx context.Context, req resource.SchemaReques
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
+			"webhook_url": resource_schema.StringAttribute{
+				Computed:            true,
+				MarkdownDescription: "The Buildkite webhook URL that receives events from the repository.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
 		},
 	}
 }
@@ -112,6 +120,7 @@ func (pw *pipelineWebhook) Create(ctx context.Context, req resource.CreateReques
 						state.Id = types.StringValue(info.ExternalId)
 						state.Provider = types.StringValue(info.ProviderName)
 						state.RepositoryUrl = types.StringValue(info.RepositoryUrl)
+						state.WebhookUrl = types.StringValue(info.Url)
 					}
 				}
 				return nil
@@ -124,6 +133,7 @@ func (pw *pipelineWebhook) Create(ctx context.Context, req resource.CreateReques
 			state.Id = types.StringValue(webhook.GetExternalId())
 			state.Provider = types.StringValue(webhook.GetProvider().GetName())
 			state.RepositoryUrl = types.StringValue(apiResponse.PipelineCreateWebhook.Pipeline.Repository.Url)
+			state.WebhookUrl = types.StringValue(webhook.GetUrl())
 		}
 		return nil
 	})
@@ -191,6 +201,7 @@ func (pw *pipelineWebhook) Read(ctx context.Context, req resource.ReadRequest, r
 	state.Id = types.StringValue(info.ExternalId)
 	state.Provider = types.StringValue(info.ProviderName)
 	state.RepositoryUrl = types.StringValue(info.RepositoryUrl)
+	state.WebhookUrl = types.StringValue(info.Url)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
