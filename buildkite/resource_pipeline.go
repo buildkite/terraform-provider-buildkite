@@ -80,6 +80,7 @@ type pipelineResourceModel struct {
 	Color                                types.String           `tfsdk:"color"`
 	ClusterId                            types.String           `tfsdk:"cluster_id"`
 	ClusterName                          types.String           `tfsdk:"cluster_name"`
+	CreateWebhook                        types.Bool             `tfsdk:"create_webhook"`
 	DefaultTeamId                        types.String           `tfsdk:"default_team_id"`
 	DefaultBranch                        types.String           `tfsdk:"default_branch"`
 	DefaultTimeoutInMinutes              types.Int64            `tfsdk:"default_timeout_in_minutes"`
@@ -97,6 +98,7 @@ type pipelineResourceModel struct {
 	Steps                                types.String           `tfsdk:"steps"`
 	Tags                                 []types.String         `tfsdk:"tags"`
 	UUID                                 types.String           `tfsdk:"uuid"`
+	WebhookCreated                       types.Bool             `tfsdk:"webhook_created"`
 	WebhookUrl                           types.String           `tfsdk:"webhook_url"`
 }
 
@@ -227,6 +229,7 @@ func (p *pipelineResource) Create(ctx context.Context, req resource.CreateReques
 				CancelIntermediateBuildsBranchFilter: plan.CancelIntermediateBuildsBranchFilter.ValueString(),
 				ClusterId:                            plan.ClusterId.ValueStringPointer(),
 				Color:                                plan.Color.ValueStringPointer(),
+				CreateWebhook:                        plan.CreateWebhook.ValueBool(),
 				DefaultBranch:                        plan.DefaultBranch.ValueString(),
 				DefaultTimeoutInMinutes:              defaultTimeoutInMinutes,
 				Emoji:                                plan.Emoji.ValueStringPointer(),
@@ -267,6 +270,20 @@ func (p *pipelineResource) Create(ctx context.Context, req resource.CreateReques
 
 	setPipelineModel(&state, &response.PipelineCreate.Pipeline)
 	state.DefaultTeamId = plan.DefaultTeamId
+	state.CreateWebhook = plan.CreateWebhook
+
+	// Set webhook_created only if create_webhook was requested
+	if plan.CreateWebhook.ValueBool() {
+		state.WebhookCreated = types.BoolValue(response.PipelineCreate.WebhookCreated)
+		if !response.PipelineCreate.WebhookCreated {
+			resp.Diagnostics.AddWarning(
+				"Webhook creation failed",
+				"Pipeline was created but the webhook could not be created. Ensure a GitHub App integration is configured for your organization and has access to the repository.",
+			)
+		}
+	} else {
+		state.WebhookCreated = types.BoolNull()
+	}
 
 	useSlugValue := response.PipelineCreate.Pipeline.Slug
 	resp.Diagnostics.Append(resp.Private.SetKey(ctx, "slugSource", []byte(`{"source": "api"}`))...)
@@ -697,6 +714,22 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
+			"create_webhook": schema.BoolAttribute{
+				Optional:            true,
+				Computed:            true,
+				Default:             booldefault.StaticBool(false),
+				MarkdownDescription: "If true, automatically create a webhook on the repository to trigger builds. Requires a GitHub App integration to be configured for the organization. This is only applied at pipeline creation time; changing this value will force a new pipeline to be created.",
+				PlanModifiers: []planmodifier.Bool{
+					boolplanmodifier.RequiresReplace(),
+				},
+			},
+			"webhook_created": schema.BoolAttribute{
+				Computed:            true,
+				MarkdownDescription: "Whether a webhook was successfully created on the repository. Only set when `create_webhook` is true.",
+				PlanModifiers: []planmodifier.Bool{
+					boolplanmodifier.UseStateForUnknown(),
+				},
+			},
 			"webhook_url": schema.StringAttribute{
 				Computed:            true,
 				MarkdownDescription: "The webhook URL used to trigger builds from VCS providers.",
@@ -1007,6 +1040,10 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 	}
 
 	setPipelineModel(&state, &response.PipelineUpdate.Pipeline)
+
+	// Preserve create_webhook and webhook_created from plan (these are only set at creation time)
+	state.CreateWebhook = plan.CreateWebhook
+	state.WebhookCreated = plan.WebhookCreated
 
 	if plan.DefaultTeamId.IsNull() && !state.DefaultTeamId.IsNull() {
 		// if the plan is empty but was previously set, just remove the team
