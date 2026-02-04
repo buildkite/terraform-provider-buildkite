@@ -55,15 +55,19 @@ resource "buildkite_pipeline" "signed-pipeline" {
 }
 
 
-# with automatic webhook creation (requires GitHub App integration)
 data "buildkite_cluster" "default" {
   name = "Default cluster"
 }
+
 resource "buildkite_pipeline" "pipeline_with_webhook" {
   name           = "repo"
   repository     = "git@github.com:my-org/my-repo"
   cluster_id     = data.buildkite_cluster.default.id
-  create_webhook = true
+}
+
+# Create a repository webhook for this pipeline (only supported via GitHub App)
+resource "buildkite_pipeline_webhook" "webhook" {
+  pipeline_id    = buildkite_pipeline.pipeline_with_webhook.id
 }
 
 # Advanced example using Github provider to create repository webhook for Buildkite pipeline
@@ -118,4 +122,3 @@ resource "github_repository_webhook" "my_webhook" {
 
   depends_on = [buildkite_pipeline.pipeline]
 }
-
