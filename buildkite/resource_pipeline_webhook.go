@@ -2,6 +2,7 @@ package buildkite
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -110,13 +111,14 @@ func (pw *pipelineWebhook) Create(ctx context.Context, req resource.CreateReques
 				if pipeline, ok := readResp.GetNode().(*getPipelineWebhookNodePipeline); ok {
 					info, err := extractWebhookFromPipeline(pipeline)
 					if err != nil {
+						if errors.Is(err, ErrNoWebhook) {
+							return nil
+						}
 						return retry.NonRetryableError(err)
 					}
-					if info != nil {
-						state.Id = types.StringValue(info.ExternalId)
-						state.RepositoryUrl = types.StringValue(info.RepositoryUrl)
-						state.WebhookUrl = types.StringValue(info.Url)
-					}
+					state.Id = types.StringValue(info.ExternalId)
+					state.RepositoryUrl = types.StringValue(info.RepositoryUrl)
+					state.WebhookUrl = types.StringValue(info.Url)
 				}
 				return nil
 			}
@@ -184,18 +186,18 @@ func (pw *pipelineWebhook) Read(ctx context.Context, req resource.ReadRequest, r
 
 	info, err := extractWebhookFromPipeline(pipeline)
 	if err != nil {
+		if errors.Is(err, ErrNoWebhook) {
+			resp.Diagnostics.AddWarning(
+				"Pipeline webhook not found",
+				"Removing pipeline webhook from state...",
+			)
+			resp.State.RemoveResource(ctx)
+			return
+		}
 		resp.Diagnostics.AddError(
 			"Unsupported repository provider",
 			err.Error(),
 		)
-		return
-	}
-	if info == nil {
-		resp.Diagnostics.AddWarning(
-			"Pipeline webhook not found",
-			"Removing pipeline webhook from state...",
-		)
-		resp.State.RemoveResource(ctx)
 		return
 	}
 
@@ -285,11 +287,14 @@ func repositoryProviderDisplayName(typename string) string {
 	}
 }
 
+// ErrNoWebhook is returned when a pipeline has no webhook configured.
+var ErrNoWebhook = errors.New("no webhook configured")
+
 // extractWebhookFromPipeline extracts webhook information from a pipeline response.
-// Returns an error if the provider is unsupported, or nil info if no webhook exists.
+// Returns ErrNoWebhook if no webhook exists, or an error if the provider is unsupported.
 func extractWebhookFromPipeline(pipeline *getPipelineWebhookNodePipeline) (*webhookInfo, error) {
 	if pipeline == nil {
-		return nil, nil
+		return nil, ErrNoWebhook
 	}
 
 	repositoryUrl := pipeline.Repository.Url
@@ -299,7 +304,7 @@ func extractWebhookFromPipeline(pipeline *getPipelineWebhookNodePipeline) (*webh
 	case *getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGithub:
 		webhook := p.Webhook
 		if webhook.GetExternalId() == "" {
-			return nil, nil
+			return nil, ErrNoWebhook
 		}
 		return &webhookInfo{
 			ExternalId:    webhook.GetExternalId(),
@@ -309,7 +314,7 @@ func extractWebhookFromPipeline(pipeline *getPipelineWebhookNodePipeline) (*webh
 	case *getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGithubEnterprise:
 		webhook := p.Webhook
 		if webhook.GetExternalId() == "" {
-			return nil, nil
+			return nil, ErrNoWebhook
 		}
 		return &webhookInfo{
 			ExternalId:    webhook.GetExternalId(),

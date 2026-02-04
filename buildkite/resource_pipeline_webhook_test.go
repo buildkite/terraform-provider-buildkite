@@ -198,10 +198,10 @@ func getPipelineIdForImport(resourceName string) resource.ImportStateIdFunc {
 
 func TestExtractWebhookFromPipeline_UnsupportedProvider(t *testing.T) {
 	tests := []struct {
-		name         string
-		provider     getPipelineWebhookNodePipelineRepositoryProvider
-		wantErr      bool
-		wantErrMsg   string
+		name       string
+		provider   getPipelineWebhookNodePipelineRepositoryProvider
+		wantErr    bool
+		wantErrMsg string
 	}{
 		{
 			name:       "GitLab provider returns error",
