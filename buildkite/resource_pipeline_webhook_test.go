@@ -157,6 +157,82 @@ func TestAccBuildkitePipelineWebhook(t *testing.T) {
 	})
 }
 
+func TestAccBuildkitePipelineWebhook_ImportWithNoWebhook(t *testing.T) {
+	configPipelineOnly := func(name string) string {
+		return fmt.Sprintf(`
+			provider "buildkite" {
+				timeouts = {
+					create = "60s"
+					read = "60s"
+					update = "60s"
+					delete = "60s"
+				}
+			}
+
+			resource "buildkite_cluster" "cluster" {
+				name = "%s_cluster"
+			}
+
+			resource "buildkite_pipeline" "pipeline" {
+				name = "%s"
+				repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
+				cluster_id = buildkite_cluster.cluster.id
+			}
+		`, name, name)
+	}
+
+	configWithWebhook := func(name string) string {
+		return fmt.Sprintf(`
+			provider "buildkite" {
+				timeouts = {
+					create = "60s"
+					read = "60s"
+					update = "60s"
+					delete = "60s"
+				}
+			}
+
+			resource "buildkite_cluster" "cluster" {
+				name = "%s_cluster"
+			}
+
+			resource "buildkite_pipeline" "pipeline" {
+				name = "%s"
+				repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
+				cluster_id = buildkite_cluster.cluster.id
+			}
+
+			resource "buildkite_pipeline_webhook" "webhook" {
+				pipeline_id = buildkite_pipeline.pipeline.id
+			}
+		`, name, name)
+	}
+
+	t.Run("import fails when pipeline has no webhook configured", func(t *testing.T) {
+		pipelineName := acctest.RandString(12)
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			Steps: []resource.TestStep{
+				// Step 1: Create pipeline without webhook
+				{
+					Config: configPipelineOnly(pipelineName),
+				},
+				// Step 2: Try to import a webhook that doesn't exist - should fail
+				{
+					Config:            configWithWebhook(pipelineName),
+					ResourceName:      "buildkite_pipeline_webhook.webhook",
+					ImportState:       true,
+					ImportStateIdFunc: getPipelineIdForImport("buildkite_pipeline.pipeline"),
+					ImportStateVerify: false,
+					ExpectError:       regexp.MustCompile(`Cannot import non-existent remote object`),
+				},
+			},
+		})
+	})
+}
+
 func TestAccBuildkitePipelineWebhook_UnsupportedProvider(t *testing.T) {
 	configUnsupportedProvider := func(name string) string {
 		return fmt.Sprintf(`
@@ -194,7 +270,7 @@ func TestAccBuildkitePipelineWebhook_UnsupportedProvider(t *testing.T) {
 			Steps: []resource.TestStep{
 				{
 					Config:      configUnsupportedProvider(pipelineName),
-					ExpectError: regexp.MustCompile(`(webhooks are not supported for repository provider|Auto-creating webhooks is not supported)`),
+					ExpectError: regexp.MustCompile(`(webhooks are not supported for repository provider)`),
 				},
 			},
 		})
@@ -236,6 +312,12 @@ func TestExtractWebhookFromPipeline_UnsupportedProvider(t *testing.T) {
 			wantErr:    true,
 			wantErrMsg: `webhooks are not supported for repository provider "Unknown"`,
 		},
+		{
+			name:       "nil provider returns error with unknown type",
+			provider:   nil,
+			wantErr:    true,
+			wantErrMsg: `webhooks are not supported for repository provider "unknown"`,
+		},
 	}
 
 	for _, tt := range tests {
@@ -267,6 +349,50 @@ func TestExtractWebhookFromPipeline_UnsupportedProvider(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestExtractWebhookFromPipeline_NoWebhook(t *testing.T) {
+	t.Run("GitHub provider with no webhook", func(t *testing.T) {
+		pipeline := &getPipelineWebhookNodePipeline{
+			Repository: getPipelineWebhookNodePipelineRepository{
+				Url: "https://github.com/example/repo.git",
+				Provider: &getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGithub{
+					Typename: "RepositoryProviderGithub",
+					Webhook:  getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGithubWebhook{},
+				},
+			},
+		}
+
+		info, err := extractWebhookFromPipeline(pipeline)
+
+		if err != ErrNoWebhook {
+			t.Errorf("expected ErrNoWebhook but got %v", err)
+		}
+		if info != nil {
+			t.Errorf("expected nil info but got %+v", info)
+		}
+	})
+
+	t.Run("GitHub Enterprise provider with no webhook", func(t *testing.T) {
+		pipeline := &getPipelineWebhookNodePipeline{
+			Repository: getPipelineWebhookNodePipelineRepository{
+				Url: "https://github.example.com/org/repo.git",
+				Provider: &getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGithubEnterprise{
+					Typename: "RepositoryProviderGithubEnterprise",
+					Webhook:  getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGithubEnterpriseWebhook{},
+				},
+			},
+		}
+
+		info, err := extractWebhookFromPipeline(pipeline)
+
+		if err != ErrNoWebhook {
+			t.Errorf("expected ErrNoWebhook but got %v", err)
+		}
+		if info != nil {
+			t.Errorf("expected nil info but got %+v", info)
+		}
+	})
 }
 
 func testAccCheckPipelineWebhookDestroy(s *terraform.State) error {
