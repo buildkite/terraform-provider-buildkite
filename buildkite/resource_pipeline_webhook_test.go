@@ -3,6 +3,7 @@ package buildkite
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
@@ -133,12 +134,52 @@ func TestAccBuildkitePipelineWebhook(t *testing.T) {
 							return err
 						}
 						if pipeline, ok := resp.GetNode().(*getPipelineWebhookNodePipeline); ok && pipeline != nil {
-							if pipeline.RepositoryWebhook.Id != "" {
+							info, _ := extractWebhookFromPipeline(pipeline)
+							if info != nil {
 								return fmt.Errorf("webhook still exists after resource removal")
 							}
 						}
 						return nil
 					},
+				},
+			},
+		})
+	})
+}
+
+func TestAccBuildkitePipelineWebhook_UnsupportedProvider(t *testing.T) {
+	configUnsupportedProvider := func(name string) string {
+		return fmt.Sprintf(`
+			provider "buildkite" {
+				timeouts = {
+					create = "60s"
+					read = "60s"
+					update = "60s"
+					delete = "60s"
+				}
+			}
+
+			resource "buildkite_pipeline" "pipeline" {
+				name = "%s"
+				repository = "https://gitlab.com/buildkite/test-repo.git"
+			}
+
+			resource "buildkite_pipeline_webhook" "webhook" {
+				pipeline_id = buildkite_pipeline.pipeline.id
+			}
+		`, name)
+	}
+
+	t.Run("pipeline webhook fails for unsupported provider", func(t *testing.T) {
+		pipelineName := acctest.RandString(12)
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			Steps: []resource.TestStep{
+				{
+					Config:      configUnsupportedProvider(pipelineName),
+					ExpectError: regexp.MustCompile(`(webhooks are not supported for repository provider|Auto-creating webhooks is not supported)`),
 				},
 			},
 		})
@@ -155,6 +196,64 @@ func getPipelineIdForImport(resourceName string) resource.ImportStateIdFunc {
 	}
 }
 
+func TestExtractWebhookFromPipeline_UnsupportedProvider(t *testing.T) {
+	tests := []struct {
+		name         string
+		provider     getPipelineWebhookNodePipelineRepositoryProvider
+		wantErr      bool
+		wantErrMsg   string
+	}{
+		{
+			name:       "GitLab provider returns error",
+			provider:   &getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGitlab{Typename: "RepositoryProviderGitlab"},
+			wantErr:    true,
+			wantErrMsg: `webhooks are not supported for repository provider "GitLab"`,
+		},
+		{
+			name:       "Bitbucket provider returns error",
+			provider:   &getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderBitbucket{Typename: "RepositoryProviderBitbucket"},
+			wantErr:    true,
+			wantErrMsg: `webhooks are not supported for repository provider "Bitbucket"`,
+		},
+		{
+			name:       "Unknown provider returns error",
+			provider:   &getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderUnknown{Typename: "RepositoryProviderUnknown"},
+			wantErr:    true,
+			wantErrMsg: `webhooks are not supported for repository provider "Unknown"`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			pipeline := &getPipelineWebhookNodePipeline{
+				Repository: getPipelineWebhookNodePipelineRepository{
+					Url:      "https://example.com/repo.git",
+					Provider: tt.provider,
+				},
+			}
+
+			info, err := extractWebhookFromPipeline(pipeline)
+
+			if tt.wantErr {
+				if err == nil {
+					t.Errorf("expected error but got nil")
+					return
+				}
+				if err.Error() != tt.wantErrMsg {
+					t.Errorf("expected error %q but got %q", tt.wantErrMsg, err.Error())
+				}
+				if info != nil {
+					t.Errorf("expected nil info but got %+v", info)
+				}
+			} else {
+				if err != nil {
+					t.Errorf("unexpected error: %v", err)
+				}
+			}
+		})
+	}
+}
+
 func testAccCheckPipelineWebhookDestroy(s *terraform.State) error {
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "buildkite_pipeline_webhook" {
@@ -166,7 +265,8 @@ func testAccCheckPipelineWebhookDestroy(s *terraform.State) error {
 			return err
 		}
 		if pipeline, ok := resp.GetNode().(*getPipelineWebhookNodePipeline); ok && pipeline != nil {
-			if pipeline.RepositoryWebhook.Id != "" {
+			info, _ := extractWebhookFromPipeline(pipeline)
+			if info != nil {
 				return fmt.Errorf("pipeline webhook still exists")
 			}
 		}

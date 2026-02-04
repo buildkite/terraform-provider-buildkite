@@ -108,7 +108,11 @@ func (pw *pipelineWebhook) Create(ctx context.Context, req resource.CreateReques
 					return retry.NonRetryableError(fmt.Errorf("webhook exists but failed to read: %w", readErr))
 				}
 				if pipeline, ok := readResp.GetNode().(*getPipelineWebhookNodePipeline); ok {
-					if info := extractWebhookFromPipeline(pipeline); info != nil {
+					info, err := extractWebhookFromPipeline(pipeline)
+					if err != nil {
+						return retry.NonRetryableError(err)
+					}
+					if info != nil {
 						state.Id = types.StringValue(info.ExternalId)
 						state.RepositoryUrl = types.StringValue(info.RepositoryUrl)
 						state.WebhookUrl = types.StringValue(info.Url)
@@ -178,7 +182,14 @@ func (pw *pipelineWebhook) Read(ctx context.Context, req resource.ReadRequest, r
 		return
 	}
 
-	info := extractWebhookFromPipeline(pipeline)
+	info, err := extractWebhookFromPipeline(pipeline)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Unsupported repository provider",
+			err.Error(),
+		)
+		return
+	}
 	if info == nil {
 		resp.Diagnostics.AddWarning(
 			"Pipeline webhook not found",
@@ -246,11 +257,39 @@ type webhookInfo struct {
 	RepositoryUrl string
 }
 
+// repositoryProviderDisplayName returns a human-readable name for a repository provider typename.
+func repositoryProviderDisplayName(typename string) string {
+	switch typename {
+	case "RepositoryProviderGithub":
+		return "GitHub"
+	case "RepositoryProviderGithubEnterprise":
+		return "GitHub Enterprise"
+	case "RepositoryProviderGitlab":
+		return "GitLab"
+	case "RepositoryProviderGitlabCommunity":
+		return "GitLab Community"
+	case "RepositoryProviderGitlabEnterprise":
+		return "GitLab Enterprise"
+	case "RepositoryProviderBitbucket":
+		return "Bitbucket"
+	case "RepositoryProviderBitbucketServer":
+		return "Bitbucket Server"
+	case "RepositoryProviderBeanstalk":
+		return "Beanstalk"
+	case "RepositoryProviderCodebase":
+		return "Codebase"
+	case "RepositoryProviderUnknown":
+		return "Unknown"
+	default:
+		return typename
+	}
+}
+
 // extractWebhookFromPipeline extracts webhook information from a pipeline response.
-// Returns nil if no webhook exists.
-func extractWebhookFromPipeline(pipeline *getPipelineWebhookNodePipeline) *webhookInfo {
+// Returns an error if the provider is unsupported, or nil info if no webhook exists.
+func extractWebhookFromPipeline(pipeline *getPipelineWebhookNodePipeline) (*webhookInfo, error) {
 	if pipeline == nil {
-		return nil
+		return nil, nil
 	}
 
 	repositoryUrl := pipeline.Repository.Url
@@ -260,24 +299,28 @@ func extractWebhookFromPipeline(pipeline *getPipelineWebhookNodePipeline) *webho
 	case *getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGithub:
 		webhook := p.Webhook
 		if webhook.GetExternalId() == "" {
-			return nil
+			return nil, nil
 		}
 		return &webhookInfo{
 			ExternalId:    webhook.GetExternalId(),
 			Url:           webhook.GetUrl(),
 			RepositoryUrl: repositoryUrl,
-		}
+		}, nil
 	case *getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGithubEnterprise:
 		webhook := p.Webhook
 		if webhook.GetExternalId() == "" {
-			return nil
+			return nil, nil
 		}
 		return &webhookInfo{
 			ExternalId:    webhook.GetExternalId(),
 			Url:           webhook.GetUrl(),
 			RepositoryUrl: repositoryUrl,
-		}
+		}, nil
 	default:
-		return nil
+		providerName := "unknown"
+		if provider != nil {
+			providerName = repositoryProviderDisplayName(provider.GetTypename())
+		}
+		return nil, fmt.Errorf("webhooks are not supported for repository provider %q", providerName)
 	}
 }
