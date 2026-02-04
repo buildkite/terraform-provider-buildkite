@@ -24,15 +24,20 @@ func TestAccBuildkitePipelineWebhook(t *testing.T) {
 				}
 			}
 
+			resource "buildkite_cluster" "cluster" {
+				name = "%s_cluster"
+			}
+
 			resource "buildkite_pipeline" "pipeline" {
 				name = "%s"
 				repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
+				cluster_id = buildkite_cluster.cluster.id
 			}
 
 			resource "buildkite_pipeline_webhook" "webhook" {
 				pipeline_id = buildkite_pipeline.pipeline.id
 			}
-		`, name)
+		`, name, name)
 	}
 
 	configPipelineOnly := func(name string) string {
@@ -46,11 +51,16 @@ func TestAccBuildkitePipelineWebhook(t *testing.T) {
 				}
 			}
 
+			resource "buildkite_cluster" "cluster" {
+				name = "%s_cluster"
+			}
+
 			resource "buildkite_pipeline" "pipeline" {
 				name = "%s"
 				repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
+				cluster_id = buildkite_cluster.cluster.id
 			}
-		`, name)
+		`, name, name)
 	}
 
 	t.Run("pipeline webhook can be created and imported", func(t *testing.T) {
@@ -159,15 +169,20 @@ func TestAccBuildkitePipelineWebhook_UnsupportedProvider(t *testing.T) {
 				}
 			}
 
+			resource "buildkite_cluster" "cluster" {
+				name = "%s_cluster"
+			}
+
 			resource "buildkite_pipeline" "pipeline" {
 				name = "%s"
 				repository = "https://gitlab.com/buildkite/test-repo.git"
+				cluster_id = buildkite_cluster.cluster.id
 			}
 
 			resource "buildkite_pipeline_webhook" "webhook" {
 				pipeline_id = buildkite_pipeline.pipeline.id
 			}
-		`, name)
+		`, name, name)
 	}
 
 	t.Run("pipeline webhook fails for unsupported provider", func(t *testing.T) {
