@@ -16,6 +16,10 @@ import (
 func TestAccBuildkitePipelineWebhook(t *testing.T) {
 	repo := os.Getenv("GITHUB_TEST_REPO")
 
+	if repo == "" {
+		return fmt.Errorf("GITHUB_TEST_REPO environment variable is not set")
+	}
+
 	configBasic := func(name string) string {
 		return fmt.Sprintf(`
 			provider "buildkite" {
@@ -78,7 +82,7 @@ func TestAccBuildkitePipelineWebhook(t *testing.T) {
 					Config: configBasic(pipelineName),
 					Check: resource.ComposeAggregateTestCheckFunc(
 						resource.TestCheckResourceAttrSet("buildkite_pipeline_webhook.webhook", "id"),
-						resource.TestCheckResourceAttrSet("buildkite_pipeline_webhook.webhook", "repository_url"),
+						resource.TestCheckResourceAttr("buildkite_pipeline_webhook.webhook", "repository_url", repo),
 						resource.TestCheckResourceAttrSet("buildkite_pipeline_webhook.webhook", "webhook_url"),
 						resource.TestCheckResourceAttrPair(
 							"buildkite_pipeline_webhook.webhook", "pipeline_id",
@@ -162,6 +166,10 @@ func TestAccBuildkitePipelineWebhook(t *testing.T) {
 
 func TestAccBuildkitePipelineWebhook_ImportWithNoWebhook(t *testing.T) {
 	repo := os.Getenv("GITHUB_TEST_REPO")
+
+	if repo == "" {
+		return fmt.Errorf("GITHUB_TEST_REPO environment variable is not set")
+	}
 
 	configPipelineOnly := func(name string) string {
 		return fmt.Sprintf(`
