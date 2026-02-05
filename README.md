@@ -80,11 +80,15 @@ Acceptance tests that test the provider works against the live Buildkite API can
 make testacc
 ```
 
-These tests require two environment variables to run correctly:
+These tests require the following environment variables to run correctly:
 
 ```bash
-BUILDKITE_ORGANIZATION_SLUG=<org-slug> BUILDKITE_API_TOKEN=<token> make testacc
+BUILDKITE_ORGANIZATION_SLUG=<org-slug> BUILDKITE_API_TOKEN=<token> GITHUB_TEST_REPO=<github-repo-url> make testacc
 ```
+
+- `BUILDKITE_ORGANIZATION_SLUG`: Your Buildkite organization slug
+- `BUILDKITE_API_TOKEN`: API token with appropriate scopes
+- `GITHUB_TEST_REPO`: A GitHub repository URL for webhook tests (e.g., `https://github.com/your-org/test-repo.git`)
 
 Note that these tests make live changes to an organization and probably
 shouldn't be run against organizations with real data. Anyone actively

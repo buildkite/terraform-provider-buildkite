@@ -14,7 +14,7 @@ import (
 )
 
 func TestAccBuildkitePipelineWebhook(t *testing.T) {
-	repo := os.Getenv("BUILDKITE_TEST_REPO")
+	repo := os.Getenv("GITHUB_TEST_REPO")
 
 	configBasic := func(name string) string {
 		return fmt.Sprintf(`
@@ -161,7 +161,7 @@ func TestAccBuildkitePipelineWebhook(t *testing.T) {
 }
 
 func TestAccBuildkitePipelineWebhook_ImportWithNoWebhook(t *testing.T) {
-	repo := os.Getenv("BUILDKITE_TEST_REPO")
+	repo := os.Getenv("GITHUB_TEST_REPO")
 
 	configPipelineOnly := func(name string) string {
 		return fmt.Sprintf(`
