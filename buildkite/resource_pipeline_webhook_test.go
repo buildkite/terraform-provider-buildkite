@@ -3,6 +3,7 @@ package buildkite
 import (
 	"context"
 	"fmt"
+	"os"
 	"regexp"
 	"testing"
 
@@ -13,6 +14,8 @@ import (
 )
 
 func TestAccBuildkitePipelineWebhook(t *testing.T) {
+	repo := os.Getenv("BUILDKITE_TEST_REPO")
+
 	configBasic := func(name string) string {
 		return fmt.Sprintf(`
 			provider "buildkite" {
@@ -30,14 +33,14 @@ func TestAccBuildkitePipelineWebhook(t *testing.T) {
 
 			resource "buildkite_pipeline" "pipeline" {
 				name = "%s"
-				repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
+				repository = "%s"
 				cluster_id = buildkite_cluster.cluster.id
 			}
 
 			resource "buildkite_pipeline_webhook" "webhook" {
 				pipeline_id = buildkite_pipeline.pipeline.id
 			}
-		`, name, name)
+		`, name, name, repo)
 	}
 
 	configPipelineOnly := func(name string) string {
@@ -57,10 +60,10 @@ func TestAccBuildkitePipelineWebhook(t *testing.T) {
 
 			resource "buildkite_pipeline" "pipeline" {
 				name = "%s"
-				repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
+				repository = "%s"
 				cluster_id = buildkite_cluster.cluster.id
 			}
-		`, name, name)
+		`, name, name, repo)
 	}
 
 	t.Run("pipeline webhook can be created and imported", func(t *testing.T) {
@@ -158,6 +161,8 @@ func TestAccBuildkitePipelineWebhook(t *testing.T) {
 }
 
 func TestAccBuildkitePipelineWebhook_ImportWithNoWebhook(t *testing.T) {
+	repo := os.Getenv("BUILDKITE_TEST_REPO")
+
 	configPipelineOnly := func(name string) string {
 		return fmt.Sprintf(`
 			provider "buildkite" {
@@ -175,10 +180,10 @@ func TestAccBuildkitePipelineWebhook_ImportWithNoWebhook(t *testing.T) {
 
 			resource "buildkite_pipeline" "pipeline" {
 				name = "%s"
-				repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
+				repository = "%s"
 				cluster_id = buildkite_cluster.cluster.id
 			}
-		`, name, name)
+		`, name, name, repo)
 	}
 
 	configWithWebhook := func(name string) string {
@@ -198,14 +203,14 @@ func TestAccBuildkitePipelineWebhook_ImportWithNoWebhook(t *testing.T) {
 
 			resource "buildkite_pipeline" "pipeline" {
 				name = "%s"
-				repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
+				repository = "%s"
 				cluster_id = buildkite_cluster.cluster.id
 			}
 
 			resource "buildkite_pipeline_webhook" "webhook" {
 				pipeline_id = buildkite_pipeline.pipeline.id
 			}
-		`, name, name)
+		`, name, name, repo)
 	}
 
 	t.Run("import fails when pipeline has no webhook configured", func(t *testing.T) {
@@ -270,7 +275,7 @@ func TestAccBuildkitePipelineWebhook_UnsupportedProvider(t *testing.T) {
 			Steps: []resource.TestStep{
 				{
 					Config:      configUnsupportedProvider(pipelineName),
-					ExpectError: regexp.MustCompile(`(webhooks are not supported for repository provider)`),
+					ExpectError: regexp.MustCompile(`Auto-creating webhooks is not\s+supported for your repository provider`),
 				},
 			},
 		})
