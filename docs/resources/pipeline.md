@@ -92,7 +92,7 @@ resource "buildkite_pipeline_webhook" "webhook" {
 }
 
 # Advanced example using Github provider to create repository webhook for Buildkite pipeline
-# Note: The example above using create_webhook is preferred when a GitHub App integration is available.
+# Note: The example above using buildkite_pipeline_webhook is preferred when a GitHub App integration is available.
 
 terraform {
   required_providers {
