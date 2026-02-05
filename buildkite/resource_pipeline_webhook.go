@@ -134,7 +134,6 @@ func (pw *pipelineWebhook) Create(ctx context.Context, req resource.CreateReques
 		}
 		return nil
 	})
-
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to create pipeline webhook",
@@ -166,7 +165,6 @@ func (pw *pipelineWebhook) Read(ctx context.Context, req resource.ReadRequest, r
 		apiResponse, err = getPipelineWebhook(ctx, pw.client.genqlient, state.PipelineId.ValueString())
 		return retryContextError(err)
 	})
-
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to read pipeline webhook",
@@ -195,10 +193,12 @@ func (pw *pipelineWebhook) Read(ctx context.Context, req resource.ReadRequest, r
 			resp.State.RemoveResource(ctx)
 			return
 		}
-		resp.Diagnostics.AddError(
-			"Unsupported repository provider",
-			err.Error(),
+		// Provider changed to an unsupported type - remove from state
+		resp.Diagnostics.AddWarning(
+			"Pipeline repository provider changed",
+			fmt.Sprintf("%s. Removing pipeline webhook from state...", err.Error()),
 		)
+		resp.State.RemoveResource(ctx)
 		return
 	}
 
@@ -239,7 +239,6 @@ func (pw *pipelineWebhook) Delete(ctx context.Context, req resource.DeleteReques
 		}
 		return retryContextError(err)
 	})
-
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to delete pipeline webhook",

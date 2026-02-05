@@ -400,6 +400,86 @@ func TestExtractWebhookFromPipeline_NoWebhook(t *testing.T) {
 	})
 }
 
+func TestAccBuildkitePipelineWebhook_ProviderChange(t *testing.T) {
+	repo := os.Getenv("GITHUB_TEST_REPO")
+
+	configWithWebhook := func(name, repository string) string {
+		return fmt.Sprintf(`
+			provider "buildkite" {
+				timeouts = {
+					create = "60s"
+					read = "60s"
+					update = "60s"
+					delete = "60s"
+				}
+			}
+
+			resource "buildkite_cluster" "cluster" {
+				name = "%s_cluster"
+			}
+
+			resource "buildkite_pipeline" "pipeline" {
+				name = "%s"
+				repository = "%s"
+				cluster_id = buildkite_cluster.cluster.id
+			}
+
+			resource "buildkite_pipeline_webhook" "webhook" {
+				pipeline_id = buildkite_pipeline.pipeline.id
+			}
+		`, name, name, repository)
+	}
+
+	configPipelineOnly := func(name, repository string) string {
+		return fmt.Sprintf(`
+			provider "buildkite" {
+				timeouts = {
+					create = "60s"
+					read = "60s"
+					update = "60s"
+					delete = "60s"
+				}
+			}
+
+			resource "buildkite_cluster" "cluster" {
+				name = "%s_cluster"
+			}
+
+			resource "buildkite_pipeline" "pipeline" {
+				name = "%s"
+				repository = "%s"
+				cluster_id = buildkite_cluster.cluster.id
+			}
+		`, name, name, repository)
+	}
+
+	t.Run("webhook is removed from state when provider changes to unsupported type", func(t *testing.T) {
+		pipelineName := acctest.RandString(12)
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			Steps: []resource.TestStep{
+				{
+					Config: configWithWebhook(pipelineName, repo),
+					Check: resource.ComposeAggregateTestCheckFunc(
+						resource.TestCheckResourceAttrSet("buildkite_pipeline_webhook.webhook", "id"),
+					),
+				},
+				{
+					Config: configPipelineOnly(pipelineName, "https://gitlab.com/buildkite/test-repo.git"),
+					Check: func(s *terraform.State) error {
+						if _, ok := s.RootModule().Resources["buildkite_pipeline_webhook.webhook"]; ok {
+							return fmt.Errorf("webhook resource should have been removed from state")
+						}
+						return nil
+					},
+				},
+			},
+		})
+	})
+}
+
 func testAccCheckPipelineWebhookDestroy(s *terraform.State) error {
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "buildkite_pipeline_webhook" {
