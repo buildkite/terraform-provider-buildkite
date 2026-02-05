@@ -117,7 +117,7 @@ func (pw *pipelineWebhook) Create(ctx context.Context, req resource.CreateReques
 					state.RepositoryUrl = types.StringValue(info.RepositoryUrl)
 					state.WebhookUrl = types.StringValue(info.Url)
 				} else {
-					return retry.NonRetryableError(fmt.Errorf("Unable to read existing webhook for pipeline"))
+					return retry.NonRetryableError(fmt.Errorf("unable to read existing webhook for pipeline"))
 				}
 				return nil
 			}
@@ -130,7 +130,7 @@ func (pw *pipelineWebhook) Create(ctx context.Context, req resource.CreateReques
 			state.RepositoryUrl = types.StringValue(apiResponse.PipelineCreateWebhook.Pipeline.Repository.Url)
 			state.WebhookUrl = types.StringValue(webhook.GetUrl())
 		} else {
-			return retry.NonRetryableError(fmt.Errorf("Unable to read existing webhook for pipeline"))
+			return retry.NonRetryableError(fmt.Errorf("unable to read existing webhook for pipeline"))
 		}
 		return nil
 	})
