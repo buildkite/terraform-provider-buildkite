@@ -16,10 +16,6 @@ import (
 func TestAccBuildkitePipelineWebhook(t *testing.T) {
 	repo := os.Getenv("GITHUB_TEST_REPO")
 
-	if repo == "" {
-		return fmt.Errorf("GITHUB_TEST_REPO environment variable is not set")
-	}
-
 	configBasic := func(name string) string {
 		return fmt.Sprintf(`
 			provider "buildkite" {
@@ -166,10 +162,6 @@ func TestAccBuildkitePipelineWebhook(t *testing.T) {
 
 func TestAccBuildkitePipelineWebhook_ImportWithNoWebhook(t *testing.T) {
 	repo := os.Getenv("GITHUB_TEST_REPO")
-
-	if repo == "" {
-		return fmt.Errorf("GITHUB_TEST_REPO environment variable is not set")
-	}
 
 	configPipelineOnly := func(name string) string {
 		return fmt.Sprintf(`
