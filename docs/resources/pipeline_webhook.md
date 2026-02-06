@@ -10,10 +10,6 @@ description: |-
   GitHub App https://buildkite.com/docs/pipelines/source-control/github#connect-your-buildkite-account-to-github-using-the-github-app.
   ~> The repository attribute must match the pipeline's configured repository URL.
   Use repository = buildkite_pipeline.<name>.repository to keep them in sync.
-  ~> Warning: When the pipeline's repository URL changes, Terraform updates the pipeline
-  before replacing the webhook. Because the webhook deletion targets the pipeline's current
-  repository, the old repository's webhook will be orphaned. It is advisable to destroy the
-  webhook resource before changing the pipeline's repository URL, then re-create it afterward.
 ---
 
 # buildkite_pipeline_webhook (Resource)
@@ -28,11 +24,6 @@ Only supported for GitHub and GitHub Enterprise repositories connected via a
 
 ~> The `repository` attribute must match the pipeline's configured repository URL.
 Use `repository = buildkite_pipeline.<name>.repository` to keep them in sync.
-
-~> **Warning:** When the pipeline's repository URL changes, Terraform updates the pipeline
-before replacing the webhook. Because the webhook deletion targets the pipeline's current
-repository, the old repository's webhook will be orphaned. It is advisable to destroy the
-webhook resource before changing the pipeline's repository URL, then re-create it afterward.
 
 ## Example Usage
 

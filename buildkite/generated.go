@@ -2747,11 +2747,6 @@ type WebhookFields interface {
 	//
 	// A webhook configured on a repository to trigger pipeline builds
 	GetUrl() string
-	// GetProvider returns the interface-field "provider" from its implementation.
-	// The GraphQL interface field's documentation follows.
-	//
-	// A webhook configured on a repository to trigger pipeline builds
-	GetProvider() WebhookFieldsProviderRepositoryProvider
 }
 
 func (v *WebhookFieldsRepositoryProviderGithubEnterpriseWebhook) implementsGraphQLInterfaceWebhookFields() {
@@ -2794,26 +2789,18 @@ func __marshalWebhookFields(v *WebhookFields) ([]byte, error) {
 	case *WebhookFieldsRepositoryProviderGithubEnterpriseWebhook:
 		typename = "RepositoryProviderGithubEnterpriseWebhook"
 
-		premarshaled, err := v.__premarshalJSON()
-		if err != nil {
-			return nil, err
-		}
 		result := struct {
 			TypeName string `json:"__typename"`
-			*__premarshalWebhookFieldsRepositoryProviderGithubEnterpriseWebhook
-		}{typename, premarshaled}
+			*WebhookFieldsRepositoryProviderGithubEnterpriseWebhook
+		}{typename, v}
 		return json.Marshal(result)
 	case *WebhookFieldsRepositoryProviderGithubWebhook:
 		typename = "RepositoryProviderGithubWebhook"
 
-		premarshaled, err := v.__premarshalJSON()
-		if err != nil {
-			return nil, err
-		}
 		result := struct {
 			TypeName string `json:"__typename"`
-			*__premarshalWebhookFieldsRepositoryProviderGithubWebhook
-		}{typename, premarshaled}
+			*WebhookFieldsRepositoryProviderGithubWebhook
+		}{typename, v}
 		return json.Marshal(result)
 	case nil:
 		return []byte("null"), nil
@@ -2822,351 +2809,6 @@ func __marshalWebhookFields(v *WebhookFields) ([]byte, error) {
 			`unexpected concrete type for WebhookFields: "%T"`, v)
 	}
 }
-
-// WebhookFieldsProviderRepositoryProvider includes the requested fields of the GraphQL interface RepositoryProvider.
-//
-// WebhookFieldsProviderRepositoryProvider is implemented by the following types:
-// WebhookFieldsProviderRepositoryProviderBeanstalk
-// WebhookFieldsProviderRepositoryProviderBitbucket
-// WebhookFieldsProviderRepositoryProviderBitbucketServer
-// WebhookFieldsProviderRepositoryProviderCodebase
-// WebhookFieldsProviderRepositoryProviderGithub
-// WebhookFieldsProviderRepositoryProviderGithubEnterprise
-// WebhookFieldsProviderRepositoryProviderGitlab
-// WebhookFieldsProviderRepositoryProviderGitlabCommunity
-// WebhookFieldsProviderRepositoryProviderGitlabEnterprise
-// WebhookFieldsProviderRepositoryProviderUnknown
-type WebhookFieldsProviderRepositoryProvider interface {
-	implementsGraphQLInterfaceWebhookFieldsProviderRepositoryProvider()
-	// GetTypename returns the receiver's concrete GraphQL type-name (see interface doc for possible values).
-	GetTypename() string
-	// GetName returns the interface-field "name" from its implementation.
-	GetName() string
-}
-
-func (v *WebhookFieldsProviderRepositoryProviderBeanstalk) implementsGraphQLInterfaceWebhookFieldsProviderRepositoryProvider() {
-}
-func (v *WebhookFieldsProviderRepositoryProviderBitbucket) implementsGraphQLInterfaceWebhookFieldsProviderRepositoryProvider() {
-}
-func (v *WebhookFieldsProviderRepositoryProviderBitbucketServer) implementsGraphQLInterfaceWebhookFieldsProviderRepositoryProvider() {
-}
-func (v *WebhookFieldsProviderRepositoryProviderCodebase) implementsGraphQLInterfaceWebhookFieldsProviderRepositoryProvider() {
-}
-func (v *WebhookFieldsProviderRepositoryProviderGithub) implementsGraphQLInterfaceWebhookFieldsProviderRepositoryProvider() {
-}
-func (v *WebhookFieldsProviderRepositoryProviderGithubEnterprise) implementsGraphQLInterfaceWebhookFieldsProviderRepositoryProvider() {
-}
-func (v *WebhookFieldsProviderRepositoryProviderGitlab) implementsGraphQLInterfaceWebhookFieldsProviderRepositoryProvider() {
-}
-func (v *WebhookFieldsProviderRepositoryProviderGitlabCommunity) implementsGraphQLInterfaceWebhookFieldsProviderRepositoryProvider() {
-}
-func (v *WebhookFieldsProviderRepositoryProviderGitlabEnterprise) implementsGraphQLInterfaceWebhookFieldsProviderRepositoryProvider() {
-}
-func (v *WebhookFieldsProviderRepositoryProviderUnknown) implementsGraphQLInterfaceWebhookFieldsProviderRepositoryProvider() {
-}
-
-func __unmarshalWebhookFieldsProviderRepositoryProvider(b []byte, v *WebhookFieldsProviderRepositoryProvider) error {
-	if string(b) == "null" {
-		return nil
-	}
-
-	var tn struct {
-		TypeName string `json:"__typename"`
-	}
-	err := json.Unmarshal(b, &tn)
-	if err != nil {
-		return err
-	}
-
-	switch tn.TypeName {
-	case "RepositoryProviderBeanstalk":
-		*v = new(WebhookFieldsProviderRepositoryProviderBeanstalk)
-		return json.Unmarshal(b, *v)
-	case "RepositoryProviderBitbucket":
-		*v = new(WebhookFieldsProviderRepositoryProviderBitbucket)
-		return json.Unmarshal(b, *v)
-	case "RepositoryProviderBitbucketServer":
-		*v = new(WebhookFieldsProviderRepositoryProviderBitbucketServer)
-		return json.Unmarshal(b, *v)
-	case "RepositoryProviderCodebase":
-		*v = new(WebhookFieldsProviderRepositoryProviderCodebase)
-		return json.Unmarshal(b, *v)
-	case "RepositoryProviderGithub":
-		*v = new(WebhookFieldsProviderRepositoryProviderGithub)
-		return json.Unmarshal(b, *v)
-	case "RepositoryProviderGithubEnterprise":
-		*v = new(WebhookFieldsProviderRepositoryProviderGithubEnterprise)
-		return json.Unmarshal(b, *v)
-	case "RepositoryProviderGitlab":
-		*v = new(WebhookFieldsProviderRepositoryProviderGitlab)
-		return json.Unmarshal(b, *v)
-	case "RepositoryProviderGitlabCommunity":
-		*v = new(WebhookFieldsProviderRepositoryProviderGitlabCommunity)
-		return json.Unmarshal(b, *v)
-	case "RepositoryProviderGitlabEnterprise":
-		*v = new(WebhookFieldsProviderRepositoryProviderGitlabEnterprise)
-		return json.Unmarshal(b, *v)
-	case "RepositoryProviderUnknown":
-		*v = new(WebhookFieldsProviderRepositoryProviderUnknown)
-		return json.Unmarshal(b, *v)
-	case "":
-		return fmt.Errorf(
-			"response was missing RepositoryProvider.__typename")
-	default:
-		return fmt.Errorf(
-			`unexpected concrete type for WebhookFieldsProviderRepositoryProvider: "%v"`, tn.TypeName)
-	}
-}
-
-func __marshalWebhookFieldsProviderRepositoryProvider(v *WebhookFieldsProviderRepositoryProvider) ([]byte, error) {
-
-	var typename string
-	switch v := (*v).(type) {
-	case *WebhookFieldsProviderRepositoryProviderBeanstalk:
-		typename = "RepositoryProviderBeanstalk"
-
-		result := struct {
-			TypeName string `json:"__typename"`
-			*WebhookFieldsProviderRepositoryProviderBeanstalk
-		}{typename, v}
-		return json.Marshal(result)
-	case *WebhookFieldsProviderRepositoryProviderBitbucket:
-		typename = "RepositoryProviderBitbucket"
-
-		result := struct {
-			TypeName string `json:"__typename"`
-			*WebhookFieldsProviderRepositoryProviderBitbucket
-		}{typename, v}
-		return json.Marshal(result)
-	case *WebhookFieldsProviderRepositoryProviderBitbucketServer:
-		typename = "RepositoryProviderBitbucketServer"
-
-		result := struct {
-			TypeName string `json:"__typename"`
-			*WebhookFieldsProviderRepositoryProviderBitbucketServer
-		}{typename, v}
-		return json.Marshal(result)
-	case *WebhookFieldsProviderRepositoryProviderCodebase:
-		typename = "RepositoryProviderCodebase"
-
-		result := struct {
-			TypeName string `json:"__typename"`
-			*WebhookFieldsProviderRepositoryProviderCodebase
-		}{typename, v}
-		return json.Marshal(result)
-	case *WebhookFieldsProviderRepositoryProviderGithub:
-		typename = "RepositoryProviderGithub"
-
-		result := struct {
-			TypeName string `json:"__typename"`
-			*WebhookFieldsProviderRepositoryProviderGithub
-		}{typename, v}
-		return json.Marshal(result)
-	case *WebhookFieldsProviderRepositoryProviderGithubEnterprise:
-		typename = "RepositoryProviderGithubEnterprise"
-
-		result := struct {
-			TypeName string `json:"__typename"`
-			*WebhookFieldsProviderRepositoryProviderGithubEnterprise
-		}{typename, v}
-		return json.Marshal(result)
-	case *WebhookFieldsProviderRepositoryProviderGitlab:
-		typename = "RepositoryProviderGitlab"
-
-		result := struct {
-			TypeName string `json:"__typename"`
-			*WebhookFieldsProviderRepositoryProviderGitlab
-		}{typename, v}
-		return json.Marshal(result)
-	case *WebhookFieldsProviderRepositoryProviderGitlabCommunity:
-		typename = "RepositoryProviderGitlabCommunity"
-
-		result := struct {
-			TypeName string `json:"__typename"`
-			*WebhookFieldsProviderRepositoryProviderGitlabCommunity
-		}{typename, v}
-		return json.Marshal(result)
-	case *WebhookFieldsProviderRepositoryProviderGitlabEnterprise:
-		typename = "RepositoryProviderGitlabEnterprise"
-
-		result := struct {
-			TypeName string `json:"__typename"`
-			*WebhookFieldsProviderRepositoryProviderGitlabEnterprise
-		}{typename, v}
-		return json.Marshal(result)
-	case *WebhookFieldsProviderRepositoryProviderUnknown:
-		typename = "RepositoryProviderUnknown"
-
-		result := struct {
-			TypeName string `json:"__typename"`
-			*WebhookFieldsProviderRepositoryProviderUnknown
-		}{typename, v}
-		return json.Marshal(result)
-	case nil:
-		return []byte("null"), nil
-	default:
-		return nil, fmt.Errorf(
-			`unexpected concrete type for WebhookFieldsProviderRepositoryProvider: "%T"`, v)
-	}
-}
-
-// WebhookFieldsProviderRepositoryProviderBeanstalk includes the requested fields of the GraphQL type RepositoryProviderBeanstalk.
-// The GraphQL type's documentation follows.
-//
-// A pipeline's repository is being provided by Beanstalk
-type WebhookFieldsProviderRepositoryProviderBeanstalk struct {
-	Typename string `json:"__typename"`
-	Name     string `json:"name"`
-}
-
-// GetTypename returns WebhookFieldsProviderRepositoryProviderBeanstalk.Typename, and is useful for accessing the field via an interface.
-func (v *WebhookFieldsProviderRepositoryProviderBeanstalk) GetTypename() string { return v.Typename }
-
-// GetName returns WebhookFieldsProviderRepositoryProviderBeanstalk.Name, and is useful for accessing the field via an interface.
-func (v *WebhookFieldsProviderRepositoryProviderBeanstalk) GetName() string { return v.Name }
-
-// WebhookFieldsProviderRepositoryProviderBitbucket includes the requested fields of the GraphQL type RepositoryProviderBitbucket.
-// The GraphQL type's documentation follows.
-//
-// A pipeline's repository is being provided by Bitbucket
-type WebhookFieldsProviderRepositoryProviderBitbucket struct {
-	Typename string `json:"__typename"`
-	Name     string `json:"name"`
-}
-
-// GetTypename returns WebhookFieldsProviderRepositoryProviderBitbucket.Typename, and is useful for accessing the field via an interface.
-func (v *WebhookFieldsProviderRepositoryProviderBitbucket) GetTypename() string { return v.Typename }
-
-// GetName returns WebhookFieldsProviderRepositoryProviderBitbucket.Name, and is useful for accessing the field via an interface.
-func (v *WebhookFieldsProviderRepositoryProviderBitbucket) GetName() string { return v.Name }
-
-// WebhookFieldsProviderRepositoryProviderBitbucketServer includes the requested fields of the GraphQL type RepositoryProviderBitbucketServer.
-// The GraphQL type's documentation follows.
-//
-// A pipeline's repository is being provided by Bitbucket Server
-type WebhookFieldsProviderRepositoryProviderBitbucketServer struct {
-	Typename string `json:"__typename"`
-	Name     string `json:"name"`
-}
-
-// GetTypename returns WebhookFieldsProviderRepositoryProviderBitbucketServer.Typename, and is useful for accessing the field via an interface.
-func (v *WebhookFieldsProviderRepositoryProviderBitbucketServer) GetTypename() string {
-	return v.Typename
-}
-
-// GetName returns WebhookFieldsProviderRepositoryProviderBitbucketServer.Name, and is useful for accessing the field via an interface.
-func (v *WebhookFieldsProviderRepositoryProviderBitbucketServer) GetName() string { return v.Name }
-
-// WebhookFieldsProviderRepositoryProviderCodebase includes the requested fields of the GraphQL type RepositoryProviderCodebase.
-// The GraphQL type's documentation follows.
-//
-// A pipeline's repository is being provided by Codebase
-type WebhookFieldsProviderRepositoryProviderCodebase struct {
-	Typename string `json:"__typename"`
-	Name     string `json:"name"`
-}
-
-// GetTypename returns WebhookFieldsProviderRepositoryProviderCodebase.Typename, and is useful for accessing the field via an interface.
-func (v *WebhookFieldsProviderRepositoryProviderCodebase) GetTypename() string { return v.Typename }
-
-// GetName returns WebhookFieldsProviderRepositoryProviderCodebase.Name, and is useful for accessing the field via an interface.
-func (v *WebhookFieldsProviderRepositoryProviderCodebase) GetName() string { return v.Name }
-
-// WebhookFieldsProviderRepositoryProviderGithub includes the requested fields of the GraphQL type RepositoryProviderGithub.
-// The GraphQL type's documentation follows.
-//
-// A pipeline's repository is being provided by GitHub
-type WebhookFieldsProviderRepositoryProviderGithub struct {
-	Typename string `json:"__typename"`
-	Name     string `json:"name"`
-}
-
-// GetTypename returns WebhookFieldsProviderRepositoryProviderGithub.Typename, and is useful for accessing the field via an interface.
-func (v *WebhookFieldsProviderRepositoryProviderGithub) GetTypename() string { return v.Typename }
-
-// GetName returns WebhookFieldsProviderRepositoryProviderGithub.Name, and is useful for accessing the field via an interface.
-func (v *WebhookFieldsProviderRepositoryProviderGithub) GetName() string { return v.Name }
-
-// WebhookFieldsProviderRepositoryProviderGithubEnterprise includes the requested fields of the GraphQL type RepositoryProviderGithubEnterprise.
-// The GraphQL type's documentation follows.
-//
-// A pipeline's repository is being provided by GitHub Enterprise
-type WebhookFieldsProviderRepositoryProviderGithubEnterprise struct {
-	Typename string `json:"__typename"`
-	Name     string `json:"name"`
-}
-
-// GetTypename returns WebhookFieldsProviderRepositoryProviderGithubEnterprise.Typename, and is useful for accessing the field via an interface.
-func (v *WebhookFieldsProviderRepositoryProviderGithubEnterprise) GetTypename() string {
-	return v.Typename
-}
-
-// GetName returns WebhookFieldsProviderRepositoryProviderGithubEnterprise.Name, and is useful for accessing the field via an interface.
-func (v *WebhookFieldsProviderRepositoryProviderGithubEnterprise) GetName() string { return v.Name }
-
-// WebhookFieldsProviderRepositoryProviderGitlab includes the requested fields of the GraphQL type RepositoryProviderGitlab.
-// The GraphQL type's documentation follows.
-//
-// A pipeline's repository is being provided by GitLab
-type WebhookFieldsProviderRepositoryProviderGitlab struct {
-	Typename string `json:"__typename"`
-	Name     string `json:"name"`
-}
-
-// GetTypename returns WebhookFieldsProviderRepositoryProviderGitlab.Typename, and is useful for accessing the field via an interface.
-func (v *WebhookFieldsProviderRepositoryProviderGitlab) GetTypename() string { return v.Typename }
-
-// GetName returns WebhookFieldsProviderRepositoryProviderGitlab.Name, and is useful for accessing the field via an interface.
-func (v *WebhookFieldsProviderRepositoryProviderGitlab) GetName() string { return v.Name }
-
-// WebhookFieldsProviderRepositoryProviderGitlabCommunity includes the requested fields of the GraphQL type RepositoryProviderGitlabCommunity.
-// The GraphQL type's documentation follows.
-//
-// Deprecated: Use RepositoryProviderGitlabEnterpriseType instead. This type represented GitLab Community Edition.
-type WebhookFieldsProviderRepositoryProviderGitlabCommunity struct {
-	Typename string `json:"__typename"`
-	Name     string `json:"name"`
-}
-
-// GetTypename returns WebhookFieldsProviderRepositoryProviderGitlabCommunity.Typename, and is useful for accessing the field via an interface.
-func (v *WebhookFieldsProviderRepositoryProviderGitlabCommunity) GetTypename() string {
-	return v.Typename
-}
-
-// GetName returns WebhookFieldsProviderRepositoryProviderGitlabCommunity.Name, and is useful for accessing the field via an interface.
-func (v *WebhookFieldsProviderRepositoryProviderGitlabCommunity) GetName() string { return v.Name }
-
-// WebhookFieldsProviderRepositoryProviderGitlabEnterprise includes the requested fields of the GraphQL type RepositoryProviderGitlabEnterprise.
-// The GraphQL type's documentation follows.
-//
-// A pipeline's repository is being provided by a GitLab Self-Managed instance.
-type WebhookFieldsProviderRepositoryProviderGitlabEnterprise struct {
-	Typename string `json:"__typename"`
-	Name     string `json:"name"`
-}
-
-// GetTypename returns WebhookFieldsProviderRepositoryProviderGitlabEnterprise.Typename, and is useful for accessing the field via an interface.
-func (v *WebhookFieldsProviderRepositoryProviderGitlabEnterprise) GetTypename() string {
-	return v.Typename
-}
-
-// GetName returns WebhookFieldsProviderRepositoryProviderGitlabEnterprise.Name, and is useful for accessing the field via an interface.
-func (v *WebhookFieldsProviderRepositoryProviderGitlabEnterprise) GetName() string { return v.Name }
-
-// WebhookFieldsProviderRepositoryProviderUnknown includes the requested fields of the GraphQL type RepositoryProviderUnknown.
-// The GraphQL type's documentation follows.
-//
-// A pipeline's repository is being provided by a service unknown to Buildkite
-type WebhookFieldsProviderRepositoryProviderUnknown struct {
-	Typename string `json:"__typename"`
-	Name     string `json:"name"`
-}
-
-// GetTypename returns WebhookFieldsProviderRepositoryProviderUnknown.Typename, and is useful for accessing the field via an interface.
-func (v *WebhookFieldsProviderRepositoryProviderUnknown) GetTypename() string { return v.Typename }
-
-// GetName returns WebhookFieldsProviderRepositoryProviderUnknown.Name, and is useful for accessing the field via an interface.
-func (v *WebhookFieldsProviderRepositoryProviderUnknown) GetName() string { return v.Name }
 
 // WebhookFields includes the GraphQL fields of RepositoryProviderGithubEnterpriseWebhook requested by the fragment WebhookFields.
 // The GraphQL type's documentation follows.
@@ -3177,8 +2819,6 @@ type WebhookFieldsRepositoryProviderGithubEnterpriseWebhook struct {
 	ExternalId string `json:"externalId"`
 	// A webhook configured on a repository to trigger pipeline builds
 	Url string `json:"url"`
-	// A webhook configured on a repository to trigger pipeline builds
-	Provider WebhookFieldsProviderRepositoryProvider `json:"-"`
 }
 
 // GetExternalId returns WebhookFieldsRepositoryProviderGithubEnterpriseWebhook.ExternalId, and is useful for accessing the field via an interface.
@@ -3189,80 +2829,6 @@ func (v *WebhookFieldsRepositoryProviderGithubEnterpriseWebhook) GetExternalId()
 // GetUrl returns WebhookFieldsRepositoryProviderGithubEnterpriseWebhook.Url, and is useful for accessing the field via an interface.
 func (v *WebhookFieldsRepositoryProviderGithubEnterpriseWebhook) GetUrl() string { return v.Url }
 
-// GetProvider returns WebhookFieldsRepositoryProviderGithubEnterpriseWebhook.Provider, and is useful for accessing the field via an interface.
-func (v *WebhookFieldsRepositoryProviderGithubEnterpriseWebhook) GetProvider() WebhookFieldsProviderRepositoryProvider {
-	return v.Provider
-}
-
-func (v *WebhookFieldsRepositoryProviderGithubEnterpriseWebhook) UnmarshalJSON(b []byte) error {
-
-	if string(b) == "null" {
-		return nil
-	}
-
-	var firstPass struct {
-		*WebhookFieldsRepositoryProviderGithubEnterpriseWebhook
-		Provider json.RawMessage `json:"provider"`
-		graphql.NoUnmarshalJSON
-	}
-	firstPass.WebhookFieldsRepositoryProviderGithubEnterpriseWebhook = v
-
-	err := json.Unmarshal(b, &firstPass)
-	if err != nil {
-		return err
-	}
-
-	{
-		dst := &v.Provider
-		src := firstPass.Provider
-		if len(src) != 0 && string(src) != "null" {
-			err = __unmarshalWebhookFieldsProviderRepositoryProvider(
-				src, dst)
-			if err != nil {
-				return fmt.Errorf(
-					"unable to unmarshal WebhookFieldsRepositoryProviderGithubEnterpriseWebhook.Provider: %w", err)
-			}
-		}
-	}
-	return nil
-}
-
-type __premarshalWebhookFieldsRepositoryProviderGithubEnterpriseWebhook struct {
-	ExternalId string `json:"externalId"`
-
-	Url string `json:"url"`
-
-	Provider json.RawMessage `json:"provider"`
-}
-
-func (v *WebhookFieldsRepositoryProviderGithubEnterpriseWebhook) MarshalJSON() ([]byte, error) {
-	premarshaled, err := v.__premarshalJSON()
-	if err != nil {
-		return nil, err
-	}
-	return json.Marshal(premarshaled)
-}
-
-func (v *WebhookFieldsRepositoryProviderGithubEnterpriseWebhook) __premarshalJSON() (*__premarshalWebhookFieldsRepositoryProviderGithubEnterpriseWebhook, error) {
-	var retval __premarshalWebhookFieldsRepositoryProviderGithubEnterpriseWebhook
-
-	retval.ExternalId = v.ExternalId
-	retval.Url = v.Url
-	{
-
-		dst := &retval.Provider
-		src := v.Provider
-		var err error
-		*dst, err = __marshalWebhookFieldsProviderRepositoryProvider(
-			&src)
-		if err != nil {
-			return nil, fmt.Errorf(
-				"unable to marshal WebhookFieldsRepositoryProviderGithubEnterpriseWebhook.Provider: %w", err)
-		}
-	}
-	return &retval, nil
-}
-
 // WebhookFields includes the GraphQL fields of RepositoryProviderGithubWebhook requested by the fragment WebhookFields.
 // The GraphQL type's documentation follows.
 //
@@ -3272,8 +2838,6 @@ type WebhookFieldsRepositoryProviderGithubWebhook struct {
 	ExternalId string `json:"externalId"`
 	// A webhook configured on a repository to trigger pipeline builds
 	Url string `json:"url"`
-	// A webhook configured on a repository to trigger pipeline builds
-	Provider WebhookFieldsProviderRepositoryProvider `json:"-"`
 }
 
 // GetExternalId returns WebhookFieldsRepositoryProviderGithubWebhook.ExternalId, and is useful for accessing the field via an interface.
@@ -3281,80 +2845,6 @@ func (v *WebhookFieldsRepositoryProviderGithubWebhook) GetExternalId() string { 
 
 // GetUrl returns WebhookFieldsRepositoryProviderGithubWebhook.Url, and is useful for accessing the field via an interface.
 func (v *WebhookFieldsRepositoryProviderGithubWebhook) GetUrl() string { return v.Url }
-
-// GetProvider returns WebhookFieldsRepositoryProviderGithubWebhook.Provider, and is useful for accessing the field via an interface.
-func (v *WebhookFieldsRepositoryProviderGithubWebhook) GetProvider() WebhookFieldsProviderRepositoryProvider {
-	return v.Provider
-}
-
-func (v *WebhookFieldsRepositoryProviderGithubWebhook) UnmarshalJSON(b []byte) error {
-
-	if string(b) == "null" {
-		return nil
-	}
-
-	var firstPass struct {
-		*WebhookFieldsRepositoryProviderGithubWebhook
-		Provider json.RawMessage `json:"provider"`
-		graphql.NoUnmarshalJSON
-	}
-	firstPass.WebhookFieldsRepositoryProviderGithubWebhook = v
-
-	err := json.Unmarshal(b, &firstPass)
-	if err != nil {
-		return err
-	}
-
-	{
-		dst := &v.Provider
-		src := firstPass.Provider
-		if len(src) != 0 && string(src) != "null" {
-			err = __unmarshalWebhookFieldsProviderRepositoryProvider(
-				src, dst)
-			if err != nil {
-				return fmt.Errorf(
-					"unable to unmarshal WebhookFieldsRepositoryProviderGithubWebhook.Provider: %w", err)
-			}
-		}
-	}
-	return nil
-}
-
-type __premarshalWebhookFieldsRepositoryProviderGithubWebhook struct {
-	ExternalId string `json:"externalId"`
-
-	Url string `json:"url"`
-
-	Provider json.RawMessage `json:"provider"`
-}
-
-func (v *WebhookFieldsRepositoryProviderGithubWebhook) MarshalJSON() ([]byte, error) {
-	premarshaled, err := v.__premarshalJSON()
-	if err != nil {
-		return nil, err
-	}
-	return json.Marshal(premarshaled)
-}
-
-func (v *WebhookFieldsRepositoryProviderGithubWebhook) __premarshalJSON() (*__premarshalWebhookFieldsRepositoryProviderGithubWebhook, error) {
-	var retval __premarshalWebhookFieldsRepositoryProviderGithubWebhook
-
-	retval.ExternalId = v.ExternalId
-	retval.Url = v.Url
-	{
-
-		dst := &retval.Provider
-		src := v.Provider
-		var err error
-		*dst, err = __marshalWebhookFieldsProviderRepositoryProvider(
-			&src)
-		if err != nil {
-			return nil, fmt.Errorf(
-				"unable to marshal WebhookFieldsRepositoryProviderGithubWebhook.Provider: %w", err)
-		}
-	}
-	return &retval, nil
-}
 
 // __GetOrganizationClustersInput is used internally by genqlient
 type __GetOrganizationClustersInput struct {
@@ -3728,11 +3218,15 @@ func (v *__deletePipelineTemplateInput) GetId() string { return v.Id }
 
 // __deletePipelineWebhookInput is used internally by genqlient
 type __deletePipelineWebhookInput struct {
-	PipelineId string `json:"pipelineId"`
+	PipelineId string  `json:"pipelineId"`
+	Repository *string `json:"repository,omitempty"`
 }
 
 // GetPipelineId returns __deletePipelineWebhookInput.PipelineId, and is useful for accessing the field via an interface.
 func (v *__deletePipelineWebhookInput) GetPipelineId() string { return v.PipelineId }
+
+// GetRepository returns __deletePipelineWebhookInput.Repository, and is useful for accessing the field via an interface.
+func (v *__deletePipelineWebhookInput) GetRepository() *string { return v.Repository }
 
 // __deleteTeamMemberInput is used internally by genqlient
 type __deleteTeamMemberInput struct {
@@ -5661,11 +5155,6 @@ func (v *createPipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayloadW
 	return v.WebhookFieldsRepositoryProviderGithubEnterpriseWebhook.Url
 }
 
-// GetProvider returns createPipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayloadWebhookRepositoryProviderGithubEnterpriseWebhook.Provider, and is useful for accessing the field via an interface.
-func (v *createPipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayloadWebhookRepositoryProviderGithubEnterpriseWebhook) GetProvider() WebhookFieldsProviderRepositoryProvider {
-	return v.WebhookFieldsRepositoryProviderGithubEnterpriseWebhook.Provider
-}
-
 func (v *createPipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayloadWebhookRepositoryProviderGithubEnterpriseWebhook) UnmarshalJSON(b []byte) error {
 
 	if string(b) == "null" {
@@ -5697,8 +5186,6 @@ type __premarshalcreatePipelineWebhookPipelineCreateWebhookPipelineCreateWebhook
 	ExternalId string `json:"externalId"`
 
 	Url string `json:"url"`
-
-	Provider json.RawMessage `json:"provider"`
 }
 
 func (v *createPipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayloadWebhookRepositoryProviderGithubEnterpriseWebhook) MarshalJSON() ([]byte, error) {
@@ -5715,18 +5202,6 @@ func (v *createPipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayloadW
 	retval.Typename = v.Typename
 	retval.ExternalId = v.WebhookFieldsRepositoryProviderGithubEnterpriseWebhook.ExternalId
 	retval.Url = v.WebhookFieldsRepositoryProviderGithubEnterpriseWebhook.Url
-	{
-
-		dst := &retval.Provider
-		src := v.WebhookFieldsRepositoryProviderGithubEnterpriseWebhook.Provider
-		var err error
-		*dst, err = __marshalWebhookFieldsProviderRepositoryProvider(
-			&src)
-		if err != nil {
-			return nil, fmt.Errorf(
-				"unable to marshal createPipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayloadWebhookRepositoryProviderGithubEnterpriseWebhook.WebhookFieldsRepositoryProviderGithubEnterpriseWebhook.Provider: %w", err)
-		}
-	}
 	return &retval, nil
 }
 
@@ -5752,11 +5227,6 @@ func (v *createPipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayloadW
 // GetUrl returns createPipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayloadWebhookRepositoryProviderGithubWebhook.Url, and is useful for accessing the field via an interface.
 func (v *createPipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayloadWebhookRepositoryProviderGithubWebhook) GetUrl() string {
 	return v.WebhookFieldsRepositoryProviderGithubWebhook.Url
-}
-
-// GetProvider returns createPipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayloadWebhookRepositoryProviderGithubWebhook.Provider, and is useful for accessing the field via an interface.
-func (v *createPipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayloadWebhookRepositoryProviderGithubWebhook) GetProvider() WebhookFieldsProviderRepositoryProvider {
-	return v.WebhookFieldsRepositoryProviderGithubWebhook.Provider
 }
 
 func (v *createPipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayloadWebhookRepositoryProviderGithubWebhook) UnmarshalJSON(b []byte) error {
@@ -5790,8 +5260,6 @@ type __premarshalcreatePipelineWebhookPipelineCreateWebhookPipelineCreateWebhook
 	ExternalId string `json:"externalId"`
 
 	Url string `json:"url"`
-
-	Provider json.RawMessage `json:"provider"`
 }
 
 func (v *createPipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayloadWebhookRepositoryProviderGithubWebhook) MarshalJSON() ([]byte, error) {
@@ -5808,18 +5276,6 @@ func (v *createPipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayloadW
 	retval.Typename = v.Typename
 	retval.ExternalId = v.WebhookFieldsRepositoryProviderGithubWebhook.ExternalId
 	retval.Url = v.WebhookFieldsRepositoryProviderGithubWebhook.Url
-	{
-
-		dst := &retval.Provider
-		src := v.WebhookFieldsRepositoryProviderGithubWebhook.Provider
-		var err error
-		*dst, err = __marshalWebhookFieldsProviderRepositoryProvider(
-			&src)
-		if err != nil {
-			return nil, fmt.Errorf(
-				"unable to marshal createPipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayloadWebhookRepositoryProviderGithubWebhook.WebhookFieldsRepositoryProviderGithubWebhook.Provider: %w", err)
-		}
-	}
 	return &retval, nil
 }
 
@@ -16263,11 +15719,6 @@ func (v *getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGithu
 	return v.WebhookFieldsRepositoryProviderGithubEnterpriseWebhook.Url
 }
 
-// GetProvider returns getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGithubEnterpriseWebhook.Provider, and is useful for accessing the field via an interface.
-func (v *getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGithubEnterpriseWebhook) GetProvider() WebhookFieldsProviderRepositoryProvider {
-	return v.WebhookFieldsRepositoryProviderGithubEnterpriseWebhook.Provider
-}
-
 func (v *getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGithubEnterpriseWebhook) UnmarshalJSON(b []byte) error {
 
 	if string(b) == "null" {
@@ -16297,8 +15748,6 @@ type __premarshalgetPipelineWebhookNodePipelineRepositoryProviderRepositoryProvi
 	ExternalId string `json:"externalId"`
 
 	Url string `json:"url"`
-
-	Provider json.RawMessage `json:"provider"`
 }
 
 func (v *getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGithubEnterpriseWebhook) MarshalJSON() ([]byte, error) {
@@ -16314,18 +15763,6 @@ func (v *getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGithu
 
 	retval.ExternalId = v.WebhookFieldsRepositoryProviderGithubEnterpriseWebhook.ExternalId
 	retval.Url = v.WebhookFieldsRepositoryProviderGithubEnterpriseWebhook.Url
-	{
-
-		dst := &retval.Provider
-		src := v.WebhookFieldsRepositoryProviderGithubEnterpriseWebhook.Provider
-		var err error
-		*dst, err = __marshalWebhookFieldsProviderRepositoryProvider(
-			&src)
-		if err != nil {
-			return nil, fmt.Errorf(
-				"unable to marshal getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGithubEnterpriseWebhook.WebhookFieldsRepositoryProviderGithubEnterpriseWebhook.Provider: %w", err)
-		}
-	}
 	return &retval, nil
 }
 
@@ -16345,11 +15782,6 @@ func (v *getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGithu
 // GetUrl returns getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGithubWebhook.Url, and is useful for accessing the field via an interface.
 func (v *getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGithubWebhook) GetUrl() string {
 	return v.WebhookFieldsRepositoryProviderGithubWebhook.Url
-}
-
-// GetProvider returns getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGithubWebhook.Provider, and is useful for accessing the field via an interface.
-func (v *getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGithubWebhook) GetProvider() WebhookFieldsProviderRepositoryProvider {
-	return v.WebhookFieldsRepositoryProviderGithubWebhook.Provider
 }
 
 func (v *getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGithubWebhook) UnmarshalJSON(b []byte) error {
@@ -16381,8 +15813,6 @@ type __premarshalgetPipelineWebhookNodePipelineRepositoryProviderRepositoryProvi
 	ExternalId string `json:"externalId"`
 
 	Url string `json:"url"`
-
-	Provider json.RawMessage `json:"provider"`
 }
 
 func (v *getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGithubWebhook) MarshalJSON() ([]byte, error) {
@@ -16398,18 +15828,6 @@ func (v *getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGithu
 
 	retval.ExternalId = v.WebhookFieldsRepositoryProviderGithubWebhook.ExternalId
 	retval.Url = v.WebhookFieldsRepositoryProviderGithubWebhook.Url
-	{
-
-		dst := &retval.Provider
-		src := v.WebhookFieldsRepositoryProviderGithubWebhook.Provider
-		var err error
-		*dst, err = __marshalWebhookFieldsProviderRepositoryProvider(
-			&src)
-		if err != nil {
-			return nil, fmt.Errorf(
-				"unable to marshal getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGithubWebhook.WebhookFieldsRepositoryProviderGithubWebhook.Provider: %w", err)
-		}
-	}
 	return &retval, nil
 }
 
@@ -21759,10 +21177,6 @@ mutation createPipelineWebhook ($pipelineId: ID!) {
 fragment WebhookFields on RepositoryProviderWebhook {
 	externalId
 	url
-	provider {
-		__typename
-		name
-	}
 }
 `
 
@@ -22209,8 +21623,8 @@ func deletePipelineTemplate(
 
 // The mutation executed by deletePipelineWebhook.
 const deletePipelineWebhook_Operation = `
-mutation deletePipelineWebhook ($pipelineId: ID!) {
-	pipelineDeleteWebhook(input: {id:$pipelineId}) {
+mutation deletePipelineWebhook ($pipelineId: ID!, $repository: String) {
+	pipelineDeleteWebhook(input: {id:$pipelineId,repository:$repository}) {
 		pipeline {
 			id
 		}
@@ -22223,12 +21637,14 @@ func deletePipelineWebhook(
 	ctx_ context.Context,
 	client_ graphql.Client,
 	pipelineId string,
+	repository *string,
 ) (data_ *deletePipelineWebhookResponse, err_ error) {
 	req_ := &graphql.Request{
 		OpName: "deletePipelineWebhook",
 		Query:  deletePipelineWebhook_Operation,
 		Variables: &__deletePipelineWebhookInput{
 			PipelineId: pipelineId,
+			Repository: repository,
 		},
 	}
 
@@ -23338,10 +22754,6 @@ query getPipelineWebhook ($id: ID!) {
 fragment WebhookFields on RepositoryProviderWebhook {
 	externalId
 	url
-	provider {
-		__typename
-		name
-	}
 }
 `
 

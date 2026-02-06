@@ -40,8 +40,12 @@ mutation createPipelineWebhook($pipelineId: ID!) {
     }
 }
 
-mutation deletePipelineWebhook($pipelineId: ID!) {
-    pipelineDeleteWebhook(input: { id: $pipelineId }) {
+mutation deletePipelineWebhook(
+    $pipelineId: ID!,
+    # @genqlient(pointer: true, omitempty: true)
+    $repository: String
+) {
+    pipelineDeleteWebhook(input: { id: $pipelineId, repository: $repository }) {
         pipeline {
             id
         }

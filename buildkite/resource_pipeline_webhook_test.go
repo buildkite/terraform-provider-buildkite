@@ -116,7 +116,8 @@ func TestAccBuildkitePipelineWebhook(t *testing.T) {
 						pipelineRes := s.RootModule().Resources["buildkite_pipeline.pipeline"]
 						_, err := deletePipelineWebhook(context.Background(),
 							genqlientGraphql,
-							pipelineRes.Primary.ID)
+							pipelineRes.Primary.ID,
+							nil)
 						return err
 					},
 					ExpectNonEmptyPlan: true,
