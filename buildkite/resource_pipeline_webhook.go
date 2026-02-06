@@ -55,7 +55,6 @@ func (pw *pipelineWebhook) Schema(ctx context.Context, req resource.SchemaReques
 
 			~> The ` + "`repository`" + ` attribute must match the pipeline's configured repository URL.
 			Use ` + "`repository = buildkite_pipeline.<name>.repository`" + ` to keep them in sync.
-			When the pipeline's repository changes, the webhook will be automatically replaced.
 
 			~> **Warning:** When the pipeline's repository URL changes, Terraform updates the pipeline
 			before replacing the webhook. Because the webhook deletion targets the pipeline's current
