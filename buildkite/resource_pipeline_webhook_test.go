@@ -16,6 +16,9 @@ import (
 
 func TestAccBuildkitePipelineWebhook(t *testing.T) {
 	repo := os.Getenv("GITHUB_TEST_REPO")
+	if repo == "" {
+		t.Skip("GITHUB_TEST_REPO must be set for webhook acceptance tests")
+	}
 
 	configBasic := func(name string) string {
 		return fmt.Sprintf(`
@@ -165,6 +168,9 @@ func TestAccBuildkitePipelineWebhook(t *testing.T) {
 
 func TestAccBuildkitePipelineWebhook_ImportWithNoWebhook(t *testing.T) {
 	repo := os.Getenv("GITHUB_TEST_REPO")
+	if repo == "" {
+		t.Skip("GITHUB_TEST_REPO must be set for webhook acceptance tests")
+	}
 
 	configPipelineOnly := func(name string) string {
 		return fmt.Sprintf(`
@@ -410,6 +416,9 @@ func TestExtractWebhookFromPipeline_NoWebhook(t *testing.T) {
 
 func TestAccBuildkitePipelineWebhook_RepositoryUrlMismatch(t *testing.T) {
 	repo := os.Getenv("GITHUB_TEST_REPO")
+	if repo == "" {
+		t.Skip("GITHUB_TEST_REPO must be set for webhook acceptance tests")
+	}
 
 	configMismatch := func(name string) string {
 		return fmt.Sprintf(`
@@ -457,6 +466,9 @@ func TestAccBuildkitePipelineWebhook_RepositoryUrlMismatch(t *testing.T) {
 
 func TestAccBuildkitePipelineWebhook_ProviderChange(t *testing.T) {
 	repo := os.Getenv("GITHUB_TEST_REPO")
+	if repo == "" {
+		t.Skip("GITHUB_TEST_REPO must be set for webhook acceptance tests")
+	}
 
 	configWithWebhook := func(name, repository string) string {
 		return fmt.Sprintf(`
@@ -538,9 +550,12 @@ func TestAccBuildkitePipelineWebhook_ProviderChange(t *testing.T) {
 
 func TestAccBuildkitePipelineWebhook_RepositoryChange(t *testing.T) {
 	repo := os.Getenv("GITHUB_TEST_REPO")
+	if repo == "" {
+		t.Skip("GITHUB_TEST_REPO must be set for webhook acceptance tests")
+	}
 	repoAlt := os.Getenv("GITHUB_TEST_REPO_ALT")
 	if repoAlt == "" {
-		t.Skip("GITHUB_TEST_REPO_ALT must be set to a different GitHub repo connected via the GitHub App")
+		t.Fatal("GITHUB_TEST_REPO_ALT must be set when GITHUB_TEST_REPO is set")
 	}
 
 	configWithWebhook := func(name, repository string) string {
