@@ -194,12 +194,18 @@ func (pw *pipelineWebhook) Read(ctx context.Context, req resource.ReadRequest, r
 			resp.State.RemoveResource(ctx)
 			return
 		}
-		// Provider changed to an unsupported type - remove from state
-		resp.Diagnostics.AddWarning(
-			"Pipeline repository provider changed",
-			fmt.Sprintf("%s. Removing pipeline webhook from state...", err.Error()),
+		if errors.Is(err, ErrProviderUnknown) {
+			resp.Diagnostics.AddWarning(
+				"Pipeline repository provider changed",
+				fmt.Sprintf("%s. Removing pipeline webhook from state...", err.Error()),
+			)
+			resp.State.RemoveResource(ctx)
+			return
+		}
+		resp.Diagnostics.AddError(
+			"Unable to read pipeline webhook",
+			fmt.Sprintf("Unable to read pipeline webhook: %s", err.Error()),
 		)
-		resp.State.RemoveResource(ctx)
 		return
 	}
 
@@ -291,6 +297,9 @@ func repositoryProviderDisplayName(typename string) string {
 // ErrNoWebhook is returned when a pipeline has no webhook configured.
 var ErrNoWebhook = errors.New("no webhook configured")
 
+// ErrProviderUnknown is returned when a pipeline's repository provider does not support webhooks.
+var ErrProviderUnknown = errors.New("unsupported repository provider")
+
 // extractWebhookFromPipeline extracts webhook information from a pipeline response.
 // Returns ErrNoWebhook if no webhook exists, or an error if the provider is unsupported.
 func extractWebhookFromPipeline(pipeline *getPipelineWebhookNodePipeline) (*webhookInfo, error) {
@@ -327,6 +336,6 @@ func extractWebhookFromPipeline(pipeline *getPipelineWebhookNodePipeline) (*webh
 		if provider != nil {
 			providerName = repositoryProviderDisplayName(provider.GetTypename())
 		}
-		return nil, fmt.Errorf("webhooks are not supported for repository provider %q", providerName)
+		return nil, fmt.Errorf("%w: webhooks are not supported for repository provider %s", ErrProviderUnknown, providerName)
 	}
 }

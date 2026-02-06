@@ -2,6 +2,7 @@ package buildkite
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"regexp"
@@ -303,25 +304,25 @@ func TestExtractWebhookFromPipeline_UnsupportedProvider(t *testing.T) {
 			name:       "GitLab provider returns error",
 			provider:   &getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGitlab{Typename: "RepositoryProviderGitlab"},
 			wantErr:    true,
-			wantErrMsg: `webhooks are not supported for repository provider "GitLab"`,
+			wantErrMsg: `unsupported repository provider: webhooks are not supported for repository provider GitLab`,
 		},
 		{
 			name:       "Bitbucket provider returns error",
 			provider:   &getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderBitbucket{Typename: "RepositoryProviderBitbucket"},
 			wantErr:    true,
-			wantErrMsg: `webhooks are not supported for repository provider "Bitbucket"`,
+			wantErrMsg: `unsupported repository provider: webhooks are not supported for repository provider Bitbucket`,
 		},
 		{
 			name:       "Unknown provider returns error",
 			provider:   &getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderUnknown{Typename: "RepositoryProviderUnknown"},
 			wantErr:    true,
-			wantErrMsg: `webhooks are not supported for repository provider "Unknown"`,
+			wantErrMsg: `unsupported repository provider: webhooks are not supported for repository provider Unknown`,
 		},
 		{
 			name:       "nil provider returns error with unknown type",
 			provider:   nil,
 			wantErr:    true,
-			wantErrMsg: `webhooks are not supported for repository provider "unknown"`,
+			wantErrMsg: `unsupported repository provider: webhooks are not supported for repository provider unknown`,
 		},
 	}
 
@@ -340,6 +341,9 @@ func TestExtractWebhookFromPipeline_UnsupportedProvider(t *testing.T) {
 				if err == nil {
 					t.Errorf("expected error but got nil")
 					return
+				}
+				if !errors.Is(err, ErrProviderUnknown) {
+					t.Errorf("expected error to wrap ErrProviderUnknown but got %v", err)
 				}
 				if err.Error() != tt.wantErrMsg {
 					t.Errorf("expected error %q but got %q", tt.wantErrMsg, err.Error())
