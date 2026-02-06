@@ -160,13 +160,13 @@ func (pw *pipelineWebhook) Create(ctx context.Context, req resource.CreateReques
 		}
 
 		webhook := apiResponse.PipelineCreateWebhook.Webhook
-		if webhook != nil && webhook.GetExternalId() != "" {
-			state.Id = types.StringValue(webhook.GetExternalId())
-			state.RepositoryUrl = types.StringValue(apiResponse.PipelineCreateWebhook.Pipeline.Repository.Url)
-			state.WebhookUrl = types.StringValue(webhook.GetUrl())
-		} else {
-			return retry.NonRetryableError(fmt.Errorf("unable to read existing webhook for pipeline"))
+		pipeline := apiResponse.PipelineCreateWebhook.Pipeline
+		if webhook == nil || webhook.GetExternalId() == "" || pipeline == nil {
+			return retry.NonRetryableError(fmt.Errorf("unable to read webhook from create response"))
 		}
+		state.Id = types.StringValue(webhook.GetExternalId())
+		state.RepositoryUrl = types.StringValue(pipeline.Repository.Url)
+		state.WebhookUrl = types.StringValue(webhook.GetUrl())
 		return nil
 	})
 	if err != nil {
