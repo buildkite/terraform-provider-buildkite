@@ -39,7 +39,8 @@ func TestAccBuildkitePipelineWebhook(t *testing.T) {
 			}
 
 			resource "buildkite_pipeline_webhook" "webhook" {
-				pipeline_id = buildkite_pipeline.pipeline.id
+				pipeline_id    = buildkite_pipeline.pipeline.id
+				repository_url = buildkite_pipeline.pipeline.repository
 			}
 		`, name, name, repo)
 	}
@@ -89,9 +90,10 @@ func TestAccBuildkitePipelineWebhook(t *testing.T) {
 				},
 				{
 					ResourceName:      "buildkite_pipeline_webhook.webhook",
-					ImportState:       true,
-					ImportStateIdFunc: getPipelineIdForImport("buildkite_pipeline.pipeline"),
-					ImportStateVerify: true,
+					ImportState:             true,
+					ImportStateIdFunc:       getPipelineIdForImport("buildkite_pipeline.pipeline"),
+					ImportStateVerify:       true,
+					ImportStateVerifyIgnore: []string{"repository_url"},
 				},
 			},
 		})
@@ -209,7 +211,8 @@ func TestAccBuildkitePipelineWebhook_ImportWithNoWebhook(t *testing.T) {
 			}
 
 			resource "buildkite_pipeline_webhook" "webhook" {
-				pipeline_id = buildkite_pipeline.pipeline.id
+				pipeline_id    = buildkite_pipeline.pipeline.id
+				repository_url = buildkite_pipeline.pipeline.repository
 			}
 		`, name, name, repo)
 	}
@@ -262,7 +265,8 @@ func TestAccBuildkitePipelineWebhook_UnsupportedProvider(t *testing.T) {
 			}
 
 			resource "buildkite_pipeline_webhook" "webhook" {
-				pipeline_id = buildkite_pipeline.pipeline.id
+				pipeline_id    = buildkite_pipeline.pipeline.id
+				repository_url = buildkite_pipeline.pipeline.repository
 			}
 		`, name, name)
 	}
@@ -429,7 +433,8 @@ func TestAccBuildkitePipelineWebhook_ProviderChange(t *testing.T) {
 			}
 
 			resource "buildkite_pipeline_webhook" "webhook" {
-				pipeline_id = buildkite_pipeline.pipeline.id
+				pipeline_id    = buildkite_pipeline.pipeline.id
+				repository_url = buildkite_pipeline.pipeline.repository
 			}
 		`, name, name, repository)
 	}
@@ -477,6 +482,73 @@ func TestAccBuildkitePipelineWebhook_ProviderChange(t *testing.T) {
 							return fmt.Errorf("webhook resource should have been removed from state")
 						}
 						return nil
+					},
+				},
+			},
+		})
+	})
+}
+
+func TestAccBuildkitePipelineWebhook_RepositoryChange(t *testing.T) {
+	repo := os.Getenv("GITHUB_TEST_REPO")
+	repoAlt := os.Getenv("GITHUB_TEST_REPO_ALT")
+	if repoAlt == "" {
+		t.Skip("GITHUB_TEST_REPO_ALT must be set to a different GitHub repo connected via the GitHub App")
+	}
+
+	configWithWebhook := func(name, repository string) string {
+		return fmt.Sprintf(`
+			provider "buildkite" {
+				timeouts = {
+					create = "60s"
+					read = "60s"
+					update = "60s"
+					delete = "60s"
+				}
+			}
+
+			resource "buildkite_cluster" "cluster" {
+				name = "%s_cluster"
+			}
+
+			resource "buildkite_pipeline" "pipeline" {
+				name = "%s"
+				repository = "%s"
+				cluster_id = buildkite_cluster.cluster.id
+			}
+
+			resource "buildkite_pipeline_webhook" "webhook" {
+				pipeline_id    = buildkite_pipeline.pipeline.id
+				repository_url = buildkite_pipeline.pipeline.repository
+			}
+		`, name, name, repository)
+	}
+
+	t.Run("webhook is replaced when pipeline repository changes", func(t *testing.T) {
+		pipelineName := acctest.RandString(12)
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			CheckDestroy:             testAccCheckPipelineWebhookDestroy,
+			Steps: []resource.TestStep{
+				{
+					Config: configWithWebhook(pipelineName, repo),
+					Check: resource.ComposeAggregateTestCheckFunc(
+						resource.TestCheckResourceAttrSet("buildkite_pipeline_webhook.webhook", "id"),
+						resource.TestCheckResourceAttr("buildkite_pipeline_webhook.webhook", "repository_url", repo),
+					),
+				},
+				{
+					Config: configWithWebhook(pipelineName, repoAlt),
+					Check: resource.ComposeAggregateTestCheckFunc(
+						resource.TestCheckResourceAttrSet("buildkite_pipeline_webhook.webhook", "id"),
+						resource.TestCheckResourceAttr("buildkite_pipeline_webhook.webhook", "repository_url", repoAlt),
+					),
+					ConfigPlanChecks: resource.ConfigPlanChecks{
+						PreApply: []plancheck.PlanCheck{
+							plancheck.ExpectResourceAction("buildkite_pipeline_webhook.webhook", plancheck.ResourceActionDestroyBeforeCreate),
+						},
 					},
 				},
 			},
