@@ -1074,56 +1074,56 @@ union AuditSubjectNode =APIAccessToken | AgentToken | AuthorizationBitbucket | A
 All the possible types of subjects in an Audit Event
 """
 enum AuditSubjectType {
-	CLUSTER
-	REGISTRY
+	USER
+	ORGANIZATION
+	SUBSCRIPTION
 	PIPELINE
+	RULE
+	SECRET
+	CLUSTER
+	CLUSTER_TOKEN
+	CLUSTER_QUEUE_TOKEN
+	JOB
+	PORTAL_TOKEN
+	PORTAL_SECRET
+	REGISTRY
 	PIPELINE_TRIGGER
-	AUTHORIZATION
+	SUITE
 	AGENT_TOKEN
 	MODEL_PROVIDER
 	API_ACCESS_TOKEN
+	AUTHORIZATION
 	CACHE_REGISTRY
 	CLUSTER_QUEUE
-	CLUSTER_TOKEN
-	CLUSTER_QUEUE_TOKEN
-	CLUSTER_PERMISSION
 	NOTIFICATION_SERVICE
-	ORGANIZATION
-	ORGANIZATION_BANNER
 	ORGANIZATION_BILLING_SETTING
-	JOB
 	ORGANIZATION_IMPERSONATION_REQUEST
 	ORGANIZATION_INVITATION
 	ORGANIZATION_MEMBER
 	ORGANIZATION_SECURITY_SETTING
+	CLUSTER_PERMISSION
+	PIPELINE_SCHEDULE
 	PIPELINE_TEMPLATE
 	PORTAL
-	PORTAL_SECRET
-	PORTAL_TOKEN
-	PORTAL_TOKEN_CODE
-	PIPELINE_SCHEDULE
-	TEAM
-	TEAM_PIPELINE
-	TEAM_REGISTRY
+	ORGANIZATION_BANNER
 	TEAM_MEMBER
+	PORTAL_TOKEN_CODE
+	TEAM
 	TEAM_SUITE
+	TEAM_REGISTRY
 	COMPOSITE_REGISTRY_UPSTREAM
+	TEAM_PIPELINE
+	SCM_SERVICE
 	REGISTRY_TOKEN
 	TEAM_SECRET
-	SSO_PROVIDER
-	SCM_PIPELINE_SETTINGS
 	SCM_REPOSITORY_HOST
-	SECRET
+	SCM_PIPELINE_SETTINGS
+	SSO_PROVIDER
 	SUITE_MONITOR
-	SUITE
-	SCM_SERVICE
-	SUITE_WORKFLOW
 	SUITE_SAVED_VIEW
-	USER_TOTP
+	SUITE_WORKFLOW
 	USER_EMAIL
-	SUBSCRIPTION
-	USER
-	RULE
+	USER_TOTP
 }
 
 """
@@ -2232,6 +2232,14 @@ Number of connected agents in the latest bucket
 """
 	connectedAgentsCount: Int!
 """
+Number of failed jobs in the latest bucket
+"""
+	jobsFailedCount: Int!
+"""
+Number of passed jobs in the latest bucket
+"""
+	jobsPassedCount: Int!
+"""
 Number of running jobs in the latest bucket
 """
 	runningJobsCount: Int!
@@ -2239,6 +2247,10 @@ Number of running jobs in the latest bucket
 The timestamp (start of the most recent time bucket, in UTC)
 """
 	timestamp: DateTime!
+"""
+Wait time statistics in seconds for the latest bucket
+"""
+	waitTimeSec: ClusterQueueWaitTime!
 """
 Number of waiting (scheduled) jobs in the latest bucket
 """
@@ -2374,6 +2386,28 @@ A unique identifier for the client performing the mutation.
 """
 	clientMutationId: String
 	clusterQueue: ClusterQueue!
+}
+
+"""
+Wait time statistics in seconds for a cluster queue
+"""
+type ClusterQueueWaitTime {
+"""
+Maximum wait time in seconds
+"""
+	max: Float!
+"""
+Minimum wait time in seconds
+"""
+	min: Float!
+"""
+Median (50th percentile) wait time in seconds
+"""
+	p50: Float!
+"""
+95th percentile wait time in seconds
+"""
+	p95: Float!
 }
 
 """
@@ -2624,6 +2658,11 @@ A unique identifier for the client performing the mutation.
 	clientMutationId: String
 	email: Email!
 }
+
+"""
+Represents signed double-precision fractional values as specified by [IEEE 754](https://en.wikipedia.org/wiki/IEEE_floating_point).
+"""
+scalar Float
 
 """
 GitHub App Installation Rate Limit (limits set by GitHub)
@@ -4693,7 +4732,7 @@ This mutation creates a webhook on the pipeline's source repository (e.g., GitHu
 that will trigger builds when code is pushed. Requires a GitHub App integration
 to be configured for the organization.
 
-If a webhook already exists for the repository, returns a `webhook_already_exists_error`.
+Returns an error if a webhook already exists for the repository.
 
 """
 	pipelineCreateWebhook(
@@ -9218,13 +9257,13 @@ The action a rule enforces
 """
 enum RuleAction {
 """
-Artifacts read
-"""
-	ARTIFACTS_READ
-"""
 Trigger build
 """
 	TRIGGER_BUILD
+"""
+Artifacts read
+"""
+	ARTIFACTS_READ
 }
 
 type RuleConnection implements Connection{

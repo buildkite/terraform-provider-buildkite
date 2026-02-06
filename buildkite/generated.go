@@ -2433,15 +2433,15 @@ var AllPipelineVisibility = []PipelineVisibility{
 type RuleAction string
 
 const (
-	// Artifacts read
-	RuleActionArtifactsRead RuleAction = "ARTIFACTS_READ"
 	// Trigger build
 	RuleActionTriggerBuild RuleAction = "TRIGGER_BUILD"
+	// Artifacts read
+	RuleActionArtifactsRead RuleAction = "ARTIFACTS_READ"
 )
 
 var AllRuleAction = []RuleAction{
-	RuleActionArtifactsRead,
 	RuleActionTriggerBuild,
+	RuleActionArtifactsRead,
 }
 
 // The effect a rule has
@@ -5916,7 +5916,7 @@ type createPipelineWebhookResponse struct {
 	// that will trigger builds when code is pushed. Requires a GitHub App integration
 	// to be configured for the organization.
 	//
-	// If a webhook already exists for the repository, returns a `webhook_already_exists_error`.
+	// Returns an error if a webhook already exists for the repository.
 	PipelineCreateWebhook createPipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayload `json:"pipelineCreateWebhook"`
 }
 
