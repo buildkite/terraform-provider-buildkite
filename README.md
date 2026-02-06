@@ -89,6 +89,7 @@ BUILDKITE_ORGANIZATION_SLUG=<org-slug> BUILDKITE_API_TOKEN=<token> GITHUB_TEST_R
 - `BUILDKITE_ORGANIZATION_SLUG`: Your Buildkite organization slug
 - `BUILDKITE_API_TOKEN`: API token with appropriate scopes
 - `GITHUB_TEST_REPO`: A GitHub repository URL for webhook tests (e.g., `https://github.com/your-org/test-repo.git`)
+- `GITHUB_TEST_REPO_ALT`: A second GitHub repository URL for webhook tests that require changing repositories (e.g., `https://github.com/your-org/test-repo-alt.git`)
 
 Note that these tests make live changes to an organization and probably
 shouldn't be run against organizations with real data. Anyone actively
