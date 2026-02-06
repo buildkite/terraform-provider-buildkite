@@ -31,7 +31,8 @@ resource "buildkite_pipeline" "pipeline" {
 
 # create a webhook to automatically trigger builds on push
 resource "buildkite_pipeline_webhook" "webhook" {
-  pipeline_id = buildkite_pipeline.pipeline.id
+  pipeline_id    = buildkite_pipeline.pipeline.id
+  repository_url = buildkite_pipeline.pipeline.repository
 }
 ```
 
@@ -41,11 +42,11 @@ resource "buildkite_pipeline_webhook" "webhook" {
 ### Required
 
 - `pipeline_id` (String) The GraphQL ID of the pipeline.
+- `repository_url` (String) The repository URL the webhook is configured for. The webhook will be replaced when this value changes.
 
 ### Read-Only
 
 - `id` (String) The ID of the webhook.
-- `repository_url` (String) The repository URL the webhook is configured for.
 - `webhook_url` (String) The Buildkite webhook URL that receives events from the repository.
 
 ## Import

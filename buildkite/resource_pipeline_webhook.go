@@ -69,10 +69,10 @@ func (pw *pipelineWebhook) Schema(ctx context.Context, req resource.SchemaReques
 				},
 			},
 			"repository_url": resource_schema.StringAttribute{
-				Computed:            true,
-				MarkdownDescription: "The repository URL the webhook is configured for.",
+				Required:            true,
+				MarkdownDescription: "The repository URL the webhook is configured for. The webhook will be replaced when this value changes.",
 				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
+					stringplanmodifier.RequiresReplace(),
 				},
 			},
 			"webhook_url": resource_schema.StringAttribute{
