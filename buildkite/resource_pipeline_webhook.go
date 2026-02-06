@@ -166,10 +166,11 @@ func (pw *pipelineWebhook) Read(ctx context.Context, req resource.ReadRequest, r
 		return retryContextError(err)
 	})
 	if err != nil {
-		resp.Diagnostics.AddError(
+		resp.Diagnostics.AddWarning(
 			"Unable to read pipeline webhook",
-			fmt.Sprintf("Unable to read pipeline webhook: %s", err.Error()),
+			fmt.Sprintf("Removing webhook from state: %s", err.Error()),
 		)
+		resp.State.RemoveResource(ctx)
 		return
 	}
 
