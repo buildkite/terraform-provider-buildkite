@@ -7,5 +7,5 @@ resource "buildkite_pipeline" "pipeline" {
 # create a webhook to automatically trigger builds on push
 resource "buildkite_pipeline_webhook" "webhook" {
   pipeline_id    = buildkite_pipeline.pipeline.id
-  repository_url = buildkite_pipeline.pipeline.repository
+  repository     = buildkite_pipeline.pipeline.repository
 }

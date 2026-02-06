@@ -23,7 +23,7 @@ type pipelineWebhook struct {
 type pipelineWebhookResourceModel struct {
 	Id            types.String `tfsdk:"id"`
 	PipelineId    types.String `tfsdk:"pipeline_id"`
-	RepositoryUrl types.String `tfsdk:"repository_url"`
+	Repository    types.String `tfsdk:"repository"`
 	WebhookUrl    types.String `tfsdk:"webhook_url"`
 }
 
@@ -53,8 +53,8 @@ func (pw *pipelineWebhook) Schema(ctx context.Context, req resource.SchemaReques
 			Only supported for GitHub and GitHub Enterprise repositories connected via a
 			[GitHub App](https://buildkite.com/docs/pipelines/source-control/github#connect-your-buildkite-account-to-github-using-the-github-app).
 
-			~> The ` + "`repository_url`" + ` attribute must match the pipeline's configured repository URL.
-			Use ` + "`repository_url = buildkite_pipeline.<name>.repository`" + ` to keep them in sync.
+			~> The ` + "`repository`" + ` attribute must match the pipeline's configured repository URL.
+			Use ` + "`repository = buildkite_pipeline.<name>.repository`" + ` to keep them in sync.
 			When the pipeline's repository changes, the webhook will be automatically replaced.
 		`),
 		Attributes: map[string]resource_schema.Attribute{
@@ -72,7 +72,7 @@ func (pw *pipelineWebhook) Schema(ctx context.Context, req resource.SchemaReques
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
-			"repository_url": resource_schema.StringAttribute{
+			"repository": resource_schema.StringAttribute{
 				Required:            true,
 				MarkdownDescription: "The repository URL the webhook is configured for. The webhook will be replaced when this value changes.",
 				PlanModifiers: []planmodifier.String{
@@ -120,13 +120,13 @@ func (pw *pipelineWebhook) Create(ctx context.Context, req resource.CreateReques
 		)
 		return
 	}
-	if pipeline.Repository.Url != plan.RepositoryUrl.ValueString() {
+	if pipeline.Repository.Url != plan.Repository.ValueString() {
 		resp.Diagnostics.AddError(
 			"Repository URL mismatch",
 			fmt.Sprintf(
-				"The repository_url %q does not match the pipeline's repository %q. "+
-					"Use repository_url = buildkite_pipeline.<name>.repository to keep them in sync.",
-				plan.RepositoryUrl.ValueString(), pipeline.Repository.Url,
+				"The repository %q does not match the pipeline's repository %q. "+
+					"Use repository = buildkite_pipeline.<name>.repository to keep them in sync.",
+				plan.Repository.ValueString(), pipeline.Repository.Url,
 			),
 		)
 		return
@@ -149,7 +149,7 @@ func (pw *pipelineWebhook) Create(ctx context.Context, req resource.CreateReques
 						return retry.NonRetryableError(err)
 					}
 					state.Id = types.StringValue(info.ExternalId)
-					state.RepositoryUrl = types.StringValue(info.RepositoryUrl)
+					state.Repository = types.StringValue(info.Repository)
 					state.WebhookUrl = types.StringValue(info.Url)
 				} else {
 					return retry.NonRetryableError(fmt.Errorf("unable to read existing webhook for pipeline"))
@@ -162,7 +162,7 @@ func (pw *pipelineWebhook) Create(ctx context.Context, req resource.CreateReques
 		webhook := apiResponse.PipelineCreateWebhook.Webhook
 		if webhook != nil && webhook.GetExternalId() != "" {
 			state.Id = types.StringValue(webhook.GetExternalId())
-			state.RepositoryUrl = types.StringValue(apiResponse.PipelineCreateWebhook.Pipeline.Repository.Url)
+			state.Repository = types.StringValue(apiResponse.PipelineCreateWebhook.Pipeline.Repository.Url)
 			state.WebhookUrl = types.StringValue(webhook.GetUrl())
 		} else {
 			return retry.NonRetryableError(fmt.Errorf("unable to read existing webhook for pipeline"))
@@ -252,7 +252,7 @@ func (pw *pipelineWebhook) Read(ctx context.Context, req resource.ReadRequest, r
 	}
 
 	state.Id = types.StringValue(info.ExternalId)
-	state.RepositoryUrl = types.StringValue(info.RepositoryUrl)
+	state.Repository = types.StringValue(info.Repository)
 	state.WebhookUrl = types.StringValue(info.Url)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
@@ -305,7 +305,7 @@ func (pw *pipelineWebhook) ImportState(ctx context.Context, req resource.ImportS
 type webhookInfo struct {
 	ExternalId    string
 	Url           string
-	RepositoryUrl string
+	Repository string
 }
 
 // repositoryProviderDisplayName returns a human-readable name for a repository provider typename.
@@ -361,7 +361,7 @@ func extractWebhookFromPipeline(pipeline *getPipelineWebhookNodePipeline) (*webh
 		return &webhookInfo{
 			ExternalId:    webhook.GetExternalId(),
 			Url:           webhook.GetUrl(),
-			RepositoryUrl: repositoryUrl,
+			Repository: repositoryUrl,
 		}, nil
 	case *getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGithubEnterprise:
 		webhook := p.Webhook
@@ -371,7 +371,7 @@ func extractWebhookFromPipeline(pipeline *getPipelineWebhookNodePipeline) (*webh
 		return &webhookInfo{
 			ExternalId:    webhook.GetExternalId(),
 			Url:           webhook.GetUrl(),
-			RepositoryUrl: repositoryUrl,
+			Repository: repositoryUrl,
 		}, nil
 	default:
 		providerName := "unknown"

@@ -8,8 +8,8 @@ description: |-
   Only one webhook can exist per pipeline - if a webhook already exists, it will be adopted into state.
   Only supported for GitHub and GitHub Enterprise repositories connected via a
   GitHub App https://buildkite.com/docs/pipelines/source-control/github#connect-your-buildkite-account-to-github-using-the-github-app.
-  ~> The repository_url attribute must match the pipeline's configured repository URL.
-  Use repository_url = buildkite_pipeline.<name>.repository to keep them in sync.
+  ~> The repository attribute must match the pipeline's configured repository URL.
+  Use repository = buildkite_pipeline.<name>.repository to keep them in sync.
   When the pipeline's repository changes, the webhook will be automatically replaced.
 ---
 
@@ -23,8 +23,8 @@ Only one webhook can exist per pipeline - if a webhook already exists, it will b
 Only supported for GitHub and GitHub Enterprise repositories connected via a
 [GitHub App](https://buildkite.com/docs/pipelines/source-control/github#connect-your-buildkite-account-to-github-using-the-github-app).
 
-~> The `repository_url` attribute must match the pipeline's configured repository URL.
-Use `repository_url = buildkite_pipeline.<name>.repository` to keep them in sync.
+~> The `repository` attribute must match the pipeline's configured repository URL.
+Use `repository = buildkite_pipeline.<name>.repository` to keep them in sync.
 When the pipeline's repository changes, the webhook will be automatically replaced.
 
 ## Example Usage
@@ -39,7 +39,7 @@ resource "buildkite_pipeline" "pipeline" {
 # create a webhook to automatically trigger builds on push
 resource "buildkite_pipeline_webhook" "webhook" {
   pipeline_id    = buildkite_pipeline.pipeline.id
-  repository_url = buildkite_pipeline.pipeline.repository
+  repository     = buildkite_pipeline.pipeline.repository
 }
 ```
 
@@ -49,7 +49,7 @@ resource "buildkite_pipeline_webhook" "webhook" {
 ### Required
 
 - `pipeline_id` (String) The GraphQL ID of the pipeline.
-- `repository_url` (String) The repository URL the webhook is configured for. The webhook will be replaced when this value changes.
+- `repository` (String) The repository URL the webhook is configured for. The webhook will be replaced when this value changes.
 
 ### Read-Only
 

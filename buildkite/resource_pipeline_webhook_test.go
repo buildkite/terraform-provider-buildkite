@@ -43,7 +43,7 @@ func TestAccBuildkitePipelineWebhook(t *testing.T) {
 
 			resource "buildkite_pipeline_webhook" "webhook" {
 				pipeline_id    = buildkite_pipeline.pipeline.id
-				repository_url = buildkite_pipeline.pipeline.repository
+				repository = buildkite_pipeline.pipeline.repository
 			}
 		`, name, name, repo)
 	}
@@ -83,7 +83,7 @@ func TestAccBuildkitePipelineWebhook(t *testing.T) {
 					Config: configBasic(pipelineName),
 					Check: resource.ComposeAggregateTestCheckFunc(
 						resource.TestCheckResourceAttrSet("buildkite_pipeline_webhook.webhook", "id"),
-						resource.TestCheckResourceAttr("buildkite_pipeline_webhook.webhook", "repository_url", repo),
+						resource.TestCheckResourceAttr("buildkite_pipeline_webhook.webhook", "repository", repo),
 						resource.TestCheckResourceAttrSet("buildkite_pipeline_webhook.webhook", "webhook_url"),
 						resource.TestCheckResourceAttrPair(
 							"buildkite_pipeline_webhook.webhook", "pipeline_id",
@@ -96,7 +96,7 @@ func TestAccBuildkitePipelineWebhook(t *testing.T) {
 					ImportState:             true,
 					ImportStateIdFunc:       getPipelineIdForImport("buildkite_pipeline.pipeline"),
 					ImportStateVerify:       true,
-					ImportStateVerifyIgnore: []string{"repository_url"},
+					ImportStateVerifyIgnore: []string{"repository"},
 				},
 			},
 		})
@@ -218,7 +218,7 @@ func TestAccBuildkitePipelineWebhook_ImportWithNoWebhook(t *testing.T) {
 
 			resource "buildkite_pipeline_webhook" "webhook" {
 				pipeline_id    = buildkite_pipeline.pipeline.id
-				repository_url = buildkite_pipeline.pipeline.repository
+				repository = buildkite_pipeline.pipeline.repository
 			}
 		`, name, name, repo)
 	}
@@ -272,7 +272,7 @@ func TestAccBuildkitePipelineWebhook_UnsupportedProvider(t *testing.T) {
 
 			resource "buildkite_pipeline_webhook" "webhook" {
 				pipeline_id    = buildkite_pipeline.pipeline.id
-				repository_url = buildkite_pipeline.pipeline.repository
+				repository = buildkite_pipeline.pipeline.repository
 			}
 		`, name, name)
 	}
@@ -443,12 +443,12 @@ func TestAccBuildkitePipelineWebhook_RepositoryUrlMismatch(t *testing.T) {
 
 			resource "buildkite_pipeline_webhook" "webhook" {
 				pipeline_id    = buildkite_pipeline.pipeline.id
-				repository_url = "https://github.com/some-other-org/some-other-repo.git"
+				repository = "https://github.com/some-other-org/some-other-repo.git"
 			}
 		`, name, name, repo)
 	}
 
-	t.Run("pipeline webhook fails when repository_url does not match pipeline repository", func(t *testing.T) {
+	t.Run("pipeline webhook fails when repository does not match pipeline repository", func(t *testing.T) {
 		pipelineName := acctest.RandString(12)
 
 		resource.ParallelTest(t, resource.TestCase{
@@ -493,7 +493,7 @@ func TestAccBuildkitePipelineWebhook_ProviderChange(t *testing.T) {
 
 			resource "buildkite_pipeline_webhook" "webhook" {
 				pipeline_id    = buildkite_pipeline.pipeline.id
-				repository_url = buildkite_pipeline.pipeline.repository
+				repository = buildkite_pipeline.pipeline.repository
 			}
 		`, name, name, repository)
 	}
@@ -581,7 +581,7 @@ func TestAccBuildkitePipelineWebhook_RepositoryChange(t *testing.T) {
 
 			resource "buildkite_pipeline_webhook" "webhook" {
 				pipeline_id    = buildkite_pipeline.pipeline.id
-				repository_url = buildkite_pipeline.pipeline.repository
+				repository = buildkite_pipeline.pipeline.repository
 			}
 		`, name, name, repository)
 	}
@@ -598,14 +598,14 @@ func TestAccBuildkitePipelineWebhook_RepositoryChange(t *testing.T) {
 					Config: configWithWebhook(pipelineName, repo),
 					Check: resource.ComposeAggregateTestCheckFunc(
 						resource.TestCheckResourceAttrSet("buildkite_pipeline_webhook.webhook", "id"),
-						resource.TestCheckResourceAttr("buildkite_pipeline_webhook.webhook", "repository_url", repo),
+						resource.TestCheckResourceAttr("buildkite_pipeline_webhook.webhook", "repository", repo),
 					),
 				},
 				{
 					Config: configWithWebhook(pipelineName, repoAlt),
 					Check: resource.ComposeAggregateTestCheckFunc(
 						resource.TestCheckResourceAttrSet("buildkite_pipeline_webhook.webhook", "id"),
-						resource.TestCheckResourceAttr("buildkite_pipeline_webhook.webhook", "repository_url", repoAlt),
+						resource.TestCheckResourceAttr("buildkite_pipeline_webhook.webhook", "repository", repoAlt),
 					),
 					ConfigPlanChecks: resource.ConfigPlanChecks{
 						PreApply: []plancheck.PlanCheck{
