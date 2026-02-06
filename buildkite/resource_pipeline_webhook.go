@@ -21,10 +21,10 @@ type pipelineWebhook struct {
 }
 
 type pipelineWebhookResourceModel struct {
-	Id            types.String `tfsdk:"id"`
-	PipelineId    types.String `tfsdk:"pipeline_id"`
-	Repository    types.String `tfsdk:"repository"`
-	WebhookUrl    types.String `tfsdk:"webhook_url"`
+	Id         types.String `tfsdk:"id"`
+	PipelineId types.String `tfsdk:"pipeline_id"`
+	Repository types.String `tfsdk:"repository"`
+	WebhookUrl types.String `tfsdk:"webhook_url"`
 }
 
 func newPipelineWebhookResource() resource.Resource {
@@ -307,8 +307,8 @@ func (pw *pipelineWebhook) ImportState(ctx context.Context, req resource.ImportS
 
 // webhookInfo holds the extracted webhook information from a pipeline
 type webhookInfo struct {
-	ExternalId    string
-	Url           string
+	ExternalId string
+	Url        string
 	Repository string
 }
 
@@ -363,8 +363,8 @@ func extractWebhookFromPipeline(pipeline *getPipelineWebhookNodePipeline) (*webh
 			return nil, ErrNoWebhook
 		}
 		return &webhookInfo{
-			ExternalId:    webhook.GetExternalId(),
-			Url:           webhook.GetUrl(),
+			ExternalId: webhook.GetExternalId(),
+			Url:        webhook.GetUrl(),
 			Repository: repositoryUrl,
 		}, nil
 	case *getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGithubEnterprise:
@@ -373,8 +373,8 @@ func extractWebhookFromPipeline(pipeline *getPipelineWebhookNodePipeline) (*webh
 			return nil, ErrNoWebhook
 		}
 		return &webhookInfo{
-			ExternalId:    webhook.GetExternalId(),
-			Url:           webhook.GetUrl(),
+			ExternalId: webhook.GetExternalId(),
+			Url:        webhook.GetUrl(),
 			Repository: repositoryUrl,
 		}, nil
 	default:
