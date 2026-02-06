@@ -52,6 +52,10 @@ func (pw *pipelineWebhook) Schema(ctx context.Context, req resource.SchemaReques
 
 			Only supported for GitHub and GitHub Enterprise repositories connected via a
 			[GitHub App](https://buildkite.com/docs/pipelines/source-control/github#connect-your-buildkite-account-to-github-using-the-github-app).
+
+			~> The ` + "`repository_url`" + ` attribute must match the pipeline's configured repository URL.
+			Use ` + "`repository_url = buildkite_pipeline.<name>.repository`" + ` to keep them in sync.
+			When the pipeline's repository changes, the webhook will be automatically replaced.
 		`),
 		Attributes: map[string]resource_schema.Attribute{
 			"id": resource_schema.StringAttribute{
@@ -100,10 +104,38 @@ func (pw *pipelineWebhook) Create(ctx context.Context, req resource.CreateReques
 		return
 	}
 
+	pipelineResp, err := getPipelineWebhook(ctx, pw.client.genqlient, plan.PipelineId.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Unable to read pipeline",
+			fmt.Sprintf("Unable to read pipeline to validate repository URL: %s", err.Error()),
+		)
+		return
+	}
+	pipeline, ok := pipelineResp.GetNode().(*getPipelineWebhookNodePipeline)
+	if !ok || pipeline == nil {
+		resp.Diagnostics.AddError(
+			"Pipeline not found",
+			fmt.Sprintf("Pipeline %s not found", plan.PipelineId.ValueString()),
+		)
+		return
+	}
+	if pipeline.Repository.Url != plan.RepositoryUrl.ValueString() {
+		resp.Diagnostics.AddError(
+			"Repository URL mismatch",
+			fmt.Sprintf(
+				"The repository_url %q does not match the pipeline's repository %q. "+
+					"Use repository_url = buildkite_pipeline.<name>.repository to keep them in sync.",
+				plan.RepositoryUrl.ValueString(), pipeline.Repository.Url,
+			),
+		)
+		return
+	}
+
 	var state pipelineWebhookResourceModel
 	state.PipelineId = plan.PipelineId
 
-	err := retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
+	err = retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
 		apiResponse, err := createPipelineWebhook(ctx, pw.client.genqlient, plan.PipelineId.ValueString())
 		if err != nil {
 			if strings.Contains(err.Error(), "A webhook already exists for this repository") {

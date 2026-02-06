@@ -408,6 +408,53 @@ func TestExtractWebhookFromPipeline_NoWebhook(t *testing.T) {
 	})
 }
 
+func TestAccBuildkitePipelineWebhook_RepositoryUrlMismatch(t *testing.T) {
+	repo := os.Getenv("GITHUB_TEST_REPO")
+
+	configMismatch := func(name string) string {
+		return fmt.Sprintf(`
+			provider "buildkite" {
+				timeouts = {
+					create = "60s"
+					read = "60s"
+					update = "60s"
+					delete = "60s"
+				}
+			}
+
+			resource "buildkite_cluster" "cluster" {
+				name = "%s_cluster"
+			}
+
+			resource "buildkite_pipeline" "pipeline" {
+				name = "%s"
+				repository = "%s"
+				cluster_id = buildkite_cluster.cluster.id
+			}
+
+			resource "buildkite_pipeline_webhook" "webhook" {
+				pipeline_id    = buildkite_pipeline.pipeline.id
+				repository_url = "https://github.com/some-other-org/some-other-repo.git"
+			}
+		`, name, name, repo)
+	}
+
+	t.Run("pipeline webhook fails when repository_url does not match pipeline repository", func(t *testing.T) {
+		pipelineName := acctest.RandString(12)
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			Steps: []resource.TestStep{
+				{
+					Config:      configMismatch(pipelineName),
+					ExpectError: regexp.MustCompile(`Repository URL mismatch`),
+				},
+			},
+		})
+	})
+}
+
 func TestAccBuildkitePipelineWebhook_ProviderChange(t *testing.T) {
 	repo := os.Getenv("GITHUB_TEST_REPO")
 
