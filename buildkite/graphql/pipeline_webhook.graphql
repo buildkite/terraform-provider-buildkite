@@ -1,9 +1,6 @@
 fragment WebhookFields on RepositoryProviderWebhook {
     externalId
     url
-    provider {
-        name
-    }
 }
 
 query getPipelineWebhook($id: ID!) {
