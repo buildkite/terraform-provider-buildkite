@@ -89,7 +89,7 @@ func TestAccBuildkitePipelineWebhook(t *testing.T) {
 					),
 				},
 				{
-					ResourceName:      "buildkite_pipeline_webhook.webhook",
+					ResourceName:            "buildkite_pipeline_webhook.webhook",
 					ImportState:             true,
 					ImportStateIdFunc:       getPipelineIdForImport("buildkite_pipeline.pipeline"),
 					ImportStateVerify:       true,

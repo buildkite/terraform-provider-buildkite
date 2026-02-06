@@ -8,6 +8,9 @@ description: |-
   Only one webhook can exist per pipeline - if a webhook already exists, it will be adopted into state.
   Only supported for GitHub and GitHub Enterprise repositories connected via a
   GitHub App https://buildkite.com/docs/pipelines/source-control/github#connect-your-buildkite-account-to-github-using-the-github-app.
+  ~> The repository_url attribute must match the pipeline's configured repository URL.
+  Use repository_url = buildkite_pipeline.<name>.repository to keep them in sync.
+  When the pipeline's repository changes, the webhook will be automatically replaced.
 ---
 
 # buildkite_pipeline_webhook (Resource)
@@ -20,7 +23,9 @@ Only one webhook can exist per pipeline - if a webhook already exists, it will b
 Only supported for GitHub and GitHub Enterprise repositories connected via a
 [GitHub App](https://buildkite.com/docs/pipelines/source-control/github#connect-your-buildkite-account-to-github-using-the-github-app).
 
-~> The `repository_url` attribute must match the pipeline's configured repository URL. Use `buildkite_pipeline.<name>.repository` to keep them in sync. When the pipeline's repository changes, the webhook will be automatically replaced.
+~> The `repository_url` attribute must match the pipeline's configured repository URL.
+Use `repository_url = buildkite_pipeline.<name>.repository` to keep them in sync.
+When the pipeline's repository changes, the webhook will be automatically replaced.
 
 ## Example Usage
 
