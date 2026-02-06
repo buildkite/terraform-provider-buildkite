@@ -6,6 +6,8 @@ description: |-
   This resource manages a webhook for a Buildkite pipeline's source repository.
   The webhook enables automatic build triggering when changes are pushed to the repository.
   Only one webhook can exist per pipeline - if a webhook already exists, it will be adopted into state.
+  Only supported for GitHub and GitHub Enterprise repositories connected via a
+  GitHub App https://buildkite.com/docs/pipelines/source-control/github#connect-your-buildkite-account-to-github-using-the-github-app.
 ---
 
 # buildkite_pipeline_webhook (Resource)
@@ -14,6 +16,9 @@ This resource manages a webhook for a Buildkite pipeline's source repository.
 
 The webhook enables automatic build triggering when changes are pushed to the repository.
 Only one webhook can exist per pipeline - if a webhook already exists, it will be adopted into state.
+
+Only supported for GitHub and GitHub Enterprise repositories connected via a
+[GitHub App](https://buildkite.com/docs/pipelines/source-control/github#connect-your-buildkite-account-to-github-using-the-github-app).
 
 ## Example Usage
 
