@@ -89,6 +89,7 @@ resource "buildkite_pipeline" "pipeline_with_webhook" {
 # Create a repository webhook for this pipeline (only supported via GitHub App)
 resource "buildkite_pipeline_webhook" "webhook" {
   pipeline_id    = buildkite_pipeline.pipeline_with_webhook.id
+  repository_url = buildkite_pipeline.pipeline_with_webhook.repository
 }
 
 # Advanced example using Github provider to create repository webhook for Buildkite pipeline
