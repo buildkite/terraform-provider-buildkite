@@ -55,7 +55,24 @@ resource "buildkite_pipeline" "signed-pipeline" {
 }
 
 
+data "buildkite_cluster" "default" {
+  name = "Default cluster"
+}
+
+resource "buildkite_pipeline" "pipeline_with_webhook" {
+  name           = "repo"
+  repository     = "git@github.com:my-org/my-repo"
+  cluster_id     = data.buildkite_cluster.default.id
+}
+
+# Create a repository webhook for this pipeline (only supported via GitHub App)
+resource "buildkite_pipeline_webhook" "webhook" {
+  pipeline_id    = buildkite_pipeline.pipeline_with_webhook.id
+  repository     = buildkite_pipeline.pipeline_with_webhook.repository
+}
+
 # Advanced example using Github provider to create repository webhook for Buildkite pipeline
+# Note: The example above using buildkite_pipeline_webhook is preferred when a GitHub App integration is available.
 
 terraform {
   required_providers {
@@ -106,4 +123,3 @@ resource "github_repository_webhook" "my_webhook" {
 
   depends_on = [buildkite_pipeline.pipeline]
 }
-

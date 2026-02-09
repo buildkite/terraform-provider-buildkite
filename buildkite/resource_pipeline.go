@@ -72,32 +72,34 @@ type PipelineTag struct {
 }
 
 type pipelineResourceModel struct {
-	AllowRebuilds                        types.Bool             `tfsdk:"allow_rebuilds"`
-	BadgeUrl                             types.String           `tfsdk:"badge_url"`
-	BranchConfiguration                  types.String           `tfsdk:"branch_configuration"`
-	CancelIntermediateBuilds             types.Bool             `tfsdk:"cancel_intermediate_builds"`
-	CancelIntermediateBuildsBranchFilter types.String           `tfsdk:"cancel_intermediate_builds_branch_filter"`
-	Color                                types.String           `tfsdk:"color"`
-	ClusterId                            types.String           `tfsdk:"cluster_id"`
-	ClusterName                          types.String           `tfsdk:"cluster_name"`
-	DefaultTeamId                        types.String           `tfsdk:"default_team_id"`
-	DefaultBranch                        types.String           `tfsdk:"default_branch"`
-	DefaultTimeoutInMinutes              types.Int64            `tfsdk:"default_timeout_in_minutes"`
-	Description                          types.String           `tfsdk:"description"`
-	Emoji                                types.String           `tfsdk:"emoji"`
-	Id                                   types.String           `tfsdk:"id"`
-	MaximumTimeoutInMinutes              types.Int64            `tfsdk:"maximum_timeout_in_minutes"`
-	Name                                 types.String           `tfsdk:"name"`
-	PipelineTemplateId                   types.String           `tfsdk:"pipeline_template_id"`
-	ProviderSettings                     *providerSettingsModel `tfsdk:"provider_settings"`
-	Repository                           types.String           `tfsdk:"repository"`
-	SkipIntermediateBuilds               types.Bool             `tfsdk:"skip_intermediate_builds"`
-	SkipIntermediateBuildsBranchFilter   types.String           `tfsdk:"skip_intermediate_builds_branch_filter"`
-	Slug                                 types.String           `tfsdk:"slug"`
-	Steps                                types.String           `tfsdk:"steps"`
-	Tags                                 []types.String         `tfsdk:"tags"`
-	UUID                                 types.String           `tfsdk:"uuid"`
-	WebhookUrl                           types.String           `tfsdk:"webhook_url"`
+	AllowRebuilds                        types.Bool   `tfsdk:"allow_rebuilds"`
+	BadgeUrl                             types.String `tfsdk:"badge_url"`
+	BranchConfiguration                  types.String `tfsdk:"branch_configuration"`
+	CancelIntermediateBuilds             types.Bool   `tfsdk:"cancel_intermediate_builds"`
+	CancelIntermediateBuildsBranchFilter types.String `tfsdk:"cancel_intermediate_builds_branch_filter"`
+	Color                                types.String `tfsdk:"color"`
+	ClusterId                            types.String `tfsdk:"cluster_id"`
+	ClusterName                          types.String `tfsdk:"cluster_name"`
+
+	DefaultTeamId                      types.String           `tfsdk:"default_team_id"`
+	DefaultBranch                      types.String           `tfsdk:"default_branch"`
+	DefaultTimeoutInMinutes            types.Int64            `tfsdk:"default_timeout_in_minutes"`
+	Description                        types.String           `tfsdk:"description"`
+	Emoji                              types.String           `tfsdk:"emoji"`
+	Id                                 types.String           `tfsdk:"id"`
+	MaximumTimeoutInMinutes            types.Int64            `tfsdk:"maximum_timeout_in_minutes"`
+	Name                               types.String           `tfsdk:"name"`
+	PipelineTemplateId                 types.String           `tfsdk:"pipeline_template_id"`
+	ProviderSettings                   *providerSettingsModel `tfsdk:"provider_settings"`
+	Repository                         types.String           `tfsdk:"repository"`
+	SkipIntermediateBuilds             types.Bool             `tfsdk:"skip_intermediate_builds"`
+	SkipIntermediateBuildsBranchFilter types.String           `tfsdk:"skip_intermediate_builds_branch_filter"`
+	Slug                               types.String           `tfsdk:"slug"`
+	Steps                              types.String           `tfsdk:"steps"`
+	Tags                               []types.String         `tfsdk:"tags"`
+	UUID                               types.String           `tfsdk:"uuid"`
+
+	WebhookUrl types.String `tfsdk:"webhook_url"`
 }
 
 type providerSettingsModel struct {
