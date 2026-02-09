@@ -287,7 +287,7 @@ func TestAccBuildkitePipelineWebhook_UnsupportedProvider(t *testing.T) {
 			Steps: []resource.TestStep{
 				{
 					Config:      configUnsupportedProvider(pipelineName),
-					ExpectError: regexp.MustCompile(`Auto-creating webhooks is not\s+supported for your repository provider`),
+					ExpectError: regexp.MustCompile(`Auto-creating webhooks is only\s+supported for GitHub and GitHub Enterprise repositories`),
 				},
 			},
 		})
