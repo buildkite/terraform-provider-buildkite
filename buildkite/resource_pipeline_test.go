@@ -1601,7 +1601,7 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 			Steps: []resource.TestStep{
 				{
 					Config:      config,
-					ExpectError: regexp.MustCompile(`expected visibility to be one of \["PUBLIC" "PRIVATE"\]`),
+					ExpectError: regexp.MustCompile(`Attribute visibility value must be one of: \["PUBLIC" "PRIVATE"\]`),
 				},
 			},
 		})
