@@ -715,7 +715,7 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 			"visibility": schema.StringAttribute{
 				Computed:            true,
 				Optional:            true,
-				MarkdownDescription: "The visibility of the pipeline. Can be `PUBLIC` or `PRIVATE`. Defaults to `PRIVATE`.",
+				MarkdownDescription: "The visibility of the pipeline. Can be `PUBLIC` or `PRIVATE`. Only use `PUBLIC` visibility for pipelines without sensitive information. Defaults to `PRIVATE`.",
 				Validators: []validator.String{
 					stringvalidator.OneOf("PUBLIC", "PRIVATE"),
 				},
