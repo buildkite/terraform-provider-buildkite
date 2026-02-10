@@ -3,6 +3,7 @@ package buildkite
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"os"
 	"regexp"
 	"strings"
@@ -245,6 +246,186 @@ func TestAccBuildkiteSignedPipelineStepsDataSource(t *testing.T) {
 						steps,
 					),
 					ExpectError: regexp.MustCompile(regexp.QuoteMeta("Error: Invalid Attribute Combination")),
+				},
+			},
+		})
+	})
+
+	t.Run("signed pipeline steps with aws_kms_key_id signs the steps", func(t *testing.T) {
+		// Skip this test if AWS credentials or KMS key ID are not configured
+		kmsKeyID := os.Getenv("TEST_AWS_KMS_KEY_ID")
+		if kmsKeyID == "" {
+			t.Skip("Skipping AWS KMS test: TEST_AWS_KMS_KEY_ID environment variable not set")
+		}
+
+		// Verify AWS credentials are configured
+		if os.Getenv("AWS_ACCESS_KEY_ID") == "" && os.Getenv("AWS_PROFILE") == "" {
+			t.Skip("Skipping AWS KMS test: AWS credentials not configured")
+		}
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			Steps: []resource.TestStep{
+				{
+					Config: heredoc.Docf(
+						`
+							data "buildkite_signed_pipeline_steps" "my_signed_steps_kms" {
+							  repository      = %q
+							  aws_kms_key_id  = %q
+							  unsigned_steps  = %q
+							}
+						`,
+						repository,
+						kmsKeyID,
+						steps,
+					),
+					Check: resource.ComposeAggregateTestCheckFunc(
+						resource.TestCheckResourceAttrSet(
+							"data.buildkite_signed_pipeline_steps.my_signed_steps_kms",
+							"steps",
+						),
+						// Verify the signed steps contain a signature field
+						resource.TestCheckResourceAttrWith(
+							"data.buildkite_signed_pipeline_steps.my_signed_steps_kms",
+							"steps",
+							func(value string) error {
+								if !strings.Contains(value, "signature:") {
+									return fmt.Errorf("expected signed steps to contain 'signature:' field")
+								}
+								return nil
+							},
+						),
+					),
+				},
+			},
+		})
+	})
+
+	t.Run("signed pipeline steps with aws_kms_key_id and jwks prefers kms", func(t *testing.T) {
+		// Skip this test if AWS credentials or KMS key ID are not configured
+		kmsKeyID := os.Getenv("TEST_AWS_KMS_KEY_ID")
+		if kmsKeyID == "" {
+			t.Skip("Skipping AWS KMS test: TEST_AWS_KMS_KEY_ID environment variable not set")
+		}
+
+		// Verify AWS credentials are configured
+		if os.Getenv("AWS_ACCESS_KEY_ID") == "" && os.Getenv("AWS_PROFILE") == "" {
+			t.Skip("Skipping AWS KMS test: AWS credentials not configured")
+		}
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			Steps: []resource.TestStep{
+				{
+					Config: heredoc.Docf(
+						`
+							data "buildkite_signed_pipeline_steps" "my_signed_steps_kms_priority" {
+							  repository      = %q
+							  aws_kms_key_id  = %q
+							  jwks            = %q
+							  jwks_key_id     = %q
+							  unsigned_steps  = %q
+							}
+						`,
+						repository,
+						kmsKeyID,
+						jwks,
+						jwksKeyID,
+						steps,
+					),
+					Check: resource.ComposeAggregateTestCheckFunc(
+						resource.TestCheckResourceAttrSet(
+							"data.buildkite_signed_pipeline_steps.my_signed_steps_kms_priority",
+							"steps",
+						),
+					),
+				},
+			},
+		})
+	})
+
+	t.Run("signed pipeline steps with invalid aws_kms_key_id fails", func(t *testing.T) {
+		// This test can run without credentials as it should fail during KMS validation
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			Steps: []resource.TestStep{
+				{
+					Config: heredoc.Docf(
+						`
+							data "buildkite_signed_pipeline_steps" "my_signed_steps_invalid_kms" {
+							  repository      = %q
+							  aws_kms_key_id  = "invalid-key-id-that-does-not-exist"
+							  unsigned_steps  = %q
+							}
+						`,
+						repository,
+						steps,
+					),
+					ExpectError: regexp.MustCompile("(Unable to load AWS configuration|Unable to create KMS signer)"),
+				},
+			},
+		})
+	})
+
+	t.Run("signed pipeline steps with aws_kms_key_id handles pipeline with env", func(t *testing.T) {
+		// Skip this test if AWS credentials or KMS key ID are not configured
+		kmsKeyID := os.Getenv("TEST_AWS_KMS_KEY_ID")
+		if kmsKeyID == "" {
+			t.Skip("Skipping AWS KMS test: TEST_AWS_KMS_KEY_ID environment variable not set")
+		}
+
+		// Verify AWS credentials are configured
+		if os.Getenv("AWS_ACCESS_KEY_ID") == "" && os.Getenv("AWS_PROFILE") == "" {
+			t.Skip("Skipping AWS KMS test: AWS credentials not configured")
+		}
+
+		stepsWithEnv := heredoc.Doc(`
+			steps:
+			- label: ":pipeline:"
+			  command: echo "Testing with environment variables"
+			  env:
+			    STEP_ENV: "step-value"
+			env:
+			  GLOBAL_ENV: "global-value"
+		`)
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			Steps: []resource.TestStep{
+				{
+					Config: heredoc.Docf(
+						`
+							data "buildkite_signed_pipeline_steps" "my_signed_steps_kms_env" {
+							  repository      = %q
+							  aws_kms_key_id  = %q
+							  unsigned_steps  = %q
+							}
+						`,
+						repository,
+						kmsKeyID,
+						stepsWithEnv,
+					),
+					Check: resource.ComposeAggregateTestCheckFunc(
+						resource.TestCheckResourceAttrSet(
+							"data.buildkite_signed_pipeline_steps.my_signed_steps_kms_env",
+							"steps",
+						),
+						// Verify the signed steps still contain env blocks
+						resource.TestCheckResourceAttrWith(
+							"data.buildkite_signed_pipeline_steps.my_signed_steps_kms_env",
+							"steps",
+							func(value string) error {
+								if !strings.Contains(value, "GLOBAL_ENV") {
+									return fmt.Errorf("expected signed steps to contain 'GLOBAL_ENV' field")
+								}
+								return nil
+							},
+						),
+					),
 				},
 			},
 		})
