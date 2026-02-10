@@ -112,7 +112,7 @@ func (sv *KMS) Public() crypto.PublicKey {
 // to debug what went wrong during the GetPublicKey operation.
 func (sv *KMS) GetPublicKey() (crypto.PublicKey, error) {
 	if sv.kid == "" {
-		return nil, fmt.Errorf("aws.KMS.Sign() requires the key ID")
+		return nil, fmt.Errorf("aws.KMS.GetPublicKey() requires the key ID")
 	}
 
 	input := kms.GetPublicKeyInput{
