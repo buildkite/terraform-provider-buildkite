@@ -7,10 +7,13 @@ import (
 	"strings"
 
 	"github.com/MakeNowJust/heredoc"
+	"github.com/aws/aws-sdk-go-v2/service/kms"
 	"github.com/buildkite/go-pipeline"
 	"github.com/buildkite/go-pipeline/signature"
 	"github.com/buildkite/interpolate"
+	"github.com/buildkite/terraform-provider-buildkite/internal/awsutil"
 	"github.com/buildkite/terraform-provider-buildkite/internal/datasourcevalidator"
+	"github.com/buildkite/terraform-provider-buildkite/internal/kmssigner"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
@@ -27,6 +30,7 @@ type signedPipelineStepsDataSource struct {
 	JWKS          types.String `tfsdk:"jwks"`
 	JWKSFile      types.String `tfsdk:"jwks_file"`
 	JWKSKeyID     types.String `tfsdk:"jwks_key_id"`
+	AWSKMSKeyID   types.String `tfsdk:"aws_kms_key_id"`
 	Steps         types.String `tfsdk:"steps"`
 }
 
@@ -136,6 +140,22 @@ func (s *signedPipelineStepsDataSource) Schema(
 				),
 				Optional: true,
 			},
+			"aws_kms_key_id": schema.StringAttribute{
+				Description: "The AWS KMS key identifier to use for signing. This can be a key ID, key ARN, alias name, or alias ARN. If this is set, jwks and jwks_file will be ignored.",
+				MarkdownDescription: heredoc.Docf(
+					`
+						The AWS KMS key identifier to use for signing. This can be a key ID,
+						key ARN, alias name, or alias ARN. AWS credentials must be configured
+						via environment variables or AWS configuration files. If this is set,
+						%s and %s will be ignored.
+
+						Only ECC_NIST_P256 keys are supported at this time.
+					`,
+					"`jwks`",
+					"`jwks_file`",
+				),
+				Optional: true,
+			},
 			"steps": schema.StringAttribute{
 				Description: "The signed steps in YAML format.",
 				Computed:    true,
@@ -183,42 +203,65 @@ func (s *signedPipelineStepsDataSource) Read(
 		return
 	}
 
-	// validators ensure that only one of `jwks` or `jwks_file` is set
-	jwksContents := []byte(data.JWKS.ValueString())
-	if len(jwksContents) == 0 {
-		jwksContents, err = os.ReadFile(data.JWKSFile.ValueString())
+	// Determine which signing method to use
+	var key signature.Key
+
+	switch {
+	case !data.AWSKMSKeyID.IsNull():
+		// Use AWS KMS for signing
+		awscfg, err := awsutil.GetConfigV2(ctx)
 		if err != nil {
-			resp.Diagnostics.AddError("Unable to read JWKS file", err.Error())
+			resp.Diagnostics.AddError("Unable to load AWS configuration", err.Error())
 			return
 		}
-	}
 
-	jwks, err := jwk.Parse(jwksContents)
-	if err != nil {
-		resp.Diagnostics.AddError("Unable to parse JWKS", err.Error())
-		return
-	}
+		kmsClient := kms.NewFromConfig(awscfg)
+		key, err = kmssigner.NewKMS(kmsClient, data.AWSKMSKeyID.ValueString())
+		if err != nil {
+			resp.Diagnostics.AddError("Unable to create KMS signer", err.Error())
+			return
+		}
 
-	var key jwk.Key
-	if data.JWKSKeyID.IsNull() {
-		if jwks.Len() != 1 {
-			resp.Diagnostics.AddError(
-				"Cannot find key",
-				"JWKS does not contain exactly one key, but no key ID was specified",
-			)
+	default:
+		// Use JWKS for signing
+		// validators ensure that only one of `jwks` or `jwks_file` is set
+		jwksContents := []byte(data.JWKS.ValueString())
+		if len(jwksContents) == 0 {
+			jwksContents, err = os.ReadFile(data.JWKSFile.ValueString())
+			if err != nil {
+				resp.Diagnostics.AddError("Unable to read JWKS file", err.Error())
+				return
+			}
+		}
+
+		jwks, err := jwk.Parse(jwksContents)
+		if err != nil {
+			resp.Diagnostics.AddError("Unable to parse JWKS", err.Error())
 			return
 		}
-		key, _ = jwks.Key(0)
-	} else {
-		ok := false
-		keyID := data.JWKSKeyID.ValueString()
-		if key, ok = jwks.LookupKeyID(keyID); !ok {
-			resp.Diagnostics.AddError(
-				"Cannot find key",
-				fmt.Sprintf("The key with ID %q was not found in the JWKS", keyID),
-			)
-			return
+
+		var jwkKey jwk.Key
+		if data.JWKSKeyID.IsNull() {
+			if jwks.Len() != 1 {
+				resp.Diagnostics.AddError(
+					"Cannot find key",
+					"JWKS does not contain exactly one key, but no key ID was specified",
+				)
+				return
+			}
+			jwkKey, _ = jwks.Key(0)
+		} else {
+			ok := false
+			keyID := data.JWKSKeyID.ValueString()
+			if jwkKey, ok = jwks.LookupKeyID(keyID); !ok {
+				resp.Diagnostics.AddError(
+					"Cannot find key",
+					fmt.Sprintf("The key with ID %q was not found in the JWKS", keyID),
+				)
+				return
+			}
 		}
+		key = jwkKey
 	}
 
 	if err := signature.SignSteps(ctx, p.Steps, key, data.Repository.ValueString(), signature.WithEnv(p.Env.ToMap())); err != nil {
