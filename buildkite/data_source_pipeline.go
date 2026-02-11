@@ -19,6 +19,7 @@ type pipelineDataSourceModel struct {
 	Repository    types.String `tfsdk:"repository"`
 	Slug          types.String `tfsdk:"slug"`
 	UUID          types.String `tfsdk:"uuid"`
+	Visibility    types.String `tfsdk:"visibility"`
 	WebhookUrl    types.String `tfsdk:"webhook_url"`
 	ClusterId     types.String `tfsdk:"cluster_id"`
 	ClusterName   types.String `tfsdk:"cluster_name"`
@@ -80,6 +81,10 @@ func (*pipelineDatasource) Schema(ctx context.Context, req datasource.SchemaRequ
 				Computed:            true,
 				MarkdownDescription: "The UUID of the pipeline.",
 			},
+			"visibility": schema.StringAttribute{
+				Computed:            true,
+				MarkdownDescription: "The visibility of the pipeline (PUBLIC or PRIVATE).",
+			},
 			"webhook_url": schema.StringAttribute{
 				Computed:            true,
 				MarkdownDescription: "The Buildkite webhook URL that triggers builds on this pipeline.",
@@ -132,6 +137,7 @@ func (c *pipelineDatasource) Read(ctx context.Context, req datasource.ReadReques
 	state.Repository = types.StringValue(pipeline.Pipeline.Repository.Url)
 	state.Slug = types.StringValue(pipeline.Pipeline.Slug)
 	state.UUID = types.StringValue(pipeline.Pipeline.PipelineUuid)
+	state.Visibility = types.StringValue(string(pipeline.Pipeline.Visibility))
 	state.WebhookUrl = types.StringValue(pipeline.Pipeline.WebhookURL)
 	state.ClusterId = types.StringPointerValue(pipeline.Pipeline.Cluster.Id)
 	state.ClusterName = types.StringPointerValue(pipeline.Pipeline.Cluster.Name)

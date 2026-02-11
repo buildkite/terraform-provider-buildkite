@@ -64,6 +64,10 @@ steps:
       - test-collector#v1.8.0:
           files: junit-*.xml
           format: junit
+    retry:
+      automatic:
+        - exit_status: -1
+          limit: 2
 
   - label: "Security Scan"
     key: security_scan
