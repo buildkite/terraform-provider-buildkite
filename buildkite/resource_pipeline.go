@@ -98,8 +98,8 @@ type pipelineResourceModel struct {
 	Steps                              types.String           `tfsdk:"steps"`
 	Tags                               []types.String         `tfsdk:"tags"`
 	UUID                               types.String           `tfsdk:"uuid"`
-
-	WebhookUrl types.String `tfsdk:"webhook_url"`
+	Visibility                         types.String           `tfsdk:"visibility"`
+	WebhookUrl                         types.String           `tfsdk:"webhook_url"`
 }
 
 type providerSettingsModel struct {
@@ -157,6 +157,7 @@ type pipelineResponse interface {
 	GetSlug() string
 	GetSteps() PipelineFieldsStepsPipelineSteps
 	GetTags() []PipelineFieldsTagsPipelineTag
+	GetVisibility() PipelineVisibility
 	GetWebhookURL() string
 }
 
@@ -242,6 +243,11 @@ func (p *pipelineResource) Create(ctx context.Context, req resource.CreateReques
 				SkipIntermediateBuildsBranchFilter:   plan.SkipIntermediateBuildsBranchFilter.ValueString(),
 				Steps:                                PipelineStepsInput{Yaml: plan.Steps.ValueString()},
 				Tags:                                 getTagsFromSchema(&plan),
+			}
+
+			if !plan.Visibility.IsNull() {
+				visibility := PipelineVisibility(plan.Visibility.ValueString())
+				input.Visibility = visibility
 			}
 
 			// if a team has been specified, add that to the graphql payload
@@ -706,6 +712,17 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
+			"visibility": schema.StringAttribute{
+				Computed:            true,
+				Optional:            true,
+				MarkdownDescription: "The visibility of the pipeline. Can be `PUBLIC` or `PRIVATE`. Only use `PUBLIC` visibility for pipelines without sensitive information. Defaults to `PRIVATE`.",
+				Validators: []validator.String{
+					stringvalidator.OneOf("PUBLIC", "PRIVATE"),
+				},
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
 			"badge_url": schema.StringAttribute{
 				Computed:            true,
 				MarkdownDescription: "The badge URL showing build state.",
@@ -974,6 +991,11 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 		Tags:                                 getTagsFromSchema(&plan),
 	}
 
+	if !plan.Visibility.IsNull() {
+		visibility := PipelineVisibility(plan.Visibility.ValueString())
+		input.Visibility = visibility
+	}
+
 	timeouts, diags := p.client.timeouts.Update(ctx, DefaultTimeout)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
@@ -1115,6 +1137,7 @@ func setPipelineModel(model *pipelineResourceModel, data pipelineResponse) {
 	model.SkipIntermediateBuilds = types.BoolValue(data.GetSkipIntermediateBuilds())
 	model.SkipIntermediateBuildsBranchFilter = types.StringValue(data.GetSkipIntermediateBuildsBranchFilter())
 	model.UUID = types.StringValue(data.GetPipelineUuid())
+	model.Visibility = types.StringValue(string(data.GetVisibility()))
 	model.WebhookUrl = types.StringValue(data.GetWebhookURL())
 
 	// only set template or steps. steps is always updated even if using a template, but its redundant and creates

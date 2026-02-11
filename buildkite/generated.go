@@ -1800,6 +1800,8 @@ type PipelineFields struct {
 	Tags []PipelineFieldsTagsPipelineTag `json:"tags"`
 	// Teams associated with this pipeline
 	Teams PipelineFieldsTeamsTeamPipelineConnection `json:"teams"`
+	// Whether this pipeline is visible to everyone, including people outside this organization
+	Visibility PipelineVisibility `json:"visibility"`
 	// The webhookURL field returns the webhook URL if the user has edit permissions for the pipeline. Otherwise, it returns null.
 	WebhookURL string `json:"webhookURL"`
 }
@@ -1878,6 +1880,9 @@ func (v *PipelineFields) GetTags() []PipelineFieldsTagsPipelineTag { return v.Ta
 
 // GetTeams returns PipelineFields.Teams, and is useful for accessing the field via an interface.
 func (v *PipelineFields) GetTeams() PipelineFieldsTeamsTeamPipelineConnection { return v.Teams }
+
+// GetVisibility returns PipelineFields.Visibility, and is useful for accessing the field via an interface.
+func (v *PipelineFields) GetVisibility() PipelineVisibility { return v.Visibility }
 
 // GetWebhookURL returns PipelineFields.WebhookURL, and is useful for accessing the field via an interface.
 func (v *PipelineFields) GetWebhookURL() string { return v.WebhookURL }
@@ -4578,6 +4583,11 @@ func (v *createPipelinePipelineCreatePipelineCreatePayloadPipeline) GetTeams() P
 	return v.PipelineFields.Teams
 }
 
+// GetVisibility returns createPipelinePipelineCreatePipelineCreatePayloadPipeline.Visibility, and is useful for accessing the field via an interface.
+func (v *createPipelinePipelineCreatePipelineCreatePayloadPipeline) GetVisibility() PipelineVisibility {
+	return v.PipelineFields.Visibility
+}
+
 // GetWebhookURL returns createPipelinePipelineCreatePipelineCreatePayloadPipeline.WebhookURL, and is useful for accessing the field via an interface.
 func (v *createPipelinePipelineCreatePipelineCreatePayloadPipeline) GetWebhookURL() string {
 	return v.PipelineFields.WebhookURL
@@ -4655,6 +4665,8 @@ type __premarshalcreatePipelinePipelineCreatePipelineCreatePayloadPipeline struc
 
 	Teams PipelineFieldsTeamsTeamPipelineConnection `json:"teams"`
 
+	Visibility PipelineVisibility `json:"visibility"`
+
 	WebhookURL string `json:"webhookURL"`
 }
 
@@ -4692,6 +4704,7 @@ func (v *createPipelinePipelineCreatePipelineCreatePayloadPipeline) __premarshal
 	retval.Steps = v.PipelineFields.Steps
 	retval.Tags = v.PipelineFields.Tags
 	retval.Teams = v.PipelineFields.Teams
+	retval.Visibility = v.PipelineFields.Visibility
 	retval.WebhookURL = v.PipelineFields.WebhookURL
 	return &retval, nil
 }
@@ -10172,6 +10185,9 @@ func (v *getNodeNodePipeline) GetTeams() PipelineFieldsTeamsTeamPipelineConnecti
 	return v.PipelineFields.Teams
 }
 
+// GetVisibility returns getNodeNodePipeline.Visibility, and is useful for accessing the field via an interface.
+func (v *getNodeNodePipeline) GetVisibility() PipelineVisibility { return v.PipelineFields.Visibility }
+
 // GetWebhookURL returns getNodeNodePipeline.WebhookURL, and is useful for accessing the field via an interface.
 func (v *getNodeNodePipeline) GetWebhookURL() string { return v.PipelineFields.WebhookURL }
 
@@ -10249,6 +10265,8 @@ type __premarshalgetNodeNodePipeline struct {
 
 	Teams PipelineFieldsTeamsTeamPipelineConnection `json:"teams"`
 
+	Visibility PipelineVisibility `json:"visibility"`
+
 	WebhookURL string `json:"webhookURL"`
 }
 
@@ -10287,6 +10305,7 @@ func (v *getNodeNodePipeline) __premarshalJSON() (*__premarshalgetNodeNodePipeli
 	retval.Steps = v.PipelineFields.Steps
 	retval.Tags = v.PipelineFields.Tags
 	retval.Teams = v.PipelineFields.Teams
+	retval.Visibility = v.PipelineFields.Visibility
 	retval.WebhookURL = v.PipelineFields.WebhookURL
 	return &retval, nil
 }
@@ -11563,6 +11582,9 @@ func (v *getPipelinePipeline) GetTeams() PipelineFieldsTeamsTeamPipelineConnecti
 	return v.PipelineFields.Teams
 }
 
+// GetVisibility returns getPipelinePipeline.Visibility, and is useful for accessing the field via an interface.
+func (v *getPipelinePipeline) GetVisibility() PipelineVisibility { return v.PipelineFields.Visibility }
+
 // GetWebhookURL returns getPipelinePipeline.WebhookURL, and is useful for accessing the field via an interface.
 func (v *getPipelinePipeline) GetWebhookURL() string { return v.PipelineFields.WebhookURL }
 
@@ -11638,6 +11660,8 @@ type __premarshalgetPipelinePipeline struct {
 
 	Teams PipelineFieldsTeamsTeamPipelineConnection `json:"teams"`
 
+	Visibility PipelineVisibility `json:"visibility"`
+
 	WebhookURL string `json:"webhookURL"`
 }
 
@@ -11675,6 +11699,7 @@ func (v *getPipelinePipeline) __premarshalJSON() (*__premarshalgetPipelinePipeli
 	retval.Steps = v.PipelineFields.Steps
 	retval.Tags = v.PipelineFields.Tags
 	retval.Teams = v.PipelineFields.Teams
+	retval.Visibility = v.PipelineFields.Visibility
 	retval.WebhookURL = v.PipelineFields.WebhookURL
 	return &retval, nil
 }
@@ -19534,6 +19559,11 @@ func (v *updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline) GetTeams() P
 	return v.PipelineFields.Teams
 }
 
+// GetVisibility returns updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline.Visibility, and is useful for accessing the field via an interface.
+func (v *updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline) GetVisibility() PipelineVisibility {
+	return v.PipelineFields.Visibility
+}
+
 // GetWebhookURL returns updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline.WebhookURL, and is useful for accessing the field via an interface.
 func (v *updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline) GetWebhookURL() string {
 	return v.PipelineFields.WebhookURL
@@ -19611,6 +19641,8 @@ type __premarshalupdatePipelinePipelineUpdatePipelineUpdatePayloadPipeline struc
 
 	Teams PipelineFieldsTeamsTeamPipelineConnection `json:"teams"`
 
+	Visibility PipelineVisibility `json:"visibility"`
+
 	WebhookURL string `json:"webhookURL"`
 }
 
@@ -19648,6 +19680,7 @@ func (v *updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline) __premarshal
 	retval.Steps = v.PipelineFields.Steps
 	retval.Tags = v.PipelineFields.Tags
 	retval.Teams = v.PipelineFields.Teams
+	retval.Visibility = v.PipelineFields.Visibility
 	retval.WebhookURL = v.PipelineFields.WebhookURL
 	return &retval, nil
 }
@@ -20991,6 +21024,7 @@ fragment PipelineFields on Pipeline {
 	teams(first: 5, order: NAME) {
 		... PipelineTeam
 	}
+	visibility
 	webhookURL
 }
 fragment PipelineTeam on TeamPipelineConnection {
@@ -22149,6 +22183,7 @@ fragment PipelineFields on Pipeline {
 	teams(first: 5, order: NAME) {
 		... PipelineTeam
 	}
+	visibility
 	webhookURL
 }
 fragment PipelineTemplateFields on PipelineTemplate {
@@ -22471,6 +22506,7 @@ fragment PipelineFields on Pipeline {
 	teams(first: 5, order: NAME) {
 		... PipelineTeam
 	}
+	visibility
 	webhookURL
 }
 fragment PipelineTeam on TeamPipelineConnection {
@@ -23659,6 +23695,7 @@ fragment PipelineFields on Pipeline {
 	teams(first: 5, order: NAME) {
 		... PipelineTeam
 	}
+	visibility
 	webhookURL
 }
 fragment PipelineTeam on TeamPipelineConnection {

@@ -48,6 +48,17 @@ resource "buildkite_pipeline" "pipeline" {
   }
 }
 
+# Public pipeline - visible to anyone with the link
+data "buildkite_cluster" "default" {
+  name = "Default cluster"
+}
+resource "buildkite_pipeline" "public_pipeline" {
+  name       = "Public Pipeline"
+  repository = "git@github.com:my-org/public-repo"
+  cluster_id = data.buildkite_cluster.default.id
+  visibility = "PUBLIC"
+}
+
 # signed pipeline
 data "buildkite_cluster" "default" {
   name = "Default cluster"
@@ -175,6 +186,7 @@ resource "github_repository_webhook" "my_webhook" {
 - `slug` (String) A custom identifier for the pipeline. If provided, this slug will be used as the pipeline's URL path instead of automatically converting the pipeline name. If not provided, the slug will be [derived](https://buildkite.com/docs/apis/graphql/cookbooks/pipelines#create-a-pipeline-deriving-a-pipeline-slug-from-the-pipelines-name) from the pipeline `name`.
 - `steps` (String) The YAML steps to configure for the pipeline. Can also accept the `steps` attribute from the [`buildkite_signed_pipeline_steps`](/docs/data-sources/signed_pipeline_steps) data source to enable a signed pipeline. Defaults to `buildkite-agent pipeline upload`.
 - `tags` (Set of String) Tags to attribute to the pipeline. Useful for searching by in the UI.
+- `visibility` (String) The visibility of the pipeline. Can be `PUBLIC` or `PRIVATE`. Only use `PUBLIC` visibility for pipelines without sensitive information. Defaults to `PRIVATE`.
 
 ### Read-Only
 
