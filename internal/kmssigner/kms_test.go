@@ -265,13 +265,18 @@ func newKMSWithMock(client kmsClient, kmsKeyID string) (*KMS, error) {
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse public key: %w", err)
 		}
-		return &KMS{
-			client: client,
-			kid:    kmsKeyID,
-			jwaAlg: jwa.ES256,
-			alg:    types.SigningAlgorithmSpecEcdsaSha256,
-			pubKey: pubKey,
-		}, nil
+	case types.KeySpecEccNistP256:
+	    pubKey, err := x509.ParsePKIXPublicKey(keyDesc.PublicKey)
+            if err != nil {
+                return nil, fmt.Errorf("failed to parse public key: %w", err)
+            }
+	    return &KMS{
+		client: client,
+		kid:    kmsKeyID,
+		jwaAlg: jwa.ES256,
+		alg:    types.SigningAlgorithmSpecEcdsaSha256,
+		pubKey: pubKey,
+	    }, nil
 	default:
 		return nil, fmt.Errorf("unsupported key spec: %q, supported key specs are %q", keyDesc.KeySpec,
 			[]types.KeySpec{types.KeySpecEccNistP256})
