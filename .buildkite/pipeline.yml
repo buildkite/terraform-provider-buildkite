@@ -51,7 +51,7 @@ steps:
             - organization_slug
             - organization_id
             - pipeline_slug
-      - aws-ssm#v1.0.0:
+      - aws-ssm#v1.1.0:
           parameters:
             BUILDKITE_ORGANIZATION_SLUG: /pipelines/buildkite/terraform-provider-buildkite-main/buildkite_organization
             BUILDKITE_API_TOKEN: /pipelines/buildkite/terraform-provider-buildkite-main/buildkite_api_token
