@@ -68,7 +68,7 @@ steps:
   - label: "Security Scan"
     key: security_scan
     secrets:
-      - GITHUB_TOKEN: SCORECARD_TOKEN
+      GITHUB_TOKEN: SCORECARD_TOKEN
     plugins:
       - ossf-scorecard#v1.0.1: ~
 
