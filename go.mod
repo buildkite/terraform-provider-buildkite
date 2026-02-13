@@ -13,7 +13,7 @@ require (
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.38.2
 	github.com/hashicorp/terraform-plugin-testing v1.14.0
 	github.com/lestrrat-go/jwx/v2 v2.1.6
-	github.com/shurcooL/graphql v0.0.0-20230722043721-ed46e5a46466
+	github.com/shurcooL/graphql v0.0.0-20240915155400-7ee5256398cf
 	gopkg.in/yaml.v3 v3.0.1
 )
 
