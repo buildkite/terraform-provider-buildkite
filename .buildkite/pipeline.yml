@@ -67,12 +67,10 @@ steps:
 
   - label: "Security Scan"
     key: security_scan
+    secrets:
+      - GITHUB_TOKEN: SCORECARD_TOKEN
     plugins:
-      - secrets#v1.0.0:
-          variables:
-            GITHUB_TOKEN: SCORECARD_TOKEN
-      - ossf-scorecard#v1.0.0:
-          github_token: $$GITHUB_TOKEN
+      - ossf-scorecard#v1.0.1: ~
 
   - label: build
     command: "make build-snapshot"
