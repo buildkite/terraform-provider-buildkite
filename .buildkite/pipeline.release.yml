@@ -8,7 +8,7 @@ steps:
             - organization_slug
             - organization_id
             - pipeline_slug
-      - ecr#v2.3.0:
+      - ecr#v2.11.0:
           account-ids: "445615400570"
           login: true
       - aws-ssm#v1.1.0:
