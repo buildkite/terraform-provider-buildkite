@@ -17,7 +17,7 @@ steps:
     agents:
       queue: "hosted"
     plugins:
-      docker-compose#v3.9.0:
+      docker-compose#v5.12.1:
         run: go
 
   - label: docs
@@ -26,7 +26,7 @@ steps:
     agents:
       queue: "hosted"
     plugins:
-      docker-compose#v3.9.0:
+      docker-compose#v5.12.1:
         run: go
         mount-buildkite-agent: true
 
@@ -36,7 +36,7 @@ steps:
     agents:
       queue: "hosted"
     plugins:
-      docker-compose#v3.9.0:
+      docker-compose#v5.12.1:
         run: go
 
   - label: acceptance tests
@@ -58,7 +58,7 @@ steps:
             BUILDKITE_ANALYTICS_TOKEN: /pipelines/buildkite/terraform-provider-buildkite-main/buildkite_analytics_token
             GITHUB_TEST_REPO: /pipelines/buildkite/terraform-provider-buildkite-main/github_test_repo
             GITHUB_TEST_REPO_ALT: /pipelines/buildkite/terraform-provider-buildkite-main/github_test_repo_alt
-      - docker-compose#v3.9.0:
+      - docker-compose#v5.12.1:
           run: go
           mount-buildkite-agent: "true"
       - test-collector#v1.11.0:
@@ -82,7 +82,7 @@ steps:
     agents:
       queue: "hosted"
     plugins:
-      docker-compose#v3.9.0:
+      docker-compose#v5.12.1:
         run: go
     depends_on:
       - lint
