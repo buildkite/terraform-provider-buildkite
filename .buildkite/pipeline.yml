@@ -51,7 +51,7 @@ steps:
             - organization_slug
             - organization_id
             - pipeline_slug
-      - aws-ssm#v1.0.0:
+      - aws-ssm#v1.1.0:
           parameters:
             BUILDKITE_ORGANIZATION_SLUG: /pipelines/buildkite/terraform-provider-buildkite-main/buildkite_organization
             BUILDKITE_API_TOKEN: /pipelines/buildkite/terraform-provider-buildkite-main/buildkite_api_token
@@ -61,9 +61,13 @@ steps:
       - docker-compose#v3.9.0:
           run: go
           mount-buildkite-agent: "true"
-      - test-collector#v1.8.0:
+      - test-collector#v1.11.0:
           files: junit-*.xml
           format: junit
+    retry:
+      automatic:
+        - exit_status: -1
+          limit: 2
 
   - label: "Security Scan"
     key: security_scan

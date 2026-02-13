@@ -27,6 +27,17 @@ resource "buildkite_pipeline" "pipeline" {
   }
 }
 
+# Public pipeline - visible to anyone with the link
+data "buildkite_cluster" "default" {
+  name = "Default cluster"
+}
+resource "buildkite_pipeline" "public_pipeline" {
+  name       = "Public Pipeline"
+  repository = "git@github.com:my-org/public-repo"
+  cluster_id = data.buildkite_cluster.default.id
+  visibility = "PUBLIC"
+}
+
 # signed pipeline
 data "buildkite_cluster" "default" {
   name = "Default cluster"
