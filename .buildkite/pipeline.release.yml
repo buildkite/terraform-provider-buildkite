@@ -15,7 +15,7 @@ steps:
           parameters:
             GITHUB_TOKEN: /pipelines/buildkite/terraform-provider-buildkite-release/github-token
             GPG_SECRET_KEY_BASE64: /pipelines/buildkite/terraform-provider-buildkite-release/gpg-secret-key-base64
-      - docker-compose#v2.2.0:
+      - docker-compose#v5.12.1:
           run: go
     agents:
       queue: "oss-deploy"
