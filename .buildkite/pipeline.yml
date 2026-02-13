@@ -5,7 +5,7 @@ steps:
     agents:
       queue: "hosted"
     plugins:
-      - docker#v5.9.0:
+      - docker#v5.13.0:
           image: "golangci/golangci-lint:v2.0.2"
           always-pull: true
           volumes:
