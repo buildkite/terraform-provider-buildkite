@@ -61,7 +61,7 @@ steps:
       - docker-compose#v3.9.0:
           run: go
           mount-buildkite-agent: "true"
-      - test-collector#v1.8.0:
+      - test-collector#v1.11.0:
           files: junit-*.xml
           format: junit
     retry:
