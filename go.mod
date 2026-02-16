@@ -5,6 +5,7 @@ go 1.24.0
 require (
 	github.com/Khan/genqlient v0.8.1
 	github.com/MakeNowJust/heredoc v1.0.0
+	github.com/MakeNowJust/heredoc/v2 v2.0.1
 	github.com/buildkite/go-pipeline v0.16.0
 	github.com/buildkite/interpolate v0.1.5
 	github.com/hashicorp/go-retryablehttp v0.7.8
@@ -62,7 +63,6 @@ require (
 )
 
 require (
-	github.com/MakeNowJust/heredoc/v2 v2.0.1
 	github.com/ProtonMail/go-crypto v1.3.0 // indirect
 	github.com/agext/levenshtein v1.2.3 // indirect
 	github.com/cloudflare/circl v1.6.1 // indirect
