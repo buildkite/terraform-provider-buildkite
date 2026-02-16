@@ -4,7 +4,7 @@ go 1.24.0
 
 require (
 	github.com/Khan/genqlient v0.8.1
-	github.com/MakeNowJust/heredoc v1.0.0
+	github.com/MakeNowJust/heredoc/v2 v2.0.1
 	github.com/MakeNowJust/heredoc/v2 v2.0.1
 	github.com/buildkite/go-pipeline v0.16.0
 	github.com/buildkite/interpolate v0.1.5
