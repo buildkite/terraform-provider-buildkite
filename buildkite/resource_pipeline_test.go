@@ -607,6 +607,7 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 					build_branches = true
 					build_tags = true
 					build_pull_request_ready_for_review = true
+					build_pull_request_base_branch_changed = true
 					cancel_deleted_branch_builds = true
 					filter_enabled = true
 					filter_condition = "true"
@@ -614,6 +615,8 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 					publish_blocked_as_pending = true
 					publish_commit_status_per_step = true
 					separate_pull_request_statuses = true
+					ignore_default_branch_pull_requests = true
+					prefix_pull_request_fork_branch_names = true
 					build_merge_group_checks_requested = true
 					cancel_when_merge_group_destroyed = true
 					use_merge_group_base_commit_for_git_diff_base = true
@@ -650,6 +653,7 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_branches", "true"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_tags", "true"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_pull_request_ready_for_review", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_pull_request_base_branch_changed", "true"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.cancel_deleted_branch_builds", "true"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.filter_enabled", "true"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.filter_condition", "true"),
@@ -657,6 +661,8 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.publish_blocked_as_pending", "true"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.publish_commit_status_per_step", "true"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.separate_pull_request_statuses", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.ignore_default_branch_pull_requests", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.prefix_pull_request_fork_branch_names", "true"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_merge_group_checks_requested", "true"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.cancel_when_merge_group_destroyed", "true"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.use_merge_group_base_commit_for_git_diff_base", "true"),
@@ -728,6 +734,7 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 								publish_commit_status_per_step = true
 								separate_pull_request_statuses = true
 								ignore_default_branch_pull_requests = true
+								prefix_pull_request_fork_branch_names = true
 								build_merge_group_checks_requested = true
 								cancel_when_merge_group_destroyed = true
 								use_merge_group_base_commit_for_git_diff_base = true
@@ -746,6 +753,7 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 						resource.TestCheckResourceAttrPair("buildkite_pipeline.pipeline", "cluster_id", "buildkite_cluster.cluster", "id"),
 						resource.TestCheckResourceAttrPair("buildkite_pipeline.pipeline", "cluster_name", "buildkite_cluster.cluster", "name"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.ignore_default_branch_pull_requests", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.prefix_pull_request_fork_branch_names", "true"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_pull_request_labels_changed", "true"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_pull_request_base_branch_changed", "true"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_merge_group_checks_requested", "true"),
