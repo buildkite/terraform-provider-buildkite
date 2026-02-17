@@ -5,7 +5,7 @@ steps:
     agents:
       queue: "hosted"
     plugins:
-      - docker#v5.9.0:
+      - docker#v5.13.0:
           image: "golangci/golangci-lint:v2.0.2"
           always-pull: true
           volumes:
@@ -17,7 +17,7 @@ steps:
     agents:
       queue: "hosted"
     plugins:
-      docker-compose#v3.9.0:
+      docker-compose#v5.12.1:
         run: go
 
   - label: docs
@@ -26,7 +26,7 @@ steps:
     agents:
       queue: "hosted"
     plugins:
-      docker-compose#v3.9.0:
+      docker-compose#v5.12.1:
         run: go
         mount-buildkite-agent: true
 
@@ -36,7 +36,7 @@ steps:
     agents:
       queue: "hosted"
     plugins:
-      docker-compose#v3.9.0:
+      docker-compose#v5.12.1:
         run: go
 
   - label: acceptance tests
@@ -51,25 +51,30 @@ steps:
             - organization_slug
             - organization_id
             - pipeline_slug
-      - aws-ssm#v1.0.0:
+      - aws-ssm#v1.1.0:
           parameters:
             BUILDKITE_ORGANIZATION_SLUG: /pipelines/buildkite/terraform-provider-buildkite-main/buildkite_organization
             BUILDKITE_API_TOKEN: /pipelines/buildkite/terraform-provider-buildkite-main/buildkite_api_token
             BUILDKITE_ANALYTICS_TOKEN: /pipelines/buildkite/terraform-provider-buildkite-main/buildkite_analytics_token
-      - docker-compose#v3.9.0:
+            GITHUB_TEST_REPO: /pipelines/buildkite/terraform-provider-buildkite-main/github_test_repo
+            GITHUB_TEST_REPO_ALT: /pipelines/buildkite/terraform-provider-buildkite-main/github_test_repo_alt
+      - docker-compose#v5.12.1:
           run: go
           mount-buildkite-agent: "true"
-      - test-collector#v1.8.0:
+      - test-collector#v1.11.0:
           files: junit-*.xml
           format: junit
+    retry:
+      automatic:
+        - exit_status: -1
+          limit: 2
 
   - label: "Security Scan"
     key: security_scan
+    secrets:
+      GITHUB_TOKEN: SCORECARD_TOKEN
     plugins:
-      - secrets#v1.0.0:
-          variables:
-            GITHUB_TOKEN: SCORECARD_TOKEN
-      - ossf-scorecard#v1.0.0:
+      - ossf-scorecard#v1.0.1:
           github_token: $$GITHUB_TOKEN
 
   - label: build
@@ -77,7 +82,7 @@ steps:
     agents:
       queue: "hosted"
     plugins:
-      docker-compose#v3.9.0:
+      docker-compose#v5.12.1:
         run: go
     depends_on:
       - lint

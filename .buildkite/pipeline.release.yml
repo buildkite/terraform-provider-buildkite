@@ -8,14 +8,14 @@ steps:
             - organization_slug
             - organization_id
             - pipeline_slug
-      - ecr#v2.3.0:
+      - ecr#v2.11.0:
           account-ids: "445615400570"
           login: true
-      - aws-ssm#v1.0.0:
+      - aws-ssm#v1.1.0:
           parameters:
             GITHUB_TOKEN: /pipelines/buildkite/terraform-provider-buildkite-release/github-token
             GPG_SECRET_KEY_BASE64: /pipelines/buildkite/terraform-provider-buildkite-release/gpg-secret-key-base64
-      - docker-compose#v2.2.0:
+      - docker-compose#v5.12.1:
           run: go
     agents:
       queue: "oss-deploy"

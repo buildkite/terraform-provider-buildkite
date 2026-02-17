@@ -24,15 +24,19 @@ type teamResource struct {
 }
 
 type teamResourceModel struct {
-	ID                        types.String `tfsdk:"id"`
-	UUID                      types.String `tfsdk:"uuid"`
-	Name                      types.String `tfsdk:"name"`
-	Description               types.String `tfsdk:"description"`
-	Privacy                   types.String `tfsdk:"privacy"`
-	IsDefaultTeam             types.Bool   `tfsdk:"default_team"`
-	DefaultMemberRole         types.String `tfsdk:"default_member_role"`
-	Slug                      types.String `tfsdk:"slug"`
-	MembersCanCreatePipelines types.Bool   `tfsdk:"members_can_create_pipelines"`
+	ID                          types.String `tfsdk:"id"`
+	UUID                        types.String `tfsdk:"uuid"`
+	Name                        types.String `tfsdk:"name"`
+	Description                 types.String `tfsdk:"description"`
+	Privacy                     types.String `tfsdk:"privacy"`
+	IsDefaultTeam               types.Bool   `tfsdk:"default_team"`
+	DefaultMemberRole           types.String `tfsdk:"default_member_role"`
+	Slug                        types.String `tfsdk:"slug"`
+	MembersCanCreatePipelines   types.Bool   `tfsdk:"members_can_create_pipelines"`
+	MembersCanCreateSuites      types.Bool   `tfsdk:"members_can_create_suites"`
+	MembersCanCreateRegistries  types.Bool   `tfsdk:"members_can_create_registries"`
+	MembersCanDestroyRegistries types.Bool   `tfsdk:"members_can_destroy_registries"`
+	MembersCanDestroyPackages   types.Bool   `tfsdk:"members_can_destroy_packages"`
 }
 
 // This is required due to the getTeam function not using Genqlient
@@ -124,6 +128,30 @@ func (t *teamResource) Schema(ctx context.Context, req resource.SchemaRequest, r
 				Default:             booldefault.StaticBool(false),
 				MarkdownDescription: "Whether members of the team can create Pipelines.",
 			},
+			"members_can_create_suites": resource_schema.BoolAttribute{
+				Optional:            true,
+				Computed:            true,
+				Default:             booldefault.StaticBool(false),
+				MarkdownDescription: "Whether members of the team can create test suites.",
+			},
+			"members_can_create_registries": resource_schema.BoolAttribute{
+				Optional:            true,
+				Computed:            true,
+				Default:             booldefault.StaticBool(false),
+				MarkdownDescription: "Whether members of the team can create registries.",
+			},
+			"members_can_destroy_registries": resource_schema.BoolAttribute{
+				Optional:            true,
+				Computed:            true,
+				Default:             booldefault.StaticBool(false),
+				MarkdownDescription: "Whether members of the team can destroy registries.",
+			},
+			"members_can_destroy_packages": resource_schema.BoolAttribute{
+				Optional:            true,
+				Computed:            true,
+				Default:             booldefault.StaticBool(false),
+				MarkdownDescription: "Whether members of the team can destroy packages.",
+			},
 		},
 	}
 }
@@ -162,6 +190,10 @@ func (t *teamResource) Create(ctx context.Context, req resource.CreateRequest, r
 				state.IsDefaultTeam.ValueBool(),
 				state.DefaultMemberRole.ValueString(),
 				state.MembersCanCreatePipelines.ValueBool(),
+				state.MembersCanCreateSuites.ValueBool(),
+				state.MembersCanCreateRegistries.ValueBool(),
+				state.MembersCanDestroyRegistries.ValueBool(),
+				state.MembersCanDestroyPackages.ValueBool(),
 			)
 		}
 
@@ -265,6 +297,10 @@ func (t *teamResource) Update(ctx context.Context, req resource.UpdateRequest, r
 			plan.IsDefaultTeam.ValueBool(),
 			plan.DefaultMemberRole.ValueString(),
 			plan.MembersCanCreatePipelines.ValueBool(),
+			plan.MembersCanCreateSuites.ValueBool(),
+			plan.MembersCanCreateRegistries.ValueBool(),
+			plan.MembersCanDestroyRegistries.ValueBool(),
+			plan.MembersCanDestroyPackages.ValueBool(),
 		)
 
 		return retryContextError(err)
@@ -328,4 +364,8 @@ func updateTeamResourceState(state *teamResourceModel, res getNodeNodeTeam) {
 	state.IsDefaultTeam = types.BoolValue(res.IsDefaultTeam)
 	state.DefaultMemberRole = types.StringValue(string(res.GetDefaultMemberRole()))
 	state.MembersCanCreatePipelines = types.BoolValue(res.MembersCanCreatePipelines)
+	state.MembersCanCreateSuites = types.BoolValue(res.MembersCanCreateSuites)
+	state.MembersCanCreateRegistries = types.BoolValue(res.MembersCanCreateRegistries)
+	state.MembersCanDestroyRegistries = types.BoolValue(res.MembersCanDestroyRegistries)
+	state.MembersCanDestroyPackages = types.BoolValue(res.MembersCanDestroyPackages)
 }

@@ -184,6 +184,7 @@ func (v *ClusterQueueValuesHostedAgentsHostedAgentQueueSettings) GetPlatformSett
 }
 
 func (v *ClusterQueueValuesHostedAgentsHostedAgentQueueSettings) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -655,6 +656,14 @@ type GetOrganizationTeamsOrganizationTeamsTeamConnectionEdgesTeamEdgeNodeTeam st
 	DefaultMemberRole string `json:"defaultMemberRole"`
 	// Whether or not team members can create new pipelines in this team
 	MembersCanCreatePipelines bool `json:"membersCanCreatePipelines"`
+	// Whether or not team members can create new test suites in this team
+	MembersCanCreateSuites bool `json:"membersCanCreateSuites"`
+	// Whether or not team members can create new registries in this team
+	MembersCanCreateRegistries bool `json:"membersCanCreateRegistries"`
+	// Whether or not team members can delete registries in this team
+	MembersCanDestroyRegistries bool `json:"membersCanDestroyRegistries"`
+	// Whether or not team members can delete packages in this team
+	MembersCanDestroyPackages bool `json:"membersCanDestroyPackages"`
 }
 
 // GetId returns GetOrganizationTeamsOrganizationTeamsTeamConnectionEdgesTeamEdgeNodeTeam.Id, and is useful for accessing the field via an interface.
@@ -700,6 +709,26 @@ func (v *GetOrganizationTeamsOrganizationTeamsTeamConnectionEdgesTeamEdgeNodeTea
 // GetMembersCanCreatePipelines returns GetOrganizationTeamsOrganizationTeamsTeamConnectionEdgesTeamEdgeNodeTeam.MembersCanCreatePipelines, and is useful for accessing the field via an interface.
 func (v *GetOrganizationTeamsOrganizationTeamsTeamConnectionEdgesTeamEdgeNodeTeam) GetMembersCanCreatePipelines() bool {
 	return v.MembersCanCreatePipelines
+}
+
+// GetMembersCanCreateSuites returns GetOrganizationTeamsOrganizationTeamsTeamConnectionEdgesTeamEdgeNodeTeam.MembersCanCreateSuites, and is useful for accessing the field via an interface.
+func (v *GetOrganizationTeamsOrganizationTeamsTeamConnectionEdgesTeamEdgeNodeTeam) GetMembersCanCreateSuites() bool {
+	return v.MembersCanCreateSuites
+}
+
+// GetMembersCanCreateRegistries returns GetOrganizationTeamsOrganizationTeamsTeamConnectionEdgesTeamEdgeNodeTeam.MembersCanCreateRegistries, and is useful for accessing the field via an interface.
+func (v *GetOrganizationTeamsOrganizationTeamsTeamConnectionEdgesTeamEdgeNodeTeam) GetMembersCanCreateRegistries() bool {
+	return v.MembersCanCreateRegistries
+}
+
+// GetMembersCanDestroyRegistries returns GetOrganizationTeamsOrganizationTeamsTeamConnectionEdgesTeamEdgeNodeTeam.MembersCanDestroyRegistries, and is useful for accessing the field via an interface.
+func (v *GetOrganizationTeamsOrganizationTeamsTeamConnectionEdgesTeamEdgeNodeTeam) GetMembersCanDestroyRegistries() bool {
+	return v.MembersCanDestroyRegistries
+}
+
+// GetMembersCanDestroyPackages returns GetOrganizationTeamsOrganizationTeamsTeamConnectionEdgesTeamEdgeNodeTeam.MembersCanDestroyPackages, and is useful for accessing the field via an interface.
+func (v *GetOrganizationTeamsOrganizationTeamsTeamConnectionEdgesTeamEdgeNodeTeam) GetMembersCanDestroyPackages() bool {
+	return v.MembersCanDestroyPackages
 }
 
 // GetOrganizationTeamsOrganizationTeamsTeamConnectionPageInfo includes the requested fields of the GraphQL type PageInfo.
@@ -800,7 +829,28 @@ func (v *GetTeamFromSlugTeam) GetMembersCanCreatePipelines() bool {
 	return v.TeamFields.MembersCanCreatePipelines
 }
 
+// GetMembersCanCreateSuites returns GetTeamFromSlugTeam.MembersCanCreateSuites, and is useful for accessing the field via an interface.
+func (v *GetTeamFromSlugTeam) GetMembersCanCreateSuites() bool {
+	return v.TeamFields.MembersCanCreateSuites
+}
+
+// GetMembersCanCreateRegistries returns GetTeamFromSlugTeam.MembersCanCreateRegistries, and is useful for accessing the field via an interface.
+func (v *GetTeamFromSlugTeam) GetMembersCanCreateRegistries() bool {
+	return v.TeamFields.MembersCanCreateRegistries
+}
+
+// GetMembersCanDestroyRegistries returns GetTeamFromSlugTeam.MembersCanDestroyRegistries, and is useful for accessing the field via an interface.
+func (v *GetTeamFromSlugTeam) GetMembersCanDestroyRegistries() bool {
+	return v.TeamFields.MembersCanDestroyRegistries
+}
+
+// GetMembersCanDestroyPackages returns GetTeamFromSlugTeam.MembersCanDestroyPackages, and is useful for accessing the field via an interface.
+func (v *GetTeamFromSlugTeam) GetMembersCanDestroyPackages() bool {
+	return v.TeamFields.MembersCanDestroyPackages
+}
+
 func (v *GetTeamFromSlugTeam) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -842,6 +892,14 @@ type __premarshalGetTeamFromSlugTeam struct {
 	DefaultMemberRole string `json:"defaultMemberRole"`
 
 	MembersCanCreatePipelines bool `json:"membersCanCreatePipelines"`
+
+	MembersCanCreateSuites bool `json:"membersCanCreateSuites"`
+
+	MembersCanCreateRegistries bool `json:"membersCanCreateRegistries"`
+
+	MembersCanDestroyRegistries bool `json:"membersCanDestroyRegistries"`
+
+	MembersCanDestroyPackages bool `json:"membersCanDestroyPackages"`
 }
 
 func (v *GetTeamFromSlugTeam) MarshalJSON() ([]byte, error) {
@@ -864,6 +922,10 @@ func (v *GetTeamFromSlugTeam) __premarshalJSON() (*__premarshalGetTeamFromSlugTe
 	retval.IsDefaultTeam = v.TeamFields.IsDefaultTeam
 	retval.DefaultMemberRole = v.TeamFields.DefaultMemberRole
 	retval.MembersCanCreatePipelines = v.TeamFields.MembersCanCreatePipelines
+	retval.MembersCanCreateSuites = v.TeamFields.MembersCanCreateSuites
+	retval.MembersCanCreateRegistries = v.TeamFields.MembersCanCreateRegistries
+	retval.MembersCanDestroyRegistries = v.TeamFields.MembersCanDestroyRegistries
+	retval.MembersCanDestroyPackages = v.TeamFields.MembersCanDestroyPackages
 	return &retval, nil
 }
 
@@ -1277,6 +1339,7 @@ func (v *OrganizationRuleFields) GetSource() OrganizationRuleFieldsSourceRuleSou
 func (v *OrganizationRuleFields) GetTarget() OrganizationRuleFieldsTargetRuleTarget { return v.Target }
 
 func (v *OrganizationRuleFields) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -1452,6 +1515,7 @@ func __unmarshalOrganizationRuleFieldsSourceRuleSource(b []byte, v *Organization
 }
 
 func __marshalOrganizationRuleFieldsSourceRuleSource(v *OrganizationRuleFieldsSourceRuleSource) ([]byte, error) {
+
 	var typename string
 	switch v := (*v).(type) {
 	case *OrganizationRuleFieldsSourcePipeline:
@@ -1529,6 +1593,7 @@ func __unmarshalOrganizationRuleFieldsTargetRuleTarget(b []byte, v *Organization
 }
 
 func __marshalOrganizationRuleFieldsTargetRuleTarget(v *OrganizationRuleFieldsTargetRuleTarget) ([]byte, error) {
+
 	var typename string
 	switch v := (*v).(type) {
 	case *OrganizationRuleFieldsTargetPipeline:
@@ -1735,7 +1800,9 @@ type PipelineFields struct {
 	Tags []PipelineFieldsTagsPipelineTag `json:"tags"`
 	// Teams associated with this pipeline
 	Teams PipelineFieldsTeamsTeamPipelineConnection `json:"teams"`
-	// The URL to use in your repository settings for commit webhooks
+	// Whether this pipeline is visible to everyone, including people outside this organization
+	Visibility PipelineVisibility `json:"visibility"`
+	// The webhookURL field returns the webhook URL if the user has edit permissions for the pipeline. Otherwise, it returns null.
 	WebhookURL string `json:"webhookURL"`
 }
 
@@ -1813,6 +1880,9 @@ func (v *PipelineFields) GetTags() []PipelineFieldsTagsPipelineTag { return v.Ta
 
 // GetTeams returns PipelineFields.Teams, and is useful for accessing the field via an interface.
 func (v *PipelineFields) GetTeams() PipelineFieldsTeamsTeamPipelineConnection { return v.Teams }
+
+// GetVisibility returns PipelineFields.Visibility, and is useful for accessing the field via an interface.
+func (v *PipelineFields) GetVisibility() PipelineVisibility { return v.Visibility }
 
 // GetWebhookURL returns PipelineFields.WebhookURL, and is useful for accessing the field via an interface.
 func (v *PipelineFields) GetWebhookURL() string { return v.WebhookURL }
@@ -2873,6 +2943,7 @@ func (v *PipelineFieldsTeamsTeamPipelineConnection) GetEdges() []PipelineTeamEdg
 }
 
 func (v *PipelineFieldsTeamsTeamPipelineConnection) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -3341,15 +3412,15 @@ var AllPipelineVisibility = []PipelineVisibility{
 type RuleAction string
 
 const (
-	// Artifacts read
-	RuleActionArtifactsRead RuleAction = "ARTIFACTS_READ"
 	// Trigger build
 	RuleActionTriggerBuild RuleAction = "TRIGGER_BUILD"
+	// Artifacts read
+	RuleActionArtifactsRead RuleAction = "ARTIFACTS_READ"
 )
 
 var AllRuleAction = []RuleAction{
-	RuleActionArtifactsRead,
 	RuleActionTriggerBuild,
+	RuleActionArtifactsRead,
 }
 
 // The effect a rule has
@@ -3425,6 +3496,14 @@ type TeamFields struct {
 	DefaultMemberRole string `json:"defaultMemberRole"`
 	// Whether or not team members can create new pipelines in this team
 	MembersCanCreatePipelines bool `json:"membersCanCreatePipelines"`
+	// Whether or not team members can create new test suites in this team
+	MembersCanCreateSuites bool `json:"membersCanCreateSuites"`
+	// Whether or not team members can create new registries in this team
+	MembersCanCreateRegistries bool `json:"membersCanCreateRegistries"`
+	// Whether or not team members can delete registries in this team
+	MembersCanDestroyRegistries bool `json:"membersCanDestroyRegistries"`
+	// Whether or not team members can delete packages in this team
+	MembersCanDestroyPackages bool `json:"membersCanDestroyPackages"`
 }
 
 // GetId returns TeamFields.Id, and is useful for accessing the field via an interface.
@@ -3453,6 +3532,18 @@ func (v *TeamFields) GetDefaultMemberRole() string { return v.DefaultMemberRole 
 
 // GetMembersCanCreatePipelines returns TeamFields.MembersCanCreatePipelines, and is useful for accessing the field via an interface.
 func (v *TeamFields) GetMembersCanCreatePipelines() bool { return v.MembersCanCreatePipelines }
+
+// GetMembersCanCreateSuites returns TeamFields.MembersCanCreateSuites, and is useful for accessing the field via an interface.
+func (v *TeamFields) GetMembersCanCreateSuites() bool { return v.MembersCanCreateSuites }
+
+// GetMembersCanCreateRegistries returns TeamFields.MembersCanCreateRegistries, and is useful for accessing the field via an interface.
+func (v *TeamFields) GetMembersCanCreateRegistries() bool { return v.MembersCanCreateRegistries }
+
+// GetMembersCanDestroyRegistries returns TeamFields.MembersCanDestroyRegistries, and is useful for accessing the field via an interface.
+func (v *TeamFields) GetMembersCanDestroyRegistries() bool { return v.MembersCanDestroyRegistries }
+
+// GetMembersCanDestroyPackages returns TeamFields.MembersCanDestroyPackages, and is useful for accessing the field via an interface.
+func (v *TeamFields) GetMembersCanDestroyPackages() bool { return v.MembersCanDestroyPackages }
 
 // TeamMemberFields includes the GraphQL fields of TeamMember requested by the fragment TeamMemberFields.
 // The GraphQL type's documentation follows.
@@ -3614,6 +3705,125 @@ type TeamSuiteFieldsTeam struct {
 
 // GetId returns TeamSuiteFieldsTeam.Id, and is useful for accessing the field via an interface.
 func (v *TeamSuiteFieldsTeam) GetId() string { return v.Id }
+
+// WebhookFields includes the GraphQL fields of RepositoryProviderWebhook requested by the fragment WebhookFields.
+// The GraphQL type's documentation follows.
+//
+// # A webhook configured on a repository to trigger pipeline builds
+//
+// WebhookFields is implemented by the following types:
+// WebhookFieldsRepositoryProviderGithubEnterpriseWebhook
+// WebhookFieldsRepositoryProviderGithubWebhook
+type WebhookFields interface {
+	implementsGraphQLInterfaceWebhookFields()
+	// GetExternalId returns the interface-field "externalId" from its implementation.
+	// The GraphQL interface field's documentation follows.
+	//
+	// A webhook configured on a repository to trigger pipeline builds
+	GetExternalId() string
+	// GetUrl returns the interface-field "url" from its implementation.
+	// The GraphQL interface field's documentation follows.
+	//
+	// A webhook configured on a repository to trigger pipeline builds
+	GetUrl() string
+}
+
+func (v *WebhookFieldsRepositoryProviderGithubEnterpriseWebhook) implementsGraphQLInterfaceWebhookFields() {
+}
+func (v *WebhookFieldsRepositoryProviderGithubWebhook) implementsGraphQLInterfaceWebhookFields() {}
+
+func __unmarshalWebhookFields(b []byte, v *WebhookFields) error {
+	if string(b) == "null" {
+		return nil
+	}
+
+	var tn struct {
+		TypeName string `json:"__typename"`
+	}
+	err := json.Unmarshal(b, &tn)
+	if err != nil {
+		return err
+	}
+
+	switch tn.TypeName {
+	case "RepositoryProviderGithubEnterpriseWebhook":
+		*v = new(WebhookFieldsRepositoryProviderGithubEnterpriseWebhook)
+		return json.Unmarshal(b, *v)
+	case "RepositoryProviderGithubWebhook":
+		*v = new(WebhookFieldsRepositoryProviderGithubWebhook)
+		return json.Unmarshal(b, *v)
+	case "":
+		return fmt.Errorf(
+			"response was missing RepositoryProviderWebhook.__typename")
+	default:
+		return fmt.Errorf(
+			`unexpected concrete type for WebhookFields: "%v"`, tn.TypeName)
+	}
+}
+
+func __marshalWebhookFields(v *WebhookFields) ([]byte, error) {
+
+	var typename string
+	switch v := (*v).(type) {
+	case *WebhookFieldsRepositoryProviderGithubEnterpriseWebhook:
+		typename = "RepositoryProviderGithubEnterpriseWebhook"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*WebhookFieldsRepositoryProviderGithubEnterpriseWebhook
+		}{typename, v}
+		return json.Marshal(result)
+	case *WebhookFieldsRepositoryProviderGithubWebhook:
+		typename = "RepositoryProviderGithubWebhook"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*WebhookFieldsRepositoryProviderGithubWebhook
+		}{typename, v}
+		return json.Marshal(result)
+	case nil:
+		return []byte("null"), nil
+	default:
+		return nil, fmt.Errorf(
+			`unexpected concrete type for WebhookFields: "%T"`, v)
+	}
+}
+
+// WebhookFields includes the GraphQL fields of RepositoryProviderGithubEnterpriseWebhook requested by the fragment WebhookFields.
+// The GraphQL type's documentation follows.
+//
+// A webhook configured on a repository to trigger pipeline builds
+type WebhookFieldsRepositoryProviderGithubEnterpriseWebhook struct {
+	// A webhook configured on a repository to trigger pipeline builds
+	ExternalId string `json:"externalId"`
+	// A webhook configured on a repository to trigger pipeline builds
+	Url string `json:"url"`
+}
+
+// GetExternalId returns WebhookFieldsRepositoryProviderGithubEnterpriseWebhook.ExternalId, and is useful for accessing the field via an interface.
+func (v *WebhookFieldsRepositoryProviderGithubEnterpriseWebhook) GetExternalId() string {
+	return v.ExternalId
+}
+
+// GetUrl returns WebhookFieldsRepositoryProviderGithubEnterpriseWebhook.Url, and is useful for accessing the field via an interface.
+func (v *WebhookFieldsRepositoryProviderGithubEnterpriseWebhook) GetUrl() string { return v.Url }
+
+// WebhookFields includes the GraphQL fields of RepositoryProviderGithubWebhook requested by the fragment WebhookFields.
+// The GraphQL type's documentation follows.
+//
+// A webhook configured on a repository to trigger pipeline builds
+type WebhookFieldsRepositoryProviderGithubWebhook struct {
+	// A webhook configured on a repository to trigger pipeline builds
+	ExternalId string `json:"externalId"`
+	// A webhook configured on a repository to trigger pipeline builds
+	Url string `json:"url"`
+}
+
+// GetExternalId returns WebhookFieldsRepositoryProviderGithubWebhook.ExternalId, and is useful for accessing the field via an interface.
+func (v *WebhookFieldsRepositoryProviderGithubWebhook) GetExternalId() string { return v.ExternalId }
+
+// GetUrl returns WebhookFieldsRepositoryProviderGithubWebhook.Url, and is useful for accessing the field via an interface.
+func (v *WebhookFieldsRepositoryProviderGithubWebhook) GetUrl() string { return v.Url }
 
 // __GetOrganizationClustersInput is used internally by genqlient
 type __GetOrganizationClustersInput struct {
@@ -3857,6 +4067,14 @@ func (v *__createPipelineTemplateInput) GetDescription() *string { return v.Desc
 // GetAvailable returns __createPipelineTemplateInput.Available, and is useful for accessing the field via an interface.
 func (v *__createPipelineTemplateInput) GetAvailable() bool { return v.Available }
 
+// __createPipelineWebhookInput is used internally by genqlient
+type __createPipelineWebhookInput struct {
+	PipelineId string `json:"pipelineId"`
+}
+
+// GetPipelineId returns __createPipelineWebhookInput.PipelineId, and is useful for accessing the field via an interface.
+func (v *__createPipelineWebhookInput) GetPipelineId() string { return v.PipelineId }
+
 // __createTeamMemberInput is used internally by genqlient
 type __createTeamMemberInput struct {
 	TeamID string `json:"teamID"`
@@ -3976,6 +4194,18 @@ func (v *__deletePipelineTemplateInput) GetOrganizationId() string { return v.Or
 
 // GetId returns __deletePipelineTemplateInput.Id, and is useful for accessing the field via an interface.
 func (v *__deletePipelineTemplateInput) GetId() string { return v.Id }
+
+// __deletePipelineWebhookInput is used internally by genqlient
+type __deletePipelineWebhookInput struct {
+	PipelineId string  `json:"pipelineId"`
+	Repository *string `json:"repository,omitempty"`
+}
+
+// GetPipelineId returns __deletePipelineWebhookInput.PipelineId, and is useful for accessing the field via an interface.
+func (v *__deletePipelineWebhookInput) GetPipelineId() string { return v.PipelineId }
+
+// GetRepository returns __deletePipelineWebhookInput.Repository, and is useful for accessing the field via an interface.
+func (v *__deletePipelineWebhookInput) GetRepository() *string { return v.Repository }
 
 // __deleteTeamMemberInput is used internally by genqlient
 type __deleteTeamMemberInput struct {
@@ -4137,6 +4367,14 @@ func (v *__getPipelineTemplatesInput) GetOrgSlug() string { return v.OrgSlug }
 // GetCursor returns __getPipelineTemplatesInput.Cursor, and is useful for accessing the field via an interface.
 func (v *__getPipelineTemplatesInput) GetCursor() *string { return v.Cursor }
 
+// __getPipelineWebhookInput is used internally by genqlient
+type __getPipelineWebhookInput struct {
+	Id string `json:"id"`
+}
+
+// GetId returns __getPipelineWebhookInput.Id, and is useful for accessing the field via an interface.
+func (v *__getPipelineWebhookInput) GetId() string { return v.Id }
+
 // __getTestSuiteInput is used internally by genqlient
 type __getTestSuiteInput struct {
 	Id        string `json:"id"`
@@ -4243,13 +4481,17 @@ func (v *__setOrganization2FAInput) GetValue() bool { return v.Value }
 
 // __teamCreateInput is used internally by genqlient
 type __teamCreateInput struct {
-	OrganizationID            string `json:"organizationID"`
-	Name                      string `json:"name"`
-	Description               string `json:"description"`
-	Privacy                   string `json:"privacy"`
-	IsDefaultTeam             bool   `json:"isDefaultTeam"`
-	DefaultMemberRole         string `json:"defaultMemberRole"`
-	MembersCanCreatePipelines bool   `json:"membersCanCreatePipelines"`
+	OrganizationID              string `json:"organizationID"`
+	Name                        string `json:"name"`
+	Description                 string `json:"description"`
+	Privacy                     string `json:"privacy"`
+	IsDefaultTeam               bool   `json:"isDefaultTeam"`
+	DefaultMemberRole           string `json:"defaultMemberRole"`
+	MembersCanCreatePipelines   bool   `json:"membersCanCreatePipelines"`
+	MembersCanCreateSuites      bool   `json:"membersCanCreateSuites"`
+	MembersCanCreateRegistries  bool   `json:"membersCanCreateRegistries"`
+	MembersCanDestroyRegistries bool   `json:"membersCanDestroyRegistries"`
+	MembersCanDestroyPackages   bool   `json:"membersCanDestroyPackages"`
 }
 
 // GetOrganizationID returns __teamCreateInput.OrganizationID, and is useful for accessing the field via an interface.
@@ -4273,6 +4515,20 @@ func (v *__teamCreateInput) GetDefaultMemberRole() string { return v.DefaultMemb
 // GetMembersCanCreatePipelines returns __teamCreateInput.MembersCanCreatePipelines, and is useful for accessing the field via an interface.
 func (v *__teamCreateInput) GetMembersCanCreatePipelines() bool { return v.MembersCanCreatePipelines }
 
+// GetMembersCanCreateSuites returns __teamCreateInput.MembersCanCreateSuites, and is useful for accessing the field via an interface.
+func (v *__teamCreateInput) GetMembersCanCreateSuites() bool { return v.MembersCanCreateSuites }
+
+// GetMembersCanCreateRegistries returns __teamCreateInput.MembersCanCreateRegistries, and is useful for accessing the field via an interface.
+func (v *__teamCreateInput) GetMembersCanCreateRegistries() bool { return v.MembersCanCreateRegistries }
+
+// GetMembersCanDestroyRegistries returns __teamCreateInput.MembersCanDestroyRegistries, and is useful for accessing the field via an interface.
+func (v *__teamCreateInput) GetMembersCanDestroyRegistries() bool {
+	return v.MembersCanDestroyRegistries
+}
+
+// GetMembersCanDestroyPackages returns __teamCreateInput.MembersCanDestroyPackages, and is useful for accessing the field via an interface.
+func (v *__teamCreateInput) GetMembersCanDestroyPackages() bool { return v.MembersCanDestroyPackages }
+
 // __teamDeleteInput is used internally by genqlient
 type __teamDeleteInput struct {
 	Id string `json:"id"`
@@ -4283,13 +4539,17 @@ func (v *__teamDeleteInput) GetId() string { return v.Id }
 
 // __teamUpdateInput is used internally by genqlient
 type __teamUpdateInput struct {
-	Id                        string `json:"id"`
-	Name                      string `json:"name"`
-	Description               string `json:"description"`
-	Privacy                   string `json:"privacy"`
-	IsDefaultTeam             bool   `json:"isDefaultTeam"`
-	DefaultMemberRole         string `json:"defaultMemberRole"`
-	MembersCanCreatePipelines bool   `json:"membersCanCreatePipelines"`
+	Id                          string `json:"id"`
+	Name                        string `json:"name"`
+	Description                 string `json:"description"`
+	Privacy                     string `json:"privacy"`
+	IsDefaultTeam               bool   `json:"isDefaultTeam"`
+	DefaultMemberRole           string `json:"defaultMemberRole"`
+	MembersCanCreatePipelines   bool   `json:"membersCanCreatePipelines"`
+	MembersCanCreateSuites      bool   `json:"membersCanCreateSuites"`
+	MembersCanCreateRegistries  bool   `json:"membersCanCreateRegistries"`
+	MembersCanDestroyRegistries bool   `json:"membersCanDestroyRegistries"`
+	MembersCanDestroyPackages   bool   `json:"membersCanDestroyPackages"`
 }
 
 // GetId returns __teamUpdateInput.Id, and is useful for accessing the field via an interface.
@@ -4312,6 +4572,20 @@ func (v *__teamUpdateInput) GetDefaultMemberRole() string { return v.DefaultMemb
 
 // GetMembersCanCreatePipelines returns __teamUpdateInput.MembersCanCreatePipelines, and is useful for accessing the field via an interface.
 func (v *__teamUpdateInput) GetMembersCanCreatePipelines() bool { return v.MembersCanCreatePipelines }
+
+// GetMembersCanCreateSuites returns __teamUpdateInput.MembersCanCreateSuites, and is useful for accessing the field via an interface.
+func (v *__teamUpdateInput) GetMembersCanCreateSuites() bool { return v.MembersCanCreateSuites }
+
+// GetMembersCanCreateRegistries returns __teamUpdateInput.MembersCanCreateRegistries, and is useful for accessing the field via an interface.
+func (v *__teamUpdateInput) GetMembersCanCreateRegistries() bool { return v.MembersCanCreateRegistries }
+
+// GetMembersCanDestroyRegistries returns __teamUpdateInput.MembersCanDestroyRegistries, and is useful for accessing the field via an interface.
+func (v *__teamUpdateInput) GetMembersCanDestroyRegistries() bool {
+	return v.MembersCanDestroyRegistries
+}
+
+// GetMembersCanDestroyPackages returns __teamUpdateInput.MembersCanDestroyPackages, and is useful for accessing the field via an interface.
+func (v *__teamUpdateInput) GetMembersCanDestroyPackages() bool { return v.MembersCanDestroyPackages }
 
 // __updateClusterAgentTokenInput is used internally by genqlient
 type __updateClusterAgentTokenInput struct {
@@ -4642,6 +4916,7 @@ func (v *createClusterAgentTokenClusterAgentTokenCreateClusterAgentTokenCreatePa
 }
 
 func (v *createClusterAgentTokenClusterAgentTokenCreateClusterAgentTokenCreatePayloadClusterAgentTokenClusterToken) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -4768,6 +5043,7 @@ func (v *createClusterClusterCreateClusterCreatePayloadCluster) GetDefaultQueue(
 }
 
 func (v *createClusterClusterCreateClusterCreatePayloadCluster) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -4882,6 +5158,7 @@ func (v *createClusterQueueClusterQueueCreateClusterQueueCreatePayloadClusterQue
 }
 
 func (v *createClusterQueueClusterQueueCreateClusterQueueCreatePayloadClusterQueue) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -5049,6 +5326,7 @@ func (v *createOrganizationRuleRuleCreateRuleCreatePayloadRule) GetTarget() Orga
 }
 
 func (v *createOrganizationRuleRuleCreateRuleCreatePayloadRule) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -5279,12 +5557,18 @@ func (v *createPipelinePipelineCreatePipelineCreatePayloadPipeline) GetTeams() P
 	return v.PipelineFields.Teams
 }
 
+// GetVisibility returns createPipelinePipelineCreatePipelineCreatePayloadPipeline.Visibility, and is useful for accessing the field via an interface.
+func (v *createPipelinePipelineCreatePipelineCreatePayloadPipeline) GetVisibility() PipelineVisibility {
+	return v.PipelineFields.Visibility
+}
+
 // GetWebhookURL returns createPipelinePipelineCreatePipelineCreatePayloadPipeline.WebhookURL, and is useful for accessing the field via an interface.
 func (v *createPipelinePipelineCreatePipelineCreatePayloadPipeline) GetWebhookURL() string {
 	return v.PipelineFields.WebhookURL
 }
 
 func (v *createPipelinePipelineCreatePipelineCreatePayloadPipeline) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -5355,6 +5639,8 @@ type __premarshalcreatePipelinePipelineCreatePipelineCreatePayloadPipeline struc
 
 	Teams PipelineFieldsTeamsTeamPipelineConnection `json:"teams"`
 
+	Visibility PipelineVisibility `json:"visibility"`
+
 	WebhookURL string `json:"webhookURL"`
 }
 
@@ -5392,6 +5678,7 @@ func (v *createPipelinePipelineCreatePipelineCreatePayloadPipeline) __premarshal
 	retval.Steps = v.PipelineFields.Steps
 	retval.Tags = v.PipelineFields.Tags
 	retval.Teams = v.PipelineFields.Teams
+	retval.Visibility = v.PipelineFields.Visibility
 	retval.WebhookURL = v.PipelineFields.WebhookURL
 	return &retval, nil
 }
@@ -5508,6 +5795,7 @@ func (v *createPipelineSchedulePipelineScheduleCreatePipelineScheduleCreatePaylo
 }
 
 func (v *createPipelineSchedulePipelineScheduleCreatePipelineScheduleCreatePayloadPipelineScheduleEdgeNodePipelineSchedule) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -5640,6 +5928,7 @@ func (v *createPipelineTemplatePipelineTemplateCreatePipelineTemplateCreatePaylo
 }
 
 func (v *createPipelineTemplatePipelineTemplateCreatePipelineTemplateCreatePayloadPipelineTemplate) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -5706,6 +5995,377 @@ type createPipelineTemplateResponse struct {
 // GetPipelineTemplateCreate returns createPipelineTemplateResponse.PipelineTemplateCreate, and is useful for accessing the field via an interface.
 func (v *createPipelineTemplateResponse) GetPipelineTemplateCreate() createPipelineTemplatePipelineTemplateCreatePipelineTemplateCreatePayload {
 	return v.PipelineTemplateCreate
+}
+
+// createPipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayload includes the requested fields of the GraphQL type PipelineCreateWebhookPayload.
+// The GraphQL type's documentation follows.
+//
+// Autogenerated return type of PipelineCreateWebhook.
+type createPipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayload struct {
+	// The pipeline
+	Pipeline createPipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayloadPipeline `json:"pipeline"`
+	// The created webhook
+	Webhook createPipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayloadWebhookRepositoryProviderWebhook `json:"-"`
+}
+
+// GetPipeline returns createPipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayload.Pipeline, and is useful for accessing the field via an interface.
+func (v *createPipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayload) GetPipeline() createPipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayloadPipeline {
+	return v.Pipeline
+}
+
+// GetWebhook returns createPipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayload.Webhook, and is useful for accessing the field via an interface.
+func (v *createPipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayload) GetWebhook() createPipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayloadWebhookRepositoryProviderWebhook {
+	return v.Webhook
+}
+
+func (v *createPipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayload) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*createPipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayload
+		Webhook json.RawMessage `json:"webhook"`
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.createPipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayload = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	{
+		dst := &v.Webhook
+		src := firstPass.Webhook
+		if len(src) != 0 && string(src) != "null" {
+			err = __unmarshalcreatePipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayloadWebhookRepositoryProviderWebhook(
+				src, dst)
+			if err != nil {
+				return fmt.Errorf(
+					"unable to unmarshal createPipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayload.Webhook: %w", err)
+			}
+		}
+	}
+	return nil
+}
+
+type __premarshalcreatePipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayload struct {
+	Pipeline createPipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayloadPipeline `json:"pipeline"`
+
+	Webhook json.RawMessage `json:"webhook"`
+}
+
+func (v *createPipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayload) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *createPipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayload) __premarshalJSON() (*__premarshalcreatePipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayload, error) {
+	var retval __premarshalcreatePipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayload
+
+	retval.Pipeline = v.Pipeline
+	{
+
+		dst := &retval.Webhook
+		src := v.Webhook
+		var err error
+		*dst, err = __marshalcreatePipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayloadWebhookRepositoryProviderWebhook(
+			&src)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"unable to marshal createPipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayload.Webhook: %w", err)
+		}
+	}
+	return &retval, nil
+}
+
+// createPipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayloadPipeline includes the requested fields of the GraphQL type Pipeline.
+// The GraphQL type's documentation follows.
+//
+// A pipeline
+type createPipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayloadPipeline struct {
+	Id string `json:"id"`
+	// The repository for this pipeline
+	Repository createPipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayloadPipelineRepository `json:"repository"`
+}
+
+// GetId returns createPipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayloadPipeline.Id, and is useful for accessing the field via an interface.
+func (v *createPipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayloadPipeline) GetId() string {
+	return v.Id
+}
+
+// GetRepository returns createPipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayloadPipeline.Repository, and is useful for accessing the field via an interface.
+func (v *createPipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayloadPipeline) GetRepository() createPipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayloadPipelineRepository {
+	return v.Repository
+}
+
+// createPipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayloadPipelineRepository includes the requested fields of the GraphQL type Repository.
+// The GraphQL type's documentation follows.
+//
+// A repository associated with a pipeline
+type createPipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayloadPipelineRepository struct {
+	// The git URL for this repository
+	Url string `json:"url"`
+}
+
+// GetUrl returns createPipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayloadPipelineRepository.Url, and is useful for accessing the field via an interface.
+func (v *createPipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayloadPipelineRepository) GetUrl() string {
+	return v.Url
+}
+
+// createPipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayloadWebhookRepositoryProviderGithubEnterpriseWebhook includes the requested fields of the GraphQL type RepositoryProviderGithubEnterpriseWebhook.
+// The GraphQL type's documentation follows.
+//
+// A webhook configured on a GitHub Enterprise repository to trigger pipeline builds
+type createPipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayloadWebhookRepositoryProviderGithubEnterpriseWebhook struct {
+	Typename                                               string `json:"__typename"`
+	WebhookFieldsRepositoryProviderGithubEnterpriseWebhook `json:"-"`
+}
+
+// GetTypename returns createPipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayloadWebhookRepositoryProviderGithubEnterpriseWebhook.Typename, and is useful for accessing the field via an interface.
+func (v *createPipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayloadWebhookRepositoryProviderGithubEnterpriseWebhook) GetTypename() string {
+	return v.Typename
+}
+
+// GetExternalId returns createPipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayloadWebhookRepositoryProviderGithubEnterpriseWebhook.ExternalId, and is useful for accessing the field via an interface.
+func (v *createPipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayloadWebhookRepositoryProviderGithubEnterpriseWebhook) GetExternalId() string {
+	return v.WebhookFieldsRepositoryProviderGithubEnterpriseWebhook.ExternalId
+}
+
+// GetUrl returns createPipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayloadWebhookRepositoryProviderGithubEnterpriseWebhook.Url, and is useful for accessing the field via an interface.
+func (v *createPipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayloadWebhookRepositoryProviderGithubEnterpriseWebhook) GetUrl() string {
+	return v.WebhookFieldsRepositoryProviderGithubEnterpriseWebhook.Url
+}
+
+func (v *createPipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayloadWebhookRepositoryProviderGithubEnterpriseWebhook) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*createPipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayloadWebhookRepositoryProviderGithubEnterpriseWebhook
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.createPipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayloadWebhookRepositoryProviderGithubEnterpriseWebhook = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	err = json.Unmarshal(
+		b, &v.WebhookFieldsRepositoryProviderGithubEnterpriseWebhook)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+type __premarshalcreatePipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayloadWebhookRepositoryProviderGithubEnterpriseWebhook struct {
+	Typename string `json:"__typename"`
+
+	ExternalId string `json:"externalId"`
+
+	Url string `json:"url"`
+}
+
+func (v *createPipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayloadWebhookRepositoryProviderGithubEnterpriseWebhook) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *createPipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayloadWebhookRepositoryProviderGithubEnterpriseWebhook) __premarshalJSON() (*__premarshalcreatePipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayloadWebhookRepositoryProviderGithubEnterpriseWebhook, error) {
+	var retval __premarshalcreatePipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayloadWebhookRepositoryProviderGithubEnterpriseWebhook
+
+	retval.Typename = v.Typename
+	retval.ExternalId = v.WebhookFieldsRepositoryProviderGithubEnterpriseWebhook.ExternalId
+	retval.Url = v.WebhookFieldsRepositoryProviderGithubEnterpriseWebhook.Url
+	return &retval, nil
+}
+
+// createPipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayloadWebhookRepositoryProviderGithubWebhook includes the requested fields of the GraphQL type RepositoryProviderGithubWebhook.
+// The GraphQL type's documentation follows.
+//
+// A webhook configured on a GitHub repository to trigger pipeline builds
+type createPipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayloadWebhookRepositoryProviderGithubWebhook struct {
+	Typename                                     string `json:"__typename"`
+	WebhookFieldsRepositoryProviderGithubWebhook `json:"-"`
+}
+
+// GetTypename returns createPipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayloadWebhookRepositoryProviderGithubWebhook.Typename, and is useful for accessing the field via an interface.
+func (v *createPipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayloadWebhookRepositoryProviderGithubWebhook) GetTypename() string {
+	return v.Typename
+}
+
+// GetExternalId returns createPipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayloadWebhookRepositoryProviderGithubWebhook.ExternalId, and is useful for accessing the field via an interface.
+func (v *createPipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayloadWebhookRepositoryProviderGithubWebhook) GetExternalId() string {
+	return v.WebhookFieldsRepositoryProviderGithubWebhook.ExternalId
+}
+
+// GetUrl returns createPipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayloadWebhookRepositoryProviderGithubWebhook.Url, and is useful for accessing the field via an interface.
+func (v *createPipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayloadWebhookRepositoryProviderGithubWebhook) GetUrl() string {
+	return v.WebhookFieldsRepositoryProviderGithubWebhook.Url
+}
+
+func (v *createPipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayloadWebhookRepositoryProviderGithubWebhook) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*createPipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayloadWebhookRepositoryProviderGithubWebhook
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.createPipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayloadWebhookRepositoryProviderGithubWebhook = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	err = json.Unmarshal(
+		b, &v.WebhookFieldsRepositoryProviderGithubWebhook)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+type __premarshalcreatePipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayloadWebhookRepositoryProviderGithubWebhook struct {
+	Typename string `json:"__typename"`
+
+	ExternalId string `json:"externalId"`
+
+	Url string `json:"url"`
+}
+
+func (v *createPipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayloadWebhookRepositoryProviderGithubWebhook) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *createPipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayloadWebhookRepositoryProviderGithubWebhook) __premarshalJSON() (*__premarshalcreatePipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayloadWebhookRepositoryProviderGithubWebhook, error) {
+	var retval __premarshalcreatePipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayloadWebhookRepositoryProviderGithubWebhook
+
+	retval.Typename = v.Typename
+	retval.ExternalId = v.WebhookFieldsRepositoryProviderGithubWebhook.ExternalId
+	retval.Url = v.WebhookFieldsRepositoryProviderGithubWebhook.Url
+	return &retval, nil
+}
+
+// createPipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayloadWebhookRepositoryProviderWebhook includes the requested fields of the GraphQL interface RepositoryProviderWebhook.
+//
+// createPipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayloadWebhookRepositoryProviderWebhook is implemented by the following types:
+// createPipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayloadWebhookRepositoryProviderGithubEnterpriseWebhook
+// createPipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayloadWebhookRepositoryProviderGithubWebhook
+// The GraphQL type's documentation follows.
+//
+// A webhook configured on a repository to trigger pipeline builds
+type createPipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayloadWebhookRepositoryProviderWebhook interface {
+	implementsGraphQLInterfacecreatePipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayloadWebhookRepositoryProviderWebhook()
+	// GetTypename returns the receiver's concrete GraphQL type-name (see interface doc for possible values).
+	GetTypename() string
+	WebhookFields
+}
+
+func (v *createPipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayloadWebhookRepositoryProviderGithubEnterpriseWebhook) implementsGraphQLInterfacecreatePipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayloadWebhookRepositoryProviderWebhook() {
+}
+func (v *createPipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayloadWebhookRepositoryProviderGithubWebhook) implementsGraphQLInterfacecreatePipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayloadWebhookRepositoryProviderWebhook() {
+}
+
+func __unmarshalcreatePipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayloadWebhookRepositoryProviderWebhook(b []byte, v *createPipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayloadWebhookRepositoryProviderWebhook) error {
+	if string(b) == "null" {
+		return nil
+	}
+
+	var tn struct {
+		TypeName string `json:"__typename"`
+	}
+	err := json.Unmarshal(b, &tn)
+	if err != nil {
+		return err
+	}
+
+	switch tn.TypeName {
+	case "RepositoryProviderGithubEnterpriseWebhook":
+		*v = new(createPipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayloadWebhookRepositoryProviderGithubEnterpriseWebhook)
+		return json.Unmarshal(b, *v)
+	case "RepositoryProviderGithubWebhook":
+		*v = new(createPipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayloadWebhookRepositoryProviderGithubWebhook)
+		return json.Unmarshal(b, *v)
+	case "":
+		return fmt.Errorf(
+			"response was missing RepositoryProviderWebhook.__typename")
+	default:
+		return fmt.Errorf(
+			`unexpected concrete type for createPipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayloadWebhookRepositoryProviderWebhook: "%v"`, tn.TypeName)
+	}
+}
+
+func __marshalcreatePipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayloadWebhookRepositoryProviderWebhook(v *createPipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayloadWebhookRepositoryProviderWebhook) ([]byte, error) {
+
+	var typename string
+	switch v := (*v).(type) {
+	case *createPipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayloadWebhookRepositoryProviderGithubEnterpriseWebhook:
+		typename = "RepositoryProviderGithubEnterpriseWebhook"
+
+		premarshaled, err := v.__premarshalJSON()
+		if err != nil {
+			return nil, err
+		}
+		result := struct {
+			TypeName string `json:"__typename"`
+			*__premarshalcreatePipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayloadWebhookRepositoryProviderGithubEnterpriseWebhook
+		}{typename, premarshaled}
+		return json.Marshal(result)
+	case *createPipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayloadWebhookRepositoryProviderGithubWebhook:
+		typename = "RepositoryProviderGithubWebhook"
+
+		premarshaled, err := v.__premarshalJSON()
+		if err != nil {
+			return nil, err
+		}
+		result := struct {
+			TypeName string `json:"__typename"`
+			*__premarshalcreatePipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayloadWebhookRepositoryProviderGithubWebhook
+		}{typename, premarshaled}
+		return json.Marshal(result)
+	case nil:
+		return []byte("null"), nil
+	default:
+		return nil, fmt.Errorf(
+			`unexpected concrete type for createPipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayloadWebhookRepositoryProviderWebhook: "%T"`, v)
+	}
+}
+
+// createPipelineWebhookResponse is returned by createPipelineWebhook on success.
+type createPipelineWebhookResponse struct {
+	// Create a webhook on the repository for a pipeline.
+	//
+	// This mutation creates a webhook on the pipeline's source repository (e.g., GitHub)
+	// that will trigger builds when code is pushed. Requires a GitHub App integration
+	// to be configured for the organization.
+	//
+	// Returns an error if a webhook already exists for the repository.
+	PipelineCreateWebhook createPipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayload `json:"pipelineCreateWebhook"`
+}
+
+// GetPipelineCreateWebhook returns createPipelineWebhookResponse.PipelineCreateWebhook, and is useful for accessing the field via an interface.
+func (v *createPipelineWebhookResponse) GetPipelineCreateWebhook() createPipelineWebhookPipelineCreateWebhookPipelineCreateWebhookPayload {
+	return v.PipelineCreateWebhook
 }
 
 // createTeamMemberResponse is returned by createTeamMember on success.
@@ -5776,6 +6436,7 @@ func (v *createTeamMemberTeamMemberCreateTeamMemberCreatePayloadTeamMemberEdgeNo
 }
 
 func (v *createTeamMemberTeamMemberCreateTeamMemberCreatePayloadTeamMemberEdgeNodeTeamMember) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -5898,6 +6559,7 @@ func (v *createTeamPipelineTeamPipelineCreateTeamPipelineCreatePayloadTeamPipeli
 }
 
 func (v *createTeamPipelineTeamPipelineCreateTeamPipelineCreatePayloadTeamPipelineEdgeNodeTeamPipeline) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -6093,6 +6755,7 @@ func (v *createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadTeamSuite) GetS
 }
 
 func (v *createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadTeamSuite) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -6321,6 +6984,55 @@ func (v *deletePipelineTemplateResponse) GetPipelineTemplateDelete() deletePipel
 	return v.PipelineTemplateDelete
 }
 
+// deletePipelineWebhookPipelineDeleteWebhookPipelineDeleteWebhookPayload includes the requested fields of the GraphQL type PipelineDeleteWebhookPayload.
+// The GraphQL type's documentation follows.
+//
+// Autogenerated return type of PipelineDeleteWebhook.
+type deletePipelineWebhookPipelineDeleteWebhookPipelineDeleteWebhookPayload struct {
+	// The pipeline
+	Pipeline deletePipelineWebhookPipelineDeleteWebhookPipelineDeleteWebhookPayloadPipeline `json:"pipeline"`
+	// The provider-specific ID of the deleted webhook
+	DeletedWebhookExternalId string `json:"deletedWebhookExternalId"`
+}
+
+// GetPipeline returns deletePipelineWebhookPipelineDeleteWebhookPipelineDeleteWebhookPayload.Pipeline, and is useful for accessing the field via an interface.
+func (v *deletePipelineWebhookPipelineDeleteWebhookPipelineDeleteWebhookPayload) GetPipeline() deletePipelineWebhookPipelineDeleteWebhookPipelineDeleteWebhookPayloadPipeline {
+	return v.Pipeline
+}
+
+// GetDeletedWebhookExternalId returns deletePipelineWebhookPipelineDeleteWebhookPipelineDeleteWebhookPayload.DeletedWebhookExternalId, and is useful for accessing the field via an interface.
+func (v *deletePipelineWebhookPipelineDeleteWebhookPipelineDeleteWebhookPayload) GetDeletedWebhookExternalId() string {
+	return v.DeletedWebhookExternalId
+}
+
+// deletePipelineWebhookPipelineDeleteWebhookPipelineDeleteWebhookPayloadPipeline includes the requested fields of the GraphQL type Pipeline.
+// The GraphQL type's documentation follows.
+//
+// A pipeline
+type deletePipelineWebhookPipelineDeleteWebhookPipelineDeleteWebhookPayloadPipeline struct {
+	Id string `json:"id"`
+}
+
+// GetId returns deletePipelineWebhookPipelineDeleteWebhookPipelineDeleteWebhookPayloadPipeline.Id, and is useful for accessing the field via an interface.
+func (v *deletePipelineWebhookPipelineDeleteWebhookPipelineDeleteWebhookPayloadPipeline) GetId() string {
+	return v.Id
+}
+
+// deletePipelineWebhookResponse is returned by deletePipelineWebhook on success.
+type deletePipelineWebhookResponse struct {
+	// Delete the webhook on the repository for a pipeline.
+	//
+	// This mutation removes the webhook from the pipeline's source repository (e.g., GitHub)
+	// that triggers builds when code is pushed. Requires a GitHub App integration
+	// to be configured for the organization.
+	PipelineDeleteWebhook deletePipelineWebhookPipelineDeleteWebhookPipelineDeleteWebhookPayload `json:"pipelineDeleteWebhook"`
+}
+
+// GetPipelineDeleteWebhook returns deletePipelineWebhookResponse.PipelineDeleteWebhook, and is useful for accessing the field via an interface.
+func (v *deletePipelineWebhookResponse) GetPipelineDeleteWebhook() deletePipelineWebhookPipelineDeleteWebhookPipelineDeleteWebhookPayload {
+	return v.PipelineDeleteWebhook
+}
+
 // deleteTeamMemberResponse is returned by deleteTeamMember on success.
 type deleteTeamMemberResponse struct {
 	// Remove a user from a team.
@@ -6527,6 +7239,7 @@ func (v *getClusterAgentTokensOrganizationClusterAgentTokensClusterAgentTokenCon
 }
 
 func (v *getClusterAgentTokensOrganizationClusterAgentTokensClusterAgentTokenConnectionEdgesClusterAgentTokenEdgeNodeClusterToken) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -6673,6 +7386,7 @@ func (v *getClusterByNameOrganizationClustersClusterConnectionEdgesClusterEdgeNo
 }
 
 func (v *getClusterByNameOrganizationClustersClusterConnectionEdgesClusterEdgeNodeCluster) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -6792,12 +7506,14 @@ func (v *getClusterByNameResponse) GetOrganization() getClusterByNameOrganizatio
 // getClusterQueueByNodeNodeJobEventAssigned
 // getClusterQueueByNodeNodeJobEventBuildStepUploadCreated
 // getClusterQueueByNodeNodeJobEventCanceled
+// getClusterQueueByNodeNodeJobEventChanged
 // getClusterQueueByNodeNodeJobEventFinished
 // getClusterQueueByNodeNodeJobEventGeneric
 // getClusterQueueByNodeNodeJobEventReprioritized
 // getClusterQueueByNodeNodeJobEventRetried
 // getClusterQueueByNodeNodeJobEventRetryFailed
 // getClusterQueueByNodeNodeJobEventStackError
+// getClusterQueueByNodeNodeJobEventStackFinished
 // getClusterQueueByNodeNodeJobEventStackNotification
 // getClusterQueueByNodeNodeJobEventTimedOut
 // getClusterQueueByNodeNodeJobTypeBlock
@@ -6841,10 +7557,8 @@ type getClusterQueueByNodeNode interface {
 
 func (v *getClusterQueueByNodeNodeAPIAccessToken) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
-
 func (v *getClusterQueueByNodeNodeAPIAccessTokenCode) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
-
 func (v *getClusterQueueByNodeNodeAPIApplication) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
 func (v *getClusterQueueByNodeNodeAgent) implementsGraphQLInterfacegetClusterQueueByNodeNode()      {}
@@ -6854,107 +7568,80 @@ func (v *getClusterQueueByNodeNodeArtifact) implementsGraphQLInterfacegetCluster
 func (v *getClusterQueueByNodeNodeAuditEvent) implementsGraphQLInterfacegetClusterQueueByNodeNode() {}
 func (v *getClusterQueueByNodeNodeAuthorizationBitbucket) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
-
 func (v *getClusterQueueByNodeNodeAuthorizationGitHub) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
-
 func (v *getClusterQueueByNodeNodeAuthorizationGitHubApp) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
-
 func (v *getClusterQueueByNodeNodeAuthorizationGitHubEnterprise) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
-
 func (v *getClusterQueueByNodeNodeAuthorizationGoogle) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
-
 func (v *getClusterQueueByNodeNodeAuthorizationSAML) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
 func (v *getClusterQueueByNodeNodeBuild) implementsGraphQLInterfacegetClusterQueueByNodeNode()   {}
 func (v *getClusterQueueByNodeNodeCluster) implementsGraphQLInterfacegetClusterQueueByNodeNode() {}
 func (v *getClusterQueueByNodeNodeClusterQueue) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
-
 func (v *getClusterQueueByNodeNodeClusterQueueToken) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
-
 func (v *getClusterQueueByNodeNodeClusterToken) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
-
 func (v *getClusterQueueByNodeNodeCompositeRegistryUpstream) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
 func (v *getClusterQueueByNodeNodeEmail) implementsGraphQLInterfacegetClusterQueueByNodeNode() {}
 func (v *getClusterQueueByNodeNodeJobEventAssigned) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
-
 func (v *getClusterQueueByNodeNodeJobEventBuildStepUploadCreated) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
-
 func (v *getClusterQueueByNodeNodeJobEventCanceled) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
-
+func (v *getClusterQueueByNodeNodeJobEventChanged) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
+}
 func (v *getClusterQueueByNodeNodeJobEventFinished) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
-
 func (v *getClusterQueueByNodeNodeJobEventGeneric) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
-
 func (v *getClusterQueueByNodeNodeJobEventReprioritized) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
-
 func (v *getClusterQueueByNodeNodeJobEventRetried) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
-
 func (v *getClusterQueueByNodeNodeJobEventRetryFailed) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
-
 func (v *getClusterQueueByNodeNodeJobEventStackError) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
-
+func (v *getClusterQueueByNodeNodeJobEventStackFinished) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
+}
 func (v *getClusterQueueByNodeNodeJobEventStackNotification) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
-
 func (v *getClusterQueueByNodeNodeJobEventTimedOut) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
-
 func (v *getClusterQueueByNodeNodeJobTypeBlock) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
-
 func (v *getClusterQueueByNodeNodeJobTypeCommand) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
-
 func (v *getClusterQueueByNodeNodeJobTypeTrigger) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
-
 func (v *getClusterQueueByNodeNodeJobTypeWait) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
-
 func (v *getClusterQueueByNodeNodeNotificationServiceSlack) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
-
 func (v *getClusterQueueByNodeNodeOrganization) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
-
 func (v *getClusterQueueByNodeNodeOrganizationBanner) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
-
 func (v *getClusterQueueByNodeNodeOrganizationInvitation) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
-
 func (v *getClusterQueueByNodeNodeOrganizationMember) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
-
 func (v *getClusterQueueByNodeNodeOrganizationRepositoryProviderGitHub) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
-
 func (v *getClusterQueueByNodeNodeOrganizationRepositoryProviderGitHubEnterpriseServer) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
 func (v *getClusterQueueByNodeNodePipeline) implementsGraphQLInterfacegetClusterQueueByNodeNode() {}
 func (v *getClusterQueueByNodeNodePipelineMetric) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
-
 func (v *getClusterQueueByNodeNodePipelineSchedule) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
-
 func (v *getClusterQueueByNodeNodePipelineTemplate) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
 func (v *getClusterQueueByNodeNodeRegistry) implementsGraphQLInterfacegetClusterQueueByNodeNode() {}
@@ -6963,10 +7650,8 @@ func (v *getClusterQueueByNodeNodeRegistryToken) implementsGraphQLInterfacegetCl
 func (v *getClusterQueueByNodeNodeRule) implementsGraphQLInterfacegetClusterQueueByNodeNode() {}
 func (v *getClusterQueueByNodeNodeSSOProviderGitHubApp) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
-
 func (v *getClusterQueueByNodeNodeSSOProviderGoogleGSuite) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
-
 func (v *getClusterQueueByNodeNodeSSOProviderSAML) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
 func (v *getClusterQueueByNodeNodeSecret) implementsGraphQLInterfacegetClusterQueueByNodeNode()     {}
@@ -6975,7 +7660,6 @@ func (v *getClusterQueueByNodeNodeTeam) implementsGraphQLInterfacegetClusterQueu
 func (v *getClusterQueueByNodeNodeTeamMember) implementsGraphQLInterfacegetClusterQueueByNodeNode() {}
 func (v *getClusterQueueByNodeNodeTeamPipeline) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
-
 func (v *getClusterQueueByNodeNodeTeamRegistry) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
 func (v *getClusterQueueByNodeNodeTeamSuite) implementsGraphQLInterfacegetClusterQueueByNodeNode() {}
@@ -7068,6 +7752,9 @@ func __unmarshalgetClusterQueueByNodeNode(b []byte, v *getClusterQueueByNodeNode
 	case "JobEventCanceled":
 		*v = new(getClusterQueueByNodeNodeJobEventCanceled)
 		return json.Unmarshal(b, *v)
+	case "JobEventChanged":
+		*v = new(getClusterQueueByNodeNodeJobEventChanged)
+		return json.Unmarshal(b, *v)
 	case "JobEventFinished":
 		*v = new(getClusterQueueByNodeNodeJobEventFinished)
 		return json.Unmarshal(b, *v)
@@ -7085,6 +7772,9 @@ func __unmarshalgetClusterQueueByNodeNode(b []byte, v *getClusterQueueByNodeNode
 		return json.Unmarshal(b, *v)
 	case "JobEventStackError":
 		*v = new(getClusterQueueByNodeNodeJobEventStackError)
+		return json.Unmarshal(b, *v)
+	case "JobEventStackFinished":
+		*v = new(getClusterQueueByNodeNodeJobEventStackFinished)
 		return json.Unmarshal(b, *v)
 	case "JobEventStackNotification":
 		*v = new(getClusterQueueByNodeNodeJobEventStackNotification)
@@ -7192,6 +7882,7 @@ func __unmarshalgetClusterQueueByNodeNode(b []byte, v *getClusterQueueByNodeNode
 }
 
 func __marshalgetClusterQueueByNodeNode(v *getClusterQueueByNodeNode) ([]byte, error) {
+
 	var typename string
 	switch v := (*v).(type) {
 	case *getClusterQueueByNodeNodeAPIAccessToken:
@@ -7390,6 +8081,14 @@ func __marshalgetClusterQueueByNodeNode(v *getClusterQueueByNodeNode) ([]byte, e
 			*getClusterQueueByNodeNodeJobEventCanceled
 		}{typename, v}
 		return json.Marshal(result)
+	case *getClusterQueueByNodeNodeJobEventChanged:
+		typename = "JobEventChanged"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterQueueByNodeNodeJobEventChanged
+		}{typename, v}
+		return json.Marshal(result)
 	case *getClusterQueueByNodeNodeJobEventFinished:
 		typename = "JobEventFinished"
 
@@ -7436,6 +8135,14 @@ func __marshalgetClusterQueueByNodeNode(v *getClusterQueueByNodeNode) ([]byte, e
 		result := struct {
 			TypeName string `json:"__typename"`
 			*getClusterQueueByNodeNodeJobEventStackError
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterQueueByNodeNodeJobEventStackFinished:
+		typename = "JobEventStackFinished"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterQueueByNodeNodeJobEventStackFinished
 		}{typename, v}
 		return json.Marshal(result)
 	case *getClusterQueueByNodeNodeJobEventStackNotification:
@@ -7940,6 +8647,7 @@ func (v *getClusterQueueByNodeNodeClusterQueue) GetHostedAgents() ClusterQueueVa
 }
 
 func (v *getClusterQueueByNodeNodeClusterQueue) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -8105,6 +8813,17 @@ type getClusterQueueByNodeNodeJobEventCanceled struct {
 // GetTypename returns getClusterQueueByNodeNodeJobEventCanceled.Typename, and is useful for accessing the field via an interface.
 func (v *getClusterQueueByNodeNodeJobEventCanceled) GetTypename() string { return v.Typename }
 
+// getClusterQueueByNodeNodeJobEventChanged includes the requested fields of the GraphQL type JobEventChanged.
+// The GraphQL type's documentation follows.
+//
+// A job event for when a job's attributes have been updated
+type getClusterQueueByNodeNodeJobEventChanged struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterQueueByNodeNodeJobEventChanged.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterQueueByNodeNodeJobEventChanged) GetTypename() string { return v.Typename }
+
 // getClusterQueueByNodeNodeJobEventFinished includes the requested fields of the GraphQL type JobEventFinished.
 // The GraphQL type's documentation follows.
 //
@@ -8170,6 +8889,17 @@ type getClusterQueueByNodeNodeJobEventStackError struct {
 
 // GetTypename returns getClusterQueueByNodeNodeJobEventStackError.Typename, and is useful for accessing the field via an interface.
 func (v *getClusterQueueByNodeNodeJobEventStackError) GetTypename() string { return v.Typename }
+
+// getClusterQueueByNodeNodeJobEventStackFinished includes the requested fields of the GraphQL type JobEventStackFinished.
+// The GraphQL type's documentation follows.
+//
+// An event created when a stack finishes a job and marks it as success
+type getClusterQueueByNodeNodeJobEventStackFinished struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterQueueByNodeNodeJobEventStackFinished.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterQueueByNodeNodeJobEventStackFinished) GetTypename() string { return v.Typename }
 
 // getClusterQueueByNodeNodeJobEventStackNotification includes the requested fields of the GraphQL type JobEventStackNotification.
 // The GraphQL type's documentation follows.
@@ -8534,6 +9264,7 @@ type getClusterQueueByNodeResponse struct {
 func (v *getClusterQueueByNodeResponse) GetNode() getClusterQueueByNodeNode { return v.Node }
 
 func (v *getClusterQueueByNodeResponse) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -8714,6 +9445,7 @@ func (v *getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClu
 }
 
 func (v *getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -8858,12 +9590,14 @@ func (v *getClusterQueuesResponse) GetOrganization() getClusterQueuesOrganizatio
 // getNodeNodeJobEventAssigned
 // getNodeNodeJobEventBuildStepUploadCreated
 // getNodeNodeJobEventCanceled
+// getNodeNodeJobEventChanged
 // getNodeNodeJobEventFinished
 // getNodeNodeJobEventGeneric
 // getNodeNodeJobEventReprioritized
 // getNodeNodeJobEventRetried
 // getNodeNodeJobEventRetryFailed
 // getNodeNodeJobEventStackError
+// getNodeNodeJobEventStackFinished
 // getNodeNodeJobEventStackNotification
 // getNodeNodeJobEventTimedOut
 // getNodeNodeJobTypeBlock
@@ -8929,12 +9663,14 @@ func (v *getNodeNodeEmail) implementsGraphQLInterfacegetNodeNode()              
 func (v *getNodeNodeJobEventAssigned) implementsGraphQLInterfacegetNodeNode()                     {}
 func (v *getNodeNodeJobEventBuildStepUploadCreated) implementsGraphQLInterfacegetNodeNode()       {}
 func (v *getNodeNodeJobEventCanceled) implementsGraphQLInterfacegetNodeNode()                     {}
+func (v *getNodeNodeJobEventChanged) implementsGraphQLInterfacegetNodeNode()                      {}
 func (v *getNodeNodeJobEventFinished) implementsGraphQLInterfacegetNodeNode()                     {}
 func (v *getNodeNodeJobEventGeneric) implementsGraphQLInterfacegetNodeNode()                      {}
 func (v *getNodeNodeJobEventReprioritized) implementsGraphQLInterfacegetNodeNode()                {}
 func (v *getNodeNodeJobEventRetried) implementsGraphQLInterfacegetNodeNode()                      {}
 func (v *getNodeNodeJobEventRetryFailed) implementsGraphQLInterfacegetNodeNode()                  {}
 func (v *getNodeNodeJobEventStackError) implementsGraphQLInterfacegetNodeNode()                   {}
+func (v *getNodeNodeJobEventStackFinished) implementsGraphQLInterfacegetNodeNode()                {}
 func (v *getNodeNodeJobEventStackNotification) implementsGraphQLInterfacegetNodeNode()            {}
 func (v *getNodeNodeJobEventTimedOut) implementsGraphQLInterfacegetNodeNode()                     {}
 func (v *getNodeNodeJobTypeBlock) implementsGraphQLInterfacegetNodeNode()                         {}
@@ -9055,6 +9791,9 @@ func __unmarshalgetNodeNode(b []byte, v *getNodeNode) error {
 	case "JobEventCanceled":
 		*v = new(getNodeNodeJobEventCanceled)
 		return json.Unmarshal(b, *v)
+	case "JobEventChanged":
+		*v = new(getNodeNodeJobEventChanged)
+		return json.Unmarshal(b, *v)
 	case "JobEventFinished":
 		*v = new(getNodeNodeJobEventFinished)
 		return json.Unmarshal(b, *v)
@@ -9072,6 +9811,9 @@ func __unmarshalgetNodeNode(b []byte, v *getNodeNode) error {
 		return json.Unmarshal(b, *v)
 	case "JobEventStackError":
 		*v = new(getNodeNodeJobEventStackError)
+		return json.Unmarshal(b, *v)
+	case "JobEventStackFinished":
+		*v = new(getNodeNodeJobEventStackFinished)
 		return json.Unmarshal(b, *v)
 	case "JobEventStackNotification":
 		*v = new(getNodeNodeJobEventStackNotification)
@@ -9179,6 +9921,7 @@ func __unmarshalgetNodeNode(b []byte, v *getNodeNode) error {
 }
 
 func __marshalgetNodeNode(v *getNodeNode) ([]byte, error) {
+
 	var typename string
 	switch v := (*v).(type) {
 	case *getNodeNodeAPIAccessToken:
@@ -9377,6 +10120,14 @@ func __marshalgetNodeNode(v *getNodeNode) ([]byte, error) {
 			*getNodeNodeJobEventCanceled
 		}{typename, v}
 		return json.Marshal(result)
+	case *getNodeNodeJobEventChanged:
+		typename = "JobEventChanged"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getNodeNodeJobEventChanged
+		}{typename, v}
+		return json.Marshal(result)
 	case *getNodeNodeJobEventFinished:
 		typename = "JobEventFinished"
 
@@ -9423,6 +10174,14 @@ func __marshalgetNodeNode(v *getNodeNode) ([]byte, error) {
 		result := struct {
 			TypeName string `json:"__typename"`
 			*getNodeNodeJobEventStackError
+		}{typename, v}
+		return json.Marshal(result)
+	case *getNodeNodeJobEventStackFinished:
+		typename = "JobEventStackFinished"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getNodeNodeJobEventStackFinished
 		}{typename, v}
 		return json.Marshal(result)
 	case *getNodeNodeJobEventStackNotification:
@@ -9915,6 +10674,7 @@ func (v *getNodeNodeCluster) GetDefaultQueue() *ClusterFieldsDefaultQueueCluster
 }
 
 func (v *getNodeNodeCluster) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -10063,6 +10823,17 @@ type getNodeNodeJobEventCanceled struct {
 // GetTypename returns getNodeNodeJobEventCanceled.Typename, and is useful for accessing the field via an interface.
 func (v *getNodeNodeJobEventCanceled) GetTypename() string { return v.Typename }
 
+// getNodeNodeJobEventChanged includes the requested fields of the GraphQL type JobEventChanged.
+// The GraphQL type's documentation follows.
+//
+// A job event for when a job's attributes have been updated
+type getNodeNodeJobEventChanged struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getNodeNodeJobEventChanged.Typename, and is useful for accessing the field via an interface.
+func (v *getNodeNodeJobEventChanged) GetTypename() string { return v.Typename }
+
 // getNodeNodeJobEventFinished includes the requested fields of the GraphQL type JobEventFinished.
 // The GraphQL type's documentation follows.
 //
@@ -10128,6 +10899,17 @@ type getNodeNodeJobEventStackError struct {
 
 // GetTypename returns getNodeNodeJobEventStackError.Typename, and is useful for accessing the field via an interface.
 func (v *getNodeNodeJobEventStackError) GetTypename() string { return v.Typename }
+
+// getNodeNodeJobEventStackFinished includes the requested fields of the GraphQL type JobEventStackFinished.
+// The GraphQL type's documentation follows.
+//
+// An event created when a stack finishes a job and marks it as success
+type getNodeNodeJobEventStackFinished struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getNodeNodeJobEventStackFinished.Typename, and is useful for accessing the field via an interface.
+func (v *getNodeNodeJobEventStackFinished) GetTypename() string { return v.Typename }
 
 // getNodeNodeJobEventStackNotification includes the requested fields of the GraphQL type JobEventStackNotification.
 // The GraphQL type's documentation follows.
@@ -10377,10 +11159,14 @@ func (v *getNodeNodePipeline) GetTeams() PipelineFieldsTeamsTeamPipelineConnecti
 	return v.PipelineFields.Teams
 }
 
+// GetVisibility returns getNodeNodePipeline.Visibility, and is useful for accessing the field via an interface.
+func (v *getNodeNodePipeline) GetVisibility() PipelineVisibility { return v.PipelineFields.Visibility }
+
 // GetWebhookURL returns getNodeNodePipeline.WebhookURL, and is useful for accessing the field via an interface.
 func (v *getNodeNodePipeline) GetWebhookURL() string { return v.PipelineFields.WebhookURL }
 
 func (v *getNodeNodePipeline) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -10453,6 +11239,8 @@ type __premarshalgetNodeNodePipeline struct {
 
 	Teams PipelineFieldsTeamsTeamPipelineConnection `json:"teams"`
 
+	Visibility PipelineVisibility `json:"visibility"`
+
 	WebhookURL string `json:"webhookURL"`
 }
 
@@ -10491,6 +11279,7 @@ func (v *getNodeNodePipeline) __premarshalJSON() (*__premarshalgetNodeNodePipeli
 	retval.Steps = v.PipelineFields.Steps
 	retval.Tags = v.PipelineFields.Tags
 	retval.Teams = v.PipelineFields.Teams
+	retval.Visibility = v.PipelineFields.Visibility
 	retval.WebhookURL = v.PipelineFields.WebhookURL
 	return &retval, nil
 }
@@ -10552,6 +11341,7 @@ func (v *getNodeNodePipelineTemplate) GetDescription() *string {
 func (v *getNodeNodePipelineTemplate) GetName() string { return v.PipelineTemplateFields.Name }
 
 func (v *getNodeNodePipelineTemplate) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -10681,6 +11471,7 @@ func (v *getNodeNodeRule) GetTarget() OrganizationRuleFieldsTargetRuleTarget {
 }
 
 func (v *getNodeNodeRule) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -10874,7 +11665,28 @@ func (v *getNodeNodeTeam) GetMembersCanCreatePipelines() bool {
 	return v.TeamFields.MembersCanCreatePipelines
 }
 
+// GetMembersCanCreateSuites returns getNodeNodeTeam.MembersCanCreateSuites, and is useful for accessing the field via an interface.
+func (v *getNodeNodeTeam) GetMembersCanCreateSuites() bool {
+	return v.TeamFields.MembersCanCreateSuites
+}
+
+// GetMembersCanCreateRegistries returns getNodeNodeTeam.MembersCanCreateRegistries, and is useful for accessing the field via an interface.
+func (v *getNodeNodeTeam) GetMembersCanCreateRegistries() bool {
+	return v.TeamFields.MembersCanCreateRegistries
+}
+
+// GetMembersCanDestroyRegistries returns getNodeNodeTeam.MembersCanDestroyRegistries, and is useful for accessing the field via an interface.
+func (v *getNodeNodeTeam) GetMembersCanDestroyRegistries() bool {
+	return v.TeamFields.MembersCanDestroyRegistries
+}
+
+// GetMembersCanDestroyPackages returns getNodeNodeTeam.MembersCanDestroyPackages, and is useful for accessing the field via an interface.
+func (v *getNodeNodeTeam) GetMembersCanDestroyPackages() bool {
+	return v.TeamFields.MembersCanDestroyPackages
+}
+
 func (v *getNodeNodeTeam) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -10918,6 +11730,14 @@ type __premarshalgetNodeNodeTeam struct {
 	DefaultMemberRole string `json:"defaultMemberRole"`
 
 	MembersCanCreatePipelines bool `json:"membersCanCreatePipelines"`
+
+	MembersCanCreateSuites bool `json:"membersCanCreateSuites"`
+
+	MembersCanCreateRegistries bool `json:"membersCanCreateRegistries"`
+
+	MembersCanDestroyRegistries bool `json:"membersCanDestroyRegistries"`
+
+	MembersCanDestroyPackages bool `json:"membersCanDestroyPackages"`
 }
 
 func (v *getNodeNodeTeam) MarshalJSON() ([]byte, error) {
@@ -10941,6 +11761,10 @@ func (v *getNodeNodeTeam) __premarshalJSON() (*__premarshalgetNodeNodeTeam, erro
 	retval.IsDefaultTeam = v.TeamFields.IsDefaultTeam
 	retval.DefaultMemberRole = v.TeamFields.DefaultMemberRole
 	retval.MembersCanCreatePipelines = v.TeamFields.MembersCanCreatePipelines
+	retval.MembersCanCreateSuites = v.TeamFields.MembersCanCreateSuites
+	retval.MembersCanCreateRegistries = v.TeamFields.MembersCanCreateRegistries
+	retval.MembersCanDestroyRegistries = v.TeamFields.MembersCanDestroyRegistries
+	retval.MembersCanDestroyPackages = v.TeamFields.MembersCanDestroyPackages
 	return &retval, nil
 }
 
@@ -10972,6 +11796,7 @@ func (v *getNodeNodeTeamMember) GetUser() TeamMemberFieldsUser { return v.TeamMe
 func (v *getNodeNodeTeamMember) GetRole() string { return v.TeamMemberFields.Role }
 
 func (v *getNodeNodeTeamMember) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -11061,6 +11886,7 @@ func (v *getNodeNodeTeamPipeline) GetPipeline() TeamPipelineFieldsPipeline {
 }
 
 func (v *getNodeNodeTeamPipeline) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -11159,6 +11985,7 @@ func (v *getNodeNodeTeamSuite) GetTeam() TeamSuiteFieldsTeam { return v.TeamSuit
 func (v *getNodeNodeTeamSuite) GetSuite() TeamSuiteFieldsSuite { return v.TeamSuiteFields.Suite }
 
 func (v *getNodeNodeTeamSuite) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -11248,6 +12075,7 @@ type getNodeResponse struct {
 func (v *getNodeResponse) GetNode() getNodeNode { return v.Node }
 
 func (v *getNodeResponse) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -11408,6 +12236,7 @@ func (v *getOrganizationRuleRule) GetTarget() OrganizationRuleFieldsTargetRuleTa
 }
 
 func (v *getOrganizationRuleRule) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -11568,6 +12397,7 @@ func (v *getOrganiztionBannerOrganizationBannersOrganizationBannerConnectionEdge
 }
 
 func (v *getOrganiztionBannerOrganizationBannersOrganizationBannerConnectionEdgesOrganizationBannerEdgeNodeOrganizationBanner) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -11726,10 +12556,14 @@ func (v *getPipelinePipeline) GetTeams() PipelineFieldsTeamsTeamPipelineConnecti
 	return v.PipelineFields.Teams
 }
 
+// GetVisibility returns getPipelinePipeline.Visibility, and is useful for accessing the field via an interface.
+func (v *getPipelinePipeline) GetVisibility() PipelineVisibility { return v.PipelineFields.Visibility }
+
 // GetWebhookURL returns getPipelinePipeline.WebhookURL, and is useful for accessing the field via an interface.
 func (v *getPipelinePipeline) GetWebhookURL() string { return v.PipelineFields.WebhookURL }
 
 func (v *getPipelinePipeline) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -11800,6 +12634,8 @@ type __premarshalgetPipelinePipeline struct {
 
 	Teams PipelineFieldsTeamsTeamPipelineConnection `json:"teams"`
 
+	Visibility PipelineVisibility `json:"visibility"`
+
 	WebhookURL string `json:"webhookURL"`
 }
 
@@ -11837,6 +12673,7 @@ func (v *getPipelinePipeline) __premarshalJSON() (*__premarshalgetPipelinePipeli
 	retval.Steps = v.PipelineFields.Steps
 	retval.Tags = v.PipelineFields.Tags
 	retval.Teams = v.PipelineFields.Teams
+	retval.Visibility = v.PipelineFields.Visibility
 	retval.WebhookURL = v.PipelineFields.WebhookURL
 	return &retval, nil
 }
@@ -11909,6 +12746,7 @@ func (v *getPipelineScheduleBySlugPipelineSchedule) GetPipeline() PipelineSchedu
 }
 
 func (v *getPipelineScheduleBySlugPipelineSchedule) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -12016,12 +12854,14 @@ func (v *getPipelineScheduleBySlugResponse) GetPipelineSchedule() getPipelineSch
 // getPipelineScheduleNodeJobEventAssigned
 // getPipelineScheduleNodeJobEventBuildStepUploadCreated
 // getPipelineScheduleNodeJobEventCanceled
+// getPipelineScheduleNodeJobEventChanged
 // getPipelineScheduleNodeJobEventFinished
 // getPipelineScheduleNodeJobEventGeneric
 // getPipelineScheduleNodeJobEventReprioritized
 // getPipelineScheduleNodeJobEventRetried
 // getPipelineScheduleNodeJobEventRetryFailed
 // getPipelineScheduleNodeJobEventStackError
+// getPipelineScheduleNodeJobEventStackFinished
 // getPipelineScheduleNodeJobEventStackNotification
 // getPipelineScheduleNodeJobEventTimedOut
 // getPipelineScheduleNodeJobTypeBlock
@@ -12074,19 +12914,14 @@ func (v *getPipelineScheduleNodeArtifact) implementsGraphQLInterfacegetPipelineS
 func (v *getPipelineScheduleNodeAuditEvent) implementsGraphQLInterfacegetPipelineScheduleNode()     {}
 func (v *getPipelineScheduleNodeAuthorizationBitbucket) implementsGraphQLInterfacegetPipelineScheduleNode() {
 }
-
 func (v *getPipelineScheduleNodeAuthorizationGitHub) implementsGraphQLInterfacegetPipelineScheduleNode() {
 }
-
 func (v *getPipelineScheduleNodeAuthorizationGitHubApp) implementsGraphQLInterfacegetPipelineScheduleNode() {
 }
-
 func (v *getPipelineScheduleNodeAuthorizationGitHubEnterprise) implementsGraphQLInterfacegetPipelineScheduleNode() {
 }
-
 func (v *getPipelineScheduleNodeAuthorizationGoogle) implementsGraphQLInterfacegetPipelineScheduleNode() {
 }
-
 func (v *getPipelineScheduleNodeAuthorizationSAML) implementsGraphQLInterfacegetPipelineScheduleNode() {
 }
 func (v *getPipelineScheduleNodeBuild) implementsGraphQLInterfacegetPipelineScheduleNode()        {}
@@ -12100,34 +12935,28 @@ func (v *getPipelineScheduleNodeCompositeRegistryUpstream) implementsGraphQLInte
 func (v *getPipelineScheduleNodeEmail) implementsGraphQLInterfacegetPipelineScheduleNode() {}
 func (v *getPipelineScheduleNodeJobEventAssigned) implementsGraphQLInterfacegetPipelineScheduleNode() {
 }
-
 func (v *getPipelineScheduleNodeJobEventBuildStepUploadCreated) implementsGraphQLInterfacegetPipelineScheduleNode() {
 }
-
 func (v *getPipelineScheduleNodeJobEventCanceled) implementsGraphQLInterfacegetPipelineScheduleNode() {
 }
-
+func (v *getPipelineScheduleNodeJobEventChanged) implementsGraphQLInterfacegetPipelineScheduleNode() {
+}
 func (v *getPipelineScheduleNodeJobEventFinished) implementsGraphQLInterfacegetPipelineScheduleNode() {
 }
-
 func (v *getPipelineScheduleNodeJobEventGeneric) implementsGraphQLInterfacegetPipelineScheduleNode() {
 }
-
 func (v *getPipelineScheduleNodeJobEventReprioritized) implementsGraphQLInterfacegetPipelineScheduleNode() {
 }
-
 func (v *getPipelineScheduleNodeJobEventRetried) implementsGraphQLInterfacegetPipelineScheduleNode() {
 }
-
 func (v *getPipelineScheduleNodeJobEventRetryFailed) implementsGraphQLInterfacegetPipelineScheduleNode() {
 }
-
 func (v *getPipelineScheduleNodeJobEventStackError) implementsGraphQLInterfacegetPipelineScheduleNode() {
 }
-
+func (v *getPipelineScheduleNodeJobEventStackFinished) implementsGraphQLInterfacegetPipelineScheduleNode() {
+}
 func (v *getPipelineScheduleNodeJobEventStackNotification) implementsGraphQLInterfacegetPipelineScheduleNode() {
 }
-
 func (v *getPipelineScheduleNodeJobEventTimedOut) implementsGraphQLInterfacegetPipelineScheduleNode() {
 }
 func (v *getPipelineScheduleNodeJobTypeBlock) implementsGraphQLInterfacegetPipelineScheduleNode()   {}
@@ -12139,23 +12968,18 @@ func (v *getPipelineScheduleNodeNotificationServiceSlack) implementsGraphQLInter
 func (v *getPipelineScheduleNodeOrganization) implementsGraphQLInterfacegetPipelineScheduleNode() {}
 func (v *getPipelineScheduleNodeOrganizationBanner) implementsGraphQLInterfacegetPipelineScheduleNode() {
 }
-
 func (v *getPipelineScheduleNodeOrganizationInvitation) implementsGraphQLInterfacegetPipelineScheduleNode() {
 }
-
 func (v *getPipelineScheduleNodeOrganizationMember) implementsGraphQLInterfacegetPipelineScheduleNode() {
 }
-
 func (v *getPipelineScheduleNodeOrganizationRepositoryProviderGitHub) implementsGraphQLInterfacegetPipelineScheduleNode() {
 }
-
 func (v *getPipelineScheduleNodeOrganizationRepositoryProviderGitHubEnterpriseServer) implementsGraphQLInterfacegetPipelineScheduleNode() {
 }
 func (v *getPipelineScheduleNodePipeline) implementsGraphQLInterfacegetPipelineScheduleNode()       {}
 func (v *getPipelineScheduleNodePipelineMetric) implementsGraphQLInterfacegetPipelineScheduleNode() {}
 func (v *getPipelineScheduleNodePipelineSchedule) implementsGraphQLInterfacegetPipelineScheduleNode() {
 }
-
 func (v *getPipelineScheduleNodePipelineTemplate) implementsGraphQLInterfacegetPipelineScheduleNode() {
 }
 func (v *getPipelineScheduleNodeRegistry) implementsGraphQLInterfacegetPipelineScheduleNode()      {}
@@ -12163,10 +12987,8 @@ func (v *getPipelineScheduleNodeRegistryToken) implementsGraphQLInterfacegetPipe
 func (v *getPipelineScheduleNodeRule) implementsGraphQLInterfacegetPipelineScheduleNode()          {}
 func (v *getPipelineScheduleNodeSSOProviderGitHubApp) implementsGraphQLInterfacegetPipelineScheduleNode() {
 }
-
 func (v *getPipelineScheduleNodeSSOProviderGoogleGSuite) implementsGraphQLInterfacegetPipelineScheduleNode() {
 }
-
 func (v *getPipelineScheduleNodeSSOProviderSAML) implementsGraphQLInterfacegetPipelineScheduleNode() {
 }
 func (v *getPipelineScheduleNodeSecret) implementsGraphQLInterfacegetPipelineScheduleNode()       {}
@@ -12265,6 +13087,9 @@ func __unmarshalgetPipelineScheduleNode(b []byte, v *getPipelineScheduleNode) er
 	case "JobEventCanceled":
 		*v = new(getPipelineScheduleNodeJobEventCanceled)
 		return json.Unmarshal(b, *v)
+	case "JobEventChanged":
+		*v = new(getPipelineScheduleNodeJobEventChanged)
+		return json.Unmarshal(b, *v)
 	case "JobEventFinished":
 		*v = new(getPipelineScheduleNodeJobEventFinished)
 		return json.Unmarshal(b, *v)
@@ -12282,6 +13107,9 @@ func __unmarshalgetPipelineScheduleNode(b []byte, v *getPipelineScheduleNode) er
 		return json.Unmarshal(b, *v)
 	case "JobEventStackError":
 		*v = new(getPipelineScheduleNodeJobEventStackError)
+		return json.Unmarshal(b, *v)
+	case "JobEventStackFinished":
+		*v = new(getPipelineScheduleNodeJobEventStackFinished)
 		return json.Unmarshal(b, *v)
 	case "JobEventStackNotification":
 		*v = new(getPipelineScheduleNodeJobEventStackNotification)
@@ -12389,6 +13217,7 @@ func __unmarshalgetPipelineScheduleNode(b []byte, v *getPipelineScheduleNode) er
 }
 
 func __marshalgetPipelineScheduleNode(v *getPipelineScheduleNode) ([]byte, error) {
+
 	var typename string
 	switch v := (*v).(type) {
 	case *getPipelineScheduleNodeAPIAccessToken:
@@ -12583,6 +13412,14 @@ func __marshalgetPipelineScheduleNode(v *getPipelineScheduleNode) ([]byte, error
 			*getPipelineScheduleNodeJobEventCanceled
 		}{typename, v}
 		return json.Marshal(result)
+	case *getPipelineScheduleNodeJobEventChanged:
+		typename = "JobEventChanged"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getPipelineScheduleNodeJobEventChanged
+		}{typename, v}
+		return json.Marshal(result)
 	case *getPipelineScheduleNodeJobEventFinished:
 		typename = "JobEventFinished"
 
@@ -12629,6 +13466,14 @@ func __marshalgetPipelineScheduleNode(v *getPipelineScheduleNode) ([]byte, error
 		result := struct {
 			TypeName string `json:"__typename"`
 			*getPipelineScheduleNodeJobEventStackError
+		}{typename, v}
+		return json.Marshal(result)
+	case *getPipelineScheduleNodeJobEventStackFinished:
+		typename = "JobEventStackFinished"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getPipelineScheduleNodeJobEventStackFinished
 		}{typename, v}
 		return json.Marshal(result)
 	case *getPipelineScheduleNodeJobEventStackNotification:
@@ -13161,6 +14006,17 @@ type getPipelineScheduleNodeJobEventCanceled struct {
 // GetTypename returns getPipelineScheduleNodeJobEventCanceled.Typename, and is useful for accessing the field via an interface.
 func (v *getPipelineScheduleNodeJobEventCanceled) GetTypename() string { return v.Typename }
 
+// getPipelineScheduleNodeJobEventChanged includes the requested fields of the GraphQL type JobEventChanged.
+// The GraphQL type's documentation follows.
+//
+// A job event for when a job's attributes have been updated
+type getPipelineScheduleNodeJobEventChanged struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getPipelineScheduleNodeJobEventChanged.Typename, and is useful for accessing the field via an interface.
+func (v *getPipelineScheduleNodeJobEventChanged) GetTypename() string { return v.Typename }
+
 // getPipelineScheduleNodeJobEventFinished includes the requested fields of the GraphQL type JobEventFinished.
 // The GraphQL type's documentation follows.
 //
@@ -13226,6 +14082,17 @@ type getPipelineScheduleNodeJobEventStackError struct {
 
 // GetTypename returns getPipelineScheduleNodeJobEventStackError.Typename, and is useful for accessing the field via an interface.
 func (v *getPipelineScheduleNodeJobEventStackError) GetTypename() string { return v.Typename }
+
+// getPipelineScheduleNodeJobEventStackFinished includes the requested fields of the GraphQL type JobEventStackFinished.
+// The GraphQL type's documentation follows.
+//
+// An event created when a stack finishes a job and marks it as success
+type getPipelineScheduleNodeJobEventStackFinished struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getPipelineScheduleNodeJobEventStackFinished.Typename, and is useful for accessing the field via an interface.
+func (v *getPipelineScheduleNodeJobEventStackFinished) GetTypename() string { return v.Typename }
 
 // getPipelineScheduleNodeJobEventStackNotification includes the requested fields of the GraphQL type JobEventStackNotification.
 // The GraphQL type's documentation follows.
@@ -13457,6 +14324,7 @@ func (v *getPipelineScheduleNodePipelineSchedule) GetPipeline() PipelineSchedule
 }
 
 func (v *getPipelineScheduleNodePipelineSchedule) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -13712,6 +14580,7 @@ type getPipelineScheduleResponse struct {
 func (v *getPipelineScheduleResponse) GetNode() getPipelineScheduleNode { return v.Node }
 
 func (v *getPipelineScheduleResponse) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -13811,6 +14680,7 @@ func (v *getPipelineTeamsPipelineTeamsTeamPipelineConnection) GetEdges() []Pipel
 }
 
 func (v *getPipelineTeamsPipelineTeamsTeamPipelineConnection) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -13947,6 +14817,7 @@ func (v *getPipelineTemplatesOrganizationPipelineTemplatesPipelineTemplateConnec
 }
 
 func (v *getPipelineTemplatesOrganizationPipelineTemplatesPipelineTemplateConnectionEdgesPipelineTemplateEdgeNodePipelineTemplate) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -14036,6 +14907,2237 @@ func (v *getPipelineTemplatesResponse) GetOrganization() getPipelineTemplatesOrg
 	return v.Organization
 }
 
+// getPipelineWebhookNode includes the requested fields of the GraphQL interface Node.
+//
+// getPipelineWebhookNode is implemented by the following types:
+// getPipelineWebhookNodeAPIAccessToken
+// getPipelineWebhookNodeAPIAccessTokenCode
+// getPipelineWebhookNodeAPIApplication
+// getPipelineWebhookNodeAgent
+// getPipelineWebhookNodeAgentToken
+// getPipelineWebhookNodeAnnotation
+// getPipelineWebhookNodeArtifact
+// getPipelineWebhookNodeAuditEvent
+// getPipelineWebhookNodeAuthorizationBitbucket
+// getPipelineWebhookNodeAuthorizationGitHub
+// getPipelineWebhookNodeAuthorizationGitHubApp
+// getPipelineWebhookNodeAuthorizationGitHubEnterprise
+// getPipelineWebhookNodeAuthorizationGoogle
+// getPipelineWebhookNodeAuthorizationSAML
+// getPipelineWebhookNodeBuild
+// getPipelineWebhookNodeCluster
+// getPipelineWebhookNodeClusterQueue
+// getPipelineWebhookNodeClusterQueueToken
+// getPipelineWebhookNodeClusterToken
+// getPipelineWebhookNodeCompositeRegistryUpstream
+// getPipelineWebhookNodeEmail
+// getPipelineWebhookNodeJobEventAssigned
+// getPipelineWebhookNodeJobEventBuildStepUploadCreated
+// getPipelineWebhookNodeJobEventCanceled
+// getPipelineWebhookNodeJobEventChanged
+// getPipelineWebhookNodeJobEventFinished
+// getPipelineWebhookNodeJobEventGeneric
+// getPipelineWebhookNodeJobEventReprioritized
+// getPipelineWebhookNodeJobEventRetried
+// getPipelineWebhookNodeJobEventRetryFailed
+// getPipelineWebhookNodeJobEventStackError
+// getPipelineWebhookNodeJobEventStackFinished
+// getPipelineWebhookNodeJobEventStackNotification
+// getPipelineWebhookNodeJobEventTimedOut
+// getPipelineWebhookNodeJobTypeBlock
+// getPipelineWebhookNodeJobTypeCommand
+// getPipelineWebhookNodeJobTypeTrigger
+// getPipelineWebhookNodeJobTypeWait
+// getPipelineWebhookNodeNotificationServiceSlack
+// getPipelineWebhookNodeOrganization
+// getPipelineWebhookNodeOrganizationBanner
+// getPipelineWebhookNodeOrganizationInvitation
+// getPipelineWebhookNodeOrganizationMember
+// getPipelineWebhookNodeOrganizationRepositoryProviderGitHub
+// getPipelineWebhookNodeOrganizationRepositoryProviderGitHubEnterpriseServer
+// getPipelineWebhookNodePipeline
+// getPipelineWebhookNodePipelineMetric
+// getPipelineWebhookNodePipelineSchedule
+// getPipelineWebhookNodePipelineTemplate
+// getPipelineWebhookNodeRegistry
+// getPipelineWebhookNodeRegistryToken
+// getPipelineWebhookNodeRule
+// getPipelineWebhookNodeSSOProviderGitHubApp
+// getPipelineWebhookNodeSSOProviderGoogleGSuite
+// getPipelineWebhookNodeSSOProviderSAML
+// getPipelineWebhookNodeSecret
+// getPipelineWebhookNodeSuite
+// getPipelineWebhookNodeTeam
+// getPipelineWebhookNodeTeamMember
+// getPipelineWebhookNodeTeamPipeline
+// getPipelineWebhookNodeTeamRegistry
+// getPipelineWebhookNodeTeamSuite
+// getPipelineWebhookNodeUser
+// getPipelineWebhookNodeViewer
+// The GraphQL type's documentation follows.
+//
+// An object with an ID.
+type getPipelineWebhookNode interface {
+	implementsGraphQLInterfacegetPipelineWebhookNode()
+	// GetTypename returns the receiver's concrete GraphQL type-name (see interface doc for possible values).
+	GetTypename() string
+}
+
+func (v *getPipelineWebhookNodeAPIAccessToken) implementsGraphQLInterfacegetPipelineWebhookNode() {}
+func (v *getPipelineWebhookNodeAPIAccessTokenCode) implementsGraphQLInterfacegetPipelineWebhookNode() {
+}
+func (v *getPipelineWebhookNodeAPIApplication) implementsGraphQLInterfacegetPipelineWebhookNode() {}
+func (v *getPipelineWebhookNodeAgent) implementsGraphQLInterfacegetPipelineWebhookNode()          {}
+func (v *getPipelineWebhookNodeAgentToken) implementsGraphQLInterfacegetPipelineWebhookNode()     {}
+func (v *getPipelineWebhookNodeAnnotation) implementsGraphQLInterfacegetPipelineWebhookNode()     {}
+func (v *getPipelineWebhookNodeArtifact) implementsGraphQLInterfacegetPipelineWebhookNode()       {}
+func (v *getPipelineWebhookNodeAuditEvent) implementsGraphQLInterfacegetPipelineWebhookNode()     {}
+func (v *getPipelineWebhookNodeAuthorizationBitbucket) implementsGraphQLInterfacegetPipelineWebhookNode() {
+}
+func (v *getPipelineWebhookNodeAuthorizationGitHub) implementsGraphQLInterfacegetPipelineWebhookNode() {
+}
+func (v *getPipelineWebhookNodeAuthorizationGitHubApp) implementsGraphQLInterfacegetPipelineWebhookNode() {
+}
+func (v *getPipelineWebhookNodeAuthorizationGitHubEnterprise) implementsGraphQLInterfacegetPipelineWebhookNode() {
+}
+func (v *getPipelineWebhookNodeAuthorizationGoogle) implementsGraphQLInterfacegetPipelineWebhookNode() {
+}
+func (v *getPipelineWebhookNodeAuthorizationSAML) implementsGraphQLInterfacegetPipelineWebhookNode() {
+}
+func (v *getPipelineWebhookNodeBuild) implementsGraphQLInterfacegetPipelineWebhookNode()        {}
+func (v *getPipelineWebhookNodeCluster) implementsGraphQLInterfacegetPipelineWebhookNode()      {}
+func (v *getPipelineWebhookNodeClusterQueue) implementsGraphQLInterfacegetPipelineWebhookNode() {}
+func (v *getPipelineWebhookNodeClusterQueueToken) implementsGraphQLInterfacegetPipelineWebhookNode() {
+}
+func (v *getPipelineWebhookNodeClusterToken) implementsGraphQLInterfacegetPipelineWebhookNode() {}
+func (v *getPipelineWebhookNodeCompositeRegistryUpstream) implementsGraphQLInterfacegetPipelineWebhookNode() {
+}
+func (v *getPipelineWebhookNodeEmail) implementsGraphQLInterfacegetPipelineWebhookNode()            {}
+func (v *getPipelineWebhookNodeJobEventAssigned) implementsGraphQLInterfacegetPipelineWebhookNode() {}
+func (v *getPipelineWebhookNodeJobEventBuildStepUploadCreated) implementsGraphQLInterfacegetPipelineWebhookNode() {
+}
+func (v *getPipelineWebhookNodeJobEventCanceled) implementsGraphQLInterfacegetPipelineWebhookNode() {}
+func (v *getPipelineWebhookNodeJobEventChanged) implementsGraphQLInterfacegetPipelineWebhookNode()  {}
+func (v *getPipelineWebhookNodeJobEventFinished) implementsGraphQLInterfacegetPipelineWebhookNode() {}
+func (v *getPipelineWebhookNodeJobEventGeneric) implementsGraphQLInterfacegetPipelineWebhookNode()  {}
+func (v *getPipelineWebhookNodeJobEventReprioritized) implementsGraphQLInterfacegetPipelineWebhookNode() {
+}
+func (v *getPipelineWebhookNodeJobEventRetried) implementsGraphQLInterfacegetPipelineWebhookNode() {}
+func (v *getPipelineWebhookNodeJobEventRetryFailed) implementsGraphQLInterfacegetPipelineWebhookNode() {
+}
+func (v *getPipelineWebhookNodeJobEventStackError) implementsGraphQLInterfacegetPipelineWebhookNode() {
+}
+func (v *getPipelineWebhookNodeJobEventStackFinished) implementsGraphQLInterfacegetPipelineWebhookNode() {
+}
+func (v *getPipelineWebhookNodeJobEventStackNotification) implementsGraphQLInterfacegetPipelineWebhookNode() {
+}
+func (v *getPipelineWebhookNodeJobEventTimedOut) implementsGraphQLInterfacegetPipelineWebhookNode() {}
+func (v *getPipelineWebhookNodeJobTypeBlock) implementsGraphQLInterfacegetPipelineWebhookNode()     {}
+func (v *getPipelineWebhookNodeJobTypeCommand) implementsGraphQLInterfacegetPipelineWebhookNode()   {}
+func (v *getPipelineWebhookNodeJobTypeTrigger) implementsGraphQLInterfacegetPipelineWebhookNode()   {}
+func (v *getPipelineWebhookNodeJobTypeWait) implementsGraphQLInterfacegetPipelineWebhookNode()      {}
+func (v *getPipelineWebhookNodeNotificationServiceSlack) implementsGraphQLInterfacegetPipelineWebhookNode() {
+}
+func (v *getPipelineWebhookNodeOrganization) implementsGraphQLInterfacegetPipelineWebhookNode() {}
+func (v *getPipelineWebhookNodeOrganizationBanner) implementsGraphQLInterfacegetPipelineWebhookNode() {
+}
+func (v *getPipelineWebhookNodeOrganizationInvitation) implementsGraphQLInterfacegetPipelineWebhookNode() {
+}
+func (v *getPipelineWebhookNodeOrganizationMember) implementsGraphQLInterfacegetPipelineWebhookNode() {
+}
+func (v *getPipelineWebhookNodeOrganizationRepositoryProviderGitHub) implementsGraphQLInterfacegetPipelineWebhookNode() {
+}
+func (v *getPipelineWebhookNodeOrganizationRepositoryProviderGitHubEnterpriseServer) implementsGraphQLInterfacegetPipelineWebhookNode() {
+}
+func (v *getPipelineWebhookNodePipeline) implementsGraphQLInterfacegetPipelineWebhookNode()         {}
+func (v *getPipelineWebhookNodePipelineMetric) implementsGraphQLInterfacegetPipelineWebhookNode()   {}
+func (v *getPipelineWebhookNodePipelineSchedule) implementsGraphQLInterfacegetPipelineWebhookNode() {}
+func (v *getPipelineWebhookNodePipelineTemplate) implementsGraphQLInterfacegetPipelineWebhookNode() {}
+func (v *getPipelineWebhookNodeRegistry) implementsGraphQLInterfacegetPipelineWebhookNode()         {}
+func (v *getPipelineWebhookNodeRegistryToken) implementsGraphQLInterfacegetPipelineWebhookNode()    {}
+func (v *getPipelineWebhookNodeRule) implementsGraphQLInterfacegetPipelineWebhookNode()             {}
+func (v *getPipelineWebhookNodeSSOProviderGitHubApp) implementsGraphQLInterfacegetPipelineWebhookNode() {
+}
+func (v *getPipelineWebhookNodeSSOProviderGoogleGSuite) implementsGraphQLInterfacegetPipelineWebhookNode() {
+}
+func (v *getPipelineWebhookNodeSSOProviderSAML) implementsGraphQLInterfacegetPipelineWebhookNode() {}
+func (v *getPipelineWebhookNodeSecret) implementsGraphQLInterfacegetPipelineWebhookNode()          {}
+func (v *getPipelineWebhookNodeSuite) implementsGraphQLInterfacegetPipelineWebhookNode()           {}
+func (v *getPipelineWebhookNodeTeam) implementsGraphQLInterfacegetPipelineWebhookNode()            {}
+func (v *getPipelineWebhookNodeTeamMember) implementsGraphQLInterfacegetPipelineWebhookNode()      {}
+func (v *getPipelineWebhookNodeTeamPipeline) implementsGraphQLInterfacegetPipelineWebhookNode()    {}
+func (v *getPipelineWebhookNodeTeamRegistry) implementsGraphQLInterfacegetPipelineWebhookNode()    {}
+func (v *getPipelineWebhookNodeTeamSuite) implementsGraphQLInterfacegetPipelineWebhookNode()       {}
+func (v *getPipelineWebhookNodeUser) implementsGraphQLInterfacegetPipelineWebhookNode()            {}
+func (v *getPipelineWebhookNodeViewer) implementsGraphQLInterfacegetPipelineWebhookNode()          {}
+
+func __unmarshalgetPipelineWebhookNode(b []byte, v *getPipelineWebhookNode) error {
+	if string(b) == "null" {
+		return nil
+	}
+
+	var tn struct {
+		TypeName string `json:"__typename"`
+	}
+	err := json.Unmarshal(b, &tn)
+	if err != nil {
+		return err
+	}
+
+	switch tn.TypeName {
+	case "APIAccessToken":
+		*v = new(getPipelineWebhookNodeAPIAccessToken)
+		return json.Unmarshal(b, *v)
+	case "APIAccessTokenCode":
+		*v = new(getPipelineWebhookNodeAPIAccessTokenCode)
+		return json.Unmarshal(b, *v)
+	case "APIApplication":
+		*v = new(getPipelineWebhookNodeAPIApplication)
+		return json.Unmarshal(b, *v)
+	case "Agent":
+		*v = new(getPipelineWebhookNodeAgent)
+		return json.Unmarshal(b, *v)
+	case "AgentToken":
+		*v = new(getPipelineWebhookNodeAgentToken)
+		return json.Unmarshal(b, *v)
+	case "Annotation":
+		*v = new(getPipelineWebhookNodeAnnotation)
+		return json.Unmarshal(b, *v)
+	case "Artifact":
+		*v = new(getPipelineWebhookNodeArtifact)
+		return json.Unmarshal(b, *v)
+	case "AuditEvent":
+		*v = new(getPipelineWebhookNodeAuditEvent)
+		return json.Unmarshal(b, *v)
+	case "AuthorizationBitbucket":
+		*v = new(getPipelineWebhookNodeAuthorizationBitbucket)
+		return json.Unmarshal(b, *v)
+	case "AuthorizationGitHub":
+		*v = new(getPipelineWebhookNodeAuthorizationGitHub)
+		return json.Unmarshal(b, *v)
+	case "AuthorizationGitHubApp":
+		*v = new(getPipelineWebhookNodeAuthorizationGitHubApp)
+		return json.Unmarshal(b, *v)
+	case "AuthorizationGitHubEnterprise":
+		*v = new(getPipelineWebhookNodeAuthorizationGitHubEnterprise)
+		return json.Unmarshal(b, *v)
+	case "AuthorizationGoogle":
+		*v = new(getPipelineWebhookNodeAuthorizationGoogle)
+		return json.Unmarshal(b, *v)
+	case "AuthorizationSAML":
+		*v = new(getPipelineWebhookNodeAuthorizationSAML)
+		return json.Unmarshal(b, *v)
+	case "Build":
+		*v = new(getPipelineWebhookNodeBuild)
+		return json.Unmarshal(b, *v)
+	case "Cluster":
+		*v = new(getPipelineWebhookNodeCluster)
+		return json.Unmarshal(b, *v)
+	case "ClusterQueue":
+		*v = new(getPipelineWebhookNodeClusterQueue)
+		return json.Unmarshal(b, *v)
+	case "ClusterQueueToken":
+		*v = new(getPipelineWebhookNodeClusterQueueToken)
+		return json.Unmarshal(b, *v)
+	case "ClusterToken":
+		*v = new(getPipelineWebhookNodeClusterToken)
+		return json.Unmarshal(b, *v)
+	case "CompositeRegistryUpstream":
+		*v = new(getPipelineWebhookNodeCompositeRegistryUpstream)
+		return json.Unmarshal(b, *v)
+	case "Email":
+		*v = new(getPipelineWebhookNodeEmail)
+		return json.Unmarshal(b, *v)
+	case "JobEventAssigned":
+		*v = new(getPipelineWebhookNodeJobEventAssigned)
+		return json.Unmarshal(b, *v)
+	case "JobEventBuildStepUploadCreated":
+		*v = new(getPipelineWebhookNodeJobEventBuildStepUploadCreated)
+		return json.Unmarshal(b, *v)
+	case "JobEventCanceled":
+		*v = new(getPipelineWebhookNodeJobEventCanceled)
+		return json.Unmarshal(b, *v)
+	case "JobEventChanged":
+		*v = new(getPipelineWebhookNodeJobEventChanged)
+		return json.Unmarshal(b, *v)
+	case "JobEventFinished":
+		*v = new(getPipelineWebhookNodeJobEventFinished)
+		return json.Unmarshal(b, *v)
+	case "JobEventGeneric":
+		*v = new(getPipelineWebhookNodeJobEventGeneric)
+		return json.Unmarshal(b, *v)
+	case "JobEventReprioritized":
+		*v = new(getPipelineWebhookNodeJobEventReprioritized)
+		return json.Unmarshal(b, *v)
+	case "JobEventRetried":
+		*v = new(getPipelineWebhookNodeJobEventRetried)
+		return json.Unmarshal(b, *v)
+	case "JobEventRetryFailed":
+		*v = new(getPipelineWebhookNodeJobEventRetryFailed)
+		return json.Unmarshal(b, *v)
+	case "JobEventStackError":
+		*v = new(getPipelineWebhookNodeJobEventStackError)
+		return json.Unmarshal(b, *v)
+	case "JobEventStackFinished":
+		*v = new(getPipelineWebhookNodeJobEventStackFinished)
+		return json.Unmarshal(b, *v)
+	case "JobEventStackNotification":
+		*v = new(getPipelineWebhookNodeJobEventStackNotification)
+		return json.Unmarshal(b, *v)
+	case "JobEventTimedOut":
+		*v = new(getPipelineWebhookNodeJobEventTimedOut)
+		return json.Unmarshal(b, *v)
+	case "JobTypeBlock":
+		*v = new(getPipelineWebhookNodeJobTypeBlock)
+		return json.Unmarshal(b, *v)
+	case "JobTypeCommand":
+		*v = new(getPipelineWebhookNodeJobTypeCommand)
+		return json.Unmarshal(b, *v)
+	case "JobTypeTrigger":
+		*v = new(getPipelineWebhookNodeJobTypeTrigger)
+		return json.Unmarshal(b, *v)
+	case "JobTypeWait":
+		*v = new(getPipelineWebhookNodeJobTypeWait)
+		return json.Unmarshal(b, *v)
+	case "NotificationServiceSlack":
+		*v = new(getPipelineWebhookNodeNotificationServiceSlack)
+		return json.Unmarshal(b, *v)
+	case "Organization":
+		*v = new(getPipelineWebhookNodeOrganization)
+		return json.Unmarshal(b, *v)
+	case "OrganizationBanner":
+		*v = new(getPipelineWebhookNodeOrganizationBanner)
+		return json.Unmarshal(b, *v)
+	case "OrganizationInvitation":
+		*v = new(getPipelineWebhookNodeOrganizationInvitation)
+		return json.Unmarshal(b, *v)
+	case "OrganizationMember":
+		*v = new(getPipelineWebhookNodeOrganizationMember)
+		return json.Unmarshal(b, *v)
+	case "OrganizationRepositoryProviderGitHub":
+		*v = new(getPipelineWebhookNodeOrganizationRepositoryProviderGitHub)
+		return json.Unmarshal(b, *v)
+	case "OrganizationRepositoryProviderGitHubEnterpriseServer":
+		*v = new(getPipelineWebhookNodeOrganizationRepositoryProviderGitHubEnterpriseServer)
+		return json.Unmarshal(b, *v)
+	case "Pipeline":
+		*v = new(getPipelineWebhookNodePipeline)
+		return json.Unmarshal(b, *v)
+	case "PipelineMetric":
+		*v = new(getPipelineWebhookNodePipelineMetric)
+		return json.Unmarshal(b, *v)
+	case "PipelineSchedule":
+		*v = new(getPipelineWebhookNodePipelineSchedule)
+		return json.Unmarshal(b, *v)
+	case "PipelineTemplate":
+		*v = new(getPipelineWebhookNodePipelineTemplate)
+		return json.Unmarshal(b, *v)
+	case "Registry":
+		*v = new(getPipelineWebhookNodeRegistry)
+		return json.Unmarshal(b, *v)
+	case "RegistryToken":
+		*v = new(getPipelineWebhookNodeRegistryToken)
+		return json.Unmarshal(b, *v)
+	case "Rule":
+		*v = new(getPipelineWebhookNodeRule)
+		return json.Unmarshal(b, *v)
+	case "SSOProviderGitHubApp":
+		*v = new(getPipelineWebhookNodeSSOProviderGitHubApp)
+		return json.Unmarshal(b, *v)
+	case "SSOProviderGoogleGSuite":
+		*v = new(getPipelineWebhookNodeSSOProviderGoogleGSuite)
+		return json.Unmarshal(b, *v)
+	case "SSOProviderSAML":
+		*v = new(getPipelineWebhookNodeSSOProviderSAML)
+		return json.Unmarshal(b, *v)
+	case "Secret":
+		*v = new(getPipelineWebhookNodeSecret)
+		return json.Unmarshal(b, *v)
+	case "Suite":
+		*v = new(getPipelineWebhookNodeSuite)
+		return json.Unmarshal(b, *v)
+	case "Team":
+		*v = new(getPipelineWebhookNodeTeam)
+		return json.Unmarshal(b, *v)
+	case "TeamMember":
+		*v = new(getPipelineWebhookNodeTeamMember)
+		return json.Unmarshal(b, *v)
+	case "TeamPipeline":
+		*v = new(getPipelineWebhookNodeTeamPipeline)
+		return json.Unmarshal(b, *v)
+	case "TeamRegistry":
+		*v = new(getPipelineWebhookNodeTeamRegistry)
+		return json.Unmarshal(b, *v)
+	case "TeamSuite":
+		*v = new(getPipelineWebhookNodeTeamSuite)
+		return json.Unmarshal(b, *v)
+	case "User":
+		*v = new(getPipelineWebhookNodeUser)
+		return json.Unmarshal(b, *v)
+	case "Viewer":
+		*v = new(getPipelineWebhookNodeViewer)
+		return json.Unmarshal(b, *v)
+	case "":
+		return fmt.Errorf(
+			"response was missing Node.__typename")
+	default:
+		return fmt.Errorf(
+			`unexpected concrete type for getPipelineWebhookNode: "%v"`, tn.TypeName)
+	}
+}
+
+func __marshalgetPipelineWebhookNode(v *getPipelineWebhookNode) ([]byte, error) {
+
+	var typename string
+	switch v := (*v).(type) {
+	case *getPipelineWebhookNodeAPIAccessToken:
+		typename = "APIAccessToken"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getPipelineWebhookNodeAPIAccessToken
+		}{typename, v}
+		return json.Marshal(result)
+	case *getPipelineWebhookNodeAPIAccessTokenCode:
+		typename = "APIAccessTokenCode"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getPipelineWebhookNodeAPIAccessTokenCode
+		}{typename, v}
+		return json.Marshal(result)
+	case *getPipelineWebhookNodeAPIApplication:
+		typename = "APIApplication"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getPipelineWebhookNodeAPIApplication
+		}{typename, v}
+		return json.Marshal(result)
+	case *getPipelineWebhookNodeAgent:
+		typename = "Agent"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getPipelineWebhookNodeAgent
+		}{typename, v}
+		return json.Marshal(result)
+	case *getPipelineWebhookNodeAgentToken:
+		typename = "AgentToken"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getPipelineWebhookNodeAgentToken
+		}{typename, v}
+		return json.Marshal(result)
+	case *getPipelineWebhookNodeAnnotation:
+		typename = "Annotation"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getPipelineWebhookNodeAnnotation
+		}{typename, v}
+		return json.Marshal(result)
+	case *getPipelineWebhookNodeArtifact:
+		typename = "Artifact"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getPipelineWebhookNodeArtifact
+		}{typename, v}
+		return json.Marshal(result)
+	case *getPipelineWebhookNodeAuditEvent:
+		typename = "AuditEvent"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getPipelineWebhookNodeAuditEvent
+		}{typename, v}
+		return json.Marshal(result)
+	case *getPipelineWebhookNodeAuthorizationBitbucket:
+		typename = "AuthorizationBitbucket"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getPipelineWebhookNodeAuthorizationBitbucket
+		}{typename, v}
+		return json.Marshal(result)
+	case *getPipelineWebhookNodeAuthorizationGitHub:
+		typename = "AuthorizationGitHub"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getPipelineWebhookNodeAuthorizationGitHub
+		}{typename, v}
+		return json.Marshal(result)
+	case *getPipelineWebhookNodeAuthorizationGitHubApp:
+		typename = "AuthorizationGitHubApp"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getPipelineWebhookNodeAuthorizationGitHubApp
+		}{typename, v}
+		return json.Marshal(result)
+	case *getPipelineWebhookNodeAuthorizationGitHubEnterprise:
+		typename = "AuthorizationGitHubEnterprise"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getPipelineWebhookNodeAuthorizationGitHubEnterprise
+		}{typename, v}
+		return json.Marshal(result)
+	case *getPipelineWebhookNodeAuthorizationGoogle:
+		typename = "AuthorizationGoogle"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getPipelineWebhookNodeAuthorizationGoogle
+		}{typename, v}
+		return json.Marshal(result)
+	case *getPipelineWebhookNodeAuthorizationSAML:
+		typename = "AuthorizationSAML"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getPipelineWebhookNodeAuthorizationSAML
+		}{typename, v}
+		return json.Marshal(result)
+	case *getPipelineWebhookNodeBuild:
+		typename = "Build"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getPipelineWebhookNodeBuild
+		}{typename, v}
+		return json.Marshal(result)
+	case *getPipelineWebhookNodeCluster:
+		typename = "Cluster"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getPipelineWebhookNodeCluster
+		}{typename, v}
+		return json.Marshal(result)
+	case *getPipelineWebhookNodeClusterQueue:
+		typename = "ClusterQueue"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getPipelineWebhookNodeClusterQueue
+		}{typename, v}
+		return json.Marshal(result)
+	case *getPipelineWebhookNodeClusterQueueToken:
+		typename = "ClusterQueueToken"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getPipelineWebhookNodeClusterQueueToken
+		}{typename, v}
+		return json.Marshal(result)
+	case *getPipelineWebhookNodeClusterToken:
+		typename = "ClusterToken"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getPipelineWebhookNodeClusterToken
+		}{typename, v}
+		return json.Marshal(result)
+	case *getPipelineWebhookNodeCompositeRegistryUpstream:
+		typename = "CompositeRegistryUpstream"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getPipelineWebhookNodeCompositeRegistryUpstream
+		}{typename, v}
+		return json.Marshal(result)
+	case *getPipelineWebhookNodeEmail:
+		typename = "Email"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getPipelineWebhookNodeEmail
+		}{typename, v}
+		return json.Marshal(result)
+	case *getPipelineWebhookNodeJobEventAssigned:
+		typename = "JobEventAssigned"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getPipelineWebhookNodeJobEventAssigned
+		}{typename, v}
+		return json.Marshal(result)
+	case *getPipelineWebhookNodeJobEventBuildStepUploadCreated:
+		typename = "JobEventBuildStepUploadCreated"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getPipelineWebhookNodeJobEventBuildStepUploadCreated
+		}{typename, v}
+		return json.Marshal(result)
+	case *getPipelineWebhookNodeJobEventCanceled:
+		typename = "JobEventCanceled"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getPipelineWebhookNodeJobEventCanceled
+		}{typename, v}
+		return json.Marshal(result)
+	case *getPipelineWebhookNodeJobEventChanged:
+		typename = "JobEventChanged"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getPipelineWebhookNodeJobEventChanged
+		}{typename, v}
+		return json.Marshal(result)
+	case *getPipelineWebhookNodeJobEventFinished:
+		typename = "JobEventFinished"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getPipelineWebhookNodeJobEventFinished
+		}{typename, v}
+		return json.Marshal(result)
+	case *getPipelineWebhookNodeJobEventGeneric:
+		typename = "JobEventGeneric"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getPipelineWebhookNodeJobEventGeneric
+		}{typename, v}
+		return json.Marshal(result)
+	case *getPipelineWebhookNodeJobEventReprioritized:
+		typename = "JobEventReprioritized"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getPipelineWebhookNodeJobEventReprioritized
+		}{typename, v}
+		return json.Marshal(result)
+	case *getPipelineWebhookNodeJobEventRetried:
+		typename = "JobEventRetried"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getPipelineWebhookNodeJobEventRetried
+		}{typename, v}
+		return json.Marshal(result)
+	case *getPipelineWebhookNodeJobEventRetryFailed:
+		typename = "JobEventRetryFailed"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getPipelineWebhookNodeJobEventRetryFailed
+		}{typename, v}
+		return json.Marshal(result)
+	case *getPipelineWebhookNodeJobEventStackError:
+		typename = "JobEventStackError"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getPipelineWebhookNodeJobEventStackError
+		}{typename, v}
+		return json.Marshal(result)
+	case *getPipelineWebhookNodeJobEventStackFinished:
+		typename = "JobEventStackFinished"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getPipelineWebhookNodeJobEventStackFinished
+		}{typename, v}
+		return json.Marshal(result)
+	case *getPipelineWebhookNodeJobEventStackNotification:
+		typename = "JobEventStackNotification"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getPipelineWebhookNodeJobEventStackNotification
+		}{typename, v}
+		return json.Marshal(result)
+	case *getPipelineWebhookNodeJobEventTimedOut:
+		typename = "JobEventTimedOut"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getPipelineWebhookNodeJobEventTimedOut
+		}{typename, v}
+		return json.Marshal(result)
+	case *getPipelineWebhookNodeJobTypeBlock:
+		typename = "JobTypeBlock"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getPipelineWebhookNodeJobTypeBlock
+		}{typename, v}
+		return json.Marshal(result)
+	case *getPipelineWebhookNodeJobTypeCommand:
+		typename = "JobTypeCommand"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getPipelineWebhookNodeJobTypeCommand
+		}{typename, v}
+		return json.Marshal(result)
+	case *getPipelineWebhookNodeJobTypeTrigger:
+		typename = "JobTypeTrigger"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getPipelineWebhookNodeJobTypeTrigger
+		}{typename, v}
+		return json.Marshal(result)
+	case *getPipelineWebhookNodeJobTypeWait:
+		typename = "JobTypeWait"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getPipelineWebhookNodeJobTypeWait
+		}{typename, v}
+		return json.Marshal(result)
+	case *getPipelineWebhookNodeNotificationServiceSlack:
+		typename = "NotificationServiceSlack"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getPipelineWebhookNodeNotificationServiceSlack
+		}{typename, v}
+		return json.Marshal(result)
+	case *getPipelineWebhookNodeOrganization:
+		typename = "Organization"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getPipelineWebhookNodeOrganization
+		}{typename, v}
+		return json.Marshal(result)
+	case *getPipelineWebhookNodeOrganizationBanner:
+		typename = "OrganizationBanner"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getPipelineWebhookNodeOrganizationBanner
+		}{typename, v}
+		return json.Marshal(result)
+	case *getPipelineWebhookNodeOrganizationInvitation:
+		typename = "OrganizationInvitation"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getPipelineWebhookNodeOrganizationInvitation
+		}{typename, v}
+		return json.Marshal(result)
+	case *getPipelineWebhookNodeOrganizationMember:
+		typename = "OrganizationMember"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getPipelineWebhookNodeOrganizationMember
+		}{typename, v}
+		return json.Marshal(result)
+	case *getPipelineWebhookNodeOrganizationRepositoryProviderGitHub:
+		typename = "OrganizationRepositoryProviderGitHub"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getPipelineWebhookNodeOrganizationRepositoryProviderGitHub
+		}{typename, v}
+		return json.Marshal(result)
+	case *getPipelineWebhookNodeOrganizationRepositoryProviderGitHubEnterpriseServer:
+		typename = "OrganizationRepositoryProviderGitHubEnterpriseServer"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getPipelineWebhookNodeOrganizationRepositoryProviderGitHubEnterpriseServer
+		}{typename, v}
+		return json.Marshal(result)
+	case *getPipelineWebhookNodePipeline:
+		typename = "Pipeline"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getPipelineWebhookNodePipeline
+		}{typename, v}
+		return json.Marshal(result)
+	case *getPipelineWebhookNodePipelineMetric:
+		typename = "PipelineMetric"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getPipelineWebhookNodePipelineMetric
+		}{typename, v}
+		return json.Marshal(result)
+	case *getPipelineWebhookNodePipelineSchedule:
+		typename = "PipelineSchedule"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getPipelineWebhookNodePipelineSchedule
+		}{typename, v}
+		return json.Marshal(result)
+	case *getPipelineWebhookNodePipelineTemplate:
+		typename = "PipelineTemplate"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getPipelineWebhookNodePipelineTemplate
+		}{typename, v}
+		return json.Marshal(result)
+	case *getPipelineWebhookNodeRegistry:
+		typename = "Registry"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getPipelineWebhookNodeRegistry
+		}{typename, v}
+		return json.Marshal(result)
+	case *getPipelineWebhookNodeRegistryToken:
+		typename = "RegistryToken"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getPipelineWebhookNodeRegistryToken
+		}{typename, v}
+		return json.Marshal(result)
+	case *getPipelineWebhookNodeRule:
+		typename = "Rule"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getPipelineWebhookNodeRule
+		}{typename, v}
+		return json.Marshal(result)
+	case *getPipelineWebhookNodeSSOProviderGitHubApp:
+		typename = "SSOProviderGitHubApp"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getPipelineWebhookNodeSSOProviderGitHubApp
+		}{typename, v}
+		return json.Marshal(result)
+	case *getPipelineWebhookNodeSSOProviderGoogleGSuite:
+		typename = "SSOProviderGoogleGSuite"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getPipelineWebhookNodeSSOProviderGoogleGSuite
+		}{typename, v}
+		return json.Marshal(result)
+	case *getPipelineWebhookNodeSSOProviderSAML:
+		typename = "SSOProviderSAML"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getPipelineWebhookNodeSSOProviderSAML
+		}{typename, v}
+		return json.Marshal(result)
+	case *getPipelineWebhookNodeSecret:
+		typename = "Secret"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getPipelineWebhookNodeSecret
+		}{typename, v}
+		return json.Marshal(result)
+	case *getPipelineWebhookNodeSuite:
+		typename = "Suite"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getPipelineWebhookNodeSuite
+		}{typename, v}
+		return json.Marshal(result)
+	case *getPipelineWebhookNodeTeam:
+		typename = "Team"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getPipelineWebhookNodeTeam
+		}{typename, v}
+		return json.Marshal(result)
+	case *getPipelineWebhookNodeTeamMember:
+		typename = "TeamMember"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getPipelineWebhookNodeTeamMember
+		}{typename, v}
+		return json.Marshal(result)
+	case *getPipelineWebhookNodeTeamPipeline:
+		typename = "TeamPipeline"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getPipelineWebhookNodeTeamPipeline
+		}{typename, v}
+		return json.Marshal(result)
+	case *getPipelineWebhookNodeTeamRegistry:
+		typename = "TeamRegistry"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getPipelineWebhookNodeTeamRegistry
+		}{typename, v}
+		return json.Marshal(result)
+	case *getPipelineWebhookNodeTeamSuite:
+		typename = "TeamSuite"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getPipelineWebhookNodeTeamSuite
+		}{typename, v}
+		return json.Marshal(result)
+	case *getPipelineWebhookNodeUser:
+		typename = "User"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getPipelineWebhookNodeUser
+		}{typename, v}
+		return json.Marshal(result)
+	case *getPipelineWebhookNodeViewer:
+		typename = "Viewer"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getPipelineWebhookNodeViewer
+		}{typename, v}
+		return json.Marshal(result)
+	case nil:
+		return []byte("null"), nil
+	default:
+		return nil, fmt.Errorf(
+			`unexpected concrete type for getPipelineWebhookNode: "%T"`, v)
+	}
+}
+
+// getPipelineWebhookNodeAPIAccessToken includes the requested fields of the GraphQL type APIAccessToken.
+// The GraphQL type's documentation follows.
+//
+// API access tokens for authentication with the Buildkite API
+type getPipelineWebhookNodeAPIAccessToken struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getPipelineWebhookNodeAPIAccessToken.Typename, and is useful for accessing the field via an interface.
+func (v *getPipelineWebhookNodeAPIAccessToken) GetTypename() string { return v.Typename }
+
+// getPipelineWebhookNodeAPIAccessTokenCode includes the requested fields of the GraphQL type APIAccessTokenCode.
+// The GraphQL type's documentation follows.
+//
+// A code that is used by an API Application to request an API Access Token
+type getPipelineWebhookNodeAPIAccessTokenCode struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getPipelineWebhookNodeAPIAccessTokenCode.Typename, and is useful for accessing the field via an interface.
+func (v *getPipelineWebhookNodeAPIAccessTokenCode) GetTypename() string { return v.Typename }
+
+// getPipelineWebhookNodeAPIApplication includes the requested fields of the GraphQL type APIApplication.
+// The GraphQL type's documentation follows.
+//
+// An API Application
+type getPipelineWebhookNodeAPIApplication struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getPipelineWebhookNodeAPIApplication.Typename, and is useful for accessing the field via an interface.
+func (v *getPipelineWebhookNodeAPIApplication) GetTypename() string { return v.Typename }
+
+// getPipelineWebhookNodeAgent includes the requested fields of the GraphQL type Agent.
+// The GraphQL type's documentation follows.
+//
+// An agent
+type getPipelineWebhookNodeAgent struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getPipelineWebhookNodeAgent.Typename, and is useful for accessing the field via an interface.
+func (v *getPipelineWebhookNodeAgent) GetTypename() string { return v.Typename }
+
+// getPipelineWebhookNodeAgentToken includes the requested fields of the GraphQL type AgentToken.
+// The GraphQL type's documentation follows.
+//
+// A token used to connect an agent to Buildkite
+type getPipelineWebhookNodeAgentToken struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getPipelineWebhookNodeAgentToken.Typename, and is useful for accessing the field via an interface.
+func (v *getPipelineWebhookNodeAgentToken) GetTypename() string { return v.Typename }
+
+// getPipelineWebhookNodeAnnotation includes the requested fields of the GraphQL type Annotation.
+// The GraphQL type's documentation follows.
+//
+// An annotation allows you to add arbitrary content to the top of a build page in the Buildkite UI
+type getPipelineWebhookNodeAnnotation struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getPipelineWebhookNodeAnnotation.Typename, and is useful for accessing the field via an interface.
+func (v *getPipelineWebhookNodeAnnotation) GetTypename() string { return v.Typename }
+
+// getPipelineWebhookNodeArtifact includes the requested fields of the GraphQL type Artifact.
+// The GraphQL type's documentation follows.
+//
+// A file uploaded from the agent whilst running a job
+type getPipelineWebhookNodeArtifact struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getPipelineWebhookNodeArtifact.Typename, and is useful for accessing the field via an interface.
+func (v *getPipelineWebhookNodeArtifact) GetTypename() string { return v.Typename }
+
+// getPipelineWebhookNodeAuditEvent includes the requested fields of the GraphQL type AuditEvent.
+// The GraphQL type's documentation follows.
+//
+// Audit record of an event which occurred in the system
+type getPipelineWebhookNodeAuditEvent struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getPipelineWebhookNodeAuditEvent.Typename, and is useful for accessing the field via an interface.
+func (v *getPipelineWebhookNodeAuditEvent) GetTypename() string { return v.Typename }
+
+// getPipelineWebhookNodeAuthorizationBitbucket includes the requested fields of the GraphQL type AuthorizationBitbucket.
+// The GraphQL type's documentation follows.
+//
+// A Bitbucket account authorized with a Buildkite account
+type getPipelineWebhookNodeAuthorizationBitbucket struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getPipelineWebhookNodeAuthorizationBitbucket.Typename, and is useful for accessing the field via an interface.
+func (v *getPipelineWebhookNodeAuthorizationBitbucket) GetTypename() string { return v.Typename }
+
+// getPipelineWebhookNodeAuthorizationGitHub includes the requested fields of the GraphQL type AuthorizationGitHub.
+// The GraphQL type's documentation follows.
+//
+// A GitHub account authorized with a Buildkite account
+type getPipelineWebhookNodeAuthorizationGitHub struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getPipelineWebhookNodeAuthorizationGitHub.Typename, and is useful for accessing the field via an interface.
+func (v *getPipelineWebhookNodeAuthorizationGitHub) GetTypename() string { return v.Typename }
+
+// getPipelineWebhookNodeAuthorizationGitHubApp includes the requested fields of the GraphQL type AuthorizationGitHubApp.
+// The GraphQL type's documentation follows.
+//
+// A GitHub app authorized with a Buildkite account
+type getPipelineWebhookNodeAuthorizationGitHubApp struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getPipelineWebhookNodeAuthorizationGitHubApp.Typename, and is useful for accessing the field via an interface.
+func (v *getPipelineWebhookNodeAuthorizationGitHubApp) GetTypename() string { return v.Typename }
+
+// getPipelineWebhookNodeAuthorizationGitHubEnterprise includes the requested fields of the GraphQL type AuthorizationGitHubEnterprise.
+// The GraphQL type's documentation follows.
+//
+// A GitHub Enterprise account authorized with a Buildkite account
+type getPipelineWebhookNodeAuthorizationGitHubEnterprise struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getPipelineWebhookNodeAuthorizationGitHubEnterprise.Typename, and is useful for accessing the field via an interface.
+func (v *getPipelineWebhookNodeAuthorizationGitHubEnterprise) GetTypename() string { return v.Typename }
+
+// getPipelineWebhookNodeAuthorizationGoogle includes the requested fields of the GraphQL type AuthorizationGoogle.
+// The GraphQL type's documentation follows.
+//
+// A Google account authorized with a Buildkite account
+type getPipelineWebhookNodeAuthorizationGoogle struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getPipelineWebhookNodeAuthorizationGoogle.Typename, and is useful for accessing the field via an interface.
+func (v *getPipelineWebhookNodeAuthorizationGoogle) GetTypename() string { return v.Typename }
+
+// getPipelineWebhookNodeAuthorizationSAML includes the requested fields of the GraphQL type AuthorizationSAML.
+// The GraphQL type's documentation follows.
+//
+// A SAML account authorized with a Buildkite account
+type getPipelineWebhookNodeAuthorizationSAML struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getPipelineWebhookNodeAuthorizationSAML.Typename, and is useful for accessing the field via an interface.
+func (v *getPipelineWebhookNodeAuthorizationSAML) GetTypename() string { return v.Typename }
+
+// getPipelineWebhookNodeBuild includes the requested fields of the GraphQL type Build.
+// The GraphQL type's documentation follows.
+//
+// A build from a pipeline
+type getPipelineWebhookNodeBuild struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getPipelineWebhookNodeBuild.Typename, and is useful for accessing the field via an interface.
+func (v *getPipelineWebhookNodeBuild) GetTypename() string { return v.Typename }
+
+// getPipelineWebhookNodeCluster includes the requested fields of the GraphQL type Cluster.
+type getPipelineWebhookNodeCluster struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getPipelineWebhookNodeCluster.Typename, and is useful for accessing the field via an interface.
+func (v *getPipelineWebhookNodeCluster) GetTypename() string { return v.Typename }
+
+// getPipelineWebhookNodeClusterQueue includes the requested fields of the GraphQL type ClusterQueue.
+type getPipelineWebhookNodeClusterQueue struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getPipelineWebhookNodeClusterQueue.Typename, and is useful for accessing the field via an interface.
+func (v *getPipelineWebhookNodeClusterQueue) GetTypename() string { return v.Typename }
+
+// getPipelineWebhookNodeClusterQueueToken includes the requested fields of the GraphQL type ClusterQueueToken.
+// The GraphQL type's documentation follows.
+//
+// A token used to register an agent with a Buildkite cluster queue
+type getPipelineWebhookNodeClusterQueueToken struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getPipelineWebhookNodeClusterQueueToken.Typename, and is useful for accessing the field via an interface.
+func (v *getPipelineWebhookNodeClusterQueueToken) GetTypename() string { return v.Typename }
+
+// getPipelineWebhookNodeClusterToken includes the requested fields of the GraphQL type ClusterToken.
+// The GraphQL type's documentation follows.
+//
+// A token used to connect an agent in cluster to Buildkite
+type getPipelineWebhookNodeClusterToken struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getPipelineWebhookNodeClusterToken.Typename, and is useful for accessing the field via an interface.
+func (v *getPipelineWebhookNodeClusterToken) GetTypename() string { return v.Typename }
+
+// getPipelineWebhookNodeCompositeRegistryUpstream includes the requested fields of the GraphQL type CompositeRegistryUpstream.
+// The GraphQL type's documentation follows.
+//
+// A composite registry's upstream
+type getPipelineWebhookNodeCompositeRegistryUpstream struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getPipelineWebhookNodeCompositeRegistryUpstream.Typename, and is useful for accessing the field via an interface.
+func (v *getPipelineWebhookNodeCompositeRegistryUpstream) GetTypename() string { return v.Typename }
+
+// getPipelineWebhookNodeEmail includes the requested fields of the GraphQL type Email.
+// The GraphQL type's documentation follows.
+//
+// An email address
+type getPipelineWebhookNodeEmail struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getPipelineWebhookNodeEmail.Typename, and is useful for accessing the field via an interface.
+func (v *getPipelineWebhookNodeEmail) GetTypename() string { return v.Typename }
+
+// getPipelineWebhookNodeJobEventAssigned includes the requested fields of the GraphQL type JobEventAssigned.
+// The GraphQL type's documentation follows.
+//
+// An event created when the dispatcher assigns the job to an agent
+type getPipelineWebhookNodeJobEventAssigned struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getPipelineWebhookNodeJobEventAssigned.Typename, and is useful for accessing the field via an interface.
+func (v *getPipelineWebhookNodeJobEventAssigned) GetTypename() string { return v.Typename }
+
+// getPipelineWebhookNodeJobEventBuildStepUploadCreated includes the requested fields of the GraphQL type JobEventBuildStepUploadCreated.
+// The GraphQL type's documentation follows.
+//
+// An event created when the job creates new build steps via pipeline upload
+type getPipelineWebhookNodeJobEventBuildStepUploadCreated struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getPipelineWebhookNodeJobEventBuildStepUploadCreated.Typename, and is useful for accessing the field via an interface.
+func (v *getPipelineWebhookNodeJobEventBuildStepUploadCreated) GetTypename() string {
+	return v.Typename
+}
+
+// getPipelineWebhookNodeJobEventCanceled includes the requested fields of the GraphQL type JobEventCanceled.
+// The GraphQL type's documentation follows.
+//
+// An event created when the job is canceled
+type getPipelineWebhookNodeJobEventCanceled struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getPipelineWebhookNodeJobEventCanceled.Typename, and is useful for accessing the field via an interface.
+func (v *getPipelineWebhookNodeJobEventCanceled) GetTypename() string { return v.Typename }
+
+// getPipelineWebhookNodeJobEventChanged includes the requested fields of the GraphQL type JobEventChanged.
+// The GraphQL type's documentation follows.
+//
+// A job event for when a job's attributes have been updated
+type getPipelineWebhookNodeJobEventChanged struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getPipelineWebhookNodeJobEventChanged.Typename, and is useful for accessing the field via an interface.
+func (v *getPipelineWebhookNodeJobEventChanged) GetTypename() string { return v.Typename }
+
+// getPipelineWebhookNodeJobEventFinished includes the requested fields of the GraphQL type JobEventFinished.
+// The GraphQL type's documentation follows.
+//
+// An event created when the job is finished
+type getPipelineWebhookNodeJobEventFinished struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getPipelineWebhookNodeJobEventFinished.Typename, and is useful for accessing the field via an interface.
+func (v *getPipelineWebhookNodeJobEventFinished) GetTypename() string { return v.Typename }
+
+// getPipelineWebhookNodeJobEventGeneric includes the requested fields of the GraphQL type JobEventGeneric.
+// The GraphQL type's documentation follows.
+//
+// A generic event type that doesn't have any additional meta-information associated with the event
+type getPipelineWebhookNodeJobEventGeneric struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getPipelineWebhookNodeJobEventGeneric.Typename, and is useful for accessing the field via an interface.
+func (v *getPipelineWebhookNodeJobEventGeneric) GetTypename() string { return v.Typename }
+
+// getPipelineWebhookNodeJobEventReprioritized includes the requested fields of the GraphQL type JobEventReprioritized.
+// The GraphQL type's documentation follows.
+//
+// A job event for when a job's priority has been changed
+type getPipelineWebhookNodeJobEventReprioritized struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getPipelineWebhookNodeJobEventReprioritized.Typename, and is useful for accessing the field via an interface.
+func (v *getPipelineWebhookNodeJobEventReprioritized) GetTypename() string { return v.Typename }
+
+// getPipelineWebhookNodeJobEventRetried includes the requested fields of the GraphQL type JobEventRetried.
+// The GraphQL type's documentation follows.
+//
+// An event created when the job is retried
+type getPipelineWebhookNodeJobEventRetried struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getPipelineWebhookNodeJobEventRetried.Typename, and is useful for accessing the field via an interface.
+func (v *getPipelineWebhookNodeJobEventRetried) GetTypename() string { return v.Typename }
+
+// getPipelineWebhookNodeJobEventRetryFailed includes the requested fields of the GraphQL type JobEventRetryFailed.
+// The GraphQL type's documentation follows.
+//
+// An event created when job fails to retry
+type getPipelineWebhookNodeJobEventRetryFailed struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getPipelineWebhookNodeJobEventRetryFailed.Typename, and is useful for accessing the field via an interface.
+func (v *getPipelineWebhookNodeJobEventRetryFailed) GetTypename() string { return v.Typename }
+
+// getPipelineWebhookNodeJobEventStackError includes the requested fields of the GraphQL type JobEventStackError.
+// The GraphQL type's documentation follows.
+//
+// An event created when a stack error is reported
+type getPipelineWebhookNodeJobEventStackError struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getPipelineWebhookNodeJobEventStackError.Typename, and is useful for accessing the field via an interface.
+func (v *getPipelineWebhookNodeJobEventStackError) GetTypename() string { return v.Typename }
+
+// getPipelineWebhookNodeJobEventStackFinished includes the requested fields of the GraphQL type JobEventStackFinished.
+// The GraphQL type's documentation follows.
+//
+// An event created when a stack finishes a job and marks it as success
+type getPipelineWebhookNodeJobEventStackFinished struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getPipelineWebhookNodeJobEventStackFinished.Typename, and is useful for accessing the field via an interface.
+func (v *getPipelineWebhookNodeJobEventStackFinished) GetTypename() string { return v.Typename }
+
+// getPipelineWebhookNodeJobEventStackNotification includes the requested fields of the GraphQL type JobEventStackNotification.
+// The GraphQL type's documentation follows.
+//
+// An event created when a stack notification is triggered
+type getPipelineWebhookNodeJobEventStackNotification struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getPipelineWebhookNodeJobEventStackNotification.Typename, and is useful for accessing the field via an interface.
+func (v *getPipelineWebhookNodeJobEventStackNotification) GetTypename() string { return v.Typename }
+
+// getPipelineWebhookNodeJobEventTimedOut includes the requested fields of the GraphQL type JobEventTimedOut.
+// The GraphQL type's documentation follows.
+//
+// An event created when the job is timed out
+type getPipelineWebhookNodeJobEventTimedOut struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getPipelineWebhookNodeJobEventTimedOut.Typename, and is useful for accessing the field via an interface.
+func (v *getPipelineWebhookNodeJobEventTimedOut) GetTypename() string { return v.Typename }
+
+// getPipelineWebhookNodeJobTypeBlock includes the requested fields of the GraphQL type JobTypeBlock.
+// The GraphQL type's documentation follows.
+//
+// A type of job that requires a user to unblock it before proceeding in a build pipeline
+type getPipelineWebhookNodeJobTypeBlock struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getPipelineWebhookNodeJobTypeBlock.Typename, and is useful for accessing the field via an interface.
+func (v *getPipelineWebhookNodeJobTypeBlock) GetTypename() string { return v.Typename }
+
+// getPipelineWebhookNodeJobTypeCommand includes the requested fields of the GraphQL type JobTypeCommand.
+// The GraphQL type's documentation follows.
+//
+// A type of job that runs a command on an agent
+type getPipelineWebhookNodeJobTypeCommand struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getPipelineWebhookNodeJobTypeCommand.Typename, and is useful for accessing the field via an interface.
+func (v *getPipelineWebhookNodeJobTypeCommand) GetTypename() string { return v.Typename }
+
+// getPipelineWebhookNodeJobTypeTrigger includes the requested fields of the GraphQL type JobTypeTrigger.
+// The GraphQL type's documentation follows.
+//
+// A type of job that triggers another build on a pipeline
+type getPipelineWebhookNodeJobTypeTrigger struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getPipelineWebhookNodeJobTypeTrigger.Typename, and is useful for accessing the field via an interface.
+func (v *getPipelineWebhookNodeJobTypeTrigger) GetTypename() string { return v.Typename }
+
+// getPipelineWebhookNodeJobTypeWait includes the requested fields of the GraphQL type JobTypeWait.
+// The GraphQL type's documentation follows.
+//
+// A type of job that waits for all previous jobs to pass before proceeding the build pipeline
+type getPipelineWebhookNodeJobTypeWait struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getPipelineWebhookNodeJobTypeWait.Typename, and is useful for accessing the field via an interface.
+func (v *getPipelineWebhookNodeJobTypeWait) GetTypename() string { return v.Typename }
+
+// getPipelineWebhookNodeNotificationServiceSlack includes the requested fields of the GraphQL type NotificationServiceSlack.
+// The GraphQL type's documentation follows.
+//
+// Deliver notifications to Slack
+type getPipelineWebhookNodeNotificationServiceSlack struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getPipelineWebhookNodeNotificationServiceSlack.Typename, and is useful for accessing the field via an interface.
+func (v *getPipelineWebhookNodeNotificationServiceSlack) GetTypename() string { return v.Typename }
+
+// getPipelineWebhookNodeOrganization includes the requested fields of the GraphQL type Organization.
+// The GraphQL type's documentation follows.
+//
+// An organization
+type getPipelineWebhookNodeOrganization struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getPipelineWebhookNodeOrganization.Typename, and is useful for accessing the field via an interface.
+func (v *getPipelineWebhookNodeOrganization) GetTypename() string { return v.Typename }
+
+// getPipelineWebhookNodeOrganizationBanner includes the requested fields of the GraphQL type OrganizationBanner.
+// The GraphQL type's documentation follows.
+//
+// System banner of an organization
+type getPipelineWebhookNodeOrganizationBanner struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getPipelineWebhookNodeOrganizationBanner.Typename, and is useful for accessing the field via an interface.
+func (v *getPipelineWebhookNodeOrganizationBanner) GetTypename() string { return v.Typename }
+
+// getPipelineWebhookNodeOrganizationInvitation includes the requested fields of the GraphQL type OrganizationInvitation.
+// The GraphQL type's documentation follows.
+//
+// A pending invitation to a user to join this organization
+type getPipelineWebhookNodeOrganizationInvitation struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getPipelineWebhookNodeOrganizationInvitation.Typename, and is useful for accessing the field via an interface.
+func (v *getPipelineWebhookNodeOrganizationInvitation) GetTypename() string { return v.Typename }
+
+// getPipelineWebhookNodeOrganizationMember includes the requested fields of the GraphQL type OrganizationMember.
+// The GraphQL type's documentation follows.
+//
+// A member of an organization
+type getPipelineWebhookNodeOrganizationMember struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getPipelineWebhookNodeOrganizationMember.Typename, and is useful for accessing the field via an interface.
+func (v *getPipelineWebhookNodeOrganizationMember) GetTypename() string { return v.Typename }
+
+// getPipelineWebhookNodeOrganizationRepositoryProviderGitHub includes the requested fields of the GraphQL type OrganizationRepositoryProviderGitHub.
+// The GraphQL type's documentation follows.
+//
+// GitHub installation associated with this organization
+type getPipelineWebhookNodeOrganizationRepositoryProviderGitHub struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getPipelineWebhookNodeOrganizationRepositoryProviderGitHub.Typename, and is useful for accessing the field via an interface.
+func (v *getPipelineWebhookNodeOrganizationRepositoryProviderGitHub) GetTypename() string {
+	return v.Typename
+}
+
+// getPipelineWebhookNodeOrganizationRepositoryProviderGitHubEnterpriseServer includes the requested fields of the GraphQL type OrganizationRepositoryProviderGitHubEnterpriseServer.
+// The GraphQL type's documentation follows.
+//
+// GitHub Enterprise Server associated with this organization
+type getPipelineWebhookNodeOrganizationRepositoryProviderGitHubEnterpriseServer struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getPipelineWebhookNodeOrganizationRepositoryProviderGitHubEnterpriseServer.Typename, and is useful for accessing the field via an interface.
+func (v *getPipelineWebhookNodeOrganizationRepositoryProviderGitHubEnterpriseServer) GetTypename() string {
+	return v.Typename
+}
+
+// getPipelineWebhookNodePipeline includes the requested fields of the GraphQL type Pipeline.
+// The GraphQL type's documentation follows.
+//
+// A pipeline
+type getPipelineWebhookNodePipeline struct {
+	Typename string `json:"__typename"`
+	Id       string `json:"id"`
+	// The repository for this pipeline
+	Repository getPipelineWebhookNodePipelineRepository `json:"repository"`
+}
+
+// GetTypename returns getPipelineWebhookNodePipeline.Typename, and is useful for accessing the field via an interface.
+func (v *getPipelineWebhookNodePipeline) GetTypename() string { return v.Typename }
+
+// GetId returns getPipelineWebhookNodePipeline.Id, and is useful for accessing the field via an interface.
+func (v *getPipelineWebhookNodePipeline) GetId() string { return v.Id }
+
+// GetRepository returns getPipelineWebhookNodePipeline.Repository, and is useful for accessing the field via an interface.
+func (v *getPipelineWebhookNodePipeline) GetRepository() getPipelineWebhookNodePipelineRepository {
+	return v.Repository
+}
+
+// getPipelineWebhookNodePipelineMetric includes the requested fields of the GraphQL type PipelineMetric.
+// The GraphQL type's documentation follows.
+//
+// A metric for a pipeline
+type getPipelineWebhookNodePipelineMetric struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getPipelineWebhookNodePipelineMetric.Typename, and is useful for accessing the field via an interface.
+func (v *getPipelineWebhookNodePipelineMetric) GetTypename() string { return v.Typename }
+
+// getPipelineWebhookNodePipelineRepository includes the requested fields of the GraphQL type Repository.
+// The GraphQL type's documentation follows.
+//
+// A repository associated with a pipeline
+type getPipelineWebhookNodePipelineRepository struct {
+	// The git URL for this repository
+	Url string `json:"url"`
+	// The repository’s provider
+	Provider getPipelineWebhookNodePipelineRepositoryProvider `json:"-"`
+}
+
+// GetUrl returns getPipelineWebhookNodePipelineRepository.Url, and is useful for accessing the field via an interface.
+func (v *getPipelineWebhookNodePipelineRepository) GetUrl() string { return v.Url }
+
+// GetProvider returns getPipelineWebhookNodePipelineRepository.Provider, and is useful for accessing the field via an interface.
+func (v *getPipelineWebhookNodePipelineRepository) GetProvider() getPipelineWebhookNodePipelineRepositoryProvider {
+	return v.Provider
+}
+
+func (v *getPipelineWebhookNodePipelineRepository) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*getPipelineWebhookNodePipelineRepository
+		Provider json.RawMessage `json:"provider"`
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.getPipelineWebhookNodePipelineRepository = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	{
+		dst := &v.Provider
+		src := firstPass.Provider
+		if len(src) != 0 && string(src) != "null" {
+			err = __unmarshalgetPipelineWebhookNodePipelineRepositoryProvider(
+				src, dst)
+			if err != nil {
+				return fmt.Errorf(
+					"unable to unmarshal getPipelineWebhookNodePipelineRepository.Provider: %w", err)
+			}
+		}
+	}
+	return nil
+}
+
+type __premarshalgetPipelineWebhookNodePipelineRepository struct {
+	Url string `json:"url"`
+
+	Provider json.RawMessage `json:"provider"`
+}
+
+func (v *getPipelineWebhookNodePipelineRepository) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *getPipelineWebhookNodePipelineRepository) __premarshalJSON() (*__premarshalgetPipelineWebhookNodePipelineRepository, error) {
+	var retval __premarshalgetPipelineWebhookNodePipelineRepository
+
+	retval.Url = v.Url
+	{
+
+		dst := &retval.Provider
+		src := v.Provider
+		var err error
+		*dst, err = __marshalgetPipelineWebhookNodePipelineRepositoryProvider(
+			&src)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"unable to marshal getPipelineWebhookNodePipelineRepository.Provider: %w", err)
+		}
+	}
+	return &retval, nil
+}
+
+// getPipelineWebhookNodePipelineRepositoryProvider includes the requested fields of the GraphQL interface RepositoryProvider.
+//
+// getPipelineWebhookNodePipelineRepositoryProvider is implemented by the following types:
+// getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderBeanstalk
+// getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderBitbucket
+// getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderBitbucketServer
+// getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderCodebase
+// getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGithub
+// getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGithubEnterprise
+// getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGitlab
+// getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGitlabCommunity
+// getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGitlabEnterprise
+// getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderUnknown
+type getPipelineWebhookNodePipelineRepositoryProvider interface {
+	implementsGraphQLInterfacegetPipelineWebhookNodePipelineRepositoryProvider()
+	// GetTypename returns the receiver's concrete GraphQL type-name (see interface doc for possible values).
+	GetTypename() string
+}
+
+func (v *getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderBeanstalk) implementsGraphQLInterfacegetPipelineWebhookNodePipelineRepositoryProvider() {
+}
+func (v *getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderBitbucket) implementsGraphQLInterfacegetPipelineWebhookNodePipelineRepositoryProvider() {
+}
+func (v *getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderBitbucketServer) implementsGraphQLInterfacegetPipelineWebhookNodePipelineRepositoryProvider() {
+}
+func (v *getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderCodebase) implementsGraphQLInterfacegetPipelineWebhookNodePipelineRepositoryProvider() {
+}
+func (v *getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGithub) implementsGraphQLInterfacegetPipelineWebhookNodePipelineRepositoryProvider() {
+}
+func (v *getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGithubEnterprise) implementsGraphQLInterfacegetPipelineWebhookNodePipelineRepositoryProvider() {
+}
+func (v *getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGitlab) implementsGraphQLInterfacegetPipelineWebhookNodePipelineRepositoryProvider() {
+}
+func (v *getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGitlabCommunity) implementsGraphQLInterfacegetPipelineWebhookNodePipelineRepositoryProvider() {
+}
+func (v *getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGitlabEnterprise) implementsGraphQLInterfacegetPipelineWebhookNodePipelineRepositoryProvider() {
+}
+func (v *getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderUnknown) implementsGraphQLInterfacegetPipelineWebhookNodePipelineRepositoryProvider() {
+}
+
+func __unmarshalgetPipelineWebhookNodePipelineRepositoryProvider(b []byte, v *getPipelineWebhookNodePipelineRepositoryProvider) error {
+	if string(b) == "null" {
+		return nil
+	}
+
+	var tn struct {
+		TypeName string `json:"__typename"`
+	}
+	err := json.Unmarshal(b, &tn)
+	if err != nil {
+		return err
+	}
+
+	switch tn.TypeName {
+	case "RepositoryProviderBeanstalk":
+		*v = new(getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderBeanstalk)
+		return json.Unmarshal(b, *v)
+	case "RepositoryProviderBitbucket":
+		*v = new(getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderBitbucket)
+		return json.Unmarshal(b, *v)
+	case "RepositoryProviderBitbucketServer":
+		*v = new(getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderBitbucketServer)
+		return json.Unmarshal(b, *v)
+	case "RepositoryProviderCodebase":
+		*v = new(getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderCodebase)
+		return json.Unmarshal(b, *v)
+	case "RepositoryProviderGithub":
+		*v = new(getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGithub)
+		return json.Unmarshal(b, *v)
+	case "RepositoryProviderGithubEnterprise":
+		*v = new(getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGithubEnterprise)
+		return json.Unmarshal(b, *v)
+	case "RepositoryProviderGitlab":
+		*v = new(getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGitlab)
+		return json.Unmarshal(b, *v)
+	case "RepositoryProviderGitlabCommunity":
+		*v = new(getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGitlabCommunity)
+		return json.Unmarshal(b, *v)
+	case "RepositoryProviderGitlabEnterprise":
+		*v = new(getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGitlabEnterprise)
+		return json.Unmarshal(b, *v)
+	case "RepositoryProviderUnknown":
+		*v = new(getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderUnknown)
+		return json.Unmarshal(b, *v)
+	case "":
+		return fmt.Errorf(
+			"response was missing RepositoryProvider.__typename")
+	default:
+		return fmt.Errorf(
+			`unexpected concrete type for getPipelineWebhookNodePipelineRepositoryProvider: "%v"`, tn.TypeName)
+	}
+}
+
+func __marshalgetPipelineWebhookNodePipelineRepositoryProvider(v *getPipelineWebhookNodePipelineRepositoryProvider) ([]byte, error) {
+
+	var typename string
+	switch v := (*v).(type) {
+	case *getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderBeanstalk:
+		typename = "RepositoryProviderBeanstalk"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderBeanstalk
+		}{typename, v}
+		return json.Marshal(result)
+	case *getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderBitbucket:
+		typename = "RepositoryProviderBitbucket"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderBitbucket
+		}{typename, v}
+		return json.Marshal(result)
+	case *getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderBitbucketServer:
+		typename = "RepositoryProviderBitbucketServer"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderBitbucketServer
+		}{typename, v}
+		return json.Marshal(result)
+	case *getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderCodebase:
+		typename = "RepositoryProviderCodebase"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderCodebase
+		}{typename, v}
+		return json.Marshal(result)
+	case *getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGithub:
+		typename = "RepositoryProviderGithub"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGithub
+		}{typename, v}
+		return json.Marshal(result)
+	case *getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGithubEnterprise:
+		typename = "RepositoryProviderGithubEnterprise"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGithubEnterprise
+		}{typename, v}
+		return json.Marshal(result)
+	case *getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGitlab:
+		typename = "RepositoryProviderGitlab"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGitlab
+		}{typename, v}
+		return json.Marshal(result)
+	case *getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGitlabCommunity:
+		typename = "RepositoryProviderGitlabCommunity"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGitlabCommunity
+		}{typename, v}
+		return json.Marshal(result)
+	case *getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGitlabEnterprise:
+		typename = "RepositoryProviderGitlabEnterprise"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGitlabEnterprise
+		}{typename, v}
+		return json.Marshal(result)
+	case *getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderUnknown:
+		typename = "RepositoryProviderUnknown"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderUnknown
+		}{typename, v}
+		return json.Marshal(result)
+	case nil:
+		return []byte("null"), nil
+	default:
+		return nil, fmt.Errorf(
+			`unexpected concrete type for getPipelineWebhookNodePipelineRepositoryProvider: "%T"`, v)
+	}
+}
+
+// getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderBeanstalk includes the requested fields of the GraphQL type RepositoryProviderBeanstalk.
+// The GraphQL type's documentation follows.
+//
+// A pipeline's repository is being provided by Beanstalk
+type getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderBeanstalk struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderBeanstalk.Typename, and is useful for accessing the field via an interface.
+func (v *getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderBeanstalk) GetTypename() string {
+	return v.Typename
+}
+
+// getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderBitbucket includes the requested fields of the GraphQL type RepositoryProviderBitbucket.
+// The GraphQL type's documentation follows.
+//
+// A pipeline's repository is being provided by Bitbucket
+type getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderBitbucket struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderBitbucket.Typename, and is useful for accessing the field via an interface.
+func (v *getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderBitbucket) GetTypename() string {
+	return v.Typename
+}
+
+// getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderBitbucketServer includes the requested fields of the GraphQL type RepositoryProviderBitbucketServer.
+// The GraphQL type's documentation follows.
+//
+// A pipeline's repository is being provided by Bitbucket Server
+type getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderBitbucketServer struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderBitbucketServer.Typename, and is useful for accessing the field via an interface.
+func (v *getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderBitbucketServer) GetTypename() string {
+	return v.Typename
+}
+
+// getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderCodebase includes the requested fields of the GraphQL type RepositoryProviderCodebase.
+// The GraphQL type's documentation follows.
+//
+// A pipeline's repository is being provided by Codebase
+type getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderCodebase struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderCodebase.Typename, and is useful for accessing the field via an interface.
+func (v *getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderCodebase) GetTypename() string {
+	return v.Typename
+}
+
+// getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGithub includes the requested fields of the GraphQL type RepositoryProviderGithub.
+// The GraphQL type's documentation follows.
+//
+// A pipeline's repository is being provided by GitHub
+type getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGithub struct {
+	Typename string `json:"__typename"`
+	// The webhook configured on the repository to trigger builds. Returns null if no webhook exists or if the user doesn't have edit permissions.
+	Webhook getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGithubWebhook `json:"webhook"`
+}
+
+// GetTypename returns getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGithub.Typename, and is useful for accessing the field via an interface.
+func (v *getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGithub) GetTypename() string {
+	return v.Typename
+}
+
+// GetWebhook returns getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGithub.Webhook, and is useful for accessing the field via an interface.
+func (v *getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGithub) GetWebhook() getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGithubWebhook {
+	return v.Webhook
+}
+
+// getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGithubEnterprise includes the requested fields of the GraphQL type RepositoryProviderGithubEnterprise.
+// The GraphQL type's documentation follows.
+//
+// A pipeline's repository is being provided by GitHub Enterprise
+type getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGithubEnterprise struct {
+	Typename string `json:"__typename"`
+	// The webhook configured on the repository to trigger builds. Returns null if no webhook exists or if the user doesn't have edit permissions.
+	Webhook getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGithubEnterpriseWebhook `json:"webhook"`
+}
+
+// GetTypename returns getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGithubEnterprise.Typename, and is useful for accessing the field via an interface.
+func (v *getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGithubEnterprise) GetTypename() string {
+	return v.Typename
+}
+
+// GetWebhook returns getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGithubEnterprise.Webhook, and is useful for accessing the field via an interface.
+func (v *getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGithubEnterprise) GetWebhook() getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGithubEnterpriseWebhook {
+	return v.Webhook
+}
+
+// getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGithubEnterpriseWebhook includes the requested fields of the GraphQL type RepositoryProviderGithubEnterpriseWebhook.
+// The GraphQL type's documentation follows.
+//
+// A webhook configured on a GitHub Enterprise repository to trigger pipeline builds
+type getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGithubEnterpriseWebhook struct {
+	WebhookFieldsRepositoryProviderGithubEnterpriseWebhook `json:"-"`
+}
+
+// GetExternalId returns getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGithubEnterpriseWebhook.ExternalId, and is useful for accessing the field via an interface.
+func (v *getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGithubEnterpriseWebhook) GetExternalId() string {
+	return v.WebhookFieldsRepositoryProviderGithubEnterpriseWebhook.ExternalId
+}
+
+// GetUrl returns getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGithubEnterpriseWebhook.Url, and is useful for accessing the field via an interface.
+func (v *getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGithubEnterpriseWebhook) GetUrl() string {
+	return v.WebhookFieldsRepositoryProviderGithubEnterpriseWebhook.Url
+}
+
+func (v *getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGithubEnterpriseWebhook) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGithubEnterpriseWebhook
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGithubEnterpriseWebhook = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	err = json.Unmarshal(
+		b, &v.WebhookFieldsRepositoryProviderGithubEnterpriseWebhook)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+type __premarshalgetPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGithubEnterpriseWebhook struct {
+	ExternalId string `json:"externalId"`
+
+	Url string `json:"url"`
+}
+
+func (v *getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGithubEnterpriseWebhook) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGithubEnterpriseWebhook) __premarshalJSON() (*__premarshalgetPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGithubEnterpriseWebhook, error) {
+	var retval __premarshalgetPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGithubEnterpriseWebhook
+
+	retval.ExternalId = v.WebhookFieldsRepositoryProviderGithubEnterpriseWebhook.ExternalId
+	retval.Url = v.WebhookFieldsRepositoryProviderGithubEnterpriseWebhook.Url
+	return &retval, nil
+}
+
+// getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGithubWebhook includes the requested fields of the GraphQL type RepositoryProviderGithubWebhook.
+// The GraphQL type's documentation follows.
+//
+// A webhook configured on a GitHub repository to trigger pipeline builds
+type getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGithubWebhook struct {
+	WebhookFieldsRepositoryProviderGithubWebhook `json:"-"`
+}
+
+// GetExternalId returns getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGithubWebhook.ExternalId, and is useful for accessing the field via an interface.
+func (v *getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGithubWebhook) GetExternalId() string {
+	return v.WebhookFieldsRepositoryProviderGithubWebhook.ExternalId
+}
+
+// GetUrl returns getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGithubWebhook.Url, and is useful for accessing the field via an interface.
+func (v *getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGithubWebhook) GetUrl() string {
+	return v.WebhookFieldsRepositoryProviderGithubWebhook.Url
+}
+
+func (v *getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGithubWebhook) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGithubWebhook
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGithubWebhook = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	err = json.Unmarshal(
+		b, &v.WebhookFieldsRepositoryProviderGithubWebhook)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+type __premarshalgetPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGithubWebhook struct {
+	ExternalId string `json:"externalId"`
+
+	Url string `json:"url"`
+}
+
+func (v *getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGithubWebhook) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGithubWebhook) __premarshalJSON() (*__premarshalgetPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGithubWebhook, error) {
+	var retval __premarshalgetPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGithubWebhook
+
+	retval.ExternalId = v.WebhookFieldsRepositoryProviderGithubWebhook.ExternalId
+	retval.Url = v.WebhookFieldsRepositoryProviderGithubWebhook.Url
+	return &retval, nil
+}
+
+// getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGitlab includes the requested fields of the GraphQL type RepositoryProviderGitlab.
+// The GraphQL type's documentation follows.
+//
+// A pipeline's repository is being provided by GitLab
+type getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGitlab struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGitlab.Typename, and is useful for accessing the field via an interface.
+func (v *getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGitlab) GetTypename() string {
+	return v.Typename
+}
+
+// getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGitlabCommunity includes the requested fields of the GraphQL type RepositoryProviderGitlabCommunity.
+// The GraphQL type's documentation follows.
+//
+// Deprecated: Use RepositoryProviderGitlabEnterpriseType instead. This type represented GitLab Community Edition.
+type getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGitlabCommunity struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGitlabCommunity.Typename, and is useful for accessing the field via an interface.
+func (v *getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGitlabCommunity) GetTypename() string {
+	return v.Typename
+}
+
+// getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGitlabEnterprise includes the requested fields of the GraphQL type RepositoryProviderGitlabEnterprise.
+// The GraphQL type's documentation follows.
+//
+// A pipeline's repository is being provided by a GitLab Self-Managed instance.
+type getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGitlabEnterprise struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGitlabEnterprise.Typename, and is useful for accessing the field via an interface.
+func (v *getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGitlabEnterprise) GetTypename() string {
+	return v.Typename
+}
+
+// getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderUnknown includes the requested fields of the GraphQL type RepositoryProviderUnknown.
+// The GraphQL type's documentation follows.
+//
+// A pipeline's repository is being provided by a service unknown to Buildkite
+type getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderUnknown struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderUnknown.Typename, and is useful for accessing the field via an interface.
+func (v *getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderUnknown) GetTypename() string {
+	return v.Typename
+}
+
+// getPipelineWebhookNodePipelineSchedule includes the requested fields of the GraphQL type PipelineSchedule.
+// The GraphQL type's documentation follows.
+//
+// A schedule of when a build should automatically triggered for a Pipeline
+type getPipelineWebhookNodePipelineSchedule struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getPipelineWebhookNodePipelineSchedule.Typename, and is useful for accessing the field via an interface.
+func (v *getPipelineWebhookNodePipelineSchedule) GetTypename() string { return v.Typename }
+
+// getPipelineWebhookNodePipelineTemplate includes the requested fields of the GraphQL type PipelineTemplate.
+// The GraphQL type's documentation follows.
+//
+// A template defining a fixed step configuration for a pipeline
+type getPipelineWebhookNodePipelineTemplate struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getPipelineWebhookNodePipelineTemplate.Typename, and is useful for accessing the field via an interface.
+func (v *getPipelineWebhookNodePipelineTemplate) GetTypename() string { return v.Typename }
+
+// getPipelineWebhookNodeRegistry includes the requested fields of the GraphQL type Registry.
+// The GraphQL type's documentation follows.
+//
+// A registry
+type getPipelineWebhookNodeRegistry struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getPipelineWebhookNodeRegistry.Typename, and is useful for accessing the field via an interface.
+func (v *getPipelineWebhookNodeRegistry) GetTypename() string { return v.Typename }
+
+// getPipelineWebhookNodeRegistryToken includes the requested fields of the GraphQL type RegistryToken.
+// The GraphQL type's documentation follows.
+//
+// A registry token
+type getPipelineWebhookNodeRegistryToken struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getPipelineWebhookNodeRegistryToken.Typename, and is useful for accessing the field via an interface.
+func (v *getPipelineWebhookNodeRegistryToken) GetTypename() string { return v.Typename }
+
+// getPipelineWebhookNodeRule includes the requested fields of the GraphQL type Rule.
+type getPipelineWebhookNodeRule struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getPipelineWebhookNodeRule.Typename, and is useful for accessing the field via an interface.
+func (v *getPipelineWebhookNodeRule) GetTypename() string { return v.Typename }
+
+// getPipelineWebhookNodeSSOProviderGitHubApp includes the requested fields of the GraphQL type SSOProviderGitHubApp.
+// The GraphQL type's documentation follows.
+//
+// Single sign-on provided by GitHub
+type getPipelineWebhookNodeSSOProviderGitHubApp struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getPipelineWebhookNodeSSOProviderGitHubApp.Typename, and is useful for accessing the field via an interface.
+func (v *getPipelineWebhookNodeSSOProviderGitHubApp) GetTypename() string { return v.Typename }
+
+// getPipelineWebhookNodeSSOProviderGoogleGSuite includes the requested fields of the GraphQL type SSOProviderGoogleGSuite.
+// The GraphQL type's documentation follows.
+//
+// Single sign-on provided by Google
+type getPipelineWebhookNodeSSOProviderGoogleGSuite struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getPipelineWebhookNodeSSOProviderGoogleGSuite.Typename, and is useful for accessing the field via an interface.
+func (v *getPipelineWebhookNodeSSOProviderGoogleGSuite) GetTypename() string { return v.Typename }
+
+// getPipelineWebhookNodeSSOProviderSAML includes the requested fields of the GraphQL type SSOProviderSAML.
+// The GraphQL type's documentation follows.
+//
+// Single sign-on provided via SAML
+type getPipelineWebhookNodeSSOProviderSAML struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getPipelineWebhookNodeSSOProviderSAML.Typename, and is useful for accessing the field via an interface.
+func (v *getPipelineWebhookNodeSSOProviderSAML) GetTypename() string { return v.Typename }
+
+// getPipelineWebhookNodeSecret includes the requested fields of the GraphQL type Secret.
+// The GraphQL type's documentation follows.
+//
+// A secret hosted by Buildkite. This does not contain the secret value or encrypted material.
+type getPipelineWebhookNodeSecret struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getPipelineWebhookNodeSecret.Typename, and is useful for accessing the field via an interface.
+func (v *getPipelineWebhookNodeSecret) GetTypename() string { return v.Typename }
+
+// getPipelineWebhookNodeSuite includes the requested fields of the GraphQL type Suite.
+// The GraphQL type's documentation follows.
+//
+// A suite
+type getPipelineWebhookNodeSuite struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getPipelineWebhookNodeSuite.Typename, and is useful for accessing the field via an interface.
+func (v *getPipelineWebhookNodeSuite) GetTypename() string { return v.Typename }
+
+// getPipelineWebhookNodeTeam includes the requested fields of the GraphQL type Team.
+// The GraphQL type's documentation follows.
+//
+// An organization team
+type getPipelineWebhookNodeTeam struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getPipelineWebhookNodeTeam.Typename, and is useful for accessing the field via an interface.
+func (v *getPipelineWebhookNodeTeam) GetTypename() string { return v.Typename }
+
+// getPipelineWebhookNodeTeamMember includes the requested fields of the GraphQL type TeamMember.
+// The GraphQL type's documentation follows.
+//
+// An member of a team
+type getPipelineWebhookNodeTeamMember struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getPipelineWebhookNodeTeamMember.Typename, and is useful for accessing the field via an interface.
+func (v *getPipelineWebhookNodeTeamMember) GetTypename() string { return v.Typename }
+
+// getPipelineWebhookNodeTeamPipeline includes the requested fields of the GraphQL type TeamPipeline.
+// The GraphQL type's documentation follows.
+//
+// An pipeline that's been assigned to a team
+type getPipelineWebhookNodeTeamPipeline struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getPipelineWebhookNodeTeamPipeline.Typename, and is useful for accessing the field via an interface.
+func (v *getPipelineWebhookNodeTeamPipeline) GetTypename() string { return v.Typename }
+
+// getPipelineWebhookNodeTeamRegistry includes the requested fields of the GraphQL type TeamRegistry.
+// The GraphQL type's documentation follows.
+//
+// A registry that's been assigned to a team
+type getPipelineWebhookNodeTeamRegistry struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getPipelineWebhookNodeTeamRegistry.Typename, and is useful for accessing the field via an interface.
+func (v *getPipelineWebhookNodeTeamRegistry) GetTypename() string { return v.Typename }
+
+// getPipelineWebhookNodeTeamSuite includes the requested fields of the GraphQL type TeamSuite.
+// The GraphQL type's documentation follows.
+//
+// A suite that's been assigned to a team
+type getPipelineWebhookNodeTeamSuite struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getPipelineWebhookNodeTeamSuite.Typename, and is useful for accessing the field via an interface.
+func (v *getPipelineWebhookNodeTeamSuite) GetTypename() string { return v.Typename }
+
+// getPipelineWebhookNodeUser includes the requested fields of the GraphQL type User.
+// The GraphQL type's documentation follows.
+//
+// A user
+type getPipelineWebhookNodeUser struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getPipelineWebhookNodeUser.Typename, and is useful for accessing the field via an interface.
+func (v *getPipelineWebhookNodeUser) GetTypename() string { return v.Typename }
+
+// getPipelineWebhookNodeViewer includes the requested fields of the GraphQL type Viewer.
+// The GraphQL type's documentation follows.
+//
+// Represents the current user session
+type getPipelineWebhookNodeViewer struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getPipelineWebhookNodeViewer.Typename, and is useful for accessing the field via an interface.
+func (v *getPipelineWebhookNodeViewer) GetTypename() string { return v.Typename }
+
+// getPipelineWebhookResponse is returned by getPipelineWebhook on success.
+type getPipelineWebhookResponse struct {
+	// Fetches an object given its ID.
+	Node getPipelineWebhookNode `json:"-"`
+}
+
+// GetNode returns getPipelineWebhookResponse.Node, and is useful for accessing the field via an interface.
+func (v *getPipelineWebhookResponse) GetNode() getPipelineWebhookNode { return v.Node }
+
+func (v *getPipelineWebhookResponse) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*getPipelineWebhookResponse
+		Node json.RawMessage `json:"node"`
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.getPipelineWebhookResponse = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	{
+		dst := &v.Node
+		src := firstPass.Node
+		if len(src) != 0 && string(src) != "null" {
+			err = __unmarshalgetPipelineWebhookNode(
+				src, dst)
+			if err != nil {
+				return fmt.Errorf(
+					"unable to unmarshal getPipelineWebhookResponse.Node: %w", err)
+			}
+		}
+	}
+	return nil
+}
+
+type __premarshalgetPipelineWebhookResponse struct {
+	Node json.RawMessage `json:"node"`
+}
+
+func (v *getPipelineWebhookResponse) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *getPipelineWebhookResponse) __premarshalJSON() (*__premarshalgetPipelineWebhookResponse, error) {
+	var retval __premarshalgetPipelineWebhookResponse
+
+	{
+
+		dst := &retval.Node
+		src := v.Node
+		var err error
+		*dst, err = __marshalgetPipelineWebhookNode(
+			&src)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"unable to marshal getPipelineWebhookResponse.Node: %w", err)
+		}
+	}
+	return &retval, nil
+}
+
 // getTestSuiteResponse is returned by getTestSuite on success.
 type getTestSuiteResponse struct {
 	// Fetches an object given its ID.
@@ -14046,6 +17148,7 @@ type getTestSuiteResponse struct {
 func (v *getTestSuiteResponse) GetSuite() getTestSuiteSuiteNode { return v.Suite }
 
 func (v *getTestSuiteResponse) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -14409,6 +17512,17 @@ type getTestSuiteSuiteJobEventCanceled struct {
 // GetTypename returns getTestSuiteSuiteJobEventCanceled.Typename, and is useful for accessing the field via an interface.
 func (v *getTestSuiteSuiteJobEventCanceled) GetTypename() string { return v.Typename }
 
+// getTestSuiteSuiteJobEventChanged includes the requested fields of the GraphQL type JobEventChanged.
+// The GraphQL type's documentation follows.
+//
+// A job event for when a job's attributes have been updated
+type getTestSuiteSuiteJobEventChanged struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getTestSuiteSuiteJobEventChanged.Typename, and is useful for accessing the field via an interface.
+func (v *getTestSuiteSuiteJobEventChanged) GetTypename() string { return v.Typename }
+
 // getTestSuiteSuiteJobEventFinished includes the requested fields of the GraphQL type JobEventFinished.
 // The GraphQL type's documentation follows.
 //
@@ -14474,6 +17588,17 @@ type getTestSuiteSuiteJobEventStackError struct {
 
 // GetTypename returns getTestSuiteSuiteJobEventStackError.Typename, and is useful for accessing the field via an interface.
 func (v *getTestSuiteSuiteJobEventStackError) GetTypename() string { return v.Typename }
+
+// getTestSuiteSuiteJobEventStackFinished includes the requested fields of the GraphQL type JobEventStackFinished.
+// The GraphQL type's documentation follows.
+//
+// An event created when a stack finishes a job and marks it as success
+type getTestSuiteSuiteJobEventStackFinished struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getTestSuiteSuiteJobEventStackFinished.Typename, and is useful for accessing the field via an interface.
+func (v *getTestSuiteSuiteJobEventStackFinished) GetTypename() string { return v.Typename }
 
 // getTestSuiteSuiteJobEventStackNotification includes the requested fields of the GraphQL type JobEventStackNotification.
 // The GraphQL type's documentation follows.
@@ -14568,12 +17693,14 @@ func (v *getTestSuiteSuiteJobTypeWait) GetTypename() string { return v.Typename 
 // getTestSuiteSuiteJobEventAssigned
 // getTestSuiteSuiteJobEventBuildStepUploadCreated
 // getTestSuiteSuiteJobEventCanceled
+// getTestSuiteSuiteJobEventChanged
 // getTestSuiteSuiteJobEventFinished
 // getTestSuiteSuiteJobEventGeneric
 // getTestSuiteSuiteJobEventReprioritized
 // getTestSuiteSuiteJobEventRetried
 // getTestSuiteSuiteJobEventRetryFailed
 // getTestSuiteSuiteJobEventStackError
+// getTestSuiteSuiteJobEventStackFinished
 // getTestSuiteSuiteJobEventStackNotification
 // getTestSuiteSuiteJobEventTimedOut
 // getTestSuiteSuiteJobTypeBlock
@@ -14642,12 +17769,14 @@ func (v *getTestSuiteSuiteJobEventAssigned) implementsGraphQLInterfacegetTestSui
 func (v *getTestSuiteSuiteJobEventBuildStepUploadCreated) implementsGraphQLInterfacegetTestSuiteSuiteNode() {
 }
 func (v *getTestSuiteSuiteJobEventCanceled) implementsGraphQLInterfacegetTestSuiteSuiteNode()      {}
+func (v *getTestSuiteSuiteJobEventChanged) implementsGraphQLInterfacegetTestSuiteSuiteNode()       {}
 func (v *getTestSuiteSuiteJobEventFinished) implementsGraphQLInterfacegetTestSuiteSuiteNode()      {}
 func (v *getTestSuiteSuiteJobEventGeneric) implementsGraphQLInterfacegetTestSuiteSuiteNode()       {}
 func (v *getTestSuiteSuiteJobEventReprioritized) implementsGraphQLInterfacegetTestSuiteSuiteNode() {}
 func (v *getTestSuiteSuiteJobEventRetried) implementsGraphQLInterfacegetTestSuiteSuiteNode()       {}
 func (v *getTestSuiteSuiteJobEventRetryFailed) implementsGraphQLInterfacegetTestSuiteSuiteNode()   {}
 func (v *getTestSuiteSuiteJobEventStackError) implementsGraphQLInterfacegetTestSuiteSuiteNode()    {}
+func (v *getTestSuiteSuiteJobEventStackFinished) implementsGraphQLInterfacegetTestSuiteSuiteNode() {}
 func (v *getTestSuiteSuiteJobEventStackNotification) implementsGraphQLInterfacegetTestSuiteSuiteNode() {
 }
 func (v *getTestSuiteSuiteJobEventTimedOut) implementsGraphQLInterfacegetTestSuiteSuiteNode() {}
@@ -14663,7 +17792,6 @@ func (v *getTestSuiteSuiteOrganizationInvitation) implementsGraphQLInterfacegetT
 func (v *getTestSuiteSuiteOrganizationMember) implementsGraphQLInterfacegetTestSuiteSuiteNode()     {}
 func (v *getTestSuiteSuiteOrganizationRepositoryProviderGitHub) implementsGraphQLInterfacegetTestSuiteSuiteNode() {
 }
-
 func (v *getTestSuiteSuiteOrganizationRepositoryProviderGitHubEnterpriseServer) implementsGraphQLInterfacegetTestSuiteSuiteNode() {
 }
 func (v *getTestSuiteSuitePipeline) implementsGraphQLInterfacegetTestSuiteSuiteNode()             {}
@@ -14773,6 +17901,9 @@ func __unmarshalgetTestSuiteSuiteNode(b []byte, v *getTestSuiteSuiteNode) error 
 	case "JobEventCanceled":
 		*v = new(getTestSuiteSuiteJobEventCanceled)
 		return json.Unmarshal(b, *v)
+	case "JobEventChanged":
+		*v = new(getTestSuiteSuiteJobEventChanged)
+		return json.Unmarshal(b, *v)
 	case "JobEventFinished":
 		*v = new(getTestSuiteSuiteJobEventFinished)
 		return json.Unmarshal(b, *v)
@@ -14790,6 +17921,9 @@ func __unmarshalgetTestSuiteSuiteNode(b []byte, v *getTestSuiteSuiteNode) error 
 		return json.Unmarshal(b, *v)
 	case "JobEventStackError":
 		*v = new(getTestSuiteSuiteJobEventStackError)
+		return json.Unmarshal(b, *v)
+	case "JobEventStackFinished":
+		*v = new(getTestSuiteSuiteJobEventStackFinished)
 		return json.Unmarshal(b, *v)
 	case "JobEventStackNotification":
 		*v = new(getTestSuiteSuiteJobEventStackNotification)
@@ -14897,6 +18031,7 @@ func __unmarshalgetTestSuiteSuiteNode(b []byte, v *getTestSuiteSuiteNode) error 
 }
 
 func __marshalgetTestSuiteSuiteNode(v *getTestSuiteSuiteNode) ([]byte, error) {
+
 	var typename string
 	switch v := (*v).(type) {
 	case *getTestSuiteSuiteAPIAccessToken:
@@ -15091,6 +18226,14 @@ func __marshalgetTestSuiteSuiteNode(v *getTestSuiteSuiteNode) ([]byte, error) {
 			*getTestSuiteSuiteJobEventCanceled
 		}{typename, v}
 		return json.Marshal(result)
+	case *getTestSuiteSuiteJobEventChanged:
+		typename = "JobEventChanged"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getTestSuiteSuiteJobEventChanged
+		}{typename, v}
+		return json.Marshal(result)
 	case *getTestSuiteSuiteJobEventFinished:
 		typename = "JobEventFinished"
 
@@ -15137,6 +18280,14 @@ func __marshalgetTestSuiteSuiteNode(v *getTestSuiteSuiteNode) ([]byte, error) {
 		result := struct {
 			TypeName string `json:"__typename"`
 			*getTestSuiteSuiteJobEventStackError
+		}{typename, v}
+		return json.Marshal(result)
+	case *getTestSuiteSuiteJobEventStackFinished:
+		typename = "JobEventStackFinished"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getTestSuiteSuiteJobEventStackFinished
 		}{typename, v}
 		return json.Marshal(result)
 	case *getTestSuiteSuiteJobEventStackNotification:
@@ -15823,6 +18974,7 @@ func (v *removeClusterDefaultQueueClusterUpdateClusterUpdatePayloadCluster) GetC
 }
 
 func (v *removeClusterDefaultQueueClusterUpdateClusterUpdatePayloadCluster) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -16131,6 +19283,7 @@ func (v *setClusterDefaultQueueClusterUpdateClusterUpdatePayloadCluster) GetColo
 }
 
 func (v *setClusterDefaultQueueClusterUpdateClusterUpdatePayloadCluster) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -16350,7 +19503,28 @@ func (v *teamCreateTeamCreateTeamCreatePayloadTeamEdgeNodeTeam) GetMembersCanCre
 	return v.TeamFields.MembersCanCreatePipelines
 }
 
+// GetMembersCanCreateSuites returns teamCreateTeamCreateTeamCreatePayloadTeamEdgeNodeTeam.MembersCanCreateSuites, and is useful for accessing the field via an interface.
+func (v *teamCreateTeamCreateTeamCreatePayloadTeamEdgeNodeTeam) GetMembersCanCreateSuites() bool {
+	return v.TeamFields.MembersCanCreateSuites
+}
+
+// GetMembersCanCreateRegistries returns teamCreateTeamCreateTeamCreatePayloadTeamEdgeNodeTeam.MembersCanCreateRegistries, and is useful for accessing the field via an interface.
+func (v *teamCreateTeamCreateTeamCreatePayloadTeamEdgeNodeTeam) GetMembersCanCreateRegistries() bool {
+	return v.TeamFields.MembersCanCreateRegistries
+}
+
+// GetMembersCanDestroyRegistries returns teamCreateTeamCreateTeamCreatePayloadTeamEdgeNodeTeam.MembersCanDestroyRegistries, and is useful for accessing the field via an interface.
+func (v *teamCreateTeamCreateTeamCreatePayloadTeamEdgeNodeTeam) GetMembersCanDestroyRegistries() bool {
+	return v.TeamFields.MembersCanDestroyRegistries
+}
+
+// GetMembersCanDestroyPackages returns teamCreateTeamCreateTeamCreatePayloadTeamEdgeNodeTeam.MembersCanDestroyPackages, and is useful for accessing the field via an interface.
+func (v *teamCreateTeamCreateTeamCreatePayloadTeamEdgeNodeTeam) GetMembersCanDestroyPackages() bool {
+	return v.TeamFields.MembersCanDestroyPackages
+}
+
 func (v *teamCreateTeamCreateTeamCreatePayloadTeamEdgeNodeTeam) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -16392,6 +19566,14 @@ type __premarshalteamCreateTeamCreateTeamCreatePayloadTeamEdgeNodeTeam struct {
 	DefaultMemberRole string `json:"defaultMemberRole"`
 
 	MembersCanCreatePipelines bool `json:"membersCanCreatePipelines"`
+
+	MembersCanCreateSuites bool `json:"membersCanCreateSuites"`
+
+	MembersCanCreateRegistries bool `json:"membersCanCreateRegistries"`
+
+	MembersCanDestroyRegistries bool `json:"membersCanDestroyRegistries"`
+
+	MembersCanDestroyPackages bool `json:"membersCanDestroyPackages"`
 }
 
 func (v *teamCreateTeamCreateTeamCreatePayloadTeamEdgeNodeTeam) MarshalJSON() ([]byte, error) {
@@ -16414,6 +19596,10 @@ func (v *teamCreateTeamCreateTeamCreatePayloadTeamEdgeNodeTeam) __premarshalJSON
 	retval.IsDefaultTeam = v.TeamFields.IsDefaultTeam
 	retval.DefaultMemberRole = v.TeamFields.DefaultMemberRole
 	retval.MembersCanCreatePipelines = v.TeamFields.MembersCanCreatePipelines
+	retval.MembersCanCreateSuites = v.TeamFields.MembersCanCreateSuites
+	retval.MembersCanCreateRegistries = v.TeamFields.MembersCanCreateRegistries
+	retval.MembersCanDestroyRegistries = v.TeamFields.MembersCanDestroyRegistries
+	retval.MembersCanDestroyPackages = v.TeamFields.MembersCanDestroyPackages
 	return &retval, nil
 }
 
@@ -16506,7 +19692,28 @@ func (v *teamUpdateTeamUpdateTeamUpdatePayloadTeam) GetMembersCanCreatePipelines
 	return v.TeamFields.MembersCanCreatePipelines
 }
 
+// GetMembersCanCreateSuites returns teamUpdateTeamUpdateTeamUpdatePayloadTeam.MembersCanCreateSuites, and is useful for accessing the field via an interface.
+func (v *teamUpdateTeamUpdateTeamUpdatePayloadTeam) GetMembersCanCreateSuites() bool {
+	return v.TeamFields.MembersCanCreateSuites
+}
+
+// GetMembersCanCreateRegistries returns teamUpdateTeamUpdateTeamUpdatePayloadTeam.MembersCanCreateRegistries, and is useful for accessing the field via an interface.
+func (v *teamUpdateTeamUpdateTeamUpdatePayloadTeam) GetMembersCanCreateRegistries() bool {
+	return v.TeamFields.MembersCanCreateRegistries
+}
+
+// GetMembersCanDestroyRegistries returns teamUpdateTeamUpdateTeamUpdatePayloadTeam.MembersCanDestroyRegistries, and is useful for accessing the field via an interface.
+func (v *teamUpdateTeamUpdateTeamUpdatePayloadTeam) GetMembersCanDestroyRegistries() bool {
+	return v.TeamFields.MembersCanDestroyRegistries
+}
+
+// GetMembersCanDestroyPackages returns teamUpdateTeamUpdateTeamUpdatePayloadTeam.MembersCanDestroyPackages, and is useful for accessing the field via an interface.
+func (v *teamUpdateTeamUpdateTeamUpdatePayloadTeam) GetMembersCanDestroyPackages() bool {
+	return v.TeamFields.MembersCanDestroyPackages
+}
+
 func (v *teamUpdateTeamUpdateTeamUpdatePayloadTeam) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -16548,6 +19755,14 @@ type __premarshalteamUpdateTeamUpdateTeamUpdatePayloadTeam struct {
 	DefaultMemberRole string `json:"defaultMemberRole"`
 
 	MembersCanCreatePipelines bool `json:"membersCanCreatePipelines"`
+
+	MembersCanCreateSuites bool `json:"membersCanCreateSuites"`
+
+	MembersCanCreateRegistries bool `json:"membersCanCreateRegistries"`
+
+	MembersCanDestroyRegistries bool `json:"membersCanDestroyRegistries"`
+
+	MembersCanDestroyPackages bool `json:"membersCanDestroyPackages"`
 }
 
 func (v *teamUpdateTeamUpdateTeamUpdatePayloadTeam) MarshalJSON() ([]byte, error) {
@@ -16570,6 +19785,10 @@ func (v *teamUpdateTeamUpdateTeamUpdatePayloadTeam) __premarshalJSON() (*__prema
 	retval.IsDefaultTeam = v.TeamFields.IsDefaultTeam
 	retval.DefaultMemberRole = v.TeamFields.DefaultMemberRole
 	retval.MembersCanCreatePipelines = v.TeamFields.MembersCanCreatePipelines
+	retval.MembersCanCreateSuites = v.TeamFields.MembersCanCreateSuites
+	retval.MembersCanCreateRegistries = v.TeamFields.MembersCanCreateRegistries
+	retval.MembersCanDestroyRegistries = v.TeamFields.MembersCanDestroyRegistries
+	retval.MembersCanDestroyPackages = v.TeamFields.MembersCanDestroyPackages
 	return &retval, nil
 }
 
@@ -16620,6 +19839,7 @@ func (v *updateClusterAgentTokenClusterAgentTokenUpdateClusterAgentTokenUpdatePa
 }
 
 func (v *updateClusterAgentTokenClusterAgentTokenUpdateClusterAgentTokenUpdatePayloadClusterAgentTokenClusterToken) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -16746,6 +19966,7 @@ func (v *updateClusterClusterUpdateClusterUpdatePayloadCluster) GetDefaultQueue(
 }
 
 func (v *updateClusterClusterUpdateClusterUpdatePayloadCluster) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -16888,6 +20109,7 @@ func (v *updateClusterQueueClusterQueueUpdateClusterQueueUpdatePayloadClusterQue
 }
 
 func (v *updateClusterQueueClusterQueueUpdateClusterQueueUpdatePayloadClusterQueue) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -17080,6 +20302,7 @@ func (v *updateOrganizationRuleRuleUpdateRuleUpdatePayloadRule) GetTarget() Orga
 }
 
 func (v *updateOrganizationRuleRuleUpdateRuleUpdatePayloadRule) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -17310,12 +20533,18 @@ func (v *updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline) GetTeams() P
 	return v.PipelineFields.Teams
 }
 
+// GetVisibility returns updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline.Visibility, and is useful for accessing the field via an interface.
+func (v *updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline) GetVisibility() PipelineVisibility {
+	return v.PipelineFields.Visibility
+}
+
 // GetWebhookURL returns updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline.WebhookURL, and is useful for accessing the field via an interface.
 func (v *updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline) GetWebhookURL() string {
 	return v.PipelineFields.WebhookURL
 }
 
 func (v *updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -17386,6 +20615,8 @@ type __premarshalupdatePipelinePipelineUpdatePipelineUpdatePayloadPipeline struc
 
 	Teams PipelineFieldsTeamsTeamPipelineConnection `json:"teams"`
 
+	Visibility PipelineVisibility `json:"visibility"`
+
 	WebhookURL string `json:"webhookURL"`
 }
 
@@ -17423,6 +20654,7 @@ func (v *updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline) __premarshal
 	retval.Steps = v.PipelineFields.Steps
 	retval.Tags = v.PipelineFields.Tags
 	retval.Teams = v.PipelineFields.Teams
+	retval.Visibility = v.PipelineFields.Visibility
 	retval.WebhookURL = v.PipelineFields.WebhookURL
 	return &retval, nil
 }
@@ -17510,6 +20742,7 @@ func (v *updatePipelineSchedulePipelineScheduleUpdatePipelineScheduleUpdatePaylo
 }
 
 func (v *updatePipelineSchedulePipelineScheduleUpdatePipelineScheduleUpdatePayloadPipelineSchedule) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -17642,6 +20875,7 @@ func (v *updatePipelineTemplatePipelineTemplateUpdatePipelineTemplateUpdatePaylo
 }
 
 func (v *updatePipelineTemplatePipelineTemplateUpdatePipelineTemplateUpdatePayloadPipelineTemplate) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -17768,6 +21002,7 @@ func (v *updateTeamMemberTeamMemberUpdateTeamMemberUpdatePayloadTeamMember) GetR
 }
 
 func (v *updateTeamMemberTeamMemberUpdateTeamMemberUpdatePayloadTeamMember) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -17880,6 +21115,7 @@ func (v *updateTeamPipelineTeamPipelineUpdateTeamPipelineUpdatePayloadTeamPipeli
 }
 
 func (v *updateTeamPipelineTeamPipelineUpdateTeamPipelineUpdatePayloadTeamPipeline) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -18029,6 +21265,7 @@ func (v *upsertBannerOrganizationBannerUpsertOrganizationBannerUpsertPayloadBann
 }
 
 func (v *upsertBannerOrganizationBannerUpsertOrganizationBannerUpsertPayloadBannerOrganizationBanner) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -18263,6 +21500,10 @@ query GetOrganizationTeams ($slug: ID!, $cursor: String) {
 					isDefaultTeam
 					defaultMemberRole
 					membersCanCreatePipelines
+					membersCanCreateSuites
+					membersCanCreateRegistries
+					membersCanDestroyRegistries
+					membersCanDestroyPackages
 				}
 			}
 		}
@@ -18348,6 +21589,10 @@ fragment TeamFields on Team {
 	isDefaultTeam
 	defaultMemberRole
 	membersCanCreatePipelines
+	membersCanCreateSuites
+	membersCanCreateRegistries
+	membersCanDestroyRegistries
+	membersCanDestroyPackages
 }
 `
 
@@ -18856,6 +22101,7 @@ fragment PipelineFields on Pipeline {
 	teams(first: 5, order: NAME) {
 		... PipelineTeam
 	}
+	visibility
 	webhookURL
 }
 fragment PipelineTeam on TeamPipelineConnection {
@@ -19012,6 +22258,53 @@ func createPipelineTemplate(
 	}
 
 	data_ = &createPipelineTemplateResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
+// The mutation executed by createPipelineWebhook.
+const createPipelineWebhook_Operation = `
+mutation createPipelineWebhook ($pipelineId: ID!) {
+	pipelineCreateWebhook(input: {id:$pipelineId}) {
+		pipeline {
+			id
+			repository {
+				url
+			}
+		}
+		webhook {
+			__typename
+			... WebhookFields
+		}
+	}
+}
+fragment WebhookFields on RepositoryProviderWebhook {
+	externalId
+	url
+}
+`
+
+func createPipelineWebhook(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	pipelineId string,
+) (data_ *createPipelineWebhookResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "createPipelineWebhook",
+		Query:  createPipelineWebhook_Operation,
+		Variables: &__createPipelineWebhookInput{
+			PipelineId: pipelineId,
+		},
+	}
+
+	data_ = &createPipelineWebhookResponse{}
 	resp_ := &graphql.Response{Data: data_}
 
 	err_ = client_.MakeRequest(
@@ -19428,6 +22721,45 @@ func deletePipelineTemplate(
 	}
 
 	data_ = &deletePipelineTemplateResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
+// The mutation executed by deletePipelineWebhook.
+const deletePipelineWebhook_Operation = `
+mutation deletePipelineWebhook ($pipelineId: ID!, $repository: String) {
+	pipelineDeleteWebhook(input: {id:$pipelineId,repository:$repository}) {
+		pipeline {
+			id
+		}
+		deletedWebhookExternalId
+	}
+}
+`
+
+func deletePipelineWebhook(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	pipelineId string,
+	repository *string,
+) (data_ *deletePipelineWebhookResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "deletePipelineWebhook",
+		Query:  deletePipelineWebhook_Operation,
+		Variables: &__deletePipelineWebhookInput{
+			PipelineId: pipelineId,
+			Repository: repository,
+		},
+	}
+
+	data_ = &deletePipelineWebhookResponse{}
 	resp_ := &graphql.Response{Data: data_}
 
 	err_ = client_.MakeRequest(
@@ -20031,6 +23363,7 @@ fragment PipelineFields on Pipeline {
 	teams(first: 5, order: NAME) {
 		... PipelineTeam
 	}
+	visibility
 	webhookURL
 }
 fragment PipelineTemplateFields on PipelineTemplate {
@@ -20085,6 +23418,10 @@ fragment TeamFields on Team {
 	isDefaultTeam
 	defaultMemberRole
 	membersCanCreatePipelines
+	membersCanCreateSuites
+	membersCanCreateRegistries
+	membersCanDestroyRegistries
+	membersCanDestroyPackages
 }
 fragment TeamSuiteFields on TeamSuite {
 	id
@@ -20452,6 +23789,7 @@ fragment PipelineFields on Pipeline {
 	teams(first: 5, order: NAME) {
 		... PipelineTeam
 	}
+	visibility
 	webhookURL
 }
 fragment PipelineTeam on TeamPipelineConnection {
@@ -20695,6 +24033,63 @@ func getPipelineTemplates(
 	}
 
 	data_ = &getPipelineTemplatesResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
+// The query executed by getPipelineWebhook.
+const getPipelineWebhook_Operation = `
+query getPipelineWebhook ($id: ID!) {
+	node(id: $id) {
+		__typename
+		... on Pipeline {
+			id
+			repository {
+				url
+				provider {
+					__typename
+					... on RepositoryProviderGithub {
+						webhook {
+							... WebhookFields
+						}
+					}
+					... on RepositoryProviderGithubEnterprise {
+						webhook {
+							... WebhookFields
+						}
+					}
+				}
+			}
+		}
+	}
+}
+fragment WebhookFields on RepositoryProviderWebhook {
+	externalId
+	url
+}
+`
+
+func getPipelineWebhook(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	id string,
+) (data_ *getPipelineWebhookResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "getPipelineWebhook",
+		Query:  getPipelineWebhook_Operation,
+		Variables: &__getPipelineWebhookInput{
+			Id: id,
+		},
+	}
+
+	data_ = &getPipelineWebhookResponse{}
 	resp_ := &graphql.Response{Data: data_}
 
 	err_ = client_.MakeRequest(
@@ -21102,8 +24497,8 @@ func setOrganization2FA(
 
 // The mutation executed by teamCreate.
 const teamCreate_Operation = `
-mutation teamCreate ($organizationID: ID!, $name: String!, $description: String, $privacy: TeamPrivacy!, $isDefaultTeam: Boolean!, $defaultMemberRole: TeamMemberRole!, $membersCanCreatePipelines: Boolean) {
-	teamCreate(input: {organizationID:$organizationID,name:$name,description:$description,privacy:$privacy,isDefaultTeam:$isDefaultTeam,defaultMemberRole:$defaultMemberRole,membersCanCreatePipelines:$membersCanCreatePipelines}) {
+mutation teamCreate ($organizationID: ID!, $name: String!, $description: String, $privacy: TeamPrivacy!, $isDefaultTeam: Boolean!, $defaultMemberRole: TeamMemberRole!, $membersCanCreatePipelines: Boolean, $membersCanCreateSuites: Boolean, $membersCanCreateRegistries: Boolean, $membersCanDestroyRegistries: Boolean, $membersCanDestroyPackages: Boolean) {
+	teamCreate(input: {organizationID:$organizationID,name:$name,description:$description,privacy:$privacy,isDefaultTeam:$isDefaultTeam,defaultMemberRole:$defaultMemberRole,membersCanCreatePipelines:$membersCanCreatePipelines,membersCanCreateSuites:$membersCanCreateSuites,membersCanCreateRegistries:$membersCanCreateRegistries,membersCanDestroyRegistries:$membersCanDestroyRegistries,membersCanDestroyPackages:$membersCanDestroyPackages}) {
 		teamEdge {
 			node {
 				... TeamFields
@@ -21121,6 +24516,10 @@ fragment TeamFields on Team {
 	isDefaultTeam
 	defaultMemberRole
 	membersCanCreatePipelines
+	membersCanCreateSuites
+	membersCanCreateRegistries
+	membersCanDestroyRegistries
+	membersCanDestroyPackages
 }
 `
 
@@ -21134,18 +24533,26 @@ func teamCreate(
 	isDefaultTeam bool,
 	defaultMemberRole string,
 	membersCanCreatePipelines bool,
+	membersCanCreateSuites bool,
+	membersCanCreateRegistries bool,
+	membersCanDestroyRegistries bool,
+	membersCanDestroyPackages bool,
 ) (data_ *teamCreateResponse, err_ error) {
 	req_ := &graphql.Request{
 		OpName: "teamCreate",
 		Query:  teamCreate_Operation,
 		Variables: &__teamCreateInput{
-			OrganizationID:            organizationID,
-			Name:                      name,
-			Description:               description,
-			Privacy:                   privacy,
-			IsDefaultTeam:             isDefaultTeam,
-			DefaultMemberRole:         defaultMemberRole,
-			MembersCanCreatePipelines: membersCanCreatePipelines,
+			OrganizationID:              organizationID,
+			Name:                        name,
+			Description:                 description,
+			Privacy:                     privacy,
+			IsDefaultTeam:               isDefaultTeam,
+			DefaultMemberRole:           defaultMemberRole,
+			MembersCanCreatePipelines:   membersCanCreatePipelines,
+			MembersCanCreateSuites:      membersCanCreateSuites,
+			MembersCanCreateRegistries:  membersCanCreateRegistries,
+			MembersCanDestroyRegistries: membersCanDestroyRegistries,
+			MembersCanDestroyPackages:   membersCanDestroyPackages,
 		},
 	}
 
@@ -21197,8 +24604,8 @@ func teamDelete(
 
 // The mutation executed by teamUpdate.
 const teamUpdate_Operation = `
-mutation teamUpdate ($id: ID!, $name: String!, $description: String, $privacy: TeamPrivacy!, $isDefaultTeam: Boolean!, $defaultMemberRole: TeamMemberRole!, $membersCanCreatePipelines: Boolean) {
-	teamUpdate(input: {id:$id,name:$name,description:$description,privacy:$privacy,isDefaultTeam:$isDefaultTeam,defaultMemberRole:$defaultMemberRole,membersCanCreatePipelines:$membersCanCreatePipelines}) {
+mutation teamUpdate ($id: ID!, $name: String!, $description: String, $privacy: TeamPrivacy!, $isDefaultTeam: Boolean!, $defaultMemberRole: TeamMemberRole!, $membersCanCreatePipelines: Boolean, $membersCanCreateSuites: Boolean, $membersCanCreateRegistries: Boolean, $membersCanDestroyRegistries: Boolean, $membersCanDestroyPackages: Boolean) {
+	teamUpdate(input: {id:$id,name:$name,description:$description,privacy:$privacy,isDefaultTeam:$isDefaultTeam,defaultMemberRole:$defaultMemberRole,membersCanCreatePipelines:$membersCanCreatePipelines,membersCanCreateSuites:$membersCanCreateSuites,membersCanCreateRegistries:$membersCanCreateRegistries,membersCanDestroyRegistries:$membersCanDestroyRegistries,membersCanDestroyPackages:$membersCanDestroyPackages}) {
 		team {
 			... TeamFields
 		}
@@ -21214,6 +24621,10 @@ fragment TeamFields on Team {
 	isDefaultTeam
 	defaultMemberRole
 	membersCanCreatePipelines
+	membersCanCreateSuites
+	membersCanCreateRegistries
+	membersCanDestroyRegistries
+	membersCanDestroyPackages
 }
 `
 
@@ -21227,18 +24638,26 @@ func teamUpdate(
 	isDefaultTeam bool,
 	defaultMemberRole string,
 	membersCanCreatePipelines bool,
+	membersCanCreateSuites bool,
+	membersCanCreateRegistries bool,
+	membersCanDestroyRegistries bool,
+	membersCanDestroyPackages bool,
 ) (data_ *teamUpdateResponse, err_ error) {
 	req_ := &graphql.Request{
 		OpName: "teamUpdate",
 		Query:  teamUpdate_Operation,
 		Variables: &__teamUpdateInput{
-			Id:                        id,
-			Name:                      name,
-			Description:               description,
-			Privacy:                   privacy,
-			IsDefaultTeam:             isDefaultTeam,
-			DefaultMemberRole:         defaultMemberRole,
-			MembersCanCreatePipelines: membersCanCreatePipelines,
+			Id:                          id,
+			Name:                        name,
+			Description:                 description,
+			Privacy:                     privacy,
+			IsDefaultTeam:               isDefaultTeam,
+			DefaultMemberRole:           defaultMemberRole,
+			MembersCanCreatePipelines:   membersCanCreatePipelines,
+			MembersCanCreateSuites:      membersCanCreateSuites,
+			MembersCanCreateRegistries:  membersCanCreateRegistries,
+			MembersCanDestroyRegistries: membersCanDestroyRegistries,
+			MembersCanDestroyPackages:   membersCanDestroyPackages,
 		},
 	}
 
@@ -21662,6 +25081,7 @@ fragment PipelineFields on Pipeline {
 	teams(first: 5, order: NAME) {
 		... PipelineTeam
 	}
+	visibility
 	webhookURL
 }
 fragment PipelineTeam on TeamPipelineConnection {

@@ -222,32 +222,34 @@ type PipelineTag struct {
 }
 
 type pipelineResourceModel struct {
-	AllowRebuilds                        types.Bool             `tfsdk:"allow_rebuilds"`
-	BadgeUrl                             types.String           `tfsdk:"badge_url"`
-	BranchConfiguration                  types.String           `tfsdk:"branch_configuration"`
-	CancelIntermediateBuilds             types.Bool             `tfsdk:"cancel_intermediate_builds"`
-	CancelIntermediateBuildsBranchFilter types.String           `tfsdk:"cancel_intermediate_builds_branch_filter"`
-	Color                                types.String           `tfsdk:"color"`
-	ClusterId                            types.String           `tfsdk:"cluster_id"`
-	ClusterName                          types.String           `tfsdk:"cluster_name"`
-	DefaultTeamId                        types.String           `tfsdk:"default_team_id"`
-	DefaultBranch                        types.String           `tfsdk:"default_branch"`
-	DefaultTimeoutInMinutes              types.Int64            `tfsdk:"default_timeout_in_minutes"`
-	Description                          types.String           `tfsdk:"description"`
-	Emoji                                types.String           `tfsdk:"emoji"`
-	Id                                   types.String           `tfsdk:"id"`
-	MaximumTimeoutInMinutes              types.Int64            `tfsdk:"maximum_timeout_in_minutes"`
-	Name                                 types.String           `tfsdk:"name"`
-	PipelineTemplateId                   types.String           `tfsdk:"pipeline_template_id"`
-	ProviderSettings                     *providerSettingsModel `tfsdk:"provider_settings"`
-	Repository                           types.String           `tfsdk:"repository"`
-	SkipIntermediateBuilds               types.Bool             `tfsdk:"skip_intermediate_builds"`
-	SkipIntermediateBuildsBranchFilter   types.String           `tfsdk:"skip_intermediate_builds_branch_filter"`
-	Slug                                 types.String           `tfsdk:"slug"`
-	Steps                                types.String           `tfsdk:"steps"`
-	Tags                                 []types.String         `tfsdk:"tags"`
-	UUID                                 types.String           `tfsdk:"uuid"`
-	WebhookUrl                           types.String           `tfsdk:"webhook_url"`
+	AllowRebuilds                        types.Bool   `tfsdk:"allow_rebuilds"`
+	BadgeUrl                             types.String `tfsdk:"badge_url"`
+	BranchConfiguration                  types.String `tfsdk:"branch_configuration"`
+	CancelIntermediateBuilds             types.Bool   `tfsdk:"cancel_intermediate_builds"`
+	CancelIntermediateBuildsBranchFilter types.String `tfsdk:"cancel_intermediate_builds_branch_filter"`
+	Color                                types.String `tfsdk:"color"`
+	ClusterId                            types.String `tfsdk:"cluster_id"`
+	ClusterName                          types.String `tfsdk:"cluster_name"`
+
+	DefaultTeamId                      types.String           `tfsdk:"default_team_id"`
+	DefaultBranch                      types.String           `tfsdk:"default_branch"`
+	DefaultTimeoutInMinutes            types.Int64            `tfsdk:"default_timeout_in_minutes"`
+	Description                        types.String           `tfsdk:"description"`
+	Emoji                              types.String           `tfsdk:"emoji"`
+	Id                                 types.String           `tfsdk:"id"`
+	MaximumTimeoutInMinutes            types.Int64            `tfsdk:"maximum_timeout_in_minutes"`
+	Name                               types.String           `tfsdk:"name"`
+	PipelineTemplateId                 types.String           `tfsdk:"pipeline_template_id"`
+	ProviderSettings                   *providerSettingsModel `tfsdk:"provider_settings"`
+	Repository                         types.String           `tfsdk:"repository"`
+	SkipIntermediateBuilds             types.Bool             `tfsdk:"skip_intermediate_builds"`
+	SkipIntermediateBuildsBranchFilter types.String           `tfsdk:"skip_intermediate_builds_branch_filter"`
+	Slug                               types.String           `tfsdk:"slug"`
+	Steps                              types.String           `tfsdk:"steps"`
+	Tags                               []types.String         `tfsdk:"tags"`
+	UUID                               types.String           `tfsdk:"uuid"`
+	Visibility                         types.String           `tfsdk:"visibility"`
+	WebhookUrl                         types.String           `tfsdk:"webhook_url"`
 }
 
 type providerSettingsModel struct {
@@ -305,6 +307,7 @@ type pipelineResponse interface {
 	GetSlug() string
 	GetSteps() PipelineFieldsStepsPipelineSteps
 	GetTags() []PipelineFieldsTagsPipelineTag
+	GetVisibility() PipelineVisibility
 	GetWebhookURL() string
 }
 
@@ -390,6 +393,11 @@ func (p *pipelineResource) Create(ctx context.Context, req resource.CreateReques
 				SkipIntermediateBuildsBranchFilter:   plan.SkipIntermediateBuildsBranchFilter.ValueString(),
 				Steps:                                PipelineStepsInput{Yaml: plan.Steps.ValueString()},
 				Tags:                                 getTagsFromSchema(&plan),
+			}
+
+			if !plan.Visibility.IsNull() {
+				visibility := PipelineVisibility(plan.Visibility.ValueString())
+				input.Visibility = visibility
 			}
 
 			// if a team has been specified, add that to the graphql payload
@@ -687,6 +695,9 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 			"branch_configuration": schema.StringAttribute{
 				MarkdownDescription: "Configure the pipeline to only build on this branch conditional.",
 				Optional:            true,
+				Validators: []validator.String{
+					branchFilterValidator{},
+				},
 			},
 			"cancel_intermediate_builds": schema.BoolAttribute{
 				Computed:            true,
@@ -702,6 +713,9 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 				MarkdownDescription: "Filter the `cancel_intermediate_builds` setting based on this branch condition.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
+				},
+				Validators: []validator.String{
+					branchFilterValidator{},
 				},
 			},
 			"color": schema.StringAttribute{
@@ -791,6 +805,9 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
+				Validators: []validator.String{
+					branchFilterValidator{},
+				},
 			},
 			"slug": schema.StringAttribute{
 				Computed:            true,
@@ -834,6 +851,17 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 			"webhook_url": schema.StringAttribute{
 				Computed:            true,
 				MarkdownDescription: "The webhook URL used to trigger builds from VCS providers.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"visibility": schema.StringAttribute{
+				Computed:            true,
+				Optional:            true,
+				MarkdownDescription: "The visibility of the pipeline. Can be `PUBLIC` or `PRIVATE`. Only use `PUBLIC` visibility for pipelines without sensitive information. Defaults to `PRIVATE`.",
+				Validators: []validator.String{
+					stringvalidator.OneOf("PUBLIC", "PRIVATE"),
+				},
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
@@ -897,8 +925,8 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 						Computed:            true,
 						Optional:            true,
 						MarkdownDescription: "Filter pull requests builds by the branch filter.",
-						PlanModifiers: []planmodifier.String{
-							providerSettingPlanModifier{},
+						Validators: []validator.String{
+							branchFilterValidator{},
 						},
 					},
 					"skip_builds_for_existing_commits": schema.BoolAttribute{
@@ -994,9 +1022,9 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 						Computed: true,
 						Optional: true,
 						MarkdownDescription: "The condition to evaluate when deciding if a build should run. This is only valid when `trigger_mode` is `code`. " +
-							"More details available in [the documentation](https://buildkite.com/docs/pipelines/conditionals#conditionals-in-pipelines).",
-						PlanModifiers: []planmodifier.String{
-							providerSettingPlanModifier{},
+							"More details available in [the documentation](https://buildkite.com/docs/pipelines/conditionals).",
+						Validators: []validator.String{
+							filterConditionValidator{},
 						},
 					},
 					"publish_commit_status": schema.BoolAttribute{
@@ -1176,6 +1204,11 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 		Tags:                                 getTagsFromSchema(&plan),
 	}
 
+	if !plan.Visibility.IsNull() {
+		visibility := PipelineVisibility(plan.Visibility.ValueString())
+		input.Visibility = visibility
+	}
+
 	timeouts, diags := p.client.timeouts.Update(ctx, DefaultTimeout)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
@@ -1317,6 +1350,7 @@ func setPipelineModel(model *pipelineResourceModel, data pipelineResponse) {
 	model.SkipIntermediateBuilds = types.BoolValue(data.GetSkipIntermediateBuilds())
 	model.SkipIntermediateBuildsBranchFilter = types.StringValue(data.GetSkipIntermediateBuildsBranchFilter())
 	model.UUID = types.StringValue(data.GetPipelineUuid())
+	model.Visibility = types.StringValue(string(data.GetVisibility()))
 	model.WebhookUrl = types.StringValue(data.GetWebhookURL())
 
 	// Set provider settings from GraphQL response if available
@@ -1858,5 +1892,129 @@ func pipelineSchemaV0() schema.Schema {
 				},
 			},
 		},
+	}
+}
+
+// branchFilterValidator rejects conditional expression syntax in branch filter fields
+// Branch filters only support glob patterns (e.g., "!main", "feature/*")
+// For conditional expressions, users should use filter_condition instead
+type branchFilterValidator struct{}
+
+func (v branchFilterValidator) Description(ctx context.Context) string {
+	return "rejects conditional expression syntax in branch filter fields"
+}
+
+func (v branchFilterValidator) MarkdownDescription(ctx context.Context) string {
+	return "Branch filter fields only support glob patterns. Use filter_condition for conditional expressions."
+}
+
+func (v branchFilterValidator) ValidateString(ctx context.Context, req validator.StringRequest, resp *validator.StringResponse) {
+	// Skip validation if value is null or unknown
+	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
+		return
+	}
+
+	value := req.ConfigValue.ValueString()
+
+	// Skip empty strings
+	if value == "" {
+		return
+	}
+
+	// Check for conditional expression syntax
+	// These indicate the user is trying to use filter_condition syntax in a branch filter field
+	conditionalPatterns := []struct {
+		pattern *regexp.Regexp
+		hint    string
+	}{
+		{regexp.MustCompile(`build\.`), "variable references (e.g., build.branch)"},
+		{regexp.MustCompile(`pipeline\.`), "variable references (e.g., pipeline.slug)"},
+		{regexp.MustCompile(`organization\.`), "variable references (e.g., organization.slug)"},
+		{regexp.MustCompile(`env\(`), "env() function calls"},
+		{regexp.MustCompile(`(==|!=|=~|!~)`), "comparison operators (==, !=, =~, !~)"},
+		{regexp.MustCompile(`(&&|\|\|)`), "logical operators (&& or ||)"},
+	}
+
+	for _, cp := range conditionalPatterns {
+		if cp.pattern.MatchString(value) {
+			resp.Diagnostics.AddAttributeError(
+				req.Path,
+				"Invalid branch filter pattern",
+				fmt.Sprintf(
+					"Branch filter fields only support glob patterns (e.g., '!main', 'feature/*'). "+
+						"Your value contains %s, which is conditional expression syntax. "+
+						"See: https://buildkite.com/docs/pipelines/configure/workflows/branch-configuration",
+					cp.hint,
+				),
+			)
+			return
+		}
+	}
+}
+
+// filterConditionValidator validates conditional expression syntax in filter_condition
+// This provides early client-side validation before the API validates it
+type filterConditionValidator struct{}
+
+func (v filterConditionValidator) Description(ctx context.Context) string {
+	return "validates regex pattern syntax in filter_condition"
+}
+
+func (v filterConditionValidator) MarkdownDescription(ctx context.Context) string {
+	return "Validates that regex patterns used with =~ or !~ operators are properly wrapped in forward slashes"
+}
+
+func (v filterConditionValidator) ValidateString(ctx context.Context, req validator.StringRequest, resp *validator.StringResponse) {
+	// Skip validation if value is null or unknown
+	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
+		return
+	}
+
+	value := req.ConfigValue.ValueString()
+
+	// Skip empty strings
+	if value == "" {
+		return
+	}
+
+	// Check for regex operators
+	hasRegexMatch := regexp.MustCompile(`=~`).MatchString(value)
+	hasRegexNotMatch := regexp.MustCompile(`!~`).MatchString(value)
+
+	if !hasRegexMatch && !hasRegexNotMatch {
+		// No regex operators found, skip validation
+		return
+	}
+
+	// Extract the pattern after the operator and validate it's wrapped in forward slashes
+	// Pattern should be: something =~ /pattern/ or something !~ /pattern/
+	regexPattern := regexp.MustCompile(`[!=]~\s*([^/\s]\S*)`)
+	matches := regexPattern.FindStringSubmatch(value)
+
+	if len(matches) > 1 {
+		// Found a pattern that's not starting with /
+		resp.Diagnostics.AddAttributeError(
+			req.Path,
+			"Invalid regex pattern syntax",
+			"When using regex operators (=~ or !~), the pattern must be wrapped in forward slashes. "+
+				"For example: 'build.branch !~ /foo/' instead of 'build.branch !~ foo'. "+
+				"See: https://buildkite.com/docs/pipelines/conditionals",
+		)
+		return
+	}
+
+	// Validate that if we have a forward slash, it's properly closed
+	slashPattern := regexp.MustCompile(`[!=]~\s*/([^/]*?)(?:/|$)`)
+	slashMatches := slashPattern.FindStringSubmatch(value)
+	if len(slashMatches) > 0 {
+		// Check if the pattern is properly closed with /
+		if !regexp.MustCompile(`[!=]~\s*/[^/]+/`).MatchString(value) {
+			resp.Diagnostics.AddAttributeError(
+				req.Path,
+				"Invalid regex pattern syntax",
+				"Regex pattern must be wrapped in forward slashes. For example: 'build.branch !~ /foo/'. "+
+					"See: https://buildkite.com/docs/pipelines/conditionals",
+			)
+		}
 	}
 }

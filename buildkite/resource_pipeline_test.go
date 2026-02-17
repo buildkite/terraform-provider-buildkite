@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -88,6 +89,7 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 			err = errors.Join(compareRemoteValue(func() any { return *pipeline.MaximumTimeoutInMinutes }, 0)(s), err)
 			err = errors.Join(compareRemoteValue(func() any { return pipeline.BranchConfiguration }, (*string)(nil))(s), err)
 			err = errors.Join(compareRemoteValue(func() any { return pipeline.Cluster.Id }, (*string)(nil))(s), err)
+			err = errors.Join(compareRemoteValue(func() any { return string(pipeline.Visibility) }, "PRIVATE")(s), err)
 
 			return err
 		}
@@ -1286,6 +1288,335 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 						resource.TestCheckNoResourceAttr("buildkite_pipeline.pipeline", "steps"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "name", pipelineName),
 					),
+				},
+			},
+		})
+	})
+
+	t.Run("reject conditional expressions in branch filter fields", func(t *testing.T) {
+		pipelineName := acctest.RandString(12)
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			CheckDestroy:             testAccCheckPipelineDestroyFunc,
+			Steps: []resource.TestStep{
+				{
+					// Test rejection of conditional syntax in cancel_intermediate_builds_branch_filter
+					Config: fmt.Sprintf(`
+						resource "buildkite_pipeline" "pipeline" {
+							name = "%s"
+							repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
+							cancel_intermediate_builds = true
+							cancel_intermediate_builds_branch_filter = "build.branch !~ foo"
+						}
+					`, pipelineName),
+					ExpectError: regexp.MustCompile(`Invalid branch filter pattern`),
+				},
+				{
+					// Test rejection of conditional syntax in skip_intermediate_builds_branch_filter
+					Config: fmt.Sprintf(`
+						resource "buildkite_pipeline" "pipeline" {
+							name = "%s"
+							repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
+							skip_intermediate_builds = true
+							skip_intermediate_builds_branch_filter = "build.branch =~ /bar/"
+						}
+					`, pipelineName),
+					ExpectError: regexp.MustCompile(`Invalid branch filter pattern`),
+				},
+				{
+					// Test rejection of conditional syntax in branch_configuration
+					Config: fmt.Sprintf(`
+						resource "buildkite_pipeline" "pipeline" {
+							name = "%s"
+							repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
+							branch_configuration = "build.branch == 'main'"
+						}
+					`, pipelineName),
+					ExpectError: regexp.MustCompile(`Invalid branch filter pattern`),
+				},
+				{
+					// Test valid simple glob patterns (no conditional operators)
+					Config: fmt.Sprintf(`
+						resource "buildkite_pipeline" "pipeline" {
+							name = "%s"
+							repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
+							cancel_intermediate_builds = true
+							cancel_intermediate_builds_branch_filter = "!main"
+							skip_intermediate_builds = true
+							skip_intermediate_builds_branch_filter = "feature/*"
+							branch_configuration = "main"
+						}
+					`, pipelineName),
+					Check: resource.ComposeAggregateTestCheckFunc(
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "cancel_intermediate_builds_branch_filter", "!main"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "skip_intermediate_builds_branch_filter", "feature/*"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "branch_configuration", "main"),
+					),
+				},
+				{
+					// Test multiple glob patterns in a single field
+					Config: fmt.Sprintf(`
+						resource "buildkite_pipeline" "pipeline" {
+							name = "%s"
+							repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
+							cancel_intermediate_builds = true
+							cancel_intermediate_builds_branch_filter = "!main !develop"
+							skip_intermediate_builds = true
+							skip_intermediate_builds_branch_filter = "feature/* bugfix/*"
+							branch_configuration = "*-staging *-production"
+						}
+					`, pipelineName),
+					Check: resource.ComposeAggregateTestCheckFunc(
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "cancel_intermediate_builds_branch_filter", "!main !develop"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "skip_intermediate_builds_branch_filter", "feature/* bugfix/*"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "branch_configuration", "*-staging *-production"),
+					),
+				},
+			},
+		})
+	})
+
+	t.Run("validate regex patterns in filter_condition", func(t *testing.T) {
+		pipelineName := acctest.RandString(12)
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			CheckDestroy:             testAccCheckPipelineDestroyFunc,
+			Steps: []resource.TestStep{
+				{
+					// Test invalid regex pattern without forward slashes in filter_condition
+					Config: fmt.Sprintf(`
+						resource "buildkite_pipeline" "pipeline" {
+							name = "%s"
+							repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
+							provider_settings = {
+								trigger_mode = "code"
+								filter_enabled = true
+								filter_condition = "build.branch =~ feature"
+							}
+						}
+					`, pipelineName),
+					ExpectError: regexp.MustCompile(`Invalid regex pattern syntax`),
+				},
+				{
+					// Test valid regex pattern with forward slashes in filter_condition
+					Config: fmt.Sprintf(`
+						resource "buildkite_pipeline" "pipeline" {
+							name = "%s"
+							repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
+							provider_settings = {
+								trigger_mode = "code"
+								filter_enabled = true
+								filter_condition = "build.branch =~ /^feature\\/.*/"
+							}
+						}
+					`, pipelineName),
+					Check: resource.ComposeAggregateTestCheckFunc(
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.filter_condition", "build.branch =~ /^feature\\/.*/"),
+					),
+				},
+				{
+					// Test valid conditional without regex operators
+					Config: fmt.Sprintf(`
+						resource "buildkite_pipeline" "pipeline" {
+							name = "%s"
+							repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
+							provider_settings = {
+								trigger_mode = "code"
+								filter_enabled = true
+								filter_condition = "build.branch == 'main'"
+							}
+						}
+					`, pipelineName),
+					Check: resource.ComposeAggregateTestCheckFunc(
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.filter_condition", "build.branch == 'main'"),
+					),
+				},
+			},
+		})
+	})
+
+	t.Run("creates pipeline with PUBLIC visibility", func(t *testing.T) {
+		pipelineName := acctest.RandString(12)
+		config := fmt.Sprintf(`
+			resource "buildkite_pipeline" "pipeline" {
+				name = "%s"
+				repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
+				visibility = "PUBLIC"
+			}
+		`, pipelineName)
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			CheckDestroy:             testAccCheckPipelineDestroyFunc,
+			Steps: []resource.TestStep{
+				{
+					Config: config,
+					Check: resource.ComposeAggregateTestCheckFunc(
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "visibility", "PUBLIC"),
+						func(s *terraform.State) error {
+							slug := fmt.Sprintf("%s/%s", getenv("BUILDKITE_ORGANIZATION_SLUG"), pipelineName)
+							resp, err := getPipeline(context.Background(), genqlientGraphql, slug)
+							if err != nil {
+								return err
+							}
+							if string(resp.Pipeline.GetVisibility()) != "PUBLIC" {
+								return fmt.Errorf("expected visibility PUBLIC, got %s", resp.Pipeline.GetVisibility())
+							}
+							return nil
+						},
+					),
+				},
+			},
+		})
+	})
+
+	t.Run("creates pipeline with PRIVATE visibility", func(t *testing.T) {
+		pipelineName := acctest.RandString(12)
+		config := fmt.Sprintf(`
+			resource "buildkite_pipeline" "pipeline" {
+				name = "%s"
+				repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
+				visibility = "PRIVATE"
+			}
+		`, pipelineName)
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			CheckDestroy:             testAccCheckPipelineDestroyFunc,
+			Steps: []resource.TestStep{
+				{
+					Config: config,
+					Check: resource.ComposeAggregateTestCheckFunc(
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "visibility", "PRIVATE"),
+						func(s *terraform.State) error {
+							slug := fmt.Sprintf("%s/%s", getenv("BUILDKITE_ORGANIZATION_SLUG"), pipelineName)
+							resp, err := getPipeline(context.Background(), genqlientGraphql, slug)
+							if err != nil {
+								return err
+							}
+							if string(resp.Pipeline.GetVisibility()) != "PRIVATE" {
+								return fmt.Errorf("expected visibility PRIVATE, got %s", resp.Pipeline.GetVisibility())
+							}
+							return nil
+						},
+					),
+				},
+			},
+		})
+	})
+
+	t.Run("creates pipeline with default visibility when not specified", func(t *testing.T) {
+		pipelineName := acctest.RandString(12)
+		config := fmt.Sprintf(`
+			resource "buildkite_pipeline" "pipeline" {
+				name = "%s"
+				repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
+			}
+		`, pipelineName)
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			CheckDestroy:             testAccCheckPipelineDestroyFunc,
+			Steps: []resource.TestStep{
+				{
+					Config: config,
+					Check: resource.ComposeAggregateTestCheckFunc(
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "visibility", "PRIVATE"),
+						func(s *terraform.State) error {
+							slug := fmt.Sprintf("%s/%s", getenv("BUILDKITE_ORGANIZATION_SLUG"), pipelineName)
+							resp, err := getPipeline(context.Background(), genqlientGraphql, slug)
+							if err != nil {
+								return err
+							}
+							if string(resp.Pipeline.Visibility) != "PRIVATE" {
+								return fmt.Errorf("expected default visibility PRIVATE, got %s", resp.Pipeline.Visibility)
+							}
+							return nil
+						},
+					),
+				},
+			},
+		})
+	})
+
+	t.Run("updates pipeline visibility from PRIVATE to PUBLIC", func(t *testing.T) {
+		pipelineName := acctest.RandString(12)
+		configPrivate := fmt.Sprintf(`
+			resource "buildkite_pipeline" "pipeline" {
+				name = "%s"
+				repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
+				visibility = "PRIVATE"
+			}
+		`, pipelineName)
+		configPublic := fmt.Sprintf(`
+			resource "buildkite_pipeline" "pipeline" {
+				name = "%s"
+				repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
+				visibility = "PUBLIC"
+			}
+		`, pipelineName)
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			CheckDestroy:             testAccCheckPipelineDestroyFunc,
+			Steps: []resource.TestStep{
+				{
+					Config: configPrivate,
+					Check: resource.ComposeAggregateTestCheckFunc(
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "visibility", "PRIVATE"),
+					),
+				},
+				{
+					Config: configPublic,
+					ConfigPlanChecks: resource.ConfigPlanChecks{
+						PreApply: []plancheck.PlanCheck{
+							plancheck.ExpectResourceAction("buildkite_pipeline.pipeline", plancheck.ResourceActionUpdate),
+						},
+					},
+					Check: resource.ComposeAggregateTestCheckFunc(
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "visibility", "PUBLIC"),
+						func(s *terraform.State) error {
+							slug := fmt.Sprintf("%s/%s", getenv("BUILDKITE_ORGANIZATION_SLUG"), pipelineName)
+							resp, err := getPipeline(context.Background(), genqlientGraphql, slug)
+							if err != nil {
+								return err
+							}
+							if string(resp.Pipeline.Visibility) != "PUBLIC" {
+								return fmt.Errorf("expected visibility PUBLIC after update, got %s", resp.Pipeline.Visibility)
+							}
+							return nil
+						},
+					),
+				},
+			},
+		})
+	})
+
+	t.Run("rejects invalid visibility values", func(t *testing.T) {
+		pipelineName := acctest.RandString(12)
+		config := fmt.Sprintf(`
+			resource "buildkite_pipeline" "pipeline" {
+				name = "%s"
+				repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
+				visibility = "INVALID"
+			}
+		`, pipelineName)
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			Steps: []resource.TestStep{
+				{
+					Config:      config,
+					ExpectError: regexp.MustCompile(`Attribute visibility value must be one of: \["PUBLIC" "PRIVATE"\]`),
 				},
 			},
 		})

@@ -48,6 +48,17 @@ resource "buildkite_pipeline" "pipeline" {
   }
 }
 
+# Public pipeline - visible to anyone with the link
+data "buildkite_cluster" "default" {
+  name = "Default cluster"
+}
+resource "buildkite_pipeline" "public_pipeline" {
+  name       = "Public Pipeline"
+  repository = "git@github.com:my-org/public-repo"
+  cluster_id = data.buildkite_cluster.default.id
+  visibility = "PUBLIC"
+}
+
 # signed pipeline
 data "buildkite_cluster" "default" {
   name = "Default cluster"
@@ -76,7 +87,24 @@ resource "buildkite_pipeline" "signed-pipeline" {
 }
 
 
+data "buildkite_cluster" "default" {
+  name = "Default cluster"
+}
+
+resource "buildkite_pipeline" "pipeline_with_webhook" {
+  name           = "repo"
+  repository     = "git@github.com:my-org/my-repo"
+  cluster_id     = data.buildkite_cluster.default.id
+}
+
+# Create a repository webhook for this pipeline (only supported via GitHub App)
+resource "buildkite_pipeline_webhook" "webhook" {
+  pipeline_id    = buildkite_pipeline.pipeline_with_webhook.id
+  repository     = buildkite_pipeline.pipeline_with_webhook.repository
+}
+
 # Advanced example using Github provider to create repository webhook for Buildkite pipeline
+# Note: The example above using buildkite_pipeline_webhook is preferred when a GitHub App integration is available.
 
 terraform {
   required_providers {
@@ -158,6 +186,7 @@ resource "github_repository_webhook" "my_webhook" {
 - `slug` (String) A custom identifier for the pipeline. If provided, this slug will be used as the pipeline's URL path instead of automatically converting the pipeline name. If not provided, the slug will be [derived](https://buildkite.com/docs/apis/graphql/cookbooks/pipelines#create-a-pipeline-deriving-a-pipeline-slug-from-the-pipelines-name) from the pipeline `name`.
 - `steps` (String) The YAML steps to configure for the pipeline. Can also accept the `steps` attribute from the [`buildkite_signed_pipeline_steps`](/docs/data-sources/signed_pipeline_steps) data source to enable a signed pipeline. Defaults to `buildkite-agent pipeline upload`.
 - `tags` (Set of String) Tags to attribute to the pipeline. Useful for searching by in the UI.
+- `visibility` (String) The visibility of the pipeline. Can be `PUBLIC` or `PRIVATE`. Only use `PUBLIC` visibility for pipelines without sensitive information. Defaults to `PRIVATE`.
 
 ### Read-Only
 
@@ -182,7 +211,7 @@ Optional:
 - `build_tags` (Boolean) Whether to create builds when tags are pushed.
 - `cancel_deleted_branch_builds` (Boolean) Automatically cancel running builds for a branch if the branch is deleted.
 - `cancel_when_merge_group_destroyed` (Boolean) Whether to cancel any running builds belonging to a removed merge group.
-- `filter_condition` (String) The condition to evaluate when deciding if a build should run. This is only valid when `trigger_mode` is `code`. More details available in [the documentation](https://buildkite.com/docs/pipelines/conditionals#conditionals-in-pipelines).
+- `filter_condition` (String) The condition to evaluate when deciding if a build should run. This is only valid when `trigger_mode` is `code`. More details available in [the documentation](https://buildkite.com/docs/pipelines/conditionals).
 - `filter_enabled` (Boolean) Whether to filter builds to only run when the condition in `filter_condition` is true.
 - `ignore_default_branch_pull_requests` (Boolean) Whether to prevent caching pull requests with the source branch matching the default branch.
 - `prefix_pull_request_fork_branch_names` (Boolean) Prefix branch names for third-party fork builds to ensure they don't trigger branch conditions. For example, the main branch from some-user will become some-user:main.

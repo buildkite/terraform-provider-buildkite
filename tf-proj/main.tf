@@ -2,7 +2,7 @@ terraform {
   required_providers {
     buildkite = {
       source  = "buildkite/buildkite"
-      version = "0.20.0"
+      version = "0.27.2"
     }
   }
 }
@@ -49,4 +49,18 @@ resource "buildkite_cluster_queue" "hosted_macos_medium" {
       xcode_version = "16.3"
     }
   }
+}
+
+
+
+resource "buildkite_cluster_secret" "my_secret" {
+  cluster_id  = buildkite_cluster.test_cluster.uuid
+  key         = "MY_SECRET"
+  value       = "secret-value"
+  description = "Test secret was created by Terraform"
+
+  policy = <<-EOT
+    - pipeline_slug: my-pipeline
+      build_branch: main
+  EOT
 }

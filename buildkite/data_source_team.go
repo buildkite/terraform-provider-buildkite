@@ -14,15 +14,19 @@ import (
 )
 
 type teamDatasourceModel struct {
-	ID                        types.String `tfsdk:"id"`
-	UUID                      types.String `tfsdk:"uuid"`
-	Slug                      types.String `tfsdk:"slug"`
-	Name                      types.String `tfsdk:"name"`
-	Privacy                   types.String `tfsdk:"privacy"`
-	Description               types.String `tfsdk:"description"`
-	IsDefaultTeam             types.Bool   `tfsdk:"default_team"`
-	DefaultMemberRole         types.String `tfsdk:"default_member_role"`
-	MembersCanCreatePipelines types.Bool   `tfsdk:"members_can_create_pipelines"`
+	ID                          types.String `tfsdk:"id"`
+	UUID                        types.String `tfsdk:"uuid"`
+	Slug                        types.String `tfsdk:"slug"`
+	Name                        types.String `tfsdk:"name"`
+	Privacy                     types.String `tfsdk:"privacy"`
+	Description                 types.String `tfsdk:"description"`
+	IsDefaultTeam               types.Bool   `tfsdk:"default_team"`
+	DefaultMemberRole           types.String `tfsdk:"default_member_role"`
+	MembersCanCreatePipelines   types.Bool   `tfsdk:"members_can_create_pipelines"`
+	MembersCanCreateSuites      types.Bool   `tfsdk:"members_can_create_suites"`
+	MembersCanCreateRegistries  types.Bool   `tfsdk:"members_can_create_registries"`
+	MembersCanDestroyRegistries types.Bool   `tfsdk:"members_can_destroy_registries"`
+	MembersCanDestroyPackages   types.Bool   `tfsdk:"members_can_destroy_packages"`
 }
 
 type teamDatasource struct {
@@ -96,6 +100,22 @@ func (t *teamDatasource) Schema(ctx context.Context, req datasource.SchemaReques
 				MarkdownDescription: "Whether members can create pipelines.",
 				Computed:            true,
 			},
+			"members_can_create_suites": schema.BoolAttribute{
+				MarkdownDescription: "Whether members can create test suites.",
+				Computed:            true,
+			},
+			"members_can_create_registries": schema.BoolAttribute{
+				MarkdownDescription: "Whether members can create registries.",
+				Computed:            true,
+			},
+			"members_can_destroy_registries": schema.BoolAttribute{
+				MarkdownDescription: "Whether members can destroy registries.",
+				Computed:            true,
+			},
+			"members_can_destroy_packages": schema.BoolAttribute{
+				MarkdownDescription: "Whether members can destroy packages.",
+				Computed:            true,
+			},
 		},
 	}
 }
@@ -152,6 +172,10 @@ func updateTeamDatasourceStateFromSlug(state *teamDatasourceModel, data GetTeamF
 	state.IsDefaultTeam = types.BoolValue(data.Team.IsDefaultTeam)
 	state.DefaultMemberRole = types.StringValue(data.Team.DefaultMemberRole)
 	state.MembersCanCreatePipelines = types.BoolValue(data.Team.MembersCanCreatePipelines)
+	state.MembersCanCreateSuites = types.BoolValue(data.Team.MembersCanCreateSuites)
+	state.MembersCanCreateRegistries = types.BoolValue(data.Team.MembersCanCreateRegistries)
+	state.MembersCanDestroyRegistries = types.BoolValue(data.Team.MembersCanDestroyRegistries)
+	state.MembersCanDestroyPackages = types.BoolValue(data.Team.MembersCanDestroyPackages)
 }
 
 func updateTeamDatasourceState(state *teamDatasourceModel, data getNodeNodeTeam) {
@@ -164,4 +188,8 @@ func updateTeamDatasourceState(state *teamDatasourceModel, data getNodeNodeTeam)
 	state.IsDefaultTeam = types.BoolValue(data.IsDefaultTeam)
 	state.DefaultMemberRole = types.StringValue(string(data.GetDefaultMemberRole()))
 	state.MembersCanCreatePipelines = types.BoolValue(data.MembersCanCreatePipelines)
+	state.MembersCanCreateSuites = types.BoolValue(data.MembersCanCreateSuites)
+	state.MembersCanCreateRegistries = types.BoolValue(data.MembersCanCreateRegistries)
+	state.MembersCanDestroyRegistries = types.BoolValue(data.MembersCanDestroyRegistries)
+	state.MembersCanDestroyPackages = types.BoolValue(data.MembersCanDestroyPackages)
 }
