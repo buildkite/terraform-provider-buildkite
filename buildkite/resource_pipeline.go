@@ -1415,7 +1415,33 @@ func setPipelineModel(ctx context.Context, model *pipelineResourceModel, data pi
 
 	// Set provider settings from GraphQL response if available
 	// Build a temporary providerSettingsModel struct
-	providerSettings := providerSettingsModel{}
+	// Initialize all fields to null to avoid unknown values for unset fields
+	providerSettings := providerSettingsModel{
+		TriggerMode:                             types.StringNull(),
+		BuildPullRequests:                       types.BoolNull(),
+		PullRequestBranchFilterEnabled:          types.BoolNull(),
+		PullRequestBranchFilterConfiguration:    types.StringNull(),
+		SkipBuildsForExistingCommits:            types.BoolNull(),
+		SkipPullRequestBuildsForExistingCommits: types.BoolNull(),
+		BuildPullRequestReadyForReview:          types.BoolNull(),
+		BuildPullRequestLabelsChanged:           types.BoolNull(),
+		BuildPullRequestBaseBranchChanged:       types.BoolNull(),
+		BuildPullRequestForks:                   types.BoolNull(),
+		PrefixPullRequestForkBranchNames:        types.BoolNull(),
+		BuildBranches:                           types.BoolNull(),
+		BuildTags:                               types.BoolNull(),
+		CancelDeletedBranchBuilds:               types.BoolNull(),
+		FilterEnabled:                           types.BoolNull(),
+		FilterCondition:                         types.StringNull(),
+		PublishCommitStatus:                     types.BoolNull(),
+		PublishBlockedAsPending:                 types.BoolNull(),
+		PublishCommitStatusPerStep:              types.BoolNull(),
+		SeparatePullRequestStatuses:             types.BoolNull(),
+		IgnoreDefaultBranchPullRequests:         types.BoolNull(),
+		BuildMergeGroupChecksRequested:          types.BoolNull(),
+		CancelWhenMergeGroupDestroyed:           types.BoolNull(),
+		UseMergeGroupBaseCommitForGitDiffBase:   types.BoolNull(),
+	}
 
 	// Check if we have provider settings from GraphQL
 	repo := data.GetRepository()
