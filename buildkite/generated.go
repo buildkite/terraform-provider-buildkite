@@ -2447,7 +2447,7 @@ func (v *PipelineFieldsRepositoryProviderRepositoryProviderCodebaseSettings) Get
 // A pipeline's repository is being provided by GitHub
 type PipelineFieldsRepositoryProviderRepositoryProviderGithub struct {
 	Typename string `json:"__typename"`
-	// The repository’s provider settings
+	// The repository's provider settings
 	Settings PipelineFieldsRepositoryProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings `json:"settings"`
 }
 
@@ -2467,7 +2467,7 @@ func (v *PipelineFieldsRepositoryProviderRepositoryProviderGithub) GetSettings()
 // A pipeline's repository is being provided by GitHub Enterprise
 type PipelineFieldsRepositoryProviderRepositoryProviderGithubEnterprise struct {
 	Typename string `json:"__typename"`
-	// The repository’s provider settings
+	// The repository's provider settings
 	Settings PipelineFieldsRepositoryProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings `json:"settings"`
 }
 
@@ -2488,6 +2488,8 @@ func (v *PipelineFieldsRepositoryProviderRepositoryProviderGithubEnterprise) Get
 type PipelineFieldsRepositoryProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings struct {
 	// Whether to create builds when branches are pushed.
 	BuildBranches bool `json:"buildBranches"`
+	// Whether to create builds for merge group check runs.
+	BuildMergeGroupChecksRequested bool `json:"buildMergeGroupChecksRequested"`
 	// Whether to create builds for pull requests when the base branch is changed.
 	BuildPullRequestBaseBranchChanged bool `json:"buildPullRequestBaseBranchChanged"`
 	// Whether to create builds for pull requests from third-party forks.
@@ -2502,6 +2504,8 @@ type PipelineFieldsRepositoryProviderRepositoryProviderGithubEnterpriseSettingsR
 	BuildTags bool `json:"buildTags"`
 	// A boolean to enable automatically cancelling any running builds for a branch if the branch is deleted.
 	CancelDeletedBranchBuilds bool `json:"cancelDeletedBranchBuilds"`
+	// Whether to cancel running builds when a merge group is destroyed.
+	CancelWhenMergeGroupDestroyed bool `json:"cancelWhenMergeGroupDestroyed"`
 	// The conditions under which this pipeline will trigger a build.
 	FilterCondition string `json:"filterCondition"`
 	// Whether the filter is enabled
@@ -2528,11 +2532,18 @@ type PipelineFieldsRepositoryProviderRepositoryProviderGithubEnterpriseSettingsR
 	SkipPullRequestBuildsForExistingCommits bool `json:"skipPullRequestBuildsForExistingCommits"`
 	// What type of event to trigger builds on.
 	TriggerMode string `json:"triggerMode"`
+	// Whether to use the merge group base commit for git diff base.
+	UseMergeGroupBaseCommitForGitDiffBase bool `json:"useMergeGroupBaseCommitForGitDiffBase"`
 }
 
 // GetBuildBranches returns PipelineFieldsRepositoryProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings.BuildBranches, and is useful for accessing the field via an interface.
 func (v *PipelineFieldsRepositoryProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings) GetBuildBranches() bool {
 	return v.BuildBranches
+}
+
+// GetBuildMergeGroupChecksRequested returns PipelineFieldsRepositoryProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings.BuildMergeGroupChecksRequested, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings) GetBuildMergeGroupChecksRequested() bool {
+	return v.BuildMergeGroupChecksRequested
 }
 
 // GetBuildPullRequestBaseBranchChanged returns PipelineFieldsRepositoryProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings.BuildPullRequestBaseBranchChanged, and is useful for accessing the field via an interface.
@@ -2568,6 +2579,11 @@ func (v *PipelineFieldsRepositoryProviderRepositoryProviderGithubEnterpriseSetti
 // GetCancelDeletedBranchBuilds returns PipelineFieldsRepositoryProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings.CancelDeletedBranchBuilds, and is useful for accessing the field via an interface.
 func (v *PipelineFieldsRepositoryProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings) GetCancelDeletedBranchBuilds() bool {
 	return v.CancelDeletedBranchBuilds
+}
+
+// GetCancelWhenMergeGroupDestroyed returns PipelineFieldsRepositoryProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings.CancelWhenMergeGroupDestroyed, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings) GetCancelWhenMergeGroupDestroyed() bool {
+	return v.CancelWhenMergeGroupDestroyed
 }
 
 // GetFilterCondition returns PipelineFieldsRepositoryProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings.FilterCondition, and is useful for accessing the field via an interface.
@@ -2635,6 +2651,11 @@ func (v *PipelineFieldsRepositoryProviderRepositoryProviderGithubEnterpriseSetti
 	return v.TriggerMode
 }
 
+// GetUseMergeGroupBaseCommitForGitDiffBase returns PipelineFieldsRepositoryProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings.UseMergeGroupBaseCommitForGitDiffBase, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings) GetUseMergeGroupBaseCommitForGitDiffBase() bool {
+	return v.UseMergeGroupBaseCommitForGitDiffBase
+}
+
 // PipelineFieldsRepositoryProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings includes the requested fields of the GraphQL type RepositoryProviderGitHubSettings.
 // The GraphQL type's documentation follows.
 //
@@ -2642,6 +2663,8 @@ func (v *PipelineFieldsRepositoryProviderRepositoryProviderGithubEnterpriseSetti
 type PipelineFieldsRepositoryProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings struct {
 	// Whether to create builds when branches are pushed.
 	BuildBranches bool `json:"buildBranches"`
+	// Whether to create builds for merge group check runs.
+	BuildMergeGroupChecksRequested bool `json:"buildMergeGroupChecksRequested"`
 	// Whether to create builds for pull requests when the base branch is changed.
 	BuildPullRequestBaseBranchChanged bool `json:"buildPullRequestBaseBranchChanged"`
 	// Whether to create builds for pull requests from third-party forks.
@@ -2656,6 +2679,8 @@ type PipelineFieldsRepositoryProviderRepositoryProviderGithubSettingsRepositoryP
 	BuildTags bool `json:"buildTags"`
 	// A boolean to enable automatically cancelling any running builds for a branch if the branch is deleted.
 	CancelDeletedBranchBuilds bool `json:"cancelDeletedBranchBuilds"`
+	// Whether to cancel running builds when a merge group is destroyed.
+	CancelWhenMergeGroupDestroyed bool `json:"cancelWhenMergeGroupDestroyed"`
 	// The conditions under which this pipeline will trigger a build.
 	FilterCondition string `json:"filterCondition"`
 	// Whether the filter is enabled
@@ -2682,11 +2707,18 @@ type PipelineFieldsRepositoryProviderRepositoryProviderGithubSettingsRepositoryP
 	SkipPullRequestBuildsForExistingCommits bool `json:"skipPullRequestBuildsForExistingCommits"`
 	// What type of event to trigger builds on.
 	TriggerMode string `json:"triggerMode"`
+	// Whether to use the merge group base commit for git diff base.
+	UseMergeGroupBaseCommitForGitDiffBase bool `json:"useMergeGroupBaseCommitForGitDiffBase"`
 }
 
 // GetBuildBranches returns PipelineFieldsRepositoryProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings.BuildBranches, and is useful for accessing the field via an interface.
 func (v *PipelineFieldsRepositoryProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings) GetBuildBranches() bool {
 	return v.BuildBranches
+}
+
+// GetBuildMergeGroupChecksRequested returns PipelineFieldsRepositoryProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings.BuildMergeGroupChecksRequested, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings) GetBuildMergeGroupChecksRequested() bool {
+	return v.BuildMergeGroupChecksRequested
 }
 
 // GetBuildPullRequestBaseBranchChanged returns PipelineFieldsRepositoryProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings.BuildPullRequestBaseBranchChanged, and is useful for accessing the field via an interface.
@@ -2722,6 +2754,11 @@ func (v *PipelineFieldsRepositoryProviderRepositoryProviderGithubSettingsReposit
 // GetCancelDeletedBranchBuilds returns PipelineFieldsRepositoryProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings.CancelDeletedBranchBuilds, and is useful for accessing the field via an interface.
 func (v *PipelineFieldsRepositoryProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings) GetCancelDeletedBranchBuilds() bool {
 	return v.CancelDeletedBranchBuilds
+}
+
+// GetCancelWhenMergeGroupDestroyed returns PipelineFieldsRepositoryProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings.CancelWhenMergeGroupDestroyed, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings) GetCancelWhenMergeGroupDestroyed() bool {
+	return v.CancelWhenMergeGroupDestroyed
 }
 
 // GetFilterCondition returns PipelineFieldsRepositoryProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings.FilterCondition, and is useful for accessing the field via an interface.
@@ -2787,6 +2824,11 @@ func (v *PipelineFieldsRepositoryProviderRepositoryProviderGithubSettingsReposit
 // GetTriggerMode returns PipelineFieldsRepositoryProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings.TriggerMode, and is useful for accessing the field via an interface.
 func (v *PipelineFieldsRepositoryProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings) GetTriggerMode() string {
 	return v.TriggerMode
+}
+
+// GetUseMergeGroupBaseCommitForGitDiffBase returns PipelineFieldsRepositoryProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings.UseMergeGroupBaseCommitForGitDiffBase, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings) GetUseMergeGroupBaseCommitForGitDiffBase() bool {
+	return v.UseMergeGroupBaseCommitForGitDiffBase
 }
 
 // PipelineFieldsRepositoryProviderRepositoryProviderGitlab includes the requested fields of the GraphQL type RepositoryProviderGitlab.
@@ -3412,15 +3454,15 @@ var AllPipelineVisibility = []PipelineVisibility{
 type RuleAction string
 
 const (
-	// Trigger build
-	RuleActionTriggerBuild RuleAction = "TRIGGER_BUILD"
 	// Artifacts read
 	RuleActionArtifactsRead RuleAction = "ARTIFACTS_READ"
+	// Trigger build
+	RuleActionTriggerBuild RuleAction = "TRIGGER_BUILD"
 )
 
 var AllRuleAction = []RuleAction{
-	RuleActionTriggerBuild,
 	RuleActionArtifactsRead,
+	RuleActionTriggerBuild,
 }
 
 // The effect a rule has
@@ -21987,6 +22029,7 @@ fragment PipelineFields on Pipeline {
 			... on RepositoryProviderGithub {
 				settings {
 					buildBranches
+					buildMergeGroupChecksRequested
 					buildPullRequestBaseBranchChanged
 					buildPullRequestForks
 					buildPullRequestLabelsChanged
@@ -21994,6 +22037,7 @@ fragment PipelineFields on Pipeline {
 					buildPullRequests
 					buildTags
 					cancelDeletedBranchBuilds
+					cancelWhenMergeGroupDestroyed
 					filterCondition
 					filterEnabled
 					ignoreDefaultBranchPullRequests
@@ -22007,6 +22051,7 @@ fragment PipelineFields on Pipeline {
 					skipBuildsForExistingCommits
 					skipPullRequestBuildsForExistingCommits
 					triggerMode
+					useMergeGroupBaseCommitForGitDiffBase
 				}
 			}
 			... on RepositoryProviderGitlab {
@@ -22056,6 +22101,7 @@ fragment PipelineFields on Pipeline {
 			... on RepositoryProviderGithubEnterprise {
 				settings {
 					buildBranches
+					buildMergeGroupChecksRequested
 					buildPullRequestBaseBranchChanged
 					buildPullRequestForks
 					buildPullRequestLabelsChanged
@@ -22063,6 +22109,7 @@ fragment PipelineFields on Pipeline {
 					buildPullRequests
 					buildTags
 					cancelDeletedBranchBuilds
+					cancelWhenMergeGroupDestroyed
 					filterCondition
 					filterEnabled
 					ignoreDefaultBranchPullRequests
@@ -22076,6 +22123,7 @@ fragment PipelineFields on Pipeline {
 					skipBuildsForExistingCommits
 					skipPullRequestBuildsForExistingCommits
 					triggerMode
+					useMergeGroupBaseCommitForGitDiffBase
 				}
 			}
 			... on RepositoryProviderUnknown {
@@ -23249,6 +23297,7 @@ fragment PipelineFields on Pipeline {
 			... on RepositoryProviderGithub {
 				settings {
 					buildBranches
+					buildMergeGroupChecksRequested
 					buildPullRequestBaseBranchChanged
 					buildPullRequestForks
 					buildPullRequestLabelsChanged
@@ -23256,6 +23305,7 @@ fragment PipelineFields on Pipeline {
 					buildPullRequests
 					buildTags
 					cancelDeletedBranchBuilds
+					cancelWhenMergeGroupDestroyed
 					filterCondition
 					filterEnabled
 					ignoreDefaultBranchPullRequests
@@ -23269,6 +23319,7 @@ fragment PipelineFields on Pipeline {
 					skipBuildsForExistingCommits
 					skipPullRequestBuildsForExistingCommits
 					triggerMode
+					useMergeGroupBaseCommitForGitDiffBase
 				}
 			}
 			... on RepositoryProviderGitlab {
@@ -23318,6 +23369,7 @@ fragment PipelineFields on Pipeline {
 			... on RepositoryProviderGithubEnterprise {
 				settings {
 					buildBranches
+					buildMergeGroupChecksRequested
 					buildPullRequestBaseBranchChanged
 					buildPullRequestForks
 					buildPullRequestLabelsChanged
@@ -23325,6 +23377,7 @@ fragment PipelineFields on Pipeline {
 					buildPullRequests
 					buildTags
 					cancelDeletedBranchBuilds
+					cancelWhenMergeGroupDestroyed
 					filterCondition
 					filterEnabled
 					ignoreDefaultBranchPullRequests
@@ -23338,6 +23391,7 @@ fragment PipelineFields on Pipeline {
 					skipBuildsForExistingCommits
 					skipPullRequestBuildsForExistingCommits
 					triggerMode
+					useMergeGroupBaseCommitForGitDiffBase
 				}
 			}
 			... on RepositoryProviderUnknown {
@@ -23675,6 +23729,7 @@ fragment PipelineFields on Pipeline {
 			... on RepositoryProviderGithub {
 				settings {
 					buildBranches
+					buildMergeGroupChecksRequested
 					buildPullRequestBaseBranchChanged
 					buildPullRequestForks
 					buildPullRequestLabelsChanged
@@ -23682,6 +23737,7 @@ fragment PipelineFields on Pipeline {
 					buildPullRequests
 					buildTags
 					cancelDeletedBranchBuilds
+					cancelWhenMergeGroupDestroyed
 					filterCondition
 					filterEnabled
 					ignoreDefaultBranchPullRequests
@@ -23695,6 +23751,7 @@ fragment PipelineFields on Pipeline {
 					skipBuildsForExistingCommits
 					skipPullRequestBuildsForExistingCommits
 					triggerMode
+					useMergeGroupBaseCommitForGitDiffBase
 				}
 			}
 			... on RepositoryProviderGitlab {
@@ -23744,6 +23801,7 @@ fragment PipelineFields on Pipeline {
 			... on RepositoryProviderGithubEnterprise {
 				settings {
 					buildBranches
+					buildMergeGroupChecksRequested
 					buildPullRequestBaseBranchChanged
 					buildPullRequestForks
 					buildPullRequestLabelsChanged
@@ -23751,6 +23809,7 @@ fragment PipelineFields on Pipeline {
 					buildPullRequests
 					buildTags
 					cancelDeletedBranchBuilds
+					cancelWhenMergeGroupDestroyed
 					filterCondition
 					filterEnabled
 					ignoreDefaultBranchPullRequests
@@ -23764,6 +23823,7 @@ fragment PipelineFields on Pipeline {
 					skipBuildsForExistingCommits
 					skipPullRequestBuildsForExistingCommits
 					triggerMode
+					useMergeGroupBaseCommitForGitDiffBase
 				}
 			}
 			... on RepositoryProviderUnknown {
@@ -24967,6 +25027,7 @@ fragment PipelineFields on Pipeline {
 			... on RepositoryProviderGithub {
 				settings {
 					buildBranches
+					buildMergeGroupChecksRequested
 					buildPullRequestBaseBranchChanged
 					buildPullRequestForks
 					buildPullRequestLabelsChanged
@@ -24974,6 +25035,7 @@ fragment PipelineFields on Pipeline {
 					buildPullRequests
 					buildTags
 					cancelDeletedBranchBuilds
+					cancelWhenMergeGroupDestroyed
 					filterCondition
 					filterEnabled
 					ignoreDefaultBranchPullRequests
@@ -24987,6 +25049,7 @@ fragment PipelineFields on Pipeline {
 					skipBuildsForExistingCommits
 					skipPullRequestBuildsForExistingCommits
 					triggerMode
+					useMergeGroupBaseCommitForGitDiffBase
 				}
 			}
 			... on RepositoryProviderGitlab {
@@ -25036,6 +25099,7 @@ fragment PipelineFields on Pipeline {
 			... on RepositoryProviderGithubEnterprise {
 				settings {
 					buildBranches
+					buildMergeGroupChecksRequested
 					buildPullRequestBaseBranchChanged
 					buildPullRequestForks
 					buildPullRequestLabelsChanged
@@ -25043,6 +25107,7 @@ fragment PipelineFields on Pipeline {
 					buildPullRequests
 					buildTags
 					cancelDeletedBranchBuilds
+					cancelWhenMergeGroupDestroyed
 					filterCondition
 					filterEnabled
 					ignoreDefaultBranchPullRequests
@@ -25056,6 +25121,7 @@ fragment PipelineFields on Pipeline {
 					skipBuildsForExistingCommits
 					skipPullRequestBuildsForExistingCommits
 					triggerMode
+					useMergeGroupBaseCommitForGitDiffBase
 				}
 			}
 			... on RepositoryProviderUnknown {
