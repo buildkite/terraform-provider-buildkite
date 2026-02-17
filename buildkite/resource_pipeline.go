@@ -1419,6 +1419,9 @@ func setPipelineModel(model *pipelineResourceModel, data pipelineResponse) {
 		model.ProviderSettings.IgnoreDefaultBranchPullRequests = types.BoolPointerValue(&settings.IgnoreDefaultBranchPullRequests)
 		model.ProviderSettings.PrefixPullRequestForkBranchNames = types.BoolPointerValue(&settings.PrefixPullRequestForkBranchNames)
 		model.ProviderSettings.SeparatePullRequestStatuses = types.BoolPointerValue(&settings.SeparatePullRequestStatuses)
+		model.ProviderSettings.BuildMergeGroupChecksRequested = types.BoolPointerValue(&settings.BuildMergeGroupChecksRequested)
+		model.ProviderSettings.CancelWhenMergeGroupDestroyed = types.BoolPointerValue(&settings.CancelWhenMergeGroupDestroyed)
+		model.ProviderSettings.UseMergeGroupBaseCommitForGitDiffBase = types.BoolPointerValue(&settings.UseMergeGroupBaseCommitForGitDiffBase)
 
 	case *PipelineFieldsRepositoryProviderRepositoryProviderGitlab:
 		// GitLab provider settings
