@@ -26,7 +26,7 @@ builds:
       - ppc64le
     ignore:
       - goos: windows
-        goarch: arm64
+        goarch: arm
     binary: "{{ .ProjectName }}_v{{ .Version }}"
 archives:
   - formats: [zip]
