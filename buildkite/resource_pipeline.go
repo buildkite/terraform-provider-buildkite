@@ -460,7 +460,10 @@ func (p *pipelineResource) Create(ctx context.Context, req resource.CreateReques
 	}
 	log.Printf("Successfully created pipeline with id '%s'.", response.PipelineCreate.Pipeline.Id)
 
-	setPipelineModel(&state, &response.PipelineCreate.Pipeline)
+	setPipelineModel(ctx, &state, &response.PipelineCreate.Pipeline, &resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 	state.DefaultTeamId = plan.DefaultTeamId
 
 	useSlugValue := response.PipelineCreate.Pipeline.Slug
@@ -599,7 +602,10 @@ func (p *pipelineResource) Read(ctx context.Context, req resource.ReadRequest, r
 			return
 		}
 
-		setPipelineModel(&state, pipelineNode)
+		setPipelineModel(ctx, &state, pipelineNode, &resp.Diagnostics)
+		if resp.Diagnostics.HasError() {
+			return
+		}
 
 		// pipeline default team is a terraform concept only so it takes some coercing
 		teamResult, err := p.setDefaultTeamIfExists(ctx, &state, &pipelineNode.Teams.PipelineTeam)
@@ -1287,7 +1293,10 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 		resp.Diagnostics.Append(resp.Private.SetKey(ctx, "slugSource", []byte(`{"source": "user"}`))...)
 	}
 
-	setPipelineModel(&state, &response.PipelineUpdate.Pipeline)
+	setPipelineModel(ctx, &state, &response.PipelineUpdate.Pipeline, &resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
 	if plan.DefaultTeamId.IsNull() && !state.DefaultTeamId.IsNull() {
 		// if the plan is empty but was previously set, just remove the team
@@ -1378,7 +1387,7 @@ func (*pipelineResource) ImportState(ctx context.Context, req resource.ImportSta
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
 
-func setPipelineModel(model *pipelineResourceModel, data pipelineResponse) {
+func setPipelineModel(ctx context.Context, model *pipelineResourceModel, data pipelineResponse, diagnostics *diag.Diagnostics) {
 	defaultTimeoutInMinutes := (*int64)(unsafe.Pointer(data.GetDefaultTimeoutInMinutes()))
 	maximumTimeoutInMinutes := (*int64)(unsafe.Pointer(data.GetMaximumTimeoutInMinutes()))
 
@@ -1520,13 +1529,14 @@ func setPipelineModel(model *pipelineResourceModel, data pipelineResponse) {
 	}
 
 	// Convert providerSettingsModel to types.Object
-	providerSettingsObj, diags := types.ObjectValueFrom(context.Background(), providerSettings.AttributeTypes(), &providerSettings)
+	providerSettingsObj, diags := types.ObjectValueFrom(ctx, providerSettings.AttributeTypes(), &providerSettings)
+	diagnostics.Append(diags...)
 	if diags.HasError() {
 		// If conversion fails, set to null
 		model.ProviderSettings = types.ObjectNull(providerSettings.AttributeTypes())
-	} else {
-		model.ProviderSettings = providerSettingsObj
+		return
 	}
+	model.ProviderSettings = providerSettingsObj
 
 	// only set template or steps. steps is always updated even if using a template, but its redundant and creates
 	// complications later
