@@ -27,6 +27,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/shurcooL/graphql"
 )
@@ -238,10 +239,10 @@ type pipelineResourceModel struct {
 	Emoji                              types.String           `tfsdk:"emoji"`
 	Id                                 types.String           `tfsdk:"id"`
 	MaximumTimeoutInMinutes            types.Int64            `tfsdk:"maximum_timeout_in_minutes"`
-	Name                               types.String           `tfsdk:"name"`
-	PipelineTemplateId                 types.String           `tfsdk:"pipeline_template_id"`
-	ProviderSettings                   *providerSettingsModel `tfsdk:"provider_settings"`
-	Repository                         types.String           `tfsdk:"repository"`
+	Name                               types.String `tfsdk:"name"`
+	PipelineTemplateId                 types.String `tfsdk:"pipeline_template_id"`
+	ProviderSettings                   types.Object `tfsdk:"provider_settings"`
+	Repository                         types.String `tfsdk:"repository"`
 	SkipIntermediateBuilds             types.Bool             `tfsdk:"skip_intermediate_builds"`
 	SkipIntermediateBuildsBranchFilter types.String           `tfsdk:"skip_intermediate_builds_branch_filter"`
 	Slug                               types.String           `tfsdk:"slug"`
@@ -277,6 +278,35 @@ type providerSettingsModel struct {
 	BuildMergeGroupChecksRequested          types.Bool   `tfsdk:"build_merge_group_checks_requested"`
 	CancelWhenMergeGroupDestroyed           types.Bool   `tfsdk:"cancel_when_merge_group_destroyed"`
 	UseMergeGroupBaseCommitForGitDiffBase   types.Bool   `tfsdk:"use_merge_group_base_commit_for_git_diff_base"`
+}
+
+func (m providerSettingsModel) AttributeTypes() map[string]attr.Type {
+	return map[string]attr.Type{
+		"trigger_mode":                                   types.StringType,
+		"build_pull_requests":                            types.BoolType,
+		"pull_request_branch_filter_enabled":             types.BoolType,
+		"pull_request_branch_filter_configuration":       types.StringType,
+		"skip_pull_request_builds_for_existing_commits":  types.BoolType,
+		"skip_builds_for_existing_commits":               types.BoolType,
+		"build_pull_request_forks":                       types.BoolType,
+		"prefix_pull_request_fork_branch_names":          types.BoolType,
+		"build_branches":                                 types.BoolType,
+		"build_tags":                                     types.BoolType,
+		"cancel_deleted_branch_builds":                   types.BoolType,
+		"publish_commit_status":                          types.BoolType,
+		"publish_commit_status_per_step":                 types.BoolType,
+		"separate_pull_request_statuses":                 types.BoolType,
+		"publish_blocked_as_pending":                     types.BoolType,
+		"filter_enabled":                                 types.BoolType,
+		"filter_condition":                               types.StringType,
+		"build_pull_request_ready_for_review":            types.BoolType,
+		"build_pull_request_labels_changed":              types.BoolType,
+		"build_pull_request_base_branch_changed":         types.BoolType,
+		"ignore_default_branch_pull_requests":            types.BoolType,
+		"build_merge_group_checks_requested":             types.BoolType,
+		"cancel_when_merge_group_destroyed":              types.BoolType,
+		"use_merge_group_base_commit_for_git_diff_base":  types.BoolType,
+	}
 }
 
 type pipelineResource struct {
@@ -321,8 +351,15 @@ func newPipelineResource(archiveOnDelete *bool) func() resource.Resource {
 
 // validateFilterConditionWithTriggerMode checks if filter_condition or filter_enabled is set
 // when trigger_mode is "none" and adds a warning if so
-func validateFilterConditionWithTriggerMode(providerSettings *providerSettingsModel, diagnostics *diag.Diagnostics) {
-	if providerSettings == nil {
+func validateFilterConditionWithTriggerMode(ctx context.Context, providerSettingsObj types.Object, diagnostics *diag.Diagnostics) {
+	if providerSettingsObj.IsNull() || providerSettingsObj.IsUnknown() {
+		return
+	}
+
+	var providerSettings providerSettingsModel
+	diags := providerSettingsObj.As(ctx, &providerSettings, basetypes.ObjectAsOptions{})
+	diagnostics.Append(diags...)
+	if diagnostics.HasError() {
 		return
 	}
 
@@ -355,7 +392,7 @@ func (p *pipelineResource) Create(ctx context.Context, req resource.CreateReques
 		return
 	}
 
-	validateFilterConditionWithTriggerMode(plan.ProviderSettings, &resp.Diagnostics)
+	validateFilterConditionWithTriggerMode(ctx, plan.ProviderSettings, &resp.Diagnostics)
 
 	// use the unsafe module to convert to an int. this is fine because the absolute max accepted by the API is much
 	// less than an int
@@ -437,18 +474,25 @@ func (p *pipelineResource) Create(ctx context.Context, req resource.CreateReques
 			return
 		}
 
-		updatePipelineResourceExtraInfo(&state, &pipelineExtraInfo)
+		updatePipelineResourceExtraInfo(ctx, &state, &pipelineExtraInfo, &resp.Diagnostics)
 		resp.Diagnostics.Append(resp.Private.SetKey(ctx, "slugSource", []byte(`{"source": "user"}`))...)
 	}
 
-	if plan.ProviderSettings != nil {
-		pipelineExtraInfo, err := updatePipelineExtraInfo(ctx, useSlugValue, plan.ProviderSettings, p.client, timeouts)
+	if !plan.ProviderSettings.IsNull() && !plan.ProviderSettings.IsUnknown() {
+		var providerSettings providerSettingsModel
+		diags := plan.ProviderSettings.As(ctx, &providerSettings, basetypes.ObjectAsOptions{})
+		resp.Diagnostics.Append(diags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+
+		pipelineExtraInfo, err := updatePipelineExtraInfo(ctx, useSlugValue, &providerSettings, p.client, timeouts)
 		if err != nil {
 			resp.Diagnostics.AddError("Unable to set pipeline info from REST", err.Error())
 			return
 		}
 
-		updatePipelineResourceExtraInfo(&state, &pipelineExtraInfo)
+		updatePipelineResourceExtraInfo(ctx, &state, &pipelineExtraInfo, &resp.Diagnostics)
 	} else {
 		// no provider_settings provided
 		state.ProviderSettings = plan.ProviderSettings
@@ -1177,7 +1221,7 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 		return
 	}
 
-	validateFilterConditionWithTriggerMode(plan.ProviderSettings, &resp.Diagnostics)
+	validateFilterConditionWithTriggerMode(ctx, plan.ProviderSettings, &resp.Diagnostics)
 
 	defaultTimeoutInMinutes := (*int)(unsafe.Pointer(plan.DefaultTimeoutInMinutes.ValueInt64Pointer()))
 	maxTimeoutInMinutes := (*int)(unsafe.Pointer(plan.MaximumTimeoutInMinutes.ValueInt64Pointer()))
@@ -1279,14 +1323,21 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 		}
 	}
 
-	if plan.ProviderSettings != nil {
-		pipelineExtraInfo, err := updatePipelineExtraInfo(ctx, useSlugValue, plan.ProviderSettings, p.client, timeouts)
+	if !plan.ProviderSettings.IsNull() && !plan.ProviderSettings.IsUnknown() {
+		var providerSettings providerSettingsModel
+		diags := plan.ProviderSettings.As(ctx, &providerSettings, basetypes.ObjectAsOptions{})
+		resp.Diagnostics.Append(diags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+
+		pipelineExtraInfo, err := updatePipelineExtraInfo(ctx, useSlugValue, &providerSettings, p.client, timeouts)
 		if err != nil {
 			resp.Diagnostics.AddError("Unable to set pipeline info from REST", err.Error())
 			return
 		}
 
-		updatePipelineResourceExtraInfo(&state, &pipelineExtraInfo)
+		updatePipelineResourceExtraInfo(ctx, &state, &pipelineExtraInfo, &resp.Diagnostics)
 	} else {
 		// no provider_settings provided
 		state.ProviderSettings = plan.ProviderSettings
@@ -1354,108 +1405,102 @@ func setPipelineModel(model *pipelineResourceModel, data pipelineResponse) {
 	model.WebhookUrl = types.StringValue(data.GetWebhookURL())
 
 	// Set provider settings from GraphQL response if available
-	if model.ProviderSettings == nil {
-		model.ProviderSettings = &providerSettingsModel{}
-	}
+	// Build a temporary providerSettingsModel struct
+	providerSettings := providerSettingsModel{}
 
 	// Check if we have provider settings from GraphQL
 	repo := data.GetRepository()
-
-	// Initialize provider settings if nil
-	if model.ProviderSettings == nil {
-		model.ProviderSettings = &providerSettingsModel{}
-	}
 
 	switch provider := repo.Provider.(type) {
 	case *PipelineFieldsRepositoryProviderRepositoryProviderGithub:
 		// GitHub provider settings
 		settings := provider.Settings
-		model.ProviderSettings.TriggerMode = types.StringPointerValue(&settings.TriggerMode)
-		model.ProviderSettings.BuildPullRequests = types.BoolPointerValue(&settings.BuildPullRequests)
-		model.ProviderSettings.BuildPullRequestForks = types.BoolPointerValue(&settings.BuildPullRequestForks)
-		model.ProviderSettings.BuildPullRequestLabelsChanged = types.BoolPointerValue(&settings.BuildPullRequestLabelsChanged)
-		model.ProviderSettings.BuildPullRequestReadyForReview = types.BoolPointerValue(&settings.BuildPullRequestReadyForReview)
-		model.ProviderSettings.BuildBranches = types.BoolPointerValue(&settings.BuildBranches)
-		model.ProviderSettings.BuildTags = types.BoolPointerValue(&settings.BuildTags)
-		model.ProviderSettings.CancelDeletedBranchBuilds = types.BoolPointerValue(&settings.CancelDeletedBranchBuilds)
-		model.ProviderSettings.FilterEnabled = types.BoolPointerValue(&settings.FilterEnabled)
-		model.ProviderSettings.FilterCondition = types.StringPointerValue(&settings.FilterCondition)
-		model.ProviderSettings.PublishCommitStatus = types.BoolPointerValue(&settings.PublishCommitStatus)
-		model.ProviderSettings.PublishBlockedAsPending = types.BoolPointerValue(&settings.PublishBlockedAsPending)
-		model.ProviderSettings.PublishCommitStatusPerStep = types.BoolPointerValue(&settings.PublishCommitStatusPerStep)
-		model.ProviderSettings.PullRequestBranchFilterEnabled = types.BoolPointerValue(&settings.PullRequestBranchFilterEnabled)
-		model.ProviderSettings.PullRequestBranchFilterConfiguration = types.StringPointerValue(&settings.PullRequestBranchFilterConfiguration)
-		model.ProviderSettings.SkipBuildsForExistingCommits = types.BoolPointerValue(&settings.SkipBuildsForExistingCommits)
-		model.ProviderSettings.SkipPullRequestBuildsForExistingCommits = types.BoolPointerValue(&settings.SkipPullRequestBuildsForExistingCommits)
-		model.ProviderSettings.BuildPullRequestBaseBranchChanged = types.BoolPointerValue(&settings.BuildPullRequestBaseBranchChanged)
-		model.ProviderSettings.IgnoreDefaultBranchPullRequests = types.BoolPointerValue(&settings.IgnoreDefaultBranchPullRequests)
-		model.ProviderSettings.PrefixPullRequestForkBranchNames = types.BoolPointerValue(&settings.PrefixPullRequestForkBranchNames)
-		model.ProviderSettings.SeparatePullRequestStatuses = types.BoolPointerValue(&settings.SeparatePullRequestStatuses)
-		model.ProviderSettings.BuildMergeGroupChecksRequested = types.BoolPointerValue(&settings.BuildMergeGroupChecksRequested)
-		model.ProviderSettings.CancelWhenMergeGroupDestroyed = types.BoolPointerValue(&settings.CancelWhenMergeGroupDestroyed)
-		model.ProviderSettings.UseMergeGroupBaseCommitForGitDiffBase = types.BoolPointerValue(&settings.UseMergeGroupBaseCommitForGitDiffBase)
+		providerSettings.TriggerMode = types.StringPointerValue(&settings.TriggerMode)
+		providerSettings.BuildPullRequests = types.BoolPointerValue(&settings.BuildPullRequests)
+		providerSettings.BuildPullRequestForks = types.BoolPointerValue(&settings.BuildPullRequestForks)
+		providerSettings.BuildPullRequestLabelsChanged = types.BoolPointerValue(&settings.BuildPullRequestLabelsChanged)
+		providerSettings.BuildPullRequestReadyForReview = types.BoolPointerValue(&settings.BuildPullRequestReadyForReview)
+		providerSettings.BuildBranches = types.BoolPointerValue(&settings.BuildBranches)
+		providerSettings.BuildTags = types.BoolPointerValue(&settings.BuildTags)
+		providerSettings.CancelDeletedBranchBuilds = types.BoolPointerValue(&settings.CancelDeletedBranchBuilds)
+		providerSettings.FilterEnabled = types.BoolPointerValue(&settings.FilterEnabled)
+		providerSettings.FilterCondition = types.StringPointerValue(&settings.FilterCondition)
+		providerSettings.PublishCommitStatus = types.BoolPointerValue(&settings.PublishCommitStatus)
+		providerSettings.PublishBlockedAsPending = types.BoolPointerValue(&settings.PublishBlockedAsPending)
+		providerSettings.PublishCommitStatusPerStep = types.BoolPointerValue(&settings.PublishCommitStatusPerStep)
+		providerSettings.PullRequestBranchFilterEnabled = types.BoolPointerValue(&settings.PullRequestBranchFilterEnabled)
+		providerSettings.PullRequestBranchFilterConfiguration = types.StringPointerValue(&settings.PullRequestBranchFilterConfiguration)
+		providerSettings.SkipBuildsForExistingCommits = types.BoolPointerValue(&settings.SkipBuildsForExistingCommits)
+		providerSettings.SkipPullRequestBuildsForExistingCommits = types.BoolPointerValue(&settings.SkipPullRequestBuildsForExistingCommits)
+		providerSettings.BuildPullRequestBaseBranchChanged = types.BoolPointerValue(&settings.BuildPullRequestBaseBranchChanged)
+		providerSettings.IgnoreDefaultBranchPullRequests = types.BoolPointerValue(&settings.IgnoreDefaultBranchPullRequests)
+		providerSettings.PrefixPullRequestForkBranchNames = types.BoolPointerValue(&settings.PrefixPullRequestForkBranchNames)
+		providerSettings.SeparatePullRequestStatuses = types.BoolPointerValue(&settings.SeparatePullRequestStatuses)
+		providerSettings.BuildMergeGroupChecksRequested = types.BoolPointerValue(&settings.BuildMergeGroupChecksRequested)
+		providerSettings.CancelWhenMergeGroupDestroyed = types.BoolPointerValue(&settings.CancelWhenMergeGroupDestroyed)
+		providerSettings.UseMergeGroupBaseCommitForGitDiffBase = types.BoolPointerValue(&settings.UseMergeGroupBaseCommitForGitDiffBase)
 
 	case *PipelineFieldsRepositoryProviderRepositoryProviderGithubEnterprise:
 		// GitHub Enterprise provider settings (same as GitHub)
 		settings := provider.Settings
-		model.ProviderSettings.TriggerMode = types.StringPointerValue(&settings.TriggerMode)
-		model.ProviderSettings.BuildPullRequests = types.BoolPointerValue(&settings.BuildPullRequests)
-		model.ProviderSettings.BuildPullRequestForks = types.BoolPointerValue(&settings.BuildPullRequestForks)
-		model.ProviderSettings.BuildPullRequestLabelsChanged = types.BoolPointerValue(&settings.BuildPullRequestLabelsChanged)
-		model.ProviderSettings.BuildPullRequestReadyForReview = types.BoolPointerValue(&settings.BuildPullRequestReadyForReview)
-		model.ProviderSettings.BuildBranches = types.BoolPointerValue(&settings.BuildBranches)
-		model.ProviderSettings.BuildTags = types.BoolPointerValue(&settings.BuildTags)
-		model.ProviderSettings.CancelDeletedBranchBuilds = types.BoolPointerValue(&settings.CancelDeletedBranchBuilds)
-		model.ProviderSettings.FilterEnabled = types.BoolPointerValue(&settings.FilterEnabled)
-		model.ProviderSettings.FilterCondition = types.StringPointerValue(&settings.FilterCondition)
-		model.ProviderSettings.PublishCommitStatus = types.BoolPointerValue(&settings.PublishCommitStatus)
-		model.ProviderSettings.PublishBlockedAsPending = types.BoolPointerValue(&settings.PublishBlockedAsPending)
-		model.ProviderSettings.PublishCommitStatusPerStep = types.BoolPointerValue(&settings.PublishCommitStatusPerStep)
-		model.ProviderSettings.PullRequestBranchFilterEnabled = types.BoolPointerValue(&settings.PullRequestBranchFilterEnabled)
-		model.ProviderSettings.PullRequestBranchFilterConfiguration = types.StringPointerValue(&settings.PullRequestBranchFilterConfiguration)
-		model.ProviderSettings.SkipBuildsForExistingCommits = types.BoolPointerValue(&settings.SkipBuildsForExistingCommits)
-		model.ProviderSettings.SkipPullRequestBuildsForExistingCommits = types.BoolPointerValue(&settings.SkipPullRequestBuildsForExistingCommits)
-		model.ProviderSettings.BuildPullRequestBaseBranchChanged = types.BoolPointerValue(&settings.BuildPullRequestBaseBranchChanged)
-		model.ProviderSettings.IgnoreDefaultBranchPullRequests = types.BoolPointerValue(&settings.IgnoreDefaultBranchPullRequests)
-		model.ProviderSettings.PrefixPullRequestForkBranchNames = types.BoolPointerValue(&settings.PrefixPullRequestForkBranchNames)
-		model.ProviderSettings.SeparatePullRequestStatuses = types.BoolPointerValue(&settings.SeparatePullRequestStatuses)
-		model.ProviderSettings.BuildMergeGroupChecksRequested = types.BoolPointerValue(&settings.BuildMergeGroupChecksRequested)
-		model.ProviderSettings.CancelWhenMergeGroupDestroyed = types.BoolPointerValue(&settings.CancelWhenMergeGroupDestroyed)
-		model.ProviderSettings.UseMergeGroupBaseCommitForGitDiffBase = types.BoolPointerValue(&settings.UseMergeGroupBaseCommitForGitDiffBase)
+		providerSettings.TriggerMode = types.StringPointerValue(&settings.TriggerMode)
+		providerSettings.BuildPullRequests = types.BoolPointerValue(&settings.BuildPullRequests)
+		providerSettings.BuildPullRequestForks = types.BoolPointerValue(&settings.BuildPullRequestForks)
+		providerSettings.BuildPullRequestLabelsChanged = types.BoolPointerValue(&settings.BuildPullRequestLabelsChanged)
+		providerSettings.BuildPullRequestReadyForReview = types.BoolPointerValue(&settings.BuildPullRequestReadyForReview)
+		providerSettings.BuildBranches = types.BoolPointerValue(&settings.BuildBranches)
+		providerSettings.BuildTags = types.BoolPointerValue(&settings.BuildTags)
+		providerSettings.CancelDeletedBranchBuilds = types.BoolPointerValue(&settings.CancelDeletedBranchBuilds)
+		providerSettings.FilterEnabled = types.BoolPointerValue(&settings.FilterEnabled)
+		providerSettings.FilterCondition = types.StringPointerValue(&settings.FilterCondition)
+		providerSettings.PublishCommitStatus = types.BoolPointerValue(&settings.PublishCommitStatus)
+		providerSettings.PublishBlockedAsPending = types.BoolPointerValue(&settings.PublishBlockedAsPending)
+		providerSettings.PublishCommitStatusPerStep = types.BoolPointerValue(&settings.PublishCommitStatusPerStep)
+		providerSettings.PullRequestBranchFilterEnabled = types.BoolPointerValue(&settings.PullRequestBranchFilterEnabled)
+		providerSettings.PullRequestBranchFilterConfiguration = types.StringPointerValue(&settings.PullRequestBranchFilterConfiguration)
+		providerSettings.SkipBuildsForExistingCommits = types.BoolPointerValue(&settings.SkipBuildsForExistingCommits)
+		providerSettings.SkipPullRequestBuildsForExistingCommits = types.BoolPointerValue(&settings.SkipPullRequestBuildsForExistingCommits)
+		providerSettings.BuildPullRequestBaseBranchChanged = types.BoolPointerValue(&settings.BuildPullRequestBaseBranchChanged)
+		providerSettings.IgnoreDefaultBranchPullRequests = types.BoolPointerValue(&settings.IgnoreDefaultBranchPullRequests)
+		providerSettings.PrefixPullRequestForkBranchNames = types.BoolPointerValue(&settings.PrefixPullRequestForkBranchNames)
+		providerSettings.SeparatePullRequestStatuses = types.BoolPointerValue(&settings.SeparatePullRequestStatuses)
+		providerSettings.BuildMergeGroupChecksRequested = types.BoolPointerValue(&settings.BuildMergeGroupChecksRequested)
+		providerSettings.CancelWhenMergeGroupDestroyed = types.BoolPointerValue(&settings.CancelWhenMergeGroupDestroyed)
+		providerSettings.UseMergeGroupBaseCommitForGitDiffBase = types.BoolPointerValue(&settings.UseMergeGroupBaseCommitForGitDiffBase)
 
 	case *PipelineFieldsRepositoryProviderRepositoryProviderGitlab:
 		// GitLab provider settings
 		settings := provider.Settings // Not a pointer for GitLab
-		model.ProviderSettings.FilterEnabled = types.BoolValue(settings.FilterEnabled)
-		model.ProviderSettings.FilterCondition = types.StringValue(settings.FilterCondition)
+		providerSettings.FilterEnabled = types.BoolValue(settings.FilterEnabled)
+		providerSettings.FilterCondition = types.StringValue(settings.FilterCondition)
 
 	case *PipelineFieldsRepositoryProviderRepositoryProviderBitbucket:
 		// Bitbucket provider settings
 		settings := provider.Settings
-		model.ProviderSettings.BuildBranches = types.BoolPointerValue(&settings.BuildBranches)
-		model.ProviderSettings.BuildPullRequests = types.BoolPointerValue(&settings.BuildPullRequests)
-		model.ProviderSettings.BuildTags = types.BoolPointerValue(&settings.BuildTags)
+		providerSettings.BuildBranches = types.BoolPointerValue(&settings.BuildBranches)
+		providerSettings.BuildPullRequests = types.BoolPointerValue(&settings.BuildPullRequests)
+		providerSettings.BuildTags = types.BoolPointerValue(&settings.BuildTags)
 		// Use the aliased field name from the GraphQL query
-		model.ProviderSettings.CancelDeletedBranchBuilds = types.BoolPointerValue(&settings.Canceldeletedbranchbuilds)
-		model.ProviderSettings.FilterEnabled = types.BoolPointerValue(&settings.FilterEnabled)
-		model.ProviderSettings.FilterCondition = types.StringPointerValue(&settings.FilterCondition)
-		model.ProviderSettings.IgnoreDefaultBranchPullRequests = types.BoolPointerValue(&settings.IgnoreDefaultBranchPullRequests)
-		model.ProviderSettings.PublishCommitStatus = types.BoolPointerValue(&settings.PublishCommitStatus)
-		model.ProviderSettings.PublishCommitStatusPerStep = types.BoolPointerValue(&settings.PublishCommitStatusPerStep)
-		model.ProviderSettings.PullRequestBranchFilterEnabled = types.BoolPointerValue(&settings.PullRequestBranchFilterEnabled)
-		model.ProviderSettings.PullRequestBranchFilterConfiguration = types.StringPointerValue(&settings.PullRequestBranchFilterConfiguration)
+		providerSettings.CancelDeletedBranchBuilds = types.BoolPointerValue(&settings.Canceldeletedbranchbuilds)
+		providerSettings.FilterEnabled = types.BoolPointerValue(&settings.FilterEnabled)
+		providerSettings.FilterCondition = types.StringPointerValue(&settings.FilterCondition)
+		providerSettings.IgnoreDefaultBranchPullRequests = types.BoolPointerValue(&settings.IgnoreDefaultBranchPullRequests)
+		providerSettings.PublishCommitStatus = types.BoolPointerValue(&settings.PublishCommitStatus)
+		providerSettings.PublishCommitStatusPerStep = types.BoolPointerValue(&settings.PublishCommitStatusPerStep)
+		providerSettings.PullRequestBranchFilterEnabled = types.BoolPointerValue(&settings.PullRequestBranchFilterEnabled)
+		providerSettings.PullRequestBranchFilterConfiguration = types.StringPointerValue(&settings.PullRequestBranchFilterConfiguration)
 		// Use the aliased field name from the GraphQL query
-		model.ProviderSettings.SkipBuildsForExistingCommits = types.BoolPointerValue(&settings.Skipbuildsforexistingcommits)
-		model.ProviderSettings.SkipPullRequestBuildsForExistingCommits = types.BoolPointerValue(&settings.SkipPullRequestBuildsForExistingCommits)
+		providerSettings.SkipBuildsForExistingCommits = types.BoolPointerValue(&settings.Skipbuildsforexistingcommits)
+		providerSettings.SkipPullRequestBuildsForExistingCommits = types.BoolPointerValue(&settings.SkipPullRequestBuildsForExistingCommits)
 
 	case *PipelineFieldsRepositoryProviderRepositoryProviderBitbucketServer:
 		// Bitbucket Server provider settings
 		settings := provider.Settings
-		model.ProviderSettings.BuildBranches = types.BoolPointerValue(&settings.BuildBranches)
-		model.ProviderSettings.BuildPullRequests = types.BoolPointerValue(&settings.BuildPullRequests)
-		model.ProviderSettings.BuildTags = types.BoolPointerValue(&settings.BuildTags)
-		model.ProviderSettings.FilterEnabled = types.BoolPointerValue(&settings.FilterEnabled)
-		model.ProviderSettings.FilterCondition = types.StringPointerValue(&settings.FilterCondition)
+		providerSettings.BuildBranches = types.BoolPointerValue(&settings.BuildBranches)
+		providerSettings.BuildPullRequests = types.BoolPointerValue(&settings.BuildPullRequests)
+		providerSettings.BuildTags = types.BoolPointerValue(&settings.BuildTags)
+		providerSettings.FilterEnabled = types.BoolPointerValue(&settings.FilterEnabled)
+		providerSettings.FilterCondition = types.StringPointerValue(&settings.FilterCondition)
 
 	case *PipelineFieldsRepositoryProviderRepositoryProviderBeanstalk,
 		*PipelineFieldsRepositoryProviderRepositoryProviderCodebase,
@@ -1463,15 +1508,24 @@ func setPipelineModel(model *pipelineResourceModel, data pipelineResponse) {
 		// These providers only have filter settings
 		switch s := provider.(type) {
 		case *PipelineFieldsRepositoryProviderRepositoryProviderBeanstalk:
-			model.ProviderSettings.FilterEnabled = types.BoolValue(s.Settings.FilterEnabled)
-			model.ProviderSettings.FilterCondition = types.StringValue(s.Settings.FilterCondition)
+			providerSettings.FilterEnabled = types.BoolValue(s.Settings.FilterEnabled)
+			providerSettings.FilterCondition = types.StringValue(s.Settings.FilterCondition)
 		case *PipelineFieldsRepositoryProviderRepositoryProviderCodebase:
-			model.ProviderSettings.FilterEnabled = types.BoolValue(s.Settings.FilterEnabled)
-			model.ProviderSettings.FilterCondition = types.StringValue(s.Settings.FilterCondition)
+			providerSettings.FilterEnabled = types.BoolValue(s.Settings.FilterEnabled)
+			providerSettings.FilterCondition = types.StringValue(s.Settings.FilterCondition)
 		case *PipelineFieldsRepositoryProviderRepositoryProviderUnknown:
-			model.ProviderSettings.FilterEnabled = types.BoolValue(s.Settings.FilterEnabled)
-			model.ProviderSettings.FilterCondition = types.StringValue(s.Settings.FilterCondition)
+			providerSettings.FilterEnabled = types.BoolValue(s.Settings.FilterEnabled)
+			providerSettings.FilterCondition = types.StringValue(s.Settings.FilterCondition)
 		}
+	}
+
+	// Convert providerSettingsModel to types.Object
+	providerSettingsObj, diags := types.ObjectValueFrom(context.Background(), providerSettings.AttributeTypes(), &providerSettings)
+	if diags.HasError() {
+		// If conversion fails, set to null
+		model.ProviderSettings = types.ObjectNull(providerSettings.AttributeTypes())
+	} else {
+		model.ProviderSettings = providerSettingsObj
 	}
 
 	// only set template or steps. steps is always updated even if using a template, but its redundant and creates
@@ -1606,10 +1660,10 @@ func getTagsFromSchema(plan *pipelineResourceModel) []PipelineTagInput {
 }
 
 // updatePipelineResourceExtraInfo updates the terraform resource with data received from Buildkite REST API
-func updatePipelineResourceExtraInfo(state *pipelineResourceModel, pipeline *PipelineExtraInfo) {
+func updatePipelineResourceExtraInfo(ctx context.Context, state *pipelineResourceModel, pipeline *PipelineExtraInfo, diagnostics *diag.Diagnostics) {
 	s := pipeline.Provider.Settings
 
-	state.ProviderSettings = &providerSettingsModel{
+	providerSettings := providerSettingsModel{
 		TriggerMode:                             types.StringPointerValue(s.TriggerMode),
 		BuildPullRequests:                       types.BoolPointerValue(s.BuildPullRequests),
 		PullRequestBranchFilterEnabled:          types.BoolPointerValue(s.PullRequestBranchFilterEnabled),
@@ -1635,6 +1689,14 @@ func updatePipelineResourceExtraInfo(state *pipelineResourceModel, pipeline *Pip
 		CancelWhenMergeGroupDestroyed:           types.BoolPointerValue(s.CancelWhenMergeGroupDestroyed),
 		UseMergeGroupBaseCommitForGitDiffBase:   types.BoolPointerValue(s.UseMergeGroupBaseCommitForGitDiffBase),
 	}
+
+	// Convert providerSettingsModel to types.Object
+	providerSettingsObj, diags := types.ObjectValueFrom(ctx, providerSettings.AttributeTypes(), &providerSettings)
+	diagnostics.Append(diags...)
+	if diagnostics.HasError() {
+		return
+	}
+	state.ProviderSettings = providerSettingsObj
 }
 
 func upgradePipelineStateV0toV1(ctx context.Context, req resource.UpgradeStateRequest, resp *resource.UpgradeStateResponse) {
@@ -1694,9 +1756,20 @@ func upgradePipelineStateV0toV1(ctx context.Context, req resource.UpgradeStateRe
 		WebhookUrl:                           priorPipelineStateData.WebhookUrl,
 	}
 
-	// If the existing pipelines' state had ProviderSettings - set it as part of the V1 pipelineResourceModel
+	// If the existing pipelines' state had ProviderSettings - convert it to types.Object
 	if len(priorPipelineStateData.ProviderSettings) == 1 {
-		upgradedPipelineStateData.ProviderSettings = priorPipelineStateData.ProviderSettings[0]
+		providerSettings := priorPipelineStateData.ProviderSettings[0]
+		providerSettingsObj, diags := types.ObjectValueFrom(ctx, providerSettings.AttributeTypes(), providerSettings)
+		resp.Diagnostics.Append(diags...)
+		if !resp.Diagnostics.HasError() {
+			upgradedPipelineStateData.ProviderSettings = providerSettingsObj
+		} else {
+			// If conversion fails, set to null
+			upgradedPipelineStateData.ProviderSettings = types.ObjectNull(providerSettings.AttributeTypes())
+		}
+	} else {
+		// No provider settings, set to null
+		upgradedPipelineStateData.ProviderSettings = types.ObjectNull(providerSettingsModel{}.AttributeTypes())
 	}
 
 	// Upgrade pipeline in state
