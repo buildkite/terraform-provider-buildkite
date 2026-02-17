@@ -232,25 +232,25 @@ type pipelineResourceModel struct {
 	ClusterId                            types.String `tfsdk:"cluster_id"`
 	ClusterName                          types.String `tfsdk:"cluster_name"`
 
-	DefaultTeamId                      types.String           `tfsdk:"default_team_id"`
-	DefaultBranch                      types.String           `tfsdk:"default_branch"`
-	DefaultTimeoutInMinutes            types.Int64            `tfsdk:"default_timeout_in_minutes"`
-	Description                        types.String           `tfsdk:"description"`
-	Emoji                              types.String           `tfsdk:"emoji"`
-	Id                                 types.String           `tfsdk:"id"`
-	MaximumTimeoutInMinutes            types.Int64            `tfsdk:"maximum_timeout_in_minutes"`
-	Name                               types.String `tfsdk:"name"`
-	PipelineTemplateId                 types.String `tfsdk:"pipeline_template_id"`
-	ProviderSettings                   types.Object `tfsdk:"provider_settings"`
-	Repository                         types.String `tfsdk:"repository"`
-	SkipIntermediateBuilds             types.Bool             `tfsdk:"skip_intermediate_builds"`
-	SkipIntermediateBuildsBranchFilter types.String           `tfsdk:"skip_intermediate_builds_branch_filter"`
-	Slug                               types.String           `tfsdk:"slug"`
-	Steps                              types.String           `tfsdk:"steps"`
-	Tags                               []types.String         `tfsdk:"tags"`
-	UUID                               types.String           `tfsdk:"uuid"`
-	Visibility                         types.String           `tfsdk:"visibility"`
-	WebhookUrl                         types.String           `tfsdk:"webhook_url"`
+	DefaultTeamId                      types.String   `tfsdk:"default_team_id"`
+	DefaultBranch                      types.String   `tfsdk:"default_branch"`
+	DefaultTimeoutInMinutes            types.Int64    `tfsdk:"default_timeout_in_minutes"`
+	Description                        types.String   `tfsdk:"description"`
+	Emoji                              types.String   `tfsdk:"emoji"`
+	Id                                 types.String   `tfsdk:"id"`
+	MaximumTimeoutInMinutes            types.Int64    `tfsdk:"maximum_timeout_in_minutes"`
+	Name                               types.String   `tfsdk:"name"`
+	PipelineTemplateId                 types.String   `tfsdk:"pipeline_template_id"`
+	ProviderSettings                   types.Object   `tfsdk:"provider_settings"`
+	Repository                         types.String   `tfsdk:"repository"`
+	SkipIntermediateBuilds             types.Bool     `tfsdk:"skip_intermediate_builds"`
+	SkipIntermediateBuildsBranchFilter types.String   `tfsdk:"skip_intermediate_builds_branch_filter"`
+	Slug                               types.String   `tfsdk:"slug"`
+	Steps                              types.String   `tfsdk:"steps"`
+	Tags                               []types.String `tfsdk:"tags"`
+	UUID                               types.String   `tfsdk:"uuid"`
+	Visibility                         types.String   `tfsdk:"visibility"`
+	WebhookUrl                         types.String   `tfsdk:"webhook_url"`
 }
 
 type providerSettingsModel struct {
@@ -282,30 +282,30 @@ type providerSettingsModel struct {
 
 func (m providerSettingsModel) AttributeTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		"trigger_mode":                                   types.StringType,
-		"build_pull_requests":                            types.BoolType,
-		"pull_request_branch_filter_enabled":             types.BoolType,
-		"pull_request_branch_filter_configuration":       types.StringType,
-		"skip_pull_request_builds_for_existing_commits":  types.BoolType,
-		"skip_builds_for_existing_commits":               types.BoolType,
-		"build_pull_request_forks":                       types.BoolType,
-		"prefix_pull_request_fork_branch_names":          types.BoolType,
-		"build_branches":                                 types.BoolType,
-		"build_tags":                                     types.BoolType,
-		"cancel_deleted_branch_builds":                   types.BoolType,
-		"publish_commit_status":                          types.BoolType,
-		"publish_commit_status_per_step":                 types.BoolType,
-		"separate_pull_request_statuses":                 types.BoolType,
-		"publish_blocked_as_pending":                     types.BoolType,
-		"filter_enabled":                                 types.BoolType,
-		"filter_condition":                               types.StringType,
-		"build_pull_request_ready_for_review":            types.BoolType,
-		"build_pull_request_labels_changed":              types.BoolType,
-		"build_pull_request_base_branch_changed":         types.BoolType,
-		"ignore_default_branch_pull_requests":            types.BoolType,
-		"build_merge_group_checks_requested":             types.BoolType,
-		"cancel_when_merge_group_destroyed":              types.BoolType,
-		"use_merge_group_base_commit_for_git_diff_base":  types.BoolType,
+		"trigger_mode":                                  types.StringType,
+		"build_pull_requests":                           types.BoolType,
+		"pull_request_branch_filter_enabled":            types.BoolType,
+		"pull_request_branch_filter_configuration":      types.StringType,
+		"skip_pull_request_builds_for_existing_commits": types.BoolType,
+		"skip_builds_for_existing_commits":              types.BoolType,
+		"build_pull_request_forks":                      types.BoolType,
+		"prefix_pull_request_fork_branch_names":         types.BoolType,
+		"build_branches":                                types.BoolType,
+		"build_tags":                                    types.BoolType,
+		"cancel_deleted_branch_builds":                  types.BoolType,
+		"publish_commit_status":                         types.BoolType,
+		"publish_commit_status_per_step":                types.BoolType,
+		"separate_pull_request_statuses":                types.BoolType,
+		"publish_blocked_as_pending":                    types.BoolType,
+		"filter_enabled":                                types.BoolType,
+		"filter_condition":                              types.StringType,
+		"build_pull_request_ready_for_review":           types.BoolType,
+		"build_pull_request_labels_changed":             types.BoolType,
+		"build_pull_request_base_branch_changed":        types.BoolType,
+		"ignore_default_branch_pull_requests":           types.BoolType,
+		"build_merge_group_checks_requested":            types.BoolType,
+		"cancel_when_merge_group_destroyed":             types.BoolType,
+		"use_merge_group_base_commit_for_git_diff_base": types.BoolType,
 	}
 }
 
