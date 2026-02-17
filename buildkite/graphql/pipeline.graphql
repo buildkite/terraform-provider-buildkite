@@ -104,13 +104,15 @@ fragment PipelineFields on Pipeline {
             ... on RepositoryProviderGithubEnterprise {
                 settings {
                     buildBranches
+                    buildMergeGroupChecksRequested
                     buildPullRequestBaseBranchChanged
                     buildPullRequestForks
                     buildPullRequestLabelsChanged
                     buildPullRequestReadyForReview
                     buildPullRequests
-                    buildTags                    
+                    buildTags
                     cancelDeletedBranchBuilds
+                    cancelWhenMergeGroupDestroyed
                     filterCondition
                     filterEnabled
                     ignoreDefaultBranchPullRequests
@@ -124,6 +126,7 @@ fragment PipelineFields on Pipeline {
                     skipBuildsForExistingCommits
                     skipPullRequestBuildsForExistingCommits
                     triggerMode
+                    useMergeGroupBaseCommitForGitDiffBase
                 }
             }
             ... on RepositoryProviderUnknown {
