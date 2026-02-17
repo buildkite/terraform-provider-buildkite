@@ -1353,6 +1353,10 @@ func setPipelineModel(model *pipelineResourceModel, data pipelineResponse) {
 		model.ProviderSettings.PullRequestBranchFilterConfiguration = types.StringPointerValue(&settings.PullRequestBranchFilterConfiguration)
 		model.ProviderSettings.SkipBuildsForExistingCommits = types.BoolPointerValue(&settings.SkipBuildsForExistingCommits)
 		model.ProviderSettings.SkipPullRequestBuildsForExistingCommits = types.BoolPointerValue(&settings.SkipPullRequestBuildsForExistingCommits)
+		model.ProviderSettings.BuildPullRequestBaseBranchChanged = types.BoolPointerValue(&settings.BuildPullRequestBaseBranchChanged)
+		model.ProviderSettings.IgnoreDefaultBranchPullRequests = types.BoolPointerValue(&settings.IgnoreDefaultBranchPullRequests)
+		model.ProviderSettings.PrefixPullRequestForkBranchNames = types.BoolPointerValue(&settings.PrefixPullRequestForkBranchNames)
+		model.ProviderSettings.SeparatePullRequestStatuses = types.BoolPointerValue(&settings.SeparatePullRequestStatuses)
 
 	case *PipelineFieldsRepositoryProviderRepositoryProviderGithubEnterprise:
 		// GitHub Enterprise provider settings (same as GitHub)
