@@ -76,6 +76,10 @@ steps:
     plugins:
       - ossf-scorecard#v1.0.1:
           github_token: $$GITHUB_TOKEN
+    retry:
+      automatic:
+        - exit_status: "*"
+          limit: 2
 
   - label: build
     command: "make build-snapshot"
