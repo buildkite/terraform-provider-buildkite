@@ -1,3 +1,4 @@
+version: 2
 before:
   hooks:
     # this is just an example and not a requirement for provider building/publishing
@@ -28,7 +29,7 @@ builds:
         goarch: arm
     binary: "{{ .ProjectName }}_v{{ .Version }}"
 archives:
-  - format: zip
+  - formats: [zip]
     name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
 checksum:
   name_template: "{{ .ProjectName }}_{{ .Version }}_SHA256SUMS"
