@@ -2194,7 +2194,7 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 		})
 	})
 
-	configSlug := func(sourceName, targetName, action, orgSlug string) string {
+	configSlug := func(sourceName, targetName, action string) string {
 		return fmt.Sprintf(`
 		provider "buildkite" {
 			timeouts = {
@@ -2231,11 +2231,11 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 			depends_on = [buildkite_pipeline.pipeline_source, buildkite_pipeline.pipeline_target]
 			type  = "pipeline.%s.pipeline"
 			value = jsonencode({
-				source_pipeline = "%s/${buildkite_pipeline.pipeline_source.slug}"
-				target_pipeline = "%s/${buildkite_pipeline.pipeline_target.slug}"
+				source_pipeline = "${buildkite_pipeline.pipeline_source.slug}"
+				target_pipeline = "${buildkite_pipeline.pipeline_target.slug}"
 			})
 		}
-		`, sourceName, targetName, sourceName, targetName, action, action, orgSlug, orgSlug)
+		`, sourceName, targetName, sourceName, targetName, action, action)
 	}
 
 	for _, action := range ruleActions {
@@ -2249,19 +2249,20 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 				CheckDestroy:             testAccCheckOrganizationRuleDestroy,
 				Steps: []resource.TestStep{
 					{
-						Config: configSlug(randName, randName, action, getenv("BUILDKITE_ORGANIZATION_SLUG")),
+						Config: configSlug(randName, randName, action),
 						Check: resource.ComposeTestCheckFunc(
 							resource.TestCheckResourceAttrSet(resourceName, "source_uuid"),
 							resource.TestCheckResourceAttrSet(resourceName, "target_uuid"),
+							// value in state preserves slug format, not UUIDs
 							resource.TestMatchResourceAttr(
 								resourceName, "value",
-								regexp.MustCompile(`[0-9a-f]{8}-[0-9a-f]{4}`),
+								regexp.MustCompile(`"source_pipeline"`),
 							),
 						),
 					},
 					// Verifies no plan diff on subsequent plan (idempotency check).
 					{
-						Config:   configSlug(randName, randName, action, getenv("BUILDKITE_ORGANIZATION_SLUG")),
+						Config:   configSlug(randName, randName, action),
 						PlanOnly: true,
 					},
 				},
