@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/MakeNowJust/heredoc"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -141,12 +142,19 @@ func (organizationRuleResource) Schema(ctx context.Context, req resource.SchemaR
 
 func (or *organizationRuleResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var plan, state organizationRuleResourceModel
-	var plannedValue ruleValue
 
 	diags := req.Plan.Get(ctx, &plan)
 	resp.Diagnostics.Append(diags...)
 
 	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	if plan.Value.IsNull() || plan.Value.IsUnknown() {
+		resp.Diagnostics.AddError(
+			"Unable to create organization rule",
+			"value must be set to a valid JSON document",
+		)
 		return
 	}
 
@@ -157,34 +165,8 @@ func (or *organizationRuleResource) Create(ctx context.Context, req resource.Cre
 		return
 	}
 
-	// Unmarshall the plan's value into a ruleValue struct instance
-	err := json.Unmarshal([]byte(plan.Value.ValueString()), &plannedValue)
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Unable to create organization rule",
-			fmt.Sprintf("Unable to create organization rule: %s ", err.Error()),
-		)
-		return
-	}
-
-	// Confirm that both the source|target pipelines specified in the value attribute of a buildkite_organization_rule are valid UUID strings.
-	// If either is not a valid UUID and not empty, the provider will return an error stating this and abort creation of the rule.
-	if !isUUID(plannedValue.Source) && len(plannedValue.Source) > 0 {
-		resp.Diagnostics.AddError(
-			"Unable to create organization rule",
-			fmt.Sprintf("%s: source_pipeline is an invalid UUID.", plan.Type.ValueString()),
-		)
-		return
-	} else if !isUUID(plannedValue.Target) && len(plannedValue.Target) > 0 {
-		resp.Diagnostics.AddError(
-			"Unable to create organization rule",
-			fmt.Sprintf("%s: target_pipeline is an invalid UUID.", plan.Type.ValueString()),
-		)
-		return
-	}
-
 	var r *createOrganizationRuleResponse
-	err = retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		org, err := or.client.GetOrganizationID()
 		if err == nil {
 			log.Printf("Creating organization rule ...")
@@ -218,18 +200,10 @@ func (or *organizationRuleResource) Create(ctx context.Context, req resource.Cre
 		return
 	}
 
-	// Obtain the sorted value JSON from the API response (document field in RuleCreatePayload's rule)
-	value, err := obtainValueJSON(r.RuleCreate.Rule.Document)
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Unable to create organization rule",
-			fmt.Sprintf("Unable to create organmization rule: %s", err.Error()),
-		)
-		return
-	}
-
-	// Update organization rule model and set in state
-	updateOrganizatonRuleCreateState(&state, *r, *sourceUUID, *targetUUID, *value)
+	// Store the user's configured value (slug or UUID format) rather than the API's
+	// UUID-based document. Read preserves this format as long as there is no drift,
+	// which prevents perpetual diffs when the user configures pipeline slugs.
+	updateOrganizatonRuleCreateState(&state, *r, *sourceUUID, *targetUUID, plan.Value.ValueString())
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
@@ -276,8 +250,8 @@ func (or *organizationRuleResource) Read(ctx context.Context, req resource.ReadR
 			return
 		}
 
-		// Get the returned rule's sorted value JSON object from its Document field
-		value, err := obtainValueJSON(organizationRule.Document)
+		// Get the API's canonical UUID-based value JSON from the document.
+		apiValue, err := obtainValueJSON(organizationRule.Document)
 		if err != nil {
 			resp.Diagnostics.AddError(
 				"Unable to read organization rule",
@@ -286,8 +260,21 @@ func (or *organizationRuleResource) Read(ctx context.Context, req resource.ReadR
 			return
 		}
 
+		// Determine what to store for value. If the source/target UUIDs and conditions
+		// are unchanged from state, preserve the user's configured format (which may use
+		// pipeline slugs). Otherwise use the API's UUID-based value to reflect drift.
+		newSourceUUID, newTargetUUID := obtainReadUUIDs(*organizationRule)
+		valueToStore := *apiValue
+		if !state.SourceUUID.IsNull() && !state.TargetUUID.IsNull() &&
+			state.SourceUUID.ValueString() == newSourceUUID &&
+			state.TargetUUID.ValueString() == newTargetUUID &&
+			!state.Value.IsNull() && !state.Value.IsUnknown() &&
+			ruleConditionsMatch(state.Value.ValueString(), *apiValue) {
+			valueToStore = state.Value.ValueString()
+		}
+
 		// Update organization rule model and set in state
-		updateOrganizatonRuleReadState(&state, *organizationRule, *value)
+		updateOrganizatonRuleReadState(&state, *organizationRule, valueToStore)
 		resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 	} else {
 		// Remove from state if not found{{}}
@@ -299,6 +286,58 @@ func (or *organizationRuleResource) Read(ctx context.Context, req resource.ReadR
 
 func (or *organizationRuleResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+}
+
+func (or *organizationRuleResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
+	// Resource is being destroyed — nothing to do.
+	if req.Plan.Raw.IsNull() || or.client == nil {
+		return
+	}
+
+	var configValue types.String
+	resp.Diagnostics.Append(req.Config.GetAttribute(ctx, path.Root("value"), &configValue)...)
+
+	// Skip if value is unknown (first pass with unknowns) or null.
+	if configValue.IsUnknown() || configValue.IsNull() {
+		return
+	}
+
+	var valueMap map[string]interface{}
+	if err := json.Unmarshal([]byte(configValue.ValueString()), &valueMap); err != nil {
+		return // Let Create surface the parse error.
+	}
+
+	// Validate that any slug-format pipeline references resolve to real pipelines.
+	// This surfaces errors at plan time rather than at apply time.
+	// The plan value is intentionally not modified — Create/Update pass the config
+	// value (slugs or UUIDs) directly to the API which accepts both formats.
+	for _, key := range []string{"source_pipeline", "target_pipeline"} {
+		slug, ok := valueMap[key].(string)
+		if !ok || slug == "" || isUUID(slug) {
+			continue
+		}
+
+		qualifiedSlug := slug
+		if !strings.Contains(slug, "/") {
+			qualifiedSlug = fmt.Sprintf("%s/%s", or.client.organization, slug)
+		}
+
+		pipeline, err := getPipeline(ctx, or.client.genqlient, qualifiedSlug)
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Unable to resolve pipeline slug",
+				fmt.Sprintf("Failed to resolve %s %q: %s", key, slug, err.Error()),
+			)
+			return
+		}
+		if pipeline.Pipeline.Id == "" {
+			resp.Diagnostics.AddError(
+				"Unable to resolve pipeline slug",
+				fmt.Sprintf("Pipeline not found for %s %q", key, slug),
+			)
+			return
+		}
+	}
 }
 
 func (or *organizationRuleResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
@@ -353,17 +392,8 @@ func (or *organizationRuleResource) Update(ctx context.Context, req resource.Upd
 		return
 	}
 
-	// Obtain the sorted value JSON from the API response (document field in RuleCreatePayload's rule)
-	value, err := obtainValueJSON(r.RuleUpdate.Rule.Document)
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Unable to update organization rule",
-			fmt.Sprintf("Unable to update organmization rule: %s", err.Error()),
-		)
-		return
-	}
-
-	updateOrganizationRuleUpdateState(&state, *r, *sourceUUID, *targetUUID, *value)
+	// Store the user's configured value (slug or UUID format) — see Create for rationale.
+	updateOrganizationRuleUpdateState(&state, *r, *sourceUUID, *targetUUID, plan.Value.ValueString())
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
@@ -502,6 +532,47 @@ func obtainReadUUIDs(nr getNodeNodeRule) (string, string) {
 	}
 
 	return sourceUUID, targetUUID
+}
+
+// ruleConditionsMatch returns true if both JSON value strings contain the same conditions list.
+// It is used by Read to determine whether the conditions have drifted from state.
+func ruleConditionsMatch(stateValueJSON, apiValueJSON string) bool {
+	var stateMap, apiMap map[string]interface{}
+	if err := json.Unmarshal([]byte(stateValueJSON), &stateMap); err != nil {
+		return false
+	}
+	if err := json.Unmarshal([]byte(apiValueJSON), &apiMap); err != nil {
+		return false
+	}
+
+	stateConditions := extractRuleConditions(stateMap)
+	apiConditions := extractRuleConditions(apiMap)
+
+	if len(stateConditions) != len(apiConditions) {
+		return false
+	}
+	for i := range stateConditions {
+		if stateConditions[i] != apiConditions[i] {
+			return false
+		}
+	}
+	return true
+}
+
+func extractRuleConditions(m map[string]interface{}) []string {
+	raw, ok := m["conditions"]
+	if !ok || raw == nil {
+		return nil
+	}
+	slice, ok := raw.([]interface{})
+	if !ok {
+		return nil
+	}
+	result := make([]string, len(slice))
+	for i, v := range slice {
+		result[i] = fmt.Sprintf("%v", v)
+	}
+	return result
 }
 
 func obtainValueJSON(document string) (*string, error) {
