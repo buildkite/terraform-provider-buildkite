@@ -104,6 +104,9 @@ func (organizationRuleResource) Schema(ctx context.Context, req resource.SchemaR
 			"source_uuid": resource_schema.StringAttribute{
 				Computed:            true,
 				MarkdownDescription: "The UUID of the resource that this organization rule allows or denies invocating its defined action. ",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"target_type": resource_schema.StringAttribute{
 				Computed:            true,
@@ -115,6 +118,9 @@ func (organizationRuleResource) Schema(ctx context.Context, req resource.SchemaR
 			"target_uuid": resource_schema.StringAttribute{
 				Computed:            true,
 				MarkdownDescription: "The UUID of the target resource that this organization rule allows or denies invocation its respective action. ",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"effect": resource_schema.StringAttribute{
 				Computed:            true,
@@ -311,36 +317,52 @@ func (or *organizationRuleResource) ModifyPlan(ctx context.Context, req resource
 		return // Let Create surface the parse error.
 	}
 
-	// Validate that any slug-format pipeline references resolve to real pipelines.
-	// This surfaces errors at plan time rather than at apply time.
+	// Resolve pipeline references and set source_uuid/target_uuid in the plan so
+	// Terraform can show correct expected values and detect inconsistencies after apply.
+	// For UUID values the UUID is used directly; for slugs it is resolved via the API.
 	// The plan value is intentionally not modified — Create/Update pass the config
 	// value (slugs or UUIDs) directly to the API which accepts both formats.
-	for _, key := range []string{"source_pipeline", "target_pipeline"} {
-		slug, ok := valueMap[key].(string)
-		if !ok || slug == "" || isUUID(slug) {
+	type pipelineRef struct {
+		valueKey string
+		planAttr path.Path
+	}
+	for _, ref := range []pipelineRef{
+		{"source_pipeline", path.Root("source_uuid")},
+		{"target_pipeline", path.Root("target_uuid")},
+	} {
+		raw, ok := valueMap[ref.valueKey].(string)
+		if !ok || raw == "" {
 			continue
 		}
 
-		qualifiedSlug := slug
-		if !strings.Contains(slug, "/") {
-			qualifiedSlug = fmt.Sprintf("%s/%s", or.client.organization, slug)
+		var uuid string
+		if isUUID(raw) {
+			uuid = raw
+		} else {
+			qualifiedSlug := raw
+			if !strings.Contains(raw, "/") {
+				qualifiedSlug = fmt.Sprintf("%s/%s", or.client.organization, raw)
+			}
+
+			pipeline, err := getPipeline(ctx, or.client.genqlient, qualifiedSlug)
+			if err != nil {
+				resp.Diagnostics.AddError(
+					"Unable to resolve pipeline slug",
+					fmt.Sprintf("Failed to resolve %s %q: %s", ref.valueKey, raw, err.Error()),
+				)
+				return
+			}
+			if pipeline.Pipeline.Id == "" {
+				resp.Diagnostics.AddError(
+					"Unable to resolve pipeline slug",
+					fmt.Sprintf("Pipeline not found for %s %q", ref.valueKey, raw),
+				)
+				return
+			}
+			uuid = pipeline.Pipeline.PipelineUuid
 		}
 
-		pipeline, err := getPipeline(ctx, or.client.genqlient, qualifiedSlug)
-		if err != nil {
-			resp.Diagnostics.AddError(
-				"Unable to resolve pipeline slug",
-				fmt.Sprintf("Failed to resolve %s %q: %s", key, slug, err.Error()),
-			)
-			return
-		}
-		if pipeline.Pipeline.Id == "" {
-			resp.Diagnostics.AddError(
-				"Unable to resolve pipeline slug",
-				fmt.Sprintf("Pipeline not found for %s %q", key, slug),
-			)
-			return
-		}
+		resp.Diagnostics.Append(resp.Plan.SetAttribute(ctx, ref.planAttr, types.StringValue(uuid))...)
 	}
 }
 
