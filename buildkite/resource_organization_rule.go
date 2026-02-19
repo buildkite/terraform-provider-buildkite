@@ -299,7 +299,9 @@ func (or *organizationRuleResource) ModifyPlan(ctx context.Context, req resource
 	// Skip validation if the value is unchanged from state — the slug already
 	// resolved successfully on the previous apply.
 	var stateValue types.String
-	resp.Diagnostics.Append(req.State.GetAttribute(ctx, path.Root("value"), &stateValue)...)
+	if !req.State.Raw.IsNull() {
+		resp.Diagnostics.Append(req.State.GetAttribute(ctx, path.Root("value"), &stateValue)...)
+	}
 	if !stateValue.IsNull() && !stateValue.IsUnknown() && stateValue.Equal(configValue) {
 		return
 	}
