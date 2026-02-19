@@ -37,12 +37,6 @@ type ruleDocument struct {
 	Value json.RawMessage `json:"value"`
 }
 
-type ruleValue struct {
-	Source     string   `json:"source_pipeline"`
-	Target     string   `json:"target_pipeline"`
-	Conditions []string `json:"conditions"`
-}
-
 type organizationRuleResource struct {
 	client *Client
 }
