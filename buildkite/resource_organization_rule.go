@@ -536,8 +536,8 @@ func obtainReadUUIDs(nr getNodeNodeRule) (string, string) {
 	return sourceUUID, targetUUID
 }
 
-// ruleConditionsMatch returns true if both JSON value strings contain the same conditions list.
-// It is used by Read to determine whether the conditions have drifted from state.
+// ruleConditionsMatch returns true if both JSON value strings contain the same conditions set.
+// Order-insensitive to handle any API reordering. Used by Read to detect conditions drift.
 func ruleConditionsMatch(stateValueJSON, apiValueJSON string) bool {
 	var stateMap, apiMap map[string]interface{}
 	if err := json.Unmarshal([]byte(stateValueJSON), &stateMap); err != nil {
@@ -553,8 +553,14 @@ func ruleConditionsMatch(stateValueJSON, apiValueJSON string) bool {
 	if len(stateConditions) != len(apiConditions) {
 		return false
 	}
-	for i := range stateConditions {
-		if stateConditions[i] != apiConditions[i] {
+
+	seen := make(map[string]int, len(stateConditions))
+	for _, c := range stateConditions {
+		seen[c]++
+	}
+	for _, c := range apiConditions {
+		seen[c]--
+		if seen[c] < 0 {
 			return false
 		}
 	}
