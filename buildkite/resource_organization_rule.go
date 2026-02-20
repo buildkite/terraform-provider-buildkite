@@ -316,7 +316,11 @@ func (or *organizationRuleResource) ModifyPlan(ctx context.Context, req resource
 
 	var valueMap map[string]interface{}
 	if err := json.Unmarshal([]byte(configValue.ValueString()), &valueMap); err != nil {
-		return // Let Create surface the parse error.
+		resp.Diagnostics.AddError(
+			"Invalid organization rule value",
+			fmt.Sprintf("Unable to parse value as JSON: %s", err.Error()),
+		)
+		return
 	}
 
 	// Resolve pipeline slugs/UUIDs to set source_uuid/target_uuid in the plan.
