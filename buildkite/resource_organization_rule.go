@@ -194,9 +194,8 @@ func (or *organizationRuleResource) Create(ctx context.Context, req resource.Cre
 		return
 	}
 
-	// Store the user's configured value (slug or UUID format) rather than the API's
-	// UUID-based document. Read preserves this format as long as there is no drift,
-	// which prevents perpetual diffs when the user configures pipeline slugs.
+	// Store the user's configured value (slug or UUID) to prevent perpetual
+	// diffs when slugs are used. Read preserves this format when no drift.
 	updateOrganizationRuleCreateState(&state, *r, *sourceUUID, *targetUUID, plan.Value.ValueString())
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
@@ -244,7 +243,7 @@ func (or *organizationRuleResource) Read(ctx context.Context, req resource.ReadR
 			return
 		}
 
-		// Get the API's canonical UUID-based value JSON from the document.
+		// Extract the UUID-based value JSON from the API document.
 		apiValue, err := obtainValueJSON(organizationRule.Document)
 		if err != nil {
 			resp.Diagnostics.AddError(
@@ -254,9 +253,8 @@ func (or *organizationRuleResource) Read(ctx context.Context, req resource.ReadR
 			return
 		}
 
-		// Determine what to store for value. If the source/target UUIDs and conditions
-		// are unchanged from state, preserve the user's configured format (which may use
-		// pipeline slugs). Otherwise use the API's UUID-based value to reflect drift.
+		// Preserve the user's value format (which may use slugs) if the underlying
+		// pipelines and conditions haven't drifted. Otherwise use the API's UUID value.
 		newSourceUUID, newTargetUUID := obtainReadUUIDs(*organizationRule)
 		valueToStore := *apiValue
 		if !state.SourceUUID.IsNull() && !state.TargetUUID.IsNull() &&
@@ -296,12 +294,9 @@ func (or *organizationRuleResource) ModifyPlan(ctx context.Context, req resource
 		return
 	}
 
-	// If value is unchanged from state, propagate state UUIDs to the plan to avoid
-	// showing source_uuid/target_uuid as (known after apply) for unrelated changes.
-	// We handle this explicitly rather than using UseStateForUnknown() because that
-	// modifier fires for ALL updates — including when value contains unknown references
-	// to not-yet-created resources — causing "inconsistent final plan" errors when
-	// Terraform re-plans with actual values during apply.
+	// Propagate state UUIDs when value is unchanged. We can't use UseStateForUnknown()
+	// here because it fires even when value has unknown cross-resource refs, causing
+	// "inconsistent final plan" errors during apply.
 	var stateValue types.String
 	if !req.State.Raw.IsNull() {
 		resp.Diagnostics.Append(req.State.GetAttribute(ctx, path.Root("value"), &stateValue)...)
@@ -324,11 +319,8 @@ func (or *organizationRuleResource) ModifyPlan(ctx context.Context, req resource
 		return // Let Create surface the parse error.
 	}
 
-	// Resolve pipeline references and set source_uuid/target_uuid in the plan so
-	// Terraform can show correct expected values and detect inconsistencies after apply.
-	// For UUID values the UUID is used directly; for slugs it is resolved via the API.
-	// The plan value is intentionally not modified — Create/Update pass the config
-	// value (slugs or UUIDs) directly to the API which accepts both formats.
+	// Resolve pipeline slugs/UUIDs to set source_uuid/target_uuid in the plan.
+	// The plan value itself stays as-is — the API accepts both formats.
 	type pipelineRef struct {
 		valueKey string
 		planAttr path.Path
