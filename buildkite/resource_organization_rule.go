@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"strings"
 
 	"github.com/MakeNowJust/heredoc"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -144,14 +143,6 @@ func (or *organizationRuleResource) Create(ctx context.Context, req resource.Cre
 		return
 	}
 
-	if plan.Value.IsNull() || plan.Value.IsUnknown() {
-		resp.Diagnostics.AddError(
-			"Unable to create organization rule",
-			"value must be set to a valid JSON document",
-		)
-		return
-	}
-
 	timeout, diags := or.client.timeouts.Create(ctx, DefaultTimeout)
 	resp.Diagnostics.Append(diags...)
 
@@ -228,7 +219,7 @@ func (or *organizationRuleResource) Read(ctx context.Context, req resource.ReadR
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to read organization rule",
-			fmt.Sprintf("Unable to read organmization rule: %s", err.Error()),
+			fmt.Sprintf("Unable to read organization rule: %s", err.Error()),
 		)
 		return
 	}
@@ -248,13 +239,15 @@ func (or *organizationRuleResource) Read(ctx context.Context, req resource.ReadR
 		if err != nil {
 			resp.Diagnostics.AddError(
 				"Unable to read organization rule",
-				fmt.Sprintf("Unable to read organmization rule: %s", err.Error()),
+				fmt.Sprintf("Unable to read organization rule: %s", err.Error()),
 			)
 			return
 		}
 
 		// Preserve the user's value format (which may use slugs) if the underlying
 		// pipelines and conditions haven't drifted. Otherwise use the API's UUID value.
+		// NOTE: drift is only detected for source_pipeline, target_pipeline, and
+		// conditions. If the API adds new value fields, this check may need updating.
 		newSourceUUID, newTargetUUID := obtainReadUUIDs(*organizationRule)
 		valueToStore := *apiValue
 		if !state.SourceUUID.IsNull() && !state.TargetUUID.IsNull() &&
@@ -342,11 +335,7 @@ func (or *organizationRuleResource) ModifyPlan(ctx context.Context, req resource
 		if isUUID(raw) {
 			uuid = raw
 		} else {
-			qualifiedSlug := raw
-			if !strings.Contains(raw, "/") {
-				qualifiedSlug = fmt.Sprintf("%s/%s", or.client.organization, raw)
-			}
-
+			qualifiedSlug := fmt.Sprintf("%s/%s", or.client.organization, raw)
 			pipeline, err := getPipeline(ctx, or.client.genqlient, qualifiedSlug)
 			if err != nil {
 				resp.Diagnostics.AddError(
@@ -603,9 +592,13 @@ func extractRuleConditions(m map[string]interface{}) []string {
 	if !ok {
 		return nil
 	}
-	result := make([]string, len(slice))
-	for i, v := range slice {
-		result[i] = fmt.Sprintf("%v", v)
+	result := make([]string, 0, len(slice))
+	for _, v := range slice {
+		b, err := json.Marshal(v)
+		if err != nil {
+			return nil
+		}
+		result = append(result, string(b))
 	}
 	return result
 }

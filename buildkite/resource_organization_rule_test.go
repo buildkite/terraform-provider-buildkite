@@ -2194,7 +2194,7 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 		})
 	})
 
-	configSlug := func(fields ...string) string {
+	configSlug := func(sourceName, targetName, action string) string {
 		return fmt.Sprintf(`
 		provider "buildkite" {
 			timeouts = {
@@ -2241,7 +2241,7 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 			})
 		}
 
-		`, fields[0], fields[1], fields[0], fields[1], fields[2], fields[2])
+		`, sourceName, targetName, sourceName, targetName, action, action)
 	}
 
 	for _, action := range ruleActions {

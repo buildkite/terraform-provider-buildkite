@@ -135,7 +135,7 @@ func (or *organizationRuleDatasource) Read(ctx context.Context, req datasource.R
 		if err != nil {
 			resp.Diagnostics.AddError(
 				"Unable to read organization rule",
-				fmt.Sprintf("Unable to read organmization rule: %s", err.Error()),
+				fmt.Sprintf("Unable to read organization rule: %s", err.Error()),
 			)
 		}
 		updateOrganizationRuleDatasource(&state, apiResponse.Rule, *value)
@@ -156,7 +156,7 @@ func (or *organizationRuleDatasource) Read(ctx context.Context, req datasource.R
 		if err != nil {
 			resp.Diagnostics.AddError(
 				"Unable to read organization rule",
-				fmt.Sprintf("Unable to read organmization rule: %s", err.Error()),
+				fmt.Sprintf("Unable to read organization rule: %s", err.Error()),
 			)
 			return
 		}
@@ -175,7 +175,7 @@ func (or *organizationRuleDatasource) Read(ctx context.Context, req datasource.R
 			if err != nil {
 				resp.Diagnostics.AddError(
 					"Unable to read organization rule",
-					fmt.Sprintf("Unable to read organmization rule: %s", err.Error()),
+					fmt.Sprintf("Unable to read organization rule: %s", err.Error()),
 				)
 			}
 			updateOrganizationRuleDatasourceStateFromNode(&state, *organizationRule, *value)
