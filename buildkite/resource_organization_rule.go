@@ -104,9 +104,6 @@ func (organizationRuleResource) Schema(ctx context.Context, req resource.SchemaR
 			"source_uuid": resource_schema.StringAttribute{
 				Computed:            true,
 				MarkdownDescription: "The UUID of the resource that this organization rule allows or denies invocating its defined action. ",
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
-				},
 			},
 			"target_type": resource_schema.StringAttribute{
 				Computed:            true,
@@ -118,9 +115,6 @@ func (organizationRuleResource) Schema(ctx context.Context, req resource.SchemaR
 			"target_uuid": resource_schema.StringAttribute{
 				Computed:            true,
 				MarkdownDescription: "The UUID of the target resource that this organization rule allows or denies invocation its respective action. ",
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
-				},
 			},
 			"effect": resource_schema.StringAttribute{
 				Computed:            true,
@@ -302,13 +296,26 @@ func (or *organizationRuleResource) ModifyPlan(ctx context.Context, req resource
 		return
 	}
 
-	// Skip validation if the value is unchanged from state — the slug already
-	// resolved successfully on the previous apply.
+	// If value is unchanged from state, propagate state UUIDs to the plan to avoid
+	// showing source_uuid/target_uuid as (known after apply) for unrelated changes.
+	// We handle this explicitly rather than using UseStateForUnknown() because that
+	// modifier fires for ALL updates — including when value contains unknown references
+	// to not-yet-created resources — causing "inconsistent final plan" errors when
+	// Terraform re-plans with actual values during apply.
 	var stateValue types.String
 	if !req.State.Raw.IsNull() {
 		resp.Diagnostics.Append(req.State.GetAttribute(ctx, path.Root("value"), &stateValue)...)
 	}
 	if !stateValue.IsNull() && !stateValue.IsUnknown() && stateValue.Equal(configValue) {
+		var stateSourceUUID, stateTargetUUID types.String
+		resp.Diagnostics.Append(req.State.GetAttribute(ctx, path.Root("source_uuid"), &stateSourceUUID)...)
+		resp.Diagnostics.Append(req.State.GetAttribute(ctx, path.Root("target_uuid"), &stateTargetUUID)...)
+		if !stateSourceUUID.IsNull() && !stateSourceUUID.IsUnknown() {
+			resp.Diagnostics.Append(resp.Plan.SetAttribute(ctx, path.Root("source_uuid"), stateSourceUUID)...)
+		}
+		if !stateTargetUUID.IsNull() && !stateTargetUUID.IsUnknown() {
+			resp.Diagnostics.Append(resp.Plan.SetAttribute(ctx, path.Root("target_uuid"), stateTargetUUID)...)
+		}
 		return
 	}
 
