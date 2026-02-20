@@ -2317,7 +2317,7 @@ func testAccCheckOrganizationRuleExists(orr *organizationRuleResourceModel, name
 			if err != nil {
 				return fmt.Errorf("Error constructing sorted value JSON to store in state")
 			}
-			updateOrganizatonRuleReadState(orr, *organizationRule, *value)
+			updateOrganizationRuleReadState(orr, *organizationRule, *value)
 		}
 
 		return nil

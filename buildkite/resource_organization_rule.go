@@ -197,7 +197,7 @@ func (or *organizationRuleResource) Create(ctx context.Context, req resource.Cre
 	// Store the user's configured value (slug or UUID format) rather than the API's
 	// UUID-based document. Read preserves this format as long as there is no drift,
 	// which prevents perpetual diffs when the user configures pipeline slugs.
-	updateOrganizatonRuleCreateState(&state, *r, *sourceUUID, *targetUUID, plan.Value.ValueString())
+	updateOrganizationRuleCreateState(&state, *r, *sourceUUID, *targetUUID, plan.Value.ValueString())
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
@@ -268,7 +268,7 @@ func (or *organizationRuleResource) Read(ctx context.Context, req resource.ReadR
 		}
 
 		// Update organization rule model and set in state
-		updateOrganizatonRuleReadState(&state, *organizationRule, valueToStore)
+		updateOrganizationRuleReadState(&state, *organizationRule, valueToStore)
 		resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 	} else {
 		// Remove from state if not found{{}}
@@ -401,7 +401,7 @@ func (or *organizationRuleResource) Update(ctx context.Context, req resource.Upd
 				*org,
 				state.ID.ValueString(),
 				plan.Description.ValueStringPointer(),
-				*plan.Value.ValueStringPointer(),
+				plan.Value.ValueString(),
 			)
 		}
 
@@ -641,7 +641,7 @@ func obtainValueJSON(document string) (*string, error) {
 	return &value, nil
 }
 
-func updateOrganizatonRuleCreateState(or *organizationRuleResourceModel, ruleCreate createOrganizationRuleResponse, sourceUUID, targetUUID, value string) {
+func updateOrganizationRuleCreateState(or *organizationRuleResourceModel, ruleCreate createOrganizationRuleResponse, sourceUUID, targetUUID, value string) {
 	or.ID = types.StringValue(ruleCreate.RuleCreate.Rule.Id)
 	or.UUID = types.StringValue(ruleCreate.RuleCreate.Rule.Uuid)
 	or.Description = types.StringPointerValue(ruleCreate.RuleCreate.Rule.Description)
@@ -662,7 +662,7 @@ func updateOrganizationRuleUpdateState(or *organizationRuleResourceModel, ruleUp
 	or.TargetUUID = types.StringValue(targetUUID)
 }
 
-func updateOrganizatonRuleReadState(or *organizationRuleResourceModel, orn getNodeNodeRule, value string) {
+func updateOrganizationRuleReadState(or *organizationRuleResourceModel, orn getNodeNodeRule, value string) {
 	sourceUUID, targetUUID := obtainReadUUIDs(orn)
 
 	or.ID = types.StringValue(orn.Id)
