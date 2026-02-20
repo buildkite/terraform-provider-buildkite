@@ -1,9 +1,18 @@
-# Creates a TRIGGER_BUILD organization rule with required attributes
+# Creates a TRIGGER_BUILD organization rule using pipeline UUIDs
 resource "buildkite_organization_rule" "trigger_build_test_dev" {
   type = "pipeline.trigger_build.pipeline"
   value = jsonencode({
     source_pipeline = buildkite_pipeline.app_dev_deploy.uuid
     target_pipeline = buildkite_pipeline.app_test_ci.uuid
+  })
+}
+
+# Creates a TRIGGER_BUILD organization rule using pipeline slugs
+resource "buildkite_organization_rule" "trigger_build_test_dev_slug" {
+  type = "pipeline.trigger_build.pipeline"
+  value = jsonencode({
+    source_pipeline = "app-dev-deploy"
+    target_pipeline = "app-test-ci"
   })
 }
 
