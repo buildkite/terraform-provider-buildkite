@@ -4,6 +4,8 @@ resource "buildkite_cluster_secret" "example" {
   value       = "super-secret-password"
   description = "Production database password"
   policy      = <<-EOT
+    pipeline_slug: my-pipeline
+    branch: main
     - pipeline_slug: my-pipeline
       build_branch: main
   EOT

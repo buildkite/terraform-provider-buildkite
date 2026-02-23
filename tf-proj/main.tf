@@ -52,7 +52,6 @@ resource "buildkite_cluster_queue" "hosted_macos_medium" {
 }
 
 
-
 resource "buildkite_cluster_secret" "my_secret" {
   cluster_id  = buildkite_cluster.test_cluster.uuid
   key         = "MY_SECRET"
