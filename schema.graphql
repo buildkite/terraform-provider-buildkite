@@ -37,6 +37,10 @@ directive @oneOf on INPUT_OBJECT
 API access tokens for authentication with the Buildkite API
 """
 type APIAccessToken implements Node{
+"""
+The time at which this API access token will expire. If null, the token will never expire.
+"""
+	expiresAt: DateTime
 	id: ID!
 """
 The public UUID for the API Access Token
@@ -901,6 +905,8 @@ enum AuditEventType {
 	CLUSTER_UPDATED
 	COMPOSITE_REGISTRY_UPSTREAM_ADDED
 	COMPOSITE_REGISTRY_UPSTREAM_REMOVED
+	CREDIT_CARD_ADDED
+	CREDIT_CARD_REMOVED
 	JOB_TERMINAL_SESSION_STARTED
 	MODEL_PROVIDER_CREATED
 	MODEL_PROVIDER_DELETED
@@ -986,6 +992,7 @@ enum AuditEventType {
 	STORAGE_CREATED
 	SUBSCRIPTION_ACTIVATED
 	SUBSCRIPTION_CANCELED
+	SUBSCRIPTION_CREATED
 	SUBSCRIPTION_PLAN_ADDED
 	SUBSCRIPTION_PLAN_CANCELATION_SCHEDULED
 	SUBSCRIPTION_PLAN_CANCELED
@@ -1075,55 +1082,56 @@ All the possible types of subjects in an Audit Event
 """
 enum AuditSubjectType {
 	USER
-	PIPELINE
-	JOB
-	CLUSTER_PERMISSION
+	SUBSCRIPTION
 	PIPELINE_TRIGGER
 	SUITE
-	CLUSTER
-	SUBSCRIPTION
-	REGISTRY
+	CREDIT_CARD
+	CLUSTER_QUEUE_TOKEN
+	CLUSTER_TOKEN
+	PORTAL_TOKEN
+	PORTAL_SECRET
+	RULE
 	TEAM
-	SECRET
-	AUTHORIZATION
+	CLUSTER
+	REGISTRY
+	CLUSTER_PERMISSION
 	AGENT_TOKEN
 	MODEL_PROVIDER
 	API_ACCESS_TOKEN
 	CACHE_REGISTRY
 	CLUSTER_QUEUE
 	NOTIFICATION_SERVICE
+	AUTHORIZATION
 	ORGANIZATION_BANNER
-	ORGANIZATION_BILLING_SETTING
 	ORGANIZATION_IMPERSONATION_REQUEST
 	ORGANIZATION_INVITATION
+	ORGANIZATION_BILLING_SETTING
 	ORGANIZATION_MEMBER
-	ORGANIZATION_SECURITY_SETTING
 	PIPELINE_SCHEDULE
 	PIPELINE_TEMPLATE
-	PORTAL
+	ORGANIZATION_SECURITY_SETTING
 	PORTAL_TOKEN_CODE
 	TEAM_MEMBER
+	PORTAL
 	TEAM_PIPELINE
-	TEAM_REGISTRY
 	TEAM_SUITE
 	TEAM_SECRET
-	COMPOSITE_REGISTRY_UPSTREAM
+	TEAM_REGISTRY
+	ORGANIZATION
 	REGISTRY_TOKEN
+	COMPOSITE_REGISTRY_UPSTREAM
+	SCM_PIPELINE_SETTINGS
 	SSO_PROVIDER
 	SCM_SERVICE
-	SCM_PIPELINE_SETTINGS
-	SCM_REPOSITORY_HOST
 	SUITE_MONITOR
-	SUITE_SAVED_VIEW
+	SCM_REPOSITORY_HOST
 	SUITE_WORKFLOW
-	USER_EMAIL
-	CLUSTER_QUEUE_TOKEN
-	CLUSTER_TOKEN
-	ORGANIZATION
-	PORTAL_TOKEN
-	RULE
-	PORTAL_SECRET
+	SUITE_SAVED_VIEW
 	USER_TOTP
+	USER_EMAIL
+	SECRET
+	PIPELINE
+	JOB
 }
 
 """
@@ -2232,6 +2240,14 @@ Number of connected agents in the latest bucket
 """
 	connectedAgentsCount: Int!
 """
+Number of failed jobs in the latest bucket
+"""
+	jobsFailedCount: Int!
+"""
+Number of passed jobs in the latest bucket
+"""
+	jobsPassedCount: Int!
+"""
 Number of running jobs in the latest bucket
 """
 	runningJobsCount: Int!
@@ -2239,6 +2255,10 @@ Number of running jobs in the latest bucket
 The timestamp (start of the most recent time bucket, in UTC)
 """
 	timestamp: DateTime!
+"""
+Wait time statistics in seconds for the latest bucket
+"""
+	waitTimeSec: ClusterQueueWaitTime!
 """
 Number of waiting (scheduled) jobs in the latest bucket
 """
@@ -2374,6 +2394,28 @@ A unique identifier for the client performing the mutation.
 """
 	clientMutationId: String
 	clusterQueue: ClusterQueue!
+}
+
+"""
+Wait time statistics in seconds for a cluster queue
+"""
+type ClusterQueueWaitTime {
+"""
+Maximum wait time in seconds
+"""
+	max: Float!
+"""
+Minimum wait time in seconds
+"""
+	min: Float!
+"""
+Median (50th percentile) wait time in seconds
+"""
+	p50: Float!
+"""
+95th percentile wait time in seconds
+"""
+	p95: Float!
 }
 
 """
@@ -2624,6 +2666,11 @@ A unique identifier for the client performing the mutation.
 	clientMutationId: String
 	email: Email!
 }
+
+"""
+Represents signed double-precision fractional values as specified by [IEEE 754](https://en.wikipedia.org/wiki/IEEE_floating_point).
+"""
+scalar Float
 
 """
 GitHub App Installation Rate Limit (limits set by GitHub)
@@ -3187,6 +3234,37 @@ The termination signal which killed the command, if the command was killed
 If the termination signal was sent by the agent, the reason the agent took that action. If this field is null, and the `signal` field is not null, the command was killed by another process or by the operating system.
 """
 	signalReason: JobEventSignalReason
+"""
+The time when the event occurred
+"""
+	timestamp: DateTime!
+"""
+The type of event
+"""
+	type: JobEventType!
+"""
+The public UUID for this job event
+"""
+	uuid: ID!
+}
+
+"""
+A job event for when a job's attributes have been updated
+"""
+type JobEventChanged implements JobEvent & Node{
+"""
+The actor that caused this event to occur
+"""
+	actor: JobEventActor!
+"""
+The changes that were made to the job
+"""
+	changedChanges: JSON
+	id: ID!
+"""
+The job that this event belongs to
+"""
+	job: JobTypeCommand!
 """
 The time when the event occurred
 """
@@ -4656,7 +4734,14 @@ Parameters for PipelineCreate
 		input: PipelineCreateInput!
 	): PipelineCreatePayload
 """
-Create SCM webhooks for a pipeline.
+Create a webhook on the repository for a pipeline.
+
+This mutation creates a webhook on the pipeline's source repository (e.g., GitHub)
+that will trigger builds when code is pushed. Requires a GitHub App integration
+to be configured for the organization.
+
+Returns an error if a webhook already exists for the repository.
+
 """
 	pipelineCreateWebhook(
 """
@@ -4673,6 +4758,20 @@ Parameters for PipelineDelete
 """
 		input: PipelineDeleteInput!
 	): PipelineDeletePayload
+"""
+Delete the webhook on the repository for a pipeline.
+
+This mutation removes the webhook from the pipeline's source repository (e.g., GitHub)
+that triggers builds when code is pushed. Requires a GitHub App integration
+to be configured for the organization.
+
+"""
+	pipelineDeleteWebhook(
+"""
+Parameters for PipelineDeleteWebhook
+"""
+		input: PipelineDeleteWebhookInput!
+	): PipelineDeleteWebhookPayload
 """
 Favorite a pipeline.
 """
@@ -5690,6 +5789,10 @@ type OrganizationAPIAccessToken {
 A description of the token
 """
 	description: String
+"""
+The time at which this API access token will expire. If null, the token will never expire.
+"""
+	expiresAt: DateTime
 	id: ID!
 """
 The IP address of the last request to the Buildkite API
@@ -6996,9 +7099,9 @@ Whether this pipeline is visible to everyone, including people outside this orga
 """
 	visibility: PipelineVisibility!
 """
-The URL to use in your repository settings for commit webhooks
+The webhookURL field returns the webhook URL if the user has edit permissions for the pipeline. Otherwise, it returns null.
 """
-	webhookURL: String!
+	webhookURL: String
 }
 
 """
@@ -7185,7 +7288,18 @@ type PipelineCreateWebhookPayload {
 A unique identifier for the client performing the mutation.
 """
 	clientMutationId: String
-	pipelineID: ID!
+"""
+The pipeline
+"""
+	pipeline: Pipeline!
+"""
+The GraphQL ID of the pipeline
+"""
+	pipelineID: ID! @deprecated(reason: "Use `pipeline { id }` instead")
+"""
+The created webhook
+"""
+	webhook: RepositoryProviderWebhook!
 }
 
 """
@@ -7212,6 +7326,42 @@ A unique identifier for the client performing the mutation.
 	clientMutationId: String
 	deletedPipelineID: ID!
 	organization: Organization!
+}
+
+"""
+Autogenerated input type of PipelineDeleteWebhook
+"""
+input PipelineDeleteWebhookInput {
+"""
+Autogenerated input type of PipelineDeleteWebhook
+"""
+	clientMutationId: String
+"""
+Autogenerated input type of PipelineDeleteWebhook
+"""
+	id: ID!
+"""
+Autogenerated input type of PipelineDeleteWebhook
+"""
+	repository: String
+}
+
+"""
+Autogenerated return type of PipelineDeleteWebhook.
+"""
+type PipelineDeleteWebhookPayload {
+"""
+A unique identifier for the client performing the mutation.
+"""
+	clientMutationId: String
+"""
+The provider-specific ID of the deleted webhook
+"""
+	deletedWebhookExternalId: String!
+"""
+The pipeline
+"""
+	pipeline: Pipeline!
 }
 
 type PipelineEdge {
@@ -8821,13 +8971,17 @@ The name of the provider
 """
 	name: String!
 """
-The repository’s provider settings
+The repository's provider settings
 """
 	settings: RepositoryProviderGitHubSettings
 """
 This URL to the provider’s web interface
 """
 	url: String
+"""
+The webhook configured on the repository to trigger builds. Returns null if no webhook exists or if the user doesn't have edit permissions.
+"""
+	webhook: RepositoryProviderGithubWebhook
 """
 The URL to use when setting up webhooks from the provider to trigger Buildkite builds
 """
@@ -8843,7 +8997,7 @@ The name of the provider
 """
 	name: String!
 """
-The repository’s provider settings
+The repository's provider settings
 """
 	settings: RepositoryProviderGitHubEnterpriseSettings
 """
@@ -8851,9 +9005,49 @@ This URL to the provider’s web interface
 """
 	url: String
 """
+The webhook configured on the repository to trigger builds. Returns null if no webhook exists or if the user doesn't have edit permissions.
+"""
+	webhook: RepositoryProviderGithubEnterpriseWebhook
+"""
 The URL to use when setting up webhooks from the provider to trigger Buildkite builds
 """
 	webhookUrl: String
+}
+
+"""
+A webhook configured on a GitHub Enterprise repository to trigger pipeline builds
+"""
+type RepositoryProviderGithubEnterpriseWebhook implements RepositoryProviderWebhook{
+"""
+The provider-specific ID of the webhook
+"""
+	externalId: String!
+"""
+The repository provider
+"""
+	provider: RepositoryProvider!
+"""
+The URL that the webhook delivers events to
+"""
+	url: String!
+}
+
+"""
+A webhook configured on a GitHub repository to trigger pipeline builds
+"""
+type RepositoryProviderGithubWebhook implements RepositoryProviderWebhook{
+"""
+The provider-specific ID of the webhook
+"""
+	externalId: String!
+"""
+The repository provider
+"""
+	provider: RepositoryProvider!
+"""
+The URL that the webhook delivers events to
+"""
+	url: String!
 }
 
 """
@@ -8978,6 +9172,24 @@ Whether the filter is enabled
 }
 
 """
+A webhook configured on a repository to trigger pipeline builds
+"""
+interface RepositoryProviderWebhook {
+"""
+A webhook configured on a repository to trigger pipeline builds
+"""
+	externalId: String!
+"""
+A webhook configured on a repository to trigger pipeline builds
+"""
+	provider: RepositoryProvider!
+"""
+A webhook configured on a repository to trigger pipeline builds
+"""
+	url: String!
+}
+
+"""
 API tokens with access to this organization will be automatically revoked after this many days of inactivity.
 """
 enum RevokeInactiveTokenPeriod {
@@ -9061,13 +9273,13 @@ The action a rule enforces
 """
 enum RuleAction {
 """
-Artifacts read
-"""
-	ARTIFACTS_READ
-"""
 Trigger build
 """
 	TRIGGER_BUILD
+"""
+Artifacts read
+"""
+	ARTIFACTS_READ
 }
 
 type RuleConnection implements Connection{

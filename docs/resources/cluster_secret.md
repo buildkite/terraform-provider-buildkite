@@ -5,12 +5,21 @@ subcategory: ""
 description: |-
   A Cluster Secret is an encrypted key-value pair that can be accessed by agents within a cluster.
   Secrets are encrypted and can only be accessed by agents that match the access policy.
+
+  Note: Secret values are write-only and cannot be retrieved from the API. When importing an existing
+  cluster secret, you must manually set the 'value' attribute in your configuration to match the secret's
+  actual value, as Terraform cannot read it from the Buildkite API.
+
 ---
 
 # buildkite_cluster_secret (Resource)
 
 A Cluster Secret is an encrypted key-value pair that can be accessed by agents within a cluster.
 Secrets are encrypted and can only be accessed by agents that match the access policy.
+
+**Note:** Secret values are write-only and cannot be retrieved from the API. When importing an existing
+cluster secret, you must manually set the 'value' attribute in your configuration to match the secret's
+actual value, as Terraform cannot read it from the Buildkite API.
 
 ## Example Usage
 
@@ -23,6 +32,8 @@ resource "buildkite_cluster_secret" "example" {
   policy      = <<-EOT
     pipeline_slug: my-pipeline
     branch: main
+    - pipeline_slug: my-pipeline
+      build_branch: main
   EOT
 }
 ```

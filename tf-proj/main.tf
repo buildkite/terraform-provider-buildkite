@@ -2,7 +2,7 @@ terraform {
   required_providers {
     buildkite = {
       source  = "buildkite/buildkite"
-      version = "0.20.0"
+      version = "1.30.0"
     }
   }
 }
@@ -58,7 +58,7 @@ resource "buildkite_cluster_secret" "my_secret" {
   key         = "MY_SECRET"
   value       = "secret-value"
   description = "Test secret was created by Terraform"
-  
+
   policy = <<-EOT
     - pipeline_slug: my-pipeline
       build_branch: main
