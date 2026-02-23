@@ -33,7 +33,7 @@ resource "buildkite_cluster_secret" "example" {
 ### Required
 
 - `cluster_id` (String) The UUID of the cluster this secret belongs to.
-- `key` (String) The key name for the secret. Must start with a letter and only contain letters, numbers, and underscores. Maximum 255 characters.
+- `key` (String) The key name for the secret. Must start with a letter and only contain letters, numbers, and underscores. Maximum 255 characters. Must not start with `BUILDKITE_` or `BK_` as these prefixes are reserved.
 - `value` (String, Sensitive) The secret value. Must be less than 8KB.
 
 ### Optional
