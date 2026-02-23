@@ -43,6 +43,7 @@ fragment PipelineFields on Pipeline {
     teams(first: 5, order: NAME) {
         ...PipelineTeam
     }
+    visibility
     webhookURL
 }
 

@@ -6,5 +6,7 @@ resource "buildkite_cluster_secret" "example" {
   policy      = <<-EOT
     pipeline_slug: my-pipeline
     branch: main
+    - pipeline_slug: my-pipeline
+      build_branch: main
   EOT
 }

@@ -1,0 +1,54 @@
+fragment WebhookFields on RepositoryProviderWebhook {
+    externalId
+    url
+}
+
+query getPipelineWebhook($id: ID!) {
+    node(id: $id) {
+        ... on Pipeline {
+            id
+            repository {
+                url
+                provider {
+                    ... on RepositoryProviderGithub {
+                        webhook {
+                            ...WebhookFields
+                        }
+                    }
+                    ... on RepositoryProviderGithubEnterprise {
+                        webhook {
+                            ...WebhookFields
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+mutation createPipelineWebhook($pipelineId: ID!) {
+    pipelineCreateWebhook(input: { id: $pipelineId }) {
+        pipeline {
+            id
+            repository {
+                url
+            }
+        }
+        webhook {
+            ...WebhookFields
+        }
+    }
+}
+
+mutation deletePipelineWebhook(
+    $pipelineId: ID!,
+    # @genqlient(pointer: true, omitempty: true)
+    $repository: String
+) {
+    pipelineDeleteWebhook(input: { id: $pipelineId, repository: $repository }) {
+        pipeline {
+            id
+        }
+        deletedWebhookExternalId
+    }
+}

@@ -72,32 +72,34 @@ type PipelineTag struct {
 }
 
 type pipelineResourceModel struct {
-	AllowRebuilds                        types.Bool             `tfsdk:"allow_rebuilds"`
-	BadgeUrl                             types.String           `tfsdk:"badge_url"`
-	BranchConfiguration                  types.String           `tfsdk:"branch_configuration"`
-	CancelIntermediateBuilds             types.Bool             `tfsdk:"cancel_intermediate_builds"`
-	CancelIntermediateBuildsBranchFilter types.String           `tfsdk:"cancel_intermediate_builds_branch_filter"`
-	Color                                types.String           `tfsdk:"color"`
-	ClusterId                            types.String           `tfsdk:"cluster_id"`
-	ClusterName                          types.String           `tfsdk:"cluster_name"`
-	DefaultTeamId                        types.String           `tfsdk:"default_team_id"`
-	DefaultBranch                        types.String           `tfsdk:"default_branch"`
-	DefaultTimeoutInMinutes              types.Int64            `tfsdk:"default_timeout_in_minutes"`
-	Description                          types.String           `tfsdk:"description"`
-	Emoji                                types.String           `tfsdk:"emoji"`
-	Id                                   types.String           `tfsdk:"id"`
-	MaximumTimeoutInMinutes              types.Int64            `tfsdk:"maximum_timeout_in_minutes"`
-	Name                                 types.String           `tfsdk:"name"`
-	PipelineTemplateId                   types.String           `tfsdk:"pipeline_template_id"`
-	ProviderSettings                     *providerSettingsModel `tfsdk:"provider_settings"`
-	Repository                           types.String           `tfsdk:"repository"`
-	SkipIntermediateBuilds               types.Bool             `tfsdk:"skip_intermediate_builds"`
-	SkipIntermediateBuildsBranchFilter   types.String           `tfsdk:"skip_intermediate_builds_branch_filter"`
-	Slug                                 types.String           `tfsdk:"slug"`
-	Steps                                types.String           `tfsdk:"steps"`
-	Tags                                 []types.String         `tfsdk:"tags"`
-	UUID                                 types.String           `tfsdk:"uuid"`
-	WebhookUrl                           types.String           `tfsdk:"webhook_url"`
+	AllowRebuilds                        types.Bool   `tfsdk:"allow_rebuilds"`
+	BadgeUrl                             types.String `tfsdk:"badge_url"`
+	BranchConfiguration                  types.String `tfsdk:"branch_configuration"`
+	CancelIntermediateBuilds             types.Bool   `tfsdk:"cancel_intermediate_builds"`
+	CancelIntermediateBuildsBranchFilter types.String `tfsdk:"cancel_intermediate_builds_branch_filter"`
+	Color                                types.String `tfsdk:"color"`
+	ClusterId                            types.String `tfsdk:"cluster_id"`
+	ClusterName                          types.String `tfsdk:"cluster_name"`
+
+	DefaultTeamId                      types.String           `tfsdk:"default_team_id"`
+	DefaultBranch                      types.String           `tfsdk:"default_branch"`
+	DefaultTimeoutInMinutes            types.Int64            `tfsdk:"default_timeout_in_minutes"`
+	Description                        types.String           `tfsdk:"description"`
+	Emoji                              types.String           `tfsdk:"emoji"`
+	Id                                 types.String           `tfsdk:"id"`
+	MaximumTimeoutInMinutes            types.Int64            `tfsdk:"maximum_timeout_in_minutes"`
+	Name                               types.String           `tfsdk:"name"`
+	PipelineTemplateId                 types.String           `tfsdk:"pipeline_template_id"`
+	ProviderSettings                   *providerSettingsModel `tfsdk:"provider_settings"`
+	Repository                         types.String           `tfsdk:"repository"`
+	SkipIntermediateBuilds             types.Bool             `tfsdk:"skip_intermediate_builds"`
+	SkipIntermediateBuildsBranchFilter types.String           `tfsdk:"skip_intermediate_builds_branch_filter"`
+	Slug                               types.String           `tfsdk:"slug"`
+	Steps                              types.String           `tfsdk:"steps"`
+	Tags                               []types.String         `tfsdk:"tags"`
+	UUID                               types.String           `tfsdk:"uuid"`
+	Visibility                         types.String           `tfsdk:"visibility"`
+	WebhookUrl                         types.String           `tfsdk:"webhook_url"`
 }
 
 type providerSettingsModel struct {
@@ -155,6 +157,7 @@ type pipelineResponse interface {
 	GetSlug() string
 	GetSteps() PipelineFieldsStepsPipelineSteps
 	GetTags() []PipelineFieldsTagsPipelineTag
+	GetVisibility() PipelineVisibility
 	GetWebhookURL() string
 }
 
@@ -240,6 +243,11 @@ func (p *pipelineResource) Create(ctx context.Context, req resource.CreateReques
 				SkipIntermediateBuildsBranchFilter:   plan.SkipIntermediateBuildsBranchFilter.ValueString(),
 				Steps:                                PipelineStepsInput{Yaml: plan.Steps.ValueString()},
 				Tags:                                 getTagsFromSchema(&plan),
+			}
+
+			if !plan.Visibility.IsNull() {
+				visibility := PipelineVisibility(plan.Visibility.ValueString())
+				input.Visibility = visibility
 			}
 
 			// if a team has been specified, add that to the graphql payload
@@ -704,6 +712,17 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
+			"visibility": schema.StringAttribute{
+				Computed:            true,
+				Optional:            true,
+				MarkdownDescription: "The visibility of the pipeline. Can be `PUBLIC` or `PRIVATE`. Only use `PUBLIC` visibility for pipelines without sensitive information. Defaults to `PRIVATE`.",
+				Validators: []validator.String{
+					stringvalidator.OneOf("PUBLIC", "PRIVATE"),
+				},
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
 			"badge_url": schema.StringAttribute{
 				Computed:            true,
 				MarkdownDescription: "The badge URL showing build state.",
@@ -972,6 +991,11 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 		Tags:                                 getTagsFromSchema(&plan),
 	}
 
+	if !plan.Visibility.IsNull() {
+		visibility := PipelineVisibility(plan.Visibility.ValueString())
+		input.Visibility = visibility
+	}
+
 	timeouts, diags := p.client.timeouts.Update(ctx, DefaultTimeout)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
@@ -1113,6 +1137,7 @@ func setPipelineModel(model *pipelineResourceModel, data pipelineResponse) {
 	model.SkipIntermediateBuilds = types.BoolValue(data.GetSkipIntermediateBuilds())
 	model.SkipIntermediateBuildsBranchFilter = types.StringValue(data.GetSkipIntermediateBuildsBranchFilter())
 	model.UUID = types.StringValue(data.GetPipelineUuid())
+	model.Visibility = types.StringValue(string(data.GetVisibility()))
 	model.WebhookUrl = types.StringValue(data.GetWebhookURL())
 
 	// only set template or steps. steps is always updated even if using a template, but its redundant and creates
