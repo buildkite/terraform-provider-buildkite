@@ -3,6 +3,9 @@ package buildkite
 import (
 	"context"
 	"fmt"
+	"regexp"
+	"strings"
+
 	"github.com/MakeNowJust/heredoc"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -13,8 +16,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
-	"regexp"
-	"strings"
 )
 
 type clusterSecretResource struct {
@@ -70,7 +71,7 @@ func (r *clusterSecretResource) Schema(ctx context.Context, req resource.SchemaR
 			},
 			"key": schema.StringAttribute{
 				Required:            true,
-				MarkdownDescription: "The key name for the secret. Must start with a letter and only contain letters, numbers, and underscores. Maximum 255 characters.",
+				MarkdownDescription: "The key name for the secret. Must start with a letter and only contain letters, numbers, and underscores. Maximum 255 characters. Must not start with `BUILDKITE_` or `BK_` as these prefixes are reserved.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
@@ -353,4 +354,31 @@ func (r *clusterSecretResource) ImportState(ctx context.Context, req resource.Im
 
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("cluster_id"), parts[0])...)
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), parts[1])...)
+}
+
+// reservedPrefixValidator checks that the key doesn't start with reserved prefixes
+type reservedPrefixValidator struct{}
+
+func (v reservedPrefixValidator) Description(ctx context.Context) string {
+	return "value must not start with BUILDKITE_ or BK_ (reserved prefixes)"
+}
+
+func (v reservedPrefixValidator) MarkdownDescription(ctx context.Context) string {
+	return "value must not start with `BUILDKITE_` or `BK_` (reserved prefixes)"
+}
+
+func (v reservedPrefixValidator) ValidateString(ctx context.Context, req validator.StringRequest, resp *validator.StringResponse) {
+	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
+		return
+	}
+
+	value := req.ConfigValue.ValueString()
+
+	if strings.HasPrefix(value, "BUILDKITE_") || strings.HasPrefix(value, "BK_") {
+		resp.Diagnostics.AddAttributeError(
+			req.Path,
+			"Invalid Secret Key",
+			"Secret key must not start with BUILDKITE_ or BK_ (reserved prefixes)",
+		)
+	}
 }

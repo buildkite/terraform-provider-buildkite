@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"regexp"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
@@ -88,6 +89,26 @@ func TestAccBuildkiteClusterSecret_withPolicy(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("buildkite_cluster_secret.test", "policy"),
 				),
+			},
+		},
+	})
+}
+
+// ADD THIS NEW TEST FUNCTION HERE
+func TestAccBuildkiteClusterSecret_validateKeyReservedPrefixes(t *testing.T) {
+	clusterName := acctest.RandString(10)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config:      testAccClusterSecretConfigInvalidKey(clusterName, "BUILDKITE_SECRET"),
+				ExpectError: regexp.MustCompile("must not start with BUILDKITE_ or BK_"),
+			},
+			{
+				Config:      testAccClusterSecretConfigInvalidKey(clusterName, "BK_SECRET"),
+				ExpectError: regexp.MustCompile("must not start with BUILDKITE_ or BK_"),
 			},
 		},
 	})
@@ -192,4 +213,24 @@ resource "buildkite_cluster_secret" "test" {
 EOT
 }
 `, getenv("BUILDKITE_ORGANIZATION_SLUG"), os.Getenv("BUILDKITE_API_TOKEN"), clusterName, key, value, pipeline, branch)
+}
+
+func testAccClusterSecretConfigInvalidKey(clusterName, key string) string {
+	return fmt.Sprintf(`
+provider "buildkite" {
+    organization = "%s"
+    api_token    = "%s"
+}
+
+resource "buildkite_cluster" "test" {
+    name        = "Test Cluster %s"
+    description = "Test cluster for secrets"
+}
+
+resource "buildkite_cluster_secret" "test" {
+    cluster_id  = buildkite_cluster.test.uuid
+    key         = "%s"
+    value       = "test-value"
+}
+`, getenv("BUILDKITE_ORGANIZATION_SLUG"), os.Getenv("BUILDKITE_API_TOKEN"), clusterName, key)
 }
