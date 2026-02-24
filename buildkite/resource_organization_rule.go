@@ -36,12 +36,6 @@ type ruleDocument struct {
 	Value json.RawMessage `json:"value"`
 }
 
-type ruleValue struct {
-	Source     string   `json:"source_pipeline"`
-	Target     string   `json:"target_pipeline"`
-	Conditions []string `json:"conditions"`
-}
-
 type organizationRuleResource struct {
 	client *Client
 }
@@ -141,7 +135,6 @@ func (organizationRuleResource) Schema(ctx context.Context, req resource.SchemaR
 
 func (or *organizationRuleResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var plan, state organizationRuleResourceModel
-	var plannedValue ruleValue
 
 	diags := req.Plan.Get(ctx, &plan)
 	resp.Diagnostics.Append(diags...)
@@ -157,34 +150,8 @@ func (or *organizationRuleResource) Create(ctx context.Context, req resource.Cre
 		return
 	}
 
-	// Unmarshall the plan's value into a ruleValue struct instance
-	err := json.Unmarshal([]byte(plan.Value.ValueString()), &plannedValue)
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Unable to create organization rule",
-			fmt.Sprintf("Unable to create organization rule: %s ", err.Error()),
-		)
-		return
-	}
-
-	// Confirm that both the source|target pipelines specified in the value attribute of a buildkite_organization_rule are valid UUID strings.
-	// If either is not a valid UUID and not empty, the provider will return an error stating this and abort creation of the rule.
-	if !isUUID(plannedValue.Source) && len(plannedValue.Source) > 0 {
-		resp.Diagnostics.AddError(
-			"Unable to create organization rule",
-			fmt.Sprintf("%s: source_pipeline is an invalid UUID.", plan.Type.ValueString()),
-		)
-		return
-	} else if !isUUID(plannedValue.Target) && len(plannedValue.Target) > 0 {
-		resp.Diagnostics.AddError(
-			"Unable to create organization rule",
-			fmt.Sprintf("%s: target_pipeline is an invalid UUID.", plan.Type.ValueString()),
-		)
-		return
-	}
-
 	var r *createOrganizationRuleResponse
-	err = retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		org, err := or.client.GetOrganizationID()
 		if err == nil {
 			log.Printf("Creating organization rule ...")
@@ -218,18 +185,9 @@ func (or *organizationRuleResource) Create(ctx context.Context, req resource.Cre
 		return
 	}
 
-	// Obtain the sorted value JSON from the API response (document field in RuleCreatePayload's rule)
-	value, err := obtainValueJSON(r.RuleCreate.Rule.Document)
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Unable to create organization rule",
-			fmt.Sprintf("Unable to create organmization rule: %s", err.Error()),
-		)
-		return
-	}
-
-	// Update organization rule model and set in state
-	updateOrganizatonRuleCreateState(&state, *r, *sourceUUID, *targetUUID, *value)
+	// Store the user's configured value (slug or UUID) to prevent perpetual
+	// diffs when slugs are used. Read preserves this format when no drift.
+	updateOrganizationRuleCreateState(&state, *r, *sourceUUID, *targetUUID, plan.Value.ValueString())
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
@@ -261,7 +219,7 @@ func (or *organizationRuleResource) Read(ctx context.Context, req resource.ReadR
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to read organization rule",
-			fmt.Sprintf("Unable to read organmization rule: %s", err.Error()),
+			fmt.Sprintf("Unable to read organization rule: %s", err.Error()),
 		)
 		return
 	}
@@ -276,18 +234,32 @@ func (or *organizationRuleResource) Read(ctx context.Context, req resource.ReadR
 			return
 		}
 
-		// Get the returned rule's sorted value JSON object from its Document field
-		value, err := obtainValueJSON(organizationRule.Document)
+		// Extract the UUID-based value JSON from the API document.
+		apiValue, err := obtainValueJSON(organizationRule.Document)
 		if err != nil {
 			resp.Diagnostics.AddError(
 				"Unable to read organization rule",
-				fmt.Sprintf("Unable to read organmization rule: %s", err.Error()),
+				fmt.Sprintf("Unable to read organization rule: %s", err.Error()),
 			)
 			return
 		}
 
+		// Preserve the user's value format (which may use slugs) if the underlying
+		// pipelines and conditions haven't drifted. Otherwise use the API's UUID value.
+		// NOTE: drift is only detected for source_pipeline, target_pipeline, and
+		// conditions. If the API adds new value fields, this check may need updating.
+		newSourceUUID, newTargetUUID := obtainReadUUIDs(*organizationRule)
+		valueToStore := *apiValue
+		if !state.SourceUUID.IsNull() && !state.TargetUUID.IsNull() &&
+			state.SourceUUID.ValueString() == newSourceUUID &&
+			state.TargetUUID.ValueString() == newTargetUUID &&
+			!state.Value.IsNull() && !state.Value.IsUnknown() &&
+			ruleConditionsMatch(state.Value.ValueString(), *apiValue) {
+			valueToStore = state.Value.ValueString()
+		}
+
 		// Update organization rule model and set in state
-		updateOrganizatonRuleReadState(&state, *organizationRule, *value)
+		updateOrganizationRuleReadState(&state, *organizationRule, valueToStore)
 		resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 	} else {
 		// Remove from state if not found{{}}
@@ -299,6 +271,91 @@ func (or *organizationRuleResource) Read(ctx context.Context, req resource.ReadR
 
 func (or *organizationRuleResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+}
+
+func (or *organizationRuleResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
+	// Resource is being destroyed — nothing to do.
+	if req.Plan.Raw.IsNull() || or.client == nil {
+		return
+	}
+
+	var configValue types.String
+	resp.Diagnostics.Append(req.Config.GetAttribute(ctx, path.Root("value"), &configValue)...)
+
+	// Skip if value is unknown (first pass with unknowns) or null.
+	if configValue.IsUnknown() || configValue.IsNull() {
+		return
+	}
+
+	// Propagate state UUIDs when value is unchanged. We can't use UseStateForUnknown()
+	// here because it fires even when value has unknown cross-resource refs, causing
+	// "inconsistent final plan" errors during apply.
+	var stateValue types.String
+	if !req.State.Raw.IsNull() {
+		resp.Diagnostics.Append(req.State.GetAttribute(ctx, path.Root("value"), &stateValue)...)
+	}
+	if !stateValue.IsNull() && !stateValue.IsUnknown() && stateValue.Equal(configValue) {
+		var stateSourceUUID, stateTargetUUID types.String
+		resp.Diagnostics.Append(req.State.GetAttribute(ctx, path.Root("source_uuid"), &stateSourceUUID)...)
+		resp.Diagnostics.Append(req.State.GetAttribute(ctx, path.Root("target_uuid"), &stateTargetUUID)...)
+		if !stateSourceUUID.IsNull() && !stateSourceUUID.IsUnknown() {
+			resp.Diagnostics.Append(resp.Plan.SetAttribute(ctx, path.Root("source_uuid"), stateSourceUUID)...)
+		}
+		if !stateTargetUUID.IsNull() && !stateTargetUUID.IsUnknown() {
+			resp.Diagnostics.Append(resp.Plan.SetAttribute(ctx, path.Root("target_uuid"), stateTargetUUID)...)
+		}
+		return
+	}
+
+	var valueMap map[string]interface{}
+	if err := json.Unmarshal([]byte(configValue.ValueString()), &valueMap); err != nil {
+		resp.Diagnostics.AddError(
+			"Invalid organization rule value",
+			fmt.Sprintf("Unable to parse value as JSON: %s", err.Error()),
+		)
+		return
+	}
+
+	// Resolve pipeline slugs/UUIDs to set source_uuid/target_uuid in the plan.
+	// The plan value itself stays as-is — the API accepts both formats.
+	type pipelineRef struct {
+		valueKey string
+		planAttr path.Path
+	}
+	for _, ref := range []pipelineRef{
+		{"source_pipeline", path.Root("source_uuid")},
+		{"target_pipeline", path.Root("target_uuid")},
+	} {
+		raw, ok := valueMap[ref.valueKey].(string)
+		if !ok || raw == "" {
+			continue
+		}
+
+		var uuid string
+		if isUUID(raw) {
+			uuid = raw
+		} else {
+			qualifiedSlug := fmt.Sprintf("%s/%s", or.client.organization, raw)
+			pipeline, err := getPipeline(ctx, or.client.genqlient, qualifiedSlug)
+			if err != nil {
+				resp.Diagnostics.AddError(
+					"Unable to resolve pipeline slug",
+					fmt.Sprintf("Failed to resolve %s %q: %s", ref.valueKey, raw, err.Error()),
+				)
+				return
+			}
+			if pipeline.Pipeline.Id == "" {
+				resp.Diagnostics.AddError(
+					"Unable to resolve pipeline slug",
+					fmt.Sprintf("Pipeline not found for %s %q", ref.valueKey, raw),
+				)
+				return
+			}
+			uuid = pipeline.Pipeline.PipelineUuid
+		}
+
+		resp.Diagnostics.Append(resp.Plan.SetAttribute(ctx, ref.planAttr, types.StringValue(uuid))...)
+	}
 }
 
 func (or *organizationRuleResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
@@ -329,7 +386,7 @@ func (or *organizationRuleResource) Update(ctx context.Context, req resource.Upd
 				*org,
 				state.ID.ValueString(),
 				plan.Description.ValueStringPointer(),
-				*plan.Value.ValueStringPointer(),
+				plan.Value.ValueString(),
 			)
 		}
 
@@ -353,17 +410,8 @@ func (or *organizationRuleResource) Update(ctx context.Context, req resource.Upd
 		return
 	}
 
-	// Obtain the sorted value JSON from the API response (document field in RuleCreatePayload's rule)
-	value, err := obtainValueJSON(r.RuleUpdate.Rule.Document)
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Unable to update organization rule",
-			fmt.Sprintf("Unable to update organmization rule: %s", err.Error()),
-		)
-		return
-	}
-
-	updateOrganizationRuleUpdateState(&state, *r, *sourceUUID, *targetUUID, *value)
+	// Store the user's configured value (slug or UUID format) — see Create for rationale.
+	updateOrganizationRuleUpdateState(&state, *r, *sourceUUID, *targetUUID, plan.Value.ValueString())
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
@@ -504,6 +552,57 @@ func obtainReadUUIDs(nr getNodeNodeRule) (string, string) {
 	return sourceUUID, targetUUID
 }
 
+// ruleConditionsMatch returns true if both JSON value strings contain the same conditions set.
+// Order-insensitive to handle any API reordering. Used by Read to detect conditions drift.
+func ruleConditionsMatch(stateValueJSON, apiValueJSON string) bool {
+	var stateMap, apiMap map[string]interface{}
+	if err := json.Unmarshal([]byte(stateValueJSON), &stateMap); err != nil {
+		return false
+	}
+	if err := json.Unmarshal([]byte(apiValueJSON), &apiMap); err != nil {
+		return false
+	}
+
+	stateConditions := extractRuleConditions(stateMap)
+	apiConditions := extractRuleConditions(apiMap)
+
+	if len(stateConditions) != len(apiConditions) {
+		return false
+	}
+
+	seen := make(map[string]int, len(stateConditions))
+	for _, c := range stateConditions {
+		seen[c]++
+	}
+	for _, c := range apiConditions {
+		seen[c]--
+		if seen[c] < 0 {
+			return false
+		}
+	}
+	return true
+}
+
+func extractRuleConditions(m map[string]interface{}) []string {
+	raw, ok := m["conditions"]
+	if !ok || raw == nil {
+		return nil
+	}
+	slice, ok := raw.([]interface{})
+	if !ok {
+		return nil
+	}
+	result := make([]string, 0, len(slice))
+	for _, v := range slice {
+		b, err := json.Marshal(v)
+		if err != nil {
+			return nil
+		}
+		result = append(result, string(b))
+	}
+	return result
+}
+
 func obtainValueJSON(document string) (*string, error) {
 	var rd ruleDocument
 	valueMap := make(map[string]interface{})
@@ -531,7 +630,7 @@ func obtainValueJSON(document string) (*string, error) {
 	return &value, nil
 }
 
-func updateOrganizatonRuleCreateState(or *organizationRuleResourceModel, ruleCreate createOrganizationRuleResponse, sourceUUID, targetUUID, value string) {
+func updateOrganizationRuleCreateState(or *organizationRuleResourceModel, ruleCreate createOrganizationRuleResponse, sourceUUID, targetUUID, value string) {
 	or.ID = types.StringValue(ruleCreate.RuleCreate.Rule.Id)
 	or.UUID = types.StringValue(ruleCreate.RuleCreate.Rule.Uuid)
 	or.Description = types.StringPointerValue(ruleCreate.RuleCreate.Rule.Description)
@@ -552,7 +651,7 @@ func updateOrganizationRuleUpdateState(or *organizationRuleResourceModel, ruleUp
 	or.TargetUUID = types.StringValue(targetUUID)
 }
 
-func updateOrganizatonRuleReadState(or *organizationRuleResourceModel, orn getNodeNodeRule, value string) {
+func updateOrganizationRuleReadState(or *organizationRuleResourceModel, orn getNodeNodeRule, value string) {
 	sourceUUID, targetUUID := obtainReadUUIDs(orn)
 
 	or.ID = types.StringValue(orn.Id)
