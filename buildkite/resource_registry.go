@@ -781,7 +781,7 @@ func (p *registryResource) Delete(ctx context.Context, req resource.DeleteReques
 		// We need to find the registry by name to get its slug first
 		readTimeout, _ := p.client.timeouts.Read(ctx, DefaultTimeout)
 
-		_ = retry.RetryContext(ctx, readTimeout, func() *retry.RetryError {
+		err := retry.RetryContext(ctx, readTimeout, func() *retry.RetryError {
 			url := fmt.Sprintf("%s/v2/packages/organizations/%s/registries", p.client.restURL, p.client.organization)
 
 			req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
@@ -830,6 +830,13 @@ func (p *registryResource) Delete(ctx context.Context, req resource.DeleteReques
 			// If we didn't find the registry, it might already be deleted
 			return nil
 		})
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Error looking up registry for deletion",
+				fmt.Sprintf("Could not look up registry by name: %s", err),
+			)
+			return
+		}
 	}
 
 	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
