@@ -206,14 +206,14 @@ func (p *registryResource) Create(ctx context.Context, req resource.CreateReques
 		// Execute the HTTP request
 		resp, err := p.client.http.Do(req)
 		if err != nil {
-			return retry.RetryableError(fmt.Errorf("error making HTTP request: %w", err))
+			return retry.NonRetryableError(fmt.Errorf("error making HTTP request: %w", err))
 		}
 		defer resp.Body.Close()
 
 		// Check for successful response
 		if resp.StatusCode >= 400 {
 			bodyBytes, _ := io.ReadAll(resp.Body)
-			return retry.RetryableError(fmt.Errorf("error creating registry (status %d): %s", resp.StatusCode, string(bodyBytes)))
+			return retry.NonRetryableError(fmt.Errorf("error creating registry (status %d): %s", resp.StatusCode, string(bodyBytes)))
 		}
 
 		// Parse the response
@@ -316,13 +316,13 @@ func (p *registryResource) Read(ctx context.Context, req resource.ReadRequest, r
 
 			resp, err := p.client.http.Do(req)
 			if err != nil {
-				return retry.RetryableError(fmt.Errorf("error making HTTP request: %w", err))
+				return retry.NonRetryableError(fmt.Errorf("error making HTTP request: %w", err))
 			}
 			defer resp.Body.Close()
 
 			if resp.StatusCode >= 400 {
 				bodyBytes, _ := io.ReadAll(resp.Body)
-				return retry.RetryableError(fmt.Errorf("error listing registries (status %d): %s", resp.StatusCode, string(bodyBytes)))
+				return retry.NonRetryableError(fmt.Errorf("error listing registries (status %d): %s", resp.StatusCode, string(bodyBytes)))
 			}
 
 			// Read and parse all registries
@@ -415,7 +415,7 @@ func (p *registryResource) Read(ctx context.Context, req resource.ReadRequest, r
 
 		resp, err := p.client.http.Do(req)
 		if err != nil {
-			return retry.RetryableError(fmt.Errorf("error making HTTP request: %w", err))
+			return retry.NonRetryableError(fmt.Errorf("error making HTTP request: %w", err))
 		}
 		defer resp.Body.Close()
 
@@ -426,7 +426,7 @@ func (p *registryResource) Read(ctx context.Context, req resource.ReadRequest, r
 
 		if resp.StatusCode >= 400 {
 			bodyBytes, _ := io.ReadAll(resp.Body)
-			return retry.RetryableError(fmt.Errorf("error reading registry (status %d): %s", resp.StatusCode, string(bodyBytes)))
+			return retry.NonRetryableError(fmt.Errorf("error reading registry (status %d): %s", resp.StatusCode, string(bodyBytes)))
 		}
 
 		// Read the entire response body to check if it's an array or a single object
@@ -610,13 +610,13 @@ func (p *registryResource) Update(ctx context.Context, req resource.UpdateReques
 
 			resp, err := p.client.http.Do(req)
 			if err != nil {
-				return retry.RetryableError(fmt.Errorf("error making HTTP request: %w", err))
+				return retry.NonRetryableError(fmt.Errorf("error making HTTP request: %w", err))
 			}
 			defer resp.Body.Close()
 
 			if resp.StatusCode >= 400 {
 				bodyBytes, _ := io.ReadAll(resp.Body)
-				return retry.RetryableError(fmt.Errorf("error listing registries (status %d): %s", resp.StatusCode, string(bodyBytes)))
+				return retry.NonRetryableError(fmt.Errorf("error listing registries (status %d): %s", resp.StatusCode, string(bodyBytes)))
 			}
 
 			bodyBytes, err := io.ReadAll(resp.Body)
@@ -702,7 +702,7 @@ func (p *registryResource) Update(ctx context.Context, req resource.UpdateReques
 
 		resp, err := p.client.http.Do(req)
 		if err != nil {
-			return retry.RetryableError(fmt.Errorf("error making HTTP request: %w", err))
+			return retry.NonRetryableError(fmt.Errorf("error making HTTP request: %w", err))
 		}
 		defer resp.Body.Close()
 
@@ -710,7 +710,7 @@ func (p *registryResource) Update(ctx context.Context, req resource.UpdateReques
 			return retry.NonRetryableError(fmt.Errorf("registry %s not found, it may have been deleted outside of Terraform", lookupID))
 		} else if resp.StatusCode >= 400 {
 			bodyBytes, _ := io.ReadAll(resp.Body)
-			return retry.RetryableError(fmt.Errorf("error updating registry (status %d): %s", resp.StatusCode, string(bodyBytes)))
+			return retry.NonRetryableError(fmt.Errorf("error updating registry (status %d): %s", resp.StatusCode, string(bodyBytes)))
 		}
 
 		var result struct {
@@ -838,13 +838,13 @@ func (p *registryResource) Delete(ctx context.Context, req resource.DeleteReques
 
 			resp, err := p.client.http.Do(req)
 			if err != nil {
-				return retry.RetryableError(fmt.Errorf("error making HTTP request: %w", err))
+				return retry.NonRetryableError(fmt.Errorf("error making HTTP request: %w", err))
 			}
 			defer resp.Body.Close()
 
 			if resp.StatusCode >= 400 {
 				bodyBytes, _ := io.ReadAll(resp.Body)
-				return retry.RetryableError(fmt.Errorf("error listing registries (status %d): %s", resp.StatusCode, string(bodyBytes)))
+				return retry.NonRetryableError(fmt.Errorf("error listing registries (status %d): %s", resp.StatusCode, string(bodyBytes)))
 			}
 
 			bodyBytes, err := io.ReadAll(resp.Body)
@@ -902,7 +902,7 @@ func (p *registryResource) Delete(ctx context.Context, req resource.DeleteReques
 		// Execute the HTTP request
 		resp, err := p.client.http.Do(req)
 		if err != nil {
-			return retry.RetryableError(fmt.Errorf("error making HTTP request: %w", err))
+			return retry.NonRetryableError(fmt.Errorf("error making HTTP request: %w", err))
 		}
 		defer resp.Body.Close()
 
@@ -914,7 +914,7 @@ func (p *registryResource) Delete(ctx context.Context, req resource.DeleteReques
 		// Check for successful response
 		if resp.StatusCode >= 400 {
 			bodyBytes, _ := io.ReadAll(resp.Body)
-			return retry.RetryableError(fmt.Errorf("error deleting registry (status %d): %s", resp.StatusCode, string(bodyBytes)))
+			return retry.NonRetryableError(fmt.Errorf("error deleting registry (status %d): %s", resp.StatusCode, string(bodyBytes)))
 		}
 
 		return nil

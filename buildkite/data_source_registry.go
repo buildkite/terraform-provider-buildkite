@@ -157,7 +157,7 @@ func (d *registryDatasource) Read(ctx context.Context, req datasource.ReadReques
 
 		httpResp, err := d.client.http.Do(req)
 		if err != nil {
-			return retry.RetryableError(fmt.Errorf("error making HTTP request to %s: %w", url, err))
+			return retry.NonRetryableError(fmt.Errorf("error making HTTP request to %s: %w", url, err))
 		}
 		defer httpResp.Body.Close()
 
@@ -170,7 +170,7 @@ func (d *registryDatasource) Read(ctx context.Context, req datasource.ReadReques
 
 		if httpResp.StatusCode >= 400 {
 			bodyBytes, _ := io.ReadAll(httpResp.Body)
-			return retry.RetryableError(fmt.Errorf("error fetching registry (status %d from %s): %s", httpResp.StatusCode, url, string(bodyBytes)))
+			return retry.NonRetryableError(fmt.Errorf("error fetching registry (status %d from %s): %s", httpResp.StatusCode, url, string(bodyBytes)))
 		}
 
 		var result struct {
