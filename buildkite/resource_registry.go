@@ -707,50 +707,7 @@ func (p *registryResource) Update(ctx context.Context, req resource.UpdateReques
 		defer resp.Body.Close()
 
 		if resp.StatusCode == http.StatusNotFound {
-			// If registry not found during update, check if it exists at all by reading
-			readURL := fmt.Sprintf("%s/v2/packages/organizations/%s/registries", p.client.restURL, p.client.organization)
-			readReq, err := http.NewRequestWithContext(ctx, http.MethodGet, readURL, nil)
-			if err != nil {
-				return retry.NonRetryableError(fmt.Errorf("error creating HTTP request: %w", err))
-			}
-
-			readReq.Header.Set("Accept", "application/json")
-			readResp, err := p.client.http.Do(readReq)
-			if err != nil {
-				return retry.RetryableError(fmt.Errorf("error making HTTP request: %w", err))
-			}
-			defer readResp.Body.Close()
-
-			// If we can read the registries, try to recreate instead of update
-			if readResp.StatusCode < 400 {
-				// Try to create the registry anew since the UUID doesn't seem to exist
-				createURL := fmt.Sprintf("%s/v2/packages/organizations/%s/registries", p.client.restURL, p.client.organization)
-				createReq, err := http.NewRequestWithContext(ctx, http.MethodPost, createURL, bytes.NewBuffer(jsonBody))
-				if err != nil {
-					return retry.NonRetryableError(fmt.Errorf("error creating HTTP request: %w", err))
-				}
-
-				createReq.Header.Set("Content-Type", "application/json")
-				createReq.Header.Set("Accept", "application/json")
-
-				createResp, err := p.client.http.Do(createReq)
-				if err != nil {
-					return retry.RetryableError(fmt.Errorf("error making HTTP request: %w", err))
-				}
-				defer createResp.Body.Close()
-
-				if createResp.StatusCode >= 400 {
-					bodyBytes, _ := io.ReadAll(createResp.Body)
-					return retry.RetryableError(fmt.Errorf("error recreating registry (status %d): %s", createResp.StatusCode, string(bodyBytes)))
-				}
-
-				// Continue with the response processing using the create response
-				resp = createResp
-			} else {
-				// Something else is wrong with the API
-				bodyBytes, _ := io.ReadAll(readResp.Body)
-				return retry.RetryableError(fmt.Errorf("error listing registries (status %d): %s", readResp.StatusCode, string(bodyBytes)))
-			}
+			return retry.NonRetryableError(fmt.Errorf("registry %s not found, it may have been deleted outside of Terraform", lookupID))
 		} else if resp.StatusCode >= 400 {
 			bodyBytes, _ := io.ReadAll(resp.Body)
 			return retry.RetryableError(fmt.Errorf("error updating registry (status %d): %s", resp.StatusCode, string(bodyBytes)))
