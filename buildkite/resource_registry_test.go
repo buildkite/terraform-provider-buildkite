@@ -25,6 +25,20 @@ func TestAccResourceRegistry(t *testing.T) {
 		}`, name, ecosystem, emoji)
 	}
 
+	configWithAllFields := func(name, ecosystem, description, emoji, color string) string {
+		return fmt.Sprintf(`
+		provider "buildkite" {}
+
+		resource "buildkite_registry" "test" {
+			name        = "%s"
+			ecosystem   = "%s"
+			description = "%s"
+			emoji       = "%s"
+			color       = "%s"
+			team_ids    = ["31529c8a-7cfa-42e8-bb85-4c844a983ea0"]
+		}`, name, ecosystem, description, emoji, color)
+	}
+
 	t.Run("create and destroy", func(t *testing.T) {
 		randName := acctest.RandString(5)
 		ecosystem := "java"
@@ -42,6 +56,32 @@ func TestAccResourceRegistry(t *testing.T) {
 						resource.TestCheckResourceAttrSet("buildkite_registry.test", "id"),
 						resource.TestCheckResourceAttrSet("buildkite_registry.test", "uuid"),
 						resource.TestCheckResourceAttrSet("buildkite_registry.test", "slug"),
+						resource.TestCheckResourceAttr("buildkite_registry.test", "public", "false"),
+						resource.TestCheckResourceAttrSet("buildkite_registry.test", "registry_type"),
+					),
+				},
+			},
+		})
+	})
+
+	t.Run("create with all fields", func(t *testing.T) {
+		randName := acctest.RandString(5)
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			CheckDestroy:             testAccCheckRegistryDestroy,
+			Steps: []resource.TestStep{
+				{
+					Config: configWithAllFields(randName, "python", "Test registry description", ":snake:", "#3776AB"),
+					Check: resource.ComposeAggregateTestCheckFunc(
+						resource.TestCheckResourceAttr("buildkite_registry.test", "name", randName),
+						resource.TestCheckResourceAttr("buildkite_registry.test", "ecosystem", "python"),
+						resource.TestCheckResourceAttr("buildkite_registry.test", "description", "Test registry description"),
+						resource.TestCheckResourceAttr("buildkite_registry.test", "emoji", ":snake:"),
+						resource.TestCheckResourceAttr("buildkite_registry.test", "color", "#3776AB"),
+						resource.TestCheckResourceAttr("buildkite_registry.test", "public", "false"),
+						resource.TestCheckResourceAttrSet("buildkite_registry.test", "registry_type"),
 					),
 				},
 			},
@@ -69,6 +109,65 @@ func TestAccResourceRegistry(t *testing.T) {
 					Check: resource.ComposeAggregateTestCheckFunc(
 						resource.TestCheckResourceAttr("buildkite_registry.test", "name", randName),
 						resource.TestCheckResourceAttr("buildkite_registry.test", "emoji", ":buildkite:"),
+					),
+				},
+			},
+		})
+	})
+
+	t.Run("update description and color", func(t *testing.T) {
+		randName := acctest.RandString(5)
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			CheckDestroy:             testAccCheckRegistryDestroy,
+			Steps: []resource.TestStep{
+				{
+					Config: configWithAllFields(randName, "java", "Initial description", ":package:", "#FF0000"),
+					Check: resource.ComposeAggregateTestCheckFunc(
+						resource.TestCheckResourceAttr("buildkite_registry.test", "description", "Initial description"),
+						resource.TestCheckResourceAttr("buildkite_registry.test", "color", "#FF0000"),
+					),
+				},
+				{
+					Config: configWithAllFields(randName, "java", "Updated description", ":package:", "#00FF00"),
+					Check: resource.ComposeAggregateTestCheckFunc(
+						resource.TestCheckResourceAttr("buildkite_registry.test", "description", "Updated description"),
+						resource.TestCheckResourceAttr("buildkite_registry.test", "color", "#00FF00"),
+					),
+				},
+			},
+		})
+	})
+
+	t.Run("create with oidc policy", func(t *testing.T) {
+		randName := acctest.RandString(5)
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			CheckDestroy:             testAccCheckRegistryDestroy,
+			Steps: []resource.TestStep{
+				{
+					Config: fmt.Sprintf(`
+					provider "buildkite" {}
+
+					resource "buildkite_registry" "test" {
+						name      = "%s"
+						ecosystem = "java"
+						oidc_policy = <<-YAML
+						- iss: https://agent.buildkite.com
+						  scopes:
+						    - read_packages
+						  claims:
+						    organization_slug: %s
+						YAML
+						team_ids = ["31529c8a-7cfa-42e8-bb85-4c844a983ea0"]
+					}`, randName, os.Getenv("BUILDKITE_ORGANIZATION_SLUG")),
+					Check: resource.ComposeAggregateTestCheckFunc(
+						resource.TestCheckResourceAttr("buildkite_registry.test", "name", randName),
+						resource.TestCheckResourceAttrSet("buildkite_registry.test", "oidc_policy"),
 					),
 				},
 			},

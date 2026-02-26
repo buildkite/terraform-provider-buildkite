@@ -44,6 +44,8 @@ func TestAccDataSourceRegistry_Basic(t *testing.T) {
 					// Check attributes now available via REST API
 					resource.TestCheckResourceAttrPair(dataSourceName, "ecosystem", resourceName, "ecosystem"),
 					resource.TestCheckResourceAttrPair(dataSourceName, "oidc_policy", resourceName, "oidc_policy"),
+					resource.TestCheckResourceAttrPair(dataSourceName, "public", resourceName, "public"),
+					resource.TestCheckResourceAttrPair(dataSourceName, "registry_type", resourceName, "registry_type"),
 				),
 			},
 		},
