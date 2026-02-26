@@ -991,9 +991,15 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 		Tags:                                 getTagsFromSchema(&plan),
 	}
 
-	if !plan.Visibility.IsNull() {
-		visibility := PipelineVisibility(plan.Visibility.ValueString())
-		input.Visibility = visibility
+	// Only send visibility if it has changed from the current state
+	// This prevents unnecessary permission errors for non-admin users
+	if !plan.Visibility.Equal(state.Visibility) {
+		if !plan.Visibility.IsNull() {
+			visibility := PipelineVisibility(plan.Visibility.ValueString())
+			input.Visibility = visibility
+		}
+		// If plan.Visibility.IsNull() but state had a value, we omit it
+		// This keeps the current API value rather than forcing a change
 	}
 
 	timeouts, diags := p.client.timeouts.Update(ctx, DefaultTimeout)
