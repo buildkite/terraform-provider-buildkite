@@ -14,6 +14,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	resource_schema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -25,16 +26,18 @@ type registryResource struct {
 }
 
 type registryResourceModel struct {
-	ID          types.String `tfsdk:"id"`
-	UUID        types.String `tfsdk:"uuid"`
-	Name        types.String `tfsdk:"name"`
-	Ecosystem   types.String `tfsdk:"ecosystem"`
-	Description types.String `tfsdk:"description"`
-	Emoji       types.String `tfsdk:"emoji"`
-	Color       types.String `tfsdk:"color"`
-	OIDCPolicy  types.String `tfsdk:"oidc_policy"`
-	Slug        types.String `tfsdk:"slug"`
-	TeamIDs     types.List   `tfsdk:"team_ids"`
+	ID           types.String `tfsdk:"id"`
+	UUID         types.String `tfsdk:"uuid"`
+	Name         types.String `tfsdk:"name"`
+	Ecosystem    types.String `tfsdk:"ecosystem"`
+	Description  types.String `tfsdk:"description"`
+	Emoji        types.String `tfsdk:"emoji"`
+	Color        types.String `tfsdk:"color"`
+	OIDCPolicy   types.String `tfsdk:"oidc_policy"`
+	Public       types.Bool   `tfsdk:"public"`
+	RegistryType types.String `tfsdk:"registry_type"`
+	Slug         types.String `tfsdk:"slug"`
+	TeamIDs      types.List   `tfsdk:"team_ids"`
 }
 
 func newRegistryResource() resource.Resource {
@@ -111,6 +114,20 @@ func (p *registryResource) Schema(ctx context.Context, req resource.SchemaReques
 			"oidc_policy": resource_schema.StringAttribute{
 				Optional:            true,
 				MarkdownDescription: "The registry's OIDC policy.",
+			},
+			"public": resource_schema.BoolAttribute{
+				Computed:            true,
+				MarkdownDescription: "Whether the registry is publicly accessible.",
+				PlanModifiers: []planmodifier.Bool{
+					boolplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"registry_type": resource_schema.StringAttribute{
+				Computed:            true,
+				MarkdownDescription: "The type of the registry (e.g. `source`).",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"team_ids": resource_schema.ListAttribute{
 				Optional:            true,
@@ -201,16 +218,18 @@ func (p *registryResource) Create(ctx context.Context, req resource.CreateReques
 
 		// Parse the response
 		var result struct {
-			GraphqlID   string   `json:"graphql_id"`
-			ID          string   `json:"id"`
-			Slug        string   `json:"slug"`
-			Name        string   `json:"name"`
-			Ecosystem   string   `json:"ecosystem"`
-			Description string   `json:"description"`
-			Emoji       string   `json:"emoji"`
-			Color       string   `json:"color"`
-			OIDCPolicy  string   `json:"oidc_policy"`
-			TeamIDs     []string `json:"team_ids"`
+			GraphqlID    string   `json:"graphql_id"`
+			ID           string   `json:"id"`
+			Slug         string   `json:"slug"`
+			Name         string   `json:"name"`
+			Ecosystem    string   `json:"ecosystem"`
+			Description  string   `json:"description"`
+			Emoji        string   `json:"emoji"`
+			Color        string   `json:"color"`
+			OIDCPolicy   string   `json:"oidc_policy"`
+			Public       bool     `json:"public"`
+			RegistryType string   `json:"type"`
+			TeamIDs      []string `json:"team_ids"`
 		}
 
 		if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
@@ -241,6 +260,9 @@ func (p *registryResource) Create(ctx context.Context, req resource.CreateReques
 		if result.OIDCPolicy != "" {
 			state.OIDCPolicy = types.StringValue(result.OIDCPolicy)
 		}
+
+		state.Public = types.BoolValue(result.Public)
+		state.RegistryType = types.StringValue(result.RegistryType)
 
 		// Handle the team_ids response using the helper function
 		state.TeamIDs = handleTeamIDs(result.TeamIDs, state.TeamIDs)
@@ -310,16 +332,18 @@ func (p *registryResource) Read(ctx context.Context, req resource.ReadRequest, r
 			}
 
 			var registries []struct {
-				GraphqlID   string   `json:"graphql_id"`
-				ID          string   `json:"id"`
-				Slug        string   `json:"slug"`
-				Name        string   `json:"name"`
-				Ecosystem   string   `json:"ecosystem"`
-				Description string   `json:"description,omitempty"`
-				Emoji       string   `json:"emoji,omitempty"`
-				Color       string   `json:"color,omitempty"`
-				OIDCPolicy  string   `json:"oidc_policy,omitempty"`
-				TeamIDs     []string `json:"team_ids,omitempty"`
+				GraphqlID    string   `json:"graphql_id"`
+				ID           string   `json:"id"`
+				Slug         string   `json:"slug"`
+				Name         string   `json:"name"`
+				Ecosystem    string   `json:"ecosystem"`
+				Description  string   `json:"description,omitempty"`
+				Emoji        string   `json:"emoji,omitempty"`
+				Color        string   `json:"color,omitempty"`
+				OIDCPolicy   string   `json:"oidc_policy,omitempty"`
+				Public       bool     `json:"public"`
+				RegistryType string   `json:"type"`
+				TeamIDs      []string `json:"team_ids,omitempty"`
 			}
 
 			if err := json.Unmarshal(bodyBytes, &registries); err != nil {
@@ -330,7 +354,6 @@ func (p *registryResource) Read(ctx context.Context, req resource.ReadRequest, r
 			found := false
 			for _, registry := range registries {
 				if registry.Name == state.Name.ValueString() {
-					// Found a match, update state with complete information including UUID
 					state.ID = types.StringValue(registry.GraphqlID)
 					state.UUID = types.StringValue(registry.ID)
 					state.Slug = types.StringValue(registry.Slug)
@@ -360,6 +383,9 @@ func (p *registryResource) Read(ctx context.Context, req resource.ReadRequest, r
 					} else {
 						state.OIDCPolicy = types.StringNull()
 					}
+
+					state.Public = types.BoolValue(registry.Public)
+					state.RegistryType = types.StringValue(registry.RegistryType)
 
 					// Handle the team_ids response
 					state.TeamIDs = handleTeamIDs(registry.TeamIDs, state.TeamIDs)
@@ -409,34 +435,37 @@ func (p *registryResource) Read(ctx context.Context, req resource.ReadRequest, r
 			return retry.NonRetryableError(fmt.Errorf("error reading response body: %w", err))
 		}
 
-		// Define the struct for a single registry
 		var result struct {
-			GraphQLID   string   `json:"graphql_id"`
-			ID          string   `json:"id"`
-			Name        string   `json:"name"`
-			Slug        string   `json:"slug"`
-			Ecosystem   string   `json:"ecosystem"`
-			Description string   `json:"description,omitempty"`
-			Emoji       string   `json:"emoji,omitempty"`
-			Color       string   `json:"color,omitempty"`
-			OIDCPolicy  string   `json:"oidc_policy,omitempty"`
-			TeamIDs     []string `json:"team_ids,omitempty"`
+			GraphQLID    string   `json:"graphql_id"`
+			ID           string   `json:"id"`
+			Name         string   `json:"name"`
+			Slug         string   `json:"slug"`
+			Ecosystem    string   `json:"ecosystem"`
+			Description  string   `json:"description,omitempty"`
+			Emoji        string   `json:"emoji,omitempty"`
+			Color        string   `json:"color,omitempty"`
+			OIDCPolicy   string   `json:"oidc_policy,omitempty"`
+			Public       bool     `json:"public"`
+			RegistryType string   `json:"type"`
+			TeamIDs      []string `json:"team_ids,omitempty"`
 		}
 
 		// Try to detect if response is an array and handle appropriately
 		if len(bodyBytes) > 0 && bodyBytes[0] == '[' {
 			// It's an array, so we need to decode as array and find the right registry
 			var registries []struct {
-				GraphQLID   string   `json:"graphql_id"`
-				ID          string   `json:"id"`
-				Name        string   `json:"name"`
-				Slug        string   `json:"slug"`
-				Ecosystem   string   `json:"ecosystem"`
-				Description string   `json:"description,omitempty"`
-				Emoji       string   `json:"emoji,omitempty"`
-				Color       string   `json:"color,omitempty"`
-				OIDCPolicy  string   `json:"oidc_policy,omitempty"`
-				TeamIDs     []string `json:"team_ids,omitempty"`
+				GraphQLID    string   `json:"graphql_id"`
+				ID           string   `json:"id"`
+				Name         string   `json:"name"`
+				Slug         string   `json:"slug"`
+				Ecosystem    string   `json:"ecosystem"`
+				Description  string   `json:"description,omitempty"`
+				Emoji        string   `json:"emoji,omitempty"`
+				Color        string   `json:"color,omitempty"`
+				OIDCPolicy   string   `json:"oidc_policy,omitempty"`
+				Public       bool     `json:"public"`
+				RegistryType string   `json:"type"`
+				TeamIDs      []string `json:"team_ids,omitempty"`
 			}
 
 			if err := json.Unmarshal(bodyBytes, &registries); err != nil {
@@ -494,6 +523,9 @@ func (p *registryResource) Read(ctx context.Context, req resource.ReadRequest, r
 		} else {
 			state.OIDCPolicy = types.StringNull()
 		}
+
+		state.Public = types.BoolValue(result.Public)
+		state.RegistryType = types.StringValue(result.RegistryType)
 
 		// Handle the team_ids response using the helper function
 		state.TeamIDs = handleTeamIDs(result.TeamIDs, state.TeamIDs)
@@ -749,23 +781,24 @@ func (p *registryResource) Update(ctx context.Context, req resource.UpdateReques
 		}
 
 		var result struct {
-			GraphQLID   string   `json:"graphql_id"`
-			ID          string   `json:"id"`
-			Name        string   `json:"name"`
-			Slug        string   `json:"slug"`
-			Ecosystem   string   `json:"ecosystem"`
-			Description string   `json:"description,omitempty"`
-			Emoji       string   `json:"emoji,omitempty"`
-			Color       string   `json:"color,omitempty"`
-			OIDCPolicy  string   `json:"oidc_policy,omitempty"`
-			TeamIDs     []string `json:"team_ids,omitempty"`
+			GraphQLID    string   `json:"graphql_id"`
+			ID           string   `json:"id"`
+			Name         string   `json:"name"`
+			Slug         string   `json:"slug"`
+			Ecosystem    string   `json:"ecosystem"`
+			Description  string   `json:"description,omitempty"`
+			Emoji        string   `json:"emoji,omitempty"`
+			Color        string   `json:"color,omitempty"`
+			OIDCPolicy   string   `json:"oidc_policy,omitempty"`
+			Public       bool     `json:"public"`
+			RegistryType string   `json:"type"`
+			TeamIDs      []string `json:"team_ids,omitempty"`
 		}
 
 		if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 			return retry.NonRetryableError(fmt.Errorf("error decoding response body: %w", err))
 		}
 
-		// Use GraphQL ID for the Terraform resource ID, UUID is for API lookups
 		plan.ID = types.StringValue(result.GraphQLID)
 		plan.UUID = types.StringValue(result.ID)
 		plan.Slug = types.StringValue(result.Slug)
@@ -795,6 +828,9 @@ func (p *registryResource) Update(ctx context.Context, req resource.UpdateReques
 		} else {
 			plan.OIDCPolicy = types.StringNull()
 		}
+
+		plan.Public = types.BoolValue(result.Public)
+		plan.RegistryType = types.StringValue(result.RegistryType)
 
 		// Handle team_ids in the response using the helper function
 		plan.TeamIDs = handleTeamIDs(result.TeamIDs, plan.TeamIDs)

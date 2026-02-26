@@ -31,16 +31,18 @@ type registryDatasource struct {
 }
 
 type registryDatasourceModel struct {
-	ID          types.String `tfsdk:"id"`          // GraphQL ID
-	UUID        types.String `tfsdk:"uuid"`        // UUID
-	Name        types.String `tfsdk:"name"`        // Name
-	Slug        types.String `tfsdk:"slug"`        // Slug (used for lookup)
-	Ecosystem   types.String `tfsdk:"ecosystem"`   // PackageEcosystem
-	Description types.String `tfsdk:"description"` // Description
-	Emoji       types.String `tfsdk:"emoji"`       // Emoji
-	Color       types.String `tfsdk:"color"`       // Color
-	OIDCPolicy  types.String `tfsdk:"oidc_policy"` // OIDC Policy
-	TeamIDs     types.List   `tfsdk:"team_ids"`    // List of Team GraphQL IDs
+	ID           types.String `tfsdk:"id"`
+	UUID         types.String `tfsdk:"uuid"`
+	Name         types.String `tfsdk:"name"`
+	Slug         types.String `tfsdk:"slug"`
+	Ecosystem    types.String `tfsdk:"ecosystem"`
+	Description  types.String `tfsdk:"description"`
+	Emoji        types.String `tfsdk:"emoji"`
+	Color        types.String `tfsdk:"color"`
+	OIDCPolicy   types.String `tfsdk:"oidc_policy"`
+	Public       types.Bool   `tfsdk:"public"`
+	RegistryType types.String `tfsdk:"registry_type"`
+	TeamIDs      types.List   `tfsdk:"team_ids"`
 }
 
 func (d *registryDatasource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
@@ -98,6 +100,14 @@ func (d *registryDatasource) Schema(ctx context.Context, req datasource.SchemaRe
 			"oidc_policy": schema.StringAttribute{
 				Computed:            true,
 				MarkdownDescription: "The registry's OIDC policy.",
+			},
+			"public": schema.BoolAttribute{
+				Computed:            true,
+				MarkdownDescription: "Whether the registry is publicly accessible.",
+			},
+			"registry_type": schema.StringAttribute{
+				Computed:            true,
+				MarkdownDescription: "The type of the registry (e.g. `source`).",
 			},
 			"team_ids": schema.ListAttribute{
 				Computed:            true,
@@ -164,16 +174,18 @@ func (d *registryDatasource) Read(ctx context.Context, req datasource.ReadReques
 		}
 
 		var result struct {
-			GraphqlID   string   `json:"graphql_id"`
-			ID          string   `json:"id"` // This is the UUID
-			Slug        string   `json:"slug"`
-			Name        string   `json:"name"`
-			Ecosystem   string   `json:"ecosystem"`
-			Description string   `json:"description"`
-			Emoji       string   `json:"emoji"`
-			Color       string   `json:"color"`
-			OIDCPolicy  string   `json:"oidc_policy"`
-			TeamIDs     []string `json:"team_ids"`
+			GraphqlID    string   `json:"graphql_id"`
+			ID           string   `json:"id"`
+			Slug         string   `json:"slug"`
+			Name         string   `json:"name"`
+			Ecosystem    string   `json:"ecosystem"`
+			Description  string   `json:"description"`
+			Emoji        string   `json:"emoji"`
+			Color        string   `json:"color"`
+			OIDCPolicy   string   `json:"oidc_policy"`
+			Public       bool     `json:"public"`
+			RegistryType string   `json:"type"`
+			TeamIDs      []string `json:"team_ids"`
 		}
 
 		if err := json.NewDecoder(httpResp.Body).Decode(&result); err != nil {
@@ -206,6 +218,9 @@ func (d *registryDatasource) Read(ctx context.Context, req datasource.ReadReques
 		if result.OIDCPolicy != "" || !state.OIDCPolicy.IsNull() {
 			state.OIDCPolicy = types.StringValue(result.OIDCPolicy)
 		}
+
+		state.Public = types.BoolValue(result.Public)
+		state.RegistryType = types.StringValue(result.RegistryType)
 
 		// Handle team_ids using logic similar to handleTeamIDs from resource_registry.go
 		if len(result.TeamIDs) > 0 {
