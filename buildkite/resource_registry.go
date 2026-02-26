@@ -687,25 +687,6 @@ func (p *registryResource) Update(ctx context.Context, req resource.UpdateReques
 			reqBody["oidc_policy"] = plan.OIDCPolicy.ValueString()
 		}
 
-		// Handle team_ids in the plan
-		if !plan.TeamIDs.IsNull() && !plan.TeamIDs.IsUnknown() {
-			teamIDs := make([]string, 0)
-			teamIDsElements := plan.TeamIDs.Elements()
-
-			for _, element := range teamIDsElements {
-				if strVal, ok := element.(types.String); ok {
-					teamIDs = append(teamIDs, strVal.ValueString())
-				}
-			}
-
-			if len(teamIDs) > 0 {
-				reqBody["team_ids"] = teamIDs
-			}
-		} else {
-			// If the plan has an empty list, we should pass an empty array to clear the team IDs
-			reqBody["team_ids"] = []string{}
-		}
-
 		jsonBody, err := json.Marshal(reqBody)
 		if err != nil {
 			return retry.NonRetryableError(fmt.Errorf("error marshaling request body: %w", err))
