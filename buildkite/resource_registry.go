@@ -429,12 +429,6 @@ func (p *registryResource) Read(ctx context.Context, req resource.ReadRequest, r
 			return retry.NonRetryableError(fmt.Errorf("error reading registry (status %d): %s", resp.StatusCode, string(bodyBytes)))
 		}
 
-		// Read the entire response body to check if it's an array or a single object
-		bodyBytes, err := io.ReadAll(resp.Body)
-		if err != nil {
-			return retry.NonRetryableError(fmt.Errorf("error reading response body: %w", err))
-		}
-
 		var result struct {
 			GraphQLID    string   `json:"graphql_id"`
 			ID           string   `json:"id"`
@@ -450,47 +444,8 @@ func (p *registryResource) Read(ctx context.Context, req resource.ReadRequest, r
 			TeamIDs      []string `json:"team_ids,omitempty"`
 		}
 
-		// Try to detect if response is an array and handle appropriately
-		if len(bodyBytes) > 0 && bodyBytes[0] == '[' {
-			// It's an array, so we need to decode as array and find the right registry
-			var registries []struct {
-				GraphQLID    string   `json:"graphql_id"`
-				ID           string   `json:"id"`
-				Name         string   `json:"name"`
-				Slug         string   `json:"slug"`
-				Ecosystem    string   `json:"ecosystem"`
-				Description  string   `json:"description,omitempty"`
-				Emoji        string   `json:"emoji,omitempty"`
-				Color        string   `json:"color,omitempty"`
-				OIDCPolicy   string   `json:"oidc_policy,omitempty"`
-				Public       bool     `json:"public"`
-				RegistryType string   `json:"type"`
-				TeamIDs      []string `json:"team_ids,omitempty"`
-			}
-
-			if err := json.Unmarshal(bodyBytes, &registries); err != nil {
-				return retry.NonRetryableError(fmt.Errorf("error decoding response body: %w", err))
-			}
-
-			// Find the registry with the matching UUID
-			found := false
-			for _, registry := range registries {
-				if registry.ID == state.UUID.ValueString() {
-					result = registry
-					found = true
-					break
-				}
-			}
-
-			if !found {
-				registryNotFound = true
-				return nil
-			}
-		} else {
-			// It's a single object (expected format), decode directly
-			if err := json.Unmarshal(bodyBytes, &result); err != nil {
-				return retry.NonRetryableError(fmt.Errorf("error decoding response body: %w", err))
-			}
+		if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+			return retry.NonRetryableError(fmt.Errorf("error decoding response body: %w", err))
 		}
 
 		// Update the state with the found registry data
