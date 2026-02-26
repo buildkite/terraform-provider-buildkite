@@ -33,5 +33,7 @@ See https://buildkite.com/docs/packages for more information.
 - `id` (String) The GraphQL ID of the registry.
 - `name` (String) The name of the registry.
 - `oidc_policy` (String) The registry's OIDC policy.
+- `public` (Boolean) Whether the registry is publicly accessible.
+- `registry_type` (String) The type of the registry (e.g. `source`).
 - `team_ids` (List of String) A list of team GraphQL IDs that have access to this registry.
 - `uuid` (String) The UUID of the registry.

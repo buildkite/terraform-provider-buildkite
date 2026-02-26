@@ -45,5 +45,7 @@ emoji itself, such as 🚀.
 ### Read-Only
 
 - `id` (String) The GraphQL ID of the registry.
+- `public` (Boolean) Whether the registry is publicly accessible.
+- `registry_type` (String) The type of the registry (e.g. `source`).
 - `slug` (String) The slug of the registry.
 - `uuid` (String) The UUID of the registry.
