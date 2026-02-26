@@ -671,8 +671,7 @@ func (p *registryResource) Update(ctx context.Context, req resource.UpdateReques
 		url := fmt.Sprintf("%s/v2/packages/organizations/%s/registries/%s", p.client.restURL, p.client.organization, lookupID)
 
 		reqBody := map[string]interface{}{
-			"name":      plan.Name.ValueString(),
-			"ecosystem": plan.Ecosystem.ValueString(),
+			"name": plan.Name.ValueString(),
 		}
 
 		if !plan.Description.IsNull() && !plan.Description.IsUnknown() {
@@ -686,10 +685,6 @@ func (p *registryResource) Update(ctx context.Context, req resource.UpdateReques
 		}
 		if !plan.OIDCPolicy.IsNull() && !plan.OIDCPolicy.IsUnknown() {
 			reqBody["oidc_policy"] = plan.OIDCPolicy.ValueString()
-		}
-
-		if !plan.Ecosystem.IsNull() && !plan.Ecosystem.IsUnknown() {
-			reqBody["ecosystem"] = plan.Ecosystem.ValueString()
 		}
 
 		// Handle team_ids in the plan
