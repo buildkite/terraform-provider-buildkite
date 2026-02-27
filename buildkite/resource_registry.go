@@ -363,15 +363,23 @@ func (p *registryResource) Update(ctx context.Context, req resource.UpdateReques
 
 		if !plan.Description.IsNull() && !plan.Description.IsUnknown() {
 			reqBody["description"] = plan.Description.ValueString()
+		} else if !state.Description.IsNull() {
+			reqBody["description"] = nil
 		}
 		if !plan.Emoji.IsNull() && !plan.Emoji.IsUnknown() {
 			reqBody["emoji"] = plan.Emoji.ValueString()
+		} else if !state.Emoji.IsNull() {
+			reqBody["emoji"] = nil
 		}
 		if !plan.Color.IsNull() && !plan.Color.IsUnknown() {
 			reqBody["color"] = plan.Color.ValueString()
+		} else if !state.Color.IsNull() {
+			reqBody["color"] = nil
 		}
 		if !plan.OIDCPolicy.IsNull() && !plan.OIDCPolicy.IsUnknown() {
 			reqBody["oidc_policy"] = plan.OIDCPolicy.ValueString()
+		} else if !state.OIDCPolicy.IsNull() {
+			reqBody["oidc_policy"] = nil
 		}
 
 		jsonBody, err := json.Marshal(reqBody)
