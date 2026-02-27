@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	"github.com/MakeNowJust/heredoc"
-	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -199,17 +198,7 @@ func (d *registryDatasource) Read(ctx context.Context, req datasource.ReadReques
 
 		state.Public = types.BoolValue(result.Public)
 		state.RegistryType = types.StringValue(result.RegistryType)
-
-		// Handle team_ids using logic similar to handleTeamIDs from resource_registry.go
-		if len(result.TeamIDs) > 0 {
-			teams := make([]attr.Value, len(result.TeamIDs))
-			for i, id := range result.TeamIDs {
-				teams[i] = types.StringValue(id)
-			}
-			state.TeamIDs = types.ListValueMust(types.StringType, teams)
-		} else {
-			state.TeamIDs = types.ListNull(types.StringType) // If API returns empty, set to null
-		}
+		state.TeamIDs = handleTeamIDs(result.TeamIDs, state.TeamIDs)
 
 		return nil
 	})
