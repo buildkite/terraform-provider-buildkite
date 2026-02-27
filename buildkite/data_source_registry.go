@@ -173,26 +173,12 @@ func (d *registryDatasource) Read(ctx context.Context, req datasource.ReadReques
 			return retry.NonRetryableError(fmt.Errorf("error fetching registry (status %d from %s): %s", httpResp.StatusCode, url, string(bodyBytes)))
 		}
 
-		var result struct {
-			GraphqlID    string   `json:"graphql_id"`
-			ID           string   `json:"id"`
-			Slug         string   `json:"slug"`
-			Name         string   `json:"name"`
-			Ecosystem    string   `json:"ecosystem"`
-			Description  *string  `json:"description"`
-			Emoji        *string  `json:"emoji"`
-			Color        *string  `json:"color"`
-			OIDCPolicy   *string  `json:"oidc_policy"`
-			Public       bool     `json:"public"`
-			RegistryType string   `json:"type"`
-			TeamIDs      []string `json:"team_ids"`
-		}
-
+		var result registryAPIResponse
 		if err := json.NewDecoder(httpResp.Body).Decode(&result); err != nil {
 			return retry.NonRetryableError(fmt.Errorf("error decoding registry response body from %s: %w", url, err))
 		}
 
-		if result.GraphqlID == "" { // Check if essential data is missing
+		if result.GraphQLID == "" {
 			resp.Diagnostics.AddWarning("Registry data incomplete", fmt.Sprintf("Registry found with slug '%s' but essential data (GraphqlID) is missing from response at %s", fullSlug, url))
 			resp.State.RemoveResource(ctx)
 			dataFound = false
@@ -200,7 +186,7 @@ func (d *registryDatasource) Read(ctx context.Context, req datasource.ReadReques
 		}
 
 		dataFound = true
-		state.ID = types.StringValue(result.GraphqlID)
+		state.ID = types.StringValue(result.GraphQLID)
 		state.UUID = types.StringValue(result.ID)
 		state.Name = types.StringValue(result.Name)
 		state.Slug = types.StringValue(result.Slug)

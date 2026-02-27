@@ -217,47 +217,16 @@ func (p *registryResource) Create(ctx context.Context, req resource.CreateReques
 		}
 
 		// Parse the response
-		var result struct {
-			GraphqlID    string   `json:"graphql_id"`
-			ID           string   `json:"id"`
-			Slug         string   `json:"slug"`
-			Name         string   `json:"name"`
-			Ecosystem    string   `json:"ecosystem"`
-			Description  *string  `json:"description"`
-			Emoji        *string  `json:"emoji"`
-			Color        *string  `json:"color"`
-			OIDCPolicy   *string  `json:"oidc_policy"`
-			Public       bool     `json:"public"`
-			RegistryType string   `json:"type"`
-			TeamIDs      []string `json:"team_ids"`
-		}
-
+		var result registryAPIResponse
 		if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 			return retry.NonRetryableError(fmt.Errorf("error decoding response body: %w", err))
 		}
 
-		// Ensure we have ID set in state - this is the UUID we need
 		if result.ID == "" {
 			return retry.NonRetryableError(fmt.Errorf("API response missing required ID field"))
 		}
 
-		// Set the GraphQL ID as the Terraform ID and the API ID as the UUID
-		state.ID = types.StringValue(result.GraphqlID)
-		state.UUID = types.StringValue(result.ID)
-		state.Slug = types.StringValue(result.Slug)
-		state.Name = types.StringValue(result.Name)
-		state.Ecosystem = types.StringValue(result.Ecosystem)
-
-		state.Description = optionalStringValue(result.Description)
-		state.Emoji = optionalStringValue(result.Emoji)
-		state.Color = optionalStringValue(result.Color)
-		state.OIDCPolicy = optionalStringValue(result.OIDCPolicy)
-
-		state.Public = types.BoolValue(result.Public)
-		state.RegistryType = types.StringValue(result.RegistryType)
-
-		// Handle the team_ids response using the helper function
-		state.TeamIDs = handleTeamIDs(result.TeamIDs, state.TeamIDs)
+		mapRegistryResponseToModel(&result, state)
 
 		return nil
 	})
@@ -323,21 +292,7 @@ func (p *registryResource) Read(ctx context.Context, req resource.ReadRequest, r
 				return retry.NonRetryableError(fmt.Errorf("error reading response body: %w", err))
 			}
 
-			var registries []struct {
-				GraphqlID    string   `json:"graphql_id"`
-				ID           string   `json:"id"`
-				Slug         string   `json:"slug"`
-				Name         string   `json:"name"`
-				Ecosystem    string   `json:"ecosystem"`
-				Description  *string  `json:"description"`
-				Emoji        *string  `json:"emoji"`
-				Color        *string  `json:"color"`
-				OIDCPolicy   *string  `json:"oidc_policy"`
-				Public       bool     `json:"public"`
-				RegistryType string   `json:"type"`
-				TeamIDs      []string `json:"team_ids"`
-			}
-
+			var registries []registryAPIResponse
 			if err := json.Unmarshal(bodyBytes, &registries); err != nil {
 				return retry.NonRetryableError(fmt.Errorf("error decoding response body: %w", err))
 			}
@@ -346,23 +301,7 @@ func (p *registryResource) Read(ctx context.Context, req resource.ReadRequest, r
 			found := false
 			for _, registry := range registries {
 				if registry.Name == state.Name.ValueString() {
-					state.ID = types.StringValue(registry.GraphqlID)
-					state.UUID = types.StringValue(registry.ID)
-					state.Slug = types.StringValue(registry.Slug)
-					state.Name = types.StringValue(registry.Name)
-					state.Ecosystem = types.StringValue(registry.Ecosystem)
-
-					state.Description = optionalStringValue(registry.Description)
-					state.Emoji = optionalStringValue(registry.Emoji)
-					state.Color = optionalStringValue(registry.Color)
-					state.OIDCPolicy = optionalStringValue(registry.OIDCPolicy)
-
-					state.Public = types.BoolValue(registry.Public)
-					state.RegistryType = types.StringValue(registry.RegistryType)
-
-					// Handle the team_ids response
-					state.TeamIDs = handleTeamIDs(registry.TeamIDs, state.TeamIDs)
-
+					mapRegistryResponseToModel(&registry, state)
 					found = true
 					break
 				}
@@ -402,42 +341,12 @@ func (p *registryResource) Read(ctx context.Context, req resource.ReadRequest, r
 			return retry.NonRetryableError(fmt.Errorf("error reading registry (status %d): %s", resp.StatusCode, string(bodyBytes)))
 		}
 
-		var result struct {
-			GraphQLID    string   `json:"graphql_id"`
-			ID           string   `json:"id"`
-			Name         string   `json:"name"`
-			Slug         string   `json:"slug"`
-			Ecosystem    string   `json:"ecosystem"`
-			Description  *string  `json:"description"`
-			Emoji        *string  `json:"emoji"`
-			Color        *string  `json:"color"`
-			OIDCPolicy   *string  `json:"oidc_policy"`
-			Public       bool     `json:"public"`
-			RegistryType string   `json:"type"`
-			TeamIDs      []string `json:"team_ids"`
-		}
-
+		var result registryAPIResponse
 		if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 			return retry.NonRetryableError(fmt.Errorf("error decoding response body: %w", err))
 		}
 
-		// Update the state with the found registry data
-		state.ID = types.StringValue(result.GraphQLID)
-		state.UUID = types.StringValue(result.ID)
-		state.Slug = types.StringValue(result.Slug)
-		state.Name = types.StringValue(result.Name)
-		state.Ecosystem = types.StringValue(result.Ecosystem)
-
-		state.Description = optionalStringValue(result.Description)
-		state.Emoji = optionalStringValue(result.Emoji)
-		state.Color = optionalStringValue(result.Color)
-		state.OIDCPolicy = optionalStringValue(result.OIDCPolicy)
-
-		state.Public = types.BoolValue(result.Public)
-		state.RegistryType = types.StringValue(result.RegistryType)
-
-		// Handle the team_ids response using the helper function
-		state.TeamIDs = handleTeamIDs(result.TeamIDs, state.TeamIDs)
+		mapRegistryResponseToModel(&result, state)
 
 		return nil
 	})
@@ -524,14 +433,7 @@ func (p *registryResource) Update(ctx context.Context, req resource.UpdateReques
 				return retry.NonRetryableError(fmt.Errorf("error reading response body: %w", err))
 			}
 
-			var registries []struct {
-				GraphqlID string `json:"graphql_id"`
-				ID        string `json:"id"`
-				Slug      string `json:"slug"`
-				Name      string `json:"name"`
-				Ecosystem string `json:"ecosystem"`
-			}
-
+			var registries []registryAPIResponse
 			if err := json.Unmarshal(bodyBytes, &registries); err != nil {
 				return retry.NonRetryableError(fmt.Errorf("error decoding response body: %w", err))
 			}
@@ -539,7 +441,6 @@ func (p *registryResource) Update(ctx context.Context, req resource.UpdateReques
 			// Find registry by name
 			for _, registry := range registries {
 				if registry.Name == state.Name.ValueString() {
-					// Update the state with the UUID
 					state.UUID = types.StringValue(registry.ID)
 					return nil
 				}
@@ -613,41 +514,12 @@ func (p *registryResource) Update(ctx context.Context, req resource.UpdateReques
 			return retry.NonRetryableError(fmt.Errorf("error updating registry (status %d): %s", resp.StatusCode, string(bodyBytes)))
 		}
 
-		var result struct {
-			GraphQLID    string   `json:"graphql_id"`
-			ID           string   `json:"id"`
-			Name         string   `json:"name"`
-			Slug         string   `json:"slug"`
-			Ecosystem    string   `json:"ecosystem"`
-			Description  *string  `json:"description"`
-			Emoji        *string  `json:"emoji"`
-			Color        *string  `json:"color"`
-			OIDCPolicy   *string  `json:"oidc_policy"`
-			Public       bool     `json:"public"`
-			RegistryType string   `json:"type"`
-			TeamIDs      []string `json:"team_ids"`
-		}
-
+		var result registryAPIResponse
 		if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 			return retry.NonRetryableError(fmt.Errorf("error decoding response body: %w", err))
 		}
 
-		plan.ID = types.StringValue(result.GraphQLID)
-		plan.UUID = types.StringValue(result.ID)
-		plan.Slug = types.StringValue(result.Slug)
-		plan.Name = types.StringValue(result.Name)
-		plan.Ecosystem = types.StringValue(result.Ecosystem)
-
-		plan.Description = optionalStringValue(result.Description)
-		plan.Emoji = optionalStringValue(result.Emoji)
-		plan.Color = optionalStringValue(result.Color)
-		plan.OIDCPolicy = optionalStringValue(result.OIDCPolicy)
-
-		plan.Public = types.BoolValue(result.Public)
-		plan.RegistryType = types.StringValue(result.RegistryType)
-
-		// Handle team_ids in the response using the helper function
-		plan.TeamIDs = handleTeamIDs(result.TeamIDs, plan.TeamIDs)
+		mapRegistryResponseToModel(&result, plan)
 
 		return nil
 	})
@@ -660,6 +532,39 @@ func (p *registryResource) Update(ctx context.Context, req resource.UpdateReques
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
+}
+
+// registryAPIResponse represents the JSON shape returned by the Packages REST API
+// for registry endpoints (GET, POST, PUT).
+type registryAPIResponse struct {
+	GraphQLID    string   `json:"graphql_id"`
+	ID           string   `json:"id"`
+	Slug         string   `json:"slug"`
+	Name         string   `json:"name"`
+	Ecosystem    string   `json:"ecosystem"`
+	Description  *string  `json:"description"`
+	Emoji        *string  `json:"emoji"`
+	Color        *string  `json:"color"`
+	OIDCPolicy   *string  `json:"oidc_policy"`
+	Public       bool     `json:"public"`
+	RegistryType string   `json:"type"`
+	TeamIDs      []string `json:"team_ids"`
+}
+
+// mapRegistryResponseToModel maps an API response onto a Terraform resource model.
+func mapRegistryResponseToModel(result *registryAPIResponse, model *registryResourceModel) {
+	model.ID = types.StringValue(result.GraphQLID)
+	model.UUID = types.StringValue(result.ID)
+	model.Slug = types.StringValue(result.Slug)
+	model.Name = types.StringValue(result.Name)
+	model.Ecosystem = types.StringValue(result.Ecosystem)
+	model.Description = optionalStringValue(result.Description)
+	model.Emoji = optionalStringValue(result.Emoji)
+	model.Color = optionalStringValue(result.Color)
+	model.OIDCPolicy = optionalStringValue(result.OIDCPolicy)
+	model.Public = types.BoolValue(result.Public)
+	model.RegistryType = types.StringValue(result.RegistryType)
+	model.TeamIDs = handleTeamIDs(result.TeamIDs, model.TeamIDs)
 }
 
 // Ensures consistent handling of team_ids field
@@ -742,14 +647,7 @@ func (p *registryResource) Delete(ctx context.Context, req resource.DeleteReques
 				return retry.NonRetryableError(fmt.Errorf("error reading response body: %w", err))
 			}
 
-			var registries []struct {
-				GraphQLID string `json:"graphql_id"`
-				ID        string `json:"id"`
-				Slug      string `json:"slug"`
-				Name      string `json:"name"`
-				Ecosystem string `json:"ecosystem"`
-			}
-
+			var registries []registryAPIResponse
 			if err := json.Unmarshal(bodyBytes, &registries); err != nil {
 				return retry.NonRetryableError(fmt.Errorf("error decoding response body: %w", err))
 			}
