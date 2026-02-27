@@ -223,10 +223,10 @@ func (p *registryResource) Create(ctx context.Context, req resource.CreateReques
 			Slug         string   `json:"slug"`
 			Name         string   `json:"name"`
 			Ecosystem    string   `json:"ecosystem"`
-			Description  string   `json:"description"`
-			Emoji        string   `json:"emoji"`
-			Color        string   `json:"color"`
-			OIDCPolicy   string   `json:"oidc_policy"`
+			Description  *string  `json:"description"`
+			Emoji        *string  `json:"emoji"`
+			Color        *string  `json:"color"`
+			OIDCPolicy   *string  `json:"oidc_policy"`
 			Public       bool     `json:"public"`
 			RegistryType string   `json:"type"`
 			TeamIDs      []string `json:"team_ids"`
@@ -248,18 +248,10 @@ func (p *registryResource) Create(ctx context.Context, req resource.CreateReques
 		state.Name = types.StringValue(result.Name)
 		state.Ecosystem = types.StringValue(result.Ecosystem)
 
-		if result.Description != "" {
-			state.Description = types.StringValue(result.Description)
-		}
-		if result.Emoji != "" {
-			state.Emoji = types.StringValue(result.Emoji)
-		}
-		if result.Color != "" {
-			state.Color = types.StringValue(result.Color)
-		}
-		if result.OIDCPolicy != "" {
-			state.OIDCPolicy = types.StringValue(result.OIDCPolicy)
-		}
+		state.Description = optionalStringValue(result.Description)
+		state.Emoji = optionalStringValue(result.Emoji)
+		state.Color = optionalStringValue(result.Color)
+		state.OIDCPolicy = optionalStringValue(result.OIDCPolicy)
 
 		state.Public = types.BoolValue(result.Public)
 		state.RegistryType = types.StringValue(result.RegistryType)
@@ -337,13 +329,13 @@ func (p *registryResource) Read(ctx context.Context, req resource.ReadRequest, r
 				Slug         string   `json:"slug"`
 				Name         string   `json:"name"`
 				Ecosystem    string   `json:"ecosystem"`
-				Description  string   `json:"description,omitempty"`
-				Emoji        string   `json:"emoji,omitempty"`
-				Color        string   `json:"color,omitempty"`
-				OIDCPolicy   string   `json:"oidc_policy,omitempty"`
+				Description  *string  `json:"description"`
+				Emoji        *string  `json:"emoji"`
+				Color        *string  `json:"color"`
+				OIDCPolicy   *string  `json:"oidc_policy"`
 				Public       bool     `json:"public"`
 				RegistryType string   `json:"type"`
-				TeamIDs      []string `json:"team_ids,omitempty"`
+				TeamIDs      []string `json:"team_ids"`
 			}
 
 			if err := json.Unmarshal(bodyBytes, &registries); err != nil {
@@ -360,29 +352,10 @@ func (p *registryResource) Read(ctx context.Context, req resource.ReadRequest, r
 					state.Name = types.StringValue(registry.Name)
 					state.Ecosystem = types.StringValue(registry.Ecosystem)
 
-					if registry.Description != "" {
-						state.Description = types.StringValue(registry.Description)
-					} else {
-						state.Description = types.StringNull()
-					}
-
-					if registry.Emoji != "" {
-						state.Emoji = types.StringValue(registry.Emoji)
-					} else {
-						state.Emoji = types.StringNull()
-					}
-
-					if registry.Color != "" {
-						state.Color = types.StringValue(registry.Color)
-					} else {
-						state.Color = types.StringNull()
-					}
-
-					if registry.OIDCPolicy != "" {
-						state.OIDCPolicy = types.StringValue(registry.OIDCPolicy)
-					} else {
-						state.OIDCPolicy = types.StringNull()
-					}
+					state.Description = optionalStringValue(registry.Description)
+					state.Emoji = optionalStringValue(registry.Emoji)
+					state.Color = optionalStringValue(registry.Color)
+					state.OIDCPolicy = optionalStringValue(registry.OIDCPolicy)
 
 					state.Public = types.BoolValue(registry.Public)
 					state.RegistryType = types.StringValue(registry.RegistryType)
@@ -435,13 +408,13 @@ func (p *registryResource) Read(ctx context.Context, req resource.ReadRequest, r
 			Name         string   `json:"name"`
 			Slug         string   `json:"slug"`
 			Ecosystem    string   `json:"ecosystem"`
-			Description  string   `json:"description,omitempty"`
-			Emoji        string   `json:"emoji,omitempty"`
-			Color        string   `json:"color,omitempty"`
-			OIDCPolicy   string   `json:"oidc_policy,omitempty"`
+			Description  *string  `json:"description"`
+			Emoji        *string  `json:"emoji"`
+			Color        *string  `json:"color"`
+			OIDCPolicy   *string  `json:"oidc_policy"`
 			Public       bool     `json:"public"`
 			RegistryType string   `json:"type"`
-			TeamIDs      []string `json:"team_ids,omitempty"`
+			TeamIDs      []string `json:"team_ids"`
 		}
 
 		if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
@@ -455,29 +428,10 @@ func (p *registryResource) Read(ctx context.Context, req resource.ReadRequest, r
 		state.Name = types.StringValue(result.Name)
 		state.Ecosystem = types.StringValue(result.Ecosystem)
 
-		if result.Description != "" {
-			state.Description = types.StringValue(result.Description)
-		} else {
-			state.Description = types.StringNull()
-		}
-
-		if result.Emoji != "" {
-			state.Emoji = types.StringValue(result.Emoji)
-		} else {
-			state.Emoji = types.StringNull()
-		}
-
-		if result.Color != "" {
-			state.Color = types.StringValue(result.Color)
-		} else {
-			state.Color = types.StringNull()
-		}
-
-		if result.OIDCPolicy != "" {
-			state.OIDCPolicy = types.StringValue(result.OIDCPolicy)
-		} else {
-			state.OIDCPolicy = types.StringNull()
-		}
+		state.Description = optionalStringValue(result.Description)
+		state.Emoji = optionalStringValue(result.Emoji)
+		state.Color = optionalStringValue(result.Color)
+		state.OIDCPolicy = optionalStringValue(result.OIDCPolicy)
 
 		state.Public = types.BoolValue(result.Public)
 		state.RegistryType = types.StringValue(result.RegistryType)
@@ -665,13 +619,13 @@ func (p *registryResource) Update(ctx context.Context, req resource.UpdateReques
 			Name         string   `json:"name"`
 			Slug         string   `json:"slug"`
 			Ecosystem    string   `json:"ecosystem"`
-			Description  string   `json:"description,omitempty"`
-			Emoji        string   `json:"emoji,omitempty"`
-			Color        string   `json:"color,omitempty"`
-			OIDCPolicy   string   `json:"oidc_policy,omitempty"`
+			Description  *string  `json:"description"`
+			Emoji        *string  `json:"emoji"`
+			Color        *string  `json:"color"`
+			OIDCPolicy   *string  `json:"oidc_policy"`
 			Public       bool     `json:"public"`
 			RegistryType string   `json:"type"`
-			TeamIDs      []string `json:"team_ids,omitempty"`
+			TeamIDs      []string `json:"team_ids"`
 		}
 
 		if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
@@ -684,29 +638,10 @@ func (p *registryResource) Update(ctx context.Context, req resource.UpdateReques
 		plan.Name = types.StringValue(result.Name)
 		plan.Ecosystem = types.StringValue(result.Ecosystem)
 
-		if result.Description != "" {
-			plan.Description = types.StringValue(result.Description)
-		} else {
-			plan.Description = types.StringNull()
-		}
-
-		if result.Emoji != "" {
-			plan.Emoji = types.StringValue(result.Emoji)
-		} else {
-			plan.Emoji = types.StringNull()
-		}
-
-		if result.Color != "" {
-			plan.Color = types.StringValue(result.Color)
-		} else {
-			plan.Color = types.StringNull()
-		}
-
-		if result.OIDCPolicy != "" {
-			plan.OIDCPolicy = types.StringValue(result.OIDCPolicy)
-		} else {
-			plan.OIDCPolicy = types.StringNull()
-		}
+		plan.Description = optionalStringValue(result.Description)
+		plan.Emoji = optionalStringValue(result.Emoji)
+		plan.Color = optionalStringValue(result.Color)
+		plan.OIDCPolicy = optionalStringValue(result.OIDCPolicy)
 
 		plan.Public = types.BoolValue(result.Public)
 		plan.RegistryType = types.StringValue(result.RegistryType)
@@ -748,6 +683,15 @@ func handleTeamIDs(apiTeamIDs []string, existing types.List) types.List {
 		// No team IDs present, set to null
 		return types.ListNull(types.StringType)
 	}
+}
+
+// optionalStringValue maps a nullable API response field to the appropriate Terraform type.
+// nil (JSON null or omitted) becomes types.StringNull(); non-nil becomes types.StringValue.
+func optionalStringValue(s *string) types.String {
+	if s == nil {
+		return types.StringNull()
+	}
+	return types.StringValue(*s)
 }
 
 func (p *registryResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {

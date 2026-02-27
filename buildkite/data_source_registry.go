@@ -179,10 +179,10 @@ func (d *registryDatasource) Read(ctx context.Context, req datasource.ReadReques
 			Slug         string   `json:"slug"`
 			Name         string   `json:"name"`
 			Ecosystem    string   `json:"ecosystem"`
-			Description  string   `json:"description"`
-			Emoji        string   `json:"emoji"`
-			Color        string   `json:"color"`
-			OIDCPolicy   string   `json:"oidc_policy"`
+			Description  *string  `json:"description"`
+			Emoji        *string  `json:"emoji"`
+			Color        *string  `json:"color"`
+			OIDCPolicy   *string  `json:"oidc_policy"`
 			Public       bool     `json:"public"`
 			RegistryType string   `json:"type"`
 			TeamIDs      []string `json:"team_ids"`
@@ -203,21 +203,13 @@ func (d *registryDatasource) Read(ctx context.Context, req datasource.ReadReques
 		state.ID = types.StringValue(result.GraphqlID)
 		state.UUID = types.StringValue(result.ID)
 		state.Name = types.StringValue(result.Name)
-		state.Slug = types.StringValue(result.Slug) // Re-affirm from response (this should be the simple slug)
+		state.Slug = types.StringValue(result.Slug)
 		state.Ecosystem = types.StringValue(result.Ecosystem)
 
-		if result.Description != "" || !state.Description.IsNull() { // Update if API provides it or clear if API clears it and it was set
-			state.Description = types.StringValue(result.Description)
-		}
-		if result.Emoji != "" || !state.Emoji.IsNull() {
-			state.Emoji = types.StringValue(result.Emoji)
-		}
-		if result.Color != "" || !state.Color.IsNull() {
-			state.Color = types.StringValue(result.Color)
-		}
-		if result.OIDCPolicy != "" || !state.OIDCPolicy.IsNull() {
-			state.OIDCPolicy = types.StringValue(result.OIDCPolicy)
-		}
+		state.Description = optionalStringValue(result.Description)
+		state.Emoji = optionalStringValue(result.Emoji)
+		state.Color = optionalStringValue(result.Color)
+		state.OIDCPolicy = optionalStringValue(result.OIDCPolicy)
 
 		state.Public = types.BoolValue(result.Public)
 		state.RegistryType = types.StringValue(result.RegistryType)
