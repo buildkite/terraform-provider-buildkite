@@ -261,61 +261,15 @@ func (p *registryResource) Read(ctx context.Context, req resource.ReadRequest, r
 		return
 	}
 
+	if state.Slug.IsNull() || state.Slug.ValueString() == "" {
+		resp.Diagnostics.AddError(
+			"Error reading registry",
+			"Registry slug is not set in state. Please re-import the resource using: terraform import <address> <slug>",
+		)
+		return
+	}
+
 	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-		// Check if we have a UUID to work with
-		if state.Slug.IsNull() || state.Slug.ValueString() == "" {
-			// If no slug is found, we need to fetch all registries and find by name
-			// This handles the case during import or when slug isn't in state
-			url := fmt.Sprintf("%s/v2/packages/organizations/%s/registries", p.client.restURL, p.client.organization)
-
-			req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
-			if err != nil {
-				return retry.NonRetryableError(fmt.Errorf("error creating HTTP request: %w", err))
-			}
-
-			req.Header.Set("Accept", "application/json")
-
-			resp, err := p.client.http.Do(req)
-			if err != nil {
-				return retry.NonRetryableError(fmt.Errorf("error making HTTP request: %w", err))
-			}
-			defer resp.Body.Close()
-
-			if resp.StatusCode >= 400 {
-				bodyBytes, _ := io.ReadAll(resp.Body)
-				return retry.NonRetryableError(fmt.Errorf("error listing registries (status %d): %s", resp.StatusCode, string(bodyBytes)))
-			}
-
-			// Read and parse all registries
-			bodyBytes, err := io.ReadAll(resp.Body)
-			if err != nil {
-				return retry.NonRetryableError(fmt.Errorf("error reading response body: %w", err))
-			}
-
-			var registries []registryAPIResponse
-			if err := json.Unmarshal(bodyBytes, &registries); err != nil {
-				return retry.NonRetryableError(fmt.Errorf("error decoding response body: %w", err))
-			}
-
-			// Find the registry by name
-			found := false
-			for _, registry := range registries {
-				if registry.Name == state.Name.ValueString() {
-					mapRegistryResponseToModel(&registry, state)
-					found = true
-					break
-				}
-			}
-
-			if !found {
-				registryNotFound = true
-				return nil
-			}
-
-			return nil
-		}
-
-		// We have a UUID, use it to directly fetch the registry
 		url := fmt.Sprintf("%s/v2/packages/organizations/%s/registries/%s", p.client.restURL, p.client.organization, state.Slug.ValueString())
 
 		req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
@@ -352,19 +306,10 @@ func (p *registryResource) Read(ctx context.Context, req resource.ReadRequest, r
 	})
 
 	if registryNotFound {
-		var idForWarning string
-		// Always prefer to show ID in messages for consistency with other resources
-		if state.Slug.IsNull() {
-			idForWarning = state.ID.ValueString()
-		} else {
-			idForWarning = state.Slug.ValueString()
-		}
-
 		resp.Diagnostics.AddWarning(
 			"Registry not found",
-			fmt.Sprintf("Registry %s was not found, removing from state", idForWarning),
+			fmt.Sprintf("Registry %s was not found, removing from state", state.Slug.ValueString()),
 		)
-
 		resp.State.RemoveResource(ctx)
 		return
 	}
@@ -401,75 +346,16 @@ func (p *registryResource) Update(ctx context.Context, req resource.UpdateReques
 		return
 	}
 
-	// First, ensure we have UUID set in state
-	if state.UUID.IsNull() || state.UUID.ValueString() == "" {
-		// We need to find the registry by name to get its UUID first
-		// This helps ensure proper updates when the UUID wasn't saved in the previous run
-		readTimeout, _ := p.client.timeouts.Read(ctx, DefaultTimeout)
-
-		err := retry.RetryContext(ctx, readTimeout, func() *retry.RetryError {
-			url := fmt.Sprintf("%s/v2/packages/organizations/%s/registries", p.client.restURL, p.client.organization)
-
-			req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
-			if err != nil {
-				return retry.NonRetryableError(fmt.Errorf("error creating HTTP request: %w", err))
-			}
-
-			req.Header.Set("Accept", "application/json")
-
-			resp, err := p.client.http.Do(req)
-			if err != nil {
-				return retry.NonRetryableError(fmt.Errorf("error making HTTP request: %w", err))
-			}
-			defer resp.Body.Close()
-
-			if resp.StatusCode >= 400 {
-				bodyBytes, _ := io.ReadAll(resp.Body)
-				return retry.NonRetryableError(fmt.Errorf("error listing registries (status %d): %s", resp.StatusCode, string(bodyBytes)))
-			}
-
-			bodyBytes, err := io.ReadAll(resp.Body)
-			if err != nil {
-				return retry.NonRetryableError(fmt.Errorf("error reading response body: %w", err))
-			}
-
-			var registries []registryAPIResponse
-			if err := json.Unmarshal(bodyBytes, &registries); err != nil {
-				return retry.NonRetryableError(fmt.Errorf("error decoding response body: %w", err))
-			}
-
-			// Find registry by name
-			for _, registry := range registries {
-				if registry.Name == state.Name.ValueString() {
-					state.UUID = types.StringValue(registry.ID)
-					return nil
-				}
-			}
-
-			// If we didn't find the registry, it might not exist
-			return retry.NonRetryableError(fmt.Errorf("registry %s not found", state.Name.ValueString()))
-		})
-		if err != nil {
-			resp.Diagnostics.AddError(
-				"Error retrieving registry UUID",
-				fmt.Sprintf("Could not find registry UUID: %s", err),
-			)
-			return
-		}
+	if state.Slug.IsNull() || state.Slug.ValueString() == "" {
+		resp.Diagnostics.AddError(
+			"Error updating registry",
+			"Registry slug is not set in state. Please re-import the resource using: terraform import <address> <slug>",
+		)
+		return
 	}
 
-	// Now proceed with the update using the UUID we have
 	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-		// First try to use UUID for lookup if it's available
-		var lookupID string
-
-		if !state.Slug.IsNull() && state.Slug.ValueString() != "" {
-			lookupID = state.Slug.ValueString()
-		} else {
-			return retry.NonRetryableError(fmt.Errorf("no valid ID or UUID available for registry lookup"))
-		}
-
-		url := fmt.Sprintf("%s/v2/packages/organizations/%s/registries/%s", p.client.restURL, p.client.organization, lookupID)
+		url := fmt.Sprintf("%s/v2/packages/organizations/%s/registries/%s", p.client.restURL, p.client.organization, state.Slug.ValueString())
 
 		reqBody := map[string]interface{}{
 			"name": plan.Name.ValueString(),
@@ -508,7 +394,7 @@ func (p *registryResource) Update(ctx context.Context, req resource.UpdateReques
 		defer resp.Body.Close()
 
 		if resp.StatusCode == http.StatusNotFound {
-			return retry.NonRetryableError(fmt.Errorf("registry %s not found, it may have been deleted outside of Terraform", lookupID))
+			return retry.NonRetryableError(fmt.Errorf("registry %s not found, it may have been deleted outside of Terraform", state.Slug.ValueString()))
 		} else if resp.StatusCode >= 400 {
 			bodyBytes, _ := io.ReadAll(resp.Body)
 			return retry.NonRetryableError(fmt.Errorf("error updating registry (status %d): %s", resp.StatusCode, string(bodyBytes)))
@@ -616,77 +502,16 @@ func (p *registryResource) Delete(ctx context.Context, req resource.DeleteReques
 		return
 	}
 
-	// First, ensure we have UUID set in state if possible
 	if state.Slug.IsNull() || state.Slug.ValueString() == "" {
-		// We need to find the registry by name to get its slug first
-		readTimeout, _ := p.client.timeouts.Read(ctx, DefaultTimeout)
-
-		err := retry.RetryContext(ctx, readTimeout, func() *retry.RetryError {
-			url := fmt.Sprintf("%s/v2/packages/organizations/%s/registries", p.client.restURL, p.client.organization)
-
-			req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
-			if err != nil {
-				return retry.NonRetryableError(fmt.Errorf("error creating HTTP request: %w", err))
-			}
-
-			req.Header.Set("Accept", "application/json")
-
-			resp, err := p.client.http.Do(req)
-			if err != nil {
-				return retry.NonRetryableError(fmt.Errorf("error making HTTP request: %w", err))
-			}
-			defer resp.Body.Close()
-
-			if resp.StatusCode >= 400 {
-				bodyBytes, _ := io.ReadAll(resp.Body)
-				return retry.NonRetryableError(fmt.Errorf("error listing registries (status %d): %s", resp.StatusCode, string(bodyBytes)))
-			}
-
-			bodyBytes, err := io.ReadAll(resp.Body)
-			if err != nil {
-				return retry.NonRetryableError(fmt.Errorf("error reading response body: %w", err))
-			}
-
-			var registries []registryAPIResponse
-			if err := json.Unmarshal(bodyBytes, &registries); err != nil {
-				return retry.NonRetryableError(fmt.Errorf("error decoding response body: %w", err))
-			}
-
-			// Find registry by name
-			for _, registry := range registries {
-				if registry.Name == state.Name.ValueString() {
-					state.Slug = types.StringValue(registry.Slug)
-					return nil
-				}
-			}
-
-			// If we didn't find the registry, it might already be deleted
-			return nil
-		})
-		if err != nil {
-			resp.Diagnostics.AddError(
-				"Error looking up registry for deletion",
-				fmt.Sprintf("Could not look up registry by name: %s", err),
-			)
-			return
-		}
+		resp.Diagnostics.AddError(
+			"Error deleting registry",
+			"Registry slug is not set in state. Please re-import the resource using: terraform import <address> <slug>",
+		)
+		return
 	}
 
 	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-		// Try to use UUID for lookup if it's available
-		var lookupID string
-
-		if !state.Slug.IsNull() && state.Slug.ValueString() != "" {
-			lookupID = state.Slug.ValueString()
-		} else {
-			resp.Diagnostics.AddError(
-				"Error deleting registry",
-				"Registry slug is not set in state. Please re-import the resource.",
-			)
-			return nil
-		}
-
-		url := fmt.Sprintf("%s/v2/packages/organizations/%s/registries/%s", p.client.restURL, p.client.organization, lookupID)
+		url := fmt.Sprintf("%s/v2/packages/organizations/%s/registries/%s", p.client.restURL, p.client.organization, state.Slug.ValueString())
 
 		// Create the HTTP request
 		req, err := http.NewRequestWithContext(ctx, http.MethodDelete, url, nil)
