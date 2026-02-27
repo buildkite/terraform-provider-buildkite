@@ -540,6 +540,15 @@ func (p *registryResource) Update(ctx context.Context, req resource.UpdateReques
 		return
 	}
 
+	// Check if team_ids is being changed and add an error
+	if !plan.TeamIDs.Equal(state.TeamIDs) {
+		resp.Diagnostics.AddError(
+			"Team IDs change detected",
+			"The team_ids attribute cannot be changed after registry creation. This restriction is enforced by the Buildkite API.",
+		)
+		return
+	}
+
 	timeout, diags := p.client.timeouts.Update(ctx, DefaultTimeout)
 	resp.Diagnostics.Append(diags...)
 
