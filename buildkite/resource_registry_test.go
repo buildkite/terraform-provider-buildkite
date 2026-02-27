@@ -264,7 +264,7 @@ func TestAccResourceRegistry(t *testing.T) {
 func testAccCheckRegistryDestroy(s *terraform.State) error {
 	apiToken := os.Getenv("BUILDKITE_API_TOKEN")
 	orgSlug := os.Getenv("BUILDKITE_ORGANIZATION_SLUG")
-	baseURL := os.Getenv("BUILDKITE_API_URL")
+	baseURL := os.Getenv("BUILDKITE_REST_URL")
 	if baseURL == "" {
 		baseURL = "https://api.buildkite.com"
 	}
