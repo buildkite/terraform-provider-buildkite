@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"regexp"
 	"testing"
 	"time"
 
@@ -136,6 +137,55 @@ func TestAccResourceRegistry(t *testing.T) {
 						resource.TestCheckResourceAttr("buildkite_registry.test", "description", "Updated description"),
 						resource.TestCheckResourceAttr("buildkite_registry.test", "color", "#00FF00"),
 					),
+				},
+			},
+		})
+	})
+
+	t.Run("reject ecosystem change", func(t *testing.T) {
+		randName := acctest.RandString(5)
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			CheckDestroy:             testAccCheckRegistryDestroy,
+			Steps: []resource.TestStep{
+				{
+					Config: config(randName, "java", ":package:"),
+				},
+				{
+					Config:      config(randName, "python", ":package:"),
+					ExpectError: regexp.MustCompile(`Ecosystem change detected`),
+				},
+			},
+		})
+	})
+
+	t.Run("reject team_ids change", func(t *testing.T) {
+		randName := acctest.RandString(5)
+
+		configWithTeams := func(name, teamID string) string {
+			return fmt.Sprintf(`
+			provider "buildkite" {}
+
+			resource "buildkite_registry" "test" {
+				name      = "%s"
+				ecosystem = "java"
+				team_ids  = ["%s"]
+			}`, name, teamID)
+		}
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			CheckDestroy:             testAccCheckRegistryDestroy,
+			Steps: []resource.TestStep{
+				{
+					Config: configWithTeams(randName, "31529c8a-7cfa-42e8-bb85-4c844a983ea0"),
+				},
+				{
+					Config:      configWithTeams(randName, "00000000-0000-0000-0000-000000000000"),
+					ExpectError: regexp.MustCompile(`Team IDs change detected`),
 				},
 			},
 		})
