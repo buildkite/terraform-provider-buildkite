@@ -110,7 +110,7 @@ func (d *registryDatasource) Schema(ctx context.Context, req datasource.SchemaRe
 			"team_ids": schema.ListAttribute{
 				Computed:            true,
 				ElementType:         types.StringType,
-				MarkdownDescription: "A list of team GraphQL IDs that have access to this registry.",
+				MarkdownDescription: "A list of team UUIDs that have access to this registry.",
 			},
 		},
 	}

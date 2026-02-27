@@ -35,5 +35,5 @@ See https://buildkite.com/docs/packages for more information.
 - `oidc_policy` (String) The registry's OIDC policy, in YAML format.
 - `public` (Boolean) Whether the registry is publicly accessible.
 - `registry_type` (String) The type of the registry (e.g. `source`).
-- `team_ids` (List of String) A list of team GraphQL IDs that have access to this registry.
+- `team_ids` (List of String) A list of team UUIDs that have access to this registry.
 - `uuid` (String) The UUID of the registry.
