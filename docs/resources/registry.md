@@ -29,7 +29,7 @@ resource "buildkite_registry" "example" {
 
 ### Required
 
-- `ecosystem` (String) The ecosystem of the registry. **Warning:** This value cannot be changed after creation. Any attempts to update this field will result in API errors.
+- `ecosystem` (String) The ecosystem of the registry. This value cannot be changed after creation.
 - `name` (String) The name of the registry. Can only contain numbers and letters, no spaces or special characters.
 
 ### Optional
@@ -40,7 +40,7 @@ which would help identify the registry's purpose.
 - `emoji` (String) An emoji to use with the registry, this can either be set using :buildkite: notation, or with the
 emoji itself, such as 🚀.
 - `oidc_policy` (String) The registry's OIDC policy.
-- `team_ids` (List of String) The team IDs that have access to the registry.
+- `team_ids` (List of String) The team IDs that have access to the registry. This value cannot be changed after creation.
 
 ### Read-Only
 

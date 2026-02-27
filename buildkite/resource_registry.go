@@ -90,7 +90,7 @@ func (p *registryResource) Schema(ctx context.Context, req resource.SchemaReques
 				Required:            true,
 			},
 			"ecosystem": resource_schema.StringAttribute{
-				MarkdownDescription: "The ecosystem of the registry. **Warning:** This value cannot be changed after creation. Any attempts to update this field will result in API errors.",
+				MarkdownDescription: "The ecosystem of the registry. This value cannot be changed after creation.",
 				Required:            true,
 			},
 			"description": resource_schema.StringAttribute{
@@ -131,7 +131,7 @@ func (p *registryResource) Schema(ctx context.Context, req resource.SchemaReques
 			},
 			"team_ids": resource_schema.ListAttribute{
 				Optional:            true,
-				MarkdownDescription: "The team IDs that have access to the registry.",
+				MarkdownDescription: "The team IDs that have access to the registry. This value cannot be changed after creation.",
 				ElementType:         types.StringType,
 			},
 		},
