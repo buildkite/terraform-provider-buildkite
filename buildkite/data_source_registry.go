@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"strings"
 
 	"github.com/MakeNowJust/heredoc"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
@@ -133,20 +132,8 @@ func (d *registryDatasource) Read(ctx context.Context, req datasource.ReadReques
 	var dataFound bool
 
 	err := retry.RetryContext(ctx, timeoutDuration, func() *retry.RetryError {
-		rawSlug := state.Slug.ValueString()
-		var fullSlug string
-		if strings.Contains(rawSlug, "/") {
-			fullSlug = rawSlug
-		} else {
-			fullSlug = fmt.Sprintf("%s/%s", d.client.organization, rawSlug)
-		}
-
-		apiPathSlug := rawSlug
-		if i := strings.LastIndexByte(rawSlug, '/'); i != -1 {
-			apiPathSlug = rawSlug[i+1:]
-		}
-
-		url := fmt.Sprintf("%s/v2/packages/organizations/%s/registries/%s", d.client.restURL, d.client.organization, apiPathSlug)
+		slug := state.Slug.ValueString()
+		url := fmt.Sprintf("%s/v2/packages/organizations/%s/registries/%s", d.client.restURL, d.client.organization, slug)
 
 		req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 		if err != nil {
@@ -161,7 +148,7 @@ func (d *registryDatasource) Read(ctx context.Context, req datasource.ReadReques
 		defer httpResp.Body.Close()
 
 		if httpResp.StatusCode == http.StatusNotFound {
-			resp.Diagnostics.AddWarning("Registry not found", fmt.Sprintf("No registry found with slug '%s' (resolved to '%s') at %s", state.Slug.ValueString(), fullSlug, url))
+			resp.Diagnostics.AddWarning("Registry not found", fmt.Sprintf("No registry found with slug '%s'", slug))
 			resp.State.RemoveResource(ctx)
 			dataFound = false
 			return nil
@@ -178,7 +165,7 @@ func (d *registryDatasource) Read(ctx context.Context, req datasource.ReadReques
 		}
 
 		if result.GraphQLID == "" {
-			resp.Diagnostics.AddWarning("Registry data incomplete", fmt.Sprintf("Registry found with slug '%s' but essential data (GraphqlID) is missing from response at %s", fullSlug, url))
+			resp.Diagnostics.AddWarning("Registry data incomplete", fmt.Sprintf("Registry found with slug '%s' but GraphQL ID is missing from response", slug))
 			resp.State.RemoveResource(ctx)
 			dataFound = false
 			return nil
