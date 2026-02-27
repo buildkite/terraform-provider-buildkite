@@ -53,9 +53,6 @@ func TestAccDataSourceRegistry_Basic(t *testing.T) {
 }
 
 func testAccDataSourceRegistryConfigBasic(name string) string {
-	// Using a known team ID from the existing resource_registry_test.go.
-	const knownTeamID = "31529c8a-7cfa-42e8-bb85-4c844a983ea0"
-
 	return fmt.Sprintf(`
 		provider "buildkite" {}
 
@@ -71,5 +68,5 @@ func testAccDataSourceRegistryConfigBasic(name string) string {
 		data "buildkite_registry" "data_test_reg" {
 			slug = buildkite_registry.test_reg.slug
 		}
-	`, name, knownTeamID)
+	`, name, testRegistryTeamID)
 }
