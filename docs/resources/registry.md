@@ -21,6 +21,17 @@ resource "buildkite_registry" "example" {
   ecosystem   = "ruby"
   emoji       = ":ruby:"
   color       = "#ff0000"
+  team_ids = [
+    buildkite_team.frontend_team.uuid,
+    buildkite_team.backend_team.uuid
+  ]
+  oidc_policy = <<YAML
+- iss: https://agent.buildkite.com
+  scopes:
+    - read_packages
+  claims:
+    build_branch: main
+YAML
 }
 ```
 
@@ -31,6 +42,7 @@ resource "buildkite_registry" "example" {
 
 - `ecosystem` (String) The ecosystem of the registry. This value cannot be changed after creation.
 - `name` (String) The name of the registry. Can only contain numbers and letters, no spaces or special characters.
+- `team_ids` (List of String) The team UUIDs that have access to the registry. At least one team must be specified. This value cannot be changed after creation.
 
 ### Optional
 
@@ -39,8 +51,7 @@ resource "buildkite_registry" "example" {
 which would help identify the registry's purpose.
 - `emoji` (String) An emoji to use with the registry, this can either be set using :buildkite: notation, or with the
 emoji itself, such as 🚀.
-- `oidc_policy` (String) The registry's OIDC policy.
-- `team_ids` (List of String) The team IDs that have access to the registry. This value cannot be changed after creation.
+- `oidc_policy` (String) The registry's OIDC policy, in YAML format.
 
 ### Read-Only
 

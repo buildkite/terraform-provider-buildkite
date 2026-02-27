@@ -97,7 +97,7 @@ func (d *registryDatasource) Schema(ctx context.Context, req datasource.SchemaRe
 			},
 			"oidc_policy": schema.StringAttribute{
 				Computed:            true,
-				MarkdownDescription: "The registry's OIDC policy.",
+				MarkdownDescription: "The registry's OIDC policy, in YAML format.",
 			},
 			"public": schema.BoolAttribute{
 				Computed:            true,

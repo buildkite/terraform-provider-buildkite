@@ -113,7 +113,7 @@ func (p *registryResource) Schema(ctx context.Context, req resource.SchemaReques
 			},
 			"oidc_policy": resource_schema.StringAttribute{
 				Optional:            true,
-				MarkdownDescription: "The registry's OIDC policy.",
+				MarkdownDescription: "The registry's OIDC policy, in YAML format.",
 			},
 			"public": resource_schema.BoolAttribute{
 				Computed:            true,
@@ -130,8 +130,8 @@ func (p *registryResource) Schema(ctx context.Context, req resource.SchemaReques
 				},
 			},
 			"team_ids": resource_schema.ListAttribute{
-				Optional:            true,
-				MarkdownDescription: "The team IDs that have access to the registry. This value cannot be changed after creation.",
+				Required:            true,
+				MarkdownDescription: "The team UUIDs that have access to the registry. At least one team must be specified. This value cannot be changed after creation.",
 				ElementType:         types.StringType,
 			},
 		},

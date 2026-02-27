@@ -32,7 +32,7 @@ See https://buildkite.com/docs/packages for more information.
 - `emoji` (String) An emoji to use with the registry.
 - `id` (String) The GraphQL ID of the registry.
 - `name` (String) The name of the registry.
-- `oidc_policy` (String) The registry's OIDC policy.
+- `oidc_policy` (String) The registry's OIDC policy, in YAML format.
 - `public` (Boolean) Whether the registry is publicly accessible.
 - `registry_type` (String) The type of the registry (e.g. `source`).
 - `team_ids` (List of String) A list of team GraphQL IDs that have access to this registry.
