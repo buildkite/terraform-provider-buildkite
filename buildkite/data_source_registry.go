@@ -6,10 +6,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"strings"
 
 	"github.com/MakeNowJust/heredoc"
-	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -31,16 +29,18 @@ type registryDatasource struct {
 }
 
 type registryDatasourceModel struct {
-	ID          types.String `tfsdk:"id"`          // GraphQL ID
-	UUID        types.String `tfsdk:"uuid"`        // UUID
-	Name        types.String `tfsdk:"name"`        // Name
-	Slug        types.String `tfsdk:"slug"`        // Slug (used for lookup)
-	Ecosystem   types.String `tfsdk:"ecosystem"`   // PackageEcosystem
-	Description types.String `tfsdk:"description"` // Description
-	Emoji       types.String `tfsdk:"emoji"`       // Emoji
-	Color       types.String `tfsdk:"color"`       // Color
-	OIDCPolicy  types.String `tfsdk:"oidc_policy"` // OIDC Policy
-	TeamIDs     types.List   `tfsdk:"team_ids"`    // List of Team GraphQL IDs
+	ID           types.String `tfsdk:"id"`
+	UUID         types.String `tfsdk:"uuid"`
+	Name         types.String `tfsdk:"name"`
+	Slug         types.String `tfsdk:"slug"`
+	Ecosystem    types.String `tfsdk:"ecosystem"`
+	Description  types.String `tfsdk:"description"`
+	Emoji        types.String `tfsdk:"emoji"`
+	Color        types.String `tfsdk:"color"`
+	OIDCPolicy   types.String `tfsdk:"oidc_policy"`
+	Public       types.Bool   `tfsdk:"public"`
+	RegistryType types.String `tfsdk:"registry_type"`
+	TeamIDs      types.List   `tfsdk:"team_ids"`
 }
 
 func (d *registryDatasource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
@@ -97,12 +97,20 @@ func (d *registryDatasource) Schema(ctx context.Context, req datasource.SchemaRe
 			},
 			"oidc_policy": schema.StringAttribute{
 				Computed:            true,
-				MarkdownDescription: "The registry's OIDC policy.",
+				MarkdownDescription: "The registry's OIDC policy, in YAML format.",
+			},
+			"public": schema.BoolAttribute{
+				Computed:            true,
+				MarkdownDescription: "Whether the registry is publicly accessible.",
+			},
+			"registry_type": schema.StringAttribute{
+				Computed:            true,
+				MarkdownDescription: "The type of the registry (e.g. `source`).",
 			},
 			"team_ids": schema.ListAttribute{
 				Computed:            true,
 				ElementType:         types.StringType,
-				MarkdownDescription: "A list of team GraphQL IDs that have access to this registry.",
+				MarkdownDescription: "A list of team UUIDs that have access to this registry.",
 			},
 		},
 	}
@@ -124,20 +132,8 @@ func (d *registryDatasource) Read(ctx context.Context, req datasource.ReadReques
 	var dataFound bool
 
 	err := retry.RetryContext(ctx, timeoutDuration, func() *retry.RetryError {
-		rawSlug := state.Slug.ValueString()
-		var fullSlug string
-		if strings.Contains(rawSlug, "/") {
-			fullSlug = rawSlug
-		} else {
-			fullSlug = fmt.Sprintf("%s/%s", d.client.organization, rawSlug)
-		}
-
-		apiPathSlug := rawSlug
-		if i := strings.LastIndexByte(rawSlug, '/'); i != -1 {
-			apiPathSlug = rawSlug[i+1:]
-		}
-
-		url := fmt.Sprintf("%s/v2/packages/organizations/%s/registries/%s", d.client.restURL, d.client.organization, apiPathSlug)
+		slug := state.Slug.ValueString()
+		url := fmt.Sprintf("%s/v2/packages/organizations/%s/registries/%s", d.client.restURL, d.client.organization, slug)
 
 		req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 		if err != nil {
@@ -147,12 +143,12 @@ func (d *registryDatasource) Read(ctx context.Context, req datasource.ReadReques
 
 		httpResp, err := d.client.http.Do(req)
 		if err != nil {
-			return retry.RetryableError(fmt.Errorf("error making HTTP request to %s: %w", url, err))
+			return retry.NonRetryableError(fmt.Errorf("error making HTTP request to %s: %w", url, err))
 		}
 		defer httpResp.Body.Close()
 
 		if httpResp.StatusCode == http.StatusNotFound {
-			resp.Diagnostics.AddWarning("Registry not found", fmt.Sprintf("No registry found with slug '%s' (resolved to '%s') at %s", state.Slug.ValueString(), fullSlug, url))
+			resp.Diagnostics.AddWarning("Registry not found", fmt.Sprintf("No registry found with slug '%s'", slug))
 			resp.State.RemoveResource(ctx)
 			dataFound = false
 			return nil
@@ -160,63 +156,36 @@ func (d *registryDatasource) Read(ctx context.Context, req datasource.ReadReques
 
 		if httpResp.StatusCode >= 400 {
 			bodyBytes, _ := io.ReadAll(httpResp.Body)
-			return retry.RetryableError(fmt.Errorf("error fetching registry (status %d from %s): %s", httpResp.StatusCode, url, string(bodyBytes)))
+			return retry.NonRetryableError(fmt.Errorf("error fetching registry (status %d from %s): %s", httpResp.StatusCode, url, string(bodyBytes)))
 		}
 
-		var result struct {
-			GraphqlID   string   `json:"graphql_id"`
-			ID          string   `json:"id"` // This is the UUID
-			Slug        string   `json:"slug"`
-			Name        string   `json:"name"`
-			Ecosystem   string   `json:"ecosystem"`
-			Description string   `json:"description"`
-			Emoji       string   `json:"emoji"`
-			Color       string   `json:"color"`
-			OIDCPolicy  string   `json:"oidc_policy"`
-			TeamIDs     []string `json:"team_ids"`
-		}
-
+		var result registryAPIResponse
 		if err := json.NewDecoder(httpResp.Body).Decode(&result); err != nil {
 			return retry.NonRetryableError(fmt.Errorf("error decoding registry response body from %s: %w", url, err))
 		}
 
-		if result.GraphqlID == "" { // Check if essential data is missing
-			resp.Diagnostics.AddWarning("Registry data incomplete", fmt.Sprintf("Registry found with slug '%s' but essential data (GraphqlID) is missing from response at %s", fullSlug, url))
+		if result.GraphQLID == "" {
+			resp.Diagnostics.AddWarning("Registry data incomplete", fmt.Sprintf("Registry found with slug '%s' but GraphQL ID is missing from response", slug))
 			resp.State.RemoveResource(ctx)
 			dataFound = false
 			return nil
 		}
 
 		dataFound = true
-		state.ID = types.StringValue(result.GraphqlID)
+		state.ID = types.StringValue(result.GraphQLID)
 		state.UUID = types.StringValue(result.ID)
 		state.Name = types.StringValue(result.Name)
-		state.Slug = types.StringValue(result.Slug) // Re-affirm from response (this should be the simple slug)
+		state.Slug = types.StringValue(result.Slug)
 		state.Ecosystem = types.StringValue(result.Ecosystem)
 
-		if result.Description != "" || !state.Description.IsNull() { // Update if API provides it or clear if API clears it and it was set
-			state.Description = types.StringValue(result.Description)
-		}
-		if result.Emoji != "" || !state.Emoji.IsNull() {
-			state.Emoji = types.StringValue(result.Emoji)
-		}
-		if result.Color != "" || !state.Color.IsNull() {
-			state.Color = types.StringValue(result.Color)
-		}
-		if result.OIDCPolicy != "" || !state.OIDCPolicy.IsNull() {
-			state.OIDCPolicy = types.StringValue(result.OIDCPolicy)
-		}
+		state.Description = optionalStringValue(result.Description)
+		state.Emoji = optionalStringValue(result.Emoji)
+		state.Color = optionalStringValue(result.Color)
+		state.OIDCPolicy = optionalStringValue(result.OIDCPolicy)
 
-		// Handle team_ids using logic similar to handleTeamIDs from resource_registry.go
-		if len(result.TeamIDs) > 0 {
-			teams := make([]attr.Value, len(result.TeamIDs))
-			for i, id := range result.TeamIDs {
-				teams[i] = types.StringValue(id)
-			}
-			state.TeamIDs = types.ListValueMust(types.StringType, teams)
-		} else {
-			state.TeamIDs = types.ListNull(types.StringType) // If API returns empty, set to null
-		}
+		state.Public = types.BoolValue(result.Public)
+		state.RegistryType = types.StringValue(result.RegistryType)
+		state.TeamIDs = handleTeamIDs(result.TeamIDs, state.TeamIDs)
 
 		return nil
 	})
