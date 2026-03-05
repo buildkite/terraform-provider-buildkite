@@ -75,6 +75,9 @@ func (ps *pipelineSchedule) Schema(ctx context.Context, req resource.SchemaReque
 			"pipeline_id": resource_schema.StringAttribute{
 				Required:            true,
 				MarkdownDescription: "The GraphQL ID of the pipeline that this schedule belongs to.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"label": resource_schema.StringAttribute{
 				Required:            true,
