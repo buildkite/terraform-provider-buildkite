@@ -1918,10 +1918,1026 @@ func (v *PipelineFieldsPipelineTemplate) GetId() *string { return v.Id }
 type PipelineFieldsRepository struct {
 	// The git URL for this repository
 	Url string `json:"url"`
+	// The repository’s provider
+	Provider PipelineFieldsRepositoryProvider `json:"-"`
 }
 
 // GetUrl returns PipelineFieldsRepository.Url, and is useful for accessing the field via an interface.
 func (v *PipelineFieldsRepository) GetUrl() string { return v.Url }
+
+// GetProvider returns PipelineFieldsRepository.Provider, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsRepository) GetProvider() PipelineFieldsRepositoryProvider { return v.Provider }
+
+func (v *PipelineFieldsRepository) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*PipelineFieldsRepository
+		Provider json.RawMessage `json:"provider"`
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.PipelineFieldsRepository = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	{
+		dst := &v.Provider
+		src := firstPass.Provider
+		if len(src) != 0 && string(src) != "null" {
+			err = __unmarshalPipelineFieldsRepositoryProvider(
+				src, dst)
+			if err != nil {
+				return fmt.Errorf(
+					"unable to unmarshal PipelineFieldsRepository.Provider: %w", err)
+			}
+		}
+	}
+	return nil
+}
+
+type __premarshalPipelineFieldsRepository struct {
+	Url string `json:"url"`
+
+	Provider json.RawMessage `json:"provider"`
+}
+
+func (v *PipelineFieldsRepository) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *PipelineFieldsRepository) __premarshalJSON() (*__premarshalPipelineFieldsRepository, error) {
+	var retval __premarshalPipelineFieldsRepository
+
+	retval.Url = v.Url
+	{
+
+		dst := &retval.Provider
+		src := v.Provider
+		var err error
+		*dst, err = __marshalPipelineFieldsRepositoryProvider(
+			&src)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"unable to marshal PipelineFieldsRepository.Provider: %w", err)
+		}
+	}
+	return &retval, nil
+}
+
+// PipelineFieldsRepositoryProvider includes the requested fields of the GraphQL interface RepositoryProvider.
+//
+// PipelineFieldsRepositoryProvider is implemented by the following types:
+// PipelineFieldsRepositoryProviderRepositoryProviderBeanstalk
+// PipelineFieldsRepositoryProviderRepositoryProviderBitbucket
+// PipelineFieldsRepositoryProviderRepositoryProviderBitbucketServer
+// PipelineFieldsRepositoryProviderRepositoryProviderCodebase
+// PipelineFieldsRepositoryProviderRepositoryProviderGithub
+// PipelineFieldsRepositoryProviderRepositoryProviderGithubEnterprise
+// PipelineFieldsRepositoryProviderRepositoryProviderGitlab
+// PipelineFieldsRepositoryProviderRepositoryProviderGitlabCommunity
+// PipelineFieldsRepositoryProviderRepositoryProviderGitlabEnterprise
+// PipelineFieldsRepositoryProviderRepositoryProviderUnknown
+type PipelineFieldsRepositoryProvider interface {
+	implementsGraphQLInterfacePipelineFieldsRepositoryProvider()
+	// GetTypename returns the receiver's concrete GraphQL type-name (see interface doc for possible values).
+	GetTypename() string
+}
+
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderBeanstalk) implementsGraphQLInterfacePipelineFieldsRepositoryProvider() {
+}
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderBitbucket) implementsGraphQLInterfacePipelineFieldsRepositoryProvider() {
+}
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderBitbucketServer) implementsGraphQLInterfacePipelineFieldsRepositoryProvider() {
+}
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderCodebase) implementsGraphQLInterfacePipelineFieldsRepositoryProvider() {
+}
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderGithub) implementsGraphQLInterfacePipelineFieldsRepositoryProvider() {
+}
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderGithubEnterprise) implementsGraphQLInterfacePipelineFieldsRepositoryProvider() {
+}
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderGitlab) implementsGraphQLInterfacePipelineFieldsRepositoryProvider() {
+}
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderGitlabCommunity) implementsGraphQLInterfacePipelineFieldsRepositoryProvider() {
+}
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderGitlabEnterprise) implementsGraphQLInterfacePipelineFieldsRepositoryProvider() {
+}
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderUnknown) implementsGraphQLInterfacePipelineFieldsRepositoryProvider() {
+}
+
+func __unmarshalPipelineFieldsRepositoryProvider(b []byte, v *PipelineFieldsRepositoryProvider) error {
+	if string(b) == "null" {
+		return nil
+	}
+
+	var tn struct {
+		TypeName string `json:"__typename"`
+	}
+	err := json.Unmarshal(b, &tn)
+	if err != nil {
+		return err
+	}
+
+	switch tn.TypeName {
+	case "RepositoryProviderBeanstalk":
+		*v = new(PipelineFieldsRepositoryProviderRepositoryProviderBeanstalk)
+		return json.Unmarshal(b, *v)
+	case "RepositoryProviderBitbucket":
+		*v = new(PipelineFieldsRepositoryProviderRepositoryProviderBitbucket)
+		return json.Unmarshal(b, *v)
+	case "RepositoryProviderBitbucketServer":
+		*v = new(PipelineFieldsRepositoryProviderRepositoryProviderBitbucketServer)
+		return json.Unmarshal(b, *v)
+	case "RepositoryProviderCodebase":
+		*v = new(PipelineFieldsRepositoryProviderRepositoryProviderCodebase)
+		return json.Unmarshal(b, *v)
+	case "RepositoryProviderGithub":
+		*v = new(PipelineFieldsRepositoryProviderRepositoryProviderGithub)
+		return json.Unmarshal(b, *v)
+	case "RepositoryProviderGithubEnterprise":
+		*v = new(PipelineFieldsRepositoryProviderRepositoryProviderGithubEnterprise)
+		return json.Unmarshal(b, *v)
+	case "RepositoryProviderGitlab":
+		*v = new(PipelineFieldsRepositoryProviderRepositoryProviderGitlab)
+		return json.Unmarshal(b, *v)
+	case "RepositoryProviderGitlabCommunity":
+		*v = new(PipelineFieldsRepositoryProviderRepositoryProviderGitlabCommunity)
+		return json.Unmarshal(b, *v)
+	case "RepositoryProviderGitlabEnterprise":
+		*v = new(PipelineFieldsRepositoryProviderRepositoryProviderGitlabEnterprise)
+		return json.Unmarshal(b, *v)
+	case "RepositoryProviderUnknown":
+		*v = new(PipelineFieldsRepositoryProviderRepositoryProviderUnknown)
+		return json.Unmarshal(b, *v)
+	case "":
+		return fmt.Errorf(
+			"response was missing RepositoryProvider.__typename")
+	default:
+		return fmt.Errorf(
+			`unexpected concrete type for PipelineFieldsRepositoryProvider: "%v"`, tn.TypeName)
+	}
+}
+
+func __marshalPipelineFieldsRepositoryProvider(v *PipelineFieldsRepositoryProvider) ([]byte, error) {
+
+	var typename string
+	switch v := (*v).(type) {
+	case *PipelineFieldsRepositoryProviderRepositoryProviderBeanstalk:
+		typename = "RepositoryProviderBeanstalk"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*PipelineFieldsRepositoryProviderRepositoryProviderBeanstalk
+		}{typename, v}
+		return json.Marshal(result)
+	case *PipelineFieldsRepositoryProviderRepositoryProviderBitbucket:
+		typename = "RepositoryProviderBitbucket"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*PipelineFieldsRepositoryProviderRepositoryProviderBitbucket
+		}{typename, v}
+		return json.Marshal(result)
+	case *PipelineFieldsRepositoryProviderRepositoryProviderBitbucketServer:
+		typename = "RepositoryProviderBitbucketServer"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*PipelineFieldsRepositoryProviderRepositoryProviderBitbucketServer
+		}{typename, v}
+		return json.Marshal(result)
+	case *PipelineFieldsRepositoryProviderRepositoryProviderCodebase:
+		typename = "RepositoryProviderCodebase"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*PipelineFieldsRepositoryProviderRepositoryProviderCodebase
+		}{typename, v}
+		return json.Marshal(result)
+	case *PipelineFieldsRepositoryProviderRepositoryProviderGithub:
+		typename = "RepositoryProviderGithub"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*PipelineFieldsRepositoryProviderRepositoryProviderGithub
+		}{typename, v}
+		return json.Marshal(result)
+	case *PipelineFieldsRepositoryProviderRepositoryProviderGithubEnterprise:
+		typename = "RepositoryProviderGithubEnterprise"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*PipelineFieldsRepositoryProviderRepositoryProviderGithubEnterprise
+		}{typename, v}
+		return json.Marshal(result)
+	case *PipelineFieldsRepositoryProviderRepositoryProviderGitlab:
+		typename = "RepositoryProviderGitlab"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*PipelineFieldsRepositoryProviderRepositoryProviderGitlab
+		}{typename, v}
+		return json.Marshal(result)
+	case *PipelineFieldsRepositoryProviderRepositoryProviderGitlabCommunity:
+		typename = "RepositoryProviderGitlabCommunity"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*PipelineFieldsRepositoryProviderRepositoryProviderGitlabCommunity
+		}{typename, v}
+		return json.Marshal(result)
+	case *PipelineFieldsRepositoryProviderRepositoryProviderGitlabEnterprise:
+		typename = "RepositoryProviderGitlabEnterprise"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*PipelineFieldsRepositoryProviderRepositoryProviderGitlabEnterprise
+		}{typename, v}
+		return json.Marshal(result)
+	case *PipelineFieldsRepositoryProviderRepositoryProviderUnknown:
+		typename = "RepositoryProviderUnknown"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*PipelineFieldsRepositoryProviderRepositoryProviderUnknown
+		}{typename, v}
+		return json.Marshal(result)
+	case nil:
+		return []byte("null"), nil
+	default:
+		return nil, fmt.Errorf(
+			`unexpected concrete type for PipelineFieldsRepositoryProvider: "%T"`, v)
+	}
+}
+
+// PipelineFieldsRepositoryProviderRepositoryProviderBeanstalk includes the requested fields of the GraphQL type RepositoryProviderBeanstalk.
+// The GraphQL type's documentation follows.
+//
+// A pipeline's repository is being provided by Beanstalk
+type PipelineFieldsRepositoryProviderRepositoryProviderBeanstalk struct {
+	Typename string `json:"__typename"`
+	// The repository’s provider settings
+	Settings PipelineFieldsRepositoryProviderRepositoryProviderBeanstalkSettings `json:"settings"`
+}
+
+// GetTypename returns PipelineFieldsRepositoryProviderRepositoryProviderBeanstalk.Typename, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderBeanstalk) GetTypename() string {
+	return v.Typename
+}
+
+// GetSettings returns PipelineFieldsRepositoryProviderRepositoryProviderBeanstalk.Settings, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderBeanstalk) GetSettings() PipelineFieldsRepositoryProviderRepositoryProviderBeanstalkSettings {
+	return v.Settings
+}
+
+// PipelineFieldsRepositoryProviderRepositoryProviderBeanstalkSettings includes the requested fields of the GraphQL type RepositoryProviderBeanstalkSettings.
+// The GraphQL type's documentation follows.
+//
+// Settings for a Beanstalk repository.
+type PipelineFieldsRepositoryProviderRepositoryProviderBeanstalkSettings struct {
+	// The conditions under which this pipeline will trigger a build.
+	FilterCondition string `json:"filterCondition"`
+	// Whether the filter is enabled
+	FilterEnabled bool `json:"filterEnabled"`
+}
+
+// GetFilterCondition returns PipelineFieldsRepositoryProviderRepositoryProviderBeanstalkSettings.FilterCondition, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderBeanstalkSettings) GetFilterCondition() string {
+	return v.FilterCondition
+}
+
+// GetFilterEnabled returns PipelineFieldsRepositoryProviderRepositoryProviderBeanstalkSettings.FilterEnabled, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderBeanstalkSettings) GetFilterEnabled() bool {
+	return v.FilterEnabled
+}
+
+// PipelineFieldsRepositoryProviderRepositoryProviderBitbucket includes the requested fields of the GraphQL type RepositoryProviderBitbucket.
+// The GraphQL type's documentation follows.
+//
+// A pipeline's repository is being provided by Bitbucket
+type PipelineFieldsRepositoryProviderRepositoryProviderBitbucket struct {
+	Typename string `json:"__typename"`
+	// The repository’s provider settings
+	Settings PipelineFieldsRepositoryProviderRepositoryProviderBitbucketSettings `json:"settings"`
+}
+
+// GetTypename returns PipelineFieldsRepositoryProviderRepositoryProviderBitbucket.Typename, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderBitbucket) GetTypename() string {
+	return v.Typename
+}
+
+// GetSettings returns PipelineFieldsRepositoryProviderRepositoryProviderBitbucket.Settings, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderBitbucket) GetSettings() PipelineFieldsRepositoryProviderRepositoryProviderBitbucketSettings {
+	return v.Settings
+}
+
+// PipelineFieldsRepositoryProviderRepositoryProviderBitbucketServer includes the requested fields of the GraphQL type RepositoryProviderBitbucketServer.
+// The GraphQL type's documentation follows.
+//
+// A pipeline's repository is being provided by Bitbucket Server
+type PipelineFieldsRepositoryProviderRepositoryProviderBitbucketServer struct {
+	Typename string `json:"__typename"`
+	// The repository’s provider settings
+	Settings PipelineFieldsRepositoryProviderRepositoryProviderBitbucketServerSettings `json:"settings"`
+}
+
+// GetTypename returns PipelineFieldsRepositoryProviderRepositoryProviderBitbucketServer.Typename, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderBitbucketServer) GetTypename() string {
+	return v.Typename
+}
+
+// GetSettings returns PipelineFieldsRepositoryProviderRepositoryProviderBitbucketServer.Settings, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderBitbucketServer) GetSettings() PipelineFieldsRepositoryProviderRepositoryProviderBitbucketServerSettings {
+	return v.Settings
+}
+
+// PipelineFieldsRepositoryProviderRepositoryProviderBitbucketServerSettings includes the requested fields of the GraphQL type RepositoryProviderBitbucketServerSettings.
+// The GraphQL type's documentation follows.
+//
+// Settings for Bitbucket Server repository
+type PipelineFieldsRepositoryProviderRepositoryProviderBitbucketServerSettings struct {
+	// Whether to create builds when branches are pushed.
+	BuildBranches bool `json:"buildBranches"`
+	// Whether to create builds for commits that are part of a Pull Request.
+	BuildPullRequests bool `json:"buildPullRequests"`
+	// Whether to create builds when tags are pushed.
+	BuildTags bool `json:"buildTags"`
+	// The conditions under which this pipeline will trigger a build.
+	FilterCondition string `json:"filterCondition"`
+	// Whether the filter is enabled
+	FilterEnabled bool `json:"filterEnabled"`
+}
+
+// GetBuildBranches returns PipelineFieldsRepositoryProviderRepositoryProviderBitbucketServerSettings.BuildBranches, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderBitbucketServerSettings) GetBuildBranches() bool {
+	return v.BuildBranches
+}
+
+// GetBuildPullRequests returns PipelineFieldsRepositoryProviderRepositoryProviderBitbucketServerSettings.BuildPullRequests, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderBitbucketServerSettings) GetBuildPullRequests() bool {
+	return v.BuildPullRequests
+}
+
+// GetBuildTags returns PipelineFieldsRepositoryProviderRepositoryProviderBitbucketServerSettings.BuildTags, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderBitbucketServerSettings) GetBuildTags() bool {
+	return v.BuildTags
+}
+
+// GetFilterCondition returns PipelineFieldsRepositoryProviderRepositoryProviderBitbucketServerSettings.FilterCondition, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderBitbucketServerSettings) GetFilterCondition() string {
+	return v.FilterCondition
+}
+
+// GetFilterEnabled returns PipelineFieldsRepositoryProviderRepositoryProviderBitbucketServerSettings.FilterEnabled, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderBitbucketServerSettings) GetFilterEnabled() bool {
+	return v.FilterEnabled
+}
+
+// PipelineFieldsRepositoryProviderRepositoryProviderBitbucketSettings includes the requested fields of the GraphQL type RepositoryProviderBitbucketSettings.
+// The GraphQL type's documentation follows.
+//
+// Settings for a Bitbucket repository.
+type PipelineFieldsRepositoryProviderRepositoryProviderBitbucketSettings struct {
+	// Whether to create builds when branches are pushed.
+	BuildBranches bool `json:"buildBranches"`
+	// Whether to create builds for commits that are part of a Pull Request.
+	BuildPullRequests bool `json:"buildPullRequests"`
+	// Whether to create builds when tags are pushed.
+	BuildTags bool `json:"buildTags"`
+	// A boolean to enable automatically cancelling any running builds for a branch if the branch is deleted.
+	Canceldeletedbranchbuilds bool `json:"canceldeletedbranchbuilds"`
+	// The conditions under which this pipeline will trigger a build.
+	FilterCondition string `json:"filterCondition"`
+	// Whether the filter is enabled
+	FilterEnabled bool `json:"filterEnabled"`
+	// Ensure that even if Build Pull Requests is disabled, all commits to the default branch will trigger a build.
+	IgnoreDefaultBranchPullRequests bool `json:"ignoreDefaultBranchPullRequests"`
+	// Whether to update the status of commits in Bitbucket.
+	PublishCommitStatus bool `json:"publishCommitStatus"`
+	// Whether to create a separate status for each job in a build, allowing you to see the status of each job directly in Bitbucket.
+	PublishCommitStatusPerStep bool `json:"publishCommitStatusPerStep"`
+	// The branch filtering pattern. Only pull requests on branches matching this pattern will cause builds to be created.
+	PullRequestBranchFilterConfiguration string `json:"pullRequestBranchFilterConfiguration"`
+	// Whether to limit the creation of builds to specific branches or patterns.
+	PullRequestBranchFilterEnabled bool `json:"pullRequestBranchFilterEnabled"`
+	// Whether to skip creating a new build if a build for the commit and branch already exists.
+	Skipbuildsforexistingcommits bool `json:"skipbuildsforexistingcommits"`
+	// Whether to skip creating a new build for a pull request if an existing build for the commit and branch already exists.
+	SkipPullRequestBuildsForExistingCommits bool `json:"skipPullRequestBuildsForExistingCommits"`
+}
+
+// GetBuildBranches returns PipelineFieldsRepositoryProviderRepositoryProviderBitbucketSettings.BuildBranches, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderBitbucketSettings) GetBuildBranches() bool {
+	return v.BuildBranches
+}
+
+// GetBuildPullRequests returns PipelineFieldsRepositoryProviderRepositoryProviderBitbucketSettings.BuildPullRequests, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderBitbucketSettings) GetBuildPullRequests() bool {
+	return v.BuildPullRequests
+}
+
+// GetBuildTags returns PipelineFieldsRepositoryProviderRepositoryProviderBitbucketSettings.BuildTags, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderBitbucketSettings) GetBuildTags() bool {
+	return v.BuildTags
+}
+
+// GetCanceldeletedbranchbuilds returns PipelineFieldsRepositoryProviderRepositoryProviderBitbucketSettings.Canceldeletedbranchbuilds, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderBitbucketSettings) GetCanceldeletedbranchbuilds() bool {
+	return v.Canceldeletedbranchbuilds
+}
+
+// GetFilterCondition returns PipelineFieldsRepositoryProviderRepositoryProviderBitbucketSettings.FilterCondition, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderBitbucketSettings) GetFilterCondition() string {
+	return v.FilterCondition
+}
+
+// GetFilterEnabled returns PipelineFieldsRepositoryProviderRepositoryProviderBitbucketSettings.FilterEnabled, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderBitbucketSettings) GetFilterEnabled() bool {
+	return v.FilterEnabled
+}
+
+// GetIgnoreDefaultBranchPullRequests returns PipelineFieldsRepositoryProviderRepositoryProviderBitbucketSettings.IgnoreDefaultBranchPullRequests, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderBitbucketSettings) GetIgnoreDefaultBranchPullRequests() bool {
+	return v.IgnoreDefaultBranchPullRequests
+}
+
+// GetPublishCommitStatus returns PipelineFieldsRepositoryProviderRepositoryProviderBitbucketSettings.PublishCommitStatus, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderBitbucketSettings) GetPublishCommitStatus() bool {
+	return v.PublishCommitStatus
+}
+
+// GetPublishCommitStatusPerStep returns PipelineFieldsRepositoryProviderRepositoryProviderBitbucketSettings.PublishCommitStatusPerStep, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderBitbucketSettings) GetPublishCommitStatusPerStep() bool {
+	return v.PublishCommitStatusPerStep
+}
+
+// GetPullRequestBranchFilterConfiguration returns PipelineFieldsRepositoryProviderRepositoryProviderBitbucketSettings.PullRequestBranchFilterConfiguration, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderBitbucketSettings) GetPullRequestBranchFilterConfiguration() string {
+	return v.PullRequestBranchFilterConfiguration
+}
+
+// GetPullRequestBranchFilterEnabled returns PipelineFieldsRepositoryProviderRepositoryProviderBitbucketSettings.PullRequestBranchFilterEnabled, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderBitbucketSettings) GetPullRequestBranchFilterEnabled() bool {
+	return v.PullRequestBranchFilterEnabled
+}
+
+// GetSkipbuildsforexistingcommits returns PipelineFieldsRepositoryProviderRepositoryProviderBitbucketSettings.Skipbuildsforexistingcommits, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderBitbucketSettings) GetSkipbuildsforexistingcommits() bool {
+	return v.Skipbuildsforexistingcommits
+}
+
+// GetSkipPullRequestBuildsForExistingCommits returns PipelineFieldsRepositoryProviderRepositoryProviderBitbucketSettings.SkipPullRequestBuildsForExistingCommits, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderBitbucketSettings) GetSkipPullRequestBuildsForExistingCommits() bool {
+	return v.SkipPullRequestBuildsForExistingCommits
+}
+
+// PipelineFieldsRepositoryProviderRepositoryProviderCodebase includes the requested fields of the GraphQL type RepositoryProviderCodebase.
+// The GraphQL type's documentation follows.
+//
+// A pipeline's repository is being provided by Codebase
+type PipelineFieldsRepositoryProviderRepositoryProviderCodebase struct {
+	Typename string `json:"__typename"`
+	// The repository’s provider settings
+	Settings PipelineFieldsRepositoryProviderRepositoryProviderCodebaseSettings `json:"settings"`
+}
+
+// GetTypename returns PipelineFieldsRepositoryProviderRepositoryProviderCodebase.Typename, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderCodebase) GetTypename() string {
+	return v.Typename
+}
+
+// GetSettings returns PipelineFieldsRepositoryProviderRepositoryProviderCodebase.Settings, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderCodebase) GetSettings() PipelineFieldsRepositoryProviderRepositoryProviderCodebaseSettings {
+	return v.Settings
+}
+
+// PipelineFieldsRepositoryProviderRepositoryProviderCodebaseSettings includes the requested fields of the GraphQL type RepositoryProviderCodebaseSettings.
+// The GraphQL type's documentation follows.
+//
+// Settings for a Codebase repository.
+type PipelineFieldsRepositoryProviderRepositoryProviderCodebaseSettings struct {
+	// The conditions under which this pipeline will trigger a build.
+	FilterCondition string `json:"filterCondition"`
+	// Whether the filter is enabled
+	FilterEnabled bool `json:"filterEnabled"`
+}
+
+// GetFilterCondition returns PipelineFieldsRepositoryProviderRepositoryProviderCodebaseSettings.FilterCondition, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderCodebaseSettings) GetFilterCondition() string {
+	return v.FilterCondition
+}
+
+// GetFilterEnabled returns PipelineFieldsRepositoryProviderRepositoryProviderCodebaseSettings.FilterEnabled, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderCodebaseSettings) GetFilterEnabled() bool {
+	return v.FilterEnabled
+}
+
+// PipelineFieldsRepositoryProviderRepositoryProviderGithub includes the requested fields of the GraphQL type RepositoryProviderGithub.
+// The GraphQL type's documentation follows.
+//
+// A pipeline's repository is being provided by GitHub
+type PipelineFieldsRepositoryProviderRepositoryProviderGithub struct {
+	Typename string `json:"__typename"`
+	// The repository's provider settings
+	Settings PipelineFieldsRepositoryProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings `json:"settings"`
+}
+
+// GetTypename returns PipelineFieldsRepositoryProviderRepositoryProviderGithub.Typename, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderGithub) GetTypename() string {
+	return v.Typename
+}
+
+// GetSettings returns PipelineFieldsRepositoryProviderRepositoryProviderGithub.Settings, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderGithub) GetSettings() PipelineFieldsRepositoryProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings {
+	return v.Settings
+}
+
+// PipelineFieldsRepositoryProviderRepositoryProviderGithubEnterprise includes the requested fields of the GraphQL type RepositoryProviderGithubEnterprise.
+// The GraphQL type's documentation follows.
+//
+// A pipeline's repository is being provided by GitHub Enterprise
+type PipelineFieldsRepositoryProviderRepositoryProviderGithubEnterprise struct {
+	Typename string `json:"__typename"`
+	// The repository's provider settings
+	Settings PipelineFieldsRepositoryProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings `json:"settings"`
+}
+
+// GetTypename returns PipelineFieldsRepositoryProviderRepositoryProviderGithubEnterprise.Typename, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderGithubEnterprise) GetTypename() string {
+	return v.Typename
+}
+
+// GetSettings returns PipelineFieldsRepositoryProviderRepositoryProviderGithubEnterprise.Settings, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderGithubEnterprise) GetSettings() PipelineFieldsRepositoryProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings {
+	return v.Settings
+}
+
+// PipelineFieldsRepositoryProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings includes the requested fields of the GraphQL type RepositoryProviderGitHubEnterpriseSettings.
+// The GraphQL type's documentation follows.
+//
+// Settings for a GitHub Enterprise repository.
+type PipelineFieldsRepositoryProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings struct {
+	// Whether to create builds when branches are pushed.
+	BuildBranches bool `json:"buildBranches"`
+	// Whether to create builds for merge group check runs.
+	BuildMergeGroupChecksRequested bool `json:"buildMergeGroupChecksRequested"`
+	// Whether to create builds for pull requests when the base branch is changed.
+	BuildPullRequestBaseBranchChanged bool `json:"buildPullRequestBaseBranchChanged"`
+	// Whether to create builds for pull requests from third-party forks.
+	BuildPullRequestForks bool `json:"buildPullRequestForks"`
+	// Whether to create builds for pull requests when labels are added or removed.
+	BuildPullRequestLabelsChanged bool `json:"buildPullRequestLabelsChanged"`
+	// Whether to create builds for pull requests that are ready for review.
+	BuildPullRequestReadyForReview bool `json:"buildPullRequestReadyForReview"`
+	// Whether to create builds for commits that are part of a Pull Request.
+	BuildPullRequests bool `json:"buildPullRequests"`
+	// Whether to create builds when tags are pushed.
+	BuildTags bool `json:"buildTags"`
+	// A boolean to enable automatically cancelling any running builds for a branch if the branch is deleted.
+	CancelDeletedBranchBuilds bool `json:"cancelDeletedBranchBuilds"`
+	// Whether to cancel running builds when a merge group is destroyed.
+	CancelWhenMergeGroupDestroyed bool `json:"cancelWhenMergeGroupDestroyed"`
+	// The conditions under which this pipeline will trigger a build.
+	FilterCondition string `json:"filterCondition"`
+	// Whether the filter is enabled
+	FilterEnabled bool `json:"filterEnabled"`
+	// Ensure that even if Build Pull Requests is disabled, all commits to the default branch will trigger a build.
+	IgnoreDefaultBranchPullRequests bool `json:"ignoreDefaultBranchPullRequests"`
+	// Prefix branch names for third-party fork builds to ensure they don't trigger branch conditions. For example, the main branch from some-user will become some-user:main.
+	PrefixPullRequestForkBranchNames bool `json:"prefixPullRequestForkBranchNames"`
+	// The status to use for blocked builds. Pending can be used with required status checks to prevent merging pull requests with blocked builds.
+	PublishBlockedAsPending bool `json:"publishBlockedAsPending"`
+	// Whether to update the status of commits in Bitbucket or GitHub.
+	PublishCommitStatus bool `json:"publishCommitStatus"`
+	// Whether to create a separate status for each job in a build, allowing you to see the status of each job directly in GitHub.
+	PublishCommitStatusPerStep bool `json:"publishCommitStatusPerStep"`
+	// The branch filtering pattern. Only pull requests on branches matching this pattern will cause builds to be created.
+	PullRequestBranchFilterConfiguration string `json:"pullRequestBranchFilterConfiguration"`
+	// Whether to limit the creation of builds to specific branches or patterns.
+	PullRequestBranchFilterEnabled bool `json:"pullRequestBranchFilterEnabled"`
+	// Whether to create a separate status for pull request builds, allowing you to require a passing pull request build in your required status checks in GitHub.
+	SeparatePullRequestStatuses bool `json:"separatePullRequestStatuses"`
+	// Whether to skip creating a new build if a build for the commit and branch already exists.
+	SkipBuildsForExistingCommits bool `json:"skipBuildsForExistingCommits"`
+	// Whether to skip creating a new build for a pull request if an existing build for the commit and branch already exists.
+	SkipPullRequestBuildsForExistingCommits bool `json:"skipPullRequestBuildsForExistingCommits"`
+	// What type of event to trigger builds on.
+	TriggerMode string `json:"triggerMode"`
+	// Whether to use the merge group base commit for git diff base.
+	UseMergeGroupBaseCommitForGitDiffBase bool `json:"useMergeGroupBaseCommitForGitDiffBase"`
+}
+
+// GetBuildBranches returns PipelineFieldsRepositoryProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings.BuildBranches, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings) GetBuildBranches() bool {
+	return v.BuildBranches
+}
+
+// GetBuildMergeGroupChecksRequested returns PipelineFieldsRepositoryProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings.BuildMergeGroupChecksRequested, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings) GetBuildMergeGroupChecksRequested() bool {
+	return v.BuildMergeGroupChecksRequested
+}
+
+// GetBuildPullRequestBaseBranchChanged returns PipelineFieldsRepositoryProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings.BuildPullRequestBaseBranchChanged, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings) GetBuildPullRequestBaseBranchChanged() bool {
+	return v.BuildPullRequestBaseBranchChanged
+}
+
+// GetBuildPullRequestForks returns PipelineFieldsRepositoryProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings.BuildPullRequestForks, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings) GetBuildPullRequestForks() bool {
+	return v.BuildPullRequestForks
+}
+
+// GetBuildPullRequestLabelsChanged returns PipelineFieldsRepositoryProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings.BuildPullRequestLabelsChanged, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings) GetBuildPullRequestLabelsChanged() bool {
+	return v.BuildPullRequestLabelsChanged
+}
+
+// GetBuildPullRequestReadyForReview returns PipelineFieldsRepositoryProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings.BuildPullRequestReadyForReview, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings) GetBuildPullRequestReadyForReview() bool {
+	return v.BuildPullRequestReadyForReview
+}
+
+// GetBuildPullRequests returns PipelineFieldsRepositoryProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings.BuildPullRequests, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings) GetBuildPullRequests() bool {
+	return v.BuildPullRequests
+}
+
+// GetBuildTags returns PipelineFieldsRepositoryProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings.BuildTags, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings) GetBuildTags() bool {
+	return v.BuildTags
+}
+
+// GetCancelDeletedBranchBuilds returns PipelineFieldsRepositoryProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings.CancelDeletedBranchBuilds, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings) GetCancelDeletedBranchBuilds() bool {
+	return v.CancelDeletedBranchBuilds
+}
+
+// GetCancelWhenMergeGroupDestroyed returns PipelineFieldsRepositoryProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings.CancelWhenMergeGroupDestroyed, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings) GetCancelWhenMergeGroupDestroyed() bool {
+	return v.CancelWhenMergeGroupDestroyed
+}
+
+// GetFilterCondition returns PipelineFieldsRepositoryProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings.FilterCondition, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings) GetFilterCondition() string {
+	return v.FilterCondition
+}
+
+// GetFilterEnabled returns PipelineFieldsRepositoryProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings.FilterEnabled, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings) GetFilterEnabled() bool {
+	return v.FilterEnabled
+}
+
+// GetIgnoreDefaultBranchPullRequests returns PipelineFieldsRepositoryProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings.IgnoreDefaultBranchPullRequests, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings) GetIgnoreDefaultBranchPullRequests() bool {
+	return v.IgnoreDefaultBranchPullRequests
+}
+
+// GetPrefixPullRequestForkBranchNames returns PipelineFieldsRepositoryProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings.PrefixPullRequestForkBranchNames, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings) GetPrefixPullRequestForkBranchNames() bool {
+	return v.PrefixPullRequestForkBranchNames
+}
+
+// GetPublishBlockedAsPending returns PipelineFieldsRepositoryProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings.PublishBlockedAsPending, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings) GetPublishBlockedAsPending() bool {
+	return v.PublishBlockedAsPending
+}
+
+// GetPublishCommitStatus returns PipelineFieldsRepositoryProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings.PublishCommitStatus, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings) GetPublishCommitStatus() bool {
+	return v.PublishCommitStatus
+}
+
+// GetPublishCommitStatusPerStep returns PipelineFieldsRepositoryProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings.PublishCommitStatusPerStep, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings) GetPublishCommitStatusPerStep() bool {
+	return v.PublishCommitStatusPerStep
+}
+
+// GetPullRequestBranchFilterConfiguration returns PipelineFieldsRepositoryProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings.PullRequestBranchFilterConfiguration, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings) GetPullRequestBranchFilterConfiguration() string {
+	return v.PullRequestBranchFilterConfiguration
+}
+
+// GetPullRequestBranchFilterEnabled returns PipelineFieldsRepositoryProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings.PullRequestBranchFilterEnabled, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings) GetPullRequestBranchFilterEnabled() bool {
+	return v.PullRequestBranchFilterEnabled
+}
+
+// GetSeparatePullRequestStatuses returns PipelineFieldsRepositoryProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings.SeparatePullRequestStatuses, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings) GetSeparatePullRequestStatuses() bool {
+	return v.SeparatePullRequestStatuses
+}
+
+// GetSkipBuildsForExistingCommits returns PipelineFieldsRepositoryProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings.SkipBuildsForExistingCommits, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings) GetSkipBuildsForExistingCommits() bool {
+	return v.SkipBuildsForExistingCommits
+}
+
+// GetSkipPullRequestBuildsForExistingCommits returns PipelineFieldsRepositoryProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings.SkipPullRequestBuildsForExistingCommits, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings) GetSkipPullRequestBuildsForExistingCommits() bool {
+	return v.SkipPullRequestBuildsForExistingCommits
+}
+
+// GetTriggerMode returns PipelineFieldsRepositoryProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings.TriggerMode, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings) GetTriggerMode() string {
+	return v.TriggerMode
+}
+
+// GetUseMergeGroupBaseCommitForGitDiffBase returns PipelineFieldsRepositoryProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings.UseMergeGroupBaseCommitForGitDiffBase, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings) GetUseMergeGroupBaseCommitForGitDiffBase() bool {
+	return v.UseMergeGroupBaseCommitForGitDiffBase
+}
+
+// PipelineFieldsRepositoryProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings includes the requested fields of the GraphQL type RepositoryProviderGitHubSettings.
+// The GraphQL type's documentation follows.
+//
+// Settings for a GitHub repository.
+type PipelineFieldsRepositoryProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings struct {
+	// Whether to create builds when branches are pushed.
+	BuildBranches bool `json:"buildBranches"`
+	// Whether to create builds for merge group check runs.
+	BuildMergeGroupChecksRequested bool `json:"buildMergeGroupChecksRequested"`
+	// Whether to create builds for pull requests when the base branch is changed.
+	BuildPullRequestBaseBranchChanged bool `json:"buildPullRequestBaseBranchChanged"`
+	// Whether to create builds for pull requests from third-party forks.
+	BuildPullRequestForks bool `json:"buildPullRequestForks"`
+	// Whether to create builds for pull requests when labels are added or removed.
+	BuildPullRequestLabelsChanged bool `json:"buildPullRequestLabelsChanged"`
+	// Whether to create builds for pull requests that are ready for review.
+	BuildPullRequestReadyForReview bool `json:"buildPullRequestReadyForReview"`
+	// Whether to create builds for commits that are part of a Pull Request.
+	BuildPullRequests bool `json:"buildPullRequests"`
+	// Whether to create builds when tags are pushed.
+	BuildTags bool `json:"buildTags"`
+	// A boolean to enable automatically cancelling any running builds for a branch if the branch is deleted.
+	CancelDeletedBranchBuilds bool `json:"cancelDeletedBranchBuilds"`
+	// Whether to cancel running builds when a merge group is destroyed.
+	CancelWhenMergeGroupDestroyed bool `json:"cancelWhenMergeGroupDestroyed"`
+	// The conditions under which this pipeline will trigger a build.
+	FilterCondition string `json:"filterCondition"`
+	// Whether the filter is enabled
+	FilterEnabled bool `json:"filterEnabled"`
+	// Ensure that even if Build Pull Requests is disabled, all commits to the default branch will trigger a build.
+	IgnoreDefaultBranchPullRequests bool `json:"ignoreDefaultBranchPullRequests"`
+	// Prefix branch names for third-party fork builds to ensure they don't trigger branch conditions. For example, the main branch from some-user will become some-user:main.
+	PrefixPullRequestForkBranchNames bool `json:"prefixPullRequestForkBranchNames"`
+	// The status to use for blocked builds. Pending can be used with required status checks to prevent merging pull requests with blocked builds.
+	PublishBlockedAsPending bool `json:"publishBlockedAsPending"`
+	// Whether to update the status of commits in Bitbucket or GitHub.
+	PublishCommitStatus bool `json:"publishCommitStatus"`
+	// Whether to create a separate status for each job in a build, allowing you to see the status of each job directly in GitHub.
+	PublishCommitStatusPerStep bool `json:"publishCommitStatusPerStep"`
+	// The branch filtering pattern. Only pull requests on branches matching this pattern will cause builds to be created.
+	PullRequestBranchFilterConfiguration string `json:"pullRequestBranchFilterConfiguration"`
+	// Whether to limit the creation of builds to specific branches or patterns.
+	PullRequestBranchFilterEnabled bool `json:"pullRequestBranchFilterEnabled"`
+	// Whether to create a separate status for pull request builds, allowing you to require a passing pull request build in your required status checks in GitHub.
+	SeparatePullRequestStatuses bool `json:"separatePullRequestStatuses"`
+	// Whether to skip creating a new build if a build for the commit and branch already exists.
+	SkipBuildsForExistingCommits bool `json:"skipBuildsForExistingCommits"`
+	// Whether to skip creating a new build for a pull request if an existing build for the commit and branch already exists.
+	SkipPullRequestBuildsForExistingCommits bool `json:"skipPullRequestBuildsForExistingCommits"`
+	// What type of event to trigger builds on.
+	TriggerMode string `json:"triggerMode"`
+	// Whether to use the merge group base commit for git diff base.
+	UseMergeGroupBaseCommitForGitDiffBase bool `json:"useMergeGroupBaseCommitForGitDiffBase"`
+}
+
+// GetBuildBranches returns PipelineFieldsRepositoryProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings.BuildBranches, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings) GetBuildBranches() bool {
+	return v.BuildBranches
+}
+
+// GetBuildMergeGroupChecksRequested returns PipelineFieldsRepositoryProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings.BuildMergeGroupChecksRequested, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings) GetBuildMergeGroupChecksRequested() bool {
+	return v.BuildMergeGroupChecksRequested
+}
+
+// GetBuildPullRequestBaseBranchChanged returns PipelineFieldsRepositoryProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings.BuildPullRequestBaseBranchChanged, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings) GetBuildPullRequestBaseBranchChanged() bool {
+	return v.BuildPullRequestBaseBranchChanged
+}
+
+// GetBuildPullRequestForks returns PipelineFieldsRepositoryProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings.BuildPullRequestForks, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings) GetBuildPullRequestForks() bool {
+	return v.BuildPullRequestForks
+}
+
+// GetBuildPullRequestLabelsChanged returns PipelineFieldsRepositoryProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings.BuildPullRequestLabelsChanged, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings) GetBuildPullRequestLabelsChanged() bool {
+	return v.BuildPullRequestLabelsChanged
+}
+
+// GetBuildPullRequestReadyForReview returns PipelineFieldsRepositoryProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings.BuildPullRequestReadyForReview, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings) GetBuildPullRequestReadyForReview() bool {
+	return v.BuildPullRequestReadyForReview
+}
+
+// GetBuildPullRequests returns PipelineFieldsRepositoryProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings.BuildPullRequests, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings) GetBuildPullRequests() bool {
+	return v.BuildPullRequests
+}
+
+// GetBuildTags returns PipelineFieldsRepositoryProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings.BuildTags, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings) GetBuildTags() bool {
+	return v.BuildTags
+}
+
+// GetCancelDeletedBranchBuilds returns PipelineFieldsRepositoryProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings.CancelDeletedBranchBuilds, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings) GetCancelDeletedBranchBuilds() bool {
+	return v.CancelDeletedBranchBuilds
+}
+
+// GetCancelWhenMergeGroupDestroyed returns PipelineFieldsRepositoryProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings.CancelWhenMergeGroupDestroyed, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings) GetCancelWhenMergeGroupDestroyed() bool {
+	return v.CancelWhenMergeGroupDestroyed
+}
+
+// GetFilterCondition returns PipelineFieldsRepositoryProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings.FilterCondition, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings) GetFilterCondition() string {
+	return v.FilterCondition
+}
+
+// GetFilterEnabled returns PipelineFieldsRepositoryProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings.FilterEnabled, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings) GetFilterEnabled() bool {
+	return v.FilterEnabled
+}
+
+// GetIgnoreDefaultBranchPullRequests returns PipelineFieldsRepositoryProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings.IgnoreDefaultBranchPullRequests, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings) GetIgnoreDefaultBranchPullRequests() bool {
+	return v.IgnoreDefaultBranchPullRequests
+}
+
+// GetPrefixPullRequestForkBranchNames returns PipelineFieldsRepositoryProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings.PrefixPullRequestForkBranchNames, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings) GetPrefixPullRequestForkBranchNames() bool {
+	return v.PrefixPullRequestForkBranchNames
+}
+
+// GetPublishBlockedAsPending returns PipelineFieldsRepositoryProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings.PublishBlockedAsPending, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings) GetPublishBlockedAsPending() bool {
+	return v.PublishBlockedAsPending
+}
+
+// GetPublishCommitStatus returns PipelineFieldsRepositoryProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings.PublishCommitStatus, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings) GetPublishCommitStatus() bool {
+	return v.PublishCommitStatus
+}
+
+// GetPublishCommitStatusPerStep returns PipelineFieldsRepositoryProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings.PublishCommitStatusPerStep, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings) GetPublishCommitStatusPerStep() bool {
+	return v.PublishCommitStatusPerStep
+}
+
+// GetPullRequestBranchFilterConfiguration returns PipelineFieldsRepositoryProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings.PullRequestBranchFilterConfiguration, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings) GetPullRequestBranchFilterConfiguration() string {
+	return v.PullRequestBranchFilterConfiguration
+}
+
+// GetPullRequestBranchFilterEnabled returns PipelineFieldsRepositoryProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings.PullRequestBranchFilterEnabled, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings) GetPullRequestBranchFilterEnabled() bool {
+	return v.PullRequestBranchFilterEnabled
+}
+
+// GetSeparatePullRequestStatuses returns PipelineFieldsRepositoryProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings.SeparatePullRequestStatuses, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings) GetSeparatePullRequestStatuses() bool {
+	return v.SeparatePullRequestStatuses
+}
+
+// GetSkipBuildsForExistingCommits returns PipelineFieldsRepositoryProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings.SkipBuildsForExistingCommits, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings) GetSkipBuildsForExistingCommits() bool {
+	return v.SkipBuildsForExistingCommits
+}
+
+// GetSkipPullRequestBuildsForExistingCommits returns PipelineFieldsRepositoryProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings.SkipPullRequestBuildsForExistingCommits, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings) GetSkipPullRequestBuildsForExistingCommits() bool {
+	return v.SkipPullRequestBuildsForExistingCommits
+}
+
+// GetTriggerMode returns PipelineFieldsRepositoryProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings.TriggerMode, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings) GetTriggerMode() string {
+	return v.TriggerMode
+}
+
+// GetUseMergeGroupBaseCommitForGitDiffBase returns PipelineFieldsRepositoryProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings.UseMergeGroupBaseCommitForGitDiffBase, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings) GetUseMergeGroupBaseCommitForGitDiffBase() bool {
+	return v.UseMergeGroupBaseCommitForGitDiffBase
+}
+
+// PipelineFieldsRepositoryProviderRepositoryProviderGitlab includes the requested fields of the GraphQL type RepositoryProviderGitlab.
+// The GraphQL type's documentation follows.
+//
+// A pipeline's repository is being provided by GitLab
+type PipelineFieldsRepositoryProviderRepositoryProviderGitlab struct {
+	Typename string `json:"__typename"`
+	// The repository’s provider settings
+	Settings PipelineFieldsRepositoryProviderRepositoryProviderGitlabSettings `json:"settings"`
+}
+
+// GetTypename returns PipelineFieldsRepositoryProviderRepositoryProviderGitlab.Typename, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderGitlab) GetTypename() string {
+	return v.Typename
+}
+
+// GetSettings returns PipelineFieldsRepositoryProviderRepositoryProviderGitlab.Settings, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderGitlab) GetSettings() PipelineFieldsRepositoryProviderRepositoryProviderGitlabSettings {
+	return v.Settings
+}
+
+// PipelineFieldsRepositoryProviderRepositoryProviderGitlabCommunity includes the requested fields of the GraphQL type RepositoryProviderGitlabCommunity.
+// The GraphQL type's documentation follows.
+//
+// Deprecated: Use RepositoryProviderGitlabEnterpriseType instead. This type represented GitLab Community Edition.
+type PipelineFieldsRepositoryProviderRepositoryProviderGitlabCommunity struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns PipelineFieldsRepositoryProviderRepositoryProviderGitlabCommunity.Typename, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderGitlabCommunity) GetTypename() string {
+	return v.Typename
+}
+
+// PipelineFieldsRepositoryProviderRepositoryProviderGitlabEnterprise includes the requested fields of the GraphQL type RepositoryProviderGitlabEnterprise.
+// The GraphQL type's documentation follows.
+//
+// A pipeline's repository is being provided by a GitLab Self-Managed instance.
+type PipelineFieldsRepositoryProviderRepositoryProviderGitlabEnterprise struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns PipelineFieldsRepositoryProviderRepositoryProviderGitlabEnterprise.Typename, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderGitlabEnterprise) GetTypename() string {
+	return v.Typename
+}
+
+// PipelineFieldsRepositoryProviderRepositoryProviderGitlabSettings includes the requested fields of the GraphQL type RepositoryProviderGitlabSettings.
+// The GraphQL type's documentation follows.
+//
+// Settings for a GitLab repository.
+type PipelineFieldsRepositoryProviderRepositoryProviderGitlabSettings struct {
+	// The conditions under which this pipeline will trigger a build.
+	FilterCondition string `json:"filterCondition"`
+	// Whether the filter is enabled
+	FilterEnabled bool `json:"filterEnabled"`
+}
+
+// GetFilterCondition returns PipelineFieldsRepositoryProviderRepositoryProviderGitlabSettings.FilterCondition, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderGitlabSettings) GetFilterCondition() string {
+	return v.FilterCondition
+}
+
+// GetFilterEnabled returns PipelineFieldsRepositoryProviderRepositoryProviderGitlabSettings.FilterEnabled, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderGitlabSettings) GetFilterEnabled() bool {
+	return v.FilterEnabled
+}
+
+// PipelineFieldsRepositoryProviderRepositoryProviderUnknown includes the requested fields of the GraphQL type RepositoryProviderUnknown.
+// The GraphQL type's documentation follows.
+//
+// A pipeline's repository is being provided by a service unknown to Buildkite
+type PipelineFieldsRepositoryProviderRepositoryProviderUnknown struct {
+	Typename string `json:"__typename"`
+	// The repository’s provider settings
+	Settings PipelineFieldsRepositoryProviderRepositoryProviderUnknownSettings `json:"settings"`
+}
+
+// GetTypename returns PipelineFieldsRepositoryProviderRepositoryProviderUnknown.Typename, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderUnknown) GetTypename() string {
+	return v.Typename
+}
+
+// GetSettings returns PipelineFieldsRepositoryProviderRepositoryProviderUnknown.Settings, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderUnknown) GetSettings() PipelineFieldsRepositoryProviderRepositoryProviderUnknownSettings {
+	return v.Settings
+}
+
+// PipelineFieldsRepositoryProviderRepositoryProviderUnknownSettings includes the requested fields of the GraphQL type RepositoryProviderUnknownSettings.
+// The GraphQL type's documentation follows.
+//
+// Settings for a repository provided by service unknown to Buildkite
+type PipelineFieldsRepositoryProviderRepositoryProviderUnknownSettings struct {
+	// The conditions under which this pipeline will trigger a build.
+	FilterCondition string `json:"filterCondition"`
+	// Whether the filter is enabled
+	FilterEnabled bool `json:"filterEnabled"`
+}
+
+// GetFilterCondition returns PipelineFieldsRepositoryProviderRepositoryProviderUnknownSettings.FilterCondition, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderUnknownSettings) GetFilterCondition() string {
+	return v.FilterCondition
+}
+
+// GetFilterEnabled returns PipelineFieldsRepositoryProviderRepositoryProviderUnknownSettings.FilterEnabled, and is useful for accessing the field via an interface.
+func (v *PipelineFieldsRepositoryProviderRepositoryProviderUnknownSettings) GetFilterEnabled() bool {
+	return v.FilterEnabled
+}
 
 // PipelineFieldsStepsPipelineSteps includes the requested fields of the GraphQL type PipelineSteps.
 // The GraphQL type's documentation follows.
@@ -2438,15 +3454,15 @@ var AllPipelineVisibility = []PipelineVisibility{
 type RuleAction string
 
 const (
-	// Trigger build
-	RuleActionTriggerBuild RuleAction = "TRIGGER_BUILD"
 	// Artifacts read
 	RuleActionArtifactsRead RuleAction = "ARTIFACTS_READ"
+	// Trigger build
+	RuleActionTriggerBuild RuleAction = "TRIGGER_BUILD"
 )
 
 var AllRuleAction = []RuleAction{
-	RuleActionTriggerBuild,
 	RuleActionArtifactsRead,
+	RuleActionTriggerBuild,
 }
 
 // The effect a rule has
@@ -21008,6 +22024,115 @@ fragment PipelineFields on Pipeline {
 	name
 	repository {
 		url
+		provider {
+			__typename
+			... on RepositoryProviderGithub {
+				settings {
+					buildBranches
+					buildMergeGroupChecksRequested
+					buildPullRequestBaseBranchChanged
+					buildPullRequestForks
+					buildPullRequestLabelsChanged
+					buildPullRequestReadyForReview
+					buildPullRequests
+					buildTags
+					cancelDeletedBranchBuilds
+					cancelWhenMergeGroupDestroyed
+					filterCondition
+					filterEnabled
+					ignoreDefaultBranchPullRequests
+					prefixPullRequestForkBranchNames
+					publishBlockedAsPending
+					publishCommitStatus
+					publishCommitStatusPerStep
+					pullRequestBranchFilterConfiguration
+					pullRequestBranchFilterEnabled
+					separatePullRequestStatuses
+					skipBuildsForExistingCommits
+					skipPullRequestBuildsForExistingCommits
+					triggerMode
+					useMergeGroupBaseCommitForGitDiffBase
+				}
+			}
+			... on RepositoryProviderGitlab {
+				settings {
+					filterCondition
+					filterEnabled
+				}
+			}
+			... on RepositoryProviderBeanstalk {
+				settings {
+					filterCondition
+					filterEnabled
+				}
+			}
+			... on RepositoryProviderBitbucket {
+				settings {
+					buildBranches
+					buildPullRequests
+					buildTags
+					canceldeletedbranchbuilds: cancelDeletedBranchBuilds
+					filterCondition
+					filterEnabled
+					ignoreDefaultBranchPullRequests
+					publishCommitStatus
+					publishCommitStatusPerStep
+					pullRequestBranchFilterConfiguration
+					pullRequestBranchFilterEnabled
+					skipbuildsforexistingcommits: skipBuildsForExistingCommits
+					skipPullRequestBuildsForExistingCommits
+				}
+			}
+			... on RepositoryProviderBitbucketServer {
+				settings {
+					buildBranches
+					buildPullRequests
+					buildTags
+					filterCondition
+					filterEnabled
+				}
+			}
+			... on RepositoryProviderCodebase {
+				settings {
+					filterCondition
+					filterEnabled
+				}
+			}
+			... on RepositoryProviderGithubEnterprise {
+				settings {
+					buildBranches
+					buildMergeGroupChecksRequested
+					buildPullRequestBaseBranchChanged
+					buildPullRequestForks
+					buildPullRequestLabelsChanged
+					buildPullRequestReadyForReview
+					buildPullRequests
+					buildTags
+					cancelDeletedBranchBuilds
+					cancelWhenMergeGroupDestroyed
+					filterCondition
+					filterEnabled
+					ignoreDefaultBranchPullRequests
+					prefixPullRequestForkBranchNames
+					publishBlockedAsPending
+					publishCommitStatus
+					publishCommitStatusPerStep
+					pullRequestBranchFilterConfiguration
+					pullRequestBranchFilterEnabled
+					separatePullRequestStatuses
+					skipBuildsForExistingCommits
+					skipPullRequestBuildsForExistingCommits
+					triggerMode
+					useMergeGroupBaseCommitForGitDiffBase
+				}
+			}
+			... on RepositoryProviderUnknown {
+				settings {
+					filterCondition
+					filterEnabled
+				}
+			}
+		}
 	}
 	pipelineTemplate {
 		id
@@ -22167,6 +23292,115 @@ fragment PipelineFields on Pipeline {
 	name
 	repository {
 		url
+		provider {
+			__typename
+			... on RepositoryProviderGithub {
+				settings {
+					buildBranches
+					buildMergeGroupChecksRequested
+					buildPullRequestBaseBranchChanged
+					buildPullRequestForks
+					buildPullRequestLabelsChanged
+					buildPullRequestReadyForReview
+					buildPullRequests
+					buildTags
+					cancelDeletedBranchBuilds
+					cancelWhenMergeGroupDestroyed
+					filterCondition
+					filterEnabled
+					ignoreDefaultBranchPullRequests
+					prefixPullRequestForkBranchNames
+					publishBlockedAsPending
+					publishCommitStatus
+					publishCommitStatusPerStep
+					pullRequestBranchFilterConfiguration
+					pullRequestBranchFilterEnabled
+					separatePullRequestStatuses
+					skipBuildsForExistingCommits
+					skipPullRequestBuildsForExistingCommits
+					triggerMode
+					useMergeGroupBaseCommitForGitDiffBase
+				}
+			}
+			... on RepositoryProviderGitlab {
+				settings {
+					filterCondition
+					filterEnabled
+				}
+			}
+			... on RepositoryProviderBeanstalk {
+				settings {
+					filterCondition
+					filterEnabled
+				}
+			}
+			... on RepositoryProviderBitbucket {
+				settings {
+					buildBranches
+					buildPullRequests
+					buildTags
+					canceldeletedbranchbuilds: cancelDeletedBranchBuilds
+					filterCondition
+					filterEnabled
+					ignoreDefaultBranchPullRequests
+					publishCommitStatus
+					publishCommitStatusPerStep
+					pullRequestBranchFilterConfiguration
+					pullRequestBranchFilterEnabled
+					skipbuildsforexistingcommits: skipBuildsForExistingCommits
+					skipPullRequestBuildsForExistingCommits
+				}
+			}
+			... on RepositoryProviderBitbucketServer {
+				settings {
+					buildBranches
+					buildPullRequests
+					buildTags
+					filterCondition
+					filterEnabled
+				}
+			}
+			... on RepositoryProviderCodebase {
+				settings {
+					filterCondition
+					filterEnabled
+				}
+			}
+			... on RepositoryProviderGithubEnterprise {
+				settings {
+					buildBranches
+					buildMergeGroupChecksRequested
+					buildPullRequestBaseBranchChanged
+					buildPullRequestForks
+					buildPullRequestLabelsChanged
+					buildPullRequestReadyForReview
+					buildPullRequests
+					buildTags
+					cancelDeletedBranchBuilds
+					cancelWhenMergeGroupDestroyed
+					filterCondition
+					filterEnabled
+					ignoreDefaultBranchPullRequests
+					prefixPullRequestForkBranchNames
+					publishBlockedAsPending
+					publishCommitStatus
+					publishCommitStatusPerStep
+					pullRequestBranchFilterConfiguration
+					pullRequestBranchFilterEnabled
+					separatePullRequestStatuses
+					skipBuildsForExistingCommits
+					skipPullRequestBuildsForExistingCommits
+					triggerMode
+					useMergeGroupBaseCommitForGitDiffBase
+				}
+			}
+			... on RepositoryProviderUnknown {
+				settings {
+					filterCondition
+					filterEnabled
+				}
+			}
+		}
 	}
 	pipelineTemplate {
 		id
@@ -22490,6 +23724,115 @@ fragment PipelineFields on Pipeline {
 	name
 	repository {
 		url
+		provider {
+			__typename
+			... on RepositoryProviderGithub {
+				settings {
+					buildBranches
+					buildMergeGroupChecksRequested
+					buildPullRequestBaseBranchChanged
+					buildPullRequestForks
+					buildPullRequestLabelsChanged
+					buildPullRequestReadyForReview
+					buildPullRequests
+					buildTags
+					cancelDeletedBranchBuilds
+					cancelWhenMergeGroupDestroyed
+					filterCondition
+					filterEnabled
+					ignoreDefaultBranchPullRequests
+					prefixPullRequestForkBranchNames
+					publishBlockedAsPending
+					publishCommitStatus
+					publishCommitStatusPerStep
+					pullRequestBranchFilterConfiguration
+					pullRequestBranchFilterEnabled
+					separatePullRequestStatuses
+					skipBuildsForExistingCommits
+					skipPullRequestBuildsForExistingCommits
+					triggerMode
+					useMergeGroupBaseCommitForGitDiffBase
+				}
+			}
+			... on RepositoryProviderGitlab {
+				settings {
+					filterCondition
+					filterEnabled
+				}
+			}
+			... on RepositoryProviderBeanstalk {
+				settings {
+					filterCondition
+					filterEnabled
+				}
+			}
+			... on RepositoryProviderBitbucket {
+				settings {
+					buildBranches
+					buildPullRequests
+					buildTags
+					canceldeletedbranchbuilds: cancelDeletedBranchBuilds
+					filterCondition
+					filterEnabled
+					ignoreDefaultBranchPullRequests
+					publishCommitStatus
+					publishCommitStatusPerStep
+					pullRequestBranchFilterConfiguration
+					pullRequestBranchFilterEnabled
+					skipbuildsforexistingcommits: skipBuildsForExistingCommits
+					skipPullRequestBuildsForExistingCommits
+				}
+			}
+			... on RepositoryProviderBitbucketServer {
+				settings {
+					buildBranches
+					buildPullRequests
+					buildTags
+					filterCondition
+					filterEnabled
+				}
+			}
+			... on RepositoryProviderCodebase {
+				settings {
+					filterCondition
+					filterEnabled
+				}
+			}
+			... on RepositoryProviderGithubEnterprise {
+				settings {
+					buildBranches
+					buildMergeGroupChecksRequested
+					buildPullRequestBaseBranchChanged
+					buildPullRequestForks
+					buildPullRequestLabelsChanged
+					buildPullRequestReadyForReview
+					buildPullRequests
+					buildTags
+					cancelDeletedBranchBuilds
+					cancelWhenMergeGroupDestroyed
+					filterCondition
+					filterEnabled
+					ignoreDefaultBranchPullRequests
+					prefixPullRequestForkBranchNames
+					publishBlockedAsPending
+					publishCommitStatus
+					publishCommitStatusPerStep
+					pullRequestBranchFilterConfiguration
+					pullRequestBranchFilterEnabled
+					separatePullRequestStatuses
+					skipBuildsForExistingCommits
+					skipPullRequestBuildsForExistingCommits
+					triggerMode
+					useMergeGroupBaseCommitForGitDiffBase
+				}
+			}
+			... on RepositoryProviderUnknown {
+				settings {
+					filterCondition
+					filterEnabled
+				}
+			}
+		}
 	}
 	pipelineTemplate {
 		id
@@ -23679,6 +25022,115 @@ fragment PipelineFields on Pipeline {
 	name
 	repository {
 		url
+		provider {
+			__typename
+			... on RepositoryProviderGithub {
+				settings {
+					buildBranches
+					buildMergeGroupChecksRequested
+					buildPullRequestBaseBranchChanged
+					buildPullRequestForks
+					buildPullRequestLabelsChanged
+					buildPullRequestReadyForReview
+					buildPullRequests
+					buildTags
+					cancelDeletedBranchBuilds
+					cancelWhenMergeGroupDestroyed
+					filterCondition
+					filterEnabled
+					ignoreDefaultBranchPullRequests
+					prefixPullRequestForkBranchNames
+					publishBlockedAsPending
+					publishCommitStatus
+					publishCommitStatusPerStep
+					pullRequestBranchFilterConfiguration
+					pullRequestBranchFilterEnabled
+					separatePullRequestStatuses
+					skipBuildsForExistingCommits
+					skipPullRequestBuildsForExistingCommits
+					triggerMode
+					useMergeGroupBaseCommitForGitDiffBase
+				}
+			}
+			... on RepositoryProviderGitlab {
+				settings {
+					filterCondition
+					filterEnabled
+				}
+			}
+			... on RepositoryProviderBeanstalk {
+				settings {
+					filterCondition
+					filterEnabled
+				}
+			}
+			... on RepositoryProviderBitbucket {
+				settings {
+					buildBranches
+					buildPullRequests
+					buildTags
+					canceldeletedbranchbuilds: cancelDeletedBranchBuilds
+					filterCondition
+					filterEnabled
+					ignoreDefaultBranchPullRequests
+					publishCommitStatus
+					publishCommitStatusPerStep
+					pullRequestBranchFilterConfiguration
+					pullRequestBranchFilterEnabled
+					skipbuildsforexistingcommits: skipBuildsForExistingCommits
+					skipPullRequestBuildsForExistingCommits
+				}
+			}
+			... on RepositoryProviderBitbucketServer {
+				settings {
+					buildBranches
+					buildPullRequests
+					buildTags
+					filterCondition
+					filterEnabled
+				}
+			}
+			... on RepositoryProviderCodebase {
+				settings {
+					filterCondition
+					filterEnabled
+				}
+			}
+			... on RepositoryProviderGithubEnterprise {
+				settings {
+					buildBranches
+					buildMergeGroupChecksRequested
+					buildPullRequestBaseBranchChanged
+					buildPullRequestForks
+					buildPullRequestLabelsChanged
+					buildPullRequestReadyForReview
+					buildPullRequests
+					buildTags
+					cancelDeletedBranchBuilds
+					cancelWhenMergeGroupDestroyed
+					filterCondition
+					filterEnabled
+					ignoreDefaultBranchPullRequests
+					prefixPullRequestForkBranchNames
+					publishBlockedAsPending
+					publishCommitStatus
+					publishCommitStatusPerStep
+					pullRequestBranchFilterConfiguration
+					pullRequestBranchFilterEnabled
+					separatePullRequestStatuses
+					skipBuildsForExistingCommits
+					skipPullRequestBuildsForExistingCommits
+					triggerMode
+					useMergeGroupBaseCommitForGitDiffBase
+				}
+			}
+			... on RepositoryProviderUnknown {
+				settings {
+					filterCondition
+					filterEnabled
+				}
+			}
+		}
 	}
 	pipelineTemplate {
 		id
