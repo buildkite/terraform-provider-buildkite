@@ -3,8 +3,6 @@ package buildkite
 import (
 	"context"
 	"fmt"
-	"regexp"
-	"strings"
 	"github.com/MakeNowJust/heredoc"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -15,6 +13,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"regexp"
+	"strings"
 )
 
 type clusterSecretResource struct {
@@ -376,8 +376,9 @@ func (v reservedPrefixValidator) ValidateString(ctx context.Context, req validat
 	}
 
 	value := req.ConfigValue.ValueString()
+	upperValue := strings.ToUpper(value)
 
-	if strings.HasPrefix(value, "BUILDKITE_") || strings.HasPrefix(value, "BK_") {
+	if strings.HasPrefix(upperValue, "BUILDKITE_") || strings.HasPrefix(upperValue, "BK_") {
 		resp.Diagnostics.AddAttributeError(
 			req.Path,
 			"Invalid Secret Key",
