@@ -22,8 +22,12 @@ dist/
 # goreleaser bin
 goreleaser
 
+# macOS files
+.DS_Store
+
 # IDE files
 .idea
+.vscode
 
 # Local .terraform directories
 **/.terraform/*
