@@ -3,6 +3,7 @@ package buildkite
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
@@ -102,6 +103,21 @@ func TestAccBuildkitePipelineTeam(t *testing.T) {
 		})
 	})
 
+	t.Run("duplicate pipeline team returns helpful error", func(t *testing.T) {
+		teamName := acctest.RandString(12)
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			Steps: []resource.TestStep{
+				{
+					Config:      testAccPipelineTeamConfigDuplicate(teamName),
+					ExpectError: regexp.MustCompile(`(?s)already been added.*moved blocks`),
+				},
+			},
+		})
+	})
+
 	t.Run("pipeline team is recreated if removed", func(t *testing.T) {
 		teamName := acctest.RandString(12)
 
@@ -154,6 +170,39 @@ func testAccPipelineTeamConfigBasic(teamName string, accessLevel string) string 
 	}
 	`
 	return fmt.Sprintf(config, teamName, teamName, accessLevel)
+}
+
+func testAccPipelineTeamConfigDuplicate(teamName string) string {
+	config := `
+	resource "buildkite_pipeline" "acc_test_pipeline" {
+	    name = "acctest pipeline %s"
+	    repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
+	    steps = "steps:\n- label: ':pipeline: Pipeline Upload'\n  command: buildkite-agent pipeline upload"
+		provider_settings = {}
+	}
+
+	resource "buildkite_team" "acc_test_team" {
+		name = "acctest team %s"
+		privacy = "VISIBLE"
+		default_team = true
+		default_member_role = "MEMBER"
+		members_can_create_pipelines = true
+	}
+
+	resource "buildkite_pipeline_team" "first" {
+		access_level = "READ_ONLY"
+		team_id = buildkite_team.acc_test_team.id
+		pipeline_id = buildkite_pipeline.acc_test_pipeline.id
+	}
+
+	resource "buildkite_pipeline_team" "duplicate" {
+		access_level = "READ_ONLY"
+		team_id = buildkite_team.acc_test_team.id
+		pipeline_id = buildkite_pipeline.acc_test_pipeline.id
+		depends_on = [buildkite_pipeline_team.first]
+	}
+	`
+	return fmt.Sprintf(config, teamName, teamName)
 }
 
 func testAccCheckPipelineTeamExists(resourceName string, tp *pipelineTeamResourceModel) resource.TestCheckFunc {
