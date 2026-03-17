@@ -16,6 +16,7 @@ import (
 var (
 	resourceNotFoundRegex = regexp.MustCompile(`(?i)(No\s+\w+(\s+\w+)*\s+found|not\s+found|no\s+longer\s+exists)`)
 	activeJobsRegex       = regexp.MustCompile(`(?i)(active\s+(builds|jobs)|running\s+(builds|jobs)|builds?\s+are\s+running|jobs?\s+are\s+running)`)
+	alreadyExistsRegex    = regexp.MustCompile(`(?i)(already\s+been\s+added|already\s+exists)`)
 )
 
 // isResourceNotFoundError returns true if the error indicates the resource was not found
@@ -32,6 +33,14 @@ func isActiveJobsError(err error) bool {
 		return false
 	}
 	return activeJobsRegex.MatchString(err.Error())
+}
+
+// isAlreadyExistsError returns true if the error indicates the resource already exists
+func isAlreadyExistsError(err error) bool {
+	if err == nil {
+		return false
+	}
+	return alreadyExistsRegex.MatchString(err.Error())
 }
 
 // GetOrganizationID retrieves the Buildkite organization ID associated with the supplied slug
