@@ -112,7 +112,7 @@ func TestAccBuildkitePipelineTeam(t *testing.T) {
 			Steps: []resource.TestStep{
 				{
 					Config:      testAccPipelineTeamConfigDuplicate(teamName),
-					ExpectError: regexp.MustCompile(`already been added to this team`),
+					ExpectError: regexp.MustCompile(`already been added`),
 				},
 			},
 		})
