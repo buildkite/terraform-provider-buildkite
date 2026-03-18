@@ -140,7 +140,7 @@ func TestAccBuildkiteClusterQueueResource(t *testing.T) {
             linux = {
                 agent_image_ref = "buildkite/agent:latest"
             }
-            instance_shape = "LINUX_ARM64_2X4"
+            instance_shape = "LINUX_AMD64_2X4"
         }
     }
     `, fields[0], fields[1], fields[2])
@@ -171,7 +171,7 @@ func TestAccBuildkiteClusterQueueResource(t *testing.T) {
             mac = {
                 xcode_version = "14.3.1"
             }
-            instance_shape = "LINUX_ARM64_2X4"
+            instance_shape = "LINUX_AMD64_2X4"
         }
     }
     `, fields[0], fields[1], fields[2])
@@ -435,7 +435,7 @@ func TestAccBuildkiteClusterQueueResource(t *testing.T) {
 		check := resource.ComposeAggregateTestCheckFunc(
 			testAccCheckClusterQueueExists("buildkite_cluster_queue.foobar", &cq),
 			resource.TestCheckResourceAttr("buildkite_cluster_queue.foobar", "hosted_agents.linux.agent_image_ref", "buildkite/agent:latest"),
-			resource.TestCheckResourceAttr("buildkite_cluster_queue.foobar", "hosted_agents.instance_shape", "LINUX_ARM64_2X4"),
+			resource.TestCheckResourceAttr("buildkite_cluster_queue.foobar", "hosted_agents.instance_shape", "LINUX_AMD64_2X4"),
 		)
 
 		resource.ParallelTest(t, resource.TestCase{

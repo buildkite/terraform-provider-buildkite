@@ -106,6 +106,7 @@ func (tp *pipelineTeamResource) Create(ctx context.Context, req resource.CreateR
 	}
 
 	var apiResponse *createTeamPipelineResponse
+	var alreadyExistsRetries int
 	err := retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
 		var err error
 
@@ -115,6 +116,11 @@ func (tp *pipelineTeamResource) Create(ctx context.Context, req resource.CreateR
 			state.PipelineId.ValueString(),
 			PipelineAccessLevels(state.AccessLevel.ValueString()),
 		)
+
+		if err != nil && isAlreadyExistsError(err) && alreadyExistsRetries < 5 {
+			alreadyExistsRetries++
+			return retry.RetryableError(err)
+		}
 
 		return retryContextError(err)
 	})
