@@ -117,19 +117,9 @@ func (tp *pipelineTeamResource) Create(ctx context.Context, req resource.CreateR
 			PipelineAccessLevels(state.AccessLevel.ValueString()),
 		)
 
-		if err != nil && isAlreadyExistsError(err) {
+		if err != nil && isAlreadyExistsError(err) && alreadyExistsRetries < 5 {
 			alreadyExistsRetries++
-			if alreadyExistsRetries <= 5 {
-				return retry.RetryableError(err)
-			}
-			// Retries exhausted — the association genuinely exists
-			return retry.NonRetryableError(fmt.Errorf(
-				"%s\n\nThis can occur when Terraform destroys and recreates the same pipeline-team "+
-					"association concurrently. If you are refactoring resource addresses, use "+
-					"Terraform moved blocks (https://developer.hashicorp.com/terraform/language/moved) "+
-					"or `terraform state mv` to avoid delete/recreate cycles",
-				err.Error(),
-			))
+			return retry.RetryableError(err)
 		}
 
 		return retryContextError(err)
