@@ -3,6 +3,8 @@ package buildkite
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"strings"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
@@ -246,6 +248,40 @@ func TestAccBuildkiteTeam(t *testing.T) {
 		})
 	})
 
+	t.Run("imports a team by UUID", func(t *testing.T) {
+		resName := acctest.RandString(12)
+		var tr teamResourceModel
+
+		check := resource.ComposeAggregateTestCheckFunc(
+			testAccCheckTeamExists("buildkite_team.acc_tests", &tr),
+			resource.TestCheckResourceAttr("buildkite_team.acc_tests", "name", resName),
+		)
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			CheckDestroy:             testAccCheckTeamResourceDestroy,
+			Steps: []resource.TestStep{
+				{
+					Config: configBasic(resName),
+					Check:  check,
+				},
+				{
+					ResourceName:            "buildkite_team.acc_tests",
+					ImportState:             true,
+					ImportStateVerify:        true,
+					ImportStateIdFunc: func(s *terraform.State) (string, error) {
+						rs := s.RootModule().Resources["buildkite_team.acc_tests"]
+						if rs == nil {
+							return "", fmt.Errorf("resource not found in state")
+						}
+						return rs.Primary.Attributes["uuid"], nil
+					},
+				},
+			},
+		})
+	})
+
 	t.Run("team is recreated if removed", func(t *testing.T) {
 		resName := acctest.RandString(12)
 
@@ -446,15 +482,54 @@ func testAccCheckTeamRemoteValues(name string, tr *teamResourceModel) resource.T
 		if tr.Name.ValueString() != name {
 			return fmt.Errorf("remote team name (%s) doesn't match expected value (%s)", tr.Name, name)
 		}
+
+		rs := s.RootModule().Resources["buildkite_team.acc_tests"]
+		if rs == nil {
+			return fmt.Errorf("resource not found in state")
+		}
+
+		checks := map[string]string{
+			"privacy":           tr.Privacy.ValueString(),
+			"default_member_role": tr.DefaultMemberRole.ValueString(),
+			"description":       tr.Description.ValueString(),
+			"slug":              tr.Slug.ValueString(),
+		}
+		for attr, remoteVal := range checks {
+			stateVal := rs.Primary.Attributes[attr]
+			if stateVal != remoteVal {
+				return fmt.Errorf("remote %s (%s) doesn't match state value (%s)", attr, remoteVal, stateVal)
+			}
+		}
+
+		if tr.UUID.ValueString() == "" {
+			return fmt.Errorf("remote team UUID is empty")
+		}
+		if tr.ID.ValueString() == "" {
+			return fmt.Errorf("remote team GraphQL ID is empty")
+		}
+
 		return nil
 	}
 }
 
 func testAccCheckTeamResourceDestroy(s *terraform.State) error {
+	client := getTestClient()
+
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "buildkite_team" {
 			continue
 		}
+
+		url := fmt.Sprintf("/v2/organizations/%s/teams/%s", client.organization, rs.Primary.Attributes["uuid"])
+		var team teamAPIResponse
+		err := client.makeRequest(context.Background(), http.MethodGet, url, nil, &team)
+		if err != nil {
+			if strings.Contains(err.Error(), "404") {
+				continue
+			}
+			return fmt.Errorf("error checking if team still exists: %v", err)
+		}
+		return fmt.Errorf("Team %s still exists after destroy", rs.Primary.ID)
 	}
 	return nil
 }
