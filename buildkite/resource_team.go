@@ -19,7 +19,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
-	"github.com/shurcooL/graphql"
 )
 
 type teamResource struct {
@@ -40,19 +39,6 @@ type teamResourceModel struct {
 	MembersCanCreateRegistries  types.Bool   `tfsdk:"members_can_create_registries"`
 	MembersCanDestroyRegistries types.Bool   `tfsdk:"members_can_destroy_registries"`
 	MembersCanDestroyPackages   types.Bool   `tfsdk:"members_can_destroy_packages"`
-}
-
-// This is required due to the getTeam function not using Genqlient
-type TeamNode struct {
-	Description               graphql.String
-	ID                        graphql.String
-	IsDefaultTeam             graphql.Boolean
-	DefaultMemberRole         graphql.String
-	Name                      graphql.String
-	MembersCanCreatePipelines graphql.Boolean
-	Privacy                   graphql.String
-	Slug                      graphql.String
-	UUID                      graphql.String
 }
 
 type teamAPIResponse struct {
@@ -440,11 +426,9 @@ func updateTeamResourceStateFromREST(state *teamResourceModel, res *teamAPIRespo
 
 func (t *teamResource) createTeam(ctx context.Context, state *teamResourceModel) (*teamAPIResponse, error) {
 	apiPath := fmt.Sprintf("/v2/organizations/%s/teams", t.client.organization)
-	reqBody := buildTeamRequest(state)
 	var result teamAPIResponse
-	err := t.client.makeRequest(ctx, http.MethodPost, apiPath, reqBody, &result)
-	if err != nil {
-		return nil, fmt.Errorf("error creating team: %w", err)
+	if err := t.client.makeRequest(ctx, http.MethodPost, apiPath, buildTeamRequest(state), &result); err != nil {
+		return nil, err
 	}
 	return &result, nil
 }
@@ -452,31 +436,24 @@ func (t *teamResource) createTeam(ctx context.Context, state *teamResourceModel)
 func (t *teamResource) getTeam(ctx context.Context, uuid string) (*teamAPIResponse, error) {
 	apiPath := fmt.Sprintf("/v2/organizations/%s/teams/%s", t.client.organization, uuid)
 	var result teamAPIResponse
-	err := t.client.makeRequest(ctx, http.MethodGet, apiPath, nil, &result)
-	if err != nil {
-		return nil, fmt.Errorf("error reading team: %w", err)
+	if err := t.client.makeRequest(ctx, http.MethodGet, apiPath, nil, &result); err != nil {
+		return nil, err
 	}
 	return &result, nil
 }
 
 func (t *teamResource) updateTeam(ctx context.Context, uuid string, plan *teamResourceModel) (*teamAPIResponse, error) {
 	apiPath := fmt.Sprintf("/v2/organizations/%s/teams/%s", t.client.organization, uuid)
-	reqBody := buildTeamRequest(plan)
 	var result teamAPIResponse
-	err := t.client.makeRequest(ctx, http.MethodPatch, apiPath, reqBody, &result)
-	if err != nil {
-		return nil, fmt.Errorf("error updating team: %w", err)
+	if err := t.client.makeRequest(ctx, http.MethodPatch, apiPath, buildTeamRequest(plan), &result); err != nil {
+		return nil, err
 	}
 	return &result, nil
 }
 
 func (t *teamResource) deleteTeam(ctx context.Context, uuid string) error {
 	apiPath := fmt.Sprintf("/v2/organizations/%s/teams/%s", t.client.organization, uuid)
-	err := t.client.makeRequest(ctx, http.MethodDelete, apiPath, nil, nil)
-	if err != nil {
-		return fmt.Errorf("error deleting team: %w", err)
-	}
-	return nil
+	return t.client.makeRequest(ctx, http.MethodDelete, apiPath, nil, nil)
 }
 
 func buildTeamRequest(state *teamResourceModel) teamCreateUpdateRequest {

@@ -66,7 +66,19 @@ func GetOrganizationID(slug string, client *graphql.Client) (string, error) {
 	return id, nil
 }
 
-// GetTeamID retrieves the Buildkite team ID associated with the supplied team slug
+// TeamNode is used by GetTeamID for GraphQL team lookups.
+type TeamNode struct {
+	Description               graphql.String
+	ID                        graphql.String
+	IsDefaultTeam             graphql.Boolean
+	DefaultMemberRole         graphql.String
+	Name                      graphql.String
+	MembersCanCreatePipelines graphql.Boolean
+	Privacy                   graphql.String
+	Slug                      graphql.String
+	UUID                      graphql.String
+}
+
 func GetTeamID(slug string, client *Client) (string, error) {
 	// Make sure the slug is prefixed with the organization
 	prefix := fmt.Sprintf("%s/", client.organization)
