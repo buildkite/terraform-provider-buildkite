@@ -225,6 +225,26 @@ func TestUpdateTeamResourceStateFromREST_EmptyDescription(t *testing.T) {
 	}
 }
 
+func TestUpdateTeamResourceStateFromREST_EmptyGraphQLID(t *testing.T) {
+	existingID := "VGVhbS0tLWV4aXN0aW5n"
+	state := teamResourceModel{
+		ID: types.StringValue(existingID),
+	}
+	res := &teamAPIResponse{
+		GraphQLID: "",
+		ID:        "some-uuid",
+	}
+
+	updateTeamResourceStateFromREST(&state, res)
+
+	if state.ID.ValueString() != existingID {
+		t.Errorf("ID was overwritten to %q, want existing value %q", state.ID.ValueString(), existingID)
+	}
+	if state.UUID.ValueString() != "some-uuid" {
+		t.Errorf("UUID = %q, want %q", state.UUID.ValueString(), "some-uuid")
+	}
+}
+
 func TestBuildTeamRequest(t *testing.T) {
 	state := &teamResourceModel{
 		Name:                        types.StringValue("My Team"),

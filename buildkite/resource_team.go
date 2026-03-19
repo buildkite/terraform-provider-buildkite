@@ -240,6 +240,9 @@ func (t *teamResource) Create(ctx context.Context, req resource.CreateRequest, r
 	if result.GraphQLID == "" {
 		getResult, err := t.getTeam(ctx, result.ID)
 		if err != nil {
+			// Save partial state so Terraform tracks the created resource
+			updateTeamResourceStateFromREST(&state, result)
+			resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 			resp.Diagnostics.AddError(
 				"Unable to read team after create.",
 				fmt.Sprintf("Unable to read team after create: %s", err.Error()),
@@ -357,6 +360,9 @@ func (t *teamResource) Update(ctx context.Context, req resource.UpdateRequest, r
 	if result.GraphQLID == "" {
 		getResult, err := t.getTeam(ctx, result.ID)
 		if err != nil {
+			// Save partial state so Terraform stays in sync
+			updateTeamResourceStateFromREST(&plan, result)
+			resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 			resp.Diagnostics.AddError(
 				"Unable to read team after update.",
 				fmt.Sprintf("Unable to read team after update: %s", err.Error()),
@@ -412,24 +418,10 @@ func (t *teamResource) Delete(ctx context.Context, req resource.DeleteRequest, r
 	}
 }
 
-func updateTeamResourceState(state *teamResourceModel, res getNodeNodeTeam) {
-	state.ID = types.StringValue(res.Id)
-	state.UUID = types.StringValue(res.Uuid)
-	state.Slug = types.StringValue(res.Slug)
-	state.Name = types.StringValue(res.Name)
-	state.Privacy = types.StringValue(string(res.GetPrivacy()))
-	state.Description = types.StringValue(res.Description)
-	state.IsDefaultTeam = types.BoolValue(res.IsDefaultTeam)
-	state.DefaultMemberRole = types.StringValue(string(res.GetDefaultMemberRole()))
-	state.MembersCanCreatePipelines = types.BoolValue(res.MembersCanCreatePipelines)
-	state.MembersCanCreateSuites = types.BoolValue(res.MembersCanCreateSuites)
-	state.MembersCanCreateRegistries = types.BoolValue(res.MembersCanCreateRegistries)
-	state.MembersCanDestroyRegistries = types.BoolValue(res.MembersCanDestroyRegistries)
-	state.MembersCanDestroyPackages = types.BoolValue(res.MembersCanDestroyPackages)
-}
-
 func updateTeamResourceStateFromREST(state *teamResourceModel, res *teamAPIResponse) {
-	state.ID = types.StringValue(res.GraphQLID)
+	if res.GraphQLID != "" {
+		state.ID = types.StringValue(res.GraphQLID)
+	}
 	state.UUID = types.StringValue(res.ID)
 	state.Slug = types.StringValue(res.Slug)
 	state.Name = types.StringValue(res.Name)

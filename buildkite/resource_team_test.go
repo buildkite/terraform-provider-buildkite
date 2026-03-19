@@ -462,17 +462,21 @@ func testAccCheckTeamExists(name string, tr *teamResourceModel) resource.TestChe
 		if rs.Primary.ID == "" {
 			return fmt.Errorf("No ID is set in state")
 		}
-		r, err := getNode(context.Background(), genqlientGraphql, rs.Primary.ID)
-		if err != nil {
-			return err
+
+		uuid := rs.Primary.Attributes["uuid"]
+		if uuid == "" {
+			return fmt.Errorf("No UUID is set in state")
 		}
 
-		if teamNode, ok := r.GetNode().(*getNodeNodeTeam); ok {
-			if teamNode == nil {
-				return fmt.Errorf("Team not found: nil response")
-			}
-			updateTeamResourceState(tr, *teamNode)
+		client := getTestClient()
+		url := fmt.Sprintf("/v2/organizations/%s/teams/%s", client.organization, uuid)
+		var result teamAPIResponse
+		err := client.makeRequest(context.Background(), http.MethodGet, url, nil, &result)
+		if err != nil {
+			return fmt.Errorf("error reading team: %w", err)
 		}
+
+		updateTeamResourceStateFromREST(tr, &result)
 		return nil
 	}
 }
