@@ -39,7 +39,7 @@ To run local tests that don't require any network access:
 
     make test
 
-Buildkite has two APIs: REST and GraphQL. New resources should use the GraphQL API where possible, but can fallback to the REST API for resouces or properties not yet supported by GraphQL.
+Buildkite has two APIs: REST and GraphQL. New resources should use the REST API where possible, but can fallback to the GraphQL for resouces or properties not yet supported by the REST API.
 
 ## Manual testing
 
