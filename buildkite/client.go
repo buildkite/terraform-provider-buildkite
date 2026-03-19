@@ -64,8 +64,8 @@ func (client *Client) GetOrganizationID() (*string, error) {
 //  1. Uses hashicorp/go-retryablehttp to provide automatic retries with smart backoff
 //  2. Maximum of 10 retry attempts for requests that fail with retryable errors
 //  3. Rate limiting strategy:
-//     - Checks RateLimit-Reset header to determine when the rate limit will be reset
-//     - Waits until the reset time plus a small buffer before retrying
+//     - Checks RateLimit-Reset header (seconds until reset) to determine how long to wait
+//     - Waits for the specified duration plus a small buffer before retrying
 //     - Falls back to Retry-After header if reset time isn't available
 //  4. Also retries server errors (HTTP 500-599) with linear jitter backoff
 //  5. All retryable requests have a minimum wait of 15 seconds and maximum of 180 seconds
@@ -80,12 +80,11 @@ func NewClient(config *clientConfig) *Client {
 	// Common Backoff strategy for retryable clients
 	sharedBackoff := func(min, max time.Duration, attemptNum int, resp *http.Response) time.Duration {
 		if resp != nil && resp.StatusCode == http.StatusTooManyRequests {
-			// Try RateLimit-Reset first (Unix timestamp format)
+			// Try RateLimit-Reset first (seconds until reset)
 			if resetHeader := resp.Header.Get("RateLimit-Reset"); resetHeader != "" {
-				if resetTime, err := strconv.ParseInt(resetHeader, 10, 64); err == nil {
-					resetAt := time.Unix(resetTime, 0)
+				if resetSeconds, err := strconv.ParseInt(resetHeader, 10, 64); err == nil {
 					// Add a 2-second buffer to ensure we're past the reset time
-					waitTime := time.Until(resetAt) + (2 * time.Second)
+					waitTime := time.Duration(resetSeconds)*time.Second + (2 * time.Second)
 					tflog.Debug(context.Background(), fmt.Sprintf("Rate limit hit, retry after: %v", waitTime))
 					if waitTime < min {
 						return min
