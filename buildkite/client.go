@@ -215,8 +215,8 @@ func (client *Client) makeRequest(ctx context.Context, method string, path strin
 		return fmt.Errorf("failed to create request: %w", err)
 	}
 
-	// Add content-type header for POST/PUT requests with body
-	if (method == http.MethodPost || method == http.MethodPut) && bodyBytes != nil {
+	// Add content-type header for POST/PUT/PATCH requests with body
+	if (method == http.MethodPost || method == http.MethodPut || method == http.MethodPatch) && bodyBytes != nil {
 		req.Header.Set("Content-Type", "application/json")
 	}
 

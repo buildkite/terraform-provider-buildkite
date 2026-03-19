@@ -68,3 +68,6 @@ tf-proj/.terraform.lock.hcl
 
 #locally generated test files
 junit*.xml
+
+# Scratch/working directory
+tmp/

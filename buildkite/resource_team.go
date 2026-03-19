@@ -2,7 +2,10 @@ package buildkite
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
+	"net/http"
+	"strings"
 
 	custom_modifier "github.com/buildkite/terraform-provider-buildkite/internal/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
@@ -50,6 +53,35 @@ type TeamNode struct {
 	Privacy                   graphql.String
 	Slug                      graphql.String
 	UUID                      graphql.String
+}
+
+type teamAPIResponse struct {
+	ID                          string `json:"id"`                            // UUID
+	GraphQLID                   string `json:"graphql_id"`                    // base64 GraphQL ID
+	Name                        string `json:"name"`
+	Slug                        string `json:"slug"`
+	Description                 string `json:"description"`
+	Privacy                     string `json:"privacy"`                      // "visible" or "secret"
+	Default                     bool   `json:"default"`                      // response uses "default"
+	DefaultMemberRole           string `json:"default_member_role"`          // "member" or "maintainer"
+	MembersCanCreatePipelines   bool   `json:"members_can_create_pipelines"`
+	MembersCanCreateSuites      bool   `json:"members_can_create_suites"`
+	MembersCanCreateRegistries  bool   `json:"members_can_create_registries"`
+	MembersCanDestroyRegistries bool   `json:"members_can_destroy_registries"`
+	MembersCanDestroyPackages   bool   `json:"members_can_destroy_packages"`
+}
+
+type teamCreateUpdateRequest struct {
+	Name                        string `json:"name"`
+	Description                 string `json:"description"`
+	Privacy                     string `json:"privacy"`            // "visible" or "secret"
+	IsDefaultTeam               bool   `json:"is_default_team"`    // request uses "is_default_team"
+	DefaultMemberRole           string `json:"default_member_role"` // "member" or "maintainer"
+	MembersCanCreatePipelines   bool   `json:"members_can_create_pipelines"`
+	MembersCanCreateSuites      bool   `json:"members_can_create_suites"`
+	MembersCanCreateRegistries  bool   `json:"members_can_create_registries"`
+	MembersCanDestroyRegistries bool   `json:"members_can_destroy_registries"`
+	MembersCanDestroyPackages   bool   `json:"members_can_destroy_packages"`
 }
 
 func newTeamResource() resource.Resource {
@@ -157,7 +189,20 @@ func (t *teamResource) Schema(ctx context.Context, req resource.SchemaRequest, r
 }
 
 func (t *teamResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+	if isUUID(req.ID) {
+		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("uuid"), req.ID)...)
+	} else {
+		uuid, err := uuidFromGraphQLID(req.ID)
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Invalid import ID",
+				fmt.Sprintf("Expected a UUID or GraphQL ID: %s", err.Error()),
+			)
+			return
+		}
+		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), req.ID)...)
+		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("uuid"), uuid)...)
+	}
 }
 
 func (t *teamResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
@@ -177,26 +222,10 @@ func (t *teamResource) Create(ctx context.Context, req resource.CreateRequest, r
 		return
 	}
 
-	var r *teamCreateResponse
+	var result *teamAPIResponse
 	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-		org, err := t.client.GetOrganizationID()
-		if err == nil {
-			r, err = teamCreate(ctx,
-				t.client.genqlient,
-				*org,
-				state.Name.ValueString(),
-				state.Description.ValueString(),
-				state.Privacy.ValueString(),
-				state.IsDefaultTeam.ValueBool(),
-				state.DefaultMemberRole.ValueString(),
-				state.MembersCanCreatePipelines.ValueBool(),
-				state.MembersCanCreateSuites.ValueBool(),
-				state.MembersCanCreateRegistries.ValueBool(),
-				state.MembersCanDestroyRegistries.ValueBool(),
-				state.MembersCanDestroyPackages.ValueBool(),
-			)
-		}
-
+		var err error
+		result, err = t.createTeam(ctx, &state)
 		return retryContextError(err)
 	})
 	if err != nil {
@@ -207,10 +236,20 @@ func (t *teamResource) Create(ctx context.Context, req resource.CreateRequest, r
 		return
 	}
 
-	state.ID = types.StringValue(r.TeamCreate.TeamEdge.Node.Id)
-	state.UUID = types.StringValue(r.TeamCreate.TeamEdge.Node.Uuid)
-	state.Slug = types.StringValue(r.TeamCreate.TeamEdge.Node.Slug)
+	// If the response lacks graphql_id, do a GET fallback
+	if result.GraphQLID == "" {
+		getResult, err := t.getTeam(ctx, result.ID)
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Unable to read team after create.",
+				fmt.Sprintf("Unable to read team after create: %s", err.Error()),
+			)
+			return
+		}
+		result = getResult
+	}
 
+	updateTeamResourceStateFromREST(&state, result)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
@@ -231,15 +270,28 @@ func (t *teamResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 		return
 	}
 
-	var response *getNodeResponse
-	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-		var err error
-		response, err = getNode(ctx,
-			t.client.genqlient,
-			state.ID.ValueString(),
+	uuid, err := teamUUIDFromState(&state)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Unable to determine team UUID.",
+			fmt.Sprintf("Unable to determine team UUID: %s", err.Error()),
 		)
+		return
+	}
 
-		return retryContextError(err)
+	var result *teamAPIResponse
+	var notFound bool
+	err = retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+		var err error
+		result, err = t.getTeam(ctx, uuid)
+		if err != nil {
+			if strings.Contains(err.Error(), "404") {
+				notFound = true
+				return nil
+			}
+			return retryContextError(err)
+		}
+		return nil
 	})
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -249,21 +301,14 @@ func (t *teamResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 		return
 	}
 
-	if teamNode, ok := response.GetNode().(*getNodeNodeTeam); ok {
-		if teamNode == nil {
-			resp.Diagnostics.AddError(
-				"Unable to get team",
-				"Error getting team: nil response",
-			)
-			return
-		}
-		updateTeamResourceState(&state, *teamNode)
-		resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
-	} else {
-		// Resource not found, remove from state
-		resp.Diagnostics.AddWarning("Team resource not found", "Removing team from state")
+	if notFound {
+		resp.Diagnostics.AddWarning("Team not found", "Removing team from state")
 		resp.State.RemoveResource(ctx)
+		return
 	}
+
+	updateTeamResourceStateFromREST(&state, result)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
 func (t *teamResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
@@ -285,24 +330,19 @@ func (t *teamResource) Update(ctx context.Context, req resource.UpdateRequest, r
 		return
 	}
 
-	var response *teamUpdateResponse
-	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-		var err error
-		response, err = teamUpdate(ctx,
-			t.client.genqlient,
-			state.ID.ValueString(),
-			plan.Name.ValueString(),
-			plan.Description.ValueString(),
-			plan.Privacy.ValueString(),
-			plan.IsDefaultTeam.ValueBool(),
-			plan.DefaultMemberRole.ValueString(),
-			plan.MembersCanCreatePipelines.ValueBool(),
-			plan.MembersCanCreateSuites.ValueBool(),
-			plan.MembersCanCreateRegistries.ValueBool(),
-			plan.MembersCanDestroyRegistries.ValueBool(),
-			plan.MembersCanDestroyPackages.ValueBool(),
+	uuid, err := teamUUIDFromState(&state)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Unable to determine team UUID.",
+			fmt.Sprintf("Unable to determine team UUID: %s", err.Error()),
 		)
+		return
+	}
 
+	var result *teamAPIResponse
+	err = retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+		var err error
+		result, err = t.updateTeam(ctx, uuid, &plan)
 		return retryContextError(err)
 	})
 	if err != nil {
@@ -313,7 +353,20 @@ func (t *teamResource) Update(ctx context.Context, req resource.UpdateRequest, r
 		return
 	}
 
-	plan.Slug = types.StringValue(response.TeamUpdate.Team.Slug)
+	// If the response lacks graphql_id, do a GET fallback
+	if result.GraphQLID == "" {
+		getResult, err := t.getTeam(ctx, result.ID)
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Unable to read team after update.",
+				fmt.Sprintf("Unable to read team after update: %s", err.Error()),
+			)
+			return
+		}
+		result = getResult
+	}
+
+	updateTeamResourceStateFromREST(&plan, result)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 }
 
@@ -334,15 +387,20 @@ func (t *teamResource) Delete(ctx context.Context, req resource.DeleteRequest, r
 		return
 	}
 
-	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-		_, err := teamDelete(ctx,
-			t.client.genqlient,
-			state.ID.ValueString(),
+	uuid, err := teamUUIDFromState(&state)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Unable to determine team UUID.",
+			fmt.Sprintf("Unable to determine team UUID: %s", err.Error()),
 		)
-		if err != nil && isResourceNotFoundError(err) {
+		return
+	}
+
+	err = retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+		err := t.deleteTeam(ctx, uuid)
+		if err != nil && strings.Contains(err.Error(), "404") {
 			return nil
 		}
-
 		return retryContextError(err)
 	})
 	if err != nil {
@@ -368,4 +426,100 @@ func updateTeamResourceState(state *teamResourceModel, res getNodeNodeTeam) {
 	state.MembersCanCreateRegistries = types.BoolValue(res.MembersCanCreateRegistries)
 	state.MembersCanDestroyRegistries = types.BoolValue(res.MembersCanDestroyRegistries)
 	state.MembersCanDestroyPackages = types.BoolValue(res.MembersCanDestroyPackages)
+}
+
+func updateTeamResourceStateFromREST(state *teamResourceModel, res *teamAPIResponse) {
+	state.ID = types.StringValue(res.GraphQLID)
+	state.UUID = types.StringValue(res.ID)
+	state.Slug = types.StringValue(res.Slug)
+	state.Name = types.StringValue(res.Name)
+	state.Description = types.StringValue(res.Description)
+	state.Privacy = types.StringValue(strings.ToUpper(res.Privacy))
+	state.IsDefaultTeam = types.BoolValue(res.Default)
+	state.DefaultMemberRole = types.StringValue(strings.ToUpper(res.DefaultMemberRole))
+	state.MembersCanCreatePipelines = types.BoolValue(res.MembersCanCreatePipelines)
+	state.MembersCanCreateSuites = types.BoolValue(res.MembersCanCreateSuites)
+	state.MembersCanCreateRegistries = types.BoolValue(res.MembersCanCreateRegistries)
+	state.MembersCanDestroyRegistries = types.BoolValue(res.MembersCanDestroyRegistries)
+	state.MembersCanDestroyPackages = types.BoolValue(res.MembersCanDestroyPackages)
+}
+
+// REST API helper methods
+
+func (t *teamResource) createTeam(ctx context.Context, state *teamResourceModel) (*teamAPIResponse, error) {
+	apiPath := fmt.Sprintf("/v2/organizations/%s/teams", t.client.organization)
+	reqBody := buildTeamRequest(state)
+	var result teamAPIResponse
+	err := t.client.makeRequest(ctx, http.MethodPost, apiPath, reqBody, &result)
+	if err != nil {
+		return nil, fmt.Errorf("error creating team: %w", err)
+	}
+	return &result, nil
+}
+
+func (t *teamResource) getTeam(ctx context.Context, uuid string) (*teamAPIResponse, error) {
+	apiPath := fmt.Sprintf("/v2/organizations/%s/teams/%s", t.client.organization, uuid)
+	var result teamAPIResponse
+	err := t.client.makeRequest(ctx, http.MethodGet, apiPath, nil, &result)
+	if err != nil {
+		return nil, fmt.Errorf("error reading team: %w", err)
+	}
+	return &result, nil
+}
+
+func (t *teamResource) updateTeam(ctx context.Context, uuid string, plan *teamResourceModel) (*teamAPIResponse, error) {
+	apiPath := fmt.Sprintf("/v2/organizations/%s/teams/%s", t.client.organization, uuid)
+	reqBody := buildTeamRequest(plan)
+	var result teamAPIResponse
+	err := t.client.makeRequest(ctx, http.MethodPatch, apiPath, reqBody, &result)
+	if err != nil {
+		return nil, fmt.Errorf("error updating team: %w", err)
+	}
+	return &result, nil
+}
+
+func (t *teamResource) deleteTeam(ctx context.Context, uuid string) error {
+	apiPath := fmt.Sprintf("/v2/organizations/%s/teams/%s", t.client.organization, uuid)
+	err := t.client.makeRequest(ctx, http.MethodDelete, apiPath, nil, nil)
+	if err != nil {
+		return fmt.Errorf("error deleting team: %w", err)
+	}
+	return nil
+}
+
+func buildTeamRequest(state *teamResourceModel) teamCreateUpdateRequest {
+	return teamCreateUpdateRequest{
+		Name:                        state.Name.ValueString(),
+		Description:                 state.Description.ValueString(),
+		Privacy:                     strings.ToLower(state.Privacy.ValueString()),
+		IsDefaultTeam:               state.IsDefaultTeam.ValueBool(),
+		DefaultMemberRole:           strings.ToLower(state.DefaultMemberRole.ValueString()),
+		MembersCanCreatePipelines:   state.MembersCanCreatePipelines.ValueBool(),
+		MembersCanCreateSuites:      state.MembersCanCreateSuites.ValueBool(),
+		MembersCanCreateRegistries:  state.MembersCanCreateRegistries.ValueBool(),
+		MembersCanDestroyRegistries: state.MembersCanDestroyRegistries.ValueBool(),
+		MembersCanDestroyPackages:   state.MembersCanDestroyPackages.ValueBool(),
+	}
+}
+
+func teamUUIDFromState(state *teamResourceModel) (string, error) {
+	if !state.UUID.IsNull() && state.UUID.ValueString() != "" {
+		return state.UUID.ValueString(), nil
+	}
+	if !state.ID.IsNull() && state.ID.ValueString() != "" {
+		return uuidFromGraphQLID(state.ID.ValueString())
+	}
+	return "", fmt.Errorf("team state is missing both uuid and id")
+}
+
+func uuidFromGraphQLID(graphqlID string) (string, error) {
+	decoded, err := base64.StdEncoding.DecodeString(graphqlID)
+	if err != nil {
+		return "", fmt.Errorf("invalid GraphQL ID: %w", err)
+	}
+	parts := strings.SplitN(string(decoded), "---", 2)
+	if len(parts) != 2 {
+		return "", fmt.Errorf("unexpected GraphQL ID format: %s", string(decoded))
+	}
+	return parts[1], nil
 }
