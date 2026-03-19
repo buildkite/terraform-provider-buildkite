@@ -111,8 +111,8 @@ func NewClient(config *clientConfig) *Client {
 			}
 		}
 
-		// Use linear backoff with jitter to spread out requests when retrying
-		return retryablehttp.LinearJitterBackoff(min, max, attemptNum, resp)
+		// Use exponential backoff for server errors (min * 2^attempt, capped at max)
+		return retryablehttp.DefaultBackoff(min, max, attemptNum, resp)
 	}
 
 	// Common CheckRetry policy for retryable clients
