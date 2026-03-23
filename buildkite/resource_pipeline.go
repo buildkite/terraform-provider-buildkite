@@ -792,7 +792,7 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 					"build_pull_request_merge_commits": schema.BoolAttribute{
 						Computed:            true,
 						Optional:            true,
-						MarkdownDescription: "Whether to create builds for pull request merge commits.",
+						MarkdownDescription: "Whether to build the test merge commit (the merged result of a pull request with its base branch).",
 					},
 					"build_pull_request_labels_changed": schema.BoolAttribute{
 						Computed:            true,
