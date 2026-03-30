@@ -110,6 +110,7 @@ type providerSettingsModel struct {
 	SkipBuildsForExistingCommits            types.Bool   `tfsdk:"skip_builds_for_existing_commits"`
 	SkipPullRequestBuildsForExistingCommits types.Bool   `tfsdk:"skip_pull_request_builds_for_existing_commits"`
 	BuildPullRequestReadyForReview          types.Bool   `tfsdk:"build_pull_request_ready_for_review"`
+	BuildPullRequestMergeCommits            types.Bool   `tfsdk:"build_pull_request_merge_commits"`
 	BuildPullRequestLabelsChanged           types.Bool   `tfsdk:"build_pull_request_labels_changed"`
 	BuildPullRequestBaseBranchChanged       types.Bool   `tfsdk:"build_pull_request_base_branch_changed"`
 	BuildPullRequestForks                   types.Bool   `tfsdk:"build_pull_request_forks"`
@@ -788,6 +789,11 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 						Optional:            true,
 						MarkdownDescription: "Whether to create a build when a pull request changes to \"Ready for review\".",
 					},
+					"build_pull_request_merge_commits": schema.BoolAttribute{
+						Computed:            true,
+						Optional:            true,
+						MarkdownDescription: "Whether to build the test merge commit (the merged result of a pull request with its base branch).",
+					},
 					"build_pull_request_labels_changed": schema.BoolAttribute{
 						Computed:            true,
 						Optional:            true,
@@ -1188,6 +1194,7 @@ type PipelineExtraSettings struct {
 	SkipBuildsForExistingCommits            *bool   `json:"skip_builds_for_existing_commits,omitempty"`
 	SkipPullRequestBuildsForExistingCommits *bool   `json:"skip_pull_request_builds_for_existing_commits,omitempty"`
 	BuildPullRequestReadyForReview          *bool   `json:"build_pull_request_ready_for_review,omitempty"`
+	BuildPullRequestMergeCommits            *bool   `json:"build_pull_request_merge_commits,omitempty"`
 	BuildPullRequestBaseBranchChanged       *bool   `json:"build_pull_request_base_branch_changed,omitempty"`
 	BuildPullRequestLabelsChanged           *bool   `json:"build_pull_request_labels_changed,omitempty"`
 	BuildPullRequestForks                   *bool   `json:"build_pull_request_forks,omitempty"`
@@ -1250,6 +1257,7 @@ func updatePipelineExtraInfo(ctx context.Context, slug string, settings *provide
 			SkipBuildsForExistingCommits:            settings.SkipBuildsForExistingCommits.ValueBoolPointer(),
 			SkipPullRequestBuildsForExistingCommits: settings.SkipPullRequestBuildsForExistingCommits.ValueBoolPointer(),
 			BuildPullRequestReadyForReview:          settings.BuildPullRequestReadyForReview.ValueBoolPointer(),
+			BuildPullRequestMergeCommits:            settings.BuildPullRequestMergeCommits.ValueBoolPointer(),
 			BuildPullRequestLabelsChanged:           settings.BuildPullRequestLabelsChanged.ValueBoolPointer(),
 			BuildPullRequestBaseBranchChanged:       settings.BuildPullRequestBaseBranchChanged.ValueBoolPointer(),
 			BuildPullRequestForks:                   settings.BuildPullRequestForks.ValueBoolPointer(),
@@ -1303,6 +1311,7 @@ func updatePipelineResourceExtraInfo(state *pipelineResourceModel, pipeline *Pip
 		SkipBuildsForExistingCommits:            types.BoolPointerValue(s.SkipBuildsForExistingCommits),
 		SkipPullRequestBuildsForExistingCommits: types.BoolPointerValue(s.SkipPullRequestBuildsForExistingCommits),
 		BuildPullRequestReadyForReview:          types.BoolPointerValue(s.BuildPullRequestReadyForReview),
+		BuildPullRequestMergeCommits:            types.BoolPointerValue(s.BuildPullRequestMergeCommits),
 		BuildPullRequestLabelsChanged:           types.BoolPointerValue(s.BuildPullRequestLabelsChanged),
 		BuildPullRequestBaseBranchChanged:       types.BoolPointerValue(s.BuildPullRequestBaseBranchChanged),
 		BuildPullRequestForks:                   types.BoolPointerValue(s.BuildPullRequestForks),
@@ -1509,6 +1518,10 @@ func pipelineSchemaV0() schema.Schema {
 							Computed: true,
 						},
 						"build_pull_request_ready_for_review": schema.BoolAttribute{
+							Computed: true,
+							Optional: true,
+						},
+						"build_pull_request_merge_commits": schema.BoolAttribute{
 							Computed: true,
 							Optional: true,
 						},
