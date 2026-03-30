@@ -73,6 +73,7 @@ type PipelineTag struct {
 
 type pipelineResourceModel struct {
 	AllowRebuilds                        types.Bool   `tfsdk:"allow_rebuilds"`
+	Archived                             types.Bool   `tfsdk:"archived"`
 	BadgeUrl                             types.String `tfsdk:"badge_url"`
 	BranchConfiguration                  types.String `tfsdk:"branch_configuration"`
 	CancelIntermediateBuilds             types.Bool   `tfsdk:"cancel_intermediate_builds"`
@@ -139,6 +140,7 @@ type pipelineResponse interface {
 	GetId() string
 	GetPipelineUuid() string
 	GetAllowRebuilds() bool
+	GetArchived() bool
 	GetBadgeURL() string
 	GetBranchConfiguration() *string
 	GetCancelIntermediateBuilds() bool
@@ -549,6 +551,12 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 				Computed:            true,
 				Default:             booldefault.StaticBool(true),
 				MarkdownDescription: "Whether rebuilds are allowed for this pipeline.",
+			},
+			"archived": schema.BoolAttribute{
+				Optional:            true,
+				Computed:            true,
+				Default:             booldefault.StaticBool(false),
+				MarkdownDescription: "Whether to archive this pipeline. Archived pipelines are hidden from most views and cannot run new builds.",
 			},
 			"branch_configuration": schema.StringAttribute{
 				MarkdownDescription: "Configure the pipeline to only build on this branch conditional.",
@@ -1029,6 +1037,22 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 		return
 	}
 
+	if !plan.Archived.Equal(state.Archived) {
+		var archiveErr error
+		if plan.Archived.ValueBool() {
+			_, archiveErr = archivePipeline(ctx, p.client.genqlient, plan.Id.ValueString())
+		} else {
+			_, archiveErr = unarchivePipeline(ctx, p.client.genqlient, plan.Id.ValueString())
+		}
+		if archiveErr != nil {
+			resp.Diagnostics.AddError(
+				"Unable to update pipeline archive state",
+				fmt.Sprintf("Unable to update pipeline archive state: %s", archiveErr.Error()),
+			)
+			return
+		}
+	}
+
 	useSlugValue := response.PipelineUpdate.Pipeline.Slug
 	resp.Diagnostics.Append(resp.Private.SetKey(ctx, "slugSource", []byte(`{"source": "api"}`))...)
 	if len(plan.Slug.ValueString()) > 0 {
@@ -1131,6 +1155,7 @@ func setPipelineModel(model *pipelineResourceModel, data pipelineResponse) {
 	maximumTimeoutInMinutes := (*int64)(unsafe.Pointer(data.GetMaximumTimeoutInMinutes()))
 
 	model.AllowRebuilds = types.BoolValue(data.GetAllowRebuilds())
+	model.Archived = types.BoolValue(data.GetArchived())
 	model.BadgeUrl = types.StringValue(data.GetBadgeURL())
 	model.BranchConfiguration = types.StringPointerValue(data.GetBranchConfiguration())
 	model.CancelIntermediateBuilds = types.BoolValue(data.GetCancelIntermediateBuilds())

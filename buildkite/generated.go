@@ -245,9 +245,13 @@ func (v *GetOrganizationClustersOrganization) GetClusters() GetOrganizationClust
 }
 
 // GetOrganizationClustersOrganizationClustersClusterConnection includes the requested fields of the GraphQL type ClusterConnection.
+// The GraphQL type's documentation follows.
+//
+// The connection type for Cluster.
 type GetOrganizationClustersOrganizationClustersClusterConnection struct {
-	PageInfo GetOrganizationClustersOrganizationClustersClusterConnectionPageInfo           `json:"pageInfo"`
-	Edges    []GetOrganizationClustersOrganizationClustersClusterConnectionEdgesClusterEdge `json:"edges"`
+	PageInfo GetOrganizationClustersOrganizationClustersClusterConnectionPageInfo `json:"pageInfo"`
+	// A list of edges.
+	Edges []GetOrganizationClustersOrganizationClustersClusterConnectionEdgesClusterEdge `json:"edges"`
 }
 
 // GetPageInfo returns GetOrganizationClustersOrganizationClustersClusterConnection.PageInfo, and is useful for accessing the field via an interface.
@@ -261,7 +265,11 @@ func (v *GetOrganizationClustersOrganizationClustersClusterConnection) GetEdges(
 }
 
 // GetOrganizationClustersOrganizationClustersClusterConnectionEdgesClusterEdge includes the requested fields of the GraphQL type ClusterEdge.
+// The GraphQL type's documentation follows.
+//
+// An edge in a connection.
 type GetOrganizationClustersOrganizationClustersClusterConnectionEdgesClusterEdge struct {
+	// The item at the end of the edge.
 	Node GetOrganizationClustersOrganizationClustersClusterConnectionEdgesClusterEdgeNodeCluster `json:"node"`
 }
 
@@ -398,7 +406,11 @@ func (v *GetOrganizationMemberByEmailOrganization) GetMembers() GetOrganizationM
 }
 
 // GetOrganizationMemberByEmailOrganizationMembersOrganizationMemberConnection includes the requested fields of the GraphQL type OrganizationMemberConnection.
+// The GraphQL type's documentation follows.
+//
+// The connection type for OrganizationMember.
 type GetOrganizationMemberByEmailOrganizationMembersOrganizationMemberConnection struct {
+	// A list of edges.
 	Edges []GetOrganizationMemberByEmailOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdge `json:"edges"`
 }
 
@@ -408,7 +420,11 @@ func (v *GetOrganizationMemberByEmailOrganizationMembersOrganizationMemberConnec
 }
 
 // GetOrganizationMemberByEmailOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdge includes the requested fields of the GraphQL type OrganizationMemberEdge.
+// The GraphQL type's documentation follows.
+//
+// An edge in a connection.
 type GetOrganizationMemberByEmailOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdge struct {
+	// The item at the end of the edge.
 	Node GetOrganizationMemberByEmailOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdgeNodeOrganizationMember `json:"node"`
 }
 
@@ -490,9 +506,13 @@ func (v *GetOrganizationMembersOrganization) GetMembers() GetOrganizationMembers
 }
 
 // GetOrganizationMembersOrganizationMembersOrganizationMemberConnection includes the requested fields of the GraphQL type OrganizationMemberConnection.
+// The GraphQL type's documentation follows.
+//
+// The connection type for OrganizationMember.
 type GetOrganizationMembersOrganizationMembersOrganizationMemberConnection struct {
-	PageInfo GetOrganizationMembersOrganizationMembersOrganizationMemberConnectionPageInfo                      `json:"pageInfo"`
-	Edges    []GetOrganizationMembersOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdge `json:"edges"`
+	PageInfo GetOrganizationMembersOrganizationMembersOrganizationMemberConnectionPageInfo `json:"pageInfo"`
+	// A list of edges.
+	Edges []GetOrganizationMembersOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdge `json:"edges"`
 }
 
 // GetPageInfo returns GetOrganizationMembersOrganizationMembersOrganizationMemberConnection.PageInfo, and is useful for accessing the field via an interface.
@@ -506,7 +526,11 @@ func (v *GetOrganizationMembersOrganizationMembersOrganizationMemberConnection) 
 }
 
 // GetOrganizationMembersOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdge includes the requested fields of the GraphQL type OrganizationMemberEdge.
+// The GraphQL type's documentation follows.
+//
+// An edge in a connection.
 type GetOrganizationMembersOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdge struct {
+	// The item at the end of the edge.
 	Node GetOrganizationMembersOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdgeNodeOrganizationMember `json:"node"`
 }
 
@@ -609,9 +633,13 @@ func (v *GetOrganizationTeamsOrganization) GetTeams() GetOrganizationTeamsOrgani
 }
 
 // GetOrganizationTeamsOrganizationTeamsTeamConnection includes the requested fields of the GraphQL type TeamConnection.
+// The GraphQL type's documentation follows.
+//
+// The connection type for Team.
 type GetOrganizationTeamsOrganizationTeamsTeamConnection struct {
-	PageInfo GetOrganizationTeamsOrganizationTeamsTeamConnectionPageInfo        `json:"pageInfo"`
-	Edges    []GetOrganizationTeamsOrganizationTeamsTeamConnectionEdgesTeamEdge `json:"edges"`
+	PageInfo GetOrganizationTeamsOrganizationTeamsTeamConnectionPageInfo `json:"pageInfo"`
+	// A list of edges.
+	Edges []GetOrganizationTeamsOrganizationTeamsTeamConnectionEdgesTeamEdge `json:"edges"`
 }
 
 // GetPageInfo returns GetOrganizationTeamsOrganizationTeamsTeamConnection.PageInfo, and is useful for accessing the field via an interface.
@@ -625,7 +653,11 @@ func (v *GetOrganizationTeamsOrganizationTeamsTeamConnection) GetEdges() []GetOr
 }
 
 // GetOrganizationTeamsOrganizationTeamsTeamConnectionEdgesTeamEdge includes the requested fields of the GraphQL type TeamEdge.
+// The GraphQL type's documentation follows.
+//
+// An edge in a connection.
 type GetOrganizationTeamsOrganizationTeamsTeamConnectionEdgesTeamEdge struct {
+	// The item at the end of the edge.
 	Node GetOrganizationTeamsOrganizationTeamsTeamConnectionEdgesTeamEdgeNodeTeam `json:"node"`
 }
 
@@ -1800,6 +1832,8 @@ type PipelineFields struct {
 	Tags []PipelineFieldsTagsPipelineTag `json:"tags"`
 	// Teams associated with this pipeline
 	Teams PipelineFieldsTeamsTeamPipelineConnection `json:"teams"`
+	// Whether this pipeline has been archived
+	Archived bool `json:"archived"`
 	// Whether this pipeline is visible to everyone, including people outside this organization
 	Visibility PipelineVisibility `json:"visibility"`
 	// The webhookURL field returns the webhook URL if the user has edit permissions for the pipeline. Otherwise, it returns null.
@@ -1881,6 +1915,9 @@ func (v *PipelineFields) GetTags() []PipelineFieldsTagsPipelineTag { return v.Ta
 // GetTeams returns PipelineFields.Teams, and is useful for accessing the field via an interface.
 func (v *PipelineFields) GetTeams() PipelineFieldsTeamsTeamPipelineConnection { return v.Teams }
 
+// GetArchived returns PipelineFields.Archived, and is useful for accessing the field via an interface.
+func (v *PipelineFields) GetArchived() bool { return v.Archived }
+
 // GetVisibility returns PipelineFields.Visibility, and is useful for accessing the field via an interface.
 func (v *PipelineFields) GetVisibility() PipelineVisibility { return v.Visibility }
 
@@ -1950,7 +1987,7 @@ func (v *PipelineFieldsTagsPipelineTag) GetLabel() string { return v.Label }
 // PipelineFieldsTeamsTeamPipelineConnection includes the requested fields of the GraphQL type TeamPipelineConnection.
 // The GraphQL type's documentation follows.
 //
-// A collection of TeamPipeline records
+// The connection type for TeamPipeline.
 type PipelineFieldsTeamsTeamPipelineConnection struct {
 	PipelineTeam `json:"-"`
 }
@@ -2163,11 +2200,12 @@ func (v *PipelineTagInput) GetLabel() string { return v.Label }
 // PipelineTeam includes the GraphQL fields of TeamPipelineConnection requested by the fragment PipelineTeam.
 // The GraphQL type's documentation follows.
 //
-// A collection of TeamPipeline records
+// The connection type for TeamPipeline.
 type PipelineTeam struct {
-	PageInfo PipelineTeamPageInfo                `json:"pageInfo"`
-	Count    int                                 `json:"count"`
-	Edges    []PipelineTeamEdgesTeamPipelineEdge `json:"edges"`
+	PageInfo PipelineTeamPageInfo `json:"pageInfo"`
+	Count    int                  `json:"count"`
+	// A list of edges.
+	Edges []PipelineTeamEdgesTeamPipelineEdge `json:"edges"`
 }
 
 // GetPageInfo returns PipelineTeam.PageInfo, and is useful for accessing the field via an interface.
@@ -2194,9 +2232,14 @@ func (v *PipelineTeamAssignmentInput) GetId() string { return v.Id }
 func (v *PipelineTeamAssignmentInput) GetAccessLevel() PipelineAccessLevels { return v.AccessLevel }
 
 // PipelineTeamEdgesTeamPipelineEdge includes the requested fields of the GraphQL type TeamPipelineEdge.
+// The GraphQL type's documentation follows.
+//
+// An edge in a connection.
 type PipelineTeamEdgesTeamPipelineEdge struct {
-	Cursor string                                            `json:"cursor"`
-	Node   PipelineTeamEdgesTeamPipelineEdgeNodeTeamPipeline `json:"node"`
+	// A cursor for use in pagination.
+	Cursor string `json:"cursor"`
+	// The item at the end of the edge.
+	Node PipelineTeamEdgesTeamPipelineEdgeNodeTeamPipeline `json:"node"`
 }
 
 // GetCursor returns PipelineTeamEdgesTeamPipelineEdge.Cursor, and is useful for accessing the field via an interface.
@@ -3613,6 +3656,14 @@ func (v *__teamUpdateInput) GetMembersCanDestroyRegistries() bool {
 // GetMembersCanDestroyPackages returns __teamUpdateInput.MembersCanDestroyPackages, and is useful for accessing the field via an interface.
 func (v *__teamUpdateInput) GetMembersCanDestroyPackages() bool { return v.MembersCanDestroyPackages }
 
+// __unarchivePipelineInput is used internally by genqlient
+type __unarchivePipelineInput struct {
+	Id string `json:"id"`
+}
+
+// GetId returns __unarchivePipelineInput.Id, and is useful for accessing the field via an interface.
+func (v *__unarchivePipelineInput) GetId() string { return v.Id }
+
 // __updateClusterAgentTokenInput is used internally by genqlient
 type __updateClusterAgentTokenInput struct {
 	OrganizationId     string `json:"organizationId"`
@@ -3841,7 +3892,11 @@ func (v *createAgentTokenAgentTokenCreateAgentTokenCreatePayload) GetAgentTokenE
 }
 
 // createAgentTokenAgentTokenCreateAgentTokenCreatePayloadAgentTokenEdge includes the requested fields of the GraphQL type AgentTokenEdge.
+// The GraphQL type's documentation follows.
+//
+// An edge in a connection.
 type createAgentTokenAgentTokenCreateAgentTokenCreatePayloadAgentTokenEdge struct {
+	// The item at the end of the edge.
 	Node createAgentTokenAgentTokenCreateAgentTokenCreatePayloadAgentTokenEdgeNodeAgentToken `json:"node"`
 }
 
@@ -4583,6 +4638,11 @@ func (v *createPipelinePipelineCreatePipelineCreatePayloadPipeline) GetTeams() P
 	return v.PipelineFields.Teams
 }
 
+// GetArchived returns createPipelinePipelineCreatePipelineCreatePayloadPipeline.Archived, and is useful for accessing the field via an interface.
+func (v *createPipelinePipelineCreatePipelineCreatePayloadPipeline) GetArchived() bool {
+	return v.PipelineFields.Archived
+}
+
 // GetVisibility returns createPipelinePipelineCreatePipelineCreatePayloadPipeline.Visibility, and is useful for accessing the field via an interface.
 func (v *createPipelinePipelineCreatePipelineCreatePayloadPipeline) GetVisibility() PipelineVisibility {
 	return v.PipelineFields.Visibility
@@ -4665,6 +4725,8 @@ type __premarshalcreatePipelinePipelineCreatePipelineCreatePayloadPipeline struc
 
 	Teams PipelineFieldsTeamsTeamPipelineConnection `json:"teams"`
 
+	Archived bool `json:"archived"`
+
 	Visibility PipelineVisibility `json:"visibility"`
 
 	WebhookURL string `json:"webhookURL"`
@@ -4704,6 +4766,7 @@ func (v *createPipelinePipelineCreatePipelineCreatePayloadPipeline) __premarshal
 	retval.Steps = v.PipelineFields.Steps
 	retval.Tags = v.PipelineFields.Tags
 	retval.Teams = v.PipelineFields.Teams
+	retval.Archived = v.PipelineFields.Archived
 	retval.Visibility = v.PipelineFields.Visibility
 	retval.WebhookURL = v.PipelineFields.WebhookURL
 	return &retval, nil
@@ -4753,7 +4816,11 @@ func (v *createPipelineSchedulePipelineScheduleCreatePipelineScheduleCreatePaylo
 }
 
 // createPipelineSchedulePipelineScheduleCreatePipelineScheduleCreatePayloadPipelineScheduleEdge includes the requested fields of the GraphQL type PipelineScheduleEdge.
+// The GraphQL type's documentation follows.
+//
+// An edge in a connection.
 type createPipelineSchedulePipelineScheduleCreatePipelineScheduleCreatePayloadPipelineScheduleEdge struct {
+	// The item at the end of the edge.
 	Node createPipelineSchedulePipelineScheduleCreatePipelineScheduleCreatePayloadPipelineScheduleEdgeNodePipelineSchedule `json:"node"`
 }
 
@@ -5419,7 +5486,11 @@ func (v *createTeamMemberTeamMemberCreateTeamMemberCreatePayload) GetTeamMemberE
 }
 
 // createTeamMemberTeamMemberCreateTeamMemberCreatePayloadTeamMemberEdge includes the requested fields of the GraphQL type TeamMemberEdge.
+// The GraphQL type's documentation follows.
+//
+// An edge in a connection.
 type createTeamMemberTeamMemberCreateTeamMemberCreatePayloadTeamMemberEdge struct {
+	// The item at the end of the edge.
 	Node createTeamMemberTeamMemberCreateTeamMemberCreatePayloadTeamMemberEdgeNodeTeamMember `json:"node"`
 }
 
@@ -5542,7 +5613,11 @@ func (v *createTeamPipelineTeamPipelineCreateTeamPipelineCreatePayload) GetTeamP
 }
 
 // createTeamPipelineTeamPipelineCreateTeamPipelineCreatePayloadTeamPipelineEdge includes the requested fields of the GraphQL type TeamPipelineEdge.
+// The GraphQL type's documentation follows.
+//
+// An edge in a connection.
 type createTeamPipelineTeamPipelineCreateTeamPipelineCreatePayloadTeamPipelineEdge struct {
+	// The item at the end of the edge.
 	Node createTeamPipelineTeamPipelineCreateTeamPipelineCreatePayloadTeamPipelineEdgeNodeTeamPipeline `json:"node"`
 }
 
@@ -5687,8 +5762,9 @@ func (v *createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuite) GetTeams
 // createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuiteTeamsTeamSuiteConnection includes the requested fields of the GraphQL type TeamSuiteConnection.
 // The GraphQL type's documentation follows.
 //
-// A collection of TeamSuite records
+// The connection type for TeamSuite.
 type createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuiteTeamsTeamSuiteConnection struct {
+	// A list of edges.
 	Edges []createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdge `json:"edges"`
 }
 
@@ -5698,7 +5774,11 @@ func (v *createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuiteTeamsTeamS
 }
 
 // createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdge includes the requested fields of the GraphQL type TeamSuiteEdge.
+// The GraphQL type's documentation follows.
+//
+// An edge in a connection.
 type createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdge struct {
+	// The item at the end of the edge.
 	Node createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdgeNodeTeamSuite `json:"node"`
 }
 
@@ -6346,9 +6426,13 @@ func (v *getClusterByNameOrganization) GetClusters() getClusterByNameOrganizatio
 }
 
 // getClusterByNameOrganizationClustersClusterConnection includes the requested fields of the GraphQL type ClusterConnection.
+// The GraphQL type's documentation follows.
+//
+// The connection type for Cluster.
 type getClusterByNameOrganizationClustersClusterConnection struct {
-	PageInfo getClusterByNameOrganizationClustersClusterConnectionPageInfo           `json:"pageInfo"`
-	Edges    []getClusterByNameOrganizationClustersClusterConnectionEdgesClusterEdge `json:"edges"`
+	PageInfo getClusterByNameOrganizationClustersClusterConnectionPageInfo `json:"pageInfo"`
+	// A list of edges.
+	Edges []getClusterByNameOrganizationClustersClusterConnectionEdgesClusterEdge `json:"edges"`
 }
 
 // GetPageInfo returns getClusterByNameOrganizationClustersClusterConnection.PageInfo, and is useful for accessing the field via an interface.
@@ -6362,7 +6446,11 @@ func (v *getClusterByNameOrganizationClustersClusterConnection) GetEdges() []get
 }
 
 // getClusterByNameOrganizationClustersClusterConnectionEdgesClusterEdge includes the requested fields of the GraphQL type ClusterEdge.
+// The GraphQL type's documentation follows.
+//
+// An edge in a connection.
 type getClusterByNameOrganizationClustersClusterConnectionEdgesClusterEdge struct {
+	// The item at the end of the edge.
 	Node getClusterByNameOrganizationClustersClusterConnectionEdgesClusterEdgeNodeCluster `json:"node"`
 }
 
@@ -8377,9 +8465,13 @@ func (v *getClusterQueuesOrganizationCluster) GetQueues() getClusterQueuesOrgani
 }
 
 // getClusterQueuesOrganizationClusterQueuesClusterQueueConnection includes the requested fields of the GraphQL type ClusterQueueConnection.
+// The GraphQL type's documentation follows.
+//
+// The connection type for ClusterQueue.
 type getClusterQueuesOrganizationClusterQueuesClusterQueueConnection struct {
-	PageInfo getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionPageInfo                `json:"pageInfo"`
-	Edges    []getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdge `json:"edges"`
+	PageInfo getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionPageInfo `json:"pageInfo"`
+	// A list of edges.
+	Edges []getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdge `json:"edges"`
 }
 
 // GetPageInfo returns getClusterQueuesOrganizationClusterQueuesClusterQueueConnection.PageInfo, and is useful for accessing the field via an interface.
@@ -8393,7 +8485,11 @@ func (v *getClusterQueuesOrganizationClusterQueuesClusterQueueConnection) GetEdg
 }
 
 // getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdge includes the requested fields of the GraphQL type ClusterQueueEdge.
+// The GraphQL type's documentation follows.
+//
+// An edge in a connection.
 type getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdge struct {
+	// The item at the end of the edge.
 	Node getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue `json:"node"`
 }
 
@@ -10185,6 +10281,9 @@ func (v *getNodeNodePipeline) GetTeams() PipelineFieldsTeamsTeamPipelineConnecti
 	return v.PipelineFields.Teams
 }
 
+// GetArchived returns getNodeNodePipeline.Archived, and is useful for accessing the field via an interface.
+func (v *getNodeNodePipeline) GetArchived() bool { return v.PipelineFields.Archived }
+
 // GetVisibility returns getNodeNodePipeline.Visibility, and is useful for accessing the field via an interface.
 func (v *getNodeNodePipeline) GetVisibility() PipelineVisibility { return v.PipelineFields.Visibility }
 
@@ -10265,6 +10364,8 @@ type __premarshalgetNodeNodePipeline struct {
 
 	Teams PipelineFieldsTeamsTeamPipelineConnection `json:"teams"`
 
+	Archived bool `json:"archived"`
+
 	Visibility PipelineVisibility `json:"visibility"`
 
 	WebhookURL string `json:"webhookURL"`
@@ -10305,6 +10406,7 @@ func (v *getNodeNodePipeline) __premarshalJSON() (*__premarshalgetNodeNodePipeli
 	retval.Steps = v.PipelineFields.Steps
 	retval.Tags = v.PipelineFields.Tags
 	retval.Teams = v.PipelineFields.Teams
+	retval.Archived = v.PipelineFields.Archived
 	retval.Visibility = v.PipelineFields.Visibility
 	retval.WebhookURL = v.PipelineFields.WebhookURL
 	return &retval, nil
@@ -11582,6 +11684,9 @@ func (v *getPipelinePipeline) GetTeams() PipelineFieldsTeamsTeamPipelineConnecti
 	return v.PipelineFields.Teams
 }
 
+// GetArchived returns getPipelinePipeline.Archived, and is useful for accessing the field via an interface.
+func (v *getPipelinePipeline) GetArchived() bool { return v.PipelineFields.Archived }
+
 // GetVisibility returns getPipelinePipeline.Visibility, and is useful for accessing the field via an interface.
 func (v *getPipelinePipeline) GetVisibility() PipelineVisibility { return v.PipelineFields.Visibility }
 
@@ -11660,6 +11765,8 @@ type __premarshalgetPipelinePipeline struct {
 
 	Teams PipelineFieldsTeamsTeamPipelineConnection `json:"teams"`
 
+	Archived bool `json:"archived"`
+
 	Visibility PipelineVisibility `json:"visibility"`
 
 	WebhookURL string `json:"webhookURL"`
@@ -11699,6 +11806,7 @@ func (v *getPipelinePipeline) __premarshalJSON() (*__premarshalgetPipelinePipeli
 	retval.Steps = v.PipelineFields.Steps
 	retval.Tags = v.PipelineFields.Tags
 	retval.Teams = v.PipelineFields.Teams
+	retval.Archived = v.PipelineFields.Archived
 	retval.Visibility = v.PipelineFields.Visibility
 	retval.WebhookURL = v.PipelineFields.WebhookURL
 	return &retval, nil
@@ -13685,7 +13793,7 @@ func (v *getPipelineTeamsPipeline) GetTeams() getPipelineTeamsPipelineTeamsTeamP
 // getPipelineTeamsPipelineTeamsTeamPipelineConnection includes the requested fields of the GraphQL type TeamPipelineConnection.
 // The GraphQL type's documentation follows.
 //
-// A collection of TeamPipeline records
+// The connection type for TeamPipeline.
 type getPipelineTeamsPipelineTeamsTeamPipelineConnection struct {
 	PipelineTeam `json:"-"`
 }
@@ -13779,9 +13887,13 @@ func (v *getPipelineTemplatesOrganization) GetPipelineTemplates() getPipelineTem
 }
 
 // getPipelineTemplatesOrganizationPipelineTemplatesPipelineTemplateConnection includes the requested fields of the GraphQL type PipelineTemplateConnection.
+// The GraphQL type's documentation follows.
+//
+// The connection type for PipelineTemplate.
 type getPipelineTemplatesOrganizationPipelineTemplatesPipelineTemplateConnection struct {
-	PageInfo getPipelineTemplatesOrganizationPipelineTemplatesPipelineTemplateConnectionPageInfo                    `json:"pageInfo"`
-	Edges    []getPipelineTemplatesOrganizationPipelineTemplatesPipelineTemplateConnectionEdgesPipelineTemplateEdge `json:"edges"`
+	PageInfo getPipelineTemplatesOrganizationPipelineTemplatesPipelineTemplateConnectionPageInfo `json:"pageInfo"`
+	// A list of edges.
+	Edges []getPipelineTemplatesOrganizationPipelineTemplatesPipelineTemplateConnectionEdgesPipelineTemplateEdge `json:"edges"`
 }
 
 // GetPageInfo returns getPipelineTemplatesOrganizationPipelineTemplatesPipelineTemplateConnection.PageInfo, and is useful for accessing the field via an interface.
@@ -13795,7 +13907,11 @@ func (v *getPipelineTemplatesOrganizationPipelineTemplatesPipelineTemplateConnec
 }
 
 // getPipelineTemplatesOrganizationPipelineTemplatesPipelineTemplateConnectionEdgesPipelineTemplateEdge includes the requested fields of the GraphQL type PipelineTemplateEdge.
+// The GraphQL type's documentation follows.
+//
+// An edge in a connection.
 type getPipelineTemplatesOrganizationPipelineTemplatesPipelineTemplateConnectionEdgesPipelineTemplateEdge struct {
+	// The item at the end of the edge.
 	Node getPipelineTemplatesOrganizationPipelineTemplatesPipelineTemplateConnectionEdgesPipelineTemplateEdgeNodePipelineTemplate `json:"node"`
 }
 
@@ -17837,8 +17953,9 @@ func (v *getTestSuiteSuiteTeamSuite) GetTypename() string { return v.Typename }
 // getTestSuiteSuiteTeamsTeamSuiteConnection includes the requested fields of the GraphQL type TeamSuiteConnection.
 // The GraphQL type's documentation follows.
 //
-// A collection of TeamSuite records
+// The connection type for TeamSuite.
 type getTestSuiteSuiteTeamsTeamSuiteConnection struct {
+	// A list of edges.
 	Edges []getTestSuiteSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdge `json:"edges"`
 }
 
@@ -17848,7 +17965,11 @@ func (v *getTestSuiteSuiteTeamsTeamSuiteConnection) GetEdges() []getTestSuiteSui
 }
 
 // getTestSuiteSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdge includes the requested fields of the GraphQL type TeamSuiteEdge.
+// The GraphQL type's documentation follows.
+//
+// An edge in a connection.
 type getTestSuiteSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdge struct {
+	// The item at the end of the edge.
 	Node getTestSuiteSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdgeNodeTeamSuite `json:"node"`
 }
 
@@ -18467,7 +18588,11 @@ func (v *teamCreateTeamCreateTeamCreatePayload) GetTeamEdge() teamCreateTeamCrea
 }
 
 // teamCreateTeamCreateTeamCreatePayloadTeamEdge includes the requested fields of the GraphQL type TeamEdge.
+// The GraphQL type's documentation follows.
+//
+// An edge in a connection.
 type teamCreateTeamCreateTeamCreatePayloadTeamEdge struct {
+	// The item at the end of the edge.
 	Node teamCreateTeamCreateTeamCreatePayloadTeamEdgeNodeTeam `json:"node"`
 }
 
@@ -18816,6 +18941,31 @@ func (v *teamUpdateTeamUpdateTeamUpdatePayloadTeam) __premarshalJSON() (*__prema
 	retval.MembersCanDestroyRegistries = v.TeamFields.MembersCanDestroyRegistries
 	retval.MembersCanDestroyPackages = v.TeamFields.MembersCanDestroyPackages
 	return &retval, nil
+}
+
+// unarchivePipelinePipelineUnarchivePipelineUnarchivePayload includes the requested fields of the GraphQL type PipelineUnarchivePayload.
+// The GraphQL type's documentation follows.
+//
+// Autogenerated return type of PipelineUnarchive.
+type unarchivePipelinePipelineUnarchivePipelineUnarchivePayload struct {
+	// A unique identifier for the client performing the mutation.
+	ClientMutationId string `json:"clientMutationId"`
+}
+
+// GetClientMutationId returns unarchivePipelinePipelineUnarchivePipelineUnarchivePayload.ClientMutationId, and is useful for accessing the field via an interface.
+func (v *unarchivePipelinePipelineUnarchivePipelineUnarchivePayload) GetClientMutationId() string {
+	return v.ClientMutationId
+}
+
+// unarchivePipelineResponse is returned by unarchivePipeline on success.
+type unarchivePipelineResponse struct {
+	// Unarchive a pipeline.
+	PipelineUnarchive unarchivePipelinePipelineUnarchivePipelineUnarchivePayload `json:"pipelineUnarchive"`
+}
+
+// GetPipelineUnarchive returns unarchivePipelineResponse.PipelineUnarchive, and is useful for accessing the field via an interface.
+func (v *unarchivePipelineResponse) GetPipelineUnarchive() unarchivePipelinePipelineUnarchivePipelineUnarchivePayload {
+	return v.PipelineUnarchive
 }
 
 // updateClusterAgentTokenClusterAgentTokenUpdateClusterAgentTokenUpdatePayload includes the requested fields of the GraphQL type ClusterAgentTokenUpdatePayload.
@@ -19559,6 +19709,11 @@ func (v *updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline) GetTeams() P
 	return v.PipelineFields.Teams
 }
 
+// GetArchived returns updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline.Archived, and is useful for accessing the field via an interface.
+func (v *updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline) GetArchived() bool {
+	return v.PipelineFields.Archived
+}
+
 // GetVisibility returns updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline.Visibility, and is useful for accessing the field via an interface.
 func (v *updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline) GetVisibility() PipelineVisibility {
 	return v.PipelineFields.Visibility
@@ -19641,6 +19796,8 @@ type __premarshalupdatePipelinePipelineUpdatePipelineUpdatePayloadPipeline struc
 
 	Teams PipelineFieldsTeamsTeamPipelineConnection `json:"teams"`
 
+	Archived bool `json:"archived"`
+
 	Visibility PipelineVisibility `json:"visibility"`
 
 	WebhookURL string `json:"webhookURL"`
@@ -19680,6 +19837,7 @@ func (v *updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline) __premarshal
 	retval.Steps = v.PipelineFields.Steps
 	retval.Tags = v.PipelineFields.Tags
 	retval.Teams = v.PipelineFields.Teams
+	retval.Archived = v.PipelineFields.Archived
 	retval.Visibility = v.PipelineFields.Visibility
 	retval.WebhookURL = v.PipelineFields.WebhookURL
 	return &retval, nil
@@ -21024,6 +21182,7 @@ fragment PipelineFields on Pipeline {
 	teams(first: 5, order: NAME) {
 		... PipelineTeam
 	}
+	archived
 	visibility
 	webhookURL
 }
@@ -22183,6 +22342,7 @@ fragment PipelineFields on Pipeline {
 	teams(first: 5, order: NAME) {
 		... PipelineTeam
 	}
+	archived
 	visibility
 	webhookURL
 }
@@ -22506,6 +22666,7 @@ fragment PipelineFields on Pipeline {
 	teams(first: 5, order: NAME) {
 		... PipelineTeam
 	}
+	archived
 	visibility
 	webhookURL
 }
@@ -23390,6 +23551,40 @@ func teamUpdate(
 	return data_, err_
 }
 
+// The mutation executed by unarchivePipeline.
+const unarchivePipeline_Operation = `
+mutation unarchivePipeline ($id: ID!) {
+	pipelineUnarchive(input: {id:$id}) {
+		clientMutationId
+	}
+}
+`
+
+func unarchivePipeline(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	id string,
+) (data_ *unarchivePipelineResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "unarchivePipeline",
+		Query:  unarchivePipeline_Operation,
+		Variables: &__unarchivePipelineInput{
+			Id: id,
+		},
+	}
+
+	data_ = &unarchivePipelineResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
 // The mutation executed by updateCluster.
 const updateCluster_Operation = `
 mutation updateCluster ($organizationId: ID!, $id: ID!, $name: String, $description: String, $emoji: String, $color: String) {
@@ -23695,6 +23890,7 @@ fragment PipelineFields on Pipeline {
 	teams(first: 5, order: NAME) {
 		... PipelineTeam
 	}
+	archived
 	visibility
 	webhookURL
 }

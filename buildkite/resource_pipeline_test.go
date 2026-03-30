@@ -1610,4 +1610,116 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 			},
 		})
 	})
+
+	t.Run("creates pipeline with archived = true", func(t *testing.T) {
+		pipelineName := acctest.RandString(12)
+		config := fmt.Sprintf(`
+			resource "buildkite_pipeline" "pipeline" {
+				name = "%s"
+				repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
+				archived = true
+			}
+		`, pipelineName)
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			CheckDestroy:             testAccCheckPipelineDestroyFunc,
+			Steps: []resource.TestStep{
+				{
+					Config: config,
+					Check: resource.ComposeAggregateTestCheckFunc(
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "archived", "true"),
+						func(s *terraform.State) error {
+							slug := fmt.Sprintf("%s/%s", getenv("BUILDKITE_ORGANIZATION_SLUG"), pipelineName)
+							resp, err := getPipeline(context.Background(), genqlientGraphql, slug)
+							if err != nil {
+								return err
+							}
+							if !resp.Pipeline.Archived {
+								return fmt.Errorf("expected pipeline to be archived, got archived = false")
+							}
+							return nil
+						},
+					),
+				},
+			},
+		})
+	})
+
+	t.Run("updates pipeline archived state", func(t *testing.T) {
+		pipelineName := acctest.RandString(12)
+		configUnarchived := fmt.Sprintf(`
+			resource "buildkite_pipeline" "pipeline" {
+				name = "%s"
+				repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
+				archived = false
+			}
+		`, pipelineName)
+		configArchived := fmt.Sprintf(`
+			resource "buildkite_pipeline" "pipeline" {
+				name = "%s"
+				repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
+				archived = true
+			}
+		`, pipelineName)
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			CheckDestroy:             testAccCheckPipelineDestroyFunc,
+			Steps: []resource.TestStep{
+				{
+					Config: configUnarchived,
+					Check: resource.ComposeAggregateTestCheckFunc(
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "archived", "false"),
+					),
+				},
+				{
+					Config: configArchived,
+					ConfigPlanChecks: resource.ConfigPlanChecks{
+						PreApply: []plancheck.PlanCheck{
+							plancheck.ExpectResourceAction("buildkite_pipeline.pipeline", plancheck.ResourceActionUpdate),
+						},
+					},
+					Check: resource.ComposeAggregateTestCheckFunc(
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "archived", "true"),
+						func(s *terraform.State) error {
+							slug := fmt.Sprintf("%s/%s", getenv("BUILDKITE_ORGANIZATION_SLUG"), pipelineName)
+							resp, err := getPipeline(context.Background(), genqlientGraphql, slug)
+							if err != nil {
+								return err
+							}
+							if !resp.Pipeline.Archived {
+								return fmt.Errorf("expected pipeline to be archived after update, got archived = false")
+							}
+							return nil
+						},
+					),
+				},
+				{
+					Config: configUnarchived,
+					ConfigPlanChecks: resource.ConfigPlanChecks{
+						PreApply: []plancheck.PlanCheck{
+							plancheck.ExpectResourceAction("buildkite_pipeline.pipeline", plancheck.ResourceActionUpdate),
+						},
+					},
+					Check: resource.ComposeAggregateTestCheckFunc(
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "archived", "false"),
+						func(s *terraform.State) error {
+							slug := fmt.Sprintf("%s/%s", getenv("BUILDKITE_ORGANIZATION_SLUG"), pipelineName)
+							resp, err := getPipeline(context.Background(), genqlientGraphql, slug)
+							if err != nil {
+								return err
+							}
+							if resp.Pipeline.Archived {
+								return fmt.Errorf("expected pipeline to be unarchived after update, got archived = true")
+							}
+							return nil
+						},
+					),
+				},
+			},
+		})
+	})
 }
