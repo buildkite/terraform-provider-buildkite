@@ -294,6 +294,21 @@ func (p *pipelineResource) Create(ctx context.Context, req resource.CreateReques
 		resp.Diagnostics.Append(resp.Private.SetKey(ctx, "slugSource", []byte(`{"source": "user"}`))...)
 	}
 
+	if plan.Archived.ValueBool() {
+		err = retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
+			_, archiveErr := archivePipeline(ctx, p.client.genqlient, state.Id.ValueString())
+			return retryContextError(archiveErr)
+		})
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Unable to archive pipeline",
+				fmt.Sprintf("Unable to archive pipeline: %s", err.Error()),
+			)
+			return
+		}
+		state.Archived = types.BoolValue(true)
+	}
+
 	if plan.ProviderSettings != nil {
 		pipelineExtraInfo, err := updatePipelineExtraInfo(ctx, useSlugValue, plan.ProviderSettings, p.client, timeouts)
 		if err != nil {
@@ -1038,16 +1053,19 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 	}
 
 	if !plan.Archived.Equal(state.Archived) {
-		var archiveErr error
-		if plan.Archived.ValueBool() {
-			_, archiveErr = archivePipeline(ctx, p.client.genqlient, plan.Id.ValueString())
-		} else {
-			_, archiveErr = unarchivePipeline(ctx, p.client.genqlient, plan.Id.ValueString())
-		}
-		if archiveErr != nil {
+		err = retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
+			var archiveErr error
+			if plan.Archived.ValueBool() {
+				_, archiveErr = archivePipeline(ctx, p.client.genqlient, plan.Id.ValueString())
+			} else {
+				_, archiveErr = unarchivePipeline(ctx, p.client.genqlient, plan.Id.ValueString())
+			}
+			return retryContextError(archiveErr)
+		})
+		if err != nil {
 			resp.Diagnostics.AddError(
 				"Unable to update pipeline archive state",
-				fmt.Sprintf("Unable to update pipeline archive state: %s", archiveErr.Error()),
+				fmt.Sprintf("Unable to update pipeline archive state: %s", err.Error()),
 			)
 			return
 		}
