@@ -43,6 +43,7 @@ fragment PipelineFields on Pipeline {
     teams(first: 5, order: NAME) {
         ...PipelineTeam
     }
+    archived
     visibility
     webhookURL
 }
@@ -128,6 +129,14 @@ mutation deletePipeline ($id: ID!) {
 
 mutation archivePipeline ($id: ID!) {
   pipelineArchive(input:{
+    id: $id
+  }) {
+    clientMutationId
+  }
+}
+
+mutation unarchivePipeline ($id: ID!) {
+  pipelineUnarchive(input:{
     id: $id
   }) {
     clientMutationId

@@ -73,6 +73,7 @@ type PipelineTag struct {
 
 type pipelineResourceModel struct {
 	AllowRebuilds                        types.Bool   `tfsdk:"allow_rebuilds"`
+	Archived                             types.Bool   `tfsdk:"archived"`
 	BadgeUrl                             types.String `tfsdk:"badge_url"`
 	BranchConfiguration                  types.String `tfsdk:"branch_configuration"`
 	CancelIntermediateBuilds             types.Bool   `tfsdk:"cancel_intermediate_builds"`
@@ -139,6 +140,7 @@ type pipelineResponse interface {
 	GetId() string
 	GetPipelineUuid() string
 	GetAllowRebuilds() bool
+	GetArchived() bool
 	GetBadgeURL() string
 	GetBranchConfiguration() *string
 	GetCancelIntermediateBuilds() bool
@@ -290,6 +292,21 @@ func (p *pipelineResource) Create(ctx context.Context, req resource.CreateReques
 
 		updatePipelineResourceExtraInfo(&state, &pipelineExtraInfo)
 		resp.Diagnostics.Append(resp.Private.SetKey(ctx, "slugSource", []byte(`{"source": "user"}`))...)
+	}
+
+	if plan.Archived.ValueBool() {
+		err = retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
+			_, archiveErr := archivePipeline(ctx, p.client.genqlient, state.Id.ValueString())
+			return retryContextError(archiveErr)
+		})
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Unable to archive pipeline",
+				fmt.Sprintf("Unable to archive pipeline: %s", err.Error()),
+			)
+			return
+		}
+		state.Archived = types.BoolValue(true)
 	}
 
 	if plan.ProviderSettings != nil {
@@ -549,6 +566,12 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 				Computed:            true,
 				Default:             booldefault.StaticBool(true),
 				MarkdownDescription: "Whether rebuilds are allowed for this pipeline.",
+			},
+			"archived": schema.BoolAttribute{
+				Optional:            true,
+				Computed:            true,
+				Default:             booldefault.StaticBool(false),
+				MarkdownDescription: "Whether to archive this pipeline. Archived pipelines are hidden from most views and cannot run new builds.",
 			},
 			"branch_configuration": schema.StringAttribute{
 				MarkdownDescription: "Configure the pipeline to only build on this branch conditional.",
@@ -1014,6 +1037,21 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 		return
 	}
 
+	// Unarchive before updating: the API rejects updates to archived pipelines.
+	if state.Archived.ValueBool() && !plan.Archived.ValueBool() {
+		err := retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
+			_, archiveErr := unarchivePipeline(ctx, p.client.genqlient, plan.Id.ValueString())
+			return retryContextError(archiveErr)
+		})
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Unable to update pipeline archive state",
+				fmt.Sprintf("Unable to update pipeline archive state: %s", err.Error()),
+			)
+			return
+		}
+	}
+
 	var response *updatePipelineResponse
 	err := retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
 		var err error
@@ -1027,6 +1065,21 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 			fmt.Sprintf("Unable to update Pipeline: %s", err.Error()),
 		)
 		return
+	}
+
+	// Archive after updating (archiving before would block other field updates too).
+	if !state.Archived.ValueBool() && plan.Archived.ValueBool() {
+		err = retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
+			_, archiveErr := archivePipeline(ctx, p.client.genqlient, plan.Id.ValueString())
+			return retryContextError(archiveErr)
+		})
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Unable to update pipeline archive state",
+				fmt.Sprintf("Unable to update pipeline archive state: %s", err.Error()),
+			)
+			return
+		}
 	}
 
 	useSlugValue := response.PipelineUpdate.Pipeline.Slug
@@ -1043,6 +1096,9 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 	}
 
 	setPipelineModel(&state, &response.PipelineUpdate.Pipeline)
+	// The updatePipeline response predates any archive/unarchive mutation above, so its archived
+	// field reflects the old state. Sync to plan to avoid a provider inconsistency error.
+	state.Archived = plan.Archived
 
 	if plan.DefaultTeamId.IsNull() && !state.DefaultTeamId.IsNull() {
 		// if the plan is empty but was previously set, just remove the team
@@ -1131,6 +1187,7 @@ func setPipelineModel(model *pipelineResourceModel, data pipelineResponse) {
 	maximumTimeoutInMinutes := (*int64)(unsafe.Pointer(data.GetMaximumTimeoutInMinutes()))
 
 	model.AllowRebuilds = types.BoolValue(data.GetAllowRebuilds())
+	model.Archived = types.BoolValue(data.GetArchived())
 	model.BadgeUrl = types.StringValue(data.GetBadgeURL())
 	model.BranchConfiguration = types.StringPointerValue(data.GetBranchConfiguration())
 	model.CancelIntermediateBuilds = types.BoolValue(data.GetCancelIntermediateBuilds())
