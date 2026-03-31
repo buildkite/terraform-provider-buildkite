@@ -1085,6 +1085,9 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 	}
 
 	setPipelineModel(&state, &response.PipelineUpdate.Pipeline)
+	// The updatePipeline response predates any archive/unarchive mutation above, so its archived
+	// field reflects the old state. Sync to plan to avoid a provider inconsistency error.
+	state.Archived = plan.Archived
 
 	if plan.DefaultTeamId.IsNull() && !state.DefaultTeamId.IsNull() {
 		// if the plan is empty but was previously set, just remove the team
