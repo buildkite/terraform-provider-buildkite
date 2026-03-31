@@ -1037,6 +1037,21 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 		return
 	}
 
+	// Unarchive before updating: the API rejects updates to archived pipelines.
+	if state.Archived.ValueBool() && !plan.Archived.ValueBool() {
+		err := retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
+			_, archiveErr := unarchivePipeline(ctx, p.client.genqlient, plan.Id.ValueString())
+			return retryContextError(archiveErr)
+		})
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Unable to update pipeline archive state",
+				fmt.Sprintf("Unable to update pipeline archive state: %s", err.Error()),
+			)
+			return
+		}
+	}
+
 	var response *updatePipelineResponse
 	err := retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
 		var err error
@@ -1052,14 +1067,10 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 		return
 	}
 
-	if !plan.Archived.Equal(state.Archived) {
+	// Archive after updating (archiving before would block other field updates too).
+	if !state.Archived.ValueBool() && plan.Archived.ValueBool() {
 		err = retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
-			var archiveErr error
-			if plan.Archived.ValueBool() {
-				_, archiveErr = archivePipeline(ctx, p.client.genqlient, plan.Id.ValueString())
-			} else {
-				_, archiveErr = unarchivePipeline(ctx, p.client.genqlient, plan.Id.ValueString())
-			}
+			_, archiveErr := archivePipeline(ctx, p.client.genqlient, plan.Id.ValueString())
 			return retryContextError(archiveErr)
 		})
 		if err != nil {
