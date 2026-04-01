@@ -1,0 +1,44 @@
+# This file is maintained automatically by "terraform init".
+# Manual edits may be lost in future updates.
+
+provider "registry.terraform.io/buildkite/buildkite" {
+  version = "1.29.0"
+  hashes = [
+    "h1:GMrdNxgDPZE4NIpuYnRTbt5H7o7TZc33sVApPRrjfe8=",
+    "zh:1a1c29efd035e22c3317010deeabbe8665bcc4dfe667263767a5a56f90a6a235",
+    "zh:1e2d263f1a7ac515e0d9cddfc988a836c74f466f4e16e75711ea596052149a99",
+    "zh:24eddfa998ad797a53122239a992c13f5e0b1f87d568a9d8ebf2ec33bb2cfbfc",
+    "zh:541d4532c875b2ee7ecb98da9a1461e76788893b623b0adf7c634d9fff7770e3",
+    "zh:565e3cf57825f5c9c8f897839f2cd3c3bd11b69c1fa4ef81f2a2ef1ab8b0547a",
+    "zh:676252e7f02b80e6f5a1640aff932875257d888541a289900beaaae442a03705",
+    "zh:77550e257112f7cf8b228efe674461be6e1d9b32eab7fdb57b9b5c8d0364bfeb",
+    "zh:873c4d952c401c937d149b827f87e3d4195fa67c42adfb7a06d16ae019e08dad",
+    "zh:8ef236647430c2351e862c21e5f1b08a45b9ff936564005c49226ef25183dfdd",
+    "zh:d438d165c026e3ecf174787dc964ae21732877b94175fc1a5a7647e07e0ca854",
+    "zh:ded7730c59e496bc5978b1f59f45de1777a773848c840e6d182ab9a900fd8cde",
+    "zh:e350a5d1f32b3f5c0afcb1706015146232c90bead2c9d2ca37d496c47af108e9",
+  ]
+}
+
+provider "registry.terraform.io/integrations/github" {
+  version     = "6.11.0"
+  constraints = "~> 6.0"
+  hashes = [
+    "h1:v7DlcIVQ4uwd0Clhl/bOjt9TeZrrTgfT/lJ0rUcNKjM=",
+    "zh:12dc2a70890e73b42909b3e985aa43d4233603ad41ddef0029d9109159ea0a31",
+    "zh:149df252fc70fa0723896697ac1c63cdecc0b05f37a0a04a4d0f0dc96fed9115",
+    "zh:28612e8a1765d4ea868282414b50e2523f1a362c86d56bf13e2a385c8112b456",
+    "zh:2c3ca9992644f01ddb5fef8015732a358d581e1125c7ea9664ad516b0f1bb688",
+    "zh:34601d2f1d81b4e06a88bf044ccd3fdf010f9c18d38bda3b4cecb2cdd298da5d",
+    "zh:38327a5f3b9e28f52b56a387572f6dcb1b9ef5717d572a5d8c335902f67fb108",
+    "zh:47260d9fea92653ebabfb2ff85c72e641b20d70b4d31386e939e63d1805e7eec",
+    "zh:5601259b31017fa88d04a3d5b77a4345a3191fc99370f4fb5692a4d64efaacf2",
+    "zh:9648e8ce7f60b70fd3d4ce798de161902f3fea1004e8f02d03f1301e82e20fc4",
+    "zh:a342d8299ce8937f93bfadc6cbb5c6ea96493d1a7e70bf30d81dc987dfeb5c46",
+    "zh:de676e5fc07a70595a3c06af41a58a7c614981b7605ca372426c7ec38260e431",
+    "zh:e4e61d2c1ffb80128e18e0e3c8c3e2032703de2671a4e9cee8fa24d7ad54b1d0",
+    "zh:ede494c03e1aa4057fa1003d819041d4c3bf21ae743223daa9cbe84bc50d8d8b",
+    "zh:f148b1536a2553aa88f31cfba6760dcf417f79d3c260599c691ac450ec926b17",
+    "zh:fbd1fee2c9df3aa19cf8851ce134dea6e45ea01cb85695c1726670c285797e25",
+  ]
+}

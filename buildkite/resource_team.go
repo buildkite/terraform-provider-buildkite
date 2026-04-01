@@ -70,8 +70,8 @@ func (t *teamResource) Configure(ctx context.Context, req resource.ConfigureRequ
 
 func (t *teamResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = resource_schema.Schema{
-		MarkdownDescription: "A Team is a group of users that can be given permissions for using Pipelines." +
-			"This feature is only available to Business and Enterprise customers.  You can find out more about Teams in the Buildkite [documentation](https://buildkite.com/docs/team-management/permissions).",
+		MarkdownDescription: "A Team is a group of users that can be given permissions for using Pipelines, Test Suites, and Registries." +
+			"This feature is only available to Business and Enterprise customers. You can find out more about Teams in the Buildkite [documentation](https://buildkite.com/docs/team-management/permissions).",
 		Attributes: map[string]resource_schema.Attribute{
 			"id": resource_schema.StringAttribute{
 				Computed:            true,
