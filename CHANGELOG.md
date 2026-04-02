@@ -1,5 +1,54 @@
 # Changelog
 
+## [1.32.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.31.4...v1.32.0)
+
+### Features
+
+* SUP-6661: add build_pull_request_merge_commits Repository Provider Setting by @tomowatt in https://github.com/buildkite/terraform-provider-buildkite/pull/1103
+* feat: add archived attribute to pipeline resource by @peerkleio in https://github.com/buildkite/terraform-provider-buildkite/pull/1108
+
+### Dependencies
+
+* chore(deps): update goreleaser/goreleaser docker tag to v2.15.1 by @renovate[bot] in https://github.com/buildkite/terraform-provider-buildkite/pull/1107
+* chore(deps): update terraform buildkite to v1.31.4 by @renovate[bot] in https://github.com/buildkite/terraform-provider-buildkite/pull/1105
+* chore(deps): update hashicorp/terraform:1.14 docker digest to 42ecfb2 by @renovate[bot] in https://github.com/buildkite/terraform-provider-buildkite/pull/1106
+* chore(deps): update goreleaser/goreleaser docker tag to v2.15.2 by @renovate[bot] in https://github.com/buildkite/terraform-provider-buildkite/pull/1109
+
+## [1.31.4](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.31.3...v1.31.4)
+
+### Fixed
+
+- Fix 5xx backoff using LinearJitterBackoff with excessive wait times by @mipearson in https://github.com/buildkite/terraform-provider-buildkite/pull/1101
+- Fix pipeline schedule resource references by @gilesgas in https://github.com/buildkite/terraform-provider-buildkite/pull/1104
+
+### Dependencies
+
+- chore(deps): bump google.golang.org/grpc from 1.79.2 to 1.79.3 by @dependabot[bot] in https://github.com/buildkite/terraform-provider-buildkite/pull/1099
+- chore(deps): update terraform buildkite to v1.31.3 by @renovate[bot] in https://github.com/buildkite/terraform-provider-buildkite/pull/1100
+- chore(deps): update golang:1.26.1 docker digest to 595c784 by @renovate[bot] in https://github.com/buildkite/terraform-provider-buildkite/pull/1102
+
+## [1.31.3](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.31.2...v1.31.3)
+
+### Fixed
+
+- Fix RateLimit-Reset header parsed as Unix timestamp instead of seconds by @mipearson in https://github.com/buildkite/terraform-provider-buildkite/pull/1098
+- Briefly retry creation of `pipeline_team`, when already exists by @petetomasik in https://github.com/buildkite/terraform-provider-buildkite/pull/1097
+
+### Dependencies
+
+- chore(deps): update terraform buildkite to v1.31.2 by @renovate[bot] in https://github.com/buildkite/terraform-provider-buildkite/pull/1077
+- chore(deps): update dependency go to v1.26.1 by @renovate[bot] in https://github.com/buildkite/terraform-provider-buildkite/pull/1078
+- chore(deps): update goreleaser/goreleaser docker tag to v2.14.2 by @renovate[bot] in https://github.com/buildkite/terraform-provider-buildkite/pull/1080
+- chore(deps): update golang docker tag to v1.26.1 by @renovate[bot] in https://github.com/buildkite/terraform-provider-buildkite/pull/1079
+- chore(deps): update goreleaser/goreleaser docker tag to v2.14.3 by @renovate[bot] in https://github.com/buildkite/terraform-provider-buildkite/pull/1081
+- chore(deps): update golang:1.26.1 docker digest to cdebbd5 by @renovate[bot] in https://github.com/buildkite/terraform-provider-buildkite/pull/1084
+- chore(deps): update golang:1.26.1 docker digest to c7e98cc by @renovate[bot] in https://github.com/buildkite/terraform-provider-buildkite/pull/1086
+- chore(deps): update hashicorp/terraform:1.14 docker digest to 880e7ee by @renovate[bot] in https://github.com/buildkite/terraform-provider-buildkite/pull/1088
+- chore(deps): update buildkite plugin ecr to v2.12.0 by @renovate[bot] in https://github.com/buildkite/terraform-provider-buildkite/pull/1090
+- Update all TF plugin modules together by @petetomasik in https://github.com/buildkite/terraform-provider-buildkite/pull/1092
+- chore(deps): update golang:1.26.1 docker digest to 16e774b by @renovate[bot] in https://github.com/buildkite/terraform-provider-buildkite/pull/1095
+- chore(deps): update golang:1.26.1 docker digest to c42e4d7 by @renovate[bot] in https://github.com/buildkite/terraform-provider-buildkite/pull/1096
+
 ## [v1.31.2](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.31.1...v1.31.2)
 
 ### Fixes
