@@ -1052,6 +1052,36 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 		})
 	})
 
+	t.Run("provider_settings produces empty plan on re-apply", func(t *testing.T) {
+		pipelineName := acctest.RandString(12)
+		config := fmt.Sprintf(`
+			resource "buildkite_pipeline" "pipeline" {
+				name = "%s"
+				repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
+				provider_settings = {}
+			}
+		`, pipelineName)
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			CheckDestroy:             testAccCheckPipelineDestroyFunc,
+			Steps: []resource.TestStep{
+				{
+					Config: config,
+				},
+				{
+					Config: config,
+					ConfigPlanChecks: resource.ConfigPlanChecks{
+						PostApplyPostRefresh: []plancheck.PlanCheck{
+							plancheck.ExpectEmptyPlan(),
+						},
+					},
+				},
+			},
+		})
+	})
+
 	t.Run("create in template mode and change template configuration afterwards", func(t *testing.T) {
 		templateName := acctest.RandString(12)
 		pipelineName := acctest.RandString(12)
