@@ -617,7 +617,7 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 				MarkdownDescription: "The name of the cluster the pipeline is (optionally) attached to.",
 				Computed:            true,
 				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
+					stringplanmodifier.UseNonNullStateForUnknown(),
 				},
 			},
 			"default_team_id": schema.StringAttribute{
@@ -765,7 +765,7 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 						Computed: true,
 						Optional: true,
 						PlanModifiers: []planmodifier.String{
-							stringplanmodifier.UseStateForUnknown(),
+							stringplanmodifier.UseNonNullStateForUnknown(),
 						},
 						MarkdownDescription: heredoc.Docf(`
 							What type of event to trigger builds on. Must be one of:
@@ -790,7 +790,7 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 						Computed:            true,
 						MarkdownDescription: "Whether to create builds for commits that are part of a pull request.",
 						PlanModifiers: []planmodifier.Bool{
-							boolplanmodifier.UseStateForUnknown(),
+							boolplanmodifier.UseNonNullStateForUnknown(),
 						},
 					},
 					"pull_request_branch_filter_enabled": schema.BoolAttribute{
@@ -798,7 +798,7 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 						Optional:            true,
 						MarkdownDescription: "Filter pull request builds.",
 						PlanModifiers: []planmodifier.Bool{
-							boolplanmodifier.UseStateForUnknown(),
+							boolplanmodifier.UseNonNullStateForUnknown(),
 						},
 					},
 					"pull_request_branch_filter_configuration": schema.StringAttribute{
@@ -806,7 +806,7 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 						Optional:            true,
 						MarkdownDescription: "Filter pull requests builds by the branch filter.",
 						PlanModifiers: []planmodifier.String{
-							stringplanmodifier.UseStateForUnknown(),
+							stringplanmodifier.UseNonNullStateForUnknown(),
 						},
 						Validators: []validator.String{
 							branchFilterValidator{},
@@ -817,7 +817,7 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 						Computed:            true,
 						MarkdownDescription: "Whether to skip creating a new build if an existing build for the commit and branch already exists. This option is only valid if the pipeline uses a GitHub repository.",
 						PlanModifiers: []planmodifier.Bool{
-							boolplanmodifier.UseStateForUnknown(),
+							boolplanmodifier.UseNonNullStateForUnknown(),
 						},
 					},
 					"skip_pull_request_builds_for_existing_commits": schema.BoolAttribute{
@@ -825,7 +825,7 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 						Computed:            true,
 						MarkdownDescription: "Whether to skip creating a new build for a pull request if an existing build for the commit and branch already exists.",
 						PlanModifiers: []planmodifier.Bool{
-							boolplanmodifier.UseStateForUnknown(),
+							boolplanmodifier.UseNonNullStateForUnknown(),
 						},
 					},
 					"build_pull_request_ready_for_review": schema.BoolAttribute{
@@ -833,7 +833,7 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 						Optional:            true,
 						MarkdownDescription: "Whether to create a build when a pull request changes to \"Ready for review\".",
 						PlanModifiers: []planmodifier.Bool{
-							boolplanmodifier.UseStateForUnknown(),
+							boolplanmodifier.UseNonNullStateForUnknown(),
 						},
 					},
 					"build_pull_request_merge_commits": schema.BoolAttribute{
@@ -841,7 +841,7 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 						Optional:            true,
 						MarkdownDescription: "Whether to build the test merge commit (the merged result of a pull request with its base branch).",
 						PlanModifiers: []planmodifier.Bool{
-							boolplanmodifier.UseStateForUnknown(),
+							boolplanmodifier.UseNonNullStateForUnknown(),
 						},
 					},
 					"build_pull_request_labels_changed": schema.BoolAttribute{
@@ -849,7 +849,7 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 						Optional:            true,
 						MarkdownDescription: "Whether to create builds for pull requests when labels are added or removed.",
 						PlanModifiers: []planmodifier.Bool{
-							boolplanmodifier.UseStateForUnknown(),
+							boolplanmodifier.UseNonNullStateForUnknown(),
 						},
 					},
 					"build_pull_request_base_branch_changed": schema.BoolAttribute{
@@ -857,7 +857,7 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 						Optional:            true,
 						MarkdownDescription: "Whether to create builds for pull requests when its base branch changes.",
 						PlanModifiers: []planmodifier.Bool{
-							boolplanmodifier.UseStateForUnknown(),
+							boolplanmodifier.UseNonNullStateForUnknown(),
 						},
 					},
 					"build_pull_request_forks": schema.BoolAttribute{
@@ -865,7 +865,7 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 						Optional:            true,
 						MarkdownDescription: "Whether to create builds for pull requests from third-party forks.",
 						PlanModifiers: []planmodifier.Bool{
-							boolplanmodifier.UseStateForUnknown(),
+							boolplanmodifier.UseNonNullStateForUnknown(),
 						},
 					},
 					"prefix_pull_request_fork_branch_names": schema.BoolAttribute{
@@ -874,7 +874,7 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 						MarkdownDescription: "Prefix branch names for third-party fork builds to ensure they don't trigger branch conditions." +
 							" For example, the main branch from some-user will become some-user:main.",
 						PlanModifiers: []planmodifier.Bool{
-							boolplanmodifier.UseStateForUnknown(),
+							boolplanmodifier.UseNonNullStateForUnknown(),
 						},
 					},
 					"build_branches": schema.BoolAttribute{
@@ -882,7 +882,7 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 						Computed:            true,
 						MarkdownDescription: "Whether to create builds when branches are pushed.",
 						PlanModifiers: []planmodifier.Bool{
-							boolplanmodifier.UseStateForUnknown(),
+							boolplanmodifier.UseNonNullStateForUnknown(),
 						},
 					},
 					"build_tags": schema.BoolAttribute{
@@ -890,7 +890,7 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 						Optional:            true,
 						MarkdownDescription: "Whether to create builds when tags are pushed.",
 						PlanModifiers: []planmodifier.Bool{
-							boolplanmodifier.UseStateForUnknown(),
+							boolplanmodifier.UseNonNullStateForUnknown(),
 						},
 					},
 					"cancel_deleted_branch_builds": schema.BoolAttribute{
@@ -898,7 +898,7 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 						Optional:            true,
 						MarkdownDescription: "Automatically cancel running builds for a branch if the branch is deleted.",
 						PlanModifiers: []planmodifier.Bool{
-							boolplanmodifier.UseStateForUnknown(),
+							boolplanmodifier.UseNonNullStateForUnknown(),
 						},
 					},
 					"filter_enabled": schema.BoolAttribute{
@@ -906,7 +906,7 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 						Optional:            true,
 						MarkdownDescription: "Whether to filter builds to only run when the condition in `filter_condition` is true.",
 						PlanModifiers: []planmodifier.Bool{
-							boolplanmodifier.UseStateForUnknown(),
+							boolplanmodifier.UseNonNullStateForUnknown(),
 						},
 					},
 					"filter_condition": schema.StringAttribute{
@@ -915,7 +915,7 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 						MarkdownDescription: "The condition to evaluate when deciding if a build should run. This is only valid when `trigger_mode` is `code`. " +
 							"More details available in [the documentation](https://buildkite.com/docs/pipelines/conditionals).",
 						PlanModifiers: []planmodifier.String{
-							stringplanmodifier.UseStateForUnknown(),
+							stringplanmodifier.UseNonNullStateForUnknown(),
 						},
 						Validators: []validator.String{
 							filterConditionValidator{},
@@ -926,7 +926,7 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 						Computed:            true,
 						MarkdownDescription: "Whether to update the status of commits in Bitbucket, GitHub, or GitLab.",
 						PlanModifiers: []planmodifier.Bool{
-							boolplanmodifier.UseStateForUnknown(),
+							boolplanmodifier.UseNonNullStateForUnknown(),
 						},
 					},
 					"publish_blocked_as_pending": schema.BoolAttribute{
@@ -935,7 +935,7 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 						MarkdownDescription: "The status to use for blocked builds. Pending can be used with [required status checks](https://help.github.com/en/articles/enabling-required-status-checks)" +
 							" to prevent merging pull requests with blocked builds.",
 						PlanModifiers: []planmodifier.Bool{
-							boolplanmodifier.UseStateForUnknown(),
+							boolplanmodifier.UseNonNullStateForUnknown(),
 						},
 					},
 					"publish_commit_status_per_step": schema.BoolAttribute{
@@ -943,7 +943,7 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 						Optional:            true,
 						MarkdownDescription: "Whether to create a separate status for each job in a build, allowing you to see the status of each job directly in Bitbucket or GitHub.",
 						PlanModifiers: []planmodifier.Bool{
-							boolplanmodifier.UseStateForUnknown(),
+							boolplanmodifier.UseNonNullStateForUnknown(),
 						},
 					},
 					"separate_pull_request_statuses": schema.BoolAttribute{
@@ -952,7 +952,7 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 						MarkdownDescription: "Whether to create a separate status for pull request builds, allowing you to require a passing pull request" +
 							" build in your [required status checks](https://help.github.com/en/articles/enabling-required-status-checks) in GitHub.",
 						PlanModifiers: []planmodifier.Bool{
-							boolplanmodifier.UseStateForUnknown(),
+							boolplanmodifier.UseNonNullStateForUnknown(),
 						},
 					},
 					"ignore_default_branch_pull_requests": schema.BoolAttribute{
@@ -960,7 +960,7 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 						Optional:            true,
 						MarkdownDescription: "Whether to prevent caching pull requests with the source branch matching the default branch.",
 						PlanModifiers: []planmodifier.Bool{
-							boolplanmodifier.UseStateForUnknown(),
+							boolplanmodifier.UseNonNullStateForUnknown(),
 						},
 					},
 					"build_merge_group_checks_requested": schema.BoolAttribute{
@@ -968,7 +968,7 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 						Optional:            true,
 						MarkdownDescription: "Whether to create merge queue builds for a merge queue enabled GitHub repository with required status checks",
 						PlanModifiers: []planmodifier.Bool{
-							boolplanmodifier.UseStateForUnknown(),
+							boolplanmodifier.UseNonNullStateForUnknown(),
 						},
 					},
 					"cancel_when_merge_group_destroyed": schema.BoolAttribute{
@@ -976,7 +976,7 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 						Optional:            true,
 						MarkdownDescription: "Whether to cancel any running builds belonging to a removed merge group.",
 						PlanModifiers: []planmodifier.Bool{
-							boolplanmodifier.UseStateForUnknown(),
+							boolplanmodifier.UseNonNullStateForUnknown(),
 						},
 					},
 					"use_merge_group_base_commit_for_git_diff_base": schema.BoolAttribute{
@@ -985,7 +985,7 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 						MarkdownDescription: "When enabled, agents performing a git diff to determine steps to upload based on [`if_changed`](https://buildkite.com/docs/pipelines/configure/step-types/command-step#agent-applied-attributes)" +
 							"comparisons will use the base commit that points to the previous merge group rather than the base branch",
 						PlanModifiers: []planmodifier.Bool{
-							boolplanmodifier.UseStateForUnknown(),
+							boolplanmodifier.UseNonNullStateForUnknown(),
 						},
 					},
 				},
