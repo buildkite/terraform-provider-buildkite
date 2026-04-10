@@ -62,6 +62,8 @@ func (m useDerivedPipelineSlugModifier) PlanModifyString(ctx context.Context, re
 			resp.PlanValue = types.StringUnknown()
 			return
 		}
+		// API-derived slug with unchanged name: preserve state value
+		resp.PlanValue = req.StateValue
 	}
 }
 
