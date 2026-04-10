@@ -1162,8 +1162,11 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 
 	useSlugValue := response.PipelineUpdate.Pipeline.Slug
 	resp.Diagnostics.Append(resp.Private.SetKey(ctx, "slugSource", []byte(`{"source": "api"}`))...)
-	if len(plan.Slug.ValueString()) > 0 {
-		useSlugValue = plan.Slug.ValueString()
+
+	var configSlug types.String
+	resp.Diagnostics.Append(req.Config.GetAttribute(ctx, path.Root("slug"), &configSlug)...)
+	if !configSlug.IsNull() && len(configSlug.ValueString()) > 0 {
+		useSlugValue = configSlug.ValueString()
 		_, err := updatePipelineSlug(ctx, response.PipelineUpdate.Pipeline.Slug, useSlugValue, p.client, timeouts)
 		if err != nil {
 			resp.Diagnostics.AddError("Unable to set pipeline slug from REST", err.Error())
@@ -1653,6 +1656,10 @@ func pipelineSchemaV0() schema.Schema {
 							Computed: true,
 						},
 						"build_pull_request_ready_for_review": schema.BoolAttribute{
+							Computed: true,
+							Optional: true,
+						},
+						"build_pull_request_merge_commits": schema.BoolAttribute{
 							Computed: true,
 							Optional: true,
 						},
