@@ -616,6 +616,9 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 			"cluster_name": schema.StringAttribute{
 				MarkdownDescription: "The name of the cluster the pipeline is (optionally) attached to.",
 				Computed:            true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseNonNullStateForUnknown(),
+				},
 			},
 			"default_team_id": schema.StringAttribute{
 				MarkdownDescription: "The GraphQL ID of a team to initially assign to the pipeline. This is required by the Buildkite API when creating a new pipeline. The team assigned here will be given 'Manage Build and Read' access. Further team associations can be managed with the `buildkite_pipeline_team` resource after the pipeline is created.",
@@ -761,6 +764,9 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 					"trigger_mode": schema.StringAttribute{
 						Computed: true,
 						Optional: true,
+						PlanModifiers: []planmodifier.String{
+							stringplanmodifier.UseNonNullStateForUnknown(),
+						},
 						MarkdownDescription: heredoc.Docf(`
 							What type of event to trigger builds on. Must be one of:
 								- %s
@@ -783,16 +789,25 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 						Optional:            true,
 						Computed:            true,
 						MarkdownDescription: "Whether to create builds for commits that are part of a pull request.",
+						PlanModifiers: []planmodifier.Bool{
+							boolplanmodifier.UseNonNullStateForUnknown(),
+						},
 					},
 					"pull_request_branch_filter_enabled": schema.BoolAttribute{
 						Computed:            true,
 						Optional:            true,
 						MarkdownDescription: "Filter pull request builds.",
+						PlanModifiers: []planmodifier.Bool{
+							boolplanmodifier.UseNonNullStateForUnknown(),
+						},
 					},
 					"pull_request_branch_filter_configuration": schema.StringAttribute{
 						Computed:            true,
 						Optional:            true,
 						MarkdownDescription: "Filter pull requests builds by the branch filter.",
+						PlanModifiers: []planmodifier.String{
+							stringplanmodifier.UseNonNullStateForUnknown(),
+						},
 						Validators: []validator.String{
 							branchFilterValidator{},
 						},
@@ -801,68 +816,107 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 						Optional:            true,
 						Computed:            true,
 						MarkdownDescription: "Whether to skip creating a new build if an existing build for the commit and branch already exists. This option is only valid if the pipeline uses a GitHub repository.",
+						PlanModifiers: []planmodifier.Bool{
+							boolplanmodifier.UseNonNullStateForUnknown(),
+						},
 					},
 					"skip_pull_request_builds_for_existing_commits": schema.BoolAttribute{
 						Optional:            true,
 						Computed:            true,
 						MarkdownDescription: "Whether to skip creating a new build for a pull request if an existing build for the commit and branch already exists.",
+						PlanModifiers: []planmodifier.Bool{
+							boolplanmodifier.UseNonNullStateForUnknown(),
+						},
 					},
 					"build_pull_request_ready_for_review": schema.BoolAttribute{
 						Computed:            true,
 						Optional:            true,
 						MarkdownDescription: "Whether to create a build when a pull request changes to \"Ready for review\".",
+						PlanModifiers: []planmodifier.Bool{
+							boolplanmodifier.UseNonNullStateForUnknown(),
+						},
 					},
 					"build_pull_request_merge_commits": schema.BoolAttribute{
 						Computed:            true,
 						Optional:            true,
 						MarkdownDescription: "Whether to build the test merge commit (the merged result of a pull request with its base branch).",
+						PlanModifiers: []planmodifier.Bool{
+							boolplanmodifier.UseNonNullStateForUnknown(),
+						},
 					},
 					"build_pull_request_labels_changed": schema.BoolAttribute{
 						Computed:            true,
 						Optional:            true,
 						MarkdownDescription: "Whether to create builds for pull requests when labels are added or removed.",
+						PlanModifiers: []planmodifier.Bool{
+							boolplanmodifier.UseNonNullStateForUnknown(),
+						},
 					},
 					"build_pull_request_base_branch_changed": schema.BoolAttribute{
 						Computed:            true,
 						Optional:            true,
 						MarkdownDescription: "Whether to create builds for pull requests when its base branch changes.",
+						PlanModifiers: []planmodifier.Bool{
+							boolplanmodifier.UseNonNullStateForUnknown(),
+						},
 					},
 					"build_pull_request_forks": schema.BoolAttribute{
 						Computed:            true,
 						Optional:            true,
 						MarkdownDescription: "Whether to create builds for pull requests from third-party forks.",
+						PlanModifiers: []planmodifier.Bool{
+							boolplanmodifier.UseNonNullStateForUnknown(),
+						},
 					},
 					"prefix_pull_request_fork_branch_names": schema.BoolAttribute{
 						Computed: true,
 						Optional: true,
 						MarkdownDescription: "Prefix branch names for third-party fork builds to ensure they don't trigger branch conditions." +
 							" For example, the main branch from some-user will become some-user:main.",
+						PlanModifiers: []planmodifier.Bool{
+							boolplanmodifier.UseNonNullStateForUnknown(),
+						},
 					},
 					"build_branches": schema.BoolAttribute{
 						Optional:            true,
 						Computed:            true,
 						MarkdownDescription: "Whether to create builds when branches are pushed.",
+						PlanModifiers: []planmodifier.Bool{
+							boolplanmodifier.UseNonNullStateForUnknown(),
+						},
 					},
 					"build_tags": schema.BoolAttribute{
 						Computed:            true,
 						Optional:            true,
 						MarkdownDescription: "Whether to create builds when tags are pushed.",
+						PlanModifiers: []planmodifier.Bool{
+							boolplanmodifier.UseNonNullStateForUnknown(),
+						},
 					},
 					"cancel_deleted_branch_builds": schema.BoolAttribute{
 						Computed:            true,
 						Optional:            true,
 						MarkdownDescription: "Automatically cancel running builds for a branch if the branch is deleted.",
+						PlanModifiers: []planmodifier.Bool{
+							boolplanmodifier.UseNonNullStateForUnknown(),
+						},
 					},
 					"filter_enabled": schema.BoolAttribute{
 						Computed:            true,
 						Optional:            true,
 						MarkdownDescription: "Whether to filter builds to only run when the condition in `filter_condition` is true.",
+						PlanModifiers: []planmodifier.Bool{
+							boolplanmodifier.UseNonNullStateForUnknown(),
+						},
 					},
 					"filter_condition": schema.StringAttribute{
 						Computed: true,
 						Optional: true,
 						MarkdownDescription: "The condition to evaluate when deciding if a build should run. This is only valid when `trigger_mode` is `code`. " +
 							"More details available in [the documentation](https://buildkite.com/docs/pipelines/conditionals).",
+						PlanModifiers: []planmodifier.String{
+							stringplanmodifier.UseNonNullStateForUnknown(),
+						},
 						Validators: []validator.String{
 							filterConditionValidator{},
 						},
@@ -871,44 +925,68 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 						Optional:            true,
 						Computed:            true,
 						MarkdownDescription: "Whether to update the status of commits in Bitbucket, GitHub, or GitLab.",
+						PlanModifiers: []planmodifier.Bool{
+							boolplanmodifier.UseNonNullStateForUnknown(),
+						},
 					},
 					"publish_blocked_as_pending": schema.BoolAttribute{
 						Computed: true,
 						Optional: true,
 						MarkdownDescription: "The status to use for blocked builds. Pending can be used with [required status checks](https://help.github.com/en/articles/enabling-required-status-checks)" +
 							" to prevent merging pull requests with blocked builds.",
+						PlanModifiers: []planmodifier.Bool{
+							boolplanmodifier.UseNonNullStateForUnknown(),
+						},
 					},
 					"publish_commit_status_per_step": schema.BoolAttribute{
 						Computed:            true,
 						Optional:            true,
 						MarkdownDescription: "Whether to create a separate status for each job in a build, allowing you to see the status of each job directly in Bitbucket or GitHub.",
+						PlanModifiers: []planmodifier.Bool{
+							boolplanmodifier.UseNonNullStateForUnknown(),
+						},
 					},
 					"separate_pull_request_statuses": schema.BoolAttribute{
 						Computed: true,
 						Optional: true,
 						MarkdownDescription: "Whether to create a separate status for pull request builds, allowing you to require a passing pull request" +
 							" build in your [required status checks](https://help.github.com/en/articles/enabling-required-status-checks) in GitHub.",
+						PlanModifiers: []planmodifier.Bool{
+							boolplanmodifier.UseNonNullStateForUnknown(),
+						},
 					},
 					"ignore_default_branch_pull_requests": schema.BoolAttribute{
 						Computed:            true,
 						Optional:            true,
 						MarkdownDescription: "Whether to prevent caching pull requests with the source branch matching the default branch.",
+						PlanModifiers: []planmodifier.Bool{
+							boolplanmodifier.UseNonNullStateForUnknown(),
+						},
 					},
 					"build_merge_group_checks_requested": schema.BoolAttribute{
 						Computed:            true,
 						Optional:            true,
 						MarkdownDescription: "Whether to create merge queue builds for a merge queue enabled GitHub repository with required status checks",
+						PlanModifiers: []planmodifier.Bool{
+							boolplanmodifier.UseNonNullStateForUnknown(),
+						},
 					},
 					"cancel_when_merge_group_destroyed": schema.BoolAttribute{
 						Computed:            true,
 						Optional:            true,
 						MarkdownDescription: "Whether to cancel any running builds belonging to a removed merge group.",
+						PlanModifiers: []planmodifier.Bool{
+							boolplanmodifier.UseNonNullStateForUnknown(),
+						},
 					},
 					"use_merge_group_base_commit_for_git_diff_base": schema.BoolAttribute{
 						Computed: true,
 						Optional: true,
 						MarkdownDescription: "When enabled, agents performing a git diff to determine steps to upload based on [`if_changed`](https://buildkite.com/docs/pipelines/configure/step-types/command-step#agent-applied-attributes)" +
 							"comparisons will use the base commit that points to the previous merge group rather than the base branch",
+						PlanModifiers: []planmodifier.Bool{
+							boolplanmodifier.UseNonNullStateForUnknown(),
+						},
 					},
 				},
 			},
@@ -1084,8 +1162,11 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 
 	useSlugValue := response.PipelineUpdate.Pipeline.Slug
 	resp.Diagnostics.Append(resp.Private.SetKey(ctx, "slugSource", []byte(`{"source": "api"}`))...)
-	if len(plan.Slug.ValueString()) > 0 {
-		useSlugValue = plan.Slug.ValueString()
+
+	var configSlug types.String
+	resp.Diagnostics.Append(req.Config.GetAttribute(ctx, path.Root("slug"), &configSlug)...)
+	if !configSlug.IsNull() && len(configSlug.ValueString()) > 0 {
+		useSlugValue = configSlug.ValueString()
 		_, err := updatePipelineSlug(ctx, response.PipelineUpdate.Pipeline.Slug, useSlugValue, p.client, timeouts)
 		if err != nil {
 			resp.Diagnostics.AddError("Unable to set pipeline slug from REST", err.Error())
