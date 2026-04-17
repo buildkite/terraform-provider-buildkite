@@ -1,0 +1,5 @@
+selected_org: buildkite
+pipelines:
+- terraform-provider-buildkite-main
+- terraform-provider-buildkite
+- terraform-provider-buildkite-release
