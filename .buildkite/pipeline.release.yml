@@ -2,7 +2,7 @@ steps:
   - label: release
     command: ".buildkite/steps/release.sh"
     plugins:
-      - aws-assume-role-with-web-identity#v1.5.0:
+      - aws-assume-role-with-web-identity#v1.6.0:
           role-arn: arn:aws:iam::445615400570:role/pipeline-buildkite-terraform-provider-buildkite-release
           session-tags:
             - organization_slug
