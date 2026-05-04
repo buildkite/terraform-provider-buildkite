@@ -75,7 +75,7 @@ func (r *clusterSecretResource) Schema(ctx context.Context, req resource.SchemaR
 			},
 			"key": schema.StringAttribute{
 				Required:            true,
-				MarkdownDescription: "The key name for the secret. Must start with a letter and only contain letters, numbers, and underscores. Maximum 255 characters. Must not start with `BUILDKITE_` or `BK_` as these prefixes are reserved.",
+				MarkdownDescription: "The key name for the secret. Must start with a letter and only contain letters, numbers, and underscores. Maximum 255 characters. Must not start with `buildkite` or `bk` (case-insensitive) as these prefixes are reserved.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
@@ -85,7 +85,7 @@ func (r *clusterSecretResource) Schema(ctx context.Context, req resource.SchemaR
 						regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9_]*$`),
 						"must start with a letter and only contain letters, numbers, and underscores",
 					),
-					reservedPrefixValidator{},
+					reservedSecretKeyPrefixValidator{},
 				},
 			},
 			"value": schema.StringAttribute{
@@ -361,27 +361,29 @@ func (r *clusterSecretResource) ImportState(ctx context.Context, req resource.Im
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), parts[1])...)
 }
 
-// reservedPrefixValidator checks that the key doesn't start with reserved prefixes
-type reservedPrefixValidator struct{}
+// reservedSecretKeyPrefixValidator checks that the key doesn't start with reserved prefixes.
+// Aligns with Buildkite's backend validation: keys beginning with "buildkite" or "bk"
+// (case-insensitive) are rejected.
+type reservedSecretKeyPrefixValidator struct{}
 
-func (v reservedPrefixValidator) Description(ctx context.Context) string {
-	return "value must not start with BUILDKITE_ or BK_ (reserved prefixes)"
+func (v reservedSecretKeyPrefixValidator) Description(ctx context.Context) string {
+	return "value must not start with 'buildkite' or 'bk' (reserved prefixes, case-insensitive)"
 }
 
-func (v reservedPrefixValidator) MarkdownDescription(ctx context.Context) string {
-	return "value must not start with `BUILDKITE_` or `BK_` (reserved prefixes)"
+func (v reservedSecretKeyPrefixValidator) MarkdownDescription(ctx context.Context) string {
+	return "value must not start with `buildkite` or `bk` (reserved prefixes, case-insensitive)"
 }
 
-func (v reservedPrefixValidator) ValidateString(ctx context.Context, req validator.StringRequest, resp *validator.StringResponse) {
+func (v reservedSecretKeyPrefixValidator) ValidateString(ctx context.Context, req validator.StringRequest, resp *validator.StringResponse) {
 	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
 		return
 	}
-	upperValue := strings.ToUpper(req.ConfigValue.ValueString())
-	if strings.HasPrefix(upperValue, "BUILDKITE_") || strings.HasPrefix(upperValue, "BK_") {
+	lower := strings.ToLower(req.ConfigValue.ValueString())
+	if strings.HasPrefix(lower, "buildkite") || strings.HasPrefix(lower, "bk") {
 		resp.Diagnostics.AddAttributeError(
 			req.Path,
-			"Invalid Secret Key",
-			"Secret key must not start with BUILDKITE_ or BK_ (reserved prefixes)",
+			"Invalid secret key",
+			"Secret key must not start with 'buildkite' or 'bk' (reserved prefixes, case-insensitive)",
 		)
 	}
 }
