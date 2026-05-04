@@ -84,6 +84,7 @@ func (r *clusterSecretResource) Schema(ctx context.Context, req resource.SchemaR
 						regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9_]*$`),
 						"must start with a letter and only contain letters, numbers, and underscores",
 					),
+					reservedPrefixValidator{},
 				},
 			},
 			"value": schema.StringAttribute{
