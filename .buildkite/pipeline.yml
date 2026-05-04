@@ -6,10 +6,10 @@ steps:
       queue: "hosted"
     plugins:
       - docker#v5.13.0:
-          image: "golangci/golangci-lint:v2.0.2"
+          image: "golangci/golangci-lint:v2.11.3"
           always-pull: true
           volumes:
-            - "/.cache/golangci-lint/v2.0.2:/root/.cache"
+            - "/.cache/golangci-lint/v2.11.3:/root/.cache"
 
   - label: vet
     key: vet
@@ -45,7 +45,7 @@ steps:
     concurrency_group: terraform-provider-acceptance-tests
     command: .buildkite/steps/annotate.sh
     plugins:
-      - aws-assume-role-with-web-identity#v1.4.0:
+      - aws-assume-role-with-web-identity#v1.6.0:
           role-arn: arn:aws:iam::445615400570:role/pipeline-buildkite-terraform-provider-buildkite-main
           session-tags:
             - organization_slug

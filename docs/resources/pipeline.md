@@ -168,6 +168,7 @@ resource "github_repository_webhook" "my_webhook" {
 ### Optional
 
 - `allow_rebuilds` (Boolean) Whether rebuilds are allowed for this pipeline.
+- `archived` (Boolean) Whether to archive this pipeline. Archived pipelines are hidden from most views and cannot run new builds.
 - `branch_configuration` (String) Configure the pipeline to only build on this branch conditional.
 - `cancel_intermediate_builds` (Boolean) Whether to cancel builds when a new commit is pushed to a matching branch.
 - `cancel_intermediate_builds_branch_filter` (String) Filter the `cancel_intermediate_builds` setting based on this branch condition.
@@ -206,6 +207,7 @@ Optional:
 - `build_pull_request_base_branch_changed` (Boolean) Whether to create builds for pull requests when its base branch changes.
 - `build_pull_request_forks` (Boolean) Whether to create builds for pull requests from third-party forks.
 - `build_pull_request_labels_changed` (Boolean) Whether to create builds for pull requests when labels are added or removed.
+- `build_pull_request_merge_commits` (Boolean) Whether to build the test merge commit (the merged result of a pull request with its base branch).
 - `build_pull_request_ready_for_review` (Boolean) Whether to create a build when a pull request changes to "Ready for review".
 - `build_pull_requests` (Boolean) Whether to create builds for commits that are part of a pull request.
 - `build_tags` (Boolean) Whether to create builds when tags are pushed.

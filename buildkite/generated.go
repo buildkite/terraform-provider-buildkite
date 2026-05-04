@@ -1800,6 +1800,8 @@ type PipelineFields struct {
 	Tags []PipelineFieldsTagsPipelineTag `json:"tags"`
 	// Teams associated with this pipeline
 	Teams PipelineFieldsTeamsTeamPipelineConnection `json:"teams"`
+	// Whether this pipeline has been archived
+	Archived bool `json:"archived"`
 	// Whether this pipeline is visible to everyone, including people outside this organization
 	Visibility PipelineVisibility `json:"visibility"`
 	// The webhookURL field returns the webhook URL if the user has edit permissions for the pipeline. Otherwise, it returns null.
@@ -1880,6 +1882,9 @@ func (v *PipelineFields) GetTags() []PipelineFieldsTagsPipelineTag { return v.Ta
 
 // GetTeams returns PipelineFields.Teams, and is useful for accessing the field via an interface.
 func (v *PipelineFields) GetTeams() PipelineFieldsTeamsTeamPipelineConnection { return v.Teams }
+
+// GetArchived returns PipelineFields.Archived, and is useful for accessing the field via an interface.
+func (v *PipelineFields) GetArchived() bool { return v.Archived }
 
 // GetVisibility returns PipelineFields.Visibility, and is useful for accessing the field via an interface.
 func (v *PipelineFields) GetVisibility() PipelineVisibility { return v.Visibility }
@@ -3613,6 +3618,14 @@ func (v *__teamUpdateInput) GetMembersCanDestroyRegistries() bool {
 // GetMembersCanDestroyPackages returns __teamUpdateInput.MembersCanDestroyPackages, and is useful for accessing the field via an interface.
 func (v *__teamUpdateInput) GetMembersCanDestroyPackages() bool { return v.MembersCanDestroyPackages }
 
+// __unarchivePipelineInput is used internally by genqlient
+type __unarchivePipelineInput struct {
+	Id string `json:"id"`
+}
+
+// GetId returns __unarchivePipelineInput.Id, and is useful for accessing the field via an interface.
+func (v *__unarchivePipelineInput) GetId() string { return v.Id }
+
 // __updateClusterAgentTokenInput is used internally by genqlient
 type __updateClusterAgentTokenInput struct {
 	OrganizationId     string `json:"organizationId"`
@@ -4583,6 +4596,11 @@ func (v *createPipelinePipelineCreatePipelineCreatePayloadPipeline) GetTeams() P
 	return v.PipelineFields.Teams
 }
 
+// GetArchived returns createPipelinePipelineCreatePipelineCreatePayloadPipeline.Archived, and is useful for accessing the field via an interface.
+func (v *createPipelinePipelineCreatePipelineCreatePayloadPipeline) GetArchived() bool {
+	return v.PipelineFields.Archived
+}
+
 // GetVisibility returns createPipelinePipelineCreatePipelineCreatePayloadPipeline.Visibility, and is useful for accessing the field via an interface.
 func (v *createPipelinePipelineCreatePipelineCreatePayloadPipeline) GetVisibility() PipelineVisibility {
 	return v.PipelineFields.Visibility
@@ -4665,6 +4683,8 @@ type __premarshalcreatePipelinePipelineCreatePipelineCreatePayloadPipeline struc
 
 	Teams PipelineFieldsTeamsTeamPipelineConnection `json:"teams"`
 
+	Archived bool `json:"archived"`
+
 	Visibility PipelineVisibility `json:"visibility"`
 
 	WebhookURL string `json:"webhookURL"`
@@ -4704,6 +4724,7 @@ func (v *createPipelinePipelineCreatePipelineCreatePayloadPipeline) __premarshal
 	retval.Steps = v.PipelineFields.Steps
 	retval.Tags = v.PipelineFields.Tags
 	retval.Teams = v.PipelineFields.Teams
+	retval.Archived = v.PipelineFields.Archived
 	retval.Visibility = v.PipelineFields.Visibility
 	retval.WebhookURL = v.PipelineFields.WebhookURL
 	return &retval, nil
@@ -10185,6 +10206,9 @@ func (v *getNodeNodePipeline) GetTeams() PipelineFieldsTeamsTeamPipelineConnecti
 	return v.PipelineFields.Teams
 }
 
+// GetArchived returns getNodeNodePipeline.Archived, and is useful for accessing the field via an interface.
+func (v *getNodeNodePipeline) GetArchived() bool { return v.PipelineFields.Archived }
+
 // GetVisibility returns getNodeNodePipeline.Visibility, and is useful for accessing the field via an interface.
 func (v *getNodeNodePipeline) GetVisibility() PipelineVisibility { return v.PipelineFields.Visibility }
 
@@ -10265,6 +10289,8 @@ type __premarshalgetNodeNodePipeline struct {
 
 	Teams PipelineFieldsTeamsTeamPipelineConnection `json:"teams"`
 
+	Archived bool `json:"archived"`
+
 	Visibility PipelineVisibility `json:"visibility"`
 
 	WebhookURL string `json:"webhookURL"`
@@ -10305,6 +10331,7 @@ func (v *getNodeNodePipeline) __premarshalJSON() (*__premarshalgetNodeNodePipeli
 	retval.Steps = v.PipelineFields.Steps
 	retval.Tags = v.PipelineFields.Tags
 	retval.Teams = v.PipelineFields.Teams
+	retval.Archived = v.PipelineFields.Archived
 	retval.Visibility = v.PipelineFields.Visibility
 	retval.WebhookURL = v.PipelineFields.WebhookURL
 	return &retval, nil
@@ -11582,6 +11609,9 @@ func (v *getPipelinePipeline) GetTeams() PipelineFieldsTeamsTeamPipelineConnecti
 	return v.PipelineFields.Teams
 }
 
+// GetArchived returns getPipelinePipeline.Archived, and is useful for accessing the field via an interface.
+func (v *getPipelinePipeline) GetArchived() bool { return v.PipelineFields.Archived }
+
 // GetVisibility returns getPipelinePipeline.Visibility, and is useful for accessing the field via an interface.
 func (v *getPipelinePipeline) GetVisibility() PipelineVisibility { return v.PipelineFields.Visibility }
 
@@ -11660,6 +11690,8 @@ type __premarshalgetPipelinePipeline struct {
 
 	Teams PipelineFieldsTeamsTeamPipelineConnection `json:"teams"`
 
+	Archived bool `json:"archived"`
+
 	Visibility PipelineVisibility `json:"visibility"`
 
 	WebhookURL string `json:"webhookURL"`
@@ -11699,6 +11731,7 @@ func (v *getPipelinePipeline) __premarshalJSON() (*__premarshalgetPipelinePipeli
 	retval.Steps = v.PipelineFields.Steps
 	retval.Tags = v.PipelineFields.Tags
 	retval.Teams = v.PipelineFields.Teams
+	retval.Archived = v.PipelineFields.Archived
 	retval.Visibility = v.PipelineFields.Visibility
 	retval.WebhookURL = v.PipelineFields.WebhookURL
 	return &retval, nil
@@ -18818,6 +18851,31 @@ func (v *teamUpdateTeamUpdateTeamUpdatePayloadTeam) __premarshalJSON() (*__prema
 	return &retval, nil
 }
 
+// unarchivePipelinePipelineUnarchivePipelineUnarchivePayload includes the requested fields of the GraphQL type PipelineUnarchivePayload.
+// The GraphQL type's documentation follows.
+//
+// Autogenerated return type of PipelineUnarchive.
+type unarchivePipelinePipelineUnarchivePipelineUnarchivePayload struct {
+	// A unique identifier for the client performing the mutation.
+	ClientMutationId string `json:"clientMutationId"`
+}
+
+// GetClientMutationId returns unarchivePipelinePipelineUnarchivePipelineUnarchivePayload.ClientMutationId, and is useful for accessing the field via an interface.
+func (v *unarchivePipelinePipelineUnarchivePipelineUnarchivePayload) GetClientMutationId() string {
+	return v.ClientMutationId
+}
+
+// unarchivePipelineResponse is returned by unarchivePipeline on success.
+type unarchivePipelineResponse struct {
+	// Unarchive a pipeline.
+	PipelineUnarchive unarchivePipelinePipelineUnarchivePipelineUnarchivePayload `json:"pipelineUnarchive"`
+}
+
+// GetPipelineUnarchive returns unarchivePipelineResponse.PipelineUnarchive, and is useful for accessing the field via an interface.
+func (v *unarchivePipelineResponse) GetPipelineUnarchive() unarchivePipelinePipelineUnarchivePipelineUnarchivePayload {
+	return v.PipelineUnarchive
+}
+
 // updateClusterAgentTokenClusterAgentTokenUpdateClusterAgentTokenUpdatePayload includes the requested fields of the GraphQL type ClusterAgentTokenUpdatePayload.
 // The GraphQL type's documentation follows.
 //
@@ -19559,6 +19617,11 @@ func (v *updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline) GetTeams() P
 	return v.PipelineFields.Teams
 }
 
+// GetArchived returns updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline.Archived, and is useful for accessing the field via an interface.
+func (v *updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline) GetArchived() bool {
+	return v.PipelineFields.Archived
+}
+
 // GetVisibility returns updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline.Visibility, and is useful for accessing the field via an interface.
 func (v *updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline) GetVisibility() PipelineVisibility {
 	return v.PipelineFields.Visibility
@@ -19641,6 +19704,8 @@ type __premarshalupdatePipelinePipelineUpdatePipelineUpdatePayloadPipeline struc
 
 	Teams PipelineFieldsTeamsTeamPipelineConnection `json:"teams"`
 
+	Archived bool `json:"archived"`
+
 	Visibility PipelineVisibility `json:"visibility"`
 
 	WebhookURL string `json:"webhookURL"`
@@ -19680,6 +19745,7 @@ func (v *updatePipelinePipelineUpdatePipelineUpdatePayloadPipeline) __premarshal
 	retval.Steps = v.PipelineFields.Steps
 	retval.Tags = v.PipelineFields.Tags
 	retval.Teams = v.PipelineFields.Teams
+	retval.Archived = v.PipelineFields.Archived
 	retval.Visibility = v.PipelineFields.Visibility
 	retval.WebhookURL = v.PipelineFields.WebhookURL
 	return &retval, nil
@@ -21024,6 +21090,7 @@ fragment PipelineFields on Pipeline {
 	teams(first: 5, order: NAME) {
 		... PipelineTeam
 	}
+	archived
 	visibility
 	webhookURL
 }
@@ -22183,6 +22250,7 @@ fragment PipelineFields on Pipeline {
 	teams(first: 5, order: NAME) {
 		... PipelineTeam
 	}
+	archived
 	visibility
 	webhookURL
 }
@@ -22506,6 +22574,7 @@ fragment PipelineFields on Pipeline {
 	teams(first: 5, order: NAME) {
 		... PipelineTeam
 	}
+	archived
 	visibility
 	webhookURL
 }
@@ -23390,6 +23459,40 @@ func teamUpdate(
 	return data_, err_
 }
 
+// The mutation executed by unarchivePipeline.
+const unarchivePipeline_Operation = `
+mutation unarchivePipeline ($id: ID!) {
+	pipelineUnarchive(input: {id:$id}) {
+		clientMutationId
+	}
+}
+`
+
+func unarchivePipeline(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	id string,
+) (data_ *unarchivePipelineResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "unarchivePipeline",
+		Query:  unarchivePipeline_Operation,
+		Variables: &__unarchivePipelineInput{
+			Id: id,
+		},
+	}
+
+	data_ = &unarchivePipelineResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
 // The mutation executed by updateCluster.
 const updateCluster_Operation = `
 mutation updateCluster ($organizationId: ID!, $id: ID!, $name: String, $description: String, $emoji: String, $color: String) {
@@ -23695,6 +23798,7 @@ fragment PipelineFields on Pipeline {
 	teams(first: 5, order: NAME) {
 		... PipelineTeam
 	}
+	archived
 	visibility
 	webhookURL
 }

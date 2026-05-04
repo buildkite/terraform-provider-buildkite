@@ -135,10 +135,10 @@ func (or *organizationRuleDatasource) Read(ctx context.Context, req datasource.R
 		if err != nil {
 			resp.Diagnostics.AddError(
 				"Unable to read organization rule",
-				fmt.Sprintf("Unable to read organmization rule: %s", err.Error()),
+				fmt.Sprintf("Unable to read organization rule: %s", err.Error()),
 			)
 		}
-		updateOrganizatonRuleDatasource(&state, apiResponse.Rule, *value)
+		updateOrganizationRuleDatasource(&state, apiResponse.Rule, *value)
 		// Otherwise if a ID is specified
 	} else if !state.ID.IsNull() {
 		var apiResponse *getNodeResponse
@@ -156,7 +156,7 @@ func (or *organizationRuleDatasource) Read(ctx context.Context, req datasource.R
 		if err != nil {
 			resp.Diagnostics.AddError(
 				"Unable to read organization rule",
-				fmt.Sprintf("Unable to read organmization rule: %s", err.Error()),
+				fmt.Sprintf("Unable to read organization rule: %s", err.Error()),
 			)
 			return
 		}
@@ -175,10 +175,10 @@ func (or *organizationRuleDatasource) Read(ctx context.Context, req datasource.R
 			if err != nil {
 				resp.Diagnostics.AddError(
 					"Unable to read organization rule",
-					fmt.Sprintf("Unable to read organmization rule: %s", err.Error()),
+					fmt.Sprintf("Unable to read organization rule: %s", err.Error()),
 				)
 			}
-			updateOrganizatonRuleDatasourceStateFromNode(&state, *organizationRule, *value)
+			updateOrganizationRuleDatasourceStateFromNode(&state, *organizationRule, *value)
 		}
 	}
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
@@ -200,7 +200,7 @@ func obtainDatasourceReadUUIDs(orr getOrganizationRuleRule) (string, string) {
 	return sourceUUID, targetUUID
 }
 
-func updateOrganizatonRuleDatasource(or *organizationRuleDatasourceModel, orr getOrganizationRuleRule, value string) {
+func updateOrganizationRuleDatasource(or *organizationRuleDatasourceModel, orr getOrganizationRuleRule, value string) {
 	sourceUUID, targetUUID := obtainDatasourceReadUUIDs(orr)
 
 	or.ID = types.StringValue(orr.Id)
@@ -216,7 +216,7 @@ func updateOrganizatonRuleDatasource(or *organizationRuleDatasourceModel, orr ge
 	or.Action = types.StringValue(string(orr.Action))
 }
 
-func updateOrganizatonRuleDatasourceStateFromNode(or *organizationRuleDatasourceModel, orn getNodeNodeRule, value string) {
+func updateOrganizationRuleDatasourceStateFromNode(or *organizationRuleDatasourceModel, orn getNodeNodeRule, value string) {
 	sourceUUID, targetUUID := obtainReadUUIDs(orn)
 
 	or.ID = types.StringValue(orn.Id)

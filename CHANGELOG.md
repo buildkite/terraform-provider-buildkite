@@ -1,5 +1,163 @@
 # Changelog
 
+## [1.32.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.31.4...v1.32.0)
+
+### Features
+
+* SUP-6661: add build_pull_request_merge_commits Repository Provider Setting by @tomowatt in https://github.com/buildkite/terraform-provider-buildkite/pull/1103
+* feat: add archived attribute to pipeline resource by @peerkleio in https://github.com/buildkite/terraform-provider-buildkite/pull/1108
+
+### Dependencies
+
+* chore(deps): update goreleaser/goreleaser docker tag to v2.15.1 by @renovate[bot] in https://github.com/buildkite/terraform-provider-buildkite/pull/1107
+* chore(deps): update terraform buildkite to v1.31.4 by @renovate[bot] in https://github.com/buildkite/terraform-provider-buildkite/pull/1105
+* chore(deps): update hashicorp/terraform:1.14 docker digest to 42ecfb2 by @renovate[bot] in https://github.com/buildkite/terraform-provider-buildkite/pull/1106
+* chore(deps): update goreleaser/goreleaser docker tag to v2.15.2 by @renovate[bot] in https://github.com/buildkite/terraform-provider-buildkite/pull/1109
+
+## [1.31.4](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.31.3...v1.31.4)
+
+### Fixed
+
+- Fix 5xx backoff using LinearJitterBackoff with excessive wait times by @mipearson in https://github.com/buildkite/terraform-provider-buildkite/pull/1101
+- Fix pipeline schedule resource references by @gilesgas in https://github.com/buildkite/terraform-provider-buildkite/pull/1104
+
+### Dependencies
+
+- chore(deps): bump google.golang.org/grpc from 1.79.2 to 1.79.3 by @dependabot[bot] in https://github.com/buildkite/terraform-provider-buildkite/pull/1099
+- chore(deps): update terraform buildkite to v1.31.3 by @renovate[bot] in https://github.com/buildkite/terraform-provider-buildkite/pull/1100
+- chore(deps): update golang:1.26.1 docker digest to 595c784 by @renovate[bot] in https://github.com/buildkite/terraform-provider-buildkite/pull/1102
+
+## [1.31.3](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.31.2...v1.31.3)
+
+### Fixed
+
+- Fix RateLimit-Reset header parsed as Unix timestamp instead of seconds by @mipearson in https://github.com/buildkite/terraform-provider-buildkite/pull/1098
+- Briefly retry creation of `pipeline_team`, when already exists by @petetomasik in https://github.com/buildkite/terraform-provider-buildkite/pull/1097
+
+### Dependencies
+
+- chore(deps): update terraform buildkite to v1.31.2 by @renovate[bot] in https://github.com/buildkite/terraform-provider-buildkite/pull/1077
+- chore(deps): update dependency go to v1.26.1 by @renovate[bot] in https://github.com/buildkite/terraform-provider-buildkite/pull/1078
+- chore(deps): update goreleaser/goreleaser docker tag to v2.14.2 by @renovate[bot] in https://github.com/buildkite/terraform-provider-buildkite/pull/1080
+- chore(deps): update golang docker tag to v1.26.1 by @renovate[bot] in https://github.com/buildkite/terraform-provider-buildkite/pull/1079
+- chore(deps): update goreleaser/goreleaser docker tag to v2.14.3 by @renovate[bot] in https://github.com/buildkite/terraform-provider-buildkite/pull/1081
+- chore(deps): update golang:1.26.1 docker digest to cdebbd5 by @renovate[bot] in https://github.com/buildkite/terraform-provider-buildkite/pull/1084
+- chore(deps): update golang:1.26.1 docker digest to c7e98cc by @renovate[bot] in https://github.com/buildkite/terraform-provider-buildkite/pull/1086
+- chore(deps): update hashicorp/terraform:1.14 docker digest to 880e7ee by @renovate[bot] in https://github.com/buildkite/terraform-provider-buildkite/pull/1088
+- chore(deps): update buildkite plugin ecr to v2.12.0 by @renovate[bot] in https://github.com/buildkite/terraform-provider-buildkite/pull/1090
+- Update all TF plugin modules together by @petetomasik in https://github.com/buildkite/terraform-provider-buildkite/pull/1092
+- chore(deps): update golang:1.26.1 docker digest to 16e774b by @renovate[bot] in https://github.com/buildkite/terraform-provider-buildkite/pull/1095
+- chore(deps): update golang:1.26.1 docker digest to c42e4d7 by @renovate[bot] in https://github.com/buildkite/terraform-provider-buildkite/pull/1096
+
+## [v1.31.2](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.31.1...v1.31.2)
+
+### Fixes
+
+- fix: recreate schedule when target pipeline changed by @mcncl in https://github.com/buildkite/terraform-provider-buildkite/pull/1076
+
+## [v1.31.1](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.31.0...v1.31.1)
+
+### Fixes
+
+- resource_pipeline: fix visibility requiring admin rights on all updates by @scadu in https://github.com/buildkite/terraform-provider-buildkite/pull/1070
+
+### Dependencies
+
+- chore(deps): update terraform buildkite to v1.31.0 by @renovate[bot] in https://github.com/buildkite/terraform-provider-buildkite/pull/1061
+- fix(deps): update module github.com/hashicorp/terraform-plugin-go to v0.30.0 by @renovate[bot] in https://github.com/buildkite/terraform-provider-buildkite/pull/1062
+- chore(deps): update golang:1.26.0 docker digest to b39810f by @renovate[bot] in https://github.com/buildkite/terraform-provider-buildkite/pull/1063
+- chore(deps): update golang:1.26.0 docker digest to b751797 by @renovate[bot] in https://github.com/buildkite/terraform-provider-buildkite/pull/1064
+- chore(deps): update goreleaser/goreleaser docker tag to v2.14.1 by @renovate[bot] in https://github.com/buildkite/terraform-provider-buildkite/pull/1068
+- chore(deps): update golang:1.26.0 docker digest to 9edf713 by @renovate[bot] in https://github.com/buildkite/terraform-provider-buildkite/pull/1065
+- chore(deps): update hashicorp/terraform:1.14 docker digest to 4776706 by @renovate[bot] in https://github.com/buildkite/terraform-provider-buildkite/pull/1066
+
+## [v1.31.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.30.0...v1.31.0)
+
+### Features
+
+- Support slugs for org rules source/target pipelines by @petetomasik in https://github.com/buildkite/terraform-provider-buildkite/pull/1059
+- Support pipeline visibility attribute by @petetomasik in https://github.com/buildkite/terraform-provider-buildkite/pull/1026
+- Migrate to pipeline secrets by @mcncl in https://github.com/buildkite/terraform-provider-buildkite/pull/1034
+
+### Dependencies
+
+- fix(deps): update github.com/shurcool/graphql digest to 7ee5256 by @renovate[bot] in https://github.com/buildkite/terraform-provider-buildkite/pull/1030
+- fix(deps): update module github.com/makenowjust/heredoc to v2 by @renovate[bot] in https://github.com/buildkite/terraform-provider-buildkite/pull/1053
+- fix(deps): update module github.com/makenowjust/heredoc to v2 by @renovate[bot] in https://github.com/buildkite/terraform-provider-buildkite/pull/1054
+- chore: Configure Renovate by @renovate[bot] in https://github.com/buildkite/terraform-provider-buildkite/pull/1028
+- chore(deps): update golang:1.25.6 docker digest to 06d1251 by @renovate[bot] in https://github.com/buildkite/terraform-provider-buildkite/pull/1029
+- chore(deps): update buildkite plugin aws-ssm to v1.1.0 by @renovate[bot] in https://github.com/buildkite/terraform-provider-buildkite/pull/1035
+- chore(deps): update buildkite plugin test-collector to v1.11.0 by @renovate[bot] in https://github.com/buildkite/terraform-provider-buildkite/pull/1040
+- chore(deps): update terraform buildkite to v0.27.2 by @renovate[bot] in https://github.com/buildkite/terraform-provider-buildkite/pull/1044
+- chore(deps): update hashicorp/terraform docker tag to v1.14 by @renovate[bot] in https://github.com/buildkite/terraform-provider-buildkite/pull/1043
+- chore(deps): update dependency go to v1.26.0 by @renovate[bot] in https://github.com/buildkite/terraform-provider-buildkite/pull/1041
+- chore(deps): update buildkite plugin docker-compose to v5 by @renovate[bot] in https://github.com/buildkite/terraform-provider-buildkite/pull/1050
+- chore(deps): update buildkite plugins by @renovate[bot] in https://github.com/buildkite/terraform-provider-buildkite/pull/1049
+- chore(deps): update terraform buildkite to v1 by @renovate[bot] in https://github.com/buildkite/terraform-provider-buildkite/pull/1051
+- golang v1.26.0 and windows/arm64 builds by @petetomasik in https://github.com/buildkite/terraform-provider-buildkite/pull/1056
+- Upgrade to goreleaser v2 by @petetomasik in https://github.com/buildkite/terraform-provider-buildkite/pull/1057
+- chore(deps): update goreleaser/goreleaser docker tag to v2.14.0 by @renovate[bot] in https://github.com/buildkite/terraform-provider-buildkite/pull/1047
+
+### Internal
+
+- Renovate: group Buildkite plugin updates by @scadu in https://github.com/buildkite/terraform-provider-buildkite/pull/1048
+- Auto retries for ossf scanning by @petetomasik in https://github.com/buildkite/terraform-provider-buildkite/pull/1058
+
+## [v1.30.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.29.0...v1.30.0)
+
+### Features
+
+- Add buildkite_pipeline_webhook resource by @lox in https://github.com/buildkite/terraform-provider-buildkite/pull/1021
+
+### Fixes
+
+- Fix pipeline webhook acceptance tests for updated API error messages by @matthewborden in https://github.com/buildkite/terraform-provider-buildkite/pull/1024
+
+### Dependencies
+
+- chore(deps): bump golang from 1.25.5 to 1.25.6 by @dependabot in https://github.com/buildkite/terraform-provider-buildkite/pull/1020
+- chore(deps): bump github.com/hashicorp/terraform-plugin-sdk/v2 from 2.38.1 to 2.38.2 by @dependabot in https://github.com/buildkite/terraform-provider-buildkite/pull/1022
+
+## [v1.29.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.28.0...v1.29.0)
+
+### Features
+
+- SUP-4194: Add Cluster Secrets by @stephanieatte in https://github.com/buildkite/terraform-provider-buildkite/pull/1015
+
+### Fixes
+
+- chore: correct error message by @tomowatt in https://github.com/buildkite/terraform-provider-buildkite/pull/1016
+
+### Dependencies
+
+- chore(deps): bump golang from 1.25.3 to 1.25.5 by @dependabot in https://github.com/buildkite/terraform-provider-buildkite/pull/1017
+
+## [v1.28.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.27.1...v1.28.0)
+
+### Features
+
+- Support all available Teams permissions by @petetomasik in https://github.com/buildkite/terraform-provider-buildkite/pull/1014
+
+### Fixes
+
+- Validate branch filtering, conditional syntax by @petetomasik in https://github.com/buildkite/terraform-provider-buildkite/pull/1013
+
+### Dependencies
+
+- chore(deps): bump github.com/hashicorp/terraform-plugin-framework from 1.16.1 to 1.17.0 by @dependabot in https://github.com/buildkite/terraform-provider-buildkite/pull/1011
+- chore(deps): bump github.com/hashicorp/terraform-plugin-testing from 1.13.3 to 1.14.0 by @dependabot in https://github.com/buildkite/terraform-provider-buildkite/pull/1010
+
+### Internal
+
+- Remove builds targeting 386 arch by @mcncl in https://github.com/buildkite/terraform-provider-buildkite/pull/1007
+- Fixes outdated docs by @JoeColeman95 in https://github.com/buildkite/terraform-provider-buildkite/pull/1009
+
+## [v1.27.1](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.27.0...v1.27.1)
+
+### Fixes
+
+- fix: buildkite agent token description update by @mcncl in https://github.com/buildkite/terraform-provider-buildkite/pull/1006
+
 ## [v1.27.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.26.0...v1.27.0)
 
 ### Features

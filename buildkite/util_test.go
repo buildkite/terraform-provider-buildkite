@@ -27,6 +27,54 @@ func TestGetOrganizationIDMissing(t *testing.T) {
 	}
 }
 
+func TestIsAlreadyExistsError(t *testing.T) {
+	tests := []struct {
+		name        string
+		err         error
+		shouldMatch bool
+	}{
+		{
+			name:        "nil error",
+			err:         nil,
+			shouldMatch: false,
+		},
+		{
+			name:        "already been added error",
+			err:         errors.New("This pipeline has already been added to this team"),
+			shouldMatch: true,
+		},
+		{
+			name:        "already exists error",
+			err:         errors.New("Resource already exists"),
+			shouldMatch: true,
+		},
+		{
+			name:        "case insensitive already exists",
+			err:         errors.New("ALREADY EXISTS in the system"),
+			shouldMatch: true,
+		},
+		{
+			name:        "unrelated error",
+			err:         errors.New("Network connection failed"),
+			shouldMatch: false,
+		},
+		{
+			name:        "not found error",
+			err:         errors.New("Resource not found"),
+			shouldMatch: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := isAlreadyExistsError(tt.err)
+			if result != tt.shouldMatch {
+				t.Errorf("isAlreadyExistsError(%v) = %v, want %v", tt.err, result, tt.shouldMatch)
+			}
+		})
+	}
+}
+
 func TestIsActiveJobsError(t *testing.T) {
 	tests := []struct {
 		name        string

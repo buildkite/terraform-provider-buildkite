@@ -1886,7 +1886,7 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 		})
 	})
 
-	t.Run("errors when an organization rule is created with an invalid source_pipeline UUID", func(t *testing.T) {
+	t.Run("errors when an organization rule is created with an invalid source_pipeline slug", func(t *testing.T) {
 		randName := acctest.RandString(12)
 		resource.ParallelTest(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },
@@ -1895,13 +1895,13 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 			Steps: []resource.TestStep{
 				{
 					Config:      configSourceUUIDInvalid(randName),
-					ExpectError: regexp.MustCompile("pipeline.trigger_build.pipeline: source_pipeline is an invalid UUID."),
+					ExpectError: regexp.MustCompile("Unable to resolve pipeline slug"),
 				},
 			},
 		})
 	})
 
-	t.Run("errors when an organization rule is created with an invalid target_pipeline UUID", func(t *testing.T) {
+	t.Run("errors when an organization rule is created with an invalid target_pipeline slug", func(t *testing.T) {
 		randName := acctest.RandString(12)
 		resource.ParallelTest(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },
@@ -1910,7 +1910,7 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 			Steps: []resource.TestStep{
 				{
 					Config:      configTargetUUIDInvalid(randName),
-					ExpectError: regexp.MustCompile("pipeline.trigger_build.pipeline: target_pipeline is an invalid UUID."),
+					ExpectError: regexp.MustCompile("Unable to resolve pipeline slug"),
 				},
 			},
 		})
@@ -2024,7 +2024,7 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 				},
 				{
 					Config:      configUpdateErrorInvalidSource(randNameOne, randNameTwo, "trigger_build"),
-					ExpectError: regexp.MustCompile("pipeline.trigger_build.pipeline: source_pipeline not found"),
+					ExpectError: regexp.MustCompile("Unable to resolve pipeline slug"),
 				},
 			},
 		})
@@ -2062,7 +2062,7 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 				},
 				{
 					Config:      configUpdateErrorInvalidTarget(randNameOne, randNameTwo, "trigger_build"),
-					ExpectError: regexp.MustCompile("pipeline.trigger_build.pipeline: target_pipeline not found"),
+					ExpectError: regexp.MustCompile("Unable to resolve pipeline slug"),
 				},
 			},
 		})
@@ -2193,6 +2193,104 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 			},
 		})
 	})
+
+	configSlug := func(sourceName, targetName, action string) string {
+		return fmt.Sprintf(`
+		provider "buildkite" {
+			timeouts = {
+				create = "60s"
+				read = "60s"
+				update = "60s"
+				delete = "60s"
+			}
+		}
+
+		resource "buildkite_cluster" "cluster_source" {
+			name        = "Cluster %s"
+			description = "A test cluster containing a source pipeline."
+		}
+
+		resource "buildkite_cluster" "cluster_target" {
+			name        = "Cluster %s"
+			description = "A test cluster containing a target pipeline for triggering builds."
+		}
+
+		resource "buildkite_pipeline" "pipeline_source" {
+			depends_on 			 = [buildkite_cluster.cluster_source]
+			name                 = "Pipeline %s"
+			repository           = "https://github.com/buildkite/terraform-provider-buildkite.git"
+			cluster_id			 = buildkite_cluster.cluster_source.id
+		}
+
+		resource "buildkite_pipeline" "pipeline_target" {
+			depends_on 			 = [buildkite_cluster.cluster_target]
+			name                 = "Pipeline %s"
+			repository           = "https://github.com/buildkite/terraform-provider-buildkite.git"
+			cluster_id           = buildkite_cluster.cluster_target.id
+		}
+
+		resource "buildkite_organization_rule" "%s_rule" {
+			depends_on = [
+				buildkite_pipeline.pipeline_source,
+				buildkite_pipeline.pipeline_target
+			]
+			type = "pipeline.%s.pipeline"
+			value = jsonencode({
+				source_pipeline = "${buildkite_pipeline.pipeline_source.slug}"
+				target_pipeline = "${buildkite_pipeline.pipeline_target.slug}"
+			})
+		}
+
+		`, sourceName, targetName, sourceName, targetName, action, action)
+	}
+
+	for _, action := range ruleActions {
+		// Formatted resource name used for slug-based test cases
+		resourceName := fmt.Sprintf("buildkite_organization_rule.%s_rule", action)
+
+		t.Run(fmt.Sprintf("creates a pipeline.%s.pipeline organization rule using pipeline slugs", action), func(t *testing.T) {
+			randNameOne := acctest.RandString(12)
+			randNameTwo := acctest.RandString(12)
+			var orr organizationRuleResourceModel
+
+			check := resource.ComposeAggregateTestCheckFunc(
+				// Confirm the organization rule exists
+				testAccCheckOrganizationRuleExists(&orr, resourceName),
+				// Confirm the organization rule has the correct values in Buildkite's system
+				testAccCheckOrganizationRuleRemoteValues(&orr, "PIPELINE", "PIPELINE", strings.ToUpper(action), "ALLOW"),
+				// Check the organization rule resource's attributes are set in state
+				resource.TestCheckResourceAttrSet(resourceName, "id"),
+				resource.TestCheckResourceAttrSet(resourceName, "uuid"),
+				resource.TestCheckResourceAttrSet(resourceName, "type"),
+				resource.TestCheckResourceAttrSet(resourceName, "source_type"),
+				resource.TestCheckResourceAttrSet(resourceName, "source_uuid"),
+				resource.TestCheckResourceAttrSet(resourceName, "target_type"),
+				resource.TestCheckResourceAttrSet(resourceName, "target_uuid"),
+				resource.TestCheckResourceAttrSet(resourceName, "value"),
+				// Assert organization rule resource's state values
+				resource.TestCheckResourceAttr(resourceName, "type", fmt.Sprintf("pipeline.%s.pipeline", action)),
+				resource.TestCheckResourceAttr(resourceName, "source_type", "PIPELINE"),
+				resource.TestCheckResourceAttr(resourceName, "target_type", "PIPELINE"),
+			)
+
+			resource.ParallelTest(t, resource.TestCase{
+				PreCheck:                 func() { testAccPreCheck(t) },
+				ProtoV6ProviderFactories: protoV6ProviderFactories(),
+				CheckDestroy:             testAccCheckOrganizationRuleDestroy,
+				Steps: []resource.TestStep{
+					{
+						Config: configSlug(randNameOne, randNameTwo, action),
+						Check:  check,
+					},
+					// Verifies no plan diff on subsequent plan (idempotency check).
+					{
+						Config:   configSlug(randNameOne, randNameTwo, action),
+						PlanOnly: true,
+					},
+				},
+			})
+		})
+	}
 }
 
 func testAccCheckOrganizationRuleExists(orr *organizationRuleResourceModel, name string) resource.TestCheckFunc {
@@ -2219,7 +2317,7 @@ func testAccCheckOrganizationRuleExists(orr *organizationRuleResourceModel, name
 			if err != nil {
 				return fmt.Errorf("Error constructing sorted value JSON to store in state")
 			}
-			updateOrganizatonRuleReadState(orr, *organizationRule, *value)
+			updateOrganizationRuleReadState(orr, *organizationRule, *value)
 		}
 
 		return nil
