@@ -3,6 +3,9 @@ package buildkite
 import (
 	"context"
 	"fmt"
+	"regexp"
+	"strings"
+
 	"github.com/MakeNowJust/heredoc"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -13,8 +16,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
-	"regexp"
-	"strings"
 )
 
 type clusterSecretResource struct {
@@ -74,7 +75,7 @@ func (r *clusterSecretResource) Schema(ctx context.Context, req resource.SchemaR
 			},
 			"key": schema.StringAttribute{
 				Required:            true,
-				MarkdownDescription: "The key name for the secret. Must start with a letter and only contain letters, numbers, and underscores. Maximum 255 characters.",
+				MarkdownDescription: "The key name for the secret. Must start with a letter and only contain letters, numbers, and underscores. Maximum 255 characters. Must not start with `buildkite` or `bk` (case-insensitive) as these prefixes are reserved.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
@@ -84,6 +85,7 @@ func (r *clusterSecretResource) Schema(ctx context.Context, req resource.SchemaR
 						regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9_]*$`),
 						"must start with a letter and only contain letters, numbers, and underscores",
 					),
+					reservedSecretKeyPrefixValidator{},
 				},
 			},
 			"value": schema.StringAttribute{
@@ -357,4 +359,31 @@ func (r *clusterSecretResource) ImportState(ctx context.Context, req resource.Im
 
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("cluster_id"), parts[0])...)
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), parts[1])...)
+}
+
+// reservedSecretKeyPrefixValidator checks that the key doesn't start with reserved prefixes.
+// Aligns with Buildkite's backend validation: keys beginning with "buildkite" or "bk"
+// (case-insensitive) are rejected.
+type reservedSecretKeyPrefixValidator struct{}
+
+func (v reservedSecretKeyPrefixValidator) Description(ctx context.Context) string {
+	return "value must not start with 'buildkite' or 'bk' (reserved prefixes, case-insensitive)"
+}
+
+func (v reservedSecretKeyPrefixValidator) MarkdownDescription(ctx context.Context) string {
+	return "value must not start with `buildkite` or `bk` (reserved prefixes, case-insensitive)"
+}
+
+func (v reservedSecretKeyPrefixValidator) ValidateString(ctx context.Context, req validator.StringRequest, resp *validator.StringResponse) {
+	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
+		return
+	}
+	lower := strings.ToLower(req.ConfigValue.ValueString())
+	if strings.HasPrefix(lower, "buildkite") || strings.HasPrefix(lower, "bk") {
+		resp.Diagnostics.AddAttributeError(
+			req.Path,
+			"Invalid secret key",
+			"Secret key must not start with 'buildkite' or 'bk' (reserved prefixes, case-insensitive)",
+		)
+	}
 }

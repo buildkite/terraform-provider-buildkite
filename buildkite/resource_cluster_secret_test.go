@@ -1,11 +1,14 @@
 package buildkite
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"os"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
@@ -135,6 +138,7 @@ func testAccCheckClusterSecretDestroy(s *terraform.State) error {
 
 	return nil
 }
+
 func testAccClusterSecretConfig(clusterName, key, value, description string) string {
 	return fmt.Sprintf(`
 provider "buildkite" {
@@ -192,4 +196,83 @@ resource "buildkite_cluster_secret" "test" {
 EOT
 }
 `, getenv("BUILDKITE_ORGANIZATION_SLUG"), os.Getenv("BUILDKITE_API_TOKEN"), clusterName, key, value, pipeline, branch)
+}
+
+// Unit tests for reservedSecretKeyPrefixValidator — no API access required.
+
+func TestReservedSecretKeyPrefixValidator(t *testing.T) {
+	t.Parallel()
+
+	v := reservedSecretKeyPrefixValidator{}
+
+	tests := []struct {
+		name        string
+		input       string
+		expectError bool
+	}{
+		// valid keys
+		{name: "plain key", input: "MY_SECRET", expectError: false},
+		{name: "api key", input: "API_KEY", expectError: false},
+		{name: "buildkite mid-string", input: "APP_BUILDKITE_TOKEN", expectError: false},
+		{name: "bk mid-string", input: "APP_BK_TOKEN", expectError: false},
+		{name: "single letter", input: "X", expectError: false},
+
+		// reserved prefix: buildkite variants
+		{name: "BUILDKITE_ uppercase", input: "BUILDKITE_TOKEN", expectError: true},
+		{name: "buildkite_ lowercase", input: "buildkite_token", expectError: true},
+		{name: "Buildkite_ mixed case", input: "Buildkite_Token", expectError: true},
+		{name: "BUILDKITE no underscore", input: "BUILDKITETOKEN", expectError: true},
+
+		// reserved prefix: bk variants
+		{name: "BK_ uppercase", input: "BK_SECRET", expectError: true},
+		{name: "bk_ lowercase", input: "bk_secret", expectError: true},
+		{name: "Bk_ mixed case", input: "Bk_Secret", expectError: true},
+		{name: "BK no underscore", input: "BKSECRET", expectError: true},
+	}
+
+	for _, tc := range tests {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			resp := &validator.StringResponse{}
+			v.ValidateString(context.Background(), validator.StringRequest{
+				ConfigValue: types.StringValue(tc.input),
+			}, resp)
+
+			if got := resp.Diagnostics.HasError(); got != tc.expectError {
+				if tc.expectError {
+					t.Errorf("input %q: expected validation error but got none", tc.input)
+				} else {
+					t.Errorf("input %q: expected no error but got: %s", tc.input, resp.Diagnostics.Errors())
+				}
+			}
+		})
+	}
+}
+
+func TestReservedSecretKeyPrefixValidator_NullAndUnknown(t *testing.T) {
+	t.Parallel()
+
+	v := reservedSecretKeyPrefixValidator{}
+
+	t.Run("null value is skipped", func(t *testing.T) {
+		resp := &validator.StringResponse{}
+		v.ValidateString(context.Background(), validator.StringRequest{
+			ConfigValue: types.StringNull(),
+		}, resp)
+		if resp.Diagnostics.HasError() {
+			t.Errorf("expected no error for null value, got: %s", resp.Diagnostics.Errors())
+		}
+	})
+
+	t.Run("unknown value is skipped", func(t *testing.T) {
+		resp := &validator.StringResponse{}
+		v.ValidateString(context.Background(), validator.StringRequest{
+			ConfigValue: types.StringUnknown(),
+		}, resp)
+		if resp.Diagnostics.HasError() {
+			t.Errorf("expected no error for unknown value, got: %s", resp.Diagnostics.Errors())
+		}
+	})
 }
