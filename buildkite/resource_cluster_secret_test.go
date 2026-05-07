@@ -113,7 +113,7 @@ func TestAccBuildkiteClusterSecret_valueValidation(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config:      testAccClusterSecretConfigWithoutValue(clusterName, secretKey),
-				ExpectError: regexp.MustCompile("Invalid Attribute Combination"),
+				ExpectError: regexp.MustCompile("Missing Attribute Configuration"),
 			},
 			{
 				Config:      testAccClusterSecretConfigWithBothValues(clusterName, secretKey, "legacy-value", "write-only-value", "version-1"),

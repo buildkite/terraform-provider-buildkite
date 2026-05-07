@@ -6,8 +6,8 @@ description: |-
   A Cluster Secret is an encrypted key-value pair that can be accessed by agents within a cluster.
   Secrets are encrypted and can only be accessed by agents that match the access policy.
   Note: Secret values are write-only in the Buildkite API and cannot be retrieved after they are set.
-  Exactly one of `value` or `value_wo` must be configured. The `value` attribute is stored in
-  Terraform state so Terraform can detect changes. Use `value_wo` with `value_wo_version`
+  Exactly one of value or value_wo must be configured. The value attribute is stored in
+  Terraform state so Terraform can detect changes. Use value_wo with value_wo_version
   to pass a secret value without storing it in Terraform plan or state artifacts.
 ---
 
@@ -17,8 +17,8 @@ A Cluster Secret is an encrypted key-value pair that can be accessed by agents w
 Secrets are encrypted and can only be accessed by agents that match the access policy.
 
 **Note:** Secret values are write-only in the Buildkite API and cannot be retrieved after they are set.
-Exactly one of `value` or `value_wo` must be configured. The `value` attribute is stored in
-Terraform state so Terraform can detect changes. Use `value_wo` with `value_wo_version`
+Exactly one of value or value_wo must be configured. The value attribute is stored in
+Terraform state so Terraform can detect changes. Use value_wo with value_wo_version
 to pass a secret value without storing it in Terraform plan or state artifacts.
 
 ## Example Usage
