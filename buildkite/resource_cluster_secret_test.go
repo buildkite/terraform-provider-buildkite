@@ -69,6 +69,39 @@ func TestAccBuildkiteClusterSecret_update(t *testing.T) {
 	})
 }
 
+func TestAccBuildkiteClusterSecret_writeOnlyValue(t *testing.T) {
+	secretKey := fmt.Sprintf("TEST_SECRET_%s", acctest.RandString(10))
+	secretValue1 := acctest.RandString(20)
+	secretValue2 := acctest.RandString(20)
+	clusterName := acctest.RandString(10)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		CheckDestroy:             testAccCheckClusterSecretDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccClusterSecretWriteOnlyConfig(clusterName, secretKey, secretValue1, "version-1", "Initial description"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("buildkite_cluster_secret.test", "key", secretKey),
+					resource.TestCheckResourceAttr("buildkite_cluster_secret.test", "description", "Initial description"),
+					resource.TestCheckResourceAttr("buildkite_cluster_secret.test", "value_wo_version", "version-1"),
+					resource.TestCheckNoResourceAttr("buildkite_cluster_secret.test", "value_wo"),
+					resource.TestCheckResourceAttrSet("buildkite_cluster_secret.test", "id"),
+				),
+			},
+			{
+				Config: testAccClusterSecretWriteOnlyConfig(clusterName, secretKey, secretValue2, "version-2", "Updated description"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("buildkite_cluster_secret.test", "description", "Updated description"),
+					resource.TestCheckResourceAttr("buildkite_cluster_secret.test", "value_wo_version", "version-2"),
+					resource.TestCheckNoResourceAttr("buildkite_cluster_secret.test", "value_wo"),
+				),
+			},
+		},
+	})
+}
+
 func TestAccBuildkiteClusterSecret_withPolicy(t *testing.T) {
 	secretKey := fmt.Sprintf("TEST_SECRET_%s", acctest.RandString(10))
 	secretValue := acctest.RandString(20)
@@ -166,6 +199,34 @@ resource "buildkite_cluster_secret" "test" {
 `, getenv("BUILDKITE_ORGANIZATION_SLUG"), os.Getenv("BUILDKITE_API_TOKEN"), clusterName, key, value, description)
 }
 
+func testAccClusterSecretWriteOnlyConfig(clusterName, key, value, version, description string) string {
+	return fmt.Sprintf(`
+provider "buildkite" {
+    organization = "%s"
+    api_token    = "%s"
+    timeouts = {
+        create = "10s"
+        read = "10s"
+        update = "10s"
+        delete = "10s"
+    }
+}
+
+resource "buildkite_cluster" "test" {
+    name        = "Test Cluster %s"
+    description = "Test cluster for secrets"
+}
+
+resource "buildkite_cluster_secret" "test" {
+    cluster_id       = buildkite_cluster.test.uuid
+    key              = "%s"
+    value_wo         = "%s"
+    value_wo_version = "%s"
+    description      = "%s"
+}
+`, getenv("BUILDKITE_ORGANIZATION_SLUG"), os.Getenv("BUILDKITE_API_TOKEN"), clusterName, key, value, version, description)
+}
+
 func testAccClusterSecretConfigWithPolicy(clusterName, key, value, pipeline, branch string) string {
 	return fmt.Sprintf(`
 provider "buildkite" {
@@ -196,6 +257,71 @@ resource "buildkite_cluster_secret" "test" {
 EOT
 }
 `, getenv("BUILDKITE_ORGANIZATION_SLUG"), os.Getenv("BUILDKITE_API_TOKEN"), clusterName, key, value, pipeline, branch)
+}
+
+func TestClusterSecretValue(t *testing.T) {
+	t.Parallel()
+
+	plan := clusterSecretResourceModel{
+		Value: types.StringValue("stateful-value"),
+	}
+	config := clusterSecretResourceModel{}
+
+	if got := clusterSecretValue(plan, config); got != "stateful-value" {
+		t.Fatalf("expected stateful value, got %q", got)
+	}
+
+	config.ValueWO = types.StringValue("write-only-value")
+	if got := clusterSecretValue(plan, config); got != "write-only-value" {
+		t.Fatalf("expected write-only value, got %q", got)
+	}
+}
+
+func TestShouldUpdateClusterSecretValue(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name  string
+		plan  clusterSecretResourceModel
+		state clusterSecretResourceModel
+		want  bool
+	}{
+		{
+			name:  "legacy value unchanged",
+			plan:  clusterSecretResourceModel{Value: types.StringValue("same")},
+			state: clusterSecretResourceModel{Value: types.StringValue("same")},
+			want:  false,
+		},
+		{
+			name:  "legacy value changed",
+			plan:  clusterSecretResourceModel{Value: types.StringValue("new")},
+			state: clusterSecretResourceModel{Value: types.StringValue("old")},
+			want:  true,
+		},
+		{
+			name:  "write-only version unchanged",
+			plan:  clusterSecretResourceModel{ValueWOVersion: types.StringValue("same-version")},
+			state: clusterSecretResourceModel{ValueWOVersion: types.StringValue("same-version")},
+			want:  false,
+		},
+		{
+			name:  "write-only version changed",
+			plan:  clusterSecretResourceModel{ValueWOVersion: types.StringValue("new-version")},
+			state: clusterSecretResourceModel{ValueWOVersion: types.StringValue("old-version")},
+			want:  true,
+		},
+	}
+
+	for _, tc := range tests {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			if got := shouldUpdateClusterSecretValue(tc.plan, tc.state); got != tc.want {
+				t.Fatalf("expected %v, got %v", tc.want, got)
+			}
+		})
+	}
 }
 
 // Unit tests for reservedSecretKeyPrefixValidator — no API access required.
