@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"regexp"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
@@ -97,6 +98,30 @@ func TestAccBuildkiteClusterSecret_writeOnlyValue(t *testing.T) {
 					resource.TestCheckResourceAttr("buildkite_cluster_secret.test", "value_wo_version", "version-2"),
 					resource.TestCheckNoResourceAttr("buildkite_cluster_secret.test", "value_wo"),
 				),
+			},
+		},
+	})
+}
+
+func TestAccBuildkiteClusterSecret_valueValidation(t *testing.T) {
+	secretKey := fmt.Sprintf("TEST_SECRET_%s", acctest.RandString(10))
+	clusterName := acctest.RandString(10)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config:      testAccClusterSecretConfigWithoutValue(clusterName, secretKey),
+				ExpectError: regexp.MustCompile("Invalid Attribute Combination"),
+			},
+			{
+				Config:      testAccClusterSecretConfigWithBothValues(clusterName, secretKey, "legacy-value", "write-only-value", "version-1"),
+				ExpectError: regexp.MustCompile("Invalid Attribute Combination"),
+			},
+			{
+				Config:      testAccClusterSecretConfigWithoutWriteOnlyVersion(clusterName, secretKey, "write-only-value"),
+				ExpectError: regexp.MustCompile("Invalid Attribute Combination"),
 			},
 		},
 	})
@@ -227,6 +252,88 @@ resource "buildkite_cluster_secret" "test" {
 `, getenv("BUILDKITE_ORGANIZATION_SLUG"), os.Getenv("BUILDKITE_API_TOKEN"), clusterName, key, value, version, description)
 }
 
+func testAccClusterSecretConfigWithoutValue(clusterName, key string) string {
+	return fmt.Sprintf(`
+provider "buildkite" {
+    organization = "%s"
+    api_token    = "%s"
+    timeouts = {
+        create = "10s"
+        read = "10s"
+        update = "10s"
+        delete = "10s"
+    }
+}
+
+resource "buildkite_cluster" "test" {
+    name        = "Test Cluster %s"
+    description = "Test cluster for secrets"
+}
+
+resource "buildkite_cluster_secret" "test" {
+    cluster_id  = buildkite_cluster.test.uuid
+    key         = "%s"
+    description = "Missing value"
+}
+`, getenv("BUILDKITE_ORGANIZATION_SLUG"), os.Getenv("BUILDKITE_API_TOKEN"), clusterName, key)
+}
+
+func testAccClusterSecretConfigWithBothValues(clusterName, key, value, writeOnlyValue, version string) string {
+	return fmt.Sprintf(`
+provider "buildkite" {
+    organization = "%s"
+    api_token    = "%s"
+    timeouts = {
+        create = "10s"
+        read = "10s"
+        update = "10s"
+        delete = "10s"
+    }
+}
+
+resource "buildkite_cluster" "test" {
+    name        = "Test Cluster %s"
+    description = "Test cluster for secrets"
+}
+
+resource "buildkite_cluster_secret" "test" {
+    cluster_id       = buildkite_cluster.test.uuid
+    key              = "%s"
+    value            = "%s"
+    value_wo         = "%s"
+    value_wo_version = "%s"
+    description      = "Both values"
+}
+`, getenv("BUILDKITE_ORGANIZATION_SLUG"), os.Getenv("BUILDKITE_API_TOKEN"), clusterName, key, value, writeOnlyValue, version)
+}
+
+func testAccClusterSecretConfigWithoutWriteOnlyVersion(clusterName, key, value string) string {
+	return fmt.Sprintf(`
+provider "buildkite" {
+    organization = "%s"
+    api_token    = "%s"
+    timeouts = {
+        create = "10s"
+        read = "10s"
+        update = "10s"
+        delete = "10s"
+    }
+}
+
+resource "buildkite_cluster" "test" {
+    name        = "Test Cluster %s"
+    description = "Test cluster for secrets"
+}
+
+resource "buildkite_cluster_secret" "test" {
+    cluster_id  = buildkite_cluster.test.uuid
+    key         = "%s"
+    value_wo    = "%s"
+    description = "Missing write-only version"
+}
+`, getenv("BUILDKITE_ORGANIZATION_SLUG"), os.Getenv("BUILDKITE_API_TOKEN"), clusterName, key, value)
+}
+
 func testAccClusterSecretConfigWithPolicy(clusterName, key, value, pipeline, branch string) string {
 	return fmt.Sprintf(`
 provider "buildkite" {
@@ -275,6 +382,16 @@ func TestClusterSecretValue(t *testing.T) {
 	if got := clusterSecretValue(plan, config); got != "write-only-value" {
 		t.Fatalf("expected write-only value, got %q", got)
 	}
+
+	config.ValueWO = types.StringNull()
+	if got := clusterSecretValue(plan, config); got != "stateful-value" {
+		t.Fatalf("expected stateful value for null write-only value, got %q", got)
+	}
+
+	config.ValueWO = types.StringUnknown()
+	if got := clusterSecretValue(plan, config); got != "stateful-value" {
+		t.Fatalf("expected stateful value for unknown write-only value, got %q", got)
+	}
 }
 
 func TestShouldUpdateClusterSecretValue(t *testing.T) {
@@ -309,6 +426,38 @@ func TestShouldUpdateClusterSecretValue(t *testing.T) {
 			plan:  clusterSecretResourceModel{ValueWOVersion: types.StringValue("new-version")},
 			state: clusterSecretResourceModel{ValueWOVersion: types.StringValue("old-version")},
 			want:  true,
+		},
+		{
+			name: "write-only value change without version change",
+			plan: clusterSecretResourceModel{
+				ValueWOVersion: types.StringValue("same-version"),
+			},
+			state: clusterSecretResourceModel{
+				ValueWOVersion: types.StringValue("same-version"),
+			},
+			want: false,
+		},
+		{
+			name: "legacy value to write-only value",
+			plan: clusterSecretResourceModel{
+				Value:          types.StringNull(),
+				ValueWOVersion: types.StringValue("version-1"),
+			},
+			state: clusterSecretResourceModel{
+				Value: types.StringValue("legacy-value"),
+			},
+			want: true,
+		},
+		{
+			name: "write-only value to legacy value",
+			plan: clusterSecretResourceModel{
+				Value: types.StringValue("legacy-value"),
+			},
+			state: clusterSecretResourceModel{
+				Value:          types.StringNull(),
+				ValueWOVersion: types.StringValue("version-1"),
+			},
+			want: true,
 		},
 	}
 
