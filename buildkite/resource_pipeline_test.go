@@ -614,6 +614,9 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 					build_merge_group_checks_requested = true
 					cancel_when_merge_group_destroyed = true
 					use_merge_group_base_commit_for_git_diff_base = true
+					build_issue_comment_created = true
+					issue_comment_command_word = "ci-force-rerun"
+					issue_comment_match_mode = "exact"
 				}
 			}
 		`, clusterName, pipelineName)
@@ -658,6 +661,9 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_merge_group_checks_requested", "true"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.cancel_when_merge_group_destroyed", "true"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.use_merge_group_base_commit_for_git_diff_base", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_issue_comment_created", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.issue_comment_command_word", "ci-force-rerun"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.issue_comment_match_mode", "exact"),
 					),
 				},
 			},
@@ -730,6 +736,9 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 								build_merge_group_checks_requested = true
 								cancel_when_merge_group_destroyed = true
 								use_merge_group_base_commit_for_git_diff_base = true
+								build_issue_comment_created = true
+								issue_comment_command_word = "/deploy"
+								issue_comment_match_mode = "contains"
 							}
 						}
 					`, clusterName, pipelineName),
@@ -751,6 +760,9 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_merge_group_checks_requested", "true"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.cancel_when_merge_group_destroyed", "true"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.use_merge_group_base_commit_for_git_diff_base", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_issue_comment_created", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.issue_comment_command_word", "/deploy"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.issue_comment_match_mode", "contains"),
 						aggregateRemoteCheck(&pipeline),
 					),
 				},

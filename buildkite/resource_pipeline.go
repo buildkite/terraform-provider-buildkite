@@ -129,6 +129,9 @@ type providerSettingsModel struct {
 	BuildMergeGroupChecksRequested          types.Bool   `tfsdk:"build_merge_group_checks_requested"`
 	CancelWhenMergeGroupDestroyed           types.Bool   `tfsdk:"cancel_when_merge_group_destroyed"`
 	UseMergeGroupBaseCommitForGitDiffBase   types.Bool   `tfsdk:"use_merge_group_base_commit_for_git_diff_base"`
+	BuildIssueCommentCreated                types.Bool   `tfsdk:"build_issue_comment_created"`
+	IssueCommentCommandWord                 types.String `tfsdk:"issue_comment_command_word"`
+	IssueCommentMatchMode                   types.String `tfsdk:"issue_comment_match_mode"`
 }
 
 type pipelineResource struct {
@@ -988,6 +991,33 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 							boolplanmodifier.UseNonNullStateForUnknown(),
 						},
 					},
+					"build_issue_comment_created": schema.BoolAttribute{
+						Computed:            true,
+						Optional:            true,
+						MarkdownDescription: "Whether to create builds when an issue comment is created on a pull request.",
+						PlanModifiers: []planmodifier.Bool{
+							boolplanmodifier.UseNonNullStateForUnknown(),
+						},
+					},
+					"issue_comment_command_word": schema.StringAttribute{
+						Computed:            true,
+						Optional:            true,
+						MarkdownDescription: "The command word used to trigger builds from issue comments (e.g. \"/bk\"). Only comments starting with or containing this word will trigger builds. Defaults to \"/bk\".",
+						PlanModifiers: []planmodifier.String{
+							stringplanmodifier.UseNonNullStateForUnknown(),
+						},
+					},
+					"issue_comment_match_mode": schema.StringAttribute{
+						Computed:            true,
+						Optional:            true,
+						MarkdownDescription: "The match mode for the issue comment command word. Valid values are \"exact\" and \"contains\". Defaults to \"exact\".",
+						PlanModifiers: []planmodifier.String{
+							stringplanmodifier.UseNonNullStateForUnknown(),
+						},
+						Validators: []validator.String{
+							stringvalidator.OneOf("exact", "contains"),
+						},
+					},
 				},
 			},
 		},
@@ -1350,6 +1380,9 @@ type PipelineExtraSettings struct {
 	BuildMergeGroupChecksRequested          *bool   `json:"build_merge_group_checks_requested,omitempty"`
 	CancelWhenMergeGroupDestroyed           *bool   `json:"cancel_when_merge_group_destroyed,omitempty"`
 	UseMergeGroupBaseCommitForGitDiffBase   *bool   `json:"use_merge_group_base_commit_for_git_diff_base,omitempty"`
+	BuildIssueCommentCreated                *bool   `json:"build_issue_comment_created,omitempty"`
+	IssueCommentCommandWord                 *string `json:"issue_comment_command_word,omitempty"`
+	IssueCommentMatchMode                   *string `json:"issue_comment_match_mode,omitempty"`
 }
 
 func getPipelineExtraInfo(ctx context.Context, client *Client, slug string, timeouts time.Duration) (*PipelineExtraInfo, error) {
@@ -1413,6 +1446,9 @@ func updatePipelineExtraInfo(ctx context.Context, slug string, settings *provide
 			BuildMergeGroupChecksRequested:          settings.BuildMergeGroupChecksRequested.ValueBoolPointer(),
 			CancelWhenMergeGroupDestroyed:           settings.CancelWhenMergeGroupDestroyed.ValueBoolPointer(),
 			UseMergeGroupBaseCommitForGitDiffBase:   settings.UseMergeGroupBaseCommitForGitDiffBase.ValueBoolPointer(),
+			BuildIssueCommentCreated:                settings.BuildIssueCommentCreated.ValueBoolPointer(),
+			IssueCommentCommandWord:                 settings.IssueCommentCommandWord.ValueStringPointer(),
+			IssueCommentMatchMode:                   settings.IssueCommentMatchMode.ValueStringPointer(),
 		},
 	}
 
@@ -1467,6 +1503,9 @@ func updatePipelineResourceExtraInfo(state *pipelineResourceModel, pipeline *Pip
 		BuildMergeGroupChecksRequested:          types.BoolPointerValue(s.BuildMergeGroupChecksRequested),
 		CancelWhenMergeGroupDestroyed:           types.BoolPointerValue(s.CancelWhenMergeGroupDestroyed),
 		UseMergeGroupBaseCommitForGitDiffBase:   types.BoolPointerValue(s.UseMergeGroupBaseCommitForGitDiffBase),
+		BuildIssueCommentCreated:                types.BoolPointerValue(s.BuildIssueCommentCreated),
+		IssueCommentCommandWord:                 types.StringPointerValue(s.IssueCommentCommandWord),
+		IssueCommentMatchMode:                   types.StringPointerValue(s.IssueCommentMatchMode),
 	}
 }
 
@@ -1728,6 +1767,18 @@ func pipelineSchemaV0() schema.Schema {
 							Optional: true,
 						},
 						"use_merge_group_base_commit_for_git_diff_base": schema.BoolAttribute{
+							Computed: true,
+							Optional: true,
+						},
+						"build_issue_comment_created": schema.BoolAttribute{
+							Computed: true,
+							Optional: true,
+						},
+						"issue_comment_command_word": schema.StringAttribute{
+							Computed: true,
+							Optional: true,
+						},
+						"issue_comment_match_mode": schema.StringAttribute{
 							Computed: true,
 							Optional: true,
 						},
