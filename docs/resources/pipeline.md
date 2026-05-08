@@ -203,6 +203,7 @@ resource "github_repository_webhook" "my_webhook" {
 Optional:
 
 - `build_branches` (Boolean) Whether to create builds when branches are pushed.
+- `build_issue_comment_created` (Boolean) Whether to create builds when an issue comment is created on a pull request.
 - `build_merge_group_checks_requested` (Boolean) Whether to create merge queue builds for a merge queue enabled GitHub repository with required status checks
 - `build_pull_request_base_branch_changed` (Boolean) Whether to create builds for pull requests when its base branch changes.
 - `build_pull_request_forks` (Boolean) Whether to create builds for pull requests from third-party forks.
@@ -216,6 +217,8 @@ Optional:
 - `filter_condition` (String) The condition to evaluate when deciding if a build should run. This is only valid when `trigger_mode` is `code`. More details available in [the documentation](https://buildkite.com/docs/pipelines/conditionals).
 - `filter_enabled` (Boolean) Whether to filter builds to only run when the condition in `filter_condition` is true.
 - `ignore_default_branch_pull_requests` (Boolean) Whether to prevent caching pull requests with the source branch matching the default branch.
+- `issue_comment_command_word` (String) The command word used to trigger builds from issue comments (e.g. "/bk"). Only comments starting with or containing this word will trigger builds. Defaults to "/bk".
+- `issue_comment_match_mode` (String) The match mode for the issue comment command word. Valid values are "exact" and "contains". Defaults to "exact".
 - `prefix_pull_request_fork_branch_names` (Boolean) Prefix branch names for third-party fork builds to ensure they don't trigger branch conditions. For example, the main branch from some-user will become some-user:main.
 - `publish_blocked_as_pending` (Boolean) The status to use for blocked builds. Pending can be used with [required status checks](https://help.github.com/en/articles/enabling-required-status-checks) to prevent merging pull requests with blocked builds.
 - `publish_commit_status` (Boolean) Whether to update the status of commits in Bitbucket, GitHub, or GitLab.
