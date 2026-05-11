@@ -33,6 +33,8 @@ github.com/bufbuild/protocompile v0.14.1 h1:iA73zAf/fyljNjQKwYzUHD6AD4R8KMasmwa/
 github.com/bufbuild/protocompile v0.14.1/go.mod h1:ppVdAIhbr2H8asPk6k4pY7t9zB1OU5DoEw9xY/FUi1c=
 github.com/buildkite/go-pipeline v0.16.0 h1:wEgWUMRAgSg1ZnWOoA3AovtYYdTvN0dLY1zwUWmPP+4=
 github.com/buildkite/go-pipeline v0.16.0/go.mod h1:VE37qY3X5pmAKKUMoDZvPsHOQuyakB9cmXj9Qn6QasA=
+github.com/buildkite/go-pipeline v0.17.0 h1:/80mKEgxxNA2o63y10viKkG9NO8tyKBXYKn0ivUw5bQ=
+github.com/buildkite/go-pipeline v0.17.0/go.mod h1:VE37qY3X5pmAKKUMoDZvPsHOQuyakB9cmXj9Qn6QasA=
 github.com/buildkite/interpolate v0.1.5 h1:v2Ji3voik69UZlbfoqzx+qfcsOKLA61nHdU79VV+tPU=
 github.com/buildkite/interpolate v0.1.5/go.mod h1:dHnrwHew5O8VNOAgMDpwRlFnhL5VSN6M1bHVmRZ9Ccc=
 github.com/cespare/xxhash/v2 v2.3.0 h1:UL815xU9SqsFlibzuggzjXhog7bL6oX9BbNZnL2UFvs=
