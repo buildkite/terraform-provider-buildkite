@@ -1,15 +1,73 @@
 {
-    "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-    "extends": [
-        "config:recommended"
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    ":disableDependencyDashboard",
+    ":semanticCommits",
+    ":automergeMinor",
+    "schedule:nonOfficeHours"
+  ],
+  "labels": [
+    "dependencies"
+  ],
+  "postUpdateOptions": [
+    "gomodTidy"
+  ],
+  "packageRules": [
+    {
+      "description": "Group Buildkite dependencies",
+      "matchSourceUrls": [
+        "https://github.com/buildkite/**"
+      ],
+      "groupName": "buildkite",
+      "automerge": true
+    },
+    {
+      "description": "Group Buildkite plugins",
+      "matchManagers": [
+        "buildkite"
+      ],
+      "groupName": "buildkite",
+      "groupSlug": "buildkite"
+    },
+    {
+      "description": "Group Go minor and patch updates",
+      "matchManagers": [
+        "gomod"
+      ],
+      "matchUpdateTypes": [
+        "minor",
+        "patch"
+      ],
+      "minimumReleaseAge": "3 days",
+      "groupName": "go-minor-patch",
+      "automerge": true
+    },
+    {
+      "description": "Group golang.org/x packages",
+      "matchSourceUrls": [
+        "https://github.com/golang/**"
+      ],
+      "minimumReleaseAge": "3 days",
+      "groupName": "golang-x",
+      "automerge": true
+    },
+    {
+      "description": "Do not automerge major updates",
+      "matchUpdateTypes": [
+        "major"
+      ],
+      "automerge": false
+    }
+  ],
+  "automerge": true,
+  "automergeType": "pr",
+  "platformAutomerge": true,
+  "vulnerabilityAlerts": {
+    "labels": [
+      "dependencies",
+      "security"
     ],
-    "packageRules": [
-        {
-            "matchManagers": [
-                "buildkite"
-            ],
-            "groupName": "buildkite plugins",
-            "groupSlug": "buildkite-plugins"
-        }
-    ]
+    "automerge": false
+  }
 }
