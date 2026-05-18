@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 
 	"github.com/MakeNowJust/heredoc"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -137,7 +136,7 @@ func (pw *pipelineWebhook) Create(ctx context.Context, req resource.CreateReques
 	err = retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
 		apiResponse, err := createPipelineWebhook(ctx, pw.client.genqlient, plan.PipelineId.ValueString())
 		if err != nil {
-			if strings.Contains(err.Error(), "A webhook already exists for this repository") {
+			if gqlErrorContains(err, "A webhook already exists for this repository") {
 				readResp, readErr := getPipelineWebhook(ctx, pw.client.genqlient, plan.PipelineId.ValueString())
 				if readErr != nil {
 					return retry.NonRetryableError(fmt.Errorf("webhook exists but failed to read: %w", readErr))
