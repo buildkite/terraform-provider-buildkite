@@ -2,6 +2,7 @@ package buildkite
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -11,6 +12,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/shurcooL/graphql"
+	"github.com/vektah/gqlparser/v2/gqlerror"
 )
 
 var (
@@ -24,12 +26,30 @@ func isResourceNotFoundError(err error) bool {
 	if err == nil {
 		return false
 	}
+	var errList gqlerror.List
+	if errors.As(err, &errList) {
+		for _, e := range errList {
+			if resourceNotFoundRegex.MatchString(e.Message) {
+				return true
+			}
+		}
+		return false
+	}
 	return resourceNotFoundRegex.MatchString(err.Error())
 }
 
 // isActiveJobsError returns true if the error indicates the pipeline has active jobs/builds preventing deletion
 func isActiveJobsError(err error) bool {
 	if err == nil {
+		return false
+	}
+	var errList gqlerror.List
+	if errors.As(err, &errList) {
+		for _, e := range errList {
+			if activeJobsRegex.MatchString(e.Message) {
+				return true
+			}
+		}
 		return false
 	}
 	return activeJobsRegex.MatchString(err.Error())
@@ -40,7 +60,34 @@ func isAlreadyExistsError(err error) bool {
 	if err == nil {
 		return false
 	}
+	var errList gqlerror.List
+	if errors.As(err, &errList) {
+		for _, e := range errList {
+			if alreadyExistsRegex.MatchString(e.Message) {
+				return true
+			}
+		}
+		return false
+	}
 	return alreadyExistsRegex.MatchString(err.Error())
+}
+
+// gqlErrorContains reports whether any GraphQL error in err contains substring s.
+// Falls back to strings.Contains(err.Error(), s) for non-gqlerror errors.
+func gqlErrorContains(err error, s string) bool {
+	if err == nil {
+		return false
+	}
+	var errList gqlerror.List
+	if errors.As(err, &errList) {
+		for _, e := range errList {
+			if strings.Contains(e.Message, s) {
+				return true
+			}
+		}
+		return false
+	}
+	return strings.Contains(err.Error(), s)
 }
 
 // GetOrganizationID retrieves the Buildkite organization ID associated with the supplied slug

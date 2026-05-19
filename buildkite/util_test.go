@@ -4,6 +4,8 @@ import (
 	"errors"
 	"os"
 	"testing"
+
+	"github.com/vektah/gqlparser/v2/gqlerror"
 )
 
 func TestGetOrganizationIDMissing(t *testing.T) {
@@ -24,6 +26,59 @@ func TestGetOrganizationIDMissing(t *testing.T) {
 	}
 	if org != nil {
 		t.Fatalf("Nonexistent organization found")
+	}
+}
+
+func TestIsResourceNotFoundError(t *testing.T) {
+	tests := []struct {
+		name        string
+		err         error
+		shouldMatch bool
+	}{
+		{
+			name:        "nil error",
+			err:         nil,
+			shouldMatch: false,
+		},
+		{
+			name:        "not found plain error",
+			err:         errors.New("Resource not found"),
+			shouldMatch: true,
+		},
+		{
+			name:        "no longer exists plain error",
+			err:         errors.New("This resource no longer exists"),
+			shouldMatch: true,
+		},
+		{
+			name:        "gqlerror.List not found",
+			err:         gqlerror.List{&gqlerror.Error{Message: "No Pipeline found"}},
+			shouldMatch: true,
+		},
+		{
+			name:        "gqlerror.List no longer exists",
+			err:         gqlerror.List{&gqlerror.Error{Message: "This resource no longer exists"}},
+			shouldMatch: true,
+		},
+		{
+			name:        "gqlerror.List unrelated",
+			err:         gqlerror.List{&gqlerror.Error{Message: "Network connection failed"}},
+			shouldMatch: false,
+		},
+		{
+			name:        "unrelated plain error",
+			err:         errors.New("Network connection failed"),
+			shouldMatch: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := isResourceNotFoundError(tt.err)
+			if result != tt.shouldMatch {
+				t.Errorf("isResourceNotFoundError(%v) = %v, want %v", tt.err, result, tt.shouldMatch)
+			}
+		})
 	}
 }
 
@@ -61,6 +116,16 @@ func TestIsAlreadyExistsError(t *testing.T) {
 		{
 			name:        "not found error",
 			err:         errors.New("Resource not found"),
+			shouldMatch: false,
+		},
+		{
+			name:        "gqlerror.List already been added",
+			err:         gqlerror.List{&gqlerror.Error{Message: "This pipeline has already been added to this team"}},
+			shouldMatch: true,
+		},
+		{
+			name:        "gqlerror.List unrelated",
+			err:         gqlerror.List{&gqlerror.Error{Message: "Network connection failed"}},
 			shouldMatch: false,
 		},
 	}
@@ -134,6 +199,16 @@ func TestIsActiveJobsError(t *testing.T) {
 		{
 			name:        "permission error",
 			err:         errors.New("Insufficient permissions"),
+			shouldMatch: false,
+		},
+		{
+			name:        "gqlerror.List active builds",
+			err:         gqlerror.List{&gqlerror.Error{Message: "Cannot delete pipeline with active builds"}},
+			shouldMatch: true,
+		},
+		{
+			name:        "gqlerror.List unrelated",
+			err:         gqlerror.List{&gqlerror.Error{Message: "Insufficient permissions"}},
 			shouldMatch: false,
 		},
 	}
