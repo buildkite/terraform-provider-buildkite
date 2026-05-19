@@ -124,6 +124,7 @@ type providerSettingsModel struct {
 	PublishCommitStatus                     types.Bool   `tfsdk:"publish_commit_status"`
 	PublishBlockedAsPending                 types.Bool   `tfsdk:"publish_blocked_as_pending"`
 	PublishCommitStatusPerStep              types.Bool   `tfsdk:"publish_commit_status_per_step"`
+	UseStepKeyAsCommitStatus                types.Bool   `tfsdk:"use_step_key_as_commit_status"`
 	SeparatePullRequestStatuses             types.Bool   `tfsdk:"separate_pull_request_statuses"`
 	IgnoreDefaultBranchPullRequests         types.Bool   `tfsdk:"ignore_default_branch_pull_requests"`
 	BuildMergeGroupChecksRequested          types.Bool   `tfsdk:"build_merge_group_checks_requested"`
@@ -949,6 +950,14 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 							boolplanmodifier.UseNonNullStateForUnknown(),
 						},
 					},
+					"use_step_key_as_commit_status": schema.BoolAttribute{
+						Computed:            true,
+						Optional:            true,
+						MarkdownDescription: "Whether to use step keys as commit status names for per-step commit statuses. Requires `publish_commit_status` and `publish_commit_status_per_step` to also be enabled. Defaults to false.",
+						PlanModifiers: []planmodifier.Bool{
+							boolplanmodifier.UseNonNullStateForUnknown(),
+						},
+					},
 					"separate_pull_request_statuses": schema.BoolAttribute{
 						Computed: true,
 						Optional: true,
@@ -1375,6 +1384,7 @@ type PipelineExtraSettings struct {
 	PublishCommitStatus                     *bool   `json:"publish_commit_status,omitempty"`
 	PublishBlockedAsPending                 *bool   `json:"publish_blocked_as_pending,omitempty"`
 	PublishCommitStatusPerStep              *bool   `json:"publish_commit_status_per_step,omitempty"`
+	UseStepKeyAsCommitStatus                *bool   `json:"use_step_key_as_commit_status,omitempty"`
 	SeparatePullRequestStatuses             *bool   `json:"separate_pull_request_statuses,omitempty"`
 	IgnoreDefaultBranchPullRequests         *bool   `json:"ignore_default_branch_pull_requests,omitempty"`
 	BuildMergeGroupChecksRequested          *bool   `json:"build_merge_group_checks_requested,omitempty"`
@@ -1441,6 +1451,7 @@ func updatePipelineExtraInfo(ctx context.Context, slug string, settings *provide
 			PublishCommitStatus:                     settings.PublishCommitStatus.ValueBoolPointer(),
 			PublishBlockedAsPending:                 settings.PublishBlockedAsPending.ValueBoolPointer(),
 			PublishCommitStatusPerStep:              settings.PublishCommitStatusPerStep.ValueBoolPointer(),
+			UseStepKeyAsCommitStatus:                settings.UseStepKeyAsCommitStatus.ValueBoolPointer(),
 			SeparatePullRequestStatuses:             settings.SeparatePullRequestStatuses.ValueBoolPointer(),
 			IgnoreDefaultBranchPullRequests:         settings.IgnoreDefaultBranchPullRequests.ValueBoolPointer(),
 			BuildMergeGroupChecksRequested:          settings.BuildMergeGroupChecksRequested.ValueBoolPointer(),
@@ -1498,6 +1509,7 @@ func updatePipelineResourceExtraInfo(state *pipelineResourceModel, pipeline *Pip
 		PublishCommitStatus:                     types.BoolPointerValue(s.PublishCommitStatus),
 		PublishBlockedAsPending:                 types.BoolPointerValue(s.PublishBlockedAsPending),
 		PublishCommitStatusPerStep:              types.BoolPointerValue(s.PublishCommitStatusPerStep),
+		UseStepKeyAsCommitStatus:                types.BoolPointerValue(s.UseStepKeyAsCommitStatus),
 		SeparatePullRequestStatuses:             types.BoolPointerValue(s.SeparatePullRequestStatuses),
 		IgnoreDefaultBranchPullRequests:         types.BoolPointerValue(s.IgnoreDefaultBranchPullRequests),
 		BuildMergeGroupChecksRequested:          types.BoolPointerValue(s.BuildMergeGroupChecksRequested),
@@ -1747,6 +1759,10 @@ func pipelineSchemaV0() schema.Schema {
 							Optional: true,
 						},
 						"publish_commit_status_per_step": schema.BoolAttribute{
+							Computed: true,
+							Optional: true,
+						},
+						"use_step_key_as_commit_status": schema.BoolAttribute{
 							Computed: true,
 							Optional: true,
 						},
