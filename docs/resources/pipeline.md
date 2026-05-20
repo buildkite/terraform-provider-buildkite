@@ -237,6 +237,7 @@ Optional:
 	-> `trigger_mode` is only valid if the pipeline uses a GitHub repository.
 	-> If not set, the default value is `code` and other provider settings defaults are applied.
 - `use_merge_group_base_commit_for_git_diff_base` (Boolean) When enabled, agents performing a git diff to determine steps to upload based on [`if_changed`](https://buildkite.com/docs/pipelines/configure/step-types/command-step#agent-applied-attributes)comparisons will use the base commit that points to the previous merge group rather than the base branch
+- `use_step_key_as_commit_status` (Boolean) Whether to use step keys as commit status names for per-step commit statuses. Requires `publish_commit_status` and `publish_commit_status_per_step` to also be enabled. Defaults to false.
 
 ## Import
 
