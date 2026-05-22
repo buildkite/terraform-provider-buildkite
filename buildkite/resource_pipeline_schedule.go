@@ -103,9 +103,11 @@ func (ps *pipelineSchedule) Schema(ctx context.Context, req resource.SchemaReque
 				MarkdownDescription: "The message the builds show for builds created by this schedule.",
 			},
 			"env": resource_schema.MapAttribute{
-				ElementType:         types.StringType,
-				Optional:            true,
-				MarkdownDescription: "The environment variables that scheduled builds should use.",
+				ElementType: types.StringType,
+				Optional:    true,
+				MarkdownDescription: "The environment variables that scheduled builds should use. " +
+					"An empty map (`{}`) is equivalent to omitting this attribute at the API level, " +
+					"though Terraform preserves whichever shape you wrote in your configuration.",
 			},
 			"enabled": resource_schema.BoolAttribute{
 				Optional:            true,
