@@ -124,7 +124,10 @@ func (r *clusterSecretResource) Schema(ctx context.Context, req resource.SchemaR
 			},
 			"value_wo_version": schema.StringAttribute{
 				Optional:            true,
-				MarkdownDescription: "Non-secret version identifier for `value_wo`. Required when `value_wo` is configured. Change this value when the write-only secret value changes, for example by using an external secret manager version ID.",
+				MarkdownDescription: "Non-empty, non-secret version identifier for `value_wo`. Required when `value_wo` is configured. Change this value when the write-only secret value changes, for example by using an external secret manager version ID.",
+				Validators: []validator.String{
+					stringvalidator.LengthAtLeast(1),
+				},
 			},
 			"description": schema.StringAttribute{
 				Optional:            true,
@@ -174,12 +177,21 @@ func (r *clusterSecretResource) Create(ctx context.Context, req resource.CreateR
 		return
 	}
 
+	secretValue, err := clusterSecretValue(plan, config)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Unable to determine cluster secret value",
+			err.Error(),
+		)
+		return
+	}
+
 	var created *ClusterSecret
-	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+	err = retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		var err error
 		secret := &ClusterSecret{
 			Key:   plan.Key.ValueString(),
-			Value: clusterSecretValue(plan, config),
+			Value: secretValue,
 		}
 		// Handle optional fields - preserve null vs empty string
 		if !plan.Description.IsNull() {
@@ -300,15 +312,29 @@ func (r *clusterSecretResource) Update(ctx context.Context, req resource.UpdateR
 		return
 	}
 
+	shouldUpdateValue := shouldUpdateClusterSecretValue(plan, state)
+	var secretValue string
+	if shouldUpdateValue {
+		var err error
+		secretValue, err = clusterSecretValue(plan, config)
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Unable to determine cluster secret value",
+				err.Error(),
+			)
+			return
+		}
+	}
+
 	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		var err error
-		if shouldUpdateClusterSecretValue(plan, state) {
+		if shouldUpdateValue {
 			_, err = r.client.UpdateClusterSecretValue(
 				ctx,
 				r.client.organization,
 				plan.ClusterID.ValueString(),
 				plan.ID.ValueString(),
-				clusterSecretValue(plan, config),
+				secretValue,
 			)
 			if err != nil {
 				return retryContextError(err)
@@ -361,11 +387,18 @@ func (r *clusterSecretResource) Update(ctx context.Context, req resource.UpdateR
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 }
 
-func clusterSecretValue(plan clusterSecretResourceModel, config clusterSecretResourceModel) string {
-	if !config.ValueWO.IsNull() && !config.ValueWO.IsUnknown() {
-		return config.ValueWO.ValueString()
+func clusterSecretValue(plan clusterSecretResourceModel, config clusterSecretResourceModel) (string, error) {
+	if !plan.ValueWOVersion.IsNull() || !config.ValueWO.IsNull() || config.ValueWO.IsUnknown() {
+		if config.ValueWO.IsNull() || config.ValueWO.IsUnknown() {
+			return "", fmt.Errorf("value_wo must be available in configuration when value_wo_version is configured")
+		}
+		return config.ValueWO.ValueString(), nil
 	}
-	return plan.Value.ValueString()
+
+	if plan.Value.IsNull() || plan.Value.IsUnknown() {
+		return "", fmt.Errorf("value must be available in plan when value_wo is not configured")
+	}
+	return plan.Value.ValueString(), nil
 }
 
 func shouldUpdateClusterSecretValue(plan clusterSecretResourceModel, state clusterSecretResourceModel) bool {

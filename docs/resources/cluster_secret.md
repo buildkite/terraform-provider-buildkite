@@ -73,7 +73,7 @@ resource "buildkite_cluster_secret" "write_only_example" {
 - `policy` (String) YAML access policy defining which pipelines and branches can access this secret.
 - `value` (String, Sensitive) The secret value. Must be less than 8KB. Exactly one of `value` or `value_wo` must be configured. This value is stored in Terraform state; use `value_wo` with `value_wo_version` to avoid storing secret values in state.
 - `value_wo` (String, Sensitive, [Write-only](https://developer.hashicorp.com/terraform/language/resources/ephemeral#write-only-arguments)) Write-only secret value. Must be less than 8KB. Exactly one of `value` or `value_wo` must be configured. This value is not stored in Terraform plan or state artifacts. Pair with `value_wo_version` to trigger secret value updates.
-- `value_wo_version` (String) Non-secret version identifier for `value_wo`. Required when `value_wo` is configured. Change this value when the write-only secret value changes, for example by using an external secret manager version ID.
+- `value_wo_version` (String) Non-empty, non-secret version identifier for `value_wo`. Required when `value_wo` is configured. Change this value when the write-only secret value changes, for example by using an external secret manager version ID.
 
 ### Read-Only
 
@@ -93,6 +93,8 @@ Using `terraform import`, import resources using the `id`. For example:
 # GET /v2/organizations/{org_slug}/clusters/{cluster_id}/secrets
 terraform import buildkite_cluster_secret.example 01234567-89ab-cdef-0123-456789abcdef/fedcba98-7654-3210-fedc-ba9876543210
 ```
+
+Because Buildkite does not return secret values after they are set, imported secrets cannot populate `value` or `value_wo_version` in Terraform state. Configure either `value` or `value_wo` before the next plan. When using `value_wo`, the first apply after import will re-send the configured secret value because `value_wo_version` changes from no state value to the configured value.
 
 In Terraform v1.5.0 and later, use an [`import` block](https://developer.hashicorp.com/terraform/language/import) to import instances using the `id`. For example:
 ```terraform

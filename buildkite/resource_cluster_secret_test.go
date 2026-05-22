@@ -87,6 +87,7 @@ func TestAccBuildkiteClusterSecret_writeOnlyValue(t *testing.T) {
 					resource.TestCheckResourceAttr("buildkite_cluster_secret.test", "key", secretKey),
 					resource.TestCheckResourceAttr("buildkite_cluster_secret.test", "description", "Initial description"),
 					resource.TestCheckResourceAttr("buildkite_cluster_secret.test", "value_wo_version", "version-1"),
+					resource.TestCheckNoResourceAttr("buildkite_cluster_secret.test", "value"),
 					resource.TestCheckNoResourceAttr("buildkite_cluster_secret.test", "value_wo"),
 					resource.TestCheckResourceAttrSet("buildkite_cluster_secret.test", "id"),
 				),
@@ -96,6 +97,40 @@ func TestAccBuildkiteClusterSecret_writeOnlyValue(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("buildkite_cluster_secret.test", "description", "Updated description"),
 					resource.TestCheckResourceAttr("buildkite_cluster_secret.test", "value_wo_version", "version-2"),
+					resource.TestCheckNoResourceAttr("buildkite_cluster_secret.test", "value"),
+					resource.TestCheckNoResourceAttr("buildkite_cluster_secret.test", "value_wo"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccBuildkiteClusterSecret_migrateValueToWriteOnlyValue(t *testing.T) {
+	secretKey := fmt.Sprintf("TEST_SECRET_%s", acctest.RandString(10))
+	secretValue1 := acctest.RandString(20)
+	secretValue2 := acctest.RandString(20)
+	clusterName := acctest.RandString(10)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		CheckDestroy:             testAccCheckClusterSecretDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccClusterSecretConfig(clusterName, secretKey, secretValue1, "Legacy value"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("buildkite_cluster_secret.test", "key", secretKey),
+					resource.TestCheckResourceAttr("buildkite_cluster_secret.test", "description", "Legacy value"),
+					resource.TestCheckResourceAttr("buildkite_cluster_secret.test", "value", secretValue1),
+					resource.TestCheckResourceAttrSet("buildkite_cluster_secret.test", "id"),
+				),
+			},
+			{
+				Config: testAccClusterSecretWriteOnlyConfig(clusterName, secretKey, secretValue2, "version-1", "Write-only value"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("buildkite_cluster_secret.test", "description", "Write-only value"),
+					resource.TestCheckResourceAttr("buildkite_cluster_secret.test", "value_wo_version", "version-1"),
+					resource.TestCheckNoResourceAttr("buildkite_cluster_secret.test", "value"),
 					resource.TestCheckNoResourceAttr("buildkite_cluster_secret.test", "value_wo"),
 				),
 			},
@@ -122,6 +157,10 @@ func TestAccBuildkiteClusterSecret_valueValidation(t *testing.T) {
 			{
 				Config:      testAccClusterSecretConfigWithoutWriteOnlyVersion(clusterName, secretKey, "write-only-value"),
 				ExpectError: regexp.MustCompile("Invalid Attribute Combination"),
+			},
+			{
+				Config:      testAccClusterSecretConfigWithEmptyWriteOnlyVersion(clusterName, secretKey, "write-only-value"),
+				ExpectError: regexp.MustCompile("Invalid Attribute Value Length"),
 			},
 		},
 	})
@@ -334,6 +373,34 @@ resource "buildkite_cluster_secret" "test" {
 `, getenv("BUILDKITE_ORGANIZATION_SLUG"), os.Getenv("BUILDKITE_API_TOKEN"), clusterName, key, value)
 }
 
+func testAccClusterSecretConfigWithEmptyWriteOnlyVersion(clusterName, key, value string) string {
+	return fmt.Sprintf(`
+provider "buildkite" {
+    organization = "%s"
+    api_token    = "%s"
+    timeouts = {
+        create = "10s"
+        read = "10s"
+        update = "10s"
+        delete = "10s"
+    }
+}
+
+resource "buildkite_cluster" "test" {
+    name        = "Test Cluster %s"
+    description = "Test cluster for secrets"
+}
+
+resource "buildkite_cluster_secret" "test" {
+    cluster_id       = buildkite_cluster.test.uuid
+    key              = "%s"
+    value_wo         = "%s"
+    value_wo_version = ""
+    description      = "Empty write-only version"
+}
+`, getenv("BUILDKITE_ORGANIZATION_SLUG"), os.Getenv("BUILDKITE_API_TOKEN"), clusterName, key, value)
+}
+
 func testAccClusterSecretConfigWithPolicy(clusterName, key, value, pipeline, branch string) string {
 	return fmt.Sprintf(`
 provider "buildkite" {
@@ -374,23 +441,40 @@ func TestClusterSecretValue(t *testing.T) {
 	}
 	config := clusterSecretResourceModel{}
 
-	if got := clusterSecretValue(plan, config); got != "stateful-value" {
-		t.Fatalf("expected stateful value, got %q", got)
+	if got, err := clusterSecretValue(plan, config); err != nil || got != "stateful-value" {
+		t.Fatalf("expected stateful value, got %q, err: %v", got, err)
 	}
 
 	config.ValueWO = types.StringValue("write-only-value")
-	if got := clusterSecretValue(plan, config); got != "write-only-value" {
-		t.Fatalf("expected write-only value, got %q", got)
+	if got, err := clusterSecretValue(plan, config); err != nil || got != "write-only-value" {
+		t.Fatalf("expected write-only value, got %q, err: %v", got, err)
 	}
 
 	config.ValueWO = types.StringNull()
-	if got := clusterSecretValue(plan, config); got != "stateful-value" {
-		t.Fatalf("expected stateful value for null write-only value, got %q", got)
+	if got, err := clusterSecretValue(plan, config); err != nil || got != "stateful-value" {
+		t.Fatalf("expected stateful value for null write-only value, got %q, err: %v", got, err)
+	}
+
+}
+
+func TestClusterSecretValueErrorsWhenWriteOnlyValueUnavailable(t *testing.T) {
+	t.Parallel()
+
+	plan := clusterSecretResourceModel{
+		Value:          types.StringNull(),
+		ValueWOVersion: types.StringValue("version-1"),
+	}
+	config := clusterSecretResourceModel{
+		ValueWO: types.StringNull(),
+	}
+
+	if got, err := clusterSecretValue(plan, config); err == nil {
+		t.Fatalf("expected error, got value %q", got)
 	}
 
 	config.ValueWO = types.StringUnknown()
-	if got := clusterSecretValue(plan, config); got != "stateful-value" {
-		t.Fatalf("expected stateful value for unknown write-only value, got %q", got)
+	if got, err := clusterSecretValue(plan, config); err == nil {
+		t.Fatalf("expected error, got value %q", got)
 	}
 }
 
