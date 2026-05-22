@@ -351,6 +351,12 @@ func updatePipelineScheduleNode(ctx context.Context, psState *pipelineScheduleRe
 	psState.Cronline = types.StringPointerValue(psNode.Cronline)
 	psState.Message = types.StringPointerValue(psNode.Message)
 	psState.Enabled = types.BoolValue(psNode.Enabled)
-	psState.Env = envVarsArrayToMap(ctx, psNode.Env)
+	newEnv := envVarsArrayToMap(ctx, psNode.Env)
+	// API returns empty for both `env = {}` and omitted env; preserve the
+	// prior state's shape when there are no env vars to avoid drift (#1152).
+	priorIsEmptyMap := !psState.Env.IsNull() && len(psState.Env.Elements()) == 0
+	if !newEnv.IsNull() || !priorIsEmptyMap {
+		psState.Env = newEnv
+	}
 	psState.PipelineId = types.StringValue(psNode.Pipeline.Id)
 }
