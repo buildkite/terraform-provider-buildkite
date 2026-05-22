@@ -355,7 +355,8 @@ func updatePipelineScheduleNode(ctx context.Context, psState *pipelineScheduleRe
 	// API returns empty for both `env = {}` and omitted env; preserve the
 	// prior state's shape when there are no env vars to avoid drift.
 	priorIsEmptyMap := !psState.Env.IsNull() && len(psState.Env.Elements()) == 0
-	if !(newEnv.IsNull() && priorIsEmptyMap) {
+	preserveEmptyMap := newEnv.IsNull() && priorIsEmptyMap
+	if !preserveEmptyMap {
 		psState.Env = newEnv
 	}
 	psState.PipelineId = types.StringValue(psNode.Pipeline.Id)
