@@ -45,7 +45,7 @@ resource "buildkite_pipeline_schedule" "nightly" {
 
 - `commit` (String) The commit that the schedule should run on.
 - `enabled` (Boolean) Whether the schedule is enabled or not.
-- `env` (Map of String) The environment variables that scheduled builds should use. An empty map (`{}`) is equivalent to omitting this attribute at the API level, though Terraform preserves whichever shape you wrote in your configuration.
+- `env` (Map of String) The environment variables that scheduled builds should use. An empty map (`{}`) is equivalent to omitting this attribute at the API level.
 - `message` (String) The message the builds show for builds created by this schedule.
 
 ### Read-Only

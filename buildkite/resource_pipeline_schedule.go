@@ -103,11 +103,9 @@ func (ps *pipelineSchedule) Schema(ctx context.Context, req resource.SchemaReque
 				MarkdownDescription: "The message the builds show for builds created by this schedule.",
 			},
 			"env": resource_schema.MapAttribute{
-				ElementType: types.StringType,
-				Optional:    true,
-				MarkdownDescription: "The environment variables that scheduled builds should use. " +
-					"An empty map (`{}`) is equivalent to omitting this attribute at the API level, " +
-					"though Terraform preserves whichever shape you wrote in your configuration.",
+				ElementType:         types.StringType,
+				Optional:            true,
+				MarkdownDescription: "The environment variables that scheduled builds should use. An empty map (`{}`) is equivalent to omitting this attribute at the API level.",
 			},
 			"enabled": resource_schema.BoolAttribute{
 				Optional:            true,
@@ -355,9 +353,9 @@ func updatePipelineScheduleNode(ctx context.Context, psState *pipelineScheduleRe
 	psState.Enabled = types.BoolValue(psNode.Enabled)
 	newEnv := envVarsArrayToMap(ctx, psNode.Env)
 	// API returns empty for both `env = {}` and omitted env; preserve the
-	// prior state's shape when there are no env vars to avoid drift (#1152).
+	// prior state's shape when there are no env vars to avoid drift.
 	priorIsEmptyMap := !psState.Env.IsNull() && len(psState.Env.Elements()) == 0
-	if !newEnv.IsNull() || !priorIsEmptyMap {
+	if !(newEnv.IsNull() && priorIsEmptyMap) {
 		psState.Env = newEnv
 	}
 	psState.PipelineId = types.StringValue(psNode.Pipeline.Id)

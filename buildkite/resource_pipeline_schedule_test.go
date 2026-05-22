@@ -184,30 +184,6 @@ func TestAccBuildkitePipelineSchedule(t *testing.T) {
 		})
 	})
 
-	t.Run("pipeline schedule can be created with an empty env map", func(t *testing.T) {
-		pipelineName := acctest.RandString(12)
-		label := acctest.RandString(12)
-
-		resource.ParallelTest(t, resource.TestCase{
-			PreCheck:                 func() { testAccPreCheck(t) },
-			ProtoV6ProviderFactories: protoV6ProviderFactories(),
-			CheckDestroy:             testAccCheckPipelineScheduleDestroy,
-			Steps: []resource.TestStep{
-				{
-					Config: config(pipelineName, "0 * * * *", label, "", true),
-					Check: resource.ComposeAggregateTestCheckFunc(
-						resource.TestCheckResourceAttr("buildkite_pipeline_schedule.pipeline", "env.%", "0"),
-					),
-					ConfigPlanChecks: resource.ConfigPlanChecks{
-						PostApplyPostRefresh: []plancheck.PlanCheck{
-							plancheck.ExpectEmptyPlan(),
-						},
-					},
-				},
-			},
-		})
-	})
-
 	t.Run("pipeline schedule env transitions between empty and populated", func(t *testing.T) {
 		pipelineName := acctest.RandString(12)
 		label := acctest.RandString(12)
@@ -236,6 +212,46 @@ func TestAccBuildkitePipelineSchedule(t *testing.T) {
 					Check:  resource.TestCheckResourceAttr("buildkite_pipeline_schedule.pipeline", "env.%", "0"),
 					ConfigPlanChecks: resource.ConfigPlanChecks{
 						PostApplyPostRefresh: []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()},
+					},
+				},
+			},
+		})
+	})
+
+	t.Run("pipeline schedule detects out-of-band env deletion", func(t *testing.T) {
+		pipelineName := acctest.RandString(12)
+		label := acctest.RandString(12)
+		cronline := "0 * * * *"
+		branch := "main"
+		enabled := true
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			CheckDestroy:             testAccCheckPipelineScheduleDestroy,
+			Steps: []resource.TestStep{
+				{
+					Config: config(pipelineName, cronline, label, "FOO = \"bar\"", enabled),
+					Check: func(s *terraform.State) error {
+						ps := s.RootModule().Resources["buildkite_pipeline_schedule.pipeline"]
+						emptyEnv := ""
+						_, err := updatePipelineSchedule(context.Background(),
+							genqlientGraphql,
+							PipelineScheduleUpdateInput{
+								Id:       ps.Primary.ID,
+								Label:    &label,
+								Cronline: &cronline,
+								Branch:   &branch,
+								Enabled:  &enabled,
+								Env:      &emptyEnv,
+							})
+						return err
+					},
+					ExpectNonEmptyPlan: true,
+					ConfigPlanChecks: resource.ConfigPlanChecks{
+						PostApplyPostRefresh: []plancheck.PlanCheck{
+							plancheck.ExpectResourceAction("buildkite_pipeline_schedule.pipeline", plancheck.ResourceActionUpdate),
+						},
 					},
 				},
 			},
