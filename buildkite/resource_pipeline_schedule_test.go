@@ -184,6 +184,30 @@ func TestAccBuildkitePipelineSchedule(t *testing.T) {
 		})
 	})
 
+	t.Run("pipeline schedule can be created with an empty env map", func(t *testing.T) {
+		pipelineName := acctest.RandString(12)
+		label := acctest.RandString(12)
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			CheckDestroy:             testAccCheckPipelineScheduleDestroy,
+			Steps: []resource.TestStep{
+				{
+					Config: config(pipelineName, "0 * * * *", label, "", true),
+					Check: resource.ComposeAggregateTestCheckFunc(
+						resource.TestCheckResourceAttr("buildkite_pipeline_schedule.pipeline", "env.%", "0"),
+					),
+					ConfigPlanChecks: resource.ConfigPlanChecks{
+						PostApplyPostRefresh: []plancheck.PlanCheck{
+							plancheck.ExpectEmptyPlan(),
+						},
+					},
+				},
+			},
+		})
+	})
+
 	t.Run("pipeline schedule is recreated if removed", func(t *testing.T) {
 		pipelineName := acctest.RandString(12)
 		label := acctest.RandString(12)
