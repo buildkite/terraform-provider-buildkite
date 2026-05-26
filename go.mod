@@ -5,7 +5,7 @@ go 1.25.8
 require (
 	github.com/Khan/genqlient v0.8.1
 	github.com/MakeNowJust/heredoc v1.0.0
-	github.com/buildkite/go-pipeline v0.17.0
+	github.com/buildkite/go-pipeline v0.17.1
 	github.com/buildkite/interpolate v0.1.5
 	github.com/hashicorp/go-retryablehttp v0.7.8
 	github.com/hashicorp/terraform-plugin-framework v1.19.0
