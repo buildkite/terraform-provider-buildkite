@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/plancheck"
@@ -184,6 +185,40 @@ func TestAccBuildkitePipelineSchedule(t *testing.T) {
 		})
 	})
 
+	t.Run("pipeline schedule env transitions between empty and populated", func(t *testing.T) {
+		pipelineName := acctest.RandString(12)
+		label := acctest.RandString(12)
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			CheckDestroy:             testAccCheckPipelineScheduleDestroy,
+			Steps: []resource.TestStep{
+				{
+					Config: config(pipelineName, "0 * * * *", label, "", true),
+					Check:  resource.TestCheckResourceAttr("buildkite_pipeline_schedule.pipeline", "env.%", "0"),
+					ConfigPlanChecks: resource.ConfigPlanChecks{
+						PostApplyPostRefresh: []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()},
+					},
+				},
+				{
+					Config: config(pipelineName, "0 * * * *", label, "FOO = \"bar\"", true),
+					Check:  resource.TestCheckResourceAttr("buildkite_pipeline_schedule.pipeline", "env.FOO", "bar"),
+					ConfigPlanChecks: resource.ConfigPlanChecks{
+						PostApplyPostRefresh: []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()},
+					},
+				},
+				{
+					Config: config(pipelineName, "0 * * * *", label, "", true),
+					Check:  resource.TestCheckResourceAttr("buildkite_pipeline_schedule.pipeline", "env.%", "0"),
+					ConfigPlanChecks: resource.ConfigPlanChecks{
+						PostApplyPostRefresh: []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()},
+					},
+				},
+			},
+		})
+	})
+
 	t.Run("pipeline schedule is recreated if removed", func(t *testing.T) {
 		pipelineName := acctest.RandString(12)
 		label := acctest.RandString(12)
@@ -212,6 +247,94 @@ func TestAccBuildkitePipelineSchedule(t *testing.T) {
 			},
 		})
 	})
+}
+
+func TestUpdatePipelineScheduleNodeEnvDiscriminator(t *testing.T) {
+	ctx := context.Background()
+	label, cronline, branch, commit, message := "lbl", "0 * * * *", "main", "HEAD", ""
+	emptyMap, _ := types.MapValueFrom(ctx, types.StringType, map[string]string{})
+	populatedMap, _ := types.MapValueFrom(ctx, types.StringType, map[string]string{"FOO": "bar"})
+	fooEqualsBar := "FOO=bar"
+
+	tests := []struct {
+		name     string
+		priorEnv types.Map
+		apiEnv   []*string
+		want     func(t *testing.T, got types.Map)
+	}{
+		{
+			name:     "empty map preserved when API returns no env vars",
+			priorEnv: emptyMap,
+			apiEnv:   nil,
+			want: func(t *testing.T, got types.Map) {
+				if got.IsNull() || len(got.Elements()) != 0 {
+					t.Errorf("expected non-null empty map, got %v", got)
+				}
+			},
+		},
+		{
+			name:     "null preserved when API returns no env vars",
+			priorEnv: types.MapNull(types.StringType),
+			apiEnv:   nil,
+			want: func(t *testing.T, got types.Map) {
+				if !got.IsNull() {
+					t.Errorf("expected null, got %v", got)
+				}
+			},
+		},
+		{
+			name:     "populated state overwritten with null on out-of-band env deletion",
+			priorEnv: populatedMap,
+			apiEnv:   nil,
+			want: func(t *testing.T, got types.Map) {
+				if !got.IsNull() {
+					t.Errorf("expected null to surface drift, got %v", got)
+				}
+			},
+		},
+		{
+			name:     "API env vars overwrite null state",
+			priorEnv: types.MapNull(types.StringType),
+			apiEnv:   []*string{&fooEqualsBar},
+			want: func(t *testing.T, got types.Map) {
+				if _, ok := got.Elements()["FOO"]; !ok {
+					t.Errorf("expected FOO in env, got %v", got)
+				}
+			},
+		},
+		{
+			name:     "API env vars overwrite empty map state",
+			priorEnv: emptyMap,
+			apiEnv:   []*string{&fooEqualsBar},
+			want: func(t *testing.T, got types.Map) {
+				if _, ok := got.Elements()["FOO"]; !ok {
+					t.Errorf("expected FOO in env, got %v", got)
+				}
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			state := &pipelineScheduleResourceModel{Env: tt.priorEnv}
+			node := getPipelineScheduleNodePipelineSchedule{
+				PipelineScheduleValues: PipelineScheduleValues{
+					Id:       "schedule-id",
+					Uuid:     "schedule-uuid",
+					Label:    &label,
+					Cronline: &cronline,
+					Message:  &message,
+					Commit:   &commit,
+					Branch:   &branch,
+					Env:      tt.apiEnv,
+					Enabled:  true,
+					Pipeline: PipelineScheduleValuesPipeline{Id: "pipeline-id"},
+				},
+			}
+			updatePipelineScheduleNode(ctx, state, node)
+			tt.want(t, state.Env)
+		})
+	}
 }
 
 // Testcase destroyer function
