@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"regexp"
+	"strings"
 	"time"
 	"unsafe"
 
@@ -424,16 +425,16 @@ func (p *pipelineResource) Read(ctx context.Context, req resource.ReadRequest, r
 			return
 		}
 
-		extraInfo, err := getPipelineExtraInfo(ctx, p.client, pipelineNode.Slug, timeouts)
-		if err != nil {
-			resp.Diagnostics.AddError("Unable to read pipeline info from REST", err.Error())
-			return
-		}
-
 		setPipelineModel(&state, pipelineNode)
 
+		// Refresh provider_settings from the GraphQL response (no REST call) when the user has
+		// configured it. use_step_key_as_commit_status is not exposed on the GraphQL API, so it is
+		// carried forward from prior state (it is still written via REST on Create/Update).
 		if state.ProviderSettings != nil {
-			updatePipelineResourceExtraInfo(&state, extraInfo)
+			if mapped := mapProviderSettingsFromGraphQL(pipelineNode.GetRepository()); mapped != nil {
+				mapped.UseStepKeyAsCommitStatus = state.ProviderSettings.UseStepKeyAsCommitStatus
+				state.ProviderSettings = mapped
+			}
 		}
 
 		// pipeline default team is a terraform concept only so it takes some coercing
@@ -1395,20 +1396,6 @@ type PipelineExtraSettings struct {
 	IssueCommentMatchMode                   *string `json:"issue_comment_match_mode,omitempty"`
 }
 
-func getPipelineExtraInfo(ctx context.Context, client *Client, slug string, timeouts time.Duration) (*PipelineExtraInfo, error) {
-	var pipelineExtraInfo PipelineExtraInfo
-
-	err := retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
-		err := client.makeRequest(ctx, "GET", fmt.Sprintf("/v2/organizations/%s/pipelines/%s", client.organization, slug), nil, &pipelineExtraInfo)
-		return retryContextError(err)
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return &pipelineExtraInfo, nil
-}
-
 func updatePipelineSlug(ctx context.Context, slug string, updatedSlug string, client *Client, timeouts time.Duration) (PipelineExtraInfo, error) {
 	payload := PipelineSlug{
 		Slug: updatedSlug,
@@ -1518,6 +1505,142 @@ func updatePipelineResourceExtraInfo(state *pipelineResourceModel, pipeline *Pip
 		BuildIssueCommentCreated:                types.BoolPointerValue(s.BuildIssueCommentCreated),
 		IssueCommentCommandWord:                 types.StringPointerValue(s.IssueCommentCommandWord),
 		IssueCommentMatchMode:                   types.StringPointerValue(s.IssueCommentMatchMode),
+	}
+}
+
+// matchModeToString converts a GraphQL CommandWordMatchMode enum (EXACT/CONTAINS) into the
+// lowercase string value (exact/contains) used by the provider_settings schema/validator.
+func matchModeToString(m *CommandWordMatchMode) types.String {
+	if m == nil {
+		return types.StringNull()
+	}
+	return types.StringValue(strings.ToLower(string(*m)))
+}
+
+// mapProviderSettingsFromGraphQL converts the repository provider settings returned by the
+// GraphQL PipelineFields fragment into a providerSettingsModel. It mirrors the REST mapping in
+// updatePipelineResourceExtraInfo so that reading via GraphQL is value-equivalent. Fields a
+// provider does not expose are left null. use_step_key_as_commit_status is intentionally not set
+// here: it is not available on the GraphQL API, so the caller carries it forward from prior state.
+// Returns nil if the provider is unset or not a recognised type.
+func mapProviderSettingsFromGraphQL(repo PipelineFieldsRepository) *providerSettingsModel {
+	switch provider := repo.GetProvider().(type) {
+	case *PipelineFieldsRepositoryProviderRepositoryProviderGithub:
+		s := provider.Settings
+		return &providerSettingsModel{
+			TriggerMode:                             types.StringPointerValue(s.TriggerMode),
+			BuildPullRequests:                       types.BoolPointerValue(s.BuildPullRequests),
+			PullRequestBranchFilterEnabled:          types.BoolPointerValue(s.PullRequestBranchFilterEnabled),
+			PullRequestBranchFilterConfiguration:    types.StringPointerValue(s.PullRequestBranchFilterConfiguration),
+			SkipBuildsForExistingCommits:            types.BoolPointerValue(s.SkipBuildsForExistingCommits),
+			SkipPullRequestBuildsForExistingCommits: types.BoolPointerValue(s.SkipPullRequestBuildsForExistingCommits),
+			BuildPullRequestReadyForReview:          types.BoolPointerValue(s.BuildPullRequestReadyForReview),
+			BuildPullRequestMergeCommits:            types.BoolPointerValue(s.BuildPullRequestMergeCommits),
+			BuildPullRequestLabelsChanged:           types.BoolPointerValue(s.BuildPullRequestLabelsChanged),
+			BuildPullRequestBaseBranchChanged:       types.BoolPointerValue(s.BuildPullRequestBaseBranchChanged),
+			BuildPullRequestForks:                   types.BoolPointerValue(s.BuildPullRequestForks),
+			PrefixPullRequestForkBranchNames:        types.BoolPointerValue(s.PrefixPullRequestForkBranchNames),
+			BuildBranches:                           types.BoolPointerValue(s.BuildBranches),
+			BuildTags:                               types.BoolPointerValue(s.BuildTags),
+			CancelDeletedBranchBuilds:               types.BoolPointerValue(s.CancelDeletedBranchBuilds),
+			FilterEnabled:                           types.BoolPointerValue(s.FilterEnabled),
+			FilterCondition:                         types.StringPointerValue(s.FilterCondition),
+			PublishCommitStatus:                     types.BoolPointerValue(s.PublishCommitStatus),
+			PublishBlockedAsPending:                 types.BoolPointerValue(s.PublishBlockedAsPending),
+			PublishCommitStatusPerStep:              types.BoolPointerValue(s.PublishCommitStatusPerStep),
+			SeparatePullRequestStatuses:             types.BoolPointerValue(s.SeparatePullRequestStatuses),
+			IgnoreDefaultBranchPullRequests:         types.BoolPointerValue(s.IgnoreDefaultBranchPullRequests),
+			BuildMergeGroupChecksRequested:          types.BoolPointerValue(s.BuildMergeGroupChecksRequested),
+			CancelWhenMergeGroupDestroyed:           types.BoolPointerValue(s.CancelWhenMergeGroupDestroyed),
+			UseMergeGroupBaseCommitForGitDiffBase:   types.BoolPointerValue(s.UseMergeGroupBaseCommitForGitDiffBase),
+			BuildIssueCommentCreated:                types.BoolPointerValue(s.BuildIssueCommentCreated),
+			IssueCommentCommandWord:                 types.StringPointerValue(s.IssueCommentCommandWord),
+			IssueCommentMatchMode:                   matchModeToString(s.IssueCommentMatchMode),
+		}
+	case *PipelineFieldsRepositoryProviderRepositoryProviderGithubEnterprise:
+		s := provider.Settings
+		return &providerSettingsModel{
+			TriggerMode:                             types.StringPointerValue(s.TriggerMode),
+			BuildPullRequests:                       types.BoolPointerValue(s.BuildPullRequests),
+			PullRequestBranchFilterEnabled:          types.BoolPointerValue(s.PullRequestBranchFilterEnabled),
+			PullRequestBranchFilterConfiguration:    types.StringPointerValue(s.PullRequestBranchFilterConfiguration),
+			SkipBuildsForExistingCommits:            types.BoolPointerValue(s.SkipBuildsForExistingCommits),
+			SkipPullRequestBuildsForExistingCommits: types.BoolPointerValue(s.SkipPullRequestBuildsForExistingCommits),
+			BuildPullRequestReadyForReview:          types.BoolPointerValue(s.BuildPullRequestReadyForReview),
+			BuildPullRequestMergeCommits:            types.BoolPointerValue(s.BuildPullRequestMergeCommits),
+			BuildPullRequestLabelsChanged:           types.BoolPointerValue(s.BuildPullRequestLabelsChanged),
+			BuildPullRequestBaseBranchChanged:       types.BoolPointerValue(s.BuildPullRequestBaseBranchChanged),
+			BuildPullRequestForks:                   types.BoolPointerValue(s.BuildPullRequestForks),
+			PrefixPullRequestForkBranchNames:        types.BoolPointerValue(s.PrefixPullRequestForkBranchNames),
+			BuildBranches:                           types.BoolPointerValue(s.BuildBranches),
+			BuildTags:                               types.BoolPointerValue(s.BuildTags),
+			CancelDeletedBranchBuilds:               types.BoolPointerValue(s.CancelDeletedBranchBuilds),
+			FilterEnabled:                           types.BoolPointerValue(s.FilterEnabled),
+			FilterCondition:                         types.StringPointerValue(s.FilterCondition),
+			PublishCommitStatus:                     types.BoolPointerValue(s.PublishCommitStatus),
+			PublishBlockedAsPending:                 types.BoolPointerValue(s.PublishBlockedAsPending),
+			PublishCommitStatusPerStep:              types.BoolPointerValue(s.PublishCommitStatusPerStep),
+			SeparatePullRequestStatuses:             types.BoolPointerValue(s.SeparatePullRequestStatuses),
+			IgnoreDefaultBranchPullRequests:         types.BoolPointerValue(s.IgnoreDefaultBranchPullRequests),
+			BuildMergeGroupChecksRequested:          types.BoolPointerValue(s.BuildMergeGroupChecksRequested),
+			CancelWhenMergeGroupDestroyed:           types.BoolPointerValue(s.CancelWhenMergeGroupDestroyed),
+			UseMergeGroupBaseCommitForGitDiffBase:   types.BoolPointerValue(s.UseMergeGroupBaseCommitForGitDiffBase),
+			BuildIssueCommentCreated:                types.BoolPointerValue(s.BuildIssueCommentCreated),
+			IssueCommentCommandWord:                 types.StringPointerValue(s.IssueCommentCommandWord),
+			IssueCommentMatchMode:                   matchModeToString(s.IssueCommentMatchMode),
+		}
+	case *PipelineFieldsRepositoryProviderRepositoryProviderBitbucket:
+		s := provider.Settings
+		return &providerSettingsModel{
+			BuildBranches:                           types.BoolPointerValue(s.BuildBranches),
+			BuildPullRequests:                       types.BoolPointerValue(s.BuildPullRequests),
+			BuildTags:                               types.BoolPointerValue(s.BuildTags),
+			CancelDeletedBranchBuilds:               types.BoolPointerValue(s.Canceldeletedbranchbuilds),
+			FilterCondition:                         types.StringPointerValue(s.FilterCondition),
+			FilterEnabled:                           types.BoolPointerValue(s.FilterEnabled),
+			IgnoreDefaultBranchPullRequests:         types.BoolPointerValue(s.IgnoreDefaultBranchPullRequests),
+			PublishCommitStatus:                     types.BoolPointerValue(s.PublishCommitStatus),
+			PublishCommitStatusPerStep:              types.BoolPointerValue(s.PublishCommitStatusPerStep),
+			PullRequestBranchFilterConfiguration:    types.StringPointerValue(s.PullRequestBranchFilterConfiguration),
+			PullRequestBranchFilterEnabled:          types.BoolPointerValue(s.PullRequestBranchFilterEnabled),
+			SkipBuildsForExistingCommits:            types.BoolPointerValue(s.Skipbuildsforexistingcommits),
+			SkipPullRequestBuildsForExistingCommits: types.BoolPointerValue(s.SkipPullRequestBuildsForExistingCommits),
+		}
+	case *PipelineFieldsRepositoryProviderRepositoryProviderBitbucketServer:
+		s := provider.Settings
+		return &providerSettingsModel{
+			BuildBranches:     types.BoolPointerValue(s.BuildBranches),
+			BuildPullRequests: types.BoolPointerValue(s.BuildPullRequests),
+			BuildTags:         types.BoolPointerValue(s.BuildTags),
+			FilterCondition:   types.StringPointerValue(s.FilterCondition),
+			FilterEnabled:     types.BoolPointerValue(s.FilterEnabled),
+		}
+	case *PipelineFieldsRepositoryProviderRepositoryProviderGitlab:
+		s := provider.Settings
+		return &providerSettingsModel{
+			FilterCondition: types.StringPointerValue(s.FilterCondition),
+			FilterEnabled:   types.BoolPointerValue(s.FilterEnabled),
+		}
+	case *PipelineFieldsRepositoryProviderRepositoryProviderBeanstalk:
+		s := provider.Settings
+		return &providerSettingsModel{
+			FilterCondition: types.StringPointerValue(s.FilterCondition),
+			FilterEnabled:   types.BoolPointerValue(s.FilterEnabled),
+		}
+	case *PipelineFieldsRepositoryProviderRepositoryProviderCodebase:
+		s := provider.Settings
+		return &providerSettingsModel{
+			FilterCondition: types.StringPointerValue(s.FilterCondition),
+			FilterEnabled:   types.BoolPointerValue(s.FilterEnabled),
+		}
+	case *PipelineFieldsRepositoryProviderRepositoryProviderUnknown:
+		s := provider.Settings
+		return &providerSettingsModel{
+			FilterCondition: types.StringPointerValue(s.FilterCondition),
+			FilterEnabled:   types.BoolPointerValue(s.FilterEnabled),
+		}
+	default:
+		return nil
 	}
 }
 
