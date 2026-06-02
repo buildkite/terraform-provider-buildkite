@@ -661,6 +661,16 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 					build_issue_comment_created = true
 					issue_comment_command_word = "ci-force-rerun"
 					issue_comment_match_mode = "exact"
+					build_check_run_completed = true
+					build_create_event = true
+					build_deployment_status_created = true
+					build_pull_request_converted_to_draft = true
+					build_pull_request_review_requested = true
+					build_pull_request_review_dismissed = true
+					build_pull_request_review_submitted = true
+					build_release_created = true
+					build_release_published = true
+					build_release_released = true
 				}
 			}
 		`, clusterName, pipelineName)
@@ -709,6 +719,16 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_issue_comment_created", "true"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.issue_comment_command_word", "ci-force-rerun"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.issue_comment_match_mode", "exact"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_check_run_completed", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_create_event", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_deployment_status_created", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_pull_request_converted_to_draft", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_pull_request_review_requested", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_pull_request_review_dismissed", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_pull_request_review_submitted", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_release_created", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_release_published", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_release_released", "true"),
 					),
 				},
 			},
@@ -785,6 +805,16 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 								build_issue_comment_created = true
 								issue_comment_command_word = "/deploy"
 								issue_comment_match_mode = "contains"
+								build_check_run_completed = true
+								build_create_event = true
+								build_deployment_status_created = true
+								build_pull_request_converted_to_draft = true
+								build_pull_request_review_requested = true
+								build_pull_request_review_dismissed = true
+								build_pull_request_review_submitted = true
+								build_release_created = true
+								build_release_published = true
+								build_release_released = true
 							}
 						}
 					`, clusterName, pipelineName),
@@ -810,6 +840,16 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_issue_comment_created", "true"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.issue_comment_command_word", "/deploy"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.issue_comment_match_mode", "contains"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_check_run_completed", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_create_event", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_deployment_status_created", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_pull_request_converted_to_draft", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_pull_request_review_requested", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_pull_request_review_dismissed", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_pull_request_review_submitted", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_release_created", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_release_published", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_release_released", "true"),
 						aggregateRemoteCheck(&pipeline),
 					),
 				},
