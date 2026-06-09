@@ -203,19 +203,32 @@ resource "github_repository_webhook" "my_webhook" {
 Optional:
 
 - `build_branches` (Boolean) Whether to create builds when branches are pushed.
+- `build_check_run_completed` (Boolean) Whether to create a build when a GitHub check run completes. Useful for chaining CI workflows by triggering a Buildkite pipeline after another CI system finishes.
+- `build_create_event` (Boolean) Whether to create a build when a branch or tag is created on GitHub.
+- `build_deployment_status_created` (Boolean) Whether to create a build when a GitHub deployment status is created.
+- `build_issue_comment_created` (Boolean) Whether to create builds when an issue comment is created on a pull request.
 - `build_merge_group_checks_requested` (Boolean) Whether to create merge queue builds for a merge queue enabled GitHub repository with required status checks
 - `build_pull_request_base_branch_changed` (Boolean) Whether to create builds for pull requests when its base branch changes.
+- `build_pull_request_converted_to_draft` (Boolean) Whether to create a build when a pull request is converted to a draft.
 - `build_pull_request_forks` (Boolean) Whether to create builds for pull requests from third-party forks.
 - `build_pull_request_labels_changed` (Boolean) Whether to create builds for pull requests when labels are added or removed.
 - `build_pull_request_merge_commits` (Boolean) Whether to build the test merge commit (the merged result of a pull request with its base branch).
 - `build_pull_request_ready_for_review` (Boolean) Whether to create a build when a pull request changes to "Ready for review".
+- `build_pull_request_review_dismissed` (Boolean) Whether to create a build when a pull request review is dismissed.
+- `build_pull_request_review_requested` (Boolean) Whether to create a build when a review is requested on a pull request.
+- `build_pull_request_review_submitted` (Boolean) Whether to create a build when a pull request review is submitted.
 - `build_pull_requests` (Boolean) Whether to create builds for commits that are part of a pull request.
+- `build_release_created` (Boolean) Whether to create a build when a GitHub release is created (including drafts).
+- `build_release_published` (Boolean) Whether to create a build when a GitHub release is published.
+- `build_release_released` (Boolean) Whether to create a build when a GitHub release is published as final (excludes pre-releases and drafts).
 - `build_tags` (Boolean) Whether to create builds when tags are pushed.
 - `cancel_deleted_branch_builds` (Boolean) Automatically cancel running builds for a branch if the branch is deleted.
 - `cancel_when_merge_group_destroyed` (Boolean) Whether to cancel any running builds belonging to a removed merge group.
 - `filter_condition` (String) The condition to evaluate when deciding if a build should run. This is only valid when `trigger_mode` is `code`. More details available in [the documentation](https://buildkite.com/docs/pipelines/conditionals).
 - `filter_enabled` (Boolean) Whether to filter builds to only run when the condition in `filter_condition` is true.
 - `ignore_default_branch_pull_requests` (Boolean) Whether to prevent caching pull requests with the source branch matching the default branch.
+- `issue_comment_command_word` (String) The command word used to trigger builds from issue comments (e.g. "/bk"). Only comments starting with or containing this word will trigger builds. Defaults to "/bk".
+- `issue_comment_match_mode` (String) The match mode for the issue comment command word. Valid values are "exact" and "contains". Defaults to "exact".
 - `prefix_pull_request_fork_branch_names` (Boolean) Prefix branch names for third-party fork builds to ensure they don't trigger branch conditions. For example, the main branch from some-user will become some-user:main.
 - `publish_blocked_as_pending` (Boolean) The status to use for blocked builds. Pending can be used with [required status checks](https://help.github.com/en/articles/enabling-required-status-checks) to prevent merging pull requests with blocked builds.
 - `publish_commit_status` (Boolean) Whether to update the status of commits in Bitbucket, GitHub, or GitLab.
@@ -234,6 +247,7 @@ Optional:
 	-> `trigger_mode` is only valid if the pipeline uses a GitHub repository.
 	-> If not set, the default value is `code` and other provider settings defaults are applied.
 - `use_merge_group_base_commit_for_git_diff_base` (Boolean) When enabled, agents performing a git diff to determine steps to upload based on [`if_changed`](https://buildkite.com/docs/pipelines/configure/step-types/command-step#agent-applied-attributes)comparisons will use the base commit that points to the previous merge group rather than the base branch
+- `use_step_key_as_commit_status` (Boolean) Whether to use step keys as commit status names for per-step commit statuses. Requires `publish_commit_status` and `publish_commit_status_per_step` to also be enabled. Defaults to false.
 
 ## Import
 

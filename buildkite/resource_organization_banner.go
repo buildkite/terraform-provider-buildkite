@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"strings"
 
 	"github.com/MakeNowJust/heredoc"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -247,7 +246,7 @@ func (ob *organizationBannerResource) Delete(ctx context.Context, req resource.D
 	})
 	if err != nil {
 		// Handle the case where banner was already deleted (doesn't exist)
-		if strings.Contains(err.Error(), "does not have an active banner") {
+		if gqlErrorContains(err, "does not have an active banner") {
 			log.Printf("Organization banner %s already deleted", state.ID.ValueString())
 			resp.State.RemoveResource(ctx)
 			return

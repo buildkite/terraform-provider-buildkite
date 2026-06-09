@@ -124,11 +124,25 @@ type providerSettingsModel struct {
 	PublishCommitStatus                     types.Bool   `tfsdk:"publish_commit_status"`
 	PublishBlockedAsPending                 types.Bool   `tfsdk:"publish_blocked_as_pending"`
 	PublishCommitStatusPerStep              types.Bool   `tfsdk:"publish_commit_status_per_step"`
+	UseStepKeyAsCommitStatus                types.Bool   `tfsdk:"use_step_key_as_commit_status"`
 	SeparatePullRequestStatuses             types.Bool   `tfsdk:"separate_pull_request_statuses"`
 	IgnoreDefaultBranchPullRequests         types.Bool   `tfsdk:"ignore_default_branch_pull_requests"`
 	BuildMergeGroupChecksRequested          types.Bool   `tfsdk:"build_merge_group_checks_requested"`
 	CancelWhenMergeGroupDestroyed           types.Bool   `tfsdk:"cancel_when_merge_group_destroyed"`
 	UseMergeGroupBaseCommitForGitDiffBase   types.Bool   `tfsdk:"use_merge_group_base_commit_for_git_diff_base"`
+	BuildIssueCommentCreated                types.Bool   `tfsdk:"build_issue_comment_created"`
+	IssueCommentCommandWord                 types.String `tfsdk:"issue_comment_command_word"`
+	IssueCommentMatchMode                   types.String `tfsdk:"issue_comment_match_mode"`
+	BuildCheckRunCompleted                  types.Bool   `tfsdk:"build_check_run_completed"`
+	BuildCreateEvent                        types.Bool   `tfsdk:"build_create_event"`
+	BuildDeploymentStatusCreated            types.Bool   `tfsdk:"build_deployment_status_created"`
+	BuildPullRequestConvertedToDraft        types.Bool   `tfsdk:"build_pull_request_converted_to_draft"`
+	BuildPullRequestReviewRequested         types.Bool   `tfsdk:"build_pull_request_review_requested"`
+	BuildPullRequestReviewDismissed         types.Bool   `tfsdk:"build_pull_request_review_dismissed"`
+	BuildPullRequestReviewSubmitted         types.Bool   `tfsdk:"build_pull_request_review_submitted"`
+	BuildReleaseCreated                     types.Bool   `tfsdk:"build_release_created"`
+	BuildReleasePublished                   types.Bool   `tfsdk:"build_release_published"`
+	BuildReleaseReleased                    types.Bool   `tfsdk:"build_release_released"`
 }
 
 type pipelineResource struct {
@@ -946,6 +960,14 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 							boolplanmodifier.UseNonNullStateForUnknown(),
 						},
 					},
+					"use_step_key_as_commit_status": schema.BoolAttribute{
+						Computed:            true,
+						Optional:            true,
+						MarkdownDescription: "Whether to use step keys as commit status names for per-step commit statuses. Requires `publish_commit_status` and `publish_commit_status_per_step` to also be enabled. Defaults to false.",
+						PlanModifiers: []planmodifier.Bool{
+							boolplanmodifier.UseNonNullStateForUnknown(),
+						},
+					},
 					"separate_pull_request_statuses": schema.BoolAttribute{
 						Computed: true,
 						Optional: true,
@@ -984,6 +1006,113 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 						Optional: true,
 						MarkdownDescription: "When enabled, agents performing a git diff to determine steps to upload based on [`if_changed`](https://buildkite.com/docs/pipelines/configure/step-types/command-step#agent-applied-attributes)" +
 							"comparisons will use the base commit that points to the previous merge group rather than the base branch",
+						PlanModifiers: []planmodifier.Bool{
+							boolplanmodifier.UseNonNullStateForUnknown(),
+						},
+					},
+					"build_issue_comment_created": schema.BoolAttribute{
+						Computed:            true,
+						Optional:            true,
+						MarkdownDescription: "Whether to create builds when an issue comment is created on a pull request.",
+						PlanModifiers: []planmodifier.Bool{
+							boolplanmodifier.UseNonNullStateForUnknown(),
+						},
+					},
+					"issue_comment_command_word": schema.StringAttribute{
+						Computed:            true,
+						Optional:            true,
+						MarkdownDescription: "The command word used to trigger builds from issue comments (e.g. \"/bk\"). Only comments starting with or containing this word will trigger builds. Defaults to \"/bk\".",
+						PlanModifiers: []planmodifier.String{
+							stringplanmodifier.UseNonNullStateForUnknown(),
+						},
+					},
+					"issue_comment_match_mode": schema.StringAttribute{
+						Computed:            true,
+						Optional:            true,
+						MarkdownDescription: "The match mode for the issue comment command word. Valid values are \"exact\" and \"contains\". Defaults to \"exact\".",
+						PlanModifiers: []planmodifier.String{
+							stringplanmodifier.UseNonNullStateForUnknown(),
+						},
+						Validators: []validator.String{
+							stringvalidator.OneOf("exact", "contains"),
+						},
+					},
+					"build_check_run_completed": schema.BoolAttribute{
+						Computed:            true,
+						Optional:            true,
+						MarkdownDescription: "Whether to create a build when a GitHub check run completes. Useful for chaining CI workflows by triggering a Buildkite pipeline after another CI system finishes.",
+						PlanModifiers: []planmodifier.Bool{
+							boolplanmodifier.UseNonNullStateForUnknown(),
+						},
+					},
+					"build_create_event": schema.BoolAttribute{
+						Computed:            true,
+						Optional:            true,
+						MarkdownDescription: "Whether to create a build when a branch or tag is created on GitHub.",
+						PlanModifiers: []planmodifier.Bool{
+							boolplanmodifier.UseNonNullStateForUnknown(),
+						},
+					},
+					"build_deployment_status_created": schema.BoolAttribute{
+						Computed:            true,
+						Optional:            true,
+						MarkdownDescription: "Whether to create a build when a GitHub deployment status is created.",
+						PlanModifiers: []planmodifier.Bool{
+							boolplanmodifier.UseNonNullStateForUnknown(),
+						},
+					},
+					"build_pull_request_converted_to_draft": schema.BoolAttribute{
+						Computed:            true,
+						Optional:            true,
+						MarkdownDescription: "Whether to create a build when a pull request is converted to a draft.",
+						PlanModifiers: []planmodifier.Bool{
+							boolplanmodifier.UseNonNullStateForUnknown(),
+						},
+					},
+					"build_pull_request_review_requested": schema.BoolAttribute{
+						Computed:            true,
+						Optional:            true,
+						MarkdownDescription: "Whether to create a build when a review is requested on a pull request.",
+						PlanModifiers: []planmodifier.Bool{
+							boolplanmodifier.UseNonNullStateForUnknown(),
+						},
+					},
+					"build_pull_request_review_dismissed": schema.BoolAttribute{
+						Computed:            true,
+						Optional:            true,
+						MarkdownDescription: "Whether to create a build when a pull request review is dismissed.",
+						PlanModifiers: []planmodifier.Bool{
+							boolplanmodifier.UseNonNullStateForUnknown(),
+						},
+					},
+					"build_pull_request_review_submitted": schema.BoolAttribute{
+						Computed:            true,
+						Optional:            true,
+						MarkdownDescription: "Whether to create a build when a pull request review is submitted.",
+						PlanModifiers: []planmodifier.Bool{
+							boolplanmodifier.UseNonNullStateForUnknown(),
+						},
+					},
+					"build_release_created": schema.BoolAttribute{
+						Computed:            true,
+						Optional:            true,
+						MarkdownDescription: "Whether to create a build when a GitHub release is created (including drafts).",
+						PlanModifiers: []planmodifier.Bool{
+							boolplanmodifier.UseNonNullStateForUnknown(),
+						},
+					},
+					"build_release_published": schema.BoolAttribute{
+						Computed:            true,
+						Optional:            true,
+						MarkdownDescription: "Whether to create a build when a GitHub release is published.",
+						PlanModifiers: []planmodifier.Bool{
+							boolplanmodifier.UseNonNullStateForUnknown(),
+						},
+					},
+					"build_release_released": schema.BoolAttribute{
+						Computed:            true,
+						Optional:            true,
+						MarkdownDescription: "Whether to create a build when a GitHub release is published as final (excludes pre-releases and drafts).",
 						PlanModifiers: []planmodifier.Bool{
 							boolplanmodifier.UseNonNullStateForUnknown(),
 						},
@@ -1345,11 +1474,25 @@ type PipelineExtraSettings struct {
 	PublishCommitStatus                     *bool   `json:"publish_commit_status,omitempty"`
 	PublishBlockedAsPending                 *bool   `json:"publish_blocked_as_pending,omitempty"`
 	PublishCommitStatusPerStep              *bool   `json:"publish_commit_status_per_step,omitempty"`
+	UseStepKeyAsCommitStatus                *bool   `json:"use_step_key_as_commit_status,omitempty"`
 	SeparatePullRequestStatuses             *bool   `json:"separate_pull_request_statuses,omitempty"`
 	IgnoreDefaultBranchPullRequests         *bool   `json:"ignore_default_branch_pull_requests,omitempty"`
 	BuildMergeGroupChecksRequested          *bool   `json:"build_merge_group_checks_requested,omitempty"`
 	CancelWhenMergeGroupDestroyed           *bool   `json:"cancel_when_merge_group_destroyed,omitempty"`
 	UseMergeGroupBaseCommitForGitDiffBase   *bool   `json:"use_merge_group_base_commit_for_git_diff_base,omitempty"`
+	BuildIssueCommentCreated                *bool   `json:"build_issue_comment_created,omitempty"`
+	IssueCommentCommandWord                 *string `json:"issue_comment_command_word,omitempty"`
+	IssueCommentMatchMode                   *string `json:"issue_comment_match_mode,omitempty"`
+	BuildCheckRunCompleted                  *bool   `json:"build_check_run_completed,omitempty"`
+	BuildCreateEvent                        *bool   `json:"build_create_event,omitempty"`
+	BuildDeploymentStatusCreated            *bool   `json:"build_deployment_status_created,omitempty"`
+	BuildPullRequestConvertedToDraft        *bool   `json:"build_pull_request_converted_to_draft,omitempty"`
+	BuildPullRequestReviewRequested         *bool   `json:"build_pull_request_review_requested,omitempty"`
+	BuildPullRequestReviewDismissed         *bool   `json:"build_pull_request_review_dismissed,omitempty"`
+	BuildPullRequestReviewSubmitted         *bool   `json:"build_pull_request_review_submitted,omitempty"`
+	BuildReleaseCreated                     *bool   `json:"build_release_created,omitempty"`
+	BuildReleasePublished                   *bool   `json:"build_release_published,omitempty"`
+	BuildReleaseReleased                    *bool   `json:"build_release_released,omitempty"`
 }
 
 func getPipelineExtraInfo(ctx context.Context, client *Client, slug string, timeouts time.Duration) (*PipelineExtraInfo, error) {
@@ -1408,11 +1551,25 @@ func updatePipelineExtraInfo(ctx context.Context, slug string, settings *provide
 			PublishCommitStatus:                     settings.PublishCommitStatus.ValueBoolPointer(),
 			PublishBlockedAsPending:                 settings.PublishBlockedAsPending.ValueBoolPointer(),
 			PublishCommitStatusPerStep:              settings.PublishCommitStatusPerStep.ValueBoolPointer(),
+			UseStepKeyAsCommitStatus:                settings.UseStepKeyAsCommitStatus.ValueBoolPointer(),
 			SeparatePullRequestStatuses:             settings.SeparatePullRequestStatuses.ValueBoolPointer(),
 			IgnoreDefaultBranchPullRequests:         settings.IgnoreDefaultBranchPullRequests.ValueBoolPointer(),
 			BuildMergeGroupChecksRequested:          settings.BuildMergeGroupChecksRequested.ValueBoolPointer(),
 			CancelWhenMergeGroupDestroyed:           settings.CancelWhenMergeGroupDestroyed.ValueBoolPointer(),
 			UseMergeGroupBaseCommitForGitDiffBase:   settings.UseMergeGroupBaseCommitForGitDiffBase.ValueBoolPointer(),
+			BuildIssueCommentCreated:                settings.BuildIssueCommentCreated.ValueBoolPointer(),
+			IssueCommentCommandWord:                 settings.IssueCommentCommandWord.ValueStringPointer(),
+			IssueCommentMatchMode:                   settings.IssueCommentMatchMode.ValueStringPointer(),
+			BuildCheckRunCompleted:                  settings.BuildCheckRunCompleted.ValueBoolPointer(),
+			BuildCreateEvent:                        settings.BuildCreateEvent.ValueBoolPointer(),
+			BuildDeploymentStatusCreated:            settings.BuildDeploymentStatusCreated.ValueBoolPointer(),
+			BuildPullRequestConvertedToDraft:        settings.BuildPullRequestConvertedToDraft.ValueBoolPointer(),
+			BuildPullRequestReviewRequested:         settings.BuildPullRequestReviewRequested.ValueBoolPointer(),
+			BuildPullRequestReviewDismissed:         settings.BuildPullRequestReviewDismissed.ValueBoolPointer(),
+			BuildPullRequestReviewSubmitted:         settings.BuildPullRequestReviewSubmitted.ValueBoolPointer(),
+			BuildReleaseCreated:                     settings.BuildReleaseCreated.ValueBoolPointer(),
+			BuildReleasePublished:                   settings.BuildReleasePublished.ValueBoolPointer(),
+			BuildReleaseReleased:                    settings.BuildReleaseReleased.ValueBoolPointer(),
 		},
 	}
 
@@ -1462,11 +1619,25 @@ func updatePipelineResourceExtraInfo(state *pipelineResourceModel, pipeline *Pip
 		PublishCommitStatus:                     types.BoolPointerValue(s.PublishCommitStatus),
 		PublishBlockedAsPending:                 types.BoolPointerValue(s.PublishBlockedAsPending),
 		PublishCommitStatusPerStep:              types.BoolPointerValue(s.PublishCommitStatusPerStep),
+		UseStepKeyAsCommitStatus:                types.BoolPointerValue(s.UseStepKeyAsCommitStatus),
 		SeparatePullRequestStatuses:             types.BoolPointerValue(s.SeparatePullRequestStatuses),
 		IgnoreDefaultBranchPullRequests:         types.BoolPointerValue(s.IgnoreDefaultBranchPullRequests),
 		BuildMergeGroupChecksRequested:          types.BoolPointerValue(s.BuildMergeGroupChecksRequested),
 		CancelWhenMergeGroupDestroyed:           types.BoolPointerValue(s.CancelWhenMergeGroupDestroyed),
 		UseMergeGroupBaseCommitForGitDiffBase:   types.BoolPointerValue(s.UseMergeGroupBaseCommitForGitDiffBase),
+		BuildIssueCommentCreated:                types.BoolPointerValue(s.BuildIssueCommentCreated),
+		IssueCommentCommandWord:                 types.StringPointerValue(s.IssueCommentCommandWord),
+		IssueCommentMatchMode:                   types.StringPointerValue(s.IssueCommentMatchMode),
+		BuildCheckRunCompleted:                  types.BoolPointerValue(s.BuildCheckRunCompleted),
+		BuildCreateEvent:                        types.BoolPointerValue(s.BuildCreateEvent),
+		BuildDeploymentStatusCreated:            types.BoolPointerValue(s.BuildDeploymentStatusCreated),
+		BuildPullRequestConvertedToDraft:        types.BoolPointerValue(s.BuildPullRequestConvertedToDraft),
+		BuildPullRequestReviewRequested:         types.BoolPointerValue(s.BuildPullRequestReviewRequested),
+		BuildPullRequestReviewDismissed:         types.BoolPointerValue(s.BuildPullRequestReviewDismissed),
+		BuildPullRequestReviewSubmitted:         types.BoolPointerValue(s.BuildPullRequestReviewSubmitted),
+		BuildReleaseCreated:                     types.BoolPointerValue(s.BuildReleaseCreated),
+		BuildReleasePublished:                   types.BoolPointerValue(s.BuildReleasePublished),
+		BuildReleaseReleased:                    types.BoolPointerValue(s.BuildReleaseReleased),
 	}
 }
 
@@ -1711,6 +1882,10 @@ func pipelineSchemaV0() schema.Schema {
 							Computed: true,
 							Optional: true,
 						},
+						"use_step_key_as_commit_status": schema.BoolAttribute{
+							Computed: true,
+							Optional: true,
+						},
 						"separate_pull_request_statuses": schema.BoolAttribute{
 							Computed: true,
 							Optional: true,
@@ -1728,6 +1903,58 @@ func pipelineSchemaV0() schema.Schema {
 							Optional: true,
 						},
 						"use_merge_group_base_commit_for_git_diff_base": schema.BoolAttribute{
+							Computed: true,
+							Optional: true,
+						},
+						"build_issue_comment_created": schema.BoolAttribute{
+							Computed: true,
+							Optional: true,
+						},
+						"issue_comment_command_word": schema.StringAttribute{
+							Computed: true,
+							Optional: true,
+						},
+						"issue_comment_match_mode": schema.StringAttribute{
+							Computed: true,
+							Optional: true,
+						},
+						"build_check_run_completed": schema.BoolAttribute{
+							Computed: true,
+							Optional: true,
+						},
+						"build_create_event": schema.BoolAttribute{
+							Computed: true,
+							Optional: true,
+						},
+						"build_deployment_status_created": schema.BoolAttribute{
+							Computed: true,
+							Optional: true,
+						},
+						"build_pull_request_converted_to_draft": schema.BoolAttribute{
+							Computed: true,
+							Optional: true,
+						},
+						"build_pull_request_review_requested": schema.BoolAttribute{
+							Computed: true,
+							Optional: true,
+						},
+						"build_pull_request_review_dismissed": schema.BoolAttribute{
+							Computed: true,
+							Optional: true,
+						},
+						"build_pull_request_review_submitted": schema.BoolAttribute{
+							Computed: true,
+							Optional: true,
+						},
+						"build_release_created": schema.BoolAttribute{
+							Computed: true,
+							Optional: true,
+						},
+						"build_release_published": schema.BoolAttribute{
+							Computed: true,
+							Optional: true,
+						},
+						"build_release_released": schema.BoolAttribute{
 							Computed: true,
 							Optional: true,
 						},

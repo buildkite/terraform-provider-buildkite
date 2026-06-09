@@ -2,6 +2,7 @@ package buildkite
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
@@ -61,6 +62,47 @@ func testAccCheckPipelineDestroy(s *terraform.State) error {
 	}
 
 	return nil
+}
+
+func TestPipelineExtraSettingsUseStepKeyAsCommitStatusJSON(t *testing.T) {
+	enabled := true
+
+	payload, err := json.Marshal(PipelineExtraSettings{
+		UseStepKeyAsCommitStatus: &enabled,
+	})
+	if err != nil {
+		t.Fatalf("failed to marshal provider settings: %v", err)
+	}
+
+	if !strings.Contains(string(payload), `"use_step_key_as_commit_status":true`) {
+		t.Fatalf("expected use_step_key_as_commit_status in payload, got %s", payload)
+	}
+
+	payload, err = json.Marshal(PipelineExtraSettings{})
+	if err != nil {
+		t.Fatalf("failed to marshal empty provider settings: %v", err)
+	}
+
+	if strings.Contains(string(payload), "use_step_key_as_commit_status") {
+		t.Fatalf("expected use_step_key_as_commit_status to be omitted from empty payload, got %s", payload)
+	}
+}
+
+func TestUpdatePipelineResourceExtraInfoUseStepKeyAsCommitStatus(t *testing.T) {
+	enabled := true
+	extraInfo := PipelineExtraInfo{}
+	extraInfo.Provider.Settings.UseStepKeyAsCommitStatus = &enabled
+
+	state := pipelineResourceModel{}
+	updatePipelineResourceExtraInfo(&state, &extraInfo)
+
+	if state.ProviderSettings == nil {
+		t.Fatal("expected provider settings to be set")
+	}
+
+	if !state.ProviderSettings.UseStepKeyAsCommitStatus.ValueBool() {
+		t.Fatal("expected use_step_key_as_commit_status to be true")
+	}
 }
 
 func testAccCheckPipelineDestroyFunc(s *terraform.State) error {
@@ -566,6 +608,7 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.skip_pull_request_builds_for_existing_commits", "false"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_branches", "false"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.publish_commit_status", "false"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.use_step_key_as_commit_status", "false"),
 					),
 				},
 			},
@@ -610,10 +653,24 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 					publish_commit_status = true
 					publish_blocked_as_pending = true
 					publish_commit_status_per_step = true
+					use_step_key_as_commit_status = true
 					separate_pull_request_statuses = true
 					build_merge_group_checks_requested = true
 					cancel_when_merge_group_destroyed = true
 					use_merge_group_base_commit_for_git_diff_base = true
+					build_issue_comment_created = true
+					issue_comment_command_word = "ci-force-rerun"
+					issue_comment_match_mode = "exact"
+					build_check_run_completed = true
+					build_create_event = true
+					build_deployment_status_created = true
+					build_pull_request_converted_to_draft = true
+					build_pull_request_review_requested = true
+					build_pull_request_review_dismissed = true
+					build_pull_request_review_submitted = true
+					build_release_created = true
+					build_release_published = true
+					build_release_released = true
 				}
 			}
 		`, clusterName, pipelineName)
@@ -654,10 +711,24 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.publish_commit_status", "true"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.publish_blocked_as_pending", "true"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.publish_commit_status_per_step", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.use_step_key_as_commit_status", "true"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.separate_pull_request_statuses", "true"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_merge_group_checks_requested", "true"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.cancel_when_merge_group_destroyed", "true"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.use_merge_group_base_commit_for_git_diff_base", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_issue_comment_created", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.issue_comment_command_word", "ci-force-rerun"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.issue_comment_match_mode", "exact"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_check_run_completed", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_create_event", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_deployment_status_created", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_pull_request_converted_to_draft", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_pull_request_review_requested", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_pull_request_review_dismissed", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_pull_request_review_submitted", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_release_created", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_release_published", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_release_released", "true"),
 					),
 				},
 			},
@@ -725,11 +796,25 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 								publish_commit_status = true
 								publish_blocked_as_pending = true
 								publish_commit_status_per_step = true
+								use_step_key_as_commit_status = true
 								separate_pull_request_statuses = true
 								ignore_default_branch_pull_requests = true
 								build_merge_group_checks_requested = true
 								cancel_when_merge_group_destroyed = true
 								use_merge_group_base_commit_for_git_diff_base = true
+								build_issue_comment_created = true
+								issue_comment_command_word = "/deploy"
+								issue_comment_match_mode = "contains"
+								build_check_run_completed = true
+								build_create_event = true
+								build_deployment_status_created = true
+								build_pull_request_converted_to_draft = true
+								build_pull_request_review_requested = true
+								build_pull_request_review_dismissed = true
+								build_pull_request_review_submitted = true
+								build_release_created = true
+								build_release_published = true
+								build_release_released = true
 							}
 						}
 					`, clusterName, pipelineName),
@@ -748,9 +833,23 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_pull_request_merge_commits", "true"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_pull_request_labels_changed", "true"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_pull_request_base_branch_changed", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.use_step_key_as_commit_status", "true"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_merge_group_checks_requested", "true"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.cancel_when_merge_group_destroyed", "true"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.use_merge_group_base_commit_for_git_diff_base", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_issue_comment_created", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.issue_comment_command_word", "/deploy"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.issue_comment_match_mode", "contains"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_check_run_completed", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_create_event", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_deployment_status_created", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_pull_request_converted_to_draft", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_pull_request_review_requested", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_pull_request_review_dismissed", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_pull_request_review_submitted", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_release_created", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_release_published", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_release_released", "true"),
 						aggregateRemoteCheck(&pipeline),
 					),
 				},
