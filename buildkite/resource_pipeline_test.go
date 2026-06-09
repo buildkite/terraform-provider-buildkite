@@ -105,6 +105,47 @@ func TestUpdatePipelineResourceExtraInfoUseStepKeyAsCommitStatus(t *testing.T) {
 	}
 }
 
+func TestMapProviderSettingsFromGraphQLGitHub(t *testing.T) {
+	triggerMode := "code"
+	enabled := true
+	disabled := false
+	matchMode := CommandWordMatchModeExact
+
+	repo := PipelineFieldsRepository{
+		Provider: &PipelineFieldsRepositoryProviderRepositoryProviderGithub{
+			Settings: PipelineFieldsRepositoryProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings{
+				TriggerMode:           &triggerMode,
+				BuildPullRequests:     &enabled,
+				BuildBranches:         &disabled,
+				IssueCommentMatchMode: &matchMode,
+			},
+		},
+	}
+
+	got := mapProviderSettingsFromGraphQL(repo)
+	if got == nil {
+		t.Fatal("expected provider settings to be mapped, got nil")
+	}
+	if got.TriggerMode.ValueString() != "code" {
+		t.Fatalf("trigger_mode: expected \"code\", got %q", got.TriggerMode.ValueString())
+	}
+	if !got.BuildPullRequests.ValueBool() {
+		t.Fatal("build_pull_requests: expected true")
+	}
+	if got.BuildBranches.ValueBool() {
+		t.Fatal("build_branches: expected false")
+	}
+	// CommandWordMatchMode enum (EXACT) must be lowercased to match the schema validator.
+	if got.IssueCommentMatchMode.ValueString() != "exact" {
+		t.Fatalf("issue_comment_match_mode: expected \"exact\", got %q", got.IssueCommentMatchMode.ValueString())
+	}
+	// use_step_key_as_commit_status is not in GraphQL; the mapping must leave it null so the
+	// caller can carry it forward from prior state.
+	if !got.UseStepKeyAsCommitStatus.IsNull() {
+		t.Fatalf("use_step_key_as_commit_status: expected null, got %v", got.UseStepKeyAsCommitStatus)
+	}
+}
+
 func testAccCheckPipelineDestroyFunc(s *terraform.State) error {
 	return testAccCheckPipelineDestroy(s)
 }
@@ -729,6 +770,23 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_release_created", "true"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_release_published", "true"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_release_released", "true"),
+					),
+				},
+				{
+					// Refresh-only: re-reads state via Read, which now sources provider_settings
+					// from GraphQL. Unchanged values prove the GraphQL-sourced read is
+					// value-equivalent to what was written via REST, that issue_comment_match_mode
+					// (a GraphQL enum) is lowercased to match the schema, and that
+					// use_step_key_as_commit_status (absent from GraphQL) is carried forward.
+					RefreshState:       true,
+					ExpectNonEmptyPlan: false,
+					Check: resource.ComposeAggregateTestCheckFunc(
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.trigger_mode", "code"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_pull_request_merge_commits", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_issue_comment_created", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.issue_comment_command_word", "ci-force-rerun"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.issue_comment_match_mode", "exact"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.use_step_key_as_commit_status", "true"),
 					),
 				},
 			},
