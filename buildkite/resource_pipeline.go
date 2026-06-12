@@ -308,6 +308,21 @@ func (p *pipelineResource) Create(ctx context.Context, req resource.CreateReques
 		resp.Diagnostics.Append(resp.Private.SetKey(ctx, "slugSource", []byte(`{"source": "user"}`))...)
 	}
 
+	if plan.ProviderSettings != nil {
+		pipelineExtraInfo, err := updatePipelineExtraInfo(ctx, useSlugValue, plan.ProviderSettings, p.client, timeouts)
+		if err != nil {
+			resp.Diagnostics.AddError("Unable to set pipeline info from REST", err.Error())
+			return
+		}
+
+		updatePipelineResourceExtraInfo(&state, &pipelineExtraInfo)
+	} else {
+		// no provider_settings provided
+		state.ProviderSettings = plan.ProviderSettings
+	}
+
+	// Archive last: the REST API rejects updates to archived pipelines, so all REST
+	// calls (slug, provider settings) must complete before the pipeline is archived.
 	if plan.Archived.ValueBool() {
 		err = retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
 			_, archiveErr := archivePipeline(ctx, p.client.genqlient, state.Id.ValueString())
@@ -321,19 +336,6 @@ func (p *pipelineResource) Create(ctx context.Context, req resource.CreateReques
 			return
 		}
 		state.Archived = types.BoolValue(true)
-	}
-
-	if plan.ProviderSettings != nil {
-		pipelineExtraInfo, err := updatePipelineExtraInfo(ctx, useSlugValue, plan.ProviderSettings, p.client, timeouts)
-		if err != nil {
-			resp.Diagnostics.AddError("Unable to set pipeline info from REST", err.Error())
-			return
-		}
-
-		updatePipelineResourceExtraInfo(&state, &pipelineExtraInfo)
-	} else {
-		// no provider_settings provided
-		state.ProviderSettings = plan.ProviderSettings
 	}
 
 	state.Slug = types.StringValue(useSlugValue)
@@ -1274,20 +1276,10 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 		return
 	}
 
-	// Archive after updating (archiving before would block other field updates too).
-	if !state.Archived.ValueBool() && plan.Archived.ValueBool() {
-		err = retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
-			_, archiveErr := archivePipeline(ctx, p.client.genqlient, plan.Id.ValueString())
-			return retryContextError(archiveErr)
-		})
-		if err != nil {
-			resp.Diagnostics.AddError(
-				"Unable to update pipeline archive state",
-				fmt.Sprintf("Unable to update pipeline archive state: %s", err.Error()),
-			)
-			return
-		}
-	}
+	// Archive last (see below): the REST API rejects updates to archived pipelines, so
+	// the slug and provider settings REST calls must complete before archiving. Capture
+	// the decision here because state.Archived is synced to plan further down.
+	needsArchive := !state.Archived.ValueBool() && plan.Archived.ValueBool()
 
 	useSlugValue := response.PipelineUpdate.Pipeline.Slug
 	resp.Diagnostics.Append(resp.Private.SetKey(ctx, "slugSource", []byte(`{"source": "api"}`))...)
@@ -1355,6 +1347,22 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 	} else {
 		// no provider_settings provided
 		state.ProviderSettings = plan.ProviderSettings
+	}
+
+	// Archive after all other updates: archiving earlier would make the REST calls
+	// above fail with "Cannot update an archived pipeline".
+	if needsArchive {
+		err = retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
+			_, archiveErr := archivePipeline(ctx, p.client.genqlient, plan.Id.ValueString())
+			return retryContextError(archiveErr)
+		})
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Unable to update pipeline archive state",
+				fmt.Sprintf("Unable to update pipeline archive state: %s", err.Error()),
+			)
+			return
+		}
 	}
 
 	state.Slug = types.StringValue(useSlugValue)

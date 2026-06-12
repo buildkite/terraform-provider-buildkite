@@ -1851,4 +1851,101 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 			},
 		})
 	})
+
+	t.Run("archives pipeline with provider_settings", func(t *testing.T) {
+		// Regression test: archiving must happen after the provider_settings REST
+		// PATCH, otherwise the API rejects it with "Cannot update an archived
+		// pipeline".
+		pipelineName := acctest.RandString(12)
+		configFor := func(archived bool) string {
+			return fmt.Sprintf(`
+				resource "buildkite_pipeline" "pipeline" {
+					name = "%s"
+					repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
+					archived = %t
+
+					provider_settings = {
+						build_branches = true
+						build_pull_requests = false
+					}
+				}
+			`, pipelineName, archived)
+		}
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			CheckDestroy:             testAccCheckPipelineDestroyFunc,
+			Steps: []resource.TestStep{
+				{
+					Config: configFor(false),
+					Check: resource.ComposeAggregateTestCheckFunc(
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "archived", "false"),
+					),
+				},
+				{
+					Config: configFor(true),
+					ConfigPlanChecks: resource.ConfigPlanChecks{
+						PreApply: []plancheck.PlanCheck{
+							plancheck.ExpectResourceAction("buildkite_pipeline.pipeline", plancheck.ResourceActionUpdate),
+						},
+					},
+					Check: resource.ComposeAggregateTestCheckFunc(
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "archived", "true"),
+						func(s *terraform.State) error {
+							slug := fmt.Sprintf("%s/%s", getenv("BUILDKITE_ORGANIZATION_SLUG"), pipelineName)
+							resp, err := getPipeline(context.Background(), genqlientGraphql, slug)
+							if err != nil {
+								return err
+							}
+							if !resp.Pipeline.Archived {
+								return fmt.Errorf("expected pipeline to be archived, got archived = false")
+							}
+							return nil
+						},
+					),
+				},
+			},
+		})
+	})
+
+	t.Run("creates archived pipeline with provider_settings", func(t *testing.T) {
+		pipelineName := acctest.RandString(12)
+		config := fmt.Sprintf(`
+			resource "buildkite_pipeline" "pipeline" {
+				name = "%s"
+				repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
+				archived = true
+
+				provider_settings = {
+					build_branches = true
+				}
+			}
+		`, pipelineName)
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			CheckDestroy:             testAccCheckPipelineDestroyFunc,
+			Steps: []resource.TestStep{
+				{
+					Config: config,
+					Check: resource.ComposeAggregateTestCheckFunc(
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "archived", "true"),
+						func(s *terraform.State) error {
+							slug := fmt.Sprintf("%s/%s", getenv("BUILDKITE_ORGANIZATION_SLUG"), pipelineName)
+							resp, err := getPipeline(context.Background(), genqlientGraphql, slug)
+							if err != nil {
+								return err
+							}
+							if !resp.Pipeline.Archived {
+								return fmt.Errorf("expected pipeline to be archived, got archived = false")
+							}
+							return nil
+						},
+					),
+				},
+			},
+		})
+	})
 }
