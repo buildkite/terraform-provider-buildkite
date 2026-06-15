@@ -632,9 +632,6 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 			"cluster_name": schema.StringAttribute{
 				MarkdownDescription: "The name of the cluster the pipeline is (optionally) attached to.",
 				Computed:            true,
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseNonNullStateForUnknown(),
-				},
 			},
 			"default_team_id": schema.StringAttribute{
 				MarkdownDescription: "The GraphQL ID of a team to initially assign to the pipeline. This is required by the Buildkite API when creating a new pipeline. The team assigned here will be given 'Manage Build and Read' access. Further team associations can be managed with the `buildkite_pipeline_team` resource after the pipeline is created.",
