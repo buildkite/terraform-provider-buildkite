@@ -857,6 +857,55 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 		})
 	})
 
+	t.Run("changing cluster_id updates cluster_name without inconsistency error", func(t *testing.T) {
+		pipelineName := acctest.RandString(12)
+		clusterNameA := acctest.RandString(12)
+		clusterNameB := acctest.RandString(12)
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			CheckDestroy:             testAccCheckPipelineDestroyFunc,
+			Steps: []resource.TestStep{
+				{
+					Config: fmt.Sprintf(`
+						resource "buildkite_cluster" "cluster_a" {
+							name = "%s"
+						}
+						resource "buildkite_pipeline" "pipeline" {
+							name = "%s"
+							repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
+							cluster_id = buildkite_cluster.cluster_a.id
+						}
+					`, clusterNameA, pipelineName),
+					Check: resource.ComposeAggregateTestCheckFunc(
+						resource.TestCheckResourceAttrPair("buildkite_pipeline.pipeline", "cluster_id", "buildkite_cluster.cluster_a", "id"),
+						resource.TestCheckResourceAttrPair("buildkite_pipeline.pipeline", "cluster_name", "buildkite_cluster.cluster_a", "name"),
+					),
+				},
+				{
+					Config: fmt.Sprintf(`
+						resource "buildkite_cluster" "cluster_a" {
+							name = "%s"
+						}
+						resource "buildkite_cluster" "cluster_b" {
+							name = "%s"
+						}
+						resource "buildkite_pipeline" "pipeline" {
+							name = "%s"
+							repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
+							cluster_id = buildkite_cluster.cluster_b.id
+						}
+					`, clusterNameA, clusterNameB, pipelineName),
+					Check: resource.ComposeAggregateTestCheckFunc(
+						resource.TestCheckResourceAttrPair("buildkite_pipeline.pipeline", "cluster_id", "buildkite_cluster.cluster_b", "id"),
+						resource.TestCheckResourceAttrPair("buildkite_pipeline.pipeline", "cluster_name", "buildkite_cluster.cluster_b", "name"),
+					),
+				},
+			},
+		})
+	})
+
 	t.Run("pipeline is recreated if removed", func(t *testing.T) {
 		pipelineName := acctest.RandString(12)
 		config := fmt.Sprintf(`
