@@ -427,13 +427,28 @@ func (p *pipelineResource) Read(ctx context.Context, req resource.ReadRequest, r
 
 		setPipelineModel(&state, pipelineNode)
 
-		// Refresh provider_settings from the GraphQL response (no REST call) when the user has
-		// configured it. use_step_key_as_commit_status is not exposed on the GraphQL API, so it is
-		// carried forward from prior state (it is still written via REST on Create/Update).
+		// Refresh provider_settings only when the user configured it, via a dedicated GraphQL query
+		// (kept out of the shared PipelineFields fragment so unrelated reads aren't coupled to the
+		// provider settings subtree). Errors are surfaced, never swallowed, to avoid persisting stale
+		// state. use_step_key_as_commit_status is not exposed on the GraphQL API, so it is carried
+		// forward from prior state (it is still written via REST on Create/Update).
 		if state.ProviderSettings != nil {
-			if mapped := mapProviderSettingsFromGraphQL(pipelineNode.GetRepository()); mapped != nil {
-				mapped.UseStepKeyAsCommitStatus = state.ProviderSettings.UseStepKeyAsCommitStatus
-				state.ProviderSettings = mapped
+			var providerSettingsResponse *getPipelineProviderSettingsResponse
+			err := retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
+				var err error
+				providerSettingsResponse, err = getPipelineProviderSettings(ctx, p.client.genqlient, state.Id.ValueString())
+				return retryContextError(err)
+			})
+			if err != nil {
+				resp.Diagnostics.AddError("Unable to read pipeline provider settings", err.Error())
+				return
+			}
+
+			if psPipeline, ok := providerSettingsResponse.Node.(*getPipelineProviderSettingsNodePipeline); ok && psPipeline != nil {
+				if mapped := mapProviderSettingsFromGraphQL(psPipeline.Repository.RepositoryProviderSettingsFields); mapped != nil {
+					mapped.UseStepKeyAsCommitStatus = state.ProviderSettings.UseStepKeyAsCommitStatus
+					state.ProviderSettings = mapped
+				}
 			}
 		}
 
@@ -1523,9 +1538,9 @@ func matchModeToString(m *CommandWordMatchMode) types.String {
 // provider does not expose are left null. use_step_key_as_commit_status is intentionally not set
 // here: it is not available on the GraphQL API, so the caller carries it forward from prior state.
 // Returns nil if the provider is unset or not a recognised type.
-func mapProviderSettingsFromGraphQL(repo PipelineFieldsRepository) *providerSettingsModel {
+func mapProviderSettingsFromGraphQL(repo RepositoryProviderSettingsFields) *providerSettingsModel {
 	switch provider := repo.GetProvider().(type) {
-	case *PipelineFieldsRepositoryProviderRepositoryProviderGithub:
+	case *RepositoryProviderSettingsFieldsProviderRepositoryProviderGithub:
 		s := provider.Settings
 		return &providerSettingsModel{
 			TriggerMode:                             types.StringPointerValue(s.TriggerMode),
@@ -1557,7 +1572,7 @@ func mapProviderSettingsFromGraphQL(repo PipelineFieldsRepository) *providerSett
 			IssueCommentCommandWord:                 types.StringPointerValue(s.IssueCommentCommandWord),
 			IssueCommentMatchMode:                   matchModeToString(s.IssueCommentMatchMode),
 		}
-	case *PipelineFieldsRepositoryProviderRepositoryProviderGithubEnterprise:
+	case *RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubEnterprise:
 		s := provider.Settings
 		return &providerSettingsModel{
 			TriggerMode:                             types.StringPointerValue(s.TriggerMode),
@@ -1589,7 +1604,7 @@ func mapProviderSettingsFromGraphQL(repo PipelineFieldsRepository) *providerSett
 			IssueCommentCommandWord:                 types.StringPointerValue(s.IssueCommentCommandWord),
 			IssueCommentMatchMode:                   matchModeToString(s.IssueCommentMatchMode),
 		}
-	case *PipelineFieldsRepositoryProviderRepositoryProviderBitbucket:
+	case *RepositoryProviderSettingsFieldsProviderRepositoryProviderBitbucket:
 		s := provider.Settings
 		return &providerSettingsModel{
 			BuildBranches:                           types.BoolPointerValue(s.BuildBranches),
@@ -1606,7 +1621,7 @@ func mapProviderSettingsFromGraphQL(repo PipelineFieldsRepository) *providerSett
 			SkipBuildsForExistingCommits:            types.BoolPointerValue(s.Skipbuildsforexistingcommits),
 			SkipPullRequestBuildsForExistingCommits: types.BoolPointerValue(s.SkipPullRequestBuildsForExistingCommits),
 		}
-	case *PipelineFieldsRepositoryProviderRepositoryProviderBitbucketServer:
+	case *RepositoryProviderSettingsFieldsProviderRepositoryProviderBitbucketServer:
 		s := provider.Settings
 		return &providerSettingsModel{
 			BuildBranches:     types.BoolPointerValue(s.BuildBranches),
@@ -1615,25 +1630,25 @@ func mapProviderSettingsFromGraphQL(repo PipelineFieldsRepository) *providerSett
 			FilterCondition:   types.StringPointerValue(s.FilterCondition),
 			FilterEnabled:     types.BoolPointerValue(s.FilterEnabled),
 		}
-	case *PipelineFieldsRepositoryProviderRepositoryProviderGitlab:
+	case *RepositoryProviderSettingsFieldsProviderRepositoryProviderGitlab:
 		s := provider.Settings
 		return &providerSettingsModel{
 			FilterCondition: types.StringPointerValue(s.FilterCondition),
 			FilterEnabled:   types.BoolPointerValue(s.FilterEnabled),
 		}
-	case *PipelineFieldsRepositoryProviderRepositoryProviderBeanstalk:
+	case *RepositoryProviderSettingsFieldsProviderRepositoryProviderBeanstalk:
 		s := provider.Settings
 		return &providerSettingsModel{
 			FilterCondition: types.StringPointerValue(s.FilterCondition),
 			FilterEnabled:   types.BoolPointerValue(s.FilterEnabled),
 		}
-	case *PipelineFieldsRepositoryProviderRepositoryProviderCodebase:
+	case *RepositoryProviderSettingsFieldsProviderRepositoryProviderCodebase:
 		s := provider.Settings
 		return &providerSettingsModel{
 			FilterCondition: types.StringPointerValue(s.FilterCondition),
 			FilterEnabled:   types.BoolPointerValue(s.FilterEnabled),
 		}
-	case *PipelineFieldsRepositoryProviderRepositoryProviderUnknown:
+	case *RepositoryProviderSettingsFieldsProviderRepositoryProviderUnknown:
 		s := provider.Settings
 		return &providerSettingsModel{
 			FilterCondition: types.StringPointerValue(s.FilterCondition),
