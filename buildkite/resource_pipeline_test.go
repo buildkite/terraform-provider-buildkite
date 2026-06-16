@@ -111,9 +111,9 @@ func TestMapProviderSettingsFromGraphQLGitHub(t *testing.T) {
 	disabled := false
 	matchMode := CommandWordMatchModeExact
 
-	repo := PipelineFieldsRepository{
-		Provider: &PipelineFieldsRepositoryProviderRepositoryProviderGithub{
-			Settings: PipelineFieldsRepositoryProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings{
+	repo := RepositoryProviderSettingsFields{
+		Provider: &RepositoryProviderSettingsFieldsProviderRepositoryProviderGithub{
+			Settings: RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings{
 				TriggerMode:           &triggerMode,
 				BuildPullRequests:     &enabled,
 				BuildBranches:         &disabled,
