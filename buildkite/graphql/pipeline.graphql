@@ -26,208 +26,6 @@ fragment PipelineFields on Pipeline {
     name
     repository {
         url
-        provider {
-            __typename
-            ... on RepositoryProviderGithub {
-                settings {
-                    # @genqlient(pointer: true)
-                    buildBranches
-                    # @genqlient(pointer: true)
-                    buildIssueCommentCreated
-                    # @genqlient(pointer: true)
-                    buildMergeGroupChecksRequested
-                    # @genqlient(pointer: true)
-                    buildPullRequestBaseBranchChanged
-                    # @genqlient(pointer: true)
-                    buildPullRequestForks
-                    # @genqlient(pointer: true)
-                    buildPullRequestLabelsChanged
-                    # @genqlient(pointer: true)
-                    buildPullRequestMergeCommits
-                    # @genqlient(pointer: true)
-                    buildPullRequestReadyForReview
-                    # @genqlient(pointer: true)
-                    buildPullRequests
-                    # @genqlient(pointer: true)
-                    buildTags
-                    # @genqlient(pointer: true)
-                    cancelDeletedBranchBuilds
-                    # @genqlient(pointer: true)
-                    cancelWhenMergeGroupDestroyed
-                    # @genqlient(pointer: true)
-                    filterCondition
-                    # @genqlient(pointer: true)
-                    filterEnabled
-                    # @genqlient(pointer: true)
-                    ignoreDefaultBranchPullRequests
-                    # @genqlient(pointer: true)
-                    issueCommentCommandWord
-                    # @genqlient(pointer: true)
-                    issueCommentMatchMode
-                    # @genqlient(pointer: true)
-                    prefixPullRequestForkBranchNames
-                    # @genqlient(pointer: true)
-                    publishBlockedAsPending
-                    # @genqlient(pointer: true)
-                    publishCommitStatus
-                    # @genqlient(pointer: true)
-                    publishCommitStatusPerStep
-                    # @genqlient(pointer: true)
-                    pullRequestBranchFilterConfiguration
-                    # @genqlient(pointer: true)
-                    pullRequestBranchFilterEnabled
-                    # @genqlient(pointer: true)
-                    separatePullRequestStatuses
-                    # @genqlient(pointer: true)
-                    skipBuildsForExistingCommits
-                    # @genqlient(pointer: true)
-                    skipPullRequestBuildsForExistingCommits
-                    # @genqlient(pointer: true)
-                    triggerMode
-                    # @genqlient(pointer: true)
-                    useMergeGroupBaseCommitForGitDiffBase
-                }
-            }
-            ... on RepositoryProviderGithubEnterprise {
-                settings {
-                    # @genqlient(pointer: true)
-                    buildBranches
-                    # @genqlient(pointer: true)
-                    buildIssueCommentCreated
-                    # @genqlient(pointer: true)
-                    buildMergeGroupChecksRequested
-                    # @genqlient(pointer: true)
-                    buildPullRequestBaseBranchChanged
-                    # @genqlient(pointer: true)
-                    buildPullRequestForks
-                    # @genqlient(pointer: true)
-                    buildPullRequestLabelsChanged
-                    # @genqlient(pointer: true)
-                    buildPullRequestMergeCommits
-                    # @genqlient(pointer: true)
-                    buildPullRequestReadyForReview
-                    # @genqlient(pointer: true)
-                    buildPullRequests
-                    # @genqlient(pointer: true)
-                    buildTags
-                    # @genqlient(pointer: true)
-                    cancelDeletedBranchBuilds
-                    # @genqlient(pointer: true)
-                    cancelWhenMergeGroupDestroyed
-                    # @genqlient(pointer: true)
-                    filterCondition
-                    # @genqlient(pointer: true)
-                    filterEnabled
-                    # @genqlient(pointer: true)
-                    ignoreDefaultBranchPullRequests
-                    # @genqlient(pointer: true)
-                    issueCommentCommandWord
-                    # @genqlient(pointer: true)
-                    issueCommentMatchMode
-                    # @genqlient(pointer: true)
-                    prefixPullRequestForkBranchNames
-                    # @genqlient(pointer: true)
-                    publishBlockedAsPending
-                    # @genqlient(pointer: true)
-                    publishCommitStatus
-                    # @genqlient(pointer: true)
-                    publishCommitStatusPerStep
-                    # @genqlient(pointer: true)
-                    pullRequestBranchFilterConfiguration
-                    # @genqlient(pointer: true)
-                    pullRequestBranchFilterEnabled
-                    # @genqlient(pointer: true)
-                    separatePullRequestStatuses
-                    # @genqlient(pointer: true)
-                    skipBuildsForExistingCommits
-                    # @genqlient(pointer: true)
-                    skipPullRequestBuildsForExistingCommits
-                    # @genqlient(pointer: true)
-                    triggerMode
-                    # @genqlient(pointer: true)
-                    useMergeGroupBaseCommitForGitDiffBase
-                }
-            }
-            ... on RepositoryProviderBitbucket {
-                settings {
-                    # @genqlient(pointer: true)
-                    buildBranches
-                    # @genqlient(pointer: true)
-                    buildPullRequests
-                    # @genqlient(pointer: true)
-                    buildTags
-                    # aliased: Bitbucket's nullable Boolean conflicts with GitHub's Boolean! under the
-                    # same response key, so give it a distinct key for the union field merge to validate.
-                    # @genqlient(pointer: true)
-                    canceldeletedbranchbuilds: cancelDeletedBranchBuilds
-                    # @genqlient(pointer: true)
-                    filterCondition
-                    # @genqlient(pointer: true)
-                    filterEnabled
-                    # @genqlient(pointer: true)
-                    ignoreDefaultBranchPullRequests
-                    # @genqlient(pointer: true)
-                    publishCommitStatus
-                    # @genqlient(pointer: true)
-                    publishCommitStatusPerStep
-                    # @genqlient(pointer: true)
-                    pullRequestBranchFilterConfiguration
-                    # @genqlient(pointer: true)
-                    pullRequestBranchFilterEnabled
-                    # aliased for the same nullability-conflict reason as canceldeletedbranchbuilds.
-                    # @genqlient(pointer: true)
-                    skipbuildsforexistingcommits: skipBuildsForExistingCommits
-                    # @genqlient(pointer: true)
-                    skipPullRequestBuildsForExistingCommits
-                }
-            }
-            ... on RepositoryProviderBitbucketServer {
-                settings {
-                    # @genqlient(pointer: true)
-                    buildBranches
-                    # @genqlient(pointer: true)
-                    buildPullRequests
-                    # @genqlient(pointer: true)
-                    buildTags
-                    # @genqlient(pointer: true)
-                    filterCondition
-                    # @genqlient(pointer: true)
-                    filterEnabled
-                }
-            }
-            ... on RepositoryProviderGitlab {
-                settings {
-                    # @genqlient(pointer: true)
-                    filterCondition
-                    # @genqlient(pointer: true)
-                    filterEnabled
-                }
-            }
-            ... on RepositoryProviderBeanstalk {
-                settings {
-                    # @genqlient(pointer: true)
-                    filterCondition
-                    # @genqlient(pointer: true)
-                    filterEnabled
-                }
-            }
-            ... on RepositoryProviderCodebase {
-                settings {
-                    # @genqlient(pointer: true)
-                    filterCondition
-                    # @genqlient(pointer: true)
-                    filterEnabled
-                }
-            }
-            ... on RepositoryProviderUnknown {
-                settings {
-                    # @genqlient(pointer: true)
-                    filterCondition
-                    # @genqlient(pointer: true)
-                    filterEnabled
-                }
-            }
-        }
     }
     pipelineTemplate {
         # @genqlient(pointer: true)
@@ -248,6 +46,215 @@ fragment PipelineFields on Pipeline {
     archived
     visibility
     webhookURL
+}
+
+# Repository provider settings are intentionally kept OUT of PipelineFields: that fragment is
+# used by getNode (the generic node read shared with other resources) and the create/update
+# mutations, and the provider settings subtree can error server-side for some pipelines. Fetching
+# it only via this dedicated fragment/query keeps unrelated reads (e.g. pipeline_team) unaffected.
+fragment RepositoryProviderSettingsFields on Repository {
+    provider {
+        __typename
+        ... on RepositoryProviderGithub {
+            settings {
+                # @genqlient(pointer: true)
+                buildBranches
+                # @genqlient(pointer: true)
+                buildIssueCommentCreated
+                # @genqlient(pointer: true)
+                buildMergeGroupChecksRequested
+                # @genqlient(pointer: true)
+                buildPullRequestBaseBranchChanged
+                # @genqlient(pointer: true)
+                buildPullRequestForks
+                # @genqlient(pointer: true)
+                buildPullRequestLabelsChanged
+                # @genqlient(pointer: true)
+                buildPullRequestMergeCommits
+                # @genqlient(pointer: true)
+                buildPullRequestReadyForReview
+                # @genqlient(pointer: true)
+                buildPullRequests
+                # @genqlient(pointer: true)
+                buildTags
+                # @genqlient(pointer: true)
+                cancelDeletedBranchBuilds
+                # @genqlient(pointer: true)
+                cancelWhenMergeGroupDestroyed
+                # @genqlient(pointer: true)
+                filterCondition
+                # @genqlient(pointer: true)
+                filterEnabled
+                # @genqlient(pointer: true)
+                ignoreDefaultBranchPullRequests
+                # @genqlient(pointer: true)
+                issueCommentCommandWord
+                # @genqlient(pointer: true)
+                issueCommentMatchMode
+                # @genqlient(pointer: true)
+                prefixPullRequestForkBranchNames
+                # @genqlient(pointer: true)
+                publishBlockedAsPending
+                # @genqlient(pointer: true)
+                publishCommitStatus
+                # @genqlient(pointer: true)
+                publishCommitStatusPerStep
+                # @genqlient(pointer: true)
+                pullRequestBranchFilterConfiguration
+                # @genqlient(pointer: true)
+                pullRequestBranchFilterEnabled
+                # @genqlient(pointer: true)
+                separatePullRequestStatuses
+                # @genqlient(pointer: true)
+                skipBuildsForExistingCommits
+                # @genqlient(pointer: true)
+                skipPullRequestBuildsForExistingCommits
+                # @genqlient(pointer: true)
+                triggerMode
+                # @genqlient(pointer: true)
+                useMergeGroupBaseCommitForGitDiffBase
+            }
+        }
+        ... on RepositoryProviderGithubEnterprise {
+            settings {
+                # @genqlient(pointer: true)
+                buildBranches
+                # @genqlient(pointer: true)
+                buildIssueCommentCreated
+                # @genqlient(pointer: true)
+                buildMergeGroupChecksRequested
+                # @genqlient(pointer: true)
+                buildPullRequestBaseBranchChanged
+                # @genqlient(pointer: true)
+                buildPullRequestForks
+                # @genqlient(pointer: true)
+                buildPullRequestLabelsChanged
+                # @genqlient(pointer: true)
+                buildPullRequestMergeCommits
+                # @genqlient(pointer: true)
+                buildPullRequestReadyForReview
+                # @genqlient(pointer: true)
+                buildPullRequests
+                # @genqlient(pointer: true)
+                buildTags
+                # @genqlient(pointer: true)
+                cancelDeletedBranchBuilds
+                # @genqlient(pointer: true)
+                cancelWhenMergeGroupDestroyed
+                # @genqlient(pointer: true)
+                filterCondition
+                # @genqlient(pointer: true)
+                filterEnabled
+                # @genqlient(pointer: true)
+                ignoreDefaultBranchPullRequests
+                # @genqlient(pointer: true)
+                issueCommentCommandWord
+                # @genqlient(pointer: true)
+                issueCommentMatchMode
+                # @genqlient(pointer: true)
+                prefixPullRequestForkBranchNames
+                # @genqlient(pointer: true)
+                publishBlockedAsPending
+                # @genqlient(pointer: true)
+                publishCommitStatus
+                # @genqlient(pointer: true)
+                publishCommitStatusPerStep
+                # @genqlient(pointer: true)
+                pullRequestBranchFilterConfiguration
+                # @genqlient(pointer: true)
+                pullRequestBranchFilterEnabled
+                # @genqlient(pointer: true)
+                separatePullRequestStatuses
+                # @genqlient(pointer: true)
+                skipBuildsForExistingCommits
+                # @genqlient(pointer: true)
+                skipPullRequestBuildsForExistingCommits
+                # @genqlient(pointer: true)
+                triggerMode
+                # @genqlient(pointer: true)
+                useMergeGroupBaseCommitForGitDiffBase
+            }
+        }
+        ... on RepositoryProviderBitbucket {
+            settings {
+                # @genqlient(pointer: true)
+                buildBranches
+                # @genqlient(pointer: true)
+                buildPullRequests
+                # @genqlient(pointer: true)
+                buildTags
+                # aliased: Bitbucket's nullable Boolean conflicts with GitHub's Boolean! under the
+                # same response key, so give it a distinct key for the union field merge to validate.
+                # @genqlient(pointer: true)
+                canceldeletedbranchbuilds: cancelDeletedBranchBuilds
+                # @genqlient(pointer: true)
+                filterCondition
+                # @genqlient(pointer: true)
+                filterEnabled
+                # @genqlient(pointer: true)
+                ignoreDefaultBranchPullRequests
+                # @genqlient(pointer: true)
+                publishCommitStatus
+                # @genqlient(pointer: true)
+                publishCommitStatusPerStep
+                # @genqlient(pointer: true)
+                pullRequestBranchFilterConfiguration
+                # @genqlient(pointer: true)
+                pullRequestBranchFilterEnabled
+                # aliased for the same nullability-conflict reason as canceldeletedbranchbuilds.
+                # @genqlient(pointer: true)
+                skipbuildsforexistingcommits: skipBuildsForExistingCommits
+                # @genqlient(pointer: true)
+                skipPullRequestBuildsForExistingCommits
+            }
+        }
+        ... on RepositoryProviderBitbucketServer {
+            settings {
+                # @genqlient(pointer: true)
+                buildBranches
+                # @genqlient(pointer: true)
+                buildPullRequests
+                # @genqlient(pointer: true)
+                buildTags
+                # @genqlient(pointer: true)
+                filterCondition
+                # @genqlient(pointer: true)
+                filterEnabled
+            }
+        }
+        ... on RepositoryProviderGitlab {
+            settings {
+                # @genqlient(pointer: true)
+                filterCondition
+                # @genqlient(pointer: true)
+                filterEnabled
+            }
+        }
+        ... on RepositoryProviderBeanstalk {
+            settings {
+                # @genqlient(pointer: true)
+                filterCondition
+                # @genqlient(pointer: true)
+                filterEnabled
+            }
+        }
+        ... on RepositoryProviderCodebase {
+            settings {
+                # @genqlient(pointer: true)
+                filterCondition
+                # @genqlient(pointer: true)
+                filterEnabled
+            }
+        }
+        ... on RepositoryProviderUnknown {
+            settings {
+                # @genqlient(pointer: true)
+                filterCondition
+                # @genqlient(pointer: true)
+                filterEnabled
+            }
+        }
+    }
 }
 
 fragment PipelineTeam on TeamPipelineConnection {
@@ -271,6 +278,20 @@ fragment PipelineTeam on TeamPipelineConnection {
 query getPipeline($slug: ID!) {
     pipeline(slug: $slug) {
         ...PipelineFields
+    }
+}
+
+# Dedicated read for repository provider settings, used only by the pipeline resource's Read when
+# provider_settings is configured. Kept separate from PipelineFields so the provider subtree is not
+# requested on every pipeline read (which would couple unrelated reads to its resolution).
+query getPipelineProviderSettings($id: ID!) {
+    node(id: $id) {
+        ... on Pipeline {
+            id
+            repository {
+                ...RepositoryProviderSettingsFields
+            }
+        }
     }
 }
 
