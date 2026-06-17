@@ -3075,6 +3075,26 @@ func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubEnterpr
 type RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings struct {
 	// Whether to create builds when branches are pushed.
 	BuildBranches *bool `json:"buildBranches"`
+	// Whether to create builds when a check run completes.
+	BuildCheckRunCompleted *bool `json:"buildCheckRunCompleted"`
+	// Whether to create builds when a branch or tag is created.
+	BuildCreateEvent *bool `json:"buildCreateEvent"`
+	// Whether to create builds when a deployment status is created.
+	BuildDeploymentStatusCreated *bool `json:"buildDeploymentStatusCreated"`
+	// Whether to create builds when a pull request is converted to draft.
+	BuildPullRequestConvertedToDraft *bool `json:"buildPullRequestConvertedToDraft"`
+	// Whether to create builds when a pull request review is requested.
+	BuildPullRequestReviewRequested *bool `json:"buildPullRequestReviewRequested"`
+	// Whether to create builds when a pull request review is dismissed.
+	BuildPullRequestReviewDismissed *bool `json:"buildPullRequestReviewDismissed"`
+	// Whether to create builds when a pull request review is submitted.
+	BuildPullRequestReviewSubmitted *bool `json:"buildPullRequestReviewSubmitted"`
+	// Whether to create builds when a release is created.
+	BuildReleaseCreated *bool `json:"buildReleaseCreated"`
+	// Whether to create builds when a release is published.
+	BuildReleasePublished *bool `json:"buildReleasePublished"`
+	// Whether to create builds when a release is released.
+	BuildReleaseReleased *bool `json:"buildReleaseReleased"`
 	// Whether to create builds when an issue comment is created on a pull request.
 	BuildIssueCommentCreated *bool `json:"buildIssueCommentCreated"`
 	// Whether to create builds for merge group check runs.
@@ -3136,6 +3156,56 @@ type RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubEnterpriseS
 // GetBuildBranches returns RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings.BuildBranches, and is useful for accessing the field via an interface.
 func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings) GetBuildBranches() *bool {
 	return v.BuildBranches
+}
+
+// GetBuildCheckRunCompleted returns RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings.BuildCheckRunCompleted, and is useful for accessing the field via an interface.
+func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings) GetBuildCheckRunCompleted() *bool {
+	return v.BuildCheckRunCompleted
+}
+
+// GetBuildCreateEvent returns RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings.BuildCreateEvent, and is useful for accessing the field via an interface.
+func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings) GetBuildCreateEvent() *bool {
+	return v.BuildCreateEvent
+}
+
+// GetBuildDeploymentStatusCreated returns RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings.BuildDeploymentStatusCreated, and is useful for accessing the field via an interface.
+func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings) GetBuildDeploymentStatusCreated() *bool {
+	return v.BuildDeploymentStatusCreated
+}
+
+// GetBuildPullRequestConvertedToDraft returns RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings.BuildPullRequestConvertedToDraft, and is useful for accessing the field via an interface.
+func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings) GetBuildPullRequestConvertedToDraft() *bool {
+	return v.BuildPullRequestConvertedToDraft
+}
+
+// GetBuildPullRequestReviewRequested returns RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings.BuildPullRequestReviewRequested, and is useful for accessing the field via an interface.
+func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings) GetBuildPullRequestReviewRequested() *bool {
+	return v.BuildPullRequestReviewRequested
+}
+
+// GetBuildPullRequestReviewDismissed returns RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings.BuildPullRequestReviewDismissed, and is useful for accessing the field via an interface.
+func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings) GetBuildPullRequestReviewDismissed() *bool {
+	return v.BuildPullRequestReviewDismissed
+}
+
+// GetBuildPullRequestReviewSubmitted returns RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings.BuildPullRequestReviewSubmitted, and is useful for accessing the field via an interface.
+func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings) GetBuildPullRequestReviewSubmitted() *bool {
+	return v.BuildPullRequestReviewSubmitted
+}
+
+// GetBuildReleaseCreated returns RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings.BuildReleaseCreated, and is useful for accessing the field via an interface.
+func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings) GetBuildReleaseCreated() *bool {
+	return v.BuildReleaseCreated
+}
+
+// GetBuildReleasePublished returns RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings.BuildReleasePublished, and is useful for accessing the field via an interface.
+func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings) GetBuildReleasePublished() *bool {
+	return v.BuildReleasePublished
+}
+
+// GetBuildReleaseReleased returns RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings.BuildReleaseReleased, and is useful for accessing the field via an interface.
+func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings) GetBuildReleaseReleased() *bool {
+	return v.BuildReleaseReleased
 }
 
 // GetBuildIssueCommentCreated returns RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings.BuildIssueCommentCreated, and is useful for accessing the field via an interface.
@@ -3285,6 +3355,26 @@ func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubEnterpr
 type RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings struct {
 	// Whether to create builds when branches are pushed.
 	BuildBranches *bool `json:"buildBranches"`
+	// Whether to create builds when a check run completes.
+	BuildCheckRunCompleted *bool `json:"buildCheckRunCompleted"`
+	// Whether to create builds when a branch or tag is created.
+	BuildCreateEvent *bool `json:"buildCreateEvent"`
+	// Whether to create builds when a deployment status is created.
+	BuildDeploymentStatusCreated *bool `json:"buildDeploymentStatusCreated"`
+	// Whether to create builds when a pull request is converted to draft.
+	BuildPullRequestConvertedToDraft *bool `json:"buildPullRequestConvertedToDraft"`
+	// Whether to create builds when a pull request review is requested.
+	BuildPullRequestReviewRequested *bool `json:"buildPullRequestReviewRequested"`
+	// Whether to create builds when a pull request review is dismissed.
+	BuildPullRequestReviewDismissed *bool `json:"buildPullRequestReviewDismissed"`
+	// Whether to create builds when a pull request review is submitted.
+	BuildPullRequestReviewSubmitted *bool `json:"buildPullRequestReviewSubmitted"`
+	// Whether to create builds when a release is created.
+	BuildReleaseCreated *bool `json:"buildReleaseCreated"`
+	// Whether to create builds when a release is published.
+	BuildReleasePublished *bool `json:"buildReleasePublished"`
+	// Whether to create builds when a release is released.
+	BuildReleaseReleased *bool `json:"buildReleaseReleased"`
 	// Whether to create builds when an issue comment is created on a pull request.
 	BuildIssueCommentCreated *bool `json:"buildIssueCommentCreated"`
 	// Whether to create builds for merge group check runs.
@@ -3346,6 +3436,56 @@ type RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubSettingsRep
 // GetBuildBranches returns RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings.BuildBranches, and is useful for accessing the field via an interface.
 func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings) GetBuildBranches() *bool {
 	return v.BuildBranches
+}
+
+// GetBuildCheckRunCompleted returns RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings.BuildCheckRunCompleted, and is useful for accessing the field via an interface.
+func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings) GetBuildCheckRunCompleted() *bool {
+	return v.BuildCheckRunCompleted
+}
+
+// GetBuildCreateEvent returns RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings.BuildCreateEvent, and is useful for accessing the field via an interface.
+func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings) GetBuildCreateEvent() *bool {
+	return v.BuildCreateEvent
+}
+
+// GetBuildDeploymentStatusCreated returns RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings.BuildDeploymentStatusCreated, and is useful for accessing the field via an interface.
+func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings) GetBuildDeploymentStatusCreated() *bool {
+	return v.BuildDeploymentStatusCreated
+}
+
+// GetBuildPullRequestConvertedToDraft returns RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings.BuildPullRequestConvertedToDraft, and is useful for accessing the field via an interface.
+func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings) GetBuildPullRequestConvertedToDraft() *bool {
+	return v.BuildPullRequestConvertedToDraft
+}
+
+// GetBuildPullRequestReviewRequested returns RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings.BuildPullRequestReviewRequested, and is useful for accessing the field via an interface.
+func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings) GetBuildPullRequestReviewRequested() *bool {
+	return v.BuildPullRequestReviewRequested
+}
+
+// GetBuildPullRequestReviewDismissed returns RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings.BuildPullRequestReviewDismissed, and is useful for accessing the field via an interface.
+func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings) GetBuildPullRequestReviewDismissed() *bool {
+	return v.BuildPullRequestReviewDismissed
+}
+
+// GetBuildPullRequestReviewSubmitted returns RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings.BuildPullRequestReviewSubmitted, and is useful for accessing the field via an interface.
+func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings) GetBuildPullRequestReviewSubmitted() *bool {
+	return v.BuildPullRequestReviewSubmitted
+}
+
+// GetBuildReleaseCreated returns RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings.BuildReleaseCreated, and is useful for accessing the field via an interface.
+func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings) GetBuildReleaseCreated() *bool {
+	return v.BuildReleaseCreated
+}
+
+// GetBuildReleasePublished returns RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings.BuildReleasePublished, and is useful for accessing the field via an interface.
+func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings) GetBuildReleasePublished() *bool {
+	return v.BuildReleasePublished
+}
+
+// GetBuildReleaseReleased returns RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings.BuildReleaseReleased, and is useful for accessing the field via an interface.
+func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings) GetBuildReleaseReleased() *bool {
+	return v.BuildReleaseReleased
 }
 
 // GetBuildIssueCommentCreated returns RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings.BuildIssueCommentCreated, and is useful for accessing the field via an interface.
@@ -25829,6 +25969,16 @@ fragment RepositoryProviderSettingsFields on Repository {
 		... on RepositoryProviderGithub {
 			settings {
 				buildBranches
+				buildCheckRunCompleted
+				buildCreateEvent
+				buildDeploymentStatusCreated
+				buildPullRequestConvertedToDraft
+				buildPullRequestReviewRequested
+				buildPullRequestReviewDismissed
+				buildPullRequestReviewSubmitted
+				buildReleaseCreated
+				buildReleasePublished
+				buildReleaseReleased
 				buildIssueCommentCreated
 				buildMergeGroupChecksRequested
 				buildPullRequestBaseBranchChanged
@@ -25862,6 +26012,16 @@ fragment RepositoryProviderSettingsFields on Repository {
 		... on RepositoryProviderGithubEnterprise {
 			settings {
 				buildBranches
+				buildCheckRunCompleted
+				buildCreateEvent
+				buildDeploymentStatusCreated
+				buildPullRequestConvertedToDraft
+				buildPullRequestReviewRequested
+				buildPullRequestReviewDismissed
+				buildPullRequestReviewSubmitted
+				buildReleaseCreated
+				buildReleasePublished
+				buildReleaseReleased
 				buildIssueCommentCreated
 				buildMergeGroupChecksRequested
 				buildPullRequestBaseBranchChanged
