@@ -3129,6 +3129,8 @@ type RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubEnterpriseS
 	TriggerMode *string `json:"triggerMode"`
 	// Whether to use the merge group base commit for git diff base.
 	UseMergeGroupBaseCommitForGitDiffBase *bool `json:"useMergeGroupBaseCommitForGitDiffBase"`
+	// Whether to use step keys as commit status names for per-step commit statuses. Requires publish_commit_status and publish_commit_status_per_step to also be enabled.
+	UseStepKeyAsCommitStatus *bool `json:"useStepKeyAsCommitStatus"`
 }
 
 // GetBuildBranches returns RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings.BuildBranches, and is useful for accessing the field via an interface.
@@ -3271,6 +3273,11 @@ func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubEnterpr
 	return v.UseMergeGroupBaseCommitForGitDiffBase
 }
 
+// GetUseStepKeyAsCommitStatus returns RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings.UseStepKeyAsCommitStatus, and is useful for accessing the field via an interface.
+func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings) GetUseStepKeyAsCommitStatus() *bool {
+	return v.UseStepKeyAsCommitStatus
+}
+
 // RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings includes the requested fields of the GraphQL type RepositoryProviderGitHubSettings.
 // The GraphQL type's documentation follows.
 //
@@ -3332,6 +3339,8 @@ type RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubSettingsRep
 	TriggerMode *string `json:"triggerMode"`
 	// Whether to use the merge group base commit for git diff base.
 	UseMergeGroupBaseCommitForGitDiffBase *bool `json:"useMergeGroupBaseCommitForGitDiffBase"`
+	// Whether to use step keys as commit status names for per-step commit statuses. Requires publish_commit_status and publish_commit_status_per_step to also be enabled.
+	UseStepKeyAsCommitStatus *bool `json:"useStepKeyAsCommitStatus"`
 }
 
 // GetBuildBranches returns RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings.BuildBranches, and is useful for accessing the field via an interface.
@@ -3472,6 +3481,11 @@ func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubSetting
 // GetUseMergeGroupBaseCommitForGitDiffBase returns RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings.UseMergeGroupBaseCommitForGitDiffBase, and is useful for accessing the field via an interface.
 func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings) GetUseMergeGroupBaseCommitForGitDiffBase() *bool {
 	return v.UseMergeGroupBaseCommitForGitDiffBase
+}
+
+// GetUseStepKeyAsCommitStatus returns RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings.UseStepKeyAsCommitStatus, and is useful for accessing the field via an interface.
+func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings) GetUseStepKeyAsCommitStatus() *bool {
+	return v.UseStepKeyAsCommitStatus
 }
 
 // RepositoryProviderSettingsFieldsProviderRepositoryProviderGitlab includes the requested fields of the GraphQL type RepositoryProviderGitlab.
@@ -25842,6 +25856,7 @@ fragment RepositoryProviderSettingsFields on Repository {
 				skipPullRequestBuildsForExistingCommits
 				triggerMode
 				useMergeGroupBaseCommitForGitDiffBase
+				useStepKeyAsCommitStatus
 			}
 		}
 		... on RepositoryProviderGithubEnterprise {
@@ -25874,6 +25889,7 @@ fragment RepositoryProviderSettingsFields on Repository {
 				skipPullRequestBuildsForExistingCommits
 				triggerMode
 				useMergeGroupBaseCommitForGitDiffBase
+				useStepKeyAsCommitStatus
 			}
 		}
 		... on RepositoryProviderBitbucket {
