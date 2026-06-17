@@ -134,6 +134,16 @@ type providerSettingsModel struct {
 	BuildIssueCommentCreated                types.Bool   `tfsdk:"build_issue_comment_created"`
 	IssueCommentCommandWord                 types.String `tfsdk:"issue_comment_command_word"`
 	IssueCommentMatchMode                   types.String `tfsdk:"issue_comment_match_mode"`
+	BuildCheckRunCompleted                  types.Bool   `tfsdk:"build_check_run_completed"`
+	BuildCreateEvent                        types.Bool   `tfsdk:"build_create_event"`
+	BuildDeploymentStatusCreated            types.Bool   `tfsdk:"build_deployment_status_created"`
+	BuildPullRequestConvertedToDraft        types.Bool   `tfsdk:"build_pull_request_converted_to_draft"`
+	BuildPullRequestReviewRequested         types.Bool   `tfsdk:"build_pull_request_review_requested"`
+	BuildPullRequestReviewDismissed         types.Bool   `tfsdk:"build_pull_request_review_dismissed"`
+	BuildPullRequestReviewSubmitted         types.Bool   `tfsdk:"build_pull_request_review_submitted"`
+	BuildReleaseCreated                     types.Bool   `tfsdk:"build_release_created"`
+	BuildReleasePublished                   types.Bool   `tfsdk:"build_release_published"`
+	BuildReleaseReleased                    types.Bool   `tfsdk:"build_release_released"`
 }
 
 type pipelineResource struct {
@@ -299,6 +309,21 @@ func (p *pipelineResource) Create(ctx context.Context, req resource.CreateReques
 		resp.Diagnostics.Append(resp.Private.SetKey(ctx, "slugSource", []byte(`{"source": "user"}`))...)
 	}
 
+	if plan.ProviderSettings != nil {
+		pipelineExtraInfo, err := updatePipelineExtraInfo(ctx, useSlugValue, plan.ProviderSettings, p.client, timeouts)
+		if err != nil {
+			resp.Diagnostics.AddError("Unable to set pipeline info from REST", err.Error())
+			return
+		}
+
+		updatePipelineResourceExtraInfo(&state, &pipelineExtraInfo)
+	} else {
+		// no provider_settings provided
+		state.ProviderSettings = plan.ProviderSettings
+	}
+
+	// Archive last: the REST API rejects updates to archived pipelines, so all REST
+	// calls (slug, provider settings) must complete before the pipeline is archived.
 	if plan.Archived.ValueBool() {
 		err = retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
 			_, archiveErr := archivePipeline(ctx, p.client.genqlient, state.Id.ValueString())
@@ -312,19 +337,6 @@ func (p *pipelineResource) Create(ctx context.Context, req resource.CreateReques
 			return
 		}
 		state.Archived = types.BoolValue(true)
-	}
-
-	if plan.ProviderSettings != nil {
-		pipelineExtraInfo, err := updatePipelineExtraInfo(ctx, useSlugValue, plan.ProviderSettings, p.client, timeouts)
-		if err != nil {
-			resp.Diagnostics.AddError("Unable to set pipeline info from REST", err.Error())
-			return
-		}
-
-		updatePipelineResourceExtraInfo(&state, &pipelineExtraInfo)
-	} else {
-		// no provider_settings provided
-		state.ProviderSettings = plan.ProviderSettings
 	}
 
 	state.Slug = types.StringValue(useSlugValue)
@@ -634,9 +646,6 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 			"cluster_name": schema.StringAttribute{
 				MarkdownDescription: "The name of the cluster the pipeline is (optionally) attached to.",
 				Computed:            true,
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseNonNullStateForUnknown(),
-				},
 			},
 			"default_team_id": schema.StringAttribute{
 				MarkdownDescription: "The GraphQL ID of a team to initially assign to the pipeline. This is required by the Buildkite API when creating a new pipeline. The team assigned here will be given 'Manage Build and Read' access. Further team associations can be managed with the `buildkite_pipeline_team` resource after the pipeline is created.",
@@ -1041,6 +1050,86 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 							stringvalidator.OneOf("exact", "contains"),
 						},
 					},
+					"build_check_run_completed": schema.BoolAttribute{
+						Computed:            true,
+						Optional:            true,
+						MarkdownDescription: "Whether to create a build when a GitHub check run completes. Useful for chaining CI workflows by triggering a Buildkite pipeline after another CI system finishes.",
+						PlanModifiers: []planmodifier.Bool{
+							boolplanmodifier.UseNonNullStateForUnknown(),
+						},
+					},
+					"build_create_event": schema.BoolAttribute{
+						Computed:            true,
+						Optional:            true,
+						MarkdownDescription: "Whether to create a build when a branch or tag is created on GitHub.",
+						PlanModifiers: []planmodifier.Bool{
+							boolplanmodifier.UseNonNullStateForUnknown(),
+						},
+					},
+					"build_deployment_status_created": schema.BoolAttribute{
+						Computed:            true,
+						Optional:            true,
+						MarkdownDescription: "Whether to create a build when a GitHub deployment status is created.",
+						PlanModifiers: []planmodifier.Bool{
+							boolplanmodifier.UseNonNullStateForUnknown(),
+						},
+					},
+					"build_pull_request_converted_to_draft": schema.BoolAttribute{
+						Computed:            true,
+						Optional:            true,
+						MarkdownDescription: "Whether to create a build when a pull request is converted to a draft.",
+						PlanModifiers: []planmodifier.Bool{
+							boolplanmodifier.UseNonNullStateForUnknown(),
+						},
+					},
+					"build_pull_request_review_requested": schema.BoolAttribute{
+						Computed:            true,
+						Optional:            true,
+						MarkdownDescription: "Whether to create a build when a review is requested on a pull request.",
+						PlanModifiers: []planmodifier.Bool{
+							boolplanmodifier.UseNonNullStateForUnknown(),
+						},
+					},
+					"build_pull_request_review_dismissed": schema.BoolAttribute{
+						Computed:            true,
+						Optional:            true,
+						MarkdownDescription: "Whether to create a build when a pull request review is dismissed.",
+						PlanModifiers: []planmodifier.Bool{
+							boolplanmodifier.UseNonNullStateForUnknown(),
+						},
+					},
+					"build_pull_request_review_submitted": schema.BoolAttribute{
+						Computed:            true,
+						Optional:            true,
+						MarkdownDescription: "Whether to create a build when a pull request review is submitted.",
+						PlanModifiers: []planmodifier.Bool{
+							boolplanmodifier.UseNonNullStateForUnknown(),
+						},
+					},
+					"build_release_created": schema.BoolAttribute{
+						Computed:            true,
+						Optional:            true,
+						MarkdownDescription: "Whether to create a build when a GitHub release is created (including drafts).",
+						PlanModifiers: []planmodifier.Bool{
+							boolplanmodifier.UseNonNullStateForUnknown(),
+						},
+					},
+					"build_release_published": schema.BoolAttribute{
+						Computed:            true,
+						Optional:            true,
+						MarkdownDescription: "Whether to create a build when a GitHub release is published.",
+						PlanModifiers: []planmodifier.Bool{
+							boolplanmodifier.UseNonNullStateForUnknown(),
+						},
+					},
+					"build_release_released": schema.BoolAttribute{
+						Computed:            true,
+						Optional:            true,
+						MarkdownDescription: "Whether to create a build when a GitHub release is published as final (excludes pre-releases and drafts).",
+						PlanModifiers: []planmodifier.Bool{
+							boolplanmodifier.UseNonNullStateForUnknown(),
+						},
+					},
 				},
 			},
 		},
@@ -1198,20 +1287,10 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 		return
 	}
 
-	// Archive after updating (archiving before would block other field updates too).
-	if !state.Archived.ValueBool() && plan.Archived.ValueBool() {
-		err = retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
-			_, archiveErr := archivePipeline(ctx, p.client.genqlient, plan.Id.ValueString())
-			return retryContextError(archiveErr)
-		})
-		if err != nil {
-			resp.Diagnostics.AddError(
-				"Unable to update pipeline archive state",
-				fmt.Sprintf("Unable to update pipeline archive state: %s", err.Error()),
-			)
-			return
-		}
-	}
+	// Archive last (see below): the REST API rejects updates to archived pipelines, so
+	// the slug and provider settings REST calls must complete before archiving. Capture
+	// the decision here because state.Archived is synced to plan further down.
+	needsArchive := !state.Archived.ValueBool() && plan.Archived.ValueBool()
 
 	useSlugValue := response.PipelineUpdate.Pipeline.Slug
 	resp.Diagnostics.Append(resp.Private.SetKey(ctx, "slugSource", []byte(`{"source": "api"}`))...)
@@ -1279,6 +1358,22 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 	} else {
 		// no provider_settings provided
 		state.ProviderSettings = plan.ProviderSettings
+	}
+
+	// Archive after all other updates: archiving earlier would make the REST calls
+	// above fail with "Cannot update an archived pipeline".
+	if needsArchive {
+		err = retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
+			_, archiveErr := archivePipeline(ctx, p.client.genqlient, plan.Id.ValueString())
+			return retryContextError(archiveErr)
+		})
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Unable to update pipeline archive state",
+				fmt.Sprintf("Unable to update pipeline archive state: %s", err.Error()),
+			)
+			return
+		}
 	}
 
 	state.Slug = types.StringValue(useSlugValue)
@@ -1407,6 +1502,16 @@ type PipelineExtraSettings struct {
 	BuildIssueCommentCreated                *bool   `json:"build_issue_comment_created,omitempty"`
 	IssueCommentCommandWord                 *string `json:"issue_comment_command_word,omitempty"`
 	IssueCommentMatchMode                   *string `json:"issue_comment_match_mode,omitempty"`
+	BuildCheckRunCompleted                  *bool   `json:"build_check_run_completed,omitempty"`
+	BuildCreateEvent                        *bool   `json:"build_create_event,omitempty"`
+	BuildDeploymentStatusCreated            *bool   `json:"build_deployment_status_created,omitempty"`
+	BuildPullRequestConvertedToDraft        *bool   `json:"build_pull_request_converted_to_draft,omitempty"`
+	BuildPullRequestReviewRequested         *bool   `json:"build_pull_request_review_requested,omitempty"`
+	BuildPullRequestReviewDismissed         *bool   `json:"build_pull_request_review_dismissed,omitempty"`
+	BuildPullRequestReviewSubmitted         *bool   `json:"build_pull_request_review_submitted,omitempty"`
+	BuildReleaseCreated                     *bool   `json:"build_release_created,omitempty"`
+	BuildReleasePublished                   *bool   `json:"build_release_published,omitempty"`
+	BuildReleaseReleased                    *bool   `json:"build_release_released,omitempty"`
 }
 
 func updatePipelineSlug(ctx context.Context, slug string, updatedSlug string, client *Client, timeouts time.Duration) (PipelineExtraInfo, error) {
@@ -1460,6 +1565,16 @@ func updatePipelineExtraInfo(ctx context.Context, slug string, settings *provide
 			BuildIssueCommentCreated:                settings.BuildIssueCommentCreated.ValueBoolPointer(),
 			IssueCommentCommandWord:                 settings.IssueCommentCommandWord.ValueStringPointer(),
 			IssueCommentMatchMode:                   settings.IssueCommentMatchMode.ValueStringPointer(),
+			BuildCheckRunCompleted:                  settings.BuildCheckRunCompleted.ValueBoolPointer(),
+			BuildCreateEvent:                        settings.BuildCreateEvent.ValueBoolPointer(),
+			BuildDeploymentStatusCreated:            settings.BuildDeploymentStatusCreated.ValueBoolPointer(),
+			BuildPullRequestConvertedToDraft:        settings.BuildPullRequestConvertedToDraft.ValueBoolPointer(),
+			BuildPullRequestReviewRequested:         settings.BuildPullRequestReviewRequested.ValueBoolPointer(),
+			BuildPullRequestReviewDismissed:         settings.BuildPullRequestReviewDismissed.ValueBoolPointer(),
+			BuildPullRequestReviewSubmitted:         settings.BuildPullRequestReviewSubmitted.ValueBoolPointer(),
+			BuildReleaseCreated:                     settings.BuildReleaseCreated.ValueBoolPointer(),
+			BuildReleasePublished:                   settings.BuildReleasePublished.ValueBoolPointer(),
+			BuildReleaseReleased:                    settings.BuildReleaseReleased.ValueBoolPointer(),
 		},
 	}
 
@@ -1518,6 +1633,16 @@ func updatePipelineResourceExtraInfo(state *pipelineResourceModel, pipeline *Pip
 		BuildIssueCommentCreated:                types.BoolPointerValue(s.BuildIssueCommentCreated),
 		IssueCommentCommandWord:                 types.StringPointerValue(s.IssueCommentCommandWord),
 		IssueCommentMatchMode:                   types.StringPointerValue(s.IssueCommentMatchMode),
+		BuildCheckRunCompleted:                  types.BoolPointerValue(s.BuildCheckRunCompleted),
+		BuildCreateEvent:                        types.BoolPointerValue(s.BuildCreateEvent),
+		BuildDeploymentStatusCreated:            types.BoolPointerValue(s.BuildDeploymentStatusCreated),
+		BuildPullRequestConvertedToDraft:        types.BoolPointerValue(s.BuildPullRequestConvertedToDraft),
+		BuildPullRequestReviewRequested:         types.BoolPointerValue(s.BuildPullRequestReviewRequested),
+		BuildPullRequestReviewDismissed:         types.BoolPointerValue(s.BuildPullRequestReviewDismissed),
+		BuildPullRequestReviewSubmitted:         types.BoolPointerValue(s.BuildPullRequestReviewSubmitted),
+		BuildReleaseCreated:                     types.BoolPointerValue(s.BuildReleaseCreated),
+		BuildReleasePublished:                   types.BoolPointerValue(s.BuildReleasePublished),
+		BuildReleaseReleased:                    types.BoolPointerValue(s.BuildReleaseReleased),
 	}
 }
 
@@ -1932,6 +2057,46 @@ func pipelineSchemaV0() schema.Schema {
 							Optional: true,
 						},
 						"issue_comment_match_mode": schema.StringAttribute{
+							Computed: true,
+							Optional: true,
+						},
+						"build_check_run_completed": schema.BoolAttribute{
+							Computed: true,
+							Optional: true,
+						},
+						"build_create_event": schema.BoolAttribute{
+							Computed: true,
+							Optional: true,
+						},
+						"build_deployment_status_created": schema.BoolAttribute{
+							Computed: true,
+							Optional: true,
+						},
+						"build_pull_request_converted_to_draft": schema.BoolAttribute{
+							Computed: true,
+							Optional: true,
+						},
+						"build_pull_request_review_requested": schema.BoolAttribute{
+							Computed: true,
+							Optional: true,
+						},
+						"build_pull_request_review_dismissed": schema.BoolAttribute{
+							Computed: true,
+							Optional: true,
+						},
+						"build_pull_request_review_submitted": schema.BoolAttribute{
+							Computed: true,
+							Optional: true,
+						},
+						"build_release_created": schema.BoolAttribute{
+							Computed: true,
+							Optional: true,
+						},
+						"build_release_published": schema.BoolAttribute{
+							Computed: true,
+							Optional: true,
+						},
+						"build_release_released": schema.BoolAttribute{
 							Computed: true,
 							Optional: true,
 						},

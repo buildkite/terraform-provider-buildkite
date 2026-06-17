@@ -1,5 +1,61 @@
 # Changelog
 
+## [1.34.2](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.34.1...v1.34.2)
+
+### Fixed
+
+* fix(config): misleading error when cluster name changed by @mcncl in https://github.com/buildkite/terraform-provider-buildkite/pull/1163
+
+### Dependencies
+
+* chore(deps): update terraform buildkite to v1.34.1 by @renovate[bot] in https://github.com/buildkite/terraform-provider-buildkite/pull/1161
+
+## [1.34.1](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.34.0...v1.34.1)
+
+### Fixed
+
+* fix: archive pipeline after REST updates in Create and Update by @inez in https://github.com/buildkite/terraform-provider-buildkite/pull/1162
+
+## [1.34.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.33.0...v1.34.0)
+
+### Features
+
+* [SUP- 7066]: feat: add `use_step_key_as_commit_status` provider setting by @omarjatoi in https://github.com/buildkite/terraform-provider-buildkite/pull/1146
+* Add GitHub webhook trigger settings to pipeline resource by @scadu in https://github.com/buildkite/terraform-provider-buildkite/pull/1157
+* feat: adds write-only value option for buildkite secret resource by @zscholl in https://github.com/buildkite/terraform-provider-buildkite/pull/1135
+
+### Fixed
+
+* Fix bug with empty `env` map by @petetomasik in https://github.com/buildkite/terraform-provider-buildkite/pull/1153
+
+### Internal
+
+* SUP-7062: use errors.As with gqlerror.List for GraphQL error handling by @tomowatt in https://github.com/buildkite/terraform-provider-buildkite/pull/1144
+
+### Dependencies
+
+* chore(deps): update terraform buildkite to v1.33.0 by @renovate[bot] in https://github.com/buildkite/terraform-provider-buildkite/pull/1141
+* chore(deps): update golang:1.26.3 docker digest to 633d23b by @renovate[bot] in https://github.com/buildkite/terraform-provider-buildkite/pull/1140
+* chore(deps): update hashicorp/terraform:1.15 docker digest to a12a7a9 by @renovate[bot] in https://github.com/buildkite/terraform-provider-buildkite/pull/1142
+* chore(deps): update golang:1.26.3 docker digest to 313faae by @renovate[bot] in https://github.com/buildkite/terraform-provider-buildkite/pull/1143
+* chore(deps): bump github.com/buildkite/go-pipeline from 0.17.0 to 0.17.1 by @dependabot[bot] in https://github.com/buildkite/terraform-provider-buildkite/pull/1155
+* chore(deps): update dependency go to v1.26.4 by @renovate[bot] in https://github.com/buildkite/terraform-provider-buildkite/pull/1158
+
+## [1.33.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.32.0...v1.33.0)
+
+### Features
+
+* Add reserved prefix validation to cluster secret key by @stephanieatte in https://github.com/buildkite/terraform-provider-buildkite/pull/1133
+* Add support for build triggering on issue comments. by @omehegan in https://github.com/buildkite/terraform-provider-buildkite/pull/1139
+
+### Fixed
+
+* Fix unknown attributes with provider_settings by @petetomasik in https://github.com/buildkite/terraform-provider-buildkite/pull/1117
+
+### Internal
+
+* Reduce build targets from 15 to 6 by @mcncl in https://github.com/buildkite/terraform-provider-buildkite/pull/1111
+
 ## [1.32.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.31.4...v1.32.0)
 
 ### Features
