@@ -60,6 +60,26 @@ fragment RepositoryProviderSettingsFields on Repository {
                 # @genqlient(pointer: true)
                 buildBranches
                 # @genqlient(pointer: true)
+                buildCheckRunCompleted
+                # @genqlient(pointer: true)
+                buildCreateEvent
+                # @genqlient(pointer: true)
+                buildDeploymentStatusCreated
+                # @genqlient(pointer: true)
+                buildPullRequestConvertedToDraft
+                # @genqlient(pointer: true)
+                buildPullRequestReviewRequested
+                # @genqlient(pointer: true)
+                buildPullRequestReviewDismissed
+                # @genqlient(pointer: true)
+                buildPullRequestReviewSubmitted
+                # @genqlient(pointer: true)
+                buildReleaseCreated
+                # @genqlient(pointer: true)
+                buildReleasePublished
+                # @genqlient(pointer: true)
+                buildReleaseReleased
+                # @genqlient(pointer: true)
                 buildIssueCommentCreated
                 # @genqlient(pointer: true)
                 buildMergeGroupChecksRequested
@@ -121,6 +141,26 @@ fragment RepositoryProviderSettingsFields on Repository {
             settings {
                 # @genqlient(pointer: true)
                 buildBranches
+                # @genqlient(pointer: true)
+                buildCheckRunCompleted
+                # @genqlient(pointer: true)
+                buildCreateEvent
+                # @genqlient(pointer: true)
+                buildDeploymentStatusCreated
+                # @genqlient(pointer: true)
+                buildPullRequestConvertedToDraft
+                # @genqlient(pointer: true)
+                buildPullRequestReviewRequested
+                # @genqlient(pointer: true)
+                buildPullRequestReviewDismissed
+                # @genqlient(pointer: true)
+                buildPullRequestReviewSubmitted
+                # @genqlient(pointer: true)
+                buildReleaseCreated
+                # @genqlient(pointer: true)
+                buildReleasePublished
+                # @genqlient(pointer: true)
+                buildReleaseReleased
                 # @genqlient(pointer: true)
                 buildIssueCommentCreated
                 # @genqlient(pointer: true)
