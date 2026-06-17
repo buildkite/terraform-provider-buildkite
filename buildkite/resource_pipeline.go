@@ -430,8 +430,7 @@ func (p *pipelineResource) Read(ctx context.Context, req resource.ReadRequest, r
 		// Refresh provider_settings only when the user configured it, via a dedicated GraphQL query
 		// (kept out of the shared PipelineFields fragment so unrelated reads aren't coupled to the
 		// provider settings subtree). Errors are surfaced, never swallowed, to avoid persisting stale
-		// state. use_step_key_as_commit_status is not exposed on the GraphQL API, so it is carried
-		// forward from prior state (it is still written via REST on Create/Update).
+		// state.
 		if state.ProviderSettings != nil {
 			var providerSettingsResponse *getPipelineProviderSettingsResponse
 			err := retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
@@ -446,7 +445,6 @@ func (p *pipelineResource) Read(ctx context.Context, req resource.ReadRequest, r
 
 			if psPipeline, ok := providerSettingsResponse.Node.(*getPipelineProviderSettingsNodePipeline); ok && psPipeline != nil {
 				if mapped := mapProviderSettingsFromGraphQL(psPipeline.Repository.RepositoryProviderSettingsFields); mapped != nil {
-					mapped.UseStepKeyAsCommitStatus = state.ProviderSettings.UseStepKeyAsCommitStatus
 					state.ProviderSettings = mapped
 				}
 			}
@@ -1533,11 +1531,10 @@ func matchModeToString(m *CommandWordMatchMode) types.String {
 }
 
 // mapProviderSettingsFromGraphQL converts the repository provider settings returned by the
-// GraphQL PipelineFields fragment into a providerSettingsModel. It mirrors the REST mapping in
-// updatePipelineResourceExtraInfo so that reading via GraphQL is value-equivalent. Fields a
-// provider does not expose are left null. use_step_key_as_commit_status is intentionally not set
-// here: it is not available on the GraphQL API, so the caller carries it forward from prior state.
-// Returns nil if the provider is unset or not a recognised type.
+// RepositoryProviderSettingsFields fragment into a providerSettingsModel. It mirrors the REST
+// mapping in updatePipelineResourceExtraInfo so that reading via GraphQL is value-equivalent.
+// Fields a provider does not expose are left null. Returns nil if the provider is unset or not a
+// recognised type.
 func mapProviderSettingsFromGraphQL(repo RepositoryProviderSettingsFields) *providerSettingsModel {
 	switch provider := repo.GetProvider().(type) {
 	case *RepositoryProviderSettingsFieldsProviderRepositoryProviderGithub:
@@ -1571,6 +1568,7 @@ func mapProviderSettingsFromGraphQL(repo RepositoryProviderSettingsFields) *prov
 			BuildIssueCommentCreated:                types.BoolPointerValue(s.BuildIssueCommentCreated),
 			IssueCommentCommandWord:                 types.StringPointerValue(s.IssueCommentCommandWord),
 			IssueCommentMatchMode:                   matchModeToString(s.IssueCommentMatchMode),
+			UseStepKeyAsCommitStatus:                types.BoolPointerValue(s.UseStepKeyAsCommitStatus),
 		}
 	case *RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubEnterprise:
 		s := provider.Settings
@@ -1603,6 +1601,7 @@ func mapProviderSettingsFromGraphQL(repo RepositoryProviderSettingsFields) *prov
 			BuildIssueCommentCreated:                types.BoolPointerValue(s.BuildIssueCommentCreated),
 			IssueCommentCommandWord:                 types.StringPointerValue(s.IssueCommentCommandWord),
 			IssueCommentMatchMode:                   matchModeToString(s.IssueCommentMatchMode),
+			UseStepKeyAsCommitStatus:                types.BoolPointerValue(s.UseStepKeyAsCommitStatus),
 		}
 	case *RepositoryProviderSettingsFieldsProviderRepositoryProviderBitbucket:
 		s := provider.Settings
