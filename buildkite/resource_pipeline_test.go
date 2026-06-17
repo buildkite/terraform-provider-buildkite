@@ -114,10 +114,11 @@ func TestMapProviderSettingsFromGraphQLGitHub(t *testing.T) {
 	repo := RepositoryProviderSettingsFields{
 		Provider: &RepositoryProviderSettingsFieldsProviderRepositoryProviderGithub{
 			Settings: RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings{
-				TriggerMode:           &triggerMode,
-				BuildPullRequests:     &enabled,
-				BuildBranches:         &disabled,
-				IssueCommentMatchMode: &matchMode,
+				TriggerMode:              &triggerMode,
+				BuildPullRequests:        &enabled,
+				BuildBranches:            &disabled,
+				IssueCommentMatchMode:    &matchMode,
+				UseStepKeyAsCommitStatus: &enabled,
 			},
 		},
 	}
@@ -139,10 +140,9 @@ func TestMapProviderSettingsFromGraphQLGitHub(t *testing.T) {
 	if got.IssueCommentMatchMode.ValueString() != "exact" {
 		t.Fatalf("issue_comment_match_mode: expected \"exact\", got %q", got.IssueCommentMatchMode.ValueString())
 	}
-	// use_step_key_as_commit_status is not in GraphQL; the mapping must leave it null so the
-	// caller can carry it forward from prior state.
-	if !got.UseStepKeyAsCommitStatus.IsNull() {
-		t.Fatalf("use_step_key_as_commit_status: expected null, got %v", got.UseStepKeyAsCommitStatus)
+	// use_step_key_as_commit_status is now exposed via GraphQL and mapped directly.
+	if !got.UseStepKeyAsCommitStatus.ValueBool() {
+		t.Fatal("use_step_key_as_commit_status: expected true")
 	}
 }
 
@@ -755,9 +755,9 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 				{
 					// Refresh-only: re-reads state via Read, which now sources provider_settings
 					// from GraphQL. Unchanged values prove the GraphQL-sourced read is
-					// value-equivalent to what was written via REST, that issue_comment_match_mode
-					// (a GraphQL enum) is lowercased to match the schema, and that
-					// use_step_key_as_commit_status (absent from GraphQL) is carried forward.
+					// value-equivalent to what was written via REST, including the
+					// issue_comment_match_mode enum (lowercased to match the schema) and
+					// use_step_key_as_commit_status.
 					RefreshState:       true,
 					ExpectNonEmptyPlan: false,
 					Check: resource.ComposeAggregateTestCheckFunc(
