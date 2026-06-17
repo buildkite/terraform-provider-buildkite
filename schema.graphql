@@ -1205,58 +1205,58 @@ union AuditSubjectNode =APIAccessToken | APIApplication | AgentToken | Authoriza
 All the possible types of subjects in an Audit Event
 """
 enum AuditSubjectType {
-	ORGANIZATION_SECURITY_SETTING
-	AUTHORIZATION
-	PIPELINE_TEMPLATE
-	PORTAL
-	PIPELINE_SCHEDULE
-	TEAM_MEMBER
-	TEAM_PIPELINE
-	PORTAL_TOKEN_CODE
-	TEAM_SUITE
-	TEAM_SECRET
-	COMPOSITE_REGISTRY_UPSTREAM
-	REGISTRY_TOKEN
-	SSO_PROVIDER
-	TEAM_REGISTRY
-	SCM_PIPELINE_SETTINGS
-	SCM_REPOSITORY_HOST
-	SCM_SERVICE
-	SUITE_MONITOR
-	SUITE_SAVED_VIEW
-	SUBSCRIPTION
-	USER_EMAIL
-	ORGANIZATION
-	USER_TOTP
-	SUITE_WORKFLOW
-	CREDIT_CARD
-	SECRET
-	API_APPLICATION
-	PIPELINE
-	REGISTRY
-	CLUSTER_QUEUE_TOKEN
-	CLUSTER_TOKEN
-	PORTAL_TOKEN
-	PORTAL_SECRET
-	SUITE
-	CLUSTER
 	JOB
-	CLUSTER_PERMISSION
-	USER
-	RULE
-	TEAM
-	PIPELINE_TRIGGER
+	SUBSCRIPTION
+	PIPELINE
+	API_APPLICATION
 	AGENT_TOKEN
 	MODEL_PROVIDER
 	API_ACCESS_TOKEN
 	CACHE_REGISTRY
 	CLUSTER_QUEUE
+	CLUSTER_TOKEN
+	CLUSTER_QUEUE_TOKEN
+	CLUSTER_PERMISSION
 	NOTIFICATION_SERVICE
+	ORGANIZATION
+	REGISTRY
 	ORGANIZATION_BANNER
+	RULE
+	ORGANIZATION_INVITATION
 	ORGANIZATION_BILLING_SETTING
 	ORGANIZATION_IMPERSONATION_REQUEST
-	ORGANIZATION_INVITATION
+	ORGANIZATION_SECURITY_SETTING
 	ORGANIZATION_MEMBER
+	PORTAL
+	PORTAL_SECRET
+	PORTAL_TOKEN
+	PORTAL_TOKEN_CODE
+	TEAM
+	TEAM_MEMBER
+	TEAM_PIPELINE
+	TEAM_REGISTRY
+	PIPELINE_TRIGGER
+	TEAM_SUITE
+	TEAM_SECRET
+	CREDIT_CARD
+	REGISTRY_TOKEN
+	SSO_PROVIDER
+	SCM_SERVICE
+	SCM_PIPELINE_SETTINGS
+	COMPOSITE_REGISTRY_UPSTREAM
+	SCM_REPOSITORY_HOST
+	SUITE_MONITOR
+	PIPELINE_SCHEDULE
+	PIPELINE_TEMPLATE
+	SUITE
+	SUITE_SAVED_VIEW
+	SUITE_WORKFLOW
+	CLUSTER
+	USER
+	USER_EMAIL
+	USER_TOTP
+	SECRET
+	AUTHORIZATION
 }
 
 """
@@ -4499,6 +4499,14 @@ The pipeline that this job is a part of
 The priority of this job
 """
 	priority: JobPriority!
+"""
+The exit status the job said it will finish with in the future
+"""
+	promisedExitStatus: JSInt
+"""
+The time the job set promised_exit_status
+"""
+	promisedExitStatusAt: DateTime
 """
 If this job has been retried
 """
@@ -9492,6 +9500,10 @@ What type of event to trigger builds on.
 Whether to use the merge group base commit for git diff base.
 """
 	useMergeGroupBaseCommitForGitDiffBase: Boolean!
+"""
+Whether to use step keys as commit status names for per-step commit statuses. Requires publish_commit_status and publish_commit_status_per_step to also be enabled.
+"""
+	useStepKeyAsCommitStatus: Boolean!
 }
 
 """
@@ -9678,6 +9690,10 @@ What type of event to trigger builds on.
 Whether to use the merge group base commit for git diff base.
 """
 	useMergeGroupBaseCommitForGitDiffBase: Boolean!
+"""
+Whether to use step keys as commit status names for per-step commit statuses. Requires publish_commit_status and publish_commit_status_per_step to also be enabled.
+"""
+	useStepKeyAsCommitStatus: Boolean!
 }
 
 """
