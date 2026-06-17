@@ -702,6 +702,16 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 					build_issue_comment_created = true
 					issue_comment_command_word = "ci-force-rerun"
 					issue_comment_match_mode = "exact"
+					build_check_run_completed = true
+					build_create_event = true
+					build_deployment_status_created = true
+					build_pull_request_converted_to_draft = true
+					build_pull_request_review_requested = true
+					build_pull_request_review_dismissed = true
+					build_pull_request_review_submitted = true
+					build_release_created = true
+					build_release_published = true
+					build_release_released = true
 				}
 			}
 		`, clusterName, pipelineName)
@@ -750,6 +760,16 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_issue_comment_created", "true"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.issue_comment_command_word", "ci-force-rerun"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.issue_comment_match_mode", "exact"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_check_run_completed", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_create_event", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_deployment_status_created", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_pull_request_converted_to_draft", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_pull_request_review_requested", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_pull_request_review_dismissed", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_pull_request_review_submitted", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_release_created", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_release_published", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_release_released", "true"),
 					),
 				},
 				{
@@ -843,6 +863,16 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 								build_issue_comment_created = true
 								issue_comment_command_word = "/deploy"
 								issue_comment_match_mode = "contains"
+								build_check_run_completed = true
+								build_create_event = true
+								build_deployment_status_created = true
+								build_pull_request_converted_to_draft = true
+								build_pull_request_review_requested = true
+								build_pull_request_review_dismissed = true
+								build_pull_request_review_submitted = true
+								build_release_created = true
+								build_release_published = true
+								build_release_released = true
 							}
 						}
 					`, clusterName, pipelineName),
@@ -868,7 +898,66 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_issue_comment_created", "true"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.issue_comment_command_word", "/deploy"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.issue_comment_match_mode", "contains"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_check_run_completed", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_create_event", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_deployment_status_created", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_pull_request_converted_to_draft", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_pull_request_review_requested", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_pull_request_review_dismissed", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_pull_request_review_submitted", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_release_created", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_release_published", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_release_released", "true"),
 						aggregateRemoteCheck(&pipeline),
+					),
+				},
+			},
+		})
+	})
+
+	t.Run("changing cluster_id updates cluster_name without inconsistency error", func(t *testing.T) {
+		pipelineName := acctest.RandString(12)
+		clusterNameA := acctest.RandString(12)
+		clusterNameB := acctest.RandString(12)
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			CheckDestroy:             testAccCheckPipelineDestroyFunc,
+			Steps: []resource.TestStep{
+				{
+					Config: fmt.Sprintf(`
+						resource "buildkite_cluster" "cluster_a" {
+							name = "%s"
+						}
+						resource "buildkite_pipeline" "pipeline" {
+							name = "%s"
+							repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
+							cluster_id = buildkite_cluster.cluster_a.id
+						}
+					`, clusterNameA, pipelineName),
+					Check: resource.ComposeAggregateTestCheckFunc(
+						resource.TestCheckResourceAttrPair("buildkite_pipeline.pipeline", "cluster_id", "buildkite_cluster.cluster_a", "id"),
+						resource.TestCheckResourceAttrPair("buildkite_pipeline.pipeline", "cluster_name", "buildkite_cluster.cluster_a", "name"),
+					),
+				},
+				{
+					Config: fmt.Sprintf(`
+						resource "buildkite_cluster" "cluster_a" {
+							name = "%s"
+						}
+						resource "buildkite_cluster" "cluster_b" {
+							name = "%s"
+						}
+						resource "buildkite_pipeline" "pipeline" {
+							name = "%s"
+							repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
+							cluster_id = buildkite_cluster.cluster_b.id
+						}
+					`, clusterNameA, clusterNameB, pipelineName),
+					Check: resource.ComposeAggregateTestCheckFunc(
+						resource.TestCheckResourceAttrPair("buildkite_pipeline.pipeline", "cluster_id", "buildkite_cluster.cluster_b", "id"),
+						resource.TestCheckResourceAttrPair("buildkite_pipeline.pipeline", "cluster_name", "buildkite_cluster.cluster_b", "name"),
 					),
 				},
 			},
@@ -1861,6 +1950,103 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 							}
 							if resp.Pipeline.Archived {
 								return fmt.Errorf("expected pipeline to be unarchived after update, got archived = true")
+							}
+							return nil
+						},
+					),
+				},
+			},
+		})
+	})
+
+	t.Run("archives pipeline with provider_settings", func(t *testing.T) {
+		// Regression test: archiving must happen after the provider_settings REST
+		// PATCH, otherwise the API rejects it with "Cannot update an archived
+		// pipeline".
+		pipelineName := acctest.RandString(12)
+		configFor := func(archived bool) string {
+			return fmt.Sprintf(`
+				resource "buildkite_pipeline" "pipeline" {
+					name = "%s"
+					repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
+					archived = %t
+
+					provider_settings = {
+						build_branches = true
+						build_pull_requests = false
+					}
+				}
+			`, pipelineName, archived)
+		}
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			CheckDestroy:             testAccCheckPipelineDestroyFunc,
+			Steps: []resource.TestStep{
+				{
+					Config: configFor(false),
+					Check: resource.ComposeAggregateTestCheckFunc(
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "archived", "false"),
+					),
+				},
+				{
+					Config: configFor(true),
+					ConfigPlanChecks: resource.ConfigPlanChecks{
+						PreApply: []plancheck.PlanCheck{
+							plancheck.ExpectResourceAction("buildkite_pipeline.pipeline", plancheck.ResourceActionUpdate),
+						},
+					},
+					Check: resource.ComposeAggregateTestCheckFunc(
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "archived", "true"),
+						func(s *terraform.State) error {
+							slug := fmt.Sprintf("%s/%s", getenv("BUILDKITE_ORGANIZATION_SLUG"), pipelineName)
+							resp, err := getPipeline(context.Background(), genqlientGraphql, slug)
+							if err != nil {
+								return err
+							}
+							if !resp.Pipeline.Archived {
+								return fmt.Errorf("expected pipeline to be archived, got archived = false")
+							}
+							return nil
+						},
+					),
+				},
+			},
+		})
+	})
+
+	t.Run("creates archived pipeline with provider_settings", func(t *testing.T) {
+		pipelineName := acctest.RandString(12)
+		config := fmt.Sprintf(`
+			resource "buildkite_pipeline" "pipeline" {
+				name = "%s"
+				repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
+				archived = true
+
+				provider_settings = {
+					build_branches = true
+				}
+			}
+		`, pipelineName)
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			CheckDestroy:             testAccCheckPipelineDestroyFunc,
+			Steps: []resource.TestStep{
+				{
+					Config: config,
+					Check: resource.ComposeAggregateTestCheckFunc(
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "archived", "true"),
+						func(s *terraform.State) error {
+							slug := fmt.Sprintf("%s/%s", getenv("BUILDKITE_ORGANIZATION_SLUG"), pipelineName)
+							resp, err := getPipeline(context.Background(), genqlientGraphql, slug)
+							if err != nil {
+								return err
+							}
+							if !resp.Pipeline.Archived {
+								return fmt.Errorf("expected pipeline to be archived, got archived = false")
 							}
 							return nil
 						},

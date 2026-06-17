@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/MakeNowJust/heredoc"
+	"github.com/hashicorp/terraform-plugin-framework-validators/resourcevalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -23,14 +24,16 @@ type clusterSecretResource struct {
 }
 
 type clusterSecretResourceModel struct {
-	ID          types.String `tfsdk:"id"`
-	ClusterID   types.String `tfsdk:"cluster_id"`
-	Key         types.String `tfsdk:"key"`
-	Value       types.String `tfsdk:"value"`
-	Description types.String `tfsdk:"description"`
-	Policy      types.String `tfsdk:"policy"`
-	CreatedAt   types.String `tfsdk:"created_at"`
-	UpdatedAt   types.String `tfsdk:"updated_at"`
+	ID             types.String `tfsdk:"id"`
+	ClusterID      types.String `tfsdk:"cluster_id"`
+	Key            types.String `tfsdk:"key"`
+	Value          types.String `tfsdk:"value"`
+	ValueWO        types.String `tfsdk:"value_wo"`
+	ValueWOVersion types.String `tfsdk:"value_wo_version"`
+	Description    types.String `tfsdk:"description"`
+	Policy         types.String `tfsdk:"policy"`
+	CreatedAt      types.String `tfsdk:"created_at"`
+	UpdatedAt      types.String `tfsdk:"updated_at"`
 }
 
 func newClusterSecretResource() resource.Resource {
@@ -48,15 +51,29 @@ func (r *clusterSecretResource) Configure(ctx context.Context, req resource.Conf
 	r.client = req.ProviderData.(*Client)
 }
 
+func (r *clusterSecretResource) ConfigValidators(ctx context.Context) []resource.ConfigValidator {
+	return []resource.ConfigValidator{
+		resourcevalidator.ExactlyOneOf(
+			path.MatchRoot("value"),
+			path.MatchRoot("value_wo"),
+		),
+		resourcevalidator.RequiredTogether(
+			path.MatchRoot("value_wo"),
+			path.MatchRoot("value_wo_version"),
+		),
+	}
+}
+
 func (r *clusterSecretResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		MarkdownDescription: heredoc.Doc(`
 			A Cluster Secret is an encrypted key-value pair that can be accessed by agents within a cluster.
 			Secrets are encrypted and can only be accessed by agents that match the access policy.
 
-			**Note:** Secret values are write-only and cannot be retrieved from the API. When importing an existing
-			cluster secret, you must manually set the 'value' attribute in your configuration to match the secret's
-			actual value, as Terraform cannot read it from the Buildkite API.
+			**Note:** Secret values are write-only in the Buildkite API and cannot be retrieved after they are set.
+			Exactly one of value or value_wo must be configured. The value attribute is stored in
+			Terraform state so Terraform can detect changes. Use value_wo with value_wo_version
+			to pass a secret value without storing it in Terraform plan or state artifacts.
 		`),
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
@@ -89,11 +106,27 @@ func (r *clusterSecretResource) Schema(ctx context.Context, req resource.SchemaR
 				},
 			},
 			"value": schema.StringAttribute{
-				Required:            true,
+				Optional:            true,
 				Sensitive:           true,
-				MarkdownDescription: "The secret value. Must be less than 8KB.",
+				MarkdownDescription: "The secret value. Must be less than 8KB. Exactly one of `value` or `value_wo` must be configured. This value is stored in Terraform state; use `value_wo` with `value_wo_version` to avoid storing secret values in state.",
 				Validators: []validator.String{
 					stringvalidator.LengthAtMost(8192), // 8KB = 8192 bytes
+				},
+			},
+			"value_wo": schema.StringAttribute{
+				Optional:            true,
+				Sensitive:           true,
+				WriteOnly:           true,
+				MarkdownDescription: "Write-only secret value. Must be less than 8KB. Exactly one of `value` or `value_wo` must be configured. This value is not stored in Terraform plan or state artifacts. Pair with `value_wo_version` to trigger secret value updates.",
+				Validators: []validator.String{
+					stringvalidator.LengthAtMost(8192), // 8KB = 8192 bytes
+				},
+			},
+			"value_wo_version": schema.StringAttribute{
+				Optional:            true,
+				MarkdownDescription: "Non-empty, non-secret version identifier for `value_wo`. Required when `value_wo` is configured. Change this value when the write-only secret value changes, for example by using an external secret manager version ID.",
+				Validators: []validator.String{
+					stringvalidator.LengthAtLeast(1),
 				},
 			},
 			"description": schema.StringAttribute{
@@ -130,18 +163,35 @@ func (r *clusterSecretResource) Create(ctx context.Context, req resource.CreateR
 		return
 	}
 
+	// Write-only attributes are only available from config, not plan or state.
+	var config clusterSecretResourceModel
+	diags = req.Config.Get(ctx, &config)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	timeout, diags := r.client.timeouts.Create(ctx, DefaultTimeout)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
+	secretValue, err := clusterSecretValue(plan, config)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Unable to determine cluster secret value",
+			err.Error(),
+		)
+		return
+	}
+
 	var created *ClusterSecret
-	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+	err = retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		var err error
 		secret := &ClusterSecret{
 			Key:   plan.Key.ValueString(),
-			Value: plan.Value.ValueString(),
+			Value: secretValue,
 		}
 		// Handle optional fields - preserve null vs empty string
 		if !plan.Description.IsNull() {
@@ -179,7 +229,7 @@ func (r *clusterSecretResource) Read(ctx context.Context, req resource.ReadReque
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	// Preserve existing value since API never returns it
+	// Preserve the legacy stateful value since the Buildkite API never returns it.
 	existingValue := state.Value
 
 	timeout, diags := r.client.timeouts.Read(ctx, DefaultTimeout)
@@ -230,14 +280,20 @@ func (r *clusterSecretResource) Read(ctx context.Context, req resource.ReadReque
 
 	state.CreatedAt = types.StringValue(secret.CreatedAt)
 	state.UpdatedAt = types.StringValue(secret.UpdatedAt)
-	// Note: Value is never returned by API, so we keep the plan value
-
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
 func (r *clusterSecretResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	var plan clusterSecretResourceModel
 	diags := req.Plan.Get(ctx, &plan)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// Write-only attributes are only available from config, not plan or state.
+	var config clusterSecretResourceModel
+	diags = req.Config.Get(ctx, &config)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -256,16 +312,29 @@ func (r *clusterSecretResource) Update(ctx context.Context, req resource.UpdateR
 		return
 	}
 
+	shouldUpdateValue := shouldUpdateClusterSecretValue(plan, state)
+	var secretValue string
+	if shouldUpdateValue {
+		var err error
+		secretValue, err = clusterSecretValue(plan, config)
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Unable to determine cluster secret value",
+				err.Error(),
+			)
+			return
+		}
+	}
+
 	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		var err error
-		// Update value if changed
-		if !plan.Value.Equal(state.Value) {
+		if shouldUpdateValue {
 			_, err = r.client.UpdateClusterSecretValue(
 				ctx,
 				r.client.organization,
 				plan.ClusterID.ValueString(),
 				plan.ID.ValueString(),
-				plan.Value.ValueString(),
+				secretValue,
 			)
 			if err != nil {
 				return retryContextError(err)
@@ -316,6 +385,27 @@ func (r *clusterSecretResource) Update(ctx context.Context, req resource.UpdateR
 	// Preserve created_at from state, Terraform will call Read to refresh updated_at
 	plan.CreatedAt = state.CreatedAt
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
+}
+
+func clusterSecretValue(plan clusterSecretResourceModel, config clusterSecretResourceModel) (string, error) {
+	if !plan.ValueWOVersion.IsNull() || !config.ValueWO.IsNull() || config.ValueWO.IsUnknown() {
+		if config.ValueWO.IsNull() || config.ValueWO.IsUnknown() {
+			return "", fmt.Errorf("value_wo must be available in configuration when value_wo_version is configured")
+		}
+		return config.ValueWO.ValueString(), nil
+	}
+
+	if plan.Value.IsNull() || plan.Value.IsUnknown() {
+		return "", fmt.Errorf("value must be available in plan when value_wo is not configured")
+	}
+	return plan.Value.ValueString(), nil
+}
+
+func shouldUpdateClusterSecretValue(plan clusterSecretResourceModel, state clusterSecretResourceModel) bool {
+	if !plan.ValueWOVersion.IsNull() || !state.ValueWOVersion.IsNull() {
+		return !plan.ValueWOVersion.Equal(state.ValueWOVersion)
+	}
+	return !plan.Value.Equal(state.Value)
 }
 
 func (r *clusterSecretResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
