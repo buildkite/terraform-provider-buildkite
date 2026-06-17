@@ -1694,6 +1694,16 @@ func mapProviderSettingsFromGraphQL(repo RepositoryProviderSettingsFields) *prov
 			IssueCommentCommandWord:                 types.StringPointerValue(s.IssueCommentCommandWord),
 			IssueCommentMatchMode:                   matchModeToString(s.IssueCommentMatchMode),
 			UseStepKeyAsCommitStatus:                types.BoolPointerValue(s.UseStepKeyAsCommitStatus),
+			BuildCheckRunCompleted:                  types.BoolPointerValue(s.BuildCheckRunCompleted),
+			BuildCreateEvent:                        types.BoolPointerValue(s.BuildCreateEvent),
+			BuildDeploymentStatusCreated:            types.BoolPointerValue(s.BuildDeploymentStatusCreated),
+			BuildPullRequestConvertedToDraft:        types.BoolPointerValue(s.BuildPullRequestConvertedToDraft),
+			BuildPullRequestReviewRequested:         types.BoolPointerValue(s.BuildPullRequestReviewRequested),
+			BuildPullRequestReviewDismissed:         types.BoolPointerValue(s.BuildPullRequestReviewDismissed),
+			BuildPullRequestReviewSubmitted:         types.BoolPointerValue(s.BuildPullRequestReviewSubmitted),
+			BuildReleaseCreated:                     types.BoolPointerValue(s.BuildReleaseCreated),
+			BuildReleasePublished:                   types.BoolPointerValue(s.BuildReleasePublished),
+			BuildReleaseReleased:                    types.BoolPointerValue(s.BuildReleaseReleased),
 		}
 	case *RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubEnterprise:
 		s := provider.Settings
@@ -1727,6 +1737,16 @@ func mapProviderSettingsFromGraphQL(repo RepositoryProviderSettingsFields) *prov
 			IssueCommentCommandWord:                 types.StringPointerValue(s.IssueCommentCommandWord),
 			IssueCommentMatchMode:                   matchModeToString(s.IssueCommentMatchMode),
 			UseStepKeyAsCommitStatus:                types.BoolPointerValue(s.UseStepKeyAsCommitStatus),
+			BuildCheckRunCompleted:                  types.BoolPointerValue(s.BuildCheckRunCompleted),
+			BuildCreateEvent:                        types.BoolPointerValue(s.BuildCreateEvent),
+			BuildDeploymentStatusCreated:            types.BoolPointerValue(s.BuildDeploymentStatusCreated),
+			BuildPullRequestConvertedToDraft:        types.BoolPointerValue(s.BuildPullRequestConvertedToDraft),
+			BuildPullRequestReviewRequested:         types.BoolPointerValue(s.BuildPullRequestReviewRequested),
+			BuildPullRequestReviewDismissed:         types.BoolPointerValue(s.BuildPullRequestReviewDismissed),
+			BuildPullRequestReviewSubmitted:         types.BoolPointerValue(s.BuildPullRequestReviewSubmitted),
+			BuildReleaseCreated:                     types.BoolPointerValue(s.BuildReleaseCreated),
+			BuildReleasePublished:                   types.BoolPointerValue(s.BuildReleasePublished),
+			BuildReleaseReleased:                    types.BoolPointerValue(s.BuildReleaseReleased),
 		}
 	case *RepositoryProviderSettingsFieldsProviderRepositoryProviderBitbucket:
 		s := provider.Settings
