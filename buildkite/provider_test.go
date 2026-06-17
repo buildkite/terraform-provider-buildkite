@@ -28,8 +28,13 @@ func init() {
 		Transport: rt,
 	}
 
-	graphqlClient = graphql.NewClient(defaultGraphqlEndpoint, httpClient)
-	genqlientGraphql = genqlient.NewClient(defaultGraphqlEndpoint, httpClient)
+	graphqlEndpoint := defaultGraphqlEndpoint
+	if v, ok := os.LookupEnv("BUILDKITE_GRAPHQL_URL"); ok {
+		graphqlEndpoint = v
+	}
+
+	graphqlClient = graphql.NewClient(graphqlEndpoint, httpClient)
+	genqlientGraphql = genqlient.NewClient(graphqlEndpoint, httpClient)
 	organizationID, _ = GetOrganizationID(getenv("BUILDKITE_ORGANIZATION_SLUG"), graphqlClient)
 }
 
