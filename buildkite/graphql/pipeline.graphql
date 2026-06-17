@@ -113,6 +113,8 @@ fragment RepositoryProviderSettingsFields on Repository {
                 triggerMode
                 # @genqlient(pointer: true)
                 useMergeGroupBaseCommitForGitDiffBase
+                # @genqlient(pointer: true)
+                useStepKeyAsCommitStatus
             }
         }
         ... on RepositoryProviderGithubEnterprise {
@@ -173,6 +175,8 @@ fragment RepositoryProviderSettingsFields on Repository {
                 triggerMode
                 # @genqlient(pointer: true)
                 useMergeGroupBaseCommitForGitDiffBase
+                # @genqlient(pointer: true)
+                useStepKeyAsCommitStatus
             }
         }
         ... on RepositoryProviderBitbucket {
