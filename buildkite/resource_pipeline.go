@@ -1780,6 +1780,18 @@ func mapProviderSettingsFromGraphQL(repo RepositoryProviderSettingsFields) *prov
 			FilterCondition: types.StringPointerValue(s.FilterCondition),
 			FilterEnabled:   types.BoolPointerValue(s.FilterEnabled),
 		}
+	case *RepositoryProviderSettingsFieldsProviderRepositoryProviderGitlabCommunity:
+		s := provider.Settings
+		return &providerSettingsModel{
+			FilterCondition: types.StringPointerValue(s.FilterCondition),
+			FilterEnabled:   types.BoolPointerValue(s.FilterEnabled),
+		}
+	case *RepositoryProviderSettingsFieldsProviderRepositoryProviderGitlabEnterprise:
+		s := provider.Settings
+		return &providerSettingsModel{
+			FilterCondition: types.StringPointerValue(s.FilterCondition),
+			FilterEnabled:   types.BoolPointerValue(s.FilterEnabled),
+		}
 	case *RepositoryProviderSettingsFieldsProviderRepositoryProviderBeanstalk:
 		s := provider.Settings
 		return &providerSettingsModel{
