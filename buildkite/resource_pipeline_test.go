@@ -146,6 +146,34 @@ func TestMapProviderSettingsFromGraphQLGitHub(t *testing.T) {
 	}
 }
 
+// GitLab Enterprise (and Community) are distinct RepositoryProvider union members that expose the
+// same RepositoryProviderGitlabSettings as plain GitLab. Regression guard: they must be mapped, not
+// fall through to the nil default (which would skip provider_settings refresh and miss drift).
+func TestMapProviderSettingsFromGraphQLGitlabEnterprise(t *testing.T) {
+	cond := "build.branch == 'main'"
+	enabled := true
+
+	repo := RepositoryProviderSettingsFields{
+		Provider: &RepositoryProviderSettingsFieldsProviderRepositoryProviderGitlabEnterprise{
+			Settings: RepositoryProviderSettingsFieldsProviderRepositoryProviderGitlabEnterpriseSettingsRepositoryProviderGitlabSettings{
+				FilterCondition: &cond,
+				FilterEnabled:   &enabled,
+			},
+		},
+	}
+
+	got := mapProviderSettingsFromGraphQL(repo)
+	if got == nil {
+		t.Fatal("expected GitLab Enterprise provider settings to be mapped, got nil")
+	}
+	if got.FilterCondition.ValueString() != cond {
+		t.Fatalf("filter_condition: expected %q, got %q", cond, got.FilterCondition.ValueString())
+	}
+	if !got.FilterEnabled.ValueBool() {
+		t.Fatal("filter_enabled: expected true")
+	}
+}
+
 func testAccCheckPipelineDestroyFunc(s *terraform.State) error {
 	return testAccCheckPipelineDestroy(s)
 }
