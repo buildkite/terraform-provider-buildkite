@@ -274,6 +274,22 @@ fragment RepositoryProviderSettingsFields on Repository {
                 filterEnabled
             }
         }
+        ... on RepositoryProviderGitlabCommunity {
+            settings {
+                # @genqlient(pointer: true)
+                filterCondition
+                # @genqlient(pointer: true)
+                filterEnabled
+            }
+        }
+        ... on RepositoryProviderGitlabEnterprise {
+            settings {
+                # @genqlient(pointer: true)
+                filterCondition
+                # @genqlient(pointer: true)
+                filterEnabled
+            }
+        }
         ... on RepositoryProviderBeanstalk {
             settings {
                 # @genqlient(pointer: true)
