@@ -3654,11 +3654,39 @@ func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderGitlab) GetSe
 // Deprecated: Use RepositoryProviderGitlabEnterpriseType instead. This type represented GitLab Community Edition.
 type RepositoryProviderSettingsFieldsProviderRepositoryProviderGitlabCommunity struct {
 	Typename string `json:"__typename"`
+	// The repository’s provider settings
+	Settings RepositoryProviderSettingsFieldsProviderRepositoryProviderGitlabCommunitySettingsRepositoryProviderGitlabSettings `json:"settings"`
 }
 
 // GetTypename returns RepositoryProviderSettingsFieldsProviderRepositoryProviderGitlabCommunity.Typename, and is useful for accessing the field via an interface.
 func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderGitlabCommunity) GetTypename() string {
 	return v.Typename
+}
+
+// GetSettings returns RepositoryProviderSettingsFieldsProviderRepositoryProviderGitlabCommunity.Settings, and is useful for accessing the field via an interface.
+func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderGitlabCommunity) GetSettings() RepositoryProviderSettingsFieldsProviderRepositoryProviderGitlabCommunitySettingsRepositoryProviderGitlabSettings {
+	return v.Settings
+}
+
+// RepositoryProviderSettingsFieldsProviderRepositoryProviderGitlabCommunitySettingsRepositoryProviderGitlabSettings includes the requested fields of the GraphQL type RepositoryProviderGitlabSettings.
+// The GraphQL type's documentation follows.
+//
+// Settings for a GitLab repository.
+type RepositoryProviderSettingsFieldsProviderRepositoryProviderGitlabCommunitySettingsRepositoryProviderGitlabSettings struct {
+	// The conditions under which this pipeline will trigger a build.
+	FilterCondition *string `json:"filterCondition"`
+	// Whether the filter is enabled
+	FilterEnabled *bool `json:"filterEnabled"`
+}
+
+// GetFilterCondition returns RepositoryProviderSettingsFieldsProviderRepositoryProviderGitlabCommunitySettingsRepositoryProviderGitlabSettings.FilterCondition, and is useful for accessing the field via an interface.
+func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderGitlabCommunitySettingsRepositoryProviderGitlabSettings) GetFilterCondition() *string {
+	return v.FilterCondition
+}
+
+// GetFilterEnabled returns RepositoryProviderSettingsFieldsProviderRepositoryProviderGitlabCommunitySettingsRepositoryProviderGitlabSettings.FilterEnabled, and is useful for accessing the field via an interface.
+func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderGitlabCommunitySettingsRepositoryProviderGitlabSettings) GetFilterEnabled() *bool {
+	return v.FilterEnabled
 }
 
 // RepositoryProviderSettingsFieldsProviderRepositoryProviderGitlabEnterprise includes the requested fields of the GraphQL type RepositoryProviderGitlabEnterprise.
@@ -3667,11 +3695,39 @@ func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderGitlabCommuni
 // A pipeline's repository is being provided by a GitLab Self-Managed instance.
 type RepositoryProviderSettingsFieldsProviderRepositoryProviderGitlabEnterprise struct {
 	Typename string `json:"__typename"`
+	// The repository’s provider settings
+	Settings RepositoryProviderSettingsFieldsProviderRepositoryProviderGitlabEnterpriseSettingsRepositoryProviderGitlabSettings `json:"settings"`
 }
 
 // GetTypename returns RepositoryProviderSettingsFieldsProviderRepositoryProviderGitlabEnterprise.Typename, and is useful for accessing the field via an interface.
 func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderGitlabEnterprise) GetTypename() string {
 	return v.Typename
+}
+
+// GetSettings returns RepositoryProviderSettingsFieldsProviderRepositoryProviderGitlabEnterprise.Settings, and is useful for accessing the field via an interface.
+func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderGitlabEnterprise) GetSettings() RepositoryProviderSettingsFieldsProviderRepositoryProviderGitlabEnterpriseSettingsRepositoryProviderGitlabSettings {
+	return v.Settings
+}
+
+// RepositoryProviderSettingsFieldsProviderRepositoryProviderGitlabEnterpriseSettingsRepositoryProviderGitlabSettings includes the requested fields of the GraphQL type RepositoryProviderGitlabSettings.
+// The GraphQL type's documentation follows.
+//
+// Settings for a GitLab repository.
+type RepositoryProviderSettingsFieldsProviderRepositoryProviderGitlabEnterpriseSettingsRepositoryProviderGitlabSettings struct {
+	// The conditions under which this pipeline will trigger a build.
+	FilterCondition *string `json:"filterCondition"`
+	// Whether the filter is enabled
+	FilterEnabled *bool `json:"filterEnabled"`
+}
+
+// GetFilterCondition returns RepositoryProviderSettingsFieldsProviderRepositoryProviderGitlabEnterpriseSettingsRepositoryProviderGitlabSettings.FilterCondition, and is useful for accessing the field via an interface.
+func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderGitlabEnterpriseSettingsRepositoryProviderGitlabSettings) GetFilterCondition() *string {
+	return v.FilterCondition
+}
+
+// GetFilterEnabled returns RepositoryProviderSettingsFieldsProviderRepositoryProviderGitlabEnterpriseSettingsRepositoryProviderGitlabSettings.FilterEnabled, and is useful for accessing the field via an interface.
+func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderGitlabEnterpriseSettingsRepositoryProviderGitlabSettings) GetFilterEnabled() *bool {
+	return v.FilterEnabled
 }
 
 // RepositoryProviderSettingsFieldsProviderRepositoryProviderGitlabSettings includes the requested fields of the GraphQL type RepositoryProviderGitlabSettings.
@@ -3740,15 +3796,15 @@ func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderUnknownSettin
 type RuleAction string
 
 const (
-	// Trigger build
-	RuleActionTriggerBuild RuleAction = "TRIGGER_BUILD"
 	// Artifacts read
 	RuleActionArtifactsRead RuleAction = "ARTIFACTS_READ"
+	// Trigger build
+	RuleActionTriggerBuild RuleAction = "TRIGGER_BUILD"
 )
 
 var AllRuleAction = []RuleAction{
-	RuleActionTriggerBuild,
 	RuleActionArtifactsRead,
+	RuleActionTriggerBuild,
 }
 
 // The effect a rule has
@@ -26079,6 +26135,18 @@ fragment RepositoryProviderSettingsFields on Repository {
 			}
 		}
 		... on RepositoryProviderGitlab {
+			settings {
+				filterCondition
+				filterEnabled
+			}
+		}
+		... on RepositoryProviderGitlabCommunity {
+			settings {
+				filterCondition
+				filterEnabled
+			}
+		}
+		... on RepositoryProviderGitlabEnterprise {
 			settings {
 				filterCondition
 				filterEnabled
