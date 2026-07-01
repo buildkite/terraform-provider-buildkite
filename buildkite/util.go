@@ -19,6 +19,7 @@ var (
 	resourceNotFoundRegex = regexp.MustCompile(`(?i)(No\s+\w+(\s+\w+)*\s+found|not\s+found|no\s+longer\s+exists)`)
 	activeJobsRegex       = regexp.MustCompile(`(?i)(active\s+(builds|jobs)|running\s+(builds|jobs)|builds?\s+are\s+running|jobs?\s+are\s+running)`)
 	alreadyExistsRegex    = regexp.MustCompile(`(?i)(already\s+been\s+added|already\s+exists)`)
+	transientErrorRegex   = regexp.MustCompile(`(?i)(currently\s+busy|please\s+try\s+again)`)
 )
 
 // isResourceNotFoundError returns true if the error indicates the resource was not found
@@ -70,6 +71,25 @@ func isAlreadyExistsError(err error) bool {
 		return false
 	}
 	return alreadyExistsRegex.MatchString(err.Error())
+}
+
+// isTransientError returns true if the error is a transient, retryable backend condition
+// (e.g. "clusterCreate Cluster creation is currently busy, please try again"). These arrive
+// in a GraphQL 200 response body, so the retryablehttp client never retries them.
+func isTransientError(err error) bool {
+	if err == nil {
+		return false
+	}
+	var errList gqlerror.List
+	if errors.As(err, &errList) {
+		for _, e := range errList {
+			if transientErrorRegex.MatchString(e.Message) {
+				return true
+			}
+		}
+		return false
+	}
+	return transientErrorRegex.MatchString(err.Error())
 }
 
 // gqlErrorContains reports whether any GraphQL error in err contains substring s.
@@ -158,12 +178,16 @@ func createCidrSliceFromList(cidrList types.List) []string {
 }
 
 // retryContextError wraps an error for use with hashicorp/terraform-plugin-sdk/v2/helper/retry.
-// Since the underlying http client now handles retries, we always treat errors as non-retryable
-// at this layer to avoid duplicate retries.
+// The underlying http client already retries transport and status errors, so we treat errors as
+// non-retryable here to avoid duplicate retries. The exception is transient backend errors that
+// arrive in a GraphQL 200 body (e.g. "... is currently busy, please try again"): the http client
+// can't act on those, so we mark them retryable and let RetryContext back off within its timeout.
 func retryContextError(err error) *retry.RetryError {
-	if err != nil {
-		// Always return NonRetryableError as the http client handles retries
-		return retry.NonRetryableError(err)
+	if err == nil {
+		return nil
 	}
-	return nil
+	if isTransientError(err) {
+		return retry.RetryableError(err)
+	}
+	return retry.NonRetryableError(err)
 }
