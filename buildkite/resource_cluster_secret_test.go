@@ -20,7 +20,7 @@ func TestAccBuildkiteClusterSecret_basic(t *testing.T) {
 	secretValue := acctest.RandString(20)
 	clusterName := acctest.RandString(10)
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: protoV6ProviderFactories(),
 		CheckDestroy:             testAccCheckClusterSecretDestroy,
@@ -45,7 +45,7 @@ func TestAccBuildkiteClusterSecret_update(t *testing.T) {
 	secretValue2 := acctest.RandString(20)
 	clusterName := acctest.RandString(10)
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: protoV6ProviderFactories(),
 		CheckDestroy:             testAccCheckClusterSecretDestroy,
@@ -76,7 +76,7 @@ func TestAccBuildkiteClusterSecret_writeOnlyValue(t *testing.T) {
 	secretValue2 := acctest.RandString(20)
 	clusterName := acctest.RandString(10)
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: protoV6ProviderFactories(),
 		CheckDestroy:             testAccCheckClusterSecretDestroy,
@@ -111,7 +111,7 @@ func TestAccBuildkiteClusterSecret_migrateValueToWriteOnlyValue(t *testing.T) {
 	secretValue2 := acctest.RandString(20)
 	clusterName := acctest.RandString(10)
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: protoV6ProviderFactories(),
 		CheckDestroy:             testAccCheckClusterSecretDestroy,
@@ -142,7 +142,7 @@ func TestAccBuildkiteClusterSecret_valueValidation(t *testing.T) {
 	secretKey := fmt.Sprintf("TEST_SECRET_%s", acctest.RandString(10))
 	clusterName := acctest.RandString(10)
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: protoV6ProviderFactories(),
 		Steps: []resource.TestStep{
@@ -171,7 +171,7 @@ func TestAccBuildkiteClusterSecret_withPolicy(t *testing.T) {
 	secretValue := acctest.RandString(20)
 	clusterName := acctest.RandString(10)
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: protoV6ProviderFactories(),
 		CheckDestroy:             testAccCheckClusterSecretDestroy,
