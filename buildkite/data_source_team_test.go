@@ -5,6 +5,7 @@ import (
 	"regexp"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -14,7 +15,7 @@ func testDatasourceTeamConfigID(name string) string {
 			name = "%s"
 			description = "a cool team of %s"
 			privacy = "VISIBLE"
-			default_team = true
+			default_team = false
 			default_member_role = "MEMBER"
 			members_can_create_pipelines = true
 		}
@@ -33,7 +34,7 @@ func testDatasourceTeamConfigSlug(name string) string {
 			name = "%s"
 			description = "a cool team of %s"
 			privacy = "VISIBLE"
-			default_team = true
+			default_team = false
 			default_member_role = "MEMBER"
 		}
 
@@ -51,7 +52,7 @@ func testDatasourceTeamConfigIDSlug(name string) string {
 			name = "%s"
 			description = "a cool team of %s"
 			privacy = "VISIBLE"
-			default_team = true
+			default_team = false
 			default_member_role = "MEMBER"
 		}
 
@@ -90,17 +91,18 @@ func testDatasourceTeamConfigWithAllPermissions(name string) string {
 func TestAccDataTeam_ReadUsingSlug(t *testing.T) {
 	t.Parallel()
 	var tr teamResourceModel
+	teamName := acctest.RandString(12)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: protoV6ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
-				Config: testDatasourceTeamConfigSlug("designers"),
+				Config: testDatasourceTeamConfigSlug(teamName),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckTeamExists("buildkite_team.acc_tests_slug", &tr),
-					testAccCheckTeamRemoteValues("designers", &tr),
-					resource.TestCheckResourceAttr("data.buildkite_team.data_test_slug", "name", "designers"),
+					testAccCheckTeamRemoteValues(teamName, &tr),
+					resource.TestCheckResourceAttr("data.buildkite_team.data_test_slug", "name", teamName),
 					resource.TestCheckResourceAttr("data.buildkite_team.data_test_slug", "members_can_create_pipelines", "false"),
 					resource.TestCheckResourceAttr("data.buildkite_team.data_test_slug", "members_can_create_suites", "false"),
 					resource.TestCheckResourceAttr("data.buildkite_team.data_test_slug", "members_can_create_registries", "false"),
@@ -115,17 +117,18 @@ func TestAccDataTeam_ReadUsingSlug(t *testing.T) {
 func TestAccDataTeam_ReadUsingID(t *testing.T) {
 	t.Parallel()
 	var tr teamResourceModel
+	teamName := acctest.RandString(12)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: protoV6ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
-				Config: testDatasourceTeamConfigID("developers"),
+				Config: testDatasourceTeamConfigID(teamName),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckTeamExists("buildkite_team.acc_tests_id", &tr),
-					testAccCheckTeamRemoteValues("developers", &tr),
-					resource.TestCheckResourceAttr("data.buildkite_team.data_test_id", "name", "developers"),
+					testAccCheckTeamRemoteValues(teamName, &tr),
+					resource.TestCheckResourceAttr("data.buildkite_team.data_test_id", "name", teamName),
 					resource.TestCheckResourceAttr("data.buildkite_team.data_test_id", "members_can_create_pipelines", "true"),
 					resource.TestCheckResourceAttr("data.buildkite_team.data_test_id", "members_can_create_suites", "false"),
 					resource.TestCheckResourceAttr("data.buildkite_team.data_test_id", "members_can_create_registries", "false"),
@@ -143,7 +146,7 @@ func TestAccDataTeam_ReadUsingIDAndSlug(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: protoV6ProviderFactories(),
-				Config:                   testDatasourceTeamConfigIDSlug("noobs"),
+				Config:                   testDatasourceTeamConfigIDSlug(acctest.RandString(12)),
 				ExpectError:              regexp.MustCompile("Invalid Attribute Combination"),
 			},
 		},
@@ -153,16 +156,17 @@ func TestAccDataTeam_ReadUsingIDAndSlug(t *testing.T) {
 func TestAccDataTeam_ReadWithAllPermissions(t *testing.T) {
 	t.Parallel()
 	var tr teamResourceModel
+	teamName := acctest.RandString(12)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: protoV6ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
-				Config: testDatasourceTeamConfigWithAllPermissions("full-access-team"),
+				Config: testDatasourceTeamConfigWithAllPermissions(teamName),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckTeamExists("buildkite_team.acc_tests_perms", &tr),
-					resource.TestCheckResourceAttr("data.buildkite_team.data_test_perms", "name", "full-access-team"),
+					resource.TestCheckResourceAttr("data.buildkite_team.data_test_perms", "name", teamName),
 					resource.TestCheckResourceAttr("data.buildkite_team.data_test_perms", "members_can_create_pipelines", "true"),
 					resource.TestCheckResourceAttr("data.buildkite_team.data_test_perms", "members_can_create_suites", "true"),
 					resource.TestCheckResourceAttr("data.buildkite_team.data_test_perms", "members_can_create_registries", "true"),

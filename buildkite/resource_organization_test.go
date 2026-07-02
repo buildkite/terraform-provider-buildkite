@@ -82,7 +82,7 @@ func TestAccBuildkiteOrganizationResource(t *testing.T) {
 			resource.TestCheckResourceAttr("buildkite_organization.let_them_in", "allowed_api_ip_addresses.2", "1.0.0.1/32"),
 		)
 
-		ckeckUpdated := resource.ComposeAggregateTestCheckFunc(
+		checkUpdated := resource.ComposeAggregateTestCheckFunc(
 			// Confirm that the allowed IP addresses are set correctly in Buildkite's system
 			testAccCheckOrganizationRemoteValues([]string{"0.0.0.0/0", "4.4.4.4/32"}),
 			// This check allows us to ensure that TF still has access (0.0.0.0/0) and that the new IP address is added correctly
@@ -100,7 +100,7 @@ func TestAccBuildkiteOrganizationResource(t *testing.T) {
 				},
 				{
 					Config: config([]string{"0.0.0.0/0", "4.4.4.4/32"}),
-					Check:  ckeckUpdated,
+					Check:  checkUpdated,
 				},
 			},
 		})
@@ -115,7 +115,7 @@ func TestAccBuildkiteOrganizationResource(t *testing.T) {
 			resource.TestCheckResourceAttr("buildkite_organization.let_them_in", "allowed_api_ip_addresses.2", "1.0.0.1/32"),
 		)
 
-		ckeckUpdated := resource.ComposeAggregateTestCheckFunc(
+		checkUpdated := resource.ComposeAggregateTestCheckFunc(
 			// Confirm that the allowed IP addresses are set correctly in Buildkite's system
 			testAccCheckOrganizationRemoteValues([]string{""}),
 			// Check the allowed IP address list in state is of length 1, and a empty string element
@@ -134,7 +134,7 @@ func TestAccBuildkiteOrganizationResource(t *testing.T) {
 				},
 				{
 					Config: config([]string{""}),
-					Check:  ckeckUpdated,
+					Check:  checkUpdated,
 				},
 			},
 		})
@@ -149,7 +149,7 @@ func TestAccBuildkiteOrganizationResource(t *testing.T) {
 			resource.TestCheckResourceAttr("buildkite_organization.let_them_in", "allowed_api_ip_addresses.2", "1.0.0.1/32"),
 		)
 
-		ckeckUpdated := resource.ComposeAggregateTestCheckFunc(
+		checkUpdated := resource.ComposeAggregateTestCheckFunc(
 			// Confirm that the allowed IP addresses are set correctly in Buildkite's system
 			testAccCheckOrganizationRemoteValues([]string{""}),
 			// Check the allowed IP address list in not set in state
@@ -167,7 +167,7 @@ func TestAccBuildkiteOrganizationResource(t *testing.T) {
 				},
 				{
 					Config: configNoAllowedIPs(),
-					Check:  ckeckUpdated,
+					Check:  checkUpdated,
 					// After clearing the IPs, state will be set to null and refresh will restore the attribute to an empty-string list of length 1
 					ExpectNonEmptyPlan: true,
 				},

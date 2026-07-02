@@ -27,7 +27,7 @@ func TestAccBuildkiteTeamMember(t *testing.T) {
 			name = "acceptance testing %s"
 			description = "a cool team for testing"
 			privacy = "VISIBLE"
-			default_team = true
+			default_team = false
 			default_member_role = "MEMBER"
 			members_can_create_pipelines = false
 		}
