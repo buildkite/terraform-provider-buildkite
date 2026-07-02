@@ -48,10 +48,11 @@ func (client *Client) GetOrganizationID() (*string, error) {
 		return client.organizationId, nil
 	}
 	orgId, err := GetOrganizationID(client.organization, client.graphql)
-	client.organizationId = &orgId
 	if err != nil {
 		return nil, err
 	}
+	// Cache only on success; a cached empty ID would be served on later retries.
+	client.organizationId = &orgId
 
 	return client.organizationId, nil
 }
