@@ -2,8 +2,10 @@ package buildkite
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"sync"
 	"testing"
 
 	"github.com/shurcooL/graphql"
@@ -54,5 +56,48 @@ func TestClientGetOrganizationIDNotCachedOnError(t *testing.T) {
 			got = *id
 		}
 		t.Fatalf("GetOrganizationID() = %q, want %q", got, "org-abc")
+	}
+}
+
+// Terraform runs resource operations concurrently against a single shared Client, so the lazy
+// organizationId cache must be safe under concurrent access. Run with -race to catch regressions.
+func TestClientGetOrganizationIDConcurrent(t *testing.T) {
+	t.Parallel()
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"data": map[string]interface{}{
+				"organization": map[string]interface{}{"id": "org-abc"},
+			},
+		})
+	}))
+	defer server.Close()
+
+	client := &Client{
+		graphql:      graphql.NewClient(server.URL, server.Client()),
+		organization: "test-org",
+	}
+
+	const goroutines = 32
+	var wg sync.WaitGroup
+	errs := make(chan error, goroutines)
+	for i := 0; i < goroutines; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			id, err := client.GetOrganizationID()
+			switch {
+			case err != nil:
+				errs <- err
+			case id == nil || *id != "org-abc":
+				errs <- fmt.Errorf("GetOrganizationID() = %v, want org-abc", id)
+			}
+		}()
+	}
+	wg.Wait()
+	close(errs)
+	for err := range errs {
+		t.Error(err)
 	}
 }

@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"sync"
 	"time"
 
 	genqlient "github.com/Khan/genqlient/graphql"
@@ -19,13 +20,14 @@ import (
 
 // Client can be used to interact with the Buildkite API
 type Client struct {
-	graphql        *graphql.Client
-	genqlient      genqlient.Client
-	http           *http.Client
-	organization   string
-	organizationId *string
-	restURL        string
-	timeouts       timeouts.Value
+	graphql          *graphql.Client
+	genqlient        genqlient.Client
+	http             *http.Client
+	organization     string
+	organizationId   *string
+	organizationIdMu sync.Mutex
+	restURL          string
+	timeouts         timeouts.Value
 }
 
 type clientConfig struct {
@@ -44,6 +46,8 @@ type headerRoundTripper struct {
 }
 
 func (client *Client) GetOrganizationID() (*string, error) {
+	client.organizationIdMu.Lock()
+	defer client.organizationIdMu.Unlock()
 	if client.organizationId != nil {
 		return client.organizationId, nil
 	}
