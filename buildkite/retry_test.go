@@ -99,6 +99,11 @@ func TestRetryContextError(t *testing.T) {
 			wantRetryable: true,
 		},
 		{
+			name:          "gqlerror list retries when any element is transient",
+			err:           gqlerror.List{{Message: "No cluster found"}, {Message: "Cluster creation is currently busy, please try again."}},
+			wantRetryable: true,
+		},
+		{
 			name:          "generic error is not retryable",
 			err:           errors.New("invalid input: name is required"),
 			wantRetryable: false,
@@ -106,6 +111,11 @@ func TestRetryContextError(t *testing.T) {
 		{
 			name:          "not-found gqlerror is not retryable",
 			err:           gqlerror.List{{Message: "No cluster found"}},
+			wantRetryable: false,
+		},
+		{
+			name:          "empty gqlerror list is not retryable",
+			err:           gqlerror.List{},
 			wantRetryable: false,
 		},
 	}
