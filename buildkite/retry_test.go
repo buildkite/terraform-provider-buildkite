@@ -89,9 +89,9 @@ func TestRetryContextError(t *testing.T) {
 			wantRetryable: true,
 		},
 		{
-			name:          "please try again is retryable",
+			name:          "generic please try again is not retryable",
 			err:           errors.New("something went wrong, please try again"),
-			wantRetryable: true,
+			wantRetryable: false,
 		},
 		{
 			name:          "transient gqlerror is retryable",

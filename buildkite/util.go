@@ -19,7 +19,7 @@ var (
 	resourceNotFoundRegex = regexp.MustCompile(`(?i)(No\s+\w+(\s+\w+)*\s+found|not\s+found|no\s+longer\s+exists)`)
 	activeJobsRegex       = regexp.MustCompile(`(?i)(active\s+(builds|jobs)|running\s+(builds|jobs)|builds?\s+are\s+running|jobs?\s+are\s+running)`)
 	alreadyExistsRegex    = regexp.MustCompile(`(?i)(already\s+been\s+added|already\s+exists)`)
-	transientErrorRegex   = regexp.MustCompile(`(?i)(currently\s+busy|please\s+try\s+again)`)
+	transientErrorRegex   = regexp.MustCompile(`(?i)currently\s+busy`)
 )
 
 // isResourceNotFoundError returns true if the error indicates the resource was not found
