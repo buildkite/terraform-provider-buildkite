@@ -158,7 +158,7 @@ func testAccPipelineTeamConfigBasic(teamName string, accessLevel string) string 
 	resource "buildkite_team" "acc_test_team" {
 		name = "acctest team %s"
 		privacy = "VISIBLE"
-		default_team = true
+		default_team = false
 		default_member_role = "MEMBER"
 		members_can_create_pipelines = true
 	}
@@ -184,7 +184,7 @@ func testAccPipelineTeamConfigDuplicate(teamName string) string {
 	resource "buildkite_team" "acc_test_team" {
 		name = "acctest team %s"
 		privacy = "VISIBLE"
-		default_team = true
+		default_team = false
 		default_member_role = "MEMBER"
 		members_can_create_pipelines = true
 	}
