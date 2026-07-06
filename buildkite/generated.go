@@ -19627,6 +19627,10 @@ type getTestSuiteSuite struct {
 	Typename string `json:"__typename"`
 	Id       string `json:"id"`
 	Uuid     string `json:"uuid"`
+	// The application name for the suite
+	ApplicationName *string `json:"applicationName"`
+	// The hex code for the suite navatar background color in the Test Suites page
+	Color *string `json:"color"`
 	// The default branch for this suite
 	DefaultBranch string `json:"defaultBranch"`
 	// The emoji that will display as a suite navatar in the Test Suites page
@@ -19647,6 +19651,12 @@ func (v *getTestSuiteSuite) GetId() string { return v.Id }
 
 // GetUuid returns getTestSuiteSuite.Uuid, and is useful for accessing the field via an interface.
 func (v *getTestSuiteSuite) GetUuid() string { return v.Uuid }
+
+// GetApplicationName returns getTestSuiteSuite.ApplicationName, and is useful for accessing the field via an interface.
+func (v *getTestSuiteSuite) GetApplicationName() *string { return v.ApplicationName }
+
+// GetColor returns getTestSuiteSuite.Color, and is useful for accessing the field via an interface.
+func (v *getTestSuiteSuite) GetColor() *string { return v.Color }
 
 // GetDefaultBranch returns getTestSuiteSuite.DefaultBranch, and is useful for accessing the field via an interface.
 func (v *getTestSuiteSuite) GetDefaultBranch() string { return v.DefaultBranch }
@@ -26475,6 +26485,8 @@ query getTestSuite ($id: ID!, $teamCount: Int) {
 		... on Suite {
 			id
 			uuid
+			applicationName
+			color
 			defaultBranch
 			emoji
 			name

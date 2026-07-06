@@ -14,6 +14,7 @@ type testSuiteDatasourceModel struct {
 	ID            types.String `tfsdk:"id"`
 	UUID          types.String `tfsdk:"uuid"`
 	Name          types.String `tfsdk:"name"`
+	OidcPolicy    types.String `tfsdk:"oidc_policy"`
 	Slug          types.String `tfsdk:"slug"`
 }
 
@@ -62,6 +63,7 @@ func (t *testSuiteDatasource) Read(ctx context.Context, req datasource.ReadReque
 	state.DefaultBranch = types.StringValue(suite.DefaultBranch)
 	state.ID = types.StringValue(suite.GraphqlID)
 	state.Name = types.StringValue(suite.Name)
+	state.OidcPolicy = types.StringPointerValue(suite.OidcPolicy)
 	state.Slug = types.StringValue(suite.Slug)
 	state.UUID = types.StringValue(suite.UUID)
 
@@ -93,6 +95,10 @@ func (t *testSuiteDatasource) Schema(ctx context.Context, req datasource.SchemaR
 			"default_branch": schema.StringAttribute{
 				Computed:            true,
 				MarkdownDescription: "The default branch for the repository this test suite is for.",
+			},
+			"oidc_policy": schema.StringAttribute{
+				Computed:            true,
+				MarkdownDescription: "The [OIDC policy](https://buildkite.com/docs/pipelines/configure/tests/test-collection/oidc) for the test suite, as a YAML or JSON string.",
 			},
 		},
 	}

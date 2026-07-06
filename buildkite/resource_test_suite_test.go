@@ -64,6 +64,35 @@ func TestAccBuildkiteTestSuiteResource(t *testing.T) {
 		`, name, name)
 	}
 
+	testSuiteWithAllAttributes := func(name, applicationName, color, oidcPolicy string) string {
+		return fmt.Sprintf(`
+		provider "buildkite" {
+			timeouts = {
+				create = "60s"
+				read = "60s"
+				update = "60s"
+				delete = "60s"
+			}
+		}
+
+		resource "buildkite_team" "team" {
+			name = "test suite team %s"
+			default_team = false
+			privacy = "VISIBLE"
+			default_member_role = "MAINTAINER"
+		}
+		resource "buildkite_test_suite" "suite" {
+			name = "test suite %s"
+			default_branch = "main"
+			emoji = ":buildkite:"
+			application_name = "%s"
+			color = "%s"
+			oidc_policy = %q
+			team_owner_id = resource.buildkite_team.team.id
+		}
+		`, name, name, applicationName, color, oidcPolicy)
+	}
+
 	testSuiteWithTwoTeams := func(name string) string {
 		return fmt.Sprintf(`
 		provider "buildkite" {
@@ -183,6 +212,57 @@ func TestAccBuildkiteTestSuiteResource(t *testing.T) {
 				{
 					Config: basicTestSuiteWithEmoji(randName),
 					Check:  check,
+				},
+			},
+		})
+	})
+
+	t.Run("creates and updates a test suite with all attributes set", func(t *testing.T) {
+		var suite getTestSuiteSuite
+		randName := acctest.RandString(10)
+
+		oidcPolicy := "- iss: https://agent.buildkite.com\n  claims:\n    organization_slug: my-org\n    pipeline_slug: my-pipeline\n  scopes:\n    - write_uploads\n"
+		updatedOidcPolicy := "- iss: https://agent.buildkite.com\n  claims:\n    organization_slug: my-org\n    pipeline_slug: another-pipeline\n  scopes:\n    - read_suites\n    - write_uploads\n"
+
+		check := func(applicationName, color, oidcPolicy string) resource.TestCheckFunc {
+			return resource.ComposeAggregateTestCheckFunc(
+				checkTestSuiteExists("buildkite_test_suite.suite", &suite),
+				checkTestSuiteRemoteValue(&suite, "Name", fmt.Sprintf("test suite %s", randName)),
+				checkTestSuiteRemoteValue(&suite, "DefaultBranch", "main"),
+				resource.TestCheckResourceAttrSet("buildkite_test_suite.suite", "id"),
+				resource.TestCheckResourceAttrSet("buildkite_test_suite.suite", "api_token"),
+				resource.TestCheckResourceAttr("buildkite_test_suite.suite", "default_branch", "main"),
+				resource.TestCheckResourceAttr("buildkite_test_suite.suite", "emoji", ":buildkite:"),
+				resource.TestCheckResourceAttr("buildkite_test_suite.suite", "application_name", applicationName),
+				resource.TestCheckResourceAttr("buildkite_test_suite.suite", "color", color),
+				resource.TestCheckResourceAttr("buildkite_test_suite.suite", "oidc_policy", oidcPolicy),
+				resource.TestCheckResourceAttr("buildkite_test_suite.suite", "name", fmt.Sprintf("test suite %s", randName)),
+				resource.TestCheckResourceAttrSet("buildkite_test_suite.suite", "team_owner_id"),
+			)
+		}
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			CheckDestroy:             testTestSuiteDestroy,
+			Steps: []resource.TestStep{
+				{
+					Config: testSuiteWithAllAttributes(randName, "My App", "#BADA55", oidcPolicy),
+					Check:  check("My App", "#BADA55", oidcPolicy),
+				},
+				{
+					Config: testSuiteWithAllAttributes(randName, "My Updated App", "#B2ECF7", updatedOidcPolicy),
+					Check:  check("My Updated App", "#B2ECF7", updatedOidcPolicy),
+				},
+				{
+					// removing the optional attributes clears them
+					Config: basicTestSuite(randName),
+					Check: resource.ComposeAggregateTestCheckFunc(
+						checkTestSuiteExists("buildkite_test_suite.suite", &suite),
+						resource.TestCheckNoResourceAttr("buildkite_test_suite.suite", "application_name"),
+						resource.TestCheckNoResourceAttr("buildkite_test_suite.suite", "color"),
+						resource.TestCheckNoResourceAttr("buildkite_test_suite.suite", "oidc_policy"),
+					),
 				},
 			},
 		})

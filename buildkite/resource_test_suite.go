@@ -15,23 +15,27 @@ import (
 )
 
 type testSuiteModel struct {
-	ApiToken      types.String `tfsdk:"api_token"`
-	DefaultBranch types.String `tfsdk:"default_branch"`
-	Emoji         types.String `tfsdk:"emoji"`
-	ID            types.String `tfsdk:"id"`
-	UUID          types.String `tfsdk:"uuid"`
-	TeamOwnerId   types.String `tfsdk:"team_owner_id"`
-	Name          types.String `tfsdk:"name"`
-	Slug          types.String `tfsdk:"slug"`
+	ApiToken        types.String `tfsdk:"api_token"`
+	ApplicationName types.String `tfsdk:"application_name"`
+	Color           types.String `tfsdk:"color"`
+	DefaultBranch   types.String `tfsdk:"default_branch"`
+	Emoji           types.String `tfsdk:"emoji"`
+	ID              types.String `tfsdk:"id"`
+	UUID            types.String `tfsdk:"uuid"`
+	OidcPolicy      types.String `tfsdk:"oidc_policy"`
+	TeamOwnerId     types.String `tfsdk:"team_owner_id"`
+	Name            types.String `tfsdk:"name"`
+	Slug            types.String `tfsdk:"slug"`
 }
 
 type testSuiteResponse struct {
-	ApiToken      string `json:"api_token"`
-	DefaultBranch string `json:"default_branch"`
-	UUID          string `json:"id"`
-	GraphqlID     string `json:"graphql_id"`
-	Name          string `json:"name"`
-	Slug          string `json:"slug"`
+	ApiToken      string  `json:"api_token"`
+	DefaultBranch string  `json:"default_branch"`
+	UUID          string  `json:"id"`
+	GraphqlID     string  `json:"graphql_id"`
+	Name          string  `json:"name"`
+	OidcPolicy    *string `json:"oidc_policy"`
+	Slug          string  `json:"slug"`
 }
 
 type testSuiteResource struct {
@@ -96,7 +100,10 @@ func (ts *testSuiteResource) Create(ctx context.Context, req resource.CreateRequ
 
 	payload["name"] = plan.Name.ValueString()
 	payload["default_branch"] = plan.DefaultBranch.ValueString()
-	payload["emoji"] = plan.Emoji.ValueString()
+	payload["emoji"] = plan.Emoji.ValueStringPointer()
+	payload["application_name"] = plan.ApplicationName.ValueStringPointer()
+	payload["color"] = plan.Color.ValueStringPointer()
+	payload["oidc_policy"] = plan.OidcPolicy.ValueStringPointer()
 	payload["show_api_token"] = true
 	payload["team_ids"] = []string{teamOwnerUuid}
 
@@ -122,11 +129,14 @@ func (ts *testSuiteResource) Create(ctx context.Context, req resource.CreateRequ
 	}
 
 	state.ApiToken = types.StringValue(response.ApiToken)
+	state.ApplicationName = plan.ApplicationName
+	state.Color = plan.Color
 	state.DefaultBranch = types.StringValue(response.DefaultBranch)
 	state.Emoji = plan.Emoji
 	state.ID = types.StringValue(response.GraphqlID)
 	state.UUID = types.StringValue(response.UUID)
 	state.Name = types.StringValue(response.Name)
+	state.OidcPolicy = plan.OidcPolicy
 	state.Slug = types.StringValue(response.Slug)
 	state.TeamOwnerId = plan.TeamOwnerId
 
@@ -233,9 +243,10 @@ func (ts *testSuiteResource) Read(ctx context.Context, req resource.ReadRequest,
 		// Test suite was removed - remove from state
 		resp.Diagnostics.AddWarning("Test suite not found", "Removing test suite from state")
 		resp.State.RemoveResource(ctx)
+		return
 	}
 
-	// API Token only available from REST API
+	// API Token and OIDC policy only available from REST API
 	var response testSuiteResponse
 
 	// Construct URL to call to the REST API to get the API Token
@@ -261,6 +272,8 @@ func (ts *testSuiteResource) Read(ctx context.Context, req resource.ReadRequest,
 		}
 		state.ApiToken = types.StringValue(response.ApiToken)
 	}
+
+	state.OidcPolicy = types.StringPointerValue(response.OidcPolicy)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
@@ -315,6 +328,19 @@ func (ts *testSuiteResource) Schema(ctx context.Context, req resource.SchemaRequ
 				MarkdownDescription: "The emoji associated with this test suite, eg :buildkite:",
 				Optional:            true,
 			},
+			"application_name": schema.StringAttribute{
+				MarkdownDescription: "The name of the application this test suite is for.",
+				Optional:            true,
+			},
+			"color": schema.StringAttribute{
+				MarkdownDescription: "The hex color code for the test suite navatar, eg #BADA55.",
+				Optional:            true,
+			},
+			"oidc_policy": schema.StringAttribute{
+				MarkdownDescription: "The [OIDC policy](https://buildkite.com/docs/pipelines/configure/tests/test-collection/oidc) for the test suite, as a YAML or JSON string. " +
+					"This policy defines which OIDC tokens can be exchanged for suite access, as an alternative to the suite API token.",
+				Optional: true,
+			},
 		},
 	}
 }
@@ -343,7 +369,10 @@ func (ts *testSuiteResource) Update(ctx context.Context, req resource.UpdateRequ
 
 	payload["name"] = plan.Name.ValueString()
 	payload["default_branch"] = plan.DefaultBranch.ValueString()
-	payload["emoji"] = plan.Emoji.ValueString()
+	payload["emoji"] = plan.Emoji.ValueStringPointer()
+	payload["application_name"] = plan.ApplicationName.ValueStringPointer()
+	payload["color"] = plan.Color.ValueStringPointer()
+	payload["oidc_policy"] = plan.OidcPolicy.ValueStringPointer()
 
 	// Construct URL to call to the REST API
 	url := fmt.Sprintf("/v2/analytics/organizations/%s/suites/%s", ts.client.organization, state.Slug.ValueString())
@@ -364,6 +393,9 @@ func (ts *testSuiteResource) Update(ctx context.Context, req resource.UpdateRequ
 	state.Name = plan.Name
 	state.DefaultBranch = plan.DefaultBranch
 	state.Emoji = plan.Emoji
+	state.ApplicationName = plan.ApplicationName
+	state.Color = plan.Color
+	state.OidcPolicy = plan.OidcPolicy
 	state.Slug = types.StringValue(response.Slug)
 
 	// If the planned team_owner_id differs from the state, add the new one and remove the old one
@@ -423,4 +455,6 @@ func setTestSuiteModel(testSuiteModel *testSuiteModel, suite *getTestSuiteSuite)
 	testSuiteModel.UUID = types.StringValue(suite.Uuid)
 	testSuiteModel.DefaultBranch = types.StringValue(suite.DefaultBranch)
 	testSuiteModel.Emoji = types.StringPointerValue(suite.Emoji)
+	testSuiteModel.ApplicationName = types.StringPointerValue(suite.ApplicationName)
+	testSuiteModel.Color = types.StringPointerValue(suite.Color)
 }
