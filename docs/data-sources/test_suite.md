@@ -37,7 +37,10 @@ resource "buildkite_test_suite_team" "everyone" {
 
 ### Read-Only
 
+- `application_name` (String) The name of the application this test suite is for.
+- `color` (String) The hex color code for the test suite navatar.
 - `default_branch` (String) The default branch for the repository this test suite is for.
+- `emoji` (String) The emoji associated with this test suite, eg :buildkite:
 - `id` (String) The GraphQL ID of the test suite.
 - `name` (String) The name to give the test suite.
 - `oidc_policy` (String) The [OIDC policy](https://buildkite.com/docs/pipelines/configure/tests/test-collection/oidc) for the test suite, as a YAML or JSON string.

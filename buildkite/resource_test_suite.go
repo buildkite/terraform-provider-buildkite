@@ -29,13 +29,16 @@ type testSuiteModel struct {
 }
 
 type testSuiteResponse struct {
-	ApiToken      string  `json:"api_token"`
-	DefaultBranch string  `json:"default_branch"`
-	UUID          string  `json:"id"`
-	GraphqlID     string  `json:"graphql_id"`
-	Name          string  `json:"name"`
-	OidcPolicy    *string `json:"oidc_policy"`
-	Slug          string  `json:"slug"`
+	ApiToken        string  `json:"api_token"`
+	ApplicationName *string `json:"application_name"`
+	Color           *string `json:"color"`
+	DefaultBranch   string  `json:"default_branch"`
+	Emoji           *string `json:"emoji"`
+	UUID            string  `json:"id"`
+	GraphqlID       string  `json:"graphql_id"`
+	Name            string  `json:"name"`
+	OidcPolicy      *string `json:"oidc_policy"`
+	Slug            string  `json:"slug"`
 }
 
 type testSuiteResource struct {
@@ -273,6 +276,8 @@ func (ts *testSuiteResource) Read(ctx context.Context, req resource.ReadRequest,
 		state.ApiToken = types.StringValue(response.ApiToken)
 	}
 
+	state.ApplicationName = types.StringPointerValue(response.ApplicationName)
+	state.Color = types.StringPointerValue(response.Color)
 	state.OidcPolicy = types.StringPointerValue(response.OidcPolicy)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
@@ -455,6 +460,4 @@ func setTestSuiteModel(testSuiteModel *testSuiteModel, suite *getTestSuiteSuite)
 	testSuiteModel.UUID = types.StringValue(suite.Uuid)
 	testSuiteModel.DefaultBranch = types.StringValue(suite.DefaultBranch)
 	testSuiteModel.Emoji = types.StringPointerValue(suite.Emoji)
-	testSuiteModel.ApplicationName = types.StringPointerValue(suite.ApplicationName)
-	testSuiteModel.Color = types.StringPointerValue(suite.Color)
 }

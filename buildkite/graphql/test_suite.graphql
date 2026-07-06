@@ -3,10 +3,6 @@ query getTestSuite($id: ID!, $teamCount: Int) {
         ... on Suite {
             id
             uuid
-            # @genqlient(pointer: true)
-            applicationName
-            # @genqlient(pointer: true)
-            color
             defaultBranch
             # @genqlient(pointer: true)
             emoji

@@ -20,6 +20,9 @@ func TestAccBuildkiteTestSuiteDatasource(t *testing.T) {
 						resource "buildkite_test_suite" "acc_tests" {
 							name = "%s"
 							default_branch = "main"
+							emoji = ":buildkite:"
+							application_name = "My App"
+							color = "#BADA55"
 							team_owner_id = buildkite_team.acc_tests_team.id
 						}
 
@@ -38,6 +41,9 @@ func TestAccBuildkiteTestSuiteDatasource(t *testing.T) {
 					Check: resource.ComposeAggregateTestCheckFunc(
 						resource.TestCheckResourceAttr("data.buildkite_test_suite.data_test_id", "name", suiteName),
 						resource.TestCheckResourceAttrPair("data.buildkite_test_suite.data_test_id", "id", "buildkite_test_suite.acc_tests", "id"),
+						resource.TestCheckResourceAttr("data.buildkite_test_suite.data_test_id", "emoji", ":buildkite:"),
+						resource.TestCheckResourceAttr("data.buildkite_test_suite.data_test_id", "application_name", "My App"),
+						resource.TestCheckResourceAttr("data.buildkite_test_suite.data_test_id", "color", "#BADA55"),
 					),
 				},
 			},
