@@ -53,6 +53,14 @@ func (o *organizationDatasource) Read(ctx context.Context, req datasource.ReadRe
 		return
 	}
 
+	if response.Organization.Id == "" {
+		resp.Diagnostics.AddError(
+			"Unable to find organization",
+			fmt.Sprintf("Could not find organization with slug \"%s\"", o.client.organization),
+		)
+		return
+	}
+
 	state.ID = types.StringValue(response.Organization.Id)
 	state.UUID = types.StringValue(response.Organization.Uuid)
 	ips, diag := types.ListValueFrom(ctx, types.StringType, strings.Split(response.Organization.AllowedApiIpAddresses, " "))
