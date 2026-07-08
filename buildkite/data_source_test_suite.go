@@ -10,11 +10,15 @@ import (
 )
 
 type testSuiteDatasourceModel struct {
-	DefaultBranch types.String `tfsdk:"default_branch"`
-	ID            types.String `tfsdk:"id"`
-	UUID          types.String `tfsdk:"uuid"`
-	Name          types.String `tfsdk:"name"`
-	Slug          types.String `tfsdk:"slug"`
+	ApplicationName types.String `tfsdk:"application_name"`
+	Color           types.String `tfsdk:"color"`
+	DefaultBranch   types.String `tfsdk:"default_branch"`
+	Emoji           types.String `tfsdk:"emoji"`
+	ID              types.String `tfsdk:"id"`
+	UUID            types.String `tfsdk:"uuid"`
+	Name            types.String `tfsdk:"name"`
+	OidcPolicy      types.String `tfsdk:"oidc_policy"`
+	Slug            types.String `tfsdk:"slug"`
 }
 
 type testSuiteDatasource struct {
@@ -59,9 +63,13 @@ func (t *testSuiteDatasource) Read(ctx context.Context, req datasource.ReadReque
 		return
 	}
 
+	state.ApplicationName = types.StringPointerValue(suite.ApplicationName)
+	state.Color = types.StringPointerValue(suite.Color)
 	state.DefaultBranch = types.StringValue(suite.DefaultBranch)
+	state.Emoji = types.StringPointerValue(suite.Emoji)
 	state.ID = types.StringValue(suite.GraphqlID)
 	state.Name = types.StringValue(suite.Name)
+	state.OidcPolicy = types.StringPointerValue(suite.OidcPolicy)
 	state.Slug = types.StringValue(suite.Slug)
 	state.UUID = types.StringValue(suite.UUID)
 
@@ -93,6 +101,22 @@ func (t *testSuiteDatasource) Schema(ctx context.Context, req datasource.SchemaR
 			"default_branch": schema.StringAttribute{
 				Computed:            true,
 				MarkdownDescription: "The default branch for the repository this test suite is for.",
+			},
+			"application_name": schema.StringAttribute{
+				Computed:            true,
+				MarkdownDescription: "The name of the application this test suite is for.",
+			},
+			"color": schema.StringAttribute{
+				Computed:            true,
+				MarkdownDescription: "The hex color code for the test suite navatar.",
+			},
+			"emoji": schema.StringAttribute{
+				Computed:            true,
+				MarkdownDescription: "The emoji associated with this test suite, eg :buildkite:",
+			},
+			"oidc_policy": schema.StringAttribute{
+				Computed:            true,
+				MarkdownDescription: "The [OIDC policy](https://buildkite.com/docs/pipelines/configure/tests/test-collection/oidc) for the test suite, as a YAML or JSON string.",
 			},
 		},
 	}
