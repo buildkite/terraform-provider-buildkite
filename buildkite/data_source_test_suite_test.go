@@ -11,6 +11,7 @@ import (
 func TestAccBuildkiteTestSuiteDatasource(t *testing.T) {
 	t.Run("Can find a datasource", func(t *testing.T) {
 		suiteName := acctest.RandString(12)
+		oidcPolicy := "- iss: https://agent.buildkite.com\n  claims:\n    organization_slug: my-org\n    pipeline_slug: my-pipeline\n  scopes:\n    - write_uploads\n"
 		resource.ParallelTest(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },
 			ProtoV6ProviderFactories: protoV6ProviderFactories(),
@@ -23,6 +24,7 @@ func TestAccBuildkiteTestSuiteDatasource(t *testing.T) {
 							emoji = ":buildkite:"
 							application_name = "My App"
 							color = "#BADA55"
+							oidc_policy = %q
 							team_owner_id = buildkite_team.acc_tests_team.id
 						}
 
@@ -37,13 +39,14 @@ func TestAccBuildkiteTestSuiteDatasource(t *testing.T) {
 							depends_on = [buildkite_test_suite.acc_tests]
 							slug = buildkite_test_suite.acc_tests.slug
 						}
-					`, suiteName, suiteName),
+					`, suiteName, oidcPolicy, suiteName),
 					Check: resource.ComposeAggregateTestCheckFunc(
 						resource.TestCheckResourceAttr("data.buildkite_test_suite.data_test_id", "name", suiteName),
 						resource.TestCheckResourceAttrPair("data.buildkite_test_suite.data_test_id", "id", "buildkite_test_suite.acc_tests", "id"),
 						resource.TestCheckResourceAttr("data.buildkite_test_suite.data_test_id", "emoji", ":buildkite:"),
 						resource.TestCheckResourceAttr("data.buildkite_test_suite.data_test_id", "application_name", "My App"),
 						resource.TestCheckResourceAttr("data.buildkite_test_suite.data_test_id", "color", "#BADA55"),
+						resource.TestCheckResourceAttr("data.buildkite_test_suite.data_test_id", "oidc_policy", oidcPolicy),
 					),
 				},
 			},

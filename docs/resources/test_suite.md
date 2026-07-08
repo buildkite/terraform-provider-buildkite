@@ -51,10 +51,10 @@ resource "buildkite_test_suite" "with_oidc_policy" {
 
 ### Optional
 
-- `application_name` (String) The name of the application this test suite is for.
-- `color` (String) The hex color code for the test suite navatar, eg #BADA55.
+- `application_name` (String) The name of the application this test suite is for. If omitted, the value is left unmanaged by Terraform; set it to an empty string to clear it.
+- `color` (String) The hex color code for the test suite navatar, eg #BADA55. If omitted, the value is left unmanaged by Terraform; set it to an empty string to clear it.
 - `emoji` (String) The emoji associated with this test suite, eg :buildkite:
-- `oidc_policy` (String) The [OIDC policy](https://buildkite.com/docs/pipelines/configure/tests/test-collection/oidc) for the test suite, as a YAML or JSON string. This policy defines which OIDC tokens can be exchanged for suite access, as an alternative to the suite API token.
+- `oidc_policy` (String) The [OIDC policy](https://buildkite.com/docs/pipelines/configure/tests/test-collection/oidc) for the test suite, as a YAML or JSON string. This policy defines which OIDC tokens can be exchanged for suite access, as an alternative to the suite API token. If omitted, the policy is left unmanaged by Terraform; set it to an empty string to remove an existing policy.
 
 ### Read-Only
 

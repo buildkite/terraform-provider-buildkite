@@ -45,6 +45,39 @@ type testSuiteResource struct {
 	client *Client
 }
 
+// optionalStringPayload returns the REST payload value for an
+// optional+computed string attribute: nil (JSON null) when the value is null
+// or unknown, which the API treats as "clear" on update and "unset" on create.
+func optionalStringPayload(v types.String) *string {
+	if v.IsNull() || v.IsUnknown() {
+		return nil
+	}
+	return v.ValueStringPointer()
+}
+
+// stateStringValue resolves the post-apply state value for an
+// optional+computed string attribute: the planned value when known (Terraform
+// requires the applied state to match a known plan), otherwise the value
+// returned by the API.
+func stateStringValue(planned types.String, fromAPI *string) types.String {
+	if planned.IsUnknown() {
+		return types.StringPointerValue(fromAPI)
+	}
+	return planned
+}
+
+// refreshedStringValue returns the state value for an optional+computed string
+// attribute refreshed from the API. An explicit empty string in state is
+// preserved when the API reports the attribute as null: the server coerces
+// blank values (eg color) to null, and "" is the documented way to clear these
+// attributes from configuration.
+func refreshedStringValue(current types.String, fromAPI *string) types.String {
+	if fromAPI == nil && !current.IsNull() && current.ValueString() == "" {
+		return current
+	}
+	return types.StringPointerValue(fromAPI)
+}
+
 func newTestSuiteResource() resource.Resource {
 	return &testSuiteResource{}
 }
@@ -104,9 +137,9 @@ func (ts *testSuiteResource) Create(ctx context.Context, req resource.CreateRequ
 	payload["name"] = plan.Name.ValueString()
 	payload["default_branch"] = plan.DefaultBranch.ValueString()
 	payload["emoji"] = plan.Emoji.ValueStringPointer()
-	payload["application_name"] = plan.ApplicationName.ValueStringPointer()
-	payload["color"] = plan.Color.ValueStringPointer()
-	payload["oidc_policy"] = plan.OidcPolicy.ValueStringPointer()
+	payload["application_name"] = optionalStringPayload(plan.ApplicationName)
+	payload["color"] = optionalStringPayload(plan.Color)
+	payload["oidc_policy"] = optionalStringPayload(plan.OidcPolicy)
 	payload["show_api_token"] = true
 	payload["team_ids"] = []string{teamOwnerUuid}
 
@@ -132,14 +165,14 @@ func (ts *testSuiteResource) Create(ctx context.Context, req resource.CreateRequ
 	}
 
 	state.ApiToken = types.StringValue(response.ApiToken)
-	state.ApplicationName = plan.ApplicationName
-	state.Color = plan.Color
+	state.ApplicationName = stateStringValue(plan.ApplicationName, response.ApplicationName)
+	state.Color = stateStringValue(plan.Color, response.Color)
 	state.DefaultBranch = types.StringValue(response.DefaultBranch)
 	state.Emoji = plan.Emoji
 	state.ID = types.StringValue(response.GraphqlID)
 	state.UUID = types.StringValue(response.UUID)
 	state.Name = types.StringValue(response.Name)
-	state.OidcPolicy = plan.OidcPolicy
+	state.OidcPolicy = stateStringValue(plan.OidcPolicy, response.OidcPolicy)
 	state.Slug = types.StringValue(response.Slug)
 	state.TeamOwnerId = plan.TeamOwnerId
 
@@ -276,9 +309,9 @@ func (ts *testSuiteResource) Read(ctx context.Context, req resource.ReadRequest,
 		state.ApiToken = types.StringValue(response.ApiToken)
 	}
 
-	state.ApplicationName = types.StringPointerValue(response.ApplicationName)
-	state.Color = types.StringPointerValue(response.Color)
-	state.OidcPolicy = types.StringPointerValue(response.OidcPolicy)
+	state.ApplicationName = refreshedStringValue(state.ApplicationName, response.ApplicationName)
+	state.Color = refreshedStringValue(state.Color, response.Color)
+	state.OidcPolicy = refreshedStringValue(state.OidcPolicy, response.OidcPolicy)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
@@ -334,17 +367,32 @@ func (ts *testSuiteResource) Schema(ctx context.Context, req resource.SchemaRequ
 				Optional:            true,
 			},
 			"application_name": schema.StringAttribute{
-				MarkdownDescription: "The name of the application this test suite is for.",
-				Optional:            true,
+				MarkdownDescription: "The name of the application this test suite is for. " +
+					"If omitted, the value is left unmanaged by Terraform; set it to an empty string to clear it.",
+				Optional: true,
+				Computed: true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"color": schema.StringAttribute{
-				MarkdownDescription: "The hex color code for the test suite navatar, eg #BADA55.",
-				Optional:            true,
+				MarkdownDescription: "The hex color code for the test suite navatar, eg #BADA55. " +
+					"If omitted, the value is left unmanaged by Terraform; set it to an empty string to clear it.",
+				Optional: true,
+				Computed: true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"oidc_policy": schema.StringAttribute{
 				MarkdownDescription: "The [OIDC policy](https://buildkite.com/docs/pipelines/configure/tests/test-collection/oidc) for the test suite, as a YAML or JSON string. " +
-					"This policy defines which OIDC tokens can be exchanged for suite access, as an alternative to the suite API token.",
+					"This policy defines which OIDC tokens can be exchanged for suite access, as an alternative to the suite API token. " +
+					"If omitted, the policy is left unmanaged by Terraform; set it to an empty string to remove an existing policy.",
 				Optional: true,
+				Computed: true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 		},
 	}
@@ -375,9 +423,9 @@ func (ts *testSuiteResource) Update(ctx context.Context, req resource.UpdateRequ
 	payload["name"] = plan.Name.ValueString()
 	payload["default_branch"] = plan.DefaultBranch.ValueString()
 	payload["emoji"] = plan.Emoji.ValueStringPointer()
-	payload["application_name"] = plan.ApplicationName.ValueStringPointer()
-	payload["color"] = plan.Color.ValueStringPointer()
-	payload["oidc_policy"] = plan.OidcPolicy.ValueStringPointer()
+	payload["application_name"] = optionalStringPayload(plan.ApplicationName)
+	payload["color"] = optionalStringPayload(plan.Color)
+	payload["oidc_policy"] = optionalStringPayload(plan.OidcPolicy)
 
 	// Construct URL to call to the REST API
 	url := fmt.Sprintf("/v2/analytics/organizations/%s/suites/%s", ts.client.organization, state.Slug.ValueString())
@@ -398,9 +446,9 @@ func (ts *testSuiteResource) Update(ctx context.Context, req resource.UpdateRequ
 	state.Name = plan.Name
 	state.DefaultBranch = plan.DefaultBranch
 	state.Emoji = plan.Emoji
-	state.ApplicationName = plan.ApplicationName
-	state.Color = plan.Color
-	state.OidcPolicy = plan.OidcPolicy
+	state.ApplicationName = stateStringValue(plan.ApplicationName, response.ApplicationName)
+	state.Color = stateStringValue(plan.Color, response.Color)
+	state.OidcPolicy = stateStringValue(plan.OidcPolicy, response.OidcPolicy)
 	state.Slug = types.StringValue(response.Slug)
 
 	// If the planned team_owner_id differs from the state, add the new one and remove the old one

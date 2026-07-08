@@ -255,13 +255,24 @@ func TestAccBuildkiteTestSuiteResource(t *testing.T) {
 					Check:  check("My Updated App", "#B2ECF7", updatedOidcPolicy),
 				},
 				{
-					// removing the optional attributes clears them
+					// removing the optional+computed attributes from config
+					// leaves the server values unmanaged and untouched
 					Config: basicTestSuite(randName),
 					Check: resource.ComposeAggregateTestCheckFunc(
 						checkTestSuiteExists("buildkite_test_suite.suite", &suite),
-						resource.TestCheckNoResourceAttr("buildkite_test_suite.suite", "application_name"),
-						resource.TestCheckNoResourceAttr("buildkite_test_suite.suite", "color"),
-						resource.TestCheckNoResourceAttr("buildkite_test_suite.suite", "oidc_policy"),
+						resource.TestCheckResourceAttr("buildkite_test_suite.suite", "application_name", "My Updated App"),
+						resource.TestCheckResourceAttr("buildkite_test_suite.suite", "color", "#B2ECF7"),
+						resource.TestCheckResourceAttr("buildkite_test_suite.suite", "oidc_policy", updatedOidcPolicy),
+					),
+				},
+				{
+					// explicitly empty attributes clear the server values
+					Config: testSuiteWithAllAttributes(randName, "", "", ""),
+					Check: resource.ComposeAggregateTestCheckFunc(
+						checkTestSuiteExists("buildkite_test_suite.suite", &suite),
+						resource.TestCheckResourceAttr("buildkite_test_suite.suite", "application_name", ""),
+						resource.TestCheckResourceAttr("buildkite_test_suite.suite", "color", ""),
+						resource.TestCheckResourceAttr("buildkite_test_suite.suite", "oidc_policy", ""),
 					),
 				},
 			},
