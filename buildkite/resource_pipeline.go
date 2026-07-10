@@ -138,6 +138,7 @@ type providerSettingsModel struct {
 	BuildCreateEvent                        types.Bool   `tfsdk:"build_create_event"`
 	BuildDeploymentStatusCreated            types.Bool   `tfsdk:"build_deployment_status_created"`
 	BuildPullRequestConvertedToDraft        types.Bool   `tfsdk:"build_pull_request_converted_to_draft"`
+	BuildPullRequestEdited                  types.Bool   `tfsdk:"build_pull_request_edited"`
 	BuildPullRequestReviewRequested         types.Bool   `tfsdk:"build_pull_request_review_requested"`
 	BuildPullRequestReviewDismissed         types.Bool   `tfsdk:"build_pull_request_review_dismissed"`
 	BuildPullRequestReviewSubmitted         types.Bool   `tfsdk:"build_pull_request_review_submitted"`
@@ -1082,6 +1083,14 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 							boolplanmodifier.UseNonNullStateForUnknown(),
 						},
 					},
+					"build_pull_request_edited": schema.BoolAttribute{
+						Computed:            true,
+						Optional:            true,
+						MarkdownDescription: "Whether to create a build when a pull request is edited (i.e. its title, description, or base branch is changed).",
+						PlanModifiers: []planmodifier.Bool{
+							boolplanmodifier.UseNonNullStateForUnknown(),
+						},
+					},
 					"build_pull_request_review_requested": schema.BoolAttribute{
 						Computed:            true,
 						Optional:            true,
@@ -1506,6 +1515,7 @@ type PipelineExtraSettings struct {
 	BuildCreateEvent                        *bool   `json:"build_create_event,omitempty"`
 	BuildDeploymentStatusCreated            *bool   `json:"build_deployment_status_created,omitempty"`
 	BuildPullRequestConvertedToDraft        *bool   `json:"build_pull_request_converted_to_draft,omitempty"`
+	BuildPullRequestEdited                  *bool   `json:"build_pull_request_edited,omitempty"`
 	BuildPullRequestReviewRequested         *bool   `json:"build_pull_request_review_requested,omitempty"`
 	BuildPullRequestReviewDismissed         *bool   `json:"build_pull_request_review_dismissed,omitempty"`
 	BuildPullRequestReviewSubmitted         *bool   `json:"build_pull_request_review_submitted,omitempty"`
@@ -1569,6 +1579,7 @@ func updatePipelineExtraInfo(ctx context.Context, slug string, settings *provide
 			BuildCreateEvent:                        settings.BuildCreateEvent.ValueBoolPointer(),
 			BuildDeploymentStatusCreated:            settings.BuildDeploymentStatusCreated.ValueBoolPointer(),
 			BuildPullRequestConvertedToDraft:        settings.BuildPullRequestConvertedToDraft.ValueBoolPointer(),
+			BuildPullRequestEdited:                  settings.BuildPullRequestEdited.ValueBoolPointer(),
 			BuildPullRequestReviewRequested:         settings.BuildPullRequestReviewRequested.ValueBoolPointer(),
 			BuildPullRequestReviewDismissed:         settings.BuildPullRequestReviewDismissed.ValueBoolPointer(),
 			BuildPullRequestReviewSubmitted:         settings.BuildPullRequestReviewSubmitted.ValueBoolPointer(),
@@ -1637,6 +1648,7 @@ func updatePipelineResourceExtraInfo(state *pipelineResourceModel, pipeline *Pip
 		BuildCreateEvent:                        types.BoolPointerValue(s.BuildCreateEvent),
 		BuildDeploymentStatusCreated:            types.BoolPointerValue(s.BuildDeploymentStatusCreated),
 		BuildPullRequestConvertedToDraft:        types.BoolPointerValue(s.BuildPullRequestConvertedToDraft),
+		BuildPullRequestEdited:                  types.BoolPointerValue(s.BuildPullRequestEdited),
 		BuildPullRequestReviewRequested:         types.BoolPointerValue(s.BuildPullRequestReviewRequested),
 		BuildPullRequestReviewDismissed:         types.BoolPointerValue(s.BuildPullRequestReviewDismissed),
 		BuildPullRequestReviewSubmitted:         types.BoolPointerValue(s.BuildPullRequestReviewSubmitted),
@@ -1698,6 +1710,7 @@ func mapProviderSettingsFromGraphQL(repo RepositoryProviderSettingsFields) *prov
 			BuildCreateEvent:                        types.BoolPointerValue(s.BuildCreateEvent),
 			BuildDeploymentStatusCreated:            types.BoolPointerValue(s.BuildDeploymentStatusCreated),
 			BuildPullRequestConvertedToDraft:        types.BoolPointerValue(s.BuildPullRequestConvertedToDraft),
+			BuildPullRequestEdited:                  types.BoolPointerValue(s.BuildPullRequestEdited),
 			BuildPullRequestReviewRequested:         types.BoolPointerValue(s.BuildPullRequestReviewRequested),
 			BuildPullRequestReviewDismissed:         types.BoolPointerValue(s.BuildPullRequestReviewDismissed),
 			BuildPullRequestReviewSubmitted:         types.BoolPointerValue(s.BuildPullRequestReviewSubmitted),
@@ -1741,6 +1754,7 @@ func mapProviderSettingsFromGraphQL(repo RepositoryProviderSettingsFields) *prov
 			BuildCreateEvent:                        types.BoolPointerValue(s.BuildCreateEvent),
 			BuildDeploymentStatusCreated:            types.BoolPointerValue(s.BuildDeploymentStatusCreated),
 			BuildPullRequestConvertedToDraft:        types.BoolPointerValue(s.BuildPullRequestConvertedToDraft),
+			BuildPullRequestEdited:                  types.BoolPointerValue(s.BuildPullRequestEdited),
 			BuildPullRequestReviewRequested:         types.BoolPointerValue(s.BuildPullRequestReviewRequested),
 			BuildPullRequestReviewDismissed:         types.BoolPointerValue(s.BuildPullRequestReviewDismissed),
 			BuildPullRequestReviewSubmitted:         types.BoolPointerValue(s.BuildPullRequestReviewSubmitted),
@@ -2105,6 +2119,10 @@ func pipelineSchemaV0() schema.Schema {
 							Optional: true,
 						},
 						"build_pull_request_converted_to_draft": schema.BoolAttribute{
+							Computed: true,
+							Optional: true,
+						},
+						"build_pull_request_edited": schema.BoolAttribute{
 							Computed: true,
 							Optional: true,
 						},
