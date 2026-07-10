@@ -797,6 +797,7 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 					build_create_event = true
 					build_deployment_status_created = true
 					build_pull_request_converted_to_draft = true
+					build_pull_request_edited = true
 					build_pull_request_review_requested = true
 					build_pull_request_review_dismissed = true
 					build_pull_request_review_submitted = true
@@ -860,6 +861,7 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_create_event", "true"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_deployment_status_created", "true"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_pull_request_converted_to_draft", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_pull_request_edited", "true"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_pull_request_review_requested", "true"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_pull_request_review_dismissed", "true"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_pull_request_review_submitted", "true"),
@@ -982,6 +984,7 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 								build_create_event = true
 								build_deployment_status_created = true
 								build_pull_request_converted_to_draft = true
+								build_pull_request_edited = true
 								build_pull_request_review_requested = true
 								build_pull_request_review_dismissed = true
 								build_pull_request_review_submitted = true
@@ -1022,6 +1025,7 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_create_event", "true"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_deployment_status_created", "true"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_pull_request_converted_to_draft", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_pull_request_edited", "true"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_pull_request_review_requested", "true"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_pull_request_review_dismissed", "true"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_pull_request_review_submitted", "true"),

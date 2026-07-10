@@ -72,6 +72,8 @@ fragment RepositoryProviderSettingsFields on Repository {
                 # @genqlient(pointer: true)
                 buildPullRequestDequeued
                 # @genqlient(pointer: true)
+                buildPullRequestEdited
+                # @genqlient(pointer: true)
                 buildPullRequestReopened
                 # @genqlient(pointer: true)
                 buildPullRequestReviewCommentCreated
@@ -163,6 +165,8 @@ fragment RepositoryProviderSettingsFields on Repository {
                 buildPullRequestConvertedToDraft
                 # @genqlient(pointer: true)
                 buildPullRequestDequeued
+                # @genqlient(pointer: true)
+                buildPullRequestEdited
                 # @genqlient(pointer: true)
                 buildPullRequestReopened
                 # @genqlient(pointer: true)
