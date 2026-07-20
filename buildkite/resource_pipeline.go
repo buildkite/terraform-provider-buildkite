@@ -443,7 +443,17 @@ func (p *pipelineResource) Read(ctx context.Context, req resource.ReadRequest, r
 		// (kept out of the shared PipelineFields fragment so unrelated reads aren't coupled to the
 		// provider settings subtree). Errors are surfaced, never swallowed, to avoid persisting stale
 		// state.
-		if state.ProviderSettings != nil {
+		//
+		// The state-based check above can't see a value that hasn't been imported into state yet, so
+		// also check the marker ImportState sets on the read that immediately follows an import - this
+		// makes sure a freshly imported pipeline's provider_settings gets fetched at least once.
+		importPending, diags := req.Private.GetKey(ctx, "importRefreshProviderSettings")
+		resp.Diagnostics.Append(diags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+
+		if state.ProviderSettings != nil || len(importPending) > 0 {
 			var providerSettingsResponse *getPipelineProviderSettingsResponse
 			err := retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
 				var err error
@@ -459,6 +469,10 @@ func (p *pipelineResource) Read(ctx context.Context, req resource.ReadRequest, r
 				if mapped := mapProviderSettingsFromGraphQL(psPipeline.Repository.RepositoryProviderSettingsFields); mapped != nil {
 					state.ProviderSettings = mapped
 				}
+			}
+
+			if len(importPending) > 0 {
+				resp.Diagnostics.Append(resp.Private.SetKey(ctx, "importRefreshProviderSettings", nil)...)
 			}
 		}
 
@@ -1409,6 +1423,12 @@ func (p *pipelineResource) findAndRemoveTeam(ctx context.Context, teamID string,
 
 func (*pipelineResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+
+	// ImportStatePassthroughID only seeds the id attribute, so state.ProviderSettings
+	// is always nil on the Read that follows import regardless of what's actually
+	// configured on the pipeline. Mark this so Read knows to fetch provider_settings
+	// once even though its state-based "did the user configure this" check can't see it yet.
+	resp.Diagnostics.Append(resp.Private.SetKey(ctx, "importRefreshProviderSettings", []byte(`{"pending": true}`))...)
 }
 
 func setPipelineModel(model *pipelineResourceModel, data pipelineResponse) {
@@ -1434,6 +1454,7 @@ func setPipelineModel(model *pipelineResourceModel, data pipelineResponse) {
 	model.Repository = types.StringValue(data.GetRepository().Url)
 	model.SkipIntermediateBuilds = types.BoolValue(data.GetSkipIntermediateBuilds())
 	model.SkipIntermediateBuildsBranchFilter = types.StringValue(data.GetSkipIntermediateBuildsBranchFilter())
+	model.Slug = types.StringValue(data.GetSlug())
 	model.UUID = types.StringValue(data.GetPipelineUuid())
 	model.Visibility = types.StringValue(string(data.GetVisibility()))
 	model.WebhookUrl = types.StringValue(data.GetWebhookURL())
