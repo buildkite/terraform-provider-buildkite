@@ -817,6 +817,15 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.use_step_key_as_commit_status", "true"),
 					),
 				},
+				{
+					// SUP-2592: importing a pipeline must populate provider_settings from the
+					// API, not just leave it as whatever was (or wasn't) in prior state.
+					// ImportStateVerify diffs every flatmapped attribute - including
+					// provider_settings.* - between pre-import and post-import state.
+					ResourceName:      "buildkite_pipeline.pipeline",
+					ImportState:       true,
+					ImportStateVerify: true,
+				},
 			},
 		})
 	})
