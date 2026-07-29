@@ -174,6 +174,40 @@ func TestMapProviderSettingsFromGraphQLGitlabEnterprise(t *testing.T) {
 	}
 }
 
+func TestMapProviderSettingsFromGraphQLCursorOrigin(t *testing.T) {
+	cond := `build.branch == "main"`
+	enabled := true
+	disabled := false
+
+	repo := RepositoryProviderSettingsFields{
+		Provider: &RepositoryProviderSettingsFieldsProviderRepositoryProviderCursorOrigin{
+			Settings: RepositoryProviderSettingsFieldsProviderRepositoryProviderCursorOriginSettings{
+				BuildBranches:       &enabled,
+				FilterCondition:     &cond,
+				FilterEnabled:       &enabled,
+				PublishCommitStatus: &disabled,
+			},
+		},
+	}
+
+	got := mapProviderSettingsFromGraphQL(repo)
+	if got == nil {
+		t.Fatal("expected Cursor Origin provider settings to be mapped, got nil")
+	}
+	if !got.BuildBranches.ValueBool() {
+		t.Fatal("build_branches: expected true")
+	}
+	if got.FilterCondition.ValueString() != cond {
+		t.Fatalf("filter_condition: expected %q, got %q", cond, got.FilterCondition.ValueString())
+	}
+	if !got.FilterEnabled.ValueBool() {
+		t.Fatal("filter_enabled: expected true")
+	}
+	if got.PublishCommitStatus.ValueBool() {
+		t.Fatal("publish_commit_status: expected false")
+	}
+}
+
 func testAccCheckPipelineDestroyFunc(s *terraform.State) error {
 	return testAccCheckPipelineDestroy(s)
 }

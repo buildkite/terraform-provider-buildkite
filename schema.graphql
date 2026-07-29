@@ -9697,6 +9697,50 @@ Whether to use step keys as commit status names for per-step commit statuses. Re
 }
 
 """
+A pipeline's repository is being provided by Cursor Origin
+"""
+type RepositoryProviderCursorOrigin implements RepositoryProvider{
+"""
+The name of the provider
+"""
+	name: String!
+"""
+The repository’s provider settings
+"""
+	settings: RepositoryProviderCursorOriginSettings
+"""
+This URL to the provider’s web interface
+"""
+	url: String
+"""
+The URL to use when setting up webhooks from the provider to trigger Buildkite builds
+"""
+	webhookUrl: String
+}
+
+"""
+Settings for a Cursor Origin repository
+"""
+type RepositoryProviderCursorOriginSettings implements RepositoryProviderSettings{
+"""
+Whether to create builds when branches are pushed.
+"""
+	buildBranches: Boolean!
+"""
+The conditions under which this pipeline will trigger a build.
+"""
+	filterCondition: String
+"""
+Whether the filter is enabled
+"""
+	filterEnabled: Boolean
+"""
+Whether to publish build results to Cursor Origin as a check run.
+"""
+	publishCommitStatus: Boolean!
+}
+
+"""
 A pipeline's repository is being provided by GitHub
 """
 type RepositoryProviderGithub implements RepositoryProvider{
