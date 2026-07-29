@@ -306,6 +306,18 @@ fragment RepositoryProviderSettingsFields on Repository {
                 filterEnabled
             }
         }
+        ... on RepositoryProviderCursorOrigin {
+            settings {
+                # @genqlient(pointer: true)
+                buildBranches
+                # @genqlient(pointer: true)
+                filterCondition
+                # @genqlient(pointer: true)
+                filterEnabled
+                # @genqlient(pointer: true)
+                publishCommitStatus
+            }
+        }
         ... on RepositoryProviderUnknown {
             settings {
                 # @genqlient(pointer: true)
