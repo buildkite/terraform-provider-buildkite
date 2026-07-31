@@ -79,6 +79,7 @@ type pipelineResourceModel struct {
 	BranchConfiguration                  types.String `tfsdk:"branch_configuration"`
 	CancelIntermediateBuilds             types.Bool   `tfsdk:"cancel_intermediate_builds"`
 	CancelIntermediateBuildsBranchFilter types.String `tfsdk:"cancel_intermediate_builds_branch_filter"`
+	CloneMirrorUrl                       types.String `tfsdk:"clone_mirror_url"`
 	Color                                types.String `tfsdk:"color"`
 	ClusterId                            types.String `tfsdk:"cluster_id"`
 	ClusterName                          types.String `tfsdk:"cluster_name"`
@@ -160,6 +161,7 @@ type pipelineResponse interface {
 	GetBranchConfiguration() *string
 	GetCancelIntermediateBuilds() bool
 	GetCancelIntermediateBuildsBranchFilter() string
+	GetCloneMirrorUrl() *string
 	GetCluster() PipelineFieldsCluster
 	GetColor() *string
 	GetDefaultBranch() string
@@ -246,6 +248,7 @@ func (p *pipelineResource) Create(ctx context.Context, req resource.CreateReques
 				BranchConfiguration:                  plan.BranchConfiguration.ValueStringPointer(),
 				CancelIntermediateBuilds:             plan.CancelIntermediateBuilds.ValueBool(),
 				CancelIntermediateBuildsBranchFilter: plan.CancelIntermediateBuildsBranchFilter.ValueString(),
+				CloneMirrorUrl:                       plan.CloneMirrorUrl.ValueStringPointer(),
 				ClusterId:                            plan.ClusterId.ValueStringPointer(),
 				Color:                                plan.Color.ValueStringPointer(),
 				DefaultBranch:                        plan.DefaultBranch.ValueString(),
@@ -642,6 +645,10 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 				Validators: []validator.String{
 					branchFilterValidator{},
 				},
+			},
+			"clone_mirror_url": schema.StringAttribute{
+				Optional:            true,
+				MarkdownDescription: "The optional repository URL agents use as a Git clone mirror. Requires the pipeline clone mirror feature to be enabled for the organization.",
 			},
 			"color": schema.StringAttribute{
 				Optional:            true,
@@ -1237,6 +1244,7 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 		BranchConfiguration:                  plan.BranchConfiguration.ValueStringPointer(),
 		CancelIntermediateBuilds:             plan.CancelIntermediateBuilds.ValueBool(),
 		CancelIntermediateBuildsBranchFilter: plan.CancelIntermediateBuildsBranchFilter.ValueString(),
+		CloneMirrorUrl:                       plan.CloneMirrorUrl.ValueStringPointer(),
 		Color:                                plan.Color.ValueStringPointer(),
 		ClusterId:                            plan.ClusterId.ValueStringPointer(),
 		DefaultBranch:                        plan.DefaultBranch.ValueString(),
@@ -1441,6 +1449,7 @@ func setPipelineModel(model *pipelineResourceModel, data pipelineResponse) {
 	model.BranchConfiguration = types.StringPointerValue(data.GetBranchConfiguration())
 	model.CancelIntermediateBuilds = types.BoolValue(data.GetCancelIntermediateBuilds())
 	model.CancelIntermediateBuildsBranchFilter = types.StringValue(data.GetCancelIntermediateBuildsBranchFilter())
+	model.CloneMirrorUrl = types.StringPointerValue(data.GetCloneMirrorUrl())
 	model.ClusterId = types.StringPointerValue(data.GetCluster().Id)
 	model.ClusterName = types.StringPointerValue(data.GetCluster().Name)
 	model.Color = types.StringPointerValue(data.GetColor())

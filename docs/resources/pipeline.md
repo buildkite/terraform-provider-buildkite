@@ -29,6 +29,13 @@ resource "buildkite_pipeline" "pipeline" {
   cluster_id = data.buildkite_cluster.default.id
 }
 
+# with a Git clone mirror (requires the pipeline clone mirror feature)
+resource "buildkite_pipeline" "pipeline_with_clone_mirror" {
+  name             = "repo-with-clone-mirror"
+  repository       = "git@github.com:my-org/my-repo"
+  clone_mirror_url = "https://cache.example.com/my-org/my-repo.git"
+}
+
 # with github provider settings
 data "buildkite_cluster" "default" {
   name = "Default cluster"
@@ -172,6 +179,7 @@ resource "github_repository_webhook" "my_webhook" {
 - `branch_configuration` (String) Configure the pipeline to only build on this branch conditional.
 - `cancel_intermediate_builds` (Boolean) Whether to cancel builds when a new commit is pushed to a matching branch.
 - `cancel_intermediate_builds_branch_filter` (String) Filter the `cancel_intermediate_builds` setting based on this branch condition.
+- `clone_mirror_url` (String) The optional repository URL agents use as a Git clone mirror. Requires the pipeline clone mirror feature to be enabled for the organization.
 - `cluster_id` (String) Attach this pipeline to the given cluster GraphQL ID.
 - `color` (String) A color hex code to represent this pipeline.
 - `default_branch` (String) Default branch of the pipeline.

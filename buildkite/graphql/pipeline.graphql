@@ -7,6 +7,8 @@ fragment PipelineFields on Pipeline {
     branchConfiguration
     cancelIntermediateBuilds
     cancelIntermediateBuildsBranchFilter
+    # @genqlient(pointer: true)
+    cloneMirrorUrl
     cluster {
         # @genqlient(pointer: true)
         id
@@ -376,6 +378,7 @@ query getPipelineTeams($slug: ID!, $cursor: String) {
 }
 
 # @genqlient(for: "PipelineCreateInput.branchConfiguration", pointer: true)
+# @genqlient(for: "PipelineCreateInput.cloneMirrorUrl", pointer: true)
 # @genqlient(for: "PipelineCreateInput.clusterId", pointer: true)
 # @genqlient(for: "PipelineCreateInput.color", pointer: true)
 # @genqlient(for: "PipelineCreateInput.emoji", pointer: true)
@@ -395,6 +398,7 @@ mutation createPipeline(
 }
 
 # @genqlient(for: "PipelineUpdateInput.clusterId", pointer: true)
+# @genqlient(for: "PipelineUpdateInput.cloneMirrorUrl", pointer: true)
 # @genqlient(for: "PipelineUpdateInput.color", pointer: true)
 # @genqlient(for: "PipelineUpdateInput.emoji", pointer: true)
 # @genqlient(for: "PipelineUpdateInput.visibility", omitempty: true)

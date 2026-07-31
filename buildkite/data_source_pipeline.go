@@ -12,17 +12,18 @@ import (
 )
 
 type pipelineDataSourceModel struct {
-	ID            types.String `tfsdk:"id"`
-	Name          types.String `tfsdk:"name"`
-	DefaultBranch types.String `tfsdk:"default_branch"`
-	Description   types.String `tfsdk:"description"`
-	Repository    types.String `tfsdk:"repository"`
-	Slug          types.String `tfsdk:"slug"`
-	UUID          types.String `tfsdk:"uuid"`
-	Visibility    types.String `tfsdk:"visibility"`
-	WebhookUrl    types.String `tfsdk:"webhook_url"`
-	ClusterId     types.String `tfsdk:"cluster_id"`
-	ClusterName   types.String `tfsdk:"cluster_name"`
+	ID             types.String `tfsdk:"id"`
+	Name           types.String `tfsdk:"name"`
+	DefaultBranch  types.String `tfsdk:"default_branch"`
+	Description    types.String `tfsdk:"description"`
+	Repository     types.String `tfsdk:"repository"`
+	Slug           types.String `tfsdk:"slug"`
+	UUID           types.String `tfsdk:"uuid"`
+	Visibility     types.String `tfsdk:"visibility"`
+	WebhookUrl     types.String `tfsdk:"webhook_url"`
+	CloneMirrorUrl types.String `tfsdk:"clone_mirror_url"`
+	ClusterId      types.String `tfsdk:"cluster_id"`
+	ClusterName    types.String `tfsdk:"cluster_name"`
 }
 
 type pipelineDatasource struct {
@@ -89,6 +90,10 @@ func (*pipelineDatasource) Schema(ctx context.Context, req datasource.SchemaRequ
 				Computed:            true,
 				MarkdownDescription: "The Buildkite webhook URL that triggers builds on this pipeline.",
 			},
+			"clone_mirror_url": schema.StringAttribute{
+				Computed:            true,
+				MarkdownDescription: "The optional repository URL agents use as a Git clone mirror.",
+			},
 			"cluster_id": schema.StringAttribute{
 				Computed:            true,
 				MarkdownDescription: "The GraphQL ID of the cluster the pipeline is (optionally) attached to.",
@@ -139,6 +144,7 @@ func (c *pipelineDatasource) Read(ctx context.Context, req datasource.ReadReques
 	state.UUID = types.StringValue(pipeline.Pipeline.PipelineUuid)
 	state.Visibility = types.StringValue(string(pipeline.Pipeline.Visibility))
 	state.WebhookUrl = types.StringValue(pipeline.Pipeline.WebhookURL)
+	state.CloneMirrorUrl = types.StringPointerValue(pipeline.Pipeline.CloneMirrorUrl)
 	state.ClusterId = types.StringPointerValue(pipeline.Pipeline.Cluster.Id)
 	state.ClusterName = types.StringPointerValue(pipeline.Pipeline.Cluster.Name)
 
