@@ -183,6 +183,8 @@ func TestMapProviderSettingsFromGraphQLCursorOrigin(t *testing.T) {
 		Provider: &RepositoryProviderSettingsFieldsProviderRepositoryProviderCursorOrigin{
 			Settings: RepositoryProviderSettingsFieldsProviderRepositoryProviderCursorOriginSettings{
 				BuildBranches:       &enabled,
+				BuildPullRequests:   &enabled,
+				BuildTags:           &disabled,
 				FilterCondition:     &cond,
 				FilterEnabled:       &enabled,
 				PublishCommitStatus: &disabled,
@@ -197,14 +199,20 @@ func TestMapProviderSettingsFromGraphQLCursorOrigin(t *testing.T) {
 	if !got.BuildBranches.ValueBool() {
 		t.Fatal("build_branches: expected true")
 	}
+	if !got.BuildPullRequests.ValueBool() {
+		t.Fatal("build_pull_requests: expected true")
+	}
+	if got.BuildTags.IsNull() || got.BuildTags.ValueBool() {
+		t.Fatal("build_tags: expected false, got null or true")
+	}
 	if got.FilterCondition.ValueString() != cond {
 		t.Fatalf("filter_condition: expected %q, got %q", cond, got.FilterCondition.ValueString())
 	}
 	if !got.FilterEnabled.ValueBool() {
 		t.Fatal("filter_enabled: expected true")
 	}
-	if got.PublishCommitStatus.ValueBool() {
-		t.Fatal("publish_commit_status: expected false")
+	if got.PublishCommitStatus.IsNull() || got.PublishCommitStatus.ValueBool() {
+		t.Fatal("publish_commit_status: expected false, got null or true")
 	}
 }
 

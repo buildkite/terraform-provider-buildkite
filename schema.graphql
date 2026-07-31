@@ -9739,6 +9739,14 @@ Whether to create builds when branches are pushed.
 """
 	buildBranches: Boolean!
 """
+Whether to create builds for commits that are part of a pull request.
+"""
+	buildPullRequests: Boolean!
+"""
+Whether to create builds when tags are pushed.
+"""
+	buildTags: Boolean!
+"""
 The conditions under which this pipeline will trigger a build.
 """
 	filterCondition: String

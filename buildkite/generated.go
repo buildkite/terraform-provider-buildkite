@@ -3084,6 +3084,10 @@ func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderCursorOrigin)
 type RepositoryProviderSettingsFieldsProviderRepositoryProviderCursorOriginSettings struct {
 	// Whether to create builds when branches are pushed.
 	BuildBranches *bool `json:"buildBranches"`
+	// Whether to create builds for commits that are part of a pull request.
+	BuildPullRequests *bool `json:"buildPullRequests"`
+	// Whether to create builds when tags are pushed.
+	BuildTags *bool `json:"buildTags"`
 	// The conditions under which this pipeline will trigger a build.
 	FilterCondition *string `json:"filterCondition"`
 	// Whether the filter is enabled
@@ -3095,6 +3099,16 @@ type RepositoryProviderSettingsFieldsProviderRepositoryProviderCursorOriginSetti
 // GetBuildBranches returns RepositoryProviderSettingsFieldsProviderRepositoryProviderCursorOriginSettings.BuildBranches, and is useful for accessing the field via an interface.
 func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderCursorOriginSettings) GetBuildBranches() *bool {
 	return v.BuildBranches
+}
+
+// GetBuildPullRequests returns RepositoryProviderSettingsFieldsProviderRepositoryProviderCursorOriginSettings.BuildPullRequests, and is useful for accessing the field via an interface.
+func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderCursorOriginSettings) GetBuildPullRequests() *bool {
+	return v.BuildPullRequests
+}
+
+// GetBuildTags returns RepositoryProviderSettingsFieldsProviderRepositoryProviderCursorOriginSettings.BuildTags, and is useful for accessing the field via an interface.
+func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderCursorOriginSettings) GetBuildTags() *bool {
+	return v.BuildTags
 }
 
 // GetFilterCondition returns RepositoryProviderSettingsFieldsProviderRepositoryProviderCursorOriginSettings.FilterCondition, and is useful for accessing the field via an interface.
@@ -26309,6 +26323,8 @@ fragment RepositoryProviderSettingsFields on Repository {
 		... on RepositoryProviderCursorOrigin {
 			settings {
 				buildBranches
+				buildPullRequests
+				buildTags
 				filterCondition
 				filterEnabled
 				publishCommitStatus

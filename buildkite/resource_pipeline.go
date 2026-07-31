@@ -1838,6 +1838,8 @@ func mapProviderSettingsFromGraphQL(repo RepositoryProviderSettingsFields) *prov
 		s := provider.Settings
 		return &providerSettingsModel{
 			BuildBranches:       types.BoolPointerValue(s.BuildBranches),
+			BuildPullRequests:   types.BoolPointerValue(s.BuildPullRequests),
+			BuildTags:           types.BoolPointerValue(s.BuildTags),
 			FilterCondition:     types.StringPointerValue(s.FilterCondition),
 			FilterEnabled:       types.BoolPointerValue(s.FilterEnabled),
 			PublishCommitStatus: types.BoolPointerValue(s.PublishCommitStatus),
