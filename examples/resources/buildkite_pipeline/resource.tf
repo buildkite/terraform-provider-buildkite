@@ -8,6 +8,13 @@ resource "buildkite_pipeline" "pipeline" {
   cluster_id = data.buildkite_cluster.default.id
 }
 
+# with a Git clone mirror (requires the pipeline clone mirror feature)
+resource "buildkite_pipeline" "pipeline_with_clone_mirror" {
+  name             = "repo-with-clone-mirror"
+  repository       = "git@github.com:my-org/my-repo"
+  clone_mirror_url = "https://cache.example.com/my-org/my-repo.git"
+}
+
 # with github provider settings
 data "buildkite_cluster" "default" {
   name = "Default cluster"

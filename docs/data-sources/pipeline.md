@@ -30,6 +30,7 @@ data "buildkite_pipeline" "pipeline" {
 
 ### Read-Only
 
+- `clone_mirror_url` (String) The optional repository URL agents use as a Git clone mirror.
 - `cluster_id` (String) The GraphQL ID of the cluster the pipeline is (optionally) attached to.
 - `cluster_name` (String) The name of the cluster the pipeline is (optionally) attached to.
 - `default_branch` (String) The default branch to prefill when new builds are created or triggered.
