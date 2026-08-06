@@ -25,16 +25,20 @@ import (
 
 const (
 	// Available instance shapes
-	MacARM64InstanceM4Medium string = "MACOS_ARM64_M4_6X28"
-	MacARM64InstanceM4Large  string = "MACOS_ARM64_M4_12X56"
-	LinuxAMD64InstanceSmall  string = "LINUX_AMD64_2X4"
-	LinuxAMD64InstanceMedium string = "LINUX_AMD64_4X16"
-	LinuxAMD64InstanceLarge  string = "LINUX_AMD64_8X32"
-	LinuxAMD64InstanceXLarge string = "LINUX_AMD64_16X64"
-	LinuxARM64InstanceSmall  string = "LINUX_ARM64_2X4"
-	LinuxARM64InstanceMedium string = "LINUX_ARM64_4X16"
-	LinuxARM64InstanceLarge  string = "LINUX_ARM64_8X32"
-	LinuxARM64InstanceXLarge string = "LINUX_ARM64_16X64"
+	MacARM64InstanceM4Medium  string = "MACOS_ARM64_M4_6X28"
+	MacARM64InstanceM4Large   string = "MACOS_ARM64_M4_12X56"
+	LinuxAMD64InstanceSmall   string = "LINUX_AMD64_2X4"
+	LinuxAMD64InstanceMedium  string = "LINUX_AMD64_4X16"
+	LinuxAMD64InstanceLarge   string = "LINUX_AMD64_8X32"
+	LinuxAMD64InstanceXLarge  string = "LINUX_AMD64_16X64"
+	LinuxAMD64InstanceXXLarge string = "LINUX_AMD64_32X128"
+	LinuxAMD64Instance3XLarge string = "LINUX_AMD64_64X256"
+	LinuxARM64InstanceSmall   string = "LINUX_ARM64_2X4"
+	LinuxARM64InstanceMedium  string = "LINUX_ARM64_4X16"
+	LinuxARM64InstanceLarge   string = "LINUX_ARM64_8X32"
+	LinuxARM64InstanceXLarge  string = "LINUX_ARM64_16X64"
+	LinuxARM64InstanceXXLarge string = "LINUX_ARM64_32X128"
+	LinuxARM64Instance3XLarge string = "LINUX_ARM64_64X256"
 
 	// Available macOS versions
 	MacOSSonoma  string = "SONOMA"
@@ -55,10 +59,14 @@ var LinuxInstanceShapes = []string{
 	LinuxAMD64InstanceMedium,
 	LinuxAMD64InstanceLarge,
 	LinuxAMD64InstanceXLarge,
+	LinuxAMD64InstanceXXLarge,
+	LinuxAMD64Instance3XLarge,
 	LinuxARM64InstanceSmall,
 	LinuxARM64InstanceMedium,
 	LinuxARM64InstanceLarge,
 	LinuxARM64InstanceXLarge,
+	LinuxARM64InstanceXXLarge,
+	LinuxARM64Instance3XLarge,
 }
 
 var MacOSVersions = []string{
