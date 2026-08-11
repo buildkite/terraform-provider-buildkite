@@ -198,7 +198,7 @@ func (*terraformProvider) Schema(ctx context.Context, req provider.SchemaRequest
 			},
 			"max_retries": schema.Int64Attribute{
 				Optional:            true,
-				MarkdownDescription: "Maximum number of retry attempts for retryable HTTP requests. Defaults to 10.",
+				MarkdownDescription: "Maximum number of retry attempts for retryable HTTP requests. Defaults to 10. REST requests are also bounded by the operation timeout, which covers the waits between attempts as well as the requests themselves, so raising this value alone may not produce more attempts.",
 			},
 			"timeouts": timeouts.AttributesAll(ctx),
 		},
