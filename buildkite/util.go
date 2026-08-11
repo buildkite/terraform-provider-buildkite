@@ -80,6 +80,13 @@ func isTransientError(err error) bool {
 	if err == nil {
 		return false
 	}
+	// A REST failure is never the 200-body throttle this matches, and its retryable statuses have
+	// already been retried by the http client. Reading the phrase out of a 5xx body would re-run the
+	// whole operation on top of those attempts, creates included.
+	var apiErr *apiError
+	if errors.As(err, &apiErr) {
+		return false
+	}
 	var errList gqlerror.List
 	if errors.As(err, &errList) {
 		for _, e := range errList {

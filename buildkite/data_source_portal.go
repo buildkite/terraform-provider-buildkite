@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
@@ -57,7 +56,7 @@ func (p *portalDatasource) Read(ctx context.Context, req datasource.ReadRequest,
 	var result portalAPIResponse
 	err := p.client.makeRequest(ctx, http.MethodGet, path, nil, &result)
 	if err != nil {
-		if strings.Contains(err.Error(), "404") {
+		if isAPIStatus(err, http.StatusNotFound) {
 			resp.Diagnostics.AddError(
 				"Portal not found",
 				fmt.Sprintf("Could not find portal with slug \"%s\"", config.Slug.ValueString()),
