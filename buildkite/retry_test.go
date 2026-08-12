@@ -475,6 +475,77 @@ func TestMakeRequestReportsAttemptsWhenTransportKeepsFailing(t *testing.T) {
 	}
 }
 
+// The registry resources and data source call client.http.Do without going through makeRequest, so
+// they keep no capture and cannot rebuild the attempt count themselves. It has to survive on the
+// error, or a retried connection failure reads to them as a single-shot one.
+func TestDirectRESTCallerKeepsTheAttemptCount(t *testing.T) {
+	t.Parallel()
+
+	server := httptest.NewServer(http.NotFoundHandler())
+	serverURL := server.URL
+	server.Close()
+
+	client := newRetryTestClient(t, serverURL, 2, time.Millisecond)
+
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, serverURL+"/v2/registries", nil)
+	if err != nil {
+		t.Fatalf("failed to build request: %v", err)
+	}
+
+	if _, err = client.http.Do(req); err == nil {
+		t.Fatal("Expected an error, got nil")
+	}
+	if !strings.Contains(err.Error(), "after 3 attempts") {
+		t.Errorf("Expected the error to report the attempts, got %s", err)
+	}
+}
+
+// The same call must not claim a retry it never made. A non-retryable transport error, a bad
+// certificate for instance, gives up on the first attempt.
+func TestDirectRESTCallerOmitsTheCountOnASingleAttempt(t *testing.T) {
+	t.Parallel()
+
+	server := httptest.NewTLSServer(http.NotFoundHandler())
+	defer server.Close()
+
+	client := newRetryTestClient(t, server.URL, 3, time.Millisecond)
+
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, server.URL+"/v2/registries", nil)
+	if err != nil {
+		t.Fatalf("failed to build request: %v", err)
+	}
+
+	if _, err = client.http.Do(req); err == nil {
+		t.Fatal("Expected an error, got nil")
+	}
+	if strings.Contains(err.Error(), "attempts") {
+		t.Errorf("Expected no attempt count on an unretried failure, got %s", err)
+	}
+	if !strings.Contains(err.Error(), "certificate") {
+		t.Errorf("Expected the cause to survive, got %s", err)
+	}
+}
+
+// The carried count is for callers that build no message of their own. makeRequest builds one and
+// renders the count beside the request, so it has to strip the carried copy.
+func TestMakeRequestDoesNotRepeatTheAttemptCount(t *testing.T) {
+	t.Parallel()
+
+	server := httptest.NewServer(http.NotFoundHandler())
+	serverURL := server.URL
+	server.Close()
+
+	client := newRetryTestClient(t, serverURL, 2, time.Millisecond)
+
+	err := client.makeRequest(context.Background(), http.MethodGet, "/v2/organizations/test-org/clusters", nil, nil)
+	if err == nil {
+		t.Fatal("Expected an error, got nil")
+	}
+	if got := strings.Count(err.Error(), "attempts"); got != 1 {
+		t.Errorf("Expected the attempt count once, got %d in %s", got, err)
+	}
+}
+
 // The body is read under a limit on both paths that produce an error message, so an unexpected
 // payload cannot be pasted wholesale into a Terraform diagnostic.
 func TestMakeRequestTruncatesBody(t *testing.T) {

@@ -182,10 +182,10 @@ func NewClient(config *clientConfig) *Client {
 			err = errors.New("no attempt produced a response")
 		}
 
-		// No attempt count here: this only reports transport errors, and makeRequest counts the same
-		// attempts from its capture and renders them alongside the request itself. Adding one would
-		// either duplicate that or read as "after 1 attempts" where nothing was ever retried.
-		return nil, unwrapURLError(err)
+		// The count is carried rather than formatted in. makeRequest renders its own from the capture,
+		// alongside the request itself, and strips this one; the registry resources call client.http.Do
+		// directly and keep no capture, so for them this is the only place the count survives.
+		return nil, &attemptsError{attempts: numTries, err: unwrapURLError(err)}
 	}
 
 	// REST Client Setup
@@ -378,6 +378,36 @@ func isAPIStatus(err error, status int) bool {
 	return errors.As(err, &apiErr) && apiErr.StatusCode == status
 }
 
+// attemptsError reports how many attempts a request took. retryablehttp does not pass the request to
+// its ErrorHandler, so a caller's own state is out of reach there and the count has to travel with
+// the error instead. A single attempt says nothing worth saying, so it says nothing.
+type attemptsError struct {
+	attempts int
+	err      error
+}
+
+func (e *attemptsError) Error() string {
+	if e.attempts > 1 {
+		return fmt.Sprintf("after %d attempts: %s", e.attempts, e.err)
+	}
+
+	return e.err.Error()
+}
+
+func (e *attemptsError) Unwrap() error { return e.err }
+
+// requestCause reduces the error the http client returned to the part worth reporting. The
+// *url.Error repeats a request the message names already, and the attempt count belongs to whoever
+// is building the message rather than to what restErrorHandler wrote for callers building none.
+func requestCause(err error) error {
+	var attemptsErr *attemptsError
+	if errors.As(err, &attemptsErr) {
+		return attemptsErr.err
+	}
+
+	return unwrapURLError(err)
+}
+
 // unwrapURLError returns the cause net/http wrapped in a *url.Error, so a message that already
 // names the request does not repeat the URL.
 func unwrapURLError(err error) error {
@@ -433,7 +463,7 @@ func (client *Client) makeRequest(ctx context.Context, method string, path strin
 				StatusCode: lastResponse.status,
 				Attempts:   lastResponse.attempts,
 				Body:       lastResponse.body,
-				Err:        unwrapURLError(err),
+				Err:        requestCause(err),
 			}
 
 		case lastResponse.status != 0:
@@ -445,7 +475,7 @@ func (client *Client) makeRequest(ctx context.Context, method string, path strin
 				Attempts:      lastResponse.attempts,
 				earlierStatus: lastResponse.status,
 				earlierBody:   lastResponse.body,
-				Err:           unwrapURLError(err),
+				Err:           requestCause(err),
 			}
 
 		default:
@@ -453,7 +483,7 @@ func (client *Client) makeRequest(ctx context.Context, method string, path strin
 				Method:   method,
 				URL:      requestURL,
 				Attempts: lastResponse.attempts,
-				Err:      unwrapURLError(err),
+				Err:      requestCause(err),
 			}
 		}
 	}
