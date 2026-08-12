@@ -11,12 +11,51 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
 const notificationServiceTestID = "123e4567-e89b-42d3-a456-426614174000"
+
+func TestNotificationServiceUpdatePayloadClearsOptionalValues(t *testing.T) {
+	t.Parallel()
+
+	scopeUUIDs := types.SetValueMust(types.StringType, []attr.Value{types.StringValue(notificationServiceTestID)})
+	state := notificationServiceResourceModel{
+		BranchConfiguration: types.StringValue("main"),
+		ScopeUUIDs:          scopeUUIDs,
+		ProviderType:        types.StringValue(notificationServiceProviderSlackWorkspace),
+	}
+	plan := state
+	plan.BranchConfiguration = types.StringNull()
+	plan.ScopeUUIDs = types.SetNull(types.StringType)
+
+	got, diags := plan.updatePayload(t.Context(), state)
+	if diags.HasError() {
+		t.Fatalf("updatePayload() diagnostics = %v", diags)
+	}
+	want := map[string]any{
+		"branch_configuration": nil,
+		"scope_uuids":          nil,
+	}
+	if diff := cmp.Diff(got, want); diff != "" {
+		t.Errorf("updatePayload() mismatch (-got +want):\n%s", diff)
+	}
+
+	response := notificationServiceTestResponse(notificationServiceProviderSlackWorkspace)
+	if applyDiags := plan.applyAPIResponse(t.Context(), &response, state); applyDiags.HasError() {
+		t.Fatalf("applyAPIResponse() diagnostics = %v", applyDiags)
+	}
+	if !plan.BranchConfiguration.IsNull() {
+		t.Errorf("BranchConfiguration = %v, want null", plan.BranchConfiguration)
+	}
+	if !plan.ScopeUUIDs.IsNull() {
+		t.Errorf("ScopeUUIDs = %v, want null", plan.ScopeUUIDs)
+	}
+}
 
 func TestNotificationServiceRESTLifecycle(t *testing.T) {
 	api := newNotificationServiceTestAPI(t)
@@ -80,6 +119,32 @@ func TestNotificationServiceCreateTracksResourceBeforeDisableError(t *testing.T)
 	})
 }
 
+func TestNotificationServiceOAuthImportUpdatesCommonFields(t *testing.T) {
+	api := newNotificationServiceTestAPI(t)
+	api.setProvider(notificationServiceProviderSlackWorkspace)
+
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config:             notificationServiceOAuthUnitTestConfig(api.server.URL, ""),
+				ResourceName:       "buildkite_notification_service.test",
+				ImportState:        true,
+				ImportStateId:      notificationServiceTestID,
+				ImportStatePersist: true,
+				ExpectNonEmptyPlan: true,
+			},
+			{
+				Config: notificationServiceOAuthUnitTestConfig(api.server.URL, "managed after import"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("buildkite_notification_service.test", "provider_type", notificationServiceProviderSlackWorkspace),
+					resource.TestCheckResourceAttr("buildkite_notification_service.test", "description", "managed after import"),
+				),
+			},
+		},
+	})
+}
+
 func TestNotificationServiceReadRemovesMissingResource(t *testing.T) {
 	api := newNotificationServiceTestAPI(t)
 
@@ -117,6 +182,14 @@ func TestNotificationServiceConfigurationValidation(t *testing.T) {
 				webhook = {}
 			`,
 			wantError: "webhook.url is required",
+		},
+		"Slack Workspace creation": {
+			resourceConfig: `provider_type = "slack_workspace"`,
+			wantError:      "OAuth-managed notification service cannot be created",
+		},
+		"legacy Slack": {
+			resourceConfig: `provider_type = "slack"`,
+			wantError:      "Attribute provider_type value must be one of",
 		},
 	}
 
@@ -250,6 +323,22 @@ func notificationServiceUnitTestConfig(restURL, description string, enabled bool
 			}
 		}
 	`, restURL, description, enabled)
+}
+
+func notificationServiceOAuthUnitTestConfig(restURL, description string) string {
+	return fmt.Sprintf(`
+		provider "buildkite" {
+			organization = "test"
+			api_token = "test"
+			rest_url = %q
+			max_retries = 0
+		}
+
+		resource "buildkite_notification_service" "test" {
+			provider_type = "slack_workspace"
+			description = %q
+		}
+	`, restURL, description)
 }
 
 type notificationServiceTestRequest struct {
