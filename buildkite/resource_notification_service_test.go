@@ -20,6 +20,45 @@ import (
 
 const notificationServiceTestID = "123e4567-e89b-42d3-a456-426614174000"
 
+func TestNotificationServiceUpdatePayloadOnlyIncludesChanges(t *testing.T) {
+	t.Parallel()
+
+	state := notificationServiceResourceModel{
+		Description:         types.StringValue("before"),
+		BranchConfiguration: types.StringValue("main"),
+		Enabled:             types.BoolValue(true),
+		Scope:               types.StringValue("all"),
+		ScopeUUIDs:          types.SetNull(types.StringType),
+		ProviderType:        types.StringValue(notificationServiceProviderDatadogPipelineVisibility),
+		DatadogPipelineVisibility: &notificationServiceDatadogPipelineVisibilityModel{
+			APIKey:      types.StringValue("secret"),
+			DatadogSite: types.StringValue("datadoghq.com"),
+			DatadogTags: types.StringValue("team:platform"),
+		},
+	}
+	plan := state
+	plan.Description = types.StringValue("after")
+	plan.DatadogPipelineVisibility = &notificationServiceDatadogPipelineVisibilityModel{
+		APIKey:      types.StringUnknown(),
+		DatadogSite: types.StringValue("datadoghq.eu"),
+		DatadogTags: types.StringValue("team:platform"),
+	}
+
+	got, diags := plan.updatePayload(t.Context(), state)
+	if diags.HasError() {
+		t.Fatalf("updatePayload() diagnostics = %v", diags)
+	}
+	want := map[string]any{
+		"description": "after",
+		"settings": map[string]any{
+			"datadog_site": "datadoghq.eu",
+		},
+	}
+	if diff := cmp.Diff(got, want); diff != "" {
+		t.Errorf("updatePayload() mismatch (-got +want):\n%s", diff)
+	}
+}
+
 func TestNotificationServiceUpdatePayloadClearsOptionalValues(t *testing.T) {
 	t.Parallel()
 
@@ -54,6 +93,25 @@ func TestNotificationServiceUpdatePayloadClearsOptionalValues(t *testing.T) {
 	}
 	if !plan.ScopeUUIDs.IsNull() {
 		t.Errorf("ScopeUUIDs = %v, want null", plan.ScopeUUIDs)
+	}
+}
+
+func TestNotificationServiceApplyAPIResponsePreservesWriteOnlySettings(t *testing.T) {
+	t.Parallel()
+
+	response := notificationServiceTestResponse(notificationServiceProviderDatadogPipelineVisibility)
+	response.Settings = json.RawMessage(`{"api_key":"XXXXXXXXcret","datadog_site":"datadoghq.eu","datadog_tags":"team:platform"}`)
+	state := notificationServiceResourceModel{
+		DatadogPipelineVisibility: &notificationServiceDatadogPipelineVisibilityModel{
+			APIKey: types.StringValue("supersecret"),
+		},
+	}
+	previous := state
+	if diags := state.applyAPIResponse(t.Context(), &response, previous); diags.HasError() {
+		t.Fatalf("applyAPIResponse() diagnostics = %v", diags)
+	}
+	if got, want := state.DatadogPipelineVisibility.APIKey.ValueString(), "supersecret"; got != want {
+		t.Errorf("Datadog API key = %q, want %q", got, want)
 	}
 }
 
@@ -176,6 +234,21 @@ func TestNotificationServiceConfigurationValidation(t *testing.T) {
 		resourceConfig string
 		wantError      string
 	}{
+		"settings mismatch": {
+			resourceConfig: `
+				provider_type = "webhook"
+				datadog_pipeline_visibility = { api_key = "secret" }
+			`,
+			wantError: "settings do not match provider_type",
+		},
+		"multiple settings objects": {
+			resourceConfig: `
+				provider_type = "webhook"
+				webhook = { url = "https://example.test/hook" }
+				datadog_pipeline_visibility = { api_key = "secret" }
+			`,
+			wantError: "Multiple notification service settings configured",
+		},
 		"missing required setting": {
 			resourceConfig: `
 				provider_type = "webhook"

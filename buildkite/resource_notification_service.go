@@ -23,8 +23,9 @@ import (
 )
 
 const (
-	notificationServiceProviderWebhook        = "webhook"
-	notificationServiceProviderSlackWorkspace = "slack_workspace"
+	notificationServiceProviderWebhook                   = "webhook"
+	notificationServiceProviderDatadogPipelineVisibility = "datadog_pipeline_visibility"
+	notificationServiceProviderSlackWorkspace            = "slack_workspace"
 )
 
 var notificationServiceUUIDPattern = regexp.MustCompile(`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$`)
@@ -34,17 +35,18 @@ type notificationServiceResource struct {
 }
 
 type notificationServiceResourceModel struct {
-	ID                  types.String                         `tfsdk:"id"`
-	GraphQLID           types.String                         `tfsdk:"graphql_id"`
-	ProviderType        types.String                         `tfsdk:"provider_type"`
-	Description         types.String                         `tfsdk:"description"`
-	BranchConfiguration types.String                         `tfsdk:"branch_configuration"`
-	Enabled             types.Bool                           `tfsdk:"enabled"`
-	Scope               types.String                         `tfsdk:"scope"`
-	ScopeUUIDs          types.Set                            `tfsdk:"scope_uuids"`
-	BuildStates         *notificationServiceBuildStatesModel `tfsdk:"build_states"`
-	Webhook             *notificationServiceWebhookModel     `tfsdk:"webhook"`
-	CreatedAt           types.String                         `tfsdk:"created_at"`
+	ID                        types.String                                       `tfsdk:"id"`
+	GraphQLID                 types.String                                       `tfsdk:"graphql_id"`
+	ProviderType              types.String                                       `tfsdk:"provider_type"`
+	Description               types.String                                       `tfsdk:"description"`
+	BranchConfiguration       types.String                                       `tfsdk:"branch_configuration"`
+	Enabled                   types.Bool                                         `tfsdk:"enabled"`
+	Scope                     types.String                                       `tfsdk:"scope"`
+	ScopeUUIDs                types.Set                                          `tfsdk:"scope_uuids"`
+	BuildStates               *notificationServiceBuildStatesModel               `tfsdk:"build_states"`
+	Webhook                   *notificationServiceWebhookModel                   `tfsdk:"webhook"`
+	DatadogPipelineVisibility *notificationServiceDatadogPipelineVisibilityModel `tfsdk:"datadog_pipeline_visibility"`
+	CreatedAt                 types.String                                       `tfsdk:"created_at"`
 }
 
 type notificationServiceBuildStatesModel struct {
@@ -64,6 +66,12 @@ type notificationServiceWebhookModel struct {
 	Version   types.Int64  `tfsdk:"version"`
 	Events    types.Set    `tfsdk:"events"`
 	TLSVerify types.Bool   `tfsdk:"tls_verify"`
+}
+
+type notificationServiceDatadogPipelineVisibilityModel struct {
+	APIKey      types.String `tfsdk:"api_key"`
+	DatadogSite types.String `tfsdk:"datadog_site"`
+	DatadogTags types.String `tfsdk:"datadog_tags"`
 }
 
 type notificationServiceAPIResponse struct {
@@ -97,6 +105,11 @@ type notificationServiceWebhookAPISettings struct {
 	Version   *int64   `json:"version"`
 	Events    []string `json:"events"`
 	TLSVerify *bool    `json:"tls_verify"`
+}
+
+type notificationServiceDatadogPipelineVisibilityAPISettings struct {
+	DatadogSite *string `json:"datadog_site"`
+	DatadogTags *string `json:"datadog_tags"`
 }
 
 var (
@@ -152,6 +165,7 @@ func (r *notificationServiceResource) Schema(ctx context.Context, req resource.S
 				Validators: []validator.String{
 					stringvalidator.OneOf(
 						notificationServiceProviderWebhook,
+						notificationServiceProviderDatadogPipelineVisibility,
 						notificationServiceProviderSlackWorkspace,
 					),
 				},
@@ -192,8 +206,9 @@ func (r *notificationServiceResource) Schema(ctx context.Context, req resource.S
 					),
 				},
 			},
-			"build_states": notificationServiceBuildStatesSchema(),
-			"webhook":      notificationServiceWebhookSchema(),
+			"build_states":                notificationServiceBuildStatesSchema(),
+			"webhook":                     notificationServiceWebhookSchema(),
+			"datadog_pipeline_visibility": notificationServiceDatadogPipelineVisibilitySchema(),
 			"created_at": schema.StringAttribute{
 				Computed:            true,
 				MarkdownDescription: "The time when the notification service was created.",
@@ -254,6 +269,30 @@ func notificationServiceWebhookSchema() schema.SingleNestedAttribute {
 				Optional:            true,
 				Computed:            true,
 				MarkdownDescription: "Whether to verify the webhook endpoint's TLS certificate.",
+			},
+		},
+	}
+}
+
+func notificationServiceDatadogPipelineVisibilitySchema() schema.SingleNestedAttribute {
+	return schema.SingleNestedAttribute{
+		Optional:            true,
+		MarkdownDescription: "Settings for the `datadog_pipeline_visibility` provider.",
+		Attributes: map[string]schema.Attribute{
+			"api_key": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Sensitive:           true,
+				MarkdownDescription: "The Datadog API key. Required on create and masked by the API.",
+			},
+			"datadog_site": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				MarkdownDescription: "The Datadog site, such as `datadoghq.com` or `datadoghq.eu`.",
+			},
+			"datadog_tags": schema.StringAttribute{
+				Optional:            true,
+				MarkdownDescription: "Newline-delimited `key:value` tags attached to Datadog events.",
 			},
 		},
 	}
@@ -327,6 +366,8 @@ func (r *notificationServiceResource) ModifyPlan(ctx context.Context, req resour
 	switch providerType {
 	case notificationServiceProviderWebhook:
 		addMissingNotificationServiceSetting(&resp.Diagnostics, config.Webhook.URL, "webhook.url")
+	case notificationServiceProviderDatadogPipelineVisibility:
+		addMissingNotificationServiceSetting(&resp.Diagnostics, config.DatadogPipelineVisibility.APIKey, "datadog_pipeline_visibility.api_key")
 	}
 }
 
@@ -334,6 +375,9 @@ func (m *notificationServiceResourceModel) configuredSettings() []string {
 	var configured []string
 	if m.Webhook != nil {
 		configured = append(configured, notificationServiceProviderWebhook)
+	}
+	if m.DatadogPipelineVisibility != nil {
+		configured = append(configured, notificationServiceProviderDatadogPipelineVisibility)
 	}
 	return configured
 }
@@ -608,6 +652,10 @@ func (m notificationServiceResourceModel) settingsCreatePayload(ctx context.Cont
 		addNotificationServiceInt64(settings, "version", m.Webhook.Version)
 		addNotificationServiceBoolAny(settings, "tls_verify", m.Webhook.TLSVerify)
 		addNotificationServiceSet(ctx, settings, "events", m.Webhook.Events, &diags)
+	case notificationServiceProviderDatadogPipelineVisibility:
+		addNotificationServiceString(settings, "api_key", m.DatadogPipelineVisibility.APIKey)
+		addNotificationServiceString(settings, "datadog_site", m.DatadogPipelineVisibility.DatadogSite)
+		addNotificationServiceString(settings, "datadog_tags", m.DatadogPipelineVisibility.DatadogTags)
 	}
 
 	return settings, diags
@@ -658,6 +706,16 @@ func (m notificationServiceResourceModel) settingsUpdatePayload(ctx context.Cont
 		addChangedNotificationServiceInt64(settings, "version", m.Webhook.Version, state.Webhook.Version)
 		addChangedNotificationServiceBoolAny(settings, "tls_verify", m.Webhook.TLSVerify, state.Webhook.TLSVerify)
 		addChangedNotificationServiceSet(ctx, settings, "events", m.Webhook.Events, state.Webhook.Events, &diags)
+	case notificationServiceProviderDatadogPipelineVisibility:
+		if m.DatadogPipelineVisibility == nil {
+			break
+		}
+		if state.DatadogPipelineVisibility == nil {
+			return m.settingsCreatePayload(ctx)
+		}
+		addChangedNotificationServiceString(settings, "api_key", m.DatadogPipelineVisibility.APIKey, state.DatadogPipelineVisibility.APIKey)
+		addChangedNotificationServiceString(settings, "datadog_site", m.DatadogPipelineVisibility.DatadogSite, state.DatadogPipelineVisibility.DatadogSite)
+		addChangedNotificationServiceString(settings, "datadog_tags", m.DatadogPipelineVisibility.DatadogTags, state.DatadogPipelineVisibility.DatadogTags)
 	}
 
 	return settings, diags
@@ -754,6 +812,8 @@ func (m *notificationServiceResourceModel) applyAPIResponse(ctx context.Context,
 	switch result.Provider.ID {
 	case notificationServiceProviderWebhook:
 		diags.Append(m.applyWebhookAPISettings(ctx, result.Settings)...)
+	case notificationServiceProviderDatadogPipelineVisibility:
+		diags.Append(m.applyDatadogPipelineVisibilityAPISettings(result.Settings, previous)...)
 	}
 
 	return diags
@@ -763,6 +823,8 @@ func (m *notificationServiceResourceModel) initializeImportedSettings(providerTy
 	switch providerType {
 	case notificationServiceProviderWebhook:
 		m.Webhook = &notificationServiceWebhookModel{}
+	case notificationServiceProviderDatadogPipelineVisibility:
+		m.DatadogPipelineVisibility = &notificationServiceDatadogPipelineVisibilityModel{APIKey: types.StringNull()}
 	}
 }
 
@@ -785,6 +847,37 @@ func (m *notificationServiceResourceModel) applyWebhookAPISettings(ctx context.C
 		TLSVerify: types.BoolPointerValue(settings.TLSVerify),
 	}
 	return diags
+}
+
+func (m *notificationServiceResourceModel) applyDatadogPipelineVisibilityAPISettings(raw json.RawMessage, previous notificationServiceResourceModel) diag.Diagnostics {
+	if m.DatadogPipelineVisibility == nil {
+		return nil
+	}
+	var settings notificationServiceDatadogPipelineVisibilityAPISettings
+	if err := json.Unmarshal(raw, &settings); err != nil {
+		return notificationServiceSettingsDiagnostic(notificationServiceProviderDatadogPipelineVisibility, err)
+	}
+
+	previousAPIKey := types.StringNull()
+	if previous.DatadogPipelineVisibility != nil {
+		previousAPIKey = previous.DatadogPipelineVisibility.APIKey
+	}
+	m.DatadogPipelineVisibility = &notificationServiceDatadogPipelineVisibilityModel{
+		APIKey:      preserveNotificationServiceString(m.DatadogPipelineVisibility.APIKey, previousAPIKey),
+		DatadogSite: types.StringPointerValue(settings.DatadogSite),
+		DatadogTags: types.StringPointerValue(settings.DatadogTags),
+	}
+	return nil
+}
+
+func preserveNotificationServiceString(configured, previous types.String) types.String {
+	if !configured.IsNull() && !configured.IsUnknown() {
+		return configured
+	}
+	if !previous.IsUnknown() {
+		return previous
+	}
+	return types.StringNull()
 }
 
 func notificationServiceSettingsDiagnostic(providerType string, err error) diag.Diagnostics {
