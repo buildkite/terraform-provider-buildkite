@@ -8,7 +8,7 @@ description: |-
   security group from the same Terraform configuration.
   The API token must have the read_clusters scope, and the user it belongs to must be able to
   manage the cluster. A token that can only read clusters will receive a 403.
-  Clusters that do not use hosted agents have no egress ranges and return an empty list.
+  Clusters that do not have a hosted agents queue have no egress ranges and return an empty list.
 ---
 
 # buildkite_cluster_network_ranges (Data Source)
@@ -20,7 +20,7 @@ security group from the same Terraform configuration.
 The API token must have the read_clusters scope, and the user it belongs to must be able to
 manage the cluster. A token that can only read clusters will receive a 403.
 
-Clusters that do not use hosted agents have no egress ranges and return an empty list.
+Clusters that do not have a hosted agents queue have no egress ranges and return an empty list.
 
 ## Example Usage
 
