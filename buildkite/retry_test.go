@@ -601,18 +601,31 @@ func TestAPIErrorMessage(t *testing.T) {
 			want: `the Buildkite API request failed: GET https://api.buildkite.com/v2/clusters (status: 503): {"message":"try later"} (after 3 attempts): context deadline exceeded`,
 		},
 		{
-			name: "transport failure",
-			err:  &apiError{Method: http.MethodGet, URL: "https://api.buildkite.com/v2/clusters", Err: errors.New("connection refused")},
-			want: "failed to send request: connection refused",
+			// A non-retryable transport error, a bad certificate for instance, gives up on the first
+			// attempt. Saying so would read as "after 1 attempts" and imply a retry that never happened.
+			name: "transport failure on a single attempt names the request and no count",
+			err: &apiError{
+				Method: http.MethodGet, URL: "https://api.buildkite.com/v2/clusters", Attempts: 1,
+				Err: errors.New("tls: failed to verify certificate"),
+			},
+			want: "failed to send request: GET https://api.buildkite.com/v2/clusters: tls: failed to verify certificate",
+		},
+		{
+			name: "retried transport failure",
+			err: &apiError{
+				Method: http.MethodGet, URL: "https://api.buildkite.com/v2/clusters", Attempts: 3,
+				Err: errors.New("connection refused"),
+			},
+			want: "failed to send request: GET https://api.buildkite.com/v2/clusters: connection refused (after 3 attempts)",
 		},
 		{
 			name: "transport failure after an earlier status",
 			err: &apiError{
-				Method: http.MethodGet, URL: "https://api.buildkite.com/v2/clusters",
+				Method: http.MethodGet, URL: "https://api.buildkite.com/v2/clusters", Attempts: 4,
 				earlierStatus: http.StatusServiceUnavailable, earlierBody: `{"message":"try later"}`,
 				Err: errors.New("EOF"),
 			},
-			want: `failed to send request: EOF (an earlier attempt returned status 503: {"message":"try later"})`,
+			want: `failed to send request: GET https://api.buildkite.com/v2/clusters: EOF (after 4 attempts) (an earlier attempt returned status 503: {"message":"try later"})`,
 		},
 	}
 

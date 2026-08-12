@@ -182,7 +182,10 @@ func NewClient(config *clientConfig) *Client {
 			err = errors.New("no attempt produced a response")
 		}
 
-		return nil, fmt.Errorf("after %d attempts: %w", numTries, unwrapURLError(err))
+		// No attempt count here: this only reports transport errors, and makeRequest counts the same
+		// attempts from its capture and renders them alongside the request itself. Adding one would
+		// either duplicate that or read as "after 1 attempts" where nothing was ever retried.
+		return nil, unwrapURLError(err)
 	}
 
 	// REST Client Setup
@@ -342,24 +345,24 @@ type apiError struct {
 }
 
 func (e *apiError) Error() string {
+	var message string
 	if e.StatusCode == 0 {
-		message := fmt.Sprintf("failed to send request: %s", e.Err)
-		if e.earlierStatus != 0 {
-			message += fmt.Sprintf(" (an earlier attempt returned status %d: %s)", e.earlierStatus, e.earlierBody)
+		message = fmt.Sprintf("failed to send request: %s %s: %s", e.Method, e.URL, e.Err)
+	} else {
+		message = fmt.Sprintf("%s %s %s (status: %d)", apiRequestFailedPrefix, e.Method, e.URL, e.StatusCode)
+		if e.Body != "" {
+			message += ": " + e.Body
 		}
-
-		return message
 	}
 
-	message := fmt.Sprintf("%s %s %s (status: %d)", apiRequestFailedPrefix, e.Method, e.URL, e.StatusCode)
-	if e.Body != "" {
-		message += ": " + e.Body
-	}
 	if e.Attempts > 1 {
 		message += fmt.Sprintf(" (after %d attempts)", e.Attempts)
 	}
-	if e.Err != nil {
+	if e.StatusCode != 0 && e.Err != nil {
 		message += ": " + e.Err.Error()
+	}
+	if e.earlierStatus != 0 {
+		message += fmt.Sprintf(" (an earlier attempt returned status %d: %s)", e.earlierStatus, e.earlierBody)
 	}
 
 	return message
@@ -446,8 +449,12 @@ func (client *Client) makeRequest(ctx context.Context, method string, path strin
 			}
 
 		default:
-			// err still carries the *url.Error here, which is the only thing naming the request.
-			return &apiError{Method: method, URL: requestURL, Attempts: lastResponse.attempts, Err: err}
+			return &apiError{
+				Method:   method,
+				URL:      requestURL,
+				Attempts: lastResponse.attempts,
+				Err:      unwrapURLError(err),
+			}
 		}
 	}
 
