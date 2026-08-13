@@ -217,7 +217,7 @@ func (c *clusterMaintainerResource) Read(ctx context.Context, req resource.ReadR
 		var err error
 		result, err = c.getClusterMaintainer(ctx, &state)
 		if err != nil {
-			if strings.Contains(err.Error(), "404") {
+			if isAPIStatus(err, http.StatusNotFound) {
 				notFound = true
 				return nil
 			}
@@ -411,10 +411,10 @@ func (c *Client) listClusterMaintainers(ctx context.Context, orgSlug, clusterID 
 	err := c.makeRequest(ctx, http.MethodGet, path, nil, &apiResponse)
 	if err != nil {
 		// Handle different error types appropriately
-		if strings.Contains(err.Error(), "status: 403") {
+		if isAPIStatus(err, http.StatusForbidden) {
 			return []maintainerModel{}, fmt.Errorf("insufficient permissions to read cluster maintainers (requires manage_cluster permission): %w", err)
 		}
-		if strings.Contains(err.Error(), "status: 404") {
+		if isAPIStatus(err, http.StatusNotFound) {
 			return []maintainerModel{}, fmt.Errorf("cluster not found: %w", err)
 		}
 		return nil, fmt.Errorf("error listing cluster maintainers: %w", err)
