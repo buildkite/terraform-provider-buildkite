@@ -7,9 +7,49 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
+
+func TestAllowedApiIpAddressesFromAPI(t *testing.T) {
+	t.Parallel()
+
+	list := func(cidrs ...string) types.List {
+		values := make([]attr.Value, len(cidrs))
+		for i, c := range cidrs {
+			values[i] = types.StringValue(c)
+		}
+		return types.ListValueMust(types.StringType, values)
+	}
+	null := types.ListNull(types.StringType)
+
+	testCases := []struct {
+		name    string
+		remote  string
+		current types.List
+		want    types.List
+	}{
+		{"unset attribute stays null for an empty allowlist", "", null, null},
+		{"empty list is kept as is", "", list(), list()},
+		{"explicit empty string round trips", "", list(""), list("")},
+		{"remote allowlist is split", "1.1.1.1/32 0.0.0.0/0", list("1.1.1.1/32"), list("1.1.1.1/32", "0.0.0.0/0")},
+		{"remote allowlist is read when unset", "1.1.1.1/32", null, list("1.1.1.1/32")},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			got, diags := allowedApiIpAddressesFromAPI(context.Background(), tc.remote, tc.current)
+			if diags.HasError() {
+				t.Fatalf("unexpected diagnostics: %v", diags)
+			}
+			if !got.Equal(tc.want) {
+				t.Errorf("got %s, want %s", got, tc.want)
+			}
+		})
+	}
+}
 
 func TestAccBuildkiteOrganizationResource(t *testing.T) {
 	config := func(ip_addresses []string) string {
@@ -168,8 +208,28 @@ func TestAccBuildkiteOrganizationResource(t *testing.T) {
 				{
 					Config: configNoAllowedIPs(),
 					Check:  checkUpdated,
-					// After clearing the IPs, state will be set to null and refresh will restore the attribute to an empty-string list of length 1
-					ExpectNonEmptyPlan: true,
+				},
+			},
+		})
+	})
+
+	t.Run("manages an organization without configuring the allowed API IP address list", func(t *testing.T) {
+		resource.Test(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			CheckDestroy:             testCheckOrganizationResourceRemoved,
+			Steps: []resource.TestStep{
+				{
+					Config: configNoAllowedIPs(),
+					Check: resource.ComposeAggregateTestCheckFunc(
+						resource.TestCheckResourceAttrSet("buildkite_organization.let_them_in", "uuid"),
+						resource.TestCheckNoResourceAttr("buildkite_organization.let_them_in", "allowed_api_ip_addresses"),
+					),
+				},
+				{
+					ResourceName:      "buildkite_organization.let_them_in",
+					ImportState:       true,
+					ImportStateVerify: true,
 				},
 			},
 		})

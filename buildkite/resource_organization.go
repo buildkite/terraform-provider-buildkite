@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/MakeNowJust/heredoc"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -91,9 +92,6 @@ func (o *organizationResource) Create(ctx context.Context, req resource.CreateRe
 		return
 	}
 
-	// Create CIDR slice from AllowedApiIpAddresses
-	cidrs := createCidrSliceFromList(plan.AllowedApiIpAddresses)
-
 	org, err := o.client.GetOrganizationID()
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -102,14 +100,17 @@ func (o *organizationResource) Create(ctx context.Context, req resource.CreateRe
 		)
 		return
 	}
-	log.Printf("Creating settings for organization %s ...", *org)
-	apiResponse, err := setApiIpAddresses(
-		ctx,
-		o.client.genqlient,
-		*org,
-		strings.Join(cidrs, " "),
-	)
+	organization, err := getOrganization(ctx, o.client.genqlient, o.client.organization)
 	if err != nil {
+		resp.Diagnostics.AddError(
+			"Unable to obtain Organization",
+			fmt.Sprintf("Unable to obtain Organization: %s", err.Error()),
+		)
+		return
+	}
+
+	log.Printf("Creating settings for organization %s ...", *org)
+	if err := o.updateAllowedApiIpAddresses(ctx, *org, plan.AllowedApiIpAddresses, types.ListNull(types.StringType)); err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to create Organization settings",
 			fmt.Sprintf("Unable to create Organization settings: %s", err.Error()),
@@ -117,7 +118,7 @@ func (o *organizationResource) Create(ctx context.Context, req resource.CreateRe
 		return
 	}
 
-	if !plan.Enforce2FA.IsNull() && !plan.Enforce2FA.IsUnknown() {
+	if !plan.Enforce2FA.IsNull() && !plan.Enforce2FA.IsUnknown() && plan.Enforce2FA.ValueBool() != organization.Organization.MembersRequireTwoFactorAuthentication {
 		_, err = setOrganization2FA(ctx, o.client.genqlient, *org, plan.Enforce2FA.ValueBool())
 		if err != nil {
 			resp.Diagnostics.AddError("Unable to set 2FA", err.Error())
@@ -125,8 +126,8 @@ func (o *organizationResource) Create(ctx context.Context, req resource.CreateRe
 		}
 	}
 
-	state.ID = types.StringValue(apiResponse.OrganizationApiIpAllowlistUpdate.Organization.Id)
-	state.UUID = types.StringValue(apiResponse.OrganizationApiIpAllowlistUpdate.Organization.Uuid)
+	state.ID = types.StringValue(*org)
+	state.UUID = types.StringValue(organization.Organization.Uuid)
 	state.Enforce2FA = plan.Enforce2FA
 	state.AllowedApiIpAddresses = plan.AllowedApiIpAddresses
 
@@ -163,15 +164,24 @@ func (o *organizationResource) Read(ctx context.Context, req resource.ReadReques
 	state.ID = types.StringValue(*org)
 	state.UUID = types.StringValue(response.Organization.Uuid)
 	state.Enforce2FA = types.BoolValue(response.Organization.MembersRequireTwoFactorAuthentication)
-	ips, diag := types.ListValueFrom(ctx, types.StringType, strings.Split(response.Organization.AllowedApiIpAddresses, " "))
-	state.AllowedApiIpAddresses = ips
 
+	ips, diag := allowedApiIpAddressesFromAPI(ctx, response.Organization.AllowedApiIpAddresses, state.AllowedApiIpAddresses)
 	if diag.HasError() {
 		resp.Diagnostics.Append(diag...)
 		return
 	}
+	state.AllowedApiIpAddresses = ips
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
+}
+
+// allowedApiIpAddressesFromAPI maps the space separated allowlist from the API onto allowed_api_ip_addresses
+func allowedApiIpAddressesFromAPI(ctx context.Context, remote string, current types.List) (types.List, diag.Diagnostics) {
+	// keep an unset (or empty) attribute as is instead of reading "" back as [""]
+	if remote == "" && (current.IsNull() || len(current.Elements()) == 0) {
+		return current, nil
+	}
+	return types.ListValueFrom(ctx, types.StringType, strings.Split(remote, " "))
 }
 
 func (o *organizationResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
@@ -179,16 +189,14 @@ func (o *organizationResource) ImportState(ctx context.Context, req resource.Imp
 }
 
 func (o *organizationResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	var plan, state organizationResourceModel
+	var plan, prior, state organizationResourceModel
 
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	resp.Diagnostics.Append(req.State.Get(ctx, &prior)...)
 
 	if resp.Diagnostics.HasError() {
 		return
 	}
-
-	// Create CIDR slice from AllowedApiIpAddresses
-	cidrs := createCidrSliceFromList(plan.AllowedApiIpAddresses)
 
 	org, err := o.client.GetOrganizationID()
 	if err != nil {
@@ -199,13 +207,7 @@ func (o *organizationResource) Update(ctx context.Context, req resource.UpdateRe
 		return
 	}
 	log.Printf("Updating settings for organization %s ...", *org)
-	apiResponse, err := setApiIpAddresses(
-		ctx,
-		o.client.genqlient,
-		*org,
-		strings.Join(cidrs, " "),
-	)
-	if err != nil {
+	if err := o.updateAllowedApiIpAddresses(ctx, *org, plan.AllowedApiIpAddresses, prior.AllowedApiIpAddresses); err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to update Organization settings",
 			fmt.Sprintf("Unable to update Organization settings: %s", err.Error()),
@@ -213,15 +215,8 @@ func (o *organizationResource) Update(ctx context.Context, req resource.UpdateRe
 		return
 	}
 
-	if !plan.Enforce2FA.IsNull() && !plan.Enforce2FA.IsUnknown() {
-		org, err := o.client.GetOrganizationID()
-		if err != nil {
-			resp.Diagnostics.AddError(
-				"Unable to find organization",
-				fmt.Sprintf("Unable to find Organization: %s", err.Error()),
-			)
-			return
-		}
+	state.Enforce2FA = prior.Enforce2FA
+	if !plan.Enforce2FA.IsNull() && !plan.Enforce2FA.IsUnknown() && !plan.Enforce2FA.Equal(prior.Enforce2FA) {
 		twoFAResponse, err := setOrganization2FA(ctx, o.client.genqlient, *org, plan.Enforce2FA.ValueBool())
 		if err != nil {
 			resp.Diagnostics.AddError("Unable to set 2FA", err.Error())
@@ -230,14 +225,22 @@ func (o *organizationResource) Update(ctx context.Context, req resource.UpdateRe
 		state.Enforce2FA = types.BoolValue(twoFAResponse.OrganizationEnforceTwoFactorAuthenticationForMembersUpdate.Organization.MembersRequireTwoFactorAuthentication)
 	}
 
-	state.ID = types.StringValue(apiResponse.OrganizationApiIpAllowlistUpdate.Organization.Id)
-	state.UUID = types.StringValue(apiResponse.OrganizationApiIpAllowlistUpdate.Organization.Uuid)
+	state.ID = types.StringValue(*org)
+	state.UUID = prior.UUID
 	state.AllowedApiIpAddresses = plan.AllowedApiIpAddresses
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }
 
 func (o *organizationResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	var state organizationResourceModel
+
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	org, err := o.client.GetOrganizationID()
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -247,8 +250,7 @@ func (o *organizationResource) Delete(ctx context.Context, req resource.DeleteRe
 		return
 	}
 	log.Printf("Deleting settings for organization %s ...", *org)
-	_, err = setApiIpAddresses(ctx, o.client.genqlient, *org, "")
-	if err != nil {
+	if err := o.updateAllowedApiIpAddresses(ctx, *org, types.ListNull(types.StringType), state.AllowedApiIpAddresses); err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to delete Organization settings",
 			fmt.Sprintf("Unable to delete Organization settings: %s", err.Error()),
@@ -257,4 +259,15 @@ func (o *organizationResource) Delete(ctx context.Context, req resource.DeleteRe
 	}
 
 	resp.Diagnostics.AddAttributeWarning(path.Root("enforce_2fa"), "Enforce 2FA setting left intact", "Use the web UI if you wish to change the value")
+}
+
+// updateAllowedApiIpAddresses sets the API IP allowlist, skipping the mutation when it is unchanged
+func (o *organizationResource) updateAllowedApiIpAddresses(ctx context.Context, orgID string, planned, current types.List) error {
+	// the mutation is rejected for organizations without the allowlist feature, even for ""
+	if planned.Equal(current) {
+		return nil
+	}
+	cidrs := createCidrSliceFromList(planned)
+	_, err := setApiIpAddresses(ctx, o.client.genqlient, orgID, strings.Join(cidrs, " "))
+	return err
 }
