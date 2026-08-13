@@ -330,10 +330,17 @@ func getTestClient() *Client {
 		Transport: newHeaderRoundTripper(http.DefaultTransport, header),
 	}
 
+	// Honours the same override the provider does, so a run pointed at a non-production REST endpoint
+	// does not quietly assert against the real one.
+	restURL := os.Getenv("BUILDKITE_REST_URL")
+	if restURL == "" {
+		restURL = defaultRestEndpoint
+	}
+
 	client := &Client{
 		http:         httpClient,
 		organization: getenv("BUILDKITE_ORGANIZATION_SLUG"),
-		restURL:      defaultRestEndpoint,
+		restURL:      restURL,
 	}
 
 	return client

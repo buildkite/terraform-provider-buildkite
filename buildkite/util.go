@@ -182,6 +182,9 @@ func getenv(key string) string {
 	return val
 }
 
+// Deprecated: keeps every element, including the null, unknown and empty ones the API reads as CIDR
+// ranges and refuses. buildkite_cluster_agent_token is the last caller; new code should use
+// allowedIPAddressesFromList, and that resource should move across when someone is in there next.
 func createCidrSliceFromList(cidrList types.List) []string {
 	cidrs := make([]string, len(cidrList.Elements()))
 	for i, v := range cidrList.Elements() {
