@@ -27,7 +27,7 @@ Using `terraform import`, import a notification service using its UUID. For exam
 In Terraform v1.5.0 and later, use an [`import` block](https://developer.hashicorp.com/terraform/language/import). For example:
 {{ $tfImportBlock := print "examples/resources/" .Name "/import.tf" }}{{tffile $tfImportBlock }}
 
-Imported OAuth-managed `linear` and `slack_workspace` services can manage common fields, enabled state, and deletion. They cannot manage OAuth settings.
+Imported OAuth-managed `linear` and `slack_workspace` services can manage their description, enabled state, and deletion. They cannot manage OAuth settings or notification filters, which do not apply to these integrations.
 
 Legacy `slack` notification services are not supported. Migrate them to a Slack Workspace notification service before managing them with Terraform.
 

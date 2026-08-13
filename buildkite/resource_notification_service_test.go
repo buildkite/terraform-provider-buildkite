@@ -66,7 +66,7 @@ func TestNotificationServiceUpdatePayloadClearsOptionalValues(t *testing.T) {
 	state := notificationServiceResourceModel{
 		BranchConfiguration: types.StringValue("main"),
 		ScopeUUIDs:          scopeUUIDs,
-		ProviderType:        types.StringValue(notificationServiceProviderSlackWorkspace),
+		ProviderType:        types.StringValue(notificationServiceProviderWebhook),
 	}
 	plan := state
 	plan.BranchConfiguration = types.StringNull()
@@ -84,7 +84,7 @@ func TestNotificationServiceUpdatePayloadClearsOptionalValues(t *testing.T) {
 		t.Errorf("updatePayload() mismatch (-got +want):\n%s", diff)
 	}
 
-	response := notificationServiceTestResponse(notificationServiceProviderSlackWorkspace)
+	response := notificationServiceTestResponse(notificationServiceProviderWebhook)
 	if applyDiags := plan.applyAPIResponse(t.Context(), &response, state); applyDiags.HasError() {
 		t.Fatalf("applyAPIResponse() diagnostics = %v", applyDiags)
 	}
@@ -249,7 +249,7 @@ func TestNotificationServiceOAuthImportUpdatesCommonFields(t *testing.T) {
 		ProtoV6ProviderFactories: protoV6ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
-				Config:             notificationServiceOAuthUnitTestConfig(api.server.URL, ""),
+				Config:             notificationServiceOAuthUnitTestConfig(api.server.URL, notificationServiceProviderSlackWorkspace, "", ""),
 				ResourceName:       "buildkite_notification_service.test",
 				ImportState:        true,
 				ImportStateId:      notificationServiceTestID,
@@ -257,7 +257,7 @@ func TestNotificationServiceOAuthImportUpdatesCommonFields(t *testing.T) {
 				ExpectNonEmptyPlan: true,
 			},
 			{
-				Config: notificationServiceOAuthUnitTestConfig(api.server.URL, "managed after import"),
+				Config: notificationServiceOAuthUnitTestConfig(api.server.URL, notificationServiceProviderSlackWorkspace, "managed after import", ""),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("buildkite_notification_service.test", "provider_type", notificationServiceProviderSlackWorkspace),
 					resource.TestCheckResourceAttr("buildkite_notification_service.test", "description", "managed after import"),
@@ -265,6 +265,55 @@ func TestNotificationServiceOAuthImportUpdatesCommonFields(t *testing.T) {
 			},
 		},
 	})
+}
+
+func TestNotificationServiceOAuthImportRejectsNotificationFilters(t *testing.T) {
+	tests := map[string]struct {
+		providerType string
+		filter       string
+	}{
+		"Slack Workspace branch": {
+			providerType: notificationServiceProviderSlackWorkspace,
+			filter:       `branch_configuration = "main"`,
+		},
+		"Slack Workspace scope": {
+			providerType: notificationServiceProviderSlackWorkspace,
+			filter: fmt.Sprintf(`
+				scope = "some_projects"
+				scope_uuids = [%q]
+			`, notificationServiceTestID),
+		},
+		"Linear branch": {
+			providerType: notificationServiceProviderLinear,
+			filter:       `branch_configuration = "main"`,
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			api := newNotificationServiceTestAPI(t)
+			api.setProvider(test.providerType)
+
+			resource.UnitTest(t, resource.TestCase{
+				ProtoV6ProviderFactories: protoV6ProviderFactories(),
+				Steps: []resource.TestStep{
+					{
+						Config:             notificationServiceOAuthUnitTestConfig(api.server.URL, test.providerType, "", ""),
+						ResourceName:       "buildkite_notification_service.test",
+						ImportState:        true,
+						ImportStateId:      notificationServiceTestID,
+						ImportStatePersist: true,
+						ExpectNonEmptyPlan: true,
+					},
+					{
+						Config:      notificationServiceOAuthUnitTestConfig(api.server.URL, test.providerType, "", test.filter),
+						PlanOnly:    true,
+						ExpectError: regexp.MustCompile("Notification filters are not supported"),
+					},
+				},
+			})
+		})
+	}
 }
 
 func TestNotificationServiceReadRemovesMissingResource(t *testing.T) {
@@ -320,6 +369,14 @@ func TestNotificationServiceConfigurationValidation(t *testing.T) {
 			`,
 			wantError: "webhook.url is required",
 		},
+		"build states": {
+			resourceConfig: `
+				provider_type = "webhook"
+				build_states = { build_failed = true }
+				webhook = { url = "https://example.test/hook" }
+			`,
+			wantError: "(?s)Unsupported argument.*build_states",
+		},
 		"OAuth creation": {
 			resourceConfig: `provider_type = "linear"`,
 			wantError:      "OAuth-managed notification service cannot be created",
@@ -370,11 +427,6 @@ func TestAccBuildkiteNotificationService(t *testing.T) {
 				description = %q
 				enabled = %t
 
-				build_states = {
-					build_failed = true
-					build_fixed = true
-				}
-
 				webhook = {
 					url = "https://example.com/buildkite-webhook-%s"
 					events = ["build.finished"]
@@ -393,8 +445,6 @@ func TestAccBuildkiteNotificationService(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("buildkite_notification_service.test", "provider_type", notificationServiceProviderWebhook),
 					resource.TestCheckResourceAttr("buildkite_notification_service.test", "enabled", "false"),
-					resource.TestCheckResourceAttr("buildkite_notification_service.test", "build_states.build_failed", "true"),
-					resource.TestCheckResourceAttr("buildkite_notification_service.test", "build_states.build_fixed", "true"),
 					resource.TestCheckResourceAttrSet("buildkite_notification_service.test", "id"),
 				),
 			},
@@ -453,10 +503,6 @@ func notificationServiceUnitTestConfig(restURL, description string, enabled bool
 			description = %q
 			enabled = %t
 
-			build_states = {
-				build_failed = true
-			}
-
 			webhook = {
 				url = "https://example.test/hook"
 				token = "terraform-secret"
@@ -466,7 +512,7 @@ func notificationServiceUnitTestConfig(restURL, description string, enabled bool
 	`, restURL, description, enabled)
 }
 
-func notificationServiceOAuthUnitTestConfig(restURL, description string) string {
+func notificationServiceOAuthUnitTestConfig(restURL, providerType, description, extra string) string {
 	return fmt.Sprintf(`
 		provider "buildkite" {
 			organization = "test"
@@ -476,10 +522,11 @@ func notificationServiceOAuthUnitTestConfig(restURL, description string) string 
 		}
 
 		resource "buildkite_notification_service" "test" {
-			provider_type = "slack_workspace"
+			provider_type = %q
 			description = %q
+			%s
 		}
-	`, restURL, description)
+	`, restURL, providerType, description, extra)
 }
 
 func notificationServiceOpenTelemetryUnitTestConfig(restURL string) string {
@@ -515,7 +562,6 @@ type notificationServiceTestAPI struct {
 	deleted      bool
 	description  string
 	enabled      bool
-	buildFailed  bool
 	failDisable  bool
 	providerType string
 	requests     []notificationServiceTestRequest
@@ -559,9 +605,6 @@ func (api *notificationServiceTestAPI) handle(w http.ResponseWriter, req *http.R
 		api.deleted = false
 		api.enabled = true
 		api.description, _ = body["description"].(string)
-		if buildStates, ok := body["build_states"].(map[string]any); ok {
-			api.buildFailed, _ = buildStates["build_failed"].(bool)
-		}
 		api.writeResponse(w, http.StatusCreated)
 	case req.Method == http.MethodGet && req.URL.Path == resourcePath:
 		if api.deleted {
@@ -598,7 +641,6 @@ func (api *notificationServiceTestAPI) writeResponse(w http.ResponseWriter, stat
 		response.Description = &api.description
 	}
 	response.Enabled = api.enabled
-	response.BuildStates.BuildFailed = api.buildFailed
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	if err := json.NewEncoder(w).Encode(response); err != nil {

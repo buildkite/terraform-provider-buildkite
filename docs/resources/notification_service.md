@@ -46,12 +46,6 @@ resource "buildkite_notification_service" "webhook" {
 
   scope = "all"
 
-  build_states = {
-    build_failed = true
-    build_fixed  = true
-    build_passed = true
-  }
-
   webhook = {
     url        = "https://example.com/buildkite-events"
     token_mode = "signature"
@@ -68,12 +62,6 @@ resource "buildkite_notification_service" "event_bridge" {
   enabled              = true
 
   scope = "all"
-
-  build_states = {
-    build_failed = true
-    build_fixed  = true
-    build_passed = true
-  }
 
   aws_event_bridge = {
     aws_region     = "us-east-1"
@@ -107,14 +95,13 @@ resource "aws_cloudwatch_event_rule" "buildkite_builds" {
 ### Optional
 
 - `aws_event_bridge` (Attributes) Settings for the `aws_event_bridge` provider. (see [below for nested schema](#nestedatt--aws_event_bridge))
-- `branch_configuration` (String) A branch pattern restricting which builds produce notifications.
-- `build_states` (Attributes) Build and job states that produce notifications. Omitted values use the provider's API defaults. (see [below for nested schema](#nestedatt--build_states))
+- `branch_configuration` (String) A branch pattern restricting which builds produce notifications. Not supported for `linear` or `slack_workspace` services.
 - `datadog_pipeline_visibility` (Attributes) Settings for the `datadog_pipeline_visibility` provider. (see [below for nested schema](#nestedatt--datadog_pipeline_visibility))
 - `description` (String) A description of the notification service.
 - `enabled` (Boolean) Whether the notification service is enabled. Defaults to true.
 - `open_telemetry_tracing` (Attributes) Settings for the `open_telemetry_tracing` provider. (see [below for nested schema](#nestedatt--open_telemetry_tracing))
-- `scope` (String) Which resources the service applies to. Defaults to `all`.
-- `scope_uuids` (Set of String) The project, team, or cluster UUIDs selected by a `some_*` scope.
+- `scope` (String) Which resources the service applies to. Defaults to `all`. Only `all` is supported for `linear` and `slack_workspace` services.
+- `scope_uuids` (Set of String) The project, team, or cluster UUIDs selected by a `some_*` scope. Not supported for `linear` or `slack_workspace` services.
 - `webhook` (Attributes) Settings for the `webhook` provider. (see [below for nested schema](#nestedatt--webhook))
 
 ### Read-Only
@@ -135,20 +122,6 @@ Optional:
 Read-Only:
 
 - `event_source_name` (String) The AWS partner event source created for this service.
-
-
-<a id="nestedatt--build_states"></a>
-### Nested Schema for `build_states`
-
-Optional:
-
-- `build_blocked` (Boolean) Notify when a build becomes blocked.
-- `build_canceled` (Boolean) Notify when a build is canceled.
-- `build_failed` (Boolean) Notify when a build fails.
-- `build_failing` (Boolean) Notify when a build starts failing.
-- `build_fixed` (Boolean) Notify when a previously failing build passes.
-- `build_passed` (Boolean) Notify when a build passes.
-- `job_activated` (Boolean) Notify when a job is activated.
 
 
 <a id="nestedatt--datadog_pipeline_visibility"></a>
@@ -200,7 +173,7 @@ import {
 }
 ```
 
-Imported OAuth-managed `linear` and `slack_workspace` services can manage common fields, enabled state, and deletion. They cannot manage OAuth settings.
+Imported OAuth-managed `linear` and `slack_workspace` services can manage their description, enabled state, and deletion. They cannot manage OAuth settings or notification filters, which do not apply to these integrations.
 
 Legacy `slack` notification services are not supported. Migrate them to a Slack Workspace notification service before managing them with Terraform.
 

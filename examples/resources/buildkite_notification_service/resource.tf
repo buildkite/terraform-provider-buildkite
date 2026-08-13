@@ -6,12 +6,6 @@ resource "buildkite_notification_service" "webhook" {
 
   scope = "all"
 
-  build_states = {
-    build_failed = true
-    build_fixed  = true
-    build_passed = true
-  }
-
   webhook = {
     url        = "https://example.com/buildkite-events"
     token_mode = "signature"
@@ -28,12 +22,6 @@ resource "buildkite_notification_service" "event_bridge" {
   enabled              = true
 
   scope = "all"
-
-  build_states = {
-    build_failed = true
-    build_fixed  = true
-    build_passed = true
-  }
 
   aws_event_bridge = {
     aws_region     = "us-east-1"

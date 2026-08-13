@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"regexp"
+	"strings"
 
 	"github.com/MakeNowJust/heredoc"
 	"github.com/hashicorp/terraform-plugin-framework-validators/setvalidator"
@@ -46,22 +47,11 @@ type notificationServiceResourceModel struct {
 	Enabled                   types.Bool                                         `tfsdk:"enabled"`
 	Scope                     types.String                                       `tfsdk:"scope"`
 	ScopeUUIDs                types.Set                                          `tfsdk:"scope_uuids"`
-	BuildStates               *notificationServiceBuildStatesModel               `tfsdk:"build_states"`
 	Webhook                   *notificationServiceWebhookModel                   `tfsdk:"webhook"`
 	AWSEventBridge            *notificationServiceAWSEventBridgeModel            `tfsdk:"aws_event_bridge"`
 	DatadogPipelineVisibility *notificationServiceDatadogPipelineVisibilityModel `tfsdk:"datadog_pipeline_visibility"`
 	OpenTelemetryTracing      *notificationServiceOpenTelemetryTracingModel      `tfsdk:"open_telemetry_tracing"`
 	CreatedAt                 types.String                                       `tfsdk:"created_at"`
-}
-
-type notificationServiceBuildStatesModel struct {
-	BuildPassed   types.Bool `tfsdk:"build_passed"`
-	BuildFixed    types.Bool `tfsdk:"build_fixed"`
-	BuildFailed   types.Bool `tfsdk:"build_failed"`
-	BuildBlocked  types.Bool `tfsdk:"build_blocked"`
-	BuildCanceled types.Bool `tfsdk:"build_canceled"`
-	BuildFailing  types.Bool `tfsdk:"build_failing"`
-	JobActivated  types.Bool `tfsdk:"job_activated"`
 }
 
 type notificationServiceWebhookModel struct {
@@ -99,22 +89,13 @@ type notificationServiceAPIResponse struct {
 	Provider  struct {
 		ID string `json:"id"`
 	} `json:"provider"`
-	Description         *string  `json:"description"`
-	Enabled             bool     `json:"enabled"`
-	Scope               string   `json:"scope"`
-	ScopeUUIDs          []string `json:"scope_uuids"`
-	BranchConfiguration string   `json:"branch_configuration"`
-	BuildStates         struct {
-		BuildPassed   bool `json:"build_passed"`
-		BuildFixed    bool `json:"build_fixed"`
-		BuildFailed   bool `json:"build_failed"`
-		BuildBlocked  bool `json:"build_blocked"`
-		BuildCanceled bool `json:"build_canceled"`
-		BuildFailing  bool `json:"build_failing"`
-		JobActivated  bool `json:"job_activated"`
-	} `json:"build_states"`
-	Settings  json.RawMessage `json:"settings"`
-	CreatedAt string          `json:"created_at"`
+	Description         *string         `json:"description"`
+	Enabled             bool            `json:"enabled"`
+	Scope               string          `json:"scope"`
+	ScopeUUIDs          []string        `json:"scope_uuids"`
+	BranchConfiguration string          `json:"branch_configuration"`
+	Settings            json.RawMessage `json:"settings"`
+	CreatedAt           string          `json:"created_at"`
 }
 
 type notificationServiceWebhookAPISettings struct {
@@ -220,7 +201,7 @@ func (r *notificationServiceResource) Schema(ctx context.Context, req resource.S
 			},
 			"branch_configuration": schema.StringAttribute{
 				Optional:            true,
-				MarkdownDescription: "A branch pattern restricting which builds produce notifications.",
+				MarkdownDescription: "A branch pattern restricting which builds produce notifications. Not supported for `linear` or `slack_workspace` services.",
 			},
 			"enabled": schema.BoolAttribute{
 				Optional:            true,
@@ -231,7 +212,7 @@ func (r *notificationServiceResource) Schema(ctx context.Context, req resource.S
 			"scope": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				MarkdownDescription: "Which resources the service applies to. Defaults to `all`.",
+				MarkdownDescription: "Which resources the service applies to. Defaults to `all`. Only `all` is supported for `linear` and `slack_workspace` services.",
 				Default:             stringdefault.StaticString("all"),
 				Validators: []validator.String{
 					stringvalidator.OneOf("all", "some_projects", "some_teams", "some_clusters"),
@@ -240,14 +221,13 @@ func (r *notificationServiceResource) Schema(ctx context.Context, req resource.S
 			"scope_uuids": schema.SetAttribute{
 				Optional:            true,
 				ElementType:         types.StringType,
-				MarkdownDescription: "The project, team, or cluster UUIDs selected by a `some_*` scope.",
+				MarkdownDescription: "The project, team, or cluster UUIDs selected by a `some_*` scope. Not supported for `linear` or `slack_workspace` services.",
 				Validators: []validator.Set{
 					setvalidator.ValueStringsAre(
 						stringvalidator.RegexMatches(notificationServiceUUIDPattern, "must be a UUID"),
 					),
 				},
 			},
-			"build_states":                notificationServiceBuildStatesSchema(),
 			"webhook":                     notificationServiceWebhookSchema(),
 			"aws_event_bridge":            notificationServiceAWSEventBridgeSchema(),
 			"datadog_pipeline_visibility": notificationServiceDatadogPipelineVisibilitySchema(),
@@ -259,22 +239,6 @@ func (r *notificationServiceResource) Schema(ctx context.Context, req resource.S
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
-		},
-	}
-}
-
-func notificationServiceBuildStatesSchema() schema.SingleNestedAttribute {
-	return schema.SingleNestedAttribute{
-		Optional:            true,
-		MarkdownDescription: "Build and job states that produce notifications. Omitted values use the provider's API defaults.",
-		Attributes: map[string]schema.Attribute{
-			"build_passed":   notificationServiceOptionalComputedBool("Notify when a build passes."),
-			"build_fixed":    notificationServiceOptionalComputedBool("Notify when a previously failing build passes."),
-			"build_failed":   notificationServiceOptionalComputedBool("Notify when a build fails."),
-			"build_blocked":  notificationServiceOptionalComputedBool("Notify when a build becomes blocked."),
-			"build_canceled": notificationServiceOptionalComputedBool("Notify when a build is canceled."),
-			"build_failing":  notificationServiceOptionalComputedBool("Notify when a build starts failing."),
-			"job_activated":  notificationServiceOptionalComputedBool("Notify when a job is activated."),
 		},
 	}
 }
@@ -407,14 +371,6 @@ func notificationServiceOpenTelemetryTracingSchema() schema.SingleNestedAttribut
 	}
 }
 
-func notificationServiceOptionalComputedBool(description string) schema.BoolAttribute {
-	return schema.BoolAttribute{
-		Optional:            true,
-		Computed:            true,
-		MarkdownDescription: description,
-	}
-}
-
 func notificationServiceEventsAttribute(description string) schema.SetAttribute {
 	return schema.SetAttribute{
 		Optional:            true,
@@ -450,6 +406,26 @@ func (r *notificationServiceResource) ModifyPlan(ctx context.Context, req resour
 			fmt.Sprintf("The %q settings object cannot be used with provider_type %q.", configuredSettings[0], providerType),
 		)
 		return
+	}
+
+	if providerType == notificationServiceProviderLinear || providerType == notificationServiceProviderSlackWorkspace {
+		var filters []string
+		if !config.BranchConfiguration.IsNull() {
+			filters = append(filters, "branch_configuration")
+		}
+		if !config.Scope.IsNull() && (config.Scope.IsUnknown() || config.Scope.ValueString() != "all") {
+			filters = append(filters, "scope")
+		}
+		if !config.ScopeUUIDs.IsNull() {
+			filters = append(filters, "scope_uuids")
+		}
+		if len(filters) > 0 {
+			resp.Diagnostics.AddError(
+				"Notification filters are not supported",
+				fmt.Sprintf("%s services are used by pipeline or Test Engine configuration, so notification filters have no effect. Remove %s.", providerType, strings.Join(filters, ", ")),
+			)
+			return
+		}
 	}
 
 	if !req.State.Raw.IsNull() {
@@ -666,10 +642,6 @@ func (m notificationServiceResourceModel) createPayload(ctx context.Context) (ma
 			payload["scope_uuids"] = values
 		}
 	}
-	if m.BuildStates != nil {
-		payload["build_states"] = m.BuildStates.createPayload()
-	}
-
 	settings, settingsDiags := m.settingsCreatePayload(ctx)
 	diags.Append(settingsDiags...)
 	payload["settings"] = settings
@@ -699,9 +671,6 @@ func (m notificationServiceResourceModel) updatePayload(ctx context.Context, sta
 		}
 	}
 
-	if states := m.buildStatesUpdatePayload(state); len(states) > 0 {
-		payload["build_states"] = states
-	}
 	settings, settingsDiags := m.settingsUpdatePayload(ctx, state)
 	diags.Append(settingsDiags...)
 	if len(settings) > 0 {
@@ -715,49 +684,6 @@ func notificationServiceNullableString(value types.String) any {
 		return nil
 	}
 	return value.ValueString()
-}
-
-func (m *notificationServiceBuildStatesModel) createPayload() map[string]bool {
-	payload := make(map[string]bool)
-	addNotificationServiceBool(payload, "build_passed", m.BuildPassed)
-	addNotificationServiceBool(payload, "build_fixed", m.BuildFixed)
-	addNotificationServiceBool(payload, "build_failed", m.BuildFailed)
-	addNotificationServiceBool(payload, "build_blocked", m.BuildBlocked)
-	addNotificationServiceBool(payload, "build_canceled", m.BuildCanceled)
-	addNotificationServiceBool(payload, "build_failing", m.BuildFailing)
-	addNotificationServiceBool(payload, "job_activated", m.JobActivated)
-	return payload
-}
-
-func addNotificationServiceBool(payload map[string]bool, key string, value types.Bool) {
-	if !value.IsNull() && !value.IsUnknown() {
-		payload[key] = value.ValueBool()
-	}
-}
-
-func (m notificationServiceResourceModel) buildStatesUpdatePayload(state notificationServiceResourceModel) map[string]bool {
-	if m.BuildStates == nil {
-		return nil
-	}
-	if state.BuildStates == nil {
-		return m.BuildStates.createPayload()
-	}
-
-	payload := make(map[string]bool)
-	addChangedNotificationServiceBool(payload, "build_passed", m.BuildStates.BuildPassed, state.BuildStates.BuildPassed)
-	addChangedNotificationServiceBool(payload, "build_fixed", m.BuildStates.BuildFixed, state.BuildStates.BuildFixed)
-	addChangedNotificationServiceBool(payload, "build_failed", m.BuildStates.BuildFailed, state.BuildStates.BuildFailed)
-	addChangedNotificationServiceBool(payload, "build_blocked", m.BuildStates.BuildBlocked, state.BuildStates.BuildBlocked)
-	addChangedNotificationServiceBool(payload, "build_canceled", m.BuildStates.BuildCanceled, state.BuildStates.BuildCanceled)
-	addChangedNotificationServiceBool(payload, "build_failing", m.BuildStates.BuildFailing, state.BuildStates.BuildFailing)
-	addChangedNotificationServiceBool(payload, "job_activated", m.BuildStates.JobActivated, state.BuildStates.JobActivated)
-	return payload
-}
-
-func addChangedNotificationServiceBool(payload map[string]bool, key string, plan, state types.Bool) {
-	if !plan.IsUnknown() && !plan.Equal(state) {
-		payload[key] = plan.ValueBool()
-	}
 }
 
 func (m notificationServiceResourceModel) settingsCreatePayload(ctx context.Context) (map[string]any, diag.Diagnostics) {
@@ -971,18 +897,6 @@ func (m *notificationServiceResourceModel) applyAPIResponse(ctx context.Context,
 		scopeUUIDs, scopeUUIDDiags := types.SetValueFrom(ctx, types.StringType, result.ScopeUUIDs)
 		diags.Append(scopeUUIDDiags...)
 		m.ScopeUUIDs = scopeUUIDs
-	}
-
-	if m.BuildStates != nil || imported {
-		m.BuildStates = &notificationServiceBuildStatesModel{
-			BuildPassed:   types.BoolValue(result.BuildStates.BuildPassed),
-			BuildFixed:    types.BoolValue(result.BuildStates.BuildFixed),
-			BuildFailed:   types.BoolValue(result.BuildStates.BuildFailed),
-			BuildBlocked:  types.BoolValue(result.BuildStates.BuildBlocked),
-			BuildCanceled: types.BoolValue(result.BuildStates.BuildCanceled),
-			BuildFailing:  types.BoolValue(result.BuildStates.BuildFailing),
-			JobActivated:  types.BoolValue(result.BuildStates.JobActivated),
-		}
 	}
 
 	switch result.Provider.ID {
