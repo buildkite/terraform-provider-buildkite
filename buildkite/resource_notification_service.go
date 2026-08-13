@@ -175,6 +175,13 @@ func (r *notificationServiceResource) Schema(ctx context.Context, req resource.S
 			REST API scopes. Use provider_type rather than provider, which is a reserved
 			Terraform meta-argument.
 
+			Webhook and Slack Workspace notification services are available on every plan.
+			New Amazon EventBridge, Datadog Pipeline Visibility, OpenTelemetry control-plane
+			tracing, and Linear notification services require Enterprise entitlements. Existing
+			organizations may retain access based on their entitlements. Terraform cannot check
+			these entitlements during planning; the Buildkite API rejects unavailable services
+			during apply with an upgrade error.
+
 			Secret settings that the Buildkite API masks or omits are preserved from Terraform
 			state during refresh. Changes made to those values outside Terraform cannot be detected.
 		`),

@@ -41,7 +41,7 @@ resource "buildkite_pipeline" "pipeline" {
 
 ### Optional
 
-- `api_token` (String, Sensitive) API token with GraphQL access and `write_pipelines`, `read_pipelines` and `write_suites` REST API scopes. You can generate a token from [your settings page](https://buildkite.com/user/api-access-tokens/new?description=terraform&scopes[]=write_pipelines&scopes[]=write_suites&scopes[]=read_pipelines&scopes[]=graphql). If not provided, the value is taken from the `BUILDKITE_API_TOKEN` environment variable.
+- `api_token` (String, Sensitive) API token with GraphQL access and `write_pipelines`, `read_pipelines`, `write_suites`, `read_notification_services`, and `write_notification_services` REST API scopes. You can generate a token from [your settings page](https://buildkite.com/user/api-access-tokens/new?description=terraform&scopes[]=write_pipelines&scopes[]=write_suites&scopes[]=read_pipelines&scopes[]=read_notification_services&scopes[]=write_notification_services&scopes[]=graphql). If not provided, the value is taken from the `BUILDKITE_API_TOKEN` environment variable.
 - `archive_pipeline_on_delete` (Boolean) Enable this to archive pipelines when destroying the resource. This is opposed to completely deleting pipelines.
 - `graphql_url` (String) Base URL for the GraphQL API to use. If not provided, the value is taken from the `BUILDKITE_GRAPHQL_URL` environment variable.
 - `max_retries` (Number) Maximum number of retry attempts for retryable HTTP requests. Defaults to 10. The waits between attempts count against the applicable `timeouts` value, so raising this alone does not necessarily produce more attempts.
