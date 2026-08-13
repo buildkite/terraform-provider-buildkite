@@ -27,6 +27,7 @@ const (
 	notificationServiceProviderAWSEventBridge            = "aws_event_bridge"
 	notificationServiceProviderDatadogPipelineVisibility = "datadog_pipeline_visibility"
 	notificationServiceProviderOpenTelemetryTracing      = "open_telemetry_tracing"
+	notificationServiceProviderLinear                    = "linear"
 	notificationServiceProviderSlackWorkspace            = "slack_workspace"
 )
 
@@ -191,13 +192,14 @@ func (r *notificationServiceResource) Schema(ctx context.Context, req resource.S
 			},
 			"provider_type": schema.StringAttribute{
 				Required:            true,
-				MarkdownDescription: "The notification provider type. OAuth-managed `slack_workspace` services can be imported but cannot be created with this resource. Legacy `slack` services are not supported.",
+				MarkdownDescription: "The notification provider type. OAuth-managed `linear` and `slack_workspace` services can be imported but cannot be created with this resource. Legacy `slack` services are not supported.",
 				Validators: []validator.String{
 					stringvalidator.OneOf(
 						notificationServiceProviderWebhook,
 						notificationServiceProviderAWSEventBridge,
 						notificationServiceProviderDatadogPipelineVisibility,
 						notificationServiceProviderOpenTelemetryTracing,
+						notificationServiceProviderLinear,
 						notificationServiceProviderSlackWorkspace,
 					),
 				},
@@ -447,7 +449,7 @@ func (r *notificationServiceResource) ModifyPlan(ctx context.Context, req resour
 		return
 	}
 
-	if providerType == notificationServiceProviderSlackWorkspace {
+	if providerType == notificationServiceProviderLinear || providerType == notificationServiceProviderSlackWorkspace {
 		resp.Diagnostics.AddError(
 			"OAuth-managed notification service cannot be created",
 			fmt.Sprintf("%s notification services must be connected in the Buildkite web UI and then imported into Terraform.", providerType),

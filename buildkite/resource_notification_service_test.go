@@ -320,6 +320,10 @@ func TestNotificationServiceConfigurationValidation(t *testing.T) {
 			`,
 			wantError: "webhook.url is required",
 		},
+		"OAuth creation": {
+			resourceConfig: `provider_type = "linear"`,
+			wantError:      "OAuth-managed notification service cannot be created",
+		},
 		"Slack Workspace creation": {
 			resourceConfig: `provider_type = "slack_workspace"`,
 			wantError:      "OAuth-managed notification service cannot be created",
