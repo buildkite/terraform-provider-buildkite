@@ -378,6 +378,29 @@ func isAPIStatus(err error, status int) bool {
 	return errors.As(err, &apiErr) && apiErr.StatusCode == status
 }
 
+// apiErrorMessage returns the "message" the REST API renders for an error, for the cases where that
+// wording is the whole point of the failure and the request line around it is noise: a plan-gated
+// setting, for instance, is refused with the name of the entitlement the organization is missing.
+// Falls back to the full error whenever the body isn't a JSON error object, which covers proxy error
+// pages and bodies the retry loop truncated.
+func apiErrorMessage(err error) string {
+	if err == nil {
+		return ""
+	}
+
+	var apiErr *apiError
+	if errors.As(err, &apiErr) {
+		var body struct {
+			Message string `json:"message"`
+		}
+		if jsonErr := json.Unmarshal([]byte(apiErr.Body), &body); jsonErr == nil && body.Message != "" {
+			return body.Message
+		}
+	}
+
+	return err.Error()
+}
+
 // attemptsError reports how many attempts a request took. retryablehttp does not pass the request to
 // its ErrorHandler, so a caller's own state is out of reach there and the count has to travel with
 // the error instead. A single attempt says nothing worth saying, so it says nothing.
@@ -445,8 +468,7 @@ func (client *Client) makeRequest(ctx context.Context, method string, path strin
 		return fmt.Errorf("failed to create request: %w", err)
 	}
 
-	// Add content-type header for POST/PUT requests with body
-	if (method == http.MethodPost || method == http.MethodPut) && bodyBytes != nil {
+	if bodyBytes != nil {
 		req.Header.Set("Content-Type", "application/json")
 	}
 

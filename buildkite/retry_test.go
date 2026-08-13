@@ -759,6 +759,68 @@ func TestIsAPIStatus(t *testing.T) {
 	}
 }
 
+// Callers that lead with the API's own wording depend on this reaching past the request line, and on
+// it giving up rather than guessing when the body is not the API's own JSON.
+func TestAPIErrorMessageFromBody(t *testing.T) {
+	t.Parallel()
+
+	withBody := func(body string) *apiError {
+		return &apiError{
+			Method: http.MethodPatch, URL: "https://api.buildkite.com/v2/organizations/acme/api-settings",
+			StatusCode: http.StatusForbidden, Body: body,
+		}
+	}
+
+	tests := []struct {
+		name string
+		err  error
+		want string
+	}{
+		{name: "nil", err: nil, want: ""},
+		{
+			name: "a JSON error object",
+			err:  withBody(`{"message":"Your billing plan doesn't support the API IP allowlist"}`),
+			want: "Your billing plan doesn't support the API IP allowlist",
+		},
+		{
+			name: "a JSON error object reached through wrapping",
+			err:  fmt.Errorf("updating organization settings: %w", withBody(`{"message":"Forbidden"}`)),
+			want: "Forbidden",
+		},
+		{
+			// A proxy's error page, or a body the retry loop only kept a prefix of.
+			name: "a body that is not JSON falls back to the whole error",
+			err:  withBody("<html><body>403 Forbidden</body></html>"),
+			want: withBody("<html><body>403 Forbidden</body></html>").Error(),
+		},
+		{
+			name: "JSON carrying no message falls back to the whole error",
+			err:  withBody(`{"errors":["Forbidden"]}`),
+			want: withBody(`{"errors":["Forbidden"]}`).Error(),
+		},
+		{
+			name: "an empty body falls back to the whole error",
+			err:  withBody(""),
+			want: withBody("").Error(),
+		},
+		{
+			name: "an error that never came from the REST client",
+			err:  errors.New("dial tcp: connection refused"),
+			want: "dial tcp: connection refused",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			if got := apiErrorMessage(tt.err); got != tt.want {
+				t.Errorf("apiErrorMessage() = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
+
 // When retries end on a status the policy does not cover, that status is the one to report: the
 // earlier 503 is history, and a resource matching on "status: 403" has to see it.
 func TestMakeRequestReportsTheStatusThatEndedTheRequest(t *testing.T) {
