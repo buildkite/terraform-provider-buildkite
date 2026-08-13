@@ -187,6 +187,7 @@ resource "github_repository_webhook" "my_webhook" {
 - `default_timeout_in_minutes` (Number) Set pipeline wide timeout for command steps.
 - `description` (String) Description for the pipeline. Can include emoji 🙌.
 - `emoji` (String) An emoji that represents this pipeline.
+- `github_webhooks_enabled` (Boolean) Whether GitHub webhook processing is enabled for the pipeline. Only applies to GitHub and GitHub Enterprise repositories and requires the organization to be enrolled in the newer webhook triggers. If omitted, the setting is left unchanged and is not read.
 - `maximum_timeout_in_minutes` (Number) Set pipeline wide maximum timeout for command steps.
 - `pipeline_template_id` (String) The GraphQL ID of the pipeline template applied to this pipeline.
 - `provider_settings` (Attributes) Control settings depending on the VCS provider used in `repository`. (see [below for nested schema](#nestedatt--provider_settings))
