@@ -24,6 +24,7 @@ import (
 
 const (
 	notificationServiceProviderWebhook                   = "webhook"
+	notificationServiceProviderAWSEventBridge            = "aws_event_bridge"
 	notificationServiceProviderDatadogPipelineVisibility = "datadog_pipeline_visibility"
 	notificationServiceProviderSlackWorkspace            = "slack_workspace"
 )
@@ -45,6 +46,7 @@ type notificationServiceResourceModel struct {
 	ScopeUUIDs                types.Set                                          `tfsdk:"scope_uuids"`
 	BuildStates               *notificationServiceBuildStatesModel               `tfsdk:"build_states"`
 	Webhook                   *notificationServiceWebhookModel                   `tfsdk:"webhook"`
+	AWSEventBridge            *notificationServiceAWSEventBridgeModel            `tfsdk:"aws_event_bridge"`
 	DatadogPipelineVisibility *notificationServiceDatadogPipelineVisibilityModel `tfsdk:"datadog_pipeline_visibility"`
 	CreatedAt                 types.String                                       `tfsdk:"created_at"`
 }
@@ -66,6 +68,13 @@ type notificationServiceWebhookModel struct {
 	Version   types.Int64  `tfsdk:"version"`
 	Events    types.Set    `tfsdk:"events"`
 	TLSVerify types.Bool   `tfsdk:"tls_verify"`
+}
+
+type notificationServiceAWSEventBridgeModel struct {
+	AWSRegion            types.String `tfsdk:"aws_region"`
+	AWSAccountID         types.String `tfsdk:"aws_account_id"`
+	EventSourceName      types.String `tfsdk:"event_source_name"`
+	IncludeBuildMetadata types.String `tfsdk:"include_build_meta_data"`
 }
 
 type notificationServiceDatadogPipelineVisibilityModel struct {
@@ -105,6 +114,12 @@ type notificationServiceWebhookAPISettings struct {
 	Version   *int64   `json:"version"`
 	Events    []string `json:"events"`
 	TLSVerify *bool    `json:"tls_verify"`
+}
+
+type notificationServiceAWSEventBridgeAPISettings struct {
+	AWSRegion            *string `json:"aws_region"`
+	EventSourceName      *string `json:"event_source_name"`
+	IncludeBuildMetadata *string `json:"include_build_meta_data"`
 }
 
 type notificationServiceDatadogPipelineVisibilityAPISettings struct {
@@ -165,6 +180,7 @@ func (r *notificationServiceResource) Schema(ctx context.Context, req resource.S
 				Validators: []validator.String{
 					stringvalidator.OneOf(
 						notificationServiceProviderWebhook,
+						notificationServiceProviderAWSEventBridge,
 						notificationServiceProviderDatadogPipelineVisibility,
 						notificationServiceProviderSlackWorkspace,
 					),
@@ -208,6 +224,7 @@ func (r *notificationServiceResource) Schema(ctx context.Context, req resource.S
 			},
 			"build_states":                notificationServiceBuildStatesSchema(),
 			"webhook":                     notificationServiceWebhookSchema(),
+			"aws_event_bridge":            notificationServiceAWSEventBridgeSchema(),
 			"datadog_pipeline_visibility": notificationServiceDatadogPipelineVisibilitySchema(),
 			"created_at": schema.StringAttribute{
 				Computed:            true,
@@ -269,6 +286,41 @@ func notificationServiceWebhookSchema() schema.SingleNestedAttribute {
 				Optional:            true,
 				Computed:            true,
 				MarkdownDescription: "Whether to verify the webhook endpoint's TLS certificate.",
+			},
+		},
+	}
+}
+
+func notificationServiceAWSEventBridgeSchema() schema.SingleNestedAttribute {
+	return schema.SingleNestedAttribute{
+		Optional:            true,
+		MarkdownDescription: "Settings for the `aws_event_bridge` provider.",
+		Attributes: map[string]schema.Attribute{
+			"aws_region": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				MarkdownDescription: "The AWS region for the partner event source. Required on create and immutable.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
+			},
+			"aws_account_id": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Sensitive:           true,
+				MarkdownDescription: "The AWS account ID for the partner event source. Required on create, immutable, and masked by the API.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
+			},
+			"event_source_name": schema.StringAttribute{
+				Computed:            true,
+				MarkdownDescription: "The AWS partner event source created for this service.",
+			},
+			"include_build_meta_data": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				MarkdownDescription: "A build meta-data pattern to include in EventBridge payloads.",
 			},
 		},
 	}
@@ -366,6 +418,9 @@ func (r *notificationServiceResource) ModifyPlan(ctx context.Context, req resour
 	switch providerType {
 	case notificationServiceProviderWebhook:
 		addMissingNotificationServiceSetting(&resp.Diagnostics, config.Webhook.URL, "webhook.url")
+	case notificationServiceProviderAWSEventBridge:
+		addMissingNotificationServiceSetting(&resp.Diagnostics, config.AWSEventBridge.AWSRegion, "aws_event_bridge.aws_region")
+		addMissingNotificationServiceSetting(&resp.Diagnostics, config.AWSEventBridge.AWSAccountID, "aws_event_bridge.aws_account_id")
 	case notificationServiceProviderDatadogPipelineVisibility:
 		addMissingNotificationServiceSetting(&resp.Diagnostics, config.DatadogPipelineVisibility.APIKey, "datadog_pipeline_visibility.api_key")
 	}
@@ -375,6 +430,9 @@ func (m *notificationServiceResourceModel) configuredSettings() []string {
 	var configured []string
 	if m.Webhook != nil {
 		configured = append(configured, notificationServiceProviderWebhook)
+	}
+	if m.AWSEventBridge != nil {
+		configured = append(configured, notificationServiceProviderAWSEventBridge)
 	}
 	if m.DatadogPipelineVisibility != nil {
 		configured = append(configured, notificationServiceProviderDatadogPipelineVisibility)
@@ -652,6 +710,10 @@ func (m notificationServiceResourceModel) settingsCreatePayload(ctx context.Cont
 		addNotificationServiceInt64(settings, "version", m.Webhook.Version)
 		addNotificationServiceBoolAny(settings, "tls_verify", m.Webhook.TLSVerify)
 		addNotificationServiceSet(ctx, settings, "events", m.Webhook.Events, &diags)
+	case notificationServiceProviderAWSEventBridge:
+		addNotificationServiceString(settings, "aws_region", m.AWSEventBridge.AWSRegion)
+		addNotificationServiceString(settings, "aws_account_id", m.AWSEventBridge.AWSAccountID)
+		addNotificationServiceString(settings, "include_build_meta_data", m.AWSEventBridge.IncludeBuildMetadata)
 	case notificationServiceProviderDatadogPipelineVisibility:
 		addNotificationServiceString(settings, "api_key", m.DatadogPipelineVisibility.APIKey)
 		addNotificationServiceString(settings, "datadog_site", m.DatadogPipelineVisibility.DatadogSite)
@@ -706,6 +768,14 @@ func (m notificationServiceResourceModel) settingsUpdatePayload(ctx context.Cont
 		addChangedNotificationServiceInt64(settings, "version", m.Webhook.Version, state.Webhook.Version)
 		addChangedNotificationServiceBoolAny(settings, "tls_verify", m.Webhook.TLSVerify, state.Webhook.TLSVerify)
 		addChangedNotificationServiceSet(ctx, settings, "events", m.Webhook.Events, state.Webhook.Events, &diags)
+	case notificationServiceProviderAWSEventBridge:
+		if m.AWSEventBridge == nil {
+			break
+		}
+		if state.AWSEventBridge == nil {
+			return m.settingsCreatePayload(ctx)
+		}
+		addChangedNotificationServiceString(settings, "include_build_meta_data", m.AWSEventBridge.IncludeBuildMetadata, state.AWSEventBridge.IncludeBuildMetadata)
 	case notificationServiceProviderDatadogPipelineVisibility:
 		if m.DatadogPipelineVisibility == nil {
 			break
@@ -812,6 +882,8 @@ func (m *notificationServiceResourceModel) applyAPIResponse(ctx context.Context,
 	switch result.Provider.ID {
 	case notificationServiceProviderWebhook:
 		diags.Append(m.applyWebhookAPISettings(ctx, result.Settings)...)
+	case notificationServiceProviderAWSEventBridge:
+		diags.Append(m.applyAWSEventBridgeAPISettings(result.Settings, previous)...)
 	case notificationServiceProviderDatadogPipelineVisibility:
 		diags.Append(m.applyDatadogPipelineVisibilityAPISettings(result.Settings, previous)...)
 	}
@@ -823,6 +895,8 @@ func (m *notificationServiceResourceModel) initializeImportedSettings(providerTy
 	switch providerType {
 	case notificationServiceProviderWebhook:
 		m.Webhook = &notificationServiceWebhookModel{}
+	case notificationServiceProviderAWSEventBridge:
+		m.AWSEventBridge = &notificationServiceAWSEventBridgeModel{AWSAccountID: types.StringNull()}
 	case notificationServiceProviderDatadogPipelineVisibility:
 		m.DatadogPipelineVisibility = &notificationServiceDatadogPipelineVisibilityModel{APIKey: types.StringNull()}
 	}
@@ -847,6 +921,28 @@ func (m *notificationServiceResourceModel) applyWebhookAPISettings(ctx context.C
 		TLSVerify: types.BoolPointerValue(settings.TLSVerify),
 	}
 	return diags
+}
+
+func (m *notificationServiceResourceModel) applyAWSEventBridgeAPISettings(raw json.RawMessage, previous notificationServiceResourceModel) diag.Diagnostics {
+	if m.AWSEventBridge == nil {
+		return nil
+	}
+	var settings notificationServiceAWSEventBridgeAPISettings
+	if err := json.Unmarshal(raw, &settings); err != nil {
+		return notificationServiceSettingsDiagnostic(notificationServiceProviderAWSEventBridge, err)
+	}
+
+	previousAccountID := types.StringNull()
+	if previous.AWSEventBridge != nil {
+		previousAccountID = previous.AWSEventBridge.AWSAccountID
+	}
+	m.AWSEventBridge = &notificationServiceAWSEventBridgeModel{
+		AWSRegion:            types.StringPointerValue(settings.AWSRegion),
+		AWSAccountID:         preserveNotificationServiceString(m.AWSEventBridge.AWSAccountID, previousAccountID),
+		EventSourceName:      types.StringPointerValue(settings.EventSourceName),
+		IncludeBuildMetadata: types.StringPointerValue(settings.IncludeBuildMetadata),
+	}
+	return nil
 }
 
 func (m *notificationServiceResourceModel) applyDatadogPipelineVisibilityAPISettings(raw json.RawMessage, previous notificationServiceResourceModel) diag.Diagnostics {

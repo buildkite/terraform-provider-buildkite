@@ -113,6 +113,19 @@ func TestNotificationServiceApplyAPIResponsePreservesWriteOnlySettings(t *testin
 	if got, want := state.DatadogPipelineVisibility.APIKey.ValueString(), "supersecret"; got != want {
 		t.Errorf("Datadog API key = %q, want %q", got, want)
 	}
+
+	response = notificationServiceTestResponse(notificationServiceProviderAWSEventBridge)
+	response.Settings = json.RawMessage(`{"aws_region":"us-east-1","aws_account_id":"XXXXXXXX9012","event_source_name":"aws.partner/test","include_build_meta_data":null}`)
+	state = notificationServiceResourceModel{
+		AWSEventBridge: &notificationServiceAWSEventBridgeModel{AWSAccountID: types.StringValue("123456789012")},
+	}
+	previous = state
+	if diags := state.applyAPIResponse(t.Context(), &response, previous); diags.HasError() {
+		t.Fatalf("applyAPIResponse() diagnostics = %v", diags)
+	}
+	if got, want := state.AWSEventBridge.AWSAccountID.ValueString(), "123456789012"; got != want {
+		t.Errorf("AWS account ID = %q, want %q", got, want)
+	}
 }
 
 func TestNotificationServiceRESTLifecycle(t *testing.T) {
