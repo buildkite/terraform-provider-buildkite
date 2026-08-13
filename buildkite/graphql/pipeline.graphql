@@ -70,6 +70,12 @@ fragment RepositoryProviderSettingsFields on Repository {
                 # @genqlient(pointer: true)
                 buildPullRequestConvertedToDraft
                 # @genqlient(pointer: true)
+                buildPullRequestDequeued
+                # @genqlient(pointer: true)
+                buildPullRequestReopened
+                # @genqlient(pointer: true)
+                buildPullRequestReviewCommentCreated
+                # @genqlient(pointer: true)
                 buildPullRequestReviewRequested
                 # @genqlient(pointer: true)
                 buildPullRequestReviewDismissed
@@ -125,6 +131,10 @@ fragment RepositoryProviderSettingsFields on Repository {
                 pullRequestBranchFilterConfiguration
                 # @genqlient(pointer: true)
                 pullRequestBranchFilterEnabled
+                # @genqlient(pointer: true)
+                reviewCommentCommandWord
+                # @genqlient(pointer: true)
+                reviewCommentMatchMode
                 # @genqlient(pointer: true)
                 separatePullRequestStatuses
                 # @genqlient(pointer: true)
@@ -152,6 +162,12 @@ fragment RepositoryProviderSettingsFields on Repository {
                 # @genqlient(pointer: true)
                 buildPullRequestConvertedToDraft
                 # @genqlient(pointer: true)
+                buildPullRequestDequeued
+                # @genqlient(pointer: true)
+                buildPullRequestReopened
+                # @genqlient(pointer: true)
+                buildPullRequestReviewCommentCreated
+                # @genqlient(pointer: true)
                 buildPullRequestReviewRequested
                 # @genqlient(pointer: true)
                 buildPullRequestReviewDismissed
@@ -207,6 +223,10 @@ fragment RepositoryProviderSettingsFields on Repository {
                 pullRequestBranchFilterConfiguration
                 # @genqlient(pointer: true)
                 pullRequestBranchFilterEnabled
+                # @genqlient(pointer: true)
+                reviewCommentCommandWord
+                # @genqlient(pointer: true)
+                reviewCommentMatchMode
                 # @genqlient(pointer: true)
                 separatePullRequestStatuses
                 # @genqlient(pointer: true)

@@ -118,6 +118,8 @@ func TestMapProviderSettingsFromGraphQLGitHub(t *testing.T) {
 				BuildPullRequests:        &enabled,
 				BuildBranches:            &disabled,
 				IssueCommentMatchMode:    &matchMode,
+				ReviewCommentMatchMode:   &matchMode,
+				BuildPullRequestReopened: &enabled,
 				UseStepKeyAsCommitStatus: &enabled,
 			},
 		},
@@ -139,6 +141,12 @@ func TestMapProviderSettingsFromGraphQLGitHub(t *testing.T) {
 	// CommandWordMatchMode enum (EXACT) must be lowercased to match the schema validator.
 	if got.IssueCommentMatchMode.ValueString() != "exact" {
 		t.Fatalf("issue_comment_match_mode: expected \"exact\", got %q", got.IssueCommentMatchMode.ValueString())
+	}
+	if got.ReviewCommentMatchMode.ValueString() != "exact" {
+		t.Fatalf("review_comment_match_mode: expected \"exact\", got %q", got.ReviewCommentMatchMode.ValueString())
+	}
+	if !got.BuildPullRequestReopened.ValueBool() {
+		t.Fatal("build_pull_request_reopened: expected true")
 	}
 	// use_step_key_as_commit_status is now exposed via GraphQL and mapped directly.
 	if !got.UseStepKeyAsCommitStatus.ValueBool() {
@@ -772,6 +780,11 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 					build_issue_comment_created = true
 					issue_comment_command_word = "ci-force-rerun"
 					issue_comment_match_mode = "exact"
+					build_pull_request_review_comment_created = true
+					review_comment_command_word = "ci-review-rerun"
+					review_comment_match_mode = "contains"
+					build_pull_request_dequeued = true
+					build_pull_request_reopened = true
 					build_check_run_completed = true
 					build_create_event = true
 					build_deployment_status_created = true
@@ -830,6 +843,11 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_issue_comment_created", "true"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.issue_comment_command_word", "ci-force-rerun"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.issue_comment_match_mode", "exact"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_pull_request_review_comment_created", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.review_comment_command_word", "ci-review-rerun"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.review_comment_match_mode", "contains"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_pull_request_dequeued", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_pull_request_reopened", "true"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_check_run_completed", "true"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_create_event", "true"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_deployment_status_created", "true"),
@@ -856,6 +874,9 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_issue_comment_created", "true"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.issue_comment_command_word", "ci-force-rerun"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.issue_comment_match_mode", "exact"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.review_comment_command_word", "ci-review-rerun"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.review_comment_match_mode", "contains"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_pull_request_dequeued", "true"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.use_step_key_as_commit_status", "true"),
 					),
 				},
@@ -942,6 +963,11 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 								build_issue_comment_created = true
 								issue_comment_command_word = "/deploy"
 								issue_comment_match_mode = "contains"
+								build_pull_request_review_comment_created = true
+								review_comment_command_word = "/review"
+								review_comment_match_mode = "exact"
+								build_pull_request_dequeued = true
+								build_pull_request_reopened = true
 								build_check_run_completed = true
 								build_create_event = true
 								build_deployment_status_created = true
@@ -977,6 +1003,11 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_issue_comment_created", "true"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.issue_comment_command_word", "/deploy"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.issue_comment_match_mode", "contains"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_pull_request_review_comment_created", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.review_comment_command_word", "/review"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.review_comment_match_mode", "exact"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_pull_request_dequeued", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_pull_request_reopened", "true"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_check_run_completed", "true"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_create_event", "true"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_deployment_status_created", "true"),
