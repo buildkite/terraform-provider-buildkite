@@ -7,17 +7,6 @@ query getOrganization($slug: ID!) {
     }
 }
 
-mutation setApiIpAddresses($organizationID: ID!, $ipAddresses: String!) {
-    organizationApiIpAllowlistUpdate(input: { organizationID: $organizationID, ipAddresses: $ipAddresses }) {
-        organization {
-            allowedApiIpAddresses
-            id
-            uuid
-            membersRequireTwoFactorAuthentication
-        }
-    }
-}
-
 mutation setOrganization2FA($organizationID: ID!, $value: Boolean!) {
     organizationEnforceTwoFactorAuthenticationForMembersUpdate(input: { organizationId: $organizationID, membersRequireTwoFactorAuthentication: $value }) {
         organization {

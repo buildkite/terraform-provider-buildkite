@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -49,6 +51,48 @@ func TestAccBuildkiteOrganizationResource(t *testing.T) {
 		`
 
 		return config
+	}
+
+	// Deliberately leaves allowed_api_ip_addresses out, so this also covers an organization whose
+	// plan does not include the IP allowlist: naming that setting at all would be refused.
+	configRestrictTokenCreation := func(restrict bool) string {
+		config := `
+
+		provider "buildkite" {
+			timeouts = {
+				create = "60s"
+				read = "60s"
+				update = "60s"
+				delete = "60s"
+			}
+		}
+
+		resource "buildkite_organization" "let_them_in" {
+			restrict_user_api_token_creation = %t
+		}
+		`
+
+		return fmt.Sprintf(config, restrict)
+	}
+
+	configRevokeInactiveTokens := func(days int) string {
+		config := `
+
+		provider "buildkite" {
+			timeouts = {
+				create = "60s"
+				read = "60s"
+				update = "60s"
+				delete = "60s"
+			}
+		}
+
+		resource "buildkite_organization" "let_them_in" {
+			revoke_inactive_tokens_after_days = %d
+		}
+		`
+
+		return fmt.Sprintf(config, days)
 	}
 
 	t.Run("creates an organization", func(t *testing.T) {
@@ -168,8 +212,93 @@ func TestAccBuildkiteOrganizationResource(t *testing.T) {
 				{
 					Config: configNoAllowedIPs(),
 					Check:  checkUpdated,
-					// After clearing the IPs, state will be set to null and refresh will restore the attribute to an empty-string list of length 1
-					ExpectNonEmptyPlan: true,
+				},
+			},
+		})
+	})
+
+	t.Run("restricts user API token creation without touching the allowlist", func(t *testing.T) {
+		resource.Test(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			CheckDestroy:             testCheckOrganizationResourceRemoved,
+			Steps: []resource.TestStep{
+				{
+					Config: configRestrictTokenCreation(true),
+					Check: resource.ComposeAggregateTestCheckFunc(
+						resource.TestCheckResourceAttr("buildkite_organization.let_them_in", "restrict_user_api_token_creation", "true"),
+						// Left alone rather than cleared, because the configuration never mentions it.
+						resource.TestCheckNoResourceAttr("buildkite_organization.let_them_in", "allowed_api_ip_addresses"),
+						testAccCheckOrganizationAPISettingsRemoteValues(func(settings *organizationAPISettings) error {
+							if !settings.RestrictUserAPITokenCreation {
+								return fmt.Errorf("Expected restrict_user_api_token_creation to be true in Buildkite's system")
+							}
+							return nil
+						}),
+					),
+				},
+				{
+					Config: configRestrictTokenCreation(false),
+					Check: resource.ComposeAggregateTestCheckFunc(
+						resource.TestCheckResourceAttr("buildkite_organization.let_them_in", "restrict_user_api_token_creation", "false"),
+						testAccCheckOrganizationAPISettingsRemoteValues(func(settings *organizationAPISettings) error {
+							if settings.RestrictUserAPITokenCreation {
+								return fmt.Errorf("Expected restrict_user_api_token_creation to be false in Buildkite's system")
+							}
+							return nil
+						}),
+					),
+				},
+			},
+		})
+	})
+
+	t.Run("revokes inactive API tokens", func(t *testing.T) {
+		skipUnlessInactiveTokenRevocationTestable(t)
+
+		resource.Test(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			CheckDestroy:             testCheckOrganizationResourceRemoved,
+			Steps: []resource.TestStep{
+				{
+					Config: configRevokeInactiveTokens(365),
+					Check: resource.ComposeAggregateTestCheckFunc(
+						resource.TestCheckResourceAttr("buildkite_organization.let_them_in", "revoke_inactive_tokens_after_days", "365"),
+						testAccCheckOrganizationAPISettingsRemoteValues(func(settings *organizationAPISettings) error {
+							if settings.RevokeInactiveTokensAfterDays == nil || *settings.RevokeInactiveTokensAfterDays != 365 {
+								return fmt.Errorf("Expected 365 days in Buildkite's system, got %v", settings.RevokeInactiveTokensAfterDays)
+							}
+							return nil
+						}),
+					),
+				},
+				{
+					Config: configNoAllowedIPs(),
+					Check: resource.ComposeAggregateTestCheckFunc(
+						resource.TestCheckNoResourceAttr("buildkite_organization.let_them_in", "revoke_inactive_tokens_after_days"),
+						testAccCheckOrganizationAPISettingsRemoteValues(func(settings *organizationAPISettings) error {
+							if settings.RevokeInactiveTokensAfterDays != nil {
+								return fmt.Errorf("Expected revocation to be off in Buildkite's system, got %d", *settings.RevokeInactiveTokensAfterDays)
+							}
+							return nil
+						}),
+					),
+				},
+			},
+		})
+	})
+
+	t.Run("rejects a revocation interval the API does not accept", func(t *testing.T) {
+		resource.Test(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			Steps: []resource.TestStep{
+				{
+					Config: configRevokeInactiveTokens(45),
+					// Loose on whitespace because Terraform wraps diagnostics at the terminal width.
+					ExpectError: regexp.MustCompile(`must\s+be\s+one\s+of`),
+					PlanOnly:    true,
 				},
 			},
 		})
@@ -225,6 +354,40 @@ func testCheckOrganizationResourceRemoved(s *terraform.State) error {
 		return nil
 	}
 	return nil
+}
+
+// skipUnlessInactiveTokenRevocationTestable keeps the revocation test off an organization that
+// can't run it. The billing plan has to include the feature, and the run has to be opted in:
+// switching the setting on revokes every already-inactive token in the organization immediately
+// rather than at the next sweep, which is not something to do to a shared test organization
+// without being asked.
+func skipUnlessInactiveTokenRevocationTestable(t *testing.T) {
+	t.Helper()
+
+	if os.Getenv("BUILDKITE_TEST_INACTIVE_TOKEN_REVOCATION") == "" {
+		t.Skip("Set BUILDKITE_TEST_INACTIVE_TOKEN_REVOCATION=1 to run this test; it revokes inactive API tokens in the target organization")
+	}
+
+	settings, err := getTestClient().GetOrganizationAPISettings(context.Background(), getenv("BUILDKITE_ORGANIZATION_SLUG"))
+	if err != nil {
+		t.Fatalf("Unable to read the organization's API settings: %v", err)
+	}
+	if !settings.Features.InactiveAPITokenRevocation {
+		t.Skip("The organization's billing plan does not include inactive API token revocation")
+	}
+}
+
+// testAccCheckOrganizationAPISettingsRemoteValues asserts against what the REST API reports, which
+// is the side of the move to REST that state alone can't confirm.
+func testAccCheckOrganizationAPISettingsRemoteValues(check func(*organizationAPISettings) error) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		settings, err := getTestClient().GetOrganizationAPISettings(context.Background(), getenv("BUILDKITE_ORGANIZATION_SLUG"))
+		if err != nil {
+			return err
+		}
+
+		return check(settings)
+	}
 }
 
 func testAccCheckOrganizationRemoteValues(ip_addresses []string) resource.TestCheckFunc {

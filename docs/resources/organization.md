@@ -5,6 +5,8 @@ subcategory: ""
 description: |-
   This resource allows you to manage the settings for an organization.
   The user of your API token must be an organization administrator to manage organization settings.
+  Every attribute other than enforce_2fa is managed through the REST API, so the token also
+  needs the read_organization_settings and write_organization_settings scopes.
 ---
 
 # buildkite_organization (Resource)
@@ -13,13 +15,19 @@ This resource allows you to manage the settings for an organization.
 
 The user of your API token must be an organization administrator to manage organization settings.
 
+Every attribute other than `enforce_2fa` is managed through the REST API, so the token also
+needs the `read_organization_settings` and `write_organization_settings` scopes.
+
 ## Example Usage
 
 ```terraform
-# allow api access only from 1.1.1.1 and enforce 2fa for all members
+# allow api access only from 1.1.1.1, enforce 2fa for all members, keep API token creation to
+# administrators and revoke tokens that go unused for 90 days
 resource "buildkite_organization" "settings" {
-  allowed_api_ip_addresses = ["1.1.1.1/32"]
-  enforce_2fa              = true
+  allowed_api_ip_addresses          = ["1.1.1.1/32"]
+  enforce_2fa                       = true
+  restrict_user_api_token_creation  = true
+  revoke_inactive_tokens_after_days = 90
 }
 ```
 
@@ -32,6 +40,12 @@ resource "buildkite_organization" "settings" {
 
 -> The "Allowed API IP Addresses" feature must be enabled on your organization in order to manage the `allowed_api_ip_addresses` attribute.
 - `enforce_2fa` (Boolean) Sets whether the organization requires two-factor authentication for all members.
+- `restrict_user_api_token_creation` (Boolean) Sets whether only organization administrators can create API access tokens that act on behalf of the organization.
+- `revoke_inactive_tokens_after_days` (Number) The number of days an API access token can go unused before it is revoked. Must be one of 30, 60, 90, 180 or 365. If not set, inactive tokens are never revoked.
+
+~> Setting this revokes tokens that are already inactive as soon as the change is applied, rather than waiting for the next scheduled sweep.
+
+-> The "Inactive API Token Revocation" feature must be enabled on your organization in order to manage the `revoke_inactive_tokens_after_days` attribute.
 
 ### Read-Only
 

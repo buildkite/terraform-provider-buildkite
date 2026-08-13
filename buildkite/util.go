@@ -2,6 +2,7 @@ package buildkite
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
@@ -9,6 +10,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/shurcooL/graphql"
@@ -117,6 +119,27 @@ func gqlErrorContains(err error, s string) bool {
 	return strings.Contains(err.Error(), s)
 }
 
+// apiErrorMessage returns the "message" the REST API renders for an error, for the cases where
+// that wording is the whole point of the failure and the request line around it is noise: a
+// plan-gated setting, for instance, is refused with the name of the entitlement the organization
+// is missing. Falls back to the full error whenever the body isn't a JSON error object, which
+// covers proxy error pages and bodies the retry loop truncated.
+func apiErrorMessage(err error) string {
+	if err == nil {
+		return ""
+	}
+	var apiErr *apiError
+	if errors.As(err, &apiErr) {
+		var body struct {
+			Message string `json:"message"`
+		}
+		if jsonErr := json.Unmarshal([]byte(apiErr.Body), &body); jsonErr == nil && body.Message != "" {
+			return body.Message
+		}
+	}
+	return err.Error()
+}
+
 // GetOrganizationID retrieves the Buildkite organization ID associated with the supplied slug
 func GetOrganizationID(slug string, client *graphql.Client) (string, error) {
 	var query struct {
@@ -173,6 +196,12 @@ func getenv(key string) string {
 		return os.Getenv("BUILDKITE_ORGANIZATION")
 	}
 	return val
+}
+
+// isKnown reports whether an attribute holds a value, as opposed to being absent from
+// configuration or not yet computed.
+func isKnown(value attr.Value) bool {
+	return !value.IsNull() && !value.IsUnknown()
 }
 
 func createCidrSliceFromList(cidrList types.List) []string {
