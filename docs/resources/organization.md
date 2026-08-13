@@ -40,10 +40,14 @@ resource "buildkite_organization" "settings" {
 
 -> The "Allowed API IP Addresses" feature must be enabled on your organization in order to manage the `allowed_api_ip_addresses` attribute.
 - `enforce_2fa` (Boolean) Sets whether the organization requires two-factor authentication for all members.
-- `restrict_user_api_token_creation` (Boolean) Sets whether only organization administrators can create API access tokens that act on behalf of the organization.
+- `restrict_user_api_token_creation` (Boolean) Sets whether only organization administrators can create API access tokens that act on behalf of the organization. Defaults to false.
+
+~> The default applies whether or not you set the attribute, so leaving it out of your configuration lifts the restriction from an organization that had it enabled.
 - `revoke_inactive_tokens_after_days` (Number) The number of days an API access token can go unused before it is revoked. Must be one of 30, 60, 90, 180 or 365. If not set, inactive tokens are never revoked.
 
 ~> Setting this revokes tokens that are already inactive as soon as the change is applied, rather than waiting for the next scheduled sweep.
+
+~> An interval set outside Terraform is read into state on refresh, so leaving this attribute out of your configuration turns automatic revocation off on the next apply.
 
 -> The "Inactive API Token Revocation" feature must be enabled on your organization in order to manage the `revoke_inactive_tokens_after_days` attribute.
 
