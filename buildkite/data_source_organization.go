@@ -63,7 +63,10 @@ func (o *organizationDatasource) Read(ctx context.Context, req datasource.ReadRe
 
 	state.ID = types.StringValue(response.Organization.Id)
 	state.UUID = types.StringValue(response.Organization.Uuid)
-	ips, diag := types.ListValueFrom(ctx, types.StringType, strings.Split(response.Organization.AllowedApiIpAddresses, " "))
+
+	// Fields rather than Split, so an organization with no allowlist reports an empty list rather than
+	// one holding a single empty CIDR, matching what buildkite_organization records.
+	ips, diag := types.ListValueFrom(ctx, types.StringType, strings.Fields(response.Organization.AllowedApiIpAddresses))
 	state.AllowedApiIpAddresses = ips
 
 	if diag.HasError() {

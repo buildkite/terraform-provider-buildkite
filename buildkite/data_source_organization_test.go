@@ -15,7 +15,11 @@ func TestAccBuildkiteOrganizationDatasource(t *testing.T) {
 				{
 					Config: `data "buildkite_organization" "settings" {}`,
 					Check: resource.ComposeAggregateTestCheckFunc(
-						resource.TestCheckResourceAttr("data.buildkite_organization.settings", "allowed_api_ip_addresses.0", ""),
+						resource.TestCheckResourceAttrSet("data.buildkite_organization.settings", "id"),
+						resource.TestCheckResourceAttrSet("data.buildkite_organization.settings", "uuid"),
+						// Set either way: an organization with no allowlist reports an empty list rather than
+						// one holding a single empty CIDR.
+						resource.TestCheckResourceAttrSet("data.buildkite_organization.settings", "allowed_api_ip_addresses.#"),
 					),
 				},
 			},
