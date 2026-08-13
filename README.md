@@ -8,7 +8,7 @@ The provider allows you to manage resources in your Buildkite organization.
 
 Two configuration values are required:
 
--   An API token, with `write_pipelines`, `read_pipelines` and `write_suites` REST API scopes and be enabled for GraphQL API access. You can generate one [here](https://buildkite.com/user/api-access-tokens/new?description=terraform&scopes[]=write_pipelines&scopes[]=write_suites&scopes[]=read_pipelines&scopes[]=graphql)
+-   An API token, with `write_pipelines`, `read_pipelines` and `write_suites` REST API scopes and be enabled for GraphQL API access. Managing the `buildkite_organization` resource also needs `read_organization_settings` and `write_organization_settings`. You can generate one [here](https://buildkite.com/user/api-access-tokens/new?description=terraform&scopes[]=write_pipelines&scopes[]=write_suites&scopes[]=read_pipelines&scopes[]=read_organization_settings&scopes[]=write_organization_settings&scopes[]=graphql)
 -   A Buildkite organization slug, available by signing into buildkite.com and examining the URL: https://buildkite.com/<org-slug>.
 
 ## Documentation
@@ -90,6 +90,7 @@ BUILDKITE_ORGANIZATION_SLUG=<org-slug> BUILDKITE_API_TOKEN=<token> GITHUB_TEST_R
 - `BUILDKITE_API_TOKEN`: API token with appropriate scopes
 - `GITHUB_TEST_REPO`: A GitHub repository URL for webhook tests (e.g., `https://github.com/your-org/test-repo.git`)
 - `GITHUB_TEST_REPO_ALT`: A second GitHub repository URL for webhook tests that require changing repositories (e.g., `https://github.com/your-org/test-repo-alt.git`)
+- `BUILDKITE_TEST_INACTIVE_TOKEN_REVOCATION`: Set to `1` to opt in to the inactive API token revocation test. Turning that setting on revokes every already-inactive API token in the organization immediately, so the test is skipped unless it is set
 
 Note that these tests make live changes to an organization and probably
 shouldn't be run against organizations with real data. Anyone actively
