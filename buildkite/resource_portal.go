@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"strings"
 
 	"github.com/MakeNowJust/heredoc"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -229,7 +228,7 @@ func (p *portalResource) Read(ctx context.Context, req resource.ReadRequest, res
 
 	result, err := p.getPortal(ctx, state.Slug.ValueString())
 	if err != nil {
-		if strings.Contains(err.Error(), "404") {
+		if isAPIStatus(err, http.StatusNotFound) {
 			resp.Diagnostics.AddWarning(
 				"Portal not found",
 				"Removing portal from state...",

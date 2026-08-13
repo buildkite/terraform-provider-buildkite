@@ -3,6 +3,7 @@ package buildkite
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"regexp"
 	"strings"
 
@@ -246,7 +247,7 @@ func (r *clusterSecretResource) Read(ctx context.Context, req resource.ReadReque
 	})
 
 	if err != nil {
-		if strings.Contains(err.Error(), "status: 404") {
+		if isAPIStatus(err, http.StatusNotFound) {
 			resp.State.RemoveResource(ctx)
 			return
 		}
