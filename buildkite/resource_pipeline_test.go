@@ -174,6 +174,27 @@ func TestMapProviderSettingsFromGraphQLGitlabEnterprise(t *testing.T) {
 	}
 }
 
+func TestMapProviderSettingsFromGraphQLOrigin(t *testing.T) {
+	cond := `build.branch == "main"`
+	enabled := true
+	disabled := false
+
+	repo := RepositoryProviderSettingsFields{
+		Provider: &RepositoryProviderSettingsFieldsProviderRepositoryProviderOrigin{
+			Settings: RepositoryProviderSettingsFieldsProviderRepositoryProviderOriginSettings{
+				BuildBranches:       &enabled,
+				BuildPullRequests:   &enabled,
+				BuildTags:           &disabled,
+				FilterCondition:     &cond,
+				FilterEnabled:       &enabled,
+				PublishCommitStatus: &disabled,
+			},
+		},
+	}
+
+	assertOriginProviderSettings(t, repo, cond)
+}
+
 func TestMapProviderSettingsFromGraphQLCursorOrigin(t *testing.T) {
 	cond := `build.branch == "main"`
 	enabled := true
@@ -192,9 +213,15 @@ func TestMapProviderSettingsFromGraphQLCursorOrigin(t *testing.T) {
 		},
 	}
 
+	assertOriginProviderSettings(t, repo, cond)
+}
+
+func assertOriginProviderSettings(t *testing.T, repo RepositoryProviderSettingsFields, cond string) {
+	t.Helper()
+
 	got := mapProviderSettingsFromGraphQL(repo)
 	if got == nil {
-		t.Fatal("expected Cursor Origin provider settings to be mapped, got nil")
+		t.Fatal("expected Origin provider settings to be mapped, got nil")
 	}
 	if !got.BuildBranches.ValueBool() {
 		t.Fatal("build_branches: expected true")

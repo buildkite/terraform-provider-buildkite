@@ -2609,6 +2609,7 @@ func (v *RepositoryProviderSettingsFields) __premarshalJSON() (*__premarshalRepo
 // RepositoryProviderSettingsFieldsProviderRepositoryProviderGitlab
 // RepositoryProviderSettingsFieldsProviderRepositoryProviderGitlabCommunity
 // RepositoryProviderSettingsFieldsProviderRepositoryProviderGitlabEnterprise
+// RepositoryProviderSettingsFieldsProviderRepositoryProviderOrigin
 // RepositoryProviderSettingsFieldsProviderRepositoryProviderUnknown
 type RepositoryProviderSettingsFieldsProviderRepositoryProvider interface {
 	implementsGraphQLInterfaceRepositoryProviderSettingsFieldsProviderRepositoryProvider()
@@ -2635,6 +2636,8 @@ func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderGitlab) imple
 func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderGitlabCommunity) implementsGraphQLInterfaceRepositoryProviderSettingsFieldsProviderRepositoryProvider() {
 }
 func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderGitlabEnterprise) implementsGraphQLInterfaceRepositoryProviderSettingsFieldsProviderRepositoryProvider() {
+}
+func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderOrigin) implementsGraphQLInterfaceRepositoryProviderSettingsFieldsProviderRepositoryProvider() {
 }
 func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderUnknown) implementsGraphQLInterfaceRepositoryProviderSettingsFieldsProviderRepositoryProvider() {
 }
@@ -2682,6 +2685,9 @@ func __unmarshalRepositoryProviderSettingsFieldsProviderRepositoryProvider(b []b
 		return json.Unmarshal(b, *v)
 	case "RepositoryProviderGitlabEnterprise":
 		*v = new(RepositoryProviderSettingsFieldsProviderRepositoryProviderGitlabEnterprise)
+		return json.Unmarshal(b, *v)
+	case "RepositoryProviderOrigin":
+		*v = new(RepositoryProviderSettingsFieldsProviderRepositoryProviderOrigin)
 		return json.Unmarshal(b, *v)
 	case "RepositoryProviderUnknown":
 		*v = new(RepositoryProviderSettingsFieldsProviderRepositoryProviderUnknown)
@@ -2777,6 +2783,14 @@ func __marshalRepositoryProviderSettingsFieldsProviderRepositoryProvider(v *Repo
 		result := struct {
 			TypeName string `json:"__typename"`
 			*RepositoryProviderSettingsFieldsProviderRepositoryProviderGitlabEnterprise
+		}{typename, v}
+		return json.Marshal(result)
+	case *RepositoryProviderSettingsFieldsProviderRepositoryProviderOrigin:
+		typename = "RepositoryProviderOrigin"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*RepositoryProviderSettingsFieldsProviderRepositoryProviderOrigin
 		}{typename, v}
 		return json.Marshal(result)
 	case *RepositoryProviderSettingsFieldsProviderRepositoryProviderUnknown:
@@ -3060,7 +3074,7 @@ func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderCodebaseSetti
 // RepositoryProviderSettingsFieldsProviderRepositoryProviderCursorOrigin includes the requested fields of the GraphQL type RepositoryProviderCursorOrigin.
 // The GraphQL type's documentation follows.
 //
-// A pipeline's repository is being provided by Cursor Origin
+// A pipeline's repository is being provided by Origin
 type RepositoryProviderSettingsFieldsProviderRepositoryProviderCursorOrigin struct {
 	Typename string `json:"__typename"`
 	// The repository’s provider settings
@@ -3080,7 +3094,7 @@ func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderCursorOrigin)
 // RepositoryProviderSettingsFieldsProviderRepositoryProviderCursorOriginSettings includes the requested fields of the GraphQL type RepositoryProviderCursorOriginSettings.
 // The GraphQL type's documentation follows.
 //
-// Settings for a Cursor Origin repository
+// Settings for an Origin repository
 type RepositoryProviderSettingsFieldsProviderRepositoryProviderCursorOriginSettings struct {
 	// Whether to create builds when branches are pushed.
 	BuildBranches *bool `json:"buildBranches"`
@@ -3092,7 +3106,7 @@ type RepositoryProviderSettingsFieldsProviderRepositoryProviderCursorOriginSetti
 	FilterCondition *string `json:"filterCondition"`
 	// Whether the filter is enabled
 	FilterEnabled *bool `json:"filterEnabled"`
-	// Whether to publish build results to Cursor Origin as a check run.
+	// Whether to publish build results to Origin as a check run.
 	PublishCommitStatus *bool `json:"publishCommitStatus"`
 }
 
@@ -3847,6 +3861,75 @@ func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderGitlabSetting
 // GetFilterEnabled returns RepositoryProviderSettingsFieldsProviderRepositoryProviderGitlabSettings.FilterEnabled, and is useful for accessing the field via an interface.
 func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderGitlabSettings) GetFilterEnabled() *bool {
 	return v.FilterEnabled
+}
+
+// RepositoryProviderSettingsFieldsProviderRepositoryProviderOrigin includes the requested fields of the GraphQL type RepositoryProviderOrigin.
+// The GraphQL type's documentation follows.
+//
+// A pipeline's repository is being provided by Origin
+type RepositoryProviderSettingsFieldsProviderRepositoryProviderOrigin struct {
+	Typename string `json:"__typename"`
+	// The repository’s provider settings
+	Settings RepositoryProviderSettingsFieldsProviderRepositoryProviderOriginSettings `json:"settings"`
+}
+
+// GetTypename returns RepositoryProviderSettingsFieldsProviderRepositoryProviderOrigin.Typename, and is useful for accessing the field via an interface.
+func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderOrigin) GetTypename() string {
+	return v.Typename
+}
+
+// GetSettings returns RepositoryProviderSettingsFieldsProviderRepositoryProviderOrigin.Settings, and is useful for accessing the field via an interface.
+func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderOrigin) GetSettings() RepositoryProviderSettingsFieldsProviderRepositoryProviderOriginSettings {
+	return v.Settings
+}
+
+// RepositoryProviderSettingsFieldsProviderRepositoryProviderOriginSettings includes the requested fields of the GraphQL type RepositoryProviderOriginSettings.
+// The GraphQL type's documentation follows.
+//
+// Settings for an Origin repository
+type RepositoryProviderSettingsFieldsProviderRepositoryProviderOriginSettings struct {
+	// Whether to create builds when branches are pushed.
+	BuildBranches *bool `json:"buildBranches"`
+	// Whether to create builds for commits that are part of a pull request.
+	BuildPullRequests *bool `json:"buildPullRequests"`
+	// Whether to create builds when tags are pushed.
+	BuildTags *bool `json:"buildTags"`
+	// The conditions under which this pipeline will trigger a build.
+	FilterCondition *string `json:"filterCondition"`
+	// Whether the filter is enabled
+	FilterEnabled *bool `json:"filterEnabled"`
+	// Whether to publish build results to Origin as a check run.
+	PublishCommitStatus *bool `json:"publishCommitStatus"`
+}
+
+// GetBuildBranches returns RepositoryProviderSettingsFieldsProviderRepositoryProviderOriginSettings.BuildBranches, and is useful for accessing the field via an interface.
+func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderOriginSettings) GetBuildBranches() *bool {
+	return v.BuildBranches
+}
+
+// GetBuildPullRequests returns RepositoryProviderSettingsFieldsProviderRepositoryProviderOriginSettings.BuildPullRequests, and is useful for accessing the field via an interface.
+func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderOriginSettings) GetBuildPullRequests() *bool {
+	return v.BuildPullRequests
+}
+
+// GetBuildTags returns RepositoryProviderSettingsFieldsProviderRepositoryProviderOriginSettings.BuildTags, and is useful for accessing the field via an interface.
+func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderOriginSettings) GetBuildTags() *bool {
+	return v.BuildTags
+}
+
+// GetFilterCondition returns RepositoryProviderSettingsFieldsProviderRepositoryProviderOriginSettings.FilterCondition, and is useful for accessing the field via an interface.
+func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderOriginSettings) GetFilterCondition() *string {
+	return v.FilterCondition
+}
+
+// GetFilterEnabled returns RepositoryProviderSettingsFieldsProviderRepositoryProviderOriginSettings.FilterEnabled, and is useful for accessing the field via an interface.
+func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderOriginSettings) GetFilterEnabled() *bool {
+	return v.FilterEnabled
+}
+
+// GetPublishCommitStatus returns RepositoryProviderSettingsFieldsProviderRepositoryProviderOriginSettings.PublishCommitStatus, and is useful for accessing the field via an interface.
+func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderOriginSettings) GetPublishCommitStatus() *bool {
+	return v.PublishCommitStatus
 }
 
 // RepositoryProviderSettingsFieldsProviderRepositoryProviderUnknown includes the requested fields of the GraphQL type RepositoryProviderUnknown.
@@ -18963,6 +19046,7 @@ func (v *getPipelineWebhookNodePipelineRepository) __premarshalJSON() (*__premar
 // getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGitlab
 // getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGitlabCommunity
 // getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGitlabEnterprise
+// getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderOrigin
 // getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderUnknown
 type getPipelineWebhookNodePipelineRepositoryProvider interface {
 	implementsGraphQLInterfacegetPipelineWebhookNodePipelineRepositoryProvider()
@@ -18989,6 +19073,8 @@ func (v *getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGitla
 func (v *getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGitlabCommunity) implementsGraphQLInterfacegetPipelineWebhookNodePipelineRepositoryProvider() {
 }
 func (v *getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGitlabEnterprise) implementsGraphQLInterfacegetPipelineWebhookNodePipelineRepositoryProvider() {
+}
+func (v *getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderOrigin) implementsGraphQLInterfacegetPipelineWebhookNodePipelineRepositoryProvider() {
 }
 func (v *getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderUnknown) implementsGraphQLInterfacegetPipelineWebhookNodePipelineRepositoryProvider() {
 }
@@ -19036,6 +19122,9 @@ func __unmarshalgetPipelineWebhookNodePipelineRepositoryProvider(b []byte, v *ge
 		return json.Unmarshal(b, *v)
 	case "RepositoryProviderGitlabEnterprise":
 		*v = new(getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGitlabEnterprise)
+		return json.Unmarshal(b, *v)
+	case "RepositoryProviderOrigin":
+		*v = new(getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderOrigin)
 		return json.Unmarshal(b, *v)
 	case "RepositoryProviderUnknown":
 		*v = new(getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderUnknown)
@@ -19133,6 +19222,14 @@ func __marshalgetPipelineWebhookNodePipelineRepositoryProvider(v *getPipelineWeb
 			*getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGitlabEnterprise
 		}{typename, v}
 		return json.Marshal(result)
+	case *getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderOrigin:
+		typename = "RepositoryProviderOrigin"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderOrigin
+		}{typename, v}
+		return json.Marshal(result)
 	case *getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderUnknown:
 		typename = "RepositoryProviderUnknown"
 
@@ -19204,7 +19301,7 @@ func (v *getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderCodeb
 // getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderCursorOrigin includes the requested fields of the GraphQL type RepositoryProviderCursorOrigin.
 // The GraphQL type's documentation follows.
 //
-// A pipeline's repository is being provided by Cursor Origin
+// A pipeline's repository is being provided by Origin
 type getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderCursorOrigin struct {
 	Typename string `json:"__typename"`
 }
@@ -19420,6 +19517,19 @@ type getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGitlabEnt
 
 // GetTypename returns getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGitlabEnterprise.Typename, and is useful for accessing the field via an interface.
 func (v *getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderGitlabEnterprise) GetTypename() string {
+	return v.Typename
+}
+
+// getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderOrigin includes the requested fields of the GraphQL type RepositoryProviderOrigin.
+// The GraphQL type's documentation follows.
+//
+// A pipeline's repository is being provided by Origin
+type getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderOrigin struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderOrigin.Typename, and is useful for accessing the field via an interface.
+func (v *getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderOrigin) GetTypename() string {
 	return v.Typename
 }
 
@@ -26321,6 +26431,16 @@ fragment RepositoryProviderSettingsFields on Repository {
 			}
 		}
 		... on RepositoryProviderCursorOrigin {
+			settings {
+				buildBranches
+				buildPullRequests
+				buildTags
+				filterCondition
+				filterEnabled
+				publishCommitStatus
+			}
+		}
+		... on RepositoryProviderOrigin {
 			settings {
 				buildBranches
 				buildPullRequests
