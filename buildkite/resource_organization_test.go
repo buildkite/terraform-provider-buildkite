@@ -9,11 +9,17 @@ import (
 	"os"
 	"reflect"
 	"regexp"
+	"slices"
+	"strconv"
 	"strings"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	fwresource "github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-go/tftypes"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
@@ -183,7 +189,7 @@ func TestAccBuildkiteOrganizationResource(t *testing.T) {
 
 	t.Run("restricts user API token creation without touching the allowlist", func(t *testing.T) {
 		resource.Test(t, resource.TestCase{
-			PreCheck:                 func() { testAccPreCheck(t) },
+			PreCheck:                 func() { testAccPreCheck(t); skipIfOrganizationHasAllowlist(t) },
 			ProtoV6ProviderFactories: protoV6ProviderFactories(),
 			CheckDestroy:             testCheckOrganizationResourceRemoved,
 			Steps: []resource.TestStep{
@@ -191,9 +197,9 @@ func TestAccBuildkiteOrganizationResource(t *testing.T) {
 					Config: configRestrictTokenCreation(true),
 					Check: resource.ComposeAggregateTestCheckFunc(
 						resource.TestCheckResourceAttr("buildkite_organization.let_them_in", "restrict_user_api_token_creation", "true"),
-						// Create leaves the allowlist alone, so it stays out of state. The step's implicit plan
-						// also has to come back empty, which it only does while the organization has no
-						// allowlist of its own to read back.
+						// Create leaves the allowlist alone, so it stays out of state, which the precheck is
+						// what makes true: an organization with an allowlist of its own would read one back and
+						// leave the step's implicit plan non-empty.
 						resource.TestCheckNoResourceAttr("buildkite_organization.let_them_in", "allowed_api_ip_addresses"),
 						testAccCheckOrganizationAPISettingsRemoteValues(func(settings *organizationAPISettings) error {
 							if !settings.RestrictUserAPITokenCreation {
@@ -296,6 +302,49 @@ func TestAccBuildkiteOrganizationResource(t *testing.T) {
 		})
 	})
 
+	// Create only writes 2FA when the plan disagrees with the organization, and both operations record
+	// what the organization actually holds, so the setting has to survive an apply that never names it
+	// as well as one that turns it on.
+	t.Run("enforces 2FA", func(t *testing.T) {
+		enforced := func(want bool) resource.TestCheckFunc {
+			return resource.ComposeAggregateTestCheckFunc(
+				resource.TestCheckResourceAttr("buildkite_organization.let_them_in", "enforce_2fa", strconv.FormatBool(want)),
+				func(s *terraform.State) error {
+					organization, err := getOrganization(context.Background(), genqlientGraphql, getenv("BUILDKITE_ORGANIZATION_SLUG"))
+					if err != nil {
+						return err
+					}
+					if got := organization.Organization.MembersRequireTwoFactorAuthentication; got != want {
+						return fmt.Errorf("Expected enforce_2fa to be %t in Buildkite's system, got %t", want, got)
+					}
+					return nil
+				},
+			)
+		}
+
+		resource.Test(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			CheckDestroy:             testCheckOrganizationResourceRemoved,
+			Steps: []resource.TestStep{
+				// The organization under test starts with 2FA off, so this exercises the branch that skips
+				// the mutation entirely.
+				{
+					Config: configNoSettings(),
+					Check:  enforced(false),
+				},
+				{
+					Config: orgConfig("enforce_2fa = true"),
+					Check:  enforced(true),
+				},
+				{
+					Config: orgConfig("enforce_2fa = false"),
+					Check:  enforced(false),
+				},
+			},
+		})
+	})
+
 	t.Run("rejects a revocation interval the API does not accept", func(t *testing.T) {
 		resource.Test(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },
@@ -359,6 +408,21 @@ func testCheckOrganizationResourceRemoved(s *terraform.State) error {
 	}
 
 	return nil
+}
+
+// skipIfOrganizationHasAllowlist keeps the tests that assert the allowlist is left untouched off an
+// organization that has one, where reading it back would leave a non-empty plan and fail the step
+// with a diff rather than a reason.
+func skipIfOrganizationHasAllowlist(t *testing.T) {
+	t.Helper()
+
+	settings, err := getTestClient().GetOrganizationAPISettings(context.Background(), getenv("BUILDKITE_ORGANIZATION_SLUG"))
+	if err != nil {
+		t.Fatalf("Unable to read the organization's API settings: %v", err)
+	}
+	if settings.AllowedIPAddresses != nil && len(strings.Fields(*settings.AllowedIPAddresses)) > 0 {
+		t.Skipf("The organization already has an API IP allowlist (%q)", *settings.AllowedIPAddresses)
+	}
 }
 
 // skipUnlessInactiveTokenRevocationTestable keeps the revocation test off an organization that
@@ -521,51 +585,86 @@ func TestReadOrganizationAPISettingsScalars(t *testing.T) {
 	}
 }
 
+// unsetModel is a configuration that names none of the REST-managed settings, which is both the
+// starting point for most of these cases and, as state, what an organization Terraform has never
+// written looks like.
+func unsetModel() organizationResourceModel {
+	return organizationResourceModel{
+		AllowedApiIpAddresses:         types.ListNull(types.StringType),
+		RevokeInactiveTokensAfterDays: types.Int64Null(),
+		RestrictUserApiTokenCreation:  types.BoolNull(),
+	}
+}
+
+func apiSettings(allowlist string, days int64, restrict bool) *organizationAPISettings {
+	settings := &organizationAPISettings{RestrictUserAPITokenCreation: restrict}
+	if allowlist != "" {
+		settings.AllowedIPAddresses = &allowlist
+	}
+	if days != 0 {
+		settings.RevokeInactiveTokensAfterDays = &days
+	}
+
+	return settings
+}
+
 func TestOrganizationAPISettingsPatchBody(t *testing.T) {
 	t.Parallel()
 
+	withValues := func(allowlist types.List, days types.Int64, restrict types.Bool) organizationResourceModel {
+		return organizationResourceModel{
+			AllowedApiIpAddresses:         allowlist,
+			RevokeInactiveTokensAfterDays: days,
+			RestrictUserApiTokenCreation:  restrict,
+		}
+	}
+
 	tests := []struct {
-		name  string
-		plan  organizationResourceModel
-		state *organizationResourceModel
-		want  map[string]any
+		name   string
+		plan   organizationResourceModel
+		state  *organizationResourceModel
+		remote *organizationAPISettings
+		want   map[string]any
 	}{
 		{
-			// The gated keys have to be absent rather than null: the API refuses them on presence
-			// alone, so naming them would lock a plan without them out of the ungated setting too.
-			name: "create with only the ungated setting names nothing else",
-			plan: organizationResourceModel{
-				AllowedApiIpAddresses:         types.ListNull(types.StringType),
-				RevokeInactiveTokensAfterDays: types.Int64Null(),
-				RestrictUserApiTokenCreation:  types.BoolValue(true),
-			},
-			want: map[string]any{"restrict_user_api_token_creation": true},
+			// The whole point of the endpoint's features map: a setting nobody configured must not be
+			// named, because naming a gated one is a 403 and naming the ungated one silently lifts a
+			// restriction the organization set for itself.
+			name:   "a create that configures nothing writes nothing",
+			plan:   unsetModel(),
+			remote: apiSettings("10.0.0.0/8", 90, true),
+			want:   map[string]any{},
 		},
 		{
-			name: "create sends every setting the plan sets",
-			plan: organizationResourceModel{
-				AllowedApiIpAddresses:         cidrList("10.0.0.0/8", "192.168.0.0/16"),
-				RevokeInactiveTokensAfterDays: types.Int64Value(90),
-				RestrictUserApiTokenCreation:  types.BoolValue(false),
-			},
+			name:   "create names only the settings the configuration sets",
+			plan:   withValues(types.ListNull(types.StringType), types.Int64Null(), types.BoolValue(true)),
+			remote: apiSettings("", 0, false),
+			want:   map[string]any{"restrict_user_api_token_creation": true},
+		},
+		{
+			name:   "create sends every setting the plan sets",
+			plan:   withValues(cidrList("10.0.0.0/8", "192.168.0.0/16"), types.Int64Value(90), types.BoolValue(true)),
+			remote: apiSettings("", 0, false),
 			want: map[string]any{
 				"allowed_ip_addresses":              "10.0.0.0/8 192.168.0.0/16",
 				"revoke_inactive_tokens_after_days": int64(90),
-				"restrict_user_api_token_creation":  false,
+				"restrict_user_api_token_creation":  true,
 			},
 		},
 		{
-			name: "dropping an attribute clears it with an explicit null",
-			plan: organizationResourceModel{
-				AllowedApiIpAddresses:         types.ListNull(types.StringType),
-				RevokeInactiveTokensAfterDays: types.Int64Null(),
-				RestrictUserApiTokenCreation:  types.BoolValue(false),
-			},
-			state: &organizationResourceModel{
-				AllowedApiIpAddresses:         cidrList("10.0.0.0/8"),
-				RevokeInactiveTokensAfterDays: types.Int64Value(90),
-				RestrictUserApiTokenCreation:  types.BoolValue(false),
-			},
+			// Naming a gated setting the organization is not entitled to fails the whole request, so a
+			// no-op write of one would take an unrelated apply down with it.
+			name:   "a setting that already holds the wanted value is not named",
+			plan:   withValues(cidrList("10.0.0.0/8"), types.Int64Value(90), types.BoolValue(true)),
+			state:  ptr(withValues(cidrList("10.0.0.0/8"), types.Int64Value(90), types.BoolValue(true))),
+			remote: apiSettings("10.0.0.0/8", 90, true),
+			want:   map[string]any{},
+		},
+		{
+			name:   "dropping an attribute clears it with an explicit null",
+			plan:   unsetModel(),
+			state:  ptr(withValues(cidrList("10.0.0.0/8"), types.Int64Value(90), types.BoolValue(true))),
+			remote: apiSettings("10.0.0.0/8", 90, true),
 			want: map[string]any{
 				"allowed_ip_addresses":              nil,
 				"revoke_inactive_tokens_after_days": nil,
@@ -574,63 +673,38 @@ func TestOrganizationAPISettingsPatchBody(t *testing.T) {
 		},
 		{
 			// An empty list says "no restrictions", which the API spells as null, not "".
-			name: "an empty allowlist clears rather than sending an empty string",
-			plan: organizationResourceModel{
-				AllowedApiIpAddresses:         cidrList(""),
-				RevokeInactiveTokensAfterDays: types.Int64Null(),
-				RestrictUserApiTokenCreation:  types.BoolValue(false),
-			},
-			want: map[string]any{
-				"allowed_ip_addresses":             nil,
-				"restrict_user_api_token_creation": false,
-			},
+			name:   "an empty allowlist clears one the organization holds",
+			plan:   withValues(cidrList(), types.Int64Null(), types.BoolNull()),
+			remote: apiSettings("10.0.0.0/8", 0, false),
+			want:   map[string]any{"allowed_ip_addresses": nil},
 		},
 		{
-			// Nothing was set and nothing is being set, so the request stays silent even though state
-			// carries the attribute.
-			name: "an untouched gated setting stays out of the body",
-			plan: organizationResourceModel{
-				AllowedApiIpAddresses:         types.ListNull(types.StringType),
-				RevokeInactiveTokensAfterDays: types.Int64Null(),
-				RestrictUserApiTokenCreation:  types.BoolValue(true),
-			},
-			state: &organizationResourceModel{
-				AllowedApiIpAddresses:         types.ListNull(types.StringType),
-				RevokeInactiveTokensAfterDays: types.Int64Null(),
-				RestrictUserApiTokenCreation:  types.BoolValue(false),
-			},
-			want: map[string]any{"restrict_user_api_token_creation": true},
+			// `allowed_api_ip_addresses = []` is a natural thing to write for a conditional list, and on
+			// an organization without the entitlement naming the key at all would be a 403.
+			name:   "an empty allowlist is not named when the organization has none",
+			plan:   withValues(cidrList(""), types.Int64Null(), types.BoolNull()),
+			remote: apiSettings("", 0, false),
+			want:   map[string]any{},
 		},
 		{
 			// State written before the allowlist moved to REST holds a one-element list containing "".
-			// There is nothing to clear, and an organization without the entitlement would be refused
-			// this request outright if it named the setting.
-			name: "an allowlist an earlier provider version left empty is not named",
-			plan: organizationResourceModel{
-				AllowedApiIpAddresses:         types.ListNull(types.StringType),
-				RevokeInactiveTokensAfterDays: types.Int64Null(),
-				RestrictUserApiTokenCreation:  types.BoolValue(false),
-			},
-			state: &organizationResourceModel{
-				AllowedApiIpAddresses:         cidrList(""),
-				RevokeInactiveTokensAfterDays: types.Int64Null(),
-				RestrictUserApiTokenCreation:  types.BoolValue(false),
-			},
-			want: map[string]any{"restrict_user_api_token_creation": false},
+			name:   "an allowlist an earlier provider version left empty is not named",
+			plan:   unsetModel(),
+			state:  ptr(withValues(cidrList(""), types.Int64Null(), types.BoolNull())),
+			remote: apiSettings("", 0, false),
+			want:   map[string]any{},
 		},
 		{
-			name: "an allowlist state records as empty is not named",
-			plan: organizationResourceModel{
-				AllowedApiIpAddresses:         types.ListNull(types.StringType),
-				RevokeInactiveTokensAfterDays: types.Int64Null(),
-				RestrictUserApiTokenCreation:  types.BoolValue(false),
-			},
-			state: &organizationResourceModel{
-				AllowedApiIpAddresses:         cidrList(),
-				RevokeInactiveTokensAfterDays: types.Int64Null(),
-				RestrictUserApiTokenCreation:  types.BoolValue(false),
-			},
-			want: map[string]any{"restrict_user_api_token_creation": false},
+			name:   "the API's own spacing is not drift",
+			plan:   withValues(cidrList("10.0.0.0/8", "192.168.0.0/16"), types.Int64Null(), types.BoolNull()),
+			remote: apiSettings("  10.0.0.0/8   192.168.0.0/16 ", 0, false),
+			want:   map[string]any{},
+		},
+		{
+			name:   "a reordered allowlist is drift",
+			plan:   withValues(cidrList("192.168.0.0/16", "10.0.0.0/8"), types.Int64Null(), types.BoolNull()),
+			remote: apiSettings("10.0.0.0/8 192.168.0.0/16", 0, false),
+			want:   map[string]any{"allowed_ip_addresses": "192.168.0.0/16 10.0.0.0/8"},
 		},
 	}
 
@@ -638,7 +712,7 @@ func TestOrganizationAPISettingsPatchBody(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			assertBodyEqual(t, organizationAPISettingsPatchBody(&tt.plan, tt.state), tt.want)
+			assertBodyEqual(t, organizationAPISettingsPatchBody(&tt.plan, tt.state, tt.remote), tt.want)
 		})
 	}
 }
@@ -647,27 +721,26 @@ func TestOrganizationAPISettingsResetBody(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name  string
-		state organizationResourceModel
-		want  map[string]any
+		name   string
+		state  organizationResourceModel
+		remote *organizationAPISettings
+		want   map[string]any
 	}{
 		{
-			name: "settings this resource never took over are left alone",
-			state: organizationResourceModel{
-				AllowedApiIpAddresses:         types.ListNull(types.StringType),
-				RevokeInactiveTokensAfterDays: types.Int64Null(),
-				RestrictUserApiTokenCreation:  types.BoolValue(false),
-			},
-			want: nil,
+			name:   "settings this resource never took over are left alone",
+			state:  unsetModel(),
+			remote: apiSettings("10.0.0.0/8", 90, true),
+			want:   map[string]any{},
 		},
 		{
 			name: "an allowlist an earlier provider version left empty is nothing to reset",
 			state: organizationResourceModel{
 				AllowedApiIpAddresses:         cidrList(""),
 				RevokeInactiveTokensAfterDays: types.Int64Null(),
-				RestrictUserApiTokenCreation:  types.BoolValue(false),
+				RestrictUserApiTokenCreation:  types.BoolNull(),
 			},
-			want: nil,
+			remote: apiSettings("", 0, false),
+			want:   map[string]any{},
 		},
 		{
 			name: "each managed setting is returned to its default",
@@ -676,6 +749,7 @@ func TestOrganizationAPISettingsResetBody(t *testing.T) {
 				RevokeInactiveTokensAfterDays: types.Int64Value(90),
 				RestrictUserApiTokenCreation:  types.BoolValue(true),
 			},
+			remote: apiSettings("10.0.0.0/8", 90, true),
 			want: map[string]any{
 				"allowed_ip_addresses":              nil,
 				"revoke_inactive_tokens_after_days": nil,
@@ -687,9 +761,10 @@ func TestOrganizationAPISettingsResetBody(t *testing.T) {
 			state: organizationResourceModel{
 				AllowedApiIpAddresses:         cidrList("10.0.0.0/8"),
 				RevokeInactiveTokensAfterDays: types.Int64Null(),
-				RestrictUserApiTokenCreation:  types.BoolValue(false),
+				RestrictUserApiTokenCreation:  types.BoolNull(),
 			},
-			want: map[string]any{"allowed_ip_addresses": nil},
+			remote: apiSettings("10.0.0.0/8", 0, false),
+			want:   map[string]any{"allowed_ip_addresses": nil},
 		},
 		{
 			// The one an organization without either entitlement can still be asked.
@@ -699,7 +774,20 @@ func TestOrganizationAPISettingsResetBody(t *testing.T) {
 				RevokeInactiveTokensAfterDays: types.Int64Null(),
 				RestrictUserApiTokenCreation:  types.BoolValue(true),
 			},
-			want: map[string]any{"restrict_user_api_token_creation": false},
+			remote: apiSettings("", 0, true),
+			want:   map[string]any{"restrict_user_api_token_creation": false},
+		},
+		{
+			// Someone else turned the setting off between the last apply and the destroy, so there is
+			// nothing left to hand back.
+			name: "a setting already back at its default is not named",
+			state: organizationResourceModel{
+				AllowedApiIpAddresses:         cidrList("10.0.0.0/8"),
+				RevokeInactiveTokensAfterDays: types.Int64Value(90),
+				RestrictUserApiTokenCreation:  types.BoolValue(true),
+			},
+			remote: apiSettings("", 0, false),
+			want:   map[string]any{},
 		},
 	}
 
@@ -707,16 +795,42 @@ func TestOrganizationAPISettingsResetBody(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			body := organizationAPISettingsResetBody(&tt.state)
-			if tt.want == nil {
-				if body != nil {
-					t.Errorf("Expected no request at all, got %v", body)
-				}
-				return
-			}
-
-			assertBodyEqual(t, body, tt.want)
+			assertBodyEqual(t, organizationAPISettingsResetBody(&tt.state, tt.remote), tt.want)
 		})
+	}
+}
+
+func TestUnavailableSettings(t *testing.T) {
+	t.Parallel()
+
+	entitled := organizationAPISettingsFeatures{APIIPAllowList: true, InactiveAPITokenRevocation: true}
+	body := func() map[string]any {
+		return map[string]any{
+			"allowed_ip_addresses":              nil,
+			"revoke_inactive_tokens_after_days": nil,
+			"restrict_user_api_token_creation":  false,
+		}
+	}
+
+	if got := unavailableSettings(body(), entitled); len(got) != 0 {
+		t.Errorf("Expected an entitled organization to be refused nothing, got %v", got)
+	}
+	if got := unavailableSettings(map[string]any{"restrict_user_api_token_creation": true}, organizationAPISettingsFeatures{}); len(got) != 0 {
+		t.Errorf("Expected the ungated setting to be writable without any entitlement, got %v", got)
+	}
+	if got := unavailableSettings(body(), organizationAPISettingsFeatures{APIIPAllowList: true}); len(got) != 1 ||
+		!strings.Contains(got[0], "revoke_inactive_tokens_after_days") {
+		t.Errorf("Expected only the revocation interval to be refused, got %v", got)
+	}
+
+	// Dropping is what lets a destroy hand back the settings the organization can still write.
+	remaining := body()
+	dropped := dropUnavailableSettings(remaining, organizationAPISettingsFeatures{})
+	if len(dropped) != 2 {
+		t.Errorf("Expected both gated settings to be dropped, got %v", dropped)
+	}
+	if _, named := remaining["restrict_user_api_token_creation"]; !named || len(remaining) != 1 {
+		t.Errorf("Expected the ungated setting to survive on its own, got %v", remaining)
 	}
 }
 
@@ -745,16 +859,168 @@ func TestOrganizationSettingsError(t *testing.T) {
 		}
 	}
 
+	// A refused read cannot be about the write scope or the billing plan, so it says neither.
+	refusedRead := *refused
+	refusedRead.Method = http.MethodGet
+	refusedRead.Body = `{"message":"Forbidden"}`
+	_, detail = organizationSettingsError("read", &refusedRead)
+	if !strings.Contains(detail, "read_organization_settings") {
+		t.Errorf("Expected the read scope to be named, got %q", detail)
+	}
+	for _, unwanted := range []string{"write_organization_settings", "billing plan"} {
+		if strings.Contains(detail, unwanted) {
+			t.Errorf("Expected no %q advice on a refused read, got %q", unwanted, detail)
+		}
+	}
+
 	summary, detail = organizationSettingsError("read", errors.New("dial tcp: connection refused"))
 	if summary != "Unable to read Organization settings" {
 		t.Errorf("Expected the action in the summary, got %q", summary)
 	}
-	if !strings.Contains(detail, "dial tcp: connection refused") {
-		t.Errorf("Expected the error to survive, got %q", detail)
+	if detail != "dial tcp: connection refused" {
+		t.Errorf("Expected a transport failure to be reported on its own, got %q", detail)
 	}
-	if strings.Contains(detail, "administrator") {
-		t.Errorf("Expected no 403 advice for a transport failure, got %q", detail)
+}
+
+// Destroying the resource hands the settings it took over back to their defaults. A billing plan
+// that no longer covers one of them is the one refusal that must not fail the destroy, because it
+// would otherwise repeat on every attempt; everything else has to surface, since a destroy that
+// reports success while an IP allowlist stays in force is worse than one that fails.
+func TestOrganizationResourceDelete(t *testing.T) {
+	t.Parallel()
+
+	state := organizationResourceModel{
+		ID:                            types.StringValue("organization-id"),
+		UUID:                          types.StringValue("organization-uuid"),
+		Enforce2FA:                    types.BoolValue(false),
+		AllowedApiIpAddresses:         cidrList("10.0.0.0/8"),
+		RevokeInactiveTokensAfterDays: types.Int64Null(),
+		RestrictUserApiTokenCreation:  types.BoolValue(true),
 	}
+
+	tests := []struct {
+		name        string
+		state       *organizationResourceModel
+		features    string
+		patchStatus int
+		wantPatch   map[string]any
+		wantError   string
+		wantWarning string
+	}{
+		{
+			name:      "hands every managed setting back",
+			features:  `{"api_ip_allow_list":true,"inactive_api_token_revocation":true}`,
+			wantPatch: map[string]any{"allowed_ip_addresses": nil, "restrict_user_api_token_creation": false},
+		},
+		{
+			name:        "keeps going without the settings the plan no longer covers",
+			features:    `{"api_ip_allow_list":false,"inactive_api_token_revocation":false}`,
+			wantPatch:   map[string]any{"restrict_user_api_token_creation": false},
+			wantWarning: "allowed_api_ip_addresses",
+		},
+		{
+			name:        "reports a refusal that is not about the billing plan",
+			features:    `{"api_ip_allow_list":true,"inactive_api_token_revocation":true}`,
+			patchStatus: http.StatusForbidden,
+			wantPatch:   map[string]any{"allowed_ip_addresses": nil, "restrict_user_api_token_creation": false},
+			wantError:   "write_organization_settings",
+		},
+		{
+			// Nothing was taken over, so nothing is read and nothing is written: a resource that only
+			// ever managed 2FA is destroyable by a token without the REST scopes.
+			name:      "asks the API nothing when it took nothing over",
+			state:     ptr(unsetModel()),
+			wantPatch: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			var patched map[string]any
+			requests := 0
+			client := testAPISettingsClient(t, func(w http.ResponseWriter, r *http.Request) {
+				requests++
+				if r.Method == http.MethodPatch {
+					if err := json.NewDecoder(r.Body).Decode(&patched); err != nil {
+						t.Errorf("Failed to decode request body: %v", err)
+					}
+					if tt.patchStatus != 0 {
+						w.WriteHeader(tt.patchStatus)
+						if _, err := w.Write([]byte(`{"message":"Forbidden"}`)); err != nil {
+							t.Errorf("Failed to write response: %v", err)
+						}
+						return
+					}
+				}
+
+				if _, err := fmt.Fprintf(w, `{
+					"allowed_ip_addresses": "10.0.0.0/8",
+					"revoke_inactive_tokens_after_days": null,
+					"restrict_user_api_token_creation": true,
+					"features": %s
+				}`, tt.features); err != nil {
+					t.Errorf("Failed to write response: %v", err)
+				}
+			})
+
+			deleting := state
+			if tt.state != nil {
+				deleting = *tt.state
+			}
+
+			resp := &fwresource.DeleteResponse{State: organizationState(t, deleting)}
+			(&organizationResource{client: client}).Delete(context.Background(), fwresource.DeleteRequest{
+				State: organizationState(t, deleting),
+			}, resp)
+
+			assertBodyEqual(t, patched, tt.wantPatch)
+			if tt.wantPatch == nil && requests != 0 {
+				t.Errorf("Expected the API not to be called at all, got %d requests", requests)
+			}
+
+			errors := resp.Diagnostics.Errors()
+			if tt.wantError == "" && len(errors) > 0 {
+				t.Fatalf("Expected the destroy to succeed, got %v", errors)
+			}
+			if tt.wantError != "" {
+				if len(errors) == 0 {
+					t.Fatalf("Expected an error mentioning %q", tt.wantError)
+				}
+				if !strings.Contains(errors[0].Detail(), tt.wantError) {
+					t.Errorf("Expected %q in the error, got %q", tt.wantError, errors[0].Detail())
+				}
+			}
+
+			warnings := resp.Diagnostics.Warnings()
+			if tt.wantWarning != "" && !slices.ContainsFunc(warnings, func(d diag.Diagnostic) bool {
+				return strings.Contains(d.Detail(), tt.wantWarning)
+			}) {
+				t.Errorf("Expected a warning naming %q, got %v", tt.wantWarning, warnings)
+			}
+		})
+	}
+}
+
+// organizationState builds the tfsdk.State the framework would hand a CRUD method, which is the only
+// way to drive one directly.
+func organizationState(t *testing.T, model organizationResourceModel) tfsdk.State {
+	t.Helper()
+
+	schemaResp := &fwresource.SchemaResponse{}
+	(&organizationResource{}).Schema(context.Background(), fwresource.SchemaRequest{}, schemaResp)
+
+	state := tfsdk.State{Schema: schemaResp.Schema, Raw: tftypes.NewValue(schemaResp.Schema.Type().TerraformType(context.Background()), nil)}
+	if diags := state.Set(context.Background(), model); diags.HasError() {
+		t.Fatalf("Failed to build state: %v", diags.Errors())
+	}
+
+	return state
+}
+
+func ptr[T any](value T) *T {
+	return &value
 }
 
 // assertBodyEqual compares the body as the API would see it. Both sides round through JSON first,

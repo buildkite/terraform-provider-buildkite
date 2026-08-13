@@ -5,8 +5,10 @@ subcategory: ""
 description: |-
   This resource allows you to manage the settings for an organization.
   The user of your API token must be an organization administrator to manage organization settings.
-  Every attribute other than enforce_2fa is managed through the REST API, so the token also
+  Every setting other than enforce_2fa is managed through the REST API, so the token also
   needs the read_organization_settings and write_organization_settings scopes.
+  These are newer than the resource itself: a token made before they existed has to be reissued,
+  or refreshing this resource fails.
 ---
 
 # buildkite_organization (Resource)
@@ -15,8 +17,10 @@ This resource allows you to manage the settings for an organization.
 
 The user of your API token must be an organization administrator to manage organization settings.
 
-Every attribute other than `enforce_2fa` is managed through the REST API, so the token also
+Every setting other than `enforce_2fa` is managed through the REST API, so the token also
 needs the `read_organization_settings` and `write_organization_settings` scopes.
+These are newer than the resource itself: a token made before they existed has to be reissued,
+or refreshing this resource fails.
 
 ## Example Usage
 
@@ -38,11 +42,13 @@ resource "buildkite_organization" "settings" {
 
 - `allowed_api_ip_addresses` (List of String) A list of IP addresses in CIDR format that are allowed to access the Buildkite API.If not set, all IP addresses are allowed (the same as setting 0.0.0.0/0).
 
+~> An allowlist set outside Terraform is read into state on refresh, so removing this attribute from your configuration clears the allowlist on the next apply.
+
 -> The "Allowed API IP Addresses" feature must be enabled on your organization in order to manage the `allowed_api_ip_addresses` attribute.
 - `enforce_2fa` (Boolean) Sets whether the organization requires two-factor authentication for all members.
-- `restrict_user_api_token_creation` (Boolean) Sets whether only organization administrators can create API access tokens that act on behalf of the organization. Defaults to false.
+- `restrict_user_api_token_creation` (Boolean) Sets whether only organization administrators can create API access tokens that act on behalf of the organization.
 
-~> The default applies whether or not you set the attribute, so leaving it out of your configuration lifts the restriction from an organization that had it enabled.
+~> A restriction set outside Terraform is read into state on refresh, so removing this attribute from your configuration lifts it on the next apply. Leaving it out of a new configuration does not, since the setting is only written once it has been named.
 - `revoke_inactive_tokens_after_days` (Number) The number of days an API access token can go unused before it is revoked. Must be one of 30, 60, 90, 180 or 365. If not set, inactive tokens are never revoked.
 
 ~> Setting this revokes tokens that are already inactive as soon as the change is applied, rather than waiting for the next scheduled sweep.

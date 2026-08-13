@@ -56,8 +56,10 @@ func (*organizationResource) Schema(ctx context.Context, req resource.SchemaRequ
 
 			The user of your API token must be an organization administrator to manage organization settings.
 
-			Every attribute other than ` + "`enforce_2fa`" + ` is managed through the REST API, so the token also
+			Every setting other than ` + "`enforce_2fa`" + ` is managed through the REST API, so the token also
 			needs the ` + "`read_organization_settings`" + ` and ` + "`write_organization_settings`" + ` scopes.
+			These are newer than the resource itself: a token made before they existed has to be reissued,
+			or refreshing this resource fails.
 		`),
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
@@ -79,6 +81,8 @@ func (*organizationResource) Schema(ctx context.Context, req resource.SchemaRequ
 				ElementType: types.StringType,
 				MarkdownDescription: "A list of IP addresses in CIDR format that are allowed to access the Buildkite API." +
 					"If not set, all IP addresses are allowed (the same as setting 0.0.0.0/0).\n\n" +
+					"~> An allowlist set outside Terraform is read into state on refresh, so removing this attribute " +
+					"from your configuration clears the allowlist on the next apply.\n\n" +
 					"-> The \"Allowed API IP Addresses\" feature must be enabled on your organization in order to manage the `allowed_api_ip_addresses` attribute.",
 			},
 			"enforce_2fa": schema.BoolAttribute{
@@ -102,62 +106,137 @@ func (*organizationResource) Schema(ctx context.Context, req resource.SchemaRequ
 			},
 			"restrict_user_api_token_creation": schema.BoolAttribute{
 				Optional: true,
-				Computed: true,
-				Default:  booldefault.StaticBool(false),
-				MarkdownDescription: "Sets whether only organization administrators can create API access tokens that act on behalf of the organization. " +
-					"Defaults to false.\n\n" +
-					"~> The default applies whether or not you set the attribute, so leaving it out of your configuration " +
-					"lifts the restriction from an organization that had it enabled.",
+				MarkdownDescription: "Sets whether only organization administrators can create API access tokens that act on behalf of the organization.\n\n" +
+					"~> A restriction set outside Terraform is read into state on refresh, so removing this attribute " +
+					"from your configuration lifts it on the next apply. Leaving it out of a new configuration does not, " +
+					"since the setting is only written once it has been named.",
 			},
 		},
 	}
 }
 
-// organizationAPISettingsPatchBody builds the PATCH body for the settings served by the REST API. The
-// API refuses a setting the billing plan does not cover on the key being present at all, so a key is
-// named only when the plan asks for it, or when state holds a value that needs clearing. An allowlist
-// state already records as empty is neither. state is nil on create.
-func organizationAPISettingsPatchBody(plan, state *organizationResourceModel) map[string]any {
+// organizationAPISettingsPatchBody builds the PATCH body for the settings served by the REST API,
+// naming a setting only when it is this resource's to write and remote does not already hold the
+// wanted value. Leaving an unchanged setting unnamed matters beyond saving bytes: the API refuses a
+// plan-gated key on its presence alone, so naming one would fail an apply that never meant to touch
+// it. A setting is this resource's to write once the configuration names it, or once state records a
+// value the configuration has since dropped. state is nil on create, where nothing has been dropped
+// and an unnamed setting belongs to whoever set it.
+func organizationAPISettingsPatchBody(plan, state *organizationResourceModel, remote *organizationAPISettings) map[string]any {
 	body := make(map[string]any)
 
-	if isKnown(plan.AllowedApiIpAddresses) {
-		body["allowed_ip_addresses"] = allowedIPAddressesFromList(plan.AllowedApiIpAddresses)
-	} else if state != nil && allowedIPAddressesFromList(state.AllowedApiIpAddresses) != nil {
-		body["allowed_ip_addresses"] = nil
+	if isKnown(plan.AllowedApiIpAddresses) || (state != nil && allowedIPAddressesFromList(state.AllowedApiIpAddresses) != nil) {
+		if want := allowedIPAddressesFromList(plan.AllowedApiIpAddresses); !allowlistsEqual(want, remote.AllowedIPAddresses) {
+			body["allowed_ip_addresses"] = want
+		}
 	}
 
-	if isKnown(plan.RevokeInactiveTokensAfterDays) {
-		body["revoke_inactive_tokens_after_days"] = plan.RevokeInactiveTokensAfterDays.ValueInt64()
-	} else if state != nil && isKnown(state.RevokeInactiveTokensAfterDays) {
-		body["revoke_inactive_tokens_after_days"] = nil
+	if isKnown(plan.RevokeInactiveTokensAfterDays) || (state != nil && isKnown(state.RevokeInactiveTokensAfterDays)) {
+		var want *int64
+		if isKnown(plan.RevokeInactiveTokensAfterDays) {
+			days := plan.RevokeInactiveTokensAfterDays.ValueInt64()
+			want = &days
+		}
+		if !revocationIntervalsEqual(want, remote.RevokeInactiveTokensAfterDays) {
+			body["revoke_inactive_tokens_after_days"] = want
+		}
 	}
 
-	// Ungated and defaulted, so it is always both safe to send and known.
-	body["restrict_user_api_token_creation"] = plan.RestrictUserApiTokenCreation.ValueBool()
+	if isKnown(plan.RestrictUserApiTokenCreation) || (state != nil && isKnown(state.RestrictUserApiTokenCreation)) {
+		if want := plan.RestrictUserApiTokenCreation.ValueBool(); want != remote.RestrictUserAPITokenCreation {
+			body["restrict_user_api_token_creation"] = want
+		}
+	}
 
 	return body
 }
 
-// organizationAPISettingsResetBody returns the settings this resource had taken over to their
-// defaults, and nil when it had taken over none of them.
-func organizationAPISettingsResetBody(state *organizationResourceModel) map[string]any {
-	body := make(map[string]any)
+// organizationAPISettingsResetBody returns the settings this resource took over to their defaults,
+// naming only the ones remote still holds. It is the patch body for a plan that configures nothing.
+func organizationAPISettingsResetBody(state *organizationResourceModel, remote *organizationAPISettings) map[string]any {
+	return organizationAPISettingsPatchBody(&organizationResourceModel{
+		AllowedApiIpAddresses:         types.ListNull(types.StringType),
+		RevokeInactiveTokensAfterDays: types.Int64Null(),
+		RestrictUserApiTokenCreation:  types.BoolNull(),
+	}, state, remote)
+}
 
-	if allowedIPAddressesFromList(state.AllowedApiIpAddresses) != nil {
-		body["allowed_ip_addresses"] = nil
-	}
-	if isKnown(state.RevokeInactiveTokensAfterDays) {
-		body["revoke_inactive_tokens_after_days"] = nil
-	}
-	if state.RestrictUserApiTokenCreation.ValueBool() {
-		body["restrict_user_api_token_creation"] = false
+// managesAnyAPISetting reports whether state records a setting this resource took over, and so
+// whether a destroy has anything to hand back.
+func managesAnyAPISetting(state *organizationResourceModel) bool {
+	return allowedIPAddressesFromList(state.AllowedApiIpAddresses) != nil ||
+		isKnown(state.RevokeInactiveTokensAfterDays) ||
+		state.RestrictUserApiTokenCreation.ValueBool()
+}
+
+// gatedSettings pairs each plan-gated key with the attribute and feature a diagnostic should name.
+var gatedSettings = []struct {
+	key       string
+	attribute string
+	feature   string
+	available func(organizationAPISettingsFeatures) bool
+}{
+	{
+		key:       "allowed_ip_addresses",
+		attribute: "allowed_api_ip_addresses",
+		feature:   "Allowed API IP Addresses",
+		available: func(f organizationAPISettingsFeatures) bool { return f.APIIPAllowList },
+	},
+	{
+		key:       "revoke_inactive_tokens_after_days",
+		attribute: "revoke_inactive_tokens_after_days",
+		feature:   "Inactive API Token Revocation",
+		available: func(f organizationAPISettingsFeatures) bool { return f.InactiveAPITokenRevocation },
+	},
+}
+
+// unavailableSettings names the attributes in body the organization's plan does not cover. Reading
+// that from the features the endpoint reports says which setting is at fault, where the 403 the
+// request would otherwise earn only says that one of them is.
+func unavailableSettings(body map[string]any, features organizationAPISettingsFeatures) []string {
+	var unavailable []string
+	for _, setting := range gatedSettings {
+		if _, named := body[setting.key]; named && !setting.available(features) {
+			unavailable = append(unavailable, fmt.Sprintf("%s (%q)", setting.attribute, setting.feature))
+		}
 	}
 
-	if len(body) == 0 {
-		return nil
+	return unavailable
+}
+
+// dropUnavailableSettings removes the keys the organization's plan does not cover and returns the
+// attributes it dropped, so a destroy can still hand back the settings it is allowed to write.
+func dropUnavailableSettings(body map[string]any, features organizationAPISettingsFeatures) []string {
+	dropped := unavailableSettings(body, features)
+	for _, setting := range gatedSettings {
+		if !setting.available(features) {
+			delete(body, setting.key)
+		}
 	}
 
-	return body
+	return dropped
+}
+
+// allowlistsEqual compares two renderings of the allowlist. Null and the empty string both mean "no
+// restrictions", and the API stores whatever spacing it was sent, so neither distinction is drift.
+func allowlistsEqual(a, b *string) bool {
+	return joinAllowlist(a) == joinAllowlist(b)
+}
+
+func joinAllowlist(allowlist *string) string {
+	if allowlist == nil {
+		return ""
+	}
+
+	return strings.Join(strings.Fields(*allowlist), " ")
+}
+
+func revocationIntervalsEqual(a, b *int64) bool {
+	if a == nil || b == nil {
+		return a == b
+	}
+
+	return *a == *b
 }
 
 // allowedIPAddressesFromList renders a CIDR list as the space separated string the API expects, or
@@ -216,24 +295,94 @@ func readOrganizationAPISettings(ctx context.Context, state *organizationResourc
 		state.RevokeInactiveTokensAfterDays = types.Int64Null()
 	}
 
-	state.RestrictUserApiTokenCreation = types.BoolValue(settings.RestrictUserAPITokenCreation)
+	// Left alone where state already agrees, for the same reason as the allowlist: an organization
+	// that never had the restriction would otherwise read back as a configured false and plan a
+	// change to null on every refresh.
+	if settings.RestrictUserAPITokenCreation != state.RestrictUserApiTokenCreation.ValueBool() {
+		state.RestrictUserApiTokenCreation = types.BoolValue(settings.RestrictUserAPITokenCreation)
+	}
 
 	return diags
 }
 
 // organizationSettingsError reports a REST failure. A 403 leads with the API's own words, which name
-// the entitlement or scope that is missing, and adds the three things that produce one.
-func organizationSettingsError(action string, err error) (string, string) {
-	summary := fmt.Sprintf("Unable to %s Organization settings", action)
+// the entitlement or scope that is missing, and adds the conditions that produce one for the request
+// that earned it.
+func organizationSettingsError(action string, err error) (summary, detail string) {
+	summary = fmt.Sprintf("Unable to %s Organization settings", action)
 
-	if isAPIStatus(err, http.StatusForbidden) {
-		return summary, fmt.Sprintf("%s\n\nThe API refuses this request when the token is missing the "+
-			"read_organization_settings or write_organization_settings scope, when its user is not an organization "+
-			"administrator, or when the organization's billing plan does not cover the setting being changed.\n\n%s",
-			apiErrorMessage(err), err.Error())
+	if !isAPIStatus(err, http.StatusForbidden) {
+		return summary, err.Error()
 	}
 
-	return summary, fmt.Sprintf("%s: %s", summary, err.Error())
+	causes := "the token is missing the write_organization_settings scope, its user is not an organization " +
+		"administrator, or the organization's billing plan does not cover the setting being changed"
+	if action == "read" {
+		causes = "the token is missing the read_organization_settings scope, or its user is not an " +
+			"organization administrator"
+	}
+
+	return summary, fmt.Sprintf("%s\n\nThe API refuses this request when %s.\n\n%s", apiErrorMessage(err), causes, err.Error())
+}
+
+// fetchOrganization looks the organization up over GraphQL, which is where its ID, UUID and 2FA
+// setting live. A slug with no organization behind it comes back as an empty response rather than an
+// error, which the removed GetOrganizationID helper used to report.
+func (o *organizationResource) fetchOrganization(ctx context.Context) (*getOrganizationResponse, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	organization, err := getOrganization(ctx, o.client.genqlient, o.client.organization)
+	if err != nil {
+		diags.AddError(
+			"Unable to obtain Organization",
+			fmt.Sprintf("Unable to obtain Organization: %s", err.Error()),
+		)
+		return nil, diags
+	}
+	if organization.Organization.Id == "" {
+		diags.AddError(
+			"Unable to find organization",
+			fmt.Sprintf("Could not find organization with slug %q", o.client.organization),
+		)
+		return nil, diags
+	}
+
+	return organization, diags
+}
+
+// writeOrganizationAPISettings applies body, having first refused a request naming a setting the
+// organization's plan does not cover so the practitioner is told which attribute is at fault rather
+// than reading it out of a 403. An empty body is no request at all.
+func (o *organizationResource) writeOrganizationAPISettings(ctx context.Context, action string, body map[string]any, features organizationAPISettingsFeatures) diag.Diagnostics {
+	var diags diag.Diagnostics
+
+	if len(body) == 0 {
+		return diags
+	}
+
+	if unavailable := unavailableSettings(body, features); len(unavailable) > 0 {
+		diags.AddError(
+			fmt.Sprintf("Unable to %s Organization settings", action),
+			fmt.Sprintf("The organization's billing plan does not cover %s, so %s cannot be changed. Remove the "+
+				"attribute from your configuration, or contact Buildkite about the plan feature.",
+				strings.Join(unavailable, " or "), pluralise(len(unavailable), "it", "they")),
+		)
+		return diags
+	}
+
+	if _, err := o.client.UpdateOrganizationAPISettings(ctx, o.client.organization, body); err != nil {
+		diags.AddError(organizationSettingsError(action, err))
+	}
+
+	return diags
+}
+
+func pluralise(count int, one, many string) string {
+	if count == 1 {
+		return one
+	}
+
+	return many
 }
 
 func (o *organizationResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
@@ -248,26 +397,21 @@ func (o *organizationResource) Create(ctx context.Context, req resource.CreateRe
 	log.Printf("Creating settings for organization %s ...", o.client.organization)
 
 	// Read before writing, so a failure looking the organization up can't leave settings changed with
-	// nothing recorded in state. This also supplies the ID and UUID the removed GraphQL mutation used
-	// to return, and the 2FA setting to compare the plan against.
-	organization, err := getOrganization(ctx, o.client.genqlient, o.client.organization)
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Unable to obtain Organization",
-			fmt.Sprintf("Unable to obtain Organization: %s", err.Error()),
-		)
-		return
-	}
-	if organization.Organization.Id == "" {
-		resp.Diagnostics.AddError(
-			"Unable to find organization",
-			fmt.Sprintf("Could not find organization with slug %q", o.client.organization),
-		)
+	// nothing recorded in state.
+	organization, diags := o.fetchOrganization(ctx)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	if _, err := o.client.UpdateOrganizationAPISettings(ctx, o.client.organization, organizationAPISettingsPatchBody(&plan, nil)); err != nil {
-		resp.Diagnostics.AddError(organizationSettingsError("create", err))
+	settings, err := o.client.GetOrganizationAPISettings(ctx, o.client.organization)
+	if err != nil {
+		resp.Diagnostics.AddError(organizationSettingsError("read", err))
+		return
+	}
+
+	resp.Diagnostics.Append(o.writeOrganizationAPISettings(ctx, "create", organizationAPISettingsPatchBody(&plan, nil, settings), settings.Features)...)
+	if resp.Diagnostics.HasError() {
 		return
 	}
 
@@ -289,8 +433,6 @@ func (o *organizationResource) Create(ctx context.Context, req resource.CreateRe
 		return
 	}
 
-	// Comparing against the organization keeps a create whose 2FA setting already matches from writing
-	// to it at all.
 	if isKnown(plan.Enforce2FA) && plan.Enforce2FA.ValueBool() != organization.Organization.MembersRequireTwoFactorAuthentication {
 		if _, err := setOrganization2FA(ctx, o.client.genqlient, organization.Organization.Id, plan.Enforce2FA.ValueBool()); err != nil {
 			resp.Diagnostics.AddError("Unable to set 2FA", err.Error())
@@ -311,20 +453,10 @@ func (o *organizationResource) Read(ctx context.Context, req resource.ReadReques
 		return
 	}
 
-	log.Printf("Reading settings for organization ...")
-	response, err := getOrganization(ctx, o.client.genqlient, o.client.organization)
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Unable to obtain Organization",
-			fmt.Sprintf("Unable to obtain Organization: %s", err.Error()),
-		)
-		return
-	}
-	if response.Organization.Id == "" {
-		resp.Diagnostics.AddError(
-			"Unable to find organization",
-			fmt.Sprintf("Could not find organization with slug %q", o.client.organization),
-		)
+	log.Printf("Reading settings for organization %s ...", o.client.organization)
+	response, diags := o.fetchOrganization(ctx)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
 		return
 	}
 
@@ -360,31 +492,37 @@ func (o *organizationResource) Update(ctx context.Context, req resource.UpdateRe
 		return
 	}
 
-	org, err := o.client.GetOrganizationID()
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Unable to find organization",
-			fmt.Sprintf("Unable to find Organization: %s", err.Error()),
-		)
+	log.Printf("Updating settings for organization %s ...", o.client.organization)
+
+	organization, diags := o.fetchOrganization(ctx)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
 		return
 	}
-	log.Printf("Updating settings for organization %s ...", *org)
 
-	// state holds the prior values, which is what tells the request apart from the settings it must
-	// leave unnamed.
-	if _, err := o.client.UpdateOrganizationAPISettings(ctx, o.client.organization, organizationAPISettingsPatchBody(&plan, &state)); err != nil {
-		resp.Diagnostics.AddError(organizationSettingsError("update", err))
+	settings, err := o.client.GetOrganizationAPISettings(ctx, o.client.organization)
+	if err != nil {
+		resp.Diagnostics.AddError(organizationSettingsError("read", err))
+		return
+	}
+
+	// state holds the prior values, which is what tells a setting the configuration dropped apart
+	// from one it never named.
+	resp.Diagnostics.Append(o.writeOrganizationAPISettings(ctx, "update", organizationAPISettingsPatchBody(&plan, &state, settings), settings.Features)...)
+	if resp.Diagnostics.HasError() {
 		return
 	}
 
 	state.AllowedApiIpAddresses = plan.AllowedApiIpAddresses
 	state.RevokeInactiveTokensAfterDays = plan.RevokeInactiveTokensAfterDays
 	state.RestrictUserApiTokenCreation = plan.RestrictUserApiTokenCreation
+	state.Enforce2FA = types.BoolValue(organization.Organization.MembersRequireTwoFactorAuthentication)
 
-	if isKnown(plan.Enforce2FA) {
-		twoFAResponse, err := setOrganization2FA(ctx, o.client.genqlient, *org, plan.Enforce2FA.ValueBool())
+	if isKnown(plan.Enforce2FA) && plan.Enforce2FA.ValueBool() != organization.Organization.MembersRequireTwoFactorAuthentication {
+		twoFAResponse, err := setOrganization2FA(ctx, o.client.genqlient, organization.Organization.Id, plan.Enforce2FA.ValueBool())
 		if err != nil {
 			resp.Diagnostics.AddError("Unable to set 2FA", err.Error())
+			// Saved anyway, so the settings the request above did write are not lost to the failure.
 			resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 			return
 		}
@@ -405,23 +543,41 @@ func (o *organizationResource) Delete(ctx context.Context, req resource.DeleteRe
 
 	log.Printf("Deleting settings for organization %s ...", o.client.organization)
 
+	// Nothing to hand back means nothing to read either, so a resource that only ever managed 2FA can
+	// still be destroyed by a token without the REST scopes.
+	if !managesAnyAPISetting(&state) {
+		resp.Diagnostics.AddAttributeWarning(path.Root("enforce_2fa"), "Enforce 2FA setting left intact", "Use the web UI if you wish to change the value")
+		return
+	}
+
+	settings, err := o.client.GetOrganizationAPISettings(ctx, o.client.organization)
+	if err != nil {
+		resp.Diagnostics.AddError(organizationSettingsError("read", err))
+		return
+	}
+
 	// The settings themselves can't be deleted, so returning the ones this resource took over is
 	// the closest thing to removing it.
-	if body := organizationAPISettingsResetBody(&state); body != nil {
-		if _, err := o.client.UpdateOrganizationAPISettings(ctx, o.client.organization, body); err != nil {
-			// A refusal here would otherwise leave the resource undestroyable, which an organization
-			// downgraded off a plan that once covered one of these settings would hit on every attempt.
-			if !isAPIStatus(err, http.StatusForbidden) {
-				resp.Diagnostics.AddError(organizationSettingsError("delete", err))
-				return
-			}
+	body := organizationAPISettingsResetBody(&state, settings)
 
-			resp.Diagnostics.AddWarning(
-				"Organization API settings left as they are",
-				fmt.Sprintf("Removing this resource could not return the organization's API settings to their "+
-					"defaults, so they keep the values Terraform last applied and have to be changed in the web "+
-					"UI.\n\n%s", apiErrorMessage(err)),
-			)
+	// An organization downgraded off a plan that once covered one of these settings can no longer
+	// write it at all, which would leave the resource undestroyable. Handing back what it still can
+	// beats refusing to destroy, so those settings are dropped from the request rather than failing
+	// it. Every other refusal, a missing scope or a demoted user among them, is a real error: a
+	// destroy that reports success while an IP allowlist stays in force is worse than one that fails.
+	if dropped := dropUnavailableSettings(body, settings.Features); len(dropped) > 0 {
+		resp.Diagnostics.AddWarning(
+			"Organization API settings left as they are",
+			fmt.Sprintf("The organization's billing plan no longer covers %s, so %s keep the value Terraform last "+
+				"applied and have to be changed in the web UI.",
+				strings.Join(dropped, " or "), pluralise(len(dropped), "it", "they")),
+		)
+	}
+
+	if len(body) > 0 {
+		if _, err := o.client.UpdateOrganizationAPISettings(ctx, o.client.organization, body); err != nil {
+			resp.Diagnostics.AddError(organizationSettingsError("delete", err))
+			return
 		}
 	}
 

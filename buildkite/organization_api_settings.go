@@ -6,24 +6,23 @@ import (
 	"net/http"
 )
 
-// The API IP allowlist has a GraphQL mutation of its own, which CONTRIBUTING would ordinarily
-// prefer, but the other two settings on this endpoint have no GraphQL equivalent. Writing all three
-// here keeps one organization's API settings from being split across two APIs.
+// CONTRIBUTING would ordinarily prefer GraphQL, and two of these three settings have a mutation
+// there, but restrict_user_api_token_creation has no GraphQL surface at all. Writing all three here
+// keeps one organization's API settings from being split across two APIs.
 
 // organizationAPISettings mirrors the /v2/organizations/{slug}/api-settings response.
 // allowed_ip_addresses is a space separated list of CIDR ranges, and both it and
 // revoke_inactive_tokens_after_days are null when the setting is off.
 type organizationAPISettings struct {
-	URL                           string                          `json:"url"`
 	AllowedIPAddresses            *string                         `json:"allowed_ip_addresses"`
 	RevokeInactiveTokensAfterDays *int64                          `json:"revoke_inactive_tokens_after_days"`
 	RestrictUserAPITokenCreation  bool                            `json:"restrict_user_api_token_creation"`
 	Features                      organizationAPISettingsFeatures `json:"features"`
 }
 
-// organizationAPISettingsFeatures reports which settings the organization's billing plan entitles
-// it to. Writing a setting the plan doesn't cover is a 403, which is what the resource reports;
-// this is read by the acceptance tests to skip what the target organization cannot exercise.
+// organizationAPISettingsFeatures reports which settings the organization's billing plan entitles it
+// to. The API refuses a gated key on its presence alone, so this is what tells a setting that is
+// switched off apart from one the organization cannot write at all.
 type organizationAPISettingsFeatures struct {
 	APIIPAllowList             bool `json:"api_ip_allow_list"`
 	InactiveAPITokenRevocation bool `json:"inactive_api_token_revocation"`
