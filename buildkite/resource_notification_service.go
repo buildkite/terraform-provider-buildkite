@@ -26,6 +26,7 @@ const (
 	notificationServiceProviderWebhook                   = "webhook"
 	notificationServiceProviderAWSEventBridge            = "aws_event_bridge"
 	notificationServiceProviderDatadogPipelineVisibility = "datadog_pipeline_visibility"
+	notificationServiceProviderOpenTelemetryTracing      = "open_telemetry_tracing"
 	notificationServiceProviderSlackWorkspace            = "slack_workspace"
 )
 
@@ -48,6 +49,7 @@ type notificationServiceResourceModel struct {
 	Webhook                   *notificationServiceWebhookModel                   `tfsdk:"webhook"`
 	AWSEventBridge            *notificationServiceAWSEventBridgeModel            `tfsdk:"aws_event_bridge"`
 	DatadogPipelineVisibility *notificationServiceDatadogPipelineVisibilityModel `tfsdk:"datadog_pipeline_visibility"`
+	OpenTelemetryTracing      *notificationServiceOpenTelemetryTracingModel      `tfsdk:"open_telemetry_tracing"`
 	CreatedAt                 types.String                                       `tfsdk:"created_at"`
 }
 
@@ -81,6 +83,13 @@ type notificationServiceDatadogPipelineVisibilityModel struct {
 	APIKey      types.String `tfsdk:"api_key"`
 	DatadogSite types.String `tfsdk:"datadog_site"`
 	DatadogTags types.String `tfsdk:"datadog_tags"`
+}
+
+type notificationServiceOpenTelemetryTracingModel struct {
+	Endpoint           types.String `tfsdk:"endpoint"`
+	ServiceName        types.String `tfsdk:"service_name"`
+	Headers            types.Map    `tfsdk:"headers"`
+	ResourceAttributes types.Map    `tfsdk:"resource_attributes"`
 }
 
 type notificationServiceAPIResponse struct {
@@ -125,6 +134,12 @@ type notificationServiceAWSEventBridgeAPISettings struct {
 type notificationServiceDatadogPipelineVisibilityAPISettings struct {
 	DatadogSite *string `json:"datadog_site"`
 	DatadogTags *string `json:"datadog_tags"`
+}
+
+type notificationServiceOpenTelemetryTracingAPISettings struct {
+	Endpoint           *string           `json:"endpoint"`
+	ServiceName        *string           `json:"service_name"`
+	ResourceAttributes map[string]string `json:"resource_attributes"`
 }
 
 var (
@@ -182,6 +197,7 @@ func (r *notificationServiceResource) Schema(ctx context.Context, req resource.S
 						notificationServiceProviderWebhook,
 						notificationServiceProviderAWSEventBridge,
 						notificationServiceProviderDatadogPipelineVisibility,
+						notificationServiceProviderOpenTelemetryTracing,
 						notificationServiceProviderSlackWorkspace,
 					),
 				},
@@ -226,6 +242,7 @@ func (r *notificationServiceResource) Schema(ctx context.Context, req resource.S
 			"webhook":                     notificationServiceWebhookSchema(),
 			"aws_event_bridge":            notificationServiceAWSEventBridgeSchema(),
 			"datadog_pipeline_visibility": notificationServiceDatadogPipelineVisibilitySchema(),
+			"open_telemetry_tracing":      notificationServiceOpenTelemetryTracingSchema(),
 			"created_at": schema.StringAttribute{
 				Computed:            true,
 				MarkdownDescription: "The time when the notification service was created.",
@@ -350,6 +367,37 @@ func notificationServiceDatadogPipelineVisibilitySchema() schema.SingleNestedAtt
 	}
 }
 
+func notificationServiceOpenTelemetryTracingSchema() schema.SingleNestedAttribute {
+	return schema.SingleNestedAttribute{
+		Optional:            true,
+		MarkdownDescription: "Settings for the `open_telemetry_tracing` provider.",
+		Attributes: map[string]schema.Attribute{
+			"endpoint": schema.StringAttribute{
+				Optional:            true,
+				MarkdownDescription: "The OTLP HTTP endpoint. Required on create.",
+			},
+			"service_name": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				MarkdownDescription: "The OpenTelemetry service name. Defaults to `buildkite`.",
+			},
+			"headers": schema.MapAttribute{
+				Optional:            true,
+				Computed:            true,
+				Sensitive:           true,
+				ElementType:         types.StringType,
+				MarkdownDescription: "Headers sent to the OTLP endpoint. Buildkite never returns these values, so they are preserved only in Terraform state.",
+			},
+			"resource_attributes": schema.MapAttribute{
+				Optional:            true,
+				Computed:            true,
+				ElementType:         types.StringType,
+				MarkdownDescription: "Additional OpenTelemetry resource attributes.",
+			},
+		},
+	}
+}
+
 func notificationServiceOptionalComputedBool(description string) schema.BoolAttribute {
 	return schema.BoolAttribute{
 		Optional:            true,
@@ -423,6 +471,8 @@ func (r *notificationServiceResource) ModifyPlan(ctx context.Context, req resour
 		addMissingNotificationServiceSetting(&resp.Diagnostics, config.AWSEventBridge.AWSAccountID, "aws_event_bridge.aws_account_id")
 	case notificationServiceProviderDatadogPipelineVisibility:
 		addMissingNotificationServiceSetting(&resp.Diagnostics, config.DatadogPipelineVisibility.APIKey, "datadog_pipeline_visibility.api_key")
+	case notificationServiceProviderOpenTelemetryTracing:
+		addMissingNotificationServiceSetting(&resp.Diagnostics, config.OpenTelemetryTracing.Endpoint, "open_telemetry_tracing.endpoint")
 	}
 }
 
@@ -436,6 +486,9 @@ func (m *notificationServiceResourceModel) configuredSettings() []string {
 	}
 	if m.DatadogPipelineVisibility != nil {
 		configured = append(configured, notificationServiceProviderDatadogPipelineVisibility)
+	}
+	if m.OpenTelemetryTracing != nil {
+		configured = append(configured, notificationServiceProviderOpenTelemetryTracing)
 	}
 	return configured
 }
@@ -718,6 +771,11 @@ func (m notificationServiceResourceModel) settingsCreatePayload(ctx context.Cont
 		addNotificationServiceString(settings, "api_key", m.DatadogPipelineVisibility.APIKey)
 		addNotificationServiceString(settings, "datadog_site", m.DatadogPipelineVisibility.DatadogSite)
 		addNotificationServiceString(settings, "datadog_tags", m.DatadogPipelineVisibility.DatadogTags)
+	case notificationServiceProviderOpenTelemetryTracing:
+		addNotificationServiceString(settings, "endpoint", m.OpenTelemetryTracing.Endpoint)
+		addNotificationServiceString(settings, "service_name", m.OpenTelemetryTracing.ServiceName)
+		addNotificationServiceMap(ctx, settings, "headers", m.OpenTelemetryTracing.Headers, &diags)
+		addNotificationServiceMap(ctx, settings, "resource_attributes", m.OpenTelemetryTracing.ResourceAttributes, &diags)
 	}
 
 	return settings, diags
@@ -746,6 +804,15 @@ func addNotificationServiceSet(ctx context.Context, payload map[string]any, key 
 		return
 	}
 	values, valueDiags := notificationServiceStringSet(ctx, value)
+	diags.Append(valueDiags...)
+	payload[key] = values
+}
+
+func addNotificationServiceMap(ctx context.Context, payload map[string]any, key string, value types.Map, diags *diag.Diagnostics) {
+	if value.IsNull() || value.IsUnknown() {
+		return
+	}
+	values, valueDiags := notificationServiceStringMap(ctx, value)
 	diags.Append(valueDiags...)
 	payload[key] = values
 }
@@ -786,6 +853,17 @@ func (m notificationServiceResourceModel) settingsUpdatePayload(ctx context.Cont
 		addChangedNotificationServiceString(settings, "api_key", m.DatadogPipelineVisibility.APIKey, state.DatadogPipelineVisibility.APIKey)
 		addChangedNotificationServiceString(settings, "datadog_site", m.DatadogPipelineVisibility.DatadogSite, state.DatadogPipelineVisibility.DatadogSite)
 		addChangedNotificationServiceString(settings, "datadog_tags", m.DatadogPipelineVisibility.DatadogTags, state.DatadogPipelineVisibility.DatadogTags)
+	case notificationServiceProviderOpenTelemetryTracing:
+		if m.OpenTelemetryTracing == nil {
+			break
+		}
+		if state.OpenTelemetryTracing == nil {
+			return m.settingsCreatePayload(ctx)
+		}
+		addChangedNotificationServiceString(settings, "endpoint", m.OpenTelemetryTracing.Endpoint, state.OpenTelemetryTracing.Endpoint)
+		addChangedNotificationServiceString(settings, "service_name", m.OpenTelemetryTracing.ServiceName, state.OpenTelemetryTracing.ServiceName)
+		addChangedNotificationServiceMap(ctx, settings, "headers", m.OpenTelemetryTracing.Headers, state.OpenTelemetryTracing.Headers, &diags)
+		addChangedNotificationServiceMap(ctx, settings, "resource_attributes", m.OpenTelemetryTracing.ResourceAttributes, state.OpenTelemetryTracing.ResourceAttributes, &diags)
 	}
 
 	return settings, diags
@@ -833,8 +911,27 @@ func addChangedNotificationServiceSet(ctx context.Context, payload map[string]an
 	payload[key] = values
 }
 
+func addChangedNotificationServiceMap(ctx context.Context, payload map[string]any, key string, plan, state types.Map, diags *diag.Diagnostics) {
+	if plan.IsUnknown() || plan.Equal(state) {
+		return
+	}
+	if plan.IsNull() {
+		payload[key] = nil
+		return
+	}
+	values, valueDiags := notificationServiceStringMap(ctx, plan)
+	diags.Append(valueDiags...)
+	payload[key] = values
+}
+
 func notificationServiceStringSet(ctx context.Context, value types.Set) ([]string, diag.Diagnostics) {
 	var result []string
+	diags := value.ElementsAs(ctx, &result, false)
+	return result, diags
+}
+
+func notificationServiceStringMap(ctx context.Context, value types.Map) (map[string]string, diag.Diagnostics) {
+	result := make(map[string]string)
 	diags := value.ElementsAs(ctx, &result, false)
 	return result, diags
 }
@@ -886,6 +983,8 @@ func (m *notificationServiceResourceModel) applyAPIResponse(ctx context.Context,
 		diags.Append(m.applyAWSEventBridgeAPISettings(result.Settings, previous)...)
 	case notificationServiceProviderDatadogPipelineVisibility:
 		diags.Append(m.applyDatadogPipelineVisibilityAPISettings(result.Settings, previous)...)
+	case notificationServiceProviderOpenTelemetryTracing:
+		diags.Append(m.applyOpenTelemetryTracingAPISettings(ctx, result.Settings, previous)...)
 	}
 
 	return diags
@@ -899,6 +998,8 @@ func (m *notificationServiceResourceModel) initializeImportedSettings(providerTy
 		m.AWSEventBridge = &notificationServiceAWSEventBridgeModel{AWSAccountID: types.StringNull()}
 	case notificationServiceProviderDatadogPipelineVisibility:
 		m.DatadogPipelineVisibility = &notificationServiceDatadogPipelineVisibilityModel{APIKey: types.StringNull()}
+	case notificationServiceProviderOpenTelemetryTracing:
+		m.OpenTelemetryTracing = &notificationServiceOpenTelemetryTracingModel{Headers: types.MapNull(types.StringType)}
 	}
 }
 
@@ -966,6 +1067,29 @@ func (m *notificationServiceResourceModel) applyDatadogPipelineVisibilityAPISett
 	return nil
 }
 
+func (m *notificationServiceResourceModel) applyOpenTelemetryTracingAPISettings(ctx context.Context, raw json.RawMessage, previous notificationServiceResourceModel) diag.Diagnostics {
+	if m.OpenTelemetryTracing == nil {
+		return nil
+	}
+	var settings notificationServiceOpenTelemetryTracingAPISettings
+	if err := json.Unmarshal(raw, &settings); err != nil {
+		return notificationServiceSettingsDiagnostic(notificationServiceProviderOpenTelemetryTracing, err)
+	}
+
+	resourceAttributes, diags := types.MapValueFrom(ctx, types.StringType, settings.ResourceAttributes)
+	previousHeaders := types.MapNull(types.StringType)
+	if previous.OpenTelemetryTracing != nil {
+		previousHeaders = previous.OpenTelemetryTracing.Headers
+	}
+	m.OpenTelemetryTracing = &notificationServiceOpenTelemetryTracingModel{
+		Endpoint:           types.StringPointerValue(settings.Endpoint),
+		ServiceName:        types.StringPointerValue(settings.ServiceName),
+		Headers:            preserveNotificationServiceMap(m.OpenTelemetryTracing.Headers, previousHeaders),
+		ResourceAttributes: resourceAttributes,
+	}
+	return diags
+}
+
 func preserveNotificationServiceString(configured, previous types.String) types.String {
 	if !configured.IsNull() && !configured.IsUnknown() {
 		return configured
@@ -974,6 +1098,16 @@ func preserveNotificationServiceString(configured, previous types.String) types.
 		return previous
 	}
 	return types.StringNull()
+}
+
+func preserveNotificationServiceMap(configured, previous types.Map) types.Map {
+	if !configured.IsNull() && !configured.IsUnknown() {
+		return configured
+	}
+	if !previous.IsUnknown() {
+		return previous
+	}
+	return types.MapNull(types.StringType)
 }
 
 func notificationServiceSettingsDiagnostic(providerType string, err error) diag.Diagnostics {

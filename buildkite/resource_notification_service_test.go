@@ -126,6 +126,35 @@ func TestNotificationServiceApplyAPIResponsePreservesWriteOnlySettings(t *testin
 	if got, want := state.AWSEventBridge.AWSAccountID.ValueString(), "123456789012"; got != want {
 		t.Errorf("AWS account ID = %q, want %q", got, want)
 	}
+
+	response = notificationServiceTestResponse(notificationServiceProviderOpenTelemetryTracing)
+	response.Settings = json.RawMessage(`{"endpoint":"https://otel.test","service_name":"buildkite","resource_attributes":{},"tracestate":{}}`)
+	headers := types.MapValueMust(types.StringType, map[string]attr.Value{
+		"authorization": types.StringValue("secret"),
+	})
+	state = notificationServiceResourceModel{
+		OpenTelemetryTracing: &notificationServiceOpenTelemetryTracingModel{Headers: headers},
+	}
+	previous = state
+	if diags := state.applyAPIResponse(t.Context(), &response, previous); diags.HasError() {
+		t.Fatalf("applyAPIResponse() diagnostics = %v", diags)
+	}
+	if !state.OpenTelemetryTracing.Headers.Equal(headers) {
+		t.Errorf("OpenTelemetry headers = %v, want %v", state.OpenTelemetryTracing.Headers, headers)
+	}
+
+	state = notificationServiceResourceModel{
+		OpenTelemetryTracing: &notificationServiceOpenTelemetryTracingModel{
+			Headers: types.MapUnknown(types.StringType),
+		},
+	}
+	previous = state
+	if diags := state.applyAPIResponse(t.Context(), &response, previous); diags.HasError() {
+		t.Fatalf("applyAPIResponse() diagnostics = %v", diags)
+	}
+	if !state.OpenTelemetryTracing.Headers.IsNull() {
+		t.Errorf("OpenTelemetry headers = %v, want null", state.OpenTelemetryTracing.Headers)
+	}
 }
 
 func TestNotificationServiceRESTLifecycle(t *testing.T) {
@@ -168,6 +197,28 @@ func TestNotificationServiceRESTLifecycle(t *testing.T) {
 				ImportStateVerify: true,
 			},
 		},
+	})
+}
+
+func TestNotificationServiceOpenTelemetryDefaults(t *testing.T) {
+	api := newNotificationServiceTestAPI(t)
+	api.setProvider(notificationServiceProviderOpenTelemetryTracing)
+
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		CheckDestroy: func(*terraform.State) error {
+			if !api.isDeleted() {
+				return fmt.Errorf("notification service was not deleted")
+			}
+			return nil
+		},
+		Steps: []resource.TestStep{{
+			Config: notificationServiceOpenTelemetryUnitTestConfig(api.server.URL),
+			Check: resource.ComposeAggregateTestCheckFunc(
+				resource.TestCheckResourceAttr("buildkite_notification_service.test", "open_telemetry_tracing.endpoint", "https://otel.test"),
+				resource.TestCheckResourceAttr("buildkite_notification_service.test", "open_telemetry_tracing.service_name", "buildkite"),
+			),
+		}},
 	})
 }
 
@@ -427,6 +478,25 @@ func notificationServiceOAuthUnitTestConfig(restURL, description string) string 
 	`, restURL, description)
 }
 
+func notificationServiceOpenTelemetryUnitTestConfig(restURL string) string {
+	return fmt.Sprintf(`
+		provider "buildkite" {
+			organization = "test"
+			api_token = "test"
+			rest_url = %q
+			max_retries = 0
+		}
+
+		resource "buildkite_notification_service" "test" {
+			provider_type = "open_telemetry_tracing"
+
+			open_telemetry_tracing = {
+				endpoint = "https://otel.test"
+			}
+		}
+	`, restURL)
+}
+
 type notificationServiceTestRequest struct {
 	Method      string
 	Path        string
@@ -611,6 +681,13 @@ func notificationServiceTestResponse(providerType string) notificationServiceAPI
 			"version":3,
 			"events":["build.finished"],
 			"tls_verify":true
+		}`)
+	case notificationServiceProviderOpenTelemetryTracing:
+		response.Settings = json.RawMessage(`{
+			"endpoint":"https://otel.test",
+			"service_name":"buildkite",
+			"resource_attributes":{},
+			"tracestate":{}
 		}`)
 	}
 	return response
