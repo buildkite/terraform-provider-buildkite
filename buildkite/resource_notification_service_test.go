@@ -15,6 +15,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
@@ -157,6 +158,32 @@ func TestNotificationServiceApplyAPIResponsePreservesWriteOnlySettings(t *testin
 	}
 }
 
+func TestNotificationServiceApplyAPIResponseRejectsMismatchedImportedAWSAccountID(t *testing.T) {
+	t.Parallel()
+
+	response := notificationServiceTestResponse(notificationServiceProviderAWSEventBridge)
+	state := notificationServiceResourceModel{
+		ProviderType: types.StringValue(notificationServiceProviderAWSEventBridge),
+		AWSEventBridge: &notificationServiceAWSEventBridgeModel{
+			AWSAccountID: types.StringValue("999999999999"),
+		},
+	}
+	previous := notificationServiceResourceModel{
+		ProviderType: types.StringValue(notificationServiceProviderAWSEventBridge),
+		AWSEventBridge: &notificationServiceAWSEventBridgeModel{
+			AWSAccountID: types.StringNull(),
+		},
+	}
+
+	diags := state.applyAPIResponse(t.Context(), &response, previous)
+	if !diags.HasError() {
+		t.Fatal("applyAPIResponse() diagnostics did not reject a mismatched AWS account ID")
+	}
+	if !state.AWSEventBridge.AWSAccountID.IsNull() {
+		t.Errorf("AWS account ID = %v, want prior null value", state.AWSEventBridge.AWSAccountID)
+	}
+}
+
 func TestNotificationServiceRESTLifecycle(t *testing.T) {
 	api := newNotificationServiceTestAPI(t)
 
@@ -195,6 +222,52 @@ func TestNotificationServiceRESTLifecycle(t *testing.T) {
 				ImportState:       true,
 				ImportStateId:     notificationServiceTestID,
 				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+func TestNotificationServiceEventBridgeImportAdoptsAccountID(t *testing.T) {
+	api := newNotificationServiceTestAPI(t)
+	api.setProvider(notificationServiceProviderAWSEventBridge)
+	config := notificationServiceEventBridgeUnitTestConfig(api.server.URL, "123456789012")
+
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config:             config,
+				ResourceName:       "buildkite_notification_service.test",
+				ImportState:        true,
+				ImportStateId:      notificationServiceTestID,
+				ImportStatePersist: true,
+				ExpectNonEmptyPlan: true,
+			},
+			{
+				Config: config,
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction("buildkite_notification_service.test", plancheck.ResourceActionUpdate),
+					},
+				},
+				Check: resource.TestCheckResourceAttr("buildkite_notification_service.test", "aws_event_bridge.aws_account_id", "123456789012"),
+			},
+			{
+				Config: config,
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction("buildkite_notification_service.test", plancheck.ResourceActionNoop),
+					},
+				},
+			},
+			{
+				Config: notificationServiceEventBridgeUnitTestConfig(api.server.URL, "123456789013"),
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction("buildkite_notification_service.test", plancheck.ResourceActionDestroyBeforeCreate),
+					},
+				},
+				Check: resource.TestCheckResourceAttr("buildkite_notification_service.test", "aws_event_bridge.aws_account_id", "123456789013"),
 			},
 		},
 	})
@@ -548,6 +621,26 @@ func notificationServiceOpenTelemetryUnitTestConfig(restURL string) string {
 	`, restURL)
 }
 
+func notificationServiceEventBridgeUnitTestConfig(restURL, accountID string) string {
+	return fmt.Sprintf(`
+		provider "buildkite" {
+			organization = "test"
+			api_token = "test"
+			rest_url = %q
+			max_retries = 0
+		}
+
+		resource "buildkite_notification_service" "test" {
+			provider_type = "aws_event_bridge"
+
+			aws_event_bridge = {
+				aws_region = "us-east-1"
+				aws_account_id = %q
+			}
+		}
+	`, restURL, accountID)
+}
+
 type notificationServiceTestRequest struct {
 	Method      string
 	Path        string
@@ -564,6 +657,7 @@ type notificationServiceTestAPI struct {
 	enabled      bool
 	failDisable  bool
 	providerType string
+	awsAccountID string
 	requests     []notificationServiceTestRequest
 }
 
@@ -573,6 +667,7 @@ func newNotificationServiceTestAPI(t *testing.T) *notificationServiceTestAPI {
 		t:            t,
 		enabled:      true,
 		providerType: notificationServiceProviderWebhook,
+		awsAccountID: "123456789012",
 	}
 	api.server = httptest.NewServer(http.HandlerFunc(api.handle))
 	t.Cleanup(api.server.Close)
@@ -605,6 +700,11 @@ func (api *notificationServiceTestAPI) handle(w http.ResponseWriter, req *http.R
 		api.deleted = false
 		api.enabled = true
 		api.description, _ = body["description"].(string)
+		if settings, ok := body["settings"].(map[string]any); ok {
+			if accountID, ok := settings["aws_account_id"].(string); ok {
+				api.awsAccountID = accountID
+			}
+		}
 		api.writeResponse(w, http.StatusCreated)
 	case req.Method == http.MethodGet && req.URL.Path == resourcePath:
 		if api.deleted {
@@ -637,6 +737,14 @@ func (api *notificationServiceTestAPI) handle(w http.ResponseWriter, req *http.R
 
 func (api *notificationServiceTestAPI) writeResponse(w http.ResponseWriter, status int) {
 	response := notificationServiceTestResponse(api.providerType)
+	if api.providerType == notificationServiceProviderAWSEventBridge {
+		response.Settings = json.RawMessage(fmt.Sprintf(`{
+			"aws_region":"us-east-1",
+			"aws_account_id":"XXXXXXXX%s",
+			"event_source_name":"aws.partner/buildkite.com.test/test",
+			"include_build_meta_data":null
+		}`, api.awsAccountID[len(api.awsAccountID)-4:]))
+	}
 	if api.description != "" {
 		response.Description = &api.description
 	}
@@ -728,6 +836,13 @@ func notificationServiceTestResponse(providerType string) notificationServiceAPI
 			"events":["build.finished"],
 			"tls_verify":true
 		}`)
+	case notificationServiceProviderAWSEventBridge:
+		response.Settings = json.RawMessage(`{
+				"aws_region":"us-east-1",
+				"aws_account_id":"XXXXXXXX9012",
+				"event_source_name":"aws.partner/buildkite.com.test/test",
+				"include_build_meta_data":null
+			}`)
 	case notificationServiceProviderOpenTelemetryTracing:
 		response.Settings = json.RawMessage(`{
 			"endpoint":"https://otel.test",

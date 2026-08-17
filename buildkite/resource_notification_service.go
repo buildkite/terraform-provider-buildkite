@@ -109,6 +109,7 @@ type notificationServiceWebhookAPISettings struct {
 
 type notificationServiceAWSEventBridgeAPISettings struct {
 	AWSRegion            *string `json:"aws_region"`
+	AWSAccountID         *string `json:"aws_account_id"`
 	EventSourceName      *string `json:"event_source_name"`
 	IncludeBuildMetadata *string `json:"include_build_meta_data"`
 }
@@ -300,7 +301,13 @@ func notificationServiceAWSEventBridgeSchema() schema.SingleNestedAttribute {
 				Sensitive:           true,
 				MarkdownDescription: "The AWS account ID for the partner event source. Required on create, immutable, and masked by the API.",
 				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.RequiresReplace(),
+					stringplanmodifier.RequiresReplaceIf(
+						func(_ context.Context, req planmodifier.StringRequest, resp *stringplanmodifier.RequiresReplaceIfFuncResponse) {
+							resp.RequiresReplace = !req.StateValue.IsNull() && !req.StateValue.IsUnknown()
+						},
+						"Changing a known AWS account ID replaces the notification service. Setting it after import adopts the existing masked account ID.",
+						"Changing a known AWS account ID replaces the notification service. Setting it after import adopts the existing masked account ID.",
+					),
 				},
 			},
 			"event_source_name": schema.StringAttribute{
@@ -960,13 +967,25 @@ func (m *notificationServiceResourceModel) applyAWSEventBridgeAPISettings(raw js
 	if previous.AWSEventBridge != nil {
 		previousAccountID = previous.AWSEventBridge.AWSAccountID
 	}
+	accountID := preserveNotificationServiceString(m.AWSEventBridge.AWSAccountID, previousAccountID)
+	var diags diag.Diagnostics
+	if settings.AWSAccountID != nil && !accountID.IsNull() && !accountID.IsUnknown() {
+		maskedSuffix := strings.TrimLeft(*settings.AWSAccountID, "X")
+		if maskedSuffix == "" || !strings.HasSuffix(accountID.ValueString(), maskedSuffix) {
+			diags.AddError(
+				"AWS account ID does not match notification service",
+				fmt.Sprintf("The configured aws_event_bridge.aws_account_id does not match the masked account ID returned by Buildkite (%s). Configure the matching AWS account ID or omit it.", *settings.AWSAccountID),
+			)
+			accountID = previousAccountID
+		}
+	}
 	m.AWSEventBridge = &notificationServiceAWSEventBridgeModel{
 		AWSRegion:            types.StringPointerValue(settings.AWSRegion),
-		AWSAccountID:         preserveNotificationServiceString(m.AWSEventBridge.AWSAccountID, previousAccountID),
+		AWSAccountID:         accountID,
 		EventSourceName:      types.StringPointerValue(settings.EventSourceName),
 		IncludeBuildMetadata: types.StringPointerValue(settings.IncludeBuildMetadata),
 	}
-	return nil
+	return diags
 }
 
 func (m *notificationServiceResourceModel) applyDatadogPipelineVisibilityAPISettings(raw json.RawMessage, previous notificationServiceResourceModel) diag.Diagnostics {
