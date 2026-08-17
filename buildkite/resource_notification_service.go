@@ -32,7 +32,7 @@ const (
 	notificationServiceProviderSlackWorkspace            = "slack_workspace"
 )
 
-var notificationServiceUUIDPattern = regexp.MustCompile(`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$`)
+var notificationServiceUUIDRegex = regexp.MustCompile(`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$`)
 
 type notificationServiceResource struct {
 	client *Client
@@ -225,7 +225,7 @@ func (r *notificationServiceResource) Schema(ctx context.Context, req resource.S
 				MarkdownDescription: "The project, team, or cluster UUIDs selected by a `some_*` scope. Not supported for `linear` or `slack_workspace` services.",
 				Validators: []validator.Set{
 					setvalidator.ValueStringsAre(
-						stringvalidator.RegexMatches(notificationServiceUUIDPattern, "must be a UUID"),
+						stringvalidator.RegexMatches(notificationServiceUUIDRegex, "must be a UUID"),
 					),
 				},
 			},
@@ -272,7 +272,12 @@ func notificationServiceWebhookSchema() schema.SingleNestedAttribute {
 				Computed:            true,
 				MarkdownDescription: "The webhook payload version. New services must use the API's latest version, and existing services can only be upgraded to it, never downgraded.",
 			},
-			"events": notificationServiceEventsAttribute("The webhook event names to deliver."),
+			"events": schema.SetAttribute{
+				Optional:            true,
+				Computed:            true,
+				ElementType:         types.StringType,
+				MarkdownDescription: "The webhook event names to deliver.",
+			},
 			"tls_verify": schema.BoolAttribute{
 				Optional:            true,
 				Computed:            true,
@@ -375,15 +380,6 @@ func notificationServiceOpenTelemetryTracingSchema() schema.SingleNestedAttribut
 				MarkdownDescription: "Additional OpenTelemetry resource attributes.",
 			},
 		},
-	}
-}
-
-func notificationServiceEventsAttribute(description string) schema.SetAttribute {
-	return schema.SetAttribute{
-		Optional:            true,
-		Computed:            true,
-		ElementType:         types.StringType,
-		MarkdownDescription: description,
 	}
 }
 
@@ -648,7 +644,7 @@ func (r *notificationServiceResource) Delete(ctx context.Context, req resource.D
 }
 
 func (r *notificationServiceResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	if !notificationServiceUUIDPattern.MatchString(req.ID) {
+	if !notificationServiceUUIDRegex.MatchString(req.ID) {
 		resp.Diagnostics.AddError("Invalid notification service import ID", "Import using the notification service UUID.")
 		return
 	}
@@ -729,7 +725,7 @@ func (m notificationServiceResourceModel) settingsCreatePayload(ctx context.Cont
 		addNotificationServiceString(settings, "token", m.Webhook.Token)
 		addNotificationServiceString(settings, "token_mode", m.Webhook.TokenMode)
 		addNotificationServiceInt64(settings, "version", m.Webhook.Version)
-		addNotificationServiceBoolAny(settings, "tls_verify", m.Webhook.TLSVerify)
+		addNotificationServiceBool(settings, "tls_verify", m.Webhook.TLSVerify)
 		addNotificationServiceSet(ctx, settings, "events", m.Webhook.Events, &diags)
 	case notificationServiceProviderAWSEventBridge:
 		addNotificationServiceString(settings, "aws_region", m.AWSEventBridge.AWSRegion)
@@ -761,7 +757,7 @@ func addNotificationServiceInt64(payload map[string]any, key string, value types
 	}
 }
 
-func addNotificationServiceBoolAny(payload map[string]any, key string, value types.Bool) {
+func addNotificationServiceBool(payload map[string]any, key string, value types.Bool) {
 	if !value.IsNull() && !value.IsUnknown() {
 		payload[key] = value.ValueBool()
 	}
@@ -801,7 +797,7 @@ func (m notificationServiceResourceModel) settingsUpdatePayload(ctx context.Cont
 		addChangedNotificationServiceString(settings, "token", m.Webhook.Token, state.Webhook.Token)
 		addChangedNotificationServiceString(settings, "token_mode", m.Webhook.TokenMode, state.Webhook.TokenMode)
 		addChangedNotificationServiceInt64(settings, "version", m.Webhook.Version, state.Webhook.Version)
-		addChangedNotificationServiceBoolAny(settings, "tls_verify", m.Webhook.TLSVerify, state.Webhook.TLSVerify)
+		addChangedNotificationServiceBool(settings, "tls_verify", m.Webhook.TLSVerify, state.Webhook.TLSVerify)
 		addChangedNotificationServiceSet(ctx, settings, "events", m.Webhook.Events, state.Webhook.Events, &diags)
 	case notificationServiceProviderAWSEventBridge:
 		if m.AWSEventBridge == nil {
@@ -855,7 +851,7 @@ func addChangedNotificationServiceInt64(payload map[string]any, key string, plan
 	}
 }
 
-func addChangedNotificationServiceBoolAny(payload map[string]any, key string, plan, state types.Bool) {
+func addChangedNotificationServiceBool(payload map[string]any, key string, plan, state types.Bool) {
 	if plan.IsUnknown() || plan.Equal(state) {
 		return
 	}
