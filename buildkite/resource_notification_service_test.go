@@ -492,6 +492,22 @@ func TestNotificationServiceOAuthImportRejectsNotificationFilters(t *testing.T) 
 	}
 }
 
+func TestNotificationServiceImportRejectsUnsupportedProvider(t *testing.T) {
+	api := newNotificationServiceTestAPI(t)
+	api.setProvider("slack")
+
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		Steps: []resource.TestStep{{
+			Config:        notificationServiceUnitTestConfig(api.server.URL, "", true),
+			ResourceName:  "buildkite_notification_service.test",
+			ImportState:   true,
+			ImportStateId: notificationServiceTestID,
+			ExpectError:   regexp.MustCompile(`provider_type "slack".*not supported`),
+		}},
+	})
+}
+
 func TestNotificationServiceReadRemovesMissingResource(t *testing.T) {
 	api := newNotificationServiceTestAPI(t)
 

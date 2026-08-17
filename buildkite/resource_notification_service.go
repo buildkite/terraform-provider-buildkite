@@ -555,6 +555,21 @@ func (r *notificationServiceResource) Read(ctx context.Context, req resource.Rea
 		return
 	}
 
+	switch result.Provider.ID {
+	case notificationServiceProviderWebhook,
+		notificationServiceProviderAWSEventBridge,
+		notificationServiceProviderDatadogPipelineVisibility,
+		notificationServiceProviderOpenTelemetryTracing,
+		notificationServiceProviderLinear,
+		notificationServiceProviderSlackWorkspace:
+	default:
+		resp.Diagnostics.AddError(
+			"Unsupported notification service provider",
+			fmt.Sprintf("Notification services with provider_type %q are not supported. Migrate this service to a supported provider before importing it.", result.Provider.ID),
+		)
+		return
+	}
+
 	previous := state
 	resp.Diagnostics.Append(state.applyAPIResponse(ctx, result, previous)...)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
