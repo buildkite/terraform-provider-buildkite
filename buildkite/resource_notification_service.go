@@ -589,7 +589,17 @@ func (r *notificationServiceResource) Update(ctx context.Context, req resource.U
 		}
 	}
 
-	if !plan.Enabled.Equal(state.Enabled) {
+	enabledChanged := !plan.Enabled.Equal(state.Enabled)
+	if result != nil && enabledChanged {
+		partialState := plan
+		resp.Diagnostics.Append(partialState.applyAPIResponse(ctx, result, state)...)
+		resp.Diagnostics.Append(resp.State.Set(ctx, &partialState)...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+	}
+
+	if enabledChanged {
 		result, err = r.setEnabled(ctx, state.ID.ValueString(), plan.Enabled.ValueBool())
 		if err != nil {
 			resp.Diagnostics.AddError("Unable to change notification service enabled state", err.Error())

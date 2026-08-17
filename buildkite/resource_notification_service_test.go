@@ -388,6 +388,35 @@ func TestNotificationServiceCreateTracksResourceBeforeDisableError(t *testing.T)
 	})
 }
 
+func TestNotificationServiceUpdateTracksPatchBeforeDisableError(t *testing.T) {
+	api := newNotificationServiceTestAPI(t)
+
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config: notificationServiceUnitTestConfig(api.server.URL, "initial", true),
+			},
+			{
+				PreConfig: func() {
+					api.setFailDisable(true)
+				},
+				Config:      notificationServiceUnitTestConfig(api.server.URL, "updated", false),
+				ExpectError: regexp.MustCompile("Unable to change notification service enabled state"),
+			},
+			{
+				PreConfig: func() {
+					api.setFailDisable(false)
+				},
+				Config: notificationServiceUnitTestConfig(api.server.URL, "updated", false),
+				Check: func(*terraform.State) error {
+					return api.verifyPatch(map[string]any{"description": "updated"})
+				},
+			},
+		},
+	})
+}
+
 func TestNotificationServiceOAuthImportUpdatesCommonFields(t *testing.T) {
 	api := newNotificationServiceTestAPI(t)
 	api.setProvider(notificationServiceProviderSlackWorkspace)
@@ -902,6 +931,12 @@ func (api *notificationServiceTestAPI) setProvider(providerType string) {
 	api.mu.Lock()
 	defer api.mu.Unlock()
 	api.providerType = providerType
+}
+
+func (api *notificationServiceTestAPI) setFailDisable(fail bool) {
+	api.mu.Lock()
+	defer api.mu.Unlock()
+	api.failDisable = fail
 }
 
 func (api *notificationServiceTestAPI) isDeleted() bool {
