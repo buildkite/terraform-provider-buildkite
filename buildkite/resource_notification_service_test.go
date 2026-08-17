@@ -213,7 +213,7 @@ func TestNotificationServiceRESTLifecycle(t *testing.T) {
 					resource.TestCheckResourceAttr("buildkite_notification_service.test", "description", "updated"),
 					resource.TestCheckResourceAttr("buildkite_notification_service.test", "enabled", "true"),
 					func(*terraform.State) error {
-						return api.verifyPartialPatch()
+						return api.verifyPatch(map[string]any{"description": "updated"})
 					},
 				),
 			},
@@ -298,6 +298,50 @@ func TestNotificationServiceEventBridgeImportAdoptsAccountID(t *testing.T) {
 					},
 				},
 				Check: resource.TestCheckResourceAttr("buildkite_notification_service.test", "aws_event_bridge.aws_account_id", "123456789013"),
+			},
+		},
+	})
+}
+
+func TestNotificationServiceDatadogLifecycle(t *testing.T) {
+	api := newNotificationServiceTestAPI(t)
+	api.setProvider(notificationServiceProviderDatadogPipelineVisibility)
+	config := notificationServiceDatadogUnitTestConfig(api.server.URL, "supersecret")
+
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config:             config,
+				ResourceName:       "buildkite_notification_service.test",
+				ImportState:        true,
+				ImportStateId:      notificationServiceTestID,
+				ImportStatePersist: true,
+				ExpectNonEmptyPlan: true,
+			},
+			{
+				Config: config,
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction("buildkite_notification_service.test", plancheck.ResourceActionUpdate),
+					},
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("buildkite_notification_service.test", "datadog_pipeline_visibility.api_key", "supersecret"),
+					func(*terraform.State) error {
+						return api.verifyPatch(map[string]any{
+							"settings": map[string]any{"api_key": "supersecret"},
+						})
+					},
+				),
+			},
+			{
+				Config: config,
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction("buildkite_notification_service.test", plancheck.ResourceActionNoop),
+					},
+				},
 			},
 		},
 	})
@@ -632,6 +676,25 @@ func notificationServiceOAuthUnitTestConfig(restURL, providerType, description, 
 	`, restURL, providerType, description, extra)
 }
 
+func notificationServiceDatadogUnitTestConfig(restURL, apiKey string) string {
+	return fmt.Sprintf(`
+		provider "buildkite" {
+			organization = "test"
+			api_token = "test"
+			rest_url = %q
+			max_retries = 0
+		}
+
+		resource "buildkite_notification_service" "test" {
+			provider_type = "datadog_pipeline_visibility"
+
+			datadog_pipeline_visibility = {
+				api_key = %q
+			}
+		}
+	`, restURL, apiKey)
+}
+
 func notificationServiceOpenTelemetryUnitTestConfig(restURL string) string {
 	return fmt.Sprintf(`
 		provider "buildkite" {
@@ -786,24 +849,26 @@ func (api *notificationServiceTestAPI) writeResponse(w http.ResponseWriter, stat
 	}
 }
 
-func (api *notificationServiceTestAPI) verifyPartialPatch() error {
+func (api *notificationServiceTestAPI) verifyPatch(want map[string]any) error {
 	api.mu.Lock()
 	defer api.mu.Unlock()
-	for index := len(api.requests) - 1; index >= 0; index-- {
-		request := api.requests[index]
+	patches := 0
+	for _, request := range api.requests {
 		if request.Method != http.MethodPatch {
 			continue
 		}
+		patches++
 		if request.ContentType != "application/json" {
 			return fmt.Errorf("PATCH Content-Type = %q, want application/json", request.ContentType)
 		}
-		want := map[string]any{"description": "updated"}
 		if diff := cmp.Diff(request.Body, want); diff != "" {
 			return fmt.Errorf("PATCH body mismatch (-got +want):\n%s", diff)
 		}
-		return nil
 	}
-	return fmt.Errorf("no PATCH request was received")
+	if patches != 1 {
+		return fmt.Errorf("PATCH requests = %d, want 1", patches)
+	}
+	return nil
 }
 
 func (api *notificationServiceTestAPI) verifyCreateDisableSequence() error {
@@ -873,6 +938,12 @@ func notificationServiceTestResponse(providerType string) notificationServiceAPI
 				"event_source_name":"aws.partner/buildkite.com.test/test",
 				"include_build_meta_data":null
 			}`)
+	case notificationServiceProviderDatadogPipelineVisibility:
+		response.Settings = json.RawMessage(`{
+			"api_key":"XXXXXXXXcret",
+			"datadog_site":"datadoghq.com",
+			"datadog_tags":null
+		}`)
 	case notificationServiceProviderOpenTelemetryTracing:
 		response.Settings = json.RawMessage(`{
 			"endpoint":"https://otel.test",
