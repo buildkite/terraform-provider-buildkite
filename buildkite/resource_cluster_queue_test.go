@@ -411,6 +411,7 @@ func TestAccBuildkiteClusterQueueResource(t *testing.T) {
 			testAccCheckClusterQueueExists("buildkite_cluster_queue.foobar", &cq),
 			resource.TestCheckResourceAttr("buildkite_cluster_queue.foobar", "hosted_agents.instance_shape", "MACOS_ARM64_M4_6X28"),
 			resource.TestCheckResourceAttr("buildkite_cluster_queue.foobar", "hosted_agents.mac.xcode_version", "14.3.1"),
+			resource.TestCheckResourceAttrSet("buildkite_cluster_queue.foobar", "hosted_agents.mac.macos_version"),
 		)
 
 		resource.ParallelTest(t, resource.TestCase{
