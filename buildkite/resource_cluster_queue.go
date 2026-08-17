@@ -221,6 +221,9 @@ func (clusterQueueResource) Schema(ctx context.Context, req resource.SchemaReque
 								Optional:    true,
 								Computed:    true,
 								Description: "The macOS version available to jobs in this queue. Buildkite selects the current default when this is omitted. This setting is experimental and may not work as expected.",
+								PlanModifiers: []planmodifier.String{
+									stringplanmodifier.UseStateForUnknown(),
+								},
 							},
 						},
 					},

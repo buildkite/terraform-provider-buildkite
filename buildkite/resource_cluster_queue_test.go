@@ -401,17 +401,34 @@ func TestAccBuildkiteClusterQueueResource(t *testing.T) {
 		})
 	})
 
-	t.Run("creates a hosted mac queue", func(t *testing.T) {
+	t.Run("preserves the API-selected macOS version during unrelated updates", func(t *testing.T) {
 		var cq clusterQueueResourceModel
 		clusterName := acctest.RandString(10)
 		queueKey := acctest.RandString(10)
 		queueDesc := acctest.RandString(10)
+		updatedQueueDesc := acctest.RandString(10)
+		var macosVersion string
 
-		check := resource.ComposeAggregateTestCheckFunc(
+		checkCreated := resource.ComposeAggregateTestCheckFunc(
 			testAccCheckClusterQueueExists("buildkite_cluster_queue.foobar", &cq),
 			resource.TestCheckResourceAttr("buildkite_cluster_queue.foobar", "hosted_agents.instance_shape", "MACOS_ARM64_M4_6X28"),
 			resource.TestCheckResourceAttr("buildkite_cluster_queue.foobar", "hosted_agents.mac.xcode_version", "14.3.1"),
-			resource.TestCheckResourceAttrSet("buildkite_cluster_queue.foobar", "hosted_agents.mac.macos_version"),
+			resource.TestCheckResourceAttrWith("buildkite_cluster_queue.foobar", "hosted_agents.mac.macos_version", func(value string) error {
+				macosVersion = value
+				return nil
+			}),
+		)
+
+		checkUpdated := resource.ComposeAggregateTestCheckFunc(
+			testAccCheckClusterQueueExists("buildkite_cluster_queue.foobar", &cq),
+			resource.TestCheckResourceAttr("buildkite_cluster_queue.foobar", "description", fmt.Sprintf("Acceptance test %s", updatedQueueDesc)),
+			resource.TestCheckResourceAttrWith("buildkite_cluster_queue.foobar", "hosted_agents.mac.macos_version", func(value string) error {
+				if value != macosVersion {
+					return fmt.Errorf("macOS version changed from %q to %q after an unrelated update", macosVersion, value)
+				}
+
+				return nil
+			}),
 		)
 
 		resource.ParallelTest(t, resource.TestCase{
@@ -421,7 +438,11 @@ func TestAccBuildkiteClusterQueueResource(t *testing.T) {
 			Steps: []resource.TestStep{
 				{
 					Config: configHostedMac(clusterName, queueKey, queueDesc),
-					Check:  check,
+					Check:  checkCreated,
+				},
+				{
+					Config: configHostedMac(clusterName, queueKey, updatedQueueDesc),
+					Check:  checkUpdated,
 				},
 			},
 		})
