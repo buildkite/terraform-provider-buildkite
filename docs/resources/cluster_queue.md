@@ -131,7 +131,7 @@ Required:
 
 Optional:
 
-- `macos_version` (String) Optional selection of a specific macOS version to be selected for jobs in the queue to have available. Please note that this value is currently experimental and may not function as expected.
+- `macos_version` (String) The macOS version available to jobs in this queue. Buildkite selects the current default when this is omitted. This setting is experimental and may not work as expected.
 
 ## Import
 
