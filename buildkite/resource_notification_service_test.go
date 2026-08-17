@@ -257,10 +257,10 @@ func TestNotificationServiceCannotRemoveSettings(t *testing.T) {
 	})
 }
 
-func TestNotificationServiceEventBridgeImportAdoptsAccountID(t *testing.T) {
+func TestNotificationServiceEventBridgeLifecycle(t *testing.T) {
 	api := newNotificationServiceTestAPI(t)
 	api.setProvider(notificationServiceProviderAWSEventBridge)
-	config := notificationServiceEventBridgeUnitTestConfig(api.server.URL, "123456789012")
+	config := notificationServiceEventBridgeUnitTestConfig(api.server.URL, "us-east-1", "123456789012")
 
 	resource.UnitTest(t, resource.TestCase{
 		ProtoV6ProviderFactories: protoV6ProviderFactories(),
@@ -291,13 +291,22 @@ func TestNotificationServiceEventBridgeImportAdoptsAccountID(t *testing.T) {
 				},
 			},
 			{
-				Config: notificationServiceEventBridgeUnitTestConfig(api.server.URL, "123456789013"),
+				Config: notificationServiceEventBridgeUnitTestConfig(api.server.URL, "us-east-1", "123456789013"),
 				ConfigPlanChecks: resource.ConfigPlanChecks{
 					PreApply: []plancheck.PlanCheck{
 						plancheck.ExpectResourceAction("buildkite_notification_service.test", plancheck.ResourceActionDestroyBeforeCreate),
 					},
 				},
 				Check: resource.TestCheckResourceAttr("buildkite_notification_service.test", "aws_event_bridge.aws_account_id", "123456789013"),
+			},
+			{
+				Config: notificationServiceEventBridgeUnitTestConfig(api.server.URL, "us-west-2", "123456789013"),
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction("buildkite_notification_service.test", plancheck.ResourceActionDestroyBeforeCreate),
+					},
+				},
+				Check: resource.TestCheckResourceAttr("buildkite_notification_service.test", "aws_event_bridge.aws_region", "us-west-2"),
 			},
 		},
 	})
@@ -759,7 +768,7 @@ func notificationServiceOpenTelemetryUnitTestConfig(restURL string) string {
 	`, restURL)
 }
 
-func notificationServiceEventBridgeUnitTestConfig(restURL, accountID string) string {
+func notificationServiceEventBridgeUnitTestConfig(restURL, region, accountID string) string {
 	return fmt.Sprintf(`
 		provider "buildkite" {
 			organization = "test"
@@ -772,11 +781,11 @@ func notificationServiceEventBridgeUnitTestConfig(restURL, accountID string) str
 			provider_type = "aws_event_bridge"
 
 			aws_event_bridge = {
-				aws_region = "us-east-1"
+				aws_region = %q
 				aws_account_id = %q
 			}
 		}
-	`, restURL, accountID)
+	`, restURL, region, accountID)
 }
 
 type notificationServiceTestRequest struct {
@@ -795,6 +804,7 @@ type notificationServiceTestAPI struct {
 	enabled      bool
 	failDisable  bool
 	providerType string
+	awsRegion    string
 	awsAccountID string
 	requests     []notificationServiceTestRequest
 }
@@ -805,6 +815,7 @@ func newNotificationServiceTestAPI(t *testing.T) *notificationServiceTestAPI {
 		t:            t,
 		enabled:      true,
 		providerType: notificationServiceProviderWebhook,
+		awsRegion:    "us-east-1",
 		awsAccountID: "123456789012",
 	}
 	api.server = httptest.NewServer(http.HandlerFunc(api.handle))
@@ -839,6 +850,9 @@ func (api *notificationServiceTestAPI) handle(w http.ResponseWriter, req *http.R
 		api.enabled = true
 		api.description, _ = body["description"].(string)
 		if settings, ok := body["settings"].(map[string]any); ok {
+			if region, ok := settings["aws_region"].(string); ok {
+				api.awsRegion = region
+			}
 			if accountID, ok := settings["aws_account_id"].(string); ok {
 				api.awsAccountID = accountID
 			}
@@ -877,11 +891,11 @@ func (api *notificationServiceTestAPI) writeResponse(w http.ResponseWriter, stat
 	response := notificationServiceTestResponse(api.providerType)
 	if api.providerType == notificationServiceProviderAWSEventBridge {
 		response.Settings = json.RawMessage(fmt.Sprintf(`{
-			"aws_region":"us-east-1",
+			"aws_region":%q,
 			"aws_account_id":"XXXXXXXX%s",
 			"event_source_name":"aws.partner/buildkite.com.test/test",
 			"include_build_meta_data":null
-		}`, api.awsAccountID[len(api.awsAccountID)-4:]))
+		}`, api.awsRegion, api.awsAccountID[len(api.awsAccountID)-4:]))
 	}
 	if api.description != "" {
 		response.Description = &api.description
