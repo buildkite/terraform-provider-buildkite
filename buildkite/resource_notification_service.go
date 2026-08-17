@@ -415,7 +415,8 @@ func (r *notificationServiceResource) ModifyPlan(ctx context.Context, req resour
 		return
 	}
 
-	if providerType == notificationServiceProviderLinear || providerType == notificationServiceProviderSlackWorkspace {
+	oauthManaged := providerType == notificationServiceProviderLinear || providerType == notificationServiceProviderSlackWorkspace
+	if oauthManaged {
 		var filters []string
 		if !config.BranchConfiguration.IsNull() {
 			filters = append(filters, "branch_configuration")
@@ -435,22 +436,22 @@ func (r *notificationServiceResource) ModifyPlan(ctx context.Context, req resour
 		}
 	}
 
-	if !req.State.Raw.IsNull() {
-		return
-	}
-
-	if providerType == notificationServiceProviderLinear || providerType == notificationServiceProviderSlackWorkspace {
+	if len(configuredSettings) == 0 && !oauthManaged {
 		resp.Diagnostics.AddError(
-			"OAuth-managed notification service cannot be created",
-			fmt.Sprintf("%s notification services must be connected in the Buildkite web UI and then imported into Terraform.", providerType),
+			"Notification service settings are required",
+			fmt.Sprintf("Add a %q settings object to match provider_type.", providerType),
 		)
 		return
 	}
 
-	if len(configuredSettings) == 0 {
+	if !req.State.Raw.IsNull() {
+		return
+	}
+
+	if oauthManaged {
 		resp.Diagnostics.AddError(
-			"Notification service settings are required",
-			fmt.Sprintf("Configure the %q settings object when creating a %q notification service.", providerType, providerType),
+			"OAuth-managed notification service cannot be created",
+			fmt.Sprintf("%s notification services must be connected in the Buildkite web UI and then imported into Terraform.", providerType),
 		)
 		return
 	}

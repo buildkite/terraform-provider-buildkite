@@ -227,6 +227,36 @@ func TestNotificationServiceRESTLifecycle(t *testing.T) {
 	})
 }
 
+func TestNotificationServiceCannotRemoveSettings(t *testing.T) {
+	api := newNotificationServiceTestAPI(t)
+	configWithoutSettings := fmt.Sprintf(`
+		provider "buildkite" {
+			organization = "test"
+			api_token = "test"
+			rest_url = %q
+			max_retries = 0
+		}
+
+		resource "buildkite_notification_service" "test" {
+			provider_type = "webhook"
+		}
+	`, api.server.URL)
+
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config: notificationServiceUnitTestConfig(api.server.URL, "initial", true),
+			},
+			{
+				Config:      configWithoutSettings,
+				PlanOnly:    true,
+				ExpectError: regexp.MustCompile("Notification service settings are required"),
+			},
+		},
+	})
+}
+
 func TestNotificationServiceEventBridgeImportAdoptsAccountID(t *testing.T) {
 	api := newNotificationServiceTestAPI(t)
 	api.setProvider(notificationServiceProviderAWSEventBridge)
