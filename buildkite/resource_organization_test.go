@@ -10,6 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
@@ -35,6 +36,7 @@ func TestAllowedApiIpAddressesFromAPI(t *testing.T) {
 		{"empty list is kept as is", "", list(), list()},
 		{"explicit empty string round trips", "", list(""), list("")},
 		{"remote allowlist is split", "1.1.1.1/32 0.0.0.0/0", list("1.1.1.1/32"), list("1.1.1.1/32", "0.0.0.0/0")},
+		{"matching allowlist is unchanged", "0.0.0.0/0 1.1.1.1/32", list("0.0.0.0/0", "1.1.1.1/32"), list("0.0.0.0/0", "1.1.1.1/32")},
 		{"remote allowlist is read when unset", "1.1.1.1/32", null, list("1.1.1.1/32")},
 	}
 
@@ -230,6 +232,52 @@ func TestAccBuildkiteOrganizationResource(t *testing.T) {
 					ResourceName:      "buildkite_organization.let_them_in",
 					ImportState:       true,
 					ImportStateVerify: true,
+				},
+			},
+		})
+	})
+
+	t.Run("adopts an existing allowed API IP address list", func(t *testing.T) {
+		// Give the organization an allowlist before terraform manages it (0.0.0.0/0 keeps the API reachable)
+		presetAllowlist := func() {
+			org, err := getOrganization(context.Background(), genqlientGraphql, getenv("BUILDKITE_ORGANIZATION_SLUG"))
+			if err != nil {
+				t.Fatalf("Unable to read organization: %v", err)
+			}
+			if _, err := setApiIpAddresses(context.Background(), genqlientGraphql, org.Organization.Id, "0.0.0.0/0"); err != nil {
+				t.Fatalf("Unable to preset the allowed API IP addresses: %v", err)
+			}
+			if _, err := getOrganization(context.Background(), genqlientGraphql, getenv("BUILDKITE_ORGANIZATION_SLUG")); err != nil {
+				t.Fatalf("API unreachable after presetting the allowed API IP addresses: %v", err)
+			}
+		}
+
+		resource.Test(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			CheckDestroy:             testCheckOrganizationResourceRemoved,
+			Steps: []resource.TestStep{
+				{
+					PreConfig: presetAllowlist,
+					Config:    config([]string{"0.0.0.0/0"}),
+					ConfigPlanChecks: resource.ConfigPlanChecks{
+						PostApplyPostRefresh: []plancheck.PlanCheck{
+							plancheck.ExpectEmptyPlan(),
+						},
+					},
+					Check: resource.ComposeAggregateTestCheckFunc(
+						// Confirm the existing allowlist is kept in Buildkite's system
+						testAccCheckOrganizationRemoteValues([]string{"0.0.0.0/0"}),
+						resource.TestCheckResourceAttr("buildkite_organization.let_them_in", "allowed_api_ip_addresses.0", "0.0.0.0/0"),
+					),
+				},
+				{
+					Config: configNoAllowedIPs(),
+					Check: resource.ComposeAggregateTestCheckFunc(
+						// Confirm the allowlist is cleared once the attribute is removed
+						testAccCheckOrganizationRemoteValues([]string{""}),
+						resource.TestCheckNoResourceAttr("buildkite_organization.let_them_in", "allowed_api_ip_addresses"),
+					),
 				},
 			},
 		})

@@ -110,7 +110,13 @@ func (o *organizationResource) Create(ctx context.Context, req resource.CreateRe
 	}
 
 	log.Printf("Creating settings for organization %s ...", *org)
-	if err := o.updateAllowedApiIpAddresses(ctx, *org, plan.AllowedApiIpAddresses, types.ListNull(types.StringType)); err != nil {
+	// compare with the organization's current allowlist so a matching one is left as it is
+	current, diags := allowedApiIpAddressesFromAPI(ctx, organization.Organization.AllowedApiIpAddresses, plan.AllowedApiIpAddresses)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	if err := o.updateAllowedApiIpAddresses(ctx, *org, plan.AllowedApiIpAddresses, current); err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to create Organization settings",
 			fmt.Sprintf("Unable to create Organization settings: %s", err.Error()),
