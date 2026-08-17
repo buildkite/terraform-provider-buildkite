@@ -270,7 +270,7 @@ func notificationServiceWebhookSchema() schema.SingleNestedAttribute {
 			"version": schema.Int64Attribute{
 				Optional:            true,
 				Computed:            true,
-				MarkdownDescription: "The webhook payload version. New services must use the API's latest version.",
+				MarkdownDescription: "The webhook payload version. New services must use the API's latest version, and existing services can only be upgraded to it, never downgraded.",
 			},
 			"events": notificationServiceEventsAttribute("The webhook event names to deliver."),
 			"tls_verify": schema.BoolAttribute{
