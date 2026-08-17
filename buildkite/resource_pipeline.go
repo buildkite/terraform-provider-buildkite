@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net/http"
 	"regexp"
 	"strings"
 	"time"
@@ -1606,7 +1607,7 @@ func updatePipelineSlug(ctx context.Context, slug string, updatedSlug string, cl
 
 	if len(updatedSlug) > 0 {
 		err := retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
-			err := client.makeRequest(ctx, "PATCH", fmt.Sprintf("/v2/organizations/%s/pipelines/%s", client.organization, slug), payload, &pipelineExtraInfo)
+			err := client.makeRequest(ctx, http.MethodPatch, fmt.Sprintf("/v2/organizations/%s/pipelines/%s", client.organization, slug), payload, &pipelineExtraInfo)
 			return retryContextError(err)
 		})
 		if err != nil {
@@ -1668,7 +1669,7 @@ func updatePipelineExtraInfo(ctx context.Context, slug string, settings *provide
 
 	var pipelineExtraInfo PipelineExtraInfo
 	err := retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
-		err := client.makeRequest(ctx, "PATCH", fmt.Sprintf("/v2/organizations/%s/pipelines/%s", client.organization, slug), payload, &pipelineExtraInfo)
+		err := client.makeRequest(ctx, http.MethodPatch, fmt.Sprintf("/v2/organizations/%s/pipelines/%s", client.organization, slug), payload, &pipelineExtraInfo)
 		return retryContextError(err)
 	})
 	if err != nil {
