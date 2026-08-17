@@ -17,7 +17,7 @@ steps:
     agents:
       queue: "hosted"
     plugins:
-      docker-compose#v5.13.0:
+      docker-compose#v5.14.0:
         run: go
 
   - label: docs
@@ -26,7 +26,7 @@ steps:
     agents:
       queue: "hosted"
     plugins:
-      docker-compose#v5.13.0:
+      docker-compose#v5.14.0:
         run: go
         mount-buildkite-agent: true
 
@@ -36,7 +36,7 @@ steps:
     agents:
       queue: "hosted"
     plugins:
-      docker-compose#v5.13.0:
+      docker-compose#v5.14.0:
         run: go
 
   - label: acceptance tests
@@ -45,7 +45,7 @@ steps:
     concurrency_group: terraform-provider-acceptance-tests
     command: .buildkite/steps/annotate.sh
     plugins:
-      - aws-assume-role-with-web-identity#v1.6.0:
+      - aws-assume-role-with-web-identity#v1.7.0:
           role-arn: arn:aws:iam::445615400570:role/pipeline-buildkite-terraform-provider-buildkite-main
           session-tags:
             - organization_slug
@@ -58,7 +58,7 @@ steps:
             BUILDKITE_ANALYTICS_TOKEN: /pipelines/buildkite/terraform-provider-buildkite-main/buildkite_analytics_token
             GITHUB_TEST_REPO: /pipelines/buildkite/terraform-provider-buildkite-main/github_test_repo
             GITHUB_TEST_REPO_ALT: /pipelines/buildkite/terraform-provider-buildkite-main/github_test_repo_alt
-      - docker-compose#v5.13.0:
+      - docker-compose#v5.14.0:
           run: go
           mount-buildkite-agent: "true"
       - test-collector#v1.11.0:
@@ -86,7 +86,7 @@ steps:
     agents:
       queue: "hosted"
     plugins:
-      docker-compose#v5.13.0:
+      docker-compose#v5.14.0:
         run: go
     depends_on:
       - lint
