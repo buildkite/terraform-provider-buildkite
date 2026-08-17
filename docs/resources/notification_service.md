@@ -155,7 +155,7 @@ Optional:
 - `token` (String, Sensitive) The token used to authenticate webhook deliveries. The API generates one when omitted.
 - `token_mode` (String) How the webhook token authenticates deliveries.
 - `url` (String) The URL that receives webhook deliveries. Required when creating a webhook service.
-- `version` (Number) The webhook payload version. New services must use the API's latest version.
+- `version` (Number) The webhook payload version. New services must use the API's latest version, and existing services can only be upgraded to it, never downgraded.
 
 ## Import
 
