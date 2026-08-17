@@ -79,7 +79,7 @@ func TestNotificationServiceUpdatePayloadClearsOptionalValues(t *testing.T) {
 	}
 	want := map[string]any{
 		"branch_configuration": nil,
-		"scope_uuids":          nil,
+		"scope_uuids":          []string{},
 	}
 	if diff := cmp.Diff(got, want); diff != "" {
 		t.Errorf("updatePayload() mismatch (-got +want):\n%s", diff)
@@ -222,6 +222,73 @@ func TestNotificationServiceRESTLifecycle(t *testing.T) {
 				ImportState:       true,
 				ImportStateId:     notificationServiceTestID,
 				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+func TestNotificationServiceScopeLifecycle(t *testing.T) {
+	api := newNotificationServiceTestAPI(t)
+	config := func(filters string) string {
+		return fmt.Sprintf(`
+			provider "buildkite" {
+				organization = "test"
+				api_token = "test"
+				rest_url = %q
+				max_retries = 0
+			}
+
+			resource "buildkite_notification_service" "test" {
+				provider_type = "webhook"
+				%s
+
+				webhook = {
+					url = "https://example.test/hook"
+					events = ["build.finished"]
+				}
+			}
+		`, api.server.URL, filters)
+	}
+	scopedConfig := config(fmt.Sprintf(`
+		scope = "some_projects"
+		scope_uuids = [%q]
+	`, notificationServiceTestID))
+	allConfig := config(`scope = "all"`)
+
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config: scopedConfig,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("buildkite_notification_service.test", "scope", "some_projects"),
+					resource.TestCheckTypeSetElemAttr("buildkite_notification_service.test", "scope_uuids.*", notificationServiceTestID),
+				),
+			},
+			{
+				Config: allConfig,
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction("buildkite_notification_service.test", plancheck.ResourceActionUpdate),
+					},
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("buildkite_notification_service.test", "scope", "all"),
+					func(*terraform.State) error {
+						return api.verifyPatch(map[string]any{
+							"scope":       "all",
+							"scope_uuids": []any{},
+						})
+					},
+				),
+			},
+			{
+				Config: allConfig,
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction("buildkite_notification_service.test", plancheck.ResourceActionNoop),
+					},
+				},
 			},
 		},
 	})
@@ -804,6 +871,8 @@ type notificationServiceTestAPI struct {
 	enabled      bool
 	failDisable  bool
 	providerType string
+	scope        string
+	scopeUUIDs   []string
 	awsRegion    string
 	awsAccountID string
 	requests     []notificationServiceTestRequest
@@ -815,6 +884,8 @@ func newNotificationServiceTestAPI(t *testing.T) *notificationServiceTestAPI {
 		t:            t,
 		enabled:      true,
 		providerType: notificationServiceProviderWebhook,
+		scope:        "all",
+		scopeUUIDs:   []string{},
 		awsRegion:    "us-east-1",
 		awsAccountID: "123456789012",
 	}
@@ -848,15 +919,7 @@ func (api *notificationServiceTestAPI) handle(w http.ResponseWriter, req *http.R
 	case req.Method == http.MethodPost && req.URL.Path == collectionPath:
 		api.deleted = false
 		api.enabled = true
-		api.description, _ = body["description"].(string)
-		if settings, ok := body["settings"].(map[string]any); ok {
-			if region, ok := settings["aws_region"].(string); ok {
-				api.awsRegion = region
-			}
-			if accountID, ok := settings["aws_account_id"].(string); ok {
-				api.awsAccountID = accountID
-			}
-		}
+		api.applyRequestBody(body)
 		api.writeResponse(w, http.StatusCreated)
 	case req.Method == http.MethodGet && req.URL.Path == resourcePath:
 		if api.deleted {
@@ -865,9 +928,7 @@ func (api *notificationServiceTestAPI) handle(w http.ResponseWriter, req *http.R
 		}
 		api.writeResponse(w, http.StatusOK)
 	case req.Method == http.MethodPatch && req.URL.Path == resourcePath:
-		if description, ok := body["description"].(string); ok {
-			api.description = description
-		}
+		api.applyRequestBody(body)
 		api.writeResponse(w, http.StatusOK)
 	case req.Method == http.MethodPut && req.URL.Path == resourcePath+"/disable":
 		if api.failDisable {
@@ -887,6 +948,31 @@ func (api *notificationServiceTestAPI) handle(w http.ResponseWriter, req *http.R
 	}
 }
 
+func (api *notificationServiceTestAPI) applyRequestBody(body map[string]any) {
+	if description, ok := body["description"].(string); ok {
+		api.description = description
+	}
+	if scope, ok := body["scope"].(string); ok {
+		api.scope = scope
+	}
+	if rawScopeUUIDs, ok := body["scope_uuids"].([]any); ok {
+		api.scopeUUIDs = make([]string, 0, len(rawScopeUUIDs))
+		for _, rawScopeUUID := range rawScopeUUIDs {
+			if scopeUUID, ok := rawScopeUUID.(string); ok {
+				api.scopeUUIDs = append(api.scopeUUIDs, scopeUUID)
+			}
+		}
+	}
+	if settings, ok := body["settings"].(map[string]any); ok {
+		if region, ok := settings["aws_region"].(string); ok {
+			api.awsRegion = region
+		}
+		if accountID, ok := settings["aws_account_id"].(string); ok {
+			api.awsAccountID = accountID
+		}
+	}
+}
+
 func (api *notificationServiceTestAPI) writeResponse(w http.ResponseWriter, status int) {
 	response := notificationServiceTestResponse(api.providerType)
 	if api.providerType == notificationServiceProviderAWSEventBridge {
@@ -901,6 +987,8 @@ func (api *notificationServiceTestAPI) writeResponse(w http.ResponseWriter, stat
 		response.Description = &api.description
 	}
 	response.Enabled = api.enabled
+	response.Scope = api.scope
+	response.ScopeUUIDs = api.scopeUUIDs
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	if err := json.NewEncoder(w).Encode(response); err != nil {

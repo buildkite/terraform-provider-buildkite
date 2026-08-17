@@ -696,7 +696,7 @@ func (m notificationServiceResourceModel) updatePayload(ctx context.Context, sta
 	var diags diag.Diagnostics
 	if !m.ScopeUUIDs.Equal(state.ScopeUUIDs) && !m.ScopeUUIDs.IsUnknown() {
 		if m.ScopeUUIDs.IsNull() {
-			payload["scope_uuids"] = nil
+			payload["scope_uuids"] = []string{}
 		} else {
 			values, valueDiags := notificationServiceStringSet(ctx, m.ScopeUUIDs)
 			diags.Append(valueDiags...)
