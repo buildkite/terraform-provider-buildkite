@@ -43,6 +43,14 @@
       "groupName": "golang-x"
     },
     {
+      "description": "Keep Go toolchain versions in mise and Docker in sync",
+      "matchManagers": ["mise", "dockerfile"],
+      "matchDepNames": ["go", "golang"],
+      "matchUpdateTypes": ["major", "minor", "patch"],
+      "groupName": "go-toolchain",
+      "minimumGroupSize": 2
+    },
+    {
       "description": "Group test and dev tooling",
       "matchPackageNames": [
         "github.com/stretchr/testify",
