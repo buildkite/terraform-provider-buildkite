@@ -1079,7 +1079,7 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 					"build_pull_request_review_comment_created": schema.BoolAttribute{
 						Computed:            true,
 						Optional:            true,
-						MarkdownDescription: "Whether to create builds when an inline review comment is created on a pull request.",
+						MarkdownDescription: "Whether to create builds when an inline review comment is created on a pull request. Requires `build_pull_requests` to be enabled.",
 						PlanModifiers: []planmodifier.Bool{
 							boolplanmodifier.UseNonNullStateForUnknown(),
 						},
@@ -1106,7 +1106,7 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 					"build_pull_request_dequeued": schema.BoolAttribute{
 						Computed:            true,
 						Optional:            true,
-						MarkdownDescription: "Whether to create builds when a pull request is removed from a merge queue.",
+						MarkdownDescription: "Whether to create builds when a pull request is removed from a merge queue. Requires `build_pull_requests` to be enabled.",
 						PlanModifiers: []planmodifier.Bool{
 							boolplanmodifier.UseNonNullStateForUnknown(),
 						},
@@ -1114,7 +1114,7 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 					"build_pull_request_reopened": schema.BoolAttribute{
 						Computed:            true,
 						Optional:            true,
-						MarkdownDescription: "Whether to create builds when a pull request is reopened.",
+						MarkdownDescription: "Whether to create builds when a pull request is reopened. Requires `build_pull_requests` to be enabled.",
 						PlanModifiers: []planmodifier.Bool{
 							boolplanmodifier.UseNonNullStateForUnknown(),
 						},

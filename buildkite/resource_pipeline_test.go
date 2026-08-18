@@ -114,13 +114,15 @@ func TestMapProviderSettingsFromGraphQLGitHub(t *testing.T) {
 	repo := RepositoryProviderSettingsFields{
 		Provider: &RepositoryProviderSettingsFieldsProviderRepositoryProviderGithub{
 			Settings: RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings{
-				TriggerMode:              &triggerMode,
-				BuildPullRequests:        &enabled,
-				BuildBranches:            &disabled,
-				IssueCommentMatchMode:    &matchMode,
-				ReviewCommentMatchMode:   &matchMode,
-				BuildPullRequestReopened: &enabled,
-				UseStepKeyAsCommitStatus: &enabled,
+				TriggerMode:                          &triggerMode,
+				BuildPullRequests:                    &enabled,
+				BuildBranches:                        &disabled,
+				IssueCommentMatchMode:                &matchMode,
+				BuildPullRequestReviewCommentCreated: &enabled,
+				ReviewCommentMatchMode:               &matchMode,
+				BuildPullRequestDequeued:             &enabled,
+				BuildPullRequestReopened:             &enabled,
+				UseStepKeyAsCommitStatus:             &enabled,
 			},
 		},
 	}
@@ -144,6 +146,12 @@ func TestMapProviderSettingsFromGraphQLGitHub(t *testing.T) {
 	}
 	if got.ReviewCommentMatchMode.ValueString() != "exact" {
 		t.Fatalf("review_comment_match_mode: expected \"exact\", got %q", got.ReviewCommentMatchMode.ValueString())
+	}
+	if !got.BuildPullRequestReviewCommentCreated.ValueBool() {
+		t.Fatal("build_pull_request_review_comment_created: expected true")
+	}
+	if !got.BuildPullRequestDequeued.ValueBool() {
+		t.Fatal("build_pull_request_dequeued: expected true")
 	}
 	if !got.BuildPullRequestReopened.ValueBool() {
 		t.Fatal("build_pull_request_reopened: expected true")
@@ -874,9 +882,11 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_issue_comment_created", "true"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.issue_comment_command_word", "ci-force-rerun"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.issue_comment_match_mode", "exact"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_pull_request_review_comment_created", "true"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.review_comment_command_word", "ci-review-rerun"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.review_comment_match_mode", "contains"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_pull_request_dequeued", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_pull_request_reopened", "true"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.use_step_key_as_commit_status", "true"),
 					),
 				},
