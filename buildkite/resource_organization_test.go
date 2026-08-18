@@ -53,6 +53,49 @@ func TestAllowedApiIpAddressesFromAPI(t *testing.T) {
 	}
 }
 
+func TestAllowedApiIpAddressesValue(t *testing.T) {
+	t.Parallel()
+
+	list := func(cidrs ...string) types.List {
+		values := make([]attr.Value, len(cidrs))
+		for i, c := range cidrs {
+			values[i] = types.StringValue(c)
+		}
+		return types.ListValueMust(types.StringType, values)
+	}
+	null := types.ListNull(types.StringType)
+
+	// pairs that serialize to the same value must not trigger the mutation
+	testCases := []struct {
+		name    string
+		planned types.List
+		current types.List
+		changed bool
+		value   string
+	}{
+		{"null and null", null, null, false, ""},
+		{"null and empty list", null, list(), false, ""},
+		{"null and empty string", null, list(""), false, ""},
+		{"empty list and empty string", list(), list(""), false, ""},
+		{"same list", list("1.1.1.1/32"), list("1.1.1.1/32"), false, "1.1.1.1/32"},
+		{"different list", list("1.1.1.1/32"), list("0.0.0.0/0"), true, "1.1.1.1/32"},
+		{"set from nothing", list("0.0.0.0/0", "1.1.1.1/32"), null, true, "0.0.0.0/0 1.1.1.1/32"},
+		{"cleared", null, list("1.1.1.1/32"), true, ""},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			planned, current := allowedApiIpAddressesValue(tc.planned), allowedApiIpAddressesValue(tc.current)
+			if (planned != current) != tc.changed {
+				t.Errorf("planned %q vs current %q: changed = %t, want %t", planned, current, planned != current, tc.changed)
+			}
+			if planned != tc.value {
+				t.Errorf("planned value = %q, want %q", planned, tc.value)
+			}
+		})
+	}
+}
+
 func TestAccBuildkiteOrganizationResource(t *testing.T) {
 	config := func(ip_addresses []string) string {
 		config := `

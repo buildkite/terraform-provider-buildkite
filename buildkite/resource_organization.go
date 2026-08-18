@@ -269,11 +269,16 @@ func (o *organizationResource) Delete(ctx context.Context, req resource.DeleteRe
 
 // updateAllowedApiIpAddresses sets the API IP allowlist, skipping the mutation when it is unchanged
 func (o *organizationResource) updateAllowedApiIpAddresses(ctx context.Context, orgID string, planned, current types.List) error {
+	plannedValue := allowedApiIpAddressesValue(planned)
 	// the mutation is rejected for organizations without the allowlist feature, even for ""
-	if planned.Equal(current) {
+	if plannedValue == allowedApiIpAddressesValue(current) {
 		return nil
 	}
-	cidrs := createCidrSliceFromList(planned)
-	_, err := setApiIpAddresses(ctx, o.client.genqlient, orgID, strings.Join(cidrs, " "))
+	_, err := setApiIpAddresses(ctx, o.client.genqlient, orgID, plannedValue)
 	return err
+}
+
+// allowedApiIpAddressesValue serializes the attribute for the API, where null, [] and [""] are all ""
+func allowedApiIpAddressesValue(cidrs types.List) string {
+	return strings.Join(createCidrSliceFromList(cidrs), " ")
 }
