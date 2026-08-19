@@ -19,6 +19,24 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+func TestMergePipelineCheckout_NestedGroup(t *testing.T) {
+	skip := true
+	nested := &pipeline.CommandStep{}
+	steps := pipeline.Steps{
+		&pipeline.GroupStep{
+			Steps: pipeline.Steps{nested},
+		},
+	}
+
+	mergePipelineCheckout(steps, &pipeline.Checkout{Skip: &skip})
+
+	if nested.Checkout == nil ||
+		nested.Checkout.Skip == nil ||
+		!*nested.Checkout.Skip {
+		t.Errorf("checkout = %#v, want skip: true", nested.Checkout)
+	}
+}
+
 func TestAccBuildkiteSignedPipelineStepsDataSource(t *testing.T) {
 	const (
 		repository = "my-repo"
@@ -26,11 +44,11 @@ func TestAccBuildkiteSignedPipelineStepsDataSource(t *testing.T) {
 	)
 
 	steps := heredoc.Doc(`
+		checkout:
+		  skip: true
 		steps:
 		- label: ":pipeline:"
 		  command: buildkite-agent pipeline upload
-		  checkout:
-		    skip: true
 		  env:
 		    LOCAL_ENV: "bar"
 		env:
@@ -57,6 +75,7 @@ func TestAccBuildkiteSignedPipelineStepsDataSource(t *testing.T) {
 		t.Fatalf("Failed to parse pipeline: %v", err)
 	}
 
+	mergePipelineCheckout(p.Steps, p.Checkout)
 	if err := signature.SignSteps(context.Background(), p.Steps, privateKey, repository, signature.WithEnv(p.Env.ToMap())); err != nil {
 		t.Fatalf("Failed to sign pipeline: %v", err)
 	}
