@@ -135,6 +135,11 @@ type providerSettingsModel struct {
 	BuildIssueCommentCreated                types.Bool   `tfsdk:"build_issue_comment_created"`
 	IssueCommentCommandWord                 types.String `tfsdk:"issue_comment_command_word"`
 	IssueCommentMatchMode                   types.String `tfsdk:"issue_comment_match_mode"`
+	BuildPullRequestReviewCommentCreated    types.Bool   `tfsdk:"build_pull_request_review_comment_created"`
+	ReviewCommentCommandWord                types.String `tfsdk:"review_comment_command_word"`
+	ReviewCommentMatchMode                  types.String `tfsdk:"review_comment_match_mode"`
+	BuildPullRequestDequeued                types.Bool   `tfsdk:"build_pull_request_dequeued"`
+	BuildPullRequestReopened                types.Bool   `tfsdk:"build_pull_request_reopened"`
 	BuildCheckRunCompleted                  types.Bool   `tfsdk:"build_check_run_completed"`
 	BuildCreateEvent                        types.Bool   `tfsdk:"build_create_event"`
 	BuildDeploymentStatusCreated            types.Bool   `tfsdk:"build_deployment_status_created"`
@@ -1071,6 +1076,49 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 							stringvalidator.OneOf("exact", "contains"),
 						},
 					},
+					"build_pull_request_review_comment_created": schema.BoolAttribute{
+						Computed:            true,
+						Optional:            true,
+						MarkdownDescription: "Whether to create builds when an inline review comment is created on a pull request. Requires `build_pull_requests` to be enabled.",
+						PlanModifiers: []planmodifier.Bool{
+							boolplanmodifier.UseNonNullStateForUnknown(),
+						},
+					},
+					"review_comment_command_word": schema.StringAttribute{
+						Computed:            true,
+						Optional:            true,
+						MarkdownDescription: "The command word used to trigger builds from inline pull request review comments (e.g. \"/bk\"). Only review comments starting with or containing this word will trigger builds.",
+						PlanModifiers: []planmodifier.String{
+							stringplanmodifier.UseNonNullStateForUnknown(),
+						},
+					},
+					"review_comment_match_mode": schema.StringAttribute{
+						Computed:            true,
+						Optional:            true,
+						MarkdownDescription: "The match mode for the review comment command word. Valid values are \"exact\" and \"contains\".",
+						PlanModifiers: []planmodifier.String{
+							stringplanmodifier.UseNonNullStateForUnknown(),
+						},
+						Validators: []validator.String{
+							stringvalidator.OneOf("exact", "contains"),
+						},
+					},
+					"build_pull_request_dequeued": schema.BoolAttribute{
+						Computed:            true,
+						Optional:            true,
+						MarkdownDescription: "Whether to create builds when a pull request is removed from a merge queue. Requires `build_pull_requests` to be enabled.",
+						PlanModifiers: []planmodifier.Bool{
+							boolplanmodifier.UseNonNullStateForUnknown(),
+						},
+					},
+					"build_pull_request_reopened": schema.BoolAttribute{
+						Computed:            true,
+						Optional:            true,
+						MarkdownDescription: "Whether to create builds when a pull request is reopened. Requires `build_pull_requests` to be enabled.",
+						PlanModifiers: []planmodifier.Bool{
+							boolplanmodifier.UseNonNullStateForUnknown(),
+						},
+					},
 					"build_check_run_completed": schema.BoolAttribute{
 						Computed:            true,
 						Optional:            true,
@@ -1532,6 +1580,11 @@ type PipelineExtraSettings struct {
 	BuildIssueCommentCreated                *bool   `json:"build_issue_comment_created,omitempty"`
 	IssueCommentCommandWord                 *string `json:"issue_comment_command_word,omitempty"`
 	IssueCommentMatchMode                   *string `json:"issue_comment_match_mode,omitempty"`
+	BuildPullRequestReviewCommentCreated    *bool   `json:"build_pull_request_review_comment_created,omitempty"`
+	ReviewCommentCommandWord                *string `json:"review_comment_command_word,omitempty"`
+	ReviewCommentMatchMode                  *string `json:"review_comment_match_mode,omitempty"`
+	BuildPullRequestDequeued                *bool   `json:"build_pull_request_dequeued,omitempty"`
+	BuildPullRequestReopened                *bool   `json:"build_pull_request_reopened,omitempty"`
 	BuildCheckRunCompleted                  *bool   `json:"build_check_run_completed,omitempty"`
 	BuildCreateEvent                        *bool   `json:"build_create_event,omitempty"`
 	BuildDeploymentStatusCreated            *bool   `json:"build_deployment_status_created,omitempty"`
@@ -1595,6 +1648,11 @@ func updatePipelineExtraInfo(ctx context.Context, slug string, settings *provide
 			BuildIssueCommentCreated:                settings.BuildIssueCommentCreated.ValueBoolPointer(),
 			IssueCommentCommandWord:                 settings.IssueCommentCommandWord.ValueStringPointer(),
 			IssueCommentMatchMode:                   settings.IssueCommentMatchMode.ValueStringPointer(),
+			BuildPullRequestReviewCommentCreated:    settings.BuildPullRequestReviewCommentCreated.ValueBoolPointer(),
+			ReviewCommentCommandWord:                settings.ReviewCommentCommandWord.ValueStringPointer(),
+			ReviewCommentMatchMode:                  settings.ReviewCommentMatchMode.ValueStringPointer(),
+			BuildPullRequestDequeued:                settings.BuildPullRequestDequeued.ValueBoolPointer(),
+			BuildPullRequestReopened:                settings.BuildPullRequestReopened.ValueBoolPointer(),
 			BuildCheckRunCompleted:                  settings.BuildCheckRunCompleted.ValueBoolPointer(),
 			BuildCreateEvent:                        settings.BuildCreateEvent.ValueBoolPointer(),
 			BuildDeploymentStatusCreated:            settings.BuildDeploymentStatusCreated.ValueBoolPointer(),
@@ -1663,6 +1721,11 @@ func updatePipelineResourceExtraInfo(state *pipelineResourceModel, pipeline *Pip
 		BuildIssueCommentCreated:                types.BoolPointerValue(s.BuildIssueCommentCreated),
 		IssueCommentCommandWord:                 types.StringPointerValue(s.IssueCommentCommandWord),
 		IssueCommentMatchMode:                   types.StringPointerValue(s.IssueCommentMatchMode),
+		BuildPullRequestReviewCommentCreated:    types.BoolPointerValue(s.BuildPullRequestReviewCommentCreated),
+		ReviewCommentCommandWord:                types.StringPointerValue(s.ReviewCommentCommandWord),
+		ReviewCommentMatchMode:                  types.StringPointerValue(s.ReviewCommentMatchMode),
+		BuildPullRequestDequeued:                types.BoolPointerValue(s.BuildPullRequestDequeued),
+		BuildPullRequestReopened:                types.BoolPointerValue(s.BuildPullRequestReopened),
 		BuildCheckRunCompleted:                  types.BoolPointerValue(s.BuildCheckRunCompleted),
 		BuildCreateEvent:                        types.BoolPointerValue(s.BuildCreateEvent),
 		BuildDeploymentStatusCreated:            types.BoolPointerValue(s.BuildDeploymentStatusCreated),
@@ -1723,6 +1786,11 @@ func mapProviderSettingsFromGraphQL(repo RepositoryProviderSettingsFields) *prov
 			BuildIssueCommentCreated:                types.BoolPointerValue(s.BuildIssueCommentCreated),
 			IssueCommentCommandWord:                 types.StringPointerValue(s.IssueCommentCommandWord),
 			IssueCommentMatchMode:                   matchModeToString(s.IssueCommentMatchMode),
+			BuildPullRequestReviewCommentCreated:    types.BoolPointerValue(s.BuildPullRequestReviewCommentCreated),
+			ReviewCommentCommandWord:                types.StringPointerValue(s.ReviewCommentCommandWord),
+			ReviewCommentMatchMode:                  matchModeToString(s.ReviewCommentMatchMode),
+			BuildPullRequestDequeued:                types.BoolPointerValue(s.BuildPullRequestDequeued),
+			BuildPullRequestReopened:                types.BoolPointerValue(s.BuildPullRequestReopened),
 			UseStepKeyAsCommitStatus:                types.BoolPointerValue(s.UseStepKeyAsCommitStatus),
 			BuildCheckRunCompleted:                  types.BoolPointerValue(s.BuildCheckRunCompleted),
 			BuildCreateEvent:                        types.BoolPointerValue(s.BuildCreateEvent),
@@ -1766,6 +1834,11 @@ func mapProviderSettingsFromGraphQL(repo RepositoryProviderSettingsFields) *prov
 			BuildIssueCommentCreated:                types.BoolPointerValue(s.BuildIssueCommentCreated),
 			IssueCommentCommandWord:                 types.StringPointerValue(s.IssueCommentCommandWord),
 			IssueCommentMatchMode:                   matchModeToString(s.IssueCommentMatchMode),
+			BuildPullRequestReviewCommentCreated:    types.BoolPointerValue(s.BuildPullRequestReviewCommentCreated),
+			ReviewCommentCommandWord:                types.StringPointerValue(s.ReviewCommentCommandWord),
+			ReviewCommentMatchMode:                  matchModeToString(s.ReviewCommentMatchMode),
+			BuildPullRequestDequeued:                types.BoolPointerValue(s.BuildPullRequestDequeued),
+			BuildPullRequestReopened:                types.BoolPointerValue(s.BuildPullRequestReopened),
 			UseStepKeyAsCommitStatus:                types.BoolPointerValue(s.UseStepKeyAsCommitStatus),
 			BuildCheckRunCompleted:                  types.BoolPointerValue(s.BuildCheckRunCompleted),
 			BuildCreateEvent:                        types.BoolPointerValue(s.BuildCreateEvent),
@@ -2129,6 +2202,26 @@ func pipelineSchemaV0() schema.Schema {
 							Optional: true,
 						},
 						"issue_comment_match_mode": schema.StringAttribute{
+							Computed: true,
+							Optional: true,
+						},
+						"build_pull_request_review_comment_created": schema.BoolAttribute{
+							Computed: true,
+							Optional: true,
+						},
+						"review_comment_command_word": schema.StringAttribute{
+							Computed: true,
+							Optional: true,
+						},
+						"review_comment_match_mode": schema.StringAttribute{
+							Computed: true,
+							Optional: true,
+						},
+						"build_pull_request_dequeued": schema.BoolAttribute{
+							Computed: true,
+							Optional: true,
+						},
+						"build_pull_request_reopened": schema.BoolAttribute{
 							Computed: true,
 							Optional: true,
 						},
