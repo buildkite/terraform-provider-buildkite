@@ -3,8 +3,10 @@ package buildkite
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"os"
 	"regexp"
+	"slices"
 	"strings"
 	"testing"
 
@@ -13,7 +15,7 @@ import (
 	"github.com/buildkite/go-pipeline/jwkutil"
 	"github.com/buildkite/go-pipeline/signature"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
-	"github.com/lestrrat-go/jwx/v2/jwa"
+	"github.com/lestrrat-go/jwx/v3/jwa"
 	"gopkg.in/yaml.v3"
 )
 
@@ -33,7 +35,7 @@ func TestAccBuildkiteSignedPipelineStepsDataSource(t *testing.T) {
 		  GLOBAL_ENV: "foo"
 	`)
 
-	privateJWKS, _, err := jwkutil.NewKeyPair(jwksKeyID, jwa.EdDSA)
+	privateJWKS, _, err := jwkutil.NewKeyPair(jwksKeyID, jwa.EdDSA())
 	if err != nil {
 		t.Fatalf("Failed to generate key pair: %v", err)
 	}
@@ -61,6 +63,73 @@ func TestAccBuildkiteSignedPipelineStepsDataSource(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to marshal signed steps: %v", err)
 	}
+
+	t.Run("signed pipeline steps include checkout in the signature", func(t *testing.T) {
+		pipelineWithCheckout := heredoc.Doc(`
+        steps:
+        - command: echo hello
+          checkout:
+            skip: true
+  `)
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			Steps: []resource.TestStep{
+				{
+					Config: heredoc.Docf(`
+						data "buildkite_signed_pipeline_steps" "checkout" {
+							repository		= %q
+							jwks			= %q
+							jwks_key_id		= %q
+							unsigned_steps	= %q
+						}
+						`,
+						repository,
+						jwks,
+						jwksKeyID,
+						pipelineWithCheckout,
+					),
+					Check: resource.TestCheckResourceAttrWith(
+						"data.buildkite_signed_pipeline_steps.checkout",
+						"steps",
+						func(got string) error {
+							p, err := pipeline.Parse(strings.NewReader(got))
+							if err != nil {
+								return fmt.Errorf("parse signed steps: %w", err)
+							}
+							if len(p.Steps) != 1 {
+								return fmt.Errorf("got %d steps, expected 1", len(p.Steps))
+							}
+
+							step, ok := p.Steps[0].(*pipeline.CommandStep)
+							if !ok {
+								return fmt.Errorf("got %T, expected *pipeline.CommandStep", p.Steps[0])
+							}
+
+							if step.Checkout == nil ||
+								step.Checkout.Skip == nil ||
+								!*step.Checkout.Skip {
+								return fmt.Errorf(
+									"checkout = %#v, want skip: true",
+									step.Checkout,
+								)
+							}
+
+							if step.Signature == nil ||
+								!slices.Contains(step.Signature.SignedFields, "checkout") {
+								return fmt.Errorf(
+									"signature = %#v, want checkout in signed fields",
+									step.Signature,
+								)
+							}
+							return nil
+						},
+					),
+				},
+			},
+		})
+	})
 
 	t.Run("signed pipeline steps with a jwks attribute signs the steps", func(t *testing.T) {
 		resource.ParallelTest(t, resource.TestCase{
