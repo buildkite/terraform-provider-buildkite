@@ -3181,6 +3181,8 @@ type RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubEnterpriseS
 	BuildDeploymentStatusCreated *bool `json:"buildDeploymentStatusCreated"`
 	// Whether to create builds when a pull request is converted to draft.
 	BuildPullRequestConvertedToDraft *bool `json:"buildPullRequestConvertedToDraft"`
+	// Whether to create builds when a pull request is edited.
+	BuildPullRequestEdited *bool `json:"buildPullRequestEdited"`
 	// Whether to create builds when a pull request review is requested.
 	BuildPullRequestReviewRequested *bool `json:"buildPullRequestReviewRequested"`
 	// Whether to create builds when a pull request review is dismissed.
@@ -3274,6 +3276,11 @@ func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubEnterpr
 // GetBuildPullRequestConvertedToDraft returns RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings.BuildPullRequestConvertedToDraft, and is useful for accessing the field via an interface.
 func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings) GetBuildPullRequestConvertedToDraft() *bool {
 	return v.BuildPullRequestConvertedToDraft
+}
+
+// GetBuildPullRequestEdited returns RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings.BuildPullRequestEdited, and is useful for accessing the field via an interface.
+func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings) GetBuildPullRequestEdited() *bool {
+	return v.BuildPullRequestEdited
 }
 
 // GetBuildPullRequestReviewRequested returns RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings.BuildPullRequestReviewRequested, and is useful for accessing the field via an interface.
@@ -3461,6 +3468,8 @@ type RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubSettingsRep
 	BuildDeploymentStatusCreated *bool `json:"buildDeploymentStatusCreated"`
 	// Whether to create builds when a pull request is converted to draft.
 	BuildPullRequestConvertedToDraft *bool `json:"buildPullRequestConvertedToDraft"`
+	// Whether to create builds when a pull request is edited.
+	BuildPullRequestEdited *bool `json:"buildPullRequestEdited"`
 	// Whether to create builds when a pull request review is requested.
 	BuildPullRequestReviewRequested *bool `json:"buildPullRequestReviewRequested"`
 	// Whether to create builds when a pull request review is dismissed.
@@ -3554,6 +3563,11 @@ func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubSetting
 // GetBuildPullRequestConvertedToDraft returns RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings.BuildPullRequestConvertedToDraft, and is useful for accessing the field via an interface.
 func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings) GetBuildPullRequestConvertedToDraft() *bool {
 	return v.BuildPullRequestConvertedToDraft
+}
+
+// GetBuildPullRequestEdited returns RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings.BuildPullRequestEdited, and is useful for accessing the field via an interface.
+func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings) GetBuildPullRequestEdited() *bool {
+	return v.BuildPullRequestEdited
 }
 
 // GetBuildPullRequestReviewRequested returns RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings.BuildPullRequestReviewRequested, and is useful for accessing the field via an interface.
@@ -26185,6 +26199,7 @@ fragment RepositoryProviderSettingsFields on Repository {
 				buildCreateEvent
 				buildDeploymentStatusCreated
 				buildPullRequestConvertedToDraft
+				buildPullRequestEdited
 				buildPullRequestReviewRequested
 				buildPullRequestReviewDismissed
 				buildPullRequestReviewSubmitted
@@ -26228,6 +26243,7 @@ fragment RepositoryProviderSettingsFields on Repository {
 				buildCreateEvent
 				buildDeploymentStatusCreated
 				buildPullRequestConvertedToDraft
+				buildPullRequestEdited
 				buildPullRequestReviewRequested
 				buildPullRequestReviewDismissed
 				buildPullRequestReviewSubmitted
