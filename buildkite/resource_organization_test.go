@@ -7,9 +7,94 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
+
+func TestAllowedApiIpAddressesFromAPI(t *testing.T) {
+	t.Parallel()
+
+	list := func(cidrs ...string) types.List {
+		values := make([]attr.Value, len(cidrs))
+		for i, c := range cidrs {
+			values[i] = types.StringValue(c)
+		}
+		return types.ListValueMust(types.StringType, values)
+	}
+	null := types.ListNull(types.StringType)
+
+	testCases := []struct {
+		name    string
+		remote  string
+		current types.List
+		want    types.List
+	}{
+		{"unset attribute stays null for an empty allowlist", "", null, null},
+		{"empty list is kept as is", "", list(), list()},
+		{"explicit empty string round trips", "", list(""), list("")},
+		{"remote allowlist is split", "1.1.1.1/32 0.0.0.0/0", list("1.1.1.1/32"), list("1.1.1.1/32", "0.0.0.0/0")},
+		{"matching allowlist is unchanged", "0.0.0.0/0 1.1.1.1/32", list("0.0.0.0/0", "1.1.1.1/32"), list("0.0.0.0/0", "1.1.1.1/32")},
+		{"remote allowlist is read when unset", "1.1.1.1/32", null, list("1.1.1.1/32")},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			got, diags := allowedApiIpAddressesFromAPI(context.Background(), tc.remote, tc.current)
+			if diags.HasError() {
+				t.Fatalf("unexpected diagnostics: %v", diags)
+			}
+			if !got.Equal(tc.want) {
+				t.Errorf("got %s, want %s", got, tc.want)
+			}
+		})
+	}
+}
+
+func TestAllowedApiIpAddressesValue(t *testing.T) {
+	t.Parallel()
+
+	list := func(cidrs ...string) types.List {
+		values := make([]attr.Value, len(cidrs))
+		for i, c := range cidrs {
+			values[i] = types.StringValue(c)
+		}
+		return types.ListValueMust(types.StringType, values)
+	}
+	null := types.ListNull(types.StringType)
+
+	// pairs that serialize to the same value must not trigger the mutation
+	testCases := []struct {
+		name    string
+		planned types.List
+		current types.List
+		changed bool
+		value   string
+	}{
+		{"null and null", null, null, false, ""},
+		{"null and empty list", null, list(), false, ""},
+		{"null and empty string", null, list(""), false, ""},
+		{"empty list and empty string", list(), list(""), false, ""},
+		{"same list", list("1.1.1.1/32"), list("1.1.1.1/32"), false, "1.1.1.1/32"},
+		{"different list", list("1.1.1.1/32"), list("0.0.0.0/0"), true, "1.1.1.1/32"},
+		{"set from nothing", list("0.0.0.0/0", "1.1.1.1/32"), null, true, "0.0.0.0/0 1.1.1.1/32"},
+		{"cleared", null, list("1.1.1.1/32"), true, ""},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			planned, current := allowedApiIpAddressesValue(tc.planned), allowedApiIpAddressesValue(tc.current)
+			if (planned != current) != tc.changed {
+				t.Errorf("planned %q vs current %q: changed = %t, want %t", planned, current, planned != current, tc.changed)
+			}
+			if planned != tc.value {
+				t.Errorf("planned value = %q, want %q", planned, tc.value)
+			}
+		})
+	}
+}
 
 func TestAccBuildkiteOrganizationResource(t *testing.T) {
 	config := func(ip_addresses []string) string {
@@ -168,8 +253,74 @@ func TestAccBuildkiteOrganizationResource(t *testing.T) {
 				{
 					Config: configNoAllowedIPs(),
 					Check:  checkUpdated,
-					// After clearing the IPs, state will be set to null and refresh will restore the attribute to an empty-string list of length 1
-					ExpectNonEmptyPlan: true,
+				},
+			},
+		})
+	})
+
+	t.Run("manages an organization without configuring the allowed API IP address list", func(t *testing.T) {
+		resource.Test(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			CheckDestroy:             testCheckOrganizationResourceRemoved,
+			Steps: []resource.TestStep{
+				{
+					Config: configNoAllowedIPs(),
+					Check: resource.ComposeAggregateTestCheckFunc(
+						resource.TestCheckResourceAttrSet("buildkite_organization.let_them_in", "uuid"),
+						resource.TestCheckNoResourceAttr("buildkite_organization.let_them_in", "allowed_api_ip_addresses"),
+					),
+				},
+				{
+					ResourceName:      "buildkite_organization.let_them_in",
+					ImportState:       true,
+					ImportStateVerify: true,
+				},
+			},
+		})
+	})
+
+	t.Run("adopts an existing allowed API IP address list", func(t *testing.T) {
+		// Give the organization an allowlist before terraform manages it (0.0.0.0/0 keeps the API reachable)
+		presetAllowlist := func() {
+			org, err := getOrganization(context.Background(), genqlientGraphql, getenv("BUILDKITE_ORGANIZATION_SLUG"))
+			if err != nil {
+				t.Fatalf("Unable to read organization: %v", err)
+			}
+			if _, err := setApiIpAddresses(context.Background(), genqlientGraphql, org.Organization.Id, "0.0.0.0/0"); err != nil {
+				t.Fatalf("Unable to preset the allowed API IP addresses: %v", err)
+			}
+			if _, err := getOrganization(context.Background(), genqlientGraphql, getenv("BUILDKITE_ORGANIZATION_SLUG")); err != nil {
+				t.Fatalf("API unreachable after presetting the allowed API IP addresses: %v", err)
+			}
+		}
+
+		resource.Test(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			CheckDestroy:             testCheckOrganizationResourceRemoved,
+			Steps: []resource.TestStep{
+				{
+					PreConfig: presetAllowlist,
+					Config:    config([]string{"0.0.0.0/0"}),
+					ConfigPlanChecks: resource.ConfigPlanChecks{
+						PostApplyPostRefresh: []plancheck.PlanCheck{
+							plancheck.ExpectEmptyPlan(),
+						},
+					},
+					Check: resource.ComposeAggregateTestCheckFunc(
+						// Confirm the existing allowlist is kept in Buildkite's system
+						testAccCheckOrganizationRemoteValues([]string{"0.0.0.0/0"}),
+						resource.TestCheckResourceAttr("buildkite_organization.let_them_in", "allowed_api_ip_addresses.0", "0.0.0.0/0"),
+					),
+				},
+				{
+					Config: configNoAllowedIPs(),
+					Check: resource.ComposeAggregateTestCheckFunc(
+						// Confirm the allowlist is cleared once the attribute is removed
+						testAccCheckOrganizationRemoteValues([]string{""}),
+						resource.TestCheckNoResourceAttr("buildkite_organization.let_them_in", "allowed_api_ip_addresses"),
+					),
 				},
 			},
 		})
