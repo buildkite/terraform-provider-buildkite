@@ -775,6 +775,8 @@ func TestNotificationServiceConfigurationValidation(t *testing.T) {
 			`, notificationServiceTestID, strings.ToUpper(notificationServiceTestID)),
 			wantError: "Duplicate notification service scope UUID",
 		},
+		// Supported providers ignore build-state flags. Keep this rejection pinned so
+		// the field is not accidentally exposed without a provider that can use it.
 		"build states": {
 			resourceConfig: `
 				provider_type = "webhook"

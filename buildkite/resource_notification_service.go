@@ -168,10 +168,8 @@ func (r *notificationServiceResource) Schema(ctx context.Context, req resource.S
 			Secret settings that the Buildkite API masks or omits are preserved from Terraform
 			state during refresh. Changes made to those values outside Terraform cannot be detected.
 
-			This resource does not manage build state selection. Services it creates use the
-			API defaults, and build states changed in the Buildkite interface are not detected
-			as drift.
-			state during refresh. Changes made to those values outside Terraform cannot be detected.
+			This resource does not manage build state selection. Every supported provider ignores
+			those API fields; only legacy Slack services, which this resource does not support, use them.
 		`),
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
