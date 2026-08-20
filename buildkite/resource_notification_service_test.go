@@ -189,29 +189,70 @@ func TestNotificationServiceApplyAPIResponsePreservesWriteOnlySettings(t *testin
 	}
 }
 
-func TestNotificationServiceApplyAPIResponseRejectsMismatchedImportedAWSAccountID(t *testing.T) {
+func TestNotificationServiceApplyAPIResponseValidatesImportedAWSAccountID(t *testing.T) {
 	t.Parallel()
 
-	response := notificationServiceTestResponse(notificationServiceProviderAWSEventBridge)
-	state := notificationServiceResourceModel{
-		ProviderType: types.StringValue(notificationServiceProviderAWSEventBridge),
-		AWSEventBridge: &notificationServiceAWSEventBridgeModel{
-			AWSAccountID: types.StringValue("999999999999"),
+	tests := map[string]struct {
+		mask      string
+		accountID string
+		wantError bool
+	}{
+		"matching suffix": {
+			mask:      "XXXXXXXX9012",
+			accountID: "123456789012",
 		},
-	}
-	previous := notificationServiceResourceModel{
-		ProviderType: types.StringValue(notificationServiceProviderAWSEventBridge),
-		AWSEventBridge: &notificationServiceAWSEventBridgeModel{
-			AWSAccountID: types.StringNull(),
+		"mismatched suffix": {
+			mask:      "XXXXXXXX9012",
+			accountID: "999999999999",
+			wantError: true,
+		},
+		"fully masked": {
+			mask:      "XXXXXXXXXXXX",
+			accountID: "123456789012",
+		},
+		"unknown mask format": {
+			mask:      "makarena-9012",
+			accountID: "123456789012",
 		},
 	}
 
-	diags := state.applyAPIResponse(t.Context(), &response, previous)
-	if !diags.HasError() {
-		t.Fatal("applyAPIResponse() diagnostics did not reject a mismatched AWS account ID")
-	}
-	if !state.AWSEventBridge.AWSAccountID.IsNull() {
-		t.Errorf("AWS account ID = %v, want prior null value", state.AWSEventBridge.AWSAccountID)
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			response := notificationServiceTestResponse(notificationServiceProviderAWSEventBridge)
+			settings, err := json.Marshal(map[string]any{
+				"aws_region":              "us-east-1",
+				"aws_account_id":          test.mask,
+				"event_source_name":       "aws.partner/test",
+				"include_build_meta_data": nil,
+			})
+			if err != nil {
+				t.Fatalf("marshal settings: %v", err)
+			}
+			response.Settings = settings
+
+			state := notificationServiceResourceModel{
+				ProviderType: types.StringValue(notificationServiceProviderAWSEventBridge),
+				AWSEventBridge: &notificationServiceAWSEventBridgeModel{
+					AWSAccountID: types.StringValue(test.accountID),
+				},
+			}
+			previous := notificationServiceResourceModel{
+				ProviderType: types.StringValue(notificationServiceProviderAWSEventBridge),
+				AWSEventBridge: &notificationServiceAWSEventBridgeModel{
+					AWSAccountID: types.StringNull(),
+				},
+			}
+
+			diags := state.applyAPIResponse(t.Context(), &response, previous)
+			if got := diags.HasError(); got != test.wantError {
+				t.Fatalf("applyAPIResponse() diagnostics HasError() = %t, want %t: %v", got, test.wantError, diags)
+			}
+			if got := state.AWSEventBridge.AWSAccountID.ValueString(); got != test.accountID {
+				t.Errorf("AWS account ID = %q, want %q", got, test.accountID)
+			}
+		})
 	}
 }
 

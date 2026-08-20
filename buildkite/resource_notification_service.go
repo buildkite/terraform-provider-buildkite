@@ -1057,12 +1057,12 @@ func (m *notificationServiceResourceModel) applyAWSEventBridgeAPISettings(raw js
 	var diags diag.Diagnostics
 	if settings.AWSAccountID != nil && !accountID.IsNull() && !accountID.IsUnknown() {
 		maskedSuffix := strings.TrimLeft(*settings.AWSAccountID, "X")
-		if maskedSuffix == "" || !strings.HasSuffix(accountID.ValueString(), maskedSuffix) {
+		maskRecognized := strings.HasPrefix(*settings.AWSAccountID, "X") && maskedSuffix != ""
+		if maskRecognized && !strings.HasSuffix(accountID.ValueString(), maskedSuffix) {
 			diags.AddError(
 				"AWS account ID does not match notification service",
 				fmt.Sprintf("The configured aws_event_bridge.aws_account_id does not match the masked account ID returned by Buildkite (%s). Configure the matching AWS account ID or omit it.", *settings.AWSAccountID),
 			)
-			accountID = previousAccountID
 		}
 	}
 	m.AWSEventBridge = &notificationServiceAWSEventBridgeModel{
