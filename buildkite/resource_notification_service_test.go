@@ -359,7 +359,7 @@ func TestNotificationServiceCannotRemoveSettings(t *testing.T) {
 func TestNotificationServiceEventBridgeLifecycle(t *testing.T) {
 	api := newNotificationServiceTestAPI(t)
 	api.setProvider(notificationServiceProviderAWSEventBridge)
-	config := notificationServiceEventBridgeUnitTestConfig(api.server.URL, "us-east-1", "123456789012")
+	config := notificationServiceEventBridgeUnitTestConfig(api.server.URL, "us-east-1", "123456789012", "")
 
 	resource.UnitTest(t, resource.TestCase{
 		ProtoV6ProviderFactories: protoV6ProviderFactories(),
@@ -390,7 +390,7 @@ func TestNotificationServiceEventBridgeLifecycle(t *testing.T) {
 				},
 			},
 			{
-				Config: notificationServiceEventBridgeUnitTestConfig(api.server.URL, "us-east-1", "123456789013"),
+				Config: notificationServiceEventBridgeUnitTestConfig(api.server.URL, "us-east-1", "123456789013", ""),
 				ConfigPlanChecks: resource.ConfigPlanChecks{
 					PreApply: []plancheck.PlanCheck{
 						plancheck.ExpectResourceAction("buildkite_notification_service.test", plancheck.ResourceActionDestroyBeforeCreate),
@@ -399,13 +399,60 @@ func TestNotificationServiceEventBridgeLifecycle(t *testing.T) {
 				Check: resource.TestCheckResourceAttr("buildkite_notification_service.test", "aws_event_bridge.aws_account_id", "123456789013"),
 			},
 			{
-				Config: notificationServiceEventBridgeUnitTestConfig(api.server.URL, "us-west-2", "123456789013"),
+				Config: notificationServiceEventBridgeUnitTestConfig(api.server.URL, "us-west-2", "123456789013", ""),
 				ConfigPlanChecks: resource.ConfigPlanChecks{
 					PreApply: []plancheck.PlanCheck{
 						plancheck.ExpectResourceAction("buildkite_notification_service.test", plancheck.ResourceActionDestroyBeforeCreate),
 					},
 				},
 				Check: resource.TestCheckResourceAttr("buildkite_notification_service.test", "aws_event_bridge.aws_region", "us-west-2"),
+			},
+		},
+	})
+}
+
+func TestNotificationServiceEventBridgeMetadataLifecycle(t *testing.T) {
+	api := newNotificationServiceTestAPI(t)
+	api.setProvider(notificationServiceProviderAWSEventBridge)
+	withMetadata := notificationServiceEventBridgeUnitTestConfig(
+		api.server.URL,
+		"us-east-1",
+		"123456789012",
+		`include_build_meta_data = "deploy:*"`,
+	)
+	withoutMetadata := notificationServiceEventBridgeUnitTestConfig(api.server.URL, "us-east-1", "123456789012", "")
+
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config: withMetadata,
+				Check: resource.TestCheckResourceAttr(
+					"buildkite_notification_service.test",
+					"aws_event_bridge.include_build_meta_data",
+					"deploy:*",
+				),
+			},
+			{
+				Config: withoutMetadata,
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction("buildkite_notification_service.test", plancheck.ResourceActionUpdate),
+					},
+				},
+				Check: func(*terraform.State) error {
+					return api.verifyPatch(map[string]any{
+						"settings": map[string]any{"include_build_meta_data": nil},
+					})
+				},
+			},
+			{
+				Config: withoutMetadata,
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction("buildkite_notification_service.test", plancheck.ResourceActionNoop),
+					},
+				},
 			},
 		},
 	})
@@ -912,7 +959,7 @@ func notificationServiceOpenTelemetryUnitTestConfig(restURL string) string {
 	`, restURL)
 }
 
-func notificationServiceEventBridgeUnitTestConfig(restURL, region, accountID string) string {
+func notificationServiceEventBridgeUnitTestConfig(restURL, region, accountID, extra string) string {
 	return fmt.Sprintf(`
 		provider "buildkite" {
 			organization = "test"
@@ -927,9 +974,10 @@ func notificationServiceEventBridgeUnitTestConfig(restURL, region, accountID str
 			aws_event_bridge = {
 				aws_region = %q
 				aws_account_id = %q
+				%s
 			}
 		}
-	`, restURL, region, accountID)
+	`, restURL, region, accountID, extra)
 }
 
 type notificationServiceTestRequest struct {
@@ -940,19 +988,20 @@ type notificationServiceTestRequest struct {
 }
 
 type notificationServiceTestAPI struct {
-	t            *testing.T
-	server       *httptest.Server
-	mu           sync.Mutex
-	deleted      bool
-	description  string
-	enabled      bool
-	failDisable  bool
-	providerType string
-	scope        string
-	scopeUUIDs   []string
-	awsRegion    string
-	awsAccountID string
-	requests     []notificationServiceTestRequest
+	t                    *testing.T
+	server               *httptest.Server
+	mu                   sync.Mutex
+	deleted              bool
+	description          string
+	enabled              bool
+	failDisable          bool
+	providerType         string
+	scope                string
+	scopeUUIDs           []string
+	awsRegion            string
+	awsAccountID         string
+	includeBuildMetadata *string
+	requests             []notificationServiceTestRequest
 }
 
 func newNotificationServiceTestAPI(t *testing.T) *notificationServiceTestAPI {
@@ -1047,18 +1096,33 @@ func (api *notificationServiceTestAPI) applyRequestBody(body map[string]any) {
 		if accountID, ok := settings["aws_account_id"].(string); ok {
 			api.awsAccountID = accountID
 		}
+		if metadata, ok := settings["include_build_meta_data"]; ok {
+			if metadata == nil {
+				api.includeBuildMetadata = nil
+			} else if metadata, ok := metadata.(string); ok {
+				api.includeBuildMetadata = &metadata
+			}
+		}
 	}
 }
 
 func (api *notificationServiceTestAPI) writeResponse(w http.ResponseWriter, status int) {
 	response := notificationServiceTestResponse(api.providerType)
 	if api.providerType == notificationServiceProviderAWSEventBridge {
-		response.Settings = json.RawMessage(fmt.Sprintf(`{
-			"aws_region":%q,
-			"aws_account_id":"XXXXXXXX%s",
-			"event_source_name":"aws.partner/buildkite.com.test/test",
-			"include_build_meta_data":null
-		}`, api.awsRegion, api.awsAccountID[len(api.awsAccountID)-4:]))
+		maskedAccountID := "XXXXXXXX" + api.awsAccountID[len(api.awsAccountID)-4:]
+		eventSourceName := "aws.partner/buildkite.com.test/test"
+		settings, err := json.Marshal(notificationServiceAWSEventBridgeAPISettings{
+			AWSRegion:            &api.awsRegion,
+			AWSAccountID:         &maskedAccountID,
+			EventSourceName:      &eventSourceName,
+			IncludeBuildMetadata: api.includeBuildMetadata,
+		})
+		if err != nil {
+			api.t.Errorf("encode EventBridge settings: %v", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		response.Settings = settings
 	}
 	if api.description != "" {
 		response.Description = &api.description

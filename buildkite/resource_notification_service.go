@@ -327,7 +327,6 @@ func notificationServiceAWSEventBridgeSchema() schema.SingleNestedAttribute {
 			},
 			"include_build_meta_data": schema.StringAttribute{
 				Optional:            true,
-				Computed:            true,
 				MarkdownDescription: "A build meta-data pattern to include in EventBridge payloads.",
 			},
 		},
