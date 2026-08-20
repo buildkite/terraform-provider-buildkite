@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"regexp"
+	"strings"
 	"sync"
 	"testing"
 
@@ -57,6 +58,36 @@ func TestNotificationServiceUpdatePayloadOnlyIncludesChanges(t *testing.T) {
 	}
 	if diff := cmp.Diff(got, want); diff != "" {
 		t.Errorf("updatePayload() mismatch (-got +want):\n%s", diff)
+	}
+}
+
+func TestNotificationServiceScopeUUIDPayloadsUseLowercase(t *testing.T) {
+	t.Parallel()
+
+	upperUUID := strings.ToUpper(notificationServiceTestID)
+	scopeUUIDs := types.SetValueMust(types.StringType, []attr.Value{types.StringValue(upperUUID)})
+	plan := notificationServiceResourceModel{
+		ProviderType: types.StringValue(notificationServiceProviderWebhook),
+		ScopeUUIDs:   scopeUUIDs,
+		Webhook:      &notificationServiceWebhookModel{},
+	}
+
+	createPayload, createDiags := plan.createPayload(t.Context())
+	if createDiags.HasError() {
+		t.Fatalf("createPayload() diagnostics = %v", createDiags)
+	}
+	if got, want := createPayload["scope_uuids"], []string{notificationServiceTestID}; !cmp.Equal(got, want) {
+		t.Errorf("createPayload() scope_uuids mismatch (-got +want):\n%s", cmp.Diff(got, want))
+	}
+
+	state := plan
+	state.ScopeUUIDs = types.SetNull(types.StringType)
+	updatePayload, updateDiags := plan.updatePayload(t.Context(), state)
+	if updateDiags.HasError() {
+		t.Fatalf("updatePayload() diagnostics = %v", updateDiags)
+	}
+	if got, want := updatePayload["scope_uuids"], []string{notificationServiceTestID}; !cmp.Equal(got, want) {
+		t.Errorf("updatePayload() scope_uuids mismatch (-got +want):\n%s", cmp.Diff(got, want))
 	}
 }
 
@@ -229,6 +260,7 @@ func TestNotificationServiceRESTLifecycle(t *testing.T) {
 
 func TestNotificationServiceScopeLifecycle(t *testing.T) {
 	api := newNotificationServiceTestAPI(t)
+	upperUUID := strings.ToUpper(notificationServiceTestID)
 	config := func(filters string) string {
 		return fmt.Sprintf(`
 			provider "buildkite" {
@@ -252,7 +284,7 @@ func TestNotificationServiceScopeLifecycle(t *testing.T) {
 	scopedConfig := config(fmt.Sprintf(`
 		scope = "some_projects"
 		scope_uuids = [%q]
-	`, notificationServiceTestID))
+	`, upperUUID))
 	allConfig := config(`scope = "all"`)
 
 	resource.UnitTest(t, resource.TestCase{
@@ -262,7 +294,7 @@ func TestNotificationServiceScopeLifecycle(t *testing.T) {
 				Config: scopedConfig,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("buildkite_notification_service.test", "scope", "some_projects"),
-					resource.TestCheckTypeSetElemAttr("buildkite_notification_service.test", "scope_uuids.*", notificationServiceTestID),
+					resource.TestCheckTypeSetElemAttr("buildkite_notification_service.test", "scope_uuids.*", upperUUID),
 				),
 			},
 			{
@@ -637,6 +669,24 @@ func TestNotificationServiceConfigurationValidation(t *testing.T) {
 			`,
 			wantError: "webhook.url is required",
 		},
+		"scope UUIDs with all scope": {
+			resourceConfig: fmt.Sprintf(`
+				provider_type = "webhook"
+				scope = "all"
+				scope_uuids = [%q]
+				webhook = { url = "https://example.test/hook" }
+			`, notificationServiceTestID),
+			wantError: "scope UUIDs require a scoped service",
+		},
+		"case-insensitive duplicate scope UUIDs": {
+			resourceConfig: fmt.Sprintf(`
+				provider_type = "webhook"
+				scope = "some_projects"
+				scope_uuids = [%q, %q]
+				webhook = { url = "https://example.test/hook" }
+			`, notificationServiceTestID, strings.ToUpper(notificationServiceTestID)),
+			wantError: "Duplicate notification service scope UUID",
+		},
 		"build states": {
 			resourceConfig: `
 				provider_type = "webhook"
@@ -684,6 +734,33 @@ func TestNotificationServiceConfigurationValidation(t *testing.T) {
 			})
 		})
 	}
+}
+
+func TestNotificationServiceAllowsEmptyScopedService(t *testing.T) {
+	config := `
+		provider "buildkite" {
+			organization = "test"
+			api_token = "test"
+			rest_url = "http://127.0.0.1"
+			max_retries = 0
+		}
+
+		resource "buildkite_notification_service" "test" {
+			provider_type = "webhook"
+			scope = "some_projects"
+			scope_uuids = []
+			webhook = { url = "https://example.test/hook" }
+		}
+	`
+
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		Steps: []resource.TestStep{{
+			Config:             config,
+			PlanOnly:           true,
+			ExpectNonEmptyPlan: true,
+		}},
+	})
 }
 
 func TestAccBuildkiteNotificationService(t *testing.T) {

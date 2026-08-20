@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"regexp"
+	"slices"
 	"strings"
 
 	"github.com/MakeNowJust/heredoc"
@@ -400,6 +401,38 @@ func (r *notificationServiceResource) ModifyPlan(ctx context.Context, req resour
 	}
 
 	providerType := config.ProviderType.ValueString()
+	if !config.ScopeUUIDs.IsNull() && !config.ScopeUUIDs.IsUnknown() {
+		scopeUUIDs, scopeUUIDDiags := notificationServiceUUIDs(ctx, config.ScopeUUIDs)
+		resp.Diagnostics.Append(scopeUUIDDiags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+
+		seen := make(map[string]struct{}, len(scopeUUIDs))
+		for _, scopeUUID := range scopeUUIDs {
+			if _, ok := seen[scopeUUID]; ok {
+				resp.Diagnostics.AddError(
+					"Duplicate notification service scope UUID",
+					"scope_uuids contains the same UUID more than once using different letter casing. Remove the duplicate value.",
+				)
+				return
+			}
+			seen[scopeUUID] = struct{}{}
+		}
+
+		scope := config.Scope
+		if scope.IsNull() {
+			scope = types.StringValue("all")
+		}
+		if len(scopeUUIDs) > 0 && !scope.IsUnknown() && !strings.HasPrefix(scope.ValueString(), "some_") {
+			resp.Diagnostics.AddError(
+				"Notification service scope UUIDs require a scoped service",
+				"Set scope to some_projects, some_teams, or some_clusters when scope_uuids is not empty.",
+			)
+			return
+		}
+	}
+
 	configuredSettings := config.configuredSettings()
 	if len(configuredSettings) > 1 {
 		resp.Diagnostics.AddError(
@@ -670,7 +703,7 @@ func (m notificationServiceResourceModel) createPayload(ctx context.Context) (ma
 
 	var diags diag.Diagnostics
 	if !m.ScopeUUIDs.IsNull() && !m.ScopeUUIDs.IsUnknown() {
-		values, valueDiags := notificationServiceStringSet(ctx, m.ScopeUUIDs)
+		values, valueDiags := notificationServiceUUIDs(ctx, m.ScopeUUIDs)
 		diags.Append(valueDiags...)
 		if len(values) > 0 {
 			payload["scope_uuids"] = values
@@ -699,7 +732,7 @@ func (m notificationServiceResourceModel) updatePayload(ctx context.Context, sta
 		if m.ScopeUUIDs.IsNull() {
 			payload["scope_uuids"] = []string{}
 		} else {
-			values, valueDiags := notificationServiceStringSet(ctx, m.ScopeUUIDs)
+			values, valueDiags := notificationServiceUUIDs(ctx, m.ScopeUUIDs)
 			diags.Append(valueDiags...)
 			payload["scope_uuids"] = values
 		}
@@ -899,6 +932,29 @@ func notificationServiceStringSet(ctx context.Context, value types.Set) ([]strin
 	return result, diags
 }
 
+func notificationServiceUUIDs(ctx context.Context, value types.Set) ([]string, diag.Diagnostics) {
+	result, diags := notificationServiceStringSet(ctx, value)
+	for index := range result {
+		result[index] = strings.ToLower(result[index])
+	}
+	return result, diags
+}
+
+func notificationServiceUUIDsEqual(ctx context.Context, value types.Set, other []string) (bool, diag.Diagnostics) {
+	if value.IsNull() || value.IsUnknown() {
+		return false, nil
+	}
+
+	got, diags := notificationServiceUUIDs(ctx, value)
+	want := make([]string, len(other))
+	for index, uuid := range other {
+		want[index] = strings.ToLower(uuid)
+	}
+	slices.Sort(got)
+	slices.Sort(want)
+	return slices.Equal(got, want), diags
+}
+
 func notificationServiceStringMap(ctx context.Context, value types.Map) (map[string]string, diag.Diagnostics) {
 	result := make(map[string]string)
 	diags := value.ElementsAs(ctx, &result, false)
@@ -928,9 +984,13 @@ func (m *notificationServiceResourceModel) applyAPIResponse(ctx context.Context,
 	if len(result.ScopeUUIDs) == 0 && m.ScopeUUIDs.IsNull() {
 		m.ScopeUUIDs = types.SetNull(types.StringType)
 	} else {
-		scopeUUIDs, scopeUUIDDiags := types.SetValueFrom(ctx, types.StringType, result.ScopeUUIDs)
-		diags.Append(scopeUUIDDiags...)
-		m.ScopeUUIDs = scopeUUIDs
+		equal, equalDiags := notificationServiceUUIDsEqual(ctx, m.ScopeUUIDs, result.ScopeUUIDs)
+		diags.Append(equalDiags...)
+		if !equal {
+			scopeUUIDs, scopeUUIDDiags := types.SetValueFrom(ctx, types.StringType, result.ScopeUUIDs)
+			diags.Append(scopeUUIDDiags...)
+			m.ScopeUUIDs = scopeUUIDs
+		}
 	}
 
 	switch result.Provider.ID {
