@@ -12,6 +12,7 @@ import (
 	"github.com/MakeNowJust/heredoc"
 	"github.com/hashicorp/terraform-plugin-framework-validators/setvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -398,7 +399,10 @@ func (r *notificationServiceResource) ModifyPlan(ctx context.Context, req resour
 	}
 
 	providerType := config.ProviderType.ValueString()
-	if !config.ScopeUUIDs.IsNull() && !config.ScopeUUIDs.IsUnknown() {
+	scopeUUIDsKnown := !slices.ContainsFunc(config.ScopeUUIDs.Elements(), func(value attr.Value) bool {
+		return value.IsUnknown()
+	})
+	if !config.ScopeUUIDs.IsNull() && !config.ScopeUUIDs.IsUnknown() && scopeUUIDsKnown {
 		scopeUUIDs, scopeUUIDDiags := notificationServiceUUIDs(ctx, config.ScopeUUIDs)
 		resp.Diagnostics.Append(scopeUUIDDiags...)
 		if resp.Diagnostics.HasError() {

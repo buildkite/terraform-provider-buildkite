@@ -853,6 +853,35 @@ func TestNotificationServiceAllowsEmptyScopedService(t *testing.T) {
 	})
 }
 
+func TestNotificationServiceAllowsComputedScopeUUID(t *testing.T) {
+	config := `
+		provider "buildkite" {
+			organization = "test"
+			api_token = "test"
+			rest_url = "http://127.0.0.1"
+			max_retries = 0
+		}
+
+		resource "terraform_data" "scope" {}
+
+		resource "buildkite_notification_service" "test" {
+			provider_type = "webhook"
+			scope = "some_projects"
+			scope_uuids = [terraform_data.scope.id]
+			webhook = { url = "https://example.test/hook" }
+		}
+	`
+
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		Steps: []resource.TestStep{{
+			Config:             config,
+			PlanOnly:           true,
+			ExpectNonEmptyPlan: true,
+		}},
+	})
+}
+
 func TestAccBuildkiteNotificationService(t *testing.T) {
 	random := acctest.RandString(10)
 	config := func(description string, enabled bool) string {
