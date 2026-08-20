@@ -153,6 +153,7 @@ func (tf *terraformProvider) Resources(context.Context) []func() resource.Resour
 		newClusterResource,
 		newClusterSecretResource,
 		newDefaultQueueClusterResource,
+		newNotificationServiceResource,
 		newOrganizationBannerResource,
 		newOrganizationRuleResource,
 		newOrganizationResource,
@@ -182,7 +183,7 @@ func (*terraformProvider) Schema(ctx context.Context, req provider.SchemaRequest
 			},
 			SchemaKeyAPIToken: schema.StringAttribute{
 				Optional:            true,
-				MarkdownDescription: "API token with GraphQL access and `write_pipelines`, `read_pipelines` and `write_suites` REST API scopes. You can generate a token from [your settings page](https://buildkite.com/user/api-access-tokens/new?description=terraform&scopes[]=write_pipelines&scopes[]=write_suites&scopes[]=read_pipelines&scopes[]=graphql). If not provided, the value is taken from the `BUILDKITE_API_TOKEN` environment variable.",
+				MarkdownDescription: "API token with GraphQL access and `write_pipelines`, `read_pipelines`, `write_suites`, `read_notification_services`, and `write_notification_services` REST API scopes. You can generate a token from [your settings page](https://buildkite.com/user/api-access-tokens/new?description=terraform&scopes[]=write_pipelines&scopes[]=write_suites&scopes[]=read_pipelines&scopes[]=read_notification_services&scopes[]=write_notification_services&scopes[]=graphql). If not provided, the value is taken from the `BUILDKITE_API_TOKEN` environment variable.",
 				Sensitive:           true,
 			},
 			SchemaKeyGraphqlURL: schema.StringAttribute{
