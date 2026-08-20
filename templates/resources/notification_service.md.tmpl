@@ -31,5 +31,9 @@ Imported OAuth-managed `linear` and `slack_workspace` services can manage their 
 
 Legacy `slack` notification services are not supported. Migrate them to a Slack Workspace notification service before managing them with Terraform.
 
-Imported non-OAuth services still need their matching settings block. Buildkite masks Datadog API keys and AWS account IDs, and omits OpenTelemetry headers. Terraform does not store the masked values, so all three remain unset after import. Add a secret value if Terraform should manage it. Adding the matching AWS account ID after import adopts it without replacing the service. Changing a known AWS region or account ID replaces the EventBridge service.
+Imported non-OAuth services still need their matching settings block. Buildkite masks Datadog API keys and AWS account IDs, and omits OpenTelemetry headers. Terraform does not store the masked values, so all three remain unset after import.
+
+Also declare `enabled`, `scope`, and `scope_uuids` to match the existing service. These attributes default to `true` and `all`, and the defaults take precedence over the imported values, so omitting them makes the first apply enable a disabled service and widen a scoped one to the whole organization.
+
+Adding the matching AWS account ID after import adopts it without replacing the service; only its trailing digits are checked against the masked value. Setting a Datadog API key or OpenTelemetry headers after import overwrites the stored secret rather than adopting it, so supply the real value or leave the attribute unset. Changing a known AWS region or account ID replaces the EventBridge service.
 {{- end }}
