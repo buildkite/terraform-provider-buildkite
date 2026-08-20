@@ -539,7 +539,16 @@ func (r *notificationServiceResource) Create(ctx context.Context, req resource.C
 		return
 	}
 
-	created, err := r.create(ctx, payload)
+	timeout, diags := r.client.timeouts.Create(ctx, DefaultTimeout)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	requestCtx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
+	created, err := r.create(requestCtx, payload)
 	if err != nil {
 		resp.Diagnostics.AddError("Unable to create notification service", err.Error())
 		return
@@ -556,7 +565,7 @@ func (r *notificationServiceResource) Create(ctx context.Context, req resource.C
 		return
 	}
 
-	disabled, err := r.setEnabled(ctx, state.ID.ValueString(), false)
+	disabled, err := r.setEnabled(requestCtx, state.ID.ValueString(), false)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to disable notification service",
@@ -625,10 +634,19 @@ func (r *notificationServiceResource) Update(ctx context.Context, req resource.U
 		return
 	}
 
+	timeout, diags := r.client.timeouts.Update(ctx, DefaultTimeout)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	requestCtx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
 	var result *notificationServiceAPIResponse
 	var err error
 	if len(payload) > 0 {
-		result, err = r.update(ctx, state.ID.ValueString(), payload)
+		result, err = r.update(requestCtx, state.ID.ValueString(), payload)
 		if err != nil {
 			resp.Diagnostics.AddError("Unable to update notification service", err.Error())
 			return
@@ -646,7 +664,7 @@ func (r *notificationServiceResource) Update(ctx context.Context, req resource.U
 	}
 
 	if enabledChanged {
-		result, err = r.setEnabled(ctx, state.ID.ValueString(), plan.Enabled.ValueBool())
+		result, err = r.setEnabled(requestCtx, state.ID.ValueString(), plan.Enabled.ValueBool())
 		if err != nil {
 			resp.Diagnostics.AddError("Unable to change notification service enabled state", err.Error())
 			return
@@ -654,7 +672,7 @@ func (r *notificationServiceResource) Update(ctx context.Context, req resource.U
 	}
 
 	if result == nil {
-		result, err = r.get(ctx, state.ID.ValueString())
+		result, err = r.get(requestCtx, state.ID.ValueString())
 		if err != nil {
 			resp.Diagnostics.AddError("Unable to read updated notification service", err.Error())
 			return
@@ -672,7 +690,16 @@ func (r *notificationServiceResource) Delete(ctx context.Context, req resource.D
 		return
 	}
 
-	err := r.delete(ctx, state.ID.ValueString())
+	timeout, diags := r.client.timeouts.Delete(ctx, DefaultTimeout)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	requestCtx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
+	err := r.delete(requestCtx, state.ID.ValueString())
 	if err != nil && !isAPIStatus(err, http.StatusNotFound) {
 		resp.Diagnostics.AddError("Unable to delete notification service", err.Error())
 	}
