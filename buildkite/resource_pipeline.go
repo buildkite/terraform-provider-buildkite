@@ -1908,6 +1908,16 @@ func mapProviderSettingsFromGraphQL(repo RepositoryProviderSettingsFields) *prov
 			FilterCondition: types.StringPointerValue(s.FilterCondition),
 			FilterEnabled:   types.BoolPointerValue(s.FilterEnabled),
 		}
+	case *RepositoryProviderSettingsFieldsProviderRepositoryProviderOrigin:
+		s := provider.Settings
+		return &providerSettingsModel{
+			BuildBranches:       types.BoolPointerValue(s.BuildBranches),
+			BuildPullRequests:   types.BoolPointerValue(s.BuildPullRequests),
+			BuildTags:           types.BoolPointerValue(s.BuildTags),
+			FilterCondition:     types.StringPointerValue(s.FilterCondition),
+			FilterEnabled:       types.BoolPointerValue(s.FilterEnabled),
+			PublishCommitStatus: types.BoolPointerValue(s.PublishCommitStatus),
+		}
 	case *RepositoryProviderSettingsFieldsProviderRepositoryProviderCursorOrigin:
 		s := provider.Settings
 		return &providerSettingsModel{
