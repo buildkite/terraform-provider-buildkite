@@ -219,10 +219,13 @@ Optional:
 - `build_merge_group_checks_requested` (Boolean) Whether to create merge queue builds for a merge queue enabled GitHub repository with required status checks
 - `build_pull_request_base_branch_changed` (Boolean) Whether to create builds for pull requests when its base branch changes.
 - `build_pull_request_converted_to_draft` (Boolean) Whether to create a build when a pull request is converted to a draft.
+- `build_pull_request_dequeued` (Boolean) Whether to create builds when a pull request is removed from a merge queue. Requires `build_pull_requests` to be enabled.
 - `build_pull_request_forks` (Boolean) Whether to create builds for pull requests from third-party forks.
 - `build_pull_request_labels_changed` (Boolean) Whether to create builds for pull requests when labels are added or removed.
 - `build_pull_request_merge_commits` (Boolean) Whether to build the test merge commit (the merged result of a pull request with its base branch).
 - `build_pull_request_ready_for_review` (Boolean) Whether to create a build when a pull request changes to "Ready for review".
+- `build_pull_request_reopened` (Boolean) Whether to create builds when a pull request is reopened. Requires `build_pull_requests` to be enabled.
+- `build_pull_request_review_comment_created` (Boolean) Whether to create builds when an inline review comment is created on a pull request. Requires `build_pull_requests` to be enabled.
 - `build_pull_request_review_dismissed` (Boolean) Whether to create a build when a pull request review is dismissed.
 - `build_pull_request_review_requested` (Boolean) Whether to create a build when a review is requested on a pull request.
 - `build_pull_request_review_submitted` (Boolean) Whether to create a build when a pull request review is submitted.
@@ -244,6 +247,8 @@ Optional:
 - `publish_commit_status_per_step` (Boolean) Whether to create a separate status for each job in a build, allowing you to see the status of each job directly in Bitbucket or GitHub.
 - `pull_request_branch_filter_configuration` (String) Filter pull requests builds by the branch filter.
 - `pull_request_branch_filter_enabled` (Boolean) Filter pull request builds.
+- `review_comment_command_word` (String) The command word used to trigger builds from inline pull request review comments (e.g. "/bk"). Only review comments starting with or containing this word will trigger builds.
+- `review_comment_match_mode` (String) The match mode for the review comment command word. Valid values are "exact" and "contains".
 - `separate_pull_request_statuses` (Boolean) Whether to create a separate status for pull request builds, allowing you to require a passing pull request build in your [required status checks](https://help.github.com/en/articles/enabling-required-status-checks) in GitHub.
 - `skip_builds_for_existing_commits` (Boolean) Whether to skip creating a new build if an existing build for the commit and branch already exists. This option is only valid if the pipeline uses a GitHub repository.
 - `skip_pull_request_builds_for_existing_commits` (Boolean) Whether to skip creating a new build for a pull request if an existing build for the commit and branch already exists.

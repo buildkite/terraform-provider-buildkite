@@ -2,7 +2,7 @@ steps:
   - label: release
     command: ".buildkite/steps/release.sh"
     plugins:
-      - aws-assume-role-with-web-identity#v1.6.0:
+      - aws-assume-role-with-web-identity#v1.7.0:
           role-arn: arn:aws:iam::445615400570:role/pipeline-buildkite-terraform-provider-buildkite-release
           session-tags:
             - organization_slug
@@ -15,7 +15,7 @@ steps:
           parameters:
             GITHUB_TOKEN: /pipelines/buildkite/terraform-provider-buildkite-release/github-token
             GPG_SECRET_KEY_BASE64: /pipelines/buildkite/terraform-provider-buildkite-release/gpg-secret-key-base64
-      - docker-compose#v5.13.0:
+      - docker-compose#v5.14.0:
           run: go
     agents:
       queue: "oss-deploy"

@@ -3181,6 +3181,12 @@ type RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubEnterpriseS
 	BuildDeploymentStatusCreated *bool `json:"buildDeploymentStatusCreated"`
 	// Whether to create builds when a pull request is converted to draft.
 	BuildPullRequestConvertedToDraft *bool `json:"buildPullRequestConvertedToDraft"`
+	// Whether to create builds when a pull request is removed from a merge queue.
+	BuildPullRequestDequeued *bool `json:"buildPullRequestDequeued"`
+	// Whether to create builds when a pull request is reopened.
+	BuildPullRequestReopened *bool `json:"buildPullRequestReopened"`
+	// Whether to create builds when an inline review comment is created on a pull request.
+	BuildPullRequestReviewCommentCreated *bool `json:"buildPullRequestReviewCommentCreated"`
 	// Whether to create builds when a pull request review is requested.
 	BuildPullRequestReviewRequested *bool `json:"buildPullRequestReviewRequested"`
 	// Whether to create builds when a pull request review is dismissed.
@@ -3237,6 +3243,10 @@ type RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubEnterpriseS
 	PullRequestBranchFilterConfiguration *string `json:"pullRequestBranchFilterConfiguration"`
 	// Whether to limit the creation of builds to specific branches or patterns.
 	PullRequestBranchFilterEnabled *bool `json:"pullRequestBranchFilterEnabled"`
+	// The command word used to trigger builds from inline PR review comments (e.g. "/bk"). Only comments containing this word will trigger builds.
+	ReviewCommentCommandWord *string `json:"reviewCommentCommandWord"`
+	// The match mode for review comment command words.
+	ReviewCommentMatchMode *CommandWordMatchMode `json:"reviewCommentMatchMode"`
 	// Whether to create a separate status for pull request builds, allowing you to require a passing pull request build in your required status checks in GitHub.
 	SeparatePullRequestStatuses *bool `json:"separatePullRequestStatuses"`
 	// Whether to skip creating a new build if a build for the commit and branch already exists.
@@ -3274,6 +3284,21 @@ func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubEnterpr
 // GetBuildPullRequestConvertedToDraft returns RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings.BuildPullRequestConvertedToDraft, and is useful for accessing the field via an interface.
 func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings) GetBuildPullRequestConvertedToDraft() *bool {
 	return v.BuildPullRequestConvertedToDraft
+}
+
+// GetBuildPullRequestDequeued returns RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings.BuildPullRequestDequeued, and is useful for accessing the field via an interface.
+func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings) GetBuildPullRequestDequeued() *bool {
+	return v.BuildPullRequestDequeued
+}
+
+// GetBuildPullRequestReopened returns RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings.BuildPullRequestReopened, and is useful for accessing the field via an interface.
+func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings) GetBuildPullRequestReopened() *bool {
+	return v.BuildPullRequestReopened
+}
+
+// GetBuildPullRequestReviewCommentCreated returns RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings.BuildPullRequestReviewCommentCreated, and is useful for accessing the field via an interface.
+func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings) GetBuildPullRequestReviewCommentCreated() *bool {
+	return v.BuildPullRequestReviewCommentCreated
 }
 
 // GetBuildPullRequestReviewRequested returns RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings.BuildPullRequestReviewRequested, and is useful for accessing the field via an interface.
@@ -3416,6 +3441,16 @@ func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubEnterpr
 	return v.PullRequestBranchFilterEnabled
 }
 
+// GetReviewCommentCommandWord returns RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings.ReviewCommentCommandWord, and is useful for accessing the field via an interface.
+func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings) GetReviewCommentCommandWord() *string {
+	return v.ReviewCommentCommandWord
+}
+
+// GetReviewCommentMatchMode returns RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings.ReviewCommentMatchMode, and is useful for accessing the field via an interface.
+func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings) GetReviewCommentMatchMode() *CommandWordMatchMode {
+	return v.ReviewCommentMatchMode
+}
+
 // GetSeparatePullRequestStatuses returns RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings.SeparatePullRequestStatuses, and is useful for accessing the field via an interface.
 func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings) GetSeparatePullRequestStatuses() *bool {
 	return v.SeparatePullRequestStatuses
@@ -3461,6 +3496,12 @@ type RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubSettingsRep
 	BuildDeploymentStatusCreated *bool `json:"buildDeploymentStatusCreated"`
 	// Whether to create builds when a pull request is converted to draft.
 	BuildPullRequestConvertedToDraft *bool `json:"buildPullRequestConvertedToDraft"`
+	// Whether to create builds when a pull request is removed from a merge queue.
+	BuildPullRequestDequeued *bool `json:"buildPullRequestDequeued"`
+	// Whether to create builds when a pull request is reopened.
+	BuildPullRequestReopened *bool `json:"buildPullRequestReopened"`
+	// Whether to create builds when an inline review comment is created on a pull request.
+	BuildPullRequestReviewCommentCreated *bool `json:"buildPullRequestReviewCommentCreated"`
 	// Whether to create builds when a pull request review is requested.
 	BuildPullRequestReviewRequested *bool `json:"buildPullRequestReviewRequested"`
 	// Whether to create builds when a pull request review is dismissed.
@@ -3517,6 +3558,10 @@ type RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubSettingsRep
 	PullRequestBranchFilterConfiguration *string `json:"pullRequestBranchFilterConfiguration"`
 	// Whether to limit the creation of builds to specific branches or patterns.
 	PullRequestBranchFilterEnabled *bool `json:"pullRequestBranchFilterEnabled"`
+	// The command word used to trigger builds from inline PR review comments (e.g. "/bk"). Only comments containing this word will trigger builds.
+	ReviewCommentCommandWord *string `json:"reviewCommentCommandWord"`
+	// The match mode for review comment command words.
+	ReviewCommentMatchMode *CommandWordMatchMode `json:"reviewCommentMatchMode"`
 	// Whether to create a separate status for pull request builds, allowing you to require a passing pull request build in your required status checks in GitHub.
 	SeparatePullRequestStatuses *bool `json:"separatePullRequestStatuses"`
 	// Whether to skip creating a new build if a build for the commit and branch already exists.
@@ -3554,6 +3599,21 @@ func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubSetting
 // GetBuildPullRequestConvertedToDraft returns RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings.BuildPullRequestConvertedToDraft, and is useful for accessing the field via an interface.
 func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings) GetBuildPullRequestConvertedToDraft() *bool {
 	return v.BuildPullRequestConvertedToDraft
+}
+
+// GetBuildPullRequestDequeued returns RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings.BuildPullRequestDequeued, and is useful for accessing the field via an interface.
+func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings) GetBuildPullRequestDequeued() *bool {
+	return v.BuildPullRequestDequeued
+}
+
+// GetBuildPullRequestReopened returns RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings.BuildPullRequestReopened, and is useful for accessing the field via an interface.
+func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings) GetBuildPullRequestReopened() *bool {
+	return v.BuildPullRequestReopened
+}
+
+// GetBuildPullRequestReviewCommentCreated returns RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings.BuildPullRequestReviewCommentCreated, and is useful for accessing the field via an interface.
+func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings) GetBuildPullRequestReviewCommentCreated() *bool {
+	return v.BuildPullRequestReviewCommentCreated
 }
 
 // GetBuildPullRequestReviewRequested returns RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings.BuildPullRequestReviewRequested, and is useful for accessing the field via an interface.
@@ -3694,6 +3754,16 @@ func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubSetting
 // GetPullRequestBranchFilterEnabled returns RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings.PullRequestBranchFilterEnabled, and is useful for accessing the field via an interface.
 func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings) GetPullRequestBranchFilterEnabled() *bool {
 	return v.PullRequestBranchFilterEnabled
+}
+
+// GetReviewCommentCommandWord returns RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings.ReviewCommentCommandWord, and is useful for accessing the field via an interface.
+func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings) GetReviewCommentCommandWord() *string {
+	return v.ReviewCommentCommandWord
+}
+
+// GetReviewCommentMatchMode returns RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings.ReviewCommentMatchMode, and is useful for accessing the field via an interface.
+func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings) GetReviewCommentMatchMode() *CommandWordMatchMode {
+	return v.ReviewCommentMatchMode
 }
 
 // GetSeparatePullRequestStatuses returns RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings.SeparatePullRequestStatuses, and is useful for accessing the field via an interface.
@@ -26185,6 +26255,9 @@ fragment RepositoryProviderSettingsFields on Repository {
 				buildCreateEvent
 				buildDeploymentStatusCreated
 				buildPullRequestConvertedToDraft
+				buildPullRequestDequeued
+				buildPullRequestReopened
+				buildPullRequestReviewCommentCreated
 				buildPullRequestReviewRequested
 				buildPullRequestReviewDismissed
 				buildPullRequestReviewSubmitted
@@ -26213,6 +26286,8 @@ fragment RepositoryProviderSettingsFields on Repository {
 				publishCommitStatusPerStep
 				pullRequestBranchFilterConfiguration
 				pullRequestBranchFilterEnabled
+				reviewCommentCommandWord
+				reviewCommentMatchMode
 				separatePullRequestStatuses
 				skipBuildsForExistingCommits
 				skipPullRequestBuildsForExistingCommits
@@ -26228,6 +26303,9 @@ fragment RepositoryProviderSettingsFields on Repository {
 				buildCreateEvent
 				buildDeploymentStatusCreated
 				buildPullRequestConvertedToDraft
+				buildPullRequestDequeued
+				buildPullRequestReopened
+				buildPullRequestReviewCommentCreated
 				buildPullRequestReviewRequested
 				buildPullRequestReviewDismissed
 				buildPullRequestReviewSubmitted
@@ -26256,6 +26334,8 @@ fragment RepositoryProviderSettingsFields on Repository {
 				publishCommitStatusPerStep
 				pullRequestBranchFilterConfiguration
 				pullRequestBranchFilterEnabled
+				reviewCommentCommandWord
+				reviewCommentMatchMode
 				separatePullRequestStatuses
 				skipBuildsForExistingCommits
 				skipPullRequestBuildsForExistingCommits

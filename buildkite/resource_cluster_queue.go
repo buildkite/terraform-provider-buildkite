@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net/http"
 	"strings"
 	"time"
 
@@ -219,7 +220,11 @@ func (clusterQueueResource) Schema(ctx context.Context, req resource.SchemaReque
 							},
 							"macos_version": resource_schema.StringAttribute{
 								Optional:    true,
-								Description: "Optional selection of a specific macOS version to be selected for jobs in the queue to have available. Please note that this value is currently experimental and may not function as expected.",
+								Computed:    true,
+								Description: "The macOS version available to jobs in this queue. Buildkite selects the current default when this is omitted. This setting is experimental and may not work as expected.",
+								PlanModifiers: []planmodifier.String{
+									stringplanmodifier.UseStateForUnknown(),
+								},
 							},
 						},
 					},
@@ -282,21 +287,15 @@ func (cq *clusterQueueResource) Create(ctx context.Context, req resource.CreateR
 				},
 			}
 		} else if plan.HostedAgents.Mac != nil {
-			if plan.HostedAgents.Mac.MacosVersion.IsNull() {
-				hosted.PlatformSettings = HostedAgentsPlatformSettingsInput{
-					Macos: &HostedAgentsMacosPlatformSettingsInput{
-						XcodeVersion: plan.HostedAgents.Mac.XcodeVersion.ValueStringPointer(),
-					},
-				}
-			} else {
-				version := HostedAgentMacOSVersion(plan.HostedAgents.Mac.MacosVersion.ValueString())
+			hosted.PlatformSettings = HostedAgentsPlatformSettingsInput{
+				Macos: &HostedAgentsMacosPlatformSettingsInput{
+					XcodeVersion: plan.HostedAgents.Mac.XcodeVersion.ValueStringPointer(),
+				},
+			}
 
-				hosted.PlatformSettings = HostedAgentsPlatformSettingsInput{
-					Macos: &HostedAgentsMacosPlatformSettingsInput{
-						XcodeVersion: plan.HostedAgents.Mac.XcodeVersion.ValueStringPointer(),
-						MacosVersion: &version,
-					},
-				}
+			if !plan.HostedAgents.Mac.MacosVersion.IsNull() && !plan.HostedAgents.Mac.MacosVersion.IsUnknown() {
+				version := HostedAgentMacOSVersion(plan.HostedAgents.Mac.MacosVersion.ValueString())
+				hosted.PlatformSettings.Macos.MacosVersion = &version
 			}
 		}
 	}
@@ -521,7 +520,7 @@ func (cq *clusterQueueResource) Update(ctx context.Context, req resource.UpdateR
 				XcodeVersion: plan.HostedAgents.Mac.XcodeVersion.ValueStringPointer(),
 			}
 
-			if !plan.HostedAgents.Mac.MacosVersion.IsNull() {
+			if !plan.HostedAgents.Mac.MacosVersion.IsNull() && !plan.HostedAgents.Mac.MacosVersion.IsUnknown() {
 				version := HostedAgentMacOSVersion(plan.HostedAgents.Mac.MacosVersion.ValueString())
 				hosted.PlatformSettings.Macos.MacosVersion = &version
 			}
@@ -828,5 +827,5 @@ func (cq *clusterQueueResource) updateClusterQueueViaREST(ctx context.Context, c
 		"retry_agent_affinity": retryAgentAffinity,
 	}
 	var response clusterQueueRestResponse
-	return cq.client.makeRequest(ctx, "PATCH", path, payload, &response)
+	return cq.client.makeRequest(ctx, http.MethodPatch, path, payload, &response)
 }
