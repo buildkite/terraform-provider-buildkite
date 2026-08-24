@@ -109,6 +109,25 @@ func (*organizationPipelineSettingsResource) ConfigValidators(context.Context) [
 	}
 }
 
+func (*organizationPipelineSettingsResource) ValidateConfig(ctx context.Context, req resource.ValidateConfigRequest, resp *resource.ValidateConfigResponse) {
+	var config organizationPipelineSettingsResourceModel
+	resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
+	if resp.Diagnostics.HasError() || config.BuildExportLocation.IsNull() || config.BuildExportStrategyID.IsNull() ||
+		config.BuildExportLocation.IsUnknown() || config.BuildExportStrategyID.IsUnknown() {
+		return
+	}
+
+	locationEmpty := config.BuildExportLocation.ValueString() == ""
+	strategyEmpty := config.BuildExportStrategyID.ValueString() == ""
+	if locationEmpty != strategyEmpty {
+		resp.Diagnostics.AddAttributeError(
+			path.Root("build_export_strategy_id"),
+			"Mismatched build export location and strategy",
+			"build_export_location and build_export_strategy_id describe one destination, so either both must name it or both must be empty to stop exporting build data.",
+		)
+	}
+}
+
 func (o *organizationPipelineSettingsResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
 	if req.ProviderData == nil {
 		return
@@ -281,11 +300,11 @@ func (o *organizationPipelineSettingsResource) Create(ctx context.Context, req r
 
 	log.Printf("Creating pipeline settings for organization %s ...", o.client.organization)
 	state := o.apply(ctx, &config, &plan, &resp.Diagnostics)
-	if resp.Diagnostics.HasError() {
-		return
+	if state != nil {
+		// apply can partially succeed across the settings endpoints. Recording the latest response
+		// preserves what changed even when a later request adds an error diagnostic.
+		resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 	}
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }
 
 func (o *organizationPipelineSettingsResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
@@ -327,11 +346,10 @@ func (o *organizationPipelineSettingsResource) Update(ctx context.Context, req r
 
 	log.Printf("Updating pipeline settings for organization %s ...", o.client.organization)
 	state := o.apply(ctx, &config, &plan, &resp.Diagnostics)
-	if resp.Diagnostics.HasError() {
-		return
+	if state != nil {
+		// Keep state aligned with any endpoint writes that succeeded before a later one failed.
+		resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 	}
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }
 
 // Delete leaves the organization's settings as they are. They have no existence apart from the
@@ -344,6 +362,13 @@ func (o *organizationPipelineSettingsResource) Delete(ctx context.Context, req r
 }
 
 func (o *organizationPipelineSettingsResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	if req.ID != o.client.organization {
+		resp.Diagnostics.AddError(
+			"Organization does not match provider configuration",
+			fmt.Sprintf("Cannot import pipeline settings for organization %q while the provider is configured for %q.", req.ID, o.client.organization),
+		)
+		return
+	}
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
 
@@ -360,29 +385,38 @@ func (o *organizationPipelineSettingsResource) apply(ctx context.Context, config
 		return nil
 	}
 
+	stateFromSettings := func() *organizationPipelineSettingsResourceModel {
+		state := *plan
+		diags.Append(state.fromAPI(ctx, o.client.organization, settings)...)
+		return &state
+	}
+
 	if payload := pipelineSettingsPatch(config, plan, settings); len(payload) > 0 {
-		settings, err = o.client.updateOrganizationPipelineSettings(ctx, payload)
-		if err != nil {
+		updated, updateErr := o.client.updateOrganizationPipelineSettings(ctx, payload)
+		if updateErr != nil {
 			diags.AddError(
 				"Unable to update organization pipeline settings",
-				pipelineSettingsErrorDetail("update the organization pipeline settings", writeOrganizationSettingsScope, err),
+				pipelineSettingsErrorDetail("update the organization pipeline settings", writeOrganizationSettingsScope, updateErr),
 			)
-			return nil
+			return stateFromSettings()
 		}
+		settings = updated
 	}
 
 	settings = o.applyToggle(ctx, pipelineSettingsPublicPipelinesPath, "public pipeline creation",
 		config.PublicPipelineCreationEnabled, plan.PublicPipelineCreationEnabled, settings.PublicPipelineCreation.Enabled, settings, diags)
-	settings = o.applyToggle(ctx, pipelineSettingsHostedAgentsSSHPath, "hosted agent remote access",
-		config.HostedAgentsTerminalAccessEnabled, plan.HostedAgentsTerminalAccessEnabled, settings.HostedAgentsTerminalAccess.Enabled, settings, diags)
-	settings = o.applyBuildExport(ctx, config, plan, settings, diags)
 	if diags.HasError() {
-		return nil
+		return stateFromSettings()
 	}
 
-	state := *plan
-	diags.Append(state.fromAPI(ctx, o.client.organization, settings)...)
-	return &state
+	settings = o.applyToggle(ctx, pipelineSettingsHostedAgentsSSHPath, "hosted agent remote access",
+		config.HostedAgentsTerminalAccessEnabled, plan.HostedAgentsTerminalAccessEnabled, settings.HostedAgentsTerminalAccess.Enabled, settings, diags)
+	if diags.HasError() {
+		return stateFromSettings()
+	}
+
+	settings = o.applyBuildExport(ctx, config, plan, settings, diags)
+	return stateFromSettings()
 }
 
 // applyToggle drives the sub-route of a setting that is switched rather than written, leaving it

@@ -5,8 +5,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/http/httptest"
+	"reflect"
+	"sync"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/plancheck"
@@ -141,6 +145,77 @@ func TestPipelineSettingsPatch(t *testing.T) {
 				t.Errorf("got %s, want %s", got, tc.want)
 			}
 		})
+	}
+}
+
+func TestApplyStopsAfterAnEndpointErrorAndKeepsPartialState(t *testing.T) {
+	t.Parallel()
+
+	var (
+		mu       sync.Mutex
+		requests []string
+	)
+	settings := organizationPipelineSettings{
+		DefaultBranch:               ptr("main"),
+		ScheduledJobExpiryInMinutes: ptr(int64(43200)),
+	}
+	settings.PublicPipelineCreation.Enabled = true
+	settings.HostedAgentsTerminalAccess.Enabled = true
+	settings.BuildExports.Available = true
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mu.Lock()
+		defer mu.Unlock()
+		requests = append(requests, r.Method+" "+r.URL.Path)
+		if r.URL.Path == "/v2/organizations/acme/pipeline-settings/public-pipelines" {
+			http.Error(w, `{"message":"forbidden"}`, http.StatusForbidden)
+			return
+		}
+		if r.Method == http.MethodPatch {
+			settings.DefaultBranch = ptr("trunk")
+		}
+		if err := json.NewEncoder(w).Encode(settings); err != nil {
+			t.Errorf("unable to write response: %v", err)
+		}
+	}))
+	defer server.Close()
+
+	settingsResource := &organizationPipelineSettingsResource{client: &Client{
+		http:         server.Client(),
+		restURL:      server.URL,
+		organization: "acme",
+	}}
+	config := organizationPipelineSettingsResourceModel{
+		DefaultBranch:                     types.StringValue("trunk"),
+		PublicPipelineCreationEnabled:     types.BoolValue(false),
+		HostedAgentsTerminalAccessEnabled: types.BoolValue(false),
+		BuildExportLocation:               types.StringValue("my-export-bucket"),
+		BuildExportStrategyID:             types.StringValue("s3"),
+	}
+	plan := config
+	var diags diag.Diagnostics
+
+	state := settingsResource.apply(context.Background(), &config, &plan, &diags)
+
+	if !diags.HasError() {
+		t.Fatal("expected the public pipeline update to fail")
+	}
+	if state == nil || state.ID.ValueString() != "acme" {
+		t.Fatalf("expected partial state for acme, got %#v", state)
+	}
+	if state.DefaultBranch.ValueString() != "trunk" {
+		t.Fatalf("expected partial state to record the successful branch update, got %s", state.DefaultBranch)
+	}
+	want := []string{
+		"GET /v2/organizations/acme/pipeline-settings",
+		"PATCH /v2/organizations/acme/pipeline-settings",
+		"DELETE /v2/organizations/acme/pipeline-settings/public-pipelines",
+	}
+	mu.Lock()
+	gotRequests := append([]string(nil), requests...)
+	mu.Unlock()
+	if !reflect.DeepEqual(gotRequests, want) {
+		t.Fatalf("got requests %v, want %v", gotRequests, want)
 	}
 }
 
@@ -304,62 +379,6 @@ func TestAccBuildkiteOrganizationPipelineSettingsResource(t *testing.T) {
 							// the hosted agent toggle was never configured, so it is only read back
 							if settings.HostedAgentsTerminalAccess.Enabled != original.HostedAgentsTerminalAccess.Enabled {
 								return fmt.Errorf("remote hosted agent remote access changed, want it left alone")
-							}
-							return nil
-						}),
-					),
-				},
-			},
-		})
-	})
-
-	t.Run("manages build data export", func(t *testing.T) {
-		bucket := fmt.Sprintf("tf-acc-%s", getenv("BUILDKITE_ORGANIZATION_SLUG"))
-
-		resource.Test(t, resource.TestCase{
-			PreCheck: func() {
-				testAccPreCheck(t)
-				settings := preserveOrganizationPipelineSettings(t)
-				// exporting build data is only writable on plans that include it
-				if !settings.BuildExports.Available {
-					t.Skip("exporting build data is not available on this organization's plan")
-				}
-			},
-			ProtoV6ProviderFactories: protoV6ProviderFactories(),
-			CheckDestroy:             testCheckOrganizationPipelineSettingsRemain,
-			Steps: []resource.TestStep{
-				{
-					Config: config(fmt.Sprintf(`
-						build_export_location    = %q
-						build_export_strategy_id = "s3"
-					`, bucket)),
-					Check: resource.ComposeAggregateTestCheckFunc(
-						resource.TestCheckResourceAttr("buildkite_organization_pipeline_settings.settings", "build_export_location", bucket),
-						resource.TestCheckResourceAttr("buildkite_organization_pipeline_settings.settings", "build_export_strategy_id", "s3"),
-						resource.TestCheckResourceAttr("buildkite_organization_pipeline_settings.settings", "build_export_available", "true"),
-						testAccCheckOrganizationPipelineSettingsRemoteValues(func(settings *organizationPipelineSettings) error {
-							if !settings.BuildExports.Enabled {
-								return fmt.Errorf("remote build data export is disabled, want enabled")
-							}
-							if settings.BuildExports.Location == nil || *settings.BuildExports.Location != bucket {
-								return fmt.Errorf("remote build export location is %v, want %s", settings.BuildExports.Location, bucket)
-							}
-							return nil
-						}),
-					),
-				},
-				{
-					// emptying both stops the export, which the API only accepts on its own endpoint
-					Config: config(`
-						build_export_location    = ""
-						build_export_strategy_id = ""
-					`),
-					Check: resource.ComposeAggregateTestCheckFunc(
-						resource.TestCheckResourceAttr("buildkite_organization_pipeline_settings.settings", "build_export_location", ""),
-						resource.TestCheckResourceAttr("buildkite_organization_pipeline_settings.settings", "build_export_strategy_id", ""),
-						testAccCheckOrganizationPipelineSettingsRemoteValues(func(settings *organizationPipelineSettings) error {
-							if settings.BuildExports.Enabled {
-								return fmt.Errorf("remote build data export is enabled, want disabled")
 							}
 							return nil
 						}),

@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"regexp"
+	"sync"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
@@ -17,11 +18,13 @@ import (
 // really checking is that every apply leaves state matching the plan Terraform made for it, which
 // depends on how the API answers and so cannot be seen from the resource alone.
 type fakePipelineSettingsAPI struct {
-	t        *testing.T
-	settings organizationPipelineSettings
+	t                 *testing.T
+	mu                sync.Mutex
+	settings          organizationPipelineSettings
+	buildExportStatus int
 }
 
-func newFakePipelineSettingsAPI(t *testing.T) *httptest.Server {
+func newFakePipelineSettingsAPI(t *testing.T) (*httptest.Server, *fakePipelineSettingsAPI) {
 	t.Helper()
 
 	api := &fakePipelineSettingsAPI{t: t}
@@ -35,25 +38,37 @@ func newFakePipelineSettingsAPI(t *testing.T) *httptest.Server {
 	server := httptest.NewServer(api)
 	t.Cleanup(server.Close)
 
-	return server
+	return server, api
 }
 
 func (a *fakePipelineSettingsAPI) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	const base = "/v2/organizations/acme/pipeline-settings"
 
+	// httptest serves requests concurrently, while this fake models one organization-wide resource.
+	a.mu.Lock()
+	defer a.mu.Unlock()
+
 	switch {
 	case r.URL.Path == base && r.Method == http.MethodGet:
 
 	case r.URL.Path == base && r.Method == http.MethodPatch:
-		a.patch(w, r)
+		if !a.patch(w, r) {
+			return
+		}
 
-	case r.URL.Path == base+"/public-pipelines":
-		a.settings.PublicPipelineCreation.Enabled = r.Method == http.MethodPut
+	case r.URL.Path == base+"/public-pipelines" && r.Method == http.MethodPut:
+		a.settings.PublicPipelineCreation.Enabled = true
 
-	case r.URL.Path == base+"/hosted-agents-ssh":
-		a.settings.HostedAgentsTerminalAccess.Enabled = r.Method == http.MethodPut
+	case r.URL.Path == base+"/public-pipelines" && r.Method == http.MethodDelete:
+		a.settings.PublicPipelineCreation.Enabled = false
 
-	case r.URL.Path == base+"/build-export":
+	case r.URL.Path == base+"/hosted-agents-ssh" && r.Method == http.MethodPut:
+		a.settings.HostedAgentsTerminalAccess.Enabled = true
+
+	case r.URL.Path == base+"/hosted-agents-ssh" && r.Method == http.MethodDelete:
+		a.settings.HostedAgentsTerminalAccess.Enabled = false
+
+	case r.URL.Path == base+"/build-export" && (r.Method == http.MethodPut || r.Method == http.MethodDelete):
 		if !a.buildExport(w, r) {
 			return
 		}
@@ -69,11 +84,12 @@ func (a *fakePipelineSettingsAPI) ServeHTTP(w http.ResponseWriter, r *http.Reque
 	}
 }
 
-func (a *fakePipelineSettingsAPI) patch(w http.ResponseWriter, r *http.Request) {
+func (a *fakePipelineSettingsAPI) patch(w http.ResponseWriter, r *http.Request) bool {
 	var body map[string]any
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		a.t.Errorf("unable to read the request: %v", err)
-		return
+		http.Error(w, `{"message":"invalid JSON"}`, http.StatusBadRequest)
+		return false
 	}
 
 	// Only the keys the request carries change, which is what lets the resource leave the settings
@@ -94,11 +110,16 @@ func (a *fakePipelineSettingsAPI) patch(w http.ResponseWriter, r *http.Request) 
 			a.t.Errorf("unexpected key in the request: %s", key)
 		}
 	}
+	return true
 }
 
 // buildExport mirrors the API's refusal to clear the export through its own endpoint, which is what
 // makes an empty location a delete rather than a write.
 func (a *fakePipelineSettingsAPI) buildExport(w http.ResponseWriter, r *http.Request) bool {
+	if a.buildExportStatus != 0 {
+		http.Error(w, `{"message":"build export unavailable"}`, a.buildExportStatus)
+		return false
+	}
 	if r.Method == http.MethodDelete {
 		a.settings.BuildExports.Enabled = false
 		a.settings.BuildExports.Location = nil
@@ -122,8 +143,8 @@ func (a *fakePipelineSettingsAPI) buildExport(w http.ResponseWriter, r *http.Req
 	return true
 }
 
-func TestAccBuildkiteOrganizationPipelineSettingsResourceAgainstFakeAPI(t *testing.T) {
-	server := newFakePipelineSettingsAPI(t)
+func TestUnitBuildkiteOrganizationPipelineSettingsResourceAgainstFakeAPI(t *testing.T) {
+	server, api := newFakePipelineSettingsAPI(t)
 
 	config := func(settings string) string {
 		return fmt.Sprintf(`
@@ -141,7 +162,7 @@ func TestAccBuildkiteOrganizationPipelineSettingsResourceAgainstFakeAPI(t *testi
 
 	const name = "buildkite_organization_pipeline_settings.settings"
 
-	resource.Test(t, resource.TestCase{
+	resource.UnitTest(t, resource.TestCase{
 		ProtoV6ProviderFactories: protoV6ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
@@ -184,6 +205,20 @@ func TestAccBuildkiteOrganizationPipelineSettingsResourceAgainstFakeAPI(t *testi
 				),
 			},
 			{
+				// zero is a stored timeout value, not the API's null representation of an unset timeout
+				Config: config(`
+					default_timeout_in_minutes = 0
+					maximum_timeout_in_minutes = 0
+				`),
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PostApplyPostRefresh: []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()},
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(name, "default_timeout_in_minutes", "0"),
+					resource.TestCheckResourceAttr(name, "maximum_timeout_in_minutes", "0"),
+				),
+			},
+			{
 				// an empty cluster leaves new pipelines without a default one
 				Config: config(`default_cluster_id = ""`),
 				ConfigPlanChecks: resource.ConfigPlanChecks{
@@ -219,6 +254,12 @@ func TestAccBuildkiteOrganizationPipelineSettingsResourceAgainstFakeAPI(t *testi
 				ImportStateVerifyIgnore: []string{"default_cluster_id"},
 			},
 			{
+				ResourceName:  name,
+				ImportState:   true,
+				ImportStateId: "another-organization",
+				ExpectError:   regexp.MustCompile("Organization does not match provider configuration"),
+			},
+			{
 				// emptying both stops the export
 				Config: config(`
 					build_export_location    = ""
@@ -243,7 +284,7 @@ func TestAccBuildkiteOrganizationPipelineSettingsResourceAgainstFakeAPI(t *testi
 	rejects := func(t *testing.T, settings, message string) {
 		t.Helper()
 
-		resource.Test(t, resource.TestCase{
+		resource.UnitTest(t, resource.TestCase{
 			ProtoV6ProviderFactories: protoV6ProviderFactories(),
 			Steps: []resource.TestStep{
 				{
@@ -274,6 +315,26 @@ func TestAccBuildkiteOrganizationPipelineSettingsResourceAgainstFakeAPI(t *testi
 
 	t.Run("rejects a scheduled job expiry out of range", func(t *testing.T) {
 		rejects(t, `scheduled_job_expiry_in_minutes = 59`, "Invalid Attribute Value")
+	})
+
+	t.Run("explains when build export is unavailable on the organization plan", func(t *testing.T) {
+		api.mu.Lock()
+		originalAvailable := api.settings.BuildExports.Available
+		originalStatus := api.buildExportStatus
+		api.settings.BuildExports.Available = false
+		api.buildExportStatus = http.StatusForbidden
+		api.mu.Unlock()
+		t.Cleanup(func() {
+			api.mu.Lock()
+			defer api.mu.Unlock()
+			api.settings.BuildExports.Available = originalAvailable
+			api.buildExportStatus = originalStatus
+		})
+
+		rejects(t, `
+			build_export_location    = "my-export-bucket"
+			build_export_strategy_id = "s3"
+		`, "not available on this organization's plan")
 	})
 }
 
