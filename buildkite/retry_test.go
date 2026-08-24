@@ -184,6 +184,12 @@ type stubResponse struct {
 	body   string
 }
 
+type roundTripFunc func(*http.Request) (*http.Response, error)
+
+func (f roundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) {
+	return f(req)
+}
+
 // newRetryStub serves responses in order and repeats the last one once they run out, counting
 // requests so tests can assert how many attempts the client made.
 func newRetryStub(t *testing.T, responses ...stubResponse) (*httptest.Server, *atomic.Int64) {
@@ -224,6 +230,34 @@ func newRetryTestClient(t *testing.T, serverURL string, maxRetries int, wait tim
 	client.restRetry.RetryWaitMax = wait
 
 	return client
+}
+
+func TestMakeRequestUsesCallerDeadline(t *testing.T) {
+	t.Parallel()
+
+	var gotDeadline time.Time
+	client := &Client{
+		restURL: "https://example.com",
+		http: &http.Client{Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
+			gotDeadline, _ = req.Context().Deadline()
+			return &http.Response{
+				StatusCode: http.StatusNoContent,
+				Body:       http.NoBody,
+				Request:    req,
+			}, nil
+		})},
+	}
+
+	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Minute)
+	t.Cleanup(cancel)
+	wantDeadline, _ := ctx.Deadline()
+
+	if err := client.makeRequest(ctx, http.MethodPost, "/notification-services", nil, nil); err != nil {
+		t.Fatalf("makeRequest() error = %v", err)
+	}
+	if !gotDeadline.Equal(wantDeadline) {
+		t.Errorf("request deadline = %v, want caller deadline %v", gotDeadline, wantDeadline)
+	}
 }
 
 // A sustained 5xx has to reach the user as a status code and the API's own message. retryablehttp

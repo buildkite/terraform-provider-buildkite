@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net/http"
 	"strings"
 	"time"
 
@@ -826,5 +827,5 @@ func (cq *clusterQueueResource) updateClusterQueueViaREST(ctx context.Context, c
 		"retry_agent_affinity": retryAgentAffinity,
 	}
 	var response clusterQueueRestResponse
-	return cq.client.makeRequest(ctx, "PATCH", path, payload, &response)
+	return cq.client.makeRequest(ctx, http.MethodPatch, path, payload, &response)
 }
