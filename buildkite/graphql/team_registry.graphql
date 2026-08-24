@@ -1,0 +1,34 @@
+fragment TeamRegistryFields on TeamRegistry {
+    id
+    # aliased because getNode also selects TeamSuite's uuid and accessLevel with different types
+    teamRegistryUuid: uuid
+    registryAccessLevel: accessLevel
+    team {
+        id
+    }
+    registry {
+        id
+    }
+}
+
+mutation createTeamRegistry($teamId: ID!, $registryId: ID!, $accessLevel: RegistryAccessLevels!) {
+    teamRegistryCreate(input: {teamID: $teamId, registryID: $registryId, accessLevel: $accessLevel}) {
+        teamRegistry {
+            ...TeamRegistryFields
+        }
+    }
+}
+
+mutation updateTeamRegistry($id: ID!, $accessLevel: RegistryAccessLevels!) {
+    teamRegistryUpdate(input: {id: $id, accessLevel: $accessLevel}) {
+        teamRegistry {
+            ...TeamRegistryFields
+        }
+    }
+}
+
+mutation deleteTeamRegistry($id: ID!) {
+    teamRegistryDelete(input: {id: $id, force: true}) {
+        deletedTeamRegistryID
+    }
+}
