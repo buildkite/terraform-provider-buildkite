@@ -65,13 +65,13 @@ Using `terraform import`, import resources using the `id`. For example:
 #     }
 #   }
 # }
-terraform import buildkite_team.everyone UGlwZWxpbmUtLS00MzVjYWQ1OC1lODFkLTQ1YWYtODYzNy1iMWNmODA3MDIzOGQ=
+terraform import buildkite_team.everyone VGVhbS0tLTdmOTdlZDZhLTQ4MjQtNDM2Yi04NWE0LTNlZDQ0YWRjY2IxMg==
 ```
 
 In Terraform v1.5.0 and later, use an [`import` block](https://developer.hashicorp.com/terraform/language/import) to import instances using the `id`. For example:
 ```terraform
 import {
   to = buildkite_team.everyone
-  id = "UGlwZWxpbmUtLS00MzVjYWQ1OC1lODFkLTQ1YWYtODYzNy1iMWNmODA3MDIzOGQ="
+  id = "VGVhbS0tLTdmOTdlZDZhLTQ4MjQtNDM2Yi04NWE0LTNlZDQ0YWRjY2IxMg=="
 }
 ```

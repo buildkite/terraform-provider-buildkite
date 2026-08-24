@@ -632,6 +632,8 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 			More information on pipelines can be found in the [documentation](https://buildkite.com/docs/pipelines).
 
 			-> **Note:** When creating a new pipeline, the Buildkite API requires at least one team to be associated with it. You must use the 'default_team_id' attribute to specify this initial team. The 'buildkite_pipeline_team' resource can then be used to manage team access for existing pipelines.
+
+			-> **Note:** After importing a pipeline, optional attributes that are set on the pipeline but left out of the configuration (for example 'color' or 'emoji') are cleared on the next apply.
 		`),
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{

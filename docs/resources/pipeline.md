@@ -6,6 +6,7 @@ description: |-
   This resource allows you to create and manage pipelines for repositories.
   More information on pipelines can be found in the documentation https://buildkite.com/docs/pipelines.
   -> Note: When creating a new pipeline, the Buildkite API requires at least one team to be associated with it. You must use the 'default_team_id' attribute to specify this initial team. The 'buildkite_pipeline_team' resource can then be used to manage team access for existing pipelines.
+  -> Note: After importing a pipeline, optional attributes that are set on the pipeline but left out of the configuration (for example 'color' or 'emoji') are cleared on the next apply.
 ---
 
 # buildkite_pipeline (Resource)
@@ -15,6 +16,8 @@ This resource allows you to create and manage pipelines for repositories.
 More information on pipelines can be found in the [documentation](https://buildkite.com/docs/pipelines).
 
 -> **Note:** When creating a new pipeline, the Buildkite API requires at least one team to be associated with it. You must use the 'default_team_id' attribute to specify this initial team. The 'buildkite_pipeline_team' resource can then be used to manage team access for existing pipelines.
+
+-> **Note:** After importing a pipeline, optional attributes that are set on the pipeline but left out of the configuration (for example 'color' or 'emoji') are cleared on the next apply.
 
 ## Example Usage
 
