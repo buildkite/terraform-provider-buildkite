@@ -742,6 +742,75 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 		})
 	})
 
+	t.Run("manages github webhooks", func(t *testing.T) {
+		pipelineName := acctest.RandString(12)
+		clusterName := acctest.RandString(12)
+		config := func(enabled bool) string {
+			return fmt.Sprintf(`
+				resource "buildkite_cluster" "cluster" {
+					name = "%s"
+				}
+				resource "buildkite_pipeline" "pipeline" {
+					name = "%s"
+					repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
+					cluster_id = buildkite_cluster.cluster.id
+					github_webhooks_enabled = %t
+				}
+			`, clusterName, pipelineName, enabled)
+		}
+		// Confirm the webhooks are enabled or disabled in Buildkite's system
+		checkRemote := func(enabled bool) resource.TestCheckFunc {
+			return func(s *terraform.State) error {
+				var webhooks struct {
+					Enabled bool `json:"enabled"`
+				}
+				path := fmt.Sprintf("/v2/organizations/%s/pipelines/%s/github-webhooks", getenv("BUILDKITE_ORGANIZATION_SLUG"), pipelineName)
+				if err := getTestClient().makeRequest(context.Background(), "GET", path, nil, &webhooks); err != nil {
+					return err
+				}
+				if webhooks.Enabled != enabled {
+					return fmt.Errorf("Remote github webhooks enabled does not match. Expected: %t, got: %t", enabled, webhooks.Enabled)
+				}
+				return nil
+			}
+		}
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			CheckDestroy:             testAccCheckPipelineDestroyFunc,
+			Steps: []resource.TestStep{
+				{
+					Config: config(false),
+					Check: resource.ComposeAggregateTestCheckFunc(
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "github_webhooks_enabled", "false"),
+						checkRemote(false),
+					),
+				},
+				{
+					Config: config(true),
+					ConfigPlanChecks: resource.ConfigPlanChecks{
+						PostApplyPostRefresh: []plancheck.PlanCheck{
+							plancheck.ExpectEmptyPlan(),
+						},
+					},
+					Check: resource.ComposeAggregateTestCheckFunc(
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "github_webhooks_enabled", "true"),
+						checkRemote(true),
+					),
+				},
+				{
+					// the setting is only read when it is managed, so it is not part of the imported state
+					// (provider_settings is the opposite: import always reads it)
+					ResourceName:            "buildkite_pipeline.pipeline",
+					ImportState:             true,
+					ImportStateVerify:       true,
+					ImportStateVerifyIgnore: []string{"github_webhooks_enabled", "provider_settings"},
+				},
+			},
+		})
+	})
+
 	t.Run("create pipeline setting all attributes", func(t *testing.T) {
 		pipelineName := acctest.RandString(12)
 		clusterName := acctest.RandString(12)
