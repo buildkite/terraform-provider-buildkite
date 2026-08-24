@@ -26,6 +26,8 @@ func TestRfc3339Validator(t *testing.T) {
 		{name: "utc", input: types.StringValue("2030-01-01T00:00:00Z"), expectError: false},
 		{name: "offset", input: types.StringValue("2030-01-01T10:30:00+10:00"), expectError: false},
 		{name: "fractional seconds", input: types.StringValue("2030-01-01T00:00:00.5Z"), expectError: false},
+		{name: "milliseconds", input: types.StringValue("2030-01-01T00:00:00.123Z"), expectError: false},
+		{name: "finer than milliseconds", input: types.StringValue("2030-01-01T00:00:00.123456Z"), expectError: true},
 		{name: "null", input: types.StringNull(), expectError: false},
 		{name: "unknown", input: types.StringUnknown(), expectError: false},
 		{name: "date only", input: types.StringValue("2030-01-01"), expectError: true},
@@ -60,6 +62,27 @@ func TestExpiresAtFromAPI(t *testing.T) {
 		{name: "same instant keeps the configured format", remote: &remote, current: types.StringValue("2030-01-01T10:00:00+10:00"), want: types.StringValue("2030-01-01T10:00:00+10:00")},
 		{name: "unset in state", remote: &remote, current: types.StringNull(), want: types.StringValue("2030-01-01T00:00:00Z")},
 		{name: "different instant", remote: &remote, current: types.StringValue("2029-01-01T00:00:00Z"), want: types.StringValue("2030-01-01T00:00:00Z")},
+	}
+	// values the validator accepts must read back unchanged once the API has stored them
+	for _, configured := range []string{"2030-01-01T00:00:00Z", "2030-01-01T00:00:00+00:00", "2030-01-01T10:00:00+10:00", "2030-01-01T00:00:00.5Z", "2030-01-01T00:00:00.123Z"} {
+		stored, err := time.Parse(time.RFC3339, configured)
+		if err != nil {
+			t.Fatal(err)
+		}
+		stored = stored.UTC().Truncate(time.Millisecond)
+		tests = append(tests, struct {
+			name    string
+			remote  *time.Time
+			current types.String
+			want    types.String
+		}{"round trip " + configured, &stored, types.StringValue(configured), types.StringValue(configured)})
+		// and an import (nothing configured) keeps the fraction
+		tests = append(tests, struct {
+			name    string
+			remote  *time.Time
+			current types.String
+			want    types.String
+		}{"import " + configured, &stored, types.StringNull(), types.StringValue(stored.Format(time.RFC3339Nano))})
 	}
 
 	for _, tc := range tests {
@@ -171,7 +194,7 @@ func TestAccBuildkiteClusterAgentTokenResource(t *testing.T) {
 				description = "Acceptance Test expiring %s"
 				expires_at = "%s"
 			}
-			`, tokenDesc, expiresAt.Format(time.RFC3339))
+			`, tokenDesc, expiresAt.Format(time.RFC3339Nano))
 		}
 		// Confirm the token has the expiry in Buildkite's system
 		checkRemoteExpiry := func(expiresAt time.Time) resource.TestCheckFunc {
@@ -180,8 +203,8 @@ func TestAccBuildkiteClusterAgentTokenResource(t *testing.T) {
 				if err := testAccCheckClusterAgentTokenExists("buildkite_cluster_agent_token.expiring", &ct)(s); err != nil {
 					return err
 				}
-				if ct.ExpiresAt.ValueString() != expiresAt.Format(time.RFC3339) {
-					return fmt.Errorf("Remote Cluster agent token expiry (%s) doesn't match expected value (%s)", ct.ExpiresAt.ValueString(), expiresAt.Format(time.RFC3339))
+				if ct.ExpiresAt.ValueString() != expiresAt.Format(time.RFC3339Nano) {
+					return fmt.Errorf("Remote Cluster agent token expiry (%s) doesn't match expected value (%s)", ct.ExpiresAt.ValueString(), expiresAt.Format(time.RFC3339Nano))
 				}
 				return nil
 			}
@@ -196,7 +219,7 @@ func TestAccBuildkiteClusterAgentTokenResource(t *testing.T) {
 					Config: config(expiry),
 					Check: resource.ComposeAggregateTestCheckFunc(
 						checkRemoteExpiry(expiry),
-						resource.TestCheckResourceAttr("buildkite_cluster_agent_token.expiring", "expires_at", expiry.Format(time.RFC3339)),
+						resource.TestCheckResourceAttr("buildkite_cluster_agent_token.expiring", "expires_at", expiry.Format(time.RFC3339Nano)),
 						resource.TestCheckNoResourceAttr("buildkite_cluster_agent_token.foobar", "expires_at"),
 					),
 				},
@@ -212,6 +235,16 @@ func TestAccBuildkiteClusterAgentTokenResource(t *testing.T) {
 						},
 					},
 					Check: checkRemoteExpiry(expiry.AddDate(0, 0, 30)),
+				},
+				{
+					// the API keeps milliseconds, so a fractional expiry must read back unchanged
+					Config: config(expiry.Add(123 * time.Millisecond)),
+					ConfigPlanChecks: resource.ConfigPlanChecks{
+						PostApplyPostRefresh: []plancheck.PlanCheck{
+							plancheck.ExpectEmptyPlan(),
+						},
+					},
+					Check: checkRemoteExpiry(expiry.Add(123 * time.Millisecond)),
 				},
 			},
 		})

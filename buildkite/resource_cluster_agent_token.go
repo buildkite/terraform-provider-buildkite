@@ -99,7 +99,7 @@ func (ct *clusterAgentToken) Schema(_ context.Context, _ resource.SchemaRequest,
 			},
 			"expires_at": resource_schema.StringAttribute{
 				Optional:            true,
-				MarkdownDescription: "The time at which the token expires, in RFC 3339 format (e.g. `2030-01-01T00:00:00Z`) and at least 10 minutes in the future. If not set, the token never expires. Changing this value replaces the token, since the expiry cannot be updated.",
+				MarkdownDescription: "The time at which the token expires, in RFC 3339 format with up to millisecond precision (e.g. `2030-01-01T00:00:00Z`) and at least 10 minutes in the future. If not set, the token never expires. Changing this value replaces the token, since the expiry cannot be updated.",
 				Validators: []validator.String{
 					rfc3339Validator{},
 				},
@@ -325,24 +325,30 @@ func expiresAtFromAPI(remote *time.Time, current types.String) types.String {
 	if configured, err := time.Parse(time.RFC3339, current.ValueString()); err == nil && configured.Equal(*remote) {
 		return current
 	}
-	return types.StringValue(remote.UTC().Format(time.RFC3339))
+	return types.StringValue(remote.UTC().Format(time.RFC3339Nano))
 }
 
 type rfc3339Validator struct{}
 
 func (v rfc3339Validator) Description(ctx context.Context) string {
-	return "value must be an RFC 3339 timestamp"
+	return "value must be an RFC 3339 timestamp with at most millisecond precision"
 }
 
 func (v rfc3339Validator) MarkdownDescription(ctx context.Context) string {
-	return "value must be an RFC 3339 timestamp"
+	return "value must be an RFC 3339 timestamp with at most millisecond precision"
 }
 
 func (v rfc3339Validator) ValidateString(ctx context.Context, req validator.StringRequest, resp *validator.StringResponse) {
 	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
 		return
 	}
-	if _, err := time.Parse(time.RFC3339, req.ConfigValue.ValueString()); err != nil {
+	t, err := time.Parse(time.RFC3339, req.ConfigValue.ValueString())
+	if err != nil {
 		resp.Diagnostics.AddAttributeError(req.Path, "Invalid timestamp", fmt.Sprintf("Value must be an RFC 3339 timestamp such as 2030-01-01T00:00:00Z: %s", err.Error()))
+		return
+	}
+	// the API returns milliseconds, so anything finer would never read back the same
+	if !t.Equal(t.Truncate(time.Millisecond)) {
+		resp.Diagnostics.AddAttributeError(req.Path, "Invalid timestamp", "Value must have at most millisecond precision")
 	}
 }

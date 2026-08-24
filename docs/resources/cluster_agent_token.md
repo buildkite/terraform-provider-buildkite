@@ -62,7 +62,7 @@ resource "buildkite_cluster_agent_token" "expiring_token" {
 ### Optional
 
 - `allowed_ip_addresses` (List of String) A list of CIDR-notation IPv4 addresses from which agents can use this Cluster Agent Token.If not set, all IP addresses are allowed (the same as setting 0.0.0.0/0).
-- `expires_at` (String) The time at which the token expires, in RFC 3339 format (e.g. `2030-01-01T00:00:00Z`) and at least 10 minutes in the future. If not set, the token never expires. Changing this value replaces the token, since the expiry cannot be updated.
+- `expires_at` (String) The time at which the token expires, in RFC 3339 format with up to millisecond precision (e.g. `2030-01-01T00:00:00Z`) and at least 10 minutes in the future. If not set, the token never expires. Changing this value replaces the token, since the expiry cannot be updated.
 
 ### Read-Only
 
