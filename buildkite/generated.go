@@ -638,6 +638,184 @@ func (v *GetOrganizationMembersResponse) GetOrganization() GetOrganizationMember
 	return v.Organization
 }
 
+// GetOrganizationPipelinesOrganization includes the requested fields of the GraphQL type Organization.
+// The GraphQL type's documentation follows.
+//
+// An organization
+type GetOrganizationPipelinesOrganization struct {
+	// Return all the pipelines the current user has access to for this organization
+	Pipelines GetOrganizationPipelinesOrganizationPipelinesPipelineConnection `json:"pipelines"`
+}
+
+// GetPipelines returns GetOrganizationPipelinesOrganization.Pipelines, and is useful for accessing the field via an interface.
+func (v *GetOrganizationPipelinesOrganization) GetPipelines() GetOrganizationPipelinesOrganizationPipelinesPipelineConnection {
+	return v.Pipelines
+}
+
+// GetOrganizationPipelinesOrganizationPipelinesPipelineConnection includes the requested fields of the GraphQL type PipelineConnection.
+// The GraphQL type's documentation follows.
+//
+// The connection type for Pipeline.
+type GetOrganizationPipelinesOrganizationPipelinesPipelineConnection struct {
+	Count    int                                                                     `json:"count"`
+	PageInfo GetOrganizationPipelinesOrganizationPipelinesPipelineConnectionPageInfo `json:"pageInfo"`
+	// A list of edges.
+	Edges []GetOrganizationPipelinesOrganizationPipelinesPipelineConnectionEdgesPipelineEdge `json:"edges"`
+}
+
+// GetCount returns GetOrganizationPipelinesOrganizationPipelinesPipelineConnection.Count, and is useful for accessing the field via an interface.
+func (v *GetOrganizationPipelinesOrganizationPipelinesPipelineConnection) GetCount() int {
+	return v.Count
+}
+
+// GetPageInfo returns GetOrganizationPipelinesOrganizationPipelinesPipelineConnection.PageInfo, and is useful for accessing the field via an interface.
+func (v *GetOrganizationPipelinesOrganizationPipelinesPipelineConnection) GetPageInfo() GetOrganizationPipelinesOrganizationPipelinesPipelineConnectionPageInfo {
+	return v.PageInfo
+}
+
+// GetEdges returns GetOrganizationPipelinesOrganizationPipelinesPipelineConnection.Edges, and is useful for accessing the field via an interface.
+func (v *GetOrganizationPipelinesOrganizationPipelinesPipelineConnection) GetEdges() []GetOrganizationPipelinesOrganizationPipelinesPipelineConnectionEdgesPipelineEdge {
+	return v.Edges
+}
+
+// GetOrganizationPipelinesOrganizationPipelinesPipelineConnectionEdgesPipelineEdge includes the requested fields of the GraphQL type PipelineEdge.
+// The GraphQL type's documentation follows.
+//
+// An edge in a connection.
+type GetOrganizationPipelinesOrganizationPipelinesPipelineConnectionEdgesPipelineEdge struct {
+	// The item at the end of the edge.
+	Node GetOrganizationPipelinesOrganizationPipelinesPipelineConnectionEdgesPipelineEdgeNodePipeline `json:"node"`
+}
+
+// GetNode returns GetOrganizationPipelinesOrganizationPipelinesPipelineConnectionEdgesPipelineEdge.Node, and is useful for accessing the field via an interface.
+func (v *GetOrganizationPipelinesOrganizationPipelinesPipelineConnectionEdgesPipelineEdge) GetNode() GetOrganizationPipelinesOrganizationPipelinesPipelineConnectionEdgesPipelineEdgeNodePipeline {
+	return v.Node
+}
+
+// GetOrganizationPipelinesOrganizationPipelinesPipelineConnectionEdgesPipelineEdgeNodePipeline includes the requested fields of the GraphQL type Pipeline.
+// The GraphQL type's documentation follows.
+//
+// A pipeline
+type GetOrganizationPipelinesOrganizationPipelinesPipelineConnectionEdgesPipelineEdgeNodePipeline struct {
+	Id string `json:"id"`
+	// The UUID of the pipeline
+	Uuid string `json:"uuid"`
+	// The slug of the pipeline
+	Slug string `json:"slug"`
+	// The name of the pipeline
+	Name string `json:"name"`
+	// The short description of the pipeline
+	Description *string `json:"description"`
+	// The default branch for this pipeline
+	DefaultBranch *string `json:"defaultBranch"`
+	// Whether this pipeline has been archived
+	Archived bool `json:"archived"`
+	// The repository for this pipeline
+	Repository GetOrganizationPipelinesOrganizationPipelinesPipelineConnectionEdgesPipelineEdgeNodePipelineRepository `json:"repository"`
+	Cluster    GetOrganizationPipelinesOrganizationPipelinesPipelineConnectionEdgesPipelineEdgeNodePipelineCluster    `json:"cluster"`
+}
+
+// GetId returns GetOrganizationPipelinesOrganizationPipelinesPipelineConnectionEdgesPipelineEdgeNodePipeline.Id, and is useful for accessing the field via an interface.
+func (v *GetOrganizationPipelinesOrganizationPipelinesPipelineConnectionEdgesPipelineEdgeNodePipeline) GetId() string {
+	return v.Id
+}
+
+// GetUuid returns GetOrganizationPipelinesOrganizationPipelinesPipelineConnectionEdgesPipelineEdgeNodePipeline.Uuid, and is useful for accessing the field via an interface.
+func (v *GetOrganizationPipelinesOrganizationPipelinesPipelineConnectionEdgesPipelineEdgeNodePipeline) GetUuid() string {
+	return v.Uuid
+}
+
+// GetSlug returns GetOrganizationPipelinesOrganizationPipelinesPipelineConnectionEdgesPipelineEdgeNodePipeline.Slug, and is useful for accessing the field via an interface.
+func (v *GetOrganizationPipelinesOrganizationPipelinesPipelineConnectionEdgesPipelineEdgeNodePipeline) GetSlug() string {
+	return v.Slug
+}
+
+// GetName returns GetOrganizationPipelinesOrganizationPipelinesPipelineConnectionEdgesPipelineEdgeNodePipeline.Name, and is useful for accessing the field via an interface.
+func (v *GetOrganizationPipelinesOrganizationPipelinesPipelineConnectionEdgesPipelineEdgeNodePipeline) GetName() string {
+	return v.Name
+}
+
+// GetDescription returns GetOrganizationPipelinesOrganizationPipelinesPipelineConnectionEdgesPipelineEdgeNodePipeline.Description, and is useful for accessing the field via an interface.
+func (v *GetOrganizationPipelinesOrganizationPipelinesPipelineConnectionEdgesPipelineEdgeNodePipeline) GetDescription() *string {
+	return v.Description
+}
+
+// GetDefaultBranch returns GetOrganizationPipelinesOrganizationPipelinesPipelineConnectionEdgesPipelineEdgeNodePipeline.DefaultBranch, and is useful for accessing the field via an interface.
+func (v *GetOrganizationPipelinesOrganizationPipelinesPipelineConnectionEdgesPipelineEdgeNodePipeline) GetDefaultBranch() *string {
+	return v.DefaultBranch
+}
+
+// GetArchived returns GetOrganizationPipelinesOrganizationPipelinesPipelineConnectionEdgesPipelineEdgeNodePipeline.Archived, and is useful for accessing the field via an interface.
+func (v *GetOrganizationPipelinesOrganizationPipelinesPipelineConnectionEdgesPipelineEdgeNodePipeline) GetArchived() bool {
+	return v.Archived
+}
+
+// GetRepository returns GetOrganizationPipelinesOrganizationPipelinesPipelineConnectionEdgesPipelineEdgeNodePipeline.Repository, and is useful for accessing the field via an interface.
+func (v *GetOrganizationPipelinesOrganizationPipelinesPipelineConnectionEdgesPipelineEdgeNodePipeline) GetRepository() GetOrganizationPipelinesOrganizationPipelinesPipelineConnectionEdgesPipelineEdgeNodePipelineRepository {
+	return v.Repository
+}
+
+// GetCluster returns GetOrganizationPipelinesOrganizationPipelinesPipelineConnectionEdgesPipelineEdgeNodePipeline.Cluster, and is useful for accessing the field via an interface.
+func (v *GetOrganizationPipelinesOrganizationPipelinesPipelineConnectionEdgesPipelineEdgeNodePipeline) GetCluster() GetOrganizationPipelinesOrganizationPipelinesPipelineConnectionEdgesPipelineEdgeNodePipelineCluster {
+	return v.Cluster
+}
+
+// GetOrganizationPipelinesOrganizationPipelinesPipelineConnectionEdgesPipelineEdgeNodePipelineCluster includes the requested fields of the GraphQL type Cluster.
+type GetOrganizationPipelinesOrganizationPipelinesPipelineConnectionEdgesPipelineEdgeNodePipelineCluster struct {
+	Id *string `json:"id"`
+}
+
+// GetId returns GetOrganizationPipelinesOrganizationPipelinesPipelineConnectionEdgesPipelineEdgeNodePipelineCluster.Id, and is useful for accessing the field via an interface.
+func (v *GetOrganizationPipelinesOrganizationPipelinesPipelineConnectionEdgesPipelineEdgeNodePipelineCluster) GetId() *string {
+	return v.Id
+}
+
+// GetOrganizationPipelinesOrganizationPipelinesPipelineConnectionEdgesPipelineEdgeNodePipelineRepository includes the requested fields of the GraphQL type Repository.
+// The GraphQL type's documentation follows.
+//
+// A repository associated with a pipeline
+type GetOrganizationPipelinesOrganizationPipelinesPipelineConnectionEdgesPipelineEdgeNodePipelineRepository struct {
+	// The git URL for this repository
+	Url string `json:"url"`
+}
+
+// GetUrl returns GetOrganizationPipelinesOrganizationPipelinesPipelineConnectionEdgesPipelineEdgeNodePipelineRepository.Url, and is useful for accessing the field via an interface.
+func (v *GetOrganizationPipelinesOrganizationPipelinesPipelineConnectionEdgesPipelineEdgeNodePipelineRepository) GetUrl() string {
+	return v.Url
+}
+
+// GetOrganizationPipelinesOrganizationPipelinesPipelineConnectionPageInfo includes the requested fields of the GraphQL type PageInfo.
+// The GraphQL type's documentation follows.
+//
+// Information about pagination in a connection.
+type GetOrganizationPipelinesOrganizationPipelinesPipelineConnectionPageInfo struct {
+	// When paginating forwards, the cursor to continue.
+	EndCursor string `json:"endCursor"`
+	// When paginating forwards, are there more items?
+	HasNextPage bool `json:"hasNextPage"`
+}
+
+// GetEndCursor returns GetOrganizationPipelinesOrganizationPipelinesPipelineConnectionPageInfo.EndCursor, and is useful for accessing the field via an interface.
+func (v *GetOrganizationPipelinesOrganizationPipelinesPipelineConnectionPageInfo) GetEndCursor() string {
+	return v.EndCursor
+}
+
+// GetHasNextPage returns GetOrganizationPipelinesOrganizationPipelinesPipelineConnectionPageInfo.HasNextPage, and is useful for accessing the field via an interface.
+func (v *GetOrganizationPipelinesOrganizationPipelinesPipelineConnectionPageInfo) GetHasNextPage() bool {
+	return v.HasNextPage
+}
+
+// GetOrganizationPipelinesResponse is returned by GetOrganizationPipelines on success.
+type GetOrganizationPipelinesResponse struct {
+	// Find an organization
+	Organization GetOrganizationPipelinesOrganization `json:"organization"`
+}
+
+// GetOrganization returns GetOrganizationPipelinesResponse.Organization, and is useful for accessing the field via an interface.
+func (v *GetOrganizationPipelinesResponse) GetOrganization() GetOrganizationPipelinesOrganization {
+	return v.Organization
+}
+
 // GetOrganizationTeamsOrganization includes the requested fields of the GraphQL type Organization.
 // The GraphQL type's documentation follows.
 //
@@ -4504,6 +4682,40 @@ func (v *__GetOrganizationMembersInput) GetSlug() string { return v.Slug }
 
 // GetCursor returns __GetOrganizationMembersInput.Cursor, and is useful for accessing the field via an interface.
 func (v *__GetOrganizationMembersInput) GetCursor() *string { return v.Cursor }
+
+// __GetOrganizationPipelinesInput is used internally by genqlient
+type __GetOrganizationPipelinesInput struct {
+	Slug       string                   `json:"slug"`
+	Cursor     *string                  `json:"cursor"`
+	Search     *string                  `json:"search,omitempty"`
+	Repository *PipelineRepositoryInput `json:"repository,omitempty"`
+	Cluster    *string                  `json:"cluster,omitempty"`
+	Archived   *bool                    `json:"archived,omitempty"`
+	Tags       []string                 `json:"tags,omitempty"`
+}
+
+// GetSlug returns __GetOrganizationPipelinesInput.Slug, and is useful for accessing the field via an interface.
+func (v *__GetOrganizationPipelinesInput) GetSlug() string { return v.Slug }
+
+// GetCursor returns __GetOrganizationPipelinesInput.Cursor, and is useful for accessing the field via an interface.
+func (v *__GetOrganizationPipelinesInput) GetCursor() *string { return v.Cursor }
+
+// GetSearch returns __GetOrganizationPipelinesInput.Search, and is useful for accessing the field via an interface.
+func (v *__GetOrganizationPipelinesInput) GetSearch() *string { return v.Search }
+
+// GetRepository returns __GetOrganizationPipelinesInput.Repository, and is useful for accessing the field via an interface.
+func (v *__GetOrganizationPipelinesInput) GetRepository() *PipelineRepositoryInput {
+	return v.Repository
+}
+
+// GetCluster returns __GetOrganizationPipelinesInput.Cluster, and is useful for accessing the field via an interface.
+func (v *__GetOrganizationPipelinesInput) GetCluster() *string { return v.Cluster }
+
+// GetArchived returns __GetOrganizationPipelinesInput.Archived, and is useful for accessing the field via an interface.
+func (v *__GetOrganizationPipelinesInput) GetArchived() *bool { return v.Archived }
+
+// GetTags returns __GetOrganizationPipelinesInput.Tags, and is useful for accessing the field via an interface.
+func (v *__GetOrganizationPipelinesInput) GetTags() []string { return v.Tags }
 
 // __GetOrganizationTeamsInput is used internally by genqlient
 type __GetOrganizationTeamsInput struct {
@@ -24680,6 +24892,75 @@ func GetOrganizationMembers(
 	}
 
 	data_ = &GetOrganizationMembersResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
+// The query executed by GetOrganizationPipelines.
+const GetOrganizationPipelines_Operation = `
+query GetOrganizationPipelines ($slug: ID!, $cursor: String, $search: String, $repository: PipelineRepositoryInput, $cluster: ID, $archived: Boolean, $tags: [String!]) {
+	organization(slug: $slug) {
+		pipelines(first: 500, after: $cursor, search: $search, repository: $repository, cluster: $cluster, archived: $archived, tags: $tags) {
+			count
+			pageInfo {
+				endCursor
+				hasNextPage
+			}
+			edges {
+				node {
+					id
+					uuid
+					slug
+					name
+					description
+					defaultBranch
+					archived
+					repository {
+						url
+					}
+					cluster {
+						id
+					}
+				}
+			}
+		}
+	}
+}
+`
+
+func GetOrganizationPipelines(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	slug string,
+	cursor *string,
+	search *string,
+	repository *PipelineRepositoryInput,
+	cluster *string,
+	archived *bool,
+	tags []string,
+) (data_ *GetOrganizationPipelinesResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "GetOrganizationPipelines",
+		Query:  GetOrganizationPipelines_Operation,
+		Variables: &__GetOrganizationPipelinesInput{
+			Slug:       slug,
+			Cursor:     cursor,
+			Search:     search,
+			Repository: repository,
+			Cluster:    cluster,
+			Archived:   archived,
+			Tags:       tags,
+		},
+	}
+
+	data_ = &GetOrganizationPipelinesResponse{}
 	resp_ := &graphql.Response{Data: data_}
 
 	err_ = client_.MakeRequest(
