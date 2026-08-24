@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net/http"
 	"regexp"
 	"strings"
 	"time"
@@ -89,6 +90,7 @@ type pipelineResourceModel struct {
 	DefaultTimeoutInMinutes            types.Int64            `tfsdk:"default_timeout_in_minutes"`
 	Description                        types.String           `tfsdk:"description"`
 	Emoji                              types.String           `tfsdk:"emoji"`
+	GithubWebhooksEnabled              types.Bool             `tfsdk:"github_webhooks_enabled"`
 	Id                                 types.String           `tfsdk:"id"`
 	MaximumTimeoutInMinutes            types.Int64            `tfsdk:"maximum_timeout_in_minutes"`
 	Name                               types.String           `tfsdk:"name"`
@@ -330,6 +332,22 @@ func (p *pipelineResource) Create(ctx context.Context, req resource.CreateReques
 		state.ProviderSettings = plan.ProviderSettings
 	}
 
+	if !plan.GithubWebhooksEnabled.IsNull() && !plan.GithubWebhooksEnabled.IsUnknown() {
+		enabled, err := getPipelineGithubWebhooks(ctx, useSlugValue, p.client, timeouts)
+		if err != nil {
+			resp.Diagnostics.AddError("Unable to read pipeline GitHub webhooks", err.Error())
+			return
+		}
+		// new pipelines have webhooks enabled, so only call the API on a change
+		if enabled != plan.GithubWebhooksEnabled.ValueBool() {
+			if err := setPipelineGithubWebhooks(ctx, useSlugValue, plan.GithubWebhooksEnabled.ValueBool(), p.client, timeouts); err != nil {
+				resp.Diagnostics.AddError("Unable to set pipeline GitHub webhooks", err.Error())
+				return
+			}
+		}
+	}
+	state.GithubWebhooksEnabled = plan.GithubWebhooksEnabled
+
 	// Archive last: the REST API rejects updates to archived pipelines, so all REST
 	// calls (slug, provider settings) must complete before the pipeline is archived.
 	if plan.Archived.ValueBool() {
@@ -482,6 +500,16 @@ func (p *pipelineResource) Read(ctx context.Context, req resource.ReadRequest, r
 			if len(importPending) > 0 {
 				resp.Diagnostics.Append(resp.Private.SetKey(ctx, "importRefreshProviderSettings", nil)...)
 			}
+		}
+
+		// github_webhooks_enabled is only refreshed when it is managed
+		if !state.GithubWebhooksEnabled.IsNull() {
+			enabled, err := getPipelineGithubWebhooks(ctx, state.Slug.ValueString(), p.client, timeouts)
+			if err != nil {
+				resp.Diagnostics.AddError("Unable to read pipeline GitHub webhooks", err.Error())
+				return
+			}
+			state.GithubWebhooksEnabled = types.BoolValue(enabled)
 		}
 
 		// pipeline default team is a terraform concept only so it takes some coercing
@@ -697,6 +725,11 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 			"emoji": schema.StringAttribute{
 				Optional:            true,
 				MarkdownDescription: "An emoji that represents this pipeline.",
+			},
+			"github_webhooks_enabled": schema.BoolAttribute{
+				Optional: true,
+				MarkdownDescription: "Whether GitHub webhook processing is enabled for the pipeline. Only applies to GitHub and GitHub Enterprise repositories and requires the organization to be enrolled in the newer webhook triggers. " +
+					"If omitted, the setting is left unchanged and is not read.",
 			},
 			"maximum_timeout_in_minutes": schema.Int64Attribute{
 				Computed:            true,
@@ -1430,6 +1463,14 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 		state.ProviderSettings = plan.ProviderSettings
 	}
 
+	if !plan.GithubWebhooksEnabled.IsNull() && !plan.GithubWebhooksEnabled.Equal(state.GithubWebhooksEnabled) {
+		if err := setPipelineGithubWebhooks(ctx, useSlugValue, plan.GithubWebhooksEnabled.ValueBool(), p.client, timeouts); err != nil {
+			resp.Diagnostics.AddError("Unable to set pipeline GitHub webhooks", err.Error())
+			return
+		}
+	}
+	state.GithubWebhooksEnabled = plan.GithubWebhooksEnabled
+
 	// Archive after all other updates: archiving earlier would make the REST calls
 	// above fail with "Cannot update an archived pipeline".
 	if needsArchive {
@@ -1606,7 +1647,7 @@ func updatePipelineSlug(ctx context.Context, slug string, updatedSlug string, cl
 
 	if len(updatedSlug) > 0 {
 		err := retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
-			err := client.makeRequest(ctx, "PATCH", fmt.Sprintf("/v2/organizations/%s/pipelines/%s", client.organization, slug), payload, &pipelineExtraInfo)
+			err := client.makeRequest(ctx, http.MethodPatch, fmt.Sprintf("/v2/organizations/%s/pipelines/%s", client.organization, slug), payload, &pipelineExtraInfo)
 			return retryContextError(err)
 		})
 		if err != nil {
@@ -1668,13 +1709,36 @@ func updatePipelineExtraInfo(ctx context.Context, slug string, settings *provide
 
 	var pipelineExtraInfo PipelineExtraInfo
 	err := retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
-		err := client.makeRequest(ctx, "PATCH", fmt.Sprintf("/v2/organizations/%s/pipelines/%s", client.organization, slug), payload, &pipelineExtraInfo)
+		err := client.makeRequest(ctx, http.MethodPatch, fmt.Sprintf("/v2/organizations/%s/pipelines/%s", client.organization, slug), payload, &pipelineExtraInfo)
 		return retryContextError(err)
 	})
 	if err != nil {
 		return pipelineExtraInfo, err
 	}
 	return pipelineExtraInfo, nil
+}
+
+func getPipelineGithubWebhooks(ctx context.Context, slug string, client *Client, timeouts time.Duration) (bool, error) {
+	var webhooks struct {
+		Enabled bool `json:"enabled"`
+	}
+	err := retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
+		err := client.makeRequest(ctx, "GET", fmt.Sprintf("/v2/organizations/%s/pipelines/%s/github-webhooks", client.organization, slug), nil, &webhooks)
+		return retryContextError(err)
+	})
+	return webhooks.Enabled, err
+}
+
+func setPipelineGithubWebhooks(ctx context.Context, slug string, enabled bool, client *Client, timeouts time.Duration) error {
+	method := "DELETE"
+	if enabled {
+		method = "PUT"
+	}
+	var response map[string]any
+	return retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
+		err := client.makeRequest(ctx, method, fmt.Sprintf("/v2/organizations/%s/pipelines/%s/github-webhooks", client.organization, slug), nil, &response)
+		return retryContextError(err)
+	})
 }
 
 func getTagsFromSchema(plan *pipelineResourceModel) []PipelineTagInput {

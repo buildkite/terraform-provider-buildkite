@@ -8,7 +8,7 @@ The provider allows you to manage resources in your Buildkite organization.
 
 Two configuration values are required:
 
--   An API token, with `write_pipelines`, `read_pipelines` and `write_suites` REST API scopes and be enabled for GraphQL API access. You can generate one [here](https://buildkite.com/user/api-access-tokens/new?description=terraform&scopes[]=write_pipelines&scopes[]=write_suites&scopes[]=read_pipelines&scopes[]=graphql)
+-   An API token with `write_pipelines`, `read_pipelines`, `write_suites`, `read_notification_services`, and `write_notification_services` REST API scopes, enabled for GraphQL API access. You can generate one [here](https://buildkite.com/user/api-access-tokens/new?description=terraform&scopes[]=write_pipelines&scopes[]=write_suites&scopes[]=read_pipelines&scopes[]=read_notification_services&scopes[]=write_notification_services&scopes[]=graphql)
 -   A Buildkite organization slug, available by signing into buildkite.com and examining the URL: https://buildkite.com/<org-slug>.
 
 ## Documentation
