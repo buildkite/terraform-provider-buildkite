@@ -198,3 +198,23 @@ func retryContextError(err error) *retry.RetryError {
 	}
 	return retry.NonRetryableError(err)
 }
+
+var (
+	importSlugRegex = regexp.MustCompile(`^[a-z0-9][a-z0-9-]*$`)
+	importUuidRegex = regexp.MustCompile(`^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$`)
+)
+
+// splitHumanImportID splits an import ID made of slugs, keys or UUIDs separated by "/" and reports whether it
+// has that shape; anything else, such as a GraphQL ID, is left for the caller to pass through unchanged
+func splitHumanImportID(id string, parts int) ([]string, bool) {
+	split := strings.Split(id, "/")
+	if len(split) != parts {
+		return nil, false
+	}
+	for _, part := range split {
+		if !importSlugRegex.MatchString(part) && !importUuidRegex.MatchString(part) {
+			return nil, false
+		}
+	}
+	return split, true
+}

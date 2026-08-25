@@ -453,12 +453,22 @@ func (cq *clusterQueueResource) Read(ctx context.Context, req resource.ReadReque
 }
 
 func (cq *clusterQueueResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	// <cluster uuid>/<queue key> is also accepted and resolved to the GraphQL ID
+	if parts, ok := splitHumanImportID(req.ID, 2); ok {
+		id, err := cq.findClusterQueueID(ctx, parts[0], parts[1])
+		if err != nil {
+			resp.Diagnostics.AddError("Unable to import cluster queue", fmt.Sprintf("Could not find queue %q in cluster %q: %s", parts[1], parts[0], err.Error()))
+			return
+		}
+		req.ID = fmt.Sprintf("%s,%s", id, parts[0])
+	}
+
 	importComponents := strings.Split(req.ID, ",")
 
 	if len(importComponents) != 2 || importComponents[0] == "" || importComponents[1] == "" {
 		resp.Diagnostics.AddError(
 			"Unexpected Import Identifier",
-			fmt.Sprintf("Expected import identifier with format: id,cluster_uuid. Got: %q", req.ID),
+			fmt.Sprintf("Expected import identifier with format: id,cluster_uuid or cluster_uuid/key. Got: %q", req.ID),
 		)
 		return
 	}
@@ -467,6 +477,26 @@ func (cq *clusterQueueResource) ImportState(ctx context.Context, req resource.Im
 	log.Printf("Importing cluster queue %s ...", importComponents[0])
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), importComponents[0])...)
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("cluster_uuid"), importComponents[1])...)
+}
+
+// findClusterQueueID pages through the cluster's queues for the one with the given key
+func (cq *clusterQueueResource) findClusterQueueID(ctx context.Context, clusterUuid, key string) (string, error) {
+	var cursor *string
+	for {
+		r, err := getClusterQueues(ctx, cq.client.genqlient, cq.client.organization, clusterUuid, cursor)
+		if err != nil {
+			return "", err
+		}
+		for _, edge := range r.Organization.Cluster.Queues.Edges {
+			if edge.Node.Key == key {
+				return edge.Node.Id, nil
+			}
+		}
+		if !r.Organization.Cluster.Queues.PageInfo.HasNextPage {
+			return "", fmt.Errorf("no queue with that key")
+		}
+		cursor = &r.Organization.Cluster.Queues.PageInfo.EndCursor
+	}
 }
 
 func (cq *clusterQueueResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {

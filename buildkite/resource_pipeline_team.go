@@ -193,7 +193,36 @@ func (tp *pipelineTeamResource) Read(ctx context.Context, req resource.ReadReque
 }
 
 func (tp *pipelineTeamResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	// <pipeline slug>/<team slug> is also accepted and resolved to the GraphQL ID
+	if parts, ok := splitHumanImportID(req.ID, 2); ok {
+		id, err := tp.findPipelineTeamID(ctx, parts[0], parts[1])
+		if err != nil {
+			resp.Diagnostics.AddError("Unable to import pipeline team", fmt.Sprintf("Could not find team %q on pipeline %q: %s", parts[1], parts[0], err.Error()))
+			return
+		}
+		req.ID = id
+	}
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+}
+
+// findPipelineTeamID pages through the pipeline's teams for the one with the given slug
+func (tp *pipelineTeamResource) findPipelineTeamID(ctx context.Context, pipelineSlug, teamSlug string) (string, error) {
+	var cursor *string
+	for {
+		r, err := getPipelineTeamIds(ctx, tp.client.genqlient, fmt.Sprintf("%s/%s", tp.client.organization, pipelineSlug), cursor)
+		if err != nil {
+			return "", err
+		}
+		for _, edge := range r.Pipeline.Teams.Edges {
+			if edge.Node.Team.Slug == teamSlug {
+				return edge.Node.Id, nil
+			}
+		}
+		if !r.Pipeline.Teams.PageInfo.HasNextPage {
+			return "", fmt.Errorf("no such pipeline, or the team has no access to it")
+		}
+		cursor = &r.Pipeline.Teams.PageInfo.EndCursor
+	}
 }
 
 func (tp *pipelineTeamResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {

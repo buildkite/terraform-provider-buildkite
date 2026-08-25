@@ -155,6 +155,9 @@ Using `terraform import`, import resources using the `id`. For example:
 #   }
 # }
 terraform import buildkite_cluster_queue.test Q2x1c3RlclF1ZXVlLS0tYjJiOGRhNTEtOWY5My00Y2MyLTkyMjktMGRiNzg3ZDQzOTAz,35498aaf-ad05-4fa5-9a07-91bf6cacd2bd
+
+# or using the cluster UUID and the queue key (keys can change; the GraphQL ID is the stable identifier)
+terraform import buildkite_cluster_queue.test 35498aaf-ad05-4fa5-9a07-91bf6cacd2bd/default
 ```
 
 In Terraform v1.5.0 and later, use an [`import` block](https://developer.hashicorp.com/terraform/language/import) to import instances using the `id`. For example:

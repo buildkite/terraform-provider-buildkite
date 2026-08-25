@@ -157,6 +157,18 @@ func (t *teamResource) Schema(ctx context.Context, req resource.SchemaRequest, r
 }
 
 func (t *teamResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	// a team slug is also accepted and resolved to the GraphQL ID
+	if parts, ok := splitHumanImportID(req.ID, 1); ok {
+		r, err := GetTeamFromSlug(ctx, t.client.genqlient, fmt.Sprintf("%s/%s", t.client.organization, parts[0]))
+		if err == nil && r.Team.Id == "" {
+			err = fmt.Errorf("no team with that slug")
+		}
+		if err != nil {
+			resp.Diagnostics.AddError("Unable to import team", fmt.Sprintf("Could not find team %q: %s", req.ID, err.Error()))
+			return
+		}
+		req.ID = r.Team.Id
+	}
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
 

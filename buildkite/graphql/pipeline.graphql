@@ -469,3 +469,32 @@ mutation unarchivePipeline ($id: ID!) {
     clientMutationId
   }
 }
+
+query getPipelineId($slug: ID!) {
+    pipeline(slug: $slug) {
+        id
+    }
+}
+
+query getPipelineTeamIds(
+    $slug: ID!,
+    # @genqlient(pointer: true)
+    $cursor: String
+) {
+    pipeline(slug: $slug) {
+        teams(first: 50, after: $cursor) {
+            pageInfo {
+                endCursor
+                hasNextPage
+            }
+            edges {
+                node {
+                    id
+                    team {
+                        slug
+                    }
+                }
+            }
+        }
+    }
+}

@@ -265,6 +265,21 @@ func TestMapProviderSettingsFromGraphQLCursorOrigin(t *testing.T) {
 	}
 }
 
+// testAccImportIDFromAttributes builds an import ID by joining attributes of resources in state with "/", each given as "<resource address>", "<attribute>"
+func testAccImportIDFromAttributes(addressesAndAttributes ...string) resource.ImportStateIdFunc {
+	return func(s *terraform.State) (string, error) {
+		var parts []string
+		for i := 0; i+1 < len(addressesAndAttributes); i += 2 {
+			rs, ok := s.RootModule().Resources[addressesAndAttributes[i]]
+			if !ok {
+				return "", fmt.Errorf("Not found in state: %s", addressesAndAttributes[i])
+			}
+			parts = append(parts, rs.Primary.Attributes[addressesAndAttributes[i+1]])
+		}
+		return strings.Join(parts, "/"), nil
+	}
+}
+
 func testAccCheckPipelineDestroyFunc(s *terraform.State) error {
 	return testAccCheckPipelineDestroy(s)
 }
@@ -373,6 +388,13 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 					ResourceName:  "buildkite_pipeline.pipeline",
 					ImportState:   true,
 					ImportStateId: pipeline.Id,
+				},
+				{
+					// the pipeline slug is also accepted
+					ResourceName:      "buildkite_pipeline.pipeline",
+					ImportState:       true,
+					ImportStateIdFunc: testAccImportIDFromAttributes("buildkite_pipeline.pipeline", "slug"),
+					ImportStateVerify: true,
 				},
 			},
 		})

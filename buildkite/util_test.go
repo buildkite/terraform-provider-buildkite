@@ -3,6 +3,7 @@ package buildkite
 import (
 	"errors"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/vektah/gqlparser/v2/gqlerror"
@@ -218,6 +219,41 @@ func TestIsActiveJobsError(t *testing.T) {
 			result := isActiveJobsError(tt.err)
 			if result != tt.shouldMatch {
 				t.Errorf("isActiveJobsError(%v) = %v, want %v", tt.err, result, tt.shouldMatch)
+			}
+		})
+	}
+}
+
+func TestSplitHumanImportID(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		id    string
+		parts int
+		want  []string
+	}{
+		{"my-pipeline", 1, []string{"my-pipeline"}},
+		{"my-pipeline/deploy-team", 2, []string{"my-pipeline", "deploy-team"}},
+		{"my-pipeline/0bd5ea7c-89b3-4f40-8ca3-ffac805771eb", 2, []string{"my-pipeline", "0bd5ea7c-89b3-4f40-8ca3-ffac805771eb"}},
+		{"0bd5ea7c-89b3-4f40-8ca3-ffac805771eb/default", 2, []string{"0bd5ea7c-89b3-4f40-8ca3-ffac805771eb", "default"}},
+		// GraphQL IDs and anything else are passed through
+		{"UGlwZWxpbmUtLS00MzVjYWQ1OC1lODFkLTQ1YWYtODYzNy1iMWNmODA3MDIzOGQ=", 1, nil},
+		{"VGVhbVBpcGVsaW5lLS0tMmQ5ZmRjYjctMjJjYS00ZDU3LTkwMWMtYmI3NzY1MmM5ZTk2", 1, nil},
+		{"VGVhbVBpcGVsaW5lLS0tMmQ5ZmRjYjctMjJjYS00ZDU3LTkwMWMtYmI3NzY1MmM5ZTk2", 2, nil},
+		{"my-pipeline", 2, nil},
+		{"my-pipeline/deploy-team", 1, nil},
+		{"my-pipeline/deploy-team/extra", 2, nil},
+		{"My-Pipeline", 1, nil},
+		{"", 1, nil},
+		{"my-pipeline/", 2, nil},
+		{"Q2x1c3RlclF1ZXVlLS0tNGM2YzNkYzEtM2Q5MC00NGQxLWIwNGMtNzBjYzRlZTg3NGJj,0bd5ea7c-89b3-4f40-8ca3-ffac805771eb", 2, nil},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.id, func(t *testing.T) {
+			got, ok := splitHumanImportID(tc.id, tc.parts)
+			if ok != (tc.want != nil) || strings.Join(got, "/") != strings.Join(tc.want, "/") {
+				t.Errorf("splitHumanImportID(%q, %d) = %v, %t; want %v", tc.id, tc.parts, got, ok, tc.want)
 			}
 		})
 	}
