@@ -344,6 +344,22 @@ fragment RepositoryProviderSettingsFields on Repository {
                 publishCommitStatus
             }
         }
+        ... on RepositoryProviderOrigin {
+            settings {
+                # @genqlient(pointer: true)
+                buildBranches
+                # @genqlient(pointer: true)
+                buildPullRequests
+                # @genqlient(pointer: true)
+                buildTags
+                # @genqlient(pointer: true)
+                filterCondition
+                # @genqlient(pointer: true)
+                filterEnabled
+                # @genqlient(pointer: true)
+                publishCommitStatus
+            }
+        }
         ... on RepositoryProviderUnknown {
             settings {
                 # @genqlient(pointer: true)
