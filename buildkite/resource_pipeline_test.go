@@ -88,6 +88,19 @@ func TestPipelineExtraSettingsUseStepKeyAsCommitStatusJSON(t *testing.T) {
 	}
 }
 
+func TestPipelineExtraSettingsBuildIssuesJSON(t *testing.T) {
+	enabled := true
+
+	payload, err := json.Marshal(PipelineExtraSettings{BuildIssues: &enabled})
+	if err != nil {
+		t.Fatalf("failed to marshal provider settings: %v", err)
+	}
+
+	if !strings.Contains(string(payload), `"build_issues":true`) {
+		t.Fatalf("expected build_issues in payload, got %s", payload)
+	}
+}
+
 func TestUpdatePipelineResourceExtraInfoUseStepKeyAsCommitStatus(t *testing.T) {
 	enabled := true
 	extraInfo := PipelineExtraInfo{}
@@ -105,6 +118,22 @@ func TestUpdatePipelineResourceExtraInfoUseStepKeyAsCommitStatus(t *testing.T) {
 	}
 }
 
+func TestUpdatePipelineResourceExtraInfoBuildIssues(t *testing.T) {
+	disabled := false
+	extraInfo := PipelineExtraInfo{}
+	extraInfo.Provider.Settings.BuildIssues = &disabled
+
+	state := pipelineResourceModel{}
+	updatePipelineResourceExtraInfo(&state, &extraInfo)
+
+	if state.ProviderSettings == nil {
+		t.Fatal("expected provider settings to be set")
+	}
+	if state.ProviderSettings.BuildIssues.IsNull() || state.ProviderSettings.BuildIssues.ValueBool() {
+		t.Fatal("expected build_issues to be false")
+	}
+}
+
 func TestMapProviderSettingsFromGraphQLGitHub(t *testing.T) {
 	triggerMode := "code"
 	enabled := true
@@ -115,6 +144,7 @@ func TestMapProviderSettingsFromGraphQLGitHub(t *testing.T) {
 		Provider: &RepositoryProviderSettingsFieldsProviderRepositoryProviderGithub{
 			Settings: RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings{
 				TriggerMode:                          &triggerMode,
+				BuildIssues:                          &enabled,
 				BuildPullRequests:                    &enabled,
 				BuildBranches:                        &disabled,
 				IssueCommentMatchMode:                &matchMode,
@@ -136,6 +166,9 @@ func TestMapProviderSettingsFromGraphQLGitHub(t *testing.T) {
 	}
 	if !got.BuildPullRequests.ValueBool() {
 		t.Fatal("build_pull_requests: expected true")
+	}
+	if !got.BuildIssues.ValueBool() {
+		t.Fatal("build_issues: expected true")
 	}
 	if got.BuildBranches.ValueBool() {
 		t.Fatal("build_branches: expected false")
@@ -731,6 +764,7 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "tags.#", "0"),
 						resource.TestCheckNoResourceAttr("buildkite_pipeline.pipeline", "tags.#"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.trigger_mode", ""),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_issues", "false"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_pull_requests", "false"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.skip_pull_request_builds_for_existing_commits", "false"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_branches", "false"),
@@ -837,6 +871,7 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 				tags = ["llama"]
 				provider_settings = {
 					trigger_mode = "code"
+					build_issues = true
 					build_pull_requests = true
 					skip_builds_for_existing_commits = true
 					build_branches = true
@@ -900,6 +935,7 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "skip_intermediate_builds", "true"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "skip_intermediate_builds_branch_filter", "!main"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.trigger_mode", "code"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_issues", "true"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_pull_requests", "true"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.skip_builds_for_existing_commits", "true"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_branches", "true"),
@@ -947,6 +983,7 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 					ExpectNonEmptyPlan: false,
 					Check: resource.ComposeAggregateTestCheckFunc(
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.trigger_mode", "code"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_issues", "true"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_pull_request_merge_commits", "true"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_issue_comment_created", "true"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.issue_comment_command_word", "ci-force-rerun"),
