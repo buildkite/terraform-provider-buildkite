@@ -21,7 +21,9 @@ type ClusterAgentTokenValues struct {
 	Cluster            ClusterAgentTokenValuesCluster `json:"cluster"`
 	// A description about what this cluster agent token is used for
 	Description string `json:"description"`
-	Id          string `json:"id"`
+	// The date and time at which this token will expire and no longer be valid. If empty, the token will never expire.
+	ExpiresAt *time.Time `json:"expiresAt"`
+	Id        string     `json:"id"`
 	// The public UUID for this cluster token
 	Uuid string `json:"uuid"`
 }
@@ -34,6 +36,9 @@ func (v *ClusterAgentTokenValues) GetCluster() ClusterAgentTokenValuesCluster { 
 
 // GetDescription returns ClusterAgentTokenValues.Description, and is useful for accessing the field via an interface.
 func (v *ClusterAgentTokenValues) GetDescription() string { return v.Description }
+
+// GetExpiresAt returns ClusterAgentTokenValues.ExpiresAt, and is useful for accessing the field via an interface.
+func (v *ClusterAgentTokenValues) GetExpiresAt() *time.Time { return v.ExpiresAt }
 
 // GetId returns ClusterAgentTokenValues.Id, and is useful for accessing the field via an interface.
 func (v *ClusterAgentTokenValues) GetId() string { return v.Id }
@@ -4536,10 +4541,11 @@ func (v *__createAgentTokenInput) GetDescription() *string { return v.Descriptio
 
 // __createClusterAgentTokenInput is used internally by genqlient
 type __createClusterAgentTokenInput struct {
-	OrganizationId     string `json:"organizationId"`
-	ClusterId          string `json:"clusterId"`
-	Description        string `json:"description"`
-	AllowedIpAddresses string `json:"allowedIpAddresses"`
+	OrganizationId     string     `json:"organizationId"`
+	ClusterId          string     `json:"clusterId"`
+	Description        string     `json:"description"`
+	AllowedIpAddresses string     `json:"allowedIpAddresses"`
+	ExpiresAt          *time.Time `json:"expiresAt,omitempty"`
 }
 
 // GetOrganizationId returns __createClusterAgentTokenInput.OrganizationId, and is useful for accessing the field via an interface.
@@ -4553,6 +4559,9 @@ func (v *__createClusterAgentTokenInput) GetDescription() string { return v.Desc
 
 // GetAllowedIpAddresses returns __createClusterAgentTokenInput.AllowedIpAddresses, and is useful for accessing the field via an interface.
 func (v *__createClusterAgentTokenInput) GetAllowedIpAddresses() string { return v.AllowedIpAddresses }
+
+// GetExpiresAt returns __createClusterAgentTokenInput.ExpiresAt, and is useful for accessing the field via an interface.
+func (v *__createClusterAgentTokenInput) GetExpiresAt() *time.Time { return v.ExpiresAt }
 
 // __createClusterInput is used internally by genqlient
 type __createClusterInput struct {
@@ -5586,6 +5595,11 @@ func (v *createClusterAgentTokenClusterAgentTokenCreateClusterAgentTokenCreatePa
 	return v.ClusterAgentTokenValues.Description
 }
 
+// GetExpiresAt returns createClusterAgentTokenClusterAgentTokenCreateClusterAgentTokenCreatePayloadClusterAgentTokenClusterToken.ExpiresAt, and is useful for accessing the field via an interface.
+func (v *createClusterAgentTokenClusterAgentTokenCreateClusterAgentTokenCreatePayloadClusterAgentTokenClusterToken) GetExpiresAt() *time.Time {
+	return v.ClusterAgentTokenValues.ExpiresAt
+}
+
 // GetId returns createClusterAgentTokenClusterAgentTokenCreateClusterAgentTokenCreatePayloadClusterAgentTokenClusterToken.Id, and is useful for accessing the field via an interface.
 func (v *createClusterAgentTokenClusterAgentTokenCreateClusterAgentTokenCreatePayloadClusterAgentTokenClusterToken) GetId() string {
 	return v.ClusterAgentTokenValues.Id
@@ -5628,6 +5642,8 @@ type __premarshalcreateClusterAgentTokenClusterAgentTokenCreateClusterAgentToken
 
 	Description string `json:"description"`
 
+	ExpiresAt *time.Time `json:"expiresAt"`
+
 	Id string `json:"id"`
 
 	Uuid string `json:"uuid"`
@@ -5647,6 +5663,7 @@ func (v *createClusterAgentTokenClusterAgentTokenCreateClusterAgentTokenCreatePa
 	retval.AllowedIpAddresses = v.ClusterAgentTokenValues.AllowedIpAddresses
 	retval.Cluster = v.ClusterAgentTokenValues.Cluster
 	retval.Description = v.ClusterAgentTokenValues.Description
+	retval.ExpiresAt = v.ClusterAgentTokenValues.ExpiresAt
 	retval.Id = v.ClusterAgentTokenValues.Id
 	retval.Uuid = v.ClusterAgentTokenValues.Uuid
 	return &retval, nil
@@ -8079,6 +8096,11 @@ func (v *getClusterAgentTokensOrganizationClusterAgentTokensClusterAgentTokenCon
 	return v.ClusterAgentTokenValues.Description
 }
 
+// GetExpiresAt returns getClusterAgentTokensOrganizationClusterAgentTokensClusterAgentTokenConnectionEdgesClusterAgentTokenEdgeNodeClusterToken.ExpiresAt, and is useful for accessing the field via an interface.
+func (v *getClusterAgentTokensOrganizationClusterAgentTokensClusterAgentTokenConnectionEdgesClusterAgentTokenEdgeNodeClusterToken) GetExpiresAt() *time.Time {
+	return v.ClusterAgentTokenValues.ExpiresAt
+}
+
 // GetId returns getClusterAgentTokensOrganizationClusterAgentTokensClusterAgentTokenConnectionEdgesClusterAgentTokenEdgeNodeClusterToken.Id, and is useful for accessing the field via an interface.
 func (v *getClusterAgentTokensOrganizationClusterAgentTokensClusterAgentTokenConnectionEdgesClusterAgentTokenEdgeNodeClusterToken) GetId() string {
 	return v.ClusterAgentTokenValues.Id
@@ -8121,6 +8143,8 @@ type __premarshalgetClusterAgentTokensOrganizationClusterAgentTokensClusterAgent
 
 	Description string `json:"description"`
 
+	ExpiresAt *time.Time `json:"expiresAt"`
+
 	Id string `json:"id"`
 
 	Uuid string `json:"uuid"`
@@ -8140,6 +8164,7 @@ func (v *getClusterAgentTokensOrganizationClusterAgentTokensClusterAgentTokenCon
 	retval.AllowedIpAddresses = v.ClusterAgentTokenValues.AllowedIpAddresses
 	retval.Cluster = v.ClusterAgentTokenValues.Cluster
 	retval.Description = v.ClusterAgentTokenValues.Description
+	retval.ExpiresAt = v.ClusterAgentTokenValues.ExpiresAt
 	retval.Id = v.ClusterAgentTokenValues.Id
 	retval.Uuid = v.ClusterAgentTokenValues.Uuid
 	return &retval, nil
@@ -22842,6 +22867,11 @@ func (v *updateClusterAgentTokenClusterAgentTokenUpdateClusterAgentTokenUpdatePa
 	return v.ClusterAgentTokenValues.Description
 }
 
+// GetExpiresAt returns updateClusterAgentTokenClusterAgentTokenUpdateClusterAgentTokenUpdatePayloadClusterAgentTokenClusterToken.ExpiresAt, and is useful for accessing the field via an interface.
+func (v *updateClusterAgentTokenClusterAgentTokenUpdateClusterAgentTokenUpdatePayloadClusterAgentTokenClusterToken) GetExpiresAt() *time.Time {
+	return v.ClusterAgentTokenValues.ExpiresAt
+}
+
 // GetId returns updateClusterAgentTokenClusterAgentTokenUpdateClusterAgentTokenUpdatePayloadClusterAgentTokenClusterToken.Id, and is useful for accessing the field via an interface.
 func (v *updateClusterAgentTokenClusterAgentTokenUpdateClusterAgentTokenUpdatePayloadClusterAgentTokenClusterToken) GetId() string {
 	return v.ClusterAgentTokenValues.Id
@@ -22884,6 +22914,8 @@ type __premarshalupdateClusterAgentTokenClusterAgentTokenUpdateClusterAgentToken
 
 	Description string `json:"description"`
 
+	ExpiresAt *time.Time `json:"expiresAt"`
+
 	Id string `json:"id"`
 
 	Uuid string `json:"uuid"`
@@ -22903,6 +22935,7 @@ func (v *updateClusterAgentTokenClusterAgentTokenUpdateClusterAgentTokenUpdatePa
 	retval.AllowedIpAddresses = v.ClusterAgentTokenValues.AllowedIpAddresses
 	retval.Cluster = v.ClusterAgentTokenValues.Cluster
 	retval.Description = v.ClusterAgentTokenValues.Description
+	retval.ExpiresAt = v.ClusterAgentTokenValues.ExpiresAt
 	retval.Id = v.ClusterAgentTokenValues.Id
 	retval.Uuid = v.ClusterAgentTokenValues.Uuid
 	return &retval, nil
@@ -24902,8 +24935,8 @@ func createCluster(
 
 // The mutation executed by createClusterAgentToken.
 const createClusterAgentToken_Operation = `
-mutation createClusterAgentToken ($organizationId: ID!, $clusterId: ID!, $description: String!, $allowedIpAddresses: String) {
-	clusterAgentTokenCreate(input: {organizationId:$organizationId,clusterId:$clusterId,description:$description,allowedIpAddresses:$allowedIpAddresses}) {
+mutation createClusterAgentToken ($organizationId: ID!, $clusterId: ID!, $description: String!, $allowedIpAddresses: String, $expiresAt: DateTime) {
+	clusterAgentTokenCreate(input: {organizationId:$organizationId,clusterId:$clusterId,description:$description,allowedIpAddresses:$allowedIpAddresses,expiresAt:$expiresAt}) {
 		clusterAgentToken {
 			... ClusterAgentTokenValues
 		}
@@ -24917,6 +24950,7 @@ fragment ClusterAgentTokenValues on ClusterToken {
 		uuid
 	}
 	description
+	expiresAt
 	id
 	uuid
 }
@@ -24929,6 +24963,7 @@ func createClusterAgentToken(
 	clusterId string,
 	description string,
 	allowedIpAddresses string,
+	expiresAt *time.Time,
 ) (data_ *createClusterAgentTokenResponse, err_ error) {
 	req_ := &graphql.Request{
 		OpName: "createClusterAgentToken",
@@ -24938,6 +24973,7 @@ func createClusterAgentToken(
 			ClusterId:          clusterId,
 			Description:        description,
 			AllowedIpAddresses: allowedIpAddresses,
+			ExpiresAt:          expiresAt,
 		},
 	}
 
@@ -26062,6 +26098,7 @@ fragment ClusterAgentTokenValues on ClusterToken {
 		uuid
 	}
 	description
+	expiresAt
 	id
 	uuid
 }
@@ -27939,6 +27976,7 @@ fragment ClusterAgentTokenValues on ClusterToken {
 		uuid
 	}
 	description
+	expiresAt
 	id
 	uuid
 }
