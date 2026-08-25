@@ -20,6 +20,9 @@ query getNode(
         ... on TeamSuite {
             ...TeamSuiteFields
         }
+        ... on TeamRegistry {
+            ...TeamRegistryFields
+        }
         ... on TeamPipeline {
             ... TeamPipelineFields
         }
