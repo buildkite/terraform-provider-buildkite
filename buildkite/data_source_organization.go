@@ -3,6 +3,7 @@ package buildkite
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
@@ -63,12 +64,30 @@ func (o *organizationDatasource) Read(ctx context.Context, req datasource.ReadRe
 
 	state.ID = types.StringValue(response.Organization.Id)
 	state.UUID = types.StringValue(response.Organization.Uuid)
-	ips, diag := types.ListValueFrom(ctx, types.StringType, strings.Split(response.Organization.AllowedApiIpAddresses, " "))
-	state.AllowedApiIpAddresses = ips
 
-	if diag.HasError() {
-		resp.Diagnostics.Append(diag...)
-		return
+	// the allowlist is served by api-settings, which only answers an organization administrator.
+	// A lookup that cannot see it still reports the identifiers most callers came for.
+	settings, err := o.client.getOrganizationAPISettings(ctx)
+	if err != nil {
+		if !isAPIStatus(err, http.StatusForbidden) {
+			resp.Diagnostics.AddError(
+				"Unable to read organization API settings",
+				fmt.Sprintf("Unable to read organization API settings: %s", err.Error()),
+			)
+			return
+		}
+		resp.Diagnostics.AddWarning(
+			"Unable to read the allowed API IP addresses",
+			fmt.Sprintf("Leaving allowed_api_ip_addresses unset: reading it needs an API token with the read_organization_settings scope, whose user is an organization administrator: %s", err.Error()),
+		)
+		state.AllowedApiIpAddresses = types.ListNull(types.StringType)
+	} else {
+		ips, diag := types.ListValueFrom(ctx, types.StringType, strings.Split(settings.AllowedIpAddresses, " "))
+		if diag.HasError() {
+			resp.Diagnostics.Append(diag...)
+			return
+		}
+		state.AllowedApiIpAddresses = ips
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
@@ -87,9 +106,10 @@ func (*organizationDatasource) Schema(ctx context.Context, req datasource.Schema
 				MarkdownDescription: "The UUID of the organization.",
 			},
 			"allowed_api_ip_addresses": schema.ListAttribute{
-				Computed:            true,
-				ElementType:         types.StringType,
-				MarkdownDescription: "List of IP addresses in CIDR format that are allowed to access the Buildkite API for this organization.",
+				Computed:    true,
+				ElementType: types.StringType,
+				MarkdownDescription: "List of IP addresses in CIDR format that are allowed to access the Buildkite API for this organization. " +
+					"Reading it requires an API token with the `read_organization_settings` scope, whose user is an organization administrator; it is left unset otherwise.",
 			},
 		},
 	}

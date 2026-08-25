@@ -5,6 +5,9 @@ subcategory: ""
 description: |-
   This resource allows you to manage the settings for an organization.
   The user of your API token must be an organization administrator to manage organization settings.
+  Every attribute other than enforce_2fa is managed through the organization API settings
+  endpoint, so the token also needs the read_organization_settings and
+  write_organization_settings scopes.
 ---
 
 # buildkite_organization (Resource)
@@ -12,6 +15,9 @@ description: |-
 This resource allows you to manage the settings for an organization.
 
 The user of your API token must be an organization administrator to manage organization settings.
+Every attribute other than `enforce_2fa` is managed through the organization API settings
+endpoint, so the token also needs the `read_organization_settings` and
+`write_organization_settings` scopes.
 
 ## Example Usage
 
@@ -36,8 +42,8 @@ resource "buildkite_organization" "settings" {
 
 -> The "Allowed API IP Addresses" feature must be enabled on your organization in order to manage the `allowed_api_ip_addresses` attribute.
 - `enforce_2fa` (Boolean) Sets whether the organization requires two-factor authentication for all members.
-- `restrict_user_api_token_creation` (Boolean) Whether only organization administrators can create new API access tokens for this organization. If omitted, the current setting is left unchanged. Requires an API token with the `read_organization_settings` and `write_organization_settings` scopes.
-- `revoke_inactive_tokens_after` (String) The period of inactivity after which user API access tokens are revoked. Valid values are `NEVER`, `DAYS_30`, `DAYS_60`, `DAYS_90`, `DAYS_180` and `DAYS_365`. If omitted, the current setting is left unchanged. Requires an API token with the `read_organization_settings` and `write_organization_settings` scopes and the inactive API token revocation feature on the organization's plan.
+- `restrict_user_api_token_creation` (Boolean) Whether only organization administrators can create new API access tokens for this organization. If omitted, the current setting is left unchanged.
+- `revoke_inactive_tokens_after` (String) The period of inactivity after which user API access tokens are revoked. Valid values are `NEVER`, `DAYS_30`, `DAYS_60`, `DAYS_90`, `DAYS_180` and `DAYS_365`. If omitted, the current setting is left unchanged. Requires the inactive API token revocation feature on the organization's plan.
 
 ### Read-Only
 

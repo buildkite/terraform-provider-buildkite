@@ -56,6 +56,9 @@ func (*organizationResource) Schema(ctx context.Context, req resource.SchemaRequ
 			This resource allows you to manage the settings for an organization.
 
 			The user of your API token must be an organization administrator to manage organization settings.
+			Every attribute other than ` + "`enforce_2fa`" + ` is managed through the organization API settings
+			endpoint, so the token also needs the ` + "`read_organization_settings`" + ` and
+			` + "`write_organization_settings`" + ` scopes.
 		`),
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
@@ -89,7 +92,7 @@ func (*organizationResource) Schema(ctx context.Context, req resource.SchemaRequ
 				Optional: true,
 				Computed: true,
 				MarkdownDescription: "The period of inactivity after which user API access tokens are revoked. Valid values are `NEVER`, `DAYS_30`, `DAYS_60`, `DAYS_90`, `DAYS_180` and `DAYS_365`. " +
-					"If omitted, the current setting is left unchanged. Requires an API token with the `read_organization_settings` and `write_organization_settings` scopes and the inactive API token revocation feature on the organization's plan.",
+					"If omitted, the current setting is left unchanged. Requires the inactive API token revocation feature on the organization's plan.",
 				Validators: []validator.String{
 					stringvalidator.OneOf(revokeInactiveTokenPeriods...),
 				},
@@ -101,7 +104,7 @@ func (*organizationResource) Schema(ctx context.Context, req resource.SchemaRequ
 				Optional: true,
 				Computed: true,
 				MarkdownDescription: "Whether only organization administrators can create new API access tokens for this organization. " +
-					"If omitted, the current setting is left unchanged. Requires an API token with the `read_organization_settings` and `write_organization_settings` scopes.",
+					"If omitted, the current setting is left unchanged.",
 				PlanModifiers: []planmodifier.Bool{
 					boolplanmodifier.UseStateForUnknown(),
 				},
@@ -138,20 +141,6 @@ func (o *organizationResource) Create(ctx context.Context, req resource.CreateRe
 	}
 
 	log.Printf("Creating settings for organization %s ...", *org)
-	// compare with the organization's current allowlist so a matching one is left as it is
-	current, diags := allowedApiIpAddressesFromAPI(ctx, organization.Organization.AllowedApiIpAddresses, plan.AllowedApiIpAddresses)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	if err := o.updateAllowedApiIpAddresses(ctx, *org, plan.AllowedApiIpAddresses, current); err != nil {
-		resp.Diagnostics.AddError(
-			"Unable to create Organization settings",
-			fmt.Sprintf("Unable to create Organization settings: %s", err.Error()),
-		)
-		return
-	}
-
 	if !plan.Enforce2FA.IsNull() && !plan.Enforce2FA.IsUnknown() && plan.Enforce2FA.ValueBool() != organization.Organization.MembersRequireTwoFactorAuthentication {
 		_, err = setOrganization2FA(ctx, o.client.genqlient, *org, plan.Enforce2FA.ValueBool())
 		if err != nil {
@@ -163,7 +152,6 @@ func (o *organizationResource) Create(ctx context.Context, req resource.CreateRe
 	state.ID = types.StringValue(*org)
 	state.UUID = types.StringValue(organization.Organization.Uuid)
 	state.Enforce2FA = plan.Enforce2FA
-	state.AllowedApiIpAddresses = plan.AllowedApiIpAddresses
 
 	o.updateAPISettings(ctx, &config, &plan, nil, &state, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
@@ -203,13 +191,6 @@ func (o *organizationResource) Read(ctx context.Context, req resource.ReadReques
 	state.ID = types.StringValue(*org)
 	state.UUID = types.StringValue(response.Organization.Uuid)
 	state.Enforce2FA = types.BoolValue(response.Organization.MembersRequireTwoFactorAuthentication)
-
-	ips, diag := allowedApiIpAddressesFromAPI(ctx, response.Organization.AllowedApiIpAddresses, state.AllowedApiIpAddresses)
-	if diag.HasError() {
-		resp.Diagnostics.Append(diag...)
-		return
-	}
-	state.AllowedApiIpAddresses = ips
 
 	o.readAPISettings(ctx, &state, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
@@ -252,14 +233,6 @@ func (o *organizationResource) Update(ctx context.Context, req resource.UpdateRe
 		return
 	}
 	log.Printf("Updating settings for organization %s ...", *org)
-	if err := o.updateAllowedApiIpAddresses(ctx, *org, plan.AllowedApiIpAddresses, prior.AllowedApiIpAddresses); err != nil {
-		resp.Diagnostics.AddError(
-			"Unable to update Organization settings",
-			fmt.Sprintf("Unable to update Organization settings: %s", err.Error()),
-		)
-		return
-	}
-
 	state.Enforce2FA = prior.Enforce2FA
 	if !plan.Enforce2FA.IsNull() && !plan.Enforce2FA.IsUnknown() && !plan.Enforce2FA.Equal(prior.Enforce2FA) {
 		twoFAResponse, err := setOrganization2FA(ctx, o.client.genqlient, *org, plan.Enforce2FA.ValueBool())
@@ -272,7 +245,6 @@ func (o *organizationResource) Update(ctx context.Context, req resource.UpdateRe
 
 	state.ID = types.StringValue(*org)
 	state.UUID = prior.UUID
-	state.AllowedApiIpAddresses = plan.AllowedApiIpAddresses
 
 	o.updateAPISettings(ctx, &config, &plan, &prior, &state, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
@@ -300,27 +272,19 @@ func (o *organizationResource) Delete(ctx context.Context, req resource.DeleteRe
 		return
 	}
 	log.Printf("Deleting settings for organization %s ...", *org)
-	if err := o.updateAllowedApiIpAddresses(ctx, *org, types.ListNull(types.StringType), state.AllowedApiIpAddresses); err != nil {
-		resp.Diagnostics.AddError(
-			"Unable to delete Organization settings",
-			fmt.Sprintf("Unable to delete Organization settings: %s", err.Error()),
-		)
-		return
+	// the allowlist is the one setting terraform owns outright, so it goes when the resource does
+	if allowedApiIpAddressesValue(state.AllowedApiIpAddresses) != "" {
+		if _, err := o.client.updateOrganizationAPISettings(ctx, map[string]any{"allowed_ip_addresses": ""}); err != nil {
+			resp.Diagnostics.AddError(
+				"Unable to delete Organization settings",
+				fmt.Sprintf("Unable to clear the allowed API IP addresses: %s", err.Error()),
+			)
+			return
+		}
 	}
 
 	resp.Diagnostics.AddAttributeWarning(path.Root("enforce_2fa"), "Enforce 2FA setting left intact", "Use the web UI if you wish to change the value")
 	resp.Diagnostics.AddWarning("API access token settings left intact", "Use the web UI if you wish to change them")
-}
-
-// updateAllowedApiIpAddresses sets the API IP allowlist, skipping the mutation when it is unchanged
-func (o *organizationResource) updateAllowedApiIpAddresses(ctx context.Context, orgID string, planned, current types.List) error {
-	plannedValue := allowedApiIpAddressesValue(planned)
-	// the mutation is rejected for organizations without the allowlist feature, even for ""
-	if plannedValue == allowedApiIpAddressesValue(current) {
-		return nil
-	}
-	_, err := setApiIpAddresses(ctx, o.client.genqlient, orgID, plannedValue)
-	return err
 }
 
 // allowedApiIpAddressesValue serializes the attribute for the API, where null, [] and [""] are all ""
@@ -351,9 +315,11 @@ func revokePeriodToDays(period string) *int64 {
 }
 
 type organizationAPISettings struct {
+	AllowedIpAddresses            string `json:"allowed_ip_addresses"`
 	RevokeInactiveTokensAfterDays *int64 `json:"revoke_inactive_tokens_after_days"`
 	RestrictUserApiTokenCreation  bool   `json:"restrict_user_api_token_creation"`
 	Features                      struct {
+		ApiIpAllowList             bool `json:"api_ip_allow_list"`
 		InactiveApiTokenRevocation bool `json:"inactive_api_token_revocation"`
 	} `json:"features"`
 }
@@ -374,6 +340,7 @@ func (c *Client) updateOrganizationAPISettings(ctx context.Context, payload map[
 func apiSettingsFromModel(model *organizationResourceModel) *organizationAPISettings {
 	settings := &organizationAPISettings{}
 	if model != nil {
+		settings.AllowedIpAddresses = allowedApiIpAddressesValue(model.AllowedApiIpAddresses)
 		settings.RevokeInactiveTokensAfterDays = revokePeriodToDays(model.RevokeInactiveTokensAfter.ValueString())
 		settings.RestrictUserApiTokenCreation = model.RestrictUserApiTokenCreation.ValueBool()
 	}
@@ -383,6 +350,12 @@ func apiSettingsFromModel(model *organizationResourceModel) *organizationAPISett
 // apiSettingsPatch returns the configured api-settings that differ from current, or all of them when current isn't known
 func apiSettingsPatch(config, plan *organizationResourceModel, current *organizationAPISettings, currentKnown bool) map[string]any {
 	payload := map[string]any{}
+	// the allowlist is owned rather than adopted: dropping it from the configuration clears it, so
+	// the plan alone says what it should be. Unchanged values stay out of the request because
+	// organizations without the allowlist feature are refused even those.
+	if allowed := allowedApiIpAddressesValue(plan.AllowedApiIpAddresses); allowed != current.AllowedIpAddresses {
+		payload["allowed_ip_addresses"] = allowed
+	}
 	// config says whether an attribute is managed, plan holds the value to apply
 	if !config.RevokeInactiveTokensAfter.IsNull() && !plan.RevokeInactiveTokensAfter.IsUnknown() {
 		if revoke := plan.RevokeInactiveTokensAfter.ValueString(); !currentKnown || revoke != revokePeriodFromDays(current.RevokeInactiveTokensAfterDays) {
@@ -408,6 +381,13 @@ func (o *organizationResource) readAPISettings(ctx context.Context, state *organ
 		diags.AddWarning("Unable to read organization API settings", fmt.Sprintf("Unable to read organization API settings, keeping the last known values. The API token needs the read_organization_settings scope: %s", err.Error()))
 		settings = apiSettingsFromModel(state)
 	}
+
+	allowed, allowedDiags := allowedApiIpAddressesFromAPI(ctx, settings.AllowedIpAddresses, state.AllowedApiIpAddresses)
+	diags.Append(allowedDiags...)
+	if diags.HasError() {
+		return
+	}
+	state.AllowedApiIpAddresses = allowed
 	state.RevokeInactiveTokensAfter = types.StringValue(revokePeriodFromDays(settings.RevokeInactiveTokensAfterDays))
 	state.RestrictUserApiTokenCreation = types.BoolValue(settings.RestrictUserApiTokenCreation)
 }
@@ -426,7 +406,9 @@ func (o *organizationResource) updateAPISettings(ctx context.Context, config, pl
 		current = apiSettingsFromModel(prior)
 	}
 
-	// attributes that are not configured are left as they are
+	// the allowlist is not adopted from the organization, so state follows the configuration exactly
+	state.AllowedApiIpAddresses = plan.AllowedApiIpAddresses
+	// the remaining attributes are left as they are when they are not configured
 	state.RevokeInactiveTokensAfter = plan.RevokeInactiveTokensAfter
 	if state.RevokeInactiveTokensAfter.IsNull() || state.RevokeInactiveTokensAfter.IsUnknown() {
 		state.RevokeInactiveTokensAfter = types.StringValue(revokePeriodFromDays(current.RevokeInactiveTokensAfterDays))
@@ -444,8 +426,15 @@ func (o *organizationResource) updateAPISettings(ctx context.Context, config, pl
 	log.Printf("Updating API settings for organization %s ...", o.client.organization)
 	if _, err := o.client.updateOrganizationAPISettings(ctx, payload); err != nil {
 		detail := fmt.Sprintf("Unable to update organization API settings: %s", err.Error())
-		if _, ok := payload["revoke_inactive_tokens_after_days"]; ok && currentKnown && !current.Features.InactiveApiTokenRevocation {
-			detail += " Inactive API token revocation is not available on this organization's plan."
+		// a 403 answers a plan-gated setting as readily as a token without the scope, so name the
+		// feature the organization's plan is missing where that is what the request asked for
+		if currentKnown && isAPIStatus(err, http.StatusForbidden) {
+			if _, ok := payload["allowed_ip_addresses"]; ok && !current.Features.ApiIpAllowList {
+				detail += " The allowed API IP addresses feature is not available on this organization's plan."
+			}
+			if _, ok := payload["revoke_inactive_tokens_after_days"]; ok && !current.Features.InactiveApiTokenRevocation {
+				detail += " Inactive API token revocation is not available on this organization's plan."
+			}
 		}
 		diags.AddError("Unable to update organization API settings", detail)
 	}
