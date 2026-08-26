@@ -1396,6 +1396,7 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 			resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "repository", "https://github.com/buildkite/terraform-provider-buildkite.git"),
 			// Ensure that v1 pipeline's provider_settings set attributes are nested in state when upgraded from v0
 			resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_branches", "true"),
+			resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_issues", "false"),
 			resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_pull_requests", "true"),
 			resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_pull_request_ready_for_review", "true"),
 			resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_tags", "true"),

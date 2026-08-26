@@ -885,7 +885,7 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 					"build_issues": schema.BoolAttribute{
 						Optional:            true,
 						Computed:            true,
-						MarkdownDescription: "Whether authenticated GitHub `issues` webhook deliveries create builds. Defaults to false.",
+						MarkdownDescription: "Whether authenticated GitHub `issues` webhook deliveries create builds. Supported for GitHub.com pipelines only. Defaults to false.",
 						PlanModifiers: []planmodifier.Bool{
 							boolplanmodifier.UseNonNullStateForUnknown(),
 						},
@@ -2218,6 +2218,10 @@ func pipelineSchemaV0() schema.Schema {
 							Optional: true,
 						},
 						"build_branches": schema.BoolAttribute{
+							Optional: true,
+							Computed: true,
+						},
+						"build_issues": schema.BoolAttribute{
 							Optional: true,
 							Computed: true,
 						},
