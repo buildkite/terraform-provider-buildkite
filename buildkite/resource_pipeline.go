@@ -109,6 +109,7 @@ type pipelineResourceModel struct {
 
 type providerSettingsModel struct {
 	TriggerMode                             types.String `tfsdk:"trigger_mode"`
+	BuildIssues                             types.Bool   `tfsdk:"build_issues"`
 	BuildPullRequests                       types.Bool   `tfsdk:"build_pull_requests"`
 	PullRequestBranchFilterEnabled          types.Bool   `tfsdk:"pull_request_branch_filter_enabled"`
 	PullRequestBranchFilterConfiguration    types.String `tfsdk:"pull_request_branch_filter_configuration"`
@@ -881,6 +882,14 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 							boolplanmodifier.UseNonNullStateForUnknown(),
 						},
 					},
+					"build_issues": schema.BoolAttribute{
+						Optional:            true,
+						Computed:            true,
+						MarkdownDescription: "Whether authenticated GitHub `issues` webhook deliveries create builds. Supported for GitHub.com pipelines only. Defaults to false.",
+						PlanModifiers: []planmodifier.Bool{
+							boolplanmodifier.UseNonNullStateForUnknown(),
+						},
+					},
 					"pull_request_branch_filter_enabled": schema.BoolAttribute{
 						Computed:            true,
 						Optional:            true,
@@ -1595,6 +1604,7 @@ type PipelineSlug struct {
 
 type PipelineExtraSettings struct {
 	TriggerMode                             *string `json:"trigger_mode,omitempty"`
+	BuildIssues                             *bool   `json:"build_issues,omitempty"`
 	BuildPullRequests                       *bool   `json:"build_pull_requests,omitempty"`
 	PullRequestBranchFilterEnabled          *bool   `json:"pull_request_branch_filter_enabled,omitempty"`
 	PullRequestBranchFilterConfiguration    *string `json:"pull_request_branch_filter_configuration,omitempty"`
@@ -1663,6 +1673,7 @@ func updatePipelineExtraInfo(ctx context.Context, slug string, settings *provide
 	payload := map[string]any{
 		"provider_settings": PipelineExtraSettings{
 			TriggerMode:                             settings.TriggerMode.ValueStringPointer(),
+			BuildIssues:                             settings.BuildIssues.ValueBoolPointer(),
 			BuildPullRequests:                       settings.BuildPullRequests.ValueBoolPointer(),
 			PullRequestBranchFilterEnabled:          settings.PullRequestBranchFilterEnabled.ValueBoolPointer(),
 			PullRequestBranchFilterConfiguration:    settings.PullRequestBranchFilterConfiguration.ValueStringPointer(),
@@ -1759,6 +1770,7 @@ func updatePipelineResourceExtraInfo(state *pipelineResourceModel, pipeline *Pip
 
 	state.ProviderSettings = &providerSettingsModel{
 		TriggerMode:                             types.StringPointerValue(s.TriggerMode),
+		BuildIssues:                             types.BoolPointerValue(s.BuildIssues),
 		BuildPullRequests:                       types.BoolPointerValue(s.BuildPullRequests),
 		PullRequestBranchFilterEnabled:          types.BoolPointerValue(s.PullRequestBranchFilterEnabled),
 		PullRequestBranchFilterConfiguration:    types.StringPointerValue(s.PullRequestBranchFilterConfiguration),
@@ -1825,6 +1837,7 @@ func mapProviderSettingsFromGraphQL(repo RepositoryProviderSettingsFields) *prov
 		s := provider.Settings
 		return &providerSettingsModel{
 			TriggerMode:                             types.StringPointerValue(s.TriggerMode),
+			BuildIssues:                             types.BoolPointerValue(s.BuildIssues),
 			BuildPullRequests:                       types.BoolPointerValue(s.BuildPullRequests),
 			PullRequestBranchFilterEnabled:          types.BoolPointerValue(s.PullRequestBranchFilterEnabled),
 			PullRequestBranchFilterConfiguration:    types.StringPointerValue(s.PullRequestBranchFilterConfiguration),
@@ -1873,6 +1886,7 @@ func mapProviderSettingsFromGraphQL(repo RepositoryProviderSettingsFields) *prov
 		s := provider.Settings
 		return &providerSettingsModel{
 			TriggerMode:                             types.StringPointerValue(s.TriggerMode),
+			BuildIssues:                             types.BoolPointerValue(s.BuildIssues),
 			BuildPullRequests:                       types.BoolPointerValue(s.BuildPullRequests),
 			PullRequestBranchFilterEnabled:          types.BoolPointerValue(s.PullRequestBranchFilterEnabled),
 			PullRequestBranchFilterConfiguration:    types.StringPointerValue(s.PullRequestBranchFilterConfiguration),
@@ -2204,6 +2218,10 @@ func pipelineSchemaV0() schema.Schema {
 							Optional: true,
 						},
 						"build_branches": schema.BoolAttribute{
+							Optional: true,
+							Computed: true,
+						},
+						"build_issues": schema.BoolAttribute{
 							Optional: true,
 							Computed: true,
 						},
