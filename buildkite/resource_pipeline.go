@@ -1531,8 +1531,8 @@ func (p *pipelineResource) findAndRemoveTeam(ctx context.Context, teamID string,
 
 func (p *pipelineResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	// a pipeline slug is also accepted and resolved to the GraphQL ID
-	if parts, ok := splitHumanImportID(req.ID, 1); ok {
-		r, err := getPipelineId(ctx, p.client.genqlient, fmt.Sprintf("%s/%s", p.client.organization, parts[0]))
+	if slug, ok := parsePipelineImportID(req.ID); ok {
+		r, err := getPipelineId(ctx, p.client.genqlient, fmt.Sprintf("%s/%s", p.client.organization, slug))
 		if err == nil && r.Pipeline.Id == "" {
 			err = fmt.Errorf("no pipeline with that slug")
 		}

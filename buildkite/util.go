@@ -2,6 +2,7 @@ package buildkite
 
 import (
 	"context"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"log"
@@ -200,21 +201,61 @@ func retryContextError(err error) *retry.RetryError {
 }
 
 var (
-	importSlugRegex = regexp.MustCompile(`^[a-z0-9][a-z0-9-]*$`)
-	importUuidRegex = regexp.MustCompile(`^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$`)
+	// https://buildkite.com/docs/apis/rest-api/pipelines#deriving-a-pipeline-slug-from-the-pipelines-name
+	importPipelineSlugRegex = regexp.MustCompile(`^[a-zA-Z0-9]+[a-zA-Z0-9-]*$`)
+	importTeamSlugRegex     = regexp.MustCompile(`^[a-z0-9][a-z0-9-]*$`)
+	importUuidRegex         = regexp.MustCompile(`^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$`)
+	graphqlIDRegex          = regexp.MustCompile(`^[A-Za-z]+---[0-9a-f-]{36}$`)
 )
 
-// splitHumanImportID splits an import ID made of slugs, keys or UUIDs separated by "/" and reports whether it
-// has that shape; anything else, such as a GraphQL ID, is left for the caller to pass through unchanged
-func splitHumanImportID(id string, parts int) ([]string, bool) {
-	split := strings.Split(id, "/")
-	if len(split) != parts {
-		return nil, false
+// isGraphqlID reports whether id is a Buildkite GraphQL ID, which is the base64 encoding of "<Type>---<uuid>"
+func isGraphqlID(id string) bool {
+	decoded, err := base64.StdEncoding.DecodeString(id)
+	if err != nil {
+		decoded, err = base64.RawStdEncoding.DecodeString(id)
 	}
-	for _, part := range split {
-		if !importSlugRegex.MatchString(part) && !importUuidRegex.MatchString(part) {
-			return nil, false
-		}
+	return err == nil && graphqlIDRegex.Match(decoded)
+}
+
+// parsePipelineImportID returns the pipeline slug when id is one rather than a GraphQL ID
+func parsePipelineImportID(id string) (string, bool) {
+	if isGraphqlID(id) || !importPipelineSlugRegex.MatchString(id) {
+		return "", false
 	}
-	return split, true
+	return id, true
+}
+
+// parseTeamImportID returns the team slug when id is one rather than a GraphQL ID
+func parseTeamImportID(id string) (string, bool) {
+	if isGraphqlID(id) || !importTeamSlugRegex.MatchString(id) {
+		return "", false
+	}
+	return id, true
+}
+
+// parsePipelineScheduleImportID splits "<pipeline slug>/<schedule uuid>"
+func parsePipelineScheduleImportID(id string) (pipeline, uuid string, ok bool) {
+	pipeline, uuid, ok = strings.Cut(id, "/")
+	if !ok || !importPipelineSlugRegex.MatchString(pipeline) || !importUuidRegex.MatchString(uuid) {
+		return "", "", false
+	}
+	return pipeline, uuid, true
+}
+
+// parsePipelineTeamImportID splits "<pipeline slug>/<team slug>"
+func parsePipelineTeamImportID(id string) (pipeline, team string, ok bool) {
+	pipeline, team, ok = strings.Cut(id, "/")
+	if !ok || !importPipelineSlugRegex.MatchString(pipeline) || !importTeamSlugRegex.MatchString(team) {
+		return "", "", false
+	}
+	return pipeline, team, true
+}
+
+// parseClusterQueueImportID splits "<cluster uuid>/<queue key>", leaving the key for the lookup to validate
+func parseClusterQueueImportID(id string) (cluster, key string, ok bool) {
+	cluster, key, ok = strings.Cut(id, "/")
+	if !ok || !importUuidRegex.MatchString(cluster) || key == "" {
+		return "", "", false
+	}
+	return cluster, key, true
 }

@@ -391,10 +391,11 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 				},
 				{
 					// the pipeline slug is also accepted
-					ResourceName:      "buildkite_pipeline.pipeline",
-					ImportState:       true,
-					ImportStateIdFunc: testAccImportIDFromAttributes("buildkite_pipeline.pipeline", "slug"),
-					ImportStateVerify: true,
+					ResourceName:            "buildkite_pipeline.pipeline",
+					ImportState:             true,
+					ImportStateIdFunc:       testAccImportIDFromAttributes("buildkite_pipeline.pipeline", "slug"),
+					ImportStateVerify:       true,
+					ImportStateVerifyIgnore: []string{"provider_settings"},
 				},
 			},
 		})

@@ -5034,11 +5034,15 @@ func (v *__getPipelineScheduleInput) GetId() string { return v.Id }
 // __getPipelineTeamIdsInput is used internally by genqlient
 type __getPipelineTeamIdsInput struct {
 	Slug   string  `json:"slug"`
+	Search string  `json:"search"`
 	Cursor *string `json:"cursor"`
 }
 
 // GetSlug returns __getPipelineTeamIdsInput.Slug, and is useful for accessing the field via an interface.
 func (v *__getPipelineTeamIdsInput) GetSlug() string { return v.Slug }
+
+// GetSearch returns __getPipelineTeamIdsInput.Search, and is useful for accessing the field via an interface.
+func (v *__getPipelineTeamIdsInput) GetSearch() string { return v.Search }
 
 // GetCursor returns __getPipelineTeamIdsInput.Cursor, and is useful for accessing the field via an interface.
 func (v *__getPipelineTeamIdsInput) GetCursor() *string { return v.Cursor }
@@ -10329,157 +10333,18 @@ func (v *getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClu
 
 // getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue includes the requested fields of the GraphQL type ClusterQueue.
 type getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue struct {
-	ClusterQueueValues `json:"-"`
-	// States whether job dispatch is paused for this cluster queue
-	DispatchPaused bool `json:"dispatchPaused"`
-	// The time this queue was paused
-	DispatchPausedAt *time.Time `json:"dispatchPausedAt"`
-	// The user who paused this cluster queue
-	DispatchPausedBy *getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueueDispatchPausedByUser `json:"dispatchPausedBy"`
-	// Note describing why job dispatch was paused for this cluster queue
-	DispatchPausedNote *string `json:"dispatchPausedNote"`
-}
-
-// GetDispatchPaused returns getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue.DispatchPaused, and is useful for accessing the field via an interface.
-func (v *getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue) GetDispatchPaused() bool {
-	return v.DispatchPaused
-}
-
-// GetDispatchPausedAt returns getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue.DispatchPausedAt, and is useful for accessing the field via an interface.
-func (v *getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue) GetDispatchPausedAt() *time.Time {
-	return v.DispatchPausedAt
-}
-
-// GetDispatchPausedBy returns getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue.DispatchPausedBy, and is useful for accessing the field via an interface.
-func (v *getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue) GetDispatchPausedBy() *getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueueDispatchPausedByUser {
-	return v.DispatchPausedBy
-}
-
-// GetDispatchPausedNote returns getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue.DispatchPausedNote, and is useful for accessing the field via an interface.
-func (v *getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue) GetDispatchPausedNote() *string {
-	return v.DispatchPausedNote
+	Id  string `json:"id"`
+	Key string `json:"key"`
 }
 
 // GetId returns getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue.Id, and is useful for accessing the field via an interface.
 func (v *getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue) GetId() string {
-	return v.ClusterQueueValues.Id
-}
-
-// GetUuid returns getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue.Uuid, and is useful for accessing the field via an interface.
-func (v *getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue) GetUuid() string {
-	return v.ClusterQueueValues.Uuid
+	return v.Id
 }
 
 // GetKey returns getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue.Key, and is useful for accessing the field via an interface.
 func (v *getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue) GetKey() string {
-	return v.ClusterQueueValues.Key
-}
-
-// GetDescription returns getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue.Description, and is useful for accessing the field via an interface.
-func (v *getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue) GetDescription() *string {
-	return v.ClusterQueueValues.Description
-}
-
-// GetCluster returns getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue.Cluster, and is useful for accessing the field via an interface.
-func (v *getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue) GetCluster() ClusterQueueValuesCluster {
-	return v.ClusterQueueValues.Cluster
-}
-
-// GetHosted returns getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue.Hosted, and is useful for accessing the field via an interface.
-func (v *getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue) GetHosted() bool {
-	return v.ClusterQueueValues.Hosted
-}
-
-// GetHostedAgents returns getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue.HostedAgents, and is useful for accessing the field via an interface.
-func (v *getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue) GetHostedAgents() ClusterQueueValuesHostedAgentsHostedAgentQueueSettings {
-	return v.ClusterQueueValues.HostedAgents
-}
-
-func (v *getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue) UnmarshalJSON(b []byte) error {
-
-	if string(b) == "null" {
-		return nil
-	}
-
-	var firstPass struct {
-		*getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue
-		graphql.NoUnmarshalJSON
-	}
-	firstPass.getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue = v
-
-	err := json.Unmarshal(b, &firstPass)
-	if err != nil {
-		return err
-	}
-
-	err = json.Unmarshal(
-		b, &v.ClusterQueueValues)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-type __premarshalgetClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue struct {
-	DispatchPaused bool `json:"dispatchPaused"`
-
-	DispatchPausedAt *time.Time `json:"dispatchPausedAt"`
-
-	DispatchPausedBy *getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueueDispatchPausedByUser `json:"dispatchPausedBy"`
-
-	DispatchPausedNote *string `json:"dispatchPausedNote"`
-
-	Id string `json:"id"`
-
-	Uuid string `json:"uuid"`
-
-	Key string `json:"key"`
-
-	Description *string `json:"description"`
-
-	Cluster ClusterQueueValuesCluster `json:"cluster"`
-
-	Hosted bool `json:"hosted"`
-
-	HostedAgents ClusterQueueValuesHostedAgentsHostedAgentQueueSettings `json:"hostedAgents"`
-}
-
-func (v *getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue) MarshalJSON() ([]byte, error) {
-	premarshaled, err := v.__premarshalJSON()
-	if err != nil {
-		return nil, err
-	}
-	return json.Marshal(premarshaled)
-}
-
-func (v *getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue) __premarshalJSON() (*__premarshalgetClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue, error) {
-	var retval __premarshalgetClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue
-
-	retval.DispatchPaused = v.DispatchPaused
-	retval.DispatchPausedAt = v.DispatchPausedAt
-	retval.DispatchPausedBy = v.DispatchPausedBy
-	retval.DispatchPausedNote = v.DispatchPausedNote
-	retval.Id = v.ClusterQueueValues.Id
-	retval.Uuid = v.ClusterQueueValues.Uuid
-	retval.Key = v.ClusterQueueValues.Key
-	retval.Description = v.ClusterQueueValues.Description
-	retval.Cluster = v.ClusterQueueValues.Cluster
-	retval.Hosted = v.ClusterQueueValues.Hosted
-	retval.HostedAgents = v.ClusterQueueValues.HostedAgents
-	return &retval, nil
-}
-
-// getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueueDispatchPausedByUser includes the requested fields of the GraphQL type User.
-// The GraphQL type's documentation follows.
-//
-// A user
-type getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueueDispatchPausedByUser struct {
-	Id string `json:"id"`
-}
-
-// GetId returns getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueueDispatchPausedByUser.Id, and is useful for accessing the field via an interface.
-func (v *getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueueDispatchPausedByUser) GetId() string {
-	return v.Id
+	return v.Key
 }
 
 // getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionPageInfo includes the requested fields of the GraphQL type PageInfo.
@@ -17621,9 +17486,13 @@ func (v *getPipelineScheduleResponse) __premarshalJSON() (*__premarshalgetPipeli
 //
 // A pipeline
 type getPipelineTeamIdsPipeline struct {
+	Id string `json:"id"`
 	// Teams associated with this pipeline
 	Teams getPipelineTeamIdsPipelineTeamsTeamPipelineConnection `json:"teams"`
 }
+
+// GetId returns getPipelineTeamIdsPipeline.Id, and is useful for accessing the field via an interface.
+func (v *getPipelineTeamIdsPipeline) GetId() string { return v.Id }
 
 // GetTeams returns getPipelineTeamIdsPipeline.Teams, and is useful for accessing the field via an interface.
 func (v *getPipelineTeamIdsPipeline) GetTeams() getPipelineTeamIdsPipelineTeamsTeamPipelineConnection {
@@ -26445,49 +26314,11 @@ query getClusterQueues ($orgSlug: ID!, $id: ID!, $cursor: String) {
 				}
 				edges {
 					node {
-						... ClusterQueueValues
-						dispatchPaused
-						dispatchPausedAt
-						dispatchPausedBy {
-							id
-						}
-						dispatchPausedNote
+						id
+						key
 					}
 				}
 			}
-		}
-	}
-}
-fragment ClusterQueueValues on ClusterQueue {
-	id
-	uuid
-	key
-	description
-	cluster {
-		id
-		uuid
-	}
-	hosted
-	hostedAgents {
-		... HostedAgentsQueueSettingsValues
-	}
-}
-fragment HostedAgentsQueueSettingsValues on HostedAgentQueueSettings {
-	instanceShape {
-		architecture
-		machineType
-		memory
-		name
-		size
-		vcpu
-	}
-	platformSettings {
-		linux {
-			agentImageRef
-		}
-		macos {
-			xcodeVersion
-			macosVersion
 		}
 	}
 }
@@ -27331,9 +27162,10 @@ func getPipelineScheduleBySlug(
 
 // The query executed by getPipelineTeamIds.
 const getPipelineTeamIds_Operation = `
-query getPipelineTeamIds ($slug: ID!, $cursor: String) {
+query getPipelineTeamIds ($slug: ID!, $search: String!, $cursor: String) {
 	pipeline(slug: $slug) {
-		teams(first: 50, after: $cursor) {
+		id
+		teams(first: 50, after: $cursor, search: $search, order: RELEVANCE) {
 			pageInfo {
 				endCursor
 				hasNextPage
@@ -27355,6 +27187,7 @@ func getPipelineTeamIds(
 	ctx_ context.Context,
 	client_ graphql.Client,
 	slug string,
+	search string,
 	cursor *string,
 ) (data_ *getPipelineTeamIdsResponse, err_ error) {
 	req_ := &graphql.Request{
@@ -27362,6 +27195,7 @@ func getPipelineTeamIds(
 		Query:  getPipelineTeamIds_Operation,
 		Variables: &__getPipelineTeamIdsInput{
 			Slug:   slug,
+			Search: search,
 			Cursor: cursor,
 		},
 	}

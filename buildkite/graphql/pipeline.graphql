@@ -478,11 +478,13 @@ query getPipelineId($slug: ID!) {
 
 query getPipelineTeamIds(
     $slug: ID!,
+    $search: String!,
     # @genqlient(pointer: true)
     $cursor: String
 ) {
     pipeline(slug: $slug) {
-        teams(first: 50, after: $cursor) {
+        id
+        teams(first: 50, after: $cursor, search: $search, order: RELEVANCE) {
             pageInfo {
                 endCursor
                 hasNextPage
