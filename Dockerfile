@@ -4,7 +4,7 @@ RUN apt-get update \
     && apt-get install -y unzip
 
 COPY --from=hashicorp/terraform:1.15@sha256:fd5debae63188975d6febc6aa5bd1a982a588f55e4a4ddb7de28be923f250456 /bin/terraform /usr/local/bin/terraform
-COPY --from=goreleaser/goreleaser:v2.17.1@sha256:1098a0be4da1780f9616a85f4c5050447b53e3e74804d8017ec1e2bbb1fb697a /usr/bin/goreleaser /usr/local/bin/goreleaser
+COPY --from=goreleaser/goreleaser:v2.18.0@sha256:a7609141326e383370858ab3ca2572e96e00fb212fe3fd5610cd4de434652faa /usr/bin/goreleaser /usr/local/bin/goreleaser
 
 WORKDIR /work
 

@@ -6,6 +6,7 @@ description: |-
   This resource allows you to create and manage pipelines for repositories.
   More information on pipelines can be found in the documentation https://buildkite.com/docs/pipelines.
   -> Note: When creating a new pipeline, the Buildkite API requires at least one team to be associated with it. You must use the 'default_team_id' attribute to specify this initial team. The 'buildkite_pipeline_team' resource can then be used to manage team access for existing pipelines.
+  -> Note: After importing a pipeline, 'color' and 'emoji' values left out of the configuration are cleared on the next apply.
 ---
 
 # buildkite_pipeline (Resource)
@@ -15,6 +16,8 @@ This resource allows you to create and manage pipelines for repositories.
 More information on pipelines can be found in the [documentation](https://buildkite.com/docs/pipelines).
 
 -> **Note:** When creating a new pipeline, the Buildkite API requires at least one team to be associated with it. You must use the 'default_team_id' attribute to specify this initial team. The 'buildkite_pipeline_team' resource can then be used to manage team access for existing pipelines.
+
+-> **Note:** After importing a pipeline, 'color' and 'emoji' values left out of the configuration are cleared on the next apply.
 
 ## Example Usage
 
@@ -216,6 +219,7 @@ Optional:
 - `build_create_event` (Boolean) Whether to create a build when a branch or tag is created on GitHub.
 - `build_deployment_status_created` (Boolean) Whether to create a build when a GitHub deployment status is created.
 - `build_issue_comment_created` (Boolean) Whether to create builds when an issue comment is created on a pull request.
+- `build_issues` (Boolean) Whether authenticated GitHub `issues` webhook deliveries create builds. Supported for GitHub.com pipelines only. Defaults to false.
 - `build_merge_group_checks_requested` (Boolean) Whether to create merge queue builds for a merge queue enabled GitHub repository with required status checks
 - `build_pull_request_base_branch_changed` (Boolean) Whether to create builds for pull requests when its base branch changes.
 - `build_pull_request_converted_to_draft` (Boolean) Whether to create a build when a pull request is converted to a draft.

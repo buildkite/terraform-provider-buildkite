@@ -3196,6 +3196,8 @@ func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubEnterpr
 type RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings struct {
 	// Whether to create builds when branches are pushed.
 	BuildBranches *bool `json:"buildBranches"`
+	// Whether to create builds for GitHub issue activity.
+	BuildIssues *bool `json:"buildIssues"`
 	// Whether to create builds when a check run completes.
 	BuildCheckRunCompleted *bool `json:"buildCheckRunCompleted"`
 	// Whether to create builds when a branch or tag is created.
@@ -3287,6 +3289,11 @@ type RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubEnterpriseS
 // GetBuildBranches returns RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings.BuildBranches, and is useful for accessing the field via an interface.
 func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings) GetBuildBranches() *bool {
 	return v.BuildBranches
+}
+
+// GetBuildIssues returns RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings.BuildIssues, and is useful for accessing the field via an interface.
+func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings) GetBuildIssues() *bool {
+	return v.BuildIssues
 }
 
 // GetBuildCheckRunCompleted returns RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings.BuildCheckRunCompleted, and is useful for accessing the field via an interface.
@@ -3511,6 +3518,8 @@ func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubEnterpr
 type RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings struct {
 	// Whether to create builds when branches are pushed.
 	BuildBranches *bool `json:"buildBranches"`
+	// Whether to create builds for GitHub issue activity.
+	BuildIssues *bool `json:"buildIssues"`
 	// Whether to create builds when a check run completes.
 	BuildCheckRunCompleted *bool `json:"buildCheckRunCompleted"`
 	// Whether to create builds when a branch or tag is created.
@@ -3602,6 +3611,11 @@ type RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubSettingsRep
 // GetBuildBranches returns RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings.BuildBranches, and is useful for accessing the field via an interface.
 func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings) GetBuildBranches() *bool {
 	return v.BuildBranches
+}
+
+// GetBuildIssues returns RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings.BuildIssues, and is useful for accessing the field via an interface.
+func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings) GetBuildIssues() *bool {
+	return v.BuildIssues
 }
 
 // GetBuildCheckRunCompleted returns RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings.BuildCheckRunCompleted, and is useful for accessing the field via an interface.
@@ -26753,6 +26767,7 @@ fragment RepositoryProviderSettingsFields on Repository {
 		... on RepositoryProviderGithub {
 			settings {
 				buildBranches
+				buildIssues
 				buildCheckRunCompleted
 				buildCreateEvent
 				buildDeploymentStatusCreated
@@ -26801,6 +26816,7 @@ fragment RepositoryProviderSettingsFields on Repository {
 		... on RepositoryProviderGithubEnterprise {
 			settings {
 				buildBranches
+				buildIssues
 				buildCheckRunCompleted
 				buildCreateEvent
 				buildDeploymentStatusCreated
