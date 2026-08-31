@@ -255,14 +255,6 @@ func (o *organizationResource) Update(ctx context.Context, req resource.UpdateRe
 }
 
 func (o *organizationResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var state organizationResourceModel
-
-	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
-
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
 	org, err := o.client.GetOrganizationID()
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -272,8 +264,17 @@ func (o *organizationResource) Delete(ctx context.Context, req resource.DeleteRe
 		return
 	}
 	log.Printf("Deleting settings for organization %s ...", *org)
-	// the allowlist is the one setting terraform owns outright, so it goes when the resource does
-	if allowedApiIpAddressesValue(state.AllowedApiIpAddresses) != "" {
+	// the allowlist is the one setting terraform owns outright, so it goes when the resource does.
+	// State does not answer whether there is one to clear: a refresh that could not read the settings
+	// keeps whatever it last saw, so the organization is asked instead. Organizations without the
+	// allowlist feature are refused even the empty value they already have, which is what the
+	// request is skipped for.
+	current, err := o.client.getOrganizationAPISettings(ctx)
+	if err != nil {
+		addUnreadableAPISettingsError(&resp.Diagnostics, err)
+		return
+	}
+	if current.AllowedIpAddresses != "" {
 		if _, err := o.client.updateOrganizationAPISettings(ctx, map[string]any{"allowed_ip_addresses": ""}); err != nil {
 			resp.Diagnostics.AddError(
 				"Unable to delete Organization settings",
@@ -368,11 +369,21 @@ func apiSettingsPatch(config, plan *organizationResourceModel, current *organiza
 	return payload
 }
 
+// addUnreadableAPISettingsError reports a settings read that failed, naming the scope a forbidden
+// answer asks for
+func addUnreadableAPISettingsError(diags *diag.Diagnostics, err error) {
+	detail := fmt.Sprintf("Unable to read organization API settings: %s", err.Error())
+	if isAPIStatus(err, http.StatusForbidden) {
+		detail += " The API token needs the read_organization_settings scope."
+	}
+	diags.AddError("Unable to read organization API settings", detail)
+}
+
 func (o *organizationResource) readAPISettings(ctx context.Context, state *organizationResourceModel, diags *diag.Diagnostics) {
 	settings, err := o.client.getOrganizationAPISettings(ctx)
 	if err != nil {
 		if !isAPIStatus(err, http.StatusForbidden) {
-			diags.AddError("Unable to read organization API settings", fmt.Sprintf("Unable to read organization API settings: %s", err.Error()))
+			addUnreadableAPISettingsError(diags, err)
 			return
 		}
 		// tolerate tokens without the read_organization_settings scope
@@ -397,11 +408,7 @@ func (o *organizationResource) updateAPISettings(ctx context.Context, config, pl
 	// would record an allowlist the organization never took.
 	current, err := o.client.getOrganizationAPISettings(ctx)
 	if err != nil {
-		detail := fmt.Sprintf("Unable to read organization API settings: %s", err.Error())
-		if isAPIStatus(err, http.StatusForbidden) {
-			detail += " The API token needs the read_organization_settings scope."
-		}
-		diags.AddError("Unable to read organization API settings", detail)
+		addUnreadableAPISettingsError(diags, err)
 		return
 	}
 

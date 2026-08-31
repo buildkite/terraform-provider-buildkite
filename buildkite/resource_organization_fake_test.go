@@ -60,6 +60,24 @@ func (a *fakeOrganizationAPI) refuseRead(status int, body string) {
 	a.readBody = body
 }
 
+// allowRead undoes refuseRead, the way granting the missing scope would
+func (a *fakeOrganizationAPI) allowRead() {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+
+	a.readStatus = 0
+	a.readBody = ""
+}
+
+// presetAllowedIpAddresses gives the organization an allowlist terraform did not write, the way
+// another administrator would
+func (a *fakeOrganizationAPI) presetAllowedIpAddresses(allowed string) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+
+	a.settings.AllowedIpAddresses = allowed
+}
+
 func (a *fakeOrganizationAPI) allowedIpAddresses() string {
 	a.mu.Lock()
 	defer a.mu.Unlock()
@@ -315,6 +333,40 @@ func TestUnitBuildkiteOrganizationRefusesToWriteUnreadableSettings(t *testing.T)
 			{
 				Config:      fakeOrganizationConfig(server, `allowed_api_ip_addresses = []`),
 				ExpectError: regexp.MustCompile(`(?s)Unable to read organization API settings.*The API token needs the read_organization_settings scope`),
+			},
+		},
+	})
+}
+
+// Destroying clears the allowlist the resource owns, and state does not say whether there is one to
+// clear: a refresh that could not read the settings keeps reporting the allowlist it last saw, so an
+// allowlist set out of band would outlive the resource that is supposed to own it.
+func TestUnitBuildkiteOrganizationRefusesToDestroyWithUnreadableSettings(t *testing.T) {
+	server, api := newFakeOrganizationAPI(t)
+
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		CheckDestroy:             api.checkAllowedIpAddresses(""),
+		Steps: []resource.TestStep{
+			{
+				// nothing says anything about an allowlist, so state records none
+				Config: fakeOrganizationConfig(server, ``),
+				Check:  api.checkAllowedIpAddresses(""),
+			},
+			{
+				PreConfig: func() {
+					api.presetAllowedIpAddresses("1.1.1.1/32")
+					api.refuseRead(http.StatusForbidden, `{"message":"Forbidden"}`)
+				},
+				Config:      fakeOrganizationConfig(server, ``),
+				Destroy:     true,
+				ExpectError: regexp.MustCompile(`(?s)Unable to read organization API settings.*The API token needs the read_organization_settings scope`),
+			},
+			{
+				// with the settings readable the allowlist state never saw is still cleared
+				PreConfig: api.allowRead,
+				Config:    fakeOrganizationConfig(server, ``),
+				Destroy:   true,
 			},
 		},
 	})
