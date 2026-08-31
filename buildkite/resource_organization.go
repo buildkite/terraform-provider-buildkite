@@ -153,7 +153,7 @@ func (o *organizationResource) Create(ctx context.Context, req resource.CreateRe
 	state.UUID = types.StringValue(organization.Organization.Uuid)
 	state.Enforce2FA = plan.Enforce2FA
 
-	o.updateAPISettings(ctx, &config, &plan, nil, &state, &resp.Diagnostics)
+	o.updateAPISettings(ctx, &config, &plan, &state, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -246,7 +246,7 @@ func (o *organizationResource) Update(ctx context.Context, req resource.UpdateRe
 	state.ID = types.StringValue(*org)
 	state.UUID = prior.UUID
 
-	o.updateAPISettings(ctx, &config, &plan, &prior, &state, &resp.Diagnostics)
+	o.updateAPISettings(ctx, &config, &plan, &state, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -336,19 +336,17 @@ func (c *Client) updateOrganizationAPISettings(ctx context.Context, payload map[
 	return &settings, err
 }
 
-// apiSettingsFromModel returns the api-settings recorded in state, or the API defaults
+// apiSettingsFromModel returns the api-settings recorded in state
 func apiSettingsFromModel(model *organizationResourceModel) *organizationAPISettings {
-	settings := &organizationAPISettings{}
-	if model != nil {
-		settings.AllowedIpAddresses = allowedApiIpAddressesValue(model.AllowedApiIpAddresses)
-		settings.RevokeInactiveTokensAfterDays = revokePeriodToDays(model.RevokeInactiveTokensAfter.ValueString())
-		settings.RestrictUserApiTokenCreation = model.RestrictUserApiTokenCreation.ValueBool()
+	return &organizationAPISettings{
+		AllowedIpAddresses:            allowedApiIpAddressesValue(model.AllowedApiIpAddresses),
+		RevokeInactiveTokensAfterDays: revokePeriodToDays(model.RevokeInactiveTokensAfter.ValueString()),
+		RestrictUserApiTokenCreation:  model.RestrictUserApiTokenCreation.ValueBool(),
 	}
-	return settings
 }
 
-// apiSettingsPatch returns the configured api-settings that differ from current, or all of them when current isn't known
-func apiSettingsPatch(config, plan *organizationResourceModel, current *organizationAPISettings, currentKnown bool) map[string]any {
+// apiSettingsPatch returns the configured api-settings that differ from current
+func apiSettingsPatch(config, plan *organizationResourceModel, current *organizationAPISettings) map[string]any {
 	payload := map[string]any{}
 	// the allowlist is owned rather than adopted: dropping it from the configuration clears it, so
 	// the plan alone says what it should be. Unchanged values stay out of the request because
@@ -358,12 +356,12 @@ func apiSettingsPatch(config, plan *organizationResourceModel, current *organiza
 	}
 	// config says whether an attribute is managed, plan holds the value to apply
 	if !config.RevokeInactiveTokensAfter.IsNull() && !plan.RevokeInactiveTokensAfter.IsUnknown() {
-		if revoke := plan.RevokeInactiveTokensAfter.ValueString(); !currentKnown || revoke != revokePeriodFromDays(current.RevokeInactiveTokensAfterDays) {
+		if revoke := plan.RevokeInactiveTokensAfter.ValueString(); revoke != revokePeriodFromDays(current.RevokeInactiveTokensAfterDays) {
 			payload["revoke_inactive_tokens_after_days"] = revokePeriodToDays(revoke)
 		}
 	}
 	if !config.RestrictUserApiTokenCreation.IsNull() && !plan.RestrictUserApiTokenCreation.IsUnknown() {
-		if restrict := plan.RestrictUserApiTokenCreation.ValueBool(); !currentKnown || restrict != current.RestrictUserApiTokenCreation {
+		if restrict := plan.RestrictUserApiTokenCreation.ValueBool(); restrict != current.RestrictUserApiTokenCreation {
 			payload["restrict_user_api_token_creation"] = restrict
 		}
 	}
@@ -393,17 +391,18 @@ func (o *organizationResource) readAPISettings(ctx context.Context, state *organ
 }
 
 // updateAPISettings sends the configured api-settings that changed and records the result on state
-func (o *organizationResource) updateAPISettings(ctx context.Context, config, plan, prior, state *organizationResourceModel, diags *diag.Diagnostics) {
+func (o *organizationResource) updateAPISettings(ctx context.Context, config, plan, state *organizationResourceModel, diags *diag.Diagnostics) {
+	// settings that are about to be written have to be read first. The allowlist is owned outright,
+	// so an unreadable one cannot be told from an empty one, and skipping the request on that guess
+	// would record an allowlist the organization never took.
 	current, err := o.client.getOrganizationAPISettings(ctx)
-	currentKnown := err == nil
 	if err != nil {
-		if !isAPIStatus(err, http.StatusForbidden) {
-			diags.AddError("Unable to read organization API settings", fmt.Sprintf("Unable to read organization API settings: %s", err.Error()))
-			return
+		detail := fmt.Sprintf("Unable to read organization API settings: %s", err.Error())
+		if isAPIStatus(err, http.StatusForbidden) {
+			detail += " The API token needs the read_organization_settings scope."
 		}
-		// without the read scope every configured value is sent, and the rest keeps its last known value
-		diags.AddWarning("Unable to read organization API settings", fmt.Sprintf("Unable to read organization API settings, keeping the last known values. The API token needs the read_organization_settings scope: %s", err.Error()))
-		current = apiSettingsFromModel(prior)
+		diags.AddError("Unable to read organization API settings", detail)
+		return
 	}
 
 	// the allowlist is not adopted from the organization, so state follows the configuration exactly
@@ -418,7 +417,7 @@ func (o *organizationResource) updateAPISettings(ctx context.Context, config, pl
 		state.RestrictUserApiTokenCreation = types.BoolValue(current.RestrictUserApiTokenCreation)
 	}
 
-	payload := apiSettingsPatch(config, plan, current, currentKnown)
+	payload := apiSettingsPatch(config, plan, current)
 	if len(payload) == 0 {
 		return
 	}
@@ -428,7 +427,7 @@ func (o *organizationResource) updateAPISettings(ctx context.Context, config, pl
 		detail := fmt.Sprintf("Unable to update organization API settings: %s", err.Error())
 		// a 403 answers a plan-gated setting as readily as a token without the scope, so name the
 		// feature the organization's plan is missing where that is what the request asked for
-		if currentKnown && isAPIStatus(err, http.StatusForbidden) {
+		if isAPIStatus(err, http.StatusForbidden) {
 			if _, ok := payload["allowed_ip_addresses"]; ok && !current.Features.ApiIpAllowList {
 				detail += " The allowed API IP addresses feature is not available on this organization's plan."
 			}

@@ -301,6 +301,25 @@ func TestUnitBuildkiteOrganizationReportsAPlanGatedAllowlist(t *testing.T) {
 	})
 }
 
+// An allowlist the provider cannot read is one it cannot compare the configuration with either, and
+// an empty configuration serializes to the same "" a fallback would read it as, so a create that
+// guessed would leave the allowlist in place while reporting it gone.
+func TestUnitBuildkiteOrganizationRefusesToWriteUnreadableSettings(t *testing.T) {
+	server, api := newFakeOrganizationAPI(t)
+	api.settings.AllowedIpAddresses = "1.1.1.1/32"
+	api.refuseRead(http.StatusForbidden, `{"message":"Forbidden"}`)
+
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config:      fakeOrganizationConfig(server, `allowed_api_ip_addresses = []`),
+				ExpectError: regexp.MustCompile(`(?s)Unable to read organization API settings.*The API token needs the read_organization_settings scope`),
+			},
+		},
+	})
+}
+
 func TestUnitBuildkiteOrganizationDatasourceAgainstFakeAPI(t *testing.T) {
 	server, api := newFakeOrganizationAPI(t)
 	api.settings.AllowedIpAddresses = "1.1.1.1/32 0.0.0.0/0"

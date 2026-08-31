@@ -149,37 +149,32 @@ func TestApiSettingsPatch(t *testing.T) {
 	}
 	unset := model(noList, types.StringNull(), types.BoolNull())
 	testCases := []struct {
-		name         string
-		config       organizationResourceModel
-		plan         organizationResourceModel
-		current      organizationAPISettings
-		currentKnown bool
-		want         string
+		name    string
+		config  organizationResourceModel
+		plan    organizationResourceModel
+		current organizationAPISettings
+		want    string
 	}{
-		{"unset attributes are not sent", unset, model(noList, types.StringUnknown(), types.BoolUnknown()), organizationAPISettings{RevokeInactiveTokensAfterDays: days(30), RestrictUserApiTokenCreation: true}, true, `{}`},
-		{"values kept from state for unset attributes are not sent", unset, model(noList, types.StringValue("DAYS_90"), types.BoolValue(true)), organizationAPISettings{}, true, `{}`},
-		{"unchanged values are not sent", model(noList, types.StringValue("DAYS_90"), types.BoolValue(true)), model(noList, types.StringValue("DAYS_90"), types.BoolValue(true)), organizationAPISettings{RevokeInactiveTokensAfterDays: days(90), RestrictUserApiTokenCreation: true}, true, `{}`},
-		{"changed period is sent", model(noList, types.StringValue("DAYS_60"), types.BoolNull()), model(noList, types.StringValue("DAYS_60"), types.BoolValue(false)), organizationAPISettings{RevokeInactiveTokensAfterDays: days(90)}, true, `{"revoke_inactive_tokens_after_days":60}`},
-		{"never is sent as null", model(noList, types.StringValue("NEVER"), types.BoolValue(false)), model(noList, types.StringValue("NEVER"), types.BoolValue(false)), organizationAPISettings{RevokeInactiveTokensAfterDays: days(90)}, true, `{"revoke_inactive_tokens_after_days":null}`},
-		{"changed restriction is sent", model(noList, types.StringNull(), types.BoolValue(false)), model(noList, types.StringValue("NEVER"), types.BoolValue(false)), organizationAPISettings{RestrictUserApiTokenCreation: true}, true, `{"restrict_user_api_token_creation":false}`},
-		{"both are sent", model(noList, types.StringValue("DAYS_365"), types.BoolValue(true)), model(noList, types.StringValue("DAYS_365"), types.BoolValue(true)), organizationAPISettings{}, true, `{"restrict_user_api_token_creation":true,"revoke_inactive_tokens_after_days":365}`},
-		// when the current settings can't be read, configured values are always sent
-		{"unknown current and explicit false", model(noList, types.StringNull(), types.BoolValue(false)), model(noList, types.StringUnknown(), types.BoolValue(false)), organizationAPISettings{}, false, `{"restrict_user_api_token_creation":false}`},
-		{"unknown current and explicit never", model(noList, types.StringValue("NEVER"), types.BoolNull()), model(noList, types.StringValue("NEVER"), types.BoolUnknown()), organizationAPISettings{}, false, `{"revoke_inactive_tokens_after_days":null}`},
-		{"unknown current and nothing configured", unset, model(noList, types.StringValue("DAYS_30"), types.BoolValue(true)), organizationAPISettings{}, false, `{}`},
+		{"unset attributes are not sent", unset, model(noList, types.StringUnknown(), types.BoolUnknown()), organizationAPISettings{RevokeInactiveTokensAfterDays: days(30), RestrictUserApiTokenCreation: true}, `{}`},
+		{"values kept from state for unset attributes are not sent", unset, model(noList, types.StringValue("DAYS_90"), types.BoolValue(true)), organizationAPISettings{}, `{}`},
+		{"unchanged values are not sent", model(noList, types.StringValue("DAYS_90"), types.BoolValue(true)), model(noList, types.StringValue("DAYS_90"), types.BoolValue(true)), organizationAPISettings{RevokeInactiveTokensAfterDays: days(90), RestrictUserApiTokenCreation: true}, `{}`},
+		{"changed period is sent", model(noList, types.StringValue("DAYS_60"), types.BoolNull()), model(noList, types.StringValue("DAYS_60"), types.BoolValue(false)), organizationAPISettings{RevokeInactiveTokensAfterDays: days(90)}, `{"revoke_inactive_tokens_after_days":60}`},
+		{"never is sent as null", model(noList, types.StringValue("NEVER"), types.BoolValue(false)), model(noList, types.StringValue("NEVER"), types.BoolValue(false)), organizationAPISettings{RevokeInactiveTokensAfterDays: days(90)}, `{"revoke_inactive_tokens_after_days":null}`},
+		{"changed restriction is sent", model(noList, types.StringNull(), types.BoolValue(false)), model(noList, types.StringValue("NEVER"), types.BoolValue(false)), organizationAPISettings{RestrictUserApiTokenCreation: true}, `{"restrict_user_api_token_creation":false}`},
+		{"both are sent", model(noList, types.StringValue("DAYS_365"), types.BoolValue(true)), model(noList, types.StringValue("DAYS_365"), types.BoolValue(true)), organizationAPISettings{}, `{"restrict_user_api_token_creation":true,"revoke_inactive_tokens_after_days":365}`},
 		// the allowlist is owned outright, so the plan says what it should be with no help from config
-		{"allowlist is sent", model(list("1.1.1.1/32"), types.StringNull(), types.BoolNull()), model(list("1.1.1.1/32"), types.StringValue("NEVER"), types.BoolValue(false)), organizationAPISettings{}, true, `{"allowed_ip_addresses":"1.1.1.1/32"}`},
-		{"unchanged allowlist is not sent", model(list("1.1.1.1/32", "0.0.0.0/0"), types.StringNull(), types.BoolNull()), model(list("1.1.1.1/32", "0.0.0.0/0"), types.StringValue("NEVER"), types.BoolValue(false)), organizationAPISettings{AllowedIpAddresses: "1.1.1.1/32 0.0.0.0/0"}, true, `{}`},
-		{"removed allowlist is cleared", unset, model(noList, types.StringValue("NEVER"), types.BoolValue(false)), organizationAPISettings{AllowedIpAddresses: "1.1.1.1/32"}, true, `{"allowed_ip_addresses":""}`},
-		{"empty string clears the allowlist", model(list(""), types.StringNull(), types.BoolNull()), model(list(""), types.StringValue("NEVER"), types.BoolValue(false)), organizationAPISettings{AllowedIpAddresses: "1.1.1.1/32"}, true, `{"allowed_ip_addresses":""}`},
+		{"allowlist is sent", model(list("1.1.1.1/32"), types.StringNull(), types.BoolNull()), model(list("1.1.1.1/32"), types.StringValue("NEVER"), types.BoolValue(false)), organizationAPISettings{}, `{"allowed_ip_addresses":"1.1.1.1/32"}`},
+		{"unchanged allowlist is not sent", model(list("1.1.1.1/32", "0.0.0.0/0"), types.StringNull(), types.BoolNull()), model(list("1.1.1.1/32", "0.0.0.0/0"), types.StringValue("NEVER"), types.BoolValue(false)), organizationAPISettings{AllowedIpAddresses: "1.1.1.1/32 0.0.0.0/0"}, `{}`},
+		{"removed allowlist is cleared", unset, model(noList, types.StringValue("NEVER"), types.BoolValue(false)), organizationAPISettings{AllowedIpAddresses: "1.1.1.1/32"}, `{"allowed_ip_addresses":""}`},
+		{"empty string clears the allowlist", model(list(""), types.StringNull(), types.BoolNull()), model(list(""), types.StringValue("NEVER"), types.BoolValue(false)), organizationAPISettings{AllowedIpAddresses: "1.1.1.1/32"}, `{"allowed_ip_addresses":""}`},
 		// an organization without the feature is refused even an unchanged allowlist, so it is left out
-		{"unset allowlist is not sent to an organization without one", unset, model(noList, types.StringValue("NEVER"), types.BoolValue(false)), organizationAPISettings{}, false, `{}`},
-		{"allowlist and a token setting travel together", model(list("1.1.1.1/32"), types.StringNull(), types.BoolValue(true)), model(list("1.1.1.1/32"), types.StringValue("NEVER"), types.BoolValue(true)), organizationAPISettings{}, true, `{"allowed_ip_addresses":"1.1.1.1/32","restrict_user_api_token_creation":true}`},
+		{"unset allowlist is not sent to an organization without one", unset, model(noList, types.StringValue("NEVER"), types.BoolValue(false)), organizationAPISettings{}, `{}`},
+		{"allowlist and a token setting travel together", model(list("1.1.1.1/32"), types.StringNull(), types.BoolValue(true)), model(list("1.1.1.1/32"), types.StringValue("NEVER"), types.BoolValue(true)), organizationAPISettings{}, `{"allowed_ip_addresses":"1.1.1.1/32","restrict_user_api_token_creation":true}`},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			got, err := json.Marshal(apiSettingsPatch(&tc.config, &tc.plan, &tc.current, tc.currentKnown))
+			got, err := json.Marshal(apiSettingsPatch(&tc.config, &tc.plan, &tc.current))
 			if err != nil {
 				t.Fatal(err)
 			}
