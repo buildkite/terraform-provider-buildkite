@@ -141,21 +141,27 @@ func (o *organizationResource) Create(ctx context.Context, req resource.CreateRe
 	}
 
 	log.Printf("Creating settings for organization %s ...", *org)
-	if !plan.Enforce2FA.IsNull() && !plan.Enforce2FA.IsUnknown() && plan.Enforce2FA.ValueBool() != organization.Organization.MembersRequireTwoFactorAuthentication {
-		_, err = setOrganization2FA(ctx, o.client.genqlient, *org, plan.Enforce2FA.ValueBool())
-		if err != nil {
-			resp.Diagnostics.AddError("Unable to set 2FA", err.Error())
-			return
-		}
-	}
-
 	state.ID = types.StringValue(*org)
 	state.UUID = types.StringValue(organization.Organization.Uuid)
-	state.Enforce2FA = plan.Enforce2FA
 
+	// api-settings goes first. A setting the organization's plan does not include is refused
+	// outright, and refusing it changes nothing, so that failure cannot leave 2FA already flipped
+	// on an organization terraform has no state for.
 	o.updateAPISettings(ctx, &config, &plan, &state, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
+	}
+
+	state.Enforce2FA = types.BoolValue(organization.Organization.MembersRequireTwoFactorAuthentication)
+	if !plan.Enforce2FA.IsNull() && !plan.Enforce2FA.IsUnknown() && plan.Enforce2FA.ValueBool() != organization.Organization.MembersRequireTwoFactorAuthentication {
+		if _, err := setOrganization2FA(ctx, o.client.genqlient, *org, plan.Enforce2FA.ValueBool()); err != nil {
+			resp.Diagnostics.AddError("Unable to set 2FA", err.Error())
+			// the settings above are the organization's now, so they are recorded even though the
+			// apply failed. 2FA is left to show as drift rather than the resource going untracked.
+			resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
+			return
+		}
+		state.Enforce2FA = plan.Enforce2FA
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
@@ -233,22 +239,24 @@ func (o *organizationResource) Update(ctx context.Context, req resource.UpdateRe
 		return
 	}
 	log.Printf("Updating settings for organization %s ...", *org)
+	state.ID = types.StringValue(*org)
+	state.UUID = prior.UUID
 	state.Enforce2FA = prior.Enforce2FA
+
+	// as in Create, the refusable write goes first so it cannot fail behind a 2FA change
+	o.updateAPISettings(ctx, &config, &plan, &state, &resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	if !plan.Enforce2FA.IsNull() && !plan.Enforce2FA.IsUnknown() && !plan.Enforce2FA.Equal(prior.Enforce2FA) {
 		twoFAResponse, err := setOrganization2FA(ctx, o.client.genqlient, *org, plan.Enforce2FA.ValueBool())
 		if err != nil {
 			resp.Diagnostics.AddError("Unable to set 2FA", err.Error())
+			resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 			return
 		}
 		state.Enforce2FA = types.BoolValue(twoFAResponse.OrganizationEnforceTwoFactorAuthenticationForMembersUpdate.Organization.MembersRequireTwoFactorAuthentication)
-	}
-
-	state.ID = types.StringValue(*org)
-	state.UUID = prior.UUID
-
-	o.updateAPISettings(ctx, &config, &plan, &state, &resp.Diagnostics)
-	if resp.Diagnostics.HasError() {
-		return
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
