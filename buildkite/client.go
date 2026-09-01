@@ -22,14 +22,16 @@ import (
 
 // Client can be used to interact with the Buildkite API
 type Client struct {
-	graphql          *graphql.Client
-	genqlient        genqlient.Client
-	http             *http.Client
-	organization     string
-	organizationId   *string
-	organizationIdMu sync.Mutex
-	restURL          string
-	timeouts         timeouts.Value
+	graphql           *graphql.Client
+	genqlient         genqlient.Client
+	http              *http.Client
+	organization      string
+	organizationId    *string
+	organizationIdMu  sync.Mutex
+	restURL           string
+	timeouts          timeouts.Value
+	clusterQueues     resourceReadCache[[]cachedClusterQueue]
+	pipelineSchedules resourceReadCache[cachedPipelineSchedules]
 
 	// Retained so tests can assert the retry configuration and shorten the waits.
 	restRetry    *retryablehttp.Client

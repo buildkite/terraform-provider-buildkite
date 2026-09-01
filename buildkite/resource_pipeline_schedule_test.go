@@ -331,7 +331,7 @@ func TestUpdatePipelineScheduleNodeEnvDiscriminator(t *testing.T) {
 					Pipeline: PipelineScheduleValuesPipeline{Id: "pipeline-id"},
 				},
 			}
-			updatePipelineScheduleNode(ctx, state, node)
+			updatePipelineScheduleNode(ctx, state, &node)
 			tt.want(t, state.Env)
 		})
 	}

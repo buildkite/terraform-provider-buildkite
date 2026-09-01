@@ -30,6 +30,21 @@ query getPipelineSchedule(
     }
 }
 
+query getPipelineSchedules($pipelineId: ID!) {
+    node(id: $pipelineId) {
+        ... on Pipeline {
+            schedules(first: 100) {
+                count
+                edges {
+                    node {
+                        ...PipelineScheduleValues
+                    }
+                }
+            }
+        }
+    }
+}
+
 
 query getPipelineScheduleBySlug(
     $slug: ID! 

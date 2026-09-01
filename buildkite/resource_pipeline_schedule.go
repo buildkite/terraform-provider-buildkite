@@ -159,6 +159,7 @@ func (ps *pipelineSchedule) Create(ctx context.Context, req resource.CreateReque
 		)
 		return
 	}
+	ps.client.pipelineSchedules.invalidate(plan.PipelineId.ValueString())
 
 	state.PipelineId = types.StringValue(apiResponse.PipelineScheduleCreate.Pipeline.Id)
 	state.Id = types.StringValue(apiResponse.PipelineScheduleCreate.PipelineScheduleEdge.Node.Id)
@@ -190,16 +191,32 @@ func (ps *pipelineSchedule) Read(ctx context.Context, req resource.ReadRequest, 
 		return
 	}
 
-	var apiResponse *getPipelineScheduleResponse
+	var schedule pipelineScheduleReadNode
 	err := retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
-		var err error
+		if !state.PipelineId.IsNull() && !state.PipelineId.IsUnknown() && state.PipelineId.ValueString() != "" {
+			batch, err := ps.getPipelineSchedulesForRead(ctx, state.PipelineId.ValueString())
+			if err != nil {
+				return retryContextError(err)
+			}
+			for index := range batch.schedules {
+				if batch.schedules[index].Id == state.Id.ValueString() {
+					schedule = &batch.schedules[index]
+					return nil
+				}
+			}
+			if batch.complete {
+				return nil
+			}
+		}
 
-		apiResponse, err = getPipelineSchedule(ctx,
-			ps.client.genqlient,
-			state.Id.ValueString(),
-		)
-
-		return retryContextError(err)
+		response, err := getPipelineSchedule(ctx, ps.client.genqlient, state.Id.ValueString())
+		if err != nil {
+			return retryContextError(err)
+		}
+		if pipelineScheduleNode, ok := response.GetNode().(*getPipelineScheduleNodePipelineSchedule); ok {
+			schedule = pipelineScheduleNode
+		}
+		return nil
 	})
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -209,15 +226,8 @@ func (ps *pipelineSchedule) Read(ctx context.Context, req resource.ReadRequest, 
 		return
 	}
 
-	if pipelineScheduleNode, ok := apiResponse.GetNode().(*getPipelineScheduleNodePipelineSchedule); ok {
-		if pipelineScheduleNode == nil {
-			resp.Diagnostics.AddError(
-				"Unable to read Pipeline schedule",
-				"Error getting Pipeline schedule: nil response",
-			)
-			return
-		}
-		updatePipelineScheduleNode(ctx, &state, *pipelineScheduleNode)
+	if schedule != nil {
+		updatePipelineScheduleNode(ctx, &state, schedule)
 		resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 	} else {
 		resp.Diagnostics.AddWarning(
@@ -226,6 +236,29 @@ func (ps *pipelineSchedule) Read(ctx context.Context, req resource.ReadRequest, 
 		)
 		resp.State.RemoveResource(ctx)
 	}
+}
+
+func (ps *pipelineSchedule) getPipelineSchedulesForRead(ctx context.Context, pipelineID string) (cachedPipelineSchedules, error) {
+	return ps.client.pipelineSchedules.get(ctx, pipelineID, func() (cachedPipelineSchedules, error) {
+		response, err := getPipelineSchedules(ctx, ps.client.genqlient, pipelineID)
+		if err != nil {
+			return cachedPipelineSchedules{}, err
+		}
+		pipeline, ok := response.GetNode().(*getPipelineSchedulesNodePipeline)
+		if !ok || pipeline == nil {
+			return cachedPipelineSchedules{}, fmt.Errorf("node %s is not a pipeline", pipelineID)
+		}
+
+		edges := pipeline.Schedules.Edges
+		schedules := make([]cachedPipelineSchedule, 0, len(edges))
+		for _, edge := range edges {
+			schedules = append(schedules, edge.Node)
+		}
+		return cachedPipelineSchedules{
+			schedules: schedules,
+			complete:  pipeline.Schedules.Count == len(schedules),
+		}, nil
+	})
 }
 
 func (ps *pipelineSchedule) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
@@ -246,6 +279,7 @@ func (ps *pipelineSchedule) Update(ctx context.Context, req resource.UpdateReque
 	if resp.Diagnostics.HasError() {
 		return
 	}
+	ps.client.pipelineSchedules.invalidate(state.PipelineId.ValueString())
 
 	envVars := envVarsMapFromTfToString(ctx, plan.Env)
 	input := PipelineScheduleUpdateInput{
@@ -312,6 +346,7 @@ func (ps *pipelineSchedule) Delete(ctx context.Context, req resource.DeleteReque
 		)
 		return
 	}
+	ps.client.pipelineSchedules.invalidate(plan.PipelineId.ValueString())
 }
 
 func (ps *pipelineSchedule) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
@@ -343,15 +378,27 @@ func envVarsMapFromTfToString(ctx context.Context, m types.Map) string {
 	return b.String()
 }
 
-func updatePipelineScheduleNode(ctx context.Context, psState *pipelineScheduleResourceModel, psNode getPipelineScheduleNodePipelineSchedule) {
-	psState.Uuid = types.StringValue(psNode.Uuid)
-	psState.Label = types.StringPointerValue(psNode.Label)
-	psState.Branch = types.StringPointerValue(psNode.Branch)
-	psState.Commit = types.StringPointerValue(psNode.Commit)
-	psState.Cronline = types.StringPointerValue(psNode.Cronline)
-	psState.Message = types.StringPointerValue(psNode.Message)
-	psState.Enabled = types.BoolValue(psNode.Enabled)
-	newEnv := envVarsArrayToMap(ctx, psNode.Env)
+type pipelineScheduleReadNode interface {
+	GetUuid() string
+	GetLabel() *string
+	GetBranch() *string
+	GetCommit() *string
+	GetCronline() *string
+	GetMessage() *string
+	GetEnabled() bool
+	GetEnv() []*string
+	GetPipeline() PipelineScheduleValuesPipeline
+}
+
+func updatePipelineScheduleNode(ctx context.Context, psState *pipelineScheduleResourceModel, psNode pipelineScheduleReadNode) {
+	psState.Uuid = types.StringValue(psNode.GetUuid())
+	psState.Label = types.StringPointerValue(psNode.GetLabel())
+	psState.Branch = types.StringPointerValue(psNode.GetBranch())
+	psState.Commit = types.StringPointerValue(psNode.GetCommit())
+	psState.Cronline = types.StringPointerValue(psNode.GetCronline())
+	psState.Message = types.StringPointerValue(psNode.GetMessage())
+	psState.Enabled = types.BoolValue(psNode.GetEnabled())
+	newEnv := envVarsArrayToMap(ctx, psNode.GetEnv())
 	// API returns empty for both `env = {}` and omitted env; preserve the
 	// prior state's shape when there are no env vars to avoid drift.
 	priorIsEmptyMap := !psState.Env.IsNull() && len(psState.Env.Elements()) == 0
@@ -359,5 +406,5 @@ func updatePipelineScheduleNode(ctx context.Context, psState *pipelineScheduleRe
 	if !preserveEmptyMap {
 		psState.Env = newEnv
 	}
-	psState.PipelineId = types.StringValue(psNode.Pipeline.Id)
+	psState.PipelineId = types.StringValue(psNode.GetPipeline().Id)
 }
