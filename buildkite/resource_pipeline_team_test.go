@@ -217,14 +217,14 @@ func testAccCheckPipelineTeamExists(resourceName string, tp *pipelineTeamResourc
 			return fmt.Errorf("No ID is set in state")
 		}
 
-		var apiResponse *getNodeResponse
+		var apiResponse *getTeamPipelineByNodeResponse
 		var err error
-		apiResponse, err = getNode(context.Background(), genqlientGraphql, resourceState.Primary.ID)
+		apiResponse, err = getTeamPipelineByNode(context.Background(), genqlientGraphql, resourceState.Primary.ID)
 		if err != nil {
 			return fmt.Errorf("Error fetching team pipeline from graphql API: %v", err)
 		}
 
-		if pipelineTeamNode, ok := apiResponse.GetNode().(*getNodeNodeTeamPipeline); ok {
+		if pipelineTeamNode, ok := apiResponse.GetNode().(*getTeamPipelineByNodeNodeTeamPipeline); ok {
 			if pipelineTeamNode == nil {
 				return fmt.Errorf("Error getting team pipeline: nil response")
 			}
@@ -242,14 +242,14 @@ func testCheckPipelineTeamResourceRemoved(s *terraform.State) error {
 			continue
 		}
 
-		var apiResponse *getNodeResponse
+		var apiResponse *getTeamPipelineByNodeResponse
 		var err error
-		apiResponse, err = getNode(context.Background(), genqlientGraphql, rs.Primary.ID)
+		apiResponse, err = getTeamPipelineByNode(context.Background(), genqlientGraphql, rs.Primary.ID)
 		if err != nil {
 			return fmt.Errorf("Error fetching team pipeline from graphql API: %v", err)
 		}
 
-		if pipelineTeamNode, ok := apiResponse.GetNode().(*getNodeNodeTeamPipeline); ok {
+		if pipelineTeamNode, ok := apiResponse.GetNode().(*getTeamPipelineByNodeNodeTeamPipeline); ok {
 			if pipelineTeamNode != nil {
 				return fmt.Errorf("Team pipeline still exists")
 			}

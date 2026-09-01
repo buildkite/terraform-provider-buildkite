@@ -155,11 +155,11 @@ func (tp *pipelineTeamResource) Read(ctx context.Context, req resource.ReadReque
 		return
 	}
 
-	var apiResponse *getNodeResponse
+	var apiResponse *getTeamPipelineByNodeResponse
 	err := retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
 		var err error
 
-		apiResponse, err = getNode(ctx,
+		apiResponse, err = getTeamPipelineByNode(ctx,
 			tp.client.genqlient,
 			state.Id.ValueString(),
 		)
@@ -174,8 +174,7 @@ func (tp *pipelineTeamResource) Read(ctx context.Context, req resource.ReadReque
 		return
 	}
 
-	// Convert from Node to getNodeNodeTeamPipeline type
-	if teamPipelineNode, ok := apiResponse.GetNode().(*getNodeNodeTeamPipeline); ok {
+	if teamPipelineNode, ok := apiResponse.GetNode().(*getTeamPipelineByNodeNodeTeamPipeline); ok {
 		if teamPipelineNode == nil {
 			resp.Diagnostics.AddError(
 				"Unable to get team pipeline",
@@ -267,7 +266,7 @@ func (tp *pipelineTeamResource) Delete(ctx context.Context, req resource.DeleteR
 	}
 }
 
-func updateTeamPipelineResourceState(tpState *pipelineTeamResourceModel, tpNode getNodeNodeTeamPipeline) {
+func updateTeamPipelineResourceState(tpState *pipelineTeamResourceModel, tpNode getTeamPipelineByNodeNodeTeamPipeline) {
 	tpState.Id = types.StringValue(tpNode.Id)
 	tpState.Uuid = types.StringValue(tpNode.Uuid)
 	tpState.TeamId = types.StringValue(tpNode.Team.Id)

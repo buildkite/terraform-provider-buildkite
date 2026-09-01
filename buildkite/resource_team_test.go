@@ -426,12 +426,12 @@ func testAccCheckTeamExists(name string, tr *teamResourceModel) resource.TestChe
 		if rs.Primary.ID == "" {
 			return fmt.Errorf("No ID is set in state")
 		}
-		r, err := getNode(context.Background(), genqlientGraphql, rs.Primary.ID)
+		r, err := getTeamByNode(context.Background(), genqlientGraphql, rs.Primary.ID)
 		if err != nil {
 			return err
 		}
 
-		if teamNode, ok := r.GetNode().(*getNodeNodeTeam); ok {
+		if teamNode, ok := r.GetNode().(*getTeamByNodeNodeTeam); ok {
 			if teamNode == nil {
 				return fmt.Errorf("Team not found: nil response")
 			}

@@ -31,3 +31,43 @@ query getNode(
         }
     }
 }
+
+query getPipelineByNode($id: ID!) {
+    node(id: $id) {
+        ... on Pipeline {
+            ...PipelineFields
+        }
+    }
+}
+
+query getOrganizationRuleByNode($id: ID!) {
+    node(id: $id) {
+        ... on Rule {
+            ...OrganizationRuleFields
+        }
+    }
+}
+
+query getTeamByNode($id: ID!) {
+    node(id: $id) {
+        ... on Team {
+            ...TeamFields
+        }
+    }
+}
+
+query getTeamPipelineByNode($id: ID!) {
+    node(id: $id) {
+        ... on TeamPipeline {
+            ...TeamPipelineFields
+        }
+    }
+}
+
+query getClusterByNode($id: ID!) {
+    node(id: $id) {
+        ... on Cluster {
+            ...ClusterFields
+        }
+    }
+}

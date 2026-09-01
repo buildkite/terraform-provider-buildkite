@@ -2304,12 +2304,12 @@ func testAccCheckOrganizationRuleExists(orr *organizationRuleResourceModel, name
 		if rs.Primary.ID == "" {
 			return fmt.Errorf("No ID is set in state")
 		}
-		r, err := getNode(context.Background(), genqlientGraphql, rs.Primary.ID)
+		r, err := getOrganizationRuleByNode(context.Background(), genqlientGraphql, rs.Primary.ID)
 		if err != nil {
 			return err
 		}
 
-		if organizationRule, ok := r.GetNode().(*getNodeNodeRule); ok {
+		if organizationRule, ok := r.GetNode().(*getOrganizationRuleByNodeNodeRule); ok {
 			if organizationRule == nil {
 				return fmt.Errorf("Organization rule not found: nil response")
 			}
@@ -2352,7 +2352,7 @@ func testAccCheckOrganizationRuleDestroy(s *terraform.State) error {
 			continue
 		}
 
-		r, err := getNode(context.Background(), genqlientGraphql, rs.Primary.ID)
+		r, err := getOrganizationRuleByNode(context.Background(), genqlientGraphql, rs.Primary.ID)
 		if err != nil {
 			if strings.Contains(err.Error(), "not found") {
 				continue
@@ -2360,7 +2360,7 @@ func testAccCheckOrganizationRuleDestroy(s *terraform.State) error {
 			return fmt.Errorf("error checking if organization rule exists: %v", err)
 		}
 
-		if organizationRule, ok := r.GetNode().(*getNodeNodeRule); ok {
+		if organizationRule, ok := r.GetNode().(*getOrganizationRuleByNodeNodeRule); ok {
 			if organizationRule != nil {
 				return fmt.Errorf("Organization rule still exists")
 			}

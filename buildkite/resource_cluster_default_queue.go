@@ -135,10 +135,10 @@ func (c *clusterDefaultQueueResource) Read(ctx context.Context, req resource.Rea
 		return
 	}
 
-	var r *getNodeResponse
+	var r *getClusterByNodeResponse
 	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		var err error
-		r, err = getNode(ctx, c.client.genqlient, state.ID.ValueString())
+		r, err = getClusterByNode(ctx, c.client.genqlient, state.ID.ValueString())
 
 		return retryContextError(err)
 	})
@@ -150,7 +150,7 @@ func (c *clusterDefaultQueueResource) Read(ctx context.Context, req resource.Rea
 		return
 	}
 
-	if clusterNode, ok := r.GetNode().(*getNodeNodeCluster); ok {
+	if clusterNode, ok := r.GetNode().(*getClusterByNodeNodeCluster); ok {
 		if clusterNode == nil {
 			resp.Diagnostics.AddError(
 				"Unable to get Cluster",

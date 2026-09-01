@@ -141,12 +141,12 @@ func (or *organizationRuleDatasource) Read(ctx context.Context, req datasource.R
 		updateOrganizationRuleDatasource(&state, apiResponse.Rule, *value)
 		// Otherwise if a ID is specified
 	} else if !state.ID.IsNull() {
-		var apiResponse *getNodeResponse
+		var apiResponse *getOrganizationRuleByNodeResponse
 		err := retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
 			var err error
 
 			log.Printf("Reading organization rule with ID %s ...", state.ID.ValueString())
-			apiResponse, err = getNode(ctx,
+			apiResponse, err = getOrganizationRuleByNode(ctx,
 				or.client.genqlient,
 				state.ID.ValueString(),
 			)
@@ -161,8 +161,7 @@ func (or *organizationRuleDatasource) Read(ctx context.Context, req datasource.R
 			return
 		}
 
-		// Convert fron Node to getNodeNodeRule type
-		if organizationRule, ok := apiResponse.GetNode().(*getNodeNodeRule); ok {
+		if organizationRule, ok := apiResponse.GetNode().(*getOrganizationRuleByNodeNodeRule); ok {
 			if organizationRule == nil {
 				resp.Diagnostics.AddError(
 					"Unable to get organization rule",
@@ -216,7 +215,7 @@ func updateOrganizationRuleDatasource(or *organizationRuleDatasourceModel, orr g
 	or.Action = types.StringValue(string(orr.Action))
 }
 
-func updateOrganizationRuleDatasourceStateFromNode(or *organizationRuleDatasourceModel, orn getNodeNodeRule, value string) {
+func updateOrganizationRuleDatasourceStateFromNode(or *organizationRuleDatasourceModel, orn getOrganizationRuleByNodeNodeRule, value string) {
 	sourceUUID, targetUUID := obtainReadUUIDs(orn)
 
 	or.ID = types.StringValue(orn.Id)

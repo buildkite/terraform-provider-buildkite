@@ -443,10 +443,10 @@ func (p *pipelineResource) Read(ctx context.Context, req resource.ReadRequest, r
 		return
 	}
 
-	var response *getNodeResponse
+	var response *getPipelineByNodeResponse
 	err := retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
 		var err error
-		response, err = getNode(ctx, p.client.genqlient, state.Id.ValueString())
+		response, err = getPipelineByNode(ctx, p.client.genqlient, state.Id.ValueString())
 		return retryContextError(err)
 	})
 	if err != nil {
@@ -457,7 +457,7 @@ func (p *pipelineResource) Read(ctx context.Context, req resource.ReadRequest, r
 		return
 	}
 
-	if pipelineNode, ok := response.Node.(*getNodeNodePipeline); ok {
+	if pipelineNode, ok := response.Node.(*getPipelineByNodeNodePipeline); ok {
 		// no pipeline with given ID found, set empty state
 		if pipelineNode == nil {
 			resp.Diagnostics.AddError("Unable to get pipeline", fmt.Sprintf("Unable to get pipeline with ID %s (%v)", state.Id.ValueString(), err))
@@ -571,8 +571,8 @@ func (p *pipelineResource) setDefaultTeamIfExistsWithCandidate(ctx context.Conte
 	if !state.DefaultTeamId.IsNull() {
 		result.originalTeamId = state.DefaultTeamId.ValueString()
 
-		// First, check if the team exists globally using getNode
-		teamResponse, err := getNode(ctx, p.client.genqlient, result.originalTeamId)
+		// First, check if the team exists globally.
+		teamResponse, err := getTeamByNode(ctx, p.client.genqlient, result.originalTeamId)
 		if err != nil {
 			return nil, fmt.Errorf("failed to check if team exists: %w", err)
 		}
@@ -583,7 +583,7 @@ func (p *pipelineResource) setDefaultTeamIfExistsWithCandidate(ctx context.Conte
 		}
 
 		// Check if it's actually a team node
-		if _, ok := teamResponse.Node.(*getNodeNodeTeam); !ok {
+		if _, ok := teamResponse.Node.(*getTeamByNodeNodeTeam); !ok {
 			return nil, fmt.Errorf("ID %s does not refer to a team", result.originalTeamId)
 		}
 

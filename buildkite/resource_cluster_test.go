@@ -172,12 +172,12 @@ func testAccCheckClusterExists(name string, c *clusterResourceModel) resource.Te
 		if rs.Primary.ID == "" {
 			return fmt.Errorf("No ID is set in state")
 		}
-		r, err := getNode(context.Background(), genqlientGraphql, rs.Primary.ID)
+		r, err := getClusterByNode(context.Background(), genqlientGraphql, rs.Primary.ID)
 		if err != nil {
 			return err
 		}
 
-		if clusterNode, ok := r.GetNode().(*getNodeNodeCluster); ok {
+		if clusterNode, ok := r.GetNode().(*getClusterByNodeNodeCluster); ok {
 			if clusterNode == nil {
 				return fmt.Errorf("Cluster not found: nil response")
 			}
