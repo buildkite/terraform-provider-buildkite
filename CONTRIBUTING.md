@@ -131,6 +131,24 @@ See the [Terraform documentation](https://developer.hashicorp.com/terraform/cli/
 
 Buildkite has two APIs: REST and GraphQL. **New resources should use the GraphQL API where possible**, but can fall back to the REST API for resources or properties not yet supported by GraphQL.
 
+### Persisting a partial operation
+
+Several resources need more than one API call to create or update themselves, and a failure in a later call does not undo the earlier ones. A CRUD method that returns without calling `resp.State.Set` in that situation loses track of work Buildkite has already done, which for `Create` means a resource left running with nothing in state pointing at it.
+
+Register the persist in a `defer` at the point the resource first exists, rather than repeating it at each error path, so a new early return cannot forget it:
+
+```go
+defer func() {
+    resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+}()
+```
+
+Two things to watch for once state is always persisted:
+
+Correct anything copied from the plan before the call that applies it. `resource_pipeline.go` syncs `state.Archived` to the plan early, so the deferred persist resets it unless the archive mutation actually ran. A value that was planned but never applied is worse than a missing one: under `-refresh=false` the next plan sees no diff and the change is never made.
+
+`Create` is different from `Update`. Terraform taints an instance whose `Create` returns both state and an error, and a tainted instance is replaced rather than updated on the next apply. For a resource that really was created, that trade is worth making: a taint is cleared with `terraform untaint`, while an orphan needs `terraform import`. For a resource that only applies settings to something that already exists, such as `buildkite_organization`, it is not, because being replaced runs `Delete`. Those record nothing and warn about what they left behind instead.
+
 ### Generating GraphQL Code
 
 If you're working with GraphQL queries:

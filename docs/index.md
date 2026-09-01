@@ -58,3 +58,15 @@ Optional:
 - `delete` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours). Setting a timeout for a Delete operation is only applicable if changes are saved into state before the destroy operation occurs.
 - `read` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours). Read operations occur during any refresh or planning operation when refresh is enabled.
 - `update` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours).
+
+## When an operation fails partway
+
+Creating or updating a resource can take several API calls, and a failure in a later one does not undo the calls that already succeeded. Where the provider can tell what applied, it records that in state alongside the error, so the next plan works from what Buildkite actually has rather than proposing the whole change again.
+
+Terraform marks a resource as tainted when its creation returns both state and an error, and a tainted resource is replaced rather than updated on the next apply. For `buildkite_pipeline` that means the next plan proposes destroying and recreating the pipeline, which loses its build history. Check the plan after a create that failed partway, and if the pipeline itself is sound and only a later setting did not apply, clear the mark so the next apply finishes the configuration in place:
+
+```shell
+terraform untaint buildkite_pipeline.example
+```
+
+The `buildkite_organization` resource is the exception. It applies settings to an organization that already exists rather than creating one, so a failed apply records nothing and can simply be applied again. When an apply sets the API IP allowlist and then fails at a later step, the provider warns that the allowlist is in place but unrecorded; it stays in place until the resource is applied again or the allowlist is cleared in the Buildkite web UI.

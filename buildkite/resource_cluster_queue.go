@@ -541,6 +541,14 @@ func (cq *clusterQueueResource) Update(ctx context.Context, req resource.UpdateR
 	planDispatchPaused = plan.DispatchPaused.ValueBool()
 	stateDispatchPaused = state.DispatchPaused.ValueBool()
 
+	// Pausing or resuming dispatch is a mutation in its own right, and the queue mutation below can
+	// still fail after it has applied. Persist on the way out either way, deferred so a new early
+	// return cannot forget it, and record the pause as soon as it applies rather than waiting for
+	// the mutation response to confirm it.
+	defer func() {
+		resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+	}()
+
 	// Check the planned value against the current state value
 	// Planned to be true (changing from false to true)
 	if planDispatchPaused && !stateDispatchPaused {
@@ -548,6 +556,7 @@ func (cq *clusterQueueResource) Update(ctx context.Context, req resource.UpdateR
 			// Error added to diagnostics within pauseDispatch
 			return
 		}
+		state.DispatchPaused = types.BoolValue(true)
 	}
 
 	// Planned to be false (changing from true to false)
@@ -556,6 +565,7 @@ func (cq *clusterQueueResource) Update(ctx context.Context, req resource.UpdateR
 			// Error added to diagnostics within resumeDispatch
 			return
 		}
+		state.DispatchPaused = types.BoolValue(false)
 	}
 
 	r, err = updateClusterQueue(ctx,
@@ -584,7 +594,6 @@ func (cq *clusterQueueResource) Update(ctx context.Context, req resource.UpdateR
 				"Unable to update retry_agent_affinity",
 				fmt.Sprintf("Unable to update retry_agent_affinity for queue %s: %s", state.Key.ValueString(), err.Error()),
 			)
-			resp.State.Set(ctx, &state)
 			return
 		}
 		state.RetryAgentAffinity = types.StringValue(desiredAffinity)
@@ -612,8 +621,6 @@ func (cq *clusterQueueResource) Update(ctx context.Context, req resource.UpdateR
 			}
 		}
 	}
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
 func (cq *clusterQueueResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {

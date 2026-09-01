@@ -144,6 +144,9 @@ func (o *organizationResource) Create(ctx context.Context, req resource.CreateRe
 	if resp.Diagnostics.HasError() {
 		return
 	}
+	// Whether this apply is responsible for what is in place, which is what the warnings below turn on.
+	plannedAllowlist := allowedApiIpAddressesValue(plan.AllowedApiIpAddresses)
+	allowlistApplied := plannedAllowlist != allowedApiIpAddressesValue(current)
 	if err := o.updateAllowedApiIpAddresses(ctx, *org, plan.AllowedApiIpAddresses, current); err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to create Organization settings",
@@ -156,6 +159,7 @@ func (o *organizationResource) Create(ctx context.Context, req resource.CreateRe
 		_, err = setOrganization2FA(ctx, o.client.genqlient, *org, plan.Enforce2FA.ValueBool())
 		if err != nil {
 			resp.Diagnostics.AddError("Unable to set 2FA", err.Error())
+			warnAboutUnrecordedAllowlist(allowlistApplied, plannedAllowlist, &resp.Diagnostics)
 			return
 		}
 	}
@@ -167,6 +171,7 @@ func (o *organizationResource) Create(ctx context.Context, req resource.CreateRe
 
 	o.updateAPISettings(ctx, &config, &plan, nil, &state, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
+		warnAboutUnrecordedAllowlist(allowlistApplied, plannedAllowlist, &resp.Diagnostics)
 		return
 	}
 
@@ -260,7 +265,23 @@ func (o *organizationResource) Update(ctx context.Context, req resource.UpdateRe
 		return
 	}
 
+	state.ID = types.StringValue(*org)
+	state.UUID = prior.UUID
+	state.AllowedApiIpAddresses = plan.AllowedApiIpAddresses
+	// Seeded from prior so a step failing before it is reached keeps the last known value rather
+	// than persisting a null over it. Each is overwritten by the step that owns it.
 	state.Enforce2FA = prior.Enforce2FA
+	state.RevokeInactiveTokensAfter = prior.RevokeInactiveTokensAfter
+	state.RestrictUserApiTokenCreation = prior.RestrictUserApiTokenCreation
+
+	// The allowlist mutation above has applied, so every path out from here has to record it, along
+	// with whatever else applied before a later step failed. Deferred so a new early return cannot
+	// forget it. Unlike Create, an Update that returns state alongside an error is not tainted, so
+	// there is nothing to weigh against recording it.
+	defer func() {
+		resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
+	}()
+
 	if !plan.Enforce2FA.IsNull() && !plan.Enforce2FA.IsUnknown() && !plan.Enforce2FA.Equal(prior.Enforce2FA) {
 		twoFAResponse, err := setOrganization2FA(ctx, o.client.genqlient, *org, plan.Enforce2FA.ValueBool())
 		if err != nil {
@@ -270,16 +291,7 @@ func (o *organizationResource) Update(ctx context.Context, req resource.UpdateRe
 		state.Enforce2FA = types.BoolValue(twoFAResponse.OrganizationEnforceTwoFactorAuthenticationForMembersUpdate.Organization.MembersRequireTwoFactorAuthentication)
 	}
 
-	state.ID = types.StringValue(*org)
-	state.UUID = prior.UUID
-	state.AllowedApiIpAddresses = plan.AllowedApiIpAddresses
-
 	o.updateAPISettings(ctx, &config, &plan, &prior, &state, &resp.Diagnostics)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }
 
 func (o *organizationResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
@@ -321,6 +333,28 @@ func (o *organizationResource) updateAllowedApiIpAddresses(ctx context.Context, 
 	}
 	_, err := setApiIpAddresses(ctx, o.client.genqlient, orgID, plannedValue)
 	return err
+}
+
+// warnAboutUnrecordedAllowlist reports an allowlist change that Create applied before failing at a
+// later step. Create deliberately records no state in that case, because this resource applies
+// settings to an organization that already exists rather than creating one: every step compares
+// before it mutates, so a re-apply converges, while state returned alongside an error would taint
+// the instance, and a tainted instance is replaced by a Delete that clears the allowlist. The cost
+// of that choice is that nothing in state says the change took effect, so say it here.
+func warnAboutUnrecordedAllowlist(applied bool, allowlist string, diags *diag.Diagnostics) {
+	if !applied {
+		return
+	}
+
+	change := fmt.Sprintf("set to %q", allowlist)
+	if allowlist == "" {
+		change = "cleared"
+	}
+	diags.AddWarning(
+		"API IP allowlist changed but not recorded",
+		fmt.Sprintf("The API IP allowlist was %s before this operation failed. That change is not recorded in state, so it stays "+
+			"in effect until this resource is applied again or the allowlist is changed in the Buildkite web UI.", change),
+	)
 }
 
 // allowedApiIpAddressesValue serializes the attribute for the API, where null, [] and [""] are all ""
@@ -448,5 +482,10 @@ func (o *organizationResource) updateAPISettings(ctx context.Context, config, pl
 			detail += " Inactive API token revocation is not available on this organization's plan."
 		}
 		diags.AddError("Unable to update organization API settings", detail)
+		// Nothing applied, so these have to describe the organization rather than the plan. On a
+		// refused GET current stands in from the prior state, which is also what readAPISettings
+		// falls back to, so leaving a planned value here would never be corrected by a refresh.
+		state.RevokeInactiveTokensAfter = types.StringValue(revokePeriodFromDays(current.RevokeInactiveTokensAfterDays))
+		state.RestrictUserApiTokenCreation = types.BoolValue(current.RestrictUserApiTokenCreation)
 	}
 }

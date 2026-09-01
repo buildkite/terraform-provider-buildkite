@@ -307,14 +307,24 @@ func (p *pipelineResource) Create(ctx context.Context, req resource.CreateReques
 
 	useSlugValue := response.PipelineCreate.Pipeline.Slug
 	resp.Diagnostics.Append(resp.Private.SetKey(ctx, "slugSource", []byte(`{"source": "api"}`))...)
-	if len(plan.Slug.ValueString()) > 0 {
-		useSlugValue = plan.Slug.ValueString()
 
-		pipelineExtraInfo, err := updatePipelineSlug(ctx, response.PipelineCreate.Pipeline.Slug, useSlugValue, p.client, timeouts)
+	// The pipeline exists from here on, so every path out has to record it. Returning without
+	// setting state would leave it running in Buildkite with nothing in state pointing at it, and
+	// the next apply would try to create it again. Terraform taints an instance whose Create
+	// returned both state and an error, so the pipeline is replaced rather than patched up on the
+	// next apply, but that is recoverable with terraform untaint and an orphan is not.
+	defer func() {
+		state.Slug = types.StringValue(useSlugValue)
+		resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+	}()
+
+	if len(plan.Slug.ValueString()) > 0 {
+		pipelineExtraInfo, err := updatePipelineSlug(ctx, response.PipelineCreate.Pipeline.Slug, plan.Slug.ValueString(), p.client, timeouts)
 		if err != nil {
 			resp.Diagnostics.AddError("Unable to set pipeline slug from REST", err.Error())
 			return
 		}
+		useSlugValue = plan.Slug.ValueString()
 
 		updatePipelineResourceExtraInfo(&state, &pipelineExtraInfo)
 		resp.Diagnostics.Append(resp.Private.SetKey(ctx, "slugSource", []byte(`{"source": "user"}`))...)
@@ -365,9 +375,6 @@ func (p *pipelineResource) Create(ctx context.Context, req resource.CreateReques
 		}
 		state.Archived = types.BoolValue(true)
 	}
-
-	state.Slug = types.StringValue(useSlugValue)
-	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
 func (p *pipelineResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
@@ -1409,27 +1416,45 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 	useSlugValue := response.PipelineUpdate.Pipeline.Slug
 	resp.Diagnostics.Append(resp.Private.SetKey(ctx, "slugSource", []byte(`{"source": "api"}`))...)
 
-	var configSlug types.String
-	resp.Diagnostics.Append(req.Config.GetAttribute(ctx, path.Root("slug"), &configSlug)...)
-	if !configSlug.IsNull() && len(configSlug.ValueString()) > 0 {
-		useSlugValue = configSlug.ValueString()
-		_, err := updatePipelineSlug(ctx, response.PipelineUpdate.Pipeline.Slug, useSlugValue, p.client, timeouts)
-		if err != nil {
-			resp.Diagnostics.AddError("Unable to set pipeline slug from REST", err.Error())
-			return
-		}
-
-		resp.Diagnostics.Append(resp.Private.SetKey(ctx, "slugSource", []byte(`{"source": "user"}`))...)
-	}
-
 	setPipelineModel(&state, &response.PipelineUpdate.Pipeline)
 	// The updatePipeline response predates any archive/unarchive mutation above, so its archived
 	// field reflects the old state. Sync to plan to avoid a provider inconsistency error.
 	state.Archived = plan.Archived
 
+	// The pipeline mutation above has applied, so everything from here on must persist it even when
+	// it fails: returning without setting state would drop every updated field and leave Terraform
+	// planning the same change again. Deferred rather than called at each error path so a new early
+	// return cannot forget it, and both values it corrects are read at call time: useSlugValue so a
+	// rename that failed persists the slug the pipeline actually has, and archived so a step failing
+	// before the archive mutation does not persist the archived state the plan asked for. Getting
+	// that wrong is invisible under -refresh=false, where the next plan sees no diff and the
+	// pipeline is never archived at all.
+	archiveApplied := false
+	defer func() {
+		if needsArchive && !archiveApplied {
+			state.Archived = types.BoolValue(false)
+		}
+		state.Slug = types.StringValue(useSlugValue)
+		resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+	}()
+
+	var configSlug types.String
+	resp.Diagnostics.Append(req.Config.GetAttribute(ctx, path.Root("slug"), &configSlug)...)
+	if !configSlug.IsNull() && len(configSlug.ValueString()) > 0 {
+		if _, err := updatePipelineSlug(ctx, response.PipelineUpdate.Pipeline.Slug, configSlug.ValueString(), p.client, timeouts); err != nil {
+			resp.Diagnostics.AddError("Unable to set pipeline slug from REST", err.Error())
+			return
+		}
+
+		useSlugValue = configSlug.ValueString()
+		resp.Diagnostics.Append(resp.Private.SetKey(ctx, "slugSource", []byte(`{"source": "user"}`))...)
+	}
+
 	if plan.DefaultTeamId.IsNull() && !state.DefaultTeamId.IsNull() {
 		// if the plan is empty but was previously set, just remove the team
-		err = p.findAndRemoveTeam(ctx, state.DefaultTeamId.ValueString(), state.Slug.ValueString(), "")
+		// useSlugValue, not state.Slug: the latter comes from the pipelineUpdate response and so
+		// predates the REST rename above, and findAndRemoveTeam looks the pipeline up by slug.
+		err = p.findAndRemoveTeam(ctx, state.DefaultTeamId.ValueString(), useSlugValue, "")
 		if err != nil {
 			resp.Diagnostics.AddError("Could not remove default team", err.Error())
 			return
@@ -1454,7 +1479,7 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 		state.DefaultTeamId = types.StringValue(r.TeamPipelineCreate.TeamPipelineEdge.Node.Team.Id)
 
 		// remove the old team
-		err = p.findAndRemoveTeam(ctx, previousTeamID, state.Slug.ValueString(), "")
+		err = p.findAndRemoveTeam(ctx, previousTeamID, useSlugValue, "")
 		if err != nil {
 			resp.Diagnostics.AddError("Could not remove previous default team", err.Error())
 			return
@@ -1496,10 +1521,8 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 			)
 			return
 		}
+		archiveApplied = true
 	}
-
-	state.Slug = types.StringValue(useSlugValue)
-	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
 // findAndRemoveTeam will try to find a team and remove its access from the pipeline

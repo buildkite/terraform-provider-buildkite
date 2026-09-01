@@ -4,12 +4,18 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"regexp"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	fwresource "github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-go/tftypes"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
@@ -624,5 +630,254 @@ func testAccCheckOrganizationRemoteValues(ip_addresses []string) resource.TestCh
 			return fmt.Errorf("Allowed IP addresses do not match. Expected: %s, got: %s", ip_addresses, resp.Organization.AllowedApiIpAddresses)
 		}
 		return nil
+	}
+}
+
+// A failed PATCH has to leave the api-settings attributes describing the organization rather than
+// the plan, or state claims a setting that was never applied. That matters most when the GET was
+// also refused: readAPISettings falls back to state on a 403, so it re-adopts whatever is there on
+// every refresh, and a wrong value put there once is never corrected and never shows in a plan.
+func TestUpdateAPISettingsReportsTheOrganizationWhenThePatchFails(t *testing.T) {
+	t.Parallel()
+
+	patchRefused := stubResponse{status: http.StatusInternalServerError, body: `{"message":"patch failed"}`}
+	tests := []struct {
+		name string
+		get  stubResponse
+	}{
+		{
+			name: "current settings readable",
+			get:  stubResponse{status: http.StatusOK, body: `{"revoke_inactive_tokens_after_days":null,"restrict_user_api_token_creation":false}`},
+		},
+		{
+			// Without the read scope the prior state stands in for the organization's settings.
+			name: "current settings refused",
+			get:  stubResponse{status: http.StatusForbidden, body: `{"message":"no read_organization_settings scope"}`},
+		},
+	}
+
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			server, _ := newRetryStub(t, testCase.get, patchRefused)
+			defer server.Close()
+
+			o := &organizationResource{client: newRetryTestClient(t, server.URL, 0, time.Millisecond)}
+
+			configured := organizationResourceModel{
+				RevokeInactiveTokensAfter:    types.StringValue("DAYS_30"),
+				RestrictUserApiTokenCreation: types.BoolValue(true),
+			}
+			prior := organizationResourceModel{
+				RevokeInactiveTokensAfter:    types.StringValue(revokeInactiveTokensNever),
+				RestrictUserApiTokenCreation: types.BoolValue(false),
+			}
+
+			var state organizationResourceModel
+			var diags diag.Diagnostics
+			o.updateAPISettings(context.Background(), &configured, &configured, &prior, &state, &diags)
+
+			if !diags.HasError() {
+				t.Fatalf("updateAPISettings diagnostics = %v, want the PATCH failure reported", diags)
+			}
+			if got := state.RevokeInactiveTokensAfter.ValueString(); got != revokeInactiveTokensNever {
+				t.Errorf("Persisted revoke_inactive_tokens_after = %q, want %q: the PATCH failed, so the configured period never applied", got, revokeInactiveTokensNever)
+			}
+			if state.RestrictUserApiTokenCreation.ValueBool() {
+				t.Error("Persisted restrict_user_api_token_creation = true, want false: the PATCH failed, so the restriction never applied")
+			}
+		})
+	}
+}
+
+// Update applies 2FA before the api-settings PATCH, so a failure in the PATCH must not drop the 2FA
+// change: Terraform would plan it again, and in the meantime state disagrees with the organization.
+func TestOrganizationUpdatePersistsTheEnforced2FAWhenTheAPISettingsPatchFails(t *testing.T) {
+	t.Parallel()
+
+	server, requests := newRetryStub(t,
+		// setOrganization2FA applies.
+		stubResponse{status: http.StatusOK, body: `{"data":{"organizationEnforceTwoFactorAuthenticationForMembersUpdate":{"organization":{
+			"id": "organization-id",
+			"membersRequireTwoFactorAuthentication": true
+		}}}}`},
+		// The api-settings GET, and then a PATCH that does not.
+		stubResponse{status: http.StatusOK, body: `{"revoke_inactive_tokens_after_days":null,"restrict_user_api_token_creation":false}`},
+		stubResponse{status: http.StatusInternalServerError, body: `{"message":"patch failed"}`},
+	)
+	defer server.Close()
+
+	client := newRetryTestClient(t, server.URL, 0, time.Millisecond)
+	orgID := "organization-id"
+	client.organizationId = &orgID
+	o := &organizationResource{client: client}
+
+	ctx := t.Context()
+	var schemaResp fwresource.SchemaResponse
+	o.Schema(ctx, fwresource.SchemaRequest{}, &schemaResp)
+	if schemaResp.Diagnostics.HasError() {
+		t.Fatalf("Schema() diagnostics = %v", schemaResp.Diagnostics)
+	}
+	schema := schemaResp.Schema
+
+	// An unchanged allowlist, so updateAllowedApiIpAddresses makes no request of its own.
+	allowlist := tftypes.NewValue(tftypes.List{ElementType: tftypes.String}, []tftypes.Value{})
+	prior := nullObjectWith(ctx, t, schema.Type(), map[string]tftypes.Value{
+		"id":                           tftypes.NewValue(tftypes.String, "organization-id"),
+		"uuid":                         tftypes.NewValue(tftypes.String, "organization-uuid"),
+		"allowed_api_ip_addresses":     allowlist,
+		"enforce_2fa":                  tftypes.NewValue(tftypes.Bool, false),
+		"revoke_inactive_tokens_after": tftypes.NewValue(tftypes.String, revokeInactiveTokensNever),
+	})
+	planned := nullObjectWith(ctx, t, schema.Type(), map[string]tftypes.Value{
+		"id":                           tftypes.NewValue(tftypes.String, "organization-id"),
+		"uuid":                         tftypes.NewValue(tftypes.String, "organization-uuid"),
+		"allowed_api_ip_addresses":     allowlist,
+		"enforce_2fa":                  tftypes.NewValue(tftypes.Bool, true),
+		"revoke_inactive_tokens_after": tftypes.NewValue(tftypes.String, "DAYS_30"),
+	})
+
+	req := fwresource.UpdateRequest{
+		Plan:   tfsdk.Plan{Schema: schema, Raw: planned},
+		State:  tfsdk.State{Schema: schema, Raw: prior},
+		Config: tfsdk.Config{Schema: schema, Raw: planned},
+	}
+	resp := fwresource.UpdateResponse{State: tfsdk.State{Schema: schema, Raw: prior}}
+
+	o.Update(ctx, req, &resp)
+
+	if got := requests.Load(); got < 3 {
+		t.Fatalf("Made %d requests, want 2FA to have applied before the PATCH failed", got)
+	}
+	if !diagnosticsContain(resp.Diagnostics, "Unable to update organization API settings") {
+		t.Fatalf("Update() diagnostics = %v, want the PATCH failure reported", resp.Diagnostics)
+	}
+
+	var persisted organizationResourceModel
+	if diags := resp.State.Get(ctx, &persisted); diags.HasError() {
+		t.Fatalf("Reading the persisted state = %v", diags)
+	}
+	if !persisted.Enforce2FA.ValueBool() {
+		t.Error("Persisted enforce_2fa = false, want true: the 2FA mutation applied, so state has to say so")
+	}
+	if got := persisted.RevokeInactiveTokensAfter.ValueString(); got != revokeInactiveTokensNever {
+		t.Errorf("Persisted revoke_inactive_tokens_after = %q, want %q: the PATCH failed", got, revokeInactiveTokensNever)
+	}
+}
+
+// This resource does not create an organization, it applies settings to one that already exists, and
+// each step compares before it mutates. So the recoverable answer to a half-applied Create is to
+// record nothing and let the next apply re-run it. Recording the part that applied instead would
+// taint the instance, and a tainted instance is replaced rather than updated: Delete would clear the
+// API IP allowlist before Create put it back. What the practitioner does need is to be told the
+// allowlist is live on their organization despite the failure.
+func TestOrganizationCreateWarnsAboutTheUnrecordedAllowlist(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name string
+		// What the organization's allowlist already is, which decides whether this apply changes it.
+		remote     string
+		wantWarned bool
+	}{
+		{
+			name:       "allowlist applied by this operation",
+			remote:     "",
+			wantWarned: true,
+		},
+		{
+			// Already what the config asks for, so updateAllowedApiIpAddresses makes no request and
+			// this apply is not responsible for the allowlist being in place.
+			name:       "allowlist already matched",
+			remote:     "1.2.3.4/32",
+			wantWarned: false,
+		},
+	}
+
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+			runOrganizationCreateAllowlistWarningCase(t, testCase.remote, testCase.wantWarned)
+		})
+	}
+}
+
+func runOrganizationCreateAllowlistWarningCase(t *testing.T, remote string, wantWarned bool) {
+	t.Helper()
+
+	const configured = "1.2.3.4/32"
+
+	responses := []stubResponse{
+		{status: http.StatusOK, body: fmt.Sprintf(`{"data":{"organization":{
+			"id": "organization-id",
+			"uuid": "organization-uuid",
+			"allowedApiIpAddresses": %q,
+			"membersRequireTwoFactorAuthentication": false
+		}}}`, remote)},
+	}
+	// An allowlist that already matches is left alone, so no mutation is sent for it and the next
+	// stubbed response has to be the one the 2FA call gets.
+	if remote != configured {
+		responses = append(responses, stubResponse{status: http.StatusOK, body: fmt.Sprintf(`{"data":{"organizationApiIpAllowlistUpdate":{"organization":{
+			"id": "organization-id",
+			"uuid": "organization-uuid",
+			"allowedApiIpAddresses": %q,
+			"membersRequireTwoFactorAuthentication": false
+		}}}}`, configured)})
+	}
+	// Enforcing 2FA is what fails.
+	responses = append(responses, stubResponse{status: http.StatusOK, body: `{"errors":[{"message":"2FA update exploded"}]}`})
+
+	server, requests := newRetryStub(t, responses...)
+	defer server.Close()
+
+	client := newRetryTestClient(t, server.URL, 0, time.Millisecond)
+	orgID := "organization-id"
+	client.organizationId = &orgID
+	o := &organizationResource{client: client}
+
+	ctx := t.Context()
+	var schemaResp fwresource.SchemaResponse
+	o.Schema(ctx, fwresource.SchemaRequest{}, &schemaResp)
+	if schemaResp.Diagnostics.HasError() {
+		t.Fatalf("Schema() diagnostics = %v", schemaResp.Diagnostics)
+	}
+	schema := schemaResp.Schema
+
+	raw := nullObjectWith(ctx, t, schema.Type(), map[string]tftypes.Value{
+		"allowed_api_ip_addresses": tftypes.NewValue(tftypes.List{ElementType: tftypes.String}, []tftypes.Value{
+			tftypes.NewValue(tftypes.String, "1.2.3.4/32"),
+		}),
+		"enforce_2fa": tftypes.NewValue(tftypes.Bool, true),
+	})
+
+	req := fwresource.CreateRequest{
+		Plan:   tfsdk.Plan{Schema: schema, Raw: raw},
+		Config: tfsdk.Config{Schema: schema, Raw: raw},
+	}
+	resp := fwresource.CreateResponse{State: tfsdk.State{Schema: schema, Raw: tftypes.NewValue(schema.Type().TerraformType(ctx), nil)}}
+
+	o.Create(ctx, req, &resp)
+
+	if !diagnosticsContain(resp.Diagnostics, "Unable to set 2FA") {
+		t.Fatalf("Create() diagnostics = %v, want the 2FA failure reported", resp.Diagnostics)
+	}
+	if !resp.State.Raw.IsNull() {
+		t.Errorf("Create() persisted %v, want no state: persisting taints the instance, and replacing it clears the API IP allowlist", resp.State.Raw)
+	}
+
+	var warned bool
+	for _, d := range resp.Diagnostics.Warnings() {
+		if strings.Contains(d.Detail(), "1.2.3.4/32") {
+			warned = true
+		}
+	}
+	if warned != wantWarned {
+		t.Errorf("Create() warned about the allowlist = %v, want %v; warnings were %v", warned, wantWarned, resp.Diagnostics.Warnings())
+	}
+	// One request per stubbed response when the allowlist changed, one fewer when it did not.
+	if got := requests.Load(); got < 2 {
+		t.Errorf("Made %d requests, want the 2FA mutation to have been attempted", got)
 	}
 }
