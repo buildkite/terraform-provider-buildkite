@@ -440,11 +440,22 @@ func (cq *clusterQueueResource) Read(ctx context.Context, req resource.ReadReque
 
 	restResponse, err := cq.getClusterQueueViaREST(ctx, state.ClusterUuid.ValueString(), state.Uuid.ValueString())
 	if err != nil {
+		// This used to record the schema default here, which is the one value a failed read must not
+		// write: a queue configured prefer-warmest that Buildkite has set to prefer-different then
+		// matches its own configuration, so no plan ever shows the drift and the queue stays wrong.
+		if !isAPIStatus(err, http.StatusForbidden) {
+			resp.Diagnostics.AddError(
+				"Unable to read retry_agent_affinity",
+				fmt.Sprintf("Queue %s read successfully but retry_agent_affinity is unavailable: %s", state.Key.ValueString(), err.Error()),
+			)
+			return
+		}
+		// tolerate a token that reads the queue over GraphQL but not over REST, as the organization
+		// resource does for its api-settings, and keep the last known value rather than inventing one
 		resp.Diagnostics.AddWarning(
 			"Unable to read retry_agent_affinity",
-			fmt.Sprintf("Queue %s read successfully but retry_agent_affinity is unavailable: %s. Defaulting to prefer-warmest.", state.Key.ValueString(), err.Error()),
+			fmt.Sprintf("Queue %s read successfully but retry_agent_affinity is unavailable, keeping the last known value: %s", state.Key.ValueString(), err.Error()),
 		)
-		state.RetryAgentAffinity = types.StringValue(RetryAgentAffinityPreferWarmest)
 	} else {
 		state.RetryAgentAffinity = types.StringValue(restResponse.RetryAgentAffinity)
 	}
