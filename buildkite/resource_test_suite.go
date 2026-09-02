@@ -444,6 +444,15 @@ func (ts *testSuiteResource) Update(ctx context.Context, req resource.UpdateRequ
 		return
 	}
 
+	// The PATCH above has applied, so every path out from here has to record it. Returning without
+	// setting state would drop everything it changed, and leave state naming the slug the suite
+	// answered to before the rename, which is the slug the next update PATCHes: under
+	// -refresh=false, where nothing re-reads the suite by ID, that request goes to a URL the suite
+	// no longer has. Deferred so a new early return cannot forget it.
+	defer func() {
+		resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+	}()
+
 	state.Name = plan.Name
 	state.DefaultBranch = plan.DefaultBranch
 	state.Emoji = plan.Emoji
@@ -474,7 +483,6 @@ func (ts *testSuiteResource) Update(ctx context.Context, req resource.UpdateRequ
 			return
 		}
 		previousOwnerId := state.TeamOwnerId.ValueString()
-		state.TeamOwnerId = types.StringValue(r.TeamSuiteCreate.TeamSuite.Team.Id)
 		for _, team := range r.TeamSuiteCreate.Suite.Teams.Edges {
 			if team.Node.Team.Id == previousOwnerId {
 				err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
@@ -494,9 +502,12 @@ func (ts *testSuiteResource) Update(ctx context.Context, req resource.UpdateRequ
 				}
 			}
 		}
-	}
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+		// Only once the previous owner is detached, because both own the suite until then. Recording
+		// the new one first leaves the next plan comparing the config against it, finding no diff,
+		// and never retrying the delete.
+		state.TeamOwnerId = types.StringValue(r.TeamSuiteCreate.TeamSuite.Team.Id)
+	}
 }
 
 func (ts *testSuiteResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
