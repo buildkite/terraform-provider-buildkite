@@ -207,12 +207,12 @@ func (or *organizationRuleResource) Read(ctx context.Context, req resource.ReadR
 		return
 	}
 
-	var apiResponse *getNodeResponse
+	var apiResponse *getOrganizationRuleByNodeResponse
 	err := retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
 		var err error
 
 		log.Printf("Reading organization rule with ID %s ...", state.ID.ValueString())
-		apiResponse, err = getNode(ctx, or.client.genqlient, state.ID.ValueString())
+		apiResponse, err = getOrganizationRuleByNode(ctx, or.client.genqlient, state.ID.ValueString())
 
 		return retryContextError(err)
 	})
@@ -224,8 +224,7 @@ func (or *organizationRuleResource) Read(ctx context.Context, req resource.ReadR
 		return
 	}
 
-	// Convert fron Node to getNodeNodeRule type
-	if organizationRule, ok := apiResponse.GetNode().(*getNodeNodeRule); ok {
+	if organizationRule, ok := apiResponse.GetNode().(*getOrganizationRuleByNodeNodeRule); ok {
 		if organizationRule == nil {
 			resp.Diagnostics.AddError(
 				"Unable to get organization rule",
@@ -536,7 +535,7 @@ func obtainUpdateUUIDs(r *updateOrganizationRuleResponse) (*string, *string, err
 	return &sourceUUID, &targetUUID, nil
 }
 
-func obtainReadUUIDs(nr getNodeNodeRule) (string, string) {
+func obtainReadUUIDs(nr getOrganizationRuleByNodeNodeRule) (string, string) {
 	var sourceUUID, targetUUID string
 
 	switch nr.SourceType {
@@ -651,7 +650,7 @@ func updateOrganizationRuleUpdateState(or *organizationRuleResourceModel, ruleUp
 	or.TargetUUID = types.StringValue(targetUUID)
 }
 
-func updateOrganizationRuleReadState(or *organizationRuleResourceModel, orn getNodeNodeRule, value string) {
+func updateOrganizationRuleReadState(or *organizationRuleResourceModel, orn getOrganizationRuleByNodeNodeRule, value string) {
 	sourceUUID, targetUUID := obtainReadUUIDs(orn)
 
 	or.ID = types.StringValue(orn.Id)

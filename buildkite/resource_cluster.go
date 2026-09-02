@@ -160,10 +160,10 @@ func (c *clusterResource) Read(ctx context.Context, req resource.ReadRequest, re
 		return
 	}
 
-	var r *getNodeResponse
+	var r *getClusterByNodeResponse
 	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		var err error
-		r, err = getNode(ctx, c.client.genqlient, state.ID.ValueString())
+		r, err = getClusterByNode(ctx, c.client.genqlient, state.ID.ValueString())
 
 		return retryContextError(err)
 	})
@@ -175,7 +175,7 @@ func (c *clusterResource) Read(ctx context.Context, req resource.ReadRequest, re
 		return
 	}
 
-	if clusterNode, ok := r.GetNode().(*getNodeNodeCluster); ok {
+	if clusterNode, ok := r.GetNode().(*getClusterByNodeNodeCluster); ok {
 		if clusterNode == nil {
 			resp.Diagnostics.AddError(
 				"Unable to get Cluster",
@@ -279,7 +279,7 @@ func (c *clusterResource) ImportState(ctx context.Context, req resource.ImportSt
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
 
-func updateClusterResourceState(state *clusterResourceModel, res getNodeNodeCluster) {
+func updateClusterResourceState(state *clusterResourceModel, res getClusterByNodeNodeCluster) {
 	state.ID = types.StringValue(res.Id)
 	state.UUID = types.StringValue(res.Uuid)
 	state.Name = types.StringValue(res.Name)

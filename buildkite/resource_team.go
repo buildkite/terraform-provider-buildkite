@@ -231,10 +231,10 @@ func (t *teamResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 		return
 	}
 
-	var response *getNodeResponse
+	var response *getTeamByNodeResponse
 	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		var err error
-		response, err = getNode(ctx,
+		response, err = getTeamByNode(ctx,
 			t.client.genqlient,
 			state.ID.ValueString(),
 		)
@@ -249,7 +249,7 @@ func (t *teamResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 		return
 	}
 
-	if teamNode, ok := response.GetNode().(*getNodeNodeTeam); ok {
+	if teamNode, ok := response.GetNode().(*getTeamByNodeNodeTeam); ok {
 		if teamNode == nil {
 			resp.Diagnostics.AddError(
 				"Unable to get team",
@@ -354,7 +354,7 @@ func (t *teamResource) Delete(ctx context.Context, req resource.DeleteRequest, r
 	}
 }
 
-func updateTeamResourceState(state *teamResourceModel, res getNodeNodeTeam) {
+func updateTeamResourceState(state *teamResourceModel, res getTeamByNodeNodeTeam) {
 	state.ID = types.StringValue(res.Id)
 	state.UUID = types.StringValue(res.Uuid)
 	state.Slug = types.StringValue(res.Slug)
