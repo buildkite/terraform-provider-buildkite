@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"time"
 
 	custom_modifier "github.com/buildkite/terraform-provider-buildkite/internal/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -464,6 +465,7 @@ func (ts *testSuiteResource) Update(ctx context.Context, req resource.UpdateRequ
 	// If the planned team_owner_id differs from the state, add the new one and remove the old one
 	if plan.TeamOwnerId.ValueString() != state.TeamOwnerId.ValueString() {
 		var r *createTestSuiteTeamResponse
+		alreadyOwned := false
 		err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 			var err error
 			r, err = createTestSuiteTeam(ctx,
@@ -472,6 +474,16 @@ func (ts *testSuiteResource) Update(ctx context.Context, req resource.UpdateRequ
 				state.ID.ValueString(),
 				SuiteAccessLevelsManageAndRead,
 			)
+
+			// An owner that already owns the suite is what re-running this method looks like: the
+			// previous apply attached it and then failed to detach the old one, which is the state
+			// this method records so the next plan retries. Failing here would never reach that
+			// detach, leaving both teams owning the suite with no way forward.
+			if err != nil && isAlreadyExistsError(err) {
+				alreadyOwned = true
+				return nil
+			}
+			alreadyOwned = false
 
 			return retryContextError(err)
 		})
@@ -482,13 +494,32 @@ func (ts *testSuiteResource) Update(ctx context.Context, req resource.UpdateRequ
 			)
 			return
 		}
+
+		// Which edge belongs to the previous owner. Normally the attach response lists the suite's
+		// teams, but it carries nothing when the attach had already applied, so read them instead.
+		teams := []testSuiteTeamEdge{}
+		if alreadyOwned {
+			teams, err = ts.suiteTeams(ctx, timeout, state.ID.ValueString())
+			if err != nil {
+				resp.Diagnostics.AddError(
+					"Could not load the suite's owner teams",
+					fmt.Sprintf("Could not load the suite's owner teams: %s", err.Error()),
+				)
+				return
+			}
+		} else {
+			for _, team := range r.TeamSuiteCreate.Suite.Teams.Edges {
+				teams = append(teams, testSuiteTeamEdge{id: team.Node.Id, teamId: team.Node.Team.Id})
+			}
+		}
+
 		previousOwnerId := state.TeamOwnerId.ValueString()
-		for _, team := range r.TeamSuiteCreate.Suite.Teams.Edges {
-			if team.Node.Team.Id == previousOwnerId {
+		for _, team := range teams {
+			if team.teamId == previousOwnerId {
 				err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 					_, err := deleteTestSuiteTeam(ctx,
 						ts.client.genqlient,
-						team.Node.Id,
+						team.id,
 					)
 
 					return retryContextError(err)
@@ -506,8 +537,44 @@ func (ts *testSuiteResource) Update(ctx context.Context, req resource.UpdateRequ
 		// Only once the previous owner is detached, because both own the suite until then. Recording
 		// the new one first leaves the next plan comparing the config against it, finding no diff,
 		// and never retrying the delete.
-		state.TeamOwnerId = types.StringValue(r.TeamSuiteCreate.TeamSuite.Team.Id)
+		// The plan rather than the mutation response, which only echoes the team it was given and
+		// carries nothing to read when the attach had already applied.
+		state.TeamOwnerId = plan.TeamOwnerId
 	}
+}
+
+// testSuiteTeamEdge is one team-suite link: the id the delete mutation takes, and the team it
+// belongs to. The attach response and the suite query spell the same pair differently.
+type testSuiteTeamEdge struct {
+	id     string
+	teamId string
+}
+
+// suiteTeams reads the teams that own a suite, for the paths that cannot take them from an attach
+// response because the attach had already applied on an earlier run.
+func (ts *testSuiteResource) suiteTeams(ctx context.Context, timeout time.Duration, suiteId string) ([]testSuiteTeamEdge, error) {
+	var r *getTestSuiteResponse
+	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+		var err error
+		r, err = getTestSuite(ctx, ts.client.genqlient, suiteId, 50)
+
+		return retryContextError(err)
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	suite, ok := r.Suite.(*getTestSuiteSuite)
+	if !ok {
+		return nil, fmt.Errorf("suite %s not found", suiteId)
+	}
+
+	teams := make([]testSuiteTeamEdge, 0, len(suite.Teams.Edges))
+	for _, team := range suite.Teams.Edges {
+		teams = append(teams, testSuiteTeamEdge{id: team.Node.Id, teamId: team.Node.Team.Id})
+	}
+
+	return teams, nil
 }
 
 func (ts *testSuiteResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {

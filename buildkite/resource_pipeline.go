@@ -1386,6 +1386,14 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 	// call time, so a step that never ran cannot persist the value the plan asked for. Getting that
 	// wrong is invisible under -refresh=false, where the next plan sees no diff and the change is
 	// never made at all.
+	//
+	// archived is null in state written before the attribute existed, because it was added without
+	// a schema version bump. The plan always has it known, from the attribute's static default, and
+	// Terraform fails an apply whose state disagrees with a known planned value. Settle it to the
+	// false the rest of this method already treats it as, so the persist cannot record the null.
+	if state.Archived.IsNull() {
+		state.Archived = types.BoolValue(false)
+	}
 	useSlugValue := state.Slug.ValueString()
 	defer func() {
 		state.Slug = types.StringValue(useSlugValue)
@@ -1462,10 +1470,16 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 		state.DefaultTeamId = types.StringNull()
 	} else if plan.DefaultTeamId.ValueString() != state.DefaultTeamId.ValueString() {
 		// If the planned default_team_id differs from the state, add the new one and remove the old one
-		var r *createTeamPipelineResponse
 		err := retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
-			var err error
-			r, err = createTeamPipeline(ctx, p.client.genqlient, plan.DefaultTeamId.ValueString(), state.Id.ValueString(), PipelineAccessLevelsManageBuildAndRead)
+			_, err := createTeamPipeline(ctx, p.client.genqlient, plan.DefaultTeamId.ValueString(), state.Id.ValueString(), PipelineAccessLevelsManageBuildAndRead)
+			// A team that is already attached is what re-running this method looks like: the previous
+			// apply attached it and then failed to detach the old one, which is the state this method
+			// records so the next plan retries. Failing here instead would never reach that detach,
+			// leaving both teams attached with no way forward, since Read keeps the recorded team
+			// while it is still attached.
+			if err != nil && isAlreadyExistsError(err) {
+				return nil
+			}
 			return retryContextError(err)
 		})
 		if err != nil {
@@ -1485,7 +1499,9 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 		// new one first leaves the next plan with no diff to retry the detach from, and Read only
 		// checks that the recorded team is still attached, so the old team would keep its access
 		// with nothing left to surface it.
-		state.DefaultTeamId = types.StringValue(r.TeamPipelineCreate.TeamPipelineEdge.Node.Team.Id)
+		// The plan rather than the mutation response, which only echoes the team it was given and
+		// carries nothing to read when the attach had already applied.
+		state.DefaultTeamId = plan.DefaultTeamId
 	}
 
 	if plan.ProviderSettings != nil {
