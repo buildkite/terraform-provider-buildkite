@@ -6,11 +6,17 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"maps"
+	"net/http"
 	"os"
 	"regexp"
 	"strings"
 	"testing"
+	"time"
 
+	fwresource "github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
+	"github.com/hashicorp/terraform-plugin-go/tftypes"
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/plancheck"
@@ -2282,4 +2288,687 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 			},
 		})
 	})
+}
+
+// findAndRemoveTeam looks the pipeline up by slug, and state.Slug still holds the slug from the
+// pipelineUpdate response at that point, which predates the REST rename. It has to be given
+// useSlugValue instead. Getting this wrong is silent: the lookup finds no teams, the old default
+// team is never detached, and Update reports success.
+func TestPipelineUpdateRemovesTheDefaultTeamByThePostRenameSlug(t *testing.T) {
+	t.Parallel()
+
+	const (
+		apiSlug    = "renamed-pipeline"
+		chosenSlug = "a-chosen-slug"
+	)
+
+	server, requests, bodies := newRecordingRetryStub(t,
+		// pipelineUpdate
+		stubResponse{status: http.StatusOK, body: fmt.Sprintf(`{"data":{"pipelineUpdate":{"pipeline":{
+			"id": "pipeline-id", "pipelineUuid": "pipeline-uuid", "name": "p", "slug": %q,
+			"defaultBranch": "main", "description": "", "archived": false,
+			"repository": {"url": "git@github.com:org/repo.git"}, "steps": {"yaml": "steps: []"},
+			"tags": [], "teams": {"edges": []}
+		}}}}`, apiSlug)},
+		// the REST rename succeeds, so the pipeline now answers to chosenSlug
+		stubResponse{status: http.StatusOK, body: `{"slug":"a-chosen-slug"}`},
+		// getPipelineTeams, whose request body is what this test is about
+		stubResponse{status: http.StatusOK, body: `{"data":{"pipeline":{"teams":{
+			"edges": [], "pageInfo": {"hasNextPage": false, "endCursor": ""}
+		}}}}`},
+	)
+	defer server.Close()
+
+	p := &pipelineResource{client: newRetryTestClient(t, server.URL, 0, time.Millisecond)}
+
+	ctx := t.Context()
+	schema := resourceSchema(ctx, t, p)
+
+	prior := nullObjectWith(ctx, t, schema.Type(), map[string]tftypes.Value{
+		"id":              tftypes.NewValue(tftypes.String, "pipeline-id"),
+		"name":            tftypes.NewValue(tftypes.String, "p"),
+		"slug":            tftypes.NewValue(tftypes.String, "original-pipeline"),
+		"repository":      tftypes.NewValue(tftypes.String, "git@github.com:org/repo.git"),
+		"steps":           tftypes.NewValue(tftypes.String, "steps: []"),
+		"default_team_id": tftypes.NewValue(tftypes.String, "team-id"),
+		"archived":        tftypes.NewValue(tftypes.Bool, false),
+	})
+	// No default_team_id in the plan, which is what sends Update into findAndRemoveTeam.
+	planned := nullObjectWith(ctx, t, schema.Type(), map[string]tftypes.Value{
+		"id":         tftypes.NewValue(tftypes.String, "pipeline-id"),
+		"name":       tftypes.NewValue(tftypes.String, "p"),
+		"slug":       tftypes.NewValue(tftypes.String, chosenSlug),
+		"repository": tftypes.NewValue(tftypes.String, "git@github.com:org/repo.git"),
+		"steps":      tftypes.NewValue(tftypes.String, "steps: []"),
+		"archived":   tftypes.NewValue(tftypes.Bool, false),
+	})
+
+	req := fwresource.UpdateRequest{
+		Plan:   tfsdk.Plan{Schema: schema, Raw: planned},
+		State:  tfsdk.State{Schema: schema, Raw: prior},
+		Config: tfsdk.Config{Schema: schema, Raw: planned},
+	}
+	resp := fwresource.UpdateResponse{State: tfsdk.State{Schema: schema, Raw: prior}}
+
+	p.Update(ctx, req, &resp)
+
+	if got := requests.Load(); got < 3 {
+		t.Fatalf("Made %d requests, want the rename and the team lookup to both have run", got)
+	}
+
+	var teamLookups []string
+	for _, body := range bodies() {
+		if strings.Contains(body, "getPipelineTeams") {
+			teamLookups = append(teamLookups, body)
+		}
+	}
+	if len(teamLookups) == 0 {
+		t.Fatalf("No getPipelineTeams request was made; bodies were %v", bodies())
+	}
+	for _, lookup := range teamLookups {
+		if !strings.Contains(lookup, "test-org/"+chosenSlug) {
+			t.Errorf("getPipelineTeams asked for the wrong pipeline: %s\nwant the post-rename slug %q", lookup, chosenSlug)
+		}
+	}
+}
+
+// From the moment the pipeline exists, every path out of Create has to record it. A pipeline left
+// out of state is not merely re-planned: it is orphaned in Buildkite with nothing pointing at it,
+// and the next apply tries to create a second one.
+func TestPipelineCreatePersistsStateWhenALaterStepFails(t *testing.T) {
+	t.Parallel()
+
+	const (
+		pipelineName = "a-new-pipeline"
+		apiSlug      = "a-new-pipeline"
+		chosenSlug   = "a-chosen-slug"
+	)
+
+	pipelineCreated := stubResponse{status: http.StatusOK, body: fmt.Sprintf(`{"data":{"pipelineCreate":{"pipeline":{
+		"id": "pipeline-id",
+		"pipelineUuid": "pipeline-uuid",
+		"name": %q,
+		"slug": %q,
+		"defaultBranch": "main",
+		"description": "",
+		"repository": {"url": "git@github.com:org/repo.git"},
+		"steps": {"yaml": "steps: []"},
+		"tags": [],
+		"teams": {"edges": []}
+	}}}}`, pipelineName, apiSlug)}
+
+	tests := []struct {
+		name string
+		plan map[string]tftypes.Value
+		// Responses the pipeline mutation and the failure below, for steps that have to apply first.
+		beforeFailure []stubResponse
+		failure       stubResponse
+		wantErr       string
+		// The slug the pipeline answers to once the dust settles, which is what every later REST
+		// call builds its URL from.
+		wantSlug string
+	}{
+		{
+			// The rename is the first thing Create does after the pipeline exists.
+			name:     "slug rename over REST",
+			plan:     map[string]tftypes.Value{"slug": tftypes.NewValue(tftypes.String, "a-chosen-slug")},
+			failure:  stubResponse{status: http.StatusInternalServerError, body: `{"message":"rename failed"}`},
+			wantErr:  "Unable to set pipeline slug from REST",
+			wantSlug: apiSlug,
+		},
+		{
+			// Archiving is the last, and it runs after every other step has already applied.
+			name:     "archive",
+			plan:     map[string]tftypes.Value{"archived": tftypes.NewValue(tftypes.Bool, true)},
+			failure:  stubResponse{status: http.StatusOK, body: `{"errors":[{"message":"archive exploded"}]}`},
+			wantErr:  "Unable to archive pipeline",
+			wantSlug: apiSlug,
+		},
+		{
+			// The rename applies and a later step fails, which is the only case where the chosen slug
+			// is what state has to name. Without it nothing pins the slug the defer records, and the
+			// next apply PATCHes a URL the pipeline stopped answering to.
+			name: "archive after the slug rename applied",
+			plan: map[string]tftypes.Value{
+				"slug":     tftypes.NewValue(tftypes.String, chosenSlug),
+				"archived": tftypes.NewValue(tftypes.Bool, true),
+			},
+			beforeFailure: []stubResponse{{status: http.StatusOK, body: fmt.Sprintf(`{"slug":%q}`, chosenSlug)}},
+			failure:       stubResponse{status: http.StatusOK, body: `{"errors":[{"message":"archive exploded"}]}`},
+			wantErr:       "Unable to archive pipeline",
+			wantSlug:      chosenSlug,
+		},
+	}
+
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			responses := append([]stubResponse{pipelineCreated}, testCase.beforeFailure...)
+			server, requests := newRetryStub(t, append(responses, testCase.failure)...)
+			defer server.Close()
+
+			client := newRetryTestClient(t, server.URL, 0, time.Millisecond)
+			// Primed so the organization lookup does not consume a stubbed response of its own.
+			orgID := "organization-id"
+			client.organizationId = &orgID
+			p := &pipelineResource{client: client}
+
+			ctx := t.Context()
+			schema := resourceSchema(ctx, t, p)
+
+			planned := map[string]tftypes.Value{
+				"name":       tftypes.NewValue(tftypes.String, pipelineName),
+				"repository": tftypes.NewValue(tftypes.String, "git@github.com:org/repo.git"),
+				"steps":      tftypes.NewValue(tftypes.String, "steps: []"),
+				"archived":   tftypes.NewValue(tftypes.Bool, false),
+			}
+			for name, value := range testCase.plan {
+				planned[name] = value
+			}
+			raw := nullObjectWith(ctx, t, schema.Type(), planned)
+
+			req := fwresource.CreateRequest{
+				Plan:   tfsdk.Plan{Schema: schema, Raw: raw},
+				Config: tfsdk.Config{Schema: schema, Raw: raw},
+			}
+			resp := fwresource.CreateResponse{State: tfsdk.State{Schema: schema, Raw: tftypes.NewValue(schema.Type().TerraformType(ctx), nil)}}
+
+			p.Create(ctx, req, &resp)
+
+			if got := requests.Load(); got < int64(len(responses)+1) {
+				t.Fatalf("Made %d requests, want %d: every step before the failure has to have applied", got, len(responses)+1)
+			}
+			if !diagnosticsContain(resp.Diagnostics, testCase.wantErr) {
+				t.Fatalf("Create() diagnostics = %v, want %q", resp.Diagnostics, testCase.wantErr)
+			}
+
+			var persisted pipelineResourceModel
+			if diags := resp.State.Get(ctx, &persisted); diags.HasError() {
+				t.Fatalf("Reading the persisted state = %v", diags)
+			}
+			if got := persisted.Id.ValueString(); got != "pipeline-id" {
+				t.Errorf("Persisted id = %q, want %q: without it the pipeline is orphaned and the next apply creates a second one", got, "pipeline-id")
+			}
+			if got := persisted.Slug.ValueString(); got != testCase.wantSlug {
+				t.Errorf("Persisted slug = %q, want %q: every later REST call builds its URL from this", got, testCase.wantSlug)
+			}
+		})
+	}
+}
+
+// Update applies the pipeline mutation before several REST and GraphQL steps that can each fail.
+// Terraform accepts state that differs from the plan when the provider also returns an error, and
+// persisting it there is the only thing between a failure in a later step and losing every field
+// the mutation changed.
+func TestPipelineUpdatePersistsStateWhenALaterStepFails(t *testing.T) {
+	t.Parallel()
+
+	const (
+		priorName   = "original-pipeline"
+		updatedName = "renamed-pipeline"
+		apiSlug     = "renamed-pipeline"
+		chosenSlug  = "a-chosen-slug"
+	)
+
+	// The pipelineUpdate mutation, which every case below needs to succeed before it can fail at
+	// something later.
+	mutationApplied := stubResponse{status: http.StatusOK, body: fmt.Sprintf(`{"data":{"pipelineUpdate":{"pipeline":{
+		"id": "pipeline-id",
+		"pipelineUuid": "pipeline-uuid",
+		"name": %q,
+		"slug": %q,
+		"defaultBranch": "main",
+		"description": "",
+		"repository": {"url": "git@github.com:org/repo.git"},
+		"steps": {"yaml": "steps: []"},
+		"tags": [],
+		"teams": {"edges": []}
+	}}}}`, updatedName, apiSlug)}
+
+	tests := []struct {
+		name string
+		// Attributes to add to the plan and config on top of the shared ones below.
+		plan   map[string]tftypes.Value
+		config map[string]tftypes.Value
+		// Responses between the pipeline mutation and the failure, for steps that have to apply first.
+		beforeFailure []stubResponse
+		failure       stubResponse
+		wantErr       string
+		wantSlug      string
+	}{
+		{
+			// A default team in state and none in the plan sends Update into findAndRemoveTeam, which
+			// pages on plain GraphQL. A GraphQL error in a 200 body is non-retryable, so it fails at once.
+			name:     "default team removal",
+			failure:  stubResponse{status: http.StatusOK, body: `{"errors":[{"message":"team lookup exploded"}]}`},
+			wantErr:  "Could not remove default team",
+			wantSlug: apiSlug,
+		},
+		{
+			// archived is synced to the plan before any of the steps below run, so a step failing
+			// between there and the archive mutation must not persist the archived state. Nothing
+			// corrects it afterwards: Read refreshes archived from the API, but under -refresh=false
+			// the next plan sees archived true -> true, shows no diff, and the pipeline is never
+			// archived.
+			name:     "archive requested but an earlier step fails",
+			plan:     map[string]tftypes.Value{"archived": tftypes.NewValue(tftypes.Bool, true)},
+			failure:  stubResponse{status: http.StatusOK, body: `{"errors":[{"message":"team lookup exploded"}]}`},
+			wantErr:  "Could not remove default team",
+			wantSlug: apiSlug,
+		},
+		{
+			// A different default team in the plan attaches the new one before detaching the old.
+			name:     "default team replacement",
+			plan:     map[string]tftypes.Value{"default_team_id": tftypes.NewValue(tftypes.String, "new-team-id")},
+			failure:  stubResponse{status: http.StatusOK, body: `{"errors":[{"message":"team attach exploded"}]}`},
+			wantErr:  "Could not attach new default team to pipeline",
+			wantSlug: apiSlug,
+		},
+		{
+			// The last REST step before the archive mutation, and the one furthest from the pipeline
+			// mutation whose result has to survive.
+			name: "github webhooks over REST",
+			plan: map[string]tftypes.Value{
+				"github_webhooks_enabled": tftypes.NewValue(tftypes.Bool, true),
+				// Unchanged, so neither team branch runs and the webhook call is what fails.
+				"default_team_id": tftypes.NewValue(tftypes.String, "team-id"),
+			},
+			failure:  stubResponse{status: http.StatusInternalServerError, body: `{"message":"webhook update failed"}`},
+			wantErr:  "Unable to set pipeline GitHub webhooks",
+			wantSlug: apiSlug,
+		},
+		{
+			// A configured slug renames the pipeline over REST. That call sits between the mutation and
+			// everything else, so it is the earliest point at which the update can be lost.
+			name:    "slug rename over REST",
+			plan:    map[string]tftypes.Value{"slug": tftypes.NewValue(tftypes.String, chosenSlug)},
+			config:  map[string]tftypes.Value{"slug": tftypes.NewValue(tftypes.String, chosenSlug)},
+			failure: stubResponse{status: http.StatusInternalServerError, body: `{"message":"rename failed"}`},
+			wantErr: "Unable to set pipeline slug from REST",
+			// The rename did not apply, so the pipeline still answers to the slug the mutation returned.
+			wantSlug: apiSlug,
+		},
+		{
+			// The rename applies and a later step fails, which is the only case where the chosen slug
+			// is what state has to name. Every case above expects the slug the mutation returned,
+			// which setPipelineModel writes anyway, so none of them pins what the defer records.
+			name:          "default team removal after the slug rename applied",
+			plan:          map[string]tftypes.Value{"slug": tftypes.NewValue(tftypes.String, chosenSlug)},
+			config:        map[string]tftypes.Value{"slug": tftypes.NewValue(tftypes.String, chosenSlug)},
+			beforeFailure: []stubResponse{{status: http.StatusOK, body: fmt.Sprintf(`{"slug":%q}`, chosenSlug)}},
+			failure:       stubResponse{status: http.StatusOK, body: `{"errors":[{"message":"team lookup exploded"}]}`},
+			wantErr:       "Could not remove default team",
+			wantSlug:      chosenSlug,
+		},
+	}
+
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			responses := append([]stubResponse{mutationApplied}, testCase.beforeFailure...)
+			server, requests := newRetryStub(t, append(responses, testCase.failure)...)
+			defer server.Close()
+
+			p := &pipelineResource{client: newRetryTestClient(t, server.URL, 0, time.Millisecond)}
+
+			ctx := t.Context()
+			schema := resourceSchema(ctx, t, p)
+
+			priorState := nullObjectWith(ctx, t, schema.Type(), map[string]tftypes.Value{
+				"id":              tftypes.NewValue(tftypes.String, "pipeline-id"),
+				"name":            tftypes.NewValue(tftypes.String, priorName),
+				"slug":            tftypes.NewValue(tftypes.String, priorName),
+				"repository":      tftypes.NewValue(tftypes.String, "git@github.com:org/repo.git"),
+				"steps":           tftypes.NewValue(tftypes.String, "steps: []"),
+				"default_team_id": tftypes.NewValue(tftypes.String, "team-id"),
+				"archived":        tftypes.NewValue(tftypes.Bool, false),
+			})
+
+			planned := map[string]tftypes.Value{
+				"id":         tftypes.NewValue(tftypes.String, "pipeline-id"),
+				"name":       tftypes.NewValue(tftypes.String, updatedName),
+				"repository": tftypes.NewValue(tftypes.String, "git@github.com:org/repo.git"),
+				"steps":      tftypes.NewValue(tftypes.String, "steps: []"),
+				"archived":   tftypes.NewValue(tftypes.Bool, false),
+			}
+			for name, value := range testCase.plan {
+				planned[name] = value
+			}
+			configured := maps.Clone(planned)
+			for name, value := range testCase.config {
+				configured[name] = value
+			}
+
+			req := fwresource.UpdateRequest{
+				Plan:   tfsdk.Plan{Schema: schema, Raw: nullObjectWith(ctx, t, schema.Type(), planned)},
+				State:  tfsdk.State{Schema: schema, Raw: priorState},
+				Config: tfsdk.Config{Schema: schema, Raw: nullObjectWith(ctx, t, schema.Type(), configured)},
+			}
+			resp := fwresource.UpdateResponse{State: tfsdk.State{Schema: schema, Raw: priorState}}
+
+			p.Update(ctx, req, &resp)
+
+			if got := requests.Load(); got < int64(len(responses)+1) {
+				t.Fatalf("Made %d requests, want %d: every step before the failure has to have applied", got, len(responses)+1)
+			}
+			// resp.Private is nil here because only the framework can build one, which adds an
+			// unrelated diagnostic; assert on the failure this case is about rather than the count.
+			if !diagnosticsContain(resp.Diagnostics, testCase.wantErr) {
+				t.Fatalf("Update() diagnostics = %v, want %q", resp.Diagnostics, testCase.wantErr)
+			}
+
+			var persisted pipelineResourceModel
+			if diags := resp.State.Get(ctx, &persisted); diags.HasError() {
+				t.Fatalf("Reading the persisted state = %v", diags)
+			}
+			if got := persisted.Name.ValueString(); got != updatedName {
+				t.Errorf("Persisted name = %q, want %q: the mutation applied, so dropping it leaves Terraform planning the same change again", got, updatedName)
+			}
+			if got := persisted.Slug.ValueString(); got != testCase.wantSlug {
+				t.Errorf("Persisted slug = %q, want %q", got, testCase.wantSlug)
+			}
+			// The pipeline is only archived by the mutation at the end of Update, so every case here
+			// leaves it unarchived no matter what the plan asked for.
+			if persisted.Archived.ValueBool() {
+				t.Error("Persisted archived = true, want false: the archive mutation never ran")
+			}
+		})
+	}
+}
+
+// Update attaches the new default team before detaching the old one, so both are attached until
+// findAndRemoveTeam succeeds. Recording the new team before that point is worse than recording
+// nothing: the next plan compares the config against it, finds no diff, and never retries the
+// detach, while Read only checks that the recorded team is still attached and so never notices the
+// old one. The old team keeps MANAGE_BUILD_AND_READ on the pipeline with nothing left to show it.
+func TestPipelineUpdateKeepsThePreviousDefaultTeamWhenTheDetachFails(t *testing.T) {
+	t.Parallel()
+
+	const (
+		previousTeamID = "team-id"
+		newTeamID      = "new-team-id"
+	)
+
+	server, requests := newRetryStub(t,
+		// pipelineUpdate applies.
+		stubResponse{status: http.StatusOK, body: `{"data":{"pipelineUpdate":{"pipeline":{
+			"id": "pipeline-id", "pipelineUuid": "pipeline-uuid", "name": "p", "slug": "p",
+			"defaultBranch": "main", "description": "", "archived": false,
+			"repository": {"url": "git@github.com:org/repo.git"}, "steps": {"yaml": "steps: []"},
+			"tags": [], "teams": {"edges": []}
+		}}}}`},
+		// The new team is attached.
+		stubResponse{status: http.StatusOK, body: fmt.Sprintf(`{"data":{"teamPipelineCreate":{"teamPipelineEdge":{"node":{
+			"id": "team-pipeline-id", "uuid": "team-pipeline-uuid", "pipelineAccessLevel": "MANAGE_BUILD_AND_READ",
+			"team": {"id": %q}, "pipeline": {"id": "pipeline-id"}
+		}}}}}`, newTeamID)},
+		// Detaching the old one does not. A GraphQL error in a 200 body is non-retryable.
+		stubResponse{status: http.StatusOK, body: `{"errors":[{"message":"team lookup exploded"}]}`},
+	)
+	defer server.Close()
+
+	p := &pipelineResource{client: newRetryTestClient(t, server.URL, 0, time.Millisecond)}
+
+	ctx := t.Context()
+	schema := resourceSchema(ctx, t, p)
+
+	prior := nullObjectWith(ctx, t, schema.Type(), map[string]tftypes.Value{
+		"id":              tftypes.NewValue(tftypes.String, "pipeline-id"),
+		"name":            tftypes.NewValue(tftypes.String, "p"),
+		"slug":            tftypes.NewValue(tftypes.String, "p"),
+		"repository":      tftypes.NewValue(tftypes.String, "git@github.com:org/repo.git"),
+		"steps":           tftypes.NewValue(tftypes.String, "steps: []"),
+		"default_team_id": tftypes.NewValue(tftypes.String, previousTeamID),
+		"archived":        tftypes.NewValue(tftypes.Bool, false),
+	})
+	planned := nullObjectWith(ctx, t, schema.Type(), map[string]tftypes.Value{
+		"id":              tftypes.NewValue(tftypes.String, "pipeline-id"),
+		"name":            tftypes.NewValue(tftypes.String, "p"),
+		"repository":      tftypes.NewValue(tftypes.String, "git@github.com:org/repo.git"),
+		"steps":           tftypes.NewValue(tftypes.String, "steps: []"),
+		"default_team_id": tftypes.NewValue(tftypes.String, newTeamID),
+		"archived":        tftypes.NewValue(tftypes.Bool, false),
+	})
+
+	req := fwresource.UpdateRequest{
+		Plan:   tfsdk.Plan{Schema: schema, Raw: planned},
+		State:  tfsdk.State{Schema: schema, Raw: prior},
+		Config: tfsdk.Config{Schema: schema, Raw: planned},
+	}
+	resp := fwresource.UpdateResponse{State: tfsdk.State{Schema: schema, Raw: prior}}
+
+	p.Update(ctx, req, &resp)
+
+	if got := requests.Load(); got < 3 {
+		t.Fatalf("Made %d requests, want the new team to have been attached before the detach failed", got)
+	}
+	if !diagnosticsContain(resp.Diagnostics, "Could not remove previous default team") {
+		t.Fatalf("Update() diagnostics = %v, want the detach failure reported", resp.Diagnostics)
+	}
+
+	var persisted pipelineResourceModel
+	if diags := resp.State.Get(ctx, &persisted); diags.HasError() {
+		t.Fatalf("Reading the persisted state = %v", diags)
+	}
+	if got := persisted.Name.ValueString(); got != "p" {
+		t.Errorf("Persisted name = %q, want %q: the pipeline mutation still applied", got, "p")
+	}
+	if got := persisted.DefaultTeamId.ValueString(); got != previousTeamID {
+		t.Errorf("Persisted default_team_id = %q, want %q: the old team is still attached, so the next plan has to retry the detach", got, previousTeamID)
+	}
+}
+
+// Unarchiving is the first mutation Update applies, and the pipeline mutation after it can still
+// fail. Returning without recording the unarchive leaves state calling the pipeline archived while
+// it is live and accepting builds, and under -refresh=false nothing corrects that before the next
+// plan re-runs the unarchive against a pipeline that is no longer archived.
+func TestPipelineUpdatePersistsTheUnarchiveWhenTheMutationFails(t *testing.T) {
+	t.Parallel()
+
+	server, requests := newRetryStub(t,
+		// pipelineUnarchive applies.
+		stubResponse{status: http.StatusOK, body: `{"data":{"pipelineUnarchive":{"clientMutationId":""}}}`},
+		// updatePipeline does not. A GraphQL error in a 200 body is non-retryable.
+		stubResponse{status: http.StatusOK, body: `{"errors":[{"message":"pipeline update exploded"}]}`},
+	)
+	defer server.Close()
+
+	p := &pipelineResource{client: newRetryTestClient(t, server.URL, 0, time.Millisecond)}
+
+	ctx := t.Context()
+	schema := resourceSchema(ctx, t, p)
+
+	shared := map[string]tftypes.Value{
+		"id":         tftypes.NewValue(tftypes.String, "pipeline-id"),
+		"name":       tftypes.NewValue(tftypes.String, "p"),
+		"repository": tftypes.NewValue(tftypes.String, "git@github.com:org/repo.git"),
+		"steps":      tftypes.NewValue(tftypes.String, "steps: []"),
+	}
+	prior := map[string]tftypes.Value{
+		"slug":     tftypes.NewValue(tftypes.String, "p"),
+		"archived": tftypes.NewValue(tftypes.Bool, true),
+	}
+	planned := map[string]tftypes.Value{"archived": tftypes.NewValue(tftypes.Bool, false)}
+	maps.Copy(prior, shared)
+	maps.Copy(planned, shared)
+
+	priorRaw := nullObjectWith(ctx, t, schema.Type(), prior)
+	req := fwresource.UpdateRequest{
+		Plan:   tfsdk.Plan{Schema: schema, Raw: nullObjectWith(ctx, t, schema.Type(), planned)},
+		State:  tfsdk.State{Schema: schema, Raw: priorRaw},
+		Config: tfsdk.Config{Schema: schema, Raw: nullObjectWith(ctx, t, schema.Type(), planned)},
+	}
+	resp := fwresource.UpdateResponse{State: tfsdk.State{Schema: schema, Raw: priorRaw}}
+
+	p.Update(ctx, req, &resp)
+
+	if got := requests.Load(); got < 2 {
+		t.Fatalf("Made %d requests, want the unarchive to have applied before the failure", got)
+	}
+	if !diagnosticsContain(resp.Diagnostics, "Unable to update Pipeline") {
+		t.Fatalf("Update() diagnostics = %v, want the pipeline mutation failure reported", resp.Diagnostics)
+	}
+
+	var persisted pipelineResourceModel
+	if diags := resp.State.Get(ctx, &persisted); diags.HasError() {
+		t.Fatalf("Reading the persisted state = %v", diags)
+	}
+	if persisted.Archived.ValueBool() {
+		t.Error("Persisted archived = true, want false: the unarchive applied, so state has to say so")
+	}
+	if got := persisted.Slug.ValueString(); got != "p" {
+		t.Errorf("Persisted slug = %q, want %q: the rename never ran", got, "p")
+	}
+}
+
+// archived was added to this resource without bumping the schema version, so state written before
+// it existed has no archived key and decodes as null rather than false. Update reads that null
+// before the pipeline mutation and restores it afterwards, so a successful update would persist a
+// null over a value the API reports as false. Terraform rejects that: the plan carries false from
+// the attribute's static default, and a state that disagrees with a known planned value fails the
+// apply with "Provider produced inconsistent result after apply". Only a refresh repairs the null,
+// so under -refresh=false every apply fails until one runs.
+func TestPipelineUpdateNormalisesANullArchivedFromOlderState(t *testing.T) {
+	t.Parallel()
+
+	server, requests := newRetryStub(t,
+		stubResponse{status: http.StatusOK, body: `{"data":{"pipelineUpdate":{"pipeline":{
+			"id": "pipeline-id", "pipelineUuid": "pipeline-uuid", "name": "p", "slug": "p",
+			"defaultBranch": "main", "description": "", "archived": false,
+			"repository": {"url": "git@github.com:org/repo.git"}, "steps": {"yaml": "steps: []"},
+			"tags": [], "teams": {"edges": []}
+		}}}}`},
+	)
+	defer server.Close()
+
+	p := &pipelineResource{client: newRetryTestClient(t, server.URL, 0, time.Millisecond)}
+
+	ctx := t.Context()
+	schema := resourceSchema(ctx, t, p)
+
+	shared := map[string]tftypes.Value{
+		"id":         tftypes.NewValue(tftypes.String, "pipeline-id"),
+		"name":       tftypes.NewValue(tftypes.String, "p"),
+		"slug":       tftypes.NewValue(tftypes.String, "p"),
+		"repository": tftypes.NewValue(tftypes.String, "git@github.com:org/repo.git"),
+		"steps":      tftypes.NewValue(tftypes.String, "steps: []"),
+	}
+	// archived deliberately absent, which is what pre-attribute state decodes to.
+	prior := map[string]tftypes.Value{}
+	// The plan always has it known, because the schema defaults it.
+	planned := map[string]tftypes.Value{"archived": tftypes.NewValue(tftypes.Bool, false)}
+	maps.Copy(prior, shared)
+	maps.Copy(planned, shared)
+
+	priorRaw := nullObjectWith(ctx, t, schema.Type(), prior)
+	req := fwresource.UpdateRequest{
+		Plan:   tfsdk.Plan{Schema: schema, Raw: nullObjectWith(ctx, t, schema.Type(), planned)},
+		State:  tfsdk.State{Schema: schema, Raw: priorRaw},
+		Config: tfsdk.Config{Schema: schema, Raw: nullObjectWith(ctx, t, schema.Type(), planned)},
+	}
+	resp := fwresource.UpdateResponse{State: tfsdk.State{Schema: schema, Raw: priorRaw}}
+
+	p.Update(ctx, req, &resp)
+
+	if got := requests.Load(); got < 1 {
+		t.Fatalf("Made %d requests, want the pipeline mutation to have run", got)
+	}
+
+	var persisted pipelineResourceModel
+	if diags := resp.State.Get(ctx, &persisted); diags.HasError() {
+		t.Fatalf("Reading the persisted state = %v", diags)
+	}
+	if persisted.Archived.IsNull() {
+		t.Error("Persisted archived is null, want false: Terraform rejects a state that disagrees with a known planned value")
+	}
+	if persisted.Archived.ValueBool() {
+		t.Error("Persisted archived = true, want false: nothing archived the pipeline")
+	}
+}
+
+// The recovery this resource records has to be reachable. When a detach fails, Update deliberately
+// keeps the previous team in state so the next plan still shows a diff. That next apply re-attaches
+// the new team, which is already attached from the run before, and createTeamPipeline rejects that
+// (resource_pipeline_team.go handles the same error for the same reason). Failing there strands the
+// pipeline with both teams attached and no way forward: Read keeps the recorded team while it is
+// still attached, so no refresh clears it either. The attach has to be idempotent so the detach
+// this apply exists to retry is actually reached.
+func TestPipelineUpdateRetriesTheDetachWhenTheNewTeamIsAlreadyAttached(t *testing.T) {
+	t.Parallel()
+
+	const (
+		previousTeamID = "team-id"
+		newTeamID      = "new-team-id"
+	)
+
+	server, requests := newRetryStub(t,
+		// pipelineUpdate applies.
+		stubResponse{status: http.StatusOK, body: `{"data":{"pipelineUpdate":{"pipeline":{
+			"id": "pipeline-id", "pipelineUuid": "pipeline-uuid", "name": "p", "slug": "p",
+			"defaultBranch": "main", "description": "", "archived": false,
+			"repository": {"url": "git@github.com:org/repo.git"}, "steps": {"yaml": "steps: []"},
+			"tags": [], "teams": {"edges": []}
+		}}}}`},
+		// The new team was attached by the previous, partly failed apply.
+		stubResponse{status: http.StatusOK, body: `{"errors":[{"message":"This pipeline has already been added to this team"}]}`},
+		// getPipelineTeams, reached only if the attach stopped being fatal. The previous owner is
+		// listed so findAndRemoveTeam has an edge to delete.
+		stubResponse{status: http.StatusOK, body: fmt.Sprintf(`{"data":{"pipeline":{"teams":{
+			"edges": [{"node": {"id": "team-pipeline-id", "team": {"id": %q}}}],
+			"pageInfo": {"hasNextPage": false, "endCursor": ""}
+		}}}}`, previousTeamID)},
+		// teamPipelineDelete for the previous owner.
+		stubResponse{status: http.StatusOK, body: `{"data":{"teamPipelineDelete":{"team":{"id":"team-id"}}}}`},
+	)
+	defer server.Close()
+
+	p := &pipelineResource{client: newRetryTestClient(t, server.URL, 0, time.Millisecond)}
+
+	ctx := t.Context()
+	schema := resourceSchema(ctx, t, p)
+
+	shared := map[string]tftypes.Value{
+		"id":         tftypes.NewValue(tftypes.String, "pipeline-id"),
+		"name":       tftypes.NewValue(tftypes.String, "p"),
+		"repository": tftypes.NewValue(tftypes.String, "git@github.com:org/repo.git"),
+		"steps":      tftypes.NewValue(tftypes.String, "steps: []"),
+		"archived":   tftypes.NewValue(tftypes.Bool, false),
+	}
+	prior := map[string]tftypes.Value{
+		"slug":            tftypes.NewValue(tftypes.String, "p"),
+		"default_team_id": tftypes.NewValue(tftypes.String, previousTeamID),
+	}
+	planned := map[string]tftypes.Value{"default_team_id": tftypes.NewValue(tftypes.String, newTeamID)}
+	maps.Copy(prior, shared)
+	maps.Copy(planned, shared)
+
+	priorRaw := nullObjectWith(ctx, t, schema.Type(), prior)
+	req := fwresource.UpdateRequest{
+		Plan:   tfsdk.Plan{Schema: schema, Raw: nullObjectWith(ctx, t, schema.Type(), planned)},
+		State:  tfsdk.State{Schema: schema, Raw: priorRaw},
+		Config: tfsdk.Config{Schema: schema, Raw: nullObjectWith(ctx, t, schema.Type(), planned)},
+	}
+	resp := fwresource.UpdateResponse{State: tfsdk.State{Schema: schema, Raw: priorRaw}}
+
+	p.Update(ctx, req, &resp)
+
+	if diagnosticsContain(resp.Diagnostics, "Could not attach new default team to pipeline") {
+		t.Fatalf("Update() failed on an attach that had already applied, so the detach it exists to retry was never reached: %v", resp.Diagnostics)
+	}
+	if diagnosticsContain(resp.Diagnostics, "Could not remove previous default team") {
+		t.Fatalf("Update() diagnostics = %v, want the detach to have succeeded", resp.Diagnostics)
+	}
+	if got := requests.Load(); got < 4 {
+		t.Fatalf("Made %d requests, want the detach to have been attempted after the duplicate attach", got)
+	}
+
+	var persisted pipelineResourceModel
+	if diags := resp.State.Get(ctx, &persisted); diags.HasError() {
+		t.Fatalf("Reading the persisted state = %v", diags)
+	}
+	if got := persisted.DefaultTeamId.ValueString(); got != newTeamID {
+		t.Errorf("Persisted default_team_id = %q, want %q: the detach succeeded, so the swap is complete", got, newTeamID)
+	}
 }
