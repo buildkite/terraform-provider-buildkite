@@ -322,6 +322,7 @@ func (cq *clusterQueueResource) Create(ctx context.Context, req resource.CreateR
 		)
 		return
 	}
+	cq.client.clusterQueues.invalidate(plan.ClusterId.ValueString())
 
 	state.Id = types.StringValue(r.ClusterQueueCreate.ClusterQueue.Id)
 	state.Uuid = types.StringValue(r.ClusterQueueCreate.ClusterQueue.Uuid)
@@ -406,18 +407,37 @@ func (cq *clusterQueueResource) Read(ctx context.Context, req resource.ReadReque
 		return
 	}
 
-	log.Printf("Getting cluster queue with ID %s using Node interface...", state.Id.ValueString())
-	r, err := getClusterQueueByNode(ctx, cq.client.genqlient, state.Id.ValueString())
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Unable to read Cluster Queue",
-			fmt.Sprintf("Unable to read Cluster Queue: %s", err.Error()),
-		)
-		return
+	log.Printf("Getting cluster queue with ID %s from cluster %s...", state.Id.ValueString(), state.ClusterId.ValueString())
+	var clusterQueue clusterQueueReadNode
+	if !state.ClusterId.IsNull() && !state.ClusterId.IsUnknown() && state.ClusterId.ValueString() != "" {
+		clusterQueues, err := cq.getClusterQueuesForRead(ctx, state.ClusterId.ValueString())
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Unable to read Cluster Queue",
+				fmt.Sprintf("Unable to read Cluster Queue: %s", err.Error()),
+			)
+			return
+		}
+		for index := range clusterQueues {
+			if clusterQueues[index].Id == state.Id.ValueString() {
+				clusterQueue = &clusterQueues[index]
+				break
+			}
+		}
+	} else {
+		response, err := getClusterQueueByNode(ctx, cq.client.genqlient, state.Id.ValueString())
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Unable to read Cluster Queue",
+				fmt.Sprintf("Unable to read Cluster Queue: %s", err.Error()),
+			)
+			return
+		}
+		if node, ok := response.Node.(*getClusterQueueByNodeNodeClusterQueue); ok && node != nil {
+			clusterQueue = node
+		}
 	}
-
-	// Check if the node exists and is a ClusterQueue
-	if r.Node == nil {
+	if clusterQueue == nil {
 		resp.Diagnostics.AddWarning(
 			"Cluster Queue not found",
 			"Removing Cluster Queue from state...",
@@ -426,17 +446,8 @@ func (cq *clusterQueueResource) Read(ctx context.Context, req resource.ReadReque
 		return
 	}
 
-	clusterQueue, ok := r.Node.(*getClusterQueueByNodeNodeClusterQueue)
-	if !ok {
-		resp.Diagnostics.AddError(
-			"Invalid node type",
-			"The returned node is not a ClusterQueue",
-		)
-		return
-	}
-
-	log.Printf("Found cluster queue with ID %s", clusterQueue.Id)
-	updateClusterQueueResourceFromNode(*clusterQueue, &state)
+	log.Printf("Found cluster queue with ID %s", clusterQueue.GetId())
+	updateClusterQueueResourceFromNode(clusterQueue, &state)
 
 	restResponse, err := cq.getClusterQueueViaREST(ctx, state.ClusterUuid.ValueString(), state.Uuid.ValueString())
 	if err != nil {
@@ -450,6 +461,29 @@ func (cq *clusterQueueResource) Read(ctx context.Context, req resource.ReadReque
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+}
+
+func (cq *clusterQueueResource) getClusterQueuesForRead(ctx context.Context, clusterID string) ([]cachedClusterQueue, error) {
+	return cq.client.clusterQueues.get(ctx, clusterID, func() ([]cachedClusterQueue, error) {
+		var clusterQueues []cachedClusterQueue
+		var cursor *string
+		for {
+			response, err := getClusterQueues(ctx, cq.client.genqlient, cq.client.organization, clusterID, cursor)
+			if err != nil {
+				return nil, err
+			}
+
+			queues := response.Organization.Cluster.Queues
+			for _, edge := range queues.Edges {
+				clusterQueues = append(clusterQueues, edge.Node)
+			}
+			if !queues.PageInfo.HasNextPage {
+				return clusterQueues, nil
+			}
+			nextCursor := queues.PageInfo.EndCursor
+			cursor = &nextCursor
+		}
+	})
 }
 
 func (cq *clusterQueueResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
@@ -534,6 +568,7 @@ func (cq *clusterQueueResource) Update(ctx context.Context, req resource.UpdateR
 	}
 
 	log.Printf("Updating cluster queue %s ...", state.Id.ValueString())
+	cq.client.clusterQueues.invalidate(state.ClusterId.ValueString())
 
 	// Extract the planned and state values for DispatchPaused attribute
 	// to compare if the Queue should be paused or resumed
@@ -652,6 +687,7 @@ func (cq *clusterQueueResource) Delete(ctx context.Context, req resource.DeleteR
 		)
 		return
 	}
+	cq.client.clusterQueues.invalidate(plan.ClusterId.ValueString())
 }
 
 type hostedAgentValidator struct{}
@@ -739,33 +775,46 @@ func (v hostedAgentValidator) ValidateObject(ctx context.Context, req validator.
 	}
 }
 
-func updateClusterQueueResourceFromNode(clusterQueueNode getClusterQueueByNodeNodeClusterQueue, cq *clusterQueueResourceModel) {
-	cq.Id = types.StringValue(clusterQueueNode.Id)
-	cq.Uuid = types.StringValue(clusterQueueNode.Uuid)
-	cq.Key = types.StringValue(clusterQueueNode.Key)
-	cq.Description = types.StringPointerValue(clusterQueueNode.Description)
-	cq.ClusterId = types.StringValue(clusterQueueNode.Cluster.Id)
-	cq.ClusterUuid = types.StringValue(clusterQueueNode.Cluster.Uuid)
-	cq.DispatchPaused = types.BoolValue(clusterQueueNode.DispatchPaused)
+type clusterQueueReadNode interface {
+	GetId() string
+	GetUuid() string
+	GetKey() string
+	GetDescription() *string
+	GetCluster() ClusterQueueValuesCluster
+	GetDispatchPaused() bool
+	GetHosted() bool
+	GetHostedAgents() ClusterQueueValuesHostedAgentsHostedAgentQueueSettings
+}
 
-	if clusterQueueNode.Hosted {
+func updateClusterQueueResourceFromNode(clusterQueueNode clusterQueueReadNode, cq *clusterQueueResourceModel) {
+	cluster := clusterQueueNode.GetCluster()
+	hostedAgents := clusterQueueNode.GetHostedAgents()
+	cq.Id = types.StringValue(clusterQueueNode.GetId())
+	cq.Uuid = types.StringValue(clusterQueueNode.GetUuid())
+	cq.Key = types.StringValue(clusterQueueNode.GetKey())
+	cq.Description = types.StringPointerValue(clusterQueueNode.GetDescription())
+	cq.ClusterId = types.StringValue(cluster.Id)
+	cq.ClusterUuid = types.StringValue(cluster.Uuid)
+	cq.DispatchPaused = types.BoolValue(clusterQueueNode.GetDispatchPaused())
+
+	if clusterQueueNode.GetHosted() {
 		cq.HostedAgents = &hostedAgentResourceModel{
-			InstanceShape: types.StringValue(string(clusterQueueNode.HostedAgents.InstanceShape.Name)),
+			InstanceShape: types.StringValue(string(hostedAgents.InstanceShape.Name)),
 		}
-		if clusterQueueNode.HostedAgents.PlatformSettings.Linux.AgentImageRef != "" {
+		if hostedAgents.PlatformSettings.Linux.AgentImageRef != "" {
 			cq.HostedAgents.Linux = &linuxConfigModel{
-				ImageAgentRef: types.StringValue(clusterQueueNode.HostedAgents.PlatformSettings.Linux.AgentImageRef),
+				ImageAgentRef: types.StringValue(hostedAgents.PlatformSettings.Linux.AgentImageRef),
 			}
 		}
-		if clusterQueueNode.HostedAgents.PlatformSettings.Macos.XcodeVersion != "" {
-			if clusterQueueNode.HostedAgents.PlatformSettings.Macos.MacosVersion != nil {
+		if hostedAgents.PlatformSettings.Macos.XcodeVersion != "" {
+			if hostedAgents.PlatformSettings.Macos.MacosVersion != nil {
 				cq.HostedAgents.Mac = &macConfigModel{
-					XcodeVersion: types.StringValue(clusterQueueNode.HostedAgents.PlatformSettings.Macos.XcodeVersion),
-					MacosVersion: types.StringValue(string(*clusterQueueNode.HostedAgents.PlatformSettings.Macos.MacosVersion)),
+					XcodeVersion: types.StringValue(hostedAgents.PlatformSettings.Macos.XcodeVersion),
+					MacosVersion: types.StringValue(string(*hostedAgents.PlatformSettings.Macos.MacosVersion)),
 				}
 			} else {
 				cq.HostedAgents.Mac = &macConfigModel{
-					XcodeVersion: types.StringValue(clusterQueueNode.HostedAgents.PlatformSettings.Macos.XcodeVersion),
+					XcodeVersion: types.StringValue(hostedAgents.PlatformSettings.Macos.XcodeVersion),
 				}
 			}
 		}

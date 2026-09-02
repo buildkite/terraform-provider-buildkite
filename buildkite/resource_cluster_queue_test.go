@@ -631,7 +631,7 @@ func testAccCheckClusterQueueExists(resourceName string, clusterQueueResourceMod
 			}
 
 			// Update ClusterQueueResourceModel with Node values
-			updateClusterQueueResourceFromNode(*clusterQueue, clusterQueueResourceModel)
+			updateClusterQueueResourceFromNode(clusterQueue, clusterQueueResourceModel)
 			return nil
 		})
 		if err != nil {
