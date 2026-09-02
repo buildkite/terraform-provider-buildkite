@@ -4,8 +4,16 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
+	"net/http"
 	"reflect"
+	"strings"
 	"testing"
+	"time"
+
+	fwresource "github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
+	"github.com/hashicorp/terraform-plugin-go/tftypes"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
@@ -432,4 +440,323 @@ func testTestSuiteDestroy(s *terraform.State) error {
 		}
 	}
 	return nil
+}
+
+// The REST PATCH applies name, default_branch, emoji, application_name, color, oidc_policy and the
+// slug they derive from, and two team mutations run after it that can each fail. Update has to
+// record the PATCH either way. Dropping it is not merely a re-plan: state goes on naming the slug
+// the suite answered to before the rename, and that is the slug the URL above is built from, so
+// under -refresh=false the next update PATCHes a suite that is no longer there.
+func TestTestSuiteUpdatePersistsThePatchWhenATeamStepFails(t *testing.T) {
+	t.Parallel()
+
+	const (
+		priorName      = "original-suite"
+		updatedName    = "renamed-suite"
+		priorSlug      = "original-suite"
+		updatedSlug    = "renamed-suite"
+		previousTeamID = "previous-team-id"
+		newTeamID      = "new-team-id"
+	)
+
+	patched := stubResponse{status: http.StatusOK, body: fmt.Sprintf(`{
+		"id": "suite-uuid", "graphql_id": "suite-id", "api_token": "token",
+		"name": %q, "slug": %q, "default_branch": "main"
+	}`, updatedName, updatedSlug)}
+	teamAttached := stubResponse{status: http.StatusOK, body: fmt.Sprintf(`{"data":{"teamSuiteCreate":{
+		"suite": {"teams": {"edges": [{"node": {"id": "team-suite-id", "uuid": "team-suite-uuid", "team": {"id": %q}}}]}},
+		"teamSuite": {"id": "team-suite-id", "teamSuiteUuid": "team-suite-uuid", "accessLevel": "MANAGE_AND_READ",
+			"team": {"id": %q}, "suite": {"id": "suite-id"}}
+	}}}`, previousTeamID, newTeamID)}
+	graphQLFails := stubResponse{status: http.StatusOK, body: `{"errors":[{"message":"team mutation exploded"}]}`}
+
+	tests := []struct {
+		name      string
+		responses []stubResponse
+		wantError string
+		// The owner the next plan has to work from. Both teams own the suite once the attach has
+		// applied, so the previous one is what leaves a diff to retry the delete from.
+		wantOwner string
+	}{
+		{
+			name:      "attaching the new owner team fails",
+			responses: []stubResponse{patched, graphQLFails},
+			wantError: "Could not add new owner team",
+			wantOwner: previousTeamID,
+		},
+		{
+			name:      "detaching the previous owner team fails",
+			responses: []stubResponse{patched, teamAttached, graphQLFails},
+			wantError: "Failed to delete team owner",
+			wantOwner: previousTeamID,
+		},
+	}
+
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			server, requests := newRetryStub(t, testCase.responses...)
+			defer server.Close()
+
+			ts := &testSuiteResource{client: newRetryTestClient(t, server.URL, 0, time.Millisecond)}
+
+			ctx := t.Context()
+			schema := resourceSchema(ctx, t, ts)
+
+			shared := map[string]tftypes.Value{
+				"id":             tftypes.NewValue(tftypes.String, "suite-id"),
+				"uuid":           tftypes.NewValue(tftypes.String, "suite-uuid"),
+				"default_branch": tftypes.NewValue(tftypes.String, "main"),
+			}
+			prior := map[string]tftypes.Value{
+				"name":          tftypes.NewValue(tftypes.String, priorName),
+				"slug":          tftypes.NewValue(tftypes.String, priorSlug),
+				"team_owner_id": tftypes.NewValue(tftypes.String, previousTeamID),
+			}
+			planned := map[string]tftypes.Value{
+				"name":          tftypes.NewValue(tftypes.String, updatedName),
+				"slug":          tftypes.NewValue(tftypes.String, updatedSlug),
+				"team_owner_id": tftypes.NewValue(tftypes.String, newTeamID),
+			}
+			maps.Copy(prior, shared)
+			maps.Copy(planned, shared)
+
+			priorRaw := nullObjectWith(ctx, t, schema.Type(), prior)
+			req := fwresource.UpdateRequest{
+				Plan:   tfsdk.Plan{Schema: schema, Raw: nullObjectWith(ctx, t, schema.Type(), planned)},
+				State:  tfsdk.State{Schema: schema, Raw: priorRaw},
+				Config: tfsdk.Config{Schema: schema, Raw: nullObjectWith(ctx, t, schema.Type(), planned)},
+			}
+			resp := fwresource.UpdateResponse{State: tfsdk.State{Schema: schema, Raw: priorRaw}}
+
+			ts.Update(ctx, req, &resp)
+
+			if got := requests.Load(); got < int64(len(testCase.responses)) {
+				t.Fatalf("Made %d requests, want %d: the PATCH has to have applied before the failure", got, len(testCase.responses))
+			}
+			if !diagnosticsContain(resp.Diagnostics, testCase.wantError) {
+				t.Fatalf("Update() diagnostics = %v, want %q", resp.Diagnostics, testCase.wantError)
+			}
+
+			var persisted testSuiteModel
+			if diags := resp.State.Get(ctx, &persisted); diags.HasError() {
+				t.Fatalf("Reading the persisted state = %v", diags)
+			}
+			if got := persisted.Name.ValueString(); got != updatedName {
+				t.Errorf("Persisted name = %q, want %q: the PATCH applied, so dropping it leaves Terraform planning the same change again", got, updatedName)
+			}
+			if got := persisted.Slug.ValueString(); got != updatedSlug {
+				t.Errorf("Persisted slug = %q, want %q: the next update builds its URL from this", got, updatedSlug)
+			}
+			if got := persisted.TeamOwnerId.ValueString(); got != testCase.wantOwner {
+				t.Errorf("Persisted team_owner_id = %q, want %q", got, testCase.wantOwner)
+			}
+		})
+	}
+}
+
+// The mirror of the pipeline case. When the delete fails, Update keeps the previous owner in state
+// so the next plan still shows a diff. That next apply re-attaches the new owner, which already
+// owns the suite from the run before, and the attach response is then empty, so the previous
+// owner's edge has to be read back or the delete this apply exists to retry is silently skipped
+// and both teams keep owning the suite.
+func TestTestSuiteUpdateRetriesTheDeleteWhenTheNewOwnerAlreadyOwnsTheSuite(t *testing.T) {
+	t.Parallel()
+
+	const (
+		previousTeamID = "previous-team-id"
+		newTeamID      = "new-team-id"
+		previousEdgeID = "previous-team-suite-id"
+	)
+
+	server, requests, bodies := newRecordingRetryStub(t,
+		// The PATCH applies.
+		stubResponse{status: http.StatusOK, body: `{
+			"id": "suite-uuid", "graphql_id": "suite-id", "api_token": "token",
+			"name": "renamed-suite", "slug": "renamed-suite", "default_branch": "main"
+		}`},
+		// The new owner was attached by the previous, partly failed apply.
+		stubResponse{status: http.StatusOK, body: `{"errors":[{"message":"This suite has already been added to this team"}]}`},
+		// getTestSuite, reached only if the attach stopped being fatal. Both teams own the suite.
+		stubResponse{status: http.StatusOK, body: fmt.Sprintf(`{"data":{"suite":{
+			"__typename": "Suite",
+			"id": "suite-id", "uuid": "suite-uuid", "name": "renamed-suite", "slug": "renamed-suite",
+			"defaultBranch": "main", "emoji": null,
+			"teams": {"edges": [
+				{"node": {"id": %q, "accessLevel": "MANAGE_AND_READ", "team": {"id": %q}}},
+				{"node": {"id": "new-team-suite-id", "accessLevel": "MANAGE_AND_READ", "team": {"id": %q}}}
+			]}
+		}}}`, previousEdgeID, previousTeamID, newTeamID)},
+		// deleteTestSuiteTeam for the previous owner.
+		stubResponse{status: http.StatusOK, body: `{"data":{"teamSuiteDelete":{"deletedTeamSuiteID":"previous-team-suite-id","clientMutationId":""}}}`},
+	)
+	defer server.Close()
+
+	ts := &testSuiteResource{client: newRetryTestClient(t, server.URL, 0, time.Millisecond)}
+
+	ctx := t.Context()
+	schema := resourceSchema(ctx, t, ts)
+
+	shared := map[string]tftypes.Value{
+		"id":             tftypes.NewValue(tftypes.String, "suite-id"),
+		"uuid":           tftypes.NewValue(tftypes.String, "suite-uuid"),
+		"default_branch": tftypes.NewValue(tftypes.String, "main"),
+	}
+	prior := map[string]tftypes.Value{
+		"name":          tftypes.NewValue(tftypes.String, "original-suite"),
+		"slug":          tftypes.NewValue(tftypes.String, "original-suite"),
+		"team_owner_id": tftypes.NewValue(tftypes.String, previousTeamID),
+	}
+	planned := map[string]tftypes.Value{
+		"name":          tftypes.NewValue(tftypes.String, "renamed-suite"),
+		"slug":          tftypes.NewValue(tftypes.String, "renamed-suite"),
+		"team_owner_id": tftypes.NewValue(tftypes.String, newTeamID),
+	}
+	maps.Copy(prior, shared)
+	maps.Copy(planned, shared)
+
+	priorRaw := nullObjectWith(ctx, t, schema.Type(), prior)
+	req := fwresource.UpdateRequest{
+		Plan:   tfsdk.Plan{Schema: schema, Raw: nullObjectWith(ctx, t, schema.Type(), planned)},
+		State:  tfsdk.State{Schema: schema, Raw: priorRaw},
+		Config: tfsdk.Config{Schema: schema, Raw: nullObjectWith(ctx, t, schema.Type(), planned)},
+	}
+	resp := fwresource.UpdateResponse{State: tfsdk.State{Schema: schema, Raw: priorRaw}}
+
+	ts.Update(ctx, req, &resp)
+
+	if diagnosticsContain(resp.Diagnostics, "Could not add new owner team") {
+		t.Fatalf("Update() failed on an attach that had already applied, so the delete it exists to retry was never reached: %v", resp.Diagnostics)
+	}
+	if resp.Diagnostics.HasError() {
+		t.Fatalf("Update() diagnostics = %v, want the swap to have completed", resp.Diagnostics)
+	}
+	if got := requests.Load(); got < 4 {
+		t.Fatalf("Made %d requests, want the previous owner to have been read back and deleted; bodies were %v", got, bodies())
+	}
+
+	var deleted bool
+	for _, body := range bodies() {
+		if strings.Contains(body, "teamSuiteDelete") && strings.Contains(body, previousEdgeID) {
+			deleted = true
+		}
+	}
+	if !deleted {
+		t.Errorf("No teamSuiteDelete for the previous owner edge %q; bodies were %v", previousEdgeID, bodies())
+	}
+
+	var persisted testSuiteModel
+	if diags := resp.State.Get(ctx, &persisted); diags.HasError() {
+		t.Fatalf("Reading the persisted state = %v", diags)
+	}
+	if got := persisted.TeamOwnerId.ValueString(); got != newTeamID {
+		t.Errorf("Persisted team_owner_id = %q, want %q: the delete succeeded, so the swap is complete", got, newTeamID)
+	}
+}
+
+// The ordinary owner swap, where the attach applies for the first time and the previous owner's
+// edge comes from its response rather than from a read-back. Only the already-owned path had
+// coverage, which left the edge ids this path takes from that response unguarded: sending the wrong
+// one to teamSuiteDelete detaches the wrong team, or nothing at all, and the swap looks successful
+// either way.
+func TestTestSuiteUpdateSwapsTheOwnerTeam(t *testing.T) {
+	t.Parallel()
+
+	const (
+		previousTeamID = "previous-team-id"
+		newTeamID      = "new-team-id"
+		previousEdgeID = "previous-team-suite-id"
+		newEdgeID      = "new-team-suite-id"
+	)
+
+	server, requests, bodies := newRecordingRetryStub(t,
+		// The PATCH applies.
+		stubResponse{status: http.StatusOK, body: `{
+			"id": "suite-uuid", "graphql_id": "suite-id", "api_token": "token",
+			"name": "renamed-suite", "slug": "renamed-suite", "default_branch": "main"
+		}`},
+		// createTestSuiteTeam applies, and answers with both owners the suite now has.
+		stubResponse{status: http.StatusOK, body: fmt.Sprintf(`{"data":{"teamSuiteCreate":{
+			"suite": {"teams": {"edges": [
+				{"node": {"id": %q, "uuid": "previous-team-suite-uuid", "team": {"id": %q}}},
+				{"node": {"id": %q, "uuid": "new-team-suite-uuid", "team": {"id": %q}}}
+			]}},
+			"teamSuite": {"id": %q, "teamSuiteUuid": "new-team-suite-uuid", "accessLevel": "MANAGE_AND_READ",
+				"team": {"id": %q}, "suite": {"id": "suite-id"}}
+		}}}`, previousEdgeID, previousTeamID, newEdgeID, newTeamID, newEdgeID, newTeamID)},
+		// deleteTestSuiteTeam for the previous owner.
+		stubResponse{status: http.StatusOK, body: fmt.Sprintf(`{"data":{"teamSuiteDelete":{"deletedTeamSuiteID":%q,"clientMutationId":""}}}`, previousEdgeID)},
+	)
+	defer server.Close()
+
+	ts := &testSuiteResource{client: newRetryTestClient(t, server.URL, 0, time.Millisecond)}
+
+	ctx := t.Context()
+	schema := resourceSchema(ctx, t, ts)
+
+	shared := map[string]tftypes.Value{
+		"id":             tftypes.NewValue(tftypes.String, "suite-id"),
+		"uuid":           tftypes.NewValue(tftypes.String, "suite-uuid"),
+		"default_branch": tftypes.NewValue(tftypes.String, "main"),
+	}
+	prior := map[string]tftypes.Value{
+		"name":          tftypes.NewValue(tftypes.String, "original-suite"),
+		"slug":          tftypes.NewValue(tftypes.String, "original-suite"),
+		"team_owner_id": tftypes.NewValue(tftypes.String, previousTeamID),
+	}
+	planned := map[string]tftypes.Value{
+		"name":          tftypes.NewValue(tftypes.String, "renamed-suite"),
+		"slug":          tftypes.NewValue(tftypes.String, "renamed-suite"),
+		"team_owner_id": tftypes.NewValue(tftypes.String, newTeamID),
+	}
+	maps.Copy(prior, shared)
+	maps.Copy(planned, shared)
+
+	priorRaw := nullObjectWith(ctx, t, schema.Type(), prior)
+	req := fwresource.UpdateRequest{
+		Plan:   tfsdk.Plan{Schema: schema, Raw: nullObjectWith(ctx, t, schema.Type(), planned)},
+		State:  tfsdk.State{Schema: schema, Raw: priorRaw},
+		Config: tfsdk.Config{Schema: schema, Raw: nullObjectWith(ctx, t, schema.Type(), planned)},
+	}
+	resp := fwresource.UpdateResponse{State: tfsdk.State{Schema: schema, Raw: priorRaw}}
+
+	ts.Update(ctx, req, &resp)
+
+	if resp.Diagnostics.HasError() {
+		t.Fatalf("Update() diagnostics = %v, want the swap to have completed", resp.Diagnostics)
+	}
+	if got := requests.Load(); got != 3 {
+		t.Fatalf("Made %d requests, want 3: the PATCH, the attach and the detach; bodies were %v", got, bodies())
+	}
+
+	var deleted []string
+	for _, body := range bodies() {
+		if strings.Contains(body, "teamSuiteDelete") {
+			deleted = append(deleted, body)
+		}
+		if strings.Contains(body, "getTestSuite") {
+			t.Errorf("Read the suite's teams back on a first-time attach, whose response already lists them: %s", body)
+		}
+	}
+	if len(deleted) != 1 {
+		t.Fatalf("Made %d teamSuiteDelete requests, want 1; bodies were %v", len(deleted), bodies())
+	}
+	if !strings.Contains(deleted[0], previousEdgeID) {
+		t.Errorf("teamSuiteDelete = %s\nwant the previous owner's edge %q", deleted[0], previousEdgeID)
+	}
+	if strings.Contains(deleted[0], newEdgeID) {
+		t.Errorf("teamSuiteDelete = %s\nwant the new owner's edge %q left attached", deleted[0], newEdgeID)
+	}
+
+	var persisted testSuiteModel
+	if diags := resp.State.Get(ctx, &persisted); diags.HasError() {
+		t.Fatalf("Reading the persisted state = %v", diags)
+	}
+	if got := persisted.TeamOwnerId.ValueString(); got != newTeamID {
+		t.Errorf("Persisted team_owner_id = %q, want %q", got, newTeamID)
+	}
+	if got := persisted.Slug.ValueString(); got != "renamed-suite" {
+		t.Errorf("Persisted slug = %q, want %q: the next PATCH addresses the suite by it", got, "renamed-suite")
+	}
 }
