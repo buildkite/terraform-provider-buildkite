@@ -143,9 +143,11 @@ defer func() {
 }()
 ```
 
-Two things to watch for once state is always persisted:
+Three things to watch for once state is always persisted:
 
-Correct anything copied from the plan before the call that applies it. `resource_pipeline.go` syncs `state.Archived` to the plan early, so the deferred persist resets it unless the archive mutation actually ran. A value that was planned but never applied is worse than a missing one: under `-refresh=false` the next plan sees no diff and the change is never made.
+Record a value where the call that applies it succeeds, rather than copying it from the plan ahead of that call. `resource_pipeline.go` sets `state.Archived` inside the archive and unarchive branches themselves, so a step that never ran cannot persist what the plan asked for. A value that was planned but never applied is worse than a missing one: under `-refresh=false` the next plan sees no diff and the change is never made.
+
+Settle a value that prior state can leave null. An attribute added without a schema version bump is absent from older state and decodes as null, while the plan carries it known from its default, and Terraform fails an apply whose state disagrees with a known planned value. `resource_pipeline.go` settles `archived` to false before registering the persist for that reason.
 
 `Create` is different from `Update`. Terraform taints an instance whose `Create` returns both state and an error, and a tainted instance is replaced rather than updated on the next apply. For a resource that really was created, that trade is worth making: a taint is cleared with `terraform untaint`, while an orphan needs `terraform import`. For a resource that only applies settings to something that already exists, such as `buildkite_organization`, it is not, because being replaced runs `Delete`. Those record nothing and warn about what they left behind instead.
 
