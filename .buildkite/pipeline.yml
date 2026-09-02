@@ -74,7 +74,7 @@ steps:
     secrets:
       GITHUB_TOKEN: SCORECARD_TOKEN
     plugins:
-      - ossf-scorecard#v1.0.1:
+      - ossf-scorecard#v1.1.0:
           github_token: $$GITHUB_TOKEN
     retry:
       automatic:
