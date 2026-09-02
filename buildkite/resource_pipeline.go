@@ -1378,6 +1378,20 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 		return
 	}
 
+	// The unarchive below is the first mutation this method applies, so every path out from here
+	// has to record what landed: returning without setting state would drop it, along with
+	// everything the steps after it changed, and leave Terraform planning the same change again.
+	// Deferred rather than called at each error path so a new early return cannot forget it.
+	// state.Archived and useSlugValue are corrected by the step that owns them, and read here at
+	// call time, so a step that never ran cannot persist the value the plan asked for. Getting that
+	// wrong is invisible under -refresh=false, where the next plan sees no diff and the change is
+	// never made at all.
+	useSlugValue := state.Slug.ValueString()
+	defer func() {
+		state.Slug = types.StringValue(useSlugValue)
+		resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+	}()
+
 	// Unarchive before updating: the API rejects updates to archived pipelines.
 	if state.Archived.ValueBool() && !plan.Archived.ValueBool() {
 		err := retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
@@ -1391,6 +1405,7 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 			)
 			return
 		}
+		state.Archived = types.BoolValue(false)
 	}
 
 	var response *updatePipelineResponse
@@ -1409,34 +1424,18 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 	}
 
 	// Archive last (see below): the REST API rejects updates to archived pipelines, so
-	// the slug and provider settings REST calls must complete before archiving. Capture
-	// the decision here because state.Archived is synced to plan further down.
-	needsArchive := !state.Archived.ValueBool() && plan.Archived.ValueBool()
+	// the slug and provider settings REST calls must complete before archiving.
+	archived := state.Archived
+	needsArchive := !archived.ValueBool() && plan.Archived.ValueBool()
 
-	useSlugValue := response.PipelineUpdate.Pipeline.Slug
+	useSlugValue = response.PipelineUpdate.Pipeline.Slug
 	resp.Diagnostics.Append(resp.Private.SetKey(ctx, "slugSource", []byte(`{"source": "api"}`))...)
 
 	setPipelineModel(&state, &response.PipelineUpdate.Pipeline)
-	// The updatePipeline response predates any archive/unarchive mutation above, so its archived
-	// field reflects the old state. Sync to plan to avoid a provider inconsistency error.
-	state.Archived = plan.Archived
-
-	// The pipeline mutation above has applied, so everything from here on must persist it even when
-	// it fails: returning without setting state would drop every updated field and leave Terraform
-	// planning the same change again. Deferred rather than called at each error path so a new early
-	// return cannot forget it, and both values it corrects are read at call time: useSlugValue so a
-	// rename that failed persists the slug the pipeline actually has, and archived so a step failing
-	// before the archive mutation does not persist the archived state the plan asked for. Getting
-	// that wrong is invisible under -refresh=false, where the next plan sees no diff and the
-	// pipeline is never archived at all.
-	archiveApplied := false
-	defer func() {
-		if needsArchive && !archiveApplied {
-			state.Archived = types.BoolValue(false)
-		}
-		state.Slug = types.StringValue(useSlugValue)
-		resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
-	}()
+	// The updatePipeline response predates the archive and unarchive mutations either side of it,
+	// so its archived field reflects the old state. Carry across what the unarchive above already
+	// established; the archive below sets it when it applies.
+	state.Archived = archived
 
 	var configSlug types.String
 	resp.Diagnostics.Append(req.Config.GetAttribute(ctx, path.Root("slug"), &configSlug)...)
@@ -1474,16 +1473,19 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 			return
 		}
 
-		// update default team in state
-		previousTeamID := state.DefaultTeamId.ValueString()
-		state.DefaultTeamId = types.StringValue(r.TeamPipelineCreate.TeamPipelineEdge.Node.Team.Id)
-
 		// remove the old team
+		previousTeamID := state.DefaultTeamId.ValueString()
 		err = p.findAndRemoveTeam(ctx, previousTeamID, useSlugValue, "")
 		if err != nil {
 			resp.Diagnostics.AddError("Could not remove previous default team", err.Error())
 			return
 		}
+
+		// Only once the old team is detached, because both are attached until then. Recording the
+		// new one first leaves the next plan with no diff to retry the detach from, and Read only
+		// checks that the recorded team is still attached, so the old team would keep its access
+		// with nothing left to surface it.
+		state.DefaultTeamId = types.StringValue(r.TeamPipelineCreate.TeamPipelineEdge.Node.Team.Id)
 	}
 
 	if plan.ProviderSettings != nil {
@@ -1521,7 +1523,7 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 			)
 			return
 		}
-		archiveApplied = true
+		state.Archived = types.BoolValue(true)
 	}
 }
 

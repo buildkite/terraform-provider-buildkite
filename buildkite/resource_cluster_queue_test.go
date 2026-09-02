@@ -3,6 +3,7 @@ package buildkite
 import (
 	"context"
 	"fmt"
+	"maps"
 	"net/http"
 	"regexp"
 	"strings"
@@ -757,5 +758,76 @@ func TestClusterQueueUpdatePersistsThePauseWhenALaterStepFails(t *testing.T) {
 	}
 	if !persisted.DispatchPaused.ValueBool() {
 		t.Error("Persisted dispatch_paused = false, want true: the pause applied, so state has to say so")
+	}
+}
+
+// The mirror of the pause case above. Resuming dispatch is its own mutation, applied before the
+// queue mutation that follows it, so a failure there must not leave state calling the queue paused
+// when dispatch is running again.
+func TestClusterQueueUpdatePersistsTheResumeWhenALaterStepFails(t *testing.T) {
+	t.Parallel()
+
+	server, requests := newRetryStub(t,
+		// resumeDispatchClusterQueue applies.
+		stubResponse{status: http.StatusOK, body: `{"data":{"clusterQueueResumeDispatch":{"clusterQueue":{
+			"id": "queue-id", "uuid": "queue-uuid", "key": "a-queue", "dispatchPaused": false
+		}}}}`},
+		// updateClusterQueue does not.
+		stubResponse{status: http.StatusOK, body: `{"errors":[{"message":"queue update exploded"}]}`},
+	)
+	defer server.Close()
+
+	client := newRetryTestClient(t, server.URL, 0, time.Millisecond)
+	orgID := "organization-id"
+	client.organizationId = &orgID
+	cq := &clusterQueueResource{client: client}
+
+	ctx := t.Context()
+	var schemaResp fwresource.SchemaResponse
+	cq.Schema(ctx, fwresource.SchemaRequest{}, &schemaResp)
+	if schemaResp.Diagnostics.HasError() {
+		t.Fatalf("Schema() diagnostics = %v", schemaResp.Diagnostics)
+	}
+	schema := schemaResp.Schema
+
+	shared := map[string]tftypes.Value{
+		"id":                   tftypes.NewValue(tftypes.String, "queue-id"),
+		"uuid":                 tftypes.NewValue(tftypes.String, "queue-uuid"),
+		"cluster_id":           tftypes.NewValue(tftypes.String, "cluster-id"),
+		"cluster_uuid":         tftypes.NewValue(tftypes.String, "cluster-uuid"),
+		"key":                  tftypes.NewValue(tftypes.String, "a-queue"),
+		"retry_agent_affinity": tftypes.NewValue(tftypes.String, RetryAgentAffinityPreferWarmest),
+	}
+	prior := map[string]tftypes.Value{"dispatch_paused": tftypes.NewValue(tftypes.Bool, true)}
+	planned := map[string]tftypes.Value{
+		"dispatch_paused": tftypes.NewValue(tftypes.Bool, false),
+		"description":     tftypes.NewValue(tftypes.String, "a new description"),
+	}
+	maps.Copy(prior, shared)
+	maps.Copy(planned, shared)
+
+	priorRaw := nullObjectWith(ctx, t, schema.Type(), prior)
+	req := fwresource.UpdateRequest{
+		Plan:   tfsdk.Plan{Schema: schema, Raw: nullObjectWith(ctx, t, schema.Type(), planned)},
+		State:  tfsdk.State{Schema: schema, Raw: priorRaw},
+		Config: tfsdk.Config{Schema: schema, Raw: nullObjectWith(ctx, t, schema.Type(), planned)},
+	}
+	resp := fwresource.UpdateResponse{State: tfsdk.State{Schema: schema, Raw: priorRaw}}
+
+	cq.Update(ctx, req, &resp)
+
+	if got := requests.Load(); got < 2 {
+		t.Fatalf("Made %d requests, want the resume to have applied before the failure", got)
+	}
+	if !diagnosticsContain(resp.Diagnostics, "Unable to update Cluster Queue") {
+		t.Fatalf("Update() diagnostics = %v, want the queue update failure reported", resp.Diagnostics)
+	}
+
+	var persisted clusterQueueResourceModel
+	if diags := resp.State.Get(ctx, &persisted); diags.HasError() {
+		t.Fatalf("Reading the persisted state = %v", diags)
+	}
+	if persisted.DispatchPaused.ValueBool() {
+		t.Error("Persisted dispatch_paused = true, want false: the resume applied, so state has to say so")
 	}
 }

@@ -2662,3 +2662,158 @@ func TestPipelineUpdatePersistsStateWhenALaterStepFails(t *testing.T) {
 		})
 	}
 }
+
+// Update attaches the new default team before detaching the old one, so both are attached until
+// findAndRemoveTeam succeeds. Recording the new team before that point is worse than recording
+// nothing: the next plan compares the config against it, finds no diff, and never retries the
+// detach, while Read only checks that the recorded team is still attached and so never notices the
+// old one. The old team keeps MANAGE_BUILD_AND_READ on the pipeline with nothing left to show it.
+func TestPipelineUpdateKeepsThePreviousDefaultTeamWhenTheDetachFails(t *testing.T) {
+	t.Parallel()
+
+	const (
+		previousTeamID = "team-id"
+		newTeamID      = "new-team-id"
+	)
+
+	server, requests := newRetryStub(t,
+		// pipelineUpdate applies.
+		stubResponse{status: http.StatusOK, body: `{"data":{"pipelineUpdate":{"pipeline":{
+			"id": "pipeline-id", "pipelineUuid": "pipeline-uuid", "name": "p", "slug": "p",
+			"defaultBranch": "main", "description": "", "archived": false,
+			"repository": {"url": "git@github.com:org/repo.git"}, "steps": {"yaml": "steps: []"},
+			"tags": [], "teams": {"edges": []}
+		}}}}`},
+		// The new team is attached.
+		stubResponse{status: http.StatusOK, body: fmt.Sprintf(`{"data":{"teamPipelineCreate":{"teamPipelineEdge":{"node":{
+			"id": "team-pipeline-id", "uuid": "team-pipeline-uuid", "pipelineAccessLevel": "MANAGE_BUILD_AND_READ",
+			"team": {"id": %q}, "pipeline": {"id": "pipeline-id"}
+		}}}}}`, newTeamID)},
+		// Detaching the old one does not. A GraphQL error in a 200 body is non-retryable.
+		stubResponse{status: http.StatusOK, body: `{"errors":[{"message":"team lookup exploded"}]}`},
+	)
+	defer server.Close()
+
+	p := &pipelineResource{client: newRetryTestClient(t, server.URL, 0, time.Millisecond)}
+
+	ctx := t.Context()
+	var schemaResp fwresource.SchemaResponse
+	p.Schema(ctx, fwresource.SchemaRequest{}, &schemaResp)
+	if schemaResp.Diagnostics.HasError() {
+		t.Fatalf("Schema() diagnostics = %v", schemaResp.Diagnostics)
+	}
+	schema := schemaResp.Schema
+
+	prior := nullObjectWith(ctx, t, schema.Type(), map[string]tftypes.Value{
+		"id":              tftypes.NewValue(tftypes.String, "pipeline-id"),
+		"name":            tftypes.NewValue(tftypes.String, "p"),
+		"slug":            tftypes.NewValue(tftypes.String, "p"),
+		"repository":      tftypes.NewValue(tftypes.String, "git@github.com:org/repo.git"),
+		"steps":           tftypes.NewValue(tftypes.String, "steps: []"),
+		"default_team_id": tftypes.NewValue(tftypes.String, previousTeamID),
+		"archived":        tftypes.NewValue(tftypes.Bool, false),
+	})
+	planned := nullObjectWith(ctx, t, schema.Type(), map[string]tftypes.Value{
+		"id":              tftypes.NewValue(tftypes.String, "pipeline-id"),
+		"name":            tftypes.NewValue(tftypes.String, "p"),
+		"repository":      tftypes.NewValue(tftypes.String, "git@github.com:org/repo.git"),
+		"steps":           tftypes.NewValue(tftypes.String, "steps: []"),
+		"default_team_id": tftypes.NewValue(tftypes.String, newTeamID),
+		"archived":        tftypes.NewValue(tftypes.Bool, false),
+	})
+
+	req := fwresource.UpdateRequest{
+		Plan:   tfsdk.Plan{Schema: schema, Raw: planned},
+		State:  tfsdk.State{Schema: schema, Raw: prior},
+		Config: tfsdk.Config{Schema: schema, Raw: planned},
+	}
+	resp := fwresource.UpdateResponse{State: tfsdk.State{Schema: schema, Raw: prior}}
+
+	p.Update(ctx, req, &resp)
+
+	if got := requests.Load(); got < 3 {
+		t.Fatalf("Made %d requests, want the new team to have been attached before the detach failed", got)
+	}
+	if !diagnosticsContain(resp.Diagnostics, "Could not remove previous default team") {
+		t.Fatalf("Update() diagnostics = %v, want the detach failure reported", resp.Diagnostics)
+	}
+
+	var persisted pipelineResourceModel
+	if diags := resp.State.Get(ctx, &persisted); diags.HasError() {
+		t.Fatalf("Reading the persisted state = %v", diags)
+	}
+	if got := persisted.Name.ValueString(); got != "p" {
+		t.Errorf("Persisted name = %q, want %q: the pipeline mutation still applied", got, "p")
+	}
+	if got := persisted.DefaultTeamId.ValueString(); got != previousTeamID {
+		t.Errorf("Persisted default_team_id = %q, want %q: the old team is still attached, so the next plan has to retry the detach", got, previousTeamID)
+	}
+}
+
+// Unarchiving is the first mutation Update applies, and the pipeline mutation after it can still
+// fail. Returning without recording the unarchive leaves state calling the pipeline archived while
+// it is live and accepting builds, and under -refresh=false nothing corrects that before the next
+// plan re-runs the unarchive against a pipeline that is no longer archived.
+func TestPipelineUpdatePersistsTheUnarchiveWhenTheMutationFails(t *testing.T) {
+	t.Parallel()
+
+	server, requests := newRetryStub(t,
+		// pipelineUnarchive applies.
+		stubResponse{status: http.StatusOK, body: `{"data":{"pipelineUnarchive":{"clientMutationId":""}}}`},
+		// updatePipeline does not. A GraphQL error in a 200 body is non-retryable.
+		stubResponse{status: http.StatusOK, body: `{"errors":[{"message":"pipeline update exploded"}]}`},
+	)
+	defer server.Close()
+
+	p := &pipelineResource{client: newRetryTestClient(t, server.URL, 0, time.Millisecond)}
+
+	ctx := t.Context()
+	var schemaResp fwresource.SchemaResponse
+	p.Schema(ctx, fwresource.SchemaRequest{}, &schemaResp)
+	if schemaResp.Diagnostics.HasError() {
+		t.Fatalf("Schema() diagnostics = %v", schemaResp.Diagnostics)
+	}
+	schema := schemaResp.Schema
+
+	shared := map[string]tftypes.Value{
+		"id":         tftypes.NewValue(tftypes.String, "pipeline-id"),
+		"name":       tftypes.NewValue(tftypes.String, "p"),
+		"repository": tftypes.NewValue(tftypes.String, "git@github.com:org/repo.git"),
+		"steps":      tftypes.NewValue(tftypes.String, "steps: []"),
+	}
+	prior := map[string]tftypes.Value{
+		"slug":     tftypes.NewValue(tftypes.String, "p"),
+		"archived": tftypes.NewValue(tftypes.Bool, true),
+	}
+	planned := map[string]tftypes.Value{"archived": tftypes.NewValue(tftypes.Bool, false)}
+	maps.Copy(prior, shared)
+	maps.Copy(planned, shared)
+
+	priorRaw := nullObjectWith(ctx, t, schema.Type(), prior)
+	req := fwresource.UpdateRequest{
+		Plan:   tfsdk.Plan{Schema: schema, Raw: nullObjectWith(ctx, t, schema.Type(), planned)},
+		State:  tfsdk.State{Schema: schema, Raw: priorRaw},
+		Config: tfsdk.Config{Schema: schema, Raw: nullObjectWith(ctx, t, schema.Type(), planned)},
+	}
+	resp := fwresource.UpdateResponse{State: tfsdk.State{Schema: schema, Raw: priorRaw}}
+
+	p.Update(ctx, req, &resp)
+
+	if got := requests.Load(); got < 2 {
+		t.Fatalf("Made %d requests, want the unarchive to have applied before the failure", got)
+	}
+	if !diagnosticsContain(resp.Diagnostics, "Unable to update Pipeline") {
+		t.Fatalf("Update() diagnostics = %v, want the pipeline mutation failure reported", resp.Diagnostics)
+	}
+
+	var persisted pipelineResourceModel
+	if diags := resp.State.Get(ctx, &persisted); diags.HasError() {
+		t.Fatalf("Reading the persisted state = %v", diags)
+	}
+	if persisted.Archived.ValueBool() {
+		t.Error("Persisted archived = true, want false: the unarchive applied, so state has to say so")
+	}
+	if got := persisted.Slug.ValueString(); got != "p" {
+		t.Errorf("Persisted slug = %q, want %q: the rename never ran", got, "p")
+	}
+}

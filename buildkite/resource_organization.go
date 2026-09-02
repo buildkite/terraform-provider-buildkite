@@ -144,9 +144,12 @@ func (o *organizationResource) Create(ctx context.Context, req resource.CreateRe
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	// Whether this apply is responsible for what is in place, which is what the warnings below turn on.
+	// What this apply has already changed on the organization. Create records no state when a later
+	// step fails, so anything collected here has to be reported instead.
+	var applied []string
+
 	plannedAllowlist := allowedApiIpAddressesValue(plan.AllowedApiIpAddresses)
-	allowlistApplied := plannedAllowlist != allowedApiIpAddressesValue(current)
+	allowlistChanged := plannedAllowlist != allowedApiIpAddressesValue(current)
 	if err := o.updateAllowedApiIpAddresses(ctx, *org, plan.AllowedApiIpAddresses, current); err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to create Organization settings",
@@ -154,14 +157,26 @@ func (o *organizationResource) Create(ctx context.Context, req resource.CreateRe
 		)
 		return
 	}
+	if allowlistChanged {
+		change := fmt.Sprintf("the API IP allowlist was set to %q", plannedAllowlist)
+		if plannedAllowlist == "" {
+			change = "the API IP allowlist was cleared"
+		}
+		applied = append(applied, change)
+	}
 
 	if !plan.Enforce2FA.IsNull() && !plan.Enforce2FA.IsUnknown() && plan.Enforce2FA.ValueBool() != organization.Organization.MembersRequireTwoFactorAuthentication {
 		_, err = setOrganization2FA(ctx, o.client.genqlient, *org, plan.Enforce2FA.ValueBool())
 		if err != nil {
 			resp.Diagnostics.AddError("Unable to set 2FA", err.Error())
-			warnAboutUnrecordedAllowlist(allowlistApplied, plannedAllowlist, &resp.Diagnostics)
+			warnAboutUnrecordedChanges(applied, &resp.Diagnostics)
 			return
 		}
+		change := "two-factor authentication enforcement was removed"
+		if plan.Enforce2FA.ValueBool() {
+			change = "two-factor authentication was enforced for all members"
+		}
+		applied = append(applied, change)
 	}
 
 	state.ID = types.StringValue(*org)
@@ -171,7 +186,7 @@ func (o *organizationResource) Create(ctx context.Context, req resource.CreateRe
 
 	o.updateAPISettings(ctx, &config, &plan, nil, &state, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
-		warnAboutUnrecordedAllowlist(allowlistApplied, plannedAllowlist, &resp.Diagnostics)
+		warnAboutUnrecordedChanges(applied, &resp.Diagnostics)
 		return
 	}
 
@@ -335,25 +350,21 @@ func (o *organizationResource) updateAllowedApiIpAddresses(ctx context.Context, 
 	return err
 }
 
-// warnAboutUnrecordedAllowlist reports an allowlist change that Create applied before failing at a
-// later step. Create deliberately records no state in that case, because this resource applies
-// settings to an organization that already exists rather than creating one: every step compares
-// before it mutates, so a re-apply converges, while state returned alongside an error would taint
-// the instance, and a tainted instance is replaced by a Delete that clears the allowlist. The cost
-// of that choice is that nothing in state says the change took effect, so say it here.
-func warnAboutUnrecordedAllowlist(applied bool, allowlist string, diags *diag.Diagnostics) {
-	if !applied {
+// warnAboutUnrecordedChanges reports the settings Create applied before failing at a later step.
+// Create deliberately records no state in that case, because this resource applies settings to an
+// organization that already exists rather than creating one: every step compares before it mutates,
+// so a re-apply converges, while state returned alongside an error would taint the instance, and a
+// tainted instance is replaced by a Delete that clears the allowlist. The cost of that choice is
+// that nothing in state says the changes took effect, so say it here.
+func warnAboutUnrecordedChanges(applied []string, diags *diag.Diagnostics) {
+	if len(applied) == 0 {
 		return
 	}
 
-	change := fmt.Sprintf("set to %q", allowlist)
-	if allowlist == "" {
-		change = "cleared"
-	}
 	diags.AddWarning(
-		"API IP allowlist changed but not recorded",
-		fmt.Sprintf("The API IP allowlist was %s before this operation failed. That change is not recorded in state, so it stays "+
-			"in effect until this resource is applied again or the allowlist is changed in the Buildkite web UI.", change),
+		"Organization settings changed but not recorded",
+		fmt.Sprintf("Before this operation failed, %s. Those changes are not recorded in state, so they stay in effect "+
+			"until this resource is applied again or they are changed in the Buildkite web UI.", strings.Join(applied, ", and ")),
 	)
 }
 

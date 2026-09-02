@@ -61,12 +61,14 @@ Optional:
 
 ## When an operation fails partway
 
-Creating or updating a resource can take several API calls, and a failure in a later one does not undo the calls that already succeeded. Where the provider can tell what applied, it records that in state alongside the error, so the next plan works from what Buildkite actually has rather than proposing the whole change again.
+Creating or updating a resource can take several API calls, and a failure in a later one does not undo the calls that already succeeded. Where a resource can tell what applied, it records that in state alongside the error, so the next plan works from what Buildkite actually has rather than proposing the whole change again. Several resources do this, including `buildkite_pipeline` and `buildkite_cluster_queue`.
 
-Terraform marks a resource as tainted when its creation returns both state and an error, and a tainted resource is replaced rather than updated on the next apply. For `buildkite_pipeline` that means the next plan proposes destroying and recreating the pipeline, which loses its build history. Check the plan after a create that failed partway, and if the pipeline itself is sound and only a later setting did not apply, clear the mark so the next apply finishes the configuration in place:
+Terraform marks a resource as tainted when its creation returns both state and an error, and a tainted resource is replaced rather than updated on the next apply. Replacing a `buildkite_pipeline` issues a new `webhook_url` and `badge_url`, and forces every `buildkite_pipeline_schedule` and `buildkite_pipeline_team` that points at it to be replaced as well. Check the plan after a create that failed partway, and if the pipeline itself is sound and only a later setting did not apply, clear the mark so the next apply finishes the configuration in place:
 
 ```shell
 terraform untaint buildkite_pipeline.example
 ```
 
-The `buildkite_organization` resource is the exception. It applies settings to an organization that already exists rather than creating one, so a failed apply records nothing and can simply be applied again. When an apply sets the API IP allowlist and then fails at a later step, the provider warns that the allowlist is in place but unrecorded; it stays in place until the resource is applied again or the allowlist is cleared in the Buildkite web UI.
+Clearing the mark matters more when the provider is configured with `archive_pipeline_on_delete`. Replacing a pipeline then archives it rather than deleting it, and the archived pipeline keeps its slug, so the recreate that follows collides with it.
+
+Creating a `buildkite_organization` is the exception, and records nothing when it fails. The resource applies settings to an organization that already exists rather than creating one, and every step compares before it mutates, so the apply can simply be run again. Updating one records what applied, like the resources above. When a create changes settings such as the API IP allowlist or two-factor enforcement and then fails at a later step, the provider warns which ones are in place but unrecorded; they stay in effect until the resource is applied again or they are changed in the Buildkite web UI.

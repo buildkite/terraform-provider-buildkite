@@ -770,66 +770,173 @@ func TestOrganizationUpdatePersistsTheEnforced2FAWhenTheAPISettingsPatchFails(t 
 // each step compares before it mutates. So the recoverable answer to a half-applied Create is to
 // record nothing and let the next apply re-run it. Recording the part that applied instead would
 // taint the instance, and a tainted instance is replaced rather than updated: Delete would clear the
-// API IP allowlist before Create put it back. What the practitioner does need is to be told the
-// allowlist is live on their organization despite the failure.
-func TestOrganizationCreateWarnsAboutTheUnrecordedAllowlist(t *testing.T) {
+// API IP allowlist before Create put it back. What the practitioner does need is to be told which
+// settings are live on their organization despite the failure.
+func TestOrganizationCreateWarnsAboutUnrecordedChanges(t *testing.T) {
 	t.Parallel()
+
+	const configuredAllowlist = "1.2.3.4/32"
+
+	organizationIs := func(allowlist string, enforced2FA bool) stubResponse {
+		return stubResponse{status: http.StatusOK, body: fmt.Sprintf(`{"data":{"organization":{
+			"id": "organization-id",
+			"uuid": "organization-uuid",
+			"allowedApiIpAddresses": %q,
+			"membersRequireTwoFactorAuthentication": %t
+		}}}`, allowlist, enforced2FA)}
+	}
+	allowlistUpdated := stubResponse{status: http.StatusOK, body: `{"data":{"organizationApiIpAllowlistUpdate":{"organization":{
+		"id": "organization-id",
+		"uuid": "organization-uuid",
+		"allowedApiIpAddresses": "",
+		"membersRequireTwoFactorAuthentication": false
+	}}}}`}
+	twoFAUpdated := stubResponse{status: http.StatusOK, body: `{"data":{"organizationEnforceTwoFactorAuthenticationForMembersUpdate":{"organization":{
+		"id": "organization-id",
+		"membersRequireTwoFactorAuthentication": true
+	}}}}`}
+	graphQLFails := stubResponse{status: http.StatusOK, body: `{"errors":[{"message":"mutation exploded"}]}`}
+	apiSettingsReadable := stubResponse{status: http.StatusOK, body: `{"revoke_inactive_tokens_after_days":null,"restrict_user_api_token_creation":false}`}
+	patchFails := stubResponse{status: http.StatusInternalServerError, body: `{"message":"patch failed"}`}
 
 	tests := []struct {
 		name string
-		// What the organization's allowlist already is, which decides whether this apply changes it.
-		remote     string
-		wantWarned bool
+		// The allowlist the config asks for. Unset means the attribute is absent, which clears it.
+		configuredAllowlist string
+		// Set when the config manages revoke_inactive_tokens_after, which is what makes Create reach
+		// the api-settings PATCH rather than failing at the 2FA mutation before it.
+		configuredRevoke string
+		responses        []stubResponse
+		wantError        string
+		// Substrings the single warning has to contain, or none to assert there is no warning.
+		wantWarned []string
 	}{
 		{
-			name:       "allowlist applied by this operation",
-			remote:     "",
-			wantWarned: true,
+			name:                "allowlist applied, then the 2FA mutation fails",
+			configuredAllowlist: configuredAllowlist,
+			responses:           []stubResponse{organizationIs("", false), allowlistUpdated, graphQLFails},
+			wantError:           "Unable to set 2FA",
+			wantWarned:          []string{`allowlist was set to "1.2.3.4/32"`},
 		},
 		{
 			// Already what the config asks for, so updateAllowedApiIpAddresses makes no request and
 			// this apply is not responsible for the allowlist being in place.
-			name:       "allowlist already matched",
-			remote:     "1.2.3.4/32",
-			wantWarned: false,
+			name:                "allowlist already matched",
+			configuredAllowlist: configuredAllowlist,
+			responses:           []stubResponse{organizationIs(configuredAllowlist, false), graphQLFails},
+			wantError:           "Unable to set 2FA",
+		},
+		{
+			// No allowlist in the config against an organization that has one, which clears it. The
+			// wording differs from a set, because "set to \"\"" would read as a change to nothing.
+			name:       "allowlist cleared, then the 2FA mutation fails",
+			responses:  []stubResponse{organizationIs(configuredAllowlist, false), allowlistUpdated, graphQLFails},
+			wantError:  "Unable to set 2FA",
+			wantWarned: []string{"allowlist was cleared"},
+		},
+		{
+			// 2FA is as sticky as the allowlist and just as absent from state, so the failure after it
+			// has to name it. The allowlist is unchanged here, so it must not be named.
+			name:             "2FA applied, then the api-settings PATCH fails",
+			configuredRevoke: "DAYS_30",
+			responses:        []stubResponse{organizationIs("", false), twoFAUpdated, apiSettingsReadable, patchFails},
+			wantError:        "Unable to update organization API settings",
+			wantWarned:       []string{"two-factor authentication was enforced"},
 		},
 	}
 
 	for _, testCase := range tests {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
-			runOrganizationCreateAllowlistWarningCase(t, testCase.remote, testCase.wantWarned)
+
+			server, requests := newRetryStub(t, testCase.responses...)
+			defer server.Close()
+
+			client := newRetryTestClient(t, server.URL, 0, time.Millisecond)
+			orgID := "organization-id"
+			client.organizationId = &orgID
+			o := &organizationResource{client: client}
+
+			ctx := t.Context()
+			var schemaResp fwresource.SchemaResponse
+			o.Schema(ctx, fwresource.SchemaRequest{}, &schemaResp)
+			if schemaResp.Diagnostics.HasError() {
+				t.Fatalf("Schema() diagnostics = %v", schemaResp.Diagnostics)
+			}
+			schema := schemaResp.Schema
+
+			attributes := map[string]tftypes.Value{"enforce_2fa": tftypes.NewValue(tftypes.Bool, true)}
+			if testCase.configuredAllowlist != "" {
+				attributes["allowed_api_ip_addresses"] = tftypes.NewValue(tftypes.List{ElementType: tftypes.String}, []tftypes.Value{
+					tftypes.NewValue(tftypes.String, testCase.configuredAllowlist),
+				})
+			}
+			if testCase.configuredRevoke != "" {
+				attributes["revoke_inactive_tokens_after"] = tftypes.NewValue(tftypes.String, testCase.configuredRevoke)
+			}
+			raw := nullObjectWith(ctx, t, schema.Type(), attributes)
+
+			req := fwresource.CreateRequest{
+				Plan:   tfsdk.Plan{Schema: schema, Raw: raw},
+				Config: tfsdk.Config{Schema: schema, Raw: raw},
+			}
+			resp := fwresource.CreateResponse{State: tfsdk.State{Schema: schema, Raw: tftypes.NewValue(schema.Type().TerraformType(ctx), nil)}}
+
+			o.Create(ctx, req, &resp)
+
+			if got := requests.Load(); got < int64(len(testCase.responses)) {
+				t.Fatalf("Made %d requests, want %d: the failure has to come from the last stubbed response", got, len(testCase.responses))
+			}
+			if !diagnosticsContain(resp.Diagnostics, testCase.wantError) {
+				t.Fatalf("Create() diagnostics = %v, want %q", resp.Diagnostics, testCase.wantError)
+			}
+			if !resp.State.Raw.IsNull() {
+				t.Errorf("Create() persisted %v, want no state: persisting taints the instance, and replacing it clears the API IP allowlist", resp.State.Raw)
+			}
+
+			warnings := resp.Diagnostics.Warnings()
+			if len(testCase.wantWarned) == 0 {
+				for _, d := range warnings {
+					if d.Summary() == "Organization settings changed but not recorded" {
+						t.Errorf("Create() warned %q, want no warning: this apply changed nothing before it failed", d.Detail())
+					}
+				}
+				return
+			}
+
+			var detail string
+			for _, d := range warnings {
+				if d.Summary() == "Organization settings changed but not recorded" {
+					detail = d.Detail()
+				}
+			}
+			if detail == "" {
+				t.Fatalf("Create() warnings = %v, want one naming the settings that applied", warnings)
+			}
+			for _, want := range testCase.wantWarned {
+				if !strings.Contains(detail, want) {
+					t.Errorf("Warning detail = %q, want it to mention %q", detail, want)
+				}
+			}
+			if testCase.configuredRevoke != "" && strings.Contains(detail, "allowlist") {
+				t.Errorf("Warning detail = %q, want no mention of the allowlist: this apply did not change it", detail)
+			}
 		})
 	}
 }
 
-func runOrganizationCreateAllowlistWarningCase(t *testing.T, remote string, wantWarned bool) {
-	t.Helper()
+// A non-403 failure on the api-settings GET makes updateAPISettings return before it assigns either
+// attribute it owns. Update persists unconditionally now, so without seeding state from the prior
+// values first, that path writes nulls over settings the organization still has. readAPISettings
+// falls back to state on a 403, so a null put there once is re-adopted on every refresh.
+func TestOrganizationUpdateKeepsPriorAPISettingsWhenTheReadFails(t *testing.T) {
+	t.Parallel()
 
-	const configured = "1.2.3.4/32"
-
-	responses := []stubResponse{
-		{status: http.StatusOK, body: fmt.Sprintf(`{"data":{"organization":{
-			"id": "organization-id",
-			"uuid": "organization-uuid",
-			"allowedApiIpAddresses": %q,
-			"membersRequireTwoFactorAuthentication": false
-		}}}`, remote)},
-	}
-	// An allowlist that already matches is left alone, so no mutation is sent for it and the next
-	// stubbed response has to be the one the 2FA call gets.
-	if remote != configured {
-		responses = append(responses, stubResponse{status: http.StatusOK, body: fmt.Sprintf(`{"data":{"organizationApiIpAllowlistUpdate":{"organization":{
-			"id": "organization-id",
-			"uuid": "organization-uuid",
-			"allowedApiIpAddresses": %q,
-			"membersRequireTwoFactorAuthentication": false
-		}}}}`, configured)})
-	}
-	// Enforcing 2FA is what fails.
-	responses = append(responses, stubResponse{status: http.StatusOK, body: `{"errors":[{"message":"2FA update exploded"}]}`})
-
-	server, requests := newRetryStub(t, responses...)
+	// Only the api-settings GET is reached: the allowlist and 2FA both match the prior state, so
+	// neither sends a mutation of its own.
+	server, requests := newRetryStub(t,
+		stubResponse{status: http.StatusInternalServerError, body: `{"message":"api-settings unavailable"}`},
+	)
 	defer server.Close()
 
 	client := newRetryTestClient(t, server.URL, 0, time.Millisecond)
@@ -845,39 +952,52 @@ func runOrganizationCreateAllowlistWarningCase(t *testing.T, remote string, want
 	}
 	schema := schemaResp.Schema
 
-	raw := nullObjectWith(ctx, t, schema.Type(), map[string]tftypes.Value{
-		"allowed_api_ip_addresses": tftypes.NewValue(tftypes.List{ElementType: tftypes.String}, []tftypes.Value{
-			tftypes.NewValue(tftypes.String, "1.2.3.4/32"),
-		}),
-		"enforce_2fa": tftypes.NewValue(tftypes.Bool, true),
+	allowlist := tftypes.NewValue(tftypes.List{ElementType: tftypes.String}, []tftypes.Value{})
+	prior := nullObjectWith(ctx, t, schema.Type(), map[string]tftypes.Value{
+		"id":                               tftypes.NewValue(tftypes.String, "organization-id"),
+		"uuid":                             tftypes.NewValue(tftypes.String, "organization-uuid"),
+		"allowed_api_ip_addresses":         allowlist,
+		"enforce_2fa":                      tftypes.NewValue(tftypes.Bool, true),
+		"revoke_inactive_tokens_after":     tftypes.NewValue(tftypes.String, "DAYS_30"),
+		"restrict_user_api_token_creation": tftypes.NewValue(tftypes.Bool, true),
+	})
+	// Only the description of an unrelated attribute changes, so nothing before the GET mutates.
+	planned := nullObjectWith(ctx, t, schema.Type(), map[string]tftypes.Value{
+		"id":                               tftypes.NewValue(tftypes.String, "organization-id"),
+		"uuid":                             tftypes.NewValue(tftypes.String, "organization-uuid"),
+		"allowed_api_ip_addresses":         allowlist,
+		"enforce_2fa":                      tftypes.NewValue(tftypes.Bool, true),
+		"revoke_inactive_tokens_after":     tftypes.NewValue(tftypes.String, "DAYS_90"),
+		"restrict_user_api_token_creation": tftypes.NewValue(tftypes.Bool, true),
 	})
 
-	req := fwresource.CreateRequest{
-		Plan:   tfsdk.Plan{Schema: schema, Raw: raw},
-		Config: tfsdk.Config{Schema: schema, Raw: raw},
+	req := fwresource.UpdateRequest{
+		Plan:   tfsdk.Plan{Schema: schema, Raw: planned},
+		State:  tfsdk.State{Schema: schema, Raw: prior},
+		Config: tfsdk.Config{Schema: schema, Raw: planned},
 	}
-	resp := fwresource.CreateResponse{State: tfsdk.State{Schema: schema, Raw: tftypes.NewValue(schema.Type().TerraformType(ctx), nil)}}
+	resp := fwresource.UpdateResponse{State: tfsdk.State{Schema: schema, Raw: prior}}
 
-	o.Create(ctx, req, &resp)
+	o.Update(ctx, req, &resp)
 
-	if !diagnosticsContain(resp.Diagnostics, "Unable to set 2FA") {
-		t.Fatalf("Create() diagnostics = %v, want the 2FA failure reported", resp.Diagnostics)
+	if got := requests.Load(); got < 1 {
+		t.Fatalf("Made %d requests, want the api-settings read to have been attempted", got)
 	}
-	if !resp.State.Raw.IsNull() {
-		t.Errorf("Create() persisted %v, want no state: persisting taints the instance, and replacing it clears the API IP allowlist", resp.State.Raw)
+	if !diagnosticsContain(resp.Diagnostics, "Unable to read organization API settings") {
+		t.Fatalf("Update() diagnostics = %v, want the read failure reported", resp.Diagnostics)
 	}
 
-	var warned bool
-	for _, d := range resp.Diagnostics.Warnings() {
-		if strings.Contains(d.Detail(), "1.2.3.4/32") {
-			warned = true
-		}
+	var persisted organizationResourceModel
+	if diags := resp.State.Get(ctx, &persisted); diags.HasError() {
+		t.Fatalf("Reading the persisted state = %v", diags)
 	}
-	if warned != wantWarned {
-		t.Errorf("Create() warned about the allowlist = %v, want %v; warnings were %v", warned, wantWarned, resp.Diagnostics.Warnings())
+	if got := persisted.RevokeInactiveTokensAfter.ValueString(); got != "DAYS_30" {
+		t.Errorf("Persisted revoke_inactive_tokens_after = %q, want %q: nothing applied, so the prior value stands", got, "DAYS_30")
 	}
-	// One request per stubbed response when the allowlist changed, one fewer when it did not.
-	if got := requests.Load(); got < 2 {
-		t.Errorf("Made %d requests, want the 2FA mutation to have been attempted", got)
+	if !persisted.RestrictUserApiTokenCreation.ValueBool() {
+		t.Error("Persisted restrict_user_api_token_creation = false, want true: nothing applied, so the prior value stands")
+	}
+	if !persisted.Enforce2FA.ValueBool() {
+		t.Error("Persisted enforce_2fa = false, want true: nothing applied, so the prior value stands")
 	}
 }
