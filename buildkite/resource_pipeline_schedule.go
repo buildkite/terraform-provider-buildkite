@@ -315,6 +315,18 @@ func (ps *pipelineSchedule) Delete(ctx context.Context, req resource.DeleteReque
 }
 
 func (ps *pipelineSchedule) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	// <pipeline slug>/<schedule uuid> is also accepted and resolved to the GraphQL ID
+	if pipeline, uuid, ok := parsePipelineScheduleImportID(req.ID); ok {
+		r, err := getPipelineScheduleBySlug(ctx, ps.client.genqlient, fmt.Sprintf("%s/%s/%s", ps.client.organization, pipeline, uuid))
+		if err == nil && r.PipelineSchedule.Id == "" {
+			err = fmt.Errorf("no pipeline schedule with that slug and UUID")
+		}
+		if err != nil {
+			resp.Diagnostics.AddError("Unable to import pipeline schedule", fmt.Sprintf("Could not find pipeline schedule %q: %s", req.ID, err.Error()))
+			return
+		}
+		req.ID = r.PipelineSchedule.Id
+	}
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
 
