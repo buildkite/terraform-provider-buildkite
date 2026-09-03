@@ -77,11 +77,12 @@ func updateRequestFor(ctx context.Context, t *testing.T, resourceSchema schema.S
 	priorRaw := nullObjectWith(ctx, t, resourceSchema.Type(), prior)
 	plannedRaw := nullObjectWith(ctx, t, resourceSchema.Type(), planned)
 
-	return fwresource.UpdateRequest{
+	req := fwresource.UpdateRequest{
 		Plan:   tfsdk.Plan{Schema: resourceSchema, Raw: plannedRaw},
 		State:  tfsdk.State{Schema: resourceSchema, Raw: priorRaw},
 		Config: tfsdk.Config{Schema: resourceSchema, Raw: plannedRaw},
-	}, fwresource.UpdateResponse{
-		State: tfsdk.State{Schema: resourceSchema, Raw: priorRaw},
 	}
+	resp := fwresource.UpdateResponse{State: tfsdk.State{Schema: resourceSchema, Raw: priorRaw}}
+
+	return req, resp
 }
