@@ -397,6 +397,13 @@ func TestAccBuildkiteClusterQueueResource(t *testing.T) {
 					ImportState:       true,
 					ImportStateVerify: true,
 				},
+				{
+					// <cluster uuid>/<queue key> is also accepted
+					ResourceName:      "buildkite_cluster_queue.foobar",
+					ImportStateIdFunc: testAccImportIDFromAttributes("buildkite_cluster_queue.foobar", "cluster_uuid", "buildkite_cluster_queue.foobar", "key"),
+					ImportState:       true,
+					ImportStateVerify: true,
+				},
 			},
 		})
 	})

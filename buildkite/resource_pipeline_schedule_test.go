@@ -112,6 +112,13 @@ func TestAccBuildkitePipelineSchedule(t *testing.T) {
 					ImportStateId:     schedule.Id,
 					ImportStateVerify: true,
 				},
+				{
+					// <pipeline slug>/<schedule uuid> is also accepted
+					ResourceName:      "buildkite_pipeline_schedule.pipeline",
+					ImportState:       true,
+					ImportStateIdFunc: testAccImportIDFromAttributes("buildkite_pipeline.pipeline", "slug", "buildkite_pipeline_schedule.pipeline", "uuid"),
+					ImportStateVerify: true,
+				},
 			},
 		})
 	})
