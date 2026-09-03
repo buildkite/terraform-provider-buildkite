@@ -447,9 +447,10 @@ func TestUnitBuildkiteOrganizationKeeps2FAWhenTheAllowlistIsRefused(t *testing.T
 	}
 }
 
-// A 2FA change that fails once the settings have been written still has to record them: the
-// allowlist is the resource's to clear, and only a resource that reached state is ever destroyed.
-func TestUnitBuildkiteOrganizationRecordsSettingsWhenSetting2FAFails(t *testing.T) {
+// A 2FA change that fails once the settings have been written must leave them alone rather than
+// record them: state from a failed create taints the resource, and the replacement that follows
+// destroys first, clearing the allowlist on the way to writing it again.
+func TestUnitBuildkiteOrganizationKeepsWrittenSettingsWhenSetting2FAFails(t *testing.T) {
 	server, api := newFakeOrganizationAPI(t)
 	api.settings.Features.ApiIpAllowList = true
 	api.enforceTwoFactor(true)
@@ -465,10 +466,13 @@ func TestUnitBuildkiteOrganizationRecordsSettingsWhenSetting2FAFails(t *testing.
 		},
 	})
 
-	// the allowlist the failed create wrote is cleared again by the destroy the test ends with,
-	// which only reaches an organization the failure recorded state for
-	if want := []string{"1.1.1.1/32", ""}; !slices.Equal(api.allowlistWrites(), want) {
+	// one write, never undone: with no state to destroy, the test cannot end by clearing the
+	// allowlist the failed create left the organization with
+	if want := []string{"1.1.1.1/32"}; !slices.Equal(api.allowlistWrites(), want) {
 		t.Errorf("allowlist writes = %q, want %q", api.allowlistWrites(), want)
+	}
+	if got := api.allowedIpAddresses(); got != "1.1.1.1/32" {
+		t.Errorf("remote allowed_ip_addresses = %q, want %q", got, "1.1.1.1/32")
 	}
 }
 

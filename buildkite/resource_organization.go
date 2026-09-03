@@ -156,9 +156,16 @@ func (o *organizationResource) Create(ctx context.Context, req resource.CreateRe
 	if !plan.Enforce2FA.IsNull() && !plan.Enforce2FA.IsUnknown() && plan.Enforce2FA.ValueBool() != organization.Organization.MembersRequireTwoFactorAuthentication {
 		if _, err := setOrganization2FA(ctx, o.client.genqlient, *org, plan.Enforce2FA.ValueBool()); err != nil {
 			resp.Diagnostics.AddError("Unable to set 2FA", err.Error())
-			// the settings above are the organization's now, so they are recorded even though the
-			// apply failed. 2FA is left to show as drift rather than the resource going untracked.
-			resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
+			// no state. Recording a failed create taints the resource, and the replacement that
+			// follows destroys before it creates, clearing an allowlist that did land. Leaving the
+			// create unrecorded keeps the organization as terraform found it, and applying again
+			// writes only what still differs before retrying 2FA.
+			resp.Diagnostics.AddWarning(
+				"Organization API settings were applied before 2FA failed",
+				"The API access token settings, including allowed_api_ip_addresses, were written and are left in place. "+
+					"No state was recorded for this resource, so terraform will not clear them. Applying again writes "+
+					"only the settings that still differ, then retries the 2FA change.",
+			)
 			return
 		}
 		state.Enforce2FA = plan.Enforce2FA
