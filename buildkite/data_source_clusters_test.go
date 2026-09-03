@@ -54,6 +54,13 @@ func TestUpdateClustersDatasourceStateClassifiesAFailedMaintainerRead(t *testing
 			maintainers: stubResponse{status: http.StatusForbidden, body: `{"message":"Forbidden"}`},
 		},
 		{
+			// The cluster went away between the page read and this call. The list is not empty, it
+			// is moot, and there is no cluster left to report it against.
+			name:        "the cluster is gone by the time its maintainers are read",
+			maintainers: stubResponse{status: http.StatusNotFound, body: `{"message":"Not Found"}`},
+			wantError:   "Unable to fetch cluster maintainers",
+		},
+		{
 			name:        "the maintainers call fails for any other reason",
 			maintainers: stubResponse{status: http.StatusInternalServerError, body: `{"message":"boom"}`},
 			wantError:   "Unable to fetch cluster maintainers",

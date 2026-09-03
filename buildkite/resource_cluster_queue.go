@@ -450,6 +450,16 @@ func (cq *clusterQueueResource) Read(ctx context.Context, req resource.ReadReque
 			)
 			return
 		}
+		// An import, or state written before this attribute existed, has no last known value to keep.
+		// Recording the default there is the same fabrication, and leaving it null plans the default
+		// against a null prior and then fails the apply on this very refusal, so say so instead.
+		if state.RetryAgentAffinity.IsNull() {
+			resp.Diagnostics.AddError(
+				"Unable to read retry_agent_affinity",
+				fmt.Sprintf("Queue %s was read, but retry_agent_affinity was refused and state holds no previous value to keep. The API token needs the read_clusters scope: %s", state.Key.ValueString(), err.Error()),
+			)
+			return
+		}
 		// tolerate a token that reads the queue over GraphQL but not over REST, as the organization
 		// resource does for its api-settings, and keep the last known value rather than inventing one
 		resp.Diagnostics.AddWarning(
