@@ -1,0 +1,45 @@
+query GetOrganizationPipelines(
+    $slug: ID!,
+    # @genqlient(pointer: true)
+    $cursor: String,
+    # @genqlient(pointer: true, omitempty: true)
+    $search: String,
+    # @genqlient(pointer: true, omitempty: true)
+    $repository: PipelineRepositoryInput,
+    # @genqlient(pointer: true, omitempty: true)
+    $cluster: ID,
+    # @genqlient(pointer: true, omitempty: true)
+    $archived: Boolean,
+    # @genqlient(omitempty: true)
+    $tags: [String!],
+) {
+    organization(slug: $slug) {
+        pipelines(first: 500, after: $cursor, search: $search, repository: $repository, cluster: $cluster, archived: $archived, tags: $tags) {
+            count
+            pageInfo {
+                endCursor
+                hasNextPage
+            }
+            edges {
+                node {
+                    id
+                    uuid
+                    slug
+                    name
+                    # @genqlient(pointer: true)
+                    description
+                    # @genqlient(pointer: true)
+                    defaultBranch
+                    archived
+                    repository {
+                        url
+                    }
+                    cluster {
+                        # @genqlient(pointer: true)
+                        id
+                    }
+                }
+            }
+        }
+    }
+}
