@@ -42,12 +42,13 @@ func nullObjectWith(ctx context.Context, t *testing.T, schemaType attr.Type, set
 	return tftypes.NewValue(objectType, attributes)
 }
 
-// diagnosticsContain reports whether any error diagnostic mentions summary, so a test can assert on
-// the failure it set up without depending on the full diagnostic text or on the count, which a
-// method driven outside the framework picks up extras from.
-func diagnosticsContain(diags diag.Diagnostics, summary string) bool {
+// diagnosticsContain reports whether any error diagnostic mentions text, in either its summary or
+// its detail, so a test can assert on the failure it set up without depending on the full
+// diagnostic wording or on the count, which a method driven outside the framework picks up extras
+// from.
+func diagnosticsContain(diags diag.Diagnostics, text string) bool {
 	for _, d := range diags.Errors() {
-		if strings.Contains(d.Summary(), summary) || strings.Contains(d.Detail(), summary) {
+		if strings.Contains(d.Summary(), text) || strings.Contains(d.Detail(), text) {
 			return true
 		}
 	}

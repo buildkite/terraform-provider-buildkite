@@ -752,7 +752,7 @@ func TestClusterQueueReadClassifiesAFailedAffinityRead(t *testing.T) {
 			cq := &clusterQueueResource{client: newRetryTestClient(t, server.URL, 0, time.Millisecond)}
 
 			ctx := t.Context()
-			schema := resourceSchema(ctx, t, cq)
+			sch := resourceSchema(ctx, t, cq)
 
 			// A null affinity stands in for the state an import leaves behind.
 			affinity := tftypes.NewValue(tftypes.String, nil)
@@ -760,7 +760,7 @@ func TestClusterQueueReadClassifiesAFailedAffinityRead(t *testing.T) {
 				affinity = tftypes.NewValue(tftypes.String, testCase.priorAffinity)
 			}
 
-			prior := nullObjectWith(ctx, t, schema.Type(), map[string]tftypes.Value{
+			prior := nullObjectWith(ctx, t, sch.Type(), map[string]tftypes.Value{
 				"id":           tftypes.NewValue(tftypes.String, "queue-id"),
 				"uuid":         tftypes.NewValue(tftypes.String, "queue-uuid"),
 				"cluster_id":   tftypes.NewValue(tftypes.String, "cluster-id"),
@@ -770,8 +770,8 @@ func TestClusterQueueReadClassifiesAFailedAffinityRead(t *testing.T) {
 				"retry_agent_affinity": affinity,
 			})
 
-			req := fwresource.ReadRequest{State: tfsdk.State{Schema: schema, Raw: prior}}
-			resp := fwresource.ReadResponse{State: tfsdk.State{Schema: schema, Raw: prior}}
+			req := fwresource.ReadRequest{State: tfsdk.State{Schema: sch, Raw: prior}}
+			resp := fwresource.ReadResponse{State: tfsdk.State{Schema: sch, Raw: prior}}
 
 			cq.Read(ctx, req, &resp)
 

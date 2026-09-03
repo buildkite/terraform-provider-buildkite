@@ -135,14 +135,14 @@ func TestClusterDatasourceReadClassifiesAFailedMaintainerRead(t *testing.T) {
 			c := &clusterDatasource{client: newRetryTestClient(t, server.URL, 0, time.Millisecond)}
 
 			ctx := t.Context()
-			schema := datasourceSchema(ctx, t, c)
+			sch := datasourceSchema(ctx, t, c)
 
-			config := nullObjectWith(ctx, t, schema.Type(), map[string]tftypes.Value{
+			config := nullObjectWith(ctx, t, sch.Type(), map[string]tftypes.Value{
 				"name": tftypes.NewValue(tftypes.String, "a-cluster"),
 			})
 
-			req := datasource.ReadRequest{Config: tfsdk.Config{Schema: schema, Raw: config}}
-			resp := datasource.ReadResponse{State: tfsdk.State{Schema: schema, Raw: config}}
+			req := datasource.ReadRequest{Config: tfsdk.Config{Schema: sch, Raw: config}}
+			resp := datasource.ReadResponse{State: tfsdk.State{Schema: sch, Raw: config}}
 
 			c.Read(ctx, req, &resp)
 

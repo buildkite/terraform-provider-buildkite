@@ -139,11 +139,11 @@ func TestClustersDatasourceReadStopsAtTheFirstFailure(t *testing.T) {
 	c := &clustersDatasource{client: newRetryTestClient(t, server.URL, 0, time.Millisecond)}
 
 	ctx := t.Context()
-	schema := datasourceSchema(ctx, t, c)
-	config := nullObjectWith(ctx, t, schema.Type(), nil)
+	sch := datasourceSchema(ctx, t, c)
+	config := nullObjectWith(ctx, t, sch.Type(), nil)
 
-	req := datasource.ReadRequest{Config: tfsdk.Config{Schema: schema, Raw: config}}
-	resp := datasource.ReadResponse{State: tfsdk.State{Schema: schema, Raw: config}}
+	req := datasource.ReadRequest{Config: tfsdk.Config{Schema: sch, Raw: config}}
+	resp := datasource.ReadResponse{State: tfsdk.State{Schema: sch, Raw: config}}
 
 	c.Read(ctx, req, &resp)
 
