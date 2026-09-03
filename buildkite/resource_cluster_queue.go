@@ -332,6 +332,15 @@ func (cq *clusterQueueResource) Create(ctx context.Context, req resource.CreateR
 
 	state.DispatchPaused = types.BoolValue(false)
 
+	// The queue exists from here on, so every path out has to record it or Terraform is left with an
+	// orphan that only terraform import recovers. Deferred so a new early return cannot forget it,
+	// and so the diagnostics from the write are not dropped as the two error paths below dropped
+	// them. State alongside an error taints the instance, which is the better trade here: the queue
+	// really was created, and a taint is cleared with terraform untaint.
+	defer func() {
+		resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+	}()
+
 	desiredAffinity := RetryAgentAffinityPreferWarmest
 	if !plan.RetryAgentAffinity.IsNull() && !plan.RetryAgentAffinity.IsUnknown() {
 		desiredAffinity = plan.RetryAgentAffinity.ValueString()
@@ -344,7 +353,6 @@ func (cq *clusterQueueResource) Create(ctx context.Context, req resource.CreateR
 				"Unable to set retry_agent_affinity",
 				fmt.Sprintf("Queue %s created but retry_agent_affinity could not be set: %s", state.Key.ValueString(), err.Error()),
 			)
-			resp.State.Set(ctx, &state)
 			return
 		}
 	}
@@ -356,7 +364,6 @@ func (cq *clusterQueueResource) Create(ctx context.Context, req resource.CreateR
 		log.Printf("Pausing dispatch on cluster queue with key %s", plan.Key.ValueString())
 		err = cq.pauseDispatch(ctx, timeout, state, &resp.Diagnostics)
 		if err != nil {
-			resp.State.Set(ctx, &state)
 			return
 		}
 		state.DispatchPaused = types.BoolValue(true)
@@ -384,8 +391,6 @@ func (cq *clusterQueueResource) Create(ctx context.Context, req resource.CreateR
 			}
 		}
 	}
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
 func (cq *clusterQueueResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
@@ -571,6 +576,14 @@ func (cq *clusterQueueResource) Update(ctx context.Context, req resource.UpdateR
 	planDispatchPaused = plan.DispatchPaused.ValueBool()
 	stateDispatchPaused = state.DispatchPaused.ValueBool()
 
+	// Pausing or resuming dispatch is a mutation in its own right, and the queue mutation below can
+	// still fail after it has applied. Persist on the way out either way, deferred so a new early
+	// return cannot forget it, and record the pause as soon as it applies rather than waiting for
+	// the mutation response to confirm it.
+	defer func() {
+		resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+	}()
+
 	// Check the planned value against the current state value
 	// Planned to be true (changing from false to true)
 	if planDispatchPaused && !stateDispatchPaused {
@@ -578,6 +591,7 @@ func (cq *clusterQueueResource) Update(ctx context.Context, req resource.UpdateR
 			// Error added to diagnostics within pauseDispatch
 			return
 		}
+		state.DispatchPaused = types.BoolValue(true)
 	}
 
 	// Planned to be false (changing from true to false)
@@ -586,6 +600,7 @@ func (cq *clusterQueueResource) Update(ctx context.Context, req resource.UpdateR
 			// Error added to diagnostics within resumeDispatch
 			return
 		}
+		state.DispatchPaused = types.BoolValue(false)
 	}
 
 	r, err = updateClusterQueue(ctx,
@@ -614,7 +629,6 @@ func (cq *clusterQueueResource) Update(ctx context.Context, req resource.UpdateR
 				"Unable to update retry_agent_affinity",
 				fmt.Sprintf("Unable to update retry_agent_affinity for queue %s: %s", state.Key.ValueString(), err.Error()),
 			)
-			resp.State.Set(ctx, &state)
 			return
 		}
 		state.RetryAgentAffinity = types.StringValue(desiredAffinity)
@@ -642,8 +656,6 @@ func (cq *clusterQueueResource) Update(ctx context.Context, req resource.UpdateR
 			}
 		}
 	}
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
 func (cq *clusterQueueResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
