@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"slices"
 	"time"
 
 	custom_modifier "github.com/buildkite/terraform-provider-buildkite/internal/planmodifier"
@@ -236,7 +237,7 @@ func (ts *testSuiteResource) Read(ctx context.Context, req resource.ReadRequest,
 		var err error
 		r, err = getTestSuite(ctx,
 			ts.client.genqlient, state.ID.ValueString(),
-			50,
+			teamPageSize, nil,
 		)
 
 		return retryContextError(err)
@@ -464,11 +465,10 @@ func (ts *testSuiteResource) Update(ctx context.Context, req resource.UpdateRequ
 
 	// If the planned team_owner_id differs from the state, add the new one and remove the old one
 	if plan.TeamOwnerId.ValueString() != state.TeamOwnerId.ValueString() {
-		var r *createTestSuiteTeamResponse
+		var attachErr error
 		alreadyOwned := false
 		err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-			var err error
-			r, err = createTestSuiteTeam(ctx,
+			_, err := createTestSuiteTeam(ctx,
 				ts.client.genqlient,
 				plan.TeamOwnerId.ValueString(),
 				state.ID.ValueString(),
@@ -479,11 +479,14 @@ func (ts *testSuiteResource) Update(ctx context.Context, req resource.UpdateRequ
 			// previous apply attached it and then failed to detach the old one, which is the state
 			// this method records so the next plan retries. Failing here would never reach that
 			// detach, leaving both teams owning the suite with no way forward.
+			//
+			// resource_pipeline_team.go reads the same predicate as eventual-consistency noise and
+			// retries it. Here the attach is the operation being re-run, so it is taken at its word
+			// and confirmed against the suite below, with attachErr kept to report if it was wrong.
 			if err != nil && isAlreadyExistsError(err) {
-				alreadyOwned = true
+				alreadyOwned, attachErr = true, err
 				return nil
 			}
-			alreadyOwned = false
 
 			return retryContextError(err)
 		})
@@ -495,21 +498,29 @@ func (ts *testSuiteResource) Update(ctx context.Context, req resource.UpdateRequ
 			return
 		}
 
-		// Which edge belongs to the previous owner. Normally the attach response lists the suite's
-		// teams, but it carries nothing when the attach had already applied, so read them instead.
-		teams := []testSuiteTeamEdge{}
+		// Which edge belongs to the previous owner. Read rather than taken from the attach
+		// response: a mutation's nested connection cannot be paged, so a previous owner sorting
+		// past the first page would go unfound and keep owning the suite with state saying it does
+		// not, and no diff left to correct it.
+		teams, err := ts.suiteTeams(ctx, timeout, state.ID.ValueString())
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Could not load the suite's owner teams",
+				fmt.Sprintf("Could not load the suite's owner teams: %s", err.Error()),
+			)
+			return
+		}
+
+		// A tolerated attach ran no mutation, so nothing yet proves the new owner can manage the
+		// suite. Detaching on a message that meant something else leaves the suite with an owner
+		// that cannot manage it, or none at all, and Read reports neither.
 		if alreadyOwned {
-			teams, err = ts.suiteTeams(ctx, timeout, state.ID.ValueString())
-			if err != nil {
+			if err := ts.ensureOwnerTeamCanManage(ctx, timeout, teams, plan.TeamOwnerId.ValueString(), attachErr); err != nil {
 				resp.Diagnostics.AddError(
-					"Could not load the suite's owner teams",
-					fmt.Sprintf("Could not load the suite's owner teams: %s", err.Error()),
+					"Could not add new owner team",
+					fmt.Sprintf("Could not add new owner team: %s", err.Error()),
 				)
 				return
-			}
-		} else {
-			for _, team := range r.TeamSuiteCreate.Suite.Teams.Edges {
-				teams = append(teams, testSuiteTeamEdge{id: team.Node.Id, teamId: team.Node.Team.Id})
 			}
 		}
 
@@ -527,7 +538,8 @@ func (ts *testSuiteResource) Update(ctx context.Context, req resource.UpdateRequ
 				if err != nil {
 					resp.Diagnostics.AddError(
 						"Failed to delete team owner",
-						fmt.Sprintf("Failed to delete team owner: %s", err.Error()),
+						fmt.Sprintf("Failed to remove team %s from the suite, which team %s now also owns: %s",
+							previousOwnerId, plan.TeamOwnerId.ValueString(), err.Error()),
 					)
 					return
 				}
@@ -536,44 +548,82 @@ func (ts *testSuiteResource) Update(ctx context.Context, req resource.UpdateRequ
 
 		// Only once the previous owner is detached, because both own the suite until then. Recording
 		// the new one first leaves the next plan comparing the config against it, finding no diff,
-		// and never retrying the delete. Taken from the plan, since the attach response carries
-		// nothing to read on the path where the attach had already applied.
+		// and never retrying the delete.
 		state.TeamOwnerId = plan.TeamOwnerId
 	}
 }
 
-// testSuiteTeamEdge is one team-suite link: the id the delete mutation takes, and the team it
-// belongs to. The attach response and the suite query spell the same pair differently.
+// testSuiteTeamEdge is one team-suite link: the id the delete mutation takes, the team it belongs
+// to, and the access that team has. The attach response and the suite query spell the same trio
+// differently.
 type testSuiteTeamEdge struct {
-	id     string
-	teamId string
+	id          string
+	teamId      string
+	accessLevel SuiteAccessLevels
 }
 
-// suiteTeams reads the teams that own a suite, for the paths that cannot take them from an attach
-// response because the attach had already applied on an earlier run.
-func (ts *testSuiteResource) suiteTeams(ctx context.Context, timeout time.Duration, suiteId string) ([]testSuiteTeamEdge, error) {
-	var r *getTestSuiteResponse
-	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-		var err error
-		r, err = getTestSuite(ctx, ts.client.genqlient, suiteId, 50)
+// ensureOwnerTeamCanManage confirms teams really does link owner to the suite, and raises that link
+// to MANAGE_AND_READ if it sits lower. attachErr is the tolerated already-exists error, reported
+// when the link turns out not to be there at all: the message was then about something other than
+// the previous run's attach, and the caller must not detach anything on the strength of it.
+func (ts *testSuiteResource) ensureOwnerTeamCanManage(ctx context.Context, timeout time.Duration, teams []testSuiteTeamEdge, owner string, attachErr error) error {
+	i := slices.IndexFunc(teams, func(team testSuiteTeamEdge) bool { return team.teamId == owner })
+	if i < 0 {
+		return fmt.Errorf("%w (team %s does not own suite)", attachErr, owner)
+	}
+	if teams[i].accessLevel == SuiteAccessLevelsManageAndRead {
+		return nil
+	}
+
+	return retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+		_, err := updateTestSuiteTeam(ctx, ts.client.genqlient, teams[i].id, SuiteAccessLevelsManageAndRead)
 
 		return retryContextError(err)
 	})
-	if err != nil {
-		return nil, err
-	}
+}
 
-	suite, ok := r.Suite.(*getTestSuiteSuite)
-	if !ok {
-		return nil, fmt.Errorf("suite %s not found", suiteId)
-	}
+// teamPageSize is how many of a suite's teams one request asks for. Suites shared this widely are
+// rare, so the paging in suiteTeams almost always completes in a single round trip.
+const teamPageSize = 50
 
-	teams := make([]testSuiteTeamEdge, 0, len(suite.Teams.Edges))
-	for _, team := range suite.Teams.Edges {
-		teams = append(teams, testSuiteTeamEdge{id: team.Node.Id, teamId: team.Node.Team.Id})
-	}
+// suiteTeams reads the teams linked to a suite, paging to the end of the connection. Stopping at
+// the first page would hide a previous owner whose team name sorts past it, and the caller reads
+// absence as "already detached" and records the swap as done.
+func (ts *testSuiteResource) suiteTeams(ctx context.Context, timeout time.Duration, suiteId string) ([]testSuiteTeamEdge, error) {
+	var teams []testSuiteTeamEdge
+	var cursor *string
+	for {
+		var r *getTestSuiteResponse
+		err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+			var err error
+			r, err = getTestSuite(ctx, ts.client.genqlient, suiteId, teamPageSize, cursor)
 
-	return teams, nil
+			return retryContextError(err)
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		suite, ok := r.Suite.(*getTestSuiteSuite)
+		if !ok {
+			return nil, fmt.Errorf("suite %s not found", suiteId)
+		}
+
+		for _, team := range suite.Teams.Edges {
+			teams = append(teams, testSuiteTeamEdge{
+				id:          team.Node.Id,
+				teamId:      team.Node.Team.Id,
+				accessLevel: team.Node.AccessLevel,
+			})
+		}
+
+		// An empty cursor alongside hasNextPage would page over the same edges forever.
+		if !suite.Teams.PageInfo.HasNextPage || suite.Teams.PageInfo.EndCursor == "" {
+			return teams, nil
+		}
+		next := suite.Teams.PageInfo.EndCursor
+		cursor = &next
+	}
 }
 
 func (ts *testSuiteResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {

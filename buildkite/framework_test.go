@@ -9,6 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	fwresource "github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-go/tftypes"
 )
 
@@ -53,9 +54,7 @@ func diagnosticsContain(diags diag.Diagnostics, summary string) bool {
 	return false
 }
 
-// resourceSchema is the schema a resource declares. A test that drives CRUD methods directly has to
-// fetch it itself, with no acceptance harness to do that, and every caller wants the diagnostics
-// checked rather than a zero schema that fails later as a confusing type error.
+// resourceSchema fetches the schema a resource declares, failing the test on diagnostics.
 func resourceSchema(ctx context.Context, t *testing.T, r fwresource.Resource) schema.Schema {
 	t.Helper()
 
@@ -66,4 +65,23 @@ func resourceSchema(ctx context.Context, t *testing.T, r fwresource.Resource) sc
 	}
 
 	return resp.Schema
+}
+
+// updateRequestFor builds the request and response an Update method is driven with. resp starts at
+// prior state because that is what the framework hands a provider
+// (fwserver.server_updateresource.go: "Require explicit provider updates for tracking successful
+// updates"), so a test that seeded it empty would not notice an Update that recorded nothing.
+func updateRequestFor(ctx context.Context, t *testing.T, resourceSchema schema.Schema, prior, planned map[string]tftypes.Value) (fwresource.UpdateRequest, fwresource.UpdateResponse) {
+	t.Helper()
+
+	priorRaw := nullObjectWith(ctx, t, resourceSchema.Type(), prior)
+	plannedRaw := nullObjectWith(ctx, t, resourceSchema.Type(), planned)
+
+	return fwresource.UpdateRequest{
+		Plan:   tfsdk.Plan{Schema: resourceSchema, Raw: plannedRaw},
+		State:  tfsdk.State{Schema: resourceSchema, Raw: priorRaw},
+		Config: tfsdk.Config{Schema: resourceSchema, Raw: plannedRaw},
+	}, fwresource.UpdateResponse{
+		State: tfsdk.State{Schema: resourceSchema, Raw: priorRaw},
+	}
 }
