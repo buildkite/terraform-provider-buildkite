@@ -1810,10 +1810,10 @@ func updatePipelineResourceExtraInfo(state *pipelineResourceModel, pipeline *Pip
 		UseMergeGroupBaseCommitForGitDiffBase:   types.BoolPointerValue(s.UseMergeGroupBaseCommitForGitDiffBase),
 		BuildIssueCommentCreated:                types.BoolPointerValue(s.BuildIssueCommentCreated),
 		IssueCommentCommandWord:                 types.StringPointerValue(s.IssueCommentCommandWord),
-		IssueCommentMatchMode:                   types.StringPointerValue(s.IssueCommentMatchMode),
+		IssueCommentMatchMode:                   matchModeFromREST(s.IssueCommentMatchMode),
 		BuildPullRequestReviewCommentCreated:    types.BoolPointerValue(s.BuildPullRequestReviewCommentCreated),
 		ReviewCommentCommandWord:                types.StringPointerValue(s.ReviewCommentCommandWord),
-		ReviewCommentMatchMode:                  types.StringPointerValue(s.ReviewCommentMatchMode),
+		ReviewCommentMatchMode:                  matchModeFromREST(s.ReviewCommentMatchMode),
 		BuildPullRequestDequeued:                types.BoolPointerValue(s.BuildPullRequestDequeued),
 		BuildPullRequestReopened:                types.BoolPointerValue(s.BuildPullRequestReopened),
 		BuildCheckRunCompleted:                  types.BoolPointerValue(s.BuildCheckRunCompleted),
@@ -1827,6 +1827,14 @@ func updatePipelineResourceExtraInfo(state *pipelineResourceModel, pipeline *Pip
 		BuildReleasePublished:                   types.BoolPointerValue(s.BuildReleasePublished),
 		BuildReleaseReleased:                    types.BoolPointerValue(s.BuildReleaseReleased),
 	}
+}
+
+// matchModeFromREST reads an unset match mode, which the REST API returns as "", as null so it agrees with the GraphQL read
+func matchModeFromREST(m *string) types.String {
+	if m == nil || *m == "" {
+		return types.StringNull()
+	}
+	return types.StringValue(*m)
 }
 
 // matchModeToString converts a GraphQL CommandWordMatchMode enum (EXACT/CONTAINS) into the
