@@ -80,3 +80,11 @@ mutation deleteCacheRegistry($organizationId: ID!, $id: ID!) {
         deletedCacheRegistryId
     }
 }
+
+query getCacheRegistryByNode($id: ID!) {
+    node(id: $id) {
+        ... on CacheRegistry {
+            ...CacheRegistryValues
+        }
+    }
+}

@@ -177,11 +177,11 @@ func (r *clusterCacheRegistryResource) Read(ctx context.Context, req resource.Re
 		return
 	}
 
-	var result *getNodeResponse
+	var result *getCacheRegistryByNodeResponse
 	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		var err error
 		log.Printf("Reading cache registry with ID %s ...", state.ID.ValueString())
-		result, err = getNode(ctx, r.client.genqlient, state.ID.ValueString())
+		result, err = getCacheRegistryByNode(ctx, r.client.genqlient, state.ID.ValueString())
 		return retryContextError(err)
 	})
 	if err != nil {
@@ -189,7 +189,7 @@ func (r *clusterCacheRegistryResource) Read(ctx context.Context, req resource.Re
 		return
 	}
 
-	cacheRegistry, ok := result.Node.(*getNodeNodeCacheRegistry)
+	cacheRegistry, ok := result.Node.(*getCacheRegistryByNodeNodeCacheRegistry)
 	if !ok || cacheRegistry == nil {
 		resp.Diagnostics.AddWarning("Cache Registry not found", "Removing Cache Registry from state...")
 		resp.State.RemoveResource(ctx)
