@@ -326,6 +326,17 @@ func cacheRegistryPoliciesEquivalent(left, right string) bool {
 		if _, ok := policy["rules"]; !ok {
 			policy["rules"] = []any{}
 		}
+		if rules, ok := policy["rules"].([]any); ok {
+			for _, rawRule := range rules {
+				rule, ok := rawRule.(map[string]any)
+				if !ok {
+					continue
+				}
+				if action, ok := rule["action"].(string); ok {
+					rule["action"] = []any{action}
+				}
+			}
+		}
 	}
 
 	normalize(leftPolicy)

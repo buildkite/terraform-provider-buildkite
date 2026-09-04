@@ -152,6 +152,12 @@ func TestCacheRegistryPolicy(t *testing.T) {
 	if cacheRegistryPoliciesEquivalent(`{"rules":[]}`, `{"rules":[{"effect":"allow","action":"save"}]}`) {
 		t.Fatal("policies with different rules must not be equivalent")
 	}
+	if !cacheRegistryPoliciesEquivalent(
+		`{"rules":[{"effect":"allow","action":"save"},{"effect":"allow","action":"restore"}]}`,
+		`{"save":{"scopes":{}},"restore":{"scopes":[]},"rules":[{"effect":"allow","action":["save"]},{"effect":"allow","action":["restore"]}]}`,
+	) {
+		t.Fatal("API-normalized rule actions must be equivalent to scalar configuration")
+	}
 }
 
 func TestAccBuildkiteClusterCacheRegistryResource(t *testing.T) {
