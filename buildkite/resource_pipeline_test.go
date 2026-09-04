@@ -134,6 +134,24 @@ func TestUpdatePipelineResourceExtraInfoBuildIssues(t *testing.T) {
 	}
 }
 
+func TestUpdatePipelineResourceExtraInfoMatchModes(t *testing.T) {
+	empty, contains := "", "contains"
+	extraInfo := PipelineExtraInfo{}
+	extraInfo.Provider.Settings.IssueCommentMatchMode = &empty
+	extraInfo.Provider.Settings.ReviewCommentMatchMode = &contains
+
+	state := pipelineResourceModel{}
+	updatePipelineResourceExtraInfo(&state, &extraInfo)
+
+	// the REST API returns "" for an unset match mode while GraphQL returns null
+	if !state.ProviderSettings.IssueCommentMatchMode.IsNull() {
+		t.Fatalf("issue_comment_match_mode: expected null, got %q", state.ProviderSettings.IssueCommentMatchMode.ValueString())
+	}
+	if state.ProviderSettings.ReviewCommentMatchMode.ValueString() != "contains" {
+		t.Fatalf("review_comment_match_mode: expected \"contains\", got %q", state.ProviderSettings.ReviewCommentMatchMode.ValueString())
+	}
+}
+
 func TestMapProviderSettingsFromGraphQLGitHub(t *testing.T) {
 	triggerMode := "code"
 	enabled := true
@@ -1027,6 +1045,44 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 					ResourceName:      "buildkite_pipeline.pipeline",
 					ImportState:       true,
 					ImportStateVerify: true,
+				},
+			},
+		})
+	})
+
+	t.Run("provider_settings without comment match modes settles after apply", func(t *testing.T) {
+		pipelineName := acctest.RandString(12)
+		clusterName := acctest.RandString(12)
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			CheckDestroy:             testAccCheckPipelineDestroy,
+			Steps: []resource.TestStep{
+				{
+					// the REST API returns "" for an unset match mode while a refresh reads null, so the
+					// output below turned into a change on every plan that followed an apply
+					Config: fmt.Sprintf(`
+						resource "buildkite_cluster" "cluster" {
+							name = "%s"
+						}
+						resource "buildkite_pipeline" "pipeline" {
+							name = "%s"
+							repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
+							cluster_id = buildkite_cluster.cluster.id
+							provider_settings = {
+								trigger_mode = "code"
+								build_pull_requests = true
+							}
+						}
+						output "provider_settings" {
+							value = buildkite_pipeline.pipeline.provider_settings
+						}
+					`, clusterName, pipelineName),
+					Check: resource.ComposeAggregateTestCheckFunc(
+						resource.TestCheckNoResourceAttr("buildkite_pipeline.pipeline", "provider_settings.issue_comment_match_mode"),
+						resource.TestCheckNoResourceAttr("buildkite_pipeline.pipeline", "provider_settings.review_comment_match_mode"),
+					),
 				},
 			},
 		})
