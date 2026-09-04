@@ -144,12 +144,31 @@ func (o *organizationResource) Create(ctx context.Context, req resource.CreateRe
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	if err := o.updateAllowedApiIpAddresses(ctx, *org, plan.AllowedApiIpAddresses, current); err != nil {
+	// What this apply has already changed on the organization. Create records no state when a later
+	// step fails, so anything collected here has to be reported instead. Reported in a defer so a
+	// new early return cannot drop the warning, which is the only record these changes applied.
+	var applied []string
+	defer func() {
+		if resp.Diagnostics.HasError() {
+			warnAboutUnrecordedChanges(applied, &resp.Diagnostics)
+		}
+	}()
+
+	plannedAllowlist := allowedApiIpAddressesValue(plan.AllowedApiIpAddresses)
+	allowlistChanged, err := o.updateAllowedApiIpAddresses(ctx, *org, plan.AllowedApiIpAddresses, current)
+	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to create Organization settings",
 			fmt.Sprintf("Unable to create Organization settings: %s", err.Error()),
 		)
 		return
+	}
+	if allowlistChanged {
+		change := fmt.Sprintf("the API IP allowlist was set to %q", plannedAllowlist)
+		if plannedAllowlist == "" {
+			change = "the API IP allowlist was cleared"
+		}
+		applied = append(applied, change)
 	}
 
 	if !plan.Enforce2FA.IsNull() && !plan.Enforce2FA.IsUnknown() && plan.Enforce2FA.ValueBool() != organization.Organization.MembersRequireTwoFactorAuthentication {
@@ -158,6 +177,11 @@ func (o *organizationResource) Create(ctx context.Context, req resource.CreateRe
 			resp.Diagnostics.AddError("Unable to set 2FA", err.Error())
 			return
 		}
+		change := "two-factor authentication enforcement was removed"
+		if plan.Enforce2FA.ValueBool() {
+			change = "two-factor authentication was enforced for all members"
+		}
+		applied = append(applied, change)
 	}
 
 	state.ID = types.StringValue(*org)
@@ -252,7 +276,7 @@ func (o *organizationResource) Update(ctx context.Context, req resource.UpdateRe
 		return
 	}
 	log.Printf("Updating settings for organization %s ...", *org)
-	if err := o.updateAllowedApiIpAddresses(ctx, *org, plan.AllowedApiIpAddresses, prior.AllowedApiIpAddresses); err != nil {
+	if _, err := o.updateAllowedApiIpAddresses(ctx, *org, plan.AllowedApiIpAddresses, prior.AllowedApiIpAddresses); err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to update Organization settings",
 			fmt.Sprintf("Unable to update Organization settings: %s", err.Error()),
@@ -260,7 +284,23 @@ func (o *organizationResource) Update(ctx context.Context, req resource.UpdateRe
 		return
 	}
 
+	state.ID = types.StringValue(*org)
+	state.UUID = prior.UUID
+	state.AllowedApiIpAddresses = plan.AllowedApiIpAddresses
+	// Seeded from prior so a step failing before it is reached keeps the last known value rather
+	// than persisting a null over it. Each is overwritten by the step that owns it.
 	state.Enforce2FA = prior.Enforce2FA
+	state.RevokeInactiveTokensAfter = prior.RevokeInactiveTokensAfter
+	state.RestrictUserApiTokenCreation = prior.RestrictUserApiTokenCreation
+
+	// The allowlist mutation above has applied, so every path out from here has to record it, along
+	// with whatever else applied before a later step failed. Deferred so a new early return cannot
+	// forget it. Unlike Create, an Update that returns state alongside an error is not tainted, so
+	// there is nothing to weigh against recording it.
+	defer func() {
+		resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
+	}()
+
 	if !plan.Enforce2FA.IsNull() && !plan.Enforce2FA.IsUnknown() && !plan.Enforce2FA.Equal(prior.Enforce2FA) {
 		twoFAResponse, err := setOrganization2FA(ctx, o.client.genqlient, *org, plan.Enforce2FA.ValueBool())
 		if err != nil {
@@ -270,16 +310,7 @@ func (o *organizationResource) Update(ctx context.Context, req resource.UpdateRe
 		state.Enforce2FA = types.BoolValue(twoFAResponse.OrganizationEnforceTwoFactorAuthenticationForMembersUpdate.Organization.MembersRequireTwoFactorAuthentication)
 	}
 
-	state.ID = types.StringValue(*org)
-	state.UUID = prior.UUID
-	state.AllowedApiIpAddresses = plan.AllowedApiIpAddresses
-
 	o.updateAPISettings(ctx, &config, &plan, &prior, &state, &resp.Diagnostics)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }
 
 func (o *organizationResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
@@ -300,7 +331,7 @@ func (o *organizationResource) Delete(ctx context.Context, req resource.DeleteRe
 		return
 	}
 	log.Printf("Deleting settings for organization %s ...", *org)
-	if err := o.updateAllowedApiIpAddresses(ctx, *org, types.ListNull(types.StringType), state.AllowedApiIpAddresses); err != nil {
+	if _, err := o.updateAllowedApiIpAddresses(ctx, *org, types.ListNull(types.StringType), state.AllowedApiIpAddresses); err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to delete Organization settings",
 			fmt.Sprintf("Unable to delete Organization settings: %s", err.Error()),
@@ -312,15 +343,36 @@ func (o *organizationResource) Delete(ctx context.Context, req resource.DeleteRe
 	resp.Diagnostics.AddWarning("API access token settings left intact", "Use the web UI if you wish to change them")
 }
 
-// updateAllowedApiIpAddresses sets the API IP allowlist, skipping the mutation when it is unchanged
-func (o *organizationResource) updateAllowedApiIpAddresses(ctx context.Context, orgID string, planned, current types.List) error {
+// updateAllowedApiIpAddresses sets the API IP allowlist, skipping the mutation when it is unchanged.
+// It reports whether the allowlist was actually sent, so a caller that has to tell the practitioner
+// what this apply changed does not have to work that out a second time and get a different answer.
+func (o *organizationResource) updateAllowedApiIpAddresses(ctx context.Context, orgID string, planned, current types.List) (bool, error) {
 	plannedValue := allowedApiIpAddressesValue(planned)
 	// the mutation is rejected for organizations without the allowlist feature, even for ""
 	if plannedValue == allowedApiIpAddressesValue(current) {
-		return nil
+		return false, nil
 	}
 	_, err := setApiIpAddresses(ctx, o.client.genqlient, orgID, plannedValue)
-	return err
+
+	return err == nil, err
+}
+
+// warnAboutUnrecordedChanges reports the settings Create applied before failing at a later step.
+// Create deliberately records no state in that case, because this resource applies settings to an
+// organization that already exists rather than creating one: every step compares before it mutates,
+// so a re-apply converges, while state returned alongside an error would taint the instance, and a
+// tainted instance is replaced by a Delete that clears the allowlist. The cost of that choice is
+// that nothing in state says the changes took effect, so say it here.
+func warnAboutUnrecordedChanges(applied []string, diags *diag.Diagnostics) {
+	if len(applied) == 0 {
+		return
+	}
+
+	diags.AddWarning(
+		"Organization settings changed but not recorded",
+		fmt.Sprintf("Before this operation failed, %s. Those changes are not recorded in state, so they stay in effect "+
+			"until this resource is applied again or they are changed in the Buildkite web UI.", strings.Join(applied, ", and ")),
+	)
 }
 
 // allowedApiIpAddressesValue serializes the attribute for the API, where null, [] and [""] are all ""
@@ -448,5 +500,10 @@ func (o *organizationResource) updateAPISettings(ctx context.Context, config, pl
 			detail += " Inactive API token revocation is not available on this organization's plan."
 		}
 		diags.AddError("Unable to update organization API settings", detail)
+		// Nothing applied, so these have to describe the organization rather than the plan. On a
+		// refused GET current stands in from the prior state, which is also what readAPISettings
+		// falls back to, so leaving a planned value here would never be corrected by a refresh.
+		state.RevokeInactiveTokensAfter = types.StringValue(revokePeriodFromDays(current.RevokeInactiveTokensAfterDays))
+		state.RestrictUserApiTokenCreation = types.BoolValue(current.RestrictUserApiTokenCreation)
 	}
 }
