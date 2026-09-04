@@ -11,6 +11,78 @@ import (
 	"github.com/Khan/genqlient/graphql"
 )
 
+// CacheRegistryValues includes the GraphQL fields of CacheRegistry requested by the fragment CacheRegistryValues.
+type CacheRegistryValues struct {
+	Id string `json:"id"`
+	// The public UUID for this cache registry
+	Uuid string `json:"uuid"`
+	// The name of this cache registry
+	Name string `json:"name"`
+	// The slug for this cache registry
+	Slug string `json:"slug"`
+	// The description of this cache registry
+	Description *string `json:"description"`
+	// Emoji for this cache registry using Buildkite emoji syntax
+	Emoji *string `json:"emoji"`
+	// Color hex code for this cache registry
+	Color *string `json:"color"`
+	// The normalized cache registry policy
+	Policy *string `json:"policy"`
+	// The time when this cache registry was created
+	CreatedAt time.Time `json:"createdAt"`
+	// The time when this cache registry was last updated
+	UpdatedAt            time.Time                               `json:"updatedAt"`
+	CacheRegistryCluster CacheRegistryValuesCacheRegistryCluster `json:"cacheRegistryCluster"`
+}
+
+// GetId returns CacheRegistryValues.Id, and is useful for accessing the field via an interface.
+func (v *CacheRegistryValues) GetId() string { return v.Id }
+
+// GetUuid returns CacheRegistryValues.Uuid, and is useful for accessing the field via an interface.
+func (v *CacheRegistryValues) GetUuid() string { return v.Uuid }
+
+// GetName returns CacheRegistryValues.Name, and is useful for accessing the field via an interface.
+func (v *CacheRegistryValues) GetName() string { return v.Name }
+
+// GetSlug returns CacheRegistryValues.Slug, and is useful for accessing the field via an interface.
+func (v *CacheRegistryValues) GetSlug() string { return v.Slug }
+
+// GetDescription returns CacheRegistryValues.Description, and is useful for accessing the field via an interface.
+func (v *CacheRegistryValues) GetDescription() *string { return v.Description }
+
+// GetEmoji returns CacheRegistryValues.Emoji, and is useful for accessing the field via an interface.
+func (v *CacheRegistryValues) GetEmoji() *string { return v.Emoji }
+
+// GetColor returns CacheRegistryValues.Color, and is useful for accessing the field via an interface.
+func (v *CacheRegistryValues) GetColor() *string { return v.Color }
+
+// GetPolicy returns CacheRegistryValues.Policy, and is useful for accessing the field via an interface.
+func (v *CacheRegistryValues) GetPolicy() *string { return v.Policy }
+
+// GetCreatedAt returns CacheRegistryValues.CreatedAt, and is useful for accessing the field via an interface.
+func (v *CacheRegistryValues) GetCreatedAt() time.Time { return v.CreatedAt }
+
+// GetUpdatedAt returns CacheRegistryValues.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *CacheRegistryValues) GetUpdatedAt() time.Time { return v.UpdatedAt }
+
+// GetCacheRegistryCluster returns CacheRegistryValues.CacheRegistryCluster, and is useful for accessing the field via an interface.
+func (v *CacheRegistryValues) GetCacheRegistryCluster() CacheRegistryValuesCacheRegistryCluster {
+	return v.CacheRegistryCluster
+}
+
+// CacheRegistryValuesCacheRegistryCluster includes the requested fields of the GraphQL type Cluster.
+type CacheRegistryValuesCacheRegistryCluster struct {
+	Id string `json:"id"`
+	// The public UUID for this cluster
+	Uuid string `json:"uuid"`
+}
+
+// GetId returns CacheRegistryValuesCacheRegistryCluster.Id, and is useful for accessing the field via an interface.
+func (v *CacheRegistryValuesCacheRegistryCluster) GetId() string { return v.Id }
+
+// GetUuid returns CacheRegistryValuesCacheRegistryCluster.Uuid, and is useful for accessing the field via an interface.
+func (v *CacheRegistryValuesCacheRegistryCluster) GetUuid() string { return v.Uuid }
+
 // ClusterAgentTokenValues includes the GraphQL fields of ClusterToken requested by the fragment ClusterAgentTokenValues.
 // The GraphQL type's documentation follows.
 //
@@ -4553,6 +4625,38 @@ func (v *__createAgentTokenInput) GetOrganizationId() string { return v.Organiza
 // GetDescription returns __createAgentTokenInput.Description, and is useful for accessing the field via an interface.
 func (v *__createAgentTokenInput) GetDescription() *string { return v.Description }
 
+// __createCacheRegistryInput is used internally by genqlient
+type __createCacheRegistryInput struct {
+	OrganizationId string  `json:"organizationId"`
+	ClusterId      string  `json:"clusterId"`
+	Name           string  `json:"name"`
+	Description    *string `json:"description"`
+	Emoji          *string `json:"emoji"`
+	Color          *string `json:"color"`
+	Policy         *string `json:"policy"`
+}
+
+// GetOrganizationId returns __createCacheRegistryInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__createCacheRegistryInput) GetOrganizationId() string { return v.OrganizationId }
+
+// GetClusterId returns __createCacheRegistryInput.ClusterId, and is useful for accessing the field via an interface.
+func (v *__createCacheRegistryInput) GetClusterId() string { return v.ClusterId }
+
+// GetName returns __createCacheRegistryInput.Name, and is useful for accessing the field via an interface.
+func (v *__createCacheRegistryInput) GetName() string { return v.Name }
+
+// GetDescription returns __createCacheRegistryInput.Description, and is useful for accessing the field via an interface.
+func (v *__createCacheRegistryInput) GetDescription() *string { return v.Description }
+
+// GetEmoji returns __createCacheRegistryInput.Emoji, and is useful for accessing the field via an interface.
+func (v *__createCacheRegistryInput) GetEmoji() *string { return v.Emoji }
+
+// GetColor returns __createCacheRegistryInput.Color, and is useful for accessing the field via an interface.
+func (v *__createCacheRegistryInput) GetColor() *string { return v.Color }
+
+// GetPolicy returns __createCacheRegistryInput.Policy, and is useful for accessing the field via an interface.
+func (v *__createCacheRegistryInput) GetPolicy() *string { return v.Policy }
+
 // __createClusterAgentTokenInput is used internally by genqlient
 type __createClusterAgentTokenInput struct {
 	OrganizationId     string     `json:"organizationId"`
@@ -4794,6 +4898,18 @@ type __deleteBannerInput struct {
 
 // GetOrganizationId returns __deleteBannerInput.OrganizationId, and is useful for accessing the field via an interface.
 func (v *__deleteBannerInput) GetOrganizationId() string { return v.OrganizationId }
+
+// __deleteCacheRegistryInput is used internally by genqlient
+type __deleteCacheRegistryInput struct {
+	OrganizationId string `json:"organizationId"`
+	Id             string `json:"id"`
+}
+
+// GetOrganizationId returns __deleteCacheRegistryInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__deleteCacheRegistryInput) GetOrganizationId() string { return v.OrganizationId }
+
+// GetId returns __deleteCacheRegistryInput.Id, and is useful for accessing the field via an interface.
+func (v *__deleteCacheRegistryInput) GetId() string { return v.Id }
 
 // __deleteClusterInput is used internally by genqlient
 type __deleteClusterInput struct {
@@ -5299,6 +5415,38 @@ type __unarchivePipelineInput struct {
 // GetId returns __unarchivePipelineInput.Id, and is useful for accessing the field via an interface.
 func (v *__unarchivePipelineInput) GetId() string { return v.Id }
 
+// __updateCacheRegistryInput is used internally by genqlient
+type __updateCacheRegistryInput struct {
+	OrganizationId string  `json:"organizationId"`
+	Id             string  `json:"id"`
+	Name           string  `json:"name"`
+	Description    *string `json:"description"`
+	Emoji          *string `json:"emoji"`
+	Color          *string `json:"color"`
+	Policy         *string `json:"policy"`
+}
+
+// GetOrganizationId returns __updateCacheRegistryInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__updateCacheRegistryInput) GetOrganizationId() string { return v.OrganizationId }
+
+// GetId returns __updateCacheRegistryInput.Id, and is useful for accessing the field via an interface.
+func (v *__updateCacheRegistryInput) GetId() string { return v.Id }
+
+// GetName returns __updateCacheRegistryInput.Name, and is useful for accessing the field via an interface.
+func (v *__updateCacheRegistryInput) GetName() string { return v.Name }
+
+// GetDescription returns __updateCacheRegistryInput.Description, and is useful for accessing the field via an interface.
+func (v *__updateCacheRegistryInput) GetDescription() *string { return v.Description }
+
+// GetEmoji returns __updateCacheRegistryInput.Emoji, and is useful for accessing the field via an interface.
+func (v *__updateCacheRegistryInput) GetEmoji() *string { return v.Emoji }
+
+// GetColor returns __updateCacheRegistryInput.Color, and is useful for accessing the field via an interface.
+func (v *__updateCacheRegistryInput) GetColor() *string { return v.Color }
+
+// GetPolicy returns __updateCacheRegistryInput.Policy, and is useful for accessing the field via an interface.
+func (v *__updateCacheRegistryInput) GetPolicy() *string { return v.Policy }
+
 // __updateClusterAgentTokenInput is used internally by genqlient
 type __updateClusterAgentTokenInput struct {
 	OrganizationId     string `json:"organizationId"`
@@ -5588,6 +5736,163 @@ type createAgentTokenResponse struct {
 // GetAgentTokenCreate returns createAgentTokenResponse.AgentTokenCreate, and is useful for accessing the field via an interface.
 func (v *createAgentTokenResponse) GetAgentTokenCreate() createAgentTokenAgentTokenCreateAgentTokenCreatePayload {
 	return v.AgentTokenCreate
+}
+
+// createCacheRegistryCacheRegistryCreateCacheRegistryCreatePayload includes the requested fields of the GraphQL type CacheRegistryCreatePayload.
+// The GraphQL type's documentation follows.
+//
+// Autogenerated return type of CacheRegistryCreate.
+type createCacheRegistryCacheRegistryCreateCacheRegistryCreatePayload struct {
+	CacheRegistry createCacheRegistryCacheRegistryCreateCacheRegistryCreatePayloadCacheRegistry `json:"cacheRegistry"`
+}
+
+// GetCacheRegistry returns createCacheRegistryCacheRegistryCreateCacheRegistryCreatePayload.CacheRegistry, and is useful for accessing the field via an interface.
+func (v *createCacheRegistryCacheRegistryCreateCacheRegistryCreatePayload) GetCacheRegistry() createCacheRegistryCacheRegistryCreateCacheRegistryCreatePayloadCacheRegistry {
+	return v.CacheRegistry
+}
+
+// createCacheRegistryCacheRegistryCreateCacheRegistryCreatePayloadCacheRegistry includes the requested fields of the GraphQL type CacheRegistry.
+type createCacheRegistryCacheRegistryCreateCacheRegistryCreatePayloadCacheRegistry struct {
+	CacheRegistryValues `json:"-"`
+}
+
+// GetId returns createCacheRegistryCacheRegistryCreateCacheRegistryCreatePayloadCacheRegistry.Id, and is useful for accessing the field via an interface.
+func (v *createCacheRegistryCacheRegistryCreateCacheRegistryCreatePayloadCacheRegistry) GetId() string {
+	return v.CacheRegistryValues.Id
+}
+
+// GetUuid returns createCacheRegistryCacheRegistryCreateCacheRegistryCreatePayloadCacheRegistry.Uuid, and is useful for accessing the field via an interface.
+func (v *createCacheRegistryCacheRegistryCreateCacheRegistryCreatePayloadCacheRegistry) GetUuid() string {
+	return v.CacheRegistryValues.Uuid
+}
+
+// GetName returns createCacheRegistryCacheRegistryCreateCacheRegistryCreatePayloadCacheRegistry.Name, and is useful for accessing the field via an interface.
+func (v *createCacheRegistryCacheRegistryCreateCacheRegistryCreatePayloadCacheRegistry) GetName() string {
+	return v.CacheRegistryValues.Name
+}
+
+// GetSlug returns createCacheRegistryCacheRegistryCreateCacheRegistryCreatePayloadCacheRegistry.Slug, and is useful for accessing the field via an interface.
+func (v *createCacheRegistryCacheRegistryCreateCacheRegistryCreatePayloadCacheRegistry) GetSlug() string {
+	return v.CacheRegistryValues.Slug
+}
+
+// GetDescription returns createCacheRegistryCacheRegistryCreateCacheRegistryCreatePayloadCacheRegistry.Description, and is useful for accessing the field via an interface.
+func (v *createCacheRegistryCacheRegistryCreateCacheRegistryCreatePayloadCacheRegistry) GetDescription() *string {
+	return v.CacheRegistryValues.Description
+}
+
+// GetEmoji returns createCacheRegistryCacheRegistryCreateCacheRegistryCreatePayloadCacheRegistry.Emoji, and is useful for accessing the field via an interface.
+func (v *createCacheRegistryCacheRegistryCreateCacheRegistryCreatePayloadCacheRegistry) GetEmoji() *string {
+	return v.CacheRegistryValues.Emoji
+}
+
+// GetColor returns createCacheRegistryCacheRegistryCreateCacheRegistryCreatePayloadCacheRegistry.Color, and is useful for accessing the field via an interface.
+func (v *createCacheRegistryCacheRegistryCreateCacheRegistryCreatePayloadCacheRegistry) GetColor() *string {
+	return v.CacheRegistryValues.Color
+}
+
+// GetPolicy returns createCacheRegistryCacheRegistryCreateCacheRegistryCreatePayloadCacheRegistry.Policy, and is useful for accessing the field via an interface.
+func (v *createCacheRegistryCacheRegistryCreateCacheRegistryCreatePayloadCacheRegistry) GetPolicy() *string {
+	return v.CacheRegistryValues.Policy
+}
+
+// GetCreatedAt returns createCacheRegistryCacheRegistryCreateCacheRegistryCreatePayloadCacheRegistry.CreatedAt, and is useful for accessing the field via an interface.
+func (v *createCacheRegistryCacheRegistryCreateCacheRegistryCreatePayloadCacheRegistry) GetCreatedAt() time.Time {
+	return v.CacheRegistryValues.CreatedAt
+}
+
+// GetUpdatedAt returns createCacheRegistryCacheRegistryCreateCacheRegistryCreatePayloadCacheRegistry.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *createCacheRegistryCacheRegistryCreateCacheRegistryCreatePayloadCacheRegistry) GetUpdatedAt() time.Time {
+	return v.CacheRegistryValues.UpdatedAt
+}
+
+// GetCacheRegistryCluster returns createCacheRegistryCacheRegistryCreateCacheRegistryCreatePayloadCacheRegistry.CacheRegistryCluster, and is useful for accessing the field via an interface.
+func (v *createCacheRegistryCacheRegistryCreateCacheRegistryCreatePayloadCacheRegistry) GetCacheRegistryCluster() CacheRegistryValuesCacheRegistryCluster {
+	return v.CacheRegistryValues.CacheRegistryCluster
+}
+
+func (v *createCacheRegistryCacheRegistryCreateCacheRegistryCreatePayloadCacheRegistry) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*createCacheRegistryCacheRegistryCreateCacheRegistryCreatePayloadCacheRegistry
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.createCacheRegistryCacheRegistryCreateCacheRegistryCreatePayloadCacheRegistry = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	err = json.Unmarshal(
+		b, &v.CacheRegistryValues)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+type __premarshalcreateCacheRegistryCacheRegistryCreateCacheRegistryCreatePayloadCacheRegistry struct {
+	Id string `json:"id"`
+
+	Uuid string `json:"uuid"`
+
+	Name string `json:"name"`
+
+	Slug string `json:"slug"`
+
+	Description *string `json:"description"`
+
+	Emoji *string `json:"emoji"`
+
+	Color *string `json:"color"`
+
+	Policy *string `json:"policy"`
+
+	CreatedAt time.Time `json:"createdAt"`
+
+	UpdatedAt time.Time `json:"updatedAt"`
+
+	CacheRegistryCluster CacheRegistryValuesCacheRegistryCluster `json:"cacheRegistryCluster"`
+}
+
+func (v *createCacheRegistryCacheRegistryCreateCacheRegistryCreatePayloadCacheRegistry) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *createCacheRegistryCacheRegistryCreateCacheRegistryCreatePayloadCacheRegistry) __premarshalJSON() (*__premarshalcreateCacheRegistryCacheRegistryCreateCacheRegistryCreatePayloadCacheRegistry, error) {
+	var retval __premarshalcreateCacheRegistryCacheRegistryCreateCacheRegistryCreatePayloadCacheRegistry
+
+	retval.Id = v.CacheRegistryValues.Id
+	retval.Uuid = v.CacheRegistryValues.Uuid
+	retval.Name = v.CacheRegistryValues.Name
+	retval.Slug = v.CacheRegistryValues.Slug
+	retval.Description = v.CacheRegistryValues.Description
+	retval.Emoji = v.CacheRegistryValues.Emoji
+	retval.Color = v.CacheRegistryValues.Color
+	retval.Policy = v.CacheRegistryValues.Policy
+	retval.CreatedAt = v.CacheRegistryValues.CreatedAt
+	retval.UpdatedAt = v.CacheRegistryValues.UpdatedAt
+	retval.CacheRegistryCluster = v.CacheRegistryValues.CacheRegistryCluster
+	return &retval, nil
+}
+
+// createCacheRegistryResponse is returned by createCacheRegistry on success.
+type createCacheRegistryResponse struct {
+	CacheRegistryCreate createCacheRegistryCacheRegistryCreateCacheRegistryCreatePayload `json:"cacheRegistryCreate"`
+}
+
+// GetCacheRegistryCreate returns createCacheRegistryResponse.CacheRegistryCreate, and is useful for accessing the field via an interface.
+func (v *createCacheRegistryResponse) GetCacheRegistryCreate() createCacheRegistryCacheRegistryCreateCacheRegistryCreatePayload {
+	return v.CacheRegistryCreate
 }
 
 // createClusterAgentTokenClusterAgentTokenCreateClusterAgentTokenCreatePayload includes the requested fields of the GraphQL type ClusterAgentTokenCreatePayload.
@@ -7717,6 +8022,30 @@ func (v *deleteBannerResponse) GetOrganizationBannerDelete() deleteBannerOrganiz
 	return v.OrganizationBannerDelete
 }
 
+// deleteCacheRegistryCacheRegistryDeleteCacheRegistryDeletePayload includes the requested fields of the GraphQL type CacheRegistryDeletePayload.
+// The GraphQL type's documentation follows.
+//
+// Autogenerated return type of CacheRegistryDelete.
+type deleteCacheRegistryCacheRegistryDeleteCacheRegistryDeletePayload struct {
+	DeletedCacheRegistryId string `json:"deletedCacheRegistryId"`
+}
+
+// GetDeletedCacheRegistryId returns deleteCacheRegistryCacheRegistryDeleteCacheRegistryDeletePayload.DeletedCacheRegistryId, and is useful for accessing the field via an interface.
+func (v *deleteCacheRegistryCacheRegistryDeleteCacheRegistryDeletePayload) GetDeletedCacheRegistryId() string {
+	return v.DeletedCacheRegistryId
+}
+
+// deleteCacheRegistryResponse is returned by deleteCacheRegistry on success.
+type deleteCacheRegistryResponse struct {
+	// Delete a cache registry.
+	CacheRegistryDelete deleteCacheRegistryCacheRegistryDeleteCacheRegistryDeletePayload `json:"cacheRegistryDelete"`
+}
+
+// GetCacheRegistryDelete returns deleteCacheRegistryResponse.CacheRegistryDelete, and is useful for accessing the field via an interface.
+func (v *deleteCacheRegistryResponse) GetCacheRegistryDelete() deleteCacheRegistryCacheRegistryDeleteCacheRegistryDeletePayload {
+	return v.CacheRegistryDelete
+}
+
 // deleteClusterClusterDeleteClusterDeletePayload includes the requested fields of the GraphQL type ClusterDeletePayload.
 // The GraphQL type's documentation follows.
 //
@@ -8419,6 +8748,7 @@ func (v *getClusterByNameResponse) GetOrganization() getClusterByNameOrganizatio
 // getClusterQueueByNodeNodeAuthorizationGoogle
 // getClusterQueueByNodeNodeAuthorizationSAML
 // getClusterQueueByNodeNodeBuild
+// getClusterQueueByNodeNodeCacheRegistry
 // getClusterQueueByNodeNodeCluster
 // getClusterQueueByNodeNodeClusterQueue
 // getClusterQueueByNodeNodeClusterQueueToken
@@ -8501,7 +8831,9 @@ func (v *getClusterQueueByNodeNodeAuthorizationGoogle) implementsGraphQLInterfac
 }
 func (v *getClusterQueueByNodeNodeAuthorizationSAML) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
-func (v *getClusterQueueByNodeNodeBuild) implementsGraphQLInterfacegetClusterQueueByNodeNode()   {}
+func (v *getClusterQueueByNodeNodeBuild) implementsGraphQLInterfacegetClusterQueueByNodeNode() {}
+func (v *getClusterQueueByNodeNodeCacheRegistry) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
+}
 func (v *getClusterQueueByNodeNodeCluster) implementsGraphQLInterfacegetClusterQueueByNodeNode() {}
 func (v *getClusterQueueByNodeNodeClusterQueue) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
@@ -8649,6 +8981,9 @@ func __unmarshalgetClusterQueueByNodeNode(b []byte, v *getClusterQueueByNodeNode
 		return json.Unmarshal(b, *v)
 	case "Build":
 		*v = new(getClusterQueueByNodeNodeBuild)
+		return json.Unmarshal(b, *v)
+	case "CacheRegistry":
+		*v = new(getClusterQueueByNodeNodeCacheRegistry)
 		return json.Unmarshal(b, *v)
 	case "Cluster":
 		*v = new(getClusterQueueByNodeNodeCluster)
@@ -8931,6 +9266,14 @@ func __marshalgetClusterQueueByNodeNode(v *getClusterQueueByNodeNode) ([]byte, e
 		result := struct {
 			TypeName string `json:"__typename"`
 			*getClusterQueueByNodeNodeBuild
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterQueueByNodeNodeCacheRegistry:
+		typename = "CacheRegistry"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterQueueByNodeNodeCacheRegistry
 		}{typename, v}
 		return json.Marshal(result)
 	case *getClusterQueueByNodeNodeCluster:
@@ -9511,6 +9854,14 @@ type getClusterQueueByNodeNodeBuild struct {
 
 // GetTypename returns getClusterQueueByNodeNodeBuild.Typename, and is useful for accessing the field via an interface.
 func (v *getClusterQueueByNodeNodeBuild) GetTypename() string { return v.Typename }
+
+// getClusterQueueByNodeNodeCacheRegistry includes the requested fields of the GraphQL type CacheRegistry.
+type getClusterQueueByNodeNodeCacheRegistry struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterQueueByNodeNodeCacheRegistry.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterQueueByNodeNodeCacheRegistry) GetTypename() string { return v.Typename }
 
 // getClusterQueueByNodeNodeCluster includes the requested fields of the GraphQL type Cluster.
 type getClusterQueueByNodeNodeCluster struct {
@@ -10397,6 +10748,7 @@ func (v *getClusterQueuesResponse) GetOrganization() getClusterQueuesOrganizatio
 // getNodeNodeAuthorizationGoogle
 // getNodeNodeAuthorizationSAML
 // getNodeNodeBuild
+// getNodeNodeCacheRegistry
 // getNodeNodeCluster
 // getNodeNodeClusterQueue
 // getNodeNodeClusterQueueToken
@@ -10471,6 +10823,7 @@ func (v *getNodeNodeAuthorizationGitHubEnterprise) implementsGraphQLInterfaceget
 func (v *getNodeNodeAuthorizationGoogle) implementsGraphQLInterfacegetNodeNode()                  {}
 func (v *getNodeNodeAuthorizationSAML) implementsGraphQLInterfacegetNodeNode()                    {}
 func (v *getNodeNodeBuild) implementsGraphQLInterfacegetNodeNode()                                {}
+func (v *getNodeNodeCacheRegistry) implementsGraphQLInterfacegetNodeNode()                        {}
 func (v *getNodeNodeCluster) implementsGraphQLInterfacegetNodeNode()                              {}
 func (v *getNodeNodeClusterQueue) implementsGraphQLInterfacegetNodeNode()                         {}
 func (v *getNodeNodeClusterQueueToken) implementsGraphQLInterfacegetNodeNode()                    {}
@@ -10581,6 +10934,9 @@ func __unmarshalgetNodeNode(b []byte, v *getNodeNode) error {
 		return json.Unmarshal(b, *v)
 	case "Build":
 		*v = new(getNodeNodeBuild)
+		return json.Unmarshal(b, *v)
+	case "CacheRegistry":
+		*v = new(getNodeNodeCacheRegistry)
 		return json.Unmarshal(b, *v)
 	case "Cluster":
 		*v = new(getNodeNodeCluster)
@@ -10864,6 +11220,18 @@ func __marshalgetNodeNode(v *getNodeNode) ([]byte, error) {
 			TypeName string `json:"__typename"`
 			*getNodeNodeBuild
 		}{typename, v}
+		return json.Marshal(result)
+	case *getNodeNodeCacheRegistry:
+		typename = "CacheRegistry"
+
+		premarshaled, err := v.__premarshalJSON()
+		if err != nil {
+			return nil, err
+		}
+		result := struct {
+			TypeName string `json:"__typename"`
+			*__premarshalgetNodeNodeCacheRegistry
+		}{typename, premarshaled}
 		return json.Marshal(result)
 	case *getNodeNodeCluster:
 		typename = "Cluster"
@@ -11473,6 +11841,127 @@ type getNodeNodeBuild struct {
 
 // GetTypename returns getNodeNodeBuild.Typename, and is useful for accessing the field via an interface.
 func (v *getNodeNodeBuild) GetTypename() string { return v.Typename }
+
+// getNodeNodeCacheRegistry includes the requested fields of the GraphQL type CacheRegistry.
+type getNodeNodeCacheRegistry struct {
+	Typename            string `json:"__typename"`
+	CacheRegistryValues `json:"-"`
+}
+
+// GetTypename returns getNodeNodeCacheRegistry.Typename, and is useful for accessing the field via an interface.
+func (v *getNodeNodeCacheRegistry) GetTypename() string { return v.Typename }
+
+// GetId returns getNodeNodeCacheRegistry.Id, and is useful for accessing the field via an interface.
+func (v *getNodeNodeCacheRegistry) GetId() string { return v.CacheRegistryValues.Id }
+
+// GetUuid returns getNodeNodeCacheRegistry.Uuid, and is useful for accessing the field via an interface.
+func (v *getNodeNodeCacheRegistry) GetUuid() string { return v.CacheRegistryValues.Uuid }
+
+// GetName returns getNodeNodeCacheRegistry.Name, and is useful for accessing the field via an interface.
+func (v *getNodeNodeCacheRegistry) GetName() string { return v.CacheRegistryValues.Name }
+
+// GetSlug returns getNodeNodeCacheRegistry.Slug, and is useful for accessing the field via an interface.
+func (v *getNodeNodeCacheRegistry) GetSlug() string { return v.CacheRegistryValues.Slug }
+
+// GetDescription returns getNodeNodeCacheRegistry.Description, and is useful for accessing the field via an interface.
+func (v *getNodeNodeCacheRegistry) GetDescription() *string { return v.CacheRegistryValues.Description }
+
+// GetEmoji returns getNodeNodeCacheRegistry.Emoji, and is useful for accessing the field via an interface.
+func (v *getNodeNodeCacheRegistry) GetEmoji() *string { return v.CacheRegistryValues.Emoji }
+
+// GetColor returns getNodeNodeCacheRegistry.Color, and is useful for accessing the field via an interface.
+func (v *getNodeNodeCacheRegistry) GetColor() *string { return v.CacheRegistryValues.Color }
+
+// GetPolicy returns getNodeNodeCacheRegistry.Policy, and is useful for accessing the field via an interface.
+func (v *getNodeNodeCacheRegistry) GetPolicy() *string { return v.CacheRegistryValues.Policy }
+
+// GetCreatedAt returns getNodeNodeCacheRegistry.CreatedAt, and is useful for accessing the field via an interface.
+func (v *getNodeNodeCacheRegistry) GetCreatedAt() time.Time { return v.CacheRegistryValues.CreatedAt }
+
+// GetUpdatedAt returns getNodeNodeCacheRegistry.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *getNodeNodeCacheRegistry) GetUpdatedAt() time.Time { return v.CacheRegistryValues.UpdatedAt }
+
+// GetCacheRegistryCluster returns getNodeNodeCacheRegistry.CacheRegistryCluster, and is useful for accessing the field via an interface.
+func (v *getNodeNodeCacheRegistry) GetCacheRegistryCluster() CacheRegistryValuesCacheRegistryCluster {
+	return v.CacheRegistryValues.CacheRegistryCluster
+}
+
+func (v *getNodeNodeCacheRegistry) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*getNodeNodeCacheRegistry
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.getNodeNodeCacheRegistry = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	err = json.Unmarshal(
+		b, &v.CacheRegistryValues)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+type __premarshalgetNodeNodeCacheRegistry struct {
+	Typename string `json:"__typename"`
+
+	Id string `json:"id"`
+
+	Uuid string `json:"uuid"`
+
+	Name string `json:"name"`
+
+	Slug string `json:"slug"`
+
+	Description *string `json:"description"`
+
+	Emoji *string `json:"emoji"`
+
+	Color *string `json:"color"`
+
+	Policy *string `json:"policy"`
+
+	CreatedAt time.Time `json:"createdAt"`
+
+	UpdatedAt time.Time `json:"updatedAt"`
+
+	CacheRegistryCluster CacheRegistryValuesCacheRegistryCluster `json:"cacheRegistryCluster"`
+}
+
+func (v *getNodeNodeCacheRegistry) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *getNodeNodeCacheRegistry) __premarshalJSON() (*__premarshalgetNodeNodeCacheRegistry, error) {
+	var retval __premarshalgetNodeNodeCacheRegistry
+
+	retval.Typename = v.Typename
+	retval.Id = v.CacheRegistryValues.Id
+	retval.Uuid = v.CacheRegistryValues.Uuid
+	retval.Name = v.CacheRegistryValues.Name
+	retval.Slug = v.CacheRegistryValues.Slug
+	retval.Description = v.CacheRegistryValues.Description
+	retval.Emoji = v.CacheRegistryValues.Emoji
+	retval.Color = v.CacheRegistryValues.Color
+	retval.Policy = v.CacheRegistryValues.Policy
+	retval.CreatedAt = v.CacheRegistryValues.CreatedAt
+	retval.UpdatedAt = v.CacheRegistryValues.UpdatedAt
+	retval.CacheRegistryCluster = v.CacheRegistryValues.CacheRegistryCluster
+	return &retval, nil
+}
 
 // getNodeNodeCluster includes the requested fields of the GraphQL type Cluster.
 type getNodeNodeCluster struct {
@@ -13665,6 +14154,7 @@ func (v *getPipelinePipeline) __premarshalJSON() (*__premarshalgetPipelinePipeli
 // getPipelineProviderSettingsNodeAuthorizationGoogle
 // getPipelineProviderSettingsNodeAuthorizationSAML
 // getPipelineProviderSettingsNodeBuild
+// getPipelineProviderSettingsNodeCacheRegistry
 // getPipelineProviderSettingsNodeCluster
 // getPipelineProviderSettingsNodeClusterQueue
 // getPipelineProviderSettingsNodeClusterQueueToken
@@ -13753,6 +14243,8 @@ func (v *getPipelineProviderSettingsNodeAuthorizationGoogle) implementsGraphQLIn
 func (v *getPipelineProviderSettingsNodeAuthorizationSAML) implementsGraphQLInterfacegetPipelineProviderSettingsNode() {
 }
 func (v *getPipelineProviderSettingsNodeBuild) implementsGraphQLInterfacegetPipelineProviderSettingsNode() {
+}
+func (v *getPipelineProviderSettingsNodeCacheRegistry) implementsGraphQLInterfacegetPipelineProviderSettingsNode() {
 }
 func (v *getPipelineProviderSettingsNodeCluster) implementsGraphQLInterfacegetPipelineProviderSettingsNode() {
 }
@@ -13913,6 +14405,9 @@ func __unmarshalgetPipelineProviderSettingsNode(b []byte, v *getPipelineProvider
 		return json.Unmarshal(b, *v)
 	case "Build":
 		*v = new(getPipelineProviderSettingsNodeBuild)
+		return json.Unmarshal(b, *v)
+	case "CacheRegistry":
+		*v = new(getPipelineProviderSettingsNodeCacheRegistry)
 		return json.Unmarshal(b, *v)
 	case "Cluster":
 		*v = new(getPipelineProviderSettingsNodeCluster)
@@ -14195,6 +14690,14 @@ func __marshalgetPipelineProviderSettingsNode(v *getPipelineProviderSettingsNode
 		result := struct {
 			TypeName string `json:"__typename"`
 			*getPipelineProviderSettingsNodeBuild
+		}{typename, v}
+		return json.Marshal(result)
+	case *getPipelineProviderSettingsNodeCacheRegistry:
+		typename = "CacheRegistry"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getPipelineProviderSettingsNodeCacheRegistry
 		}{typename, v}
 		return json.Marshal(result)
 	case *getPipelineProviderSettingsNodeCluster:
@@ -14775,6 +15278,14 @@ type getPipelineProviderSettingsNodeBuild struct {
 
 // GetTypename returns getPipelineProviderSettingsNodeBuild.Typename, and is useful for accessing the field via an interface.
 func (v *getPipelineProviderSettingsNodeBuild) GetTypename() string { return v.Typename }
+
+// getPipelineProviderSettingsNodeCacheRegistry includes the requested fields of the GraphQL type CacheRegistry.
+type getPipelineProviderSettingsNodeCacheRegistry struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getPipelineProviderSettingsNodeCacheRegistry.Typename, and is useful for accessing the field via an interface.
+func (v *getPipelineProviderSettingsNodeCacheRegistry) GetTypename() string { return v.Typename }
 
 // getPipelineProviderSettingsNodeCluster includes the requested fields of the GraphQL type Cluster.
 type getPipelineProviderSettingsNodeCluster struct {
@@ -15659,6 +16170,7 @@ func (v *getPipelineScheduleBySlugResponse) GetPipelineSchedule() getPipelineSch
 // getPipelineScheduleNodeAuthorizationGoogle
 // getPipelineScheduleNodeAuthorizationSAML
 // getPipelineScheduleNodeBuild
+// getPipelineScheduleNodeCacheRegistry
 // getPipelineScheduleNodeCluster
 // getPipelineScheduleNodeClusterQueue
 // getPipelineScheduleNodeClusterQueueToken
@@ -15739,9 +16251,10 @@ func (v *getPipelineScheduleNodeAuthorizationGoogle) implementsGraphQLInterfaceg
 }
 func (v *getPipelineScheduleNodeAuthorizationSAML) implementsGraphQLInterfacegetPipelineScheduleNode() {
 }
-func (v *getPipelineScheduleNodeBuild) implementsGraphQLInterfacegetPipelineScheduleNode()        {}
-func (v *getPipelineScheduleNodeCluster) implementsGraphQLInterfacegetPipelineScheduleNode()      {}
-func (v *getPipelineScheduleNodeClusterQueue) implementsGraphQLInterfacegetPipelineScheduleNode() {}
+func (v *getPipelineScheduleNodeBuild) implementsGraphQLInterfacegetPipelineScheduleNode()         {}
+func (v *getPipelineScheduleNodeCacheRegistry) implementsGraphQLInterfacegetPipelineScheduleNode() {}
+func (v *getPipelineScheduleNodeCluster) implementsGraphQLInterfacegetPipelineScheduleNode()       {}
+func (v *getPipelineScheduleNodeClusterQueue) implementsGraphQLInterfacegetPipelineScheduleNode()  {}
 func (v *getPipelineScheduleNodeClusterQueueToken) implementsGraphQLInterfacegetPipelineScheduleNode() {
 }
 func (v *getPipelineScheduleNodeClusterToken) implementsGraphQLInterfacegetPipelineScheduleNode() {}
@@ -15876,6 +16389,9 @@ func __unmarshalgetPipelineScheduleNode(b []byte, v *getPipelineScheduleNode) er
 		return json.Unmarshal(b, *v)
 	case "Build":
 		*v = new(getPipelineScheduleNodeBuild)
+		return json.Unmarshal(b, *v)
+	case "CacheRegistry":
+		*v = new(getPipelineScheduleNodeCacheRegistry)
 		return json.Unmarshal(b, *v)
 	case "Cluster":
 		*v = new(getPipelineScheduleNodeCluster)
@@ -16158,6 +16674,14 @@ func __marshalgetPipelineScheduleNode(v *getPipelineScheduleNode) ([]byte, error
 		result := struct {
 			TypeName string `json:"__typename"`
 			*getPipelineScheduleNodeBuild
+		}{typename, v}
+		return json.Marshal(result)
+	case *getPipelineScheduleNodeCacheRegistry:
+		typename = "CacheRegistry"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getPipelineScheduleNodeCacheRegistry
 		}{typename, v}
 		return json.Marshal(result)
 	case *getPipelineScheduleNodeCluster:
@@ -16738,6 +17262,14 @@ type getPipelineScheduleNodeBuild struct {
 
 // GetTypename returns getPipelineScheduleNodeBuild.Typename, and is useful for accessing the field via an interface.
 func (v *getPipelineScheduleNodeBuild) GetTypename() string { return v.Typename }
+
+// getPipelineScheduleNodeCacheRegistry includes the requested fields of the GraphQL type CacheRegistry.
+type getPipelineScheduleNodeCacheRegistry struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getPipelineScheduleNodeCacheRegistry.Typename, and is useful for accessing the field via an interface.
+func (v *getPipelineScheduleNodeCacheRegistry) GetTypename() string { return v.Typename }
 
 // getPipelineScheduleNodeCluster includes the requested fields of the GraphQL type Cluster.
 type getPipelineScheduleNodeCluster struct {
@@ -17888,6 +18420,7 @@ func (v *getPipelineTemplatesResponse) GetOrganization() getPipelineTemplatesOrg
 // getPipelineWebhookNodeAuthorizationGoogle
 // getPipelineWebhookNodeAuthorizationSAML
 // getPipelineWebhookNodeBuild
+// getPipelineWebhookNodeCacheRegistry
 // getPipelineWebhookNodeCluster
 // getPipelineWebhookNodeClusterQueue
 // getPipelineWebhookNodeClusterQueueToken
@@ -17968,9 +18501,10 @@ func (v *getPipelineWebhookNodeAuthorizationGoogle) implementsGraphQLInterfacege
 }
 func (v *getPipelineWebhookNodeAuthorizationSAML) implementsGraphQLInterfacegetPipelineWebhookNode() {
 }
-func (v *getPipelineWebhookNodeBuild) implementsGraphQLInterfacegetPipelineWebhookNode()        {}
-func (v *getPipelineWebhookNodeCluster) implementsGraphQLInterfacegetPipelineWebhookNode()      {}
-func (v *getPipelineWebhookNodeClusterQueue) implementsGraphQLInterfacegetPipelineWebhookNode() {}
+func (v *getPipelineWebhookNodeBuild) implementsGraphQLInterfacegetPipelineWebhookNode()         {}
+func (v *getPipelineWebhookNodeCacheRegistry) implementsGraphQLInterfacegetPipelineWebhookNode() {}
+func (v *getPipelineWebhookNodeCluster) implementsGraphQLInterfacegetPipelineWebhookNode()       {}
+func (v *getPipelineWebhookNodeClusterQueue) implementsGraphQLInterfacegetPipelineWebhookNode()  {}
 func (v *getPipelineWebhookNodeClusterQueueToken) implementsGraphQLInterfacegetPipelineWebhookNode() {
 }
 func (v *getPipelineWebhookNodeClusterToken) implementsGraphQLInterfacegetPipelineWebhookNode() {}
@@ -18095,6 +18629,9 @@ func __unmarshalgetPipelineWebhookNode(b []byte, v *getPipelineWebhookNode) erro
 		return json.Unmarshal(b, *v)
 	case "Build":
 		*v = new(getPipelineWebhookNodeBuild)
+		return json.Unmarshal(b, *v)
+	case "CacheRegistry":
+		*v = new(getPipelineWebhookNodeCacheRegistry)
 		return json.Unmarshal(b, *v)
 	case "Cluster":
 		*v = new(getPipelineWebhookNodeCluster)
@@ -18377,6 +18914,14 @@ func __marshalgetPipelineWebhookNode(v *getPipelineWebhookNode) ([]byte, error) 
 		result := struct {
 			TypeName string `json:"__typename"`
 			*getPipelineWebhookNodeBuild
+		}{typename, v}
+		return json.Marshal(result)
+	case *getPipelineWebhookNodeCacheRegistry:
+		typename = "CacheRegistry"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getPipelineWebhookNodeCacheRegistry
 		}{typename, v}
 		return json.Marshal(result)
 	case *getPipelineWebhookNodeCluster:
@@ -18951,6 +19496,14 @@ type getPipelineWebhookNodeBuild struct {
 
 // GetTypename returns getPipelineWebhookNodeBuild.Typename, and is useful for accessing the field via an interface.
 func (v *getPipelineWebhookNodeBuild) GetTypename() string { return v.Typename }
+
+// getPipelineWebhookNodeCacheRegistry includes the requested fields of the GraphQL type CacheRegistry.
+type getPipelineWebhookNodeCacheRegistry struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getPipelineWebhookNodeCacheRegistry.Typename, and is useful for accessing the field via an interface.
+func (v *getPipelineWebhookNodeCacheRegistry) GetTypename() string { return v.Typename }
 
 // getPipelineWebhookNodeCluster includes the requested fields of the GraphQL type Cluster.
 type getPipelineWebhookNodeCluster struct {
@@ -20434,6 +20987,14 @@ type getTestSuiteSuiteBuild struct {
 // GetTypename returns getTestSuiteSuiteBuild.Typename, and is useful for accessing the field via an interface.
 func (v *getTestSuiteSuiteBuild) GetTypename() string { return v.Typename }
 
+// getTestSuiteSuiteCacheRegistry includes the requested fields of the GraphQL type CacheRegistry.
+type getTestSuiteSuiteCacheRegistry struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getTestSuiteSuiteCacheRegistry.Typename, and is useful for accessing the field via an interface.
+func (v *getTestSuiteSuiteCacheRegistry) GetTypename() string { return v.Typename }
+
 // getTestSuiteSuiteCluster includes the requested fields of the GraphQL type Cluster.
 type getTestSuiteSuiteCluster struct {
 	Typename string `json:"__typename"`
@@ -20710,6 +21271,7 @@ func (v *getTestSuiteSuiteJobTypeWait) GetTypename() string { return v.Typename 
 // getTestSuiteSuiteAuthorizationGoogle
 // getTestSuiteSuiteAuthorizationSAML
 // getTestSuiteSuiteBuild
+// getTestSuiteSuiteCacheRegistry
 // getTestSuiteSuiteCluster
 // getTestSuiteSuiteClusterQueue
 // getTestSuiteSuiteClusterQueueToken
@@ -20785,6 +21347,7 @@ func (v *getTestSuiteSuiteAuthorizationGitHubEnterprise) implementsGraphQLInterf
 func (v *getTestSuiteSuiteAuthorizationGoogle) implementsGraphQLInterfacegetTestSuiteSuiteNode() {}
 func (v *getTestSuiteSuiteAuthorizationSAML) implementsGraphQLInterfacegetTestSuiteSuiteNode()   {}
 func (v *getTestSuiteSuiteBuild) implementsGraphQLInterfacegetTestSuiteSuiteNode()               {}
+func (v *getTestSuiteSuiteCacheRegistry) implementsGraphQLInterfacegetTestSuiteSuiteNode()       {}
 func (v *getTestSuiteSuiteCluster) implementsGraphQLInterfacegetTestSuiteSuiteNode()             {}
 func (v *getTestSuiteSuiteClusterQueue) implementsGraphQLInterfacegetTestSuiteSuiteNode()        {}
 func (v *getTestSuiteSuiteClusterQueueToken) implementsGraphQLInterfacegetTestSuiteSuiteNode()   {}
@@ -20902,6 +21465,9 @@ func __unmarshalgetTestSuiteSuiteNode(b []byte, v *getTestSuiteSuiteNode) error 
 		return json.Unmarshal(b, *v)
 	case "Build":
 		*v = new(getTestSuiteSuiteBuild)
+		return json.Unmarshal(b, *v)
+	case "CacheRegistry":
+		*v = new(getTestSuiteSuiteCacheRegistry)
 		return json.Unmarshal(b, *v)
 	case "Cluster":
 		*v = new(getTestSuiteSuiteCluster)
@@ -21184,6 +21750,14 @@ func __marshalgetTestSuiteSuiteNode(v *getTestSuiteSuiteNode) ([]byte, error) {
 		result := struct {
 			TypeName string `json:"__typename"`
 			*getTestSuiteSuiteBuild
+		}{typename, v}
+		return json.Marshal(result)
+	case *getTestSuiteSuiteCacheRegistry:
+		typename = "CacheRegistry"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getTestSuiteSuiteCacheRegistry
 		}{typename, v}
 		return json.Marshal(result)
 	case *getTestSuiteSuiteCluster:
@@ -22864,6 +23438,164 @@ type unarchivePipelineResponse struct {
 // GetPipelineUnarchive returns unarchivePipelineResponse.PipelineUnarchive, and is useful for accessing the field via an interface.
 func (v *unarchivePipelineResponse) GetPipelineUnarchive() unarchivePipelinePipelineUnarchivePipelineUnarchivePayload {
 	return v.PipelineUnarchive
+}
+
+// updateCacheRegistryCacheRegistryUpdateCacheRegistryUpdatePayload includes the requested fields of the GraphQL type CacheRegistryUpdatePayload.
+// The GraphQL type's documentation follows.
+//
+// Autogenerated return type of CacheRegistryUpdate.
+type updateCacheRegistryCacheRegistryUpdateCacheRegistryUpdatePayload struct {
+	CacheRegistry updateCacheRegistryCacheRegistryUpdateCacheRegistryUpdatePayloadCacheRegistry `json:"cacheRegistry"`
+}
+
+// GetCacheRegistry returns updateCacheRegistryCacheRegistryUpdateCacheRegistryUpdatePayload.CacheRegistry, and is useful for accessing the field via an interface.
+func (v *updateCacheRegistryCacheRegistryUpdateCacheRegistryUpdatePayload) GetCacheRegistry() updateCacheRegistryCacheRegistryUpdateCacheRegistryUpdatePayloadCacheRegistry {
+	return v.CacheRegistry
+}
+
+// updateCacheRegistryCacheRegistryUpdateCacheRegistryUpdatePayloadCacheRegistry includes the requested fields of the GraphQL type CacheRegistry.
+type updateCacheRegistryCacheRegistryUpdateCacheRegistryUpdatePayloadCacheRegistry struct {
+	CacheRegistryValues `json:"-"`
+}
+
+// GetId returns updateCacheRegistryCacheRegistryUpdateCacheRegistryUpdatePayloadCacheRegistry.Id, and is useful for accessing the field via an interface.
+func (v *updateCacheRegistryCacheRegistryUpdateCacheRegistryUpdatePayloadCacheRegistry) GetId() string {
+	return v.CacheRegistryValues.Id
+}
+
+// GetUuid returns updateCacheRegistryCacheRegistryUpdateCacheRegistryUpdatePayloadCacheRegistry.Uuid, and is useful for accessing the field via an interface.
+func (v *updateCacheRegistryCacheRegistryUpdateCacheRegistryUpdatePayloadCacheRegistry) GetUuid() string {
+	return v.CacheRegistryValues.Uuid
+}
+
+// GetName returns updateCacheRegistryCacheRegistryUpdateCacheRegistryUpdatePayloadCacheRegistry.Name, and is useful for accessing the field via an interface.
+func (v *updateCacheRegistryCacheRegistryUpdateCacheRegistryUpdatePayloadCacheRegistry) GetName() string {
+	return v.CacheRegistryValues.Name
+}
+
+// GetSlug returns updateCacheRegistryCacheRegistryUpdateCacheRegistryUpdatePayloadCacheRegistry.Slug, and is useful for accessing the field via an interface.
+func (v *updateCacheRegistryCacheRegistryUpdateCacheRegistryUpdatePayloadCacheRegistry) GetSlug() string {
+	return v.CacheRegistryValues.Slug
+}
+
+// GetDescription returns updateCacheRegistryCacheRegistryUpdateCacheRegistryUpdatePayloadCacheRegistry.Description, and is useful for accessing the field via an interface.
+func (v *updateCacheRegistryCacheRegistryUpdateCacheRegistryUpdatePayloadCacheRegistry) GetDescription() *string {
+	return v.CacheRegistryValues.Description
+}
+
+// GetEmoji returns updateCacheRegistryCacheRegistryUpdateCacheRegistryUpdatePayloadCacheRegistry.Emoji, and is useful for accessing the field via an interface.
+func (v *updateCacheRegistryCacheRegistryUpdateCacheRegistryUpdatePayloadCacheRegistry) GetEmoji() *string {
+	return v.CacheRegistryValues.Emoji
+}
+
+// GetColor returns updateCacheRegistryCacheRegistryUpdateCacheRegistryUpdatePayloadCacheRegistry.Color, and is useful for accessing the field via an interface.
+func (v *updateCacheRegistryCacheRegistryUpdateCacheRegistryUpdatePayloadCacheRegistry) GetColor() *string {
+	return v.CacheRegistryValues.Color
+}
+
+// GetPolicy returns updateCacheRegistryCacheRegistryUpdateCacheRegistryUpdatePayloadCacheRegistry.Policy, and is useful for accessing the field via an interface.
+func (v *updateCacheRegistryCacheRegistryUpdateCacheRegistryUpdatePayloadCacheRegistry) GetPolicy() *string {
+	return v.CacheRegistryValues.Policy
+}
+
+// GetCreatedAt returns updateCacheRegistryCacheRegistryUpdateCacheRegistryUpdatePayloadCacheRegistry.CreatedAt, and is useful for accessing the field via an interface.
+func (v *updateCacheRegistryCacheRegistryUpdateCacheRegistryUpdatePayloadCacheRegistry) GetCreatedAt() time.Time {
+	return v.CacheRegistryValues.CreatedAt
+}
+
+// GetUpdatedAt returns updateCacheRegistryCacheRegistryUpdateCacheRegistryUpdatePayloadCacheRegistry.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *updateCacheRegistryCacheRegistryUpdateCacheRegistryUpdatePayloadCacheRegistry) GetUpdatedAt() time.Time {
+	return v.CacheRegistryValues.UpdatedAt
+}
+
+// GetCacheRegistryCluster returns updateCacheRegistryCacheRegistryUpdateCacheRegistryUpdatePayloadCacheRegistry.CacheRegistryCluster, and is useful for accessing the field via an interface.
+func (v *updateCacheRegistryCacheRegistryUpdateCacheRegistryUpdatePayloadCacheRegistry) GetCacheRegistryCluster() CacheRegistryValuesCacheRegistryCluster {
+	return v.CacheRegistryValues.CacheRegistryCluster
+}
+
+func (v *updateCacheRegistryCacheRegistryUpdateCacheRegistryUpdatePayloadCacheRegistry) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*updateCacheRegistryCacheRegistryUpdateCacheRegistryUpdatePayloadCacheRegistry
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.updateCacheRegistryCacheRegistryUpdateCacheRegistryUpdatePayloadCacheRegistry = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	err = json.Unmarshal(
+		b, &v.CacheRegistryValues)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+type __premarshalupdateCacheRegistryCacheRegistryUpdateCacheRegistryUpdatePayloadCacheRegistry struct {
+	Id string `json:"id"`
+
+	Uuid string `json:"uuid"`
+
+	Name string `json:"name"`
+
+	Slug string `json:"slug"`
+
+	Description *string `json:"description"`
+
+	Emoji *string `json:"emoji"`
+
+	Color *string `json:"color"`
+
+	Policy *string `json:"policy"`
+
+	CreatedAt time.Time `json:"createdAt"`
+
+	UpdatedAt time.Time `json:"updatedAt"`
+
+	CacheRegistryCluster CacheRegistryValuesCacheRegistryCluster `json:"cacheRegistryCluster"`
+}
+
+func (v *updateCacheRegistryCacheRegistryUpdateCacheRegistryUpdatePayloadCacheRegistry) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *updateCacheRegistryCacheRegistryUpdateCacheRegistryUpdatePayloadCacheRegistry) __premarshalJSON() (*__premarshalupdateCacheRegistryCacheRegistryUpdateCacheRegistryUpdatePayloadCacheRegistry, error) {
+	var retval __premarshalupdateCacheRegistryCacheRegistryUpdateCacheRegistryUpdatePayloadCacheRegistry
+
+	retval.Id = v.CacheRegistryValues.Id
+	retval.Uuid = v.CacheRegistryValues.Uuid
+	retval.Name = v.CacheRegistryValues.Name
+	retval.Slug = v.CacheRegistryValues.Slug
+	retval.Description = v.CacheRegistryValues.Description
+	retval.Emoji = v.CacheRegistryValues.Emoji
+	retval.Color = v.CacheRegistryValues.Color
+	retval.Policy = v.CacheRegistryValues.Policy
+	retval.CreatedAt = v.CacheRegistryValues.CreatedAt
+	retval.UpdatedAt = v.CacheRegistryValues.UpdatedAt
+	retval.CacheRegistryCluster = v.CacheRegistryValues.CacheRegistryCluster
+	return &retval, nil
+}
+
+// updateCacheRegistryResponse is returned by updateCacheRegistry on success.
+type updateCacheRegistryResponse struct {
+	// Update a cache registry.
+	CacheRegistryUpdate updateCacheRegistryCacheRegistryUpdateCacheRegistryUpdatePayload `json:"cacheRegistryUpdate"`
+}
+
+// GetCacheRegistryUpdate returns updateCacheRegistryResponse.CacheRegistryUpdate, and is useful for accessing the field via an interface.
+func (v *updateCacheRegistryResponse) GetCacheRegistryUpdate() updateCacheRegistryCacheRegistryUpdateCacheRegistryUpdatePayload {
+	return v.CacheRegistryUpdate
 }
 
 // updateClusterAgentTokenClusterAgentTokenUpdateClusterAgentTokenUpdatePayload includes the requested fields of the GraphQL type ClusterAgentTokenUpdatePayload.
@@ -24909,6 +25641,70 @@ func createAgentToken(
 	return data_, err_
 }
 
+// The mutation executed by createCacheRegistry.
+const createCacheRegistry_Operation = `
+mutation createCacheRegistry ($organizationId: ID!, $clusterId: ID!, $name: String!, $description: String, $emoji: String, $color: String, $policy: JSON) {
+	cacheRegistryCreate(input: {organizationId:$organizationId,clusterId:$clusterId,name:$name,description:$description,emoji:$emoji,color:$color,policy:$policy}) {
+		cacheRegistry {
+			... CacheRegistryValues
+		}
+	}
+}
+fragment CacheRegistryValues on CacheRegistry {
+	id
+	uuid
+	name
+	slug
+	description
+	emoji
+	color
+	policy
+	createdAt
+	updatedAt
+	cacheRegistryCluster: cluster {
+		id
+		uuid
+	}
+}
+`
+
+func createCacheRegistry(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	organizationId string,
+	clusterId string,
+	name string,
+	description *string,
+	emoji *string,
+	color *string,
+	policy *string,
+) (data_ *createCacheRegistryResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "createCacheRegistry",
+		Query:  createCacheRegistry_Operation,
+		Variables: &__createCacheRegistryInput{
+			OrganizationId: organizationId,
+			ClusterId:      clusterId,
+			Name:           name,
+			Description:    description,
+			Emoji:          emoji,
+			Color:          color,
+			Policy:         policy,
+		},
+	}
+
+	data_ = &createCacheRegistryResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
 // The mutation executed by createCluster.
 const createCluster_Operation = `
 mutation createCluster ($organizationId: ID!, $name: String!, $description: String, $emoji: String, $color: String) {
@@ -25684,6 +26480,42 @@ func deleteBanner(
 	return data_, err_
 }
 
+// The mutation executed by deleteCacheRegistry.
+const deleteCacheRegistry_Operation = `
+mutation deleteCacheRegistry ($organizationId: ID!, $id: ID!) {
+	cacheRegistryDelete(input: {organizationId:$organizationId,id:$id}) {
+		deletedCacheRegistryId
+	}
+}
+`
+
+func deleteCacheRegistry(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	organizationId string,
+	id string,
+) (data_ *deleteCacheRegistryResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "deleteCacheRegistry",
+		Query:  deleteCacheRegistry_Operation,
+		Variables: &__deleteCacheRegistryInput{
+			OrganizationId: organizationId,
+			Id:             id,
+		},
+	}
+
+	data_ = &deleteCacheRegistryResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
 // The mutation executed by deleteCluster.
 const deleteCluster_Operation = `
 mutation deleteCluster ($organizationId: ID!, $id: ID!) {
@@ -26385,6 +27217,9 @@ query getNode ($id: ID!) {
 		... on Cluster {
 			... ClusterFields
 		}
+		... on CacheRegistry {
+			... CacheRegistryValues
+		}
 	}
 }
 fragment PipelineFields on Pipeline {
@@ -26531,6 +27366,22 @@ fragment ClusterFields on Cluster {
 		uuid
 		key
 		description
+	}
+}
+fragment CacheRegistryValues on CacheRegistry {
+	id
+	uuid
+	name
+	slug
+	description
+	emoji
+	color
+	policy
+	createdAt
+	updatedAt
+	cacheRegistryCluster: cluster {
+		id
+		uuid
 	}
 }
 fragment PipelineTeam on TeamPipelineConnection {
@@ -27973,6 +28824,70 @@ func unarchivePipeline(
 	}
 
 	data_ = &unarchivePipelineResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
+// The mutation executed by updateCacheRegistry.
+const updateCacheRegistry_Operation = `
+mutation updateCacheRegistry ($organizationId: ID!, $id: ID!, $name: String!, $description: String, $emoji: String, $color: String, $policy: JSON) {
+	cacheRegistryUpdate(input: {organizationId:$organizationId,id:$id,name:$name,description:$description,emoji:$emoji,color:$color,policy:$policy}) {
+		cacheRegistry {
+			... CacheRegistryValues
+		}
+	}
+}
+fragment CacheRegistryValues on CacheRegistry {
+	id
+	uuid
+	name
+	slug
+	description
+	emoji
+	color
+	policy
+	createdAt
+	updatedAt
+	cacheRegistryCluster: cluster {
+		id
+		uuid
+	}
+}
+`
+
+func updateCacheRegistry(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	organizationId string,
+	id string,
+	name string,
+	description *string,
+	emoji *string,
+	color *string,
+	policy *string,
+) (data_ *updateCacheRegistryResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "updateCacheRegistry",
+		Query:  updateCacheRegistry_Operation,
+		Variables: &__updateCacheRegistryInput{
+			OrganizationId: organizationId,
+			Id:             id,
+			Name:           name,
+			Description:    description,
+			Emoji:          emoji,
+			Color:          color,
+			Policy:         policy,
+		},
+	}
+
+	data_ = &updateCacheRegistryResponse{}
 	resp_ := &graphql.Response{Data: data_}
 
 	err_ = client_.MakeRequest(

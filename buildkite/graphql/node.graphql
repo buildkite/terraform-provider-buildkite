@@ -29,5 +29,8 @@ query getNode(
         ... on Cluster {
             ... ClusterFields
         }
+        ... on CacheRegistry {
+            ...CacheRegistryValues
+        }
     }
 }

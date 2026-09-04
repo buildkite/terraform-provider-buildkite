@@ -1,0 +1,82 @@
+fragment CacheRegistryValues on CacheRegistry {
+    id
+    uuid
+    name
+    slug
+    # @genqlient(pointer: true)
+    description
+    # @genqlient(pointer: true)
+    emoji
+    # @genqlient(pointer: true)
+    color
+    # @genqlient(pointer: true)
+    policy
+    createdAt
+    updatedAt
+    cacheRegistryCluster: cluster {
+        id
+        uuid
+    }
+}
+
+mutation createCacheRegistry(
+    $organizationId: ID!
+    $clusterId: ID!
+    $name: String!
+    # @genqlient(pointer: true)
+    $description: String
+    # @genqlient(pointer: true)
+    $emoji: String
+    # @genqlient(pointer: true)
+    $color: String
+    # @genqlient(pointer: true)
+    $policy: JSON
+) {
+    cacheRegistryCreate(input: {
+        organizationId: $organizationId
+        clusterId: $clusterId
+        name: $name
+        description: $description
+        emoji: $emoji
+        color: $color
+        policy: $policy
+    }) {
+        cacheRegistry {
+            ...CacheRegistryValues
+        }
+    }
+}
+
+mutation updateCacheRegistry(
+    $organizationId: ID!
+    $id: ID!
+    $name: String!
+    # @genqlient(pointer: true)
+    $description: String
+    # @genqlient(pointer: true)
+    $emoji: String
+    # @genqlient(pointer: true)
+    $color: String
+    # @genqlient(pointer: true)
+    $policy: JSON
+) {
+    cacheRegistryUpdate(input: {
+        organizationId: $organizationId
+        id: $id
+        name: $name
+        description: $description
+        emoji: $emoji
+        color: $color
+        policy: $policy
+    }) {
+        cacheRegistry {
+            ...CacheRegistryValues
+        }
+    }
+}
+
+mutation deleteCacheRegistry($organizationId: ID!, $id: ID!) {
+    cacheRegistryDelete(input: { organizationId: $organizationId, id: $id }) {
+        deletedCacheRegistryId
+    }
+}
