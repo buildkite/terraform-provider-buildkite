@@ -3,6 +3,7 @@ package buildkite
 import (
 	"errors"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/vektah/gqlparser/v2/gqlerror"
@@ -221,4 +222,58 @@ func TestIsActiveJobsError(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestParseImportIDs(t *testing.T) {
+	t.Parallel()
+
+	const (
+		pipelineID     = "UGlwZWxpbmUtLS00MzVjYWQ1OC1lODFkLTQ1YWYtODYzNy1iMWNmODA3MDIzOGQ="
+		teamPipelineID = "VGVhbVBpcGVsaW5lLS0tMmQ5ZmRjYjctMjJjYS00ZDU3LTkwMWMtYmI3NzY1MmM5ZTk2" // no padding, so shaped like a slug
+		queueID        = "Q2x1c3RlclF1ZXVlLS0tNGM2YzNkYzEtM2Q5MC00NGQxLWIwNGMtNzBjYzRlZTg3NGJj"
+		uuid           = "0bd5ea7c-89b3-4f40-8ca3-ffac805771eb"
+	)
+
+	t.Run("pipeline", func(t *testing.T) {
+		for id, want := range map[string]string{"my-pipeline": "my-pipeline", "My-Pipeline": "My-Pipeline", "pipeline2": "pipeline2", pipelineID: "", teamPipelineID: "", "-pipeline": "", "my_pipeline": "", "my-pipeline/x": "", "": ""} {
+			if got, ok := parsePipelineImportID(id); got != want || ok != (want != "") {
+				t.Errorf("parsePipelineImportID(%q) = %q, %t", id, got, ok)
+			}
+		}
+	})
+
+	t.Run("team", func(t *testing.T) {
+		for id, want := range map[string]string{"everyone": "everyone", "deploy-team": "deploy-team", pipelineID: "", teamPipelineID: "", "Deploy-Team": "", "": ""} {
+			if got, ok := parseTeamImportID(id); got != want || ok != (want != "") {
+				t.Errorf("parseTeamImportID(%q) = %q, %t", id, got, ok)
+			}
+		}
+	})
+
+	t.Run("pipeline schedule", func(t *testing.T) {
+		for id, want := range map[string]string{"my-pipeline/" + uuid: "my-pipeline " + uuid, "My-Pipeline/" + uuid: "My-Pipeline " + uuid, "my-pipeline/nightly": "", "my-pipeline": "", pipelineID: "", uuid + "/my-pipeline": ""} {
+			pipeline, schedule, ok := parsePipelineScheduleImportID(id)
+			if got := strings.TrimSpace(pipeline + " " + schedule); got != want || ok != (want != "") {
+				t.Errorf("parsePipelineScheduleImportID(%q) = %q, %t", id, got, ok)
+			}
+		}
+	})
+
+	t.Run("pipeline team", func(t *testing.T) {
+		for id, want := range map[string]string{"my-pipeline/deploy-team": "my-pipeline deploy-team", "My-Pipeline/everyone": "My-Pipeline everyone", "my-pipeline": "", "my-pipeline/Deploy": "", teamPipelineID: "", "a/b/c": ""} {
+			pipeline, team, ok := parsePipelineTeamImportID(id)
+			if got := strings.TrimSpace(pipeline + " " + team); got != want || ok != (want != "") {
+				t.Errorf("parsePipelineTeamImportID(%q) = %q, %t", id, got, ok)
+			}
+		}
+	})
+
+	t.Run("cluster queue", func(t *testing.T) {
+		for id, want := range map[string]string{uuid + "/default": uuid + " default", uuid + "/linux_small_amd": uuid + " linux_small_amd", uuid + "/Mac-Silicon.1": uuid + " Mac-Silicon.1", uuid + "/": "", uuid: "", "default/" + uuid: "", queueID + "," + uuid: "", queueID: ""} {
+			cluster, key, ok := parseClusterQueueImportID(id)
+			if got := strings.TrimSpace(cluster + " " + key); got != want || ok != (want != "") {
+				t.Errorf("parseClusterQueueImportID(%q) = %q, %t", id, got, ok)
+			}
+		}
+	})
 }

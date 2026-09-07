@@ -330,38 +330,16 @@ func (cq *clusterQueueResource) Create(ctx context.Context, req resource.CreateR
 	state.Key = types.StringValue(r.ClusterQueueCreate.ClusterQueue.Key)
 	state.Description = types.StringPointerValue(r.ClusterQueueCreate.ClusterQueue.Description)
 
+	// The mutation creates the queue dispatching, and on the API's own retry_agent_affinity default.
+	// The calls further down move it off both if the plan asked for something else, and each records
+	// its own result, so what is recorded here is what a queue looks like when none of them ran.
 	state.DispatchPaused = types.BoolValue(false)
+	state.RetryAgentAffinity = types.StringValue(RetryAgentAffinityPreferWarmest)
 
-	desiredAffinity := RetryAgentAffinityPreferWarmest
-	if !plan.RetryAgentAffinity.IsNull() && !plan.RetryAgentAffinity.IsUnknown() {
-		desiredAffinity = plan.RetryAgentAffinity.ValueString()
-	}
-
-	if desiredAffinity != RetryAgentAffinityPreferWarmest {
-		err := cq.updateClusterQueueViaREST(ctx, state.ClusterUuid.ValueString(), state.Uuid.ValueString(), desiredAffinity)
-		if err != nil {
-			resp.Diagnostics.AddError(
-				"Unable to set retry_agent_affinity",
-				fmt.Sprintf("Queue %s created but retry_agent_affinity could not be set: %s", state.Key.ValueString(), err.Error()),
-			)
-			resp.State.Set(ctx, &state)
-			return
-		}
-	}
-	state.RetryAgentAffinity = types.StringValue(desiredAffinity)
-
-	// GraphQL API does not allow Cluster Queue to be created with Dispatch Paused
-	// so Pause Dispatch after creation if required
-	if plan.DispatchPaused.ValueBool() {
-		log.Printf("Pausing dispatch on cluster queue with key %s", plan.Key.ValueString())
-		err = cq.pauseDispatch(ctx, timeout, state, &resp.Diagnostics)
-		if err != nil {
-			resp.State.Set(ctx, &state)
-			return
-		}
-		state.DispatchPaused = types.BoolValue(true)
-	}
-
+	// The create response already carries the hosted agent settings, so this belongs with the rest
+	// of what the mutation applied rather than after the calls that can fail. Recording it late used
+	// to leave hosted_agents null in state for a queue that has it, which reads to the RequiresReplaceIf
+	// above as the attribute having been added, and plans a replace for a queue that only needed a retry.
 	if plan.HostedAgents != nil {
 		state.HostedAgents = &hostedAgentResourceModel{
 			InstanceShape: types.StringValue(string(r.ClusterQueueCreate.ClusterQueue.HostedAgents.InstanceShape.Name)),
@@ -385,7 +363,42 @@ func (cq *clusterQueueResource) Create(ctx context.Context, req resource.CreateR
 		}
 	}
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+	// The queue exists from here on, so every path out has to record it or Terraform is left with an
+	// orphan that only terraform import recovers. Deferred so a new early return cannot forget it,
+	// and so the diagnostics from the write are not dropped as the two error paths below dropped
+	// them. State alongside an error taints the instance, which is the better trade here: the queue
+	// really was created, and a taint is cleared with terraform untaint.
+	defer func() {
+		resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+	}()
+
+	desiredAffinity := RetryAgentAffinityPreferWarmest
+	if !plan.RetryAgentAffinity.IsNull() && !plan.RetryAgentAffinity.IsUnknown() {
+		desiredAffinity = plan.RetryAgentAffinity.ValueString()
+	}
+
+	if desiredAffinity != RetryAgentAffinityPreferWarmest {
+		err := cq.updateClusterQueueViaREST(ctx, state.ClusterUuid.ValueString(), state.Uuid.ValueString(), desiredAffinity)
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Unable to set retry_agent_affinity",
+				fmt.Sprintf("Queue %s created but retry_agent_affinity could not be set: %s", state.Key.ValueString(), err.Error()),
+			)
+			return
+		}
+		state.RetryAgentAffinity = types.StringValue(desiredAffinity)
+	}
+
+	// GraphQL API does not allow Cluster Queue to be created with Dispatch Paused
+	// so Pause Dispatch after creation if required
+	if plan.DispatchPaused.ValueBool() {
+		log.Printf("Pausing dispatch on cluster queue with key %s", plan.Key.ValueString())
+		err = cq.pauseDispatch(ctx, timeout, state, &resp.Diagnostics)
+		if err != nil {
+			return
+		}
+		state.DispatchPaused = types.BoolValue(true)
+	}
 }
 
 func (cq *clusterQueueResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
@@ -440,11 +453,32 @@ func (cq *clusterQueueResource) Read(ctx context.Context, req resource.ReadReque
 
 	restResponse, err := cq.getClusterQueueViaREST(ctx, state.ClusterUuid.ValueString(), state.Uuid.ValueString())
 	if err != nil {
+		// This used to record the schema default here, which is the one value a failed read must not
+		// write: a queue configured prefer-warmest that Buildkite has set to prefer-different then
+		// matches its own configuration, so no plan ever shows the drift and the queue stays wrong.
+		if !isAPIStatus(err, http.StatusForbidden) {
+			resp.Diagnostics.AddError(
+				"Unable to read retry_agent_affinity",
+				fmt.Sprintf("Queue %s read successfully but retry_agent_affinity is unavailable: %s", state.Key.ValueString(), err.Error()),
+			)
+			return
+		}
+		// An import, or state written before this attribute existed, has no last known value to keep.
+		// Recording the default there is the same fabrication, and leaving it null plans the default
+		// against a null prior and then fails the apply on this very refusal, so say so instead.
+		if state.RetryAgentAffinity.IsNull() {
+			resp.Diagnostics.AddError(
+				"Unable to read retry_agent_affinity",
+				fmt.Sprintf("Queue %s was read, but retry_agent_affinity was refused and state holds no previous value to keep. The API token needs the read_clusters scope: %s", state.Key.ValueString(), err.Error()),
+			)
+			return
+		}
+		// tolerate a token that reads the queue over GraphQL but not over REST, as the organization
+		// resource does for its api-settings, and keep the last known value rather than inventing one
 		resp.Diagnostics.AddWarning(
 			"Unable to read retry_agent_affinity",
-			fmt.Sprintf("Queue %s read successfully but retry_agent_affinity is unavailable: %s. Defaulting to prefer-warmest.", state.Key.ValueString(), err.Error()),
+			fmt.Sprintf("Queue %s read successfully but retry_agent_affinity is unavailable, keeping the last known value: %s", state.Key.ValueString(), err.Error()),
 		)
-		state.RetryAgentAffinity = types.StringValue(RetryAgentAffinityPreferWarmest)
 	} else {
 		state.RetryAgentAffinity = types.StringValue(restResponse.RetryAgentAffinity)
 	}
@@ -453,12 +487,22 @@ func (cq *clusterQueueResource) Read(ctx context.Context, req resource.ReadReque
 }
 
 func (cq *clusterQueueResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	// <cluster uuid>/<queue key> is also accepted and resolved to the GraphQL ID
+	if cluster, key, ok := parseClusterQueueImportID(req.ID); ok {
+		id, err := cq.findClusterQueueID(ctx, cluster, key)
+		if err != nil {
+			resp.Diagnostics.AddError("Unable to import cluster queue", fmt.Sprintf("Could not find queue %q in cluster %q: %s", key, cluster, err.Error()))
+			return
+		}
+		req.ID = fmt.Sprintf("%s,%s", id, cluster)
+	}
+
 	importComponents := strings.Split(req.ID, ",")
 
 	if len(importComponents) != 2 || importComponents[0] == "" || importComponents[1] == "" {
 		resp.Diagnostics.AddError(
 			"Unexpected Import Identifier",
-			fmt.Sprintf("Expected import identifier with format: id,cluster_uuid. Got: %q", req.ID),
+			fmt.Sprintf("Expected import identifier with format: id,cluster_uuid or cluster_uuid/key. Got: %q", req.ID),
 		)
 		return
 	}
@@ -467,6 +511,26 @@ func (cq *clusterQueueResource) ImportState(ctx context.Context, req resource.Im
 	log.Printf("Importing cluster queue %s ...", importComponents[0])
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), importComponents[0])...)
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("cluster_uuid"), importComponents[1])...)
+}
+
+// findClusterQueueID pages through the cluster's queues for the one with the given key
+func (cq *clusterQueueResource) findClusterQueueID(ctx context.Context, clusterUuid, key string) (string, error) {
+	var cursor *string
+	for {
+		r, err := getClusterQueues(ctx, cq.client.genqlient, cq.client.organization, clusterUuid, cursor)
+		if err != nil {
+			return "", err
+		}
+		for _, edge := range r.Organization.Cluster.Queues.Edges {
+			if edge.Node.Key == key {
+				return edge.Node.Id, nil
+			}
+		}
+		if !r.Organization.Cluster.Queues.PageInfo.HasNextPage {
+			return "", fmt.Errorf("no such cluster, or no queue with that key in it")
+		}
+		cursor = &r.Organization.Cluster.Queues.PageInfo.EndCursor
+	}
 }
 
 func (cq *clusterQueueResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
@@ -541,21 +605,24 @@ func (cq *clusterQueueResource) Update(ctx context.Context, req resource.UpdateR
 	planDispatchPaused = plan.DispatchPaused.ValueBool()
 	stateDispatchPaused = state.DispatchPaused.ValueBool()
 
-	// Check the planned value against the current state value
-	// Planned to be true (changing from false to true)
+	// Pausing or resuming dispatch is a mutation in its own right, and the steps around it can still
+	// fail after it has applied. Persist on the way out either way, deferred so a new early return
+	// cannot forget it, and record the change as soon as it applies rather than waiting for a later
+	// response to confirm it.
+	defer func() {
+		resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+	}()
+
+	// The pause goes before the rest of the update and the resume goes after it, so that a failure
+	// part way through leaves the queue paused rather than dispatching jobs against a configuration
+	// that only half applied. Paused is the safe state to fail into, and it is the state a
+	// practitioner asked for in one direction and has not finished leaving in the other.
 	if planDispatchPaused && !stateDispatchPaused {
 		if err := cq.pauseDispatch(ctx, timeout, state, &resp.Diagnostics); err != nil {
 			// Error added to diagnostics within pauseDispatch
 			return
 		}
-	}
-
-	// Planned to be false (changing from true to false)
-	if !planDispatchPaused && stateDispatchPaused {
-		if err := cq.resumeDispatch(ctx, timeout, state, &resp.Diagnostics); err != nil {
-			// Error added to diagnostics within resumeDispatch
-			return
-		}
+		state.DispatchPaused = types.BoolValue(true)
 	}
 
 	r, err = updateClusterQueue(ctx,
@@ -573,22 +640,10 @@ func (cq *clusterQueueResource) Update(ctx context.Context, req resource.UpdateR
 		return
 	}
 
+	// Everything the mutation applied, recorded together and before the REST call below, which can
+	// fail after the new instance shape is already live on the queue.
 	state.Description = types.StringPointerValue(r.ClusterQueueUpdate.ClusterQueue.Description)
 	state.DispatchPaused = types.BoolValue(r.ClusterQueueUpdate.ClusterQueue.DispatchPaused)
-
-	if !plan.RetryAgentAffinity.Equal(state.RetryAgentAffinity) {
-		desiredAffinity := plan.RetryAgentAffinity.ValueString()
-		err := cq.updateClusterQueueViaREST(ctx, state.ClusterUuid.ValueString(), state.Uuid.ValueString(), desiredAffinity)
-		if err != nil {
-			resp.Diagnostics.AddError(
-				"Unable to update retry_agent_affinity",
-				fmt.Sprintf("Unable to update retry_agent_affinity for queue %s: %s", state.Key.ValueString(), err.Error()),
-			)
-			resp.State.Set(ctx, &state)
-			return
-		}
-		state.RetryAgentAffinity = types.StringValue(desiredAffinity)
-	}
 
 	if state.HostedAgents != nil {
 		state.HostedAgents = &hostedAgentResourceModel{
@@ -613,7 +668,28 @@ func (cq *clusterQueueResource) Update(ctx context.Context, req resource.UpdateR
 		}
 	}
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+	if !plan.RetryAgentAffinity.Equal(state.RetryAgentAffinity) {
+		desiredAffinity := plan.RetryAgentAffinity.ValueString()
+		err := cq.updateClusterQueueViaREST(ctx, state.ClusterUuid.ValueString(), state.Uuid.ValueString(), desiredAffinity)
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Unable to update retry_agent_affinity",
+				fmt.Sprintf("Unable to update retry_agent_affinity for queue %s: %s", state.Key.ValueString(), err.Error()),
+			)
+			return
+		}
+		state.RetryAgentAffinity = types.StringValue(desiredAffinity)
+	}
+
+	// Last, per the ordering note above: everything the plan asked for has applied, so there is
+	// nothing left that a resumed queue could pick up jobs against.
+	if !planDispatchPaused && stateDispatchPaused {
+		if err := cq.resumeDispatch(ctx, timeout, state, &resp.Diagnostics); err != nil {
+			// Error added to diagnostics within resumeDispatch
+			return
+		}
+		state.DispatchPaused = types.BoolValue(false)
+	}
 }
 
 func (cq *clusterQueueResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
