@@ -47,6 +47,13 @@ func TestAccBuildkitePipelineTeam(t *testing.T) {
 					ImportStateId:     tp.Id.ValueString(),
 					ImportStateVerify: true,
 				},
+				{
+					// <pipeline slug>/<team slug> is also accepted
+					ResourceName:      "buildkite_pipeline_team.pipelineteam",
+					ImportState:       true,
+					ImportStateIdFunc: testAccImportIDFromAttributes("buildkite_pipeline.acc_test_pipeline", "slug", "buildkite_team.acc_test_team", "slug"),
+					ImportStateVerify: true,
+				},
 			},
 		})
 	})

@@ -1529,7 +1529,19 @@ func (p *pipelineResource) findAndRemoveTeam(ctx context.Context, teamID string,
 	return nil
 }
 
-func (*pipelineResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+func (p *pipelineResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	// a pipeline slug is also accepted and resolved to the GraphQL ID
+	if slug, ok := parsePipelineImportID(req.ID); ok {
+		r, err := getPipelineId(ctx, p.client.genqlient, fmt.Sprintf("%s/%s", p.client.organization, slug))
+		if err == nil && r.Pipeline.Id == "" {
+			err = fmt.Errorf("no pipeline with that slug")
+		}
+		if err != nil {
+			resp.Diagnostics.AddError("Unable to import pipeline", fmt.Sprintf("Could not find pipeline %q: %s", req.ID, err.Error()))
+			return
+		}
+		req.ID = r.Pipeline.Id
+	}
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 
 	// ImportStatePassthroughID only seeds the id attribute, so state.ProviderSettings
