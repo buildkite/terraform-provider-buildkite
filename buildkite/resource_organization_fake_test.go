@@ -26,16 +26,18 @@ import (
 // exercised without an organization to change. Its GraphQL side answers with identifiers only: the
 // allowlist is api-settings' to report, and nothing here offers a second copy of it.
 type fakeOrganizationAPI struct {
-	t                 *testing.T
-	mu                sync.Mutex
-	settings          organizationAPISettings
-	readStatus        int
-	readBody          string
-	patchStatus       int
-	patchBody         string
-	twoFactorEnforced bool
-	twoFactorError    string
-	writes            []string
+	t        *testing.T
+	mu       sync.Mutex
+	settings organizationAPISettings
+	// readStatus, once readsBeforeRefusal successful reads have gone through, fails every read after
+	readStatus         int
+	readBody           string
+	readsBeforeRefusal int
+	patchStatus        int
+	patchBody          string
+	twoFactorEnforced  bool
+	twoFactorError     string
+	writes             []string
 }
 
 func newFakeOrganizationAPI(t *testing.T) (*httptest.Server, *fakeOrganizationAPI) {
@@ -64,6 +66,17 @@ func (a *fakeOrganizationAPI) refuseRead(status int, body string) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
+	a.readStatus = status
+	a.readBody = body
+}
+
+// refuseReadAfter lets the next successes reads through before refuseRead takes effect, so a test can
+// put the failure between the refresh and the destroy rather than in front of both
+func (a *fakeOrganizationAPI) refuseReadAfter(successes, status int, body string) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+
+	a.readsBeforeRefusal = successes
 	a.readStatus = status
 	a.readBody = body
 }
@@ -193,6 +206,10 @@ func (a *fakeOrganizationAPI) apiSettings(w http.ResponseWriter, r *http.Request
 	switch r.Method {
 	case http.MethodGet:
 		if a.readStatus != 0 {
+			if a.readsBeforeRefusal > 0 {
+				a.readsBeforeRefusal--
+				break
+			}
 			http.Error(w, a.readBody, a.readStatus)
 			return
 		}
@@ -439,10 +456,45 @@ func TestUnitBuildkiteOrganizationRefusesToDestroyWithUnreadableSettings(t *test
 				},
 				Config:      fakeOrganizationConfig(server, ``),
 				Destroy:     true,
-				ExpectError: regexp.MustCompile(`(?s)Unable to read organization API settings.*The API token needs the read_organization_settings scope`),
+				ExpectError: regexp.MustCompile(`(?s)Unable to read organization API settings.*The API token needs the read_organization_settings scope.*terraform state rm`),
 			},
 			{
 				// with the settings readable the allowlist state never saw is still cleared
+				PreConfig: api.allowRead,
+				Config:    fakeOrganizationConfig(server, ``),
+				Destroy:   true,
+			},
+		},
+	})
+}
+
+// A destroy that cannot read the settings has no way to finish, whatever stopped the read. The scope
+// hint only fits a forbidden answer, so the way out has to be named for every other status too. Only
+// a read that fails after the refresh reaches Delete: a refresh that fails on a status Read does not
+// tolerate stops the destroy in front of it, carrying no way out because a plain refresh has none.
+func TestUnitBuildkiteOrganizationNamesTheWayOutOfAnUndestroyableResource(t *testing.T) {
+	server, api := newFakeOrganizationAPI(t)
+
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		// restoring the read is the other way out the message offers, and it finishes the job
+		CheckDestroy: api.checkAllowedIpAddresses(""),
+		Steps: []resource.TestStep{
+			{
+				Config: fakeOrganizationConfig(server, ``),
+			},
+			{
+				PreConfig: func() {
+					api.presetAllowedIpAddresses("1.1.1.1/32")
+					// the refresh reads, then the settings go away before Delete asks. Not a scope
+					// problem, so nothing about scopes would help the operator here.
+					api.refuseReadAfter(1, http.StatusNotFound, `{"message":"Not Found"}`)
+				},
+				Config:      fakeOrganizationConfig(server, ``),
+				Destroy:     true,
+				ExpectError: regexp.MustCompile(`(?s)Unable to read organization API settings.*terraform state rm`),
+			},
+			{
 				PreConfig: api.allowRead,
 				Config:    fakeOrganizationConfig(server, ``),
 				Destroy:   true,

@@ -289,7 +289,14 @@ func (o *organizationResource) Delete(ctx context.Context, req resource.DeleteRe
 	// request is skipped for.
 	current, err := o.client.getOrganizationAPISettings(ctx)
 	if err != nil {
-		addUnreadableAPISettingsError(&resp.Diagnostics, err)
+		// a destroy that cannot read has no way to finish, so say what does finish it. Every status
+		// lands here, not just the forbidden one the scope hint covers.
+		resp.Diagnostics.AddError(
+			"Unable to read organization API settings",
+			unreadableAPISettingsDetail(err)+" Destroying this resource clears the allowed API IP addresses, "+
+				"which the organization has to answer for first. Restore access and destroy again, or remove "+
+				"the resource from state with terraform state rm to leave the organization's settings as they are.",
+		)
 		return
 	}
 	if current.AllowedIpAddresses != "" {
@@ -387,14 +394,18 @@ func apiSettingsPatch(config, plan *organizationResourceModel, current *organiza
 	return payload
 }
 
-// addUnreadableAPISettingsError reports a settings read that failed, naming the scope a forbidden
-// answer asks for
-func addUnreadableAPISettingsError(diags *diag.Diagnostics, err error) {
+// unreadableAPISettingsDetail describes a settings read that failed, naming the scope a forbidden
+// answer asks for. Callers with a way out of the failure append it.
+func unreadableAPISettingsDetail(err error) string {
 	detail := fmt.Sprintf("Unable to read organization API settings: %s", err.Error())
 	if isAPIStatus(err, http.StatusForbidden) {
 		detail += " The API token needs the read_organization_settings scope."
 	}
-	diags.AddError("Unable to read organization API settings", detail)
+	return detail
+}
+
+func addUnreadableAPISettingsError(diags *diag.Diagnostics, err error) {
+	diags.AddError("Unable to read organization API settings", unreadableAPISettingsDetail(err))
 }
 
 func (o *organizationResource) readAPISettings(ctx context.Context, state *organizationResourceModel, diags *diag.Diagnostics) {
