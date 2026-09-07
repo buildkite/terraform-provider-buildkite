@@ -193,7 +193,47 @@ func (tp *pipelineTeamResource) Read(ctx context.Context, req resource.ReadReque
 }
 
 func (tp *pipelineTeamResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	// <pipeline slug>/<team slug> is also accepted and resolved to the GraphQL ID
+	if pipeline, team, ok := parsePipelineTeamImportID(req.ID); ok {
+		id, err := tp.findPipelineTeamID(ctx, pipeline, team)
+		if err != nil {
+			resp.Diagnostics.AddError("Unable to import pipeline team", fmt.Sprintf("Could not find team %q on pipeline %q: %s", team, pipeline, err.Error()))
+			return
+		}
+		req.ID = id
+	}
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+}
+
+// findPipelineTeamID looks the team up on the pipeline by searching for its name and comparing slugs
+func (tp *pipelineTeamResource) findPipelineTeamID(ctx context.Context, pipelineSlug, teamSlug string) (string, error) {
+	team, err := GetTeamFromSlug(ctx, tp.client.genqlient, fmt.Sprintf("%s/%s", tp.client.organization, teamSlug))
+	if err != nil {
+		return "", err
+	}
+	if team.Team.Id == "" {
+		return "", fmt.Errorf("no team with that slug")
+	}
+	var cursor *string
+	for {
+		// the search can return partial matches, so the slug is still compared
+		r, err := getPipelineTeamIds(ctx, tp.client.genqlient, fmt.Sprintf("%s/%s", tp.client.organization, pipelineSlug), team.Team.Name, cursor)
+		if err != nil {
+			return "", err
+		}
+		if r.Pipeline.Id == "" {
+			return "", fmt.Errorf("no pipeline with that slug")
+		}
+		for _, edge := range r.Pipeline.Teams.Edges {
+			if edge.Node.Team.Slug == teamSlug {
+				return edge.Node.Id, nil
+			}
+		}
+		if !r.Pipeline.Teams.PageInfo.HasNextPage {
+			return "", fmt.Errorf("team is not assigned to the pipeline")
+		}
+		cursor = &r.Pipeline.Teams.PageInfo.EndCursor
+	}
 }
 
 func (tp *pipelineTeamResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {

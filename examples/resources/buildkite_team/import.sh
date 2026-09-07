@@ -14,3 +14,6 @@
 #   }
 # }
 terraform import buildkite_team.everyone VGVhbS0tLTdmOTdlZDZhLTQ4MjQtNDM2Yi04NWE0LTNlZDQ0YWRjY2IxMg==
+
+# or using its slug (slugs can change; the GraphQL ID is the stable identifier)
+terraform import buildkite_team.everyone everyone
