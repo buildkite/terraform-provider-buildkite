@@ -330,38 +330,16 @@ func (cq *clusterQueueResource) Create(ctx context.Context, req resource.CreateR
 	state.Key = types.StringValue(r.ClusterQueueCreate.ClusterQueue.Key)
 	state.Description = types.StringPointerValue(r.ClusterQueueCreate.ClusterQueue.Description)
 
+	// The mutation creates the queue dispatching, and on the API's own retry_agent_affinity default.
+	// The calls further down move it off both if the plan asked for something else, and each records
+	// its own result, so what is recorded here is what a queue looks like when none of them ran.
 	state.DispatchPaused = types.BoolValue(false)
+	state.RetryAgentAffinity = types.StringValue(RetryAgentAffinityPreferWarmest)
 
-	desiredAffinity := RetryAgentAffinityPreferWarmest
-	if !plan.RetryAgentAffinity.IsNull() && !plan.RetryAgentAffinity.IsUnknown() {
-		desiredAffinity = plan.RetryAgentAffinity.ValueString()
-	}
-
-	if desiredAffinity != RetryAgentAffinityPreferWarmest {
-		err := cq.updateClusterQueueViaREST(ctx, state.ClusterUuid.ValueString(), state.Uuid.ValueString(), desiredAffinity)
-		if err != nil {
-			resp.Diagnostics.AddError(
-				"Unable to set retry_agent_affinity",
-				fmt.Sprintf("Queue %s created but retry_agent_affinity could not be set: %s", state.Key.ValueString(), err.Error()),
-			)
-			resp.State.Set(ctx, &state)
-			return
-		}
-	}
-	state.RetryAgentAffinity = types.StringValue(desiredAffinity)
-
-	// GraphQL API does not allow Cluster Queue to be created with Dispatch Paused
-	// so Pause Dispatch after creation if required
-	if plan.DispatchPaused.ValueBool() {
-		log.Printf("Pausing dispatch on cluster queue with key %s", plan.Key.ValueString())
-		err = cq.pauseDispatch(ctx, timeout, state, &resp.Diagnostics)
-		if err != nil {
-			resp.State.Set(ctx, &state)
-			return
-		}
-		state.DispatchPaused = types.BoolValue(true)
-	}
-
+	// The create response already carries the hosted agent settings, so this belongs with the rest
+	// of what the mutation applied rather than after the calls that can fail. Recording it late used
+	// to leave hosted_agents null in state for a queue that has it, which reads to the RequiresReplaceIf
+	// above as the attribute having been added, and plans a replace for a queue that only needed a retry.
 	if plan.HostedAgents != nil {
 		state.HostedAgents = &hostedAgentResourceModel{
 			InstanceShape: types.StringValue(string(r.ClusterQueueCreate.ClusterQueue.HostedAgents.InstanceShape.Name)),
@@ -385,7 +363,42 @@ func (cq *clusterQueueResource) Create(ctx context.Context, req resource.CreateR
 		}
 	}
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+	// The queue exists from here on, so every path out has to record it or Terraform is left with an
+	// orphan that only terraform import recovers. Deferred so a new early return cannot forget it,
+	// and so the diagnostics from the write are not dropped as the two error paths below dropped
+	// them. State alongside an error taints the instance, which is the better trade here: the queue
+	// really was created, and a taint is cleared with terraform untaint.
+	defer func() {
+		resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+	}()
+
+	desiredAffinity := RetryAgentAffinityPreferWarmest
+	if !plan.RetryAgentAffinity.IsNull() && !plan.RetryAgentAffinity.IsUnknown() {
+		desiredAffinity = plan.RetryAgentAffinity.ValueString()
+	}
+
+	if desiredAffinity != RetryAgentAffinityPreferWarmest {
+		err := cq.updateClusterQueueViaREST(ctx, state.ClusterUuid.ValueString(), state.Uuid.ValueString(), desiredAffinity)
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Unable to set retry_agent_affinity",
+				fmt.Sprintf("Queue %s created but retry_agent_affinity could not be set: %s", state.Key.ValueString(), err.Error()),
+			)
+			return
+		}
+		state.RetryAgentAffinity = types.StringValue(desiredAffinity)
+	}
+
+	// GraphQL API does not allow Cluster Queue to be created with Dispatch Paused
+	// so Pause Dispatch after creation if required
+	if plan.DispatchPaused.ValueBool() {
+		log.Printf("Pausing dispatch on cluster queue with key %s", plan.Key.ValueString())
+		err = cq.pauseDispatch(ctx, timeout, state, &resp.Diagnostics)
+		if err != nil {
+			return
+		}
+		state.DispatchPaused = types.BoolValue(true)
+	}
 }
 
 func (cq *clusterQueueResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
@@ -592,21 +605,24 @@ func (cq *clusterQueueResource) Update(ctx context.Context, req resource.UpdateR
 	planDispatchPaused = plan.DispatchPaused.ValueBool()
 	stateDispatchPaused = state.DispatchPaused.ValueBool()
 
-	// Check the planned value against the current state value
-	// Planned to be true (changing from false to true)
+	// Pausing or resuming dispatch is a mutation in its own right, and the steps around it can still
+	// fail after it has applied. Persist on the way out either way, deferred so a new early return
+	// cannot forget it, and record the change as soon as it applies rather than waiting for a later
+	// response to confirm it.
+	defer func() {
+		resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+	}()
+
+	// The pause goes before the rest of the update and the resume goes after it, so that a failure
+	// part way through leaves the queue paused rather than dispatching jobs against a configuration
+	// that only half applied. Paused is the safe state to fail into, and it is the state a
+	// practitioner asked for in one direction and has not finished leaving in the other.
 	if planDispatchPaused && !stateDispatchPaused {
 		if err := cq.pauseDispatch(ctx, timeout, state, &resp.Diagnostics); err != nil {
 			// Error added to diagnostics within pauseDispatch
 			return
 		}
-	}
-
-	// Planned to be false (changing from true to false)
-	if !planDispatchPaused && stateDispatchPaused {
-		if err := cq.resumeDispatch(ctx, timeout, state, &resp.Diagnostics); err != nil {
-			// Error added to diagnostics within resumeDispatch
-			return
-		}
+		state.DispatchPaused = types.BoolValue(true)
 	}
 
 	r, err = updateClusterQueue(ctx,
@@ -624,22 +640,10 @@ func (cq *clusterQueueResource) Update(ctx context.Context, req resource.UpdateR
 		return
 	}
 
+	// Everything the mutation applied, recorded together and before the REST call below, which can
+	// fail after the new instance shape is already live on the queue.
 	state.Description = types.StringPointerValue(r.ClusterQueueUpdate.ClusterQueue.Description)
 	state.DispatchPaused = types.BoolValue(r.ClusterQueueUpdate.ClusterQueue.DispatchPaused)
-
-	if !plan.RetryAgentAffinity.Equal(state.RetryAgentAffinity) {
-		desiredAffinity := plan.RetryAgentAffinity.ValueString()
-		err := cq.updateClusterQueueViaREST(ctx, state.ClusterUuid.ValueString(), state.Uuid.ValueString(), desiredAffinity)
-		if err != nil {
-			resp.Diagnostics.AddError(
-				"Unable to update retry_agent_affinity",
-				fmt.Sprintf("Unable to update retry_agent_affinity for queue %s: %s", state.Key.ValueString(), err.Error()),
-			)
-			resp.State.Set(ctx, &state)
-			return
-		}
-		state.RetryAgentAffinity = types.StringValue(desiredAffinity)
-	}
 
 	if state.HostedAgents != nil {
 		state.HostedAgents = &hostedAgentResourceModel{
@@ -664,7 +668,28 @@ func (cq *clusterQueueResource) Update(ctx context.Context, req resource.UpdateR
 		}
 	}
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+	if !plan.RetryAgentAffinity.Equal(state.RetryAgentAffinity) {
+		desiredAffinity := plan.RetryAgentAffinity.ValueString()
+		err := cq.updateClusterQueueViaREST(ctx, state.ClusterUuid.ValueString(), state.Uuid.ValueString(), desiredAffinity)
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Unable to update retry_agent_affinity",
+				fmt.Sprintf("Unable to update retry_agent_affinity for queue %s: %s", state.Key.ValueString(), err.Error()),
+			)
+			return
+		}
+		state.RetryAgentAffinity = types.StringValue(desiredAffinity)
+	}
+
+	// Last, per the ordering note above: everything the plan asked for has applied, so there is
+	// nothing left that a resumed queue could pick up jobs against.
+	if !planDispatchPaused && stateDispatchPaused {
+		if err := cq.resumeDispatch(ctx, timeout, state, &resp.Diagnostics); err != nil {
+			// Error added to diagnostics within resumeDispatch
+			return
+		}
+		state.DispatchPaused = types.BoolValue(false)
+	}
 }
 
 func (cq *clusterQueueResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
