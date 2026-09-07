@@ -1,9 +1,9 @@
-FROM golang:1.27.0@sha256:4013ae0f9e7994f8535c58c811f8f863fbed38b72e0d51e6592156f758d66146
+FROM golang:1.27.1@sha256:512690a5660563b57d37ecc31129e7f136e831db2aed24a1dbeb8ad7380dc0fa
 
 RUN apt-get update \
     && apt-get install -y unzip
 
-COPY --from=hashicorp/terraform:1.16@sha256:64360659224d6cbeb099eeed61aa66a80e02c18ba08c0243bd905165b47b088e /bin/terraform /usr/local/bin/terraform
+COPY --from=hashicorp/terraform:1.16@sha256:f4d9594d2c8010c03f0149352682166410c58c21d46344cf256fd5a4b721a011 /bin/terraform /usr/local/bin/terraform
 COPY --from=goreleaser/goreleaser:v2.18.0@sha256:a7609141326e383370858ab3ca2572e96e00fb212fe3fd5610cd4de434652faa /usr/bin/goreleaser /usr/local/bin/goreleaser
 
 WORKDIR /work
