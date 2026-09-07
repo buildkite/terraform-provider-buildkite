@@ -2911,6 +2911,116 @@ func TestPipelineUpdateNormalisesANullArchivedFromOlderState(t *testing.T) {
 	}
 }
 
+// The null above is settled from the update response rather than from the attribute's default,
+// because the two disagree when the pipeline was archived outside Terraform. The update fails
+// against an archived pipeline, so nothing here establishes it is unarchived, and recording false
+// anyway would match the planned default and leave the next -refresh=false plan with no drift to
+// unarchive it from.
+func TestPipelineUpdateLeavesANullArchivedAloneWhenTheUpdateFails(t *testing.T) {
+	t.Parallel()
+
+	server, _ := newRetryStub(t,
+		stubResponse{status: http.StatusOK, body: `{"errors":[{"message":"This pipeline is archived and cannot be updated"}]}`},
+	)
+	defer server.Close()
+
+	p := &pipelineResource{client: newRetryTestClient(t, server.URL, 0, time.Millisecond)}
+
+	ctx := t.Context()
+	schema := resourceSchema(ctx, t, p)
+
+	shared := map[string]tftypes.Value{
+		"id":         tftypes.NewValue(tftypes.String, "pipeline-id"),
+		"name":       tftypes.NewValue(tftypes.String, "p"),
+		"slug":       tftypes.NewValue(tftypes.String, "p"),
+		"repository": tftypes.NewValue(tftypes.String, "git@github.com:org/repo.git"),
+		"steps":      tftypes.NewValue(tftypes.String, "steps: []"),
+	}
+	// archived deliberately absent, which is what pre-attribute state decodes to.
+	prior := map[string]tftypes.Value{}
+	planned := map[string]tftypes.Value{"archived": tftypes.NewValue(tftypes.Bool, false)}
+	maps.Copy(prior, shared)
+	maps.Copy(planned, shared)
+
+	priorRaw := nullObjectWith(ctx, t, schema.Type(), prior)
+	req := fwresource.UpdateRequest{
+		Plan:   tfsdk.Plan{Schema: schema, Raw: nullObjectWith(ctx, t, schema.Type(), planned)},
+		State:  tfsdk.State{Schema: schema, Raw: priorRaw},
+		Config: tfsdk.Config{Schema: schema, Raw: nullObjectWith(ctx, t, schema.Type(), planned)},
+	}
+	resp := fwresource.UpdateResponse{State: tfsdk.State{Schema: schema, Raw: priorRaw}}
+
+	p.Update(ctx, req, &resp)
+
+	if !diagnosticsContain(resp.Diagnostics, "Unable to update Pipeline") {
+		t.Fatalf("Update() diagnostics = %v, want the update against an archived pipeline to have failed", resp.Diagnostics)
+	}
+
+	var persisted pipelineResourceModel
+	if diags := resp.State.Get(ctx, &persisted); diags.HasError() {
+		t.Fatalf("Reading the persisted state = %v", diags)
+	}
+	if !persisted.Archived.IsNull() {
+		t.Errorf("Persisted archived = %v, want null: nothing read the remote, so there is no value to record", persisted.Archived)
+	}
+}
+
+// The same legacy null, but the pipeline really is unarchived. The response says so, so it settles
+// the null and the apply can succeed: leaving it null here would fail the apply outright, because
+// Terraform rejects a state that disagrees with a known planned value.
+func TestPipelineUpdateSettlesANullArchivedFromAnArchivedRemote(t *testing.T) {
+	t.Parallel()
+
+	server, _ := newRetryStub(t,
+		// The remote is archived, and the update happens to be accepted anyway.
+		stubResponse{status: http.StatusOK, body: `{"data":{"pipelineUpdate":{"pipeline":{
+			"id": "pipeline-id", "pipelineUuid": "pipeline-uuid", "name": "p", "slug": "p",
+			"defaultBranch": "main", "description": "", "archived": true,
+			"repository": {"url": "git@github.com:org/repo.git"}, "steps": {"yaml": "steps: []"},
+			"tags": [], "teams": {"edges": []}
+		}}}}`},
+	)
+	defer server.Close()
+
+	p := &pipelineResource{client: newRetryTestClient(t, server.URL, 0, time.Millisecond)}
+
+	ctx := t.Context()
+	schema := resourceSchema(ctx, t, p)
+
+	shared := map[string]tftypes.Value{
+		"id":         tftypes.NewValue(tftypes.String, "pipeline-id"),
+		"name":       tftypes.NewValue(tftypes.String, "p"),
+		"slug":       tftypes.NewValue(tftypes.String, "p"),
+		"repository": tftypes.NewValue(tftypes.String, "git@github.com:org/repo.git"),
+		"steps":      tftypes.NewValue(tftypes.String, "steps: []"),
+	}
+	prior := map[string]tftypes.Value{}
+	planned := map[string]tftypes.Value{"archived": tftypes.NewValue(tftypes.Bool, false)}
+	maps.Copy(prior, shared)
+	maps.Copy(planned, shared)
+
+	priorRaw := nullObjectWith(ctx, t, schema.Type(), prior)
+	req := fwresource.UpdateRequest{
+		Plan:   tfsdk.Plan{Schema: schema, Raw: nullObjectWith(ctx, t, schema.Type(), planned)},
+		State:  tfsdk.State{Schema: schema, Raw: priorRaw},
+		Config: tfsdk.Config{Schema: schema, Raw: nullObjectWith(ctx, t, schema.Type(), planned)},
+	}
+	resp := fwresource.UpdateResponse{State: tfsdk.State{Schema: schema, Raw: priorRaw}}
+
+	p.Update(ctx, req, &resp)
+
+	var persisted pipelineResourceModel
+	if diags := resp.State.Get(ctx, &persisted); diags.HasError() {
+		t.Fatalf("Reading the persisted state = %v", diags)
+	}
+	if persisted.Archived.IsNull() {
+		t.Fatal("Persisted archived is null, want true: the response settled it")
+	}
+	if !persisted.Archived.ValueBool() {
+		t.Error("Persisted archived = false, want true: the remote is archived, so the next plan has drift to unarchive it from")
+	}
+}
+
 // The recovery this resource records has to be reachable. When a detach fails, Update deliberately
 // keeps the previous team in state so the next plan still shows a diff. That next apply re-attaches
 // the new team, which is already attached from the run before, and createTeamPipeline rejects that

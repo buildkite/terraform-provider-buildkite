@@ -1386,14 +1386,6 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 	// call time, so a step that never ran cannot persist the value the plan asked for. Getting that
 	// wrong is invisible under -refresh=false, where the next plan sees no diff and the change is
 	// never made at all.
-	//
-	// archived is null in state written before the attribute existed, because it was added without
-	// a schema version bump. The plan always has it known, from the attribute's static default, and
-	// Terraform fails an apply whose state disagrees with a known planned value. Settle it to the
-	// false the rest of this method already treats it as, so the persist cannot record the null.
-	if state.Archived.IsNull() {
-		state.Archived = types.BoolValue(false)
-	}
 	useSlugValue := state.Slug.ValueString()
 	defer func() {
 		state.Slug = types.StringValue(useSlugValue)
@@ -1429,6 +1421,18 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 			fmt.Sprintf("Unable to update Pipeline: %s", err.Error()),
 		)
 		return
+	}
+
+	// archived is null in state written before the attribute existed, because it was added without
+	// a schema version bump, and the plan always has it known from the attribute's static default.
+	// The response is the first thing in this method to have read the remote, so it settles the
+	// null. Settling it to that default earlier would record the pipeline as unarchived on the
+	// strength of nothing: one archived outside Terraform fails the update above, and the false
+	// would still persist and leave the next plan no drift to unarchive it from. Staying null on
+	// the paths that return before here costs nothing, because Terraform skips the planned against
+	// applied consistency check on an apply that also returns an error.
+	if state.Archived.IsNull() {
+		state.Archived = types.BoolValue(response.PipelineUpdate.Pipeline.GetArchived())
 	}
 
 	// Archive last (see below): the REST API rejects updates to archived pipelines, so
