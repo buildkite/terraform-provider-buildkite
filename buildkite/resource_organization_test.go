@@ -714,23 +714,18 @@ func TestOrganizationUpdatePersistsTheEnforced2FAWhenTheAPISettingsPatchFails(t 
 	o := &organizationResource{client: client}
 
 	ctx := t.Context()
-	var schemaResp fwresource.SchemaResponse
-	o.Schema(ctx, fwresource.SchemaRequest{}, &schemaResp)
-	if schemaResp.Diagnostics.HasError() {
-		t.Fatalf("Schema() diagnostics = %v", schemaResp.Diagnostics)
-	}
-	schema := schemaResp.Schema
+	sch := resourceSchema(ctx, t, o)
 
 	// An unchanged allowlist, so updateAllowedApiIpAddresses makes no request of its own.
 	allowlist := tftypes.NewValue(tftypes.List{ElementType: tftypes.String}, []tftypes.Value{})
-	prior := nullObjectWith(ctx, t, schema.Type(), map[string]tftypes.Value{
+	prior := nullObjectWith(ctx, t, sch.Type(), map[string]tftypes.Value{
 		"id":                           tftypes.NewValue(tftypes.String, "organization-id"),
 		"uuid":                         tftypes.NewValue(tftypes.String, "organization-uuid"),
 		"allowed_api_ip_addresses":     allowlist,
 		"enforce_2fa":                  tftypes.NewValue(tftypes.Bool, false),
 		"revoke_inactive_tokens_after": tftypes.NewValue(tftypes.String, revokeInactiveTokensNever),
 	})
-	planned := nullObjectWith(ctx, t, schema.Type(), map[string]tftypes.Value{
+	planned := nullObjectWith(ctx, t, sch.Type(), map[string]tftypes.Value{
 		"id":                           tftypes.NewValue(tftypes.String, "organization-id"),
 		"uuid":                         tftypes.NewValue(tftypes.String, "organization-uuid"),
 		"allowed_api_ip_addresses":     allowlist,
@@ -739,16 +734,16 @@ func TestOrganizationUpdatePersistsTheEnforced2FAWhenTheAPISettingsPatchFails(t 
 	})
 
 	req := fwresource.UpdateRequest{
-		Plan:   tfsdk.Plan{Schema: schema, Raw: planned},
-		State:  tfsdk.State{Schema: schema, Raw: prior},
-		Config: tfsdk.Config{Schema: schema, Raw: planned},
+		Plan:   tfsdk.Plan{Schema: sch, Raw: planned},
+		State:  tfsdk.State{Schema: sch, Raw: prior},
+		Config: tfsdk.Config{Schema: sch, Raw: planned},
 	}
-	resp := fwresource.UpdateResponse{State: tfsdk.State{Schema: schema, Raw: prior}}
+	resp := fwresource.UpdateResponse{State: tfsdk.State{Schema: sch, Raw: prior}}
 
 	o.Update(ctx, req, &resp)
 
 	if got := requests.Load(); got < 3 {
-		t.Fatalf("Made %d requests, want 2FA to have applied before the PATCH failed", got)
+		t.Fatalf("Made %d requests, want 3: 2FA and the api-settings read have to precede the failing PATCH", got)
 	}
 	if !diagnosticsContain(resp.Diagnostics, "Unable to update organization API settings") {
 		t.Fatalf("Update() diagnostics = %v, want the PATCH failure reported", resp.Diagnostics)
@@ -858,12 +853,7 @@ func TestOrganizationCreateWarnsAboutUnrecordedChanges(t *testing.T) {
 			o := &organizationResource{client: client}
 
 			ctx := t.Context()
-			var schemaResp fwresource.SchemaResponse
-			o.Schema(ctx, fwresource.SchemaRequest{}, &schemaResp)
-			if schemaResp.Diagnostics.HasError() {
-				t.Fatalf("Schema() diagnostics = %v", schemaResp.Diagnostics)
-			}
-			schema := schemaResp.Schema
+			sch := resourceSchema(ctx, t, o)
 
 			attributes := map[string]tftypes.Value{"enforce_2fa": tftypes.NewValue(tftypes.Bool, true)}
 			if testCase.configuredAllowlist != "" {
@@ -874,13 +864,13 @@ func TestOrganizationCreateWarnsAboutUnrecordedChanges(t *testing.T) {
 			if testCase.configuredRevoke != "" {
 				attributes["revoke_inactive_tokens_after"] = tftypes.NewValue(tftypes.String, testCase.configuredRevoke)
 			}
-			raw := nullObjectWith(ctx, t, schema.Type(), attributes)
+			raw := nullObjectWith(ctx, t, sch.Type(), attributes)
 
 			req := fwresource.CreateRequest{
-				Plan:   tfsdk.Plan{Schema: schema, Raw: raw},
-				Config: tfsdk.Config{Schema: schema, Raw: raw},
+				Plan:   tfsdk.Plan{Schema: sch, Raw: raw},
+				Config: tfsdk.Config{Schema: sch, Raw: raw},
 			}
-			resp := fwresource.CreateResponse{State: tfsdk.State{Schema: schema, Raw: tftypes.NewValue(schema.Type().TerraformType(ctx), nil)}}
+			resp := fwresource.CreateResponse{State: tfsdk.State{Schema: sch, Raw: tftypes.NewValue(sch.Type().TerraformType(ctx), nil)}}
 
 			o.Create(ctx, req, &resp)
 
@@ -945,15 +935,10 @@ func TestOrganizationUpdateKeepsPriorAPISettingsWhenTheReadFails(t *testing.T) {
 	o := &organizationResource{client: client}
 
 	ctx := t.Context()
-	var schemaResp fwresource.SchemaResponse
-	o.Schema(ctx, fwresource.SchemaRequest{}, &schemaResp)
-	if schemaResp.Diagnostics.HasError() {
-		t.Fatalf("Schema() diagnostics = %v", schemaResp.Diagnostics)
-	}
-	schema := schemaResp.Schema
+	sch := resourceSchema(ctx, t, o)
 
 	allowlist := tftypes.NewValue(tftypes.List{ElementType: tftypes.String}, []tftypes.Value{})
-	prior := nullObjectWith(ctx, t, schema.Type(), map[string]tftypes.Value{
+	prior := nullObjectWith(ctx, t, sch.Type(), map[string]tftypes.Value{
 		"id":                               tftypes.NewValue(tftypes.String, "organization-id"),
 		"uuid":                             tftypes.NewValue(tftypes.String, "organization-uuid"),
 		"allowed_api_ip_addresses":         allowlist,
@@ -961,8 +946,9 @@ func TestOrganizationUpdateKeepsPriorAPISettingsWhenTheReadFails(t *testing.T) {
 		"revoke_inactive_tokens_after":     tftypes.NewValue(tftypes.String, "DAYS_30"),
 		"restrict_user_api_token_creation": tftypes.NewValue(tftypes.Bool, true),
 	})
-	// Only the description of an unrelated attribute changes, so nothing before the GET mutates.
-	planned := nullObjectWith(ctx, t, schema.Type(), map[string]tftypes.Value{
+	// Only revoke_inactive_tokens_after changes, and it is applied after the GET, so no mutation
+	// runs before the read fails.
+	planned := nullObjectWith(ctx, t, sch.Type(), map[string]tftypes.Value{
 		"id":                               tftypes.NewValue(tftypes.String, "organization-id"),
 		"uuid":                             tftypes.NewValue(tftypes.String, "organization-uuid"),
 		"allowed_api_ip_addresses":         allowlist,
@@ -972,11 +958,11 @@ func TestOrganizationUpdateKeepsPriorAPISettingsWhenTheReadFails(t *testing.T) {
 	})
 
 	req := fwresource.UpdateRequest{
-		Plan:   tfsdk.Plan{Schema: schema, Raw: planned},
-		State:  tfsdk.State{Schema: schema, Raw: prior},
-		Config: tfsdk.Config{Schema: schema, Raw: planned},
+		Plan:   tfsdk.Plan{Schema: sch, Raw: planned},
+		State:  tfsdk.State{Schema: sch, Raw: prior},
+		Config: tfsdk.Config{Schema: sch, Raw: planned},
 	}
-	resp := fwresource.UpdateResponse{State: tfsdk.State{Schema: schema, Raw: prior}}
+	resp := fwresource.UpdateResponse{State: tfsdk.State{Schema: sch, Raw: prior}}
 
 	o.Update(ctx, req, &resp)
 

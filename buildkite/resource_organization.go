@@ -344,8 +344,9 @@ func (o *organizationResource) Delete(ctx context.Context, req resource.DeleteRe
 }
 
 // updateAllowedApiIpAddresses sets the API IP allowlist, skipping the mutation when it is unchanged.
-// It reports whether the allowlist was actually sent, so a caller that has to tell the practitioner
-// what this apply changed does not have to work that out a second time and get a different answer.
+// It reports whether the allowlist was actually changed, so a caller that has to tell the
+// practitioner what this apply changed does not have to work that out a second time and get a
+// different answer.
 func (o *organizationResource) updateAllowedApiIpAddresses(ctx context.Context, orgID string, planned, current types.List) (bool, error) {
 	plannedValue := allowedApiIpAddressesValue(planned)
 	// the mutation is rejected for organizations without the allowlist feature, even for ""
