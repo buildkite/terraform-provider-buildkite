@@ -3,10 +3,15 @@ package buildkite
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"regexp"
 	"strings"
 	"testing"
+	"time"
 
+	fwresource "github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
+	"github.com/hashicorp/terraform-plugin-go/tftypes"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
@@ -686,4 +691,108 @@ func testAccCheckClusterQueueDestroy(s *terraform.State) error {
 		}
 	}
 	return nil
+}
+
+// A failed retry_agent_affinity read used to write the schema default into state. That is the one
+// value it must not write: a queue configured prefer-warmest whose real setting is prefer-different
+// then agrees with its own configuration, so no plan ever shows the drift.
+func TestClusterQueueReadClassifiesAFailedAffinityRead(t *testing.T) {
+	t.Parallel()
+
+	queueFound := stubResponse{status: http.StatusOK, body: `{"data":{"node":{
+		"__typename": "ClusterQueue",
+		"id": "queue-id",
+		"uuid": "queue-uuid",
+		"key": "a-queue",
+		"description": "a description",
+		"cluster": {"id": "cluster-id", "uuid": "cluster-uuid"},
+		"hosted": false,
+		"dispatchPaused": false
+	}}}`}
+
+	tests := []struct {
+		name string
+		// The affinity GET's answer, after the queue itself was read successfully.
+		affinity stubResponse
+		// What the last successful read recorded. Empty means state holds no value for it yet.
+		priorAffinity string
+		// Empty means the read has to succeed with a warning instead.
+		wantError string
+	}{
+		{
+			// A token that reads the queue over GraphQL but lacks the REST cluster scope. The queue
+			// is readable, so failing the whole refresh over one attribute is worse than saying so.
+			name:          "the affinity read is refused",
+			affinity:      stubResponse{status: http.StatusForbidden, body: `{"message":"Forbidden"}`},
+			priorAffinity: RetryAgentAffinityPreferDifferent,
+		},
+		{
+			// An import records only the id and the cluster uuid, so there is nothing to keep. The
+			// schema default is the one value a refused read must not stand in with, and leaving it
+			// null plans that default against a null prior and fails the apply on the same refusal.
+			name:      "the affinity read is refused and state holds no previous value",
+			affinity:  stubResponse{status: http.StatusForbidden, body: `{"message":"Forbidden"}`},
+			wantError: "state holds no previous value",
+		},
+		{
+			name:          "the affinity read fails for any other reason",
+			affinity:      stubResponse{status: http.StatusInternalServerError, body: `{"message":"boom"}`},
+			priorAffinity: RetryAgentAffinityPreferDifferent,
+			wantError:     "Unable to read retry_agent_affinity",
+		},
+	}
+
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			server, _ := newRetryStub(t, queueFound, testCase.affinity)
+			defer server.Close()
+
+			cq := &clusterQueueResource{client: newRetryTestClient(t, server.URL, 0, time.Millisecond)}
+
+			ctx := t.Context()
+			sch := resourceSchema(ctx, t, cq)
+
+			// A null affinity stands in for the state an import leaves behind.
+			affinity := tftypes.NewValue(tftypes.String, nil)
+			if testCase.priorAffinity != "" {
+				affinity = tftypes.NewValue(tftypes.String, testCase.priorAffinity)
+			}
+
+			prior := nullObjectWith(ctx, t, sch.Type(), map[string]tftypes.Value{
+				"id":           tftypes.NewValue(tftypes.String, "queue-id"),
+				"uuid":         tftypes.NewValue(tftypes.String, "queue-uuid"),
+				"cluster_id":   tftypes.NewValue(tftypes.String, "cluster-id"),
+				"cluster_uuid": tftypes.NewValue(tftypes.String, "cluster-uuid"),
+				"key":          tftypes.NewValue(tftypes.String, "a-queue"),
+				// What the last successful read recorded, and what a failed read must not overwrite.
+				"retry_agent_affinity": affinity,
+			})
+
+			req := fwresource.ReadRequest{State: tfsdk.State{Schema: sch, Raw: prior}}
+			resp := fwresource.ReadResponse{State: tfsdk.State{Schema: sch, Raw: prior}}
+
+			cq.Read(ctx, req, &resp)
+
+			if testCase.wantError != "" {
+				if !diagnosticsContain(resp.Diagnostics, testCase.wantError) {
+					t.Fatalf("Read() diagnostics = %v, want %q: the API never answered, so the value is unknown", resp.Diagnostics, testCase.wantError)
+				}
+				return
+			}
+
+			if resp.Diagnostics.HasError() {
+				t.Fatalf("Read() diagnostics = %v, want the refusal reported as a warning", resp.Diagnostics)
+			}
+
+			var persisted clusterQueueResourceModel
+			if diags := resp.State.Get(ctx, &persisted); diags.HasError() {
+				t.Fatalf("Reading the persisted state = %v", diags)
+			}
+			if got := persisted.RetryAgentAffinity.ValueString(); got != testCase.priorAffinity {
+				t.Errorf("Persisted retry_agent_affinity = %q, want the last known %q: the read was refused, not answered", got, testCase.priorAffinity)
+			}
+		})
+	}
 }
