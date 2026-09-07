@@ -3,12 +3,14 @@ package buildkite
 import (
 	"context"
 	"fmt"
+	"maps"
 	"net/http"
 	"regexp"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	fwresource "github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-go/tftypes"
@@ -691,6 +693,317 @@ func testAccCheckClusterQueueDestroy(s *terraform.State) error {
 		}
 	}
 	return nil
+}
+
+// hostedAgentsValue builds a linux hosted_agents object from the schema's own nested types, so a
+// fixture does not have to restate them and drift when the schema changes.
+func hostedAgentsValue(ctx context.Context, t *testing.T, schemaType attr.Type, shape string) tftypes.Value {
+	t.Helper()
+
+	object, ok := schemaType.TerraformType(ctx).(tftypes.Object)
+	if !ok {
+		t.Fatal("Expected the schema to be an object")
+	}
+	hosted, ok := object.AttributeTypes["hosted_agents"].(tftypes.Object)
+	if !ok {
+		t.Fatal("Expected hosted_agents to be an object")
+	}
+	linux, ok := hosted.AttributeTypes["linux"].(tftypes.Object)
+	if !ok {
+		t.Fatal("Expected hosted_agents.linux to be an object")
+	}
+
+	return tftypes.NewValue(hosted, map[string]tftypes.Value{
+		"instance_shape": tftypes.NewValue(tftypes.String, shape),
+		"mac":            tftypes.NewValue(hosted.AttributeTypes["mac"], nil),
+		"linux": tftypes.NewValue(linux, map[string]tftypes.Value{
+			"agent_image_ref": tftypes.NewValue(tftypes.String, "an-image-ref"),
+		}),
+	})
+}
+
+// Update pauses before the rest of the update and resumes after it, so a failed apply leaves the
+// queue paused either way. Both halves of that need state to agree: a pause that applied has to be
+// recorded even though the step after it failed, and a resume that never ran must not be recorded
+// just because the plan asked for it. Getting either wrong leaves Terraform describing a dispatch
+// state the queue is not in, with nothing in the next plan to say so until state is refreshed.
+func TestClusterQueueUpdateLeavesDispatchPausedWhenAStepFails(t *testing.T) {
+	t.Parallel()
+
+	// The queue mutation that fails in both cases, after the pause in one and before the resume in
+	// the other.
+	queueUpdateFailed := stubResponse{status: http.StatusOK, body: `{"errors":[{"message":"queue update exploded"}]}`}
+
+	tests := []struct {
+		name  string
+		stubs []stubResponse
+		// The number of requests the ordering allows. The resume case turns on the resume mutation
+		// never being sent, which the count is the only evidence of.
+		wantRequests                     int
+		priorPause, planPause, wantPause bool
+	}{
+		{
+			// The pause mutation selects only clientMutationId, so there is no dispatchPaused in its
+			// response and the assertion can only be satisfied by Update recording the pause itself.
+			name: "the pause applies and the queue update then fails",
+			stubs: []stubResponse{
+				{status: http.StatusOK, body: `{"data":{"clusterQueuePauseDispatch":{"clientMutationId":""}}}`},
+				queueUpdateFailed,
+			},
+			wantRequests: 2,
+			priorPause:   false,
+			planPause:    true,
+			wantPause:    true,
+		},
+		{
+			// Resuming last is what makes this fail closed. The queue keeps running the old
+			// configuration, but it is not dispatching jobs against it.
+			name:         "the queue update fails before the resume is reached",
+			stubs:        []stubResponse{queueUpdateFailed},
+			wantRequests: 1,
+			priorPause:   true,
+			planPause:    false,
+			wantPause:    true,
+		},
+	}
+
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			server, requests := newRetryStub(t, testCase.stubs...)
+			defer server.Close()
+
+			client := newRetryTestClient(t, server.URL, 0, time.Millisecond)
+			orgID := "organization-id"
+			client.organizationId = &orgID
+			cq := &clusterQueueResource{client: client}
+
+			ctx := t.Context()
+			sch := resourceSchema(ctx, t, cq)
+
+			shared := map[string]tftypes.Value{
+				"id":                   tftypes.NewValue(tftypes.String, "queue-id"),
+				"uuid":                 tftypes.NewValue(tftypes.String, "queue-uuid"),
+				"cluster_id":           tftypes.NewValue(tftypes.String, "cluster-id"),
+				"cluster_uuid":         tftypes.NewValue(tftypes.String, "cluster-uuid"),
+				"key":                  tftypes.NewValue(tftypes.String, "a-queue"),
+				"retry_agent_affinity": tftypes.NewValue(tftypes.String, RetryAgentAffinityPreferWarmest),
+			}
+			prior := map[string]tftypes.Value{"dispatch_paused": tftypes.NewValue(tftypes.Bool, testCase.priorPause)}
+			planned := map[string]tftypes.Value{
+				"dispatch_paused": tftypes.NewValue(tftypes.Bool, testCase.planPause),
+				"description":     tftypes.NewValue(tftypes.String, "a new description"),
+			}
+			maps.Copy(prior, shared)
+			maps.Copy(planned, shared)
+
+			priorRaw := nullObjectWith(ctx, t, sch.Type(), prior)
+			plannedRaw := nullObjectWith(ctx, t, sch.Type(), planned)
+			req := fwresource.UpdateRequest{
+				Plan:   tfsdk.Plan{Schema: sch, Raw: plannedRaw},
+				State:  tfsdk.State{Schema: sch, Raw: priorRaw},
+				Config: tfsdk.Config{Schema: sch, Raw: plannedRaw},
+			}
+			resp := fwresource.UpdateResponse{State: tfsdk.State{Schema: sch, Raw: priorRaw}}
+
+			cq.Update(ctx, req, &resp)
+
+			if got := requests.Load(); got != int64(testCase.wantRequests) {
+				t.Fatalf("Made %d requests, want %d", got, testCase.wantRequests)
+			}
+			if !diagnosticsContain(resp.Diagnostics, "Unable to update Cluster Queue") {
+				t.Fatalf("Update() diagnostics = %v, want the queue update failure reported", resp.Diagnostics)
+			}
+
+			var persisted clusterQueueResourceModel
+			if diags := resp.State.Get(ctx, &persisted); diags.HasError() {
+				t.Fatalf("Reading the persisted state = %v", diags)
+			}
+			if got := persisted.DispatchPaused.ValueBool(); got != testCase.wantPause {
+				t.Errorf("Persisted dispatch_paused = %t, want %t: state has to describe the queue the failure left behind", got, testCase.wantPause)
+			}
+		})
+	}
+}
+
+// retry_agent_affinity is a REST call made after the queue mutation, so a failure there arrives with
+// the description and the instance shape already applied. Recording those only after the REST call
+// returned left state describing a queue that no longer existed in that form.
+func TestClusterQueueUpdatePersistsTheMutationWhenTheAffinityUpdateFails(t *testing.T) {
+	t.Parallel()
+
+	server, requests := newRetryStub(t,
+		// updateClusterQueue applies, with both the new description and the new instance shape.
+		stubResponse{status: http.StatusOK, body: `{"data":{"clusterQueueUpdate":{"clusterQueue":{
+			"id": "queue-id",
+			"uuid": "queue-uuid",
+			"key": "a-queue",
+			"description": "a new description",
+			"cluster": {"id": "cluster-id", "uuid": "cluster-uuid"},
+			"hosted": true,
+			"hostedAgents": {
+				"instanceShape": {"name": "LINUX_AMD64_4X16"},
+				"platformSettings": {"linux": {"agentImageRef": "an-image-ref"}}
+			},
+			"dispatchPaused": false
+		}}}}`},
+		// The retry_agent_affinity PATCH does not.
+		stubResponse{status: http.StatusInternalServerError, body: `{"message":"affinity update exploded"}`},
+	)
+	defer server.Close()
+
+	client := newRetryTestClient(t, server.URL, 0, time.Millisecond)
+	orgID := "organization-id"
+	client.organizationId = &orgID
+	cq := &clusterQueueResource{client: client}
+
+	ctx := t.Context()
+	sch := resourceSchema(ctx, t, cq)
+
+	shared := map[string]tftypes.Value{
+		"id":              tftypes.NewValue(tftypes.String, "queue-id"),
+		"uuid":            tftypes.NewValue(tftypes.String, "queue-uuid"),
+		"cluster_id":      tftypes.NewValue(tftypes.String, "cluster-id"),
+		"cluster_uuid":    tftypes.NewValue(tftypes.String, "cluster-uuid"),
+		"key":             tftypes.NewValue(tftypes.String, "a-queue"),
+		"dispatch_paused": tftypes.NewValue(tftypes.Bool, false),
+	}
+	prior := map[string]tftypes.Value{
+		"description":          tftypes.NewValue(tftypes.String, "an old description"),
+		"retry_agent_affinity": tftypes.NewValue(tftypes.String, RetryAgentAffinityPreferWarmest),
+		"hosted_agents":        hostedAgentsValue(ctx, t, sch.Type(), LinuxAMD64InstanceSmall),
+	}
+	planned := map[string]tftypes.Value{
+		"description":          tftypes.NewValue(tftypes.String, "a new description"),
+		"retry_agent_affinity": tftypes.NewValue(tftypes.String, RetryAgentAffinityPreferDifferent),
+		"hosted_agents":        hostedAgentsValue(ctx, t, sch.Type(), LinuxAMD64InstanceMedium),
+	}
+	maps.Copy(prior, shared)
+	maps.Copy(planned, shared)
+
+	priorRaw := nullObjectWith(ctx, t, sch.Type(), prior)
+	plannedRaw := nullObjectWith(ctx, t, sch.Type(), planned)
+	req := fwresource.UpdateRequest{
+		Plan:   tfsdk.Plan{Schema: sch, Raw: plannedRaw},
+		State:  tfsdk.State{Schema: sch, Raw: priorRaw},
+		Config: tfsdk.Config{Schema: sch, Raw: plannedRaw},
+	}
+	resp := fwresource.UpdateResponse{State: tfsdk.State{Schema: sch, Raw: priorRaw}}
+
+	cq.Update(ctx, req, &resp)
+
+	if got := requests.Load(); got < 2 {
+		t.Fatalf("Made %d requests, want the queue update to have applied before the failure", got)
+	}
+	if !diagnosticsContain(resp.Diagnostics, "Unable to update retry_agent_affinity") {
+		t.Fatalf("Update() diagnostics = %v, want the affinity failure reported", resp.Diagnostics)
+	}
+
+	var persisted clusterQueueResourceModel
+	if diags := resp.State.Get(ctx, &persisted); diags.HasError() {
+		t.Fatalf("Reading the persisted state = %v", diags)
+	}
+	if got := persisted.Description.ValueString(); got != "a new description" {
+		t.Errorf("Persisted description = %q, want %q: the mutation applied it before the REST call failed", got, "a new description")
+	}
+	if persisted.HostedAgents == nil {
+		t.Fatal("Persisted hosted_agents = nil, want the shape the mutation applied")
+	}
+	if got := persisted.HostedAgents.InstanceShape.ValueString(); got != LinuxAMD64InstanceMedium {
+		t.Errorf("Persisted instance_shape = %q, want %q: the mutation applied it before the REST call failed", got, LinuxAMD64InstanceMedium)
+	}
+	if got := persisted.RetryAgentAffinity.ValueString(); got != RetryAgentAffinityPreferWarmest {
+		t.Errorf("Persisted retry_agent_affinity = %q, want the prior %q: the PATCH failed, so nothing changed it", got, RetryAgentAffinityPreferWarmest)
+	}
+}
+
+// Setting retry_agent_affinity is a REST call made after the queue has been created. Create used to
+// persist on that failure with a bare resp.State.Set whose diagnostics went nowhere; it now shares
+// the deferred write with every other path out. Either way the queue exists, and dropping the write
+// would leave it running with nothing in state pointing at it, recoverable only by terraform import.
+func TestClusterQueueCreatePersistsTheQueueWhenTheAffinityUpdateFails(t *testing.T) {
+	t.Parallel()
+
+	server, requests := newRetryStub(t,
+		// createClusterQueue applies, hosted agent settings and all.
+		stubResponse{status: http.StatusOK, body: `{"data":{"clusterQueueCreate":{"clusterQueue":{
+			"id": "queue-id",
+			"uuid": "queue-uuid",
+			"key": "a-queue",
+			"description": "a description",
+			"cluster": {"id": "cluster-id", "uuid": "cluster-uuid"},
+			"hosted": true,
+			"hostedAgents": {
+				"instanceShape": {"name": "LINUX_AMD64_2X4"},
+				"platformSettings": {"linux": {"agentImageRef": "an-image-ref"}}
+			}
+		}}}}`},
+		// The retry_agent_affinity PATCH does not.
+		stubResponse{status: http.StatusInternalServerError, body: `{"message":"affinity update exploded"}`},
+	)
+	defer server.Close()
+
+	client := newRetryTestClient(t, server.URL, 0, time.Millisecond)
+	orgID := "organization-id"
+	client.organizationId = &orgID
+	cq := &clusterQueueResource{client: client}
+
+	ctx := t.Context()
+	sch := resourceSchema(ctx, t, cq)
+
+	planned := nullObjectWith(ctx, t, sch.Type(), map[string]tftypes.Value{
+		"cluster_id":           tftypes.NewValue(tftypes.String, "cluster-id"),
+		"key":                  tftypes.NewValue(tftypes.String, "a-queue"),
+		"description":          tftypes.NewValue(tftypes.String, "a description"),
+		"retry_agent_affinity": tftypes.NewValue(tftypes.String, RetryAgentAffinityPreferDifferent),
+		"dispatch_paused":      tftypes.NewValue(tftypes.Bool, false),
+		"hosted_agents":        hostedAgentsValue(ctx, t, sch.Type(), LinuxAMD64InstanceSmall),
+	})
+
+	req := fwresource.CreateRequest{
+		Plan:   tfsdk.Plan{Schema: sch, Raw: planned},
+		Config: tfsdk.Config{Schema: sch, Raw: planned},
+	}
+	resp := fwresource.CreateResponse{State: tfsdk.State{Schema: sch, Raw: tftypes.NewValue(sch.Type().TerraformType(ctx), nil)}}
+
+	cq.Create(ctx, req, &resp)
+
+	if got := requests.Load(); got < 2 {
+		t.Fatalf("Made %d requests, want the queue to have been created before the failure", got)
+	}
+	if !diagnosticsContain(resp.Diagnostics, "Unable to set retry_agent_affinity") {
+		t.Fatalf("Create() diagnostics = %v, want the affinity failure reported", resp.Diagnostics)
+	}
+
+	var persisted clusterQueueResourceModel
+	if diags := resp.State.Get(ctx, &persisted); diags.HasError() {
+		t.Fatalf("Reading the persisted state = %v", diags)
+	}
+	if persisted.Id.ValueString() != "queue-id" {
+		t.Errorf("Persisted id = %q, want %q: the queue was created, so state has to point at it", persisted.Id.ValueString(), "queue-id")
+	}
+	if persisted.Uuid.ValueString() != "queue-uuid" {
+		t.Errorf("Persisted uuid = %q, want %q", persisted.Uuid.ValueString(), "queue-uuid")
+	}
+	if persisted.ClusterUuid.ValueString() != "cluster-uuid" {
+		t.Errorf("Persisted cluster_uuid = %q, want %q: Read and Update reach the REST API through it", persisted.ClusterUuid.ValueString(), "cluster-uuid")
+	}
+	if persisted.DispatchPaused.ValueBool() {
+		t.Error("Persisted dispatch_paused = true, want false: the queue is created with dispatch running")
+	}
+	// The queue was created with these, and the failed PATCH did not touch either. Recording them
+	// only after the PATCH left hosted_agents null, which the RequiresReplaceIf on the attribute
+	// reads as the block having been added, so an untainted queue then plans a needless replace.
+	if got := persisted.RetryAgentAffinity.ValueString(); got != RetryAgentAffinityPreferWarmest {
+		t.Errorf("Persisted retry_agent_affinity = %q, want %q: the PATCH failed, so the queue is still on the API default", got, RetryAgentAffinityPreferWarmest)
+	}
+	if persisted.HostedAgents == nil {
+		t.Fatal("Persisted hosted_agents = nil, want the settings the queue was created with")
+	}
+	if got := persisted.HostedAgents.InstanceShape.ValueString(); got != LinuxAMD64InstanceSmall {
+		t.Errorf("Persisted instance_shape = %q, want %q", got, LinuxAMD64InstanceSmall)
+	}
 }
 
 // A failed retry_agent_affinity read used to write the schema default into state. That is the one
