@@ -3208,6 +3208,8 @@ type RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubEnterpriseS
 	BuildPullRequestConvertedToDraft *bool `json:"buildPullRequestConvertedToDraft"`
 	// Whether to create builds when a pull request is removed from a merge queue.
 	BuildPullRequestDequeued *bool `json:"buildPullRequestDequeued"`
+	// Whether to create builds when a pull request is edited.
+	BuildPullRequestEdited *bool `json:"buildPullRequestEdited"`
 	// Whether to create builds when a pull request is reopened.
 	BuildPullRequestReopened *bool `json:"buildPullRequestReopened"`
 	// Whether to create builds when an inline review comment is created on a pull request.
@@ -3319,6 +3321,11 @@ func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubEnterpr
 // GetBuildPullRequestDequeued returns RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings.BuildPullRequestDequeued, and is useful for accessing the field via an interface.
 func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings) GetBuildPullRequestDequeued() *bool {
 	return v.BuildPullRequestDequeued
+}
+
+// GetBuildPullRequestEdited returns RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings.BuildPullRequestEdited, and is useful for accessing the field via an interface.
+func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings) GetBuildPullRequestEdited() *bool {
+	return v.BuildPullRequestEdited
 }
 
 // GetBuildPullRequestReopened returns RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings.BuildPullRequestReopened, and is useful for accessing the field via an interface.
@@ -3530,6 +3537,8 @@ type RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubSettingsRep
 	BuildPullRequestConvertedToDraft *bool `json:"buildPullRequestConvertedToDraft"`
 	// Whether to create builds when a pull request is removed from a merge queue.
 	BuildPullRequestDequeued *bool `json:"buildPullRequestDequeued"`
+	// Whether to create builds when a pull request is edited.
+	BuildPullRequestEdited *bool `json:"buildPullRequestEdited"`
 	// Whether to create builds when a pull request is reopened.
 	BuildPullRequestReopened *bool `json:"buildPullRequestReopened"`
 	// Whether to create builds when an inline review comment is created on a pull request.
@@ -3641,6 +3650,11 @@ func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubSetting
 // GetBuildPullRequestDequeued returns RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings.BuildPullRequestDequeued, and is useful for accessing the field via an interface.
 func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings) GetBuildPullRequestDequeued() *bool {
 	return v.BuildPullRequestDequeued
+}
+
+// GetBuildPullRequestEdited returns RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings.BuildPullRequestEdited, and is useful for accessing the field via an interface.
+func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings) GetBuildPullRequestEdited() *bool {
+	return v.BuildPullRequestEdited
 }
 
 // GetBuildPullRequestReopened returns RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings.BuildPullRequestReopened, and is useful for accessing the field via an interface.
@@ -26868,6 +26882,7 @@ fragment RepositoryProviderSettingsFields on Repository {
 				buildDeploymentStatusCreated
 				buildPullRequestConvertedToDraft
 				buildPullRequestDequeued
+				buildPullRequestEdited
 				buildPullRequestReopened
 				buildPullRequestReviewCommentCreated
 				buildPullRequestReviewRequested
@@ -26917,6 +26932,7 @@ fragment RepositoryProviderSettingsFields on Repository {
 				buildDeploymentStatusCreated
 				buildPullRequestConvertedToDraft
 				buildPullRequestDequeued
+				buildPullRequestEdited
 				buildPullRequestReopened
 				buildPullRequestReviewCommentCreated
 				buildPullRequestReviewRequested
