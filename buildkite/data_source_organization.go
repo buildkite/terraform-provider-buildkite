@@ -82,7 +82,11 @@ func (o *organizationDatasource) Read(ctx context.Context, req datasource.ReadRe
 		)
 		state.AllowedApiIpAddresses = types.ListNull(types.StringType)
 	} else {
-		ips, diag := types.ListValueFrom(ctx, types.StringType, strings.Split(settings.AllowedIpAddresses, " "))
+		// Fields, not Split: an organization without an allowlist has no addresses rather than the one
+		// blank one splitting "" reports, and the API separates on runs of whitespace the way
+		// Buildkite::IPAddrList does, so a doubled space is not an empty address either.
+		addresses := strings.Fields(settings.AllowedIpAddresses)
+		ips, diag := types.ListValueFrom(ctx, types.StringType, addresses)
 		if diag.HasError() {
 			resp.Diagnostics.Append(diag...)
 			return

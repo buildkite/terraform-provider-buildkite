@@ -627,6 +627,46 @@ func TestUnitBuildkiteOrganizationDatasourceAgainstFakeAPI(t *testing.T) {
 	})
 }
 
+// An organization without an allowlist has no addresses, which splitting the empty string the API
+// answers with would report as one blank address instead. The API separates on runs of whitespace,
+// so a doubled space is not an empty address either.
+func TestUnitBuildkiteOrganizationDatasourceAllowlistSeparators(t *testing.T) {
+	testCases := []struct {
+		name   string
+		remote string
+		want   []string
+	}{
+		{"no allowlist is no addresses", "", nil},
+		{"one address", "1.1.1.1/32", []string{"1.1.1.1/32"}},
+		{"a doubled space is not an address", "1.1.1.1/32  0.0.0.0/0", []string{"1.1.1.1/32", "0.0.0.0/0"}},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			server, api := newFakeOrganizationAPI(t)
+			api.settings.AllowedIpAddresses = tc.remote
+
+			const name = "data.buildkite_organization.settings"
+			checks := []resource.TestCheckFunc{
+				resource.TestCheckResourceAttr(name, "allowed_api_ip_addresses.#", fmt.Sprint(len(tc.want))),
+			}
+			for i, address := range tc.want {
+				checks = append(checks, resource.TestCheckResourceAttr(name, fmt.Sprintf("allowed_api_ip_addresses.%d", i), address))
+			}
+
+			resource.UnitTest(t, resource.TestCase{
+				ProtoV6ProviderFactories: protoV6ProviderFactories(),
+				Steps: []resource.TestStep{
+					{
+						Config: fakeOrganizationDatasourceConfig(server),
+						Check:  resource.ComposeAggregateTestCheckFunc(checks...),
+					},
+				},
+			})
+		})
+	}
+}
+
 // api-settings only answers an organization administrator, so a lookup that cannot see the allowlist
 // still reports the identifiers rather than failing outright.
 func TestUnitBuildkiteOrganizationDatasourceWithoutSettingsAccess(t *testing.T) {
