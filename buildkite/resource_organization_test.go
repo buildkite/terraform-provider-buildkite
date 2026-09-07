@@ -142,34 +142,45 @@ func TestApiSettingsPatch(t *testing.T) {
 	t.Parallel()
 
 	days := func(d int64) *int64 { return &d }
-	model := func(revoke types.String, restrict types.Bool) organizationResourceModel {
-		return organizationResourceModel{RevokeInactiveTokensAfter: revoke, RestrictUserApiTokenCreation: restrict}
+	list := func(cidrs ...string) types.List {
+		values := make([]attr.Value, len(cidrs))
+		for i, c := range cidrs {
+			values[i] = types.StringValue(c)
+		}
+		return types.ListValueMust(types.StringType, values)
 	}
-	unset := model(types.StringNull(), types.BoolNull())
+	noList := types.ListNull(types.StringType)
+	model := func(allowed types.List, revoke types.String, restrict types.Bool) organizationResourceModel {
+		return organizationResourceModel{AllowedApiIpAddresses: allowed, RevokeInactiveTokensAfter: revoke, RestrictUserApiTokenCreation: restrict}
+	}
+	unset := model(noList, types.StringNull(), types.BoolNull())
 	testCases := []struct {
-		name         string
-		config       organizationResourceModel
-		plan         organizationResourceModel
-		current      organizationAPISettings
-		currentKnown bool
-		want         string
+		name    string
+		config  organizationResourceModel
+		plan    organizationResourceModel
+		current organizationAPISettings
+		want    string
 	}{
-		{"unset attributes are not sent", unset, model(types.StringUnknown(), types.BoolUnknown()), organizationAPISettings{RevokeInactiveTokensAfterDays: days(30), RestrictUserApiTokenCreation: true}, true, `{}`},
-		{"values kept from state for unset attributes are not sent", unset, model(types.StringValue("DAYS_90"), types.BoolValue(true)), organizationAPISettings{}, true, `{}`},
-		{"unchanged values are not sent", model(types.StringValue("DAYS_90"), types.BoolValue(true)), model(types.StringValue("DAYS_90"), types.BoolValue(true)), organizationAPISettings{RevokeInactiveTokensAfterDays: days(90), RestrictUserApiTokenCreation: true}, true, `{}`},
-		{"changed period is sent", model(types.StringValue("DAYS_60"), types.BoolNull()), model(types.StringValue("DAYS_60"), types.BoolValue(false)), organizationAPISettings{RevokeInactiveTokensAfterDays: days(90)}, true, `{"revoke_inactive_tokens_after_days":60}`},
-		{"never is sent as null", model(types.StringValue("NEVER"), types.BoolValue(false)), model(types.StringValue("NEVER"), types.BoolValue(false)), organizationAPISettings{RevokeInactiveTokensAfterDays: days(90)}, true, `{"revoke_inactive_tokens_after_days":null}`},
-		{"changed restriction is sent", model(types.StringNull(), types.BoolValue(false)), model(types.StringValue("NEVER"), types.BoolValue(false)), organizationAPISettings{RestrictUserApiTokenCreation: true}, true, `{"restrict_user_api_token_creation":false}`},
-		{"both are sent", model(types.StringValue("DAYS_365"), types.BoolValue(true)), model(types.StringValue("DAYS_365"), types.BoolValue(true)), organizationAPISettings{}, true, `{"restrict_user_api_token_creation":true,"revoke_inactive_tokens_after_days":365}`},
-		// when the current settings can't be read, configured values are always sent
-		{"unknown current and explicit false", model(types.StringNull(), types.BoolValue(false)), model(types.StringUnknown(), types.BoolValue(false)), organizationAPISettings{}, false, `{"restrict_user_api_token_creation":false}`},
-		{"unknown current and explicit never", model(types.StringValue("NEVER"), types.BoolNull()), model(types.StringValue("NEVER"), types.BoolUnknown()), organizationAPISettings{}, false, `{"revoke_inactive_tokens_after_days":null}`},
-		{"unknown current and nothing configured", unset, model(types.StringValue("DAYS_30"), types.BoolValue(true)), organizationAPISettings{}, false, `{}`},
+		{"unset attributes are not sent", unset, model(noList, types.StringUnknown(), types.BoolUnknown()), organizationAPISettings{RevokeInactiveTokensAfterDays: days(30), RestrictUserApiTokenCreation: true}, `{}`},
+		{"values kept from state for unset attributes are not sent", unset, model(noList, types.StringValue("DAYS_90"), types.BoolValue(true)), organizationAPISettings{}, `{}`},
+		{"unchanged values are not sent", model(noList, types.StringValue("DAYS_90"), types.BoolValue(true)), model(noList, types.StringValue("DAYS_90"), types.BoolValue(true)), organizationAPISettings{RevokeInactiveTokensAfterDays: days(90), RestrictUserApiTokenCreation: true}, `{}`},
+		{"changed period is sent", model(noList, types.StringValue("DAYS_60"), types.BoolNull()), model(noList, types.StringValue("DAYS_60"), types.BoolValue(false)), organizationAPISettings{RevokeInactiveTokensAfterDays: days(90)}, `{"revoke_inactive_tokens_after_days":60}`},
+		{"never is sent as null", model(noList, types.StringValue("NEVER"), types.BoolValue(false)), model(noList, types.StringValue("NEVER"), types.BoolValue(false)), organizationAPISettings{RevokeInactiveTokensAfterDays: days(90)}, `{"revoke_inactive_tokens_after_days":null}`},
+		{"changed restriction is sent", model(noList, types.StringNull(), types.BoolValue(false)), model(noList, types.StringValue("NEVER"), types.BoolValue(false)), organizationAPISettings{RestrictUserApiTokenCreation: true}, `{"restrict_user_api_token_creation":false}`},
+		{"both are sent", model(noList, types.StringValue("DAYS_365"), types.BoolValue(true)), model(noList, types.StringValue("DAYS_365"), types.BoolValue(true)), organizationAPISettings{}, `{"restrict_user_api_token_creation":true,"revoke_inactive_tokens_after_days":365}`},
+		// the allowlist is owned outright, so the plan says what it should be with no help from config
+		{"allowlist is sent", model(list("1.1.1.1/32"), types.StringNull(), types.BoolNull()), model(list("1.1.1.1/32"), types.StringValue("NEVER"), types.BoolValue(false)), organizationAPISettings{}, `{"allowed_ip_addresses":"1.1.1.1/32"}`},
+		{"unchanged allowlist is not sent", model(list("1.1.1.1/32", "0.0.0.0/0"), types.StringNull(), types.BoolNull()), model(list("1.1.1.1/32", "0.0.0.0/0"), types.StringValue("NEVER"), types.BoolValue(false)), organizationAPISettings{AllowedIpAddresses: "1.1.1.1/32 0.0.0.0/0"}, `{}`},
+		{"removed allowlist is cleared", unset, model(noList, types.StringValue("NEVER"), types.BoolValue(false)), organizationAPISettings{AllowedIpAddresses: "1.1.1.1/32"}, `{"allowed_ip_addresses":""}`},
+		{"empty string clears the allowlist", model(list(""), types.StringNull(), types.BoolNull()), model(list(""), types.StringValue("NEVER"), types.BoolValue(false)), organizationAPISettings{AllowedIpAddresses: "1.1.1.1/32"}, `{"allowed_ip_addresses":""}`},
+		// an organization without the feature is refused even an unchanged allowlist, so it is left out
+		{"unset allowlist is not sent to an organization without one", unset, model(noList, types.StringValue("NEVER"), types.BoolValue(false)), organizationAPISettings{}, `{}`},
+		{"allowlist and a token setting travel together", model(list("1.1.1.1/32"), types.StringNull(), types.BoolValue(true)), model(list("1.1.1.1/32"), types.StringValue("NEVER"), types.BoolValue(true)), organizationAPISettings{}, `{"allowed_ip_addresses":"1.1.1.1/32","restrict_user_api_token_creation":true}`},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			got, err := json.Marshal(apiSettingsPatch(&tc.config, &tc.plan, &tc.current, tc.currentKnown))
+			got, err := json.Marshal(apiSettingsPatch(&tc.config, &tc.plan, &tc.current))
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -367,14 +378,10 @@ func TestAccBuildkiteOrganizationResource(t *testing.T) {
 	t.Run("adopts an existing allowed API IP address list", func(t *testing.T) {
 		// Give the organization an allowlist before terraform manages it (0.0.0.0/0 keeps the API reachable)
 		presetAllowlist := func() {
-			org, err := getOrganization(context.Background(), genqlientGraphql, getenv("BUILDKITE_ORGANIZATION_SLUG"))
-			if err != nil {
-				t.Fatalf("Unable to read organization: %v", err)
-			}
-			if _, err := setApiIpAddresses(context.Background(), genqlientGraphql, org.Organization.Id, "0.0.0.0/0"); err != nil {
+			if _, err := getTestClient().updateOrganizationAPISettings(context.Background(), map[string]any{"allowed_ip_addresses": "0.0.0.0/0"}); err != nil {
 				t.Fatalf("Unable to preset the allowed API IP addresses: %v", err)
 			}
-			if _, err := getOrganization(context.Background(), genqlientGraphql, getenv("BUILDKITE_ORGANIZATION_SLUG")); err != nil {
+			if _, err := getTestClient().getOrganizationAPISettings(context.Background()); err != nil {
 				t.Fatalf("API unreachable after presetting the allowed API IP addresses: %v", err)
 			}
 		}
@@ -621,90 +628,78 @@ func testAccCheckOrganizationAPISettingsRemoteValues(revokeAfter string, restric
 
 func testAccCheckOrganizationRemoteValues(ip_addresses []string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
-		resp, err := getOrganization(context.Background(), genqlientGraphql, getenv("BUILDKITE_ORGANIZATION_SLUG"))
+		settings, err := getTestClient().getOrganizationAPISettings(context.Background())
 		if err != nil {
 			return err
 		}
 
-		if resp.Organization.AllowedApiIpAddresses != strings.Join(ip_addresses, " ") {
-			return fmt.Errorf("Allowed IP addresses do not match. Expected: %s, got: %s", ip_addresses, resp.Organization.AllowedApiIpAddresses)
+		if settings.AllowedIpAddresses != strings.Join(ip_addresses, " ") {
+			return fmt.Errorf("Allowed IP addresses do not match. Expected: %s, got: %s", ip_addresses, settings.AllowedIpAddresses)
 		}
 		return nil
 	}
 }
 
 // A failed PATCH has to leave the api-settings attributes describing the organization rather than
-// the plan, or state claims a setting that was never applied. That matters most when the GET was
-// also refused: readAPISettings falls back to state on a 403, so it re-adopts whatever is there on
-// every refresh, and a wrong value put there once is never corrected and never shows in a plan.
+// the plan, or state claims a setting that was never applied. Update persists state on that path,
+// and readAPISettings falls back to state when a refresh cannot read the settings, so a wrong value
+// put there once is re-adopted rather than replanned and never shows in a plan.
 func TestUpdateAPISettingsReportsTheOrganizationWhenThePatchFails(t *testing.T) {
 	t.Parallel()
 
-	patchRefused := stubResponse{status: http.StatusInternalServerError, body: `{"message":"patch failed"}`}
-	tests := []struct {
-		name string
-		get  stubResponse
-	}{
-		{
-			name: "current settings readable",
-			get:  stubResponse{status: http.StatusOK, body: `{"revoke_inactive_tokens_after_days":null,"restrict_user_api_token_creation":false}`},
-		},
-		{
-			// Without the read scope the prior state stands in for the organization's settings.
-			name: "current settings refused",
-			get:  stubResponse{status: http.StatusForbidden, body: `{"message":"no read_organization_settings scope"}`},
-		},
+	server, _ := newRetryStub(t,
+		stubResponse{status: http.StatusOK, body: `{"allowed_ip_addresses":"9.9.9.9/32","revoke_inactive_tokens_after_days":null,"restrict_user_api_token_creation":false}`},
+		stubResponse{status: http.StatusInternalServerError, body: `{"message":"patch failed"}`},
+	)
+	defer server.Close()
+
+	o := &organizationResource{client: newRetryTestClient(t, server.URL, 0, time.Millisecond)}
+
+	ctx := t.Context()
+	configured := organizationResourceModel{
+		AllowedApiIpAddresses:        listOfStrings(ctx, t, "1.2.3.4/32"),
+		RevokeInactiveTokensAfter:    types.StringValue("DAYS_30"),
+		RestrictUserApiTokenCreation: types.BoolValue(true),
+	}
+	// as Update seeds it, from the prior state
+	state := organizationResourceModel{
+		AllowedApiIpAddresses:        listOfStrings(ctx, t, "9.9.9.9/32"),
+		RevokeInactiveTokensAfter:    types.StringValue(revokeInactiveTokensNever),
+		RestrictUserApiTokenCreation: types.BoolValue(false),
 	}
 
-	for _, testCase := range tests {
-		t.Run(testCase.name, func(t *testing.T) {
-			t.Parallel()
+	var diags diag.Diagnostics
+	applied := o.updateAPISettings(ctx, &configured, &configured, &state, &diags)
 
-			server, _ := newRetryStub(t, testCase.get, patchRefused)
-			defer server.Close()
-
-			o := &organizationResource{client: newRetryTestClient(t, server.URL, 0, time.Millisecond)}
-
-			configured := organizationResourceModel{
-				RevokeInactiveTokensAfter:    types.StringValue("DAYS_30"),
-				RestrictUserApiTokenCreation: types.BoolValue(true),
-			}
-			prior := organizationResourceModel{
-				RevokeInactiveTokensAfter:    types.StringValue(revokeInactiveTokensNever),
-				RestrictUserApiTokenCreation: types.BoolValue(false),
-			}
-
-			var state organizationResourceModel
-			var diags diag.Diagnostics
-			o.updateAPISettings(context.Background(), &configured, &configured, &prior, &state, &diags)
-
-			if !diags.HasError() {
-				t.Fatalf("updateAPISettings diagnostics = %v, want the PATCH failure reported", diags)
-			}
-			if got := state.RevokeInactiveTokensAfter.ValueString(); got != revokeInactiveTokensNever {
-				t.Errorf("Persisted revoke_inactive_tokens_after = %q, want %q: the PATCH failed, so the configured period never applied", got, revokeInactiveTokensNever)
-			}
-			if state.RestrictUserApiTokenCreation.ValueBool() {
-				t.Error("Persisted restrict_user_api_token_creation = true, want false: the PATCH failed, so the restriction never applied")
-			}
-		})
+	if !diags.HasError() {
+		t.Fatalf("updateAPISettings diagnostics = %v, want the PATCH failure reported", diags)
+	}
+	if len(applied) != 0 {
+		t.Errorf("updateAPISettings applied = %v, want none: the PATCH failed, so it changed nothing", applied)
+	}
+	if got := allowedApiIpAddressesValue(state.AllowedApiIpAddresses); got != "9.9.9.9/32" {
+		t.Errorf("Persisted allowed_api_ip_addresses = %q, want %q: the PATCH failed, so the configured allowlist never applied", got, "9.9.9.9/32")
+	}
+	if got := state.RevokeInactiveTokensAfter.ValueString(); got != revokeInactiveTokensNever {
+		t.Errorf("Persisted revoke_inactive_tokens_after = %q, want %q: the PATCH failed, so the configured period never applied", got, revokeInactiveTokensNever)
+	}
+	if state.RestrictUserApiTokenCreation.ValueBool() {
+		t.Error("Persisted restrict_user_api_token_creation = true, want false: the PATCH failed, so the restriction never applied")
 	}
 }
 
-// Update applies 2FA before the api-settings PATCH, so a failure in the PATCH must not drop the 2FA
-// change: Terraform would plan it again, and in the meantime state disagrees with the organization.
-func TestOrganizationUpdatePersistsTheEnforced2FAWhenTheAPISettingsPatchFails(t *testing.T) {
+// Update writes the api-settings before it changes 2FA, so a 2FA failure must not drop the settings
+// the patch applied: Terraform would plan them again, and in the meantime state disagrees with the
+// organization.
+func TestOrganizationUpdatePersistsTheAppliedAPISettingsWhen2FAFails(t *testing.T) {
 	t.Parallel()
 
 	server, requests := newRetryStub(t,
-		// setOrganization2FA applies.
-		stubResponse{status: http.StatusOK, body: `{"data":{"organizationEnforceTwoFactorAuthenticationForMembersUpdate":{"organization":{
-			"id": "organization-id",
-			"membersRequireTwoFactorAuthentication": true
-		}}}}`},
-		// The api-settings GET, and then a PATCH that does not.
-		stubResponse{status: http.StatusOK, body: `{"revoke_inactive_tokens_after_days":null,"restrict_user_api_token_creation":false}`},
-		stubResponse{status: http.StatusInternalServerError, body: `{"message":"patch failed"}`},
+		// The api-settings GET, then a PATCH that applies the new period.
+		stubResponse{status: http.StatusOK, body: `{"allowed_ip_addresses":"","revoke_inactive_tokens_after_days":null,"restrict_user_api_token_creation":false}`},
+		stubResponse{status: http.StatusOK, body: `{"allowed_ip_addresses":"","revoke_inactive_tokens_after_days":30,"restrict_user_api_token_creation":false}`},
+		// setOrganization2FA, which does not.
+		stubResponse{status: http.StatusOK, body: `{"errors":[{"message":"mutation exploded"}]}`},
 	)
 	defer server.Close()
 
@@ -716,7 +711,7 @@ func TestOrganizationUpdatePersistsTheEnforced2FAWhenTheAPISettingsPatchFails(t 
 	ctx := t.Context()
 	sch := resourceSchema(ctx, t, o)
 
-	// An unchanged allowlist, so updateAllowedApiIpAddresses makes no request of its own.
+	// An unchanged allowlist, so it stays out of the patch and only the period is sent.
 	allowlist := tftypes.NewValue(tftypes.List{ElementType: tftypes.String}, []tftypes.Value{})
 	prior := nullObjectWith(ctx, t, sch.Type(), map[string]tftypes.Value{
 		"id":                           tftypes.NewValue(tftypes.String, "organization-id"),
@@ -743,21 +738,21 @@ func TestOrganizationUpdatePersistsTheEnforced2FAWhenTheAPISettingsPatchFails(t 
 	o.Update(ctx, req, &resp)
 
 	if got := requests.Load(); got < 3 {
-		t.Fatalf("Made %d requests, want 3: 2FA and the api-settings read have to precede the failing PATCH", got)
+		t.Fatalf("Made %d requests, want 3: the api-settings read and patch have to precede the failing 2FA mutation", got)
 	}
-	if !diagnosticsContain(resp.Diagnostics, "Unable to update organization API settings") {
-		t.Fatalf("Update() diagnostics = %v, want the PATCH failure reported", resp.Diagnostics)
+	if !diagnosticsContain(resp.Diagnostics, "Unable to set 2FA") {
+		t.Fatalf("Update() diagnostics = %v, want the 2FA failure reported", resp.Diagnostics)
 	}
 
 	var persisted organizationResourceModel
 	if diags := resp.State.Get(ctx, &persisted); diags.HasError() {
 		t.Fatalf("Reading the persisted state = %v", diags)
 	}
-	if !persisted.Enforce2FA.ValueBool() {
-		t.Error("Persisted enforce_2fa = false, want true: the 2FA mutation applied, so state has to say so")
+	if got := persisted.RevokeInactiveTokensAfter.ValueString(); got != "DAYS_30" {
+		t.Errorf("Persisted revoke_inactive_tokens_after = %q, want %q: the patch applied, so state has to say so", got, "DAYS_30")
 	}
-	if got := persisted.RevokeInactiveTokensAfter.ValueString(); got != revokeInactiveTokensNever {
-		t.Errorf("Persisted revoke_inactive_tokens_after = %q, want %q: the PATCH failed", got, revokeInactiveTokensNever)
+	if persisted.Enforce2FA.ValueBool() {
+		t.Error("Persisted enforce_2fa = true, want false: the 2FA mutation failed, so it never applied")
 	}
 }
 
@@ -772,71 +767,56 @@ func TestOrganizationCreateWarnsAboutUnrecordedChanges(t *testing.T) {
 
 	const configuredAllowlist = "1.2.3.4/32"
 
-	organizationIs := func(allowlist string, enforced2FA bool) stubResponse {
+	organizationIs := func(enforced2FA bool) stubResponse {
 		return stubResponse{status: http.StatusOK, body: fmt.Sprintf(`{"data":{"organization":{
 			"id": "organization-id",
 			"uuid": "organization-uuid",
-			"allowedApiIpAddresses": %q,
 			"membersRequireTwoFactorAuthentication": %t
-		}}}`, allowlist, enforced2FA)}
+		}}}`, enforced2FA)}
 	}
-	allowlistUpdated := stubResponse{status: http.StatusOK, body: `{"data":{"organizationApiIpAllowlistUpdate":{"organization":{
-		"id": "organization-id",
-		"uuid": "organization-uuid",
-		"allowedApiIpAddresses": "",
-		"membersRequireTwoFactorAuthentication": false
-	}}}}`}
-	twoFAUpdated := stubResponse{status: http.StatusOK, body: `{"data":{"organizationEnforceTwoFactorAuthenticationForMembersUpdate":{"organization":{
-		"id": "organization-id",
-		"membersRequireTwoFactorAuthentication": true
-	}}}}`}
-	graphQLFails := stubResponse{status: http.StatusOK, body: `{"errors":[{"message":"mutation exploded"}]}`}
-	apiSettingsReadable := stubResponse{status: http.StatusOK, body: `{"revoke_inactive_tokens_after_days":null,"restrict_user_api_token_creation":false}`}
-	patchFails := stubResponse{status: http.StatusInternalServerError, body: `{"message":"patch failed"}`}
+	apiSettingsAre := func(allowed string) stubResponse {
+		return stubResponse{status: http.StatusOK, body: fmt.Sprintf(
+			`{"allowed_ip_addresses":%q,"revoke_inactive_tokens_after_days":null,"restrict_user_api_token_creation":false}`, allowed)}
+	}
+	patchApplied := stubResponse{status: http.StatusOK, body: `{"allowed_ip_addresses":"","revoke_inactive_tokens_after_days":null,"restrict_user_api_token_creation":false}`}
+	twoFAFails := stubResponse{status: http.StatusOK, body: `{"errors":[{"message":"mutation exploded"}]}`}
 
 	tests := []struct {
 		name string
 		// The allowlist the config asks for. Unset means the attribute is absent, which clears it.
 		configuredAllowlist string
-		// Set when the config manages revoke_inactive_tokens_after, which is what makes Create reach
-		// the api-settings PATCH rather than failing at the 2FA mutation before it.
+		// Set when the config also manages revoke_inactive_tokens_after.
 		configuredRevoke string
 		responses        []stubResponse
-		wantError        string
 		// Substrings the single warning has to contain, or none to assert there is no warning.
 		wantWarned []string
 	}{
 		{
 			name:                "allowlist applied, then the 2FA mutation fails",
 			configuredAllowlist: configuredAllowlist,
-			responses:           []stubResponse{organizationIs("", false), allowlistUpdated, graphQLFails},
-			wantError:           "Unable to set 2FA",
+			responses:           []stubResponse{organizationIs(false), apiSettingsAre(""), patchApplied, twoFAFails},
 			wantWarned:          []string{`allowlist was set to "1.2.3.4/32"`},
 		},
 		{
-			// Already what the config asks for, so updateAllowedApiIpAddresses makes no request and
-			// this apply is not responsible for the allowlist being in place.
+			// Already what the config asks for, so the patch is empty, no request is made, and this
+			// apply is not responsible for the allowlist being in place.
 			name:                "allowlist already matched",
 			configuredAllowlist: configuredAllowlist,
-			responses:           []stubResponse{organizationIs(configuredAllowlist, false), graphQLFails},
-			wantError:           "Unable to set 2FA",
+			responses:           []stubResponse{organizationIs(false), apiSettingsAre(configuredAllowlist), twoFAFails},
 		},
 		{
 			// No allowlist in the config against an organization that has one, which clears it. The
 			// wording differs from a set, because "set to \"\"" would read as a change to nothing.
 			name:       "allowlist cleared, then the 2FA mutation fails",
-			responses:  []stubResponse{organizationIs(configuredAllowlist, false), allowlistUpdated, graphQLFails},
-			wantError:  "Unable to set 2FA",
+			responses:  []stubResponse{organizationIs(false), apiSettingsAre(configuredAllowlist), patchApplied, twoFAFails},
 			wantWarned: []string{"allowlist was cleared"},
 		},
 		{
-			// 2FA is as sticky as the allowlist and just as absent from state, so the failure after it
-			// has to name it. The allowlist is unchanged here, so it must not be named.
-			name:             "2FA applied, then the api-settings PATCH fails",
+			// The allowlist is unchanged here, so the warning must name the period and not it.
+			name:             "revocation period applied, then the 2FA mutation fails",
 			configuredRevoke: "DAYS_30",
-			responses:        []stubResponse{organizationIs("", false), twoFAUpdated, apiSettingsReadable, patchFails},
-			wantError:        "Unable to update organization API settings",
-			wantWarned:       []string{"two-factor authentication was enforced"},
+			responses:        []stubResponse{organizationIs(false), apiSettingsAre(""), patchApplied, twoFAFails},
+			wantWarned:       []string{"inactive API token revocation was set to DAYS_30"},
 		},
 	}
 
@@ -877,28 +857,25 @@ func TestOrganizationCreateWarnsAboutUnrecordedChanges(t *testing.T) {
 			if got := requests.Load(); got < int64(len(testCase.responses)) {
 				t.Fatalf("Made %d requests, want %d: the failure has to come from the last stubbed response", got, len(testCase.responses))
 			}
-			if !diagnosticsContain(resp.Diagnostics, testCase.wantError) {
-				t.Fatalf("Create() diagnostics = %v, want %q", resp.Diagnostics, testCase.wantError)
+			if !diagnosticsContain(resp.Diagnostics, "Unable to set 2FA") {
+				t.Fatalf("Create() diagnostics = %v, want the 2FA failure reported", resp.Diagnostics)
 			}
 			if !resp.State.Raw.IsNull() {
 				t.Errorf("Create() persisted %v, want no state: persisting taints the instance, and replacing it clears the API IP allowlist", resp.State.Raw)
 			}
 
 			warnings := resp.Diagnostics.Warnings()
-			if len(testCase.wantWarned) == 0 {
-				for _, d := range warnings {
-					if d.Summary() == "Organization settings changed but not recorded" {
-						t.Errorf("Create() warned %q, want no warning: this apply changed nothing before it failed", d.Detail())
-					}
-				}
-				return
-			}
-
 			var detail string
 			for _, d := range warnings {
 				if d.Summary() == "Organization settings changed but not recorded" {
 					detail = d.Detail()
 				}
+			}
+			if len(testCase.wantWarned) == 0 {
+				if detail != "" {
+					t.Errorf("Create() warned %q, want no warning: this apply changed nothing before it failed", detail)
+				}
+				return
 			}
 			if detail == "" {
 				t.Fatalf("Create() warnings = %v, want one naming the settings that applied", warnings)
@@ -915,15 +892,14 @@ func TestOrganizationCreateWarnsAboutUnrecordedChanges(t *testing.T) {
 	}
 }
 
-// A non-403 failure on the api-settings GET makes updateAPISettings return before it assigns either
-// attribute it owns. Update persists unconditionally now, so without seeding state from the prior
-// values first, that path writes nulls over settings the organization still has. readAPISettings
-// falls back to state on a 403, so a null put there once is re-adopted on every refresh.
+// A failed api-settings GET makes updateAPISettings return before it assigns any of the attributes
+// it owns. Update persists unconditionally now, so without seeding state from the prior values
+// first, that path writes nulls over settings the organization still has. readAPISettings falls back
+// to state when a refresh cannot read the settings, so a null put there once is re-adopted.
 func TestOrganizationUpdateKeepsPriorAPISettingsWhenTheReadFails(t *testing.T) {
 	t.Parallel()
 
-	// Only the api-settings GET is reached: the allowlist and 2FA both match the prior state, so
-	// neither sends a mutation of its own.
+	// Only the api-settings GET is reached: it precedes both the patch and the 2FA mutation.
 	server, requests := newRetryStub(t,
 		stubResponse{status: http.StatusInternalServerError, body: `{"message":"api-settings unavailable"}`},
 	)
@@ -937,7 +913,9 @@ func TestOrganizationUpdateKeepsPriorAPISettingsWhenTheReadFails(t *testing.T) {
 	ctx := t.Context()
 	sch := resourceSchema(ctx, t, o)
 
-	allowlist := tftypes.NewValue(tftypes.List{ElementType: tftypes.String}, []tftypes.Value{})
+	allowlist := tftypes.NewValue(tftypes.List{ElementType: tftypes.String}, []tftypes.Value{
+		tftypes.NewValue(tftypes.String, "9.9.9.9/32"),
+	})
 	prior := nullObjectWith(ctx, t, sch.Type(), map[string]tftypes.Value{
 		"id":                               tftypes.NewValue(tftypes.String, "organization-id"),
 		"uuid":                             tftypes.NewValue(tftypes.String, "organization-uuid"),
@@ -946,7 +924,7 @@ func TestOrganizationUpdateKeepsPriorAPISettingsWhenTheReadFails(t *testing.T) {
 		"revoke_inactive_tokens_after":     tftypes.NewValue(tftypes.String, "DAYS_30"),
 		"restrict_user_api_token_creation": tftypes.NewValue(tftypes.Bool, true),
 	})
-	// Only revoke_inactive_tokens_after changes, and it is applied after the GET, so no mutation
+	// Only revoke_inactive_tokens_after changes, and everything is applied after the GET, so nothing
 	// runs before the read fails.
 	planned := nullObjectWith(ctx, t, sch.Type(), map[string]tftypes.Value{
 		"id":                               tftypes.NewValue(tftypes.String, "organization-id"),
@@ -977,6 +955,9 @@ func TestOrganizationUpdateKeepsPriorAPISettingsWhenTheReadFails(t *testing.T) {
 	if diags := resp.State.Get(ctx, &persisted); diags.HasError() {
 		t.Fatalf("Reading the persisted state = %v", diags)
 	}
+	if got := allowedApiIpAddressesValue(persisted.AllowedApiIpAddresses); got != "9.9.9.9/32" {
+		t.Errorf("Persisted allowed_api_ip_addresses = %q, want %q: nothing applied, so the prior value stands", got, "9.9.9.9/32")
+	}
 	if got := persisted.RevokeInactiveTokensAfter.ValueString(); got != "DAYS_30" {
 		t.Errorf("Persisted revoke_inactive_tokens_after = %q, want %q: nothing applied, so the prior value stands", got, "DAYS_30")
 	}
@@ -986,4 +967,15 @@ func TestOrganizationUpdateKeepsPriorAPISettingsWhenTheReadFails(t *testing.T) {
 	if !persisted.Enforce2FA.ValueBool() {
 		t.Error("Persisted enforce_2fa = false, want true: nothing applied, so the prior value stands")
 	}
+}
+
+// listOfStrings builds the attribute value for a known-good allowlist
+func listOfStrings(ctx context.Context, t *testing.T, values ...string) types.List {
+	t.Helper()
+
+	list, diags := types.ListValueFrom(ctx, types.StringType, values)
+	if diags.HasError() {
+		t.Fatalf("building a list of %q = %v", values, diags)
+	}
+	return list
 }
