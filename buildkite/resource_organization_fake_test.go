@@ -389,6 +389,30 @@ func TestUnitBuildkiteOrganizationRefusesToWriteUnreadableSettings(t *testing.T)
 	})
 }
 
+// The settings endpoint is read on every apply, whatever the configuration sets, so a token that
+// cannot read it manages nothing here. enforce_2fa is the one attribute the endpoint does not carry,
+// and it is no exception: the read still has to answer before the resource can record the settings
+// it adopts rather than invent them.
+func TestUnitBuildkiteOrganizationNeedsReadableSettingsFor2FAAlone(t *testing.T) {
+	server, api := newFakeOrganizationAPI(t)
+	api.refuseRead(http.StatusForbidden, `{"message":"Forbidden"}`)
+
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config:      fakeOrganizationConfig(server, `enforce_2fa = true`),
+				ExpectError: regexp.MustCompile(`(?s)Unable to read organization API settings.*The API token needs the read_organization_settings scope`),
+			},
+		},
+	})
+
+	// the read comes first, so the apply gives up before touching 2FA
+	if api.twoFactorState() {
+		t.Error("2FA was changed by an apply that could not read the API settings")
+	}
+}
+
 // Destroying clears the allowlist the resource owns, and state does not say whether there is one to
 // clear: a refresh that could not read the settings keeps reporting the allowlist it last saw, so an
 // allowlist set out of band would outlive the resource that is supposed to own it.

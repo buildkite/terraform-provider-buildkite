@@ -57,8 +57,9 @@ func (*organizationResource) Schema(ctx context.Context, req resource.SchemaRequ
 
 			The user of your API token must be an organization administrator to manage organization settings.
 			Every attribute other than ` + "`enforce_2fa`" + ` is managed through the organization API settings
-			endpoint, so the token also needs the ` + "`read_organization_settings`" + ` and
-			` + "`write_organization_settings`" + ` scopes.
+			endpoint. The resource reads that endpoint on every apply, so the token needs the
+			` + "`read_organization_settings`" + ` scope whatever the configuration sets, and
+			` + "`write_organization_settings`" + ` to change any of those attributes.
 		`),
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
