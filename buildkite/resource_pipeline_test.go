@@ -2936,10 +2936,19 @@ func TestPipelineUpdateRetriesTheDetachWhenTheNewTeamIsAlreadyAttached(t *testin
 		}}}}`},
 		// The new team was attached by the previous, partly failed apply.
 		stubResponse{status: http.StatusOK, body: `{"errors":[{"message":"This pipeline has already been added to this team"}]}`},
-		// getPipelineTeams, reached only if the attach stopped being fatal. The previous owner is
-		// listed so findAndRemoveTeam has an edge to delete.
+		// getPipelineTeams for the access level check, reached only if the attach stopped being
+		// fatal. Both teams are listed, which is what the previous apply left behind, and the new
+		// one already has the access that apply gave it.
 		stubResponse{status: http.StatusOK, body: fmt.Sprintf(`{"data":{"pipeline":{"teams":{
-			"edges": [{"node": {"id": "team-pipeline-id", "team": {"id": %q}}}],
+			"edges": [
+				{"node": {"id": "team-pipeline-id", "accessLevel": "MANAGE_BUILD_AND_READ", "team": {"id": %q}}},
+				{"node": {"id": "new-team-pipeline-id", "accessLevel": "MANAGE_BUILD_AND_READ", "team": {"id": %q}}}
+			],
+			"pageInfo": {"hasNextPage": false, "endCursor": ""}
+		}}}}`, previousTeamID, newTeamID)},
+		// getPipelineTeams again, so findAndRemoveTeam has an edge to delete.
+		stubResponse{status: http.StatusOK, body: fmt.Sprintf(`{"data":{"pipeline":{"teams":{
+			"edges": [{"node": {"id": "team-pipeline-id", "accessLevel": "MANAGE_BUILD_AND_READ", "team": {"id": %q}}}],
 			"pageInfo": {"hasNextPage": false, "endCursor": ""}
 		}}}}`, previousTeamID)},
 		// teamPipelineDelete for the previous owner.
@@ -2983,7 +2992,7 @@ func TestPipelineUpdateRetriesTheDetachWhenTheNewTeamIsAlreadyAttached(t *testin
 	if diagnosticsContain(resp.Diagnostics, "Could not remove previous default team") {
 		t.Fatalf("Update() diagnostics = %v, want the detach to have succeeded", resp.Diagnostics)
 	}
-	if got := requests.Load(); got < 4 {
+	if got := requests.Load(); got < 5 {
 		t.Fatalf("Made %d requests, want the detach to have been attempted after the duplicate attach", got)
 	}
 
@@ -2994,4 +3003,148 @@ func TestPipelineUpdateRetriesTheDetachWhenTheNewTeamIsAlreadyAttached(t *testin
 	if got := persisted.DefaultTeamId.ValueString(); got != newTeamID {
 		t.Errorf("Persisted default_team_id = %q, want %q: the detach succeeded, so the swap is complete", got, newTeamID)
 	}
+}
+
+func TestPipelineUpdateRaisesTheAccessOfATeamAttachedOutsideTheResource(t *testing.T) {
+	t.Parallel()
+
+	const (
+		previousTeamID = "team-id"
+		newTeamID      = "new-team-id"
+	)
+
+	server, requests := newRetryStub(t,
+		// pipelineUpdate applies.
+		stubResponse{status: http.StatusOK, body: `{"data":{"pipelineUpdate":{"pipeline":{
+			"id": "pipeline-id", "pipelineUuid": "pipeline-uuid", "name": "p", "slug": "p",
+			"defaultBranch": "main", "description": "", "archived": false,
+			"repository": {"url": "git@github.com:org/repo.git"}, "steps": {"yaml": "steps: []"},
+			"tags": [], "teams": {"edges": []}
+		}}}}`},
+		// The new team is already attached, but by buildkite_pipeline_team or the web UI rather
+		// than by a previous run of this method, so it carries whatever access that gave it.
+		stubResponse{status: http.StatusOK, body: `{"errors":[{"message":"This pipeline has already been added to this team"}]}`},
+		// getPipelineTeams for the access level check.
+		stubResponse{status: http.StatusOK, body: fmt.Sprintf(`{"data":{"pipeline":{"teams":{
+			"edges": [
+				{"node": {"id": "team-pipeline-id", "accessLevel": "MANAGE_BUILD_AND_READ", "team": {"id": %q}}},
+				{"node": {"id": "new-team-pipeline-id", "accessLevel": "READ_ONLY", "team": {"id": %q}}}
+			],
+			"pageInfo": {"hasNextPage": false, "endCursor": ""}
+		}}}}`, previousTeamID, newTeamID)},
+		// teamPipelineUpdate raising the new team to full access.
+		stubResponse{status: http.StatusOK, body: `{"data":{"teamPipelineUpdate":{"teamPipeline":{
+			"id": "new-team-pipeline-id", "uuid": "new-team-pipeline-uuid",
+			"pipelineAccessLevel": "MANAGE_BUILD_AND_READ",
+			"team": {"id": "new-team-id"}, "pipeline": {"id": "pipeline-id"}
+		}}}}`},
+		// getPipelineTeams again, so findAndRemoveTeam has an edge to delete.
+		stubResponse{status: http.StatusOK, body: fmt.Sprintf(`{"data":{"pipeline":{"teams":{
+			"edges": [{"node": {"id": "team-pipeline-id", "accessLevel": "MANAGE_BUILD_AND_READ", "team": {"id": %q}}}],
+			"pageInfo": {"hasNextPage": false, "endCursor": ""}
+		}}}}`, previousTeamID)},
+		// teamPipelineDelete for the previous owner.
+		stubResponse{status: http.StatusOK, body: `{"data":{"teamPipelineDelete":{"team":{"id":"team-id"}}}}`},
+	)
+	defer server.Close()
+
+	resp := updateWithDefaultTeamSwap(t, server.URL, previousTeamID, newTeamID)
+
+	if diagnosticsContain(resp.Diagnostics, "Could not attach new default team to pipeline") {
+		t.Fatalf("Update() diagnostics = %v, want the already attached team to have been raised rather than rejected", resp.Diagnostics)
+	}
+	if diagnosticsContain(resp.Diagnostics, "Could not remove previous default team") {
+		t.Fatalf("Update() diagnostics = %v, want the detach to have succeeded", resp.Diagnostics)
+	}
+	// Six requests means teamPipelineUpdate ran: without it the detach and delete would land on
+	// requests four and five, and the pipeline would keep a read-only default team.
+	if got := requests.Load(); got != 6 {
+		t.Fatalf("Made %d requests, want 6: the existing edge has to be raised to full access before the previous team is detached", got)
+	}
+
+	var persisted pipelineResourceModel
+	if diags := resp.State.Get(t.Context(), &persisted); diags.HasError() {
+		t.Fatalf("Reading the persisted state = %v", diags)
+	}
+	if got := persisted.DefaultTeamId.ValueString(); got != newTeamID {
+		t.Errorf("Persisted default_team_id = %q, want %q: the swap completed", got, newTeamID)
+	}
+}
+
+func TestPipelineUpdateFailsWhenTheDuplicateTeamIsNotActuallyAttached(t *testing.T) {
+	t.Parallel()
+
+	const (
+		previousTeamID = "team-id"
+		newTeamID      = "new-team-id"
+	)
+
+	server, _ := newRetryStub(t,
+		// pipelineUpdate applies.
+		stubResponse{status: http.StatusOK, body: `{"data":{"pipelineUpdate":{"pipeline":{
+			"id": "pipeline-id", "pipelineUuid": "pipeline-uuid", "name": "p", "slug": "p",
+			"defaultBranch": "main", "description": "", "archived": false,
+			"repository": {"url": "git@github.com:org/repo.git"}, "steps": {"yaml": "steps: []"},
+			"tags": [], "teams": {"edges": []}
+		}}}}`},
+		stubResponse{status: http.StatusOK, body: `{"errors":[{"message":"This pipeline has already been added to this team"}]}`},
+		// The team the attach claimed already existed is nowhere on the pipeline.
+		stubResponse{status: http.StatusOK, body: fmt.Sprintf(`{"data":{"pipeline":{"teams":{
+			"edges": [{"node": {"id": "team-pipeline-id", "accessLevel": "MANAGE_BUILD_AND_READ", "team": {"id": %q}}}],
+			"pageInfo": {"hasNextPage": false, "endCursor": ""}
+		}}}}`, previousTeamID)},
+	)
+	defer server.Close()
+
+	resp := updateWithDefaultTeamSwap(t, server.URL, previousTeamID, newTeamID)
+
+	if !diagnosticsContain(resp.Diagnostics, "Could not attach new default team to pipeline") {
+		t.Fatalf("Update() diagnostics = %v, want the attach to have failed rather than detaching the previous team", resp.Diagnostics)
+	}
+
+	var persisted pipelineResourceModel
+	if diags := resp.State.Get(t.Context(), &persisted); diags.HasError() {
+		t.Fatalf("Reading the persisted state = %v", diags)
+	}
+	if got := persisted.DefaultTeamId.ValueString(); got != previousTeamID {
+		t.Errorf("Persisted default_team_id = %q, want %q: the new team is not attached, so it cannot be recorded", got, previousTeamID)
+	}
+}
+
+// updateWithDefaultTeamSwap runs Update over a plan that swaps default_team_id from previousTeamID
+// to newTeamID, against the stub server at url.
+func updateWithDefaultTeamSwap(t *testing.T, url, previousTeamID, newTeamID string) fwresource.UpdateResponse {
+	t.Helper()
+
+	p := &pipelineResource{client: newRetryTestClient(t, url, 0, time.Millisecond)}
+
+	ctx := t.Context()
+	schema := resourceSchema(ctx, t, p)
+
+	shared := map[string]tftypes.Value{
+		"id":         tftypes.NewValue(tftypes.String, "pipeline-id"),
+		"name":       tftypes.NewValue(tftypes.String, "p"),
+		"repository": tftypes.NewValue(tftypes.String, "git@github.com:org/repo.git"),
+		"steps":      tftypes.NewValue(tftypes.String, "steps: []"),
+		"archived":   tftypes.NewValue(tftypes.Bool, false),
+	}
+	prior := map[string]tftypes.Value{
+		"slug":            tftypes.NewValue(tftypes.String, "p"),
+		"default_team_id": tftypes.NewValue(tftypes.String, previousTeamID),
+	}
+	planned := map[string]tftypes.Value{"default_team_id": tftypes.NewValue(tftypes.String, newTeamID)}
+	maps.Copy(prior, shared)
+	maps.Copy(planned, shared)
+
+	priorRaw := nullObjectWith(ctx, t, schema.Type(), prior)
+	req := fwresource.UpdateRequest{
+		Plan:   tfsdk.Plan{Schema: schema, Raw: nullObjectWith(ctx, t, schema.Type(), planned)},
+		State:  tfsdk.State{Schema: schema, Raw: priorRaw},
+		Config: tfsdk.Config{Schema: schema, Raw: nullObjectWith(ctx, t, schema.Type(), planned)},
+	}
+	resp := fwresource.UpdateResponse{State: tfsdk.State{Schema: schema, Raw: priorRaw}}
+
+	p.Update(ctx, req, &resp)
+
+	return resp
 }

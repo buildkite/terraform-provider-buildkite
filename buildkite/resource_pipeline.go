@@ -1470,7 +1470,9 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 		state.DefaultTeamId = types.StringNull()
 	} else if plan.DefaultTeamId.ValueString() != state.DefaultTeamId.ValueString() {
 		// If the planned default_team_id differs from the state, add the new one and remove the old one
+		alreadyAttached := false
 		err := retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
+			alreadyAttached = false
 			_, err := createTeamPipeline(ctx, p.client.genqlient, plan.DefaultTeamId.ValueString(), state.Id.ValueString(), PipelineAccessLevelsManageBuildAndRead)
 			// A team that is already attached is what re-running this method looks like: the previous
 			// apply attached it and then failed to detach the old one, which is the state this method
@@ -1478,6 +1480,7 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 			// leaving both teams attached with no way forward, since Read keeps the recorded team
 			// while it is still attached.
 			if err != nil && isAlreadyExistsError(err) {
+				alreadyAttached = true
 				return nil
 			}
 			return retryContextError(err)
@@ -1485,6 +1488,19 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 		if err != nil {
 			resp.Diagnostics.AddError("Could not attach new default team to pipeline", err.Error())
 			return
+		}
+
+		// The team can also have been attached outside this resource, through buildkite_pipeline_team
+		// or the web UI, at whatever access level that gave it. teamPipelineCreate leaves an existing
+		// edge alone, so the access level has to be raised separately: without it the detach below
+		// hands the pipeline to a default team that lacks the full access the attribute stands for,
+		// and Read only warns about that, so the apply reports success.
+		if alreadyAttached {
+			err = p.findAndSetTeamAccessLevel(ctx, plan.DefaultTeamId.ValueString(), useSlugValue, PipelineAccessLevelsManageBuildAndRead, "")
+			if err != nil {
+				resp.Diagnostics.AddError("Could not attach new default team to pipeline", err.Error())
+				return
+			}
 		}
 
 		// remove the old team
@@ -1568,6 +1584,35 @@ func (p *pipelineResource) findAndRemoveTeam(ctx context.Context, teamID string,
 		return p.findAndRemoveTeam(ctx, teamID, pipelineSlug, teams.Pipeline.Teams.PageInfo.EndCursor)
 	}
 	return nil
+}
+
+// findAndSetTeamAccessLevel raises an already attached team to accessLevel, which teamPipelineCreate
+// does not do for an edge that already exists. Like the removal above it has to page through the
+// connection, because the update takes the pipeline team connection ID rather than the team's.
+// A team that turns out not to be attached is an error: the caller is about to record it as the
+// default team, so reporting success would put a team in state that the pipeline does not have.
+func (p *pipelineResource) findAndSetTeamAccessLevel(ctx context.Context, teamID string, pipelineSlug string, accessLevel PipelineAccessLevels, cursor string) error {
+	slug := fmt.Sprintf("%s/%s", p.client.organization, pipelineSlug)
+	teams, err := getPipelineTeams(ctx, p.client.genqlient, slug, cursor)
+	if err != nil {
+		return err
+	}
+
+	for _, team := range teams.Pipeline.Teams.Edges {
+		if team.Node.Team.Id != teamID {
+			continue
+		}
+		if team.Node.AccessLevel == accessLevel {
+			return nil
+		}
+		_, err := updateTeamPipeline(ctx, p.client.genqlient, team.Node.Id, accessLevel)
+		return err
+	}
+
+	if teams.Pipeline.Teams.PageInfo.HasNextPage {
+		return p.findAndSetTeamAccessLevel(ctx, teamID, pipelineSlug, accessLevel, teams.Pipeline.Teams.PageInfo.EndCursor)
+	}
+	return fmt.Errorf("team with ID %s is not attached to the pipeline", teamID)
 }
 
 func (p *pipelineResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
