@@ -1,6 +1,7 @@
 package buildkite
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -12,6 +13,9 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
@@ -497,6 +501,55 @@ func TestUnitBuildkiteOrganizationKeepsWrittenSettingsWhenSetting2FAFails(t *tes
 	}
 	if got := api.allowedIpAddresses(); got != "1.1.1.1/32" {
 		t.Errorf("remote allowed_ip_addresses = %q, want %q", got, "1.1.1.1/32")
+	}
+}
+
+// updateAPISettings reports whether the organization was written to. A create that fails at 2FA
+// afterwards tells the operator what it left behind, and a settings write that never happened leaves
+// nothing to tell them about.
+func TestUnitOrganizationUpdateAPISettingsReportsWhetherItWrote(t *testing.T) {
+	unset := organizationResourceModel{
+		AllowedApiIpAddresses:        types.ListNull(types.StringType),
+		RevokeInactiveTokensAfter:    types.StringNull(),
+		RestrictUserApiTokenCreation: types.BoolNull(),
+	}
+	configured := unset
+	configured.AllowedApiIpAddresses = types.ListValueMust(types.StringType, []attr.Value{types.StringValue("1.1.1.1/32")})
+
+	testCases := []struct {
+		name        string
+		model       organizationResourceModel
+		patchStatus int
+		want        bool
+	}{
+		{"nothing differs, so nothing is written", unset, 0, false},
+		{"a changed allowlist is written", configured, 0, true},
+		{"a refused write is not a write", configured, http.StatusForbidden, false},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			server, api := newFakeOrganizationAPI(t)
+			api.settings.Features.ApiIpAllowList = true
+			if tc.patchStatus != 0 {
+				api.refusePatch(tc.patchStatus, `{"message":"Forbidden"}`)
+			}
+
+			org := &organizationResource{client: NewClient(&clientConfig{
+				apiToken:   "fake",
+				graphqlURL: server.URL + "/graphql",
+				restURL:    server.URL,
+				org:        "acme",
+				userAgent:  "test",
+			})}
+
+			var diags diag.Diagnostics
+			state := tc.model
+			got := org.updateAPISettings(context.Background(), &tc.model, &tc.model, &state, &diags)
+			if got != tc.want {
+				t.Errorf("updateAPISettings() = %t, want %t (diagnostics: %v)", got, tc.want, diags)
+			}
+		})
 	}
 }
 

@@ -148,7 +148,7 @@ func (o *organizationResource) Create(ctx context.Context, req resource.CreateRe
 	// api-settings goes first. A setting the organization's plan does not include is refused
 	// outright, and refusing it changes nothing, so that failure cannot leave 2FA already flipped
 	// on an organization terraform has no state for.
-	o.updateAPISettings(ctx, &config, &plan, &state, &resp.Diagnostics)
+	wroteAPISettings := o.updateAPISettings(ctx, &config, &plan, &state, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -161,12 +161,14 @@ func (o *organizationResource) Create(ctx context.Context, req resource.CreateRe
 			// follows destroys before it creates, clearing an allowlist that did land. Leaving the
 			// create unrecorded keeps the organization as terraform found it, and applying again
 			// writes only what still differs before retrying 2FA.
-			resp.Diagnostics.AddWarning(
-				"Organization API settings were applied before 2FA failed",
-				"The API access token settings, including allowed_api_ip_addresses, were written and are left in place. "+
-					"No state was recorded for this resource, so terraform will not clear them. Applying again writes "+
-					"only the settings that still differ, then retries the 2FA change.",
-			)
+			if wroteAPISettings {
+				resp.Diagnostics.AddWarning(
+					"Organization API settings were applied before 2FA failed",
+					"The API access token settings, including allowed_api_ip_addresses, were written and are left in place. "+
+						"No state was recorded for this resource, so terraform will not clear them. Applying again writes "+
+						"only the settings that still differ, then retries the 2FA change.",
+				)
+			}
 			return
 		}
 		state.Enforce2FA = plan.Enforce2FA
@@ -417,15 +419,17 @@ func (o *organizationResource) readAPISettings(ctx context.Context, state *organ
 	state.RestrictUserApiTokenCreation = types.BoolValue(settings.RestrictUserApiTokenCreation)
 }
 
-// updateAPISettings sends the configured api-settings that changed and records the result on state
-func (o *organizationResource) updateAPISettings(ctx context.Context, config, plan, state *organizationResourceModel, diags *diag.Diagnostics) {
+// updateAPISettings sends the configured api-settings that changed and records the result on state.
+// It reports whether the organization was written to, which a caller that fails afterwards needs to
+// know before telling anyone what was left behind.
+func (o *organizationResource) updateAPISettings(ctx context.Context, config, plan, state *organizationResourceModel, diags *diag.Diagnostics) bool {
 	// settings that are about to be written have to be read first. The allowlist is owned outright,
 	// so an unreadable one cannot be told from an empty one, and skipping the request on that guess
 	// would record an allowlist the organization never took.
 	current, err := o.client.getOrganizationAPISettings(ctx)
 	if err != nil {
 		addUnreadableAPISettingsError(diags, err)
-		return
+		return false
 	}
 
 	// the allowlist is not adopted from the organization, so state follows the configuration exactly
@@ -442,7 +446,7 @@ func (o *organizationResource) updateAPISettings(ctx context.Context, config, pl
 
 	payload := apiSettingsPatch(config, plan, current)
 	if len(payload) == 0 {
-		return
+		return false
 	}
 
 	log.Printf("Updating API settings for organization %s ...", o.client.organization)
@@ -459,5 +463,7 @@ func (o *organizationResource) updateAPISettings(ctx context.Context, config, pl
 			}
 		}
 		diags.AddError("Unable to update organization API settings", detail)
+		return false
 	}
+	return true
 }
