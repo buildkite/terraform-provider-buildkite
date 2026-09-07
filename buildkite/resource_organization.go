@@ -164,7 +164,7 @@ func (o *organizationResource) Create(ctx context.Context, req resource.CreateRe
 			if wroteAPISettings {
 				resp.Diagnostics.AddWarning(
 					"Organization API settings were applied before 2FA failed",
-					"The API access token settings, including allowed_api_ip_addresses, were written and are left in place. "+
+					"The organization API settings that differed were written and are left in place. "+
 						"No state was recorded for this resource, so terraform will not clear them. Applying again writes "+
 						"only the settings that still differ, then retries the 2FA change.",
 				)
