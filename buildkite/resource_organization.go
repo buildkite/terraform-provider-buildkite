@@ -394,12 +394,14 @@ func apiSettingsPatch(config, plan *organizationResourceModel, current *organiza
 	return payload
 }
 
-// unreadableAPISettingsDetail describes a settings read that failed, naming the scope a forbidden
-// answer asks for. Callers with a way out of the failure append it.
+// unreadableAPISettingsDetail describes a settings read that failed, naming the access a forbidden
+// answer asks for. The endpoint requires an organization administrator to read as well as write, so a
+// token already carrying the scope is refused just the same. Callers with a way out of the failure
+// append it.
 func unreadableAPISettingsDetail(err error) string {
 	detail := fmt.Sprintf("Unable to read organization API settings: %s", err.Error())
 	if isAPIStatus(err, http.StatusForbidden) {
-		detail += " The API token needs the read_organization_settings scope."
+		detail += fmt.Sprintf(" The API token needs the %s scope, and its user must be an organization administrator.", readOrganizationSettingsScope)
 	}
 	return detail
 }
@@ -415,8 +417,8 @@ func (o *organizationResource) readAPISettings(ctx context.Context, state *organ
 			addUnreadableAPISettingsError(diags, err)
 			return
 		}
-		// tolerate tokens without the read_organization_settings scope
-		diags.AddWarning("Unable to read organization API settings", fmt.Sprintf("Unable to read organization API settings, keeping the last known values. The API token needs the read_organization_settings scope: %s", err.Error()))
+		// tolerate a refresh that is not allowed to read the settings
+		diags.AddWarning("Unable to read organization API settings", fmt.Sprintf("Unable to read organization API settings, keeping the last known values. The API token needs the %s scope, and its user must be an organization administrator: %s", readOrganizationSettingsScope, err.Error()))
 		settings = apiSettingsFromModel(state)
 	}
 

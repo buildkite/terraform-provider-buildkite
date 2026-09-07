@@ -404,7 +404,7 @@ func TestUnitBuildkiteOrganizationRefusesToWriteUnreadableSettings(t *testing.T)
 		Steps: []resource.TestStep{
 			{
 				Config:      fakeOrganizationConfig(server, `allowed_api_ip_addresses = []`),
-				ExpectError: regexp.MustCompile(`(?s)Unable to read organization API settings.*The API token needs the read_organization_settings scope`),
+				ExpectError: regexp.MustCompile(`(?s)Unable to read organization API settings.*The API token needs the read_organization_settings scope, and its user must be an organization administrator`),
 			},
 		},
 	})
@@ -423,7 +423,7 @@ func TestUnitBuildkiteOrganizationNeedsReadableSettingsFor2FAAlone(t *testing.T)
 		Steps: []resource.TestStep{
 			{
 				Config:      fakeOrganizationConfig(server, `enforce_2fa = true`),
-				ExpectError: regexp.MustCompile(`(?s)Unable to read organization API settings.*The API token needs the read_organization_settings scope`),
+				ExpectError: regexp.MustCompile(`(?s)Unable to read organization API settings.*The API token needs the read_organization_settings scope, and its user must be an organization administrator`),
 			},
 		},
 	})
@@ -456,7 +456,7 @@ func TestUnitBuildkiteOrganizationRefusesToDestroyWithUnreadableSettings(t *test
 				},
 				Config:      fakeOrganizationConfig(server, ``),
 				Destroy:     true,
-				ExpectError: regexp.MustCompile(`(?s)Unable to read organization API settings.*The API token needs the read_organization_settings scope.*terraform state rm`),
+				ExpectError: regexp.MustCompile(`(?s)Unable to read organization API settings.*The API token needs the read_organization_settings scope, and its user must be an organization administrator.*terraform state rm`),
 			},
 			{
 				// with the settings readable the allowlist state never saw is still cleared
