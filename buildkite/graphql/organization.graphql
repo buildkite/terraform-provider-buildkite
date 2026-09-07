@@ -1,20 +1,8 @@
 query getOrganization($slug: ID!) {
     organization(slug: $slug) {
-        allowedApiIpAddresses
         id
         uuid
         membersRequireTwoFactorAuthentication
-    }
-}
-
-mutation setApiIpAddresses($organizationID: ID!, $ipAddresses: String!) {
-    organizationApiIpAllowlistUpdate(input: { organizationID: $organizationID, ipAddresses: $ipAddresses }) {
-        organization {
-            allowedApiIpAddresses
-            id
-            uuid
-            membersRequireTwoFactorAuthentication
-        }
     }
 }
 
