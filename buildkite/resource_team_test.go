@@ -242,6 +242,13 @@ func TestAccBuildkiteTeam(t *testing.T) {
 					ImportState:       true,
 					ImportStateVerify: true,
 				},
+				{
+					// the team slug is also accepted
+					ResourceName:      "buildkite_team.acc_tests",
+					ImportState:       true,
+					ImportStateIdFunc: testAccImportIDFromAttributes("buildkite_team.acc_tests", "slug"),
+					ImportStateVerify: true,
+				},
 			},
 		})
 	})

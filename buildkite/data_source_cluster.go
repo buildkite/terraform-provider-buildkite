@@ -3,6 +3,7 @@ package buildkite
 import (
 	"context"
 	"fmt"
+	"net/http"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
@@ -83,15 +84,22 @@ func (c *clusterDatasource) Read(ctx context.Context, req datasource.ReadRequest
 				// Fetch maintainers for this cluster
 				maintainers, err := c.client.listClusterMaintainers(ctx, c.client.organization, cluster.Node.Uuid)
 				if err != nil {
-					// Log warning but don't fail the entire request - maintainers might not be accessible
+					// A refusal is an answer: the caller may not see the maintainers, and reporting
+					// none is a fair reading of that. Any other failure means the API never
+					// answered, and an empty list would be consumed as though it had.
+					if !isAPIStatus(err, http.StatusForbidden) {
+						resp.Diagnostics.AddError(
+							"Unable to fetch cluster maintainers",
+							fmt.Sprintf("Could not fetch maintainers for cluster %s: %s", cluster.Node.Name, err.Error()),
+						)
+						return
+					}
 					resp.Diagnostics.AddWarning(
 						"Unable to fetch cluster maintainers",
-						fmt.Sprintf("Could not fetch maintainers for cluster %s: %s", cluster.Node.Name, err.Error()),
+						fmt.Sprintf("Could not fetch maintainers for cluster %s, reporting none: %s", cluster.Node.Name, err.Error()),
 					)
-					state.Maintainers = []maintainerModel{}
-				} else {
-					state.Maintainers = maintainers
 				}
+				state.Maintainers = maintainers
 				break
 			}
 		}

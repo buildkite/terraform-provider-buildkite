@@ -50,16 +50,8 @@ query getClusterQueues(
                 }
                 edges {
                     node {
-                        ...ClusterQueueValues
-                        dispatchPaused
-                        # @genqlient(pointer: true)
-                        dispatchPausedAt
-                        # @genqlient(pointer: true)
-                        dispatchPausedBy {
-                            id
-                        }
-                        # @genqlient(pointer: true)
-                        dispatchPausedNote
+                        id
+                        key
                     }
                 }
             }
