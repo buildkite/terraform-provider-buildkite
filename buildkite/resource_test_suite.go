@@ -3,6 +3,7 @@ package buildkite
 import (
 	"context"
 	"fmt"
+	"net/http"
 
 	custom_modifier "github.com/buildkite/terraform-provider-buildkite/internal/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -430,7 +431,7 @@ func (ts *testSuiteResource) Update(ctx context.Context, req resource.UpdateRequ
 	// Construct URL to call to the REST API
 	url := fmt.Sprintf("/v2/analytics/organizations/%s/suites/%s", ts.client.organization, state.Slug.ValueString())
 	updateErr := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-		err := ts.client.makeRequest(ctx, "PATCH", url, payload, &response)
+		err := ts.client.makeRequest(ctx, http.MethodPatch, url, payload, &response)
 
 		return retryContextError(err)
 	})

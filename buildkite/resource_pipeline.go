@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net/http"
 	"regexp"
 	"strings"
 	"time"
@@ -89,6 +90,7 @@ type pipelineResourceModel struct {
 	DefaultTimeoutInMinutes            types.Int64            `tfsdk:"default_timeout_in_minutes"`
 	Description                        types.String           `tfsdk:"description"`
 	Emoji                              types.String           `tfsdk:"emoji"`
+	GithubWebhooksEnabled              types.Bool             `tfsdk:"github_webhooks_enabled"`
 	Id                                 types.String           `tfsdk:"id"`
 	MaximumTimeoutInMinutes            types.Int64            `tfsdk:"maximum_timeout_in_minutes"`
 	Name                               types.String           `tfsdk:"name"`
@@ -107,6 +109,7 @@ type pipelineResourceModel struct {
 
 type providerSettingsModel struct {
 	TriggerMode                             types.String `tfsdk:"trigger_mode"`
+	BuildIssues                             types.Bool   `tfsdk:"build_issues"`
 	BuildPullRequests                       types.Bool   `tfsdk:"build_pull_requests"`
 	PullRequestBranchFilterEnabled          types.Bool   `tfsdk:"pull_request_branch_filter_enabled"`
 	PullRequestBranchFilterConfiguration    types.String `tfsdk:"pull_request_branch_filter_configuration"`
@@ -331,6 +334,22 @@ func (p *pipelineResource) Create(ctx context.Context, req resource.CreateReques
 		state.ProviderSettings = plan.ProviderSettings
 	}
 
+	if !plan.GithubWebhooksEnabled.IsNull() && !plan.GithubWebhooksEnabled.IsUnknown() {
+		enabled, err := getPipelineGithubWebhooks(ctx, useSlugValue, p.client, timeouts)
+		if err != nil {
+			resp.Diagnostics.AddError("Unable to read pipeline GitHub webhooks", err.Error())
+			return
+		}
+		// new pipelines have webhooks enabled, so only call the API on a change
+		if enabled != plan.GithubWebhooksEnabled.ValueBool() {
+			if err := setPipelineGithubWebhooks(ctx, useSlugValue, plan.GithubWebhooksEnabled.ValueBool(), p.client, timeouts); err != nil {
+				resp.Diagnostics.AddError("Unable to set pipeline GitHub webhooks", err.Error())
+				return
+			}
+		}
+	}
+	state.GithubWebhooksEnabled = plan.GithubWebhooksEnabled
+
 	// Archive last: the REST API rejects updates to archived pipelines, so all REST
 	// calls (slug, provider settings) must complete before the pipeline is archived.
 	if plan.Archived.ValueBool() {
@@ -485,6 +504,16 @@ func (p *pipelineResource) Read(ctx context.Context, req resource.ReadRequest, r
 			}
 		}
 
+		// github_webhooks_enabled is only refreshed when it is managed
+		if !state.GithubWebhooksEnabled.IsNull() {
+			enabled, err := getPipelineGithubWebhooks(ctx, state.Slug.ValueString(), p.client, timeouts)
+			if err != nil {
+				resp.Diagnostics.AddError("Unable to read pipeline GitHub webhooks", err.Error())
+				return
+			}
+			state.GithubWebhooksEnabled = types.BoolValue(enabled)
+		}
+
 		// pipeline default team is a terraform concept only so it takes some coercing
 		teamResult, err := p.setDefaultTeamIfExists(ctx, &state, &pipelineNode.Teams.PipelineTeam)
 		if err != nil {
@@ -605,6 +634,8 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 			More information on pipelines can be found in the [documentation](https://buildkite.com/docs/pipelines).
 
 			-> **Note:** When creating a new pipeline, the Buildkite API requires at least one team to be associated with it. You must use the 'default_team_id' attribute to specify this initial team. The 'buildkite_pipeline_team' resource can then be used to manage team access for existing pipelines.
+
+			-> **Note:** After importing a pipeline, 'color' and 'emoji' values left out of the configuration are cleared on the next apply.
 		`),
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
@@ -698,6 +729,11 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 			"emoji": schema.StringAttribute{
 				Optional:            true,
 				MarkdownDescription: "An emoji that represents this pipeline.",
+			},
+			"github_webhooks_enabled": schema.BoolAttribute{
+				Optional: true,
+				MarkdownDescription: "Whether GitHub webhook processing is enabled for the pipeline. Only applies to GitHub and GitHub Enterprise repositories and requires the organization to be enrolled in the newer webhook triggers. " +
+					"If omitted, the setting is left unchanged and is not read.",
 			},
 			"maximum_timeout_in_minutes": schema.Int64Attribute{
 				Computed:            true,
@@ -843,6 +879,14 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 						Optional:            true,
 						Computed:            true,
 						MarkdownDescription: "Whether to create builds for commits that are part of a pull request.",
+						PlanModifiers: []planmodifier.Bool{
+							boolplanmodifier.UseNonNullStateForUnknown(),
+						},
+					},
+					"build_issues": schema.BoolAttribute{
+						Optional:            true,
+						Computed:            true,
+						MarkdownDescription: "Whether authenticated GitHub `issues` webhook deliveries create builds. Supported for GitHub.com pipelines only. Defaults to false.",
 						PlanModifiers: []planmodifier.Bool{
 							boolplanmodifier.UseNonNullStateForUnknown(),
 						},
@@ -1439,6 +1483,14 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 		state.ProviderSettings = plan.ProviderSettings
 	}
 
+	if !plan.GithubWebhooksEnabled.IsNull() && !plan.GithubWebhooksEnabled.Equal(state.GithubWebhooksEnabled) {
+		if err := setPipelineGithubWebhooks(ctx, useSlugValue, plan.GithubWebhooksEnabled.ValueBool(), p.client, timeouts); err != nil {
+			resp.Diagnostics.AddError("Unable to set pipeline GitHub webhooks", err.Error())
+			return
+		}
+	}
+	state.GithubWebhooksEnabled = plan.GithubWebhooksEnabled
+
 	// Archive after all other updates: archiving earlier would make the REST calls
 	// above fail with "Cannot update an archived pipeline".
 	if needsArchive {
@@ -1486,7 +1538,19 @@ func (p *pipelineResource) findAndRemoveTeam(ctx context.Context, teamID string,
 	return nil
 }
 
-func (*pipelineResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+func (p *pipelineResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	// a pipeline slug is also accepted and resolved to the GraphQL ID
+	if slug, ok := parsePipelineImportID(req.ID); ok {
+		r, err := getPipelineId(ctx, p.client.genqlient, fmt.Sprintf("%s/%s", p.client.organization, slug))
+		if err == nil && r.Pipeline.Id == "" {
+			err = fmt.Errorf("no pipeline with that slug")
+		}
+		if err != nil {
+			resp.Diagnostics.AddError("Unable to import pipeline", fmt.Sprintf("Could not find pipeline %q: %s", req.ID, err.Error()))
+			return
+		}
+		req.ID = r.Pipeline.Id
+	}
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 
 	// ImportStatePassthroughID only seeds the id attribute, so state.ProviderSettings
@@ -1561,6 +1625,7 @@ type PipelineSlug struct {
 
 type PipelineExtraSettings struct {
 	TriggerMode                             *string `json:"trigger_mode,omitempty"`
+	BuildIssues                             *bool   `json:"build_issues,omitempty"`
 	BuildPullRequests                       *bool   `json:"build_pull_requests,omitempty"`
 	PullRequestBranchFilterEnabled          *bool   `json:"pull_request_branch_filter_enabled,omitempty"`
 	PullRequestBranchFilterConfiguration    *string `json:"pull_request_branch_filter_configuration,omitempty"`
@@ -1616,7 +1681,7 @@ func updatePipelineSlug(ctx context.Context, slug string, updatedSlug string, cl
 
 	if len(updatedSlug) > 0 {
 		err := retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
-			err := client.makeRequest(ctx, "PATCH", fmt.Sprintf("/v2/organizations/%s/pipelines/%s", client.organization, slug), payload, &pipelineExtraInfo)
+			err := client.makeRequest(ctx, http.MethodPatch, fmt.Sprintf("/v2/organizations/%s/pipelines/%s", client.organization, slug), payload, &pipelineExtraInfo)
 			return retryContextError(err)
 		})
 		if err != nil {
@@ -1630,6 +1695,7 @@ func updatePipelineExtraInfo(ctx context.Context, slug string, settings *provide
 	payload := map[string]any{
 		"provider_settings": PipelineExtraSettings{
 			TriggerMode:                             settings.TriggerMode.ValueStringPointer(),
+			BuildIssues:                             settings.BuildIssues.ValueBoolPointer(),
 			BuildPullRequests:                       settings.BuildPullRequests.ValueBoolPointer(),
 			PullRequestBranchFilterEnabled:          settings.PullRequestBranchFilterEnabled.ValueBoolPointer(),
 			PullRequestBranchFilterConfiguration:    settings.PullRequestBranchFilterConfiguration.ValueStringPointer(),
@@ -1679,13 +1745,36 @@ func updatePipelineExtraInfo(ctx context.Context, slug string, settings *provide
 
 	var pipelineExtraInfo PipelineExtraInfo
 	err := retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
-		err := client.makeRequest(ctx, "PATCH", fmt.Sprintf("/v2/organizations/%s/pipelines/%s", client.organization, slug), payload, &pipelineExtraInfo)
+		err := client.makeRequest(ctx, http.MethodPatch, fmt.Sprintf("/v2/organizations/%s/pipelines/%s", client.organization, slug), payload, &pipelineExtraInfo)
 		return retryContextError(err)
 	})
 	if err != nil {
 		return pipelineExtraInfo, err
 	}
 	return pipelineExtraInfo, nil
+}
+
+func getPipelineGithubWebhooks(ctx context.Context, slug string, client *Client, timeouts time.Duration) (bool, error) {
+	var webhooks struct {
+		Enabled bool `json:"enabled"`
+	}
+	err := retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
+		err := client.makeRequest(ctx, "GET", fmt.Sprintf("/v2/organizations/%s/pipelines/%s/github-webhooks", client.organization, slug), nil, &webhooks)
+		return retryContextError(err)
+	})
+	return webhooks.Enabled, err
+}
+
+func setPipelineGithubWebhooks(ctx context.Context, slug string, enabled bool, client *Client, timeouts time.Duration) error {
+	method := "DELETE"
+	if enabled {
+		method = "PUT"
+	}
+	var response map[string]any
+	return retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
+		err := client.makeRequest(ctx, method, fmt.Sprintf("/v2/organizations/%s/pipelines/%s/github-webhooks", client.organization, slug), nil, &response)
+		return retryContextError(err)
+	})
 }
 
 func getTagsFromSchema(plan *pipelineResourceModel) []PipelineTagInput {
@@ -1704,6 +1793,7 @@ func updatePipelineResourceExtraInfo(state *pipelineResourceModel, pipeline *Pip
 
 	state.ProviderSettings = &providerSettingsModel{
 		TriggerMode:                             types.StringPointerValue(s.TriggerMode),
+		BuildIssues:                             types.BoolPointerValue(s.BuildIssues),
 		BuildPullRequests:                       types.BoolPointerValue(s.BuildPullRequests),
 		PullRequestBranchFilterEnabled:          types.BoolPointerValue(s.PullRequestBranchFilterEnabled),
 		PullRequestBranchFilterConfiguration:    types.StringPointerValue(s.PullRequestBranchFilterConfiguration),
@@ -1771,6 +1861,7 @@ func mapProviderSettingsFromGraphQL(repo RepositoryProviderSettingsFields) *prov
 		s := provider.Settings
 		return &providerSettingsModel{
 			TriggerMode:                             types.StringPointerValue(s.TriggerMode),
+			BuildIssues:                             types.BoolPointerValue(s.BuildIssues),
 			BuildPullRequests:                       types.BoolPointerValue(s.BuildPullRequests),
 			PullRequestBranchFilterEnabled:          types.BoolPointerValue(s.PullRequestBranchFilterEnabled),
 			PullRequestBranchFilterConfiguration:    types.StringPointerValue(s.PullRequestBranchFilterConfiguration),
@@ -1820,6 +1911,7 @@ func mapProviderSettingsFromGraphQL(repo RepositoryProviderSettingsFields) *prov
 		s := provider.Settings
 		return &providerSettingsModel{
 			TriggerMode:                             types.StringPointerValue(s.TriggerMode),
+			BuildIssues:                             types.BoolPointerValue(s.BuildIssues),
 			BuildPullRequests:                       types.BoolPointerValue(s.BuildPullRequests),
 			PullRequestBranchFilterEnabled:          types.BoolPointerValue(s.PullRequestBranchFilterEnabled),
 			PullRequestBranchFilterConfiguration:    types.StringPointerValue(s.PullRequestBranchFilterConfiguration),
@@ -2152,6 +2244,10 @@ func pipelineSchemaV0() schema.Schema {
 							Optional: true,
 						},
 						"build_branches": schema.BoolAttribute{
+							Optional: true,
+							Computed: true,
+						},
+						"build_issues": schema.BoolAttribute{
 							Optional: true,
 							Computed: true,
 						},

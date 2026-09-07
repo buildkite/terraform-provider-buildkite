@@ -3,8 +3,10 @@ package buildkite
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"os"
 	"regexp"
+	"slices"
 	"strings"
 	"testing"
 
@@ -13,9 +15,27 @@ import (
 	"github.com/buildkite/go-pipeline/jwkutil"
 	"github.com/buildkite/go-pipeline/signature"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
-	"github.com/lestrrat-go/jwx/v2/jwa"
+	"github.com/lestrrat-go/jwx/v3/jwa"
 	"gopkg.in/yaml.v3"
 )
+
+func TestMergePipelineCheckout_NestedGroup(t *testing.T) {
+	skip := true
+	nested := &pipeline.CommandStep{}
+	steps := pipeline.Steps{
+		&pipeline.GroupStep{
+			Steps: pipeline.Steps{nested},
+		},
+	}
+
+	mergePipelineCheckout(steps, &pipeline.Checkout{Skip: &skip})
+
+	if nested.Checkout == nil ||
+		nested.Checkout.Skip == nil ||
+		!*nested.Checkout.Skip {
+		t.Errorf("checkout = %#v, want skip: true", nested.Checkout)
+	}
+}
 
 func TestAccBuildkiteSignedPipelineStepsDataSource(t *testing.T) {
 	const (
@@ -24,6 +44,8 @@ func TestAccBuildkiteSignedPipelineStepsDataSource(t *testing.T) {
 	)
 
 	steps := heredoc.Doc(`
+		checkout:
+		  skip: true
 		steps:
 		- label: ":pipeline:"
 		  command: buildkite-agent pipeline upload
@@ -33,7 +55,7 @@ func TestAccBuildkiteSignedPipelineStepsDataSource(t *testing.T) {
 		  GLOBAL_ENV: "foo"
 	`)
 
-	privateJWKS, _, err := jwkutil.NewKeyPair(jwksKeyID, jwa.EdDSA)
+	privateJWKS, _, err := jwkutil.NewKeyPair(jwksKeyID, jwa.EdDSA())
 	if err != nil {
 		t.Fatalf("Failed to generate key pair: %v", err)
 	}
@@ -53,6 +75,7 @@ func TestAccBuildkiteSignedPipelineStepsDataSource(t *testing.T) {
 		t.Fatalf("Failed to parse pipeline: %v", err)
 	}
 
+	mergePipelineCheckout(p.Steps, p.Checkout)
 	if err := signature.SignSteps(context.Background(), p.Steps, privateKey, repository, signature.WithEnv(p.Env.ToMap())); err != nil {
 		t.Fatalf("Failed to sign pipeline: %v", err)
 	}
@@ -87,6 +110,42 @@ func TestAccBuildkiteSignedPipelineStepsDataSource(t *testing.T) {
 							"data.buildkite_signed_pipeline_steps.my_signed_steps",
 							"steps",
 							string(signedSteps),
+						),
+						resource.TestCheckResourceAttrWith(
+							"data.buildkite_signed_pipeline_steps.my_signed_steps",
+							"steps",
+							func(got string) error {
+								p, err := pipeline.Parse(strings.NewReader(got))
+								if err != nil {
+									return fmt.Errorf("parse signed steps: %w", err)
+								}
+								if len(p.Steps) != 1 {
+									return fmt.Errorf("got %d steps, want 1", len(p.Steps))
+								}
+
+								step, ok := p.Steps[0].(*pipeline.CommandStep)
+								if !ok {
+									return fmt.Errorf("got %T, want *pipeline.CommandStep", p.Steps[0])
+								}
+
+								if step.Checkout == nil ||
+									step.Checkout.Skip == nil ||
+									!*step.Checkout.Skip {
+									return fmt.Errorf(
+										"checkout = %#v, want skip: true",
+										step.Checkout,
+									)
+								}
+
+								if step.Signature == nil ||
+									!slices.Contains(step.Signature.SignedFields, "checkout") {
+									return fmt.Errorf(
+										"signature = %#v, want checkout in signed fields",
+										step.Signature,
+									)
+								}
+								return nil
+							},
 						),
 					),
 				},

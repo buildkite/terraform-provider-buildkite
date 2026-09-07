@@ -5,12 +5,14 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	resource_schema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
@@ -27,6 +29,7 @@ type clusterAgentTokenResourceModel struct {
 	ClusterId          types.String `tfsdk:"cluster_id"`
 	ClusterUuid        types.String `tfsdk:"cluster_uuid"`
 	AllowedIpAddresses types.List   `tfsdk:"allowed_ip_addresses"`
+	ExpiresAt          types.String `tfsdk:"expires_at"`
 }
 
 func newClusterAgentTokenResource() resource.Resource {
@@ -94,6 +97,16 @@ func (ct *clusterAgentToken) Schema(_ context.Context, _ resource.SchemaRequest,
 				MarkdownDescription: "A list of CIDR-notation IPv4 addresses from which agents can use this Cluster Agent Token." +
 					"If not set, all IP addresses are allowed (the same as setting 0.0.0.0/0).",
 			},
+			"expires_at": resource_schema.StringAttribute{
+				Optional:            true,
+				MarkdownDescription: "The time at which the token expires, in RFC 3339 format with up to millisecond precision (e.g. `2030-01-01T00:00:00Z`) and at least 10 minutes in the future. If not set, the token never expires. Changing this value replaces the token, since the expiry cannot be updated.",
+				Validators: []validator.String{
+					rfc3339Validator{},
+				},
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
+			},
 		},
 	}
 }
@@ -118,6 +131,13 @@ func (ct *clusterAgentToken) Create(ctx context.Context, req resource.CreateRequ
 	// Create CIDR slice from AllowedApiIpAddresses in the plan
 	cidrs := createCidrSliceFromList(plan.AllowedIpAddresses)
 
+	var expiresAt *time.Time
+	if !plan.ExpiresAt.IsNull() {
+		// already checked by the validator
+		t, _ := time.Parse(time.RFC3339, plan.ExpiresAt.ValueString())
+		expiresAt = &t
+	}
+
 	var r *createClusterAgentTokenResponse
 	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		org, err := ct.client.GetOrganizationID()
@@ -130,6 +150,7 @@ func (ct *clusterAgentToken) Create(ctx context.Context, req resource.CreateRequ
 				plan.ClusterId.ValueString(),
 				plan.Description.ValueString(),
 				strings.Join(cidrs, " "),
+				expiresAt,
 			)
 		}
 
@@ -150,6 +171,7 @@ func (ct *clusterAgentToken) Create(ctx context.Context, req resource.CreateRequ
 	state.ClusterId = types.StringValue(r.ClusterAgentTokenCreate.ClusterAgentToken.Cluster.Id)
 	state.ClusterUuid = types.StringValue(r.ClusterAgentTokenCreate.ClusterAgentToken.Cluster.Uuid)
 	state.AllowedIpAddresses = plan.AllowedIpAddresses
+	state.ExpiresAt = plan.ExpiresAt
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
@@ -196,6 +218,7 @@ func (ct *clusterAgentToken) Read(ctx context.Context, req resource.ReadRequest,
 		if edge.Node.Id == state.Id.ValueString() {
 			log.Printf("Found cluster Token with Description %s in cluster %s", edge.Node.Id, state.ClusterUuid.ValueString())
 			state.Description = types.StringValue(edge.Node.Description)
+			state.ExpiresAt = expiresAtFromAPI(edge.Node.ExpiresAt, state.ExpiresAt)
 			resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 			return
 		}
@@ -291,5 +314,41 @@ func (ct *clusterAgentToken) Delete(ctx context.Context, req resource.DeleteRequ
 			fmt.Sprintf("Unable to revoke Cluster Agent Token: %s", err.Error()),
 		)
 		return
+	}
+}
+
+// expiresAtFromAPI keeps the configured value when it names the same instant as the API value
+func expiresAtFromAPI(remote *time.Time, current types.String) types.String {
+	if remote == nil {
+		return types.StringNull()
+	}
+	if configured, err := time.Parse(time.RFC3339, current.ValueString()); err == nil && configured.Equal(*remote) {
+		return current
+	}
+	return types.StringValue(remote.UTC().Format(time.RFC3339Nano))
+}
+
+type rfc3339Validator struct{}
+
+func (v rfc3339Validator) Description(ctx context.Context) string {
+	return "value must be an RFC 3339 timestamp with at most millisecond precision"
+}
+
+func (v rfc3339Validator) MarkdownDescription(ctx context.Context) string {
+	return "value must be an RFC 3339 timestamp with at most millisecond precision"
+}
+
+func (v rfc3339Validator) ValidateString(ctx context.Context, req validator.StringRequest, resp *validator.StringResponse) {
+	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
+		return
+	}
+	t, err := time.Parse(time.RFC3339, req.ConfigValue.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddAttributeError(req.Path, "Invalid timestamp", fmt.Sprintf("Value must be an RFC 3339 timestamp such as 2030-01-01T00:00:00Z: %s", err.Error()))
+		return
+	}
+	// the API returns milliseconds, so anything finer would never read back the same
+	if !t.Equal(t.Truncate(time.Millisecond)) {
+		resp.Diagnostics.AddAttributeError(req.Path, "Invalid timestamp", "Value must have at most millisecond precision")
 	}
 }

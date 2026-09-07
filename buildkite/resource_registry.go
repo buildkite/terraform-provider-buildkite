@@ -463,6 +463,11 @@ func mapRegistryResponseToModel(result *registryAPIResponse, model *registryReso
 
 // Ensures consistent handling of team_ids field
 func handleTeamIDs(apiTeamIDs []string, existing types.List) types.List {
+	// team_ids is only used at creation, while the API returns every team that currently has
+	// access, so keep the configured value and only fall back to the API's (e.g. after import)
+	if !existing.IsNull() && !existing.IsUnknown() && len(existing.Elements()) > 0 {
+		return existing
+	}
 	if len(apiTeamIDs) > 0 {
 		// API returned team IDs, set them in the state
 		teamIDElements := make([]attr.Value, 0, len(apiTeamIDs))
@@ -476,12 +481,9 @@ func handleTeamIDs(apiTeamIDs []string, existing types.List) types.List {
 			return existing
 		}
 		return teamIDsList
-	} else if !existing.IsNull() && len(existing.Elements()) > 0 {
-		return existing
-	} else {
-		// No team IDs present, set to null
-		return types.ListNull(types.StringType)
 	}
+	// No team IDs present, set to null
+	return types.ListNull(types.StringType)
 }
 
 // optionalStringValue maps a nullable API response field to the appropriate Terraform type.

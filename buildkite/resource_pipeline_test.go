@@ -88,6 +88,19 @@ func TestPipelineExtraSettingsUseStepKeyAsCommitStatusJSON(t *testing.T) {
 	}
 }
 
+func TestPipelineExtraSettingsBuildIssuesJSON(t *testing.T) {
+	enabled := true
+
+	payload, err := json.Marshal(PipelineExtraSettings{BuildIssues: &enabled})
+	if err != nil {
+		t.Fatalf("failed to marshal provider settings: %v", err)
+	}
+
+	if !strings.Contains(string(payload), `"build_issues":true`) {
+		t.Fatalf("expected build_issues in payload, got %s", payload)
+	}
+}
+
 func TestUpdatePipelineResourceExtraInfoUseStepKeyAsCommitStatus(t *testing.T) {
 	enabled := true
 	extraInfo := PipelineExtraInfo{}
@@ -105,6 +118,22 @@ func TestUpdatePipelineResourceExtraInfoUseStepKeyAsCommitStatus(t *testing.T) {
 	}
 }
 
+func TestUpdatePipelineResourceExtraInfoBuildIssues(t *testing.T) {
+	disabled := false
+	extraInfo := PipelineExtraInfo{}
+	extraInfo.Provider.Settings.BuildIssues = &disabled
+
+	state := pipelineResourceModel{}
+	updatePipelineResourceExtraInfo(&state, &extraInfo)
+
+	if state.ProviderSettings == nil {
+		t.Fatal("expected provider settings to be set")
+	}
+	if state.ProviderSettings.BuildIssues.IsNull() || state.ProviderSettings.BuildIssues.ValueBool() {
+		t.Fatal("expected build_issues to be false")
+	}
+}
+
 func TestMapProviderSettingsFromGraphQLGitHub(t *testing.T) {
 	triggerMode := "code"
 	enabled := true
@@ -115,6 +144,7 @@ func TestMapProviderSettingsFromGraphQLGitHub(t *testing.T) {
 		Provider: &RepositoryProviderSettingsFieldsProviderRepositoryProviderGithub{
 			Settings: RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings{
 				TriggerMode:                          &triggerMode,
+				BuildIssues:                          &enabled,
 				BuildPullRequests:                    &enabled,
 				BuildBranches:                        &disabled,
 				IssueCommentMatchMode:                &matchMode,
@@ -136,6 +166,9 @@ func TestMapProviderSettingsFromGraphQLGitHub(t *testing.T) {
 	}
 	if !got.BuildPullRequests.ValueBool() {
 		t.Fatal("build_pull_requests: expected true")
+	}
+	if !got.BuildIssues.ValueBool() {
+		t.Fatal("build_issues: expected true")
 	}
 	if got.BuildBranches.ValueBool() {
 		t.Fatal("build_branches: expected false")
@@ -229,6 +262,21 @@ func TestMapProviderSettingsFromGraphQLCursorOrigin(t *testing.T) {
 	}
 	if got.PublishCommitStatus.IsNull() || got.PublishCommitStatus.ValueBool() {
 		t.Fatal("publish_commit_status: expected false, got null or true")
+	}
+}
+
+// testAccImportIDFromAttributes builds an import ID by joining attributes of resources in state with "/", each given as "<resource address>", "<attribute>"
+func testAccImportIDFromAttributes(addressesAndAttributes ...string) resource.ImportStateIdFunc {
+	return func(s *terraform.State) (string, error) {
+		var parts []string
+		for i := 0; i+1 < len(addressesAndAttributes); i += 2 {
+			rs, ok := s.RootModule().Resources[addressesAndAttributes[i]]
+			if !ok {
+				return "", fmt.Errorf("Not found in state: %s", addressesAndAttributes[i])
+			}
+			parts = append(parts, rs.Primary.Attributes[addressesAndAttributes[i+1]])
+		}
+		return strings.Join(parts, "/"), nil
 	}
 }
 
@@ -340,6 +388,14 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 					ResourceName:  "buildkite_pipeline.pipeline",
 					ImportState:   true,
 					ImportStateId: pipeline.Id,
+				},
+				{
+					// the pipeline slug is also accepted
+					ResourceName:            "buildkite_pipeline.pipeline",
+					ImportState:             true,
+					ImportStateIdFunc:       testAccImportIDFromAttributes("buildkite_pipeline.pipeline", "slug"),
+					ImportStateVerify:       true,
+					ImportStateVerifyIgnore: []string{"provider_settings"},
 				},
 			},
 		})
@@ -731,6 +787,7 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "tags.#", "0"),
 						resource.TestCheckNoResourceAttr("buildkite_pipeline.pipeline", "tags.#"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.trigger_mode", ""),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_issues", "false"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_pull_requests", "false"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_pull_request_edited", "false"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.skip_pull_request_builds_for_existing_commits", "false"),
@@ -738,6 +795,75 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.publish_commit_status", "false"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.use_step_key_as_commit_status", "false"),
 					),
+				},
+			},
+		})
+	})
+
+	t.Run("manages github webhooks", func(t *testing.T) {
+		pipelineName := acctest.RandString(12)
+		clusterName := acctest.RandString(12)
+		config := func(enabled bool) string {
+			return fmt.Sprintf(`
+				resource "buildkite_cluster" "cluster" {
+					name = "%s"
+				}
+				resource "buildkite_pipeline" "pipeline" {
+					name = "%s"
+					repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
+					cluster_id = buildkite_cluster.cluster.id
+					github_webhooks_enabled = %t
+				}
+			`, clusterName, pipelineName, enabled)
+		}
+		// Confirm the webhooks are enabled or disabled in Buildkite's system
+		checkRemote := func(enabled bool) resource.TestCheckFunc {
+			return func(s *terraform.State) error {
+				var webhooks struct {
+					Enabled bool `json:"enabled"`
+				}
+				path := fmt.Sprintf("/v2/organizations/%s/pipelines/%s/github-webhooks", getenv("BUILDKITE_ORGANIZATION_SLUG"), pipelineName)
+				if err := getTestClient().makeRequest(context.Background(), "GET", path, nil, &webhooks); err != nil {
+					return err
+				}
+				if webhooks.Enabled != enabled {
+					return fmt.Errorf("Remote github webhooks enabled does not match. Expected: %t, got: %t", enabled, webhooks.Enabled)
+				}
+				return nil
+			}
+		}
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			CheckDestroy:             testAccCheckPipelineDestroyFunc,
+			Steps: []resource.TestStep{
+				{
+					Config: config(false),
+					Check: resource.ComposeAggregateTestCheckFunc(
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "github_webhooks_enabled", "false"),
+						checkRemote(false),
+					),
+				},
+				{
+					Config: config(true),
+					ConfigPlanChecks: resource.ConfigPlanChecks{
+						PostApplyPostRefresh: []plancheck.PlanCheck{
+							plancheck.ExpectEmptyPlan(),
+						},
+					},
+					Check: resource.ComposeAggregateTestCheckFunc(
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "github_webhooks_enabled", "true"),
+						checkRemote(true),
+					),
+				},
+				{
+					// the setting is only read when it is managed, so it is not part of the imported state
+					// (provider_settings is the opposite: import always reads it)
+					ResourceName:            "buildkite_pipeline.pipeline",
+					ImportState:             true,
+					ImportStateVerify:       true,
+					ImportStateVerifyIgnore: []string{"github_webhooks_enabled", "provider_settings"},
 				},
 			},
 		})
@@ -769,6 +895,7 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 				tags = ["llama"]
 				provider_settings = {
 					trigger_mode = "code"
+					build_issues = true
 					build_pull_requests = true
 					skip_builds_for_existing_commits = true
 					build_branches = true
@@ -833,6 +960,7 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "skip_intermediate_builds", "true"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "skip_intermediate_builds_branch_filter", "!main"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.trigger_mode", "code"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_issues", "true"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_pull_requests", "true"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.skip_builds_for_existing_commits", "true"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_branches", "true"),
@@ -881,6 +1009,7 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 					ExpectNonEmptyPlan: false,
 					Check: resource.ComposeAggregateTestCheckFunc(
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.trigger_mode", "code"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_issues", "true"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_pull_request_merge_commits", "true"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_issue_comment_created", "true"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.issue_comment_command_word", "ci-force-rerun"),
@@ -1295,6 +1424,7 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 			resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "repository", "https://github.com/buildkite/terraform-provider-buildkite.git"),
 			// Ensure that v1 pipeline's provider_settings set attributes are nested in state when upgraded from v0
 			resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_branches", "true"),
+			resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_issues", "false"),
 			resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_pull_requests", "true"),
 			resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_pull_request_ready_for_review", "true"),
 			resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_tags", "true"),

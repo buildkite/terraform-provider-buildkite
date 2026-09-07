@@ -62,6 +62,8 @@ fragment RepositoryProviderSettingsFields on Repository {
                 # @genqlient(pointer: true)
                 buildBranches
                 # @genqlient(pointer: true)
+                buildIssues
+                # @genqlient(pointer: true)
                 buildCheckRunCompleted
                 # @genqlient(pointer: true)
                 buildCreateEvent
@@ -155,6 +157,8 @@ fragment RepositoryProviderSettingsFields on Repository {
             settings {
                 # @genqlient(pointer: true)
                 buildBranches
+                # @genqlient(pointer: true)
+                buildIssues
                 # @genqlient(pointer: true)
                 buildCheckRunCompleted
                 # @genqlient(pointer: true)
@@ -468,4 +472,35 @@ mutation unarchivePipeline ($id: ID!) {
   }) {
     clientMutationId
   }
+}
+
+query getPipelineId($slug: ID!) {
+    pipeline(slug: $slug) {
+        id
+    }
+}
+
+query getPipelineTeamIds(
+    $slug: ID!,
+    $search: String!,
+    # @genqlient(pointer: true)
+    $cursor: String
+) {
+    pipeline(slug: $slug) {
+        id
+        teams(first: 50, after: $cursor, search: $search, order: RELEVANCE) {
+            pageInfo {
+                endCursor
+                hasNextPage
+            }
+            edges {
+                node {
+                    id
+                    team {
+                        slug
+                    }
+                }
+            }
+        }
+    }
 }

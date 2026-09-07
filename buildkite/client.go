@@ -82,9 +82,10 @@ func (client *Client) GetOrganizationID() (*string, error) {
 //  5. Retryable requests wait a minimum of 15 seconds and a maximum of 180 seconds, except that a
 //     Retry-After this code does not handle itself is passed through to retryablehttp and honoured
 //     as given, which can fall below the minimum or exceed the maximum
-//  6. The deadline makeRequest derives from the read timeout bounds the whole request including the
-//     waits between attempts, so on REST it, not max_retries, is usually what ends a sustained
-//     failure. GraphQL calls are not bounded this way, since they never pass through makeRequest.
+//  6. For REST, makeRequest uses the caller's deadline when one is set and otherwise derives one
+//     from the read timeout. That deadline bounds the whole request including waits between attempts,
+//     so it, not max_retries, is usually what ends a sustained failure. GraphQL calls are not bounded
+//     this way, since they never pass through makeRequest.
 func NewClient(config *clientConfig) *Client {
 	readTimeout, diags := config.timeouts.Read(context.Background(), DefaultTimeout)
 
@@ -419,11 +420,13 @@ func unwrapURLError(err error) error {
 }
 
 func (client *Client) makeRequest(ctx context.Context, method string, path string, postData interface{}, responseObject interface{}) error {
-	readTimeout, diags := client.timeouts.Read(ctx, DefaultTimeout)
-	if !diags.HasError() {
-		var cancel context.CancelFunc
-		ctx, cancel = context.WithTimeout(ctx, readTimeout)
-		defer cancel()
+	if _, hasDeadline := ctx.Deadline(); !hasDeadline {
+		readTimeout, diags := client.timeouts.Read(ctx, DefaultTimeout)
+		if !diags.HasError() {
+			var cancel context.CancelFunc
+			ctx, cancel = context.WithTimeout(ctx, readTimeout)
+			defer cancel()
+		}
 	}
 
 	lastResponse := &lastResponseCapture{}
@@ -445,8 +448,8 @@ func (client *Client) makeRequest(ctx context.Context, method string, path strin
 		return fmt.Errorf("failed to create request: %w", err)
 	}
 
-	// Add content-type header for POST/PUT requests with body
-	if (method == http.MethodPost || method == http.MethodPut) && bodyBytes != nil {
+	// JSON request bodies use the same media type regardless of the HTTP method.
+	if bodyBytes != nil {
 		req.Header.Set("Content-Type", "application/json")
 	}
 

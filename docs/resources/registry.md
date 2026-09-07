@@ -60,3 +60,25 @@ emoji itself, such as 🚀.
 - `registry_type` (String) The type of the registry (e.g. `source`).
 - `slug` (String) The slug of the registry.
 - `uuid` (String) The UUID of the registry.
+
+## Import
+
+Using `terraform import`, import resources using the `id`. For example:
+```shell
+# import a registry resource using the registry slug
+#
+# you can find the slug from the Buildkite web UI in the registry's URL:
+# https://buildkite.com/organizations/{org}/packages/registries/{slug}
+#
+# or by listing all registries via the REST API:
+# GET https://api.buildkite.com/v2/packages/organizations/{org}/registries
+terraform import buildkite_registry.example example
+```
+
+In Terraform v1.5.0 and later, use an [`import` block](https://developer.hashicorp.com/terraform/language/import) to import instances using the `id`. For example:
+```terraform
+import {
+  to = buildkite_registry.example
+  id = "example"
+}
+```

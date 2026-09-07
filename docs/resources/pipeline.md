@@ -6,6 +6,7 @@ description: |-
   This resource allows you to create and manage pipelines for repositories.
   More information on pipelines can be found in the documentation https://buildkite.com/docs/pipelines.
   -> Note: When creating a new pipeline, the Buildkite API requires at least one team to be associated with it. You must use the 'default_team_id' attribute to specify this initial team. The 'buildkite_pipeline_team' resource can then be used to manage team access for existing pipelines.
+  -> Note: After importing a pipeline, 'color' and 'emoji' values left out of the configuration are cleared on the next apply.
 ---
 
 # buildkite_pipeline (Resource)
@@ -15,6 +16,8 @@ This resource allows you to create and manage pipelines for repositories.
 More information on pipelines can be found in the [documentation](https://buildkite.com/docs/pipelines).
 
 -> **Note:** When creating a new pipeline, the Buildkite API requires at least one team to be associated with it. You must use the 'default_team_id' attribute to specify this initial team. The 'buildkite_pipeline_team' resource can then be used to manage team access for existing pipelines.
+
+-> **Note:** After importing a pipeline, 'color' and 'emoji' values left out of the configuration are cleared on the next apply.
 
 ## Example Usage
 
@@ -187,6 +190,7 @@ resource "github_repository_webhook" "my_webhook" {
 - `default_timeout_in_minutes` (Number) Set pipeline wide timeout for command steps.
 - `description` (String) Description for the pipeline. Can include emoji 🙌.
 - `emoji` (String) An emoji that represents this pipeline.
+- `github_webhooks_enabled` (Boolean) Whether GitHub webhook processing is enabled for the pipeline. Only applies to GitHub and GitHub Enterprise repositories and requires the organization to be enrolled in the newer webhook triggers. If omitted, the setting is left unchanged and is not read.
 - `maximum_timeout_in_minutes` (Number) Set pipeline wide maximum timeout for command steps.
 - `pipeline_template_id` (String) The GraphQL ID of the pipeline template applied to this pipeline.
 - `provider_settings` (Attributes) Control settings depending on the VCS provider used in `repository`. (see [below for nested schema](#nestedatt--provider_settings))
@@ -215,6 +219,7 @@ Optional:
 - `build_create_event` (Boolean) Whether to create a build when a branch or tag is created on GitHub.
 - `build_deployment_status_created` (Boolean) Whether to create a build when a GitHub deployment status is created.
 - `build_issue_comment_created` (Boolean) Whether to create builds when an issue comment is created on a pull request.
+- `build_issues` (Boolean) Whether authenticated GitHub `issues` webhook deliveries create builds. Supported for GitHub.com pipelines only. Defaults to false.
 - `build_merge_group_checks_requested` (Boolean) Whether to create merge queue builds for a merge queue enabled GitHub repository with required status checks
 - `build_pull_request_base_branch_changed` (Boolean) Whether to create builds for pull requests when its base branch changes.
 - `build_pull_request_converted_to_draft` (Boolean) Whether to create a build when a pull request is converted to a draft.
@@ -270,6 +275,9 @@ Using `terraform import`, import resources using the `id`. For example:
 # import a pipeline resource using the pipelines GraphQL ID
 # GraphQL ID for a pipeline can be found on its settings page
 terraform import buildkite_pipeline.pipeline UGlwZWxpbmUtLS00MzVjYWQ1OC1lODFkLTQ1YWYtODYzNy1iMWNmODA3MDIzOGQ=
+
+# or using its slug (slugs can change; the GraphQL ID is the stable identifier)
+terraform import buildkite_pipeline.pipeline my-pipeline
 ```
 
 In Terraform v1.5.0 and later, use an [`import` block](https://developer.hashicorp.com/terraform/language/import) to import instances using the `id`. For example:

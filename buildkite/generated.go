@@ -21,7 +21,9 @@ type ClusterAgentTokenValues struct {
 	Cluster            ClusterAgentTokenValuesCluster `json:"cluster"`
 	// A description about what this cluster agent token is used for
 	Description string `json:"description"`
-	Id          string `json:"id"`
+	// The date and time at which this token will expire and no longer be valid. If empty, the token will never expire.
+	ExpiresAt *time.Time `json:"expiresAt"`
+	Id        string     `json:"id"`
 	// The public UUID for this cluster token
 	Uuid string `json:"uuid"`
 }
@@ -34,6 +36,9 @@ func (v *ClusterAgentTokenValues) GetCluster() ClusterAgentTokenValuesCluster { 
 
 // GetDescription returns ClusterAgentTokenValues.Description, and is useful for accessing the field via an interface.
 func (v *ClusterAgentTokenValues) GetDescription() string { return v.Description }
+
+// GetExpiresAt returns ClusterAgentTokenValues.ExpiresAt, and is useful for accessing the field via an interface.
+func (v *ClusterAgentTokenValues) GetExpiresAt() *time.Time { return v.ExpiresAt }
 
 // GetId returns ClusterAgentTokenValues.Id, and is useful for accessing the field via an interface.
 func (v *ClusterAgentTokenValues) GetId() string { return v.Id }
@@ -2519,6 +2524,24 @@ var AllPipelineVisibility = []PipelineVisibility{
 	PipelineVisibilityPrivate,
 }
 
+// The access levels that can be assigned to a registry
+type RegistryAccessLevels string
+
+const (
+	// Read only
+	RegistryAccessLevelsReadOnly RegistryAccessLevels = "READ_ONLY"
+	// Allow read and push
+	RegistryAccessLevelsReadAndWrite RegistryAccessLevels = "READ_AND_WRITE"
+	// Allow read, push, delete and management
+	RegistryAccessLevelsReadWriteAndAdmin RegistryAccessLevels = "READ_WRITE_AND_ADMIN"
+)
+
+var AllRegistryAccessLevels = []RegistryAccessLevels{
+	RegistryAccessLevelsReadOnly,
+	RegistryAccessLevelsReadAndWrite,
+	RegistryAccessLevelsReadWriteAndAdmin,
+}
+
 // Repository provider settings are intentionally kept OUT of PipelineFields: that fragment is
 // used by getNode (the generic node read shared with other resources) and the create/update
 // mutations, and the provider settings subtree can error server-side for some pipelines. Fetching
@@ -3173,6 +3196,8 @@ func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubEnterpr
 type RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings struct {
 	// Whether to create builds when branches are pushed.
 	BuildBranches *bool `json:"buildBranches"`
+	// Whether to create builds for GitHub issue activity.
+	BuildIssues *bool `json:"buildIssues"`
 	// Whether to create builds when a check run completes.
 	BuildCheckRunCompleted *bool `json:"buildCheckRunCompleted"`
 	// Whether to create builds when a branch or tag is created.
@@ -3266,6 +3291,11 @@ type RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubEnterpriseS
 // GetBuildBranches returns RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings.BuildBranches, and is useful for accessing the field via an interface.
 func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings) GetBuildBranches() *bool {
 	return v.BuildBranches
+}
+
+// GetBuildIssues returns RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings.BuildIssues, and is useful for accessing the field via an interface.
+func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings) GetBuildIssues() *bool {
+	return v.BuildIssues
 }
 
 // GetBuildCheckRunCompleted returns RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings.BuildCheckRunCompleted, and is useful for accessing the field via an interface.
@@ -3495,6 +3525,8 @@ func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubEnterpr
 type RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings struct {
 	// Whether to create builds when branches are pushed.
 	BuildBranches *bool `json:"buildBranches"`
+	// Whether to create builds for GitHub issue activity.
+	BuildIssues *bool `json:"buildIssues"`
 	// Whether to create builds when a check run completes.
 	BuildCheckRunCompleted *bool `json:"buildCheckRunCompleted"`
 	// Whether to create builds when a branch or tag is created.
@@ -3588,6 +3620,11 @@ type RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubSettingsRep
 // GetBuildBranches returns RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings.BuildBranches, and is useful for accessing the field via an interface.
 func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings) GetBuildBranches() *bool {
 	return v.BuildBranches
+}
+
+// GetBuildIssues returns RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings.BuildIssues, and is useful for accessing the field via an interface.
+func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings) GetBuildIssues() *bool {
+	return v.BuildIssues
 }
 
 // GetBuildCheckRunCompleted returns RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings.BuildCheckRunCompleted, and is useful for accessing the field via an interface.
@@ -4219,6 +4256,61 @@ type TeamPipelineFieldsTeam struct {
 // GetId returns TeamPipelineFieldsTeam.Id, and is useful for accessing the field via an interface.
 func (v *TeamPipelineFieldsTeam) GetId() string { return v.Id }
 
+// TeamRegistryFields includes the GraphQL fields of TeamRegistry requested by the fragment TeamRegistryFields.
+// The GraphQL type's documentation follows.
+//
+// A registry that's been assigned to a team
+type TeamRegistryFields struct {
+	Id string `json:"id"`
+	// The public UUID for this team registry
+	TeamRegistryUuid string `json:"teamRegistryUuid"`
+	// The access level users have to this registry
+	RegistryAccessLevel RegistryAccessLevels `json:"registryAccessLevel"`
+	// The team associated with this team member
+	Team TeamRegistryFieldsTeam `json:"team"`
+	// The registry associated with this team member
+	Registry TeamRegistryFieldsRegistry `json:"registry"`
+}
+
+// GetId returns TeamRegistryFields.Id, and is useful for accessing the field via an interface.
+func (v *TeamRegistryFields) GetId() string { return v.Id }
+
+// GetTeamRegistryUuid returns TeamRegistryFields.TeamRegistryUuid, and is useful for accessing the field via an interface.
+func (v *TeamRegistryFields) GetTeamRegistryUuid() string { return v.TeamRegistryUuid }
+
+// GetRegistryAccessLevel returns TeamRegistryFields.RegistryAccessLevel, and is useful for accessing the field via an interface.
+func (v *TeamRegistryFields) GetRegistryAccessLevel() RegistryAccessLevels {
+	return v.RegistryAccessLevel
+}
+
+// GetTeam returns TeamRegistryFields.Team, and is useful for accessing the field via an interface.
+func (v *TeamRegistryFields) GetTeam() TeamRegistryFieldsTeam { return v.Team }
+
+// GetRegistry returns TeamRegistryFields.Registry, and is useful for accessing the field via an interface.
+func (v *TeamRegistryFields) GetRegistry() TeamRegistryFieldsRegistry { return v.Registry }
+
+// TeamRegistryFieldsRegistry includes the requested fields of the GraphQL type Registry.
+// The GraphQL type's documentation follows.
+//
+// A registry
+type TeamRegistryFieldsRegistry struct {
+	Id string `json:"id"`
+}
+
+// GetId returns TeamRegistryFieldsRegistry.Id, and is useful for accessing the field via an interface.
+func (v *TeamRegistryFieldsRegistry) GetId() string { return v.Id }
+
+// TeamRegistryFieldsTeam includes the requested fields of the GraphQL type Team.
+// The GraphQL type's documentation follows.
+//
+// An organization team
+type TeamRegistryFieldsTeam struct {
+	Id string `json:"id"`
+}
+
+// GetId returns TeamRegistryFieldsTeam.Id, and is useful for accessing the field via an interface.
+func (v *TeamRegistryFieldsTeam) GetId() string { return v.Id }
+
 // TeamSuiteFields includes the GraphQL fields of TeamSuite requested by the fragment TeamSuiteFields.
 // The GraphQL type's documentation follows.
 //
@@ -4477,10 +4569,11 @@ func (v *__createAgentTokenInput) GetDescription() *string { return v.Descriptio
 
 // __createClusterAgentTokenInput is used internally by genqlient
 type __createClusterAgentTokenInput struct {
-	OrganizationId     string `json:"organizationId"`
-	ClusterId          string `json:"clusterId"`
-	Description        string `json:"description"`
-	AllowedIpAddresses string `json:"allowedIpAddresses"`
+	OrganizationId     string     `json:"organizationId"`
+	ClusterId          string     `json:"clusterId"`
+	Description        string     `json:"description"`
+	AllowedIpAddresses string     `json:"allowedIpAddresses"`
+	ExpiresAt          *time.Time `json:"expiresAt,omitempty"`
 }
 
 // GetOrganizationId returns __createClusterAgentTokenInput.OrganizationId, and is useful for accessing the field via an interface.
@@ -4494,6 +4587,9 @@ func (v *__createClusterAgentTokenInput) GetDescription() string { return v.Desc
 
 // GetAllowedIpAddresses returns __createClusterAgentTokenInput.AllowedIpAddresses, and is useful for accessing the field via an interface.
 func (v *__createClusterAgentTokenInput) GetAllowedIpAddresses() string { return v.AllowedIpAddresses }
+
+// GetExpiresAt returns __createClusterAgentTokenInput.ExpiresAt, and is useful for accessing the field via an interface.
+func (v *__createClusterAgentTokenInput) GetExpiresAt() *time.Time { return v.ExpiresAt }
 
 // __createClusterInput is used internally by genqlient
 type __createClusterInput struct {
@@ -4673,6 +4769,22 @@ func (v *__createTeamPipelineInput) GetPipelineID() string { return v.PipelineID
 // GetAccessLevel returns __createTeamPipelineInput.AccessLevel, and is useful for accessing the field via an interface.
 func (v *__createTeamPipelineInput) GetAccessLevel() PipelineAccessLevels { return v.AccessLevel }
 
+// __createTeamRegistryInput is used internally by genqlient
+type __createTeamRegistryInput struct {
+	TeamId      string               `json:"teamId"`
+	RegistryId  string               `json:"registryId"`
+	AccessLevel RegistryAccessLevels `json:"accessLevel"`
+}
+
+// GetTeamId returns __createTeamRegistryInput.TeamId, and is useful for accessing the field via an interface.
+func (v *__createTeamRegistryInput) GetTeamId() string { return v.TeamId }
+
+// GetRegistryId returns __createTeamRegistryInput.RegistryId, and is useful for accessing the field via an interface.
+func (v *__createTeamRegistryInput) GetRegistryId() string { return v.RegistryId }
+
+// GetAccessLevel returns __createTeamRegistryInput.AccessLevel, and is useful for accessing the field via an interface.
+func (v *__createTeamRegistryInput) GetAccessLevel() RegistryAccessLevels { return v.AccessLevel }
+
 // __createTestSuiteTeamInput is used internally by genqlient
 type __createTestSuiteTeamInput struct {
 	TeamId      string            `json:"teamId"`
@@ -4789,6 +4901,14 @@ type __deleteTeamPipelineInput struct {
 // GetId returns __deleteTeamPipelineInput.Id, and is useful for accessing the field via an interface.
 func (v *__deleteTeamPipelineInput) GetId() string { return v.Id }
 
+// __deleteTeamRegistryInput is used internally by genqlient
+type __deleteTeamRegistryInput struct {
+	Id string `json:"id"`
+}
+
+// GetId returns __deleteTeamRegistryInput.Id, and is useful for accessing the field via an interface.
+func (v *__deleteTeamRegistryInput) GetId() string { return v.Id }
+
 // __deleteTestSuiteTeamInput is used internally by genqlient
 type __deleteTestSuiteTeamInput struct {
 	Id string `json:"id"`
@@ -4885,6 +5005,14 @@ type __getOrganiztionBannerInput struct {
 // GetOrgSlug returns __getOrganiztionBannerInput.OrgSlug, and is useful for accessing the field via an interface.
 func (v *__getOrganiztionBannerInput) GetOrgSlug() string { return v.OrgSlug }
 
+// __getPipelineIdInput is used internally by genqlient
+type __getPipelineIdInput struct {
+	Slug string `json:"slug"`
+}
+
+// GetSlug returns __getPipelineIdInput.Slug, and is useful for accessing the field via an interface.
+func (v *__getPipelineIdInput) GetSlug() string { return v.Slug }
+
 // __getPipelineInput is used internally by genqlient
 type __getPipelineInput struct {
 	Slug string `json:"slug"`
@@ -4916,6 +5044,22 @@ type __getPipelineScheduleInput struct {
 
 // GetId returns __getPipelineScheduleInput.Id, and is useful for accessing the field via an interface.
 func (v *__getPipelineScheduleInput) GetId() string { return v.Id }
+
+// __getPipelineTeamIdsInput is used internally by genqlient
+type __getPipelineTeamIdsInput struct {
+	Slug   string  `json:"slug"`
+	Search string  `json:"search"`
+	Cursor *string `json:"cursor"`
+}
+
+// GetSlug returns __getPipelineTeamIdsInput.Slug, and is useful for accessing the field via an interface.
+func (v *__getPipelineTeamIdsInput) GetSlug() string { return v.Slug }
+
+// GetSearch returns __getPipelineTeamIdsInput.Search, and is useful for accessing the field via an interface.
+func (v *__getPipelineTeamIdsInput) GetSearch() string { return v.Search }
+
+// GetCursor returns __getPipelineTeamIdsInput.Cursor, and is useful for accessing the field via an interface.
+func (v *__getPipelineTeamIdsInput) GetCursor() *string { return v.Cursor }
 
 // __getPipelineTeamsInput is used internally by genqlient
 type __getPipelineTeamsInput struct {
@@ -5327,6 +5471,18 @@ func (v *__updateTeamPipelineInput) GetId() string { return v.Id }
 // GetAccessLevel returns __updateTeamPipelineInput.AccessLevel, and is useful for accessing the field via an interface.
 func (v *__updateTeamPipelineInput) GetAccessLevel() PipelineAccessLevels { return v.AccessLevel }
 
+// __updateTeamRegistryInput is used internally by genqlient
+type __updateTeamRegistryInput struct {
+	Id          string               `json:"id"`
+	AccessLevel RegistryAccessLevels `json:"accessLevel"`
+}
+
+// GetId returns __updateTeamRegistryInput.Id, and is useful for accessing the field via an interface.
+func (v *__updateTeamRegistryInput) GetId() string { return v.Id }
+
+// GetAccessLevel returns __updateTeamRegistryInput.AccessLevel, and is useful for accessing the field via an interface.
+func (v *__updateTeamRegistryInput) GetAccessLevel() RegistryAccessLevels { return v.AccessLevel }
+
 // __updateTestSuiteTeamInput is used internally by genqlient
 type __updateTestSuiteTeamInput struct {
 	Id          string            `json:"id"`
@@ -5491,6 +5647,11 @@ func (v *createClusterAgentTokenClusterAgentTokenCreateClusterAgentTokenCreatePa
 	return v.ClusterAgentTokenValues.Description
 }
 
+// GetExpiresAt returns createClusterAgentTokenClusterAgentTokenCreateClusterAgentTokenCreatePayloadClusterAgentTokenClusterToken.ExpiresAt, and is useful for accessing the field via an interface.
+func (v *createClusterAgentTokenClusterAgentTokenCreateClusterAgentTokenCreatePayloadClusterAgentTokenClusterToken) GetExpiresAt() *time.Time {
+	return v.ClusterAgentTokenValues.ExpiresAt
+}
+
 // GetId returns createClusterAgentTokenClusterAgentTokenCreateClusterAgentTokenCreatePayloadClusterAgentTokenClusterToken.Id, and is useful for accessing the field via an interface.
 func (v *createClusterAgentTokenClusterAgentTokenCreateClusterAgentTokenCreatePayloadClusterAgentTokenClusterToken) GetId() string {
 	return v.ClusterAgentTokenValues.Id
@@ -5533,6 +5694,8 @@ type __premarshalcreateClusterAgentTokenClusterAgentTokenCreateClusterAgentToken
 
 	Description string `json:"description"`
 
+	ExpiresAt *time.Time `json:"expiresAt"`
+
 	Id string `json:"id"`
 
 	Uuid string `json:"uuid"`
@@ -5552,6 +5715,7 @@ func (v *createClusterAgentTokenClusterAgentTokenCreateClusterAgentTokenCreatePa
 	retval.AllowedIpAddresses = v.ClusterAgentTokenValues.AllowedIpAddresses
 	retval.Cluster = v.ClusterAgentTokenValues.Cluster
 	retval.Description = v.ClusterAgentTokenValues.Description
+	retval.ExpiresAt = v.ClusterAgentTokenValues.ExpiresAt
 	retval.Id = v.ClusterAgentTokenValues.Id
 	retval.Uuid = v.ClusterAgentTokenValues.Uuid
 	return &retval, nil
@@ -7228,6 +7392,119 @@ func (v *createTeamPipelineTeamPipelineCreateTeamPipelineCreatePayloadTeamPipeli
 	return &retval, nil
 }
 
+// createTeamRegistryResponse is returned by createTeamRegistry on success.
+type createTeamRegistryResponse struct {
+	// Add a registry to a team.
+	TeamRegistryCreate createTeamRegistryTeamRegistryCreateTeamRegistryCreatePayload `json:"teamRegistryCreate"`
+}
+
+// GetTeamRegistryCreate returns createTeamRegistryResponse.TeamRegistryCreate, and is useful for accessing the field via an interface.
+func (v *createTeamRegistryResponse) GetTeamRegistryCreate() createTeamRegistryTeamRegistryCreateTeamRegistryCreatePayload {
+	return v.TeamRegistryCreate
+}
+
+// createTeamRegistryTeamRegistryCreateTeamRegistryCreatePayload includes the requested fields of the GraphQL type TeamRegistryCreatePayload.
+// The GraphQL type's documentation follows.
+//
+// Autogenerated return type of TeamRegistryCreate.
+type createTeamRegistryTeamRegistryCreateTeamRegistryCreatePayload struct {
+	TeamRegistry createTeamRegistryTeamRegistryCreateTeamRegistryCreatePayloadTeamRegistry `json:"teamRegistry"`
+}
+
+// GetTeamRegistry returns createTeamRegistryTeamRegistryCreateTeamRegistryCreatePayload.TeamRegistry, and is useful for accessing the field via an interface.
+func (v *createTeamRegistryTeamRegistryCreateTeamRegistryCreatePayload) GetTeamRegistry() createTeamRegistryTeamRegistryCreateTeamRegistryCreatePayloadTeamRegistry {
+	return v.TeamRegistry
+}
+
+// createTeamRegistryTeamRegistryCreateTeamRegistryCreatePayloadTeamRegistry includes the requested fields of the GraphQL type TeamRegistry.
+// The GraphQL type's documentation follows.
+//
+// A registry that's been assigned to a team
+type createTeamRegistryTeamRegistryCreateTeamRegistryCreatePayloadTeamRegistry struct {
+	TeamRegistryFields `json:"-"`
+}
+
+// GetId returns createTeamRegistryTeamRegistryCreateTeamRegistryCreatePayloadTeamRegistry.Id, and is useful for accessing the field via an interface.
+func (v *createTeamRegistryTeamRegistryCreateTeamRegistryCreatePayloadTeamRegistry) GetId() string {
+	return v.TeamRegistryFields.Id
+}
+
+// GetTeamRegistryUuid returns createTeamRegistryTeamRegistryCreateTeamRegistryCreatePayloadTeamRegistry.TeamRegistryUuid, and is useful for accessing the field via an interface.
+func (v *createTeamRegistryTeamRegistryCreateTeamRegistryCreatePayloadTeamRegistry) GetTeamRegistryUuid() string {
+	return v.TeamRegistryFields.TeamRegistryUuid
+}
+
+// GetRegistryAccessLevel returns createTeamRegistryTeamRegistryCreateTeamRegistryCreatePayloadTeamRegistry.RegistryAccessLevel, and is useful for accessing the field via an interface.
+func (v *createTeamRegistryTeamRegistryCreateTeamRegistryCreatePayloadTeamRegistry) GetRegistryAccessLevel() RegistryAccessLevels {
+	return v.TeamRegistryFields.RegistryAccessLevel
+}
+
+// GetTeam returns createTeamRegistryTeamRegistryCreateTeamRegistryCreatePayloadTeamRegistry.Team, and is useful for accessing the field via an interface.
+func (v *createTeamRegistryTeamRegistryCreateTeamRegistryCreatePayloadTeamRegistry) GetTeam() TeamRegistryFieldsTeam {
+	return v.TeamRegistryFields.Team
+}
+
+// GetRegistry returns createTeamRegistryTeamRegistryCreateTeamRegistryCreatePayloadTeamRegistry.Registry, and is useful for accessing the field via an interface.
+func (v *createTeamRegistryTeamRegistryCreateTeamRegistryCreatePayloadTeamRegistry) GetRegistry() TeamRegistryFieldsRegistry {
+	return v.TeamRegistryFields.Registry
+}
+
+func (v *createTeamRegistryTeamRegistryCreateTeamRegistryCreatePayloadTeamRegistry) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*createTeamRegistryTeamRegistryCreateTeamRegistryCreatePayloadTeamRegistry
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.createTeamRegistryTeamRegistryCreateTeamRegistryCreatePayloadTeamRegistry = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	err = json.Unmarshal(
+		b, &v.TeamRegistryFields)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+type __premarshalcreateTeamRegistryTeamRegistryCreateTeamRegistryCreatePayloadTeamRegistry struct {
+	Id string `json:"id"`
+
+	TeamRegistryUuid string `json:"teamRegistryUuid"`
+
+	RegistryAccessLevel RegistryAccessLevels `json:"registryAccessLevel"`
+
+	Team TeamRegistryFieldsTeam `json:"team"`
+
+	Registry TeamRegistryFieldsRegistry `json:"registry"`
+}
+
+func (v *createTeamRegistryTeamRegistryCreateTeamRegistryCreatePayloadTeamRegistry) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *createTeamRegistryTeamRegistryCreateTeamRegistryCreatePayloadTeamRegistry) __premarshalJSON() (*__premarshalcreateTeamRegistryTeamRegistryCreateTeamRegistryCreatePayloadTeamRegistry, error) {
+	var retval __premarshalcreateTeamRegistryTeamRegistryCreateTeamRegistryCreatePayloadTeamRegistry
+
+	retval.Id = v.TeamRegistryFields.Id
+	retval.TeamRegistryUuid = v.TeamRegistryFields.TeamRegistryUuid
+	retval.RegistryAccessLevel = v.TeamRegistryFields.RegistryAccessLevel
+	retval.Team = v.TeamRegistryFields.Team
+	retval.Registry = v.TeamRegistryFields.Registry
+	return &retval, nil
+}
+
 // createTestSuiteTeamResponse is returned by createTestSuiteTeam on success.
 type createTestSuiteTeamResponse struct {
 	// Add a suite to a team.
@@ -7708,6 +7985,30 @@ func (v *deleteTeamPipelineTeamPipelineDeleteTeamPipelineDeletePayload) GetClien
 	return v.ClientMutationId
 }
 
+// deleteTeamRegistryResponse is returned by deleteTeamRegistry on success.
+type deleteTeamRegistryResponse struct {
+	// Remove a registry from a team.
+	TeamRegistryDelete deleteTeamRegistryTeamRegistryDeleteTeamRegistryDeletePayload `json:"teamRegistryDelete"`
+}
+
+// GetTeamRegistryDelete returns deleteTeamRegistryResponse.TeamRegistryDelete, and is useful for accessing the field via an interface.
+func (v *deleteTeamRegistryResponse) GetTeamRegistryDelete() deleteTeamRegistryTeamRegistryDeleteTeamRegistryDeletePayload {
+	return v.TeamRegistryDelete
+}
+
+// deleteTeamRegistryTeamRegistryDeleteTeamRegistryDeletePayload includes the requested fields of the GraphQL type TeamRegistryDeletePayload.
+// The GraphQL type's documentation follows.
+//
+// Autogenerated return type of TeamRegistryDelete.
+type deleteTeamRegistryTeamRegistryDeleteTeamRegistryDeletePayload struct {
+	DeletedTeamRegistryID string `json:"deletedTeamRegistryID"`
+}
+
+// GetDeletedTeamRegistryID returns deleteTeamRegistryTeamRegistryDeleteTeamRegistryDeletePayload.DeletedTeamRegistryID, and is useful for accessing the field via an interface.
+func (v *deleteTeamRegistryTeamRegistryDeleteTeamRegistryDeletePayload) GetDeletedTeamRegistryID() string {
+	return v.DeletedTeamRegistryID
+}
+
 // deleteTestSuiteTeamResponse is returned by deleteTestSuiteTeam on success.
 type deleteTestSuiteTeamResponse struct {
 	// Remove a suite from a team.
@@ -7847,6 +8148,11 @@ func (v *getClusterAgentTokensOrganizationClusterAgentTokensClusterAgentTokenCon
 	return v.ClusterAgentTokenValues.Description
 }
 
+// GetExpiresAt returns getClusterAgentTokensOrganizationClusterAgentTokensClusterAgentTokenConnectionEdgesClusterAgentTokenEdgeNodeClusterToken.ExpiresAt, and is useful for accessing the field via an interface.
+func (v *getClusterAgentTokensOrganizationClusterAgentTokensClusterAgentTokenConnectionEdgesClusterAgentTokenEdgeNodeClusterToken) GetExpiresAt() *time.Time {
+	return v.ClusterAgentTokenValues.ExpiresAt
+}
+
 // GetId returns getClusterAgentTokensOrganizationClusterAgentTokensClusterAgentTokenConnectionEdgesClusterAgentTokenEdgeNodeClusterToken.Id, and is useful for accessing the field via an interface.
 func (v *getClusterAgentTokensOrganizationClusterAgentTokensClusterAgentTokenConnectionEdgesClusterAgentTokenEdgeNodeClusterToken) GetId() string {
 	return v.ClusterAgentTokenValues.Id
@@ -7889,6 +8195,8 @@ type __premarshalgetClusterAgentTokensOrganizationClusterAgentTokensClusterAgent
 
 	Description string `json:"description"`
 
+	ExpiresAt *time.Time `json:"expiresAt"`
+
 	Id string `json:"id"`
 
 	Uuid string `json:"uuid"`
@@ -7908,6 +8216,7 @@ func (v *getClusterAgentTokensOrganizationClusterAgentTokensClusterAgentTokenCon
 	retval.AllowedIpAddresses = v.ClusterAgentTokenValues.AllowedIpAddresses
 	retval.Cluster = v.ClusterAgentTokenValues.Cluster
 	retval.Description = v.ClusterAgentTokenValues.Description
+	retval.ExpiresAt = v.ClusterAgentTokenValues.ExpiresAt
 	retval.Id = v.ClusterAgentTokenValues.Id
 	retval.Uuid = v.ClusterAgentTokenValues.Uuid
 	return &retval, nil
@@ -10038,157 +10347,18 @@ func (v *getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClu
 
 // getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue includes the requested fields of the GraphQL type ClusterQueue.
 type getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue struct {
-	ClusterQueueValues `json:"-"`
-	// States whether job dispatch is paused for this cluster queue
-	DispatchPaused bool `json:"dispatchPaused"`
-	// The time this queue was paused
-	DispatchPausedAt *time.Time `json:"dispatchPausedAt"`
-	// The user who paused this cluster queue
-	DispatchPausedBy *getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueueDispatchPausedByUser `json:"dispatchPausedBy"`
-	// Note describing why job dispatch was paused for this cluster queue
-	DispatchPausedNote *string `json:"dispatchPausedNote"`
-}
-
-// GetDispatchPaused returns getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue.DispatchPaused, and is useful for accessing the field via an interface.
-func (v *getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue) GetDispatchPaused() bool {
-	return v.DispatchPaused
-}
-
-// GetDispatchPausedAt returns getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue.DispatchPausedAt, and is useful for accessing the field via an interface.
-func (v *getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue) GetDispatchPausedAt() *time.Time {
-	return v.DispatchPausedAt
-}
-
-// GetDispatchPausedBy returns getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue.DispatchPausedBy, and is useful for accessing the field via an interface.
-func (v *getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue) GetDispatchPausedBy() *getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueueDispatchPausedByUser {
-	return v.DispatchPausedBy
-}
-
-// GetDispatchPausedNote returns getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue.DispatchPausedNote, and is useful for accessing the field via an interface.
-func (v *getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue) GetDispatchPausedNote() *string {
-	return v.DispatchPausedNote
+	Id  string `json:"id"`
+	Key string `json:"key"`
 }
 
 // GetId returns getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue.Id, and is useful for accessing the field via an interface.
 func (v *getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue) GetId() string {
-	return v.ClusterQueueValues.Id
-}
-
-// GetUuid returns getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue.Uuid, and is useful for accessing the field via an interface.
-func (v *getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue) GetUuid() string {
-	return v.ClusterQueueValues.Uuid
+	return v.Id
 }
 
 // GetKey returns getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue.Key, and is useful for accessing the field via an interface.
 func (v *getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue) GetKey() string {
-	return v.ClusterQueueValues.Key
-}
-
-// GetDescription returns getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue.Description, and is useful for accessing the field via an interface.
-func (v *getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue) GetDescription() *string {
-	return v.ClusterQueueValues.Description
-}
-
-// GetCluster returns getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue.Cluster, and is useful for accessing the field via an interface.
-func (v *getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue) GetCluster() ClusterQueueValuesCluster {
-	return v.ClusterQueueValues.Cluster
-}
-
-// GetHosted returns getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue.Hosted, and is useful for accessing the field via an interface.
-func (v *getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue) GetHosted() bool {
-	return v.ClusterQueueValues.Hosted
-}
-
-// GetHostedAgents returns getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue.HostedAgents, and is useful for accessing the field via an interface.
-func (v *getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue) GetHostedAgents() ClusterQueueValuesHostedAgentsHostedAgentQueueSettings {
-	return v.ClusterQueueValues.HostedAgents
-}
-
-func (v *getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue) UnmarshalJSON(b []byte) error {
-
-	if string(b) == "null" {
-		return nil
-	}
-
-	var firstPass struct {
-		*getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue
-		graphql.NoUnmarshalJSON
-	}
-	firstPass.getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue = v
-
-	err := json.Unmarshal(b, &firstPass)
-	if err != nil {
-		return err
-	}
-
-	err = json.Unmarshal(
-		b, &v.ClusterQueueValues)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-type __premarshalgetClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue struct {
-	DispatchPaused bool `json:"dispatchPaused"`
-
-	DispatchPausedAt *time.Time `json:"dispatchPausedAt"`
-
-	DispatchPausedBy *getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueueDispatchPausedByUser `json:"dispatchPausedBy"`
-
-	DispatchPausedNote *string `json:"dispatchPausedNote"`
-
-	Id string `json:"id"`
-
-	Uuid string `json:"uuid"`
-
-	Key string `json:"key"`
-
-	Description *string `json:"description"`
-
-	Cluster ClusterQueueValuesCluster `json:"cluster"`
-
-	Hosted bool `json:"hosted"`
-
-	HostedAgents ClusterQueueValuesHostedAgentsHostedAgentQueueSettings `json:"hostedAgents"`
-}
-
-func (v *getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue) MarshalJSON() ([]byte, error) {
-	premarshaled, err := v.__premarshalJSON()
-	if err != nil {
-		return nil, err
-	}
-	return json.Marshal(premarshaled)
-}
-
-func (v *getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue) __premarshalJSON() (*__premarshalgetClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue, error) {
-	var retval __premarshalgetClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueue
-
-	retval.DispatchPaused = v.DispatchPaused
-	retval.DispatchPausedAt = v.DispatchPausedAt
-	retval.DispatchPausedBy = v.DispatchPausedBy
-	retval.DispatchPausedNote = v.DispatchPausedNote
-	retval.Id = v.ClusterQueueValues.Id
-	retval.Uuid = v.ClusterQueueValues.Uuid
-	retval.Key = v.ClusterQueueValues.Key
-	retval.Description = v.ClusterQueueValues.Description
-	retval.Cluster = v.ClusterQueueValues.Cluster
-	retval.Hosted = v.ClusterQueueValues.Hosted
-	retval.HostedAgents = v.ClusterQueueValues.HostedAgents
-	return &retval, nil
-}
-
-// getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueueDispatchPausedByUser includes the requested fields of the GraphQL type User.
-// The GraphQL type's documentation follows.
-//
-// A user
-type getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueueDispatchPausedByUser struct {
-	Id string `json:"id"`
-}
-
-// GetId returns getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueueDispatchPausedByUser.Id, and is useful for accessing the field via an interface.
-func (v *getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionEdgesClusterQueueEdgeNodeClusterQueueDispatchPausedByUser) GetId() string {
-	return v.Id
+	return v.Key
 }
 
 // getClusterQueuesOrganizationClusterQueuesClusterQueueConnectionPageInfo includes the requested fields of the GraphQL type PageInfo.
@@ -11108,10 +11278,14 @@ func __marshalgetNodeNode(v *getNodeNode) ([]byte, error) {
 	case *getNodeNodeTeamRegistry:
 		typename = "TeamRegistry"
 
+		premarshaled, err := v.__premarshalJSON()
+		if err != nil {
+			return nil, err
+		}
 		result := struct {
 			TypeName string `json:"__typename"`
-			*getNodeNodeTeamRegistry
-		}{typename, v}
+			*__premarshalgetNodeNodeTeamRegistry
+		}{typename, premarshaled}
 		return json.Marshal(result)
 	case *getNodeNodeTeamSuite:
 		typename = "TeamSuite"
@@ -12645,11 +12819,92 @@ func (v *getNodeNodeTeamPipeline) __premarshalJSON() (*__premarshalgetNodeNodeTe
 //
 // A registry that's been assigned to a team
 type getNodeNodeTeamRegistry struct {
-	Typename string `json:"__typename"`
+	Typename           string `json:"__typename"`
+	TeamRegistryFields `json:"-"`
 }
 
 // GetTypename returns getNodeNodeTeamRegistry.Typename, and is useful for accessing the field via an interface.
 func (v *getNodeNodeTeamRegistry) GetTypename() string { return v.Typename }
+
+// GetId returns getNodeNodeTeamRegistry.Id, and is useful for accessing the field via an interface.
+func (v *getNodeNodeTeamRegistry) GetId() string { return v.TeamRegistryFields.Id }
+
+// GetTeamRegistryUuid returns getNodeNodeTeamRegistry.TeamRegistryUuid, and is useful for accessing the field via an interface.
+func (v *getNodeNodeTeamRegistry) GetTeamRegistryUuid() string {
+	return v.TeamRegistryFields.TeamRegistryUuid
+}
+
+// GetRegistryAccessLevel returns getNodeNodeTeamRegistry.RegistryAccessLevel, and is useful for accessing the field via an interface.
+func (v *getNodeNodeTeamRegistry) GetRegistryAccessLevel() RegistryAccessLevels {
+	return v.TeamRegistryFields.RegistryAccessLevel
+}
+
+// GetTeam returns getNodeNodeTeamRegistry.Team, and is useful for accessing the field via an interface.
+func (v *getNodeNodeTeamRegistry) GetTeam() TeamRegistryFieldsTeam { return v.TeamRegistryFields.Team }
+
+// GetRegistry returns getNodeNodeTeamRegistry.Registry, and is useful for accessing the field via an interface.
+func (v *getNodeNodeTeamRegistry) GetRegistry() TeamRegistryFieldsRegistry {
+	return v.TeamRegistryFields.Registry
+}
+
+func (v *getNodeNodeTeamRegistry) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*getNodeNodeTeamRegistry
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.getNodeNodeTeamRegistry = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	err = json.Unmarshal(
+		b, &v.TeamRegistryFields)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+type __premarshalgetNodeNodeTeamRegistry struct {
+	Typename string `json:"__typename"`
+
+	Id string `json:"id"`
+
+	TeamRegistryUuid string `json:"teamRegistryUuid"`
+
+	RegistryAccessLevel RegistryAccessLevels `json:"registryAccessLevel"`
+
+	Team TeamRegistryFieldsTeam `json:"team"`
+
+	Registry TeamRegistryFieldsRegistry `json:"registry"`
+}
+
+func (v *getNodeNodeTeamRegistry) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *getNodeNodeTeamRegistry) __premarshalJSON() (*__premarshalgetNodeNodeTeamRegistry, error) {
+	var retval __premarshalgetNodeNodeTeamRegistry
+
+	retval.Typename = v.Typename
+	retval.Id = v.TeamRegistryFields.Id
+	retval.TeamRegistryUuid = v.TeamRegistryFields.TeamRegistryUuid
+	retval.RegistryAccessLevel = v.TeamRegistryFields.RegistryAccessLevel
+	retval.Team = v.TeamRegistryFields.Team
+	retval.Registry = v.TeamRegistryFields.Registry
+	return &retval, nil
+}
 
 // getNodeNodeTeamSuite includes the requested fields of the GraphQL type TeamSuite.
 // The GraphQL type's documentation follows.
@@ -13152,6 +13407,26 @@ type getOrganiztionBannerResponse struct {
 func (v *getOrganiztionBannerResponse) GetOrganization() getOrganiztionBannerOrganization {
 	return v.Organization
 }
+
+// getPipelineIdPipeline includes the requested fields of the GraphQL type Pipeline.
+// The GraphQL type's documentation follows.
+//
+// A pipeline
+type getPipelineIdPipeline struct {
+	Id string `json:"id"`
+}
+
+// GetId returns getPipelineIdPipeline.Id, and is useful for accessing the field via an interface.
+func (v *getPipelineIdPipeline) GetId() string { return v.Id }
+
+// getPipelineIdResponse is returned by getPipelineId on success.
+type getPipelineIdResponse struct {
+	// Find a pipeline
+	Pipeline getPipelineIdPipeline `json:"pipeline"`
+}
+
+// GetPipeline returns getPipelineIdResponse.Pipeline, and is useful for accessing the field via an interface.
+func (v *getPipelineIdResponse) GetPipeline() getPipelineIdPipeline { return v.Pipeline }
 
 // getPipelinePipeline includes the requested fields of the GraphQL type Pipeline.
 // The GraphQL type's documentation follows.
@@ -17219,6 +17494,122 @@ func (v *getPipelineScheduleResponse) __premarshalJSON() (*__premarshalgetPipeli
 	}
 	return &retval, nil
 }
+
+// getPipelineTeamIdsPipeline includes the requested fields of the GraphQL type Pipeline.
+// The GraphQL type's documentation follows.
+//
+// A pipeline
+type getPipelineTeamIdsPipeline struct {
+	Id string `json:"id"`
+	// Teams associated with this pipeline
+	Teams getPipelineTeamIdsPipelineTeamsTeamPipelineConnection `json:"teams"`
+}
+
+// GetId returns getPipelineTeamIdsPipeline.Id, and is useful for accessing the field via an interface.
+func (v *getPipelineTeamIdsPipeline) GetId() string { return v.Id }
+
+// GetTeams returns getPipelineTeamIdsPipeline.Teams, and is useful for accessing the field via an interface.
+func (v *getPipelineTeamIdsPipeline) GetTeams() getPipelineTeamIdsPipelineTeamsTeamPipelineConnection {
+	return v.Teams
+}
+
+// getPipelineTeamIdsPipelineTeamsTeamPipelineConnection includes the requested fields of the GraphQL type TeamPipelineConnection.
+// The GraphQL type's documentation follows.
+//
+// The connection type for TeamPipeline.
+type getPipelineTeamIdsPipelineTeamsTeamPipelineConnection struct {
+	PageInfo getPipelineTeamIdsPipelineTeamsTeamPipelineConnectionPageInfo `json:"pageInfo"`
+	// A list of edges.
+	Edges []getPipelineTeamIdsPipelineTeamsTeamPipelineConnectionEdgesTeamPipelineEdge `json:"edges"`
+}
+
+// GetPageInfo returns getPipelineTeamIdsPipelineTeamsTeamPipelineConnection.PageInfo, and is useful for accessing the field via an interface.
+func (v *getPipelineTeamIdsPipelineTeamsTeamPipelineConnection) GetPageInfo() getPipelineTeamIdsPipelineTeamsTeamPipelineConnectionPageInfo {
+	return v.PageInfo
+}
+
+// GetEdges returns getPipelineTeamIdsPipelineTeamsTeamPipelineConnection.Edges, and is useful for accessing the field via an interface.
+func (v *getPipelineTeamIdsPipelineTeamsTeamPipelineConnection) GetEdges() []getPipelineTeamIdsPipelineTeamsTeamPipelineConnectionEdgesTeamPipelineEdge {
+	return v.Edges
+}
+
+// getPipelineTeamIdsPipelineTeamsTeamPipelineConnectionEdgesTeamPipelineEdge includes the requested fields of the GraphQL type TeamPipelineEdge.
+// The GraphQL type's documentation follows.
+//
+// An edge in a connection.
+type getPipelineTeamIdsPipelineTeamsTeamPipelineConnectionEdgesTeamPipelineEdge struct {
+	// The item at the end of the edge.
+	Node getPipelineTeamIdsPipelineTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipeline `json:"node"`
+}
+
+// GetNode returns getPipelineTeamIdsPipelineTeamsTeamPipelineConnectionEdgesTeamPipelineEdge.Node, and is useful for accessing the field via an interface.
+func (v *getPipelineTeamIdsPipelineTeamsTeamPipelineConnectionEdgesTeamPipelineEdge) GetNode() getPipelineTeamIdsPipelineTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipeline {
+	return v.Node
+}
+
+// getPipelineTeamIdsPipelineTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipeline includes the requested fields of the GraphQL type TeamPipeline.
+// The GraphQL type's documentation follows.
+//
+// An pipeline that's been assigned to a team
+type getPipelineTeamIdsPipelineTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipeline struct {
+	Id string `json:"id"`
+	// The team associated with this team member
+	Team getPipelineTeamIdsPipelineTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipelineTeam `json:"team"`
+}
+
+// GetId returns getPipelineTeamIdsPipelineTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipeline.Id, and is useful for accessing the field via an interface.
+func (v *getPipelineTeamIdsPipelineTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipeline) GetId() string {
+	return v.Id
+}
+
+// GetTeam returns getPipelineTeamIdsPipelineTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipeline.Team, and is useful for accessing the field via an interface.
+func (v *getPipelineTeamIdsPipelineTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipeline) GetTeam() getPipelineTeamIdsPipelineTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipelineTeam {
+	return v.Team
+}
+
+// getPipelineTeamIdsPipelineTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipelineTeam includes the requested fields of the GraphQL type Team.
+// The GraphQL type's documentation follows.
+//
+// An organization team
+type getPipelineTeamIdsPipelineTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipelineTeam struct {
+	// The slug of the team
+	Slug string `json:"slug"`
+}
+
+// GetSlug returns getPipelineTeamIdsPipelineTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipelineTeam.Slug, and is useful for accessing the field via an interface.
+func (v *getPipelineTeamIdsPipelineTeamsTeamPipelineConnectionEdgesTeamPipelineEdgeNodeTeamPipelineTeam) GetSlug() string {
+	return v.Slug
+}
+
+// getPipelineTeamIdsPipelineTeamsTeamPipelineConnectionPageInfo includes the requested fields of the GraphQL type PageInfo.
+// The GraphQL type's documentation follows.
+//
+// Information about pagination in a connection.
+type getPipelineTeamIdsPipelineTeamsTeamPipelineConnectionPageInfo struct {
+	// When paginating forwards, the cursor to continue.
+	EndCursor string `json:"endCursor"`
+	// When paginating forwards, are there more items?
+	HasNextPage bool `json:"hasNextPage"`
+}
+
+// GetEndCursor returns getPipelineTeamIdsPipelineTeamsTeamPipelineConnectionPageInfo.EndCursor, and is useful for accessing the field via an interface.
+func (v *getPipelineTeamIdsPipelineTeamsTeamPipelineConnectionPageInfo) GetEndCursor() string {
+	return v.EndCursor
+}
+
+// GetHasNextPage returns getPipelineTeamIdsPipelineTeamsTeamPipelineConnectionPageInfo.HasNextPage, and is useful for accessing the field via an interface.
+func (v *getPipelineTeamIdsPipelineTeamsTeamPipelineConnectionPageInfo) GetHasNextPage() bool {
+	return v.HasNextPage
+}
+
+// getPipelineTeamIdsResponse is returned by getPipelineTeamIds on success.
+type getPipelineTeamIdsResponse struct {
+	// Find a pipeline
+	Pipeline getPipelineTeamIdsPipeline `json:"pipeline"`
+}
+
+// GetPipeline returns getPipelineTeamIdsResponse.Pipeline, and is useful for accessing the field via an interface.
+func (v *getPipelineTeamIdsResponse) GetPipeline() getPipelineTeamIdsPipeline { return v.Pipeline }
 
 // getPipelineTeamsPipeline includes the requested fields of the GraphQL type Pipeline.
 // The GraphQL type's documentation follows.
@@ -22525,6 +22916,11 @@ func (v *updateClusterAgentTokenClusterAgentTokenUpdateClusterAgentTokenUpdatePa
 	return v.ClusterAgentTokenValues.Description
 }
 
+// GetExpiresAt returns updateClusterAgentTokenClusterAgentTokenUpdateClusterAgentTokenUpdatePayloadClusterAgentTokenClusterToken.ExpiresAt, and is useful for accessing the field via an interface.
+func (v *updateClusterAgentTokenClusterAgentTokenUpdateClusterAgentTokenUpdatePayloadClusterAgentTokenClusterToken) GetExpiresAt() *time.Time {
+	return v.ClusterAgentTokenValues.ExpiresAt
+}
+
 // GetId returns updateClusterAgentTokenClusterAgentTokenUpdateClusterAgentTokenUpdatePayloadClusterAgentTokenClusterToken.Id, and is useful for accessing the field via an interface.
 func (v *updateClusterAgentTokenClusterAgentTokenUpdateClusterAgentTokenUpdatePayloadClusterAgentTokenClusterToken) GetId() string {
 	return v.ClusterAgentTokenValues.Id
@@ -22567,6 +22963,8 @@ type __premarshalupdateClusterAgentTokenClusterAgentTokenUpdateClusterAgentToken
 
 	Description string `json:"description"`
 
+	ExpiresAt *time.Time `json:"expiresAt"`
+
 	Id string `json:"id"`
 
 	Uuid string `json:"uuid"`
@@ -22586,6 +22984,7 @@ func (v *updateClusterAgentTokenClusterAgentTokenUpdateClusterAgentTokenUpdatePa
 	retval.AllowedIpAddresses = v.ClusterAgentTokenValues.AllowedIpAddresses
 	retval.Cluster = v.ClusterAgentTokenValues.Cluster
 	retval.Description = v.ClusterAgentTokenValues.Description
+	retval.ExpiresAt = v.ClusterAgentTokenValues.ExpiresAt
 	retval.Id = v.ClusterAgentTokenValues.Id
 	retval.Uuid = v.ClusterAgentTokenValues.Uuid
 	return &retval, nil
@@ -23883,6 +24282,119 @@ func (v *updateTeamPipelineTeamPipelineUpdateTeamPipelineUpdatePayloadTeamPipeli
 	return &retval, nil
 }
 
+// updateTeamRegistryResponse is returned by updateTeamRegistry on success.
+type updateTeamRegistryResponse struct {
+	// Update a registry's access level within a team.
+	TeamRegistryUpdate updateTeamRegistryTeamRegistryUpdateTeamRegistryUpdatePayload `json:"teamRegistryUpdate"`
+}
+
+// GetTeamRegistryUpdate returns updateTeamRegistryResponse.TeamRegistryUpdate, and is useful for accessing the field via an interface.
+func (v *updateTeamRegistryResponse) GetTeamRegistryUpdate() updateTeamRegistryTeamRegistryUpdateTeamRegistryUpdatePayload {
+	return v.TeamRegistryUpdate
+}
+
+// updateTeamRegistryTeamRegistryUpdateTeamRegistryUpdatePayload includes the requested fields of the GraphQL type TeamRegistryUpdatePayload.
+// The GraphQL type's documentation follows.
+//
+// Autogenerated return type of TeamRegistryUpdate.
+type updateTeamRegistryTeamRegistryUpdateTeamRegistryUpdatePayload struct {
+	TeamRegistry updateTeamRegistryTeamRegistryUpdateTeamRegistryUpdatePayloadTeamRegistry `json:"teamRegistry"`
+}
+
+// GetTeamRegistry returns updateTeamRegistryTeamRegistryUpdateTeamRegistryUpdatePayload.TeamRegistry, and is useful for accessing the field via an interface.
+func (v *updateTeamRegistryTeamRegistryUpdateTeamRegistryUpdatePayload) GetTeamRegistry() updateTeamRegistryTeamRegistryUpdateTeamRegistryUpdatePayloadTeamRegistry {
+	return v.TeamRegistry
+}
+
+// updateTeamRegistryTeamRegistryUpdateTeamRegistryUpdatePayloadTeamRegistry includes the requested fields of the GraphQL type TeamRegistry.
+// The GraphQL type's documentation follows.
+//
+// A registry that's been assigned to a team
+type updateTeamRegistryTeamRegistryUpdateTeamRegistryUpdatePayloadTeamRegistry struct {
+	TeamRegistryFields `json:"-"`
+}
+
+// GetId returns updateTeamRegistryTeamRegistryUpdateTeamRegistryUpdatePayloadTeamRegistry.Id, and is useful for accessing the field via an interface.
+func (v *updateTeamRegistryTeamRegistryUpdateTeamRegistryUpdatePayloadTeamRegistry) GetId() string {
+	return v.TeamRegistryFields.Id
+}
+
+// GetTeamRegistryUuid returns updateTeamRegistryTeamRegistryUpdateTeamRegistryUpdatePayloadTeamRegistry.TeamRegistryUuid, and is useful for accessing the field via an interface.
+func (v *updateTeamRegistryTeamRegistryUpdateTeamRegistryUpdatePayloadTeamRegistry) GetTeamRegistryUuid() string {
+	return v.TeamRegistryFields.TeamRegistryUuid
+}
+
+// GetRegistryAccessLevel returns updateTeamRegistryTeamRegistryUpdateTeamRegistryUpdatePayloadTeamRegistry.RegistryAccessLevel, and is useful for accessing the field via an interface.
+func (v *updateTeamRegistryTeamRegistryUpdateTeamRegistryUpdatePayloadTeamRegistry) GetRegistryAccessLevel() RegistryAccessLevels {
+	return v.TeamRegistryFields.RegistryAccessLevel
+}
+
+// GetTeam returns updateTeamRegistryTeamRegistryUpdateTeamRegistryUpdatePayloadTeamRegistry.Team, and is useful for accessing the field via an interface.
+func (v *updateTeamRegistryTeamRegistryUpdateTeamRegistryUpdatePayloadTeamRegistry) GetTeam() TeamRegistryFieldsTeam {
+	return v.TeamRegistryFields.Team
+}
+
+// GetRegistry returns updateTeamRegistryTeamRegistryUpdateTeamRegistryUpdatePayloadTeamRegistry.Registry, and is useful for accessing the field via an interface.
+func (v *updateTeamRegistryTeamRegistryUpdateTeamRegistryUpdatePayloadTeamRegistry) GetRegistry() TeamRegistryFieldsRegistry {
+	return v.TeamRegistryFields.Registry
+}
+
+func (v *updateTeamRegistryTeamRegistryUpdateTeamRegistryUpdatePayloadTeamRegistry) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*updateTeamRegistryTeamRegistryUpdateTeamRegistryUpdatePayloadTeamRegistry
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.updateTeamRegistryTeamRegistryUpdateTeamRegistryUpdatePayloadTeamRegistry = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	err = json.Unmarshal(
+		b, &v.TeamRegistryFields)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+type __premarshalupdateTeamRegistryTeamRegistryUpdateTeamRegistryUpdatePayloadTeamRegistry struct {
+	Id string `json:"id"`
+
+	TeamRegistryUuid string `json:"teamRegistryUuid"`
+
+	RegistryAccessLevel RegistryAccessLevels `json:"registryAccessLevel"`
+
+	Team TeamRegistryFieldsTeam `json:"team"`
+
+	Registry TeamRegistryFieldsRegistry `json:"registry"`
+}
+
+func (v *updateTeamRegistryTeamRegistryUpdateTeamRegistryUpdatePayloadTeamRegistry) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *updateTeamRegistryTeamRegistryUpdateTeamRegistryUpdatePayloadTeamRegistry) __premarshalJSON() (*__premarshalupdateTeamRegistryTeamRegistryUpdateTeamRegistryUpdatePayloadTeamRegistry, error) {
+	var retval __premarshalupdateTeamRegistryTeamRegistryUpdateTeamRegistryUpdatePayloadTeamRegistry
+
+	retval.Id = v.TeamRegistryFields.Id
+	retval.TeamRegistryUuid = v.TeamRegistryFields.TeamRegistryUuid
+	retval.RegistryAccessLevel = v.TeamRegistryFields.RegistryAccessLevel
+	retval.Team = v.TeamRegistryFields.Team
+	retval.Registry = v.TeamRegistryFields.Registry
+	return &retval, nil
+}
+
 // updateTestSuiteTeamResponse is returned by updateTestSuiteTeam on success.
 type updateTestSuiteTeamResponse struct {
 	// Update a suite's access level within a team.
@@ -24472,8 +24984,8 @@ func createCluster(
 
 // The mutation executed by createClusterAgentToken.
 const createClusterAgentToken_Operation = `
-mutation createClusterAgentToken ($organizationId: ID!, $clusterId: ID!, $description: String!, $allowedIpAddresses: String) {
-	clusterAgentTokenCreate(input: {organizationId:$organizationId,clusterId:$clusterId,description:$description,allowedIpAddresses:$allowedIpAddresses}) {
+mutation createClusterAgentToken ($organizationId: ID!, $clusterId: ID!, $description: String!, $allowedIpAddresses: String, $expiresAt: DateTime) {
+	clusterAgentTokenCreate(input: {organizationId:$organizationId,clusterId:$clusterId,description:$description,allowedIpAddresses:$allowedIpAddresses,expiresAt:$expiresAt}) {
 		clusterAgentToken {
 			... ClusterAgentTokenValues
 		}
@@ -24487,6 +24999,7 @@ fragment ClusterAgentTokenValues on ClusterToken {
 		uuid
 	}
 	description
+	expiresAt
 	id
 	uuid
 }
@@ -24499,6 +25012,7 @@ func createClusterAgentToken(
 	clusterId string,
 	description string,
 	allowedIpAddresses string,
+	expiresAt *time.Time,
 ) (data_ *createClusterAgentTokenResponse, err_ error) {
 	req_ := &graphql.Request{
 		OpName: "createClusterAgentToken",
@@ -24508,6 +25022,7 @@ func createClusterAgentToken(
 			ClusterId:          clusterId,
 			Description:        description,
 			AllowedIpAddresses: allowedIpAddresses,
+			ExpiresAt:          expiresAt,
 		},
 	}
 
@@ -25034,6 +25549,57 @@ func createTeamPipeline(
 	return data_, err_
 }
 
+// The mutation executed by createTeamRegistry.
+const createTeamRegistry_Operation = `
+mutation createTeamRegistry ($teamId: ID!, $registryId: ID!, $accessLevel: RegistryAccessLevels!) {
+	teamRegistryCreate(input: {teamID:$teamId,registryID:$registryId,accessLevel:$accessLevel}) {
+		teamRegistry {
+			... TeamRegistryFields
+		}
+	}
+}
+fragment TeamRegistryFields on TeamRegistry {
+	id
+	teamRegistryUuid: uuid
+	registryAccessLevel: accessLevel
+	team {
+		id
+	}
+	registry {
+		id
+	}
+}
+`
+
+func createTeamRegistry(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	teamId string,
+	registryId string,
+	accessLevel RegistryAccessLevels,
+) (data_ *createTeamRegistryResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "createTeamRegistry",
+		Query:  createTeamRegistry_Operation,
+		Variables: &__createTeamRegistryInput{
+			TeamId:      teamId,
+			RegistryId:  registryId,
+			AccessLevel: accessLevel,
+		},
+	}
+
+	data_ = &createTeamRegistryResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
 // The mutation executed by createTestSuiteTeam.
 const createTestSuiteTeam_Operation = `
 mutation createTestSuiteTeam ($teamId: ID!, $suiteId: ID!, $accessLevel: SuiteAccessLevels!) {
@@ -25452,6 +26018,40 @@ func deleteTeamPipeline(
 	return data_, err_
 }
 
+// The mutation executed by deleteTeamRegistry.
+const deleteTeamRegistry_Operation = `
+mutation deleteTeamRegistry ($id: ID!) {
+	teamRegistryDelete(input: {id:$id,force:true}) {
+		deletedTeamRegistryID
+	}
+}
+`
+
+func deleteTeamRegistry(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	id string,
+) (data_ *deleteTeamRegistryResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "deleteTeamRegistry",
+		Query:  deleteTeamRegistry_Operation,
+		Variables: &__deleteTeamRegistryInput{
+			Id: id,
+		},
+	}
+
+	data_ = &deleteTeamRegistryResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
 // The mutation executed by deleteTestSuiteTeam.
 const deleteTestSuiteTeam_Operation = `
 mutation deleteTestSuiteTeam ($id: ID!) {
@@ -25547,6 +26147,7 @@ fragment ClusterAgentTokenValues on ClusterToken {
 		uuid
 	}
 	description
+	expiresAt
 	id
 	uuid
 }
@@ -25727,49 +26328,11 @@ query getClusterQueues ($orgSlug: ID!, $id: ID!, $cursor: String) {
 				}
 				edges {
 					node {
-						... ClusterQueueValues
-						dispatchPaused
-						dispatchPausedAt
-						dispatchPausedBy {
-							id
-						}
-						dispatchPausedNote
+						id
+						key
 					}
 				}
 			}
-		}
-	}
-}
-fragment ClusterQueueValues on ClusterQueue {
-	id
-	uuid
-	key
-	description
-	cluster {
-		id
-		uuid
-	}
-	hosted
-	hostedAgents {
-		... HostedAgentsQueueSettingsValues
-	}
-}
-fragment HostedAgentsQueueSettingsValues on HostedAgentQueueSettings {
-	instanceShape {
-		architecture
-		machineType
-		memory
-		name
-		size
-		vcpu
-	}
-	platformSettings {
-		linux {
-			agentImageRef
-		}
-		macos {
-			xcodeVersion
-			macosVersion
 		}
 	}
 }
@@ -25826,6 +26389,9 @@ query getNode ($id: ID!) {
 		}
 		... on TeamSuite {
 			... TeamSuiteFields
+		}
+		... on TeamRegistry {
+			... TeamRegistryFields
 		}
 		... on TeamPipeline {
 			... TeamPipelineFields
@@ -25942,6 +26508,17 @@ fragment TeamSuiteFields on TeamSuite {
 		id
 	}
 	suite {
+		id
+	}
+}
+fragment TeamRegistryFields on TeamRegistry {
+	id
+	teamRegistryUuid: uuid
+	registryAccessLevel: accessLevel
+	team {
+		id
+	}
+	registry {
 		id
 	}
 }
@@ -26246,6 +26823,40 @@ func getPipeline(
 	return data_, err_
 }
 
+// The query executed by getPipelineId.
+const getPipelineId_Operation = `
+query getPipelineId ($slug: ID!) {
+	pipeline(slug: $slug) {
+		id
+	}
+}
+`
+
+func getPipelineId(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	slug string,
+) (data_ *getPipelineIdResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "getPipelineId",
+		Query:  getPipelineId_Operation,
+		Variables: &__getPipelineIdInput{
+			Slug: slug,
+		},
+	}
+
+	data_ = &getPipelineIdResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
 // The query executed by getPipelineProviderSettings.
 const getPipelineProviderSettings_Operation = `
 query getPipelineProviderSettings ($id: ID!) {
@@ -26265,6 +26876,7 @@ fragment RepositoryProviderSettingsFields on Repository {
 		... on RepositoryProviderGithub {
 			settings {
 				buildBranches
+				buildIssues
 				buildCheckRunCompleted
 				buildCreateEvent
 				buildDeploymentStatusCreated
@@ -26314,6 +26926,7 @@ fragment RepositoryProviderSettingsFields on Repository {
 		... on RepositoryProviderGithubEnterprise {
 			settings {
 				buildBranches
+				buildIssues
 				buildCheckRunCompleted
 				buildCreateEvent
 				buildDeploymentStatusCreated
@@ -26552,6 +27165,58 @@ func getPipelineScheduleBySlug(
 	}
 
 	data_ = &getPipelineScheduleBySlugResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
+// The query executed by getPipelineTeamIds.
+const getPipelineTeamIds_Operation = `
+query getPipelineTeamIds ($slug: ID!, $search: String!, $cursor: String) {
+	pipeline(slug: $slug) {
+		id
+		teams(first: 50, after: $cursor, search: $search, order: RELEVANCE) {
+			pageInfo {
+				endCursor
+				hasNextPage
+			}
+			edges {
+				node {
+					id
+					team {
+						slug
+					}
+				}
+			}
+		}
+	}
+}
+`
+
+func getPipelineTeamIds(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	slug string,
+	search string,
+	cursor *string,
+) (data_ *getPipelineTeamIdsResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "getPipelineTeamIds",
+		Query:  getPipelineTeamIds_Operation,
+		Variables: &__getPipelineTeamIdsInput{
+			Slug:   slug,
+			Search: search,
+			Cursor: cursor,
+		},
+	}
+
+	data_ = &getPipelineTeamIdsResponse{}
 	resp_ := &graphql.Response{Data: data_}
 
 	err_ = client_.MakeRequest(
@@ -27412,6 +28077,7 @@ fragment ClusterAgentTokenValues on ClusterToken {
 		uuid
 	}
 	description
+	expiresAt
 	id
 	uuid
 }
@@ -27880,6 +28546,55 @@ func updateTeamPipeline(
 	}
 
 	data_ = &updateTeamPipelineResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
+// The mutation executed by updateTeamRegistry.
+const updateTeamRegistry_Operation = `
+mutation updateTeamRegistry ($id: ID!, $accessLevel: RegistryAccessLevels!) {
+	teamRegistryUpdate(input: {id:$id,accessLevel:$accessLevel}) {
+		teamRegistry {
+			... TeamRegistryFields
+		}
+	}
+}
+fragment TeamRegistryFields on TeamRegistry {
+	id
+	teamRegistryUuid: uuid
+	registryAccessLevel: accessLevel
+	team {
+		id
+	}
+	registry {
+		id
+	}
+}
+`
+
+func updateTeamRegistry(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	id string,
+	accessLevel RegistryAccessLevels,
+) (data_ *updateTeamRegistryResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "updateTeamRegistry",
+		Query:  updateTeamRegistry_Operation,
+		Variables: &__updateTeamRegistryInput{
+			Id:          id,
+			AccessLevel: accessLevel,
+		},
+	}
+
+	data_ = &updateTeamRegistryResponse{}
 	resp_ := &graphql.Response{Data: data_}
 
 	err_ = client_.MakeRequest(

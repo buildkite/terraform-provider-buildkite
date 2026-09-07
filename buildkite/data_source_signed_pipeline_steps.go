@@ -17,7 +17,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/lestrrat-go/jwx/v2/jwk"
+	"github.com/lestrrat-go/jwx/v3/jwk"
 	"gopkg.in/yaml.v3"
 )
 
@@ -221,6 +221,11 @@ func (s *signedPipelineStepsDataSource) Read(
 		}
 	}
 
+	// SignSteps only sees command steps, so apply pipeline-level checkout first.
+	// https://github.com/buildkite/go-pipeline/pull/73, first released in v0.18.0, made checkout part of the signed
+	// fields. Verification rejects checkout added during dispatch if it wasn't
+	// present during signing.
+	mergePipelineCheckout(p.Steps, p.Checkout)
 	if err := signature.SignSteps(ctx, p.Steps, key, data.Repository.ValueString(), signature.WithEnv(p.Env.ToMap())); err != nil {
 		resp.Diagnostics.AddError("Failed to sign pipeline", err.Error())
 		return
@@ -234,4 +239,19 @@ func (s *signedPipelineStepsDataSource) Read(
 
 	data.Steps = types.StringValue(string(signedSteps))
 	resp.Diagnostics.Append(resp.State.Set(ctx, data)...)
+}
+
+func mergePipelineCheckout(steps pipeline.Steps, checkout *pipeline.Checkout) {
+	if checkout == nil {
+		return
+	}
+
+	for _, step := range steps {
+		switch step := step.(type) {
+		case *pipeline.CommandStep:
+			step.MergeCheckoutFromPipeline(checkout)
+		case *pipeline.GroupStep:
+			mergePipelineCheckout(step.Steps, checkout)
+		}
+	}
 }

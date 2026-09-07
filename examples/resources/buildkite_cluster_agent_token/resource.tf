@@ -28,3 +28,9 @@ resource "buildkite_cluster_queue" "default" {
   cluster_id = buildkite_cluster.primary.id
   key        = "default"
 }
+
+resource "buildkite_cluster_agent_token" "expiring_token" {
+  description = "Token that expires"
+  cluster_id  = buildkite_cluster.primary.id
+  expires_at  = "2030-01-01T00:00:00Z"
+}

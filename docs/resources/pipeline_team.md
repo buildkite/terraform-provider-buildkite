@@ -65,13 +65,16 @@ Using `terraform import`, import resources using the `id`. For example:
 #     }
 #   }
 # }
-terraform import buildkite_pipeline_team.guests VGVhbS0tLWU1YjQyMDQyLTUzN2QtNDZjNi04MjY0LTliZjFkMzkyYjZkNQ==
+terraform import buildkite_pipeline_team.guests VGVhbVBpcGVsaW5lLS0tMmQ5ZmRjYjctMjJjYS00ZDU3LTkwMWMtYmI3NzY1MmM5ZTk2
+
+# or using the pipeline slug and the team slug (slugs can change; the GraphQL ID is the stable identifier)
+terraform import buildkite_pipeline_team.guests my-pipeline/guests
 ```
 
 In Terraform v1.5.0 and later, use an [`import` block](https://developer.hashicorp.com/terraform/language/import) to import instances using the `id`. For example:
 ```terraform
 import {
   to = buildkite_pipeline_team.guests
-  id = "VGVhbS0tLWU1YjQyMDQyLTUzN2QtNDZjNi04MjY0LTliZjFkMzkyYjZkNQ=="
+  id = "VGVhbVBpcGVsaW5lLS0tMmQ5ZmRjYjctMjJjYS00ZDU3LTkwMWMtYmI3NzY1MmM5ZTk2"
 }
 ```
