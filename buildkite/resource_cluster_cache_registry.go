@@ -117,6 +117,9 @@ func (clusterCacheRegistryResource) Schema(ctx context.Context, req resource.Sch
 				Validators: []validator.String{
 					cacheRegistryPolicyValidator{},
 				},
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"created_at": resource_schema.StringAttribute{
 				Computed:            true,

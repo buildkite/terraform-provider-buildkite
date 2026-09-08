@@ -53,6 +53,9 @@ func TestClusterCacheRegistrySchema(t *testing.T) {
 	if _, ok := policy.CustomType.(jsontypes.NormalizedType); !ok {
 		t.Fatalf("policy custom type is %T, want jsontypes.NormalizedType", policy.CustomType)
 	}
+	if len(policy.PlanModifiers) != 1 {
+		t.Fatalf("policy has %d plan modifiers, want UseStateForUnknown", len(policy.PlanModifiers))
+	}
 }
 
 func TestUpdateClusterCacheRegistryState(t *testing.T) {
@@ -193,6 +196,7 @@ resource "buildkite_cluster_cache_registry" "test" {
 	registryName := "Cache " + acctest.RandString(8)
 	renamedRegistry := registryName + " renamed"
 	resourceName := "buildkite_cluster_cache_registry.test"
+	var defaultPolicy string
 
 	testingresource.Test(t, testingresource.TestCase{
 		PreCheck:                 localPreCheck,
@@ -206,9 +210,24 @@ resource "buildkite_cluster_cache_registry" "test" {
 					testingresource.TestCheckResourceAttrSet(resourceName, "uuid"),
 					testingresource.TestCheckResourceAttrSet(resourceName, "cluster_uuid"),
 					testingresource.TestCheckResourceAttrSet(resourceName, "slug"),
-					testingresource.TestCheckResourceAttrSet(resourceName, "policy"),
+					testingresource.TestCheckResourceAttrWith(resourceName, "policy", func(value string) error {
+						defaultPolicy = value
+						return nil
+					}),
 					testingresource.TestCheckResourceAttrSet(resourceName, "created_at"),
 					testingresource.TestCheckResourceAttrSet(resourceName, "updated_at"),
+				),
+			},
+			{
+				Config: config(clusterName, registryName, "Updated without policy", ""),
+				Check: testingresource.ComposeAggregateTestCheckFunc(
+					testingresource.TestCheckResourceAttr(resourceName, "description", "Updated without policy"),
+					testingresource.TestCheckResourceAttrWith(resourceName, "policy", func(value string) error {
+						if value != defaultPolicy {
+							return fmt.Errorf("policy changed during unrelated update: got %q, want %q", value, defaultPolicy)
+						}
+						return nil
+					}),
 				),
 			},
 			{
