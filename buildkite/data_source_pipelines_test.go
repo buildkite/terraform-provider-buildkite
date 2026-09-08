@@ -2,6 +2,7 @@ package buildkite
 
 import (
 	"fmt"
+	"regexp"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
@@ -49,6 +50,25 @@ func TestAccBuildkitePipelinesDatasource(t *testing.T) {
 						resource.TestCheckResourceAttrSet("data.buildkite_pipelines.all", "pipelines.0.slug"),
 						resource.TestCheckResourceAttrSet("data.buildkite_pipelines.all", "pipelines.1.slug"),
 					),
+				},
+			},
+		})
+	})
+
+	t.Run("pipelines data source errors when the organization cannot be found", func(t *testing.T) {
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			Steps: []resource.TestStep{
+				{
+					Config: fmt.Sprintf(`
+					provider "buildkite" {
+						organization = "%s"
+					}
+
+					data "buildkite_pipelines" "all" {}
+					`, acctest.RandString(24)),
+					ExpectError: regexp.MustCompile("Could not find organization"),
 				},
 			},
 		})

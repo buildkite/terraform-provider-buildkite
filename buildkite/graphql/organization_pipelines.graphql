@@ -14,6 +14,7 @@ query GetOrganizationPipelines(
     $tags: [String!],
 ) {
     organization(slug: $slug) {
+        id
         pipelines(first: 500, after: $cursor, search: $search, repository: $repository, cluster: $cluster, archived: $archived, tags: $tags) {
             count
             pageInfo {

@@ -643,9 +643,13 @@ func (v *GetOrganizationMembersResponse) GetOrganization() GetOrganizationMember
 //
 // An organization
 type GetOrganizationPipelinesOrganization struct {
+	Id string `json:"id"`
 	// Return all the pipelines the current user has access to for this organization
 	Pipelines GetOrganizationPipelinesOrganizationPipelinesPipelineConnection `json:"pipelines"`
 }
+
+// GetId returns GetOrganizationPipelinesOrganization.Id, and is useful for accessing the field via an interface.
+func (v *GetOrganizationPipelinesOrganization) GetId() string { return v.Id }
 
 // GetPipelines returns GetOrganizationPipelinesOrganization.Pipelines, and is useful for accessing the field via an interface.
 func (v *GetOrganizationPipelinesOrganization) GetPipelines() GetOrganizationPipelinesOrganizationPipelinesPipelineConnection {
@@ -24907,6 +24911,7 @@ func GetOrganizationMembers(
 const GetOrganizationPipelines_Operation = `
 query GetOrganizationPipelines ($slug: ID!, $cursor: String, $search: String, $repository: PipelineRepositoryInput, $cluster: ID, $archived: Boolean, $tags: [String!]) {
 	organization(slug: $slug) {
+		id
 		pipelines(first: 500, after: $cursor, search: $search, repository: $repository, cluster: $cluster, archived: $archived, tags: $tags) {
 			count
 			pageInfo {

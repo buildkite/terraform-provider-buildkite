@@ -158,6 +158,14 @@ func (p *pipelinesDatasource) Read(ctx context.Context, req datasource.ReadReque
 			return
 		}
 
+		if res.Organization.Id == "" {
+			resp.Diagnostics.AddError(
+				"Unable to find organization",
+				fmt.Sprintf("Could not find organization with slug \"%s\"", p.client.organization),
+			)
+			return
+		}
+
 		state.Total = types.Int64Value(int64(res.Organization.Pipelines.Count))
 		for _, pipeline := range res.Organization.Pipelines.Edges {
 			updatePipelinesDatasourceState(&state, pipeline)
