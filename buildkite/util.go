@@ -251,6 +251,15 @@ func parsePipelineTeamImportID(id string) (pipeline, team string, ok bool) {
 	return pipeline, team, true
 }
 
+// parseTeamMemberImportID splits "<team slug>/<email>", leaving the email for the lookup to validate
+func parseTeamMemberImportID(id string) (team, email string, ok bool) {
+	team, email, ok = strings.Cut(id, "/")
+	if !ok || !importTeamSlugRegex.MatchString(team) || !strings.Contains(email, "@") {
+		return "", "", false
+	}
+	return team, email, true
+}
+
 // parseClusterQueueImportID splits "<cluster uuid>/<queue key>", leaving the key for the lookup to validate
 func parseClusterQueueImportID(id string) (cluster, key string, ok bool) {
 	cluster, key, ok = strings.Cut(id, "/")

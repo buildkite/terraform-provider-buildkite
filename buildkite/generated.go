@@ -5309,6 +5309,22 @@ type __getPipelineWebhookInput struct {
 // GetId returns __getPipelineWebhookInput.Id, and is useful for accessing the field via an interface.
 func (v *__getPipelineWebhookInput) GetId() string { return v.Id }
 
+// __getTeamMemberIdByEmailInput is used internally by genqlient
+type __getTeamMemberIdByEmailInput struct {
+	Slug   string  `json:"slug"`
+	Email  string  `json:"email"`
+	Cursor *string `json:"cursor"`
+}
+
+// GetSlug returns __getTeamMemberIdByEmailInput.Slug, and is useful for accessing the field via an interface.
+func (v *__getTeamMemberIdByEmailInput) GetSlug() string { return v.Slug }
+
+// GetEmail returns __getTeamMemberIdByEmailInput.Email, and is useful for accessing the field via an interface.
+func (v *__getTeamMemberIdByEmailInput) GetEmail() string { return v.Email }
+
+// GetCursor returns __getTeamMemberIdByEmailInput.Cursor, and is useful for accessing the field via an interface.
+func (v *__getTeamMemberIdByEmailInput) GetCursor() *string { return v.Cursor }
+
 // __getTestSuiteInput is used internally by genqlient
 type __getTestSuiteInput struct {
 	Id        string `json:"id"`
@@ -20383,6 +20399,166 @@ func (v *getPipelineWebhookResponse) __premarshalJSON() (*__premarshalgetPipelin
 	return &retval, nil
 }
 
+// getTeamMemberIdByEmailOrganization includes the requested fields of the GraphQL type Organization.
+// The GraphQL type's documentation follows.
+//
+// An organization
+type getTeamMemberIdByEmailOrganization struct {
+	Id string `json:"id"`
+	// Returns users within the organization
+	Members getTeamMemberIdByEmailOrganizationMembersOrganizationMemberConnection `json:"members"`
+}
+
+// GetId returns getTeamMemberIdByEmailOrganization.Id, and is useful for accessing the field via an interface.
+func (v *getTeamMemberIdByEmailOrganization) GetId() string { return v.Id }
+
+// GetMembers returns getTeamMemberIdByEmailOrganization.Members, and is useful for accessing the field via an interface.
+func (v *getTeamMemberIdByEmailOrganization) GetMembers() getTeamMemberIdByEmailOrganizationMembersOrganizationMemberConnection {
+	return v.Members
+}
+
+// getTeamMemberIdByEmailOrganizationMembersOrganizationMemberConnection includes the requested fields of the GraphQL type OrganizationMemberConnection.
+// The GraphQL type's documentation follows.
+//
+// The connection type for OrganizationMember.
+type getTeamMemberIdByEmailOrganizationMembersOrganizationMemberConnection struct {
+	// A list of edges.
+	Edges []getTeamMemberIdByEmailOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdge `json:"edges"`
+}
+
+// GetEdges returns getTeamMemberIdByEmailOrganizationMembersOrganizationMemberConnection.Edges, and is useful for accessing the field via an interface.
+func (v *getTeamMemberIdByEmailOrganizationMembersOrganizationMemberConnection) GetEdges() []getTeamMemberIdByEmailOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdge {
+	return v.Edges
+}
+
+// getTeamMemberIdByEmailOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdge includes the requested fields of the GraphQL type OrganizationMemberEdge.
+// The GraphQL type's documentation follows.
+//
+// An edge in a connection.
+type getTeamMemberIdByEmailOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdge struct {
+	// The item at the end of the edge.
+	Node getTeamMemberIdByEmailOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdgeNodeOrganizationMember `json:"node"`
+}
+
+// GetNode returns getTeamMemberIdByEmailOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdge.Node, and is useful for accessing the field via an interface.
+func (v *getTeamMemberIdByEmailOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdge) GetNode() getTeamMemberIdByEmailOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdgeNodeOrganizationMember {
+	return v.Node
+}
+
+// getTeamMemberIdByEmailOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdgeNodeOrganizationMember includes the requested fields of the GraphQL type OrganizationMember.
+// The GraphQL type's documentation follows.
+//
+// A member of an organization
+type getTeamMemberIdByEmailOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdgeNodeOrganizationMember struct {
+	// Teams that this user is a part of within the organization
+	Teams getTeamMemberIdByEmailOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdgeNodeOrganizationMemberTeamsTeamMemberConnection `json:"teams"`
+}
+
+// GetTeams returns getTeamMemberIdByEmailOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdgeNodeOrganizationMember.Teams, and is useful for accessing the field via an interface.
+func (v *getTeamMemberIdByEmailOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdgeNodeOrganizationMember) GetTeams() getTeamMemberIdByEmailOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdgeNodeOrganizationMemberTeamsTeamMemberConnection {
+	return v.Teams
+}
+
+// getTeamMemberIdByEmailOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdgeNodeOrganizationMemberTeamsTeamMemberConnection includes the requested fields of the GraphQL type TeamMemberConnection.
+// The GraphQL type's documentation follows.
+//
+// The connection type for TeamMember.
+type getTeamMemberIdByEmailOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdgeNodeOrganizationMemberTeamsTeamMemberConnection struct {
+	PageInfo getTeamMemberIdByEmailOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdgeNodeOrganizationMemberTeamsTeamMemberConnectionPageInfo `json:"pageInfo"`
+	// A list of edges.
+	Edges []getTeamMemberIdByEmailOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdgeNodeOrganizationMemberTeamsTeamMemberConnectionEdgesTeamMemberEdge `json:"edges"`
+}
+
+// GetPageInfo returns getTeamMemberIdByEmailOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdgeNodeOrganizationMemberTeamsTeamMemberConnection.PageInfo, and is useful for accessing the field via an interface.
+func (v *getTeamMemberIdByEmailOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdgeNodeOrganizationMemberTeamsTeamMemberConnection) GetPageInfo() getTeamMemberIdByEmailOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdgeNodeOrganizationMemberTeamsTeamMemberConnectionPageInfo {
+	return v.PageInfo
+}
+
+// GetEdges returns getTeamMemberIdByEmailOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdgeNodeOrganizationMemberTeamsTeamMemberConnection.Edges, and is useful for accessing the field via an interface.
+func (v *getTeamMemberIdByEmailOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdgeNodeOrganizationMemberTeamsTeamMemberConnection) GetEdges() []getTeamMemberIdByEmailOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdgeNodeOrganizationMemberTeamsTeamMemberConnectionEdgesTeamMemberEdge {
+	return v.Edges
+}
+
+// getTeamMemberIdByEmailOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdgeNodeOrganizationMemberTeamsTeamMemberConnectionEdgesTeamMemberEdge includes the requested fields of the GraphQL type TeamMemberEdge.
+// The GraphQL type's documentation follows.
+//
+// An edge in a connection.
+type getTeamMemberIdByEmailOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdgeNodeOrganizationMemberTeamsTeamMemberConnectionEdgesTeamMemberEdge struct {
+	// The item at the end of the edge.
+	Node getTeamMemberIdByEmailOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdgeNodeOrganizationMemberTeamsTeamMemberConnectionEdgesTeamMemberEdgeNodeTeamMember `json:"node"`
+}
+
+// GetNode returns getTeamMemberIdByEmailOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdgeNodeOrganizationMemberTeamsTeamMemberConnectionEdgesTeamMemberEdge.Node, and is useful for accessing the field via an interface.
+func (v *getTeamMemberIdByEmailOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdgeNodeOrganizationMemberTeamsTeamMemberConnectionEdgesTeamMemberEdge) GetNode() getTeamMemberIdByEmailOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdgeNodeOrganizationMemberTeamsTeamMemberConnectionEdgesTeamMemberEdgeNodeTeamMember {
+	return v.Node
+}
+
+// getTeamMemberIdByEmailOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdgeNodeOrganizationMemberTeamsTeamMemberConnectionEdgesTeamMemberEdgeNodeTeamMember includes the requested fields of the GraphQL type TeamMember.
+// The GraphQL type's documentation follows.
+//
+// An member of a team
+type getTeamMemberIdByEmailOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdgeNodeOrganizationMemberTeamsTeamMemberConnectionEdgesTeamMemberEdgeNodeTeamMember struct {
+	Id string `json:"id"`
+	// The team associated with this team member
+	Team getTeamMemberIdByEmailOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdgeNodeOrganizationMemberTeamsTeamMemberConnectionEdgesTeamMemberEdgeNodeTeamMemberTeam `json:"team"`
+}
+
+// GetId returns getTeamMemberIdByEmailOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdgeNodeOrganizationMemberTeamsTeamMemberConnectionEdgesTeamMemberEdgeNodeTeamMember.Id, and is useful for accessing the field via an interface.
+func (v *getTeamMemberIdByEmailOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdgeNodeOrganizationMemberTeamsTeamMemberConnectionEdgesTeamMemberEdgeNodeTeamMember) GetId() string {
+	return v.Id
+}
+
+// GetTeam returns getTeamMemberIdByEmailOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdgeNodeOrganizationMemberTeamsTeamMemberConnectionEdgesTeamMemberEdgeNodeTeamMember.Team, and is useful for accessing the field via an interface.
+func (v *getTeamMemberIdByEmailOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdgeNodeOrganizationMemberTeamsTeamMemberConnectionEdgesTeamMemberEdgeNodeTeamMember) GetTeam() getTeamMemberIdByEmailOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdgeNodeOrganizationMemberTeamsTeamMemberConnectionEdgesTeamMemberEdgeNodeTeamMemberTeam {
+	return v.Team
+}
+
+// getTeamMemberIdByEmailOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdgeNodeOrganizationMemberTeamsTeamMemberConnectionEdgesTeamMemberEdgeNodeTeamMemberTeam includes the requested fields of the GraphQL type Team.
+// The GraphQL type's documentation follows.
+//
+// An organization team
+type getTeamMemberIdByEmailOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdgeNodeOrganizationMemberTeamsTeamMemberConnectionEdgesTeamMemberEdgeNodeTeamMemberTeam struct {
+	// The slug of the team
+	Slug string `json:"slug"`
+}
+
+// GetSlug returns getTeamMemberIdByEmailOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdgeNodeOrganizationMemberTeamsTeamMemberConnectionEdgesTeamMemberEdgeNodeTeamMemberTeam.Slug, and is useful for accessing the field via an interface.
+func (v *getTeamMemberIdByEmailOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdgeNodeOrganizationMemberTeamsTeamMemberConnectionEdgesTeamMemberEdgeNodeTeamMemberTeam) GetSlug() string {
+	return v.Slug
+}
+
+// getTeamMemberIdByEmailOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdgeNodeOrganizationMemberTeamsTeamMemberConnectionPageInfo includes the requested fields of the GraphQL type PageInfo.
+// The GraphQL type's documentation follows.
+//
+// Information about pagination in a connection.
+type getTeamMemberIdByEmailOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdgeNodeOrganizationMemberTeamsTeamMemberConnectionPageInfo struct {
+	// When paginating forwards, the cursor to continue.
+	EndCursor string `json:"endCursor"`
+	// When paginating forwards, are there more items?
+	HasNextPage bool `json:"hasNextPage"`
+}
+
+// GetEndCursor returns getTeamMemberIdByEmailOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdgeNodeOrganizationMemberTeamsTeamMemberConnectionPageInfo.EndCursor, and is useful for accessing the field via an interface.
+func (v *getTeamMemberIdByEmailOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdgeNodeOrganizationMemberTeamsTeamMemberConnectionPageInfo) GetEndCursor() string {
+	return v.EndCursor
+}
+
+// GetHasNextPage returns getTeamMemberIdByEmailOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdgeNodeOrganizationMemberTeamsTeamMemberConnectionPageInfo.HasNextPage, and is useful for accessing the field via an interface.
+func (v *getTeamMemberIdByEmailOrganizationMembersOrganizationMemberConnectionEdgesOrganizationMemberEdgeNodeOrganizationMemberTeamsTeamMemberConnectionPageInfo) GetHasNextPage() bool {
+	return v.HasNextPage
+}
+
+// getTeamMemberIdByEmailResponse is returned by getTeamMemberIdByEmail on success.
+type getTeamMemberIdByEmailResponse struct {
+	// Find an organization
+	Organization getTeamMemberIdByEmailOrganization `json:"organization"`
+}
+
+// GetOrganization returns getTeamMemberIdByEmailResponse.Organization, and is useful for accessing the field via an interface.
+func (v *getTeamMemberIdByEmailResponse) GetOrganization() getTeamMemberIdByEmailOrganization {
+	return v.Organization
+}
+
 // getTestSuiteResponse is returned by getTestSuite on success.
 type getTestSuiteResponse struct {
 	// Fetches an object given its ID.
@@ -27669,6 +27845,64 @@ func getPipelineWebhook(
 	}
 
 	data_ = &getPipelineWebhookResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
+// The query executed by getTeamMemberIdByEmail.
+const getTeamMemberIdByEmail_Operation = `
+query getTeamMemberIdByEmail ($slug: ID!, $email: String!, $cursor: String) {
+	organization(slug: $slug) {
+		id
+		members(first: 1, email: $email) {
+			edges {
+				node {
+					teams(first: 50, after: $cursor) {
+						pageInfo {
+							endCursor
+							hasNextPage
+						}
+						edges {
+							node {
+								id
+								team {
+									slug
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
+`
+
+func getTeamMemberIdByEmail(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	slug string,
+	email string,
+	cursor *string,
+) (data_ *getTeamMemberIdByEmailResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "getTeamMemberIdByEmail",
+		Query:  getTeamMemberIdByEmail_Operation,
+		Variables: &__getTeamMemberIdByEmailInput{
+			Slug:   slug,
+			Email:  email,
+			Cursor: cursor,
+		},
+	}
+
+	data_ = &getTeamMemberIdByEmailResponse{}
 	resp_ := &graphql.Response{Data: data_}
 
 	err_ = client_.MakeRequest(
