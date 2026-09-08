@@ -201,6 +201,7 @@ resource "buildkite_cluster_cache_registry" "test" {
 	testingresource.Test(t, testingresource.TestCase{
 		PreCheck:                 localPreCheck,
 		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		CheckDestroy:             testAccCheckClusterCacheRegistryDestroy,
 		Steps: []testingresource.TestStep{
 			{
 				Config: config(clusterName, registryName, "Created by Terraform", ""),
@@ -255,6 +256,23 @@ resource "buildkite_cluster_cache_registry" "test" {
 			},
 		},
 	})
+}
+
+func testAccCheckClusterCacheRegistryDestroy(state *terraform.State) error {
+	for _, resourceState := range state.RootModule().Resources {
+		if resourceState.Type != "buildkite_cluster_cache_registry" {
+			continue
+		}
+
+		result, err := getCacheRegistryByNode(context.Background(), genqlientGraphql, resourceState.Primary.ID)
+		if err != nil {
+			return fmt.Errorf("checking destroyed cache registry: %w", err)
+		}
+		if cacheRegistry, ok := result.Node.(*getCacheRegistryByNodeNodeCacheRegistry); ok && cacheRegistry != nil {
+			return fmt.Errorf("cache registry %s still exists", resourceState.Primary.ID)
+		}
+	}
+	return nil
 }
 
 func testAccDeleteClusterCacheRegistryOutOfBand(name string) testingresource.TestCheckFunc {

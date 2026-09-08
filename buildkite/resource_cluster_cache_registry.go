@@ -250,14 +250,18 @@ func (r *clusterCacheRegistryResource) Delete(ctx context.Context, req resource.
 
 	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		organizationID, err := r.client.GetOrganizationID()
-		if err == nil {
-			log.Printf("Deleting cache registry with ID %s ...", state.ID.ValueString())
-			_, err = deleteCacheRegistry(ctx, r.client.genqlient, *organizationID, state.ID.ValueString())
+		if err != nil {
+			return retryContextError(err)
 		}
-		if isResourceNotFoundError(err) {
-			return nil
+
+		log.Printf("Deleting cache registry with ID %s ...", state.ID.ValueString())
+		if _, err := deleteCacheRegistry(ctx, r.client.genqlient, *organizationID, state.ID.ValueString()); err != nil {
+			if isResourceNotFoundError(err) {
+				return nil
+			}
+			return retryContextError(err)
 		}
-		return retryContextError(err)
+		return nil
 	})
 	if err != nil {
 		resp.Diagnostics.AddError("Unable to delete Cache Registry", fmt.Sprintf("Unable to delete Cache Registry: %s", err))
