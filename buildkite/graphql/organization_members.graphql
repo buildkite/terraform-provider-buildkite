@@ -1,10 +1,15 @@
 query GetOrganizationMembers(
     $slug: ID!,
     # @genqlient(pointer: true)
-    $cursor: String
+    $cursor: String,
+    # @genqlient(pointer: true, omitempty: true)
+    $team: TeamSelector,
+    # @genqlient(omitempty: true)
+    $role: [OrganizationMemberRole!],
 ) {
     organization(slug: $slug) {
-        members(first: 500, after: $cursor) {
+        id
+        members(first: 500, after: $cursor, team: $team, role: $role) {
             pageInfo {
                 endCursor
                 hasNextPage
