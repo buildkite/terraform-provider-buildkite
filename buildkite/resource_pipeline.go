@@ -1114,7 +1114,8 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 						Optional:            true,
 						MarkdownDescription: "The match mode for the issue comment command word. Valid values are \"exact\" and \"contains\". Defaults to \"exact\".",
 						PlanModifiers: []planmodifier.String{
-							stringplanmodifier.UseNonNullStateForUnknown(),
+							// state written before "" was read as null must not be planned as ""
+							custom_modifier.UseNonEmptyStateForUnknown(),
 						},
 						Validators: []validator.String{
 							stringvalidator.OneOf("exact", "contains"),
@@ -1141,7 +1142,7 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 						Optional:            true,
 						MarkdownDescription: "The match mode for the review comment command word. Valid values are \"exact\" and \"contains\".",
 						PlanModifiers: []planmodifier.String{
-							stringplanmodifier.UseNonNullStateForUnknown(),
+							custom_modifier.UseNonEmptyStateForUnknown(),
 						},
 						Validators: []validator.String{
 							stringvalidator.OneOf("exact", "contains"),
