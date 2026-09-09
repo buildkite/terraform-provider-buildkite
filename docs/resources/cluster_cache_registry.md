@@ -3,12 +3,12 @@
 page_title: "buildkite_cluster_cache_registry Resource - terraform-provider-buildkite"
 subcategory: ""
 description: |-
-  A Cache Registry stores cached build data for a Buildkite Cluster.
+  A Cache Registry stores cached build data for a Buildkite Cluster. Buildkite Cache is currently in private preview and must be enabled for your Buildkite organization.
 ---
 
 # buildkite_cluster_cache_registry (Resource)
 
-A Cache Registry stores cached build data for a Buildkite Cluster.
+A Cache Registry stores cached build data for a Buildkite Cluster. Buildkite Cache is currently in private preview and must be enabled for your Buildkite organization.
 
 ## Example Usage
 

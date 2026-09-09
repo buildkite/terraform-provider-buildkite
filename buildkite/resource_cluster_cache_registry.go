@@ -55,7 +55,7 @@ func (r *clusterCacheRegistryResource) Configure(ctx context.Context, req resour
 
 func (clusterCacheRegistryResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = resource_schema.Schema{
-		MarkdownDescription: "A Cache Registry stores cached build data for a Buildkite Cluster.",
+		MarkdownDescription: "A Cache Registry stores cached build data for a Buildkite Cluster. Buildkite Cache is currently in private preview and must be enabled for your Buildkite organization.",
 		Attributes: map[string]resource_schema.Attribute{
 			"id": resource_schema.StringAttribute{
 				Computed:            true,
