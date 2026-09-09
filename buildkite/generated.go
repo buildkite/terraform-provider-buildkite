@@ -5059,6 +5059,22 @@ func (v *__getClusterByNameInput) GetOrgSlug() string { return v.OrgSlug }
 // GetCursor returns __getClusterByNameInput.Cursor, and is useful for accessing the field via an interface.
 func (v *__getClusterByNameInput) GetCursor() *string { return v.Cursor }
 
+// __getClusterCacheRegistriesInput is used internally by genqlient
+type __getClusterCacheRegistriesInput struct {
+	OrgSlug     string  `json:"orgSlug"`
+	ClusterUuid string  `json:"clusterUuid"`
+	Cursor      *string `json:"cursor"`
+}
+
+// GetOrgSlug returns __getClusterCacheRegistriesInput.OrgSlug, and is useful for accessing the field via an interface.
+func (v *__getClusterCacheRegistriesInput) GetOrgSlug() string { return v.OrgSlug }
+
+// GetClusterUuid returns __getClusterCacheRegistriesInput.ClusterUuid, and is useful for accessing the field via an interface.
+func (v *__getClusterCacheRegistriesInput) GetClusterUuid() string { return v.ClusterUuid }
+
+// GetCursor returns __getClusterCacheRegistriesInput.Cursor, and is useful for accessing the field via an interface.
+func (v *__getClusterCacheRegistriesInput) GetCursor() *string { return v.Cursor }
+
 // __getClusterQueueByNodeInput is used internally by genqlient
 type __getClusterQueueByNodeInput struct {
 	Id string `json:"id"`
@@ -10619,6 +10635,106 @@ type getClusterByNameResponse struct {
 
 // GetOrganization returns getClusterByNameResponse.Organization, and is useful for accessing the field via an interface.
 func (v *getClusterByNameResponse) GetOrganization() getClusterByNameOrganization {
+	return v.Organization
+}
+
+// getClusterCacheRegistriesOrganization includes the requested fields of the GraphQL type Organization.
+// The GraphQL type's documentation follows.
+//
+// An organization
+type getClusterCacheRegistriesOrganization struct {
+	// Return cluster in the Organization by UUID
+	Cluster *getClusterCacheRegistriesOrganizationCluster `json:"cluster"`
+}
+
+// GetCluster returns getClusterCacheRegistriesOrganization.Cluster, and is useful for accessing the field via an interface.
+func (v *getClusterCacheRegistriesOrganization) GetCluster() *getClusterCacheRegistriesOrganizationCluster {
+	return v.Cluster
+}
+
+// getClusterCacheRegistriesOrganizationCluster includes the requested fields of the GraphQL type Cluster.
+type getClusterCacheRegistriesOrganizationCluster struct {
+	CacheRegistries *getClusterCacheRegistriesOrganizationClusterCacheRegistriesCacheRegistryConnection `json:"cacheRegistries"`
+}
+
+// GetCacheRegistries returns getClusterCacheRegistriesOrganizationCluster.CacheRegistries, and is useful for accessing the field via an interface.
+func (v *getClusterCacheRegistriesOrganizationCluster) GetCacheRegistries() *getClusterCacheRegistriesOrganizationClusterCacheRegistriesCacheRegistryConnection {
+	return v.CacheRegistries
+}
+
+// getClusterCacheRegistriesOrganizationClusterCacheRegistriesCacheRegistryConnection includes the requested fields of the GraphQL type CacheRegistryConnection.
+// The GraphQL type's documentation follows.
+//
+// The connection type for CacheRegistry.
+type getClusterCacheRegistriesOrganizationClusterCacheRegistriesCacheRegistryConnection struct {
+	// A list of edges.
+	Edges    []getClusterCacheRegistriesOrganizationClusterCacheRegistriesCacheRegistryConnectionEdgesCacheRegistryEdge `json:"edges"`
+	PageInfo getClusterCacheRegistriesOrganizationClusterCacheRegistriesCacheRegistryConnectionPageInfo                 `json:"pageInfo"`
+}
+
+// GetEdges returns getClusterCacheRegistriesOrganizationClusterCacheRegistriesCacheRegistryConnection.Edges, and is useful for accessing the field via an interface.
+func (v *getClusterCacheRegistriesOrganizationClusterCacheRegistriesCacheRegistryConnection) GetEdges() []getClusterCacheRegistriesOrganizationClusterCacheRegistriesCacheRegistryConnectionEdgesCacheRegistryEdge {
+	return v.Edges
+}
+
+// GetPageInfo returns getClusterCacheRegistriesOrganizationClusterCacheRegistriesCacheRegistryConnection.PageInfo, and is useful for accessing the field via an interface.
+func (v *getClusterCacheRegistriesOrganizationClusterCacheRegistriesCacheRegistryConnection) GetPageInfo() getClusterCacheRegistriesOrganizationClusterCacheRegistriesCacheRegistryConnectionPageInfo {
+	return v.PageInfo
+}
+
+// getClusterCacheRegistriesOrganizationClusterCacheRegistriesCacheRegistryConnectionEdgesCacheRegistryEdge includes the requested fields of the GraphQL type CacheRegistryEdge.
+// The GraphQL type's documentation follows.
+//
+// An edge in a connection.
+type getClusterCacheRegistriesOrganizationClusterCacheRegistriesCacheRegistryConnectionEdgesCacheRegistryEdge struct {
+	// The item at the end of the edge.
+	Node getClusterCacheRegistriesOrganizationClusterCacheRegistriesCacheRegistryConnectionEdgesCacheRegistryEdgeNodeCacheRegistry `json:"node"`
+}
+
+// GetNode returns getClusterCacheRegistriesOrganizationClusterCacheRegistriesCacheRegistryConnectionEdgesCacheRegistryEdge.Node, and is useful for accessing the field via an interface.
+func (v *getClusterCacheRegistriesOrganizationClusterCacheRegistriesCacheRegistryConnectionEdgesCacheRegistryEdge) GetNode() getClusterCacheRegistriesOrganizationClusterCacheRegistriesCacheRegistryConnectionEdgesCacheRegistryEdgeNodeCacheRegistry {
+	return v.Node
+}
+
+// getClusterCacheRegistriesOrganizationClusterCacheRegistriesCacheRegistryConnectionEdgesCacheRegistryEdgeNodeCacheRegistry includes the requested fields of the GraphQL type CacheRegistry.
+type getClusterCacheRegistriesOrganizationClusterCacheRegistriesCacheRegistryConnectionEdgesCacheRegistryEdgeNodeCacheRegistry struct {
+	Id string `json:"id"`
+}
+
+// GetId returns getClusterCacheRegistriesOrganizationClusterCacheRegistriesCacheRegistryConnectionEdgesCacheRegistryEdgeNodeCacheRegistry.Id, and is useful for accessing the field via an interface.
+func (v *getClusterCacheRegistriesOrganizationClusterCacheRegistriesCacheRegistryConnectionEdgesCacheRegistryEdgeNodeCacheRegistry) GetId() string {
+	return v.Id
+}
+
+// getClusterCacheRegistriesOrganizationClusterCacheRegistriesCacheRegistryConnectionPageInfo includes the requested fields of the GraphQL type PageInfo.
+// The GraphQL type's documentation follows.
+//
+// Information about pagination in a connection.
+type getClusterCacheRegistriesOrganizationClusterCacheRegistriesCacheRegistryConnectionPageInfo struct {
+	// When paginating forwards, the cursor to continue.
+	EndCursor string `json:"endCursor"`
+	// When paginating forwards, are there more items?
+	HasNextPage bool `json:"hasNextPage"`
+}
+
+// GetEndCursor returns getClusterCacheRegistriesOrganizationClusterCacheRegistriesCacheRegistryConnectionPageInfo.EndCursor, and is useful for accessing the field via an interface.
+func (v *getClusterCacheRegistriesOrganizationClusterCacheRegistriesCacheRegistryConnectionPageInfo) GetEndCursor() string {
+	return v.EndCursor
+}
+
+// GetHasNextPage returns getClusterCacheRegistriesOrganizationClusterCacheRegistriesCacheRegistryConnectionPageInfo.HasNextPage, and is useful for accessing the field via an interface.
+func (v *getClusterCacheRegistriesOrganizationClusterCacheRegistriesCacheRegistryConnectionPageInfo) GetHasNextPage() bool {
+	return v.HasNextPage
+}
+
+// getClusterCacheRegistriesResponse is returned by getClusterCacheRegistries on success.
+type getClusterCacheRegistriesResponse struct {
+	// Find an organization
+	Organization *getClusterCacheRegistriesOrganization `json:"organization"`
+}
+
+// GetOrganization returns getClusterCacheRegistriesResponse.Organization, and is useful for accessing the field via an interface.
+func (v *getClusterCacheRegistriesResponse) GetOrganization() *getClusterCacheRegistriesOrganization {
 	return v.Organization
 }
 
@@ -28875,6 +28991,56 @@ func getClusterByName(
 	}
 
 	data_ = &getClusterByNameResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
+// The query executed by getClusterCacheRegistries.
+const getClusterCacheRegistries_Operation = `
+query getClusterCacheRegistries ($orgSlug: ID!, $clusterUuid: ID!, $cursor: String) {
+	organization(slug: $orgSlug) {
+		cluster(id: $clusterUuid) {
+			cacheRegistries(first: 100, after: $cursor) {
+				edges {
+					node {
+						id
+					}
+				}
+				pageInfo {
+					endCursor
+					hasNextPage
+				}
+			}
+		}
+	}
+}
+`
+
+func getClusterCacheRegistries(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	orgSlug string,
+	clusterUuid string,
+	cursor *string,
+) (data_ *getClusterCacheRegistriesResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "getClusterCacheRegistries",
+		Query:  getClusterCacheRegistries_Operation,
+		Variables: &__getClusterCacheRegistriesInput{
+			OrgSlug:     orgSlug,
+			ClusterUuid: clusterUuid,
+			Cursor:      cursor,
+		},
+	}
+
+	data_ = &getClusterCacheRegistriesResponse{}
 	resp_ := &graphql.Response{Data: data_}
 
 	err_ = client_.MakeRequest(

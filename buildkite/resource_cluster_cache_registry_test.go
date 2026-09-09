@@ -2,12 +2,16 @@ package buildkite
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"strings"
 	"testing"
 	"time"
 
+	genqlient "github.com/Khan/genqlient/graphql"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	frameworkresource "github.com/hashicorp/terraform-plugin-framework/resource"
@@ -17,6 +21,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	testingresource "github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
+	"github.com/vektah/gqlparser/v2/gqlerror"
 )
 
 func TestClusterCacheRegistrySchema(t *testing.T) {
@@ -109,6 +114,114 @@ func TestUpdateClusterCacheRegistryState(t *testing.T) {
 		if got != want[name] {
 			t.Errorf("%s = %q, want %q", name, got, want[name])
 		}
+	}
+}
+
+func TestUpdateClusterCacheRegistryStatePolicy(t *testing.T) {
+	t.Parallel()
+
+	tests := map[string]struct {
+		configured string
+		fromAPI    string
+		want       string
+	}{
+		"expanded defaults keep the configured text": {
+			configured: `{"save":{"scopes":{"branch":true}}}`,
+			fromAPI:    `{"save":{"scopes":{"branch":true}},"restore":{"scopes":[]},"rules":[]}`,
+			want:       `{"save":{"scopes":{"branch":true}}}`,
+		},
+		"widened rule actions keep the configured text": {
+			configured: `{"rules":[{"effect":"allow","action":"save"}]}`,
+			fromAPI:    `{"save":{"scopes":{}},"restore":{"scopes":[]},"rules":[{"effect":"allow","action":["save"]}]}`,
+			want:       `{"rules":[{"effect":"allow","action":"save"}]}`,
+		},
+		"a genuinely different policy takes the API value": {
+			configured: `{"rules":[]}`,
+			fromAPI:    `{"save":{"scopes":{}},"restore":{"scopes":[]},"rules":[{"effect":"deny","action":["save"]}]}`,
+			want:       `{"save":{"scopes":{}},"restore":{"scopes":[]},"rules":[{"effect":"deny","action":["save"]}]}`,
+		},
+		"documented example keeps the configured text": {
+			configured: `{"save":{"scopes":{"branch":true}},"restore":{"scopes":[{"branch":"main"}]},"rules":[{"effect":"allow","action":"save"},{"effect":"allow","action":"restore"}]}`,
+			fromAPI:    `{"save":{"scopes":{"branch":true}},"restore":{"scopes":[{"branch":"main"}]},"rules":[{"effect":"allow","action":["save"]},{"effect":"allow","action":["restore"]}]}`,
+			want:       `{"save":{"scopes":{"branch":true}},"restore":{"scopes":[{"branch":"main"}]},"rules":[{"effect":"allow","action":"save"},{"effect":"allow","action":"restore"}]}`,
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			state := clusterCacheRegistryResourceModel{Policy: jsontypes.NewNormalizedValue(test.configured)}
+			updateClusterCacheRegistryState(&state, CacheRegistryValues{Policy: &test.fromAPI})
+			if got := state.Policy.ValueString(); got != test.want {
+				t.Errorf("policy = %q, want %q", got, test.want)
+			}
+		})
+	}
+}
+
+func TestIsCacheRegistryNotFoundError(t *testing.T) {
+	t.Parallel()
+
+	tests := map[string]struct {
+		err  error
+		want bool
+	}{
+		"cache registry GraphQL error": {err: gqlerror.List{{Message: "No cache registry found"}}, want: true},
+		"organization GraphQL error":   {err: gqlerror.List{{Message: "No organization found"}}},
+		"plain cache registry error":   {err: errors.New("No cache registry found")},
+		"other GraphQL error":          {err: gqlerror.List{{Message: "Insufficient permissions"}}},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			if got := isCacheRegistryNotFoundError(test.err); got != test.want {
+				t.Errorf("isCacheRegistryNotFoundError() = %t, want %t", got, test.want)
+			}
+		})
+	}
+}
+
+func TestCacheRegistryExistsInCluster(t *testing.T) {
+	t.Parallel()
+
+	tests := map[string]struct {
+		response   string
+		wantExists bool
+		wantError  bool
+	}{
+		"organization inaccessible": {response: `{"data":{"organization":null}}`, wantError: true},
+		"cluster inaccessible":      {response: `{"data":{"organization":{"cluster":null}}}`, wantError: true},
+		"feature unavailable":       {response: `{"data":{"organization":{"cluster":{"cacheRegistries":null}}}}`, wantError: true},
+		"resolver error":            {response: `{"errors":[{"message":"Cache Registries are not enabled"}]}`, wantError: true},
+		"registry absent":           {response: `{"data":{"organization":{"cluster":{"cacheRegistries":{"edges":[],"pageInfo":{"hasNextPage":false}}}}}}`},
+		"registry present":          {response: `{"data":{"organization":{"cluster":{"cacheRegistries":{"edges":[{"node":{"id":"cache-id"}}],"pageInfo":{"hasNextPage":false}}}}}}`, wantExists: true},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				_, _ = w.Write([]byte(test.response))
+			}))
+			defer server.Close()
+
+			resource := clusterCacheRegistryResource{client: &Client{
+				genqlient:    genqlient.NewClient(server.URL, server.Client()),
+				organization: "test-org",
+			}}
+			exists, err := resource.cacheRegistryExistsInCluster(context.Background(), DefaultTimeout, clusterCacheRegistryResourceModel{
+				ID:          types.StringValue("cache-id"),
+				ClusterUUID: types.StringValue("cluster-uuid"),
+			})
+			if (err != nil) != test.wantError {
+				t.Fatalf("error = %v, wantError %t", err, test.wantError)
+			}
+			if exists != test.wantExists {
+				t.Errorf("exists = %t, want %t", exists, test.wantExists)
+			}
+		})
 	}
 }
 

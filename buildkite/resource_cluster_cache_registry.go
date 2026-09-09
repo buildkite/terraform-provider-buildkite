@@ -3,9 +3,11 @@ package buildkite
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"reflect"
+	"regexp"
 	"time"
 
 	bkplanmodifier "github.com/buildkite/terraform-provider-buildkite/internal/planmodifier"
@@ -18,6 +20,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/vektah/gqlparser/v2/gqlerror"
 )
 
 type clusterCacheRegistryResource struct {
@@ -194,6 +197,15 @@ func (r *clusterCacheRegistryResource) Read(ctx context.Context, req resource.Re
 
 	cacheRegistry, ok := result.Node.(*getCacheRegistryByNodeNodeCacheRegistry)
 	if !ok || cacheRegistry == nil {
+		exists, err := r.cacheRegistryExistsInCluster(ctx, timeout, state)
+		if err != nil {
+			resp.Diagnostics.AddError("Unable to read Cache Registry", fmt.Sprintf("Unable to confirm whether Cache Registry still exists: %s", err))
+			return
+		}
+		if exists {
+			resp.Diagnostics.AddError("Unable to read Cache Registry", "The Cache Registry still exists but is not accessible through the Relay node lookup.")
+			return
+		}
 		resp.Diagnostics.AddWarning("Cache Registry not found", "Removing Cache Registry from state...")
 		resp.State.RemoveResource(ctx)
 		return
@@ -256,7 +268,7 @@ func (r *clusterCacheRegistryResource) Delete(ctx context.Context, req resource.
 
 		log.Printf("Deleting cache registry with ID %s ...", state.ID.ValueString())
 		if _, err := deleteCacheRegistry(ctx, r.client.genqlient, *organizationID, state.ID.ValueString()); err != nil {
-			if isResourceNotFoundError(err) {
+			if isCacheRegistryNotFoundError(err) {
 				return nil
 			}
 			return retryContextError(err)
@@ -265,6 +277,40 @@ func (r *clusterCacheRegistryResource) Delete(ctx context.Context, req resource.
 	})
 	if err != nil {
 		resp.Diagnostics.AddError("Unable to delete Cache Registry", fmt.Sprintf("Unable to delete Cache Registry: %s", err))
+	}
+}
+
+func (r *clusterCacheRegistryResource) cacheRegistryExistsInCluster(ctx context.Context, timeout time.Duration, state clusterCacheRegistryResourceModel) (bool, error) {
+	var cursor *string
+	for {
+		var result *getClusterCacheRegistriesResponse
+		err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+			var err error
+			result, err = getClusterCacheRegistries(ctx, r.client.genqlient, r.client.organization, state.ClusterUUID.ValueString(), cursor)
+			return retryContextError(err)
+		})
+		if err != nil {
+			return false, err
+		}
+		if result.Organization == nil {
+			return false, fmt.Errorf("organization %q was not found or is inaccessible", r.client.organization)
+		}
+		if result.Organization.Cluster == nil {
+			return false, fmt.Errorf("cluster %q was not found or is inaccessible", state.ClusterUUID.ValueString())
+		}
+		if result.Organization.Cluster.CacheRegistries == nil {
+			return false, errors.New("cache registries are not available for this cluster")
+		}
+
+		for _, edge := range result.Organization.Cluster.CacheRegistries.Edges {
+			if edge.Node.Id == state.ID.ValueString() {
+				return true, nil
+			}
+		}
+		if !result.Organization.Cluster.CacheRegistries.PageInfo.HasNextPage {
+			return false, nil
+		}
+		cursor = &result.Organization.Cluster.CacheRegistries.PageInfo.EndCursor
 	}
 }
 
@@ -311,6 +357,21 @@ func cacheRegistryPolicyPayload(policy jsontypes.Normalized) *string {
 		return nil
 	}
 	return policy.ValueStringPointer()
+}
+
+var cacheRegistryNotFoundRegex = regexp.MustCompile(`(?i)no\s+cache\s+registry\s+found`)
+
+func isCacheRegistryNotFoundError(err error) bool {
+	var errList gqlerror.List
+	if !errors.As(err, &errList) {
+		return false
+	}
+	for _, graphqlError := range errList {
+		if cacheRegistryNotFoundRegex.MatchString(graphqlError.Message) {
+			return true
+		}
+	}
+	return false
 }
 
 func cacheRegistryPoliciesEquivalent(left, right string) bool {

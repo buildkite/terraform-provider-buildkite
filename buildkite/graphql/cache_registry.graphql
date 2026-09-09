@@ -88,3 +88,29 @@ query getCacheRegistryByNode($id: ID!) {
         }
     }
 }
+
+query getClusterCacheRegistries(
+    $orgSlug: ID!
+    $clusterUuid: ID!
+    # @genqlient(pointer: true)
+    $cursor: String
+) {
+    # @genqlient(pointer: true)
+    organization(slug: $orgSlug) {
+        # @genqlient(pointer: true)
+        cluster(id: $clusterUuid) {
+            # @genqlient(pointer: true)
+            cacheRegistries(first: 100, after: $cursor) {
+                edges {
+                    node {
+                        id
+                    }
+                }
+                pageInfo {
+                    endCursor
+                    hasNextPage
+                }
+            }
+        }
+    }
+}
