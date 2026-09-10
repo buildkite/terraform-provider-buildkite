@@ -4,8 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"reflect"
+	"strings"
 	"testing"
+	"time"
+
+	"github.com/hashicorp/terraform-plugin-go/tftypes"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
@@ -391,7 +396,7 @@ func checkTestSuiteRemoteValue(suite *getTestSuiteSuite, property, value string)
 }
 
 func loadRemoteTestSuite(id string) *getTestSuiteSuite {
-	_suite, err := getTestSuite(context.Background(), genqlientGraphql, id, 1)
+	_suite, err := getTestSuite(context.Background(), genqlientGraphql, id, 1, nil)
 	if err != nil {
 		return nil
 	}
@@ -432,4 +437,520 @@ func testTestSuiteDestroy(s *terraform.State) error {
 		}
 	}
 	return nil
+}
+
+// The attributes these tests drive Update with. The schema has a dozen more, and nullObjectWith
+// leaves those null, which keeps each case to the attributes that actually steer the code path.
+func testSuiteAttrs(name, slug, teamOwnerID string) map[string]tftypes.Value {
+	return map[string]tftypes.Value{
+		"id":             tftypes.NewValue(tftypes.String, "suite-id"),
+		"uuid":           tftypes.NewValue(tftypes.String, "suite-uuid"),
+		"default_branch": tftypes.NewValue(tftypes.String, "main"),
+		"name":           tftypes.NewValue(tftypes.String, name),
+		"slug":           tftypes.NewValue(tftypes.String, slug),
+		"team_owner_id":  tftypes.NewValue(tftypes.String, teamOwnerID),
+	}
+}
+
+const (
+	priorSuiteName    = "original-suite"
+	updatedSuiteName  = "renamed-suite"
+	previousSuiteTeam = "previous-team-id"
+	newSuiteTeam      = "new-team-id"
+	previousSuiteEdge = "previous-team-suite-id"
+	newSuiteEdge      = "new-team-suite-id"
+)
+
+// suitePatched is the REST PATCH answering with the renamed suite.
+var suitePatched = stubResponse{status: http.StatusOK, body: fmt.Sprintf(`{
+	"id": "suite-uuid", "graphql_id": "suite-id", "api_token": "token",
+	"name": %q, "slug": %q, "default_branch": "main"
+}`, updatedSuiteName, updatedSuiteName)}
+
+var (
+	suiteTeamAttached = stubResponse{status: http.StatusOK, body: fmt.Sprintf(`{"data":{"teamSuiteCreate":{
+		"teamSuite": {"id": %q, "teamSuiteUuid": "new-team-suite-uuid", "accessLevel": "MANAGE_AND_READ",
+			"team": {"id": %q}, "suite": {"id": "suite-id"}}
+	}}}`, newSuiteEdge, newSuiteTeam)}
+	suiteTeamAlreadyAttached = stubResponse{status: http.StatusOK, body: `{"errors":[{"message":"This suite has already been added to this team"}]}`}
+	suiteTeamDetached        = stubResponse{status: http.StatusOK, body: fmt.Sprintf(`{"data":{"teamSuiteDelete":{"deletedTeamSuiteID":%q,"clientMutationId":""}}}`, previousSuiteEdge)}
+	graphQLFails             = stubResponse{status: http.StatusOK, body: `{"errors":[{"message":"the mutation exploded"}]}`}
+)
+
+// suiteTeamEdge is one edge of the teams connection getTestSuite answers with.
+func suiteTeamEdge(edgeID, teamID, accessLevel string) string {
+	return fmt.Sprintf(`{"node": {"id": %q, "accessLevel": %q, "team": {"id": %q}}}`, edgeID, accessLevel, teamID)
+}
+
+// suiteWithTeams is a getTestSuite response listing edges, optionally reporting a further page.
+func suiteWithTeams(nextCursor string, edges ...string) stubResponse {
+	pageInfo := `{"hasNextPage": false, "endCursor": ""}`
+	if nextCursor != "" {
+		pageInfo = fmt.Sprintf(`{"hasNextPage": true, "endCursor": %q}`, nextCursor)
+	}
+
+	return stubResponse{status: http.StatusOK, body: fmt.Sprintf(`{"data":{"suite":{
+		"__typename": "Suite",
+		"id": "suite-id", "uuid": "suite-uuid", "name": %q, "slug": %q,
+		"defaultBranch": "main", "emoji": null,
+		"teams": {"pageInfo": %s, "edges": [%s]}
+	}}}`, updatedSuiteName, updatedSuiteName, pageInfo, strings.Join(edges, ","))}
+}
+
+// bothTeamsOwn is the suite mid-swap: the new owner attached, the previous one not yet detached.
+func bothTeamsOwn() stubResponse {
+	return suiteWithTeams("",
+		suiteTeamEdge(previousSuiteEdge, previousSuiteTeam, "MANAGE_AND_READ"),
+		suiteTeamEdge(newSuiteEdge, newSuiteTeam, "MANAGE_AND_READ"),
+	)
+}
+
+// The REST PATCH applies name, default_branch, emoji, application_name, color, oidc_policy and the
+// slug they derive from, and the team swap that runs after it can fail at any of three steps.
+// Update has to record the PATCH either way. Dropping it is not merely a re-plan: state goes on
+// naming the slug the suite answered to before the rename, and that is the slug the PATCH URL is
+// built from, so under -refresh=false the next update PATCHes a suite that is no longer there.
+func TestTestSuiteUpdatePersistsThePatchWhenATeamStepFails(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name      string
+		responses []stubResponse
+		wantError string
+	}{
+		{
+			name:      "attaching the new owner team fails",
+			responses: []stubResponse{suitePatched, graphQLFails},
+			wantError: "Could not add new owner team",
+		},
+		{
+			name:      "reading the suite's teams fails",
+			responses: []stubResponse{suitePatched, suiteTeamAttached, graphQLFails},
+			wantError: "Could not load the suite's owner teams",
+		},
+		{
+			name:      "detaching the previous owner team fails",
+			responses: []stubResponse{suitePatched, suiteTeamAttached, bothTeamsOwn(), graphQLFails},
+			wantError: "Failed to delete team owner",
+		},
+	}
+
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			server, requests := newRetryStub(t, testCase.responses...)
+			defer server.Close()
+
+			ts := &testSuiteResource{client: newRetryTestClient(t, server.URL, 0, time.Millisecond)}
+			ctx := t.Context()
+			schema := resourceSchema(ctx, t, ts)
+
+			req, resp := updateRequestFor(ctx, t, schema,
+				testSuiteAttrs(priorSuiteName, priorSuiteName, previousSuiteTeam),
+				testSuiteAttrs(updatedSuiteName, updatedSuiteName, newSuiteTeam))
+			ts.Update(ctx, req, &resp)
+
+			if got := requests.Load(); got < int64(len(testCase.responses)) {
+				t.Fatalf("Made %d requests, want %d: the PATCH has to have applied before the failure", got, len(testCase.responses))
+			}
+			if !diagnosticsContain(resp.Diagnostics, testCase.wantError) {
+				t.Fatalf("Update() diagnostics = %v, want %q", resp.Diagnostics, testCase.wantError)
+			}
+
+			var persisted testSuiteModel
+			if diags := resp.State.Get(ctx, &persisted); diags.HasError() {
+				t.Fatalf("Reading the persisted state = %v", diags)
+			}
+			if got := persisted.Name.ValueString(); got != updatedSuiteName {
+				t.Errorf("Persisted name = %q, want %q: the PATCH applied, so dropping it leaves Terraform planning the same change again", got, updatedSuiteName)
+			}
+			if got := persisted.Slug.ValueString(); got != updatedSuiteName {
+				t.Errorf("Persisted slug = %q, want %q: the next update builds its URL from this", got, updatedSuiteName)
+			}
+			// Both teams own the suite once the attach has applied, so keeping the previous one is
+			// what leaves a diff for the next plan to retry the detach from.
+			if got := persisted.TeamOwnerId.ValueString(); got != previousSuiteTeam {
+				t.Errorf("Persisted team_owner_id = %q, want %q", got, previousSuiteTeam)
+			}
+		})
+	}
+}
+
+// The mirror of the case above: nothing applied, so nothing may be recorded. The defer that
+// persists the PATCH is registered after it, and hoisting it above would start reporting a rename
+// that never happened.
+func TestTestSuiteUpdateKeepsPriorStateWhenThePatchFails(t *testing.T) {
+	t.Parallel()
+
+	server, _ := newRetryStub(t, stubResponse{status: http.StatusInternalServerError, body: `{"message":"boom"}`})
+	defer server.Close()
+
+	ts := &testSuiteResource{client: newRetryTestClient(t, server.URL, 0, time.Millisecond)}
+	ctx := t.Context()
+	schema := resourceSchema(ctx, t, ts)
+
+	req, resp := updateRequestFor(ctx, t, schema,
+		testSuiteAttrs(priorSuiteName, priorSuiteName, previousSuiteTeam),
+		testSuiteAttrs(updatedSuiteName, updatedSuiteName, newSuiteTeam))
+	ts.Update(ctx, req, &resp)
+
+	if !diagnosticsContain(resp.Diagnostics, "Failed to update test suite") {
+		t.Fatalf("Update() diagnostics = %v, want %q", resp.Diagnostics, "Failed to update test suite")
+	}
+
+	var persisted testSuiteModel
+	if diags := resp.State.Get(ctx, &persisted); diags.HasError() {
+		t.Fatalf("Reading the persisted state = %v", diags)
+	}
+	if got := persisted.Name.ValueString(); got != priorSuiteName {
+		t.Errorf("Persisted name = %q, want %q: the PATCH never applied", got, priorSuiteName)
+	}
+	if got := persisted.Slug.ValueString(); got != priorSuiteName {
+		t.Errorf("Persisted slug = %q, want %q: the PATCH never applied", got, priorSuiteName)
+	}
+	if got := persisted.TeamOwnerId.ValueString(); got != previousSuiteTeam {
+		t.Errorf("Persisted team_owner_id = %q, want %q", got, previousSuiteTeam)
+	}
+}
+
+// The common update: a rename with the owner left alone. The whole team block is skipped, so the
+// PATCH is recorded by the defer and nothing else, and no GraphQL call is made at all.
+func TestTestSuiteUpdateRecordsARenameWithNoOwnerChange(t *testing.T) {
+	t.Parallel()
+
+	server, requests, bodies := newRecordingRetryStub(t, suitePatched)
+	defer server.Close()
+
+	ts := &testSuiteResource{client: newRetryTestClient(t, server.URL, 0, time.Millisecond)}
+	ctx := t.Context()
+	schema := resourceSchema(ctx, t, ts)
+
+	req, resp := updateRequestFor(ctx, t, schema,
+		testSuiteAttrs(priorSuiteName, priorSuiteName, previousSuiteTeam),
+		testSuiteAttrs(updatedSuiteName, updatedSuiteName, previousSuiteTeam))
+	ts.Update(ctx, req, &resp)
+
+	recorded := bodies()
+	if resp.Diagnostics.HasError() {
+		t.Fatalf("Update() diagnostics = %v, want the rename to have applied", resp.Diagnostics)
+	}
+	if got := requests.Load(); got != 1 {
+		t.Fatalf("Made %d requests, want 1: only the PATCH; bodies were %v", got, recorded)
+	}
+
+	var persisted testSuiteModel
+	if diags := resp.State.Get(ctx, &persisted); diags.HasError() {
+		t.Fatalf("Reading the persisted state = %v", diags)
+	}
+	if got := persisted.Slug.ValueString(); got != updatedSuiteName {
+		t.Errorf("Persisted slug = %q, want %q", got, updatedSuiteName)
+	}
+	if got := persisted.TeamOwnerId.ValueString(); got != previousSuiteTeam {
+		t.Errorf("Persisted team_owner_id = %q, want %q", got, previousSuiteTeam)
+	}
+}
+
+// The ordinary owner swap: attach the new owner, read the suite's teams, detach the previous one.
+// Sending the wrong edge id to teamSuiteDelete detaches the wrong team, or nothing at all, and the
+// swap looks successful either way.
+func TestTestSuiteUpdateSwapsTheOwnerTeam(t *testing.T) {
+	t.Parallel()
+
+	server, requests, bodies := newRecordingRetryStub(t,
+		suitePatched, suiteTeamAttached, bothTeamsOwn(), suiteTeamDetached,
+	)
+	defer server.Close()
+
+	ts := &testSuiteResource{client: newRetryTestClient(t, server.URL, 0, time.Millisecond)}
+	ctx := t.Context()
+	schema := resourceSchema(ctx, t, ts)
+
+	req, resp := updateRequestFor(ctx, t, schema,
+		testSuiteAttrs(priorSuiteName, priorSuiteName, previousSuiteTeam),
+		testSuiteAttrs(updatedSuiteName, updatedSuiteName, newSuiteTeam))
+	ts.Update(ctx, req, &resp)
+
+	recorded := bodies()
+	if resp.Diagnostics.HasError() {
+		t.Fatalf("Update() diagnostics = %v, want the swap to have completed", resp.Diagnostics)
+	}
+	if got := requests.Load(); got != 4 {
+		t.Fatalf("Made %d requests, want 4: the PATCH, the attach, the teams read and the detach; bodies were %v", got, recorded)
+	}
+
+	var deleted []string
+	for _, body := range recorded {
+		if strings.Contains(body, "teamSuiteDelete") {
+			deleted = append(deleted, body)
+		}
+	}
+	if len(deleted) != 1 {
+		t.Fatalf("Made %d teamSuiteDelete requests, want 1; bodies were %v", len(deleted), recorded)
+	}
+	if !strings.Contains(deleted[0], previousSuiteEdge) {
+		t.Errorf("teamSuiteDelete = %s\nwant the previous owner's edge %q", deleted[0], previousSuiteEdge)
+	}
+	if strings.Contains(deleted[0], newSuiteEdge) {
+		t.Errorf("teamSuiteDelete = %s\nwant the new owner's edge %q left attached", deleted[0], newSuiteEdge)
+	}
+
+	var persisted testSuiteModel
+	if diags := resp.State.Get(ctx, &persisted); diags.HasError() {
+		t.Fatalf("Reading the persisted state = %v", diags)
+	}
+	if got := persisted.TeamOwnerId.ValueString(); got != newSuiteTeam {
+		t.Errorf("Persisted team_owner_id = %q, want %q", got, newSuiteTeam)
+	}
+	if got := persisted.Slug.ValueString(); got != updatedSuiteName {
+		t.Errorf("Persisted slug = %q, want %q: the next PATCH addresses the suite by it", got, updatedSuiteName)
+	}
+}
+
+// The suite's teams are paged, and the previous owner is only on the second page. Stopping at the
+// first would detach nothing, record the swap as done, and leave the previous team owning the suite
+// with no diff left to correct it.
+func TestTestSuiteUpdateFindsAPreviousOwnerPastTheFirstPage(t *testing.T) {
+	t.Parallel()
+
+	const cursor = "page-1-end"
+
+	server, _, bodies := newRecordingRetryStub(t,
+		suitePatched,
+		suiteTeamAttached,
+		suiteWithTeams(cursor, suiteTeamEdge(newSuiteEdge, newSuiteTeam, "MANAGE_AND_READ")),
+		suiteWithTeams("", suiteTeamEdge(previousSuiteEdge, previousSuiteTeam, "MANAGE_AND_READ")),
+		suiteTeamDetached,
+	)
+	defer server.Close()
+
+	ts := &testSuiteResource{client: newRetryTestClient(t, server.URL, 0, time.Millisecond)}
+	ctx := t.Context()
+	schema := resourceSchema(ctx, t, ts)
+
+	req, resp := updateRequestFor(ctx, t, schema,
+		testSuiteAttrs(priorSuiteName, priorSuiteName, previousSuiteTeam),
+		testSuiteAttrs(updatedSuiteName, updatedSuiteName, newSuiteTeam))
+	ts.Update(ctx, req, &resp)
+
+	recorded := bodies()
+	if resp.Diagnostics.HasError() {
+		t.Fatalf("Update() diagnostics = %v, want the swap to have completed", resp.Diagnostics)
+	}
+
+	var paged, deleted bool
+	for _, body := range recorded {
+		if strings.Contains(body, "getTestSuite") && strings.Contains(body, cursor) {
+			paged = true
+		}
+		if strings.Contains(body, "teamSuiteDelete") && strings.Contains(body, previousSuiteEdge) {
+			deleted = true
+		}
+	}
+	if !paged {
+		t.Errorf("No getTestSuite carried the cursor %q, so the second page was never read; bodies were %v", cursor, recorded)
+	}
+	if !deleted {
+		t.Errorf("No teamSuiteDelete for the previous owner edge %q; bodies were %v", previousSuiteEdge, recorded)
+	}
+
+	var persisted testSuiteModel
+	if diags := resp.State.Get(ctx, &persisted); diags.HasError() {
+		t.Fatalf("Reading the persisted state = %v", diags)
+	}
+	if got := persisted.TeamOwnerId.ValueString(); got != newSuiteTeam {
+		t.Errorf("Persisted team_owner_id = %q, want %q", got, newSuiteTeam)
+	}
+}
+
+// When the delete fails, Update keeps the previous owner in state so the next plan still shows a
+// diff. That next apply re-attaches the new owner, which already owns the suite from the run
+// before, so the attach errors and the delete this apply exists to retry has to still be reached.
+func TestTestSuiteUpdateRetriesTheDeleteWhenTheNewOwnerAlreadyOwnsTheSuite(t *testing.T) {
+	t.Parallel()
+
+	server, _, bodies := newRecordingRetryStub(t,
+		suitePatched, suiteTeamAlreadyAttached, bothTeamsOwn(), suiteTeamDetached,
+	)
+	defer server.Close()
+
+	ts := &testSuiteResource{client: newRetryTestClient(t, server.URL, 0, time.Millisecond)}
+	ctx := t.Context()
+	schema := resourceSchema(ctx, t, ts)
+
+	req, resp := updateRequestFor(ctx, t, schema,
+		testSuiteAttrs(priorSuiteName, priorSuiteName, previousSuiteTeam),
+		testSuiteAttrs(updatedSuiteName, updatedSuiteName, newSuiteTeam))
+	ts.Update(ctx, req, &resp)
+
+	recorded := bodies()
+	if diagnosticsContain(resp.Diagnostics, "Could not add new owner team") {
+		t.Fatalf("Update() failed on an attach that had already applied, so the delete it exists to retry was never reached: %v", resp.Diagnostics)
+	}
+	if resp.Diagnostics.HasError() {
+		t.Fatalf("Update() diagnostics = %v, want the swap to have completed", resp.Diagnostics)
+	}
+
+	var deleted bool
+	for _, body := range recorded {
+		if strings.Contains(body, "teamSuiteDelete") && strings.Contains(body, previousSuiteEdge) {
+			deleted = true
+		}
+	}
+	if !deleted {
+		t.Errorf("No teamSuiteDelete for the previous owner edge %q; bodies were %v", previousSuiteEdge, recorded)
+	}
+
+	var persisted testSuiteModel
+	if diags := resp.State.Get(ctx, &persisted); diags.HasError() {
+		t.Fatalf("Reading the persisted state = %v", diags)
+	}
+	if got := persisted.TeamOwnerId.ValueString(); got != newSuiteTeam {
+		t.Errorf("Persisted team_owner_id = %q, want %q: the delete succeeded, so the swap is complete", got, newSuiteTeam)
+	}
+}
+
+// Tolerating the already-added attach means no mutation ran to prove the new owner can manage the
+// suite, and the message it was tolerated on is only matched by regex. So the suite is asked before
+// the previous owner is detached. Without that check the suite ends up with an owner that cannot
+// manage it, or with none at all, and Read surfaces neither: it matches the team named in state and
+// never looks at the access level.
+func TestTestSuiteUpdateChecksTheToleratedAttachBeforeDetaching(t *testing.T) {
+	t.Parallel()
+
+	promoted := stubResponse{status: http.StatusOK, body: fmt.Sprintf(`{"data":{"teamSuiteUpdate":{"teamSuite":{
+		"id": %q, "uuid": "new-team-suite-uuid", "accessLevel": "MANAGE_AND_READ"}}}}`, newSuiteEdge)}
+
+	tests := []struct {
+		name          string
+		responses     []stubResponse
+		wantError     string
+		wantPromotion bool
+		wantDetach    bool
+		// The owner the next plan has to work from.
+		wantOwner string
+	}{
+		{
+			// The new owner is linked, but only at READ_ONLY, which is not ownership. Recording it
+			// as owner without raising it leaves the suite with nobody who can manage it.
+			name: "the new owner team is linked below manage access",
+			responses: []stubResponse{suitePatched, suiteTeamAlreadyAttached, suiteWithTeams("",
+				suiteTeamEdge(previousSuiteEdge, previousSuiteTeam, "MANAGE_AND_READ"),
+				suiteTeamEdge(newSuiteEdge, newSuiteTeam, "READ_ONLY"),
+			), promoted, suiteTeamDetached},
+			wantPromotion: true,
+			wantDetach:    true,
+			wantOwner:     newSuiteTeam,
+		},
+		{
+			// The message matched but the new owner is not linked at all, so it was never about a
+			// previous run's attach. Detaching here strips the suite's only owner, and Read then
+			// fails outright with "Could not find owning team".
+			name: "the new owner team does not own the suite",
+			responses: []stubResponse{suitePatched, suiteTeamAlreadyAttached, suiteWithTeams("",
+				suiteTeamEdge(previousSuiteEdge, previousSuiteTeam, "MANAGE_AND_READ"),
+			)},
+			wantError:  "Could not add new owner team",
+			wantDetach: false,
+			wantOwner:  previousSuiteTeam,
+		},
+	}
+
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			server, _, bodies := newRecordingRetryStub(t, testCase.responses...)
+			defer server.Close()
+
+			ts := &testSuiteResource{client: newRetryTestClient(t, server.URL, 0, time.Millisecond)}
+			ctx := t.Context()
+			schema := resourceSchema(ctx, t, ts)
+
+			req, resp := updateRequestFor(ctx, t, schema,
+				testSuiteAttrs(priorSuiteName, priorSuiteName, previousSuiteTeam),
+				testSuiteAttrs(updatedSuiteName, updatedSuiteName, newSuiteTeam))
+			ts.Update(ctx, req, &resp)
+
+			recorded := bodies()
+			if testCase.wantError == "" {
+				if resp.Diagnostics.HasError() {
+					t.Fatalf("Update() diagnostics = %v, want the swap to have completed", resp.Diagnostics)
+				}
+			} else if !diagnosticsContain(resp.Diagnostics, testCase.wantError) {
+				t.Fatalf("Update() diagnostics = %v, want %q; bodies were %v", resp.Diagnostics, testCase.wantError, recorded)
+			}
+
+			var promotedTeam, detached bool
+			for _, body := range recorded {
+				if strings.Contains(body, "teamSuiteUpdate") && strings.Contains(body, newSuiteEdge) && strings.Contains(body, "MANAGE_AND_READ") {
+					promotedTeam = true
+				}
+				if strings.Contains(body, "teamSuiteDelete") {
+					detached = true
+				}
+			}
+			if promotedTeam != testCase.wantPromotion {
+				t.Errorf("Promoted the new owner to MANAGE_AND_READ = %v, want %v; bodies were %v", promotedTeam, testCase.wantPromotion, recorded)
+			}
+			if detached != testCase.wantDetach {
+				t.Errorf("Detached the previous owner = %v, want %v; bodies were %v", detached, testCase.wantDetach, recorded)
+			}
+
+			var persisted testSuiteModel
+			if diags := resp.State.Get(ctx, &persisted); diags.HasError() {
+				t.Fatalf("Reading the persisted state = %v", diags)
+			}
+			if got := persisted.TeamOwnerId.ValueString(); got != testCase.wantOwner {
+				t.Errorf("Persisted team_owner_id = %q, want %q", got, testCase.wantOwner)
+			}
+			if got := persisted.Slug.ValueString(); got != updatedSuiteName {
+				t.Errorf("Persisted slug = %q, want %q: the PATCH applied either way", got, updatedSuiteName)
+			}
+		})
+	}
+}
+
+// The suite is deleted out of band between the PATCH and the read-back, so node(id:) answers with
+// something that is not a Suite. The swap cannot proceed, but the PATCH still has to be recorded
+// and the previous owner kept, so the next plan has somewhere to go.
+func TestTestSuiteUpdateReportsASuiteThatDisappearsDuringTheSwap(t *testing.T) {
+	t.Parallel()
+
+	server, _, bodies := newRecordingRetryStub(t,
+		suitePatched,
+		suiteTeamAttached,
+		stubResponse{status: http.StatusOK, body: `{"data":{"suite":null}}`},
+	)
+	defer server.Close()
+
+	ts := &testSuiteResource{client: newRetryTestClient(t, server.URL, 0, time.Millisecond)}
+	ctx := t.Context()
+	schema := resourceSchema(ctx, t, ts)
+
+	req, resp := updateRequestFor(ctx, t, schema,
+		testSuiteAttrs(priorSuiteName, priorSuiteName, previousSuiteTeam),
+		testSuiteAttrs(updatedSuiteName, updatedSuiteName, newSuiteTeam))
+	ts.Update(ctx, req, &resp)
+
+	recorded := bodies()
+	if !diagnosticsContain(resp.Diagnostics, "Could not load the suite's owner teams") {
+		t.Fatalf("Update() diagnostics = %v, want %q; bodies were %v", resp.Diagnostics, "Could not load the suite's owner teams", recorded)
+	}
+	for _, body := range recorded {
+		if strings.Contains(body, "teamSuiteDelete") {
+			t.Errorf("Detached a team without knowing the suite's owners: %s", body)
+		}
+	}
+
+	var persisted testSuiteModel
+	if diags := resp.State.Get(ctx, &persisted); diags.HasError() {
+		t.Fatalf("Reading the persisted state = %v", diags)
+	}
+	if got := persisted.Slug.ValueString(); got != updatedSuiteName {
+		t.Errorf("Persisted slug = %q, want %q: the PATCH applied", got, updatedSuiteName)
+	}
+	if got := persisted.TeamOwnerId.ValueString(); got != previousSuiteTeam {
+		t.Errorf("Persisted team_owner_id = %q, want %q", got, previousSuiteTeam)
+	}
 }

@@ -12,19 +12,6 @@ fragment TeamSuiteFields on TeamSuite {
 
 mutation createTestSuiteTeam($teamId: ID!, $suiteId: ID!, $accessLevel: SuiteAccessLevels!) {
     teamSuiteCreate(input: {teamID: $teamId, suiteID: $suiteId, accessLevel: $accessLevel}) {
-        suite {
-            teams(order: NAME, first: 50) {
-                edges {
-                    node {
-                        id
-                        uuid
-                        team {
-                            id
-                        }
-                    }
-                }
-            }
-        }
         teamSuite {
             ...TeamSuiteFields
         }

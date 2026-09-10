@@ -4,9 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -195,8 +197,31 @@ func (f roundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) {
 func newRetryStub(t *testing.T, responses ...stubResponse) (*httptest.Server, *atomic.Int64) {
 	t.Helper()
 
-	var requests atomic.Int64
+	server, requests, _ := newRecordingRetryStub(t, responses...)
+
+	return server, requests
+}
+
+// newRecordingRetryStub is newRetryStub plus the request bodies it received, for tests that need to
+// assert what the provider sent rather than only how many times it sent something.
+func newRecordingRetryStub(t *testing.T, responses ...stubResponse) (*httptest.Server, *atomic.Int64, func() []string) {
+	t.Helper()
+
+	var (
+		requests atomic.Int64
+		mu       sync.Mutex
+		bodies   []string
+	)
+
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, err := io.ReadAll(r.Body)
+		if err != nil {
+			t.Errorf("failed to read request body: %v", err)
+		}
+		mu.Lock()
+		bodies = append(bodies, r.URL.Path+" "+string(body))
+		mu.Unlock()
+
 		response := responses[len(responses)-1]
 		if n := int(requests.Add(1)); n <= len(responses) {
 			response = responses[n-1]
@@ -208,7 +233,12 @@ func newRetryStub(t *testing.T, responses ...stubResponse) (*httptest.Server, *a
 		}
 	}))
 
-	return server, &requests
+	return server, &requests, func() []string {
+		mu.Lock()
+		defer mu.Unlock()
+
+		return slices.Clone(bodies)
+	}
 }
 
 // newRetryTestClient goes through NewClient so the tests exercise the real retry configuration,
