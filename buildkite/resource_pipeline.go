@@ -1115,7 +1115,8 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 						Optional:            true,
 						MarkdownDescription: "The match mode for the issue comment command word. Valid values are \"exact\" and \"contains\". Defaults to \"exact\".",
 						PlanModifiers: []planmodifier.String{
-							stringplanmodifier.UseNonNullStateForUnknown(),
+							// state written before "" was read as null must not be planned as ""
+							custom_modifier.UseNonEmptyStateForUnknown(),
 						},
 						Validators: []validator.String{
 							stringvalidator.OneOf("exact", "contains"),
@@ -1142,7 +1143,7 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 						Optional:            true,
 						MarkdownDescription: "The match mode for the review comment command word. Valid values are \"exact\" and \"contains\".",
 						PlanModifiers: []planmodifier.String{
-							stringplanmodifier.UseNonNullStateForUnknown(),
+							custom_modifier.UseNonEmptyStateForUnknown(),
 						},
 						Validators: []validator.String{
 							stringvalidator.OneOf("exact", "contains"),
@@ -1821,10 +1822,10 @@ func updatePipelineResourceExtraInfo(state *pipelineResourceModel, pipeline *Pip
 		UseMergeGroupBaseCommitForGitDiffBase:   types.BoolPointerValue(s.UseMergeGroupBaseCommitForGitDiffBase),
 		BuildIssueCommentCreated:                types.BoolPointerValue(s.BuildIssueCommentCreated),
 		IssueCommentCommandWord:                 types.StringPointerValue(s.IssueCommentCommandWord),
-		IssueCommentMatchMode:                   types.StringPointerValue(s.IssueCommentMatchMode),
+		IssueCommentMatchMode:                   matchModeFromREST(s.IssueCommentMatchMode),
 		BuildPullRequestReviewCommentCreated:    types.BoolPointerValue(s.BuildPullRequestReviewCommentCreated),
 		ReviewCommentCommandWord:                types.StringPointerValue(s.ReviewCommentCommandWord),
-		ReviewCommentMatchMode:                  types.StringPointerValue(s.ReviewCommentMatchMode),
+		ReviewCommentMatchMode:                  matchModeFromREST(s.ReviewCommentMatchMode),
 		BuildPullRequestDequeued:                types.BoolPointerValue(s.BuildPullRequestDequeued),
 		BuildPullRequestReopened:                types.BoolPointerValue(s.BuildPullRequestReopened),
 		BuildCheckRunCompleted:                  types.BoolPointerValue(s.BuildCheckRunCompleted),
@@ -1839,6 +1840,14 @@ func updatePipelineResourceExtraInfo(state *pipelineResourceModel, pipeline *Pip
 		BuildReleasePublished:                   types.BoolPointerValue(s.BuildReleasePublished),
 		BuildReleaseReleased:                    types.BoolPointerValue(s.BuildReleaseReleased),
 	}
+}
+
+// matchModeFromREST reads an unset match mode, which the REST API returns as "", as null so it agrees with the GraphQL read
+func matchModeFromREST(m *string) types.String {
+	if m == nil || *m == "" {
+		return types.StringNull()
+	}
+	return types.StringValue(*m)
 }
 
 // matchModeToString converts a GraphQL CommandWordMatchMode enum (EXACT/CONTAINS) into the
