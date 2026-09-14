@@ -1,4 +1,9 @@
-query getTestSuite($id: ID!, $teamCount: Int) {
+query getTestSuite(
+    $id: ID!,
+    $teamCount: Int,
+    # @genqlient(pointer: true)
+    $teamCursor: String,
+) {
     suite: node(id: $id) {
         ... on Suite {
             id
@@ -8,7 +13,11 @@ query getTestSuite($id: ID!, $teamCount: Int) {
             emoji
             name
             slug
-            teams(first: $teamCount, order: NAME) {
+            teams(first: $teamCount, after: $teamCursor, order: NAME) {
+                pageInfo {
+                    hasNextPage
+                    endCursor
+                }
                 edges {
                     node {
                         id
