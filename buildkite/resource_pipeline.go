@@ -308,14 +308,24 @@ func (p *pipelineResource) Create(ctx context.Context, req resource.CreateReques
 
 	useSlugValue := response.PipelineCreate.Pipeline.Slug
 	resp.Diagnostics.Append(resp.Private.SetKey(ctx, "slugSource", []byte(`{"source": "api"}`))...)
-	if len(plan.Slug.ValueString()) > 0 {
-		useSlugValue = plan.Slug.ValueString()
 
-		pipelineExtraInfo, err := updatePipelineSlug(ctx, response.PipelineCreate.Pipeline.Slug, useSlugValue, p.client, timeouts)
+	// The pipeline exists from here on, so every path out has to record it. Returning without
+	// setting state would leave it running in Buildkite with nothing in state pointing at it, and
+	// the next apply would try to create it again. Terraform taints an instance whose Create
+	// returned both state and an error, so the pipeline is replaced rather than patched up on the
+	// next apply, but that is recoverable with terraform untaint and an orphan is not.
+	defer func() {
+		state.Slug = types.StringValue(useSlugValue)
+		resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+	}()
+
+	if len(plan.Slug.ValueString()) > 0 {
+		pipelineExtraInfo, err := updatePipelineSlug(ctx, response.PipelineCreate.Pipeline.Slug, plan.Slug.ValueString(), p.client, timeouts)
 		if err != nil {
 			resp.Diagnostics.AddError("Unable to set pipeline slug from REST", err.Error())
 			return
 		}
+		useSlugValue = plan.Slug.ValueString()
 
 		updatePipelineResourceExtraInfo(&state, &pipelineExtraInfo)
 		resp.Diagnostics.Append(resp.Private.SetKey(ctx, "slugSource", []byte(`{"source": "user"}`))...)
@@ -366,9 +376,6 @@ func (p *pipelineResource) Create(ctx context.Context, req resource.CreateReques
 		}
 		state.Archived = types.BoolValue(true)
 	}
-
-	state.Slug = types.StringValue(useSlugValue)
-	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
 func (p *pipelineResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
@@ -1380,6 +1387,20 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 		return
 	}
 
+	// The unarchive below is the first mutation this method applies, so every path out from here
+	// has to record what landed: returning without setting state would drop it, along with
+	// everything the steps after it changed, and leave Terraform planning the same change again.
+	// Deferred rather than called at each error path so a new early return cannot forget it.
+	// state.Archived and useSlugValue are corrected by the step that owns them, and read here at
+	// call time, so a step that never ran cannot persist the value the plan asked for. Getting that
+	// wrong is invisible under -refresh=false, where the next plan sees no diff and the change is
+	// never made at all.
+	useSlugValue := state.Slug.ValueString()
+	defer func() {
+		state.Slug = types.StringValue(useSlugValue)
+		resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+	}()
+
 	// Unarchive before updating: the API rejects updates to archived pipelines.
 	if state.Archived.ValueBool() && !plan.Archived.ValueBool() {
 		err := retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
@@ -1393,6 +1414,7 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 			)
 			return
 		}
+		state.Archived = types.BoolValue(false)
 	}
 
 	var response *updatePipelineResponse
@@ -1410,35 +1432,49 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 		return
 	}
 
-	// Archive last (see below): the REST API rejects updates to archived pipelines, so
-	// the slug and provider settings REST calls must complete before archiving. Capture
-	// the decision here because state.Archived is synced to plan further down.
-	needsArchive := !state.Archived.ValueBool() && plan.Archived.ValueBool()
+	// archived is null in state written before the attribute existed, because it was added without
+	// a schema version bump, and the plan always has it known from the attribute's static default.
+	// The response is the first thing in this method to have read the remote, so it settles the
+	// null. Settling it to that default earlier would record the pipeline as unarchived on the
+	// strength of nothing: one archived outside Terraform fails the update above, and the false
+	// would still persist and leave the next plan no drift to unarchive it from. Staying null on
+	// the paths that return before here costs nothing, because Terraform skips the planned against
+	// applied consistency check on an apply that also returns an error.
+	if state.Archived.IsNull() {
+		state.Archived = types.BoolValue(response.PipelineUpdate.Pipeline.GetArchived())
+	}
 
-	useSlugValue := response.PipelineUpdate.Pipeline.Slug
+	// Archive last (see below): the REST API rejects updates to archived pipelines, so
+	// the slug and provider settings REST calls must complete before archiving.
+	archived := state.Archived
+	needsArchive := !archived.ValueBool() && plan.Archived.ValueBool()
+
+	useSlugValue = response.PipelineUpdate.Pipeline.Slug
 	resp.Diagnostics.Append(resp.Private.SetKey(ctx, "slugSource", []byte(`{"source": "api"}`))...)
+
+	setPipelineModel(&state, &response.PipelineUpdate.Pipeline)
+	// The updatePipeline response predates the archive and unarchive mutations either side of it,
+	// so its archived field reflects the old state. Carry across what the unarchive above already
+	// established; the archive below sets it when it applies.
+	state.Archived = archived
 
 	var configSlug types.String
 	resp.Diagnostics.Append(req.Config.GetAttribute(ctx, path.Root("slug"), &configSlug)...)
 	if !configSlug.IsNull() && len(configSlug.ValueString()) > 0 {
-		useSlugValue = configSlug.ValueString()
-		_, err := updatePipelineSlug(ctx, response.PipelineUpdate.Pipeline.Slug, useSlugValue, p.client, timeouts)
-		if err != nil {
+		if _, err := updatePipelineSlug(ctx, response.PipelineUpdate.Pipeline.Slug, configSlug.ValueString(), p.client, timeouts); err != nil {
 			resp.Diagnostics.AddError("Unable to set pipeline slug from REST", err.Error())
 			return
 		}
 
+		useSlugValue = configSlug.ValueString()
 		resp.Diagnostics.Append(resp.Private.SetKey(ctx, "slugSource", []byte(`{"source": "user"}`))...)
 	}
 
-	setPipelineModel(&state, &response.PipelineUpdate.Pipeline)
-	// The updatePipeline response predates any archive/unarchive mutation above, so its archived
-	// field reflects the old state. Sync to plan to avoid a provider inconsistency error.
-	state.Archived = plan.Archived
-
 	if plan.DefaultTeamId.IsNull() && !state.DefaultTeamId.IsNull() {
 		// if the plan is empty but was previously set, just remove the team
-		err = p.findAndRemoveTeam(ctx, state.DefaultTeamId.ValueString(), state.Slug.ValueString(), "")
+		// useSlugValue, not state.Slug: the latter comes from the pipelineUpdate response and so
+		// predates the REST rename above, and findAndRemoveTeam looks the pipeline up by slug.
+		err = p.findAndRemoveTeam(ctx, state.DefaultTeamId.ValueString(), useSlugValue, "")
 		if err != nil {
 			resp.Diagnostics.AddError("Could not remove default team", err.Error())
 			return
@@ -1447,10 +1483,19 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 		state.DefaultTeamId = types.StringNull()
 	} else if plan.DefaultTeamId.ValueString() != state.DefaultTeamId.ValueString() {
 		// If the planned default_team_id differs from the state, add the new one and remove the old one
-		var r *createTeamPipelineResponse
+		alreadyAttached := false
 		err := retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
-			var err error
-			r, err = createTeamPipeline(ctx, p.client.genqlient, plan.DefaultTeamId.ValueString(), state.Id.ValueString(), PipelineAccessLevelsManageBuildAndRead)
+			alreadyAttached = false
+			_, err := createTeamPipeline(ctx, p.client.genqlient, plan.DefaultTeamId.ValueString(), state.Id.ValueString(), PipelineAccessLevelsManageBuildAndRead)
+			// A team that is already attached is what re-running this method looks like: the previous
+			// apply attached it and then failed to detach the old one, which is the state this method
+			// records so the next plan retries. Failing here instead would never reach that detach,
+			// leaving both teams attached with no way forward, since Read keeps the recorded team
+			// while it is still attached.
+			if err != nil && isAlreadyExistsError(err) {
+				alreadyAttached = true
+				return nil
+			}
 			return retryContextError(err)
 		})
 		if err != nil {
@@ -1458,16 +1503,34 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 			return
 		}
 
-		// update default team in state
-		previousTeamID := state.DefaultTeamId.ValueString()
-		state.DefaultTeamId = types.StringValue(r.TeamPipelineCreate.TeamPipelineEdge.Node.Team.Id)
+		// The team can also have been attached outside this resource, through buildkite_pipeline_team
+		// or the web UI, at whatever access level that gave it. teamPipelineCreate leaves an existing
+		// edge alone, so the access level has to be raised separately: without it the detach below
+		// hands the pipeline to a default team that lacks the full access the attribute stands for,
+		// and Read only warns about that, so the apply reports success.
+		if alreadyAttached {
+			err = p.findAndSetTeamAccessLevel(ctx, plan.DefaultTeamId.ValueString(), useSlugValue, PipelineAccessLevelsManageBuildAndRead, "")
+			if err != nil {
+				resp.Diagnostics.AddError("Could not attach new default team to pipeline", err.Error())
+				return
+			}
+		}
 
 		// remove the old team
-		err = p.findAndRemoveTeam(ctx, previousTeamID, state.Slug.ValueString(), "")
+		previousTeamID := state.DefaultTeamId.ValueString()
+		err = p.findAndRemoveTeam(ctx, previousTeamID, useSlugValue, "")
 		if err != nil {
 			resp.Diagnostics.AddError("Could not remove previous default team", err.Error())
 			return
 		}
+
+		// Only once the old team is detached, because both are attached until then. Recording the
+		// new one first leaves the next plan with no diff to retry the detach from, and Read only
+		// checks that the recorded team is still attached, so the old team would keep its access
+		// with nothing left to surface it.
+		// The plan rather than the mutation response, which only echoes the team it was given and
+		// carries nothing to read when the attach had already applied.
+		state.DefaultTeamId = plan.DefaultTeamId
 	}
 
 	if plan.ProviderSettings != nil {
@@ -1505,10 +1568,8 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 			)
 			return
 		}
+		state.Archived = types.BoolValue(true)
 	}
-
-	state.Slug = types.StringValue(useSlugValue)
-	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
 // findAndRemoveTeam will try to find a team and remove its access from the pipeline
@@ -1536,6 +1597,35 @@ func (p *pipelineResource) findAndRemoveTeam(ctx context.Context, teamID string,
 		return p.findAndRemoveTeam(ctx, teamID, pipelineSlug, teams.Pipeline.Teams.PageInfo.EndCursor)
 	}
 	return nil
+}
+
+// findAndSetTeamAccessLevel raises an already attached team to accessLevel, which teamPipelineCreate
+// does not do for an edge that already exists. Like the removal above it has to page through the
+// connection, because the update takes the pipeline team connection ID rather than the team's.
+// A team that turns out not to be attached is an error: the caller is about to record it as the
+// default team, so reporting success would put a team in state that the pipeline does not have.
+func (p *pipelineResource) findAndSetTeamAccessLevel(ctx context.Context, teamID string, pipelineSlug string, accessLevel PipelineAccessLevels, cursor string) error {
+	slug := fmt.Sprintf("%s/%s", p.client.organization, pipelineSlug)
+	teams, err := getPipelineTeams(ctx, p.client.genqlient, slug, cursor)
+	if err != nil {
+		return err
+	}
+
+	for _, team := range teams.Pipeline.Teams.Edges {
+		if team.Node.Team.Id != teamID {
+			continue
+		}
+		if team.Node.AccessLevel == accessLevel {
+			return nil
+		}
+		_, err := updateTeamPipeline(ctx, p.client.genqlient, team.Node.Id, accessLevel)
+		return err
+	}
+
+	if teams.Pipeline.Teams.PageInfo.HasNextPage {
+		return p.findAndSetTeamAccessLevel(ctx, teamID, pipelineSlug, accessLevel, teams.Pipeline.Teams.PageInfo.EndCursor)
+	}
+	return fmt.Errorf("team with ID %s is not attached to the pipeline", teamID)
 }
 
 func (p *pipelineResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
