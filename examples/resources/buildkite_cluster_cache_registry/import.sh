@@ -1,0 +1,1 @@
+terraform import buildkite_cluster_cache_registry.primary Q2FjaGVSZWdpc3RyeS0tLTExMTExMTExLTExMTEtMTExMS0xMTExLTExMTExMTExMTExMQ==
