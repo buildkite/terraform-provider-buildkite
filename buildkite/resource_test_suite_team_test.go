@@ -3,6 +3,7 @@ package buildkite
 import (
 	"context"
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
@@ -141,6 +142,40 @@ func TestAccBuildkiteTestSuiteTeamResource(t *testing.T) {
 				{
 					Config: config(ownerTeamName, newTeamName, "MANAGE_AND_READ"),
 					Check:  checkManageAndRead,
+				},
+			},
+		})
+	})
+
+	t.Run("moves a test suite team to another team by replacing it", func(t *testing.T) {
+		ownerTeamName := acctest.RandString(12)
+		newTeamName := acctest.RandString(12)
+		thirdTeam := fmt.Sprintf(`
+		resource "buildkite_team" "thirdteam" {
+			name = "Test Suite Third Team %s"
+			default_team = false
+			privacy = "VISIBLE"
+			default_member_role = "MAINTAINER"
+		}
+		`, newTeamName)
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			CheckDestroy:             testAccCheckTestSuiteTeamDestroy,
+			Steps: []resource.TestStep{
+				{
+					Config: config(ownerTeamName, newTeamName, "READ_ONLY") + thirdTeam,
+				},
+				{
+					// the access cannot be moved with an update, so changing the team replaces it
+					Config: strings.Replace(config(ownerTeamName, newTeamName, "READ_ONLY"), "team_id = buildkite_team.newteam.id", "team_id = buildkite_team.thirdteam.id", 1) + thirdTeam,
+					ConfigPlanChecks: resource.ConfigPlanChecks{
+						PreApply: []plancheck.PlanCheck{
+							plancheck.ExpectResourceAction("buildkite_test_suite_team.teamsuite", plancheck.ResourceActionReplace),
+						},
+					},
+					Check: resource.TestCheckResourceAttrPair("buildkite_test_suite_team.teamsuite", "team_id", "buildkite_team.thirdteam", "id"),
 				},
 			},
 		})

@@ -65,10 +65,16 @@ func (tst *testSuiteTeamResource) Schema(ctx context.Context, req resource.Schem
 			"test_suite_id": schema.StringAttribute{
 				Required:            true,
 				MarkdownDescription: "The GraphQL ID of the test suite.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"team_id": schema.StringAttribute{
 				Required:            true,
 				MarkdownDescription: "The GraphQL ID of the team.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"access_level": schema.StringAttribute{
 				Required:            true,
