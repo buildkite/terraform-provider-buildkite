@@ -3,6 +3,7 @@ package buildkite
 import (
 	"context"
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
@@ -122,6 +123,44 @@ func TestAccBuildkiteTeamMember(t *testing.T) {
 				{
 					Config: basic(randName, "MAINTAINER"),
 					Check:  checkMaintainer,
+				},
+			},
+		})
+	})
+
+	t.Run("moves a team member to another team by replacing it", func(t *testing.T) {
+		var tm teamMemberResourceModel
+		randName := acctest.RandString(10)
+		otherTeam := fmt.Sprintf(`
+		resource "buildkite_team" "other" {
+			name = "acceptance testing other %s"
+			privacy = "VISIBLE"
+			default_team = false
+			default_member_role = "MEMBER"
+		}
+		`, randName)
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			CheckDestroy:             testCheckTeamMemberResourceRemoved,
+			Steps: []resource.TestStep{
+				{
+					Config: basic(randName, "MEMBER") + otherTeam,
+					Check:  testAccCheckTeamMemberExists("buildkite_team_member.test", &tm),
+				},
+				{
+					// the membership cannot be moved with an update, so changing the team replaces it
+					Config: strings.Replace(basic(randName, "MEMBER"), "team_id = buildkite_team.test.id", "team_id = buildkite_team.other.id", 1) + otherTeam,
+					ConfigPlanChecks: resource.ConfigPlanChecks{
+						PreApply: []plancheck.PlanCheck{
+							plancheck.ExpectResourceAction("buildkite_team_member.test", plancheck.ResourceActionReplace),
+						},
+					},
+					Check: resource.ComposeAggregateTestCheckFunc(
+						testAccCheckTeamMemberExists("buildkite_team_member.test", &tm),
+						resource.TestCheckResourceAttrPair("buildkite_team_member.test", "team_id", "buildkite_team.other", "id"),
+					),
 				},
 			},
 		})

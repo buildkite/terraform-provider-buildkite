@@ -65,10 +65,16 @@ func (teamMemberResource) Schema(ctx context.Context, req resource.SchemaRequest
 			"team_id": resource_schema.StringAttribute{
 				Required:            true,
 				MarkdownDescription: "The GraphQL ID of the team.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"user_id": resource_schema.StringAttribute{
 				Required:            true,
 				MarkdownDescription: "The GraphQL ID of the user.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"role": resource_schema.StringAttribute{
 				Required:            true,
