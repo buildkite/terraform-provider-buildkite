@@ -3,12 +3,18 @@
 page_title: "buildkite_cluster_cache_registry Resource - terraform-provider-buildkite"
 subcategory: ""
 description: |-
-  A Cache Registry stores cached build data for a Buildkite Cluster. Buildkite Cache is currently in private preview and must be enabled for your Buildkite organization.
+  A Cache Registry stores cached build data for a Buildkite Cluster. Buildkite Cache is currently in private preview and must be enabled for your Buildkite organization. Refresh removes state only after verifying that the registry or its parent cluster was deleted. Access or API errors retain state and return diagnostics.
 ---
 
 # buildkite_cluster_cache_registry (Resource)
 
-A Cache Registry stores cached build data for a Buildkite Cluster. Buildkite Cache is currently in private preview and must be enabled for your Buildkite organization.
+A Cache Registry stores cached build data for a Buildkite Cluster. Buildkite Cache is currently in private preview and must be enabled for your Buildkite organization. Refresh removes state only after verifying that the registry or its parent cluster was deleted. Access or API errors retain state and return diagnostics.
+
+Keep the provider configured for the registry's owning organization. The read-only `organization_id` records that ownership, so changing the provider organization cannot make an existing registry appear deleted. Older state without this field is populated on a successful refresh; if the registry is inaccessible, restore access before refreshing again.
+
+The provider verifies current authorized organization membership and paginates the organization's clusters to confirm parent deletion. For a live parent, it checks the full cache registry connection, which requires cache feature access and cluster management permission. Public organization visibility and a not-found error alone do not establish deletion. Access or API errors retain state and return diagnostics.
+
+Parent-deletion handling depends on the Buildkite backend deleting a cluster's cache registries when deleting the cluster. Reference the cluster resource's `id`, as below, so Terraform deletes the registry before its parent during destroy.
 
 ## Example Usage
 
@@ -62,11 +68,14 @@ resource "buildkite_cluster_cache_registry" "primary" {
 - `cluster_uuid` (String) The UUID of the cluster that owns the cache registry.
 - `created_at` (String) The time when the cache registry was created, in RFC3339 format.
 - `id` (String) The GraphQL ID of the cache registry.
+- `organization_id` (String) The GraphQL ID of the owning organization. The provider must remain configured for this organization.
 - `slug` (String) The slug of the cache registry.
 - `updated_at` (String) The time when the cache registry was last updated, in RFC3339 format.
 - `uuid` (String) The UUID of the cache registry.
 
 ## Import
+
+The registry must exist, be accessible, and belong to the provider's configured organization. An ID-only import cannot establish ownership for a missing or inaccessible registry.
 
 Using `terraform import`, import resources using the `id`. For example:
 ```shell

@@ -2,6 +2,7 @@ package buildkite
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -17,6 +18,7 @@ import (
 	frameworkresource "github.com/hashicorp/terraform-plugin-framework/resource"
 	resource_schema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
+	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	testingresource "github.com/hashicorp/terraform-plugin-testing/helper/resource"
@@ -69,12 +71,12 @@ func TestUpdateClusterCacheRegistryState(t *testing.T) {
 	description := "Shared cache"
 	emoji := ":package:"
 	color := "#BADA55"
-	policy := `{"retention":{"max_age_days":30}}`
+	policy := `{"save":{"scopes":{"branch":true}}}`
 	createdAt := time.Date(2026, time.January, 2, 3, 4, 5, 0, time.UTC)
 	updatedAt := createdAt.Add(time.Hour)
 	var state clusterCacheRegistryResourceModel
 
-	updateClusterCacheRegistryState(&state, CacheRegistryValues{
+	err := updateClusterCacheRegistryState(&state, CacheRegistryValues{
 		Id:          "cache-id",
 		Uuid:        "cache-uuid",
 		Name:        "Primary cache",
@@ -90,6 +92,9 @@ func TestUpdateClusterCacheRegistryState(t *testing.T) {
 			Uuid: "cluster-uuid",
 		},
 	})
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	checks := map[string]string{
 		"id":           state.ID.ValueString(),
@@ -151,7 +156,9 @@ func TestUpdateClusterCacheRegistryStatePolicy(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 			state := clusterCacheRegistryResourceModel{Policy: jsontypes.NewNormalizedValue(test.configured)}
-			updateClusterCacheRegistryState(&state, CacheRegistryValues{Policy: &test.fromAPI})
+			if err := updateClusterCacheRegistryState(&state, CacheRegistryValues{Policy: &test.fromAPI}); err != nil {
+				t.Fatal(err)
+			}
 			if got := state.Policy.ValueString(); got != test.want {
 				t.Errorf("policy = %q, want %q", got, test.want)
 			}
@@ -170,6 +177,7 @@ func TestIsCacheRegistryNotFoundError(t *testing.T) {
 		"organization GraphQL error":   {err: gqlerror.List{{Message: "No organization found"}}},
 		"plain cache registry error":   {err: errors.New("No cache registry found")},
 		"other GraphQL error":          {err: gqlerror.List{{Message: "Insufficient permissions"}}},
+		"mixed GraphQL errors":         {err: gqlerror.List{{Message: "No cache registry found"}, {Message: "Insufficient permissions"}}},
 	}
 
 	for name, test := range tests {
@@ -190,12 +198,11 @@ func TestCacheRegistryExistsInCluster(t *testing.T) {
 		wantExists bool
 		wantError  bool
 	}{
-		"organization inaccessible": {response: `{"data":{"organization":null}}`, wantError: true},
-		"cluster inaccessible":      {response: `{"data":{"organization":{"cluster":null}}}`, wantError: true},
-		"feature unavailable":       {response: `{"data":{"organization":{"cluster":{"cacheRegistries":null}}}}`, wantError: true},
-		"resolver error":            {response: `{"errors":[{"message":"Cache Registries are not enabled"}]}`, wantError: true},
-		"registry absent":           {response: `{"data":{"organization":{"cluster":{"cacheRegistries":{"edges":[],"pageInfo":{"hasNextPage":false}}}}}}`},
-		"registry present":          {response: `{"data":{"organization":{"cluster":{"cacheRegistries":{"edges":[{"node":{"id":"cache-id"}}],"pageInfo":{"hasNextPage":false}}}}}}`, wantExists: true},
+		"organization inaccessible":   {response: `{"data":{"organization":null}}`, wantError: true},
+		"cluster inaccessible":        {response: `{"data":{"organization":{"cluster":null}}}`, wantError: true},
+		"feature unavailable":         {response: `{"data":{"organization":{"cluster":{"cacheRegistries":null}}}}`, wantError: true},
+		"resolver error":              {response: `{"errors":[{"message":"Cache Registries are not enabled"}]}`, wantError: true},
+		"unverified empty connection": {response: `{"data":{"organization":{"cluster":{"cacheRegistries":{"edges":[],"pageInfo":{"hasNextPage":false}}}}}}`, wantError: true},
 	}
 
 	for name, test := range tests {
@@ -211,15 +218,15 @@ func TestCacheRegistryExistsInCluster(t *testing.T) {
 				genqlient:    genqlient.NewClient(server.URL, server.Client()),
 				organization: "test-org",
 			}}
-			exists, err := resource.cacheRegistryExistsInCluster(context.Background(), DefaultTimeout, clusterCacheRegistryResourceModel{
+			values, err := resource.lookupCacheRegistry(context.Background(), &clusterCacheRegistryResourceModel{
 				ID:          types.StringValue("cache-id"),
 				ClusterUUID: types.StringValue("cluster-uuid"),
 			})
 			if (err != nil) != test.wantError {
 				t.Fatalf("error = %v, wantError %t", err, test.wantError)
 			}
-			if exists != test.wantExists {
-				t.Errorf("exists = %t, want %t", exists, test.wantExists)
+			if (values != nil) != test.wantExists {
+				t.Errorf("values = %v, want exists %t", values, test.wantExists)
 			}
 		})
 	}
@@ -232,7 +239,7 @@ func TestCacheRegistryPolicy(t *testing.T) {
 		value     types.String
 		wantError bool
 	}{
-		"object":            {value: types.StringValue(`{"retention":{"max_age_days":30}}`)},
+		"object":            {value: types.StringValue(`{"save":{"scopes":{"branch":true}}}`)},
 		"empty object":      {value: types.StringValue(`{}`)},
 		"malformed":         {value: types.StringValue(`{"retention":`), wantError: true},
 		"array":             {value: types.StringValue(`[]`), wantError: true},
@@ -252,8 +259,8 @@ func TestCacheRegistryPolicy(t *testing.T) {
 		})
 	}
 
-	configured := jsontypes.NewNormalizedValue(`{"retention":{"max_age_days":30},"enabled":true}`)
-	normalized := jsontypes.NewNormalizedValue(`{"enabled":true,"retention":{"max_age_days":30}}`)
+	configured := jsontypes.NewNormalizedValue(`{"save":{"scopes":{"branch":true}},"rules":[]}`)
+	normalized := jsontypes.NewNormalizedValue(`{"rules":[],"save":{"scopes":{"branch":true}}}`)
 	equal, diagnostics := configured.StringSemanticEquals(context.Background(), normalized)
 	if diagnostics.HasError() || !equal {
 		t.Fatalf("equivalent policies were not semantically equal: %v", diagnostics)
@@ -276,20 +283,254 @@ func TestCacheRegistryPolicy(t *testing.T) {
 	}
 }
 
-func TestAccBuildkiteClusterCacheRegistryResource(t *testing.T) {
-	localPreCheck := func() {
-		testAccPreCheck(t)
-		if endpoint := os.Getenv("BUILDKITE_GRAPHQL_URL"); !strings.Contains(endpoint, "graphql.buildkite.localhost") {
-			t.Skip("cache registry acceptance tests require the local Buildkite GraphQL endpoint")
+func TestCacheRegistryPoliciesEquivalent(t *testing.T) {
+	t.Parallel()
+	tests := map[string]struct {
+		left, right string
+		want        bool
+	}{
+		"empty defaults":      {`{}`, cacheRegistryEmptyPolicy, true},
+		"missing scopes":      {`{"save":{},"restore":{}}`, cacheRegistryEmptyPolicy, true},
+		"null rule name":      {cacheRegistryNullableNamePolicy, cacheRegistrySavePolicy, true},
+		"null rule when":      {cacheRegistryNullableWhenPolicy, cacheRegistrySavePolicy, true},
+		"both optional nulls": {cacheRegistryNullablePolicy, cacheRegistrySavePolicy, true},
+		"named conditional rule": {
+			`{"rules":[{"name":"Main","effect":"allow","action":"save","when":"claims.build_branch == 'main'"}]}`,
+			`{"save":{"scopes":{}},"restore":{"scopes":[]},"rules":[{"name":"Main","effect":"allow","action":["save"],"when":"claims.build_branch == 'main'"}]}`, true,
+		},
+		"null object":                    {`null`, `{}`, false},
+		"both null":                      {`null`, `null`, false},
+		"malformed JSON":                 {`{"rules":`, `{}`, false},
+		"trailing JSON":                  {`{} {}`, `{}`, false},
+		"root array":                     {`[]`, `{}`, false},
+		"root scalar":                    {`1`, `{}`, false},
+		"null save":                      {`{"save":null}`, `{}`, false},
+		"array save":                     {`{"save":[]}`, `{}`, false},
+		"scalar restore":                 {`{"restore":false}`, `{}`, false},
+		"both malformed sections":        {`{"restore":false}`, `{"restore":false}`, false},
+		"null save scopes":               {`{"save":{"scopes":null}}`, `{}`, false},
+		"object restore scopes":          {`{"restore":{"scopes":{}}}`, `{}`, false},
+		"null rules":                     {`{"rules":null}`, `{}`, false},
+		"object rules":                   {`{"rules":{}}`, `{}`, false},
+		"null rule":                      {`{"rules":[null]}`, `{"rules":[null]}`, false},
+		"different effect":               {`{"rules":[{"effect":"deny","action":"save"}]}`, cacheRegistrySavePolicy, false},
+		"additional rule":                {cacheRegistryDefaultPolicy, cacheRegistrySavePolicy, false},
+		"different scopes":               {`{"save":{"scopes":{"branch":true}}}`, `{"save":{"scopes":{"branch":false}}}`, false},
+		"different name":                 {`{"rules":[{"name":"Save","effect":"allow","action":"save"}]}`, cacheRegistrySavePolicy, false},
+		"different condition":            {`{"rules":[{"when":"false","effect":"allow","action":"save"}]}`, cacheRegistrySavePolicy, false},
+		"unknown key not discarded":      {`{"extra":true}`, `{}`, false},
+		"unknown rule key not discarded": {`{"rules":[{"extra":null,"effect":"allow","action":"save"}]}`, cacheRegistrySavePolicy, false},
+		"large numbers stay distinct":    {`{"extra":9007199254740992}`, `{"extra":9007199254740993}`, false},
+		"rule order matters": {
+			`{"rules":[{"effect":"deny","action":"save"},{"effect":"allow","action":"save"}]}`,
+			`{"rules":[{"effect":"allow","action":"save"},{"effect":"deny","action":"save"}]}`, false,
+		},
+	}
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			if got := cacheRegistryPoliciesEquivalent(test.left, test.right); got != test.want {
+				t.Errorf("equivalent(%s, %s) = %t, want %t", test.left, test.right, got, test.want)
+			}
+			if got := cacheRegistryPoliciesEquivalent(test.right, test.left); got != test.want {
+				t.Errorf("reverse equivalence = %t, want %t", got, test.want)
+			}
+		})
+	}
+}
+
+func TestClusterCacheRegistryApplyResponse(t *testing.T) {
+	t.Parallel()
+	for _, operation := range []string{"create", "update"} {
+		for name, test := range map[string]struct {
+			policy  *string
+			message string
+		}{
+			"API null":          {nil, "null policy"},
+			"JSON null":         {ptr("null"), "not null"},
+			"malformed JSON":    {ptr(`{"rules":`), "valid JSON object"},
+			"array":             {ptr(`[]`), "JSON object"},
+			"malformed section": {ptr(`{"save":null}`), "save to be an object"},
+			"different policy":  {ptr(cacheRegistryDefaultPolicy), "differs from the plan"},
+		} {
+			t.Run(operation+"/"+name, func(t *testing.T) {
+				t.Parallel()
+				ctx := context.Background()
+				server, api := newCacheRegistryTestAPI(t)
+				r := clusterCacheRegistryResource{client: NewClient(&clientConfig{
+					org: "test-org", apiToken: "dummy", graphqlURL: server.URL, restURL: server.URL,
+				})}
+				var schema frameworkresource.SchemaResponse
+				r.Schema(ctx, frameworkresource.SchemaRequest{}, &schema)
+				model := clusterCacheRegistryResourceModel{
+					ID: types.StringUnknown(), UUID: types.StringUnknown(), ClusterUUID: types.StringUnknown(),
+					Slug: types.StringUnknown(), CreatedAt: types.StringUnknown(), UpdatedAt: types.StringUnknown(),
+					ClusterID: types.StringValue("cluster-id"), Name: types.StringValue("Cache"),
+					Policy: jsontypes.NewNormalizedValue(cacheRegistryNullablePolicy),
+				}
+				plan := tfsdk.Plan{Schema: schema.Schema}
+				if diags := plan.Set(ctx, &model); diags.HasError() {
+					t.Fatal(diags)
+				}
+				var prior tfsdk.State
+				if operation == "update" {
+					response := frameworkresource.CreateResponse{State: tfsdk.State{Schema: schema.Schema, Raw: plan.Raw}}
+					r.Create(ctx, frameworkresource.CreateRequest{Plan: plan}, &response)
+					if response.Diagnostics.HasError() {
+						t.Fatal(response.Diagnostics)
+					}
+					prior = response.State
+					model.Name = types.StringValue("Renamed Cache")
+					if diags := plan.Set(ctx, &model); diags.HasError() {
+						t.Fatal(diags)
+					}
+				}
+				api.mu.Lock()
+				api.overridePolicy, api.responsePolicy = true, test.policy
+				api.mu.Unlock()
+				state := tfsdk.State{Schema: schema.Schema, Raw: plan.Raw}
+				var diagnosticText string
+				if operation == "create" {
+					response := frameworkresource.CreateResponse{State: state}
+					r.Create(ctx, frameworkresource.CreateRequest{Plan: plan}, &response)
+					if !response.Diagnostics.HasError() {
+						t.Fatal("expected create response diagnostic")
+					}
+					diagnosticText = fmt.Sprint(response.Diagnostics)
+					state = response.State
+				} else {
+					response := frameworkresource.UpdateResponse{State: prior}
+					r.Update(ctx, frameworkresource.UpdateRequest{Plan: plan, State: prior}, &response)
+					if !response.Diagnostics.HasError() {
+						t.Fatal("expected update response diagnostic")
+					}
+					diagnosticText = fmt.Sprint(response.Diagnostics)
+					state = response.State
+				}
+				for _, text := range []string{test.message, "cache-id", "terraform plan", "Invalid Cache Registry " + operation + " response"} {
+					if !strings.Contains(diagnosticText, text) {
+						t.Errorf("diagnostics %s missing %q", diagnosticText, text)
+					}
+				}
+				if name == "different policy" {
+					for _, policy := range []string{cacheRegistryNullablePolicy, cacheRegistryDefaultPolicy} {
+						if !strings.Contains(diagnosticText, policy) {
+							t.Errorf("policy mismatch diagnostic omits %s: %s", policy, diagnosticText)
+						}
+					}
+				}
+				var got clusterCacheRegistryResourceModel
+				if diags := state.Get(ctx, &got); diags.HasError() {
+					t.Fatal(diags)
+				}
+				if got.ID.ValueString() != "cache-id" || got.UUID.ValueString() != "cache-uuid" || got.ClusterID.ValueString() != "cluster-id" || got.ClusterUUID.ValueString() != "cluster-uuid" {
+					t.Fatalf("remote identity was lost: %+v", got)
+				}
+				wantPolicy := jsontypes.NewNormalizedPointerValue(test.policy)
+				if test.policy != nil && !json.Valid([]byte(*test.policy)) {
+					wantPolicy = jsontypes.NewNormalizedNull()
+					if !strings.Contains(diagnosticText, *test.policy) {
+						t.Errorf("diagnostics omit malformed response: %s", diagnosticText)
+					}
+				}
+				if !got.Name.Equal(model.Name) || !got.Policy.Equal(wantPolicy) {
+					t.Fatalf("state does not reflect API response: %+v", got)
+				}
+				if err := api.checkDestroyed(nil); err == nil {
+					t.Fatal("expected a live registry after the mutation")
+				}
+				deleted := frameworkresource.DeleteResponse{State: state}
+				r.Delete(ctx, frameworkresource.DeleteRequest{State: state}, &deleted)
+				if deleted.Diagnostics.HasError() {
+					t.Fatal(deleted.Diagnostics)
+				}
+				if err := api.checkDestroyed(nil); err != nil {
+					t.Fatal(err)
+				}
+			})
 		}
 	}
+}
 
-	config := func(clusterName, registryName, description, policy string) string {
-		policyAttribute := ""
-		if policy != "" {
-			policyAttribute = fmt.Sprintf("policy = jsonencode(%s)", policy)
-		}
-		return fmt.Sprintf(`
+func TestClusterCacheRegistryReadPolicy(t *testing.T) {
+	t.Parallel()
+	for name, test := range map[string]struct {
+		policy     *string
+		hideNode   bool
+		wantError  bool
+		wantPolicy jsontypes.Normalized
+	}{
+		"equivalent":                       {policy: ptr(cacheRegistrySavePolicy), wantPolicy: jsontypes.NewNormalizedValue(cacheRegistryNullablePolicy)},
+		"drift":                            {policy: ptr(cacheRegistryDefaultPolicy), wantPolicy: jsontypes.NewNormalizedValue(cacheRegistryDefaultPolicy)},
+		"API null":                         {wantError: true, wantPolicy: jsontypes.NewNormalizedNull()},
+		"JSON null":                        {policy: ptr("null"), wantError: true, wantPolicy: jsontypes.NewNormalizedValue("null")},
+		"malformed":                        {policy: ptr("{broken"), wantError: true, wantPolicy: jsontypes.NewNormalizedNull()},
+		"node hidden but registry present": {hideNode: true, wantError: true, wantPolicy: jsontypes.NewNormalizedValue(cacheRegistryNullablePolicy)},
+	} {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			ctx := context.Background()
+			server, api := newCacheRegistryTestAPI(t)
+			r := clusterCacheRegistryResource{client: NewClient(&clientConfig{
+				org: "test-org", apiToken: "dummy", graphqlURL: server.URL, restURL: server.URL,
+			})}
+			var schema frameworkresource.SchemaResponse
+			r.Schema(ctx, frameworkresource.SchemaRequest{}, &schema)
+			plan := tfsdk.Plan{Schema: schema.Schema}
+			if diags := plan.Set(ctx, &clusterCacheRegistryResourceModel{
+				ClusterID: types.StringValue("cluster-id"), Name: types.StringValue("Cache"),
+				Policy: jsontypes.NewNormalizedValue(cacheRegistryNullablePolicy),
+			}); diags.HasError() {
+				t.Fatal(diags)
+			}
+			created := frameworkresource.CreateResponse{State: tfsdk.State{Schema: schema.Schema, Raw: plan.Raw}}
+			r.Create(ctx, frameworkresource.CreateRequest{Plan: plan}, &created)
+			if created.Diagnostics.HasError() {
+				t.Fatal(created.Diagnostics)
+			}
+			api.mu.Lock()
+			api.registry["policy"], api.hideNode = test.policy, test.hideNode
+			api.mu.Unlock()
+			read := frameworkresource.ReadResponse{State: created.State}
+			r.Read(ctx, frameworkresource.ReadRequest{State: created.State}, &read)
+			if read.Diagnostics.HasError() != test.wantError {
+				t.Fatalf("unexpected diagnostics: %v", read.Diagnostics)
+			}
+			var got clusterCacheRegistryResourceModel
+			if diags := read.State.Get(ctx, &got); diags.HasError() {
+				t.Fatal(diags)
+			}
+			if got.ID.ValueString() != "cache-id" || !got.Policy.Equal(test.wantPolicy) {
+				t.Fatalf("unexpected refreshed state: %+v", got)
+			}
+			if test.hideNode {
+				api.mu.Lock()
+				if api.operations["getClusterCacheRegistries"] != 1 {
+					t.Errorf("cluster fallback was not queried: %v", api.operations)
+				}
+				api.mu.Unlock()
+			}
+		})
+	}
+}
+
+func testAccCacheRegistryPreCheck(t *testing.T) {
+	if os.Getenv("BUILDKITE_CACHE_REGISTRIES_ACCEPTANCE") != "1" {
+		t.Skip("live Cache Registry resources are untested; set BUILDKITE_CACHE_REGISTRIES_ACCEPTANCE=1 and TF_ACC=1 to enable acceptance tests")
+	}
+	testAccPreCheck(t)
+}
+
+func testAccCacheRegistryConfig(clusterName, registryName, description, policy string, optionalStrings ...string) string {
+	policyAttribute := ""
+	if policy != "" {
+		policyAttribute = fmt.Sprintf("policy = jsonencode(%s)", policy)
+	}
+	stringsAttributes := fmt.Sprintf("description = %q\nemoji = %q\ncolor = %q", description, ":package:", "#BADA55")
+	if len(optionalStrings) > 0 {
+		stringsAttributes = optionalStrings[0]
+	}
+	return fmt.Sprintf(`
 resource "buildkite_cluster" "cache_registry_test" {
   name = %q
 }
@@ -297,14 +538,14 @@ resource "buildkite_cluster" "cache_registry_test" {
 resource "buildkite_cluster_cache_registry" "test" {
   cluster_id  = buildkite_cluster.cache_registry_test.id
   name        = %q
-  description = %q
-  emoji       = ":package:"
-  color       = "#BADA55"
+  %s
   %s
 }
-`, clusterName, registryName, description, policyAttribute)
-	}
+`, clusterName, registryName, stringsAttributes, policyAttribute)
+}
 
+func TestAccBuildkiteClusterCacheRegistryResource(t *testing.T) {
+	config := testAccCacheRegistryConfig
 	clusterName := "tf-cache-" + acctest.RandString(8)
 	registryName := "Cache " + acctest.RandString(8)
 	renamedRegistry := registryName + " renamed"
@@ -312,7 +553,7 @@ resource "buildkite_cluster_cache_registry" "test" {
 	var defaultPolicy string
 
 	testingresource.Test(t, testingresource.TestCase{
-		PreCheck:                 localPreCheck,
+		PreCheck:                 func() { testAccCacheRegistryPreCheck(t) },
 		ProtoV6ProviderFactories: protoV6ProviderFactories(),
 		CheckDestroy:             testAccCheckClusterCacheRegistryDestroy,
 		Steps: []testingresource.TestStep{
@@ -363,6 +604,50 @@ resource "buildkite_cluster_cache_registry" "test" {
 				PlanOnly: true,
 			},
 			{
+				Config: config(clusterName, renamedRegistry, "", `{ rules = [{ name = null, when = null, effect = "allow", action = "save" }] }`, `description = ""
+emoji = ""
+color = ""`),
+				Check: testingresource.ComposeAggregateTestCheckFunc(
+					testingresource.TestCheckResourceAttr(resourceName, "description", ""),
+					testingresource.TestCheckResourceAttr(resourceName, "emoji", ""),
+					testingresource.TestCheckResourceAttr(resourceName, "color", ""),
+				),
+			},
+			{
+				Config: config(clusterName, renamedRegistry, "  Case Preserved  ", `{ rules = [{ name = null, effect = "allow", action = "save" }] }`),
+				Check: testingresource.ComposeAggregateTestCheckFunc(
+					testingresource.TestCheckResourceAttr(resourceName, "description", "  Case Preserved  "),
+					testingresource.TestCheckResourceAttr(resourceName, "emoji", ":package:"),
+					testingresource.TestCheckResourceAttr(resourceName, "color", "#BADA55"),
+				),
+			},
+			{
+				Config: config(clusterName, renamedRegistry, "  Case Preserved  ", `{ rules = [{ when = null, effect = "allow", action = "save" }] }`),
+			},
+			{
+				Config: config(clusterName, renamedRegistry, "", "", ""),
+				Check: testingresource.ComposeAggregateTestCheckFunc(
+					testingresource.TestCheckNoResourceAttr(resourceName, "description"),
+					testingresource.TestCheckNoResourceAttr(resourceName, "emoji"),
+					testingresource.TestCheckNoResourceAttr(resourceName, "color"),
+					testingresource.TestCheckResourceAttrWith(resourceName, "policy", func(value string) error {
+						if !cacheRegistryPoliciesEquivalent(value, cacheRegistrySavePolicy) {
+							return fmt.Errorf("removing configured policy changed its rules: %s", value)
+						}
+						return nil
+					}),
+				),
+			},
+			{
+				Config: config(clusterName, renamedRegistry, "Cleared policy", `{ save = { scopes = {} }, restore = { scopes = [] }, rules = [] }`),
+				Check: testingresource.TestCheckResourceAttrWith(resourceName, "policy", func(value string) error {
+					if !cacheRegistryPoliciesEquivalent(value, cacheRegistryEmptyPolicy) {
+						return fmt.Errorf("policy was not cleared: %s", value)
+					}
+					return nil
+				}),
+			},
+			{
 				Config:             config(clusterName, renamedRegistry, "Updated by Terraform", `{ save = { scopes = { branch = true } }, restore = { scopes = [] }, rules = [] }`),
 				Check:              testAccDeleteClusterCacheRegistryOutOfBand(resourceName),
 				ExpectNonEmptyPlan: true,
@@ -377,15 +662,56 @@ func testAccCheckClusterCacheRegistryDestroy(state *terraform.State) error {
 			continue
 		}
 
-		result, err := getCacheRegistryByNode(context.Background(), genqlientGraphql, resourceState.Primary.ID)
+		r := clusterCacheRegistryResource{client: &Client{genqlient: genqlientGraphql, organization: getenv("BUILDKITE_ORGANIZATION_SLUG")}}
+		_, err := r.lookupCacheRegistry(context.Background(), &clusterCacheRegistryResourceModel{
+			ID:             types.StringValue(resourceState.Primary.ID),
+			OrganizationID: types.StringValue(resourceState.Primary.Attributes["organization_id"]),
+			ClusterID:      types.StringValue(resourceState.Primary.Attributes["cluster_id"]),
+			ClusterUUID:    types.StringValue(resourceState.Primary.Attributes["cluster_uuid"]),
+		})
+		if errors.Is(err, errCacheRegistryAbsent) {
+			continue
+		}
 		if err != nil {
 			return fmt.Errorf("checking destroyed cache registry: %w", err)
 		}
-		if cacheRegistry, ok := result.Node.(*getCacheRegistryByNodeNodeCacheRegistry); ok && cacheRegistry != nil {
-			return fmt.Errorf("cache registry %s still exists", resourceState.Primary.ID)
-		}
+		return fmt.Errorf("cache registry %s still exists", resourceState.Primary.ID)
 	}
 	return nil
+}
+
+func TestAccBuildkiteClusterCacheRegistryParentDeletion(t *testing.T) {
+	config := testAccCacheRegistryConfig("tf-cache-parent-"+acctest.RandString(8), "Disposable cache", "Parent deletion acceptance", `{ rules = [{ name = null, when = null, effect = "allow", action = "save" }] }`)
+	var oldClusterID, oldRegistryID string
+	testingresource.Test(t, testingresource.TestCase{
+		PreCheck:                 func() { testAccCacheRegistryPreCheck(t) },
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		CheckDestroy:             testAccCheckClusterCacheRegistryDestroy,
+		Steps: []testingresource.TestStep{
+			{
+				Config: config,
+				Check: func(state *terraform.State) error {
+					oldClusterID = state.RootModule().Resources["buildkite_cluster.cache_registry_test"].Primary.ID
+					oldRegistryID = state.RootModule().Resources["buildkite_cluster_cache_registry.test"].Primary.ID
+					_, err := deleteCluster(context.Background(), genqlientGraphql, organizationID, oldClusterID)
+					if err != nil {
+						return err
+					}
+					return testAccCheckClusterCacheRegistryDestroy(state)
+				},
+				ExpectNonEmptyPlan: true,
+			},
+			{
+				Config: config,
+				Check: func(state *terraform.State) error {
+					if state.RootModule().Resources["buildkite_cluster.cache_registry_test"].Primary.ID == oldClusterID || state.RootModule().Resources["buildkite_cluster_cache_registry.test"].Primary.ID == oldRegistryID {
+						return fmt.Errorf("deleted parent and registry were not recreated")
+					}
+					return nil
+				},
+			},
+		},
+	})
 }
 
 func testAccDeleteClusterCacheRegistryOutOfBand(name string) testingresource.TestCheckFunc {

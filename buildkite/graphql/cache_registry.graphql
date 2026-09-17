@@ -16,6 +16,10 @@ fragment CacheRegistryValues on CacheRegistry {
     cacheRegistryCluster: cluster {
         id
         uuid
+        # @genqlient(pointer: true)
+        organization {
+            id
+        }
     }
 }
 
@@ -81,7 +85,11 @@ mutation deleteCacheRegistry($organizationId: ID!, $id: ID!) {
     }
 }
 
-query getCacheRegistryByNode($id: ID!) {
+query getCacheRegistryByNode($id: ID!, $orgSlug: ID!) {
+    # @genqlient(pointer: true)
+    organization(slug: $orgSlug) {
+        ...CacheRegistryOrganizationAccess
+    }
     node(id: $id) {
         ... on CacheRegistry {
             ...CacheRegistryValues
@@ -97,19 +105,71 @@ query getClusterCacheRegistries(
 ) {
     # @genqlient(pointer: true)
     organization(slug: $orgSlug) {
+        ...CacheRegistryOrganizationAccess
         # @genqlient(pointer: true)
         cluster(id: $clusterUuid) {
+            id
             # @genqlient(pointer: true)
             cacheRegistries(first: 100, after: $cursor) {
+                # @genqlient(pointer: true)
                 edges {
+                    # @genqlient(pointer: true)
                     node {
                         id
                     }
                 }
+                # @genqlient(pointer: true)
                 pageInfo {
+                    # @genqlient(pointer: true)
                     endCursor
                     hasNextPage
                 }
+            }
+        }
+    }
+}
+
+fragment CacheRegistryOrganizationAccess on Organization {
+    id
+    # @genqlient(pointer: true)
+    permissions {
+        # @genqlient(pointer: true)
+        organizationMemberView {
+            # @genqlient(pointer: true)
+            allowed
+        }
+    }
+}
+
+query getCacheRegistryOrganization($orgSlug: ID!) {
+    # @genqlient(pointer: true)
+    organization(slug: $orgSlug) {
+        ...CacheRegistryOrganizationAccess
+    }
+}
+
+query getCacheRegistryClusters($orgSlug: ID!,
+    # @genqlient(pointer: true)
+    $cursor: String
+) {
+    # @genqlient(pointer: true)
+    organization(slug: $orgSlug) {
+        ...CacheRegistryOrganizationAccess
+        # @genqlient(pointer: true)
+        clusters(first: 100, after: $cursor) {
+            # @genqlient(pointer: true)
+            edges {
+                # @genqlient(pointer: true)
+                node {
+                    id
+                    uuid
+                }
+            }
+            # @genqlient(pointer: true)
+            pageInfo {
+                # @genqlient(pointer: true)
+                endCursor
+                hasNextPage
             }
         }
     }
