@@ -17,6 +17,6 @@ Use this data source to look up the organization settings.
 
 ### Read-Only
 
-- `allowed_api_ip_addresses` (List of String) List of IP addresses in CIDR format that are allowed to access the Buildkite API for this organization.
+- `allowed_api_ip_addresses` (List of String) List of IP addresses in CIDR format that are allowed to access the Buildkite API for this organization. Reading it requires an API token with the `read_organization_settings` scope, whose user is an organization administrator; it is left unset otherwise.
 - `id` (String) The GraphQL ID of the organization.
 - `uuid` (String) The UUID of the organization.
