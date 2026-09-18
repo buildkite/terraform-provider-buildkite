@@ -147,6 +147,7 @@ type providerSettingsModel struct {
 	BuildCreateEvent                        types.Bool   `tfsdk:"build_create_event"`
 	BuildDeploymentStatusCreated            types.Bool   `tfsdk:"build_deployment_status_created"`
 	BuildPullRequestConvertedToDraft        types.Bool   `tfsdk:"build_pull_request_converted_to_draft"`
+	BuildPullRequestEdited                  types.Bool   `tfsdk:"build_pull_request_edited"`
 	BuildPullRequestReviewRequested         types.Bool   `tfsdk:"build_pull_request_review_requested"`
 	BuildPullRequestReviewDismissed         types.Bool   `tfsdk:"build_pull_request_review_dismissed"`
 	BuildPullRequestReviewSubmitted         types.Bool   `tfsdk:"build_pull_request_review_submitted"`
@@ -1121,7 +1122,8 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 						Optional:            true,
 						MarkdownDescription: "The match mode for the issue comment command word. Valid values are \"exact\" and \"contains\". Defaults to \"exact\".",
 						PlanModifiers: []planmodifier.String{
-							stringplanmodifier.UseNonNullStateForUnknown(),
+							// state written before "" was read as null must not be planned as ""
+							custom_modifier.UseNonEmptyStateForUnknown(),
 						},
 						Validators: []validator.String{
 							stringvalidator.OneOf("exact", "contains"),
@@ -1148,7 +1150,7 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 						Optional:            true,
 						MarkdownDescription: "The match mode for the review comment command word. Valid values are \"exact\" and \"contains\".",
 						PlanModifiers: []planmodifier.String{
-							stringplanmodifier.UseNonNullStateForUnknown(),
+							custom_modifier.UseNonEmptyStateForUnknown(),
 						},
 						Validators: []validator.String{
 							stringvalidator.OneOf("exact", "contains"),
@@ -1198,6 +1200,14 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 						Computed:            true,
 						Optional:            true,
 						MarkdownDescription: "Whether to create a build when a pull request is converted to a draft.",
+						PlanModifiers: []planmodifier.Bool{
+							boolplanmodifier.UseNonNullStateForUnknown(),
+						},
+					},
+					"build_pull_request_edited": schema.BoolAttribute{
+						Computed:            true,
+						Optional:            true,
+						MarkdownDescription: "Whether to create a build when a pull request is edited (i.e. its title or description).",
 						PlanModifiers: []planmodifier.Bool{
 							boolplanmodifier.UseNonNullStateForUnknown(),
 						},
@@ -1744,6 +1754,7 @@ type PipelineExtraSettings struct {
 	BuildCreateEvent                        *bool   `json:"build_create_event,omitempty"`
 	BuildDeploymentStatusCreated            *bool   `json:"build_deployment_status_created,omitempty"`
 	BuildPullRequestConvertedToDraft        *bool   `json:"build_pull_request_converted_to_draft,omitempty"`
+	BuildPullRequestEdited                  *bool   `json:"build_pull_request_edited,omitempty"`
 	BuildPullRequestReviewRequested         *bool   `json:"build_pull_request_review_requested,omitempty"`
 	BuildPullRequestReviewDismissed         *bool   `json:"build_pull_request_review_dismissed,omitempty"`
 	BuildPullRequestReviewSubmitted         *bool   `json:"build_pull_request_review_submitted,omitempty"`
@@ -1813,6 +1824,7 @@ func updatePipelineExtraInfo(ctx context.Context, slug string, settings *provide
 			BuildCreateEvent:                        settings.BuildCreateEvent.ValueBoolPointer(),
 			BuildDeploymentStatusCreated:            settings.BuildDeploymentStatusCreated.ValueBoolPointer(),
 			BuildPullRequestConvertedToDraft:        settings.BuildPullRequestConvertedToDraft.ValueBoolPointer(),
+			BuildPullRequestEdited:                  settings.BuildPullRequestEdited.ValueBoolPointer(),
 			BuildPullRequestReviewRequested:         settings.BuildPullRequestReviewRequested.ValueBoolPointer(),
 			BuildPullRequestReviewDismissed:         settings.BuildPullRequestReviewDismissed.ValueBoolPointer(),
 			BuildPullRequestReviewSubmitted:         settings.BuildPullRequestReviewSubmitted.ValueBoolPointer(),
@@ -1900,16 +1912,17 @@ func updatePipelineResourceExtraInfo(state *pipelineResourceModel, pipeline *Pip
 		UseMergeGroupBaseCommitForGitDiffBase:   types.BoolPointerValue(s.UseMergeGroupBaseCommitForGitDiffBase),
 		BuildIssueCommentCreated:                types.BoolPointerValue(s.BuildIssueCommentCreated),
 		IssueCommentCommandWord:                 types.StringPointerValue(s.IssueCommentCommandWord),
-		IssueCommentMatchMode:                   types.StringPointerValue(s.IssueCommentMatchMode),
+		IssueCommentMatchMode:                   matchModeFromREST(s.IssueCommentMatchMode),
 		BuildPullRequestReviewCommentCreated:    types.BoolPointerValue(s.BuildPullRequestReviewCommentCreated),
 		ReviewCommentCommandWord:                types.StringPointerValue(s.ReviewCommentCommandWord),
-		ReviewCommentMatchMode:                  types.StringPointerValue(s.ReviewCommentMatchMode),
+		ReviewCommentMatchMode:                  matchModeFromREST(s.ReviewCommentMatchMode),
 		BuildPullRequestDequeued:                types.BoolPointerValue(s.BuildPullRequestDequeued),
 		BuildPullRequestReopened:                types.BoolPointerValue(s.BuildPullRequestReopened),
 		BuildCheckRunCompleted:                  types.BoolPointerValue(s.BuildCheckRunCompleted),
 		BuildCreateEvent:                        types.BoolPointerValue(s.BuildCreateEvent),
 		BuildDeploymentStatusCreated:            types.BoolPointerValue(s.BuildDeploymentStatusCreated),
 		BuildPullRequestConvertedToDraft:        types.BoolPointerValue(s.BuildPullRequestConvertedToDraft),
+		BuildPullRequestEdited:                  types.BoolPointerValue(s.BuildPullRequestEdited),
 		BuildPullRequestReviewRequested:         types.BoolPointerValue(s.BuildPullRequestReviewRequested),
 		BuildPullRequestReviewDismissed:         types.BoolPointerValue(s.BuildPullRequestReviewDismissed),
 		BuildPullRequestReviewSubmitted:         types.BoolPointerValue(s.BuildPullRequestReviewSubmitted),
@@ -1917,6 +1930,14 @@ func updatePipelineResourceExtraInfo(state *pipelineResourceModel, pipeline *Pip
 		BuildReleasePublished:                   types.BoolPointerValue(s.BuildReleasePublished),
 		BuildReleaseReleased:                    types.BoolPointerValue(s.BuildReleaseReleased),
 	}
+}
+
+// matchModeFromREST reads an unset match mode, which the REST API returns as "", as null so it agrees with the GraphQL read
+func matchModeFromREST(m *string) types.String {
+	if m == nil || *m == "" {
+		return types.StringNull()
+	}
+	return types.StringValue(*m)
 }
 
 // matchModeToString converts a GraphQL CommandWordMatchMode enum (EXACT/CONTAINS) into the
@@ -1977,6 +1998,7 @@ func mapProviderSettingsFromGraphQL(repo RepositoryProviderSettingsFields) *prov
 			BuildCreateEvent:                        types.BoolPointerValue(s.BuildCreateEvent),
 			BuildDeploymentStatusCreated:            types.BoolPointerValue(s.BuildDeploymentStatusCreated),
 			BuildPullRequestConvertedToDraft:        types.BoolPointerValue(s.BuildPullRequestConvertedToDraft),
+			BuildPullRequestEdited:                  types.BoolPointerValue(s.BuildPullRequestEdited),
 			BuildPullRequestReviewRequested:         types.BoolPointerValue(s.BuildPullRequestReviewRequested),
 			BuildPullRequestReviewDismissed:         types.BoolPointerValue(s.BuildPullRequestReviewDismissed),
 			BuildPullRequestReviewSubmitted:         types.BoolPointerValue(s.BuildPullRequestReviewSubmitted),
@@ -2026,6 +2048,7 @@ func mapProviderSettingsFromGraphQL(repo RepositoryProviderSettingsFields) *prov
 			BuildCreateEvent:                        types.BoolPointerValue(s.BuildCreateEvent),
 			BuildDeploymentStatusCreated:            types.BoolPointerValue(s.BuildDeploymentStatusCreated),
 			BuildPullRequestConvertedToDraft:        types.BoolPointerValue(s.BuildPullRequestConvertedToDraft),
+			BuildPullRequestEdited:                  types.BoolPointerValue(s.BuildPullRequestEdited),
 			BuildPullRequestReviewRequested:         types.BoolPointerValue(s.BuildPullRequestReviewRequested),
 			BuildPullRequestReviewDismissed:         types.BoolPointerValue(s.BuildPullRequestReviewDismissed),
 			BuildPullRequestReviewSubmitted:         types.BoolPointerValue(s.BuildPullRequestReviewSubmitted),
@@ -2424,6 +2447,10 @@ func pipelineSchemaV0() schema.Schema {
 							Optional: true,
 						},
 						"build_pull_request_converted_to_draft": schema.BoolAttribute{
+							Computed: true,
+							Optional: true,
+						},
+						"build_pull_request_edited": schema.BoolAttribute{
 							Computed: true,
 							Optional: true,
 						},
