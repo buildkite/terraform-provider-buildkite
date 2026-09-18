@@ -5,12 +5,16 @@ import (
 	"fmt"
 
 	"github.com/MakeNowJust/heredoc"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 type organizationMembersDatasourceModel struct {
+	Team    types.String               `tfsdk:"team"`
+	Role    types.String               `tfsdk:"role"`
 	Members []organizationMembersModel `tfsdk:"members"`
 }
 
@@ -48,6 +52,17 @@ func (o *organizationMembersDatasource) Schema(ctx context.Context, req datasour
 			[documentation](https://buildkite.com/docs/platform/team-management).
 		`),
 		Attributes: map[string]schema.Attribute{
+			"team": schema.StringAttribute{
+				Optional:            true,
+				MarkdownDescription: "Only return members of the team with this slug.",
+			},
+			"role": schema.StringAttribute{
+				Optional:            true,
+				MarkdownDescription: "Only return members with this organization role, either `MEMBER` or `ADMIN`.",
+				Validators: []validator.String{
+					stringvalidator.OneOf("MEMBER", "ADMIN"),
+				},
+			},
 			"members": schema.ListNestedAttribute{
 				Computed: true,
 				NestedObject: schema.NestedAttributeObject{
@@ -83,9 +98,15 @@ func (o *organizationMembersDatasource) Read(ctx context.Context, req datasource
 		return
 	}
 
+	var role []OrganizationMemberRole
+	if !state.Role.IsNull() {
+		role = []OrganizationMemberRole{OrganizationMemberRole(state.Role.ValueString())}
+	}
+
+	state.Members = []organizationMembersModel{}
 	var cursor *string
 	for {
-		res, err := GetOrganizationMembers(ctx, o.client.genqlient, o.client.organization, cursor)
+		res, err := GetOrganizationMembers(ctx, o.client.genqlient, o.client.organization, cursor, state.Team.ValueStringPointer(), role)
 		if err != nil {
 			resp.Diagnostics.AddError(
 				"Unable to get organization members",
@@ -94,10 +115,10 @@ func (o *organizationMembersDatasource) Read(ctx context.Context, req datasource
 			return
 		}
 
-		if len(res.Organization.Members.Edges) == 0 {
+		if res.Organization.Id == "" {
 			resp.Diagnostics.AddError(
-				"No organization members found",
-				fmt.Sprintf("Error getting members for organization: %s", o.client.organization),
+				"Unable to find organization",
+				fmt.Sprintf("Could not find organization with slug \"%s\"", o.client.organization),
 			)
 			return
 		}

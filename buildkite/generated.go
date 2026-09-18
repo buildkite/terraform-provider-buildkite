@@ -516,9 +516,13 @@ func (v *GetOrganizationMemberByEmailResponse) GetOrganization() GetOrganization
 //
 // An organization
 type GetOrganizationMembersOrganization struct {
+	Id string `json:"id"`
 	// Returns users within the organization
 	Members GetOrganizationMembersOrganizationMembersOrganizationMemberConnection `json:"members"`
 }
+
+// GetId returns GetOrganizationMembersOrganization.Id, and is useful for accessing the field via an interface.
+func (v *GetOrganizationMembersOrganization) GetId() string { return v.Id }
 
 // GetMembers returns GetOrganizationMembersOrganization.Members, and is useful for accessing the field via an interface.
 func (v *GetOrganizationMembersOrganization) GetMembers() GetOrganizationMembersOrganizationMembersOrganizationMemberConnection {
@@ -1525,6 +1529,21 @@ func (v *OrganizationBannerFields) GetUuid() string { return v.Uuid }
 
 // GetMessage returns OrganizationBannerFields.Message, and is useful for accessing the field via an interface.
 func (v *OrganizationBannerFields) GetMessage() string { return v.Message }
+
+// The roles a user can be within an organization
+type OrganizationMemberRole string
+
+const (
+	// The user is a regular member of the organization
+	OrganizationMemberRoleMember OrganizationMemberRole = "MEMBER"
+	// Has full access to the entire organization
+	OrganizationMemberRoleAdmin OrganizationMemberRole = "ADMIN"
+)
+
+var AllOrganizationMemberRole = []OrganizationMemberRole{
+	OrganizationMemberRoleMember,
+	OrganizationMemberRoleAdmin,
+}
 
 // OrganizationRuleFields includes the GraphQL fields of Rule requested by the fragment OrganizationRuleFields.
 type OrganizationRuleFields struct {
@@ -4691,8 +4710,10 @@ func (v *__GetOrganizationMemberByEmailInput) GetEmail() string { return v.Email
 
 // __GetOrganizationMembersInput is used internally by genqlient
 type __GetOrganizationMembersInput struct {
-	Slug   string  `json:"slug"`
-	Cursor *string `json:"cursor"`
+	Slug   string                   `json:"slug"`
+	Cursor *string                  `json:"cursor"`
+	Team   *string                  `json:"team,omitempty"`
+	Role   []OrganizationMemberRole `json:"role,omitempty"`
 }
 
 // GetSlug returns __GetOrganizationMembersInput.Slug, and is useful for accessing the field via an interface.
@@ -4700,6 +4721,12 @@ func (v *__GetOrganizationMembersInput) GetSlug() string { return v.Slug }
 
 // GetCursor returns __GetOrganizationMembersInput.Cursor, and is useful for accessing the field via an interface.
 func (v *__GetOrganizationMembersInput) GetCursor() *string { return v.Cursor }
+
+// GetTeam returns __GetOrganizationMembersInput.Team, and is useful for accessing the field via an interface.
+func (v *__GetOrganizationMembersInput) GetTeam() *string { return v.Team }
+
+// GetRole returns __GetOrganizationMembersInput.Role, and is useful for accessing the field via an interface.
+func (v *__GetOrganizationMembersInput) GetRole() []OrganizationMemberRole { return v.Role }
 
 // __GetOrganizationPipelinesInput is used internally by genqlient
 type __GetOrganizationPipelinesInput struct {
@@ -24872,9 +24899,10 @@ func GetOrganizationMemberByEmail(
 
 // The query executed by GetOrganizationMembers.
 const GetOrganizationMembers_Operation = `
-query GetOrganizationMembers ($slug: ID!, $cursor: String) {
+query GetOrganizationMembers ($slug: ID!, $cursor: String, $team: TeamSelector, $role: [OrganizationMemberRole!]) {
 	organization(slug: $slug) {
-		members(first: 500, after: $cursor) {
+		id
+		members(first: 500, after: $cursor, team: $team, role: $role) {
 			pageInfo {
 				endCursor
 				hasNextPage
@@ -24899,6 +24927,8 @@ func GetOrganizationMembers(
 	client_ graphql.Client,
 	slug string,
 	cursor *string,
+	team *string,
+	role []OrganizationMemberRole,
 ) (data_ *GetOrganizationMembersResponse, err_ error) {
 	req_ := &graphql.Request{
 		OpName: "GetOrganizationMembers",
@@ -24906,6 +24936,8 @@ func GetOrganizationMembers(
 		Variables: &__GetOrganizationMembersInput{
 			Slug:   slug,
 			Cursor: cursor,
+			Team:   team,
+			Role:   role,
 		},
 	}
 
