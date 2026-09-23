@@ -14,5 +14,7 @@ bindings:
     type: string
   TeamMemberRole:
     type: string
+  TeamSelector:
+    type: string
   DateTime:
     type: time.Time
