@@ -35,7 +35,9 @@ func init() {
 
 	graphqlClient = graphql.NewClient(graphqlEndpoint, httpClient)
 	genqlientGraphql = genqlient.NewClient(graphqlEndpoint, httpClient)
-	organizationID, _ = GetOrganizationID(getenv("BUILDKITE_ORGANIZATION_SLUG"), graphqlClient)
+	if os.Getenv("TF_ACC") != "" {
+		organizationID, _ = GetOrganizationID(getenv("BUILDKITE_ORGANIZATION_SLUG"), graphqlClient)
+	}
 }
 
 func protoV6ProviderFactories() map[string]func() (tfprotov6.ProviderServer, error) {
