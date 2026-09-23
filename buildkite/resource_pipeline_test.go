@@ -1191,7 +1191,9 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 								build_pull_request_dequeued = true
 								build_pull_request_reopened = true
 								build_pull_request_stacks = true
+								github_workflow_access_tokens_enabled = true
 								skip_builds_for_closed_pull_requests = true
+								prevent_custom_statuses_from_using_buildkite_prefix = true
 								build_check_run_completed = true
 								build_create_event = true
 								build_deployment_status_created = true
