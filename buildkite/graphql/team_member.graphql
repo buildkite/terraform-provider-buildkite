@@ -58,3 +58,33 @@ mutation deleteTeamMember(
         clientMutationId
     }
 }
+query getTeamMemberIdByEmail(
+    $slug: ID!,
+    $email: String!,
+    # @genqlient(pointer: true)
+    $cursor: String
+) {
+    organization(slug: $slug) {
+        id
+        members(first: 1, email: $email) {
+            edges {
+                node {
+                    teams(first: 50, after: $cursor) {
+                        pageInfo {
+                            endCursor
+                            hasNextPage
+                        }
+                        edges {
+                            node {
+                                id
+                                team {
+                                    slug
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
