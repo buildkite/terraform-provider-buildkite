@@ -1077,6 +1077,53 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 		})
 	})
 
+	t.Run("provider_settings left out of the configuration keep the API defaults", func(t *testing.T) {
+		pipelineName := acctest.RandString(12)
+		clusterName := acctest.RandString(12)
+		config := func(extra string) string {
+			return fmt.Sprintf(`
+				resource "buildkite_cluster" "cluster" {
+					name = "%s"
+				}
+				resource "buildkite_pipeline" "pipeline" {
+					name = "%s"
+					repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
+					cluster_id = buildkite_cluster.cluster.id
+					provider_settings = {
+						trigger_mode = "none"
+						build_branches = false
+						build_tags = false
+						build_pull_requests = true
+						%s
+					}
+				}
+			`, clusterName, pipelineName, extra)
+		}
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			CheckDestroy:             testAccCheckPipelineDestroy,
+			Steps: []resource.TestStep{
+				{
+					// both default to true in Buildkite and must not be sent as false just because they are unset
+					Config: config(""),
+					Check: resource.ComposeAggregateTestCheckFunc(
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.skip_builds_for_closed_pull_requests", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.prevent_custom_statuses_from_using_buildkite_prefix", "true"),
+					),
+				},
+				{
+					Config: config("skip_builds_for_closed_pull_requests = false\nprevent_custom_statuses_from_using_buildkite_prefix = false"),
+					Check: resource.ComposeAggregateTestCheckFunc(
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.skip_builds_for_closed_pull_requests", "false"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.prevent_custom_statuses_from_using_buildkite_prefix", "false"),
+					),
+				},
+			},
+		})
+	})
+
 	t.Run("provider_settings without comment match modes settles after apply", func(t *testing.T) {
 		pipelineName := acctest.RandString(12)
 		clusterName := acctest.RandString(12)

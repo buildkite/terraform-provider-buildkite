@@ -1732,6 +1732,14 @@ func updatePipelineSlug(ctx context.Context, slug string, updatedSlug string, cl
 	return pipelineExtraInfo, nil
 }
 
+// knownBoolPointer is nil for a null or unknown value so the setting is left out of the request and keeps the API default
+func knownBoolPointer(value types.Bool) *bool {
+	if value.IsUnknown() {
+		return nil
+	}
+	return value.ValueBoolPointer()
+}
+
 func updatePipelineExtraInfo(ctx context.Context, slug string, settings *providerSettingsModel, client *Client, timeouts time.Duration) (PipelineExtraInfo, error) {
 	payload := map[string]any{
 		"provider_settings": PipelineExtraSettings{
@@ -1770,10 +1778,10 @@ func updatePipelineExtraInfo(ctx context.Context, slug string, settings *provide
 			ReviewCommentMatchMode:                  settings.ReviewCommentMatchMode.ValueStringPointer(),
 			BuildPullRequestDequeued:                settings.BuildPullRequestDequeued.ValueBoolPointer(),
 			BuildPullRequestReopened:                settings.BuildPullRequestReopened.ValueBoolPointer(),
-			BuildPullRequestStacks:                  settings.BuildPullRequestStacks.ValueBoolPointer(),
-			GithubWorkflowAccessTokensEnabled:       settings.GithubWorkflowAccessTokensEnabled.ValueBoolPointer(),
-			SkipBuildsForClosedPullRequests:         settings.SkipBuildsForClosedPullRequests.ValueBoolPointer(),
-			PreventCustomStatusesBuildkitePrefix:    settings.PreventCustomStatusesBuildkitePrefix.ValueBoolPointer(),
+			BuildPullRequestStacks:                  knownBoolPointer(settings.BuildPullRequestStacks),
+			GithubWorkflowAccessTokensEnabled:       knownBoolPointer(settings.GithubWorkflowAccessTokensEnabled),
+			SkipBuildsForClosedPullRequests:         knownBoolPointer(settings.SkipBuildsForClosedPullRequests),
+			PreventCustomStatusesBuildkitePrefix:    knownBoolPointer(settings.PreventCustomStatusesBuildkitePrefix),
 			BuildCheckRunCompleted:                  settings.BuildCheckRunCompleted.ValueBoolPointer(),
 			BuildCreateEvent:                        settings.BuildCreateEvent.ValueBoolPointer(),
 			BuildDeploymentStatusCreated:            settings.BuildDeploymentStatusCreated.ValueBoolPointer(),
