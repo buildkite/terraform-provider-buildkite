@@ -11,6 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	fwresource "github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-go/tftypes"
 )
 
@@ -83,4 +84,24 @@ func datasourceSchema(ctx context.Context, t *testing.T, d fwdatasource.DataSour
 	}
 
 	return resp.Schema
+}
+
+// updateRequestFor builds the request and response an Update method is driven with. resp starts at
+// prior state because that is what the framework hands a provider
+// (fwserver.server_updateresource.go: "Require explicit provider updates for tracking successful
+// updates"), so a test that seeded it empty would not notice an Update that recorded nothing.
+func updateRequestFor(ctx context.Context, t *testing.T, resourceSchema schema.Schema, prior, planned map[string]tftypes.Value) (fwresource.UpdateRequest, fwresource.UpdateResponse) {
+	t.Helper()
+
+	priorRaw := nullObjectWith(ctx, t, resourceSchema.Type(), prior)
+	plannedRaw := nullObjectWith(ctx, t, resourceSchema.Type(), planned)
+
+	req := fwresource.UpdateRequest{
+		Plan:   tfsdk.Plan{Schema: resourceSchema, Raw: plannedRaw},
+		State:  tfsdk.State{Schema: resourceSchema, Raw: priorRaw},
+		Config: tfsdk.Config{Schema: resourceSchema, Raw: plannedRaw},
+	}
+	resp := fwresource.UpdateResponse{State: tfsdk.State{Schema: resourceSchema, Raw: priorRaw}}
+
+	return req, resp
 }

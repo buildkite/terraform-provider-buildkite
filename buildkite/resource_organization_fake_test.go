@@ -1,6 +1,7 @@
 package buildkite
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -12,6 +13,9 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
@@ -22,16 +26,18 @@ import (
 // exercised without an organization to change. Its GraphQL side answers with identifiers only: the
 // allowlist is api-settings' to report, and nothing here offers a second copy of it.
 type fakeOrganizationAPI struct {
-	t                 *testing.T
-	mu                sync.Mutex
-	settings          organizationAPISettings
-	readStatus        int
-	readBody          string
-	patchStatus       int
-	patchBody         string
-	twoFactorEnforced bool
-	twoFactorError    string
-	writes            []string
+	t        *testing.T
+	mu       sync.Mutex
+	settings organizationAPISettings
+	// readStatus, once readsBeforeRefusal successful reads have gone through, fails every read after
+	readStatus         int
+	readBody           string
+	readsBeforeRefusal int
+	patchStatus        int
+	patchBody          string
+	twoFactorEnforced  bool
+	twoFactorError     string
+	writes             []string
 }
 
 func newFakeOrganizationAPI(t *testing.T) (*httptest.Server, *fakeOrganizationAPI) {
@@ -60,6 +66,17 @@ func (a *fakeOrganizationAPI) refuseRead(status int, body string) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
+	a.readStatus = status
+	a.readBody = body
+}
+
+// refuseReadAfter lets the next successes reads through before refuseRead takes effect, so a test can
+// put the failure between the refresh and the destroy rather than in front of both
+func (a *fakeOrganizationAPI) refuseReadAfter(successes, status int, body string) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+
+	a.readsBeforeRefusal = successes
 	a.readStatus = status
 	a.readBody = body
 }
@@ -189,6 +206,10 @@ func (a *fakeOrganizationAPI) apiSettings(w http.ResponseWriter, r *http.Request
 	switch r.Method {
 	case http.MethodGet:
 		if a.readStatus != 0 {
+			if a.readsBeforeRefusal > 0 {
+				a.readsBeforeRefusal--
+				break
+			}
 			http.Error(w, a.readBody, a.readStatus)
 			return
 		}
@@ -383,10 +404,34 @@ func TestUnitBuildkiteOrganizationRefusesToWriteUnreadableSettings(t *testing.T)
 		Steps: []resource.TestStep{
 			{
 				Config:      fakeOrganizationConfig(server, `allowed_api_ip_addresses = []`),
-				ExpectError: regexp.MustCompile(`(?s)Unable to read organization API settings.*The API token needs the read_organization_settings scope`),
+				ExpectError: regexp.MustCompile(`(?s)Unable to read organization API settings.*The API token needs the read_organization_settings scope, and its user must be an organization administrator`),
 			},
 		},
 	})
+}
+
+// The settings endpoint is read on every apply, whatever the configuration sets, so a token that
+// cannot read it manages nothing here. enforce_2fa is the one attribute the endpoint does not carry,
+// and it is no exception: the read still has to answer before the resource can record the settings
+// it adopts rather than invent them.
+func TestUnitBuildkiteOrganizationNeedsReadableSettingsFor2FAAlone(t *testing.T) {
+	server, api := newFakeOrganizationAPI(t)
+	api.refuseRead(http.StatusForbidden, `{"message":"Forbidden"}`)
+
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config:      fakeOrganizationConfig(server, `enforce_2fa = true`),
+				ExpectError: regexp.MustCompile(`(?s)Unable to read organization API settings.*The API token needs the read_organization_settings scope, and its user must be an organization administrator`),
+			},
+		},
+	})
+
+	// the read comes first, so the apply gives up before touching 2FA
+	if api.twoFactorState() {
+		t.Error("2FA was changed by an apply that could not read the API settings")
+	}
 }
 
 // Destroying clears the allowlist the resource owns, and state does not say whether there is one to
@@ -411,10 +456,45 @@ func TestUnitBuildkiteOrganizationRefusesToDestroyWithUnreadableSettings(t *test
 				},
 				Config:      fakeOrganizationConfig(server, ``),
 				Destroy:     true,
-				ExpectError: regexp.MustCompile(`(?s)Unable to read organization API settings.*The API token needs the read_organization_settings scope`),
+				ExpectError: regexp.MustCompile(`(?s)Unable to read organization API settings.*The API token needs the read_organization_settings scope, and its user must be an organization administrator.*terraform state rm`),
 			},
 			{
 				// with the settings readable the allowlist state never saw is still cleared
+				PreConfig: api.allowRead,
+				Config:    fakeOrganizationConfig(server, ``),
+				Destroy:   true,
+			},
+		},
+	})
+}
+
+// A destroy that cannot read the settings has no way to finish, whatever stopped the read. The scope
+// hint only fits a forbidden answer, so the way out has to be named for every other status too. Only
+// a read that fails after the refresh reaches Delete: a refresh that fails on a status Read does not
+// tolerate stops the destroy in front of it, carrying no way out because a plain refresh has none.
+func TestUnitBuildkiteOrganizationNamesTheWayOutOfAnUndestroyableResource(t *testing.T) {
+	server, api := newFakeOrganizationAPI(t)
+
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		// restoring the read is the other way out the message offers, and it finishes the job
+		CheckDestroy: api.checkAllowedIpAddresses(""),
+		Steps: []resource.TestStep{
+			{
+				Config: fakeOrganizationConfig(server, ``),
+			},
+			{
+				PreConfig: func() {
+					api.presetAllowedIpAddresses("1.1.1.1/32")
+					// the refresh reads, then the settings go away before Delete asks. Not a scope
+					// problem, so nothing about scopes would help the operator here.
+					api.refuseReadAfter(1, http.StatusNotFound, `{"message":"Not Found"}`)
+				},
+				Config:      fakeOrganizationConfig(server, ``),
+				Destroy:     true,
+				ExpectError: regexp.MustCompile(`(?s)Unable to read organization API settings.*terraform state rm`),
+			},
+			{
 				PreConfig: api.allowRead,
 				Config:    fakeOrganizationConfig(server, ``),
 				Destroy:   true,
@@ -476,6 +556,55 @@ func TestUnitBuildkiteOrganizationKeepsWrittenSettingsWhenSetting2FAFails(t *tes
 	}
 }
 
+// updateAPISettings reports what it wrote to the organization. A create that fails at 2FA
+// afterwards tells the operator what it left behind, and a settings write that never happened leaves
+// nothing to tell them about.
+func TestUnitOrganizationUpdateAPISettingsReportsWhetherItWrote(t *testing.T) {
+	unset := organizationResourceModel{
+		AllowedApiIpAddresses:        types.ListNull(types.StringType),
+		RevokeInactiveTokensAfter:    types.StringNull(),
+		RestrictUserApiTokenCreation: types.BoolNull(),
+	}
+	configured := unset
+	configured.AllowedApiIpAddresses = types.ListValueMust(types.StringType, []attr.Value{types.StringValue("1.1.1.1/32")})
+
+	testCases := []struct {
+		name        string
+		model       organizationResourceModel
+		patchStatus int
+		want        bool
+	}{
+		{"nothing differs, so nothing is written", unset, 0, false},
+		{"a changed allowlist is written", configured, 0, true},
+		{"a refused write is not a write", configured, http.StatusForbidden, false},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			server, api := newFakeOrganizationAPI(t)
+			api.settings.Features.ApiIpAllowList = true
+			if tc.patchStatus != 0 {
+				api.refusePatch(tc.patchStatus, `{"message":"Forbidden"}`)
+			}
+
+			org := &organizationResource{client: NewClient(&clientConfig{
+				apiToken:   "fake",
+				graphqlURL: server.URL + "/graphql",
+				restURL:    server.URL,
+				org:        "acme",
+				userAgent:  "test",
+			})}
+
+			var diags diag.Diagnostics
+			state := tc.model
+			got := org.updateAPISettings(context.Background(), &tc.model, &tc.model, &state, &diags)
+			if wrote := len(got) > 0; wrote != tc.want {
+				t.Errorf("updateAPISettings() = %q, want a write reported: %t (diagnostics: %v)", got, tc.want, diags)
+			}
+		})
+	}
+}
+
 func TestUnitBuildkiteOrganizationDatasourceAgainstFakeAPI(t *testing.T) {
 	server, api := newFakeOrganizationAPI(t)
 	api.settings.AllowedIpAddresses = "1.1.1.1/32 0.0.0.0/0"
@@ -496,6 +625,46 @@ func TestUnitBuildkiteOrganizationDatasourceAgainstFakeAPI(t *testing.T) {
 			},
 		},
 	})
+}
+
+// An organization without an allowlist has no addresses, which splitting the empty string the API
+// answers with would report as one blank address instead. The API separates on runs of whitespace,
+// so a doubled space is not an empty address either.
+func TestUnitBuildkiteOrganizationDatasourceAllowlistSeparators(t *testing.T) {
+	testCases := []struct {
+		name   string
+		remote string
+		want   []string
+	}{
+		{"no allowlist is no addresses", "", nil},
+		{"one address", "1.1.1.1/32", []string{"1.1.1.1/32"}},
+		{"a doubled space is not an address", "1.1.1.1/32  0.0.0.0/0", []string{"1.1.1.1/32", "0.0.0.0/0"}},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			server, api := newFakeOrganizationAPI(t)
+			api.settings.AllowedIpAddresses = tc.remote
+
+			const name = "data.buildkite_organization.settings"
+			checks := []resource.TestCheckFunc{
+				resource.TestCheckResourceAttr(name, "allowed_api_ip_addresses.#", fmt.Sprint(len(tc.want))),
+			}
+			for i, address := range tc.want {
+				checks = append(checks, resource.TestCheckResourceAttr(name, fmt.Sprintf("allowed_api_ip_addresses.%d", i), address))
+			}
+
+			resource.UnitTest(t, resource.TestCase{
+				ProtoV6ProviderFactories: protoV6ProviderFactories(),
+				Steps: []resource.TestStep{
+					{
+						Config: fakeOrganizationDatasourceConfig(server),
+						Check:  resource.ComposeAggregateTestCheckFunc(checks...),
+					},
+				},
+			})
+		})
+	}
 }
 
 // api-settings only answers an organization administrator, so a lookup that cannot see the allowlist

@@ -57,8 +57,9 @@ func (*organizationResource) Schema(ctx context.Context, req resource.SchemaRequ
 
 			The user of your API token must be an organization administrator to manage organization settings.
 			Every attribute other than ` + "`enforce_2fa`" + ` is managed through the organization API settings
-			endpoint, so the token also needs the ` + "`read_organization_settings`" + ` and
-			` + "`write_organization_settings`" + ` scopes.
+			endpoint. The resource reads that endpoint on every apply, so the token needs the
+			` + "`read_organization_settings`" + ` scope whatever the configuration sets, and
+			` + "`write_organization_settings`" + ` to change any of those attributes.
 		`),
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
@@ -283,11 +284,11 @@ func (o *organizationResource) Update(ctx context.Context, req resource.UpdateRe
 		twoFAResponse, err := setOrganization2FA(ctx, o.client.genqlient, *org, plan.Enforce2FA.ValueBool())
 		if err != nil {
 			resp.Diagnostics.AddError("Unable to set 2FA", err.Error())
+			resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 			return
 		}
 		state.Enforce2FA = types.BoolValue(twoFAResponse.OrganizationEnforceTwoFactorAuthenticationForMembersUpdate.Organization.MembersRequireTwoFactorAuthentication)
 	}
-
 }
 
 func (o *organizationResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
@@ -307,7 +308,14 @@ func (o *organizationResource) Delete(ctx context.Context, req resource.DeleteRe
 	// request is skipped for.
 	current, err := o.client.getOrganizationAPISettings(ctx)
 	if err != nil {
-		addUnreadableAPISettingsError(&resp.Diagnostics, err)
+		// a destroy that cannot read has no way to finish, so say what does finish it. Every status
+		// lands here, not just the forbidden one the scope hint covers.
+		resp.Diagnostics.AddError(
+			"Unable to read organization API settings",
+			unreadableAPISettingsDetail(err)+" Destroying this resource clears the allowed API IP addresses, "+
+				"which the organization has to answer for first. Restore access and destroy again, or remove "+
+				"the resource from state with terraform state rm to leave the organization's settings as they are.",
+		)
 		return
 	}
 	if current.AllowedIpAddresses != "" {
@@ -425,14 +433,20 @@ func apiSettingsPatch(config, plan *organizationResourceModel, current *organiza
 	return payload
 }
 
-// addUnreadableAPISettingsError reports a settings read that failed, naming the scope a forbidden
-// answer asks for
-func addUnreadableAPISettingsError(diags *diag.Diagnostics, err error) {
+// unreadableAPISettingsDetail describes a settings read that failed, naming the access a forbidden
+// answer asks for. The endpoint requires an organization administrator to read as well as write, so a
+// token already carrying the scope is refused just the same. Callers with a way out of the failure
+// append it.
+func unreadableAPISettingsDetail(err error) string {
 	detail := fmt.Sprintf("Unable to read organization API settings: %s", err.Error())
 	if isAPIStatus(err, http.StatusForbidden) {
-		detail += " The API token needs the read_organization_settings scope."
+		detail += fmt.Sprintf(" The API token needs the %s scope, and its user must be an organization administrator.", readOrganizationSettingsScope)
 	}
-	diags.AddError("Unable to read organization API settings", detail)
+	return detail
+}
+
+func addUnreadableAPISettingsError(diags *diag.Diagnostics, err error) {
+	diags.AddError("Unable to read organization API settings", unreadableAPISettingsDetail(err))
 }
 
 func (o *organizationResource) readAPISettings(ctx context.Context, state *organizationResourceModel, diags *diag.Diagnostics) {
@@ -442,8 +456,8 @@ func (o *organizationResource) readAPISettings(ctx context.Context, state *organ
 			addUnreadableAPISettingsError(diags, err)
 			return
 		}
-		// tolerate tokens without the read_organization_settings scope
-		diags.AddWarning("Unable to read organization API settings", fmt.Sprintf("Unable to read organization API settings, keeping the last known values. The API token needs the read_organization_settings scope: %s", err.Error()))
+		// tolerate a refresh that is not allowed to read the settings
+		diags.AddWarning("Unable to read organization API settings", fmt.Sprintf("Unable to read organization API settings, keeping the last known values. The API token needs the %s scope, and its user must be an organization administrator: %s", readOrganizationSettingsScope, err.Error()))
 		settings = apiSettingsFromModel(state)
 	}
 
