@@ -14,8 +14,12 @@ func TestAccBuildkiteOrganizationDatasource(t *testing.T) {
 			Steps: []resource.TestStep{
 				{
 					Config: `data "buildkite_organization" "settings" {}`,
+					// the identifiers are what a default lookup is for, and they resolve for a caller
+					// who cannot see the settings. The allowlist is organization-wide state another
+					// test presets, so this one does not assert on it.
 					Check: resource.ComposeAggregateTestCheckFunc(
-						resource.TestCheckResourceAttr("data.buildkite_organization.settings", "allowed_api_ip_addresses.0", ""),
+						resource.TestCheckResourceAttrSet("data.buildkite_organization.settings", "id"),
+						resource.TestCheckResourceAttrSet("data.buildkite_organization.settings", "uuid"),
 					),
 				},
 			},

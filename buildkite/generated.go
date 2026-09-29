@@ -516,9 +516,13 @@ func (v *GetOrganizationMemberByEmailResponse) GetOrganization() GetOrganization
 //
 // An organization
 type GetOrganizationMembersOrganization struct {
+	Id string `json:"id"`
 	// Returns users within the organization
 	Members GetOrganizationMembersOrganizationMembersOrganizationMemberConnection `json:"members"`
 }
+
+// GetId returns GetOrganizationMembersOrganization.Id, and is useful for accessing the field via an interface.
+func (v *GetOrganizationMembersOrganization) GetId() string { return v.Id }
 
 // GetMembers returns GetOrganizationMembersOrganization.Members, and is useful for accessing the field via an interface.
 func (v *GetOrganizationMembersOrganization) GetMembers() GetOrganizationMembersOrganizationMembersOrganizationMemberConnection {
@@ -1543,6 +1547,21 @@ func (v *OrganizationBannerFields) GetUuid() string { return v.Uuid }
 
 // GetMessage returns OrganizationBannerFields.Message, and is useful for accessing the field via an interface.
 func (v *OrganizationBannerFields) GetMessage() string { return v.Message }
+
+// The roles a user can be within an organization
+type OrganizationMemberRole string
+
+const (
+	// The user is a regular member of the organization
+	OrganizationMemberRoleMember OrganizationMemberRole = "MEMBER"
+	// Has full access to the entire organization
+	OrganizationMemberRoleAdmin OrganizationMemberRole = "ADMIN"
+)
+
+var AllOrganizationMemberRole = []OrganizationMemberRole{
+	OrganizationMemberRoleMember,
+	OrganizationMemberRoleAdmin,
+}
 
 // OrganizationRuleFields includes the GraphQL fields of Rule requested by the fragment OrganizationRuleFields.
 type OrganizationRuleFields struct {
@@ -4765,8 +4784,10 @@ func (v *__GetOrganizationMemberByEmailInput) GetEmail() string { return v.Email
 
 // __GetOrganizationMembersInput is used internally by genqlient
 type __GetOrganizationMembersInput struct {
-	Slug   string  `json:"slug"`
-	Cursor *string `json:"cursor"`
+	Slug   string                   `json:"slug"`
+	Cursor *string                  `json:"cursor"`
+	Team   *string                  `json:"team,omitempty"`
+	Role   []OrganizationMemberRole `json:"role,omitempty"`
 }
 
 // GetSlug returns __GetOrganizationMembersInput.Slug, and is useful for accessing the field via an interface.
@@ -4774,6 +4795,12 @@ func (v *__GetOrganizationMembersInput) GetSlug() string { return v.Slug }
 
 // GetCursor returns __GetOrganizationMembersInput.Cursor, and is useful for accessing the field via an interface.
 func (v *__GetOrganizationMembersInput) GetCursor() *string { return v.Cursor }
+
+// GetTeam returns __GetOrganizationMembersInput.Team, and is useful for accessing the field via an interface.
+func (v *__GetOrganizationMembersInput) GetTeam() *string { return v.Team }
+
+// GetRole returns __GetOrganizationMembersInput.Role, and is useful for accessing the field via an interface.
+func (v *__GetOrganizationMembersInput) GetRole() []OrganizationMemberRole { return v.Role }
 
 // __GetOrganizationPipelinesInput is used internally by genqlient
 type __GetOrganizationPipelinesInput struct {
@@ -5385,8 +5412,9 @@ func (v *__getPipelineWebhookInput) GetId() string { return v.Id }
 
 // __getTestSuiteInput is used internally by genqlient
 type __getTestSuiteInput struct {
-	Id        string `json:"id"`
-	TeamCount int    `json:"teamCount"`
+	Id         string  `json:"id"`
+	TeamCount  int     `json:"teamCount"`
+	TeamCursor *string `json:"teamCursor"`
 }
 
 // GetId returns __getTestSuiteInput.Id, and is useful for accessing the field via an interface.
@@ -5394,6 +5422,9 @@ func (v *__getTestSuiteInput) GetId() string { return v.Id }
 
 // GetTeamCount returns __getTestSuiteInput.TeamCount, and is useful for accessing the field via an interface.
 func (v *__getTestSuiteInput) GetTeamCount() int { return v.TeamCount }
+
+// GetTeamCursor returns __getTestSuiteInput.TeamCursor, and is useful for accessing the field via an interface.
+func (v *__getTestSuiteInput) GetTeamCursor() *string { return v.TeamCursor }
 
 // __pauseDispatchClusterQueueInput is used internally by genqlient
 type __pauseDispatchClusterQueueInput struct {
@@ -5446,18 +5477,6 @@ func (v *__revokeClusterAgentTokenInput) GetOrganizationId() string { return v.O
 
 // GetId returns __revokeClusterAgentTokenInput.Id, and is useful for accessing the field via an interface.
 func (v *__revokeClusterAgentTokenInput) GetId() string { return v.Id }
-
-// __setApiIpAddressesInput is used internally by genqlient
-type __setApiIpAddressesInput struct {
-	OrganizationID string `json:"organizationID"`
-	IpAddresses    string `json:"ipAddresses"`
-}
-
-// GetOrganizationID returns __setApiIpAddressesInput.OrganizationID, and is useful for accessing the field via an interface.
-func (v *__setApiIpAddressesInput) GetOrganizationID() string { return v.OrganizationID }
-
-// GetIpAddresses returns __setApiIpAddressesInput.IpAddresses, and is useful for accessing the field via an interface.
-func (v *__setApiIpAddressesInput) GetIpAddresses() string { return v.IpAddresses }
 
 // __setClusterDefaultQueueInput is used internally by genqlient
 type __setClusterDefaultQueueInput struct {
@@ -7811,100 +7830,12 @@ func (v *createTestSuiteTeamResponse) GetTeamSuiteCreate() createTestSuiteTeamTe
 //
 // Autogenerated return type of TeamSuiteCreate.
 type createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayload struct {
-	Suite     createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuite     `json:"suite"`
 	TeamSuite createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadTeamSuite `json:"teamSuite"`
-}
-
-// GetSuite returns createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayload.Suite, and is useful for accessing the field via an interface.
-func (v *createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayload) GetSuite() createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuite {
-	return v.Suite
 }
 
 // GetTeamSuite returns createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayload.TeamSuite, and is useful for accessing the field via an interface.
 func (v *createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayload) GetTeamSuite() createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadTeamSuite {
 	return v.TeamSuite
-}
-
-// createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuite includes the requested fields of the GraphQL type Suite.
-// The GraphQL type's documentation follows.
-//
-// A suite
-type createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuite struct {
-	// Teams associated with this suite
-	Teams createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuiteTeamsTeamSuiteConnection `json:"teams"`
-}
-
-// GetTeams returns createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuite.Teams, and is useful for accessing the field via an interface.
-func (v *createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuite) GetTeams() createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuiteTeamsTeamSuiteConnection {
-	return v.Teams
-}
-
-// createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuiteTeamsTeamSuiteConnection includes the requested fields of the GraphQL type TeamSuiteConnection.
-// The GraphQL type's documentation follows.
-//
-// The connection type for TeamSuite.
-type createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuiteTeamsTeamSuiteConnection struct {
-	// A list of edges.
-	Edges []createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdge `json:"edges"`
-}
-
-// GetEdges returns createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuiteTeamsTeamSuiteConnection.Edges, and is useful for accessing the field via an interface.
-func (v *createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuiteTeamsTeamSuiteConnection) GetEdges() []createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdge {
-	return v.Edges
-}
-
-// createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdge includes the requested fields of the GraphQL type TeamSuiteEdge.
-// The GraphQL type's documentation follows.
-//
-// An edge in a connection.
-type createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdge struct {
-	// The item at the end of the edge.
-	Node createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdgeNodeTeamSuite `json:"node"`
-}
-
-// GetNode returns createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdge.Node, and is useful for accessing the field via an interface.
-func (v *createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdge) GetNode() createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdgeNodeTeamSuite {
-	return v.Node
-}
-
-// createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdgeNodeTeamSuite includes the requested fields of the GraphQL type TeamSuite.
-// The GraphQL type's documentation follows.
-//
-// A suite that's been assigned to a team
-type createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdgeNodeTeamSuite struct {
-	Id string `json:"id"`
-	// The public UUID for this team suite
-	Uuid string `json:"uuid"`
-	// The team associated with this team member
-	Team createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdgeNodeTeamSuiteTeam `json:"team"`
-}
-
-// GetId returns createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdgeNodeTeamSuite.Id, and is useful for accessing the field via an interface.
-func (v *createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdgeNodeTeamSuite) GetId() string {
-	return v.Id
-}
-
-// GetUuid returns createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdgeNodeTeamSuite.Uuid, and is useful for accessing the field via an interface.
-func (v *createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdgeNodeTeamSuite) GetUuid() string {
-	return v.Uuid
-}
-
-// GetTeam returns createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdgeNodeTeamSuite.Team, and is useful for accessing the field via an interface.
-func (v *createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdgeNodeTeamSuite) GetTeam() createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdgeNodeTeamSuiteTeam {
-	return v.Team
-}
-
-// createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdgeNodeTeamSuiteTeam includes the requested fields of the GraphQL type Team.
-// The GraphQL type's documentation follows.
-//
-// An organization team
-type createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdgeNodeTeamSuiteTeam struct {
-	Id string `json:"id"`
-}
-
-// GetId returns createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdgeNodeTeamSuiteTeam.Id, and is useful for accessing the field via an interface.
-func (v *createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdgeNodeTeamSuiteTeam) GetId() string {
-	return v.Id
 }
 
 // createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadTeamSuite includes the requested fields of the GraphQL type TeamSuite.
@@ -13437,18 +13368,11 @@ func (v *getNodeResponse) __premarshalJSON() (*__premarshalgetNodeResponse, erro
 //
 // An organization
 type getOrganizationOrganization struct {
-	// A space-separated allowlist of IP addresses that can access the organization via the GraphQL or REST API
-	AllowedApiIpAddresses string `json:"allowedApiIpAddresses"`
-	Id                    string `json:"id"`
+	Id string `json:"id"`
 	// The public UUID for this organization
 	Uuid string `json:"uuid"`
 	// Whether this organization requires 2FA to access (Please note that this is a beta feature and is not yet available to all organizations.)
 	MembersRequireTwoFactorAuthentication bool `json:"membersRequireTwoFactorAuthentication"`
-}
-
-// GetAllowedApiIpAddresses returns getOrganizationOrganization.AllowedApiIpAddresses, and is useful for accessing the field via an interface.
-func (v *getOrganizationOrganization) GetAllowedApiIpAddresses() string {
-	return v.AllowedApiIpAddresses
 }
 
 // GetId returns getOrganizationOrganization.Id, and is useful for accessing the field via an interface.
@@ -22319,8 +22243,14 @@ func (v *getTestSuiteSuiteTeamSuite) GetTypename() string { return v.Typename }
 //
 // The connection type for TeamSuite.
 type getTestSuiteSuiteTeamsTeamSuiteConnection struct {
+	PageInfo getTestSuiteSuiteTeamsTeamSuiteConnectionPageInfo `json:"pageInfo"`
 	// A list of edges.
 	Edges []getTestSuiteSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdge `json:"edges"`
+}
+
+// GetPageInfo returns getTestSuiteSuiteTeamsTeamSuiteConnection.PageInfo, and is useful for accessing the field via an interface.
+func (v *getTestSuiteSuiteTeamsTeamSuiteConnection) GetPageInfo() getTestSuiteSuiteTeamsTeamSuiteConnectionPageInfo {
+	return v.PageInfo
 }
 
 // GetEdges returns getTestSuiteSuiteTeamsTeamSuiteConnection.Edges, and is useful for accessing the field via an interface.
@@ -22381,6 +22311,25 @@ type getTestSuiteSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdgeNodeTeamSuiteTea
 func (v *getTestSuiteSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdgeNodeTeamSuiteTeam) GetId() string {
 	return v.Id
 }
+
+// getTestSuiteSuiteTeamsTeamSuiteConnectionPageInfo includes the requested fields of the GraphQL type PageInfo.
+// The GraphQL type's documentation follows.
+//
+// Information about pagination in a connection.
+type getTestSuiteSuiteTeamsTeamSuiteConnectionPageInfo struct {
+	// When paginating forwards, are there more items?
+	HasNextPage bool `json:"hasNextPage"`
+	// When paginating forwards, the cursor to continue.
+	EndCursor string `json:"endCursor"`
+}
+
+// GetHasNextPage returns getTestSuiteSuiteTeamsTeamSuiteConnectionPageInfo.HasNextPage, and is useful for accessing the field via an interface.
+func (v *getTestSuiteSuiteTeamsTeamSuiteConnectionPageInfo) GetHasNextPage() bool {
+	return v.HasNextPage
+}
+
+// GetEndCursor returns getTestSuiteSuiteTeamsTeamSuiteConnectionPageInfo.EndCursor, and is useful for accessing the field via an interface.
+func (v *getTestSuiteSuiteTeamsTeamSuiteConnectionPageInfo) GetEndCursor() string { return v.EndCursor }
 
 // getTestSuiteSuiteUser includes the requested fields of the GraphQL type User.
 // The GraphQL type's documentation follows.
@@ -22678,64 +22627,6 @@ type revokeClusterAgentTokenResponse struct {
 // GetClusterAgentTokenRevoke returns revokeClusterAgentTokenResponse.ClusterAgentTokenRevoke, and is useful for accessing the field via an interface.
 func (v *revokeClusterAgentTokenResponse) GetClusterAgentTokenRevoke() revokeClusterAgentTokenClusterAgentTokenRevokeClusterAgentTokenRevokePayload {
 	return v.ClusterAgentTokenRevoke
-}
-
-// setApiIpAddressesOrganizationApiIpAllowlistUpdateOrganizationAPIIPAllowlistUpdateMutationPayload includes the requested fields of the GraphQL type OrganizationAPIIPAllowlistUpdateMutationPayload.
-// The GraphQL type's documentation follows.
-//
-// Autogenerated return type of OrganizationAPIIPAllowlistUpdateMutation.
-type setApiIpAddressesOrganizationApiIpAllowlistUpdateOrganizationAPIIPAllowlistUpdateMutationPayload struct {
-	Organization setApiIpAddressesOrganizationApiIpAllowlistUpdateOrganizationAPIIPAllowlistUpdateMutationPayloadOrganization `json:"organization"`
-}
-
-// GetOrganization returns setApiIpAddressesOrganizationApiIpAllowlistUpdateOrganizationAPIIPAllowlistUpdateMutationPayload.Organization, and is useful for accessing the field via an interface.
-func (v *setApiIpAddressesOrganizationApiIpAllowlistUpdateOrganizationAPIIPAllowlistUpdateMutationPayload) GetOrganization() setApiIpAddressesOrganizationApiIpAllowlistUpdateOrganizationAPIIPAllowlistUpdateMutationPayloadOrganization {
-	return v.Organization
-}
-
-// setApiIpAddressesOrganizationApiIpAllowlistUpdateOrganizationAPIIPAllowlistUpdateMutationPayloadOrganization includes the requested fields of the GraphQL type Organization.
-// The GraphQL type's documentation follows.
-//
-// An organization
-type setApiIpAddressesOrganizationApiIpAllowlistUpdateOrganizationAPIIPAllowlistUpdateMutationPayloadOrganization struct {
-	// A space-separated allowlist of IP addresses that can access the organization via the GraphQL or REST API
-	AllowedApiIpAddresses string `json:"allowedApiIpAddresses"`
-	Id                    string `json:"id"`
-	// The public UUID for this organization
-	Uuid string `json:"uuid"`
-	// Whether this organization requires 2FA to access (Please note that this is a beta feature and is not yet available to all organizations.)
-	MembersRequireTwoFactorAuthentication bool `json:"membersRequireTwoFactorAuthentication"`
-}
-
-// GetAllowedApiIpAddresses returns setApiIpAddressesOrganizationApiIpAllowlistUpdateOrganizationAPIIPAllowlistUpdateMutationPayloadOrganization.AllowedApiIpAddresses, and is useful for accessing the field via an interface.
-func (v *setApiIpAddressesOrganizationApiIpAllowlistUpdateOrganizationAPIIPAllowlistUpdateMutationPayloadOrganization) GetAllowedApiIpAddresses() string {
-	return v.AllowedApiIpAddresses
-}
-
-// GetId returns setApiIpAddressesOrganizationApiIpAllowlistUpdateOrganizationAPIIPAllowlistUpdateMutationPayloadOrganization.Id, and is useful for accessing the field via an interface.
-func (v *setApiIpAddressesOrganizationApiIpAllowlistUpdateOrganizationAPIIPAllowlistUpdateMutationPayloadOrganization) GetId() string {
-	return v.Id
-}
-
-// GetUuid returns setApiIpAddressesOrganizationApiIpAllowlistUpdateOrganizationAPIIPAllowlistUpdateMutationPayloadOrganization.Uuid, and is useful for accessing the field via an interface.
-func (v *setApiIpAddressesOrganizationApiIpAllowlistUpdateOrganizationAPIIPAllowlistUpdateMutationPayloadOrganization) GetUuid() string {
-	return v.Uuid
-}
-
-// GetMembersRequireTwoFactorAuthentication returns setApiIpAddressesOrganizationApiIpAllowlistUpdateOrganizationAPIIPAllowlistUpdateMutationPayloadOrganization.MembersRequireTwoFactorAuthentication, and is useful for accessing the field via an interface.
-func (v *setApiIpAddressesOrganizationApiIpAllowlistUpdateOrganizationAPIIPAllowlistUpdateMutationPayloadOrganization) GetMembersRequireTwoFactorAuthentication() bool {
-	return v.MembersRequireTwoFactorAuthentication
-}
-
-// setApiIpAddressesResponse is returned by setApiIpAddresses on success.
-type setApiIpAddressesResponse struct {
-	// Sets an allowlist of IP addresses for API access to an organization. Please note that this is a beta feature and is not yet available to all organizations.
-	OrganizationApiIpAllowlistUpdate setApiIpAddressesOrganizationApiIpAllowlistUpdateOrganizationAPIIPAllowlistUpdateMutationPayload `json:"organizationApiIpAllowlistUpdate"`
-}
-
-// GetOrganizationApiIpAllowlistUpdate returns setApiIpAddressesResponse.OrganizationApiIpAllowlistUpdate, and is useful for accessing the field via an interface.
-func (v *setApiIpAddressesResponse) GetOrganizationApiIpAllowlistUpdate() setApiIpAddressesOrganizationApiIpAllowlistUpdateOrganizationAPIIPAllowlistUpdateMutationPayload {
-	return v.OrganizationApiIpAllowlistUpdate
 }
 
 // setClusterDefaultQueueClusterUpdateClusterUpdatePayload includes the requested fields of the GraphQL type ClusterUpdatePayload.
@@ -25108,9 +24999,10 @@ func GetOrganizationMemberByEmail(
 
 // The query executed by GetOrganizationMembers.
 const GetOrganizationMembers_Operation = `
-query GetOrganizationMembers ($slug: ID!, $cursor: String) {
+query GetOrganizationMembers ($slug: ID!, $cursor: String, $team: TeamSelector, $role: [OrganizationMemberRole!]) {
 	organization(slug: $slug) {
-		members(first: 500, after: $cursor) {
+		id
+		members(first: 500, after: $cursor, team: $team, role: $role) {
 			pageInfo {
 				endCursor
 				hasNextPage
@@ -25135,6 +25027,8 @@ func GetOrganizationMembers(
 	client_ graphql.Client,
 	slug string,
 	cursor *string,
+	team *string,
+	role []OrganizationMemberRole,
 ) (data_ *GetOrganizationMembersResponse, err_ error) {
 	req_ := &graphql.Request{
 		OpName: "GetOrganizationMembers",
@@ -25142,6 +25036,8 @@ func GetOrganizationMembers(
 		Variables: &__GetOrganizationMembersInput{
 			Slug:   slug,
 			Cursor: cursor,
+			Team:   team,
+			Role:   role,
 		},
 	}
 
@@ -26126,19 +26022,6 @@ func createTeamRegistry(
 const createTestSuiteTeam_Operation = `
 mutation createTestSuiteTeam ($teamId: ID!, $suiteId: ID!, $accessLevel: SuiteAccessLevels!) {
 	teamSuiteCreate(input: {teamID:$teamId,suiteID:$suiteId,accessLevel:$accessLevel}) {
-		suite {
-			teams(order: NAME, first: 50) {
-				edges {
-					node {
-						id
-						uuid
-						team {
-							id
-						}
-					}
-				}
-			}
-		}
 		teamSuite {
 			... TeamSuiteFields
 		}
@@ -27117,7 +27000,6 @@ func getNode(
 const getOrganization_Operation = `
 query getOrganization ($slug: ID!) {
 	organization(slug: $slug) {
-		allowedApiIpAddresses
 		id
 		uuid
 		membersRequireTwoFactorAuthentication
@@ -27926,7 +27808,7 @@ func getPipelineWebhook(
 
 // The query executed by getTestSuite.
 const getTestSuite_Operation = `
-query getTestSuite ($id: ID!, $teamCount: Int) {
+query getTestSuite ($id: ID!, $teamCount: Int, $teamCursor: String) {
 	suite: node(id: $id) {
 		__typename
 		... on Suite {
@@ -27936,7 +27818,11 @@ query getTestSuite ($id: ID!, $teamCount: Int) {
 			emoji
 			name
 			slug
-			teams(first: $teamCount, order: NAME) {
+			teams(first: $teamCount, after: $teamCursor, order: NAME) {
+				pageInfo {
+					hasNextPage
+					endCursor
+				}
 				edges {
 					node {
 						id
@@ -27957,13 +27843,15 @@ func getTestSuite(
 	client_ graphql.Client,
 	id string,
 	teamCount int,
+	teamCursor *string,
 ) (data_ *getTestSuiteResponse, err_ error) {
 	req_ := &graphql.Request{
 		OpName: "getTestSuite",
 		Query:  getTestSuite_Operation,
 		Variables: &__getTestSuiteInput{
-			Id:        id,
-			TeamCount: teamCount,
+			Id:         id,
+			TeamCount:  teamCount,
+			TeamCursor: teamCursor,
 		},
 	}
 
@@ -28169,47 +28057,6 @@ func revokeClusterAgentToken(
 	}
 
 	data_ = &revokeClusterAgentTokenResponse{}
-	resp_ := &graphql.Response{Data: data_}
-
-	err_ = client_.MakeRequest(
-		ctx_,
-		req_,
-		resp_,
-	)
-
-	return data_, err_
-}
-
-// The mutation executed by setApiIpAddresses.
-const setApiIpAddresses_Operation = `
-mutation setApiIpAddresses ($organizationID: ID!, $ipAddresses: String!) {
-	organizationApiIpAllowlistUpdate(input: {organizationID:$organizationID,ipAddresses:$ipAddresses}) {
-		organization {
-			allowedApiIpAddresses
-			id
-			uuid
-			membersRequireTwoFactorAuthentication
-		}
-	}
-}
-`
-
-func setApiIpAddresses(
-	ctx_ context.Context,
-	client_ graphql.Client,
-	organizationID string,
-	ipAddresses string,
-) (data_ *setApiIpAddressesResponse, err_ error) {
-	req_ := &graphql.Request{
-		OpName: "setApiIpAddresses",
-		Query:  setApiIpAddresses_Operation,
-		Variables: &__setApiIpAddressesInput{
-			OrganizationID: organizationID,
-			IpAddresses:    ipAddresses,
-		},
-	}
-
-	data_ = &setApiIpAddressesResponse{}
 	resp_ := &graphql.Response{Data: data_}
 
 	err_ = client_.MakeRequest(
