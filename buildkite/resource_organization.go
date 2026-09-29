@@ -527,13 +527,15 @@ func (o *organizationResource) updateAPISettings(ctx context.Context, config, pl
 		}
 		// State has to describe the organization rather than the plan: Update records state on this
 		// path, and a later refresh that cannot read the settings keeps whatever it last saw, so a
-		// planned value left here would be adopted rather than replanned. A 4xx is the API refusing
-		// the request, so the organization is as the read above found it. Anything else, a 5xx, a
-		// transport failure or a response that could not be decoded, may have followed a PATCH that
-		// landed, and the client retries those, so the organization is asked again.
+		// planned value left here would be adopted rather than replanned. A 4xx answering the only
+		// attempt is the API refusing the request, so the organization is as the read above found
+		// it. Anything else may have followed a PATCH that landed, so the organization is asked
+		// again: a 5xx, a transport failure or a response that could not be decoded, and any retried
+		// request, whose final 4xx says nothing about the earlier attempt it retried.
 		observed := current
 		var apiErr *apiError
-		if !errors.As(err, &apiErr) || apiErr.StatusCode < 400 || apiErr.StatusCode >= 500 {
+		refused := errors.As(err, &apiErr) && apiErr.StatusCode >= 400 && apiErr.StatusCode < 500 && apiErr.Attempts <= 1
+		if !refused {
 			reread, readErr := o.client.getOrganizationAPISettings(ctx)
 			if readErr != nil {
 				detail += fmt.Sprintf(" The settings could not be read back to check whether the update applied, so state "+

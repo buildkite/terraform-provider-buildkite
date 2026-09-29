@@ -662,8 +662,11 @@ func TestUpdateAPISettingsReportsTheOrganizationWhenThePatchFails(t *testing.T) 
 		wantRestrict bool
 		wantApplied  int
 		wantDetail   string
-		// the read, the PATCH, and the read back that only a PATCH which may have landed gets
+		// the read, the PATCH with any retries, and the read back that only a PATCH which may have
+		// landed gets
 		wantRequests int64
+		// how often the client retries a 429 or 5xx
+		retries int
 	}{
 		{
 			name:        "a refused patch changed nothing, so it is not read back",
@@ -687,6 +690,19 @@ func TestUpdateAPISettingsReportsTheOrganizationWhenThePatchFails(t *testing.T) 
 			wantAllowed: "9.9.9.9/32", wantRevoke: revokeInactiveTokensNever, wantRestrict: false,
 			wantDetail: "could not be read back", wantRequests: 3,
 		},
+		{
+			// the 429 ends the request, but the 5xx it retried may have followed a PATCH that landed
+			name:        "a retried 5xx that runs out on a 429 records what landed",
+			responses:   []stubResponse{before, serverError, {status: http.StatusTooManyRequests, body: `{"message":"slow down"}`}, after},
+			retries:     1,
+			wantAllowed: "1.2.3.4/32", wantRevoke: "DAYS_30", wantRestrict: true, wantApplied: 3, wantRequests: 4,
+		},
+		{
+			name:        "a retried 5xx answered with a 4xx records what landed",
+			responses:   []stubResponse{before, serverError, {status: http.StatusForbidden, body: `{"message":"Forbidden"}`}, after},
+			retries:     1,
+			wantAllowed: "1.2.3.4/32", wantRevoke: "DAYS_30", wantRestrict: true, wantApplied: 3, wantRequests: 4,
+		},
 	}
 
 	for _, testCase := range tests {
@@ -696,7 +712,7 @@ func TestUpdateAPISettingsReportsTheOrganizationWhenThePatchFails(t *testing.T) 
 			server, requests := newRetryStub(t, testCase.responses...)
 			defer server.Close()
 
-			o := &organizationResource{client: newRetryTestClient(t, server.URL, 0, time.Millisecond)}
+			o := &organizationResource{client: newRetryTestClient(t, server.URL, testCase.retries, time.Millisecond)}
 
 			ctx := t.Context()
 			configured := organizationResourceModel{
@@ -807,6 +823,70 @@ func TestOrganizationUpdatePersistsTheAppliedAPISettingsWhen2FAFails(t *testing.
 	}
 }
 
+// A PATCH that answers with a 5xx may still have landed, and Update records state on its way out, so
+// what it records has to be what the read back finds rather than the values from before the PATCH.
+// Otherwise the planned value would be dropped from state while the organization holds it.
+func TestOrganizationUpdatePersistsWhatAFailedPatchApplied(t *testing.T) {
+	t.Parallel()
+
+	server, requests := newRetryStub(t,
+		stubResponse{status: http.StatusOK, body: `{"allowed_ip_addresses":"","revoke_inactive_tokens_after_days":null,"restrict_user_api_token_creation":false}`},
+		stubResponse{status: http.StatusInternalServerError, body: `{"message":"patch failed"}`},
+		// the read back, which finds the period the PATCH applied
+		stubResponse{status: http.StatusOK, body: `{"allowed_ip_addresses":"","revoke_inactive_tokens_after_days":30,"restrict_user_api_token_creation":false}`},
+	)
+	defer server.Close()
+
+	client := newRetryTestClient(t, server.URL, 0, time.Millisecond)
+	orgID := "organization-id"
+	client.organizationId = &orgID
+	o := &organizationResource{client: client}
+
+	ctx := t.Context()
+	sch := resourceSchema(ctx, t, o)
+
+	allowlist := tftypes.NewValue(tftypes.List{ElementType: tftypes.String}, []tftypes.Value{})
+	prior := nullObjectWith(ctx, t, sch.Type(), map[string]tftypes.Value{
+		"id":                           tftypes.NewValue(tftypes.String, "organization-id"),
+		"uuid":                         tftypes.NewValue(tftypes.String, "organization-uuid"),
+		"allowed_api_ip_addresses":     allowlist,
+		"enforce_2fa":                  tftypes.NewValue(tftypes.Bool, false),
+		"revoke_inactive_tokens_after": tftypes.NewValue(tftypes.String, revokeInactiveTokensNever),
+	})
+	// 2FA is unchanged, so the PATCH is the last request the apply makes
+	planned := nullObjectWith(ctx, t, sch.Type(), map[string]tftypes.Value{
+		"id":                           tftypes.NewValue(tftypes.String, "organization-id"),
+		"uuid":                         tftypes.NewValue(tftypes.String, "organization-uuid"),
+		"allowed_api_ip_addresses":     allowlist,
+		"enforce_2fa":                  tftypes.NewValue(tftypes.Bool, false),
+		"revoke_inactive_tokens_after": tftypes.NewValue(tftypes.String, "DAYS_30"),
+	})
+
+	req := fwresource.UpdateRequest{
+		Plan:   tfsdk.Plan{Schema: sch, Raw: planned},
+		State:  tfsdk.State{Schema: sch, Raw: prior},
+		Config: tfsdk.Config{Schema: sch, Raw: planned},
+	}
+	resp := fwresource.UpdateResponse{State: tfsdk.State{Schema: sch, Raw: prior}}
+
+	o.Update(ctx, req, &resp)
+
+	if got := requests.Load(); got != 3 {
+		t.Fatalf("Made %d requests, want 3: the read, the failing PATCH, and the read back", got)
+	}
+	if !diagnosticsContain(resp.Diagnostics, "Unable to update organization API settings") {
+		t.Fatalf("Update() diagnostics = %v, want the PATCH failure reported", resp.Diagnostics)
+	}
+
+	var persisted organizationResourceModel
+	if diags := resp.State.Get(ctx, &persisted); diags.HasError() {
+		t.Fatalf("Reading the persisted state = %v", diags)
+	}
+	if got := persisted.RevokeInactiveTokensAfter.ValueString(); got != "DAYS_30" {
+		t.Errorf("Persisted revoke_inactive_tokens_after = %q, want %q: the read back found the PATCH applied", got, "DAYS_30")
+	}
+}
+
 // This resource does not create an organization, it applies settings to one that already exists, and
 // each step compares before it mutates. So the recoverable answer to a half-applied Create is to
 // record nothing and let the next apply re-run it. Recording the part that applied instead would
@@ -843,6 +923,8 @@ func TestOrganizationCreateWarnsAboutUnrecordedChanges(t *testing.T) {
 		responses          []stubResponse
 		// Substrings the single warning has to contain, or none to assert there is no warning.
 		wantWarned []string
+		// The error the apply fails with, the 2FA mutation's unless set.
+		wantError string
 	}{
 		{
 			name:                "allowlist applied, then the 2FA mutation fails",
@@ -873,6 +955,19 @@ func TestOrganizationCreateWarnsAboutUnrecordedChanges(t *testing.T) {
 		},
 		{
 			// One PATCH carrying every api-setting, so the warning has to list all three as a sentence.
+			// The PATCH answers with a 5xx but landed, so the read back finds the allowlist in place and
+			// the apply stops there, before 2FA, having still changed the organization.
+			name:                "allowlist applied behind a 5xx from the PATCH",
+			configuredAllowlist: configuredAllowlist,
+			responses: []stubResponse{
+				organizationIs(false), apiSettingsAre(""),
+				{status: http.StatusInternalServerError, body: `{"message":"patch failed"}`},
+				apiSettingsAre(configuredAllowlist),
+			},
+			wantWarned: []string{`allowlist was set to "1.2.3.4/32"`},
+			wantError:  "Unable to update organization API settings",
+		},
+		{
 			name:                "every api-setting applied, then the 2FA mutation fails",
 			configuredAllowlist: configuredAllowlist,
 			configuredRevoke:    "DAYS_30",
@@ -923,8 +1018,12 @@ func TestOrganizationCreateWarnsAboutUnrecordedChanges(t *testing.T) {
 			if got := requests.Load(); got < int64(len(testCase.responses)) {
 				t.Fatalf("Made %d requests, want %d: the failure has to come from the last stubbed response", got, len(testCase.responses))
 			}
-			if !diagnosticsContain(resp.Diagnostics, "Unable to set 2FA") {
-				t.Fatalf("Create() diagnostics = %v, want the 2FA failure reported", resp.Diagnostics)
+			wantError := testCase.wantError
+			if wantError == "" {
+				wantError = "Unable to set 2FA"
+			}
+			if !diagnosticsContain(resp.Diagnostics, wantError) {
+				t.Fatalf("Create() diagnostics = %v, want %q reported", resp.Diagnostics, wantError)
 			}
 			if !resp.State.Raw.IsNull() {
 				t.Errorf("Create() persisted %v, want no state: persisting taints the instance, and replacing it clears the API IP allowlist", resp.State.Raw)
