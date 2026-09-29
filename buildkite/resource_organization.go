@@ -143,13 +143,17 @@ func (o *organizationResource) Create(ctx context.Context, req resource.CreateRe
 	}
 
 	log.Printf("Creating settings for organization %s ...", *org)
-	// What this apply has already changed on the organization. Create records no state when a later
-	// step fails, so anything collected here has to be reported instead. Reported in a defer so a
-	// new early return cannot drop the warning, which is the only record these changes applied.
-	var applied []string
+	// A failed Create records no state (the 2FA failure below says why), so this warning is the only
+	// record of api-settings that were written first. Deferred so a new early return cannot drop it.
+	var wroteAPISettings bool
 	defer func() {
-		if resp.Diagnostics.HasError() {
-			warnAboutUnrecordedChanges(applied, &resp.Diagnostics)
+		if wroteAPISettings && resp.Diagnostics.HasError() {
+			resp.Diagnostics.AddWarning(
+				"Organization API settings were applied before the apply failed",
+				"The organization API settings that differed were written and are left in place. "+
+					"No state was recorded for this resource, so terraform will not clear them. Applying again writes "+
+					"only the settings that still differ, then retries whatever failed.",
+			)
 		}
 	}()
 
@@ -159,7 +163,7 @@ func (o *organizationResource) Create(ctx context.Context, req resource.CreateRe
 	// api-settings goes first. A setting the organization's plan does not include is refused
 	// outright, and refusing it changes nothing, so that failure cannot leave 2FA already flipped
 	// on an organization terraform has no state for.
-	applied = append(applied, o.updateAPISettings(ctx, &config, &plan, &state, &resp.Diagnostics)...)
+	wroteAPISettings = o.updateAPISettings(ctx, &config, &plan, &state, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -171,15 +175,9 @@ func (o *organizationResource) Create(ctx context.Context, req resource.CreateRe
 			// no state. Recording a failed create taints the resource, and the replacement that
 			// follows destroys before it creates, clearing an allowlist that did land. Leaving the
 			// create unrecorded keeps the organization as terraform found it, and applying again
-			// writes only what still differs before retrying 2FA. The deferred warning is what
-			// names the api-settings that did land.
+			// writes only what still differs before retrying 2FA.
 			return
 		}
-		change := "two-factor authentication enforcement was removed"
-		if plan.Enforce2FA.ValueBool() {
-			change = "two-factor authentication was enforced for all members"
-		}
-		applied = append(applied, change)
 		state.Enforce2FA = plan.Enforce2FA
 	}
 
@@ -332,34 +330,6 @@ func (o *organizationResource) Delete(ctx context.Context, req resource.DeleteRe
 	resp.Diagnostics.AddWarning("API access token settings left intact", "Use the web UI if you wish to change them")
 }
 
-// warnAboutUnrecordedChanges reports the settings Create applied before failing at a later step.
-// Create deliberately records no state in that case, because this resource applies settings to an
-// organization that already exists rather than creating one: every step compares before it mutates,
-// so a re-apply converges, while state returned alongside an error would taint the instance, and a
-// tainted instance is replaced by a Delete that clears the allowlist. The cost of that choice is
-// that nothing in state says the changes took effect, so say it here.
-func warnAboutUnrecordedChanges(applied []string, diags *diag.Diagnostics) {
-	if len(applied) == 0 {
-		return
-	}
-
-	diags.AddWarning(
-		"Organization settings changed but not recorded",
-		fmt.Sprintf("Before this operation failed, %s. No state was recorded for this resource, so terraform will not "+
-			"clear those changes: they stay in effect until this resource is applied again, which writes only the "+
-			"settings that still differ, or until they are changed in the Buildkite web UI.",
-			joinChanges(applied)),
-	)
-}
-
-// joinChanges lists changes as a sentence would: "a", "a and b", "a, b, and c"
-func joinChanges(changes []string) string {
-	if len(changes) <= 2 {
-		return strings.Join(changes, " and ")
-	}
-	return strings.Join(changes[:len(changes)-1], ", ") + ", and " + changes[len(changes)-1]
-}
-
 // allowedApiIpAddressesValue serializes the attribute for the API, where null, [] and [""] are all ""
 func allowedApiIpAddressesValue(cidrs types.List) string {
 	return strings.Join(createCidrSliceFromList(cidrs), " ")
@@ -480,16 +450,16 @@ func (o *organizationResource) readAPISettings(ctx context.Context, state *organ
 }
 
 // updateAPISettings sends the configured api-settings that changed and records the result on state.
-// It returns a description of each setting the patch applied, for a caller that has to tell the
-// practitioner what an apply it could not record left behind.
-func (o *organizationResource) updateAPISettings(ctx context.Context, config, plan, state *organizationResourceModel, diags *diag.Diagnostics) []string {
+// It reports whether the organization was written to, which a caller that fails afterwards needs to
+// know before telling anyone what was left behind.
+func (o *organizationResource) updateAPISettings(ctx context.Context, config, plan, state *organizationResourceModel, diags *diag.Diagnostics) bool {
 	// settings that are about to be written have to be read first. The allowlist is owned outright,
 	// so an unreadable one cannot be told from an empty one, and skipping the request on that guess
 	// would record an allowlist the organization never took.
 	current, err := o.client.getOrganizationAPISettings(ctx)
 	if err != nil {
 		addUnreadableAPISettingsError(diags, err)
-		return nil
+		return false
 	}
 
 	// what state had before it is made to describe the plan, so the failure path below can put back
@@ -509,7 +479,7 @@ func (o *organizationResource) updateAPISettings(ctx context.Context, config, pl
 
 	payload := apiSettingsPatch(config, plan, current)
 	if len(payload) == 0 {
-		return nil
+		return false
 	}
 
 	log.Printf("Updating API settings for organization %s ...", o.client.organization)
@@ -552,43 +522,16 @@ func (o *organizationResource) updateAPISettings(ctx context.Context, config, pl
 		state.RevokeInactiveTokensAfter = types.StringValue(revokePeriodFromDays(observed.RevokeInactiveTokensAfterDays))
 		state.RestrictUserApiTokenCreation = types.BoolValue(observed.RestrictUserApiTokenCreation)
 
-		// whatever the organization now agrees with the plan on is what landed despite the error
+		// a setting the PATCH carried that the organization now agrees with the plan on landed despite
+		// the error
 		stillDiffers := apiSettingsPatch(config, plan, observed)
 		for key := range payload {
-			if _, ok := stillDiffers[key]; ok {
-				delete(payload, key)
+			if _, ok := stillDiffers[key]; !ok {
+				return true
 			}
 		}
+		return false
 	}
 
-	return describeAPISettingsChanges(payload, plan)
-}
-
-// describeAPISettingsChanges names the api-settings a patch applied, in the terms the attributes
-// use. The payload says which settings were sent, so the description cannot disagree with the
-// request the way a second comparison against the organization could.
-func describeAPISettingsChanges(payload map[string]any, plan *organizationResourceModel) []string {
-	changes := make([]string, 0, len(payload))
-	if _, ok := payload["allowed_ip_addresses"]; ok {
-		if allowed := allowedApiIpAddressesValue(plan.AllowedApiIpAddresses); allowed == "" {
-			changes = append(changes, "the API IP allowlist was cleared")
-		} else {
-			changes = append(changes, fmt.Sprintf("the API IP allowlist was set to %q", allowed))
-		}
-	}
-	if _, ok := payload["revoke_inactive_tokens_after_days"]; ok {
-		if period := plan.RevokeInactiveTokensAfter.ValueString(); period == revokeInactiveTokensNever {
-			changes = append(changes, "inactive API token revocation was turned off")
-		} else {
-			changes = append(changes, fmt.Sprintf("inactive API token revocation was set to %s", period))
-		}
-	}
-	if _, ok := payload["restrict_user_api_token_creation"]; ok {
-		if plan.RestrictUserApiTokenCreation.ValueBool() {
-			changes = append(changes, "user API token creation was restricted")
-		} else {
-			changes = append(changes, "the restriction on user API token creation was removed")
-		}
-	}
-	return changes
+	return true
 }

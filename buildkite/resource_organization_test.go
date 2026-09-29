@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"regexp"
-	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -660,7 +659,7 @@ func TestUpdateAPISettingsReportsTheOrganizationWhenThePatchFails(t *testing.T) 
 		wantAllowed  string
 		wantRevoke   string
 		wantRestrict bool
-		wantApplied  int
+		wantWrote    bool
 		wantDetail   string
 		// the read, the PATCH with any retries, and the read back that only a PATCH which may have
 		// landed gets
@@ -677,12 +676,12 @@ func TestUpdateAPISettingsReportsTheOrganizationWhenThePatchFails(t *testing.T) 
 		{
 			name:        "a 5xx after the patch landed records what landed",
 			responses:   []stubResponse{before, serverError, after},
-			wantAllowed: "1.2.3.4/32", wantRevoke: "DAYS_30", wantRestrict: true, wantApplied: 3, wantRequests: 3,
+			wantAllowed: "1.2.3.4/32", wantRevoke: "DAYS_30", wantRestrict: true, wantWrote: true, wantRequests: 3,
 		},
 		{
 			name:        "an undecodable response after the patch landed records what landed",
 			responses:   []stubResponse{before, {status: http.StatusOK, body: `not json`}, after},
-			wantAllowed: "1.2.3.4/32", wantRevoke: "DAYS_30", wantRestrict: true, wantApplied: 3, wantRequests: 3,
+			wantAllowed: "1.2.3.4/32", wantRevoke: "DAYS_30", wantRestrict: true, wantWrote: true, wantRequests: 3,
 		},
 		{
 			name:        "a 5xx that cannot be read back keeps the values from before it",
@@ -695,13 +694,13 @@ func TestUpdateAPISettingsReportsTheOrganizationWhenThePatchFails(t *testing.T) 
 			name:        "a retried 5xx that runs out on a 429 records what landed",
 			responses:   []stubResponse{before, serverError, {status: http.StatusTooManyRequests, body: `{"message":"slow down"}`}, after},
 			retries:     1,
-			wantAllowed: "1.2.3.4/32", wantRevoke: "DAYS_30", wantRestrict: true, wantApplied: 3, wantRequests: 4,
+			wantAllowed: "1.2.3.4/32", wantRevoke: "DAYS_30", wantRestrict: true, wantWrote: true, wantRequests: 4,
 		},
 		{
 			name:        "a retried 5xx answered with a 4xx records what landed",
 			responses:   []stubResponse{before, serverError, {status: http.StatusForbidden, body: `{"message":"Forbidden"}`}, after},
 			retries:     1,
-			wantAllowed: "1.2.3.4/32", wantRevoke: "DAYS_30", wantRestrict: true, wantApplied: 3, wantRequests: 4,
+			wantAllowed: "1.2.3.4/32", wantRevoke: "DAYS_30", wantRestrict: true, wantWrote: true, wantRequests: 4,
 		},
 	}
 
@@ -728,7 +727,7 @@ func TestUpdateAPISettingsReportsTheOrganizationWhenThePatchFails(t *testing.T) 
 			}
 
 			var diags diag.Diagnostics
-			applied := o.updateAPISettings(ctx, &configured, &configured, &state, &diags)
+			wrote := o.updateAPISettings(ctx, &configured, &configured, &state, &diags)
 
 			if !diagnosticsContain(diags, "Unable to update organization API settings") {
 				t.Fatalf("updateAPISettings diagnostics = %v, want the PATCH failure reported", diags)
@@ -739,8 +738,8 @@ func TestUpdateAPISettingsReportsTheOrganizationWhenThePatchFails(t *testing.T) 
 			if got := requests.Load(); got != testCase.wantRequests {
 				t.Errorf("Made %d requests, want %d", got, testCase.wantRequests)
 			}
-			if len(applied) != testCase.wantApplied {
-				t.Errorf("updateAPISettings applied = %q, want %d changes", applied, testCase.wantApplied)
+			if wrote != testCase.wantWrote {
+				t.Errorf("updateAPISettings() = %t, want %t: it reports whether the PATCH landed", wrote, testCase.wantWrote)
 			}
 			if got := allowedApiIpAddressesValue(state.AllowedApiIpAddresses); got != testCase.wantAllowed {
 				t.Errorf("Persisted allowed_api_ip_addresses = %q, want %q", got, testCase.wantAllowed)
@@ -891,7 +890,7 @@ func TestOrganizationUpdatePersistsWhatAFailedPatchApplied(t *testing.T) {
 // each step compares before it mutates. So the recoverable answer to a half-applied Create is to
 // record nothing and let the next apply re-run it. Recording the part that applied instead would
 // taint the instance, and a tainted instance is replaced rather than updated: Delete would clear the
-// API IP allowlist before Create put it back. What the practitioner does need is to be told which
+// API IP allowlist before Create put it back. What the practitioner does need is to be told that
 // settings are live on their organization despite the failure.
 func TestOrganizationCreateWarnsAboutUnrecordedChanges(t *testing.T) {
 	t.Parallel()
@@ -913,68 +912,34 @@ func TestOrganizationCreateWarnsAboutUnrecordedChanges(t *testing.T) {
 	twoFAFails := stubResponse{status: http.StatusOK, body: `{"errors":[{"message":"mutation exploded"}]}`}
 
 	tests := []struct {
-		name string
-		// The allowlist the config asks for. Unset means the attribute is absent, which clears it.
-		configuredAllowlist string
-		// Set when the config also manages revoke_inactive_tokens_after.
-		configuredRevoke string
-		// Set when the config also manages restrict_user_api_token_creation.
-		configuredRestrict bool
-		responses          []stubResponse
-		// Substrings the single warning has to contain, or none to assert there is no warning.
-		wantWarned []string
+		name       string
+		responses  []stubResponse
+		wantWarned bool
 		// The error the apply fails with, the 2FA mutation's unless set.
 		wantError string
 	}{
 		{
-			name:                "allowlist applied, then the 2FA mutation fails",
-			configuredAllowlist: configuredAllowlist,
-			responses:           []stubResponse{organizationIs(false), apiSettingsAre(""), patchApplied, twoFAFails},
-			wantWarned:          []string{`allowlist was set to "1.2.3.4/32"`},
+			name:       "allowlist applied, then the 2FA mutation fails",
+			responses:  []stubResponse{organizationIs(false), apiSettingsAre(""), patchApplied, twoFAFails},
+			wantWarned: true,
 		},
 		{
 			// Already what the config asks for, so the patch is empty, no request is made, and this
 			// apply is not responsible for the allowlist being in place.
-			name:                "allowlist already matched",
-			configuredAllowlist: configuredAllowlist,
-			responses:           []stubResponse{organizationIs(false), apiSettingsAre(configuredAllowlist), twoFAFails},
+			name:      "allowlist already matched",
+			responses: []stubResponse{organizationIs(false), apiSettingsAre(configuredAllowlist), twoFAFails},
 		},
 		{
-			// No allowlist in the config against an organization that has one, which clears it. The
-			// wording differs from a set, because "set to \"\"" would read as a change to nothing.
-			name:       "allowlist cleared, then the 2FA mutation fails",
-			responses:  []stubResponse{organizationIs(false), apiSettingsAre(configuredAllowlist), patchApplied, twoFAFails},
-			wantWarned: []string{"allowlist was cleared"},
-		},
-		{
-			// The allowlist is unchanged here, so the warning must name the period and not it.
-			name:             "revocation period applied, then the 2FA mutation fails",
-			configuredRevoke: "DAYS_30",
-			responses:        []stubResponse{organizationIs(false), apiSettingsAre(""), patchApplied, twoFAFails},
-			wantWarned:       []string{"inactive API token revocation was set to DAYS_30"},
-		},
-		{
-			// One PATCH carrying every api-setting, so the warning has to list all three as a sentence.
 			// The PATCH answers with a 5xx but landed, so the read back finds the allowlist in place and
 			// the apply stops there, before 2FA, having still changed the organization.
-			name:                "allowlist applied behind a 5xx from the PATCH",
-			configuredAllowlist: configuredAllowlist,
+			name: "allowlist applied behind a 5xx from the PATCH",
 			responses: []stubResponse{
 				organizationIs(false), apiSettingsAre(""),
 				{status: http.StatusInternalServerError, body: `{"message":"patch failed"}`},
 				apiSettingsAre(configuredAllowlist),
 			},
-			wantWarned: []string{`allowlist was set to "1.2.3.4/32"`},
+			wantWarned: true,
 			wantError:  "Unable to update organization API settings",
-		},
-		{
-			name:                "every api-setting applied, then the 2FA mutation fails",
-			configuredAllowlist: configuredAllowlist,
-			configuredRevoke:    "DAYS_30",
-			configuredRestrict:  true,
-			responses:           []stubResponse{organizationIs(false), apiSettingsAre(""), patchApplied, twoFAFails},
-			wantWarned: []string{`Before this operation failed, the API IP allowlist was set to "1.2.3.4/32", ` +
-				"inactive API token revocation was set to DAYS_30, and user API token creation was restricted."},
 		},
 	}
 
@@ -993,19 +958,12 @@ func TestOrganizationCreateWarnsAboutUnrecordedChanges(t *testing.T) {
 			ctx := t.Context()
 			sch := resourceSchema(ctx, t, o)
 
-			attributes := map[string]tftypes.Value{"enforce_2fa": tftypes.NewValue(tftypes.Bool, true)}
-			if testCase.configuredAllowlist != "" {
-				attributes["allowed_api_ip_addresses"] = tftypes.NewValue(tftypes.List{ElementType: tftypes.String}, []tftypes.Value{
-					tftypes.NewValue(tftypes.String, testCase.configuredAllowlist),
-				})
-			}
-			if testCase.configuredRevoke != "" {
-				attributes["revoke_inactive_tokens_after"] = tftypes.NewValue(tftypes.String, testCase.configuredRevoke)
-			}
-			if testCase.configuredRestrict {
-				attributes["restrict_user_api_token_creation"] = tftypes.NewValue(tftypes.Bool, true)
-			}
-			raw := nullObjectWith(ctx, t, sch.Type(), attributes)
+			raw := nullObjectWith(ctx, t, sch.Type(), map[string]tftypes.Value{
+				"enforce_2fa": tftypes.NewValue(tftypes.Bool, true),
+				"allowed_api_ip_addresses": tftypes.NewValue(tftypes.List{ElementType: tftypes.String}, []tftypes.Value{
+					tftypes.NewValue(tftypes.String, configuredAllowlist),
+				}),
+			})
 
 			req := fwresource.CreateRequest{
 				Plan:   tfsdk.Plan{Schema: sch, Raw: raw},
@@ -1029,29 +987,12 @@ func TestOrganizationCreateWarnsAboutUnrecordedChanges(t *testing.T) {
 				t.Errorf("Create() persisted %v, want no state: persisting taints the instance, and replacing it clears the API IP allowlist", resp.State.Raw)
 			}
 
-			warnings := resp.Diagnostics.Warnings()
-			var detail string
-			for _, d := range warnings {
-				if d.Summary() == "Organization settings changed but not recorded" {
-					detail = d.Detail()
-				}
+			warned := false
+			for _, d := range resp.Diagnostics.Warnings() {
+				warned = warned || d.Summary() == "Organization API settings were applied before the apply failed"
 			}
-			if len(testCase.wantWarned) == 0 {
-				if detail != "" {
-					t.Errorf("Create() warned %q, want no warning: this apply changed nothing before it failed", detail)
-				}
-				return
-			}
-			if detail == "" {
-				t.Fatalf("Create() warnings = %v, want one naming the settings that applied", warnings)
-			}
-			for _, want := range testCase.wantWarned {
-				if !strings.Contains(detail, want) {
-					t.Errorf("Warning detail = %q, want it to mention %q", detail, want)
-				}
-			}
-			if testCase.configuredAllowlist == "" && testCase.configuredRevoke != "" && strings.Contains(detail, "allowlist") {
-				t.Errorf("Warning detail = %q, want no mention of the allowlist: this apply did not change it", detail)
+			if warned != testCase.wantWarned {
+				t.Errorf("Create() warned = %t, want %t: the warning says whether this apply changed the organization before it failed (diagnostics: %v)", warned, testCase.wantWarned, resp.Diagnostics)
 			}
 		})
 	}
@@ -1131,93 +1072,6 @@ func TestOrganizationUpdateKeepsPriorAPISettingsWhenTheReadFails(t *testing.T) {
 	}
 	if !persisted.Enforce2FA.ValueBool() {
 		t.Error("Persisted enforce_2fa = false, want true: nothing applied, so the prior value stands")
-	}
-}
-
-// Each api-setting a patch carried is named in the attribute's terms, with the wording that fits the
-// value it was set to rather than a raw value such as "set to NEVER" or "set to false".
-func TestDescribeAPISettingsChanges(t *testing.T) {
-	t.Parallel()
-
-	ctx := t.Context()
-	tests := []struct {
-		name    string
-		payload map[string]any
-		plan    organizationResourceModel
-		want    []string
-	}{
-		{
-			name:    "allowlist set",
-			payload: map[string]any{"allowed_ip_addresses": "1.2.3.4/32 5.6.7.8/32"},
-			plan:    organizationResourceModel{AllowedApiIpAddresses: listOfStrings(ctx, t, "1.2.3.4/32", "5.6.7.8/32")},
-			want:    []string{`the API IP allowlist was set to "1.2.3.4/32 5.6.7.8/32"`},
-		},
-		{
-			name:    "allowlist cleared",
-			payload: map[string]any{"allowed_ip_addresses": ""},
-			plan:    organizationResourceModel{AllowedApiIpAddresses: types.ListNull(types.StringType)},
-			want:    []string{"the API IP allowlist was cleared"},
-		},
-		{
-			name:    "revocation set to a period",
-			payload: map[string]any{"revoke_inactive_tokens_after_days": revokePeriodToDays("DAYS_90")},
-			plan:    organizationResourceModel{RevokeInactiveTokensAfter: types.StringValue("DAYS_90")},
-			want:    []string{"inactive API token revocation was set to DAYS_90"},
-		},
-		{
-			name:    "revocation turned off",
-			payload: map[string]any{"revoke_inactive_tokens_after_days": revokePeriodToDays(revokeInactiveTokensNever)},
-			plan:    organizationResourceModel{RevokeInactiveTokensAfter: types.StringValue(revokeInactiveTokensNever)},
-			want:    []string{"inactive API token revocation was turned off"},
-		},
-		{
-			name:    "token creation restricted",
-			payload: map[string]any{"restrict_user_api_token_creation": true},
-			plan:    organizationResourceModel{RestrictUserApiTokenCreation: types.BoolValue(true)},
-			want:    []string{"user API token creation was restricted"},
-		},
-		{
-			name:    "token creation restriction removed",
-			payload: map[string]any{"restrict_user_api_token_creation": false},
-			plan:    organizationResourceModel{RestrictUserApiTokenCreation: types.BoolValue(false)},
-			want:    []string{"the restriction on user API token creation was removed"},
-		},
-		{
-			// a setting the plan holds but the patch did not carry was not changed by it
-			name:    "nothing sent",
-			payload: map[string]any{},
-			plan:    organizationResourceModel{RestrictUserApiTokenCreation: types.BoolValue(true)},
-			want:    []string{},
-		},
-	}
-
-	for _, testCase := range tests {
-		t.Run(testCase.name, func(t *testing.T) {
-			t.Parallel()
-
-			if got := describeAPISettingsChanges(testCase.payload, &testCase.plan); !slices.Equal(got, testCase.want) {
-				t.Errorf("describeAPISettingsChanges() = %q, want %q", got, testCase.want)
-			}
-		})
-	}
-}
-
-func TestJoinChanges(t *testing.T) {
-	t.Parallel()
-
-	tests := []struct {
-		changes []string
-		want    string
-	}{
-		{[]string{"a"}, "a"},
-		{[]string{"a", "b"}, "a and b"},
-		{[]string{"a", "b", "c"}, "a, b, and c"},
-	}
-
-	for _, testCase := range tests {
-		if got := joinChanges(testCase.changes); got != testCase.want {
-			t.Errorf("joinChanges(%q) = %q, want %q", testCase.changes, got, testCase.want)
-		}
 	}
 }
 
