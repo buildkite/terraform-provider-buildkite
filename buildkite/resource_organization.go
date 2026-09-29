@@ -2,6 +2,7 @@ package buildkite
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -284,7 +285,6 @@ func (o *organizationResource) Update(ctx context.Context, req resource.UpdateRe
 		twoFAResponse, err := setOrganization2FA(ctx, o.client.genqlient, *org, plan.Enforce2FA.ValueBool())
 		if err != nil {
 			resp.Diagnostics.AddError("Unable to set 2FA", err.Error())
-			resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 			return
 		}
 		state.Enforce2FA = types.BoolValue(twoFAResponse.OrganizationEnforceTwoFactorAuthenticationForMembersUpdate.Organization.MembersRequireTwoFactorAuthentication)
@@ -348,8 +348,16 @@ func warnAboutUnrecordedChanges(applied []string, diags *diag.Diagnostics) {
 		fmt.Sprintf("Before this operation failed, %s. No state was recorded for this resource, so terraform will not "+
 			"clear those changes: they stay in effect until this resource is applied again, which writes only the "+
 			"settings that still differ, or until they are changed in the Buildkite web UI.",
-			strings.Join(applied, ", and ")),
+			joinChanges(applied)),
 	)
+}
+
+// joinChanges lists changes as a sentence would: "a", "a and b", "a, b, and c"
+func joinChanges(changes []string) string {
+	if len(changes) <= 2 {
+		return strings.Join(changes, " and ")
+	}
+	return strings.Join(changes[:len(changes)-1], ", ") + ", and " + changes[len(changes)-1]
 }
 
 // allowedApiIpAddressesValue serializes the attribute for the API, where null, [] and [""] are all ""
@@ -517,18 +525,38 @@ func (o *organizationResource) updateAPISettings(ctx context.Context, config, pl
 				detail += " Inactive API token revocation is not available on this organization's plan."
 			}
 		}
+		// State has to describe the organization rather than the plan: Update records state on this
+		// path, and a later refresh that cannot read the settings keeps whatever it last saw, so a
+		// planned value left here would be adopted rather than replanned. A 4xx is the API refusing
+		// the request, so the organization is as the read above found it. Anything else, a 5xx, a
+		// transport failure or a response that could not be decoded, may have followed a PATCH that
+		// landed, and the client retries those, so the organization is asked again.
+		observed := current
+		var apiErr *apiError
+		if !errors.As(err, &apiErr) || apiErr.StatusCode < 400 || apiErr.StatusCode >= 500 {
+			reread, readErr := o.client.getOrganizationAPISettings(ctx)
+			if readErr != nil {
+				detail += fmt.Sprintf(" The settings could not be read back to check whether the update applied, so state "+
+					"keeps the values from before it until a refresh can read them: %s", readErr.Error())
+			} else {
+				observed = reread
+			}
+		}
 		diags.AddError("Unable to update organization API settings", detail)
-		// The patch is one request, so nothing in it applied and state has to describe the
-		// organization rather than the plan. Update records state on this path, and a later refresh
-		// that cannot read the settings keeps whatever it last saw, so a planned value left here
-		// would be adopted rather than replanned.
-		allowed, allowedDiags := allowedApiIpAddressesFromAPI(ctx, current.AllowedIpAddresses, recorded)
+
+		allowed, allowedDiags := allowedApiIpAddressesFromAPI(ctx, observed.AllowedIpAddresses, recorded)
 		diags.Append(allowedDiags...)
 		state.AllowedApiIpAddresses = allowed
-		state.RevokeInactiveTokensAfter = types.StringValue(revokePeriodFromDays(current.RevokeInactiveTokensAfterDays))
-		state.RestrictUserApiTokenCreation = types.BoolValue(current.RestrictUserApiTokenCreation)
+		state.RevokeInactiveTokensAfter = types.StringValue(revokePeriodFromDays(observed.RevokeInactiveTokensAfterDays))
+		state.RestrictUserApiTokenCreation = types.BoolValue(observed.RestrictUserApiTokenCreation)
 
-		return nil
+		// whatever the organization now agrees with the plan on is what landed despite the error
+		stillDiffers := apiSettingsPatch(config, plan, observed)
+		for key := range payload {
+			if _, ok := stillDiffers[key]; ok {
+				delete(payload, key)
+			}
+		}
 	}
 
 	return describeAPISettingsChanges(payload, plan)

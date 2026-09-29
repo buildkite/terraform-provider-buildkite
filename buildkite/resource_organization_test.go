@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"regexp"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -643,48 +644,98 @@ func testAccCheckOrganizationRemoteValues(ip_addresses []string) resource.TestCh
 // A failed PATCH has to leave the api-settings attributes describing the organization rather than
 // the plan, or state claims a setting that was never applied. Update persists state on that path,
 // and readAPISettings falls back to state when a refresh cannot read the settings, so a wrong value
-// put there once is re-adopted rather than replanned and never shows in a plan.
+// put there once is re-adopted rather than replanned and never shows in a plan. Only a 4xx says the
+// PATCH was refused: after anything else it may have landed, so the organization is read again.
 func TestUpdateAPISettingsReportsTheOrganizationWhenThePatchFails(t *testing.T) {
 	t.Parallel()
 
-	server, _ := newRetryStub(t,
-		stubResponse{status: http.StatusOK, body: `{"allowed_ip_addresses":"9.9.9.9/32","revoke_inactive_tokens_after_days":null,"restrict_user_api_token_creation":false}`},
-		stubResponse{status: http.StatusInternalServerError, body: `{"message":"patch failed"}`},
-	)
-	defer server.Close()
+	before := stubResponse{status: http.StatusOK, body: `{"allowed_ip_addresses":"9.9.9.9/32","revoke_inactive_tokens_after_days":null,"restrict_user_api_token_creation":false}`}
+	after := stubResponse{status: http.StatusOK, body: `{"allowed_ip_addresses":"1.2.3.4/32","revoke_inactive_tokens_after_days":30,"restrict_user_api_token_creation":true}`}
+	serverError := stubResponse{status: http.StatusInternalServerError, body: `{"message":"patch failed"}`}
 
-	o := &organizationResource{client: newRetryTestClient(t, server.URL, 0, time.Millisecond)}
+	tests := []struct {
+		name      string
+		responses []stubResponse
+		// the attributes state should end up with, which is what the organization has
+		wantAllowed  string
+		wantRevoke   string
+		wantRestrict bool
+		wantApplied  int
+		wantDetail   string
+		// the read, the PATCH, and the read back that only a PATCH which may have landed gets
+		wantRequests int64
+	}{
+		{
+			name:        "a refused patch changed nothing, so it is not read back",
+			responses:   []stubResponse{before, {status: http.StatusUnprocessableEntity, body: `{"message":"invalid"}`}, after},
+			wantAllowed: "9.9.9.9/32", wantRevoke: revokeInactiveTokensNever, wantRestrict: false,
+			wantRequests: 2,
+		},
+		{
+			name:        "a 5xx after the patch landed records what landed",
+			responses:   []stubResponse{before, serverError, after},
+			wantAllowed: "1.2.3.4/32", wantRevoke: "DAYS_30", wantRestrict: true, wantApplied: 3, wantRequests: 3,
+		},
+		{
+			name:        "an undecodable response after the patch landed records what landed",
+			responses:   []stubResponse{before, {status: http.StatusOK, body: `not json`}, after},
+			wantAllowed: "1.2.3.4/32", wantRevoke: "DAYS_30", wantRestrict: true, wantApplied: 3, wantRequests: 3,
+		},
+		{
+			name:        "a 5xx that cannot be read back keeps the values from before it",
+			responses:   []stubResponse{before, serverError, serverError},
+			wantAllowed: "9.9.9.9/32", wantRevoke: revokeInactiveTokensNever, wantRestrict: false,
+			wantDetail: "could not be read back", wantRequests: 3,
+		},
+	}
 
-	ctx := t.Context()
-	configured := organizationResourceModel{
-		AllowedApiIpAddresses:        listOfStrings(ctx, t, "1.2.3.4/32"),
-		RevokeInactiveTokensAfter:    types.StringValue("DAYS_30"),
-		RestrictUserApiTokenCreation: types.BoolValue(true),
-	}
-	// as Update seeds it, from the prior state
-	state := organizationResourceModel{
-		AllowedApiIpAddresses:        listOfStrings(ctx, t, "9.9.9.9/32"),
-		RevokeInactiveTokensAfter:    types.StringValue(revokeInactiveTokensNever),
-		RestrictUserApiTokenCreation: types.BoolValue(false),
-	}
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
 
-	var diags diag.Diagnostics
-	applied := o.updateAPISettings(ctx, &configured, &configured, &state, &diags)
+			server, requests := newRetryStub(t, testCase.responses...)
+			defer server.Close()
 
-	if !diags.HasError() {
-		t.Fatalf("updateAPISettings diagnostics = %v, want the PATCH failure reported", diags)
-	}
-	if len(applied) != 0 {
-		t.Errorf("updateAPISettings applied = %v, want none: the PATCH failed, so it changed nothing", applied)
-	}
-	if got := allowedApiIpAddressesValue(state.AllowedApiIpAddresses); got != "9.9.9.9/32" {
-		t.Errorf("Persisted allowed_api_ip_addresses = %q, want %q: the PATCH failed, so the configured allowlist never applied", got, "9.9.9.9/32")
-	}
-	if got := state.RevokeInactiveTokensAfter.ValueString(); got != revokeInactiveTokensNever {
-		t.Errorf("Persisted revoke_inactive_tokens_after = %q, want %q: the PATCH failed, so the configured period never applied", got, revokeInactiveTokensNever)
-	}
-	if state.RestrictUserApiTokenCreation.ValueBool() {
-		t.Error("Persisted restrict_user_api_token_creation = true, want false: the PATCH failed, so the restriction never applied")
+			o := &organizationResource{client: newRetryTestClient(t, server.URL, 0, time.Millisecond)}
+
+			ctx := t.Context()
+			configured := organizationResourceModel{
+				AllowedApiIpAddresses:        listOfStrings(ctx, t, "1.2.3.4/32"),
+				RevokeInactiveTokensAfter:    types.StringValue("DAYS_30"),
+				RestrictUserApiTokenCreation: types.BoolValue(true),
+			}
+			// as Update seeds it, from the prior state
+			state := organizationResourceModel{
+				AllowedApiIpAddresses:        listOfStrings(ctx, t, "9.9.9.9/32"),
+				RevokeInactiveTokensAfter:    types.StringValue(revokeInactiveTokensNever),
+				RestrictUserApiTokenCreation: types.BoolValue(false),
+			}
+
+			var diags diag.Diagnostics
+			applied := o.updateAPISettings(ctx, &configured, &configured, &state, &diags)
+
+			if !diagnosticsContain(diags, "Unable to update organization API settings") {
+				t.Fatalf("updateAPISettings diagnostics = %v, want the PATCH failure reported", diags)
+			}
+			if testCase.wantDetail != "" && !strings.Contains(fmt.Sprint(diags), testCase.wantDetail) {
+				t.Errorf("updateAPISettings diagnostics = %v, want them to mention %q", diags, testCase.wantDetail)
+			}
+			if got := requests.Load(); got != testCase.wantRequests {
+				t.Errorf("Made %d requests, want %d", got, testCase.wantRequests)
+			}
+			if len(applied) != testCase.wantApplied {
+				t.Errorf("updateAPISettings applied = %q, want %d changes", applied, testCase.wantApplied)
+			}
+			if got := allowedApiIpAddressesValue(state.AllowedApiIpAddresses); got != testCase.wantAllowed {
+				t.Errorf("Persisted allowed_api_ip_addresses = %q, want %q", got, testCase.wantAllowed)
+			}
+			if got := state.RevokeInactiveTokensAfter.ValueString(); got != testCase.wantRevoke {
+				t.Errorf("Persisted revoke_inactive_tokens_after = %q, want %q", got, testCase.wantRevoke)
+			}
+			if got := state.RestrictUserApiTokenCreation.ValueBool(); got != testCase.wantRestrict {
+				t.Errorf("Persisted restrict_user_api_token_creation = %t, want %t", got, testCase.wantRestrict)
+			}
+		})
 	}
 }
 
@@ -787,7 +838,9 @@ func TestOrganizationCreateWarnsAboutUnrecordedChanges(t *testing.T) {
 		configuredAllowlist string
 		// Set when the config also manages revoke_inactive_tokens_after.
 		configuredRevoke string
-		responses        []stubResponse
+		// Set when the config also manages restrict_user_api_token_creation.
+		configuredRestrict bool
+		responses          []stubResponse
 		// Substrings the single warning has to contain, or none to assert there is no warning.
 		wantWarned []string
 	}{
@@ -818,6 +871,16 @@ func TestOrganizationCreateWarnsAboutUnrecordedChanges(t *testing.T) {
 			responses:        []stubResponse{organizationIs(false), apiSettingsAre(""), patchApplied, twoFAFails},
 			wantWarned:       []string{"inactive API token revocation was set to DAYS_30"},
 		},
+		{
+			// One PATCH carrying every api-setting, so the warning has to list all three as a sentence.
+			name:                "every api-setting applied, then the 2FA mutation fails",
+			configuredAllowlist: configuredAllowlist,
+			configuredRevoke:    "DAYS_30",
+			configuredRestrict:  true,
+			responses:           []stubResponse{organizationIs(false), apiSettingsAre(""), patchApplied, twoFAFails},
+			wantWarned: []string{`Before this operation failed, the API IP allowlist was set to "1.2.3.4/32", ` +
+				"inactive API token revocation was set to DAYS_30, and user API token creation was restricted."},
+		},
 	}
 
 	for _, testCase := range tests {
@@ -843,6 +906,9 @@ func TestOrganizationCreateWarnsAboutUnrecordedChanges(t *testing.T) {
 			}
 			if testCase.configuredRevoke != "" {
 				attributes["revoke_inactive_tokens_after"] = tftypes.NewValue(tftypes.String, testCase.configuredRevoke)
+			}
+			if testCase.configuredRestrict {
+				attributes["restrict_user_api_token_creation"] = tftypes.NewValue(tftypes.Bool, true)
 			}
 			raw := nullObjectWith(ctx, t, sch.Type(), attributes)
 
@@ -885,7 +951,7 @@ func TestOrganizationCreateWarnsAboutUnrecordedChanges(t *testing.T) {
 					t.Errorf("Warning detail = %q, want it to mention %q", detail, want)
 				}
 			}
-			if testCase.configuredRevoke != "" && strings.Contains(detail, "allowlist") {
+			if testCase.configuredAllowlist == "" && testCase.configuredRevoke != "" && strings.Contains(detail, "allowlist") {
 				t.Errorf("Warning detail = %q, want no mention of the allowlist: this apply did not change it", detail)
 			}
 		})
@@ -966,6 +1032,93 @@ func TestOrganizationUpdateKeepsPriorAPISettingsWhenTheReadFails(t *testing.T) {
 	}
 	if !persisted.Enforce2FA.ValueBool() {
 		t.Error("Persisted enforce_2fa = false, want true: nothing applied, so the prior value stands")
+	}
+}
+
+// Each api-setting a patch carried is named in the attribute's terms, with the wording that fits the
+// value it was set to rather than a raw value such as "set to NEVER" or "set to false".
+func TestDescribeAPISettingsChanges(t *testing.T) {
+	t.Parallel()
+
+	ctx := t.Context()
+	tests := []struct {
+		name    string
+		payload map[string]any
+		plan    organizationResourceModel
+		want    []string
+	}{
+		{
+			name:    "allowlist set",
+			payload: map[string]any{"allowed_ip_addresses": "1.2.3.4/32 5.6.7.8/32"},
+			plan:    organizationResourceModel{AllowedApiIpAddresses: listOfStrings(ctx, t, "1.2.3.4/32", "5.6.7.8/32")},
+			want:    []string{`the API IP allowlist was set to "1.2.3.4/32 5.6.7.8/32"`},
+		},
+		{
+			name:    "allowlist cleared",
+			payload: map[string]any{"allowed_ip_addresses": ""},
+			plan:    organizationResourceModel{AllowedApiIpAddresses: types.ListNull(types.StringType)},
+			want:    []string{"the API IP allowlist was cleared"},
+		},
+		{
+			name:    "revocation set to a period",
+			payload: map[string]any{"revoke_inactive_tokens_after_days": revokePeriodToDays("DAYS_90")},
+			plan:    organizationResourceModel{RevokeInactiveTokensAfter: types.StringValue("DAYS_90")},
+			want:    []string{"inactive API token revocation was set to DAYS_90"},
+		},
+		{
+			name:    "revocation turned off",
+			payload: map[string]any{"revoke_inactive_tokens_after_days": revokePeriodToDays(revokeInactiveTokensNever)},
+			plan:    organizationResourceModel{RevokeInactiveTokensAfter: types.StringValue(revokeInactiveTokensNever)},
+			want:    []string{"inactive API token revocation was turned off"},
+		},
+		{
+			name:    "token creation restricted",
+			payload: map[string]any{"restrict_user_api_token_creation": true},
+			plan:    organizationResourceModel{RestrictUserApiTokenCreation: types.BoolValue(true)},
+			want:    []string{"user API token creation was restricted"},
+		},
+		{
+			name:    "token creation restriction removed",
+			payload: map[string]any{"restrict_user_api_token_creation": false},
+			plan:    organizationResourceModel{RestrictUserApiTokenCreation: types.BoolValue(false)},
+			want:    []string{"the restriction on user API token creation was removed"},
+		},
+		{
+			// a setting the plan holds but the patch did not carry was not changed by it
+			name:    "nothing sent",
+			payload: map[string]any{},
+			plan:    organizationResourceModel{RestrictUserApiTokenCreation: types.BoolValue(true)},
+			want:    []string{},
+		},
+	}
+
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			if got := describeAPISettingsChanges(testCase.payload, &testCase.plan); !slices.Equal(got, testCase.want) {
+				t.Errorf("describeAPISettingsChanges() = %q, want %q", got, testCase.want)
+			}
+		})
+	}
+}
+
+func TestJoinChanges(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		changes []string
+		want    string
+	}{
+		{[]string{"a"}, "a"},
+		{[]string{"a", "b"}, "a and b"},
+		{[]string{"a", "b", "c"}, "a, b, and c"},
+	}
+
+	for _, testCase := range tests {
+		if got := joinChanges(testCase.changes); got != testCase.want {
+			t.Errorf("joinChanges(%q) = %q, want %q", testCase.changes, got, testCase.want)
+		}
 	}
 }
 

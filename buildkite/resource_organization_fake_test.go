@@ -559,7 +559,7 @@ func TestUnitBuildkiteOrganizationKeepsWrittenSettingsWhenSetting2FAFails(t *tes
 // updateAPISettings reports what it wrote to the organization. A create that fails at 2FA
 // afterwards tells the operator what it left behind, and a settings write that never happened leaves
 // nothing to tell them about.
-func TestUnitOrganizationUpdateAPISettingsReportsWhetherItWrote(t *testing.T) {
+func TestUnitOrganizationUpdateAPISettingsReportsWhatItWrote(t *testing.T) {
 	unset := organizationResourceModel{
 		AllowedApiIpAddresses:        types.ListNull(types.StringType),
 		RevokeInactiveTokensAfter:    types.StringNull(),
@@ -572,11 +572,11 @@ func TestUnitOrganizationUpdateAPISettingsReportsWhetherItWrote(t *testing.T) {
 		name        string
 		model       organizationResourceModel
 		patchStatus int
-		want        bool
+		want        []string
 	}{
-		{"nothing differs, so nothing is written", unset, 0, false},
-		{"a changed allowlist is written", configured, 0, true},
-		{"a refused write is not a write", configured, http.StatusForbidden, false},
+		{"nothing differs, so nothing is written", unset, 0, nil},
+		{"a changed allowlist is written", configured, 0, []string{`the API IP allowlist was set to "1.1.1.1/32"`}},
+		{"a refused write is not a write", configured, http.StatusForbidden, nil},
 	}
 
 	for _, tc := range testCases {
@@ -598,8 +598,8 @@ func TestUnitOrganizationUpdateAPISettingsReportsWhetherItWrote(t *testing.T) {
 			var diags diag.Diagnostics
 			state := tc.model
 			got := org.updateAPISettings(context.Background(), &tc.model, &tc.model, &state, &diags)
-			if wrote := len(got) > 0; wrote != tc.want {
-				t.Errorf("updateAPISettings() = %q, want a write reported: %t (diagnostics: %v)", got, tc.want, diags)
+			if !slices.Equal(got, tc.want) {
+				t.Errorf("updateAPISettings() = %q, want %q (diagnostics: %v)", got, tc.want, diags)
 			}
 		})
 	}
