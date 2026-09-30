@@ -491,19 +491,19 @@ func (cq *clusterQueueResource) Read(ctx context.Context, req resource.ReadReque
 }
 
 func (cq *clusterQueueResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	timeout, diags := cq.client.readTimeout(ctx)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	// Import has no timeout of its own, so the lookup, which pages through the cluster's queues,
-	// gets the read timeout as one budget.
-	requestCtx, cancel := context.WithTimeout(ctx, timeout)
-	defer cancel()
-
 	// <cluster uuid>/<queue key> is also accepted and resolved to the GraphQL ID
 	if cluster, key, ok := parseClusterQueueImportID(req.ID); ok {
+		timeout, diags := cq.client.readTimeout(ctx)
+		resp.Diagnostics.Append(diags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+
+		// Import has no timeout of its own, so the lookup, which pages through the cluster's
+		// queues, gets the read timeout as one budget.
+		requestCtx, cancel := context.WithTimeout(ctx, timeout)
+		defer cancel()
+
 		id, err := cq.findClusterQueueID(requestCtx, cluster, key)
 		if err != nil {
 			resp.Diagnostics.AddError("Unable to import cluster queue", fmt.Sprintf("Could not find queue %q in cluster %q: %s", key, cluster, err.Error()))

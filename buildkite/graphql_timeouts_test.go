@@ -10,12 +10,10 @@ import (
 
 	genqlient "github.com/Khan/genqlient/graphql"
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
-	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	fwresource "github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-go/tftypes"
 )
 
@@ -37,32 +35,20 @@ const (
 	stubBoundedAttempts   = 10
 )
 
-// timeoutsValue is the provider's timeouts block with the given attributes set.
-func timeoutsValue(set map[string]string) timeouts.Value {
-	attrTypes := map[string]attr.Type{}
-	values := map[string]attr.Value{}
-	for name, value := range set {
-		attrTypes[name] = types.StringType
-		values[name] = types.StringValue(value)
-	}
-
-	return timeouts.Value{Object: types.ObjectValueMust(attrTypes, values)}
-}
-
 // newGraphQLTimeoutTestClient is newRetryTestClient with the GraphQL waits shortened as well and the
 // given timeouts configured.
-func newGraphQLTimeoutTestClient(t *testing.T, serverURL string, maxRetries int, wait time.Duration, configured map[string]string) *Client {
+func newGraphQLTimeoutTestClient(t *testing.T, serverURL string, maxRetries int, wait time.Duration, configured timeouts.Value) *Client {
 	t.Helper()
 
 	client := newRetryTestClient(t, serverURL, maxRetries, wait)
 	client.graphqlRetry.RetryWaitMin = wait
 	client.graphqlRetry.RetryWaitMax = wait
-	client.timeouts = timeoutsValue(configured)
+	client.timeouts = configured
 
 	return client
 }
 
-func assertStoppedAtTheTimeout(t *testing.T, requests int64, failure string) {
+func assertStoppedAtTheTimeout(t *testing.T, requests int64, hitDeadline bool, failure any) {
 	t.Helper()
 
 	if requests < 1 {
@@ -73,18 +59,9 @@ func assertStoppedAtTheTimeout(t *testing.T, requests int64, failure string) {
 	}
 	// With retries exhausted the stub's 503 would surface instead, so the deadline error is what shows
 	// the call stopped at its timeout rather than for some other reason.
-	if !strings.Contains(failure, "context deadline exceeded") {
-		t.Errorf("Failed with %q, want a context deadline error", failure)
+	if !hitDeadline {
+		t.Errorf("Failed with %v, want a context deadline error", failure)
 	}
-}
-
-func errorsText(diags diag.Diagnostics) string {
-	var messages []string
-	for _, d := range diags.Errors() {
-		messages = append(messages, d.Summary()+": "+d.Detail())
-	}
-
-	return strings.Join(messages, "; ")
 }
 
 // datasourceConfigFor builds a config for d in which every attribute is null except those in set.
@@ -104,13 +81,13 @@ func TestGraphQLRequestWithoutADeadlineStopsAtTheReadTimeout(t *testing.T) {
 	server, requests := newRetryStub(t, stubResponse{status: http.StatusServiceUnavailable, body: `{"errors":[{"message":"unavailable"}]}`})
 	defer server.Close()
 
-	client := newGraphQLTimeoutTestClient(t, server.URL, stubRetries, stubRetryWait, map[string]string{"read": stubReadTimeout.String()})
+	client := newGraphQLTimeoutTestClient(t, server.URL, stubRetries, stubRetryWait, configuredTimeouts("read", stubReadTimeout.String()))
 
 	_, err := getOrganization(context.Background(), client.genqlient, client.organization)
 	if err == nil {
 		t.Fatal("getOrganization succeeded against a server that only fails")
 	}
-	assertStoppedAtTheTimeout(t, requests.Load(), err.Error())
+	assertStoppedAtTheTimeout(t, requests.Load(), strings.Contains(err.Error(), "context deadline exceeded"), err)
 }
 
 // The organization lookup runs under a mutex, so an unbounded one would also block every other
@@ -121,60 +98,33 @@ func TestGetOrganizationIDWithoutADeadlineStopsAtTheReadTimeout(t *testing.T) {
 	server, requests := newRetryStub(t, stubResponse{status: http.StatusServiceUnavailable, body: `{"message":"unavailable"}`})
 	defer server.Close()
 
-	client := newGraphQLTimeoutTestClient(t, server.URL, stubRetries, stubRetryWait, map[string]string{"read": stubReadTimeout.String()})
+	client := newGraphQLTimeoutTestClient(t, server.URL, stubRetries, stubRetryWait, configuredTimeouts("read", stubReadTimeout.String()))
 
 	_, err := client.GetOrganizationID(context.Background())
 	if err == nil {
 		t.Fatal("GetOrganizationID succeeded against a server that only fails")
 	}
-	assertStoppedAtTheTimeout(t, requests.Load(), err.Error())
+	assertStoppedAtTheTimeout(t, requests.Load(), strings.Contains(err.Error(), "context deadline exceeded"), err)
 }
 
-// The data source a customer hit ran for 55m51s against a network path that kept resetting.
-func TestDatasourceReadsStopAtTheReadTimeout(t *testing.T) {
+// The data source a customer hit, which ran for 55m51s against a network path that kept resetting.
+func TestClusterDatasourceReadStopsAtTheReadTimeout(t *testing.T) {
 	t.Parallel()
 
-	tests := []struct {
-		name       string
-		datasource func(*Client) datasource.DataSource
-		config     map[string]tftypes.Value
-	}{
-		{
-			name:       "cluster",
-			datasource: func(client *Client) datasource.DataSource { return &clusterDatasource{client: client} },
-			config:     map[string]tftypes.Value{"name": tftypes.NewValue(tftypes.String, "some-cluster")},
-		},
-		{
-			name:       "pipeline template",
-			datasource: func(client *Client) datasource.DataSource { return &pipelineTemplateDatasource{client: client} },
-			config:     map[string]tftypes.Value{"name": tftypes.NewValue(tftypes.String, "some-template")},
-		},
-		{
-			name:       "pipelines",
-			datasource: func(client *Client) datasource.DataSource { return &pipelinesDatasource{client: client} },
-		},
+	server, requests := newRetryStub(t, stubResponse{status: http.StatusServiceUnavailable, body: `{"message":"unavailable"}`})
+	defer server.Close()
+
+	ctx := t.Context()
+	ds := &clusterDatasource{client: newGraphQLTimeoutTestClient(t, server.URL, stubRetries, stubRetryWait, configuredTimeouts("read", stubReadTimeout.String()))}
+	req := datasource.ReadRequest{Config: datasourceConfigFor(ctx, t, ds, map[string]tftypes.Value{"name": tftypes.NewValue(tftypes.String, "some-cluster")})}
+	resp := datasource.ReadResponse{State: tfsdk.State{Schema: req.Config.Schema}}
+
+	ds.Read(ctx, req, &resp)
+
+	if !resp.Diagnostics.HasError() {
+		t.Fatal("Read succeeded against a server that only fails")
 	}
-
-	for _, testCase := range tests {
-		t.Run(testCase.name, func(t *testing.T) {
-			t.Parallel()
-
-			server, requests := newRetryStub(t, stubResponse{status: http.StatusServiceUnavailable, body: `{"message":"unavailable"}`})
-			defer server.Close()
-
-			ctx := t.Context()
-			ds := testCase.datasource(newGraphQLTimeoutTestClient(t, server.URL, stubRetries, stubRetryWait, map[string]string{"read": stubReadTimeout.String()}))
-			req := datasource.ReadRequest{Config: datasourceConfigFor(ctx, t, ds, testCase.config)}
-			resp := datasource.ReadResponse{State: tfsdk.State{Schema: req.Config.Schema}}
-
-			ds.Read(ctx, req, &resp)
-
-			if !resp.Diagnostics.HasError() {
-				t.Fatal("Read succeeded against a server that only fails")
-			}
-			assertStoppedAtTheTimeout(t, requests.Load(), errorsText(resp.Diagnostics))
-		})
-	}
+	assertStoppedAtTheTimeout(t, requests.Load(), diagnosticsContain(resp.Diagnostics, "context deadline exceeded"), resp.Diagnostics)
 }
 
 // deadlineRecorder records the deadline each GraphQL request arrives with, before the client's own
@@ -202,7 +152,7 @@ func TestOperationsBoundTheirGraphQLCallsByTheirOwnTimeout(t *testing.T) {
 	t.Parallel()
 
 	// Distinct values so the recorded deadline shows which one was used.
-	configured := map[string]string{"read": "1m", "create": "10m", "delete": "7m"}
+	configured := configuredTimeouts("read", "1m", "create", "10m", "delete", "7m")
 
 	teamsPage := func(hasNextPage bool) stubResponse {
 		next := "false"

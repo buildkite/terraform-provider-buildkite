@@ -199,19 +199,19 @@ func (tp *pipelineTeamResource) Read(ctx context.Context, req resource.ReadReque
 }
 
 func (tp *pipelineTeamResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	timeout, diags := tp.client.readTimeout(ctx)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	// Import has no timeout of its own, so the lookup, which pages through the pipeline's teams,
-	// gets the read timeout as one budget.
-	requestCtx, cancel := context.WithTimeout(ctx, timeout)
-	defer cancel()
-
 	// <pipeline slug>/<team slug> is also accepted and resolved to the GraphQL ID
 	if pipeline, team, ok := parsePipelineTeamImportID(req.ID); ok {
+		timeout, diags := tp.client.readTimeout(ctx)
+		resp.Diagnostics.Append(diags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+
+		// Import has no timeout of its own, so the lookup, which pages through the pipeline's
+		// teams, gets the read timeout as one budget.
+		requestCtx, cancel := context.WithTimeout(ctx, timeout)
+		defer cancel()
+
 		id, err := tp.findPipelineTeamID(requestCtx, pipeline, team)
 		if err != nil {
 			resp.Diagnostics.AddError("Unable to import pipeline team", fmt.Sprintf("Could not find team %q on pipeline %q: %s", team, pipeline, err.Error()))
