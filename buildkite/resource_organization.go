@@ -508,8 +508,8 @@ func (o *organizationResource) updateAPISettings(ctx context.Context, config, pl
 		if !refused {
 			reread, readErr := o.client.getOrganizationAPISettings(ctx)
 			if readErr != nil {
-				detail += fmt.Sprintf(" The settings could not be read back to check whether the update applied, so state "+
-					"keeps the values from before it until a refresh can read them: %s", readErr.Error())
+				detail += fmt.Sprintf(" The settings could not be read back, so it is not known whether the update "+
+					"applied. The next apply reads them again before writing: %s", readErr.Error())
 			} else {
 				observed = reread
 			}
