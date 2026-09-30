@@ -1,7 +1,9 @@
 package buildkite
 
 import (
+	"context"
 	"errors"
+	"fmt"
 	"os"
 	"strings"
 	"testing"
@@ -69,6 +71,28 @@ func TestIsResourceNotFoundError(t *testing.T) {
 		{
 			name:        "unrelated plain error",
 			err:         errors.New("Network connection failed"),
+			shouldMatch: false,
+		},
+		{
+			name:        "404 with a not found body",
+			err:         &apiError{Method: "GET", URL: "/x", StatusCode: 404, Body: `{"message":"Not Found"}`},
+			shouldMatch: true,
+		},
+		// A retried status or a spent deadline says nothing about whether the resource exists, even
+		// when the body of a proxy's error page happens to say "not found".
+		{
+			name:        "retried 503 with a not found body",
+			err:         &apiError{Method: "POST", URL: "/v1", StatusCode: 503, Attempts: 4, Body: "upstream not found", Err: context.DeadlineExceeded},
+			shouldMatch: false,
+		},
+		{
+			name:        "429 with a not found body",
+			err:         &apiError{Method: "POST", URL: "/v1", StatusCode: 429, Body: "not found"},
+			shouldMatch: false,
+		},
+		{
+			name:        "deadline wrapping a not found message",
+			err:         fmt.Errorf("resource not found yet: %w", context.DeadlineExceeded),
 			shouldMatch: false,
 		},
 	}
