@@ -153,13 +153,13 @@ func (a *cacheRegistryTestAPI) ServeHTTP(w http.ResponseWriter, r *http.Request)
 		if variables["organizationId"] != "organization-id" {
 			a.t.Errorf("unexpected organization: %v", variables)
 		}
-		policy := cacheRegistryDefaultPolicy
+		var policy any = cacheRegistryDefaultPolicy
 		if operation == "updateCacheRegistry" {
 			if a.registry == nil || variables["id"] != a.registry["id"] {
 				fail("No cache registry found")
 				return
 			}
-			policy, _ = a.registry["policy"].(string)
+			policy = a.registry["policy"]
 		} else if a.registry != nil {
 			a.t.Error("create would orphan the existing cache registry")
 			fail("Cache registry already exists")
@@ -392,6 +392,76 @@ color = "#BADA55"`), Check: resource.ComposeAggregateTestCheckFunc(
 	}
 	if api.mutations[0]["policy"] != nil {
 		t.Fatalf("omitted policy sent on create: %v", api.mutations[0])
+	}
+}
+
+func TestUnitClusterCacheRegistryNullPolicyLifecycle(t *testing.T) {
+	server, api := newCacheRegistryTestAPI(t)
+	config := cacheRegistryTestConfig(server, "Cache", "")
+	updated := cacheRegistryTestConfig(server, "Cache", `description = "policy remains null"`)
+	repaired := cacheRegistryTestConfig(server, "Cache", fmt.Sprintf("description = %q\npolicy = %q", "policy remains null", cacheRegistrySavePolicy))
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		CheckDestroy:             api.checkDestroyed,
+		Steps: []resource.TestStep{
+			{Config: config, Check: cacheRegistryTestPolicyCheck(cacheRegistryDefaultPolicy)},
+			{PreConfig: func() {
+				api.mu.Lock()
+				defer api.mu.Unlock()
+				api.registry["policy"] = nil
+			}, RefreshState: true, Check: resource.TestCheckNoResourceAttr(cacheRegistryTestAddress, "policy")},
+			{Config: updated, Check: resource.ComposeAggregateTestCheckFunc(
+				resource.TestCheckNoResourceAttr(cacheRegistryTestAddress, "policy"),
+				resource.TestCheckResourceAttr(cacheRegistryTestAddress, "description", "policy remains null"),
+			)},
+			{ResourceName: cacheRegistryTestAddress, ImportState: true, ImportStateVerify: true,
+				ImportStateCheck: func(states []*terraform.InstanceState) error {
+					if len(states) != 1 {
+						return fmt.Errorf("expected one imported registry, got %v", states)
+					}
+					if policy, exists := states[0].Attributes["policy"]; exists {
+						return fmt.Errorf("imported policy = %q, want null", policy)
+					}
+					return nil
+				},
+			},
+			{Config: updated, PlanOnly: true},
+			{Config: repaired, ConfigPlanChecks: resource.ConfigPlanChecks{PreApply: []plancheck.PlanCheck{
+				plancheck.ExpectResourceAction(cacheRegistryTestAddress, plancheck.ResourceActionUpdate),
+			}}, Check: cacheRegistryTestPolicyCheck(cacheRegistrySavePolicy)},
+			{Config: repaired, PlanOnly: true},
+		},
+	})
+	api.mu.Lock()
+	defer api.mu.Unlock()
+	if api.operations["createCacheRegistry"] != 1 || api.operations["updateCacheRegistry"] != 2 || api.operations["deleteCacheRegistry"] != 1 {
+		t.Fatalf("null policy repair replaced or repeated the registry: %v", api.operations)
+	}
+	if api.mutations[1]["policy"] != nil {
+		t.Fatalf("unrelated update sent a policy: %v", api.mutations[1])
+	}
+}
+
+func TestUnitClusterCacheRegistryCreateNullPolicy(t *testing.T) {
+	server, api := newCacheRegistryTestAPI(t)
+	api.overridePolicy = true
+	config := cacheRegistryTestConfig(server, "Cache", "")
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		CheckDestroy:             api.checkDestroyed,
+		Steps: []resource.TestStep{
+			{Config: config, Check: resource.TestCheckNoResourceAttr(cacheRegistryTestAddress, "policy"),
+				ConfigPlanChecks: resource.ConfigPlanChecks{PreApply: []plancheck.PlanCheck{
+					plancheck.ExpectUnknownValue(cacheRegistryTestAddress, tfjsonpath.New("policy")),
+				}},
+			},
+			{Config: config, PlanOnly: true},
+		},
+	})
+	api.mu.Lock()
+	defer api.mu.Unlock()
+	if api.operations["createCacheRegistry"] != 1 || api.operations["updateCacheRegistry"] != 0 || api.operations["deleteCacheRegistry"] != 1 || api.mutations[0]["policy"] != nil {
+		t.Fatalf("unexpected null policy create lifecycle: operations=%v, mutations=%v", api.operations, api.mutations)
 	}
 }
 

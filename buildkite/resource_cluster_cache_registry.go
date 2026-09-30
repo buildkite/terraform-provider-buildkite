@@ -552,7 +552,7 @@ func updateClusterCacheRegistryState(state *clusterCacheRegistryResourceModel, r
 	state.CreatedAt = types.StringValue(result.CreatedAt.Format(time.RFC3339))
 	state.UpdatedAt = types.StringValue(result.UpdatedAt.Format(time.RFC3339))
 	if result.Policy == nil {
-		return fmt.Errorf("cache registry %q returned a null policy; expected a JSON object. The remote identity has been recorded in state. Check the API response and run terraform plan before applying again", result.Id)
+		return nil
 	}
 	if _, err := normalizeCacheRegistryPolicy(*result.Policy); err != nil {
 		if !json.Valid([]byte(*result.Policy)) {

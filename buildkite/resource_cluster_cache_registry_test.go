@@ -346,7 +346,7 @@ func TestClusterCacheRegistryApplyResponse(t *testing.T) {
 			policy  *string
 			message string
 		}{
-			"API null":          {nil, "null policy"},
+			"API null":          {nil, "differs from the plan"},
 			"JSON null":         {ptr("null"), "not null"},
 			"malformed JSON":    {ptr(`{"rules":`), "valid JSON object"},
 			"array":             {ptr(`[]`), "JSON object"},
@@ -462,7 +462,7 @@ func TestClusterCacheRegistryReadPolicy(t *testing.T) {
 	}{
 		"equivalent":                       {policy: ptr(cacheRegistrySavePolicy), wantPolicy: jsontypes.NewNormalizedValue(cacheRegistryNullablePolicy)},
 		"drift":                            {policy: ptr(cacheRegistryDefaultPolicy), wantPolicy: jsontypes.NewNormalizedValue(cacheRegistryDefaultPolicy)},
-		"API null":                         {wantError: true, wantPolicy: jsontypes.NewNormalizedNull()},
+		"API null":                         {wantPolicy: jsontypes.NewNormalizedNull()},
 		"JSON null":                        {policy: ptr("null"), wantError: true, wantPolicy: jsontypes.NewNormalizedValue("null")},
 		"malformed":                        {policy: ptr("{broken"), wantError: true, wantPolicy: jsontypes.NewNormalizedNull()},
 		"node hidden but registry present": {hideNode: true, wantError: true, wantPolicy: jsontypes.NewNormalizedValue(cacheRegistryNullablePolicy)},
