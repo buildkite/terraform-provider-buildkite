@@ -2,6 +2,7 @@ package buildkite
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -142,13 +143,27 @@ func (o *organizationResource) Create(ctx context.Context, req resource.CreateRe
 	}
 
 	log.Printf("Creating settings for organization %s ...", *org)
+	// A failed Create records no state (the 2FA failure below says why), so this warning is the only
+	// record of api-settings that were written first. Deferred so a new early return cannot drop it.
+	var wroteAPISettings bool
+	defer func() {
+		if wroteAPISettings && resp.Diagnostics.HasError() {
+			resp.Diagnostics.AddWarning(
+				"Organization API settings were applied before the apply failed",
+				"The organization API settings that differed were written and are left in place. "+
+					"No state was recorded for this resource, so terraform will not clear them. Applying again writes "+
+					"only the settings that still differ, then retries whatever failed.",
+			)
+		}
+	}()
+
 	state.ID = types.StringValue(*org)
 	state.UUID = types.StringValue(organization.Organization.Uuid)
 
 	// api-settings goes first. A setting the organization's plan does not include is refused
 	// outright, and refusing it changes nothing, so that failure cannot leave 2FA already flipped
 	// on an organization terraform has no state for.
-	wroteAPISettings := o.updateAPISettings(ctx, &config, &plan, &state, &resp.Diagnostics)
+	wroteAPISettings = o.updateAPISettings(ctx, &config, &plan, &state, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -161,14 +176,6 @@ func (o *organizationResource) Create(ctx context.Context, req resource.CreateRe
 			// follows destroys before it creates, clearing an allowlist that did land. Leaving the
 			// create unrecorded keeps the organization as terraform found it, and applying again
 			// writes only what still differs before retrying 2FA.
-			if wroteAPISettings {
-				resp.Diagnostics.AddWarning(
-					"Organization API settings were applied before 2FA failed",
-					"The organization API settings that differed were written and are left in place. "+
-						"No state was recorded for this resource, so terraform will not clear them. Applying again writes "+
-						"only the settings that still differ, then retries the 2FA change.",
-				)
-			}
 			return
 		}
 		state.Enforce2FA = plan.Enforce2FA
@@ -251,7 +258,20 @@ func (o *organizationResource) Update(ctx context.Context, req resource.UpdateRe
 	log.Printf("Updating settings for organization %s ...", *org)
 	state.ID = types.StringValue(*org)
 	state.UUID = prior.UUID
+	// Seeded from prior so a step failing before it is reached keeps the last known value rather
+	// than persisting a null over it. Each is overwritten by the step that owns it.
 	state.Enforce2FA = prior.Enforce2FA
+	state.AllowedApiIpAddresses = prior.AllowedApiIpAddresses
+	state.RevokeInactiveTokensAfter = prior.RevokeInactiveTokensAfter
+	state.RestrictUserApiTokenCreation = prior.RestrictUserApiTokenCreation
+
+	// Whatever applies below has to be recorded on every path out, not just the one that reaches
+	// the end. Deferred so a new early return cannot forget it. Unlike Create, an Update that
+	// returns state alongside an error is not tainted, so there is nothing to weigh against
+	// recording it.
+	defer func() {
+		resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
+	}()
 
 	// as in Create, the refusable write goes first so it cannot fail behind a 2FA change
 	o.updateAPISettings(ctx, &config, &plan, &state, &resp.Diagnostics)
@@ -263,13 +283,10 @@ func (o *organizationResource) Update(ctx context.Context, req resource.UpdateRe
 		twoFAResponse, err := setOrganization2FA(ctx, o.client.genqlient, *org, plan.Enforce2FA.ValueBool())
 		if err != nil {
 			resp.Diagnostics.AddError("Unable to set 2FA", err.Error())
-			resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 			return
 		}
 		state.Enforce2FA = types.BoolValue(twoFAResponse.OrganizationEnforceTwoFactorAuthenticationForMembersUpdate.Organization.MembersRequireTwoFactorAuthentication)
 	}
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }
 
 func (o *organizationResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
@@ -445,6 +462,9 @@ func (o *organizationResource) updateAPISettings(ctx context.Context, config, pl
 		return false
 	}
 
+	// what state had before it is made to describe the plan, so the failure path below can put back
+	// an allowlist the patch never applied
+	recorded := state.AllowedApiIpAddresses
 	// the allowlist is not adopted from the organization, so state follows the configuration exactly
 	state.AllowedApiIpAddresses = plan.AllowedApiIpAddresses
 	// the remaining attributes are left as they are when they are not configured
@@ -475,8 +495,43 @@ func (o *organizationResource) updateAPISettings(ctx context.Context, config, pl
 				detail += " Inactive API token revocation is not available on this organization's plan."
 			}
 		}
+		// State has to describe the organization rather than the plan: Update records state on this
+		// path, and a later refresh that cannot read the settings keeps whatever it last saw, so a
+		// planned value left here would be adopted rather than replanned. A 4xx answering the only
+		// attempt is the API refusing the request, so the organization is as the read above found
+		// it. Anything else may have followed a PATCH that landed, so the organization is asked
+		// again: a 5xx, a transport failure or a response that could not be decoded, and any retried
+		// request, whose final 4xx says nothing about the earlier attempt it retried.
+		observed := current
+		var apiErr *apiError
+		refused := errors.As(err, &apiErr) && apiErr.StatusCode >= 400 && apiErr.StatusCode < 500 && apiErr.Attempts <= 1
+		if !refused {
+			reread, readErr := o.client.getOrganizationAPISettings(ctx)
+			if readErr != nil {
+				detail += fmt.Sprintf(" The settings could not be read back, so it is not known whether the update "+
+					"applied. The next apply reads them again before writing: %s", readErr.Error())
+			} else {
+				observed = reread
+			}
+		}
 		diags.AddError("Unable to update organization API settings", detail)
+
+		allowed, allowedDiags := allowedApiIpAddressesFromAPI(ctx, observed.AllowedIpAddresses, recorded)
+		diags.Append(allowedDiags...)
+		state.AllowedApiIpAddresses = allowed
+		state.RevokeInactiveTokensAfter = types.StringValue(revokePeriodFromDays(observed.RevokeInactiveTokensAfterDays))
+		state.RestrictUserApiTokenCreation = types.BoolValue(observed.RestrictUserApiTokenCreation)
+
+		// a setting the PATCH carried that the organization now agrees with the plan on landed despite
+		// the error
+		stillDiffers := apiSettingsPatch(config, plan, observed)
+		for key := range payload {
+			if _, ok := stillDiffers[key]; !ok {
+				return true
+			}
+		}
 		return false
 	}
+
 	return true
 }
