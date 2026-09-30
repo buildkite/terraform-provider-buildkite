@@ -143,6 +143,10 @@ type providerSettingsModel struct {
 	ReviewCommentMatchMode                  types.String `tfsdk:"review_comment_match_mode"`
 	BuildPullRequestDequeued                types.Bool   `tfsdk:"build_pull_request_dequeued"`
 	BuildPullRequestReopened                types.Bool   `tfsdk:"build_pull_request_reopened"`
+	BuildPullRequestStacks                  types.Bool   `tfsdk:"build_pull_request_stacks"`
+	GithubWorkflowAccessTokensEnabled       types.Bool   `tfsdk:"github_workflow_access_tokens_enabled"`
+	SkipBuildsForClosedPullRequests         types.Bool   `tfsdk:"skip_builds_for_closed_pull_requests"`
+	PreventCustomStatusesBuildkitePrefix    types.Bool   `tfsdk:"prevent_custom_statuses_from_using_buildkite_prefix"`
 	BuildCheckRunCompleted                  types.Bool   `tfsdk:"build_check_run_completed"`
 	BuildCreateEvent                        types.Bool   `tfsdk:"build_create_event"`
 	BuildDeploymentStatusCreated            types.Bool   `tfsdk:"build_deployment_status_created"`
@@ -1172,6 +1176,38 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 							boolplanmodifier.UseNonNullStateForUnknown(),
 						},
 					},
+					"build_pull_request_stacks": schema.BoolAttribute{
+						Computed:            true,
+						Optional:            true,
+						MarkdownDescription: "Whether to create a build when a pull request is added to a stack. Requires `build_pull_requests` to be enabled.",
+						PlanModifiers: []planmodifier.Bool{
+							boolplanmodifier.UseNonNullStateForUnknown(),
+						},
+					},
+					"github_workflow_access_tokens_enabled": schema.BoolAttribute{
+						Computed:            true,
+						Optional:            true,
+						MarkdownDescription: "Whether jobs can request GitHub access tokens bounded by workflow permissions. GitHub only; the organization feature must also be enabled.",
+						PlanModifiers: []planmodifier.Bool{
+							boolplanmodifier.UseNonNullStateForUnknown(),
+						},
+					},
+					"skip_builds_for_closed_pull_requests": schema.BoolAttribute{
+						Computed:            true,
+						Optional:            true,
+						MarkdownDescription: "Whether to skip creating builds for a pull request once it is closed or merged, for example for late label changes from bots.",
+						PlanModifiers: []planmodifier.Bool{
+							boolplanmodifier.UseNonNullStateForUnknown(),
+						},
+					},
+					"prevent_custom_statuses_from_using_buildkite_prefix": schema.BoolAttribute{
+						Computed:            true,
+						Optional:            true,
+						MarkdownDescription: "Whether custom commit statuses posted via `notify:` are prevented from using a `context:` starting with `buildkite/`. Only enforced while the matching organization setting is enabled.",
+						PlanModifiers: []planmodifier.Bool{
+							boolplanmodifier.UseNonNullStateForUnknown(),
+						},
+					},
 					"build_check_run_completed": schema.BoolAttribute{
 						Computed:            true,
 						Optional:            true,
@@ -1750,6 +1786,10 @@ type PipelineExtraSettings struct {
 	ReviewCommentMatchMode                  *string `json:"review_comment_match_mode,omitempty"`
 	BuildPullRequestDequeued                *bool   `json:"build_pull_request_dequeued,omitempty"`
 	BuildPullRequestReopened                *bool   `json:"build_pull_request_reopened,omitempty"`
+	BuildPullRequestStacks                  *bool   `json:"build_pull_request_stacks,omitempty"`
+	GithubWorkflowAccessTokensEnabled       *bool   `json:"github_workflow_access_tokens_enabled,omitempty"`
+	SkipBuildsForClosedPullRequests         *bool   `json:"skip_builds_for_closed_pull_requests,omitempty"`
+	PreventCustomStatusesBuildkitePrefix    *bool   `json:"prevent_custom_statuses_from_using_buildkite_prefix,omitempty"`
 	BuildCheckRunCompleted                  *bool   `json:"build_check_run_completed,omitempty"`
 	BuildCreateEvent                        *bool   `json:"build_create_event,omitempty"`
 	BuildDeploymentStatusCreated            *bool   `json:"build_deployment_status_created,omitempty"`
@@ -1780,6 +1820,14 @@ func updatePipelineSlug(ctx context.Context, slug string, updatedSlug string, cl
 		}
 	}
 	return pipelineExtraInfo, nil
+}
+
+// knownBoolPointer is nil for a null or unknown value so the setting is left out of the request and keeps the API default
+func knownBoolPointer(value types.Bool) *bool {
+	if value.IsUnknown() {
+		return nil
+	}
+	return value.ValueBoolPointer()
 }
 
 func updatePipelineExtraInfo(ctx context.Context, slug string, settings *providerSettingsModel, client *Client, timeouts time.Duration) (PipelineExtraInfo, error) {
@@ -1820,6 +1868,10 @@ func updatePipelineExtraInfo(ctx context.Context, slug string, settings *provide
 			ReviewCommentMatchMode:                  settings.ReviewCommentMatchMode.ValueStringPointer(),
 			BuildPullRequestDequeued:                settings.BuildPullRequestDequeued.ValueBoolPointer(),
 			BuildPullRequestReopened:                settings.BuildPullRequestReopened.ValueBoolPointer(),
+			BuildPullRequestStacks:                  knownBoolPointer(settings.BuildPullRequestStacks),
+			GithubWorkflowAccessTokensEnabled:       knownBoolPointer(settings.GithubWorkflowAccessTokensEnabled),
+			SkipBuildsForClosedPullRequests:         knownBoolPointer(settings.SkipBuildsForClosedPullRequests),
+			PreventCustomStatusesBuildkitePrefix:    knownBoolPointer(settings.PreventCustomStatusesBuildkitePrefix),
 			BuildCheckRunCompleted:                  settings.BuildCheckRunCompleted.ValueBoolPointer(),
 			BuildCreateEvent:                        settings.BuildCreateEvent.ValueBoolPointer(),
 			BuildDeploymentStatusCreated:            settings.BuildDeploymentStatusCreated.ValueBoolPointer(),
@@ -1918,6 +1970,10 @@ func updatePipelineResourceExtraInfo(state *pipelineResourceModel, pipeline *Pip
 		ReviewCommentMatchMode:                  matchModeFromREST(s.ReviewCommentMatchMode),
 		BuildPullRequestDequeued:                types.BoolPointerValue(s.BuildPullRequestDequeued),
 		BuildPullRequestReopened:                types.BoolPointerValue(s.BuildPullRequestReopened),
+		BuildPullRequestStacks:                  types.BoolPointerValue(s.BuildPullRequestStacks),
+		GithubWorkflowAccessTokensEnabled:       types.BoolPointerValue(s.GithubWorkflowAccessTokensEnabled),
+		SkipBuildsForClosedPullRequests:         types.BoolPointerValue(s.SkipBuildsForClosedPullRequests),
+		PreventCustomStatusesBuildkitePrefix:    types.BoolPointerValue(s.PreventCustomStatusesBuildkitePrefix),
 		BuildCheckRunCompleted:                  types.BoolPointerValue(s.BuildCheckRunCompleted),
 		BuildCreateEvent:                        types.BoolPointerValue(s.BuildCreateEvent),
 		BuildDeploymentStatusCreated:            types.BoolPointerValue(s.BuildDeploymentStatusCreated),
@@ -1993,6 +2049,10 @@ func mapProviderSettingsFromGraphQL(repo RepositoryProviderSettingsFields) *prov
 			ReviewCommentMatchMode:                  matchModeToString(s.ReviewCommentMatchMode),
 			BuildPullRequestDequeued:                types.BoolPointerValue(s.BuildPullRequestDequeued),
 			BuildPullRequestReopened:                types.BoolPointerValue(s.BuildPullRequestReopened),
+			BuildPullRequestStacks:                  types.BoolPointerValue(s.BuildPullRequestStacks),
+			GithubWorkflowAccessTokensEnabled:       types.BoolPointerValue(s.GithubWorkflowAccessTokensEnabled),
+			SkipBuildsForClosedPullRequests:         types.BoolPointerValue(s.SkipBuildsForClosedPullRequests),
+			PreventCustomStatusesBuildkitePrefix:    types.BoolPointerValue(s.PreventCustomStatusesFromUsingBuildkitePrefix),
 			UseStepKeyAsCommitStatus:                types.BoolPointerValue(s.UseStepKeyAsCommitStatus),
 			BuildCheckRunCompleted:                  types.BoolPointerValue(s.BuildCheckRunCompleted),
 			BuildCreateEvent:                        types.BoolPointerValue(s.BuildCreateEvent),
@@ -2043,6 +2103,10 @@ func mapProviderSettingsFromGraphQL(repo RepositoryProviderSettingsFields) *prov
 			ReviewCommentMatchMode:                  matchModeToString(s.ReviewCommentMatchMode),
 			BuildPullRequestDequeued:                types.BoolPointerValue(s.BuildPullRequestDequeued),
 			BuildPullRequestReopened:                types.BoolPointerValue(s.BuildPullRequestReopened),
+			BuildPullRequestStacks:                  types.BoolPointerValue(s.BuildPullRequestStacks),
+			GithubWorkflowAccessTokensEnabled:       types.BoolPointerValue(s.GithubWorkflowAccessTokensEnabled),
+			SkipBuildsForClosedPullRequests:         types.BoolPointerValue(s.SkipBuildsForClosedPullRequests),
+			PreventCustomStatusesBuildkitePrefix:    types.BoolPointerValue(s.PreventCustomStatusesFromUsingBuildkitePrefix),
 			UseStepKeyAsCommitStatus:                types.BoolPointerValue(s.UseStepKeyAsCommitStatus),
 			BuildCheckRunCompleted:                  types.BoolPointerValue(s.BuildCheckRunCompleted),
 			BuildCreateEvent:                        types.BoolPointerValue(s.BuildCreateEvent),
@@ -2431,6 +2495,22 @@ func pipelineSchemaV0() schema.Schema {
 							Optional: true,
 						},
 						"build_pull_request_reopened": schema.BoolAttribute{
+							Computed: true,
+							Optional: true,
+						},
+						"build_pull_request_stacks": schema.BoolAttribute{
+							Computed: true,
+							Optional: true,
+						},
+						"github_workflow_access_tokens_enabled": schema.BoolAttribute{
+							Computed: true,
+							Optional: true,
+						},
+						"skip_builds_for_closed_pull_requests": schema.BoolAttribute{
+							Computed: true,
+							Optional: true,
+						},
+						"prevent_custom_statuses_from_using_buildkite_prefix": schema.BoolAttribute{
 							Computed: true,
 							Optional: true,
 						},
