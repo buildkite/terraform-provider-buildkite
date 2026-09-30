@@ -8,7 +8,7 @@ The provider allows you to manage resources in your Buildkite organization.
 
 Two configuration values are required:
 
--   An API token with `write_pipelines`, `read_pipelines`, `write_suites`, `read_notification_services`, and `write_notification_services` REST API scopes, enabled for GraphQL API access. You can generate one [here](https://buildkite.com/user/api-access-tokens/new?description=terraform&scopes[]=write_pipelines&scopes[]=write_suites&scopes[]=read_pipelines&scopes[]=read_notification_services&scopes[]=write_notification_services&scopes[]=graphql)
+-   An API token with `write_pipelines`, `read_pipelines`, `write_suites`, `read_notification_services`, `write_notification_services`, `read_organization_settings`, and `write_organization_settings` REST API scopes, enabled for GraphQL API access. You can generate one [here](https://buildkite.com/user/api-access-tokens/new?description=terraform&scopes[]=write_pipelines&scopes[]=write_suites&scopes[]=read_pipelines&scopes[]=read_notification_services&scopes[]=write_notification_services&scopes[]=read_organization_settings&scopes[]=write_organization_settings&scopes[]=graphql). The `buildkite_organization` resource and data source both read the organization API settings endpoint, so both need `read_organization_settings`. Only the resource needs `write_organization_settings`, and only to change an attribute that endpoint carries. The token's user must also be an organization administrator to manage organization settings.
 -   A Buildkite organization slug, available by signing into buildkite.com and examining the URL: https://buildkite.com/<org-slug>.
 
 ## Documentation

@@ -143,7 +143,7 @@ func (or *organizationRuleResource) Create(ctx context.Context, req resource.Cre
 		return
 	}
 
-	timeout, diags := or.client.timeouts.Create(ctx, DefaultTimeout)
+	timeout, diags := or.client.createTimeout(ctx)
 	resp.Diagnostics.Append(diags...)
 
 	if resp.Diagnostics.HasError() {
@@ -200,7 +200,7 @@ func (or *organizationRuleResource) Read(ctx context.Context, req resource.ReadR
 		return
 	}
 
-	timeouts, diags := or.client.timeouts.Read(ctx, DefaultTimeout)
+	timeouts, diags := or.client.readTimeout(ctx)
 	resp.Diagnostics.Append(diags...)
 
 	if resp.Diagnostics.HasError() {
@@ -368,7 +368,7 @@ func (or *organizationRuleResource) Update(ctx context.Context, req resource.Upd
 		return
 	}
 
-	timeout, diags := or.client.timeouts.Update(ctx, DefaultTimeout)
+	timeout, diags := or.client.updateTimeout(ctx)
 
 	resp.Diagnostics.Append(diags...)
 
@@ -424,7 +424,7 @@ func (or *organizationRuleResource) Delete(ctx context.Context, req resource.Del
 		return
 	}
 
-	timeout, diags := or.client.timeouts.Delete(ctx, DefaultTimeout)
+	timeout, diags := or.client.deleteTimeout(ctx)
 	resp.Diagnostics.Append(diags...)
 
 	if resp.Diagnostics.HasError() {

@@ -2,40 +2,20 @@ package buildkite
 
 import (
 	"fmt"
+	"net/http"
 	"regexp"
+	"slices"
 	"testing"
+	"time"
 
+	"github.com/hashicorp/terraform-plugin-framework/datasource"
+	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
+	"github.com/hashicorp/terraform-plugin-go/tftypes"
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
 func TestAccBuildkiteClusterDatasource(t *testing.T) {
-	t.Run("timeout reading cluster", func(t *testing.T) {
-		t.Skip()
-		clusterName := acctest.RandString(12)
-
-		resource.ParallelTest(t, resource.TestCase{
-			ProtoV6ProviderFactories: protoV6ProviderFactories(),
-			Steps: []resource.TestStep{
-				{
-					Config: fmt.Sprintf(`
-						provider "buildkite" {
-							timeouts = {
-								read = "0s"
-							}
-						}
-						resource "buildkite_cluster" "cluster" {
-							name = "%s"
-						}
-						data "buildkite_cluster" "default" {
-							name = buildkite_cluster.cluster.name
-						}`, clusterName),
-					ExpectError: regexp.MustCompile(`timeout while waiting for state to become 'success'`),
-				},
-			},
-		})
-	})
-
 	t.Run("can find a cluster", func(t *testing.T) {
 		clusterName := acctest.RandString(12)
 		resource.ParallelTest(t, resource.TestCase{
@@ -73,4 +53,96 @@ func TestAccBuildkiteClusterDatasource(t *testing.T) {
 			},
 		})
 	})
+}
+
+// The single-cluster data source has the same fabricated empty list as buildkite_clusters, on the
+// same call. A refusal reports no maintainers; anything else leaves the list unknown, and an empty
+// one would be consumed as though the API had said so.
+func TestClusterDatasourceReadClassifiesAFailedMaintainerRead(t *testing.T) {
+	t.Parallel()
+
+	clusterFound := stubResponse{status: http.StatusOK, body: `{"data":{"organization":{"clusters":{
+		"pageInfo": {"endCursor": "", "hasNextPage": false},
+		"edges": [{"node": {
+			"id": "cluster-id", "uuid": "cluster-uuid", "name": "a-cluster",
+			"description": null, "emoji": null, "color": null
+		}}]
+	}}}}`}
+
+	tests := []struct {
+		name        string
+		maintainers stubResponse
+		// Empty means the read has to succeed, with the maintainers named here.
+		wantError       string
+		wantMaintainers []string
+	}{
+		{
+			name:            "the maintainers are readable",
+			maintainers:     stubResponse{status: http.StatusOK, body: `[{"id":"permission-uuid","actor":{"id":"actor-uuid","type":"team","name":"a-team"}}]`},
+			wantMaintainers: []string{"permission-uuid"},
+		},
+		{
+			name:        "the maintainers call is refused",
+			maintainers: stubResponse{status: http.StatusForbidden, body: `{"message":"Forbidden"}`},
+		},
+		{
+			// The cluster went away between the page read and this call. The list is not empty, it
+			// is moot, and there is no cluster left to report it against.
+			name:        "the cluster is gone by the time its maintainers are read",
+			maintainers: stubResponse{status: http.StatusNotFound, body: `{"message":"Not Found"}`},
+			wantError:   "Unable to fetch cluster maintainers",
+		},
+		{
+			name:        "the maintainers call fails for any other reason",
+			maintainers: stubResponse{status: http.StatusInternalServerError, body: `{"message":"boom"}`},
+			wantError:   "Unable to fetch cluster maintainers",
+		},
+	}
+
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			server, _ := newRetryStub(t, clusterFound, testCase.maintainers)
+			defer server.Close()
+
+			c := &clusterDatasource{client: newRetryTestClient(t, server.URL, 0, time.Millisecond)}
+
+			ctx := t.Context()
+			sch := datasourceSchema(ctx, t, c)
+
+			config := nullObjectWith(ctx, t, sch.Type(), map[string]tftypes.Value{
+				"name": tftypes.NewValue(tftypes.String, "a-cluster"),
+			})
+
+			req := datasource.ReadRequest{Config: tfsdk.Config{Schema: sch, Raw: config}}
+			resp := datasource.ReadResponse{State: tfsdk.State{Schema: sch, Raw: config}}
+
+			c.Read(ctx, req, &resp)
+
+			if testCase.wantError != "" {
+				if !diagnosticsContain(resp.Diagnostics, testCase.wantError) {
+					t.Fatalf("Read() diagnostics = %v, want %q: the API never answered, so the list is unknown", resp.Diagnostics, testCase.wantError)
+				}
+				return
+			}
+
+			if resp.Diagnostics.HasError() {
+				t.Fatalf("Read() diagnostics = %v, want the cluster read", resp.Diagnostics)
+			}
+
+			var read clusterDatasourceModel
+			if diags := resp.State.Get(ctx, &read); diags.HasError() {
+				t.Fatalf("Reading the recorded state = %v", diags)
+			}
+
+			got := make([]string, 0, len(read.Maintainers))
+			for _, maintainer := range read.Maintainers {
+				got = append(got, maintainer.PermissionUUID.ValueString())
+			}
+			if !slices.Equal(got, testCase.wantMaintainers) {
+				t.Errorf("Recorded maintainers = %v, want %v", got, testCase.wantMaintainers)
+			}
+		})
+	}
 }

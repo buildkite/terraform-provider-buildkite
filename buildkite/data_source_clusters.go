@@ -3,6 +3,7 @@ package buildkite
 import (
 	"context"
 	"fmt"
+	"net/http"
 
 	"github.com/MakeNowJust/heredoc"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
@@ -177,6 +178,10 @@ func (c *clustersDatasource) Read(ctx context.Context, req datasource.ReadReques
 
 		for _, cluster := range res.Organization.Clusters.Edges {
 			updateClustersDatasourceState(ctx, c.client, resp, &state, cluster)
+			// stop at the first cluster that failed rather than sweeping the rest to fail the same way
+			if resp.Diagnostics.HasError() {
+				return
+			}
 		}
 
 		if !res.Organization.Clusters.PageInfo.HasNextPage {
@@ -210,15 +215,22 @@ func updateClustersDatasourceState(ctx context.Context, client *Client, resp *da
 	// Fetch maintainers for this cluster
 	maintainers, err := client.listClusterMaintainers(ctx, client.organization, data.Node.Uuid)
 	if err != nil {
-		// Log warning but don't fail the entire request - maintainers might not be accessible
+		// A refusal is an answer: the caller may not see the maintainers, and reporting none is a
+		// fair reading of that. Any other failure means the API never answered, and an empty list
+		// would be consumed as though it had.
+		if !isAPIStatus(err, http.StatusForbidden) {
+			resp.Diagnostics.AddError(
+				"Unable to fetch cluster maintainers",
+				fmt.Sprintf("Could not fetch maintainers for cluster %s: %s", data.Node.Name, err.Error()),
+			)
+			return
+		}
 		resp.Diagnostics.AddWarning(
 			"Unable to fetch cluster maintainers",
-			fmt.Sprintf("Could not fetch maintainers for cluster %s: %s", data.Node.Name, err.Error()),
+			fmt.Sprintf("Could not fetch maintainers for cluster %s, reporting none: %s", data.Node.Name, err.Error()),
 		)
-		clusterState.Maintainers = []maintainerModel{}
-	} else {
-		clusterState.Maintainers = maintainers
 	}
+	clusterState.Maintainers = maintainers
 
 	state.Clusters = append(state.Clusters, clusterState)
 }

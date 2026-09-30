@@ -74,7 +74,17 @@ fragment RepositoryProviderSettingsFields on Repository {
                 # @genqlient(pointer: true)
                 buildPullRequestDequeued
                 # @genqlient(pointer: true)
+                buildPullRequestEdited
+                # @genqlient(pointer: true)
                 buildPullRequestReopened
+                # @genqlient(pointer: true)
+                buildPullRequestStacks
+                # @genqlient(pointer: true)
+                githubWorkflowAccessTokensEnabled
+                # @genqlient(pointer: true)
+                skipBuildsForClosedPullRequests
+                # @genqlient(pointer: true)
+                preventCustomStatusesFromUsingBuildkitePrefix
                 # @genqlient(pointer: true)
                 buildPullRequestReviewCommentCreated
                 # @genqlient(pointer: true)
@@ -168,7 +178,17 @@ fragment RepositoryProviderSettingsFields on Repository {
                 # @genqlient(pointer: true)
                 buildPullRequestDequeued
                 # @genqlient(pointer: true)
+                buildPullRequestEdited
+                # @genqlient(pointer: true)
                 buildPullRequestReopened
+                # @genqlient(pointer: true)
+                buildPullRequestStacks
+                # @genqlient(pointer: true)
+                githubWorkflowAccessTokensEnabled
+                # @genqlient(pointer: true)
+                skipBuildsForClosedPullRequests
+                # @genqlient(pointer: true)
+                preventCustomStatusesFromUsingBuildkitePrefix
                 # @genqlient(pointer: true)
                 buildPullRequestReviewCommentCreated
                 # @genqlient(pointer: true)

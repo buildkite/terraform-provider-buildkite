@@ -16,6 +16,7 @@ import (
 	genqlient "github.com/Khan/genqlient/graphql"
 	"github.com/hashicorp/go-retryablehttp"
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/shurcooL/graphql"
 )
@@ -67,6 +68,42 @@ func (client *Client) GetOrganizationID() (*string, error) {
 	return client.organizationId, nil
 }
 
+// effectiveTimeout falls back to DefaultTimeout for a timeout that is not positive. The timeouts
+// validator accepts "0s" and "-1h" because they parse, and the default is only substituted when the
+// attribute is unset, so without this a configured zero reaches callers as zero: context.WithTimeout
+// returns an already-expired context, and retry.RetryContext usually gives up before its first
+// attempt and never retries.
+func effectiveTimeout(timeout time.Duration) time.Duration {
+	if timeout <= 0 {
+		return DefaultTimeout
+	}
+
+	return timeout
+}
+
+// createTimeout, readTimeout, updateTimeout and deleteTimeout read the configured timeout for an
+// operation. Use these rather than client.timeouts directly so a non-positive value is treated as
+// unset everywhere.
+func (client *Client) createTimeout(ctx context.Context) (time.Duration, diag.Diagnostics) {
+	timeout, diags := client.timeouts.Create(ctx, DefaultTimeout)
+	return effectiveTimeout(timeout), diags
+}
+
+func (client *Client) readTimeout(ctx context.Context) (time.Duration, diag.Diagnostics) {
+	timeout, diags := client.timeouts.Read(ctx, DefaultTimeout)
+	return effectiveTimeout(timeout), diags
+}
+
+func (client *Client) updateTimeout(ctx context.Context) (time.Duration, diag.Diagnostics) {
+	timeout, diags := client.timeouts.Update(ctx, DefaultTimeout)
+	return effectiveTimeout(timeout), diags
+}
+
+func (client *Client) deleteTimeout(ctx context.Context) (time.Duration, diag.Diagnostics) {
+	timeout, diags := client.timeouts.Delete(ctx, DefaultTimeout)
+	return effectiveTimeout(timeout), diags
+}
+
 // NewClient creates a client for interacting with the Buildkite API.
 //
 // https://buildkite.com/docs/apis/rest-api/limits
@@ -88,6 +125,7 @@ func (client *Client) GetOrganizationID() (*string, error) {
 //     this way, since they never pass through makeRequest.
 func NewClient(config *clientConfig) *Client {
 	readTimeout, diags := config.timeouts.Read(context.Background(), DefaultTimeout)
+	readTimeout = effectiveTimeout(readTimeout)
 
 	commonHeaders := make(http.Header)
 	commonHeaders.Set("Authorization", "Bearer "+config.apiToken)
@@ -199,7 +237,7 @@ func NewClient(config *clientConfig) *Client {
 	restRetryClient.Backoff = sharedBackoff
 	restRetryClient.CheckRetry = sharedCheckRetry
 	restRetryClient.ErrorHandler = restErrorHandler
-	if !diags.HasError() && readTimeout > 0 {
+	if !diags.HasError() {
 		restRetryClient.HTTPClient.Timeout = readTimeout
 	}
 	// Add auth headers to the underlying transport of the REST retry client
@@ -214,7 +252,7 @@ func NewClient(config *clientConfig) *Client {
 	graphqlRetryClient.Logger = nil // Using tflog directly
 	graphqlRetryClient.Backoff = sharedBackoff
 	graphqlRetryClient.CheckRetry = sharedCheckRetry
-	if !diags.HasError() && readTimeout > 0 {
+	if !diags.HasError() {
 		graphqlRetryClient.HTTPClient.Timeout = readTimeout
 	}
 	// Add auth headers to the underlying transport of the GraphQL retry client
@@ -421,7 +459,7 @@ func unwrapURLError(err error) error {
 
 func (client *Client) makeRequest(ctx context.Context, method string, path string, postData interface{}, responseObject interface{}) error {
 	if _, hasDeadline := ctx.Deadline(); !hasDeadline {
-		readTimeout, diags := client.timeouts.Read(ctx, DefaultTimeout)
+		readTimeout, diags := client.readTimeout(ctx)
 		if !diags.HasError() {
 			var cancel context.CancelFunc
 			ctx, cancel = context.WithTimeout(ctx, readTimeout)

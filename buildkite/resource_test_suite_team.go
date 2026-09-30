@@ -65,10 +65,16 @@ func (tst *testSuiteTeamResource) Schema(ctx context.Context, req resource.Schem
 			"test_suite_id": schema.StringAttribute{
 				Required:            true,
 				MarkdownDescription: "The GraphQL ID of the test suite.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"team_id": schema.StringAttribute{
 				Required:            true,
 				MarkdownDescription: "The GraphQL ID of the team.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"access_level": schema.StringAttribute{
 				Required:            true,
@@ -91,7 +97,7 @@ func (tst *testSuiteTeamResource) Create(ctx context.Context, req resource.Creat
 		return
 	}
 
-	timeout, diags := tst.client.timeouts.Create(ctx, DefaultTimeout)
+	timeout, diags := tst.client.createTimeout(ctx)
 	resp.Diagnostics.Append(diags...)
 
 	if resp.Diagnostics.HasError() {
@@ -136,7 +142,7 @@ func (tst *testSuiteTeamResource) Read(ctx context.Context, req resource.ReadReq
 		return
 	}
 
-	timeout, diags := tst.client.timeouts.Read(ctx, DefaultTimeout)
+	timeout, diags := tst.client.readTimeout(ctx)
 	resp.Diagnostics.Append(diags...)
 
 	if resp.Diagnostics.HasError() {
@@ -199,7 +205,7 @@ func (tst *testSuiteTeamResource) Update(ctx context.Context, req resource.Updat
 		return
 	}
 
-	timeout, diags := tst.client.timeouts.Update(ctx, DefaultTimeout)
+	timeout, diags := tst.client.updateTimeout(ctx)
 	resp.Diagnostics.Append(diags...)
 
 	if resp.Diagnostics.HasError() {
@@ -242,7 +248,7 @@ func (tst *testSuiteTeamResource) Delete(ctx context.Context, req resource.Delet
 		return
 	}
 
-	timeout, diags := tst.client.timeouts.Delete(ctx, DefaultTimeout)
+	timeout, diags := tst.client.deleteTimeout(ctx)
 	resp.Diagnostics.Append(diags...)
 
 	if resp.Diagnostics.HasError() {

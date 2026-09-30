@@ -65,10 +65,16 @@ func (teamMemberResource) Schema(ctx context.Context, req resource.SchemaRequest
 			"team_id": resource_schema.StringAttribute{
 				Required:            true,
 				MarkdownDescription: "The GraphQL ID of the team.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"user_id": resource_schema.StringAttribute{
 				Required:            true,
 				MarkdownDescription: "The GraphQL ID of the user.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"role": resource_schema.StringAttribute{
 				Required:            true,
@@ -91,7 +97,7 @@ func (tm *teamMemberResource) Create(ctx context.Context, req resource.CreateReq
 		return
 	}
 
-	timeout, diags := tm.client.timeouts.Create(ctx, DefaultTimeout)
+	timeout, diags := tm.client.createTimeout(ctx)
 	resp.Diagnostics.Append(diags...)
 
 	if resp.Diagnostics.HasError() {
@@ -138,7 +144,7 @@ func (tm *teamMemberResource) Read(ctx context.Context, req resource.ReadRequest
 		return
 	}
 
-	timeout, diags := tm.client.timeouts.Read(ctx, DefaultTimeout)
+	timeout, diags := tm.client.readTimeout(ctx)
 	resp.Diagnostics.Append(diags...)
 
 	if resp.Diagnostics.HasError() {
@@ -200,7 +206,7 @@ func (tm *teamMemberResource) Update(ctx context.Context, req resource.UpdateReq
 		return
 	}
 
-	timeout, diags := tm.client.timeouts.Update(ctx, DefaultTimeout)
+	timeout, diags := tm.client.updateTimeout(ctx)
 	resp.Diagnostics.Append(diags...)
 
 	if resp.Diagnostics.HasError() {
@@ -242,7 +248,7 @@ func (tm *teamMemberResource) Delete(ctx context.Context, req resource.DeleteReq
 		return
 	}
 
-	timeout, diags := tm.client.timeouts.Delete(ctx, DefaultTimeout)
+	timeout, diags := tm.client.deleteTimeout(ctx)
 	resp.Diagnostics.Append(diags...)
 
 	if resp.Diagnostics.HasError() {
