@@ -81,7 +81,7 @@ func (ob *organizationBannerResource) Create(ctx context.Context, req resource.C
 		return
 	}
 
-	timeout, diags := ob.client.timeouts.Create(ctx, DefaultTimeout)
+	timeout, diags := ob.client.createTimeout(ctx)
 	resp.Diagnostics.Append(diags...)
 
 	if resp.Diagnostics.HasError() {
@@ -127,7 +127,7 @@ func (ob *organizationBannerResource) Read(ctx context.Context, req resource.Rea
 		return
 	}
 
-	timeout, diags := ob.client.timeouts.Read(ctx, DefaultTimeout)
+	timeout, diags := ob.client.readTimeout(ctx)
 	resp.Diagnostics.Append(diags...)
 
 	if resp.Diagnostics.HasError() {
@@ -181,7 +181,7 @@ func (ob *organizationBannerResource) Update(ctx context.Context, req resource.U
 		return
 	}
 
-	timeout, diags := ob.client.timeouts.Update(ctx, DefaultTimeout)
+	timeout, diags := ob.client.updateTimeout(ctx)
 	resp.Diagnostics.Append(diags...)
 
 	if resp.Diagnostics.HasError() {
@@ -225,7 +225,7 @@ func (ob *organizationBannerResource) Delete(ctx context.Context, req resource.D
 		return
 	}
 
-	timeout, diags := ob.client.timeouts.Delete(ctx, DefaultTimeout)
+	timeout, diags := ob.client.deleteTimeout(ctx)
 	resp.Diagnostics.Append(diags...)
 
 	if resp.Diagnostics.HasError() {

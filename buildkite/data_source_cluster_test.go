@@ -16,32 +16,6 @@ import (
 )
 
 func TestAccBuildkiteClusterDatasource(t *testing.T) {
-	t.Run("timeout reading cluster", func(t *testing.T) {
-		t.Skip()
-		clusterName := acctest.RandString(12)
-
-		resource.ParallelTest(t, resource.TestCase{
-			ProtoV6ProviderFactories: protoV6ProviderFactories(),
-			Steps: []resource.TestStep{
-				{
-					Config: fmt.Sprintf(`
-						provider "buildkite" {
-							timeouts = {
-								read = "0s"
-							}
-						}
-						resource "buildkite_cluster" "cluster" {
-							name = "%s"
-						}
-						data "buildkite_cluster" "default" {
-							name = buildkite_cluster.cluster.name
-						}`, clusterName),
-					ExpectError: regexp.MustCompile(`timeout while waiting for state to become 'success'`),
-				},
-			},
-		})
-	})
-
 	t.Run("can find a cluster", func(t *testing.T) {
 		clusterName := acctest.RandString(12)
 		resource.ParallelTest(t, resource.TestCase{

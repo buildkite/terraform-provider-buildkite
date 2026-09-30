@@ -55,7 +55,7 @@ func (at *agentTokenResource) Create(ctx context.Context, req resource.CreateReq
 		return
 	}
 
-	timeout, diags := at.client.timeouts.Create(ctx, DefaultTimeout)
+	timeout, diags := at.client.createTimeout(ctx)
 	resp.Diagnostics.Append(diags...)
 
 	if resp.Diagnostics.HasError() {
@@ -101,7 +101,7 @@ func (at *agentTokenResource) Delete(ctx context.Context, req resource.DeleteReq
 		return
 	}
 
-	timeout, diags := at.client.timeouts.Delete(ctx, DefaultTimeout)
+	timeout, diags := at.client.deleteTimeout(ctx)
 	resp.Diagnostics.Append(diags...)
 
 	if resp.Diagnostics.HasError() {
@@ -140,7 +140,7 @@ func (at *agentTokenResource) Read(ctx context.Context, req resource.ReadRequest
 		return
 	}
 
-	timeout, diags := at.client.timeouts.Read(ctx, DefaultTimeout)
+	timeout, diags := at.client.readTimeout(ctx)
 	resp.Diagnostics.Append(diags...)
 
 	if resp.Diagnostics.HasError() {

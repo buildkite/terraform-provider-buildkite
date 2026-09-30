@@ -48,7 +48,7 @@ func (c *clusterDatasource) Read(ctx context.Context, req datasource.ReadRequest
 		return
 	}
 
-	_, diags := c.client.timeouts.Read(ctx, DefaultTimeout)
+	_, diags := c.client.readTimeout(ctx)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

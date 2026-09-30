@@ -14,6 +14,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/provider"
 	"github.com/hashicorp/terraform-plugin-framework/provider/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	resourceschema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -205,9 +206,18 @@ func (*terraformProvider) Schema(ctx context.Context, req provider.SchemaRequest
 				Optional:            true,
 				MarkdownDescription: "Maximum number of retry attempts for retryable HTTP requests. Defaults to 10. The waits between attempts count against the applicable `timeouts` value, so raising this alone does not necessarily produce more attempts.",
 			},
-			"timeouts": timeouts.AttributesAll(ctx),
+			"timeouts": providerTimeoutsAttribute(ctx),
 		},
 	}
+}
+
+// providerTimeoutsAttribute is the framework's timeouts block with a description of the default and
+// of what a non-positive value means, which the framework's own descriptions do not cover.
+func providerTimeoutsAttribute(ctx context.Context) resourceschema.SingleNestedAttribute {
+	attribute := timeouts.AttributesAll(ctx).(resourceschema.SingleNestedAttribute)
+	attribute.MarkdownDescription = "Time limits for each kind of operation. Each defaults to 3 minutes when unset. A value of `\"0s\"` or a negative duration is treated as unset, so the default applies."
+
+	return attribute
 }
 
 // New is a helper function to simplify provider server and testing implementation.
