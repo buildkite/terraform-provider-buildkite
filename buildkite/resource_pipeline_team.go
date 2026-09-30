@@ -105,12 +105,15 @@ func (tp *pipelineTeamResource) Create(ctx context.Context, req resource.CreateR
 		return
 	}
 
+	requestCtx, cancel := context.WithTimeout(ctx, timeouts)
+	defer cancel()
+
 	var apiResponse *createTeamPipelineResponse
 	var alreadyExistsRetries int
-	err := retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
+	err := retry.RetryContext(requestCtx, timeouts, func() *retry.RetryError {
 		var err error
 
-		apiResponse, err = createTeamPipeline(ctx,
+		apiResponse, err = createTeamPipeline(requestCtx,
 			tp.client.genqlient,
 			state.TeamId.ValueString(),
 			state.PipelineId.ValueString(),
@@ -155,11 +158,14 @@ func (tp *pipelineTeamResource) Read(ctx context.Context, req resource.ReadReque
 		return
 	}
 
+	requestCtx, cancel := context.WithTimeout(ctx, timeouts)
+	defer cancel()
+
 	var apiResponse *getNodeResponse
-	err := retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
+	err := retry.RetryContext(requestCtx, timeouts, func() *retry.RetryError {
 		var err error
 
-		apiResponse, err = getNode(ctx,
+		apiResponse, err = getNode(requestCtx,
 			tp.client.genqlient,
 			state.Id.ValueString(),
 		)
@@ -193,9 +199,20 @@ func (tp *pipelineTeamResource) Read(ctx context.Context, req resource.ReadReque
 }
 
 func (tp *pipelineTeamResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	timeout, diags := tp.client.readTimeout(ctx)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// Import has no timeout of its own, so the lookup, which pages through the pipeline's teams,
+	// gets the read timeout as one budget.
+	requestCtx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
 	// <pipeline slug>/<team slug> is also accepted and resolved to the GraphQL ID
 	if pipeline, team, ok := parsePipelineTeamImportID(req.ID); ok {
-		id, err := tp.findPipelineTeamID(ctx, pipeline, team)
+		id, err := tp.findPipelineTeamID(requestCtx, pipeline, team)
 		if err != nil {
 			resp.Diagnostics.AddError("Unable to import pipeline team", fmt.Sprintf("Could not find team %q on pipeline %q: %s", team, pipeline, err.Error()))
 			return
@@ -253,8 +270,11 @@ func (tp *pipelineTeamResource) Update(ctx context.Context, req resource.UpdateR
 		return
 	}
 
-	err := retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
-		_, err := updateTeamPipeline(ctx, tp.client.genqlient,
+	requestCtx, cancel := context.WithTimeout(ctx, timeouts)
+	defer cancel()
+
+	err := retry.RetryContext(requestCtx, timeouts, func() *retry.RetryError {
+		_, err := updateTeamPipeline(requestCtx, tp.client.genqlient,
 			state.Id.ValueString(),
 			PipelineAccessLevels(accessLevel),
 		)
@@ -290,8 +310,11 @@ func (tp *pipelineTeamResource) Delete(ctx context.Context, req resource.DeleteR
 		return
 	}
 
-	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-		_, err := deleteTeamPipeline(ctx, tp.client.genqlient, state.Id.ValueString())
+	requestCtx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
+	err := retry.RetryContext(requestCtx, timeout, func() *retry.RetryError {
+		_, err := deleteTeamPipeline(requestCtx, tp.client.genqlient, state.Id.ValueString())
 		if err != nil && isResourceNotFoundError(err) {
 			return nil
 		}

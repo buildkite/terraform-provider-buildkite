@@ -106,16 +106,22 @@ func (ts *testSuiteResource) Create(ctx context.Context, req resource.CreateRequ
 		return
 	}
 
-	// Use the Read timeout for obtaining a Test suite's UUID
-	timeout, diags := ts.client.readTimeout(ctx)
+	// One budget for the whole create, including the team lookup ahead of it
+	timeout, diags := ts.client.createTimeout(ctx)
 	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	requestCtx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
 
 	// The REST API requires team UUIDs but everything else in the provider uses GraphQL IDs. So we map from UUID to ID
 	// here
 	var r *getNodeResponse
-	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+	err := retry.RetryContext(requestCtx, timeout, func() *retry.RetryError {
 		var err error
-		r, err = getNode(ctx,
+		r, err = getNode(requestCtx,
 			ts.client.genqlient,
 			plan.TeamOwnerId.ValueString(),
 		)
@@ -149,12 +155,8 @@ func (ts *testSuiteResource) Create(ctx context.Context, req resource.CreateRequ
 	// Construct URL to call to the REST API
 	url := fmt.Sprintf("/v2/analytics/organizations/%s/suites", ts.client.organization)
 
-	// Use the Create timeout for test suite creation
-	timeout, diags = ts.client.createTimeout(ctx)
-	resp.Diagnostics.Append(diags...)
-
-	createErr := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-		err = ts.client.makeRequest(ctx, "POST", url, payload, &response)
+	createErr := retry.RetryContext(requestCtx, timeout, func() *retry.RetryError {
+		err = ts.client.makeRequest(requestCtx, "POST", url, payload, &response)
 
 		return retryContextError(err)
 	})
@@ -195,10 +197,13 @@ func (ts *testSuiteResource) Delete(ctx context.Context, req resource.DeleteRequ
 	timeout, diags := ts.client.deleteTimeout(ctx)
 	resp.Diagnostics.Append(diags...)
 
+	requestCtx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
 	// Construct URL to call to the REST API
 	url := fmt.Sprintf("/v2/analytics/organizations/%s/suites/%s", ts.client.organization, state.Slug.ValueString())
-	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-		err := ts.client.makeRequest(ctx, "DELETE", url, nil, nil)
+	err := retry.RetryContext(requestCtx, timeout, func() *retry.RetryError {
+		err := ts.client.makeRequest(requestCtx, "DELETE", url, nil, nil)
 
 		return retryContextError(err)
 	})
@@ -232,10 +237,13 @@ func (ts *testSuiteResource) Read(ctx context.Context, req resource.ReadRequest,
 		return
 	}
 
+	requestCtx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
 	var r *getTestSuiteResponse
-	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+	err := retry.RetryContext(requestCtx, timeout, func() *retry.RetryError {
 		var err error
-		r, err = getTestSuite(ctx,
+		r, err = getTestSuite(requestCtx,
 			ts.client.genqlient, state.ID.ValueString(),
 			teamPageSize, nil,
 		)
@@ -290,8 +298,8 @@ func (ts *testSuiteResource) Read(ctx context.Context, req resource.ReadRequest,
 
 	// Construct URL to call to the REST API to get the API Token
 	url := fmt.Sprintf("/v2/analytics/organizations/%s/suites/%s?show_api_token=true", ts.client.organization, state.Slug.ValueString())
-	err = retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-		err := ts.client.makeRequest(ctx, "GET", url, nil, &response)
+	err = retry.RetryContext(requestCtx, timeout, func() *retry.RetryError {
+		err := ts.client.makeRequest(requestCtx, "GET", url, nil, &response)
 		return retryContextError(err)
 	})
 	if err != nil {
@@ -423,6 +431,9 @@ func (ts *testSuiteResource) Update(ctx context.Context, req resource.UpdateRequ
 		return
 	}
 
+	requestCtx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
 	payload["name"] = plan.Name.ValueString()
 	payload["default_branch"] = plan.DefaultBranch.ValueString()
 	payload["emoji"] = plan.Emoji.ValueStringPointer()
@@ -432,8 +443,8 @@ func (ts *testSuiteResource) Update(ctx context.Context, req resource.UpdateRequ
 
 	// Construct URL to call to the REST API
 	url := fmt.Sprintf("/v2/analytics/organizations/%s/suites/%s", ts.client.organization, state.Slug.ValueString())
-	updateErr := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-		err := ts.client.makeRequest(ctx, http.MethodPatch, url, payload, &response)
+	updateErr := retry.RetryContext(requestCtx, timeout, func() *retry.RetryError {
+		err := ts.client.makeRequest(requestCtx, http.MethodPatch, url, payload, &response)
 
 		return retryContextError(err)
 	})
@@ -467,8 +478,8 @@ func (ts *testSuiteResource) Update(ctx context.Context, req resource.UpdateRequ
 	if plan.TeamOwnerId.ValueString() != state.TeamOwnerId.ValueString() {
 		var attachErr error
 		alreadyOwned := false
-		err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-			_, err := createTestSuiteTeam(ctx,
+		err := retry.RetryContext(requestCtx, timeout, func() *retry.RetryError {
+			_, err := createTestSuiteTeam(requestCtx,
 				ts.client.genqlient,
 				plan.TeamOwnerId.ValueString(),
 				state.ID.ValueString(),
@@ -502,7 +513,7 @@ func (ts *testSuiteResource) Update(ctx context.Context, req resource.UpdateRequ
 		// response: a mutation's nested connection cannot be paged, so a previous owner sorting
 		// past the first page would go unfound and keep owning the suite with state saying it does
 		// not, and no diff left to correct it.
-		teams, err := ts.suiteTeams(ctx, timeout, state.ID.ValueString())
+		teams, err := ts.suiteTeams(requestCtx, timeout, state.ID.ValueString())
 		if err != nil {
 			resp.Diagnostics.AddError(
 				"Could not load the suite's owner teams",
@@ -515,7 +526,7 @@ func (ts *testSuiteResource) Update(ctx context.Context, req resource.UpdateRequ
 		// suite. Detaching on a message that meant something else leaves the suite with an owner
 		// that cannot manage it, or none at all, and Read reports neither.
 		if alreadyOwned {
-			if err := ts.ensureOwnerTeamCanManage(ctx, timeout, teams, plan.TeamOwnerId.ValueString(), attachErr); err != nil {
+			if err := ts.ensureOwnerTeamCanManage(requestCtx, timeout, teams, plan.TeamOwnerId.ValueString(), attachErr); err != nil {
 				resp.Diagnostics.AddError(
 					"Could not add new owner team",
 					fmt.Sprintf("Could not add new owner team: %s", err.Error()),
@@ -527,8 +538,8 @@ func (ts *testSuiteResource) Update(ctx context.Context, req resource.UpdateRequ
 		previousOwnerId := state.TeamOwnerId.ValueString()
 		for _, team := range teams {
 			if team.teamId == previousOwnerId {
-				err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-					_, err := deleteTestSuiteTeam(ctx,
+				err := retry.RetryContext(requestCtx, timeout, func() *retry.RetryError {
+					_, err := deleteTestSuiteTeam(requestCtx,
 						ts.client.genqlient,
 						team.id,
 					)

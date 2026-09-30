@@ -110,12 +110,15 @@ func (c *clusterResource) Create(ctx context.Context, req resource.CreateRequest
 		return
 	}
 
+	requestCtx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
 	var r *createClusterResponse
-	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-		org, err := c.client.GetOrganizationID()
+	err := retry.RetryContext(requestCtx, timeout, func() *retry.RetryError {
+		org, err := c.client.GetOrganizationID(requestCtx)
 		if err == nil {
 			r, err = createCluster(
-				ctx,
+				requestCtx,
 				c.client.genqlient,
 				*org,
 				state.Name.ValueString(),
@@ -160,10 +163,13 @@ func (c *clusterResource) Read(ctx context.Context, req resource.ReadRequest, re
 		return
 	}
 
+	requestCtx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
 	var r *getNodeResponse
-	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+	err := retry.RetryContext(requestCtx, timeout, func() *retry.RetryError {
 		var err error
-		r, err = getNode(ctx, c.client.genqlient, state.ID.ValueString())
+		r, err = getNode(requestCtx, c.client.genqlient, state.ID.ValueString())
 
 		return retryContextError(err)
 	})
@@ -212,10 +218,13 @@ func (c *clusterResource) Update(ctx context.Context, req resource.UpdateRequest
 		return
 	}
 
-	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-		org, err := c.client.GetOrganizationID()
+	requestCtx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
+	err := retry.RetryContext(requestCtx, timeout, func() *retry.RetryError {
+		org, err := c.client.GetOrganizationID(requestCtx)
 		if err == nil {
-			_, err = updateCluster(ctx,
+			_, err = updateCluster(requestCtx,
 				c.client.genqlient,
 				*org,
 				state.ID.ValueString(),
@@ -258,10 +267,13 @@ func (c *clusterResource) Delete(ctx context.Context, req resource.DeleteRequest
 		return
 	}
 
-	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-		org, err := c.client.GetOrganizationID()
+	requestCtx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
+	err := retry.RetryContext(requestCtx, timeout, func() *retry.RetryError {
+		org, err := c.client.GetOrganizationID(requestCtx)
 		if err == nil {
-			_, err = deleteCluster(ctx, c.client.genqlient, *org, state.ID.ValueString())
+			_, err = deleteCluster(requestCtx, c.client.genqlient, *org, state.ID.ValueString())
 		}
 
 		return retryContextError(err)

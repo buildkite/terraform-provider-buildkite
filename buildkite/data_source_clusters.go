@@ -157,9 +157,20 @@ func (c *clustersDatasource) Read(ctx context.Context, req datasource.ReadReques
 		return
 	}
 
+	timeout, diags := c.client.readTimeout(ctx)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// One budget for the whole read, not one per page or per cluster: the maintainer lookup is
+	// REST, where makeRequest would otherwise give each cluster a fresh timeout.
+	requestCtx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
 	var cursor *string
 	for {
-		res, err := GetOrganizationClusters(ctx, c.client.genqlient, c.client.organization, cursor)
+		res, err := GetOrganizationClusters(requestCtx, c.client.genqlient, c.client.organization, cursor)
 		if err != nil {
 			resp.Diagnostics.AddError(
 				"Unable to get organization clusters",
@@ -177,7 +188,7 @@ func (c *clustersDatasource) Read(ctx context.Context, req datasource.ReadReques
 		}
 
 		for _, cluster := range res.Organization.Clusters.Edges {
-			updateClustersDatasourceState(ctx, c.client, resp, &state, cluster)
+			updateClustersDatasourceState(requestCtx, c.client, resp, &state, cluster)
 			// stop at the first cluster that failed rather than sweeping the rest to fail the same way
 			if resp.Diagnostics.HasError() {
 				return

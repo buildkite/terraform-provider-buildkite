@@ -45,7 +45,16 @@ func (o *organizationDatasource) Read(ctx context.Context, req datasource.ReadRe
 		return
 	}
 
-	response, err := getOrganization(ctx, o.client.genqlient, o.client.organization)
+	timeout, diags := o.client.readTimeout(ctx)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	requestCtx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
+	response, err := getOrganization(requestCtx, o.client.genqlient, o.client.organization)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to read organization settings",
@@ -67,7 +76,7 @@ func (o *organizationDatasource) Read(ctx context.Context, req datasource.ReadRe
 
 	// the allowlist is served by api-settings, which only answers an organization administrator.
 	// A lookup that cannot see it still reports the identifiers most callers came for.
-	settings, err := o.client.getOrganizationAPISettings(ctx)
+	settings, err := o.client.getOrganizationAPISettings(requestCtx)
 	if err != nil {
 		if !isAPIStatus(err, http.StatusForbidden) {
 			resp.Diagnostics.AddError(

@@ -119,7 +119,7 @@ func gqlErrorContains(err error, s string) bool {
 }
 
 // GetOrganizationID retrieves the Buildkite organization ID associated with the supplied slug
-func GetOrganizationID(slug string, client *graphql.Client) (string, error) {
+func GetOrganizationID(ctx context.Context, slug string, client *graphql.Client) (string, error) {
 	var query struct {
 		Organization struct {
 			ID graphql.ID
@@ -128,7 +128,7 @@ func GetOrganizationID(slug string, client *graphql.Client) (string, error) {
 	vars := map[string]interface{}{
 		"slug": slug,
 	}
-	err := client.Query(context.Background(), &query, vars)
+	err := client.Query(ctx, &query, vars)
 	if err != nil {
 		return "", err
 	}

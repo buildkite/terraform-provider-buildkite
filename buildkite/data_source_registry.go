@@ -129,13 +129,16 @@ func (d *registryDatasource) Read(ctx context.Context, req datasource.ReadReques
 		return
 	}
 
+	requestCtx, cancel := context.WithTimeout(ctx, timeoutDuration)
+	defer cancel()
+
 	var dataFound bool
 
-	err := retry.RetryContext(ctx, timeoutDuration, func() *retry.RetryError {
+	err := retry.RetryContext(requestCtx, timeoutDuration, func() *retry.RetryError {
 		slug := state.Slug.ValueString()
 		url := fmt.Sprintf("%s/v2/packages/organizations/%s/registries/%s", d.client.restURL, d.client.organization, slug)
 
-		req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+		req, err := http.NewRequestWithContext(requestCtx, http.MethodGet, url, nil)
 		if err != nil {
 			return retry.NonRetryableError(fmt.Errorf("error creating HTTP request: %w", err))
 		}

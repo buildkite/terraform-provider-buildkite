@@ -52,13 +52,27 @@ type headerRoundTripper struct {
 	Header http.Header
 }
 
-func (client *Client) GetOrganizationID() (*string, error) {
+// GetOrganizationID resolves and caches the organization ID. The lookup runs under the mutex, so like
+// makeRequest it falls back to the read timeout when the caller set no deadline: an unbounded lookup
+// would hold the mutex for the whole retry schedule and block every other resource waiting on it.
+// The deadline is derived before Lock so time spent waiting for the mutex counts against it, though
+// the wait itself cannot be interrupted.
+func (client *Client) GetOrganizationID(ctx context.Context) (*string, error) {
+	if _, hasDeadline := ctx.Deadline(); !hasDeadline {
+		readTimeout, diags := client.readTimeout(ctx)
+		if !diags.HasError() {
+			var cancel context.CancelFunc
+			ctx, cancel = context.WithTimeout(ctx, readTimeout)
+			defer cancel()
+		}
+	}
+
 	client.organizationIdMu.Lock()
 	defer client.organizationIdMu.Unlock()
 	if client.organizationId != nil {
 		return client.organizationId, nil
 	}
-	orgId, err := GetOrganizationID(client.organization, client.graphql)
+	orgId, err := GetOrganizationID(ctx, client.organization, client.graphql)
 	if err != nil {
 		return nil, err
 	}
@@ -121,8 +135,9 @@ func (client *Client) deleteTimeout(ctx context.Context) (time.Duration, diag.Di
 //     as given, which can fall below the minimum or exceed the maximum
 //  6. For REST, makeRequest uses the caller's deadline when one is set and otherwise derives one
 //     from the read timeout. That deadline bounds the whole request including waits between attempts,
-//     so it, not max_retries, is usually what ends a sustained failure. GraphQL calls are not bounded
-//     this way, since they never pass through makeRequest.
+//     so it, not max_retries, is usually what ends a sustained failure. GraphQL requests get the same
+//     fallback from boundedGraphQLClient. HTTPClient.Timeout below only bounds each attempt, because
+//     StandardClient runs the whole retry loop inside one RoundTrip.
 func NewClient(config *clientConfig) *Client {
 	readTimeout, diags := config.timeouts.Read(context.Background(), DefaultTimeout)
 	readTimeout = effectiveTimeout(readTimeout)
@@ -261,9 +276,8 @@ func NewClient(config *clientConfig) *Client {
 
 	graphqlClient := graphql.NewClient(config.graphqlURL, graphqlHttpClient)
 
-	return &Client{
+	client := &Client{
 		graphql:        graphqlClient,
-		genqlient:      genqlient.NewClient(config.graphqlURL, graphqlHttpClient),
 		http:           restHttpClient,
 		organization:   config.org,
 		organizationId: nil,
@@ -272,6 +286,34 @@ func NewClient(config *clientConfig) *Client {
 		restRetry:      restRetryClient,
 		graphqlRetry:   graphqlRetryClient,
 	}
+	client.genqlient = boundedGraphQLClient{
+		inner:  genqlient.NewClient(config.graphqlURL, graphqlHttpClient),
+		client: client,
+	}
+
+	return client
+}
+
+// boundedGraphQLClient gives a GraphQL request the read timeout as a deadline when its caller set
+// none, the same fallback makeRequest applies to REST. CRUD methods derive a deadline from their own
+// operation's timeout and pass it down, which is what should bound them; this is the floor under a
+// call that does not, so it cannot run the retry schedule out (just under an hour for GraphQL).
+type boundedGraphQLClient struct {
+	inner  genqlient.Client
+	client *Client
+}
+
+func (c boundedGraphQLClient) MakeRequest(ctx context.Context, req *genqlient.Request, resp *genqlient.Response) error {
+	if _, hasDeadline := ctx.Deadline(); !hasDeadline {
+		readTimeout, diags := c.client.readTimeout(ctx)
+		if !diags.HasError() {
+			var cancel context.CancelFunc
+			ctx, cancel = context.WithTimeout(ctx, readTimeout)
+			defer cancel()
+		}
+	}
+
+	return c.inner.MakeRequest(ctx, req, resp)
 }
 
 func newHeaderRoundTripper(next http.RoundTripper, header http.Header) *headerRoundTripper {

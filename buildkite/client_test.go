@@ -80,14 +80,14 @@ func TestClientGetOrganizationIDNotCachedOnError(t *testing.T) {
 		organization: "test-org",
 	}
 
-	if _, err := client.GetOrganizationID(); err == nil {
+	if _, err := client.GetOrganizationID(t.Context()); err == nil {
 		t.Fatal("expected error from first lookup, got nil")
 	}
 	if client.organizationId != nil {
 		t.Fatalf("organizationId was cached after a failed lookup: %q", *client.organizationId)
 	}
 
-	id, err := client.GetOrganizationID()
+	id, err := client.GetOrganizationID(t.Context())
 	if err != nil {
 		t.Fatalf("second lookup failed: %v", err)
 	}
@@ -127,7 +127,7 @@ func TestClientGetOrganizationIDConcurrent(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			id, err := client.GetOrganizationID()
+			id, err := client.GetOrganizationID(t.Context())
 			switch {
 			case err != nil:
 				errs <- err

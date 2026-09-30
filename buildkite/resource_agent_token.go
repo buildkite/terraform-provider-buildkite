@@ -62,11 +62,14 @@ func (at *agentTokenResource) Create(ctx context.Context, req resource.CreateReq
 		return
 	}
 
+	requestCtx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
 	var r *createAgentTokenResponse
-	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-		org, err := at.client.GetOrganizationID()
+	err := retry.RetryContext(requestCtx, timeout, func() *retry.RetryError {
+		org, err := at.client.GetOrganizationID(requestCtx)
 		if err == nil {
-			r, err = createAgentToken(ctx,
+			r, err = createAgentToken(requestCtx,
 				at.client.genqlient,
 				*org,
 				plan.Description.ValueStringPointer(),
@@ -108,8 +111,11 @@ func (at *agentTokenResource) Delete(ctx context.Context, req resource.DeleteReq
 		return
 	}
 
-	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-		_, err := revokeAgentToken(ctx,
+	requestCtx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
+	err := retry.RetryContext(requestCtx, timeout, func() *retry.RetryError {
+		_, err := revokeAgentToken(requestCtx,
 			at.client.genqlient,
 			state.Id.ValueString(),
 			"Revoked by Terraform",
@@ -147,10 +153,13 @@ func (at *agentTokenResource) Read(ctx context.Context, req resource.ReadRequest
 		return
 	}
 
+	requestCtx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
 	var r *getAgentTokenResponse
-	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+	err := retry.RetryContext(requestCtx, timeout, func() *retry.RetryError {
 		var err error
-		r, err = getAgentToken(ctx,
+		r, err = getAgentToken(requestCtx,
 			at.client.genqlient,
 			fmt.Sprintf("%s/%s", at.client.organization, plan.Uuid.ValueString()),
 		)
