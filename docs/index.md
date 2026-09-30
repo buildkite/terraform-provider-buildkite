@@ -47,7 +47,7 @@ resource "buildkite_pipeline" "pipeline" {
 - `max_retries` (Number) Maximum number of retry attempts for retryable HTTP requests. Defaults to 10. The waits between attempts count against the applicable `timeouts` value, so raising this alone does not necessarily produce more attempts.
 - `organization` (String) The Buildkite organization slug. This can be found on the [settings](https://buildkite.com/organizations/~/settings) page. If not provided, the value is taken from the `BUILDKITE_ORGANIZATION_SLUG` environment variable.
 - `rest_url` (String) Base URL for the REST API to use. If not provided, the value is taken from the `BUILDKITE_REST_URL` environment variable.
-- `timeouts` (Attributes) (see [below for nested schema](#nestedatt--timeouts))
+- `timeouts` (Attributes) Time limits for each kind of operation. Each defaults to 3 minutes when unset. A value of `"0s"` or a negative duration is treated as unset, so the default applies. (see [below for nested schema](#nestedatt--timeouts))
 
 <a id="nestedatt--timeouts"></a>
 ### Nested Schema for `timeouts`

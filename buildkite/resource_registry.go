@@ -143,7 +143,7 @@ func (p *registryResource) Create(ctx context.Context, req resource.CreateReques
 
 	diags := req.Plan.Get(ctx, &state)
 	resp.Diagnostics.Append(diags...)
-	timeout, diags := p.client.timeouts.Create(ctx, DefaultTimeout)
+	timeout, diags := p.client.createTimeout(ctx)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -254,7 +254,7 @@ func (p *registryResource) Read(ctx context.Context, req resource.ReadRequest, r
 		return
 	}
 
-	timeout, diags := p.client.timeouts.Read(ctx, DefaultTimeout)
+	timeout, diags := p.client.readTimeout(ctx)
 	resp.Diagnostics.Append(diags...)
 
 	if resp.Diagnostics.HasError() {
@@ -339,7 +339,7 @@ func (p *registryResource) Update(ctx context.Context, req resource.UpdateReques
 		return
 	}
 
-	timeout, diags := p.client.timeouts.Update(ctx, DefaultTimeout)
+	timeout, diags := p.client.updateTimeout(ctx)
 	resp.Diagnostics.Append(diags...)
 
 	if resp.Diagnostics.HasError() {
@@ -505,7 +505,7 @@ func (p *registryResource) Delete(ctx context.Context, req resource.DeleteReques
 		return
 	}
 
-	timeout, diags := p.client.timeouts.Delete(ctx, DefaultTimeout)
+	timeout, diags := p.client.deleteTimeout(ctx)
 	resp.Diagnostics.Append(diags...)
 
 	if resp.Diagnostics.HasError() {

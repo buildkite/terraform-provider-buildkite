@@ -245,7 +245,7 @@ func (p *pipelineResource) Create(ctx context.Context, req resource.CreateReques
 	defaultTimeoutInMinutes := (*int)(unsafe.Pointer(plan.DefaultTimeoutInMinutes.ValueInt64Pointer()))
 	maxTimeoutInMinutes := (*int)(unsafe.Pointer(plan.MaximumTimeoutInMinutes.ValueInt64Pointer()))
 
-	timeouts, diags := p.client.timeouts.Create(ctx, DefaultTimeout)
+	timeouts, diags := p.client.createTimeout(ctx)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -390,7 +390,7 @@ func (p *pipelineResource) Delete(ctx context.Context, req resource.DeleteReques
 		return
 	}
 
-	timeout, diags := p.client.timeouts.Delete(ctx, DefaultTimeout)
+	timeout, diags := p.client.deleteTimeout(ctx)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -449,7 +449,7 @@ func (p *pipelineResource) Read(ctx context.Context, req resource.ReadRequest, r
 		return
 	}
 
-	timeouts, diags := p.client.timeouts.Read(ctx, DefaultTimeout)
+	timeouts, diags := p.client.readTimeout(ctx)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -1418,7 +1418,7 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 		// This keeps the current API value rather than forcing a change
 	}
 
-	timeouts, diags := p.client.timeouts.Update(ctx, DefaultTimeout)
+	timeouts, diags := p.client.updateTimeout(ctx)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

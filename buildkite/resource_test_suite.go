@@ -107,7 +107,7 @@ func (ts *testSuiteResource) Create(ctx context.Context, req resource.CreateRequ
 	}
 
 	// Use the Read timeout for obtaining a Test suite's UUID
-	timeout, diags := ts.client.timeouts.Read(ctx, DefaultTimeout)
+	timeout, diags := ts.client.readTimeout(ctx)
 	resp.Diagnostics.Append(diags...)
 
 	// The REST API requires team UUIDs but everything else in the provider uses GraphQL IDs. So we map from UUID to ID
@@ -150,7 +150,7 @@ func (ts *testSuiteResource) Create(ctx context.Context, req resource.CreateRequ
 	url := fmt.Sprintf("/v2/analytics/organizations/%s/suites", ts.client.organization)
 
 	// Use the Create timeout for test suite creation
-	timeout, diags = ts.client.timeouts.Create(ctx, DefaultTimeout)
+	timeout, diags = ts.client.createTimeout(ctx)
 	resp.Diagnostics.Append(diags...)
 
 	createErr := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
@@ -192,7 +192,7 @@ func (ts *testSuiteResource) Delete(ctx context.Context, req resource.DeleteRequ
 		return
 	}
 
-	timeout, diags := ts.client.timeouts.Delete(ctx, DefaultTimeout)
+	timeout, diags := ts.client.deleteTimeout(ctx)
 	resp.Diagnostics.Append(diags...)
 
 	// Construct URL to call to the REST API
@@ -225,7 +225,7 @@ func (ts *testSuiteResource) Read(ctx context.Context, req resource.ReadRequest,
 		return
 	}
 
-	timeout, diags := ts.client.timeouts.Read(ctx, DefaultTimeout)
+	timeout, diags := ts.client.readTimeout(ctx)
 	resp.Diagnostics.Append(diags...)
 
 	if resp.Diagnostics.HasError() {
@@ -416,7 +416,7 @@ func (ts *testSuiteResource) Update(ctx context.Context, req resource.UpdateRequ
 		return
 	}
 
-	timeout, diags := ts.client.timeouts.Update(ctx, DefaultTimeout)
+	timeout, diags := ts.client.updateTimeout(ctx)
 	resp.Diagnostics.Append(diags...)
 
 	if resp.Diagnostics.HasError() {

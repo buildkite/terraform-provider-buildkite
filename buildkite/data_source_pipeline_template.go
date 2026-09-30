@@ -95,7 +95,7 @@ func (pt *pipelineTemplateDatasource) Read(ctx context.Context, req datasource.R
 		return
 	}
 
-	_, diags := pt.client.timeouts.Read(ctx, DefaultTimeout)
+	_, diags := pt.client.readTimeout(ctx)
 	resp.Diagnostics.Append(diags...)
 
 	if resp.Diagnostics.HasError() {

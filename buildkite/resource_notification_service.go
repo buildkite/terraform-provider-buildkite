@@ -543,7 +543,7 @@ func (r *notificationServiceResource) Create(ctx context.Context, req resource.C
 		return
 	}
 
-	timeout, diags := r.client.timeouts.Create(ctx, DefaultTimeout)
+	timeout, diags := r.client.createTimeout(ctx)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -638,7 +638,7 @@ func (r *notificationServiceResource) Update(ctx context.Context, req resource.U
 		return
 	}
 
-	timeout, diags := r.client.timeouts.Update(ctx, DefaultTimeout)
+	timeout, diags := r.client.updateTimeout(ctx)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -694,7 +694,7 @@ func (r *notificationServiceResource) Delete(ctx context.Context, req resource.D
 		return
 	}
 
-	timeout, diags := r.client.timeouts.Delete(ctx, DefaultTimeout)
+	timeout, diags := r.client.deleteTimeout(ctx)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

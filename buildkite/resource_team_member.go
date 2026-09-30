@@ -97,7 +97,7 @@ func (tm *teamMemberResource) Create(ctx context.Context, req resource.CreateReq
 		return
 	}
 
-	timeout, diags := tm.client.timeouts.Create(ctx, DefaultTimeout)
+	timeout, diags := tm.client.createTimeout(ctx)
 	resp.Diagnostics.Append(diags...)
 
 	if resp.Diagnostics.HasError() {
@@ -144,7 +144,7 @@ func (tm *teamMemberResource) Read(ctx context.Context, req resource.ReadRequest
 		return
 	}
 
-	timeout, diags := tm.client.timeouts.Read(ctx, DefaultTimeout)
+	timeout, diags := tm.client.readTimeout(ctx)
 	resp.Diagnostics.Append(diags...)
 
 	if resp.Diagnostics.HasError() {
@@ -206,7 +206,7 @@ func (tm *teamMemberResource) Update(ctx context.Context, req resource.UpdateReq
 		return
 	}
 
-	timeout, diags := tm.client.timeouts.Update(ctx, DefaultTimeout)
+	timeout, diags := tm.client.updateTimeout(ctx)
 	resp.Diagnostics.Append(diags...)
 
 	if resp.Diagnostics.HasError() {
@@ -248,7 +248,7 @@ func (tm *teamMemberResource) Delete(ctx context.Context, req resource.DeleteReq
 		return
 	}
 
-	timeout, diags := tm.client.timeouts.Delete(ctx, DefaultTimeout)
+	timeout, diags := tm.client.deleteTimeout(ctx)
 	resp.Diagnostics.Append(diags...)
 
 	if resp.Diagnostics.HasError() {

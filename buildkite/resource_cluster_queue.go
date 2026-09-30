@@ -267,7 +267,7 @@ func (cq *clusterQueueResource) Create(ctx context.Context, req resource.CreateR
 		return
 	}
 
-	timeout, diags := cq.client.timeouts.Create(ctx, DefaultTimeout)
+	timeout, diags := cq.client.createTimeout(ctx)
 	resp.Diagnostics.Append(diags...)
 
 	if resp.Diagnostics.HasError() {
@@ -412,7 +412,7 @@ func (cq *clusterQueueResource) Read(ctx context.Context, req resource.ReadReque
 	}
 
 	// Timeout is not used here
-	_, readDiags := cq.client.timeouts.Read(ctx, DefaultTimeout)
+	_, readDiags := cq.client.readTimeout(ctx)
 	resp.Diagnostics.Append(readDiags...)
 
 	if resp.Diagnostics.HasError() {
@@ -544,7 +544,7 @@ func (cq *clusterQueueResource) Update(ctx context.Context, req resource.UpdateR
 		return
 	}
 
-	timeout, diags := cq.client.timeouts.Update(ctx, DefaultTimeout)
+	timeout, diags := cq.client.updateTimeout(ctx)
 	resp.Diagnostics.Append(diags...)
 
 	if resp.Diagnostics.HasError() {
@@ -702,7 +702,7 @@ func (cq *clusterQueueResource) Delete(ctx context.Context, req resource.DeleteR
 		return
 	}
 
-	_, deleteDiags := cq.client.timeouts.Delete(ctx, DefaultTimeout)
+	_, deleteDiags := cq.client.deleteTimeout(ctx)
 	resp.Diagnostics.Append(deleteDiags...)
 
 	if resp.Diagnostics.HasError() {
