@@ -71,7 +71,8 @@ func (client *Client) GetOrganizationID() (*string, error) {
 // effectiveTimeout falls back to DefaultTimeout for a timeout that is not positive. The timeouts
 // validator accepts "0s" and "-1h" because they parse, and the default is only substituted when the
 // attribute is unset, so without this a configured zero reaches callers as zero: context.WithTimeout
-// returns an already-expired context and retry.RetryContext gives up before its first attempt.
+// returns an already-expired context, and retry.RetryContext usually gives up before its first
+// attempt and never retries.
 func effectiveTimeout(timeout time.Duration) time.Duration {
 	if timeout <= 0 {
 		return DefaultTimeout
