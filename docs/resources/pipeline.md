@@ -234,6 +234,7 @@ Optional:
 - `build_pull_request_review_dismissed` (Boolean) Whether to create a build when a pull request review is dismissed.
 - `build_pull_request_review_requested` (Boolean) Whether to create a build when a review is requested on a pull request.
 - `build_pull_request_review_submitted` (Boolean) Whether to create a build when a pull request review is submitted.
+- `build_pull_request_stacks` (Boolean) Whether to create a build when a pull request is added to a stack. Requires `build_pull_requests` to be enabled.
 - `build_pull_requests` (Boolean) Whether to create builds for commits that are part of a pull request.
 - `build_release_created` (Boolean) Whether to create a build when a GitHub release is created (including drafts).
 - `build_release_published` (Boolean) Whether to create a build when a GitHub release is published.
@@ -243,10 +244,12 @@ Optional:
 - `cancel_when_merge_group_destroyed` (Boolean) Whether to cancel any running builds belonging to a removed merge group.
 - `filter_condition` (String) The condition to evaluate when deciding if a build should run. This is only valid when `trigger_mode` is `code`. More details available in [the documentation](https://buildkite.com/docs/pipelines/conditionals).
 - `filter_enabled` (Boolean) Whether to filter builds to only run when the condition in `filter_condition` is true.
+- `github_workflow_access_tokens_enabled` (Boolean) Whether jobs can request GitHub access tokens bounded by workflow permissions. GitHub only; the organization feature must also be enabled.
 - `ignore_default_branch_pull_requests` (Boolean) Whether to prevent caching pull requests with the source branch matching the default branch.
 - `issue_comment_command_word` (String) The command word used to trigger builds from issue comments (e.g. "/bk"). Only comments starting with or containing this word will trigger builds. Defaults to "/bk".
 - `issue_comment_match_mode` (String) The match mode for the issue comment command word. Valid values are "exact" and "contains". Defaults to "exact".
 - `prefix_pull_request_fork_branch_names` (Boolean) Prefix branch names for third-party fork builds to ensure they don't trigger branch conditions. For example, the main branch from some-user will become some-user:main.
+- `prevent_custom_statuses_from_using_buildkite_prefix` (Boolean) Whether custom commit statuses posted via `notify:` are prevented from using a `context:` starting with `buildkite/`. Only enforced while the matching organization setting is enabled.
 - `publish_blocked_as_pending` (Boolean) The status to use for blocked builds. Pending can be used with [required status checks](https://help.github.com/en/articles/enabling-required-status-checks) to prevent merging pull requests with blocked builds.
 - `publish_commit_status` (Boolean) Whether to update the status of commits in Bitbucket, GitHub, or GitLab.
 - `publish_commit_status_per_step` (Boolean) Whether to create a separate status for each job in a build, allowing you to see the status of each job directly in Bitbucket or GitHub.
@@ -255,6 +258,7 @@ Optional:
 - `review_comment_command_word` (String) The command word used to trigger builds from inline pull request review comments (e.g. "/bk"). Only review comments starting with or containing this word will trigger builds.
 - `review_comment_match_mode` (String) The match mode for the review comment command word. Valid values are "exact" and "contains".
 - `separate_pull_request_statuses` (Boolean) Whether to create a separate status for pull request builds, allowing you to require a passing pull request build in your [required status checks](https://help.github.com/en/articles/enabling-required-status-checks) in GitHub.
+- `skip_builds_for_closed_pull_requests` (Boolean) Whether to skip creating builds for a pull request once it is closed or merged, for example for late label changes from bots.
 - `skip_builds_for_existing_commits` (Boolean) Whether to skip creating a new build if an existing build for the commit and branch already exists. This option is only valid if the pipeline uses a GitHub repository.
 - `skip_pull_request_builds_for_existing_commits` (Boolean) Whether to skip creating a new build for a pull request if an existing build for the commit and branch already exists.
 - `trigger_mode` (String) What type of event to trigger builds on. Must be one of:

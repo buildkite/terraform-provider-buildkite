@@ -167,16 +167,20 @@ func TestMapProviderSettingsFromGraphQLGitHub(t *testing.T) {
 	repo := RepositoryProviderSettingsFields{
 		Provider: &RepositoryProviderSettingsFieldsProviderRepositoryProviderGithub{
 			Settings: RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings{
-				TriggerMode:                          &triggerMode,
-				BuildIssues:                          &enabled,
-				BuildPullRequests:                    &enabled,
-				BuildBranches:                        &disabled,
-				IssueCommentMatchMode:                &matchMode,
-				BuildPullRequestReviewCommentCreated: &enabled,
-				ReviewCommentMatchMode:               &matchMode,
-				BuildPullRequestDequeued:             &enabled,
-				BuildPullRequestReopened:             &enabled,
-				UseStepKeyAsCommitStatus:             &enabled,
+				TriggerMode:                                   &triggerMode,
+				BuildIssues:                                   &enabled,
+				BuildPullRequests:                             &enabled,
+				BuildBranches:                                 &disabled,
+				IssueCommentMatchMode:                         &matchMode,
+				BuildPullRequestReviewCommentCreated:          &enabled,
+				ReviewCommentMatchMode:                        &matchMode,
+				BuildPullRequestDequeued:                      &enabled,
+				BuildPullRequestReopened:                      &enabled,
+				BuildPullRequestStacks:                        &enabled,
+				GithubWorkflowAccessTokensEnabled:             &enabled,
+				SkipBuildsForClosedPullRequests:               &enabled,
+				PreventCustomStatusesFromUsingBuildkitePrefix: &enabled,
+				UseStepKeyAsCommitStatus:                      &enabled,
 			},
 		},
 	}
@@ -212,6 +216,18 @@ func TestMapProviderSettingsFromGraphQLGitHub(t *testing.T) {
 	}
 	if !got.BuildPullRequestReopened.ValueBool() {
 		t.Fatal("build_pull_request_reopened: expected true")
+	}
+	if !got.BuildPullRequestStacks.ValueBool() {
+		t.Fatal("build_pull_request_stacks: expected true")
+	}
+	if !got.GithubWorkflowAccessTokensEnabled.ValueBool() {
+		t.Fatal("github_workflow_access_tokens_enabled: expected true")
+	}
+	if !got.SkipBuildsForClosedPullRequests.ValueBool() {
+		t.Fatal("skip_builds_for_closed_pull_requests: expected true")
+	}
+	if !got.PreventCustomStatusesBuildkitePrefix.ValueBool() {
+		t.Fatal("prevent_custom_statuses_from_using_buildkite_prefix: expected true")
 	}
 	// use_step_key_as_commit_status is now exposed via GraphQL and mapped directly.
 	if !got.UseStepKeyAsCommitStatus.ValueBool() {
@@ -945,6 +961,10 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 					review_comment_match_mode = "contains"
 					build_pull_request_dequeued = true
 					build_pull_request_reopened = true
+					build_pull_request_stacks = true
+					github_workflow_access_tokens_enabled = true
+					skip_builds_for_closed_pull_requests = true
+					prevent_custom_statuses_from_using_buildkite_prefix = true
 					build_check_run_completed = true
 					build_create_event = true
 					build_deployment_status_created = true
@@ -1010,6 +1030,10 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.review_comment_match_mode", "contains"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_pull_request_dequeued", "true"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_pull_request_reopened", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_pull_request_stacks", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.github_workflow_access_tokens_enabled", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.skip_builds_for_closed_pull_requests", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.prevent_custom_statuses_from_using_buildkite_prefix", "true"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_check_run_completed", "true"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_create_event", "true"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_deployment_status_created", "true"),
@@ -1054,6 +1078,53 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 					ResourceName:      "buildkite_pipeline.pipeline",
 					ImportState:       true,
 					ImportStateVerify: true,
+				},
+			},
+		})
+	})
+
+	t.Run("provider_settings left out of the configuration keep the API defaults", func(t *testing.T) {
+		pipelineName := acctest.RandString(12)
+		clusterName := acctest.RandString(12)
+		config := func(extra string) string {
+			return fmt.Sprintf(`
+				resource "buildkite_cluster" "cluster" {
+					name = "%s"
+				}
+				resource "buildkite_pipeline" "pipeline" {
+					name = "%s"
+					repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
+					cluster_id = buildkite_cluster.cluster.id
+					provider_settings = {
+						trigger_mode = "none"
+						build_branches = false
+						build_tags = false
+						build_pull_requests = true
+						%s
+					}
+				}
+			`, clusterName, pipelineName, extra)
+		}
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			CheckDestroy:             testAccCheckPipelineDestroy,
+			Steps: []resource.TestStep{
+				{
+					// both default to true in Buildkite and must not be sent as false just because they are unset
+					Config: config(""),
+					Check: resource.ComposeAggregateTestCheckFunc(
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.skip_builds_for_closed_pull_requests", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.prevent_custom_statuses_from_using_buildkite_prefix", "true"),
+					),
+				},
+				{
+					Config: config("skip_builds_for_closed_pull_requests = false\nprevent_custom_statuses_from_using_buildkite_prefix = false"),
+					Check: resource.ComposeAggregateTestCheckFunc(
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.skip_builds_for_closed_pull_requests", "false"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.prevent_custom_statuses_from_using_buildkite_prefix", "false"),
+					),
 				},
 			},
 		})
@@ -1172,6 +1243,10 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 								review_comment_match_mode = "exact"
 								build_pull_request_dequeued = true
 								build_pull_request_reopened = true
+								build_pull_request_stacks = true
+								github_workflow_access_tokens_enabled = true
+								skip_builds_for_closed_pull_requests = true
+								prevent_custom_statuses_from_using_buildkite_prefix = true
 								build_check_run_completed = true
 								build_create_event = true
 								build_deployment_status_created = true
@@ -1213,6 +1288,10 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.review_comment_match_mode", "exact"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_pull_request_dequeued", "true"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_pull_request_reopened", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_pull_request_stacks", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.github_workflow_access_tokens_enabled", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.skip_builds_for_closed_pull_requests", "true"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.prevent_custom_statuses_from_using_buildkite_prefix", "true"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_check_run_completed", "true"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_create_event", "true"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_deployment_status_created", "true"),
