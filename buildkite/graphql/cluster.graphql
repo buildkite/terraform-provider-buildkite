@@ -9,6 +9,8 @@ fragment ClusterFields on Cluster {
     # @genqlient(pointer: true)
     color
     # @genqlient(pointer: true)
+    agentTracingServiceUuid
+    # @genqlient(pointer: true)
     defaultQueue {
         id
         uuid
@@ -47,9 +49,19 @@ mutation createCluster(
     $emoji: String
     # @genqlient(pointer: true)
     $color: String
+    # Omitted when nil: the API rejects the key, even as null, unless agent tracing is enabled
+    # @genqlient(pointer: true, omitempty: true)
+    $agentTracingServiceUuid: String
 ) {
     clusterCreate(
-        input: { organizationId: $organizationId, name: $name, description: $description, emoji: $emoji, color: $color }
+        input: {
+            organizationId: $organizationId
+            name: $name
+            description: $description
+            emoji: $emoji
+            color: $color
+            agentTracingServiceUuid: $agentTracingServiceUuid
+        }
     ) {
         clientMutationId
         cluster {
@@ -68,6 +80,9 @@ mutation updateCluster(
     $emoji: String
     # @genqlient(pointer: true)
     $color: String
+    # Omitted when nil: the API rejects the key, even as null, unless agent tracing is enabled
+    # @genqlient(pointer: true, omitempty: true)
+    $agentTracingServiceUuid: String
 ) {
     clusterUpdate(
         input: {
@@ -77,6 +92,7 @@ mutation updateCluster(
             description: $description
             emoji: $emoji
             color: $color
+            agentTracingServiceUuid: $agentTracingServiceUuid
         }
     ) {
         clientMutationId

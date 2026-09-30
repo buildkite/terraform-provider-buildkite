@@ -5,11 +5,13 @@ import (
 	"fmt"
 
 	"github.com/MakeNowJust/heredoc"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	resource_schema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
@@ -19,12 +21,13 @@ type clusterResource struct {
 }
 
 type clusterResourceModel struct {
-	ID          types.String `tfsdk:"id"`
-	Name        types.String `tfsdk:"name"`
-	Description types.String `tfsdk:"description"`
-	Emoji       types.String `tfsdk:"emoji"`
-	Color       types.String `tfsdk:"color"`
-	UUID        types.String `tfsdk:"uuid"`
+	ID                      types.String `tfsdk:"id"`
+	Name                    types.String `tfsdk:"name"`
+	Description             types.String `tfsdk:"description"`
+	Emoji                   types.String `tfsdk:"emoji"`
+	Color                   types.String `tfsdk:"color"`
+	UUID                    types.String `tfsdk:"uuid"`
+	AgentTracingServiceUUID types.String `tfsdk:"agent_tracing_service_uuid"`
 }
 
 func newClusterResource() resource.Resource {
@@ -87,6 +90,25 @@ func (c *clusterResource) Schema(ctx context.Context, req resource.SchemaRequest
 				Optional:            true,
 				MarkdownDescription: "A color representation of the Cluster. Accepts hex codes, eg #BADA55.",
 			},
+			"agent_tracing_service_uuid": resource_schema.StringAttribute{
+				Optional: true,
+				Computed: true,
+				MarkdownDescription: heredoc.Doc(`
+					The UUID of the OpenTelemetry tracing notification service that agents in this Cluster export traces
+					to, such as ` + "`buildkite_notification_service.otel.id`" + `. The service must be enabled, cover all
+					pipelines, and have no branch filter, and the organization must have agent tracing enabled.
+					Leaving this unset adopts whatever service the Cluster already uses, and removing it from configuration
+					keeps the current selection; clear a selection in the Buildkite UI or API. The API reports no selection
+					unless agent tracing is enabled for the organization and the API token can manage the Cluster.
+				`),
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+				Validators: []validator.String{
+					// the API returns the UUID lowercased, so any other form would never match what is read back
+					stringvalidator.RegexMatches(importUuidRegex, "must be a lowercase UUID, such as a notification service's id"),
+				},
+			},
 		},
 	}
 }
@@ -122,6 +144,7 @@ func (c *clusterResource) Create(ctx context.Context, req resource.CreateRequest
 				state.Description.ValueStringPointer(),
 				state.Emoji.ValueStringPointer(),
 				state.Color.ValueStringPointer(),
+				agentTracingServiceUUIDToWrite(state.AgentTracingServiceUUID, types.StringNull()),
 			)
 		}
 
@@ -137,6 +160,7 @@ func (c *clusterResource) Create(ctx context.Context, req resource.CreateRequest
 
 	state.ID = types.StringValue(r.ClusterCreate.Cluster.Id)
 	state.UUID = types.StringValue(r.ClusterCreate.Cluster.Uuid)
+	state.AgentTracingServiceUUID = types.StringPointerValue(r.ClusterCreate.Cluster.AgentTracingServiceUuid)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
@@ -223,6 +247,7 @@ func (c *clusterResource) Update(ctx context.Context, req resource.UpdateRequest
 				plan.Description.ValueStringPointer(),
 				plan.Emoji.ValueStringPointer(),
 				plan.Color.ValueStringPointer(),
+				agentTracingServiceUUIDToWrite(plan.AgentTracingServiceUUID, state.AgentTracingServiceUUID),
 			)
 		}
 
@@ -286,4 +311,16 @@ func updateClusterResourceState(state *clusterResourceModel, res getNodeNodeClus
 	state.Description = types.StringPointerValue(res.Description)
 	state.Emoji = types.StringPointerValue(res.Emoji)
 	state.Color = types.StringPointerValue(res.Color)
+	state.AgentTracingServiceUUID = types.StringPointerValue(res.AgentTracingServiceUuid)
+}
+
+// agentTracingServiceUUIDToWrite returns the selection to send, or nil to leave it out of the mutation. The
+// API rejects the key, even as null, for an organization without agent tracing, so it is sent only when a
+// configured selection differs from the current one. Nothing here clears a selection: an unconfigured
+// attribute plans the current value.
+func agentTracingServiceUUIDToWrite(planned, current types.String) *string {
+	if planned.IsNull() || planned.IsUnknown() || planned.Equal(current) {
+		return nil
+	}
+	return planned.ValueStringPointer()
 }

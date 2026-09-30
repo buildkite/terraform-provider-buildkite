@@ -72,6 +72,8 @@ type ClusterFields struct {
 	Emoji *string `json:"emoji"`
 	// Color hex code for the cluster
 	Color *string `json:"color"`
+	// Public UUID of the selected OpenTelemetry notification service; null when unconfigured or unavailable to the caller
+	AgentTracingServiceUuid *string `json:"agentTracingServiceUuid"`
 	// The default queue that agents connecting to the cluster without specifying a queue will accept jobs from
 	DefaultQueue *ClusterFieldsDefaultQueueClusterQueue `json:"defaultQueue"`
 }
@@ -93,6 +95,9 @@ func (v *ClusterFields) GetEmoji() *string { return v.Emoji }
 
 // GetColor returns ClusterFields.Color, and is useful for accessing the field via an interface.
 func (v *ClusterFields) GetColor() *string { return v.Color }
+
+// GetAgentTracingServiceUuid returns ClusterFields.AgentTracingServiceUuid, and is useful for accessing the field via an interface.
+func (v *ClusterFields) GetAgentTracingServiceUuid() *string { return v.AgentTracingServiceUuid }
 
 // GetDefaultQueue returns ClusterFields.DefaultQueue, and is useful for accessing the field via an interface.
 func (v *ClusterFields) GetDefaultQueue() *ClusterFieldsDefaultQueueClusterQueue {
@@ -311,6 +316,8 @@ type GetOrganizationClustersOrganizationClustersClusterConnectionEdgesClusterEdg
 	Emoji *string `json:"emoji"`
 	// Color hex code for the cluster
 	Color *string `json:"color"`
+	// Public UUID of the selected OpenTelemetry notification service; null when unconfigured or unavailable to the caller
+	AgentTracingServiceUuid *string `json:"agentTracingServiceUuid"`
 	// The default queue that agents connecting to the cluster without specifying a queue will accept jobs from
 	DefaultQueue *GetOrganizationClustersOrganizationClustersClusterConnectionEdgesClusterEdgeNodeClusterDefaultQueueClusterQueue `json:"defaultQueue"`
 }
@@ -343,6 +350,11 @@ func (v *GetOrganizationClustersOrganizationClustersClusterConnectionEdgesCluste
 // GetColor returns GetOrganizationClustersOrganizationClustersClusterConnectionEdgesClusterEdgeNodeCluster.Color, and is useful for accessing the field via an interface.
 func (v *GetOrganizationClustersOrganizationClustersClusterConnectionEdgesClusterEdgeNodeCluster) GetColor() *string {
 	return v.Color
+}
+
+// GetAgentTracingServiceUuid returns GetOrganizationClustersOrganizationClustersClusterConnectionEdgesClusterEdgeNodeCluster.AgentTracingServiceUuid, and is useful for accessing the field via an interface.
+func (v *GetOrganizationClustersOrganizationClustersClusterConnectionEdgesClusterEdgeNodeCluster) GetAgentTracingServiceUuid() *string {
+	return v.AgentTracingServiceUuid
 }
 
 // GetDefaultQueue returns GetOrganizationClustersOrganizationClustersClusterConnectionEdgesClusterEdgeNodeCluster.DefaultQueue, and is useful for accessing the field via an interface.
@@ -4910,11 +4922,12 @@ func (v *__createClusterAgentTokenInput) GetExpiresAt() *time.Time { return v.Ex
 
 // __createClusterInput is used internally by genqlient
 type __createClusterInput struct {
-	OrganizationId string  `json:"organizationId"`
-	Name           string  `json:"name"`
-	Description    *string `json:"description"`
-	Emoji          *string `json:"emoji"`
-	Color          *string `json:"color"`
+	OrganizationId          string  `json:"organizationId"`
+	Name                    string  `json:"name"`
+	Description             *string `json:"description"`
+	Emoji                   *string `json:"emoji"`
+	Color                   *string `json:"color"`
+	AgentTracingServiceUuid *string `json:"agentTracingServiceUuid,omitempty"`
 }
 
 // GetOrganizationId returns __createClusterInput.OrganizationId, and is useful for accessing the field via an interface.
@@ -4931,6 +4944,9 @@ func (v *__createClusterInput) GetEmoji() *string { return v.Emoji }
 
 // GetColor returns __createClusterInput.Color, and is useful for accessing the field via an interface.
 func (v *__createClusterInput) GetColor() *string { return v.Color }
+
+// GetAgentTracingServiceUuid returns __createClusterInput.AgentTracingServiceUuid, and is useful for accessing the field via an interface.
+func (v *__createClusterInput) GetAgentTracingServiceUuid() *string { return v.AgentTracingServiceUuid }
 
 // __createClusterQueueInput is used internally by genqlient
 type __createClusterQueueInput struct {
@@ -5644,12 +5660,13 @@ func (v *__updateClusterAgentTokenInput) GetAllowedIpAddresses() string { return
 
 // __updateClusterInput is used internally by genqlient
 type __updateClusterInput struct {
-	OrganizationId string  `json:"organizationId"`
-	Id             string  `json:"id"`
-	Name           string  `json:"name"`
-	Description    *string `json:"description"`
-	Emoji          *string `json:"emoji"`
-	Color          *string `json:"color"`
+	OrganizationId          string  `json:"organizationId"`
+	Id                      string  `json:"id"`
+	Name                    string  `json:"name"`
+	Description             *string `json:"description"`
+	Emoji                   *string `json:"emoji"`
+	Color                   *string `json:"color"`
+	AgentTracingServiceUuid *string `json:"agentTracingServiceUuid,omitempty"`
 }
 
 // GetOrganizationId returns __updateClusterInput.OrganizationId, and is useful for accessing the field via an interface.
@@ -5669,6 +5686,9 @@ func (v *__updateClusterInput) GetEmoji() *string { return v.Emoji }
 
 // GetColor returns __updateClusterInput.Color, and is useful for accessing the field via an interface.
 func (v *__updateClusterInput) GetColor() *string { return v.Color }
+
+// GetAgentTracingServiceUuid returns __updateClusterInput.AgentTracingServiceUuid, and is useful for accessing the field via an interface.
+func (v *__updateClusterInput) GetAgentTracingServiceUuid() *string { return v.AgentTracingServiceUuid }
 
 // __updateClusterQueueInput is used internally by genqlient
 type __updateClusterQueueInput struct {
@@ -6096,6 +6116,11 @@ func (v *createClusterClusterCreateClusterCreatePayloadCluster) GetColor() *stri
 	return v.ClusterFields.Color
 }
 
+// GetAgentTracingServiceUuid returns createClusterClusterCreateClusterCreatePayloadCluster.AgentTracingServiceUuid, and is useful for accessing the field via an interface.
+func (v *createClusterClusterCreateClusterCreatePayloadCluster) GetAgentTracingServiceUuid() *string {
+	return v.ClusterFields.AgentTracingServiceUuid
+}
+
 // GetDefaultQueue returns createClusterClusterCreateClusterCreatePayloadCluster.DefaultQueue, and is useful for accessing the field via an interface.
 func (v *createClusterClusterCreateClusterCreatePayloadCluster) GetDefaultQueue() *ClusterFieldsDefaultQueueClusterQueue {
 	return v.ClusterFields.DefaultQueue
@@ -6139,6 +6164,8 @@ type __premarshalcreateClusterClusterCreateClusterCreatePayloadCluster struct {
 
 	Color *string `json:"color"`
 
+	AgentTracingServiceUuid *string `json:"agentTracingServiceUuid"`
+
 	DefaultQueue *ClusterFieldsDefaultQueueClusterQueue `json:"defaultQueue"`
 }
 
@@ -6159,6 +6186,7 @@ func (v *createClusterClusterCreateClusterCreatePayloadCluster) __premarshalJSON
 	retval.Description = v.ClusterFields.Description
 	retval.Emoji = v.ClusterFields.Emoji
 	retval.Color = v.ClusterFields.Color
+	retval.AgentTracingServiceUuid = v.ClusterFields.AgentTracingServiceUuid
 	retval.DefaultQueue = v.ClusterFields.DefaultQueue
 	return &retval, nil
 }
@@ -8537,6 +8565,11 @@ func (v *getClusterByNameOrganizationClustersClusterConnectionEdgesClusterEdgeNo
 	return v.ClusterFields.Color
 }
 
+// GetAgentTracingServiceUuid returns getClusterByNameOrganizationClustersClusterConnectionEdgesClusterEdgeNodeCluster.AgentTracingServiceUuid, and is useful for accessing the field via an interface.
+func (v *getClusterByNameOrganizationClustersClusterConnectionEdgesClusterEdgeNodeCluster) GetAgentTracingServiceUuid() *string {
+	return v.ClusterFields.AgentTracingServiceUuid
+}
+
 // GetDefaultQueue returns getClusterByNameOrganizationClustersClusterConnectionEdgesClusterEdgeNodeCluster.DefaultQueue, and is useful for accessing the field via an interface.
 func (v *getClusterByNameOrganizationClustersClusterConnectionEdgesClusterEdgeNodeCluster) GetDefaultQueue() *ClusterFieldsDefaultQueueClusterQueue {
 	return v.ClusterFields.DefaultQueue
@@ -8580,6 +8613,8 @@ type __premarshalgetClusterByNameOrganizationClustersClusterConnectionEdgesClust
 
 	Color *string `json:"color"`
 
+	AgentTracingServiceUuid *string `json:"agentTracingServiceUuid"`
+
 	DefaultQueue *ClusterFieldsDefaultQueueClusterQueue `json:"defaultQueue"`
 }
 
@@ -8600,6 +8635,7 @@ func (v *getClusterByNameOrganizationClustersClusterConnectionEdgesClusterEdgeNo
 	retval.Description = v.ClusterFields.Description
 	retval.Emoji = v.ClusterFields.Emoji
 	retval.Color = v.ClusterFields.Color
+	retval.AgentTracingServiceUuid = v.ClusterFields.AgentTracingServiceUuid
 	retval.DefaultQueue = v.ClusterFields.DefaultQueue
 	return &retval, nil
 }
@@ -11777,6 +11813,11 @@ func (v *getNodeNodeCluster) GetEmoji() *string { return v.ClusterFields.Emoji }
 // GetColor returns getNodeNodeCluster.Color, and is useful for accessing the field via an interface.
 func (v *getNodeNodeCluster) GetColor() *string { return v.ClusterFields.Color }
 
+// GetAgentTracingServiceUuid returns getNodeNodeCluster.AgentTracingServiceUuid, and is useful for accessing the field via an interface.
+func (v *getNodeNodeCluster) GetAgentTracingServiceUuid() *string {
+	return v.ClusterFields.AgentTracingServiceUuid
+}
+
 // GetDefaultQueue returns getNodeNodeCluster.DefaultQueue, and is useful for accessing the field via an interface.
 func (v *getNodeNodeCluster) GetDefaultQueue() *ClusterFieldsDefaultQueueClusterQueue {
 	return v.ClusterFields.DefaultQueue
@@ -11822,6 +11863,8 @@ type __premarshalgetNodeNodeCluster struct {
 
 	Color *string `json:"color"`
 
+	AgentTracingServiceUuid *string `json:"agentTracingServiceUuid"`
+
 	DefaultQueue *ClusterFieldsDefaultQueueClusterQueue `json:"defaultQueue"`
 }
 
@@ -11843,6 +11886,7 @@ func (v *getNodeNodeCluster) __premarshalJSON() (*__premarshalgetNodeNodeCluster
 	retval.Description = v.ClusterFields.Description
 	retval.Emoji = v.ClusterFields.Emoji
 	retval.Color = v.ClusterFields.Color
+	retval.AgentTracingServiceUuid = v.ClusterFields.AgentTracingServiceUuid
 	retval.DefaultQueue = v.ClusterFields.DefaultQueue
 	return &retval, nil
 }
@@ -22433,6 +22477,11 @@ func (v *removeClusterDefaultQueueClusterUpdateClusterUpdatePayloadCluster) GetC
 	return v.ClusterFields.Color
 }
 
+// GetAgentTracingServiceUuid returns removeClusterDefaultQueueClusterUpdateClusterUpdatePayloadCluster.AgentTracingServiceUuid, and is useful for accessing the field via an interface.
+func (v *removeClusterDefaultQueueClusterUpdateClusterUpdatePayloadCluster) GetAgentTracingServiceUuid() *string {
+	return v.ClusterFields.AgentTracingServiceUuid
+}
+
 func (v *removeClusterDefaultQueueClusterUpdateClusterUpdatePayloadCluster) UnmarshalJSON(b []byte) error {
 
 	if string(b) == "null" {
@@ -22472,6 +22521,8 @@ type __premarshalremoveClusterDefaultQueueClusterUpdateClusterUpdatePayloadClust
 	Emoji *string `json:"emoji"`
 
 	Color *string `json:"color"`
+
+	AgentTracingServiceUuid *string `json:"agentTracingServiceUuid"`
 }
 
 func (v *removeClusterDefaultQueueClusterUpdateClusterUpdatePayloadCluster) MarshalJSON() ([]byte, error) {
@@ -22492,6 +22543,7 @@ func (v *removeClusterDefaultQueueClusterUpdateClusterUpdatePayloadCluster) __pr
 	retval.Description = v.ClusterFields.Description
 	retval.Emoji = v.ClusterFields.Emoji
 	retval.Color = v.ClusterFields.Color
+	retval.AgentTracingServiceUuid = v.ClusterFields.AgentTracingServiceUuid
 	return &retval, nil
 }
 
@@ -22684,6 +22736,11 @@ func (v *setClusterDefaultQueueClusterUpdateClusterUpdatePayloadCluster) GetColo
 	return v.ClusterFields.Color
 }
 
+// GetAgentTracingServiceUuid returns setClusterDefaultQueueClusterUpdateClusterUpdatePayloadCluster.AgentTracingServiceUuid, and is useful for accessing the field via an interface.
+func (v *setClusterDefaultQueueClusterUpdateClusterUpdatePayloadCluster) GetAgentTracingServiceUuid() *string {
+	return v.ClusterFields.AgentTracingServiceUuid
+}
+
 func (v *setClusterDefaultQueueClusterUpdateClusterUpdatePayloadCluster) UnmarshalJSON(b []byte) error {
 
 	if string(b) == "null" {
@@ -22723,6 +22780,8 @@ type __premarshalsetClusterDefaultQueueClusterUpdateClusterUpdatePayloadCluster 
 	Emoji *string `json:"emoji"`
 
 	Color *string `json:"color"`
+
+	AgentTracingServiceUuid *string `json:"agentTracingServiceUuid"`
 }
 
 func (v *setClusterDefaultQueueClusterUpdateClusterUpdatePayloadCluster) MarshalJSON() ([]byte, error) {
@@ -22743,6 +22802,7 @@ func (v *setClusterDefaultQueueClusterUpdateClusterUpdatePayloadCluster) __prema
 	retval.Description = v.ClusterFields.Description
 	retval.Emoji = v.ClusterFields.Emoji
 	retval.Color = v.ClusterFields.Color
+	retval.AgentTracingServiceUuid = v.ClusterFields.AgentTracingServiceUuid
 	return &retval, nil
 }
 
@@ -23399,6 +23459,11 @@ func (v *updateClusterClusterUpdateClusterUpdatePayloadCluster) GetColor() *stri
 	return v.ClusterFields.Color
 }
 
+// GetAgentTracingServiceUuid returns updateClusterClusterUpdateClusterUpdatePayloadCluster.AgentTracingServiceUuid, and is useful for accessing the field via an interface.
+func (v *updateClusterClusterUpdateClusterUpdatePayloadCluster) GetAgentTracingServiceUuid() *string {
+	return v.ClusterFields.AgentTracingServiceUuid
+}
+
 // GetDefaultQueue returns updateClusterClusterUpdateClusterUpdatePayloadCluster.DefaultQueue, and is useful for accessing the field via an interface.
 func (v *updateClusterClusterUpdateClusterUpdatePayloadCluster) GetDefaultQueue() *ClusterFieldsDefaultQueueClusterQueue {
 	return v.ClusterFields.DefaultQueue
@@ -23442,6 +23507,8 @@ type __premarshalupdateClusterClusterUpdateClusterUpdatePayloadCluster struct {
 
 	Color *string `json:"color"`
 
+	AgentTracingServiceUuid *string `json:"agentTracingServiceUuid"`
+
 	DefaultQueue *ClusterFieldsDefaultQueueClusterQueue `json:"defaultQueue"`
 }
 
@@ -23462,6 +23529,7 @@ func (v *updateClusterClusterUpdateClusterUpdatePayloadCluster) __premarshalJSON
 	retval.Description = v.ClusterFields.Description
 	retval.Emoji = v.ClusterFields.Emoji
 	retval.Color = v.ClusterFields.Color
+	retval.AgentTracingServiceUuid = v.ClusterFields.AgentTracingServiceUuid
 	retval.DefaultQueue = v.ClusterFields.DefaultQueue
 	return &retval, nil
 }
@@ -24910,6 +24978,7 @@ query GetOrganizationClusters ($slug: ID!, $cursor: String) {
 					description
 					emoji
 					color
+					agentTracingServiceUuid
 					defaultQueue {
 						id
 						uuid
@@ -25343,8 +25412,8 @@ func createAgentToken(
 
 // The mutation executed by createCluster.
 const createCluster_Operation = `
-mutation createCluster ($organizationId: ID!, $name: String!, $description: String, $emoji: String, $color: String) {
-	clusterCreate(input: {organizationId:$organizationId,name:$name,description:$description,emoji:$emoji,color:$color}) {
+mutation createCluster ($organizationId: ID!, $name: String!, $description: String, $emoji: String, $color: String, $agentTracingServiceUuid: String) {
+	clusterCreate(input: {organizationId:$organizationId,name:$name,description:$description,emoji:$emoji,color:$color,agentTracingServiceUuid:$agentTracingServiceUuid}) {
 		clientMutationId
 		cluster {
 			... ClusterFields
@@ -25358,6 +25427,7 @@ fragment ClusterFields on Cluster {
 	description
 	emoji
 	color
+	agentTracingServiceUuid
 	defaultQueue {
 		id
 		uuid
@@ -25375,16 +25445,18 @@ func createCluster(
 	description *string,
 	emoji *string,
 	color *string,
+	agentTracingServiceUuid *string,
 ) (data_ *createClusterResponse, err_ error) {
 	req_ := &graphql.Request{
 		OpName: "createCluster",
 		Query:  createCluster_Operation,
 		Variables: &__createClusterInput{
-			OrganizationId: organizationId,
-			Name:           name,
-			Description:    description,
-			Emoji:          emoji,
-			Color:          color,
+			OrganizationId:          organizationId,
+			Name:                    name,
+			Description:             description,
+			Emoji:                   emoji,
+			Color:                   color,
+			AgentTracingServiceUuid: agentTracingServiceUuid,
 		},
 	}
 
@@ -26609,6 +26681,7 @@ fragment ClusterFields on Cluster {
 	description
 	emoji
 	color
+	agentTracingServiceUuid
 	defaultQueue {
 		id
 		uuid
@@ -26945,6 +27018,7 @@ fragment ClusterFields on Cluster {
 	description
 	emoji
 	color
+	agentTracingServiceUuid
 	defaultQueue {
 		id
 		uuid
@@ -27922,6 +27996,7 @@ fragment ClusterFields on Cluster {
 	description
 	emoji
 	color
+	agentTracingServiceUuid
 	defaultQueue {
 		id
 		uuid
@@ -28089,6 +28164,7 @@ fragment ClusterFields on Cluster {
 	description
 	emoji
 	color
+	agentTracingServiceUuid
 	defaultQueue {
 		id
 		uuid
@@ -28379,8 +28455,8 @@ func unarchivePipeline(
 
 // The mutation executed by updateCluster.
 const updateCluster_Operation = `
-mutation updateCluster ($organizationId: ID!, $id: ID!, $name: String, $description: String, $emoji: String, $color: String) {
-	clusterUpdate(input: {organizationId:$organizationId,id:$id,name:$name,description:$description,emoji:$emoji,color:$color}) {
+mutation updateCluster ($organizationId: ID!, $id: ID!, $name: String, $description: String, $emoji: String, $color: String, $agentTracingServiceUuid: String) {
+	clusterUpdate(input: {organizationId:$organizationId,id:$id,name:$name,description:$description,emoji:$emoji,color:$color,agentTracingServiceUuid:$agentTracingServiceUuid}) {
 		clientMutationId
 		cluster {
 			... ClusterFields
@@ -28394,6 +28470,7 @@ fragment ClusterFields on Cluster {
 	description
 	emoji
 	color
+	agentTracingServiceUuid
 	defaultQueue {
 		id
 		uuid
@@ -28412,17 +28489,19 @@ func updateCluster(
 	description *string,
 	emoji *string,
 	color *string,
+	agentTracingServiceUuid *string,
 ) (data_ *updateClusterResponse, err_ error) {
 	req_ := &graphql.Request{
 		OpName: "updateCluster",
 		Query:  updateCluster_Operation,
 		Variables: &__updateClusterInput{
-			OrganizationId: organizationId,
-			Id:             id,
-			Name:           name,
-			Description:    description,
-			Emoji:          emoji,
-			Color:          color,
+			OrganizationId:          organizationId,
+			Id:                      id,
+			Name:                    name,
+			Description:             description,
+			Emoji:                   emoji,
+			Color:                   color,
+			AgentTracingServiceUuid: agentTracingServiceUuid,
 		},
 	}
 
