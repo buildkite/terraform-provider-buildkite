@@ -192,6 +192,16 @@ func TestAccBuildkiteTeamMember(t *testing.T) {
 					ImportState:       true,
 					ImportStateVerify: true,
 				},
+				{
+					Config: basic(randName, "MEMBER") + `data "buildkite_organization_members" "all" {}`,
+				},
+				{
+					// <team slug>/<email> is also accepted
+					ResourceName:      "buildkite_team_member.test",
+					ImportState:       true,
+					ImportStateIdFunc: testAccTeamMemberEmailImportID,
+					ImportStateVerify: true,
+				},
 			},
 		})
 	})
@@ -223,6 +233,19 @@ func TestAccBuildkiteTeamMember(t *testing.T) {
 			},
 		})
 	})
+}
+
+// testAccTeamMemberEmailImportID builds "<team slug>/<email>" for buildkite_team_member.test, taking the email from data.buildkite_organization_members.all
+func testAccTeamMemberEmailImportID(s *terraform.State) (string, error) {
+	member := s.RootModule().Resources["buildkite_team_member.test"].Primary.Attributes
+	team := s.RootModule().Resources["buildkite_team.test"].Primary.Attributes
+	members := s.RootModule().Resources["data.buildkite_organization_members.all"].Primary.Attributes
+	for i := 0; members[fmt.Sprintf("members.%d.id", i)] != ""; i++ {
+		if members[fmt.Sprintf("members.%d.id", i)] == member["user_id"] {
+			return fmt.Sprintf("%s/%s", team["slug"], members[fmt.Sprintf("members.%d.email", i)]), nil
+		}
+	}
+	return "", fmt.Errorf("no organization member with id %s", member["user_id"])
 }
 
 func testAccCheckTeamMemberExists(resourceName string, tm *teamMemberResourceModel) resource.TestCheckFunc {
