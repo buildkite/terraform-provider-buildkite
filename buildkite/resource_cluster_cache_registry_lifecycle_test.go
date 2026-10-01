@@ -335,6 +335,45 @@ func TestUnitClusterCacheRegistryNullablePolicy(t *testing.T) {
 	}
 }
 
+func TestUnitClusterCacheRegistryNonPositiveTimeouts(t *testing.T) {
+	for _, configured := range []string{"0s", "-1h"} {
+		for _, operation := range []string{"create", "read", "update", "delete"} {
+			t.Run(operation+"="+configured, func(t *testing.T) {
+				server, api := newCacheRegistryTestAPI(t)
+				config := func(name string) string {
+					return strings.Replace(cacheRegistryTestConfig(server, name, ""),
+						`  api_token = "dummy"`, fmt.Sprintf(`  api_token = "dummy"
+  timeouts = {
+    %s = %q
+  }`, operation, configured), 1)
+				}
+				initial := cacheRegistryTestConfig(server, "Cache", "")
+				if operation == "create" {
+					initial = config("Cache")
+				}
+				resource.UnitTest(t, resource.TestCase{
+					ProtoV6ProviderFactories: protoV6ProviderFactories(),
+					CheckDestroy:             api.checkDestroyed,
+					Steps: []resource.TestStep{
+						{Config: initial, Check: resource.TestCheckResourceAttr(cacheRegistryTestAddress, "name", "Cache")},
+						{Config: config("Cache"), PlanOnly: true},
+						{Config: config("Renamed Cache"), Check: resource.ComposeAggregateTestCheckFunc(
+							resource.TestCheckResourceAttr(cacheRegistryTestAddress, "name", "Renamed Cache"),
+							resource.TestCheckResourceAttr(cacheRegistryTestAddress, "slug", "renamed-cache"),
+						)},
+						{Config: config("Renamed Cache"), Destroy: true},
+					},
+				})
+				api.mu.Lock()
+				defer api.mu.Unlock()
+				if api.operations["createCacheRegistry"] != 1 || api.operations["getCacheRegistryByNode"] == 0 || api.operations["updateCacheRegistry"] != 1 || api.operations["deleteCacheRegistry"] != 1 {
+					t.Fatalf("unexpected lifecycle operations with %s=%s: %v", operation, configured, api.operations)
+				}
+			})
+		}
+	}
+}
+
 func TestUnitClusterCacheRegistryPolicyLifecycle(t *testing.T) {
 	server, api := newCacheRegistryTestAPI(t)
 	config := func(name, attributes string) string { return cacheRegistryTestConfig(server, name, attributes) }

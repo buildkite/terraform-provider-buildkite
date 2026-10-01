@@ -153,7 +153,7 @@ func (r *clusterCacheRegistryResource) Create(ctx context.Context, req resource.
 		return
 	}
 
-	timeout, diags := r.client.timeouts.Create(ctx, DefaultTimeout)
+	timeout, diags := r.client.createTimeout(ctx)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -206,7 +206,7 @@ func (r *clusterCacheRegistryResource) Read(ctx context.Context, req resource.Re
 		return
 	}
 
-	timeout, diags := r.client.timeouts.Read(ctx, DefaultTimeout)
+	timeout, diags := r.client.readTimeout(ctx)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -248,7 +248,7 @@ func (r *clusterCacheRegistryResource) Update(ctx context.Context, req resource.
 		return
 	}
 
-	timeout, diags := r.client.timeouts.Update(ctx, DefaultTimeout)
+	timeout, diags := r.client.updateTimeout(ctx)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -298,7 +298,7 @@ func (r *clusterCacheRegistryResource) Delete(ctx context.Context, req resource.
 		return
 	}
 
-	timeout, diags := r.client.timeouts.Delete(ctx, DefaultTimeout)
+	timeout, diags := r.client.deleteTimeout(ctx)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
