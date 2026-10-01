@@ -69,8 +69,8 @@ Terraform marks a resource as tainted when its creation returns both state and a
 terraform untaint buildkite_pipeline.example
 ```
 
-Clearing the mark matters more when the provider is configured with `archive_pipeline_on_delete`. Replacing a pipeline then archives it rather than deleting it, and the archived pipeline keeps its slug, so the recreate that follows collides with it.
+Clearing the mark matters more when the provider is configured with `archive_pipeline_on_delete`. Replacing a pipeline then archives it rather than deleting it, and an archived pipeline keeps its name, which must be unique within the organization, so the recreate that follows fails.
 
 A `buildkite_cluster_queue` that is being unpaused stays paused if the apply does not reach the end. Dispatch is resumed only once the rest of the update has applied, so that a queue never picks up jobs against a configuration that is half applied. Run the apply again to resume it.
 
-Creating a `buildkite_organization` is the exception, and records nothing when it fails. The resource applies settings to an organization that already exists rather than creating one, and every step compares before it mutates, so the apply can simply be run again. Updating one records what applied, like the resources above. When a create changes settings such as the API IP allowlist or two-factor enforcement and then fails at a later step, the provider warns which ones are in place but unrecorded; they stay in effect until the resource is applied again or they are changed in the Buildkite web UI.
+Creating a `buildkite_organization` is the exception, and records nothing when it fails. The resource applies settings to an organization that already exists rather than creating one, and every step compares before it mutates, so the apply can simply be run again. Updating one records what applied, like the resources above. When a create writes the organization's API settings, such as the API IP allowlist, and then fails to set two-factor enforcement, the provider warns that those API settings are in place but unrecorded; applying again writes only what still differs, then retries two-factor enforcement.
