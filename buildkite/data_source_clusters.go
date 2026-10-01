@@ -16,14 +16,15 @@ type clustersDatasourceModel struct {
 }
 
 type clustersModel struct {
-	ID           types.String               `tfsdk:"id"`
-	UUID         types.String               `tfsdk:"uuid"`
-	Name         types.String               `tfsdk:"name"`
-	Description  types.String               `tfsdk:"description"`
-	Emoji        types.String               `tfsdk:"emoji"`
-	Color        types.String               `tfsdk:"color"`
-	DefaultQueue *clustersDefaultQueueModel `tfsdk:"default_queue"`
-	Maintainers  []maintainerModel          `tfsdk:"maintainers"`
+	ID                      types.String               `tfsdk:"id"`
+	UUID                    types.String               `tfsdk:"uuid"`
+	Name                    types.String               `tfsdk:"name"`
+	Description             types.String               `tfsdk:"description"`
+	Emoji                   types.String               `tfsdk:"emoji"`
+	Color                   types.String               `tfsdk:"color"`
+	AgentTracingServiceUUID types.String               `tfsdk:"agent_tracing_service_uuid"`
+	DefaultQueue            *clustersDefaultQueueModel `tfsdk:"default_queue"`
+	Maintainers             []maintainerModel          `tfsdk:"maintainers"`
 }
 
 type clustersDefaultQueueModel struct {
@@ -86,6 +87,10 @@ func (c *clustersDatasource) Schema(ctx context.Context, req datasource.SchemaRe
 						},
 						"color": schema.StringAttribute{
 							MarkdownDescription: "The color for the cluster.",
+							Computed:            true,
+						},
+						"agent_tracing_service_uuid": schema.StringAttribute{
+							MarkdownDescription: "The UUID of the OpenTelemetry tracing notification service agents in the cluster export traces to. Null when none is selected, when the organization does not have agent tracing enabled, or when the API token cannot manage the cluster.",
 							Computed:            true,
 						},
 						"default_queue": schema.SingleNestedAttribute{
@@ -195,12 +200,13 @@ func (c *clustersDatasource) Read(ctx context.Context, req datasource.ReadReques
 
 func updateClustersDatasourceState(ctx context.Context, client *Client, resp *datasource.ReadResponse, state *clustersDatasourceModel, data GetOrganizationClustersOrganizationClustersClusterConnectionEdgesClusterEdge) {
 	clusterState := clustersModel{
-		ID:          types.StringValue(data.Node.Id),
-		UUID:        types.StringValue(data.Node.Uuid),
-		Name:        types.StringValue(data.Node.Name),
-		Description: types.StringPointerValue(data.Node.Description),
-		Emoji:       types.StringPointerValue(data.Node.Emoji),
-		Color:       types.StringPointerValue(data.Node.Color),
+		ID:                      types.StringValue(data.Node.Id),
+		UUID:                    types.StringValue(data.Node.Uuid),
+		Name:                    types.StringValue(data.Node.Name),
+		Description:             types.StringPointerValue(data.Node.Description),
+		Emoji:                   types.StringPointerValue(data.Node.Emoji),
+		Color:                   types.StringPointerValue(data.Node.Color),
+		AgentTracingServiceUUID: types.StringPointerValue(data.Node.AgentTracingServiceUuid),
 	}
 
 	if data.Node.DefaultQueue != nil {
