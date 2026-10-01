@@ -66,7 +66,10 @@ resource "buildkite_cluster" "traced" {
 - `agent_tracing_service_uuid` (String) The UUID of the OpenTelemetry tracing notification service that agents in this Cluster export traces
 to, such as `buildkite_notification_service.otel.id`. The service must be enabled, cover all
 pipelines, and have no branch filter, and the organization must have agent tracing enabled.
-Set this to `""` to clear the selection so agents stop exporting traces.
+Set this to `""` to clear the selection.
+Setting, changing, or clearing the selection only affects agents that register afterwards: running
+agents keep their current exporter configuration and keep tracing until they are restarted or
+re-registered.
 Leaving this unset adopts the Cluster's current selection, and **removing it from configuration does
 not clear the selection: agents keep exporting traces** until it is set to `""` or cleared in
 the Buildkite UI or API.
