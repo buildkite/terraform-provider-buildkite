@@ -34,8 +34,15 @@ type fakeClusterAPI struct {
 	description     *string
 	tracingService  *string
 	tracingDisabled bool
-	// writes holds the variables of every createCluster and updateCluster request, in order
-	writes []map[string]json.RawMessage
+	// writes holds every cluster create or update, in order
+	writes []fakeClusterWrite
+}
+
+// fakeClusterWrite records how a write treated agentTracingServiceUuid: tracingService is the JSON it
+// sent, "null" included, or "" when the key was left out
+type fakeClusterWrite struct {
+	operation      string
+	tracingService string
 }
 
 func newFakeClusterAPI(t *testing.T) (*httptest.Server, *fakeClusterAPI) {
@@ -66,6 +73,7 @@ func (a *fakeClusterAPI) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func (a *fakeClusterAPI) graphql(w http.ResponseWriter, r *http.Request) {
 	var body struct {
 		OperationName string                     `json:"operationName"`
+		Query         string                     `json:"query"`
 		Variables     map[string]json.RawMessage `json:"variables"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
@@ -76,9 +84,14 @@ func (a *fakeClusterAPI) graphql(w http.ResponseWriter, r *http.Request) {
 	// the organization id is fetched with an anonymous query
 	response := `{"data":{"organization":{"id":"organization-graphql-id"}}}`
 	switch body.OperationName {
-	case "createCluster", "updateCluster":
-		a.writes = append(a.writes, body.Variables)
-		if raw, ok := body.Variables["agentTracingServiceUuid"]; ok {
+	case "createCluster", "updateCluster", "updateClusterClearingAgentTracingService":
+		raw, ok := body.Variables["agentTracingServiceUuid"]
+		// genqlient sends the operation with its whitespace removed
+		if strings.Contains(strings.ReplaceAll(body.Query, " ", ""), "agentTracingServiceUuid:null") {
+			raw, ok = json.RawMessage("null"), true
+		}
+		a.writes = append(a.writes, fakeClusterWrite{operation: body.OperationName, tracingService: string(raw)})
+		if ok {
 			if a.tracingDisabled {
 				response = `{"data":null,"errors":[{"message":"Agent tracing configuration is not enabled for this organization"}]}`
 				break
@@ -96,7 +109,10 @@ func (a *fakeClusterAPI) graphql(w http.ResponseWriter, r *http.Request) {
 		if err := json.Unmarshal(body.Variables["description"], &a.description); err != nil {
 			a.t.Errorf("description = %s, want a string or null", body.Variables["description"])
 		}
-		field := map[string]string{"createCluster": "clusterCreate", "updateCluster": "clusterUpdate"}[body.OperationName]
+		field := "clusterUpdate"
+		if body.OperationName == "createCluster" {
+			field = "clusterCreate"
+		}
 		response = fmt.Sprintf(`{"data":{%q:{"clientMutationId":null,"cluster":%s}}}`, field, a.clusterJSON())
 	case "getNode":
 		node := "null"
@@ -140,6 +156,18 @@ func (a *fakeClusterAPI) clusterJSON() string {
 	return string(cluster)
 }
 
+// seed gives the fake a cluster made outside Terraform, for a test to import
+func (a *fakeClusterAPI) seed(tracingService string) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+
+	a.exists = true
+	a.name = "test"
+	if tracingService != "" {
+		a.tracingService = &tracingService
+	}
+}
+
 func (a *fakeClusterAPI) setTracingService(uuid string) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
@@ -147,8 +175,12 @@ func (a *fakeClusterAPI) setTracingService(uuid string) {
 	a.tracingService = &uuid
 }
 
-// checkLastWrite checks the agentTracingServiceUuid the last write sent, where "" means the key was left out
+// checkLastWrite checks the operation of the last write and the agentTracingServiceUuid it sent: a UUID,
+// "null", or "" for the key left out
 func (a *fakeClusterAPI) checkLastWrite(operation, want string) resource.TestCheckFunc {
+	if want != "" && want != "null" {
+		want = fmt.Sprintf("%q", want)
+	}
 	return func(*terraform.State) error {
 		a.mu.Lock()
 		defer a.mu.Unlock()
@@ -157,15 +189,26 @@ func (a *fakeClusterAPI) checkLastWrite(operation, want string) resource.TestChe
 			return fmt.Errorf("no cluster write was made, want %s", operation)
 		}
 		write := a.writes[len(a.writes)-1]
-		if _, isUpdate := write["id"]; isUpdate != (operation == "updateCluster") {
-			return fmt.Errorf("the last write was not %s: %v", operation, write)
-		}
-		raw, sent := write["agentTracingServiceUuid"]
 		switch {
-		case want == "" && sent:
-			return fmt.Errorf("%s sent agentTracingServiceUuid = %s, want the key left out", operation, raw)
-		case want != "" && string(raw) != fmt.Sprintf("%q", want):
-			return fmt.Errorf("%s sent agentTracingServiceUuid = %s, want %q", operation, raw, want)
+		case write.operation != operation:
+			return fmt.Errorf("the last write was %s, want %s", write.operation, operation)
+		case write.tracingService != want && want == "":
+			return fmt.Errorf("%s sent agentTracingServiceUuid = %s, want the key left out", operation, write.tracingService)
+		case write.tracingService != want:
+			return fmt.Errorf("%s sent agentTracingServiceUuid = %q, want %s", operation, write.tracingService, want)
+		}
+		return nil
+	}
+}
+
+// checkWrites checks how many cluster writes have been made, so a step can show it wrote nothing
+func (a *fakeClusterAPI) checkWrites(want int) resource.TestCheckFunc {
+	return func(*terraform.State) error {
+		a.mu.Lock()
+		defer a.mu.Unlock()
+
+		if len(a.writes) != want {
+			return fmt.Errorf("%d cluster writes were made, want %d: %v", len(a.writes), want, a.writes)
 		}
 		return nil
 	}
@@ -348,4 +391,164 @@ func TestUnitBuildkiteClusterRejectsAnAgentTracingServiceThatIsNotALowercaseUUID
 			})
 		})
 	}
+}
+
+func TestUnitBuildkiteClusterClearsTheAgentTracingServiceWithAnEmptyString(t *testing.T) {
+	server, api := newFakeClusterAPI(t)
+
+	const name = "buildkite_cluster.test"
+	cleared := `agent_tracing_service_uuid = ""`
+
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config: fakeClusterConfig(server, fmt.Sprintf(`agent_tracing_service_uuid = %q`, fakeTracingServiceA)),
+				Check:  api.checkLastWrite("createCluster", fakeTracingServiceA),
+			},
+			{
+				// "" clears with an explicit null, and is kept although the API reads it back as null
+				Config: fakeClusterConfig(server, cleared),
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PostApplyPostRefresh: []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()},
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(name, "agent_tracing_service_uuid", ""),
+					api.checkLastWrite("updateClusterClearingAgentTracingService", "null"),
+					api.checkTracingService(""),
+				),
+			},
+			{
+				// once cleared, other changes leave the key out again
+				Config: fakeClusterConfig(server, cleared+"\ndescription = \"changed\""),
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PostApplyPostRefresh: []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()},
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(name, "agent_tracing_service_uuid", ""),
+					api.checkLastWrite("updateCluster", ""),
+				),
+			},
+			{
+				// removing the attribute after clearing plans nothing
+				Config: fakeClusterConfig(server, `description = "changed"`),
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()},
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(name, "agent_tracing_service_uuid", ""),
+					api.checkWrites(3),
+				),
+			},
+			{
+				// a selection made outside Terraform is cleared again while the configuration says ""
+				PreConfig: func() { api.setTracingService(fakeTracingServiceB) },
+				Config:    fakeClusterConfig(server, cleared+"\ndescription = \"changed\""),
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PostApplyPostRefresh: []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()},
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(name, "agent_tracing_service_uuid", ""),
+					api.checkLastWrite("updateClusterClearingAgentTracingService", "null"),
+					api.checkTracingService(""),
+				),
+			},
+		},
+	})
+}
+
+// A new cluster has no selection to clear, so "" is created without the key, which an organization
+// without agent tracing would refuse
+func TestUnitBuildkiteClusterCreatesWithAnEmptyAgentTracingService(t *testing.T) {
+	server, api := newFakeClusterAPI(t)
+	api.tracingDisabled = true
+
+	cleared := `agent_tracing_service_uuid = ""`
+
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config: fakeClusterConfig(server, cleared),
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PostApplyPostRefresh: []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()},
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("buildkite_cluster.test", "agent_tracing_service_uuid", ""),
+					api.checkLastWrite("createCluster", ""),
+				),
+			},
+			{
+				Config: fakeClusterConfig(server, cleared+"\ndescription = \"changed\""),
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PostApplyPostRefresh: []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()},
+				},
+				Check: api.checkLastWrite("updateCluster", ""),
+			},
+		},
+	})
+}
+
+func TestUnitBuildkiteClusterImportedThenClearedWithAnEmptyString(t *testing.T) {
+	const name = "buildkite_cluster.test"
+	cleared := `agent_tracing_service_uuid = ""`
+
+	t.Run("with a selection", func(t *testing.T) {
+		server, api := newFakeClusterAPI(t)
+		api.seed(fakeTracingServiceA)
+
+		resource.UnitTest(t, resource.TestCase{
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			Steps: []resource.TestStep{
+				{
+					Config:             fakeClusterConfig(server, cleared),
+					ResourceName:       name,
+					ImportState:        true,
+					ImportStateId:      fakeClusterGraphQLID,
+					ImportStatePersist: true,
+				},
+				{
+					Config: fakeClusterConfig(server, cleared),
+					ConfigPlanChecks: resource.ConfigPlanChecks{
+						PostApplyPostRefresh: []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()},
+					},
+					Check: resource.ComposeAggregateTestCheckFunc(
+						resource.TestCheckResourceAttr(name, "agent_tracing_service_uuid", ""),
+						api.checkLastWrite("updateClusterClearingAgentTracingService", "null"),
+						api.checkTracingService(""),
+					),
+				},
+			},
+		})
+	})
+
+	t.Run("without a selection", func(t *testing.T) {
+		server, api := newFakeClusterAPI(t)
+		api.seed("")
+		api.tracingDisabled = true
+
+		resource.UnitTest(t, resource.TestCase{
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			Steps: []resource.TestStep{
+				{
+					Config:             fakeClusterConfig(server, cleared),
+					ResourceName:       name,
+					ImportState:        true,
+					ImportStateId:      fakeClusterGraphQLID,
+					ImportStatePersist: true,
+				},
+				{
+					// the import reads null, so "" is one update that has nothing to clear and leaves the key out
+					Config: fakeClusterConfig(server, cleared),
+					ConfigPlanChecks: resource.ConfigPlanChecks{
+						PostApplyPostRefresh: []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()},
+					},
+					Check: resource.ComposeAggregateTestCheckFunc(
+						resource.TestCheckResourceAttr(name, "agent_tracing_service_uuid", ""),
+						api.checkLastWrite("updateCluster", ""),
+					),
+				},
+			},
+		})
+	})
 }

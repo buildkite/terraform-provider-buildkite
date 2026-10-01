@@ -3,6 +3,7 @@ package buildkite
 import (
 	"context"
 	"fmt"
+	"regexp"
 
 	"github.com/MakeNowJust/heredoc"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
@@ -97,16 +98,22 @@ func (c *clusterResource) Schema(ctx context.Context, req resource.SchemaRequest
 					The UUID of the OpenTelemetry tracing notification service that agents in this Cluster export traces
 					to, such as ` + "`buildkite_notification_service.otel.id`" + `. The service must be enabled, cover all
 					pipelines, and have no branch filter, and the organization must have agent tracing enabled.
-					Leaving this unset adopts whatever service the Cluster already uses, and removing it from configuration
-					keeps the current selection; clear a selection in the Buildkite UI or API. The API reports no selection
-					unless agent tracing is enabled for the organization and the API token can manage the Cluster.
+					Set this to ` + "`\"\"`" + ` to clear the selection so agents stop exporting traces.
+					Leaving this unset adopts the Cluster's current selection, and **removing it from configuration does
+					not clear the selection: agents keep exporting traces** until it is set to ` + "`\"\"`" + ` or cleared in
+					the Buildkite UI or API.
+					If the selected service is later deleted, disabled, or given a branch filter, the Cluster still reports
+					its UUID and plans stay clean, but agents that register afterwards silently stop receiving tracing
+					configuration.
+					The API reports no selection unless agent tracing is enabled for the organization and the API token can
+					manage the Cluster.
 				`),
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
 				Validators: []validator.String{
 					// the API returns the UUID lowercased, so any other form would never match what is read back
-					stringvalidator.RegexMatches(importUuidRegex, "must be a lowercase UUID, such as a notification service's id"),
+					stringvalidator.RegexMatches(agentTracingServiceUUIDRegex, `must be a lowercase UUID, such as a notification service's id, or "" to clear the selection`),
 				},
 			},
 		},
@@ -160,7 +167,7 @@ func (c *clusterResource) Create(ctx context.Context, req resource.CreateRequest
 
 	state.ID = types.StringValue(r.ClusterCreate.Cluster.Id)
 	state.UUID = types.StringValue(r.ClusterCreate.Cluster.Uuid)
-	state.AgentTracingServiceUUID = types.StringPointerValue(r.ClusterCreate.Cluster.AgentTracingServiceUuid)
+	state.AgentTracingServiceUUID = agentTracingServiceUUIDFromAPI(r.ClusterCreate.Cluster.AgentTracingServiceUuid, state.AgentTracingServiceUUID)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
@@ -238,7 +245,17 @@ func (c *clusterResource) Update(ctx context.Context, req resource.UpdateRequest
 
 	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		org, err := c.client.GetOrganizationID()
-		if err == nil {
+		if err == nil && clearsAgentTracingService(plan.AgentTracingServiceUUID, state.AgentTracingServiceUUID) {
+			_, err = updateClusterClearingAgentTracingService(ctx,
+				c.client.genqlient,
+				*org,
+				state.ID.ValueString(),
+				plan.Name.ValueString(),
+				plan.Description.ValueStringPointer(),
+				plan.Emoji.ValueStringPointer(),
+				plan.Color.ValueStringPointer(),
+			)
+		} else if err == nil {
 			_, err = updateCluster(ctx,
 				c.client.genqlient,
 				*org,
@@ -311,16 +328,34 @@ func updateClusterResourceState(state *clusterResourceModel, res getNodeNodeClus
 	state.Description = types.StringPointerValue(res.Description)
 	state.Emoji = types.StringPointerValue(res.Emoji)
 	state.Color = types.StringPointerValue(res.Color)
-	state.AgentTracingServiceUUID = types.StringPointerValue(res.AgentTracingServiceUuid)
+	state.AgentTracingServiceUUID = agentTracingServiceUUIDFromAPI(res.AgentTracingServiceUuid, state.AgentTracingServiceUUID)
 }
+
+// agentTracingServiceUUIDRegex accepts a lowercase UUID, or "" to clear the selection
+var agentTracingServiceUUIDRegex = regexp.MustCompile(`^(|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$`)
 
 // agentTracingServiceUUIDToWrite returns the selection to send, or nil to leave it out of the mutation. The
 // API rejects the key, even as null, for an organization without agent tracing, so it is sent only when a
-// configured selection differs from the current one. Nothing here clears a selection: an unconfigured
-// attribute plans the current value.
+// configured selection differs from the current one. An unconfigured attribute plans the current value, and
+// "" is cleared by clearsAgentTracingService instead.
 func agentTracingServiceUUIDToWrite(planned, current types.String) *string {
-	if planned.IsNull() || planned.IsUnknown() || planned.Equal(current) {
+	if planned.IsNull() || planned.IsUnknown() || planned.ValueString() == "" || planned.Equal(current) {
 		return nil
 	}
 	return planned.ValueStringPointer()
+}
+
+// clearsAgentTracingService reports whether a planned "" has a selection to clear. A null current value
+// is already no selection as far as the API has said, so there is nothing to send.
+func clearsAgentTracingService(planned, current types.String) bool {
+	return !planned.IsUnknown() && planned.ValueString() == "" && !planned.IsNull() && current.ValueString() != ""
+}
+
+// agentTracingServiceUUIDFromAPI keeps a cleared "" that the API reads back as null, so clearing does not
+// plan again on every refresh
+func agentTracingServiceUUIDFromAPI(remote *string, prior types.String) types.String {
+	if remote == nil && !prior.IsNull() && !prior.IsUnknown() && prior.ValueString() == "" {
+		return prior
+	}
+	return types.StringPointerValue(remote)
 }

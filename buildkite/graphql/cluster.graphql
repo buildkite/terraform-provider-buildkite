@@ -102,6 +102,38 @@ mutation updateCluster(
     }
 }
 
+# updateClusterClearingAgentTracingService is updateCluster with the agent tracing service cleared. The
+# clear is a literal null so that no other update can send the key, which the API refuses, even as null,
+# for an organization without agent tracing.
+mutation updateClusterClearingAgentTracingService(
+    $organizationId: ID!
+    $id: ID!
+    $name: String
+    # @genqlient(pointer: true)
+    $description: String
+    # @genqlient(pointer: true)
+    $emoji: String
+    # @genqlient(pointer: true)
+    $color: String
+) {
+    clusterUpdate(
+        input: {
+            organizationId: $organizationId
+            id: $id
+            name: $name
+            description: $description
+            emoji: $emoji
+            color: $color
+            agentTracingServiceUuid: null
+        }
+    ) {
+        clientMutationId
+        cluster {
+            ...ClusterFields
+        }
+    }
+}
+
 mutation setClusterDefaultQueue($organizationId: ID!, $clusterId: ID!, $queueId: ID) {
     clusterUpdate(input: {organizationId: $organizationId, id: $clusterId, defaultQueueId: $queueId}) {
         cluster {
