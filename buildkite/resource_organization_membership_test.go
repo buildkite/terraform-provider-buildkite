@@ -702,6 +702,59 @@ func TestOrganizationMembershipPreservesPendingTeamAssignments(t *testing.T) {
 	}
 }
 
+type membershipAcceptancePlanCheck struct {
+	api      *membershipAPI
+	onRevoke bool
+}
+
+func (c membershipAcceptancePlanCheck) CheckPlan(_ context.Context, _ plancheck.CheckPlanRequest, _ *plancheck.CheckPlanResponse) {
+	c.api.mu.Lock()
+	defer c.api.mu.Unlock()
+	if c.onRevoke {
+		c.api.acceptOnRevoke = true
+	} else {
+		c.api.accept()
+	}
+}
+
+func TestOrganizationMembershipAcceptanceDuringTerraformUpdate(t *testing.T) {
+	for _, onRevoke := range []bool{false, true} {
+		t.Run(fmt.Sprintf("accept_on_revoke=%t", onRevoke), func(t *testing.T) {
+			s, api := newMembershipAPI(t)
+			resource.UnitTest(t, resource.TestCase{
+				ProtoV6ProviderFactories: protoV6ProviderFactories(),
+				Steps: []resource.TestStep{
+					{Config: membershipConfig(s.URL, "email = \"jane@example.com\"\nrole = \"ADMIN\"\nsso_mode = \"OPTIONAL\"\nsend_invitation = true")},
+					{
+						Config: membershipConfig(s.URL, "email = \"jane@example.com\"\nrole = \"MEMBER\"\nsso_mode = \"REQUIRED\"\nsend_invitation = true"),
+						ConfigPlanChecks: resource.ConfigPlanChecks{
+							PreApply: []plancheck.PlanCheck{
+								plancheck.ExpectResourceAction(membershipAddress, plancheck.ResourceActionUpdate),
+								// Accept after the saved plan, or during its revoke request (422).
+								// Direct apply() tests cannot catch Terraform's consistency checks.
+								membershipAcceptancePlanCheck{api: api, onRevoke: onRevoke},
+							},
+							PostApplyPostRefresh: []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()},
+						},
+						Check: resource.ComposeAggregateTestCheckFunc(
+							resource.TestCheckResourceAttr(membershipAddress, "state", "active"),
+							resource.TestCheckResourceAttr(membershipAddress, "uuid", membershipUserUUID),
+							resource.TestCheckResourceAttr(membershipAddress, "user_id", membershipUserID),
+							resource.TestCheckResourceAttr(membershipAddress, "role", "MEMBER"),
+							resource.TestCheckResourceAttr(membershipAddress, "sso_mode", "REQUIRED"),
+						),
+					},
+				},
+			})
+			api.mu.Lock()
+			defer api.mu.Unlock()
+			if api.created != 1 || api.revoked != 0 || api.deleted != 1 || len(api.patches) != 1 {
+				t.Fatalf("acceptance must update the member without replacing the invite: created=%d revoked=%d deleted=%d patches=%v", api.created, api.revoked, api.deleted, api.patches)
+			}
+		})
+	}
+}
+
 func TestOrganizationMembershipAcceptanceRaces(t *testing.T) {
 	for _, operation := range []string{"update", "remove", "downgrade"} {
 		t.Run(operation, func(t *testing.T) {

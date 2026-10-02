@@ -113,11 +113,11 @@ func (r *organizationMembershipResource) Schema(_ context.Context, _ resource.Sc
 			"uuid": schema.StringAttribute{
 				Optional: true, Computed: true, MarkdownDescription: "User UUID for an existing member. Null while an invitation is pending. Changing a configured UUID replaces the resource.",
 				Validators:    []validator.String{stringvalidator.RegexMatches(importUuidRegex, "must be a user UUID")},
-				PlanModifiers: []planmodifier.String{stringplanmodifier.RequiresReplaceIfConfigured(), stringplanmodifier.UseStateForUnknown()},
+				PlanModifiers: []planmodifier.String{stringplanmodifier.RequiresReplaceIfConfigured(), stringplanmodifier.UseNonNullStateForUnknown()},
 			},
 			"user_id": schema.StringAttribute{
 				Computed: true, MarkdownDescription: "GraphQL user ID for buildkite_team_member. Null until membership is active; create team memberships after invitation acceptance.",
-				PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
+				PlanModifiers: []planmodifier.String{stringplanmodifier.UseNonNullStateForUnknown()},
 			},
 			"invitation_id": schema.StringAttribute{
 				Computed: true, MarkdownDescription: "UUID of the tracked invitation, or null when an existing active membership was adopted.",
