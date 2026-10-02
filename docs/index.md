@@ -58,3 +58,19 @@ Optional:
 - `delete` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours). Setting a timeout for a Delete operation is only applicable if changes are saved into state before the destroy operation occurs.
 - `read` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours). Read operations occur during any refresh or planning operation when refresh is enabled.
 - `update` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours).
+
+## When an operation fails partway
+
+Creating or updating a resource can take several API calls, and a failure in a later one does not undo the calls that already succeeded. Where a resource can tell what applied, it records that in state alongside the error, so the next plan works from what Buildkite actually has rather than proposing the whole change again. Several resources do this, including `buildkite_pipeline` and `buildkite_cluster_queue`.
+
+Terraform marks a resource as tainted when its creation returns both state and an error, and a tainted resource is replaced rather than updated on the next apply. Replacing a `buildkite_pipeline` issues a new `webhook_url` and `badge_url`, and forces every `buildkite_pipeline_schedule` and `buildkite_pipeline_team` that points at it to be replaced as well. Check the plan after a create that failed partway, and if the pipeline itself is sound and only a later setting did not apply, clear the mark so the next apply finishes the configuration in place:
+
+```shell
+terraform untaint buildkite_pipeline.example
+```
+
+Clearing the mark matters more when the provider is configured with `archive_pipeline_on_delete`. Replacing a pipeline then archives it rather than deleting it, and an archived pipeline keeps its name, which must be unique within the organization, so the recreate that follows fails.
+
+A `buildkite_cluster_queue` that is being unpaused stays paused if the apply does not reach the end. Dispatch is resumed only once the rest of the update has applied, so that a queue never picks up jobs against a configuration that is half applied. Run the apply again to resume it.
+
+Creating a `buildkite_organization` is the exception, and records nothing when it fails. The resource applies settings to an organization that already exists rather than creating one, and every step compares before it mutates, so the apply can simply be run again. Updating one records what applied, like the resources above. When a create writes the organization's API settings, such as the API IP allowlist, and then fails to set two-factor enforcement, the provider warns that those API settings are in place but unrecorded; applying again writes only what still differs, then retries two-factor enforcement.

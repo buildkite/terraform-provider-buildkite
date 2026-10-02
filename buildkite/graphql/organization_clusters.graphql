@@ -21,6 +21,8 @@ query GetOrganizationClusters(
                     # @genqlient(pointer: true)
                     color
                     # @genqlient(pointer: true)
+                    agentTracingServiceUuid
+                    # @genqlient(pointer: true)
                     defaultQueue {
                         id
                         uuid
