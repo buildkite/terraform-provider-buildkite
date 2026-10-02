@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Khan/genqlient/graphql"
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -47,9 +48,13 @@ type membershipAPI struct {
 	patchStatus        int
 	createStatus       int
 	revokeStatus       int
-	memberPageTwo      bool
 	invitationPageTwo  bool
 	memberListRequests int
+	graphQLRequests    int
+	memberRequests     int
+	graphQLEmail       string
+	graphQLError       bool
+	graphQLNullOrg     bool
 }
 
 func newMembershipAPI(t *testing.T) (*httptest.Server, *membershipAPI) {
@@ -80,18 +85,33 @@ func (a *membershipAPI) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	const base = "/v2/organizations/acme/"
 	var result any
 	switch {
+	case r.Method == "POST" && r.URL.Path == "/graphql":
+		a.graphQLRequests++
+		var query struct {
+			Variables struct{ Slug, Email string }
+		}
+		if err := json.NewDecoder(r.Body).Decode(&query); err != nil {
+			a.t.Error(err)
+		}
+		if query.Variables.Slug != "acme" || query.Variables.Email == "" {
+			a.t.Errorf("expected organization-scoped email lookup: %+v", query.Variables)
+		}
+		edges := []map[string]any{}
+		if a.member != nil && (strings.EqualFold(query.Variables.Email, a.member["email"].(string)) || query.Variables.Email == a.graphQLEmail) {
+			edges = append(edges, map[string]any{"node": map[string]any{"user": map[string]any{"uuid": membershipUserUUID}}})
+		}
+		result = map[string]any{"data": map[string]any{"organization": map[string]any{"id": "org", "members": map[string]any{"edges": edges}}}}
+		if a.graphQLError {
+			result = map[string]any{"errors": []map[string]string{{"message": "member lookup forbidden"}}}
+		} else if a.graphQLNullOrg {
+			result = map[string]any{"data": map[string]any{"organization": nil}}
+		}
 	case r.Method == "GET" && r.URL.Path == base+"members":
 		a.memberListRequests++
-		members := []map[string]any{}
-		if a.memberPageTwo && r.URL.Query().Get("page") == "1" {
-			for range 100 {
-				members = append(members, map[string]any{"id": "other", "email": "other@example.com"})
-			}
-		} else if a.member != nil {
-			members = append(members, a.member)
-		}
-		result = members
+		a.t.Error("membership lookup must not list REST members")
+		result = []map[string]any{}
 	case r.Method == "GET" && r.URL.Path == base+"members/"+membershipUserUUID:
+		a.memberRequests++
 		if a.member == nil {
 			http.NotFound(w, r)
 			return
@@ -205,12 +225,13 @@ provider "buildkite" {
   organization = "acme"
   api_token = "fake"
   rest_url = %q
+  graphql_url = %q
   max_retries = 0
 }
 resource "buildkite_organization_membership" "jane" {
   %s
 }
-`, server, attributes)
+`, server, server+"/graphql", attributes)
 }
 
 func TestOrganizationMembershipAdoptUpdateImport(t *testing.T) {
@@ -218,7 +239,6 @@ func TestOrganizationMembershipAdoptUpdateImport(t *testing.T) {
 		t.Run(identity, func(t *testing.T) {
 			s, api := newMembershipAPI(t)
 			api.member = map[string]any{"id": membershipUserUUID, "email": "jane@example.com", "role": "member", "sso_mode": "required"}
-			api.memberPageTwo = true
 			resource.UnitTest(t, resource.TestCase{
 				ProtoV6ProviderFactories: protoV6ProviderFactories(),
 				Steps: []resource.TestStep{
@@ -429,6 +449,71 @@ func TestOrganizationMembershipImportReconciliationRetry(t *testing.T) {
 	}
 }
 
+func TestOrganizationMembershipPendingLookup(t *testing.T) {
+	for _, tc := range []struct {
+		name, memberEmail, memberID string
+		graphqlError, hiddenOrg     bool
+		wantState                   string
+		wantError                   bool
+	}{
+		{name: "absent", wantState: "pending"},
+		{name: "SSO joined", memberEmail: "jane@example.com", memberID: membershipUserUUID, wantState: "active"},
+		{name: "case insensitive", memberEmail: "JANE@example.com", memberID: membershipUserUUID, wantState: "active"},
+		{name: "secondary email must not broaden adoption", memberEmail: "other@example.com", memberID: membershipUserUUID, wantState: "pending"},
+		{name: "GraphQL errors preserve state", graphqlError: true, wantError: true},
+		{name: "inaccessible organization preserves state", hiddenOrg: true, wantError: true},
+		{name: "wrong REST identity preserves state", memberEmail: "jane@example.com", memberID: "another-user", wantError: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			s, api := newMembershipAPI(t)
+			api.invitation = map[string]any{"id": "invite", "email": "jane@example.com", "state": "pending", "role": "member", "sso_mode": "required"}
+			api.graphQLError, api.graphQLNullOrg = tc.graphqlError, tc.hiddenOrg
+			if tc.memberEmail != "" {
+				api.member = map[string]any{"id": tc.memberID, "email": tc.memberEmail, "role": "member", "sso_mode": "required"}
+				// GraphQL can match a secondary/unverified address that REST does not expose.
+				api.graphQLEmail = "jane@example.com"
+			}
+			r := &organizationMembershipResource{client: &Client{organization: "acme", restURL: s.URL, http: s.Client(), genqlient: graphql.NewClient(s.URL+"/graphql", s.Client())}}
+			var schemaResp frameworkresource.SchemaResponse
+			r.Schema(context.Background(), frameworkresource.SchemaRequest{}, &schemaResp)
+			state := tfsdk.State{Schema: schemaResp.Schema}
+			model := organizationMembershipResourceModel{
+				ID: types.StringValue("invite"), InvitationID: types.StringValue("invite"), Email: types.StringValue("jane@example.com"),
+				State: types.StringValue("pending"), Role: types.StringValue("MEMBER"), SSOMode: types.StringValue("REQUIRED"),
+			}
+			if diags := state.Set(context.Background(), &model); diags.HasError() {
+				t.Fatal(diags)
+			}
+			response := frameworkresource.ReadResponse{State: state}
+			r.Read(context.Background(), frameworkresource.ReadRequest{State: state}, &response)
+			if tc.wantError {
+				if !response.Diagnostics.HasError() || !response.State.Raw.Equal(state.Raw) {
+					t.Fatalf("lookup failure must preserve state: %v", response.Diagnostics)
+				}
+			} else {
+				if response.Diagnostics.HasError() {
+					t.Fatal(response.Diagnostics)
+				}
+				if diags := response.State.Get(context.Background(), &model); diags.HasError() {
+					t.Fatal(diags)
+				}
+				if model.State.ValueString() != tc.wantState || (tc.wantState == "active" && model.UUID.ValueString() != membershipUserUUID) || (tc.wantState == "pending" && !model.UUID.IsNull()) {
+					t.Fatalf("wrong membership identity/state: %+v", model)
+				}
+			}
+			api.mu.Lock()
+			defer api.mu.Unlock()
+			wantREST := 0
+			if tc.memberEmail != "" {
+				wantREST = 1
+			}
+			if api.graphQLRequests != 1 || api.memberRequests != wantREST || api.memberListRequests != 0 || api.created != 0 || api.revoked != 0 || api.deleted != 0 || len(api.patches) != 0 {
+				t.Fatalf("expected one targeted lookup and REST confirmation only on a match: graphql=%d member=%d list=%d created=%d revoked=%d deleted=%d patches=%v", api.graphQLRequests, api.memberRequests, api.memberListRequests, api.created, api.revoked, api.deleted, api.patches)
+			}
+		})
+	}
+}
+
 func TestOrganizationMembershipPendingBecomesActive(t *testing.T) {
 	for _, accepted := range []bool{false, true} {
 		t.Run(fmt.Sprintf("accepted_by_present=%t", accepted), func(t *testing.T) {
@@ -452,9 +537,8 @@ func TestOrganizationMembershipPendingBecomesActive(t *testing.T) {
 								// then creates membership independently. Signing in with a
 								// secondary email can leave a primary-email invitation pending.
 								api.member = map[string]any{"id": membershipUserUUID, "email": "jane@example.com", "role": "member", "sso_mode": "required"}
-								api.memberPageTwo = true
 							}
-							api.memberListRequests = 0
+							api.graphQLRequests = 0
 						},
 						Config: config,
 						Check: resource.ComposeAggregateTestCheckFunc(
@@ -464,18 +548,18 @@ func TestOrganizationMembershipPendingBecomesActive(t *testing.T) {
 							func(_ *terraform.State) error {
 								api.mu.Lock()
 								defer api.mu.Unlock()
-								if accepted && api.memberListRequests != 0 {
-									return fmt.Errorf("accepted_by lookup scanned members: %d requests", api.memberListRequests)
+								if accepted && api.graphQLRequests != 0 {
+									return fmt.Errorf("accepted_by lookup searched by email: %d requests", api.graphQLRequests)
 								}
-								if !accepted && (api.invitation["state"] != "pending" || api.memberListRequests < 2) {
-									return fmt.Errorf("SSO membership must be discovered while invitation is still pending: invitation=%v requests=%d", api.invitation, api.memberListRequests)
+								if !accepted && (api.invitation["state"] != "pending" || api.graphQLRequests == 0) {
+									return fmt.Errorf("SSO membership must be discovered while invitation is still pending: invitation=%v requests=%d", api.invitation, api.graphQLRequests)
 								}
 								return nil
 							},
 						),
 					},
 					{
-						PreConfig:        func() { api.mu.Lock(); defer api.mu.Unlock(); api.memberListRequests = 0 },
+						PreConfig:        func() { api.mu.Lock(); defer api.mu.Unlock(); api.graphQLRequests = 0 },
 						Config:           config,
 						ConfigPlanChecks: resource.ConfigPlanChecks{PreApply: []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()}},
 					},
@@ -487,8 +571,8 @@ func TestOrganizationMembershipPendingBecomesActive(t *testing.T) {
 			if !accepted {
 				wantRevoked = 1
 			}
-			if api.memberListRequests != 0 || api.deleted != 1 || api.revoked != wantRevoked || api.created != 0 {
-				t.Fatalf("subsequent refresh and destroy must follow UUID: requests=%d deleted=%d revoked=%d created=%d", api.memberListRequests, api.deleted, api.revoked, api.created)
+			if api.memberListRequests != 0 || api.graphQLRequests != 0 || api.deleted != 1 || api.revoked != wantRevoked || api.created != 0 {
+				t.Fatalf("subsequent refresh and destroy must follow UUID: list=%d graphql=%d deleted=%d revoked=%d created=%d", api.memberListRequests, api.graphQLRequests, api.deleted, api.revoked, api.created)
 			}
 		})
 	}
@@ -749,7 +833,7 @@ func TestOrganizationMembershipPreservesPendingTeamAssignments(t *testing.T) {
 		"id": "invite", "email": "jane@example.com", "state": "pending", "role": "member", "sso_mode": "required",
 		"teams": []map[string]any{{"id": "engineering"}},
 	}
-	r := &organizationMembershipResource{client: &Client{organization: "acme", restURL: s.URL, http: s.Client()}}
+	r := &organizationMembershipResource{client: &Client{organization: "acme", restURL: s.URL, http: s.Client(), genqlient: graphql.NewClient(s.URL+"/graphql", s.Client())}}
 	state := organizationMembershipResourceModel{
 		Email: types.StringValue("jane@example.com"), Role: types.StringValue("ADMIN"),
 		SSOMode: types.StringValue("OPTIONAL"), SendInvitation: types.BoolValue(true),
@@ -866,7 +950,7 @@ func TestOrganizationMembershipAcceptanceRaces(t *testing.T) {
 			s, api := newMembershipAPI(t)
 			api.invitation = map[string]any{"id": "invite", "email": "jane@example.com", "state": "pending", "role": "admin", "sso_mode": "optional"}
 			api.acceptOnRevoke = true
-			r := &organizationMembershipResource{client: &Client{organization: "acme", restURL: s.URL, http: s.Client()}}
+			r := &organizationMembershipResource{client: &Client{organization: "acme", restURL: s.URL, http: s.Client(), genqlient: graphql.NewClient(s.URL+"/graphql", s.Client())}}
 			state := organizationMembershipResourceModel{
 				ID: types.StringValue("invite"), Email: types.StringValue("jane@example.com"), InvitationID: types.StringValue("invite"),
 				Role: types.StringValue("MEMBER"), SSOMode: types.StringValue("REQUIRED"), SendInvitation: types.BoolValue(true),
@@ -957,14 +1041,15 @@ func TestOrganizationMembershipOperationDeadlines(t *testing.T) {
 			transport := &membershipDeadlineTransport{RoundTripper: s.Client().Transport}
 			r := &organizationMembershipResource{client: &Client{
 				organization: "acme", restURL: s.URL, http: &http.Client{Transport: transport},
-				timeouts: timeouts.Value{Object: types.ObjectValueMust(attributeTypes, attributeValues)},
+				genqlient: graphql.NewClient(s.URL+"/graphql", &http.Client{Transport: transport}),
+				timeouts:  timeouts.Value{Object: types.ObjectValueMust(attributeTypes, attributeValues)},
 			}}
 			model := organizationMembershipResourceModel{
 				ID: types.StringValue(membershipUserUUID), UUID: types.StringValue(membershipUserUUID),
 				Email: types.StringValue("jane@example.com"), Role: types.StringValue("ADMIN"), SSOMode: types.StringValue("REQUIRED"),
 			}
 			if operation == "read" {
-				// Pending refresh reads both the invitation and members collection.
+				// Pending refresh reads the invitation and performs a GraphQL lookup.
 				api.member = nil
 				api.invitation = map[string]any{"id": "invite", "email": "jane@example.com", "state": "pending", "role": "member", "sso_mode": "required"}
 				model.ID, model.InvitationID = types.StringValue("invite"), types.StringValue("invite")

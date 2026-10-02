@@ -3,11 +3,13 @@
 page_title: "buildkite_organization_membership Resource - terraform-provider-buildkite"
 subcategory: ""
 description: |-
-  Manages an organization's membership lifecycle using the REST API. Existing members and pending
+  Manages an organization's membership lifecycle using the REST and GraphQL APIs. Existing members and pending
   invitations are adopted. Set send_invitation = true to invite an absent user by email.
   Apply returns while the invitation is pending; a later refresh discovers acceptance.
-  While an invitation is pending, refresh scans organization members to detect users who joined
-  through SSO without accepting it. Once a user UUID is known, refresh looks up that member directly.
+  While an invitation is pending, refresh uses a targeted GraphQL email lookup to detect users who joined
+  through SSO without accepting it, then confirms a match with the REST member's email. This avoids
+  listing all organization members. Once a user UUID is known, or an invitation supplies accepted_by,
+  refresh looks up that member directly through REST without an email lookup.
   Destroy removes active members by default, including adopted members. Removing a member can
   lose their team memberships and tokens; re-inviting them does not restore those. Set
   downgrade_on_destroy = true to retain active members with role MEMBER and unchanged SSO mode.
@@ -23,17 +25,20 @@ description: |-
   wait for acceptance before changing role or SSO mode. Manage teams separately with
   buildkite_team_member.
   The token needs read_organizations and write_organizations, and permission to manage the member.
+  Email lookups additionally require the graphql scope. Lookup failures do not fall back to a member scan.
   Invitation operations additionally need read_organization_invitations and write_organization_invitations.
   Use an organization administrator's token; the API does not allow updating your own membership.
 ---
 
 # buildkite_organization_membership (Resource)
 
-Manages an organization's membership lifecycle using the REST API. Existing members and pending
+Manages an organization's membership lifecycle using the REST and GraphQL APIs. Existing members and pending
 invitations are adopted. Set `send_invitation = true` to invite an absent user by email.
 Apply returns while the invitation is pending; a later refresh discovers acceptance.
-While an invitation is pending, refresh scans organization members to detect users who joined
-through SSO without accepting it. Once a user UUID is known, refresh looks up that member directly.
+While an invitation is pending, refresh uses a targeted GraphQL email lookup to detect users who joined
+through SSO without accepting it, then confirms a match with the REST member's email. This avoids
+listing all organization members. Once a user UUID is known, or an invitation supplies accepted_by,
+refresh looks up that member directly through REST without an email lookup.
 
 Destroy removes active members by default, including adopted members. Removing a member can
 lose their team memberships and tokens; re-inviting them does not restore those. Set
@@ -52,6 +57,7 @@ wait for acceptance before changing role or SSO mode. Manage teams separately wi
 `buildkite_team_member`.
 
 The token needs read_organizations and write_organizations, and permission to manage the member.
+Email lookups additionally require the graphql scope. Lookup failures do not fall back to a member scan.
 Invitation operations additionally need read_organization_invitations and write_organization_invitations.
 Use an organization administrator's token; the API does not allow updating your own membership.
 

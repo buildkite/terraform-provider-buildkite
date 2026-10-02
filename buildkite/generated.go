@@ -416,9 +416,13 @@ func (v *GetOrganizationClustersResponse) GetOrganization() GetOrganizationClust
 //
 // An organization
 type GetOrganizationMemberByEmailOrganization struct {
+	Id string `json:"id"`
 	// Returns users within the organization
 	Members GetOrganizationMemberByEmailOrganizationMembersOrganizationMemberConnection `json:"members"`
 }
+
+// GetId returns GetOrganizationMemberByEmailOrganization.Id, and is useful for accessing the field via an interface.
+func (v *GetOrganizationMemberByEmailOrganization) GetId() string { return v.Id }
 
 // GetMembers returns GetOrganizationMemberByEmailOrganization.Members, and is useful for accessing the field via an interface.
 func (v *GetOrganizationMemberByEmailOrganization) GetMembers() GetOrganizationMemberByEmailOrganizationMembersOrganizationMemberConnection {
@@ -24854,6 +24858,7 @@ func GetOrganizationClusters(
 const GetOrganizationMemberByEmail_Operation = `
 query GetOrganizationMemberByEmail ($slug: ID!, $email: String) {
 	organization(slug: $slug) {
+		id
 		members(first: 1, email: $email) {
 			edges {
 				node {

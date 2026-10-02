@@ -48,21 +48,34 @@ func (c *Client) getOrganizationMembershipMember(ctx context.Context, id string)
 }
 
 func (c *Client) findOrganizationMembershipMember(ctx context.Context, email string) (*organizationMembershipMember, error) {
-	for page := 1; ; page++ {
-		var members []organizationMembershipMember
-		p := fmt.Sprintf("%s?per_page=100&page=%d", c.organizationMembershipPath("members", ""), page)
-		if err := c.makeRequest(ctx, http.MethodGet, p, nil, &members); err != nil {
-			return nil, err
-		}
-		for _, member := range members {
-			if strings.EqualFold(member.Email, email) {
-				return &member, nil
-			}
-		}
-		if len(members) < 100 {
-			return nil, errOrganizationMembershipNotFound
-		}
+	result, err := GetOrganizationMemberByEmail(ctx, c.genqlient, c.organization, email)
+	if err != nil {
+		return nil, err
 	}
+	if result.Organization.Id == "" {
+		return nil, fmt.Errorf("organization member lookup did not return the organization; check token access and graphql scope")
+	}
+	if len(result.Organization.Members.Edges) == 0 {
+		return nil, errOrganizationMembershipNotFound
+	}
+	id := result.Organization.Members.Edges[0].Node.User.Uuid
+	if id == "" {
+		return nil, fmt.Errorf("organization member lookup omitted the user UUID")
+	}
+	member, err := c.getOrganizationMembershipMember(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	if member.ID != id {
+		return nil, fmt.Errorf("organization member response did not match the requested user UUID")
+	}
+	// GraphQL matches all attached emails, including unverified secondary ones.
+	// Preserve REST adoption semantics: only the organization's displayed email
+	// may select a member. Known UUIDs and accepted_by bypass this email lookup.
+	if !strings.EqualFold(member.Email, email) {
+		return nil, errOrganizationMembershipNotFound
+	}
+	return member, nil
 }
 
 func (c *Client) getOrganizationMembershipInvitation(ctx context.Context, id string) (*organizationMembershipInvitation, error) {
