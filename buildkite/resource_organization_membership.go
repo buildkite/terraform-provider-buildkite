@@ -72,8 +72,10 @@ func (r *organizationMembershipResource) Schema(_ context.Context, _ resource.Sc
 			` + "`downgrade_on_destroy = true`" + ` to retain active members with role MEMBER and unchanged SSO mode.
 			Pending invitations are always revoked on destroy. Apply a change to this flag before removing the resource.
 
-			Do not let SCIM and Terraform manage the same membership lifecycle. An externally removed member,
-			or an expired/revoked invitation, becomes absent. A later apply can send a new invitation only when
+			Do not let SCIM and Terraform manage the same membership lifecycle. An externally removed member
+			remains tracked as pending if its tracked invitation is still pending, so destroy can revoke it;
+			otherwise it becomes absent. An expired/revoked invitation also becomes absent when no member exists.
+			A later apply can send a new invitation only when
 			invitation sending is enabled; Terraform cannot accept it or immediately recreate an active membership.
 			There is no invitation resend operation. Changing a pending invitation's role or SSO mode revokes
 			and replaces it, sending a new email; this requires invitation sending to be enabled.
@@ -100,23 +102,23 @@ func (r *organizationMembershipResource) Schema(_ context.Context, _ resource.Sc
 						}
 						pending, diags := req.Private.GetKey(ctx, organizationMembershipImportPending)
 						resp.Diagnostics.Append(diags...)
-						var uuid types.String
-						resp.Diagnostics.Append(req.State.GetAttribute(ctx, path.Root("uuid"), &uuid)...)
+						var membershipState types.String
+						resp.Diagnostics.Append(req.State.GetAttribute(ctx, path.Root("state"), &membershipState)...)
 						// An imported UUID is authoritative. For pending invitations only
 						// casing can be reconciled: a different address is a new invitee.
-						resp.RequiresReplace = len(pending) == 0 || (uuid.ValueString() == "" && !strings.EqualFold(req.PlanValue.ValueString(), req.StateValue.ValueString()))
+						resp.RequiresReplace = len(pending) == 0 || (membershipState.ValueString() != "active" && !strings.EqualFold(req.PlanValue.ValueString(), req.StateValue.ValueString()))
 					},
 					"Changing a configured email replaces the resource, except for initial import reconciliation.",
 					"Changing a configured email replaces the resource, except for initial import reconciliation.",
 				)},
 			},
 			"uuid": schema.StringAttribute{
-				Optional: true, Computed: true, MarkdownDescription: "User UUID for an existing member. Null while an invitation is pending. Changing a configured UUID replaces the resource.",
+				Optional: true, Computed: true, MarkdownDescription: "User UUID for an existing member. Null until the user is identified; retained if the member is later removed while a tracked invitation remains pending. Changing a configured UUID replaces the resource.",
 				Validators:    []validator.String{stringvalidator.RegexMatches(importUuidRegex, "must be a user UUID")},
 				PlanModifiers: []planmodifier.String{stringplanmodifier.RequiresReplaceIfConfigured(), stringplanmodifier.UseNonNullStateForUnknown()},
 			},
 			"user_id": schema.StringAttribute{
-				Computed: true, MarkdownDescription: "GraphQL user ID for buildkite_team_member. Null until membership is active; create team memberships after invitation acceptance.",
+				Computed: true, MarkdownDescription: "GraphQL user ID for buildkite_team_member. Null until the user is identified, then retained. Membership state must be active before managing team memberships.",
 				PlanModifiers: []planmodifier.String{stringplanmodifier.UseNonNullStateForUnknown()},
 			},
 			"invitation_id": schema.StringAttribute{
@@ -158,11 +160,12 @@ func (r *organizationMembershipResource) ModifyPlan(ctx context.Context, req res
 		resp.Diagnostics.Append(resp.Plan.SetAttribute(ctx, path.Root("invitation_id"), types.StringUnknown())...)
 		// A matching config did not trigger the framework's computed-unknown pass.
 		// Leave room for invitation acceptance during this state-only update.
-		var uuid types.String
-		resp.Diagnostics.Append(req.Plan.GetAttribute(ctx, path.Root("uuid"), &uuid)...)
-		if uuid.IsNull() {
-			resp.Diagnostics.Append(resp.Plan.SetAttribute(ctx, path.Root("uuid"), types.StringUnknown())...)
-			resp.Diagnostics.Append(resp.Plan.SetAttribute(ctx, path.Root("user_id"), types.StringUnknown())...)
+		for _, name := range []string{"uuid", "user_id"} {
+			var value types.String
+			resp.Diagnostics.Append(req.Plan.GetAttribute(ctx, path.Root(name), &value)...)
+			if value.IsNull() {
+				resp.Diagnostics.Append(resp.Plan.SetAttribute(ctx, path.Root(name), types.StringUnknown())...)
+			}
 		}
 	}
 }
@@ -179,7 +182,19 @@ func (r *organizationMembershipResource) lookup(ctx context.Context, state *orga
 	}()
 	if id := state.UUID.ValueString(); id != "" {
 		member, err := r.client.getOrganizationMembershipMember(ctx, id)
-		return member, nil, err
+		if !errors.Is(err, errOrganizationMembershipNotFound) || state.InvitationID.ValueString() == "" {
+			return member, nil, err
+		}
+		// A membership 404 is not absence while its tracked invitation is pending.
+		// Keep that invitation for offboarding, but never retarget the known UUID.
+		invitation, err := r.client.getOrganizationMembershipInvitation(ctx, state.InvitationID.ValueString())
+		if err != nil {
+			return nil, nil, err
+		}
+		if invitation.State == "pending" {
+			return nil, invitation, nil
+		}
+		return nil, nil, nil
 	}
 	if id := state.InvitationID.ValueString(); id != "" {
 		invitation, err := r.client.getOrganizationMembershipInvitation(ctx, id)
@@ -236,11 +251,17 @@ func (state *organizationMembershipResourceModel) fromInvitation(invitation *org
 	if state.ID.ValueString() == "" {
 		state.ID = types.StringValue(invitation.ID)
 	}
-	if !strings.EqualFold(state.Email.ValueString(), invitation.Email) {
+	if state.Email.ValueString() == "" {
 		state.Email = types.StringValue(invitation.Email)
 	}
-	state.UUID = types.StringNull()
-	state.UserID = types.StringNull()
+	// Retain established identity if membership disappeared but the invitation
+	// is still pending. Presence is reported by State, not by the user identifiers.
+	if state.UUID.IsUnknown() {
+		state.UUID = types.StringNull()
+	}
+	if state.UserID.IsUnknown() {
+		state.UserID = types.StringNull()
+	}
 	state.InvitationID = types.StringValue(invitation.ID)
 	state.State = types.StringValue("pending")
 	state.Role = types.StringValue(strings.ToUpper(invitation.Role))
@@ -390,12 +411,16 @@ func (r *organizationMembershipResource) apply(ctx context.Context, state *organ
 	if !state.SendInvitation.ValueBool() || state.Email.ValueString() == "" {
 		return fmt.Errorf("organization member not found; provision the user first, or supply email and set send_invitation = true")
 	}
-	// A configured UUID cannot become an unknown invitee. Inviting by email is a
-	// separate lifecycle, not a way to recreate a particular user account.
-	if state.UUID.ValueString() != "" {
+	// A UUID alone cannot become an unknown invitee. A tracked invitation may
+	// still be replaced after external membership removal, using its original email.
+	if state.UUID.ValueString() != "" && invitation == nil {
 		return fmt.Errorf("user UUID is not an organization member; invite using email without a configured UUID")
 	}
-	created, err := r.client.createOrganizationMembershipInvitation(ctx, state.Email.ValueString(), role, ssoMode)
+	email := state.Email.ValueString()
+	if invitation != nil {
+		email = invitation.Email
+	}
+	created, err := r.client.createOrganizationMembershipInvitation(ctx, email, role, ssoMode)
 	if err != nil {
 		return err
 	}

@@ -18,7 +18,7 @@ resource "buildkite_organization_membership" "new_user" {
 }
 
 # Team membership stays separate. This example uses an already-active user.
-# Do not reference a pending invitation's null user_id in a team membership.
+# Only manage team membership when the organization membership's state is active.
 data "buildkite_team" "engineering" {
   slug = "engineering"
 }

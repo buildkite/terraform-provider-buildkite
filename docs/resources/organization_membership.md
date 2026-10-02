@@ -12,8 +12,10 @@ description: |-
   lose their team memberships and tokens; re-inviting them does not restore those. Set
   downgrade_on_destroy = true to retain active members with role MEMBER and unchanged SSO mode.
   Pending invitations are always revoked on destroy. Apply a change to this flag before removing the resource.
-  Do not let SCIM and Terraform manage the same membership lifecycle. An externally removed member,
-  or an expired/revoked invitation, becomes absent. A later apply can send a new invitation only when
+  Do not let SCIM and Terraform manage the same membership lifecycle. An externally removed member
+  remains tracked as pending if its tracked invitation is still pending, so destroy can revoke it;
+  otherwise it becomes absent. An expired/revoked invitation also becomes absent when no member exists.
+  A later apply can send a new invitation only when
   invitation sending is enabled; Terraform cannot accept it or immediately recreate an active membership.
   There is no invitation resend operation. Changing a pending invitation's role or SSO mode revokes
   and replaces it, sending a new email; this requires invitation sending to be enabled.
@@ -38,8 +40,10 @@ lose their team memberships and tokens; re-inviting them does not restore those.
 `downgrade_on_destroy = true` to retain active members with role MEMBER and unchanged SSO mode.
 Pending invitations are always revoked on destroy. Apply a change to this flag before removing the resource.
 
-Do not let SCIM and Terraform manage the same membership lifecycle. An externally removed member,
-or an expired/revoked invitation, becomes absent. A later apply can send a new invitation only when
+Do not let SCIM and Terraform manage the same membership lifecycle. An externally removed member
+remains tracked as pending if its tracked invitation is still pending, so destroy can revoke it;
+otherwise it becomes absent. An expired/revoked invitation also becomes absent when no member exists.
+A later apply can send a new invitation only when
 invitation sending is enabled; Terraform cannot accept it or immediately recreate an active membership.
 There is no invitation resend operation. Changing a pending invitation's role or SSO mode revokes
 and replaces it, sending a new email; this requires invitation sending to be enabled.
@@ -74,7 +78,7 @@ resource "buildkite_organization_membership" "new_user" {
 }
 
 # Team membership stays separate. This example uses an already-active user.
-# Do not reference a pending invitation's null user_id in a team membership.
+# Only manage team membership when the organization membership's state is active.
 data "buildkite_team" "engineering" {
   slug = "engineering"
 }
@@ -99,14 +103,14 @@ resource "buildkite_team_member" "jane" {
 - `downgrade_on_destroy` (Boolean) Demote an active member to MEMBER instead of removing them on destroy, leaving SSO mode unchanged. Pending invitations are still revoked. Defaults to false.
 - `email` (String) Email address used to adopt or invite. Specify email or uuid. Required to invite an absent user. Retained after adoption even if the user's primary email changes. The first apply after import reconciles an active member's email selector, or a pending invitation's email casing, without replacement. Subsequent changes to a configured email replace the resource.
 - `send_invitation` (Boolean) Allow sending invitations to absent users and replacing pending invitations when role or SSO mode changes. Defaults to false.
-- `uuid` (String) User UUID for an existing member. Null while an invitation is pending. Changing a configured UUID replaces the resource.
+- `uuid` (String) User UUID for an existing member. Null until the user is identified; retained if the member is later removed while a tracked invitation remains pending. Changing a configured UUID replaces the resource.
 
 ### Read-Only
 
 - `id` (String) Stable resource identifier, initially the member's user UUID or invitation UUID. Does not change on acceptance.
 - `invitation_id` (String) UUID of the tracked invitation, or null when an existing active membership was adopted.
 - `state` (String) Membership state: pending or active.
-- `user_id` (String) GraphQL user ID for buildkite_team_member. Null until membership is active; create team memberships after invitation acceptance.
+- `user_id` (String) GraphQL user ID for buildkite_team_member. Null until the user is identified, then retained. Membership state must be active before managing team memberships.
 
 ## Import
 

@@ -494,6 +494,60 @@ func TestOrganizationMembershipPendingBecomesActive(t *testing.T) {
 	}
 }
 
+func TestOrganizationMembershipRefreshKeepsTrackedInvitation(t *testing.T) {
+	for _, refreshFirst := range []bool{false, true} {
+		t.Run(fmt.Sprintf("refresh_before_destroy=%t", refreshFirst), func(t *testing.T) {
+			s, api := newMembershipAPI(t)
+			const id = "00000000-0000-4000-8001-000000000099"
+			api.invitation = map[string]any{"id": id, "email": "jane@example.com", "state": "pending", "role": "admin", "sso_mode": "optional"}
+			api.member = map[string]any{"id": membershipUserUUID, "email": "jane@example.com", "role": "admin", "sso_mode": "optional"}
+			// Import a member who joined through SSO, retaining a different selector.
+			config := membershipConfig(s.URL, "email = \"jane.invited@example.com\"\nrole = \"ADMIN\"\nsso_mode = \"OPTIONAL\"")
+			removeMember := func() { api.mu.Lock(); defer api.mu.Unlock(); api.member = nil }
+			steps := []resource.TestStep{
+				{Config: config, ResourceName: membershipAddress, ImportState: true, ImportStateId: "invitation/" + id, ImportStatePersist: true, ExpectNonEmptyPlan: true},
+				{Config: config, Check: resource.TestCheckResourceAttr(membershipAddress, "uuid", membershipUserUUID)},
+			}
+			if refreshFirst {
+				steps = append(steps, resource.TestStep{
+					PreConfig:        removeMember,
+					Config:           config,
+					ConfigPlanChecks: resource.ConfigPlanChecks{PreApply: []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()}},
+					Check: resource.ComposeAggregateTestCheckFunc(
+						resource.TestCheckResourceAttr(membershipAddress, "state", "pending"),
+						resource.TestCheckResourceAttr(membershipAddress, "uuid", membershipUserUUID),
+						resource.TestCheckResourceAttr(membershipAddress, "email", "jane.invited@example.com"),
+						resource.TestCheckResourceAttr(membershipAddress, "user_id", membershipUserID),
+					),
+				})
+				// Replacing the tracked invitation must retain identity and its original
+				// destination, not send to the imported selector alias.
+				config = membershipConfig(s.URL, "email = \"jane.invited@example.com\"\nrole = \"MEMBER\"\nsso_mode = \"REQUIRED\"\nsend_invitation = true")
+				steps = append(steps, resource.TestStep{
+					Config:           config,
+					ConfigPlanChecks: resource.ConfigPlanChecks{PostApplyPostRefresh: []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()}},
+					Check: resource.ComposeAggregateTestCheckFunc(
+						resource.TestCheckResourceAttr(membershipAddress, "uuid", membershipUserUUID),
+						resource.TestCheckResourceAttr(membershipAddress, "role", "MEMBER"),
+						resource.TestCheckResourceAttr(membershipAddress, "sso_mode", "REQUIRED"),
+					),
+				})
+			}
+			steps = append(steps, resource.TestStep{PreConfig: removeMember, Config: config, Destroy: true})
+			resource.UnitTest(t, resource.TestCase{ProtoV6ProviderFactories: protoV6ProviderFactories(), Steps: steps})
+			api.mu.Lock()
+			defer api.mu.Unlock()
+			wantRevoked, wantCreated := 1, 0
+			if refreshFirst {
+				wantRevoked, wantCreated = 2, 1
+			}
+			if api.revoked != wantRevoked || api.invitation["state"] != "revoked" || api.created != wantCreated || api.deleted != 0 {
+				t.Fatalf("refresh must not abandon the pending invitation on a member 404: revoked=%d invitation=%v created=%d deleted=%d", api.revoked, api.invitation, api.created, api.deleted)
+			}
+		})
+	}
+}
+
 func TestOrganizationMembershipInvitationLifecycle(t *testing.T) {
 	s, api := newMembershipAPI(t)
 	const firstID = "00000000-0000-4000-8001-000000000001"
