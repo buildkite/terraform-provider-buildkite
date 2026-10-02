@@ -46,6 +46,7 @@ type membershipAPI struct {
 	status             int
 	patchStatus        int
 	createStatus       int
+	revokeStatus       int
 	memberPageTwo      bool
 	invitationPageTwo  bool
 	memberListRequests int
@@ -170,6 +171,10 @@ func (a *membershipAPI) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if r.Method == "DELETE" {
+			if a.revokeStatus != 0 {
+				http.Error(w, `{"message":"cannot revoke invitation"}`, a.revokeStatus)
+				return
+			}
 			if a.acceptOnRevoke {
 				a.acceptOnRevoke = false
 				a.accept()
@@ -478,7 +483,11 @@ func TestOrganizationMembershipPendingBecomesActive(t *testing.T) {
 			})
 			api.mu.Lock()
 			defer api.mu.Unlock()
-			if api.memberListRequests != 0 || api.deleted != 1 || api.revoked != 0 || api.created != 0 {
+			wantRevoked := 0
+			if !accepted {
+				wantRevoked = 1
+			}
+			if api.memberListRequests != 0 || api.deleted != 1 || api.revoked != wantRevoked || api.created != 0 {
 				t.Fatalf("subsequent refresh and destroy must follow UUID: requests=%d deleted=%d revoked=%d created=%d", api.memberListRequests, api.deleted, api.revoked, api.created)
 			}
 		})
@@ -750,6 +759,48 @@ func TestOrganizationMembershipAcceptanceDuringTerraformUpdate(t *testing.T) {
 			defer api.mu.Unlock()
 			if api.created != 1 || api.revoked != 0 || api.deleted != 1 || len(api.patches) != 1 {
 				t.Fatalf("acceptance must update the member without replacing the invite: created=%d revoked=%d deleted=%d patches=%v", api.created, api.revoked, api.deleted, api.patches)
+			}
+		})
+	}
+}
+
+func TestOrganizationMembershipDestroyTrackedPendingInvitation(t *testing.T) {
+	for _, tc := range []struct {
+		name         string
+		missing      bool
+		revokeStatus int
+	}{
+		{name: "downgrade"},
+		{name: "member already removed", missing: true},
+		{name: "revocation forbidden", revokeStatus: http.StatusForbidden},
+		{name: "revocation refused while still pending", revokeStatus: http.StatusUnprocessableEntity},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			s, api := newMembershipAPI(t)
+			api.invitation = map[string]any{"id": "invite", "email": "jane@example.com", "state": "pending", "role": "admin", "sso_mode": "optional"}
+			if !tc.missing {
+				api.member = map[string]any{"id": membershipUserUUID, "email": "jane@example.com", "role": "admin", "sso_mode": "required"}
+			}
+			api.revokeStatus = tc.revokeStatus
+			r := &organizationMembershipResource{client: &Client{organization: "acme", restURL: s.URL, http: s.Client()}}
+			state := organizationMembershipResourceModel{
+				ID: types.StringValue("invite"), UUID: types.StringValue(membershipUserUUID), InvitationID: types.StringValue("invite"),
+				DowngradeOnDestroy: types.BoolValue(true),
+			}
+			err := r.remove(context.Background(), &state)
+			api.mu.Lock()
+			defer api.mu.Unlock()
+			if tc.revokeStatus != 0 {
+				if err == nil || api.invitation["state"] != "pending" || len(api.patches) != 0 || api.deleted != 0 {
+					t.Fatalf("failed revocation must abort destroy without changing membership: err=%v patches=%v deleted=%d", err, api.patches, api.deleted)
+				}
+				return
+			}
+			if err != nil || api.revoked != 1 || api.deleted != 0 {
+				t.Fatalf("must revoke the invitation even if member is retained or absent: err=%v revoked=%d deleted=%d", err, api.revoked, api.deleted)
+			}
+			if !tc.missing && (api.member["role"] != "member" || api.member["sso_mode"] != "required") {
+				t.Fatalf("downgrade must preserve membership SSO mode: %v", api.member)
 			}
 		})
 	}

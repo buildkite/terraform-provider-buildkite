@@ -427,18 +427,30 @@ func (r *organizationMembershipResource) remove(ctx context.Context, state *orga
 	if err != nil {
 		return err
 	}
-	if invitation != nil {
+	// SSO can leave the tracked invitation pending after membership is active.
+	// Revoke it before removing/demoting the member so it cannot restore access.
+	if id := state.InvitationID.ValueString(); invitation == nil && id != "" {
+		var lookupErr error
+		invitation, lookupErr = r.client.getOrganizationMembershipInvitation(ctx, id)
+		if lookupErr != nil && !errors.Is(lookupErr, errOrganizationMembershipNotFound) {
+			return lookupErr
+		}
+	}
+	if invitation != nil && invitation.State == "pending" {
 		err = r.client.makeRequest(ctx, http.MethodDelete, r.client.organizationMembershipPath("invitations", invitation.ID), nil, nil)
 		if isAPIStatus(err, http.StatusUnprocessableEntity) {
 			// Re-evaluate exactly once if acceptance/revocation raced with destroy.
-			var remaining *organizationMembershipInvitation
-			member, remaining, err = r.lookup(ctx, state)
-			if err != nil {
-				return err
+			remaining, lookupErr := r.client.getOrganizationMembershipInvitation(ctx, invitation.ID)
+			if lookupErr != nil && !errors.Is(lookupErr, errOrganizationMembershipNotFound) {
+				return lookupErr
 			}
-			if remaining != nil {
+			if remaining != nil && remaining.State == "pending" {
 				return fmt.Errorf("invitation is still pending but the API refused to revoke it")
 			}
+			member, _, err = r.lookup(ctx, state)
+		}
+		if err != nil && !isAPIStatus(err, http.StatusNotFound) {
+			return err
 		}
 	}
 	if member != nil {
