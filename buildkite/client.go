@@ -77,6 +77,11 @@ func (client *Client) GetOrganizationID(ctx context.Context) (*string, error) {
 		// The lookup outlives the caller that started it, so a caller giving up does not fail it for
 		// the others waiting on it, but it keeps that caller's deadline so it stays bounded.
 		lookup := client.organizationIdLookup.DoChan("", func() (any, error) {
+			// Another lookup may have cached the ID and left the group since the check above.
+			if id := client.cachedOrganizationID(); id != nil {
+				return id, nil
+			}
+
 			lookupCtx := context.WithoutCancel(ctx)
 			if deadline, ok := ctx.Deadline(); ok {
 				var cancel context.CancelFunc
