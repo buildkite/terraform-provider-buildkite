@@ -19,6 +19,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/shurcooL/graphql"
+	"golang.org/x/sync/singleflight"
 )
 
 // Client can be used to interact with the Buildkite API
@@ -28,9 +29,11 @@ type Client struct {
 	http             *http.Client
 	organization     string
 	organizationId   *string
-	organizationIdMu sync.Mutex
-	restURL          string
-	timeouts         timeouts.Value
+	organizationIdMu sync.Mutex // guards organizationId
+	// organizationIdLookup shares one in-flight lookup between concurrent callers.
+	organizationIdLookup singleflight.Group
+	restURL              string
+	timeouts             timeouts.Value
 
 	// Retained so tests can assert the retry configuration and shorten the waits.
 	restRetry    *retryablehttp.Client
@@ -52,11 +55,10 @@ type headerRoundTripper struct {
 	Header http.Header
 }
 
-// GetOrganizationID resolves and caches the organization ID. The lookup runs under the mutex, so like
-// makeRequest it falls back to the read timeout when the caller set no deadline: an unbounded lookup
-// would hold the mutex for the whole retry schedule and block every other resource waiting on it.
-// The deadline is derived before Lock so time spent waiting for the mutex counts against it, though
-// the wait itself cannot be interrupted.
+// GetOrganizationID resolves and caches the organization ID. Concurrent callers share one in-flight
+// lookup, and each waits for it only until its own context is done, so a caller never outlives its
+// deadline waiting on a lookup another caller started. Like makeRequest, a caller with no deadline
+// falls back to the read timeout.
 func (client *Client) GetOrganizationID(ctx context.Context) (*string, error) {
 	if _, hasDeadline := ctx.Deadline(); !hasDeadline {
 		readTimeout, diags := client.readTimeout(ctx)
@@ -67,19 +69,67 @@ func (client *Client) GetOrganizationID(ctx context.Context) (*string, error) {
 		}
 	}
 
+	for {
+		if id := client.cachedOrganizationID(); id != nil {
+			return id, nil
+		}
+
+		// The lookup outlives the caller that started it, so a caller giving up does not fail it for
+		// the others waiting on it, but it keeps that caller's deadline so it stays bounded.
+		lookup := client.organizationIdLookup.DoChan("", func() (any, error) {
+			// Another lookup may have cached the ID and left the group since the check above.
+			if id := client.cachedOrganizationID(); id != nil {
+				return id, nil
+			}
+
+			lookupCtx := context.WithoutCancel(ctx)
+			if deadline, ok := ctx.Deadline(); ok {
+				var cancel context.CancelFunc
+				lookupCtx, cancel = context.WithDeadline(lookupCtx, deadline)
+				defer cancel()
+			}
+
+			orgId, err := GetOrganizationID(lookupCtx, client.organization, client.graphql)
+			if err != nil {
+				if lookupCtx.Err() != nil {
+					return nil, fmt.Errorf("%w: %w", errOrganizationIDLookupExpired, err)
+				}
+				return nil, err
+			}
+			// Cache only on success; a cached empty ID would be served on later retries.
+			client.organizationIdMu.Lock()
+			defer client.organizationIdMu.Unlock()
+			client.organizationId = &orgId
+
+			return client.organizationId, nil
+		})
+
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		case result := <-lookup:
+			if result.Err == nil {
+				return result.Val.(*string), nil
+			}
+			// A lookup started by a caller with a shorter deadline ran out of time, not ours: start
+			// another under ours rather than failing with a budget that was never this caller's.
+			if errors.Is(result.Err, errOrganizationIDLookupExpired) && ctx.Err() == nil {
+				continue
+			}
+			return nil, result.Err
+		}
+	}
+}
+
+// errOrganizationIDLookupExpired marks a shared lookup that ended because the deadline it was started
+// under passed, which a caller with more time left can retry.
+var errOrganizationIDLookupExpired = errors.New("organization ID lookup ran out of time")
+
+func (client *Client) cachedOrganizationID() *string {
 	client.organizationIdMu.Lock()
 	defer client.organizationIdMu.Unlock()
-	if client.organizationId != nil {
-		return client.organizationId, nil
-	}
-	orgId, err := GetOrganizationID(ctx, client.organization, client.graphql)
-	if err != nil {
-		return nil, err
-	}
-	// Cache only on success; a cached empty ID would be served on later retries.
-	client.organizationId = &orgId
 
-	return client.organizationId, nil
+	return client.organizationId
 }
 
 // effectiveTimeout falls back to DefaultTimeout for a timeout that is not positive. The timeouts
