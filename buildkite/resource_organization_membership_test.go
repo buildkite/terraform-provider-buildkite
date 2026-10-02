@@ -21,6 +21,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/knownvalue"
 	"github.com/hashicorp/terraform-plugin-testing/plancheck"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/hashicorp/terraform-plugin-testing/tfjsonpath"
 )
 
@@ -33,20 +34,21 @@ const (
 // The wire fixtures deliberately use JSON field names independently of the
 // production structs. Terraform's actual CLI drives the provider against this API.
 type membershipAPI struct {
-	t                 *testing.T
-	mu                sync.Mutex
-	member            map[string]any
-	invitation        map[string]any
-	created           int
-	revoked           int
-	deleted           int
-	patches           []map[string]string
-	acceptOnRevoke    bool
-	status            int
-	patchStatus       int
-	createStatus      int
-	memberPageTwo     bool
-	invitationPageTwo bool
+	t                  *testing.T
+	mu                 sync.Mutex
+	member             map[string]any
+	invitation         map[string]any
+	created            int
+	revoked            int
+	deleted            int
+	patches            []map[string]string
+	acceptOnRevoke     bool
+	status             int
+	patchStatus        int
+	createStatus       int
+	memberPageTwo      bool
+	invitationPageTwo  bool
+	memberListRequests int
 }
 
 func newMembershipAPI(t *testing.T) (*httptest.Server, *membershipAPI) {
@@ -78,6 +80,7 @@ func (a *membershipAPI) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var result any
 	switch {
 	case r.Method == "GET" && r.URL.Path == base+"members":
+		a.memberListRequests++
 		members := []map[string]any{}
 		if a.memberPageTwo && r.URL.Query().Get("page") == "1" {
 			for range 100 {
@@ -245,6 +248,238 @@ func TestOrganizationMembershipAdoptUpdateImport(t *testing.T) {
 			defer api.mu.Unlock()
 			if api.created != 0 || api.deleted != 1 || api.member != nil || len(api.patches) != 2 {
 				t.Fatalf("adoption lifecycle: created=%d deleted=%d member=%v patches=%v", api.created, api.deleted, api.member, api.patches)
+			}
+		})
+	}
+}
+
+func TestOrganizationMembershipImportEmailReconciliation(t *testing.T) {
+	for _, tc := range []struct {
+		name, email string
+		pending     bool
+	}{
+		{name: "active case difference", email: "JANE@example.com"},
+		{name: "active invitation address", email: "jane.invited@example.com"},
+		{name: "active matching email", email: "jane@example.com"},
+		{name: "pending case difference", email: "JANE@example.com", pending: true},
+		{name: "pending matching email", email: "jane@example.com", pending: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			s, api := newMembershipAPI(t)
+			id, importID, state := membershipUserUUID, membershipUserUUID, "active"
+			if tc.pending {
+				id = "00000000-0000-4000-8001-000000000099"
+				importID, state = "invitation/"+id, "pending"
+				api.invitation = map[string]any{"id": id, "email": "jane@example.com", "state": "pending", "role": "member", "sso_mode": "required"}
+			} else {
+				api.member = map[string]any{"id": id, "email": "jane@example.com", "role": "member", "sso_mode": "required"}
+			}
+			config := membershipConfig(s.URL, fmt.Sprintf("email = %q\nrole = \"MEMBER\"\nsso_mode = \"REQUIRED\"", tc.email))
+			otherIdentity := `uuid = "00000000-0000-4000-8000-000000000003"`
+			if tc.pending {
+				otherIdentity = `email = "someone.else@example.com"`
+			}
+			checks := []plancheck.PlanCheck{plancheck.ExpectResourceAction(membershipAddress, plancheck.ResourceActionUpdate)}
+			if tc.pending {
+				// Acceptance can race with this apply, even when email already matches.
+				checks = append(checks,
+					plancheck.ExpectUnknownValue(membershipAddress, tfjsonpath.New("uuid")),
+					plancheck.ExpectUnknownValue(membershipAddress, tfjsonpath.New("user_id")),
+				)
+			}
+			resource.UnitTest(t, resource.TestCase{
+				ProtoV6ProviderFactories: protoV6ProviderFactories(),
+				Steps: []resource.TestStep{
+					{
+						Config: config, ResourceName: membershipAddress,
+						ImportState: true, ImportStateId: importID, ImportStatePersist: true,
+						ExpectNonEmptyPlan: true,
+					},
+					{
+						// Import must not exempt a different UUID or pending invitee.
+						// A speculative plan must not consume the reconciliation marker.
+						Config:   membershipConfig(s.URL, otherIdentity+"\nrole = \"MEMBER\"\nsso_mode = \"REQUIRED\""),
+						PlanOnly: true, ExpectNonEmptyPlan: true,
+						ConfigPlanChecks: resource.ConfigPlanChecks{PostApplyPostRefresh: []plancheck.PlanCheck{
+							plancheck.ExpectResourceAction(membershipAddress, plancheck.ResourceActionDestroyBeforeCreate),
+						}},
+					},
+					{
+						Config: config,
+						ConfigPlanChecks: resource.ConfigPlanChecks{
+							PreApply:             checks,
+							PostApplyPostRefresh: []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()},
+						},
+						Check: resource.ComposeAggregateTestCheckFunc(
+							resource.TestCheckResourceAttr(membershipAddress, "id", id),
+							resource.TestCheckResourceAttr(membershipAddress, "email", tc.email),
+							resource.TestCheckResourceAttr(membershipAddress, "state", state),
+							func(_ *terraform.State) error {
+								api.mu.Lock()
+								defer api.mu.Unlock()
+								if api.created != 0 || api.revoked != 0 || api.deleted != 0 || len(api.patches) != 0 {
+									return fmt.Errorf("email reconciliation mutated the API: created=%d revoked=%d deleted=%d patches=%v", api.created, api.revoked, api.deleted, api.patches)
+								}
+								return nil
+							},
+						),
+					},
+					{
+						// Import provenance must be consumed even when the first email matched.
+						// Later identity changes still require explicit replacement.
+						Config:   membershipConfig(s.URL, "email = \"someone.else@example.com\"\nrole = \"MEMBER\"\nsso_mode = \"REQUIRED\""),
+						PlanOnly: true, ExpectNonEmptyPlan: true,
+						ConfigPlanChecks: resource.ConfigPlanChecks{PostApplyPostRefresh: []plancheck.PlanCheck{
+							plancheck.ExpectResourceAction(membershipAddress, plancheck.ResourceActionDestroyBeforeCreate),
+						}},
+					},
+				},
+			})
+		})
+	}
+}
+
+func TestOrganizationMembershipImportBlockEmailReconciliation(t *testing.T) {
+	s, api := newMembershipAPI(t)
+	api.member = map[string]any{"id": membershipUserUUID, "email": "jane@example.com", "role": "member", "sso_mode": "required"}
+	config := membershipConfig(s.URL, "email = \"jane.invited@example.com\"\nrole = \"MEMBER\"\nsso_mode = \"REQUIRED\"")
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config: config + fmt.Sprintf("\nimport {\n  to = %s\n  id = %q\n}\n", membershipAddress, membershipUserUUID),
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply:             []plancheck.PlanCheck{plancheck.ExpectResourceAction(membershipAddress, plancheck.ResourceActionUpdate)},
+					PostApplyPostRefresh: []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()},
+				},
+				Check: resource.TestCheckResourceAttr(membershipAddress, "email", "jane.invited@example.com"),
+			},
+			{Config: config, ConfigPlanChecks: resource.ConfigPlanChecks{PreApply: []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()}}},
+		},
+	})
+	api.mu.Lock()
+	defer api.mu.Unlock()
+	if api.deleted != 1 || api.created != 0 || len(api.patches) != 0 {
+		t.Fatalf("import block must reconcile without remote changes before cleanup: deleted=%d created=%d patches=%v", api.deleted, api.created, api.patches)
+	}
+}
+
+func TestOrganizationMembershipImportedInvitationChangesInvitee(t *testing.T) {
+	s, api := newMembershipAPI(t)
+	const id = "00000000-0000-4000-8001-000000000099"
+	api.invitation = map[string]any{"id": id, "email": "previous@example.com", "state": "pending", "role": "member", "sso_mode": "required"}
+	config := membershipConfig(s.URL, "email = \"jane@example.com\"\nrole = \"MEMBER\"\nsso_mode = \"REQUIRED\"\nsend_invitation = true")
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		Steps: []resource.TestStep{
+			{Config: config, ResourceName: membershipAddress, ImportState: true, ImportStateId: "invitation/" + id, ImportStatePersist: true, ExpectNonEmptyPlan: true},
+			{
+				Config: config,
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply:             []plancheck.PlanCheck{plancheck.ExpectResourceAction(membershipAddress, plancheck.ResourceActionDestroyBeforeCreate)},
+					PostApplyPostRefresh: []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()},
+				},
+				Check: resource.TestCheckResourceAttr(membershipAddress, "email", "jane@example.com"),
+			},
+		},
+	})
+	api.mu.Lock()
+	defer api.mu.Unlock()
+	if api.created != 1 || api.revoked != 2 || api.deleted != 0 {
+		t.Fatalf("different invitee must replace, then revoke on cleanup: created=%d revoked=%d deleted=%d", api.created, api.revoked, api.deleted)
+	}
+}
+
+func TestOrganizationMembershipImportReconciliationRetry(t *testing.T) {
+	s, api := newMembershipAPI(t)
+	api.member = map[string]any{"id": membershipUserUUID, "email": "jane@example.com", "role": "member", "sso_mode": "required"}
+	api.patchStatus = http.StatusForbidden
+	config := membershipConfig(s.URL, "email = \"jane.invited@example.com\"\nrole = \"ADMIN\"\nsso_mode = \"REQUIRED\"")
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config: config, ResourceName: membershipAddress,
+				ImportState: true, ImportStateId: membershipUserUUID, ImportStatePersist: true, ExpectNonEmptyPlan: true,
+			},
+			{Config: config, ExpectError: regexp.MustCompile("status: 403")},
+			{
+				PreConfig: func() { api.mu.Lock(); defer api.mu.Unlock(); api.patchStatus = 0 },
+				Config:    config,
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply:             []plancheck.PlanCheck{plancheck.ExpectResourceAction(membershipAddress, plancheck.ResourceActionUpdate)},
+					PostApplyPostRefresh: []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()},
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(membershipAddress, "email", "jane.invited@example.com"),
+					resource.TestCheckResourceAttr(membershipAddress, "role", "ADMIN"),
+				),
+			},
+		},
+	})
+	api.mu.Lock()
+	defer api.mu.Unlock()
+	if api.deleted != 1 || api.revoked != 0 || api.created != 0 || len(api.patches) != 1 {
+		t.Fatalf("retry must update the imported member, not replace it: deleted=%d revoked=%d created=%d patches=%v", api.deleted, api.revoked, api.created, api.patches)
+	}
+}
+
+func TestOrganizationMembershipPendingBecomesActive(t *testing.T) {
+	for _, accepted := range []bool{false, true} {
+		t.Run(fmt.Sprintf("accepted_by_present=%t", accepted), func(t *testing.T) {
+			s, api := newMembershipAPI(t)
+			api.invitation = map[string]any{"id": "invite", "email": "jane@example.com", "state": "pending", "role": "member", "sso_mode": "required"}
+			config := membershipConfig(s.URL, "email = \"jane@example.com\"\nrole = \"MEMBER\"\nsso_mode = \"REQUIRED\"")
+			resource.UnitTest(t, resource.TestCase{
+				ProtoV6ProviderFactories: protoV6ProviderFactories(),
+				Steps: []resource.TestStep{
+					{Config: config, Check: resource.TestCheckResourceAttr(membershipAddress, "state", "pending")},
+					{
+						PreConfig: func() {
+							api.mu.Lock()
+							defer api.mu.Unlock()
+							if accepted {
+								api.accept()
+								// accepted_by must work even if REST exposes a different email.
+								api.member["email"] = "jane.primary@example.com"
+							} else {
+								// SSO without an invitation token searches by identity_email,
+								// then creates membership independently. Signing in with a
+								// secondary email can leave a primary-email invitation pending.
+								api.member = map[string]any{"id": membershipUserUUID, "email": "jane@example.com", "role": "member", "sso_mode": "required"}
+								api.memberPageTwo = true
+							}
+							api.memberListRequests = 0
+						},
+						Config: config,
+						Check: resource.ComposeAggregateTestCheckFunc(
+							resource.TestCheckResourceAttr(membershipAddress, "state", "active"),
+							resource.TestCheckResourceAttr(membershipAddress, "uuid", membershipUserUUID),
+							resource.TestCheckResourceAttr(membershipAddress, "user_id", membershipUserID),
+							func(_ *terraform.State) error {
+								api.mu.Lock()
+								defer api.mu.Unlock()
+								if accepted && api.memberListRequests != 0 {
+									return fmt.Errorf("accepted_by lookup scanned members: %d requests", api.memberListRequests)
+								}
+								if !accepted && (api.invitation["state"] != "pending" || api.memberListRequests < 2) {
+									return fmt.Errorf("SSO membership must be discovered while invitation is still pending: invitation=%v requests=%d", api.invitation, api.memberListRequests)
+								}
+								return nil
+							},
+						),
+					},
+					{
+						PreConfig:        func() { api.mu.Lock(); defer api.mu.Unlock(); api.memberListRequests = 0 },
+						Config:           config,
+						ConfigPlanChecks: resource.ConfigPlanChecks{PreApply: []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()}},
+					},
+				},
+			})
+			api.mu.Lock()
+			defer api.mu.Unlock()
+			if api.memberListRequests != 0 || api.deleted != 1 || api.revoked != 0 || api.created != 0 {
+				t.Fatalf("subsequent refresh and destroy must follow UUID: requests=%d deleted=%d revoked=%d created=%d", api.memberListRequests, api.deleted, api.revoked, api.created)
 			}
 		})
 	}

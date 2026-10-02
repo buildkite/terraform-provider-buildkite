@@ -36,6 +36,8 @@ type organizationMembershipResourceModel struct {
 
 type organizationMembershipResource struct{ client *Client }
 
+const organizationMembershipImportPending = "importEmailReconciliation"
+
 func newOrganizationMembershipResource() resource.Resource {
 	return &organizationMembershipResource{}
 }
@@ -62,6 +64,8 @@ func (r *organizationMembershipResource) Schema(_ context.Context, _ resource.Sc
 			Manages an organization's membership lifecycle using the REST API. Existing members and pending
 			invitations are adopted. Set ` + "`send_invitation = true`" + ` to invite an absent user by email.
 			Apply returns while the invitation is pending; a later refresh discovers acceptance.
+			While an invitation is pending, refresh scans organization members to detect users who joined
+			through SSO without accepting it. Once a user UUID is known, refresh looks up that member directly.
 
 			Destroy removes active members by default, including adopted members. Removing a member can
 			lose their team memberships and tokens; re-inviting them does not restore those. Set
@@ -87,9 +91,24 @@ func (r *organizationMembershipResource) Schema(_ context.Context, _ resource.Sc
 				PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
 			},
 			"email": schema.StringAttribute{
-				Optional: true, Computed: true, MarkdownDescription: "Email address used to adopt or invite. Specify email or uuid. Required to invite an absent user. Retained after adoption even if the user's primary email changes. Changing a configured email replaces the resource.",
-				Validators:    []validator.String{stringvalidator.LengthAtLeast(1)},
-				PlanModifiers: []planmodifier.String{stringplanmodifier.RequiresReplaceIfConfigured()},
+				Optional: true, Computed: true, MarkdownDescription: "Email address used to adopt or invite. Specify email or uuid. Required to invite an absent user. Retained after adoption even if the user's primary email changes. The first apply after import reconciles an active member's email selector, or a pending invitation's email casing, without replacement. Subsequent changes to a configured email replace the resource.",
+				Validators: []validator.String{stringvalidator.LengthAtLeast(1)},
+				PlanModifiers: []planmodifier.String{stringplanmodifier.RequiresReplaceIf(
+					func(ctx context.Context, req planmodifier.StringRequest, resp *stringplanmodifier.RequiresReplaceIfFuncResponse) {
+						if req.ConfigValue.IsNull() {
+							return
+						}
+						pending, diags := req.Private.GetKey(ctx, organizationMembershipImportPending)
+						resp.Diagnostics.Append(diags...)
+						var uuid types.String
+						resp.Diagnostics.Append(req.State.GetAttribute(ctx, path.Root("uuid"), &uuid)...)
+						// An imported UUID is authoritative. For pending invitations only
+						// casing can be reconciled: a different address is a new invitee.
+						resp.RequiresReplace = len(pending) == 0 || (uuid.ValueString() == "" && !strings.EqualFold(req.PlanValue.ValueString(), req.StateValue.ValueString()))
+					},
+					"Changing a configured email replaces the resource, except for initial import reconciliation.",
+					"Changing a configured email replaces the resource, except for initial import reconciliation.",
+				)},
 			},
 			"uuid": schema.StringAttribute{
 				Optional: true, Computed: true, MarkdownDescription: "User UUID for an existing member. Null while an invitation is pending. Changing a configured UUID replaces the resource.",
@@ -126,6 +145,28 @@ func (r *organizationMembershipResource) Schema(_ context.Context, _ resource.Sc
 	}
 }
 
+func (r *organizationMembershipResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
+	if req.State.Raw.IsNull() || req.Plan.Raw.IsNull() {
+		return
+	}
+	pending, diags := req.Private.GetKey(ctx, organizationMembershipImportPending)
+	resp.Diagnostics.Append(diags...)
+	if len(pending) != 0 {
+		// Ensure the first apply consumes import provenance even if config already
+		// matches the API. Otherwise a later identity change could evade replacement.
+		resp.Diagnostics.Append(resp.Plan.SetAttribute(ctx, path.Root("state"), types.StringUnknown())...)
+		resp.Diagnostics.Append(resp.Plan.SetAttribute(ctx, path.Root("invitation_id"), types.StringUnknown())...)
+		// A matching config did not trigger the framework's computed-unknown pass.
+		// Leave room for invitation acceptance during this state-only update.
+		var uuid types.String
+		resp.Diagnostics.Append(req.Plan.GetAttribute(ctx, path.Root("uuid"), &uuid)...)
+		if uuid.IsNull() {
+			resp.Diagnostics.Append(resp.Plan.SetAttribute(ctx, path.Root("uuid"), types.StringUnknown())...)
+			resp.Diagnostics.Append(resp.Plan.SetAttribute(ctx, path.Root("user_id"), types.StringUnknown())...)
+		}
+	}
+}
+
 // lookup follows a known user UUID rather than email once active, so an email change
 // cannot make destroy target a different person. Accepted invitations give us that UUID.
 func (r *organizationMembershipResource) lookup(ctx context.Context, state *organizationMembershipResourceModel) (member *organizationMembershipMember, invitation *organizationMembershipInvitation, err error) {
@@ -149,6 +190,8 @@ func (r *organizationMembershipResource) lookup(ctx context.Context, state *orga
 			member, err := r.client.getOrganizationMembershipMember(ctx, invitation.AcceptedBy.ID)
 			return member, nil, err
 		}
+		// SSO can create membership without accepting an invitation to a different
+		// email on the same account. Pending alone does not prove the user is absent.
 		member, err := r.client.findOrganizationMembershipMember(ctx, state.Email.ValueString())
 		if !errors.Is(err, errOrganizationMembershipNotFound) {
 			return member, nil, err
@@ -287,6 +330,11 @@ func (r *organizationMembershipResource) Update(ctx context.Context, req resourc
 		return
 	}
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
+	pending, diags := req.Private.GetKey(ctx, organizationMembershipImportPending)
+	resp.Diagnostics.Append(diags...)
+	if !resp.Diagnostics.HasError() && len(pending) != 0 {
+		resp.Diagnostics.Append(resp.Private.SetKey(ctx, organizationMembershipImportPending, nil)...)
+	}
 }
 
 func (r *organizationMembershipResource) apply(ctx context.Context, state *organizationMembershipResourceModel) error {
@@ -427,4 +475,5 @@ func (r *organizationMembershipResource) ImportState(ctx context.Context, req re
 	}
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("send_invitation"), false)...)
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("downgrade_on_destroy"), false)...)
+	resp.Diagnostics.Append(resp.Private.SetKey(ctx, organizationMembershipImportPending, []byte("true"))...)
 }

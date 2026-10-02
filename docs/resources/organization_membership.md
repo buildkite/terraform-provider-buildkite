@@ -6,6 +6,8 @@ description: |-
   Manages an organization's membership lifecycle using the REST API. Existing members and pending
   invitations are adopted. Set send_invitation = true to invite an absent user by email.
   Apply returns while the invitation is pending; a later refresh discovers acceptance.
+  While an invitation is pending, refresh scans organization members to detect users who joined
+  through SSO without accepting it. Once a user UUID is known, refresh looks up that member directly.
   Destroy removes active members by default, including adopted members. Removing a member can
   lose their team memberships and tokens; re-inviting them does not restore those. Set
   downgrade_on_destroy = true to retain active members with role MEMBER and unchanged SSO mode.
@@ -28,6 +30,8 @@ description: |-
 Manages an organization's membership lifecycle using the REST API. Existing members and pending
 invitations are adopted. Set `send_invitation = true` to invite an absent user by email.
 Apply returns while the invitation is pending; a later refresh discovers acceptance.
+While an invitation is pending, refresh scans organization members to detect users who joined
+through SSO without accepting it. Once a user UUID is known, refresh looks up that member directly.
 
 Destroy removes active members by default, including adopted members. Removing a member can
 lose their team memberships and tokens; re-inviting them does not restore those. Set
@@ -93,7 +97,7 @@ resource "buildkite_team_member" "jane" {
 ### Optional
 
 - `downgrade_on_destroy` (Boolean) Demote an active member to MEMBER instead of removing them on destroy, leaving SSO mode unchanged. Pending invitations are still revoked. Defaults to false.
-- `email` (String) Email address used to adopt or invite. Specify email or uuid. Required to invite an absent user. Retained after adoption even if the user's primary email changes. Changing a configured email replaces the resource.
+- `email` (String) Email address used to adopt or invite. Specify email or uuid. Required to invite an absent user. Retained after adoption even if the user's primary email changes. The first apply after import reconciles an active member's email selector, or a pending invitation's email casing, without replacement. Subsequent changes to a configured email replace the resource.
 - `send_invitation` (Boolean) Allow sending invitations to absent users and replacing pending invitations when role or SSO mode changes. Defaults to false.
 - `uuid` (String) User UUID for an existing member. Null while an invitation is pending. Changing a configured UUID replaces the resource.
 
@@ -130,3 +134,11 @@ import {
 Import defaults `send_invitation` and `downgrade_on_destroy` to `false`. Apply your intended
 flag values before destroying an imported resource. For a membership that began as an
 invitation, import using its current `uuid` (user UUID), not its stable Terraform `id`.
+
+The first apply after import performs an in-place reconciliation, even when the configuration
+already matches. For active members, the imported user UUID remains authoritative: the
+configured email becomes the retained selector without removing or re-inviting the member,
+even if it differs from the API email. For pending invitations, only email casing differences
+are reconciled; a different address still replaces the invitation. Later changes to a configured
+email replace the resource as usual. Email reconciliation alone does not change the remote
+member or invitation; configured role and SSO changes still apply normally.
