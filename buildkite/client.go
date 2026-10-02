@@ -339,6 +339,7 @@ func NewClient(config *clientConfig) *Client {
 	client.genqlient = boundedGraphQLClient{
 		inner:  genqlient.NewClient(config.graphqlURL, graphqlHttpClient),
 		client: client,
+		url:    config.graphqlURL,
 	}
 
 	return client
@@ -351,6 +352,7 @@ func NewClient(config *clientConfig) *Client {
 type boundedGraphQLClient struct {
 	inner  genqlient.Client
 	client *Client
+	url    string
 }
 
 func (c boundedGraphQLClient) MakeRequest(ctx context.Context, req *genqlient.Request, resp *genqlient.Response) error {
@@ -363,7 +365,20 @@ func (c boundedGraphQLClient) MakeRequest(ctx context.Context, req *genqlient.Re
 		}
 	}
 
-	return c.inner.MakeRequest(ctx, req, resp)
+	// Record the retried responses as makeRequest does, so a request that runs out of time or retries
+	// can say what the API was answering rather than only that it gave up. Only a failure with no
+	// response behind it is wrapped; a response that did arrive, including an HTTP error genqlient
+	// reports itself, passes through unchanged.
+	capture := &lastResponseCapture{}
+	ctx = context.WithValue(ctx, lastResponseKey{}, capture)
+
+	err := c.inner.MakeRequest(ctx, req, resp)
+	var urlErr *url.Error
+	if errors.As(err, &urlErr) && capture.status != 0 {
+		return capture.requestError(http.MethodPost, c.url, err)
+	}
+
+	return err
 }
 
 func newHeaderRoundTripper(next http.RoundTripper, header http.Header) *headerRoundTripper {
@@ -403,6 +418,26 @@ type lastResponseCapture struct {
 	// stale marks a stored response as belonging to an earlier attempt than the one that ended the
 	// request, so it is reported as context rather than as the cause.
 	stale bool
+}
+
+// requestError describes a request that failed without a response to hand back. A retryable status
+// that never clears usually ends up here: if the deadline lands during a backoff wait, retryablehttp
+// returns the context error and the response is already gone, so what this capture kept of it is
+// the only record of what the API said.
+func (c *lastResponseCapture) requestError(method, requestURL string, err error) *apiError {
+	apiErr := &apiError{Method: method, URL: requestURL, Attempts: c.attempts, Err: requestCause(err)}
+	switch {
+	case c.status != 0 && !c.stale:
+		apiErr.StatusCode = c.status
+		apiErr.Body = c.body
+	case c.status != 0:
+		// The last attempt died in flight rather than during a wait, so what the API said earlier
+		// is context, not the cause, and no StatusCode is claimed for it.
+		apiErr.earlierStatus = c.status
+		apiErr.earlierBody = c.body
+	}
+
+	return apiErr
 }
 
 // reopenedBody hands a body that has already been read back to the next reader while still closing
@@ -585,40 +620,7 @@ func (client *Client) makeRequest(ctx context.Context, method string, path strin
 
 	resp, err := client.http.Do(req)
 	if err != nil {
-		// A retryable status that never clears usually ends up here rather than in the status check
-		// below: if the deadline lands during a backoff wait, retryablehttp returns the context error
-		// and the response is already gone.
-		switch {
-		case lastResponse.status != 0 && !lastResponse.stale:
-			return &apiError{
-				Method:     method,
-				URL:        requestURL,
-				StatusCode: lastResponse.status,
-				Attempts:   lastResponse.attempts,
-				Body:       lastResponse.body,
-				Err:        requestCause(err),
-			}
-
-		case lastResponse.status != 0:
-			// The last attempt died in flight rather than during a wait, so what the API said earlier
-			// is context, not the cause, and no StatusCode is claimed for it.
-			return &apiError{
-				Method:        method,
-				URL:           requestURL,
-				Attempts:      lastResponse.attempts,
-				earlierStatus: lastResponse.status,
-				earlierBody:   lastResponse.body,
-				Err:           requestCause(err),
-			}
-
-		default:
-			return &apiError{
-				Method:   method,
-				URL:      requestURL,
-				Attempts: lastResponse.attempts,
-				Err:      requestCause(err),
-			}
-		}
+		return lastResponse.requestError(method, requestURL, err)
 	}
 
 	if resp.StatusCode >= 400 {
