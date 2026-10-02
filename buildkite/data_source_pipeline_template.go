@@ -95,17 +95,20 @@ func (pt *pipelineTemplateDatasource) Read(ctx context.Context, req datasource.R
 		return
 	}
 
-	_, diags := pt.client.readTimeout(ctx)
+	timeout, diags := pt.client.readTimeout(ctx)
 	resp.Diagnostics.Append(diags...)
 
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
+	requestCtx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
 	if !state.ID.IsNull() {
 		var apiResponse *getNodeResponse
 		var err error
-		apiResponse, err = getNode(ctx, pt.client.genqlient, state.ID.ValueString())
+		apiResponse, err = getNode(requestCtx, pt.client.genqlient, state.ID.ValueString())
 		if err != nil {
 			resp.Diagnostics.AddError(
 				"Unable to get Pipeline Template by ID",
@@ -133,7 +136,7 @@ func (pt *pipelineTemplateDatasource) Read(ctx context.Context, req datasource.R
 
 		for {
 			r, err = getPipelineTemplates(
-				ctx,
+				requestCtx,
 				pt.client.genqlient,
 				pt.client.organization,
 				cursor)

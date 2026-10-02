@@ -131,6 +131,23 @@ See the [Terraform documentation](https://developer.hashicorp.com/terraform/cli/
 
 Buildkite has two APIs: REST and GraphQL. **New resources should use the GraphQL API where possible**, but can fall back to the REST API for resources or properties not yet supported by GraphQL.
 
+### Bounding API calls
+
+Every CRUD method should derive one context from its operation's configured timeout and pass it to every API call it makes, including `retry.RetryContext` and paging loops:
+
+```go
+timeout, diags := r.client.createTimeout(ctx)
+resp.Diagnostics.Append(diags...)
+if resp.Diagnostics.HasError() {
+    return
+}
+
+requestCtx, cancel := context.WithTimeout(ctx, timeout)
+defer cancel()
+```
+
+Keep the bare `ctx` for framework calls such as `resp.State.Set`, so state can still be recorded after the budget is spent. A request made without a deadline falls back to the read timeout, which stops it running the retry schedule out, but that fallback applies per request and uses the read timeout whatever the operation.
+
 ### Generating GraphQL Code
 
 If you're working with GraphQL queries:

@@ -150,13 +150,16 @@ func (or *organizationRuleResource) Create(ctx context.Context, req resource.Cre
 		return
 	}
 
+	requestCtx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
 	var r *createOrganizationRuleResponse
-	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-		org, err := or.client.GetOrganizationID()
+	err := retry.RetryContext(requestCtx, timeout, func() *retry.RetryError {
+		org, err := or.client.GetOrganizationID(requestCtx)
 		if err == nil {
 			log.Printf("Creating organization rule ...")
 			r, err = createOrganizationRule(
-				ctx,
+				requestCtx,
 				or.client.genqlient,
 				*org,
 				plan.Description.ValueStringPointer(),
@@ -207,12 +210,15 @@ func (or *organizationRuleResource) Read(ctx context.Context, req resource.ReadR
 		return
 	}
 
+	requestCtx, cancel := context.WithTimeout(ctx, timeouts)
+	defer cancel()
+
 	var apiResponse *getNodeResponse
-	err := retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
+	err := retry.RetryContext(requestCtx, timeouts, func() *retry.RetryError {
 		var err error
 
 		log.Printf("Reading organization rule with ID %s ...", state.ID.ValueString())
-		apiResponse, err = getNode(ctx, or.client.genqlient, state.ID.ValueString())
+		apiResponse, err = getNode(requestCtx, or.client.genqlient, state.ID.ValueString())
 
 		return retryContextError(err)
 	})
@@ -316,6 +322,16 @@ func (or *organizationRuleResource) ModifyPlan(ctx context.Context, req resource
 		return
 	}
 
+	timeout, diags := or.client.readTimeout(ctx)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// Plan has no timeout of its own, so the slug lookups share the read timeout as one budget.
+	requestCtx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
 	// Resolve pipeline slugs/UUIDs to set source_uuid/target_uuid in the plan.
 	// The plan value itself stays as-is — the API accepts both formats.
 	type pipelineRef struct {
@@ -336,7 +352,7 @@ func (or *organizationRuleResource) ModifyPlan(ctx context.Context, req resource
 			uuid = raw
 		} else {
 			qualifiedSlug := fmt.Sprintf("%s/%s", or.client.organization, raw)
-			pipeline, err := getPipeline(ctx, or.client.genqlient, qualifiedSlug)
+			pipeline, err := getPipeline(requestCtx, or.client.genqlient, qualifiedSlug)
 			if err != nil {
 				resp.Diagnostics.AddError(
 					"Unable to resolve pipeline slug",
@@ -376,12 +392,15 @@ func (or *organizationRuleResource) Update(ctx context.Context, req resource.Upd
 		return
 	}
 
+	requestCtx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
 	var r *updateOrganizationRuleResponse
-	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-		org, err := or.client.GetOrganizationID()
+	err := retry.RetryContext(requestCtx, timeout, func() *retry.RetryError {
+		org, err := or.client.GetOrganizationID(requestCtx)
 		if err == nil {
 			log.Printf("Updating organization rule with ID %s ...", state.ID.ValueString())
-			r, err = updateOrganizationRule(ctx,
+			r, err = updateOrganizationRule(requestCtx,
 				or.client.genqlient,
 				*org,
 				state.ID.ValueString(),
@@ -431,12 +450,15 @@ func (or *organizationRuleResource) Delete(ctx context.Context, req resource.Del
 		return
 	}
 
-	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-		org, err := or.client.GetOrganizationID()
+	requestCtx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
+	err := retry.RetryContext(requestCtx, timeout, func() *retry.RetryError {
+		org, err := or.client.GetOrganizationID(requestCtx)
 		if err == nil {
 			log.Printf("Deleting organization rule with ID %s ...", state.ID.ValueString())
 			_, err = deleteOrganizationRule(
-				ctx,
+				requestCtx,
 				or.client.genqlient,
 				*org,
 				state.ID.ValueString(),

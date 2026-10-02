@@ -128,9 +128,19 @@ func (t *teamsDatasource) Read(ctx context.Context, req datasource.ReadRequest, 
 		return
 	}
 
+	timeout, diags := t.client.readTimeout(ctx)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// One budget for the whole read, not one per page, so the configured timeout bounds the walk.
+	requestCtx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
 	var cursor *string
 	for {
-		res, err := GetOrganizationTeams(ctx, t.client.genqlient, t.client.organization, cursor)
+		res, err := GetOrganizationTeams(requestCtx, t.client.genqlient, t.client.organization, cursor)
 		if err != nil {
 			resp.Diagnostics.AddError(
 				"Unable to get organization teams",

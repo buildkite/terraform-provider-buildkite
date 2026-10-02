@@ -117,12 +117,15 @@ func (or *organizationRuleDatasource) Read(ctx context.Context, req datasource.R
 		return
 	}
 
+	requestCtx, cancel := context.WithTimeout(ctx, timeouts)
+	defer cancel()
+
 	// If a UUID is entered through an organization rule data source config
 	if !state.UUID.IsNull() {
 		var apiResponse *getOrganizationRuleResponse
-		err := retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
+		err := retry.RetryContext(requestCtx, timeouts, func() *retry.RetryError {
 			var err error
-			apiResponse, err = getOrganizationRule(ctx, or.client.genqlient, state.UUID.ValueString())
+			apiResponse, err = getOrganizationRule(requestCtx, or.client.genqlient, state.UUID.ValueString())
 			return retryContextError(err)
 		})
 		if err != nil {
@@ -142,11 +145,11 @@ func (or *organizationRuleDatasource) Read(ctx context.Context, req datasource.R
 		// Otherwise if a ID is specified
 	} else if !state.ID.IsNull() {
 		var apiResponse *getNodeResponse
-		err := retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
+		err := retry.RetryContext(requestCtx, timeouts, func() *retry.RetryError {
 			var err error
 
 			log.Printf("Reading organization rule with ID %s ...", state.ID.ValueString())
-			apiResponse, err = getNode(ctx,
+			apiResponse, err = getNode(requestCtx,
 				or.client.genqlient,
 				state.ID.ValueString(),
 			)

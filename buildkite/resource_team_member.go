@@ -104,11 +104,14 @@ func (tm *teamMemberResource) Create(ctx context.Context, req resource.CreateReq
 		return
 	}
 
+	requestCtx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
 	log.Printf("Creating team member into team %s ...", state.TeamId.ValueString())
 	var r *createTeamMemberResponse
-	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+	err := retry.RetryContext(requestCtx, timeout, func() *retry.RetryError {
 		var err error
-		r, err = createTeamMember(ctx,
+		r, err = createTeamMember(requestCtx,
 			tm.client.genqlient,
 			state.TeamId.ValueString(),
 			state.UserId.ValueString(),
@@ -151,11 +154,14 @@ func (tm *teamMemberResource) Read(ctx context.Context, req resource.ReadRequest
 		return
 	}
 
+	requestCtx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
 	log.Printf("Reading team member %s ...", state.Id.ValueString())
 	var r *getNodeResponse
-	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+	err := retry.RetryContext(requestCtx, timeout, func() *retry.RetryError {
 		var err error
-		r, err = getNode(ctx,
+		r, err = getNode(requestCtx,
 			tm.client.genqlient,
 			state.Id.ValueString(),
 		)
@@ -213,11 +219,14 @@ func (tm *teamMemberResource) Update(ctx context.Context, req resource.UpdateReq
 		return
 	}
 
+	requestCtx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
 	log.Printf("Updating team member %s with role %s ...", state.Id.ValueString(), plan.Role.ValueString())
 	var r *updateTeamMemberResponse
-	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+	err := retry.RetryContext(requestCtx, timeout, func() *retry.RetryError {
 		var err error
-		r, err = updateTeamMember(ctx,
+		r, err = updateTeamMember(requestCtx,
 			tm.client.genqlient,
 			state.Id.ValueString(),
 			*plan.Role.ValueStringPointer(),
@@ -255,9 +264,12 @@ func (tm *teamMemberResource) Delete(ctx context.Context, req resource.DeleteReq
 		return
 	}
 
+	requestCtx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
 	log.Printf("Deleting team member with ID %s ...", state.Id.ValueString())
-	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-		_, err := deleteTeamMember(ctx,
+	err := retry.RetryContext(requestCtx, timeout, func() *retry.RetryError {
+		_, err := deleteTeamMember(requestCtx,
 			tm.client.genqlient,
 			state.Id.ValueString(),
 		)

@@ -98,6 +98,16 @@ func (o *organizationMembersDatasource) Read(ctx context.Context, req datasource
 		return
 	}
 
+	timeout, diags := o.client.readTimeout(ctx)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// One budget for the whole read, not one per page, so the configured timeout bounds the walk.
+	requestCtx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
 	var role []OrganizationMemberRole
 	if !state.Role.IsNull() {
 		role = []OrganizationMemberRole{OrganizationMemberRole(state.Role.ValueString())}
@@ -106,7 +116,7 @@ func (o *organizationMembersDatasource) Read(ctx context.Context, req datasource
 	state.Members = []organizationMembersModel{}
 	var cursor *string
 	for {
-		res, err := GetOrganizationMembers(ctx, o.client.genqlient, o.client.organization, cursor, state.Team.ValueStringPointer(), role)
+		res, err := GetOrganizationMembers(requestCtx, o.client.genqlient, o.client.organization, cursor, state.Team.ValueStringPointer(), role)
 		if err != nil {
 			resp.Diagnostics.AddError(
 				"Unable to get organization members",

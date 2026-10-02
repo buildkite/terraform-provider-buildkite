@@ -21,7 +21,7 @@ func TestGetOrganizationIDMissing(t *testing.T) {
 	}
 
 	client := NewClient(config)
-	org, err := client.GetOrganizationID()
+	org, err := client.GetOrganizationID(t.Context())
 	if err == nil {
 		t.Fatal("No error occurred")
 	}
