@@ -284,7 +284,7 @@ func (r *organizationMembershipResource) Create(ctx context.Context, req resourc
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	timeout, diags := r.client.timeouts.Create(ctx, DefaultTimeout)
+	timeout, diags := r.client.createTimeout(ctx)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -307,7 +307,7 @@ func (r *organizationMembershipResource) Read(ctx context.Context, req resource.
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	timeout, diags := r.client.timeouts.Read(ctx, DefaultTimeout)
+	timeout, diags := r.client.readTimeout(ctx)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -341,7 +341,7 @@ func (r *organizationMembershipResource) Update(ctx context.Context, req resourc
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	timeout, diags := r.client.timeouts.Update(ctx, DefaultTimeout)
+	timeout, diags := r.client.updateTimeout(ctx)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -444,7 +444,7 @@ func (r *organizationMembershipResource) Delete(ctx context.Context, req resourc
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	timeout, diags := r.client.timeouts.Delete(ctx, DefaultTimeout)
+	timeout, diags := r.client.deleteTimeout(ctx)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

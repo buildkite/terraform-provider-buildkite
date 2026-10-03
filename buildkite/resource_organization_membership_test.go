@@ -1171,73 +1171,81 @@ func TestOrganizationMembershipOperationDeadlines(t *testing.T) {
 	}
 
 	for operation, budget := range budgets {
-		t.Run(operation, func(t *testing.T) {
-			s, api := newMembershipAPI(t)
-			api.member = map[string]any{"id": membershipUserUUID, "email": "jane@example.com", "role": "member", "sso_mode": "required"}
-			transport := &membershipDeadlineTransport{RoundTripper: s.Client().Transport}
-			r := &organizationMembershipResource{client: &Client{
-				organization: "acme", restURL: s.URL, http: &http.Client{Transport: transport},
-				genqlient: graphql.NewClient(s.URL+"/graphql", &http.Client{Transport: transport}),
-				timeouts:  timeouts.Value{Object: types.ObjectValueMust(attributeTypes, attributeValues)},
-			}}
-			model := organizationMembershipResourceModel{
-				ID: types.StringValue(membershipUserUUID), UUID: types.StringValue(membershipUserUUID),
-				Email: types.StringValue("jane@example.com"), Role: types.StringValue("ADMIN"), SSOMode: types.StringValue("REQUIRED"),
-			}
-			if operation == "read" {
-				// Pending refresh reads the invitation and performs a GraphQL lookup.
-				api.member = nil
-				api.invitation = map[string]any{"id": "invite", "email": "jane@example.com", "state": "pending", "role": "member", "sso_mode": "required"}
-				model.ID, model.InvitationID = types.StringValue("invite"), types.StringValue("invite")
-				model.UUID = types.StringNull()
-			}
-			ctx := context.Background()
-			var schemaResp frameworkresource.SchemaResponse
-			r.Schema(ctx, frameworkresource.SchemaRequest{}, &schemaResp)
-			state := tfsdk.State{Schema: schemaResp.Schema}
-			if diags := state.Set(ctx, &model); diags.HasError() {
-				t.Fatal(diags)
-			}
-			plan := tfsdk.Plan{Schema: schemaResp.Schema, Raw: state.Raw}
-			var diagnostics diag.Diagnostics
-			started := time.Now()
-			switch operation {
-			case "create":
-				response := frameworkresource.CreateResponse{State: state}
-				r.Create(ctx, frameworkresource.CreateRequest{Plan: plan}, &response)
-				diagnostics = response.Diagnostics
-			case "read":
-				response := frameworkresource.ReadResponse{State: state}
-				r.Read(ctx, frameworkresource.ReadRequest{State: state}, &response)
-				diagnostics = response.Diagnostics
-			case "update":
-				response := frameworkresource.UpdateResponse{State: state}
-				r.Update(ctx, frameworkresource.UpdateRequest{State: state, Plan: plan}, &response)
-				diagnostics = response.Diagnostics
-			case "delete":
-				response := frameworkresource.DeleteResponse{State: state}
-				r.Delete(ctx, frameworkresource.DeleteRequest{State: state}, &response)
-				diagnostics = response.Diagnostics
-			}
-			finished := time.Now()
-			if diagnostics.HasError() {
-				t.Fatal(diagnostics)
-			}
-			wantRequests := 3 // Member GET, token-owner GET, and mutation.
-			if operation == "read" {
-				wantRequests = 2 // Pending invitation GET and GraphQL miss.
-			}
-			if len(transport.deadlines) != wantRequests {
-				t.Fatalf("expected %d requests sharing an operation deadline, got %v", wantRequests, transport.deadlines)
-			}
-			for _, deadline := range transport.deadlines {
-				if deadline.Before(started.Add(budget)) || deadline.After(finished.Add(budget)) {
-					t.Errorf("request deadline %s does not use the %s budget of %s", deadline, operation, budget)
+		for _, configured := range []time.Duration{budget, 0, -time.Hour} {
+			t.Run(operation+"/"+configured.String(), func(t *testing.T) {
+				attributeValues[operation] = types.StringValue(configured.String())
+				defer func() { attributeValues[operation] = types.StringValue(budget.String()) }()
+				wantBudget := budget
+				if configured <= 0 {
+					wantBudget = DefaultTimeout
 				}
-				if !deadline.Equal(transport.deadlines[0]) {
-					t.Error("each request received a fresh deadline instead of sharing the operation budget")
+				s, api := newMembershipAPI(t)
+				api.member = map[string]any{"id": membershipUserUUID, "email": "jane@example.com", "role": "member", "sso_mode": "required"}
+				transport := &membershipDeadlineTransport{RoundTripper: s.Client().Transport}
+				r := &organizationMembershipResource{client: &Client{
+					organization: "acme", restURL: s.URL, http: &http.Client{Transport: transport},
+					genqlient: graphql.NewClient(s.URL+"/graphql", &http.Client{Transport: transport}),
+					timeouts:  timeouts.Value{Object: types.ObjectValueMust(attributeTypes, attributeValues)},
+				}}
+				model := organizationMembershipResourceModel{
+					ID: types.StringValue(membershipUserUUID), UUID: types.StringValue(membershipUserUUID),
+					Email: types.StringValue("jane@example.com"), Role: types.StringValue("ADMIN"), SSOMode: types.StringValue("REQUIRED"),
 				}
-			}
-		})
+				if operation == "read" {
+					// Pending refresh reads the invitation and performs a GraphQL lookup.
+					api.member = nil
+					api.invitation = map[string]any{"id": "invite", "email": "jane@example.com", "state": "pending", "role": "member", "sso_mode": "required"}
+					model.ID, model.InvitationID = types.StringValue("invite"), types.StringValue("invite")
+					model.UUID = types.StringNull()
+				}
+				ctx := context.Background()
+				var schemaResp frameworkresource.SchemaResponse
+				r.Schema(ctx, frameworkresource.SchemaRequest{}, &schemaResp)
+				state := tfsdk.State{Schema: schemaResp.Schema}
+				if diags := state.Set(ctx, &model); diags.HasError() {
+					t.Fatal(diags)
+				}
+				plan := tfsdk.Plan{Schema: schemaResp.Schema, Raw: state.Raw}
+				var diagnostics diag.Diagnostics
+				started := time.Now()
+				switch operation {
+				case "create":
+					response := frameworkresource.CreateResponse{State: state}
+					r.Create(ctx, frameworkresource.CreateRequest{Plan: plan}, &response)
+					diagnostics = response.Diagnostics
+				case "read":
+					response := frameworkresource.ReadResponse{State: state}
+					r.Read(ctx, frameworkresource.ReadRequest{State: state}, &response)
+					diagnostics = response.Diagnostics
+				case "update":
+					response := frameworkresource.UpdateResponse{State: state}
+					r.Update(ctx, frameworkresource.UpdateRequest{State: state, Plan: plan}, &response)
+					diagnostics = response.Diagnostics
+				case "delete":
+					response := frameworkresource.DeleteResponse{State: state}
+					r.Delete(ctx, frameworkresource.DeleteRequest{State: state}, &response)
+					diagnostics = response.Diagnostics
+				}
+				finished := time.Now()
+				if diagnostics.HasError() {
+					t.Fatal(diagnostics)
+				}
+				wantRequests := 3 // Member GET, token-owner GET, and mutation.
+				if operation == "read" {
+					wantRequests = 2 // Pending invitation GET and GraphQL miss.
+				}
+				if len(transport.deadlines) != wantRequests {
+					t.Fatalf("expected %d requests sharing an operation deadline, got %v", wantRequests, transport.deadlines)
+				}
+				for _, deadline := range transport.deadlines {
+					if deadline.Before(started.Add(wantBudget)) || deadline.After(finished.Add(wantBudget)) {
+						t.Errorf("request deadline %s does not use the %s budget of %s", deadline, operation, wantBudget)
+					}
+					if !deadline.Equal(transport.deadlines[0]) {
+						t.Error("each request received a fresh deadline instead of sharing the operation budget")
+					}
+				}
+			})
+		}
 	}
 }
