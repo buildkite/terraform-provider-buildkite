@@ -24,10 +24,12 @@ description: |-
   Invitations with team assignments cannot be replaced because the API does not return their team roles;
   wait for acceptance before changing role or SSO mode. Manage teams separately with
   buildkite_team_member.
-  The token needs read_organizations and write_organizations, and permission to manage the member.
+  The token needs read_user, read_organizations and write_organizations, and permission to manage the member.
   Email lookups additionally require the graphql scope. Lookup failures do not fall back to a member scan.
   Invitation operations additionally need read_organization_invitations and write_organization_invitations.
-  Use an organization administrator's token; the API does not allow updating your own membership.
+  Use a different organization administrator's token: this resource refuses to manage the token owner's
+  membership, including import, refresh and destroy. Removing that member would revoke the running token.
+  Each active-member lookup verifies the current token owner through GET /v2/user and fails closed if it cannot.
 ---
 
 # buildkite_organization_membership (Resource)
@@ -56,10 +58,12 @@ Invitations with team assignments cannot be replaced because the API does not re
 wait for acceptance before changing role or SSO mode. Manage teams separately with
 `buildkite_team_member`.
 
-The token needs read_organizations and write_organizations, and permission to manage the member.
+The token needs read_user, read_organizations and write_organizations, and permission to manage the member.
 Email lookups additionally require the graphql scope. Lookup failures do not fall back to a member scan.
 Invitation operations additionally need read_organization_invitations and write_organization_invitations.
-Use an organization administrator's token; the API does not allow updating your own membership.
+Use a different organization administrator's token: this resource refuses to manage the token owner's
+membership, including import, refresh and destroy. Removing that member would revoke the running token.
+Each active-member lookup verifies the current token owner through GET /v2/user and fails closed if it cannot.
 
 ## Example Usage
 
@@ -107,7 +111,7 @@ resource "buildkite_team_member" "jane" {
 ### Optional
 
 - `downgrade_on_destroy` (Boolean) Demote an active member to MEMBER instead of removing them on destroy, leaving SSO mode unchanged. Pending invitations are still revoked. Defaults to false.
-- `email` (String) Email address used to adopt or invite. Specify email or uuid. Required to invite an absent user. Retained after adoption even if the user's primary email changes. The first apply after import reconciles an active member's email selector, or a pending invitation's email casing, without replacement. Subsequent changes to a configured email replace the resource.
+- `email` (String) Email address used to adopt or invite. Adoption by email requires the member's organization notification email, or primary email if no notification email is configured. A match only on another account email fails explicitly; use the organization email or UUID instead. Specify email or uuid. Required to invite an absent user. Retained after adoption even if the user's primary email changes. The first apply after import reconciles an active member's email selector, or a pending invitation's email casing, without replacement. Subsequent changes to a configured email replace the resource.
 - `send_invitation` (Boolean) Allow sending invitations to absent users and replacing pending invitations when role or SSO mode changes. Defaults to false.
 - `uuid` (String) User UUID for an existing member. Null until the user is identified; retained if the member is later removed while a tracked invitation remains pending. Changing a configured UUID replaces the resource.
 

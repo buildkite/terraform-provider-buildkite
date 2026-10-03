@@ -85,10 +85,12 @@ func (r *organizationMembershipResource) Schema(_ context.Context, _ resource.Sc
 			wait for acceptance before changing role or SSO mode. Manage teams separately with
 			` + "`buildkite_team_member`" + `.
 
-			The token needs read_organizations and write_organizations, and permission to manage the member.
+			The token needs read_user, read_organizations and write_organizations, and permission to manage the member.
 			Email lookups additionally require the graphql scope. Lookup failures do not fall back to a member scan.
 			Invitation operations additionally need read_organization_invitations and write_organization_invitations.
-			Use an organization administrator's token; the API does not allow updating your own membership.
+			Use a different organization administrator's token: this resource refuses to manage the token owner's
+			membership, including import, refresh and destroy. Removing that member would revoke the running token.
+			Each active-member lookup verifies the current token owner through GET /v2/user and fails closed if it cannot.
 		`),
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
@@ -96,7 +98,7 @@ func (r *organizationMembershipResource) Schema(_ context.Context, _ resource.Sc
 				PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
 			},
 			"email": schema.StringAttribute{
-				Optional: true, Computed: true, MarkdownDescription: "Email address used to adopt or invite. Specify email or uuid. Required to invite an absent user. Retained after adoption even if the user's primary email changes. The first apply after import reconciles an active member's email selector, or a pending invitation's email casing, without replacement. Subsequent changes to a configured email replace the resource.",
+				Optional: true, Computed: true, MarkdownDescription: "Email address used to adopt or invite. Adoption by email requires the member's organization notification email, or primary email if no notification email is configured. A match only on another account email fails explicitly; use the organization email or UUID instead. Specify email or uuid. Required to invite an absent user. Retained after adoption even if the user's primary email changes. The first apply after import reconciles an active member's email selector, or a pending invitation's email casing, without replacement. Subsequent changes to a configured email replace the resource.",
 				Validators: []validator.String{stringvalidator.LengthAtLeast(1)},
 				PlanModifiers: []planmodifier.String{stringplanmodifier.RequiresReplaceIf(
 					func(ctx context.Context, req planmodifier.StringRequest, resp *stringplanmodifier.RequiresReplaceIfFuncResponse) {
@@ -181,6 +183,11 @@ func (r *organizationMembershipResource) lookup(ctx context.Context, state *orga
 	defer func() {
 		if errors.Is(err, errOrganizationMembershipNotFound) {
 			err = nil
+		}
+		// Check every resolved member, including imports, changed tokens and
+		// acceptance races, before any caller can adopt or mutate membership.
+		if err == nil && member != nil {
+			err = r.client.checkOrganizationMembershipNotSelf(ctx, member.ID)
 		}
 	}()
 	if id := state.UUID.ValueString(); id != "" {
@@ -476,6 +483,9 @@ func (r *organizationMembershipResource) remove(ctx context.Context, state *orga
 				return fmt.Errorf("invitation is still pending but the API refused to revoke it")
 			}
 			member, _, err = r.lookup(ctx, state)
+			if err != nil {
+				return err
+			}
 		}
 		if err != nil && !isAPIStatus(err, http.StatusNotFound) {
 			return err

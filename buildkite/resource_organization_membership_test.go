@@ -55,11 +55,14 @@ type membershipAPI struct {
 	graphQLEmail       string
 	graphQLError       bool
 	graphQLNullOrg     bool
+	currentUserID      string
+	currentUserStatus  int
+	mutationRequests   int
 }
 
 func newMembershipAPI(t *testing.T) (*httptest.Server, *membershipAPI) {
 	t.Helper()
-	a := &membershipAPI{t: t}
+	a := &membershipAPI{t: t, currentUserID: "00000000-0000-4000-8000-000000000001"}
 	s := httptest.NewServer(a)
 	t.Cleanup(s.Close)
 	return s, a
@@ -78,6 +81,9 @@ func (a *membershipAPI) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	w.Header().Set("Content-Type", "application/json")
+	if r.Method != http.MethodGet && r.URL.Path != "/graphql" {
+		a.mutationRequests++
+	}
 	if a.status != 0 {
 		http.Error(w, `{"message":"not found is only prose, not a 404 status"}`, a.status)
 		return
@@ -85,6 +91,12 @@ func (a *membershipAPI) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	const base = "/v2/organizations/acme/"
 	var result any
 	switch {
+	case r.Method == "GET" && r.URL.Path == "/v2/user":
+		if a.currentUserStatus != 0 {
+			http.Error(w, `{"message":"cannot identify user"}`, a.currentUserStatus)
+			return
+		}
+		result = map[string]any{"id": a.currentUserID}
 	case r.Method == "POST" && r.URL.Path == "/graphql":
 		a.graphQLRequests++
 		var query struct {
@@ -459,7 +471,7 @@ func TestOrganizationMembershipPendingLookup(t *testing.T) {
 		{name: "absent", wantState: "pending"},
 		{name: "SSO joined", memberEmail: "jane@example.com", memberID: membershipUserUUID, wantState: "active"},
 		{name: "case insensitive", memberEmail: "JANE@example.com", memberID: membershipUserUUID, wantState: "active"},
-		{name: "secondary email must not broaden adoption", memberEmail: "other@example.com", memberID: membershipUserUUID, wantState: "pending"},
+		{name: "secondary email must fail closed", memberEmail: "other@example.com", memberID: membershipUserUUID, wantError: true},
 		{name: "GraphQL errors preserve state", graphqlError: true, wantError: true},
 		{name: "inaccessible organization preserves state", hiddenOrg: true, wantError: true},
 		{name: "wrong REST identity preserves state", memberEmail: "jane@example.com", memberID: "another-user", wantError: true},
@@ -944,6 +956,130 @@ func TestOrganizationMembershipDestroyTrackedPendingInvitation(t *testing.T) {
 	}
 }
 
+func TestOrganizationMembershipSafetyGuards(t *testing.T) {
+	for _, tc := range []struct {
+		name, wantError string
+		ownerID         string
+		ownerStatus     int
+		secondary       bool
+	}{
+		{name: "secondary email", secondary: true, wantError: "organization email differs"},
+		{name: "token owner", ownerID: membershipUserUUID, wantError: "cannot manage the API token owner's"},
+		{name: "owner lookup forbidden", ownerStatus: 403, wantError: "unable to identify the API token owner"},
+		{name: "owner lookup missing", ownerStatus: 404, wantError: "unable to identify the API token owner"},
+		{name: "owner UUID missing", wantError: "user UUID missing"},
+	} {
+		for _, operation := range []string{"create", "read", "update", "delete"} {
+			t.Run(tc.name+"/"+operation, func(t *testing.T) {
+				s, api := newMembershipAPI(t)
+				api.member = map[string]any{"id": membershipUserUUID, "email": "jane@example.com", "role": "member", "sso_mode": "required"}
+				api.invitation = map[string]any{"id": "invite", "email": "jane@example.com", "state": "pending", "role": "member", "sso_mode": "required"}
+				api.currentUserID, api.currentUserStatus = tc.ownerID, tc.ownerStatus
+				r := &organizationMembershipResource{client: &Client{organization: "acme", restURL: s.URL, http: s.Client(), genqlient: graphql.NewClient(s.URL+"/graphql", s.Client())}}
+				model := organizationMembershipResourceModel{
+					ID: types.StringValue("invite"), UUID: types.StringValue(membershipUserUUID), InvitationID: types.StringValue("invite"),
+					Email: types.StringValue("jane@example.com"), Role: types.StringValue("MEMBER"), SSOMode: types.StringValue("REQUIRED"),
+					State: types.StringValue("active"), SendInvitation: types.BoolValue(true),
+				}
+				if tc.secondary {
+					model.UUID, model.State = types.StringNull(), types.StringValue("pending")
+					model.Email = types.StringValue("jane.secondary@example.com")
+					api.graphQLEmail = model.Email.ValueString()
+				}
+				if operation == "create" {
+					model.ID, model.UUID, model.InvitationID = types.StringNull(), types.StringNull(), types.StringNull()
+				}
+				var schemaResp frameworkresource.SchemaResponse
+				r.Schema(context.Background(), frameworkresource.SchemaRequest{}, &schemaResp)
+				state := tfsdk.State{Schema: schemaResp.Schema}
+				if diags := state.Set(context.Background(), &model); diags.HasError() {
+					t.Fatal(diags)
+				}
+				plan := tfsdk.Plan{Schema: schemaResp.Schema, Raw: state.Raw}
+				var diagnostics diag.Diagnostics
+				var after tfsdk.State
+				switch operation {
+				case "create":
+					resp := frameworkresource.CreateResponse{State: tfsdk.State{Schema: schemaResp.Schema}}
+					r.Create(context.Background(), frameworkresource.CreateRequest{Plan: plan}, &resp)
+					diagnostics, after = resp.Diagnostics, resp.State
+				case "read":
+					resp := frameworkresource.ReadResponse{State: state}
+					r.Read(context.Background(), frameworkresource.ReadRequest{State: state}, &resp)
+					diagnostics, after = resp.Diagnostics, resp.State
+				case "update":
+					resp := frameworkresource.UpdateResponse{State: state}
+					r.Update(context.Background(), frameworkresource.UpdateRequest{State: state, Plan: plan}, &resp)
+					diagnostics, after = resp.Diagnostics, resp.State
+				case "delete":
+					resp := frameworkresource.DeleteResponse{State: state}
+					r.Delete(context.Background(), frameworkresource.DeleteRequest{State: state}, &resp)
+					diagnostics, after = resp.Diagnostics, resp.State
+				}
+				if !diagnostics.HasError() || !strings.Contains(fmt.Sprint(diagnostics), tc.wantError) {
+					t.Fatalf("expected %q, got %v", tc.wantError, diagnostics)
+				}
+				if (operation == "create" && !after.Raw.IsNull()) || (operation != "create" && !after.Raw.Equal(state.Raw)) {
+					t.Fatal("rejection changed Terraform state")
+				}
+				api.mu.Lock()
+				defer api.mu.Unlock()
+				if api.mutationRequests != 0 {
+					t.Fatalf("rejection sent %d mutation requests", api.mutationRequests)
+				}
+			})
+		}
+	}
+}
+
+func TestOrganizationMembershipSelfImportRejected(t *testing.T) {
+	s, api := newMembershipAPI(t)
+	api.currentUserID = membershipUserUUID
+	api.member = map[string]any{"id": membershipUserUUID, "email": "jane@example.com", "role": "member", "sso_mode": "required"}
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		Steps: []resource.TestStep{{
+			Config:       membershipConfig(s.URL, "email = \"jane@example.com\"\nrole = \"MEMBER\"\nsso_mode = \"REQUIRED\""),
+			ResourceName: membershipAddress, ImportState: true, ImportStateId: membershipUserUUID,
+			ExpectError: regexp.MustCompile("cannot manage the API token owner's"),
+		}},
+	})
+	api.mu.Lock()
+	defer api.mu.Unlock()
+	if api.mutationRequests != 0 {
+		t.Fatalf("self-import sent %d mutations", api.mutationRequests)
+	}
+}
+
+func TestOrganizationMembershipAcceptanceRaceChecksOwner(t *testing.T) {
+	for _, ownerStatus := range []int{0, 404} {
+		for _, operation := range []string{"update", "delete"} {
+			t.Run(fmt.Sprintf("%s/owner_status=%d", operation, ownerStatus), func(t *testing.T) {
+				s, api := newMembershipAPI(t)
+				api.currentUserID, api.currentUserStatus = membershipUserUUID, ownerStatus
+				api.invitation = map[string]any{"id": "invite", "email": "jane@example.com", "state": "pending", "role": "admin", "sso_mode": "optional"}
+				api.acceptOnRevoke = true
+				r := &organizationMembershipResource{client: &Client{organization: "acme", restURL: s.URL, http: s.Client(), genqlient: graphql.NewClient(s.URL+"/graphql", s.Client())}}
+				state := organizationMembershipResourceModel{
+					ID: types.StringValue("invite"), InvitationID: types.StringValue("invite"), Email: types.StringValue("jane@example.com"),
+					Role: types.StringValue("MEMBER"), SSOMode: types.StringValue("REQUIRED"), SendInvitation: types.BoolValue(true),
+				}
+				var err error
+				if operation == "update" {
+					err = r.apply(context.Background(), &state)
+				} else {
+					err = r.remove(context.Background(), &state)
+				}
+				api.mu.Lock()
+				defer api.mu.Unlock()
+				if err == nil || !strings.Contains(err.Error(), "API token owner") || api.member == nil || api.mutationRequests != 1 || api.deleted != 0 || len(api.patches) != 0 {
+					t.Fatalf("acceptance race bypassed owner guard: err=%v mutations=%d deleted=%d patches=%v", err, api.mutationRequests, api.deleted, api.patches)
+				}
+			})
+		}
+	}
+}
+
 func TestOrganizationMembershipAcceptanceRaces(t *testing.T) {
 	for _, operation := range []string{"update", "remove", "downgrade"} {
 		t.Run(operation, func(t *testing.T) {
@@ -1087,8 +1223,12 @@ func TestOrganizationMembershipOperationDeadlines(t *testing.T) {
 			if diagnostics.HasError() {
 				t.Fatal(diagnostics)
 			}
-			if len(transport.deadlines) != 2 {
-				t.Fatalf("expected two requests sharing an operation deadline, got %v", transport.deadlines)
+			wantRequests := 3 // Member GET, token-owner GET, and mutation.
+			if operation == "read" {
+				wantRequests = 2 // Pending invitation GET and GraphQL miss.
+			}
+			if len(transport.deadlines) != wantRequests {
+				t.Fatalf("expected %d requests sharing an operation deadline, got %v", wantRequests, transport.deadlines)
 			}
 			for _, deadline := range transport.deadlines {
 				if deadline.Before(started.Add(budget)) || deadline.After(finished.Add(budget)) {

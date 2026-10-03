@@ -73,9 +73,25 @@ func (c *Client) findOrganizationMembershipMember(ctx context.Context, email str
 	// Preserve REST adoption semantics: only the organization's displayed email
 	// may select a member. Known UUIDs and accepted_by bypass this email lookup.
 	if !strings.EqualFold(member.Email, email) {
-		return nil, errOrganizationMembershipNotFound
+		return nil, fmt.Errorf("configured email matches an account whose organization email differs; use the member's primary or organization notification email, or identify the member by UUID")
 	}
 	return member, nil
+}
+
+func (c *Client) checkOrganizationMembershipNotSelf(ctx context.Context, memberID string) error {
+	var user struct {
+		ID string `json:"id"`
+	}
+	if err := c.makeRequest(ctx, http.MethodGet, "/v2/user", nil, &user); err != nil {
+		return fmt.Errorf("unable to identify the API token owner (read_user scope required): %w", err)
+	}
+	if user.ID == "" || memberID == "" {
+		return fmt.Errorf("cannot verify membership identity: user UUID missing from API response")
+	}
+	if strings.EqualFold(user.ID, memberID) {
+		return fmt.Errorf("cannot manage the API token owner's organization membership; use a token belonging to a different organization administrator")
+	}
+	return nil
 }
 
 func (c *Client) getOrganizationMembershipInvitation(ctx context.Context, id string) (*organizationMembershipInvitation, error) {
