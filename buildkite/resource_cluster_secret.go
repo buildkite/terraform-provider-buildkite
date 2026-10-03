@@ -172,7 +172,7 @@ func (r *clusterSecretResource) Create(ctx context.Context, req resource.CreateR
 		return
 	}
 
-	timeout, diags := r.client.timeouts.Create(ctx, DefaultTimeout)
+	timeout, diags := r.client.createTimeout(ctx)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -233,7 +233,7 @@ func (r *clusterSecretResource) Read(ctx context.Context, req resource.ReadReque
 	// Preserve the legacy stateful value since the Buildkite API never returns it.
 	existingValue := state.Value
 
-	timeout, diags := r.client.timeouts.Read(ctx, DefaultTimeout)
+	timeout, diags := r.client.readTimeout(ctx)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -307,7 +307,7 @@ func (r *clusterSecretResource) Update(ctx context.Context, req resource.UpdateR
 		return
 	}
 
-	timeout, diags := r.client.timeouts.Update(ctx, DefaultTimeout)
+	timeout, diags := r.client.updateTimeout(ctx)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -417,7 +417,7 @@ func (r *clusterSecretResource) Delete(ctx context.Context, req resource.DeleteR
 		return
 	}
 
-	timeout, diags := r.client.timeouts.Delete(ctx, DefaultTimeout)
+	timeout, diags := r.client.deleteTimeout(ctx)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

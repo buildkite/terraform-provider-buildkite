@@ -98,7 +98,7 @@ func (pt *pipelineTemplateResource) Create(ctx context.Context, req resource.Cre
 		return
 	}
 
-	timeout, diags := pt.client.timeouts.Create(ctx, DefaultTimeout)
+	timeout, diags := pt.client.createTimeout(ctx)
 	resp.Diagnostics.Append(diags...)
 
 	if resp.Diagnostics.HasError() {
@@ -149,7 +149,7 @@ func (pt *pipelineTemplateResource) Read(ctx context.Context, req resource.ReadR
 		return
 	}
 
-	timeouts, diags := pt.client.timeouts.Read(ctx, DefaultTimeout)
+	timeouts, diags := pt.client.readTimeout(ctx)
 	resp.Diagnostics.Append(diags...)
 
 	if resp.Diagnostics.HasError() {
@@ -211,7 +211,7 @@ func (pt *pipelineTemplateResource) Update(ctx context.Context, req resource.Upd
 		return
 	}
 
-	timeout, diags := pt.client.timeouts.Update(ctx, DefaultTimeout)
+	timeout, diags := pt.client.updateTimeout(ctx)
 	resp.Diagnostics.Append(diags...)
 
 	if resp.Diagnostics.HasError() {
@@ -262,7 +262,7 @@ func (pt *pipelineTemplateResource) Delete(ctx context.Context, req resource.Del
 		return
 	}
 
-	timeout, diags := pt.client.timeouts.Delete(ctx, DefaultTimeout)
+	timeout, diags := pt.client.deleteTimeout(ctx)
 	resp.Diagnostics.Append(diags...)
 
 	if resp.Diagnostics.HasError() {

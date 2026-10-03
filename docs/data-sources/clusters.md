@@ -26,6 +26,7 @@ Use this data source to retrieve clusters of an organization. You can find out m
 
 Read-Only:
 
+- `agent_tracing_service_uuid` (String) The UUID of the OpenTelemetry tracing notification service agents in the cluster export traces to. Null when none is selected, when the organization does not have agent tracing enabled, or when the API token cannot manage the cluster.
 - `color` (String) The color for the cluster.
 - `default_queue` (Attributes) The default queue for the cluster. (see [below for nested schema](#nestedatt--clusters--default_queue))
 - `description` (String) The description of the cluster.

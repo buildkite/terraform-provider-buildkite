@@ -41,13 +41,13 @@ resource "buildkite_pipeline" "pipeline" {
 
 ### Optional
 
-- `api_token` (String, Sensitive) API token with GraphQL access and `write_pipelines`, `read_pipelines`, `write_suites`, `read_notification_services`, and `write_notification_services` REST API scopes. You can generate a token from [your settings page](https://buildkite.com/user/api-access-tokens/new?description=terraform&scopes[]=write_pipelines&scopes[]=write_suites&scopes[]=read_pipelines&scopes[]=read_notification_services&scopes[]=write_notification_services&scopes[]=graphql). If not provided, the value is taken from the `BUILDKITE_API_TOKEN` environment variable.
+- `api_token` (String, Sensitive) API token with GraphQL access and `write_pipelines`, `read_pipelines`, `write_suites`, `read_notification_services`, `write_notification_services`, `read_organization_settings`, and `write_organization_settings` REST API scopes. The `buildkite_organization` resource and data source both read the organization API settings endpoint, so both need `read_organization_settings`; only the resource needs `write_organization_settings`. You can generate a token from [your settings page](https://buildkite.com/user/api-access-tokens/new?description=terraform&scopes[]=write_pipelines&scopes[]=write_suites&scopes[]=read_pipelines&scopes[]=read_notification_services&scopes[]=write_notification_services&scopes[]=read_organization_settings&scopes[]=write_organization_settings&scopes[]=graphql). If not provided, the value is taken from the `BUILDKITE_API_TOKEN` environment variable.
 - `archive_pipeline_on_delete` (Boolean) Enable this to archive pipelines when destroying the resource. This is opposed to completely deleting pipelines.
 - `graphql_url` (String) Base URL for the GraphQL API to use. If not provided, the value is taken from the `BUILDKITE_GRAPHQL_URL` environment variable.
 - `max_retries` (Number) Maximum number of retry attempts for retryable HTTP requests. Defaults to 10. The waits between attempts count against the applicable `timeouts` value, so raising this alone does not necessarily produce more attempts.
 - `organization` (String) The Buildkite organization slug. This can be found on the [settings](https://buildkite.com/organizations/~/settings) page. If not provided, the value is taken from the `BUILDKITE_ORGANIZATION_SLUG` environment variable.
 - `rest_url` (String) Base URL for the REST API to use. If not provided, the value is taken from the `BUILDKITE_REST_URL` environment variable.
-- `timeouts` (Attributes) (see [below for nested schema](#nestedatt--timeouts))
+- `timeouts` (Attributes) Time limits for each kind of operation. Each defaults to 3 minutes when unset. A value of `"0s"` or a negative duration is treated as unset, so the default applies. (see [below for nested schema](#nestedatt--timeouts))
 
 <a id="nestedatt--timeouts"></a>
 ### Nested Schema for `timeouts`
@@ -58,3 +58,19 @@ Optional:
 - `delete` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours). Setting a timeout for a Delete operation is only applicable if changes are saved into state before the destroy operation occurs.
 - `read` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours). Read operations occur during any refresh or planning operation when refresh is enabled.
 - `update` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours).
+
+## When an operation fails partway
+
+Creating or updating a resource can take several API calls, and a failure in a later one does not undo the calls that already succeeded. Where a resource can tell what applied, it records that in state alongside the error, so the next plan works from what Buildkite actually has rather than proposing the whole change again. Several resources do this, including `buildkite_pipeline` and `buildkite_cluster_queue`.
+
+Terraform marks a resource as tainted when its creation returns both state and an error, and a tainted resource is replaced rather than updated on the next apply. Replacing a `buildkite_pipeline` issues a new `webhook_url` and `badge_url`, and forces every `buildkite_pipeline_schedule` and `buildkite_pipeline_team` that points at it to be replaced as well. Check the plan after a create that failed partway, and if the pipeline itself is sound and only a later setting did not apply, clear the mark so the next apply finishes the configuration in place:
+
+```shell
+terraform untaint buildkite_pipeline.example
+```
+
+Clearing the mark matters more when the provider is configured with `archive_pipeline_on_delete`. Replacing a pipeline then archives it rather than deleting it, and an archived pipeline keeps its name, which must be unique within the organization, so the recreate that follows fails.
+
+A `buildkite_cluster_queue` that is being unpaused stays paused if the apply does not reach the end. Dispatch is resumed only once the rest of the update has applied, so that a queue never picks up jobs against a configuration that is half applied. Run the apply again to resume it.
+
+Creating a `buildkite_organization` is the exception, and records nothing when it fails. The resource applies settings to an organization that already exists rather than creating one, and every step compares before it mutates, so the apply can simply be run again. Updating one records what applied, like the resources above. When a create writes the organization's API settings, such as the API IP allowlist, and then fails to set two-factor enforcement, the provider warns that those API settings are in place but unrecorded; applying again writes only what still differs, then retries two-factor enforcement.

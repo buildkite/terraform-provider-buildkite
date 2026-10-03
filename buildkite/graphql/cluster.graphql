@@ -9,6 +9,8 @@ fragment ClusterFields on Cluster {
     # @genqlient(pointer: true)
     color
     # @genqlient(pointer: true)
+    agentTracingServiceUuid
+    # @genqlient(pointer: true)
     defaultQueue {
         id
         uuid
@@ -47,9 +49,19 @@ mutation createCluster(
     $emoji: String
     # @genqlient(pointer: true)
     $color: String
+    # Omitted when nil: the API rejects the key, even as null, unless agent tracing is enabled
+    # @genqlient(pointer: true, omitempty: true)
+    $agentTracingServiceUuid: String
 ) {
     clusterCreate(
-        input: { organizationId: $organizationId, name: $name, description: $description, emoji: $emoji, color: $color }
+        input: {
+            organizationId: $organizationId
+            name: $name
+            description: $description
+            emoji: $emoji
+            color: $color
+            agentTracingServiceUuid: $agentTracingServiceUuid
+        }
     ) {
         clientMutationId
         cluster {
@@ -68,6 +80,9 @@ mutation updateCluster(
     $emoji: String
     # @genqlient(pointer: true)
     $color: String
+    # Omitted when nil: the API rejects the key, even as null, unless agent tracing is enabled
+    # @genqlient(pointer: true, omitempty: true)
+    $agentTracingServiceUuid: String
 ) {
     clusterUpdate(
         input: {
@@ -77,6 +92,39 @@ mutation updateCluster(
             description: $description
             emoji: $emoji
             color: $color
+            agentTracingServiceUuid: $agentTracingServiceUuid
+        }
+    ) {
+        clientMutationId
+        cluster {
+            ...ClusterFields
+        }
+    }
+}
+
+# updateClusterClearingAgentTracingService is updateCluster with the agent tracing service cleared. The
+# clear is a literal null so that no other update can send the key, which the API refuses, even as null,
+# for an organization without agent tracing.
+mutation updateClusterClearingAgentTracingService(
+    $organizationId: ID!
+    $id: ID!
+    $name: String
+    # @genqlient(pointer: true)
+    $description: String
+    # @genqlient(pointer: true)
+    $emoji: String
+    # @genqlient(pointer: true)
+    $color: String
+) {
+    clusterUpdate(
+        input: {
+            organizationId: $organizationId
+            id: $id
+            name: $name
+            description: $description
+            emoji: $emoji
+            color: $color
+            agentTracingServiceUuid: null
         }
     ) {
         clientMutationId

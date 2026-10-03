@@ -99,7 +99,7 @@ func (tp *pipelineTeamResource) Create(ctx context.Context, req resource.CreateR
 		return
 	}
 
-	timeouts, diags := tp.client.timeouts.Create(ctx, DefaultTimeout)
+	timeouts, diags := tp.client.createTimeout(ctx)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -149,7 +149,7 @@ func (tp *pipelineTeamResource) Read(ctx context.Context, req resource.ReadReque
 		return
 	}
 
-	timeouts, diags := tp.client.timeouts.Read(ctx, DefaultTimeout)
+	timeouts, diags := tp.client.readTimeout(ctx)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -247,7 +247,7 @@ func (tp *pipelineTeamResource) Update(ctx context.Context, req resource.UpdateR
 		return
 	}
 
-	timeouts, diags := tp.client.timeouts.Update(ctx, DefaultTimeout)
+	timeouts, diags := tp.client.updateTimeout(ctx)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -283,7 +283,7 @@ func (tp *pipelineTeamResource) Delete(ctx context.Context, req resource.DeleteR
 		return
 	}
 
-	timeout, diags := tp.client.timeouts.Delete(ctx, DefaultTimeout)
+	timeout, diags := tp.client.deleteTimeout(ctx)
 	resp.Diagnostics.Append(diags...)
 
 	if resp.Diagnostics.HasError() {

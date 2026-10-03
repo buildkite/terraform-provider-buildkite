@@ -110,7 +110,7 @@ func (or *organizationRuleDatasource) Read(ctx context.Context, req datasource.R
 		return
 	}
 
-	timeouts, diags := or.client.timeouts.Read(ctx, DefaultTimeout)
+	timeouts, diags := or.client.readTimeout(ctx)
 	resp.Diagnostics.Append(diags...)
 
 	if resp.Diagnostics.HasError() {

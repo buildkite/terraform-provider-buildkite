@@ -72,6 +72,8 @@ type ClusterFields struct {
 	Emoji *string `json:"emoji"`
 	// Color hex code for the cluster
 	Color *string `json:"color"`
+	// Public UUID of the selected OpenTelemetry notification service; null when unconfigured or unavailable to the caller
+	AgentTracingServiceUuid *string `json:"agentTracingServiceUuid"`
 	// The default queue that agents connecting to the cluster without specifying a queue will accept jobs from
 	DefaultQueue *ClusterFieldsDefaultQueueClusterQueue `json:"defaultQueue"`
 }
@@ -93,6 +95,9 @@ func (v *ClusterFields) GetEmoji() *string { return v.Emoji }
 
 // GetColor returns ClusterFields.Color, and is useful for accessing the field via an interface.
 func (v *ClusterFields) GetColor() *string { return v.Color }
+
+// GetAgentTracingServiceUuid returns ClusterFields.AgentTracingServiceUuid, and is useful for accessing the field via an interface.
+func (v *ClusterFields) GetAgentTracingServiceUuid() *string { return v.AgentTracingServiceUuid }
 
 // GetDefaultQueue returns ClusterFields.DefaultQueue, and is useful for accessing the field via an interface.
 func (v *ClusterFields) GetDefaultQueue() *ClusterFieldsDefaultQueueClusterQueue {
@@ -311,6 +316,8 @@ type GetOrganizationClustersOrganizationClustersClusterConnectionEdgesClusterEdg
 	Emoji *string `json:"emoji"`
 	// Color hex code for the cluster
 	Color *string `json:"color"`
+	// Public UUID of the selected OpenTelemetry notification service; null when unconfigured or unavailable to the caller
+	AgentTracingServiceUuid *string `json:"agentTracingServiceUuid"`
 	// The default queue that agents connecting to the cluster without specifying a queue will accept jobs from
 	DefaultQueue *GetOrganizationClustersOrganizationClustersClusterConnectionEdgesClusterEdgeNodeClusterDefaultQueueClusterQueue `json:"defaultQueue"`
 }
@@ -343,6 +350,11 @@ func (v *GetOrganizationClustersOrganizationClustersClusterConnectionEdgesCluste
 // GetColor returns GetOrganizationClustersOrganizationClustersClusterConnectionEdgesClusterEdgeNodeCluster.Color, and is useful for accessing the field via an interface.
 func (v *GetOrganizationClustersOrganizationClustersClusterConnectionEdgesClusterEdgeNodeCluster) GetColor() *string {
 	return v.Color
+}
+
+// GetAgentTracingServiceUuid returns GetOrganizationClustersOrganizationClustersClusterConnectionEdgesClusterEdgeNodeCluster.AgentTracingServiceUuid, and is useful for accessing the field via an interface.
+func (v *GetOrganizationClustersOrganizationClustersClusterConnectionEdgesClusterEdgeNodeCluster) GetAgentTracingServiceUuid() *string {
+	return v.AgentTracingServiceUuid
 }
 
 // GetDefaultQueue returns GetOrganizationClustersOrganizationClustersClusterConnectionEdgesClusterEdgeNodeCluster.DefaultQueue, and is useful for accessing the field via an interface.
@@ -1200,6 +1212,8 @@ const (
 	HostedAgentInstanceShapeNameLinuxAmd6416x64 HostedAgentInstanceShapeName = "LINUX_AMD64_16X64"
 	// Linux 32 vCPU x 128 GB Memory
 	HostedAgentInstanceShapeNameLinuxAmd6432x128 HostedAgentInstanceShapeName = "LINUX_AMD64_32X128"
+	// Linux 64 vCPU x 256 GB Memory
+	HostedAgentInstanceShapeNameLinuxAmd6464x256 HostedAgentInstanceShapeName = "LINUX_AMD64_64X256"
 	// Linux 2 vCPU x 4 GB Memory
 	HostedAgentInstanceShapeNameLinuxArm642x4 HostedAgentInstanceShapeName = "LINUX_ARM64_2X4"
 	// Linux 4 vCPU x 16 GB Memory
@@ -1210,18 +1224,20 @@ const (
 	HostedAgentInstanceShapeNameLinuxArm6416x64 HostedAgentInstanceShapeName = "LINUX_ARM64_16X64"
 	// Linux 32 vCPU x 128 GB Memory
 	HostedAgentInstanceShapeNameLinuxArm6432x128 HostedAgentInstanceShapeName = "LINUX_ARM64_32X128"
-	// macOS 4 vCPU x 7 GB Memory
-	HostedAgentInstanceShapeNameMacosM24x7 HostedAgentInstanceShapeName = "MACOS_M2_4X7"
-	// macOS 6 vCPU x 14 GB Memory
-	HostedAgentInstanceShapeNameMacosM26x14 HostedAgentInstanceShapeName = "MACOS_M2_6X14"
-	// macOS 12 vCPU x 28 GB Memory
-	HostedAgentInstanceShapeNameMacosM212x28 HostedAgentInstanceShapeName = "MACOS_M2_12X28"
-	// macOS 12 vCPU x 56 GB Memory
-	HostedAgentInstanceShapeNameMacosM412x56 HostedAgentInstanceShapeName = "MACOS_M4_12X56"
+	// Linux 64 vCPU x 256 GB Memory
+	HostedAgentInstanceShapeNameLinuxArm6464x256 HostedAgentInstanceShapeName = "LINUX_ARM64_64X256"
 	// macOS 6 vCPU x 28 GB Memory
 	HostedAgentInstanceShapeNameMacosArm64M46x28 HostedAgentInstanceShapeName = "MACOS_ARM64_M4_6X28"
 	// macOS 12 vCPU x 56 GB Memory
 	HostedAgentInstanceShapeNameMacosArm64M412x56 HostedAgentInstanceShapeName = "MACOS_ARM64_M4_12X56"
+	// Windows 2 vCPU x 8 GB Memory
+	HostedAgentInstanceShapeNameWindowsAmd642x8 HostedAgentInstanceShapeName = "WINDOWS_AMD64_2X8"
+	// Windows 4 vCPU x 16 GB Memory
+	HostedAgentInstanceShapeNameWindowsAmd644x16 HostedAgentInstanceShapeName = "WINDOWS_AMD64_4X16"
+	// Windows 8 vCPU x 32 GB Memory
+	HostedAgentInstanceShapeNameWindowsAmd648x32 HostedAgentInstanceShapeName = "WINDOWS_AMD64_8X32"
+	// Windows 16 vCPU x 64 GB Memory
+	HostedAgentInstanceShapeNameWindowsAmd6416x64 HostedAgentInstanceShapeName = "WINDOWS_AMD64_16X64"
 )
 
 var AllHostedAgentInstanceShapeName = []HostedAgentInstanceShapeName{
@@ -1230,17 +1246,19 @@ var AllHostedAgentInstanceShapeName = []HostedAgentInstanceShapeName{
 	HostedAgentInstanceShapeNameLinuxAmd648x32,
 	HostedAgentInstanceShapeNameLinuxAmd6416x64,
 	HostedAgentInstanceShapeNameLinuxAmd6432x128,
+	HostedAgentInstanceShapeNameLinuxAmd6464x256,
 	HostedAgentInstanceShapeNameLinuxArm642x4,
 	HostedAgentInstanceShapeNameLinuxArm644x16,
 	HostedAgentInstanceShapeNameLinuxArm648x32,
 	HostedAgentInstanceShapeNameLinuxArm6416x64,
 	HostedAgentInstanceShapeNameLinuxArm6432x128,
-	HostedAgentInstanceShapeNameMacosM24x7,
-	HostedAgentInstanceShapeNameMacosM26x14,
-	HostedAgentInstanceShapeNameMacosM212x28,
-	HostedAgentInstanceShapeNameMacosM412x56,
+	HostedAgentInstanceShapeNameLinuxArm6464x256,
 	HostedAgentInstanceShapeNameMacosArm64M46x28,
 	HostedAgentInstanceShapeNameMacosArm64M412x56,
+	HostedAgentInstanceShapeNameWindowsAmd642x8,
+	HostedAgentInstanceShapeNameWindowsAmd644x16,
+	HostedAgentInstanceShapeNameWindowsAmd648x32,
+	HostedAgentInstanceShapeNameWindowsAmd6416x64,
 }
 
 // Possible macOS versions for the Hosted Agent instance
@@ -1255,6 +1273,10 @@ const (
 	HostedAgentMacOSVersionTahoe HostedAgentMacOSVersion = "TAHOE"
 	// macOS Tahoe (26.5)
 	HostedAgentMacOSVersionTahoeSlim HostedAgentMacOSVersion = "TAHOE_SLIM"
+	// macOS Tahoe (26.6)
+	HostedAgentMacOSVersionTahoe266 HostedAgentMacOSVersion = "TAHOE_26_6"
+	// macOS Golden Gate (27.0)
+	HostedAgentMacOSVersionGoldenGate HostedAgentMacOSVersion = "GOLDEN_GATE"
 )
 
 var AllHostedAgentMacOSVersion = []HostedAgentMacOSVersion{
@@ -1262,6 +1284,8 @@ var AllHostedAgentMacOSVersion = []HostedAgentMacOSVersion{
 	HostedAgentMacOSVersionSequoia,
 	HostedAgentMacOSVersionTahoe,
 	HostedAgentMacOSVersionTahoeSlim,
+	HostedAgentMacOSVersionTahoe266,
+	HostedAgentMacOSVersionGoldenGate,
 }
 
 // Possible machine types for the hosted agent instance
@@ -1272,11 +1296,14 @@ const (
 	HostedAgentMachineTypeLinux HostedAgentMachineType = "LINUX"
 	// macOS
 	HostedAgentMachineTypeMacos HostedAgentMachineType = "MACOS"
+	// Windows
+	HostedAgentMachineTypeWindows HostedAgentMachineType = "WINDOWS"
 )
 
 var AllHostedAgentMachineType = []HostedAgentMachineType{
 	HostedAgentMachineTypeLinux,
 	HostedAgentMachineTypeMacos,
+	HostedAgentMachineTypeWindows,
 }
 
 // Possible sizes for the hosted agent instance, specifying vCPU and memory allocations.
@@ -1293,6 +1320,8 @@ const (
 	HostedAgentSizeExtraLarge HostedAgentSize = "EXTRA_LARGE"
 	// Extra extra large capacity size: 32 vCPU, 128GB RAM (Linux); Not applicable for macOS.
 	HostedAgentSizeExtraExtraLarge HostedAgentSize = "EXTRA_EXTRA_LARGE"
+	// 3XL capacity size: 64 vCPU, 256GB RAM (Linux); Not applicable for macOS.
+	HostedAgentSizeThreeXl HostedAgentSize = "THREE_XL"
 )
 
 var AllHostedAgentSize = []HostedAgentSize{
@@ -1301,6 +1330,7 @@ var AllHostedAgentSize = []HostedAgentSize{
 	HostedAgentSizeLarge,
 	HostedAgentSizeExtraLarge,
 	HostedAgentSizeExtraExtraLarge,
+	HostedAgentSizeThreeXl,
 }
 
 // Settings for Linux hosted agents on this queue
@@ -1903,8 +1933,6 @@ var AllPipelineAccessLevels = []PipelineAccessLevels{
 type PipelineCreateInput struct {
 	// Autogenerated input type of PipelineCreate
 	ClientMutationId string `json:"clientMutationId"`
-	// An optional repository URL agents use as a Git clone mirror.
-	CloneMirrorUrl *string `json:"cloneMirrorUrl"`
 	// Autogenerated input type of PipelineCreate
 	OrganizationId string `json:"organizationId"`
 	// Autogenerated input type of PipelineCreate
@@ -1949,13 +1977,12 @@ type PipelineCreateInput struct {
 	Tags []PipelineTagInput `json:"tags"`
 	// Autogenerated input type of PipelineCreate
 	BranchConfiguration *string `json:"branchConfiguration"`
+	// Autogenerated input type of PipelineCreate
+	CloneMirrorUrl *string `json:"cloneMirrorUrl"`
 }
 
 // GetClientMutationId returns PipelineCreateInput.ClientMutationId, and is useful for accessing the field via an interface.
 func (v *PipelineCreateInput) GetClientMutationId() string { return v.ClientMutationId }
-
-// GetCloneMirrorUrl returns PipelineCreateInput.CloneMirrorUrl, and is useful for accessing the field via an interface.
-func (v *PipelineCreateInput) GetCloneMirrorUrl() *string { return v.CloneMirrorUrl }
 
 // GetOrganizationId returns PipelineCreateInput.OrganizationId, and is useful for accessing the field via an interface.
 func (v *PipelineCreateInput) GetOrganizationId() string { return v.OrganizationId }
@@ -2026,6 +2053,9 @@ func (v *PipelineCreateInput) GetTags() []PipelineTagInput { return v.Tags }
 
 // GetBranchConfiguration returns PipelineCreateInput.BranchConfiguration, and is useful for accessing the field via an interface.
 func (v *PipelineCreateInput) GetBranchConfiguration() *string { return v.BranchConfiguration }
+
+// GetCloneMirrorUrl returns PipelineCreateInput.CloneMirrorUrl, and is useful for accessing the field via an interface.
+func (v *PipelineCreateInput) GetCloneMirrorUrl() *string { return v.CloneMirrorUrl }
 
 // PipelineFields includes the GraphQL fields of Pipeline requested by the fragment PipelineFields.
 // The GraphQL type's documentation follows.
@@ -2590,8 +2620,6 @@ func (v *PipelineTemplateFields) GetName() string { return v.Name }
 type PipelineUpdateInput struct {
 	// Autogenerated input type of PipelineUpdate
 	ClientMutationId string `json:"clientMutationId"`
-	// An optional repository URL agents use as a Git clone mirror. Set to null to clear it.
-	CloneMirrorUrl *string `json:"cloneMirrorUrl"`
 	// Autogenerated input type of PipelineUpdate
 	Id string `json:"id"`
 	// Autogenerated input type of PipelineUpdate
@@ -2636,13 +2664,12 @@ type PipelineUpdateInput struct {
 	Tags []PipelineTagInput `json:"tags"`
 	// Autogenerated input type of PipelineUpdate
 	BranchConfiguration *string `json:"branchConfiguration"`
+	// Autogenerated input type of PipelineUpdate
+	CloneMirrorUrl *string `json:"cloneMirrorUrl"`
 }
 
 // GetClientMutationId returns PipelineUpdateInput.ClientMutationId, and is useful for accessing the field via an interface.
 func (v *PipelineUpdateInput) GetClientMutationId() string { return v.ClientMutationId }
-
-// GetCloneMirrorUrl returns PipelineUpdateInput.CloneMirrorUrl, and is useful for accessing the field via an interface.
-func (v *PipelineUpdateInput) GetCloneMirrorUrl() *string { return v.CloneMirrorUrl }
 
 // GetId returns PipelineUpdateInput.Id, and is useful for accessing the field via an interface.
 func (v *PipelineUpdateInput) GetId() string { return v.Id }
@@ -2713,6 +2740,9 @@ func (v *PipelineUpdateInput) GetTags() []PipelineTagInput { return v.Tags }
 
 // GetBranchConfiguration returns PipelineUpdateInput.BranchConfiguration, and is useful for accessing the field via an interface.
 func (v *PipelineUpdateInput) GetBranchConfiguration() *string { return v.BranchConfiguration }
+
+// GetCloneMirrorUrl returns PipelineUpdateInput.CloneMirrorUrl, and is useful for accessing the field via an interface.
+func (v *PipelineUpdateInput) GetCloneMirrorUrl() *string { return v.CloneMirrorUrl }
 
 // The visibility of the pipeline
 type PipelineVisibility string
@@ -3288,7 +3318,7 @@ func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderCodebaseSetti
 // RepositoryProviderSettingsFieldsProviderRepositoryProviderCursorOrigin includes the requested fields of the GraphQL type RepositoryProviderCursorOrigin.
 // The GraphQL type's documentation follows.
 //
-// A pipeline's repository is being provided by Cursor Origin
+// A pipeline's repository is being provided by Origin
 type RepositoryProviderSettingsFieldsProviderRepositoryProviderCursorOrigin struct {
 	Typename string `json:"__typename"`
 	// The repository’s provider settings
@@ -3308,7 +3338,7 @@ func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderCursorOrigin)
 // RepositoryProviderSettingsFieldsProviderRepositoryProviderCursorOriginSettings includes the requested fields of the GraphQL type RepositoryProviderCursorOriginSettings.
 // The GraphQL type's documentation follows.
 //
-// Settings for a Cursor Origin repository
+// Settings for an Origin repository
 type RepositoryProviderSettingsFieldsProviderRepositoryProviderCursorOriginSettings struct {
 	// Whether to create builds when branches are pushed.
 	BuildBranches *bool `json:"buildBranches"`
@@ -3320,7 +3350,7 @@ type RepositoryProviderSettingsFieldsProviderRepositoryProviderCursorOriginSetti
 	FilterCondition *string `json:"filterCondition"`
 	// Whether the filter is enabled
 	FilterEnabled *bool `json:"filterEnabled"`
-	// Whether to publish build results to Cursor Origin as a check run.
+	// Whether to publish build results to Origin as a check run.
 	PublishCommitStatus *bool `json:"publishCommitStatus"`
 }
 
@@ -3417,6 +3447,14 @@ type RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubEnterpriseS
 	BuildPullRequestEdited *bool `json:"buildPullRequestEdited"`
 	// Whether to create builds when a pull request is reopened.
 	BuildPullRequestReopened *bool `json:"buildPullRequestReopened"`
+	// Whether to create a build when a pull request is added to a stack.
+	BuildPullRequestStacks *bool `json:"buildPullRequestStacks"`
+	// Whether jobs can request GitHub access tokens bounded by workflow permissions.
+	GithubWorkflowAccessTokensEnabled *bool `json:"githubWorkflowAccessTokensEnabled"`
+	// Whether to skip creating a new build for a pull request when the pull request is closed or merged. Useful for ignoring late activity from automated housekeeping (e.g. label changes from bots) on closed pull requests.
+	SkipBuildsForClosedPullRequests *bool `json:"skipBuildsForClosedPullRequests"`
+	// Whether to prevent custom commit statuses posted via `notify:` from using a `context:` starting with `buildkite/`. Prevents conflicts with commit statuses automatically generated by Buildkite. When enabled, custom commit statuses must specify a `context:`. Effective enforcement also requires this restriction to be enabled at the organization level; when the organization-level restriction is inactive, the setting is stored but not enforced.
+	PreventCustomStatusesFromUsingBuildkitePrefix *bool `json:"preventCustomStatusesFromUsingBuildkitePrefix"`
 	// Whether to create builds when an inline review comment is created on a pull request.
 	BuildPullRequestReviewCommentCreated *bool `json:"buildPullRequestReviewCommentCreated"`
 	// Whether to create builds when a pull request review is requested.
@@ -3536,6 +3574,26 @@ func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubEnterpr
 // GetBuildPullRequestReopened returns RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings.BuildPullRequestReopened, and is useful for accessing the field via an interface.
 func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings) GetBuildPullRequestReopened() *bool {
 	return v.BuildPullRequestReopened
+}
+
+// GetBuildPullRequestStacks returns RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings.BuildPullRequestStacks, and is useful for accessing the field via an interface.
+func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings) GetBuildPullRequestStacks() *bool {
+	return v.BuildPullRequestStacks
+}
+
+// GetGithubWorkflowAccessTokensEnabled returns RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings.GithubWorkflowAccessTokensEnabled, and is useful for accessing the field via an interface.
+func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings) GetGithubWorkflowAccessTokensEnabled() *bool {
+	return v.GithubWorkflowAccessTokensEnabled
+}
+
+// GetSkipBuildsForClosedPullRequests returns RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings.SkipBuildsForClosedPullRequests, and is useful for accessing the field via an interface.
+func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings) GetSkipBuildsForClosedPullRequests() *bool {
+	return v.SkipBuildsForClosedPullRequests
+}
+
+// GetPreventCustomStatusesFromUsingBuildkitePrefix returns RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings.PreventCustomStatusesFromUsingBuildkitePrefix, and is useful for accessing the field via an interface.
+func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings) GetPreventCustomStatusesFromUsingBuildkitePrefix() *bool {
+	return v.PreventCustomStatusesFromUsingBuildkitePrefix
 }
 
 // GetBuildPullRequestReviewCommentCreated returns RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubEnterpriseSettingsRepositoryProviderGitHubEnterpriseSettings.BuildPullRequestReviewCommentCreated, and is useful for accessing the field via an interface.
@@ -3746,6 +3804,14 @@ type RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubSettingsRep
 	BuildPullRequestEdited *bool `json:"buildPullRequestEdited"`
 	// Whether to create builds when a pull request is reopened.
 	BuildPullRequestReopened *bool `json:"buildPullRequestReopened"`
+	// Whether to create a build when a pull request is added to a stack.
+	BuildPullRequestStacks *bool `json:"buildPullRequestStacks"`
+	// Whether jobs can request GitHub access tokens bounded by workflow permissions.
+	GithubWorkflowAccessTokensEnabled *bool `json:"githubWorkflowAccessTokensEnabled"`
+	// Whether to skip creating a new build for a pull request when the pull request is closed or merged. Useful for ignoring late activity from automated housekeeping (e.g. label changes from bots) on closed pull requests.
+	SkipBuildsForClosedPullRequests *bool `json:"skipBuildsForClosedPullRequests"`
+	// Whether to prevent custom commit statuses posted via `notify:` from using a `context:` starting with `buildkite/`. Prevents conflicts with commit statuses automatically generated by Buildkite. When enabled, custom commit statuses must specify a `context:`. Effective enforcement also requires this restriction to be enabled at the organization level; when the organization-level restriction is inactive, the setting is stored but not enforced.
+	PreventCustomStatusesFromUsingBuildkitePrefix *bool `json:"preventCustomStatusesFromUsingBuildkitePrefix"`
 	// Whether to create builds when an inline review comment is created on a pull request.
 	BuildPullRequestReviewCommentCreated *bool `json:"buildPullRequestReviewCommentCreated"`
 	// Whether to create builds when a pull request review is requested.
@@ -3865,6 +3931,26 @@ func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubSetting
 // GetBuildPullRequestReopened returns RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings.BuildPullRequestReopened, and is useful for accessing the field via an interface.
 func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings) GetBuildPullRequestReopened() *bool {
 	return v.BuildPullRequestReopened
+}
+
+// GetBuildPullRequestStacks returns RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings.BuildPullRequestStacks, and is useful for accessing the field via an interface.
+func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings) GetBuildPullRequestStacks() *bool {
+	return v.BuildPullRequestStacks
+}
+
+// GetGithubWorkflowAccessTokensEnabled returns RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings.GithubWorkflowAccessTokensEnabled, and is useful for accessing the field via an interface.
+func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings) GetGithubWorkflowAccessTokensEnabled() *bool {
+	return v.GithubWorkflowAccessTokensEnabled
+}
+
+// GetSkipBuildsForClosedPullRequests returns RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings.SkipBuildsForClosedPullRequests, and is useful for accessing the field via an interface.
+func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings) GetSkipBuildsForClosedPullRequests() *bool {
+	return v.SkipBuildsForClosedPullRequests
+}
+
+// GetPreventCustomStatusesFromUsingBuildkitePrefix returns RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings.PreventCustomStatusesFromUsingBuildkitePrefix, and is useful for accessing the field via an interface.
+func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings) GetPreventCustomStatusesFromUsingBuildkitePrefix() *bool {
+	return v.PreventCustomStatusesFromUsingBuildkitePrefix
 }
 
 // GetBuildPullRequestReviewCommentCreated returns RepositoryProviderSettingsFieldsProviderRepositoryProviderGithubSettingsRepositoryProviderGitHubSettings.BuildPullRequestReviewCommentCreated, and is useful for accessing the field via an interface.
@@ -4220,15 +4306,15 @@ func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderUnknownSettin
 type RuleAction string
 
 const (
-	// Artifacts read
-	RuleActionArtifactsRead RuleAction = "ARTIFACTS_READ"
 	// Trigger build
 	RuleActionTriggerBuild RuleAction = "TRIGGER_BUILD"
+	// Artifacts read
+	RuleActionArtifactsRead RuleAction = "ARTIFACTS_READ"
 )
 
 var AllRuleAction = []RuleAction{
-	RuleActionArtifactsRead,
 	RuleActionTriggerBuild,
+	RuleActionArtifactsRead,
 }
 
 // The effect a rule has
@@ -4840,11 +4926,12 @@ func (v *__createClusterAgentTokenInput) GetExpiresAt() *time.Time { return v.Ex
 
 // __createClusterInput is used internally by genqlient
 type __createClusterInput struct {
-	OrganizationId string  `json:"organizationId"`
-	Name           string  `json:"name"`
-	Description    *string `json:"description"`
-	Emoji          *string `json:"emoji"`
-	Color          *string `json:"color"`
+	OrganizationId          string  `json:"organizationId"`
+	Name                    string  `json:"name"`
+	Description             *string `json:"description"`
+	Emoji                   *string `json:"emoji"`
+	Color                   *string `json:"color"`
+	AgentTracingServiceUuid *string `json:"agentTracingServiceUuid,omitempty"`
 }
 
 // GetOrganizationId returns __createClusterInput.OrganizationId, and is useful for accessing the field via an interface.
@@ -4861,6 +4948,9 @@ func (v *__createClusterInput) GetEmoji() *string { return v.Emoji }
 
 // GetColor returns __createClusterInput.Color, and is useful for accessing the field via an interface.
 func (v *__createClusterInput) GetColor() *string { return v.Color }
+
+// GetAgentTracingServiceUuid returns __createClusterInput.AgentTracingServiceUuid, and is useful for accessing the field via an interface.
+func (v *__createClusterInput) GetAgentTracingServiceUuid() *string { return v.AgentTracingServiceUuid }
 
 // __createClusterQueueInput is used internally by genqlient
 type __createClusterQueueInput struct {
@@ -5342,8 +5432,9 @@ func (v *__getPipelineWebhookInput) GetId() string { return v.Id }
 
 // __getTestSuiteInput is used internally by genqlient
 type __getTestSuiteInput struct {
-	Id        string `json:"id"`
-	TeamCount int    `json:"teamCount"`
+	Id         string  `json:"id"`
+	TeamCount  int     `json:"teamCount"`
+	TeamCursor *string `json:"teamCursor"`
 }
 
 // GetId returns __getTestSuiteInput.Id, and is useful for accessing the field via an interface.
@@ -5351,6 +5442,9 @@ func (v *__getTestSuiteInput) GetId() string { return v.Id }
 
 // GetTeamCount returns __getTestSuiteInput.TeamCount, and is useful for accessing the field via an interface.
 func (v *__getTestSuiteInput) GetTeamCount() int { return v.TeamCount }
+
+// GetTeamCursor returns __getTestSuiteInput.TeamCursor, and is useful for accessing the field via an interface.
+func (v *__getTestSuiteInput) GetTeamCursor() *string { return v.TeamCursor }
 
 // __pauseDispatchClusterQueueInput is used internally by genqlient
 type __pauseDispatchClusterQueueInput struct {
@@ -5403,18 +5497,6 @@ func (v *__revokeClusterAgentTokenInput) GetOrganizationId() string { return v.O
 
 // GetId returns __revokeClusterAgentTokenInput.Id, and is useful for accessing the field via an interface.
 func (v *__revokeClusterAgentTokenInput) GetId() string { return v.Id }
-
-// __setApiIpAddressesInput is used internally by genqlient
-type __setApiIpAddressesInput struct {
-	OrganizationID string `json:"organizationID"`
-	IpAddresses    string `json:"ipAddresses"`
-}
-
-// GetOrganizationID returns __setApiIpAddressesInput.OrganizationID, and is useful for accessing the field via an interface.
-func (v *__setApiIpAddressesInput) GetOrganizationID() string { return v.OrganizationID }
-
-// GetIpAddresses returns __setApiIpAddressesInput.IpAddresses, and is useful for accessing the field via an interface.
-func (v *__setApiIpAddressesInput) GetIpAddresses() string { return v.IpAddresses }
 
 // __setClusterDefaultQueueInput is used internally by genqlient
 type __setClusterDefaultQueueInput struct {
@@ -5580,14 +5662,47 @@ func (v *__updateClusterAgentTokenInput) GetDescription() string { return v.Desc
 // GetAllowedIpAddresses returns __updateClusterAgentTokenInput.AllowedIpAddresses, and is useful for accessing the field via an interface.
 func (v *__updateClusterAgentTokenInput) GetAllowedIpAddresses() string { return v.AllowedIpAddresses }
 
-// __updateClusterInput is used internally by genqlient
-type __updateClusterInput struct {
+// __updateClusterClearingAgentTracingServiceInput is used internally by genqlient
+type __updateClusterClearingAgentTracingServiceInput struct {
 	OrganizationId string  `json:"organizationId"`
 	Id             string  `json:"id"`
 	Name           string  `json:"name"`
 	Description    *string `json:"description"`
 	Emoji          *string `json:"emoji"`
 	Color          *string `json:"color"`
+}
+
+// GetOrganizationId returns __updateClusterClearingAgentTracingServiceInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__updateClusterClearingAgentTracingServiceInput) GetOrganizationId() string {
+	return v.OrganizationId
+}
+
+// GetId returns __updateClusterClearingAgentTracingServiceInput.Id, and is useful for accessing the field via an interface.
+func (v *__updateClusterClearingAgentTracingServiceInput) GetId() string { return v.Id }
+
+// GetName returns __updateClusterClearingAgentTracingServiceInput.Name, and is useful for accessing the field via an interface.
+func (v *__updateClusterClearingAgentTracingServiceInput) GetName() string { return v.Name }
+
+// GetDescription returns __updateClusterClearingAgentTracingServiceInput.Description, and is useful for accessing the field via an interface.
+func (v *__updateClusterClearingAgentTracingServiceInput) GetDescription() *string {
+	return v.Description
+}
+
+// GetEmoji returns __updateClusterClearingAgentTracingServiceInput.Emoji, and is useful for accessing the field via an interface.
+func (v *__updateClusterClearingAgentTracingServiceInput) GetEmoji() *string { return v.Emoji }
+
+// GetColor returns __updateClusterClearingAgentTracingServiceInput.Color, and is useful for accessing the field via an interface.
+func (v *__updateClusterClearingAgentTracingServiceInput) GetColor() *string { return v.Color }
+
+// __updateClusterInput is used internally by genqlient
+type __updateClusterInput struct {
+	OrganizationId          string  `json:"organizationId"`
+	Id                      string  `json:"id"`
+	Name                    string  `json:"name"`
+	Description             *string `json:"description"`
+	Emoji                   *string `json:"emoji"`
+	Color                   *string `json:"color"`
+	AgentTracingServiceUuid *string `json:"agentTracingServiceUuid,omitempty"`
 }
 
 // GetOrganizationId returns __updateClusterInput.OrganizationId, and is useful for accessing the field via an interface.
@@ -5607,6 +5722,9 @@ func (v *__updateClusterInput) GetEmoji() *string { return v.Emoji }
 
 // GetColor returns __updateClusterInput.Color, and is useful for accessing the field via an interface.
 func (v *__updateClusterInput) GetColor() *string { return v.Color }
+
+// GetAgentTracingServiceUuid returns __updateClusterInput.AgentTracingServiceUuid, and is useful for accessing the field via an interface.
+func (v *__updateClusterInput) GetAgentTracingServiceUuid() *string { return v.AgentTracingServiceUuid }
 
 // __updateClusterQueueInput is used internally by genqlient
 type __updateClusterQueueInput struct {
@@ -6034,6 +6152,11 @@ func (v *createClusterClusterCreateClusterCreatePayloadCluster) GetColor() *stri
 	return v.ClusterFields.Color
 }
 
+// GetAgentTracingServiceUuid returns createClusterClusterCreateClusterCreatePayloadCluster.AgentTracingServiceUuid, and is useful for accessing the field via an interface.
+func (v *createClusterClusterCreateClusterCreatePayloadCluster) GetAgentTracingServiceUuid() *string {
+	return v.ClusterFields.AgentTracingServiceUuid
+}
+
 // GetDefaultQueue returns createClusterClusterCreateClusterCreatePayloadCluster.DefaultQueue, and is useful for accessing the field via an interface.
 func (v *createClusterClusterCreateClusterCreatePayloadCluster) GetDefaultQueue() *ClusterFieldsDefaultQueueClusterQueue {
 	return v.ClusterFields.DefaultQueue
@@ -6077,6 +6200,8 @@ type __premarshalcreateClusterClusterCreateClusterCreatePayloadCluster struct {
 
 	Color *string `json:"color"`
 
+	AgentTracingServiceUuid *string `json:"agentTracingServiceUuid"`
+
 	DefaultQueue *ClusterFieldsDefaultQueueClusterQueue `json:"defaultQueue"`
 }
 
@@ -6097,6 +6222,7 @@ func (v *createClusterClusterCreateClusterCreatePayloadCluster) __premarshalJSON
 	retval.Description = v.ClusterFields.Description
 	retval.Emoji = v.ClusterFields.Emoji
 	retval.Color = v.ClusterFields.Color
+	retval.AgentTracingServiceUuid = v.ClusterFields.AgentTracingServiceUuid
 	retval.DefaultQueue = v.ClusterFields.DefaultQueue
 	return &retval, nil
 }
@@ -7768,100 +7894,12 @@ func (v *createTestSuiteTeamResponse) GetTeamSuiteCreate() createTestSuiteTeamTe
 //
 // Autogenerated return type of TeamSuiteCreate.
 type createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayload struct {
-	Suite     createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuite     `json:"suite"`
 	TeamSuite createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadTeamSuite `json:"teamSuite"`
-}
-
-// GetSuite returns createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayload.Suite, and is useful for accessing the field via an interface.
-func (v *createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayload) GetSuite() createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuite {
-	return v.Suite
 }
 
 // GetTeamSuite returns createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayload.TeamSuite, and is useful for accessing the field via an interface.
 func (v *createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayload) GetTeamSuite() createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadTeamSuite {
 	return v.TeamSuite
-}
-
-// createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuite includes the requested fields of the GraphQL type Suite.
-// The GraphQL type's documentation follows.
-//
-// A suite
-type createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuite struct {
-	// Teams associated with this suite
-	Teams createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuiteTeamsTeamSuiteConnection `json:"teams"`
-}
-
-// GetTeams returns createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuite.Teams, and is useful for accessing the field via an interface.
-func (v *createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuite) GetTeams() createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuiteTeamsTeamSuiteConnection {
-	return v.Teams
-}
-
-// createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuiteTeamsTeamSuiteConnection includes the requested fields of the GraphQL type TeamSuiteConnection.
-// The GraphQL type's documentation follows.
-//
-// The connection type for TeamSuite.
-type createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuiteTeamsTeamSuiteConnection struct {
-	// A list of edges.
-	Edges []createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdge `json:"edges"`
-}
-
-// GetEdges returns createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuiteTeamsTeamSuiteConnection.Edges, and is useful for accessing the field via an interface.
-func (v *createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuiteTeamsTeamSuiteConnection) GetEdges() []createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdge {
-	return v.Edges
-}
-
-// createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdge includes the requested fields of the GraphQL type TeamSuiteEdge.
-// The GraphQL type's documentation follows.
-//
-// An edge in a connection.
-type createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdge struct {
-	// The item at the end of the edge.
-	Node createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdgeNodeTeamSuite `json:"node"`
-}
-
-// GetNode returns createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdge.Node, and is useful for accessing the field via an interface.
-func (v *createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdge) GetNode() createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdgeNodeTeamSuite {
-	return v.Node
-}
-
-// createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdgeNodeTeamSuite includes the requested fields of the GraphQL type TeamSuite.
-// The GraphQL type's documentation follows.
-//
-// A suite that's been assigned to a team
-type createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdgeNodeTeamSuite struct {
-	Id string `json:"id"`
-	// The public UUID for this team suite
-	Uuid string `json:"uuid"`
-	// The team associated with this team member
-	Team createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdgeNodeTeamSuiteTeam `json:"team"`
-}
-
-// GetId returns createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdgeNodeTeamSuite.Id, and is useful for accessing the field via an interface.
-func (v *createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdgeNodeTeamSuite) GetId() string {
-	return v.Id
-}
-
-// GetUuid returns createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdgeNodeTeamSuite.Uuid, and is useful for accessing the field via an interface.
-func (v *createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdgeNodeTeamSuite) GetUuid() string {
-	return v.Uuid
-}
-
-// GetTeam returns createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdgeNodeTeamSuite.Team, and is useful for accessing the field via an interface.
-func (v *createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdgeNodeTeamSuite) GetTeam() createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdgeNodeTeamSuiteTeam {
-	return v.Team
-}
-
-// createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdgeNodeTeamSuiteTeam includes the requested fields of the GraphQL type Team.
-// The GraphQL type's documentation follows.
-//
-// An organization team
-type createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdgeNodeTeamSuiteTeam struct {
-	Id string `json:"id"`
-}
-
-// GetId returns createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdgeNodeTeamSuiteTeam.Id, and is useful for accessing the field via an interface.
-func (v *createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdgeNodeTeamSuiteTeam) GetId() string {
-	return v.Id
 }
 
 // createTestSuiteTeamTeamSuiteCreateTeamSuiteCreatePayloadTeamSuite includes the requested fields of the GraphQL type TeamSuite.
@@ -8563,6 +8601,11 @@ func (v *getClusterByNameOrganizationClustersClusterConnectionEdgesClusterEdgeNo
 	return v.ClusterFields.Color
 }
 
+// GetAgentTracingServiceUuid returns getClusterByNameOrganizationClustersClusterConnectionEdgesClusterEdgeNodeCluster.AgentTracingServiceUuid, and is useful for accessing the field via an interface.
+func (v *getClusterByNameOrganizationClustersClusterConnectionEdgesClusterEdgeNodeCluster) GetAgentTracingServiceUuid() *string {
+	return v.ClusterFields.AgentTracingServiceUuid
+}
+
 // GetDefaultQueue returns getClusterByNameOrganizationClustersClusterConnectionEdgesClusterEdgeNodeCluster.DefaultQueue, and is useful for accessing the field via an interface.
 func (v *getClusterByNameOrganizationClustersClusterConnectionEdgesClusterEdgeNodeCluster) GetDefaultQueue() *ClusterFieldsDefaultQueueClusterQueue {
 	return v.ClusterFields.DefaultQueue
@@ -8606,6 +8649,8 @@ type __premarshalgetClusterByNameOrganizationClustersClusterConnectionEdgesClust
 
 	Color *string `json:"color"`
 
+	AgentTracingServiceUuid *string `json:"agentTracingServiceUuid"`
+
 	DefaultQueue *ClusterFieldsDefaultQueueClusterQueue `json:"defaultQueue"`
 }
 
@@ -8626,6 +8671,7 @@ func (v *getClusterByNameOrganizationClustersClusterConnectionEdgesClusterEdgeNo
 	retval.Description = v.ClusterFields.Description
 	retval.Emoji = v.ClusterFields.Emoji
 	retval.Color = v.ClusterFields.Color
+	retval.AgentTracingServiceUuid = v.ClusterFields.AgentTracingServiceUuid
 	retval.DefaultQueue = v.ClusterFields.DefaultQueue
 	return &retval, nil
 }
@@ -8709,6 +8755,7 @@ func (v *getClusterByNameResponse) GetOrganization() getClusterByNameOrganizatio
 // getClusterQueueByNodeNodeOrganizationBanner
 // getClusterQueueByNodeNodeOrganizationInvitation
 // getClusterQueueByNodeNodeOrganizationMember
+// getClusterQueueByNodeNodeOrganizationRepositoryProviderCursorOrigin
 // getClusterQueueByNodeNodeOrganizationRepositoryProviderGitHub
 // getClusterQueueByNodeNodeOrganizationRepositoryProviderGitHubEnterpriseServer
 // getClusterQueueByNodeNodePipeline
@@ -8818,6 +8865,8 @@ func (v *getClusterQueueByNodeNodeOrganizationBanner) implementsGraphQLInterface
 func (v *getClusterQueueByNodeNodeOrganizationInvitation) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
 func (v *getClusterQueueByNodeNodeOrganizationMember) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
+}
+func (v *getClusterQueueByNodeNodeOrganizationRepositoryProviderCursorOrigin) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
 func (v *getClusterQueueByNodeNodeOrganizationRepositoryProviderGitHub) implementsGraphQLInterfacegetClusterQueueByNodeNode() {
 }
@@ -8997,6 +9046,9 @@ func __unmarshalgetClusterQueueByNodeNode(b []byte, v *getClusterQueueByNodeNode
 		return json.Unmarshal(b, *v)
 	case "OrganizationMember":
 		*v = new(getClusterQueueByNodeNodeOrganizationMember)
+		return json.Unmarshal(b, *v)
+	case "OrganizationRepositoryProviderCursorOrigin":
+		*v = new(getClusterQueueByNodeNodeOrganizationRepositoryProviderCursorOrigin)
 		return json.Unmarshal(b, *v)
 	case "OrganizationRepositoryProviderGitHub":
 		*v = new(getClusterQueueByNodeNodeOrganizationRepositoryProviderGitHub)
@@ -9428,6 +9480,14 @@ func __marshalgetClusterQueueByNodeNode(v *getClusterQueueByNodeNode) ([]byte, e
 		result := struct {
 			TypeName string `json:"__typename"`
 			*getClusterQueueByNodeNodeOrganizationMember
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterQueueByNodeNodeOrganizationRepositoryProviderCursorOrigin:
+		typename = "OrganizationRepositoryProviderCursorOrigin"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterQueueByNodeNodeOrganizationRepositoryProviderCursorOrigin
 		}{typename, v}
 		return json.Marshal(result)
 	case *getClusterQueueByNodeNodeOrganizationRepositoryProviderGitHub:
@@ -10230,6 +10290,19 @@ type getClusterQueueByNodeNodeOrganizationMember struct {
 // GetTypename returns getClusterQueueByNodeNodeOrganizationMember.Typename, and is useful for accessing the field via an interface.
 func (v *getClusterQueueByNodeNodeOrganizationMember) GetTypename() string { return v.Typename }
 
+// getClusterQueueByNodeNodeOrganizationRepositoryProviderCursorOrigin includes the requested fields of the GraphQL type OrganizationRepositoryProviderCursorOrigin.
+// The GraphQL type's documentation follows.
+//
+// Origin installation associated with this organization
+type getClusterQueueByNodeNodeOrganizationRepositoryProviderCursorOrigin struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterQueueByNodeNodeOrganizationRepositoryProviderCursorOrigin.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterQueueByNodeNodeOrganizationRepositoryProviderCursorOrigin) GetTypename() string {
+	return v.Typename
+}
+
 // getClusterQueueByNodeNodeOrganizationRepositoryProviderGitHub includes the requested fields of the GraphQL type OrganizationRepositoryProviderGitHub.
 // The GraphQL type's documentation follows.
 //
@@ -10687,6 +10760,7 @@ func (v *getClusterQueuesResponse) GetOrganization() getClusterQueuesOrganizatio
 // getNodeNodeOrganizationBanner
 // getNodeNodeOrganizationInvitation
 // getNodeNodeOrganizationMember
+// getNodeNodeOrganizationRepositoryProviderCursorOrigin
 // getNodeNodeOrganizationRepositoryProviderGitHub
 // getNodeNodeOrganizationRepositoryProviderGitHubEnterpriseServer
 // getNodeNodePipeline
@@ -10717,50 +10791,52 @@ type getNodeNode interface {
 	GetTypename() string
 }
 
-func (v *getNodeNodeAPIAccessToken) implementsGraphQLInterfacegetNodeNode()                       {}
-func (v *getNodeNodeAPIAccessTokenCode) implementsGraphQLInterfacegetNodeNode()                   {}
-func (v *getNodeNodeAPIApplication) implementsGraphQLInterfacegetNodeNode()                       {}
-func (v *getNodeNodeAgent) implementsGraphQLInterfacegetNodeNode()                                {}
-func (v *getNodeNodeAgentToken) implementsGraphQLInterfacegetNodeNode()                           {}
-func (v *getNodeNodeAnnotation) implementsGraphQLInterfacegetNodeNode()                           {}
-func (v *getNodeNodeArtifact) implementsGraphQLInterfacegetNodeNode()                             {}
-func (v *getNodeNodeAuditEvent) implementsGraphQLInterfacegetNodeNode()                           {}
-func (v *getNodeNodeAuthorizationBitbucket) implementsGraphQLInterfacegetNodeNode()               {}
-func (v *getNodeNodeAuthorizationGitHub) implementsGraphQLInterfacegetNodeNode()                  {}
-func (v *getNodeNodeAuthorizationGitHubApp) implementsGraphQLInterfacegetNodeNode()               {}
-func (v *getNodeNodeAuthorizationGitHubEnterprise) implementsGraphQLInterfacegetNodeNode()        {}
-func (v *getNodeNodeAuthorizationGoogle) implementsGraphQLInterfacegetNodeNode()                  {}
-func (v *getNodeNodeAuthorizationSAML) implementsGraphQLInterfacegetNodeNode()                    {}
-func (v *getNodeNodeBuild) implementsGraphQLInterfacegetNodeNode()                                {}
-func (v *getNodeNodeCluster) implementsGraphQLInterfacegetNodeNode()                              {}
-func (v *getNodeNodeClusterQueue) implementsGraphQLInterfacegetNodeNode()                         {}
-func (v *getNodeNodeClusterQueueToken) implementsGraphQLInterfacegetNodeNode()                    {}
-func (v *getNodeNodeClusterToken) implementsGraphQLInterfacegetNodeNode()                         {}
-func (v *getNodeNodeCompositeRegistryUpstream) implementsGraphQLInterfacegetNodeNode()            {}
-func (v *getNodeNodeEmail) implementsGraphQLInterfacegetNodeNode()                                {}
-func (v *getNodeNodeJobEventAssigned) implementsGraphQLInterfacegetNodeNode()                     {}
-func (v *getNodeNodeJobEventBuildStepUploadCreated) implementsGraphQLInterfacegetNodeNode()       {}
-func (v *getNodeNodeJobEventCanceled) implementsGraphQLInterfacegetNodeNode()                     {}
-func (v *getNodeNodeJobEventChanged) implementsGraphQLInterfacegetNodeNode()                      {}
-func (v *getNodeNodeJobEventFinished) implementsGraphQLInterfacegetNodeNode()                     {}
-func (v *getNodeNodeJobEventGeneric) implementsGraphQLInterfacegetNodeNode()                      {}
-func (v *getNodeNodeJobEventPromisedExitStatus) implementsGraphQLInterfacegetNodeNode()           {}
-func (v *getNodeNodeJobEventReprioritized) implementsGraphQLInterfacegetNodeNode()                {}
-func (v *getNodeNodeJobEventRetried) implementsGraphQLInterfacegetNodeNode()                      {}
-func (v *getNodeNodeJobEventRetryFailed) implementsGraphQLInterfacegetNodeNode()                  {}
-func (v *getNodeNodeJobEventStackError) implementsGraphQLInterfacegetNodeNode()                   {}
-func (v *getNodeNodeJobEventStackFinished) implementsGraphQLInterfacegetNodeNode()                {}
-func (v *getNodeNodeJobEventStackNotification) implementsGraphQLInterfacegetNodeNode()            {}
-func (v *getNodeNodeJobEventTimedOut) implementsGraphQLInterfacegetNodeNode()                     {}
-func (v *getNodeNodeJobTypeBlock) implementsGraphQLInterfacegetNodeNode()                         {}
-func (v *getNodeNodeJobTypeCommand) implementsGraphQLInterfacegetNodeNode()                       {}
-func (v *getNodeNodeJobTypeTrigger) implementsGraphQLInterfacegetNodeNode()                       {}
-func (v *getNodeNodeJobTypeWait) implementsGraphQLInterfacegetNodeNode()                          {}
-func (v *getNodeNodeNotificationServiceSlack) implementsGraphQLInterfacegetNodeNode()             {}
-func (v *getNodeNodeOrganization) implementsGraphQLInterfacegetNodeNode()                         {}
-func (v *getNodeNodeOrganizationBanner) implementsGraphQLInterfacegetNodeNode()                   {}
-func (v *getNodeNodeOrganizationInvitation) implementsGraphQLInterfacegetNodeNode()               {}
-func (v *getNodeNodeOrganizationMember) implementsGraphQLInterfacegetNodeNode()                   {}
+func (v *getNodeNodeAPIAccessToken) implementsGraphQLInterfacegetNodeNode()                 {}
+func (v *getNodeNodeAPIAccessTokenCode) implementsGraphQLInterfacegetNodeNode()             {}
+func (v *getNodeNodeAPIApplication) implementsGraphQLInterfacegetNodeNode()                 {}
+func (v *getNodeNodeAgent) implementsGraphQLInterfacegetNodeNode()                          {}
+func (v *getNodeNodeAgentToken) implementsGraphQLInterfacegetNodeNode()                     {}
+func (v *getNodeNodeAnnotation) implementsGraphQLInterfacegetNodeNode()                     {}
+func (v *getNodeNodeArtifact) implementsGraphQLInterfacegetNodeNode()                       {}
+func (v *getNodeNodeAuditEvent) implementsGraphQLInterfacegetNodeNode()                     {}
+func (v *getNodeNodeAuthorizationBitbucket) implementsGraphQLInterfacegetNodeNode()         {}
+func (v *getNodeNodeAuthorizationGitHub) implementsGraphQLInterfacegetNodeNode()            {}
+func (v *getNodeNodeAuthorizationGitHubApp) implementsGraphQLInterfacegetNodeNode()         {}
+func (v *getNodeNodeAuthorizationGitHubEnterprise) implementsGraphQLInterfacegetNodeNode()  {}
+func (v *getNodeNodeAuthorizationGoogle) implementsGraphQLInterfacegetNodeNode()            {}
+func (v *getNodeNodeAuthorizationSAML) implementsGraphQLInterfacegetNodeNode()              {}
+func (v *getNodeNodeBuild) implementsGraphQLInterfacegetNodeNode()                          {}
+func (v *getNodeNodeCluster) implementsGraphQLInterfacegetNodeNode()                        {}
+func (v *getNodeNodeClusterQueue) implementsGraphQLInterfacegetNodeNode()                   {}
+func (v *getNodeNodeClusterQueueToken) implementsGraphQLInterfacegetNodeNode()              {}
+func (v *getNodeNodeClusterToken) implementsGraphQLInterfacegetNodeNode()                   {}
+func (v *getNodeNodeCompositeRegistryUpstream) implementsGraphQLInterfacegetNodeNode()      {}
+func (v *getNodeNodeEmail) implementsGraphQLInterfacegetNodeNode()                          {}
+func (v *getNodeNodeJobEventAssigned) implementsGraphQLInterfacegetNodeNode()               {}
+func (v *getNodeNodeJobEventBuildStepUploadCreated) implementsGraphQLInterfacegetNodeNode() {}
+func (v *getNodeNodeJobEventCanceled) implementsGraphQLInterfacegetNodeNode()               {}
+func (v *getNodeNodeJobEventChanged) implementsGraphQLInterfacegetNodeNode()                {}
+func (v *getNodeNodeJobEventFinished) implementsGraphQLInterfacegetNodeNode()               {}
+func (v *getNodeNodeJobEventGeneric) implementsGraphQLInterfacegetNodeNode()                {}
+func (v *getNodeNodeJobEventPromisedExitStatus) implementsGraphQLInterfacegetNodeNode()     {}
+func (v *getNodeNodeJobEventReprioritized) implementsGraphQLInterfacegetNodeNode()          {}
+func (v *getNodeNodeJobEventRetried) implementsGraphQLInterfacegetNodeNode()                {}
+func (v *getNodeNodeJobEventRetryFailed) implementsGraphQLInterfacegetNodeNode()            {}
+func (v *getNodeNodeJobEventStackError) implementsGraphQLInterfacegetNodeNode()             {}
+func (v *getNodeNodeJobEventStackFinished) implementsGraphQLInterfacegetNodeNode()          {}
+func (v *getNodeNodeJobEventStackNotification) implementsGraphQLInterfacegetNodeNode()      {}
+func (v *getNodeNodeJobEventTimedOut) implementsGraphQLInterfacegetNodeNode()               {}
+func (v *getNodeNodeJobTypeBlock) implementsGraphQLInterfacegetNodeNode()                   {}
+func (v *getNodeNodeJobTypeCommand) implementsGraphQLInterfacegetNodeNode()                 {}
+func (v *getNodeNodeJobTypeTrigger) implementsGraphQLInterfacegetNodeNode()                 {}
+func (v *getNodeNodeJobTypeWait) implementsGraphQLInterfacegetNodeNode()                    {}
+func (v *getNodeNodeNotificationServiceSlack) implementsGraphQLInterfacegetNodeNode()       {}
+func (v *getNodeNodeOrganization) implementsGraphQLInterfacegetNodeNode()                   {}
+func (v *getNodeNodeOrganizationBanner) implementsGraphQLInterfacegetNodeNode()             {}
+func (v *getNodeNodeOrganizationInvitation) implementsGraphQLInterfacegetNodeNode()         {}
+func (v *getNodeNodeOrganizationMember) implementsGraphQLInterfacegetNodeNode()             {}
+func (v *getNodeNodeOrganizationRepositoryProviderCursorOrigin) implementsGraphQLInterfacegetNodeNode() {
+}
 func (v *getNodeNodeOrganizationRepositoryProviderGitHub) implementsGraphQLInterfacegetNodeNode() {}
 func (v *getNodeNodeOrganizationRepositoryProviderGitHubEnterpriseServer) implementsGraphQLInterfacegetNodeNode() {
 }
@@ -10929,6 +11005,9 @@ func __unmarshalgetNodeNode(b []byte, v *getNodeNode) error {
 		return json.Unmarshal(b, *v)
 	case "OrganizationMember":
 		*v = new(getNodeNodeOrganizationMember)
+		return json.Unmarshal(b, *v)
+	case "OrganizationRepositoryProviderCursorOrigin":
+		*v = new(getNodeNodeOrganizationRepositoryProviderCursorOrigin)
 		return json.Unmarshal(b, *v)
 	case "OrganizationRepositoryProviderGitHub":
 		*v = new(getNodeNodeOrganizationRepositoryProviderGitHub)
@@ -11362,6 +11441,14 @@ func __marshalgetNodeNode(v *getNodeNode) ([]byte, error) {
 			*getNodeNodeOrganizationMember
 		}{typename, v}
 		return json.Marshal(result)
+	case *getNodeNodeOrganizationRepositoryProviderCursorOrigin:
+		typename = "OrganizationRepositoryProviderCursorOrigin"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getNodeNodeOrganizationRepositoryProviderCursorOrigin
+		}{typename, v}
+		return json.Marshal(result)
 	case *getNodeNodeOrganizationRepositoryProviderGitHub:
 		typename = "OrganizationRepositoryProviderGitHub"
 
@@ -11762,6 +11849,11 @@ func (v *getNodeNodeCluster) GetEmoji() *string { return v.ClusterFields.Emoji }
 // GetColor returns getNodeNodeCluster.Color, and is useful for accessing the field via an interface.
 func (v *getNodeNodeCluster) GetColor() *string { return v.ClusterFields.Color }
 
+// GetAgentTracingServiceUuid returns getNodeNodeCluster.AgentTracingServiceUuid, and is useful for accessing the field via an interface.
+func (v *getNodeNodeCluster) GetAgentTracingServiceUuid() *string {
+	return v.ClusterFields.AgentTracingServiceUuid
+}
+
 // GetDefaultQueue returns getNodeNodeCluster.DefaultQueue, and is useful for accessing the field via an interface.
 func (v *getNodeNodeCluster) GetDefaultQueue() *ClusterFieldsDefaultQueueClusterQueue {
 	return v.ClusterFields.DefaultQueue
@@ -11807,6 +11899,8 @@ type __premarshalgetNodeNodeCluster struct {
 
 	Color *string `json:"color"`
 
+	AgentTracingServiceUuid *string `json:"agentTracingServiceUuid"`
+
 	DefaultQueue *ClusterFieldsDefaultQueueClusterQueue `json:"defaultQueue"`
 }
 
@@ -11828,6 +11922,7 @@ func (v *getNodeNodeCluster) __premarshalJSON() (*__premarshalgetNodeNodeCluster
 	retval.Description = v.ClusterFields.Description
 	retval.Emoji = v.ClusterFields.Emoji
 	retval.Color = v.ClusterFields.Color
+	retval.AgentTracingServiceUuid = v.ClusterFields.AgentTracingServiceUuid
 	retval.DefaultQueue = v.ClusterFields.DefaultQueue
 	return &retval, nil
 }
@@ -12136,6 +12231,19 @@ type getNodeNodeOrganizationMember struct {
 
 // GetTypename returns getNodeNodeOrganizationMember.Typename, and is useful for accessing the field via an interface.
 func (v *getNodeNodeOrganizationMember) GetTypename() string { return v.Typename }
+
+// getNodeNodeOrganizationRepositoryProviderCursorOrigin includes the requested fields of the GraphQL type OrganizationRepositoryProviderCursorOrigin.
+// The GraphQL type's documentation follows.
+//
+// Origin installation associated with this organization
+type getNodeNodeOrganizationRepositoryProviderCursorOrigin struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getNodeNodeOrganizationRepositoryProviderCursorOrigin.Typename, and is useful for accessing the field via an interface.
+func (v *getNodeNodeOrganizationRepositoryProviderCursorOrigin) GetTypename() string {
+	return v.Typename
+}
 
 // getNodeNodeOrganizationRepositoryProviderGitHub includes the requested fields of the GraphQL type OrganizationRepositoryProviderGitHub.
 // The GraphQL type's documentation follows.
@@ -13340,18 +13448,11 @@ func (v *getNodeResponse) __premarshalJSON() (*__premarshalgetNodeResponse, erro
 //
 // An organization
 type getOrganizationOrganization struct {
-	// A space-separated allowlist of IP addresses that can access the organization via the GraphQL or REST API
-	AllowedApiIpAddresses string `json:"allowedApiIpAddresses"`
-	Id                    string `json:"id"`
+	Id string `json:"id"`
 	// The public UUID for this organization
 	Uuid string `json:"uuid"`
 	// Whether this organization requires 2FA to access (Please note that this is a beta feature and is not yet available to all organizations.)
 	MembersRequireTwoFactorAuthentication bool `json:"membersRequireTwoFactorAuthentication"`
-}
-
-// GetAllowedApiIpAddresses returns getOrganizationOrganization.AllowedApiIpAddresses, and is useful for accessing the field via an interface.
-func (v *getOrganizationOrganization) GetAllowedApiIpAddresses() string {
-	return v.AllowedApiIpAddresses
 }
 
 // GetId returns getOrganizationOrganization.Id, and is useful for accessing the field via an interface.
@@ -13955,6 +14056,7 @@ func (v *getPipelinePipeline) __premarshalJSON() (*__premarshalgetPipelinePipeli
 // getPipelineProviderSettingsNodeOrganizationBanner
 // getPipelineProviderSettingsNodeOrganizationInvitation
 // getPipelineProviderSettingsNodeOrganizationMember
+// getPipelineProviderSettingsNodeOrganizationRepositoryProviderCursorOrigin
 // getPipelineProviderSettingsNodeOrganizationRepositoryProviderGitHub
 // getPipelineProviderSettingsNodeOrganizationRepositoryProviderGitHubEnterpriseServer
 // getPipelineProviderSettingsNodePipeline
@@ -14072,6 +14174,8 @@ func (v *getPipelineProviderSettingsNodeOrganizationBanner) implementsGraphQLInt
 func (v *getPipelineProviderSettingsNodeOrganizationInvitation) implementsGraphQLInterfacegetPipelineProviderSettingsNode() {
 }
 func (v *getPipelineProviderSettingsNodeOrganizationMember) implementsGraphQLInterfacegetPipelineProviderSettingsNode() {
+}
+func (v *getPipelineProviderSettingsNodeOrganizationRepositoryProviderCursorOrigin) implementsGraphQLInterfacegetPipelineProviderSettingsNode() {
 }
 func (v *getPipelineProviderSettingsNodeOrganizationRepositoryProviderGitHub) implementsGraphQLInterfacegetPipelineProviderSettingsNode() {
 }
@@ -14261,6 +14365,9 @@ func __unmarshalgetPipelineProviderSettingsNode(b []byte, v *getPipelineProvider
 		return json.Unmarshal(b, *v)
 	case "OrganizationMember":
 		*v = new(getPipelineProviderSettingsNodeOrganizationMember)
+		return json.Unmarshal(b, *v)
+	case "OrganizationRepositoryProviderCursorOrigin":
+		*v = new(getPipelineProviderSettingsNodeOrganizationRepositoryProviderCursorOrigin)
 		return json.Unmarshal(b, *v)
 	case "OrganizationRepositoryProviderGitHub":
 		*v = new(getPipelineProviderSettingsNodeOrganizationRepositoryProviderGitHub)
@@ -14688,6 +14795,14 @@ func __marshalgetPipelineProviderSettingsNode(v *getPipelineProviderSettingsNode
 		result := struct {
 			TypeName string `json:"__typename"`
 			*getPipelineProviderSettingsNodeOrganizationMember
+		}{typename, v}
+		return json.Marshal(result)
+	case *getPipelineProviderSettingsNodeOrganizationRepositoryProviderCursorOrigin:
+		typename = "OrganizationRepositoryProviderCursorOrigin"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getPipelineProviderSettingsNodeOrganizationRepositoryProviderCursorOrigin
 		}{typename, v}
 		return json.Marshal(result)
 	case *getPipelineProviderSettingsNodeOrganizationRepositoryProviderGitHub:
@@ -15366,6 +15481,19 @@ type getPipelineProviderSettingsNodeOrganizationMember struct {
 // GetTypename returns getPipelineProviderSettingsNodeOrganizationMember.Typename, and is useful for accessing the field via an interface.
 func (v *getPipelineProviderSettingsNodeOrganizationMember) GetTypename() string { return v.Typename }
 
+// getPipelineProviderSettingsNodeOrganizationRepositoryProviderCursorOrigin includes the requested fields of the GraphQL type OrganizationRepositoryProviderCursorOrigin.
+// The GraphQL type's documentation follows.
+//
+// Origin installation associated with this organization
+type getPipelineProviderSettingsNodeOrganizationRepositoryProviderCursorOrigin struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getPipelineProviderSettingsNodeOrganizationRepositoryProviderCursorOrigin.Typename, and is useful for accessing the field via an interface.
+func (v *getPipelineProviderSettingsNodeOrganizationRepositoryProviderCursorOrigin) GetTypename() string {
+	return v.Typename
+}
+
 // getPipelineProviderSettingsNodeOrganizationRepositoryProviderGitHub includes the requested fields of the GraphQL type OrganizationRepositoryProviderGitHub.
 // The GraphQL type's documentation follows.
 //
@@ -15949,6 +16077,7 @@ func (v *getPipelineScheduleBySlugResponse) GetPipelineSchedule() getPipelineSch
 // getPipelineScheduleNodeOrganizationBanner
 // getPipelineScheduleNodeOrganizationInvitation
 // getPipelineScheduleNodeOrganizationMember
+// getPipelineScheduleNodeOrganizationRepositoryProviderCursorOrigin
 // getPipelineScheduleNodeOrganizationRepositoryProviderGitHub
 // getPipelineScheduleNodeOrganizationRepositoryProviderGitHubEnterpriseServer
 // getPipelineScheduleNodePipeline
@@ -16049,6 +16178,8 @@ func (v *getPipelineScheduleNodeOrganizationBanner) implementsGraphQLInterfacege
 func (v *getPipelineScheduleNodeOrganizationInvitation) implementsGraphQLInterfacegetPipelineScheduleNode() {
 }
 func (v *getPipelineScheduleNodeOrganizationMember) implementsGraphQLInterfacegetPipelineScheduleNode() {
+}
+func (v *getPipelineScheduleNodeOrganizationRepositoryProviderCursorOrigin) implementsGraphQLInterfacegetPipelineScheduleNode() {
 }
 func (v *getPipelineScheduleNodeOrganizationRepositoryProviderGitHub) implementsGraphQLInterfacegetPipelineScheduleNode() {
 }
@@ -16224,6 +16355,9 @@ func __unmarshalgetPipelineScheduleNode(b []byte, v *getPipelineScheduleNode) er
 		return json.Unmarshal(b, *v)
 	case "OrganizationMember":
 		*v = new(getPipelineScheduleNodeOrganizationMember)
+		return json.Unmarshal(b, *v)
+	case "OrganizationRepositoryProviderCursorOrigin":
+		*v = new(getPipelineScheduleNodeOrganizationRepositoryProviderCursorOrigin)
 		return json.Unmarshal(b, *v)
 	case "OrganizationRepositoryProviderGitHub":
 		*v = new(getPipelineScheduleNodeOrganizationRepositoryProviderGitHub)
@@ -16651,6 +16785,14 @@ func __marshalgetPipelineScheduleNode(v *getPipelineScheduleNode) ([]byte, error
 		result := struct {
 			TypeName string `json:"__typename"`
 			*getPipelineScheduleNodeOrganizationMember
+		}{typename, v}
+		return json.Marshal(result)
+	case *getPipelineScheduleNodeOrganizationRepositoryProviderCursorOrigin:
+		typename = "OrganizationRepositoryProviderCursorOrigin"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getPipelineScheduleNodeOrganizationRepositoryProviderCursorOrigin
 		}{typename, v}
 		return json.Marshal(result)
 	case *getPipelineScheduleNodeOrganizationRepositoryProviderGitHub:
@@ -17314,6 +17456,19 @@ type getPipelineScheduleNodeOrganizationMember struct {
 
 // GetTypename returns getPipelineScheduleNodeOrganizationMember.Typename, and is useful for accessing the field via an interface.
 func (v *getPipelineScheduleNodeOrganizationMember) GetTypename() string { return v.Typename }
+
+// getPipelineScheduleNodeOrganizationRepositoryProviderCursorOrigin includes the requested fields of the GraphQL type OrganizationRepositoryProviderCursorOrigin.
+// The GraphQL type's documentation follows.
+//
+// Origin installation associated with this organization
+type getPipelineScheduleNodeOrganizationRepositoryProviderCursorOrigin struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getPipelineScheduleNodeOrganizationRepositoryProviderCursorOrigin.Typename, and is useful for accessing the field via an interface.
+func (v *getPipelineScheduleNodeOrganizationRepositoryProviderCursorOrigin) GetTypename() string {
+	return v.Typename
+}
 
 // getPipelineScheduleNodeOrganizationRepositoryProviderGitHub includes the requested fields of the GraphQL type OrganizationRepositoryProviderGitHub.
 // The GraphQL type's documentation follows.
@@ -18178,6 +18333,7 @@ func (v *getPipelineTemplatesResponse) GetOrganization() getPipelineTemplatesOrg
 // getPipelineWebhookNodeOrganizationBanner
 // getPipelineWebhookNodeOrganizationInvitation
 // getPipelineWebhookNodeOrganizationMember
+// getPipelineWebhookNodeOrganizationRepositoryProviderCursorOrigin
 // getPipelineWebhookNodeOrganizationRepositoryProviderGitHub
 // getPipelineWebhookNodeOrganizationRepositoryProviderGitHubEnterpriseServer
 // getPipelineWebhookNodePipeline
@@ -18271,6 +18427,8 @@ func (v *getPipelineWebhookNodeOrganizationBanner) implementsGraphQLInterfaceget
 func (v *getPipelineWebhookNodeOrganizationInvitation) implementsGraphQLInterfacegetPipelineWebhookNode() {
 }
 func (v *getPipelineWebhookNodeOrganizationMember) implementsGraphQLInterfacegetPipelineWebhookNode() {
+}
+func (v *getPipelineWebhookNodeOrganizationRepositoryProviderCursorOrigin) implementsGraphQLInterfacegetPipelineWebhookNode() {
 }
 func (v *getPipelineWebhookNodeOrganizationRepositoryProviderGitHub) implementsGraphQLInterfacegetPipelineWebhookNode() {
 }
@@ -18443,6 +18601,9 @@ func __unmarshalgetPipelineWebhookNode(b []byte, v *getPipelineWebhookNode) erro
 		return json.Unmarshal(b, *v)
 	case "OrganizationMember":
 		*v = new(getPipelineWebhookNodeOrganizationMember)
+		return json.Unmarshal(b, *v)
+	case "OrganizationRepositoryProviderCursorOrigin":
+		*v = new(getPipelineWebhookNodeOrganizationRepositoryProviderCursorOrigin)
 		return json.Unmarshal(b, *v)
 	case "OrganizationRepositoryProviderGitHub":
 		*v = new(getPipelineWebhookNodeOrganizationRepositoryProviderGitHub)
@@ -18870,6 +19031,14 @@ func __marshalgetPipelineWebhookNode(v *getPipelineWebhookNode) ([]byte, error) 
 		result := struct {
 			TypeName string `json:"__typename"`
 			*getPipelineWebhookNodeOrganizationMember
+		}{typename, v}
+		return json.Marshal(result)
+	case *getPipelineWebhookNodeOrganizationRepositoryProviderCursorOrigin:
+		typename = "OrganizationRepositoryProviderCursorOrigin"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getPipelineWebhookNodeOrganizationRepositoryProviderCursorOrigin
 		}{typename, v}
 		return json.Marshal(result)
 	case *getPipelineWebhookNodeOrganizationRepositoryProviderGitHub:
@@ -19528,6 +19697,19 @@ type getPipelineWebhookNodeOrganizationMember struct {
 // GetTypename returns getPipelineWebhookNodeOrganizationMember.Typename, and is useful for accessing the field via an interface.
 func (v *getPipelineWebhookNodeOrganizationMember) GetTypename() string { return v.Typename }
 
+// getPipelineWebhookNodeOrganizationRepositoryProviderCursorOrigin includes the requested fields of the GraphQL type OrganizationRepositoryProviderCursorOrigin.
+// The GraphQL type's documentation follows.
+//
+// Origin installation associated with this organization
+type getPipelineWebhookNodeOrganizationRepositoryProviderCursorOrigin struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getPipelineWebhookNodeOrganizationRepositoryProviderCursorOrigin.Typename, and is useful for accessing the field via an interface.
+func (v *getPipelineWebhookNodeOrganizationRepositoryProviderCursorOrigin) GetTypename() string {
+	return v.Typename
+}
+
 // getPipelineWebhookNodeOrganizationRepositoryProviderGitHub includes the requested fields of the GraphQL type OrganizationRepositoryProviderGitHub.
 // The GraphQL type's documentation follows.
 //
@@ -19926,7 +20108,7 @@ func (v *getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderCodeb
 // getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderCursorOrigin includes the requested fields of the GraphQL type RepositoryProviderCursorOrigin.
 // The GraphQL type's documentation follows.
 //
-// A pipeline's repository is being provided by Cursor Origin
+// A pipeline's repository is being provided by Origin
 type getPipelineWebhookNodePipelineRepositoryProviderRepositoryProviderCursorOrigin struct {
 	Typename string `json:"__typename"`
 }
@@ -21000,6 +21182,7 @@ func (v *getTestSuiteSuiteJobTypeWait) GetTypename() string { return v.Typename 
 // getTestSuiteSuiteOrganizationBanner
 // getTestSuiteSuiteOrganizationInvitation
 // getTestSuiteSuiteOrganizationMember
+// getTestSuiteSuiteOrganizationRepositoryProviderCursorOrigin
 // getTestSuiteSuiteOrganizationRepositoryProviderGitHub
 // getTestSuiteSuiteOrganizationRepositoryProviderGitHubEnterpriseServer
 // getTestSuiteSuitePipeline
@@ -21080,6 +21263,8 @@ func (v *getTestSuiteSuiteOrganization) implementsGraphQLInterfacegetTestSuiteSu
 func (v *getTestSuiteSuiteOrganizationBanner) implementsGraphQLInterfacegetTestSuiteSuiteNode()     {}
 func (v *getTestSuiteSuiteOrganizationInvitation) implementsGraphQLInterfacegetTestSuiteSuiteNode() {}
 func (v *getTestSuiteSuiteOrganizationMember) implementsGraphQLInterfacegetTestSuiteSuiteNode()     {}
+func (v *getTestSuiteSuiteOrganizationRepositoryProviderCursorOrigin) implementsGraphQLInterfacegetTestSuiteSuiteNode() {
+}
 func (v *getTestSuiteSuiteOrganizationRepositoryProviderGitHub) implementsGraphQLInterfacegetTestSuiteSuiteNode() {
 }
 func (v *getTestSuiteSuiteOrganizationRepositoryProviderGitHubEnterpriseServer) implementsGraphQLInterfacegetTestSuiteSuiteNode() {
@@ -21250,6 +21435,9 @@ func __unmarshalgetTestSuiteSuiteNode(b []byte, v *getTestSuiteSuiteNode) error 
 		return json.Unmarshal(b, *v)
 	case "OrganizationMember":
 		*v = new(getTestSuiteSuiteOrganizationMember)
+		return json.Unmarshal(b, *v)
+	case "OrganizationRepositoryProviderCursorOrigin":
+		*v = new(getTestSuiteSuiteOrganizationRepositoryProviderCursorOrigin)
 		return json.Unmarshal(b, *v)
 	case "OrganizationRepositoryProviderGitHub":
 		*v = new(getTestSuiteSuiteOrganizationRepositoryProviderGitHub)
@@ -21679,6 +21867,14 @@ func __marshalgetTestSuiteSuiteNode(v *getTestSuiteSuiteNode) ([]byte, error) {
 			*getTestSuiteSuiteOrganizationMember
 		}{typename, v}
 		return json.Marshal(result)
+	case *getTestSuiteSuiteOrganizationRepositoryProviderCursorOrigin:
+		typename = "OrganizationRepositoryProviderCursorOrigin"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getTestSuiteSuiteOrganizationRepositoryProviderCursorOrigin
+		}{typename, v}
+		return json.Marshal(result)
 	case *getTestSuiteSuiteOrganizationRepositoryProviderGitHub:
 		typename = "OrganizationRepositoryProviderGitHub"
 
@@ -21910,6 +22106,19 @@ type getTestSuiteSuiteOrganizationMember struct {
 // GetTypename returns getTestSuiteSuiteOrganizationMember.Typename, and is useful for accessing the field via an interface.
 func (v *getTestSuiteSuiteOrganizationMember) GetTypename() string { return v.Typename }
 
+// getTestSuiteSuiteOrganizationRepositoryProviderCursorOrigin includes the requested fields of the GraphQL type OrganizationRepositoryProviderCursorOrigin.
+// The GraphQL type's documentation follows.
+//
+// Origin installation associated with this organization
+type getTestSuiteSuiteOrganizationRepositoryProviderCursorOrigin struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getTestSuiteSuiteOrganizationRepositoryProviderCursorOrigin.Typename, and is useful for accessing the field via an interface.
+func (v *getTestSuiteSuiteOrganizationRepositoryProviderCursorOrigin) GetTypename() string {
+	return v.Typename
+}
+
 // getTestSuiteSuiteOrganizationRepositoryProviderGitHub includes the requested fields of the GraphQL type OrganizationRepositoryProviderGitHub.
 // The GraphQL type's documentation follows.
 //
@@ -22114,8 +22323,14 @@ func (v *getTestSuiteSuiteTeamSuite) GetTypename() string { return v.Typename }
 //
 // The connection type for TeamSuite.
 type getTestSuiteSuiteTeamsTeamSuiteConnection struct {
+	PageInfo getTestSuiteSuiteTeamsTeamSuiteConnectionPageInfo `json:"pageInfo"`
 	// A list of edges.
 	Edges []getTestSuiteSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdge `json:"edges"`
+}
+
+// GetPageInfo returns getTestSuiteSuiteTeamsTeamSuiteConnection.PageInfo, and is useful for accessing the field via an interface.
+func (v *getTestSuiteSuiteTeamsTeamSuiteConnection) GetPageInfo() getTestSuiteSuiteTeamsTeamSuiteConnectionPageInfo {
+	return v.PageInfo
 }
 
 // GetEdges returns getTestSuiteSuiteTeamsTeamSuiteConnection.Edges, and is useful for accessing the field via an interface.
@@ -22176,6 +22391,25 @@ type getTestSuiteSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdgeNodeTeamSuiteTea
 func (v *getTestSuiteSuiteTeamsTeamSuiteConnectionEdgesTeamSuiteEdgeNodeTeamSuiteTeam) GetId() string {
 	return v.Id
 }
+
+// getTestSuiteSuiteTeamsTeamSuiteConnectionPageInfo includes the requested fields of the GraphQL type PageInfo.
+// The GraphQL type's documentation follows.
+//
+// Information about pagination in a connection.
+type getTestSuiteSuiteTeamsTeamSuiteConnectionPageInfo struct {
+	// When paginating forwards, are there more items?
+	HasNextPage bool `json:"hasNextPage"`
+	// When paginating forwards, the cursor to continue.
+	EndCursor string `json:"endCursor"`
+}
+
+// GetHasNextPage returns getTestSuiteSuiteTeamsTeamSuiteConnectionPageInfo.HasNextPage, and is useful for accessing the field via an interface.
+func (v *getTestSuiteSuiteTeamsTeamSuiteConnectionPageInfo) GetHasNextPage() bool {
+	return v.HasNextPage
+}
+
+// GetEndCursor returns getTestSuiteSuiteTeamsTeamSuiteConnectionPageInfo.EndCursor, and is useful for accessing the field via an interface.
+func (v *getTestSuiteSuiteTeamsTeamSuiteConnectionPageInfo) GetEndCursor() string { return v.EndCursor }
 
 // getTestSuiteSuiteUser includes the requested fields of the GraphQL type User.
 // The GraphQL type's documentation follows.
@@ -22279,6 +22513,11 @@ func (v *removeClusterDefaultQueueClusterUpdateClusterUpdatePayloadCluster) GetC
 	return v.ClusterFields.Color
 }
 
+// GetAgentTracingServiceUuid returns removeClusterDefaultQueueClusterUpdateClusterUpdatePayloadCluster.AgentTracingServiceUuid, and is useful for accessing the field via an interface.
+func (v *removeClusterDefaultQueueClusterUpdateClusterUpdatePayloadCluster) GetAgentTracingServiceUuid() *string {
+	return v.ClusterFields.AgentTracingServiceUuid
+}
+
 func (v *removeClusterDefaultQueueClusterUpdateClusterUpdatePayloadCluster) UnmarshalJSON(b []byte) error {
 
 	if string(b) == "null" {
@@ -22318,6 +22557,8 @@ type __premarshalremoveClusterDefaultQueueClusterUpdateClusterUpdatePayloadClust
 	Emoji *string `json:"emoji"`
 
 	Color *string `json:"color"`
+
+	AgentTracingServiceUuid *string `json:"agentTracingServiceUuid"`
 }
 
 func (v *removeClusterDefaultQueueClusterUpdateClusterUpdatePayloadCluster) MarshalJSON() ([]byte, error) {
@@ -22338,6 +22579,7 @@ func (v *removeClusterDefaultQueueClusterUpdateClusterUpdatePayloadCluster) __pr
 	retval.Description = v.ClusterFields.Description
 	retval.Emoji = v.ClusterFields.Emoji
 	retval.Color = v.ClusterFields.Color
+	retval.AgentTracingServiceUuid = v.ClusterFields.AgentTracingServiceUuid
 	return &retval, nil
 }
 
@@ -22475,64 +22717,6 @@ func (v *revokeClusterAgentTokenResponse) GetClusterAgentTokenRevoke() revokeClu
 	return v.ClusterAgentTokenRevoke
 }
 
-// setApiIpAddressesOrganizationApiIpAllowlistUpdateOrganizationAPIIPAllowlistUpdateMutationPayload includes the requested fields of the GraphQL type OrganizationAPIIPAllowlistUpdateMutationPayload.
-// The GraphQL type's documentation follows.
-//
-// Autogenerated return type of OrganizationAPIIPAllowlistUpdateMutation.
-type setApiIpAddressesOrganizationApiIpAllowlistUpdateOrganizationAPIIPAllowlistUpdateMutationPayload struct {
-	Organization setApiIpAddressesOrganizationApiIpAllowlistUpdateOrganizationAPIIPAllowlistUpdateMutationPayloadOrganization `json:"organization"`
-}
-
-// GetOrganization returns setApiIpAddressesOrganizationApiIpAllowlistUpdateOrganizationAPIIPAllowlistUpdateMutationPayload.Organization, and is useful for accessing the field via an interface.
-func (v *setApiIpAddressesOrganizationApiIpAllowlistUpdateOrganizationAPIIPAllowlistUpdateMutationPayload) GetOrganization() setApiIpAddressesOrganizationApiIpAllowlistUpdateOrganizationAPIIPAllowlistUpdateMutationPayloadOrganization {
-	return v.Organization
-}
-
-// setApiIpAddressesOrganizationApiIpAllowlistUpdateOrganizationAPIIPAllowlistUpdateMutationPayloadOrganization includes the requested fields of the GraphQL type Organization.
-// The GraphQL type's documentation follows.
-//
-// An organization
-type setApiIpAddressesOrganizationApiIpAllowlistUpdateOrganizationAPIIPAllowlistUpdateMutationPayloadOrganization struct {
-	// A space-separated allowlist of IP addresses that can access the organization via the GraphQL or REST API
-	AllowedApiIpAddresses string `json:"allowedApiIpAddresses"`
-	Id                    string `json:"id"`
-	// The public UUID for this organization
-	Uuid string `json:"uuid"`
-	// Whether this organization requires 2FA to access (Please note that this is a beta feature and is not yet available to all organizations.)
-	MembersRequireTwoFactorAuthentication bool `json:"membersRequireTwoFactorAuthentication"`
-}
-
-// GetAllowedApiIpAddresses returns setApiIpAddressesOrganizationApiIpAllowlistUpdateOrganizationAPIIPAllowlistUpdateMutationPayloadOrganization.AllowedApiIpAddresses, and is useful for accessing the field via an interface.
-func (v *setApiIpAddressesOrganizationApiIpAllowlistUpdateOrganizationAPIIPAllowlistUpdateMutationPayloadOrganization) GetAllowedApiIpAddresses() string {
-	return v.AllowedApiIpAddresses
-}
-
-// GetId returns setApiIpAddressesOrganizationApiIpAllowlistUpdateOrganizationAPIIPAllowlistUpdateMutationPayloadOrganization.Id, and is useful for accessing the field via an interface.
-func (v *setApiIpAddressesOrganizationApiIpAllowlistUpdateOrganizationAPIIPAllowlistUpdateMutationPayloadOrganization) GetId() string {
-	return v.Id
-}
-
-// GetUuid returns setApiIpAddressesOrganizationApiIpAllowlistUpdateOrganizationAPIIPAllowlistUpdateMutationPayloadOrganization.Uuid, and is useful for accessing the field via an interface.
-func (v *setApiIpAddressesOrganizationApiIpAllowlistUpdateOrganizationAPIIPAllowlistUpdateMutationPayloadOrganization) GetUuid() string {
-	return v.Uuid
-}
-
-// GetMembersRequireTwoFactorAuthentication returns setApiIpAddressesOrganizationApiIpAllowlistUpdateOrganizationAPIIPAllowlistUpdateMutationPayloadOrganization.MembersRequireTwoFactorAuthentication, and is useful for accessing the field via an interface.
-func (v *setApiIpAddressesOrganizationApiIpAllowlistUpdateOrganizationAPIIPAllowlistUpdateMutationPayloadOrganization) GetMembersRequireTwoFactorAuthentication() bool {
-	return v.MembersRequireTwoFactorAuthentication
-}
-
-// setApiIpAddressesResponse is returned by setApiIpAddresses on success.
-type setApiIpAddressesResponse struct {
-	// Sets an allowlist of IP addresses for API access to an organization. Please note that this is a beta feature and is not yet available to all organizations.
-	OrganizationApiIpAllowlistUpdate setApiIpAddressesOrganizationApiIpAllowlistUpdateOrganizationAPIIPAllowlistUpdateMutationPayload `json:"organizationApiIpAllowlistUpdate"`
-}
-
-// GetOrganizationApiIpAllowlistUpdate returns setApiIpAddressesResponse.OrganizationApiIpAllowlistUpdate, and is useful for accessing the field via an interface.
-func (v *setApiIpAddressesResponse) GetOrganizationApiIpAllowlistUpdate() setApiIpAddressesOrganizationApiIpAllowlistUpdateOrganizationAPIIPAllowlistUpdateMutationPayload {
-	return v.OrganizationApiIpAllowlistUpdate
-}
-
 // setClusterDefaultQueueClusterUpdateClusterUpdatePayload includes the requested fields of the GraphQL type ClusterUpdatePayload.
 // The GraphQL type's documentation follows.
 //
@@ -22588,6 +22772,11 @@ func (v *setClusterDefaultQueueClusterUpdateClusterUpdatePayloadCluster) GetColo
 	return v.ClusterFields.Color
 }
 
+// GetAgentTracingServiceUuid returns setClusterDefaultQueueClusterUpdateClusterUpdatePayloadCluster.AgentTracingServiceUuid, and is useful for accessing the field via an interface.
+func (v *setClusterDefaultQueueClusterUpdateClusterUpdatePayloadCluster) GetAgentTracingServiceUuid() *string {
+	return v.ClusterFields.AgentTracingServiceUuid
+}
+
 func (v *setClusterDefaultQueueClusterUpdateClusterUpdatePayloadCluster) UnmarshalJSON(b []byte) error {
 
 	if string(b) == "null" {
@@ -22627,6 +22816,8 @@ type __premarshalsetClusterDefaultQueueClusterUpdateClusterUpdatePayloadCluster 
 	Emoji *string `json:"emoji"`
 
 	Color *string `json:"color"`
+
+	AgentTracingServiceUuid *string `json:"agentTracingServiceUuid"`
 }
 
 func (v *setClusterDefaultQueueClusterUpdateClusterUpdatePayloadCluster) MarshalJSON() ([]byte, error) {
@@ -22647,6 +22838,7 @@ func (v *setClusterDefaultQueueClusterUpdateClusterUpdatePayloadCluster) __prema
 	retval.Description = v.ClusterFields.Description
 	retval.Emoji = v.ClusterFields.Emoji
 	retval.Color = v.ClusterFields.Color
+	retval.AgentTracingServiceUuid = v.ClusterFields.AgentTracingServiceUuid
 	return &retval, nil
 }
 
@@ -23248,6 +23440,147 @@ func (v *updateClusterAgentTokenResponse) GetClusterAgentTokenUpdate() updateClu
 	return v.ClusterAgentTokenUpdate
 }
 
+// updateClusterClearingAgentTracingServiceClusterUpdateClusterUpdatePayload includes the requested fields of the GraphQL type ClusterUpdatePayload.
+// The GraphQL type's documentation follows.
+//
+// Autogenerated return type of ClusterUpdate.
+type updateClusterClearingAgentTracingServiceClusterUpdateClusterUpdatePayload struct {
+	// A unique identifier for the client performing the mutation.
+	ClientMutationId string                                                                           `json:"clientMutationId"`
+	Cluster          updateClusterClearingAgentTracingServiceClusterUpdateClusterUpdatePayloadCluster `json:"cluster"`
+}
+
+// GetClientMutationId returns updateClusterClearingAgentTracingServiceClusterUpdateClusterUpdatePayload.ClientMutationId, and is useful for accessing the field via an interface.
+func (v *updateClusterClearingAgentTracingServiceClusterUpdateClusterUpdatePayload) GetClientMutationId() string {
+	return v.ClientMutationId
+}
+
+// GetCluster returns updateClusterClearingAgentTracingServiceClusterUpdateClusterUpdatePayload.Cluster, and is useful for accessing the field via an interface.
+func (v *updateClusterClearingAgentTracingServiceClusterUpdateClusterUpdatePayload) GetCluster() updateClusterClearingAgentTracingServiceClusterUpdateClusterUpdatePayloadCluster {
+	return v.Cluster
+}
+
+// updateClusterClearingAgentTracingServiceClusterUpdateClusterUpdatePayloadCluster includes the requested fields of the GraphQL type Cluster.
+type updateClusterClearingAgentTracingServiceClusterUpdateClusterUpdatePayloadCluster struct {
+	ClusterFields `json:"-"`
+}
+
+// GetId returns updateClusterClearingAgentTracingServiceClusterUpdateClusterUpdatePayloadCluster.Id, and is useful for accessing the field via an interface.
+func (v *updateClusterClearingAgentTracingServiceClusterUpdateClusterUpdatePayloadCluster) GetId() string {
+	return v.ClusterFields.Id
+}
+
+// GetUuid returns updateClusterClearingAgentTracingServiceClusterUpdateClusterUpdatePayloadCluster.Uuid, and is useful for accessing the field via an interface.
+func (v *updateClusterClearingAgentTracingServiceClusterUpdateClusterUpdatePayloadCluster) GetUuid() string {
+	return v.ClusterFields.Uuid
+}
+
+// GetName returns updateClusterClearingAgentTracingServiceClusterUpdateClusterUpdatePayloadCluster.Name, and is useful for accessing the field via an interface.
+func (v *updateClusterClearingAgentTracingServiceClusterUpdateClusterUpdatePayloadCluster) GetName() string {
+	return v.ClusterFields.Name
+}
+
+// GetDescription returns updateClusterClearingAgentTracingServiceClusterUpdateClusterUpdatePayloadCluster.Description, and is useful for accessing the field via an interface.
+func (v *updateClusterClearingAgentTracingServiceClusterUpdateClusterUpdatePayloadCluster) GetDescription() *string {
+	return v.ClusterFields.Description
+}
+
+// GetEmoji returns updateClusterClearingAgentTracingServiceClusterUpdateClusterUpdatePayloadCluster.Emoji, and is useful for accessing the field via an interface.
+func (v *updateClusterClearingAgentTracingServiceClusterUpdateClusterUpdatePayloadCluster) GetEmoji() *string {
+	return v.ClusterFields.Emoji
+}
+
+// GetColor returns updateClusterClearingAgentTracingServiceClusterUpdateClusterUpdatePayloadCluster.Color, and is useful for accessing the field via an interface.
+func (v *updateClusterClearingAgentTracingServiceClusterUpdateClusterUpdatePayloadCluster) GetColor() *string {
+	return v.ClusterFields.Color
+}
+
+// GetAgentTracingServiceUuid returns updateClusterClearingAgentTracingServiceClusterUpdateClusterUpdatePayloadCluster.AgentTracingServiceUuid, and is useful for accessing the field via an interface.
+func (v *updateClusterClearingAgentTracingServiceClusterUpdateClusterUpdatePayloadCluster) GetAgentTracingServiceUuid() *string {
+	return v.ClusterFields.AgentTracingServiceUuid
+}
+
+// GetDefaultQueue returns updateClusterClearingAgentTracingServiceClusterUpdateClusterUpdatePayloadCluster.DefaultQueue, and is useful for accessing the field via an interface.
+func (v *updateClusterClearingAgentTracingServiceClusterUpdateClusterUpdatePayloadCluster) GetDefaultQueue() *ClusterFieldsDefaultQueueClusterQueue {
+	return v.ClusterFields.DefaultQueue
+}
+
+func (v *updateClusterClearingAgentTracingServiceClusterUpdateClusterUpdatePayloadCluster) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*updateClusterClearingAgentTracingServiceClusterUpdateClusterUpdatePayloadCluster
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.updateClusterClearingAgentTracingServiceClusterUpdateClusterUpdatePayloadCluster = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	err = json.Unmarshal(
+		b, &v.ClusterFields)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+type __premarshalupdateClusterClearingAgentTracingServiceClusterUpdateClusterUpdatePayloadCluster struct {
+	Id string `json:"id"`
+
+	Uuid string `json:"uuid"`
+
+	Name string `json:"name"`
+
+	Description *string `json:"description"`
+
+	Emoji *string `json:"emoji"`
+
+	Color *string `json:"color"`
+
+	AgentTracingServiceUuid *string `json:"agentTracingServiceUuid"`
+
+	DefaultQueue *ClusterFieldsDefaultQueueClusterQueue `json:"defaultQueue"`
+}
+
+func (v *updateClusterClearingAgentTracingServiceClusterUpdateClusterUpdatePayloadCluster) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *updateClusterClearingAgentTracingServiceClusterUpdateClusterUpdatePayloadCluster) __premarshalJSON() (*__premarshalupdateClusterClearingAgentTracingServiceClusterUpdateClusterUpdatePayloadCluster, error) {
+	var retval __premarshalupdateClusterClearingAgentTracingServiceClusterUpdateClusterUpdatePayloadCluster
+
+	retval.Id = v.ClusterFields.Id
+	retval.Uuid = v.ClusterFields.Uuid
+	retval.Name = v.ClusterFields.Name
+	retval.Description = v.ClusterFields.Description
+	retval.Emoji = v.ClusterFields.Emoji
+	retval.Color = v.ClusterFields.Color
+	retval.AgentTracingServiceUuid = v.ClusterFields.AgentTracingServiceUuid
+	retval.DefaultQueue = v.ClusterFields.DefaultQueue
+	return &retval, nil
+}
+
+// updateClusterClearingAgentTracingServiceResponse is returned by updateClusterClearingAgentTracingService on success.
+type updateClusterClearingAgentTracingServiceResponse struct {
+	// Updates a cluster.
+	ClusterUpdate updateClusterClearingAgentTracingServiceClusterUpdateClusterUpdatePayload `json:"clusterUpdate"`
+}
+
+// GetClusterUpdate returns updateClusterClearingAgentTracingServiceResponse.ClusterUpdate, and is useful for accessing the field via an interface.
+func (v *updateClusterClearingAgentTracingServiceResponse) GetClusterUpdate() updateClusterClearingAgentTracingServiceClusterUpdateClusterUpdatePayload {
+	return v.ClusterUpdate
+}
+
 // updateClusterClusterUpdateClusterUpdatePayload includes the requested fields of the GraphQL type ClusterUpdatePayload.
 // The GraphQL type's documentation follows.
 //
@@ -23303,6 +23636,11 @@ func (v *updateClusterClusterUpdateClusterUpdatePayloadCluster) GetColor() *stri
 	return v.ClusterFields.Color
 }
 
+// GetAgentTracingServiceUuid returns updateClusterClusterUpdateClusterUpdatePayloadCluster.AgentTracingServiceUuid, and is useful for accessing the field via an interface.
+func (v *updateClusterClusterUpdateClusterUpdatePayloadCluster) GetAgentTracingServiceUuid() *string {
+	return v.ClusterFields.AgentTracingServiceUuid
+}
+
 // GetDefaultQueue returns updateClusterClusterUpdateClusterUpdatePayloadCluster.DefaultQueue, and is useful for accessing the field via an interface.
 func (v *updateClusterClusterUpdateClusterUpdatePayloadCluster) GetDefaultQueue() *ClusterFieldsDefaultQueueClusterQueue {
 	return v.ClusterFields.DefaultQueue
@@ -23346,6 +23684,8 @@ type __premarshalupdateClusterClusterUpdateClusterUpdatePayloadCluster struct {
 
 	Color *string `json:"color"`
 
+	AgentTracingServiceUuid *string `json:"agentTracingServiceUuid"`
+
 	DefaultQueue *ClusterFieldsDefaultQueueClusterQueue `json:"defaultQueue"`
 }
 
@@ -23366,6 +23706,7 @@ func (v *updateClusterClusterUpdateClusterUpdatePayloadCluster) __premarshalJSON
 	retval.Description = v.ClusterFields.Description
 	retval.Emoji = v.ClusterFields.Emoji
 	retval.Color = v.ClusterFields.Color
+	retval.AgentTracingServiceUuid = v.ClusterFields.AgentTracingServiceUuid
 	retval.DefaultQueue = v.ClusterFields.DefaultQueue
 	return &retval, nil
 }
@@ -24814,6 +25155,7 @@ query GetOrganizationClusters ($slug: ID!, $cursor: String) {
 					description
 					emoji
 					color
+					agentTracingServiceUuid
 					defaultQueue {
 						id
 						uuid
@@ -25248,8 +25590,8 @@ func createAgentToken(
 
 // The mutation executed by createCluster.
 const createCluster_Operation = `
-mutation createCluster ($organizationId: ID!, $name: String!, $description: String, $emoji: String, $color: String) {
-	clusterCreate(input: {organizationId:$organizationId,name:$name,description:$description,emoji:$emoji,color:$color}) {
+mutation createCluster ($organizationId: ID!, $name: String!, $description: String, $emoji: String, $color: String, $agentTracingServiceUuid: String) {
+	clusterCreate(input: {organizationId:$organizationId,name:$name,description:$description,emoji:$emoji,color:$color,agentTracingServiceUuid:$agentTracingServiceUuid}) {
 		clientMutationId
 		cluster {
 			... ClusterFields
@@ -25263,6 +25605,7 @@ fragment ClusterFields on Cluster {
 	description
 	emoji
 	color
+	agentTracingServiceUuid
 	defaultQueue {
 		id
 		uuid
@@ -25280,16 +25623,18 @@ func createCluster(
 	description *string,
 	emoji *string,
 	color *string,
+	agentTracingServiceUuid *string,
 ) (data_ *createClusterResponse, err_ error) {
 	req_ := &graphql.Request{
 		OpName: "createCluster",
 		Query:  createCluster_Operation,
 		Variables: &__createClusterInput{
-			OrganizationId: organizationId,
-			Name:           name,
-			Description:    description,
-			Emoji:          emoji,
-			Color:          color,
+			OrganizationId:          organizationId,
+			Name:                    name,
+			Description:             description,
+			Emoji:                   emoji,
+			Color:                   color,
+			AgentTracingServiceUuid: agentTracingServiceUuid,
 		},
 	}
 
@@ -25927,19 +26272,6 @@ func createTeamRegistry(
 const createTestSuiteTeam_Operation = `
 mutation createTestSuiteTeam ($teamId: ID!, $suiteId: ID!, $accessLevel: SuiteAccessLevels!) {
 	teamSuiteCreate(input: {teamID:$teamId,suiteID:$suiteId,accessLevel:$accessLevel}) {
-		suite {
-			teams(order: NAME, first: 50) {
-				edges {
-					node {
-						id
-						uuid
-						team {
-							id
-						}
-					}
-				}
-			}
-		}
 		teamSuite {
 			... TeamSuiteFields
 		}
@@ -26527,6 +26859,7 @@ fragment ClusterFields on Cluster {
 	description
 	emoji
 	color
+	agentTracingServiceUuid
 	defaultQueue {
 		id
 		uuid
@@ -26863,6 +27196,7 @@ fragment ClusterFields on Cluster {
 	description
 	emoji
 	color
+	agentTracingServiceUuid
 	defaultQueue {
 		id
 		uuid
@@ -26918,7 +27252,6 @@ func getNode(
 const getOrganization_Operation = `
 query getOrganization ($slug: ID!) {
 	organization(slug: $slug) {
-		allowedApiIpAddresses
 		id
 		uuid
 		membersRequireTwoFactorAuthentication
@@ -27207,6 +27540,10 @@ fragment RepositoryProviderSettingsFields on Repository {
 				buildPullRequestDequeued
 				buildPullRequestEdited
 				buildPullRequestReopened
+				buildPullRequestStacks
+				githubWorkflowAccessTokensEnabled
+				skipBuildsForClosedPullRequests
+				preventCustomStatusesFromUsingBuildkitePrefix
 				buildPullRequestReviewCommentCreated
 				buildPullRequestReviewRequested
 				buildPullRequestReviewDismissed
@@ -27257,6 +27594,10 @@ fragment RepositoryProviderSettingsFields on Repository {
 				buildPullRequestDequeued
 				buildPullRequestEdited
 				buildPullRequestReopened
+				buildPullRequestStacks
+				githubWorkflowAccessTokensEnabled
+				skipBuildsForClosedPullRequests
+				preventCustomStatusesFromUsingBuildkitePrefix
 				buildPullRequestReviewCommentCreated
 				buildPullRequestReviewRequested
 				buildPullRequestReviewDismissed
@@ -27719,7 +28060,7 @@ func getPipelineWebhook(
 
 // The query executed by getTestSuite.
 const getTestSuite_Operation = `
-query getTestSuite ($id: ID!, $teamCount: Int) {
+query getTestSuite ($id: ID!, $teamCount: Int, $teamCursor: String) {
 	suite: node(id: $id) {
 		__typename
 		... on Suite {
@@ -27729,7 +28070,11 @@ query getTestSuite ($id: ID!, $teamCount: Int) {
 			emoji
 			name
 			slug
-			teams(first: $teamCount, order: NAME) {
+			teams(first: $teamCount, after: $teamCursor, order: NAME) {
+				pageInfo {
+					hasNextPage
+					endCursor
+				}
 				edges {
 					node {
 						id
@@ -27750,13 +28095,15 @@ func getTestSuite(
 	client_ graphql.Client,
 	id string,
 	teamCount int,
+	teamCursor *string,
 ) (data_ *getTestSuiteResponse, err_ error) {
 	req_ := &graphql.Request{
 		OpName: "getTestSuite",
 		Query:  getTestSuite_Operation,
 		Variables: &__getTestSuiteInput{
-			Id:        id,
-			TeamCount: teamCount,
+			Id:         id,
+			TeamCount:  teamCount,
+			TeamCursor: teamCursor,
 		},
 	}
 
@@ -27827,6 +28174,7 @@ fragment ClusterFields on Cluster {
 	description
 	emoji
 	color
+	agentTracingServiceUuid
 	defaultQueue {
 		id
 		uuid
@@ -27973,47 +28321,6 @@ func revokeClusterAgentToken(
 	return data_, err_
 }
 
-// The mutation executed by setApiIpAddresses.
-const setApiIpAddresses_Operation = `
-mutation setApiIpAddresses ($organizationID: ID!, $ipAddresses: String!) {
-	organizationApiIpAllowlistUpdate(input: {organizationID:$organizationID,ipAddresses:$ipAddresses}) {
-		organization {
-			allowedApiIpAddresses
-			id
-			uuid
-			membersRequireTwoFactorAuthentication
-		}
-	}
-}
-`
-
-func setApiIpAddresses(
-	ctx_ context.Context,
-	client_ graphql.Client,
-	organizationID string,
-	ipAddresses string,
-) (data_ *setApiIpAddressesResponse, err_ error) {
-	req_ := &graphql.Request{
-		OpName: "setApiIpAddresses",
-		Query:  setApiIpAddresses_Operation,
-		Variables: &__setApiIpAddressesInput{
-			OrganizationID: organizationID,
-			IpAddresses:    ipAddresses,
-		},
-	}
-
-	data_ = &setApiIpAddressesResponse{}
-	resp_ := &graphql.Response{Data: data_}
-
-	err_ = client_.MakeRequest(
-		ctx_,
-		req_,
-		resp_,
-	)
-
-	return data_, err_
-}
-
 // The mutation executed by setClusterDefaultQueue.
 const setClusterDefaultQueue_Operation = `
 mutation setClusterDefaultQueue ($organizationId: ID!, $clusterId: ID!, $queueId: ID) {
@@ -28035,6 +28342,7 @@ fragment ClusterFields on Cluster {
 	description
 	emoji
 	color
+	agentTracingServiceUuid
 	defaultQueue {
 		id
 		uuid
@@ -28325,8 +28633,8 @@ func unarchivePipeline(
 
 // The mutation executed by updateCluster.
 const updateCluster_Operation = `
-mutation updateCluster ($organizationId: ID!, $id: ID!, $name: String, $description: String, $emoji: String, $color: String) {
-	clusterUpdate(input: {organizationId:$organizationId,id:$id,name:$name,description:$description,emoji:$emoji,color:$color}) {
+mutation updateCluster ($organizationId: ID!, $id: ID!, $name: String, $description: String, $emoji: String, $color: String, $agentTracingServiceUuid: String) {
+	clusterUpdate(input: {organizationId:$organizationId,id:$id,name:$name,description:$description,emoji:$emoji,color:$color,agentTracingServiceUuid:$agentTracingServiceUuid}) {
 		clientMutationId
 		cluster {
 			... ClusterFields
@@ -28340,6 +28648,7 @@ fragment ClusterFields on Cluster {
 	description
 	emoji
 	color
+	agentTracingServiceUuid
 	defaultQueue {
 		id
 		uuid
@@ -28358,17 +28667,19 @@ func updateCluster(
 	description *string,
 	emoji *string,
 	color *string,
+	agentTracingServiceUuid *string,
 ) (data_ *updateClusterResponse, err_ error) {
 	req_ := &graphql.Request{
 		OpName: "updateCluster",
 		Query:  updateCluster_Operation,
 		Variables: &__updateClusterInput{
-			OrganizationId: organizationId,
-			Id:             id,
-			Name:           name,
-			Description:    description,
-			Emoji:          emoji,
-			Color:          color,
+			OrganizationId:          organizationId,
+			Id:                      id,
+			Name:                    name,
+			Description:             description,
+			Emoji:                   emoji,
+			Color:                   color,
+			AgentTracingServiceUuid: agentTracingServiceUuid,
 		},
 	}
 
@@ -28426,6 +28737,71 @@ func updateClusterAgentToken(
 	}
 
 	data_ = &updateClusterAgentTokenResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
+// The mutation executed by updateClusterClearingAgentTracingService.
+const updateClusterClearingAgentTracingService_Operation = `
+mutation updateClusterClearingAgentTracingService ($organizationId: ID!, $id: ID!, $name: String, $description: String, $emoji: String, $color: String) {
+	clusterUpdate(input: {organizationId:$organizationId,id:$id,name:$name,description:$description,emoji:$emoji,color:$color,agentTracingServiceUuid:null}) {
+		clientMutationId
+		cluster {
+			... ClusterFields
+		}
+	}
+}
+fragment ClusterFields on Cluster {
+	id
+	uuid
+	name
+	description
+	emoji
+	color
+	agentTracingServiceUuid
+	defaultQueue {
+		id
+		uuid
+		key
+		description
+	}
+}
+`
+
+// updateClusterClearingAgentTracingService is updateCluster with the agent tracing service cleared. The
+// clear is a literal null so that no other update can send the key, which the API refuses, even as null,
+// for an organization without agent tracing.
+func updateClusterClearingAgentTracingService(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	organizationId string,
+	id string,
+	name string,
+	description *string,
+	emoji *string,
+	color *string,
+) (data_ *updateClusterClearingAgentTracingServiceResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "updateClusterClearingAgentTracingService",
+		Query:  updateClusterClearingAgentTracingService_Operation,
+		Variables: &__updateClusterClearingAgentTracingServiceInput{
+			OrganizationId: organizationId,
+			Id:             id,
+			Name:           name,
+			Description:    description,
+			Emoji:          emoji,
+			Color:          color,
+		},
+	}
+
+	data_ = &updateClusterClearingAgentTracingServiceResponse{}
 	resp_ := &graphql.Response{Data: data_}
 
 	err_ = client_.MakeRequest(

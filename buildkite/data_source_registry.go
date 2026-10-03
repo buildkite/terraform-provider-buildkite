@@ -123,7 +123,7 @@ func (d *registryDatasource) Read(ctx context.Context, req datasource.ReadReques
 		return
 	}
 
-	timeoutDuration, diags := d.client.timeouts.Read(ctx, DefaultTimeout)
+	timeoutDuration, diags := d.client.readTimeout(ctx)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
