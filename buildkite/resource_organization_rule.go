@@ -150,11 +150,11 @@ func (or *organizationRuleResource) Create(ctx context.Context, req resource.Cre
 		return
 	}
 
-	requestCtx, cancel := context.WithTimeout(ctx, timeout)
+	requestCtx, cancel := mutationContext(ctx, timeout)
 	defer cancel()
 
 	var r *createOrganizationRuleResponse
-	err := retry.RetryContext(requestCtx, timeout, func() *retry.RetryError {
+	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		org, err := or.client.GetOrganizationID(requestCtx)
 		if err == nil {
 			log.Printf("Creating organization rule ...")
@@ -392,11 +392,11 @@ func (or *organizationRuleResource) Update(ctx context.Context, req resource.Upd
 		return
 	}
 
-	requestCtx, cancel := context.WithTimeout(ctx, timeout)
+	requestCtx, cancel := mutationContext(ctx, timeout)
 	defer cancel()
 
 	var r *updateOrganizationRuleResponse
-	err := retry.RetryContext(requestCtx, timeout, func() *retry.RetryError {
+	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		org, err := or.client.GetOrganizationID(requestCtx)
 		if err == nil {
 			log.Printf("Updating organization rule with ID %s ...", state.ID.ValueString())
@@ -450,10 +450,10 @@ func (or *organizationRuleResource) Delete(ctx context.Context, req resource.Del
 		return
 	}
 
-	requestCtx, cancel := context.WithTimeout(ctx, timeout)
+	requestCtx, cancel := mutationContext(ctx, timeout)
 	defer cancel()
 
-	err := retry.RetryContext(requestCtx, timeout, func() *retry.RetryError {
+	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		org, err := or.client.GetOrganizationID(requestCtx)
 		if err == nil {
 			log.Printf("Deleting organization rule with ID %s ...", state.ID.ValueString())

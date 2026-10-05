@@ -62,11 +62,11 @@ func (at *agentTokenResource) Create(ctx context.Context, req resource.CreateReq
 		return
 	}
 
-	requestCtx, cancel := context.WithTimeout(ctx, timeout)
+	requestCtx, cancel := mutationContext(ctx, timeout)
 	defer cancel()
 
 	var r *createAgentTokenResponse
-	err := retry.RetryContext(requestCtx, timeout, func() *retry.RetryError {
+	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		org, err := at.client.GetOrganizationID(requestCtx)
 		if err == nil {
 			r, err = createAgentToken(requestCtx,
@@ -111,10 +111,10 @@ func (at *agentTokenResource) Delete(ctx context.Context, req resource.DeleteReq
 		return
 	}
 
-	requestCtx, cancel := context.WithTimeout(ctx, timeout)
+	requestCtx, cancel := mutationContext(ctx, timeout)
 	defer cancel()
 
-	err := retry.RetryContext(requestCtx, timeout, func() *retry.RetryError {
+	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		_, err := revokeAgentToken(requestCtx,
 			at.client.genqlient,
 			state.Id.ValueString(),

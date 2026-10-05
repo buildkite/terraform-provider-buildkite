@@ -168,6 +168,22 @@ func (client *Client) deleteTimeout(ctx context.Context) (time.Duration, diag.Di
 	return effectiveTimeout(timeout), diags
 }
 
+// mutationGracePeriod matches the refresh grace period in terraform-plugin-sdk's helper/retry: once
+// retry.RetryContext reaches its timeout it waits this long for the attempt in flight, and returns
+// that attempt's result if it succeeded.
+const mutationGracePeriod = 30 * time.Second
+
+// mutationContext bounds the API calls of one step of a create, update or delete. Pass it to the
+// calls and pass the parent context to retry.RetryContext with the same timeout. The deadline runs
+// mutationGracePeriod past the timeout so a mutation that lands just after it is still returned and
+// recorded in state rather than cancelled, which would leave it applied in Buildkite and missing from
+// state. Derive one per step, so a slow step does not leave the steps after it without a budget once
+// the first has changed something. A step that only looks something up has nothing to record, so it
+// takes a plain context.WithTimeout instead.
+func mutationContext(ctx context.Context, timeout time.Duration) (context.Context, context.CancelFunc) {
+	return context.WithTimeout(ctx, timeout+mutationGracePeriod)
+}
+
 // NewClient creates a client for interacting with the Buildkite API.
 //
 // https://buildkite.com/docs/apis/rest-api/limits
@@ -346,8 +362,8 @@ func NewClient(config *clientConfig) *Client {
 }
 
 // boundedGraphQLClient gives a GraphQL request the read timeout as a deadline when its caller set
-// none, the same fallback makeRequest applies to REST. CRUD methods derive a deadline from their own
-// operation's timeout and pass it down, which is what should bound them; this is the floor under a
+// none, the same fallback makeRequest applies to REST. CRUD methods derive deadlines from their own
+// operation's timeout and pass them down, which is what should bound them; this is the floor under a
 // call that does not, so it cannot run the retry schedule out (just under an hour for GraphQL).
 type boundedGraphQLClient struct {
 	inner  genqlient.Client

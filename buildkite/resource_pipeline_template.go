@@ -105,11 +105,11 @@ func (pt *pipelineTemplateResource) Create(ctx context.Context, req resource.Cre
 		return
 	}
 
-	requestCtx, cancel := context.WithTimeout(ctx, timeout)
+	requestCtx, cancel := mutationContext(ctx, timeout)
 	defer cancel()
 
 	var r *createPipelineTemplateResponse
-	err := retry.RetryContext(requestCtx, timeout, func() *retry.RetryError {
+	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		org, err := pt.client.GetOrganizationID(requestCtx)
 		if err == nil {
 			log.Printf("Creating pipeline template %s ...", plan.Name.ValueString())
@@ -224,11 +224,11 @@ func (pt *pipelineTemplateResource) Update(ctx context.Context, req resource.Upd
 		return
 	}
 
-	requestCtx, cancel := context.WithTimeout(ctx, timeout)
+	requestCtx, cancel := mutationContext(ctx, timeout)
 	defer cancel()
 
 	var r *updatePipelineTemplateResponse
-	err := retry.RetryContext(requestCtx, timeout, func() *retry.RetryError {
+	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		org, err := pt.client.GetOrganizationID(requestCtx)
 		if err == nil {
 			log.Printf("Updating pipeline template %s with ID %s ...", plan.Name.ValueString(), plan.ID.ValueString())
@@ -278,10 +278,10 @@ func (pt *pipelineTemplateResource) Delete(ctx context.Context, req resource.Del
 		return
 	}
 
-	requestCtx, cancel := context.WithTimeout(ctx, timeout)
+	requestCtx, cancel := mutationContext(ctx, timeout)
 	defer cancel()
 
-	err := retry.RetryContext(requestCtx, timeout, func() *retry.RetryError {
+	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		org, err := pt.client.GetOrganizationID(requestCtx)
 		if err == nil {
 			log.Printf("Deleting pipeline template %s with ID %s ...", state.Name.ValueString(), state.ID.ValueString())

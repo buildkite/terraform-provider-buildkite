@@ -104,12 +104,12 @@ func (tst *testSuiteTeamResource) Create(ctx context.Context, req resource.Creat
 		return
 	}
 
-	requestCtx, cancel := context.WithTimeout(ctx, timeout)
+	requestCtx, cancel := mutationContext(ctx, timeout)
 	defer cancel()
 
 	log.Printf("Adding team %s to test suite %s ...", state.TeamID.ValueString(), state.TestSuiteId.ValueString())
 	var r *createTestSuiteTeamResponse
-	err := retry.RetryContext(requestCtx, timeout, func() *retry.RetryError {
+	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		var err error
 		r, err = createTestSuiteTeam(requestCtx,
 			tst.client.genqlient,
@@ -218,12 +218,12 @@ func (tst *testSuiteTeamResource) Update(ctx context.Context, req resource.Updat
 		return
 	}
 
-	requestCtx, cancel := context.WithTimeout(ctx, timeout)
+	requestCtx, cancel := mutationContext(ctx, timeout)
 	defer cancel()
 
 	log.Printf("Updating team %s in test suite %s to %s ...", state.TeamID.ValueString(), state.TestSuiteId.ValueString(), testSuiteTeamAccessLevel)
 	var r *updateTestSuiteTeamResponse
-	err := retry.RetryContext(requestCtx, timeout, func() *retry.RetryError {
+	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		var err error
 		r, err = updateTestSuiteTeam(requestCtx,
 			tst.client.genqlient,
@@ -264,11 +264,11 @@ func (tst *testSuiteTeamResource) Delete(ctx context.Context, req resource.Delet
 		return
 	}
 
-	requestCtx, cancel := context.WithTimeout(ctx, timeout)
+	requestCtx, cancel := mutationContext(ctx, timeout)
 	defer cancel()
 
 	log.Printf("Deleting team %s's access to test suite %s ...", state.TeamID.ValueString(), state.TestSuiteId.ValueString())
-	err := retry.RetryContext(requestCtx, timeout, func() *retry.RetryError {
+	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		_, err := deleteTestSuiteTeam(requestCtx,
 			tst.client.genqlient,
 			state.ID.ValueString(),

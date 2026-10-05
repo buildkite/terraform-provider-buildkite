@@ -3,6 +3,7 @@ package buildkite
 import (
 	"context"
 	"errors"
+	"maps"
 	"net/http"
 	"strings"
 	"sync"
@@ -147,9 +148,10 @@ func (d *deadlineRecorder) MakeRequest(ctx context.Context, req *genqlient.Reque
 	return d.inner.MakeRequest(ctx, req, resp)
 }
 
-// Every GraphQL call in an operation shares one deadline derived from that operation's own timeout.
-// Without it, the client's fallback would bound a create by the read timeout, and a paging walk
-// would get a fresh read timeout for every page.
+// Each operation bounds its GraphQL calls by its own timeout. Without it, the client's fallback would
+// bound a create by the read timeout, and a paging walk would get a fresh read timeout for every
+// page. A create or delete gets mutationGracePeriod on top, the time retry.RetryContext waits for an
+// attempt still in flight at its timeout.
 func TestOperationsBoundTheirGraphQLCallsByTheirOwnTimeout(t *testing.T) {
 	t.Parallel()
 
@@ -178,7 +180,7 @@ func TestOperationsBoundTheirGraphQLCallsByTheirOwnTimeout(t *testing.T) {
 		{
 			name:      "resource create uses the create timeout",
 			responses: []stubResponse{refused},
-			want:      10 * time.Minute,
+			want:      10*time.Minute + mutationGracePeriod,
 			requests:  1,
 			run: func(ctx context.Context, t *testing.T, client *Client) diag.Diagnostics {
 				r := &clusterResource{client: client}
@@ -192,7 +194,7 @@ func TestOperationsBoundTheirGraphQLCallsByTheirOwnTimeout(t *testing.T) {
 		{
 			name:      "resource delete uses the delete timeout",
 			responses: []stubResponse{refused},
-			want:      7 * time.Minute,
+			want:      7*time.Minute + mutationGracePeriod,
 			requests:  1,
 			run: func(ctx context.Context, t *testing.T, client *Client) diag.Diagnostics {
 				r := &clusterResource{client: client}
@@ -251,6 +253,155 @@ func TestOperationsBoundTheirGraphQLCallsByTheirOwnTimeout(t *testing.T) {
 				if !deadline.Equal(recorder.deadlines[0]) {
 					t.Errorf("Request %d had deadline %s, want the operation's single deadline %s", i+1, deadline, recorder.deadlines[0])
 				}
+			}
+		})
+	}
+}
+
+// A create whose response arrives after the create timeout, but within the grace period
+// retry.RetryContext waits for the attempt in flight, still records state. Cancelling it at the
+// timeout instead left the team in Buildkite with nothing in state, and the next apply failed on
+// the name being taken.
+func TestResourceCreateRecordsAMutationThatLandsJustAfterTheTimeout(t *testing.T) {
+	t.Parallel()
+
+	const createTimeout = 500 * time.Millisecond
+
+	server, requests := newRetryStub(t, stubResponse{
+		status: http.StatusOK,
+		body:   `{"data":{"teamCreate":{"teamEdge":{"node":{"id":"team-id","uuid":"team-uuid","slug":"team"}}}}}`,
+		delay:  3 * createTimeout,
+	})
+	defer server.Close()
+
+	client := newGraphQLTimeoutTestClient(t, server.URL, 0, time.Millisecond, configuredTimeouts("create", createTimeout.String()))
+	organizationID := "organization-id"
+	client.organizationId = &organizationID
+
+	ctx := t.Context()
+	r := &teamResource{client: client}
+	schema := resourceSchema(ctx, t, r)
+	plan := nullObjectWith(ctx, t, schema.Type(), map[string]tftypes.Value{
+		"name":                tftypes.NewValue(tftypes.String, "team"),
+		"privacy":             tftypes.NewValue(tftypes.String, "VISIBLE"),
+		"default_member_role": tftypes.NewValue(tftypes.String, "MEMBER"),
+		"default_team":        tftypes.NewValue(tftypes.Bool, false),
+	})
+	resp := fwresource.CreateResponse{State: tfsdk.State{Schema: schema, Raw: tftypes.NewValue(schema.Type().TerraformType(ctx), nil)}}
+
+	r.Create(ctx, fwresource.CreateRequest{Plan: tfsdk.Plan{Schema: schema, Raw: plan}}, &resp)
+
+	if got := requests.Load(); got != 1 {
+		t.Fatalf("Made %d requests, want 1", got)
+	}
+	if resp.Diagnostics.HasError() {
+		t.Fatalf("Create() diagnostics = %v, want the team that was created recorded", resp.Diagnostics)
+	}
+	var state teamResourceModel
+	if diags := resp.State.Get(ctx, &state); diags.HasError() {
+		t.Fatalf("Reading the recorded state = %v", diags)
+	}
+	if got := state.ID.ValueString(); got != "team-id" {
+		t.Errorf("Recorded id = %q, want %q", got, "team-id")
+	}
+}
+
+// Each step of a multi-step create or update gets its own budget. Sharing one meant a slow pipeline
+// create left the archive after it too little time, and the pipeline was recorded unarchived and
+// tainted.
+func TestPipelineMutationsGiveEachStepItsOwnDeadline(t *testing.T) {
+	t.Parallel()
+
+	const stepDelay = 100 * time.Millisecond
+
+	pipeline := `{"pipeline":{
+		"id": "pipeline-id",
+		"pipelineUuid": "pipeline-uuid",
+		"name": "pipeline",
+		"slug": "pipeline",
+		"repository": {"url": "git@github.com:org/repo.git"},
+		"steps": {"yaml": "steps: []"},
+		"tags": [],
+		"teams": {"edges": []}
+	}}`
+	archived := stubResponse{status: http.StatusOK, body: `{"data":{"pipelineArchive":{"pipeline":{"id":"pipeline-id"}}}}`}
+	planned := map[string]tftypes.Value{
+		"name":       tftypes.NewValue(tftypes.String, "pipeline"),
+		"repository": tftypes.NewValue(tftypes.String, "git@github.com:org/repo.git"),
+		"steps":      tftypes.NewValue(tftypes.String, "steps: []"),
+		"archived":   tftypes.NewValue(tftypes.Bool, true),
+	}
+
+	tests := []struct {
+		name       string
+		configured timeouts.Value
+		first      stubResponse
+		run        func(context.Context, *testing.T, *pipelineResource) diag.Diagnostics
+	}{
+		{
+			name:       "create",
+			configured: configuredTimeouts("create", "10m"),
+			first:      stubResponse{status: http.StatusOK, delay: stepDelay, body: `{"data":{"pipelineCreate":` + pipeline + `}}`},
+			run: func(ctx context.Context, t *testing.T, p *pipelineResource) diag.Diagnostics {
+				schema := resourceSchema(ctx, t, p)
+				raw := nullObjectWith(ctx, t, schema.Type(), planned)
+				resp := fwresource.CreateResponse{State: tfsdk.State{Schema: schema, Raw: tftypes.NewValue(schema.Type().TerraformType(ctx), nil)}}
+				p.Create(ctx, fwresource.CreateRequest{Plan: tfsdk.Plan{Schema: schema, Raw: raw}, Config: tfsdk.Config{Schema: schema, Raw: raw}}, &resp)
+				return resp.Diagnostics
+			},
+		},
+		{
+			name:       "update",
+			configured: configuredTimeouts("update", "10m"),
+			first:      stubResponse{status: http.StatusOK, delay: stepDelay, body: `{"data":{"pipelineUpdate":` + pipeline + `}}`},
+			run: func(ctx context.Context, t *testing.T, p *pipelineResource) diag.Diagnostics {
+				schema := resourceSchema(ctx, t, p)
+				withID := maps.Clone(planned)
+				withID["id"] = tftypes.NewValue(tftypes.String, "pipeline-id")
+				raw := nullObjectWith(ctx, t, schema.Type(), withID)
+				withID["archived"] = tftypes.NewValue(tftypes.Bool, false)
+				withID["slug"] = tftypes.NewValue(tftypes.String, "pipeline")
+				prior := nullObjectWith(ctx, t, schema.Type(), withID)
+				resp := fwresource.UpdateResponse{State: tfsdk.State{Schema: schema, Raw: prior}}
+				p.Update(ctx, fwresource.UpdateRequest{
+					Plan:   tfsdk.Plan{Schema: schema, Raw: raw},
+					Config: tfsdk.Config{Schema: schema, Raw: raw},
+					State:  tfsdk.State{Schema: schema, Raw: prior},
+				}, &resp)
+				return resp.Diagnostics
+			},
+		},
+	}
+
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			server, _ := newRetryStub(t, testCase.first, archived)
+			defer server.Close()
+
+			client := newGraphQLTimeoutTestClient(t, server.URL, 0, time.Millisecond, testCase.configured)
+			organizationID := "organization-id"
+			client.organizationId = &organizationID
+			recorder := &deadlineRecorder{inner: client.genqlient}
+			client.genqlient = recorder
+
+			diags := testCase.run(t.Context(), t, &pipelineResource{client: client})
+
+			// resp.Private is nil here because only the framework can build one, which adds an
+			// unrelated diagnostic, so check the step this is about rather than for any error.
+			if diagnosticsContain(diags, "archive") {
+				t.Fatalf("diagnostics = %v, want the archive to succeed", diags)
+			}
+			recorder.mu.Lock()
+			defer recorder.mu.Unlock()
+			if len(recorder.deadlines) != 2 {
+				t.Fatalf("Made %d GraphQL requests, want the mutation and the archive; diagnostics: %v", len(recorder.deadlines), diags)
+			}
+			// The archive's budget starts once the first step has come back, so it ends at least that
+			// step's delay after the first step's. A shared budget would give both the same deadline.
+			if gap := recorder.deadlines[1].Sub(recorder.deadlines[0]); gap < stepDelay {
+				t.Errorf("Archive deadline is %s after the first step's, want at least %s: the archive shared its budget", gap, stepDelay)
 			}
 		})
 	}

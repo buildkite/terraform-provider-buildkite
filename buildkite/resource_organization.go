@@ -131,7 +131,7 @@ func (o *organizationResource) Create(ctx context.Context, req resource.CreateRe
 		return
 	}
 
-	requestCtx, cancel := context.WithTimeout(ctx, timeout)
+	requestCtx, cancel := mutationContext(ctx, timeout)
 	defer cancel()
 
 	org, err := o.client.GetOrganizationID(requestCtx)
@@ -179,7 +179,10 @@ func (o *organizationResource) Create(ctx context.Context, req resource.CreateRe
 
 	state.Enforce2FA = types.BoolValue(organization.Organization.MembersRequireTwoFactorAuthentication)
 	if !plan.Enforce2FA.IsNull() && !plan.Enforce2FA.IsUnknown() && plan.Enforce2FA.ValueBool() != organization.Organization.MembersRequireTwoFactorAuthentication {
-		if _, err := setOrganization2FA(requestCtx, o.client.genqlient, *org, plan.Enforce2FA.ValueBool()); err != nil {
+		twoFACtx, cancel := mutationContext(ctx, timeout)
+		defer cancel()
+
+		if _, err := setOrganization2FA(twoFACtx, o.client.genqlient, *org, plan.Enforce2FA.ValueBool()); err != nil {
 			resp.Diagnostics.AddError("Unable to set 2FA", err.Error())
 			// no state. Recording a failed create taints the resource, and the replacement that
 			// follows destroys before it creates, clearing an allowlist that did land. Leaving the
@@ -271,7 +274,7 @@ func (o *organizationResource) Update(ctx context.Context, req resource.UpdateRe
 		return
 	}
 
-	requestCtx, cancel := context.WithTimeout(ctx, timeout)
+	requestCtx, cancel := mutationContext(ctx, timeout)
 	defer cancel()
 
 	org, err := o.client.GetOrganizationID(requestCtx)
@@ -307,7 +310,10 @@ func (o *organizationResource) Update(ctx context.Context, req resource.UpdateRe
 	}
 
 	if !plan.Enforce2FA.IsNull() && !plan.Enforce2FA.IsUnknown() && !plan.Enforce2FA.Equal(prior.Enforce2FA) {
-		twoFAResponse, err := setOrganization2FA(requestCtx, o.client.genqlient, *org, plan.Enforce2FA.ValueBool())
+		twoFACtx, cancel := mutationContext(ctx, timeout)
+		defer cancel()
+
+		twoFAResponse, err := setOrganization2FA(twoFACtx, o.client.genqlient, *org, plan.Enforce2FA.ValueBool())
 		if err != nil {
 			resp.Diagnostics.AddError("Unable to set 2FA", err.Error())
 			return
@@ -323,7 +329,7 @@ func (o *organizationResource) Delete(ctx context.Context, req resource.DeleteRe
 		return
 	}
 
-	requestCtx, cancel := context.WithTimeout(ctx, timeout)
+	requestCtx, cancel := mutationContext(ctx, timeout)
 	defer cancel()
 
 	org, err := o.client.GetOrganizationID(requestCtx)
