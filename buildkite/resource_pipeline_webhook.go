@@ -102,7 +102,8 @@ func (pw *pipelineWebhook) Create(ctx context.Context, req resource.CreateReques
 		return
 	}
 
-	lookupCtx, cancel := mutationContext(ctx, timeouts)
+	// A lookup changes nothing, so it takes the plain timeout rather than mutationContext.
+	lookupCtx, cancel := context.WithTimeout(ctx, timeouts)
 	defer cancel()
 
 	pipelineResp, err := getPipelineWebhook(lookupCtx, pw.client.genqlient, plan.PipelineId.ValueString())

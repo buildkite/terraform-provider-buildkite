@@ -148,7 +148,7 @@ requestCtx, cancel := context.WithTimeout(ctx, timeout)
 defer cancel()
 ```
 
-A `Create`, `Update` or `Delete` derives a context from `mutationContext` for each step, meaning each `retry.RetryContext` block or each call made outside one, and passes the parent `ctx` to `retry.RetryContext`:
+A `Create`, `Update` or `Delete` derives a context from `mutationContext` for each step that changes something, meaning each `retry.RetryContext` block or each call made outside one, and passes the parent `ctx` to `retry.RetryContext`:
 
 ```go
 requestCtx, cancel := mutationContext(ctx, timeout)
@@ -160,7 +160,7 @@ err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 })
 ```
 
-`mutationContext` adds 30 seconds to the deadline, matching how long `retry.RetryContext` waits for an attempt still in flight at its timeout. So a mutation that lands just after the timeout is still recorded in state instead of being cancelled, which would leave it applied in Buildkite with no state. A new context per step stops a slow step from using up the time the steps after it need, once the first has already changed something. A helper that takes the timeout, such as `updatePipelineSlug`, derives its own context and takes the parent.
+`mutationContext` adds 30 seconds to the deadline, matching how long `retry.RetryContext` waits for an attempt still in flight at its timeout. So a mutation that lands just after the timeout is still recorded in state instead of being cancelled, which would leave it applied in Buildkite with no state. A new context per step stops a slow step from using up the time the steps after it need, once the first has already changed something. A helper that takes the timeout, such as `updatePipelineSlug`, derives its own context and takes the parent. A step that only looks something up, such as the repository check before a pipeline webhook is created, changes nothing that needs recording, so it uses a plain `context.WithTimeout` as a read does.
 
 Keep the bare `ctx` for framework calls such as `resp.State.Set`, so state can still be recorded after the budget is spent. A request made without a deadline falls back to the read timeout, which stops it running the retry schedule out, but that fallback applies per request and uses the read timeout whatever the operation.
 

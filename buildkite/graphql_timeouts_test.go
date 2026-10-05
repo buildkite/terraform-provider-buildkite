@@ -2,6 +2,7 @@ package buildkite
 
 import (
 	"context"
+	"maps"
 	"net/http"
 	"strings"
 	"sync"
@@ -303,60 +304,103 @@ func TestResourceCreateRecordsAMutationThatLandsJustAfterTheTimeout(t *testing.T
 	}
 }
 
-// Each step of a multi-step create gets its own budget. Sharing one meant a slow pipeline create
-// left the archive after it too little time, and the pipeline was recorded unarchived and tainted.
-func TestPipelineCreateGivesEachStepItsOwnDeadline(t *testing.T) {
+// Each step of a multi-step create or update gets its own budget. Sharing one meant a slow pipeline
+// create left the archive after it too little time, and the pipeline was recorded unarchived and
+// tainted.
+func TestPipelineMutationsGiveEachStepItsOwnDeadline(t *testing.T) {
 	t.Parallel()
 
-	const createDelay = 100 * time.Millisecond
+	const stepDelay = 100 * time.Millisecond
 
-	server, _ := newRetryStub(t,
-		stubResponse{status: http.StatusOK, delay: createDelay, body: `{"data":{"pipelineCreate":{"pipeline":{
-			"id": "pipeline-id",
-			"pipelineUuid": "pipeline-uuid",
-			"name": "pipeline",
-			"slug": "pipeline",
-			"repository": {"url": "git@github.com:org/repo.git"},
-			"steps": {"yaml": "steps: []"},
-			"tags": [],
-			"teams": {"edges": []}
-		}}}}`},
-		stubResponse{status: http.StatusOK, body: `{"data":{"pipelineArchive":{"pipeline":{"id":"pipeline-id"}}}}`},
-	)
-	defer server.Close()
-
-	client := newGraphQLTimeoutTestClient(t, server.URL, 0, time.Millisecond, configuredTimeouts("create", "10m"))
-	organizationID := "organization-id"
-	client.organizationId = &organizationID
-	recorder := &deadlineRecorder{inner: client.genqlient}
-	client.genqlient = recorder
-
-	ctx := t.Context()
-	p := &pipelineResource{client: client}
-	schema := resourceSchema(ctx, t, p)
-	raw := nullObjectWith(ctx, t, schema.Type(), map[string]tftypes.Value{
+	pipeline := `{"pipeline":{
+		"id": "pipeline-id",
+		"pipelineUuid": "pipeline-uuid",
+		"name": "pipeline",
+		"slug": "pipeline",
+		"repository": {"url": "git@github.com:org/repo.git"},
+		"steps": {"yaml": "steps: []"},
+		"tags": [],
+		"teams": {"edges": []}
+	}}`
+	archived := stubResponse{status: http.StatusOK, body: `{"data":{"pipelineArchive":{"pipeline":{"id":"pipeline-id"}}}}`}
+	planned := map[string]tftypes.Value{
 		"name":       tftypes.NewValue(tftypes.String, "pipeline"),
 		"repository": tftypes.NewValue(tftypes.String, "git@github.com:org/repo.git"),
 		"steps":      tftypes.NewValue(tftypes.String, "steps: []"),
 		"archived":   tftypes.NewValue(tftypes.Bool, true),
-	})
-	resp := fwresource.CreateResponse{State: tfsdk.State{Schema: schema, Raw: tftypes.NewValue(schema.Type().TerraformType(ctx), nil)}}
-
-	p.Create(ctx, fwresource.CreateRequest{Plan: tfsdk.Plan{Schema: schema, Raw: raw}, Config: tfsdk.Config{Schema: schema, Raw: raw}}, &resp)
-
-	// resp.Private is nil here because only the framework can build one, which adds an unrelated
-	// diagnostic, so check the step this is about rather than for any error.
-	if diagnosticsContain(resp.Diagnostics, "Unable to archive pipeline") {
-		t.Fatalf("Create() diagnostics = %v, want the archive to succeed", resp.Diagnostics)
 	}
-	recorder.mu.Lock()
-	defer recorder.mu.Unlock()
-	if len(recorder.deadlines) != 2 {
-		t.Fatalf("Made %d GraphQL requests, want the create and the archive; diagnostics: %v", len(recorder.deadlines), resp.Diagnostics)
+
+	tests := []struct {
+		name       string
+		configured timeouts.Value
+		first      stubResponse
+		run        func(context.Context, *testing.T, *pipelineResource) diag.Diagnostics
+	}{
+		{
+			name:       "create",
+			configured: configuredTimeouts("create", "10m"),
+			first:      stubResponse{status: http.StatusOK, delay: stepDelay, body: `{"data":{"pipelineCreate":` + pipeline + `}}`},
+			run: func(ctx context.Context, t *testing.T, p *pipelineResource) diag.Diagnostics {
+				schema := resourceSchema(ctx, t, p)
+				raw := nullObjectWith(ctx, t, schema.Type(), planned)
+				resp := fwresource.CreateResponse{State: tfsdk.State{Schema: schema, Raw: tftypes.NewValue(schema.Type().TerraformType(ctx), nil)}}
+				p.Create(ctx, fwresource.CreateRequest{Plan: tfsdk.Plan{Schema: schema, Raw: raw}, Config: tfsdk.Config{Schema: schema, Raw: raw}}, &resp)
+				return resp.Diagnostics
+			},
+		},
+		{
+			name:       "update",
+			configured: configuredTimeouts("update", "10m"),
+			first:      stubResponse{status: http.StatusOK, delay: stepDelay, body: `{"data":{"pipelineUpdate":` + pipeline + `}}`},
+			run: func(ctx context.Context, t *testing.T, p *pipelineResource) diag.Diagnostics {
+				schema := resourceSchema(ctx, t, p)
+				withID := maps.Clone(planned)
+				withID["id"] = tftypes.NewValue(tftypes.String, "pipeline-id")
+				raw := nullObjectWith(ctx, t, schema.Type(), withID)
+				withID["archived"] = tftypes.NewValue(tftypes.Bool, false)
+				withID["slug"] = tftypes.NewValue(tftypes.String, "pipeline")
+				prior := nullObjectWith(ctx, t, schema.Type(), withID)
+				resp := fwresource.UpdateResponse{State: tfsdk.State{Schema: schema, Raw: prior}}
+				p.Update(ctx, fwresource.UpdateRequest{
+					Plan:   tfsdk.Plan{Schema: schema, Raw: raw},
+					Config: tfsdk.Config{Schema: schema, Raw: raw},
+					State:  tfsdk.State{Schema: schema, Raw: prior},
+				}, &resp)
+				return resp.Diagnostics
+			},
+		},
 	}
-	// The archive's budget starts once the create has come back, so it ends at least the create's
-	// delay after the create's. A shared budget would give both the same deadline.
-	if gap := recorder.deadlines[1].Sub(recorder.deadlines[0]); gap < createDelay {
-		t.Errorf("Archive deadline is %s after the create's, want at least %s: the archive shared the create's budget", gap, createDelay)
+
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			server, _ := newRetryStub(t, testCase.first, archived)
+			defer server.Close()
+
+			client := newGraphQLTimeoutTestClient(t, server.URL, 0, time.Millisecond, testCase.configured)
+			organizationID := "organization-id"
+			client.organizationId = &organizationID
+			recorder := &deadlineRecorder{inner: client.genqlient}
+			client.genqlient = recorder
+
+			diags := testCase.run(t.Context(), t, &pipelineResource{client: client})
+
+			// resp.Private is nil here because only the framework can build one, which adds an
+			// unrelated diagnostic, so check the step this is about rather than for any error.
+			if diagnosticsContain(diags, "archive") {
+				t.Fatalf("diagnostics = %v, want the archive to succeed", diags)
+			}
+			recorder.mu.Lock()
+			defer recorder.mu.Unlock()
+			if len(recorder.deadlines) != 2 {
+				t.Fatalf("Made %d GraphQL requests, want the mutation and the archive; diagnostics: %v", len(recorder.deadlines), diags)
+			}
+			// The archive's budget starts once the first step has come back, so it ends at least that
+			// step's delay after the first step's. A shared budget would give both the same deadline.
+			if gap := recorder.deadlines[1].Sub(recorder.deadlines[0]); gap < stepDelay {
+				t.Errorf("Archive deadline is %s after the first step's, want at least %s: the archive shared its budget", gap, stepDelay)
+			}
+		})
 	}
 }

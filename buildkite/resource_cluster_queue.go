@@ -612,7 +612,8 @@ func (cq *clusterQueueResource) Update(ctx context.Context, req resource.UpdateR
 		}
 	}
 
-	lookupCtx, cancel := mutationContext(ctx, timeout)
+	// A lookup changes nothing, so it takes the plain timeout rather than mutationContext.
+	lookupCtx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
 	org, err := cq.client.GetOrganizationID(lookupCtx)

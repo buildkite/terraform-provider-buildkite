@@ -1937,13 +1937,14 @@ func updatePipelineExtraInfo(ctx context.Context, slug string, settings *provide
 }
 
 func getPipelineGithubWebhooks(ctx context.Context, slug string, client *Client, timeouts time.Duration) (bool, error) {
-	requestCtx, cancel := mutationContext(ctx, timeouts)
+	// A lookup changes nothing, so it takes the plain timeout rather than mutationContext.
+	requestCtx, cancel := context.WithTimeout(ctx, timeouts)
 	defer cancel()
 
 	var webhooks struct {
 		Enabled bool `json:"enabled"`
 	}
-	err := retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
+	err := retry.RetryContext(requestCtx, timeouts, func() *retry.RetryError {
 		err := client.makeRequest(requestCtx, "GET", fmt.Sprintf("/v2/organizations/%s/pipelines/%s/github-webhooks", client.organization, slug), nil, &webhooks)
 		return retryContextError(err)
 	})

@@ -178,7 +178,8 @@ const mutationGracePeriod = 30 * time.Second
 // mutationGracePeriod past the timeout so a mutation that lands just after it is still returned and
 // recorded in state rather than cancelled, which would leave it applied in Buildkite and missing from
 // state. Derive one per step, so a slow step does not leave the steps after it without a budget once
-// the first has changed something.
+// the first has changed something. A step that only looks something up has nothing to record, so it
+// takes a plain context.WithTimeout instead.
 func mutationContext(ctx context.Context, timeout time.Duration) (context.Context, context.CancelFunc) {
 	return context.WithTimeout(ctx, timeout+mutationGracePeriod)
 }

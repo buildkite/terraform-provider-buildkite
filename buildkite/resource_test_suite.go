@@ -112,13 +112,14 @@ func (ts *testSuiteResource) Create(ctx context.Context, req resource.CreateRequ
 		return
 	}
 
-	lookupCtx, cancel := mutationContext(ctx, timeout)
+	// A lookup changes nothing, so it takes the plain timeout rather than mutationContext.
+	lookupCtx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
 	// The REST API requires team UUIDs but everything else in the provider uses GraphQL IDs. So we map from UUID to ID
 	// here
 	var r *getNodeResponse
-	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+	err := retry.RetryContext(lookupCtx, timeout, func() *retry.RetryError {
 		var err error
 		r, err = getNode(lookupCtx,
 			ts.client.genqlient,
