@@ -149,10 +149,10 @@ func (p *registryResource) Create(ctx context.Context, req resource.CreateReques
 		return
 	}
 
-	requestCtx, cancel := context.WithTimeout(ctx, timeout)
+	requestCtx, cancel := mutationContext(ctx, timeout)
 	defer cancel()
 
-	err := retry.RetryContext(requestCtx, timeout, func() *retry.RetryError {
+	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		url := fmt.Sprintf("%s/v2/packages/organizations/%s/registries", p.client.restURL, p.client.organization)
 
 		reqBody := map[string]interface{}{
@@ -352,7 +352,7 @@ func (p *registryResource) Update(ctx context.Context, req resource.UpdateReques
 		return
 	}
 
-	requestCtx, cancel := context.WithTimeout(ctx, timeout)
+	requestCtx, cancel := mutationContext(ctx, timeout)
 	defer cancel()
 
 	if state.Slug.IsNull() || state.Slug.ValueString() == "" {
@@ -363,7 +363,7 @@ func (p *registryResource) Update(ctx context.Context, req resource.UpdateReques
 		return
 	}
 
-	err := retry.RetryContext(requestCtx, timeout, func() *retry.RetryError {
+	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		url := fmt.Sprintf("%s/v2/packages/organizations/%s/registries/%s", p.client.restURL, p.client.organization, state.Slug.ValueString())
 
 		reqBody := map[string]interface{}{
@@ -521,7 +521,7 @@ func (p *registryResource) Delete(ctx context.Context, req resource.DeleteReques
 		return
 	}
 
-	requestCtx, cancel := context.WithTimeout(ctx, timeout)
+	requestCtx, cancel := mutationContext(ctx, timeout)
 	defer cancel()
 
 	if state.Slug.IsNull() || state.Slug.ValueString() == "" {
@@ -532,7 +532,7 @@ func (p *registryResource) Delete(ctx context.Context, req resource.DeleteReques
 		return
 	}
 
-	err := retry.RetryContext(requestCtx, timeout, func() *retry.RetryError {
+	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		url := fmt.Sprintf("%s/v2/packages/organizations/%s/registries/%s", p.client.restURL, p.client.organization, state.Slug.ValueString())
 
 		// Create the HTTP request

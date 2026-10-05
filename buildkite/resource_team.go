@@ -189,11 +189,11 @@ func (t *teamResource) Create(ctx context.Context, req resource.CreateRequest, r
 		return
 	}
 
-	requestCtx, cancel := context.WithTimeout(ctx, timeout)
+	requestCtx, cancel := mutationContext(ctx, timeout)
 	defer cancel()
 
 	var r *teamCreateResponse
-	err := retry.RetryContext(requestCtx, timeout, func() *retry.RetryError {
+	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		org, err := t.client.GetOrganizationID(requestCtx)
 		if err == nil {
 			r, err = teamCreate(requestCtx,
@@ -303,11 +303,11 @@ func (t *teamResource) Update(ctx context.Context, req resource.UpdateRequest, r
 		return
 	}
 
-	requestCtx, cancel := context.WithTimeout(ctx, timeout)
+	requestCtx, cancel := mutationContext(ctx, timeout)
 	defer cancel()
 
 	var response *teamUpdateResponse
-	err := retry.RetryContext(requestCtx, timeout, func() *retry.RetryError {
+	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		var err error
 		response, err = teamUpdate(requestCtx,
 			t.client.genqlient,
@@ -355,10 +355,10 @@ func (t *teamResource) Delete(ctx context.Context, req resource.DeleteRequest, r
 		return
 	}
 
-	requestCtx, cancel := context.WithTimeout(ctx, timeout)
+	requestCtx, cancel := mutationContext(ctx, timeout)
 	defer cancel()
 
-	err := retry.RetryContext(requestCtx, timeout, func() *retry.RetryError {
+	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		_, err := teamDelete(requestCtx,
 			t.client.genqlient,
 			state.ID.ValueString(),

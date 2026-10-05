@@ -88,11 +88,11 @@ func (ob *organizationBannerResource) Create(ctx context.Context, req resource.C
 		return
 	}
 
-	requestCtx, cancel := context.WithTimeout(ctx, timeout)
+	requestCtx, cancel := mutationContext(ctx, timeout)
 	defer cancel()
 
 	var r *upsertBannerResponse
-	err := retry.RetryContext(requestCtx, timeout, func() *retry.RetryError {
+	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		org, err := ob.client.GetOrganizationID(requestCtx)
 		if err == nil {
 			log.Printf("Creating organization banner ...")
@@ -194,11 +194,11 @@ func (ob *organizationBannerResource) Update(ctx context.Context, req resource.U
 		return
 	}
 
-	requestCtx, cancel := context.WithTimeout(ctx, timeout)
+	requestCtx, cancel := mutationContext(ctx, timeout)
 	defer cancel()
 
 	var r *upsertBannerResponse
-	err := retry.RetryContext(requestCtx, timeout, func() *retry.RetryError {
+	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		org, err := ob.client.GetOrganizationID(requestCtx)
 		if err == nil {
 			log.Printf("Updating organization banner %s ...", state.ID.ValueString())
@@ -241,10 +241,10 @@ func (ob *organizationBannerResource) Delete(ctx context.Context, req resource.D
 		return
 	}
 
-	requestCtx, cancel := context.WithTimeout(ctx, timeout)
+	requestCtx, cancel := mutationContext(ctx, timeout)
 	defer cancel()
 
-	err := retry.RetryContext(requestCtx, timeout, func() *retry.RetryError {
+	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		org, err := ob.client.GetOrganizationID(requestCtx)
 		if err == nil {
 			log.Printf("Deleting organization banner %s ...", state.ID.ValueString())
