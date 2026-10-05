@@ -15,13 +15,14 @@ type clusterDatasource struct {
 }
 
 type clusterDatasourceModel struct {
-	ID          types.String      `tfsdk:"id"`
-	UUID        types.String      `tfsdk:"uuid"`
-	Name        types.String      `tfsdk:"name"`
-	Description types.String      `tfsdk:"description"`
-	Emoji       types.String      `tfsdk:"emoji"`
-	Color       types.String      `tfsdk:"color"`
-	Maintainers []maintainerModel `tfsdk:"maintainers"`
+	ID                      types.String      `tfsdk:"id"`
+	UUID                    types.String      `tfsdk:"uuid"`
+	Name                    types.String      `tfsdk:"name"`
+	Description             types.String      `tfsdk:"description"`
+	Emoji                   types.String      `tfsdk:"emoji"`
+	Color                   types.String      `tfsdk:"color"`
+	Maintainers             []maintainerModel `tfsdk:"maintainers"`
+	AgentTracingServiceUUID types.String      `tfsdk:"agent_tracing_service_uuid"`
 }
 
 func newClusterDatasource() datasource.DataSource {
@@ -80,6 +81,7 @@ func (c *clusterDatasource) Read(ctx context.Context, req datasource.ReadRequest
 				state.ID = types.StringValue(cluster.Node.Id)
 				state.Name = types.StringValue(cluster.Node.Name)
 				state.UUID = types.StringValue(cluster.Node.Uuid)
+				state.AgentTracingServiceUUID = types.StringPointerValue(cluster.Node.AgentTracingServiceUuid)
 
 				// Fetch maintainers for this cluster
 				maintainers, err := c.client.listClusterMaintainers(ctx, c.client.organization, cluster.Node.Uuid)
@@ -147,6 +149,10 @@ func (*clusterDatasource) Schema(ctx context.Context, req datasource.SchemaReque
 			"color": schema.StringAttribute{
 				Computed:            true,
 				MarkdownDescription: "The color of the cluster.",
+			},
+			"agent_tracing_service_uuid": schema.StringAttribute{
+				Computed:            true,
+				MarkdownDescription: "The UUID of the OpenTelemetry tracing notification service agents in the cluster export traces to. Null when none is selected, when the organization does not have agent tracing enabled, or when the API token cannot manage the cluster.",
 			},
 			"maintainers": schema.ListNestedAttribute{
 				Computed:            true,
