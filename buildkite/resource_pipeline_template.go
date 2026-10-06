@@ -105,12 +105,15 @@ func (pt *pipelineTemplateResource) Create(ctx context.Context, req resource.Cre
 		return
 	}
 
+	requestCtx, cancel := mutationContext(ctx, timeout)
+	defer cancel()
+
 	var r *createPipelineTemplateResponse
 	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-		org, err := pt.client.GetOrganizationID()
+		org, err := pt.client.GetOrganizationID(requestCtx)
 		if err == nil {
 			log.Printf("Creating pipeline template %s ...", plan.Name.ValueString())
-			r, err = createPipelineTemplate(ctx,
+			r, err = createPipelineTemplate(requestCtx,
 				pt.client.genqlient,
 				*org,
 				plan.Name.ValueString(),
@@ -156,12 +159,15 @@ func (pt *pipelineTemplateResource) Read(ctx context.Context, req resource.ReadR
 		return
 	}
 
+	requestCtx, cancel := context.WithTimeout(ctx, timeouts)
+	defer cancel()
+
 	var apiResponse *getNodeResponse
-	err := retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
+	err := retry.RetryContext(requestCtx, timeouts, func() *retry.RetryError {
 		var err error
 
 		log.Printf("Reading pipeline template with ID %s ...", state.ID.ValueString())
-		apiResponse, err = getNode(ctx,
+		apiResponse, err = getNode(requestCtx,
 			pt.client.genqlient,
 			state.ID.ValueString(),
 		)
@@ -218,12 +224,15 @@ func (pt *pipelineTemplateResource) Update(ctx context.Context, req resource.Upd
 		return
 	}
 
+	requestCtx, cancel := mutationContext(ctx, timeout)
+	defer cancel()
+
 	var r *updatePipelineTemplateResponse
 	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-		org, err := pt.client.GetOrganizationID()
+		org, err := pt.client.GetOrganizationID(requestCtx)
 		if err == nil {
 			log.Printf("Updating pipeline template %s with ID %s ...", plan.Name.ValueString(), plan.ID.ValueString())
-			r, err = updatePipelineTemplate(ctx,
+			r, err = updatePipelineTemplate(requestCtx,
 				pt.client.genqlient,
 				*org,
 				plan.ID.ValueString(),
@@ -269,11 +278,14 @@ func (pt *pipelineTemplateResource) Delete(ctx context.Context, req resource.Del
 		return
 	}
 
+	requestCtx, cancel := mutationContext(ctx, timeout)
+	defer cancel()
+
 	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-		org, err := pt.client.GetOrganizationID()
+		org, err := pt.client.GetOrganizationID(requestCtx)
 		if err == nil {
 			log.Printf("Deleting pipeline template %s with ID %s ...", state.Name.ValueString(), state.ID.ValueString())
-			_, err = deletePipelineTemplate(ctx,
+			_, err = deletePipelineTemplate(requestCtx,
 				pt.client.genqlient,
 				*org,
 				state.ID.ValueString(),

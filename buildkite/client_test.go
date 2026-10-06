@@ -3,10 +3,13 @@ package buildkite
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -80,14 +83,14 @@ func TestClientGetOrganizationIDNotCachedOnError(t *testing.T) {
 		organization: "test-org",
 	}
 
-	if _, err := client.GetOrganizationID(); err == nil {
+	if _, err := client.GetOrganizationID(t.Context()); err == nil {
 		t.Fatal("expected error from first lookup, got nil")
 	}
 	if client.organizationId != nil {
 		t.Fatalf("organizationId was cached after a failed lookup: %q", *client.organizationId)
 	}
 
-	id, err := client.GetOrganizationID()
+	id, err := client.GetOrganizationID(t.Context())
 	if err != nil {
 		t.Fatalf("second lookup failed: %v", err)
 	}
@@ -127,7 +130,7 @@ func TestClientGetOrganizationIDConcurrent(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			id, err := client.GetOrganizationID()
+			id, err := client.GetOrganizationID(t.Context())
 			switch {
 			case err != nil:
 				errs <- err
@@ -140,5 +143,106 @@ func TestClientGetOrganizationIDConcurrent(t *testing.T) {
 	close(errs)
 	for err := range errs {
 		t.Error(err)
+	}
+}
+
+// A caller must stop at its own deadline even while another caller's lookup is still running, and
+// the waiting caller shares that lookup rather than starting its own.
+func TestClientGetOrganizationIDWaiterStopsAtItsOwnDeadline(t *testing.T) {
+	t.Parallel()
+
+	var requests atomic.Int64
+	release := make(chan struct{})
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests.Add(1)
+		<-release
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"data":{"organization":{"id":"org-abc"}}}`))
+	}))
+	defer server.Close()
+
+	client := &Client{graphql: graphql.NewClient(server.URL, server.Client()), organization: "test-org"}
+
+	// Release the holder's lookup after a while regardless, so a waiter that cannot give up early
+	// fails the assertions below instead of hanging the test.
+	releaseLater := time.AfterFunc(3*time.Second, func() { close(release) })
+
+	holder := make(chan error, 1)
+	go func() {
+		ctx, cancel := context.WithTimeout(t.Context(), time.Minute)
+		defer cancel()
+		_, err := client.GetOrganizationID(ctx)
+		holder <- err
+	}()
+	for requests.Load() == 0 {
+		time.Sleep(time.Millisecond)
+	}
+
+	ctx, cancel := context.WithTimeout(t.Context(), 100*time.Millisecond)
+	defer cancel()
+	started := time.Now()
+	_, err := client.GetOrganizationID(ctx)
+	if !errors.Is(err, context.DeadlineExceeded) {
+		t.Fatalf("GetOrganizationID() = %v, want its own deadline", err)
+	}
+	// Generous against a loaded machine, but short of the holder's release.
+	if waited := time.Since(started); waited > 2*time.Second {
+		t.Errorf("Waited %s for a lookup it could not use, want about 100ms", waited.Round(time.Millisecond))
+	}
+
+	if releaseLater.Stop() {
+		close(release)
+	}
+	if err := <-holder; err != nil {
+		t.Fatalf("The holder's lookup failed: %v", err)
+	}
+	if got := requests.Load(); got != 1 {
+		t.Errorf("Made %d lookups, want the waiter to have shared the holder's", got)
+	}
+}
+
+// A lookup started by a caller with a short deadline ends at that deadline. A caller with more time
+// must not inherit that failure; it starts a lookup of its own under its own deadline.
+func TestClientGetOrganizationIDOutlivesAShorterCallersLookup(t *testing.T) {
+	t.Parallel()
+
+	var requests atomic.Int64
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if requests.Add(1) == 1 {
+			// The first lookup hangs until its caller's deadline cuts it off. The server only notices
+			// the client going away once the request body has been read.
+			_, _ = io.Copy(io.Discard, r.Body)
+			<-r.Context().Done()
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"data":{"organization":{"id":"org-abc"}}}`))
+	}))
+	defer server.Close()
+
+	client := &Client{graphql: graphql.NewClient(server.URL, server.Client()), organization: "test-org"}
+
+	short := make(chan error, 1)
+	go func() {
+		ctx, cancel := context.WithTimeout(t.Context(), 200*time.Millisecond)
+		defer cancel()
+		_, err := client.GetOrganizationID(ctx)
+		short <- err
+	}()
+	for requests.Load() == 0 {
+		time.Sleep(time.Millisecond)
+	}
+
+	ctx, cancel := context.WithTimeout(t.Context(), time.Minute)
+	defer cancel()
+	id, err := client.GetOrganizationID(ctx)
+	if err != nil {
+		t.Fatalf("GetOrganizationID() with a minute to spare = %v, want the ID", err)
+	}
+	if *id != "org-abc" {
+		t.Errorf("GetOrganizationID() = %q, want %q", *id, "org-abc")
+	}
+	if err := <-short; !errors.Is(err, context.DeadlineExceeded) {
+		t.Errorf("The short caller's GetOrganizationID() = %v, want its deadline", err)
 	}
 }

@@ -106,16 +106,22 @@ func (ts *testSuiteResource) Create(ctx context.Context, req resource.CreateRequ
 		return
 	}
 
-	// Use the Read timeout for obtaining a Test suite's UUID
-	timeout, diags := ts.client.readTimeout(ctx)
+	timeout, diags := ts.client.createTimeout(ctx)
 	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// A lookup changes nothing, so it takes the plain timeout rather than mutationContext.
+	lookupCtx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
 
 	// The REST API requires team UUIDs but everything else in the provider uses GraphQL IDs. So we map from UUID to ID
 	// here
 	var r *getNodeResponse
-	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+	err := retry.RetryContext(lookupCtx, timeout, func() *retry.RetryError {
 		var err error
-		r, err = getNode(ctx,
+		r, err = getNode(lookupCtx,
 			ts.client.genqlient,
 			plan.TeamOwnerId.ValueString(),
 		)
@@ -149,12 +155,11 @@ func (ts *testSuiteResource) Create(ctx context.Context, req resource.CreateRequ
 	// Construct URL to call to the REST API
 	url := fmt.Sprintf("/v2/analytics/organizations/%s/suites", ts.client.organization)
 
-	// Use the Create timeout for test suite creation
-	timeout, diags = ts.client.createTimeout(ctx)
-	resp.Diagnostics.Append(diags...)
+	createCtx, cancel := mutationContext(ctx, timeout)
+	defer cancel()
 
 	createErr := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-		err = ts.client.makeRequest(ctx, "POST", url, payload, &response)
+		err = ts.client.makeRequest(createCtx, "POST", url, payload, &response)
 
 		return retryContextError(err)
 	})
@@ -195,10 +200,13 @@ func (ts *testSuiteResource) Delete(ctx context.Context, req resource.DeleteRequ
 	timeout, diags := ts.client.deleteTimeout(ctx)
 	resp.Diagnostics.Append(diags...)
 
+	requestCtx, cancel := mutationContext(ctx, timeout)
+	defer cancel()
+
 	// Construct URL to call to the REST API
 	url := fmt.Sprintf("/v2/analytics/organizations/%s/suites/%s", ts.client.organization, state.Slug.ValueString())
 	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-		err := ts.client.makeRequest(ctx, "DELETE", url, nil, nil)
+		err := ts.client.makeRequest(requestCtx, "DELETE", url, nil, nil)
 
 		return retryContextError(err)
 	})
@@ -232,10 +240,13 @@ func (ts *testSuiteResource) Read(ctx context.Context, req resource.ReadRequest,
 		return
 	}
 
+	requestCtx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
 	var r *getTestSuiteResponse
-	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+	err := retry.RetryContext(requestCtx, timeout, func() *retry.RetryError {
 		var err error
-		r, err = getTestSuite(ctx,
+		r, err = getTestSuite(requestCtx,
 			ts.client.genqlient, state.ID.ValueString(),
 			teamPageSize, nil,
 		)
@@ -290,8 +301,8 @@ func (ts *testSuiteResource) Read(ctx context.Context, req resource.ReadRequest,
 
 	// Construct URL to call to the REST API to get the API Token
 	url := fmt.Sprintf("/v2/analytics/organizations/%s/suites/%s?show_api_token=true", ts.client.organization, state.Slug.ValueString())
-	err = retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-		err := ts.client.makeRequest(ctx, "GET", url, nil, &response)
+	err = retry.RetryContext(requestCtx, timeout, func() *retry.RetryError {
+		err := ts.client.makeRequest(requestCtx, "GET", url, nil, &response)
 		return retryContextError(err)
 	})
 	if err != nil {
@@ -432,8 +443,11 @@ func (ts *testSuiteResource) Update(ctx context.Context, req resource.UpdateRequ
 
 	// Construct URL to call to the REST API
 	url := fmt.Sprintf("/v2/analytics/organizations/%s/suites/%s", ts.client.organization, state.Slug.ValueString())
+	updateCtx, cancel := mutationContext(ctx, timeout)
+	defer cancel()
+
 	updateErr := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-		err := ts.client.makeRequest(ctx, http.MethodPatch, url, payload, &response)
+		err := ts.client.makeRequest(updateCtx, http.MethodPatch, url, payload, &response)
 
 		return retryContextError(err)
 	})
@@ -467,8 +481,11 @@ func (ts *testSuiteResource) Update(ctx context.Context, req resource.UpdateRequ
 	if plan.TeamOwnerId.ValueString() != state.TeamOwnerId.ValueString() {
 		var attachErr error
 		alreadyOwned := false
+		attachCtx, cancel := mutationContext(ctx, timeout)
+		defer cancel()
+
 		err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-			_, err := createTestSuiteTeam(ctx,
+			_, err := createTestSuiteTeam(attachCtx,
 				ts.client.genqlient,
 				plan.TeamOwnerId.ValueString(),
 				state.ID.ValueString(),
@@ -527,8 +544,11 @@ func (ts *testSuiteResource) Update(ctx context.Context, req resource.UpdateRequ
 		previousOwnerId := state.TeamOwnerId.ValueString()
 		for _, team := range teams {
 			if team.teamId == previousOwnerId {
+				detachCtx, cancel := mutationContext(ctx, timeout)
+				defer cancel()
+
 				err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-					_, err := deleteTestSuiteTeam(ctx,
+					_, err := deleteTestSuiteTeam(detachCtx,
 						ts.client.genqlient,
 						team.id,
 					)
@@ -575,8 +595,11 @@ func (ts *testSuiteResource) ensureOwnerTeamCanManage(ctx context.Context, timeo
 		return nil
 	}
 
+	requestCtx, cancel := mutationContext(ctx, timeout)
+	defer cancel()
+
 	return retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-		_, err := updateTestSuiteTeam(ctx, ts.client.genqlient, teams[i].id, SuiteAccessLevelsManageAndRead)
+		_, err := updateTestSuiteTeam(requestCtx, ts.client.genqlient, teams[i].id, SuiteAccessLevelsManageAndRead)
 
 		return retryContextError(err)
 	})
@@ -590,13 +613,17 @@ const teamPageSize = 50
 // the first page would hide a previous owner whose team name sorts past it, and the caller reads
 // absence as "already detached" and records the swap as done.
 func (ts *testSuiteResource) suiteTeams(ctx context.Context, timeout time.Duration, suiteId string) ([]testSuiteTeamEdge, error) {
+	// One context for every page, so a long connection cannot take the timeout once per page.
+	requestCtx, cancel := mutationContext(ctx, timeout)
+	defer cancel()
+
 	var teams []testSuiteTeamEdge
 	var cursor *string
 	for {
 		var r *getTestSuiteResponse
 		err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 			var err error
-			r, err = getTestSuite(ctx, ts.client.genqlient, suiteId, teamPageSize, cursor)
+			r, err = getTestSuite(requestCtx, ts.client.genqlient, suiteId, teamPageSize, cursor)
 
 			return retryContextError(err)
 		})

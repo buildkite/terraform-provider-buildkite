@@ -16,6 +16,7 @@ require (
 	github.com/hashicorp/terraform-plugin-testing v1.16.0
 	github.com/lestrrat-go/jwx/v3 v3.3.0
 	github.com/shurcooL/graphql v0.0.0-20240915155400-7ee5256398cf
+	golang.org/x/sync v0.22.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
@@ -39,7 +40,6 @@ require (
 	github.com/segmentio/asm v1.2.1 // indirect
 	github.com/suessflorian/gqlfetch v0.7.0 // indirect
 	github.com/valyala/fastjson v1.6.10 // indirect
-	golang.org/x/sync v0.22.0 // indirect
 	golang.org/x/tools v0.48.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260526163538-3dc84a4a5aaa // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect

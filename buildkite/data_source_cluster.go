@@ -49,11 +49,14 @@ func (c *clusterDatasource) Read(ctx context.Context, req datasource.ReadRequest
 		return
 	}
 
-	_, diags := c.client.readTimeout(ctx)
+	timeout, diags := c.client.readTimeout(ctx)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
+
+	requestCtx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
 
 	var r *getClusterByNameResponse
 	var err error
@@ -62,7 +65,7 @@ func (c *clusterDatasource) Read(ctx context.Context, req datasource.ReadRequest
 
 	// Loop through all pages until a match is found or we run out of pages
 	for {
-		r, err = getClusterByName(ctx, c.client.genqlient, c.client.organization, cursor)
+		r, err = getClusterByName(requestCtx, c.client.genqlient, c.client.organization, cursor)
 		if err != nil {
 			resp.Diagnostics.AddError(
 				"Unable to read Cluster",
@@ -84,7 +87,7 @@ func (c *clusterDatasource) Read(ctx context.Context, req datasource.ReadRequest
 				state.AgentTracingServiceUUID = types.StringPointerValue(cluster.Node.AgentTracingServiceUuid)
 
 				// Fetch maintainers for this cluster
-				maintainers, err := c.client.listClusterMaintainers(ctx, c.client.organization, cluster.Node.Uuid)
+				maintainers, err := c.client.listClusterMaintainers(requestCtx, c.client.organization, cluster.Node.Uuid)
 				if err != nil {
 					// A refusal is an answer: the caller may not see the maintainers, and reporting
 					// none is a fair reading of that. Any other failure means the API never

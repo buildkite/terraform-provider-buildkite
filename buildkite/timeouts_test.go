@@ -14,12 +14,16 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// configuredTimeouts is the provider's timeouts block with one attribute set.
-func configuredTimeouts(attribute, value string) timeouts.Value {
-	return timeouts.Value{Object: types.ObjectValueMust(
-		map[string]attr.Type{attribute: types.StringType},
-		map[string]attr.Value{attribute: types.StringValue(value)},
-	)}
+// configuredTimeouts is the provider's timeouts block with the given attribute and value pairs set.
+func configuredTimeouts(pairs ...string) timeouts.Value {
+	attrTypes := map[string]attr.Type{}
+	values := map[string]attr.Value{}
+	for i := 0; i+1 < len(pairs); i += 2 {
+		attrTypes[pairs[i]] = types.StringType
+		values[pairs[i]] = types.StringValue(pairs[i+1])
+	}
+
+	return timeouts.Value{Object: types.ObjectValueMust(attrTypes, values)}
 }
 
 // "0s" and "-1h" parse, so validation lets them through, and a retry helper or context handed one
