@@ -1,10 +1,13 @@
 package buildkite
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"maps"
 	"net/http"
+	"net/http/httptest"
 	"strings"
 	"sync"
 	"testing"
@@ -231,6 +234,70 @@ func TestResourceCreateRecordsAMutationThatLandsJustAfterTheTimeout(t *testing.T
 	}
 	if got := state.ID.ValueString(); got != "team-id" {
 		t.Errorf("Recorded id = %q, want %q", got, "team-id")
+	}
+}
+
+// A cache registry create that outlasts the read timeout but not its own create timeout is
+// recorded. Its calls used to carry no deadline, so the client's read-timeout fallback cancelled the
+// mutation at the read timeout, after it had applied in Buildkite, and left nothing in state.
+func TestClusterCacheRegistryCreateIsBoundedByTheCreateTimeout(t *testing.T) {
+	t.Parallel()
+
+	const (
+		readTimeout   = time.Second
+		createTimeout = 10 * time.Second
+		retryWait     = 600 * time.Millisecond
+	)
+
+	_, api := newCacheRegistryTestAPI(t)
+	api.retryOperation = "createCacheRegistry"
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, err := io.ReadAll(r.Body)
+		if err != nil {
+			t.Errorf("failed to read request body: %v", err)
+		}
+		// The 503 comes back at once and the retry's success takes retryWait, so the mutation lands
+		// at about twice retryWait: past the read timeout and well inside the create timeout.
+		api.mu.Lock()
+		retried := api.retries > 0
+		api.mu.Unlock()
+		if retried && strings.Contains(string(body), `"operationName":"createCacheRegistry"`) {
+			time.Sleep(retryWait)
+		}
+		r.Body = io.NopCloser(bytes.NewReader(body))
+		r.Header.Set("Authorization", "Bearer dummy")
+		api.ServeHTTP(w, r)
+	}))
+	defer server.Close()
+
+	client := newGraphQLTimeoutTestClient(t, server.URL, 1, retryWait, configuredTimeouts("read", readTimeout.String(), "create", createTimeout.String()))
+
+	ctx := t.Context()
+	r := &clusterCacheRegistryResource{client: client}
+	schema := resourceSchema(ctx, t, r)
+	plan := nullObjectWith(ctx, t, schema.Type(), map[string]tftypes.Value{
+		"cluster_id": tftypes.NewValue(tftypes.String, "cluster-id"),
+		"name":       tftypes.NewValue(tftypes.String, "Cache"),
+	})
+	resp := fwresource.CreateResponse{State: tfsdk.State{Schema: schema, Raw: tftypes.NewValue(schema.Type().TerraformType(ctx), nil)}}
+
+	r.Create(ctx, fwresource.CreateRequest{Plan: tfsdk.Plan{Schema: schema, Raw: plan}}, &resp)
+
+	if resp.Diagnostics.HasError() {
+		t.Fatalf("Create() diagnostics = %v, want the registry that was created recorded", resp.Diagnostics)
+	}
+	var state clusterCacheRegistryResourceModel
+	if diags := resp.State.Get(ctx, &state); diags.HasError() {
+		t.Fatalf("Reading the recorded state = %v", diags)
+	}
+	if state.ID.ValueString() == "" {
+		t.Error("Recorded no id, so the registry is orphaned and the next apply creates a second one")
+	}
+
+	api.mu.Lock()
+	defer api.mu.Unlock()
+	if got := api.operations["createCacheRegistry"]; got != 2 {
+		t.Errorf("Sent createCacheRegistry %d times, want the 503 and its retry", got)
 	}
 }
 
