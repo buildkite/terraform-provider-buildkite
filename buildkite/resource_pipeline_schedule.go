@@ -126,7 +126,7 @@ func (ps *pipelineSchedule) Create(ctx context.Context, req resource.CreateReque
 		return
 	}
 
-	timeouts, diags := ps.client.timeouts.Create(ctx, DefaultTimeout)
+	timeouts, diags := ps.client.createTimeout(ctx)
 
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
@@ -184,7 +184,7 @@ func (ps *pipelineSchedule) Read(ctx context.Context, req resource.ReadRequest, 
 		return
 	}
 
-	timeouts, diags := ps.client.timeouts.Read(ctx, DefaultTimeout)
+	timeouts, diags := ps.client.readTimeout(ctx)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -241,7 +241,7 @@ func (ps *pipelineSchedule) Update(ctx context.Context, req resource.UpdateReque
 		return
 	}
 
-	timeouts, diags := ps.client.timeouts.Update(ctx, DefaultTimeout)
+	timeouts, diags := ps.client.updateTimeout(ctx)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -289,7 +289,7 @@ func (ps *pipelineSchedule) Delete(ctx context.Context, req resource.DeleteReque
 		return
 	}
 
-	timeout, diags := ps.client.timeouts.Delete(ctx, DefaultTimeout)
+	timeout, diags := ps.client.deleteTimeout(ctx)
 	resp.Diagnostics.Append(diags...)
 
 	if resp.Diagnostics.HasError() {

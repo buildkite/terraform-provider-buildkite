@@ -97,7 +97,7 @@ func (tr *teamRegistryResource) Create(ctx context.Context, req resource.CreateR
 		return
 	}
 
-	timeout, diags := tr.client.timeouts.Create(ctx, DefaultTimeout)
+	timeout, diags := tr.client.createTimeout(ctx)
 	resp.Diagnostics.Append(diags...)
 
 	if resp.Diagnostics.HasError() {
@@ -141,7 +141,7 @@ func (tr *teamRegistryResource) Read(ctx context.Context, req resource.ReadReque
 		return
 	}
 
-	timeout, diags := tr.client.timeouts.Read(ctx, DefaultTimeout)
+	timeout, diags := tr.client.readTimeout(ctx)
 	resp.Diagnostics.Append(diags...)
 
 	if resp.Diagnostics.HasError() {
@@ -203,7 +203,7 @@ func (tr *teamRegistryResource) Update(ctx context.Context, req resource.UpdateR
 		return
 	}
 
-	timeout, diags := tr.client.timeouts.Update(ctx, DefaultTimeout)
+	timeout, diags := tr.client.updateTimeout(ctx)
 	resp.Diagnostics.Append(diags...)
 
 	if resp.Diagnostics.HasError() {
@@ -245,7 +245,7 @@ func (tr *teamRegistryResource) Delete(ctx context.Context, req resource.DeleteR
 		return
 	}
 
-	timeout, diags := tr.client.timeouts.Delete(ctx, DefaultTimeout)
+	timeout, diags := tr.client.deleteTimeout(ctx)
 	resp.Diagnostics.Append(diags...)
 
 	if resp.Diagnostics.HasError() {

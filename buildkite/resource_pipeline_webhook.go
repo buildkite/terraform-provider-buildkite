@@ -96,7 +96,7 @@ func (pw *pipelineWebhook) Create(ctx context.Context, req resource.CreateReques
 		return
 	}
 
-	timeouts, diags := pw.client.timeouts.Create(ctx, DefaultTimeout)
+	timeouts, diags := pw.client.createTimeout(ctx)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -186,7 +186,7 @@ func (pw *pipelineWebhook) Read(ctx context.Context, req resource.ReadRequest, r
 		return
 	}
 
-	timeouts, diags := pw.client.timeouts.Read(ctx, DefaultTimeout)
+	timeouts, diags := pw.client.readTimeout(ctx)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -273,7 +273,7 @@ func (pw *pipelineWebhook) Delete(ctx context.Context, req resource.DeleteReques
 		return
 	}
 
-	timeout, diags := pw.client.timeouts.Delete(ctx, DefaultTimeout)
+	timeout, diags := pw.client.deleteTimeout(ctx)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

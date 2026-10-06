@@ -39,7 +39,7 @@ func (c *clusterDefaultQueueResource) Create(ctx context.Context, req resource.C
 		return
 	}
 
-	timeout, diags := c.client.timeouts.Create(ctx, DefaultTimeout)
+	timeout, diags := c.client.createTimeout(ctx)
 	resp.Diagnostics.Append(diags...)
 
 	if resp.Diagnostics.HasError() {
@@ -80,7 +80,7 @@ func (c *clusterDefaultQueueResource) Delete(ctx context.Context, req resource.D
 		return
 	}
 
-	timeout, diags := c.client.timeouts.Delete(ctx, DefaultTimeout)
+	timeout, diags := c.client.deleteTimeout(ctx)
 	resp.Diagnostics.Append(diags...)
 
 	if resp.Diagnostics.HasError() {
@@ -127,7 +127,7 @@ func (c *clusterDefaultQueueResource) Read(ctx context.Context, req resource.Rea
 		return
 	}
 
-	timeout, diags := c.client.timeouts.Read(ctx, DefaultTimeout)
+	timeout, diags := c.client.readTimeout(ctx)
 
 	resp.Diagnostics.Append(diags...)
 
@@ -233,7 +233,7 @@ func (c *clusterDefaultQueueResource) Update(ctx context.Context, req resource.U
 		return
 	}
 
-	timeout, diags := c.client.timeouts.Update(ctx, DefaultTimeout)
+	timeout, diags := c.client.updateTimeout(ctx)
 	resp.Diagnostics.Append(diags...)
 
 	if resp.Diagnostics.HasError() {

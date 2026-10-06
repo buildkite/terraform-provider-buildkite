@@ -35,6 +35,7 @@ resource "buildkite_pipeline" "terraform-provider-buildkite" {
 
 ### Read-Only
 
+- `agent_tracing_service_uuid` (String) The UUID of the OpenTelemetry tracing notification service agents in the cluster export traces to. Null when none is selected, when the organization does not have agent tracing enabled, or when the API token cannot manage the cluster.
 - `color` (String) The color of the cluster.
 - `description` (String) The description of the cluster.
 - `emoji` (String) The emoji of the cluster.

@@ -3,13 +3,16 @@ package buildkite
 import (
 	"context"
 	"fmt"
+	"regexp"
 
 	"github.com/MakeNowJust/heredoc"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	resource_schema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
@@ -19,12 +22,13 @@ type clusterResource struct {
 }
 
 type clusterResourceModel struct {
-	ID          types.String `tfsdk:"id"`
-	Name        types.String `tfsdk:"name"`
-	Description types.String `tfsdk:"description"`
-	Emoji       types.String `tfsdk:"emoji"`
-	Color       types.String `tfsdk:"color"`
-	UUID        types.String `tfsdk:"uuid"`
+	ID                      types.String `tfsdk:"id"`
+	Name                    types.String `tfsdk:"name"`
+	Description             types.String `tfsdk:"description"`
+	Emoji                   types.String `tfsdk:"emoji"`
+	Color                   types.String `tfsdk:"color"`
+	UUID                    types.String `tfsdk:"uuid"`
+	AgentTracingServiceUUID types.String `tfsdk:"agent_tracing_service_uuid"`
 }
 
 func newClusterResource() resource.Resource {
@@ -87,6 +91,34 @@ func (c *clusterResource) Schema(ctx context.Context, req resource.SchemaRequest
 				Optional:            true,
 				MarkdownDescription: "A color representation of the Cluster. Accepts hex codes, eg #BADA55.",
 			},
+			"agent_tracing_service_uuid": resource_schema.StringAttribute{
+				Optional: true,
+				Computed: true,
+				MarkdownDescription: heredoc.Doc(`
+					The UUID of the OpenTelemetry tracing notification service that agents in this Cluster export traces
+					to, such as ` + "`buildkite_notification_service.otel.id`" + `. The service must be enabled, cover all
+					pipelines, and have no branch filter, and the organization must have agent tracing enabled.
+					Set this to ` + "`\"\"`" + ` to clear the selection.
+					Setting, changing, or clearing the selection only affects agents that register afterwards: running
+					agents keep their current exporter configuration and keep tracing until they are restarted or
+					re-registered.
+					Leaving this unset adopts the Cluster's current selection, and **removing it from configuration does
+					not clear the selection: agents keep exporting traces** until it is set to ` + "`\"\"`" + ` or cleared in
+					the Buildkite UI or API.
+					If the selected service is later deleted, disabled, or given a branch filter, the Cluster still reports
+					its UUID and plans stay clean, but agents that register afterwards silently stop receiving tracing
+					configuration.
+					The API reports no selection unless agent tracing is enabled for the organization and the API token can
+					manage the Cluster.
+				`),
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+				Validators: []validator.String{
+					// the API returns the UUID lowercased, so any other form would never match what is read back
+					stringvalidator.RegexMatches(agentTracingServiceUUIDRegex, `must be a lowercase UUID, such as a notification service's id, or "" to clear the selection`),
+				},
+			},
 		},
 	}
 }
@@ -102,7 +134,7 @@ func (c *clusterResource) Create(ctx context.Context, req resource.CreateRequest
 		return
 	}
 
-	timeout, diags := c.client.timeouts.Create(ctx, DefaultTimeout)
+	timeout, diags := c.client.createTimeout(ctx)
 
 	resp.Diagnostics.Append(diags...)
 
@@ -122,6 +154,7 @@ func (c *clusterResource) Create(ctx context.Context, req resource.CreateRequest
 				state.Description.ValueStringPointer(),
 				state.Emoji.ValueStringPointer(),
 				state.Color.ValueStringPointer(),
+				agentTracingServiceUUIDToWrite(state.AgentTracingServiceUUID, types.StringNull()),
 			)
 		}
 
@@ -137,6 +170,7 @@ func (c *clusterResource) Create(ctx context.Context, req resource.CreateRequest
 
 	state.ID = types.StringValue(r.ClusterCreate.Cluster.Id)
 	state.UUID = types.StringValue(r.ClusterCreate.Cluster.Uuid)
+	state.AgentTracingServiceUUID = agentTracingServiceUUIDFromAPI(r.ClusterCreate.Cluster.AgentTracingServiceUuid, state.AgentTracingServiceUUID)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
@@ -152,7 +186,7 @@ func (c *clusterResource) Read(ctx context.Context, req resource.ReadRequest, re
 		return
 	}
 
-	timeout, diags := c.client.timeouts.Read(ctx, DefaultTimeout)
+	timeout, diags := c.client.readTimeout(ctx)
 
 	resp.Diagnostics.Append(diags...)
 
@@ -204,7 +238,7 @@ func (c *clusterResource) Update(ctx context.Context, req resource.UpdateRequest
 		return
 	}
 
-	timeout, diags := c.client.timeouts.Update(ctx, DefaultTimeout)
+	timeout, diags := c.client.updateTimeout(ctx)
 
 	resp.Diagnostics.Append(diags...)
 
@@ -214,7 +248,17 @@ func (c *clusterResource) Update(ctx context.Context, req resource.UpdateRequest
 
 	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		org, err := c.client.GetOrganizationID()
-		if err == nil {
+		if err == nil && clearsAgentTracingService(plan.AgentTracingServiceUUID, state.AgentTracingServiceUUID) {
+			_, err = updateClusterClearingAgentTracingService(ctx,
+				c.client.genqlient,
+				*org,
+				state.ID.ValueString(),
+				plan.Name.ValueString(),
+				plan.Description.ValueStringPointer(),
+				plan.Emoji.ValueStringPointer(),
+				plan.Color.ValueStringPointer(),
+			)
+		} else if err == nil {
 			_, err = updateCluster(ctx,
 				c.client.genqlient,
 				*org,
@@ -223,6 +267,7 @@ func (c *clusterResource) Update(ctx context.Context, req resource.UpdateRequest
 				plan.Description.ValueStringPointer(),
 				plan.Emoji.ValueStringPointer(),
 				plan.Color.ValueStringPointer(),
+				agentTracingServiceUUIDToWrite(plan.AgentTracingServiceUUID, state.AgentTracingServiceUUID),
 			)
 		}
 
@@ -250,7 +295,7 @@ func (c *clusterResource) Delete(ctx context.Context, req resource.DeleteRequest
 		return
 	}
 
-	timeout, diags := c.client.timeouts.Delete(ctx, DefaultTimeout)
+	timeout, diags := c.client.deleteTimeout(ctx)
 
 	resp.Diagnostics.Append(diags...)
 
@@ -286,4 +331,34 @@ func updateClusterResourceState(state *clusterResourceModel, res getNodeNodeClus
 	state.Description = types.StringPointerValue(res.Description)
 	state.Emoji = types.StringPointerValue(res.Emoji)
 	state.Color = types.StringPointerValue(res.Color)
+	state.AgentTracingServiceUUID = agentTracingServiceUUIDFromAPI(res.AgentTracingServiceUuid, state.AgentTracingServiceUUID)
+}
+
+// agentTracingServiceUUIDRegex accepts a lowercase UUID, or "" to clear the selection
+var agentTracingServiceUUIDRegex = regexp.MustCompile(`^(|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$`)
+
+// agentTracingServiceUUIDToWrite returns the selection to send, or nil to leave it out of the mutation. The
+// API rejects the key, even as null, for an organization without agent tracing, so it is sent only when a
+// configured selection differs from the current one. An unconfigured attribute plans the current value, and
+// "" is cleared by clearsAgentTracingService instead.
+func agentTracingServiceUUIDToWrite(planned, current types.String) *string {
+	if planned.IsNull() || planned.IsUnknown() || planned.ValueString() == "" || planned.Equal(current) {
+		return nil
+	}
+	return planned.ValueStringPointer()
+}
+
+// clearsAgentTracingService reports whether a planned "" has a selection to clear. A null current value
+// is already no selection as far as the API has said, so there is nothing to send.
+func clearsAgentTracingService(planned, current types.String) bool {
+	return !planned.IsUnknown() && planned.ValueString() == "" && !planned.IsNull() && current.ValueString() != ""
+}
+
+// agentTracingServiceUUIDFromAPI keeps a cleared "" that the API reads back as null, so clearing does not
+// plan again on every refresh
+func agentTracingServiceUUIDFromAPI(remote *string, prior types.String) types.String {
+	if remote == nil && !prior.IsNull() && !prior.IsUnknown() && prior.ValueString() == "" {
+		return prior
+	}
+	return types.StringPointerValue(remote)
 }

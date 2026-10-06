@@ -171,7 +171,7 @@ func (c *clusterMaintainerResource) Create(ctx context.Context, req resource.Cre
 		return
 	}
 
-	timeout, diags := c.client.timeouts.Create(ctx, DefaultTimeout)
+	timeout, diags := c.client.createTimeout(ctx)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -205,7 +205,7 @@ func (c *clusterMaintainerResource) Read(ctx context.Context, req resource.ReadR
 		return
 	}
 
-	timeout, diags := c.client.timeouts.Read(ctx, DefaultTimeout)
+	timeout, diags := c.client.readTimeout(ctx)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -264,7 +264,7 @@ func (c *clusterMaintainerResource) Delete(ctx context.Context, req resource.Del
 		return
 	}
 
-	timeout, diags := c.client.timeouts.Delete(ctx, DefaultTimeout)
+	timeout, diags := c.client.deleteTimeout(ctx)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

@@ -121,7 +121,7 @@ func (ct *clusterAgentToken) Create(ctx context.Context, req resource.CreateRequ
 		return
 	}
 
-	timeout, diags := ct.client.timeouts.Create(ctx, DefaultTimeout)
+	timeout, diags := ct.client.createTimeout(ctx)
 	resp.Diagnostics.Append(diags...)
 
 	if resp.Diagnostics.HasError() {
@@ -186,7 +186,7 @@ func (ct *clusterAgentToken) Read(ctx context.Context, req resource.ReadRequest,
 		return
 	}
 
-	timeout, diags := ct.client.timeouts.Read(ctx, DefaultTimeout)
+	timeout, diags := ct.client.readTimeout(ctx)
 	resp.Diagnostics.Append(diags...)
 
 	if resp.Diagnostics.HasError() {
@@ -238,7 +238,7 @@ func (ct *clusterAgentToken) Update(ctx context.Context, req resource.UpdateRequ
 		return
 	}
 
-	timeout, diags := ct.client.timeouts.Update(ctx, DefaultTimeout)
+	timeout, diags := ct.client.updateTimeout(ctx)
 	resp.Diagnostics.Append(diags...)
 
 	if resp.Diagnostics.HasError() {
@@ -288,7 +288,7 @@ func (ct *clusterAgentToken) Delete(ctx context.Context, req resource.DeleteRequ
 		return
 	}
 
-	timeout, diags := ct.client.timeouts.Delete(ctx, DefaultTimeout)
+	timeout, diags := ct.client.deleteTimeout(ctx)
 	resp.Diagnostics.Append(diags...)
 
 	if resp.Diagnostics.HasError() {
