@@ -66,6 +66,24 @@ BUILDKITE_ORGANIZATION_SLUG=<org-slug> BUILDKITE_API_TOKEN=<token> make testacc
 - Code reviewers will run the acceptance tests manually
 - Please run the acceptance tests locally to confirm they pass before requesting a review
 
+#### Cache Registry acceptance tests
+
+Cache Registry live tests also require `BUILDKITE_CACHE_REGISTRIES_ACCEPTANCE=1`. Without it, they skip with a message that live resources are untested. The offline Terraform `UnitTest` lifecycle tests still run with `make test`.
+
+To run both live tests against a local Buildkite instance with Cache Registries enabled and a seeded API token:
+
+```bash
+TF_ACC=1 BUILDKITE_CACHE_REGISTRIES_ACCEPTANCE=1 \
+BUILDKITE_ORGANIZATION_SLUG=buildkite BUILDKITE_API_TOKEN=bkua_development_api_token \
+BUILDKITE_GRAPHQL_URL=http://graphql.buildkite.localhost:3100/v1 \
+BUILDKITE_REST_URL=http://api.buildkite.localhost:3100/v2 \
+go test ./buildkite -run '^TestAccBuildkiteClusterCacheRegistry(Resource|ParentDeletion)$' -count=1 -v
+```
+
+The tests create disposable clusters and registries, exercise their lifecycle, and delete them. Once opted in, missing credentials, API failures, or unavailable Cache Registries fail the tests rather than skip them. Leave custom endpoint variables unset to use the default production APIs; an explicitly empty URL is not a default.
+
+CI must opt in with `BUILDKITE_CACHE_REGISTRIES_ACCEPTANCE=1` only after its test organization has Cache Registries enabled and its token has organization membership and cluster management access. `TF_ACC=1` is still required (`make testacc` sets it). The Docker Compose test service forwards the opt-in and custom GraphQL/REST URLs when set.
+
 ### Code Quality
 
 Before committing, ensure your code passes these checks:
