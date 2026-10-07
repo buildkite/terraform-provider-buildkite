@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"regexp"
 	"strings"
@@ -26,6 +27,16 @@ var (
 // isResourceNotFoundError returns true if the error indicates the resource was not found
 func isResourceNotFoundError(err error) bool {
 	if err == nil {
+		return false
+	}
+	// Neither a request that ran out of time nor a retried 429 or 5xx says anything about whether the
+	// resource exists, but their messages can carry the body of a proxy's error page, which the
+	// fallback below would otherwise read, and a Read acting on that removes a live resource from state.
+	if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
+		return false
+	}
+	var apiErr *apiError
+	if errors.As(err, &apiErr) && (apiErr.StatusCode == 0 || apiErr.StatusCode == http.StatusTooManyRequests || apiErr.StatusCode >= 500) {
 		return false
 	}
 	var errList gqlerror.List

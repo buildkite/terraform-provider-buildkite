@@ -3,6 +3,7 @@ package buildkite
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"maps"
@@ -19,6 +20,7 @@ import (
 	fwresource "github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-go/tftypes"
+	"github.com/vektah/gqlparser/v2/gqlerror"
 )
 
 // GraphQL requests do not pass through makeRequest, and the retry client's HTTPClient.Timeout only
@@ -846,4 +848,75 @@ func nullAttribute(ctx context.Context, t *testing.T, r fwresource.Resource, nam
 	}
 
 	return tftypes.NewValue(objectType, attributes)
+}
+
+// retryablehttp returns only the context error when the deadline lands during a backoff wait, or
+// "giving up after N attempt(s)" when the retries run out, and the response it retried is gone. REST
+// kept it through makeRequest; GraphQL now keeps it the same way, so the failure says what the API
+// was answering.
+func TestGraphQLRequestReportsTheResponseItRetried(t *testing.T) {
+	t.Parallel()
+
+	unavailable := stubResponse{status: http.StatusServiceUnavailable, body: `{"message":"Service Unavailable"}`}
+
+	tests := []struct {
+		name       string
+		retries    int
+		wantPhrase string
+		deadline   bool
+	}{
+		{name: "deadline lands during a backoff wait", retries: stubRetries, wantPhrase: "context deadline exceeded", deadline: true},
+		{name: "retries run out", retries: 2, wantPhrase: "after 3 attempts"},
+	}
+
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			server, _ := newRetryStub(t, unavailable)
+			defer server.Close()
+
+			client := newGraphQLTimeoutTestClient(t, server.URL, testCase.retries, stubRetryWait, configuredTimeouts("read", stubReadTimeout.String()))
+
+			_, err := getOrganization(context.Background(), client.genqlient, client.organization)
+			if err == nil {
+				t.Fatal("getOrganization succeeded against a server that only fails")
+			}
+			if !isAPIStatus(err, http.StatusServiceUnavailable) {
+				t.Errorf("getOrganization() = %q, want the 503 it retried reported as the status", err)
+			}
+			for _, want := range []string{"Service Unavailable", testCase.wantPhrase} {
+				if !strings.Contains(err.Error(), want) {
+					t.Errorf("getOrganization() = %q, want it to mention %q", err, want)
+				}
+			}
+			if got := errors.Is(err, context.DeadlineExceeded); got != testCase.deadline {
+				t.Errorf("errors.Is(err, context.DeadlineExceeded) = %v, want %v", got, testCase.deadline)
+			}
+		})
+	}
+}
+
+// A response that did arrive is reported by genqlient itself and passes through untouched, so
+// callers that inspect GraphQL errors see what they did before.
+func TestGraphQLResponseErrorsPassThrough(t *testing.T) {
+	t.Parallel()
+
+	server, _ := newRetryStub(t, stubResponse{status: http.StatusOK, body: `{"errors":[{"message":"No Organization found"}]}`})
+	defer server.Close()
+
+	client := newGraphQLTimeoutTestClient(t, server.URL, 0, time.Millisecond, configuredTimeouts("read", stubReadTimeout.String()))
+
+	_, err := getOrganization(context.Background(), client.genqlient, client.organization)
+	var errList gqlerror.List
+	if !errors.As(err, &errList) {
+		t.Fatalf("getOrganization() = %v (%T), want the GraphQL error list", err, err)
+	}
+	var apiErr *apiError
+	if errors.As(err, &apiErr) {
+		t.Errorf("getOrganization() = %q, want a response error left unwrapped", err)
+	}
+	if !isResourceNotFoundError(err) {
+		t.Errorf("isResourceNotFoundError(%q) = false, want true", err)
+	}
 }
