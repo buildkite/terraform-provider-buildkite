@@ -115,10 +115,19 @@ func (c *pipelineDatasource) Read(ctx context.Context, req datasource.ReadReques
 		return
 	}
 
+	timeout, diags := c.client.readTimeout(ctx)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	requestCtx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
 	orgPipelineSlug := fmt.Sprintf("%s/%s", c.client.organization, state.Slug.ValueString())
 
 	log.Printf("Obtaining pipeline with slug %s ...", orgPipelineSlug)
-	pipeline, err := getPipeline(ctx, c.client.genqlient, orgPipelineSlug)
+	pipeline, err := getPipeline(requestCtx, c.client.genqlient, orgPipelineSlug)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to read pipeline",

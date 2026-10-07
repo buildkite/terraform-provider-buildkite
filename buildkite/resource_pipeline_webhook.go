@@ -102,7 +102,11 @@ func (pw *pipelineWebhook) Create(ctx context.Context, req resource.CreateReques
 		return
 	}
 
-	pipelineResp, err := getPipelineWebhook(ctx, pw.client.genqlient, plan.PipelineId.ValueString())
+	// A lookup changes nothing, so it takes the plain timeout rather than mutationContext.
+	lookupCtx, cancel := context.WithTimeout(ctx, timeouts)
+	defer cancel()
+
+	pipelineResp, err := getPipelineWebhook(lookupCtx, pw.client.genqlient, plan.PipelineId.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to read pipeline",
@@ -133,11 +137,14 @@ func (pw *pipelineWebhook) Create(ctx context.Context, req resource.CreateReques
 	var state pipelineWebhookResourceModel
 	state.PipelineId = plan.PipelineId
 
+	createCtx, cancel := mutationContext(ctx, timeouts)
+	defer cancel()
+
 	err = retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
-		apiResponse, err := createPipelineWebhook(ctx, pw.client.genqlient, plan.PipelineId.ValueString())
+		apiResponse, err := createPipelineWebhook(createCtx, pw.client.genqlient, plan.PipelineId.ValueString())
 		if err != nil {
 			if gqlErrorContains(err, "A webhook already exists for this repository") {
-				readResp, readErr := getPipelineWebhook(ctx, pw.client.genqlient, plan.PipelineId.ValueString())
+				readResp, readErr := getPipelineWebhook(createCtx, pw.client.genqlient, plan.PipelineId.ValueString())
 				if readErr != nil {
 					return retry.NonRetryableError(fmt.Errorf("webhook exists but failed to read: %w", readErr))
 				}
@@ -192,10 +199,13 @@ func (pw *pipelineWebhook) Read(ctx context.Context, req resource.ReadRequest, r
 		return
 	}
 
+	requestCtx, cancel := context.WithTimeout(ctx, timeouts)
+	defer cancel()
+
 	var apiResponse *getPipelineWebhookResponse
-	err := retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
+	err := retry.RetryContext(requestCtx, timeouts, func() *retry.RetryError {
 		var err error
-		apiResponse, err = getPipelineWebhook(ctx, pw.client.genqlient, state.PipelineId.ValueString())
+		apiResponse, err = getPipelineWebhook(requestCtx, pw.client.genqlient, state.PipelineId.ValueString())
 		return retryContextError(err)
 	})
 	if err != nil {
@@ -279,9 +289,12 @@ func (pw *pipelineWebhook) Delete(ctx context.Context, req resource.DeleteReques
 		return
 	}
 
+	requestCtx, cancel := mutationContext(ctx, timeout)
+	defer cancel()
+
 	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		repository := state.Repository.ValueString()
-		_, err := deletePipelineWebhook(ctx, pw.client.genqlient, state.PipelineId.ValueString(), &repository)
+		_, err := deletePipelineWebhook(requestCtx, pw.client.genqlient, state.PipelineId.ValueString(), &repository)
 		if err != nil && isResourceNotFoundError(err) {
 			return nil
 		}

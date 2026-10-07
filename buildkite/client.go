@@ -19,6 +19,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/shurcooL/graphql"
+	"golang.org/x/sync/singleflight"
 )
 
 // Client can be used to interact with the Buildkite API
@@ -28,9 +29,11 @@ type Client struct {
 	http             *http.Client
 	organization     string
 	organizationId   *string
-	organizationIdMu sync.Mutex
-	restURL          string
-	timeouts         timeouts.Value
+	organizationIdMu sync.Mutex // guards organizationId
+	// organizationIdLookup shares one in-flight lookup between concurrent callers.
+	organizationIdLookup singleflight.Group
+	restURL              string
+	timeouts             timeouts.Value
 
 	// Retained so tests can assert the retry configuration and shorten the waits.
 	restRetry    *retryablehttp.Client
@@ -52,20 +55,81 @@ type headerRoundTripper struct {
 	Header http.Header
 }
 
-func (client *Client) GetOrganizationID() (*string, error) {
+// GetOrganizationID resolves and caches the organization ID. Concurrent callers share one in-flight
+// lookup, and each waits for it only until its own context is done, so a caller never outlives its
+// deadline waiting on a lookup another caller started. Like makeRequest, a caller with no deadline
+// falls back to the read timeout.
+func (client *Client) GetOrganizationID(ctx context.Context) (*string, error) {
+	if _, hasDeadline := ctx.Deadline(); !hasDeadline {
+		readTimeout, diags := client.readTimeout(ctx)
+		if !diags.HasError() {
+			var cancel context.CancelFunc
+			ctx, cancel = context.WithTimeout(ctx, readTimeout)
+			defer cancel()
+		}
+	}
+
+	for {
+		if id := client.cachedOrganizationID(); id != nil {
+			return id, nil
+		}
+
+		// The lookup outlives the caller that started it, so a caller giving up does not fail it for
+		// the others waiting on it, but it keeps that caller's deadline so it stays bounded.
+		lookup := client.organizationIdLookup.DoChan("", func() (any, error) {
+			// Another lookup may have cached the ID and left the group since the check above.
+			if id := client.cachedOrganizationID(); id != nil {
+				return id, nil
+			}
+
+			lookupCtx := context.WithoutCancel(ctx)
+			if deadline, ok := ctx.Deadline(); ok {
+				var cancel context.CancelFunc
+				lookupCtx, cancel = context.WithDeadline(lookupCtx, deadline)
+				defer cancel()
+			}
+
+			orgId, err := GetOrganizationID(lookupCtx, client.organization, client.graphql)
+			if err != nil {
+				if lookupCtx.Err() != nil {
+					return nil, fmt.Errorf("%w: %w", errOrganizationIDLookupExpired, err)
+				}
+				return nil, err
+			}
+			// Cache only on success; a cached empty ID would be served on later retries.
+			client.organizationIdMu.Lock()
+			defer client.organizationIdMu.Unlock()
+			client.organizationId = &orgId
+
+			return client.organizationId, nil
+		})
+
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		case result := <-lookup:
+			if result.Err == nil {
+				return result.Val.(*string), nil
+			}
+			// A lookup started by a caller with a shorter deadline ran out of time, not ours: start
+			// another under ours rather than failing with a budget that was never this caller's.
+			if errors.Is(result.Err, errOrganizationIDLookupExpired) && ctx.Err() == nil {
+				continue
+			}
+			return nil, result.Err
+		}
+	}
+}
+
+// errOrganizationIDLookupExpired marks a shared lookup that ended because the deadline it was started
+// under passed, which a caller with more time left can retry.
+var errOrganizationIDLookupExpired = errors.New("organization ID lookup ran out of time")
+
+func (client *Client) cachedOrganizationID() *string {
 	client.organizationIdMu.Lock()
 	defer client.organizationIdMu.Unlock()
-	if client.organizationId != nil {
-		return client.organizationId, nil
-	}
-	orgId, err := GetOrganizationID(client.organization, client.graphql)
-	if err != nil {
-		return nil, err
-	}
-	// Cache only on success; a cached empty ID would be served on later retries.
-	client.organizationId = &orgId
 
-	return client.organizationId, nil
+	return client.organizationId
 }
 
 // effectiveTimeout falls back to DefaultTimeout for a timeout that is not positive. The timeouts
@@ -104,6 +168,22 @@ func (client *Client) deleteTimeout(ctx context.Context) (time.Duration, diag.Di
 	return effectiveTimeout(timeout), diags
 }
 
+// mutationGracePeriod matches the refresh grace period in terraform-plugin-sdk's helper/retry: once
+// retry.RetryContext reaches its timeout it waits this long for the attempt in flight, and returns
+// that attempt's result if it succeeded.
+const mutationGracePeriod = 30 * time.Second
+
+// mutationContext bounds the API calls of one step of a create, update or delete. Pass it to the
+// calls and pass the parent context to retry.RetryContext with the same timeout. The deadline runs
+// mutationGracePeriod past the timeout so a mutation that lands just after it is still returned and
+// recorded in state rather than cancelled, which would leave it applied in Buildkite and missing from
+// state. Derive one per step, so a slow step does not leave the steps after it without a budget once
+// the first has changed something. A step that only looks something up has nothing to record, so it
+// takes a plain context.WithTimeout instead.
+func mutationContext(ctx context.Context, timeout time.Duration) (context.Context, context.CancelFunc) {
+	return context.WithTimeout(ctx, timeout+mutationGracePeriod)
+}
+
 // NewClient creates a client for interacting with the Buildkite API.
 //
 // https://buildkite.com/docs/apis/rest-api/limits
@@ -121,8 +201,9 @@ func (client *Client) deleteTimeout(ctx context.Context) (time.Duration, diag.Di
 //     as given, which can fall below the minimum or exceed the maximum
 //  6. For REST, makeRequest uses the caller's deadline when one is set and otherwise derives one
 //     from the read timeout. That deadline bounds the whole request including waits between attempts,
-//     so it, not max_retries, is usually what ends a sustained failure. GraphQL calls are not bounded
-//     this way, since they never pass through makeRequest.
+//     so it, not max_retries, is usually what ends a sustained failure. GraphQL requests get the same
+//     fallback from boundedGraphQLClient. HTTPClient.Timeout below only bounds each attempt, because
+//     StandardClient runs the whole retry loop inside one RoundTrip.
 func NewClient(config *clientConfig) *Client {
 	readTimeout, diags := config.timeouts.Read(context.Background(), DefaultTimeout)
 	readTimeout = effectiveTimeout(readTimeout)
@@ -261,9 +342,8 @@ func NewClient(config *clientConfig) *Client {
 
 	graphqlClient := graphql.NewClient(config.graphqlURL, graphqlHttpClient)
 
-	return &Client{
+	client := &Client{
 		graphql:        graphqlClient,
-		genqlient:      genqlient.NewClient(config.graphqlURL, graphqlHttpClient),
 		http:           restHttpClient,
 		organization:   config.org,
 		organizationId: nil,
@@ -272,6 +352,49 @@ func NewClient(config *clientConfig) *Client {
 		restRetry:      restRetryClient,
 		graphqlRetry:   graphqlRetryClient,
 	}
+	client.genqlient = boundedGraphQLClient{
+		inner:  genqlient.NewClient(config.graphqlURL, graphqlHttpClient),
+		client: client,
+		url:    config.graphqlURL,
+	}
+
+	return client
+}
+
+// boundedGraphQLClient gives a GraphQL request the read timeout as a deadline when its caller set
+// none, the same fallback makeRequest applies to REST. CRUD methods derive deadlines from their own
+// operation's timeout and pass them down, which is what should bound them; this is the floor under a
+// call that does not, so it cannot run the retry schedule out (just under an hour for GraphQL).
+type boundedGraphQLClient struct {
+	inner  genqlient.Client
+	client *Client
+	url    string
+}
+
+func (c boundedGraphQLClient) MakeRequest(ctx context.Context, req *genqlient.Request, resp *genqlient.Response) error {
+	if _, hasDeadline := ctx.Deadline(); !hasDeadline {
+		readTimeout, diags := c.client.readTimeout(ctx)
+		if !diags.HasError() {
+			var cancel context.CancelFunc
+			ctx, cancel = context.WithTimeout(ctx, readTimeout)
+			defer cancel()
+		}
+	}
+
+	// Record the retried responses as makeRequest does, so a request that runs out of time or retries
+	// can say what the API was answering rather than only that it gave up. Only a failure with no
+	// response behind it is wrapped; a response that did arrive, including an HTTP error genqlient
+	// reports itself, passes through unchanged.
+	capture := &lastResponseCapture{}
+	ctx = context.WithValue(ctx, lastResponseKey{}, capture)
+
+	err := c.inner.MakeRequest(ctx, req, resp)
+	var urlErr *url.Error
+	if errors.As(err, &urlErr) && capture.status != 0 {
+		return capture.requestError(http.MethodPost, c.url, err)
+	}
+
+	return err
 }
 
 func newHeaderRoundTripper(next http.RoundTripper, header http.Header) *headerRoundTripper {
@@ -311,6 +434,26 @@ type lastResponseCapture struct {
 	// stale marks a stored response as belonging to an earlier attempt than the one that ended the
 	// request, so it is reported as context rather than as the cause.
 	stale bool
+}
+
+// requestError describes a request that failed without a response to hand back. A retryable status
+// that never clears usually ends up here: if the deadline lands during a backoff wait, retryablehttp
+// returns the context error and the response is already gone, so what this capture kept of it is
+// the only record of what the API said.
+func (c *lastResponseCapture) requestError(method, requestURL string, err error) *apiError {
+	apiErr := &apiError{Method: method, URL: requestURL, Attempts: c.attempts, Err: requestCause(err)}
+	switch {
+	case c.status != 0 && !c.stale:
+		apiErr.StatusCode = c.status
+		apiErr.Body = c.body
+	case c.status != 0:
+		// The last attempt died in flight rather than during a wait, so what the API said earlier
+		// is context, not the cause, and no StatusCode is claimed for it.
+		apiErr.earlierStatus = c.status
+		apiErr.earlierBody = c.body
+	}
+
+	return apiErr
 }
 
 // reopenedBody hands a body that has already been read back to the next reader while still closing
@@ -493,40 +636,7 @@ func (client *Client) makeRequest(ctx context.Context, method string, path strin
 
 	resp, err := client.http.Do(req)
 	if err != nil {
-		// A retryable status that never clears usually ends up here rather than in the status check
-		// below: if the deadline lands during a backoff wait, retryablehttp returns the context error
-		// and the response is already gone.
-		switch {
-		case lastResponse.status != 0 && !lastResponse.stale:
-			return &apiError{
-				Method:     method,
-				URL:        requestURL,
-				StatusCode: lastResponse.status,
-				Attempts:   lastResponse.attempts,
-				Body:       lastResponse.body,
-				Err:        requestCause(err),
-			}
-
-		case lastResponse.status != 0:
-			// The last attempt died in flight rather than during a wait, so what the API said earlier
-			// is context, not the cause, and no StatusCode is claimed for it.
-			return &apiError{
-				Method:        method,
-				URL:           requestURL,
-				Attempts:      lastResponse.attempts,
-				earlierStatus: lastResponse.status,
-				earlierBody:   lastResponse.body,
-				Err:           requestCause(err),
-			}
-
-		default:
-			return &apiError{
-				Method:   method,
-				URL:      requestURL,
-				Attempts: lastResponse.attempts,
-				Err:      requestCause(err),
-			}
-		}
+		return lastResponse.requestError(method, requestURL, err)
 	}
 
 	if resp.StatusCode >= 400 {

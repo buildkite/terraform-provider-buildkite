@@ -141,6 +141,16 @@ func (p *pipelinesDatasource) Read(ctx context.Context, req datasource.ReadReque
 		return
 	}
 
+	timeout, diags := p.client.readTimeout(ctx)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// One budget for the whole read, not one per page, so the configured timeout bounds the walk.
+	requestCtx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
 	var repository *PipelineRepositoryInput
 	if !state.Repository.IsNull() {
 		repository = &PipelineRepositoryInput{Url: state.Repository.ValueString()}
@@ -149,7 +159,7 @@ func (p *pipelinesDatasource) Read(ctx context.Context, req datasource.ReadReque
 	state.Pipelines = []pipelinesModel{}
 	var cursor *string
 	for {
-		res, err := GetOrganizationPipelines(ctx, p.client.genqlient, p.client.organization, cursor, state.Search.ValueStringPointer(), repository, state.ClusterId.ValueStringPointer(), state.Archived.ValueBoolPointer(), state.Tags)
+		res, err := GetOrganizationPipelines(requestCtx, p.client.genqlient, p.client.organization, cursor, state.Search.ValueStringPointer(), repository, state.ClusterId.ValueStringPointer(), state.Archived.ValueBoolPointer(), state.Tags)
 		if err != nil {
 			resp.Diagnostics.AddError(
 				"Unable to get organization pipelines",

@@ -149,6 +149,9 @@ func (p *registryResource) Create(ctx context.Context, req resource.CreateReques
 		return
 	}
 
+	requestCtx, cancel := mutationContext(ctx, timeout)
+	defer cancel()
+
 	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		url := fmt.Sprintf("%s/v2/packages/organizations/%s/registries", p.client.restURL, p.client.organization)
 
@@ -194,7 +197,7 @@ func (p *registryResource) Create(ctx context.Context, req resource.CreateReques
 		}
 
 		// Create the HTTP request
-		req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewBuffer(jsonBody))
+		req, err := http.NewRequestWithContext(requestCtx, http.MethodPost, url, bytes.NewBuffer(jsonBody))
 		if err != nil {
 			return retry.NonRetryableError(fmt.Errorf("error creating HTTP request: %w", err))
 		}
@@ -261,6 +264,9 @@ func (p *registryResource) Read(ctx context.Context, req resource.ReadRequest, r
 		return
 	}
 
+	requestCtx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
 	if state.Slug.IsNull() || state.Slug.ValueString() == "" {
 		resp.Diagnostics.AddError(
 			"Error reading registry",
@@ -269,10 +275,10 @@ func (p *registryResource) Read(ctx context.Context, req resource.ReadRequest, r
 		return
 	}
 
-	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+	err := retry.RetryContext(requestCtx, timeout, func() *retry.RetryError {
 		url := fmt.Sprintf("%s/v2/packages/organizations/%s/registries/%s", p.client.restURL, p.client.organization, state.Slug.ValueString())
 
-		req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+		req, err := http.NewRequestWithContext(requestCtx, http.MethodGet, url, nil)
 		if err != nil {
 			return retry.NonRetryableError(fmt.Errorf("error creating HTTP request: %w", err))
 		}
@@ -346,6 +352,9 @@ func (p *registryResource) Update(ctx context.Context, req resource.UpdateReques
 		return
 	}
 
+	requestCtx, cancel := mutationContext(ctx, timeout)
+	defer cancel()
+
 	if state.Slug.IsNull() || state.Slug.ValueString() == "" {
 		resp.Diagnostics.AddError(
 			"Error updating registry",
@@ -387,7 +396,7 @@ func (p *registryResource) Update(ctx context.Context, req resource.UpdateReques
 			return retry.NonRetryableError(fmt.Errorf("error marshaling request body: %w", err))
 		}
 
-		req, err := http.NewRequestWithContext(ctx, http.MethodPut, url, bytes.NewBuffer(jsonBody))
+		req, err := http.NewRequestWithContext(requestCtx, http.MethodPut, url, bytes.NewBuffer(jsonBody))
 		if err != nil {
 			return retry.NonRetryableError(fmt.Errorf("error creating HTTP request: %w", err))
 		}
@@ -512,6 +521,9 @@ func (p *registryResource) Delete(ctx context.Context, req resource.DeleteReques
 		return
 	}
 
+	requestCtx, cancel := mutationContext(ctx, timeout)
+	defer cancel()
+
 	if state.Slug.IsNull() || state.Slug.ValueString() == "" {
 		resp.Diagnostics.AddError(
 			"Error deleting registry",
@@ -524,7 +536,7 @@ func (p *registryResource) Delete(ctx context.Context, req resource.DeleteReques
 		url := fmt.Sprintf("%s/v2/packages/organizations/%s/registries/%s", p.client.restURL, p.client.organization, state.Slug.ValueString())
 
 		// Create the HTTP request
-		req, err := http.NewRequestWithContext(ctx, http.MethodDelete, url, nil)
+		req, err := http.NewRequestWithContext(requestCtx, http.MethodDelete, url, nil)
 		if err != nil {
 			return retry.NonRetryableError(fmt.Errorf("error creating HTTP request: %w", err))
 		}
