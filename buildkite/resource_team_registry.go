@@ -104,11 +104,14 @@ func (tr *teamRegistryResource) Create(ctx context.Context, req resource.CreateR
 		return
 	}
 
+	requestCtx, cancel := mutationContext(ctx, timeout)
+	defer cancel()
+
 	log.Printf("Adding team %s to registry %s ...", state.TeamID.ValueString(), state.RegistryID.ValueString())
 	var r *createTeamRegistryResponse
 	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		var err error
-		r, err = createTeamRegistry(ctx,
+		r, err = createTeamRegistry(requestCtx,
 			tr.client.genqlient,
 			state.TeamID.ValueString(),
 			state.RegistryID.ValueString(),
@@ -148,11 +151,14 @@ func (tr *teamRegistryResource) Read(ctx context.Context, req resource.ReadReque
 		return
 	}
 
+	requestCtx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
 	log.Printf("Reading team registry with ID %s ...", state.ID.ValueString())
 	var r *getNodeResponse
-	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+	err := retry.RetryContext(requestCtx, timeout, func() *retry.RetryError {
 		var err error
-		r, err = getNode(ctx,
+		r, err = getNode(requestCtx,
 			tr.client.genqlient,
 			state.ID.ValueString(),
 		)
@@ -210,11 +216,14 @@ func (tr *teamRegistryResource) Update(ctx context.Context, req resource.UpdateR
 		return
 	}
 
+	requestCtx, cancel := mutationContext(ctx, timeout)
+	defer cancel()
+
 	log.Printf("Updating team %s in registry %s to %s ...", state.TeamID.ValueString(), state.RegistryID.ValueString(), accessLevel)
 	var r *updateTeamRegistryResponse
 	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		var err error
-		r, err = updateTeamRegistry(ctx,
+		r, err = updateTeamRegistry(requestCtx,
 			tr.client.genqlient,
 			state.ID.ValueString(),
 			RegistryAccessLevels(accessLevel),
@@ -252,9 +261,12 @@ func (tr *teamRegistryResource) Delete(ctx context.Context, req resource.DeleteR
 		return
 	}
 
+	requestCtx, cancel := mutationContext(ctx, timeout)
+	defer cancel()
+
 	log.Printf("Deleting team %s's access to registry %s ...", state.TeamID.ValueString(), state.RegistryID.ValueString())
 	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-		_, err := deleteTeamRegistry(ctx,
+		_, err := deleteTeamRegistry(requestCtx,
 			tr.client.genqlient,
 			state.ID.ValueString(),
 		)

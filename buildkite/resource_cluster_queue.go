@@ -6,7 +6,6 @@ import (
 	"log"
 	"net/http"
 	"strings"
-	"time"
 
 	"github.com/MakeNowJust/heredoc"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
@@ -274,6 +273,9 @@ func (cq *clusterQueueResource) Create(ctx context.Context, req resource.CreateR
 		return
 	}
 
+	createCtx, cancel := mutationContext(ctx, timeout)
+	defer cancel()
+
 	hosted := (*HostedAgentsQueueSettingsCreateInput)(nil)
 	if plan.HostedAgents != nil {
 		hosted = &HostedAgentsQueueSettingsCreateInput{
@@ -300,14 +302,14 @@ func (cq *clusterQueueResource) Create(ctx context.Context, req resource.CreateR
 		}
 	}
 
-	org, err := cq.client.GetOrganizationID()
+	org, err := cq.client.GetOrganizationID(createCtx)
 	if err != nil {
 		resp.Diagnostics.AddError("Unable to get organization ID", fmt.Sprintf("Failed to get organization ID: %s", err.Error()))
 		return
 	}
 
 	log.Printf("Creating cluster queue with key %s into cluster %s ...", plan.Key.ValueString(), plan.ClusterId.ValueString())
-	r, err := createClusterQueue(ctx,
+	r, err := createClusterQueue(createCtx,
 		cq.client.genqlient,
 		*org,
 		plan.ClusterId.ValueString(),
@@ -378,7 +380,10 @@ func (cq *clusterQueueResource) Create(ctx context.Context, req resource.CreateR
 	}
 
 	if desiredAffinity != RetryAgentAffinityPreferWarmest {
-		err := cq.updateClusterQueueViaREST(ctx, state.ClusterUuid.ValueString(), state.Uuid.ValueString(), desiredAffinity)
+		affinityCtx, cancel := mutationContext(ctx, timeout)
+		defer cancel()
+
+		err := cq.updateClusterQueueViaREST(affinityCtx, state.ClusterUuid.ValueString(), state.Uuid.ValueString(), desiredAffinity)
 		if err != nil {
 			resp.Diagnostics.AddError(
 				"Unable to set retry_agent_affinity",
@@ -393,7 +398,10 @@ func (cq *clusterQueueResource) Create(ctx context.Context, req resource.CreateR
 	// so Pause Dispatch after creation if required
 	if plan.DispatchPaused.ValueBool() {
 		log.Printf("Pausing dispatch on cluster queue with key %s", plan.Key.ValueString())
-		err = cq.pauseDispatch(ctx, timeout, state, &resp.Diagnostics)
+		pauseCtx, cancel := mutationContext(ctx, timeout)
+		defer cancel()
+
+		err = cq.pauseDispatch(pauseCtx, state, &resp.Diagnostics)
 		if err != nil {
 			return
 		}
@@ -411,16 +419,18 @@ func (cq *clusterQueueResource) Read(ctx context.Context, req resource.ReadReque
 		return
 	}
 
-	// Timeout is not used here
-	_, readDiags := cq.client.readTimeout(ctx)
+	timeout, readDiags := cq.client.readTimeout(ctx)
 	resp.Diagnostics.Append(readDiags...)
 
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
+	requestCtx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
 	log.Printf("Getting cluster queue with ID %s using Node interface...", state.Id.ValueString())
-	r, err := getClusterQueueByNode(ctx, cq.client.genqlient, state.Id.ValueString())
+	r, err := getClusterQueueByNode(requestCtx, cq.client.genqlient, state.Id.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to read Cluster Queue",
@@ -451,7 +461,7 @@ func (cq *clusterQueueResource) Read(ctx context.Context, req resource.ReadReque
 	log.Printf("Found cluster queue with ID %s", clusterQueue.Id)
 	updateClusterQueueResourceFromNode(*clusterQueue, &state)
 
-	restResponse, err := cq.getClusterQueueViaREST(ctx, state.ClusterUuid.ValueString(), state.Uuid.ValueString())
+	restResponse, err := cq.getClusterQueueViaREST(requestCtx, state.ClusterUuid.ValueString(), state.Uuid.ValueString())
 	if err != nil {
 		// This used to record the schema default here, which is the one value a failed read must not
 		// write: a queue configured prefer-warmest that Buildkite has set to prefer-different then
@@ -489,7 +499,18 @@ func (cq *clusterQueueResource) Read(ctx context.Context, req resource.ReadReque
 func (cq *clusterQueueResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	// <cluster uuid>/<queue key> is also accepted and resolved to the GraphQL ID
 	if cluster, key, ok := parseClusterQueueImportID(req.ID); ok {
-		id, err := cq.findClusterQueueID(ctx, cluster, key)
+		timeout, diags := cq.client.readTimeout(ctx)
+		resp.Diagnostics.Append(diags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+
+		// Import has no timeout of its own, so the lookup, which pages through the cluster's
+		// queues, gets the read timeout as one budget.
+		requestCtx, cancel := context.WithTimeout(ctx, timeout)
+		defer cancel()
+
+		id, err := cq.findClusterQueueID(requestCtx, cluster, key)
 		if err != nil {
 			resp.Diagnostics.AddError("Unable to import cluster queue", fmt.Sprintf("Could not find queue %q in cluster %q: %s", key, cluster, err.Error()))
 			return
@@ -591,7 +612,11 @@ func (cq *clusterQueueResource) Update(ctx context.Context, req resource.UpdateR
 		}
 	}
 
-	org, err := cq.client.GetOrganizationID()
+	// A lookup changes nothing, so it takes the plain timeout rather than mutationContext.
+	lookupCtx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
+	org, err := cq.client.GetOrganizationID(lookupCtx)
 	if err != nil {
 		resp.Diagnostics.AddError("Unable to get organization ID", fmt.Sprintf("Failed to get organization ID: %s", err.Error()))
 		return
@@ -618,14 +643,20 @@ func (cq *clusterQueueResource) Update(ctx context.Context, req resource.UpdateR
 	// that only half applied. Paused is the safe state to fail into, and it is the state a
 	// practitioner asked for in one direction and has not finished leaving in the other.
 	if planDispatchPaused && !stateDispatchPaused {
-		if err := cq.pauseDispatch(ctx, timeout, state, &resp.Diagnostics); err != nil {
+		pauseCtx, cancel := mutationContext(ctx, timeout)
+		defer cancel()
+
+		if err := cq.pauseDispatch(pauseCtx, state, &resp.Diagnostics); err != nil {
 			// Error added to diagnostics within pauseDispatch
 			return
 		}
 		state.DispatchPaused = types.BoolValue(true)
 	}
 
-	r, err = updateClusterQueue(ctx,
+	updateCtx, cancel := mutationContext(ctx, timeout)
+	defer cancel()
+
+	r, err = updateClusterQueue(updateCtx,
 		cq.client.genqlient,
 		*org,
 		state.Id.ValueString(),
@@ -670,7 +701,10 @@ func (cq *clusterQueueResource) Update(ctx context.Context, req resource.UpdateR
 
 	if !plan.RetryAgentAffinity.Equal(state.RetryAgentAffinity) {
 		desiredAffinity := plan.RetryAgentAffinity.ValueString()
-		err := cq.updateClusterQueueViaREST(ctx, state.ClusterUuid.ValueString(), state.Uuid.ValueString(), desiredAffinity)
+		affinityCtx, cancel := mutationContext(ctx, timeout)
+		defer cancel()
+
+		err := cq.updateClusterQueueViaREST(affinityCtx, state.ClusterUuid.ValueString(), state.Uuid.ValueString(), desiredAffinity)
 		if err != nil {
 			resp.Diagnostics.AddError(
 				"Unable to update retry_agent_affinity",
@@ -684,7 +718,10 @@ func (cq *clusterQueueResource) Update(ctx context.Context, req resource.UpdateR
 	// Last, per the ordering note above: everything the plan asked for has applied, so there is
 	// nothing left that a resumed queue could pick up jobs against.
 	if !planDispatchPaused && stateDispatchPaused {
-		if err := cq.resumeDispatch(ctx, timeout, state, &resp.Diagnostics); err != nil {
+		resumeCtx, cancel := mutationContext(ctx, timeout)
+		defer cancel()
+
+		if err := cq.resumeDispatch(resumeCtx, state, &resp.Diagnostics); err != nil {
 			// Error added to diagnostics within resumeDispatch
 			return
 		}
@@ -702,21 +739,24 @@ func (cq *clusterQueueResource) Delete(ctx context.Context, req resource.DeleteR
 		return
 	}
 
-	_, deleteDiags := cq.client.deleteTimeout(ctx)
+	timeout, deleteDiags := cq.client.deleteTimeout(ctx)
 	resp.Diagnostics.Append(deleteDiags...)
 
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	org, err := cq.client.GetOrganizationID()
+	requestCtx, cancel := mutationContext(ctx, timeout)
+	defer cancel()
+
+	org, err := cq.client.GetOrganizationID(requestCtx)
 	if err != nil {
 		resp.Diagnostics.AddError("Unable to get organization ID", fmt.Sprintf("Failed to get organization ID: %s", err.Error()))
 		return
 	}
 
 	log.Printf("Deleting cluster queue %s ...", plan.Id.ValueString())
-	_, err = deleteClusterQueue(ctx,
+	_, err = deleteClusterQueue(requestCtx,
 		cq.client.genqlient,
 		*org,
 		plan.Id.ValueString(),
@@ -848,7 +888,7 @@ func updateClusterQueueResourceFromNode(clusterQueueNode getClusterQueueByNodeNo
 	}
 }
 
-func (cq *clusterQueueResource) pauseDispatch(ctx context.Context, timeout time.Duration, state clusterQueueResourceModel, diag *diag.Diagnostics) error {
+func (cq *clusterQueueResource) pauseDispatch(ctx context.Context, state clusterQueueResourceModel, diag *diag.Diagnostics) error {
 	log.Printf("Pausing dispatch for cluster queue %s", state.Key.ValueString())
 	_, err := pauseDispatchClusterQueue(ctx, cq.client.genqlient, state.Id.ValueString())
 	if err != nil {
@@ -861,7 +901,7 @@ func (cq *clusterQueueResource) pauseDispatch(ctx context.Context, timeout time.
 	return err
 }
 
-func (cq *clusterQueueResource) resumeDispatch(ctx context.Context, timeout time.Duration, state clusterQueueResourceModel, diag *diag.Diagnostics) error {
+func (cq *clusterQueueResource) resumeDispatch(ctx context.Context, state clusterQueueResourceModel, diag *diag.Diagnostics) error {
 	log.Printf("Resuming dispatch for cluster queue %s", state.Key.ValueString())
 	_, err := resumeDispatchClusterQueue(ctx, cq.client.genqlient, state.Id.ValueString())
 	if err != nil {

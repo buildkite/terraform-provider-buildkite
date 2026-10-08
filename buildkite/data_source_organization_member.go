@@ -72,7 +72,16 @@ func (o *organizationMemberDatasource) Read(ctx context.Context, req datasource.
 		return
 	}
 
-	res, err := GetOrganizationMemberByEmail(ctx, o.client.genqlient, o.client.organization, state.Email.ValueString())
+	timeout, diags := o.client.readTimeout(ctx)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	requestCtx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
+	res, err := GetOrganizationMemberByEmail(requestCtx, o.client.genqlient, o.client.organization, state.Email.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to get organization member",

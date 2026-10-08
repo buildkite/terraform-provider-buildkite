@@ -19,3 +19,6 @@
 #   }
 # }
 terraform import buildkite_team_member.a_smith VGVhbU1lbWJlci0tLTVlZDEyMmY2LTM2NjQtNDI1MS04YzMwLTc4NjRiMDdiZDQ4Zg==
+
+# or using the team slug and the member's email (emails can change; the GraphQL ID is the stable identifier)
+terraform import buildkite_team_member.a_smith everyone/a.smith@example.com

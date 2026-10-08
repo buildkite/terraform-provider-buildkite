@@ -128,8 +128,17 @@ func (t *teamDatasource) Read(ctx context.Context, req datasource.ReadRequest, r
 		return
 	}
 
+	timeout, diags := t.client.readTimeout(ctx)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	requestCtx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
 	if !state.Slug.IsNull() {
-		res, err := GetTeamFromSlug(ctx, t.client.genqlient, fmt.Sprintf("%s/%s", t.client.organization, state.Slug.ValueString()))
+		res, err := GetTeamFromSlug(requestCtx, t.client.genqlient, fmt.Sprintf("%s/%s", t.client.organization, state.Slug.ValueString()))
 		if err != nil {
 			resp.Diagnostics.AddError(
 				"Unable to get team",
@@ -139,7 +148,7 @@ func (t *teamDatasource) Read(ctx context.Context, req datasource.ReadRequest, r
 		}
 		updateTeamDatasourceStateFromSlug(&state, *res)
 	} else if !state.ID.IsNull() {
-		res, err := getNode(ctx, t.client.genqlient, state.ID.ValueString())
+		res, err := getNode(requestCtx, t.client.genqlient, state.ID.ValueString())
 		if err != nil {
 			resp.Diagnostics.AddError(
 				"Unable to get team",

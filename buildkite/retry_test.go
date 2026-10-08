@@ -184,6 +184,8 @@ func TestRetryContextError(t *testing.T) {
 type stubResponse struct {
 	status int
 	body   string
+	// delay holds the response back, standing in for a request that is slow to come back.
+	delay time.Duration
 }
 
 type roundTripFunc func(*http.Request) (*http.Response, error)
@@ -227,6 +229,7 @@ func newRecordingRetryStub(t *testing.T, responses ...stubResponse) (*httptest.S
 			response = responses[n-1]
 		}
 
+		time.Sleep(response.delay)
 		w.WriteHeader(response.status)
 		if _, err := w.Write([]byte(response.body)); err != nil {
 			t.Errorf("failed to write response: %v", err)

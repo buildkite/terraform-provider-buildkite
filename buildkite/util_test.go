@@ -1,7 +1,9 @@
 package buildkite
 
 import (
+	"context"
 	"errors"
+	"fmt"
 	"os"
 	"strings"
 	"testing"
@@ -21,7 +23,7 @@ func TestGetOrganizationIDMissing(t *testing.T) {
 	}
 
 	client := NewClient(config)
-	org, err := client.GetOrganizationID()
+	org, err := client.GetOrganizationID(t.Context())
 	if err == nil {
 		t.Fatal("No error occurred")
 	}
@@ -69,6 +71,28 @@ func TestIsResourceNotFoundError(t *testing.T) {
 		{
 			name:        "unrelated plain error",
 			err:         errors.New("Network connection failed"),
+			shouldMatch: false,
+		},
+		{
+			name:        "404 with a not found body",
+			err:         &apiError{Method: "GET", URL: "/x", StatusCode: 404, Body: `{"message":"Not Found"}`},
+			shouldMatch: true,
+		},
+		// A retried status or a spent deadline says nothing about whether the resource exists, even
+		// when the body of a proxy's error page happens to say "not found".
+		{
+			name:        "retried 503 with a not found body",
+			err:         &apiError{Method: "POST", URL: "/v1", StatusCode: 503, Attempts: 4, Body: "upstream not found", Err: context.DeadlineExceeded},
+			shouldMatch: false,
+		},
+		{
+			name:        "429 with a not found body",
+			err:         &apiError{Method: "POST", URL: "/v1", StatusCode: 429, Body: "not found"},
+			shouldMatch: false,
+		},
+		{
+			name:        "deadline wrapping a not found message",
+			err:         fmt.Errorf("resource not found yet: %w", context.DeadlineExceeded),
 			shouldMatch: false,
 		},
 	}
@@ -231,6 +255,7 @@ func TestParseImportIDs(t *testing.T) {
 		pipelineID     = "UGlwZWxpbmUtLS00MzVjYWQ1OC1lODFkLTQ1YWYtODYzNy1iMWNmODA3MDIzOGQ="
 		teamPipelineID = "VGVhbVBpcGVsaW5lLS0tMmQ5ZmRjYjctMjJjYS00ZDU3LTkwMWMtYmI3NzY1MmM5ZTk2" // no padding, so shaped like a slug
 		queueID        = "Q2x1c3RlclF1ZXVlLS0tNGM2YzNkYzEtM2Q5MC00NGQxLWIwNGMtNzBjYzRlZTg3NGJj"
+		teamMemberID   = "VGVhbU1lbWJlci0tLTVlZDEyMmY2LTM2NjQtNDI1MS04YzMwLTc4NjRiMDdiZDQ4Zg=="
 		uuid           = "0bd5ea7c-89b3-4f40-8ca3-ffac805771eb"
 	)
 
@@ -264,6 +289,15 @@ func TestParseImportIDs(t *testing.T) {
 			pipeline, team, ok := parsePipelineTeamImportID(id)
 			if got := strings.TrimSpace(pipeline + " " + team); got != want || ok != (want != "") {
 				t.Errorf("parsePipelineTeamImportID(%q) = %q, %t", id, got, ok)
+			}
+		}
+	})
+
+	t.Run("team member", func(t *testing.T) {
+		for id, want := range map[string]string{"everyone/someone@example.com": "everyone someone@example.com", "deploy-team/first.last+ci@example.com": "deploy-team first.last+ci@example.com", "everyone/someone": "", "Everyone/someone@example.com": "", "someone@example.com": "", teamMemberID: "", teamMemberID + "/someone@example.com": ""} {
+			team, email, ok := parseTeamMemberImportID(id)
+			if got := strings.TrimSpace(team + " " + email); got != want || ok != (want != "") {
+				t.Errorf("parseTeamMemberImportID(%q) = %q, %t", id, got, ok)
 			}
 		}
 	})

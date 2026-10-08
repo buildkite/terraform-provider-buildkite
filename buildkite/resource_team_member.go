@@ -104,11 +104,14 @@ func (tm *teamMemberResource) Create(ctx context.Context, req resource.CreateReq
 		return
 	}
 
+	requestCtx, cancel := mutationContext(ctx, timeout)
+	defer cancel()
+
 	log.Printf("Creating team member into team %s ...", state.TeamId.ValueString())
 	var r *createTeamMemberResponse
 	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		var err error
-		r, err = createTeamMember(ctx,
+		r, err = createTeamMember(requestCtx,
 			tm.client.genqlient,
 			state.TeamId.ValueString(),
 			state.UserId.ValueString(),
@@ -151,11 +154,14 @@ func (tm *teamMemberResource) Read(ctx context.Context, req resource.ReadRequest
 		return
 	}
 
+	requestCtx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
 	log.Printf("Reading team member %s ...", state.Id.ValueString())
 	var r *getNodeResponse
-	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+	err := retry.RetryContext(requestCtx, timeout, func() *retry.RetryError {
 		var err error
-		r, err = getNode(ctx,
+		r, err = getNode(requestCtx,
 			tm.client.genqlient,
 			state.Id.ValueString(),
 		)
@@ -189,7 +195,43 @@ func (tm *teamMemberResource) Read(ctx context.Context, req resource.ReadRequest
 }
 
 func (tm *teamMemberResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	// <team slug>/<email> is also accepted and resolved to the GraphQL ID
+	if team, email, ok := parseTeamMemberImportID(req.ID); ok {
+		id, err := tm.findTeamMemberID(ctx, team, email)
+		if err != nil {
+			resp.Diagnostics.AddError("Unable to import team member", fmt.Sprintf("Could not find %q in team %q: %s", email, team, err.Error()))
+			return
+		}
+		req.ID = id
+	}
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+}
+
+// findTeamMemberID looks the organization member up by email and pages through their teams for the one with the given slug
+func (tm *teamMemberResource) findTeamMemberID(ctx context.Context, teamSlug, email string) (string, error) {
+	var cursor *string
+	for {
+		r, err := getTeamMemberIdByEmail(ctx, tm.client.genqlient, tm.client.organization, email, cursor)
+		if err != nil {
+			return "", err
+		}
+		if r.Organization.Id == "" {
+			return "", fmt.Errorf("could not find organization %q", tm.client.organization)
+		}
+		if len(r.Organization.Members.Edges) == 0 {
+			return "", fmt.Errorf("no organization member with that email")
+		}
+		teams := r.Organization.Members.Edges[0].Node.Teams
+		for _, edge := range teams.Edges {
+			if edge.Node.Team.Slug == teamSlug {
+				return edge.Node.Id, nil
+			}
+		}
+		if !teams.PageInfo.HasNextPage {
+			return "", fmt.Errorf("not a member of that team")
+		}
+		cursor = &teams.PageInfo.EndCursor
+	}
 }
 
 func (tm *teamMemberResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
@@ -213,11 +255,14 @@ func (tm *teamMemberResource) Update(ctx context.Context, req resource.UpdateReq
 		return
 	}
 
+	requestCtx, cancel := mutationContext(ctx, timeout)
+	defer cancel()
+
 	log.Printf("Updating team member %s with role %s ...", state.Id.ValueString(), plan.Role.ValueString())
 	var r *updateTeamMemberResponse
 	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		var err error
-		r, err = updateTeamMember(ctx,
+		r, err = updateTeamMember(requestCtx,
 			tm.client.genqlient,
 			state.Id.ValueString(),
 			*plan.Role.ValueStringPointer(),
@@ -255,9 +300,12 @@ func (tm *teamMemberResource) Delete(ctx context.Context, req resource.DeleteReq
 		return
 	}
 
+	requestCtx, cancel := mutationContext(ctx, timeout)
+	defer cancel()
+
 	log.Printf("Deleting team member with ID %s ...", state.Id.ValueString())
 	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-		_, err := deleteTeamMember(ctx,
+		_, err := deleteTeamMember(requestCtx,
 			tm.client.genqlient,
 			state.Id.ValueString(),
 		)

@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"regexp"
 	"strings"
@@ -26,6 +27,16 @@ var (
 // isResourceNotFoundError returns true if the error indicates the resource was not found
 func isResourceNotFoundError(err error) bool {
 	if err == nil {
+		return false
+	}
+	// Neither a request that ran out of time nor a retried 429 or 5xx says anything about whether the
+	// resource exists, but their messages can carry the body of a proxy's error page, which the
+	// fallback below would otherwise read, and a Read acting on that removes a live resource from state.
+	if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
+		return false
+	}
+	var apiErr *apiError
+	if errors.As(err, &apiErr) && (apiErr.StatusCode == 0 || apiErr.StatusCode == http.StatusTooManyRequests || apiErr.StatusCode >= 500) {
 		return false
 	}
 	var errList gqlerror.List
@@ -119,7 +130,7 @@ func gqlErrorContains(err error, s string) bool {
 }
 
 // GetOrganizationID retrieves the Buildkite organization ID associated with the supplied slug
-func GetOrganizationID(slug string, client *graphql.Client) (string, error) {
+func GetOrganizationID(ctx context.Context, slug string, client *graphql.Client) (string, error) {
 	var query struct {
 		Organization struct {
 			ID graphql.ID
@@ -128,7 +139,7 @@ func GetOrganizationID(slug string, client *graphql.Client) (string, error) {
 	vars := map[string]interface{}{
 		"slug": slug,
 	}
-	err := client.Query(context.Background(), &query, vars)
+	err := client.Query(ctx, &query, vars)
 	if err != nil {
 		return "", err
 	}
@@ -249,6 +260,15 @@ func parsePipelineTeamImportID(id string) (pipeline, team string, ok bool) {
 		return "", "", false
 	}
 	return pipeline, team, true
+}
+
+// parseTeamMemberImportID splits "<team slug>/<email>", leaving the email for the lookup to validate
+func parseTeamMemberImportID(id string) (team, email string, ok bool) {
+	team, email, ok = strings.Cut(id, "/")
+	if !ok || !importTeamSlugRegex.MatchString(team) || !strings.Contains(email, "@") {
+		return "", "", false
+	}
+	return team, email, true
 }
 
 // parseClusterQueueImportID splits "<cluster uuid>/<queue key>", leaving the key for the lookup to validate

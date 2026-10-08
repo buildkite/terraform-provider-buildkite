@@ -66,6 +66,24 @@ BUILDKITE_ORGANIZATION_SLUG=<org-slug> BUILDKITE_API_TOKEN=<token> make testacc
 - Code reviewers will run the acceptance tests manually
 - Please run the acceptance tests locally to confirm they pass before requesting a review
 
+#### Cache Registry acceptance tests
+
+Cache Registry live tests also require `BUILDKITE_CACHE_REGISTRIES_ACCEPTANCE=1`. Without it, they skip with a message that live resources are untested. The offline Terraform `UnitTest` lifecycle tests still run with `make test`.
+
+To run both live tests against a local Buildkite instance with Cache Registries enabled and a seeded API token:
+
+```bash
+TF_ACC=1 BUILDKITE_CACHE_REGISTRIES_ACCEPTANCE=1 \
+BUILDKITE_ORGANIZATION_SLUG=buildkite BUILDKITE_API_TOKEN=bkua_development_api_token \
+BUILDKITE_GRAPHQL_URL=http://graphql.buildkite.localhost:3100/v1 \
+BUILDKITE_REST_URL=http://api.buildkite.localhost:3100/v2 \
+go test ./buildkite -run '^TestAccBuildkiteClusterCacheRegistry(Resource|ParentDeletion)$' -count=1 -v
+```
+
+The tests create disposable clusters and registries, exercise their lifecycle, and delete them. Once opted in, missing credentials, API failures, or unavailable Cache Registries fail the tests rather than skip them. Leave custom endpoint variables unset to use the default production APIs; an explicitly empty URL is not a default.
+
+CI must opt in with `BUILDKITE_CACHE_REGISTRIES_ACCEPTANCE=1` only after its test organization has Cache Registries enabled and its token has organization membership and cluster management access. `TF_ACC=1` is still required (`make testacc` sets it). The Docker Compose test service forwards the opt-in and custom GraphQL/REST URLs when set.
+
 ### Code Quality
 
 Before committing, ensure your code passes these checks:
@@ -130,6 +148,39 @@ See the [Terraform documentation](https://developer.hashicorp.com/terraform/cli/
 ### API Usage
 
 Buildkite has two APIs: REST and GraphQL. **New resources should use the GraphQL API where possible**, but can fall back to the REST API for resources or properties not yet supported by GraphQL.
+
+### Bounding API calls
+
+Every API call should run under a deadline derived from its operation's configured timeout.
+
+A `Read` (and an import or plan-time lookup, which use the read timeout) derives one context and passes it to every call it makes, including `retry.RetryContext` and paging loops, so the whole read shares one budget:
+
+```go
+timeout, diags := r.client.readTimeout(ctx)
+resp.Diagnostics.Append(diags...)
+if resp.Diagnostics.HasError() {
+    return
+}
+
+requestCtx, cancel := context.WithTimeout(ctx, timeout)
+defer cancel()
+```
+
+A `Create`, `Update` or `Delete` derives a context from `mutationContext` for each step that changes something, meaning each `retry.RetryContext` block or each call made outside one, and passes the parent `ctx` to `retry.RetryContext`:
+
+```go
+requestCtx, cancel := mutationContext(ctx, timeout)
+defer cancel()
+
+err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+    _, err := archivePipeline(requestCtx, r.client.genqlient, id)
+    return retryContextError(err)
+})
+```
+
+`mutationContext` adds 30 seconds to the deadline, matching how long `retry.RetryContext` waits for an attempt still in flight at its timeout. So a mutation that lands just after the timeout is still recorded in state instead of being cancelled, which would leave it applied in Buildkite with no state. A new context per step stops a slow step from using up the time the steps after it need, once the first has already changed something. A helper that takes the timeout, such as `updatePipelineSlug`, derives its own context and takes the parent. A step that only looks something up, such as the repository check before a pipeline webhook is created, changes nothing that needs recording, so it uses a plain `context.WithTimeout` as a read does.
+
+Keep the bare `ctx` for framework calls such as `resp.State.Set`, so state can still be recorded after the budget is spent. A request made without a deadline falls back to the read timeout, which stops it running the retry schedule out, but that fallback applies per request and uses the read timeout whatever the operation.
 
 ### Generating GraphQL Code
 

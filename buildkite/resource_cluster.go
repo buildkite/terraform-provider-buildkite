@@ -142,12 +142,15 @@ func (c *clusterResource) Create(ctx context.Context, req resource.CreateRequest
 		return
 	}
 
+	requestCtx, cancel := mutationContext(ctx, timeout)
+	defer cancel()
+
 	var r *createClusterResponse
 	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-		org, err := c.client.GetOrganizationID()
+		org, err := c.client.GetOrganizationID(requestCtx)
 		if err == nil {
 			r, err = createCluster(
-				ctx,
+				requestCtx,
 				c.client.genqlient,
 				*org,
 				state.Name.ValueString(),
@@ -194,10 +197,13 @@ func (c *clusterResource) Read(ctx context.Context, req resource.ReadRequest, re
 		return
 	}
 
+	requestCtx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
 	var r *getNodeResponse
-	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+	err := retry.RetryContext(requestCtx, timeout, func() *retry.RetryError {
 		var err error
-		r, err = getNode(ctx, c.client.genqlient, state.ID.ValueString())
+		r, err = getNode(requestCtx, c.client.genqlient, state.ID.ValueString())
 
 		return retryContextError(err)
 	})
@@ -246,10 +252,13 @@ func (c *clusterResource) Update(ctx context.Context, req resource.UpdateRequest
 		return
 	}
 
+	requestCtx, cancel := mutationContext(ctx, timeout)
+	defer cancel()
+
 	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-		org, err := c.client.GetOrganizationID()
+		org, err := c.client.GetOrganizationID(requestCtx)
 		if err == nil && clearsAgentTracingService(plan.AgentTracingServiceUUID, state.AgentTracingServiceUUID) {
-			_, err = updateClusterClearingAgentTracingService(ctx,
+			_, err = updateClusterClearingAgentTracingService(requestCtx,
 				c.client.genqlient,
 				*org,
 				state.ID.ValueString(),
@@ -259,7 +268,7 @@ func (c *clusterResource) Update(ctx context.Context, req resource.UpdateRequest
 				plan.Color.ValueStringPointer(),
 			)
 		} else if err == nil {
-			_, err = updateCluster(ctx,
+			_, err = updateCluster(requestCtx,
 				c.client.genqlient,
 				*org,
 				state.ID.ValueString(),
@@ -303,10 +312,13 @@ func (c *clusterResource) Delete(ctx context.Context, req resource.DeleteRequest
 		return
 	}
 
+	requestCtx, cancel := mutationContext(ctx, timeout)
+	defer cancel()
+
 	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-		org, err := c.client.GetOrganizationID()
+		org, err := c.client.GetOrganizationID(requestCtx)
 		if err == nil {
-			_, err = deleteCluster(ctx, c.client.genqlient, *org, state.ID.ValueString())
+			_, err = deleteCluster(requestCtx, c.client.genqlient, *org, state.ID.ValueString())
 		}
 
 		return retryContextError(err)
