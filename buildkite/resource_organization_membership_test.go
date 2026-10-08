@@ -1,0 +1,1251 @@
+package buildkite
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"regexp"
+	"strings"
+	"sync"
+	"testing"
+	"time"
+
+	"github.com/Khan/genqlient/graphql"
+	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	frameworkresource "github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/knownvalue"
+	"github.com/hashicorp/terraform-plugin-testing/plancheck"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
+	"github.com/hashicorp/terraform-plugin-testing/tfjsonpath"
+)
+
+const (
+	membershipUserUUID = "00000000-0000-4000-8000-000000000002"
+	membershipUserID   = "VXNlci0tLTAwMDAwMDAwLTAwMDAtNDAwMC04MDAwLTAwMDAwMDAwMDAwMg=="
+	membershipAddress  = "buildkite_organization_membership.jane"
+)
+
+// The wire fixtures deliberately use JSON field names independently of the
+// production structs. Terraform's actual CLI drives the provider against this API.
+type membershipAPI struct {
+	t                  *testing.T
+	mu                 sync.Mutex
+	member             map[string]any
+	invitation         map[string]any
+	created            int
+	revoked            int
+	deleted            int
+	patches            []map[string]string
+	acceptOnRevoke     bool
+	status             int
+	patchStatus        int
+	createStatus       int
+	revokeStatus       int
+	invitationPageTwo  bool
+	memberListRequests int
+	graphQLRequests    int
+	memberRequests     int
+	graphQLEmail       string
+	graphQLError       bool
+	graphQLNullOrg     bool
+	currentUserID      string
+	currentUserStatus  int
+	mutationRequests   int
+}
+
+func newMembershipAPI(t *testing.T) (*httptest.Server, *membershipAPI) {
+	t.Helper()
+	a := &membershipAPI{t: t, currentUserID: "00000000-0000-4000-8000-000000000001"}
+	s := httptest.NewServer(a)
+	t.Cleanup(s.Close)
+	return s, a
+}
+
+func (a *membershipAPI) accept() {
+	a.member = map[string]any{
+		"id": membershipUserUUID, "email": "jane@example.com",
+		"role": a.invitation["role"], "sso_mode": a.invitation["sso_mode"],
+	}
+	a.invitation["state"] = "accepted"
+	a.invitation["accepted_by"] = map[string]any{"id": membershipUserUUID}
+}
+
+func (a *membershipAPI) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	w.Header().Set("Content-Type", "application/json")
+	if r.Method != http.MethodGet && r.URL.Path != "/graphql" {
+		a.mutationRequests++
+	}
+	if a.status != 0 {
+		http.Error(w, `{"message":"not found is only prose, not a 404 status"}`, a.status)
+		return
+	}
+	const base = "/v2/organizations/acme/"
+	var result any
+	switch {
+	case r.Method == "GET" && r.URL.Path == "/v2/user":
+		if a.currentUserStatus != 0 {
+			http.Error(w, `{"message":"cannot identify user"}`, a.currentUserStatus)
+			return
+		}
+		result = map[string]any{"id": a.currentUserID}
+	case r.Method == "POST" && r.URL.Path == "/graphql":
+		a.graphQLRequests++
+		var query struct {
+			Variables struct{ Slug, Email string }
+		}
+		if err := json.NewDecoder(r.Body).Decode(&query); err != nil {
+			a.t.Error(err)
+		}
+		if query.Variables.Slug != "acme" || query.Variables.Email == "" {
+			a.t.Errorf("expected organization-scoped email lookup: %+v", query.Variables)
+		}
+		edges := []map[string]any{}
+		if a.member != nil && (strings.EqualFold(query.Variables.Email, a.member["email"].(string)) || query.Variables.Email == a.graphQLEmail) {
+			edges = append(edges, map[string]any{"node": map[string]any{"user": map[string]any{"uuid": membershipUserUUID}}})
+		}
+		result = map[string]any{"data": map[string]any{"organization": map[string]any{"id": "org", "members": map[string]any{"edges": edges}}}}
+		if a.graphQLError {
+			result = map[string]any{"errors": []map[string]string{{"message": "member lookup forbidden"}}}
+		} else if a.graphQLNullOrg {
+			result = map[string]any{"data": map[string]any{"organization": nil}}
+		}
+	case r.Method == "GET" && r.URL.Path == base+"members":
+		a.memberListRequests++
+		a.t.Error("membership lookup must not list REST members")
+		result = []map[string]any{}
+	case r.Method == "GET" && r.URL.Path == base+"members/"+membershipUserUUID:
+		a.memberRequests++
+		if a.member == nil {
+			http.NotFound(w, r)
+			return
+		}
+		result = a.member
+	case r.Method == "PATCH" && r.URL.Path == base+"members/"+membershipUserUUID:
+		if a.patchStatus != 0 {
+			http.Error(w, `{"message":"cannot update member"}`, a.patchStatus)
+			return
+		}
+		var payload map[string]string
+		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+			a.t.Error(err)
+		}
+		if a.member == nil {
+			http.NotFound(w, r)
+			return
+		}
+		for k, v := range payload {
+			if (k == "role" && v != "admin" && v != "member") || (k == "sso_mode" && v != "required" && v != "optional") {
+				a.t.Errorf("unexpected patch: %v", payload)
+			}
+			a.member[k] = v
+		}
+		a.patches = append(a.patches, payload)
+		result = a.member
+	case r.Method == "DELETE" && r.URL.Path == base+"members/"+membershipUserUUID:
+		a.member = nil
+		a.deleted++
+		w.WriteHeader(http.StatusNoContent)
+		return
+	case r.Method == "GET" && r.URL.Path == base+"invitations":
+		items := []map[string]any{}
+		links := map[string]string{}
+		if a.invitationPageTwo && r.URL.Query().Get("after") == "" {
+			items = append(items, map[string]any{"id": "other", "email": "other@example.com", "state": "pending"})
+			links["next"] = "http://" + r.Host + base + "invitations?per_page=100&after=opaque%2Bcursor"
+		} else if a.invitation != nil && a.invitation["state"] == "pending" {
+			if a.invitationPageTwo && r.URL.Query().Get("after") != "opaque+cursor" {
+				a.t.Errorf("cursor changed: %s", r.URL.RawQuery)
+			}
+			items = append(items, a.invitation)
+		}
+		result = map[string]any{"items": items, "links": links}
+	case r.Method == "POST" && r.URL.Path == base+"invitations":
+		if a.createStatus != 0 {
+			http.Error(w, `{"message":"cannot create invitation"}`, a.createStatus)
+			return
+		}
+		var payload struct {
+			Emails  []string `json:"emails"`
+			Role    string   `json:"role"`
+			SSOMode string   `json:"sso_mode"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+			a.t.Error(err)
+		}
+		if len(payload.Emails) != 1 || payload.Emails[0] != "jane@example.com" ||
+			(payload.Role != "admin" && payload.Role != "member") ||
+			(payload.SSOMode != "required" && payload.SSOMode != "optional") {
+			a.t.Errorf("invalid invitation payload: %+v", payload)
+		}
+		if a.member != nil || (a.invitation != nil && a.invitation["state"] == "pending") {
+			http.Error(w, `{"message":"already a member or invited"}`, http.StatusUnprocessableEntity)
+			return
+		}
+		a.created++
+		a.invitation = map[string]any{
+			"id":    fmt.Sprintf("00000000-0000-4000-8001-%012d", a.created),
+			"email": payload.Emails[0], "state": "pending", "role": payload.Role, "sso_mode": payload.SSOMode,
+		}
+		result = []map[string]any{a.invitation}
+		w.WriteHeader(http.StatusCreated)
+	case strings.HasPrefix(r.URL.Path, base+"invitations/") && (r.Method == "GET" || r.Method == "DELETE"):
+		if a.invitation == nil || strings.TrimPrefix(r.URL.Path, base+"invitations/") != a.invitation["id"] {
+			http.NotFound(w, r)
+			return
+		}
+		if r.Method == "DELETE" {
+			if a.revokeStatus != 0 {
+				http.Error(w, `{"message":"cannot revoke invitation"}`, a.revokeStatus)
+				return
+			}
+			if a.acceptOnRevoke {
+				a.acceptOnRevoke = false
+				a.accept()
+			}
+			if a.invitation["state"] != "pending" {
+				http.Error(w, `{"message":"invitation is not pending"}`, http.StatusUnprocessableEntity)
+				return
+			}
+			a.invitation["state"] = "revoked"
+			a.revoked++
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+		result = a.invitation
+	default:
+		a.t.Errorf("unexpected request: %s %s", r.Method, r.URL)
+		http.NotFound(w, r)
+		return
+	}
+	if err := json.NewEncoder(w).Encode(result); err != nil {
+		a.t.Error(err)
+	}
+}
+
+func membershipConfig(server, attributes string) string {
+	return fmt.Sprintf(`
+provider "buildkite" {
+  organization = "acme"
+  api_token = "fake"
+  rest_url = %q
+  graphql_url = %q
+  max_retries = 0
+}
+resource "buildkite_organization_membership" "jane" {
+  %s
+}
+`, server, server+"/graphql", attributes)
+}
+
+func TestOrganizationMembershipAdoptUpdateImport(t *testing.T) {
+	for _, identity := range []string{`email = "jane@example.com"`, `uuid = "` + membershipUserUUID + `"`} {
+		t.Run(identity, func(t *testing.T) {
+			s, api := newMembershipAPI(t)
+			api.member = map[string]any{"id": membershipUserUUID, "email": "jane@example.com", "role": "member", "sso_mode": "required"}
+			resource.UnitTest(t, resource.TestCase{
+				ProtoV6ProviderFactories: protoV6ProviderFactories(),
+				Steps: []resource.TestStep{
+					{
+						Config:           membershipConfig(s.URL, identity+"\nrole = \"ADMIN\"\nsso_mode = \"OPTIONAL\""),
+						ConfigPlanChecks: resource.ConfigPlanChecks{PostApplyPostRefresh: []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()}},
+						Check: resource.ComposeAggregateTestCheckFunc(
+							resource.TestCheckResourceAttr(membershipAddress, "id", membershipUserUUID),
+							resource.TestCheckResourceAttr(membershipAddress, "state", "active"),
+							resource.TestCheckResourceAttr(membershipAddress, "user_id", membershipUserID),
+							resource.TestCheckResourceAttr(membershipAddress, "role", "ADMIN"),
+							resource.TestCheckResourceAttr(membershipAddress, "sso_mode", "OPTIONAL"),
+						),
+					},
+					{ResourceName: membershipAddress, ImportState: true, ImportStateVerify: true},
+					{
+						Config: membershipConfig(s.URL, identity+"\nrole = \"MEMBER\"\nsso_mode = \"REQUIRED\""),
+						ConfigPlanChecks: resource.ConfigPlanChecks{PreApply: []plancheck.PlanCheck{
+							plancheck.ExpectResourceAction(membershipAddress, plancheck.ResourceActionUpdate),
+							// Unknown identity values would force replacement of dependent team memberships.
+							plancheck.ExpectKnownValue(membershipAddress, tfjsonpath.New("user_id"), knownvalue.StringExact(membershipUserID)),
+							plancheck.ExpectKnownValue(membershipAddress, tfjsonpath.New("uuid"), knownvalue.StringExact(membershipUserUUID)),
+						}},
+						Check: resource.ComposeAggregateTestCheckFunc(
+							resource.TestCheckResourceAttr(membershipAddress, "role", "MEMBER"),
+							resource.TestCheckResourceAttr(membershipAddress, "sso_mode", "REQUIRED"),
+						),
+					},
+				},
+			})
+			api.mu.Lock()
+			defer api.mu.Unlock()
+			if api.created != 0 || api.deleted != 1 || api.member != nil || len(api.patches) != 2 {
+				t.Fatalf("adoption lifecycle: created=%d deleted=%d member=%v patches=%v", api.created, api.deleted, api.member, api.patches)
+			}
+		})
+	}
+}
+
+func TestOrganizationMembershipImportEmailReconciliation(t *testing.T) {
+	for _, tc := range []struct {
+		name, email string
+		pending     bool
+	}{
+		{name: "active case difference", email: "JANE@example.com"},
+		{name: "active invitation address", email: "jane.invited@example.com"},
+		{name: "active matching email", email: "jane@example.com"},
+		{name: "pending case difference", email: "JANE@example.com", pending: true},
+		{name: "pending matching email", email: "jane@example.com", pending: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			s, api := newMembershipAPI(t)
+			id, importID, state := membershipUserUUID, membershipUserUUID, "active"
+			if tc.pending {
+				id = "00000000-0000-4000-8001-000000000099"
+				importID, state = "invitation/"+id, "pending"
+				api.invitation = map[string]any{"id": id, "email": "jane@example.com", "state": "pending", "role": "member", "sso_mode": "required"}
+			} else {
+				api.member = map[string]any{"id": id, "email": "jane@example.com", "role": "member", "sso_mode": "required"}
+			}
+			config := membershipConfig(s.URL, fmt.Sprintf("email = %q\nrole = \"MEMBER\"\nsso_mode = \"REQUIRED\"", tc.email))
+			otherIdentity := `uuid = "00000000-0000-4000-8000-000000000003"`
+			if tc.pending {
+				otherIdentity = `email = "someone.else@example.com"`
+			}
+			checks := []plancheck.PlanCheck{plancheck.ExpectResourceAction(membershipAddress, plancheck.ResourceActionUpdate)}
+			if tc.pending {
+				// Acceptance can race with this apply, even when email already matches.
+				checks = append(checks,
+					plancheck.ExpectUnknownValue(membershipAddress, tfjsonpath.New("uuid")),
+					plancheck.ExpectUnknownValue(membershipAddress, tfjsonpath.New("user_id")),
+				)
+			}
+			resource.UnitTest(t, resource.TestCase{
+				ProtoV6ProviderFactories: protoV6ProviderFactories(),
+				Steps: []resource.TestStep{
+					{
+						Config: config, ResourceName: membershipAddress,
+						ImportState: true, ImportStateId: importID, ImportStatePersist: true,
+						ExpectNonEmptyPlan: true,
+					},
+					{
+						// Import must not exempt a different UUID or pending invitee.
+						// A speculative plan must not consume the reconciliation marker.
+						Config:   membershipConfig(s.URL, otherIdentity+"\nrole = \"MEMBER\"\nsso_mode = \"REQUIRED\""),
+						PlanOnly: true, ExpectNonEmptyPlan: true,
+						ConfigPlanChecks: resource.ConfigPlanChecks{PostApplyPostRefresh: []plancheck.PlanCheck{
+							plancheck.ExpectResourceAction(membershipAddress, plancheck.ResourceActionDestroyBeforeCreate),
+						}},
+					},
+					{
+						Config: config,
+						ConfigPlanChecks: resource.ConfigPlanChecks{
+							PreApply:             checks,
+							PostApplyPostRefresh: []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()},
+						},
+						Check: resource.ComposeAggregateTestCheckFunc(
+							resource.TestCheckResourceAttr(membershipAddress, "id", id),
+							resource.TestCheckResourceAttr(membershipAddress, "email", tc.email),
+							resource.TestCheckResourceAttr(membershipAddress, "state", state),
+							func(_ *terraform.State) error {
+								api.mu.Lock()
+								defer api.mu.Unlock()
+								if api.created != 0 || api.revoked != 0 || api.deleted != 0 || len(api.patches) != 0 {
+									return fmt.Errorf("email reconciliation mutated the API: created=%d revoked=%d deleted=%d patches=%v", api.created, api.revoked, api.deleted, api.patches)
+								}
+								return nil
+							},
+						),
+					},
+					{
+						// Import provenance must be consumed even when the first email matched.
+						// Later identity changes still require explicit replacement.
+						Config:   membershipConfig(s.URL, "email = \"someone.else@example.com\"\nrole = \"MEMBER\"\nsso_mode = \"REQUIRED\""),
+						PlanOnly: true, ExpectNonEmptyPlan: true,
+						ConfigPlanChecks: resource.ConfigPlanChecks{PostApplyPostRefresh: []plancheck.PlanCheck{
+							plancheck.ExpectResourceAction(membershipAddress, plancheck.ResourceActionDestroyBeforeCreate),
+						}},
+					},
+				},
+			})
+		})
+	}
+}
+
+func TestOrganizationMembershipImportBlockEmailReconciliation(t *testing.T) {
+	s, api := newMembershipAPI(t)
+	api.member = map[string]any{"id": membershipUserUUID, "email": "jane@example.com", "role": "member", "sso_mode": "required"}
+	config := membershipConfig(s.URL, "email = \"jane.invited@example.com\"\nrole = \"MEMBER\"\nsso_mode = \"REQUIRED\"")
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config: config + fmt.Sprintf("\nimport {\n  to = %s\n  id = %q\n}\n", membershipAddress, membershipUserUUID),
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply:             []plancheck.PlanCheck{plancheck.ExpectResourceAction(membershipAddress, plancheck.ResourceActionUpdate)},
+					PostApplyPostRefresh: []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()},
+				},
+				Check: resource.TestCheckResourceAttr(membershipAddress, "email", "jane.invited@example.com"),
+			},
+			{Config: config, ConfigPlanChecks: resource.ConfigPlanChecks{PreApply: []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()}}},
+		},
+	})
+	api.mu.Lock()
+	defer api.mu.Unlock()
+	if api.deleted != 1 || api.created != 0 || len(api.patches) != 0 {
+		t.Fatalf("import block must reconcile without remote changes before cleanup: deleted=%d created=%d patches=%v", api.deleted, api.created, api.patches)
+	}
+}
+
+func TestOrganizationMembershipImportedInvitationChangesInvitee(t *testing.T) {
+	s, api := newMembershipAPI(t)
+	const id = "00000000-0000-4000-8001-000000000099"
+	api.invitation = map[string]any{"id": id, "email": "previous@example.com", "state": "pending", "role": "member", "sso_mode": "required"}
+	config := membershipConfig(s.URL, "email = \"jane@example.com\"\nrole = \"MEMBER\"\nsso_mode = \"REQUIRED\"\nsend_invitation = true")
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		Steps: []resource.TestStep{
+			{Config: config, ResourceName: membershipAddress, ImportState: true, ImportStateId: "invitation/" + id, ImportStatePersist: true, ExpectNonEmptyPlan: true},
+			{
+				Config: config,
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply:             []plancheck.PlanCheck{plancheck.ExpectResourceAction(membershipAddress, plancheck.ResourceActionDestroyBeforeCreate)},
+					PostApplyPostRefresh: []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()},
+				},
+				Check: resource.TestCheckResourceAttr(membershipAddress, "email", "jane@example.com"),
+			},
+		},
+	})
+	api.mu.Lock()
+	defer api.mu.Unlock()
+	if api.created != 1 || api.revoked != 2 || api.deleted != 0 {
+		t.Fatalf("different invitee must replace, then revoke on cleanup: created=%d revoked=%d deleted=%d", api.created, api.revoked, api.deleted)
+	}
+}
+
+func TestOrganizationMembershipImportReconciliationRetry(t *testing.T) {
+	s, api := newMembershipAPI(t)
+	api.member = map[string]any{"id": membershipUserUUID, "email": "jane@example.com", "role": "member", "sso_mode": "required"}
+	api.patchStatus = http.StatusForbidden
+	config := membershipConfig(s.URL, "email = \"jane.invited@example.com\"\nrole = \"ADMIN\"\nsso_mode = \"REQUIRED\"")
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config: config, ResourceName: membershipAddress,
+				ImportState: true, ImportStateId: membershipUserUUID, ImportStatePersist: true, ExpectNonEmptyPlan: true,
+			},
+			{Config: config, ExpectError: regexp.MustCompile("status: 403")},
+			{
+				PreConfig: func() { api.mu.Lock(); defer api.mu.Unlock(); api.patchStatus = 0 },
+				Config:    config,
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply:             []plancheck.PlanCheck{plancheck.ExpectResourceAction(membershipAddress, plancheck.ResourceActionUpdate)},
+					PostApplyPostRefresh: []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()},
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(membershipAddress, "email", "jane.invited@example.com"),
+					resource.TestCheckResourceAttr(membershipAddress, "role", "ADMIN"),
+				),
+			},
+		},
+	})
+	api.mu.Lock()
+	defer api.mu.Unlock()
+	if api.deleted != 1 || api.revoked != 0 || api.created != 0 || len(api.patches) != 1 {
+		t.Fatalf("retry must update the imported member, not replace it: deleted=%d revoked=%d created=%d patches=%v", api.deleted, api.revoked, api.created, api.patches)
+	}
+}
+
+func TestOrganizationMembershipPendingLookup(t *testing.T) {
+	for _, tc := range []struct {
+		name, memberEmail, memberID string
+		graphqlError, hiddenOrg     bool
+		wantState                   string
+		wantError                   bool
+	}{
+		{name: "absent", wantState: "pending"},
+		{name: "SSO joined", memberEmail: "jane@example.com", memberID: membershipUserUUID, wantState: "active"},
+		{name: "case insensitive", memberEmail: "JANE@example.com", memberID: membershipUserUUID, wantState: "active"},
+		{name: "secondary email must fail closed", memberEmail: "other@example.com", memberID: membershipUserUUID, wantError: true},
+		{name: "GraphQL errors preserve state", graphqlError: true, wantError: true},
+		{name: "inaccessible organization preserves state", hiddenOrg: true, wantError: true},
+		{name: "wrong REST identity preserves state", memberEmail: "jane@example.com", memberID: "another-user", wantError: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			s, api := newMembershipAPI(t)
+			api.invitation = map[string]any{"id": "invite", "email": "jane@example.com", "state": "pending", "role": "member", "sso_mode": "required"}
+			api.graphQLError, api.graphQLNullOrg = tc.graphqlError, tc.hiddenOrg
+			if tc.memberEmail != "" {
+				api.member = map[string]any{"id": tc.memberID, "email": tc.memberEmail, "role": "member", "sso_mode": "required"}
+				// GraphQL can match a secondary/unverified address that REST does not expose.
+				api.graphQLEmail = "jane@example.com"
+			}
+			r := &organizationMembershipResource{client: &Client{organization: "acme", restURL: s.URL, http: s.Client(), genqlient: graphql.NewClient(s.URL+"/graphql", s.Client())}}
+			var schemaResp frameworkresource.SchemaResponse
+			r.Schema(context.Background(), frameworkresource.SchemaRequest{}, &schemaResp)
+			state := tfsdk.State{Schema: schemaResp.Schema}
+			model := organizationMembershipResourceModel{
+				ID: types.StringValue("invite"), InvitationID: types.StringValue("invite"), Email: types.StringValue("jane@example.com"),
+				State: types.StringValue("pending"), Role: types.StringValue("MEMBER"), SSOMode: types.StringValue("REQUIRED"),
+			}
+			if diags := state.Set(context.Background(), &model); diags.HasError() {
+				t.Fatal(diags)
+			}
+			response := frameworkresource.ReadResponse{State: state}
+			r.Read(context.Background(), frameworkresource.ReadRequest{State: state}, &response)
+			if tc.wantError {
+				if !response.Diagnostics.HasError() || !response.State.Raw.Equal(state.Raw) {
+					t.Fatalf("lookup failure must preserve state: %v", response.Diagnostics)
+				}
+			} else {
+				if response.Diagnostics.HasError() {
+					t.Fatal(response.Diagnostics)
+				}
+				if diags := response.State.Get(context.Background(), &model); diags.HasError() {
+					t.Fatal(diags)
+				}
+				if model.State.ValueString() != tc.wantState || (tc.wantState == "active" && model.UUID.ValueString() != membershipUserUUID) || (tc.wantState == "pending" && !model.UUID.IsNull()) {
+					t.Fatalf("wrong membership identity/state: %+v", model)
+				}
+			}
+			api.mu.Lock()
+			defer api.mu.Unlock()
+			wantREST := 0
+			if tc.memberEmail != "" {
+				wantREST = 1
+			}
+			if api.graphQLRequests != 1 || api.memberRequests != wantREST || api.memberListRequests != 0 || api.created != 0 || api.revoked != 0 || api.deleted != 0 || len(api.patches) != 0 {
+				t.Fatalf("expected one targeted lookup and REST confirmation only on a match: graphql=%d member=%d list=%d created=%d revoked=%d deleted=%d patches=%v", api.graphQLRequests, api.memberRequests, api.memberListRequests, api.created, api.revoked, api.deleted, api.patches)
+			}
+		})
+	}
+}
+
+func TestOrganizationMembershipPendingBecomesActive(t *testing.T) {
+	for _, accepted := range []bool{false, true} {
+		t.Run(fmt.Sprintf("accepted_by_present=%t", accepted), func(t *testing.T) {
+			s, api := newMembershipAPI(t)
+			api.invitation = map[string]any{"id": "invite", "email": "jane@example.com", "state": "pending", "role": "member", "sso_mode": "required"}
+			config := membershipConfig(s.URL, "email = \"jane@example.com\"\nrole = \"MEMBER\"\nsso_mode = \"REQUIRED\"")
+			resource.UnitTest(t, resource.TestCase{
+				ProtoV6ProviderFactories: protoV6ProviderFactories(),
+				Steps: []resource.TestStep{
+					{Config: config, Check: resource.TestCheckResourceAttr(membershipAddress, "state", "pending")},
+					{
+						PreConfig: func() {
+							api.mu.Lock()
+							defer api.mu.Unlock()
+							if accepted {
+								api.accept()
+								// accepted_by must work even if REST exposes a different email.
+								api.member["email"] = "jane.primary@example.com"
+							} else {
+								// SSO without an invitation token searches by identity_email,
+								// then creates membership independently. Signing in with a
+								// secondary email can leave a primary-email invitation pending.
+								api.member = map[string]any{"id": membershipUserUUID, "email": "jane@example.com", "role": "member", "sso_mode": "required"}
+							}
+							api.graphQLRequests = 0
+						},
+						Config: config,
+						Check: resource.ComposeAggregateTestCheckFunc(
+							resource.TestCheckResourceAttr(membershipAddress, "state", "active"),
+							resource.TestCheckResourceAttr(membershipAddress, "uuid", membershipUserUUID),
+							resource.TestCheckResourceAttr(membershipAddress, "user_id", membershipUserID),
+							func(_ *terraform.State) error {
+								api.mu.Lock()
+								defer api.mu.Unlock()
+								if accepted && api.graphQLRequests != 0 {
+									return fmt.Errorf("accepted_by lookup searched by email: %d requests", api.graphQLRequests)
+								}
+								if !accepted && (api.invitation["state"] != "pending" || api.graphQLRequests == 0) {
+									return fmt.Errorf("SSO membership must be discovered while invitation is still pending: invitation=%v requests=%d", api.invitation, api.graphQLRequests)
+								}
+								return nil
+							},
+						),
+					},
+					{
+						PreConfig:        func() { api.mu.Lock(); defer api.mu.Unlock(); api.graphQLRequests = 0 },
+						Config:           config,
+						ConfigPlanChecks: resource.ConfigPlanChecks{PreApply: []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()}},
+					},
+				},
+			})
+			api.mu.Lock()
+			defer api.mu.Unlock()
+			wantRevoked := 0
+			if !accepted {
+				wantRevoked = 1
+			}
+			if api.memberListRequests != 0 || api.graphQLRequests != 0 || api.deleted != 1 || api.revoked != wantRevoked || api.created != 0 {
+				t.Fatalf("subsequent refresh and destroy must follow UUID: list=%d graphql=%d deleted=%d revoked=%d created=%d", api.memberListRequests, api.graphQLRequests, api.deleted, api.revoked, api.created)
+			}
+		})
+	}
+}
+
+func TestOrganizationMembershipRefreshKeepsTrackedInvitation(t *testing.T) {
+	for _, refreshFirst := range []bool{false, true} {
+		t.Run(fmt.Sprintf("refresh_before_destroy=%t", refreshFirst), func(t *testing.T) {
+			s, api := newMembershipAPI(t)
+			const id = "00000000-0000-4000-8001-000000000099"
+			api.invitation = map[string]any{"id": id, "email": "jane@example.com", "state": "pending", "role": "admin", "sso_mode": "optional"}
+			api.member = map[string]any{"id": membershipUserUUID, "email": "jane@example.com", "role": "admin", "sso_mode": "optional"}
+			// Import a member who joined through SSO, retaining a different selector.
+			config := membershipConfig(s.URL, "email = \"jane.invited@example.com\"\nrole = \"ADMIN\"\nsso_mode = \"OPTIONAL\"")
+			removeMember := func() { api.mu.Lock(); defer api.mu.Unlock(); api.member = nil }
+			steps := []resource.TestStep{
+				{Config: config, ResourceName: membershipAddress, ImportState: true, ImportStateId: "invitation/" + id, ImportStatePersist: true, ExpectNonEmptyPlan: true},
+				{Config: config, Check: resource.TestCheckResourceAttr(membershipAddress, "uuid", membershipUserUUID)},
+			}
+			if refreshFirst {
+				steps = append(steps, resource.TestStep{
+					PreConfig:        removeMember,
+					Config:           config,
+					ConfigPlanChecks: resource.ConfigPlanChecks{PreApply: []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()}},
+					Check: resource.ComposeAggregateTestCheckFunc(
+						resource.TestCheckResourceAttr(membershipAddress, "state", "pending"),
+						resource.TestCheckResourceAttr(membershipAddress, "uuid", membershipUserUUID),
+						resource.TestCheckResourceAttr(membershipAddress, "email", "jane.invited@example.com"),
+						resource.TestCheckResourceAttr(membershipAddress, "user_id", membershipUserID),
+					),
+				})
+				// Replacing the tracked invitation must retain identity and its original
+				// destination, not send to the imported selector alias.
+				config = membershipConfig(s.URL, "email = \"jane.invited@example.com\"\nrole = \"MEMBER\"\nsso_mode = \"REQUIRED\"\nsend_invitation = true")
+				steps = append(steps, resource.TestStep{
+					Config:           config,
+					ConfigPlanChecks: resource.ConfigPlanChecks{PostApplyPostRefresh: []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()}},
+					Check: resource.ComposeAggregateTestCheckFunc(
+						resource.TestCheckResourceAttr(membershipAddress, "uuid", membershipUserUUID),
+						resource.TestCheckResourceAttr(membershipAddress, "role", "MEMBER"),
+						resource.TestCheckResourceAttr(membershipAddress, "sso_mode", "REQUIRED"),
+					),
+				})
+			}
+			steps = append(steps, resource.TestStep{PreConfig: removeMember, Config: config, Destroy: true})
+			resource.UnitTest(t, resource.TestCase{ProtoV6ProviderFactories: protoV6ProviderFactories(), Steps: steps})
+			api.mu.Lock()
+			defer api.mu.Unlock()
+			wantRevoked, wantCreated := 1, 0
+			if refreshFirst {
+				wantRevoked, wantCreated = 2, 1
+			}
+			if api.revoked != wantRevoked || api.invitation["state"] != "revoked" || api.created != wantCreated || api.deleted != 0 {
+				t.Fatalf("refresh must not abandon the pending invitation on a member 404: revoked=%d invitation=%v created=%d deleted=%d", api.revoked, api.invitation, api.created, api.deleted)
+			}
+		})
+	}
+}
+
+func TestOrganizationMembershipInvitationLifecycle(t *testing.T) {
+	s, api := newMembershipAPI(t)
+	const firstID = "00000000-0000-4000-8001-000000000001"
+	initial := membershipConfig(s.URL, `email = "jane@example.com"
+role = "ADMIN"
+sso_mode = "OPTIONAL"
+send_invitation = true`)
+	updated := membershipConfig(s.URL, `email = "jane@example.com"
+role = "MEMBER"
+sso_mode = "REQUIRED"
+send_invitation = true`)
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config: initial,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(membershipAddress, "state", "pending"),
+					resource.TestCheckResourceAttr(membershipAddress, "id", firstID),
+					resource.TestCheckNoResourceAttr(membershipAddress, "user_id"),
+					resource.TestCheckNoResourceAttr(membershipAddress, "uuid"),
+				),
+			},
+			{
+				ResourceName: membershipAddress, ImportState: true, ImportStateId: "invitation/" + firstID,
+				ImportStateVerify: true, ImportStateVerifyIgnore: []string{"send_invitation"},
+			},
+			{
+				Config: updated,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(membershipAddress, "id", firstID),
+					resource.TestCheckResourceAttr(membershipAddress, "invitation_id", "00000000-0000-4000-8001-000000000002"),
+					resource.TestCheckResourceAttr(membershipAddress, "role", "MEMBER"),
+					resource.TestCheckResourceAttr(membershipAddress, "sso_mode", "REQUIRED"),
+				),
+			},
+			{
+				PreConfig: func() {
+					api.mu.Lock()
+					defer api.mu.Unlock()
+					api.accept()
+					// An invitation may be accepted by a user whose primary email differs.
+					api.member["email"] = "jane.primary@example.com"
+				},
+				Config:           updated,
+				ConfigPlanChecks: resource.ConfigPlanChecks{PostApplyPostRefresh: []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()}},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(membershipAddress, "id", firstID),
+					resource.TestCheckResourceAttr(membershipAddress, "email", "jane@example.com"),
+					resource.TestCheckResourceAttr(membershipAddress, "state", "active"),
+					resource.TestCheckResourceAttr(membershipAddress, "uuid", membershipUserUUID),
+					resource.TestCheckResourceAttr(membershipAddress, "user_id", membershipUserID),
+				),
+			},
+		},
+	})
+	api.mu.Lock()
+	defer api.mu.Unlock()
+	if api.created != 2 || api.revoked != 1 || api.deleted != 1 {
+		t.Fatalf("invitation lifecycle: created=%d revoked=%d deleted=%d", api.created, api.revoked, api.deleted)
+	}
+}
+
+func TestOrganizationMembershipDowngradeOnDestroy(t *testing.T) {
+	s, api := newMembershipAPI(t)
+	api.member = map[string]any{"id": membershipUserUUID, "email": "jane@example.com", "role": "admin", "sso_mode": "optional"}
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		Steps: []resource.TestStep{{Config: membershipConfig(s.URL, `email = "jane@example.com"
+role = "ADMIN"
+sso_mode = "OPTIONAL"
+downgrade_on_destroy = true`)}},
+	})
+	api.mu.Lock()
+	defer api.mu.Unlock()
+	if api.deleted != 0 || api.member["role"] != "member" || api.member["sso_mode"] != "optional" || len(api.patches) != 1 || len(api.patches[0]) != 1 {
+		t.Fatalf("destroy must only demote, retaining SSO mode: member=%v patches=%v deleted=%d", api.member, api.patches, api.deleted)
+	}
+}
+
+func TestOrganizationMembershipAdoptPendingAndExpire(t *testing.T) {
+	s, api := newMembershipAPI(t)
+	api.invitationPageTwo = true
+	api.invitation = map[string]any{"id": "00000000-0000-4000-8001-000000000099", "email": "JANE@example.com", "state": "pending", "role": "member", "sso_mode": "required"}
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		Steps: []resource.TestStep{
+			{Config: membershipConfig(s.URL, `email = "jane@example.com"
+role = "MEMBER"
+sso_mode = "REQUIRED"
+downgrade_on_destroy = true`), Check: resource.TestCheckResourceAttr(membershipAddress, "invitation_id", "00000000-0000-4000-8001-000000000099")},
+			{
+				PreConfig: func() {
+					api.mu.Lock()
+					defer api.mu.Unlock()
+					if api.created != 0 {
+						t.Error("adoption sent a duplicate invitation")
+					}
+					api.invitation["state"] = "expired"
+				},
+				Config: membershipConfig(s.URL, `email = "jane@example.com"
+role = "MEMBER"
+sso_mode = "REQUIRED"
+send_invitation = true
+downgrade_on_destroy = true`),
+				Check: resource.TestCheckResourceAttr(membershipAddress, "invitation_id", "00000000-0000-4000-8001-000000000001"),
+			},
+		},
+	})
+	api.mu.Lock()
+	defer api.mu.Unlock()
+	if api.created != 1 || api.revoked != 1 || api.deleted != 0 {
+		t.Fatalf("pending destroy must revoke even with downgrade: created=%d revoked=%d deleted=%d", api.created, api.revoked, api.deleted)
+	}
+}
+
+func TestOrganizationMembershipMissingDoesNotInvite(t *testing.T) {
+	s, api := newMembershipAPI(t)
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		Steps: []resource.TestStep{{
+			Config: membershipConfig(s.URL, `email = "jane@example.com"
+role = "MEMBER"
+sso_mode = "REQUIRED"`),
+			ExpectError: regexp.MustCompile("organization member not found"),
+		}},
+	})
+	api.mu.Lock()
+	defer api.mu.Unlock()
+	if api.created != 0 {
+		t.Fatal("sent an invitation without opt-in")
+	}
+}
+
+func TestOrganizationMembershipFailedAdoptionDoesNotTaintMember(t *testing.T) {
+	s, api := newMembershipAPI(t)
+	api.member = map[string]any{"id": membershipUserUUID, "email": "jane@example.com", "role": "member", "sso_mode": "required"}
+	api.patchStatus = http.StatusForbidden
+	config := membershipConfig(s.URL, `email = "jane@example.com"
+role = "ADMIN"
+sso_mode = "OPTIONAL"`)
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		Steps: []resource.TestStep{
+			{Config: config, ExpectError: regexp.MustCompile("status: 403")},
+			{
+				PreConfig: func() { api.mu.Lock(); defer api.mu.Unlock(); api.patchStatus = 0 },
+				Config:    config,
+				Check:     resource.TestCheckResourceAttr(membershipAddress, "role", "ADMIN"),
+			},
+		},
+	})
+	api.mu.Lock()
+	defer api.mu.Unlock()
+	if api.deleted != 1 || len(api.patches) != 1 {
+		t.Fatalf("retry must adopt, not destroy a tainted member: deleted=%d patches=%v", api.deleted, api.patches)
+	}
+}
+
+func TestOrganizationMembershipFailedInvitationReplacementRecovers(t *testing.T) {
+	s, api := newMembershipAPI(t)
+	initial := membershipConfig(s.URL, `email = "jane@example.com"
+role = "MEMBER"
+sso_mode = "REQUIRED"
+send_invitation = true`)
+	updated := membershipConfig(s.URL, `email = "jane@example.com"
+role = "ADMIN"
+sso_mode = "OPTIONAL"
+send_invitation = true`)
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		Steps: []resource.TestStep{
+			{Config: initial},
+			{
+				PreConfig: func() { api.mu.Lock(); defer api.mu.Unlock(); api.createStatus = http.StatusForbidden },
+				Config:    updated, ExpectError: regexp.MustCompile("status: 403"),
+			},
+			{
+				PreConfig: func() { api.mu.Lock(); defer api.mu.Unlock(); api.createStatus = 0 },
+				Config:    updated,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(membershipAddress, "invitation_id", "00000000-0000-4000-8001-000000000002"),
+					resource.TestCheckResourceAttr(membershipAddress, "role", "ADMIN"),
+					resource.TestCheckResourceAttr(membershipAddress, "sso_mode", "OPTIONAL"),
+				),
+			},
+		},
+	})
+	api.mu.Lock()
+	defer api.mu.Unlock()
+	if api.created != 2 || api.revoked != 2 {
+		t.Fatalf("unexpected replacement recovery: created=%d revoked=%d", api.created, api.revoked)
+	}
+}
+
+func TestOrganizationMembershipPreservesPendingTeamAssignments(t *testing.T) {
+	s, api := newMembershipAPI(t)
+	api.invitation = map[string]any{
+		"id": "invite", "email": "jane@example.com", "state": "pending", "role": "member", "sso_mode": "required",
+		"teams": []map[string]any{{"id": "engineering"}},
+	}
+	r := &organizationMembershipResource{client: &Client{organization: "acme", restURL: s.URL, http: s.Client(), genqlient: graphql.NewClient(s.URL+"/graphql", s.Client())}}
+	state := organizationMembershipResourceModel{
+		Email: types.StringValue("jane@example.com"), Role: types.StringValue("ADMIN"),
+		SSOMode: types.StringValue("OPTIONAL"), SendInvitation: types.BoolValue(true),
+	}
+	err := r.apply(context.Background(), &state)
+	if err == nil || !strings.Contains(err.Error(), "team assignments") {
+		t.Fatalf("expected refusal to discard team assignments, got %v", err)
+	}
+	api.mu.Lock()
+	defer api.mu.Unlock()
+	if api.revoked != 0 || api.created != 0 || api.invitation["state"] != "pending" {
+		t.Fatal("invitation with unmanaged teams was replaced")
+	}
+}
+
+type membershipAcceptancePlanCheck struct {
+	api      *membershipAPI
+	onRevoke bool
+}
+
+func (c membershipAcceptancePlanCheck) CheckPlan(_ context.Context, _ plancheck.CheckPlanRequest, _ *plancheck.CheckPlanResponse) {
+	c.api.mu.Lock()
+	defer c.api.mu.Unlock()
+	if c.onRevoke {
+		c.api.acceptOnRevoke = true
+	} else {
+		c.api.accept()
+	}
+}
+
+func TestOrganizationMembershipAcceptanceDuringTerraformUpdate(t *testing.T) {
+	for _, onRevoke := range []bool{false, true} {
+		t.Run(fmt.Sprintf("accept_on_revoke=%t", onRevoke), func(t *testing.T) {
+			s, api := newMembershipAPI(t)
+			resource.UnitTest(t, resource.TestCase{
+				ProtoV6ProviderFactories: protoV6ProviderFactories(),
+				Steps: []resource.TestStep{
+					{Config: membershipConfig(s.URL, "email = \"jane@example.com\"\nrole = \"ADMIN\"\nsso_mode = \"OPTIONAL\"\nsend_invitation = true")},
+					{
+						Config: membershipConfig(s.URL, "email = \"jane@example.com\"\nrole = \"MEMBER\"\nsso_mode = \"REQUIRED\"\nsend_invitation = true"),
+						ConfigPlanChecks: resource.ConfigPlanChecks{
+							PreApply: []plancheck.PlanCheck{
+								plancheck.ExpectResourceAction(membershipAddress, plancheck.ResourceActionUpdate),
+								// Accept after the saved plan, or during its revoke request (422).
+								// Direct apply() tests cannot catch Terraform's consistency checks.
+								membershipAcceptancePlanCheck{api: api, onRevoke: onRevoke},
+							},
+							PostApplyPostRefresh: []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()},
+						},
+						Check: resource.ComposeAggregateTestCheckFunc(
+							resource.TestCheckResourceAttr(membershipAddress, "state", "active"),
+							resource.TestCheckResourceAttr(membershipAddress, "uuid", membershipUserUUID),
+							resource.TestCheckResourceAttr(membershipAddress, "user_id", membershipUserID),
+							resource.TestCheckResourceAttr(membershipAddress, "role", "MEMBER"),
+							resource.TestCheckResourceAttr(membershipAddress, "sso_mode", "REQUIRED"),
+						),
+					},
+				},
+			})
+			api.mu.Lock()
+			defer api.mu.Unlock()
+			if api.created != 1 || api.revoked != 0 || api.deleted != 1 || len(api.patches) != 1 {
+				t.Fatalf("acceptance must update the member without replacing the invite: created=%d revoked=%d deleted=%d patches=%v", api.created, api.revoked, api.deleted, api.patches)
+			}
+		})
+	}
+}
+
+func TestOrganizationMembershipDestroyTrackedPendingInvitation(t *testing.T) {
+	for _, tc := range []struct {
+		name         string
+		missing      bool
+		revokeStatus int
+	}{
+		{name: "downgrade"},
+		{name: "member already removed", missing: true},
+		{name: "revocation forbidden", revokeStatus: http.StatusForbidden},
+		{name: "revocation refused while still pending", revokeStatus: http.StatusUnprocessableEntity},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			s, api := newMembershipAPI(t)
+			api.invitation = map[string]any{"id": "invite", "email": "jane@example.com", "state": "pending", "role": "admin", "sso_mode": "optional"}
+			if !tc.missing {
+				api.member = map[string]any{"id": membershipUserUUID, "email": "jane@example.com", "role": "admin", "sso_mode": "required"}
+			}
+			api.revokeStatus = tc.revokeStatus
+			r := &organizationMembershipResource{client: &Client{organization: "acme", restURL: s.URL, http: s.Client()}}
+			state := organizationMembershipResourceModel{
+				ID: types.StringValue("invite"), UUID: types.StringValue(membershipUserUUID), InvitationID: types.StringValue("invite"),
+				DowngradeOnDestroy: types.BoolValue(true),
+			}
+			err := r.remove(context.Background(), &state)
+			api.mu.Lock()
+			defer api.mu.Unlock()
+			if tc.revokeStatus != 0 {
+				if err == nil || api.invitation["state"] != "pending" || len(api.patches) != 0 || api.deleted != 0 {
+					t.Fatalf("failed revocation must abort destroy without changing membership: err=%v patches=%v deleted=%d", err, api.patches, api.deleted)
+				}
+				return
+			}
+			if err != nil || api.revoked != 1 || api.deleted != 0 {
+				t.Fatalf("must revoke the invitation even if member is retained or absent: err=%v revoked=%d deleted=%d", err, api.revoked, api.deleted)
+			}
+			if !tc.missing && (api.member["role"] != "member" || api.member["sso_mode"] != "required") {
+				t.Fatalf("downgrade must preserve membership SSO mode: %v", api.member)
+			}
+		})
+	}
+}
+
+func TestOrganizationMembershipSafetyGuards(t *testing.T) {
+	for _, tc := range []struct {
+		name, wantError string
+		ownerID         string
+		ownerStatus     int
+		secondary       bool
+	}{
+		{name: "secondary email", secondary: true, wantError: "organization email differs"},
+		{name: "token owner", ownerID: membershipUserUUID, wantError: "cannot manage the API token owner's"},
+		{name: "owner lookup forbidden", ownerStatus: 403, wantError: "unable to identify the API token owner"},
+		{name: "owner lookup missing", ownerStatus: 404, wantError: "unable to identify the API token owner"},
+		{name: "owner UUID missing", wantError: "user UUID missing"},
+	} {
+		for _, operation := range []string{"create", "read", "update", "delete"} {
+			t.Run(tc.name+"/"+operation, func(t *testing.T) {
+				s, api := newMembershipAPI(t)
+				api.member = map[string]any{"id": membershipUserUUID, "email": "jane@example.com", "role": "member", "sso_mode": "required"}
+				api.invitation = map[string]any{"id": "invite", "email": "jane@example.com", "state": "pending", "role": "member", "sso_mode": "required"}
+				api.currentUserID, api.currentUserStatus = tc.ownerID, tc.ownerStatus
+				r := &organizationMembershipResource{client: &Client{organization: "acme", restURL: s.URL, http: s.Client(), genqlient: graphql.NewClient(s.URL+"/graphql", s.Client())}}
+				model := organizationMembershipResourceModel{
+					ID: types.StringValue("invite"), UUID: types.StringValue(membershipUserUUID), InvitationID: types.StringValue("invite"),
+					Email: types.StringValue("jane@example.com"), Role: types.StringValue("MEMBER"), SSOMode: types.StringValue("REQUIRED"),
+					State: types.StringValue("active"), SendInvitation: types.BoolValue(true),
+				}
+				if tc.secondary {
+					model.UUID, model.State = types.StringNull(), types.StringValue("pending")
+					model.Email = types.StringValue("jane.secondary@example.com")
+					api.graphQLEmail = model.Email.ValueString()
+				}
+				if operation == "create" {
+					model.ID, model.UUID, model.InvitationID = types.StringNull(), types.StringNull(), types.StringNull()
+				}
+				var schemaResp frameworkresource.SchemaResponse
+				r.Schema(context.Background(), frameworkresource.SchemaRequest{}, &schemaResp)
+				state := tfsdk.State{Schema: schemaResp.Schema}
+				if diags := state.Set(context.Background(), &model); diags.HasError() {
+					t.Fatal(diags)
+				}
+				plan := tfsdk.Plan{Schema: schemaResp.Schema, Raw: state.Raw}
+				var diagnostics diag.Diagnostics
+				var after tfsdk.State
+				switch operation {
+				case "create":
+					resp := frameworkresource.CreateResponse{State: tfsdk.State{Schema: schemaResp.Schema}}
+					r.Create(context.Background(), frameworkresource.CreateRequest{Plan: plan}, &resp)
+					diagnostics, after = resp.Diagnostics, resp.State
+				case "read":
+					resp := frameworkresource.ReadResponse{State: state}
+					r.Read(context.Background(), frameworkresource.ReadRequest{State: state}, &resp)
+					diagnostics, after = resp.Diagnostics, resp.State
+				case "update":
+					resp := frameworkresource.UpdateResponse{State: state}
+					r.Update(context.Background(), frameworkresource.UpdateRequest{State: state, Plan: plan}, &resp)
+					diagnostics, after = resp.Diagnostics, resp.State
+				case "delete":
+					resp := frameworkresource.DeleteResponse{State: state}
+					r.Delete(context.Background(), frameworkresource.DeleteRequest{State: state}, &resp)
+					diagnostics, after = resp.Diagnostics, resp.State
+				}
+				if !diagnostics.HasError() || !strings.Contains(fmt.Sprint(diagnostics), tc.wantError) {
+					t.Fatalf("expected %q, got %v", tc.wantError, diagnostics)
+				}
+				if (operation == "create" && !after.Raw.IsNull()) || (operation != "create" && !after.Raw.Equal(state.Raw)) {
+					t.Fatal("rejection changed Terraform state")
+				}
+				api.mu.Lock()
+				defer api.mu.Unlock()
+				if api.mutationRequests != 0 {
+					t.Fatalf("rejection sent %d mutation requests", api.mutationRequests)
+				}
+			})
+		}
+	}
+}
+
+func TestOrganizationMembershipSelfImportRejected(t *testing.T) {
+	s, api := newMembershipAPI(t)
+	api.currentUserID = membershipUserUUID
+	api.member = map[string]any{"id": membershipUserUUID, "email": "jane@example.com", "role": "member", "sso_mode": "required"}
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		Steps: []resource.TestStep{{
+			Config:       membershipConfig(s.URL, "email = \"jane@example.com\"\nrole = \"MEMBER\"\nsso_mode = \"REQUIRED\""),
+			ResourceName: membershipAddress, ImportState: true, ImportStateId: membershipUserUUID,
+			ExpectError: regexp.MustCompile("cannot manage the API token owner's"),
+		}},
+	})
+	api.mu.Lock()
+	defer api.mu.Unlock()
+	if api.mutationRequests != 0 {
+		t.Fatalf("self-import sent %d mutations", api.mutationRequests)
+	}
+}
+
+func TestOrganizationMembershipAcceptanceRaceChecksOwner(t *testing.T) {
+	for _, ownerStatus := range []int{0, 404} {
+		for _, operation := range []string{"update", "delete"} {
+			t.Run(fmt.Sprintf("%s/owner_status=%d", operation, ownerStatus), func(t *testing.T) {
+				s, api := newMembershipAPI(t)
+				api.currentUserID, api.currentUserStatus = membershipUserUUID, ownerStatus
+				api.invitation = map[string]any{"id": "invite", "email": "jane@example.com", "state": "pending", "role": "admin", "sso_mode": "optional"}
+				api.acceptOnRevoke = true
+				r := &organizationMembershipResource{client: &Client{organization: "acme", restURL: s.URL, http: s.Client(), genqlient: graphql.NewClient(s.URL+"/graphql", s.Client())}}
+				state := organizationMembershipResourceModel{
+					ID: types.StringValue("invite"), InvitationID: types.StringValue("invite"), Email: types.StringValue("jane@example.com"),
+					Role: types.StringValue("MEMBER"), SSOMode: types.StringValue("REQUIRED"), SendInvitation: types.BoolValue(true),
+				}
+				var err error
+				if operation == "update" {
+					err = r.apply(context.Background(), &state)
+				} else {
+					err = r.remove(context.Background(), &state)
+				}
+				api.mu.Lock()
+				defer api.mu.Unlock()
+				if err == nil || !strings.Contains(err.Error(), "API token owner") || api.member == nil || api.mutationRequests != 1 || api.deleted != 0 || len(api.patches) != 0 {
+					t.Fatalf("acceptance race bypassed owner guard: err=%v mutations=%d deleted=%d patches=%v", err, api.mutationRequests, api.deleted, api.patches)
+				}
+			})
+		}
+	}
+}
+
+func TestOrganizationMembershipAcceptanceRaces(t *testing.T) {
+	for _, operation := range []string{"update", "remove", "downgrade"} {
+		t.Run(operation, func(t *testing.T) {
+			s, api := newMembershipAPI(t)
+			api.invitation = map[string]any{"id": "invite", "email": "jane@example.com", "state": "pending", "role": "admin", "sso_mode": "optional"}
+			api.acceptOnRevoke = true
+			r := &organizationMembershipResource{client: &Client{organization: "acme", restURL: s.URL, http: s.Client(), genqlient: graphql.NewClient(s.URL+"/graphql", s.Client())}}
+			state := organizationMembershipResourceModel{
+				ID: types.StringValue("invite"), Email: types.StringValue("jane@example.com"), InvitationID: types.StringValue("invite"),
+				Role: types.StringValue("MEMBER"), SSOMode: types.StringValue("REQUIRED"), SendInvitation: types.BoolValue(true),
+				DowngradeOnDestroy: types.BoolValue(operation == "downgrade"),
+			}
+			var err error
+			if operation == "update" {
+				err = r.apply(context.Background(), &state)
+			} else {
+				err = r.remove(context.Background(), &state)
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+			api.mu.Lock()
+			defer api.mu.Unlock()
+			if api.created != 0 || api.revoked != 0 {
+				t.Fatal("accepted invitation was replaced or revoked")
+			}
+			if operation == "remove" {
+				if api.deleted != 1 || api.member != nil {
+					t.Fatal("accepted member was left behind")
+				}
+			} else {
+				wantSSO := "optional"
+				if operation == "update" {
+					wantSSO = "required"
+				}
+				if api.deleted != 0 || api.member["role"] != "member" || api.member["sso_mode"] != wantSSO {
+					t.Fatalf("wrong result after acceptance race: %v", api.member)
+				}
+			}
+		})
+	}
+}
+
+func TestOrganizationMembershipReadErrorsPreserveState(t *testing.T) {
+	for _, status := range []int{403, 404, 500} {
+		t.Run(fmt.Sprint(status), func(t *testing.T) {
+			s, api := newMembershipAPI(t)
+			api.status = status
+			r := &organizationMembershipResource{client: &Client{organization: "acme", restURL: s.URL, http: s.Client()}}
+			var schemaResp frameworkresource.SchemaResponse
+			r.Schema(context.Background(), frameworkresource.SchemaRequest{}, &schemaResp)
+			state := tfsdk.State{Schema: schemaResp.Schema}
+			model := organizationMembershipResourceModel{ID: types.StringValue(membershipUserUUID), UUID: types.StringValue(membershipUserUUID)}
+			if diags := state.Set(context.Background(), &model); diags.HasError() {
+				t.Fatal(diags)
+			}
+			response := frameworkresource.ReadResponse{State: state}
+			r.Read(context.Background(), frameworkresource.ReadRequest{State: state}, &response)
+			if status == 404 {
+				if response.Diagnostics.HasError() || !response.State.Raw.IsNull() {
+					t.Fatal("404 must remove the resource")
+				}
+			} else if !response.Diagnostics.HasError() || !response.State.Raw.Equal(state.Raw) {
+				t.Fatal("API error must be reported without losing state")
+			}
+		})
+	}
+}
+
+type membershipDeadlineTransport struct {
+	http.RoundTripper
+	deadlines []time.Time
+}
+
+func (t *membershipDeadlineTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	deadline, _ := req.Context().Deadline()
+	t.deadlines = append(t.deadlines, deadline)
+	return t.RoundTripper.RoundTrip(req)
+}
+
+func TestOrganizationMembershipOperationDeadlines(t *testing.T) {
+	// Distinct budgets catch accidentally using the read timeout for every operation.
+	budgets := map[string]time.Duration{"create": time.Hour, "read": 2 * time.Hour, "update": 3 * time.Hour, "delete": 4 * time.Hour}
+	attributeTypes := map[string]attr.Type{}
+	attributeValues := map[string]attr.Value{}
+	for operation, budget := range budgets {
+		attributeTypes[operation] = types.StringType
+		attributeValues[operation] = types.StringValue(budget.String())
+	}
+
+	for operation, budget := range budgets {
+		for _, configured := range []time.Duration{budget, 0, -time.Hour} {
+			t.Run(operation+"/"+configured.String(), func(t *testing.T) {
+				attributeValues[operation] = types.StringValue(configured.String())
+				defer func() { attributeValues[operation] = types.StringValue(budget.String()) }()
+				wantBudget := budget
+				if configured <= 0 {
+					wantBudget = DefaultTimeout
+				}
+				s, api := newMembershipAPI(t)
+				api.member = map[string]any{"id": membershipUserUUID, "email": "jane@example.com", "role": "member", "sso_mode": "required"}
+				transport := &membershipDeadlineTransport{RoundTripper: s.Client().Transport}
+				r := &organizationMembershipResource{client: &Client{
+					organization: "acme", restURL: s.URL, http: &http.Client{Transport: transport},
+					genqlient: graphql.NewClient(s.URL+"/graphql", &http.Client{Transport: transport}),
+					timeouts:  timeouts.Value{Object: types.ObjectValueMust(attributeTypes, attributeValues)},
+				}}
+				model := organizationMembershipResourceModel{
+					ID: types.StringValue(membershipUserUUID), UUID: types.StringValue(membershipUserUUID),
+					Email: types.StringValue("jane@example.com"), Role: types.StringValue("ADMIN"), SSOMode: types.StringValue("REQUIRED"),
+				}
+				if operation == "read" {
+					// Pending refresh reads the invitation and performs a GraphQL lookup.
+					api.member = nil
+					api.invitation = map[string]any{"id": "invite", "email": "jane@example.com", "state": "pending", "role": "member", "sso_mode": "required"}
+					model.ID, model.InvitationID = types.StringValue("invite"), types.StringValue("invite")
+					model.UUID = types.StringNull()
+				}
+				ctx := context.Background()
+				var schemaResp frameworkresource.SchemaResponse
+				r.Schema(ctx, frameworkresource.SchemaRequest{}, &schemaResp)
+				state := tfsdk.State{Schema: schemaResp.Schema}
+				if diags := state.Set(ctx, &model); diags.HasError() {
+					t.Fatal(diags)
+				}
+				plan := tfsdk.Plan{Schema: schemaResp.Schema, Raw: state.Raw}
+				var diagnostics diag.Diagnostics
+				started := time.Now()
+				switch operation {
+				case "create":
+					response := frameworkresource.CreateResponse{State: state}
+					r.Create(ctx, frameworkresource.CreateRequest{Plan: plan}, &response)
+					diagnostics = response.Diagnostics
+				case "read":
+					response := frameworkresource.ReadResponse{State: state}
+					r.Read(ctx, frameworkresource.ReadRequest{State: state}, &response)
+					diagnostics = response.Diagnostics
+				case "update":
+					response := frameworkresource.UpdateResponse{State: state}
+					r.Update(ctx, frameworkresource.UpdateRequest{State: state, Plan: plan}, &response)
+					diagnostics = response.Diagnostics
+				case "delete":
+					response := frameworkresource.DeleteResponse{State: state}
+					r.Delete(ctx, frameworkresource.DeleteRequest{State: state}, &response)
+					diagnostics = response.Diagnostics
+				}
+				finished := time.Now()
+				if diagnostics.HasError() {
+					t.Fatal(diagnostics)
+				}
+				wantRequests := 3 // Member GET, token-owner GET, and mutation.
+				if operation == "read" {
+					wantRequests = 2 // Pending invitation GET and GraphQL miss.
+				}
+				if len(transport.deadlines) != wantRequests {
+					t.Fatalf("expected %d requests sharing an operation deadline, got %v", wantRequests, transport.deadlines)
+				}
+				for _, deadline := range transport.deadlines {
+					if deadline.Before(started.Add(wantBudget)) || deadline.After(finished.Add(wantBudget)) {
+						t.Errorf("request deadline %s does not use the %s budget of %s", deadline, operation, wantBudget)
+					}
+					if !deadline.Equal(transport.deadlines[0]) {
+						t.Error("each request received a fresh deadline instead of sharing the operation budget")
+					}
+				}
+			})
+		}
+	}
+}

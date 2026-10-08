@@ -3,6 +3,7 @@ query GetOrganizationMemberByEmail(
     $email: String
 ) {
     organization(slug: $slug) {
+        id
         members(first: 1, email: $email) {
             edges {
                 node {

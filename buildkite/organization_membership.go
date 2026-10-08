@@ -1,0 +1,167 @@
+package buildkite
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"net/http"
+	"net/url"
+	"strings"
+)
+
+var errOrganizationMembershipNotFound = errors.New("organization member or invitation not found")
+
+type organizationMembershipMember struct {
+	ID      string  `json:"id"`
+	Email   string  `json:"email"`
+	Role    string  `json:"role"`
+	SSOMode *string `json:"sso_mode"`
+}
+
+type organizationMembershipInvitation struct {
+	ID         string                        `json:"id"`
+	Email      string                        `json:"email"`
+	State      string                        `json:"state"`
+	Role       string                        `json:"role"`
+	SSOMode    string                        `json:"sso_mode"`
+	AcceptedBy *organizationMembershipMember `json:"accepted_by"`
+	Teams      []struct {
+		ID string `json:"id"`
+	} `json:"teams"`
+}
+
+func (c *Client) organizationMembershipPath(collection, id string) string {
+	p := "/v2/organizations/" + url.PathEscape(c.organization) + "/" + collection
+	if id != "" {
+		p += "/" + url.PathEscape(id)
+	}
+	return p
+}
+
+func (c *Client) getOrganizationMembershipMember(ctx context.Context, id string) (*organizationMembershipMember, error) {
+	var member organizationMembershipMember
+	err := c.makeRequest(ctx, http.MethodGet, c.organizationMembershipPath("members", id), nil, &member)
+	if isAPIStatus(err, http.StatusNotFound) {
+		return nil, errOrganizationMembershipNotFound
+	}
+	return &member, err
+}
+
+func (c *Client) findOrganizationMembershipMember(ctx context.Context, email string) (*organizationMembershipMember, error) {
+	result, err := GetOrganizationMemberByEmail(ctx, c.genqlient, c.organization, email)
+	if err != nil {
+		return nil, err
+	}
+	if result.Organization.Id == "" {
+		return nil, fmt.Errorf("organization member lookup did not return the organization; check token access and graphql scope")
+	}
+	if len(result.Organization.Members.Edges) == 0 {
+		return nil, errOrganizationMembershipNotFound
+	}
+	id := result.Organization.Members.Edges[0].Node.User.Uuid
+	if id == "" {
+		return nil, fmt.Errorf("organization member lookup omitted the user UUID")
+	}
+	member, err := c.getOrganizationMembershipMember(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	if member.ID != id {
+		return nil, fmt.Errorf("organization member response did not match the requested user UUID")
+	}
+	// GraphQL matches all attached emails, including unverified secondary ones.
+	// Preserve REST adoption semantics: only the organization's displayed email
+	// may select a member. Known UUIDs and accepted_by bypass this email lookup.
+	if !strings.EqualFold(member.Email, email) {
+		return nil, fmt.Errorf("configured email matches an account whose organization email differs; use the member's primary or organization notification email, or identify the member by UUID")
+	}
+	return member, nil
+}
+
+func (c *Client) checkOrganizationMembershipNotSelf(ctx context.Context, memberID string) error {
+	var user struct {
+		ID string `json:"id"`
+	}
+	if err := c.makeRequest(ctx, http.MethodGet, "/v2/user", nil, &user); err != nil {
+		return fmt.Errorf("unable to identify the API token owner (read_user scope required): %w", err)
+	}
+	if user.ID == "" || memberID == "" {
+		return fmt.Errorf("cannot verify membership identity: user UUID missing from API response")
+	}
+	if strings.EqualFold(user.ID, memberID) {
+		return fmt.Errorf("cannot manage the API token owner's organization membership; use a token belonging to a different organization administrator")
+	}
+	return nil
+}
+
+func (c *Client) getOrganizationMembershipInvitation(ctx context.Context, id string) (*organizationMembershipInvitation, error) {
+	var invitation organizationMembershipInvitation
+	err := c.makeRequest(ctx, http.MethodGet, c.organizationMembershipPath("invitations", id), nil, &invitation)
+	if isAPIStatus(err, http.StatusNotFound) {
+		return nil, errOrganizationMembershipNotFound
+	}
+	return &invitation, err
+}
+
+func (c *Client) findOrganizationMembershipInvitation(ctx context.Context, email string) (*organizationMembershipInvitation, error) {
+	base := c.organizationMembershipPath("invitations", "")
+	for next := base + "?per_page=100"; next != ""; {
+		var page struct {
+			Items []organizationMembershipInvitation `json:"items"`
+			Links struct {
+				Next string `json:"next"`
+			} `json:"links"`
+		}
+		if err := c.makeRequest(ctx, http.MethodGet, next, nil, &page); err != nil {
+			return nil, err
+		}
+		for _, invitation := range page.Items {
+			if invitation.State == "pending" && strings.EqualFold(invitation.Email, email) {
+				return &invitation, nil
+			}
+		}
+		if page.Links.Next == "" {
+			break
+		}
+		u, err := url.Parse(page.Links.Next)
+		if err != nil || u.Path != base || u.RequestURI() == next {
+			return nil, fmt.Errorf("invalid invitation pagination link")
+		}
+		// Keep requests on the configured REST host; use the API's cursor unchanged.
+		next = u.RequestURI()
+	}
+	return nil, errOrganizationMembershipNotFound
+}
+
+func (c *Client) createOrganizationMembershipInvitation(ctx context.Context, email, role, ssoMode string) (*organizationMembershipInvitation, error) {
+	var invitations []organizationMembershipInvitation
+	err := c.makeRequest(ctx, http.MethodPost, c.organizationMembershipPath("invitations", ""), map[string]any{
+		"emails": []string{email}, "role": strings.ToLower(role), "sso_mode": strings.ToLower(ssoMode),
+	}, &invitations)
+	if err != nil {
+		return nil, err
+	}
+	if len(invitations) != 1 || invitations[0].ID == "" {
+		return nil, fmt.Errorf("expected one created invitation in the API response")
+	}
+	return &invitations[0], nil
+}
+
+func (c *Client) updateOrganizationMembershipMember(ctx context.Context, member *organizationMembershipMember, role, ssoMode string) (*organizationMembershipMember, error) {
+	payload := map[string]string{}
+	if role != member.Role {
+		payload["role"] = role
+	}
+	if ssoMode != "" && (member.SSOMode == nil || ssoMode != *member.SSOMode) {
+		payload["sso_mode"] = ssoMode
+	}
+	if len(payload) == 0 {
+		return member, nil
+	}
+	var updated organizationMembershipMember
+	err := c.makeRequest(ctx, http.MethodPatch, c.organizationMembershipPath("members", member.ID), payload, &updated)
+	if err != nil {
+		return member, err
+	}
+	return &updated, nil
+}
