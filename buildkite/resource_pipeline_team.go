@@ -105,15 +105,12 @@ func (tp *pipelineTeamResource) Create(ctx context.Context, req resource.CreateR
 		return
 	}
 
-	requestCtx, cancel := mutationContext(ctx, timeouts)
-	defer cancel()
-
 	var apiResponse *createTeamPipelineResponse
 	var alreadyExistsRetries int
-	err := retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
+	err := retryMutation(ctx, timeouts, func(ctx context.Context) *retry.RetryError {
 		var err error
 
-		apiResponse, err = createTeamPipeline(requestCtx,
+		apiResponse, err = createTeamPipeline(ctx,
 			tp.client.genqlient,
 			state.TeamId.ValueString(),
 			state.PipelineId.ValueString(),
@@ -270,11 +267,8 @@ func (tp *pipelineTeamResource) Update(ctx context.Context, req resource.UpdateR
 		return
 	}
 
-	requestCtx, cancel := mutationContext(ctx, timeouts)
-	defer cancel()
-
-	err := retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
-		_, err := updateTeamPipeline(requestCtx, tp.client.genqlient,
+	err := retryMutation(ctx, timeouts, func(ctx context.Context) *retry.RetryError {
+		_, err := updateTeamPipeline(ctx, tp.client.genqlient,
 			state.Id.ValueString(),
 			PipelineAccessLevels(accessLevel),
 		)
@@ -310,11 +304,8 @@ func (tp *pipelineTeamResource) Delete(ctx context.Context, req resource.DeleteR
 		return
 	}
 
-	requestCtx, cancel := mutationContext(ctx, timeout)
-	defer cancel()
-
-	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-		_, err := deleteTeamPipeline(requestCtx, tp.client.genqlient, state.Id.ValueString())
+	err := retryMutation(ctx, timeout, func(ctx context.Context) *retry.RetryError {
+		_, err := deleteTeamPipeline(ctx, tp.client.genqlient, state.Id.ValueString())
 		if err != nil && isResourceNotFoundError(err) {
 			return nil
 		}

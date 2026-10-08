@@ -159,15 +159,12 @@ func (r *clusterCacheRegistryResource) Create(ctx context.Context, req resource.
 		return
 	}
 
-	requestCtx, cancel := mutationContext(ctx, timeout)
-	defer cancel()
-
 	var result *createCacheRegistryResponse
-	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-		organizationID, err := r.cacheRegistryOrganization(requestCtx)
+	err := retryMutation(ctx, timeout, func(ctx context.Context) *retry.RetryError {
+		organizationID, err := r.cacheRegistryOrganization(ctx)
 		if err == nil {
 			var uuid string
-			uuid, err = r.cacheRegistryParent(requestCtx, organizationID, state.ClusterID.ValueString())
+			uuid, err = r.cacheRegistryParent(ctx, organizationID, state.ClusterID.ValueString())
 			if err == nil && uuid == "" {
 				err = errors.New("the configured organization does not contain the requested cluster")
 			}
@@ -177,7 +174,7 @@ func (r *clusterCacheRegistryResource) Create(ctx context.Context, req resource.
 		}
 		if err == nil {
 			log.Printf("Creating cache registry %q in cluster %s ...", state.Name.ValueString(), state.ClusterID.ValueString())
-			result, err = createCacheRegistry(requestCtx, r.client.genqlient, organizationID, state.ClusterID.ValueString(), state.Name.ValueString(), optionalStringPayload(state.Description), optionalStringPayload(state.Emoji), optionalStringPayload(state.Color), cacheRegistryPolicyPayload(state.Policy))
+			result, err = createCacheRegistry(ctx, r.client.genqlient, organizationID, state.ClusterID.ValueString(), state.Name.ValueString(), optionalStringPayload(state.Description), optionalStringPayload(state.Emoji), optionalStringPayload(state.Color), cacheRegistryPolicyPayload(state.Policy))
 			state.OrganizationID = types.StringValue(organizationID)
 			if err != nil && result != nil && result.CacheRegistryCreate.CacheRegistry.Id != "" {
 				return retry.NonRetryableError(err)
@@ -260,18 +257,15 @@ func (r *clusterCacheRegistryResource) Update(ctx context.Context, req resource.
 		return
 	}
 
-	requestCtx, cancel := mutationContext(ctx, timeout)
-	defer cancel()
-
 	var result *updateCacheRegistryResponse
-	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-		_, err := r.lookupCacheRegistry(requestCtx, &state)
+	err := retryMutation(ctx, timeout, func(ctx context.Context) *retry.RetryError {
+		_, err := r.lookupCacheRegistry(ctx, &state)
 		if errors.Is(err, errCacheRegistryAbsent) {
 			err = errors.New("cache registry no longer exists; run terraform plan before applying again")
 		}
 		if err == nil {
 			log.Printf("Updating cache registry with ID %s ...", state.ID.ValueString())
-			result, err = updateCacheRegistry(requestCtx, r.client.genqlient, state.OrganizationID.ValueString(), state.ID.ValueString(), plan.Name.ValueString(), optionalStringPayload(plan.Description), optionalStringPayload(plan.Emoji), optionalStringPayload(plan.Color), cacheRegistryPolicyPayload(plan.Policy))
+			result, err = updateCacheRegistry(ctx, r.client.genqlient, state.OrganizationID.ValueString(), state.ID.ValueString(), plan.Name.ValueString(), optionalStringPayload(plan.Description), optionalStringPayload(plan.Emoji), optionalStringPayload(plan.Color), cacheRegistryPolicyPayload(plan.Policy))
 			if err != nil && result != nil && result.CacheRegistryUpdate.CacheRegistry.Id != "" {
 				return retry.NonRetryableError(err)
 			}
@@ -313,11 +307,8 @@ func (r *clusterCacheRegistryResource) Delete(ctx context.Context, req resource.
 		return
 	}
 
-	requestCtx, cancel := mutationContext(ctx, timeout)
-	defer cancel()
-
-	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-		_, err := r.lookupCacheRegistry(requestCtx, &state)
+	err := retryMutation(ctx, timeout, func(ctx context.Context) *retry.RetryError {
+		_, err := r.lookupCacheRegistry(ctx, &state)
 		if errors.Is(err, errCacheRegistryAbsent) {
 			return nil
 		}
@@ -326,10 +317,10 @@ func (r *clusterCacheRegistryResource) Delete(ctx context.Context, req resource.
 		}
 
 		log.Printf("Deleting cache registry with ID %s ...", state.ID.ValueString())
-		result, err := deleteCacheRegistry(requestCtx, r.client.genqlient, state.OrganizationID.ValueString(), state.ID.ValueString())
+		result, err := deleteCacheRegistry(ctx, r.client.genqlient, state.OrganizationID.ValueString(), state.ID.ValueString())
 		if err != nil {
 			if isCacheRegistryNotFoundError(err) {
-				_, verifyErr := r.lookupCacheRegistry(requestCtx, &state)
+				_, verifyErr := r.lookupCacheRegistry(ctx, &state)
 				if errors.Is(verifyErr, errCacheRegistryAbsent) {
 					return nil
 				}

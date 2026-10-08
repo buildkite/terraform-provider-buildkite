@@ -430,9 +430,6 @@ func TestOperationsGiveEachRequestItsBudget(t *testing.T) {
 		return tftypes.NewValue(listType, []tftypes.Value{str(cidr)})
 	}
 	queueCreated := ok(`{"data":{"clusterQueueCreate":{"clusterQueue":{"id":"queue-id","uuid":"queue-uuid","key":"queue","cluster":{"uuid":"cluster-uuid"}}}}}`)
-	suiteTeams := ok(`{"data":{"suite":{"__typename":"Suite","id":"suite-id","teams":{"pageInfo":{"hasNextPage":false},"edges":[
-		{"node":{"id":"old-edge","accessLevel":"MANAGE_AND_READ","team":{"id":"old-team"}}},
-		{"node":{"id":"new-edge","accessLevel":"MANAGE_AND_READ","team":{"id":"new-team"}}}]}}}}`)
 
 	tests := []struct {
 		name      string
@@ -708,16 +705,19 @@ func TestOperationsGiveEachRequestItsBudget(t *testing.T) {
 			},
 		},
 		{
-			// The PATCH, attaching the new owner, reading the suite's teams, and detaching the old owner
-			// are each a step.
+			// The PATCH, attaching the new owner, and detaching the old owner are each a step. Reading
+			// the suite's teams in between is a lookup, so its pages share one plain timeout.
 			name: "test suite update",
 			responses: []stubResponse{
 				ok(`{"slug":"suite"}`),
 				ok(`{"data":{"teamSuiteCreate":{"teamSuite":{"id":"new-edge"}}}}`),
-				suiteTeams,
+				ok(`{"data":{"suite":{"__typename":"Suite","id":"suite-id","teams":{"pageInfo":{"endCursor":"cursor","hasNextPage":true},"edges":[
+					{"node":{"id":"new-edge","accessLevel":"MANAGE_AND_READ","team":{"id":"new-team"}}}]}}}}`),
+				ok(`{"data":{"suite":{"__typename":"Suite","id":"suite-id","teams":{"pageInfo":{"hasNextPage":false},"edges":[
+					{"node":{"id":"old-edge","accessLevel":"MANAGE_AND_READ","team":{"id":"old-team"}}}]}}}}`),
 				ok(`{"data":{"teamSuiteDelete":{"deletedTeamSuiteID":"old-edge"}}}`),
 			},
-			want: []budget{mutation(updateTimeout, true), mutation(updateTimeout, true), mutation(updateTimeout, true), mutation(updateTimeout, true)},
+			want: []budget{mutation(updateTimeout, true), mutation(updateTimeout, true), lookup(updateTimeout), {updateTimeout, false}, mutation(updateTimeout, true)},
 			run: func(ctx context.Context, t *testing.T, c *Client) diag.Diagnostics {
 				prior := map[string]tftypes.Value{"id": str("suite-id"), "slug": str("suite"), "name": str("suite"), "default_branch": str("main"), "team_owner_id": str("old-team")}
 				return runUpdate(ctx, t, &testSuiteResource{client: c}, prior, with(prior, map[string]tftypes.Value{"team_owner_id": str("new-team")}))

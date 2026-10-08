@@ -104,14 +104,11 @@ func (tr *teamRegistryResource) Create(ctx context.Context, req resource.CreateR
 		return
 	}
 
-	requestCtx, cancel := mutationContext(ctx, timeout)
-	defer cancel()
-
 	log.Printf("Adding team %s to registry %s ...", state.TeamID.ValueString(), state.RegistryID.ValueString())
 	var r *createTeamRegistryResponse
-	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+	err := retryMutation(ctx, timeout, func(ctx context.Context) *retry.RetryError {
 		var err error
-		r, err = createTeamRegistry(requestCtx,
+		r, err = createTeamRegistry(ctx,
 			tr.client.genqlient,
 			state.TeamID.ValueString(),
 			state.RegistryID.ValueString(),
@@ -216,14 +213,11 @@ func (tr *teamRegistryResource) Update(ctx context.Context, req resource.UpdateR
 		return
 	}
 
-	requestCtx, cancel := mutationContext(ctx, timeout)
-	defer cancel()
-
 	log.Printf("Updating team %s in registry %s to %s ...", state.TeamID.ValueString(), state.RegistryID.ValueString(), accessLevel)
 	var r *updateTeamRegistryResponse
-	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+	err := retryMutation(ctx, timeout, func(ctx context.Context) *retry.RetryError {
 		var err error
-		r, err = updateTeamRegistry(requestCtx,
+		r, err = updateTeamRegistry(ctx,
 			tr.client.genqlient,
 			state.ID.ValueString(),
 			RegistryAccessLevels(accessLevel),
@@ -261,12 +255,9 @@ func (tr *teamRegistryResource) Delete(ctx context.Context, req resource.DeleteR
 		return
 	}
 
-	requestCtx, cancel := mutationContext(ctx, timeout)
-	defer cancel()
-
 	log.Printf("Deleting team %s's access to registry %s ...", state.TeamID.ValueString(), state.RegistryID.ValueString())
-	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-		_, err := deleteTeamRegistry(requestCtx,
+	err := retryMutation(ctx, timeout, func(ctx context.Context) *retry.RetryError {
+		_, err := deleteTeamRegistry(ctx,
 			tr.client.genqlient,
 			state.ID.ValueString(),
 		)

@@ -150,16 +150,13 @@ func (or *organizationRuleResource) Create(ctx context.Context, req resource.Cre
 		return
 	}
 
-	requestCtx, cancel := mutationContext(ctx, timeout)
-	defer cancel()
-
 	var r *createOrganizationRuleResponse
-	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-		org, err := or.client.GetOrganizationID(requestCtx)
+	err := retryMutation(ctx, timeout, func(ctx context.Context) *retry.RetryError {
+		org, err := or.client.GetOrganizationID(ctx)
 		if err == nil {
 			log.Printf("Creating organization rule ...")
 			r, err = createOrganizationRule(
-				requestCtx,
+				ctx,
 				or.client.genqlient,
 				*org,
 				plan.Description.ValueStringPointer(),
@@ -392,15 +389,12 @@ func (or *organizationRuleResource) Update(ctx context.Context, req resource.Upd
 		return
 	}
 
-	requestCtx, cancel := mutationContext(ctx, timeout)
-	defer cancel()
-
 	var r *updateOrganizationRuleResponse
-	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-		org, err := or.client.GetOrganizationID(requestCtx)
+	err := retryMutation(ctx, timeout, func(ctx context.Context) *retry.RetryError {
+		org, err := or.client.GetOrganizationID(ctx)
 		if err == nil {
 			log.Printf("Updating organization rule with ID %s ...", state.ID.ValueString())
-			r, err = updateOrganizationRule(requestCtx,
+			r, err = updateOrganizationRule(ctx,
 				or.client.genqlient,
 				*org,
 				state.ID.ValueString(),
@@ -450,15 +444,12 @@ func (or *organizationRuleResource) Delete(ctx context.Context, req resource.Del
 		return
 	}
 
-	requestCtx, cancel := mutationContext(ctx, timeout)
-	defer cancel()
-
-	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-		org, err := or.client.GetOrganizationID(requestCtx)
+	err := retryMutation(ctx, timeout, func(ctx context.Context) *retry.RetryError {
+		org, err := or.client.GetOrganizationID(ctx)
 		if err == nil {
 			log.Printf("Deleting organization rule with ID %s ...", state.ID.ValueString())
 			_, err = deleteOrganizationRule(
-				requestCtx,
+				ctx,
 				or.client.genqlient,
 				*org,
 				state.ID.ValueString(),
