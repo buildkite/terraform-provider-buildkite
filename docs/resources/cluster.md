@@ -91,7 +91,8 @@ created, so a configured false plans one more update after that queue is added. 
 adopts the Cluster's current setting.
 Reading and changing it is done through the REST API, so the API token needs the `read_clusters`
 and `write_clusters` scopes and permission to manage the Cluster. Without `read_clusters` or permission to
-manage the Cluster, the last known value is kept, and a change made outside Terraform is not detected.
+manage the Cluster, the last known value is kept, and a change made outside Terraform is not detected. The
+same happens, with a warning, when a read fails for another reason, such as the REST API rate limit.
 - `hosted_git_mirror_enabled` (Boolean) Whether hosted agents in this Cluster keep a git mirror of the repositories they check out, to
 speed up checkouts. This only applies to a Cluster with at least one hosted queue: a new Cluster has
 it disabled, so it can only be set to false when the Cluster is created, and the API refuses to
@@ -100,7 +101,8 @@ to the hosted agents platform, and the change fails if that sync does. Leaving t
 Cluster's current setting.
 Reading and changing it is done through the REST API, so the API token needs the `read_clusters`
 and `write_clusters` scopes and permission to manage the Cluster. Without `read_clusters` or permission to
-manage the Cluster, the last known value is kept, and a change made outside Terraform is not detected.
+manage the Cluster, the last known value is kept, and a change made outside Terraform is not detected. The
+same happens, with a warning, when a read fails for another reason, such as the REST API rate limit.
 
 ### Read-Only
 

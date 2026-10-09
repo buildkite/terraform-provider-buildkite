@@ -49,7 +49,8 @@ const hostedSettingsRequirement = "hosted_git_mirror_enabled and hosted_containe
 // hostedSettingsAccess ends both hosted cache settings' descriptions
 const hostedSettingsAccess = "Reading and changing it is done through the REST API, so the API token needs the `read_clusters`\n" +
 	"and `write_clusters` scopes and permission to manage the Cluster. Without `read_clusters` or permission to\n" +
-	"manage the Cluster, the last known value is kept, and a change made outside Terraform is not detected.\n"
+	"manage the Cluster, the last known value is kept, and a change made outside Terraform is not detected. The\n" +
+	"same happens, with a warning, when a read fails for another reason, such as the REST API rate limit.\n"
 
 func newClusterResource() resource.Resource {
 	return &clusterResource{}
@@ -311,24 +312,20 @@ func (c *clusterResource) Read(ctx context.Context, req resource.ReadRequest, re
 		updateClusterResourceState(&state, *clusterNode)
 
 		settings, err := c.getClusterHostedSettings(ctx, state.UUID.ValueString())
-		if isAPIStatus(err, http.StatusForbidden) || isAPIStatus(err, http.StatusNotFound) {
-			// A token that reads the cluster over GraphQL but not over REST keeps the last known settings
-			// rather than failing every refresh: one without the read_clusters scope is refused, and a
-			// cluster outside the provider's organization is not found. That only needs saying where there
-			// are settings to keep.
-			if !state.HostedGitMirrorEnabled.IsNull() || !state.HostedContainerCacheEnabled.IsNull() {
+		if err != nil {
+			// The settings come over REST, which can fail where GraphQL has just read the cluster: a token
+			// without the read_clusters scope is refused, a cluster outside the provider's organization is
+			// not found, and REST has its own rate limit. None of that should fail a refresh that may not
+			// involve these settings at all, so the last known values are kept. A refusal with nothing to
+			// keep is a token that never reads them, which is not worth a warning on every refresh.
+			refused := isAPIStatus(err, http.StatusForbidden) || isAPIStatus(err, http.StatusNotFound)
+			if !refused || !state.HostedGitMirrorEnabled.IsNull() || !state.HostedContainerCacheEnabled.IsNull() {
 				resp.Diagnostics.AddWarning(
 					"Unable to read the Cluster's hosted cache settings",
-					fmt.Sprintf("Cluster %s was read, but its hosted cache settings were refused, keeping the last known values. The API token needs the read_clusters scope, and the Cluster must belong to the provider's organization: %s", state.Name.ValueString(), err.Error()),
+					fmt.Sprintf("Cluster %s was read, but its hosted cache settings could not be, keeping the last known values. Reading them needs the read_clusters scope and a Cluster in the provider's organization: %s", state.Name.ValueString(), err.Error()),
 				)
 			}
 			settings = &clusterHostedSettings{}
-		} else if err != nil {
-			resp.Diagnostics.AddError(
-				"Unable to read the Cluster's hosted cache settings",
-				fmt.Sprintf("Cluster %s was read, but its hosted cache settings are unavailable: %s", state.Name.ValueString(), err.Error()),
-			)
-			return
 		}
 		setClusterHostedSettings(&state, settings)
 

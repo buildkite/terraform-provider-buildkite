@@ -45,7 +45,7 @@ type fakeClusterAPI struct {
 	// without the hosted cache settings
 	unmanaged bool
 	// readStatus, when set, fails REST reads with that status: 403 is a token without the read_clusters
-	// scope, and 404 a cluster outside the provider's organization
+	// scope, 404 a cluster outside the provider's organization, and 429 the REST rate limit
 	readStatus int
 	// patches holds the body of every REST cluster update, in order
 	patches []string
@@ -151,6 +151,7 @@ func (a *fakeClusterAPI) graphql(w http.ResponseWriter, r *http.Request) {
 // rest serves the REST cluster, which carries the hosted cache settings that GraphQL does not
 func (a *fakeClusterAPI) rest(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet && a.readStatus != 0 {
+		w.Header().Set("RateLimit-Reset", "10")
 		http.Error(w, `{"message":"refused"}`, a.readStatus)
 		return
 	}
@@ -837,6 +838,37 @@ func TestUnitBuildkiteClusterRefusesAnUnknownHostedCacheSettingWhenCreating(t *t
 				}
 				`,
 				ExpectError: regexp.MustCompile(`Cannot enable hosted_git_mirror_enabled when creating or replacing a Cluster`),
+			},
+		},
+	})
+}
+
+// A REST read that keeps failing, as it does on the rate limit, keeps the last known settings with a
+// warning rather than failing a refresh that GraphQL has already read the cluster for
+func TestUnitBuildkiteClusterWithTheHostedCacheSettingsRateLimited(t *testing.T) {
+	server, api := newFakeClusterAPI(t)
+
+	const name = "buildkite_cluster.test"
+	// the client waits out the rate limit's 10 second reset, which this read timeout does not allow
+	config := strings.Replace(fakeClusterConfig(server, ``), `api_token    = "fake"`, `api_token    = "fake"
+		timeouts = { read = "1s" }`, 1)
+
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config: config,
+				Check:  resource.TestCheckResourceAttr(name, "hosted_container_cache_enabled", "false"),
+			},
+			{
+				PreConfig: func() {
+					api.mu.Lock()
+					defer api.mu.Unlock()
+					api.readStatus = http.StatusTooManyRequests
+					api.containerCache = true
+				},
+				RefreshState: true,
+				Check:        resource.TestCheckResourceAttr(name, "hosted_container_cache_enabled", "false"),
 			},
 		},
 	})
