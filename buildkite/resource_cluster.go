@@ -3,6 +3,7 @@ package buildkite
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"regexp"
 
 	"github.com/MakeNowJust/heredoc"
@@ -10,6 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	resource_schema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
@@ -22,14 +24,33 @@ type clusterResource struct {
 }
 
 type clusterResourceModel struct {
-	ID                      types.String `tfsdk:"id"`
-	Name                    types.String `tfsdk:"name"`
-	Description             types.String `tfsdk:"description"`
-	Emoji                   types.String `tfsdk:"emoji"`
-	Color                   types.String `tfsdk:"color"`
-	UUID                    types.String `tfsdk:"uuid"`
-	AgentTracingServiceUUID types.String `tfsdk:"agent_tracing_service_uuid"`
+	ID                          types.String `tfsdk:"id"`
+	Name                        types.String `tfsdk:"name"`
+	Description                 types.String `tfsdk:"description"`
+	Emoji                       types.String `tfsdk:"emoji"`
+	Color                       types.String `tfsdk:"color"`
+	UUID                        types.String `tfsdk:"uuid"`
+	AgentTracingServiceUUID     types.String `tfsdk:"agent_tracing_service_uuid"`
+	HostedGitMirrorEnabled      types.Bool   `tfsdk:"hosted_git_mirror_enabled"`
+	HostedContainerCacheEnabled types.Bool   `tfsdk:"hosted_container_cache_enabled"`
 }
+
+// hostedSettingsRequirement explains why the hosted cache settings cannot be enabled on a new cluster: the
+// API refuses to change them until the cluster has a hosted queue, and a queue needs the cluster first.
+const hostedSettingsRequirement = "hosted_git_mirror_enabled and hosted_container_cache_enabled can only be changed " +
+	"once the Cluster has at least one hosted queue (a buildkite_cluster_queue with hosted_agents). " +
+	"A new Cluster has both disabled, so they can only be set to false when it is created, and a tainted, " +
+	"replaced, or externally deleted Cluster is created again from scratch. " +
+	"Create the Cluster and its hosted queue first, then enable these attributes in a later apply. " +
+	"A value not known until apply is refused when creating too, since it could be true: use a literal false, " +
+	"or leave the attribute unset. " +
+	"If an apply is failing on this, remove the attributes, apply so the hosted queue is created, then add them back."
+
+// hostedSettingsAccess ends both hosted cache settings' descriptions
+const hostedSettingsAccess = "Reading and changing it is done through the REST API, so the API token needs the `read_clusters`\n" +
+	"and `write_clusters` scopes and permission to manage the Cluster. Without `read_clusters` or permission to\n" +
+	"manage the Cluster, the last known value is kept, and a change made outside Terraform is not detected. The\n" +
+	"same happens, with a warning, when a read fails for another reason, such as the REST API rate limit.\n"
 
 func newClusterResource() resource.Resource {
 	return &clusterResource{}
@@ -46,6 +67,8 @@ func (c *clusterResource) Configure(ctx context.Context, req resource.ConfigureR
 
 	c.client = req.ProviderData.(*Client)
 }
+
+var _ resource.ResourceWithModifyPlan = &clusterResource{}
 
 func (c *clusterResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = resource_schema.Schema{
@@ -119,7 +142,58 @@ func (c *clusterResource) Schema(ctx context.Context, req resource.SchemaRequest
 					stringvalidator.RegexMatches(agentTracingServiceUUIDRegex, `must be a lowercase UUID, such as a notification service's id, or "" to clear the selection`),
 				},
 			},
+			"hosted_git_mirror_enabled": resource_schema.BoolAttribute{
+				Optional: true,
+				Computed: true,
+				MarkdownDescription: heredoc.Doc(`
+					Whether hosted agents in this Cluster keep a git mirror of the repositories they check out, to
+					speed up checkouts. This only applies to a Cluster with at least one hosted queue: a new Cluster has
+					it disabled, so it can only be set to false when the Cluster is created, and the API refuses to
+					change it until the Cluster has a hosted queue, so enable it in a later apply. Changing it is synced
+					to the hosted agents platform, and the change fails if that sync does. Leaving this unset adopts the
+					Cluster's current setting.
+				`) + hostedSettingsAccess,
+				PlanModifiers: []planmodifier.Bool{
+					boolplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"hosted_container_cache_enabled": resource_schema.BoolAttribute{
+				Optional: true,
+				Computed: true,
+				MarkdownDescription: heredoc.Doc(`
+					Whether hosted agents in this Cluster cache container images between jobs. This only applies to a
+					Cluster with at least one hosted queue: a new Cluster has it disabled, so it can only be set to false
+					when the Cluster is created, and the API refuses to change it until the Cluster has a hosted queue,
+					so enable it in a later apply. Buildkite enables it when the Cluster's first hosted queue is
+					created, so a configured false plans one more update after that queue is added. Leaving this unset
+					adopts the Cluster's current setting.
+				`) + hostedSettingsAccess,
+				PlanModifiers: []planmodifier.Bool{
+					boolplanmodifier.UseStateForUnknown(),
+				},
+			},
 		},
+	}
+}
+
+// ModifyPlan refuses to enable the hosted cache settings on a new Cluster, since the API would refuse that
+// anyway once the Cluster had been created, and Terraform would then taint it. A new Cluster has both
+// disabled, so false needs no write and is accepted. A value not known until apply could be true.
+func (c *clusterResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
+	if !req.State.Raw.IsNull() || req.Plan.Raw.IsNull() {
+		return
+	}
+
+	for _, attribute := range []string{"hosted_git_mirror_enabled", "hosted_container_cache_enabled"} {
+		var value types.Bool
+		resp.Diagnostics.Append(req.Config.GetAttribute(ctx, path.Root(attribute), &value)...)
+		if value.IsUnknown() || value.ValueBool() {
+			resp.Diagnostics.AddAttributeError(
+				path.Root(attribute),
+				"Cannot enable "+attribute+" when creating or replacing a Cluster",
+				hostedSettingsRequirement,
+			)
+		}
 	}
 }
 
@@ -175,6 +249,18 @@ func (c *clusterResource) Create(ctx context.Context, req resource.CreateRequest
 	state.UUID = types.StringValue(r.ClusterCreate.Cluster.Uuid)
 	state.AgentTracingServiceUUID = agentTracingServiceUUIDFromAPI(r.ClusterCreate.Cluster.AgentTracingServiceUuid, state.AgentTracingServiceUUID)
 
+	// ModifyPlan keeps the hosted cache settings out of a create, so they are only read here. The cluster
+	// exists already, so a failed read is a warning that leaves them for the next refresh, not a taint.
+	settings, err := c.getClusterHostedSettings(ctx, state.UUID.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddWarning(
+			"Unable to read the Cluster's hosted cache settings",
+			fmt.Sprintf("Cluster %s was created, but its hosted cache settings could not be read: %s", state.Name.ValueString(), err.Error()),
+		)
+		settings = &clusterHostedSettings{}
+	}
+	setClusterHostedSettings(state, settings)
+
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
@@ -224,6 +310,25 @@ func (c *clusterResource) Read(ctx context.Context, req resource.ReadRequest, re
 			return
 		}
 		updateClusterResourceState(&state, *clusterNode)
+
+		settings, err := c.getClusterHostedSettings(ctx, state.UUID.ValueString())
+		if err != nil {
+			// The settings come over REST, which can fail where GraphQL has just read the cluster: a token
+			// without the read_clusters scope is refused, a cluster outside the provider's organization is
+			// not found, and REST has its own rate limit. None of that should fail a refresh that may not
+			// involve these settings at all, so the last known values are kept. A refusal with nothing to
+			// keep is a token that never reads them, which is not worth a warning on every refresh.
+			refused := isAPIStatus(err, http.StatusForbidden) || isAPIStatus(err, http.StatusNotFound)
+			if !refused || !state.HostedGitMirrorEnabled.IsNull() || !state.HostedContainerCacheEnabled.IsNull() {
+				resp.Diagnostics.AddWarning(
+					"Unable to read the Cluster's hosted cache settings",
+					fmt.Sprintf("Cluster %s was read, but its hosted cache settings could not be, keeping the last known values. Reading them needs the read_clusters scope and a Cluster in the provider's organization: %s", state.Name.ValueString(), err.Error()),
+				)
+			}
+			settings = &clusterHostedSettings{}
+		}
+		setClusterHostedSettings(&state, settings)
+
 		resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 	} else {
 		resp.Diagnostics.AddWarning(
@@ -252,42 +357,71 @@ func (c *clusterResource) Update(ctx context.Context, req resource.UpdateRequest
 		return
 	}
 
-	requestCtx, cancel := mutationContext(ctx, timeout)
-	defer cancel()
+	// An update that only changes the hosted cache settings has nothing to send over GraphQL. The settings
+	// written over REST are taken out of the comparison rather than the GraphQL ones listed, so an attribute
+	// added to the mutation later is sent without anyone having to remember this.
+	graphQLPlan := plan
+	graphQLPlan.HostedGitMirrorEnabled = state.HostedGitMirrorEnabled
+	graphQLPlan.HostedContainerCacheEnabled = state.HostedContainerCacheEnabled
 
-	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-		org, err := c.client.GetOrganizationID(requestCtx)
-		if err == nil && clearsAgentTracingService(plan.AgentTracingServiceUUID, state.AgentTracingServiceUUID) {
-			_, err = updateClusterClearingAgentTracingService(requestCtx,
-				c.client.genqlient,
-				*org,
-				state.ID.ValueString(),
-				plan.Name.ValueString(),
-				plan.Description.ValueStringPointer(),
-				plan.Emoji.ValueStringPointer(),
-				plan.Color.ValueStringPointer(),
+	if graphQLPlan != state {
+		requestCtx, cancel := mutationContext(ctx, timeout)
+		defer cancel()
+
+		err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+			org, err := c.client.GetOrganizationID(requestCtx)
+			if err == nil && clearsAgentTracingService(plan.AgentTracingServiceUUID, state.AgentTracingServiceUUID) {
+				_, err = updateClusterClearingAgentTracingService(requestCtx,
+					c.client.genqlient,
+					*org,
+					state.ID.ValueString(),
+					plan.Name.ValueString(),
+					plan.Description.ValueStringPointer(),
+					plan.Emoji.ValueStringPointer(),
+					plan.Color.ValueStringPointer(),
+				)
+			} else if err == nil {
+				_, err = updateCluster(requestCtx,
+					c.client.genqlient,
+					*org,
+					state.ID.ValueString(),
+					plan.Name.ValueString(),
+					plan.Description.ValueStringPointer(),
+					plan.Emoji.ValueStringPointer(),
+					plan.Color.ValueStringPointer(),
+					agentTracingServiceUUIDToWrite(plan.AgentTracingServiceUUID, state.AgentTracingServiceUUID),
+				)
+			}
+
+			return retryContextError(err)
+		})
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Unable to update Cluster",
+				fmt.Sprintf("Unable to update Cluster: %s", err.Error()),
 			)
-		} else if err == nil {
-			_, err = updateCluster(requestCtx,
-				c.client.genqlient,
-				*org,
-				state.ID.ValueString(),
-				plan.Name.ValueString(),
-				plan.Description.ValueStringPointer(),
-				plan.Emoji.ValueStringPointer(),
-				plan.Color.ValueStringPointer(),
-				agentTracingServiceUUIDToWrite(plan.AgentTracingServiceUUID, state.AgentTracingServiceUUID),
-			)
+			return
 		}
+	}
 
-		return retryContextError(err)
-	})
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Unable to update Cluster",
-			fmt.Sprintf("Unable to update Cluster: %s", err.Error()),
-		)
-		return
+	// GraphQL has no hosted cache settings, so they are a second write, over REST. The plan already holds
+	// what this sends and, for a setting it leaves out, what state holds, so the response is not recorded:
+	// it would also fill a setting planned as null, which Terraform refuses as an inconsistent result.
+	if payload := hostedSettingsToWrite(plan, state); payload != nil {
+		settingsCtx, cancel := mutationContext(ctx, timeout)
+		defer cancel()
+
+		if err := c.updateClusterHostedSettings(settingsCtx, state.UUID.ValueString(), payload); err != nil {
+			// the rest of the update has applied, so record it with the settings as they were
+			plan.HostedGitMirrorEnabled = state.HostedGitMirrorEnabled
+			plan.HostedContainerCacheEnabled = state.HostedContainerCacheEnabled
+			resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
+			resp.Diagnostics.AddError(
+				"Unable to update the Cluster's hosted cache settings",
+				fmt.Sprintf("Unable to update the hosted cache settings of Cluster %s: %s", plan.Name.ValueString(), err.Error()),
+			)
+			return
+		}
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
@@ -344,6 +478,70 @@ func updateClusterResourceState(state *clusterResourceModel, res getNodeNodeClus
 	state.Emoji = types.StringPointerValue(res.Emoji)
 	state.Color = types.StringPointerValue(res.Color)
 	state.AgentTracingServiceUUID = agentTracingServiceUUIDFromAPI(res.AgentTracingServiceUuid, state.AgentTracingServiceUUID)
+}
+
+// clusterHostedSettings is both the PATCH body, where an absent key leaves that setting alone, and the
+// REST cluster's settings, which the API leaves out for a token that cannot manage the cluster
+type clusterHostedSettings struct {
+	HostedGitMirrorEnabled      *bool `json:"hosted_git_mirror_enabled,omitempty"`
+	HostedContainerCacheEnabled *bool `json:"hosted_container_cache_enabled,omitempty"`
+}
+
+func (c *clusterResource) getClusterHostedSettings(ctx context.Context, clusterUUID string) (*clusterHostedSettings, error) {
+	var settings clusterHostedSettings
+	path := fmt.Sprintf("/v2/organizations/%s/clusters/%s", c.client.organization, clusterUUID)
+	if err := c.client.makeRequest(ctx, http.MethodGet, path, nil, &settings); err != nil {
+		return nil, err
+	}
+	return &settings, nil
+}
+
+func (c *clusterResource) updateClusterHostedSettings(ctx context.Context, clusterUUID string, payload *clusterHostedSettings) error {
+	path := fmt.Sprintf("/v2/organizations/%s/clusters/%s", c.client.organization, clusterUUID)
+	// the response is not recorded, see Update, but makeRequest decodes it and fails on a nil target
+	err := c.client.makeRequest(ctx, http.MethodPatch, path, payload, &struct{}{})
+	// with booleans to send, the API only refuses them for a cluster without a hosted queue
+	if isAPIStatus(err, http.StatusUnprocessableEntity) {
+		return fmt.Errorf("%w\n\n%s", err, hostedSettingsRequirement)
+	}
+	return err
+}
+
+// hostedSettingsToWrite returns the configured settings that differ from the current ones, or nil when
+// there are none. Sending only those keeps a git mirror sync out of an update that does not change it.
+func hostedSettingsToWrite(plan, current clusterResourceModel) *clusterHostedSettings {
+	changed := func(planned, existing types.Bool) *bool {
+		if planned.IsNull() || planned.IsUnknown() || planned.Equal(existing) {
+			return nil
+		}
+		return planned.ValueBoolPointer()
+	}
+
+	payload := clusterHostedSettings{
+		HostedGitMirrorEnabled:      changed(plan.HostedGitMirrorEnabled, current.HostedGitMirrorEnabled),
+		HostedContainerCacheEnabled: changed(plan.HostedContainerCacheEnabled, current.HostedContainerCacheEnabled),
+	}
+	if payload.HostedGitMirrorEnabled == nil && payload.HostedContainerCacheEnabled == nil {
+		return nil
+	}
+	return &payload
+}
+
+// setClusterHostedSettings records the settings the API reported. One it left out keeps the last known
+// value, or becomes null where there is none, rather than failing the read.
+func setClusterHostedSettings(state *clusterResourceModel, settings *clusterHostedSettings) {
+	fromAPI := func(remote *bool, prior types.Bool) types.Bool {
+		if remote != nil {
+			return types.BoolValue(*remote)
+		}
+		if prior.IsUnknown() {
+			return types.BoolNull()
+		}
+		return prior
+	}
+
+	state.HostedGitMirrorEnabled = fromAPI(settings.HostedGitMirrorEnabled, state.HostedGitMirrorEnabled)
+	state.HostedContainerCacheEnabled = fromAPI(settings.HostedContainerCacheEnabled, state.HostedContainerCacheEnabled)
 }
 
 // agentTracingServiceUUIDRegex accepts a lowercase UUID, or "" to clear the selection

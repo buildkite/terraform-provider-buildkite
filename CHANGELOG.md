@@ -5,6 +5,7 @@
 ### Features
 
 * Add the `buildkite_cluster_cache_registry` resource.
+* SUP-7777: Add `hosted_git_mirror_enabled` and `hosted_container_cache_enabled` to `buildkite_cluster`.
 
 ## [1.35.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.34.2...v1.35.0)
 

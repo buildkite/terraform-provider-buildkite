@@ -83,6 +83,26 @@ manage the Cluster.
 which would help identify the Cluster's purpose.
 - `emoji` (String) An emoji to use with the Cluster, this can either be set using :buildkite: notation, or with the
 emoji itself, such as 🚀.
+- `hosted_container_cache_enabled` (Boolean) Whether hosted agents in this Cluster cache container images between jobs. This only applies to a
+Cluster with at least one hosted queue: a new Cluster has it disabled, so it can only be set to false
+when the Cluster is created, and the API refuses to change it until the Cluster has a hosted queue,
+so enable it in a later apply. Buildkite enables it when the Cluster's first hosted queue is
+created, so a configured false plans one more update after that queue is added. Leaving this unset
+adopts the Cluster's current setting.
+Reading and changing it is done through the REST API, so the API token needs the `read_clusters`
+and `write_clusters` scopes and permission to manage the Cluster. Without `read_clusters` or permission to
+manage the Cluster, the last known value is kept, and a change made outside Terraform is not detected. The
+same happens, with a warning, when a read fails for another reason, such as the REST API rate limit.
+- `hosted_git_mirror_enabled` (Boolean) Whether hosted agents in this Cluster keep a git mirror of the repositories they check out, to
+speed up checkouts. This only applies to a Cluster with at least one hosted queue: a new Cluster has
+it disabled, so it can only be set to false when the Cluster is created, and the API refuses to
+change it until the Cluster has a hosted queue, so enable it in a later apply. Changing it is synced
+to the hosted agents platform, and the change fails if that sync does. Leaving this unset adopts the
+Cluster's current setting.
+Reading and changing it is done through the REST API, so the API token needs the `read_clusters`
+and `write_clusters` scopes and permission to manage the Cluster. Without `read_clusters` or permission to
+manage the Cluster, the last known value is kept, and a change made outside Terraform is not detected. The
+same happens, with a warning, when a read fails for another reason, such as the REST API rate limit.
 
 ### Read-Only
 
