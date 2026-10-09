@@ -156,6 +156,7 @@ func (tf *terraformProvider) Resources(context.Context) []func() resource.Resour
 		newClusterResource,
 		newClusterSecretResource,
 		newDefaultQueueClusterResource,
+		newHostedAgentImageResource,
 		newNotificationServiceResource,
 		newOrganizationBannerResource,
 		newOrganizationMembershipResource,
