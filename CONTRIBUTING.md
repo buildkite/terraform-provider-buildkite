@@ -153,7 +153,7 @@ Buildkite has two APIs: REST and GraphQL. **New resources should use the GraphQL
 
 Every API call should run under a deadline derived from its operation's configured timeout.
 
-A `Read` (and an import or plan-time lookup, which use the read timeout) derives one context and passes it to every call it makes, including `retry.RetryContext` and paging loops, so the whole read shares one budget:
+A `Read` (and an import or plan-time lookup, which use the read timeout) derives one context and passes it to every call it makes, including `retry.RetryContext` and paging loops, so the whole read shares one budget. Reads have no helper like `retryMutation` below, because a helper would give each retry block its own deadline, and a read cut off at its deadline has nothing to record:
 
 ```go
 timeout, diags := r.client.readTimeout(ctx)
@@ -166,21 +166,27 @@ requestCtx, cancel := context.WithTimeout(ctx, timeout)
 defer cancel()
 ```
 
-A `Create`, `Update` or `Delete` derives a context from `mutationContext` for each step that changes something, meaning each `retry.RetryContext` block or each call made outside one, and passes the parent `ctx` to `retry.RetryContext`:
+A `Create`, `Update` or `Delete` gives each step that changes something its own deadline. A step that retries uses `retryMutation` in place of `retry.RetryContext`. `retryMutation` passes the parent `ctx` to `retry.RetryContext` and hands the function a context from `mutationContext`, so make every call in the block with the `ctx` the function receives:
+
+```go
+err := retryMutation(ctx, timeout, func(ctx context.Context) *retry.RetryError {
+    _, err := archivePipeline(ctx, r.client.genqlient, id)
+    return retryContextError(err)
+})
+```
+
+A call made outside a retry block derives its own context from `mutationContext` and passes it to the call:
 
 ```go
 requestCtx, cancel := mutationContext(ctx, timeout)
 defer cancel()
 
-err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-    _, err := archivePipeline(requestCtx, r.client.genqlient, id)
-    return retryContextError(err)
-})
+_, err := setOrganization2FA(requestCtx, r.client.genqlient, org, enforce)
 ```
 
-`mutationContext` adds 30 seconds to the deadline, matching how long `retry.RetryContext` waits for an attempt still in flight at its timeout. So a mutation that lands just after the timeout is still recorded in state instead of being cancelled, which would leave it applied in Buildkite with no state. A new context per step stops a slow step from using up the time the steps after it need, once the first has already changed something. A helper that takes the timeout, such as `updatePipelineSlug`, derives its own context and takes the parent. A step that only looks something up, such as the repository check before a pipeline webhook is created, changes nothing that needs recording, so it uses a plain `context.WithTimeout` as a read does.
+`mutationContext` adds 30 seconds to the deadline, matching how long `retry.RetryContext` waits for an attempt still in flight at its timeout. So a mutation that lands just after the timeout is still recorded in state instead of being cancelled, which would leave it applied in Buildkite with no state. A new context per step stops a slow step from using up the time the steps after it need, once the first has already changed something. A helper that takes the timeout, such as `updatePipelineSlug`, derives its own context and takes the parent. A step that only looks something up, such as the repository check before a pipeline webhook is created, changes nothing that needs recording, so it uses a plain `context.WithTimeout` as a read does. A lookup that pages, such as `suiteTeams`, shares that one context across its pages and their `retry.RetryContext` calls, the same as a read.
 
-Keep the bare `ctx` for framework calls such as `resp.State.Set`, so state can still be recorded after the budget is spent. A request made without a deadline falls back to the read timeout, which stops it running the retry schedule out, but that fallback applies per request and uses the read timeout whatever the operation.
+Keep the method's own `ctx`, outside any retry block, for framework calls such as `resp.State.Set`, so state can still be recorded after the budget is spent. A request made without a deadline falls back to the read timeout, which stops it running the retry schedule out, but that fallback applies per request and uses the read timeout whatever the operation.
 
 ### Generating GraphQL Code
 

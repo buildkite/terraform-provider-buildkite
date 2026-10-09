@@ -251,13 +251,10 @@ func (p *pipelineResource) Create(ctx context.Context, req resource.CreateReques
 		return
 	}
 
-	createCtx, cancel := mutationContext(ctx, timeouts)
-	defer cancel()
-
 	var response *createPipelineResponse
 	log.Printf("Creating pipeline %s ...", plan.Name.ValueString())
-	err := retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
-		org, err := p.client.GetOrganizationID(createCtx)
+	err := retryMutation(ctx, timeouts, func(ctx context.Context) *retry.RetryError {
+		org, err := p.client.GetOrganizationID(ctx)
 		if err == nil {
 			input := PipelineCreateInput{
 				AllowRebuilds:                        plan.AllowRebuilds.ValueBool(),
@@ -297,7 +294,7 @@ func (p *pipelineResource) Create(ctx context.Context, req resource.CreateReques
 				}
 			}
 
-			response, err = createPipeline(createCtx, p.client.genqlient, input)
+			response, err = createPipeline(ctx, p.client.genqlient, input)
 		}
 		return retryContextError(err)
 	})
@@ -370,11 +367,8 @@ func (p *pipelineResource) Create(ctx context.Context, req resource.CreateReques
 	// Archive last: the REST API rejects updates to archived pipelines, so all REST
 	// calls (slug, provider settings) must complete before the pipeline is archived.
 	if plan.Archived.ValueBool() {
-		archiveCtx, cancel := mutationContext(ctx, timeouts)
-		defer cancel()
-
-		err = retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
-			_, archiveErr := archivePipeline(archiveCtx, p.client.genqlient, state.Id.ValueString())
+		err = retryMutation(ctx, timeouts, func(ctx context.Context) *retry.RetryError {
+			_, archiveErr := archivePipeline(ctx, p.client.genqlient, state.Id.ValueString())
 			return retryContextError(archiveErr)
 		})
 		if err != nil {
@@ -402,14 +396,11 @@ func (p *pipelineResource) Delete(ctx context.Context, req resource.DeleteReques
 		return
 	}
 
-	requestCtx, cancel := mutationContext(ctx, timeout)
-	defer cancel()
-
 	if *p.archiveOnDelete {
 		log.Printf("Pipeline %s set to archive on delete. Archiving...", state.Name.ValueString())
 
-		err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-			_, err := archivePipeline(requestCtx, p.client.genqlient, state.Id.ValueString())
+		err := retryMutation(ctx, timeout, func(ctx context.Context) *retry.RetryError {
+			_, err := archivePipeline(ctx, p.client.genqlient, state.Id.ValueString())
 			return retryContextError(err)
 		})
 		if err != nil {
@@ -421,9 +412,9 @@ func (p *pipelineResource) Delete(ctx context.Context, req resource.DeleteReques
 		return
 	}
 
-	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+	err := retryMutation(ctx, timeout, func(ctx context.Context) *retry.RetryError {
 		log.Printf("Deleting pipeline %s ...", state.Name.ValueString())
-		_, err := deletePipeline(requestCtx, p.client.genqlient, state.Id.ValueString())
+		_, err := deletePipeline(ctx, p.client.genqlient, state.Id.ValueString())
 
 		if err != nil && isResourceNotFoundError(err) {
 			return nil
@@ -1452,11 +1443,8 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 
 	// Unarchive before updating: the API rejects updates to archived pipelines.
 	if state.Archived.ValueBool() && !plan.Archived.ValueBool() {
-		unarchiveCtx, cancel := mutationContext(ctx, timeouts)
-		defer cancel()
-
-		err := retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
-			_, archiveErr := unarchivePipeline(unarchiveCtx, p.client.genqlient, plan.Id.ValueString())
+		err := retryMutation(ctx, timeouts, func(ctx context.Context) *retry.RetryError {
+			_, archiveErr := unarchivePipeline(ctx, p.client.genqlient, plan.Id.ValueString())
 			return retryContextError(archiveErr)
 		})
 		if err != nil {
@@ -1469,14 +1457,11 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 		state.Archived = types.BoolValue(false)
 	}
 
-	updateCtx, cancel := mutationContext(ctx, timeouts)
-	defer cancel()
-
 	var response *updatePipelineResponse
-	err := retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
+	err := retryMutation(ctx, timeouts, func(ctx context.Context) *retry.RetryError {
 		var err error
 		log.Printf("Updating pipeline %s ...", input.Name)
-		response, err = updatePipeline(updateCtx, p.client.genqlient, input)
+		response, err = updatePipeline(ctx, p.client.genqlient, input)
 		return retryContextError(err)
 	})
 	if err != nil {
@@ -1542,12 +1527,9 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 	} else if plan.DefaultTeamId.ValueString() != state.DefaultTeamId.ValueString() {
 		// If the planned default_team_id differs from the state, add the new one and remove the old one
 		alreadyAttached := false
-		attachCtx, cancel := mutationContext(ctx, timeouts)
-		defer cancel()
-
-		err := retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
+		err := retryMutation(ctx, timeouts, func(ctx context.Context) *retry.RetryError {
 			alreadyAttached = false
-			_, err := createTeamPipeline(attachCtx, p.client.genqlient, plan.DefaultTeamId.ValueString(), state.Id.ValueString(), PipelineAccessLevelsManageBuildAndRead)
+			_, err := createTeamPipeline(ctx, p.client.genqlient, plan.DefaultTeamId.ValueString(), state.Id.ValueString(), PipelineAccessLevelsManageBuildAndRead)
 			// A team that is already attached is what re-running this method looks like: the previous
 			// apply attached it and then failed to detach the old one, which is the state this method
 			// records so the next plan retries. Failing here instead would never reach that detach,
@@ -1624,11 +1606,8 @@ func (p *pipelineResource) Update(ctx context.Context, req resource.UpdateReques
 	// Archive after all other updates: archiving earlier would make the REST calls
 	// above fail with "Cannot update an archived pipeline".
 	if needsArchive {
-		archiveCtx, cancel := mutationContext(ctx, timeouts)
-		defer cancel()
-
-		err = retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
-			_, archiveErr := archivePipeline(archiveCtx, p.client.genqlient, plan.Id.ValueString())
+		err = retryMutation(ctx, timeouts, func(ctx context.Context) *retry.RetryError {
+			_, archiveErr := archivePipeline(ctx, p.client.genqlient, plan.Id.ValueString())
 			return retryContextError(archiveErr)
 		})
 		if err != nil {
@@ -1844,11 +1823,8 @@ func updatePipelineSlug(ctx context.Context, slug string, updatedSlug string, cl
 	var pipelineExtraInfo PipelineExtraInfo
 
 	if len(updatedSlug) > 0 {
-		requestCtx, cancel := mutationContext(ctx, timeouts)
-		defer cancel()
-
-		err := retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
-			err := client.makeRequest(requestCtx, http.MethodPatch, fmt.Sprintf("/v2/organizations/%s/pipelines/%s", client.organization, slug), payload, &pipelineExtraInfo)
+		err := retryMutation(ctx, timeouts, func(ctx context.Context) *retry.RetryError {
+			err := client.makeRequest(ctx, http.MethodPatch, fmt.Sprintf("/v2/organizations/%s/pipelines/%s", client.organization, slug), payload, &pipelineExtraInfo)
 			return retryContextError(err)
 		})
 		if err != nil {
@@ -1922,12 +1898,9 @@ func updatePipelineExtraInfo(ctx context.Context, slug string, settings *provide
 		},
 	}
 
-	requestCtx, cancel := mutationContext(ctx, timeouts)
-	defer cancel()
-
 	var pipelineExtraInfo PipelineExtraInfo
-	err := retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
-		err := client.makeRequest(requestCtx, http.MethodPatch, fmt.Sprintf("/v2/organizations/%s/pipelines/%s", client.organization, slug), payload, &pipelineExtraInfo)
+	err := retryMutation(ctx, timeouts, func(ctx context.Context) *retry.RetryError {
+		err := client.makeRequest(ctx, http.MethodPatch, fmt.Sprintf("/v2/organizations/%s/pipelines/%s", client.organization, slug), payload, &pipelineExtraInfo)
 		return retryContextError(err)
 	})
 	if err != nil {
@@ -1956,12 +1929,9 @@ func setPipelineGithubWebhooks(ctx context.Context, slug string, enabled bool, c
 	if enabled {
 		method = "PUT"
 	}
-	requestCtx, cancel := mutationContext(ctx, timeouts)
-	defer cancel()
-
 	var response map[string]any
-	return retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
-		err := client.makeRequest(requestCtx, method, fmt.Sprintf("/v2/organizations/%s/pipelines/%s/github-webhooks", client.organization, slug), nil, &response)
+	return retryMutation(ctx, timeouts, func(ctx context.Context) *retry.RetryError {
+		err := client.makeRequest(ctx, method, fmt.Sprintf("/v2/organizations/%s/pipelines/%s/github-webhooks", client.organization, slug), nil, &response)
 		return retryContextError(err)
 	})
 }

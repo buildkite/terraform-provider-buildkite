@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/shurcooL/graphql"
 )
 
@@ -244,5 +245,42 @@ func TestClientGetOrganizationIDOutlivesAShorterCallersLookup(t *testing.T) {
 	}
 	if err := <-short; !errors.Is(err, context.DeadlineExceeded) {
 		t.Errorf("The short caller's GetOrganizationID() = %v, want its deadline", err)
+	}
+}
+
+// Every attempt of a step shares one deadline, the timeout plus mutationGracePeriod, rather than
+// each retry getting a fresh one.
+func TestRetryMutationGivesEveryAttemptOneDeadline(t *testing.T) {
+	t.Parallel()
+
+	const timeout = 10 * time.Second
+	var deadlines []time.Time
+	before := time.Now()
+	err := retryMutation(t.Context(), timeout, func(ctx context.Context) *retry.RetryError {
+		deadline, ok := ctx.Deadline()
+		if !ok {
+			return retry.NonRetryableError(errors.New("attempt has no deadline"))
+		}
+		deadlines = append(deadlines, deadline)
+		if len(deadlines) == 1 {
+			return retry.RetryableError(errors.New("try again"))
+		}
+		return nil
+	})
+	after := time.Now()
+
+	if err != nil {
+		t.Fatalf("retryMutation() = %v, want nil", err)
+	}
+	if len(deadlines) != 2 {
+		t.Fatalf("retryMutation() made %d attempts, want 2", len(deadlines))
+	}
+	if !deadlines[0].Equal(deadlines[1]) {
+		t.Errorf("Attempt deadlines = %v and %v, want the same", deadlines[0], deadlines[1])
+	}
+	earliest := before.Add(timeout + mutationGracePeriod)
+	latest := after.Add(timeout + mutationGracePeriod)
+	if deadlines[0].Before(earliest) || deadlines[0].After(latest) {
+		t.Errorf("Attempt deadline = %v, want between %v and %v", deadlines[0], earliest, latest)
 	}
 }
