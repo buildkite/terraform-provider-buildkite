@@ -207,7 +207,7 @@ resource "github_repository_webhook" "my_webhook" {
 - `cluster_name` (String) The name of the cluster the pipeline is (optionally) attached to.
 - `id` (String) The GraphQL ID of the pipeline.
 - `uuid` (String) The UUID of the pipeline.
-- `webhook_url` (String) The webhook URL used to trigger builds from VCS providers.
+- `webhook_url` (String) The webhook URL used to trigger builds from VCS providers. Buildkite returns it only to a token that may edit the pipeline, so a refresh with a read-only token keeps the URL already in state, and an update made while state holds none fills it in.
 
 <a id="nestedatt--provider_settings"></a>
 ### Nested Schema for `provider_settings`

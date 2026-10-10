@@ -488,7 +488,17 @@ func (p *pipelineResource) Read(ctx context.Context, req resource.ReadRequest, r
 			return
 		}
 
+		webhookURL := state.WebhookUrl
 		setPipelineModel(&state, pipelineNode)
+		// Buildkite withholds webhookURL from a token that may not edit the pipeline, a read-only
+		// token above all (https://buildkite.com/changelog/368-read-only-api-tokens-no-longer-expose-pipeline-webhook-urls),
+		// so an empty one says nothing about the pipeline: keep the URL the last create or update
+		// stored, which is what the next update returns. Without this a plan refreshed with a
+		// read-only token holds "" and the apply, made with a token that sees the URL, fails
+		// Terraform's consistency check on it.
+		if pipelineNode.GetWebhookURL() == "" && webhookURL.ValueString() != "" {
+			state.WebhookUrl = webhookURL
+		}
 
 		// Refresh provider_settings only when the user configured it, via a dedicated GraphQL query
 		// (kept out of the shared PipelineFields fragment so unrelated reads aren't coupled to the
@@ -846,10 +856,12 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 				},
 			},
 			"webhook_url": schema.StringAttribute{
-				Computed:            true,
-				MarkdownDescription: "The webhook URL used to trigger builds from VCS providers.",
+				Computed: true,
+				MarkdownDescription: "The webhook URL used to trigger builds from VCS providers. Buildkite returns it only to a token " +
+					"that may edit the pipeline, so a refresh with a read-only token keeps the URL already in state, and an " +
+					"update made while state holds none fills it in.",
 				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
+					custom_modifier.UseNonEmptyStateForUnknown(),
 				},
 			},
 			"visibility": schema.StringAttribute{
