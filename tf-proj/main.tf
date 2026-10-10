@@ -2,7 +2,7 @@ terraform {
   required_providers {
     buildkite = {
       source  = "buildkite/buildkite"
-      version = "1.39.2"
+      version = "1.40.0"
     }
   }
 }
