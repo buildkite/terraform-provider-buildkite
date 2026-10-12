@@ -311,7 +311,7 @@ func (c *clusterResource) Read(ctx context.Context, req resource.ReadRequest, re
 		}
 		updateClusterResourceState(&state, *clusterNode)
 
-		settings, err := c.getClusterHostedSettings(ctx, state.UUID.ValueString())
+		settings, err := c.getClusterHostedSettings(requestCtx, state.UUID.ValueString())
 		if err != nil {
 			// The settings come over REST, which can fail where GraphQL has just read the cluster: a token
 			// without the read_clusters scope is refused, a cluster outside the provider's organization is
