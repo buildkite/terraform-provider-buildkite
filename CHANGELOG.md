@@ -6,6 +6,10 @@
 
 * Add the `buildkite_cluster_cache_registry` resource.
 
+### Fixed
+
+* Fix `buildkite_pipeline` updates failing with "Provider produced inconsistent result after apply" when a read-only planning token cannot see `webhook_url` but the apply token can. The URL is now known after apply during updates.
+
 ## [1.35.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.34.2...v1.35.0)
 
 ### Features
