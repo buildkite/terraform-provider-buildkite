@@ -848,9 +848,6 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 			"webhook_url": schema.StringAttribute{
 				Computed:            true,
 				MarkdownDescription: "The webhook URL used to trigger builds from VCS providers.",
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
-				},
 			},
 			"visibility": schema.StringAttribute{
 				Computed:            true,

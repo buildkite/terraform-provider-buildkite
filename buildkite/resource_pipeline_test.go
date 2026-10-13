@@ -8,9 +8,11 @@ import (
 	"log"
 	"maps"
 	"net/http"
+	"net/http/httptest"
 	"os"
 	"regexp"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -21,6 +23,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
+	"github.com/hashicorp/terraform-plugin-testing/tfjsonpath"
 )
 
 func testAccCheckPipelineDestroy(s *terraform.State) error {
@@ -3397,4 +3400,122 @@ func updateWithDefaultTeamSwap(t *testing.T, url, previousTeamID, newTeamID stri
 	p.Update(ctx, req, &resp)
 
 	return resp
+}
+
+// Exercise Terraform's plan/apply consistency checks, not just the attribute modifier:
+// a restricted refresh returns null, while a write-authorized mutation returns the URL.
+func TestUnitPipelineWebhookURLUpdates(t *testing.T) {
+	for _, hideOnRead := range []bool{true, false} {
+		t.Run(fmt.Sprintf("hideOnRead=%t", hideOnRead), func(t *testing.T) {
+			const address = "buildkite_pipeline.test"
+			const originalURL = "https://webhook.buildkite.com/deliver/original"
+			const updatedURL = "https://webhook.buildkite.com/deliver/updated"
+			var mu sync.Mutex
+			var exists bool
+			pipeline := map[string]any{
+				"__typename": "Pipeline", "id": "pipeline-id", "pipelineUuid": "pipeline-uuid",
+				"slug": "test", "badgeURL": "https://badge.buildkite.com/test.svg",
+				"visibility": "PRIVATE", "archived": false, "teams": map[string]any{"edges": []any{}},
+				"webhookURL": originalURL,
+			}
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				mu.Lock()
+				defer mu.Unlock()
+				var request struct {
+					OperationName string `json:"operationName"`
+					Query         string `json:"query"`
+					Variables     struct {
+						Input map[string]any `json:"input"`
+					} `json:"variables"`
+				}
+				if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+					t.Errorf("decode request: %v", err)
+					w.WriteHeader(http.StatusBadRequest)
+					return
+				}
+				var data any
+				switch request.OperationName {
+				case "createPipeline", "updatePipeline":
+					maps.Copy(pipeline, request.Variables.Input)
+					exists = true
+					field := "pipelineCreate"
+					if request.OperationName == "updatePipeline" {
+						field = "pipelineUpdate"
+						pipeline["webhookURL"] = updatedURL
+					}
+					data = map[string]any{field: map[string]any{"pipeline": pipeline}}
+				case "getNode":
+					var node any
+					if exists {
+						read := maps.Clone(pipeline)
+						if hideOnRead {
+							read["webhookURL"] = nil
+						}
+						node = read
+					}
+					data = map[string]any{"node": node}
+				case "deletePipeline":
+					exists = false
+					data = map[string]any{"pipelineDelete": map[string]any{"clientMutationId": nil}}
+				default:
+					if request.OperationName != "" || !strings.Contains(request.Query, "organization(slug:") {
+						t.Errorf("unexpected GraphQL request: %s", request.Query)
+						w.WriteHeader(http.StatusBadRequest)
+						return
+					}
+					data = map[string]any{"organization": map[string]any{"id": "organization-id"}}
+				}
+				w.Header().Set("Content-Type", "application/json")
+				if err := json.NewEncoder(w).Encode(map[string]any{"data": data}); err != nil {
+					t.Errorf("encode response: %v", err)
+				}
+			}))
+			defer server.Close()
+
+			config := func(description string) string {
+				return fmt.Sprintf(`
+provider "buildkite" {
+  organization = "test-org"
+  api_token = "dummy"
+  graphql_url = %q
+  rest_url = %q
+}
+resource "buildkite_pipeline" "test" {
+  name = "test"
+  repository = "https://github.com/example/test.git"
+  description = %q
+}
+`, server.URL, server.URL, description)
+			}
+			resource.UnitTest(t, resource.TestCase{
+				ProtoV6ProviderFactories: protoV6ProviderFactories(),
+				Steps: []resource.TestStep{
+					{
+						Config: config("original"),
+						Check:  resource.TestCheckResourceAttr(address, "webhook_url", originalURL),
+					},
+					// Removing the modifier must not itself cause an update on every plan.
+					{Config: config("original"), PlanOnly: true},
+					{
+						Config: config("updated"),
+						ConfigPlanChecks: resource.ConfigPlanChecks{
+							PreApply: []plancheck.PlanCheck{
+								plancheck.ExpectUnknownValue(address, tfjsonpath.New("webhook_url")),
+							},
+						},
+						Check: resource.ComposeAggregateTestCheckFunc(
+							resource.TestCheckResourceAttr(address, "description", "updated"),
+							resource.TestCheckResourceAttr(address, "webhook_url", updatedURL),
+						),
+					},
+					{Config: config("updated"), PlanOnly: true},
+				},
+			})
+			mu.Lock()
+			defer mu.Unlock()
+			if exists {
+				t.Error("pipeline still exists after destroy")
+			}
+		})
+	}
 }
