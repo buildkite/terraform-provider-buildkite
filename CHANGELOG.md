@@ -8,6 +8,8 @@
 
 ### Fixed
 
+* Preserve Origin pull request settings during refresh and import: skip existing commits, label changes, ready-for-review, reopening, edits, base-branch changes, and submitted reviews. Release requires deployment of all corresponding Buildkite GraphQL fields.
+* New GitHub, GitHub Enterprise, Bitbucket Cloud, and Origin pipelines now retain the server default `true` when `provider_settings` omits `skip_pull_request_builds_for_existing_commits`. Previously, Terraform wrote `false`. Explicit values and existing known values of this setting are unchanged.
 * Fix `buildkite_pipeline` updates failing with "Provider produced inconsistent result after apply" when a read-only planning token cannot see `webhook_url` but the apply token can. The URL is now known after apply during updates.
 
 ## [1.35.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.34.2...v1.35.0)

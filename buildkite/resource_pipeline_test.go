@@ -833,7 +833,7 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_issues", "false"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_pull_requests", "false"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_pull_request_edited", "false"),
-						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.skip_pull_request_builds_for_existing_commits", "false"),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.skip_pull_request_builds_for_existing_commits", "true"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.build_branches", "false"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.publish_commit_status", "false"),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "provider_settings.use_step_key_as_commit_status", "false"),
@@ -3517,5 +3517,175 @@ resource "buildkite_pipeline" "test" {
 				t.Error("pipeline still exists after destroy")
 			}
 		})
+	}
+}
+
+func TestUnitPipelineOriginProviderSettings(t *testing.T) {
+	const address = "buildkite_pipeline.test"
+	fields := []struct {
+		rest         string
+		graphql      string
+		defaultValue bool
+	}{
+		{"skip_pull_request_builds_for_existing_commits", "skipPullRequestBuildsForExistingCommits", true},
+		{"build_pull_request_labels_changed", "buildPullRequestLabelsChanged", false},
+		{"build_pull_request_ready_for_review", "buildPullRequestReadyForReview", false},
+		{"build_pull_request_reopened", "buildPullRequestReopened", false},
+		{"build_pull_request_edited", "buildPullRequestEdited", false},
+		{"build_pull_request_base_branch_changed", "buildPullRequestBaseBranchChanged", false},
+		{"build_pull_request_review_submitted", "buildPullRequestReviewSubmitted", false},
+		{"build_branches", "buildBranches", true},
+		{"build_pull_requests", "buildPullRequests", true},
+		{"build_tags", "buildTags", false},
+		{"publish_commit_status", "publishCommitStatus", true},
+	}
+	settings := map[string]bool{}
+	for _, field := range fields {
+		settings[field.rest] = field.defaultValue
+	}
+	var mu sync.Mutex
+	var exists bool
+	pipeline := map[string]any{
+		"__typename": "Pipeline", "id": "pipeline-id", "pipelineUuid": "pipeline-uuid",
+		"slug": "test", "badgeURL": "https://badge.buildkite.com/test.svg",
+		"visibility": "PRIVATE", "archived": false, "teams": map[string]any{"edges": []any{}},
+	}
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mu.Lock()
+		defer mu.Unlock()
+		w.Header().Set("Content-Type", "application/json")
+		var response any
+		if r.Method == http.MethodPatch && r.URL.Path == "/v2/organizations/test-org/pipelines/test" {
+			var request struct {
+				Settings map[string]any `json:"provider_settings"`
+			}
+			if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+				t.Errorf("decode REST settings: %v", err)
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+			for key, value := range request.Settings {
+				if _, supported := settings[key]; supported {
+					boolean, ok := value.(bool)
+					if !ok {
+						t.Errorf("REST setting %s: expected bool, got %v", key, value)
+						w.WriteHeader(http.StatusBadRequest)
+						return
+					}
+					settings[key] = boolean
+				}
+			}
+			response = map[string]any{"slug": "test", "provider": map[string]any{"settings": settings}}
+		} else {
+			var request struct {
+				OperationName string `json:"operationName"`
+				Query         string `json:"query"`
+				Variables     struct {
+					Input map[string]any `json:"input"`
+				} `json:"variables"`
+			}
+			if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+				t.Errorf("decode GraphQL request: %v", err)
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+			var data any
+			switch request.OperationName {
+			case "createPipeline", "updatePipeline":
+				maps.Copy(pipeline, request.Variables.Input)
+				exists = true
+				field := "pipelineCreate"
+				if request.OperationName == "updatePipeline" {
+					field = "pipelineUpdate"
+				}
+				data = map[string]any{field: map[string]any{"pipeline": pipeline}}
+			case "getNode":
+				var node any
+				if exists {
+					node = pipeline
+				}
+				data = map[string]any{"node": node}
+			case "getPipelineId":
+				data = map[string]any{"pipeline": map[string]any{"id": "pipeline-id"}}
+			case "getPipelineProviderSettings":
+				// A GraphQL response contains only fields selected on the Origin type.
+				_, selection, _ := strings.Cut(request.Query, "... on RepositoryProviderCursorOrigin {")
+				selection, _, _ = strings.Cut(selection, "}")
+				selected := map[string]any{}
+				for _, field := range fields {
+					if strings.Contains(selection, field.graphql) {
+						selected[field.graphql] = settings[field.rest]
+					}
+				}
+				data = map[string]any{"node": map[string]any{
+					"__typename": "Pipeline",
+					"repository": map[string]any{"provider": map[string]any{
+						"__typename": "RepositoryProviderCursorOrigin", "settings": selected,
+					}},
+				}}
+			case "deletePipeline":
+				exists = false
+				data = map[string]any{"pipelineDelete": map[string]any{"clientMutationId": nil}}
+			default:
+				if request.OperationName != "" || !strings.Contains(request.Query, "organization(slug:") {
+					t.Errorf("unexpected GraphQL request: %s", request.Query)
+					w.WriteHeader(http.StatusBadRequest)
+					return
+				}
+				data = map[string]any{"organization": map[string]any{"id": "organization-id"}}
+			}
+			response = map[string]any{"data": data}
+		}
+		if err := json.NewEncoder(w).Encode(response); err != nil {
+			t.Errorf("encode response: %v", err)
+		}
+	}))
+	defer server.Close()
+
+	var steps []resource.TestStep
+	for _, mode := range []string{"defaults", "mixed", "inverted"} {
+		var configSettings strings.Builder
+		if mode == "defaults" {
+			configSettings.WriteString("build_branches = true\nbuild_pull_requests = true\nbuild_tags = false\npublish_commit_status = true\n")
+		}
+		var checks []resource.TestCheckFunc
+		for i, field := range fields {
+			value := field.defaultValue
+			if mode != "defaults" {
+				value = (i%2 == 0) == (mode == "mixed")
+				fmt.Fprintf(&configSettings, "%s = %t\n", field.rest, value)
+			}
+			checks = append(checks, resource.TestCheckResourceAttr(address, "provider_settings."+field.rest, fmt.Sprint(value)))
+		}
+		config := fmt.Sprintf(`
+provider "buildkite" {
+  organization = "test-org"
+  api_token = "dummy"
+  graphql_url = %q
+  rest_url = %q
+}
+resource "buildkite_pipeline" "test" {
+  name = "test"
+  repository = "https://origin.example/test.git"
+  provider_settings = {
+    %s
+  }
+}
+`, server.URL, server.URL, configSettings.String())
+		steps = append(steps,
+			resource.TestStep{Config: config, Check: resource.ComposeAggregateTestCheckFunc(checks...)},
+			resource.TestStep{RefreshState: true, Check: resource.ComposeAggregateTestCheckFunc(checks...)},
+			resource.TestStep{ResourceName: address, ImportState: true, ImportStateVerify: true},
+			resource.TestStep{Config: config, PlanOnly: true},
+		)
+	}
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		Steps:                    steps,
+	})
+	mu.Lock()
+	defer mu.Unlock()
+	if exists {
+		t.Error("pipeline still exists after destroy")
 	}
 }
