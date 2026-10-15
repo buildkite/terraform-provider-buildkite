@@ -5,6 +5,7 @@
 ### Features
 
 * Add the `buildkite_cluster_cache_registry` resource.
+* SUP-7777: Add `hosted_git_mirror_enabled` and `hosted_container_cache_enabled` to `buildkite_cluster`.
 
 ### Fixed
 
