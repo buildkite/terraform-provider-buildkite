@@ -149,10 +149,7 @@ func (p *registryResource) Create(ctx context.Context, req resource.CreateReques
 		return
 	}
 
-	requestCtx, cancel := mutationContext(ctx, timeout)
-	defer cancel()
-
-	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+	err := retryMutation(ctx, timeout, func(ctx context.Context) *retry.RetryError {
 		url := fmt.Sprintf("%s/v2/packages/organizations/%s/registries", p.client.restURL, p.client.organization)
 
 		reqBody := map[string]interface{}{
@@ -197,7 +194,7 @@ func (p *registryResource) Create(ctx context.Context, req resource.CreateReques
 		}
 
 		// Create the HTTP request
-		req, err := http.NewRequestWithContext(requestCtx, http.MethodPost, url, bytes.NewBuffer(jsonBody))
+		req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewBuffer(jsonBody))
 		if err != nil {
 			return retry.NonRetryableError(fmt.Errorf("error creating HTTP request: %w", err))
 		}
@@ -352,9 +349,6 @@ func (p *registryResource) Update(ctx context.Context, req resource.UpdateReques
 		return
 	}
 
-	requestCtx, cancel := mutationContext(ctx, timeout)
-	defer cancel()
-
 	if state.Slug.IsNull() || state.Slug.ValueString() == "" {
 		resp.Diagnostics.AddError(
 			"Error updating registry",
@@ -363,7 +357,7 @@ func (p *registryResource) Update(ctx context.Context, req resource.UpdateReques
 		return
 	}
 
-	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+	err := retryMutation(ctx, timeout, func(ctx context.Context) *retry.RetryError {
 		url := fmt.Sprintf("%s/v2/packages/organizations/%s/registries/%s", p.client.restURL, p.client.organization, state.Slug.ValueString())
 
 		reqBody := map[string]interface{}{
@@ -396,7 +390,7 @@ func (p *registryResource) Update(ctx context.Context, req resource.UpdateReques
 			return retry.NonRetryableError(fmt.Errorf("error marshaling request body: %w", err))
 		}
 
-		req, err := http.NewRequestWithContext(requestCtx, http.MethodPut, url, bytes.NewBuffer(jsonBody))
+		req, err := http.NewRequestWithContext(ctx, http.MethodPut, url, bytes.NewBuffer(jsonBody))
 		if err != nil {
 			return retry.NonRetryableError(fmt.Errorf("error creating HTTP request: %w", err))
 		}
@@ -521,9 +515,6 @@ func (p *registryResource) Delete(ctx context.Context, req resource.DeleteReques
 		return
 	}
 
-	requestCtx, cancel := mutationContext(ctx, timeout)
-	defer cancel()
-
 	if state.Slug.IsNull() || state.Slug.ValueString() == "" {
 		resp.Diagnostics.AddError(
 			"Error deleting registry",
@@ -532,11 +523,11 @@ func (p *registryResource) Delete(ctx context.Context, req resource.DeleteReques
 		return
 	}
 
-	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+	err := retryMutation(ctx, timeout, func(ctx context.Context) *retry.RetryError {
 		url := fmt.Sprintf("%s/v2/packages/organizations/%s/registries/%s", p.client.restURL, p.client.organization, state.Slug.ValueString())
 
 		// Create the HTTP request
-		req, err := http.NewRequestWithContext(requestCtx, http.MethodDelete, url, nil)
+		req, err := http.NewRequestWithContext(ctx, http.MethodDelete, url, nil)
 		if err != nil {
 			return retry.NonRetryableError(fmt.Errorf("error creating HTTP request: %w", err))
 		}

@@ -88,15 +88,12 @@ func (ob *organizationBannerResource) Create(ctx context.Context, req resource.C
 		return
 	}
 
-	requestCtx, cancel := mutationContext(ctx, timeout)
-	defer cancel()
-
 	var r *upsertBannerResponse
-	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-		org, err := ob.client.GetOrganizationID(requestCtx)
+	err := retryMutation(ctx, timeout, func(ctx context.Context) *retry.RetryError {
+		org, err := ob.client.GetOrganizationID(ctx)
 		if err == nil {
 			log.Printf("Creating organization banner ...")
-			r, err = upsertBanner(requestCtx,
+			r, err = upsertBanner(ctx,
 				ob.client.genqlient,
 				*org,
 				plan.Message.ValueString(),
@@ -194,15 +191,12 @@ func (ob *organizationBannerResource) Update(ctx context.Context, req resource.U
 		return
 	}
 
-	requestCtx, cancel := mutationContext(ctx, timeout)
-	defer cancel()
-
 	var r *upsertBannerResponse
-	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-		org, err := ob.client.GetOrganizationID(requestCtx)
+	err := retryMutation(ctx, timeout, func(ctx context.Context) *retry.RetryError {
+		org, err := ob.client.GetOrganizationID(ctx)
 		if err == nil {
 			log.Printf("Updating organization banner %s ...", state.ID.ValueString())
-			r, err = upsertBanner(requestCtx,
+			r, err = upsertBanner(ctx,
 				ob.client.genqlient,
 				*org,
 				plan.Message.ValueString(),
@@ -241,14 +235,11 @@ func (ob *organizationBannerResource) Delete(ctx context.Context, req resource.D
 		return
 	}
 
-	requestCtx, cancel := mutationContext(ctx, timeout)
-	defer cancel()
-
-	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-		org, err := ob.client.GetOrganizationID(requestCtx)
+	err := retryMutation(ctx, timeout, func(ctx context.Context) *retry.RetryError {
+		org, err := ob.client.GetOrganizationID(ctx)
 		if err == nil {
 			log.Printf("Deleting organization banner %s ...", state.ID.ValueString())
-			_, err = deleteBanner(requestCtx,
+			_, err = deleteBanner(ctx,
 				ob.client.genqlient,
 				*org,
 			)

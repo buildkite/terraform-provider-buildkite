@@ -177,13 +177,10 @@ func (c *clusterMaintainerResource) Create(ctx context.Context, req resource.Cre
 		return
 	}
 
-	requestCtx, cancel := mutationContext(ctx, timeout)
-	defer cancel()
-
 	var result *clusterMaintainerAPIResponse
-	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+	err := retryMutation(ctx, timeout, func(ctx context.Context) *retry.RetryError {
 		var err error
-		result, err = c.createClusterMaintainer(requestCtx, state)
+		result, err = c.createClusterMaintainer(ctx, state)
 		return retryContextError(err)
 	})
 	if err != nil {
@@ -276,11 +273,8 @@ func (c *clusterMaintainerResource) Delete(ctx context.Context, req resource.Del
 		return
 	}
 
-	requestCtx, cancel := mutationContext(ctx, timeout)
-	defer cancel()
-
-	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-		err := c.deleteClusterMaintainer(requestCtx, &state)
+	err := retryMutation(ctx, timeout, func(ctx context.Context) *retry.RetryError {
+		err := c.deleteClusterMaintainer(ctx, &state)
 		return retryContextError(err)
 	})
 	if err != nil {

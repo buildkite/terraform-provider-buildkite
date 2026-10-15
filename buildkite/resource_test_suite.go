@@ -155,11 +155,8 @@ func (ts *testSuiteResource) Create(ctx context.Context, req resource.CreateRequ
 	// Construct URL to call to the REST API
 	url := fmt.Sprintf("/v2/analytics/organizations/%s/suites", ts.client.organization)
 
-	createCtx, cancel := mutationContext(ctx, timeout)
-	defer cancel()
-
-	createErr := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-		err = ts.client.makeRequest(createCtx, "POST", url, payload, &response)
+	createErr := retryMutation(ctx, timeout, func(ctx context.Context) *retry.RetryError {
+		err = ts.client.makeRequest(ctx, "POST", url, payload, &response)
 
 		return retryContextError(err)
 	})
@@ -200,13 +197,10 @@ func (ts *testSuiteResource) Delete(ctx context.Context, req resource.DeleteRequ
 	timeout, diags := ts.client.deleteTimeout(ctx)
 	resp.Diagnostics.Append(diags...)
 
-	requestCtx, cancel := mutationContext(ctx, timeout)
-	defer cancel()
-
 	// Construct URL to call to the REST API
 	url := fmt.Sprintf("/v2/analytics/organizations/%s/suites/%s", ts.client.organization, state.Slug.ValueString())
-	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-		err := ts.client.makeRequest(requestCtx, "DELETE", url, nil, nil)
+	err := retryMutation(ctx, timeout, func(ctx context.Context) *retry.RetryError {
+		err := ts.client.makeRequest(ctx, "DELETE", url, nil, nil)
 
 		return retryContextError(err)
 	})
@@ -443,11 +437,8 @@ func (ts *testSuiteResource) Update(ctx context.Context, req resource.UpdateRequ
 
 	// Construct URL to call to the REST API
 	url := fmt.Sprintf("/v2/analytics/organizations/%s/suites/%s", ts.client.organization, state.Slug.ValueString())
-	updateCtx, cancel := mutationContext(ctx, timeout)
-	defer cancel()
-
-	updateErr := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-		err := ts.client.makeRequest(updateCtx, http.MethodPatch, url, payload, &response)
+	updateErr := retryMutation(ctx, timeout, func(ctx context.Context) *retry.RetryError {
+		err := ts.client.makeRequest(ctx, http.MethodPatch, url, payload, &response)
 
 		return retryContextError(err)
 	})
@@ -481,11 +472,8 @@ func (ts *testSuiteResource) Update(ctx context.Context, req resource.UpdateRequ
 	if plan.TeamOwnerId.ValueString() != state.TeamOwnerId.ValueString() {
 		var attachErr error
 		alreadyOwned := false
-		attachCtx, cancel := mutationContext(ctx, timeout)
-		defer cancel()
-
-		err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-			_, err := createTestSuiteTeam(attachCtx,
+		err := retryMutation(ctx, timeout, func(ctx context.Context) *retry.RetryError {
+			_, err := createTestSuiteTeam(ctx,
 				ts.client.genqlient,
 				plan.TeamOwnerId.ValueString(),
 				state.ID.ValueString(),
@@ -544,11 +532,8 @@ func (ts *testSuiteResource) Update(ctx context.Context, req resource.UpdateRequ
 		previousOwnerId := state.TeamOwnerId.ValueString()
 		for _, team := range teams {
 			if team.teamId == previousOwnerId {
-				detachCtx, cancel := mutationContext(ctx, timeout)
-				defer cancel()
-
-				err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-					_, err := deleteTestSuiteTeam(detachCtx,
+				err := retryMutation(ctx, timeout, func(ctx context.Context) *retry.RetryError {
+					_, err := deleteTestSuiteTeam(ctx,
 						ts.client.genqlient,
 						team.id,
 					)
@@ -595,11 +580,8 @@ func (ts *testSuiteResource) ensureOwnerTeamCanManage(ctx context.Context, timeo
 		return nil
 	}
 
-	requestCtx, cancel := mutationContext(ctx, timeout)
-	defer cancel()
-
-	return retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-		_, err := updateTestSuiteTeam(requestCtx, ts.client.genqlient, teams[i].id, SuiteAccessLevelsManageAndRead)
+	return retryMutation(ctx, timeout, func(ctx context.Context) *retry.RetryError {
+		_, err := updateTestSuiteTeam(ctx, ts.client.genqlient, teams[i].id, SuiteAccessLevelsManageAndRead)
 
 		return retryContextError(err)
 	})
@@ -613,15 +595,16 @@ const teamPageSize = 50
 // the first page would hide a previous owner whose team name sorts past it, and the caller reads
 // absence as "already detached" and records the swap as done.
 func (ts *testSuiteResource) suiteTeams(ctx context.Context, timeout time.Duration, suiteId string) ([]testSuiteTeamEdge, error) {
-	// One context for every page, so a long connection cannot take the timeout once per page.
-	requestCtx, cancel := mutationContext(ctx, timeout)
+	// One context for every page, so a long connection cannot take the timeout once per page. A
+	// lookup changes nothing, so it takes the plain timeout rather than mutationContext.
+	requestCtx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
 	var teams []testSuiteTeamEdge
 	var cursor *string
 	for {
 		var r *getTestSuiteResponse
-		err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+		err := retry.RetryContext(requestCtx, timeout, func() *retry.RetryError {
 			var err error
 			r, err = getTestSuite(requestCtx, ts.client.genqlient, suiteId, teamPageSize, cursor)
 
