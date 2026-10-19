@@ -78,6 +78,10 @@ func (a *workflowTestAPI) handle(w http.ResponseWriter, r *http.Request) {
 	if r.Header.Get("Authorization") != "Bearer test" {
 		a.t.Error("request did not use the configured test token")
 	}
+	if r.Method == http.MethodGet && r.URL.Path == "/v2/analytics/organizations/test/suites/application" {
+		_, _ = fmt.Fprintf(w, `{"id":%q,"graphql_id":"suite-graphql-id","slug":"application"}`, workflowTestSuiteUUID)
+		return
+	}
 	collection := "/v2/analytics/organizations/test/suites/" + workflowTestSuiteUUID + "/workflows"
 	if r.Method == http.MethodPost && r.URL.Path == collection {
 		var body map[string]any
@@ -214,6 +218,15 @@ resource "terraform_data" "branch" {
 		},
 		Steps: []resource.TestStep{
 			{Config: config, Check: checks},
+			{
+				ResourceName: workflowTestAddress, ImportState: true,
+				ImportStateId: "application/123e4567-e89b-42d3-a456-000000000099",
+				ExpectError:   regexp.MustCompile("Cannot import non-existent remote object"),
+			},
+			{
+				ResourceName: workflowTestAddress, ImportState: true,
+				ImportStateId: "application/123e4567-e89b-42d3-a456-000000000001", ImportStateVerify: true,
+			},
 			{Config: config, PlanOnly: true},
 			{PreConfig: func() {
 				api.mu.Lock()
@@ -225,6 +238,57 @@ resource "terraform_data" "branch" {
 			}, RefreshState: true, Check: resource.TestCheckResourceAttr(workflowTestAddress, "web_url", "https://buildkite.com/renamed-suite/workflow/events")},
 		},
 	})
+}
+
+func TestTestSuiteWorkflowImportErrors(t *testing.T) {
+	const id = "123e4567-e89b-42d3-a456-000000000001"
+	tests := []struct {
+		name, importID, body, message string
+		status                        int
+	}{
+		{name: "missing separator", importID: id, message: "Expected suite-slug/workflow-uuid"},
+		{name: "missing slug", importID: "/" + id, message: "Expected suite-slug/workflow-uuid"},
+		{name: "missing uuid", importID: "application/", message: "Expected suite-slug/workflow-uuid"},
+		{name: "invalid uuid", importID: "application/not-a-uuid", message: "Expected suite-slug/workflow-uuid"},
+		{name: "extra component", importID: "application/" + id + "/extra", message: "Expected suite-slug/workflow-uuid"},
+		{name: "url", importID: "https://buildkite.com/application/" + id, message: "Expected suite-slug/workflow-uuid"},
+		{name: "path traversal", importID: "../" + id, message: "Expected suite-slug/workflow-uuid"},
+		{name: "query", importID: "application?other/" + id, message: "Expected suite-slug/workflow-uuid"},
+		{name: "suite not found", status: http.StatusNotFound, message: "Could not read test suite"},
+		{name: "suite forbidden", status: http.StatusForbidden, message: "Could not read test suite"},
+		{name: "suite server error", status: http.StatusInternalServerError, message: "Could not read test suite"},
+		{name: "missing suite uuid", status: http.StatusOK, body: `{"graphql_id":"suite-graphql-id"}`, message: "did not return a valid suite UUID"},
+		{name: "invalid suite uuid", status: http.StatusOK, body: `{"id":"suite-graphql-id"}`, message: "did not return a valid suite UUID"},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+				if tc.status == 0 {
+					t.Error("invalid import ID must not make API requests")
+					w.WriteHeader(http.StatusBadRequest)
+					return
+				}
+				if req.Method != http.MethodGet || req.URL.Path != "/v2/analytics/organizations/test/suites/application" {
+					t.Errorf("unexpected request: %s %s", req.Method, req.URL.Path)
+				}
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(tc.status)
+				_, _ = w.Write([]byte(tc.body))
+			}))
+			defer server.Close()
+			ctx := context.Background()
+			r := &testSuiteWorkflowResource{client: NewClient(&clientConfig{org: "test", apiToken: "test", restURL: server.URL})}
+			resp := fwresource.ImportStateResponse{State: tfsdk.State{Schema: resourceSchema(ctx, t, r)}}
+			importID := tc.importID
+			if importID == "" {
+				importID = "application/" + id
+			}
+			r.ImportState(ctx, fwresource.ImportStateRequest{ID: importID}, &resp)
+			if !resp.Diagnostics.HasError() || !diagnosticsContain(resp.Diagnostics, tc.message) || !resp.State.Raw.IsNull() {
+				t.Fatalf("failed import must report %q without writing state: %v, state: %s", tc.message, resp.Diagnostics, resp.State.Raw)
+			}
+		})
+	}
 }
 
 func TestTestSuiteWorkflowTypes(t *testing.T) {
