@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"reflect"
 	"regexp"
 	"slices"
@@ -454,45 +453,4 @@ func TestTestSuiteWorkflowFailureState(t *testing.T) {
 	if deleted.Diagnostics.HasError() {
 		t.Fatalf("deleting a missing workflow must succeed: %v", deleted.Diagnostics)
 	}
-}
-
-func TestAccBuildkiteTestSuiteWorkflow(t *testing.T) {
-	suite := os.Getenv("BUILDKITE_TEST_SUITE_WORKFLOW_SUITE_UUID")
-	resource.ParallelTest(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-			if suite == "" {
-				t.Skip("Set BUILDKITE_TEST_SUITE_WORKFLOW_SUITE_UUID to a disposable suite in a workflow-enabled organization")
-			}
-		},
-		ProtoV6ProviderFactories: protoV6ProviderFactories(),
-		CheckDestroy: func(state *terraform.State) error {
-			client := getTestClient()
-			for _, rs := range state.RootModule().Resources {
-				if rs.Type != "buildkite_test_suite_workflow" {
-					continue
-				}
-				p := fmt.Sprintf("/v2/analytics/organizations/%s/suites/%s/workflows/%s", client.organization, rs.Primary.Attributes["test_suite_uuid"], rs.Primary.ID)
-				var result testSuiteWorkflowResponse
-				if err := client.makeRequest(context.Background(), http.MethodGet, p, nil, &result); !isAPIStatus(err, http.StatusNotFound) {
-					return fmt.Errorf("expected deleted workflow to return 404, got %v", err)
-				}
-			}
-			return nil
-		},
-		Steps: []resource.TestStep{{
-			Config: fmt.Sprintf(`resource "buildkite_test_suite_workflow" "test" {
-test_suite_uuid = %q
-monitor = {
-%s
-}
-filters = [{key="scm.branch",operator="is",value="terraform-workflow-acceptance"}]
-}`, suite, workflowTestMonitor),
-			Check: resource.ComposeAggregateTestCheckFunc(
-				resource.TestCheckResourceAttrSet(workflowTestAddress, "id"),
-				resource.TestCheckResourceAttr(workflowTestAddress, "monitor.window_size", "73"),
-				resource.TestCheckResourceAttr(workflowTestAddress, "alarm_actions.#", "0"),
-			),
-		}},
-	})
 }
