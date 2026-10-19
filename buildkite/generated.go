@@ -270,6 +270,8 @@ type ClusterQueueValues struct {
 	Hosted bool `json:"hosted"`
 	// Settings for hosted agents used for jobs in this queue
 	HostedAgents ClusterQueueValuesHostedAgentsHostedAgentQueueSettings `json:"hostedAgents"`
+	// Whether jobs on this self-hosted queue check out GitHub repositories with a Buildkite-issued GitHub App token, as on hosted queues
+	UseGithubAppToken bool `json:"useGithubAppToken"`
 }
 
 // GetId returns ClusterQueueValues.Id, and is useful for accessing the field via an interface.
@@ -294,6 +296,9 @@ func (v *ClusterQueueValues) GetHosted() bool { return v.Hosted }
 func (v *ClusterQueueValues) GetHostedAgents() ClusterQueueValuesHostedAgentsHostedAgentQueueSettings {
 	return v.HostedAgents
 }
+
+// GetUseGithubAppToken returns ClusterQueueValues.UseGithubAppToken, and is useful for accessing the field via an interface.
+func (v *ClusterQueueValues) GetUseGithubAppToken() bool { return v.UseGithubAppToken }
 
 // ClusterQueueValuesCluster includes the requested fields of the GraphQL type Cluster.
 type ClusterQueueValuesCluster struct {
@@ -5119,11 +5124,12 @@ func (v *__createClusterInput) GetAgentTracingServiceUuid() *string { return v.A
 
 // __createClusterQueueInput is used internally by genqlient
 type __createClusterQueueInput struct {
-	OrganizationId string                                `json:"organizationId"`
-	ClusterId      string                                `json:"clusterId"`
-	Key            string                                `json:"key"`
-	Description    *string                               `json:"description"`
-	HostedAgents   *HostedAgentsQueueSettingsCreateInput `json:"hostedAgents"`
+	OrganizationId    string                                `json:"organizationId"`
+	ClusterId         string                                `json:"clusterId"`
+	Key               string                                `json:"key"`
+	Description       *string                               `json:"description"`
+	HostedAgents      *HostedAgentsQueueSettingsCreateInput `json:"hostedAgents"`
+	UseGithubAppToken *bool                                 `json:"useGithubAppToken,omitempty"`
 }
 
 // GetOrganizationId returns __createClusterQueueInput.OrganizationId, and is useful for accessing the field via an interface.
@@ -5142,6 +5148,9 @@ func (v *__createClusterQueueInput) GetDescription() *string { return v.Descript
 func (v *__createClusterQueueInput) GetHostedAgents() *HostedAgentsQueueSettingsCreateInput {
 	return v.HostedAgents
 }
+
+// GetUseGithubAppToken returns __createClusterQueueInput.UseGithubAppToken, and is useful for accessing the field via an interface.
+func (v *__createClusterQueueInput) GetUseGithubAppToken() *bool { return v.UseGithubAppToken }
 
 // __createOrganizationRuleInput is used internally by genqlient
 type __createOrganizationRuleInput struct {
@@ -6001,10 +6010,11 @@ func (v *__updateClusterInput) GetAgentTracingServiceUuid() *string { return v.A
 
 // __updateClusterQueueInput is used internally by genqlient
 type __updateClusterQueueInput struct {
-	OrganizationId string                                `json:"organizationId"`
-	Id             string                                `json:"id"`
-	Description    *string                               `json:"description"`
-	HostedAgents   *HostedAgentsQueueSettingsUpdateInput `json:"hostedAgents"`
+	OrganizationId    string                                `json:"organizationId"`
+	Id                string                                `json:"id"`
+	Description       *string                               `json:"description"`
+	HostedAgents      *HostedAgentsQueueSettingsUpdateInput `json:"hostedAgents"`
+	UseGithubAppToken *bool                                 `json:"useGithubAppToken,omitempty"`
 }
 
 // GetOrganizationId returns __updateClusterQueueInput.OrganizationId, and is useful for accessing the field via an interface.
@@ -6020,6 +6030,9 @@ func (v *__updateClusterQueueInput) GetDescription() *string { return v.Descript
 func (v *__updateClusterQueueInput) GetHostedAgents() *HostedAgentsQueueSettingsUpdateInput {
 	return v.HostedAgents
 }
+
+// GetUseGithubAppToken returns __updateClusterQueueInput.UseGithubAppToken, and is useful for accessing the field via an interface.
+func (v *__updateClusterQueueInput) GetUseGithubAppToken() *bool { return v.UseGithubAppToken }
 
 // __updateOrganizationRuleInput is used internally by genqlient
 type __updateOrganizationRuleInput struct {
@@ -6710,6 +6723,11 @@ func (v *createClusterQueueClusterQueueCreateClusterQueueCreatePayloadClusterQue
 	return v.ClusterQueueValues.HostedAgents
 }
 
+// GetUseGithubAppToken returns createClusterQueueClusterQueueCreateClusterQueueCreatePayloadClusterQueue.UseGithubAppToken, and is useful for accessing the field via an interface.
+func (v *createClusterQueueClusterQueueCreateClusterQueueCreatePayloadClusterQueue) GetUseGithubAppToken() bool {
+	return v.ClusterQueueValues.UseGithubAppToken
+}
+
 func (v *createClusterQueueClusterQueueCreateClusterQueueCreatePayloadClusterQueue) UnmarshalJSON(b []byte) error {
 
 	if string(b) == "null" {
@@ -6749,6 +6767,8 @@ type __premarshalcreateClusterQueueClusterQueueCreateClusterQueueCreatePayloadCl
 	Hosted bool `json:"hosted"`
 
 	HostedAgents ClusterQueueValuesHostedAgentsHostedAgentQueueSettings `json:"hostedAgents"`
+
+	UseGithubAppToken bool `json:"useGithubAppToken"`
 }
 
 func (v *createClusterQueueClusterQueueCreateClusterQueueCreatePayloadClusterQueue) MarshalJSON() ([]byte, error) {
@@ -6769,6 +6789,7 @@ func (v *createClusterQueueClusterQueueCreateClusterQueueCreatePayloadClusterQue
 	retval.Cluster = v.ClusterQueueValues.Cluster
 	retval.Hosted = v.ClusterQueueValues.Hosted
 	retval.HostedAgents = v.ClusterQueueValues.HostedAgents
+	retval.UseGithubAppToken = v.ClusterQueueValues.UseGithubAppToken
 	return &retval, nil
 }
 
@@ -12764,6 +12785,11 @@ func (v *getClusterQueueByNodeNodeClusterQueue) GetHostedAgents() ClusterQueueVa
 	return v.ClusterQueueValues.HostedAgents
 }
 
+// GetUseGithubAppToken returns getClusterQueueByNodeNodeClusterQueue.UseGithubAppToken, and is useful for accessing the field via an interface.
+func (v *getClusterQueueByNodeNodeClusterQueue) GetUseGithubAppToken() bool {
+	return v.ClusterQueueValues.UseGithubAppToken
+}
+
 func (v *getClusterQueueByNodeNodeClusterQueue) UnmarshalJSON(b []byte) error {
 
 	if string(b) == "null" {
@@ -12813,6 +12839,8 @@ type __premarshalgetClusterQueueByNodeNodeClusterQueue struct {
 	Hosted bool `json:"hosted"`
 
 	HostedAgents ClusterQueueValuesHostedAgentsHostedAgentQueueSettings `json:"hostedAgents"`
+
+	UseGithubAppToken bool `json:"useGithubAppToken"`
 }
 
 func (v *getClusterQueueByNodeNodeClusterQueue) MarshalJSON() ([]byte, error) {
@@ -12838,6 +12866,7 @@ func (v *getClusterQueueByNodeNodeClusterQueue) __premarshalJSON() (*__premarsha
 	retval.Cluster = v.ClusterQueueValues.Cluster
 	retval.Hosted = v.ClusterQueueValues.Hosted
 	retval.HostedAgents = v.ClusterQueueValues.HostedAgents
+	retval.UseGithubAppToken = v.ClusterQueueValues.UseGithubAppToken
 	return &retval, nil
 }
 
@@ -27077,6 +27106,11 @@ func (v *updateClusterQueueClusterQueueUpdateClusterQueueUpdatePayloadClusterQue
 	return v.ClusterQueueValues.HostedAgents
 }
 
+// GetUseGithubAppToken returns updateClusterQueueClusterQueueUpdateClusterQueueUpdatePayloadClusterQueue.UseGithubAppToken, and is useful for accessing the field via an interface.
+func (v *updateClusterQueueClusterQueueUpdateClusterQueueUpdatePayloadClusterQueue) GetUseGithubAppToken() bool {
+	return v.ClusterQueueValues.UseGithubAppToken
+}
+
 func (v *updateClusterQueueClusterQueueUpdateClusterQueueUpdatePayloadClusterQueue) UnmarshalJSON(b []byte) error {
 
 	if string(b) == "null" {
@@ -27124,6 +27158,8 @@ type __premarshalupdateClusterQueueClusterQueueUpdateClusterQueueUpdatePayloadCl
 	Hosted bool `json:"hosted"`
 
 	HostedAgents ClusterQueueValuesHostedAgentsHostedAgentQueueSettings `json:"hostedAgents"`
+
+	UseGithubAppToken bool `json:"useGithubAppToken"`
 }
 
 func (v *updateClusterQueueClusterQueueUpdateClusterQueueUpdatePayloadClusterQueue) MarshalJSON() ([]byte, error) {
@@ -27148,6 +27184,7 @@ func (v *updateClusterQueueClusterQueueUpdateClusterQueueUpdatePayloadClusterQue
 	retval.Cluster = v.ClusterQueueValues.Cluster
 	retval.Hosted = v.ClusterQueueValues.Hosted
 	retval.HostedAgents = v.ClusterQueueValues.HostedAgents
+	retval.UseGithubAppToken = v.ClusterQueueValues.UseGithubAppToken
 	return &retval, nil
 }
 
@@ -29060,8 +29097,8 @@ func createClusterAgentToken(
 
 // The mutation executed by createClusterQueue.
 const createClusterQueue_Operation = `
-mutation createClusterQueue ($organizationId: ID!, $clusterId: ID!, $key: String!, $description: String, $hostedAgents: HostedAgentsQueueSettingsCreateInput) {
-	clusterQueueCreate(input: {organizationId:$organizationId,clusterId:$clusterId,key:$key,description:$description,hostedAgents:$hostedAgents}) {
+mutation createClusterQueue ($organizationId: ID!, $clusterId: ID!, $key: String!, $description: String, $hostedAgents: HostedAgentsQueueSettingsCreateInput, $useGithubAppToken: Boolean) {
+	clusterQueueCreate(input: {organizationId:$organizationId,clusterId:$clusterId,key:$key,description:$description,hostedAgents:$hostedAgents,useGithubAppToken:$useGithubAppToken}) {
 		clusterQueue {
 			... ClusterQueueValues
 		}
@@ -29080,6 +29117,7 @@ fragment ClusterQueueValues on ClusterQueue {
 	hostedAgents {
 		... HostedAgentsQueueSettingsValues
 	}
+	useGithubAppToken
 }
 fragment HostedAgentsQueueSettingsValues on HostedAgentQueueSettings {
 	instanceShape {
@@ -29110,16 +29148,18 @@ func createClusterQueue(
 	key string,
 	description *string,
 	hostedAgents *HostedAgentsQueueSettingsCreateInput,
+	useGithubAppToken *bool,
 ) (data_ *createClusterQueueResponse, err_ error) {
 	req_ := &graphql.Request{
 		OpName: "createClusterQueue",
 		Query:  createClusterQueue_Operation,
 		Variables: &__createClusterQueueInput{
-			OrganizationId: organizationId,
-			ClusterId:      clusterId,
-			Key:            key,
-			Description:    description,
-			HostedAgents:   hostedAgents,
+			OrganizationId:    organizationId,
+			ClusterId:         clusterId,
+			Key:               key,
+			Description:       description,
+			HostedAgents:      hostedAgents,
+			UseGithubAppToken: useGithubAppToken,
 		},
 	}
 
@@ -30540,6 +30580,7 @@ fragment ClusterQueueValues on ClusterQueue {
 	hostedAgents {
 		... HostedAgentsQueueSettingsValues
 	}
+	useGithubAppToken
 }
 fragment HostedAgentsQueueSettingsValues on HostedAgentQueueSettings {
 	instanceShape {
@@ -32555,8 +32596,8 @@ func updateClusterClearingAgentTracingService(
 
 // The mutation executed by updateClusterQueue.
 const updateClusterQueue_Operation = `
-mutation updateClusterQueue ($organizationId: ID!, $id: ID!, $description: String, $hostedAgents: HostedAgentsQueueSettingsUpdateInput) {
-	clusterQueueUpdate(input: {organizationId:$organizationId,id:$id,description:$description,hostedAgents:$hostedAgents}) {
+mutation updateClusterQueue ($organizationId: ID!, $id: ID!, $description: String, $hostedAgents: HostedAgentsQueueSettingsUpdateInput, $useGithubAppToken: Boolean) {
+	clusterQueueUpdate(input: {organizationId:$organizationId,id:$id,description:$description,hostedAgents:$hostedAgents,useGithubAppToken:$useGithubAppToken}) {
 		clusterQueue {
 			... ClusterQueueValues
 			dispatchPaused
@@ -32581,6 +32622,7 @@ fragment ClusterQueueValues on ClusterQueue {
 	hostedAgents {
 		... HostedAgentsQueueSettingsValues
 	}
+	useGithubAppToken
 }
 fragment HostedAgentsQueueSettingsValues on HostedAgentQueueSettings {
 	instanceShape {
@@ -32610,15 +32652,17 @@ func updateClusterQueue(
 	id string,
 	description *string,
 	hostedAgents *HostedAgentsQueueSettingsUpdateInput,
+	useGithubAppToken *bool,
 ) (data_ *updateClusterQueueResponse, err_ error) {
 	req_ := &graphql.Request{
 		OpName: "updateClusterQueue",
 		Query:  updateClusterQueue_Operation,
 		Variables: &__updateClusterQueueInput{
-			OrganizationId: organizationId,
-			Id:             id,
-			Description:    description,
-			HostedAgents:   hostedAgents,
+			OrganizationId:    organizationId,
+			Id:                id,
+			Description:       description,
+			HostedAgents:      hostedAgents,
+			UseGithubAppToken: useGithubAppToken,
 		},
 	}
 

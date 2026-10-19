@@ -2,6 +2,7 @@ package buildkite
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"maps"
 	"net/http"
@@ -87,6 +88,29 @@ func TestAccBuildkiteClusterQueueResource(t *testing.T) {
 			key = "queue-%s"
 			description = "Acceptance test %s"
 			retry_agent_affinity = "%s"
+		}
+		`, fields[0], fields[1], fields[2], fields[3])
+	}
+
+	configGithubAppToken := func(fields ...string) string {
+		return fmt.Sprintf(`
+		provider "buildkite" {
+			timeouts = {
+				create = "60s"
+				read = "60s"
+				update = "60s"
+				delete = "60s"
+			}
+		}
+		resource "buildkite_cluster" "cluster_test" {
+			name = "Test cluster %s"
+			description = "Acceptance testing cluster"
+		}
+		resource "buildkite_cluster_queue" "foobar" {
+			cluster_id = buildkite_cluster.cluster_test.id
+			key = "queue-%s"
+			description = "Acceptance test %s"
+			use_github_app_token = %s
 		}
 		`, fields[0], fields[1], fields[2], fields[3])
 	}
@@ -613,6 +637,33 @@ func TestAccBuildkiteClusterQueueResource(t *testing.T) {
 			},
 		})
 	})
+
+	t.Run("toggles use_github_app_token on a self-hosted queue", func(t *testing.T) {
+		clusterName := acctest.RandString(10)
+		queueKey := acctest.RandString(10)
+		queueDesc := acctest.RandString(10)
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			CheckDestroy:             testAccCheckClusterQueueDestroy,
+			Steps: []resource.TestStep{
+				{
+					Config: configGithubAppToken(clusterName, queueKey, queueDesc, "true"),
+					Check:  resource.TestCheckResourceAttr("buildkite_cluster_queue.foobar", "use_github_app_token", "true"),
+				},
+				{
+					Config: configGithubAppToken(clusterName, queueKey, queueDesc, "false"),
+					Check:  resource.TestCheckResourceAttr("buildkite_cluster_queue.foobar", "use_github_app_token", "false"),
+				},
+				{
+					// Omitting it leaves the queue's setting alone rather than resetting it
+					Config:   configBasic(clusterName, queueKey, queueDesc),
+					PlanOnly: true,
+				},
+			},
+		})
+	})
 }
 
 func testAccCheckClusterQueueExists(resourceName string, clusterQueueResourceModel *clusterQueueResourceModel) resource.TestCheckFunc {
@@ -1105,6 +1156,114 @@ func TestClusterQueueReadClassifiesAFailedAffinityRead(t *testing.T) {
 			}
 			if got := persisted.RetryAgentAffinity.ValueString(); got != testCase.priorAffinity {
 				t.Errorf("Persisted retry_agent_affinity = %q, want the last known %q: the read was refused, not answered", got, testCase.priorAffinity)
+			}
+		})
+	}
+}
+
+// use_github_app_token is left out of the update mutation unless the plan changes it, so an
+// unrelated change to the queue never sends the setting at all, and a change sends the new value.
+func TestClusterQueueUpdateSendsUseGithubAppTokenOnlyWhenItChanges(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name             string
+		prior, planned   bool
+		wantSent         any
+		responseHasToken bool
+	}{
+		{name: "an unrelated change", prior: true, planned: true, wantSent: nil, responseHasToken: true},
+		{name: "enabling it", prior: false, planned: true, wantSent: true, responseHasToken: true},
+		{name: "disabling it", prior: true, planned: false, wantSent: false, responseHasToken: false},
+	}
+
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			server, _, bodies := newRecordingRetryStub(t,
+				stubResponse{status: http.StatusOK, body: fmt.Sprintf(`{"data":{"clusterQueueUpdate":{"clusterQueue":{
+					"id": "queue-id",
+					"uuid": "queue-uuid",
+					"key": "a-queue",
+					"description": "a new description",
+					"cluster": {"id": "cluster-id", "uuid": "cluster-uuid"},
+					"hosted": false,
+					"hostedAgents": null,
+					"useGithubAppToken": %t,
+					"dispatchPaused": false
+				}}}}`, testCase.responseHasToken)},
+			)
+			defer server.Close()
+
+			client := newRetryTestClient(t, server.URL, 0, time.Millisecond)
+			orgID := "organization-id"
+			client.organizationId = &orgID
+			cq := &clusterQueueResource{client: client}
+
+			ctx := t.Context()
+			sch := resourceSchema(ctx, t, cq)
+
+			shared := map[string]tftypes.Value{
+				"id":                   tftypes.NewValue(tftypes.String, "queue-id"),
+				"uuid":                 tftypes.NewValue(tftypes.String, "queue-uuid"),
+				"cluster_id":           tftypes.NewValue(tftypes.String, "cluster-id"),
+				"cluster_uuid":         tftypes.NewValue(tftypes.String, "cluster-uuid"),
+				"key":                  tftypes.NewValue(tftypes.String, "a-queue"),
+				"dispatch_paused":      tftypes.NewValue(tftypes.Bool, false),
+				"retry_agent_affinity": tftypes.NewValue(tftypes.String, RetryAgentAffinityPreferWarmest),
+			}
+			prior := map[string]tftypes.Value{
+				"description":          tftypes.NewValue(tftypes.String, "an old description"),
+				"use_github_app_token": tftypes.NewValue(tftypes.Bool, testCase.prior),
+			}
+			planned := map[string]tftypes.Value{
+				"description":          tftypes.NewValue(tftypes.String, "a new description"),
+				"use_github_app_token": tftypes.NewValue(tftypes.Bool, testCase.planned),
+			}
+			maps.Copy(prior, shared)
+			maps.Copy(planned, shared)
+
+			priorRaw := nullObjectWith(ctx, t, sch.Type(), prior)
+			plannedRaw := nullObjectWith(ctx, t, sch.Type(), planned)
+			req := fwresource.UpdateRequest{
+				Plan:   tfsdk.Plan{Schema: sch, Raw: plannedRaw},
+				State:  tfsdk.State{Schema: sch, Raw: priorRaw},
+				Config: tfsdk.Config{Schema: sch, Raw: plannedRaw},
+			}
+			resp := fwresource.UpdateResponse{State: tfsdk.State{Schema: sch, Raw: priorRaw}}
+
+			cq.Update(ctx, req, &resp)
+
+			if resp.Diagnostics.HasError() {
+				t.Fatalf("Update() diagnostics = %v", resp.Diagnostics)
+			}
+
+			sent := bodies()
+			if len(sent) != 1 {
+				t.Fatalf("Made %d requests, want only the update mutation: %v", len(sent), sent)
+			}
+			var request struct {
+				Variables map[string]any `json:"variables"`
+			}
+			if err := json.Unmarshal([]byte(strings.SplitN(sent[0], " ", 2)[1]), &request); err != nil {
+				t.Fatalf("Decoding the update request: %v", err)
+			}
+			got, present := request.Variables["useGithubAppToken"]
+			if testCase.wantSent == nil {
+				if present {
+					t.Errorf("Sent useGithubAppToken = %v, want it left out of an update that does not change it", got)
+				}
+			} else if got != testCase.wantSent {
+				t.Errorf("Sent useGithubAppToken = %v (present %t), want %v", got, present, testCase.wantSent)
+			}
+
+			var persisted clusterQueueResourceModel
+			if diags := resp.State.Get(ctx, &persisted); diags.HasError() {
+				t.Fatalf("Reading the persisted state = %v", diags)
+			}
+			if got := persisted.UseGithubAppToken.ValueBool(); got != testCase.responseHasToken {
+				t.Errorf("Persisted use_github_app_token = %t, want %t from the response", got, testCase.responseHasToken)
 			}
 		})
 	}
