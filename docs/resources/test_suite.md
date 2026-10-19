@@ -21,6 +21,15 @@ resource "buildkite_test_suite" "main" {
   team_owner_id  = "VGVhbvDf4eRef20tMzIxMGEfYTctNzEF5g00M8f5s6E2YjYtODNlOGNlZgD6HcBi"
 }
 
+# create a test suite without the default flaky-detection workflow or flaky label
+# this option only takes effect when creating the suite
+resource "buildkite_test_suite" "without_flaky_detection" {
+  name            = "without flaky detection"
+  default_branch  = "main"
+  team_owner_id   = "VGVhbvDf4eRef20tMzIxMGEfYTctNzEF5g00M8f5s6E2YjYtODNlOGNlZgD6HcBi"
+  flaky_detection = false
+}
+
 # create a test suite with an OIDC policy allowing a pipeline to upload
 # test results without a suite API token
 resource "buildkite_test_suite" "with_oidc_policy" {
@@ -54,6 +63,7 @@ resource "buildkite_test_suite" "with_oidc_policy" {
 - `application_name` (String) The name of the application this test suite is for. If omitted, the value is left unmanaged by Terraform; set it to an empty string to clear it.
 - `color` (String) The hex color code for the test suite navatar, eg #BADA55. If omitted, the value is left unmanaged by Terraform; set it to an empty string to clear it.
 - `emoji` (String) The emoji associated with this test suite, eg :buildkite:
+- `flaky_detection` (Boolean) Whether to create the default flaky-detection workflow and `flaky` label when the suite is created. Defaults to `true`. Only takes effect at creation; changing it later does not add or remove workflows on an existing suite.
 - `oidc_policy` (String) The [OIDC policy](https://buildkite.com/docs/pipelines/configure/tests/test-collection/oidc) for the test suite, as a YAML or JSON string. This policy defines which OIDC tokens can be exchanged for suite access, as an alternative to the suite API token. If omitted, the policy is left unmanaged by Terraform; set it to an empty string to remove an existing policy.
 
 ### Read-Only

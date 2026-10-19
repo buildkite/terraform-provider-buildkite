@@ -11,6 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -23,6 +24,7 @@ type testSuiteModel struct {
 	Color           types.String `tfsdk:"color"`
 	DefaultBranch   types.String `tfsdk:"default_branch"`
 	Emoji           types.String `tfsdk:"emoji"`
+	FlakyDetection  types.Bool   `tfsdk:"flaky_detection"`
 	ID              types.String `tfsdk:"id"`
 	UUID            types.String `tfsdk:"uuid"`
 	OidcPolicy      types.String `tfsdk:"oidc_policy"`
@@ -151,6 +153,7 @@ func (ts *testSuiteResource) Create(ctx context.Context, req resource.CreateRequ
 	payload["oidc_policy"] = optionalStringPayload(plan.OidcPolicy)
 	payload["show_api_token"] = true
 	payload["team_ids"] = []string{teamOwnerUuid}
+	payload["flaky_detection"] = plan.FlakyDetection.ValueBool()
 
 	// Construct URL to call to the REST API
 	url := fmt.Sprintf("/v2/analytics/organizations/%s/suites", ts.client.organization)
@@ -177,6 +180,7 @@ func (ts *testSuiteResource) Create(ctx context.Context, req resource.CreateRequ
 	state.Color = stateStringValue(plan.Color, response.Color)
 	state.DefaultBranch = types.StringValue(response.DefaultBranch)
 	state.Emoji = plan.Emoji
+	state.FlakyDetection = plan.FlakyDetection
 	state.ID = types.StringValue(response.GraphqlID)
 	state.UUID = types.StringValue(response.UUID)
 	state.Name = types.StringValue(response.Name)
@@ -326,6 +330,11 @@ func (ts *testSuiteResource) Read(ctx context.Context, req resource.ReadRequest,
 	state.ApplicationName = refreshedStringValue(state.ApplicationName, response.ApplicationName)
 	state.Color = refreshedStringValue(state.Color, response.Color)
 	state.OidcPolicy = refreshedStringValue(state.OidcPolicy, response.OidcPolicy)
+	// This creation option is not returned by the API. Older and imported state
+	// has no value, so use the default without changing an explicit opt-out.
+	if state.FlakyDetection.IsNull() {
+		state.FlakyDetection = types.BoolValue(true)
+	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
@@ -379,6 +388,13 @@ func (ts *testSuiteResource) Schema(ctx context.Context, req resource.SchemaRequ
 			"emoji": schema.StringAttribute{
 				MarkdownDescription: "The emoji associated with this test suite, eg :buildkite:",
 				Optional:            true,
+			},
+			"flaky_detection": schema.BoolAttribute{
+				MarkdownDescription: "Whether to create the default flaky-detection workflow and `flaky` label when the suite is created. " +
+					"Defaults to `true`. Only takes effect at creation; changing it later does not add or remove workflows on an existing suite.",
+				Optional: true,
+				Computed: true,
+				Default:  booldefault.StaticBool(true),
 			},
 			"application_name": schema.StringAttribute{
 				MarkdownDescription: "The name of the application this test suite is for. " +
@@ -472,6 +488,8 @@ func (ts *testSuiteResource) Update(ctx context.Context, req resource.UpdateRequ
 	state.Name = plan.Name
 	state.DefaultBranch = plan.DefaultBranch
 	state.Emoji = plan.Emoji
+	// The API only uses this option on create; later changes are state-only.
+	state.FlakyDetection = plan.FlakyDetection
 	state.ApplicationName = stateStringValue(plan.ApplicationName, response.ApplicationName)
 	state.Color = stateStringValue(plan.Color, response.Color)
 	state.OidcPolicy = stateStringValue(plan.OidcPolicy, response.OidcPolicy)
