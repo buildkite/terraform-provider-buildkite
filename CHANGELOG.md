@@ -5,6 +5,7 @@
 ### Features
 
 * Add the `buildkite_cluster_cache_registry` resource.
+* Add `flaky_detection` to `buildkite_test_suite` to opt out of creating the default flaky-detection workflow and label. Defaults to `true` and only takes effect when creating a suite.
 
 ### Fixed
 
