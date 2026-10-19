@@ -52,13 +52,13 @@ resource "buildkite_test_suite_workflow" "flaky" {
 
 ### Required
 
-- `monitor` (Attributes) Monitor settings. Supply all fields for the selected type. Recovery thresholds must be below alarm thresholds. (see [below for nested schema](#nestedatt--monitor))
+- `monitor` (Attributes) Monitor settings. Recovery thresholds must be below alarm thresholds. (see [below for nested schema](#nestedatt--monitor))
 - `test_suite_uuid` (String) Suite UUID, such as `buildkite_test_suite.example.uuid`, not its GraphQL ID or slug.
 
 ### Optional
 
 - `alarm_actions` (Attributes Set) Actions. Defaults to empty. Supply only the fields required by each action type. Maximum 7 entries. (see [below for nested schema](#nestedatt--alarm_actions))
-- `filters` (Attributes Set) Tag filters. Defaults to empty. `transition_count` requires a nonblank `scm.branch` filter; no default-branch filter is added. Maximum 4 entries. (see [below for nested schema](#nestedatt--filters))
+- `filters` (Attributes Set) Tag filters. Defaults to empty. `transition_count` requires a nonblank `scm.branch` filter. Maximum 4 entries. (see [below for nested schema](#nestedatt--filters))
 - `recover_actions` (Attributes Set) Actions. Defaults to empty. Supply only the fields required by each action type. Maximum 7 entries. (see [below for nested schema](#nestedatt--recover_actions))
 
 ### Read-Only
@@ -110,7 +110,7 @@ Optional:
 
 Required:
 
-- `key` (String) Tag key: at most 64 bytes, starting with a letter. Cannot be `mut` or start with `mut.`.
+- `key` (String) Tag key: at most 64 bytes, starting with a letter.
 - `operator` (String) One of `is`, `is_not`, or `starts_with`.
 - `value` (String) Nonempty tag value, at most 128 bytes, with no surrounding whitespace.
 

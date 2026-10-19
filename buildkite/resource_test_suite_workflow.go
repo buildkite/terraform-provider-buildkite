@@ -92,7 +92,7 @@ func (r *testSuiteWorkflowResource) Configure(_ context.Context, req resource.Co
 func workflowMonitorSchema() schema.SingleNestedAttribute {
 	return schema.SingleNestedAttribute{
 		Required:            true,
-		MarkdownDescription: "Monitor settings. Supply all fields for the selected type. Recovery thresholds must be below alarm thresholds.",
+		MarkdownDescription: "Monitor settings. Recovery thresholds must be below alarm thresholds.",
 		PlanModifiers:       []planmodifier.Object{objectplanmodifier.RequiresReplace()},
 		Attributes: map[string]schema.Attribute{
 			"type": schema.StringAttribute{
@@ -136,7 +136,7 @@ func workflowMonitorSchema() schema.SingleNestedAttribute {
 func workflowFiltersSchema() schema.SetNestedAttribute {
 	attributes := map[string]schema.Attribute{
 		"key": schema.StringAttribute{
-			Required: true, MarkdownDescription: "Tag key: at most 64 bytes, starting with a letter. Cannot be `mut` or start with `mut.`.",
+			Required: true, MarkdownDescription: "Tag key: at most 64 bytes, starting with a letter.",
 			Validators: []validator.String{stringvalidator.RegexMatches(regexp.MustCompile(`^[A-Za-z][\w.\-]*$`), "must start with a letter and contain only letters, digits, underscores, dots, or hyphens")},
 		},
 		"operator": schema.StringAttribute{
@@ -148,7 +148,7 @@ func workflowFiltersSchema() schema.SetNestedAttribute {
 			Validators: []validator.String{stringvalidator.LengthAtLeast(1)},
 		},
 	}
-	return workflowSetSchema(attributes, 4, "Tag filters. Defaults to empty. `transition_count` requires a nonblank `scm.branch` filter; no default-branch filter is added.")
+	return workflowSetSchema(attributes, 4, "Tag filters. Defaults to empty. `transition_count` requires a nonblank `scm.branch` filter.")
 }
 
 func workflowActionsSchema() schema.SetNestedAttribute {
