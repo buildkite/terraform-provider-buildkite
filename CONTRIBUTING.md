@@ -66,6 +66,16 @@ BUILDKITE_ORGANIZATION_SLUG=<org-slug> BUILDKITE_API_TOKEN=<token> make testacc
 - Code reviewers will run the acceptance tests manually
 - Please run the acceptance tests locally to confirm they pass before requesting a review
 
+#### Test suite workflow acceptance test
+
+This test creates and deletes one workflow on a disposable suite. It requires the workflows API, `read_suites` and `write_suites` scopes, and suite-edit permission. It skips unless a suite UUID is supplied:
+
+```bash
+TF_ACC=1 BUILDKITE_TEST_SUITE_WORKFLOW_SUITE_UUID=<suite-uuid> \
+BUILDKITE_ORGANIZATION_SLUG=<org-slug> BUILDKITE_API_TOKEN=<token> \
+go test ./buildkite -run '^TestAccBuildkiteTestSuiteWorkflow$' -count=1 -v
+```
+
 #### Cache Registry acceptance tests
 
 Cache Registry live tests also require `BUILDKITE_CACHE_REGISTRIES_ACCEPTANCE=1`. Without it, they skip with a message that live resources are untested. The offline Terraform `UnitTest` lifecycle tests still run with `make test`.
