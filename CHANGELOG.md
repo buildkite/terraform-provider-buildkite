@@ -5,6 +5,7 @@
 ### Features
 
 * Add the `buildkite_cluster_cache_registry` resource.
+* Add `use_github_app_token` to `buildkite_cluster_queue`, so jobs on a self-hosted queue can check out GitHub repositories with a short-lived Buildkite-issued GitHub App token instead of a long-lived credential on the agent.
 * Add `flaky_detection` to `buildkite_test_suite` to opt out of creating the default flaky-detection workflow and label. Defaults to `true` and only takes effect when creating a suite.
 * Add the `buildkite_test_suite_workflow` resource with create, read, and delete support. Configuration changes replace the workflow.
 
