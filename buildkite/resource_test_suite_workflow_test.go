@@ -346,6 +346,10 @@ func TestTestSuiteWorkflowValidation(t *testing.T) {
 		{`type="passed_on_retry"`, `filters=[{key="mut.state",operator="is",value="muted"}]`, "cannot be mutable tags"},
 		{`type="passed_on_retry"`, `filters=[null]`, "cannot contain null"},
 		{`type="passed_on_retry"`, `alarm_actions=[null]`, "cannot contain null"},
+		{`type="passed_on_retry"`, `alarm_actions=[{type="send_slack_notification",slack_workspace_id="123E4567-E89B-42D3-A456-426614174001",channel="#test",message_template="Flaky test"}]`, `must be a lowercase\s+UUID`},
+		{`type="passed_on_retry"`, `recover_actions=[{type="send_slack_notification",slack_workspace_id="123e4567-E89b-42d3-a456-426614174001",channel="#test",message_template="Recovered test"}]`, `must be a lowercase\s+UUID`},
+		{`type="passed_on_retry"`, `alarm_actions=[{type="create_linear_issue",linear_team_id="123E4567-E89B-42D3-A456-426614174002",title_template="Flaky test",description_template="Check test"}]`, `must be a lowercase\s+UUID`},
+		{`type="passed_on_retry"`, `recover_actions=[{type="create_linear_issue",linear_team_id="123e4567-E89b-42d3-a456-426614174002",title_template="Recovered test",description_template="Check test"}]`, `must be a lowercase\s+UUID`},
 	}
 	for _, tc := range tests {
 		t.Run(tc.message, func(t *testing.T) {

@@ -152,6 +152,7 @@ func workflowFiltersSchema() schema.SetNestedAttribute {
 }
 
 func workflowActionsSchema() schema.SetNestedAttribute {
+	uuidValidator := stringvalidator.RegexMatches(regexp.MustCompile(`^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$`), "must be a lowercase UUID")
 	attributes := map[string]schema.Attribute{
 		"type": schema.StringAttribute{
 			Required: true, MarkdownDescription: "One of `add_label`, `remove_label`, `change_state`, `send_webhook_notification`, `send_slack_notification`, or `create_linear_issue`.",
@@ -171,7 +172,7 @@ func workflowActionsSchema() schema.SetNestedAttribute {
 		},
 		"slack_workspace_id": schema.StringAttribute{
 			Optional: true, MarkdownDescription: "Slack notification service UUID from the notification services API (`read_notification_services` scope), not a native Slack ID.",
-			Validators: []validator.String{stringvalidator.RegexMatches(notificationServiceUUIDRegex, "must be a UUID")},
+			Validators: []validator.String{uuidValidator},
 		},
 		"channel": schema.StringAttribute{
 			Optional: true, Sensitive: true, MarkdownDescription: "Slack channel.",
@@ -183,7 +184,7 @@ func workflowActionsSchema() schema.SetNestedAttribute {
 		},
 		"linear_team_id": schema.StringAttribute{
 			Optional: true, MarkdownDescription: "Team UUID from Linear, accessible to the organization's integration.",
-			Validators: []validator.String{stringvalidator.RegexMatches(notificationServiceUUIDRegex, "must be a UUID")},
+			Validators: []validator.String{uuidValidator},
 		},
 		"title_template": schema.StringAttribute{
 			Optional: true, Sensitive: true, MarkdownDescription: "Linear issue title Liquid template.",
