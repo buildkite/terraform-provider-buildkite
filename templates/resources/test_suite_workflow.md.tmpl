@@ -27,5 +27,5 @@ Using `terraform import`, import a workflow using `suite-slug/workflow-uuid` fro
 In Terraform v1.5.0 and later, use an [`import` block](https://developer.hashicorp.com/terraform/language/import). For example:
 {{ $tfImportBlock := print "examples/resources/" .Name "/import.tf" }}{{tffile $tfImportBlock }}
 
-Match the configuration to the existing workflow before applying to avoid replacement. Include any existing filters and actions, which default to empty sets when omitted.
+Match the configuration to the existing workflow before applying to avoid unintended changes. Include any existing filters and actions, which default to empty sets when omitted and will be cleared on apply. Changing the monitor type or test suite replaces the workflow.
 {{- end }}

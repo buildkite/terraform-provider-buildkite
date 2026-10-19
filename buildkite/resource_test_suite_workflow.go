@@ -19,10 +19,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/objectplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setdefault"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -94,13 +92,13 @@ func workflowMonitorSchema() schema.SingleNestedAttribute {
 	return schema.SingleNestedAttribute{
 		Required:            true,
 		MarkdownDescription: "Monitor settings. Recovery thresholds must be below alarm thresholds.",
-		PlanModifiers:       []planmodifier.Object{objectplanmodifier.RequiresReplace()},
 		Attributes: map[string]schema.Attribute{
 			"type": schema.StringAttribute{
 				Required: true,
 				MarkdownDescription: "One of `transition_count`, `probabilistic_flakiness`, `duration_threshold`, `passed_on_retry`, or `new_test`. " +
-					"`new_test` requires an existing run and cannot have recovery actions.",
-				Validators: []validator.String{stringvalidator.OneOf("transition_count", "probabilistic_flakiness", "duration_threshold", "passed_on_retry", "new_test")},
+					"Changing the type replaces the workflow. `new_test` requires an existing run and cannot have recovery actions.",
+				Validators:    []validator.String{stringvalidator.OneOf("transition_count", "probabilistic_flakiness", "duration_threshold", "passed_on_retry", "new_test")},
+				PlanModifiers: []planmodifier.String{stringplanmodifier.RequiresReplace()},
 			},
 			"window_size": schema.Int64Attribute{
 				Optional: true, MarkdownDescription: "Transition-count window size, from 2 to 1000.",
@@ -207,7 +205,6 @@ func workflowSetSchema(attributes map[string]schema.Attribute, limit int, descri
 		NestedObject:        nested,
 		Default:             setdefault.StaticValue(types.SetValueMust(nested.Type(), []attr.Value{})),
 		Validators:          []validator.Set{setvalidator.SizeAtMost(limit)},
-		PlanModifiers:       []planmodifier.Set{setplanmodifier.RequiresReplace()},
 	}
 }
 
@@ -215,7 +212,7 @@ func (*testSuiteWorkflowResource) Schema(_ context.Context, _ resource.SchemaReq
 	resp.Schema = schema.Schema{
 		MarkdownDescription: "Manages a Test Engine workflow. Requires the workflows API, `read_suites` and `write_suites` scopes, and suite-edit permission. " +
 			"Available monitors and actions depend on the organization's plan and integrations.\n\n" +
-			"Configuration changes replace the workflow.\n\n" +
+			"Monitor settings, filters, and actions update in place. Changing the monitor type or test suite replaces the workflow.\n\n" +
 			"Sensitive values remain in Terraform state. Refresh fails if webhook endpoints are masked.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
@@ -427,8 +424,34 @@ func (r *testSuiteWorkflowResource) Delete(ctx context.Context, req resource.Del
 	}
 }
 
-func (*testSuiteWorkflowResource) Update(_ context.Context, _ resource.UpdateRequest, resp *resource.UpdateResponse) {
-	resp.Diagnostics.AddError("Workflow update is not supported", "Changes to workflow configuration must replace the resource.")
+func (r *testSuiteWorkflowResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	var state testSuiteWorkflowModel
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &state)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	timeout, diags := r.client.updateTimeout(ctx)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	requestCtx, cancel := mutationContext(ctx, timeout)
+	defer cancel()
+	payload := map[string]any{
+		"monitor":         workflowObjectPayload(state.Monitor),
+		"filters":         workflowSetPayload(state.Filters),
+		"alarm_actions":   workflowSetPayload(state.AlarmActions),
+		"recover_actions": workflowSetPayload(state.RecoverActions),
+	}
+	var result testSuiteWorkflowResponse
+	if err := r.client.makeRequest(requestCtx, http.MethodPatch, r.workflowPath(state), payload, &result); err != nil {
+		resp.Diagnostics.AddError("Failed to update test suite workflow", err.Error())
+		return
+	}
+	resp.Diagnostics.Append(state.applyWorkflowResponse(result)...)
+	if !resp.Diagnostics.HasError() {
+		resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+	}
 }
 
 func (r *testSuiteWorkflowResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {

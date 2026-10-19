@@ -4,7 +4,7 @@ page_title: "buildkite_test_suite_workflow Resource - terraform-provider-buildki
 subcategory: ""
 description: |-
   Manages a Test Engine workflow. Requires the workflows API, read_suites and write_suites scopes, and suite-edit permission. Available monitors and actions depend on the organization's plan and integrations.
-  Configuration changes replace the workflow.
+  Monitor settings, filters, and actions update in place. Changing the monitor type or test suite replaces the workflow.
   Sensitive values remain in Terraform state. Refresh fails if webhook endpoints are masked.
 ---
 
@@ -12,7 +12,7 @@ description: |-
 
 Manages a Test Engine workflow. Requires the workflows API, `read_suites` and `write_suites` scopes, and suite-edit permission. Available monitors and actions depend on the organization's plan and integrations.
 
-Configuration changes replace the workflow.
+Monitor settings, filters, and actions update in place. Changing the monitor type or test suite replaces the workflow.
 
 Sensitive values remain in Terraform state. Refresh fails if webhook endpoints are masked.
 
@@ -72,7 +72,7 @@ resource "buildkite_test_suite_workflow" "flaky" {
 
 Required:
 
-- `type` (String) One of `transition_count`, `probabilistic_flakiness`, `duration_threshold`, `passed_on_retry`, or `new_test`. `new_test` requires an existing run and cannot have recovery actions.
+- `type` (String) One of `transition_count`, `probabilistic_flakiness`, `duration_threshold`, `passed_on_retry`, or `new_test`. Changing the type replaces the workflow. `new_test` requires an existing run and cannot have recovery actions.
 
 Optional:
 
@@ -150,4 +150,4 @@ import {
 }
 ```
 
-Match the configuration to the existing workflow before applying to avoid replacement. Include any existing filters and actions, which default to empty sets when omitted.
+Match the configuration to the existing workflow before applying to avoid unintended changes. Include any existing filters and actions, which default to empty sets when omitted and will be cleared on apply. Changing the monitor type or test suite replaces the workflow.

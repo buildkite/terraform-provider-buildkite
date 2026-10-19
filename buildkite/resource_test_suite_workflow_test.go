@@ -13,6 +13,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	fwresource "github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -83,7 +84,16 @@ func (a *workflowTestAPI) handle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	collection := "/v2/analytics/organizations/test/suites/" + workflowTestSuiteUUID + "/workflows"
-	if r.Method == http.MethodPost && r.URL.Path == collection {
+	creating := r.Method == http.MethodPost && r.URL.Path == collection
+	updating := r.Method == http.MethodPatch && strings.HasPrefix(r.URL.Path, collection+"/")
+	if creating || updating {
+		id := strings.TrimPrefix(r.URL.Path, collection+"/")
+		if updating {
+			if _, exists := a.workflows[id]; !exists {
+				w.WriteHeader(http.StatusNotFound)
+				return
+			}
+		}
 		var body map[string]any
 		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 			a.t.Error(err)
@@ -105,15 +115,17 @@ func (a *workflowTestAPI) handle(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 		if !reflect.DeepEqual(body["monitor"], a.want["monitor"]) || len(body) != 4 {
-			a.t.Errorf("unexpected create payload: %#v", body)
+			a.t.Errorf("unexpected workflow payload: %#v", body)
 		}
 		if a.status != 0 {
 			w.WriteHeader(a.status)
 			_, _ = w.Write([]byte(`{"message":"Validation Failed","errors":[{"field":"/alarm_actions/0/label","code":"invalid"}]}`))
 			return
 		}
-		a.creates++
-		id := fmt.Sprintf("123e4567-e89b-42d3-a456-%012d", a.creates)
+		if creating {
+			a.creates++
+			id = fmt.Sprintf("123e4567-e89b-42d3-a456-%012d", a.creates)
+		}
 		encoded, _ := json.Marshal(a.want)
 		var response map[string]any
 		if err := json.Unmarshal(encoded, &response); err != nil {
@@ -128,7 +140,9 @@ func (a *workflowTestAPI) handle(w http.ResponseWriter, r *http.Request) {
 		response["url"] = "https://api.buildkite.com" + collection + "/" + id
 		response["web_url"] = "https://buildkite.com/workflows/" + id + "/events"
 		a.workflows[id] = response
-		w.WriteHeader(http.StatusCreated)
+		if creating {
+			w.WriteHeader(http.StatusCreated)
+		}
 		encoded, _ = json.Marshal(response)
 		if a.maskWebhook {
 			encoded = []byte(strings.ReplaceAll(string(encoded), "https://example.com/secret", "https://example.com/[REDACTED]"))
@@ -367,11 +381,7 @@ func TestTestSuiteWorkflowReplacement(t *testing.T) {
 	steps := []resource.TestStep{{Config: config}}
 	for _, replacement := range []string{
 		strings.Replace(config, workflowTestSuiteUUID, "123e4567-e89b-42d3-a456-426614174099", 1),
-		strings.Replace(config, "window_size = 73", "window_size = 74", 1),
-		strings.Replace(config, `value = "staging"`, `value = "production"`, 1),
-		strings.Replace(config, "https://example.com/secret", "https://example.com/changed", 1),
-		strings.Replace(config, `recover_actions = [{ type = "remove_label", label = "flaky" }]`, `recover_actions = []`, 1),
-		strings.Replace(config, workflowTestCollections, `filters = [{key="scm.branch",operator="is",value="main"}]`, 1),
+		strings.Replace(config, workflowTestMonitor, `type = "passed_on_retry"`, 1),
 	} {
 		steps = append(steps, resource.TestStep{
 			Config: replacement, PlanOnly: true, ExpectNonEmptyPlan: true,
@@ -382,15 +392,73 @@ func TestTestSuiteWorkflowReplacement(t *testing.T) {
 		PreConfig: func() {
 			api.mu.Lock()
 			defer api.mu.Unlock()
-			api.want["monitor"].(map[string]any)["window_size"] = float64(74)
+			api.want["monitor"] = map[string]any{"type": "passed_on_retry"}
 		},
-		Config: strings.Replace(config, "window_size = 73", "window_size = 74", 1),
+		Config: strings.Replace(config, workflowTestMonitor, `type = "passed_on_retry"`, 1),
 		Check: resource.ComposeAggregateTestCheckFunc(
 			resource.TestCheckResourceAttr(workflowTestAddress, "id", "123e4567-e89b-42d3-a456-000000000002"),
-			resource.TestCheckResourceAttr(workflowTestAddress, "monitor.window_size", "74"),
+			resource.TestCheckResourceAttr(workflowTestAddress, "monitor.type", "passed_on_retry"),
 		),
 	})
 	resource.UnitTest(t, resource.TestCase{ProtoV6ProviderFactories: protoV6ProviderFactories(), Steps: steps})
+}
+
+func TestTestSuiteWorkflowUpdate(t *testing.T) {
+	api := newWorkflowTestAPI(t, workflowTestBody)
+	config := workflowTestConfig(api.server.URL, workflowTestSuiteUUID, workflowTestMonitor, workflowTestCollections)
+	updated := workflowTestConfig(api.server.URL, workflowTestSuiteUUID, `type = "transition_count"
+window_size = 91
+alarm_threshold = 0.25
+recover_threshold = 0.012`, `
+filters = [{key="scm.branch",operator="starts_with",value="release/"}]
+alarm_actions = [{type="send_webhook_notification",endpoint="https://example.com/changed"}]
+recover_actions = [{type="change_state",state="enabled"}]
+`)
+	cleared := workflowTestConfig(api.server.URL, workflowTestSuiteUUID, `type = "transition_count"
+window_size = 91
+alarm_threshold = 0.25
+recover_threshold = 0.012`, `filters = [{key="scm.branch",operator="starts_with",value="release/"}]`)
+	idCheck := resource.TestCheckResourceAttr(workflowTestAddress, "id", "123e4567-e89b-42d3-a456-000000000001")
+	updateCheck := resource.ConfigPlanChecks{PreApply: []plancheck.PlanCheck{
+		plancheck.ExpectResourceAction(workflowTestAddress, plancheck.ResourceActionUpdate),
+	}}
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		Steps: []resource.TestStep{
+			{Config: config},
+			{PreConfig: func() {
+				api.mu.Lock()
+				defer api.mu.Unlock()
+				if err := json.Unmarshal([]byte(`{
+"monitor":{"type":"transition_count","window_size":91,"alarm_threshold":0.25,"recover_threshold":0.012},
+"filters":[{"key":"scm.branch","operator":"starts_with","value":"release/"}],
+"alarm_actions":[{"type":"send_webhook_notification","endpoint":"https://example.com/changed"}],
+"recover_actions":[{"type":"change_state","state":"enabled"}]}`), &api.want); err != nil {
+					t.Fatal(err)
+				}
+			}, Config: updated, ConfigPlanChecks: updateCheck, Check: resource.ComposeAggregateTestCheckFunc(
+				idCheck,
+				resource.TestCheckResourceAttr(workflowTestAddress, "monitor.window_size", "91"),
+				resource.TestCheckResourceAttr(workflowTestAddress, "monitor.alarm_threshold", "0.25"),
+				resource.TestCheckResourceAttr(workflowTestAddress, "monitor.recover_threshold", "0.012"),
+				resource.TestCheckResourceAttr(workflowTestAddress, "filters.#", "1"),
+				resource.TestCheckTypeSetElemNestedAttrs(workflowTestAddress, "filters.*", map[string]string{"operator": "starts_with", "value": "release/"}),
+				resource.TestCheckResourceAttr(workflowTestAddress, "alarm_actions.#", "1"),
+				resource.TestCheckTypeSetElemNestedAttrs(workflowTestAddress, "alarm_actions.*", map[string]string{"endpoint": "https://example.com/changed"}),
+				resource.TestCheckTypeSetElemNestedAttrs(workflowTestAddress, "recover_actions.*", map[string]string{"state": "enabled"}),
+			)},
+			{PreConfig: func() {
+				api.mu.Lock()
+				defer api.mu.Unlock()
+				api.want["alarm_actions"], api.want["recover_actions"] = []any{}, []any{}
+			}, Config: cleared, ConfigPlanChecks: updateCheck, Check: resource.ComposeAggregateTestCheckFunc(
+				idCheck,
+				resource.TestCheckResourceAttr(workflowTestAddress, "alarm_actions.#", "0"),
+				resource.TestCheckResourceAttr(workflowTestAddress, "recover_actions.#", "0"),
+			)},
+			{Config: cleared, PlanOnly: true},
+		},
+	})
 }
 
 func TestTestSuiteWorkflowValidation(t *testing.T) {
@@ -451,6 +519,11 @@ func TestTestSuiteWorkflowFailureState(t *testing.T) {
 	if create.Diagnostics.HasError() {
 		t.Fatal(create.Diagnostics)
 	}
+	updatePlan := tfsdk.Plan{Schema: schema, Raw: create.State.Raw}
+	// Computed URLs are unknown in an update plan; failures must retain their prior values.
+	if diags := updatePlan.SetAttribute(ctx, path.Root("web_url"), types.StringUnknown()); diags.HasError() {
+		t.Fatal(diags)
+	}
 
 	for _, status := range []int{http.StatusForbidden, http.StatusInternalServerError} {
 		api.mu.Lock()
@@ -460,6 +533,11 @@ func TestTestSuiteWorkflowFailureState(t *testing.T) {
 		r.Read(ctx, fwresource.ReadRequest{State: create.State}, &read)
 		if !read.Diagnostics.HasError() || !read.State.Raw.Equal(create.State.Raw) {
 			t.Fatalf("HTTP %d must report an error and retain state: %v", status, read.Diagnostics)
+		}
+		updated := fwresource.UpdateResponse{State: create.State}
+		r.Update(ctx, fwresource.UpdateRequest{Plan: updatePlan, State: create.State}, &updated)
+		if !updated.Diagnostics.HasError() || !updated.State.Raw.Equal(create.State.Raw) {
+			t.Fatalf("HTTP %d update must report an error and retain state: %v", status, updated.Diagnostics)
 		}
 		deleted := fwresource.DeleteResponse{State: create.State}
 		r.Delete(ctx, fwresource.DeleteRequest{State: create.State}, &deleted)
@@ -474,6 +552,11 @@ func TestTestSuiteWorkflowFailureState(t *testing.T) {
 	r.Read(ctx, fwresource.ReadRequest{State: create.State}, &read)
 	if !diagnosticsContain(read.Diagnostics, "masked webhook") || !read.State.Raw.Equal(create.State.Raw) {
 		t.Fatalf("masked endpoint must fail without changing state: %v", read.Diagnostics)
+	}
+	updated := fwresource.UpdateResponse{State: create.State}
+	r.Update(ctx, fwresource.UpdateRequest{Plan: updatePlan, State: create.State}, &updated)
+	if !diagnosticsContain(updated.Diagnostics, "masked webhook") || !updated.State.Raw.Equal(create.State.Raw) {
+		t.Fatalf("masked update must fail without losing prior state: %v", updated.Diagnostics)
 	}
 	maskedCreate := fwresource.CreateResponse{State: tfsdk.State{Schema: schema}}
 	r.Create(ctx, fwresource.CreateRequest{Plan: plan}, &maskedCreate)
@@ -492,6 +575,11 @@ func TestTestSuiteWorkflowFailureState(t *testing.T) {
 	r.Create(ctx, fwresource.CreateRequest{Plan: plan}, &failed)
 	if !diagnosticsContain(failed.Diagnostics, "/alarm_actions/0/label") {
 		t.Fatalf("API validation pointer missing: %v", failed.Diagnostics)
+	}
+	updated = fwresource.UpdateResponse{State: create.State}
+	r.Update(ctx, fwresource.UpdateRequest{Plan: updatePlan, State: create.State}, &updated)
+	if !diagnosticsContain(updated.Diagnostics, "/alarm_actions/0/label") || !updated.State.Raw.Equal(create.State.Raw) {
+		t.Fatalf("invalid update must report the API validation pointer and retain state: %v", updated.Diagnostics)
 	}
 	api.mu.Lock()
 	api.status = 0
