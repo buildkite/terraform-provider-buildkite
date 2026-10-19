@@ -4,7 +4,7 @@ page_title: "buildkite_test_suite_workflow Resource - terraform-provider-buildki
 subcategory: ""
 description: |-
   Manages a Test Engine workflow. Requires the workflows API, read_suites and write_suites scopes, and suite-edit permission. Available monitors and actions depend on the organization's plan and integrations.
-  Configuration changes replace the workflow. Import is not supported.
+  Configuration changes replace the workflow.
   Sensitive values remain in Terraform state. Refresh fails if webhook endpoints are masked.
 ---
 
@@ -12,7 +12,7 @@ description: |-
 
 Manages a Test Engine workflow. Requires the workflows API, `read_suites` and `write_suites` scopes, and suite-edit permission. Available monitors and actions depend on the organization's plan and integrations.
 
-Configuration changes replace the workflow. Import is not supported.
+Configuration changes replace the workflow.
 
 Sensitive values remain in Terraform state. Refresh fails if webhook endpoints are masked.
 
@@ -133,3 +133,21 @@ Optional:
 - `slack_workspace_id` (String) Slack notification service UUID from the notification services API (`read_notification_services` scope), not a native Slack ID.
 - `state` (String) Test state for `change_state`. Requires state management on the suite.
 - `title_template` (String, Sensitive) Linear issue title Liquid template.
+
+## Import
+
+Using `terraform import`, import a workflow using `suite-slug/workflow-uuid` from the provider's configured organization. For example:
+```shell
+# Import a workflow using its suite slug and workflow UUID
+terraform import buildkite_test_suite_workflow.flaky application/123e4567-e89b-42d3-a456-426614174001
+```
+
+In Terraform v1.5.0 and later, use an [`import` block](https://developer.hashicorp.com/terraform/language/import). For example:
+```terraform
+import {
+  to = buildkite_test_suite_workflow.flaky
+  id = "application/123e4567-e89b-42d3-a456-426614174001"
+}
+```
+
+Match the configuration to the existing workflow before applying to avoid replacement. Include any existing filters and actions, which default to empty sets when omitted.

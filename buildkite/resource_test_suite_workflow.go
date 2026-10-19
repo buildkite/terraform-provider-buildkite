@@ -72,6 +72,7 @@ type testSuiteWorkflowResponse struct {
 
 var (
 	_ resource.ResourceWithConfigure      = (*testSuiteWorkflowResource)(nil)
+	_ resource.ResourceWithImportState    = (*testSuiteWorkflowResource)(nil)
 	_ resource.ResourceWithValidateConfig = (*testSuiteWorkflowResource)(nil)
 )
 
@@ -214,7 +215,7 @@ func (*testSuiteWorkflowResource) Schema(_ context.Context, _ resource.SchemaReq
 	resp.Schema = schema.Schema{
 		MarkdownDescription: "Manages a Test Engine workflow. Requires the workflows API, `read_suites` and `write_suites` scopes, and suite-edit permission. " +
 			"Available monitors and actions depend on the organization's plan and integrations.\n\n" +
-			"Configuration changes replace the workflow. Import is not supported.\n\n" +
+			"Configuration changes replace the workflow.\n\n" +
 			"Sensitive values remain in Terraform state. Refresh fails if webhook endpoints are masked.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
@@ -428,6 +429,33 @@ func (r *testSuiteWorkflowResource) Delete(ctx context.Context, req resource.Del
 
 func (*testSuiteWorkflowResource) Update(_ context.Context, _ resource.UpdateRequest, resp *resource.UpdateResponse) {
 	resp.Diagnostics.AddError("Workflow update is not supported", "Changes to workflow configuration must replace the resource.")
+}
+
+func (r *testSuiteWorkflowResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	slug, id, ok := strings.Cut(req.ID, "/")
+	if !ok || !regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9_-]*$`).MatchString(slug) || !notificationServiceUUIDRegex.MatchString(id) {
+		resp.Diagnostics.AddError("Invalid test suite workflow import ID", "Expected suite-slug/workflow-uuid, using the suite slug and workflow UUID from the provider's configured organization.")
+		return
+	}
+	timeout, diags := r.client.readTimeout(ctx)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	requestCtx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+	var suite testSuiteResponse
+	url := fmt.Sprintf("/v2/analytics/organizations/%s/suites/%s", r.client.organization, slug)
+	if err := r.client.makeRequest(requestCtx, http.MethodGet, url, nil, &suite); err != nil {
+		resp.Diagnostics.AddError("Failed to import test suite workflow", fmt.Sprintf("Could not read test suite %q: %s", slug, err))
+		return
+	}
+	if !notificationServiceUUIDRegex.MatchString(suite.UUID) {
+		resp.Diagnostics.AddError("Failed to import test suite workflow", fmt.Sprintf("Test suite %q did not return a valid suite UUID.", slug))
+		return
+	}
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("test_suite_uuid"), suite.UUID)...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), id)...)
 }
 
 func workflowObjectPayload(object types.Object) map[string]any {
