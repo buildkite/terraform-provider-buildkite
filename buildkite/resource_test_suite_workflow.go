@@ -358,14 +358,8 @@ func (r *testSuiteWorkflowResource) Create(ctx context.Context, req resource.Cre
 	}
 	requestCtx, cancel := mutationContext(ctx, timeout)
 	defer cancel()
-	payload := map[string]any{
-		"monitor":         workflowObjectPayload(state.Monitor),
-		"filters":         workflowSetPayload(state.Filters),
-		"alarm_actions":   workflowSetPayload(state.AlarmActions),
-		"recover_actions": workflowSetPayload(state.RecoverActions),
-	}
 	var result testSuiteWorkflowResponse
-	if err := r.client.makeRequest(requestCtx, http.MethodPost, r.workflowPath(state), payload, &result); err != nil {
+	if err := r.client.makeRequest(requestCtx, http.MethodPost, r.workflowPath(state), workflowPayload(state), &result); err != nil {
 		resp.Diagnostics.AddError("Failed to create test suite workflow", err.Error())
 		return
 	}
@@ -437,14 +431,8 @@ func (r *testSuiteWorkflowResource) Update(ctx context.Context, req resource.Upd
 	}
 	requestCtx, cancel := mutationContext(ctx, timeout)
 	defer cancel()
-	payload := map[string]any{
-		"monitor":         workflowObjectPayload(state.Monitor),
-		"filters":         workflowSetPayload(state.Filters),
-		"alarm_actions":   workflowSetPayload(state.AlarmActions),
-		"recover_actions": workflowSetPayload(state.RecoverActions),
-	}
 	var result testSuiteWorkflowResponse
-	if err := r.client.makeRequest(requestCtx, http.MethodPatch, r.workflowPath(state), payload, &result); err != nil {
+	if err := r.client.makeRequest(requestCtx, http.MethodPatch, r.workflowPath(state), workflowPayload(state), &result); err != nil {
 		resp.Diagnostics.AddError("Failed to update test suite workflow", err.Error())
 		return
 	}
@@ -479,6 +467,15 @@ func (r *testSuiteWorkflowResource) ImportState(ctx context.Context, req resourc
 	}
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("test_suite_uuid"), suite.UUID)...)
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), id)...)
+}
+
+func workflowPayload(state testSuiteWorkflowModel) map[string]any {
+	return map[string]any{
+		"monitor":         workflowObjectPayload(state.Monitor),
+		"filters":         workflowSetPayload(state.Filters),
+		"alarm_actions":   workflowSetPayload(state.AlarmActions),
+		"recover_actions": workflowSetPayload(state.RecoverActions),
+	}
 }
 
 func workflowObjectPayload(object types.Object) map[string]any {
