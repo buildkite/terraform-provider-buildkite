@@ -16,6 +16,23 @@ description: |-
 {{tffile .ExampleFile }}
 {{- end }}
 
+## Updating an existing workflow
+
+After applying the example above, change `monitor.alarm_threshold` from `0.05` to `0.10` in the same resource, leaving its other settings unchanged:
+
+```terraform
+monitor = {
+  type              = "transition_count"
+  window_size       = 100
+  alarm_threshold   = 0.10
+  recover_threshold = 0
+}
+```
+
+`terraform plan` shows an in-place update, and `terraform apply` preserves the workflow UUID. Filters and actions also update in place. For example, replace the existing `recover_actions` value with `recover_actions = []` to remove all recovery actions.
+
+Changing `monitor.type` or `test_suite_uuid` instead replaces the workflow.
+
 {{ .SchemaMarkdown | trimspace }}
 {{- if .HasImport }}
 
@@ -27,5 +44,5 @@ Using `terraform import`, import a workflow using `suite-slug/workflow-uuid` fro
 In Terraform v1.5.0 and later, use an [`import` block](https://developer.hashicorp.com/terraform/language/import). For example:
 {{ $tfImportBlock := print "examples/resources/" .Name "/import.tf" }}{{tffile $tfImportBlock }}
 
-Match the configuration to the existing workflow before applying to avoid replacement. Include any existing filters and actions, which default to empty sets when omitted.
+Match the configuration to the existing workflow before applying to avoid unintended changes. Include any existing filters and actions, which default to empty sets when omitted and will be cleared on apply. Changing the monitor type or test suite replaces the workflow.
 {{- end }}
