@@ -51,6 +51,27 @@ func isResourceNotFoundError(err error) bool {
 	return resourceNotFoundRegex.MatchString(err.Error())
 }
 
+// isPipelineScheduleNotFoundError reports whether err indicates the pipeline schedule itself is
+// missing. It is tighter than isResourceNotFoundError, which also matches "No pipeline found" —
+// a message pipelineScheduleDelete returns when the schedule's parent pipeline is invisible to
+// the viewer (archived pipeline, missing RBAC, token in the wrong org). The schedule may still
+// exist upstream in that case, so a schedule Delete must surface the error rather than swallow it.
+func isPipelineScheduleNotFoundError(err error) bool {
+	if !isResourceNotFoundError(err) {
+		return false
+	}
+	var errList gqlerror.List
+	if errors.As(err, &errList) {
+		for _, e := range errList {
+			if strings.Contains(strings.ToLower(e.Message), "schedule") {
+				return true
+			}
+		}
+		return false
+	}
+	return strings.Contains(strings.ToLower(err.Error()), "schedule")
+}
+
 // isActiveJobsError returns true if the error indicates the pipeline has active jobs/builds preventing deletion
 func isActiveJobsError(err error) bool {
 	if err == nil {

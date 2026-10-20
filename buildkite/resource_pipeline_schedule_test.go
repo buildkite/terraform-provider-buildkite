@@ -5,12 +5,72 @@ import (
 	"fmt"
 	"testing"
 
+	genqlient "github.com/Khan/genqlient/graphql"
+	frameworkresource "github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
+	"github.com/vektah/gqlparser/v2/gqlerror"
 )
+
+type fakeGraphQLClient struct {
+	handler func(ctx context.Context, req *genqlient.Request, resp *genqlient.Response) error
+}
+
+func (f *fakeGraphQLClient) MakeRequest(ctx context.Context, req *genqlient.Request, resp *genqlient.Response) error {
+	return f.handler(ctx, req, resp)
+}
+
+// TestPipelineScheduleDeleteSurfacesParentPipelineNotFound pins the fix for the customer bug:
+// pipelineScheduleDelete returning "No pipeline found" (which it does when the schedule's parent
+// pipeline is invisible to the viewer — archived, missing RBAC, token in the wrong org) must
+// NOT be reported as a successful destroy. The schedule may still exist upstream.
+func TestPipelineScheduleDeleteSurfacesParentPipelineNotFound(t *testing.T) {
+	var calls int
+	fake := &fakeGraphQLClient{
+		handler: func(ctx context.Context, req *genqlient.Request, resp *genqlient.Response) error {
+			calls++
+			return gqlerror.List{&gqlerror.Error{Message: "No pipeline found"}}
+		},
+	}
+	r := &pipelineSchedule{client: &Client{genqlient: fake}}
+
+	var schemaResp frameworkresource.SchemaResponse
+	r.Schema(context.Background(), frameworkresource.SchemaRequest{}, &schemaResp)
+	if schemaResp.Diagnostics.HasError() {
+		t.Fatalf("schema: %v", schemaResp.Diagnostics)
+	}
+
+	state := tfsdk.State{Schema: schemaResp.Schema}
+	model := pipelineScheduleResourceModel{
+		Id:         types.StringValue("UGlwZWxpbmVTY2hlZHVsZS0tLWJhMjNiZWZiLTU1NTctNDI1NC1hZTU1LTc4OGM0Y2I5MjBiOQ=="),
+		Uuid:       types.StringValue("ba23befb-5557-4254-ae55-788c4cb920b9"),
+		PipelineId: types.StringValue("UGlwZWxpbmUtLS0wMTlmNWRlOC1iNDJhLTQxNDgtYTA5OS03ZWVmM2JjNjNjOTg="),
+		Label:      types.StringValue("Nightly build"),
+		Cronline:   types.StringValue("@midnight"),
+		Branch:     types.StringValue("main"),
+		Commit:     types.StringNull(),
+		Message:    types.StringNull(),
+		Env:        types.MapNull(types.StringType),
+		Enabled:    types.BoolValue(true),
+	}
+	if diags := state.Set(context.Background(), &model); diags.HasError() {
+		t.Fatalf("state.Set: %v", diags)
+	}
+
+	resp := frameworkresource.DeleteResponse{State: state}
+	r.Delete(context.Background(), frameworkresource.DeleteRequest{State: state}, &resp)
+
+	if calls == 0 {
+		t.Fatal("Delete did not call the GraphQL client")
+	}
+	if !resp.Diagnostics.HasError() {
+		t.Fatal(`Delete silently swallowed a "No pipeline found" response from pipelineScheduleDelete; the schedule may still exist upstream`)
+	}
+}
 
 func TestAccBuildkitePipelineSchedule(t *testing.T) {
 	config := func(name, cronline, label, env string, enabled bool) string {
@@ -349,6 +409,18 @@ func testAccCheckPipelineScheduleDestroy(s *terraform.State) error {
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "buildkite_pipeline_schedule" {
 			continue
+		}
+
+		resp, err := getPipelineSchedule(context.Background(), genqlientGraphql, rs.Primary.ID)
+		if err != nil {
+			if isResourceNotFoundError(err) {
+				continue
+			}
+			return err
+		}
+
+		if node, ok := resp.GetNode().(*getPipelineScheduleNodePipelineSchedule); ok && node != nil {
+			return fmt.Errorf("pipeline schedule still exists upstream: %s", node.Id)
 		}
 	}
 	return nil
