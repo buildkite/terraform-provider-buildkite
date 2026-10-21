@@ -22,9 +22,9 @@ data "buildkite_team" "team" {
 }
 
 resource "buildkite_test_suite_team" "everyone" {
-  team_id      = data.buildkite_team.team.id
-  suite_id     = data.buildkite_test_suite.application.id
-  access_level = "MANAGE_AND_READ"
+  test_suite_id = data.buildkite_test_suite.application.id
+  team_id       = data.buildkite_team.team.id
+  access_level  = "MANAGE_AND_READ"
 }
 ```
 

@@ -6,6 +6,15 @@ resource "buildkite_test_suite" "main" {
   team_owner_id  = "VGVhbvDf4eRef20tMzIxMGEfYTctNzEF5g00M8f5s6E2YjYtODNlOGNlZgD6HcBi"
 }
 
+# create a test suite without the default flaky-detection workflow or flaky label
+# this option only takes effect when creating the suite
+resource "buildkite_test_suite" "without_flaky_detection" {
+  name            = "without flaky detection"
+  default_branch  = "main"
+  team_owner_id   = "VGVhbvDf4eRef20tMzIxMGEfYTctNzEF5g00M8f5s6E2YjYtODNlOGNlZgD6HcBi"
+  flaky_detection = false
+}
+
 # create a test suite with an OIDC policy allowing a pipeline to upload
 # test results without a suite API token
 resource "buildkite_test_suite" "with_oidc_policy" {

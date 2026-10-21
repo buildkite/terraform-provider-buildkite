@@ -8,12 +8,14 @@ import (
 	"strings"
 
 	"github.com/MakeNowJust/heredoc"
+	"github.com/hashicorp/terraform-plugin-framework-validators/boolvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	resource_schema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/objectplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
@@ -84,6 +86,7 @@ type clusterQueueResourceModel struct {
 	Description        types.String              `tfsdk:"description"`
 	DispatchPaused     types.Bool                `tfsdk:"dispatch_paused"`
 	RetryAgentAffinity types.String              `tfsdk:"retry_agent_affinity"`
+	UseGithubAppToken  types.Bool                `tfsdk:"use_github_app_token"`
 	HostedAgents       *hostedAgentResourceModel `tfsdk:"hosted_agents"`
 }
 
@@ -178,6 +181,17 @@ func (clusterQueueResource) Schema(ctx context.Context, req resource.SchemaReque
 				Default:             stringdefault.StaticString(RetryAgentAffinityPreferWarmest),
 				Validators: []validator.String{
 					stringvalidator.OneOf(RetryAgentAffinityPreferWarmest, RetryAgentAffinityPreferDifferent),
+				},
+			},
+			"use_github_app_token": resource_schema.BoolAttribute{
+				Optional:            true,
+				Computed:            true,
+				MarkdownDescription: "Whether jobs on this self-hosted queue check out GitHub repositories with a short-lived, Buildkite-issued GitHub App token, as hosted queues do, instead of a long-lived credential on the agent. Only applies to self-hosted queues, so it cannot be set alongside `hosted_agents`. When omitted, the queue's current setting is left unchanged.",
+				PlanModifiers: []planmodifier.Bool{
+					boolplanmodifier.UseNonNullStateForUnknown(),
+				},
+				Validators: []validator.Bool{
+					boolvalidator.ConflictsWith(path.MatchRoot("hosted_agents")),
 				},
 			},
 			"hosted_agents": resource_schema.SingleNestedAttribute{
@@ -308,6 +322,12 @@ func (cq *clusterQueueResource) Create(ctx context.Context, req resource.CreateR
 		return
 	}
 
+	// Left out of the mutation when unset, so the queue takes the API's default
+	var useGithubAppToken *bool
+	if !plan.UseGithubAppToken.IsUnknown() {
+		useGithubAppToken = plan.UseGithubAppToken.ValueBoolPointer()
+	}
+
 	log.Printf("Creating cluster queue with key %s into cluster %s ...", plan.Key.ValueString(), plan.ClusterId.ValueString())
 	r, err := createClusterQueue(createCtx,
 		cq.client.genqlient,
@@ -316,6 +336,7 @@ func (cq *clusterQueueResource) Create(ctx context.Context, req resource.CreateR
 		plan.Key.ValueString(),
 		plan.Description.ValueStringPointer(),
 		hosted,
+		useGithubAppToken,
 	)
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -331,6 +352,7 @@ func (cq *clusterQueueResource) Create(ctx context.Context, req resource.CreateR
 	state.ClusterUuid = types.StringValue(r.ClusterQueueCreate.ClusterQueue.Cluster.Uuid)
 	state.Key = types.StringValue(r.ClusterQueueCreate.ClusterQueue.Key)
 	state.Description = types.StringPointerValue(r.ClusterQueueCreate.ClusterQueue.Description)
+	state.UseGithubAppToken = types.BoolValue(r.ClusterQueueCreate.ClusterQueue.UseGithubAppToken)
 
 	// The mutation creates the queue dispatching, and on the API's own retry_agent_affinity default.
 	// The calls further down move it off both if the plan asked for something else, and each records
@@ -653,6 +675,12 @@ func (cq *clusterQueueResource) Update(ctx context.Context, req resource.UpdateR
 		state.DispatchPaused = types.BoolValue(true)
 	}
 
+	// Only sent when it changes, so an unrelated update never touches it
+	var useGithubAppToken *bool
+	if !plan.UseGithubAppToken.IsUnknown() && !plan.UseGithubAppToken.Equal(state.UseGithubAppToken) {
+		useGithubAppToken = plan.UseGithubAppToken.ValueBoolPointer()
+	}
+
 	updateCtx, cancel := mutationContext(ctx, timeout)
 	defer cancel()
 
@@ -662,6 +690,7 @@ func (cq *clusterQueueResource) Update(ctx context.Context, req resource.UpdateR
 		state.Id.ValueString(),
 		plan.Description.ValueStringPointer(),
 		hosted,
+		useGithubAppToken,
 	)
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -675,6 +704,7 @@ func (cq *clusterQueueResource) Update(ctx context.Context, req resource.UpdateR
 	// fail after the new instance shape is already live on the queue.
 	state.Description = types.StringPointerValue(r.ClusterQueueUpdate.ClusterQueue.Description)
 	state.DispatchPaused = types.BoolValue(r.ClusterQueueUpdate.ClusterQueue.DispatchPaused)
+	state.UseGithubAppToken = types.BoolValue(r.ClusterQueueUpdate.ClusterQueue.UseGithubAppToken)
 
 	if state.HostedAgents != nil {
 		state.HostedAgents = &hostedAgentResourceModel{
@@ -863,6 +893,7 @@ func updateClusterQueueResourceFromNode(clusterQueueNode getClusterQueueByNodeNo
 	cq.ClusterId = types.StringValue(clusterQueueNode.Cluster.Id)
 	cq.ClusterUuid = types.StringValue(clusterQueueNode.Cluster.Uuid)
 	cq.DispatchPaused = types.BoolValue(clusterQueueNode.DispatchPaused)
+	cq.UseGithubAppToken = types.BoolValue(clusterQueueNode.UseGithubAppToken)
 
 	if clusterQueueNode.Hosted {
 		cq.HostedAgents = &hostedAgentResourceModel{

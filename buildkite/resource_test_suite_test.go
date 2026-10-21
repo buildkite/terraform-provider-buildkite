@@ -2,11 +2,14 @@ package buildkite
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
+	"net/http/httptest"
 	"reflect"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -14,8 +17,110 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
+
+// Exercise Terraform planning as well as CRUD: the option defaults to true,
+// survives refresh despite not being returned by the API, and never replaces a suite.
+func TestUnitTestSuiteFlakyDetection(t *testing.T) {
+	for _, optOut := range []bool{false, true} {
+		t.Run(fmt.Sprintf("opt_out=%t", optOut), func(t *testing.T) {
+			var creates atomic.Int32
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				if r.URL.Path == "/graphql" {
+					var request struct {
+						OperationName string `json:"operationName"`
+					}
+					if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+						t.Errorf("decode GraphQL request: %v", err)
+						w.WriteHeader(http.StatusBadRequest)
+						return
+					}
+					switch request.OperationName {
+					case "getNode":
+						fmt.Fprint(w, `{"data":{"node":{"__typename":"Team","id":"previous-team-id","uuid":"team-uuid"}}}`)
+					case "getTestSuite":
+						fmt.Fprint(w, suiteWithTeams("", suiteTeamEdge(previousSuiteEdge, previousSuiteTeam, "MANAGE_AND_READ")).body)
+					default:
+						t.Errorf("unexpected GraphQL operation: %s", request.OperationName)
+						w.WriteHeader(http.StatusBadRequest)
+					}
+					return
+				}
+				if r.Method == http.MethodDelete {
+					w.WriteHeader(http.StatusNoContent)
+					return
+				}
+				if r.Method == http.MethodPost || r.Method == http.MethodPatch {
+					var payload map[string]any
+					if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+						t.Errorf("decode suite payload: %v", err)
+					}
+					if r.Method == http.MethodPost {
+						creates.Add(1)
+						if got := payload["flaky_detection"]; got != !optOut {
+							t.Errorf("POST flaky_detection = %v, want %t", got, !optOut)
+						}
+					} else if _, present := payload["flaky_detection"]; present {
+						t.Error("PATCH must not send the create-only flaky_detection option")
+					}
+				}
+				fmt.Fprint(w, suitePatched.body)
+			}))
+			defer server.Close()
+
+			config := func(option string) string {
+				return fmt.Sprintf(`
+provider "buildkite" {
+  organization = "test-org"
+  api_token = "dummy"
+  graphql_url = %q
+  rest_url = %q
+}
+resource "buildkite_test_suite" "suite" {
+  name = %q
+  default_branch = "main"
+  team_owner_id = %q
+  %s
+}`, server.URL+"/graphql", server.URL, updatedSuiteName, previousSuiteTeam, option)
+			}
+			initial := ""
+			if optOut {
+				initial = "flaky_detection = false"
+			}
+			const address = "buildkite_test_suite.suite"
+			resource.UnitTest(t, resource.TestCase{
+				ProtoV6ProviderFactories: protoV6ProviderFactories(),
+				Steps: []resource.TestStep{
+					{
+						Config: config(initial),
+						Check:  resource.TestCheckResourceAttr(address, "flaky_detection", fmt.Sprint(!optOut)),
+					},
+					{
+						Config: config(fmt.Sprintf("flaky_detection = %t", optOut)),
+						ConfigPlanChecks: resource.ConfigPlanChecks{
+							PreApply: []plancheck.PlanCheck{plancheck.ExpectResourceAction(address, plancheck.ResourceActionUpdate)},
+						},
+						Check: resource.TestCheckResourceAttr(address, "flaky_detection", fmt.Sprint(optOut)),
+					},
+					{
+						Config: config(""),
+						Check:  resource.TestCheckResourceAttr(address, "flaky_detection", "true"),
+					},
+					{
+						ResourceName: address, ImportState: true, ImportStateId: "suite-id",
+						ImportStateVerify: true,
+					},
+				},
+			})
+			if got := creates.Load(); got != 1 {
+				t.Errorf("suite creates = %d, want 1 (no replacement)", got)
+			}
+		})
+	}
+}
 
 func TestAccBuildkiteTestSuiteResource(t *testing.T) {
 	basicTestSuite := func(name string) string {
