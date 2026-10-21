@@ -18,7 +18,7 @@ The Buildkite team will review your PR and start a CI build for it. The team aim
 
 You'll need the following installed on your machine:
 
-- **Go 1.24+**: The provider is written in Go
+- **Go 1.26.10+ (1.26 series) or 1.27.3+**: Use a patched toolchain for the eMudhra intermediate CA compromise (CVE-2026-111943). Development and release builds use Go 1.27.3.
 - **Terraform**: For testing your changes
 - **Lefthook** (optional): For managing Git hooks (see [lefthook.dev](https://lefthook.dev))
 
