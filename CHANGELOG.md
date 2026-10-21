@@ -11,6 +11,7 @@
 
 ### Fixed
 
+* Build the provider with Go 1.27.3 to reject compromised eMudhra intermediate CA certificate chains (CVE-2026-111943).
 * Fix `buildkite_pipeline` updates failing with "Provider produced inconsistent result after apply" when a read-only planning token cannot see `webhook_url` but the apply token can. The URL is now known after apply during updates.
 * Fix the `buildkite_test_suite` data source example to use `test_suite_id` instead of `suite_id`.
 
