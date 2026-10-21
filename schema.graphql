@@ -9745,6 +9745,33 @@ Whether to create builds when branches are pushed.
 """
 	buildBranches: Boolean!
 """
+Whether to create builds when pull requests change target branch, even if the commit and branch already built.
+"""
+	buildPullRequestBaseBranchChanged: Boolean!
+"""
+Whether to create builds when pull request titles, descriptions or target
+branches change, even if the commit and branch already built.
+"""
+	buildPullRequestEdited: Boolean!
+"""
+Whether to create builds when pull request labels change. Requires pull
+request builds and organization pull request labels support.
+"""
+	buildPullRequestLabelsChanged: Boolean!
+"""
+Whether to create builds when pull requests become ready for review.
+"""
+	buildPullRequestReadyForReview: Boolean!
+"""
+Whether to create builds when pull requests are reopened, even if the commit and branch already built.
+"""
+	buildPullRequestReopened: Boolean!
+"""
+Whether to create builds of the reviewed commit when pull request reviews are
+submitted, independently of pull request builds and existing-commit suppression.
+"""
+	buildPullRequestReviewSubmitted: Boolean!
+"""
 Whether to create builds for commits that are part of a pull request.
 """
 	buildPullRequests: Boolean!
@@ -9764,6 +9791,10 @@ Whether the filter is enabled
 Whether to publish build results to Origin as a check run.
 """
 	publishCommitStatus: Boolean!
+"""
+Whether to skip pull request builds when a webhook build already exists for the same commit and branch.
+"""
+	skipPullRequestBuildsForExistingCommits: Boolean!
 }
 
 """

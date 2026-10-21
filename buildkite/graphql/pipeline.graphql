@@ -357,6 +357,18 @@ fragment RepositoryProviderSettingsFields on Repository {
                 # @genqlient(pointer: true)
                 buildBranches
                 # @genqlient(pointer: true)
+                buildPullRequestBaseBranchChanged
+                # @genqlient(pointer: true)
+                buildPullRequestEdited
+                # @genqlient(pointer: true)
+                buildPullRequestLabelsChanged
+                # @genqlient(pointer: true)
+                buildPullRequestReadyForReview
+                # @genqlient(pointer: true)
+                buildPullRequestReopened
+                # @genqlient(pointer: true)
+                buildPullRequestReviewSubmitted
+                # @genqlient(pointer: true)
                 buildPullRequests
                 # @genqlient(pointer: true)
                 buildTags
@@ -366,6 +378,8 @@ fragment RepositoryProviderSettingsFields on Repository {
                 filterEnabled
                 # @genqlient(pointer: true)
                 publishCommitStatus
+                # @genqlient(pointer: true)
+                skipPullRequestBuildsForExistingCommits
             }
         }
         ... on RepositoryProviderUnknown {

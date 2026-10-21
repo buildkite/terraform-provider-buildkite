@@ -3480,6 +3480,21 @@ func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderCursorOrigin)
 type RepositoryProviderSettingsFieldsProviderRepositoryProviderCursorOriginSettings struct {
 	// Whether to create builds when branches are pushed.
 	BuildBranches *bool `json:"buildBranches"`
+	// Whether to create builds when pull requests change target branch, even if the commit and branch already built.
+	BuildPullRequestBaseBranchChanged *bool `json:"buildPullRequestBaseBranchChanged"`
+	// Whether to create builds when pull request titles, descriptions or target
+	// branches change, even if the commit and branch already built.
+	BuildPullRequestEdited *bool `json:"buildPullRequestEdited"`
+	// Whether to create builds when pull request labels change. Requires pull
+	// request builds and organization pull request labels support.
+	BuildPullRequestLabelsChanged *bool `json:"buildPullRequestLabelsChanged"`
+	// Whether to create builds when pull requests become ready for review.
+	BuildPullRequestReadyForReview *bool `json:"buildPullRequestReadyForReview"`
+	// Whether to create builds when pull requests are reopened, even if the commit and branch already built.
+	BuildPullRequestReopened *bool `json:"buildPullRequestReopened"`
+	// Whether to create builds of the reviewed commit when pull request reviews are
+	// submitted, independently of pull request builds and existing-commit suppression.
+	BuildPullRequestReviewSubmitted *bool `json:"buildPullRequestReviewSubmitted"`
 	// Whether to create builds for commits that are part of a pull request.
 	BuildPullRequests *bool `json:"buildPullRequests"`
 	// Whether to create builds when tags are pushed.
@@ -3490,11 +3505,43 @@ type RepositoryProviderSettingsFieldsProviderRepositoryProviderCursorOriginSetti
 	FilterEnabled *bool `json:"filterEnabled"`
 	// Whether to publish build results to Origin as a check run.
 	PublishCommitStatus *bool `json:"publishCommitStatus"`
+	// Whether to skip pull request builds when a webhook build already exists for the same commit and branch.
+	SkipPullRequestBuildsForExistingCommits *bool `json:"skipPullRequestBuildsForExistingCommits"`
 }
 
 // GetBuildBranches returns RepositoryProviderSettingsFieldsProviderRepositoryProviderCursorOriginSettings.BuildBranches, and is useful for accessing the field via an interface.
 func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderCursorOriginSettings) GetBuildBranches() *bool {
 	return v.BuildBranches
+}
+
+// GetBuildPullRequestBaseBranchChanged returns RepositoryProviderSettingsFieldsProviderRepositoryProviderCursorOriginSettings.BuildPullRequestBaseBranchChanged, and is useful for accessing the field via an interface.
+func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderCursorOriginSettings) GetBuildPullRequestBaseBranchChanged() *bool {
+	return v.BuildPullRequestBaseBranchChanged
+}
+
+// GetBuildPullRequestEdited returns RepositoryProviderSettingsFieldsProviderRepositoryProviderCursorOriginSettings.BuildPullRequestEdited, and is useful for accessing the field via an interface.
+func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderCursorOriginSettings) GetBuildPullRequestEdited() *bool {
+	return v.BuildPullRequestEdited
+}
+
+// GetBuildPullRequestLabelsChanged returns RepositoryProviderSettingsFieldsProviderRepositoryProviderCursorOriginSettings.BuildPullRequestLabelsChanged, and is useful for accessing the field via an interface.
+func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderCursorOriginSettings) GetBuildPullRequestLabelsChanged() *bool {
+	return v.BuildPullRequestLabelsChanged
+}
+
+// GetBuildPullRequestReadyForReview returns RepositoryProviderSettingsFieldsProviderRepositoryProviderCursorOriginSettings.BuildPullRequestReadyForReview, and is useful for accessing the field via an interface.
+func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderCursorOriginSettings) GetBuildPullRequestReadyForReview() *bool {
+	return v.BuildPullRequestReadyForReview
+}
+
+// GetBuildPullRequestReopened returns RepositoryProviderSettingsFieldsProviderRepositoryProviderCursorOriginSettings.BuildPullRequestReopened, and is useful for accessing the field via an interface.
+func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderCursorOriginSettings) GetBuildPullRequestReopened() *bool {
+	return v.BuildPullRequestReopened
+}
+
+// GetBuildPullRequestReviewSubmitted returns RepositoryProviderSettingsFieldsProviderRepositoryProviderCursorOriginSettings.BuildPullRequestReviewSubmitted, and is useful for accessing the field via an interface.
+func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderCursorOriginSettings) GetBuildPullRequestReviewSubmitted() *bool {
+	return v.BuildPullRequestReviewSubmitted
 }
 
 // GetBuildPullRequests returns RepositoryProviderSettingsFieldsProviderRepositoryProviderCursorOriginSettings.BuildPullRequests, and is useful for accessing the field via an interface.
@@ -3520,6 +3567,11 @@ func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderCursorOriginS
 // GetPublishCommitStatus returns RepositoryProviderSettingsFieldsProviderRepositoryProviderCursorOriginSettings.PublishCommitStatus, and is useful for accessing the field via an interface.
 func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderCursorOriginSettings) GetPublishCommitStatus() *bool {
 	return v.PublishCommitStatus
+}
+
+// GetSkipPullRequestBuildsForExistingCommits returns RepositoryProviderSettingsFieldsProviderRepositoryProviderCursorOriginSettings.SkipPullRequestBuildsForExistingCommits, and is useful for accessing the field via an interface.
+func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderCursorOriginSettings) GetSkipPullRequestBuildsForExistingCommits() *bool {
+	return v.SkipPullRequestBuildsForExistingCommits
 }
 
 // RepositoryProviderSettingsFieldsProviderRepositoryProviderGithub includes the requested fields of the GraphQL type RepositoryProviderGithub.
@@ -31352,11 +31404,18 @@ fragment RepositoryProviderSettingsFields on Repository {
 		... on RepositoryProviderCursorOrigin {
 			settings {
 				buildBranches
+				buildPullRequestBaseBranchChanged
+				buildPullRequestEdited
+				buildPullRequestLabelsChanged
+				buildPullRequestReadyForReview
+				buildPullRequestReopened
+				buildPullRequestReviewSubmitted
 				buildPullRequests
 				buildTags
 				filterCondition
 				filterEnabled
 				publishCommitStatus
+				skipPullRequestBuildsForExistingCommits
 			}
 		}
 		... on RepositoryProviderUnknown {
