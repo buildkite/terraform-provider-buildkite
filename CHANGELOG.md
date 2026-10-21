@@ -2,9 +2,10 @@
 
 ## Unreleased
 
+## [1.43.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.42.1...v1.43.0)
+
 ### Features
 
-* Add the `buildkite_cluster_cache_registry` resource.
 * Add `use_github_app_token` to `buildkite_cluster_queue`, so jobs on a self-hosted queue can check out GitHub repositories with a short-lived Buildkite-issued GitHub App token instead of a long-lived credential on the agent.
 * Add `flaky_detection` to `buildkite_test_suite` to opt out of creating the default flaky-detection workflow and label. Defaults to `true` and only takes effect when creating a suite.
 * Add the `buildkite_test_suite_workflow` resource with create, read, update, delete, and import support. Monitor settings, filters, and actions update in place; changing the monitor type or test suite replaces the workflow.
@@ -12,8 +13,24 @@
 ### Fixed
 
 * Build the provider with Go 1.27.3 to reject compromised eMudhra intermediate CA certificate chains (CVE-2026-111943).
-* Fix `buildkite_pipeline` updates failing with "Provider produced inconsistent result after apply" when a read-only planning token cannot see `webhook_url` but the apply token can. The URL is now known after apply during updates.
 * Fix the `buildkite_test_suite` data source example to use `test_suite_id` instead of `suite_id`.
+
+### Dependencies
+
+* Update GoReleaser to v2.18.3.
+* Update the `aws-assume-role-with-web-identity` Buildkite plugin to v1.8.0 and the acceptance-test project's Buildkite provider to v1.42.0.
+
+## [1.42.1](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.42.0...v1.42.1)
+
+### Fixed
+
+* Fix `buildkite_pipeline` updates failing with "Provider produced inconsistent result after apply" when a read-only planning token cannot see `webhook_url` but the apply token can. The URL is now known after apply during updates.
+
+## [1.41.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.40.0...v1.41.0)
+
+### Features
+
+* Add the `buildkite_cluster_cache_registry` resource.
 
 ## [1.35.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.34.2...v1.35.0)
 
