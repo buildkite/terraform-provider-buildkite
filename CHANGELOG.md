@@ -12,6 +12,7 @@
 
 ### Fixed
 
+* Build the provider with Go 1.27.3 to reject compromised eMudhra intermediate CA certificate chains (CVE-2026-111943).
 * Fix the `buildkite_test_suite` data source example to use `test_suite_id` instead of `suite_id`.
 
 ### Dependencies
