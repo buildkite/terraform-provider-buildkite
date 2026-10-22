@@ -133,16 +133,13 @@ func (ps *pipelineSchedule) Create(ctx context.Context, req resource.CreateReque
 		return
 	}
 
-	requestCtx, cancel := mutationContext(ctx, timeouts)
-	defer cancel()
-
 	envVars := envVarsMapFromTfToString(ctx, plan.Env)
 	var apiResponse *createPipelineScheduleResponse
 
-	err := retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
+	err := retryMutation(ctx, timeouts, func(ctx context.Context) *retry.RetryError {
 		var err error
 
-		apiResponse, err = createPipelineSchedule(requestCtx,
+		apiResponse, err = createPipelineSchedule(ctx,
 			ps.client.genqlient,
 			plan.PipelineId.ValueString(),
 			plan.Label.ValueStringPointer(),
@@ -253,9 +250,6 @@ func (ps *pipelineSchedule) Update(ctx context.Context, req resource.UpdateReque
 		return
 	}
 
-	requestCtx, cancel := mutationContext(ctx, timeouts)
-	defer cancel()
-
 	envVars := envVarsMapFromTfToString(ctx, plan.Env)
 	input := PipelineScheduleUpdateInput{
 		Id:       state.Id.ValueString(),
@@ -268,9 +262,9 @@ func (ps *pipelineSchedule) Update(ctx context.Context, req resource.UpdateReque
 		Enabled:  plan.Enabled.ValueBoolPointer(),
 	}
 
-	err := retry.RetryContext(ctx, timeouts, func() *retry.RetryError {
+	err := retryMutation(ctx, timeouts, func(ctx context.Context) *retry.RetryError {
 		var err error
-		_, err = updatePipelineSchedule(requestCtx,
+		_, err = updatePipelineSchedule(ctx,
 			ps.client.genqlient,
 			input,
 		)
@@ -305,11 +299,8 @@ func (ps *pipelineSchedule) Delete(ctx context.Context, req resource.DeleteReque
 		return
 	}
 
-	requestCtx, cancel := mutationContext(ctx, timeout)
-	defer cancel()
-
-	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-		_, err := deletePipelineSchedule(requestCtx, ps.client.genqlient, plan.Id.ValueString())
+	err := retryMutation(ctx, timeout, func(ctx context.Context) *retry.RetryError {
+		_, err := deletePipelineSchedule(ctx, ps.client.genqlient, plan.Id.ValueString())
 
 		if err != nil && isResourceNotFoundError(err) {
 			return nil

@@ -105,15 +105,12 @@ func (pt *pipelineTemplateResource) Create(ctx context.Context, req resource.Cre
 		return
 	}
 
-	requestCtx, cancel := mutationContext(ctx, timeout)
-	defer cancel()
-
 	var r *createPipelineTemplateResponse
-	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-		org, err := pt.client.GetOrganizationID(requestCtx)
+	err := retryMutation(ctx, timeout, func(ctx context.Context) *retry.RetryError {
+		org, err := pt.client.GetOrganizationID(ctx)
 		if err == nil {
 			log.Printf("Creating pipeline template %s ...", plan.Name.ValueString())
-			r, err = createPipelineTemplate(requestCtx,
+			r, err = createPipelineTemplate(ctx,
 				pt.client.genqlient,
 				*org,
 				plan.Name.ValueString(),
@@ -224,15 +221,12 @@ func (pt *pipelineTemplateResource) Update(ctx context.Context, req resource.Upd
 		return
 	}
 
-	requestCtx, cancel := mutationContext(ctx, timeout)
-	defer cancel()
-
 	var r *updatePipelineTemplateResponse
-	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-		org, err := pt.client.GetOrganizationID(requestCtx)
+	err := retryMutation(ctx, timeout, func(ctx context.Context) *retry.RetryError {
+		org, err := pt.client.GetOrganizationID(ctx)
 		if err == nil {
 			log.Printf("Updating pipeline template %s with ID %s ...", plan.Name.ValueString(), plan.ID.ValueString())
-			r, err = updatePipelineTemplate(requestCtx,
+			r, err = updatePipelineTemplate(ctx,
 				pt.client.genqlient,
 				*org,
 				plan.ID.ValueString(),
@@ -278,14 +272,11 @@ func (pt *pipelineTemplateResource) Delete(ctx context.Context, req resource.Del
 		return
 	}
 
-	requestCtx, cancel := mutationContext(ctx, timeout)
-	defer cancel()
-
-	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-		org, err := pt.client.GetOrganizationID(requestCtx)
+	err := retryMutation(ctx, timeout, func(ctx context.Context) *retry.RetryError {
+		org, err := pt.client.GetOrganizationID(ctx)
 		if err == nil {
 			log.Printf("Deleting pipeline template %s with ID %s ...", state.Name.ValueString(), state.ID.ValueString())
-			_, err = deletePipelineTemplate(requestCtx,
+			_, err = deletePipelineTemplate(ctx,
 				pt.client.genqlient,
 				*org,
 				state.ID.ValueString(),

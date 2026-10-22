@@ -178,9 +178,6 @@ func (r *clusterSecretResource) Create(ctx context.Context, req resource.CreateR
 		return
 	}
 
-	requestCtx, cancel := mutationContext(ctx, timeout)
-	defer cancel()
-
 	secretValue, err := clusterSecretValue(plan, config)
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -191,7 +188,7 @@ func (r *clusterSecretResource) Create(ctx context.Context, req resource.CreateR
 	}
 
 	var created *ClusterSecret
-	err = retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+	err = retryMutation(ctx, timeout, func(ctx context.Context) *retry.RetryError {
 		var err error
 		secret := &ClusterSecret{
 			Key:   plan.Key.ValueString(),
@@ -207,7 +204,7 @@ func (r *clusterSecretResource) Create(ctx context.Context, req resource.CreateR
 			secret.Policy = &pol
 		}
 
-		created, err = r.client.CreateClusterSecret(requestCtx, r.client.organization, plan.ClusterID.ValueString(), secret)
+		created, err = r.client.CreateClusterSecret(ctx, r.client.organization, plan.ClusterID.ValueString(), secret)
 		return retryContextError(err)
 	})
 
@@ -319,9 +316,6 @@ func (r *clusterSecretResource) Update(ctx context.Context, req resource.UpdateR
 		return
 	}
 
-	requestCtx, cancel := mutationContext(ctx, timeout)
-	defer cancel()
-
 	shouldUpdateValue := shouldUpdateClusterSecretValue(plan, state)
 	var secretValue string
 	if shouldUpdateValue {
@@ -336,11 +330,11 @@ func (r *clusterSecretResource) Update(ctx context.Context, req resource.UpdateR
 		}
 	}
 
-	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+	err := retryMutation(ctx, timeout, func(ctx context.Context) *retry.RetryError {
 		var err error
 		if shouldUpdateValue {
 			_, err = r.client.UpdateClusterSecretValue(
-				requestCtx,
+				ctx,
 				r.client.organization,
 				plan.ClusterID.ValueString(),
 				plan.ID.ValueString(),
@@ -370,7 +364,7 @@ func (r *clusterSecretResource) Update(ctx context.Context, req resource.UpdateR
 			}
 
 			_, err = r.client.UpdateClusterSecret(
-				requestCtx,
+				ctx,
 				r.client.organization,
 				plan.ClusterID.ValueString(),
 				plan.ID.ValueString(),
@@ -432,11 +426,8 @@ func (r *clusterSecretResource) Delete(ctx context.Context, req resource.DeleteR
 		return
 	}
 
-	requestCtx, cancel := mutationContext(ctx, timeout)
-	defer cancel()
-
-	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-		err := r.client.DeleteClusterSecret(requestCtx, r.client.organization, state.ClusterID.ValueString(), state.ID.ValueString())
+	err := retryMutation(ctx, timeout, func(ctx context.Context) *retry.RetryError {
+		err := r.client.DeleteClusterSecret(ctx, r.client.organization, state.ClusterID.ValueString(), state.ID.ValueString())
 		return retryContextError(err)
 	})
 
