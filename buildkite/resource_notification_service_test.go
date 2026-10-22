@@ -290,10 +290,11 @@ func TestNotificationServiceRESTLifecycle(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:      "buildkite_notification_service.test",
-				ImportState:       true,
-				ImportStateId:     notificationServiceTestID,
-				ImportStateVerify: true,
+				ResourceName:            "buildkite_notification_service.test",
+				ImportState:             true,
+				ImportStateId:           notificationServiceTestID,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"webhook.url"},
 			},
 		},
 	})
@@ -755,7 +756,7 @@ func TestNotificationServiceConfigurationValidation(t *testing.T) {
 				provider_type = "webhook"
 				webhook = {}
 			`,
-			wantError: "webhook.url is required",
+			wantError: "webhook.url or webhook.url_wo is required",
 		},
 		"scope UUIDs with all scope": {
 			resourceConfig: fmt.Sprintf(`
@@ -920,9 +921,10 @@ func TestAccBuildkiteNotificationService(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:      "buildkite_notification_service.test",
-				ImportState:       true,
-				ImportStateVerify: true,
+				ResourceName:            "buildkite_notification_service.test",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"webhook.url"},
 				ImportStateIdFunc: func(state *terraform.State) (string, error) {
 					resourceState, ok := state.RootModule().Resources["buildkite_notification_service.test"]
 					if !ok {
@@ -1070,6 +1072,7 @@ type notificationServiceTestAPI struct {
 	providerType         string
 	scope                string
 	scopeUUIDs           []string
+	webhookURL           string
 	awsRegion            string
 	awsAccountID         string
 	includeBuildMetadata *string
@@ -1084,6 +1087,7 @@ func newNotificationServiceTestAPI(t *testing.T) *notificationServiceTestAPI {
 		providerType: notificationServiceProviderWebhook,
 		scope:        "all",
 		scopeUUIDs:   []string{},
+		webhookURL:   "https://example.test/hook",
 		awsRegion:    "us-east-1",
 		awsAccountID: "123456789012",
 	}
@@ -1162,6 +1166,9 @@ func (api *notificationServiceTestAPI) applyRequestBody(body map[string]any) {
 		}
 	}
 	if settings, ok := body["settings"].(map[string]any); ok {
+		if url, ok := settings["url"].(string); ok {
+			api.webhookURL = url
+		}
 		if region, ok := settings["aws_region"].(string); ok {
 			api.awsRegion = region
 		}
@@ -1180,6 +1187,22 @@ func (api *notificationServiceTestAPI) applyRequestBody(body map[string]any) {
 
 func (api *notificationServiceTestAPI) writeResponse(w http.ResponseWriter, status int) {
 	response := notificationServiceTestResponse(api.providerType)
+	if api.providerType == notificationServiceProviderWebhook {
+		var settings map[string]any
+		if err := json.Unmarshal(response.Settings, &settings); err != nil {
+			api.t.Errorf("decode webhook settings: %v", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		settings["url"] = api.webhookURL
+		encoded, err := json.Marshal(settings)
+		if err != nil {
+			api.t.Errorf("encode webhook settings: %v", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		response.Settings = encoded
+	}
 	if api.providerType == notificationServiceProviderAWSEventBridge {
 		maskedAccountID := "XXXXXXXX" + api.awsAccountID[len(api.awsAccountID)-4:]
 		eventSourceName := "aws.partner/buildkite.com.test/test"

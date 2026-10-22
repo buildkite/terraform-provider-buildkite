@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/MakeNowJust/heredoc"
+	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/setvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -57,12 +58,14 @@ type notificationServiceResourceModel struct {
 }
 
 type notificationServiceWebhookModel struct {
-	URL       types.String `tfsdk:"url"`
-	Token     types.String `tfsdk:"token"`
-	TokenMode types.String `tfsdk:"token_mode"`
-	Version   types.Int64  `tfsdk:"version"`
-	Events    types.Set    `tfsdk:"events"`
-	TLSVerify types.Bool   `tfsdk:"tls_verify"`
+	URL          types.String `tfsdk:"url"`
+	URLWO        types.String `tfsdk:"url_wo"`
+	URLWOVersion types.Int64  `tfsdk:"url_wo_version"`
+	Token        types.String `tfsdk:"token"`
+	TokenMode    types.String `tfsdk:"token_mode"`
+	Version      types.Int64  `tfsdk:"version"`
+	Events       types.Set    `tfsdk:"events"`
+	TLSVerify    types.Bool   `tfsdk:"tls_verify"`
 }
 
 type notificationServiceAWSEventBridgeModel struct {
@@ -256,7 +259,28 @@ func notificationServiceWebhookSchema() schema.SingleNestedAttribute {
 		Attributes: map[string]schema.Attribute{
 			"url": schema.StringAttribute{
 				Optional:            true,
-				MarkdownDescription: "The URL that receives webhook deliveries. Required when creating a webhook service.",
+				MarkdownDescription: "The URL that receives webhook deliveries. Stored in Terraform state; use `url_wo` for URLs containing credentials. Set either `url` or `url_wo` when creating a webhook service.",
+				Validators: []validator.String{
+					stringvalidator.ConflictsWith(path.MatchRelative().AtParent().AtName("url_wo")),
+				},
+			},
+			"url_wo": schema.StringAttribute{
+				Optional:            true,
+				WriteOnly:           true,
+				Sensitive:           true,
+				MarkdownDescription: "The webhook destination URL, without storing it in Terraform plans or state. Requires Terraform 1.11.1 or later and `url_wo_version`. Conflicts with `url`. Sent on creation and when `url_wo_version` changes; changes made outside Terraform cannot be detected.",
+				Validators: []validator.String{
+					stringvalidator.LengthAtLeast(1),
+					stringvalidator.AlsoRequires(path.MatchRelative().AtParent().AtName("url_wo_version")),
+				},
+			},
+			"url_wo_version": schema.Int64Attribute{
+				Optional:            true,
+				MarkdownDescription: "A positive version number for `url_wo`. Set it initially and increment it whenever the URL changes. This number is stored in state; the URL is not. Requires `url_wo`.",
+				Validators: []validator.Int64{
+					int64validator.AtLeast(1),
+					int64validator.AlsoRequires(path.MatchRelative().AtParent().AtName("url_wo")),
+				},
 			},
 			"token": schema.StringAttribute{
 				Optional:            true,
@@ -493,7 +517,9 @@ func (r *notificationServiceResource) ModifyPlan(ctx context.Context, req resour
 
 	switch providerType {
 	case notificationServiceProviderWebhook:
-		addMissingNotificationServiceSetting(&resp.Diagnostics, config.Webhook.URL, "webhook.url")
+		if config.Webhook.URLWO.IsNull() {
+			addMissingNotificationServiceSetting(&resp.Diagnostics, config.Webhook.URL, "webhook.url or webhook.url_wo")
+		}
 	case notificationServiceProviderAWSEventBridge:
 		addMissingNotificationServiceSetting(&resp.Diagnostics, config.AWSEventBridge.AWSRegion, "aws_event_bridge.aws_region")
 		addMissingNotificationServiceSetting(&resp.Diagnostics, config.AWSEventBridge.AWSAccountID, "aws_event_bridge.aws_account_id")
@@ -533,6 +559,9 @@ func addMissingNotificationServiceSetting(diags *diag.Diagnostics, value types.S
 func (r *notificationServiceResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var plan notificationServiceResourceModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	if plan.Webhook != nil {
+		resp.Diagnostics.Append(req.Config.GetAttribute(ctx, path.Root("webhook").AtName("url_wo"), &plan.Webhook.URLWO)...)
+	}
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -622,6 +651,9 @@ func (r *notificationServiceResource) Read(ctx context.Context, req resource.Rea
 func (r *notificationServiceResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	var plan notificationServiceResourceModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	if plan.Webhook != nil {
+		resp.Diagnostics.Append(req.Config.GetAttribute(ctx, path.Root("webhook").AtName("url_wo"), &plan.Webhook.URLWO)...)
+	}
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -788,6 +820,7 @@ func (m notificationServiceResourceModel) settingsCreatePayload(ctx context.Cont
 	switch m.ProviderType.ValueString() {
 	case notificationServiceProviderWebhook:
 		addNotificationServiceString(settings, "url", m.Webhook.URL)
+		addNotificationServiceString(settings, "url", m.Webhook.URLWO)
 		addNotificationServiceString(settings, "token", m.Webhook.Token)
 		addNotificationServiceString(settings, "token_mode", m.Webhook.TokenMode)
 		addNotificationServiceInt64(settings, "version", m.Webhook.Version)
@@ -859,7 +892,13 @@ func (m notificationServiceResourceModel) settingsUpdatePayload(ctx context.Cont
 		if state.Webhook == nil {
 			return m.settingsCreatePayload(ctx)
 		}
-		addChangedNotificationServiceString(settings, "url", m.Webhook.URL, state.Webhook.URL)
+		if !m.Webhook.URLWOVersion.IsNull() {
+			if !m.Webhook.URLWOVersion.Equal(state.Webhook.URLWOVersion) {
+				addNotificationServiceString(settings, "url", m.Webhook.URLWO)
+			}
+		} else {
+			addChangedNotificationServiceString(settings, "url", m.Webhook.URL, state.Webhook.URL)
+		}
 		addChangedNotificationServiceString(settings, "token", m.Webhook.Token, state.Webhook.Token)
 		addChangedNotificationServiceString(settings, "token_mode", m.Webhook.TokenMode, state.Webhook.TokenMode)
 		addChangedNotificationServiceInt64(settings, "version", m.Webhook.Version, state.Webhook.Version)
@@ -1058,13 +1097,22 @@ func (m *notificationServiceResourceModel) applyWebhookAPISettings(ctx context.C
 	}
 
 	events, diags := types.SetValueFrom(ctx, types.StringType, settings.Events)
+	// Only refresh a URL that is already managed through the persisted argument.
+	// In particular, imports and write-only configurations must not copy a secret
+	// returned by the API into the ordinary URL attribute.
+	url := types.StringNull()
+	if !m.Webhook.URL.IsNull() && m.Webhook.URLWOVersion.IsNull() {
+		url = types.StringPointerValue(settings.URL)
+	}
 	m.Webhook = &notificationServiceWebhookModel{
-		URL:       types.StringPointerValue(settings.URL),
-		Token:     types.StringPointerValue(settings.Token),
-		TokenMode: types.StringPointerValue(settings.TokenMode),
-		Version:   types.Int64PointerValue(settings.Version),
-		Events:    events,
-		TLSVerify: types.BoolPointerValue(settings.TLSVerify),
+		URL:          url,
+		URLWO:        types.StringNull(),
+		URLWOVersion: m.Webhook.URLWOVersion,
+		Token:        types.StringPointerValue(settings.Token),
+		TokenMode:    types.StringPointerValue(settings.TokenMode),
+		Version:      types.Int64PointerValue(settings.Version),
+		Events:       events,
+		TLSVerify:    types.BoolPointerValue(settings.TLSVerify),
 	}
 	return diags
 }
