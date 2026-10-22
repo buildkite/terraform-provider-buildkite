@@ -37,14 +37,10 @@ type clusterResourceModel struct {
 
 // hostedSettingsRequirement explains why the hosted cache settings cannot be enabled on a new cluster: the
 // API refuses to change them until the cluster has a hosted queue, and a queue needs the cluster first.
-const hostedSettingsRequirement = "hosted_git_mirror_enabled and hosted_container_cache_enabled can only be changed " +
+const hostedSettingsRequirement = "hosted_git_mirror_enabled and hosted_container_cache_enabled can only be enabled " +
 	"once the Cluster has at least one hosted queue (a buildkite_cluster_queue with hosted_agents). " +
-	"A new Cluster has both disabled, so they can only be set to false when it is created, and a tainted, " +
-	"replaced, or externally deleted Cluster is created again from scratch. " +
-	"Create the Cluster and its hosted queue first, then enable these attributes in a later apply. " +
-	"A value not known until apply is refused when creating too, since it could be true: use a literal false, " +
-	"or leave the attribute unset. " +
-	"If an apply is failing on this, remove the attributes, apply so the hosted queue is created, then add them back."
+	"Create the Cluster and its hosted queue first, then enable them in a later apply. " +
+	"If an apply is failing on this, remove the attributes, apply, then add them back."
 
 // hostedSettingsAccess ends both hosted cache settings' descriptions
 const hostedSettingsAccess = "Reading and changing it is done through the REST API, so the API token needs the `read_clusters`\n" +
