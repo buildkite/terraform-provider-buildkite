@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Features
+
+* SUP-7777: Add `hosted_git_mirror_enabled` and `hosted_container_cache_enabled` to `buildkite_cluster`.
+
 ### Fixed
 
 * Preserve Origin pull request settings during refresh and import: skip existing commits, label changes, ready-for-review, reopening, edits, base-branch changes, and submitted reviews. Release requires deployment of all corresponding Buildkite GraphQL fields.

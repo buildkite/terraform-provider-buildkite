@@ -3,6 +3,7 @@ package buildkite
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
@@ -250,6 +251,89 @@ func TestAccBuildkiteClusterAgentTracingService(t *testing.T) {
 					PreApply: []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()},
 				},
 				Check: testAccCheckClusterAgentTracingService(name, ""),
+			},
+		},
+	})
+}
+
+// TestAccBuildkiteClusterHostedCacheSettings needs an organization with hosted agents, since the API only
+// changes the settings on a cluster with a hosted queue
+func TestAccBuildkiteClusterHostedCacheSettings(t *testing.T) {
+	randName := acctest.RandString(10)
+	config := func(queue, attributes string) string {
+		return fmt.Sprintf(`
+		provider "buildkite" {
+			timeouts = {
+				create = "60s"
+				read = "60s"
+				update = "60s"
+				delete = "60s"
+			}
+		}
+
+		resource "buildkite_cluster" "foo" {
+			name = "%[1]s_test_cluster"
+			%[3]s
+		}
+
+		%[2]s
+		`, randName, queue, attributes)
+	}
+
+	const name = "buildkite_cluster.foo"
+	hostedQueue := `
+		resource "buildkite_cluster_queue" "hosted" {
+			cluster_id = buildkite_cluster.foo.id
+			key        = "hosted"
+
+			hosted_agents = {
+				linux = {
+					agent_image_ref = "buildkite/agent:latest"
+				}
+				instance_shape = "LINUX_AMD64_2X4"
+			}
+		}
+	`
+	settings := "hosted_git_mirror_enabled = true\nhosted_container_cache_enabled = false"
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		CheckDestroy:             testAccCheckClusterDestroy,
+		Steps: []resource.TestStep{
+			{
+				// a new cluster has both disabled, so false is accepted when creating it
+				Config: config("", "hosted_git_mirror_enabled = false\nhosted_container_cache_enabled = false"),
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PostApplyPostRefresh: []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()},
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(name, "hosted_git_mirror_enabled", "false"),
+					resource.TestCheckResourceAttr(name, "hosted_container_cache_enabled", "false"),
+				),
+			},
+			{
+				Config:      config("", settings),
+				ExpectError: regexp.MustCompile(`(?s)status: 422.*at least one hosted queue`),
+			},
+			{
+				Config: config(hostedQueue, ""),
+			},
+			{
+				// the first hosted queue enabled the container cache, which this turns back off
+				Config: config(hostedQueue, settings),
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PostApplyPostRefresh: []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()},
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(name, "hosted_git_mirror_enabled", "true"),
+					resource.TestCheckResourceAttr(name, "hosted_container_cache_enabled", "false"),
+				),
+			},
+			{
+				ResourceName:      name,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
