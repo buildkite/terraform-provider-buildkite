@@ -944,10 +944,11 @@ func TestGraphQLRequestReportsTheResponseItRetried(t *testing.T) {
 				} else if apiErr.Body != unavailableBody || apiErr.earlierStatus != 0 || apiErr.earlierBody != "" {
 					t.Errorf("Expected the last 503 body as the response, got %+v", apiErr)
 				}
-				for _, want := range []string{"Service Unavailable", testCase.wantPhrase} {
-					if !strings.Contains(err.Error(), want) {
-						t.Errorf("getOrganization() = %q, want it to mention %q", err, want)
-					}
+				if strings.Contains(err.Error(), "Service Unavailable") {
+					t.Errorf("getOrganization() = %q, want response body not to be exposed", err)
+				}
+				if !strings.Contains(err.Error(), testCase.wantPhrase) {
+					t.Errorf("getOrganization() = %q, want it to mention %q", err, testCase.wantPhrase)
 				}
 				if got := errors.Is(err, context.DeadlineExceeded); got != testCase.deadline {
 					t.Errorf("errors.Is(err, context.DeadlineExceeded) = %v, want %v", got, testCase.deadline)
