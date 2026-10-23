@@ -532,9 +532,6 @@ func (e *apiError) Error() string {
 		message = fmt.Sprintf("failed to send request: %s %s: %s", e.Method, e.URL, e.Err)
 	} else {
 		message = fmt.Sprintf("%s %s %s (status: %d)", apiRequestFailedPrefix, e.Method, e.URL, e.StatusCode)
-		if e.Body != "" {
-			message += ": " + e.Body
-		}
 	}
 
 	if e.Attempts > 1 {
@@ -544,7 +541,7 @@ func (e *apiError) Error() string {
 		message += ": " + e.Err.Error()
 	}
 	if e.earlierStatus != 0 {
-		message += fmt.Sprintf(" (an earlier attempt returned status %d: %s)", e.earlierStatus, e.earlierBody)
+		message += fmt.Sprintf(" (an earlier attempt returned status %d)", e.earlierStatus)
 	}
 
 	return message
@@ -646,25 +643,11 @@ func (client *Client) makeRequest(ctx context.Context, method string, path strin
 			}
 		}()
 
-		// Try to read the error body for better error messages, bounded because a 5xx body can be a
-		// proxy's HTML error page rather than the API's own JSON.
-		var errorMsg string
-		errorBody, readErr := io.ReadAll(io.LimitReader(resp.Body, maxCapturedBodyBytes))
-		if readErr == nil && len(errorBody) > 0 {
-			errorMsg = string(errorBody)
-		}
-		if errorMsg == "" && !lastResponse.stale {
-			// This read can fail for whatever reason the request did. The retry loop may already hold
-			// a prefix of the same body from the attempt it gave up on.
-			errorMsg = lastResponse.body
-		}
-
 		return &apiError{
 			Method:     method,
 			URL:        requestURL,
 			StatusCode: resp.StatusCode,
 			Attempts:   lastResponse.attempts,
-			Body:       errorMsg,
 		}
 	} else if resp.StatusCode == 204 {
 		if closeErr := resp.Body.Close(); closeErr != nil {
