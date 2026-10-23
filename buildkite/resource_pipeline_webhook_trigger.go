@@ -10,8 +10,8 @@ import (
 	"github.com/MakeNowJust/heredoc"
 	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
@@ -24,14 +24,14 @@ import (
 type pipelineWebhookTriggerResource struct{ client *Client }
 
 type pipelineWebhookTriggerModel struct {
-	ID             types.String                               `tfsdk:"id"`
-	PipelineID     types.String                               `tfsdk:"pipeline_id"`
-	Label          types.String                               `tfsdk:"label"`
-	Enabled        types.Bool                                 `tfsdk:"enabled"`
-	Build          *pipelineWebhookTriggerBuildModel          `tfsdk:"build"`
-	EffectiveBuild *pipelineWebhookTriggerEffectiveBuildModel `tfsdk:"effective_build"`
-	Filter         types.String                               `tfsdk:"filter"`
-	EndpointURL    types.String                               `tfsdk:"endpoint_url"`
+	ID             types.String                      `tfsdk:"id"`
+	PipelineID     types.String                      `tfsdk:"pipeline_id"`
+	Label          types.String                      `tfsdk:"label"`
+	Enabled        types.Bool                        `tfsdk:"enabled"`
+	Build          *pipelineWebhookTriggerBuildModel `tfsdk:"build"`
+	EffectiveBuild types.Object                      `tfsdk:"effective_build"`
+	Filter         types.String                      `tfsdk:"filter"`
+	EndpointURL    types.String                      `tfsdk:"endpoint_url"`
 }
 
 type pipelineWebhookTriggerBuildModel struct {
@@ -39,12 +39,6 @@ type pipelineWebhookTriggerBuildModel struct {
 	Commit      types.String `tfsdk:"commit"`
 	Message     types.String `tfsdk:"message"`
 	Environment types.Map    `tfsdk:"environment"`
-}
-
-type pipelineWebhookTriggerEffectiveBuildModel struct {
-	Branch  types.String `tfsdk:"branch"`
-	Commit  types.String `tfsdk:"commit"`
-	Message types.String `tfsdk:"message"`
 }
 
 type pipelineWebhookTriggerResponse struct {
@@ -244,20 +238,26 @@ func (m *pipelineWebhookTriggerModel) refresh(result pipelineWebhookTriggerRespo
 		diags.AddError("Invalid pipeline trigger response", "The webhook trigger response did not include build settings.")
 		return diags
 	}
-	m.EffectiveBuild = &pipelineWebhookTriggerEffectiveBuildModel{
-		Branch:  types.StringPointerValue(result.Build.Branch),
-		Commit:  types.StringPointerValue(result.Build.Commit),
-		Message: types.StringPointerValue(result.Build.Message),
-	}
+	effectiveBuild, objectDiags := types.ObjectValue(
+		map[string]attr.Type{"branch": types.StringType, "commit": types.StringType, "message": types.StringType},
+		map[string]attr.Value{
+			"branch":  types.StringPointerValue(result.Build.Branch),
+			"commit":  types.StringPointerValue(result.Build.Commit),
+			"message": types.StringPointerValue(result.Build.Message),
+		},
+	)
+	diags.Append(objectDiags...)
+	m.EffectiveBuild = effectiveBuild
+
 	if m.Build != nil {
 		if !m.Build.Branch.IsNull() {
-			m.Build.Branch = m.EffectiveBuild.Branch
+			m.Build.Branch = types.StringPointerValue(result.Build.Branch)
 		}
 		if !m.Build.Commit.IsNull() {
-			m.Build.Commit = m.EffectiveBuild.Commit
+			m.Build.Commit = types.StringPointerValue(result.Build.Commit)
 		}
 		if !m.Build.Message.IsNull() {
-			m.Build.Message = m.EffectiveBuild.Message
+			m.Build.Message = types.StringPointerValue(result.Build.Message)
 		}
 	}
 
@@ -266,8 +266,7 @@ func (m *pipelineWebhookTriggerModel) refresh(result pipelineWebhookTriggerRespo
 
 func (r *pipelineWebhookTriggerResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var plan pipelineWebhookTriggerModel
-	resp.Diagnostics.Append(req.Config.Get(ctx, &plan)...)
-	resp.Diagnostics.Append(req.Plan.GetAttribute(ctx, path.Root("enabled"), &plan.Enabled)...)
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -347,8 +346,7 @@ func (r *pipelineWebhookTriggerResource) Read(ctx context.Context, req resource.
 
 func (r *pipelineWebhookTriggerResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	var plan, state pipelineWebhookTriggerModel
-	resp.Diagnostics.Append(req.Config.Get(ctx, &plan)...)
-	resp.Diagnostics.Append(req.Plan.GetAttribute(ctx, path.Root("enabled"), &plan.Enabled)...)
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -446,7 +444,7 @@ func (r *pipelineWebhookTriggerResource) ImportState(ctx context.Context, req re
 		return
 	}
 	state.Build = &pipelineWebhookTriggerBuildModel{
-		Branch: state.EffectiveBuild.Branch, Commit: state.EffectiveBuild.Commit, Message: state.EffectiveBuild.Message,
+		Branch: types.StringPointerValue(result.Build.Branch), Commit: types.StringPointerValue(result.Build.Commit), Message: types.StringPointerValue(result.Build.Message),
 		Environment: types.MapNull(types.StringType),
 	}
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)

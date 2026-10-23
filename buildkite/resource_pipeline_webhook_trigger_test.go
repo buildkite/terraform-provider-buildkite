@@ -695,3 +695,96 @@ func TestPipelineWebhookTriggerAdoptObservedOverride(t *testing.T) {
 		},
 	})
 }
+
+func TestPipelineWebhookTriggerIgnoreChanges(t *testing.T) {
+	for _, test := range []struct {
+		name      string
+		initial   string
+		updated   string
+		change    func(*webhookTriggerTestAPI)
+		wantBuild map[string]any
+		checks    resource.TestCheckFunc
+	}{
+		{
+			name: "nested branch",
+			initial: `build = { branch = "main" }
+    lifecycle { ignore_changes = [build.branch] }`,
+			updated: `build = { branch = "main" }
+    lifecycle { ignore_changes = [build.branch] }`,
+			change:    func(api *webhookTriggerTestAPI) { api.branch = "release" },
+			wantBuild: map[string]any{"branch": "release"},
+			checks: resource.ComposeAggregateTestCheckFunc(
+				resource.TestCheckResourceAttr(triggerTestAddress, "build.branch", "release"),
+				resource.TestCheckResourceAttr(triggerTestAddress, "effective_build.branch", "release"),
+			),
+		},
+		{
+			name: "whole build object",
+			initial: `build = { branch = "main", environment = { TARGET = "staging" } }
+    lifecycle { ignore_changes = [build] }`,
+			updated:   `lifecycle { ignore_changes = [build] }`,
+			change:    func(api *webhookTriggerTestAPI) { api.branch = "release" },
+			wantBuild: map[string]any{"branch": "release", "environment": map[string]any{"TARGET": "staging"}},
+			checks: resource.ComposeAggregateTestCheckFunc(
+				resource.TestCheckResourceAttr(triggerTestAddress, "build.branch", "release"),
+				resource.TestCheckResourceAttr(triggerTestAddress, "build.environment.TARGET", "staging"),
+			),
+		},
+		{
+			name: "environment configuration",
+			initial: `build = { environment = { TARGET = "staging" } }
+    lifecycle { ignore_changes = [build.environment] }`,
+			updated: `build = { environment = { TARGET = "production" } }
+    lifecycle { ignore_changes = [build.environment] }`,
+			change:    func(*webhookTriggerTestAPI) {},
+			wantBuild: map[string]any{"environment": map[string]any{"TARGET": "staging"}},
+			checks:    resource.TestCheckResourceAttr(triggerTestAddress, "build.environment.TARGET", "staging"),
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			api := newWebhookTriggerTestAPI(t)
+			resource.UnitTest(t, resource.TestCase{
+				ProtoV6ProviderFactories: protoV6ProviderFactories(), CheckDestroy: api.checkDestroy,
+				Steps: []resource.TestStep{
+					{Config: api.config(test.initial)},
+					{PreConfig: api.change(func() { test.change(api) }), Config: api.config(test.updated + "\nenabled = false"),
+						ConfigPlanChecks: resource.ConfigPlanChecks{PreApply: []plancheck.PlanCheck{plancheck.ExpectResourceAction(triggerTestAddress, plancheck.ResourceActionUpdate)}},
+						Check: resource.ComposeAggregateTestCheckFunc(test.checks,
+							resource.TestCheckResourceAttr(triggerTestAddress, "enabled", "false"),
+							api.checkPayload(map[string]any{"label": "Example trigger", "enabled": false, "build": test.wantBuild}),
+						),
+					},
+				},
+			})
+		})
+	}
+}
+
+func TestPipelineWebhookTriggerIgnoreTopLevelChanges(t *testing.T) {
+	api := newWebhookTriggerTestAPI(t)
+	config := api.config(`filter = "webhook.payload.action == \"deploy\""
+  lifecycle { ignore_changes = [pipeline_id, label, filter] }`)
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: protoV6ProviderFactories(), CheckDestroy: api.checkDestroy,
+		Steps: []resource.TestStep{
+			{Config: config},
+			{PreConfig: api.change(func() {
+				api.label = "Updated externally"
+				api.filter = map[string]any{"expression": "webhook.payload.action == \"release\""}
+			}), Config: strings.Replace(config, `pipeline_id = "receiver-id"`, `pipeline_id = "other-id"`, 1) + "\n",
+				PlanOnly: true, ExpectNonEmptyPlan: false,
+			},
+			{Config: strings.Replace(api.config(`enabled = false
+     lifecycle { ignore_changes = [pipeline_id, label, filter] }`), `pipeline_id = "receiver-id"`, `pipeline_id = "other-id"`, 1),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(triggerTestAddress, "pipeline_id", "receiver-id"),
+					resource.TestCheckResourceAttr(triggerTestAddress, "label", "Updated externally"),
+					resource.TestCheckResourceAttr(triggerTestAddress, "filter", "webhook.payload.action == \"release\""),
+					resource.TestCheckResourceAttr(triggerTestAddress, "endpoint_url", "https://example.test/trigger-1"),
+					api.checkPayload(map[string]any{"label": "Updated externally", "enabled": false,
+						"filter": map[string]any{"expression": "webhook.payload.action == \"release\""}}),
+				),
+			},
+		},
+	})
+}
