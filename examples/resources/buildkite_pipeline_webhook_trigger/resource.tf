@@ -3,9 +3,9 @@ data "buildkite_pipeline" "receiver" {
 }
 
 resource "buildkite_pipeline_webhook_trigger" "deploy" {
-  pipeline_slug = data.buildkite_pipeline.receiver.slug
-  label         = "Deploy from an external webhook"
-  enabled       = true
+  pipeline_id = data.buildkite_pipeline.receiver.id
+  label       = "Deploy from an external webhook"
+  enabled     = true
 
   build = {
     branch  = "main"
