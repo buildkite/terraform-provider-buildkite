@@ -36,9 +36,9 @@ data "buildkite_pipeline" "receiver" {
 }
 
 resource "buildkite_pipeline_webhook_trigger" "deploy" {
-  pipeline_slug = data.buildkite_pipeline.receiver.slug
-  label         = "Deploy from an external webhook"
-  enabled       = true
+  pipeline_id = data.buildkite_pipeline.receiver.id
+  label       = "Deploy from an external webhook"
+  enabled     = true
 
   build = {
     branch  = "main"
@@ -62,7 +62,7 @@ output "webhook_endpoint" {
 ### Required
 
 - `label` (String) A non-empty label describing the trigger.
-- `pipeline_slug` (String) Slug of the receiving pipeline in the provider's organization. Changing it replaces the trigger.
+- `pipeline_id` (String) GraphQL ID of the receiving pipeline in the provider's organization. Changing the pipeline replaces the trigger; renaming it does not.
 
 ### Optional
 
@@ -72,6 +72,7 @@ output "webhook_endpoint" {
 
 ### Read-Only
 
+- `effective_build` (Attributes) Build settings reported by Buildkite, including defaults and overrides made outside Terraform. These values are recovered during import. (see [below for nested schema](#nestedatt--effective_build))
 - `endpoint_url` (String, Sensitive) Credential-bearing URL returned only when the trigger is created. Retained in Terraform state; unavailable after import.
 - `id` (String) The trigger UUID.
 
@@ -85,6 +86,16 @@ Optional:
 - `environment` (Map of String, Sensitive) Build environment variables. Values are stored in state and are not returned by the API, so external value changes cannot be detected. Removing this map clears previously managed variables.
 - `message` (String) Build message.
 
+
+<a id="nestedatt--effective_build"></a>
+### Nested Schema for `effective_build`
+
+Read-Only:
+
+- `branch` (String) Effective branch.
+- `commit` (String) Effective commit.
+- `message` (String) Effective build message.
+
 ## Endpoint lifecycle
 
 This resource manages generic `webhook` triggers. GitHub, GitHub Actions, and Linear
@@ -96,16 +107,33 @@ the full URL when creating the trigger; later responses contain a masked hint.
 The provider retains the creation URL across refreshes and updates. Losing that
 state loses the provider's copy of the URL. Replace the trigger to obtain a new URL.
 
-Changing the receiving pipeline replaces the trigger. For a coordinated endpoint
+The `pipeline_id` argument uses the pipeline's stable GraphQL ID. Renaming the
+pipeline preserves the trigger and its URL. Changing the receiving pipeline replaces
+the trigger. For a coordinated endpoint
 replacement, use `create_before_destroy` and reference `endpoint_url` from the sending
 resource so Terraform can update the sender before removing the old endpoint.
 
 Removing the resource deletes its endpoint. A trigger deleted outside Terraform
 is recreated on the next apply with a new URL.
 
+## Build defaults and overrides
+
+The optional `build` object declares the overrides Terraform manages. The computed
+`effective_build` object reports the branch, commit, and message Buildkite actually
+uses, including defaults and changes made outside Terraform.
+
+Removing a configured field from `build` restores its API default; removing the
+entire object resets all previously configured overrides. Omitted overrides are
+not enforced, but their effective values remain visible in `effective_build`.
+
+Environment values are unavailable from reads. Terraform retains configured values
+in state, and removing a previously configured environment map clears it. After
+import, omitted environment settings preserve the existing remote variables.
+
 ## Import
 
-Import using the pipeline slug and trigger UUID, separated by `/`:
+Import using the current pipeline slug and trigger UUID, separated by `/`. The
+provider resolves the slug to the stable `pipeline_id` during import:
 
 ```shell
 terraform import buildkite_pipeline_webhook_trigger.deploy webhook-receiver/123e4567-e89b-42d3-a456-426614174000
@@ -121,7 +149,9 @@ import {
 ```
 
 Import cannot recover the endpoint URL or environment values. `endpoint_url` remains
-unset, and existing build overrides are left unmanaged until configured explicitly.
+unset. Branch, commit, and message are recovered into both `build` and
+`effective_build`. Include the imported `build` values in configuration to retain
+them; omitting them restores their API defaults on the next apply.
 Keep the existing receiving URL in the sender, or replace the trigger if Terraform
 needs to supply its URL.
 

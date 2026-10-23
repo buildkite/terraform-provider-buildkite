@@ -24,13 +24,14 @@ import (
 type pipelineWebhookTriggerResource struct{ client *Client }
 
 type pipelineWebhookTriggerModel struct {
-	ID           types.String                      `tfsdk:"id"`
-	PipelineSlug types.String                      `tfsdk:"pipeline_slug"`
-	Label        types.String                      `tfsdk:"label"`
-	Enabled      types.Bool                        `tfsdk:"enabled"`
-	Build        *pipelineWebhookTriggerBuildModel `tfsdk:"build"`
-	Filter       types.String                      `tfsdk:"filter"`
-	EndpointURL  types.String                      `tfsdk:"endpoint_url"`
+	ID             types.String                               `tfsdk:"id"`
+	PipelineID     types.String                               `tfsdk:"pipeline_id"`
+	Label          types.String                               `tfsdk:"label"`
+	Enabled        types.Bool                                 `tfsdk:"enabled"`
+	Build          *pipelineWebhookTriggerBuildModel          `tfsdk:"build"`
+	EffectiveBuild *pipelineWebhookTriggerEffectiveBuildModel `tfsdk:"effective_build"`
+	Filter         types.String                               `tfsdk:"filter"`
+	EndpointURL    types.String                               `tfsdk:"endpoint_url"`
 }
 
 type pipelineWebhookTriggerBuildModel struct {
@@ -38,6 +39,12 @@ type pipelineWebhookTriggerBuildModel struct {
 	Commit      types.String `tfsdk:"commit"`
 	Message     types.String `tfsdk:"message"`
 	Environment types.Map    `tfsdk:"environment"`
+}
+
+type pipelineWebhookTriggerEffectiveBuildModel struct {
+	Branch  types.String `tfsdk:"branch"`
+	Commit  types.String `tfsdk:"commit"`
+	Message types.String `tfsdk:"message"`
 }
 
 type pipelineWebhookTriggerResponse struct {
@@ -95,9 +102,9 @@ func (r *pipelineWebhookTriggerResource) Schema(_ context.Context, _ resource.Sc
 				MarkdownDescription: "The trigger UUID.",
 				PlanModifiers:       []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
 			},
-			"pipeline_slug": schema.StringAttribute{
+			"pipeline_id": schema.StringAttribute{
 				Required:            true,
-				MarkdownDescription: "Slug of the receiving pipeline in the provider's organization. Changing it replaces the trigger.",
+				MarkdownDescription: "GraphQL ID of the receiving pipeline in the provider's organization. Changing the pipeline replaces the trigger; renaming it does not.",
 				Validators:          []validator.String{stringvalidator.LengthAtLeast(1)},
 				PlanModifiers:       []planmodifier.String{stringplanmodifier.RequiresReplace()},
 			},
@@ -145,6 +152,15 @@ func (r *pipelineWebhookTriggerResource) Schema(_ context.Context, _ resource.Sc
 						ElementType:         types.StringType,
 						MarkdownDescription: "Build environment variables. Values are stored in state and are not returned by the API, so external value changes cannot be detected. Removing this map clears previously managed variables.",
 					},
+				},
+			},
+			"effective_build": schema.SingleNestedAttribute{
+				Computed:            true,
+				MarkdownDescription: "Build settings reported by Buildkite, including defaults and overrides made outside Terraform. These values are recovered during import.",
+				Attributes: map[string]schema.Attribute{
+					"branch":  schema.StringAttribute{Computed: true, MarkdownDescription: "Effective branch."},
+					"commit":  schema.StringAttribute{Computed: true, MarkdownDescription: "Effective commit."},
+					"message": schema.StringAttribute{Computed: true, MarkdownDescription: "Effective build message."},
 				},
 			},
 		},
@@ -206,8 +222,7 @@ func (m pipelineWebhookTriggerModel) payload(ctx context.Context, previous *pipe
 	return payload, diags
 }
 
-// Reads omit credentials and resolve omitted build fields to pipeline defaults.
-// Keep the creation URL and hidden environment values, and only refresh managed overrides.
+// Refresh readable values, including resolved defaults. Credentials remain in state.
 func (m *pipelineWebhookTriggerModel) refresh(result pipelineWebhookTriggerResponse) diag.Diagnostics {
 	var diags diag.Diagnostics
 	if result.Type != "webhook" {
@@ -225,23 +240,34 @@ func (m *pipelineWebhookTriggerModel) refresh(result pipelineWebhookTriggerRespo
 	if result.Filter != nil {
 		m.Filter = types.StringValue(result.Filter.Expression)
 	}
-	if m.Build != nil && result.Build != nil {
+	if result.Build == nil {
+		diags.AddError("Invalid pipeline trigger response", "The webhook trigger response did not include build settings.")
+		return diags
+	}
+	m.EffectiveBuild = &pipelineWebhookTriggerEffectiveBuildModel{
+		Branch:  types.StringPointerValue(result.Build.Branch),
+		Commit:  types.StringPointerValue(result.Build.Commit),
+		Message: types.StringPointerValue(result.Build.Message),
+	}
+	if m.Build != nil {
 		if !m.Build.Branch.IsNull() {
-			m.Build.Branch = types.StringPointerValue(result.Build.Branch)
+			m.Build.Branch = m.EffectiveBuild.Branch
 		}
 		if !m.Build.Commit.IsNull() {
-			m.Build.Commit = types.StringPointerValue(result.Build.Commit)
+			m.Build.Commit = m.EffectiveBuild.Commit
 		}
 		if !m.Build.Message.IsNull() {
-			m.Build.Message = types.StringPointerValue(result.Build.Message)
+			m.Build.Message = m.EffectiveBuild.Message
 		}
 	}
+
 	return diags
 }
 
 func (r *pipelineWebhookTriggerResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var plan pipelineWebhookTriggerModel
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	resp.Diagnostics.Append(req.Config.Get(ctx, &plan)...)
+	resp.Diagnostics.Append(req.Plan.GetAttribute(ctx, path.Root("enabled"), &plan.Enabled)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -252,10 +278,19 @@ func (r *pipelineWebhookTriggerResource) Create(ctx context.Context, req resourc
 	if resp.Diagnostics.HasError() {
 		return
 	}
+	var result pipelineWebhookTriggerResponse
+	pipeline, lookupErr := r.pipelineSlug(ctx, plan.PipelineID.ValueString())
+	if lookupErr != nil {
+		resp.Diagnostics.AddError("Unable to resolve receiving pipeline", lookupErr.Error())
+		return
+	}
+	if pipeline == "" {
+		resp.Diagnostics.AddError("Receiving pipeline not found", "The receiving pipeline is missing or inaccessible.")
+		return
+	}
 	requestCtx, cancel := mutationContext(ctx, timeout)
 	defer cancel()
-	var result pipelineWebhookTriggerResponse
-	err := r.client.makeRequest(requestCtx, http.MethodPost, r.apiPath(plan.PipelineSlug.ValueString(), ""), payload, &result)
+	err := r.client.makeRequest(requestCtx, http.MethodPost, r.apiPath(pipeline, ""), payload, &result)
 	if err != nil {
 		resp.Diagnostics.AddError("Unable to create pipeline webhook trigger", err.Error())
 		return
@@ -286,7 +321,16 @@ func (r *pipelineWebhookTriggerResource) Read(ctx context.Context, req resource.
 	requestCtx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 	var result pipelineWebhookTriggerResponse
-	err := r.client.makeRequest(requestCtx, http.MethodGet, r.apiPath(state.PipelineSlug.ValueString(), state.ID.ValueString()), nil, &result)
+	pipeline, lookupErr := r.pipelineSlug(requestCtx, state.PipelineID.ValueString())
+	if lookupErr != nil {
+		resp.Diagnostics.AddError("Unable to resolve receiving pipeline", lookupErr.Error())
+		return
+	}
+	if pipeline == "" {
+		resp.State.RemoveResource(ctx)
+		return
+	}
+	err := r.client.makeRequest(requestCtx, http.MethodGet, r.apiPath(pipeline, state.ID.ValueString()), nil, &result)
 	if isAPIStatus(err, http.StatusNotFound) {
 		resp.State.RemoveResource(ctx)
 		return
@@ -303,7 +347,8 @@ func (r *pipelineWebhookTriggerResource) Read(ctx context.Context, req resource.
 
 func (r *pipelineWebhookTriggerResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	var plan, state pipelineWebhookTriggerModel
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	resp.Diagnostics.Append(req.Config.Get(ctx, &plan)...)
+	resp.Diagnostics.Append(req.Plan.GetAttribute(ctx, path.Root("enabled"), &plan.Enabled)...)
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -315,10 +360,19 @@ func (r *pipelineWebhookTriggerResource) Update(ctx context.Context, req resourc
 	if resp.Diagnostics.HasError() {
 		return
 	}
+	var result pipelineWebhookTriggerResponse
+	pipeline, lookupErr := r.pipelineSlug(ctx, state.PipelineID.ValueString())
+	if lookupErr != nil {
+		resp.Diagnostics.AddError("Unable to resolve receiving pipeline", lookupErr.Error())
+		return
+	}
+	if pipeline == "" {
+		resp.Diagnostics.AddError("Receiving pipeline not found", "The receiving pipeline is missing or inaccessible.")
+		return
+	}
 	requestCtx, cancel := mutationContext(ctx, timeout)
 	defer cancel()
-	var result pipelineWebhookTriggerResponse
-	err := r.client.makeRequest(requestCtx, http.MethodPatch, r.apiPath(state.PipelineSlug.ValueString(), state.ID.ValueString()), payload, &result)
+	err := r.client.makeRequest(requestCtx, http.MethodPatch, r.apiPath(pipeline, state.ID.ValueString()), payload, &result)
 	if err != nil {
 		resp.Diagnostics.AddError("Unable to update pipeline webhook trigger", err.Error())
 		return
@@ -338,9 +392,17 @@ func (r *pipelineWebhookTriggerResource) Delete(ctx context.Context, req resourc
 	if resp.Diagnostics.HasError() {
 		return
 	}
+	pipeline, lookupErr := r.pipelineSlug(ctx, state.PipelineID.ValueString())
+	if lookupErr != nil {
+		resp.Diagnostics.AddError("Unable to resolve receiving pipeline", lookupErr.Error())
+		return
+	}
+	if pipeline == "" {
+		return
+	}
 	requestCtx, cancel := mutationContext(ctx, timeout)
 	defer cancel()
-	err := r.client.makeRequest(requestCtx, http.MethodDelete, r.apiPath(state.PipelineSlug.ValueString(), state.ID.ValueString()), nil, nil)
+	err := r.client.makeRequest(requestCtx, http.MethodDelete, r.apiPath(pipeline, state.ID.ValueString()), nil, nil)
 	if err != nil && !isAPIStatus(err, http.StatusNotFound) {
 		resp.Diagnostics.AddError("Unable to delete pipeline webhook trigger", err.Error())
 	}
@@ -357,7 +419,62 @@ func (r *pipelineWebhookTriggerResource) ImportState(ctx context.Context, req re
 		resp.Diagnostics.AddError("Invalid pipeline webhook trigger import ID", "Import using pipeline-slug/trigger-uuid.")
 		return
 	}
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("pipeline_slug"), parts[0])...)
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), id.String())...)
-	resp.Diagnostics.AddWarning("Endpoint URL cannot be recovered", "Buildkite only returns the full endpoint URL when creating a trigger. Import leaves endpoint_url unset. Build overrides and environment values are not imported; configure them explicitly if they should be managed.")
+	timeout, diags := r.client.readTimeout(ctx)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	requestCtx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+	parent, err := getPipelineId(requestCtx, r.client.genqlient, r.client.organization+"/"+parts[0])
+	if err != nil {
+		resp.Diagnostics.AddError("Unable to import receiving pipeline", err.Error())
+		return
+	}
+	if parent.Pipeline.Id == "" {
+		resp.Diagnostics.AddError("Receiving pipeline not found", "The receiving pipeline is missing or inaccessible.")
+		return
+	}
+	var result pipelineWebhookTriggerResponse
+	if err := r.client.makeRequest(requestCtx, http.MethodGet, r.apiPath(parts[0], id.String()), nil, &result); err != nil {
+		resp.Diagnostics.AddError("Unable to import pipeline webhook trigger", err.Error())
+		return
+	}
+	state := pipelineWebhookTriggerModel{PipelineID: types.StringValue(parent.Pipeline.Id)}
+	resp.Diagnostics.Append(state.refresh(result)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	state.Build = &pipelineWebhookTriggerBuildModel{
+		Branch: state.EffectiveBuild.Branch, Commit: state.EffectiveBuild.Commit, Message: state.EffectiveBuild.Message,
+		Environment: types.MapNull(types.StringType),
+	}
+	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+
+	resp.Diagnostics.AddWarning("Endpoint URL cannot be recovered", "Buildkite only returns the full endpoint URL when creating a trigger. Import leaves endpoint_url unset. Environment values cannot be imported. Readable build settings are imported. Configure them to retain the existing overrides; omitting them restores their defaults on the next apply.")
+}
+
+// The REST route uses a mutable slug; resolve it from the stable parent ID each time.
+func (r *pipelineWebhookTriggerResource) pipelineSlug(ctx context.Context, id string) (string, error) {
+	timeout, diags := r.client.readTimeout(ctx)
+	if diags.HasError() {
+		return "", fmt.Errorf("invalid read timeout: %s", diags.Errors()[0].Detail())
+	}
+	lookupCtx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+	result, err := getPipelineTriggerParent(lookupCtx, r.client.genqlient, id)
+	if err != nil {
+		return "", err
+	}
+	parent, ok := result.Node.(*getPipelineTriggerParentNodePipeline)
+	if result.Node == nil {
+		return "", nil
+	}
+	if !ok || parent == nil || parent.Id != id || parent.Slug == "" {
+		return "", fmt.Errorf("receiving pipeline ID did not resolve to a valid pipeline")
+	}
+	if parent.Organization.Slug != r.client.organization {
+		return "", fmt.Errorf("receiving pipeline belongs to a different organization")
+	}
+	return parent.Slug, nil
 }

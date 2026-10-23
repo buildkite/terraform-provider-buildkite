@@ -23,32 +23,41 @@ const triggerTestAddress = "buildkite_pipeline_webhook_trigger.test"
 
 // The server returns the credential only on POST and resolves unset build fields
 // to defaults, matching the public API rather than echoing the Terraform configuration.
+type webhookTriggerRecord struct {
+	id          string
+	pipeline    string
+	label       string
+	enabled     bool
+	branch      any
+	commit      any
+	message     any
+	environment map[string]any
+	filter      any
+	exists      bool
+}
+
 type webhookTriggerTestAPI struct {
-	t              *testing.T
-	server         *httptest.Server
-	mu             sync.Mutex
-	id             string
-	pipeline       string
-	label          string
-	enabled        bool
-	branch         any
-	commit         any
-	message        any
-	environment    map[string]any
-	filter         any
-	exists         bool
-	creates        int
-	deletes        int
-	lastPayload    map[string]any
-	readStatus     int
-	writeStatus    int
-	omitURL        bool
-	triggerType    string
-	deleteNotFound bool
+	*webhookTriggerRecord
+	t                  *testing.T
+	server             *httptest.Server
+	mu                 sync.Mutex
+	records            map[string]*webhookTriggerRecord
+	pipelines          map[string]string
+	creates            int
+	deletes            int
+	lastPayload        map[string]any
+	readStatus         int
+	writeStatus        int
+	omitURL            bool
+	triggerType        string
+	deleteNotFound     bool
+	parentStatus       int
+	parentOrganization string
+	events             []string
 }
 
 func newWebhookTriggerTestAPI(t *testing.T) *webhookTriggerTestAPI {
-	api := &webhookTriggerTestAPI{t: t, triggerType: "webhook"}
+	api := &webhookTriggerTestAPI{t: t, triggerType: "webhook", webhookTriggerRecord: &webhookTriggerRecord{}, records: map[string]*webhookTriggerRecord{}, pipelines: map[string]string{"receiver-id": "receiver", "other-id": "other"}, parentOrganization: "example"}
 	api.server = httptest.NewServer(http.HandlerFunc(api.handle))
 	t.Cleanup(api.server.Close)
 	return api
@@ -58,6 +67,10 @@ func (api *webhookTriggerTestAPI) handle(w http.ResponseWriter, r *http.Request)
 	api.mu.Lock()
 	defer api.mu.Unlock()
 	w.Header().Set("Content-Type", "application/json")
+	if r.URL.Path == "/graphql" {
+		api.graphql(w, r)
+		return
+	}
 	parts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
 	if len(parts) < 6 || parts[0] != "v2" || parts[1] != "organizations" || parts[2] != "example" || parts[3] != "pipelines" || parts[5] != "triggers" {
 		api.t.Errorf("unexpected API path: %s", r.URL.Path)
@@ -79,10 +92,21 @@ func (api *webhookTriggerTestAPI) handle(w http.ResponseWriter, r *http.Request)
 		_, _ = w.Write([]byte(`{"message":"write failed"}`))
 		return
 	}
-	if r.Method != http.MethodPost && (!api.exists || len(parts) != 7 || parts[6] != api.id || parts[4] != api.pipeline) {
-		w.WriteHeader(http.StatusNotFound)
-		return
+	if r.Method != http.MethodPost {
+		if len(parts) != 7 {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		record := api.records[parts[6]]
+		if record == nil || !record.exists || parts[4] != record.pipeline {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		previous := api.webhookTriggerRecord
+		api.webhookTriggerRecord = record
+		defer func() { api.webhookTriggerRecord = previous }()
 	}
+
 	switch r.Method {
 	case http.MethodPost, http.MethodPatch:
 		if r.Header.Get("Content-Type") != "application/json" {
@@ -104,14 +128,17 @@ func (api *webhookTriggerTestAPI) handle(w http.ResponseWriter, r *http.Request)
 			}
 		}
 		if r.Method == http.MethodPost {
-			if len(parts) != 6 || api.exists || body["type"] != "webhook" {
+			if len(parts) != 6 || body["type"] != "webhook" {
 				api.t.Error("invalid create request")
 				w.WriteHeader(http.StatusBadRequest)
 				return
 			}
+			api.webhookTriggerRecord = &webhookTriggerRecord{}
 			api.creates++
+			api.events = append(api.events, "create")
 			api.id = fmt.Sprintf("123e4567-e89b-42d3-a456-%012d", api.creates)
 			api.pipeline, api.exists = parts[4], true
+			api.records[api.id] = api.webhookTriggerRecord
 			api.branch, api.commit, api.message = "main", "HEAD", "Webhook build"
 			api.environment = map[string]any{}
 			api.filter = nil
@@ -158,6 +185,7 @@ func (api *webhookTriggerTestAPI) handle(w http.ResponseWriter, r *http.Request)
 	case http.MethodDelete:
 		api.exists = false
 		api.deletes++
+		api.events = append(api.events, "delete:"+api.id)
 		if api.deleteNotFound {
 			w.WriteHeader(http.StatusNotFound)
 			return
@@ -196,13 +224,14 @@ func (api *webhookTriggerTestAPI) config(extra string) string {
  provider "buildkite" {
   organization = "example"
   api_token = "test-token"
-  rest_url = %q
+  rest_url = %[1]q
+ graphql_url = "%[1]s/graphql"
   max_retries = 0
  }
  resource "buildkite_pipeline_webhook_trigger" "test" {
-  pipeline_slug = "receiver"
+  pipeline_id = "receiver-id"
   label = "Example trigger"
-  %s
+  %[2]s
  }
  `, api.server.URL, extra)
 }
@@ -225,8 +254,10 @@ func (api *webhookTriggerTestAPI) checkPayload(want map[string]any) resource.Tes
 func (api *webhookTriggerTestAPI) checkDestroy(*terraform.State) error {
 	api.mu.Lock()
 	defer api.mu.Unlock()
-	if api.exists {
-		return fmt.Errorf("trigger still exists")
+	for _, record := range api.records {
+		if record.exists {
+			return fmt.Errorf("trigger still exists")
+		}
 	}
 	return nil
 }
@@ -261,13 +292,15 @@ func TestPipelineWebhookTriggerLifecycle(t *testing.T) {
 			// Clear the filter and the whole build block. The API needs explicit nulls and an empty environment.
 			{Config: api.config(""), Check: resource.ComposeAggregateTestCheckFunc(
 				resource.TestCheckResourceAttr(triggerTestAddress, "endpoint_url", "https://example.test/trigger-1"),
-				resource.TestCheckNoResourceAttr(triggerTestAddress, "build"),
+				resource.TestCheckResourceAttr(triggerTestAddress, "effective_build.branch", "main"),
+				resource.TestCheckResourceAttr(triggerTestAddress, "effective_build.commit", "HEAD"),
+				resource.TestCheckResourceAttr(triggerTestAddress, "effective_build.message", "Webhook build"),
 				resource.TestCheckNoResourceAttr(triggerTestAddress, "filter"),
 				api.checkPayload(map[string]any{"label": "Example trigger", "enabled": true, "filter": nil,
 					"build": map[string]any{"branch": nil, "commit": nil, "message": nil, "environment": map[string]any{}}}),
 			)},
 			{Config: api.config(""), PlanOnly: true, ExpectNonEmptyPlan: false},
-			{ResourceName: triggerTestAddress, ImportState: true, ImportStateId: "receiver/123e4567-e89b-42d3-a456-000000000001", ImportStateVerify: true, ImportStateVerifyIgnore: []string{"endpoint_url"}, ImportStateCheck: func(states []*terraform.InstanceState) error {
+			{ResourceName: triggerTestAddress, ImportState: true, ImportStateId: "receiver/123e4567-e89b-42d3-a456-000000000001", ImportStateVerify: true, ImportStateVerifyIgnore: []string{"endpoint_url", "build"}, ImportStateCheck: func(states []*terraform.InstanceState) error {
 				if len(states) != 1 || states[0].Attributes["endpoint_url"] != "" {
 					return fmt.Errorf("import must not invent or recover a credential")
 				}
@@ -290,11 +323,11 @@ func TestPipelineWebhookTriggerDriftAndDeletion(t *testing.T) {
 			{PreConfig: api.change(func() { api.exists = false }), Config: config,
 				ConfigPlanChecks: resource.ConfigPlanChecks{PreApply: []plancheck.PlanCheck{plancheck.ExpectResourceAction(triggerTestAddress, plancheck.ResourceActionCreate)}},
 				Check:            resource.TestCheckResourceAttr(triggerTestAddress, "endpoint_url", "https://example.test/trigger-2")},
-			{Config: strings.Replace(config, `pipeline_slug = "receiver"`, `pipeline_slug = "other"`, 1),
+			{Config: strings.Replace(config, `pipeline_id = "receiver-id"`, `pipeline_id = "other-id"`, 1),
 				ConfigPlanChecks: resource.ConfigPlanChecks{PreApply: []plancheck.PlanCheck{plancheck.ExpectResourceAction(triggerTestAddress, plancheck.ResourceActionDestroyBeforeCreate)}},
 				Check:            resource.TestCheckResourceAttr(triggerTestAddress, "endpoint_url", "https://example.test/trigger-3")},
 			// The object can disappear between refresh and DELETE.
-			{PreConfig: api.change(func() { api.deleteNotFound = true }), Config: strings.Replace(config, `pipeline_slug = "receiver"`, `pipeline_slug = "other"`, 1), Destroy: true},
+			{PreConfig: api.change(func() { api.deleteNotFound = true }), Config: strings.Replace(config, `pipeline_id = "receiver-id"`, `pipeline_id = "other-id"`, 1), Destroy: true},
 		},
 	})
 }
@@ -369,7 +402,7 @@ func TestAccBuildkitePipelineWebhookTrigger(t *testing.T) {
     repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
    }
    resource "buildkite_pipeline_webhook_trigger" "test" {
-    pipeline_slug = buildkite_pipeline.receiver.slug
+    pipeline_id = buildkite_pipeline.receiver.id
     label = "Terraform acceptance test"
     enabled = %t
     build = { branch = %q }
@@ -401,9 +434,9 @@ func TestAccBuildkitePipelineWebhookTrigger(t *testing.T) {
 					return nil
 				},
 			)},
-			{ResourceName: triggerTestAddress, ImportState: true, ImportStateVerify: true, ImportStateVerifyIgnore: []string{"endpoint_url", "build"}, ImportStateIdFunc: func(state *terraform.State) (string, error) {
+			{ResourceName: triggerTestAddress, ImportState: true, ImportStateVerify: true, ImportStateVerifyIgnore: []string{"endpoint_url", "build.commit", "build.message"}, ImportStateIdFunc: func(state *terraform.State) (string, error) {
 				attrs := state.RootModule().Resources[triggerTestAddress].Primary.Attributes
-				return attrs["pipeline_slug"] + "/" + attrs["id"], nil
+				return state.RootModule().Resources["buildkite_pipeline.receiver"].Primary.Attributes["slug"] + "/" + attrs["id"], nil
 			}},
 		},
 	})
@@ -420,14 +453,245 @@ func TestPipelineWebhookTriggerUpdatePreservesUnmanagedBuildFields(t *testing.T)
 			// An imported trigger can have build overrides that this configuration does not manage.
 			{PreConfig: api.change(func() { api.branch = "release" }),
 				Config: strings.Replace(config, `label = "Example trigger"`, `label = "Updated label"`, 1),
-				Check: func(*terraform.State) error {
+				Check: func(state *terraform.State) error {
 					api.mu.Lock()
 					defer api.mu.Unlock()
+					if state.RootModule().Resources[triggerTestAddress].Primary.Attributes["effective_build.branch"] != "release" {
+						return fmt.Errorf("effective build state did not reflect the external branch override")
+					}
 					if api.branch != "release" {
 						return fmt.Errorf("unmanaged branch override was reset")
 					}
 					return nil
 				}},
+		},
+	})
+}
+
+func (api *webhookTriggerTestAPI) graphql(w http.ResponseWriter, r *http.Request) {
+	if r.Header.Get("Authorization") != "Bearer test-token" {
+		api.t.Error("missing GraphQL authentication")
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+	if api.parentStatus != 0 {
+		w.WriteHeader(api.parentStatus)
+		return
+	}
+	var request struct {
+		OperationName string            `json:"operationName"`
+		Variables     map[string]string `json:"variables"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+		api.t.Errorf("decode GraphQL request: %v", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	var data map[string]any
+	switch request.OperationName {
+	case "getPipelineTriggerParent":
+		var node any
+		if slug, exists := api.pipelines[request.Variables["id"]]; exists {
+			node = map[string]any{"__typename": "Pipeline", "id": request.Variables["id"], "slug": slug, "organization": map[string]any{"slug": api.parentOrganization}}
+		}
+		data = map[string]any{"node": node}
+	case "getPipelineId":
+		var pipeline any
+		for id, slug := range api.pipelines {
+			if request.Variables["slug"] == "example/"+slug {
+				pipeline = map[string]any{"id": id}
+			}
+		}
+		data = map[string]any{"pipeline": pipeline}
+	default:
+		api.t.Errorf("unexpected GraphQL operation: %s", request.OperationName)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	if err := json.NewEncoder(w).Encode(map[string]any{"data": data}); err != nil {
+		api.t.Error(err)
+	}
+}
+
+func TestPipelineWebhookTriggerParentRename(t *testing.T) {
+	api := newWebhookTriggerTestAPI(t)
+	config := api.config(`build = { branch = "release" }`)
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: protoV6ProviderFactories(), CheckDestroy: api.checkDestroy,
+		Steps: []resource.TestStep{
+			{Config: config},
+			{PreConfig: api.change(func() { api.pipelines["receiver-id"] = "renamed"; api.pipeline = "renamed" }), Config: config, PlanOnly: true, ExpectNonEmptyPlan: false},
+			{Config: api.config(`enabled = false
+    build = { branch = "release" }`),
+				ConfigPlanChecks: resource.ConfigPlanChecks{PreApply: []plancheck.PlanCheck{plancheck.ExpectResourceAction(triggerTestAddress, plancheck.ResourceActionUpdate)}},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(triggerTestAddress, "pipeline_id", "receiver-id"),
+					resource.TestCheckResourceAttr(triggerTestAddress, "endpoint_url", "https://example.test/trigger-1"),
+				)},
+			{Config: config, Destroy: true},
+		},
+	})
+}
+
+func TestPipelineWebhookTriggerImportBuildSettings(t *testing.T) {
+	api := newWebhookTriggerTestAPI(t)
+	config := api.config(`build = {
+  branch = "release"
+  commit = "abc123"
+  message = "Deploy release"
+  environment = { TARGET = "staging" }
+ }`)
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: protoV6ProviderFactories(), CheckDestroy: api.checkDestroy,
+		Steps: []resource.TestStep{
+			{Config: config},
+			{ResourceName: triggerTestAddress, ImportState: true,
+				ImportStateId:     "receiver/123e4567-e89b-42d3-a456-000000000001",
+				ImportStateVerify: true, ImportStateVerifyIgnore: []string{"endpoint_url", "build.environment"},
+				ImportStateCheck: func(states []*terraform.InstanceState) error {
+					if len(states) != 1 {
+						return fmt.Errorf("expected one imported trigger")
+					}
+					for key, want := range map[string]string{"pipeline_id": "receiver-id", "build.branch": "release", "build.commit": "abc123", "build.message": "Deploy release"} {
+						if got := states[0].Attributes[key]; got != want {
+							return fmt.Errorf("imported %s = %q; want %q", key, got, want)
+						}
+					}
+					if states[0].Attributes["build.environment.TARGET"] != "" {
+						return fmt.Errorf("import recovered a hidden environment value")
+					}
+					return nil
+				},
+			},
+		},
+	})
+}
+
+func TestPipelineWebhookTriggerRemoveIndividualOverrides(t *testing.T) {
+	api := newWebhookTriggerTestAPI(t)
+	config := api.config(`build = {
+  branch = "release"
+  commit = "abc123"
+  message = "Deploy release"
+  environment = { TARGET = "staging" }
+ }`)
+	removed := api.config(`build = { environment = { TARGET = "staging" } }`)
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: protoV6ProviderFactories(), CheckDestroy: api.checkDestroy,
+		Steps: []resource.TestStep{
+			{Config: config},
+			{Config: removed, Check: resource.ComposeAggregateTestCheckFunc(
+				resource.TestCheckResourceAttr(triggerTestAddress, "effective_build.branch", "main"),
+				resource.TestCheckResourceAttr(triggerTestAddress, "effective_build.commit", "HEAD"),
+				resource.TestCheckResourceAttr(triggerTestAddress, "effective_build.message", "Webhook build"),
+				api.checkPayload(map[string]any{"label": "Example trigger", "enabled": true,
+					"build": map[string]any{"branch": nil, "commit": nil, "message": nil, "environment": map[string]any{"TARGET": "staging"}}}),
+			)},
+			{Config: removed, PlanOnly: true, ExpectNonEmptyPlan: false},
+			{Config: api.config(`build = {}`), Check: resource.ComposeAggregateTestCheckFunc(
+				resource.TestCheckNoResourceAttr(triggerTestAddress, "build.environment"),
+				api.checkPayload(map[string]any{"label": "Example trigger", "enabled": true, "build": map[string]any{"environment": map[string]any{}}}),
+			)},
+			{Config: api.config(`build = {}`), PlanOnly: true, ExpectNonEmptyPlan: false},
+		},
+	})
+}
+
+func TestPipelineWebhookTriggerCreateBeforeDestroy(t *testing.T) {
+	api := newWebhookTriggerTestAPI(t)
+	config := api.config(`lifecycle { create_before_destroy = true }`) + `
+ resource "terraform_data" "sender" {
+  input = buildkite_pipeline_webhook_trigger.test.endpoint_url
+ }
+ `
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: protoV6ProviderFactories(), CheckDestroy: api.checkDestroy,
+		Steps: []resource.TestStep{
+			{Config: config},
+			{Config: strings.Replace(config, `pipeline_id = "receiver-id"`, `pipeline_id = "other-id"`, 1),
+				ConfigPlanChecks: resource.ConfigPlanChecks{PreApply: []plancheck.PlanCheck{plancheck.ExpectResourceAction(triggerTestAddress, plancheck.ResourceActionCreateBeforeDestroy)}},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(triggerTestAddress, "endpoint_url", "https://example.test/trigger-2"),
+					resource.TestCheckResourceAttr("terraform_data.sender", "input", "https://example.test/trigger-2"),
+					func(*terraform.State) error {
+						api.mu.Lock()
+						defer api.mu.Unlock()
+						if diff := cmp.Diff([]string{"create", "create", "delete:123e4567-e89b-42d3-a456-000000000001"}, api.events); diff != "" {
+							return fmt.Errorf("wrong replacement order: %s", diff)
+						}
+						return nil
+					},
+				),
+			},
+		},
+	})
+}
+
+func TestPipelineWebhookTriggerParentLookupErrors(t *testing.T) {
+	api := newWebhookTriggerTestAPI(t)
+	config := api.config("")
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: protoV6ProviderFactories(), CheckDestroy: api.checkDestroy,
+		Steps: []resource.TestStep{
+			{Config: config},
+			{PreConfig: api.change(func() { api.parentStatus = http.StatusForbidden }), Config: config, PlanOnly: true, ExpectError: regexp.MustCompile("Unable to resolve receiving pipeline")},
+			{PreConfig: api.change(func() { api.parentStatus = 0; api.parentOrganization = "different" }), Config: config, PlanOnly: true, ExpectError: regexp.MustCompile("different organization")},
+			{PreConfig: api.change(func() { api.parentOrganization = "example" }), Config: config, PlanOnly: true, ExpectNonEmptyPlan: false},
+		},
+	})
+}
+
+func TestPipelineWebhookTriggerUpdateAfterImport(t *testing.T) {
+	api := newWebhookTriggerTestAPI(t)
+	api.webhookTriggerRecord = &webhookTriggerRecord{
+		id: "123e4567-e89b-42d3-a456-000000000001", pipeline: "receiver", exists: true,
+		label: "Existing trigger", enabled: true, branch: "release", commit: "abc123", message: "Deploy release",
+		environment: map[string]any{"TARGET": "staging"},
+	}
+	api.records[api.id] = api.webhookTriggerRecord
+	config := api.config(`build = { branch = "release", commit = "abc123", message = "Deploy release" }`) + `
+ import {
+  to = buildkite_pipeline_webhook_trigger.test
+  id = "receiver/123e4567-e89b-42d3-a456-000000000001"
+ }
+ `
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: protoV6ProviderFactories(), CheckDestroy: api.checkDestroy,
+		Steps: []resource.TestStep{
+			{Config: config, Check: resource.ComposeAggregateTestCheckFunc(
+				resource.TestCheckResourceAttr(triggerTestAddress, "build.branch", "release"),
+				resource.TestCheckNoResourceAttr(triggerTestAddress, "endpoint_url"),
+				api.checkPayload(map[string]any{"label": "Example trigger", "enabled": true, "build": map[string]any{"branch": "release", "commit": "abc123", "message": "Deploy release"}}),
+				func(*terraform.State) error {
+					api.mu.Lock()
+					defer api.mu.Unlock()
+					if api.environment["TARGET"] != "staging" {
+						return fmt.Errorf("import update removed unknown environment values")
+					}
+					return nil
+				},
+			)},
+			{Config: config, PlanOnly: true, ExpectNonEmptyPlan: false},
+			{Config: api.config(""), Check: resource.ComposeAggregateTestCheckFunc(
+				resource.TestCheckResourceAttr(triggerTestAddress, "effective_build.branch", "main"),
+				resource.TestCheckNoResourceAttr(triggerTestAddress, "build"),
+				api.checkPayload(map[string]any{"label": "Example trigger", "enabled": true, "build": map[string]any{"branch": nil, "commit": nil, "message": nil}}),
+			)},
+		},
+	})
+}
+
+func TestPipelineWebhookTriggerAdoptObservedOverride(t *testing.T) {
+	api := newWebhookTriggerTestAPI(t)
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: protoV6ProviderFactories(), CheckDestroy: api.checkDestroy,
+		Steps: []resource.TestStep{
+			{Config: api.config("")},
+			{PreConfig: api.change(func() { api.branch = "release" }), Config: api.config(`build = { branch = "release" }`)},
+			{Config: api.config(""), Check: resource.ComposeAggregateTestCheckFunc(
+				resource.TestCheckResourceAttr(triggerTestAddress, "effective_build.branch", "main"),
+				api.checkPayload(map[string]any{"label": "Example trigger", "enabled": true, "build": map[string]any{"branch": nil}}),
+			)},
 		},
 	})
 }

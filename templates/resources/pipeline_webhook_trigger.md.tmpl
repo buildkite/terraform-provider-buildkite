@@ -29,16 +29,33 @@ the full URL when creating the trigger; later responses contain a masked hint.
 The provider retains the creation URL across refreshes and updates. Losing that
 state loses the provider's copy of the URL. Replace the trigger to obtain a new URL.
 
-Changing the receiving pipeline replaces the trigger. For a coordinated endpoint
+The `pipeline_id` argument uses the pipeline's stable GraphQL ID. Renaming the
+pipeline preserves the trigger and its URL. Changing the receiving pipeline replaces
+the trigger. For a coordinated endpoint
 replacement, use `create_before_destroy` and reference `endpoint_url` from the sending
 resource so Terraform can update the sender before removing the old endpoint.
 
 Removing the resource deletes its endpoint. A trigger deleted outside Terraform
 is recreated on the next apply with a new URL.
 
+## Build defaults and overrides
+
+The optional `build` object declares the overrides Terraform manages. The computed
+`effective_build` object reports the branch, commit, and message Buildkite actually
+uses, including defaults and changes made outside Terraform.
+
+Removing a configured field from `build` restores its API default; removing the
+entire object resets all previously configured overrides. Omitted overrides are
+not enforced, but their effective values remain visible in `effective_build`.
+
+Environment values are unavailable from reads. Terraform retains configured values
+in state, and removing a previously configured environment map clears it. After
+import, omitted environment settings preserve the existing remote variables.
+
 ## Import
 
-Import using the pipeline slug and trigger UUID, separated by `/`:
+Import using the current pipeline slug and trigger UUID, separated by `/`. The
+provider resolves the slug to the stable `pipeline_id` during import:
 
 {{codefile "shell" .ImportFile }}
 
@@ -47,7 +64,9 @@ In Terraform v1.5.0 and later, an import block can also be used:
 {{ $tfImportBlock := print "examples/resources/" .Name "/import.tf" }}{{tffile $tfImportBlock }}
 
 Import cannot recover the endpoint URL or environment values. `endpoint_url` remains
-unset, and existing build overrides are left unmanaged until configured explicitly.
+unset. Branch, commit, and message are recovered into both `build` and
+`effective_build`. Include the imported `build` values in configuration to retain
+them; omitting them restores their API defaults on the next apply.
 Keep the existing receiving URL in the sender, or replace the trigger if Terraform
 needs to supply its URL.
 
