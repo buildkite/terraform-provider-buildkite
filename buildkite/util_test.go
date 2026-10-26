@@ -107,6 +107,67 @@ func TestIsResourceNotFoundError(t *testing.T) {
 	}
 }
 
+func TestIsPipelineScheduleNotFoundError(t *testing.T) {
+	tests := []struct {
+		name        string
+		err         error
+		shouldMatch bool
+	}{
+		{
+			name:        "nil error",
+			err:         nil,
+			shouldMatch: false,
+		},
+		// The customer bug: a legitimate "No pipeline found" from pipelineScheduleDelete
+		// (returned when the parent pipeline is archived or invisible to this viewer) must
+		// NOT be treated as "already deleted" — the schedule can still be live upstream.
+		{
+			name:        "gqlerror.List no pipeline found is not swallowed",
+			err:         gqlerror.List{&gqlerror.Error{Message: "No pipeline found"}},
+			shouldMatch: false,
+		},
+		{
+			name:        "gqlerror.List no pipeline schedule found is swallowed",
+			err:         gqlerror.List{&gqlerror.Error{Message: "No pipeline schedule found"}},
+			shouldMatch: true,
+		},
+		{
+			name:        "gqlerror.List schedule no longer exists is swallowed",
+			err:         gqlerror.List{&gqlerror.Error{Message: "This pipeline schedule no longer exists"}},
+			shouldMatch: true,
+		},
+		{
+			name:        "plain not found without schedule mention is not swallowed",
+			err:         errors.New("Resource not found"),
+			shouldMatch: false,
+		},
+		{
+			name:        "plain not found with schedule mention is swallowed",
+			err:         errors.New("pipeline schedule not found"),
+			shouldMatch: true,
+		},
+		{
+			name:        "unrelated plain error",
+			err:         errors.New("Network connection failed"),
+			shouldMatch: false,
+		},
+		// Ambient guards inherited from isResourceNotFoundError still apply.
+		{
+			name:        "retried 503 with a schedule-not-found body",
+			err:         &apiError{Method: "POST", URL: "/v1", StatusCode: 503, Attempts: 4, Body: "schedule not found", Err: context.DeadlineExceeded},
+			shouldMatch: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := isPipelineScheduleNotFoundError(tt.err); got != tt.shouldMatch {
+				t.Errorf("isPipelineScheduleNotFoundError(%v) = %v, want %v", tt.err, got, tt.shouldMatch)
+			}
+		})
+	}
+}
+
 func TestIsAlreadyExistsError(t *testing.T) {
 	tests := []struct {
 		name        string
