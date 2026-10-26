@@ -81,8 +81,8 @@ output "webhook_endpoint" {
 
 Optional:
 
-- `branch` (String) Branch to build.
-- `commit` (String) Commit to build, such as HEAD.
+- `branch` (String) Branch to build. Must not be empty; omit to use the pipeline default.
+- `commit` (String) Commit to build, such as HEAD. Must not be empty; omit to use the default.
 - `environment` (Map of String, Sensitive) Build environment variables. Values are stored in state and are not returned by the API, so external value changes cannot be detected. Removing this map clears previously managed variables.
 - `message` (String) Build message.
 

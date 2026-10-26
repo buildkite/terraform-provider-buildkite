@@ -130,11 +130,13 @@ func (r *pipelineWebhookTriggerResource) Schema(_ context.Context, _ resource.Sc
 				Attributes: map[string]schema.Attribute{
 					"branch": schema.StringAttribute{
 						Optional:            true,
-						MarkdownDescription: "Branch to build.",
+						MarkdownDescription: "Branch to build. Must not be empty; omit to use the pipeline default.",
+						Validators:          []validator.String{stringvalidator.LengthAtLeast(1)},
 					},
 					"commit": schema.StringAttribute{
 						Optional:            true,
-						MarkdownDescription: "Commit to build, such as HEAD.",
+						MarkdownDescription: "Commit to build, such as HEAD. Must not be empty; omit to use the default.",
+						Validators:          []validator.String{stringvalidator.LengthAtLeast(1)},
 					},
 					"message": schema.StringAttribute{
 						Optional:            true,

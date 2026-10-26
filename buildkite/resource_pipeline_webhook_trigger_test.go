@@ -139,7 +139,7 @@ func (api *webhookTriggerTestAPI) handle(w http.ResponseWriter, r *http.Request)
 			api.id = fmt.Sprintf("123e4567-e89b-42d3-a456-%012d", api.creates)
 			api.pipeline, api.exists = parts[4], true
 			api.records[api.id] = api.webhookTriggerRecord
-			api.branch, api.commit, api.message = "main", "HEAD", "Webhook build"
+			api.branch, api.commit, api.message = "main", "HEAD", nil
 			api.environment = map[string]any{}
 			api.filter = nil
 		} else if _, ok := body["type"]; ok {
@@ -171,9 +171,6 @@ func (api *webhookTriggerTestAPI) handle(w http.ResponseWriter, r *http.Request)
 					}
 					api.commit = value
 				case "message":
-					if value == nil {
-						value = "Webhook build"
-					}
 					api.message = value
 				case "environment":
 					api.environment = value.(map[string]any)
@@ -294,7 +291,7 @@ func TestPipelineWebhookTriggerLifecycle(t *testing.T) {
 				resource.TestCheckResourceAttr(triggerTestAddress, "endpoint_url", "https://example.test/trigger-1"),
 				resource.TestCheckResourceAttr(triggerTestAddress, "effective_build.branch", "main"),
 				resource.TestCheckResourceAttr(triggerTestAddress, "effective_build.commit", "HEAD"),
-				resource.TestCheckResourceAttr(triggerTestAddress, "effective_build.message", "Webhook build"),
+				resource.TestCheckNoResourceAttr(triggerTestAddress, "effective_build.message"),
 				resource.TestCheckNoResourceAttr(triggerTestAddress, "filter"),
 				api.checkPayload(map[string]any{"label": "Example trigger", "enabled": true, "filter": nil,
 					"build": map[string]any{"branch": nil, "commit": nil, "message": nil, "environment": map[string]any{}}}),
@@ -316,7 +313,7 @@ func TestPipelineWebhookTriggerDriftAndDeletion(t *testing.T) {
 	resource.UnitTest(t, resource.TestCase{
 		ProtoV6ProviderFactories: protoV6ProviderFactories(), CheckDestroy: api.checkDestroy,
 		Steps: []resource.TestStep{
-			{Config: config},
+			{Config: config, Check: resource.TestCheckNoResourceAttr(triggerTestAddress, "effective_build.message")},
 			{PreConfig: api.change(func() { api.branch = "other"; api.enabled = false }), Config: config,
 				ConfigPlanChecks: resource.ConfigPlanChecks{PreApply: []plancheck.PlanCheck{plancheck.ExpectResourceAction(triggerTestAddress, plancheck.ResourceActionUpdate)}},
 				Check:            resource.ComposeAggregateTestCheckFunc(resource.TestCheckResourceAttr(triggerTestAddress, "enabled", "true"), resource.TestCheckResourceAttr(triggerTestAddress, "build.branch", "release"), resource.TestCheckResourceAttr(triggerTestAddress, "endpoint_url", "https://example.test/trigger-1"))},
@@ -583,7 +580,7 @@ func TestPipelineWebhookTriggerRemoveIndividualOverrides(t *testing.T) {
 			{Config: removed, Check: resource.ComposeAggregateTestCheckFunc(
 				resource.TestCheckResourceAttr(triggerTestAddress, "effective_build.branch", "main"),
 				resource.TestCheckResourceAttr(triggerTestAddress, "effective_build.commit", "HEAD"),
-				resource.TestCheckResourceAttr(triggerTestAddress, "effective_build.message", "Webhook build"),
+				resource.TestCheckNoResourceAttr(triggerTestAddress, "effective_build.message"),
 				api.checkPayload(map[string]any{"label": "Example trigger", "enabled": true,
 					"build": map[string]any{"branch": nil, "commit": nil, "message": nil, "environment": map[string]any{"TARGET": "staging"}}}),
 			)},
@@ -787,4 +784,24 @@ func TestPipelineWebhookTriggerIgnoreTopLevelChanges(t *testing.T) {
 			},
 		},
 	})
+}
+
+func TestPipelineWebhookTriggerRejectsEmptyBuildOverrides(t *testing.T) {
+	for _, field := range []string{"branch", "commit"} {
+		t.Run(field, func(t *testing.T) {
+			api := newWebhookTriggerTestAPI(t)
+			invalid := api.config(fmt.Sprintf(`build = { %s = "" }`, field))
+			valid := api.config(`build = { branch = "release", commit = "abc123" }`)
+			validationError := regexp.MustCompile(`(?s)Attribute build\.` + field + `.*string length must be at least 1`)
+			resource.UnitTest(t, resource.TestCase{
+				ProtoV6ProviderFactories: protoV6ProviderFactories(), CheckDestroy: api.checkDestroy,
+				Steps: []resource.TestStep{
+					{Config: invalid, PlanOnly: true, ExpectError: validationError},
+					{Config: valid},
+					{Config: invalid, PlanOnly: true, ExpectError: validationError},
+					{Config: valid, PlanOnly: true, ExpectNonEmptyPlan: false},
+				},
+			})
+		})
+	}
 }
