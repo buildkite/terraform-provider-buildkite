@@ -33,6 +33,7 @@ fragment ClusterQueueValues on ClusterQueue {
     hostedAgents {
         ...HostedAgentsQueueSettingsValues
     }
+    useGithubAppToken
 }
 
 query getClusterQueues(
@@ -72,6 +73,8 @@ mutation createClusterQueue(
     $description: String
     # @genqlient(pointer: true)
     $hostedAgents: HostedAgentsQueueSettingsCreateInput
+    # @genqlient(pointer: true, omitempty: true)
+    $useGithubAppToken: Boolean
 ) {
     clusterQueueCreate(
         input: {
@@ -80,6 +83,7 @@ mutation createClusterQueue(
             key: $key
             description: $description
             hostedAgents: $hostedAgents
+            useGithubAppToken: $useGithubAppToken
         }
     ) {
         clusterQueue {
@@ -100,6 +104,8 @@ mutation updateClusterQueue(
     $description: String
     # @genqlient(pointer: true)
     $hostedAgents: HostedAgentsQueueSettingsUpdateInput
+    # @genqlient(pointer: true, omitempty: true)
+    $useGithubAppToken: Boolean
 ) {
     clusterQueueUpdate(
         input: {
@@ -107,6 +113,7 @@ mutation updateClusterQueue(
             id: $id
             description: $description
             hostedAgents: $hostedAgents
+            useGithubAppToken: $useGithubAppToken
         }
     ) {
         clusterQueue {
