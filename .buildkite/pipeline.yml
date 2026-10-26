@@ -44,6 +44,9 @@ steps:
     concurrency: 1
     concurrency_group: terraform-provider-acceptance-tests
     command: .buildkite/steps/annotate.sh
+    artifact_paths:
+      - "test-events-*.jsonl"
+      - "junit-*.xml"
     plugins:
       - aws-assume-role-with-web-identity#v1.8.0:
           role-arn: arn:aws:iam::445615400570:role/pipeline-buildkite-terraform-provider-buildkite-main
