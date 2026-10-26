@@ -1091,6 +1091,9 @@ func (m *notificationServiceResourceModel) applyWebhookAPISettings(ctx context.C
 	if m.Webhook == nil {
 		return nil
 	}
+	// State is saved even when decoding fails. Clear the credential first because
+	// the framework can skip write-only nullification when returning an error.
+	m.Webhook.URLWO = types.StringNull()
 	var settings notificationServiceWebhookAPISettings
 	if err := json.Unmarshal(raw, &settings); err != nil {
 		return notificationServiceSettingsDiagnostic(notificationServiceProviderWebhook, err)

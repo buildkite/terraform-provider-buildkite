@@ -5,11 +5,19 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/http/httptest"
 	"regexp"
 	"strings"
+	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/hashicorp/go-version"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	fwresource "github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-go/tftypes"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/plancheck"
@@ -234,4 +242,89 @@ func (api *notificationServiceTestAPI) verifyWebhookURL(wantURL string, wantWrit
 		return fmt.Errorf("URL writes = %d, want %d", writes, wantWrites)
 	}
 	return nil
+}
+
+// Inspect the resource response directly: error diagnostics can bypass the
+// framework's automatic write-only nullification.
+func TestNotificationServiceWriteOnlyURLMalformedSettings(t *testing.T) {
+	for _, operation := range []string{"create", "update", "update and disable"} {
+		t.Run(operation, func(t *testing.T) {
+			ctx := t.Context()
+			const secretURL = "https://example.test/secret-malformed-response"
+			var requests atomic.Int64
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+				requests.Add(1)
+				wantMethod := http.MethodPatch
+				if operation == "create" {
+					wantMethod = http.MethodPost
+				}
+				if req.Method != wantMethod {
+					t.Errorf("method = %s, want %s", req.Method, wantMethod)
+				}
+				var payload struct {
+					Settings struct {
+						URL string `json:"url"`
+					} `json:"settings"`
+				}
+				if err := json.NewDecoder(req.Body).Decode(&payload); err != nil {
+					t.Errorf("decode request: %v", err)
+				}
+				if payload.Settings.URL != secretURL {
+					t.Error("request did not contain the write-only URL")
+				}
+				response := notificationServiceTestResponse(notificationServiceProviderWebhook)
+				response.Settings = json.RawMessage(`{"url":42}`)
+				w.Header().Set("Content-Type", "application/json")
+				if err := json.NewEncoder(w).Encode(response); err != nil {
+					t.Errorf("encode response: %v", err)
+				}
+			}))
+			defer server.Close()
+			r := &notificationServiceResource{client: newRetryTestClient(t, server.URL, 0, time.Millisecond)}
+			sch := resourceSchema(ctx, t, r)
+			raw := func(url any, version int64, enabled bool) tftypes.Value {
+				return nullObjectWith(ctx, t, sch.Type(), map[string]tftypes.Value{
+					"id":            tftypes.NewValue(tftypes.String, notificationServiceTestID),
+					"provider_type": tftypes.NewValue(tftypes.String, notificationServiceProviderWebhook),
+					"enabled":       tftypes.NewValue(tftypes.Bool, enabled),
+					"webhook": nullObjectWith(ctx, t, sch.Attributes["webhook"].GetType(), map[string]tftypes.Value{
+						"url_wo":         tftypes.NewValue(tftypes.String, url),
+						"url_wo_version": tftypes.NewValue(tftypes.Number, version),
+					}),
+				})
+			}
+			plan := tfsdk.Plan{Schema: sch, Raw: raw(nil, 2, operation != "update and disable")}
+			config := tfsdk.Config{Schema: sch, Raw: raw(secretURL, 2, operation != "update and disable")}
+			state := tfsdk.State{Schema: sch, Raw: raw(nil, 1, true)}
+			var diags diag.Diagnostics
+			if operation == "create" {
+				resp := fwresource.CreateResponse{State: tfsdk.State{Schema: sch, Raw: tftypes.NewValue(sch.Type().TerraformType(ctx), nil)}}
+				r.Create(ctx, fwresource.CreateRequest{Plan: plan, Config: config}, &resp)
+				state, diags = resp.State, resp.Diagnostics
+			} else {
+				resp := fwresource.UpdateResponse{State: state}
+				r.Update(ctx, fwresource.UpdateRequest{Plan: plan, Config: config, State: state}, &resp)
+				state, diags = resp.State, resp.Diagnostics
+			}
+			if !diagnosticsContain(diags, "Unable to read notification service settings") {
+				t.Fatalf("expected settings error, got %v", diags)
+			}
+			var model notificationServiceResourceModel
+			if diags := state.Get(ctx, &model); diags.HasError() {
+				t.Fatalf("decode returned state: %v", diags)
+			}
+			if model.Webhook == nil {
+				t.Fatal("missing webhook state")
+			}
+			if !model.Webhook.URLWO.IsNull() || !model.Webhook.URL.IsNull() {
+				t.Error("error response contains a credential-bearing URL")
+			}
+			if !model.ID.Equal(types.StringValue(notificationServiceTestID)) {
+				t.Error("error response lost resource identity")
+			}
+			if requests.Load() != 1 {
+				t.Errorf("requests = %d, want 1", requests.Load())
+			}
+		})
+	}
 }
