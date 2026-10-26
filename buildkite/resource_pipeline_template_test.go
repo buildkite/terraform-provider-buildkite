@@ -12,6 +12,7 @@ import (
 )
 
 func TestAccBuildkitePipelineTemplateResource(t *testing.T) {
+	t.Parallel()
 	configRequired := func(name string) string {
 		return fmt.Sprintf(`
 		provider "buildkite" {

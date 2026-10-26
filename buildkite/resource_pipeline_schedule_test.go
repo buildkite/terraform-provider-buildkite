@@ -73,6 +73,7 @@ func TestPipelineScheduleDeleteSurfacesParentPipelineNotFound(t *testing.T) {
 }
 
 func TestAccBuildkitePipelineSchedule(t *testing.T) {
+	t.Parallel()
 	config := func(name, cronline, label, env string, enabled bool) string {
 		return fmt.Sprintf(`
 			provider "buildkite" {

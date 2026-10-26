@@ -12,6 +12,7 @@ import (
 )
 
 func TestAccBuildkiteTeam(t *testing.T) {
+	t.Parallel()
 	configBasic := func(name string) string {
 		return fmt.Sprintf(`
 		provider "buildkite" {
