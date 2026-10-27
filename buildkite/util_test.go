@@ -11,7 +11,12 @@ import (
 	"github.com/vektah/gqlparser/v2/gqlerror"
 )
 
-func TestGetOrganizationIDMissing(t *testing.T) {
+func TestAccGetOrganizationIDMissing(t *testing.T) {
+	if os.Getenv("TF_ACC") == "" {
+		t.Skip("set TF_ACC to run live acceptance tests")
+	}
+	testAccPreCheck(t)
+
 	slug := "doesnt match API key"
 
 	config := &clientConfig{
