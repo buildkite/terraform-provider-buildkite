@@ -2,14 +2,22 @@
 
 ## Unreleased
 
+## [1.44.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.43.0...v1.44.0)
+
 ### Features
 
 * SUP-7777: Add `hosted_git_mirror_enabled` and `hosted_container_cache_enabled` to `buildkite_cluster`.
 
 ### Fixed
 
-* Preserve Origin pull request settings during refresh and import: skip existing commits, label changes, ready-for-review, reopening, edits, base-branch changes, and submitted reviews. Release requires deployment of all corresponding Buildkite GraphQL fields.
+* PB-3878: Preserve Origin pull request settings during refresh and import: skip existing commits, label changes, ready-for-review, reopening, edits, base-branch changes, and submitted reviews.
 * New GitHub, GitHub Enterprise, Bitbucket Cloud, and Origin pipelines now retain the server default `true` when `provider_settings` omits `skip_pull_request_builds_for_existing_commits`. Previously, Terraform wrote `false`. Explicit values and existing known values of this setting are unchanged.
+* Report pipeline schedule deletion errors when the parent pipeline is missing or inaccessible, rather than removing a schedule from state that may still exist in Buildkite.
+
+### Dependencies
+
+* Update `golang.org/x/sync` to v0.24.0 and `github.com/vektah/gqlparser/v2` to v2.5.63.
+* Update the Terraform 1.16 container digest and the acceptance-test project's Buildkite provider to v1.42.1.
 
 ## [1.43.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.42.1...v1.43.0)
 
