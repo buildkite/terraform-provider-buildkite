@@ -1,0 +1,11 @@
+query getPipelineTriggerParent($id: ID!) {
+    node(id: $id) {
+        ... on Pipeline {
+            id
+            slug
+            organization {
+                slug
+            }
+        }
+    }
+}
