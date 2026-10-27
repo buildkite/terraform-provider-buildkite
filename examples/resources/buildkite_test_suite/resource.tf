@@ -6,6 +6,23 @@ resource "buildkite_test_suite" "main" {
   team_owner_id  = "VGVhbvDf4eRef20tMzIxMGEfYTctNzEF5g00M8f5s6E2YjYtODNlOGNlZgD6HcBi"
 }
 
+# enable test state management and allow muting tests for quarantine
+# requires a plan that includes test state management; automatic change-state
+# workflow actions additionally require Enterprise
+resource "buildkite_test_suite" "with_state_management" {
+  name           = "with state management"
+  default_branch = "main"
+  team_owner_id  = "VGVhbvDf4eRef20tMzIxMGEfYTctNzEF5g00M8f5s6E2YjYtODNlOGNlZgD6HcBi"
+
+  test_state_management = true
+  allowed_test_states   = ["muted"]
+
+  # Disabling permanently resets muted/skipped tests to enabled. Re-enabling
+  # does not restore their previous states. Set test_state_management = false
+  # without clearing allowed_test_states in the same apply.
+  # Removing these attributes from config leaves the remote settings unmanaged.
+}
+
 # create a test suite without the default flaky-detection workflow or flaky label
 # this option only takes effect when creating the suite
 resource "buildkite_test_suite" "without_flaky_detection" {
