@@ -426,8 +426,7 @@ func (ts *testSuiteResource) Schema(ctx context.Context, req resource.SchemaRequ
 			"test_state_management": schema.BoolAttribute{
 				MarkdownDescription: "Whether test state management is enabled. Requires a plan that includes test state management. " +
 					"If omitted, the setting is left unmanaged; the API defaults to `false` on creation. " +
-					"Disabling permanently resets all muted and skipped tests to enabled. Re-enabling does not restore their previous states. " +
-					"To disable, set this to `false` without clearing `allowed_test_states` in the same apply.",
+					"Disabling permanently resets all muted and skipped tests to enabled. Re-enabling does not restore their previous states.",
 				Optional: true,
 				Computed: true,
 			},

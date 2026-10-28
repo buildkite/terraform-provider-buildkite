@@ -18,8 +18,7 @@ resource "buildkite_test_suite" "with_state_management" {
   allowed_test_states   = ["muted"]
 
   # Disabling permanently resets muted/skipped tests to enabled. Re-enabling
-  # does not restore their previous states. Set test_state_management = false
-  # without clearing allowed_test_states in the same apply.
+  # does not restore their previous states.
   # Removing these attributes from config leaves the remote settings unmanaged.
 }
 

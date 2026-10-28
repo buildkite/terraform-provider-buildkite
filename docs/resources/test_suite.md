@@ -33,8 +33,7 @@ resource "buildkite_test_suite" "with_state_management" {
   allowed_test_states   = ["muted"]
 
   # Disabling permanently resets muted/skipped tests to enabled. Re-enabling
-  # does not restore their previous states. Set test_state_management = false
-  # without clearing allowed_test_states in the same apply.
+  # does not restore their previous states.
   # Removing these attributes from config leaves the remote settings unmanaged.
 }
 
@@ -83,7 +82,7 @@ resource "buildkite_test_suite" "with_oidc_policy" {
 - `emoji` (String) The emoji associated with this test suite, eg :buildkite:
 - `flaky_detection` (Boolean) Whether to create the default flaky-detection workflow and `flaky` label when the suite is created. Defaults to `true`. Only takes effect at creation; changing it later does not add or remove workflows on an existing suite.
 - `oidc_policy` (String) The [OIDC policy](https://buildkite.com/docs/pipelines/configure/tests/test-collection/oidc) for the test suite, as a YAML or JSON string. This policy defines which OIDC tokens can be exchanged for suite access, as an alternative to the suite API token. If omitted, the policy is left unmanaged by Terraform; set it to an empty string to remove an existing policy.
-- `test_state_management` (Boolean) Whether test state management is enabled. Requires a plan that includes test state management. If omitted, the setting is left unmanaged; the API defaults to `false` on creation. Disabling permanently resets all muted and skipped tests to enabled. Re-enabling does not restore their previous states. To disable, set this to `false` without clearing `allowed_test_states` in the same apply.
+- `test_state_management` (Boolean) Whether test state management is enabled. Requires a plan that includes test state management. If omitted, the setting is left unmanaged; the API defaults to `false` on creation. Disabling permanently resets all muted and skipped tests to enabled. Re-enabling does not restore their previous states.
 
 ### Read-Only
 
