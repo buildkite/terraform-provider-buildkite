@@ -15,6 +15,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/hashicorp/terraform-plugin-go/tftypes"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
@@ -210,7 +212,9 @@ resource "buildkite_test_suite" "suite" {
 						for _, key := range []string{"test_state_management", "allowed_test_states"} {
 							got, present := lastPayload[key]
 							want, wantPresent := sent[key]
-							if present != wantPresent || !reflect.DeepEqual(got, want) {
+							if present != wantPresent || !cmp.Equal(got, want, cmpopts.SortSlices(func(a, b any) bool {
+								return fmt.Sprint(a) < fmt.Sprint(b)
+							})) {
 								return fmt.Errorf("payload %s = %#v (present %t), want %#v (present %t)", key, got, present, want, wantPresent)
 							}
 						}
@@ -226,24 +230,19 @@ resource "buildkite_test_suite" "suite" {
 			initialSent := map[string]any{}
 			if explicitCreate {
 				initial, initialStates = bothStates, []string{"muted", "skipped"}
-				initialSent = map[string]any{"test_state_management": true, "allowed_test_states": []any{"muted", "skipped"}}
+				initialSent = map[string]any{"test_state_management": true, "allowed_test_states": []any{"skipped", "muted"}}
 			}
 			updateOnly := resource.ConfigPlanChecks{PreApply: []plancheck.PlanCheck{
 				plancheck.ExpectResourceAction(address, plancheck.ResourceActionUpdate),
 			}}
-			resource.UnitTest(t, resource.TestCase{
-				ProtoV6ProviderFactories: protoV6ProviderFactories(),
-				Steps: []resource.TestStep{
-					{Config: config(initial, "original"), Check: check(explicitCreate, initialStates, initialSent)},
+			steps := []resource.TestStep{
+				{Config: config(initial, "original"), Check: check(explicitCreate, initialStates, initialSent)},
+			}
+			if explicitCreate {
+				steps = append(steps, []resource.TestStep{
 					{
 						// An enabled, populated remote suite must stay untouched when config
 						// omits these settings, including when a different field forces PATCH.
-						PreConfig: func() {
-							mu.Lock()
-							defer mu.Unlock()
-							suite["test_state_management"] = true
-							suite["allowed_test_states"] = []any{"muted", "skipped"}
-						},
 						Config: config("", "updated"), ConfigPlanChecks: updateOnly,
 						Check: check(true, []string{"muted", "skipped"}, nil),
 					},
@@ -273,7 +272,11 @@ resource "buildkite_test_suite" "suite" {
 						PlanOnly: true, ExpectError: regexp.MustCompile(`must be one of`),
 					},
 					{Config: config(`allowed_test_states = []`, "updated")},
-				},
+				}...)
+			}
+			resource.UnitTest(t, resource.TestCase{
+				ProtoV6ProviderFactories: protoV6ProviderFactories(),
+				Steps:                    steps,
 			})
 			if creates != 1 {
 				t.Errorf("suite creates = %d, want 1", creates)

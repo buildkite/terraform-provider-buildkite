@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Features
+
+* TE-7714: Add `test_state_management` and `allowed_test_states` to `buildkite_test_suite`, with create, read/import, and in-place update support.
+
 ## [1.44.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.43.0...v1.44.0)
 
 ### Features
