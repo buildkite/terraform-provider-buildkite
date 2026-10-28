@@ -2,9 +2,21 @@
 
 ## Unreleased
 
+## [1.45.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.44.0...v1.45.0)
+
 ### Features
 
 * TE-7714: Add `test_state_management` and `allowed_test_states` to `buildkite_test_suite`, with create, read/import, and in-place update support.
+* Add the `buildkite_pipeline_webhook_trigger` resource to manage generic incoming webhook triggers that create pipeline builds, with build overrides, filtering, and import support. Uses the public-preview pipeline triggers API.
+
+### Fixed
+
+* Add `webhook.url_wo` and `webhook.url_wo_version` to `buildkite_notification_service`, allowing credential-bearing webhook destination URLs to stay out of plans and state with Terraform 1.11.1 or later.
+
+### Dependencies
+
+* Update `github.com/vektah/gqlparser/v2` to v2.5.64, `github.com/lestrrat-go/jwx/v3` to v3.4.0, `github.com/agnivade/levenshtein` to v1.2.2, and `github.com/goccy/go-json` to v0.11.2.
+* Update the `aws-assume-role-with-web-identity` Buildkite plugin to v1.8.1, the `docker-compose` plugin to v5.16.0, and the acceptance-test project's Buildkite provider to v1.43.0.
 
 ## [1.44.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.43.0...v1.44.0)
 
