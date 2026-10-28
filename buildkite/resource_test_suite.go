@@ -8,42 +8,49 @@ import (
 	"time"
 
 	custom_modifier "github.com/buildkite/terraform-provider-buildkite/internal/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework-validators/setvalidator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
 type testSuiteModel struct {
-	ApiToken        types.String `tfsdk:"api_token"`
-	ApplicationName types.String `tfsdk:"application_name"`
-	Color           types.String `tfsdk:"color"`
-	DefaultBranch   types.String `tfsdk:"default_branch"`
-	Emoji           types.String `tfsdk:"emoji"`
-	FlakyDetection  types.Bool   `tfsdk:"flaky_detection"`
-	ID              types.String `tfsdk:"id"`
-	UUID            types.String `tfsdk:"uuid"`
-	OidcPolicy      types.String `tfsdk:"oidc_policy"`
-	TeamOwnerId     types.String `tfsdk:"team_owner_id"`
-	Name            types.String `tfsdk:"name"`
-	Slug            types.String `tfsdk:"slug"`
+	TestStateManagement types.Bool   `tfsdk:"test_state_management"`
+	AllowedTestStates   types.Set    `tfsdk:"allowed_test_states"`
+	ApiToken            types.String `tfsdk:"api_token"`
+	ApplicationName     types.String `tfsdk:"application_name"`
+	Color               types.String `tfsdk:"color"`
+	DefaultBranch       types.String `tfsdk:"default_branch"`
+	Emoji               types.String `tfsdk:"emoji"`
+	FlakyDetection      types.Bool   `tfsdk:"flaky_detection"`
+	ID                  types.String `tfsdk:"id"`
+	UUID                types.String `tfsdk:"uuid"`
+	OidcPolicy          types.String `tfsdk:"oidc_policy"`
+	TeamOwnerId         types.String `tfsdk:"team_owner_id"`
+	Name                types.String `tfsdk:"name"`
+	Slug                types.String `tfsdk:"slug"`
 }
 
 type testSuiteResponse struct {
-	ApiToken        string  `json:"api_token"`
-	ApplicationName *string `json:"application_name"`
-	Color           *string `json:"color"`
-	DefaultBranch   string  `json:"default_branch"`
-	Emoji           *string `json:"emoji"`
-	UUID            string  `json:"id"`
-	GraphqlID       string  `json:"graphql_id"`
-	Name            string  `json:"name"`
-	OidcPolicy      *string `json:"oidc_policy"`
-	Slug            string  `json:"slug"`
+	TestStateManagement bool     `json:"test_state_management"`
+	AllowedTestStates   []string `json:"allowed_test_states"`
+	ApiToken            string   `json:"api_token"`
+	ApplicationName     *string  `json:"application_name"`
+	Color               *string  `json:"color"`
+	DefaultBranch       string   `json:"default_branch"`
+	Emoji               *string  `json:"emoji"`
+	UUID                string   `json:"id"`
+	GraphqlID           string   `json:"graphql_id"`
+	Name                string   `json:"name"`
+	OidcPolicy          *string  `json:"oidc_policy"`
+	Slug                string   `json:"slug"`
 }
 
 type testSuiteResource struct {
@@ -96,13 +103,14 @@ func (ts *testSuiteResource) Configure(ctx context.Context, req resource.Configu
 }
 
 func (ts *testSuiteResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	var plan, state testSuiteModel
+	var config, plan, state testSuiteModel
 	var response testSuiteResponse
 	payload := map[string]interface{}{}
 	var teamOwnerUuid string
 
 	diags := req.Plan.Get(ctx, &plan)
 	resp.Diagnostics.Append(diags...)
+	resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
 
 	if resp.Diagnostics.HasError() {
 		return
@@ -154,6 +162,19 @@ func (ts *testSuiteResource) Create(ctx context.Context, req resource.CreateRequ
 	payload["show_api_token"] = true
 	payload["team_ids"] = []string{teamOwnerUuid}
 	payload["flaky_detection"] = plan.FlakyDetection.ValueBool()
+	// These keys are billing-gated even for false/empty values. Omitted config
+	// must not send values inherited from computed state.
+	if !config.TestStateManagement.IsNull() {
+		payload["test_state_management"] = plan.TestStateManagement.ValueBool()
+	}
+	if !config.AllowedTestStates.IsNull() {
+		states := make([]string, 0)
+		resp.Diagnostics.Append(plan.AllowedTestStates.ElementsAs(ctx, &states, false)...)
+		payload["allowed_test_states"] = states
+	}
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
 	// Construct URL to call to the REST API
 	url := fmt.Sprintf("/v2/analytics/organizations/%s/suites", ts.client.organization)
@@ -187,6 +208,9 @@ func (ts *testSuiteResource) Create(ctx context.Context, req resource.CreateRequ
 	state.OidcPolicy = stateStringValue(plan.OidcPolicy, response.OidcPolicy)
 	state.Slug = types.StringValue(response.Slug)
 	state.TeamOwnerId = plan.TeamOwnerId
+	state.TestStateManagement = types.BoolValue(response.TestStateManagement)
+	state.AllowedTestStates, diags = types.SetValueFrom(ctx, types.StringType, response.AllowedTestStates)
+	resp.Diagnostics.Append(diags...)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
@@ -330,6 +354,9 @@ func (ts *testSuiteResource) Read(ctx context.Context, req resource.ReadRequest,
 	state.ApplicationName = refreshedStringValue(state.ApplicationName, response.ApplicationName)
 	state.Color = refreshedStringValue(state.Color, response.Color)
 	state.OidcPolicy = refreshedStringValue(state.OidcPolicy, response.OidcPolicy)
+	state.TestStateManagement = types.BoolValue(response.TestStateManagement)
+	state.AllowedTestStates, diags = types.SetValueFrom(ctx, types.StringType, response.AllowedTestStates)
+	resp.Diagnostics.Append(diags...)
 	// This creation option is not returned by the API. Older and imported state
 	// has no value, so use the default without changing an explicit opt-out.
 	if state.FlakyDetection.IsNull() {
@@ -396,6 +423,24 @@ func (ts *testSuiteResource) Schema(ctx context.Context, req resource.SchemaRequ
 				Computed: true,
 				Default:  booldefault.StaticBool(true),
 			},
+			"test_state_management": schema.BoolAttribute{
+				MarkdownDescription: "Whether test state management is enabled. Requires a plan that includes test state management. " +
+					"If omitted, the setting is left unmanaged; the API defaults to `false` on creation. " +
+					"Disabling permanently resets all muted and skipped tests to enabled. Re-enabling does not restore their previous states.",
+				Optional: true,
+				Computed: true,
+			},
+			"allowed_test_states": schema.SetAttribute{
+				MarkdownDescription: "Allowed quarantine states: `muted` and/or `skipped`. The `enabled` state is always available and must not be included. " +
+					"Requires a plan that includes test state management. If omitted, the setting is left unmanaged; the API defaults to an empty set on creation. " +
+					"An explicit empty set allows only enabled tests. A state cannot be removed while tests use it or it is the automatic-quarantine default.",
+				Optional:    true,
+				Computed:    true,
+				ElementType: types.StringType,
+				Validators: []validator.Set{
+					setvalidator.ValueStringsAre(stringvalidator.OneOf("muted", "skipped")),
+				},
+			},
 			"application_name": schema.StringAttribute{
 				MarkdownDescription: "The name of the application this test suite is for. " +
 					"If omitted, the value is left unmanaged by Terraform; set it to an empty string to clear it.",
@@ -429,7 +474,7 @@ func (ts *testSuiteResource) Schema(ctx context.Context, req resource.SchemaRequ
 }
 
 func (ts *testSuiteResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	var plan, state testSuiteModel
+	var config, plan, state testSuiteModel
 	var response testSuiteResponse
 	payload := map[string]interface{}{}
 
@@ -438,6 +483,7 @@ func (ts *testSuiteResource) Update(ctx context.Context, req resource.UpdateRequ
 
 	resp.Diagnostics.Append(diagsPlan...)
 	resp.Diagnostics.Append(diagsState...)
+	resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
 
 	if resp.Diagnostics.HasError() {
 		return
@@ -456,6 +502,19 @@ func (ts *testSuiteResource) Update(ctx context.Context, req resource.UpdateRequ
 	payload["application_name"] = optionalStringPayload(plan.ApplicationName)
 	payload["color"] = optionalStringPayload(plan.Color)
 	payload["oidc_policy"] = optionalStringPayload(plan.OidcPolicy)
+	// Inspect config rather than the plan: omitted optional+computed settings
+	// can retain known values from state, but must remain absent from PATCH.
+	if !config.TestStateManagement.IsNull() {
+		payload["test_state_management"] = plan.TestStateManagement.ValueBool()
+	}
+	if !config.AllowedTestStates.IsNull() {
+		states := make([]string, 0)
+		resp.Diagnostics.Append(plan.AllowedTestStates.ElementsAs(ctx, &states, false)...)
+		payload["allowed_test_states"] = states
+	}
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
 	// Construct URL to call to the REST API
 	url := fmt.Sprintf("/v2/analytics/organizations/%s/suites/%s", ts.client.organization, state.Slug.ValueString())
@@ -494,6 +553,9 @@ func (ts *testSuiteResource) Update(ctx context.Context, req resource.UpdateRequ
 	state.Color = stateStringValue(plan.Color, response.Color)
 	state.OidcPolicy = stateStringValue(plan.OidcPolicy, response.OidcPolicy)
 	state.Slug = types.StringValue(response.Slug)
+	state.TestStateManagement = types.BoolValue(response.TestStateManagement)
+	state.AllowedTestStates, diags = types.SetValueFrom(ctx, types.StringType, response.AllowedTestStates)
+	resp.Diagnostics.Append(diags...)
 
 	// If the planned team_owner_id differs from the state, add the new one and remove the old one
 	if plan.TeamOwnerId.ValueString() != state.TeamOwnerId.ValueString() {

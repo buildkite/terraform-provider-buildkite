@@ -21,6 +21,22 @@ resource "buildkite_test_suite" "main" {
   team_owner_id  = "VGVhbvDf4eRef20tMzIxMGEfYTctNzEF5g00M8f5s6E2YjYtODNlOGNlZgD6HcBi"
 }
 
+# enable test state management and allow muting tests for quarantine
+# requires a plan that includes test state management; automatic change-state
+# workflow actions additionally require Enterprise
+resource "buildkite_test_suite" "with_state_management" {
+  name           = "with state management"
+  default_branch = "main"
+  team_owner_id  = "VGVhbvDf4eRef20tMzIxMGEfYTctNzEF5g00M8f5s6E2YjYtODNlOGNlZgD6HcBi"
+
+  test_state_management = true
+  allowed_test_states   = ["muted"]
+
+  # Disabling permanently resets muted/skipped tests to enabled. Re-enabling
+  # does not restore their previous states.
+  # Removing these attributes from config leaves the remote settings unmanaged.
+}
+
 # create a test suite without the default flaky-detection workflow or flaky label
 # this option only takes effect when creating the suite
 resource "buildkite_test_suite" "without_flaky_detection" {
@@ -60,11 +76,13 @@ resource "buildkite_test_suite" "with_oidc_policy" {
 
 ### Optional
 
+- `allowed_test_states` (Set of String) Allowed quarantine states: `muted` and/or `skipped`. The `enabled` state is always available and must not be included. Requires a plan that includes test state management. If omitted, the setting is left unmanaged; the API defaults to an empty set on creation. An explicit empty set allows only enabled tests. A state cannot be removed while tests use it or it is the automatic-quarantine default.
 - `application_name` (String) The name of the application this test suite is for. If omitted, the value is left unmanaged by Terraform; set it to an empty string to clear it.
 - `color` (String) The hex color code for the test suite navatar, eg #BADA55. If omitted, the value is left unmanaged by Terraform; set it to an empty string to clear it.
 - `emoji` (String) The emoji associated with this test suite, eg :buildkite:
 - `flaky_detection` (Boolean) Whether to create the default flaky-detection workflow and `flaky` label when the suite is created. Defaults to `true`. Only takes effect at creation; changing it later does not add or remove workflows on an existing suite.
 - `oidc_policy` (String) The [OIDC policy](https://buildkite.com/docs/pipelines/configure/tests/test-collection/oidc) for the test suite, as a YAML or JSON string. This policy defines which OIDC tokens can be exchanged for suite access, as an alternative to the suite API token. If omitted, the policy is left unmanaged by Terraform; set it to an empty string to remove an existing policy.
+- `test_state_management` (Boolean) Whether test state management is enabled. Requires a plan that includes test state management. If omitted, the setting is left unmanaged; the API defaults to `false` on creation. Disabling permanently resets all muted and skipped tests to enabled. Re-enabling does not restore their previous states.
 
 ### Read-Only
 

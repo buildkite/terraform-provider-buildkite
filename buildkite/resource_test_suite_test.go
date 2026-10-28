@@ -8,11 +8,15 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"reflect"
+	"regexp"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/hashicorp/terraform-plugin-go/tftypes"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
@@ -117,6 +121,202 @@ resource "buildkite_test_suite" "suite" {
 			})
 			if got := creates.Load(); got != 1 {
 				t.Errorf("suite creates = %d, want 1 (no replacement)", got)
+			}
+		})
+	}
+}
+
+func TestUnitTestSuiteStateManagement(t *testing.T) {
+	const address = "buildkite_test_suite.suite"
+	const bothStates = `test_state_management = true
+allowed_test_states = ["muted", "skipped"]`
+	for _, explicitCreate := range []bool{false, true} {
+		t.Run(fmt.Sprintf("explicit_create=%t", explicitCreate), func(t *testing.T) {
+			var mu sync.Mutex
+			var suite map[string]any
+			if err := json.Unmarshal([]byte(suitePatched.body), &suite); err != nil {
+				t.Fatal(err)
+			}
+			suite["test_state_management"] = false
+			suite["allowed_test_states"] = []any{}
+			var lastPayload map[string]any
+			var creates int
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				mu.Lock()
+				defer mu.Unlock()
+				w.Header().Set("Content-Type", "application/json")
+				if r.URL.Path == "/graphql" {
+					var request struct {
+						OperationName string `json:"operationName"`
+					}
+					if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+						t.Error(err)
+						w.WriteHeader(http.StatusBadRequest)
+						return
+					}
+					switch request.OperationName {
+					case "getNode":
+						fmt.Fprint(w, `{"data":{"node":{"__typename":"Team","id":"previous-team-id","uuid":"team-uuid"}}}`)
+					case "getTestSuite":
+						fmt.Fprint(w, suiteWithTeams("", suiteTeamEdge(previousSuiteEdge, previousSuiteTeam, "MANAGE_AND_READ")).body)
+					default:
+						t.Errorf("unexpected GraphQL operation: %s", request.OperationName)
+						w.WriteHeader(http.StatusBadRequest)
+					}
+					return
+				}
+				switch r.Method {
+				case http.MethodPost, http.MethodPatch:
+					if r.Method == http.MethodPost {
+						creates++
+					}
+					lastPayload = nil
+					if err := json.NewDecoder(r.Body).Decode(&lastPayload); err != nil {
+						t.Error(err)
+					}
+					for key, value := range lastPayload {
+						suite[key] = value
+					}
+				case http.MethodDelete:
+					w.WriteHeader(http.StatusNoContent)
+					return
+				}
+				if err := json.NewEncoder(w).Encode(suite); err != nil {
+					t.Error(err)
+				}
+			}))
+			defer server.Close()
+			config := func(settings, application string) string {
+				return fmt.Sprintf(`
+provider "buildkite" {
+  organization = "test-org"
+  api_token = "dummy"
+  graphql_url = %q
+  rest_url = %q
+}
+resource "buildkite_test_suite" "suite" {
+  name = %q
+  default_branch = "main"
+  team_owner_id = %q
+  application_name = %q
+  %s
+}`, server.URL+"/graphql", server.URL, updatedSuiteName, previousSuiteTeam, application, settings)
+			}
+			check := func(enabled bool, states []string, sent map[string]any) resource.TestCheckFunc {
+				checks := []resource.TestCheckFunc{
+					resource.TestCheckResourceAttr(address, "test_state_management", fmt.Sprint(enabled)),
+					resource.TestCheckResourceAttr(address, "allowed_test_states.#", fmt.Sprint(len(states))),
+					func(_ *terraform.State) error {
+						mu.Lock()
+						defer mu.Unlock()
+						for _, key := range []string{"test_state_management", "allowed_test_states"} {
+							got, present := lastPayload[key]
+							want, wantPresent := sent[key]
+							if present != wantPresent || !cmp.Equal(got, want, cmpopts.SortSlices(func(a, b any) bool {
+								return fmt.Sprint(a) < fmt.Sprint(b)
+							})) {
+								return fmt.Errorf("payload %s = %#v (present %t), want %#v (present %t)", key, got, present, want, wantPresent)
+							}
+						}
+						return nil
+					},
+				}
+				for _, state := range states {
+					checks = append(checks, resource.TestCheckTypeSetElemAttr(address, "allowed_test_states.*", state))
+				}
+				return resource.ComposeAggregateTestCheckFunc(checks...)
+			}
+			initial, initialStates := "", []string{}
+			initialSent := map[string]any{}
+			if explicitCreate {
+				initial, initialStates = bothStates, []string{"muted", "skipped"}
+				initialSent = map[string]any{"test_state_management": true, "allowed_test_states": []any{"skipped", "muted"}}
+			}
+			updateOnly := resource.ConfigPlanChecks{PreApply: []plancheck.PlanCheck{
+				plancheck.ExpectResourceAction(address, plancheck.ResourceActionUpdate),
+			}}
+			steps := []resource.TestStep{
+				{Config: config(initial, "original"), Check: check(explicitCreate, initialStates, initialSent)},
+			}
+			if explicitCreate {
+				steps = append(steps, []resource.TestStep{
+					{
+						// An enabled, populated remote suite must stay untouched when config
+						// omits these settings, including when a different field forces PATCH.
+						Config: config("", "updated"), ConfigPlanChecks: updateOnly,
+						Check: check(true, []string{"muted", "skipped"}, nil),
+					},
+					{ResourceName: address, ImportState: true, ImportStateId: "suite-id", ImportStateVerify: true},
+					{
+						Config: config(`allowed_test_states = ["skipped"]`, "updated"), ConfigPlanChecks: updateOnly,
+						Check: check(true, []string{"skipped"}, map[string]any{"allowed_test_states": []any{"skipped"}}),
+					},
+					{Config: config(bothStates, "updated"), ConfigPlanChecks: updateOnly},
+					{
+						Config: config("test_state_management = true\nallowed_test_states = [\"skipped\", \"muted\"]", "updated"),
+						ConfigPlanChecks: resource.ConfigPlanChecks{PreApply: []plancheck.PlanCheck{
+							plancheck.ExpectResourceAction(address, plancheck.ResourceActionNoop),
+						}},
+					},
+					{
+						Config: config(`test_state_management = false`, "updated"), ConfigPlanChecks: updateOnly,
+						Check: check(false, []string{"muted", "skipped"}, map[string]any{"test_state_management": false}),
+					},
+					{
+						Config: config(`allowed_test_states = []`, "updated"), ConfigPlanChecks: updateOnly,
+						Check: check(false, nil, map[string]any{"allowed_test_states": []any{}}),
+					},
+					{ResourceName: address, ImportState: true, ImportStateId: "suite-id", ImportStateVerify: true},
+					{
+						Config:   config(`allowed_test_states = ["enabled"]`, "updated"),
+						PlanOnly: true, ExpectError: regexp.MustCompile(`must be one of`),
+					},
+					{Config: config(`allowed_test_states = []`, "updated")},
+				}...)
+			}
+			resource.UnitTest(t, resource.TestCase{
+				ProtoV6ProviderFactories: protoV6ProviderFactories(),
+				Steps:                    steps,
+			})
+			if creates != 1 {
+				t.Errorf("suite creates = %d, want 1", creates)
+			}
+		})
+	}
+}
+
+func TestTestSuiteStateManagementRejectedUpdate(t *testing.T) {
+	for _, testCase := range []struct {
+		status  int
+		message string
+	}{
+		{http.StatusForbidden, "Your plan does not include test state management."},
+		{http.StatusUnprocessableEntity, "Allowed test states cannot remove muted test state while tests are still muted"},
+	} {
+		t.Run(fmt.Sprint(testCase.status), func(t *testing.T) {
+			server, requests := newRetryStub(t, stubResponse{
+				status: testCase.status, body: fmt.Sprintf(`{"message":%q}`, testCase.message),
+			})
+			defer server.Close()
+			ts := &testSuiteResource{client: newRetryTestClient(t, server.URL, 0, time.Millisecond)}
+			ctx := t.Context()
+			schema := resourceSchema(ctx, t, ts)
+			prior := testSuiteAttrs(priorSuiteName, priorSuiteName, previousSuiteTeam)
+			prior["test_state_management"] = tftypes.NewValue(tftypes.Bool, true)
+			prior["allowed_test_states"] = tftypes.NewValue(tftypes.Set{ElementType: tftypes.String}, []tftypes.Value{tftypes.NewValue(tftypes.String, "muted")})
+			planned := testSuiteAttrs(priorSuiteName, priorSuiteName, previousSuiteTeam)
+			planned["test_state_management"] = tftypes.NewValue(tftypes.Bool, false)
+			planned["allowed_test_states"] = tftypes.NewValue(tftypes.Set{ElementType: tftypes.String}, []tftypes.Value{})
+			req, resp := updateRequestFor(ctx, t, schema, prior, planned)
+			ts.Update(ctx, req, &resp)
+			if !diagnosticsContain(resp.Diagnostics, testCase.message) {
+				t.Fatalf("diagnostics = %v, want API error %q", resp.Diagnostics, testCase.message)
+			}
+			if !resp.State.Raw.Equal(req.State.Raw) {
+				t.Fatal("rejected PATCH changed Terraform state")
+			}
+			if requests.Load() != 1 {
+				t.Fatalf("made %d requests, want one rejected PATCH", requests.Load())
 			}
 		})
 	}
@@ -569,7 +769,8 @@ const (
 // suitePatched is the REST PATCH answering with the renamed suite.
 var suitePatched = stubResponse{status: http.StatusOK, body: fmt.Sprintf(`{
 	"id": "suite-uuid", "graphql_id": "suite-id", "api_token": "token",
-	"name": %q, "slug": %q, "default_branch": "main"
+	"name": %q, "slug": %q, "default_branch": "main",
+	"test_state_management": true, "allowed_test_states": ["muted"]
 }`, updatedSuiteName, updatedSuiteName)}
 
 var (
@@ -651,9 +852,12 @@ func TestTestSuiteUpdatePersistsThePatchWhenATeamStepFails(t *testing.T) {
 			ctx := t.Context()
 			schema := resourceSchema(ctx, t, ts)
 
+			planned := testSuiteAttrs(updatedSuiteName, updatedSuiteName, newSuiteTeam)
+			planned["test_state_management"] = tftypes.NewValue(tftypes.Bool, true)
+			planned["allowed_test_states"] = tftypes.NewValue(tftypes.Set{ElementType: tftypes.String}, []tftypes.Value{tftypes.NewValue(tftypes.String, "muted")})
 			req, resp := updateRequestFor(ctx, t, schema,
 				testSuiteAttrs(priorSuiteName, priorSuiteName, previousSuiteTeam),
-				testSuiteAttrs(updatedSuiteName, updatedSuiteName, newSuiteTeam))
+				planned)
 			ts.Update(ctx, req, &resp)
 
 			if got := requests.Load(); got < int64(len(testCase.responses)) {
@@ -672,6 +876,13 @@ func TestTestSuiteUpdatePersistsThePatchWhenATeamStepFails(t *testing.T) {
 			}
 			if got := persisted.Slug.ValueString(); got != updatedSuiteName {
 				t.Errorf("Persisted slug = %q, want %q: the next update builds its URL from this", got, updatedSuiteName)
+			}
+			var states []string
+			if diags := persisted.AllowedTestStates.ElementsAs(ctx, &states, false); diags.HasError() {
+				t.Fatal(diags)
+			}
+			if !persisted.TestStateManagement.ValueBool() || !reflect.DeepEqual(states, []string{"muted"}) {
+				t.Errorf("Persisted state management = %v, %v; want true, [muted] after successful PATCH", persisted.TestStateManagement, states)
 			}
 			// Both teams own the suite once the attach has applied, so keeping the previous one is
 			// what leaves a diff for the next plan to retry the detach from.
