@@ -62,7 +62,7 @@ steps:
             GITHUB_TEST_REPO: /pipelines/buildkite/terraform-provider-buildkite-main/github_test_repo
             GITHUB_TEST_REPO_ALT: /pipelines/buildkite/terraform-provider-buildkite-main/github_test_repo_alt
       - docker-compose#v5.16.0:
-          run: go
+          run: acceptance
           mount-buildkite-agent: "true"
       - test-collector#v1.12.0:
           files: junit-*.xml

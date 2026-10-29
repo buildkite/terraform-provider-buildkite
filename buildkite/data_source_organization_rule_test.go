@@ -10,6 +10,8 @@ import (
 )
 
 func TestAccBuildkiteOrganizationRuleDatasource(t *testing.T) {
+	t.Parallel()
+
 	ruleActions := []string{"trigger_build", "artifacts_read"}
 
 	configRequiredByID := func(fields ...string) string {

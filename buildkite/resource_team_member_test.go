@@ -13,6 +13,8 @@ import (
 )
 
 func TestAccBuildkiteTeamMember(t *testing.T) {
+	t.Parallel()
+
 	basic := func(name, role string) string {
 		return fmt.Sprintf(`
 		provider "buildkite" {

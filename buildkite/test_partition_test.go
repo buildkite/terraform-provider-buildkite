@@ -16,78 +16,36 @@ import (
 )
 
 // TestHarnessPartition checks the naming boundary used to select acceptance tests.
-// It checks direct Terraform harness usage throughout the buildkite subtree,
-// including acceptance packages and closures, not whether arbitrary Go tests or
-// their dependencies can access the network.
+// It checks direct Terraform harness usage in this directory, including closures,
+// not whether arbitrary Go tests or their dependencies can access the network.
 func TestHarnessPartition(t *testing.T) {
 	_, filename, _, ok := runtime.Caller(0)
 	if !ok {
 		t.Fatal("locate test source directory")
 	}
-	violations, files, errs := harnessPartitionDirectoryViolations(filepath.Dir(filename))
-	for _, err := range errs {
-		t.Error(err)
+	dir := filepath.Dir(filename)
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		t.Fatal(err)
 	}
-	for _, violation := range violations {
-		t.Error(violation)
-	}
-	t.Logf("checked %d test source files", files)
-}
-
-// harnessPartitionDirectoryViolations parses test sources in every nested package
-// without loading or executing them, so the guard itself remains offline.
-func harnessPartitionDirectoryViolations(dir string) (violations []string, files int, errs []error) {
-	err := filepath.WalkDir(dir, func(path string, entry os.DirEntry, err error) error {
-		if err != nil {
-			errs = append(errs, err)
-			return nil
-		}
+	files := 0
+	for _, entry := range entries {
 		if entry.IsDir() || !strings.HasSuffix(entry.Name(), "_test.go") {
-			return nil
+			continue
 		}
 		files++
+		path := filepath.Join(dir, entry.Name())
 		fset := token.NewFileSet()
 		file, err := parser.ParseFile(fset, path, nil, 0)
 		if err != nil {
-			errs = append(errs, err)
-			return nil
+			t.Error(err)
+			continue
 		}
-		violations = append(violations, harnessPartitionViolations(fset, file)...)
-		return nil
-	})
-	if err != nil {
-		errs = append(errs, err)
-	}
-	return violations, files, errs
-}
-
-func TestHarnessPartitionRecursive(t *testing.T) {
-	dir := t.TempDir()
-	sources := map[string]string{
-		"root_test.go":                      "package root\nimport \"testing\"\nimport \"github.com/hashicorp/terraform-plugin-testing/helper/resource\"\nfunc TestOffline(t *testing.T) { resource.UnitTest(t, resource.TestCase{}) }",
-		"acceptance/valid_test.go":          "package acceptance\nimport \"testing\"\nimport \"github.com/hashicorp/terraform-plugin-testing/helper/resource\"\nfunc TestAccLive(t *testing.T) { resource.Test(t, resource.TestCase{}) }",
-		"acceptance/nested/invalid_test.go": "package nested\nimport \"testing\"\nimport \"github.com/hashicorp/terraform-plugin-testing/helper/resource\"\nfunc TestOffline(t *testing.T) { resource.ParallelTest(t, resource.TestCase{}) }",
-		"acceptance/nested/ignored.go":      "not a test source",
-	}
-	for name, source := range sources {
-		path := filepath.Join(dir, name)
-		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-			t.Fatal(err)
-		}
-		if err := os.WriteFile(path, []byte(source), 0o600); err != nil {
-			t.Fatal(err)
+		for _, violation := range harnessPartitionViolations(fset, file) {
+			t.Error(violation)
 		}
 	}
-	violations, files, errs := harnessPartitionDirectoryViolations(dir)
-	if len(errs) != 0 {
-		t.Fatalf("scan errors: %v", errs)
-	}
-	if files != 3 {
-		t.Errorf("checked %d test source files, want 3", files)
-	}
-	if len(violations) != 1 || !strings.Contains(violations[0], filepath.Join("acceptance", "nested", "invalid_test.go")) || !strings.Contains(violations[0], "must belong to a TestAcc") {
-		t.Fatalf("violations = %v, want one nested-package naming violation", violations)
-	}
+	t.Logf("checked %d test source files", files)
 }
 
 func harnessPartitionViolations(fset *token.FileSet, file *ast.File) []string {

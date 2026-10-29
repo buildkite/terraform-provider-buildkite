@@ -1,10 +1,11 @@
 version: "3.5"
 
 services:
-  go:
+  go: &go
     build:
       context: .
       dockerfile: Dockerfile
+      target: release
     volumes:
       - .:/work
       - go-pkg-mod:/go/pkg/mod
@@ -30,6 +31,13 @@ services:
       - BUILDKITE_TAG
       - GITHUB_TOKEN
       - GPG_SECRET_KEY_BASE64
+
+  acceptance:
+    <<: *go
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: test
 
 volumes:
   go-pkg-mod:
