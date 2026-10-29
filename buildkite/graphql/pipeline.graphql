@@ -373,6 +373,8 @@ fragment RepositoryProviderSettingsFields on Repository {
                 # @genqlient(pointer: true)
                 buildTags
                 # @genqlient(pointer: true)
+                cancelDeletedBranchBuilds
+                # @genqlient(pointer: true)
                 filterCondition
                 # @genqlient(pointer: true)
                 filterEnabled

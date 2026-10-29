@@ -3499,6 +3499,9 @@ type RepositoryProviderSettingsFieldsProviderRepositoryProviderCursorOriginSetti
 	BuildPullRequests *bool `json:"buildPullRequests"`
 	// Whether to create builds when tags are pushed.
 	BuildTags *bool `json:"buildTags"`
+	// Whether to cancel builds when their branch is deleted. Defaults to false.
+	// Requires deleted branch cancellation support to be enabled for the organization.
+	CancelDeletedBranchBuilds *bool `json:"cancelDeletedBranchBuilds"`
 	// The conditions under which this pipeline will trigger a build.
 	FilterCondition *string `json:"filterCondition"`
 	// Whether the filter is enabled
@@ -3552,6 +3555,11 @@ func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderCursorOriginS
 // GetBuildTags returns RepositoryProviderSettingsFieldsProviderRepositoryProviderCursorOriginSettings.BuildTags, and is useful for accessing the field via an interface.
 func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderCursorOriginSettings) GetBuildTags() *bool {
 	return v.BuildTags
+}
+
+// GetCancelDeletedBranchBuilds returns RepositoryProviderSettingsFieldsProviderRepositoryProviderCursorOriginSettings.CancelDeletedBranchBuilds, and is useful for accessing the field via an interface.
+func (v *RepositoryProviderSettingsFieldsProviderRepositoryProviderCursorOriginSettings) GetCancelDeletedBranchBuilds() *bool {
+	return v.CancelDeletedBranchBuilds
 }
 
 // GetFilterCondition returns RepositoryProviderSettingsFieldsProviderRepositoryProviderCursorOriginSettings.FilterCondition, and is useful for accessing the field via an interface.
@@ -33245,6 +33253,7 @@ fragment RepositoryProviderSettingsFields on Repository {
 				buildPullRequestReviewSubmitted
 				buildPullRequests
 				buildTags
+				cancelDeletedBranchBuilds
 				filterCondition
 				filterEnabled
 				publishCommitStatus

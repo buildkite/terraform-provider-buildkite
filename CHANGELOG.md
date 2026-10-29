@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Fixed
+
+* PB-4320: Preserve Origin `provider_settings.cancel_deleted_branch_builds` during refresh and import, avoiding recurring plan changes when the saved setting matches configuration.
+
 ## [1.45.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.44.0...v1.45.0)
 
 ### Features
