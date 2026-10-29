@@ -25,9 +25,10 @@ test:
 	TF_ACC= go test ./... -parallel=4 -skip '^TestAcc'
 
 # Acceptance tests. This will create, manage and delete real resources in a real
-# Buildkite organization!
+# Buildkite organization! Serialize packages to protect organization-wide fixtures;
+# -parallel limits concurrency only within each package.
 testacc:
-	TF_ACC=1 go run gotest.tools/gotestsum --format testname --junitfile "junit-${BUILDKITE_JOB_ID}.xml" --jsonfile "test-events-${BUILDKITE_JOB_ID}.jsonl" -- -count=1 -parallel=12 -run '^TestAcc' ./...
+	TF_ACC=1 go run gotest.tools/gotestsum --format testname --junitfile "junit-${BUILDKITE_JOB_ID}.xml" --jsonfile "test-events-${BUILDKITE_JOB_ID}.jsonl" -- -p=1 -count=1 -parallel=12 -run '^TestAcc' ./...
 
 # Generate the Buildkite GraphQL schema file
 schema:

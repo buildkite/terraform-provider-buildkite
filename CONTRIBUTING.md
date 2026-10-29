@@ -54,7 +54,8 @@ Top-level tests named `TestAcc…` belong to the live acceptance suite. `make te
 clears `TF_ACC` and excludes those tests; `make testacc` runs only those tests.
 Keep fake-API and configuration-validation tests in the unit suite, using
 `resource.UnitTest` rather than `resource.Test` or `resource.ParallelTest`.
-`TestHarnessPartition` checks this convention for direct Terraform harness calls.
+`TestHarnessPartition` checks this convention for direct Terraform harness calls
+throughout `buildkite/`, including acceptance subpackages.
 Terraform-based unit tests need a Terraform executable and may download one if it
 is not installed.
 
@@ -73,6 +74,21 @@ BUILDKITE_ORGANIZATION_SLUG=<org-slug> BUILDKITE_API_TOKEN=<token> make testacc
 - The CI process will not run acceptance tests on pull requests
 - Code reviewers will run the acceptance tests manually
 - Please run the acceptance tests locally to confirm they pass before requesting a review
+
+#### Acceptance packages
+
+The agent-token tests are in `buildkite/acceptance/agenttoken`, using the shared
+`internal/acctest` setup and the provider's public constructor. Other acceptance
+tests remain beside the provider code. Each moved test keeps its complete
+Terraform lifecycle and creates its own resources rather than relying on another
+test to create them.
+
+`make testacc` runs packages serially with `-p=1`, retaining twelve parallel slots
+within each package. Do not run acceptance packages concurrently against the same
+organization: Go's serial tests only protect shared settings within one process.
+CI also holds the existing cross-build organization lock for the whole job.
+Package boundaries provide smaller units for future selection and retries; the
+current command still runs every acceptance test.
 
 #### Cache Registry acceptance tests
 

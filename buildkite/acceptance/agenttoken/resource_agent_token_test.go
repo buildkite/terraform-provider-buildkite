@@ -1,10 +1,12 @@
-package buildkite
+package agenttoken
 
 import (
 	"context"
 	"fmt"
 	"testing"
 
+	"github.com/buildkite/terraform-provider-buildkite/buildkite"
+	acceptance "github.com/buildkite/terraform-provider-buildkite/internal/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
@@ -31,7 +33,7 @@ func TestAccBuildkiteAgentToken(t *testing.T) {
 
 	// Confirm that we can create a new agent token, and then delete it without error
 	t.Run("adds an agent token", func(t *testing.T) {
-		var resourceToken AgentTokenNode
+		var resourceToken buildkite.AgentTokenNode
 		randName := acctest.RandString(10)
 
 		check := resource.ComposeAggregateTestCheckFunc(
@@ -54,8 +56,8 @@ func TestAccBuildkiteAgentToken(t *testing.T) {
 		)
 
 		resource.ParallelTest(t, resource.TestCase{
-			PreCheck:                 func() { testAccPreCheck(t) },
-			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			PreCheck:                 func() { acceptance.PreCheck(t) },
+			ProtoV6ProviderFactories: acceptance.ProviderFactories(),
 			CheckDestroy:             testAccCheckAgentTokenResourceDestroy,
 			Steps: []resource.TestStep{
 				{
@@ -74,7 +76,7 @@ func TestAccBuildkiteAgentToken(t *testing.T) {
 	// Confirm that we can create a new agent token, and then update the description
 	// Technically tokens can't be updated, so this will actuall do a delete+create
 	t.Run("updates an agent token", func(t *testing.T) {
-		var resourceToken AgentTokenNode
+		var resourceToken buildkite.AgentTokenNode
 		randName := acctest.RandString(10)
 		randNameUpdated := acctest.RandString(10)
 
@@ -95,8 +97,8 @@ func TestAccBuildkiteAgentToken(t *testing.T) {
 		)
 
 		resource.ParallelTest(t, resource.TestCase{
-			PreCheck:                 func() { testAccPreCheck(t) },
-			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			PreCheck:                 func() { acceptance.PreCheck(t) },
+			ProtoV6ProviderFactories: acceptance.ProviderFactories(),
 			CheckDestroy:             testAccCheckAgentTokenResourceDestroy,
 			Steps: []resource.TestStep{
 				{
@@ -112,7 +114,7 @@ func TestAccBuildkiteAgentToken(t *testing.T) {
 	})
 }
 
-func testAccCheckAgentTokenExists(resourceName string, resourceToken *AgentTokenNode) resource.TestCheckFunc {
+func testAccCheckAgentTokenExists(resourceName string, resourceToken *buildkite.AgentTokenNode) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		resourceState, ok := s.RootModule().Resources[resourceName]
 
@@ -126,7 +128,7 @@ func testAccCheckAgentTokenExists(resourceName string, resourceToken *AgentToken
 
 		var query struct {
 			Node struct {
-				AgentToken AgentTokenNode `graphql:"... on AgentToken"`
+				AgentToken buildkite.AgentTokenNode `graphql:"... on AgentToken"`
 			} `graphql:"node(id: $id)"`
 		}
 
@@ -134,7 +136,7 @@ func testAccCheckAgentTokenExists(resourceName string, resourceToken *AgentToken
 			"id": resourceState.Primary.ID,
 		}
 
-		err := graphqlClient.Query(context.Background(), &query, vars)
+		err := acceptance.GraphQLClient().Query(context.Background(), &query, vars)
 		if err != nil {
 			return fmt.Errorf("Error fetching agent token from graphql API: %v", err)
 		}
@@ -155,7 +157,7 @@ func testAccCheckAgentTokenExists(resourceName string, resourceToken *AgentToken
 	}
 }
 
-func testAccCheckAgentTokenRemoteValues(resourceToken *AgentTokenNode, description string) resource.TestCheckFunc {
+func testAccCheckAgentTokenRemoteValues(resourceToken *buildkite.AgentTokenNode, description string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		if string(resourceToken.Description) != description {
 			return fmt.Errorf("remote agent token description (%s) doesn't match expected value (%s)", resourceToken.Description, description)
@@ -164,7 +166,8 @@ func testAccCheckAgentTokenRemoteValues(resourceToken *AgentTokenNode, descripti
 	}
 }
 
-// verifies the agent token has been destroyed
+// The existing destroy check does not verify remote deletion. Terraform still
+// destroys the resources; strengthening this check is separate from extraction.
 func testAccCheckAgentTokenResourceDestroy(s *terraform.State) error {
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "buildkite_agent_token" {
