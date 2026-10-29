@@ -95,6 +95,7 @@ func TestExpiresAtFromAPI(t *testing.T) {
 }
 
 func TestAccBuildkiteClusterAgentTokenResource(t *testing.T) {
+	t.Parallel()
 	configBasic := func(fields ...string) string {
 		return fmt.Sprintf(`
 		provider "buildkite" {

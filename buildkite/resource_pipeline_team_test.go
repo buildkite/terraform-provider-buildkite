@@ -13,6 +13,7 @@ import (
 )
 
 func TestAccBuildkitePipelineTeam(t *testing.T) {
+	t.Parallel()
 	t.Run("pipeline team can be created", func(t *testing.T) {
 		var tp pipelineTeamResourceModel
 		teamName := acctest.RandString(12)

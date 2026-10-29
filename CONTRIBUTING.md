@@ -44,11 +44,19 @@ make build-snapshot
 
 ### Unit Tests
 
-Run local tests that don't require any network access:
+Run tests that do not use the live Buildkite API:
 
 ```bash
 make test
 ```
+
+Top-level tests named `TestAcc…` belong to the live acceptance suite. `make test`
+clears `TF_ACC` and excludes those tests; `make testacc` runs only those tests.
+Keep fake-API and configuration-validation tests in the unit suite, using
+`resource.UnitTest` rather than `resource.Test` or `resource.ParallelTest`.
+`TestHarnessPartition` checks this convention for direct Terraform harness calls.
+Terraform-based unit tests need a Terraform executable and may download one if it
+is not installed.
 
 ### Acceptance Tests
 

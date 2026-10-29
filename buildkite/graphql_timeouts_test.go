@@ -12,6 +12,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"testing/synctest"
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
@@ -850,49 +851,108 @@ func nullAttribute(ctx context.Context, t *testing.T, r fwresource.Resource, nam
 	return tftypes.NewValue(objectType, attributes)
 }
 
-// retryablehttp returns only the context error when the deadline lands during a backoff wait, or
-// "giving up after N attempt(s)" when the retries run out, and the response it retried is gone. REST
-// kept it through makeRequest; GraphQL now keeps it the same way, so the failure says what the API
-// was answering.
+// A deadline during backoff retains the last response as the reported status. If a later attempt
+// dies in flight, that response is only historical context. Fake time and transport keep these
+// paths distinct instead of racing a real deadline against the next retry.
 func TestGraphQLRequestReportsTheResponseItRetried(t *testing.T) {
 	t.Parallel()
 
-	unavailable := stubResponse{status: http.StatusServiceUnavailable, body: `{"message":"Service Unavailable"}`}
+	const unavailableBody = `{"message":"Service Unavailable"}`
 
 	tests := []struct {
-		name       string
-		retries    int
-		wantPhrase string
-		deadline   bool
+		name            string
+		retries         int
+		wait            time.Duration
+		stallAfterFirst bool
+		wantStatus      int
+		wantAttempts    int
+		wantPhrase      string
+		deadline        bool
 	}{
-		{name: "deadline lands during a backoff wait", retries: stubRetries, wantPhrase: "context deadline exceeded", deadline: true},
-		{name: "retries run out", retries: 2, wantPhrase: "after 3 attempts"},
+		{
+			name:         "deadline lands during a backoff wait",
+			retries:      stubRetries,
+			wait:         2 * stubReadTimeout,
+			wantStatus:   http.StatusServiceUnavailable,
+			wantAttempts: 1,
+			wantPhrase:   "context deadline exceeded",
+			deadline:     true,
+		},
+		{
+			name:            "deadline lands during the next attempt",
+			retries:         stubRetries,
+			wait:            stubRetryWait,
+			stallAfterFirst: true,
+			wantStatus:      0, // The final attempt has no HTTP response.
+			wantAttempts:    2,
+			wantPhrase:      "an earlier attempt returned status 503",
+			deadline:        true,
+		},
+		{
+			name:         "retries run out",
+			retries:      2,
+			wait:         stubRetryWait,
+			wantStatus:   http.StatusServiceUnavailable,
+			wantAttempts: 3,
+			wantPhrase:   "after 3 attempts",
+		},
 	}
 
 	for _, testCase := range tests {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			server, _ := newRetryStub(t, unavailable)
-			defer server.Close()
+			synctest.Test(t, func(t *testing.T) {
+				client := newGraphQLTimeoutTestClient(t, "https://example.com", testCase.retries, testCase.wait, configuredTimeouts("read", stubReadTimeout.String()))
+				// Let the GraphQL request's read deadline, not the per-attempt timer, end the call.
+				client.graphqlRetry.HTTPClient.Timeout = 0
+				requests := 0
+				client.graphqlRetry.HTTPClient.Transport = roundTripFunc(func(req *http.Request) (*http.Response, error) {
+					requests++
+					if testCase.stallAfterFirst && requests > 1 {
+						<-req.Context().Done()
+						return nil, req.Context().Err()
+					}
+					return &http.Response{
+						StatusCode: http.StatusServiceUnavailable,
+						Body:       io.NopCloser(strings.NewReader(unavailableBody)),
+						Request:    req,
+					}, nil
+				})
 
-			client := newGraphQLTimeoutTestClient(t, server.URL, testCase.retries, stubRetryWait, configuredTimeouts("read", stubReadTimeout.String()))
-
-			_, err := getOrganization(context.Background(), client.genqlient, client.organization)
-			if err == nil {
-				t.Fatal("getOrganization succeeded against a server that only fails")
-			}
-			if !isAPIStatus(err, http.StatusServiceUnavailable) {
-				t.Errorf("getOrganization() = %q, want the 503 it retried reported as the status", err)
-			}
-			for _, want := range []string{"Service Unavailable", testCase.wantPhrase} {
-				if !strings.Contains(err.Error(), want) {
-					t.Errorf("getOrganization() = %q, want it to mention %q", err, want)
+				_, err := getOrganization(context.Background(), client.genqlient, client.organization)
+				if err == nil {
+					t.Fatal("getOrganization succeeded against a transport that only fails")
 				}
-			}
-			if got := errors.Is(err, context.DeadlineExceeded); got != testCase.deadline {
-				t.Errorf("errors.Is(err, context.DeadlineExceeded) = %v, want %v", got, testCase.deadline)
-			}
+				var apiErr *apiError
+				if !errors.As(err, &apiErr) {
+					t.Fatalf("getOrganization() = %v (%T), want an API error", err, err)
+				}
+				if apiErr.StatusCode != testCase.wantStatus {
+					t.Errorf("StatusCode = %d, want %d: %v", apiErr.StatusCode, testCase.wantStatus, err)
+				}
+				if got := isAPIStatus(err, http.StatusServiceUnavailable); got != (testCase.wantStatus == http.StatusServiceUnavailable) {
+					t.Errorf("isAPIStatus(err, 503) = %v, want %v", got, testCase.wantStatus == http.StatusServiceUnavailable)
+				}
+				if requests != testCase.wantAttempts || apiErr.Attempts != testCase.wantAttempts {
+					t.Errorf("transport requests = %d, reported attempts = %d, want both %d", requests, apiErr.Attempts, testCase.wantAttempts)
+				}
+				if testCase.stallAfterFirst {
+					if apiErr.Body != "" || apiErr.earlierStatus != http.StatusServiceUnavailable || apiErr.earlierBody != unavailableBody {
+						t.Errorf("Expected the earlier 503 body only as context, got %+v", apiErr)
+					}
+				} else if apiErr.Body != unavailableBody || apiErr.earlierStatus != 0 || apiErr.earlierBody != "" {
+					t.Errorf("Expected the last 503 body as the response, got %+v", apiErr)
+				}
+				for _, want := range []string{"Service Unavailable", testCase.wantPhrase} {
+					if !strings.Contains(err.Error(), want) {
+						t.Errorf("getOrganization() = %q, want it to mention %q", err, want)
+					}
+				}
+				if got := errors.Is(err, context.DeadlineExceeded); got != testCase.deadline {
+					t.Errorf("errors.Is(err, context.DeadlineExceeded) = %v, want %v", got, testCase.deadline)
+				}
+			})
 		})
 	}
 }

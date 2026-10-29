@@ -323,6 +323,7 @@ func TestTestSuiteStateManagementRejectedUpdate(t *testing.T) {
 }
 
 func TestAccBuildkiteTestSuiteResource(t *testing.T) {
+	t.Parallel()
 	basicTestSuite := func(name string) string {
 		return fmt.Sprintf(`
 		provider "buildkite" {
