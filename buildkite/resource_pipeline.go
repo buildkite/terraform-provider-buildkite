@@ -2231,6 +2231,7 @@ func mapProviderSettingsFromGraphQL(repo RepositoryProviderSettingsFields) *prov
 			BuildPullRequestReviewSubmitted:         types.BoolPointerValue(s.BuildPullRequestReviewSubmitted),
 			BuildPullRequests:                       types.BoolPointerValue(s.BuildPullRequests),
 			BuildTags:                               types.BoolPointerValue(s.BuildTags),
+			CancelDeletedBranchBuilds:               types.BoolPointerValue(s.CancelDeletedBranchBuilds),
 			FilterCondition:                         types.StringPointerValue(s.FilterCondition),
 			FilterEnabled:                           types.BoolPointerValue(s.FilterEnabled),
 			PublishCommitStatus:                     types.BoolPointerValue(s.PublishCommitStatus),

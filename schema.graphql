@@ -9780,6 +9780,11 @@ Whether to create builds when tags are pushed.
 """
 	buildTags: Boolean!
 """
+Whether to cancel builds when their branch is deleted. Defaults to false.
+Requires deleted branch cancellation support to be enabled for the organization.
+"""
+	cancelDeletedBranchBuilds: Boolean!
+"""
 The conditions under which this pipeline will trigger a build.
 """
 	filterCondition: String

@@ -3538,6 +3538,7 @@ func TestUnitPipelineOriginProviderSettings(t *testing.T) {
 		{"build_pull_requests", "buildPullRequests", true},
 		{"build_tags", "buildTags", false},
 		{"publish_commit_status", "publishCommitStatus", true},
+		{"cancel_deleted_branch_builds", "cancelDeletedBranchBuilds", false},
 	}
 	settings := map[string]bool{}
 	for _, field := range fields {
@@ -3678,6 +3679,32 @@ resource "buildkite_pipeline" "test" {
 			resource.TestStep{ResourceName: address, ImportState: true, ImportStateVerify: true},
 			resource.TestStep{Config: config, PlanOnly: true},
 		)
+		if mode != "defaults" {
+			driftedValue := mode == "mixed"
+			steps = append(steps,
+				resource.TestStep{
+					PreConfig: func() {
+						mu.Lock()
+						defer mu.Unlock()
+						settings["cancel_deleted_branch_builds"] = driftedValue
+					},
+					RefreshState:       true,
+					ExpectNonEmptyPlan: true,
+					Check: resource.TestCheckResourceAttr(address,
+						"provider_settings.cancel_deleted_branch_builds", fmt.Sprint(driftedValue)),
+				},
+				resource.TestStep{
+					Config: config,
+					ConfigPlanChecks: resource.ConfigPlanChecks{
+						PreApply: []plancheck.PlanCheck{
+							plancheck.ExpectResourceAction(address, plancheck.ResourceActionUpdate),
+						},
+					},
+					Check: resource.ComposeAggregateTestCheckFunc(checks...),
+				},
+				resource.TestStep{Config: config, PlanOnly: true},
+			)
+		}
 	}
 	resource.UnitTest(t, resource.TestCase{
 		ProtoV6ProviderFactories: protoV6ProviderFactories(),
