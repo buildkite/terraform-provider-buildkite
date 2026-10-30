@@ -18,6 +18,8 @@ testfmt:
 vet:
 	go vet $(go list ./...)
 
+GOTESTSUM ?= go run gotest.tools/gotestsum@v1.13.0
+
 .PHONY: test testacc
 
 # Keep live TestAcc tests out of the unit job, even if TF_ACC was inherited.
@@ -27,7 +29,7 @@ test:
 # Acceptance tests. This will create, manage and delete real resources in a real
 # Buildkite organization!
 testacc:
-	TF_ACC=1 go run gotest.tools/gotestsum --format testname --junitfile "junit-${BUILDKITE_JOB_ID}.xml" --jsonfile "test-events-${BUILDKITE_JOB_ID}.jsonl" -- -count=1 -parallel=12 -run '^TestAcc' ./...
+	TF_ACC=1 $(GOTESTSUM) --format testname --junitfile "junit-${BUILDKITE_JOB_ID}.xml" --jsonfile "test-events-${BUILDKITE_JOB_ID}.jsonl" -- -count=1 -parallel=12 -run '^TestAcc' ./...
 
 # Generate the Buildkite GraphQL schema file
 schema:

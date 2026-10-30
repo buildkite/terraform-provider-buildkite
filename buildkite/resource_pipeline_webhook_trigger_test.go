@@ -391,6 +391,8 @@ func TestPipelineWebhookTriggerInvalidImportID(t *testing.T) {
 }
 
 func TestAccBuildkitePipelineWebhookTrigger(t *testing.T) {
+	t.Parallel()
+
 	name := "terraform-trigger-" + acctest.RandString(12)
 	config := func(enabled bool, branch string) string {
 		return fmt.Sprintf(`

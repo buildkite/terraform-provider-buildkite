@@ -9,6 +9,8 @@ import (
 )
 
 func TestAccBuildkiteTestSuiteDatasource(t *testing.T) {
+	t.Parallel()
+
 	t.Run("Can find a datasource", func(t *testing.T) {
 		suiteName := acctest.RandString(12)
 		oidcPolicy := "- iss: https://agent.buildkite.com\n  claims:\n    organization_slug: my-org\n    pipeline_slug: my-pipeline\n  scopes:\n    - write_uploads\n"
