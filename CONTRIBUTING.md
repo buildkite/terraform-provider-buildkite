@@ -92,6 +92,20 @@ The tests create disposable clusters and registries, exercise their lifecycle, a
 
 CI must opt in with `BUILDKITE_CACHE_REGISTRIES_ACCEPTANCE=1` only after its test organization has Cache Registries enabled and its token has organization membership and cluster management access. `TF_ACC=1` is still required (`make testacc` sets it). The Docker Compose test service forwards the opt-in and custom GraphQL/REST URLs when set.
 
+#### Organization allowlist entries acceptance test
+
+The tuple allowlist lifecycle uses the same Terraform steps against the offline organization test server (`make test`) and the live API. Live tuple testing is opt-in until the tuple REST endpoint is deployed:
+
+```bash
+TF_ACC=1 BUILDKITE_API_IP_ENTRIES_ACCEPTANCE=1 \
+BUILDKITE_ORGANIZATION_SLUG=<disposable-org> BUILDKITE_API_TOKEN=<token> \
+go test ./buildkite -run '^TestAccBuildkiteOrganizationIPEntries$' -count=1 -v
+```
+
+Set `BUILDKITE_REST_URL` and `BUILDKITE_GRAPHQL_URL` to target a development Buildkite instance with both backend PRs applied. [Backend preparation #37881](https://github.com/buildkite/buildkite/pull/37881) must deploy fleet-wide before enabling tuple writes from [REST tuples #37891](https://github.com/buildkite/buildkite/pull/37891). The tuple REST API must be available before releasing or using the provider's `allowed_api_ip_entries` functionality. The REST PR also requires human acceptance of rejecting writes containing both allowlist fields, including unmodified full GET responses.
+
+Use a disposable organization with the allowlist feature and an administrator token with organization settings read/write scopes. The test replaces the entire allowlist, switches representations, imports, clears on attribute removal, and destroys. It includes `0.0.0.0/0` to retain API access. Without the opt-in, it explicitly skips; offline tests are not evidence that the live backend is deployed or accepted.
+
 ### Code Quality
 
 Before committing, ensure your code passes these checks:

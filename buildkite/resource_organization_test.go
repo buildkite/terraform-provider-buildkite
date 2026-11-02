@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 	"regexp"
 	"strings"
 	"testing"
@@ -15,11 +16,44 @@ import (
 	fwresource "github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 	"github.com/hashicorp/terraform-plugin-go/tftypes"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
+
+func TestOrganizationLegacySavedState(t *testing.T) {
+	ctx := t.Context()
+	provider, err := protoV6ProviderFactories()["buildkite"]()
+	if err != nil {
+		t.Fatal(err)
+	}
+	// State written before allowed_api_ip_entries existed has no key for it at all.
+	resp, err := provider.UpgradeResourceState(ctx, &tfprotov6.UpgradeResourceStateRequest{
+		TypeName: "buildkite_organization",
+		RawState: &tfprotov6.RawState{JSON: []byte(`{
+			"id":"org-id", "uuid":"org-uuid", "enforce_2fa":false,
+			"allowed_api_ip_addresses":["192.0.2.1/32","198.51.100.0/24"],
+			"revoke_inactive_tokens_after":"NEVER", "restrict_user_api_token_creation":false
+		}`)},
+	})
+	if err != nil || len(resp.Diagnostics) != 0 {
+		t.Fatalf("upgrade failed: %v, %v", err, resp)
+	}
+	sch := resourceSchema(ctx, t, newOrganizationResource())
+	raw, err := resp.UpgradedState.Unmarshal(sch.Type().TerraformType(ctx))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var state organizationResourceModel
+	if diags := (tfsdk.State{Schema: sch, Raw: raw}).Get(ctx, &state); diags.HasError() {
+		t.Fatal(diags)
+	}
+	if got := allowedApiIpAddressesValue(state.AllowedApiIpAddresses); got != "192.0.2.1/32 198.51.100.0/24" || !state.AllowedApiIpEntries.IsNull() {
+		t.Fatalf("legacy state changed representation: %+v", state)
+	}
+}
 
 func TestAllowedApiIpAddressesFromAPI(t *testing.T) {
 	t.Parallel()
@@ -189,6 +223,97 @@ func TestApiSettingsPatch(t *testing.T) {
 			}
 		})
 	}
+}
+
+// Shared by the offline Terraform lifecycle and the live acceptance test. Keep a catch-all in
+// nonempty live allowlists so the test cannot lock its own API token out.
+func organizationAllowlistEntrySteps(config func(string) string) []resource.TestStep {
+	const name = "buildkite_organization.settings"
+	settings := []struct {
+		config string
+		check  resource.TestCheckFunc
+	}{
+		{`allowed_api_ip_addresses = ["0.0.0.0/0"]`, resource.ComposeAggregateTestCheckFunc(
+			resource.TestCheckResourceAttr(name, "allowed_api_ip_addresses.0", "0.0.0.0/0"),
+			resource.TestCheckNoResourceAttr(name, "allowed_api_ip_entries"),
+		)},
+		{fmt.Sprintf(`allowed_api_ip_entries = [
+			{ ip_address = "0.0.0.0/0", description = %q },
+			{ ip_address = "2001:db8::1/128" },
+			{ ip_address = "2001:db8::1/128", description = "Second occurrence" }
+		]`, strings.Repeat("é", 255)), resource.ComposeAggregateTestCheckFunc(
+			resource.TestCheckNoResourceAttr(name, "allowed_api_ip_addresses"),
+			resource.TestCheckResourceAttr(name, "allowed_api_ip_entries.#", "3"),
+			resource.TestCheckResourceAttr(name, "allowed_api_ip_entries.0.description", strings.Repeat("é", 255)),
+			resource.TestCheckResourceAttr(name, "allowed_api_ip_entries.1.description", ""),
+			resource.TestCheckResourceAttr(name, "allowed_api_ip_entries.2.description", "Second occurrence"),
+		)},
+		{`allowed_api_ip_entries = [{ ip_address = "0.0.0.0/0", description = "Office" }]`,
+			resource.TestCheckResourceAttr(name, "allowed_api_ip_entries.#", "1")},
+		// Same address, description-only update must write too.
+		{`allowed_api_ip_entries = [{ ip_address = "0.0.0.0/0", description = "Renamed" }]`,
+			resource.TestCheckResourceAttr(name, "allowed_api_ip_entries.0.description", "Renamed")},
+		// Switching back must not leave tuples in state or send both REST fields.
+		{`allowed_api_ip_addresses = ["0.0.0.0/0"]`, resource.ComposeAggregateTestCheckFunc(
+			resource.TestCheckNoResourceAttr(name, "allowed_api_ip_entries"),
+			resource.TestCheckResourceAttr(name, "allowed_api_ip_addresses.0", "0.0.0.0/0"),
+		)},
+		{`allowed_api_ip_entries = []`, resource.ComposeAggregateTestCheckFunc(
+			resource.TestCheckResourceAttr(name, "allowed_api_ip_entries.#", "0"),
+			resource.TestCheckNoResourceAttr(name, "allowed_api_ip_addresses"),
+		)},
+		{`allowed_api_ip_entries = [{ ip_address = "0.0.0.0/0" }]`,
+			resource.TestCheckResourceAttr(name, "allowed_api_ip_entries.0.description", "")},
+		{``, resource.ComposeAggregateTestCheckFunc(
+			resource.TestCheckNoResourceAttr(name, "allowed_api_ip_entries"),
+			resource.TestCheckNoResourceAttr(name, "allowed_api_ip_addresses"),
+		)},
+		// Leave tuples configured for the harness's final destroy to clear.
+		{`allowed_api_ip_entries = [{ ip_address = "0.0.0.0/0", description = "Destroy me" }]`,
+			resource.TestCheckResourceAttr(name, "allowed_api_ip_entries.0.description", "Destroy me")},
+	}
+	var steps []resource.TestStep
+	for i, setting := range settings {
+		steps = append(steps, resource.TestStep{
+			Config: config(setting.config),
+			ConfigPlanChecks: resource.ConfigPlanChecks{
+				PostApplyPostRefresh: []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()},
+			},
+			Check: setting.check,
+		})
+		if i == 0 {
+			steps = append(steps, resource.TestStep{
+				ResourceName: name, ImportState: true, ImportStateVerify: true,
+			})
+		}
+		if i == 3 {
+			steps = append(steps, resource.TestStep{
+				ResourceName: name, ImportState: true, ImportStateVerify: true,
+				ImportStateVerifyIgnore: []string{"allowed_api_ip_entries", "allowed_api_ip_addresses"},
+				ImportStateCheck: func(states []*terraform.InstanceState) error {
+					if len(states) != 1 || states[0].Attributes["allowed_api_ip_addresses.0"] != "0.0.0.0/0" || states[0].Attributes["allowed_api_ip_entries.#"] != "" {
+						return fmt.Errorf("import must use only the legacy address representation: %v", states)
+					}
+					return nil
+				},
+			})
+		}
+	}
+	return steps
+}
+
+func TestAccBuildkiteOrganizationIPEntries(t *testing.T) {
+	if os.Getenv("BUILDKITE_API_IP_ENTRIES_ACCEPTANCE") != "1" {
+		t.Skip("Set BUILDKITE_API_IP_ENTRIES_ACCEPTANCE=1 against an endpoint supporting allowlist entries; live tuple writes are untested")
+	}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		Steps: organizationAllowlistEntrySteps(func(settings string) string {
+			return fmt.Sprintf(`resource "buildkite_organization" "settings" { %s }`, settings)
+		}),
+	})
 }
 
 func TestAccBuildkiteOrganizationResource(t *testing.T) {
