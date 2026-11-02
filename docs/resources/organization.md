@@ -29,6 +29,12 @@ resource "buildkite_organization" "settings" {
   allowed_api_ip_addresses = ["1.1.1.1/32"]
   enforce_2fa              = true
 
+  # Alternatively, replace allowed_api_ip_addresses with entries to attach descriptions:
+  # allowed_api_ip_entries = [
+  #   { ip_address = "1.1.1.1/32", description = "Office" },
+  #   { ip_address = "2001:db8::/48" }, # omitted description defaults to ""
+  # ]
+
   # only let administrators create API access tokens and revoke tokens unused for 90 days
   restrict_user_api_token_creation = true
   revoke_inactive_tokens_after     = "DAYS_90"
@@ -42,7 +48,10 @@ resource "buildkite_organization" "settings" {
 
 - `allowed_api_ip_addresses` (List of String) A list of IP addresses in CIDR format that are allowed to access the Buildkite API.If not set, all IP addresses are allowed (the same as setting 0.0.0.0/0).
 
+Conflicts with `allowed_api_ip_entries`. Removing the configured allowlist or destroying this resource clears it.
+
 -> The "Allowed API IP Addresses" feature must be enabled on your organization in order to manage the `allowed_api_ip_addresses` attribute.
+- `allowed_api_ip_entries` (Attributes List) An ordered list of IP addresses or CIDRs and descriptions allowed to access the Buildkite API. Conflicts with `allowed_api_ip_addresses`. An empty list, removing the configured allowlist, or destroying this resource clears it, allowing all IP addresses. Requires the Allowed API IP Addresses feature and a Buildkite API supporting allowlist entries. Import initially uses `allowed_api_ip_addresses`; configure this attribute to switch representations. (see [below for nested schema](#nestedatt--allowed_api_ip_entries))
 - `enforce_2fa` (Boolean) Sets whether the organization requires two-factor authentication for all members.
 - `restrict_user_api_token_creation` (Boolean) Whether only organization administrators can create new API access tokens for this organization. If omitted, the current setting is left unchanged.
 - `revoke_inactive_tokens_after` (String) The period of inactivity after which user API access tokens are revoked. Valid values are `NEVER`, `DAYS_30`, `DAYS_60`, `DAYS_90`, `DAYS_180` and `DAYS_365`. If omitted, the current setting is left unchanged. Requires the inactive API token revocation feature on the organization's plan.
@@ -51,6 +60,17 @@ resource "buildkite_organization" "settings" {
 
 - `id` (String) The GraphQL ID of the organization.
 - `uuid` (String) The UUID of the organization.
+
+<a id="nestedatt--allowed_api_ip_entries"></a>
+### Nested Schema for `allowed_api_ip_entries`
+
+Required:
+
+- `ip_address` (String) An IP address or CIDR allowed to access the API.
+
+Optional:
+
+- `description` (String) A description of up to 255 characters. Defaults to an empty string.
 
 ## Import
 

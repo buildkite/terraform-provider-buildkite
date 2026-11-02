@@ -11,6 +11,8 @@ import (
 )
 
 func TestAccBuildkitePipelineDataSource(t *testing.T) {
+	t.Parallel()
+
 	var pipeline getPipelinePipeline
 	pipelineName := acctest.RandString(12)
 

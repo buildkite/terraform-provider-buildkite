@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	frameworkresource "github.com/hashicorp/terraform-plugin-framework/resource"
@@ -320,6 +321,8 @@ func TestUnitClusterCacheRegistryAccessAndOrganization(t *testing.T) {
 func TestClusterCacheRegistryRetry(t *testing.T) {
 	server, api := newCacheRegistryTestAPI(t)
 	r := clusterCacheRegistryResource{client: NewClient(&clientConfig{org: "test-org", apiToken: "dummy", graphqlURL: server.URL, restURL: server.URL, maxRetries: 1})}
+	r.client.graphqlRetry.RetryWaitMin = time.Millisecond
+	r.client.graphqlRetry.RetryWaitMax = time.Millisecond
 	state := createCacheRegistryCallbackState(t, &r)
 	api.mu.Lock()
 	api.retryOperation = "getCacheRegistryByNode"

@@ -16,6 +16,8 @@ import (
 )
 
 func TestAccBuildkiteClusterDatasource(t *testing.T) {
+	t.Parallel()
+
 	t.Run("can find a cluster", func(t *testing.T) {
 		clusterName := acctest.RandString(12)
 		resource.ParallelTest(t, resource.TestCase{

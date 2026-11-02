@@ -138,12 +138,13 @@ func TestAccBuildkiteClusterSecret_migrateValueToWriteOnlyValue(t *testing.T) {
 	})
 }
 
-func TestAccBuildkiteClusterSecret_valueValidation(t *testing.T) {
-	secretKey := fmt.Sprintf("TEST_SECRET_%s", acctest.RandString(10))
-	clusterName := acctest.RandString(10)
+func TestBuildkiteClusterSecret_valueValidation(t *testing.T) {
+	t.Parallel()
 
-	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
+	const secretKey = "TEST_SECRET_VALIDATION"
+	const clusterName = "validation-cluster"
+
+	resource.UnitTest(t, resource.TestCase{
 		ProtoV6ProviderFactories: protoV6ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
@@ -294,8 +295,11 @@ resource "buildkite_cluster_secret" "test" {
 func testAccClusterSecretConfigWithoutValue(clusterName, key string) string {
 	return fmt.Sprintf(`
 provider "buildkite" {
-    organization = "%s"
-    api_token    = "%s"
+    organization = "test-org"
+    api_token    = "test-token"
+    graphql_url  = "http://127.0.0.1:1/graphql"
+    rest_url     = "http://127.0.0.1:1/v2"
+    max_retries  = 0
     timeouts = {
         create = "10s"
         read = "10s"
@@ -314,14 +318,17 @@ resource "buildkite_cluster_secret" "test" {
     key         = "%s"
     description = "Missing value"
 }
-`, getenv("BUILDKITE_ORGANIZATION_SLUG"), os.Getenv("BUILDKITE_API_TOKEN"), clusterName, key)
+`, clusterName, key)
 }
 
 func testAccClusterSecretConfigWithBothValues(clusterName, key, value, writeOnlyValue, version string) string {
 	return fmt.Sprintf(`
 provider "buildkite" {
-    organization = "%s"
-    api_token    = "%s"
+    organization = "test-org"
+    api_token    = "test-token"
+    graphql_url  = "http://127.0.0.1:1/graphql"
+    rest_url     = "http://127.0.0.1:1/v2"
+    max_retries  = 0
     timeouts = {
         create = "10s"
         read = "10s"
@@ -343,14 +350,17 @@ resource "buildkite_cluster_secret" "test" {
     value_wo_version = "%s"
     description      = "Both values"
 }
-`, getenv("BUILDKITE_ORGANIZATION_SLUG"), os.Getenv("BUILDKITE_API_TOKEN"), clusterName, key, value, writeOnlyValue, version)
+`, clusterName, key, value, writeOnlyValue, version)
 }
 
 func testAccClusterSecretConfigWithoutWriteOnlyVersion(clusterName, key, value string) string {
 	return fmt.Sprintf(`
 provider "buildkite" {
-    organization = "%s"
-    api_token    = "%s"
+    organization = "test-org"
+    api_token    = "test-token"
+    graphql_url  = "http://127.0.0.1:1/graphql"
+    rest_url     = "http://127.0.0.1:1/v2"
+    max_retries  = 0
     timeouts = {
         create = "10s"
         read = "10s"
@@ -370,14 +380,17 @@ resource "buildkite_cluster_secret" "test" {
     value_wo    = "%s"
     description = "Missing write-only version"
 }
-`, getenv("BUILDKITE_ORGANIZATION_SLUG"), os.Getenv("BUILDKITE_API_TOKEN"), clusterName, key, value)
+`, clusterName, key, value)
 }
 
 func testAccClusterSecretConfigWithEmptyWriteOnlyVersion(clusterName, key, value string) string {
 	return fmt.Sprintf(`
 provider "buildkite" {
-    organization = "%s"
-    api_token    = "%s"
+    organization = "test-org"
+    api_token    = "test-token"
+    graphql_url  = "http://127.0.0.1:1/graphql"
+    rest_url     = "http://127.0.0.1:1/v2"
+    max_retries  = 0
     timeouts = {
         create = "10s"
         read = "10s"
@@ -398,7 +411,7 @@ resource "buildkite_cluster_secret" "test" {
     value_wo_version = ""
     description      = "Empty write-only version"
 }
-`, getenv("BUILDKITE_ORGANIZATION_SLUG"), os.Getenv("BUILDKITE_API_TOKEN"), clusterName, key, value)
+`, clusterName, key, value)
 }
 
 func testAccClusterSecretConfigWithPolicy(clusterName, key, value, pipeline, branch string) string {

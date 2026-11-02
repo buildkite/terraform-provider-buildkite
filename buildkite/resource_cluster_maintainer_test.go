@@ -15,6 +15,7 @@ import (
 )
 
 func TestAccBuildkiteClusterMaintainerResource(t *testing.T) {
+	t.Parallel()
 	t.Run("adds a user as maintainer", func(t *testing.T) {
 		config := func(clusterName, userID string) string {
 			return fmt.Sprintf(`

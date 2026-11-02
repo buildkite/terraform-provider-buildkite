@@ -302,7 +302,7 @@ func (ps *pipelineSchedule) Delete(ctx context.Context, req resource.DeleteReque
 	err := retryMutation(ctx, timeout, func(ctx context.Context) *retry.RetryError {
 		_, err := deletePipelineSchedule(ctx, ps.client.genqlient, plan.Id.ValueString())
 
-		if err != nil && isResourceNotFoundError(err) {
+		if err != nil && isPipelineScheduleNotFoundError(err) {
 			return nil
 		}
 

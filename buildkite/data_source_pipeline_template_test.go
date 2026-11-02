@@ -10,6 +10,8 @@ import (
 )
 
 func TestAccBuildkitePipelineTemplateDatasource(t *testing.T) {
+	t.Parallel()
+
 	configId := func(name string) string {
 		return fmt.Sprintf(`
 		provider "buildkite" {

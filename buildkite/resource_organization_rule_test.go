@@ -13,6 +13,8 @@ import (
 )
 
 func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
+	t.Parallel()
+
 	ruleActions := []string{"trigger_build", "artifacts_read"}
 
 	configRequired := func(fields ...string) string {

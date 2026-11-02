@@ -12,6 +12,7 @@ import (
 )
 
 func TestAccBuildkiteTeamRegistryResource(t *testing.T) {
+	t.Parallel()
 	config := func(name, accessLevel string) string {
 		return fmt.Sprintf(`
 		provider "buildkite" {

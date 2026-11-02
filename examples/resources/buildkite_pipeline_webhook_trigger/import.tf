@@ -1,0 +1,4 @@
+import {
+  to = buildkite_pipeline_webhook_trigger.deploy
+  id = "webhook-receiver/123e4567-e89b-42d3-a456-426614174000"
+}

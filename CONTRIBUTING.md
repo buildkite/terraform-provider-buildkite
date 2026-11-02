@@ -18,7 +18,7 @@ The Buildkite team will review your PR and start a CI build for it. The team aim
 
 You'll need the following installed on your machine:
 
-- **Go 1.24+**: The provider is written in Go
+- **Go 1.26.10+ (1.26 series) or 1.27.3+**: Use a patched toolchain for the eMudhra intermediate CA compromise (CVE-2026-111943). Development and release builds use Go 1.27.3.
 - **Terraform**: For testing your changes
 - **Lefthook** (optional): For managing Git hooks (see [lefthook.dev](https://lefthook.dev))
 
@@ -44,11 +44,19 @@ make build-snapshot
 
 ### Unit Tests
 
-Run local tests that don't require any network access:
+Run tests that do not use the live Buildkite API:
 
 ```bash
 make test
 ```
+
+Top-level tests named `TestAcc…` belong to the live acceptance suite. `make test`
+clears `TF_ACC` and excludes those tests; `make testacc` runs only those tests.
+Keep fake-API and configuration-validation tests in the unit suite, using
+`resource.UnitTest` rather than `resource.Test` or `resource.ParallelTest`.
+`TestHarnessPartition` checks this convention for direct Terraform harness calls.
+Terraform-based unit tests need a Terraform executable and may download one if it
+is not installed.
 
 ### Acceptance Tests
 
@@ -83,6 +91,20 @@ go test ./buildkite -run '^TestAccBuildkiteClusterCacheRegistry(Resource|ParentD
 The tests create disposable clusters and registries, exercise their lifecycle, and delete them. Once opted in, missing credentials, API failures, or unavailable Cache Registries fail the tests rather than skip them. Leave custom endpoint variables unset to use the default production APIs; an explicitly empty URL is not a default.
 
 CI must opt in with `BUILDKITE_CACHE_REGISTRIES_ACCEPTANCE=1` only after its test organization has Cache Registries enabled and its token has organization membership and cluster management access. `TF_ACC=1` is still required (`make testacc` sets it). The Docker Compose test service forwards the opt-in and custom GraphQL/REST URLs when set.
+
+#### Organization allowlist entries acceptance test
+
+The tuple allowlist lifecycle uses the same Terraform steps against the offline organization test server (`make test`) and the live API. Live tuple testing is opt-in until the tuple REST endpoint is deployed:
+
+```bash
+TF_ACC=1 BUILDKITE_API_IP_ENTRIES_ACCEPTANCE=1 \
+BUILDKITE_ORGANIZATION_SLUG=<disposable-org> BUILDKITE_API_TOKEN=<token> \
+go test ./buildkite -run '^TestAccBuildkiteOrganizationIPEntries$' -count=1 -v
+```
+
+Set `BUILDKITE_REST_URL` and `BUILDKITE_GRAPHQL_URL` to target a development Buildkite instance with both backend PRs applied. [Backend preparation #37881](https://github.com/buildkite/buildkite/pull/37881) must deploy fleet-wide before enabling tuple writes from [REST tuples #37891](https://github.com/buildkite/buildkite/pull/37891). The tuple REST API must be available before releasing or using the provider's `allowed_api_ip_entries` functionality. The REST PR also requires human acceptance of rejecting writes containing both allowlist fields, including unmodified full GET responses.
+
+Use a disposable organization with the allowlist feature and an administrator token with organization settings read/write scopes. The test replaces the entire allowlist, switches representations, imports, clears on attribute removal, and destroys. It includes `0.0.0.0/0` to retain API access. Without the opt-in, it explicitly skips; offline tests are not evidence that the live backend is deployed or accepted.
 
 ### Code Quality
 
