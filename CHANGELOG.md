@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Features
+
+* PF-10060: Add `allowed_api_ip_entries` to `buildkite_organization` for IP/CIDR allowlist entries with optional descriptions, while retaining address-only configurations. Requires the tuple allowlist REST API before release or use.
+
 ### Fixed
 
 * PB-4320: Preserve Origin `provider_settings.cancel_deleted_branch_builds` during refresh and import, avoiding recurring plan changes when the saved setting matches configuration.

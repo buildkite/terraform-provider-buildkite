@@ -12,6 +12,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"unicode/utf8"
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -38,6 +39,7 @@ type fakeOrganizationAPI struct {
 	twoFactorEnforced  bool
 	twoFactorError     string
 	writes             []string
+	entryWrites        [][]organizationIPEntry
 }
 
 func newFakeOrganizationAPI(t *testing.T) (*httptest.Server, *fakeOrganizationAPI) {
@@ -242,6 +244,14 @@ func (a *fakeOrganizationAPI) patch(w http.ResponseWriter, r *http.Request) bool
 		return false
 	}
 
+	_, addresses := body["allowed_ip_addresses"]
+	_, entries := body["allowed_ip_entries"]
+	if addresses && entries {
+		a.t.Error("provider sent both allowlist representations")
+		http.Error(w, `{"message":"Supply only one of allowed_ip_addresses or allowed_ip_entries"}`, http.StatusUnprocessableEntity)
+		return false
+	}
+
 	// Only the keys the request carries change, which is what lets the resource leave the settings
 	// it does not manage alone.
 	for key, value := range body {
@@ -251,8 +261,38 @@ func (a *fakeOrganizationAPI) patch(w http.ResponseWriter, r *http.Request) bool
 			if !ok {
 				a.t.Errorf("allowed_ip_addresses is %T, want a string", value)
 			}
+			// Legacy updates preserve descriptions by exact address and duplicate occurrence.
+			old := slices.Clone(a.settings.AllowedIpEntries)
+			a.settings.AllowedIpEntries = []organizationIPEntry{}
+			for _, address := range strings.Fields(allowed) {
+				entry := organizationIPEntry{IPAddress: address}
+				if i := slices.IndexFunc(old, func(e organizationIPEntry) bool { return e.IPAddress == address }); i >= 0 {
+					entry = old[i]
+					old = slices.Delete(old, i, i+1)
+				}
+				a.settings.AllowedIpEntries = append(a.settings.AllowedIpEntries, entry)
+			}
 			a.settings.AllowedIpAddresses = allowed
 			a.writes = append(a.writes, allowed)
+		case "allowed_ip_entries":
+			raw, _ := json.Marshal(value)
+			var entries []organizationIPEntry
+			if err := json.Unmarshal(raw, &entries); err != nil || value == nil {
+				a.t.Errorf("invalid tuple payload: %s", raw)
+				return false
+			}
+			addresses := make([]string, len(entries))
+			for i, entry := range entries {
+				if utf8.RuneCountInString(entry.Description) > 255 {
+					a.t.Error("provider sent an overlong description")
+					return false
+				}
+				addresses[i] = entry.IPAddress
+			}
+			a.settings.AllowedIpEntries = entries
+			a.settings.AllowedIpAddresses = strings.Join(addresses, " ")
+			a.entryWrites = append(a.entryWrites, slices.Clone(entries))
+			a.writes = append(a.writes, a.settings.AllowedIpAddresses)
 		case "restrict_user_api_token_creation":
 			restrict, ok := value.(bool)
 			if !ok {
@@ -352,6 +392,91 @@ func TestUnitBuildkiteOrganizationAllowlistAgainstFakeAPI(t *testing.T) {
 					resource.TestCheckNoResourceAttr(name, "allowed_api_ip_addresses"),
 					api.checkAllowedIpAddresses(""),
 				),
+			},
+		},
+	})
+}
+
+func TestUnitBuildkiteOrganizationIPEntriesAgainstFakeAPI(t *testing.T) {
+	server, api := newFakeOrganizationAPI(t)
+	api.settings.Features.ApiIpAllowList = true
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		CheckDestroy:             api.checkAllowedIpAddresses(""),
+		Steps: organizationAllowlistEntrySteps(func(settings string) string {
+			return fakeOrganizationConfig(server, settings)
+		}),
+	})
+	// Check the wire contract, not just the provider's state. Both GET and write responses expose
+	// both fields, but only tuple configurations may write entries, and [] must not become null.
+	want := [][]organizationIPEntry{
+		{{IPAddress: "0.0.0.0/0", Description: strings.Repeat("é", 255)}, {IPAddress: "2001:db8::1/128"}, {IPAddress: "2001:db8::1/128", Description: "Second occurrence"}},
+		{{IPAddress: "0.0.0.0/0", Description: "Office"}},
+		{{IPAddress: "0.0.0.0/0", Description: "Renamed"}},
+		{},
+		{{IPAddress: "0.0.0.0/0"}},
+		{{IPAddress: "0.0.0.0/0", Description: "Destroy me"}},
+	}
+	if len(api.entryWrites) != len(want) {
+		t.Fatalf("tuple writes = %v, want %v", api.entryWrites, want)
+	}
+	for i := range want {
+		if !slices.Equal(api.entryWrites[i], want[i]) {
+			t.Errorf("tuple write %d = %v, want %v", i, api.entryWrites[i], want[i])
+		}
+	}
+}
+
+func TestUnitBuildkiteOrganizationIPEntriesValidation(t *testing.T) {
+	server, _ := newFakeOrganizationAPI(t)
+	for _, tc := range []struct {
+		name, settings, error string
+	}{
+		{"conflict including empty lists", "allowed_api_ip_addresses = []\nallowed_api_ip_entries = []", "Invalid Attribute Combination"},
+		{"scalar list element", `allowed_api_ip_entries = ["192.0.2.1"]`, `object\s+required`},
+		{"null entry", `allowed_api_ip_entries = [null]`, "Null List Value"},
+		{"missing address", `allowed_api_ip_entries = [{ description = "Office" }]`, `attribute "ip_address" is required`},
+		{"address type", `allowed_api_ip_entries = [{ ip_address = [] }]`, "string required"},
+		{"description type", `allowed_api_ip_entries = [{ ip_address = "192.0.2.1", description = [] }]`, "string required"},
+		{"description too long", fmt.Sprintf(`allowed_api_ip_entries = [{ ip_address = "192.0.2.1", description = %q }]`, strings.Repeat("é", 256)), `(?s)at most.*255`},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			resource.UnitTest(t, resource.TestCase{
+				ProtoV6ProviderFactories: protoV6ProviderFactories(),
+				Steps: []resource.TestStep{{
+					Config:   fakeOrganizationConfig(server, tc.settings),
+					PlanOnly: true, ExpectError: regexp.MustCompile(tc.error),
+				}},
+			})
+		})
+	}
+}
+
+func TestUnitBuildkiteOrganizationKeepsEntriesAfterRefusedUpdateAndUnreadableRefresh(t *testing.T) {
+	server, api := newFakeOrganizationAPI(t)
+	api.settings.Features.ApiIpAllowList = true
+	initial := fakeOrganizationConfig(server, `allowed_api_ip_entries = [{ ip_address = "192.0.2.1", description = "Office" }]`)
+	changed := fakeOrganizationConfig(server, `allowed_api_ip_entries = [{ ip_address = "192.0.2.1", description = "Renamed" }]`)
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		CheckDestroy:             api.checkAllowedIpAddresses(""),
+		Steps: []resource.TestStep{
+			{Config: initial},
+			{
+				PreConfig: func() { api.refusePatch(http.StatusUnprocessableEntity, `{"message":"refused"}`) },
+				Config:    changed, ExpectError: regexp.MustCompile("refused"),
+			},
+			{
+				PreConfig: func() { api.refuseRead(http.StatusForbidden, `{"message":"Forbidden"}`) },
+				Config:    initial, PlanOnly: true,
+			},
+			{
+				PreConfig: func() {
+					api.allowRead()
+					api.refusePatch(0, "")
+				},
+				Config: changed,
+				Check:  resource.TestCheckResourceAttr("buildkite_organization.settings", "allowed_api_ip_entries.0.description", "Renamed"),
 			},
 		},
 	})
