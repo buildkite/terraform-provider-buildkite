@@ -36,8 +36,15 @@ func isResourceNotFoundError(err error) bool {
 		return false
 	}
 	var apiErr *apiError
-	if errors.As(err, &apiErr) && (apiErr.StatusCode == 0 || apiErr.StatusCode == http.StatusTooManyRequests || apiErr.StatusCode >= 500) {
-		return false
+	if errors.As(err, &apiErr) {
+		// The status field is authoritative for REST failures: the body is never rendered into the
+		// message, so the regex fallback below cannot see it.
+		if apiErr.StatusCode == http.StatusNotFound {
+			return true
+		}
+		if apiErr.StatusCode == 0 || apiErr.StatusCode == http.StatusTooManyRequests || apiErr.StatusCode >= 500 {
+			return false
+		}
 	}
 	var errList gqlerror.List
 	if errors.As(err, &errList) {
