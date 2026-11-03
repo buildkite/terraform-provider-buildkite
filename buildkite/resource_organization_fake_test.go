@@ -463,9 +463,10 @@ func TestUnitBuildkiteOrganizationKeepsEntriesAfterRefusedUpdateAndUnreadableRef
 		Steps: []resource.TestStep{
 			{Config: initial},
 			{
+				// The refusal's body is deliberately not in the error, so the status is what identifies it.
 				PreConfig: func() { api.refusePatch(http.StatusUnprocessableEntity, `{"message":"refused"}`) },
-				Config:    changed, ExpectError: regexp.MustCompile("refused"),
-			},
+				Config:    changed, ExpectError: regexp.MustCompile(`(?s)status:\s+422`),
+			},	
 			{
 				PreConfig: func() { api.refuseRead(http.StatusForbidden, `{"message":"Forbidden"}`) },
 				Config:    initial, PlanOnly: true,
@@ -510,7 +511,7 @@ func TestUnitBuildkiteOrganizationReportsAPlanGatedAllowlist(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config:      fakeOrganizationConfig(server, `allowed_api_ip_addresses = ["1.1.1.1/32"]`),
-				ExpectError: regexp.MustCompile(`(?s)Your plan does not include the API IP allow list feature.*The allowed API IP addresses feature is not available on this organization's plan`),
+				ExpectError: regexp.MustCompile(`(?s)status:\s+403.*The allowed API IP addresses feature is not available on this organization's plan`),
 			},
 		},
 	})
