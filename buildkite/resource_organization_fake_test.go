@@ -466,7 +466,7 @@ func TestUnitBuildkiteOrganizationKeepsEntriesAfterRefusedUpdateAndUnreadableRef
 				// The refusal's body is deliberately not in the error, so the status is what identifies it.
 				PreConfig: func() { api.refusePatch(http.StatusUnprocessableEntity, `{"message":"refused"}`) },
 				Config:    changed, ExpectError: regexp.MustCompile(`(?s)status:\s+422`),
-			},	
+			},
 			{
 				PreConfig: func() { api.refuseRead(http.StatusForbidden, `{"message":"Forbidden"}`) },
 				Config:    initial, PlanOnly: true,
