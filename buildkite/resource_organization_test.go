@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/http/httptest"
 	"os"
 	"regexp"
 	"strings"
@@ -711,26 +712,56 @@ func TestAccBuildkiteOrganizationResource(t *testing.T) {
 	})
 }
 
+func TestOrganizationDestroyCheck(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		status  int
+		body    string
+		wantErr bool
+	}{
+		{"cleared", http.StatusOK, `{"allowed_ip_addresses":""}`, false},
+		{"not cleared", http.StatusOK, `{"allowed_ip_addresses":"192.0.2.0/24"}`, true},
+		{"unreadable", http.StatusForbidden, `{"message":"forbidden"}`, true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.URL.Path != "/v2/organizations/test-org/api-settings" {
+					t.Errorf("unexpected API settings path: %s", r.URL.Path)
+				}
+				w.WriteHeader(tc.status)
+				_, _ = w.Write([]byte(tc.body))
+			}))
+			t.Cleanup(server.Close)
+			t.Setenv("BUILDKITE_API_TOKEN", "test-token")
+			t.Setenv("BUILDKITE_ORGANIZATION_SLUG", "test-org")
+			t.Setenv("BUILDKITE_REST_URL", server.URL)
+			s := &terraform.State{Modules: []*terraform.ModuleState{{
+				Path: []string{"root"},
+				Resources: map[string]*terraform.ResourceState{
+					"buildkite_organization.test": {Type: "buildkite_organization", Primary: &terraform.InstanceState{ID: "graphql-organization-id"}},
+				},
+			}}}
+			if err := testCheckOrganizationResourceRemoved(s); (err != nil) != tc.wantErr {
+				t.Fatalf("destroy check = %v, want error: %v", err, tc.wantErr)
+			}
+		})
+	}
+}
+
 func testCheckOrganizationResourceRemoved(s *terraform.State) error {
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "buildkite_organization" {
 			continue
 		}
 
-		var getOrganizationQuery struct {
-			Organization struct {
-				AllowedApiIpAddresses string
-			}
+		settings, err := getTestClient().getOrganizationAPISettings(context.Background())
+		if err != nil {
+			return fmt.Errorf("checking organization settings deletion: %w", err)
 		}
-
-		err := graphqlClient.Query(context.Background(), &getOrganizationQuery, map[string]interface{}{
-			"slug": rs.Primary.ID,
-		})
-
-		if err == nil {
-			return fmt.Errorf("Organization still exist")
+		// Destroy clears the allowlist, not the organization or its other settings.
+		if settings.AllowedIpAddresses != "" {
+			return fmt.Errorf("organization allowed API IP addresses still exist")
 		}
-		return nil
 	}
 	return nil
 }

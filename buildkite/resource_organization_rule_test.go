@@ -2356,7 +2356,7 @@ func testAccCheckOrganizationRuleDestroy(s *terraform.State) error {
 
 		r, err := getNode(context.Background(), genqlientGraphql, rs.Primary.ID)
 		if err != nil {
-			if strings.Contains(err.Error(), "not found") {
+			if isResourceNotFoundError(err) {
 				continue
 			}
 			return fmt.Errorf("error checking if organization rule exists: %v", err)

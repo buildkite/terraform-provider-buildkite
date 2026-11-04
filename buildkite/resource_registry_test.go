@@ -7,7 +7,6 @@ import (
 	"os"
 	"regexp"
 	"testing"
-	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -269,7 +268,9 @@ func TestAccResourceRegistry(t *testing.T) {
 					} `graphql:"teamRegistry"`
 				} `graphql:"teamRegistryCreate(input: {teamID: $teamId, registryID: $registryId, accessLevel: READ_ONLY})"`
 			}
-			return graphqlClient.Mutate(context.Background(), &mutation, map[string]interface{}{
+			ctx, cancel := context.WithTimeout(context.Background(), DefaultTimeout)
+			defer cancel()
+			return graphqlClient.Mutate(ctx, &mutation, map[string]interface{}{
 				"teamId":     graphql.ID(team.Primary.Attributes["id"]),
 				"registryId": graphql.ID(registry.Primary.Attributes["id"]),
 			})
@@ -370,16 +371,7 @@ func TestAccResourceRegistry(t *testing.T) {
 }
 
 func testAccCheckRegistryDestroy(s *terraform.State) error {
-	apiToken := os.Getenv("BUILDKITE_API_TOKEN")
-	orgSlug := os.Getenv("BUILDKITE_ORGANIZATION_SLUG")
-	baseURL := os.Getenv("BUILDKITE_REST_URL")
-	if baseURL == "" {
-		baseURL = "https://api.buildkite.com"
-	}
-
-	httpClient := &http.Client{
-		Timeout: time.Second * 10,
-	}
+	client := getTestClient()
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "buildkite_registry" {
@@ -387,26 +379,16 @@ func testAccCheckRegistryDestroy(s *terraform.State) error {
 		}
 
 		slug := rs.Primary.Attributes["slug"]
-		url := fmt.Sprintf("%s/v2/packages/organizations/%s/registries/%s", baseURL, orgSlug, slug)
+		path := fmt.Sprintf("/v2/packages/organizations/%s/registries/%s", client.organization, slug)
 
-		req, err := http.NewRequest(http.MethodGet, url, nil)
-		if err != nil {
-			return fmt.Errorf("error creating request to check if registry still exists: %w", err)
-		}
-
-		req.Header.Set("Accept", "application/json")
-		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", apiToken))
-
-		resp, err := httpClient.Do(req)
-		if err != nil {
-			return fmt.Errorf("error making request to check if registry still exists: %w", err)
-		}
-		defer resp.Body.Close()
-
-		if resp.StatusCode == http.StatusNotFound {
+		var result struct{}
+		err := client.makeRequest(context.Background(), http.MethodGet, path, nil, &result)
+		if isAPIStatus(err, http.StatusNotFound) {
 			continue
 		}
-
+		if err != nil {
+			return fmt.Errorf("checking registry deletion: %w", err)
+		}
 		return fmt.Errorf("buildkite_registry resource still exists: %s", slug)
 	}
 

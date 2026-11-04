@@ -3,7 +3,6 @@ package buildkite
 import (
 	"context"
 	"fmt"
-	"strings"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
@@ -241,7 +240,7 @@ func testAccCheckPipelineTemplateDestroy(s *terraform.State) error {
 
 		r, err := getNode(context.Background(), genqlientGraphql, rs.Primary.ID)
 		if err != nil {
-			if strings.Contains(err.Error(), "not found") {
+			if isResourceNotFoundError(err) {
 				continue
 			}
 			return err
