@@ -195,9 +195,7 @@ func TestAccBuildkiteClusterSecret_withPolicy(t *testing.T) {
 }
 
 func testAccCheckClusterSecretDestroy(s *terraform.State) error {
-	org := getenv("BUILDKITE_ORGANIZATION_SLUG")
-	apiToken := os.Getenv("BUILDKITE_API_TOKEN")
-	httpClient := &http.Client{}
+	client := getTestClient()
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "buildkite_cluster_secret" {
@@ -207,31 +205,18 @@ func testAccCheckClusterSecretDestroy(s *terraform.State) error {
 		clusterID := rs.Primary.Attributes["cluster_id"]
 		secretID := rs.Primary.ID
 
-		url := fmt.Sprintf("%s/v2/organizations/%s/clusters/%s/secrets/%s",
-			defaultRestEndpoint, org, clusterID, secretID)
+		path := fmt.Sprintf("/v2/organizations/%s/clusters/%s/secrets/%s",
+			client.organization, clusterID, secretID)
 
-		req, err := http.NewRequest("GET", url, nil)
-		if err != nil {
-			return err
-		}
-
-		req.Header.Set("Authorization", "Bearer "+apiToken)
-
-		resp, err := httpClient.Do(req)
-		if err != nil {
-			return err
-		}
-		resp.Body.Close()
-
-		// If we get a 404, the secret was successfully destroyed
-		if resp.StatusCode == 404 {
+		var result struct{}
+		err := client.makeRequest(context.Background(), http.MethodGet, path, nil, &result)
+		if isAPIStatus(err, http.StatusNotFound) {
 			continue
 		}
-
-		// If we get 200, the secret still exists
-		if resp.StatusCode == 200 {
-			return fmt.Errorf("cluster secret %s still exists", secretID)
+		if err != nil {
+			return fmt.Errorf("checking cluster secret deletion: %w", err)
 		}
+		return fmt.Errorf("cluster secret %s still exists", secretID)
 	}
 
 	return nil

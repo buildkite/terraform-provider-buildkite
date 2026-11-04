@@ -4,14 +4,19 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"net/http/httptest"
 	"os"
+	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
 	genqlient "github.com/Khan/genqlient/graphql"
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/shurcooL/graphql"
+	"github.com/vektah/gqlparser/v2/gqlerror"
 )
 
 var (
@@ -21,31 +26,213 @@ var (
 )
 
 func init() {
-	rt := http.DefaultTransport
-	header := make(http.Header)
-	header.Set("Authorization", "Bearer "+os.Getenv("BUILDKITE_API_TOKEN"))
-	header.Set("User-Agent", "testing")
-	rt = newHeaderRoundTripper(rt, header)
-
-	httpClient := &http.Client{
-		Transport: rt,
+	client := getTestClient()
+	graphqlClient = client.graphql
+	genqlientGraphql = client.genqlient
+	if os.Getenv("TF_ACC") != "" {
+		if id, err := client.GetOrganizationID(context.Background()); err == nil {
+			organizationID = *id
+		}
 	}
+}
 
+func getTestClient() *Client {
 	graphqlEndpoint := defaultGraphqlEndpoint
 	if v, ok := os.LookupEnv("BUILDKITE_GRAPHQL_URL"); ok {
 		graphqlEndpoint = v
 	}
+	restEndpoint := defaultRestEndpoint
+	if v, ok := os.LookupEnv("BUILDKITE_REST_URL"); ok {
+		restEndpoint = v
+	}
+	return NewClient(&clientConfig{
+		org:        getenv("BUILDKITE_ORGANIZATION_SLUG"),
+		apiToken:   os.Getenv("BUILDKITE_API_TOKEN"),
+		graphqlURL: graphqlEndpoint,
+		restURL:    restEndpoint,
+		userAgent:  "terraform-provider-buildkite-test",
+		maxRetries: DefaultRetryMaxAttempts,
+	})
+}
 
-	graphqlClient = graphql.NewClient(graphqlEndpoint, httpClient)
-	genqlientGraphql = genqlient.NewClient(graphqlEndpoint, httpClient)
-	if os.Getenv("TF_ACC") != "" {
-		organizationID, _ = GetOrganizationID(context.Background(), getenv("BUILDKITE_ORGANIZATION_SLUG"), graphqlClient)
+func TestSharedTestClientRetries(t *testing.T) {
+	for _, protocol := range []string{"REST", "GraphQL", "genqlient"} {
+		t.Run(protocol, func(t *testing.T) {
+			var requests atomic.Int32
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				wantPath := "/graphql"
+				if protocol == "REST" {
+					wantPath = "/rest/organizations/test-org"
+				}
+				if r.URL.Path != wantPath {
+					t.Errorf("request path = %q, want %q", r.URL.Path, wantPath)
+				}
+				if r.Header.Get("Authorization") != "Bearer test-token" || r.Header.Get("User-Agent") != "terraform-provider-buildkite-test" {
+					t.Error("acceptance client did not send its credentials and user agent")
+				}
+				w.Header().Set("Content-Type", "application/json")
+				if requests.Add(1) == 1 {
+					w.Header().Set("RateLimit-Reset", "0")
+					w.WriteHeader(http.StatusTooManyRequests)
+					_, _ = w.Write([]byte(`{"message":"rate limited"}`))
+					return
+				}
+				_, _ = w.Write([]byte(`{"name":"test-org","data":{"organization":{"name":"test-org"}}}`))
+			}))
+			t.Cleanup(server.Close)
+			t.Setenv("BUILDKITE_API_TOKEN", "test-token")
+			t.Setenv("BUILDKITE_ORGANIZATION_SLUG", "test-org")
+			t.Setenv("BUILDKITE_REST_URL", server.URL+"/rest")
+			t.Setenv("BUILDKITE_GRAPHQL_URL", server.URL+"/graphql")
+			client := getTestClient()
+			// Shorten only the waits, retaining the acceptance client's retry budget.
+			if client.restRetry != nil {
+				client.restRetry.RetryWaitMin = time.Millisecond
+				client.restRetry.RetryWaitMax = time.Millisecond
+			}
+			if client.graphqlRetry != nil {
+				client.graphqlRetry.RetryWaitMin = time.Millisecond
+				client.graphqlRetry.RetryWaitMax = time.Millisecond
+			}
+			var name string
+			switch protocol {
+			case "REST":
+				if client.restURL != server.URL+"/rest" {
+					t.Fatal("acceptance client ignored BUILDKITE_REST_URL")
+				}
+				var result struct{ Name string }
+				if err := client.makeRequest(t.Context(), http.MethodGet, "/organizations/"+client.organization, nil, &result); err != nil {
+					t.Fatal(err)
+				}
+				name = result.Name
+			case "GraphQL", "genqlient":
+				var query struct {
+					Organization struct{ Name graphql.String } `graphql:"organization(slug: $slug)"`
+				}
+				if protocol == "GraphQL" {
+					if client.graphql == nil {
+						t.Fatal("acceptance client has no GraphQL client")
+					}
+					if err := client.graphql.Query(t.Context(), &query, map[string]any{"slug": graphql.ID(client.organization)}); err != nil {
+						t.Fatal(err)
+					}
+				} else {
+					if client.genqlient == nil {
+						t.Fatal("acceptance client has no genqlient client")
+					}
+					err := client.genqlient.MakeRequest(t.Context(), &genqlient.Request{Query: `query { organization(slug: "test-org") { name } }`}, &genqlient.Response{Data: &query})
+					if err != nil {
+						t.Fatal(err)
+					}
+				}
+				name = string(query.Organization.Name)
+			}
+			if name != "test-org" || requests.Load() != 2 {
+				t.Fatalf("name = %q after %d requests, want test-org after retrying the 429", name, requests.Load())
+			}
+		})
 	}
 }
 
 func protoV6ProviderFactories() map[string]func() (tfprotov6.ProviderServer, error) {
 	return map[string]func() (tfprotov6.ProviderServer, error){
 		"buildkite": providerserver.NewProtocol6WithError(New("testing")),
+	}
+}
+
+func TestDestroyChecksRequireNotFound(t *testing.T) {
+	checks := []struct {
+		resourceType string
+		path         string
+		check        func(*terraform.State) error
+	}{
+		{"buildkite_portal", "/v2/organizations/test-org/portals/test", testAccCheckPortalResourceDestroy},
+		{"buildkite_cluster_secret", "/v2/organizations/test-org/clusters/cluster/secrets/id-with-404", testAccCheckClusterSecretDestroy},
+		{"buildkite_registry", "/v2/packages/organizations/test-org/registries/test", testAccCheckRegistryDestroy},
+		{"buildkite_cluster_maintainer", "/v2/organizations/test-org/clusters/cluster/maintainers/id-with-404", testAccCheckClusterMaintainerDestroy},
+	}
+	for _, check := range checks {
+		t.Run(check.resourceType, func(t *testing.T) {
+			for _, status := range []int{http.StatusNotFound, http.StatusForbidden, http.StatusOK} {
+				t.Run(fmt.Sprint(status), func(t *testing.T) {
+					server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+						if r.URL.Path != check.path {
+							t.Errorf("request path = %q, want %q", r.URL.Path, check.path)
+						}
+						w.WriteHeader(status)
+						_, _ = w.Write([]byte(`{}`))
+					}))
+					t.Cleanup(server.Close)
+					t.Setenv("BUILDKITE_API_TOKEN", "test-token")
+					t.Setenv("BUILDKITE_ORGANIZATION_SLUG", "test-org")
+					t.Setenv("BUILDKITE_REST_URL", server.URL)
+					s := &terraform.State{Modules: []*terraform.ModuleState{{
+						Path: []string{"root"},
+						Resources: map[string]*terraform.ResourceState{
+							check.resourceType + ".test": {
+								Type: check.resourceType,
+								Primary: &terraform.InstanceState{ID: "id-with-404", Attributes: map[string]string{
+									"slug": "test", "cluster_id": "cluster", "cluster_uuid": "cluster",
+								}},
+							},
+						},
+					}}}
+					err := check.check(s)
+					if (err == nil) != (status == http.StatusNotFound) {
+						t.Fatalf("destroy check for HTTP %d = %v; only 404 should confirm deletion", status, err)
+					}
+					if status == http.StatusOK && !strings.Contains(err.Error(), "still exists") {
+						t.Fatalf("existing resource was not reported as still existing: %v", err)
+					}
+				})
+			}
+		})
+	}
+}
+
+func TestGraphQLDestroyChecksRejectFailedReads(t *testing.T) {
+	t.Setenv("BUILDKITE_ORGANIZATION_SLUG", "test-org")
+	previous := genqlientGraphql
+	t.Cleanup(func() { genqlientGraphql = previous })
+	checks := []struct {
+		resourceType string
+		check        func(*terraform.State) error
+	}{
+		{"buildkite_pipeline", testAccCheckPipelineDestroy},
+		{"buildkite_pipeline_template", testAccCheckPipelineTemplateDestroy},
+		{"buildkite_organization_rule", testAccCheckOrganizationRuleDestroy},
+	}
+	for _, check := range checks {
+		t.Run(check.resourceType, func(t *testing.T) {
+			for _, tc := range []struct {
+				name    string
+				err     error
+				wantErr bool
+			}{
+				{"absent", gqlerror.List{&gqlerror.Error{Message: "Resource not found"}}, false},
+				{"rate limited", &apiError{StatusCode: http.StatusTooManyRequests, Attempts: 11, Body: "upstream not found"}, true},
+				{"unavailable", &apiError{StatusCode: http.StatusServiceUnavailable, Attempts: 11, Body: "upstream not found"}, true},
+				{"deadline", &apiError{StatusCode: http.StatusServiceUnavailable, Body: "upstream not found", Err: context.DeadlineExceeded}, true},
+			} {
+				t.Run(tc.name, func(t *testing.T) {
+					genqlientGraphql = &fakeGraphQLClient{handler: func(context.Context, *genqlient.Request, *genqlient.Response) error {
+						return tc.err
+					}}
+					s := &terraform.State{Modules: []*terraform.ModuleState{{
+						Path: []string{"root"},
+						Resources: map[string]*terraform.ResourceState{
+							check.resourceType + ".test": {
+								Type:    check.resourceType,
+								Primary: &terraform.InstanceState{ID: "test", Attributes: map[string]string{"slug": "test"}},
+							},
+						},
+					}}}
+					if err := check.check(s); (err != nil) != tc.wantErr {
+						t.Fatalf("destroy check = %v, want error: %v", err, tc.wantErr)
+					}
+				})
+			}
+		})
 	}
 }
 

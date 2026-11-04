@@ -55,8 +55,7 @@ func testAccCheckPipelineDestroy(s *terraform.State) error {
 		log.Printf("[DEBUG] Checking pipeline with slug: %s", pipelineSlug)
 		resp, err := getPipeline(context.Background(), genqlientGraphql, pipelineSlug)
 		if err != nil {
-			if strings.Contains(err.Error(), "not found") ||
-				strings.Contains(err.Error(), "pipeline not found") {
+			if isResourceNotFoundError(err) {
 				log.Printf("[DEBUG] Pipeline not found (expected): %s", pipelineSlug)
 				continue
 			}

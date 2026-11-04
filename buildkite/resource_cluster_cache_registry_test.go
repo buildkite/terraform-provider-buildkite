@@ -662,7 +662,7 @@ func testAccCheckClusterCacheRegistryDestroy(state *terraform.State) error {
 			continue
 		}
 
-		r := clusterCacheRegistryResource{client: &Client{genqlient: genqlientGraphql, organization: getenv("BUILDKITE_ORGANIZATION_SLUG")}}
+		r := clusterCacheRegistryResource{client: getTestClient()}
 		_, err := r.lookupCacheRegistry(context.Background(), &clusterCacheRegistryResourceModel{
 			ID:             types.StringValue(resourceState.Primary.ID),
 			OrganizationID: types.StringValue(resourceState.Primary.Attributes["organization_id"]),

@@ -19,15 +19,8 @@ func TestAccGetOrganizationIDMissing(t *testing.T) {
 
 	slug := "doesnt match API key"
 
-	config := &clientConfig{
-		org:        slug,
-		apiToken:   os.Getenv("BUILDKITE_API_TOKEN"),
-		graphqlURL: defaultGraphqlEndpoint,
-		restURL:    defaultRestEndpoint,
-		userAgent:  "test-user-agent",
-	}
-
-	client := NewClient(config)
+	client := getTestClient()
+	client.organization = slug
 	org, err := client.GetOrganizationID(t.Context())
 	if err == nil {
 		t.Fatal("No error occurred")
