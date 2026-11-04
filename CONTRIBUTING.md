@@ -76,7 +76,8 @@ BUILDKITE_ORGANIZATION_SLUG=<org-slug> BUILDKITE_API_TOKEN=<token> make testacc
 
 #### Non-admin acceptance tests
 
-Run the pipeline and pipeline schedule lifecycle tests with a non-admin token:
+Run the shared pipeline and pipeline schedule lifecycle tests and read-only data
+source tests with a non-admin token:
 
 ```bash
 BUILDKITE_ORGANIZATION_SLUG=<test-org> BUILDKITE_API_TOKEN=<non-admin-token> make testacc-nonadmin
@@ -89,12 +90,24 @@ existing team. The tests do not create teams or change memberships.
 
 These tests create, read, update, import, and delete pipelines and schedules.
 Pipelines are assigned to the team at creation using `default_team_id`, and
-schedules remain disabled so they cannot trigger builds. The fixtures avoid
-custom pipeline slugs, repository provider settings, and GitHub webhook controls,
-which require REST API permissions. Add token scopes only when new coverage needs
-them; do not broaden the token to run the admin suite unchanged.
+schedules remain disabled so they cannot trigger builds. The pipeline lifecycle
+also checks pipeline and team data sources, including filtered pipeline reads
+after an update and unchanged private visibility. It reuses its pipeline for
+these checks instead of creating a separate data source fixture.
+
+Read-only tests look up the token owner's organization membership and list
+members without assuming list order. The organization data source must return
+its identifiers even when the token cannot read restricted API settings. These
+tests do not change organization settings or memberships.
+
+The pipeline fixtures avoid custom pipeline slugs, repository provider settings,
+and GitHub webhook controls, which require REST API permissions. Add token scopes
+only when new coverage needs them; do not broaden the token to run the admin suite
+unchanged.
 
 Tests named `TestAccNonAdmin…` also run under the admin token with `make testacc`.
+Use the same test implementation for operations supported by both credentials,
+and consolidate equivalent admin scenarios rather than keeping duplicate tests.
 The dedicated target checks the token owner's organization role and fails if its
 test selector matches nothing. CI loads the non-admin token from
 `/pipelines/buildkite/terraform-provider-buildkite-main/buildkite_api_token_nonadmin`

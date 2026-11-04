@@ -328,11 +328,50 @@ func testAccCheckPipelineDestroyFunc(s *terraform.State) error {
 
 func TestAccNonAdminPipeline(t *testing.T) {
 	pipelineName := "nonadmin-" + acctest.RandString(12)
+	config := func(description string) string {
+		return testAccPipelineConfigWithTeam(pipelineName, description) + `
+			data "buildkite_pipeline" "pipeline" {
+				slug = buildkite_pipeline.pipeline.slug
+				depends_on = [buildkite_pipeline.pipeline]
+			}
+
+			data "buildkite_pipelines" "matching" {
+				search = buildkite_pipeline.pipeline.name
+				depends_on = [buildkite_pipeline.pipeline]
+			}
+
+			data "buildkite_team" "by_id" {
+				id = data.buildkite_team.nonadmin.id
+			}
+
+			data "buildkite_teams" "teams" {}
+		`
+	}
 	check := func(description string) resource.TestCheckFunc {
 		return resource.ComposeAggregateTestCheckFunc(
 			resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "name", pipelineName),
 			resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "description", description),
+			resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "visibility", "PRIVATE"),
 			resource.TestCheckResourceAttrPair("buildkite_pipeline.pipeline", "default_team_id", "data.buildkite_team.nonadmin", "id"),
+			resource.TestCheckResourceAttrPair("data.buildkite_pipeline.pipeline", "id", "buildkite_pipeline.pipeline", "id"),
+			resource.TestCheckResourceAttrPair("data.buildkite_pipeline.pipeline", "uuid", "buildkite_pipeline.pipeline", "uuid"),
+			resource.TestCheckResourceAttr("data.buildkite_pipeline.pipeline", "name", pipelineName),
+			resource.TestCheckResourceAttr("data.buildkite_pipeline.pipeline", "description", description),
+			resource.TestCheckResourceAttr("data.buildkite_pipeline.pipeline", "repository", "https://github.com/buildkite/terraform-provider-buildkite.git"),
+			resource.TestCheckResourceAttr("data.buildkite_pipeline.pipeline", "visibility", "PRIVATE"),
+			resource.TestCheckResourceAttr("data.buildkite_pipelines.matching", "total", "1"),
+			resource.TestCheckResourceAttrPair("data.buildkite_pipelines.matching", "pipelines.0.id", "buildkite_pipeline.pipeline", "id"),
+			resource.TestCheckResourceAttr("data.buildkite_pipelines.matching", "pipelines.0.description", description),
+			resource.TestCheckResourceAttrPair("data.buildkite_team.by_id", "id", "data.buildkite_team.nonadmin", "id"),
+			resource.TestCheckResourceAttrPair("data.buildkite_team.by_id", "slug", "data.buildkite_team.nonadmin", "slug"),
+			func(s *terraform.State) error {
+				team := s.RootModule().Resources["data.buildkite_team.nonadmin"]
+				values := map[string]string{}
+				for _, attr := range []string{"id", "uuid", "name", "slug", "members_can_create_pipelines", "members_can_create_suites", "members_can_create_registries", "members_can_destroy_registries", "members_can_destroy_packages"} {
+					values[attr] = team.Primary.Attributes[attr]
+				}
+				return resource.TestCheckTypeSetElemNestedAttrs("data.buildkite_teams.teams", "teams.*", values)(s)
+			},
 			func(s *terraform.State) error {
 				pipeline := s.RootModule().Resources["buildkite_pipeline.pipeline"]
 				remote, err := getPipeline(context.Background(), genqlientGraphql,
@@ -340,8 +379,8 @@ func TestAccNonAdminPipeline(t *testing.T) {
 				if err != nil {
 					return err
 				}
-				if remote.Pipeline.Id != pipeline.Primary.ID || remote.Pipeline.Name != pipelineName || remote.Pipeline.Description != description {
-					return fmt.Errorf("remote pipeline does not match the expected ID, name, and description")
+				if remote.Pipeline.Id != pipeline.Primary.ID || remote.Pipeline.Name != pipelineName || remote.Pipeline.Description != description || remote.Pipeline.Visibility != PipelineVisibilityPrivate {
+					return fmt.Errorf("remote pipeline does not match the expected ID, name, description, and private visibility")
 				}
 				teamID := s.RootModule().Resources["data.buildkite_team.nonadmin"].Primary.ID
 				for _, edge := range remote.Pipeline.Teams.Edges {
@@ -360,11 +399,11 @@ func TestAccNonAdminPipeline(t *testing.T) {
 		CheckDestroy:             testAccCheckPipelineDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccPipelineConfigWithTeam(pipelineName, "Created with a team"),
+				Config: config("Created with a team"),
 				Check:  check("Created with a team"),
 			},
 			{
-				Config: testAccPipelineConfigWithTeam(pipelineName, "Updated without losing team access"),
+				Config: config("Updated without losing team access"),
 				Check:  check("Updated without losing team access"),
 				ConfigPlanChecks: resource.ConfigPlanChecks{
 					PreApply: []plancheck.PlanCheck{

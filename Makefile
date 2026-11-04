@@ -31,7 +31,7 @@ test:
 testacc:
 	TF_ACC=1 $(GOTESTSUM) --format testname --junitfile "junit-${BUILDKITE_JOB_ID}.xml" --jsonfile "test-events-${BUILDKITE_JOB_ID}.jsonl" -- -count=1 -parallel=12 -run '^TestAcc' ./...
 
-# GraphQL-only lifecycle tests using a non-admin team maintainer's token.
+# Shared lifecycles and lookups using a graphql-scoped team maintainer's token.
 # Fail rather than silently succeed if the selected tests have been removed.
 testacc-nonadmin:
 	@tests="$$(TF_ACC= go test ./buildkite -list '^TestAccNonAdmin')" || exit $$?; \
