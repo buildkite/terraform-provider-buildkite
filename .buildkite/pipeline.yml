@@ -72,6 +72,37 @@ steps:
         - exit_status: -1
           limit: 2
 
+  - label: acceptance tests - non-admin
+    key: testacc-nonadmin
+    concurrency: 1
+    concurrency_group: terraform-provider-acceptance-tests
+    command: .buildkite/steps/annotate.sh testacc-nonadmin
+    artifact_paths:
+      - "test-events-*.jsonl"
+      - "junit-*.xml"
+    plugins:
+      - aws-assume-role-with-web-identity#v1.8.1:
+          role-arn: arn:aws:iam::445615400570:role/pipeline-buildkite-terraform-provider-buildkite-main
+          session-tags:
+            - organization_slug
+            - organization_id
+            - pipeline_slug
+      - aws-ssm#v1.1.0:
+          parameters:
+            BUILDKITE_ORGANIZATION_SLUG: /pipelines/buildkite/terraform-provider-buildkite-main/buildkite_organization
+            BUILDKITE_API_TOKEN: /pipelines/buildkite/terraform-provider-buildkite-main/buildkite_api_token_nonadmin
+            BUILDKITE_ANALYTICS_TOKEN: /pipelines/buildkite/terraform-provider-buildkite-main/buildkite_analytics_token
+      - docker-compose#v5.16.0:
+          run: acceptance
+          mount-buildkite-agent: "true"
+      - test-collector#v1.12.0:
+          files: junit-*.xml
+          format: junit
+    retry:
+      automatic:
+        - exit_status: -1
+          limit: 2
+
   - label: "Security Scan"
     key: security_scan
     secrets:
@@ -95,5 +126,6 @@ steps:
       - lint
       - test
       - testacc
+      - testacc-nonadmin
       - vet
       - docs

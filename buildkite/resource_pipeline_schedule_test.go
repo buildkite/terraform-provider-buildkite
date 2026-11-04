@@ -72,6 +72,75 @@ func TestPipelineScheduleDeleteSurfacesParentPipelineNotFound(t *testing.T) {
 	}
 }
 
+func TestAccNonAdminPipelineSchedule(t *testing.T) {
+	pipelineName := "nonadmin-schedule-" + acctest.RandString(12)
+	config := func(label, cronline string) string {
+		return testAccPipelineConfigWithTeam(pipelineName, "Non-admin schedule lifecycle") + fmt.Sprintf(`
+			resource "buildkite_pipeline_schedule" "schedule" {
+				pipeline_id = buildkite_pipeline.pipeline.id
+				branch = "main"
+				label = %q
+				cronline = %q
+				enabled = false
+			}
+		`, label, cronline)
+	}
+	check := func(label, cronline string) resource.TestCheckFunc {
+		return resource.ComposeAggregateTestCheckFunc(
+			resource.TestCheckResourceAttr("buildkite_pipeline_schedule.schedule", "label", label),
+			resource.TestCheckResourceAttr("buildkite_pipeline_schedule.schedule", "cronline", cronline),
+			resource.TestCheckResourceAttr("buildkite_pipeline_schedule.schedule", "enabled", "false"),
+			resource.TestCheckResourceAttrPair("buildkite_pipeline_schedule.schedule", "pipeline_id", "buildkite_pipeline.pipeline", "id"),
+			func(s *terraform.State) error {
+				schedule := s.RootModule().Resources["buildkite_pipeline_schedule.schedule"]
+				remote, err := getPipelineSchedule(context.Background(), genqlientGraphql, schedule.Primary.ID)
+				if err != nil {
+					return err
+				}
+				node, ok := remote.Node.(*getPipelineScheduleNodePipelineSchedule)
+				if !ok || node == nil {
+					return fmt.Errorf("remote pipeline schedule not found")
+				}
+				pipelineID := s.RootModule().Resources["buildkite_pipeline.pipeline"].Primary.ID
+				if node.Pipeline.Id != pipelineID || node.Label == nil || *node.Label != label || node.Cronline == nil || *node.Cronline != cronline || node.Enabled {
+					return fmt.Errorf("remote schedule does not match the expected pipeline, label, cronline, and disabled state")
+				}
+				return nil
+			},
+		)
+	}
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccNonAdminPreCheck(t) },
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		CheckDestroy: func(s *terraform.State) error {
+			if err := testAccCheckPipelineScheduleDestroy(s); err != nil {
+				return err
+			}
+			return testAccCheckPipelineDestroy(s)
+		},
+		Steps: []resource.TestStep{
+			{
+				Config: config("Created schedule", "0 3 * * *"),
+				Check:  check("Created schedule", "0 3 * * *"),
+			},
+			{
+				Config: config("Updated schedule", "15 5 * * 1"),
+				Check:  check("Updated schedule", "15 5 * * 1"),
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PostApplyPostRefresh: []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()},
+				},
+			},
+			{
+				ResourceName:      "buildkite_pipeline_schedule.schedule",
+				ImportState:       true,
+				ImportStateIdFunc: testAccImportIDFromAttributes("buildkite_pipeline.pipeline", "slug", "buildkite_pipeline_schedule.schedule", "uuid"),
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
 func TestAccBuildkitePipelineSchedule(t *testing.T) {
 	t.Parallel()
 	config := func(name, cronline, label, env string, enabled bool) string {
