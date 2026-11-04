@@ -128,6 +128,9 @@ func TestAccNonAdminPipelineSchedule(t *testing.T) {
 				Config: config("Updated schedule", "15 5 * * 1"),
 				Check:  check("Updated schedule", "15 5 * * 1"),
 				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction("buildkite_pipeline_schedule.schedule", plancheck.ResourceActionUpdate),
+					},
 					PostApplyPostRefresh: []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()},
 				},
 			},

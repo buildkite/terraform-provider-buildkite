@@ -368,6 +368,9 @@ func TestAccNonAdminPipeline(t *testing.T) {
 				Config: testAccPipelineConfigWithTeam(pipelineName, "Updated without losing team access"),
 				Check:  check("Updated without losing team access"),
 				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction("buildkite_pipeline.pipeline", plancheck.ResourceActionUpdate),
+					},
 					PostApplyPostRefresh: []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()},
 				},
 			},
