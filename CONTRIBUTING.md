@@ -74,6 +74,34 @@ BUILDKITE_ORGANIZATION_SLUG=<org-slug> BUILDKITE_API_TOKEN=<token> make testacc
 - Code reviewers will run the acceptance tests manually
 - Please run the acceptance tests locally to confirm they pass before requesting a review
 
+#### Non-admin acceptance tests
+
+Run the pipeline and pipeline schedule lifecycle tests with a non-admin token:
+
+```bash
+BUILDKITE_ORGANIZATION_SLUG=<test-org> BUILDKITE_API_TOKEN=<non-admin-token> make testacc-nonadmin
+```
+
+The token needs only the `graphql` scope. Its owner must be an organization
+`MEMBER`, not an `ADMIN`, and a maintainer of the existing `everyone` team with
+permission to create pipelines. Set `BUILDKITE_NONADMIN_TEAM_SLUG` to use another
+existing team. The tests do not create teams or change memberships.
+
+These tests create, read, update, import, and delete pipelines and schedules.
+Pipelines are assigned to the team at creation using `default_team_id`, and
+schedules remain disabled so they cannot trigger builds. The fixtures avoid
+custom pipeline slugs, repository provider settings, and GitHub webhook controls,
+which require REST API permissions. Add token scopes only when new coverage needs
+them; do not broaden the token to run the admin suite unchanged.
+
+Tests named `TestAccNonAdmin…` also run under the admin token with `make testacc`.
+The dedicated target checks the token owner's organization role and fails if its
+test selector matches nothing. CI loads the non-admin token from
+`/pipelines/buildkite/terraform-provider-buildkite-main/buildkite_api_token_nonadmin`
+into `BUILDKITE_API_TOKEN` in a separate acceptance step. The admin and non-admin
+steps share a concurrency group, produce per-job JUnit and JSON reports, and use
+separate annotation contexts.
+
 #### Cache Registry acceptance tests
 
 Cache Registry live tests also require `BUILDKITE_CACHE_REGISTRIES_ACCEPTANCE=1`. Without it, they skip with a message that live resources are untested. The offline Terraform `UnitTest` lifecycle tests still run with `make test`.

@@ -327,6 +327,66 @@ func testAccCheckPipelineDestroyFunc(s *terraform.State) error {
 	return testAccCheckPipelineDestroy(s)
 }
 
+func TestAccNonAdminPipeline(t *testing.T) {
+	pipelineName := "nonadmin-" + acctest.RandString(12)
+	check := func(description string) resource.TestCheckFunc {
+		return resource.ComposeAggregateTestCheckFunc(
+			resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "name", pipelineName),
+			resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "description", description),
+			resource.TestCheckResourceAttrPair("buildkite_pipeline.pipeline", "default_team_id", "data.buildkite_team.nonadmin", "id"),
+			func(s *terraform.State) error {
+				pipeline := s.RootModule().Resources["buildkite_pipeline.pipeline"]
+				remote, err := getPipeline(context.Background(), genqlientGraphql,
+					fmt.Sprintf("%s/%s", getenv("BUILDKITE_ORGANIZATION_SLUG"), pipeline.Primary.Attributes["slug"]))
+				if err != nil {
+					return err
+				}
+				if remote.Pipeline.Id != pipeline.Primary.ID || remote.Pipeline.Name != pipelineName || remote.Pipeline.Description != description {
+					return fmt.Errorf("remote pipeline does not match the expected ID, name, and description")
+				}
+				teamID := s.RootModule().Resources["data.buildkite_team.nonadmin"].Primary.ID
+				for _, edge := range remote.Pipeline.Teams.Edges {
+					if edge.Node.Team.Id == teamID && edge.Node.AccessLevel == PipelineAccessLevelsManageBuildAndRead {
+						return nil
+					}
+				}
+				return fmt.Errorf("remote pipeline is missing its initial team with MANAGE_BUILD_AND_READ access")
+			},
+		)
+	}
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccNonAdminPreCheck(t) },
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		CheckDestroy:             testAccCheckPipelineDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccPipelineConfigWithTeam(pipelineName, "Created with a team"),
+				Check:  check("Created with a team"),
+			},
+			{
+				Config: testAccPipelineConfigWithTeam(pipelineName, "Updated without losing team access"),
+				Check:  check("Updated without losing team access"),
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction("buildkite_pipeline.pipeline", plancheck.ResourceActionUpdate),
+					},
+					PostApplyPostRefresh: []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()},
+				},
+			},
+			{
+				ResourceName:      "buildkite_pipeline.pipeline",
+				ImportState:       true,
+				ImportStateIdFunc: testAccImportIDFromAttributes("buildkite_pipeline.pipeline", "slug"),
+				ImportStateVerify: true,
+				// The default team is a Terraform-only choice, and import reads
+				// repository settings even when they were not managed before.
+				ImportStateVerifyIgnore: []string{"default_team_id", "provider_settings"},
+			},
+		},
+	})
+}
+
 func TestAccBuildkitePipelineResource(t *testing.T) {
 	t.Parallel()
 	compareRemoteValue := func(prop func() any, value any) resource.TestCheckFunc {
