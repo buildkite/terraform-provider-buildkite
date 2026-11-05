@@ -272,6 +272,48 @@ func TestOrganizationRuleDestroyPreservesReadFixture(t *testing.T) {
 	}
 }
 
+func TestClusterQueueDestroyRequiresAbsentNode(t *testing.T) {
+	previous := genqlientGraphql
+	t.Cleanup(func() { genqlientGraphql = previous })
+	for _, tc := range []struct {
+		name    string
+		exists  bool
+		err     error
+		wantErr bool
+	}{
+		{name: "absent"},
+		{name: "still exists", exists: true, wantErr: true},
+		{name: "forbidden", err: &apiError{StatusCode: http.StatusForbidden}, wantErr: true},
+		{name: "deadline", err: context.DeadlineExceeded, wantErr: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			genqlientGraphql = &fakeGraphQLClient{handler: func(_ context.Context, req *genqlient.Request, resp *genqlient.Response) error {
+				id := req.Variables.(interface{ GetId() string }).GetId()
+				if id == "persistent-fixture" || tc.exists {
+					resp.Data.(*getClusterQueueByNodeResponse).Node = &getClusterQueueByNodeNodeClusterQueue{}
+				}
+				return tc.err
+			}}
+			s := &terraform.State{Modules: []*terraform.ModuleState{{
+				Path: []string{"root"},
+				Resources: map[string]*terraform.ResourceState{
+					"data.buildkite_cluster_queue.fixture": {
+						Type:    "buildkite_cluster_queue",
+						Primary: &terraform.InstanceState{ID: "persistent-fixture"},
+					},
+					"buildkite_cluster_queue.temporary": {
+						Type:    "buildkite_cluster_queue",
+						Primary: &terraform.InstanceState{ID: "temporary-queue"},
+					},
+				},
+			}}}
+			if err := testAccCheckClusterQueueDestroy(s); (err != nil) != tc.wantErr {
+				t.Fatalf("destroy check = %v, want error: %t", err, tc.wantErr)
+			}
+		})
+	}
+}
+
 func testAccPreCheck(t *testing.T) {
 	if v := getenv("BUILDKITE_ORGANIZATION_SLUG"); v == "" {
 		t.Fatal("BUILDKITE_ORGANIZATION_SLUG must be set for acceptance tests")

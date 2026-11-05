@@ -76,7 +76,7 @@ BUILDKITE_ORGANIZATION_SLUG=<org-slug> BUILDKITE_API_TOKEN=<token> make testacc
 
 #### Non-admin acceptance tests
 
-Run the shared pipeline, pipeline schedule, and pipeline-team lifecycle tests and
+Run the shared pipeline, pipeline schedule, pipeline-team, and queue lifecycle tests and
 read-only data source tests with a non-admin token:
 
 ```bash
@@ -122,6 +122,16 @@ maintainer list without assuming list order. A forbidden maintainer lookup must
 not pass as an empty list. This read requires `read_clusters` and cluster-management
 permission inherited through the team; it does not need `write_clusters`. The
 test never manages or deletes the cluster or its maintainer assignments.
+
+The shared self-hosted queue lifecycle uses the same cluster fixture. It creates a
+temporary queue, updates its description in place, pauses dispatch, refreshes,
+imports using both `id,cluster_uuid` and `cluster_uuid/key`, resumes dispatch, and
+deletes the queue. It checks remote settings and deletion, stable queue identity,
+and the cluster's unchanged default queue. The test does not manage the persistent
+cluster, maintainers, or default-queue assignment. Queue mutations use GraphQL;
+REST reads during refresh and import require the existing `read_clusters` scope.
+The test leaves retry affinity unconfigured at its default. Changing affinity
+would require `write_clusters` and remains in the admin-only coverage.
 
 Read-only tests look up the token owner's organization membership and list
 members without assuming list order. The organization data source must return
