@@ -2,6 +2,7 @@ package buildkite
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -84,9 +85,75 @@ func TestAccNonAdminOrganizationRuleReads(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	// The admin lane proves these Rules exist and reference the intended
+	// pipelines. A member's not-found response alone cannot establish that.
+	hiddenPipelineUUID := os.Getenv("BUILDKITE_NONADMIN_RULE_HIDDEN_PIPELINE_UUID")
+	if hiddenPipelineUUID == "" || hiddenPipelineUUID == source.Uuid || hiddenPipelineUUID == target.Uuid {
+		t.Fatal("BUILDKITE_NONADMIN_RULE_HIDDEN_PIPELINE_UUID must identify a third private pipeline inaccessible to the member token")
+	}
+	nonAdmin := os.Getenv("BUILDKITE_ACCEPTANCE_NONADMIN") == "1"
+	for _, pipeline := range []struct {
+		uuid    string
+		visible bool
+	}{
+		{source.Uuid, true},
+		{target.Uuid, true},
+		{hiddenPipelineUUID, !nonAdmin},
+	} {
+		id := base64.StdEncoding.EncodeToString([]byte("Pipeline---" + pipeline.uuid))
+		response, err := getNode(ctx, genqlientGraphql, id)
+		if err != nil {
+			t.Fatalf("read pipeline fixture %s: %v", pipeline.uuid, err)
+		}
+		if !pipeline.visible {
+			if response.Node != nil {
+				t.Fatalf("pipeline fixture %s must be inaccessible to the member; remove its pipeline/team access", pipeline.uuid)
+			}
+			continue
+		}
+		remotePipeline, ok := response.Node.(*getNodeNodePipeline)
+		if !ok || remotePipeline.PipelineUuid != pipeline.uuid {
+			t.Fatalf("pipeline fixture %s must be readable by this token", pipeline.uuid)
+		}
+	}
+	var visibilitySteps []resource.TestStep
+	for _, fixture := range []struct {
+		env        string
+		sourceUUID string
+		targetUUID string
+	}{
+		{"BUILDKITE_NONADMIN_RULE_SOURCE_ONLY_UUID", source.Uuid, hiddenPipelineUUID},
+		{"BUILDKITE_NONADMIN_RULE_TARGET_ONLY_UUID", hiddenPipelineUUID, target.Uuid},
+	} {
+		uuid := os.Getenv(fixture.env)
+		if uuid == "" {
+			t.Fatalf("%s must identify a persistent Rule from pipeline %s to %s; provision it before running acceptance tests", fixture.env, fixture.sourceUUID, fixture.targetUUID)
+		}
+		id := base64.StdEncoding.EncodeToString([]byte("Rule---" + uuid))
+		for _, lookup := range []struct{ name, value string }{{"uuid", uuid}, {"id", id}} {
+			step := resource.TestStep{
+				Config: fmt.Sprintf(`
+					data "buildkite_organization_rule" "restricted" {
+						%s = %q
+					}`, lookup.name, lookup.value),
+			}
+			if nonAdmin {
+				step.ExpectError = regexp.MustCompile("Organization rule not found or not accessible")
+			} else {
+				step.Check = resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("data.buildkite_organization_rule.restricted", "id", id),
+					resource.TestCheckResourceAttr("data.buildkite_organization_rule.restricted", "uuid", uuid),
+					resource.TestCheckResourceAttr("data.buildkite_organization_rule.restricted", "source_uuid", fixture.sourceUUID),
+					resource.TestCheckResourceAttr("data.buildkite_organization_rule.restricted", "target_uuid", fixture.targetUUID),
+				)
+			}
+			visibilitySteps = append(visibilitySteps, step)
+		}
+	}
+
 	resource.ParallelTest(t, resource.TestCase{
 		ProtoV6ProviderFactories: protoV6ProviderFactories(),
-		Steps: []resource.TestStep{
+		Steps: append([]resource.TestStep{
 			{
 				Config: fmt.Sprintf(`
 					data "buildkite_organization_rule" "by_uuid" {
@@ -121,7 +188,7 @@ func TestAccNonAdminOrganizationRuleReads(t *testing.T) {
 					return checkValue(states[0].Attributes["value"])
 				},
 			},
-		},
+		}, visibilitySteps...),
 	})
 }
 

@@ -81,7 +81,11 @@ source tests with a non-admin token:
 
 ```bash
 BUILDKITE_ORGANIZATION_SLUG=<test-org> BUILDKITE_API_TOKEN=<non-admin-token> \
-BUILDKITE_NONADMIN_RULE_UUID=<existing-rule-uuid> make testacc-nonadmin
+BUILDKITE_NONADMIN_RULE_UUID=<both-pipelines-readable-rule-uuid> \
+BUILDKITE_NONADMIN_RULE_HIDDEN_PIPELINE_UUID=<inaccessible-pipeline-uuid> \
+BUILDKITE_NONADMIN_RULE_SOURCE_ONLY_UUID=<source-only-readable-rule-uuid> \
+BUILDKITE_NONADMIN_RULE_TARGET_ONLY_UUID=<target-only-readable-rule-uuid> \
+make testacc-nonadmin
 ```
 
 The token needs the `graphql` and `write_pipelines` scopes. Its owner must be an
@@ -109,10 +113,31 @@ by UUID and GraphQL ID, then resource import and its refresh in a temporary stat
 that is not used by acceptance cleanup. Missing or invisible fixtures fail with
 an actionable error rather than skipping. These reads need only `graphql`, not
 an additional REST scope. See the [Rules cookbook](https://buildkite.com/docs/apis/graphql/cookbooks/rules).
-CI sets the persistent Rule UUID in `.buildkite/pipeline.yml` for both acceptance
-steps; Docker Compose passes it into the test container. Its
-[source](https://buildkite.com/buildkite-terraform-provider-test-org/terraform-provider-non-admin-rules-source)
-and [target](https://buildkite.com/buildkite-terraform-provider-test-org/terraform-provider-non-admin-rules-target)
+
+Provision a third private pipeline with no access for the member, including
+through `everyone` or another team. Set its UUID in
+`BUILDKITE_NONADMIN_RULE_HIDDEN_PIPELINE_UUID`. Provision two more persistent Rules:
+
+- `BUILDKITE_NONADMIN_RULE_SOURCE_ONLY_UUID`: from the readable source pipeline to
+  the inaccessible pipeline.
+- `BUILDKITE_NONADMIN_RULE_TARGET_ONLY_UUID`: from the inaccessible pipeline to
+  the readable target pipeline.
+
+Pass all four Rule fixture variables to both acceptance targets. The admin lane
+must read both restricted Rules by UUID and ID and verify their endpoints; the
+member lane must receive the not-found-or-inaccessible diagnostic for each
+lookup. The test independently checks all three pipelines' visibility and keeps
+the both-pipelines-readable Rule as a positive control. This prevents unintended
+pipeline access or disabled member Rules reads from making the negative checks
+misleadingly pass. No extra token scopes are needed, and none of these fixtures
+are mutated or deleted by the tests. Do not use the persistent read fixtures for
+Rule update or delete denial tests.
+
+CI sets all four fixture UUIDs in `.buildkite/pipeline.yml` for both acceptance
+steps; Docker Compose passes them into the test container. The
+[source](https://buildkite.com/buildkite-terraform-provider-test-org/terraform-provider-non-admin-rules-source),
+[target](https://buildkite.com/buildkite-terraform-provider-test-org/terraform-provider-non-admin-rules-target),
+and [inaccessible](https://buildkite.com/buildkite-terraform-provider-test-org/terraform-provider-non-admin-rules-hidden)
 pipelines are persistent fixtures, not resources for acceptance cleanup to delete.
 
 The basic pipeline and schedule fixtures use only GraphQL. A separate shared
