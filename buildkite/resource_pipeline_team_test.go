@@ -3,6 +3,7 @@ package buildkite
 import (
 	"context"
 	"fmt"
+	"os"
 	"regexp"
 	"testing"
 
@@ -14,51 +15,6 @@ import (
 
 func TestAccBuildkitePipelineTeam(t *testing.T) {
 	t.Parallel()
-	t.Run("pipeline team can be created", func(t *testing.T) {
-		var tp pipelineTeamResourceModel
-		teamName := acctest.RandString(12)
-
-		resource.ParallelTest(t, resource.TestCase{
-			PreCheck:                 func() { testAccPreCheck(t) },
-			ProtoV6ProviderFactories: protoV6ProviderFactories(),
-			CheckDestroy:             testCheckPipelineTeamResourceRemoved,
-			Steps: []resource.TestStep{
-				{
-					Config: testAccPipelineTeamConfigBasic(teamName, "READ_ONLY"),
-					Check: resource.ComposeAggregateTestCheckFunc(
-						// Confirm the test resource team & team pipeline exists in the Buildkite API
-						testAccCheckPipelineTeamExists("buildkite_pipeline_team.pipelineteam", &tp),
-						// Confirm the team pipeline has the correct values in Buildkite's system
-						testAccCheckPipelineTeamRemoteValues("READ_ONLY", &tp),
-						// Confirm the team pipeline has the correct values in terraform state
-						resource.TestCheckResourceAttrPair("buildkite_pipeline_team.pipelineteam", "team_id", "buildkite_team.acc_test_team", "id"),
-						resource.TestCheckResourceAttrPair("buildkite_pipeline_team.pipelineteam", "pipeline_id", "buildkite_pipeline.acc_test_pipeline", "id"),
-						resource.TestCheckResourceAttr("buildkite_pipeline_team.pipelineteam", "access_level", "READ_ONLY"),
-					),
-					ConfigPlanChecks: resource.ConfigPlanChecks{
-						PostApplyPostRefresh: []plancheck.PlanCheck{
-							plancheck.ExpectEmptyPlan(),
-							plancheck.ExpectResourceAction("buildkite_pipeline.acc_test_pipeline", plancheck.ResourceActionNoop),
-						},
-					},
-				},
-				{
-					ResourceName:      "buildkite_pipeline_team.pipelineteam",
-					ImportState:       true,
-					ImportStateId:     tp.Id.ValueString(),
-					ImportStateVerify: true,
-				},
-				{
-					// <pipeline slug>/<team slug> is also accepted
-					ResourceName:      "buildkite_pipeline_team.pipelineteam",
-					ImportState:       true,
-					ImportStateIdFunc: testAccImportIDFromAttributes("buildkite_pipeline.acc_test_pipeline", "slug", "buildkite_team.acc_test_team", "slug"),
-					ImportStateVerify: true,
-				},
-			},
-		})
-	})
-
 	t.Run("pipeline team can be updated", func(t *testing.T) {
 		var tp pipelineTeamResourceModel
 		teamName := acctest.RandString(12)
@@ -151,6 +107,136 @@ func TestAccBuildkitePipelineTeam(t *testing.T) {
 				},
 			},
 		})
+	})
+}
+
+func TestAccNonAdminPipelineTeam(t *testing.T) {
+	pipelineName := "nonadmin-team-" + acctest.RandString(12)
+	teamSlug := os.Getenv("BUILDKITE_NONADMIN_PIPELINE_TEAM_SLUG")
+	baseConfig := testAccPipelineConfigWithTeam(pipelineName, "Pipeline team acceptance test") + fmt.Sprintf(`
+		data "buildkite_team" "secondary" {
+			slug = %q
+		}
+	`, teamSlug)
+	config := func(accessLevel string) string {
+		return baseConfig + fmt.Sprintf(`
+			resource "buildkite_pipeline_team" "secondary" {
+				pipeline_id = buildkite_pipeline.pipeline.id
+				team_id = data.buildkite_team.secondary.id
+				access_level = %q
+			}
+		`, accessLevel)
+	}
+	var associationID string
+	check := func(accessLevel string) resource.TestCheckFunc {
+		return func(s *terraform.State) error {
+			pipeline := s.RootModule().Resources["buildkite_pipeline.pipeline"]
+			ownerID := s.RootModule().Resources["data.buildkite_team.nonadmin"].Primary.ID
+			secondaryID := s.RootModule().Resources["data.buildkite_team.secondary"].Primary.ID
+			if ownerID == secondaryID {
+				return fmt.Errorf("pipeline-team fixture must differ from the pipeline's original Full Access team")
+			}
+			remote, err := getPipeline(context.Background(), genqlientGraphql,
+				fmt.Sprintf("%s/%s", getenv("BUILDKITE_ORGANIZATION_SLUG"), pipeline.Primary.Attributes["slug"]))
+			if err != nil {
+				return err
+			}
+			if remote.Pipeline.Id != pipeline.Primary.ID {
+				return fmt.Errorf("temporary pipeline identity changed or pipeline is no longer readable")
+			}
+			var ownerFound, secondaryFound bool
+			for _, edge := range remote.Pipeline.Teams.Edges {
+				if edge.Node.Team.Id == ownerID {
+					ownerFound = edge.Node.AccessLevel == PipelineAccessLevelsManageBuildAndRead
+				}
+				if edge.Node.Team.Id == secondaryID {
+					secondaryFound = true
+					if string(edge.Node.AccessLevel) != accessLevel {
+						return fmt.Errorf("secondary team access = %q, want %q", edge.Node.AccessLevel, accessLevel)
+					}
+				}
+			}
+			if !ownerFound || secondaryFound != (accessLevel != "") {
+				return fmt.Errorf("original Full Access team present: %t; secondary team present: %t (expected access %q)", ownerFound, secondaryFound, accessLevel)
+			}
+			if accessLevel == "" {
+				if _, exists := s.RootModule().Resources["buildkite_pipeline_team.secondary"]; exists {
+					return fmt.Errorf("removed pipeline-team association remains in Terraform state")
+				}
+				return nil
+			}
+			association := s.RootModule().Resources["buildkite_pipeline_team.secondary"]
+			if associationID == "" {
+				associationID = association.Primary.ID
+			}
+			return resource.ComposeAggregateTestCheckFunc(
+				resource.TestCheckResourceAttr("buildkite_pipeline_team.secondary", "id", associationID),
+				resource.TestCheckResourceAttr("buildkite_pipeline_team.secondary", "access_level", accessLevel),
+				resource.TestCheckResourceAttrPair("buildkite_pipeline_team.secondary", "team_id", "data.buildkite_team.secondary", "id"),
+				resource.TestCheckResourceAttrPair("buildkite_pipeline_team.secondary", "pipeline_id", "buildkite_pipeline.pipeline", "id"),
+			)(s)
+		}
+	}
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() {
+			testAccNonAdminPreCheck(t)
+			if teamSlug == "" {
+				t.Fatal("BUILDKITE_NONADMIN_PIPELINE_TEAM_SLUG must name an existing second team maintained by the non-admin token owner")
+			}
+			ownerSlug := os.Getenv("BUILDKITE_NONADMIN_TEAM_SLUG")
+			if ownerSlug == "" {
+				ownerSlug = "everyone"
+			}
+			if teamSlug == ownerSlug {
+				t.Fatal("BUILDKITE_NONADMIN_PIPELINE_TEAM_SLUG must differ from the pipeline's original Full Access team")
+			}
+		},
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		CheckDestroy:             testAccCheckPipelineDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: config("READ_ONLY"),
+				Check:  check("READ_ONLY"),
+			},
+			{
+				Config: config("MANAGE_BUILD_AND_READ"),
+				Check:  check("MANAGE_BUILD_AND_READ"),
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction("buildkite_pipeline_team.secondary", plancheck.ResourceActionUpdate),
+						plancheck.ExpectResourceAction("buildkite_pipeline.pipeline", plancheck.ResourceActionNoop),
+					},
+					PostApplyPostRefresh: []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()},
+				},
+			},
+			{
+				RefreshState: true,
+				Check:        check("MANAGE_BUILD_AND_READ"),
+			},
+			{
+				ResourceName:      "buildkite_pipeline_team.secondary",
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
+				ResourceName:      "buildkite_pipeline_team.secondary",
+				ImportState:       true,
+				ImportStateIdFunc: testAccImportIDFromAttributes("buildkite_pipeline.pipeline", "slug", "data.buildkite_team.secondary", "slug"),
+				ImportStateVerify: true,
+			},
+			{
+				Config: baseConfig,
+				Check:  check(""),
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction("buildkite_pipeline_team.secondary", plancheck.ResourceActionDestroy),
+						plancheck.ExpectResourceAction("buildkite_pipeline.pipeline", plancheck.ResourceActionNoop),
+					},
+					PostApplyPostRefresh: []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()},
+				},
+			},
+		},
 	})
 }
 

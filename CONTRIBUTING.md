@@ -76,11 +76,12 @@ BUILDKITE_ORGANIZATION_SLUG=<org-slug> BUILDKITE_API_TOKEN=<token> make testacc
 
 #### Non-admin acceptance tests
 
-Run the shared pipeline and pipeline schedule lifecycle tests and read-only data
-source tests with a non-admin token:
+Run the shared pipeline, pipeline schedule, and pipeline-team lifecycle tests and
+read-only data source tests with a non-admin token:
 
 ```bash
 BUILDKITE_ORGANIZATION_SLUG=<test-org> BUILDKITE_API_TOKEN=<non-admin-token> \
+BUILDKITE_NONADMIN_PIPELINE_TEAM_SLUG=<second-team-slug> \
 BUILDKITE_NONADMIN_RULE_UUID=<both-pipelines-readable-rule-uuid> \
 BUILDKITE_NONADMIN_RULE_HIDDEN_PIPELINE_UUID=<inaccessible-pipeline-uuid> \
 BUILDKITE_NONADMIN_RULE_SOURCE_ONLY_UUID=<source-only-readable-rule-uuid> \
@@ -99,6 +100,16 @@ schedules remain disabled so they cannot trigger builds. The pipeline lifecycle
 also checks pipeline and team data sources, including filtered pipeline reads
 after an update and unchanged private visibility. It reuses its pipeline for
 these checks instead of creating a separate data source fixture.
+
+Set `BUILDKITE_NONADMIN_PIPELINE_TEAM_SLUG` for both acceptance targets to a
+second persistent team, distinct from the pipeline's original Full Access team.
+The member token owner must also maintain this team. The shared pipeline-team
+test creates a temporary pipeline, adds the second team with read-only access,
+updates it to Full Access, refreshes, and imports the association using both its
+GraphQL ID and `pipeline-slug/team-slug`. It then removes the association and
+checks that the original team's Full Access remains intact before deleting the
+temporary pipeline. Both persistent teams and their memberships remain unchanged.
+These operations use GraphQL and need no additional REST scopes.
 
 Read-only tests look up the token owner's organization membership and list
 members without assuming list order. The organization data source must return
