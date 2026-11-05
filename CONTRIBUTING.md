@@ -83,8 +83,8 @@ source tests with a non-admin token:
 BUILDKITE_ORGANIZATION_SLUG=<test-org> BUILDKITE_API_TOKEN=<non-admin-token> make testacc-nonadmin
 ```
 
-The token needs only the `graphql` scope. Its owner must be an organization
-`MEMBER`, not an `ADMIN`, and a maintainer of the existing `everyone` team with
+The token needs the `graphql` and `write_pipelines` scopes. Its owner must be an
+organization `MEMBER`, not an `ADMIN`, and a maintainer of the existing `everyone` team with
 permission to create pipelines. Set `BUILDKITE_NONADMIN_TEAM_SLUG` to use another
 existing team. The tests do not create teams or change memberships.
 
@@ -100,10 +100,14 @@ members without assuming list order. The organization data source must return
 its identifiers even when the token cannot read restricted API settings. These
 tests do not change organization settings or memberships.
 
-The pipeline fixtures avoid custom pipeline slugs, repository provider settings,
-and GitHub webhook controls, which require REST API permissions. Add token scopes
-only when new coverage needs them; do not broaden the token to run the admin suite
-unchanged.
+The basic pipeline and schedule fixtures use only GraphQL. A separate shared
+pipeline lifecycle uses REST writes to create and rename a custom slug and update
+repository provider settings, requiring `write_pipelines`. It disables GitHub
+build triggers, verifies that team access survives the update, and checks provider
+settings after refresh and import. These reads use GraphQL, so `read_pipelines`
+is not needed. GitHub webhook controls remain outside this coverage. Add token
+scopes only when new coverage needs them; do not broaden the token to run the
+admin suite unchanged.
 
 Tests named `TestAccNonAdmin…` also run under the admin token with `make testacc`.
 Use the same test implementation for operations supported by both credentials,
