@@ -29,6 +29,7 @@ import (
 type organizationResourceModel struct {
 	AllowedApiIpAddresses        types.List   `tfsdk:"allowed_api_ip_addresses"`
 	AllowedApiIpEntries          types.List   `tfsdk:"allowed_api_ip_entries"`
+	AllowedBrowserIpEntries      types.List   `tfsdk:"allowed_browser_ip_entries"`
 	ID                           types.String `tfsdk:"id"`
 	UUID                         types.String `tfsdk:"uuid"`
 	Enforce2FA                   types.Bool   `tfsdk:"enforce_2fa"`
@@ -62,8 +63,8 @@ func (*organizationResource) Schema(ctx context.Context, req resource.SchemaRequ
 			This resource allows you to manage the settings for an organization.
 
 			The user of your API token must be an organization administrator to manage organization settings.
-			Every attribute other than ` + "`enforce_2fa`" + ` is managed through the organization API settings
-			endpoint. The resource reads that endpoint on every apply, so the token needs the
+			Settings other than ` + "`enforce_2fa`" + ` are managed through the organization API and browser settings
+			endpoints. The resource reads API settings on every apply, so the token needs the
 			` + "`read_organization_settings`" + ` scope whatever the configuration sets, and
 			` + "`write_organization_settings`" + ` to change any of those attributes.
 		`),
@@ -107,6 +108,30 @@ func (*organizationResource) Schema(ctx context.Context, req resource.SchemaRequ
 						"ip_address": schema.StringAttribute{
 							Required:            true,
 							MarkdownDescription: "An IP address or CIDR allowed to access the API.",
+						},
+						"description": schema.StringAttribute{
+							Optional:            true,
+							Computed:            true,
+							Default:             stringdefault.StaticString(""),
+							Validators:          []validator.String{stringvalidator.UTF8LengthAtMost(255)},
+							MarkdownDescription: "A description of up to 255 characters. Defaults to an empty string.",
+						},
+					},
+				},
+			},
+			"allowed_browser_ip_entries": schema.ListNestedAttribute{
+				Optional: true,
+				MarkdownDescription: "An ordered list of IPv4/IPv6 hosts or CIDRs and descriptions allowed to access private organization browser content. " +
+					"Independent of API and agent allowlists; repeated addresses and their descriptions are preserved. " +
+					"Omitting this attribute leaves an unmanaged browser policy unchanged. Once managed, an empty list, removing the attribute, or destroying this resource clears it. " +
+					"Import adopts a nonempty stored browser policy; an empty policy stays unmanaged. Requires the Browser IP Allowlist feature to be enabled for the organization to update or clear the policy. " +
+					"Loss of editing availability does not remove the stored policy. The automation caller's IP need not be in this list, but the independent API policy still applies.",
+				Validators: []validator.List{listvalidator.NoNullValues()},
+				NestedObject: schema.NestedAttributeObject{
+					Attributes: map[string]schema.Attribute{
+						"ip_address": schema.StringAttribute{
+							Required:            true,
+							MarkdownDescription: "An IPv4/IPv6 host or CIDR allowed browser access.",
 						},
 						"description": schema.StringAttribute{
 							Optional:            true,
@@ -188,8 +213,12 @@ func (o *organizationResource) Create(ctx context.Context, req resource.CreateRe
 	log.Printf("Creating settings for organization %s ...", *org)
 	// A failed Create records no state (the 2FA failure below says why), so this warning is the only
 	// record of api-settings that were written first. Deferred so a new early return cannot drop it.
-	var wroteAPISettings bool
+	var wroteAPISettings, wroteBrowserSettings bool
 	defer func() {
+		if wroteBrowserSettings && resp.Diagnostics.HasError() {
+			resp.Diagnostics.AddWarning("Organization browser settings were applied before the apply failed",
+				"The browser policy was written and left in place, but no state was recorded. Apply again to finish managing it.")
+		}
 		if wroteAPISettings && resp.Diagnostics.HasError() {
 			resp.Diagnostics.AddWarning(
 				"Organization API settings were applied before the apply failed",
@@ -207,6 +236,13 @@ func (o *organizationResource) Create(ctx context.Context, req resource.CreateRe
 	// outright, and refusing it changes nothing, so that failure cannot leave 2FA already flipped
 	// on an organization terraform has no state for.
 	wroteAPISettings = o.updateAPISettings(requestCtx, &config, &plan, &state, &resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	browserCtx, browserCancel := mutationContext(ctx, timeout)
+	defer browserCancel()
+	wroteBrowserSettings = o.updateBrowserSettings(browserCtx, &plan, &state, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -275,6 +311,11 @@ func (o *organizationResource) Read(ctx context.Context, req resource.ReadReques
 		return
 	}
 
+	o.readBrowserSettings(requestCtx, &state, &resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }
 
@@ -289,6 +330,32 @@ func allowedApiIpAddressesFromAPI(ctx context.Context, remote string, current ty
 
 func (o *organizationResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+	// An import adopts the browser policy, unlike an existing resource that never managed it.
+	timeout, diags := o.client.readTimeout(ctx)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	requestCtx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+	settings, err := o.client.getOrganizationBrowserSettings(requestCtx)
+	if isAPIStatus(err, http.StatusNotFound) {
+		// Keep organization imports working before the browser endpoint is deployed.
+		return
+	}
+	if isAPIStatus(err, http.StatusForbidden) {
+		resp.Diagnostics.AddWarning("Unable to import organization browser settings", "The browser policy is left unmanaged. "+browserSettingsErrorDetail(err))
+		return
+	}
+	if err != nil {
+		resp.Diagnostics.AddError("Unable to import organization browser settings", browserSettingsErrorDetail(err))
+		return
+	}
+	if len(settings.AllowedIpEntries) > 0 {
+		entries, entryDiags := types.ListValueFrom(ctx, organizationIPEntryType, settings.AllowedIpEntries)
+		resp.Diagnostics.Append(entryDiags...)
+		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("allowed_browser_ip_entries"), entries)...)
+	}
 }
 
 func (o *organizationResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
@@ -327,6 +394,7 @@ func (o *organizationResource) Update(ctx context.Context, req resource.UpdateRe
 	state.Enforce2FA = prior.Enforce2FA
 	state.AllowedApiIpAddresses = prior.AllowedApiIpAddresses
 	state.AllowedApiIpEntries = prior.AllowedApiIpEntries
+	state.AllowedBrowserIpEntries = prior.AllowedBrowserIpEntries
 	state.RevokeInactiveTokensAfter = prior.RevokeInactiveTokensAfter
 	state.RestrictUserApiTokenCreation = prior.RestrictUserApiTokenCreation
 
@@ -340,6 +408,13 @@ func (o *organizationResource) Update(ctx context.Context, req resource.UpdateRe
 
 	// as in Create, the refusable write goes first so it cannot fail behind a 2FA change
 	o.updateAPISettings(requestCtx, &config, &plan, &state, &resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	browserCtx, browserCancel := mutationContext(ctx, timeout)
+	defer browserCancel()
+	o.updateBrowserSettings(browserCtx, &plan, &state, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -358,6 +433,12 @@ func (o *organizationResource) Update(ctx context.Context, req resource.UpdateRe
 }
 
 func (o *organizationResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	var state organizationResourceModel
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	timeout, diags := o.client.deleteTimeout(ctx)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
@@ -401,6 +482,14 @@ func (o *organizationResource) Delete(ctx context.Context, req resource.DeleteRe
 			)
 			return
 		}
+	}
+
+	browserCtx, browserCancel := mutationContext(ctx, timeout)
+	defer browserCancel()
+	clear := organizationResourceModel{AllowedBrowserIpEntries: types.ListNull(organizationIPEntryType)}
+	o.updateBrowserSettings(browserCtx, &clear, &state, &resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
+		return
 	}
 
 	resp.Diagnostics.AddAttributeWarning(path.Root("enforce_2fa"), "Enforce 2FA setting left intact", "Use the web UI if you wish to change the value")
@@ -456,7 +545,7 @@ var organizationIPEntryType = types.ObjectType{AttrTypes: map[string]attr.Type{
 }}
 
 // The plan is known by apply time; optional descriptions have their schema default.
-func allowedApiIpEntriesValue(entries types.List) []organizationIPEntry {
+func organizationIPEntriesValue(entries types.List) []organizationIPEntry {
 	result := make([]organizationIPEntry, 0, len(entries.Elements()))
 	for _, value := range entries.Elements() {
 		attrs := value.(types.Object).Attributes()
@@ -499,7 +588,7 @@ func (c *Client) updateOrganizationAPISettings(ctx context.Context, payload map[
 func apiSettingsFromModel(model *organizationResourceModel) *organizationAPISettings {
 	return &organizationAPISettings{
 		AllowedIpAddresses:            allowedApiIpAddressesValue(model.AllowedApiIpAddresses),
-		AllowedIpEntries:              allowedApiIpEntriesValue(model.AllowedApiIpEntries),
+		AllowedIpEntries:              organizationIPEntriesValue(model.AllowedApiIpEntries),
 		RevokeInactiveTokensAfterDays: revokePeriodToDays(model.RevokeInactiveTokensAfter.ValueString()),
 		RestrictUserApiTokenCreation:  model.RestrictUserApiTokenCreation.ValueBool(),
 	}
@@ -512,7 +601,7 @@ func apiSettingsPatch(config, plan *organizationResourceModel, current *organiza
 	// the plan alone says what it should be. Unchanged values stay out of the request because
 	// organizations without the allowlist feature are refused even those.
 	if !plan.AllowedApiIpEntries.IsNull() {
-		if entries := allowedApiIpEntriesValue(plan.AllowedApiIpEntries); !slices.Equal(entries, current.AllowedIpEntries) {
+		if entries := organizationIPEntriesValue(plan.AllowedApiIpEntries); !slices.Equal(entries, current.AllowedIpEntries) {
 			payload["allowed_ip_entries"] = entries
 		}
 	} else if allowed := allowedApiIpAddressesValue(plan.AllowedApiIpAddresses); allowed != current.AllowedIpAddresses {
@@ -655,5 +744,91 @@ func (o *organizationResource) updateAPISettings(ctx context.Context, config, pl
 		return false
 	}
 
+	return true
+}
+
+type organizationBrowserSettings struct {
+	AllowedIpEntries []organizationIPEntry `json:"allowed_ip_entries"`
+	Features         struct {
+		BrowserIpAllowList bool `json:"browser_ip_allow_list"`
+	} `json:"features"`
+}
+
+func (c *Client) getOrganizationBrowserSettings(ctx context.Context) (*organizationBrowserSettings, error) {
+	var settings organizationBrowserSettings
+	err := c.makeRequest(ctx, http.MethodGet, fmt.Sprintf("/v2/organizations/%s/browser-settings", c.organization), nil, &settings)
+	return &settings, err
+}
+
+func (c *Client) updateOrganizationBrowserSettings(ctx context.Context, entries []organizationIPEntry) error {
+	var settings organizationBrowserSettings
+	return c.makeRequest(ctx, http.MethodPatch, fmt.Sprintf("/v2/organizations/%s/browser-settings", c.organization),
+		map[string]any{"allowed_ip_entries": entries}, &settings)
+}
+
+func browserSettingsErrorDetail(err error) string {
+	detail := err.Error()
+	if isAPIStatus(err, http.StatusForbidden) {
+		detail += " The API token needs read_organization_settings to read and write_organization_settings to write, and its user needs change_organization management permission. Browser policy writes and clears also require enrollment and the Browser IP Allowlist entitlement."
+	}
+	return detail
+}
+
+func (o *organizationResource) readBrowserSettings(ctx context.Context, state *organizationResourceModel, diags *diag.Diagnostics) {
+	if state.AllowedBrowserIpEntries.IsNull() {
+		return
+	}
+	settings, err := o.client.getOrganizationBrowserSettings(ctx)
+	if err != nil {
+		if isAPIStatus(err, http.StatusForbidden) {
+			diags.AddWarning("Unable to read organization browser settings", "Keeping the last known browser policy. "+browserSettingsErrorDetail(err))
+		} else {
+			diags.AddError("Unable to read organization browser settings", browserSettingsErrorDetail(err))
+		}
+		return
+	}
+	// Editing availability is not policy existence: retain tuples even if the feature is false.
+	entries, entryDiags := types.ListValueFrom(ctx, organizationIPEntryType, settings.AllowedIpEntries)
+	diags.Append(entryDiags...)
+	state.AllowedBrowserIpEntries = entries
+}
+
+// A never-managed browser policy is omitted. Removing a managed attribute explicitly clears it.
+// Like API settings, a failed write records observed remote values, not the rejected plan.
+func (o *organizationResource) updateBrowserSettings(ctx context.Context, plan, state *organizationResourceModel, diags *diag.Diagnostics) bool {
+	if plan.AllowedBrowserIpEntries.IsNull() && state.AllowedBrowserIpEntries.IsNull() {
+		state.AllowedBrowserIpEntries = plan.AllowedBrowserIpEntries
+		return false
+	}
+	current, err := o.client.getOrganizationBrowserSettings(ctx)
+	if err != nil {
+		diags.AddError("Unable to read organization browser settings", browserSettingsErrorDetail(err))
+		return false
+	}
+	entries := organizationIPEntriesValue(plan.AllowedBrowserIpEntries)
+	if slices.Equal(entries, current.AllowedIpEntries) {
+		state.AllowedBrowserIpEntries = plan.AllowedBrowserIpEntries
+		return false
+	}
+	if err := o.client.updateOrganizationBrowserSettings(ctx, entries); err != nil {
+		detail := browserSettingsErrorDetail(err)
+		observed := current
+		var apiErr *apiError
+		refused := errors.As(err, &apiErr) && apiErr.StatusCode >= 400 && apiErr.StatusCode < 500 && apiErr.Attempts <= 1
+		if !refused {
+			reread, readErr := o.client.getOrganizationBrowserSettings(ctx)
+			if readErr != nil {
+				detail += fmt.Sprintf(" The browser policy could not be read back; whether the write applied is unknown. Apply again to reconcile: %s", readErr)
+			} else {
+				observed = reread
+			}
+		}
+		diags.AddError("Unable to update organization browser settings", detail)
+		actual, entryDiags := types.ListValueFrom(ctx, organizationIPEntryType, observed.AllowedIpEntries)
+		diags.Append(entryDiags...)
+		state.AllowedBrowserIpEntries = actual
+		return slices.Equal(entries, observed.AllowedIpEntries)
+	}
+	state.AllowedBrowserIpEntries = plan.AllowedBrowserIpEntries
 	return true
 }

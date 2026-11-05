@@ -5,8 +5,8 @@ subcategory: ""
 description: |-
   This resource allows you to manage the settings for an organization.
   The user of your API token must be an organization administrator to manage organization settings.
-  Every attribute other than enforce_2fa is managed through the organization API settings
-  endpoint. The resource reads that endpoint on every apply, so the token needs the
+  Settings other than enforce_2fa are managed through the organization API and browser settings
+  endpoints. The resource reads API settings on every apply, so the token needs the
   read_organization_settings scope whatever the configuration sets, and
   write_organization_settings to change any of those attributes.
 ---
@@ -16,8 +16,8 @@ description: |-
 This resource allows you to manage the settings for an organization.
 
 The user of your API token must be an organization administrator to manage organization settings.
-Every attribute other than `enforce_2fa` is managed through the organization API settings
-endpoint. The resource reads that endpoint on every apply, so the token needs the
+Settings other than `enforce_2fa` are managed through the organization API and browser settings
+endpoints. The resource reads API settings on every apply, so the token needs the
 `read_organization_settings` scope whatever the configuration sets, and
 `write_organization_settings` to change any of those attributes.
 
@@ -34,6 +34,13 @@ resource "buildkite_organization" "settings" {
   #   { ip_address = "1.1.1.1/32", description = "Office" },
   #   { ip_address = "2001:db8::/48" }, # omitted description defaults to ""
   # ]
+
+  # Browser policy is separate from API and agent policy.
+  # allowed_browser_ip_entries = [
+  #   { ip_address = "198.51.100.0/24", description = "Company network" },
+  #   { ip_address = "2001:db8::/48" },
+  # ]
+  # [] or removing a previously managed browser list clears it; omission otherwise leaves it alone.
 
   # only let administrators create API access tokens and revoke tokens unused for 90 days
   restrict_user_api_token_creation = true
@@ -52,6 +59,7 @@ Conflicts with `allowed_api_ip_entries`. Removing the configured allowlist or de
 
 -> The "Allowed API IP Addresses" feature must be enabled on your organization in order to manage the `allowed_api_ip_addresses` attribute.
 - `allowed_api_ip_entries` (Attributes List) An ordered list of IP addresses or CIDRs and descriptions allowed to access the Buildkite API. Conflicts with `allowed_api_ip_addresses`. An empty list, removing the configured allowlist, or destroying this resource clears it, allowing all IP addresses. Requires the Allowed API IP Addresses feature and a Buildkite API supporting allowlist entries. Import initially uses `allowed_api_ip_addresses`; configure this attribute to switch representations. (see [below for nested schema](#nestedatt--allowed_api_ip_entries))
+- `allowed_browser_ip_entries` (Attributes List) An ordered list of IPv4/IPv6 hosts or CIDRs and descriptions allowed to access private organization browser content. Independent of API and agent allowlists; repeated addresses and their descriptions are preserved. Omitting this attribute leaves an unmanaged browser policy unchanged. Once managed, an empty list, removing the attribute, or destroying this resource clears it. Import adopts a nonempty stored browser policy; an empty policy stays unmanaged. Requires the Browser IP Allowlist feature to be enabled for the organization to update or clear the policy. Loss of editing availability does not remove the stored policy. The automation caller's IP need not be in this list, but the independent API policy still applies. (see [below for nested schema](#nestedatt--allowed_browser_ip_entries))
 - `enforce_2fa` (Boolean) Sets whether the organization requires two-factor authentication for all members.
 - `restrict_user_api_token_creation` (Boolean) Whether only organization administrators can create new API access tokens for this organization. If omitted, the current setting is left unchanged.
 - `revoke_inactive_tokens_after` (String) The period of inactivity after which user API access tokens are revoked. Valid values are `NEVER`, `DAYS_30`, `DAYS_60`, `DAYS_90`, `DAYS_180` and `DAYS_365`. If omitted, the current setting is left unchanged. Requires the inactive API token revocation feature on the organization's plan.
@@ -67,6 +75,18 @@ Conflicts with `allowed_api_ip_entries`. Removing the configured allowlist or de
 Required:
 
 - `ip_address` (String) An IP address or CIDR allowed to access the API.
+
+Optional:
+
+- `description` (String) A description of up to 255 characters. Defaults to an empty string.
+
+
+<a id="nestedatt--allowed_browser_ip_entries"></a>
+### Nested Schema for `allowed_browser_ip_entries`
+
+Required:
+
+- `ip_address` (String) An IPv4/IPv6 host or CIDR allowed browser access.
 
 Optional:
 
