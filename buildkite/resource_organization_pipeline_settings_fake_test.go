@@ -334,7 +334,7 @@ func TestUnitBuildkiteOrganizationPipelineSettingsResourceAgainstFakeAPI(t *test
 		rejects(t, `
 			build_export_location    = "my-export-bucket"
 			build_export_strategy_id = "s3"
-		`, "not available on this organization's plan")
+		`, `not\s+available\s+on\s+this\s+organization's\s+plan`)
 	})
 }
 

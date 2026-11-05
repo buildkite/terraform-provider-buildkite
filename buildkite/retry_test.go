@@ -314,8 +314,8 @@ func TestMakeRequestSurfacesFinalErrorAfterRetries(t *testing.T) {
 	if !strings.Contains(err.Error(), "status: 503") {
 		t.Errorf("Expected the error to name the status code, got %s", err)
 	}
-	if !strings.Contains(err.Error(), "tenant is not configured") {
-		t.Errorf("Expected the error to carry the API message, got %s", err)
+	if strings.Contains(err.Error(), "tenant is not configured") {
+		t.Errorf("Expected the error not to expose the response body, got %s", err)
 	}
 	// Distinguishes a retried failure from a single-shot one.
 	if !strings.Contains(err.Error(), "after 3 attempts") {
@@ -357,8 +357,8 @@ func TestMakeRequestSurfacesFinalErrorWhenDeadlineExpires(t *testing.T) {
 	if !strings.Contains(err.Error(), "status: 503") {
 		t.Errorf("Expected the error to name the status code, got %s", err)
 	}
-	if !strings.Contains(err.Error(), "tenant is not configured") {
-		t.Errorf("Expected the error to carry the API message, got %s", err)
+	if strings.Contains(err.Error(), "tenant is not configured") {
+		t.Errorf("Expected the error not to expose the response body, got %s", err)
 	}
 	if !errors.Is(err, context.DeadlineExceeded) {
 		t.Errorf("Expected the deadline to stay in the error chain, got %s", err)
@@ -389,8 +389,8 @@ func TestMakeRequestSurfacesRateLimitErrorAfterRetries(t *testing.T) {
 	if !strings.Contains(err.Error(), "status: 429") {
 		t.Errorf("Expected the error to name the status code, got %s", err)
 	}
-	if !strings.Contains(err.Error(), "Number of requests exceeded") {
-		t.Errorf("Expected the error to carry the API message, got %s", err)
+	if strings.Contains(err.Error(), "Number of requests exceeded") {
+		t.Errorf("Expected the error not to expose the response body, got %s", err)
 	}
 	if got := requests.Load(); got != 2 {
 		t.Errorf("Expected 2 attempts (1 initial + 1 retry), got %d", got)
@@ -444,8 +444,8 @@ func TestMakeRequestDoesNotRetryClientErrors(t *testing.T) {
 	if !strings.Contains(err.Error(), "status: 403") {
 		t.Errorf("Expected the error to name the status code, got %s", err)
 	}
-	if !strings.Contains(err.Error(), "You're not allowed to do that") {
-		t.Errorf("Expected the error to carry the API message, got %s", err)
+	if strings.Contains(err.Error(), "You're not allowed to do that") {
+		t.Errorf("Expected the error not to expose the response body, got %s", err)
 	}
 	// A single-attempt failure reads the same as it always has. Resources match on this wording to
 	// recognise permission and not-found errors, so the unretried shape must not drift.
@@ -697,8 +697,8 @@ func TestMakeRequestDoesNotDisguiseABodyAsAStatus(t *testing.T) {
 	if !isAPIStatus(err, http.StatusServiceUnavailable) {
 		t.Errorf("Expected the error to carry the real status code, got %s", err)
 	}
-	if !strings.Contains(err.Error(), "upstream returned 404") {
-		t.Errorf("Expected the body to still reach the reader, got %s", err)
+	if strings.Contains(err.Error(), "upstream returned 404") {
+		t.Errorf("Expected the body not to expose the response body, got %s", err)
 	}
 }
 
@@ -719,7 +719,7 @@ func TestAPIErrorMessage(t *testing.T) {
 				StatusCode: http.StatusForbidden, Attempts: 1,
 				Body: `{"message":"forbidden"}`,
 			},
-			want: `the Buildkite API request failed: GET https://api.buildkite.com/v2/clusters (status: 403): {"message":"forbidden"}`,
+			want: `the Buildkite API request failed: GET https://api.buildkite.com/v2/clusters (status: 403)`,
 		},
 		{
 			name: "status response with no body and a single attempt says neither",
@@ -736,7 +736,7 @@ func TestAPIErrorMessage(t *testing.T) {
 				StatusCode: http.StatusServiceUnavailable, Attempts: 3,
 				Body: `{"message":"try later"}`, Err: context.DeadlineExceeded,
 			},
-			want: `the Buildkite API request failed: GET https://api.buildkite.com/v2/clusters (status: 503): {"message":"try later"} (after 3 attempts): context deadline exceeded`,
+			want: `the Buildkite API request failed: GET https://api.buildkite.com/v2/clusters (status: 503) (after 3 attempts): context deadline exceeded`,
 		},
 		{
 			// A non-retryable transport error, a bad certificate for instance, gives up on the first
@@ -763,7 +763,7 @@ func TestAPIErrorMessage(t *testing.T) {
 				earlierStatus: http.StatusServiceUnavailable, earlierBody: `{"message":"try later"}`,
 				Err: errors.New("EOF"),
 			},
-			want: `failed to send request: GET https://api.buildkite.com/v2/clusters: EOF (after 4 attempts) (an earlier attempt returned status 503: {"message":"try later"})`,
+			want: `failed to send request: GET https://api.buildkite.com/v2/clusters: EOF (after 4 attempts) (an earlier attempt returned status 503)`,
 		},
 	}
 
@@ -771,8 +771,18 @@ func TestAPIErrorMessage(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			if got := tt.err.Error(); got != tt.want {
+			got := tt.err.Error()
+			if got != tt.want {
 				t.Errorf("Error() =\n  %s\nwant\n  %s", got, tt.want)
+			}
+
+			for _, sensitive := range []string{
+				tt.err.Body,
+				tt.err.earlierBody,
+			} {
+				if sensitive != "" && strings.Contains(got, sensitive) {
+					t.Errorf("Error() exposed response body %q: %s", sensitive, got)
+				}
 			}
 		})
 	}
@@ -955,8 +965,8 @@ func TestMakeRequestCapturesAreIndependent(t *testing.T) {
 		if !strings.Contains(err.Error(), fmt.Sprintf("status: %d", status)) {
 			t.Errorf("Expected the %d request to report its own status, got %s", status, err)
 		}
-		if !strings.Contains(err.Error(), fmt.Sprintf("body for %d", status)) {
-			t.Errorf("Expected the %d request to report its own body, got %s", status, err)
+		if strings.Contains(err.Error(), fmt.Sprintf("body for %d", status)) {
+			t.Errorf("Expected the %d request not to expose its response body, got %s", status, err)
 		}
 	}
 }
@@ -993,5 +1003,53 @@ func TestUnwrapURLError(t *testing.T) {
 				t.Errorf("unwrapURLError(%v) = %v, want %v", tt.err, got, tt.want)
 			}
 		})
+	}
+}
+
+func TestMakeRequestDoesNotExposeEarlierOrFinalResponseBodies(t *testing.T) {
+	t.Parallel()
+
+	const (
+		earlierSecret = "sensitive-earlier-response"
+		finalSecret   = "sensitive-final-response"
+	)
+
+	server, requests := newRetryStub(t,
+		stubResponse{
+			status: http.StatusServiceUnavailable,
+			body:   fmt.Sprintf(`{"message":"%s"}`, earlierSecret),
+		},
+		stubResponse{
+			status: http.StatusForbidden,
+			body:   fmt.Sprintf(`{"message":"%s"}`, finalSecret),
+		},
+	)
+	defer server.Close()
+
+	client := newRetryTestClient(t, server.URL, 3, time.Millisecond)
+
+	err := client.makeRequest(
+		context.Background(),
+		http.MethodGet,
+		"/v2/organizations/test-org/clusters",
+		nil,
+		nil,
+	)
+	if err == nil {
+		t.Fatal("Expected an error, got nil")
+	}
+
+	for _, secret := range []string{earlierSecret, finalSecret} {
+		if strings.Contains(err.Error(), secret) {
+			t.Errorf("Error exposed sensitive response body %q: %s", secret, err)
+		}
+	}
+
+	if !isAPIStatus(err, http.StatusForbidden) {
+		t.Errorf("Expected final status 403, got %s", err)
+	}
+
+	if got := requests.Load(); got != 2 {
+		t.Errorf("Expected 2 attempts, got %d", got)
 	}
 }
