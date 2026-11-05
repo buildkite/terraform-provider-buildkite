@@ -148,6 +148,23 @@ only `graphql`, no new persistent fixtures or REST scopes. If an unexpected Rule
 remains, the test reports its ID for an administrator to inspect and remove;
 it never falls back to admin credentials. Persistent read Rules remain untouched.
 
+Rule update/delete denials run in `make testacc`, which additionally requires
+`BUILDKITE_NONADMIN_API_TOKEN` containing the member token. `BUILDKITE_API_TOKEN`
+remains the admin token. Terraform creates a disposable trigger Rule using the
+readable fixture pipelines and verifies an admin update succeeds. Separate
+member-configured Terraform states import that Rule and require explicit update
+and delete permission errors. Data source reads then verify its identity,
+description, conditions, and endpoints remain unchanged. Each member state
+forgets its imported copy without deleting the Rule; the independent admin state
+owns cleanup, including when a denial test fails. No member operation is retried
+with admin credentials, and no persistent Rule is managed by this test.
+
+This test requires Terraform 1.7 or newer for non-destructive `removed` blocks
+(CI uses 1.16). It runs serially within the admin suite to avoid occupying the
+shared trigger slot concurrently with the creation test. CI supplies the existing
+member token to the admin step under the additional variable; the non-admin step
+still receives only the member token. Neither token needs additional API scopes.
+
 CI sets all four fixture UUIDs in `.buildkite/pipeline.yml` for both acceptance
 steps; Docker Compose passes them into the test container. The
 [source](https://buildkite.com/buildkite-terraform-provider-test-org/terraform-provider-non-admin-rules-source),

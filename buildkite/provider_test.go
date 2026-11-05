@@ -37,6 +37,10 @@ func init() {
 }
 
 func getTestClient() *Client {
+	return getTestClientWithToken(os.Getenv("BUILDKITE_API_TOKEN"))
+}
+
+func getTestClientWithToken(token string) *Client {
 	graphqlEndpoint := defaultGraphqlEndpoint
 	if v, ok := os.LookupEnv("BUILDKITE_GRAPHQL_URL"); ok {
 		graphqlEndpoint = v
@@ -47,7 +51,7 @@ func getTestClient() *Client {
 	}
 	return NewClient(&clientConfig{
 		org:        getenv("BUILDKITE_ORGANIZATION_SLUG"),
-		apiToken:   os.Getenv("BUILDKITE_API_TOKEN"),
+		apiToken:   token,
 		graphqlURL: graphqlEndpoint,
 		restURL:    restEndpoint,
 		userAgent:  "terraform-provider-buildkite-test",
@@ -255,7 +259,11 @@ func testAccNonAdminPreCheck(t *testing.T) {
 	if os.Getenv("BUILDKITE_ACCEPTANCE_NONADMIN") != "1" {
 		return
 	}
+	testAccMemberPreCheck(t, graphqlClient)
+}
 
+func testAccMemberPreCheck(t *testing.T, client *graphql.Client) {
+	t.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 	var viewer struct {
@@ -263,7 +271,7 @@ func testAccNonAdminPreCheck(t *testing.T) {
 			User struct{ Email graphql.String }
 		}
 	}
-	if err := graphqlClient.Query(ctx, &viewer, nil); err != nil {
+	if err := client.Query(ctx, &viewer, nil); err != nil {
 		t.Fatalf("read non-admin token owner: %v", err)
 	}
 	var membership struct {
@@ -279,7 +287,7 @@ func testAccNonAdminPreCheck(t *testing.T) {
 		"slug":  graphql.ID(getenv("BUILDKITE_ORGANIZATION_SLUG")),
 		"email": viewer.Viewer.User.Email,
 	}
-	if err := graphqlClient.Query(ctx, &membership, variables); err != nil {
+	if err := client.Query(ctx, &membership, variables); err != nil {
 		t.Fatalf("read non-admin organization membership: %v", err)
 	}
 	edges := membership.Organization.Members.Edges
