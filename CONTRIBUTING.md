@@ -80,7 +80,8 @@ Run the shared pipeline and pipeline schedule lifecycle tests and read-only data
 source tests with a non-admin token:
 
 ```bash
-BUILDKITE_ORGANIZATION_SLUG=<test-org> BUILDKITE_API_TOKEN=<non-admin-token> make testacc-nonadmin
+BUILDKITE_ORGANIZATION_SLUG=<test-org> BUILDKITE_API_TOKEN=<non-admin-token> \
+BUILDKITE_NONADMIN_RULE_UUID=<existing-rule-uuid> make testacc-nonadmin
 ```
 
 The token needs the `graphql` and `write_pipelines` scopes. Its owner must be an
@@ -100,14 +101,29 @@ members without assuming list order. The organization data source must return
 its identifiers even when the token cannot read restricted API settings. These
 tests do not change organization settings or memberships.
 
+Set `BUILDKITE_NONADMIN_RULE_UUID` for both acceptance targets to an existing Rule
+between two distinct pipelines the member can read. Member Rules reads must be
+enabled for the token owner. An administrator must provision this fixture; the
+tests never create, update, or delete it. The shared test checks data source reads
+by UUID and GraphQL ID, then resource import and its refresh in a temporary state
+that is not used by acceptance cleanup. Missing or invisible fixtures fail with
+an actionable error rather than skipping. These reads need only `graphql`, not
+an additional REST scope. See the [Rules cookbook](https://buildkite.com/docs/apis/graphql/cookbooks/rules).
+CI sets the persistent Rule UUID in `.buildkite/pipeline.yml` for both acceptance
+steps; Docker Compose passes it into the test container. Its
+[source](https://buildkite.com/buildkite-terraform-provider-test-org/terraform-provider-non-admin-rules-source)
+and [target](https://buildkite.com/buildkite-terraform-provider-test-org/terraform-provider-non-admin-rules-target)
+pipelines are persistent fixtures, not resources for acceptance cleanup to delete.
+
 The basic pipeline and schedule fixtures use only GraphQL. A separate shared
 pipeline lifecycle uses REST writes to create and rename a custom slug and update
-repository provider settings, requiring `write_pipelines`. It disables GitHub
-build triggers, verifies that team access survives the update, and checks provider
-settings after refresh and import. These reads use GraphQL, so `read_pipelines`
-is not needed. GitHub webhook controls remain outside this coverage. Add token
-scopes only when new coverage needs them; do not broaden the token to run the
-admin suite unchanged.
+repository provider settings, requiring `write_pipelines`. It disables traditional
+GitHub build triggering, verifies that team access survives the update, and checks
+provider settings after refresh and import. These reads use GraphQL, so
+`read_pipelines` is not needed. Independently configured GitHub Actions triggers
+are unaffected by `trigger_mode = "none"`. GitHub webhook controls remain outside
+this coverage. Add token scopes only when new coverage needs them; do not broaden
+the token to run the admin suite unchanged.
 
 Tests named `TestAccNonAdmin…` also run under the admin token with `make testacc`.
 Use the same test implementation for operations supported by both credentials,

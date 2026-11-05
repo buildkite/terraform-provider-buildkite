@@ -1,3 +1,7 @@
+env:
+  # Persistent Rule required by shared admin/non-admin acceptance tests. Do not delete.
+  BUILDKITE_NONADMIN_RULE_UUID: "01a1ac8d-4aa6-7bf4-b3b2-842a4578de37"
+
 steps:
   - label: ":golangci-lint: lint"
     key: lint
