@@ -81,15 +81,15 @@ read-only data source tests with a non-admin token:
 
 ```bash
 BUILDKITE_ORGANIZATION_SLUG=<test-org> BUILDKITE_API_TOKEN=<non-admin-token> \
-BUILDKITE_NONADMIN_CLUSTER_NAME=<cluster-name> \
-BUILDKITE_NONADMIN_CLUSTER_UUID=<cluster-uuid> \
-BUILDKITE_NONADMIN_PIPELINE_TEAM_SLUG=<second-team-slug> \
-BUILDKITE_NONADMIN_RULE_UUID=<both-pipelines-readable-rule-uuid> \
-BUILDKITE_NONADMIN_RULE_HIDDEN_PIPELINE_UUID=<inaccessible-pipeline-uuid> \
-BUILDKITE_NONADMIN_RULE_SOURCE_ONLY_UUID=<source-only-readable-rule-uuid> \
-BUILDKITE_NONADMIN_RULE_TARGET_ONLY_UUID=<target-only-readable-rule-uuid> \
 make testacc-nonadmin
 ```
+
+Use `buildkite-terraform-provider-test-org` as the test organization. The persistent
+fixture names and IDs are constants in `buildkite/provider_test.go`, shared by both
+acceptance targets. They are not environment-variable overrides. These scenarios
+require the fixtures in that organization; running them in another organization
+requires updating the constants. Do not delete the persistent fixtures or change
+their required access grants.
 
 The token needs the `graphql`, `write_pipelines`, and `read_clusters` scopes. Its owner must be an
 organization `MEMBER`, not an `ADMIN`, and a maintainer of the existing `everyone` team with
@@ -103,8 +103,8 @@ also checks pipeline and team data sources, including filtered pipeline reads
 after an update and unchanged private visibility. It reuses its pipeline for
 these checks instead of creating a separate data source fixture.
 
-Set `BUILDKITE_NONADMIN_PIPELINE_TEAM_SLUG` for both acceptance targets to a
-second persistent team, distinct from the pipeline's original Full Access team.
+`testAccFixturePipelineTeamSlug` identifies the second persistent team, distinct
+from the pipeline's original Full Access team.
 The member token owner must also maintain this team. The shared pipeline-team
 test creates a temporary pipeline, adds the second team with read-only access,
 updates it to Full Access, refreshes, and imports the association using both its
@@ -113,10 +113,9 @@ checks that the original team's Full Access remains intact before deleting the
 temporary pipeline. Both persistent teams and their memberships remain unchanged.
 These operations use GraphQL and need no additional REST scopes.
 
-Set `BUILDKITE_NONADMIN_CLUSTER_NAME` and `BUILDKITE_NONADMIN_CLUSTER_UUID` for
-both acceptance targets to a persistent cluster with a `DO NOT DELETE:` description
-referencing `SUP-8762`. Assign the second team above as a cluster maintainer. The
-shared cluster test reads and refreshes the cluster through its data source,
+`testAccFixtureClusterName` and `testAccFixtureClusterUUID` identify the persistent
+cluster. The second team above must remain a cluster maintainer. The shared
+cluster test reads and refreshes the cluster through its data source,
 checks its name, UUID, and GraphQL ID, and requires the known team in the REST
 maintainer list without assuming list order. A forbidden maintainer lookup must
 not pass as an empty list. This read requires `read_clusters` and cluster-management
@@ -138,27 +137,26 @@ members without assuming list order. The organization data source must return
 its identifiers even when the token cannot read restricted API settings. These
 tests do not change organization settings or memberships.
 
-Set `BUILDKITE_NONADMIN_RULE_UUID` for both acceptance targets to an existing Rule
-between two distinct pipelines the member can read. Member Rules reads must be
-enabled for the token owner. An administrator must provision this fixture; the
-tests never create, update, or delete it. The shared test checks data source reads
+`testAccFixtureReadableRuleUUID` identifies the persistent Rule between two
+distinct pipelines the member can read. Member Rules reads must be enabled for
+the token owner. An administrator must provision this fixture; the tests never
+create, update, or delete it. The shared test checks data source reads
 by UUID and GraphQL ID, then resource import and its refresh in a temporary state
 that is not used by acceptance cleanup. Missing or invisible fixtures fail with
 an actionable error rather than skipping. These reads need only `graphql`, not
 an additional REST scope. See the [Rules cookbook](https://buildkite.com/docs/apis/graphql/cookbooks/rules).
 
-Provision a third private pipeline with no access for the member, including
-through `everyone` or another team. Set its UUID in
-`BUILDKITE_NONADMIN_RULE_HIDDEN_PIPELINE_UUID`. Provision two more persistent Rules:
+`testAccFixtureHiddenPipelineUUID` identifies a third private pipeline with no
+access for the member, including through `everyone` or another team. Two more
+persistent Rules exercise partial endpoint visibility:
 
-- `BUILDKITE_NONADMIN_RULE_SOURCE_ONLY_UUID`: from the readable source pipeline to
+- `testAccFixtureSourceOnlyRuleUUID`: from the readable source pipeline to
   the inaccessible pipeline.
-- `BUILDKITE_NONADMIN_RULE_TARGET_ONLY_UUID`: from the inaccessible pipeline to
+- `testAccFixtureTargetOnlyRuleUUID`: from the inaccessible pipeline to
   the readable target pipeline.
 
-Pass all four Rule fixture variables to both acceptance targets. The admin lane
-must read both restricted Rules by UUID and ID and verify their endpoints; the
-member lane must receive the not-found-or-inaccessible diagnostic for each
+The admin lane must read both restricted Rules by UUID and ID and verify their
+endpoints; the member lane must receive the not-found-or-inaccessible diagnostic for each
 lookup. The test independently checks all three pipelines' visibility and keeps
 the both-pipelines-readable Rule as a positive control. This prevents unintended
 pipeline access or disabled member Rules reads from making the negative checks
@@ -198,8 +196,7 @@ shared trigger slot concurrently with the creation test. CI supplies the existin
 member token to the admin step under the additional variable; the non-admin step
 still receives only the member token. Neither token needs additional API scopes.
 
-CI sets all four fixture UUIDs in `.buildkite/pipeline.yml` for both acceptance
-steps; Docker Compose passes them into the test container. The
+The
 [source](https://buildkite.com/buildkite-terraform-provider-test-org/terraform-provider-non-admin-rules-source),
 [target](https://buildkite.com/buildkite-terraform-provider-test-org/terraform-provider-non-admin-rules-target),
 and [inaccessible](https://buildkite.com/buildkite-terraform-provider-test-org/terraform-provider-non-admin-rules-hidden)

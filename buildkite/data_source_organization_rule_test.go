@@ -24,10 +24,7 @@ func TestAccNonAdminOrganizationRuleReads(t *testing.T) {
 		t.Skip("TF_ACC must be set for acceptance tests")
 	}
 	testAccNonAdminPreCheck(t)
-	uuid := os.Getenv("BUILDKITE_NONADMIN_RULE_UUID")
-	if uuid == "" {
-		t.Fatal("BUILDKITE_NONADMIN_RULE_UUID must identify an existing Rule visible to the member token; provision the fixture before running acceptance tests")
-	}
+	uuid := testAccFixtureReadableRuleUUID
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
@@ -87,9 +84,9 @@ func TestAccNonAdminOrganizationRuleReads(t *testing.T) {
 
 	// The admin lane proves these Rules exist and reference the intended
 	// pipelines. A member's not-found response alone cannot establish that.
-	hiddenPipelineUUID := os.Getenv("BUILDKITE_NONADMIN_RULE_HIDDEN_PIPELINE_UUID")
-	if hiddenPipelineUUID == "" || hiddenPipelineUUID == source.Uuid || hiddenPipelineUUID == target.Uuid {
-		t.Fatal("BUILDKITE_NONADMIN_RULE_HIDDEN_PIPELINE_UUID must identify a third private pipeline inaccessible to the member token")
+	hiddenPipelineUUID := testAccFixtureHiddenPipelineUUID
+	if hiddenPipelineUUID == source.Uuid || hiddenPipelineUUID == target.Uuid {
+		t.Fatal("hidden pipeline fixture must be distinct from both readable Rule endpoints")
 	}
 	nonAdmin := os.Getenv("BUILDKITE_ACCEPTANCE_NONADMIN") == "1"
 	for _, pipeline := range []struct {
@@ -118,17 +115,14 @@ func TestAccNonAdminOrganizationRuleReads(t *testing.T) {
 	}
 	var visibilitySteps []resource.TestStep
 	for _, fixture := range []struct {
-		env        string
+		uuid       string
 		sourceUUID string
 		targetUUID string
 	}{
-		{"BUILDKITE_NONADMIN_RULE_SOURCE_ONLY_UUID", source.Uuid, hiddenPipelineUUID},
-		{"BUILDKITE_NONADMIN_RULE_TARGET_ONLY_UUID", hiddenPipelineUUID, target.Uuid},
+		{testAccFixtureSourceOnlyRuleUUID, source.Uuid, hiddenPipelineUUID},
+		{testAccFixtureTargetOnlyRuleUUID, hiddenPipelineUUID, target.Uuid},
 	} {
-		uuid := os.Getenv(fixture.env)
-		if uuid == "" {
-			t.Fatalf("%s must identify a persistent Rule from pipeline %s to %s; provision it before running acceptance tests", fixture.env, fixture.sourceUUID, fixture.targetUUID)
-		}
+		uuid := fixture.uuid
 		id := base64.StdEncoding.EncodeToString([]byte("Rule---" + uuid))
 		for _, lookup := range []struct{ name, value string }{{"uuid", uuid}, {"id", id}} {
 			step := resource.TestStep{

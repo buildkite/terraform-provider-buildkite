@@ -19,6 +19,20 @@ import (
 	"github.com/vektah/gqlparser/v2/gqlerror"
 )
 
+// Persistent fixtures in buildkite-terraform-provider-test-org for the shared
+// admin/member acceptance tests. Do not delete these resources or
+// change their access grants: the member must maintain the team and cluster,
+// read both endpoints of the readable Rule, and not read the hidden pipeline.
+const (
+	testAccFixtureClusterName        = "Terraform Provider Non-admin Cluster"
+	testAccFixtureClusterUUID        = "9b1f5539-235b-4455-bb0f-af75113a8295"
+	testAccFixturePipelineTeamSlug   = "terraform-provider-non-admin-pipeline-team"
+	testAccFixtureHiddenPipelineUUID = "01a1acbc-eae9-4689-bbe0-a6365f77469d"
+	testAccFixtureSourceOnlyRuleUUID = "01a1acbe-c891-7935-9849-23e51bcbb1bd"
+	testAccFixtureTargetOnlyRuleUUID = "01a1acbe-c8d8-7af1-bd85-069d1d888838"
+	testAccFixtureReadableRuleUUID   = "01a1ac8d-4aa6-7bf4-b3b2-842a4578de37"
+)
+
 var (
 	graphqlClient    *graphql.Client
 	genqlientGraphql genqlient.Client

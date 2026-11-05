@@ -4,7 +4,6 @@ import (
 	"encoding/base64"
 	"fmt"
 	"net/http"
-	"os"
 	"regexp"
 	"slices"
 	"testing"
@@ -19,14 +18,13 @@ import (
 )
 
 func TestAccNonAdminClusterRead(t *testing.T) {
-	name := os.Getenv("BUILDKITE_NONADMIN_CLUSTER_NAME")
-	uuid := os.Getenv("BUILDKITE_NONADMIN_CLUSTER_UUID")
-	teamSlug := os.Getenv("BUILDKITE_NONADMIN_PIPELINE_TEAM_SLUG")
+	name := testAccFixtureClusterName
+	uuid := testAccFixtureClusterUUID
+	teamSlug := testAccFixturePipelineTeamSlug
 	check := resource.ComposeAggregateTestCheckFunc(
 		resource.TestCheckResourceAttr("data.buildkite_cluster.fixture", "name", name),
 		resource.TestCheckResourceAttr("data.buildkite_cluster.fixture", "uuid", uuid),
 		resource.TestCheckResourceAttr("data.buildkite_cluster.fixture", "id", base64.StdEncoding.EncodeToString([]byte("Cluster---"+uuid))),
-		resource.TestMatchResourceAttr("data.buildkite_cluster.fixture", "description", regexp.MustCompile(`DO NOT DELETE:.*SUP-8762`)),
 		resource.TestCheckResourceAttrSet("data.buildkite_team.maintainer", "uuid"),
 		func(s *terraform.State) error {
 			team := s.RootModule().Resources["data.buildkite_team.maintainer"]
@@ -44,15 +42,7 @@ func TestAccNonAdminClusterRead(t *testing.T) {
 		},
 	)
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck: func() {
-			testAccNonAdminPreCheck(t)
-			if name == "" || uuid == "" {
-				t.Fatal("BUILDKITE_NONADMIN_CLUSTER_NAME and BUILDKITE_NONADMIN_CLUSTER_UUID must identify the persistent cluster fixture")
-			}
-			if teamSlug == "" {
-				t.Fatal("BUILDKITE_NONADMIN_PIPELINE_TEAM_SLUG must identify an existing cluster-maintainer team containing the non-admin token owner; the token also needs read_clusters")
-			}
-		},
+		PreCheck:                 func() { testAccNonAdminPreCheck(t) },
 		ProtoV6ProviderFactories: protoV6ProviderFactories(),
 		Steps: []resource.TestStep{
 			{

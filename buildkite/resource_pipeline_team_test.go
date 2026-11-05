@@ -112,7 +112,7 @@ func TestAccBuildkitePipelineTeam(t *testing.T) {
 
 func TestAccNonAdminPipelineTeam(t *testing.T) {
 	pipelineName := "nonadmin-team-" + acctest.RandString(12)
-	teamSlug := os.Getenv("BUILDKITE_NONADMIN_PIPELINE_TEAM_SLUG")
+	teamSlug := testAccFixturePipelineTeamSlug
 	baseConfig := testAccPipelineConfigWithTeam(pipelineName, "Pipeline team acceptance test") + fmt.Sprintf(`
 		data "buildkite_team" "secondary" {
 			slug = %q
@@ -181,15 +181,12 @@ func TestAccNonAdminPipelineTeam(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() {
 			testAccNonAdminPreCheck(t)
-			if teamSlug == "" {
-				t.Fatal("BUILDKITE_NONADMIN_PIPELINE_TEAM_SLUG must name an existing second team maintained by the non-admin token owner")
-			}
 			ownerSlug := os.Getenv("BUILDKITE_NONADMIN_TEAM_SLUG")
 			if ownerSlug == "" {
 				ownerSlug = "everyone"
 			}
 			if teamSlug == ownerSlug {
-				t.Fatal("BUILDKITE_NONADMIN_PIPELINE_TEAM_SLUG must differ from the pipeline's original Full Access team")
+				t.Fatal("persistent pipeline-team fixture must differ from the pipeline's original Full Access team")
 			}
 		},
 		ProtoV6ProviderFactories: protoV6ProviderFactories(),

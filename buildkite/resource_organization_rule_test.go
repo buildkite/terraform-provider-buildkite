@@ -21,10 +21,7 @@ func TestAccNonAdminOrganizationRuleCreate(t *testing.T) {
 		t.Skip("TF_ACC must be set for acceptance tests")
 	}
 	testAccNonAdminPreCheck(t)
-	uuid := os.Getenv("BUILDKITE_NONADMIN_RULE_UUID")
-	if uuid == "" {
-		t.Fatal("BUILDKITE_NONADMIN_RULE_UUID must identify the persistent artifacts-read Rule between two member-readable pipelines")
-	}
+	uuid := testAccFixtureReadableRuleUUID
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 	response, err := getOrganizationRule(ctx, genqlientGraphql, uuid)
@@ -147,10 +144,7 @@ func TestAccBuildkiteOrganizationRuleMutationPermissions(t *testing.T) {
 		t.Fatal("BUILDKITE_NONADMIN_API_TOKEN must contain the member token for Rule update/delete denial tests; BUILDKITE_API_TOKEN must remain the admin token")
 	}
 	testAccMemberPreCheck(t, getTestClientWithToken(memberToken).graphql)
-	fixtureUUID := os.Getenv("BUILDKITE_NONADMIN_RULE_UUID")
-	if fixtureUUID == "" {
-		t.Fatal("BUILDKITE_NONADMIN_RULE_UUID must identify the persistent readable Rule")
-	}
+	fixtureUUID := testAccFixtureReadableRuleUUID
 	// Keep this test serial: it temporarily occupies the same trigger slot as
 	// TestAccNonAdminOrganizationRuleCreate. No credentials are changed globally.
 	t.Setenv("TF_VAR_rule_member_token", memberToken)

@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"maps"
 	"net/http"
-	"os"
 	"regexp"
 	"strings"
 	"testing"
@@ -25,8 +24,8 @@ import (
 )
 
 func TestAccNonAdminClusterQueue(t *testing.T) {
-	name := os.Getenv("BUILDKITE_NONADMIN_CLUSTER_NAME")
-	uuid := os.Getenv("BUILDKITE_NONADMIN_CLUSTER_UUID")
+	name := testAccFixtureClusterName
+	uuid := testAccFixtureClusterUUID
 	clusterID := base64.StdEncoding.EncodeToString([]byte("Cluster---" + uuid))
 	key := "nonadmin-queue-" + acctest.RandString(12)
 	baseConfig := fmt.Sprintf(`
@@ -107,9 +106,6 @@ func TestAccNonAdminClusterQueue(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() {
 			testAccNonAdminPreCheck(t)
-			if name == "" || uuid == "" {
-				t.Fatal("BUILDKITE_NONADMIN_CLUSTER_NAME and BUILDKITE_NONADMIN_CLUSTER_UUID must identify a persistent cluster maintained by the token owner; the token also needs read_clusters for queue import")
-			}
 			// Capture the existing default without ever managing it or the cluster.
 			r, err := getNode(context.Background(), genqlientGraphql, clusterID)
 			if err != nil {
