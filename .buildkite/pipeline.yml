@@ -1,5 +1,7 @@
 env:
   # Persistent fixtures required by shared admin/non-admin acceptance tests. Do not delete.
+  BUILDKITE_NONADMIN_CLUSTER_NAME: "Terraform Provider Non-admin Cluster"
+  BUILDKITE_NONADMIN_CLUSTER_UUID: "9b1f5539-235b-4455-bb0f-af75113a8295"
   BUILDKITE_NONADMIN_PIPELINE_TEAM_SLUG: "terraform-provider-non-admin-pipeline-team"
   BUILDKITE_NONADMIN_RULE_HIDDEN_PIPELINE_UUID: "01a1acbc-eae9-4689-bbe0-a6365f77469d"
   BUILDKITE_NONADMIN_RULE_SOURCE_ONLY_UUID: "01a1acbe-c891-7935-9849-23e51bcbb1bd"

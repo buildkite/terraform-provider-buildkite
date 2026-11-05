@@ -81,6 +81,8 @@ read-only data source tests with a non-admin token:
 
 ```bash
 BUILDKITE_ORGANIZATION_SLUG=<test-org> BUILDKITE_API_TOKEN=<non-admin-token> \
+BUILDKITE_NONADMIN_CLUSTER_NAME=<cluster-name> \
+BUILDKITE_NONADMIN_CLUSTER_UUID=<cluster-uuid> \
 BUILDKITE_NONADMIN_PIPELINE_TEAM_SLUG=<second-team-slug> \
 BUILDKITE_NONADMIN_RULE_UUID=<both-pipelines-readable-rule-uuid> \
 BUILDKITE_NONADMIN_RULE_HIDDEN_PIPELINE_UUID=<inaccessible-pipeline-uuid> \
@@ -89,7 +91,7 @@ BUILDKITE_NONADMIN_RULE_TARGET_ONLY_UUID=<target-only-readable-rule-uuid> \
 make testacc-nonadmin
 ```
 
-The token needs the `graphql` and `write_pipelines` scopes. Its owner must be an
+The token needs the `graphql`, `write_pipelines`, and `read_clusters` scopes. Its owner must be an
 organization `MEMBER`, not an `ADMIN`, and a maintainer of the existing `everyone` team with
 permission to create pipelines. Set `BUILDKITE_NONADMIN_TEAM_SLUG` to use another
 existing team. The tests do not create teams or change memberships.
@@ -110,6 +112,16 @@ GraphQL ID and `pipeline-slug/team-slug`. It then removes the association and
 checks that the original team's Full Access remains intact before deleting the
 temporary pipeline. Both persistent teams and their memberships remain unchanged.
 These operations use GraphQL and need no additional REST scopes.
+
+Set `BUILDKITE_NONADMIN_CLUSTER_NAME` and `BUILDKITE_NONADMIN_CLUSTER_UUID` for
+both acceptance targets to a persistent cluster with a `DO NOT DELETE:` description
+referencing `SUP-8762`. Assign the second team above as a cluster maintainer. The
+shared cluster test reads and refreshes the cluster through its data source,
+checks its name, UUID, and GraphQL ID, and requires the known team in the REST
+maintainer list without assuming list order. A forbidden maintainer lookup must
+not pass as an empty list. This read requires `read_clusters` and cluster-management
+permission inherited through the team; it does not need `write_clusters`. The
+test never manages or deletes the cluster or its maintainer assignments.
 
 Read-only tests look up the token owner's organization membership and list
 members without assuming list order. The organization data source must return
