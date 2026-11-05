@@ -328,6 +328,47 @@ func TestClusterQueueDestroyRequiresAbsentNode(t *testing.T) {
 	}
 }
 
+func TestClusterAgentTokenDestroyRequiresAbsentNode(t *testing.T) {
+	previous := genqlientGraphql
+	t.Cleanup(func() { genqlientGraphql = previous })
+	for _, tc := range []struct {
+		name    string
+		exists  bool
+		err     error
+		wantErr bool
+	}{
+		{name: "revoked"},
+		{name: "still active", exists: true, wantErr: true},
+		{name: "forbidden", err: &apiError{StatusCode: http.StatusForbidden}, wantErr: true},
+		{name: "deadline", err: context.DeadlineExceeded, wantErr: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			genqlientGraphql = &fakeGraphQLClient{handler: func(_ context.Context, _ *genqlient.Request, resp *genqlient.Response) error {
+				if tc.exists {
+					resp.Data.(*getNodeResponse).Node = &getNodeNodeClusterToken{}
+				}
+				return tc.err
+			}}
+			s := &terraform.State{Modules: []*terraform.ModuleState{{
+				Path: []string{"root"},
+				Resources: map[string]*terraform.ResourceState{
+					"buildkite_cluster_agent_token.temporary": {
+						Type:    "buildkite_cluster_agent_token",
+						Primary: &terraform.InstanceState{ID: "temporary-token"},
+					},
+					"data.buildkite_cluster.fixture": {
+						Type:    "buildkite_cluster",
+						Primary: &terraform.InstanceState{ID: "persistent-cluster"},
+					},
+				},
+			}}}
+			if err := testAccCheckClusterAgentTokenDestroy(s); (err != nil) != tc.wantErr {
+				t.Fatalf("destroy check = %v, want error: %t", err, tc.wantErr)
+			}
+		})
+	}
+}
+
 func testAccPreCheck(t *testing.T) {
 	if v := getenv("BUILDKITE_ORGANIZATION_SLUG"); v == "" {
 		t.Fatal("BUILDKITE_ORGANIZATION_SLUG must be set for acceptance tests")

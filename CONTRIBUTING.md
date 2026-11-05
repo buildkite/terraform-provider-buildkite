@@ -132,6 +132,15 @@ REST reads during refresh and import require the existing `read_clusters` scope.
 The test leaves retry affinity unconfigured at its default. Changing affinity
 would require `write_clusters` and remains in the admin-only coverage.
 
+The shared cluster agent-token lifecycle also uses this cluster fixture. It
+creates a temporary token with restricted IP addresses and a finite expiry,
+updates its description and IP restrictions in place, refreshes, and revokes it.
+Checks require stable token identity and secret, matching remote settings, and
+remote absence after revocation. The cluster remains a data source and is never
+managed or deleted. Token operations use GraphQL; the cluster data source uses
+the existing `read_clusters` scope for maintainer reads. The token resource does
+not support import. Distinct expiry replacement cases remain in the admin suite.
+
 Read-only tests look up the token owner's organization membership and list
 members without assuming list order. The organization data source must return
 its identifiers even when the token cannot read restricted API settings. These
