@@ -76,8 +76,8 @@ BUILDKITE_ORGANIZATION_SLUG=<org-slug> BUILDKITE_API_TOKEN=<token> make testacc
 
 #### Non-admin acceptance tests
 
-Run the shared pipeline, pipeline schedule, pipeline-team, and queue lifecycle tests and
-read-only data source tests with a non-admin token:
+Run the shared pipeline, pipeline schedule, pipeline-team, queue, cluster agent-token,
+and test suite lifecycles and read-only data source tests with a non-admin token:
 
 ```bash
 BUILDKITE_ORGANIZATION_SLUG=<test-org> BUILDKITE_API_TOKEN=<non-admin-token> \
@@ -91,7 +91,8 @@ require the fixtures in that organization; running them in another organization
 requires updating the constants. Do not delete the persistent fixtures or change
 their required access grants.
 
-The token needs the `graphql`, `write_pipelines`, and `read_clusters` scopes. Its owner must be an
+The token needs `graphql`, `write_pipelines`, `read_clusters`, `read_suites`, and
+`write_suites` scopes. Its owner must be an
 organization `MEMBER`, not an `ADMIN`, and a maintainer of the existing `everyone` team with
 permission to create pipelines. Set `BUILDKITE_NONADMIN_TEAM_SLUG` to use another
 existing team. The tests do not create teams or change memberships.
@@ -140,6 +141,17 @@ remote absence after revocation. The cluster remains a data source and is never
 managed or deleted. Token operations use GraphQL; the cluster data source uses
 the existing `read_clusters` scope for maintainer reads. The token resource does
 not support import. Distinct expiry replacement cases remain in the admin suite.
+
+The shared test suite lifecycle uses `testAccFixturePipelineTeamSlug` as the
+owner of a temporary suite. The member must maintain that team, and the
+organization must allow members to delete test suites. The test creates the
+suite, reads its data source, updates its default branch and application name in
+place, refreshes, imports by GraphQL ID, and deletes it. Checks require stable
+identity and API token, the owner's unchanged Manage & Read access, and remote
+absence after deletion. The persistent team and its memberships are never
+managed. REST operations require `read_suites` and `write_suites`; ownership
+reads use GraphQL. Distinct optional-setting and owner-change scenarios remain
+in the admin suite.
 
 Read-only tests look up the token owner's organization membership and list
 members without assuming list order. The organization data source must return

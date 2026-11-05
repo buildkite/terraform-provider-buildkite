@@ -36,8 +36,7 @@ func TestAccNonAdminOrganizationRuleCreate(t *testing.T) {
 		t.Fatal("Rule fixture must be a readable artifacts-read Rule between two distinct pipelines; check fixture access and member Rules-read enrollment")
 	}
 
-	// Rule uniqueness excludes conditions and description. Keep the trigger
-	// action unused so the admin lane proves this create configuration is valid.
+	// Keep the trigger action unused so the admin lane proves this create configuration is valid.
 	checkTriggerAbsent := func() error {
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()

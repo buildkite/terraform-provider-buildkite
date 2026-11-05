@@ -168,6 +168,7 @@ func TestDestroyChecksRequireNotFound(t *testing.T) {
 		{"buildkite_cluster_secret", "/v2/organizations/test-org/clusters/cluster/secrets/id-with-404", testAccCheckClusterSecretDestroy},
 		{"buildkite_registry", "/v2/packages/organizations/test-org/registries/test", testAccCheckRegistryDestroy},
 		{"buildkite_cluster_maintainer", "/v2/organizations/test-org/clusters/cluster/maintainers/id-with-404", testAccCheckClusterMaintainerDestroy},
+		{"buildkite_test_suite", "/v2/analytics/organizations/test-org/suites/test", testTestSuiteDestroy},
 	}
 	for _, check := range checks {
 		t.Run(check.resourceType, func(t *testing.T) {
@@ -193,6 +194,10 @@ func TestDestroyChecksRequireNotFound(t *testing.T) {
 									"slug": "test", "cluster_id": "cluster", "cluster_uuid": "cluster",
 								}},
 							},
+							"data.buildkite_test_suite.fixture": {
+								Type:    "buildkite_test_suite",
+								Primary: &terraform.InstanceState{ID: "persistent-suite", Attributes: map[string]string{"slug": "persistent"}},
+							},
 						},
 					}}}
 					err := check.check(s)
@@ -205,6 +210,25 @@ func TestDestroyChecksRequireNotFound(t *testing.T) {
 				})
 			}
 		})
+	}
+}
+
+func TestSuiteDeletionWaitsForReplica(t *testing.T) {
+	var reads atomic.Int32
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if reads.Add(1) == 1 {
+			_, _ = w.Write([]byte(`{}`))
+			return
+		}
+		w.WriteHeader(http.StatusNotFound)
+		_, _ = w.Write([]byte(`{}`))
+	}))
+	t.Cleanup(server.Close)
+	t.Setenv("BUILDKITE_API_TOKEN", "test-token")
+	t.Setenv("BUILDKITE_ORGANIZATION_SLUG", "test-org")
+	t.Setenv("BUILDKITE_REST_URL", server.URL)
+	if err := testAccCheckTestSuiteDeleted("deleted-suite"); err != nil {
+		t.Fatalf("deleted suite remained briefly visible on replica: %v", err)
 	}
 }
 
