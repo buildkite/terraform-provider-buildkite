@@ -2599,8 +2599,8 @@ func testAccCheckOrganizationRuleRemoteValues(orr *organizationRuleResourceModel
 }
 
 func testAccCheckOrganizationRuleDestroy(s *terraform.State) error {
-	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "buildkite_organization_rule" {
+	for address, rs := range s.RootModule().Resources {
+		if rs.Type != "buildkite_organization_rule" || strings.HasPrefix(address, "data.") {
 			continue
 		}
 

@@ -240,6 +240,38 @@ func TestGraphQLDestroyChecksRejectFailedReads(t *testing.T) {
 	}
 }
 
+func TestOrganizationRuleDestroyPreservesReadFixture(t *testing.T) {
+	previous := genqlientGraphql
+	t.Cleanup(func() { genqlientGraphql = previous })
+	for _, managedExists := range []bool{false, true} {
+		t.Run(fmt.Sprintf("managed_exists=%t", managedExists), func(t *testing.T) {
+			genqlientGraphql = &fakeGraphQLClient{handler: func(_ context.Context, req *genqlient.Request, resp *genqlient.Response) error {
+				id := req.Variables.(interface{ GetId() string }).GetId()
+				if id == "persistent-fixture" || managedExists {
+					resp.Data.(*getNodeResponse).Node = &getNodeNodeRule{}
+				}
+				return nil
+			}}
+			s := &terraform.State{Modules: []*terraform.ModuleState{{
+				Path: []string{"root"},
+				Resources: map[string]*terraform.ResourceState{
+					"data.buildkite_organization_rule.fixture": {
+						Type:    "buildkite_organization_rule",
+						Primary: &terraform.InstanceState{ID: "persistent-fixture"},
+					},
+					"buildkite_organization_rule.temporary": {
+						Type:    "buildkite_organization_rule",
+						Primary: &terraform.InstanceState{ID: "temporary-rule"},
+					},
+				},
+			}}}
+			if err := testAccCheckOrganizationRuleDestroy(s); (err != nil) != managedExists {
+				t.Fatalf("destroy check = %v, managed Rule exists: %t; the persistent data source must be preserved", err, managedExists)
+			}
+		})
+	}
+}
+
 func testAccPreCheck(t *testing.T) {
 	if v := getenv("BUILDKITE_ORGANIZATION_SLUG"); v == "" {
 		t.Fatal("BUILDKITE_ORGANIZATION_SLUG must be set for acceptance tests")
