@@ -133,6 +133,21 @@ misleadingly pass. No extra token scopes are needed, and none of these fixtures
 are mutated or deleted by the tests. Do not use the persistent read fixtures for
 Rule update or delete denial tests.
 
+The shared Rule creation test reuses the two readable pipelines. Their persistent
+Rule must use `pipeline.artifacts_read.pipeline`, and there must be no
+`pipeline.trigger_build.pipeline` Rule between the same source and target before
+the test. The admin lane creates and deletes a temporary trigger Rule with a
+unique fixture-only branch condition; the member lane must receive the explicit
+API permission error. Rules management remains admin-only even when a member can
+read both pipelines. Creating a Rule does not itself trigger a build.
+
+Before the attempt and after Terraform cleanup, an endpoint-filtered Rules query
+must include the persistent artifacts-read control and no trigger Rule. Member
+Rules listing must also be enabled for the organization. These checks require
+only `graphql`, no new persistent fixtures or REST scopes. If an unexpected Rule
+remains, the test reports its ID for an administrator to inspect and remove;
+it never falls back to admin credentials. Persistent read Rules remain untouched.
+
 CI sets all four fixture UUIDs in `.buildkite/pipeline.yml` for both acceptance
 steps; Docker Compose passes them into the test container. The
 [source](https://buildkite.com/buildkite-terraform-provider-test-org/terraform-provider-non-admin-rules-source),
