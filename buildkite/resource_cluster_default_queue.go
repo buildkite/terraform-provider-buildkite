@@ -46,15 +46,12 @@ func (c *clusterDefaultQueueResource) Create(ctx context.Context, req resource.C
 		return
 	}
 
-	requestCtx, cancel := mutationContext(ctx, timeout)
-	defer cancel()
-
 	// modify cluster to set default
 	var r *setClusterDefaultQueueResponse
-	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-		org, err := c.client.GetOrganizationID(requestCtx)
+	err := retryMutation(ctx, timeout, func(ctx context.Context) *retry.RetryError {
+		org, err := c.client.GetOrganizationID(ctx)
 		if err == nil {
-			r, err = setClusterDefaultQueue(requestCtx, c.client.genqlient, *org, plan.ClusterId.ValueString(), plan.QueueId.ValueString())
+			r, err = setClusterDefaultQueue(ctx, c.client.genqlient, *org, plan.ClusterId.ValueString(), plan.QueueId.ValueString())
 		}
 
 		return retryContextError(err)
@@ -90,13 +87,10 @@ func (c *clusterDefaultQueueResource) Delete(ctx context.Context, req resource.D
 		return
 	}
 
-	requestCtx, cancel := mutationContext(ctx, timeout)
-	defer cancel()
-
-	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-		org, err := c.client.GetOrganizationID(requestCtx)
+	err := retryMutation(ctx, timeout, func(ctx context.Context) *retry.RetryError {
+		org, err := c.client.GetOrganizationID(ctx)
 		if err == nil {
-			_, err = removeClusterDefaultQueue(requestCtx, c.client.genqlient, *org, state.ClusterId.ValueString())
+			_, err = removeClusterDefaultQueue(ctx, c.client.genqlient, *org, state.ClusterId.ValueString())
 		}
 
 		return retryContextError(err)
@@ -249,15 +243,12 @@ func (c *clusterDefaultQueueResource) Update(ctx context.Context, req resource.U
 		return
 	}
 
-	requestCtx, cancel := mutationContext(ctx, timeout)
-	defer cancel()
-
 	// modify cluster to set default
 	var r *setClusterDefaultQueueResponse
-	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-		org, err := c.client.GetOrganizationID(requestCtx)
+	err := retryMutation(ctx, timeout, func(ctx context.Context) *retry.RetryError {
+		org, err := c.client.GetOrganizationID(ctx)
 		if err == nil {
-			r, err = setClusterDefaultQueue(requestCtx, c.client.genqlient, *org, plan.ClusterId.ValueString(), plan.QueueId.ValueString())
+			r, err = setClusterDefaultQueue(ctx, c.client.genqlient, *org, plan.ClusterId.ValueString(), plan.QueueId.ValueString())
 		}
 
 		return retryContextError(err)

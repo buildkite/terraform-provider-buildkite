@@ -104,14 +104,11 @@ func (tm *teamMemberResource) Create(ctx context.Context, req resource.CreateReq
 		return
 	}
 
-	requestCtx, cancel := mutationContext(ctx, timeout)
-	defer cancel()
-
 	log.Printf("Creating team member into team %s ...", state.TeamId.ValueString())
 	var r *createTeamMemberResponse
-	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+	err := retryMutation(ctx, timeout, func(ctx context.Context) *retry.RetryError {
 		var err error
-		r, err = createTeamMember(requestCtx,
+		r, err = createTeamMember(ctx,
 			tm.client.genqlient,
 			state.TeamId.ValueString(),
 			state.UserId.ValueString(),
@@ -255,14 +252,11 @@ func (tm *teamMemberResource) Update(ctx context.Context, req resource.UpdateReq
 		return
 	}
 
-	requestCtx, cancel := mutationContext(ctx, timeout)
-	defer cancel()
-
 	log.Printf("Updating team member %s with role %s ...", state.Id.ValueString(), plan.Role.ValueString())
 	var r *updateTeamMemberResponse
-	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+	err := retryMutation(ctx, timeout, func(ctx context.Context) *retry.RetryError {
 		var err error
-		r, err = updateTeamMember(requestCtx,
+		r, err = updateTeamMember(ctx,
 			tm.client.genqlient,
 			state.Id.ValueString(),
 			*plan.Role.ValueStringPointer(),
@@ -300,12 +294,9 @@ func (tm *teamMemberResource) Delete(ctx context.Context, req resource.DeleteReq
 		return
 	}
 
-	requestCtx, cancel := mutationContext(ctx, timeout)
-	defer cancel()
-
 	log.Printf("Deleting team member with ID %s ...", state.Id.ValueString())
-	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-		_, err := deleteTeamMember(requestCtx,
+	err := retryMutation(ctx, timeout, func(ctx context.Context) *retry.RetryError {
+		_, err := deleteTeamMember(ctx,
 			tm.client.genqlient,
 			state.Id.ValueString(),
 		)
