@@ -1,6 +1,7 @@
 package buildkite
 
 import (
+	"encoding/base64"
 	"fmt"
 	"net/http"
 	"regexp"
@@ -13,7 +14,55 @@ import (
 	"github.com/hashicorp/terraform-plugin-go/tftypes"
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
+
+func TestAccNonAdminClusterRead(t *testing.T) {
+	name := testAccFixtureClusterName
+	uuid := testAccFixtureClusterUUID
+	teamSlug := testAccFixturePipelineTeamSlug
+	check := resource.ComposeAggregateTestCheckFunc(
+		resource.TestCheckResourceAttr("data.buildkite_cluster.fixture", "name", name),
+		resource.TestCheckResourceAttr("data.buildkite_cluster.fixture", "uuid", uuid),
+		resource.TestCheckResourceAttr("data.buildkite_cluster.fixture", "id", base64.StdEncoding.EncodeToString([]byte("Cluster---"+uuid))),
+		resource.TestCheckResourceAttrSet("data.buildkite_team.maintainer", "uuid"),
+		func(s *terraform.State) error {
+			team := s.RootModule().Resources["data.buildkite_team.maintainer"]
+			// Match the known maintainer by identity, not list order or count.
+			// A forbidden REST lookup must not pass as an actually empty list.
+			err := resource.TestCheckTypeSetElemNestedAttrs("data.buildkite_cluster.fixture", "maintainers.*", map[string]string{
+				"actor_uuid": team.Primary.Attributes["uuid"],
+				"actor_type": "team",
+				"actor_slug": teamSlug,
+			})(s)
+			if err != nil {
+				return fmt.Errorf("expected cluster-maintainer team %q; check the fixture assignment, token owner's team membership, and read_clusters scope: %w", teamSlug, err)
+			}
+			return nil
+		},
+	)
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccNonAdminPreCheck(t) },
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config: fmt.Sprintf(`
+					data "buildkite_cluster" "fixture" {
+						name = %q
+					}
+					data "buildkite_team" "maintainer" {
+						slug = %q
+					}
+				`, name, teamSlug),
+				Check: check,
+			},
+			{
+				RefreshState: true,
+				Check:        check,
+			},
+		},
+	})
+}
 
 func TestAccBuildkiteClusterDatasource(t *testing.T) {
 	t.Parallel()

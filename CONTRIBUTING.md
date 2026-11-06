@@ -76,25 +76,235 @@ BUILDKITE_ORGANIZATION_SLUG=<org-slug> BUILDKITE_API_TOKEN=<token> make testacc
 
 #### Non-admin acceptance tests
 
-Run the pipeline and pipeline schedule lifecycle tests with a non-admin token:
+Run the shared pipeline, pipeline schedule, pipeline-team, queue, cluster agent-token,
+test suite, and suite-team lifecycles and read-only data source tests with a non-admin token:
 
 ```bash
-BUILDKITE_ORGANIZATION_SLUG=<test-org> BUILDKITE_API_TOKEN=<non-admin-token> make testacc-nonadmin
+BUILDKITE_ORGANIZATION_SLUG=<test-org> BUILDKITE_API_TOKEN=<non-admin-token> \
+make testacc-nonadmin
 ```
 
-The token needs only the `graphql` scope. Its owner must be an organization
-`MEMBER`, not an `ADMIN`, and a maintainer of the existing `everyone` team with
+Use `buildkite-terraform-provider-test-org` as the test organization. The persistent
+fixture names and IDs are constants in `buildkite/provider_test.go`, shared by both
+acceptance targets. They are not environment-variable overrides. These scenarios
+require the fixtures in that organization; running them in another organization
+requires updating the constants. Do not delete the persistent fixtures or change
+their required access grants.
+
+The token needs `graphql`, `write_pipelines`, `read_clusters`, `read_suites`,
+`write_suites`, `read_secrets_details`, and `write_secrets` scopes. Its owner must be an
+organization `MEMBER`, not an `ADMIN`, and a maintainer of the existing `everyone` team with
 permission to create pipelines. Set `BUILDKITE_NONADMIN_TEAM_SLUG` to use another
 existing team. The tests do not create teams or change memberships.
 
 These tests create, read, update, import, and delete pipelines and schedules.
 Pipelines are assigned to the team at creation using `default_team_id`, and
-schedules remain disabled so they cannot trigger builds. The fixtures avoid
-custom pipeline slugs, repository provider settings, and GitHub webhook controls,
-which require REST API permissions. Add token scopes only when new coverage needs
-them; do not broaden the token to run the admin suite unchanged.
+schedules remain disabled so they cannot trigger builds. The pipeline lifecycle
+also checks pipeline and team data sources, including filtered pipeline reads
+after an update and unchanged private visibility. It reuses its pipeline for
+these checks instead of creating a separate data source fixture.
+
+The shared pipeline-template lifecycle reads the persistent available template
+identified by `testAccFixtureTemplateName`, `testAccFixtureTemplateUUID`, and
+`testAccFixtureTemplateID`, independently by name and GraphQL ID. Its configuration
+must remain `steps: []`. The test creates a temporary private pipeline with that
+template, refreshes, imports by pipeline slug, removes the assignment in place
+with explicit nonempty steps, reassigns the template, and deletes the pipeline.
+The organization must permit editable pipeline steps so the member can remove
+the template assignment and configure explicit steps.
+Checks require matching remote assignment and steps, stable pipeline identity,
+the original team's unchanged Full Access, and remote absence after deletion.
+The template and team remain data sources; neither is managed or deleted.
+These operations use GraphQL and require no additional REST scopes. Equivalent
+basic template data-source reads are consolidated here; nonempty-template
+assignment, template-update propagation, explicit/implicit steps-mode transitions,
+and invalid data-source lookup cases remain separate.
+
+`testAccFixturePipelineTeamSlug` identifies the second persistent team, distinct
+from the pipeline's original Full Access team.
+The member token owner must also maintain this team. The shared pipeline-team
+test creates a temporary pipeline, adds the second team with read-only access,
+updates it to Full Access, refreshes, and imports the association using both its
+GraphQL ID and `pipeline-slug/team-slug`. It then removes the association and
+checks that the original team's Full Access remains intact before deleting the
+temporary pipeline. Both persistent teams and their memberships remain unchanged.
+These operations use GraphQL and need no additional REST scopes.
+
+`testAccFixtureClusterName` and `testAccFixtureClusterUUID` identify the persistent
+cluster. The second team above must remain a cluster maintainer. The shared
+cluster test reads and refreshes the cluster through its data source,
+checks its name, UUID, and GraphQL ID, and requires the known team in the REST
+maintainer list without assuming list order. A forbidden maintainer lookup must
+not pass as an empty list. This read requires `read_clusters` and cluster-management
+permission inherited through the team; it does not need `write_clusters`. The
+test never manages or deletes the cluster or its maintainer assignments.
+
+The shared self-hosted queue lifecycle uses the same cluster fixture. It creates a
+temporary queue, updates its description in place, pauses dispatch, refreshes,
+imports using both `id,cluster_uuid` and `cluster_uuid/key`, resumes dispatch, and
+deletes the queue. It checks remote settings and deletion, stable queue identity,
+and the cluster's unchanged default queue. The test does not manage the persistent
+cluster, maintainers, or default-queue assignment. Queue mutations use GraphQL;
+REST reads during refresh and import require the existing `read_clusters` scope.
+The test leaves retry affinity unconfigured at its default. Changing affinity
+would require `write_clusters` and remains in the admin-only coverage.
+
+The shared cluster agent-token lifecycle also uses this cluster fixture. It
+creates a temporary token with restricted IP addresses and a finite expiry,
+updates its description and IP restrictions in place, refreshes, and revokes it.
+Checks require stable token identity and secret, matching remote settings, and
+remote absence after revocation. The cluster remains a data source and is never
+managed or deleted. Token operations use GraphQL; the cluster data source uses
+the existing `read_clusters` scope for maintainer reads. The token resource does
+not support import. Distinct expiry replacement cases remain in the admin suite.
+
+The shared cluster-secret lifecycle creates a temporary secret on the same
+maintained cluster, updates its description and policy, rotates a generated dummy
+value, refreshes, imports using `cluster_uuid/secret_uuid`, and deletes it. It
+checks stable identity and creation time, remote metadata, state-value retention,
+and remote absence after deletion. Import verification excludes `value` because
+the API does not return secret values; imported state must not contain a value.
+The test does not retrieve a secret through an agent or prove its encrypted value
+by reading it back. Secret metadata reads require `read_secrets_details`; creation,
+both update operations, and deletion require `write_secrets`. The cluster remains
+a data source. Distinct write-only, value-to-write-only migration, policy, and
+validation cases remain separate.
+
+The shared test suite lifecycle uses `testAccFixturePipelineTeamSlug` as the
+owner of a temporary suite. The member must maintain that team, and the
+organization must allow members to delete test suites. The test creates the
+suite, reads its data source, updates its default branch and application name in
+place, refreshes, imports by GraphQL ID, and deletes it. Checks require stable
+identity and API token, the owner's unchanged Manage & Read access, and remote
+absence after deletion. The persistent team and its memberships are never
+managed. REST operations require `read_suites` and `write_suites`; ownership
+reads use GraphQL. Distinct optional-setting and owner-change scenarios remain
+in the admin suite.
+
+The shared suite-team lifecycle creates another temporary suite with the same
+owner and adds the `BUILDKITE_NONADMIN_TEAM_SLUG` team (default `everyone`) with
+Read Only access. These teams must be distinct. The test updates the secondary
+association to Manage & Read, refreshes, imports by GraphQL ID, and removes it
+before suite cleanup. Checks require a stable association identity, remote
+absence after removal, and the original owner's unchanged Manage & Read access.
+Both teams remain data sources. Association operations use GraphQL and need no
+additional REST scopes. Team replacement and out-of-band removal scenarios
+remain in the admin suite.
+
+Read-only tests look up the token owner's organization membership and list
+members without assuming list order. The organization data source must return
+its identifiers even when the token cannot read restricted API settings. These
+tests do not change organization settings or memberships.
+
+`testAccFixtureReadableRuleUUID` identifies the persistent Rule between two
+distinct pipelines the member can read. Member Rules reads must be enabled for
+the token owner. An administrator must provision this fixture; the tests never
+create, update, or delete it. The shared test checks data source reads
+by UUID and GraphQL ID, then resource import and its refresh in a temporary state
+that is not used by acceptance cleanup. Missing or invisible fixtures fail with
+an actionable error rather than skipping. These reads need only `graphql`, not
+an additional REST scope. See the [Rules cookbook](https://buildkite.com/docs/apis/graphql/cookbooks/rules).
+
+`testAccFixtureHiddenPipelineUUID` identifies a third private pipeline with no
+access for the member, including through `everyone` or another team. Two more
+persistent Rules exercise partial endpoint visibility:
+
+- `testAccFixtureSourceOnlyRuleUUID`: from the readable source pipeline to
+  the inaccessible pipeline.
+- `testAccFixtureTargetOnlyRuleUUID`: from the inaccessible pipeline to
+  the readable target pipeline.
+
+The admin lane must read both restricted Rules by UUID and ID and verify their
+endpoints; the member lane must receive the not-found-or-inaccessible diagnostic for each
+lookup. The test independently checks all three pipelines' visibility and keeps
+the both-pipelines-readable Rule as a positive control. This prevents unintended
+pipeline access or disabled member Rules reads from making the negative checks
+misleadingly pass. No extra token scopes are needed, and none of these fixtures
+are mutated or deleted by the tests. Do not use the persistent read fixtures for
+Rule update or delete denial tests.
+
+The shared Rule creation test reuses the two readable pipelines. Their persistent
+Rule must use `pipeline.artifacts_read.pipeline`, and there must be no
+`pipeline.trigger_build.pipeline` Rule between the same source and target before
+the test. The admin lane creates and deletes a temporary trigger Rule with a
+unique fixture-only branch condition; the member lane must receive the explicit
+API permission error. Rules management remains admin-only even when a member can
+read both pipelines. Creating a Rule does not itself trigger a build.
+
+Before the attempt and after Terraform cleanup, an endpoint-filtered Rules query
+must include the persistent artifacts-read control and no trigger Rule. Member
+Rules listing must also be enabled for the organization. These checks require
+only `graphql`, no new persistent fixtures or REST scopes. If an unexpected Rule
+remains, the test reports its ID for an administrator to inspect and remove;
+it never falls back to admin credentials. Persistent read Rules remain untouched.
+
+Rule update/delete denials run in `make testacc`, which additionally requires
+`BUILDKITE_NONADMIN_API_TOKEN` containing the member token. `BUILDKITE_API_TOKEN`
+remains the admin token. Terraform creates a disposable trigger Rule using the
+readable fixture pipelines and verifies an admin update succeeds. Separate
+member-configured Terraform states import that Rule and require explicit update
+and delete permission errors. Data source reads then verify its identity,
+description, conditions, and endpoints remain unchanged. Each member state
+forgets its imported copy without deleting the Rule; the independent admin state
+owns cleanup, including when a denial test fails. No member operation is retried
+with admin credentials, and no persistent Rule is managed by this test.
+
+This test requires Terraform 1.7 or newer for non-destructive `removed` blocks
+(CI uses 1.16). It runs serially within the admin suite to avoid occupying the
+shared trigger slot concurrently with the creation test. CI supplies the existing
+member token to the admin step under the additional variable; the non-admin step
+still receives only the member token. Neither token needs additional API scopes.
+
+Registry permission tests also run in `make testacc` with both tokens. The member
+token needs `read_registries`, `write_registries`, and `delete_registries`, and its
+team must have permission to create and delete registries. The tests use
+`testAccFixturePipelineTeamSlug` as an existing team data source; they never
+manage the team or its memberships.
+
+One case creates and reads a temporary private registry with the member token,
+then forgets the member state without deleting the registry. Independent admin
+Terraform cleanup imports and deletes that registry, including after failed
+member steps. Another case creates a temporary registry with the admin token,
+imports its existing team association, and explicitly grants Full Access using
+Terraform. Admin and member checks then verify registry settings, data source
+reads, updates, and imports by slug. The member refreshes and deletes the registry;
+the independent admin state retains cleanup responsibility if a member step fails.
+Checks require stable identity, unchanged private visibility and team Full Access,
+and remote absence after deletion. No member operation is retried with admin
+credentials. The non-admin-only job does not receive the admin token.
+
+Registry-team permission tests use the same dual-credential admin job. Admin
+Terraform creates a temporary registry and grants the existing owner team Full
+Access. Admin and member states then separately exercise secondary-team creation,
+Read Only → Read & Write → Full Access updates, GraphQL-ID import, refresh, and
+removal on that registry. The secondary team is `BUILDKITE_NONADMIN_TEAM_SLUG`
+(default `everyone`); it must differ from the owner, and the member must maintain
+both teams. Both teams remain data sources. Checks require stable association
+identity, correct endpoints and access, unchanged owner Full Access, and registry
+survival after association removal. Independent admin Terraform state owns final
+registry cleanup, including after member failures. Association mutations use
+GraphQL; no additional API scopes or persistent fixtures are needed beyond the
+registry prerequisites above. The distinct admin drift/recreation test remains.
+
+The
+[source](https://buildkite.com/buildkite-terraform-provider-test-org/terraform-provider-non-admin-rules-source),
+[target](https://buildkite.com/buildkite-terraform-provider-test-org/terraform-provider-non-admin-rules-target),
+and [inaccessible](https://buildkite.com/buildkite-terraform-provider-test-org/terraform-provider-non-admin-rules-hidden)
+pipelines are persistent fixtures, not resources for acceptance cleanup to delete.
+
+The basic pipeline and schedule fixtures use only GraphQL. A separate shared
+pipeline lifecycle uses REST writes to create and rename a custom slug and update
+repository provider settings, requiring `write_pipelines`. It disables traditional
+GitHub build triggering, verifies that team access survives the update, and checks
+provider settings after refresh and import. These reads use GraphQL, so
+`read_pipelines` is not needed. Independently configured GitHub Actions triggers
+are unaffected by `trigger_mode = "none"`. GitHub webhook controls remain outside
+this coverage. Add token scopes only when new coverage needs them; do not broaden
+the token to run the admin suite unchanged.
 
 Tests named `TestAccNonAdmin…` also run under the admin token with `make testacc`.
+Use the same test implementation for operations supported by both credentials,
+and consolidate equivalent admin scenarios rather than keeping duplicate tests.
 The dedicated target checks the token owner's organization role and fails if its
 test selector matches nothing. CI loads the non-admin token from
 `/pipelines/buildkite/terraform-provider-buildkite-main/buildkite_api_token_nonadmin`

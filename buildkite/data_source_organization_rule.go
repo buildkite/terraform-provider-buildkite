@@ -132,6 +132,10 @@ func (or *organizationRuleDatasource) Read(ctx context.Context, req datasource.R
 			resp.Diagnostics.AddError("Unable to find organization rule", err.Error())
 			return
 		}
+		if apiResponse.Rule.Id == "" {
+			resp.Diagnostics.AddError("Organization rule not found or not accessible", "Check the rule UUID and access to both its source and target pipelines.")
+			return
+		}
 
 		// Update data source state from the found rule
 		value, err := obtainValueJSON(apiResponse.Rule.Document)
@@ -140,6 +144,7 @@ func (or *organizationRuleDatasource) Read(ctx context.Context, req datasource.R
 				"Unable to read organization rule",
 				fmt.Sprintf("Unable to read organization rule: %s", err.Error()),
 			)
+			return
 		}
 		updateOrganizationRuleDatasource(&state, apiResponse.Rule, *value)
 		// Otherwise if a ID is specified
@@ -180,8 +185,12 @@ func (or *organizationRuleDatasource) Read(ctx context.Context, req datasource.R
 					"Unable to read organization rule",
 					fmt.Sprintf("Unable to read organization rule: %s", err.Error()),
 				)
+				return
 			}
 			updateOrganizationRuleDatasourceStateFromNode(&state, *organizationRule, *value)
+		} else {
+			resp.Diagnostics.AddError("Organization rule not found or not accessible", "Check the rule ID and access to both its source and target pipelines.")
+			return
 		}
 	}
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)

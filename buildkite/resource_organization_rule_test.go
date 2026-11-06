@@ -2,15 +2,258 @@ package buildkite
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
+	"os"
 	"regexp"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
+	"github.com/shurcooL/graphql"
 )
+
+func TestAccNonAdminOrganizationRuleCreate(t *testing.T) {
+	if os.Getenv("TF_ACC") == "" {
+		t.Skip("TF_ACC must be set for acceptance tests")
+	}
+	testAccNonAdminPreCheck(t)
+	uuid := testAccFixtureReadableRuleUUID
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	response, err := getOrganizationRule(ctx, genqlientGraphql, uuid)
+	if err != nil {
+		t.Fatalf("read Rule fixture %s: %v", uuid, err)
+	}
+	fixture := response.Rule
+	source, sourceOK := fixture.Source.(*OrganizationRuleFieldsSourcePipeline)
+	target, targetOK := fixture.Target.(*OrganizationRuleFieldsTargetPipeline)
+	if fixture.Id == "" || fixture.Uuid != uuid || fixture.Type != "pipeline.artifacts_read.pipeline" ||
+		!sourceOK || !targetOK || source.Uuid == "" || target.Uuid == "" || source.Uuid == target.Uuid {
+		t.Fatal("Rule fixture must be a readable artifacts-read Rule between two distinct pipelines; check fixture access and member Rules-read enrollment")
+	}
+
+	// Keep the trigger action unused so the admin lane proves this create configuration is valid.
+	checkTriggerAbsent := func() error {
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+		var query struct {
+			Organization struct {
+				Rules struct {
+					Edges []struct {
+						Node struct {
+							ID     graphql.ID
+							Action graphql.String
+						}
+					}
+					PageInfo struct{ HasNextPage graphql.Boolean }
+				} `graphql:"rules(first: 100, sourceId: $source, targetId: $target)"`
+			} `graphql:"organization(slug: $slug)"`
+		}
+		variables := map[string]any{
+			"slug":   graphql.ID(getenv("BUILDKITE_ORGANIZATION_SLUG")),
+			"source": graphql.ID(base64.StdEncoding.EncodeToString([]byte("Pipeline---" + source.Uuid))),
+			"target": graphql.ID(base64.StdEncoding.EncodeToString([]byte("Pipeline---" + target.Uuid))),
+		}
+		if err := graphqlClient.Query(ctx, &query, variables); err != nil {
+			return fmt.Errorf("verify Rule fixture pair: %w", err)
+		}
+		if query.Organization.Rules.PageInfo.HasNextPage {
+			return fmt.Errorf("Rule fixture pair query was truncated; cannot verify trigger Rule absence")
+		}
+		foundFixture := false
+		for _, edge := range query.Organization.Rules.Edges {
+			if edge.Node.ID == fixture.Id {
+				foundFixture = true
+			}
+			if edge.Node.Action == "TRIGGER_BUILD" {
+				return fmt.Errorf("unexpected trigger Rule %v between fixture pipelines; an administrator must inspect and remove it before rerunning", edge.Node.ID)
+			}
+		}
+		if !foundFixture {
+			return fmt.Errorf("persistent Rule %s is missing from the endpoint-filtered list; cannot verify trigger Rule absence", uuid)
+		}
+		return nil
+	}
+	if err := checkTriggerAbsent(); err != nil {
+		t.Fatal(err)
+	}
+	// Also inspect remote state if the expected denial fails. Never delete a
+	// leaked Rule using fallback admin credentials or touch persistent read Rules.
+	t.Cleanup(func() {
+		if err := checkTriggerAbsent(); err != nil {
+			t.Error(err)
+		}
+	})
+
+	marker := acctest.RandString(12)
+	config := fmt.Sprintf(`
+		provider "buildkite" {
+			timeouts = { create = "30s", read = "30s", delete = "30s" }
+		}
+		data "buildkite_organization_rule" "fixture" {
+			uuid = %q
+		}`, uuid)
+	create := resource.TestStep{
+		Config: config + fmt.Sprintf(`
+			resource "buildkite_organization_rule" "temporary" {
+				type = "pipeline.trigger_build.pipeline"
+				description = "Terraform acceptance Rule create %s"
+				value = jsonencode({
+					source_pipeline = data.buildkite_organization_rule.fixture.source_uuid
+					target_pipeline = data.buildkite_organization_rule.fixture.target_uuid
+					conditions = ["source.build.branch == 'terraform-provider-rule-create-%s'"]
+				})
+			}`, marker, marker),
+	}
+	if os.Getenv("BUILDKITE_ACCEPTANCE_NONADMIN") == "1" {
+		create.ExpectError = regexp.MustCompile("(?s)Unable to create organization rule.*You’re not allowed")
+	} else {
+		create.Check = resource.ComposeAggregateTestCheckFunc(
+			resource.TestCheckResourceAttrSet("buildkite_organization_rule.temporary", "id"),
+			resource.TestCheckResourceAttrSet("buildkite_organization_rule.temporary", "uuid"),
+			resource.TestCheckResourceAttr("buildkite_organization_rule.temporary", "type", "pipeline.trigger_build.pipeline"),
+			resource.TestCheckResourceAttr("buildkite_organization_rule.temporary", "description", "Terraform acceptance Rule create "+marker),
+			resource.TestCheckResourceAttr("buildkite_organization_rule.temporary", "source_uuid", source.Uuid),
+			resource.TestCheckResourceAttr("buildkite_organization_rule.temporary", "target_uuid", target.Uuid),
+		)
+	}
+	resource.ParallelTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config: config,
+				Check:  resource.TestCheckResourceAttr("data.buildkite_organization_rule.fixture", "id", fixture.Id),
+			},
+			create,
+		},
+	})
+}
+
+func TestAccBuildkiteOrganizationRuleMutationPermissions(t *testing.T) {
+	if os.Getenv("TF_ACC") == "" {
+		t.Skip("TF_ACC must be set for acceptance tests")
+	}
+	testAccPreCheck(t)
+	memberToken := os.Getenv("BUILDKITE_NONADMIN_API_TOKEN")
+	if memberToken == "" {
+		t.Fatal("BUILDKITE_NONADMIN_API_TOKEN must contain the member token for Rule update/delete denial tests; BUILDKITE_API_TOKEN must remain the admin token")
+	}
+	testAccMemberPreCheck(t, getTestClientWithToken(memberToken).graphql)
+	fixtureUUID := testAccFixtureReadableRuleUUID
+	// Keep this test serial: it temporarily occupies the same trigger slot as
+	// TestAccNonAdminOrganizationRuleCreate. No credentials are changed globally.
+	t.Setenv("TF_VAR_rule_member_token", memberToken)
+	marker := "terraform-provider-rule-mutations-" + acctest.RandString(12)
+	fixtureConfig := fmt.Sprintf(`
+		provider "buildkite" {
+			timeouts = { create = "30s", read = "30s", update = "30s", delete = "30s" }
+		}
+		data "buildkite_organization_rule" "fixture" {
+			uuid = %q
+		}`, fixtureUUID)
+	ruleConfig := func(revision string) string {
+		return fmt.Sprintf(`
+			resource "buildkite_organization_rule" "temporary" {
+				type = "pipeline.trigger_build.pipeline"
+				description = %q
+				value = jsonencode({
+					source_pipeline = data.buildkite_organization_rule.fixture.source_uuid
+					target_pipeline = data.buildkite_organization_rule.fixture.target_uuid
+					conditions = [%q]
+				})
+			}`, marker+"-"+revision, "source.build.branch == '"+marker+"-"+revision+"'")
+	}
+	var ruleID string
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		CheckDestroy:             testAccCheckOrganizationRuleDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: fixtureConfig + ruleConfig("original"),
+				Check: func(s *terraform.State) error {
+					ruleID = s.RootModule().Resources["buildkite_organization_rule.temporary"].Primary.ID
+					return resource.TestCheckResourceAttrSet("buildkite_organization_rule.temporary", "uuid")(s)
+				},
+			},
+			{
+				Config: fixtureConfig + ruleConfig("updated"),
+				Check: func(s *terraform.State) error {
+					return resource.ComposeAggregateTestCheckFunc(
+						resource.TestCheckResourceAttr("buildkite_organization_rule.temporary", "id", ruleID),
+						resource.TestCheckResourceAttr("buildkite_organization_rule.temporary", "description", marker+"-updated"),
+					)(s)
+				},
+			},
+			{
+				Config: fixtureConfig + ruleConfig("original"),
+				Check: func(s *terraform.State) error {
+					attrs := s.RootModule().Resources["buildkite_organization_rule.temporary"].Primary.Attributes
+					memberConfig := fmt.Sprintf(`
+						variable "rule_member_token" {
+							type = string
+							sensitive = true
+						}
+						provider "buildkite" {
+							api_token = var.rule_member_token
+							timeouts = { read = "30s", update = "30s", delete = "30s" }
+						}
+						data "buildkite_organization_rule" "fixture" {
+							uuid = %q
+						}`, fixtureUUID)
+					for _, operation := range []string{"update", "delete"} {
+						t.Run("member_"+operation, func(t *testing.T) {
+							attempt := resource.TestStep{
+								Config:      memberConfig + ruleConfig("updated"),
+								ExpectError: regexp.MustCompile("(?s)Unable to " + operation + " organization rule.*You’re not allowed"),
+							}
+							if operation == "delete" {
+								attempt.Config = memberConfig + ruleConfig("original")
+								attempt.Destroy = true
+							}
+							// Forget only the member's imported state. The independent
+							// admin state owns the disposable Rule and always destroys it,
+							// even if a member subtest fails before reaching this step.
+							verifyConfig := memberConfig + fmt.Sprintf(`
+								removed {
+									from = buildkite_organization_rule.temporary
+									lifecycle { destroy = false }
+								}
+								data "buildkite_organization_rule" "unchanged" {
+									uuid = %q
+								}`, attrs["uuid"])
+							var checks []resource.TestCheckFunc
+							for _, field := range []string{"id", "uuid", "type", "description", "value", "source_uuid", "target_uuid", "action", "effect"} {
+								checks = append(checks, resource.TestCheckResourceAttr("data.buildkite_organization_rule.unchanged", field, attrs[field]))
+							}
+							resource.Test(t, resource.TestCase{
+								ProtoV6ProviderFactories: protoV6ProviderFactories(),
+								Steps: []resource.TestStep{
+									{
+										Config:             memberConfig + ruleConfig("original"),
+										ResourceName:       "buildkite_organization_rule.temporary",
+										ImportState:        true,
+										ImportStateId:      ruleID,
+										ImportStatePersist: true,
+									},
+									attempt,
+									{
+										Config: verifyConfig,
+										Check:  resource.ComposeAggregateTestCheckFunc(checks...),
+									},
+								},
+							})
+						})
+					}
+					return nil
+				},
+			},
+		},
+	})
+}
 
 func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 	t.Parallel()
@@ -2349,8 +2592,8 @@ func testAccCheckOrganizationRuleRemoteValues(orr *organizationRuleResourceModel
 }
 
 func testAccCheckOrganizationRuleDestroy(s *terraform.State) error {
-	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "buildkite_organization_rule" {
+	for address, rs := range s.RootModule().Resources {
+		if rs.Type != "buildkite_organization_rule" || strings.HasPrefix(address, "data.") {
 			continue
 		}
 

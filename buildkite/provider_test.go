@@ -19,6 +19,23 @@ import (
 	"github.com/vektah/gqlparser/v2/gqlerror"
 )
 
+// Persistent fixtures in buildkite-terraform-provider-test-org for the shared
+// admin/member acceptance tests. Do not delete these resources or
+// change their access grants: the member must maintain the team and cluster,
+// read both endpoints of the readable Rule, and not read the hidden pipeline.
+const (
+	testAccFixtureClusterName        = "Terraform Provider Non-admin Cluster"
+	testAccFixtureClusterUUID        = "9b1f5539-235b-4455-bb0f-af75113a8295"
+	testAccFixturePipelineTeamSlug   = "terraform-provider-non-admin-pipeline-team"
+	testAccFixtureHiddenPipelineUUID = "01a1acbc-eae9-4689-bbe0-a6365f77469d"
+	testAccFixtureSourceOnlyRuleUUID = "01a1acbe-c891-7935-9849-23e51bcbb1bd"
+	testAccFixtureTargetOnlyRuleUUID = "01a1acbe-c8d8-7af1-bd85-069d1d888838"
+	testAccFixtureReadableRuleUUID   = "01a1ac8d-4aa6-7bf4-b3b2-842a4578de37"
+	testAccFixtureTemplateName       = "Terraform Provider Non-admin Template"
+	testAccFixtureTemplateUUID       = "01a1b1f5-1e98-7146-ae79-86a60a3d8cb6"
+	testAccFixtureTemplateID         = "UGlwZWxpbmVUZW1wbGF0ZS0tLTAxYTFiMWY1LTFlOTgtNzE0Ni1hZTc5LTg2YTYwYTNkOGNiNg=="
+)
+
 var (
 	graphqlClient    *graphql.Client
 	genqlientGraphql genqlient.Client
@@ -37,6 +54,10 @@ func init() {
 }
 
 func getTestClient() *Client {
+	return getTestClientWithToken(os.Getenv("BUILDKITE_API_TOKEN"))
+}
+
+func getTestClientWithToken(token string) *Client {
 	graphqlEndpoint := defaultGraphqlEndpoint
 	if v, ok := os.LookupEnv("BUILDKITE_GRAPHQL_URL"); ok {
 		graphqlEndpoint = v
@@ -47,7 +68,7 @@ func getTestClient() *Client {
 	}
 	return NewClient(&clientConfig{
 		org:        getenv("BUILDKITE_ORGANIZATION_SLUG"),
-		apiToken:   os.Getenv("BUILDKITE_API_TOKEN"),
+		apiToken:   token,
 		graphqlURL: graphqlEndpoint,
 		restURL:    restEndpoint,
 		userAgent:  "terraform-provider-buildkite-test",
@@ -150,6 +171,7 @@ func TestDestroyChecksRequireNotFound(t *testing.T) {
 		{"buildkite_cluster_secret", "/v2/organizations/test-org/clusters/cluster/secrets/id-with-404", testAccCheckClusterSecretDestroy},
 		{"buildkite_registry", "/v2/packages/organizations/test-org/registries/test", testAccCheckRegistryDestroy},
 		{"buildkite_cluster_maintainer", "/v2/organizations/test-org/clusters/cluster/maintainers/id-with-404", testAccCheckClusterMaintainerDestroy},
+		{"buildkite_test_suite", "/v2/analytics/organizations/test-org/suites/test", testTestSuiteDestroy},
 	}
 	for _, check := range checks {
 		t.Run(check.resourceType, func(t *testing.T) {
@@ -175,6 +197,14 @@ func TestDestroyChecksRequireNotFound(t *testing.T) {
 									"slug": "test", "cluster_id": "cluster", "cluster_uuid": "cluster",
 								}},
 							},
+							"data.buildkite_test_suite.fixture": {
+								Type:    "buildkite_test_suite",
+								Primary: &terraform.InstanceState{ID: "persistent-suite", Attributes: map[string]string{"slug": "persistent"}},
+							},
+							"data.buildkite_registry.fixture": {
+								Type:    "buildkite_registry",
+								Primary: &terraform.InstanceState{ID: "persistent-registry", Attributes: map[string]string{"slug": "persistent"}},
+							},
 						},
 					}}}
 					err := check.check(s)
@@ -187,6 +217,40 @@ func TestDestroyChecksRequireNotFound(t *testing.T) {
 				})
 			}
 		})
+	}
+}
+
+func TestSuiteDeletionWaitsForReplica(t *testing.T) {
+	var reads atomic.Int32
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if reads.Add(1) == 1 {
+			_, _ = w.Write([]byte(`{}`))
+			return
+		}
+		w.WriteHeader(http.StatusNotFound)
+		_, _ = w.Write([]byte(`{}`))
+	}))
+	t.Cleanup(server.Close)
+	t.Setenv("BUILDKITE_API_TOKEN", "test-token")
+	t.Setenv("BUILDKITE_ORGANIZATION_SLUG", "test-org")
+	t.Setenv("BUILDKITE_REST_URL", server.URL)
+	if err := testAccCheckTestSuiteDeleted("deleted-suite"); err != nil {
+		t.Fatalf("deleted suite remained briefly visible on replica: %v", err)
+	}
+}
+
+func TestSuiteDeletionAllowsSlowNotFound(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		time.Sleep(6 * time.Second)
+		w.WriteHeader(http.StatusNotFound)
+		_, _ = w.Write([]byte(`{}`))
+	}))
+	t.Cleanup(server.Close)
+	t.Setenv("BUILDKITE_API_TOKEN", "test-token")
+	t.Setenv("BUILDKITE_ORGANIZATION_SLUG", "test-org")
+	t.Setenv("BUILDKITE_REST_URL", server.URL)
+	if err := testAccCheckTestSuiteDeleted("deleted-suite"); err != nil {
+		t.Fatalf("slow not-found response must still confirm deletion: %v", err)
 	}
 }
 
@@ -236,6 +300,121 @@ func TestGraphQLDestroyChecksRejectFailedReads(t *testing.T) {
 	}
 }
 
+func TestOrganizationRuleDestroyPreservesReadFixture(t *testing.T) {
+	previous := genqlientGraphql
+	t.Cleanup(func() { genqlientGraphql = previous })
+	for _, managedExists := range []bool{false, true} {
+		t.Run(fmt.Sprintf("managed_exists=%t", managedExists), func(t *testing.T) {
+			genqlientGraphql = &fakeGraphQLClient{handler: func(_ context.Context, req *genqlient.Request, resp *genqlient.Response) error {
+				id := req.Variables.(interface{ GetId() string }).GetId()
+				if id == "persistent-fixture" || managedExists {
+					resp.Data.(*getNodeResponse).Node = &getNodeNodeRule{}
+				}
+				return nil
+			}}
+			s := &terraform.State{Modules: []*terraform.ModuleState{{
+				Path: []string{"root"},
+				Resources: map[string]*terraform.ResourceState{
+					"data.buildkite_organization_rule.fixture": {
+						Type:    "buildkite_organization_rule",
+						Primary: &terraform.InstanceState{ID: "persistent-fixture"},
+					},
+					"buildkite_organization_rule.temporary": {
+						Type:    "buildkite_organization_rule",
+						Primary: &terraform.InstanceState{ID: "temporary-rule"},
+					},
+				},
+			}}}
+			if err := testAccCheckOrganizationRuleDestroy(s); (err != nil) != managedExists {
+				t.Fatalf("destroy check = %v, managed Rule exists: %t; the persistent data source must be preserved", err, managedExists)
+			}
+		})
+	}
+}
+
+func TestClusterQueueDestroyRequiresAbsentNode(t *testing.T) {
+	previous := genqlientGraphql
+	t.Cleanup(func() { genqlientGraphql = previous })
+	for _, tc := range []struct {
+		name    string
+		exists  bool
+		err     error
+		wantErr bool
+	}{
+		{name: "absent"},
+		{name: "still exists", exists: true, wantErr: true},
+		{name: "forbidden", err: &apiError{StatusCode: http.StatusForbidden}, wantErr: true},
+		{name: "deadline", err: context.DeadlineExceeded, wantErr: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			genqlientGraphql = &fakeGraphQLClient{handler: func(_ context.Context, req *genqlient.Request, resp *genqlient.Response) error {
+				id := req.Variables.(interface{ GetId() string }).GetId()
+				if id == "persistent-fixture" || tc.exists {
+					resp.Data.(*getClusterQueueByNodeResponse).Node = &getClusterQueueByNodeNodeClusterQueue{}
+				}
+				return tc.err
+			}}
+			s := &terraform.State{Modules: []*terraform.ModuleState{{
+				Path: []string{"root"},
+				Resources: map[string]*terraform.ResourceState{
+					"data.buildkite_cluster_queue.fixture": {
+						Type:    "buildkite_cluster_queue",
+						Primary: &terraform.InstanceState{ID: "persistent-fixture"},
+					},
+					"buildkite_cluster_queue.temporary": {
+						Type:    "buildkite_cluster_queue",
+						Primary: &terraform.InstanceState{ID: "temporary-queue"},
+					},
+				},
+			}}}
+			if err := testAccCheckClusterQueueDestroy(s); (err != nil) != tc.wantErr {
+				t.Fatalf("destroy check = %v, want error: %t", err, tc.wantErr)
+			}
+		})
+	}
+}
+
+func TestClusterAgentTokenDestroyRequiresAbsentNode(t *testing.T) {
+	previous := genqlientGraphql
+	t.Cleanup(func() { genqlientGraphql = previous })
+	for _, tc := range []struct {
+		name    string
+		exists  bool
+		err     error
+		wantErr bool
+	}{
+		{name: "revoked"},
+		{name: "still active", exists: true, wantErr: true},
+		{name: "forbidden", err: &apiError{StatusCode: http.StatusForbidden}, wantErr: true},
+		{name: "deadline", err: context.DeadlineExceeded, wantErr: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			genqlientGraphql = &fakeGraphQLClient{handler: func(_ context.Context, _ *genqlient.Request, resp *genqlient.Response) error {
+				if tc.exists {
+					resp.Data.(*getNodeResponse).Node = &getNodeNodeClusterToken{}
+				}
+				return tc.err
+			}}
+			s := &terraform.State{Modules: []*terraform.ModuleState{{
+				Path: []string{"root"},
+				Resources: map[string]*terraform.ResourceState{
+					"buildkite_cluster_agent_token.temporary": {
+						Type:    "buildkite_cluster_agent_token",
+						Primary: &terraform.InstanceState{ID: "temporary-token"},
+					},
+					"data.buildkite_cluster.fixture": {
+						Type:    "buildkite_cluster",
+						Primary: &terraform.InstanceState{ID: "persistent-cluster"},
+					},
+				},
+			}}}
+			if err := testAccCheckClusterAgentTokenDestroy(s); (err != nil) != tc.wantErr {
+				t.Fatalf("destroy check = %v, want error: %t", err, tc.wantErr)
+			}
+		})
+	}
+}
+
 func testAccPreCheck(t *testing.T) {
 	if v := getenv("BUILDKITE_ORGANIZATION_SLUG"); v == "" {
 		t.Fatal("BUILDKITE_ORGANIZATION_SLUG must be set for acceptance tests")
@@ -255,7 +434,11 @@ func testAccNonAdminPreCheck(t *testing.T) {
 	if os.Getenv("BUILDKITE_ACCEPTANCE_NONADMIN") != "1" {
 		return
 	}
+	testAccMemberPreCheck(t, graphqlClient)
+}
 
+func testAccMemberPreCheck(t *testing.T, client *graphql.Client) {
+	t.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 	var viewer struct {
@@ -263,7 +446,7 @@ func testAccNonAdminPreCheck(t *testing.T) {
 			User struct{ Email graphql.String }
 		}
 	}
-	if err := graphqlClient.Query(ctx, &viewer, nil); err != nil {
+	if err := client.Query(ctx, &viewer, nil); err != nil {
 		t.Fatalf("read non-admin token owner: %v", err)
 	}
 	var membership struct {
@@ -279,7 +462,7 @@ func testAccNonAdminPreCheck(t *testing.T) {
 		"slug":  graphql.ID(getenv("BUILDKITE_ORGANIZATION_SLUG")),
 		"email": viewer.Viewer.User.Email,
 	}
-	if err := graphqlClient.Query(ctx, &membership, variables); err != nil {
+	if err := client.Query(ctx, &membership, variables); err != nil {
 		t.Fatalf("read non-admin organization membership: %v", err)
 	}
 	edges := membership.Organization.Members.Edges
