@@ -3,7 +3,7 @@ FROM golang:1.27.3@sha256:f24164268fc1e741bbdc0066dbadcf1c8426c5a8489f0729c02c39
 RUN apt-get update \
     && apt-get install -y unzip
 
-COPY --from=hashicorp/terraform:1.16@sha256:bfffc1ded5fbf0a17beaaf22eb4793980abdb19d0761ff6a3a0efb2ab4d9b316 /bin/terraform /usr/local/bin/terraform
+COPY --from=hashicorp/terraform:1.17@sha256:a5d5a5a892c98f60fcbfa81eac2a40fc19e7b3fa7719bccae10ff6111d22524a /bin/terraform /usr/local/bin/terraform
 
 WORKDIR /work
 ENV GOCACHE=/root/.cache/go-build
@@ -30,4 +30,4 @@ RUN set -eu; \
 
 # Preserve the default image's snapshot/release tooling for existing callers.
 FROM base AS release
-COPY --from=goreleaser/goreleaser:v2.18.3@sha256:b61a4eedf5e3b1d283792dade34ee0f8c6cce3e6f1f65851d3b397b8f8a75b6d /usr/bin/goreleaser /usr/local/bin/goreleaser
+COPY --from=goreleaser/goreleaser:v2.19.0@sha256:b62e651c2fd9e7b1c94133a4e5d131187649e45aeeca137fbf4940f0f654ad08 /usr/bin/goreleaser /usr/local/bin/goreleaser
