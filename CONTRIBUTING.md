@@ -227,6 +227,24 @@ shared trigger slot concurrently with the creation test. CI supplies the existin
 member token to the admin step under the additional variable; the non-admin step
 still receives only the member token. Neither token needs additional API scopes.
 
+Registry permission tests also run in `make testacc` with both tokens. The member
+token needs `read_registries`, `write_registries`, and `delete_registries`, and its
+team must have permission to create and delete registries. The tests use
+`testAccFixturePipelineTeamSlug` as an existing team data source; they never
+manage the team or its memberships.
+
+One case creates and reads a temporary private registry with the member token,
+then forgets the member state without deleting the registry. Independent admin
+Terraform cleanup imports and deletes that registry, including after failed
+member steps. Another case creates a temporary registry with the admin token,
+imports its existing team association, and explicitly grants Full Access using
+Terraform. Admin and member checks then verify registry settings, data source
+reads, updates, and imports by slug. The member refreshes and deletes the registry;
+the independent admin state retains cleanup responsibility if a member step fails.
+Checks require stable identity, unchanged private visibility and team Full Access,
+and remote absence after deletion. No member operation is retried with admin
+credentials. The non-admin-only job does not receive the admin token.
+
 The
 [source](https://buildkite.com/buildkite-terraform-provider-test-org/terraform-provider-non-admin-rules-source),
 [target](https://buildkite.com/buildkite-terraform-provider-test-org/terraform-provider-non-admin-rules-target),

@@ -198,6 +198,10 @@ func TestDestroyChecksRequireNotFound(t *testing.T) {
 								Type:    "buildkite_test_suite",
 								Primary: &terraform.InstanceState{ID: "persistent-suite", Attributes: map[string]string{"slug": "persistent"}},
 							},
+							"data.buildkite_registry.fixture": {
+								Type:    "buildkite_registry",
+								Primary: &terraform.InstanceState{ID: "persistent-registry", Attributes: map[string]string{"slug": "persistent"}},
+							},
 						},
 					}}}
 					err := check.check(s)
