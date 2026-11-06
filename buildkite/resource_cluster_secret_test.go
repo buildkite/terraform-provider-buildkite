@@ -12,58 +12,121 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
-func TestAccBuildkiteClusterSecret_basic(t *testing.T) {
-	secretKey := fmt.Sprintf("TEST_SECRET_%s", acctest.RandString(10))
-	secretValue := acctest.RandString(20)
-	clusterName := acctest.RandString(10)
-
+func TestAccNonAdminClusterSecret(t *testing.T) {
+	const address = "buildkite_cluster_secret.temporary"
+	key := "TF_ACCEPTANCE_" + acctest.RandString(12)
+	initialValue, rotatedValue := acctest.RandString(24), acctest.RandString(32)
+	initialPolicy := "- pipeline_slug: terraform-provider-secret-fixture\n  build_branch: main"
+	updatedPolicy := "- pipeline_slug: terraform-provider-secret-fixture\n  build_branch: develop"
+	baseConfig := fmt.Sprintf(`
+		data "buildkite_cluster" "fixture" { name = %q }
+	`, testAccFixtureClusterName)
+	config := func(value, description, policy string) string {
+		return baseConfig + fmt.Sprintf(`
+			resource "buildkite_cluster_secret" "temporary" {
+				cluster_id = data.buildkite_cluster.fixture.uuid
+				key = %q
+				value = %q
+				description = %q
+				policy = %q
+			}
+		`, key, value, description, policy)
+	}
+	var secretID, createdAt string
+	check := func(value, description, policy string) resource.TestCheckFunc {
+		return func(s *terraform.State) error {
+			rs, ok := s.RootModule().Resources[address]
+			if !ok || rs.Primary == nil || rs.Primary.ID == "" {
+				return fmt.Errorf("temporary secret is missing from Terraform state")
+			}
+			if secretID == "" {
+				secretID, createdAt = rs.Primary.ID, rs.Primary.Attributes["created_at"]
+			}
+			if rs.Primary.Attributes["value"] != value {
+				return fmt.Errorf("temporary secret value was not preserved in state")
+			}
+			if err := resource.ComposeAggregateTestCheckFunc(
+				resource.TestCheckResourceAttr("data.buildkite_cluster.fixture", "uuid", testAccFixtureClusterUUID),
+				resource.TestCheckResourceAttr(address, "id", secretID),
+				resource.TestCheckResourceAttr(address, "cluster_id", testAccFixtureClusterUUID),
+				resource.TestCheckResourceAttr(address, "key", key),
+				resource.TestCheckResourceAttr(address, "description", description),
+				resource.TestCheckResourceAttr(address, "policy", policy),
+				resource.TestCheckResourceAttrSet(address, "created_at"),
+				resource.TestCheckResourceAttr(address, "created_at", createdAt),
+				resource.TestCheckResourceAttrSet(address, "updated_at"),
+			)(s); err != nil {
+				return err
+			}
+			client := getTestClient()
+			remote, err := client.GetClusterSecret(context.Background(), client.organization, testAccFixtureClusterUUID, secretID)
+			if err != nil {
+				return err
+			}
+			if remote.ID != secretID || remote.Key != key || remote.CreatedAt != createdAt || remote.Description == nil || *remote.Description != description || remote.Policy == nil || *remote.Policy != policy {
+				return fmt.Errorf("remote secret identity, creation time, description, or policy changed unexpectedly")
+			}
+			if remote.Value != "" {
+				return fmt.Errorf("secret metadata read unexpectedly returned a value")
+			}
+			return nil
+		}
+	}
+	updateChecks := resource.ConfigPlanChecks{
+		PreApply:             []plancheck.PlanCheck{plancheck.ExpectResourceAction(address, plancheck.ResourceActionUpdate)},
+		PostApplyPostRefresh: []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()},
+	}
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
+		PreCheck:                 func() { testAccNonAdminPreCheck(t) },
 		ProtoV6ProviderFactories: protoV6ProviderFactories(),
 		CheckDestroy:             testAccCheckClusterSecretDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccClusterSecretConfig(clusterName, secretKey, secretValue, "Initial description"),
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("buildkite_cluster_secret.test", "key", secretKey),
-					resource.TestCheckResourceAttr("buildkite_cluster_secret.test", "description", "Initial description"),
-					resource.TestCheckResourceAttrSet("buildkite_cluster_secret.test", "id"),
-					resource.TestCheckResourceAttrSet("buildkite_cluster_secret.test", "created_at"),
-					resource.TestCheckResourceAttrSet("buildkite_cluster_secret.test", "updated_at"),
-				),
-			},
-		},
-	})
-}
-
-func TestAccBuildkiteClusterSecret_update(t *testing.T) {
-	secretKey := fmt.Sprintf("TEST_SECRET_%s", acctest.RandString(10))
-	secretValue1 := acctest.RandString(20)
-	secretValue2 := acctest.RandString(20)
-	clusterName := acctest.RandString(10)
-
-	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: protoV6ProviderFactories(),
-		CheckDestroy:             testAccCheckClusterSecretDestroy,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccClusterSecretConfig(clusterName, secretKey, secretValue1, "Initial description"),
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("buildkite_cluster_secret.test", "description", "Initial description"),
-					resource.TestCheckResourceAttrSet("buildkite_cluster_secret.test", "created_at"),
-				),
+				Config: config(initialValue, "Initial secret description", initialPolicy),
+				Check:  check(initialValue, "Initial secret description", initialPolicy),
 			},
 			{
-				Config: testAccClusterSecretConfig(clusterName, secretKey, secretValue2, "Updated description"),
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("buildkite_cluster_secret.test", "description", "Updated description"),
-					// Verify created_at doesn't change on update
-					resource.TestCheckResourceAttrSet("buildkite_cluster_secret.test", "created_at"),
-					resource.TestCheckResourceAttrSet("buildkite_cluster_secret.test", "updated_at"),
+				Config:           config(initialValue, "Updated secret description", updatedPolicy),
+				Check:            check(initialValue, "Updated secret description", updatedPolicy),
+				ConfigPlanChecks: updateChecks,
+			},
+			{
+				Config:           config(rotatedValue, "Updated secret description", updatedPolicy),
+				Check:            check(rotatedValue, "Updated secret description", updatedPolicy),
+				ConfigPlanChecks: updateChecks,
+			},
+			{RefreshState: true, Check: check(rotatedValue, "Updated secret description", updatedPolicy)},
+			{
+				ResourceName:            address,
+				ImportState:             true,
+				ImportStateIdFunc:       func(*terraform.State) (string, error) { return testAccFixtureClusterUUID + "/" + secretID, nil },
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"value"},
+				ImportStateCheck: func(states []*terraform.InstanceState) error {
+					if len(states) != 1 || states[0].ID != secretID || states[0].Attributes["value"] != "" {
+						return fmt.Errorf("secret import must preserve identity without retrieving its value")
+					}
+					return nil
+				},
+			},
+			{
+				Config: baseConfig,
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply:             []plancheck.PlanCheck{plancheck.ExpectResourceAction(address, plancheck.ResourceActionDestroy)},
+					PostApplyPostRefresh: []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()},
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("data.buildkite_cluster.fixture", "uuid", testAccFixtureClusterUUID),
+					func(s *terraform.State) error {
+						if _, ok := s.RootModule().Resources[address]; ok {
+							return fmt.Errorf("deleted secret remains in Terraform state")
+						}
+						return testAccCheckClusterSecretDeleted(getTestClient(), testAccFixtureClusterUUID, secretID)
+					},
 				),
 			},
 		},
@@ -195,9 +258,7 @@ func TestAccBuildkiteClusterSecret_withPolicy(t *testing.T) {
 }
 
 func testAccCheckClusterSecretDestroy(s *terraform.State) error {
-	org := getenv("BUILDKITE_ORGANIZATION_SLUG")
-	apiToken := os.Getenv("BUILDKITE_API_TOKEN")
-	httpClient := &http.Client{}
+	client := getTestClient()
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "buildkite_cluster_secret" {
@@ -207,34 +268,25 @@ func testAccCheckClusterSecretDestroy(s *terraform.State) error {
 		clusterID := rs.Primary.Attributes["cluster_id"]
 		secretID := rs.Primary.ID
 
-		url := fmt.Sprintf("%s/v2/organizations/%s/clusters/%s/secrets/%s",
-			defaultRestEndpoint, org, clusterID, secretID)
-
-		req, err := http.NewRequest("GET", url, nil)
-		if err != nil {
+		if err := testAccCheckClusterSecretDeleted(client, clusterID, secretID); err != nil {
 			return err
-		}
-
-		req.Header.Set("Authorization", "Bearer "+apiToken)
-
-		resp, err := httpClient.Do(req)
-		if err != nil {
-			return err
-		}
-		resp.Body.Close()
-
-		// If we get a 404, the secret was successfully destroyed
-		if resp.StatusCode == 404 {
-			continue
-		}
-
-		// If we get 200, the secret still exists
-		if resp.StatusCode == 200 {
-			return fmt.Errorf("cluster secret %s still exists", secretID)
 		}
 	}
 
 	return nil
+}
+
+func testAccCheckClusterSecretDeleted(client *Client, clusterID, secretID string) error {
+	path := fmt.Sprintf("/v2/organizations/%s/clusters/%s/secrets/%s", client.organization, clusterID, secretID)
+	var result struct{}
+	err := client.makeRequest(context.Background(), http.MethodGet, path, nil, &result)
+	if isAPIStatus(err, http.StatusNotFound) {
+		return nil
+	}
+	if err != nil {
+		return fmt.Errorf("checking cluster secret deletion: %w", err)
+	}
+	return fmt.Errorf("cluster secret %s still exists", secretID)
 }
 
 func testAccClusterSecretConfig(clusterName, key, value, description string) string {

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## [1.46.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.45.0...v1.46.0)
+
 ### Features
 
 * PF-10060: Add `allowed_api_ip_entries` to `buildkite_organization` for IP/CIDR allowlist entries with optional descriptions, while retaining address-only configurations. Requires the tuple allowlist REST API before release or use.
@@ -9,6 +11,10 @@
 ### Fixed
 
 * PB-4320: Preserve Origin `provider_settings.cancel_deleted_branch_builds` during refresh and import, avoiding recurring plan changes when the saved setting matches configuration.
+
+### Internal
+
+* Reduce acceptance-test setup and scheduling overhead, separate unit and live acceptance suites, and retain test timing artifacts in CI.
 
 ## [1.45.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.44.0...v1.45.0)
 

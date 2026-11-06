@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"os"
 	"regexp"
+	"strings"
 	"testing"
-	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -54,6 +54,328 @@ func TestHandleTeamIDs(t *testing.T) {
 
 const testRegistryTeamID = "31529c8a-7cfa-42e8-bb85-4c844a983ea0"
 
+func TestAccBuildkiteRegistryPermissions(t *testing.T) {
+	if os.Getenv("TF_ACC") == "" {
+		t.Skip("TF_ACC must be set for acceptance tests")
+	}
+	testAccPreCheck(t)
+	memberToken := os.Getenv("BUILDKITE_NONADMIN_API_TOKEN")
+	if memberToken == "" {
+		t.Fatal("BUILDKITE_NONADMIN_API_TOKEN must contain the member token for registry tests; BUILDKITE_API_TOKEN must remain the admin token")
+	}
+	admin := getTestClient()
+	member := getTestClientWithToken(memberToken)
+	testAccMemberPreCheck(t, member.graphql)
+	t.Setenv("TF_VAR_registry_member_token", memberToken)
+	const address = "buildkite_registry.temporary"
+	const memberProvider = `
+		variable "registry_member_token" {
+			type = string
+			sensitive = true
+		}
+		provider "buildkite" {
+			api_token = var.registry_member_token
+		}`
+	fixtures := fmt.Sprintf(`
+		data "buildkite_team" "owner" {
+			slug = %q
+		}`, testAccFixturePipelineTeamSlug)
+	const registryDataSource = `
+		data "buildkite_registry" "temporary" {
+			slug = buildkite_registry.temporary.slug
+		}`
+	config := func(name, description, emoji, color string) string {
+		return fixtures + fmt.Sprintf(`
+			resource "buildkite_registry" "temporary" {
+				name = %q
+				ecosystem = "python"
+				description = %q
+				emoji = %q
+				color = %q
+				team_ids = [data.buildkite_team.owner.uuid]
+			}`, name, description, emoji, color)
+	}
+
+	t.Run("member_create", func(t *testing.T) {
+		name := "nonadmincreate" + acctest.RandString(12)
+		const description = "Temporary member-created registry"
+		registryConfig := config(name, description, ":snake:", "#3776AB")
+		if err := testAccCheckRegistryDeleted(admin, name); err != nil {
+			t.Fatal(err)
+		}
+		// Independent admin state owns cleanup even if the member test fails
+		// before forgetting its resource or recording a successful create.
+		t.Cleanup(func() {
+			var remote registryAPIResponse
+			path := fmt.Sprintf("/v2/packages/organizations/%s/registries/%s", admin.organization, name)
+			err := admin.makeRequest(context.Background(), http.MethodGet, path, nil, &remote)
+			if isAPIStatus(err, http.StatusNotFound) {
+				return
+			}
+			if err != nil {
+				t.Fatalf("read member-created registry for admin cleanup: %v", err)
+			}
+			if remote.Name != name || remote.Slug != name {
+				t.Fatal("refusing cleanup of a registry that does not match this test's unique name and slug")
+			}
+			resource.Test(t, resource.TestCase{
+				ProtoV6ProviderFactories: protoV6ProviderFactories(),
+				CheckDestroy:             testAccCheckRegistryDestroy,
+				Steps: []resource.TestStep{{
+					Config:             registryConfig,
+					ResourceName:       address,
+					ImportState:        true,
+					ImportStateId:      name,
+					ImportStatePersist: true,
+				}},
+			})
+			if err := testAccCheckRegistryDeleted(admin, name); err != nil {
+				t.Error(err)
+			}
+		})
+		resource.Test(t, resource.TestCase{
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			Steps: []resource.TestStep{
+				{
+					Config: memberProvider + registryConfig + registryDataSource,
+					Check: resource.ComposeAggregateTestCheckFunc(
+						resource.TestCheckResourceAttr(address, "name", name),
+						resource.TestCheckResourceAttr(address, "ecosystem", "python"),
+						resource.TestCheckResourceAttr(address, "description", description),
+						resource.TestCheckResourceAttr(address, "public", "false"),
+						resource.TestCheckResourceAttrSet(address, "id"),
+						resource.TestCheckResourceAttrSet(address, "uuid"),
+						resource.TestCheckResourceAttr(address, "slug", name),
+						resource.TestCheckResourceAttrPair(address, "team_ids.0", "data.buildkite_team.owner", "uuid"),
+						resource.TestCheckResourceAttrPair("data.buildkite_registry.temporary", "id", address, "id"),
+					),
+				},
+				{
+					Config: memberProvider + fixtures + `
+						removed {
+							from = buildkite_registry.temporary
+							lifecycle { destroy = false }
+						}`,
+					Check: func(s *terraform.State) error {
+						if _, ok := s.RootModule().Resources[address]; ok {
+							return fmt.Errorf("member-created registry remains in member state")
+						}
+						var remote registryAPIResponse
+						path := fmt.Sprintf("/v2/packages/organizations/%s/registries/%s", member.organization, name)
+						if err := member.makeRequest(context.Background(), http.MethodGet, path, nil, &remote); err != nil {
+							return err
+						}
+						if remote.Name != name || remote.Slug != name {
+							return fmt.Errorf("forgetting member state must leave its temporary registry intact for admin cleanup")
+						}
+						return nil
+					},
+				},
+			},
+		})
+	})
+
+	t.Run("delegated_lifecycle", func(t *testing.T) {
+		name := "delegatedregistry" + acctest.RandString(12)
+		initial := config(name, "Initial registry description", ":snake:", "#3776AB") + registryDataSource
+		adminUpdated := config(name, "Admin registry update", ":package:", "#123456")
+		memberUpdated := config(name, "Member registry update", ":buildkite:", "#00FF00") + registryDataSource
+		const ownerConfig = `
+			resource "buildkite_team_registry" "owner" {
+				registry_id = buildkite_registry.temporary.id
+				team_id = data.buildkite_team.owner.id
+				access_level = "READ_WRITE_AND_ADMIN"
+			}`
+		var registryID, registryUUID, slug, ownerID, ownerLinkID string
+		readOwner := func(client *Client, requireAdmin bool) error {
+			var query struct {
+				Node struct {
+					Registry struct {
+						Teams struct {
+							Edges []struct {
+								Node struct {
+									ID          string
+									AccessLevel graphql.String
+									Team        struct{ ID string }
+								}
+							}
+							PageInfo struct{ HasNextPage graphql.Boolean }
+						} `graphql:"teams(first: 100)"`
+					} `graphql:"... on Registry"`
+				} `graphql:"node(id: $id)"`
+			}
+			ctx, cancel := context.WithTimeout(context.Background(), DefaultTimeout)
+			defer cancel()
+			if err := client.graphql.Query(ctx, &query, map[string]any{"id": graphql.ID(registryID)}); err != nil {
+				return err
+			}
+			teams := query.Node.Registry.Teams
+			if teams.PageInfo.HasNextPage {
+				return fmt.Errorf("registry teams query was truncated")
+			}
+			for _, edge := range teams.Edges {
+				if edge.Node.Team.ID != ownerID {
+					continue
+				}
+				if edge.Node.ID == "" || (ownerLinkID != "" && edge.Node.ID != ownerLinkID) {
+					return fmt.Errorf("registry owner association identity changed")
+				}
+				ownerLinkID = edge.Node.ID
+				if requireAdmin && edge.Node.AccessLevel != "READ_WRITE_AND_ADMIN" {
+					return fmt.Errorf("registry owner lost Full Access: %s", edge.Node.AccessLevel)
+				}
+				return nil
+			}
+			return fmt.Errorf("registry owner association is missing")
+		}
+		check := func(client *Client, description, emoji, color string, requireAdmin bool) resource.TestCheckFunc {
+			return func(s *terraform.State) error {
+				for _, key := range []string{address, "data.buildkite_team.owner"} {
+					if rs, ok := s.RootModule().Resources[key]; !ok || rs.Primary == nil || rs.Primary.ID == "" {
+						return fmt.Errorf("%s is missing from Terraform state", key)
+					}
+				}
+				state := s.RootModule().Resources[address].Primary
+				owner := s.RootModule().Resources["data.buildkite_team.owner"].Primary
+				if registryID == "" {
+					registryID, registryUUID, slug, ownerID = state.ID, state.Attributes["uuid"], state.Attributes["slug"], owner.ID
+				}
+				checks := []resource.TestCheckFunc{
+					resource.TestCheckResourceAttr(address, "id", registryID),
+					resource.TestCheckResourceAttrSet(address, "uuid"),
+					resource.TestCheckResourceAttr(address, "uuid", registryUUID),
+					resource.TestCheckResourceAttr(address, "slug", slug),
+					resource.TestCheckResourceAttr(address, "name", name),
+					resource.TestCheckResourceAttr(address, "ecosystem", "python"),
+					resource.TestCheckResourceAttr(address, "description", description),
+					resource.TestCheckResourceAttr(address, "emoji", emoji),
+					resource.TestCheckResourceAttr(address, "color", color),
+					resource.TestCheckResourceAttr(address, "public", "false"),
+					resource.TestCheckResourceAttr(address, "registry_type", "source"),
+					resource.TestCheckResourceAttr(address, "team_ids.#", "1"),
+					resource.TestCheckResourceAttrPair(address, "team_ids.0", "data.buildkite_team.owner", "uuid"),
+				}
+				for _, field := range []string{"id", "uuid", "slug", "name", "ecosystem", "description", "emoji", "color", "public", "registry_type", "team_ids.#", "team_ids.0"} {
+					checks = append(checks, resource.TestCheckResourceAttrPair("data.buildkite_registry.temporary", field, address, field))
+				}
+				if err := resource.ComposeAggregateTestCheckFunc(checks...)(s); err != nil {
+					return err
+				}
+				var remote registryAPIResponse
+				path := fmt.Sprintf("/v2/packages/organizations/%s/registries/%s", client.organization, slug)
+				if err := client.makeRequest(context.Background(), http.MethodGet, path, nil, &remote); err != nil {
+					return err
+				}
+				if remote.GraphQLID != registryID || remote.ID != registryUUID || remote.Slug != slug || remote.Name != name || remote.Ecosystem != "python" || remote.Public || remote.RegistryType != "source" ||
+					remote.Description == nil || *remote.Description != description || remote.Emoji == nil || *remote.Emoji != emoji || remote.Color == nil || *remote.Color != color ||
+					len(remote.TeamIDs) != 1 || remote.TeamIDs[0] != owner.Attributes["uuid"] {
+					return fmt.Errorf("remote registry does not match the expected identity, settings, and team")
+				}
+				return readOwner(client, requireAdmin)
+			}
+		}
+		resource.Test(t, resource.TestCase{
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			CheckDestroy:             testAccCheckRegistryDestroy,
+			Steps: []resource.TestStep{
+				{Config: initial, Check: check(admin, "Initial registry description", ":snake:", "#3776AB", false)},
+				{
+					Config:             initial + ownerConfig,
+					ResourceName:       "buildkite_team_registry.owner",
+					ImportState:        true,
+					ImportStatePersist: true,
+					ImportStateIdFunc:  func(*terraform.State) (string, error) { return ownerLinkID, nil },
+				},
+				{Config: initial + ownerConfig, Check: check(admin, "Initial registry description", ":snake:", "#3776AB", true)},
+				{
+					Config: adminUpdated + ownerConfig + registryDataSource,
+					ConfigPlanChecks: resource.ConfigPlanChecks{
+						PreApply: []plancheck.PlanCheck{plancheck.ExpectResourceAction(address, plancheck.ResourceActionUpdate)},
+					},
+					Check: check(admin, "Admin registry update", ":package:", "#123456", true),
+				},
+				{
+					ResourceName:      address,
+					ImportState:       true,
+					ImportStateIdFunc: func(*terraform.State) (string, error) { return slug, nil },
+					ImportStateVerify: true,
+				},
+				{
+					Config: adminUpdated + ownerConfig,
+					// The member deletes the registry during Check; the admin state
+					// must notice its disappearance without applying a recreation.
+					ExpectNonEmptyPlan: true,
+					ConfigPlanChecks: resource.ConfigPlanChecks{
+						PreApply:             []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()},
+						PostApplyPostRefresh: []plancheck.PlanCheck{plancheck.ExpectResourceAction(address, plancheck.ResourceActionCreate)},
+					},
+					Check: func(s *terraform.State) error {
+						registry, ok := s.RootModule().Resources[address]
+						if !ok || registry.Primary == nil {
+							return fmt.Errorf("admin registry is missing from Terraform state")
+						}
+						attrs := registry.Primary.Attributes
+						if !t.Run("member_lifecycle", func(t *testing.T) {
+							resource.Test(t, resource.TestCase{
+								ProtoV6ProviderFactories: protoV6ProviderFactories(),
+								CheckDestroy:             testAccCheckRegistryDestroy,
+								Steps: []resource.TestStep{
+									{
+										Config:             memberProvider + adminUpdated + registryDataSource,
+										ResourceName:       address,
+										ImportState:        true,
+										ImportStateId:      slug,
+										ImportStatePersist: true,
+										ImportStateCheck: func(states []*terraform.InstanceState) error {
+											if len(states) != 1 || states[0].ID != registryID {
+												return fmt.Errorf("member import did not return the temporary registry")
+											}
+											for _, field := range []string{"id", "uuid", "slug", "name", "ecosystem", "description", "emoji", "color", "public", "registry_type", "team_ids.#", "team_ids.0"} {
+												if states[0].Attributes[field] != attrs[field] {
+													return fmt.Errorf("member import changed registry %s", field)
+												}
+											}
+											return nil
+										},
+									},
+									{
+										Config:           memberProvider + adminUpdated + registryDataSource,
+										ConfigPlanChecks: resource.ConfigPlanChecks{PreApply: []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()}},
+										Check:            check(member, "Admin registry update", ":package:", "#123456", true),
+									},
+									{
+										Config:           memberProvider + memberUpdated,
+										ConfigPlanChecks: resource.ConfigPlanChecks{PreApply: []plancheck.PlanCheck{plancheck.ExpectResourceAction(address, plancheck.ResourceActionUpdate)}},
+										Check:            check(member, "Member registry update", ":buildkite:", "#00FF00", true),
+									},
+									{RefreshState: true, Check: check(member, "Member registry update", ":buildkite:", "#00FF00", true)},
+									{ResourceName: address, ImportState: true, ImportStateId: slug, ImportStateVerify: true},
+									{
+										Config:           memberProvider + fixtures,
+										ConfigPlanChecks: resource.ConfigPlanChecks{PreApply: []plancheck.PlanCheck{plancheck.ExpectResourceAction(address, plancheck.ResourceActionDestroy)}},
+										Check: func(s *terraform.State) error {
+											if _, ok := s.RootModule().Resources[address]; ok {
+												return fmt.Errorf("deleted registry remains in member state")
+											}
+											if err := testAccCheckRegistryDeleted(member, slug); err != nil {
+												return err
+											}
+											return testAccCheckRegistryDeleted(admin, slug)
+										},
+									},
+								},
+							})
+						}) {
+							return fmt.Errorf("member registry lifecycle failed; independent admin state retains cleanup ownership")
+						}
+						return nil
+					},
+				},
+			},
+		})
+	})
+}
+
 func TestAccResourceRegistry(t *testing.T) {
 	config := func(name, ecosystem, emoji string) string {
 		return fmt.Sprintf(`
@@ -98,30 +420,6 @@ func TestAccResourceRegistry(t *testing.T) {
 						resource.TestCheckResourceAttrSet("buildkite_registry.test", "id"),
 						resource.TestCheckResourceAttrSet("buildkite_registry.test", "uuid"),
 						resource.TestCheckResourceAttrSet("buildkite_registry.test", "slug"),
-						resource.TestCheckResourceAttr("buildkite_registry.test", "public", "false"),
-						resource.TestCheckResourceAttrSet("buildkite_registry.test", "registry_type"),
-					),
-				},
-			},
-		})
-	})
-
-	t.Run("create with all fields", func(t *testing.T) {
-		randName := acctest.RandString(5)
-
-		resource.ParallelTest(t, resource.TestCase{
-			PreCheck:                 func() { testAccPreCheck(t) },
-			ProtoV6ProviderFactories: protoV6ProviderFactories(),
-			CheckDestroy:             testAccCheckRegistryDestroy,
-			Steps: []resource.TestStep{
-				{
-					Config: configWithAllFields(randName, "python", "Test registry description", ":snake:", "#3776AB"),
-					Check: resource.ComposeAggregateTestCheckFunc(
-						resource.TestCheckResourceAttr("buildkite_registry.test", "name", randName),
-						resource.TestCheckResourceAttr("buildkite_registry.test", "ecosystem", "python"),
-						resource.TestCheckResourceAttr("buildkite_registry.test", "description", "Test registry description"),
-						resource.TestCheckResourceAttr("buildkite_registry.test", "emoji", ":snake:"),
-						resource.TestCheckResourceAttr("buildkite_registry.test", "color", "#3776AB"),
 						resource.TestCheckResourceAttr("buildkite_registry.test", "public", "false"),
 						resource.TestCheckResourceAttrSet("buildkite_registry.test", "registry_type"),
 					),
@@ -269,7 +567,9 @@ func TestAccResourceRegistry(t *testing.T) {
 					} `graphql:"teamRegistry"`
 				} `graphql:"teamRegistryCreate(input: {teamID: $teamId, registryID: $registryId, accessLevel: READ_ONLY})"`
 			}
-			return graphqlClient.Mutate(context.Background(), &mutation, map[string]interface{}{
+			ctx, cancel := context.WithTimeout(context.Background(), DefaultTimeout)
+			defer cancel()
+			return graphqlClient.Mutate(ctx, &mutation, map[string]interface{}{
 				"teamId":     graphql.ID(team.Primary.Attributes["id"]),
 				"registryId": graphql.ID(registry.Primary.Attributes["id"]),
 			})
@@ -370,47 +670,30 @@ func TestAccResourceRegistry(t *testing.T) {
 }
 
 func testAccCheckRegistryDestroy(s *terraform.State) error {
-	apiToken := os.Getenv("BUILDKITE_API_TOKEN")
-	orgSlug := os.Getenv("BUILDKITE_ORGANIZATION_SLUG")
-	baseURL := os.Getenv("BUILDKITE_REST_URL")
-	if baseURL == "" {
-		baseURL = "https://api.buildkite.com"
-	}
-
-	httpClient := &http.Client{
-		Timeout: time.Second * 10,
-	}
-
-	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "buildkite_registry" {
+	for name, rs := range s.RootModule().Resources {
+		if rs.Type != "buildkite_registry" || strings.HasPrefix(name, "data.") {
 			continue
 		}
 
-		slug := rs.Primary.Attributes["slug"]
-		url := fmt.Sprintf("%s/v2/packages/organizations/%s/registries/%s", baseURL, orgSlug, slug)
-
-		req, err := http.NewRequest(http.MethodGet, url, nil)
-		if err != nil {
-			return fmt.Errorf("error creating request to check if registry still exists: %w", err)
+		if err := testAccCheckRegistryDeleted(getTestClient(), rs.Primary.Attributes["slug"]); err != nil {
+			return err
 		}
-
-		req.Header.Set("Accept", "application/json")
-		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", apiToken))
-
-		resp, err := httpClient.Do(req)
-		if err != nil {
-			return fmt.Errorf("error making request to check if registry still exists: %w", err)
-		}
-		defer resp.Body.Close()
-
-		if resp.StatusCode == http.StatusNotFound {
-			continue
-		}
-
-		return fmt.Errorf("buildkite_registry resource still exists: %s", slug)
 	}
 
 	return nil
+}
+
+func testAccCheckRegistryDeleted(client *Client, slug string) error {
+	path := fmt.Sprintf("/v2/packages/organizations/%s/registries/%s", client.organization, slug)
+	var result struct{}
+	err := client.makeRequest(context.Background(), http.MethodGet, path, nil, &result)
+	if isAPIStatus(err, http.StatusNotFound) {
+		return nil
+	}
+	if err != nil {
+		return fmt.Errorf("checking registry deletion: %w", err)
+	}
+	return fmt.Errorf("buildkite_registry resource still exists: %s", slug)
 }
 
 func testAccCheckRegistryExists(n string, r *registryResourceModel) resource.TestCheckFunc {

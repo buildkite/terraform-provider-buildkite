@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"os"
 	"regexp"
 	"strings"
 	"testing"
@@ -322,24 +321,6 @@ func TestAccBuildkiteClusterMaintainerResource(t *testing.T) {
 	})
 }
 
-func getTestClient() *Client {
-	header := make(http.Header)
-	header.Set("Authorization", "Bearer "+os.Getenv("BUILDKITE_API_TOKEN"))
-	header.Set("User-Agent", "terraform-provider-buildkite-test")
-
-	httpClient := &http.Client{
-		Transport: newHeaderRoundTripper(http.DefaultTransport, header),
-	}
-
-	client := &Client{
-		http:         httpClient,
-		organization: getenv("BUILDKITE_ORGANIZATION_SLUG"),
-		restURL:      defaultRestEndpoint,
-	}
-
-	return client
-}
-
 func testAccCheckClusterMaintainerExists(resourceName string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[resourceName]
@@ -409,7 +390,7 @@ func testAccCheckClusterMaintainerDestroy(s *terraform.State) error {
 		err := client.makeRequest(context.Background(), http.MethodGet, path, nil, &result)
 		if err != nil {
 			// If we get a 404, the maintainer was successfully deleted
-			if strings.Contains(err.Error(), "404") {
+			if isAPIStatus(err, http.StatusNotFound) {
 				continue
 			}
 			return fmt.Errorf("error checking if cluster maintainer still exists: %v", err)

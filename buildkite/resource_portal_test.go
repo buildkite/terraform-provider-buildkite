@@ -176,6 +176,9 @@ func testAccCheckPortalResourceDestroy(s *terraform.State) error {
 		if err == nil {
 			return fmt.Errorf("portal still exists")
 		}
+		if !isAPIStatus(err, http.StatusNotFound) {
+			return fmt.Errorf("checking portal deletion: %w", err)
+		}
 	}
 	return nil
 }

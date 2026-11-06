@@ -7,26 +7,6 @@ import (
 )
 
 func TestAccBuildkiteTeamsDatasource(t *testing.T) {
-	t.Run("teams data source can be loaded with defaults", func(t *testing.T) {
-		resource.ParallelTest(t, resource.TestCase{
-			PreCheck:                 func() { testAccPreCheck(t) },
-			ProtoV6ProviderFactories: protoV6ProviderFactories(),
-			Steps: []resource.TestStep{
-				{
-					Config: `data "buildkite_teams" "teams" {}`,
-					Check: resource.ComposeTestCheckFunc(
-						resource.TestCheckResourceAttrSet("data.buildkite_teams.teams", "teams.0.name"),
-						resource.TestCheckResourceAttrSet("data.buildkite_teams.teams", "teams.0.members_can_create_pipelines"),
-						resource.TestCheckResourceAttrSet("data.buildkite_teams.teams", "teams.0.members_can_create_suites"),
-						resource.TestCheckResourceAttrSet("data.buildkite_teams.teams", "teams.0.members_can_create_registries"),
-						resource.TestCheckResourceAttrSet("data.buildkite_teams.teams", "teams.0.members_can_destroy_registries"),
-						resource.TestCheckResourceAttrSet("data.buildkite_teams.teams", "teams.0.members_can_destroy_packages"),
-					),
-				},
-			},
-		})
-	})
-
 	t.Run("teams data source reads permissions correctly", func(t *testing.T) {
 		config := `
 		resource "buildkite_team" "test_team_perms" {

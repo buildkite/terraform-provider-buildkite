@@ -322,6 +322,125 @@ func TestTestSuiteStateManagementRejectedUpdate(t *testing.T) {
 	}
 }
 
+func TestAccNonAdminTestSuite(t *testing.T) {
+	const address = "buildkite_test_suite.temporary"
+	name := "nonadmin-suite-" + acctest.RandString(12)
+	baseConfig := fmt.Sprintf(`
+		data "buildkite_team" "owner" {
+			slug = %q
+		}
+	`, testAccFixturePipelineTeamSlug)
+	config := func(branch, application string) string {
+		return baseConfig + fmt.Sprintf(`
+			resource "buildkite_test_suite" "temporary" {
+				name = %q
+				default_branch = %q
+				application_name = %q
+				team_owner_id = data.buildkite_team.owner.id
+			}
+
+			data "buildkite_test_suite" "temporary" {
+				slug = buildkite_test_suite.temporary.slug
+				depends_on = [buildkite_test_suite.temporary]
+			}
+		`, name, branch, application)
+	}
+	var suiteID, suiteUUID, suiteSlug, suiteToken string
+	check := func(branch, application string) resource.TestCheckFunc {
+		return resource.ComposeAggregateTestCheckFunc(
+			resource.TestCheckResourceAttr(address, "name", name),
+			resource.TestCheckResourceAttr(address, "default_branch", branch),
+			resource.TestCheckResourceAttr(address, "application_name", application),
+			resource.TestCheckResourceAttrSet(address, "uuid"),
+			resource.TestCheckResourceAttrSet(address, "slug"),
+			resource.TestCheckResourceAttrSet(address, "api_token"),
+			resource.TestCheckNoResourceAttr(address, "emoji"),
+			resource.TestCheckResourceAttrPair(address, "team_owner_id", "data.buildkite_team.owner", "id"),
+			resource.TestCheckResourceAttrPair("data.buildkite_test_suite.temporary", "id", address, "id"),
+			resource.TestCheckResourceAttrPair("data.buildkite_test_suite.temporary", "uuid", address, "uuid"),
+			resource.TestCheckResourceAttrPair("data.buildkite_test_suite.temporary", "slug", address, "slug"),
+			resource.TestCheckResourceAttr("data.buildkite_test_suite.temporary", "name", name),
+			resource.TestCheckResourceAttr("data.buildkite_test_suite.temporary", "default_branch", branch),
+			resource.TestCheckResourceAttr("data.buildkite_test_suite.temporary", "application_name", application),
+			func(s *terraform.State) error {
+				rs, ok := s.RootModule().Resources[address]
+				if !ok || rs.Primary == nil {
+					return fmt.Errorf("temporary suite is missing from Terraform state")
+				}
+				state := rs.Primary
+				if suiteID == "" {
+					suiteID, suiteUUID, suiteSlug, suiteToken = state.ID, state.Attributes["uuid"], state.Attributes["slug"], state.Attributes["api_token"]
+				}
+				if state.ID == "" || state.ID != suiteID || state.Attributes["uuid"] != suiteUUID || state.Attributes["slug"] != suiteSlug || state.Attributes["api_token"] != suiteToken {
+					return fmt.Errorf("temporary suite identity or API token changed")
+				}
+				r, err := getTestSuite(context.Background(), genqlientGraphql, suiteID, teamPageSize, nil)
+				if err != nil {
+					return err
+				}
+				suite, ok := r.Suite.(*getTestSuiteSuite)
+				if !ok || suite.Id != suiteID || suite.Uuid != suiteUUID || suite.Slug != suiteSlug || suite.Name != name || suite.DefaultBranch != branch {
+					return fmt.Errorf("remote suite does not match the expected identity and settings")
+				}
+				ownerState, ok := s.RootModule().Resources["data.buildkite_team.owner"]
+				if !ok || ownerState.Primary == nil {
+					return fmt.Errorf("persistent owner team is missing from Terraform state")
+				}
+				owner := ownerState.Primary.ID
+				for _, edge := range suite.Teams.Edges {
+					if edge.Node.Team.Id == owner && edge.Node.AccessLevel == SuiteAccessLevelsManageAndRead {
+						return nil
+					}
+				}
+				return fmt.Errorf("temporary suite lost its owner's MANAGE_AND_READ access")
+			},
+		)
+	}
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccNonAdminPreCheck(t) },
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		CheckDestroy:             testTestSuiteDestroy,
+		Steps: []resource.TestStep{
+			{Config: config("main", "Acceptance application"), Check: check("main", "Acceptance application")},
+			{
+				Config: config("release", "Updated acceptance application"),
+				Check:  check("release", "Updated acceptance application"),
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply:             []plancheck.PlanCheck{plancheck.ExpectResourceAction(address, plancheck.ResourceActionUpdate)},
+					PostApplyPostRefresh: []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()},
+				},
+			},
+			{RefreshState: true, Check: check("release", "Updated acceptance application")},
+			{
+				ResourceName:      address,
+				ImportState:       true,
+				ImportStateVerify: true,
+				// The default verifier prints mismatched values, including secrets.
+				ImportStateVerifyIgnore: []string{"api_token"},
+				ImportStateCheck: func(states []*terraform.InstanceState) error {
+					if len(states) != 1 || states[0].Attributes["api_token"] != suiteToken {
+						return fmt.Errorf("import did not preserve the suite API token")
+					}
+					return nil
+				},
+			},
+			{
+				Config: baseConfig,
+				Check: func(s *terraform.State) error {
+					if _, exists := s.RootModule().Resources[address]; exists {
+						return fmt.Errorf("deleted suite remains in Terraform state")
+					}
+					return testAccCheckTestSuiteDeleted(suiteSlug)
+				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply:             []plancheck.PlanCheck{plancheck.ExpectResourceAction(address, plancheck.ResourceActionDestroy)},
+					PostApplyPostRefresh: []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()},
+				},
+			},
+		},
+	})
+}
+
 func TestAccBuildkiteTestSuiteResource(t *testing.T) {
 	t.Parallel()
 	basicTestSuite := func(name string) string {
@@ -470,34 +589,6 @@ func TestAccBuildkiteTestSuiteResource(t *testing.T) {
 		}
 		`, name, name, name)
 	}
-
-	t.Run("creates a test suite", func(t *testing.T) {
-		var suite getTestSuiteSuite
-		randName := acctest.RandString(10)
-
-		check := resource.ComposeAggregateTestCheckFunc(
-			checkTestSuiteExists("buildkite_test_suite.suite", &suite),
-			checkTestSuiteRemoteValue(&suite, "Name", fmt.Sprintf("test suite %s", randName)),
-			checkTestSuiteRemoteValue(&suite, "DefaultBranch", "main"),
-			resource.TestCheckResourceAttrSet("buildkite_test_suite.suite", "id"),
-			resource.TestCheckResourceAttrSet("buildkite_test_suite.suite", "api_token"),
-			resource.TestCheckResourceAttr("buildkite_test_suite.suite", "default_branch", "main"),
-			resource.TestCheckResourceAttr("buildkite_test_suite.suite", "name", fmt.Sprintf("test suite %s", randName)),
-			resource.TestCheckResourceAttrSet("buildkite_test_suite.suite", "team_owner_id"),
-		)
-
-		resource.ParallelTest(t, resource.TestCase{
-			PreCheck:                 func() { testAccPreCheck(t) },
-			ProtoV6ProviderFactories: protoV6ProviderFactories(),
-			CheckDestroy:             testTestSuiteDestroy,
-			Steps: []resource.TestStep{
-				{
-					Config: basicTestSuite(randName),
-					Check:  check,
-				},
-			},
-		})
-	})
 
 	t.Run("creates a test suite with an emoji set", func(t *testing.T) {
 		var suite getTestSuiteSuite
@@ -655,40 +746,6 @@ func TestAccBuildkiteTestSuiteResource(t *testing.T) {
 			},
 		})
 	})
-
-	t.Run("import a test suite", func(t *testing.T) {
-		var suite getTestSuiteSuite
-		resName := acctest.RandString(10)
-
-		check := resource.ComposeAggregateTestCheckFunc(
-			checkTestSuiteExists("buildkite_test_suite.suite", &suite),
-			resource.TestCheckResourceAttrSet("buildkite_test_suite.suite", "id"),
-			resource.TestCheckResourceAttrSet("buildkite_test_suite.suite", "uuid"),
-			resource.TestCheckResourceAttr("buildkite_test_suite.suite", "name", fmt.Sprintf("test suite %s", resName)),
-			resource.TestCheckResourceAttrSet("buildkite_test_suite.suite", "slug"),
-			resource.TestCheckResourceAttr("buildkite_test_suite.suite", "default_branch", "main"),
-			resource.TestCheckResourceAttrSet("buildkite_test_suite.suite", "team_owner_id"),
-			resource.TestCheckNoResourceAttr("buildkite_test_suite.suite", "emoji"),
-			resource.TestCheckResourceAttrSet("buildkite_test_suite.suite", "api_token"),
-		)
-
-		resource.ParallelTest(t, resource.TestCase{
-			PreCheck:                 func() { testAccPreCheck(t) },
-			ProtoV6ProviderFactories: protoV6ProviderFactories(),
-			CheckDestroy:             testTestSuiteDestroy,
-			Steps: []resource.TestStep{
-				{
-					Config: basicTestSuite(resName),
-					Check:  check,
-				},
-				{
-					ResourceName:      "buildkite_test_suite.suite",
-					ImportState:       true,
-					ImportStateVerify: true,
-				},
-			},
-		})
-	})
 }
 
 func checkTestSuiteRemoteValue(suite *getTestSuiteSuite, property, value string) resource.TestCheckFunc {
@@ -737,12 +794,41 @@ func checkTestSuiteExists(name string, suite *getTestSuiteSuite) resource.TestCh
 }
 
 func testTestSuiteDestroy(s *terraform.State) error {
-	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "buildkite_test_suite" {
+	for address, rs := range s.RootModule().Resources {
+		if rs.Type != "buildkite_test_suite" || strings.HasPrefix(address, "data.") {
 			continue
+		}
+		if err := testAccCheckTestSuiteDeleted(rs.Primary.Attributes["slug"]); err != nil {
+			return err
 		}
 	}
 	return nil
+}
+
+func testAccCheckTestSuiteDeleted(slug string) error {
+	client := getTestClient()
+	url := fmt.Sprintf("/v2/analytics/organizations/%s/suites/%s", client.organization, slug)
+	ctx, cancel := context.WithTimeout(context.Background(), DefaultTimeout)
+	defer cancel()
+	pollDeadline := time.Now().Add(5 * time.Second)
+	for {
+		var response testSuiteResponse
+		err := client.makeRequest(ctx, http.MethodGet, url, nil, &response)
+		if isAPIStatus(err, http.StatusNotFound) {
+			return nil
+		}
+		if err != nil {
+			return fmt.Errorf("checking suite deletion: %w", err)
+		}
+		if time.Now().After(pollDeadline) {
+			return fmt.Errorf("test suite still exists: %s", slug)
+		}
+		select {
+		case <-ctx.Done():
+			return fmt.Errorf("checking suite deletion: %w", ctx.Err())
+		case <-time.After(500 * time.Millisecond):
+		}
+	}
 }
 
 // The attributes these tests drive Update with. The schema has a dozen more, and nullObjectWith
