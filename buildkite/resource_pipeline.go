@@ -459,10 +459,10 @@ func (p *pipelineResource) Read(ctx context.Context, req resource.ReadRequest, r
 	defer cancel()
 
 	var response *getNodeResponse
-	err := retry.RetryContext(requestCtx, timeouts, func() *retry.RetryError {
+	err := retryRead(requestCtx, func() error {
 		var err error
 		response, err = getNode(requestCtx, p.client.genqlient, state.Id.ValueString())
-		return retryContextError(err)
+		return err
 	})
 	if err != nil {
 		resp.Diagnostics.AddError(

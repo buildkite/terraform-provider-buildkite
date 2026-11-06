@@ -2,6 +2,7 @@ package buildkite
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -39,18 +40,12 @@ const (
 var (
 	graphqlClient    *graphql.Client
 	genqlientGraphql genqlient.Client
-	organizationID   string
 )
 
 func init() {
 	client := getTestClient()
 	graphqlClient = client.graphql
 	genqlientGraphql = client.genqlient
-	if os.Getenv("TF_ACC") != "" {
-		if id, err := client.GetOrganizationID(context.Background()); err == nil {
-			organizationID = *id
-		}
-	}
 }
 
 func getTestClient() *Client {
@@ -150,6 +145,114 @@ func TestSharedTestClientRetries(t *testing.T) {
 			}
 			if name != "test-org" || requests.Load() != 2 {
 				t.Fatalf("name = %q after %d requests, want test-org after retrying the 429", name, requests.Load())
+			}
+		})
+	}
+}
+
+func TestSuiteExistenceCheckPreservesFailures(t *testing.T) {
+	previous := genqlientGraphql
+	t.Cleanup(func() { genqlientGraphql = previous })
+	for _, tc := range []struct {
+		name   string
+		err    error
+		exists bool
+	}{
+		{name: "rate limited", err: &apiError{StatusCode: http.StatusTooManyRequests, Body: "rate limit exceeded", Err: context.DeadlineExceeded}},
+		{name: "forbidden", err: gqlerror.List{{Message: "You are not authorized to read this suite"}}},
+		{name: "transport deadline", err: context.DeadlineExceeded},
+		{name: "present", exists: true},
+		{name: "absent"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			genqlientGraphql = &fakeGraphQLClient{handler: func(_ context.Context, _ *genqlient.Request, resp *genqlient.Response) error {
+				if tc.exists {
+					resp.Data.(*getTestSuiteResponse).Suite = &getTestSuiteSuite{Id: "suite-id", Name: "remote-suite"}
+				}
+				return tc.err
+			}}
+			s := &terraform.State{Modules: []*terraform.ModuleState{{
+				Path: []string{"root"},
+				Resources: map[string]*terraform.ResourceState{
+					"buildkite_test_suite.test": {
+						Type: "buildkite_test_suite", Primary: &terraform.InstanceState{Attributes: map[string]string{"id": "suite-id"}},
+					},
+				},
+			}}}
+			var suite getTestSuiteSuite
+			err := checkTestSuiteExists("buildkite_test_suite.test", &suite)(s)
+			if tc.err == nil {
+				if tc.exists {
+					if err != nil || suite.Id != "suite-id" || suite.Name != "remote-suite" {
+						t.Fatalf("suite existence check = %v, suite = %+v", err, suite)
+					}
+				} else if err == nil || !strings.Contains(err.Error(), "does not exist on server") {
+					t.Fatalf("suite existence check = %v, want genuine missing-suite error", err)
+				}
+				return
+			}
+			cause := tc.err
+			if list, ok := tc.err.(gqlerror.List); ok {
+				cause = list[0]
+			}
+			if !errors.Is(err, cause) || !strings.Contains(err.Error(), tc.err.Error()) {
+				t.Fatalf("suite existence check = %v, want underlying error %v", err, tc.err)
+			}
+		})
+	}
+}
+
+func TestCacheRegistryDeletionPreservesOrganizationLookupFailure(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = fmt.Fprint(w, `{"errors":[{"message":"Organization lookup denied"}]}`)
+	}))
+	t.Cleanup(server.Close)
+	t.Setenv("BUILDKITE_GRAPHQL_URL", server.URL)
+	t.Setenv("BUILDKITE_ORGANIZATION_SLUG", "test-org")
+	previous := genqlientGraphql
+	t.Cleanup(func() { genqlientGraphql = previous })
+	genqlientGraphql = &fakeGraphQLClient{handler: func(context.Context, *genqlient.Request, *genqlient.Response) error {
+		return errors.New("deletion attempted without an organization ID")
+	}}
+	s := &terraform.State{Modules: []*terraform.ModuleState{{
+		Path: []string{"root"},
+		Resources: map[string]*terraform.ResourceState{
+			"buildkite_cluster_cache_registry.test": {
+				Type: "buildkite_cluster_cache_registry", Primary: &terraform.InstanceState{ID: "registry-id"},
+			},
+		},
+	}}}
+	err := testAccDeleteClusterCacheRegistryOutOfBand("buildkite_cluster_cache_registry.test")(s)
+	if err == nil || !strings.Contains(err.Error(), "Organization lookup denied") {
+		t.Fatalf("cache registry deletion = %v, want organization lookup error", err)
+	}
+}
+
+func TestMaintainerExistenceCheckPreservesHTTPFailure(t *testing.T) {
+	t.Setenv("BUILDKITE_ORGANIZATION_SLUG", "test-org")
+	for _, status := range []int{http.StatusForbidden, http.StatusNotFound} {
+		t.Run(fmt.Sprint(status), func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				http.Error(w, `{"message":"request 404-abc refused"}`, status)
+			}))
+			t.Cleanup(server.Close)
+			t.Setenv("BUILDKITE_REST_URL", server.URL)
+			s := &terraform.State{Modules: []*terraform.ModuleState{{
+				Path: []string{"root"},
+				Resources: map[string]*terraform.ResourceState{
+					"buildkite_cluster_maintainer.test": {
+						Type: "buildkite_cluster_maintainer", Primary: &terraform.InstanceState{
+							ID: "maintainer-404", Attributes: map[string]string{"cluster_uuid": "cluster-id", "user_uuid": "user-id"},
+						},
+					},
+				},
+			}}}
+			err := testAccCheckClusterMaintainerExists("buildkite_cluster_maintainer.test")(s)
+			if !isAPIStatus(err, status) || !strings.Contains(err.Error(), "request 404-abc refused") {
+				t.Fatalf("maintainer existence check = %v, want original HTTP %d error", err, status)
+			}
+			if status == http.StatusForbidden && strings.Contains(err.Error(), "not found in API") {
+				t.Fatalf("HTTP 403 was misclassified as not found: %v", err)
 			}
 		})
 	}

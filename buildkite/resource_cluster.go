@@ -280,11 +280,11 @@ func (c *clusterResource) Read(ctx context.Context, req resource.ReadRequest, re
 	defer cancel()
 
 	var r *getNodeResponse
-	err := retry.RetryContext(requestCtx, timeout, func() *retry.RetryError {
+	err := retryRead(requestCtx, func() error {
 		var err error
 		r, err = getNode(requestCtx, c.client.genqlient, state.ID.ValueString())
 
-		return retryContextError(err)
+		return err
 	})
 	if err != nil {
 		resp.Diagnostics.AddError(
