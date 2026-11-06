@@ -91,8 +91,8 @@ require the fixtures in that organization; running them in another organization
 requires updating the constants. Do not delete the persistent fixtures or change
 their required access grants.
 
-The token needs `graphql`, `write_pipelines`, `read_clusters`, `read_suites`, and
-`write_suites` scopes. Its owner must be an
+The token needs `graphql`, `write_pipelines`, `read_clusters`, `read_suites`,
+`write_suites`, `read_secrets_details`, and `write_secrets` scopes. Its owner must be an
 organization `MEMBER`, not an `ADMIN`, and a maintainer of the existing `everyone` team with
 permission to create pipelines. Set `BUILDKITE_NONADMIN_TEAM_SLUG` to use another
 existing team. The tests do not create teams or change memberships.
@@ -141,6 +141,18 @@ remote absence after revocation. The cluster remains a data source and is never
 managed or deleted. Token operations use GraphQL; the cluster data source uses
 the existing `read_clusters` scope for maintainer reads. The token resource does
 not support import. Distinct expiry replacement cases remain in the admin suite.
+
+The shared cluster-secret lifecycle creates a temporary secret on the same
+maintained cluster, updates its description and policy, rotates a generated dummy
+value, refreshes, imports using `cluster_uuid/secret_uuid`, and deletes it. It
+checks stable identity and creation time, remote metadata, state-value retention,
+and remote absence after deletion. Import verification excludes `value` because
+the API does not return secret values; imported state must not contain a value.
+The test does not retrieve a secret through an agent or prove its encrypted value
+by reading it back. Secret metadata reads require `read_secrets_details`; creation,
+both update operations, and deletion require `write_secrets`. The cluster remains
+a data source. Distinct write-only, value-to-write-only migration, policy, and
+validation cases remain separate.
 
 The shared test suite lifecycle uses `testAccFixturePipelineTeamSlug` as the
 owner of a temporary suite. The member must maintain that team, and the
