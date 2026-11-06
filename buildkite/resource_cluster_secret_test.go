@@ -4,17 +4,172 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"net/http/httptest"
 	"os"
 	"regexp"
 	"testing"
+	"time"
 
+	fwresource "github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
+	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-go/tftypes"
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
+
+func TestClusterSecretReadPreservesRateLimitErrorAtDeadline(t *testing.T) {
+	t.Parallel()
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("RateLimit-Reset", "5")
+		http.Error(w, `{"message":"Organization API rate limit exceeded"}`, http.StatusTooManyRequests)
+	}))
+	defer server.Close()
+	client := NewClient(&clientConfig{restURL: server.URL, org: "test-org", maxRetries: DefaultRetryMaxAttempts})
+	client.timeouts = configuredTimeouts("read", "200ms")
+
+	// Hold the HTTP retry result briefly after its deadline. This forces the ordering where
+	// the SDK waiter gives up before its callback can publish the already-captured 429.
+	transport := client.http.Transport
+	finished := make(chan struct{})
+	client.http.Transport = roundTripFunc(func(req *http.Request) (*http.Response, error) {
+		defer close(finished)
+		resp, err := transport.RoundTrip(req)
+		if req.Context().Err() != nil {
+			time.Sleep(50 * time.Millisecond)
+		}
+		return resp, err
+	})
+	t.Cleanup(func() { <-finished })
+
+	diags := runRead(t.Context(), t, &clusterSecretResource{client: client}, map[string]tftypes.Value{
+		"id":         tftypes.NewValue(tftypes.String, "secret-456"),
+		"cluster_id": tftypes.NewValue(tftypes.String, "cluster-123"),
+		"value":      tftypes.NewValue(tftypes.String, "state-only-secret"),
+	})
+	for _, want := range []string{"429", "Organization API rate limit exceeded", "context deadline exceeded"} {
+		if !diagnosticsContain(diags, want) {
+			t.Errorf("Read diagnostics = %v, want %q", diags, want)
+		}
+	}
+	if diagnosticsContain(diags, "state-only-secret") {
+		t.Fatal("Read diagnostics exposed the secret value")
+	}
+}
+
+func TestClusterSecretReadRecoversFromRateLimit(t *testing.T) {
+	t.Parallel()
+
+	requests := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests++
+		if requests == 1 {
+			w.Header().Set("RateLimit-Reset", "5")
+			http.Error(w, `{"message":"Organization API rate limit exceeded"}`, http.StatusTooManyRequests)
+			return
+		}
+		_, _ = fmt.Fprint(w, `{"id":"secret-456","key":"MY_SECRET","description":"updated","created_at":"2026-10-21T15:00:00Z","updated_at":"2026-10-21T15:28:00Z"}`)
+	}))
+	defer server.Close()
+	// Keep the production timeout and backoff defaults: the acceptance configs use these too.
+	client := NewClient(&clientConfig{restURL: server.URL, org: "test-org", maxRetries: DefaultRetryMaxAttempts})
+	r := &clusterSecretResource{client: client}
+	state := tfsdk.State{Schema: resourceSchema(t.Context(), t, r)}
+	if diags := state.Set(t.Context(), &clusterSecretResourceModel{
+		ID: types.StringValue("secret-456"), ClusterID: types.StringValue("cluster-123"),
+		Key: types.StringValue("MY_SECRET"), Value: types.StringValue("state-only-secret"),
+	}); diags.HasError() {
+		t.Fatal(diags)
+	}
+	resp := fwresource.ReadResponse{State: state}
+	r.Read(t.Context(), fwresource.ReadRequest{State: state}, &resp)
+	if resp.Diagnostics.HasError() {
+		t.Fatal(resp.Diagnostics)
+	}
+	var got clusterSecretResourceModel
+	if diags := resp.State.Get(t.Context(), &got); diags.HasError() {
+		t.Fatal(diags)
+	}
+	if requests != 2 || got.ID.ValueString() != "secret-456" || got.Key.ValueString() != "MY_SECRET" ||
+		got.Description.ValueString() != "updated" || got.UpdatedAt.ValueString() != "2026-10-21T15:28:00Z" ||
+		got.Value.ValueString() != "state-only-secret" {
+		t.Fatal("Read did not recover and refresh metadata while preserving the secret value")
+	}
+}
+
+func TestClusterSecretReadFailureHandling(t *testing.T) {
+	t.Parallel()
+
+	for _, tc := range []struct {
+		name   string
+		status int
+		cancel bool
+		want   string
+	}{
+		{name: "request deadline without response", want: "context deadline exceeded"},
+		{name: "caller cancellation without response", cancel: true, want: "context canceled"},
+		{name: "forbidden is not removed or retried", status: http.StatusForbidden, want: "403"},
+		{name: "not found removes state", status: http.StatusNotFound},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			ctx, cancel := context.WithCancel(t.Context())
+			defer cancel()
+			requests := 0
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+				requests++
+				if tc.status != 0 {
+					http.Error(w, `{"message":"Request refused"}`, tc.status)
+					return
+				}
+				if tc.cancel {
+					cancel()
+				}
+				<-req.Context().Done()
+			}))
+			defer server.Close()
+			client := NewClient(&clientConfig{restURL: server.URL, org: "test-org", maxRetries: DefaultRetryMaxAttempts})
+			client.timeouts = configuredTimeouts("read", "200ms")
+			r := &clusterSecretResource{client: client}
+			state := tfsdk.State{Schema: resourceSchema(t.Context(), t, r)}
+			if diags := state.Set(t.Context(), &clusterSecretResourceModel{
+				ID: types.StringValue("secret-456"), ClusterID: types.StringValue("cluster-123"),
+			}); diags.HasError() {
+				t.Fatal(diags)
+			}
+			resp := fwresource.ReadResponse{State: state}
+			started := time.Now()
+			r.Read(ctx, fwresource.ReadRequest{State: state}, &resp)
+			if elapsed := time.Since(started); elapsed > 2*time.Second {
+				t.Errorf("Read took %s, want bounded cancellation/deadline handling", elapsed)
+			}
+			if tc.status == http.StatusNotFound {
+				if resp.Diagnostics.HasError() || !resp.State.Raw.IsNull() {
+					t.Fatalf("404 should remove state without error, got %v", resp.Diagnostics)
+				}
+			} else {
+				if !diagnosticsContain(resp.Diagnostics, tc.want) {
+					t.Errorf("Read diagnostics = %v, want %q", resp.Diagnostics, tc.want)
+				}
+				if !resp.State.Raw.Equal(state.Raw) {
+					t.Error("failed Read changed the prior state")
+				}
+				if tc.status == 0 && diagnosticsContain(resp.Diagnostics, "status:") {
+					t.Error("Read reported an HTTP status without a response")
+				}
+			}
+			// Wait for the server handler before checking its request count.
+			server.Close()
+			if requests != 1 {
+				t.Errorf("made %d requests, want 1", requests)
+			}
+		})
+	}
+}
 
 func TestAccNonAdminClusterSecret(t *testing.T) {
 	const address = "buildkite_cluster_secret.temporary"
@@ -294,12 +449,6 @@ func testAccClusterSecretConfig(clusterName, key, value, description string) str
 provider "buildkite" {
     organization = "%s"
     api_token    = "%s"
-    timeouts = {
-        create = "10s"
-        read = "10s"
-        update = "10s"
-        delete = "10s"
-    }
 }
 
 resource "buildkite_cluster" "test" {
@@ -321,12 +470,6 @@ func testAccClusterSecretWriteOnlyConfig(clusterName, key, value, version, descr
 provider "buildkite" {
     organization = "%s"
     api_token    = "%s"
-    timeouts = {
-        create = "10s"
-        read = "10s"
-        update = "10s"
-        delete = "10s"
-    }
 }
 
 resource "buildkite_cluster" "test" {
@@ -471,12 +614,6 @@ func testAccClusterSecretConfigWithPolicy(clusterName, key, value, pipeline, bra
 provider "buildkite" {
     organization = "%s"
     api_token    = "%s"
-    timeouts = {
-        create = "10s"
-        read = "10s"
-        update = "10s"
-        delete = "10s"
-    }
 }
 
 resource "buildkite_cluster" "test" {
