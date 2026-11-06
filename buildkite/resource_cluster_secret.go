@@ -242,13 +242,9 @@ func (r *clusterSecretResource) Read(ctx context.Context, req resource.ReadReque
 	requestCtx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
-	var secret *ClusterSecret
-	err := retry.RetryContext(requestCtx, timeout, func() *retry.RetryError {
-		var err error
-		secret, err = r.client.GetClusterSecret(requestCtx, r.client.organization, state.ClusterID.ValueString(), state.ID.ValueString())
-		return retryContextError(err)
-	})
-
+	// The HTTP client owns REST retries. An outer waiter can time out before the request
+	// returns its captured API error, replacing a useful status with a generic state timeout.
+	secret, err := r.client.GetClusterSecret(requestCtx, r.client.organization, state.ClusterID.ValueString(), state.ID.ValueString())
 	if err != nil {
 		if isAPIStatus(err, http.StatusNotFound) {
 			resp.State.RemoveResource(ctx)
