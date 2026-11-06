@@ -94,6 +94,7 @@ func TestClusterSecretReadRecoversFromRateLimit(t *testing.T) {
 	if diags := resp.State.Get(t.Context(), &got); diags.HasError() {
 		t.Fatal(diags)
 	}
+	server.Close()
 	if requests != 2 || got.ID.ValueString() != "secret-456" || got.Key.ValueString() != "MY_SECRET" ||
 		got.Description.ValueString() != "updated" || got.UpdatedAt.ValueString() != "2026-10-21T15:28:00Z" ||
 		got.Value.ValueString() != "state-only-secret" {
