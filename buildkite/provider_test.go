@@ -31,6 +31,9 @@ const (
 	testAccFixtureSourceOnlyRuleUUID = "01a1acbe-c891-7935-9849-23e51bcbb1bd"
 	testAccFixtureTargetOnlyRuleUUID = "01a1acbe-c8d8-7af1-bd85-069d1d888838"
 	testAccFixtureReadableRuleUUID   = "01a1ac8d-4aa6-7bf4-b3b2-842a4578de37"
+	testAccFixtureTemplateName       = "Terraform Provider Non-admin Template"
+	testAccFixtureTemplateUUID       = "01a1b1f5-1e98-7146-ae79-86a60a3d8cb6"
+	testAccFixtureTemplateID         = "UGlwZWxpbmVUZW1wbGF0ZS0tLTAxYTFiMWY1LTFlOTgtNzE0Ni1hZTc5LTg2YTYwYTNkOGNiNg=="
 )
 
 var (

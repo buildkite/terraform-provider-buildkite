@@ -425,6 +425,149 @@ func TestAccNonAdminPipeline(t *testing.T) {
 	})
 }
 
+func TestAccNonAdminPipelineTemplate(t *testing.T) {
+	const address = "buildkite_pipeline.pipeline"
+	const explicitSteps = "steps:\n  - block: Template acceptance control"
+	pipelineName := "nonadmin-template-" + acctest.RandString(12)
+	teamSlug := os.Getenv("BUILDKITE_NONADMIN_TEAM_SLUG")
+	if teamSlug == "" {
+		teamSlug = "everyone"
+	}
+	fixtureConfig := fmt.Sprintf(`
+		data "buildkite_team" "nonadmin" {
+			slug = %q
+		}
+		data "buildkite_pipeline_template" "by_name" {
+			name = %q
+		}
+		data "buildkite_pipeline_template" "by_id" {
+			id = %q
+		}
+	`, teamSlug, testAccFixtureTemplateName, testAccFixtureTemplateID)
+	config := func(templateSource string) string {
+		stepsMode := fmt.Sprintf("steps = %q", explicitSteps)
+		if templateSource != "" {
+			stepsMode = fmt.Sprintf("pipeline_template_id = data.buildkite_pipeline_template.%s.id", templateSource)
+		}
+		return fixtureConfig + fmt.Sprintf(`
+			resource "buildkite_pipeline" "pipeline" {
+				name = %q
+				repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
+				default_team_id = data.buildkite_team.nonadmin.id
+				%s
+			}
+		`, pipelineName, stepsMode)
+	}
+	fixtureChecks := []resource.TestCheckFunc{}
+	for _, source := range []string{"by_name", "by_id"} {
+		dataAddress := "data.buildkite_pipeline_template." + source
+		fixtureChecks = append(fixtureChecks,
+			resource.TestCheckResourceAttr(dataAddress, "id", testAccFixtureTemplateID),
+			resource.TestCheckResourceAttr(dataAddress, "uuid", testAccFixtureTemplateUUID),
+			resource.TestCheckResourceAttr(dataAddress, "name", testAccFixtureTemplateName),
+			resource.TestCheckResourceAttr(dataAddress, "available", "true"),
+			resource.TestCheckResourceAttr(dataAddress, "configuration", "steps: []"),
+		)
+	}
+	checkFixtures := resource.ComposeAggregateTestCheckFunc(fixtureChecks...)
+	var pipelineID, pipelineUUID, pipelineSlug string
+	check := func(withTemplate bool) resource.TestCheckFunc {
+		modeChecks := resource.ComposeAggregateTestCheckFunc(
+			resource.TestCheckResourceAttr(address, "pipeline_template_id", testAccFixtureTemplateID),
+			resource.TestCheckNoResourceAttr(address, "steps"),
+		)
+		if !withTemplate {
+			modeChecks = resource.ComposeAggregateTestCheckFunc(
+				resource.TestCheckNoResourceAttr(address, "pipeline_template_id"),
+				resource.TestCheckResourceAttr(address, "steps", explicitSteps),
+			)
+		}
+		return resource.ComposeAggregateTestCheckFunc(
+			checkFixtures,
+			modeChecks,
+			resource.TestCheckResourceAttr(address, "name", pipelineName),
+			resource.TestCheckResourceAttr(address, "visibility", "PRIVATE"),
+			resource.TestCheckResourceAttrPair(address, "default_team_id", "data.buildkite_team.nonadmin", "id"),
+			func(s *terraform.State) error {
+				p := s.RootModule().Resources[address].Primary
+				if pipelineID == "" {
+					pipelineID, pipelineUUID, pipelineSlug = p.ID, p.Attributes["uuid"], p.Attributes["slug"]
+				}
+				if pipelineID == "" || pipelineUUID == "" || pipelineSlug == "" || p.ID != pipelineID || p.Attributes["uuid"] != pipelineUUID || p.Attributes["slug"] != pipelineSlug {
+					return fmt.Errorf("pipeline identity is missing or changed")
+				}
+				remote, err := getPipeline(context.Background(), genqlientGraphql,
+					fmt.Sprintf("%s/%s", getenv("BUILDKITE_ORGANIZATION_SLUG"), pipelineSlug))
+				if err != nil {
+					return err
+				}
+				if remote.Pipeline.Id != pipelineID || remote.Pipeline.PipelineUuid != pipelineUUID || remote.Pipeline.Name != pipelineName || remote.Pipeline.Visibility != PipelineVisibilityPrivate {
+					return fmt.Errorf("remote pipeline identity or private visibility does not match")
+				}
+				templateID, steps := "", explicitSteps
+				if withTemplate {
+					templateID, steps = testAccFixtureTemplateID, "steps: []"
+				}
+				remoteTemplateID := remote.Pipeline.PipelineTemplate.Id
+				if (remoteTemplateID == nil && templateID != "") || (remoteTemplateID != nil && *remoteTemplateID != templateID) || remote.Pipeline.Steps.Yaml != steps {
+					return fmt.Errorf("remote pipeline template assignment or steps do not match the expected mode")
+				}
+				teamID := s.RootModule().Resources["data.buildkite_team.nonadmin"].Primary.ID
+				for _, edge := range remote.Pipeline.Teams.Edges {
+					if edge.Node.Team.Id == teamID && edge.Node.AccessLevel == PipelineAccessLevelsManageBuildAndRead {
+						return nil
+					}
+				}
+				return fmt.Errorf("remote pipeline lost its initial team's Full Access")
+			},
+		)
+	}
+	inPlaceUpdate := resource.ConfigPlanChecks{
+		PreApply: []plancheck.PlanCheck{
+			plancheck.ExpectResourceAction(address, plancheck.ResourceActionUpdate),
+		},
+		PostApplyPostRefresh: []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()},
+	}
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccNonAdminPreCheck(t) },
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		CheckDestroy:             testAccCheckPipelineDestroy,
+		Steps: []resource.TestStep{
+			{Config: config("by_name"), Check: check(true)},
+			{RefreshState: true, Check: check(true)},
+			{
+				ResourceName:            address,
+				ImportState:             true,
+				ImportStateIdFunc:       testAccImportIDFromAttributes(address, "slug"),
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"default_team_id", "provider_settings"},
+			},
+			{Config: config(""), Check: check(false), ConfigPlanChecks: inPlaceUpdate},
+			{RefreshState: true, Check: check(false)},
+			{Config: config("by_id"), Check: check(true), ConfigPlanChecks: inPlaceUpdate},
+			{
+				Config: fixtureConfig,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					checkFixtures,
+					func(s *terraform.State) error {
+						if _, exists := s.RootModule().Resources[address]; exists {
+							return fmt.Errorf("deleted pipeline remains in Terraform state")
+						}
+						remote, err := getNode(context.Background(), genqlientGraphql, pipelineID)
+						if err != nil {
+							return err
+						}
+						if remote.Node != nil {
+							return fmt.Errorf("deleted pipeline remains in the API")
+						}
+						return nil
+					},
+				),
+			},
+		},
+	})
+}
+
 func TestAccNonAdminPipelineRESTSettings(t *testing.T) {
 	pipelineName := "nonadmin-rest-" + acctest.RandString(12)
 	slug := "custom-" + acctest.RandString(12)

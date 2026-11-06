@@ -104,6 +104,22 @@ also checks pipeline and team data sources, including filtered pipeline reads
 after an update and unchanged private visibility. It reuses its pipeline for
 these checks instead of creating a separate data source fixture.
 
+The shared pipeline-template lifecycle reads the persistent available template
+identified by `testAccFixtureTemplateName`, `testAccFixtureTemplateUUID`, and
+`testAccFixtureTemplateID`, independently by name and GraphQL ID. Its configuration
+must remain `steps: []`. The test creates a temporary private pipeline with that
+template, refreshes, imports by pipeline slug, removes the assignment in place
+with explicit nonempty steps, reassigns the template, and deletes the pipeline.
+The organization must permit editable pipeline steps so the member can remove
+the template assignment and configure explicit steps.
+Checks require matching remote assignment and steps, stable pipeline identity,
+the original team's unchanged Full Access, and remote absence after deletion.
+The template and team remain data sources; neither is managed or deleted.
+These operations use GraphQL and require no additional REST scopes. Equivalent
+basic template data-source reads are consolidated here; nonempty-template
+assignment, template-update propagation, explicit/implicit steps-mode transitions,
+and invalid data-source lookup cases remain separate.
+
 `testAccFixturePipelineTeamSlug` identifies the second persistent team, distinct
 from the pipeline's original Full Access team.
 The member token owner must also maintain this team. The shared pipeline-team
