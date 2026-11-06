@@ -77,7 +77,7 @@ BUILDKITE_ORGANIZATION_SLUG=<org-slug> BUILDKITE_API_TOKEN=<token> make testacc
 #### Non-admin acceptance tests
 
 Run the shared pipeline, pipeline schedule, pipeline-team, queue, cluster agent-token,
-and test suite lifecycles and read-only data source tests with a non-admin token:
+test suite, and suite-team lifecycles and read-only data source tests with a non-admin token:
 
 ```bash
 BUILDKITE_ORGANIZATION_SLUG=<test-org> BUILDKITE_API_TOKEN=<non-admin-token> \
@@ -152,6 +152,16 @@ absence after deletion. The persistent team and its memberships are never
 managed. REST operations require `read_suites` and `write_suites`; ownership
 reads use GraphQL. Distinct optional-setting and owner-change scenarios remain
 in the admin suite.
+
+The shared suite-team lifecycle creates another temporary suite with the same
+owner and adds the `BUILDKITE_NONADMIN_TEAM_SLUG` team (default `everyone`) with
+Read Only access. These teams must be distinct. The test updates the secondary
+association to Manage & Read, refreshes, imports by GraphQL ID, and removes it
+before suite cleanup. Checks require a stable association identity, remote
+absence after removal, and the original owner's unchanged Manage & Read access.
+Both teams remain data sources. Association operations use GraphQL and need no
+additional REST scopes. Team replacement and out-of-band removal scenarios
+remain in the admin suite.
 
 Read-only tests look up the token owner's organization membership and list
 members without assuming list order. The organization data source must return
