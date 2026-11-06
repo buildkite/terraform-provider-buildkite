@@ -245,6 +245,19 @@ Checks require stable identity, unchanged private visibility and team Full Acces
 and remote absence after deletion. No member operation is retried with admin
 credentials. The non-admin-only job does not receive the admin token.
 
+Registry-team permission tests use the same dual-credential admin job. Admin
+Terraform creates a temporary registry and grants the existing owner team Full
+Access. Admin and member states then separately exercise secondary-team creation,
+Read Only → Read & Write → Full Access updates, GraphQL-ID import, refresh, and
+removal on that registry. The secondary team is `BUILDKITE_NONADMIN_TEAM_SLUG`
+(default `everyone`); it must differ from the owner, and the member must maintain
+both teams. Both teams remain data sources. Checks require stable association
+identity, correct endpoints and access, unchanged owner Full Access, and registry
+survival after association removal. Independent admin Terraform state owns final
+registry cleanup, including after member failures. Association mutations use
+GraphQL; no additional API scopes or persistent fixtures are needed beyond the
+registry prerequisites above. The distinct admin drift/recreation test remains.
+
 The
 [source](https://buildkite.com/buildkite-terraform-provider-test-org/terraform-provider-non-admin-rules-source),
 [target](https://buildkite.com/buildkite-terraform-provider-test-org/terraform-provider-non-admin-rules-target),
