@@ -19,7 +19,6 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/hashicorp/terraform-plugin-go/tftypes"
 
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/plancheck"
@@ -809,19 +808,27 @@ func testTestSuiteDestroy(s *terraform.State) error {
 func testAccCheckTestSuiteDeleted(slug string) error {
 	client := getTestClient()
 	url := fmt.Sprintf("/v2/analytics/organizations/%s/suites/%s", client.organization, slug)
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), DefaultTimeout)
 	defer cancel()
-	return retry.RetryContext(ctx, 5*time.Second, func() *retry.RetryError {
+	pollDeadline := time.Now().Add(5 * time.Second)
+	for {
 		var response testSuiteResponse
 		err := client.makeRequest(ctx, http.MethodGet, url, nil, &response)
 		if isAPIStatus(err, http.StatusNotFound) {
 			return nil
 		}
 		if err != nil {
-			return retry.NonRetryableError(fmt.Errorf("checking suite deletion: %w", err))
+			return fmt.Errorf("checking suite deletion: %w", err)
 		}
-		return retry.RetryableError(fmt.Errorf("test suite still exists: %s", slug))
-	})
+		if time.Now().After(pollDeadline) {
+			return fmt.Errorf("test suite still exists: %s", slug)
+		}
+		select {
+		case <-ctx.Done():
+			return fmt.Errorf("checking suite deletion: %w", ctx.Err())
+		case <-time.After(500 * time.Millisecond):
+		}
+	}
 }
 
 // The attributes these tests drive Update with. The schema has a dozen more, and nullObjectWith

@@ -232,6 +232,21 @@ func TestSuiteDeletionWaitsForReplica(t *testing.T) {
 	}
 }
 
+func TestSuiteDeletionAllowsSlowNotFound(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		time.Sleep(6 * time.Second)
+		w.WriteHeader(http.StatusNotFound)
+		_, _ = w.Write([]byte(`{}`))
+	}))
+	t.Cleanup(server.Close)
+	t.Setenv("BUILDKITE_API_TOKEN", "test-token")
+	t.Setenv("BUILDKITE_ORGANIZATION_SLUG", "test-org")
+	t.Setenv("BUILDKITE_REST_URL", server.URL)
+	if err := testAccCheckTestSuiteDeleted("deleted-suite"); err != nil {
+		t.Fatalf("slow not-found response must still confirm deletion: %v", err)
+	}
+}
+
 func TestGraphQLDestroyChecksRejectFailedReads(t *testing.T) {
 	t.Setenv("BUILDKITE_ORGANIZATION_SLUG", "test-org")
 	previous := genqlientGraphql
