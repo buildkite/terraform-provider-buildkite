@@ -413,7 +413,7 @@ Buildkite has two APIs: REST and GraphQL. **New resources should use the GraphQL
 
 Every API call should run under a deadline derived from its operation's configured timeout.
 
-A `Read` (and an import or plan-time lookup, which use the read timeout) derives one context and passes it to every call it makes, including `retry.RetryContext` and paging loops, so the whole read shares one budget. Reads have no helper like `retryMutation` below, because a helper would give each retry block its own deadline, and a read cut off at its deadline has nothing to record:
+A `Read` (and an import or plan-time lookup, which use the read timeout) derives one context and passes it to every call it makes, including retry helpers and paging loops, so the whole read shares one budget. Read retry helpers must reuse that context rather than create a new deadline for each retry block:
 
 ```go
 timeout, diags := r.client.readTimeout(ctx)
@@ -425,6 +425,8 @@ if resp.Diagnostics.HasError() {
 requestCtx, cancel := context.WithTimeout(ctx, timeout)
 defer cancel()
 ```
+
+The initial cluster and pipeline GraphQL refreshes use `retryRead(requestCtx, fn)`. It waits synchronously for the request's error, so an SDK waiter cannot return a generic timeout before the request reports its captured API failure. The HTTP client owns transport and HTTP-status retries; `retryRead` retries only transient backend errors in GraphQL responses. If the read runs out of time, it retains the latest backend error alongside the deadline or cancellation error. It does not add a mutation grace period or reset the shared deadline.
 
 A `Create`, `Update` or `Delete` gives each step that changes something its own deadline. A step that retries uses `retryMutation` in place of `retry.RetryContext`. `retryMutation` passes the parent `ctx` to `retry.RetryContext` and hands the function a context from `mutationContext`, so make every call in the block with the `ctx` the function receives:
 

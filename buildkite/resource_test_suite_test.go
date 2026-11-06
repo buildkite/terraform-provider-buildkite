@@ -758,27 +758,19 @@ func checkTestSuiteRemoteValue(suite *getTestSuiteSuite, property, value string)
 	}
 }
 
-func loadRemoteTestSuite(id string) *getTestSuiteSuite {
-	_suite, err := getTestSuite(context.Background(), genqlientGraphql, id, 1, nil)
-	if err != nil {
-		return nil
-	}
-	if suite, ok := _suite.Suite.(*getTestSuiteSuite); ok {
-		return suite
-	}
-
-	return nil
-}
-
 func checkTestSuiteExists(name string, suite *getTestSuiteSuite) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[name]
 		if !ok {
 			return errors.New("Test suite not found in state")
 		}
-		_suite := loadRemoteTestSuite(rs.Primary.Attributes["id"])
+		response, err := getTestSuite(context.Background(), genqlientGraphql, rs.Primary.Attributes["id"], 1, nil)
+		if err != nil {
+			return fmt.Errorf("checking test suite %s: %w", name, err)
+		}
 
-		if _suite == nil {
+		_suite, ok := response.Suite.(*getTestSuiteSuite)
+		if !ok || _suite == nil {
 			return errors.New("Test suite does not exist on server")
 		}
 

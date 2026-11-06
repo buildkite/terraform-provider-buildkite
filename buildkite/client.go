@@ -199,6 +199,36 @@ func retryMutation(ctx context.Context, timeout time.Duration, fn func(ctx conte
 	})
 }
 
+// retryRead waits for the request itself to finish, rather than racing an SDK waiter against its
+// callback at the same deadline. HTTP retries stay in the client; only GraphQL 200-body backend
+// throttles need another attempt here. Callers supply the read's shared operation context.
+func retryRead(ctx context.Context, fn func() error) error {
+	var lastErr error
+	for wait := 500 * time.Millisecond; ; wait = min(2*wait, 10*time.Second) {
+		if err := ctx.Err(); err != nil {
+			return errors.Join(lastErr, err)
+		}
+		err := fn()
+		if err == nil {
+			return nil
+		}
+		if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
+			return errors.Join(lastErr, err)
+		}
+		if !isTransientError(err) {
+			return err
+		}
+		lastErr = err
+		timer := time.NewTimer(wait)
+		select {
+		case <-ctx.Done():
+			timer.Stop()
+			return errors.Join(lastErr, ctx.Err())
+		case <-timer.C:
+		}
+	}
+}
+
 // NewClient creates a client for interacting with the Buildkite API.
 //
 // https://buildkite.com/docs/apis/rest-api/limits
