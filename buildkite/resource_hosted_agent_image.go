@@ -75,10 +75,19 @@ func (r *hostedAgentImageResource) Schema(ctx context.Context, req resource.Sche
 			must already have a hosted queue before an image can be created in it. Use ` + "`depends_on`" + ` when that
 			queue is managed in the same configuration.
 
+			The API token requires ` + "`read_clusters` and `write_clusters`" + ` scopes, and its user must have
+			permission to manage the cluster. This permission is required for reads as well as writes.
+
 			Creating an image waits for its build to finish. If the build fails, the build error is reported and
 			the image is replaced on the next apply. Images cannot be changed after they are created, so changing
-			any argument replaces the image. An image used by a queue cannot be deleted until those queues use a
-			different image.
+			` + "`cluster_id`, `name`, or `dockerfile`" + ` replaces the image. An image used by a queue cannot be
+			deleted until those queues use a different image.
+
+			To replace an image used by a queue, set ` + "`lifecycle { create_before_destroy = true }`" + ` and
+			change its name for each Dockerfile revision, as shown in the example below. Buildkite requires image
+			names to be unique within a cluster, so keeping the same name prevents creation of the replacement.
+			Terraform can then build the new image, update queues that reference it, and delete the old image.
+			Without this lifecycle setting, first switch queues away from the image in a separate apply.
 		`),
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
@@ -130,7 +139,7 @@ func (r *hostedAgentImageResource) Schema(ctx context.Context, req resource.Sche
 		Blocks: map[string]schema.Block{
 			"timeouts": timeouts.Block(ctx, timeouts.Opts{
 				Create:            true,
-				CreateDescription: "How long to wait for the image to build. Defaults to 30 minutes.",
+				CreateDescription: "How long to wait for the image to build. Must be greater than zero. Defaults to 30 minutes.",
 			}),
 		},
 	}
@@ -148,6 +157,10 @@ func (r *hostedAgentImageResource) Create(ctx context.Context, req resource.Crea
 	buildTimeout, diags := plan.Timeouts.Create(ctx, defaultHostedAgentImageBuildTimeout)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
+		return
+	}
+	if buildTimeout <= 0 {
+		resp.Diagnostics.AddAttributeError(path.Root("timeouts").AtName("create"), "Invalid build timeout", "The create timeout must be greater than zero.")
 		return
 	}
 

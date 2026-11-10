@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Features
+
+* Add the `buildkite_hosted_agent_image` resource.
+
 ### Fixed
 
 * Clear `description` and `allowed_ip_addresses` on `buildkite_portal` when they are removed from configuration, instead of failing the apply with an inconsistent result while the portal keeps the old values.
@@ -82,7 +86,6 @@
 ### Features
 
 * Add the `buildkite_cluster_cache_registry` resource.
-* Add the `buildkite_hosted_agent_image` resource.
 
 ## [1.35.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.34.2...v1.35.0)
 

@@ -9,10 +9,17 @@ description: |-
   A cluster gets its hosted agents environment when its first hosted queue is created, so the cluster
   must already have a hosted queue before an image can be created in it. Use depends_on when that
   queue is managed in the same configuration.
+  The API token requires read_clusters and write_clusters scopes, and its user must have
+  permission to manage the cluster. This permission is required for reads as well as writes.
   Creating an image waits for its build to finish. If the build fails, the build error is reported and
   the image is replaced on the next apply. Images cannot be changed after they are created, so changing
-  any argument replaces the image. An image used by a queue cannot be deleted until those queues use a
-  different image.
+  cluster_id, name, or dockerfile replaces the image. An image used by a queue cannot be
+  deleted until those queues use a different image.
+  To replace an image used by a queue, set lifecycle { create_before_destroy = true } and
+  change its name for each Dockerfile revision, as shown in the example below. Buildkite requires image
+  names to be unique within a cluster, so keeping the same name prevents creation of the replacement.
+  Terraform can then build the new image, update queues that reference it, and delete the old image.
+  Without this lifecycle setting, first switch queues away from the image in a separate apply.
 ---
 
 # buildkite_hosted_agent_image (Resource)
@@ -25,10 +32,19 @@ A cluster gets its hosted agents environment when its first hosted queue is crea
 must already have a hosted queue before an image can be created in it. Use `depends_on` when that
 queue is managed in the same configuration.
 
+The API token requires `read_clusters` and `write_clusters` scopes, and its user must have
+permission to manage the cluster. This permission is required for reads as well as writes.
+
 Creating an image waits for its build to finish. If the build fails, the build error is reported and
 the image is replaced on the next apply. Images cannot be changed after they are created, so changing
-any argument replaces the image. An image used by a queue cannot be deleted until those queues use a
-different image.
+`cluster_id`, `name`, or `dockerfile` replaces the image. An image used by a queue cannot be
+deleted until those queues use a different image.
+
+To replace an image used by a queue, set `lifecycle { create_before_destroy = true }` and
+change its name for each Dockerfile revision, as shown in the example below. Buildkite requires image
+names to be unique within a cluster, so keeping the same name prevents creation of the replacement.
+Terraform can then build the new image, update queues that reference it, and delete the old image.
+Without this lifecycle setting, first switch queues away from the image in a separate apply.
 
 ## Example Usage
 
@@ -47,12 +63,21 @@ resource "buildkite_cluster_queue" "default" {
   }
 }
 
-resource "buildkite_hosted_agent_image" "ruby" {
-  cluster_id = buildkite_cluster.hosted.uuid
-  name       = "ruby"
-  dockerfile = <<-EOT
+locals {
+  ruby_dockerfile = <<-EOT
     RUN apt-get update && apt-get install -y ruby-full
   EOT
+}
+
+resource "buildkite_hosted_agent_image" "ruby" {
+  cluster_id = buildkite_cluster.hosted.uuid
+  # Each Dockerfile revision needs a unique name so both images can exist during rollout
+  name       = "ruby-${substr(sha256(local.ruby_dockerfile), 0, 12)}"
+  dockerfile = local.ruby_dockerfile
+
+  lifecycle {
+    create_before_destroy = true
+  }
 
   depends_on = [buildkite_cluster_queue.default]
 }
@@ -96,7 +121,7 @@ resource "buildkite_cluster_queue" "ruby" {
 
 Optional:
 
-- `create` (String) How long to wait for the image to build. Defaults to 30 minutes.
+- `create` (String) How long to wait for the image to build. Must be greater than zero. Defaults to 30 minutes.
 
 ## Import
 

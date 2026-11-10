@@ -25,6 +25,7 @@ type fakeHostedAgentImageAPI struct {
 	reads         map[string]int
 	buildingReads int
 	buildError    string
+	inUse         bool
 	created       int
 }
 
@@ -88,6 +89,10 @@ func (a *fakeHostedAgentImageAPI) ServeHTTP(w http.ResponseWriter, r *http.Reque
 			writeFakeJSON(w, http.StatusNotFound, map[string]string{"message": "No agent image found with the given ID."})
 			return
 		}
+		if a.inUse {
+			writeFakeJSON(w, http.StatusConflict, map[string]string{"message": "this agent image is in use by one or more queues; reassign those queues before deleting it"})
+			return
+		}
 		delete(a.images, id)
 		w.WriteHeader(http.StatusNoContent)
 	default:
@@ -107,6 +112,13 @@ func (a *fakeHostedAgentImageAPI) setBuildError(message string) {
 	defer a.mu.Unlock()
 
 	a.buildError = message
+}
+
+func (a *fakeHostedAgentImageAPI) setInUse(inUse bool) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+
+	a.inUse = inUse
 }
 
 // checkImages asserts the names of the images left in the cluster
@@ -216,6 +228,56 @@ func TestUnitBuildkiteHostedAgentImageReplacesAFailedBuild(t *testing.T) {
 					api.checkImages("ruby RUN apt-get install -y ruby\n"),
 				),
 			},
+		},
+	})
+}
+
+func TestUnitBuildkiteHostedAgentImageRejectsNonPositiveBuildTimeout(t *testing.T) {
+	for _, timeout := range []string{"0s", "-1h"} {
+		t.Run(timeout, func(t *testing.T) {
+			server, api := newFakeHostedAgentImageAPI(t)
+			config := strings.Replace(fakeHostedAgentImageConfig(server, "RUN true\n"),
+				"dockerfile =", fmt.Sprintf("timeouts { create = %q }\n dockerfile =", timeout), 1)
+
+			resource.UnitTest(t, resource.TestCase{
+				ProtoV6ProviderFactories: protoV6ProviderFactories(),
+				CheckDestroy:             api.checkImages(),
+				Steps: []resource.TestStep{{
+					Config:      config,
+					ExpectError: regexp.MustCompile(`create timeout must be greater than zero`),
+				}},
+			})
+
+			api.mu.Lock()
+			defer api.mu.Unlock()
+			if api.created != 0 {
+				t.Errorf("created %d images with an invalid build timeout, want none", api.created)
+			}
+		})
+	}
+}
+
+func TestUnitBuildkiteHostedAgentImageRetainsAnImageInUse(t *testing.T) {
+	server, api := newFakeHostedAgentImageAPI(t)
+	config := fakeHostedAgentImageConfig(server, "RUN true\n")
+
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		CheckDestroy:             api.checkImages(),
+		Steps: []resource.TestStep{
+			{Config: config},
+			{
+				PreConfig:   func() { api.setInUse(true) },
+				Config:      config,
+				Destroy:     true,
+				ExpectError: regexp.MustCompile(`reassign those queues before deleting it`),
+			},
+			{
+				PreConfig: func() { api.setInUse(false) },
+				Config:    config,
+				Check:     resource.TestCheckResourceAttr("buildkite_hosted_agent_image.ruby", "id", "img1"),
+			},
+			{Config: config, Destroy: true},
 		},
 	})
 }

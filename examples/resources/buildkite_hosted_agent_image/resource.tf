@@ -12,12 +12,21 @@ resource "buildkite_cluster_queue" "default" {
   }
 }
 
-resource "buildkite_hosted_agent_image" "ruby" {
-  cluster_id = buildkite_cluster.hosted.uuid
-  name       = "ruby"
-  dockerfile = <<-EOT
+locals {
+  ruby_dockerfile = <<-EOT
     RUN apt-get update && apt-get install -y ruby-full
   EOT
+}
+
+resource "buildkite_hosted_agent_image" "ruby" {
+  cluster_id = buildkite_cluster.hosted.uuid
+  # Each Dockerfile revision needs a unique name so both images can exist during rollout
+  name       = "ruby-${substr(sha256(local.ruby_dockerfile), 0, 12)}"
+  dockerfile = local.ruby_dockerfile
+
+  lifecycle {
+    create_before_destroy = true
+  }
 
   depends_on = [buildkite_cluster_queue.default]
 }
