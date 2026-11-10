@@ -27,8 +27,15 @@ const (
 )
 
 type fakeClusterAgentTokenWrite struct {
-	operation   string
-	permissions string
+	operation       string
+	permissions     string
+	allowAllQueues  string
+	allowedQueueIDs string
+}
+
+type fakeClusterAgentTokenQueue struct {
+	clusterID      string
+	organizationID string
 }
 
 type fakeClusterAgentTokenAPI struct {
@@ -41,6 +48,9 @@ type fakeClusterAgentTokenAPI struct {
 	permissions         []string
 	defaultPermissions  []string
 	permissionsDisabled bool
+	allowAllQueues      bool
+	allowedQueueIDs     []string
+	queues              map[string]fakeClusterAgentTokenQueue
 	responses           int
 	reads               int
 	creates             int
@@ -53,6 +63,15 @@ func newFakeClusterAgentTokenAPI(t *testing.T) (*httptest.Server, *fakeClusterAg
 	api := &fakeClusterAgentTokenAPI{
 		t:                  t,
 		defaultPermissions: []string{"run_jobs", "read_build_metadata", "read_metrics"},
+		allowAllQueues:     true,
+		allowedQueueIDs:    []string{},
+		queues: map[string]fakeClusterAgentTokenQueue{
+			scopedTokenTestQueueAID:              {clusterID: scopedTokenTestClusterID, organizationID: "org-id"},
+			scopedTokenTestQueueBID:              {clusterID: scopedTokenTestClusterID, organizationID: "org-id"},
+			scopedTokenTestQueueCID:              {clusterID: scopedTokenTestClusterID, organizationID: "org-id"},
+			scopedTokenTestForeignClusterQueueID: {clusterID: "other-cluster-id", organizationID: "org-id"},
+			scopedTokenTestForeignOrgQueueID:     {clusterID: "foreign-cluster-id", organizationID: "foreign-org-id"},
+		},
 	}
 	server := httptest.NewServer(api)
 	t.Cleanup(server.Close)
@@ -89,8 +108,18 @@ func (a *fakeClusterAgentTokenAPI) ServeHTTP(w http.ResponseWriter, r *http.Requ
 		}
 		response = map[string]any{"organization": map[string]any{"id": "org-id"}}
 	case "createClusterAgentToken", "updateClusterAgentToken":
+		for _, field := range []string{"allowAllQueues", "allowedQueueIds"} {
+			if !strings.Contains(request.Query, field) {
+				a.t.Errorf("token mutation does not request %s: %s", field, request.Query)
+			}
+		}
 		raw, present := request.Variables["permissions"]
-		a.writes = append(a.writes, fakeClusterAgentTokenWrite{request.OperationName, string(raw)})
+		rawMode, modePresent := request.Variables["allowAllQueues"]
+		rawQueueIDs, queueIDsPresent := request.Variables["allowedQueueIds"]
+		a.writes = append(a.writes, fakeClusterAgentTokenWrite{
+			operation: request.OperationName, permissions: string(raw),
+			allowAllQueues: string(rawMode), allowedQueueIDs: string(rawQueueIDs),
+		})
 		var permissions []string
 		if present {
 			if a.permissionsDisabled {
@@ -113,9 +142,71 @@ func (a *fakeClusterAgentTokenAPI) ServeHTTP(w http.ResponseWriter, r *http.Requ
 				}
 			}
 		}
+		if a.permissionsDisabled && (modePresent || queueIDsPresent) {
+			a.writeError(w, "Agent token queue bindings are not enabled for this organization")
+			return
+		}
+		creating := request.OperationName == "createClusterAgentToken"
+		allowAllQueues := a.allowAllQueues
+		allowedQueueIDs := slices.Clone(a.allowedQueueIDs)
+		if creating {
+			allowAllQueues = true
+			allowedQueueIDs = []string{}
+		}
+		if modePresent {
+			if string(rawMode) == "null" || json.Unmarshal(rawMode, &allowAllQueues) != nil {
+				a.writeError(w, "allowAllQueues must be a boolean, not null")
+				return
+			}
+		}
+		if queueIDsPresent {
+			if string(rawQueueIDs) == "null" || json.Unmarshal(rawQueueIDs, &allowedQueueIDs) != nil {
+				a.writeError(w, "allowedQueueIds must be an array of GraphQL queue IDs, not null")
+				return
+			}
+			for _, id := range allowedQueueIDs {
+				queue, ok := a.queues[id]
+				if !ok {
+					if !creating && slices.Contains(a.allowedQueueIDs, id) {
+						continue
+					}
+					if id == scopedTokenTestWrongTypeQueueID {
+						a.writeError(w, "Queue ID must identify a ClusterQueue, not a Cluster")
+					} else {
+						a.writeError(w, "Queue ID does not identify an available ClusterQueue: "+id)
+					}
+					return
+				}
+				if queue.organizationID != "org-id" {
+					a.writeError(w, "Queue belongs to another organization: "+id)
+					return
+				}
+				if queue.clusterID != scopedTokenTestClusterID {
+					a.writeError(w, "Queue belongs to another cluster: "+id)
+					return
+				}
+			}
+		}
+		if creating && !allowAllQueues && !queueIDsPresent {
+			a.writeError(w, "Creating a restricted token requires an explicit allowedQueueIds array")
+			return
+		}
+		if allowAllQueues && len(allowedQueueIDs) != 0 {
+			a.writeError(w, "All-queues access cannot be combined with queue bindings; explicitly clear allowedQueueIds")
+			return
+		}
+		var description, allowedIPAddresses string
+		if err := json.Unmarshal(request.Variables["description"], &description); err != nil {
+			a.t.Errorf("description: %v", err)
+			return
+		}
+		if err := json.Unmarshal(request.Variables["allowedIpAddresses"], &allowedIPAddresses); err != nil {
+			a.t.Errorf("allowedIpAddresses: %v", err)
+			return
+		}
 		a.checkVariable(request.Variables, "organizationId", "org-id")
 		field := "clusterAgentTokenUpdate"
-		if request.OperationName == "createClusterAgentToken" {
+		if creating {
 			a.checkVariable(request.Variables, "clusterId", scopedTokenTestClusterID)
 			if a.exists {
 				a.t.Error("an existing token was recreated")
@@ -144,12 +235,15 @@ func (a *fakeClusterAgentTokenAPI) ServeHTTP(w http.ResponseWriter, r *http.Requ
 				}
 			}
 		}
-		if err := json.Unmarshal(request.Variables["description"], &a.description); err != nil {
-			a.t.Errorf("description: %v", err)
+		a.allowAllQueues = allowAllQueues
+		a.allowedQueueIDs = make([]string, 0, len(allowedQueueIDs))
+		for _, id := range allowedQueueIDs {
+			if !slices.Contains(a.allowedQueueIDs, id) {
+				a.allowedQueueIDs = append(a.allowedQueueIDs, id)
+			}
 		}
-		if err := json.Unmarshal(request.Variables["allowedIpAddresses"], &a.allowedIPAddresses); err != nil {
-			a.t.Errorf("allowedIpAddresses: %v", err)
-		}
+		a.description = description
+		a.allowedIPAddresses = allowedIPAddresses
 		payload := map[string]any{"clusterAgentToken": a.token()}
 		if field == "clusterAgentTokenCreate" {
 			payload["tokenValue"] = scopedTokenTestSecret
@@ -159,7 +253,7 @@ func (a *fakeClusterAgentTokenAPI) ServeHTTP(w http.ResponseWriter, r *http.Requ
 		a.checkVariable(request.Variables, "id", scopedTokenTestID)
 		if request.OperationName == "getClusterAgentToken" {
 			a.reads++
-			for _, field := range []string{"ClusterToken", "permissions", "organization", "slug"} {
+			for _, field := range []string{"ClusterToken", "permissions", "allowAllQueues", "allowedQueueIds", "organization", "slug"} {
 				if !strings.Contains(request.Query, field) {
 					a.t.Errorf("token node query does not request %s: %s", field, request.Query)
 				}
@@ -173,8 +267,10 @@ func (a *fakeClusterAgentTokenAPI) ServeHTTP(w http.ResponseWriter, r *http.Requ
 	case "revokeClusterAgentToken":
 		a.checkVariable(request.Variables, "organizationId", "org-id")
 		a.checkVariable(request.Variables, "id", scopedTokenTestID)
-		if _, present := request.Variables["permissions"]; present {
-			a.t.Error("revoke sent a permissions variable")
+		for _, field := range []string{"permissions", "allowAllQueues", "allowedQueueIds"} {
+			if _, present := request.Variables[field]; present {
+				a.t.Errorf("revoke sent a %s variable", field)
+			}
 		}
 		a.revokes++
 		a.exists = false
@@ -206,12 +302,17 @@ func (a *fakeClusterAgentTokenAPI) writeError(w http.ResponseWriter, message str
 
 func (a *fakeClusterAgentTokenAPI) token() map[string]any {
 	permissions := append([]string{}, a.permissions...)
+	allowedQueueIDs := append([]string{}, a.allowedQueueIDs...)
+	var allowAllQueues any = a.allowAllQueues
 	a.responses++
 	if a.responses%2 == 0 {
 		slices.Reverse(permissions)
+		slices.Reverse(allowedQueueIDs)
 	}
 	if a.permissionsDisabled {
 		permissions = nil
+		allowedQueueIDs = nil
+		allowAllQueues = nil
 	}
 	return map[string]any{
 		"__typename":         "ClusterToken",
@@ -221,6 +322,8 @@ func (a *fakeClusterAgentTokenAPI) token() map[string]any {
 		"allowedIpAddresses": a.allowedIPAddresses,
 		"expiresAt":          a.expiresAt,
 		"permissions":        permissions,
+		"allowAllQueues":     allowAllQueues,
+		"allowedQueueIds":    allowedQueueIDs,
 		"cluster": map[string]any{
 			"id": scopedTokenTestClusterID, "uuid": scopedTokenTestClusterUUID,
 			"organization": map[string]string{"slug": "acme"},

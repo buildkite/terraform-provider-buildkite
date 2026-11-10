@@ -17,7 +17,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
-func TestClusterTokenPermissionsToWrite(t *testing.T) {
+func TestClusterTokenStringSetToWrite(t *testing.T) {
 	t.Parallel()
 	for _, tc := range []struct {
 		name        string
@@ -33,7 +33,7 @@ func TestClusterTokenPermissionsToWrite(t *testing.T) {
 		{name: "null element", configured: types.SetValueMust(types.StringType, []attr.Value{types.StringNull()}), expectError: true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			permissions, diags := clusterTokenPermissionsToWrite(t.Context(), tc.configured)
+			permissions, diags := clusterTokenStringSetToWrite(t.Context(), tc.configured)
 			if diags.HasError() != tc.expectError {
 				t.Fatalf("permission conversion diagnostics = %v, want error %t", diags, tc.expectError)
 			}
@@ -48,6 +48,32 @@ func TestClusterTokenPermissionsToWrite(t *testing.T) {
 			}
 			if string(body) != tc.want {
 				t.Errorf("mutation permissions = %s, want %s", body, tc.want)
+			}
+		})
+	}
+}
+
+func TestClusterTokenQueueModeToWrite(t *testing.T) {
+	t.Parallel()
+	for _, tc := range []struct {
+		name string
+		mode types.Bool
+		want string
+	}{
+		{name: "omitted", mode: types.BoolNull(), want: `{}`},
+		{name: "computed", mode: types.BoolUnknown(), want: `{}`},
+		{name: "all queues", mode: types.BoolValue(true), want: `{"allowAllQueues":true}`},
+		{name: "restricted", mode: types.BoolValue(false), want: `{"allowAllQueues":false}`},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			body, err := json.Marshal(struct {
+				AllowAllQueues *bool `json:"allowAllQueues,omitempty"`
+			}{AllowAllQueues: clusterTokenQueueModeToWrite(tc.mode)})
+			if err != nil {
+				t.Fatal(err)
+			}
+			if string(body) != tc.want {
+				t.Errorf("queue mode = %s, want %s", body, tc.want)
 			}
 		})
 	}
@@ -77,6 +103,72 @@ func TestClusterTokenPermissionsFromAPI(t *testing.T) {
 			got, diags := clusterTokenPermissionsFromAPI(t.Context(), tc.remote, tc.current)
 			if diags.HasError() || !got.Equal(tc.want) || (diags.WarningsCount() != 0) != tc.wantWarning {
 				t.Errorf("permissions = %s, diagnostics = %v; want %s, warning %t", got, diags, tc.want, tc.wantWarning)
+			}
+		})
+	}
+}
+
+func TestClusterTokenQueueAccessFromAPI(t *testing.T) {
+	t.Parallel()
+	all, restricted := true, false
+	empty := types.SetValueMust(types.StringType, []attr.Value{})
+	selected := types.SetValueMust(types.StringType, []attr.Value{types.StringValue("queue-id")})
+	for _, tc := range []struct {
+		name        string
+		remoteMode  *bool
+		remoteIds   []string
+		currentMode types.Bool
+		currentIds  types.Set
+		wantMode    types.Bool
+		wantIds     types.Set
+		wantWarning bool
+	}{
+		{
+			name: "omitted values become API defaults", remoteMode: &all, remoteIds: []string{},
+			currentMode: types.BoolUnknown(), currentIds: types.SetUnknown(types.StringType),
+			wantMode: types.BoolValue(true), wantIds: empty,
+		},
+		{
+			name: "deny all is distinct from unavailable", remoteMode: &restricted, remoteIds: []string{},
+			currentMode: types.BoolValue(true), currentIds: selected,
+			wantMode: types.BoolValue(false), wantIds: empty,
+		},
+		{
+			name: "binding IDs are not resolved or filtered", remoteMode: &restricted, remoteIds: []string{"queue-id"},
+			currentMode: types.BoolNull(), currentIds: types.SetNull(types.StringType),
+			wantMode: types.BoolValue(false), wantIds: selected,
+		},
+		{
+			name:        "unavailable values do not acquire defaults",
+			currentMode: types.BoolUnknown(), currentIds: types.SetUnknown(types.StringType),
+			wantMode: types.BoolNull(), wantIds: types.SetNull(types.StringType),
+		},
+		{
+			name:        "unavailable legacy values remain null",
+			currentMode: types.BoolNull(), currentIds: types.SetNull(types.StringType),
+			wantMode: types.BoolNull(), wantIds: types.SetNull(types.StringType),
+		},
+		{
+			name:        "unavailable values retain selected queues",
+			currentMode: types.BoolValue(false), currentIds: selected,
+			wantMode: types.BoolValue(false), wantIds: selected, wantWarning: true,
+		},
+		{
+			name:        "unavailable values retain deny all",
+			currentMode: types.BoolValue(false), currentIds: empty,
+			wantMode: types.BoolValue(false), wantIds: empty, wantWarning: true,
+		},
+		{
+			name:        "unavailable values retain all queues",
+			currentMode: types.BoolValue(true), currentIds: empty,
+			wantMode: types.BoolValue(true), wantIds: empty, wantWarning: true,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			state := clusterAgentTokenResourceModel{AllowAllQueues: tc.currentMode, AllowedQueueIds: tc.currentIds}
+			diags := state.setQueueAccess(t.Context(), tc.remoteMode, tc.remoteIds)
+			if diags.HasError() || !state.AllowAllQueues.Equal(tc.wantMode) || !state.AllowedQueueIds.Equal(tc.wantIds) || (diags.WarningsCount() != 0) != tc.wantWarning {
+				t.Errorf("queue access = %s, %s, diagnostics = %v; want %s, %s, warning %t", state.AllowAllQueues, state.AllowedQueueIds, diags, tc.wantMode, tc.wantIds, tc.wantWarning)
 			}
 		})
 	}

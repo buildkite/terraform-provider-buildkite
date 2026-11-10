@@ -10,6 +10,9 @@ fragment ClusterAgentTokenValues on ClusterToken {
     id
     uuid
     permissions
+    # @genqlient(pointer: true)
+    allowAllQueues
+    allowedQueueIds
 }
 
 query getClusterAgentToken($id: ID!) {
@@ -50,6 +53,10 @@ mutation createClusterAgentToken(
     $expiresAt: DateTime
     # @genqlient(bind: "*[]string", omitempty: true)
     $permissions: [String!]
+    # @genqlient(pointer: true, omitempty: true)
+    $allowAllQueues: Boolean
+    # @genqlient(bind: "*[]string", omitempty: true)
+    $allowedQueueIds: [ID!]
 ) {
         clusterAgentTokenCreate(input:{
             organizationId: $organizationId
@@ -58,6 +65,8 @@ mutation createClusterAgentToken(
             allowedIpAddresses: $allowedIpAddresses
             expiresAt: $expiresAt
             permissions: $permissions
+            allowAllQueues: $allowAllQueues
+            allowedQueueIds: $allowedQueueIds
         }) {
             clusterAgentToken {
                 ... ClusterAgentTokenValues
@@ -88,6 +97,10 @@ mutation updateClusterAgentToken(
     $allowedIpAddresses: String
     # @genqlient(bind: "*[]string", omitempty: true)
     $permissions: [String!]
+    # @genqlient(pointer: true, omitempty: true)
+    $allowAllQueues: Boolean
+    # @genqlient(bind: "*[]string", omitempty: true)
+    $allowedQueueIds: [ID!]
 ) {
     clusterAgentTokenUpdate(input: {
         organizationId: $organizationId
@@ -95,6 +108,8 @@ mutation updateClusterAgentToken(
         description: $description
         allowedIpAddresses: $allowedIpAddresses
         permissions: $permissions
+        allowAllQueues: $allowAllQueues
+        allowedQueueIds: $allowedQueueIds
     }) {
         clusterAgentToken {
             ... ClusterAgentTokenValues

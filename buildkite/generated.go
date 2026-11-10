@@ -158,8 +158,10 @@ type ClusterAgentTokenValues struct {
 	ExpiresAt *time.Time `json:"expiresAt"`
 	Id        string     `json:"id"`
 	// The public UUID for this cluster token
-	Uuid        string   `json:"uuid"`
-	Permissions []string `json:"permissions"`
+	Uuid            string   `json:"uuid"`
+	Permissions     []string `json:"permissions"`
+	AllowAllQueues  *bool    `json:"allowAllQueues"`
+	AllowedQueueIds []string `json:"allowedQueueIds"`
 }
 
 // GetAllowedIpAddresses returns ClusterAgentTokenValues.AllowedIpAddresses, and is useful for accessing the field via an interface.
@@ -182,6 +184,12 @@ func (v *ClusterAgentTokenValues) GetUuid() string { return v.Uuid }
 
 // GetPermissions returns ClusterAgentTokenValues.Permissions, and is useful for accessing the field via an interface.
 func (v *ClusterAgentTokenValues) GetPermissions() []string { return v.Permissions }
+
+// GetAllowAllQueues returns ClusterAgentTokenValues.AllowAllQueues, and is useful for accessing the field via an interface.
+func (v *ClusterAgentTokenValues) GetAllowAllQueues() *bool { return v.AllowAllQueues }
+
+// GetAllowedQueueIds returns ClusterAgentTokenValues.AllowedQueueIds, and is useful for accessing the field via an interface.
+func (v *ClusterAgentTokenValues) GetAllowedQueueIds() []string { return v.AllowedQueueIds }
 
 // ClusterAgentTokenValuesCluster includes the requested fields of the GraphQL type Cluster.
 type ClusterAgentTokenValuesCluster struct {
@@ -5142,6 +5150,8 @@ type __createClusterAgentTokenInput struct {
 	AllowedIpAddresses string     `json:"allowedIpAddresses"`
 	ExpiresAt          *time.Time `json:"expiresAt,omitempty"`
 	Permissions        *[]string  `json:"permissions,omitempty"`
+	AllowAllQueues     *bool      `json:"allowAllQueues,omitempty"`
+	AllowedQueueIds    *[]string  `json:"allowedQueueIds,omitempty"`
 }
 
 // GetOrganizationId returns __createClusterAgentTokenInput.OrganizationId, and is useful for accessing the field via an interface.
@@ -5161,6 +5171,12 @@ func (v *__createClusterAgentTokenInput) GetExpiresAt() *time.Time { return v.Ex
 
 // GetPermissions returns __createClusterAgentTokenInput.Permissions, and is useful for accessing the field via an interface.
 func (v *__createClusterAgentTokenInput) GetPermissions() *[]string { return v.Permissions }
+
+// GetAllowAllQueues returns __createClusterAgentTokenInput.AllowAllQueues, and is useful for accessing the field via an interface.
+func (v *__createClusterAgentTokenInput) GetAllowAllQueues() *bool { return v.AllowAllQueues }
+
+// GetAllowedQueueIds returns __createClusterAgentTokenInput.AllowedQueueIds, and is useful for accessing the field via an interface.
+func (v *__createClusterAgentTokenInput) GetAllowedQueueIds() *[]string { return v.AllowedQueueIds }
 
 // __createClusterInput is used internally by genqlient
 type __createClusterInput struct {
@@ -6015,6 +6031,8 @@ type __updateClusterAgentTokenInput struct {
 	Description        string    `json:"description"`
 	AllowedIpAddresses string    `json:"allowedIpAddresses"`
 	Permissions        *[]string `json:"permissions,omitempty"`
+	AllowAllQueues     *bool     `json:"allowAllQueues,omitempty"`
+	AllowedQueueIds    *[]string `json:"allowedQueueIds,omitempty"`
 }
 
 // GetOrganizationId returns __updateClusterAgentTokenInput.OrganizationId, and is useful for accessing the field via an interface.
@@ -6031,6 +6049,12 @@ func (v *__updateClusterAgentTokenInput) GetAllowedIpAddresses() string { return
 
 // GetPermissions returns __updateClusterAgentTokenInput.Permissions, and is useful for accessing the field via an interface.
 func (v *__updateClusterAgentTokenInput) GetPermissions() *[]string { return v.Permissions }
+
+// GetAllowAllQueues returns __updateClusterAgentTokenInput.AllowAllQueues, and is useful for accessing the field via an interface.
+func (v *__updateClusterAgentTokenInput) GetAllowAllQueues() *bool { return v.AllowAllQueues }
+
+// GetAllowedQueueIds returns __updateClusterAgentTokenInput.AllowedQueueIds, and is useful for accessing the field via an interface.
+func (v *__updateClusterAgentTokenInput) GetAllowedQueueIds() *[]string { return v.AllowedQueueIds }
 
 // __updateClusterClearingAgentTracingServiceInput is used internally by genqlient
 type __updateClusterClearingAgentTracingServiceInput struct {
@@ -6563,6 +6587,16 @@ func (v *createClusterAgentTokenClusterAgentTokenCreateClusterAgentTokenCreatePa
 	return v.ClusterAgentTokenValues.Permissions
 }
 
+// GetAllowAllQueues returns createClusterAgentTokenClusterAgentTokenCreateClusterAgentTokenCreatePayloadClusterAgentTokenClusterToken.AllowAllQueues, and is useful for accessing the field via an interface.
+func (v *createClusterAgentTokenClusterAgentTokenCreateClusterAgentTokenCreatePayloadClusterAgentTokenClusterToken) GetAllowAllQueues() *bool {
+	return v.ClusterAgentTokenValues.AllowAllQueues
+}
+
+// GetAllowedQueueIds returns createClusterAgentTokenClusterAgentTokenCreateClusterAgentTokenCreatePayloadClusterAgentTokenClusterToken.AllowedQueueIds, and is useful for accessing the field via an interface.
+func (v *createClusterAgentTokenClusterAgentTokenCreateClusterAgentTokenCreatePayloadClusterAgentTokenClusterToken) GetAllowedQueueIds() []string {
+	return v.ClusterAgentTokenValues.AllowedQueueIds
+}
+
 func (v *createClusterAgentTokenClusterAgentTokenCreateClusterAgentTokenCreatePayloadClusterAgentTokenClusterToken) UnmarshalJSON(b []byte) error {
 
 	if string(b) == "null" {
@@ -6602,6 +6636,10 @@ type __premarshalcreateClusterAgentTokenClusterAgentTokenCreateClusterAgentToken
 	Uuid string `json:"uuid"`
 
 	Permissions []string `json:"permissions"`
+
+	AllowAllQueues *bool `json:"allowAllQueues"`
+
+	AllowedQueueIds []string `json:"allowedQueueIds"`
 }
 
 func (v *createClusterAgentTokenClusterAgentTokenCreateClusterAgentTokenCreatePayloadClusterAgentTokenClusterToken) MarshalJSON() ([]byte, error) {
@@ -6622,6 +6660,8 @@ func (v *createClusterAgentTokenClusterAgentTokenCreateClusterAgentTokenCreatePa
 	retval.Id = v.ClusterAgentTokenValues.Id
 	retval.Uuid = v.ClusterAgentTokenValues.Uuid
 	retval.Permissions = v.ClusterAgentTokenValues.Permissions
+	retval.AllowAllQueues = v.ClusterAgentTokenValues.AllowAllQueues
+	retval.AllowedQueueIds = v.ClusterAgentTokenValues.AllowedQueueIds
 	return &retval, nil
 }
 
@@ -12369,6 +12409,16 @@ func (v *getClusterAgentTokenNodeClusterToken) GetPermissions() []string {
 	return v.ClusterAgentTokenValues.Permissions
 }
 
+// GetAllowAllQueues returns getClusterAgentTokenNodeClusterToken.AllowAllQueues, and is useful for accessing the field via an interface.
+func (v *getClusterAgentTokenNodeClusterToken) GetAllowAllQueues() *bool {
+	return v.ClusterAgentTokenValues.AllowAllQueues
+}
+
+// GetAllowedQueueIds returns getClusterAgentTokenNodeClusterToken.AllowedQueueIds, and is useful for accessing the field via an interface.
+func (v *getClusterAgentTokenNodeClusterToken) GetAllowedQueueIds() []string {
+	return v.ClusterAgentTokenValues.AllowedQueueIds
+}
+
 func (v *getClusterAgentTokenNodeClusterToken) UnmarshalJSON(b []byte) error {
 
 	if string(b) == "null" {
@@ -12410,6 +12460,10 @@ type __premarshalgetClusterAgentTokenNodeClusterToken struct {
 	Uuid string `json:"uuid"`
 
 	Permissions []string `json:"permissions"`
+
+	AllowAllQueues *bool `json:"allowAllQueues"`
+
+	AllowedQueueIds []string `json:"allowedQueueIds"`
 }
 
 func (v *getClusterAgentTokenNodeClusterToken) MarshalJSON() ([]byte, error) {
@@ -12431,6 +12485,8 @@ func (v *getClusterAgentTokenNodeClusterToken) __premarshalJSON() (*__premarshal
 	retval.Id = v.ClusterAgentTokenValues.Id
 	retval.Uuid = v.ClusterAgentTokenValues.Uuid
 	retval.Permissions = v.ClusterAgentTokenValues.Permissions
+	retval.AllowAllQueues = v.ClusterAgentTokenValues.AllowAllQueues
+	retval.AllowedQueueIds = v.ClusterAgentTokenValues.AllowedQueueIds
 	return &retval, nil
 }
 
@@ -13147,6 +13203,16 @@ func (v *getClusterAgentTokensOrganizationClusterAgentTokensClusterAgentTokenCon
 	return v.ClusterAgentTokenValues.Permissions
 }
 
+// GetAllowAllQueues returns getClusterAgentTokensOrganizationClusterAgentTokensClusterAgentTokenConnectionEdgesClusterAgentTokenEdgeNodeClusterToken.AllowAllQueues, and is useful for accessing the field via an interface.
+func (v *getClusterAgentTokensOrganizationClusterAgentTokensClusterAgentTokenConnectionEdgesClusterAgentTokenEdgeNodeClusterToken) GetAllowAllQueues() *bool {
+	return v.ClusterAgentTokenValues.AllowAllQueues
+}
+
+// GetAllowedQueueIds returns getClusterAgentTokensOrganizationClusterAgentTokensClusterAgentTokenConnectionEdgesClusterAgentTokenEdgeNodeClusterToken.AllowedQueueIds, and is useful for accessing the field via an interface.
+func (v *getClusterAgentTokensOrganizationClusterAgentTokensClusterAgentTokenConnectionEdgesClusterAgentTokenEdgeNodeClusterToken) GetAllowedQueueIds() []string {
+	return v.ClusterAgentTokenValues.AllowedQueueIds
+}
+
 func (v *getClusterAgentTokensOrganizationClusterAgentTokensClusterAgentTokenConnectionEdgesClusterAgentTokenEdgeNodeClusterToken) UnmarshalJSON(b []byte) error {
 
 	if string(b) == "null" {
@@ -13186,6 +13252,10 @@ type __premarshalgetClusterAgentTokensOrganizationClusterAgentTokensClusterAgent
 	Uuid string `json:"uuid"`
 
 	Permissions []string `json:"permissions"`
+
+	AllowAllQueues *bool `json:"allowAllQueues"`
+
+	AllowedQueueIds []string `json:"allowedQueueIds"`
 }
 
 func (v *getClusterAgentTokensOrganizationClusterAgentTokensClusterAgentTokenConnectionEdgesClusterAgentTokenEdgeNodeClusterToken) MarshalJSON() ([]byte, error) {
@@ -13206,6 +13276,8 @@ func (v *getClusterAgentTokensOrganizationClusterAgentTokensClusterAgentTokenCon
 	retval.Id = v.ClusterAgentTokenValues.Id
 	retval.Uuid = v.ClusterAgentTokenValues.Uuid
 	retval.Permissions = v.ClusterAgentTokenValues.Permissions
+	retval.AllowAllQueues = v.ClusterAgentTokenValues.AllowAllQueues
+	retval.AllowedQueueIds = v.ClusterAgentTokenValues.AllowedQueueIds
 	return &retval, nil
 }
 
@@ -30521,6 +30593,16 @@ func (v *updateClusterAgentTokenClusterAgentTokenUpdateClusterAgentTokenUpdatePa
 	return v.ClusterAgentTokenValues.Permissions
 }
 
+// GetAllowAllQueues returns updateClusterAgentTokenClusterAgentTokenUpdateClusterAgentTokenUpdatePayloadClusterAgentTokenClusterToken.AllowAllQueues, and is useful for accessing the field via an interface.
+func (v *updateClusterAgentTokenClusterAgentTokenUpdateClusterAgentTokenUpdatePayloadClusterAgentTokenClusterToken) GetAllowAllQueues() *bool {
+	return v.ClusterAgentTokenValues.AllowAllQueues
+}
+
+// GetAllowedQueueIds returns updateClusterAgentTokenClusterAgentTokenUpdateClusterAgentTokenUpdatePayloadClusterAgentTokenClusterToken.AllowedQueueIds, and is useful for accessing the field via an interface.
+func (v *updateClusterAgentTokenClusterAgentTokenUpdateClusterAgentTokenUpdatePayloadClusterAgentTokenClusterToken) GetAllowedQueueIds() []string {
+	return v.ClusterAgentTokenValues.AllowedQueueIds
+}
+
 func (v *updateClusterAgentTokenClusterAgentTokenUpdateClusterAgentTokenUpdatePayloadClusterAgentTokenClusterToken) UnmarshalJSON(b []byte) error {
 
 	if string(b) == "null" {
@@ -30560,6 +30642,10 @@ type __premarshalupdateClusterAgentTokenClusterAgentTokenUpdateClusterAgentToken
 	Uuid string `json:"uuid"`
 
 	Permissions []string `json:"permissions"`
+
+	AllowAllQueues *bool `json:"allowAllQueues"`
+
+	AllowedQueueIds []string `json:"allowedQueueIds"`
 }
 
 func (v *updateClusterAgentTokenClusterAgentTokenUpdateClusterAgentTokenUpdatePayloadClusterAgentTokenClusterToken) MarshalJSON() ([]byte, error) {
@@ -30580,6 +30666,8 @@ func (v *updateClusterAgentTokenClusterAgentTokenUpdateClusterAgentTokenUpdatePa
 	retval.Id = v.ClusterAgentTokenValues.Id
 	retval.Uuid = v.ClusterAgentTokenValues.Uuid
 	retval.Permissions = v.ClusterAgentTokenValues.Permissions
+	retval.AllowAllQueues = v.ClusterAgentTokenValues.AllowAllQueues
+	retval.AllowedQueueIds = v.ClusterAgentTokenValues.AllowedQueueIds
 	return &retval, nil
 }
 
@@ -32881,8 +32969,8 @@ func createCluster(
 
 // The mutation executed by createClusterAgentToken.
 const createClusterAgentToken_Operation = `
-mutation createClusterAgentToken ($organizationId: ID!, $clusterId: ID!, $description: String!, $allowedIpAddresses: String, $expiresAt: DateTime, $permissions: [String!]) {
-	clusterAgentTokenCreate(input: {organizationId:$organizationId,clusterId:$clusterId,description:$description,allowedIpAddresses:$allowedIpAddresses,expiresAt:$expiresAt,permissions:$permissions}) {
+mutation createClusterAgentToken ($organizationId: ID!, $clusterId: ID!, $description: String!, $allowedIpAddresses: String, $expiresAt: DateTime, $permissions: [String!], $allowAllQueues: Boolean, $allowedQueueIds: [ID!]) {
+	clusterAgentTokenCreate(input: {organizationId:$organizationId,clusterId:$clusterId,description:$description,allowedIpAddresses:$allowedIpAddresses,expiresAt:$expiresAt,permissions:$permissions,allowAllQueues:$allowAllQueues,allowedQueueIds:$allowedQueueIds}) {
 		clusterAgentToken {
 			... ClusterAgentTokenValues
 		}
@@ -32900,6 +32988,8 @@ fragment ClusterAgentTokenValues on ClusterToken {
 	id
 	uuid
 	permissions
+	allowAllQueues
+	allowedQueueIds
 }
 `
 
@@ -32912,6 +33002,8 @@ func createClusterAgentToken(
 	allowedIpAddresses string,
 	expiresAt *time.Time,
 	permissions *[]string,
+	allowAllQueues *bool,
+	allowedQueueIds *[]string,
 ) (data_ *createClusterAgentTokenResponse, err_ error) {
 	req_ := &graphql.Request{
 		OpName: "createClusterAgentToken",
@@ -32923,6 +33015,8 @@ func createClusterAgentToken(
 			AllowedIpAddresses: allowedIpAddresses,
 			ExpiresAt:          expiresAt,
 			Permissions:        permissions,
+			AllowAllQueues:     allowAllQueues,
+			AllowedQueueIds:    allowedQueueIds,
 		},
 	}
 
@@ -34246,6 +34340,8 @@ fragment ClusterAgentTokenValues on ClusterToken {
 	id
 	uuid
 	permissions
+	allowAllQueues
+	allowedQueueIds
 }
 `
 
@@ -34300,6 +34396,8 @@ fragment ClusterAgentTokenValues on ClusterToken {
 	id
 	uuid
 	permissions
+	allowAllQueues
+	allowedQueueIds
 }
 `
 
@@ -36427,8 +36525,8 @@ func updateCluster(
 
 // The mutation executed by updateClusterAgentToken.
 const updateClusterAgentToken_Operation = `
-mutation updateClusterAgentToken ($organizationId: ID!, $id: ID!, $description: String!, $allowedIpAddresses: String, $permissions: [String!]) {
-	clusterAgentTokenUpdate(input: {organizationId:$organizationId,id:$id,description:$description,allowedIpAddresses:$allowedIpAddresses,permissions:$permissions}) {
+mutation updateClusterAgentToken ($organizationId: ID!, $id: ID!, $description: String!, $allowedIpAddresses: String, $permissions: [String!], $allowAllQueues: Boolean, $allowedQueueIds: [ID!]) {
+	clusterAgentTokenUpdate(input: {organizationId:$organizationId,id:$id,description:$description,allowedIpAddresses:$allowedIpAddresses,permissions:$permissions,allowAllQueues:$allowAllQueues,allowedQueueIds:$allowedQueueIds}) {
 		clusterAgentToken {
 			... ClusterAgentTokenValues
 		}
@@ -36445,6 +36543,8 @@ fragment ClusterAgentTokenValues on ClusterToken {
 	id
 	uuid
 	permissions
+	allowAllQueues
+	allowedQueueIds
 }
 `
 
@@ -36456,6 +36556,8 @@ func updateClusterAgentToken(
 	description string,
 	allowedIpAddresses string,
 	permissions *[]string,
+	allowAllQueues *bool,
+	allowedQueueIds *[]string,
 ) (data_ *updateClusterAgentTokenResponse, err_ error) {
 	req_ := &graphql.Request{
 		OpName: "updateClusterAgentToken",
@@ -36466,6 +36568,8 @@ func updateClusterAgentToken(
 			Description:        description,
 			AllowedIpAddresses: allowedIpAddresses,
 			Permissions:        permissions,
+			AllowAllQueues:     allowAllQueues,
+			AllowedQueueIds:    allowedQueueIds,
 		},
 	}
 
