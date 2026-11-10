@@ -16,12 +16,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
-// fakeHostedAgentImageAPI serves the agent-images endpoints for one cluster. Images report BUILDING
+// fakeClusterAgentImageAPI serves the agent-images endpoints for one cluster. Images report BUILDING
 // for their first buildingReads reads, then finish building, failing with buildError when it is set.
-type fakeHostedAgentImageAPI struct {
+type fakeClusterAgentImageAPI struct {
 	t             *testing.T
 	mu            sync.Mutex
-	images        map[string]*hostedAgentImage
+	images        map[string]*clusterAgentImage
 	reads         map[string]int
 	buildingReads int
 	buildError    string
@@ -29,23 +29,23 @@ type fakeHostedAgentImageAPI struct {
 	created       int
 }
 
-const fakeHostedAgentImageCluster = "0190a0f0-0000-7000-8000-000000000001"
+const fakeClusterAgentImageCluster = "0190a0f0-0000-7000-8000-000000000001"
 
-func newFakeHostedAgentImageAPI(t *testing.T) (*httptest.Server, *fakeHostedAgentImageAPI) {
+func newFakeClusterAgentImageAPI(t *testing.T) (*httptest.Server, *fakeClusterAgentImageAPI) {
 	t.Helper()
 
-	api := &fakeHostedAgentImageAPI{t: t, images: map[string]*hostedAgentImage{}, reads: map[string]int{}}
+	api := &fakeClusterAgentImageAPI{t: t, images: map[string]*clusterAgentImage{}, reads: map[string]int{}}
 	server := httptest.NewServer(api)
 	t.Cleanup(server.Close)
 
 	return server, api
 }
 
-func (a *fakeHostedAgentImageAPI) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (a *fakeClusterAgentImageAPI) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
-	prefix := "/v2/organizations/acme/clusters/" + fakeHostedAgentImageCluster + "/agent-images"
+	prefix := "/v2/organizations/acme/clusters/" + fakeClusterAgentImageCluster + "/agent-images"
 	if !strings.HasPrefix(r.URL.Path, prefix) {
 		a.t.Errorf("unexpected request: %s %s", r.Method, r.URL.Path)
 		http.NotFound(w, r)
@@ -66,7 +66,7 @@ func (a *fakeHostedAgentImageAPI) ServeHTTP(w http.ResponseWriter, r *http.Reque
 			}
 		}
 		a.created++
-		image := &hostedAgentImage{ID: fmt.Sprintf("img%d", a.created), Name: body.Name, Dockerfile: body.Dockerfile, Status: "BUILDING"}
+		image := &clusterAgentImage{ID: fmt.Sprintf("img%d", a.created), Name: body.Name, Dockerfile: body.Dockerfile, Status: "BUILDING"}
 		a.images[image.ID] = image
 		writeFakeJSON(w, http.StatusCreated, image)
 	case r.Method == http.MethodGet && id != "":
@@ -107,14 +107,14 @@ func writeFakeJSON(w http.ResponseWriter, status int, body any) {
 	_ = json.NewEncoder(w).Encode(body)
 }
 
-func (a *fakeHostedAgentImageAPI) setBuildError(message string) {
+func (a *fakeClusterAgentImageAPI) setBuildError(message string) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
 	a.buildError = message
 }
 
-func (a *fakeHostedAgentImageAPI) setInUse(inUse bool) {
+func (a *fakeClusterAgentImageAPI) setInUse(inUse bool) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
@@ -122,7 +122,7 @@ func (a *fakeHostedAgentImageAPI) setInUse(inUse bool) {
 }
 
 // checkImages asserts the names of the images left in the cluster
-func (a *fakeHostedAgentImageAPI) checkImages(want ...string) func(*terraform.State) error {
+func (a *fakeClusterAgentImageAPI) checkImages(want ...string) func(*terraform.State) error {
 	return func(*terraform.State) error {
 		a.mu.Lock()
 		defer a.mu.Unlock()
@@ -138,7 +138,7 @@ func (a *fakeHostedAgentImageAPI) checkImages(want ...string) func(*terraform.St
 	}
 }
 
-func fakeHostedAgentImageConfig(server *httptest.Server, dockerfile string) string {
+func fakeClusterAgentImageConfig(server *httptest.Server, dockerfile string) string {
 	return fmt.Sprintf(`
 	provider "buildkite" {
 		organization = "acme"
@@ -147,26 +147,26 @@ func fakeHostedAgentImageConfig(server *httptest.Server, dockerfile string) stri
 		graphql_url  = %q
 	}
 
-	resource "buildkite_hosted_agent_image" "ruby" {
+	resource "buildkite_cluster_agent_image" "ruby" {
 		cluster_id = %q
 		name       = "ruby"
 		dockerfile = %q
 	}
-	`, server.URL, server.URL+"/graphql", fakeHostedAgentImageCluster, dockerfile)
+	`, server.URL, server.URL+"/graphql", fakeClusterAgentImageCluster, dockerfile)
 }
 
-func TestUnitBuildkiteHostedAgentImageWaitsForItsBuild(t *testing.T) {
-	server, api := newFakeHostedAgentImageAPI(t)
+func TestUnitBuildkiteClusterAgentImageWaitsForItsBuild(t *testing.T) {
+	server, api := newFakeClusterAgentImageAPI(t)
 	api.buildingReads = 2
 
-	const name = "buildkite_hosted_agent_image.ruby"
+	const name = "buildkite_cluster_agent_image.ruby"
 
 	resource.UnitTest(t, resource.TestCase{
 		ProtoV6ProviderFactories: protoV6ProviderFactories(),
 		CheckDestroy:             api.checkImages(),
 		Steps: []resource.TestStep{
 			{
-				Config: fakeHostedAgentImageConfig(server, "RUN apt-get install -y ruby\n"),
+				Config: fakeClusterAgentImageConfig(server, "RUN apt-get install -y ruby\n"),
 				ConfigPlanChecks: resource.ConfigPlanChecks{
 					PostApplyPostRefresh: []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()},
 				},
@@ -181,13 +181,13 @@ func TestUnitBuildkiteHostedAgentImageWaitsForItsBuild(t *testing.T) {
 			{
 				ResourceName:            name,
 				ImportState:             true,
-				ImportStateId:           fakeHostedAgentImageCluster + "/img1",
+				ImportStateId:           fakeClusterAgentImageCluster + "/img1",
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"timeouts"},
 			},
 			{
 				// there is no update endpoint, so a new Dockerfile is a new image
-				Config: fakeHostedAgentImageConfig(server, "RUN apt-get install -y ruby-full\n"),
+				Config: fakeClusterAgentImageConfig(server, "RUN apt-get install -y ruby-full\n"),
 				ConfigPlanChecks: resource.ConfigPlanChecks{
 					PreApply: []plancheck.PlanCheck{plancheck.ExpectResourceAction(name, plancheck.ResourceActionDestroyBeforeCreate)},
 				},
@@ -200,12 +200,12 @@ func TestUnitBuildkiteHostedAgentImageWaitsForItsBuild(t *testing.T) {
 	})
 }
 
-func TestUnitBuildkiteHostedAgentImageReplacesAFailedBuild(t *testing.T) {
-	server, api := newFakeHostedAgentImageAPI(t)
+func TestUnitBuildkiteClusterAgentImageReplacesAFailedBuild(t *testing.T) {
+	server, api := newFakeClusterAgentImageAPI(t)
 	api.buildError = "dockerfile step 3 exited with status 1"
 
-	const name = "buildkite_hosted_agent_image.ruby"
-	config := fakeHostedAgentImageConfig(server, "RUN apt-get install -y ruby\n")
+	const name = "buildkite_cluster_agent_image.ruby"
+	config := fakeClusterAgentImageConfig(server, "RUN apt-get install -y ruby\n")
 
 	resource.UnitTest(t, resource.TestCase{
 		ProtoV6ProviderFactories: protoV6ProviderFactories(),
@@ -232,11 +232,65 @@ func TestUnitBuildkiteHostedAgentImageReplacesAFailedBuild(t *testing.T) {
 	})
 }
 
-func TestUnitBuildkiteHostedAgentImageRejectsNonPositiveBuildTimeout(t *testing.T) {
+func TestUnitBuildkiteClusterAgentImageRecoversWithCreateBeforeDestroy(t *testing.T) {
+	for _, failure := range []string{"failed build", "build timeout"} {
+		t.Run(failure, func(t *testing.T) {
+			server, api := newFakeClusterAgentImageAPI(t)
+			wantError := regexp.MustCompile(`dockerfile\s+step 3 exited with status 1`)
+			if failure == "failed build" {
+				api.buildError = "dockerfile step 3 exited with status 1"
+			} else {
+				api.buildingReads = 1_000_000
+				wantError = regexp.MustCompile(`Cluster agent image img1 did not build`)
+			}
+
+			const name = "buildkite_cluster_agent_image.ruby"
+			config := strings.Replace(fakeClusterAgentImageConfig(server, "RUN true\n"),
+				`name       = "ruby"`, `name = "ruby"
+				lifecycle { create_before_destroy = true }
+				timeouts { create = "2s" }`, 1)
+
+			resource.UnitTest(t, resource.TestCase{
+				ProtoV6ProviderFactories: protoV6ProviderFactories(),
+				CheckDestroy:             api.checkImages(),
+				Steps: []resource.TestStep{
+					{Config: config, ExpectError: wantError},
+					{
+						PreConfig: func() {
+							api.mu.Lock()
+							defer api.mu.Unlock()
+							api.buildError = ""
+							api.buildingReads = 0
+						},
+						Config: config,
+						ConfigPlanChecks: resource.ConfigPlanChecks{
+							PreApply: []plancheck.PlanCheck{plancheck.ExpectResourceAction(name, plancheck.ResourceActionCreateBeforeDestroy)},
+						},
+						ExpectError: regexp.MustCompile(`an agent image with that name already exists`),
+					},
+					{
+						// A fresh name allows replacement before the retained image is deleted.
+						Config: strings.ReplaceAll(strings.Replace(config, `name = "ruby"`, `name = "ruby-retry"`, 1), `create = "2s"`, `create = "30s"`),
+						ConfigPlanChecks: resource.ConfigPlanChecks{
+							PreApply: []plancheck.PlanCheck{plancheck.ExpectResourceAction(name, plancheck.ResourceActionCreateBeforeDestroy)},
+						},
+						Check: resource.ComposeAggregateTestCheckFunc(
+							resource.TestCheckResourceAttr(name, "id", "img2"),
+							resource.TestCheckResourceAttr(name, "status", "READY"),
+							api.checkImages("ruby-retry RUN true\n"),
+						),
+					},
+				},
+			})
+		})
+	}
+}
+
+func TestUnitBuildkiteClusterAgentImageRejectsNonPositiveBuildTimeout(t *testing.T) {
 	for _, timeout := range []string{"0s", "-1h"} {
 		t.Run(timeout, func(t *testing.T) {
-			server, api := newFakeHostedAgentImageAPI(t)
-			config := strings.Replace(fakeHostedAgentImageConfig(server, "RUN true\n"),
+			server, api := newFakeClusterAgentImageAPI(t)
+			config := strings.Replace(fakeClusterAgentImageConfig(server, "RUN true\n"),
 				"dockerfile =", fmt.Sprintf("timeouts { create = %q }\n dockerfile =", timeout), 1)
 
 			resource.UnitTest(t, resource.TestCase{
@@ -257,9 +311,9 @@ func TestUnitBuildkiteHostedAgentImageRejectsNonPositiveBuildTimeout(t *testing.
 	}
 }
 
-func TestUnitBuildkiteHostedAgentImageRetainsAnImageInUse(t *testing.T) {
-	server, api := newFakeHostedAgentImageAPI(t)
-	config := fakeHostedAgentImageConfig(server, "RUN true\n")
+func TestUnitBuildkiteClusterAgentImageRetainsAnImageInUse(t *testing.T) {
+	server, api := newFakeClusterAgentImageAPI(t)
+	config := fakeClusterAgentImageConfig(server, "RUN true\n")
 
 	resource.UnitTest(t, resource.TestCase{
 		ProtoV6ProviderFactories: protoV6ProviderFactories(),
@@ -275,14 +329,14 @@ func TestUnitBuildkiteHostedAgentImageRetainsAnImageInUse(t *testing.T) {
 			{
 				PreConfig: func() { api.setInUse(false) },
 				Config:    config,
-				Check:     resource.TestCheckResourceAttr("buildkite_hosted_agent_image.ruby", "id", "img1"),
+				Check:     resource.TestCheckResourceAttr("buildkite_cluster_agent_image.ruby", "id", "img1"),
 			},
 			{Config: config, Destroy: true},
 		},
 	})
 }
 
-func TestAccBuildkiteHostedAgentImage(t *testing.T) {
+func TestAccBuildkiteClusterAgentImage(t *testing.T) {
 	clusterName := acctest.RandString(12)
 	imageName := acctest.RandString(12)
 
@@ -300,7 +354,7 @@ func TestAccBuildkiteHostedAgentImage(t *testing.T) {
 		}
 	}
 
-	resource "buildkite_hosted_agent_image" "image" {
+	resource "buildkite_cluster_agent_image" "image" {
 		cluster_id = buildkite_cluster.hosted.uuid
 		name       = "%s"
 		dockerfile = "RUN echo hello > /tmp/hello\n"
@@ -313,13 +367,13 @@ func TestAccBuildkiteHostedAgentImage(t *testing.T) {
 		hosted_agents = {
 			instance_shape = "LINUX_AMD64_2X4"
 			linux = {
-				agent_image_ref = buildkite_hosted_agent_image.image.image_ref
+				agent_image_ref = buildkite_cluster_agent_image.image.image_ref
 			}
 		}
 	}
 	`, clusterName, imageName)
 
-	const name = "buildkite_hosted_agent_image.image"
+	const name = "buildkite_cluster_agent_image.image"
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },

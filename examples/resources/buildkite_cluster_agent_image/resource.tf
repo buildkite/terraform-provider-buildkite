@@ -18,9 +18,10 @@ locals {
   EOT
 }
 
-resource "buildkite_hosted_agent_image" "ruby" {
+resource "buildkite_cluster_agent_image" "ruby" {
   cluster_id = buildkite_cluster.hosted.uuid
   # Each Dockerfile revision needs a unique name so both images can exist during rollout
+  # To retry a failed or timed-out build, use a new name or destroy the retained image first
   name       = "ruby-${substr(sha256(local.ruby_dockerfile), 0, 12)}"
   dockerfile = local.ruby_dockerfile
 
@@ -40,7 +41,7 @@ resource "buildkite_cluster_queue" "ruby" {
     instance_shape = "LINUX_AMD64_2X4"
 
     linux = {
-      agent_image_ref = buildkite_hosted_agent_image.ruby.image_ref
+      agent_image_ref = buildkite_cluster_agent_image.ruby.image_ref
     }
   }
 }

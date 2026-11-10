@@ -4,7 +4,7 @@
 
 ### Features
 
-* Add the `buildkite_hosted_agent_image` resource.
+* Add the `buildkite_cluster_agent_image` resource.
 
 ### Fixed
 
