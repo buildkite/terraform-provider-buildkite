@@ -19,14 +19,15 @@ import (
 // fakeClusterAgentImageAPI serves the agent-images endpoints for one cluster. Images report BUILDING
 // for their first buildingReads reads, then finish building, failing with buildError when it is set.
 type fakeClusterAgentImageAPI struct {
-	t             *testing.T
-	mu            sync.Mutex
-	images        map[string]*clusterAgentImage
-	reads         map[string]int
-	buildingReads int
-	buildError    string
-	inUse         bool
-	created       int
+	t                 *testing.T
+	mu                sync.Mutex
+	images            map[string]*clusterAgentImage
+	reads             map[string]int
+	buildingReads     int
+	buildError        string
+	inUse             bool
+	disappearOnDelete bool
+	created           int
 }
 
 const fakeClusterAgentImageCluster = "0190a0f0-0000-7000-8000-000000000001"
@@ -85,6 +86,9 @@ func (a *fakeClusterAgentImageAPI) ServeHTTP(w http.ResponseWriter, r *http.Requ
 		}
 		writeFakeJSON(w, http.StatusOK, image)
 	case r.Method == http.MethodDelete && id != "":
+		if a.disappearOnDelete {
+			delete(a.images, id)
+		}
 		if _, ok := a.images[id]; !ok {
 			writeFakeJSON(w, http.StatusNotFound, map[string]string{"message": "No agent image found with the given ID."})
 			return
@@ -291,6 +295,22 @@ func TestUnitBuildkiteClusterAgentImageRejectsNonPositiveBuildTimeout(t *testing
 			}
 		})
 	}
+}
+
+func TestUnitBuildkiteClusterAgentImageDeletesAnAlreadyAbsentImage(t *testing.T) {
+	server, api := newFakeClusterAgentImageAPI(t)
+	// The image is present during refresh, but disappears before DELETE can find it.
+	api.disappearOnDelete = true
+	config := fakeClusterAgentImageConfig(server, "RUN true\n")
+
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		CheckDestroy:             api.checkImages(),
+		Steps: []resource.TestStep{
+			{Config: config},
+			{Config: config, Destroy: true},
+		},
+	})
 }
 
 func TestUnitBuildkiteClusterAgentImageRetainsAnImageInUse(t *testing.T) {

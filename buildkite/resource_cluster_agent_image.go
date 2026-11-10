@@ -274,7 +274,7 @@ func (r *clusterAgentImageResource) Delete(ctx context.Context, req resource.Del
 	err := retryMutation(ctx, timeout, func(ctx context.Context) *retry.RetryError {
 		return retryContextError(r.client.deleteClusterAgentImage(ctx, state.ClusterID.ValueString(), state.ID.ValueString()))
 	})
-	if err != nil {
+	if err != nil && !isAPIStatus(err, http.StatusNotFound) {
 		resp.Diagnostics.AddError("Unable to delete cluster agent image", fmt.Sprintf("Unable to delete cluster agent image: %s", err))
 	}
 }
