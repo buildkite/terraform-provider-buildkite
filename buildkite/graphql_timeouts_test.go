@@ -12,8 +12,10 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"testing/synctest"
 	"time"
 
+	genqlient "github.com/Khan/genqlient/graphql"
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -52,6 +54,139 @@ func newGraphQLTimeoutTestClient(t *testing.T, serverURL string, maxRetries int,
 	client.timeouts = configured
 
 	return client
+}
+
+func TestRefreshReadsPreserveGraphQLFailureAtDeadline(t *testing.T) {
+	t.Parallel()
+
+	for name, newResource := range map[string]func(*Client) fwresource.Resource{
+		"cluster":  func(c *Client) fwresource.Resource { return &clusterResource{client: c} },
+		"pipeline": func(c *Client) fwresource.Resource { return &pipelineResource{client: c} },
+	} {
+		for _, status := range []int{http.StatusTooManyRequests, http.StatusServiceUnavailable} {
+			t.Run(fmt.Sprintf("%s/%d", name, status), func(t *testing.T) {
+				synctest.Test(t, func(t *testing.T) {
+					const endpoint = "https://api.example.test/graphql"
+					client := NewClient(&clientConfig{graphqlURL: endpoint, maxRetries: DefaultRetryMaxAttempts})
+					client.timeouts = configuredTimeouts("read", "1s")
+					client.graphqlRetry.HTTPClient.Transport = roundTripFunc(func(req *http.Request) (*http.Response, error) {
+						return &http.Response{
+							StatusCode: status, Header: make(http.Header), Request: req,
+							Body: io.NopCloser(strings.NewReader(`{"message":"upstream temporarily unavailable"}`)),
+						}, nil
+					})
+					httpClient := client.graphqlRetry.StandardClient()
+					transport := httpClient.Transport
+					finished := make(chan struct{})
+					defer func() { <-finished }()
+					httpClient.Transport = roundTripFunc(func(req *http.Request) (*http.Response, error) {
+						defer close(finished)
+						response, err := transport.RoundTrip(req)
+						// Force the ordering where the waiter sees cancellation before the
+						// HTTP callback publishes its captured response. Fake time keeps this fast.
+						if req.Context().Err() != nil {
+							time.Sleep(time.Millisecond)
+						}
+						return response, err
+					})
+					client.genqlient = boundedGraphQLClient{inner: genqlient.NewClient(endpoint, httpClient), client: client, url: endpoint}
+					diags := runRead(t.Context(), t, newResource(client), map[string]tftypes.Value{
+						"id": tftypes.NewValue(tftypes.String, "resource-id"),
+					})
+					for _, want := range []string{fmt.Sprintf("status: %d", status), "upstream temporarily unavailable", "context deadline exceeded"} {
+						if !diagnosticsContain(diags, want) {
+							t.Errorf("Read diagnostics = %v, want %q", diags, want)
+						}
+					}
+				})
+			})
+		}
+	}
+}
+
+func TestRefreshReadsHandleGraphQLBackendErrors(t *testing.T) {
+	t.Parallel()
+
+	for name, newResource := range map[string]func(*Client) fwresource.Resource{
+		"cluster":  func(c *Client) fwresource.Resource { return &clusterResource{client: c} },
+		"pipeline": func(c *Client) fwresource.Resource { return &pipelineResource{client: c} },
+	} {
+		for _, scenario := range []string{"recovery", "busy until deadline", "busy then stalled request", "forbidden", "validation", "no response", "cancellation"} {
+			t.Run(name+"/"+scenario, func(t *testing.T) {
+				synctest.Test(t, func(t *testing.T) {
+					ctx, cancel := context.WithCancel(t.Context())
+					defer cancel()
+					attempts := 0
+					client := &Client{timeouts: configuredTimeouts("read", "1s")}
+					client.genqlient = &fakeGraphQLClient{handler: func(ctx context.Context, _ *genqlient.Request, _ *genqlient.Response) error {
+						attempts++
+						switch scenario {
+						case "recovery":
+							if attempts > 1 {
+								return nil // Successful lookup confirms the remote node is absent.
+							}
+						case "forbidden":
+							return gqlerror.List{{Message: "Not authorized to read this resource"}}
+						case "validation":
+							return gqlerror.List{{Message: "Invalid resource ID"}}
+						case "cancellation":
+							cancel()
+							<-ctx.Done()
+							return ctx.Err()
+						case "no response":
+							<-ctx.Done()
+							return ctx.Err()
+						case "busy then stalled request":
+							if attempts > 1 {
+								<-ctx.Done()
+								return ctx.Err()
+							}
+						}
+						return gqlerror.List{{Message: "Resource is currently busy, please try again."}}
+					}}
+					r := newResource(client)
+					state := tfsdk.State{Schema: resourceSchema(ctx, t, r)}
+					state.Raw = nullObjectWith(ctx, t, state.Schema.Type(), map[string]tftypes.Value{
+						"id": tftypes.NewValue(tftypes.String, "resource-id"),
+					})
+					resp := fwresource.ReadResponse{State: state}
+					r.Read(ctx, fwresource.ReadRequest{State: state}, &resp)
+					if scenario == "recovery" {
+						if resp.Diagnostics.HasError() || !resp.State.Raw.IsNull() || attempts != 2 {
+							t.Fatalf("Read after a transient failure = %v, removed state: %t, attempts: %d", resp.Diagnostics, resp.State.Raw.IsNull(), attempts)
+						}
+						return
+					}
+					want := []string{"context deadline exceeded"}
+					switch scenario {
+					case "busy until deadline", "busy then stalled request":
+						want = append(want, "currently busy")
+					case "forbidden":
+						want = []string{"Not authorized"}
+					case "validation":
+						want = []string{"Invalid resource ID"}
+					case "cancellation":
+						want = []string{"context canceled"}
+					}
+					for _, phrase := range want {
+						if !diagnosticsContain(resp.Diagnostics, phrase) {
+							t.Errorf("Read diagnostics = %v, want %q", resp.Diagnostics, phrase)
+						}
+					}
+					if !resp.State.Raw.Equal(state.Raw) {
+						t.Error("failed Read changed prior state")
+					}
+					if (scenario == "no response" || scenario == "cancellation") &&
+						(diagnosticsContain(resp.Diagnostics, "currently busy") || diagnosticsContain(resp.Diagnostics, "status:")) {
+						t.Error("Read reported an API failure without receiving a response")
+					}
+					if (scenario == "forbidden" || scenario == "validation") && attempts != 1 {
+						t.Errorf("terminal error retried %d times", attempts)
+					}
+				})
+			})
+		}
+	}
 }
 
 func assertStoppedAtTheTimeout(t *testing.T, requests int64, hitDeadline bool, failure any) {
@@ -430,9 +565,6 @@ func TestOperationsGiveEachRequestItsBudget(t *testing.T) {
 		return tftypes.NewValue(listType, []tftypes.Value{str(cidr)})
 	}
 	queueCreated := ok(`{"data":{"clusterQueueCreate":{"clusterQueue":{"id":"queue-id","uuid":"queue-uuid","key":"queue","cluster":{"uuid":"cluster-uuid"}}}}}`)
-	suiteTeams := ok(`{"data":{"suite":{"__typename":"Suite","id":"suite-id","teams":{"pageInfo":{"hasNextPage":false},"edges":[
-		{"node":{"id":"old-edge","accessLevel":"MANAGE_AND_READ","team":{"id":"old-team"}}},
-		{"node":{"id":"new-edge","accessLevel":"MANAGE_AND_READ","team":{"id":"new-team"}}}]}}}}`)
 
 	tests := []struct {
 		name      string
@@ -708,16 +840,19 @@ func TestOperationsGiveEachRequestItsBudget(t *testing.T) {
 			},
 		},
 		{
-			// The PATCH, attaching the new owner, reading the suite's teams, and detaching the old owner
-			// are each a step.
+			// The PATCH, attaching the new owner, and detaching the old owner are each a step. Reading
+			// the suite's teams in between is a lookup, so its pages share one plain timeout.
 			name: "test suite update",
 			responses: []stubResponse{
 				ok(`{"slug":"suite"}`),
 				ok(`{"data":{"teamSuiteCreate":{"teamSuite":{"id":"new-edge"}}}}`),
-				suiteTeams,
+				ok(`{"data":{"suite":{"__typename":"Suite","id":"suite-id","teams":{"pageInfo":{"endCursor":"cursor","hasNextPage":true},"edges":[
+					{"node":{"id":"new-edge","accessLevel":"MANAGE_AND_READ","team":{"id":"new-team"}}}]}}}}`),
+				ok(`{"data":{"suite":{"__typename":"Suite","id":"suite-id","teams":{"pageInfo":{"hasNextPage":false},"edges":[
+					{"node":{"id":"old-edge","accessLevel":"MANAGE_AND_READ","team":{"id":"old-team"}}}]}}}}`),
 				ok(`{"data":{"teamSuiteDelete":{"deletedTeamSuiteID":"old-edge"}}}`),
 			},
-			want: []budget{mutation(updateTimeout, true), mutation(updateTimeout, true), mutation(updateTimeout, true), mutation(updateTimeout, true)},
+			want: []budget{mutation(updateTimeout, true), mutation(updateTimeout, true), lookup(updateTimeout), {updateTimeout, false}, mutation(updateTimeout, true)},
 			run: func(ctx context.Context, t *testing.T, c *Client) diag.Diagnostics {
 				prior := map[string]tftypes.Value{"id": str("suite-id"), "slug": str("suite"), "name": str("suite"), "default_branch": str("main"), "team_owner_id": str("old-team")}
 				return runUpdate(ctx, t, &testSuiteResource{client: c}, prior, with(prior, map[string]tftypes.Value{"team_owner_id": str("new-team")}))
@@ -850,49 +985,108 @@ func nullAttribute(ctx context.Context, t *testing.T, r fwresource.Resource, nam
 	return tftypes.NewValue(objectType, attributes)
 }
 
-// retryablehttp returns only the context error when the deadline lands during a backoff wait, or
-// "giving up after N attempt(s)" when the retries run out, and the response it retried is gone. REST
-// kept it through makeRequest; GraphQL now keeps it the same way, so the failure says what the API
-// was answering.
+// A deadline during backoff retains the last response as the reported status. If a later attempt
+// dies in flight, that response is only historical context. Fake time and transport keep these
+// paths distinct instead of racing a real deadline against the next retry.
 func TestGraphQLRequestReportsTheResponseItRetried(t *testing.T) {
 	t.Parallel()
 
-	unavailable := stubResponse{status: http.StatusServiceUnavailable, body: `{"message":"Service Unavailable"}`}
+	const unavailableBody = `{"message":"Service Unavailable"}`
 
 	tests := []struct {
-		name       string
-		retries    int
-		wantPhrase string
-		deadline   bool
+		name            string
+		retries         int
+		wait            time.Duration
+		stallAfterFirst bool
+		wantStatus      int
+		wantAttempts    int
+		wantPhrase      string
+		deadline        bool
 	}{
-		{name: "deadline lands during a backoff wait", retries: stubRetries, wantPhrase: "context deadline exceeded", deadline: true},
-		{name: "retries run out", retries: 2, wantPhrase: "after 3 attempts"},
+		{
+			name:         "deadline lands during a backoff wait",
+			retries:      stubRetries,
+			wait:         2 * stubReadTimeout,
+			wantStatus:   http.StatusServiceUnavailable,
+			wantAttempts: 1,
+			wantPhrase:   "context deadline exceeded",
+			deadline:     true,
+		},
+		{
+			name:            "deadline lands during the next attempt",
+			retries:         stubRetries,
+			wait:            stubRetryWait,
+			stallAfterFirst: true,
+			wantStatus:      0, // The final attempt has no HTTP response.
+			wantAttempts:    2,
+			wantPhrase:      "an earlier attempt returned status 503",
+			deadline:        true,
+		},
+		{
+			name:         "retries run out",
+			retries:      2,
+			wait:         stubRetryWait,
+			wantStatus:   http.StatusServiceUnavailable,
+			wantAttempts: 3,
+			wantPhrase:   "after 3 attempts",
+		},
 	}
 
 	for _, testCase := range tests {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			server, _ := newRetryStub(t, unavailable)
-			defer server.Close()
+			synctest.Test(t, func(t *testing.T) {
+				client := newGraphQLTimeoutTestClient(t, "https://example.com", testCase.retries, testCase.wait, configuredTimeouts("read", stubReadTimeout.String()))
+				// Let the GraphQL request's read deadline, not the per-attempt timer, end the call.
+				client.graphqlRetry.HTTPClient.Timeout = 0
+				requests := 0
+				client.graphqlRetry.HTTPClient.Transport = roundTripFunc(func(req *http.Request) (*http.Response, error) {
+					requests++
+					if testCase.stallAfterFirst && requests > 1 {
+						<-req.Context().Done()
+						return nil, req.Context().Err()
+					}
+					return &http.Response{
+						StatusCode: http.StatusServiceUnavailable,
+						Body:       io.NopCloser(strings.NewReader(unavailableBody)),
+						Request:    req,
+					}, nil
+				})
 
-			client := newGraphQLTimeoutTestClient(t, server.URL, testCase.retries, stubRetryWait, configuredTimeouts("read", stubReadTimeout.String()))
-
-			_, err := getOrganization(context.Background(), client.genqlient, client.organization)
-			if err == nil {
-				t.Fatal("getOrganization succeeded against a server that only fails")
-			}
-			if !isAPIStatus(err, http.StatusServiceUnavailable) {
-				t.Errorf("getOrganization() = %q, want the 503 it retried reported as the status", err)
-			}
-			for _, want := range []string{"Service Unavailable", testCase.wantPhrase} {
-				if !strings.Contains(err.Error(), want) {
-					t.Errorf("getOrganization() = %q, want it to mention %q", err, want)
+				_, err := getOrganization(context.Background(), client.genqlient, client.organization)
+				if err == nil {
+					t.Fatal("getOrganization succeeded against a transport that only fails")
 				}
-			}
-			if got := errors.Is(err, context.DeadlineExceeded); got != testCase.deadline {
-				t.Errorf("errors.Is(err, context.DeadlineExceeded) = %v, want %v", got, testCase.deadline)
-			}
+				var apiErr *apiError
+				if !errors.As(err, &apiErr) {
+					t.Fatalf("getOrganization() = %v (%T), want an API error", err, err)
+				}
+				if apiErr.StatusCode != testCase.wantStatus {
+					t.Errorf("StatusCode = %d, want %d: %v", apiErr.StatusCode, testCase.wantStatus, err)
+				}
+				if got := isAPIStatus(err, http.StatusServiceUnavailable); got != (testCase.wantStatus == http.StatusServiceUnavailable) {
+					t.Errorf("isAPIStatus(err, 503) = %v, want %v", got, testCase.wantStatus == http.StatusServiceUnavailable)
+				}
+				if requests != testCase.wantAttempts || apiErr.Attempts != testCase.wantAttempts {
+					t.Errorf("transport requests = %d, reported attempts = %d, want both %d", requests, apiErr.Attempts, testCase.wantAttempts)
+				}
+				if testCase.stallAfterFirst {
+					if apiErr.Body != "" || apiErr.earlierStatus != http.StatusServiceUnavailable || apiErr.earlierBody != unavailableBody {
+						t.Errorf("Expected the earlier 503 body only as context, got %+v", apiErr)
+					}
+				} else if apiErr.Body != unavailableBody || apiErr.earlierStatus != 0 || apiErr.earlierBody != "" {
+					t.Errorf("Expected the last 503 body as the response, got %+v", apiErr)
+				}
+				for _, want := range []string{"Service Unavailable", testCase.wantPhrase} {
+					if !strings.Contains(err.Error(), want) {
+						t.Errorf("getOrganization() = %q, want it to mention %q", err, want)
+					}
+				}
+				if got := errors.Is(err, context.DeadlineExceeded); got != testCase.deadline {
+					t.Errorf("errors.Is(err, context.DeadlineExceeded) = %v, want %v", got, testCase.deadline)
+				}
+			})
 		})
 	}
 }

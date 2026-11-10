@@ -16,6 +16,34 @@ description: |-
 {{tffile .ExampleFile }}
 {{- end }}
 
+## Webhook URLs containing credentials
+
+With Terraform 1.11.1 or later, use `webhook.url_wo` and `webhook.url_wo_version` to keep a webhook destination URL out of plans and state. Supply the URL from an ephemeral variable or ephemeral resource; an ordinary data source still stores its result in state.
+
+```hcl
+variable "webhook_url" {
+  type      = string
+  sensitive = true
+  ephemeral = true
+}
+
+resource "buildkite_notification_service" "webhook" {
+  provider_type = "webhook"
+
+  webhook = {
+    url_wo         = var.webhook_url
+    url_wo_version = 1
+    events         = ["build.finished"]
+  }
+}
+```
+
+Increment `url_wo_version` whenever the URL changes. The provider sends the URL on creation and when this version changes. Changing only the ephemeral value, or updating unrelated settings, does not update the destination. Terraform cannot detect URL changes made outside Terraform when using `url_wo`.
+
+To migrate an existing resource, replace `url` with `url_wo`, add `url_wo_version`, and apply. This removes `url` from the current resource state without replacing the notification service. Previous state versions and saved plans can still contain the old URL; rotate credentials that have already been stored and handle historical artifacts according to your state backend's retention controls.
+
+`url` remains available for existing configurations and Terraform versions before 1.11.1. The write-only argument covers only the destination URL; other secret attributes such as `webhook.token` retain their existing state behavior.
+
 {{ .SchemaMarkdown | trimspace }}
 {{- if .HasImport }}
 
@@ -32,6 +60,8 @@ Imported OAuth-managed `linear` and `slack_workspace` services can manage their 
 Legacy `slack` notification services are not supported. Migrate them to a Slack Workspace notification service before managing them with Terraform.
 
 Imported non-OAuth services still need their matching settings block. Buildkite masks Datadog API keys and AWS account IDs, and omits OpenTelemetry headers. Terraform does not store the masked values, so all three remain unset after import.
+
+Webhook URLs are also omitted during import so URLs containing credentials are not copied into state. Configure `url_wo` with `url_wo_version` to manage the destination without persisting it, or configure `url` to use the persisted argument. Applying either configuration sends the supplied URL to Buildkite. Omitting both leaves the imported destination unchanged.
 
 Also declare `enabled`, `scope`, and `scope_uuids` to match the existing service. These attributes default to `true` and `all`, and the defaults take precedence over the imported values, so omitting them makes the first apply enable a disabled service and widen a scoped one to the whole organization.
 

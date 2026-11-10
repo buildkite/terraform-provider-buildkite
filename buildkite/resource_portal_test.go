@@ -12,6 +12,7 @@ import (
 )
 
 func TestAccBuildkitePortal(t *testing.T) {
+	t.Parallel()
 	basic := func(name string) string {
 		return fmt.Sprintf(`
 		provider "buildkite" {
@@ -174,6 +175,9 @@ func testAccCheckPortalResourceDestroy(s *terraform.State) error {
 		err := client.makeRequest(context.Background(), http.MethodGet, path, nil, &result)
 		if err == nil {
 			return fmt.Errorf("portal still exists")
+		}
+		if !isAPIStatus(err, http.StatusNotFound) {
+			return fmt.Errorf("checking portal deletion: %w", err)
 		}
 	}
 	return nil

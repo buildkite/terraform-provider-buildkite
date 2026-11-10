@@ -6,10 +6,13 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"slices"
 	"strings"
 
 	"github.com/MakeNowJust/heredoc"
+	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -17,6 +20,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -24,6 +28,7 @@ import (
 
 type organizationResourceModel struct {
 	AllowedApiIpAddresses        types.List   `tfsdk:"allowed_api_ip_addresses"`
+	AllowedApiIpEntries          types.List   `tfsdk:"allowed_api_ip_entries"`
 	ID                           types.String `tfsdk:"id"`
 	UUID                         types.String `tfsdk:"uuid"`
 	Enforce2FA                   types.Bool   `tfsdk:"enforce_2fa"`
@@ -80,9 +85,38 @@ func (*organizationResource) Schema(ctx context.Context, req resource.SchemaRequ
 			"allowed_api_ip_addresses": schema.ListAttribute{
 				Optional:    true,
 				ElementType: types.StringType,
+				Validators: []validator.List{
+					listvalidator.ConflictsWith(path.MatchRoot("allowed_api_ip_entries")),
+				},
 				MarkdownDescription: "A list of IP addresses in CIDR format that are allowed to access the Buildkite API." +
 					"If not set, all IP addresses are allowed (the same as setting 0.0.0.0/0).\n\n" +
+					"Conflicts with `allowed_api_ip_entries`. Removing the configured allowlist or destroying this resource clears it.\n\n" +
 					"-> The \"Allowed API IP Addresses\" feature must be enabled on your organization in order to manage the `allowed_api_ip_addresses` attribute.",
+			},
+			"allowed_api_ip_entries": schema.ListNestedAttribute{
+				Optional: true,
+				MarkdownDescription: "An ordered list of IP addresses or CIDRs and descriptions allowed to access the Buildkite API. " +
+					"Conflicts with `allowed_api_ip_addresses`. An empty list, removing the configured allowlist, or destroying this resource clears it, allowing all IP addresses. " +
+					"Requires the Allowed API IP Addresses feature and a Buildkite API supporting allowlist entries. Import initially uses `allowed_api_ip_addresses`; configure this attribute to switch representations.",
+				Validators: []validator.List{
+					listvalidator.ConflictsWith(path.MatchRoot("allowed_api_ip_addresses")),
+					listvalidator.NoNullValues(),
+				},
+				NestedObject: schema.NestedAttributeObject{
+					Attributes: map[string]schema.Attribute{
+						"ip_address": schema.StringAttribute{
+							Required:            true,
+							MarkdownDescription: "An IP address or CIDR allowed to access the API.",
+						},
+						"description": schema.StringAttribute{
+							Optional:            true,
+							Computed:            true,
+							Default:             stringdefault.StaticString(""),
+							Validators:          []validator.String{stringvalidator.UTF8LengthAtMost(255)},
+							MarkdownDescription: "A description of up to 255 characters. Defaults to an empty string.",
+						},
+					},
+				},
 			},
 			"enforce_2fa": schema.BoolAttribute{
 				Optional:            true,
@@ -292,6 +326,7 @@ func (o *organizationResource) Update(ctx context.Context, req resource.UpdateRe
 	// than persisting a null over it. Each is overwritten by the step that owns it.
 	state.Enforce2FA = prior.Enforce2FA
 	state.AllowedApiIpAddresses = prior.AllowedApiIpAddresses
+	state.AllowedApiIpEntries = prior.AllowedApiIpEntries
 	state.RevokeInactiveTokensAfter = prior.RevokeInactiveTokensAfter
 	state.RestrictUserApiTokenCreation = prior.RestrictUserApiTokenCreation
 
@@ -400,13 +435,52 @@ func revokePeriodToDays(period string) *int64 {
 }
 
 type organizationAPISettings struct {
-	AllowedIpAddresses            string `json:"allowed_ip_addresses"`
-	RevokeInactiveTokensAfterDays *int64 `json:"revoke_inactive_tokens_after_days"`
-	RestrictUserApiTokenCreation  bool   `json:"restrict_user_api_token_creation"`
+	AllowedIpAddresses            string                `json:"allowed_ip_addresses"`
+	AllowedIpEntries              []organizationIPEntry `json:"allowed_ip_entries"`
+	RevokeInactiveTokensAfterDays *int64                `json:"revoke_inactive_tokens_after_days"`
+	RestrictUserApiTokenCreation  bool                  `json:"restrict_user_api_token_creation"`
 	Features                      struct {
 		ApiIpAllowList             bool `json:"api_ip_allow_list"`
 		InactiveApiTokenRevocation bool `json:"inactive_api_token_revocation"`
 	} `json:"features"`
+}
+
+type organizationIPEntry struct {
+	IPAddress   string `json:"ip_address" tfsdk:"ip_address"`
+	Description string `json:"description" tfsdk:"description"`
+}
+
+var organizationIPEntryType = types.ObjectType{AttrTypes: map[string]attr.Type{
+	"ip_address":  types.StringType,
+	"description": types.StringType,
+}}
+
+// The plan is known by apply time; optional descriptions have their schema default.
+func allowedApiIpEntriesValue(entries types.List) []organizationIPEntry {
+	result := make([]organizationIPEntry, 0, len(entries.Elements()))
+	for _, value := range entries.Elements() {
+		attrs := value.(types.Object).Attributes()
+		result = append(result, organizationIPEntry{
+			IPAddress:   attrs["ip_address"].(types.String).ValueString(),
+			Description: attrs["description"].(types.String).ValueString(),
+		})
+	}
+	return result
+}
+
+// Refresh only the representation already in state. Old saved state and imports use addresses.
+func (state *organizationResourceModel) readAllowlist(ctx context.Context, settings *organizationAPISettings, diags *diag.Diagnostics) {
+	if !state.AllowedApiIpEntries.IsNull() {
+		entries, entryDiags := types.ListValueFrom(ctx, organizationIPEntryType, settings.AllowedIpEntries)
+		diags.Append(entryDiags...)
+		state.AllowedApiIpEntries = entries
+		state.AllowedApiIpAddresses = types.ListNull(types.StringType)
+	} else {
+		allowed, allowedDiags := allowedApiIpAddressesFromAPI(ctx, settings.AllowedIpAddresses, state.AllowedApiIpAddresses)
+		diags.Append(allowedDiags...)
+		state.AllowedApiIpAddresses = allowed
+		state.AllowedApiIpEntries = types.ListNull(organizationIPEntryType)
+	}
 }
 
 func (c *Client) getOrganizationAPISettings(ctx context.Context) (*organizationAPISettings, error) {
@@ -425,6 +499,7 @@ func (c *Client) updateOrganizationAPISettings(ctx context.Context, payload map[
 func apiSettingsFromModel(model *organizationResourceModel) *organizationAPISettings {
 	return &organizationAPISettings{
 		AllowedIpAddresses:            allowedApiIpAddressesValue(model.AllowedApiIpAddresses),
+		AllowedIpEntries:              allowedApiIpEntriesValue(model.AllowedApiIpEntries),
 		RevokeInactiveTokensAfterDays: revokePeriodToDays(model.RevokeInactiveTokensAfter.ValueString()),
 		RestrictUserApiTokenCreation:  model.RestrictUserApiTokenCreation.ValueBool(),
 	}
@@ -436,7 +511,11 @@ func apiSettingsPatch(config, plan *organizationResourceModel, current *organiza
 	// the allowlist is owned rather than adopted: dropping it from the configuration clears it, so
 	// the plan alone says what it should be. Unchanged values stay out of the request because
 	// organizations without the allowlist feature are refused even those.
-	if allowed := allowedApiIpAddressesValue(plan.AllowedApiIpAddresses); allowed != current.AllowedIpAddresses {
+	if !plan.AllowedApiIpEntries.IsNull() {
+		if entries := allowedApiIpEntriesValue(plan.AllowedApiIpEntries); !slices.Equal(entries, current.AllowedIpEntries) {
+			payload["allowed_ip_entries"] = entries
+		}
+	} else if allowed := allowedApiIpAddressesValue(plan.AllowedApiIpAddresses); allowed != current.AllowedIpAddresses {
 		payload["allowed_ip_addresses"] = allowed
 	}
 	// config says whether an attribute is managed, plan holds the value to apply
@@ -481,12 +560,10 @@ func (o *organizationResource) readAPISettings(ctx context.Context, state *organ
 		settings = apiSettingsFromModel(state)
 	}
 
-	allowed, allowedDiags := allowedApiIpAddressesFromAPI(ctx, settings.AllowedIpAddresses, state.AllowedApiIpAddresses)
-	diags.Append(allowedDiags...)
+	state.readAllowlist(ctx, settings, diags)
 	if diags.HasError() {
 		return
 	}
-	state.AllowedApiIpAddresses = allowed
 	state.RevokeInactiveTokensAfter = types.StringValue(revokePeriodFromDays(settings.RevokeInactiveTokensAfterDays))
 	state.RestrictUserApiTokenCreation = types.BoolValue(settings.RestrictUserApiTokenCreation)
 }
@@ -506,9 +583,10 @@ func (o *organizationResource) updateAPISettings(ctx context.Context, config, pl
 
 	// what state had before it is made to describe the plan, so the failure path below can put back
 	// an allowlist the patch never applied
-	recorded := state.AllowedApiIpAddresses
+	recorded := *state
 	// the allowlist is not adopted from the organization, so state follows the configuration exactly
 	state.AllowedApiIpAddresses = plan.AllowedApiIpAddresses
+	state.AllowedApiIpEntries = plan.AllowedApiIpEntries
 	// the remaining attributes are left as they are when they are not configured
 	state.RevokeInactiveTokensAfter = plan.RevokeInactiveTokensAfter
 	if state.RevokeInactiveTokensAfter.IsNull() || state.RevokeInactiveTokensAfter.IsUnknown() {
@@ -530,7 +608,9 @@ func (o *organizationResource) updateAPISettings(ctx context.Context, config, pl
 		// a 403 answers a plan-gated setting as readily as a token without the scope, so name the
 		// feature the organization's plan is missing where that is what the request asked for
 		if isAPIStatus(err, http.StatusForbidden) {
-			if _, ok := payload["allowed_ip_addresses"]; ok && !current.Features.ApiIpAllowList {
+			_, addresses := payload["allowed_ip_addresses"]
+			_, entries := payload["allowed_ip_entries"]
+			if (addresses || entries) && !current.Features.ApiIpAllowList {
 				detail += " The allowed API IP addresses feature is not available on this organization's plan."
 			}
 			if _, ok := payload["revoke_inactive_tokens_after_days"]; ok && !current.Features.InactiveApiTokenRevocation {
@@ -558,9 +638,9 @@ func (o *organizationResource) updateAPISettings(ctx context.Context, config, pl
 		}
 		diags.AddError("Unable to update organization API settings", detail)
 
-		allowed, allowedDiags := allowedApiIpAddressesFromAPI(ctx, observed.AllowedIpAddresses, recorded)
-		diags.Append(allowedDiags...)
-		state.AllowedApiIpAddresses = allowed
+		state.AllowedApiIpAddresses = recorded.AllowedApiIpAddresses
+		state.AllowedApiIpEntries = recorded.AllowedApiIpEntries
+		state.readAllowlist(ctx, observed, diags)
 		state.RevokeInactiveTokensAfter = types.StringValue(revokePeriodFromDays(observed.RevokeInactiveTokensAfterDays))
 		state.RestrictUserApiTokenCreation = types.BoolValue(observed.RestrictUserApiTokenCreation)
 

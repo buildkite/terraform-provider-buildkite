@@ -37,7 +37,16 @@ func TestMergePipelineCheckout_NestedGroup(t *testing.T) {
 	}
 }
 
-func TestAccBuildkiteSignedPipelineStepsDataSource(t *testing.T) {
+func TestBuildkiteSignedPipelineStepsDataSource(t *testing.T) {
+	const offlineProvider = `
+provider "buildkite" {
+    organization = "test-org"
+    api_token    = "test-token"
+    graphql_url  = "http://127.0.0.1:1/graphql"
+    rest_url     = "http://127.0.0.1:1/v2"
+    max_retries  = 0
+}
+`
 	const (
 		repository = "my-repo"
 		jwksKeyID  = "my-key-id"
@@ -86,12 +95,13 @@ func TestAccBuildkiteSignedPipelineStepsDataSource(t *testing.T) {
 	}
 
 	t.Run("signed pipeline steps with a jwks attribute signs the steps", func(t *testing.T) {
-		resource.ParallelTest(t, resource.TestCase{
-			PreCheck:                 func() { testAccPreCheck(t) },
+		t.Parallel()
+
+		resource.UnitTest(t, resource.TestCase{
 			ProtoV6ProviderFactories: protoV6ProviderFactories(),
 			Steps: []resource.TestStep{
 				{
-					Config: heredoc.Docf(
+					Config: offlineProvider + heredoc.Docf(
 						`
 							data "buildkite_signed_pipeline_steps" "my_signed_steps" {
 							  repository     = %q
@@ -154,18 +164,19 @@ func TestAccBuildkiteSignedPipelineStepsDataSource(t *testing.T) {
 	})
 
 	t.Run("signed pipeline steps with interpolations fails validation", func(t *testing.T) {
+		t.Parallel()
+
 		pipelineWithInterpolations := heredoc.Doc(`
 			steps:
 			- label: ":pipeline:"
 				command: 'echo "$INTERPOLATE and $$ESCAPED"'
 		`)
 
-		resource.ParallelTest(t, resource.TestCase{
-			PreCheck:                 func() { testAccPreCheck(t) },
+		resource.UnitTest(t, resource.TestCase{
 			ProtoV6ProviderFactories: protoV6ProviderFactories(),
 			Steps: []resource.TestStep{
 				{
-					Config: heredoc.Docf(
+					Config: offlineProvider + heredoc.Docf(
 						`
 							data "buildkite_signed_pipeline_steps" "my_signed_steps" {
 							  repository     = %q
@@ -186,6 +197,8 @@ func TestAccBuildkiteSignedPipelineStepsDataSource(t *testing.T) {
 	})
 
 	t.Run("signed pipeline steps with escaped interpolations regex", func(t *testing.T) {
+		t.Parallel()
+
 		pipelineWithEscapedInterpolations := heredoc.Doc(`
 			steps:
 			- label: ":pipeline:"
@@ -193,12 +206,11 @@ func TestAccBuildkiteSignedPipelineStepsDataSource(t *testing.T) {
 			  if: 'pipeline.slug !~ /^.+-main\z/'
 		`)
 
-		resource.ParallelTest(t, resource.TestCase{
-			PreCheck:                 func() { testAccPreCheck(t) },
+		resource.UnitTest(t, resource.TestCase{
 			ProtoV6ProviderFactories: protoV6ProviderFactories(),
 			Steps: []resource.TestStep{
 				{
-					Config: heredoc.Docf(
+					Config: offlineProvider + heredoc.Docf(
 						`
 							data "buildkite_signed_pipeline_steps" "my_signed_steps" {
 							  repository     = %q
@@ -224,14 +236,15 @@ func TestAccBuildkiteSignedPipelineStepsDataSource(t *testing.T) {
 	})
 
 	t.Run("signed pipeline steps with a jwks file attribute signs the steps", func(t *testing.T) {
+		t.Parallel()
+
 		jwksFile := writeToTempFile(t, jwks)
 
-		resource.ParallelTest(t, resource.TestCase{
-			PreCheck:                 func() { testAccPreCheck(t) },
+		resource.UnitTest(t, resource.TestCase{
 			ProtoV6ProviderFactories: protoV6ProviderFactories(),
 			Steps: []resource.TestStep{
 				{
-					Config: heredoc.Docf(
+					Config: offlineProvider + heredoc.Docf(
 						`
 							data "buildkite_signed_pipeline_steps" "my_signed_steps" {
 							  repository     = %q
@@ -258,14 +271,15 @@ func TestAccBuildkiteSignedPipelineStepsDataSource(t *testing.T) {
 	})
 
 	t.Run("signed pipeline steps with a jwks_file and a jwks fails validation", func(t *testing.T) {
+		t.Parallel()
+
 		jwksFile := writeToTempFile(t, jwks)
 
-		resource.ParallelTest(t, resource.TestCase{
-			PreCheck:                 func() { testAccPreCheck(t) },
+		resource.UnitTest(t, resource.TestCase{
 			ProtoV6ProviderFactories: protoV6ProviderFactories(),
 			Steps: []resource.TestStep{
 				{
-					Config: heredoc.Docf(
+					Config: offlineProvider + heredoc.Docf(
 						`
 							data "buildkite_signed_pipeline_steps" "my_signed_steps" {
 							  repository     = %q
@@ -288,12 +302,13 @@ func TestAccBuildkiteSignedPipelineStepsDataSource(t *testing.T) {
 	})
 
 	t.Run("signed pipeline steps without a jwks_file or a jwks fails validation", func(t *testing.T) {
-		resource.ParallelTest(t, resource.TestCase{
-			PreCheck:                 func() { testAccPreCheck(t) },
+		t.Parallel()
+
+		resource.UnitTest(t, resource.TestCase{
 			ProtoV6ProviderFactories: protoV6ProviderFactories(),
 			Steps: []resource.TestStep{
 				{
-					Config: heredoc.Docf(
+					Config: offlineProvider + heredoc.Docf(
 						`
 							data "buildkite_signed_pipeline_steps" "my_signed_steps" {
 							  repository     = %q

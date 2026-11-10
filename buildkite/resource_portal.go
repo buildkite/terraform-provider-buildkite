@@ -291,15 +291,15 @@ func (p *portalResource) Read(ctx context.Context, req resource.ReadRequest, res
 }
 
 func (p *portalResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	var plan portalResourceModel
+	var plan, state portalResourceModel
 
-	diags := req.Plan.Get(ctx, &plan)
-	resp.Diagnostics.Append(diags...)
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	result, err := p.updatePortal(ctx, &plan)
+	result, err := p.updatePortal(ctx, &plan, &state)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to update portal",
@@ -419,24 +419,28 @@ func (p *portalResource) getPortal(ctx context.Context, slug string) (*portalAPI
 	return &result, nil
 }
 
-func (p *portalResource) updatePortal(ctx context.Context, plan *portalResourceModel) (*portalAPIResponse, error) {
+func (p *portalResource) updatePortal(ctx context.Context, plan, state *portalResourceModel) (*portalAPIResponse, error) {
 	path := fmt.Sprintf("/v2/organizations/%s/portals/%s", p.client.organization, plan.Slug.ValueString())
 
-	reqBody := portalCreateUpdateRequest{
-		Name:          plan.Name.ValueString(),
-		Slug:          plan.Slug.ValueString(),
-		Query:         plan.Query.ValueString(),
-		UserInvokable: plan.UserInvokable.ValueBool(),
+	// The API keeps any field the request leaves out, so a field removed from the
+	// configuration is sent as null to clear it.
+	reqBody := map[string]any{
+		"name":           plan.Name.ValueString(),
+		"slug":           plan.Slug.ValueString(),
+		"query":          plan.Query.ValueString(),
+		"user_invokable": plan.UserInvokable.ValueBool(),
 	}
 
 	if !plan.Description.IsNull() {
-		desc := plan.Description.ValueString()
-		reqBody.Description = &desc
+		reqBody["description"] = plan.Description.ValueString()
+	} else if !state.Description.IsNull() {
+		reqBody["description"] = nil
 	}
 
 	if !plan.AllowedIPAddresses.IsNull() {
-		ipString := plan.AllowedIPAddresses.ValueString()
-		reqBody.AllowedIPAddresses = &ipString
+		reqBody["allowed_ip_addresses"] = plan.AllowedIPAddresses.ValueString()
+	} else if !state.AllowedIPAddresses.IsNull() {
+		reqBody["allowed_ip_addresses"] = nil
 	}
 
 	var result portalAPIResponse

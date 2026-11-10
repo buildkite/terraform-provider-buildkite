@@ -662,7 +662,7 @@ func testAccCheckClusterCacheRegistryDestroy(state *terraform.State) error {
 			continue
 		}
 
-		r := clusterCacheRegistryResource{client: &Client{genqlient: genqlientGraphql, organization: getenv("BUILDKITE_ORGANIZATION_SLUG")}}
+		r := clusterCacheRegistryResource{client: getTestClient()}
 		_, err := r.lookupCacheRegistry(context.Background(), &clusterCacheRegistryResourceModel{
 			ID:             types.StringValue(resourceState.Primary.ID),
 			OrganizationID: types.StringValue(resourceState.Primary.Attributes["organization_id"]),
@@ -693,7 +693,12 @@ func TestAccBuildkiteClusterCacheRegistryParentDeletion(t *testing.T) {
 				Check: func(state *terraform.State) error {
 					oldClusterID = state.RootModule().Resources["buildkite_cluster.cache_registry_test"].Primary.ID
 					oldRegistryID = state.RootModule().Resources["buildkite_cluster_cache_registry.test"].Primary.ID
-					_, err := deleteCluster(context.Background(), genqlientGraphql, organizationID, oldClusterID)
+					client := getTestClient()
+					organizationID, err := client.GetOrganizationID(context.Background())
+					if err != nil {
+						return fmt.Errorf("looking up organization before deleting cluster: %w", err)
+					}
+					_, err = deleteCluster(context.Background(), client.genqlient, *organizationID, oldClusterID)
 					if err != nil {
 						return err
 					}
@@ -720,7 +725,12 @@ func testAccDeleteClusterCacheRegistryOutOfBand(name string) testingresource.Tes
 		if !ok {
 			return fmt.Errorf("cache registry %s not found in state", name)
 		}
-		_, err := deleteCacheRegistry(context.Background(), genqlientGraphql, organizationID, registry.Primary.ID)
+		client := getTestClient()
+		organizationID, err := client.GetOrganizationID(context.Background())
+		if err != nil {
+			return fmt.Errorf("looking up organization before deleting cache registry: %w", err)
+		}
+		_, err = deleteCacheRegistry(context.Background(), client.genqlient, *organizationID, registry.Primary.ID)
 		return err
 	}
 }

@@ -35,6 +35,14 @@ resource "buildkite_cluster_queue" "default" {
   dispatch_paused = true
 }
 
+# create a self-hosted queue whose jobs check out GitHub repositories with a
+# short-lived Buildkite-issued GitHub App token instead of a long-lived credential
+resource "buildkite_cluster_queue" "github_app_token" {
+  cluster_id           = buildkite_cluster.primary.id
+  key                  = "github-app-token"
+  use_github_app_token = true
+}
+
 # create a hosted agent queue with macos agents
 resource "buildkite_cluster_queue" "hosted_agents_macos" {
   cluster_id = buildkite_cluster.primary.id
@@ -80,6 +88,7 @@ resource "buildkite_cluster_queue" "hosted_agents_linux" {
 - `dispatch_paused` (Boolean) The dispatch state of a cluster queue.
 - `hosted_agents` (Attributes) Control the settings for the Buildkite hosted agents. (see [below for nested schema](#nestedatt--hosted_agents))
 - `retry_agent_affinity` (String) Specifies which agent should be preferred when a job is retried. Valid values are `prefer-warmest` (prefer agents that have recently finished jobs) and `prefer-different` (prefer a different agent if available). Defaults to `prefer-warmest`.
+- `use_github_app_token` (Boolean) Whether jobs on this self-hosted queue check out GitHub repositories with a short-lived, Buildkite-issued GitHub App token, as hosted queues do, instead of a long-lived credential on the agent. Only applies to self-hosted queues, so it cannot be set alongside `hosted_agents`. When omitted, the queue's current setting is left unchanged.
 
 ### Read-Only
 

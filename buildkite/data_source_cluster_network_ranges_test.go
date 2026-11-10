@@ -16,6 +16,8 @@ import (
 const testClusterUUID = "e8738c39-1f2a-4a1e-9b3c-2d4e5f6a7b8c"
 
 func TestAccBuildkiteClusterNetworkRangesDatasource(t *testing.T) {
+	t.Parallel()
+
 	// A cluster created by the test suite has no hosted agents, so the API returns an empty
 	// collection. The attribute still has to be a known empty set for configurations that
 	// iterate over it.

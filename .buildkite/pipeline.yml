@@ -17,7 +17,7 @@ steps:
     agents:
       queue: "hosted"
     plugins:
-      docker-compose#v5.15.0:
+      docker-compose#v5.16.0:
         run: go
 
   - label: docs
@@ -26,7 +26,7 @@ steps:
     agents:
       queue: "hosted"
     plugins:
-      docker-compose#v5.15.0:
+      docker-compose#v5.16.0:
         run: go
         mount-buildkite-agent: true
 
@@ -36,7 +36,7 @@ steps:
     agents:
       queue: "hosted"
     plugins:
-      docker-compose#v5.15.0:
+      docker-compose#v5.16.0:
         run: go
 
   - label: acceptance tests
@@ -44,8 +44,11 @@ steps:
     concurrency: 1
     concurrency_group: terraform-provider-acceptance-tests
     command: .buildkite/steps/annotate.sh
+    artifact_paths:
+      - "test-events-*.jsonl"
+      - "junit-*.xml"
     plugins:
-      - aws-assume-role-with-web-identity#v1.7.0:
+      - aws-assume-role-with-web-identity#v1.8.2:
           role-arn: arn:aws:iam::445615400570:role/pipeline-buildkite-terraform-provider-buildkite-main
           session-tags:
             - organization_slug
@@ -55,11 +58,43 @@ steps:
           parameters:
             BUILDKITE_ORGANIZATION_SLUG: /pipelines/buildkite/terraform-provider-buildkite-main/buildkite_organization
             BUILDKITE_API_TOKEN: /pipelines/buildkite/terraform-provider-buildkite-main/buildkite_api_token
+            BUILDKITE_NONADMIN_API_TOKEN: /pipelines/buildkite/terraform-provider-buildkite-main/buildkite_api_token_nonadmin
             BUILDKITE_ANALYTICS_TOKEN: /pipelines/buildkite/terraform-provider-buildkite-main/buildkite_analytics_token
             GITHUB_TEST_REPO: /pipelines/buildkite/terraform-provider-buildkite-main/github_test_repo
             GITHUB_TEST_REPO_ALT: /pipelines/buildkite/terraform-provider-buildkite-main/github_test_repo_alt
-      - docker-compose#v5.15.0:
-          run: go
+      - docker-compose#v5.16.0:
+          run: acceptance
+          mount-buildkite-agent: "true"
+      - test-collector#v1.12.0:
+          files: junit-*.xml
+          format: junit
+    retry:
+      automatic:
+        - exit_status: -1
+          limit: 2
+
+  - label: acceptance tests - non-admin
+    key: testacc-nonadmin
+    concurrency: 1
+    concurrency_group: terraform-provider-acceptance-tests
+    command: .buildkite/steps/annotate.sh testacc-nonadmin
+    artifact_paths:
+      - "test-events-*.jsonl"
+      - "junit-*.xml"
+    plugins:
+      - aws-assume-role-with-web-identity#v1.8.2:
+          role-arn: arn:aws:iam::445615400570:role/pipeline-buildkite-terraform-provider-buildkite-main
+          session-tags:
+            - organization_slug
+            - organization_id
+            - pipeline_slug
+      - aws-ssm#v1.1.0:
+          parameters:
+            BUILDKITE_ORGANIZATION_SLUG: /pipelines/buildkite/terraform-provider-buildkite-main/buildkite_organization
+            BUILDKITE_API_TOKEN: /pipelines/buildkite/terraform-provider-buildkite-main/buildkite_api_token_nonadmin
+            BUILDKITE_ANALYTICS_TOKEN: /pipelines/buildkite/terraform-provider-buildkite-main/buildkite_analytics_token
+      - docker-compose#v5.16.0:
+          run: acceptance
           mount-buildkite-agent: "true"
       - test-collector#v1.12.0:
           files: junit-*.xml
@@ -86,11 +121,12 @@ steps:
     agents:
       queue: "hosted"
     plugins:
-      docker-compose#v5.15.0:
+      docker-compose#v5.16.0:
         run: go
     depends_on:
       - lint
       - test
       - testacc
+      - testacc-nonadmin
       - vet
       - docs

@@ -2,22 +2,447 @@ package buildkite
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
+	"net/http/httptest"
 	"reflect"
+	"regexp"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/hashicorp/terraform-plugin-go/tftypes"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
+// Exercise Terraform planning as well as CRUD: the option defaults to true,
+// survives refresh despite not being returned by the API, and never replaces a suite.
+func TestUnitTestSuiteFlakyDetection(t *testing.T) {
+	for _, optOut := range []bool{false, true} {
+		t.Run(fmt.Sprintf("opt_out=%t", optOut), func(t *testing.T) {
+			var creates atomic.Int32
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				if r.URL.Path == "/graphql" {
+					var request struct {
+						OperationName string `json:"operationName"`
+					}
+					if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+						t.Errorf("decode GraphQL request: %v", err)
+						w.WriteHeader(http.StatusBadRequest)
+						return
+					}
+					switch request.OperationName {
+					case "getNode":
+						fmt.Fprint(w, `{"data":{"node":{"__typename":"Team","id":"previous-team-id","uuid":"team-uuid"}}}`)
+					case "getTestSuite":
+						fmt.Fprint(w, suiteWithTeams("", suiteTeamEdge(previousSuiteEdge, previousSuiteTeam, "MANAGE_AND_READ")).body)
+					default:
+						t.Errorf("unexpected GraphQL operation: %s", request.OperationName)
+						w.WriteHeader(http.StatusBadRequest)
+					}
+					return
+				}
+				if r.Method == http.MethodDelete {
+					w.WriteHeader(http.StatusNoContent)
+					return
+				}
+				if r.Method == http.MethodPost || r.Method == http.MethodPatch {
+					var payload map[string]any
+					if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+						t.Errorf("decode suite payload: %v", err)
+					}
+					if r.Method == http.MethodPost {
+						creates.Add(1)
+						if got := payload["flaky_detection"]; got != !optOut {
+							t.Errorf("POST flaky_detection = %v, want %t", got, !optOut)
+						}
+					} else if _, present := payload["flaky_detection"]; present {
+						t.Error("PATCH must not send the create-only flaky_detection option")
+					}
+				}
+				fmt.Fprint(w, suitePatched.body)
+			}))
+			defer server.Close()
+
+			config := func(option string) string {
+				return fmt.Sprintf(`
+provider "buildkite" {
+  organization = "test-org"
+  api_token = "dummy"
+  graphql_url = %q
+  rest_url = %q
+}
+resource "buildkite_test_suite" "suite" {
+  name = %q
+  default_branch = "main"
+  team_owner_id = %q
+  %s
+}`, server.URL+"/graphql", server.URL, updatedSuiteName, previousSuiteTeam, option)
+			}
+			initial := ""
+			if optOut {
+				initial = "flaky_detection = false"
+			}
+			const address = "buildkite_test_suite.suite"
+			resource.UnitTest(t, resource.TestCase{
+				ProtoV6ProviderFactories: protoV6ProviderFactories(),
+				Steps: []resource.TestStep{
+					{
+						Config: config(initial),
+						Check:  resource.TestCheckResourceAttr(address, "flaky_detection", fmt.Sprint(!optOut)),
+					},
+					{
+						Config: config(fmt.Sprintf("flaky_detection = %t", optOut)),
+						ConfigPlanChecks: resource.ConfigPlanChecks{
+							PreApply: []plancheck.PlanCheck{plancheck.ExpectResourceAction(address, plancheck.ResourceActionUpdate)},
+						},
+						Check: resource.TestCheckResourceAttr(address, "flaky_detection", fmt.Sprint(optOut)),
+					},
+					{
+						Config: config(""),
+						Check:  resource.TestCheckResourceAttr(address, "flaky_detection", "true"),
+					},
+					{
+						ResourceName: address, ImportState: true, ImportStateId: "suite-id",
+						ImportStateVerify: true,
+					},
+				},
+			})
+			if got := creates.Load(); got != 1 {
+				t.Errorf("suite creates = %d, want 1 (no replacement)", got)
+			}
+		})
+	}
+}
+
+func TestUnitTestSuiteStateManagement(t *testing.T) {
+	const address = "buildkite_test_suite.suite"
+	const bothStates = `test_state_management = true
+allowed_test_states = ["muted", "skipped"]`
+	for _, explicitCreate := range []bool{false, true} {
+		t.Run(fmt.Sprintf("explicit_create=%t", explicitCreate), func(t *testing.T) {
+			var mu sync.Mutex
+			var suite map[string]any
+			if err := json.Unmarshal([]byte(suitePatched.body), &suite); err != nil {
+				t.Fatal(err)
+			}
+			suite["test_state_management"] = false
+			suite["allowed_test_states"] = []any{}
+			var lastPayload map[string]any
+			var creates int
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				mu.Lock()
+				defer mu.Unlock()
+				w.Header().Set("Content-Type", "application/json")
+				if r.URL.Path == "/graphql" {
+					var request struct {
+						OperationName string `json:"operationName"`
+					}
+					if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+						t.Error(err)
+						w.WriteHeader(http.StatusBadRequest)
+						return
+					}
+					switch request.OperationName {
+					case "getNode":
+						fmt.Fprint(w, `{"data":{"node":{"__typename":"Team","id":"previous-team-id","uuid":"team-uuid"}}}`)
+					case "getTestSuite":
+						fmt.Fprint(w, suiteWithTeams("", suiteTeamEdge(previousSuiteEdge, previousSuiteTeam, "MANAGE_AND_READ")).body)
+					default:
+						t.Errorf("unexpected GraphQL operation: %s", request.OperationName)
+						w.WriteHeader(http.StatusBadRequest)
+					}
+					return
+				}
+				switch r.Method {
+				case http.MethodPost, http.MethodPatch:
+					if r.Method == http.MethodPost {
+						creates++
+					}
+					lastPayload = nil
+					if err := json.NewDecoder(r.Body).Decode(&lastPayload); err != nil {
+						t.Error(err)
+					}
+					for key, value := range lastPayload {
+						suite[key] = value
+					}
+				case http.MethodDelete:
+					w.WriteHeader(http.StatusNoContent)
+					return
+				}
+				if err := json.NewEncoder(w).Encode(suite); err != nil {
+					t.Error(err)
+				}
+			}))
+			defer server.Close()
+			config := func(settings, application string) string {
+				return fmt.Sprintf(`
+provider "buildkite" {
+  organization = "test-org"
+  api_token = "dummy"
+  graphql_url = %q
+  rest_url = %q
+}
+resource "buildkite_test_suite" "suite" {
+  name = %q
+  default_branch = "main"
+  team_owner_id = %q
+  application_name = %q
+  %s
+}`, server.URL+"/graphql", server.URL, updatedSuiteName, previousSuiteTeam, application, settings)
+			}
+			check := func(enabled bool, states []string, sent map[string]any) resource.TestCheckFunc {
+				checks := []resource.TestCheckFunc{
+					resource.TestCheckResourceAttr(address, "test_state_management", fmt.Sprint(enabled)),
+					resource.TestCheckResourceAttr(address, "allowed_test_states.#", fmt.Sprint(len(states))),
+					func(_ *terraform.State) error {
+						mu.Lock()
+						defer mu.Unlock()
+						for _, key := range []string{"test_state_management", "allowed_test_states"} {
+							got, present := lastPayload[key]
+							want, wantPresent := sent[key]
+							if present != wantPresent || !cmp.Equal(got, want, cmpopts.SortSlices(func(a, b any) bool {
+								return fmt.Sprint(a) < fmt.Sprint(b)
+							})) {
+								return fmt.Errorf("payload %s = %#v (present %t), want %#v (present %t)", key, got, present, want, wantPresent)
+							}
+						}
+						return nil
+					},
+				}
+				for _, state := range states {
+					checks = append(checks, resource.TestCheckTypeSetElemAttr(address, "allowed_test_states.*", state))
+				}
+				return resource.ComposeAggregateTestCheckFunc(checks...)
+			}
+			initial, initialStates := "", []string{}
+			initialSent := map[string]any{}
+			if explicitCreate {
+				initial, initialStates = bothStates, []string{"muted", "skipped"}
+				initialSent = map[string]any{"test_state_management": true, "allowed_test_states": []any{"skipped", "muted"}}
+			}
+			updateOnly := resource.ConfigPlanChecks{PreApply: []plancheck.PlanCheck{
+				plancheck.ExpectResourceAction(address, plancheck.ResourceActionUpdate),
+			}}
+			steps := []resource.TestStep{
+				{Config: config(initial, "original"), Check: check(explicitCreate, initialStates, initialSent)},
+			}
+			if explicitCreate {
+				steps = append(steps, []resource.TestStep{
+					{
+						// An enabled, populated remote suite must stay untouched when config
+						// omits these settings, including when a different field forces PATCH.
+						Config: config("", "updated"), ConfigPlanChecks: updateOnly,
+						Check: check(true, []string{"muted", "skipped"}, nil),
+					},
+					{ResourceName: address, ImportState: true, ImportStateId: "suite-id", ImportStateVerify: true},
+					{
+						Config: config(`allowed_test_states = ["skipped"]`, "updated"), ConfigPlanChecks: updateOnly,
+						Check: check(true, []string{"skipped"}, map[string]any{"allowed_test_states": []any{"skipped"}}),
+					},
+					{Config: config(bothStates, "updated"), ConfigPlanChecks: updateOnly},
+					{
+						Config: config("test_state_management = true\nallowed_test_states = [\"skipped\", \"muted\"]", "updated"),
+						ConfigPlanChecks: resource.ConfigPlanChecks{PreApply: []plancheck.PlanCheck{
+							plancheck.ExpectResourceAction(address, plancheck.ResourceActionNoop),
+						}},
+					},
+					{
+						Config: config(`test_state_management = false`, "updated"), ConfigPlanChecks: updateOnly,
+						Check: check(false, []string{"muted", "skipped"}, map[string]any{"test_state_management": false}),
+					},
+					{
+						Config: config(`allowed_test_states = []`, "updated"), ConfigPlanChecks: updateOnly,
+						Check: check(false, nil, map[string]any{"allowed_test_states": []any{}}),
+					},
+					{ResourceName: address, ImportState: true, ImportStateId: "suite-id", ImportStateVerify: true},
+					{
+						Config:   config(`allowed_test_states = ["enabled"]`, "updated"),
+						PlanOnly: true, ExpectError: regexp.MustCompile(`must be one of`),
+					},
+					{Config: config(`allowed_test_states = []`, "updated")},
+				}...)
+			}
+			resource.UnitTest(t, resource.TestCase{
+				ProtoV6ProviderFactories: protoV6ProviderFactories(),
+				Steps:                    steps,
+			})
+			if creates != 1 {
+				t.Errorf("suite creates = %d, want 1", creates)
+			}
+		})
+	}
+}
+
+func TestTestSuiteStateManagementRejectedUpdate(t *testing.T) {
+	for _, testCase := range []struct {
+		status  int
+		message string
+	}{
+		{http.StatusForbidden, "Your plan does not include test state management."},
+		{http.StatusUnprocessableEntity, "Allowed test states cannot remove muted test state while tests are still muted"},
+	} {
+		t.Run(fmt.Sprint(testCase.status), func(t *testing.T) {
+			server, requests := newRetryStub(t, stubResponse{
+				status: testCase.status, body: fmt.Sprintf(`{"message":%q}`, testCase.message),
+			})
+			defer server.Close()
+			ts := &testSuiteResource{client: newRetryTestClient(t, server.URL, 0, time.Millisecond)}
+			ctx := t.Context()
+			schema := resourceSchema(ctx, t, ts)
+			prior := testSuiteAttrs(priorSuiteName, priorSuiteName, previousSuiteTeam)
+			prior["test_state_management"] = tftypes.NewValue(tftypes.Bool, true)
+			prior["allowed_test_states"] = tftypes.NewValue(tftypes.Set{ElementType: tftypes.String}, []tftypes.Value{tftypes.NewValue(tftypes.String, "muted")})
+			planned := testSuiteAttrs(priorSuiteName, priorSuiteName, previousSuiteTeam)
+			planned["test_state_management"] = tftypes.NewValue(tftypes.Bool, false)
+			planned["allowed_test_states"] = tftypes.NewValue(tftypes.Set{ElementType: tftypes.String}, []tftypes.Value{})
+			req, resp := updateRequestFor(ctx, t, schema, prior, planned)
+			ts.Update(ctx, req, &resp)
+			if !diagnosticsContain(resp.Diagnostics, testCase.message) {
+				t.Fatalf("diagnostics = %v, want API error %q", resp.Diagnostics, testCase.message)
+			}
+			if !resp.State.Raw.Equal(req.State.Raw) {
+				t.Fatal("rejected PATCH changed Terraform state")
+			}
+			if requests.Load() != 1 {
+				t.Fatalf("made %d requests, want one rejected PATCH", requests.Load())
+			}
+		})
+	}
+}
+
+func TestAccNonAdminTestSuite(t *testing.T) {
+	const address = "buildkite_test_suite.temporary"
+	name := "nonadmin-suite-" + acctest.RandString(12)
+	baseConfig := fmt.Sprintf(`
+		data "buildkite_team" "owner" {
+			slug = %q
+		}
+	`, testAccFixturePipelineTeamSlug)
+	config := func(branch, application string) string {
+		return baseConfig + fmt.Sprintf(`
+			resource "buildkite_test_suite" "temporary" {
+				name = %q
+				default_branch = %q
+				application_name = %q
+				team_owner_id = data.buildkite_team.owner.id
+			}
+
+			data "buildkite_test_suite" "temporary" {
+				slug = buildkite_test_suite.temporary.slug
+				depends_on = [buildkite_test_suite.temporary]
+			}
+		`, name, branch, application)
+	}
+	var suiteID, suiteUUID, suiteSlug, suiteToken string
+	check := func(branch, application string) resource.TestCheckFunc {
+		return resource.ComposeAggregateTestCheckFunc(
+			resource.TestCheckResourceAttr(address, "name", name),
+			resource.TestCheckResourceAttr(address, "default_branch", branch),
+			resource.TestCheckResourceAttr(address, "application_name", application),
+			resource.TestCheckResourceAttrSet(address, "uuid"),
+			resource.TestCheckResourceAttrSet(address, "slug"),
+			resource.TestCheckResourceAttrSet(address, "api_token"),
+			resource.TestCheckNoResourceAttr(address, "emoji"),
+			resource.TestCheckResourceAttrPair(address, "team_owner_id", "data.buildkite_team.owner", "id"),
+			resource.TestCheckResourceAttrPair("data.buildkite_test_suite.temporary", "id", address, "id"),
+			resource.TestCheckResourceAttrPair("data.buildkite_test_suite.temporary", "uuid", address, "uuid"),
+			resource.TestCheckResourceAttrPair("data.buildkite_test_suite.temporary", "slug", address, "slug"),
+			resource.TestCheckResourceAttr("data.buildkite_test_suite.temporary", "name", name),
+			resource.TestCheckResourceAttr("data.buildkite_test_suite.temporary", "default_branch", branch),
+			resource.TestCheckResourceAttr("data.buildkite_test_suite.temporary", "application_name", application),
+			func(s *terraform.State) error {
+				rs, ok := s.RootModule().Resources[address]
+				if !ok || rs.Primary == nil {
+					return fmt.Errorf("temporary suite is missing from Terraform state")
+				}
+				state := rs.Primary
+				if suiteID == "" {
+					suiteID, suiteUUID, suiteSlug, suiteToken = state.ID, state.Attributes["uuid"], state.Attributes["slug"], state.Attributes["api_token"]
+				}
+				if state.ID == "" || state.ID != suiteID || state.Attributes["uuid"] != suiteUUID || state.Attributes["slug"] != suiteSlug || state.Attributes["api_token"] != suiteToken {
+					return fmt.Errorf("temporary suite identity or API token changed")
+				}
+				r, err := getTestSuite(context.Background(), genqlientGraphql, suiteID, teamPageSize, nil)
+				if err != nil {
+					return err
+				}
+				suite, ok := r.Suite.(*getTestSuiteSuite)
+				if !ok || suite.Id != suiteID || suite.Uuid != suiteUUID || suite.Slug != suiteSlug || suite.Name != name || suite.DefaultBranch != branch {
+					return fmt.Errorf("remote suite does not match the expected identity and settings")
+				}
+				ownerState, ok := s.RootModule().Resources["data.buildkite_team.owner"]
+				if !ok || ownerState.Primary == nil {
+					return fmt.Errorf("persistent owner team is missing from Terraform state")
+				}
+				owner := ownerState.Primary.ID
+				for _, edge := range suite.Teams.Edges {
+					if edge.Node.Team.Id == owner && edge.Node.AccessLevel == SuiteAccessLevelsManageAndRead {
+						return nil
+					}
+				}
+				return fmt.Errorf("temporary suite lost its owner's MANAGE_AND_READ access")
+			},
+		)
+	}
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccNonAdminPreCheck(t) },
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		CheckDestroy:             testTestSuiteDestroy,
+		Steps: []resource.TestStep{
+			{Config: config("main", "Acceptance application"), Check: check("main", "Acceptance application")},
+			{
+				Config: config("release", "Updated acceptance application"),
+				Check:  check("release", "Updated acceptance application"),
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply:             []plancheck.PlanCheck{plancheck.ExpectResourceAction(address, plancheck.ResourceActionUpdate)},
+					PostApplyPostRefresh: []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()},
+				},
+			},
+			{RefreshState: true, Check: check("release", "Updated acceptance application")},
+			{
+				ResourceName:      address,
+				ImportState:       true,
+				ImportStateVerify: true,
+				// The default verifier prints mismatched values, including secrets.
+				ImportStateVerifyIgnore: []string{"api_token"},
+				ImportStateCheck: func(states []*terraform.InstanceState) error {
+					if len(states) != 1 || states[0].Attributes["api_token"] != suiteToken {
+						return fmt.Errorf("import did not preserve the suite API token")
+					}
+					return nil
+				},
+			},
+			{
+				Config: baseConfig,
+				Check: func(s *terraform.State) error {
+					if _, exists := s.RootModule().Resources[address]; exists {
+						return fmt.Errorf("deleted suite remains in Terraform state")
+					}
+					return testAccCheckTestSuiteDeleted(suiteSlug)
+				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply:             []plancheck.PlanCheck{plancheck.ExpectResourceAction(address, plancheck.ResourceActionDestroy)},
+					PostApplyPostRefresh: []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()},
+				},
+			},
+		},
+	})
+}
+
 func TestAccBuildkiteTestSuiteResource(t *testing.T) {
+	t.Parallel()
 	basicTestSuite := func(name string) string {
 		return fmt.Sprintf(`
 		provider "buildkite" {
@@ -164,34 +589,6 @@ func TestAccBuildkiteTestSuiteResource(t *testing.T) {
 		}
 		`, name, name, name)
 	}
-
-	t.Run("creates a test suite", func(t *testing.T) {
-		var suite getTestSuiteSuite
-		randName := acctest.RandString(10)
-
-		check := resource.ComposeAggregateTestCheckFunc(
-			checkTestSuiteExists("buildkite_test_suite.suite", &suite),
-			checkTestSuiteRemoteValue(&suite, "Name", fmt.Sprintf("test suite %s", randName)),
-			checkTestSuiteRemoteValue(&suite, "DefaultBranch", "main"),
-			resource.TestCheckResourceAttrSet("buildkite_test_suite.suite", "id"),
-			resource.TestCheckResourceAttrSet("buildkite_test_suite.suite", "api_token"),
-			resource.TestCheckResourceAttr("buildkite_test_suite.suite", "default_branch", "main"),
-			resource.TestCheckResourceAttr("buildkite_test_suite.suite", "name", fmt.Sprintf("test suite %s", randName)),
-			resource.TestCheckResourceAttrSet("buildkite_test_suite.suite", "team_owner_id"),
-		)
-
-		resource.ParallelTest(t, resource.TestCase{
-			PreCheck:                 func() { testAccPreCheck(t) },
-			ProtoV6ProviderFactories: protoV6ProviderFactories(),
-			CheckDestroy:             testTestSuiteDestroy,
-			Steps: []resource.TestStep{
-				{
-					Config: basicTestSuite(randName),
-					Check:  check,
-				},
-			},
-		})
-	})
 
 	t.Run("creates a test suite with an emoji set", func(t *testing.T) {
 		var suite getTestSuiteSuite
@@ -349,40 +746,6 @@ func TestAccBuildkiteTestSuiteResource(t *testing.T) {
 			},
 		})
 	})
-
-	t.Run("import a test suite", func(t *testing.T) {
-		var suite getTestSuiteSuite
-		resName := acctest.RandString(10)
-
-		check := resource.ComposeAggregateTestCheckFunc(
-			checkTestSuiteExists("buildkite_test_suite.suite", &suite),
-			resource.TestCheckResourceAttrSet("buildkite_test_suite.suite", "id"),
-			resource.TestCheckResourceAttrSet("buildkite_test_suite.suite", "uuid"),
-			resource.TestCheckResourceAttr("buildkite_test_suite.suite", "name", fmt.Sprintf("test suite %s", resName)),
-			resource.TestCheckResourceAttrSet("buildkite_test_suite.suite", "slug"),
-			resource.TestCheckResourceAttr("buildkite_test_suite.suite", "default_branch", "main"),
-			resource.TestCheckResourceAttrSet("buildkite_test_suite.suite", "team_owner_id"),
-			resource.TestCheckNoResourceAttr("buildkite_test_suite.suite", "emoji"),
-			resource.TestCheckResourceAttrSet("buildkite_test_suite.suite", "api_token"),
-		)
-
-		resource.ParallelTest(t, resource.TestCase{
-			PreCheck:                 func() { testAccPreCheck(t) },
-			ProtoV6ProviderFactories: protoV6ProviderFactories(),
-			CheckDestroy:             testTestSuiteDestroy,
-			Steps: []resource.TestStep{
-				{
-					Config: basicTestSuite(resName),
-					Check:  check,
-				},
-				{
-					ResourceName:      "buildkite_test_suite.suite",
-					ImportState:       true,
-					ImportStateVerify: true,
-				},
-			},
-		})
-	})
 }
 
 func checkTestSuiteRemoteValue(suite *getTestSuiteSuite, property, value string) resource.TestCheckFunc {
@@ -395,27 +758,19 @@ func checkTestSuiteRemoteValue(suite *getTestSuiteSuite, property, value string)
 	}
 }
 
-func loadRemoteTestSuite(id string) *getTestSuiteSuite {
-	_suite, err := getTestSuite(context.Background(), genqlientGraphql, id, 1, nil)
-	if err != nil {
-		return nil
-	}
-	if suite, ok := _suite.Suite.(*getTestSuiteSuite); ok {
-		return suite
-	}
-
-	return nil
-}
-
 func checkTestSuiteExists(name string, suite *getTestSuiteSuite) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[name]
 		if !ok {
 			return errors.New("Test suite not found in state")
 		}
-		_suite := loadRemoteTestSuite(rs.Primary.Attributes["id"])
+		response, err := getTestSuite(context.Background(), genqlientGraphql, rs.Primary.Attributes["id"], 1, nil)
+		if err != nil {
+			return fmt.Errorf("checking test suite %s: %w", name, err)
+		}
 
-		if _suite == nil {
+		_suite, ok := response.Suite.(*getTestSuiteSuite)
+		if !ok || _suite == nil {
 			return errors.New("Test suite does not exist on server")
 		}
 
@@ -431,12 +786,41 @@ func checkTestSuiteExists(name string, suite *getTestSuiteSuite) resource.TestCh
 }
 
 func testTestSuiteDestroy(s *terraform.State) error {
-	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "buildkite_test_suite" {
+	for address, rs := range s.RootModule().Resources {
+		if rs.Type != "buildkite_test_suite" || strings.HasPrefix(address, "data.") {
 			continue
+		}
+		if err := testAccCheckTestSuiteDeleted(rs.Primary.Attributes["slug"]); err != nil {
+			return err
 		}
 	}
 	return nil
+}
+
+func testAccCheckTestSuiteDeleted(slug string) error {
+	client := getTestClient()
+	url := fmt.Sprintf("/v2/analytics/organizations/%s/suites/%s", client.organization, slug)
+	ctx, cancel := context.WithTimeout(context.Background(), DefaultTimeout)
+	defer cancel()
+	pollDeadline := time.Now().Add(5 * time.Second)
+	for {
+		var response testSuiteResponse
+		err := client.makeRequest(ctx, http.MethodGet, url, nil, &response)
+		if isAPIStatus(err, http.StatusNotFound) {
+			return nil
+		}
+		if err != nil {
+			return fmt.Errorf("checking suite deletion: %w", err)
+		}
+		if time.Now().After(pollDeadline) {
+			return fmt.Errorf("test suite still exists: %s", slug)
+		}
+		select {
+		case <-ctx.Done():
+			return fmt.Errorf("checking suite deletion: %w", ctx.Err())
+		case <-time.After(500 * time.Millisecond):
+		}
+	}
 }
 
 // The attributes these tests drive Update with. The schema has a dozen more, and nullObjectWith
@@ -464,7 +848,8 @@ const (
 // suitePatched is the REST PATCH answering with the renamed suite.
 var suitePatched = stubResponse{status: http.StatusOK, body: fmt.Sprintf(`{
 	"id": "suite-uuid", "graphql_id": "suite-id", "api_token": "token",
-	"name": %q, "slug": %q, "default_branch": "main"
+	"name": %q, "slug": %q, "default_branch": "main",
+	"test_state_management": true, "allowed_test_states": ["muted"]
 }`, updatedSuiteName, updatedSuiteName)}
 
 var (
@@ -546,9 +931,12 @@ func TestTestSuiteUpdatePersistsThePatchWhenATeamStepFails(t *testing.T) {
 			ctx := t.Context()
 			schema := resourceSchema(ctx, t, ts)
 
+			planned := testSuiteAttrs(updatedSuiteName, updatedSuiteName, newSuiteTeam)
+			planned["test_state_management"] = tftypes.NewValue(tftypes.Bool, true)
+			planned["allowed_test_states"] = tftypes.NewValue(tftypes.Set{ElementType: tftypes.String}, []tftypes.Value{tftypes.NewValue(tftypes.String, "muted")})
 			req, resp := updateRequestFor(ctx, t, schema,
 				testSuiteAttrs(priorSuiteName, priorSuiteName, previousSuiteTeam),
-				testSuiteAttrs(updatedSuiteName, updatedSuiteName, newSuiteTeam))
+				planned)
 			ts.Update(ctx, req, &resp)
 
 			if got := requests.Load(); got < int64(len(testCase.responses)) {
@@ -567,6 +955,13 @@ func TestTestSuiteUpdatePersistsThePatchWhenATeamStepFails(t *testing.T) {
 			}
 			if got := persisted.Slug.ValueString(); got != updatedSuiteName {
 				t.Errorf("Persisted slug = %q, want %q: the next update builds its URL from this", got, updatedSuiteName)
+			}
+			var states []string
+			if diags := persisted.AllowedTestStates.ElementsAs(ctx, &states, false); diags.HasError() {
+				t.Fatal(diags)
+			}
+			if !persisted.TestStateManagement.ValueBool() || !reflect.DeepEqual(states, []string{"muted"}) {
+				t.Errorf("Persisted state management = %v, %v; want true, [muted] after successful PATCH", persisted.TestStateManagement, states)
 			}
 			// Both teams own the suite once the attach has applied, so keeping the previous one is
 			// what leaves a diff for the next plan to retry the detach from.

@@ -1,8 +1,10 @@
 #!/bin/bash
 set -ueo pipefail
 
-go get gotest.tools/gotestsum
+target="${1:-testacc}"
+output="$(mktemp)"
+trap 'rm -f "$output"' EXIT
 
-make testacc | tee test_output
+make "$target" GOTESTSUM=gotestsum | tee "$output"
 
-printf '```term\n%b\n```' "$(cat test_output)" | buildkite-agent annotate --style info --context "testacc"
+printf '```term\n%b\n```' "$(cat "$output")" | buildkite-agent annotate --style info --context "$target"

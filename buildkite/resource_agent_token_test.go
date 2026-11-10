@@ -11,6 +11,7 @@ import (
 )
 
 func TestAccBuildkiteAgentToken(t *testing.T) {
+	t.Parallel()
 	basic := func(name string) string {
 		return fmt.Sprintf(`
 		provider "buildkite" {
@@ -133,7 +134,9 @@ func testAccCheckAgentTokenExists(resourceName string, resourceToken *AgentToken
 			"id": resourceState.Primary.ID,
 		}
 
-		err := graphqlClient.Query(context.Background(), &query, vars)
+		ctx, cancel := context.WithTimeout(context.Background(), DefaultTimeout)
+		defer cancel()
+		err := graphqlClient.Query(ctx, &query, vars)
 		if err != nil {
 			return fmt.Errorf("Error fetching agent token from graphql API: %v", err)
 		}

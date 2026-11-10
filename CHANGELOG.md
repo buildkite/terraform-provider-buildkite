@@ -2,6 +2,83 @@
 
 ## Unreleased
 
+### Fixed
+
+* Clear `description` and `allowed_ip_addresses` on `buildkite_portal` when they are removed from configuration, instead of failing the apply with an inconsistent result while the portal keeps the old values.
+
+## [1.46.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.45.0...v1.46.0)
+
+### Features
+
+* PF-10060: Add `allowed_api_ip_entries` to `buildkite_organization` for IP/CIDR allowlist entries with optional descriptions, while retaining address-only configurations. Requires the tuple allowlist REST API before release or use.
+
+### Fixed
+
+* PB-4320: Preserve Origin `provider_settings.cancel_deleted_branch_builds` during refresh and import, avoiding recurring plan changes when the saved setting matches configuration.
+
+### Internal
+
+* Reduce acceptance-test setup and scheduling overhead, separate unit and live acceptance suites, and retain test timing artifacts in CI.
+
+## [1.45.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.44.0...v1.45.0)
+
+### Features
+
+* TE-7714: Add `test_state_management` and `allowed_test_states` to `buildkite_test_suite`, with create, read/import, and in-place update support.
+* Add the `buildkite_pipeline_webhook_trigger` resource to manage generic incoming webhook triggers that create pipeline builds, with build overrides, filtering, and import support. Uses the public-preview pipeline triggers API.
+
+### Fixed
+
+* Add `webhook.url_wo` and `webhook.url_wo_version` to `buildkite_notification_service`, allowing credential-bearing webhook destination URLs to stay out of plans and state with Terraform 1.11.1 or later.
+
+### Dependencies
+
+* Update `github.com/vektah/gqlparser/v2` to v2.5.64, `github.com/lestrrat-go/jwx/v3` to v3.4.0, `github.com/agnivade/levenshtein` to v1.2.2, and `github.com/goccy/go-json` to v0.11.2.
+* Update the `aws-assume-role-with-web-identity` Buildkite plugin to v1.8.1, the `docker-compose` plugin to v5.16.0, and the acceptance-test project's Buildkite provider to v1.43.0.
+
+## [1.44.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.43.0...v1.44.0)
+
+### Features
+
+* SUP-7777: Add `hosted_git_mirror_enabled` and `hosted_container_cache_enabled` to `buildkite_cluster`.
+
+### Fixed
+
+* PB-3878: Preserve Origin pull request settings during refresh and import: skip existing commits, label changes, ready-for-review, reopening, edits, base-branch changes, and submitted reviews.
+* New GitHub, GitHub Enterprise, Bitbucket Cloud, and Origin pipelines now retain the server default `true` when `provider_settings` omits `skip_pull_request_builds_for_existing_commits`. Previously, Terraform wrote `false`. Explicit values and existing known values of this setting are unchanged.
+* Report pipeline schedule deletion errors when the parent pipeline is missing or inaccessible, rather than removing a schedule from state that may still exist in Buildkite.
+
+### Dependencies
+
+* Update `golang.org/x/sync` to v0.24.0 and `github.com/vektah/gqlparser/v2` to v2.5.63.
+* Update the Terraform 1.16 container digest and the acceptance-test project's Buildkite provider to v1.42.1.
+
+## [1.43.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.42.1...v1.43.0)
+
+### Features
+
+* Add `use_github_app_token` to `buildkite_cluster_queue`, so jobs on a self-hosted queue can check out GitHub repositories with a short-lived Buildkite-issued GitHub App token instead of a long-lived credential on the agent.
+* Add `flaky_detection` to `buildkite_test_suite` to opt out of creating the default flaky-detection workflow and label. Defaults to `true` and only takes effect when creating a suite.
+* Add the `buildkite_test_suite_workflow` resource with create, read, update, delete, and import support. Monitor settings, filters, and actions update in place; changing the monitor type or test suite replaces the workflow.
+
+### Fixed
+
+* Build the provider with Go 1.27.3 to reject compromised eMudhra intermediate CA certificate chains (CVE-2026-111943).
+* Fix the `buildkite_test_suite` data source example to use `test_suite_id` instead of `suite_id`.
+
+### Dependencies
+
+* Update GoReleaser to v2.18.3.
+* Update the `aws-assume-role-with-web-identity` Buildkite plugin to v1.8.0 and the acceptance-test project's Buildkite provider to v1.42.0.
+
+## [1.42.1](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.42.0...v1.42.1)
+
+### Fixed
+
+* Fix `buildkite_pipeline` updates failing with "Provider produced inconsistent result after apply" when a read-only planning token cannot see `webhook_url` but the apply token can. The URL is now known after apply during updates.
+
+## [1.41.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.40.0...v1.41.0)
+
 ### Features
 
 * Add the `buildkite_cluster_cache_registry` resource.

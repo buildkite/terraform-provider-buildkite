@@ -35,9 +35,12 @@ To compile the provider:
 
     make build
 
-To run local tests that don't require any network access:
+To run tests that do not use the live Buildkite API:
 
     make test
+
+This excludes the live `TestAcc…` tests and clears `TF_ACC`. `make testacc` runs
+only the live tests. Terraform-based unit tests need a Terraform executable.
 
 Buildkite has two APIs: REST and GraphQL. New resources should use the GraphQL API where possible, but can fallback to the REST API for resouces or properties not yet supported by GraphQL.
 
