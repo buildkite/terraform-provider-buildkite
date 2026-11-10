@@ -7,10 +7,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	resource_schema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -30,6 +33,7 @@ type clusterAgentTokenResourceModel struct {
 	ClusterUuid        types.String `tfsdk:"cluster_uuid"`
 	AllowedIpAddresses types.List   `tfsdk:"allowed_ip_addresses"`
 	ExpiresAt          types.String `tfsdk:"expires_at"`
+	Permissions        types.Set    `tfsdk:"permissions"`
 }
 
 func newClusterAgentTokenResource() resource.Resource {
@@ -49,7 +53,8 @@ func (ct *clusterAgentToken) Configure(ctx context.Context, req resource.Configu
 
 func (ct *clusterAgentToken) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		MarkdownDescription: "A Cluster Agent Token is a token used to connect an agent to a cluster in Buildkite.",
+		MarkdownDescription: "A Cluster Agent Token is a token used to connect an agent to a cluster in Buildkite. " +
+			"Import using the token's GraphQL ID. Import reads the token's metadata and permissions, but cannot recover its secret value.",
 		Attributes: map[string]resource_schema.Attribute{
 			"id": resource_schema.StringAttribute{
 				Computed:            true,
@@ -107,6 +112,18 @@ func (ct *clusterAgentToken) Schema(_ context.Context, _ resource.SchemaRequest,
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
+			"permissions": schema.SetAttribute{
+				Optional:    true,
+				Computed:    true,
+				ElementType: types.StringType,
+				MarkdownDescription: "The token's permission allow list. Values are validated by the Buildkite API. " +
+					"Omitting this grants the API's default permissions on creation and leaves the stored scope unchanged on updates, including when removing this attribute from configuration. " +
+					"An explicit empty set (`[]`) grants no permissions. Configured permissions are managed as an unordered set, and changes made outside Terraform are detected. " +
+					"Scoped agent-token permissions must be enabled for the organization. When the API does not expose permissions, the last known scope is retained.",
+				PlanModifiers: []planmodifier.Set{
+					setplanmodifier.UseStateForUnknown(),
+				},
+			},
 		},
 	}
 }
@@ -117,6 +134,12 @@ func (ct *clusterAgentToken) Create(ctx context.Context, req resource.CreateRequ
 	diags := req.Plan.Get(ctx, &plan)
 	resp.Diagnostics.Append(diags...)
 
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	permissions, diags := clusterTokenPermissionsToWrite(ctx, plan.Permissions)
+	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -151,6 +174,7 @@ func (ct *clusterAgentToken) Create(ctx context.Context, req resource.CreateRequ
 				plan.Description.ValueString(),
 				strings.Join(cidrs, " "),
 				expiresAt,
+				permissions,
 			)
 		}
 
@@ -172,6 +196,8 @@ func (ct *clusterAgentToken) Create(ctx context.Context, req resource.CreateRequ
 	state.ClusterUuid = types.StringValue(r.ClusterAgentTokenCreate.ClusterAgentToken.Cluster.Uuid)
 	state.AllowedIpAddresses = plan.AllowedIpAddresses
 	state.ExpiresAt = plan.ExpiresAt
+	state.Permissions, diags = clusterTokenPermissionsFromAPI(ctx, r.ClusterAgentTokenCreate.ClusterAgentToken.Permissions, plan.Permissions)
+	resp.Diagnostics.Append(diags...)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
@@ -196,15 +222,14 @@ func (ct *clusterAgentToken) Read(ctx context.Context, req resource.ReadRequest,
 	requestCtx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
-	var r *getClusterAgentTokensResponse
+	var r *getClusterAgentTokenResponse
 	err := retry.RetryContext(requestCtx, timeout, func() *retry.RetryError {
 		var err error
 
-		log.Printf("Getting cluster agent tokens for cluster %s ...", state.ClusterUuid.ValueString())
-		r, err = getClusterAgentTokens(requestCtx,
+		log.Printf("Getting cluster agent token %s ...", state.Id.ValueString())
+		r, err = getClusterAgentToken(requestCtx,
 			ct.client.genqlient,
-			ct.client.organization,
-			state.ClusterUuid.ValueString(),
+			state.Id.ValueString(),
 		)
 
 		return retryContextError(err)
@@ -217,15 +242,23 @@ func (ct *clusterAgentToken) Read(ctx context.Context, req resource.ReadRequest,
 		return
 	}
 
-	for _, edge := range r.Organization.Cluster.AgentTokens.Edges {
-		if edge.Node.Id == state.Id.ValueString() {
-			log.Printf("Found cluster Token with Description %s in cluster %s", edge.Node.Id, state.ClusterUuid.ValueString())
-			state.Description = types.StringValue(edge.Node.Description)
-			state.ExpiresAt = expiresAtFromAPI(edge.Node.ExpiresAt, state.ExpiresAt)
-			resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
-			return
-		}
+	node, ok := r.Node.(*getClusterAgentTokenNodeClusterToken)
+	if !ok || node == nil || node.Cluster.Organization.Slug != ct.client.organization {
+		resp.State.RemoveResource(ctx)
+		return
 	}
+	if state.Uuid.IsNull() && node.AllowedIpAddresses != "" && node.AllowedIpAddresses != "0.0.0.0/0" {
+		state.AllowedIpAddresses, diags = types.ListValueFrom(ctx, types.StringType, strings.Fields(node.AllowedIpAddresses))
+		resp.Diagnostics.Append(diags...)
+	}
+	state.Description = types.StringValue(node.Description)
+	state.ExpiresAt = expiresAtFromAPI(node.ExpiresAt, state.ExpiresAt)
+	state.Uuid = types.StringValue(node.Uuid)
+	state.ClusterId = types.StringValue(node.Cluster.Id)
+	state.ClusterUuid = types.StringValue(node.Cluster.Uuid)
+	state.Permissions, diags = clusterTokenPermissionsFromAPI(ctx, node.Permissions, state.Permissions)
+	resp.Diagnostics.Append(diags...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
 func (ct *clusterAgentToken) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
@@ -236,7 +269,18 @@ func (ct *clusterAgentToken) Update(ctx context.Context, req resource.UpdateRequ
 
 	resp.Diagnostics.Append(diagsState...)
 	resp.Diagnostics.Append(diagsPlan...)
+	var configuredPermissions types.Set
+	resp.Diagnostics.Append(req.Config.GetAttribute(ctx, path.Root("permissions"), &configuredPermissions)...)
 
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	permissions, diags := clusterTokenPermissionsToWrite(ctx, plan.Permissions)
+	if configuredPermissions.IsNull() {
+		permissions = nil
+	}
+	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -262,6 +306,7 @@ func (ct *clusterAgentToken) Update(ctx context.Context, req resource.UpdateRequ
 				state.Id.ValueString(),
 				plan.Description.ValueString(),
 				strings.Join(cidrs, " "),
+				permissions,
 			)
 		}
 
@@ -277,8 +322,38 @@ func (ct *clusterAgentToken) Update(ctx context.Context, req resource.UpdateRequ
 
 	state.Description = types.StringValue(r.ClusterAgentTokenUpdate.ClusterAgentToken.Description)
 	state.AllowedIpAddresses = plan.AllowedIpAddresses
+	state.Permissions, diags = clusterTokenPermissionsFromAPI(ctx, r.ClusterAgentTokenUpdate.ClusterAgentToken.Permissions, plan.Permissions)
+	resp.Diagnostics.Append(diags...)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+}
+
+func (ct *clusterAgentToken) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+}
+
+func clusterTokenPermissionsToWrite(ctx context.Context, configured types.Set) (*[]string, diag.Diagnostics) {
+	if configured.IsNull() || configured.IsUnknown() {
+		return nil, nil
+	}
+	permissions := make([]string, 0, len(configured.Elements()))
+	diags := configured.ElementsAs(ctx, &permissions, false)
+	return &permissions, diags
+}
+
+func clusterTokenPermissionsFromAPI(ctx context.Context, remote []string, current types.Set) (types.Set, diag.Diagnostics) {
+	if remote == nil {
+		if current.IsUnknown() {
+			return types.SetNull(types.StringType), nil
+		}
+		if !current.IsNull() {
+			var diags diag.Diagnostics
+			diags.AddWarning("Cluster Agent Token permissions unavailable", "The API did not expose this token's permissions. The last known scope has been retained, but permission changes outside Terraform cannot be detected until scoped agent-token permissions are enabled for the organization.")
+			return current, diags
+		}
+		return current, nil
+	}
+	return types.SetValueFrom(ctx, types.StringType, remote)
 }
 
 func (ct *clusterAgentToken) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {

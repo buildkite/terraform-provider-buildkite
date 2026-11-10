@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
@@ -15,6 +16,71 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
+
+func TestClusterTokenPermissionsToWrite(t *testing.T) {
+	t.Parallel()
+	for _, tc := range []struct {
+		name        string
+		configured  types.Set
+		want        string
+		expectError bool
+	}{
+		{name: "omitted", configured: types.SetNull(types.StringType), want: `{}`},
+		{name: "computed", configured: types.SetUnknown(types.StringType), want: `{}`},
+		{name: "empty", configured: types.SetValueMust(types.StringType, []attr.Value{}), want: `{"permissions":[]}`},
+		{name: "restricted", configured: types.SetValueMust(types.StringType, []attr.Value{types.StringValue("run_jobs")}), want: `{"permissions":["run_jobs"]}`},
+		{name: "unknown element", configured: types.SetValueMust(types.StringType, []attr.Value{types.StringUnknown()}), expectError: true},
+		{name: "null element", configured: types.SetValueMust(types.StringType, []attr.Value{types.StringNull()}), expectError: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			permissions, diags := clusterTokenPermissionsToWrite(t.Context(), tc.configured)
+			if diags.HasError() != tc.expectError {
+				t.Fatalf("permission conversion diagnostics = %v, want error %t", diags, tc.expectError)
+			}
+			if tc.expectError {
+				return
+			}
+			body, err := json.Marshal(struct {
+				Permissions *[]string `json:"permissions,omitempty"`
+			}{Permissions: permissions})
+			if err != nil {
+				t.Fatal(err)
+			}
+			if string(body) != tc.want {
+				t.Errorf("mutation permissions = %s, want %s", body, tc.want)
+			}
+		})
+	}
+}
+
+func TestClusterTokenPermissionsFromAPI(t *testing.T) {
+	t.Parallel()
+	restricted := types.SetValueMust(types.StringType, []attr.Value{types.StringValue("run_jobs")})
+	empty := types.SetValueMust(types.StringType, []attr.Value{})
+	for _, tc := range []struct {
+		name        string
+		remote      []string
+		current     types.Set
+		want        types.Set
+		wantWarning bool
+	}{
+		{name: "unavailable on creation", current: types.SetUnknown(types.StringType), want: types.SetNull(types.StringType)},
+		{name: "unavailable on legacy token", current: types.SetNull(types.StringType), want: types.SetNull(types.StringType)},
+		{name: "unavailable retains scope", current: restricted, want: restricted, wantWarning: true},
+		{name: "unavailable retains empty scope", current: empty, want: empty, wantWarning: true},
+		{name: "explicit empty", remote: []string{}, current: restricted, want: empty},
+		{name: "read scope", remote: []string{"run_jobs"}, current: types.SetNull(types.StringType), want: restricted},
+		{name: "detect removed grant", remote: []string{}, current: restricted, want: empty},
+		{name: "detect added grant", remote: []string{"run_jobs"}, current: empty, want: restricted},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			got, diags := clusterTokenPermissionsFromAPI(t.Context(), tc.remote, tc.current)
+			if diags.HasError() || !got.Equal(tc.want) || (diags.WarningsCount() != 0) != tc.wantWarning {
+				t.Errorf("permissions = %s, diagnostics = %v; want %s, warning %t", got, diags, tc.want, tc.wantWarning)
+			}
+		})
+	}
+}
 
 func TestRfc3339Validator(t *testing.T) {
 	t.Parallel()

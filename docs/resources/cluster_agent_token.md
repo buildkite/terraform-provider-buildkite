@@ -3,12 +3,12 @@
 page_title: "buildkite_cluster_agent_token Resource - terraform-provider-buildkite"
 subcategory: ""
 description: |-
-  A Cluster Agent Token is a token used to connect an agent to a cluster in Buildkite.
+  A Cluster Agent Token is a token used to connect an agent to a cluster in Buildkite. Import using the token's GraphQL ID. Import reads the token's metadata and permissions, but cannot recover its secret value.
 ---
 
 # buildkite_cluster_agent_token (Resource)
 
-A Cluster Agent Token is a token used to connect an agent to a cluster in Buildkite.
+A Cluster Agent Token is a token used to connect an agent to a cluster in Buildkite. Import using the token's GraphQL ID. Import reads the token's metadata and permissions, but cannot recover its secret value.
 
 ## Example Usage
 
@@ -31,6 +31,12 @@ resource "buildkite_cluster_agent_token" "ip_limited_token" {
   description          = "Token with allowed IP range"
   cluster_id           = buildkite_cluster.primary.id
   allowed_ip_addresses = ["10.100.1.0/28"]
+}
+
+resource "buildkite_cluster_agent_token" "restricted_token" {
+  description = "Agent token without pipeline upload access"
+  cluster_id  = buildkite_cluster.primary.id
+  permissions = ["run_jobs", "upload_artifacts", "download_artifacts"]
 }
 
 resource "buildkite_pipeline" "monolith" {
@@ -63,6 +69,7 @@ resource "buildkite_cluster_agent_token" "expiring_token" {
 
 - `allowed_ip_addresses` (List of String) A list of CIDR-notation IPv4 addresses from which agents can use this Cluster Agent Token.If not set, all IP addresses are allowed (the same as setting 0.0.0.0/0).
 - `expires_at` (String) The time at which the token expires, in RFC 3339 format with up to millisecond precision (e.g. `2030-01-01T00:00:00Z`) and at least 10 minutes in the future. If not set, the token never expires. Changing this value replaces the token, since the expiry cannot be updated.
+- `permissions` (Set of String) The token's permission allow list. Values are validated by the Buildkite API. Omitting this grants the API's default permissions on creation and leaves the stored scope unchanged on updates, including when removing this attribute from configuration. An explicit empty set (`[]`) grants no permissions. Configured permissions are managed as an unordered set, and changes made outside Terraform are detected. Scoped agent-token permissions must be enabled for the organization. When the API does not expose permissions, the last known scope is retained.
 
 ### Read-Only
 
@@ -70,3 +77,18 @@ resource "buildkite_cluster_agent_token" "expiring_token" {
 - `id` (String) The GraphQL ID of the token.
 - `token` (String, Sensitive) The token value used by an agent to register with the API.
 - `uuid` (String) The UUID of the token.
+
+## Import
+
+Using `terraform import`, import resources using the `id`. For example:
+```shell
+terraform import buildkite_cluster_agent_token.default "TOKEN_GRAPHQL_ID"
+```
+
+In Terraform v1.5.0 and later, use an [`import` block](https://developer.hashicorp.com/terraform/language/import) to import instances using the `id`. For example:
+```terraform
+import {
+  to = buildkite_cluster_agent_token.default
+  id = "TOKEN_GRAPHQL_ID"
+}
+```

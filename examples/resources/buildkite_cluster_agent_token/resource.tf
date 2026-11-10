@@ -18,6 +18,12 @@ resource "buildkite_cluster_agent_token" "ip_limited_token" {
   allowed_ip_addresses = ["10.100.1.0/28"]
 }
 
+resource "buildkite_cluster_agent_token" "restricted_token" {
+  description = "Agent token without pipeline upload access"
+  cluster_id  = buildkite_cluster.primary.id
+  permissions = ["run_jobs", "upload_artifacts", "download_artifacts"]
+}
+
 resource "buildkite_pipeline" "monolith" {
   name       = "Monolith"
   repository = "https://github.com/..."

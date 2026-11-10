@@ -9,6 +9,22 @@ fragment ClusterAgentTokenValues on ClusterToken {
     expiresAt
     id
     uuid
+    permissions
+}
+
+query getClusterAgentToken($id: ID!) {
+    node(id: $id) {
+        ... on ClusterToken {
+            ... ClusterAgentTokenValues
+            cluster {
+                id
+                uuid
+                organization {
+                    slug
+                }
+            }
+        }
+    }
 }
 
 query getClusterAgentTokens($orgSlug: ID!, $id: ID!) {
@@ -32,6 +48,8 @@ mutation createClusterAgentToken(
     $allowedIpAddresses: String
     # @genqlient(pointer: true, omitempty: true)
     $expiresAt: DateTime
+    # @genqlient(bind: "*[]string", omitempty: true)
+    $permissions: [String!]
 ) {
         clusterAgentTokenCreate(input:{
             organizationId: $organizationId
@@ -39,6 +57,7 @@ mutation createClusterAgentToken(
             description: $description
             allowedIpAddresses: $allowedIpAddresses
             expiresAt: $expiresAt
+            permissions: $permissions
         }) {
             clusterAgentToken {
                 ... ClusterAgentTokenValues
@@ -67,12 +86,15 @@ mutation updateClusterAgentToken(
     $id: ID!
     $description: String!
     $allowedIpAddresses: String
+    # @genqlient(bind: "*[]string", omitempty: true)
+    $permissions: [String!]
 ) {
     clusterAgentTokenUpdate(input: {
         organizationId: $organizationId
         id: $id
         description: $description
         allowedIpAddresses: $allowedIpAddresses
+        permissions: $permissions
     }) {
         clusterAgentToken {
             ... ClusterAgentTokenValues
