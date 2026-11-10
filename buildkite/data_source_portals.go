@@ -3,7 +3,6 @@ package buildkite
 import (
 	"context"
 	"fmt"
-	"net/http"
 
 	"github.com/MakeNowJust/heredoc"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -125,8 +124,7 @@ func (p *portalsDatasource) Read(ctx context.Context, req datasource.ReadRequest
 
 	path := fmt.Sprintf("/v2/organizations/%s/portals", p.client.organization)
 
-	var results []portalAPIResponse
-	err := p.client.makeRequest(ctx, http.MethodGet, path, nil, &results)
+	results, err := getAllPages[portalAPIResponse](ctx, p.client, path)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to get organization portals",

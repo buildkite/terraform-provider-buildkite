@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -646,6 +647,13 @@ func unwrapURLError(err error) error {
 }
 
 func (client *Client) makeRequest(ctx context.Context, method string, path string, postData interface{}, responseObject interface{}) error {
+	_, err := client.doRequest(ctx, method, path, postData, responseObject)
+	return err
+}
+
+// doRequest is makeRequest that also returns the response headers, which carry the REST API's
+// pagination links.
+func (client *Client) doRequest(ctx context.Context, method string, path string, postData interface{}, responseObject interface{}) (http.Header, error) {
 	if _, hasDeadline := ctx.Deadline(); !hasDeadline {
 		readTimeout, diags := client.readTimeout(ctx)
 		if !diags.HasError() {
@@ -662,7 +670,7 @@ func (client *Client) makeRequest(ctx context.Context, method string, path strin
 	if postData != nil {
 		jsonPayload, err := json.Marshal(postData)
 		if err != nil {
-			return fmt.Errorf("failed to marshal request: %w", err)
+			return nil, fmt.Errorf("failed to marshal request: %w", err)
 		}
 		bodyBytes = bytes.NewBuffer(jsonPayload)
 	}
@@ -671,7 +679,7 @@ func (client *Client) makeRequest(ctx context.Context, method string, path strin
 
 	req, err := http.NewRequestWithContext(ctx, method, requestURL, bodyBytes)
 	if err != nil {
-		return fmt.Errorf("failed to create request: %w", err)
+		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
 	// JSON request bodies use the same media type regardless of the HTTP method.
@@ -681,7 +689,7 @@ func (client *Client) makeRequest(ctx context.Context, method string, path strin
 
 	resp, err := client.http.Do(req)
 	if err != nil {
-		return lastResponse.requestError(method, requestURL, err)
+		return nil, lastResponse.requestError(method, requestURL, err)
 	}
 
 	if resp.StatusCode >= 400 {
@@ -704,7 +712,7 @@ func (client *Client) makeRequest(ctx context.Context, method string, path strin
 			errorMsg = lastResponse.body
 		}
 
-		return &apiError{
+		return nil, &apiError{
 			Method:     method,
 			URL:        requestURL,
 			StatusCode: resp.StatusCode,
@@ -715,7 +723,7 @@ func (client *Client) makeRequest(ctx context.Context, method string, path strin
 		if closeErr := resp.Body.Close(); closeErr != nil {
 			tflog.Warn(ctx, "Failed to close response body", map[string]interface{}{"error": closeErr.Error()})
 		}
-		return nil
+		return resp.Header, nil
 	}
 
 	defer func() {
@@ -726,12 +734,55 @@ func (client *Client) makeRequest(ctx context.Context, method string, path strin
 
 	responseBody, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return fmt.Errorf("failed to read response: %w", err)
+		return nil, fmt.Errorf("failed to read response: %w", err)
 	}
 
 	if err := json.Unmarshal(responseBody, responseObject); err != nil {
-		return fmt.Errorf("failed to unmarshal response: %w", err)
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
 	}
 
-	return nil
+	return resp.Header, nil
+}
+
+// getAllPages follows the Link header of a paginated REST list endpoint and returns every item.
+// Each page is requested with per_page=100, the API's maximum. Links are only followed on the
+// same path of the configured REST host.
+func getAllPages[T any](ctx context.Context, client *Client, path string) ([]T, error) {
+	var all []T
+	next := path + "?per_page=100"
+	for next != "" {
+		var page []T
+		header, err := client.doRequest(ctx, http.MethodGet, next, nil, &page)
+		if err != nil {
+			return nil, err
+		}
+		all = append(all, page...)
+
+		link := nextPageLink(header.Get("Link"))
+		if link == "" {
+			break
+		}
+		u, err := url.Parse(link)
+		if err != nil || u.Path != path || u.RequestURI() == next {
+			return nil, fmt.Errorf("invalid pagination link %q for %s", link, path)
+		}
+		next = u.RequestURI()
+	}
+	return all, nil
+}
+
+// nextPageLink returns the rel="next" URL of a Link header, or "" when there is none.
+func nextPageLink(header string) string {
+	for _, part := range strings.Split(header, ",") {
+		target, params, ok := strings.Cut(strings.TrimSpace(part), ";")
+		if !ok {
+			continue
+		}
+		for _, param := range strings.Split(params, ";") {
+			if strings.TrimSpace(param) == `rel="next"` {
+				return strings.Trim(strings.TrimSpace(target), "<>")
+			}
+		}
+	}
+	return ""
 }
