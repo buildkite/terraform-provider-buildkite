@@ -746,7 +746,8 @@ func (client *Client) doRequest(ctx context.Context, method string, path string,
 
 // getAllPages follows the Link header of a paginated REST list endpoint and returns every item.
 // Each page is requested with per_page=100, the API's maximum. Links are only followed on the
-// same path of the configured REST host.
+// same path of the configured REST host. Pass a context with the deadline for the whole read, or
+// each page gets its own read timeout.
 func getAllPages[T any](ctx context.Context, client *Client, path string) ([]T, error) {
 	var all []T
 	next := path + "?per_page=100"

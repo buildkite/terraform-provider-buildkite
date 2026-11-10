@@ -5,15 +5,17 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"regexp"
 	"strconv"
 	"testing"
+	"time"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
 // newPaginatedPortalsAPI serves total portals from the list endpoint, pageSize at a time, with
-// the Link header the REST API uses for pagination.
-func newPaginatedPortalsAPI(t *testing.T, total, pageSize int) *httptest.Server {
+// the Link header the REST API uses for pagination. Each page is delayed by pageDelay.
+func newPaginatedPortalsAPI(t *testing.T, total, pageSize int, pageDelay time.Duration) *httptest.Server {
 	t.Helper()
 
 	const path = "/v2/organizations/acme/portals"
@@ -23,6 +25,12 @@ func newPaginatedPortalsAPI(t *testing.T, total, pageSize int) *httptest.Server 
 		if r.Method != http.MethodGet || r.URL.Path != path {
 			t.Errorf("unexpected request: %s %s", r.Method, r.URL)
 			http.Error(w, `{"message":"Not Found"}`, http.StatusNotFound)
+			return
+		}
+
+		select {
+		case <-time.After(pageDelay):
+		case <-r.Context().Done():
 			return
 		}
 
@@ -58,7 +66,7 @@ func newPaginatedPortalsAPI(t *testing.T, total, pageSize int) *httptest.Server 
 }
 
 func TestUnitBuildkitePortalsDataSourceReadsEveryPage(t *testing.T) {
-	server := newPaginatedPortalsAPI(t, 65, 30)
+	server := newPaginatedPortalsAPI(t, 65, 30, 0)
 
 	resource.UnitTest(t, resource.TestCase{
 		ProtoV6ProviderFactories: protoV6ProviderFactories(),
@@ -78,6 +86,32 @@ func TestUnitBuildkitePortalsDataSourceReadsEveryPage(t *testing.T) {
 					resource.TestCheckResourceAttr("data.buildkite_portals.all", "portals.0.slug", "portal-1"),
 					resource.TestCheckResourceAttr("data.buildkite_portals.all", "portals.64.slug", "portal-65"),
 				),
+			},
+		},
+	})
+}
+
+func TestUnitBuildkitePortalsDataSourceSharesReadTimeoutAcrossPages(t *testing.T) {
+	// Three pages of 600ms each fit in a 1s budget per page but not in one 1s budget for the
+	// whole read.
+	server := newPaginatedPortalsAPI(t, 3, 1, 600*time.Millisecond)
+
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config: fmt.Sprintf(`
+				provider "buildkite" {
+					organization = "acme"
+					api_token    = "fake"
+					rest_url     = %q
+					max_retries  = 0
+					timeouts     = { read = "1s" }
+				}
+
+				data "buildkite_portals" "all" {}
+				`, server.URL),
+				ExpectError: regexp.MustCompile(`context deadline exceeded`),
 			},
 		},
 	})

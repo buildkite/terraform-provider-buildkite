@@ -122,9 +122,20 @@ func (p *portalsDatasource) Read(ctx context.Context, req datasource.ReadRequest
 		return
 	}
 
+	timeout, diags := p.client.readTimeout(ctx)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// One budget for the whole read, not one per page: makeRequest would otherwise give each page
+	// a fresh timeout.
+	requestCtx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
 	path := fmt.Sprintf("/v2/organizations/%s/portals", p.client.organization)
 
-	results, err := getAllPages[portalAPIResponse](ctx, p.client, path)
+	results, err := getAllPages[portalAPIResponse](requestCtx, p.client, path)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to get organization portals",
