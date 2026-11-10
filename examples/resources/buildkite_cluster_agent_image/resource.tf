@@ -12,22 +12,15 @@ resource "buildkite_cluster_queue" "default" {
   }
 }
 
-locals {
-  ruby_dockerfile = <<-EOT
-    RUN apt-get update && apt-get install -y ruby-full
-  EOT
-}
-
 resource "buildkite_cluster_agent_image" "ruby" {
   cluster_id = buildkite_cluster.hosted.uuid
-  # Each Dockerfile revision needs a unique name so both images can exist during rollout
-  # To retry a failed or timed-out build, use a new name or destroy the retained image first
-  name       = "ruby-${substr(sha256(local.ruby_dockerfile), 0, 12)}"
-  dockerfile = local.ruby_dockerfile
+  name       = "ruby"
 
-  lifecycle {
-    create_before_destroy = true
-  }
+  # Changing dockerfile deletes and re-creates the image; in-place updates are not supported
+  # Switch queues to a different image in a separate apply before replacing this image
+  dockerfile = <<-EOT
+    RUN apt-get update && apt-get install -y ruby-full
+  EOT
 
   depends_on = [buildkite_cluster_queue.default]
 }

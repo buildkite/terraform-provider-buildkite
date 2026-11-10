@@ -232,58 +232,40 @@ func TestUnitBuildkiteClusterAgentImageReplacesAFailedBuild(t *testing.T) {
 	})
 }
 
-func TestUnitBuildkiteClusterAgentImageRecoversWithCreateBeforeDestroy(t *testing.T) {
-	for _, failure := range []string{"failed build", "build timeout"} {
-		t.Run(failure, func(t *testing.T) {
-			server, api := newFakeClusterAgentImageAPI(t)
-			wantError := regexp.MustCompile(`dockerfile\s+step 3 exited with status 1`)
-			if failure == "failed build" {
-				api.buildError = "dockerfile step 3 exited with status 1"
-			} else {
-				api.buildingReads = 1_000_000
-				wantError = regexp.MustCompile(`Cluster agent image img1 did not build`)
-			}
+func TestUnitBuildkiteClusterAgentImageReplacesATimedOutBuild(t *testing.T) {
+	server, api := newFakeClusterAgentImageAPI(t)
+	api.buildingReads = 1_000_000
 
-			const name = "buildkite_cluster_agent_image.ruby"
-			config := strings.Replace(fakeClusterAgentImageConfig(server, "RUN true\n"),
-				`name       = "ruby"`, `name = "ruby"
-				lifecycle { create_before_destroy = true }
-				timeouts { create = "2s" }`, 1)
+	const name = "buildkite_cluster_agent_image.ruby"
+	config := strings.Replace(fakeClusterAgentImageConfig(server, "RUN true\n"),
+		"dockerfile =", "timeouts { create = \"2s\" }\n dockerfile =", 1)
 
-			resource.UnitTest(t, resource.TestCase{
-				ProtoV6ProviderFactories: protoV6ProviderFactories(),
-				CheckDestroy:             api.checkImages(),
-				Steps: []resource.TestStep{
-					{Config: config, ExpectError: wantError},
-					{
-						PreConfig: func() {
-							api.mu.Lock()
-							defer api.mu.Unlock()
-							api.buildError = ""
-							api.buildingReads = 0
-						},
-						Config: config,
-						ConfigPlanChecks: resource.ConfigPlanChecks{
-							PreApply: []plancheck.PlanCheck{plancheck.ExpectResourceAction(name, plancheck.ResourceActionCreateBeforeDestroy)},
-						},
-						ExpectError: regexp.MustCompile(`an agent image with that name already exists`),
-					},
-					{
-						// A fresh name allows replacement before the retained image is deleted.
-						Config: strings.ReplaceAll(strings.Replace(config, `name = "ruby"`, `name = "ruby-retry"`, 1), `create = "2s"`, `create = "30s"`),
-						ConfigPlanChecks: resource.ConfigPlanChecks{
-							PreApply: []plancheck.PlanCheck{plancheck.ExpectResourceAction(name, plancheck.ResourceActionCreateBeforeDestroy)},
-						},
-						Check: resource.ComposeAggregateTestCheckFunc(
-							resource.TestCheckResourceAttr(name, "id", "img2"),
-							resource.TestCheckResourceAttr(name, "status", "READY"),
-							api.checkImages("ruby-retry RUN true\n"),
-						),
-					},
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		CheckDestroy:             api.checkImages(),
+		Steps: []resource.TestStep{
+			{
+				Config:      config,
+				ExpectError: regexp.MustCompile(`Cluster agent image img1 did not build`),
+			},
+			{
+				PreConfig: func() {
+					api.mu.Lock()
+					defer api.mu.Unlock()
+					api.buildingReads = 0
 				},
-			})
-		})
-	}
+				Config: strings.Replace(config, `create = "2s"`, `create = "30s"`, 1),
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{plancheck.ExpectResourceAction(name, plancheck.ResourceActionDestroyBeforeCreate)},
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(name, "id", "img2"),
+					resource.TestCheckResourceAttr(name, "status", "READY"),
+					api.checkImages("ruby RUN true\n"),
+				),
+			},
+		},
+	})
 }
 
 func TestUnitBuildkiteClusterAgentImageRejectsNonPositiveBuildTimeout(t *testing.T) {

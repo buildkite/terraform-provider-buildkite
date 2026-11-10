@@ -12,19 +12,13 @@ description: |-
   The API token requires read_clusters and write_clusters scopes, and its user must have
   permission to manage the cluster. This permission is required for reads as well as writes.
   Creating an image waits for its build to finish. If the build fails or the wait times out, Terraform
-  reports an error and retains the image for replacement. Images cannot be changed after they are created, so changing
-  cluster_id, name, or dockerfile replaces the image. An image used by a queue cannot be
-  deleted until those queues use a different image.
-  To replace an image used by a queue, set lifecycle { create_before_destroy = true } and
-  change its name for each Dockerfile revision, as shown in the example below. Buildkite requires image
-  names to be unique within a cluster, so keeping the same name prevents creation of the replacement.
-  Terraform can then build the new image, update queues that reference it, and delete the old image.
-  Without this lifecycle setting, first switch queues away from the image in a separate apply.
-  With create_before_destroy, retrying a failed or timed-out build also requires a new name,
-  even if the Dockerfile has not changed. Alternatively, explicitly destroy the retained image before
-  retrying, after switching any queues away from it. Retrying with the same name fails because the
-  retained image still occupies that name. Without this lifecycle setting, the next apply deletes
-  the retained image before creating its replacement.
+  reports an error and retains the image for replacement on the next apply.
+  This resource does not support in-place updates. Changing dockerfile requires replacement:
+  Terraform deletes the existing image, then re-creates it with the new Dockerfile instructions.
+  Changing cluster_id or name also requires replacement.
+  An image used by a queue cannot be deleted. Before replacing an image, switch all queues that use it
+  to a different image in a separate apply. After the replacement is built, switch the queues back to
+  the new image reference in a subsequent apply.
 ---
 
 # buildkite_cluster_agent_image (Resource)
@@ -41,21 +35,15 @@ The API token requires `read_clusters` and `write_clusters` scopes, and its user
 permission to manage the cluster. This permission is required for reads as well as writes.
 
 Creating an image waits for its build to finish. If the build fails or the wait times out, Terraform
-reports an error and retains the image for replacement. Images cannot be changed after they are created, so changing
-`cluster_id`, `name`, or `dockerfile` replaces the image. An image used by a queue cannot be
-deleted until those queues use a different image.
+reports an error and retains the image for replacement on the next apply.
 
-To replace an image used by a queue, set `lifecycle { create_before_destroy = true }` and
-change its name for each Dockerfile revision, as shown in the example below. Buildkite requires image
-names to be unique within a cluster, so keeping the same name prevents creation of the replacement.
-Terraform can then build the new image, update queues that reference it, and delete the old image.
-Without this lifecycle setting, first switch queues away from the image in a separate apply.
+This resource does not support in-place updates. Changing `dockerfile` requires replacement:
+Terraform deletes the existing image, then re-creates it with the new Dockerfile instructions.
+Changing `cluster_id` or `name` also requires replacement.
 
-With `create_before_destroy`, retrying a failed or timed-out build also requires a new name,
-even if the Dockerfile has not changed. Alternatively, explicitly destroy the retained image before
-retrying, after switching any queues away from it. Retrying with the same name fails because the
-retained image still occupies that name. Without this lifecycle setting, the next apply deletes
-the retained image before creating its replacement.
+An image used by a queue cannot be deleted. Before replacing an image, switch all queues that use it
+to a different image in a separate apply. After the replacement is built, switch the queues back to
+the new image reference in a subsequent apply.
 
 ## Example Usage
 
@@ -74,22 +62,15 @@ resource "buildkite_cluster_queue" "default" {
   }
 }
 
-locals {
-  ruby_dockerfile = <<-EOT
-    RUN apt-get update && apt-get install -y ruby-full
-  EOT
-}
-
 resource "buildkite_cluster_agent_image" "ruby" {
   cluster_id = buildkite_cluster.hosted.uuid
-  # Each Dockerfile revision needs a unique name so both images can exist during rollout
-  # To retry a failed or timed-out build, use a new name or destroy the retained image first
-  name       = "ruby-${substr(sha256(local.ruby_dockerfile), 0, 12)}"
-  dockerfile = local.ruby_dockerfile
+  name       = "ruby"
 
-  lifecycle {
-    create_before_destroy = true
-  }
+  # Changing dockerfile deletes and re-creates the image; in-place updates are not supported
+  # Switch queues to a different image in a separate apply before replacing this image
+  dockerfile = <<-EOT
+    RUN apt-get update && apt-get install -y ruby-full
+  EOT
 
   depends_on = [buildkite_cluster_queue.default]
 }
@@ -115,7 +96,7 @@ resource "buildkite_cluster_queue" "ruby" {
 ### Required
 
 - `cluster_id` (String) The UUID of the cluster the image belongs to.
-- `dockerfile` (String) The Dockerfile instructions to build the image with. Buildkite provides the base image, so this must not contain a `FROM` instruction.
+- `dockerfile` (String) The Dockerfile instructions to build the image with. Buildkite provides the base image, so this must not contain a `FROM` instruction. Changing this attribute requires replacement: the existing image is deleted, then re-created. In-place updates are not supported.
 - `name` (String) The name of the agent image. Must be unique within the cluster.
 
 ### Optional

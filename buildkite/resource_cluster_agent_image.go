@@ -79,21 +79,15 @@ func (r *clusterAgentImageResource) Schema(ctx context.Context, req resource.Sch
 			permission to manage the cluster. This permission is required for reads as well as writes.
 
 			Creating an image waits for its build to finish. If the build fails or the wait times out, Terraform
-			reports an error and retains the image for replacement. Images cannot be changed after they are created, so changing
-			` + "`cluster_id`, `name`, or `dockerfile`" + ` replaces the image. An image used by a queue cannot be
-			deleted until those queues use a different image.
+			reports an error and retains the image for replacement on the next apply.
 
-			To replace an image used by a queue, set ` + "`lifecycle { create_before_destroy = true }`" + ` and
-			change its name for each Dockerfile revision, as shown in the example below. Buildkite requires image
-			names to be unique within a cluster, so keeping the same name prevents creation of the replacement.
-			Terraform can then build the new image, update queues that reference it, and delete the old image.
-			Without this lifecycle setting, first switch queues away from the image in a separate apply.
+			This resource does not support in-place updates. Changing ` + "`dockerfile`" + ` requires replacement:
+			Terraform deletes the existing image, then re-creates it with the new Dockerfile instructions.
+			Changing ` + "`cluster_id` or `name`" + ` also requires replacement.
 
-			With ` + "`create_before_destroy`" + `, retrying a failed or timed-out build also requires a new name,
-			even if the Dockerfile has not changed. Alternatively, explicitly destroy the retained image before
-			retrying, after switching any queues away from it. Retrying with the same name fails because the
-			retained image still occupies that name. Without this lifecycle setting, the next apply deletes
-			the retained image before creating its replacement.
+			An image used by a queue cannot be deleted. Before replacing an image, switch all queues that use it
+			to a different image in a separate apply. After the replacement is built, switch the queues back to
+			the new image reference in a subsequent apply.
 		`),
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
@@ -122,7 +116,7 @@ func (r *clusterAgentImageResource) Schema(ctx context.Context, req resource.Sch
 			},
 			"dockerfile": schema.StringAttribute{
 				Required:            true,
-				MarkdownDescription: "The Dockerfile instructions to build the image with. Buildkite provides the base image, so this must not contain a `FROM` instruction.",
+				MarkdownDescription: "The Dockerfile instructions to build the image with. Buildkite provides the base image, so this must not contain a `FROM` instruction. Changing this attribute requires replacement: the existing image is deleted, then re-created. In-place updates are not supported.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
