@@ -6,6 +6,10 @@
 
 * FODA-2268: Add independent `allowed_browser_ip_entries` management to `buildkite_organization`, including tuple descriptions, import and explicit clearing. Requires the Browser IP Allowlist feature to be enabled for the organization.
 
+### Fixed
+
+* Clear `description` and `allowed_ip_addresses` on `buildkite_portal` when they are removed from configuration, instead of failing the apply with an inconsistent result while the portal keeps the old values.
+
 ## [1.46.0](https://github.com/buildkite/terraform-provider-buildkite/compare/v1.45.0...v1.46.0)
 
 ### Features

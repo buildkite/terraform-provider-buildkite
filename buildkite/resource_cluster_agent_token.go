@@ -128,9 +128,6 @@ func (ct *clusterAgentToken) Create(ctx context.Context, req resource.CreateRequ
 		return
 	}
 
-	requestCtx, cancel := mutationContext(ctx, timeout)
-	defer cancel()
-
 	// Create CIDR slice from AllowedApiIpAddresses in the plan
 	cidrs := createCidrSliceFromList(plan.AllowedIpAddresses)
 
@@ -142,12 +139,12 @@ func (ct *clusterAgentToken) Create(ctx context.Context, req resource.CreateRequ
 	}
 
 	var r *createClusterAgentTokenResponse
-	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-		org, err := ct.client.GetOrganizationID(requestCtx)
+	err := retryMutation(ctx, timeout, func(ctx context.Context) *retry.RetryError {
+		org, err := ct.client.GetOrganizationID(ctx)
 		if err == nil {
 
 			log.Printf("Creating cluster agent token with description %s into cluster %s ...", plan.Description.ValueString(), plan.ClusterId.ValueString())
-			r, err = createClusterAgentToken(requestCtx,
+			r, err = createClusterAgentToken(ctx,
 				ct.client.genqlient,
 				*org,
 				plan.ClusterId.ValueString(),
@@ -251,18 +248,15 @@ func (ct *clusterAgentToken) Update(ctx context.Context, req resource.UpdateRequ
 		return
 	}
 
-	requestCtx, cancel := mutationContext(ctx, timeout)
-	defer cancel()
-
 	// Create CIDR slice from AllowedApiIpAddresses in the plan
 	cidrs := createCidrSliceFromList(plan.AllowedIpAddresses)
 
 	var r *updateClusterAgentTokenResponse
-	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-		org, err := ct.client.GetOrganizationID(requestCtx)
+	err := retryMutation(ctx, timeout, func(ctx context.Context) *retry.RetryError {
+		org, err := ct.client.GetOrganizationID(ctx)
 		if err == nil {
 			log.Printf("Updating cluster token %s", state.Id.ValueString())
-			r, err = updateClusterAgentToken(requestCtx,
+			r, err = updateClusterAgentToken(ctx,
 				ct.client.genqlient,
 				*org,
 				state.Id.ValueString(),
@@ -304,14 +298,11 @@ func (ct *clusterAgentToken) Delete(ctx context.Context, req resource.DeleteRequ
 		return
 	}
 
-	requestCtx, cancel := mutationContext(ctx, timeout)
-	defer cancel()
-
-	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
-		org, err := ct.client.GetOrganizationID(requestCtx)
+	err := retryMutation(ctx, timeout, func(ctx context.Context) *retry.RetryError {
+		org, err := ct.client.GetOrganizationID(ctx)
 		if err == nil {
 			log.Printf("Revoking Cluster Agent Token %s ...", plan.Id.ValueString())
-			_, err = revokeClusterAgentToken(requestCtx,
+			_, err = revokeClusterAgentToken(ctx,
 				ct.client.genqlient,
 				*org,
 				plan.Id.ValueString(),

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"regexp"
-	"strings"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
@@ -356,10 +355,10 @@ func testAccCheckClusterMaintainerExists(resourceName string) resource.TestCheck
 		var result clusterMaintainerAPIResponse
 		err := client.makeRequest(context.Background(), http.MethodGet, path, nil, &result)
 		if err != nil {
-			if strings.Contains(err.Error(), "404") {
-				return fmt.Errorf("cluster maintainer %s not found in API", rs.Primary.ID)
+			if isAPIStatus(err, http.StatusNotFound) {
+				return fmt.Errorf("cluster maintainer %s not found in API: %w", rs.Primary.ID, err)
 			}
-			return fmt.Errorf("error fetching cluster maintainer from API: %v", err)
+			return fmt.Errorf("error fetching cluster maintainer from API: %w", err)
 		}
 
 		// Verify the maintainer details match
