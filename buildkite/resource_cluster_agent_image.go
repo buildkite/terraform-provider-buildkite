@@ -280,12 +280,41 @@ func (r *clusterAgentImageResource) Delete(ctx context.Context, req resource.Del
 }
 
 func (r *clusterAgentImageResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	clusterID, imageID, ok := strings.Cut(req.ID, "/")
-	if !ok || clusterID == "" || imageID == "" || strings.Contains(imageID, "/") {
+	clusterID, identifier, ok := strings.Cut(req.ID, "/")
+	if !ok || clusterID == "" || identifier == "" {
 		resp.Diagnostics.AddError(
 			"Invalid import ID format",
-			fmt.Sprintf("Expected format: cluster_id/image_id, got: %s", req.ID),
+			fmt.Sprintf("Expected format: cluster_id/image_id or cluster_id/image_name, got: %s", req.ID),
 		)
+		return
+	}
+
+	timeout, diags := r.client.readTimeout(ctx)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	requestCtx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
+	var images []clusterAgentImage
+	if err := r.client.makeRequest(requestCtx, http.MethodGet, r.client.clusterAgentImagePath(clusterID, ""), nil, &images); err != nil {
+		resp.Diagnostics.AddError("Unable to import cluster agent image", fmt.Sprintf("Unable to list cluster agent images: %s", err))
+		return
+	}
+
+	var imageID string
+	for _, image := range images {
+		if image.ID == identifier {
+			imageID = image.ID
+			break
+		}
+		if image.Name == identifier {
+			imageID = image.ID
+		}
+	}
+	if imageID == "" {
+		resp.Diagnostics.AddError("Unable to import cluster agent image", fmt.Sprintf("No cluster agent image with ID or name %q found in cluster %q.", identifier, clusterID))
 		return
 	}
 

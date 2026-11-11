@@ -10,6 +10,8 @@ import (
 	"sync"
 	"testing"
 
+	fwresource "github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/plancheck"
@@ -70,6 +72,12 @@ func (a *fakeClusterAgentImageAPI) ServeHTTP(w http.ResponseWriter, r *http.Requ
 		image := &clusterAgentImage{ID: fmt.Sprintf("img%d", a.created), Name: body.Name, Dockerfile: body.Dockerfile, Status: "BUILDING"}
 		a.images[image.ID] = image
 		writeFakeJSON(w, http.StatusCreated, image)
+	case r.Method == http.MethodGet && id == "":
+		images := make([]*clusterAgentImage, 0, len(a.images))
+		for _, image := range a.images {
+			images = append(images, image)
+		}
+		writeFakeJSON(w, http.StatusOK, images)
 	case r.Method == http.MethodGet && id != "":
 		image, ok := a.images[id]
 		if !ok {
@@ -190,6 +198,13 @@ func TestUnitBuildkiteClusterAgentImageWaitsForItsBuild(t *testing.T) {
 				ImportStateVerifyIgnore: []string{"timeouts"},
 			},
 			{
+				ResourceName:            name,
+				ImportState:             true,
+				ImportStateId:           fakeClusterAgentImageCluster + "/ruby",
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"timeouts"},
+			},
+			{
 				// there is no update endpoint, so a new Dockerfile is a new image
 				Config: fakeClusterAgentImageConfig(server, "RUN apt-get install -y ruby-full\n"),
 				ConfigPlanChecks: resource.ConfigPlanChecks{
@@ -202,6 +217,61 @@ func TestUnitBuildkiteClusterAgentImageWaitsForItsBuild(t *testing.T) {
 			},
 		},
 	})
+}
+
+func TestUnitBuildkiteClusterAgentImageImportResolution(t *testing.T) {
+	const images = `[{"id":"img2","name":"img1"},{"id":"img1","name":"ruby / prod"}]`
+	for _, tc := range []struct {
+		name       string
+		identifier string
+		status     int
+		wantID     string
+		wantError  string
+	}{
+		{name: "ID takes precedence over name", identifier: "img1", status: http.StatusOK, wantID: "img1"},
+		{name: "name containing spaces and slash", identifier: "ruby / prod", status: http.StatusOK, wantID: "img1"},
+		{name: "case-sensitive name", identifier: "Ruby / prod", status: http.StatusOK, wantError: "No cluster agent image"},
+		{name: "missing image", identifier: "missing", status: http.StatusOK, wantError: "No cluster agent image"},
+		{name: "forbidden", identifier: "ruby", status: http.StatusForbidden, wantError: "403"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+				if req.Method != http.MethodGet || req.URL.Path != "/v2/organizations/acme/clusters/"+fakeClusterAgentImageCluster+"/agent-images" {
+					t.Errorf("unexpected request: %s %s", req.Method, req.URL.Path)
+				}
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(tc.status)
+				if tc.status == http.StatusOK {
+					_, _ = w.Write([]byte(images))
+				} else {
+					_, _ = w.Write([]byte(`{"message":"access denied"}`))
+				}
+			}))
+			defer server.Close()
+			r := &clusterAgentImageResource{client: NewClient(&clientConfig{org: "acme", restURL: server.URL})}
+			ctx := t.Context()
+			schema := resourceSchema(ctx, t, r)
+			state := tfsdk.State{Schema: schema, Raw: nullObjectWith(ctx, t, schema.Type(), nil)}
+			resp := fwresource.ImportStateResponse{State: state}
+			r.ImportState(ctx, fwresource.ImportStateRequest{ID: fakeClusterAgentImageCluster + "/" + tc.identifier}, &resp)
+			if tc.wantError != "" {
+				if !resp.Diagnostics.HasError() || !diagnosticsContain(resp.Diagnostics, tc.wantError) || !resp.State.Raw.Equal(state.Raw) {
+					t.Fatalf("want import error %q without state, got %v, state: %s", tc.wantError, resp.Diagnostics, resp.State.Raw)
+				}
+				return
+			}
+			if resp.Diagnostics.HasError() {
+				t.Fatal(resp.Diagnostics)
+			}
+			var imported clusterAgentImageResourceModel
+			if diags := resp.State.Get(ctx, &imported); diags.HasError() {
+				t.Fatal(diags)
+			}
+			if imported.ID.ValueString() != tc.wantID || imported.ClusterID.ValueString() != fakeClusterAgentImageCluster {
+				t.Fatalf("imported ID = %q, cluster = %q; want %q, %q", imported.ID.ValueString(), imported.ClusterID.ValueString(), tc.wantID, fakeClusterAgentImageCluster)
+			}
+		})
+	}
 }
 
 func TestUnitBuildkiteClusterAgentImageReplacesAFailedBuild(t *testing.T) {
@@ -398,6 +468,16 @@ func TestAccBuildkiteClusterAgentImage(t *testing.T) {
 				ImportStateIdFunc: func(s *terraform.State) (string, error) {
 					image := s.RootModule().Resources[name].Primary
 					return image.Attributes["cluster_id"] + "/" + image.ID, nil
+				},
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"timeouts"},
+			},
+			{
+				ResourceName: name,
+				ImportState:  true,
+				ImportStateIdFunc: func(s *terraform.State) (string, error) {
+					image := s.RootModule().Resources[name].Primary
+					return image.Attributes["cluster_id"] + "/" + image.Attributes["name"], nil
 				},
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"timeouts"},
