@@ -433,6 +433,16 @@ func TestAccBuildkiteClusterAgentImage(t *testing.T) {
 		depends_on = [buildkite_cluster_queue.default]
 	}
 
+	data "buildkite_cluster_agent_image" "by_id" {
+		cluster_id = buildkite_cluster.hosted.uuid
+		id         = buildkite_cluster_agent_image.image.id
+	}
+
+	data "buildkite_cluster_agent_image" "by_name" {
+		cluster_id = buildkite_cluster.hosted.uuid
+		name       = buildkite_cluster_agent_image.image.name
+	}
+
 	resource "buildkite_cluster_queue" "custom" {
 		cluster_id = buildkite_cluster.hosted.id
 		key        = "custom"
@@ -460,6 +470,15 @@ func TestAccBuildkiteClusterAgentImage(t *testing.T) {
 					resource.TestCheckResourceAttr(name, "status", "READY"),
 					resource.TestCheckResourceAttr(name, "dockerfile", "RUN echo hello > /tmp/hello\n"),
 					resource.TestCheckResourceAttrPair("buildkite_cluster_queue.custom", "hosted_agents.linux.agent_image_ref", name, "image_ref"),
+					resource.TestCheckResourceAttrPair("data.buildkite_cluster_agent_image.by_id", "id", name, "id"),
+					resource.TestCheckResourceAttrPair("data.buildkite_cluster_agent_image.by_id", "name", name, "name"),
+					resource.TestCheckResourceAttrPair("data.buildkite_cluster_agent_image.by_id", "image_ref", name, "image_ref"),
+					resource.TestCheckResourceAttr("data.buildkite_cluster_agent_image.by_id", "status", "READY"),
+					resource.TestCheckResourceAttr("data.buildkite_cluster_agent_image.by_id", "dockerfile", "RUN echo hello > /tmp/hello\n"),
+					resource.TestCheckResourceAttrPair("data.buildkite_cluster_agent_image.by_name", "id", name, "id"),
+					resource.TestCheckResourceAttrPair("data.buildkite_cluster_agent_image.by_name", "image_ref", name, "image_ref"),
+					resource.TestCheckResourceAttr("data.buildkite_cluster_agent_image.by_name", "status", "READY"),
+					resource.TestCheckResourceAttr("data.buildkite_cluster_agent_image.by_name", "dockerfile", "RUN echo hello > /tmp/hello\n"),
 				),
 			},
 			{
