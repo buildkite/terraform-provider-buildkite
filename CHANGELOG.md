@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Features
+
+* Add the `buildkite_cluster_agent_image` resource.
+
 ### Fixed
 
 * Clear `description` and `allowed_ip_addresses` on `buildkite_portal` when they are removed from configuration, instead of failing the apply with an inconsistent result while the portal keeps the old values.
