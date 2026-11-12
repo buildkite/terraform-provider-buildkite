@@ -27,9 +27,14 @@ import (
 // exercised without an organization to change. Its GraphQL side answers with identifiers only: the
 // allowlist is api-settings' to report, and nothing here offers a second copy of it.
 type fakeOrganizationAPI struct {
-	t        *testing.T
-	mu       sync.Mutex
-	settings organizationAPISettings
+	t                       *testing.T
+	mu                      sync.Mutex
+	settings                organizationAPISettings
+	browserSettings         organizationBrowserSettings
+	browserReadStatus       int
+	browserPatchStatus      int
+	browserApplyBeforeError bool
+	browserWrites           [][]organizationIPEntry
 	// readStatus, once readsBeforeRefusal successful reads have gone through, fails every read after
 	readStatus         int
 	readBody           string
@@ -162,6 +167,8 @@ func (a *fakeOrganizationAPI) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 		a.graphql(w, r)
 	case "/v2/organizations/acme/api-settings":
 		a.apiSettings(w, r)
+	case "/v2/organizations/acme/browser-settings":
+		a.browserAPISettings(w, r)
 	default:
 		a.t.Errorf("unexpected request: %s %s", r.Method, r.URL.Path)
 		http.Error(w, `{"message":"Not Found"}`, http.StatusNotFound)
@@ -658,6 +665,7 @@ func TestUnitBuildkiteOrganizationKeeps2FAWhenTheAllowlistIsRefused(t *testing.T
 func TestUnitBuildkiteOrganizationKeepsWrittenSettingsWhenSetting2FAFails(t *testing.T) {
 	server, api := newFakeOrganizationAPI(t)
 	api.settings.Features.ApiIpAllowList = true
+	api.browserSettings.Features.BrowserIpAllowList = true
 	api.enforceTwoFactor(true)
 	api.refuseTwoFactorChange("Unable to enforce two-factor authentication")
 
@@ -665,7 +673,8 @@ func TestUnitBuildkiteOrganizationKeepsWrittenSettingsWhenSetting2FAFails(t *tes
 		ProtoV6ProviderFactories: protoV6ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
-				Config:      fakeOrganizationConfig(server, `allowed_api_ip_addresses = ["1.1.1.1/32"]`),
+				Config: fakeOrganizationConfig(server, `allowed_api_ip_addresses = ["1.1.1.1/32"]
+					allowed_browser_ip_entries = [{ ip_address = "192.0.2.1", description = "Browser office" }]`),
 				ExpectError: regexp.MustCompile(`Unable to set 2FA`),
 			},
 		},
@@ -678,6 +687,9 @@ func TestUnitBuildkiteOrganizationKeepsWrittenSettingsWhenSetting2FAFails(t *tes
 	}
 	if got := api.allowedIpAddresses(); got != "1.1.1.1/32" {
 		t.Errorf("remote allowed_ip_addresses = %q, want %q", got, "1.1.1.1/32")
+	}
+	if want := []organizationIPEntry{{"192.0.2.1", "Browser office"}}; !slices.Equal(api.browserSettings.AllowedIpEntries, want) {
+		t.Errorf("browser policy was lost after failed create: %v", api.browserSettings.AllowedIpEntries)
 	}
 }
 
