@@ -615,7 +615,8 @@ func (p *pipelineResource) setDefaultTeamIfExistsWithCandidate(ctx context.Conte
 
 		// If there are multiple pages of teams, keep checking until we find the team or exhaust all pages
 		if foundAccessLevel == nil && pipelineTeam.PageInfo.HasNextPage {
-			resp, err := getPipelineTeams(ctx, p.client.genqlient, state.Slug.ValueString(), pipelineTeam.PageInfo.EndCursor)
+			slug := fmt.Sprintf("%s/%s", p.client.organization, state.Slug.ValueString())
+			resp, err := getPipelineTeams(ctx, p.client.genqlient, slug, pipelineTeam.PageInfo.EndCursor)
 			if err != nil {
 				return nil, err
 			}
