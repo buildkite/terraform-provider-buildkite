@@ -573,13 +573,19 @@ func TestTestSuiteWorkflowFailureState(t *testing.T) {
 	api.mu.Unlock()
 	failed := fwresource.CreateResponse{State: tfsdk.State{Schema: schema}}
 	r.Create(ctx, fwresource.CreateRequest{Plan: plan}, &failed)
-	if !diagnosticsContain(failed.Diagnostics, "/alarm_actions/0/label") {
-		t.Fatalf("API validation pointer missing: %v", failed.Diagnostics)
+	if !diagnosticsContain(failed.Diagnostics, "status: 422") {
+		t.Fatalf("Expected the 422 status in the diagnostic: %v", failed.Diagnostics)
+	}
+	if diagnosticsContain(failed.Diagnostics, "/alarm_actions/0/label") || diagnosticsContain(failed.Diagnostics, "Validation Failed") {
+		t.Fatalf("Expected the API response body not to be exposed: %v", failed.Diagnostics)
 	}
 	updated = fwresource.UpdateResponse{State: create.State}
 	r.Update(ctx, fwresource.UpdateRequest{Plan: updatePlan, State: create.State}, &updated)
-	if !diagnosticsContain(updated.Diagnostics, "/alarm_actions/0/label") || !updated.State.Raw.Equal(create.State.Raw) {
-		t.Fatalf("invalid update must report the API validation pointer and retain state: %v", updated.Diagnostics)
+	if !diagnosticsContain(updated.Diagnostics, "status: 422") || !updated.State.Raw.Equal(create.State.Raw) {
+		t.Fatalf("invalid update must report the 422 status and retain state: %v", updated.Diagnostics)
+	}
+	if diagnosticsContain(updated.Diagnostics, "/alarm_actions/0/label") || diagnosticsContain(updated.Diagnostics, "Validation Failed") {
+		t.Fatalf("Expected the API response body not to be exposed: %v", updated.Diagnostics)
 	}
 	api.mu.Lock()
 	api.status = 0

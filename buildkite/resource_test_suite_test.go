@@ -309,8 +309,11 @@ func TestTestSuiteStateManagementRejectedUpdate(t *testing.T) {
 			planned["allowed_test_states"] = tftypes.NewValue(tftypes.Set{ElementType: tftypes.String}, []tftypes.Value{})
 			req, resp := updateRequestFor(ctx, t, schema, prior, planned)
 			ts.Update(ctx, req, &resp)
-			if !diagnosticsContain(resp.Diagnostics, testCase.message) {
-				t.Fatalf("diagnostics = %v, want API error %q", resp.Diagnostics, testCase.message)
+			if !diagnosticsContain(resp.Diagnostics, fmt.Sprintf("status: %d", testCase.status)) {
+				t.Fatalf("diagnostics = %v, want the %d status", resp.Diagnostics, testCase.status)
+			}
+			if diagnosticsContain(resp.Diagnostics, testCase.message) {
+				t.Fatalf("diagnostics = %v, want the API response body %q not to be exposed", resp.Diagnostics, testCase.message)
 			}
 			if !resp.State.Raw.Equal(req.State.Raw) {
 				t.Fatal("rejected PATCH changed Terraform state")
