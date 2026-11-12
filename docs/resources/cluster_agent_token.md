@@ -4,14 +4,14 @@ page_title: "buildkite_cluster_agent_token Resource - terraform-provider-buildki
 subcategory: ""
 description: |-
   A Cluster Agent Token is a token used to connect an agent to a cluster in Buildkite. Import using the token's GraphQL ID. Import reads the token's metadata, permissions and queue bindings, but cannot recover its secret value.
-  Queue access is independent of action permissions: selecting a queue does not grant run_jobs or other permissions. Queue-binding changes do not disconnect existing agents or cancel running jobs. Scoped agent-token permissions must be enabled for the organization to manage queue access. When the API does not expose queue access, the last known settings are retained, but drift cannot be detected.
+  Queue access is independent of action permissions: selecting a queue does not grant run_jobs or other permissions. Queue-binding changes do not disconnect existing agents or cancel running jobs. When the API does not expose queue access, the last known settings are retained, but drift cannot be detected.
 ---
 
 # buildkite_cluster_agent_token (Resource)
 
 A Cluster Agent Token is a token used to connect an agent to a cluster in Buildkite. Import using the token's GraphQL ID. Import reads the token's metadata, permissions and queue bindings, but cannot recover its secret value.
 
-Queue access is independent of action permissions: selecting a queue does not grant `run_jobs` or other permissions. Queue-binding changes do not disconnect existing agents or cancel running jobs. Scoped agent-token permissions must be enabled for the organization to manage queue access. When the API does not expose queue access, the last known settings are retained, but drift cannot be detected.
+Queue access is independent of action permissions: selecting a queue does not grant `run_jobs` or other permissions. Queue-binding changes do not disconnect existing agents or cancel running jobs. When the API does not expose queue access, the last known settings are retained, but drift cannot be detected.
 
 ## Example Usage
 
@@ -90,7 +90,7 @@ resource "buildkite_cluster_agent_token" "expiring_token" {
 - `allowed_ip_addresses` (List of String) A list of CIDR-notation IPv4 addresses from which agents can use this Cluster Agent Token.If not set, all IP addresses are allowed (the same as setting 0.0.0.0/0).
 - `allowed_queue_ids` (Set of String) The complete, unordered set of GraphQL queue IDs this token can access when `allow_all_queues` is `false`, such as `buildkite_cluster_queue.workers.id`. Queues must belong to the token's cluster. Omitting this uses the API's empty selection on creation and preserves the stored selection on updates, including when removing it from configuration. An empty set (`[]`) does not change the access mode: with `allow_all_queues = false` it denies every queue. Nonempty bindings cannot be combined with all-queues access. Configured bindings detect changes made outside Terraform. Bindings do not select an agent's queue: agents must target an allowed queue, or the cluster's default queue must be allowed when no queue tag is supplied.
 - `expires_at` (String) The time at which the token expires, in RFC 3339 format with up to millisecond precision (e.g. `2030-01-01T00:00:00Z`) and at least 10 minutes in the future. If not set, the token never expires. Changing this value replaces the token, since the expiry cannot be updated.
-- `permissions` (Set of String) The token's permission allow list. Values are validated by the Buildkite API. Omitting this grants the API's default permissions on creation and leaves the stored scope unchanged on updates, including when removing this attribute from configuration. An explicit empty set (`[]`) grants no permissions. Configured permissions are managed as an unordered set, and changes made outside Terraform are detected. Scoped agent-token permissions must be enabled for the organization. When the API does not expose permissions, the last known scope is retained.
+- `permissions` (Set of String) The token's permission allow list. Values are validated by the Buildkite API. Omitting this grants the API's default permissions on creation and leaves the stored scope unchanged on updates, including when removing this attribute from configuration. An explicit empty set (`[]`) grants no permissions. Configured permissions are managed as an unordered set, and changes made outside Terraform are detected. When the API does not expose permissions, the last known scope is retained.
 
 ### Read-Only
 

@@ -60,7 +60,7 @@ func (ct *clusterAgentToken) Schema(_ context.Context, _ resource.SchemaRequest,
 			"Import using the token's GraphQL ID. Import reads the token's metadata, permissions and queue bindings, but cannot recover its secret value.\n\n" +
 			"Queue access is independent of action permissions: selecting a queue does not grant `run_jobs` or other permissions. " +
 			"Queue-binding changes do not disconnect existing agents or cancel running jobs. " +
-			"Scoped agent-token permissions must be enabled for the organization to manage queue access. When the API does not expose queue access, the last known settings are retained, but drift cannot be detected.",
+			"When the API does not expose queue access, the last known settings are retained, but drift cannot be detected.",
 		Attributes: map[string]resource_schema.Attribute{
 			"id": resource_schema.StringAttribute{
 				Computed:            true,
@@ -125,7 +125,7 @@ func (ct *clusterAgentToken) Schema(_ context.Context, _ resource.SchemaRequest,
 				MarkdownDescription: "The token's permission allow list. Values are validated by the Buildkite API. " +
 					"Omitting this grants the API's default permissions on creation and leaves the stored scope unchanged on updates, including when removing this attribute from configuration. " +
 					"An explicit empty set (`[]`) grants no permissions. Configured permissions are managed as an unordered set, and changes made outside Terraform are detected. " +
-					"Scoped agent-token permissions must be enabled for the organization. When the API does not expose permissions, the last known scope is retained.",
+					"When the API does not expose permissions, the last known scope is retained.",
 				PlanModifiers: []planmodifier.Set{
 					setplanmodifier.UseStateForUnknown(),
 				},
