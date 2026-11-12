@@ -17,7 +17,7 @@ require (
 	github.com/hashicorp/terraform-plugin-testing v1.16.0
 	github.com/lestrrat-go/jwx/v3 v3.4.0
 	github.com/shurcooL/graphql v0.0.0-20240915155400-7ee5256398cf
-	golang.org/x/sync v0.24.0
+	golang.org/x/sync v0.25.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
