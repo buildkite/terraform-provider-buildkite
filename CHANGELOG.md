@@ -5,6 +5,7 @@
 ### Features
 
 * Add the `buildkite_cluster_agent_image` resource.
+* SUP-2651: Add the `buildkite_cluster_agent_image` data source to look up custom hosted agent images by ID or name within a cluster.
 
 ### Fixed
 
