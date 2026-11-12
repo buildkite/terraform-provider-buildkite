@@ -2758,6 +2758,103 @@ func TestPipelineUpdateRemovesTheDefaultTeamByThePostRenameSlug(t *testing.T) {
 	}
 }
 
+// Regression test: the initial pipeline read only fetches the first 5 teams (PipelineFields'
+// teams(first: 5)). When the configured default_team_id isn't among those first 5 and the
+// pipeline has more teams, Read pages forward with getPipelineTeams - which previously queried
+// using the bare pipeline slug instead of "org-slug/pipeline-slug", a shape the API rejects.
+func TestPipelineReadFindsTheDefaultTeamPastTheFirstPage(t *testing.T) {
+	t.Parallel()
+
+	const (
+		pipelineSlug  = "demo-deploy"
+		defaultTeamID = "team-6"
+		cursor        = "cursor-1"
+	)
+
+	var firstPageEdges []string
+	for i := 1; i <= 5; i++ {
+		id := fmt.Sprintf("team-%d", i)
+		firstPageEdges = append(firstPageEdges, fmt.Sprintf(
+			`{"cursor":%q,"node":{"id":"tp-%s","accessLevel":"MANAGE_BUILD_AND_READ","team":{"id":%q}}}`,
+			id, id, id,
+		))
+	}
+
+	server, requests, bodies := newRecordingRetryStub(t,
+		// getNode(pipeline), returning the first page of 5 teams, none of which is the default,
+		// plus a next page to follow.
+		stubResponse{status: http.StatusOK, body: fmt.Sprintf(`{"data":{"node":{
+			"__typename": "Pipeline", "id": "pipeline-id", "pipelineUuid": "pipeline-uuid",
+			"name": "demo_deploy", "slug": %q, "defaultBranch": "main", "description": "",
+			"archived": false, "repository": {"url": "git@github.com:org/repo.git"},
+			"steps": {"yaml": "steps: []"}, "tags": [],
+			"teams": {"edges": [%s], "pageInfo": {"hasNextPage": true, "endCursor": %q}}
+		}}}`, pipelineSlug, strings.Join(firstPageEdges, ","), cursor)},
+		// getNode(team), confirming the configured default team exists globally.
+		stubResponse{status: http.StatusOK, body: fmt.Sprintf(`{"data":{"node":{
+			"__typename": "Team", "id": %q, "uuid": "team-uuid", "name": "Deploy team"
+		}}}`, defaultTeamID)},
+		// getPipelineTeams, the second page - the request this test is about.
+		stubResponse{status: http.StatusOK, body: fmt.Sprintf(`{"data":{"pipeline":{"teams":{
+			"edges": [{"cursor":"c6","node":{"id":"tp-6","accessLevel":"MANAGE_BUILD_AND_READ","team":{"id":%q}}}],
+			"pageInfo": {"hasNextPage": false, "endCursor": ""}
+		}}}}`, defaultTeamID)},
+		// The recursive retry re-runs the whole candidate check, including a second
+		// getNode(team) existence check.
+		stubResponse{status: http.StatusOK, body: fmt.Sprintf(`{"data":{"node":{
+			"__typename": "Team", "id": %q, "uuid": "team-uuid", "name": "Deploy team"
+		}}}`, defaultTeamID)},
+	)
+	defer server.Close()
+
+	p := &pipelineResource{client: newRetryTestClient(t, server.URL, 0, time.Millisecond)}
+
+	ctx := t.Context()
+	schema := resourceSchema(ctx, t, p)
+
+	state := tfsdk.State{Schema: schema, Raw: nullObjectWith(ctx, t, schema.Type(), map[string]tftypes.Value{
+		"id":              tftypes.NewValue(tftypes.String, "pipeline-id"),
+		"slug":            tftypes.NewValue(tftypes.String, pipelineSlug),
+		"default_team_id": tftypes.NewValue(tftypes.String, defaultTeamID),
+		"archived":        tftypes.NewValue(tftypes.Bool, false),
+	})}
+
+	resp := fwresource.ReadResponse{State: state}
+	p.Read(ctx, fwresource.ReadRequest{State: state}, &resp)
+
+	if got := requests.Load(); got < 4 {
+		t.Fatalf("Made %d requests, want the pipeline read, the team check and the paged team lookup to all have run", got)
+	}
+
+	var teamLookups []string
+	for _, body := range bodies() {
+		if strings.Contains(body, "getPipelineTeams") {
+			teamLookups = append(teamLookups, body)
+		}
+	}
+	if len(teamLookups) == 0 {
+		t.Fatalf("No getPipelineTeams request was made; bodies were %v", bodies())
+	}
+	for _, lookup := range teamLookups {
+		if !strings.Contains(lookup, "test-org/"+pipelineSlug) {
+			t.Errorf("getPipelineTeams asked for the wrong pipeline: %s\nwant the qualified slug %q", lookup, "test-org/"+pipelineSlug)
+		}
+	}
+
+	if resp.Diagnostics.HasError() {
+		t.Fatalf("Read() diagnostics = %v", resp.Diagnostics)
+	}
+
+	var out pipelineResourceModel
+	resp.Diagnostics.Append(resp.State.Get(ctx, &out)...)
+	if resp.Diagnostics.HasError() {
+		t.Fatalf("State.Get() diagnostics = %v", resp.Diagnostics)
+	}
+	if out.DefaultTeamId.ValueString() != defaultTeamID {
+		t.Errorf("default_team_id = %q, want %q", out.DefaultTeamId.ValueString(), defaultTeamID)
+	}
+}
+
 // From the moment the pipeline exists, every path out of Create has to record it. A pipeline left
 // out of state is not merely re-planned: it is orphaned in Buildkite with nothing pointing at it,
 // and the next apply tries to create a second one.

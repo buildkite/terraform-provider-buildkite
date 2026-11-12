@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Features
+
+* Add the `buildkite_cluster_agent_image` resource.
+* SUP-2651: Add the `buildkite_cluster_agent_image` data source to look up custom hosted agent images by ID or name within a cluster.
+
 ### Fixed
 
 * Return every portal from the `buildkite_portals` data source. It read only the first page of the paginated list endpoint, so organizations with more than 30 portals got the first 30. Pages are now followed through the `Link` header, 100 at a time.

@@ -1,4 +1,4 @@
-FROM golang:1.27.3@sha256:f24164268fc1e741bbdc0066dbadcf1c8426c5a8489f0729c02c3905a53032fd AS base
+FROM golang:1.27.3@sha256:e519d3b0a5b285e5aa53ab9eef02bc6bbb9cb04608389b743a136a9ce75f0d1e AS base
 
 RUN apt-get update \
     && apt-get install -y unzip
@@ -30,4 +30,4 @@ RUN set -eu; \
 
 # Preserve the default image's snapshot/release tooling for existing callers.
 FROM base AS release
-COPY --from=goreleaser/goreleaser:v2.18.3@sha256:b61a4eedf5e3b1d283792dade34ee0f8c6cce3e6f1f65851d3b397b8f8a75b6d /usr/bin/goreleaser /usr/local/bin/goreleaser
+COPY --from=goreleaser/goreleaser:v2.20.0@sha256:19ca96ff782e521af4002ca42dd42021d360a04a8d2a06bb79f720a284c3fee1 /usr/bin/goreleaser /usr/local/bin/goreleaser
