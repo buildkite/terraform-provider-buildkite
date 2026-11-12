@@ -2,15 +2,22 @@ package buildkite
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"log"
 	"strings"
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-framework-validators/setvalidator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	resource_schema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -30,6 +37,9 @@ type clusterAgentTokenResourceModel struct {
 	ClusterUuid        types.String `tfsdk:"cluster_uuid"`
 	AllowedIpAddresses types.List   `tfsdk:"allowed_ip_addresses"`
 	ExpiresAt          types.String `tfsdk:"expires_at"`
+	Permissions        types.Set    `tfsdk:"permissions"`
+	AllowAllQueues     types.Bool   `tfsdk:"allow_all_queues"`
+	AllowedQueueUuids  types.Set    `tfsdk:"allowed_queue_uuids"`
 }
 
 func newClusterAgentTokenResource() resource.Resource {
@@ -49,7 +59,11 @@ func (ct *clusterAgentToken) Configure(ctx context.Context, req resource.Configu
 
 func (ct *clusterAgentToken) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		MarkdownDescription: "A Cluster Agent Token is a token used to connect an agent to a cluster in Buildkite.",
+		MarkdownDescription: "A Cluster Agent Token is a token used to connect an agent to a cluster in Buildkite. " +
+			"Import using the token's GraphQL ID. Import reads the token's metadata, permissions and queue bindings, but cannot recover its secret value.\n\n" +
+			"Queue access is independent of action permissions: selecting a queue does not grant `run_jobs` or other permissions. " +
+			"Queue-binding changes do not disconnect existing agents or cancel running jobs. " +
+			"When the API does not expose queue access, the last known settings are retained, but drift cannot be detected.",
 		Attributes: map[string]resource_schema.Attribute{
 			"id": resource_schema.StringAttribute{
 				Computed:            true,
@@ -107,6 +121,45 @@ func (ct *clusterAgentToken) Schema(_ context.Context, _ resource.SchemaRequest,
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
+			"permissions": schema.SetAttribute{
+				Optional:    true,
+				Computed:    true,
+				ElementType: types.StringType,
+				MarkdownDescription: "The token's permission allow list. Values are validated by the Buildkite API. " +
+					"Omitting this grants the API's default permissions on creation and leaves the stored scope unchanged on updates, including when removing this attribute from configuration. " +
+					"An explicit empty set (`[]`) grants no permissions. Configured permissions are managed as an unordered set, and changes made outside Terraform are detected. " +
+					"When the API does not expose permissions, the last known scope is retained.",
+				PlanModifiers: []planmodifier.Set{
+					setplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"allow_all_queues": schema.BoolAttribute{
+				Optional: true,
+				Computed: true,
+				MarkdownDescription: "Whether the token can access every queue in its cluster. " +
+					"Omitting this uses the API's default of `true` on creation and leaves the stored mode unchanged on updates, including when removing it from configuration. " +
+					"Creating a restricted token requires `false` and an explicit `allowed_queue_uuids` set. " +
+					"To switch a token with queue bindings to all queues, explicitly set this to `true` and `allowed_queue_uuids = []` together.",
+				PlanModifiers: []planmodifier.Bool{
+					boolplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"allowed_queue_uuids": schema.SetAttribute{
+				Optional:    true,
+				Computed:    true,
+				ElementType: types.StringType,
+				MarkdownDescription: "The complete, unordered set of canonical lowercase queue UUIDs this token can access when `allow_all_queues` is `false`, such as `buildkite_cluster_queue.workers.uuid`. " +
+					"Queues must belong to the token's cluster. Omitting this uses the API's empty selection on creation and preserves the stored selection on updates, including when removing it from configuration. " +
+					"An empty set (`[]`) does not change the access mode: with `allow_all_queues = false` it denies every queue. " +
+					"Nonempty bindings cannot be combined with all-queues access. Configured bindings detect changes made outside Terraform. " +
+					"Bindings do not select an agent's queue: agents must target an allowed queue, or the cluster's default queue must be allowed when no queue tag is supplied.",
+				PlanModifiers: []planmodifier.Set{
+					setplanmodifier.UseStateForUnknown(),
+				},
+				Validators: []validator.Set{
+					setvalidator.ValueStringsAre(stringvalidator.RegexMatches(importUuidRegex, "must be a canonical lowercase queue UUID")),
+				},
+			},
 		},
 	}
 }
@@ -117,6 +170,14 @@ func (ct *clusterAgentToken) Create(ctx context.Context, req resource.CreateRequ
 	diags := req.Plan.Get(ctx, &plan)
 	resp.Diagnostics.Append(diags...)
 
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	permissions, diags := clusterTokenStringSetToWrite(ctx, plan.Permissions)
+	resp.Diagnostics.Append(diags...)
+	allowedQueueIds, diags := clusterTokenQueueIdsToWrite(ctx, plan.AllowedQueueUuids)
+	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -151,6 +212,9 @@ func (ct *clusterAgentToken) Create(ctx context.Context, req resource.CreateRequ
 				plan.Description.ValueString(),
 				strings.Join(cidrs, " "),
 				expiresAt,
+				permissions,
+				clusterTokenQueueModeToWrite(plan.AllowAllQueues),
+				allowedQueueIds,
 			)
 		}
 
@@ -172,6 +236,11 @@ func (ct *clusterAgentToken) Create(ctx context.Context, req resource.CreateRequ
 	state.ClusterUuid = types.StringValue(r.ClusterAgentTokenCreate.ClusterAgentToken.Cluster.Uuid)
 	state.AllowedIpAddresses = plan.AllowedIpAddresses
 	state.ExpiresAt = plan.ExpiresAt
+	state.Permissions, diags = clusterTokenPermissionsFromAPI(ctx, r.ClusterAgentTokenCreate.ClusterAgentToken.Permissions, plan.Permissions)
+	resp.Diagnostics.Append(diags...)
+	state.AllowAllQueues = plan.AllowAllQueues
+	state.AllowedQueueUuids = plan.AllowedQueueUuids
+	resp.Diagnostics.Append(state.setQueueAccess(ctx, r.ClusterAgentTokenCreate.ClusterAgentToken.AllowAllQueues, r.ClusterAgentTokenCreate.ClusterAgentToken.AllowedQueueIds)...)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
@@ -196,15 +265,14 @@ func (ct *clusterAgentToken) Read(ctx context.Context, req resource.ReadRequest,
 	requestCtx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
-	var r *getClusterAgentTokensResponse
+	var r *getClusterAgentTokenResponse
 	err := retry.RetryContext(requestCtx, timeout, func() *retry.RetryError {
 		var err error
 
-		log.Printf("Getting cluster agent tokens for cluster %s ...", state.ClusterUuid.ValueString())
-		r, err = getClusterAgentTokens(requestCtx,
+		log.Printf("Getting cluster agent token %s ...", state.Id.ValueString())
+		r, err = getClusterAgentToken(requestCtx,
 			ct.client.genqlient,
-			ct.client.organization,
-			state.ClusterUuid.ValueString(),
+			state.Id.ValueString(),
 		)
 
 		return retryContextError(err)
@@ -217,15 +285,24 @@ func (ct *clusterAgentToken) Read(ctx context.Context, req resource.ReadRequest,
 		return
 	}
 
-	for _, edge := range r.Organization.Cluster.AgentTokens.Edges {
-		if edge.Node.Id == state.Id.ValueString() {
-			log.Printf("Found cluster Token with Description %s in cluster %s", edge.Node.Id, state.ClusterUuid.ValueString())
-			state.Description = types.StringValue(edge.Node.Description)
-			state.ExpiresAt = expiresAtFromAPI(edge.Node.ExpiresAt, state.ExpiresAt)
-			resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
-			return
-		}
+	node, ok := r.Node.(*getClusterAgentTokenNodeClusterToken)
+	if !ok || node == nil || node.Cluster.Organization.Slug != ct.client.organization {
+		resp.State.RemoveResource(ctx)
+		return
 	}
+	if state.Uuid.IsNull() && node.AllowedIpAddresses != "" && node.AllowedIpAddresses != "0.0.0.0/0" {
+		state.AllowedIpAddresses, diags = types.ListValueFrom(ctx, types.StringType, strings.Fields(node.AllowedIpAddresses))
+		resp.Diagnostics.Append(diags...)
+	}
+	state.Description = types.StringValue(node.Description)
+	state.ExpiresAt = expiresAtFromAPI(node.ExpiresAt, state.ExpiresAt)
+	state.Uuid = types.StringValue(node.Uuid)
+	state.ClusterId = types.StringValue(node.Cluster.Id)
+	state.ClusterUuid = types.StringValue(node.Cluster.Uuid)
+	state.Permissions, diags = clusterTokenPermissionsFromAPI(ctx, node.Permissions, state.Permissions)
+	resp.Diagnostics.Append(diags...)
+	resp.Diagnostics.Append(state.setQueueAccess(ctx, node.AllowAllQueues, node.AllowedQueueIds)...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
 func (ct *clusterAgentToken) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
@@ -236,7 +313,27 @@ func (ct *clusterAgentToken) Update(ctx context.Context, req resource.UpdateRequ
 
 	resp.Diagnostics.Append(diagsState...)
 	resp.Diagnostics.Append(diagsPlan...)
+	var config clusterAgentTokenResourceModel
+	resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
 
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	permissions, diags := clusterTokenStringSetToWrite(ctx, plan.Permissions)
+	if config.Permissions.IsNull() {
+		permissions = nil
+	}
+	resp.Diagnostics.Append(diags...)
+	allowedQueueIds, diags := clusterTokenQueueIdsToWrite(ctx, plan.AllowedQueueUuids)
+	if config.AllowedQueueUuids.IsNull() {
+		allowedQueueIds = nil
+	}
+	resp.Diagnostics.Append(diags...)
+	allowAllQueues := clusterTokenQueueModeToWrite(plan.AllowAllQueues)
+	if config.AllowAllQueues.IsNull() {
+		allowAllQueues = nil
+	}
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -262,6 +359,9 @@ func (ct *clusterAgentToken) Update(ctx context.Context, req resource.UpdateRequ
 				state.Id.ValueString(),
 				plan.Description.ValueString(),
 				strings.Join(cidrs, " "),
+				permissions,
+				allowAllQueues,
+				allowedQueueIds,
 			)
 		}
 
@@ -277,8 +377,117 @@ func (ct *clusterAgentToken) Update(ctx context.Context, req resource.UpdateRequ
 
 	state.Description = types.StringValue(r.ClusterAgentTokenUpdate.ClusterAgentToken.Description)
 	state.AllowedIpAddresses = plan.AllowedIpAddresses
+	state.Permissions, diags = clusterTokenPermissionsFromAPI(ctx, r.ClusterAgentTokenUpdate.ClusterAgentToken.Permissions, plan.Permissions)
+	resp.Diagnostics.Append(diags...)
+	state.AllowAllQueues = plan.AllowAllQueues
+	state.AllowedQueueUuids = plan.AllowedQueueUuids
+	resp.Diagnostics.Append(state.setQueueAccess(ctx, r.ClusterAgentTokenUpdate.ClusterAgentToken.AllowAllQueues, r.ClusterAgentTokenUpdate.ClusterAgentToken.AllowedQueueIds)...)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+}
+
+func (ct *clusterAgentToken) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+}
+
+func clusterTokenStringSetToWrite(ctx context.Context, configured types.Set) (*[]string, diag.Diagnostics) {
+	if configured.IsNull() || configured.IsUnknown() {
+		return nil, nil
+	}
+	values := make([]string, 0, len(configured.Elements()))
+	diags := configured.ElementsAs(ctx, &values, false)
+	return &values, diags
+}
+
+func clusterTokenQueueModeToWrite(mode types.Bool) *bool {
+	if mode.IsNull() || mode.IsUnknown() {
+		return nil
+	}
+	return mode.ValueBoolPointer()
+}
+
+func clusterTokenQueueIdsToWrite(ctx context.Context, configured types.Set) (*[]string, diag.Diagnostics) {
+	uuids, diags := clusterTokenStringSetToWrite(ctx, configured)
+	if diags.HasError() || uuids == nil {
+		return nil, diags
+	}
+	ids := make([]string, 0, len(*uuids))
+	for _, uuid := range *uuids {
+		if !importUuidRegex.MatchString(uuid) {
+			diags.AddAttributeError(path.Root("allowed_queue_uuids"), "Invalid queue UUID", "Queue bindings must be canonical lowercase UUIDs.")
+			return nil, diags
+		}
+		ids = append(ids, base64.StdEncoding.EncodeToString([]byte("ClusterQueue---"+uuid)))
+	}
+	return &ids, diags
+}
+
+func clusterTokenQueueUuidsFromAPI(ctx context.Context, ids []string) (types.Set, diag.Diagnostics) {
+	if ids == nil {
+		return types.SetNull(types.StringType), nil
+	}
+	uuids := make([]string, 0, len(ids))
+	for _, id := range ids {
+		decoded, err := base64.StdEncoding.DecodeString(id)
+		if err != nil {
+			decoded, err = base64.RawStdEncoding.DecodeString(id)
+		}
+		uuid, ok := strings.CutPrefix(string(decoded), "ClusterQueue---")
+		if err != nil || !ok || !importUuidRegex.MatchString(uuid) {
+			var diags diag.Diagnostics
+			diags.AddError("Unable to read Cluster Agent Token queue bindings", "The API returned a queue binding that is not a ClusterQueue GraphQL ID containing a canonical lowercase UUID.")
+			return types.SetNull(types.StringType), diags
+		}
+		uuids = append(uuids, uuid)
+	}
+	return types.SetValueFrom(ctx, types.StringType, uuids)
+}
+
+func clusterTokenPermissionsFromAPI(ctx context.Context, remote []string, current types.Set) (types.Set, diag.Diagnostics) {
+	if remote == nil {
+		if current.IsUnknown() {
+			return types.SetNull(types.StringType), nil
+		}
+		if !current.IsNull() {
+			var diags diag.Diagnostics
+			diags.AddWarning("Cluster Agent Token permissions unavailable", "The API did not expose this token's permissions. The last known scope has been retained, but permission changes outside Terraform cannot be detected until scoped agent-token permissions are enabled for the organization.")
+			return current, diags
+		}
+		return current, nil
+	}
+	return types.SetValueFrom(ctx, types.StringType, remote)
+}
+
+func (state *clusterAgentTokenResourceModel) setQueueAccess(ctx context.Context, allowAllQueues *bool, allowedQueueIds []string) diag.Diagnostics {
+	var diags diag.Diagnostics
+	var queueUuids types.Set
+	if allowedQueueIds != nil {
+		var setDiags diag.Diagnostics
+		queueUuids, setDiags = clusterTokenQueueUuidsFromAPI(ctx, allowedQueueIds)
+		diags.Append(setDiags...)
+		if diags.HasError() {
+			return diags
+		}
+	}
+	unavailable := false
+	if allowAllQueues != nil {
+		state.AllowAllQueues = types.BoolValue(*allowAllQueues)
+	} else if state.AllowAllQueues.IsUnknown() {
+		state.AllowAllQueues = types.BoolNull()
+	} else if !state.AllowAllQueues.IsNull() {
+		unavailable = true
+	}
+	if allowedQueueIds != nil {
+		state.AllowedQueueUuids = queueUuids
+	} else if state.AllowedQueueUuids.IsUnknown() {
+		state.AllowedQueueUuids = types.SetNull(types.StringType)
+	} else if !state.AllowedQueueUuids.IsNull() {
+		unavailable = true
+	}
+	if unavailable {
+		diags.AddWarning("Cluster Agent Token queue access unavailable", "The API did not expose this token's queue access settings. The last known settings have been retained, but queue-binding changes outside Terraform cannot be detected until scoped agent-token permissions are enabled for the organization.")
+	}
+	return diags
 }
 
 func (ct *clusterAgentToken) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
