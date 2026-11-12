@@ -1,6 +1,7 @@
 package buildkite
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -103,9 +104,12 @@ func (a *fakeClusterAgentTokenAPI) ServeHTTP(w http.ResponseWriter, r *http.Requ
 	var response any
 	switch request.OperationName {
 	case "":
-		if !strings.Contains(request.Query, "organization") {
+		if strings.Join(strings.Fields(request.Query), "") != "query($slug:ID!){organization(slug:$slug){id}}" {
 			a.t.Errorf("unexpected anonymous query: %s", request.Query)
+			a.writeError(w, "Unexpected anonymous GraphQL query")
+			return
 		}
+		a.checkVariable(request.Variables, "slug", "acme")
 		response = map[string]any{"organization": map[string]any{"id": "org-id"}}
 	case "createClusterAgentToken", "updateClusterAgentToken":
 		for _, field := range []string{"allowAllQueues", "allowedQueueIds"} {
@@ -165,16 +169,19 @@ func (a *fakeClusterAgentTokenAPI) ServeHTTP(w http.ResponseWriter, r *http.Requ
 				return
 			}
 			for _, id := range allowedQueueIDs {
+				decoded, err := base64.StdEncoding.DecodeString(id)
+				nodeType, _, ok := strings.Cut(string(decoded), "---")
+				if err != nil || !ok || nodeType != "ClusterQueue" {
+					a.t.Errorf("allowedQueueIds contains %q, want an encoded ClusterQueue ID", id)
+					a.writeError(w, "Queue ID must identify a ClusterQueue")
+					return
+				}
 				queue, ok := a.queues[id]
 				if !ok {
 					if !creating && slices.Contains(a.allowedQueueIDs, id) {
 						continue
 					}
-					if id == scopedTokenTestWrongTypeQueueID {
-						a.writeError(w, "Queue ID must identify a ClusterQueue, not a Cluster")
-					} else {
-						a.writeError(w, "Queue ID does not identify an available ClusterQueue: "+id)
-					}
+					a.writeError(w, "Queue ID does not identify an available ClusterQueue: "+id)
 					return
 				}
 				if queue.organizationID != "org-id" {

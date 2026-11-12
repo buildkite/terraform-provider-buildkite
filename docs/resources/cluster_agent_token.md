@@ -54,19 +54,19 @@ resource "buildkite_cluster_queue" "default" {
 }
 
 resource "buildkite_cluster_agent_token" "queue_bound_token" {
-  description       = "Agent token restricted to the default queue"
-  cluster_id        = buildkite_cluster.primary.id
-  permissions       = ["run_jobs", "upload_artifacts", "download_artifacts"]
-  allow_all_queues  = false
-  allowed_queue_ids = [buildkite_cluster_queue.default.id]
+  description         = "Agent token restricted to the default queue"
+  cluster_id          = buildkite_cluster.primary.id
+  permissions         = ["run_jobs", "upload_artifacts", "download_artifacts"]
+  allow_all_queues    = false
+  allowed_queue_uuids = [buildkite_cluster_queue.default.uuid]
 }
 
 resource "buildkite_cluster_agent_token" "no_queue_access" {
-  description       = "Agent token without queue access"
-  cluster_id        = buildkite_cluster.primary.id
-  permissions       = ["upload_steps"]
-  allow_all_queues  = false
-  allowed_queue_ids = []
+  description         = "Agent token without queue access"
+  cluster_id          = buildkite_cluster.primary.id
+  permissions         = ["upload_steps"]
+  allow_all_queues    = false
+  allowed_queue_uuids = []
 }
 
 resource "buildkite_cluster_agent_token" "expiring_token" {
@@ -86,9 +86,9 @@ resource "buildkite_cluster_agent_token" "expiring_token" {
 
 ### Optional
 
-- `allow_all_queues` (Boolean) Whether the token can access every queue in its cluster. Omitting this uses the API's default of `true` on creation and leaves the stored mode unchanged on updates, including when removing it from configuration. Creating a restricted token requires `false` and an explicit `allowed_queue_ids` set. To switch a token with queue bindings to all queues, explicitly set this to `true` and `allowed_queue_ids = []` together.
+- `allow_all_queues` (Boolean) Whether the token can access every queue in its cluster. Omitting this uses the API's default of `true` on creation and leaves the stored mode unchanged on updates, including when removing it from configuration. Creating a restricted token requires `false` and an explicit `allowed_queue_uuids` set. To switch a token with queue bindings to all queues, explicitly set this to `true` and `allowed_queue_uuids = []` together.
 - `allowed_ip_addresses` (List of String) A list of CIDR-notation IPv4 addresses from which agents can use this Cluster Agent Token.If not set, all IP addresses are allowed (the same as setting 0.0.0.0/0).
-- `allowed_queue_ids` (Set of String) The complete, unordered set of GraphQL queue IDs this token can access when `allow_all_queues` is `false`, such as `buildkite_cluster_queue.workers.id`. Queues must belong to the token's cluster. Omitting this uses the API's empty selection on creation and preserves the stored selection on updates, including when removing it from configuration. An empty set (`[]`) does not change the access mode: with `allow_all_queues = false` it denies every queue. Nonempty bindings cannot be combined with all-queues access. Configured bindings detect changes made outside Terraform. Bindings do not select an agent's queue: agents must target an allowed queue, or the cluster's default queue must be allowed when no queue tag is supplied.
+- `allowed_queue_uuids` (Set of String) The complete, unordered set of canonical lowercase queue UUIDs this token can access when `allow_all_queues` is `false`, such as `buildkite_cluster_queue.workers.uuid`. Queues must belong to the token's cluster. Omitting this uses the API's empty selection on creation and preserves the stored selection on updates, including when removing it from configuration. An empty set (`[]`) does not change the access mode: with `allow_all_queues = false` it denies every queue. Nonempty bindings cannot be combined with all-queues access. Configured bindings detect changes made outside Terraform. Bindings do not select an agent's queue: agents must target an allowed queue, or the cluster's default queue must be allowed when no queue tag is supplied.
 - `expires_at` (String) The time at which the token expires, in RFC 3339 format with up to millisecond precision (e.g. `2030-01-01T00:00:00Z`) and at least 10 minutes in the future. If not set, the token never expires. Changing this value replaces the token, since the expiry cannot be updated.
 - `permissions` (Set of String) The token's permission allow list. Values are validated by the Buildkite API. Omitting this grants the API's default permissions on creation and leaves the stored scope unchanged on updates, including when removing this attribute from configuration. An explicit empty set (`[]`) grants no permissions. Configured permissions are managed as an unordered set, and changes made outside Terraform are detected. When the API does not expose permissions, the last known scope is retained.
 

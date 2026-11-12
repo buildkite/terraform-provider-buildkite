@@ -36,19 +36,19 @@ resource "buildkite_cluster_queue" "default" {
 }
 
 resource "buildkite_cluster_agent_token" "queue_bound_token" {
-  description       = "Agent token restricted to the default queue"
-  cluster_id        = buildkite_cluster.primary.id
-  permissions       = ["run_jobs", "upload_artifacts", "download_artifacts"]
-  allow_all_queues  = false
-  allowed_queue_ids = [buildkite_cluster_queue.default.id]
+  description         = "Agent token restricted to the default queue"
+  cluster_id          = buildkite_cluster.primary.id
+  permissions         = ["run_jobs", "upload_artifacts", "download_artifacts"]
+  allow_all_queues    = false
+  allowed_queue_uuids = [buildkite_cluster_queue.default.uuid]
 }
 
 resource "buildkite_cluster_agent_token" "no_queue_access" {
-  description       = "Agent token without queue access"
-  cluster_id        = buildkite_cluster.primary.id
-  permissions       = ["upload_steps"]
-  allow_all_queues  = false
-  allowed_queue_ids = []
+  description         = "Agent token without queue access"
+  cluster_id          = buildkite_cluster.primary.id
+  permissions         = ["upload_steps"]
+  allow_all_queues    = false
+  allowed_queue_uuids = []
 }
 
 resource "buildkite_cluster_agent_token" "expiring_token" {

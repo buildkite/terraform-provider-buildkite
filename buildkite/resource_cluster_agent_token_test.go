@@ -2,6 +2,7 @@ package buildkite
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -79,6 +80,78 @@ func TestClusterTokenQueueModeToWrite(t *testing.T) {
 	}
 }
 
+func TestClusterTokenQueueIdsToWrite(t *testing.T) {
+	t.Parallel()
+	const uuid = "11111111-1111-4111-8111-111111111111"
+	id := base64.StdEncoding.EncodeToString([]byte("ClusterQueue---" + uuid))
+	for _, tc := range []struct {
+		name        string
+		configured  types.Set
+		want        string
+		expectError bool
+	}{
+		{name: "omitted", configured: types.SetNull(types.StringType), want: `{}`},
+		{name: "computed", configured: types.SetUnknown(types.StringType), want: `{}`},
+		{name: "empty", configured: types.SetValueMust(types.StringType, []attr.Value{}), want: `{"allowedQueueIds":[]}`},
+		{name: "UUID encoded locally", configured: types.SetValueMust(types.StringType, []attr.Value{types.StringValue(uuid)}), want: fmt.Sprintf(`{"allowedQueueIds":[%q]}`, id)},
+		{name: "GraphQL ID rejected", configured: types.SetValueMust(types.StringType, []attr.Value{types.StringValue(id)}), expectError: true},
+		{name: "malformed UUID rejected", configured: types.SetValueMust(types.StringType, []attr.Value{types.StringValue("not-a-uuid")}), expectError: true},
+		{name: "unknown element", configured: types.SetValueMust(types.StringType, []attr.Value{types.StringUnknown()}), expectError: true},
+		{name: "null element", configured: types.SetValueMust(types.StringType, []attr.Value{types.StringNull()}), expectError: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			ids, diags := clusterTokenQueueIdsToWrite(t.Context(), tc.configured)
+			if diags.HasError() != tc.expectError {
+				t.Fatalf("queue conversion diagnostics = %v, want error %t", diags, tc.expectError)
+			}
+			if tc.expectError {
+				return
+			}
+			body, err := json.Marshal(struct {
+				AllowedQueueIds *[]string `json:"allowedQueueIds,omitempty"`
+			}{AllowedQueueIds: ids})
+			if err != nil {
+				t.Fatal(err)
+			}
+			if string(body) != tc.want {
+				t.Errorf("mutation queue IDs = %s, want %s", body, tc.want)
+			}
+		})
+	}
+}
+
+func TestClusterTokenQueueUuidsFromAPI(t *testing.T) {
+	t.Parallel()
+	const uuid = "11111111-1111-4111-8111-111111111111"
+	id := base64.StdEncoding.EncodeToString([]byte("ClusterQueue---" + uuid))
+	selected := types.SetValueMust(types.StringType, []attr.Value{types.StringValue(uuid)})
+	for _, tc := range []struct {
+		name        string
+		remote      []string
+		want        types.Set
+		expectError bool
+	}{
+		{name: "unavailable", want: types.SetNull(types.StringType)},
+		{name: "empty", remote: []string{}, want: types.SetValueMust(types.StringType, []attr.Value{})},
+		{name: "decoded UUID", remote: []string{id}, want: selected},
+		{name: "unpadded ID", remote: []string{strings.TrimRight(id, "=")}, want: selected},
+		{name: "invalid base64", remote: []string{"!"}, expectError: true},
+		{name: "wrong node type", remote: []string{base64.StdEncoding.EncodeToString([]byte("Cluster---" + uuid))}, expectError: true},
+		{name: "invalid embedded UUID", remote: []string{base64.StdEncoding.EncodeToString([]byte("ClusterQueue---not-a-uuid"))}, expectError: true},
+		{name: "raw UUID is not an API queue ID", remote: []string{uuid}, expectError: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			got, diags := clusterTokenQueueUuidsFromAPI(t.Context(), tc.remote)
+			if diags.HasError() != tc.expectError {
+				t.Fatalf("queue decoding diagnostics = %v, want error %t", diags, tc.expectError)
+			}
+			if !tc.expectError && !got.Equal(tc.want) {
+				t.Errorf("queue UUIDs = %s, want %s", got, tc.want)
+			}
+		})
+	}
+}
+
 func TestClusterTokenPermissionsFromAPI(t *testing.T) {
 	t.Parallel()
 	restricted := types.SetValueMust(types.StringType, []attr.Value{types.StringValue("run_jobs")})
@@ -112,7 +185,9 @@ func TestClusterTokenQueueAccessFromAPI(t *testing.T) {
 	t.Parallel()
 	all, restricted := true, false
 	empty := types.SetValueMust(types.StringType, []attr.Value{})
-	selected := types.SetValueMust(types.StringType, []attr.Value{types.StringValue("queue-id")})
+	const uuid = "11111111-1111-4111-8111-111111111111"
+	id := base64.StdEncoding.EncodeToString([]byte("ClusterQueue---" + uuid))
+	selected := types.SetValueMust(types.StringType, []attr.Value{types.StringValue(uuid)})
 	for _, tc := range []struct {
 		name        string
 		remoteMode  *bool
@@ -134,7 +209,7 @@ func TestClusterTokenQueueAccessFromAPI(t *testing.T) {
 			wantMode: types.BoolValue(false), wantIds: empty,
 		},
 		{
-			name: "binding IDs are not resolved or filtered", remoteMode: &restricted, remoteIds: []string{"queue-id"},
+			name: "binding UUIDs are decoded without a lookup", remoteMode: &restricted, remoteIds: []string{id},
 			currentMode: types.BoolNull(), currentIds: types.SetNull(types.StringType),
 			wantMode: types.BoolValue(false), wantIds: selected,
 		},
@@ -165,12 +240,22 @@ func TestClusterTokenQueueAccessFromAPI(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			state := clusterAgentTokenResourceModel{AllowAllQueues: tc.currentMode, AllowedQueueIds: tc.currentIds}
+			state := clusterAgentTokenResourceModel{AllowAllQueues: tc.currentMode, AllowedQueueUuids: tc.currentIds}
 			diags := state.setQueueAccess(t.Context(), tc.remoteMode, tc.remoteIds)
-			if diags.HasError() || !state.AllowAllQueues.Equal(tc.wantMode) || !state.AllowedQueueIds.Equal(tc.wantIds) || (diags.WarningsCount() != 0) != tc.wantWarning {
-				t.Errorf("queue access = %s, %s, diagnostics = %v; want %s, %s, warning %t", state.AllowAllQueues, state.AllowedQueueIds, diags, tc.wantMode, tc.wantIds, tc.wantWarning)
+			if diags.HasError() || !state.AllowAllQueues.Equal(tc.wantMode) || !state.AllowedQueueUuids.Equal(tc.wantIds) || (diags.WarningsCount() != 0) != tc.wantWarning {
+				t.Errorf("queue access = %s, %s, diagnostics = %v; want %s, %s, warning %t", state.AllowAllQueues, state.AllowedQueueUuids, diags, tc.wantMode, tc.wantIds, tc.wantWarning)
 			}
 		})
+	}
+}
+
+func TestClusterTokenQueueAccessRejectsInvalidAPIIds(t *testing.T) {
+	selected := types.SetValueMust(types.StringType, []attr.Value{types.StringValue("11111111-1111-4111-8111-111111111111")})
+	state := clusterAgentTokenResourceModel{AllowAllQueues: types.BoolValue(true), AllowedQueueUuids: selected}
+	restricted := false
+	diags := state.setQueueAccess(t.Context(), &restricted, []string{"invalid-id"})
+	if !diags.HasError() || !state.AllowAllQueues.ValueBool() || !state.AllowedQueueUuids.Equal(selected) {
+		t.Fatalf("invalid API queue ID changed known access: mode=%s UUIDs=%s diagnostics=%v", state.AllowAllQueues, state.AllowedQueueUuids, diags)
 	}
 }
 

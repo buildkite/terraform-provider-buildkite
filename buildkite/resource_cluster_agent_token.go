@@ -2,11 +2,14 @@ package buildkite
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"log"
 	"strings"
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-framework-validators/setvalidator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -36,7 +39,7 @@ type clusterAgentTokenResourceModel struct {
 	ExpiresAt          types.String `tfsdk:"expires_at"`
 	Permissions        types.Set    `tfsdk:"permissions"`
 	AllowAllQueues     types.Bool   `tfsdk:"allow_all_queues"`
-	AllowedQueueIds    types.Set    `tfsdk:"allowed_queue_ids"`
+	AllowedQueueUuids  types.Set    `tfsdk:"allowed_queue_uuids"`
 }
 
 func newClusterAgentTokenResource() resource.Resource {
@@ -135,23 +138,26 @@ func (ct *clusterAgentToken) Schema(_ context.Context, _ resource.SchemaRequest,
 				Computed: true,
 				MarkdownDescription: "Whether the token can access every queue in its cluster. " +
 					"Omitting this uses the API's default of `true` on creation and leaves the stored mode unchanged on updates, including when removing it from configuration. " +
-					"Creating a restricted token requires `false` and an explicit `allowed_queue_ids` set. " +
-					"To switch a token with queue bindings to all queues, explicitly set this to `true` and `allowed_queue_ids = []` together.",
+					"Creating a restricted token requires `false` and an explicit `allowed_queue_uuids` set. " +
+					"To switch a token with queue bindings to all queues, explicitly set this to `true` and `allowed_queue_uuids = []` together.",
 				PlanModifiers: []planmodifier.Bool{
 					boolplanmodifier.UseStateForUnknown(),
 				},
 			},
-			"allowed_queue_ids": schema.SetAttribute{
+			"allowed_queue_uuids": schema.SetAttribute{
 				Optional:    true,
 				Computed:    true,
 				ElementType: types.StringType,
-				MarkdownDescription: "The complete, unordered set of GraphQL queue IDs this token can access when `allow_all_queues` is `false`, such as `buildkite_cluster_queue.workers.id`. " +
+				MarkdownDescription: "The complete, unordered set of canonical lowercase queue UUIDs this token can access when `allow_all_queues` is `false`, such as `buildkite_cluster_queue.workers.uuid`. " +
 					"Queues must belong to the token's cluster. Omitting this uses the API's empty selection on creation and preserves the stored selection on updates, including when removing it from configuration. " +
 					"An empty set (`[]`) does not change the access mode: with `allow_all_queues = false` it denies every queue. " +
 					"Nonempty bindings cannot be combined with all-queues access. Configured bindings detect changes made outside Terraform. " +
 					"Bindings do not select an agent's queue: agents must target an allowed queue, or the cluster's default queue must be allowed when no queue tag is supplied.",
 				PlanModifiers: []planmodifier.Set{
 					setplanmodifier.UseStateForUnknown(),
+				},
+				Validators: []validator.Set{
+					setvalidator.ValueStringsAre(stringvalidator.RegexMatches(importUuidRegex, "must be a canonical lowercase queue UUID")),
 				},
 			},
 		},
@@ -170,7 +176,7 @@ func (ct *clusterAgentToken) Create(ctx context.Context, req resource.CreateRequ
 
 	permissions, diags := clusterTokenStringSetToWrite(ctx, plan.Permissions)
 	resp.Diagnostics.Append(diags...)
-	allowedQueueIds, diags := clusterTokenStringSetToWrite(ctx, plan.AllowedQueueIds)
+	allowedQueueIds, diags := clusterTokenQueueIdsToWrite(ctx, plan.AllowedQueueUuids)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -233,7 +239,7 @@ func (ct *clusterAgentToken) Create(ctx context.Context, req resource.CreateRequ
 	state.Permissions, diags = clusterTokenPermissionsFromAPI(ctx, r.ClusterAgentTokenCreate.ClusterAgentToken.Permissions, plan.Permissions)
 	resp.Diagnostics.Append(diags...)
 	state.AllowAllQueues = plan.AllowAllQueues
-	state.AllowedQueueIds = plan.AllowedQueueIds
+	state.AllowedQueueUuids = plan.AllowedQueueUuids
 	resp.Diagnostics.Append(state.setQueueAccess(ctx, r.ClusterAgentTokenCreate.ClusterAgentToken.AllowAllQueues, r.ClusterAgentTokenCreate.ClusterAgentToken.AllowedQueueIds)...)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
@@ -319,8 +325,8 @@ func (ct *clusterAgentToken) Update(ctx context.Context, req resource.UpdateRequ
 		permissions = nil
 	}
 	resp.Diagnostics.Append(diags...)
-	allowedQueueIds, diags := clusterTokenStringSetToWrite(ctx, plan.AllowedQueueIds)
-	if config.AllowedQueueIds.IsNull() {
+	allowedQueueIds, diags := clusterTokenQueueIdsToWrite(ctx, plan.AllowedQueueUuids)
+	if config.AllowedQueueUuids.IsNull() {
 		allowedQueueIds = nil
 	}
 	resp.Diagnostics.Append(diags...)
@@ -374,7 +380,7 @@ func (ct *clusterAgentToken) Update(ctx context.Context, req resource.UpdateRequ
 	state.Permissions, diags = clusterTokenPermissionsFromAPI(ctx, r.ClusterAgentTokenUpdate.ClusterAgentToken.Permissions, plan.Permissions)
 	resp.Diagnostics.Append(diags...)
 	state.AllowAllQueues = plan.AllowAllQueues
-	state.AllowedQueueIds = plan.AllowedQueueIds
+	state.AllowedQueueUuids = plan.AllowedQueueUuids
 	resp.Diagnostics.Append(state.setQueueAccess(ctx, r.ClusterAgentTokenUpdate.ClusterAgentToken.AllowAllQueues, r.ClusterAgentTokenUpdate.ClusterAgentToken.AllowedQueueIds)...)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
@@ -400,6 +406,43 @@ func clusterTokenQueueModeToWrite(mode types.Bool) *bool {
 	return mode.ValueBoolPointer()
 }
 
+func clusterTokenQueueIdsToWrite(ctx context.Context, configured types.Set) (*[]string, diag.Diagnostics) {
+	uuids, diags := clusterTokenStringSetToWrite(ctx, configured)
+	if diags.HasError() || uuids == nil {
+		return nil, diags
+	}
+	ids := make([]string, 0, len(*uuids))
+	for _, uuid := range *uuids {
+		if !importUuidRegex.MatchString(uuid) {
+			diags.AddAttributeError(path.Root("allowed_queue_uuids"), "Invalid queue UUID", "Queue bindings must be canonical lowercase UUIDs.")
+			return nil, diags
+		}
+		ids = append(ids, base64.StdEncoding.EncodeToString([]byte("ClusterQueue---"+uuid)))
+	}
+	return &ids, diags
+}
+
+func clusterTokenQueueUuidsFromAPI(ctx context.Context, ids []string) (types.Set, diag.Diagnostics) {
+	if ids == nil {
+		return types.SetNull(types.StringType), nil
+	}
+	uuids := make([]string, 0, len(ids))
+	for _, id := range ids {
+		decoded, err := base64.StdEncoding.DecodeString(id)
+		if err != nil {
+			decoded, err = base64.RawStdEncoding.DecodeString(id)
+		}
+		uuid, ok := strings.CutPrefix(string(decoded), "ClusterQueue---")
+		if err != nil || !ok || !importUuidRegex.MatchString(uuid) {
+			var diags diag.Diagnostics
+			diags.AddError("Unable to read Cluster Agent Token queue bindings", "The API returned a queue binding that is not a ClusterQueue GraphQL ID containing a canonical lowercase UUID.")
+			return types.SetNull(types.StringType), diags
+		}
+		uuids = append(uuids, uuid)
+	}
+	return types.SetValueFrom(ctx, types.StringType, uuids)
+}
+
 func clusterTokenPermissionsFromAPI(ctx context.Context, remote []string, current types.Set) (types.Set, diag.Diagnostics) {
 	if remote == nil {
 		if current.IsUnknown() {
@@ -417,6 +460,15 @@ func clusterTokenPermissionsFromAPI(ctx context.Context, remote []string, curren
 
 func (state *clusterAgentTokenResourceModel) setQueueAccess(ctx context.Context, allowAllQueues *bool, allowedQueueIds []string) diag.Diagnostics {
 	var diags diag.Diagnostics
+	var queueUuids types.Set
+	if allowedQueueIds != nil {
+		var setDiags diag.Diagnostics
+		queueUuids, setDiags = clusterTokenQueueUuidsFromAPI(ctx, allowedQueueIds)
+		diags.Append(setDiags...)
+		if diags.HasError() {
+			return diags
+		}
+	}
 	unavailable := false
 	if allowAllQueues != nil {
 		state.AllowAllQueues = types.BoolValue(*allowAllQueues)
@@ -426,12 +478,10 @@ func (state *clusterAgentTokenResourceModel) setQueueAccess(ctx context.Context,
 		unavailable = true
 	}
 	if allowedQueueIds != nil {
-		var setDiags diag.Diagnostics
-		state.AllowedQueueIds, setDiags = types.SetValueFrom(ctx, types.StringType, allowedQueueIds)
-		diags.Append(setDiags...)
-	} else if state.AllowedQueueIds.IsUnknown() {
-		state.AllowedQueueIds = types.SetNull(types.StringType)
-	} else if !state.AllowedQueueIds.IsNull() {
+		state.AllowedQueueUuids = queueUuids
+	} else if state.AllowedQueueUuids.IsUnknown() {
+		state.AllowedQueueUuids = types.SetNull(types.StringType)
+	} else if !state.AllowedQueueUuids.IsNull() {
 		unavailable = true
 	}
 	if unavailable {
