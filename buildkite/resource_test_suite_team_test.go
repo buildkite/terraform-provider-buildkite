@@ -7,7 +7,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
@@ -33,7 +32,7 @@ func TestAccNonAdminTestSuiteTeam(t *testing.T) {
 			default_branch = "main"
 			team_owner_id = data.buildkite_team.owner.id
 		}
-	`, "nonadmin-suite-team-"+acctest.RandString(12))
+	`, testAccResourceName()+"-nonadmin-suite-team")
 	config := func(access string) string {
 		return baseConfig + fmt.Sprintf(`
 			resource "buildkite_test_suite_team" "secondary" {
@@ -177,21 +176,21 @@ func TestAccBuildkiteTestSuiteTeamResource(t *testing.T) {
 		}
 
 		resource "buildkite_team" "ownerteam" {
-			name = "Test Suite Owner Team %s"
+			name = "%s-owner-team"
 			default_team = false
 			privacy = "VISIBLE"
 			default_member_role = "MAINTAINER"
 		}
 
 		resource "buildkite_team" "newteam" {
-			name = "Test Suite New Team %s"
+			name = "%s-new-team"
 			default_team = false
 			privacy = "VISIBLE"
 			default_member_role = "MAINTAINER"
 		}
 
 		resource "buildkite_test_suite" "testsuite" {
-			name = "Test Suite %s"
+			name = "%s-suite"
 			default_branch = "main"
 			team_owner_id = buildkite_team.ownerteam.id
 		}
@@ -205,11 +204,11 @@ func TestAccBuildkiteTestSuiteTeamResource(t *testing.T) {
 	}
 
 	t.Run("moves a test suite team to another team by replacing it", func(t *testing.T) {
-		ownerTeamName := acctest.RandString(12)
-		newTeamName := acctest.RandString(12)
+		ownerTeamName := testAccResourceName()
+		newTeamName := testAccResourceName()
 		thirdTeam := fmt.Sprintf(`
 		resource "buildkite_team" "thirdteam" {
-			name = "Test Suite Third Team %s"
+			name = "%s-third-team"
 			default_team = false
 			privacy = "VISIBLE"
 			default_member_role = "MAINTAINER"
@@ -239,8 +238,8 @@ func TestAccBuildkiteTestSuiteTeamResource(t *testing.T) {
 	})
 
 	t.Run("removes a test suite team", func(t *testing.T) {
-		ownerTeamName := acctest.RandString(12)
-		newTeamName := acctest.RandString(12)
+		ownerTeamName := testAccResourceName()
+		newTeamName := testAccResourceName()
 		var tr teamResourceModel
 		var ts getTestSuiteSuite
 		var tst testSuiteTeamModel
@@ -269,8 +268,8 @@ func TestAccBuildkiteTestSuiteTeamResource(t *testing.T) {
 	})
 
 	t.Run("test suite team is recreated if removed", func(t *testing.T) {
-		ownerTeamName := acctest.RandString(12)
-		newTeamName := acctest.RandString(12)
+		ownerTeamName := testAccResourceName()
+		newTeamName := testAccResourceName()
 
 		check := func(s *terraform.State) error {
 			teamSuite := s.RootModule().Resources["buildkite_test_suite_team.teamsuite"]

@@ -32,7 +32,7 @@ func TestAccBuildkitePipelinesDatasource(t *testing.T) {
 	}
 
 	t.Run("pipelines data source can be loaded with defaults", func(t *testing.T) {
-		name := acctest.RandString(12)
+		name := testAccResourceName()
 
 		resource.ParallelTest(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },
@@ -75,7 +75,7 @@ func TestAccBuildkitePipelinesDatasource(t *testing.T) {
 	})
 
 	t.Run("pipelines data source can be filtered", func(t *testing.T) {
-		name := acctest.RandString(12)
+		name := testAccResourceName()
 
 		resource.ParallelTest(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },

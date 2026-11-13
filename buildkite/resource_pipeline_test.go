@@ -19,7 +19,6 @@ import (
 	fwresource "github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-go/tftypes"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
@@ -327,7 +326,7 @@ func testAccCheckPipelineDestroyFunc(s *terraform.State) error {
 }
 
 func TestAccNonAdminPipeline(t *testing.T) {
-	pipelineName := "nonadmin-" + acctest.RandString(12)
+	pipelineName := testAccResourceName() + "-nonadmin"
 	config := func(description string) string {
 		return testAccPipelineConfigWithTeam(pipelineName, description) + `
 			data "buildkite_pipeline" "pipeline" {
@@ -428,7 +427,7 @@ func TestAccNonAdminPipeline(t *testing.T) {
 func TestAccNonAdminPipelineTemplate(t *testing.T) {
 	const address = "buildkite_pipeline.pipeline"
 	const explicitSteps = "steps:\n  - block: Template acceptance control"
-	pipelineName := "nonadmin-template-" + acctest.RandString(12)
+	pipelineName := testAccResourceName() + "-nonadmin-template"
 	teamSlug := os.Getenv("BUILDKITE_NONADMIN_TEAM_SLUG")
 	if teamSlug == "" {
 		teamSlug = "everyone"
@@ -569,8 +568,8 @@ func TestAccNonAdminPipelineTemplate(t *testing.T) {
 }
 
 func TestAccNonAdminPipelineRESTSettings(t *testing.T) {
-	pipelineName := "nonadmin-rest-" + acctest.RandString(12)
-	slug := "custom-" + acctest.RandString(12)
+	pipelineName := testAccResourceName() + "-nonadmin-rest"
+	slug := testAccResourceName() + "-custom"
 	renamedSlug := slug + "-renamed"
 	teamSlug := os.Getenv("BUILDKITE_NONADMIN_TEAM_SLUG")
 	if teamSlug == "" {
@@ -711,7 +710,7 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 
 	t.Run("create pipeline with only required attributes", func(t *testing.T) {
 		var pipeline getPipelinePipeline
-		pipelineName := acctest.RandString(12)
+		pipelineName := testAccResourceName()
 		config := fmt.Sprintf(`
 			resource "buildkite_pipeline" "pipeline" {
 				name = "%s"
@@ -783,7 +782,7 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 
 	t.Run("update pipeline with only required attributes", func(t *testing.T) {
 		var pipeline getPipelinePipeline
-		pipelineName := acctest.RandString(12)
+		pipelineName := testAccResourceName()
 
 		resource.ParallelTest(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },
@@ -833,8 +832,8 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 
 	t.Run("set user defined slug for existing pipeline", func(t *testing.T) {
 		var pipeline getPipelinePipeline
-		pipelineName := acctest.RandString(12)
-		slugName := strings.ToLower(acctest.RandString(12))
+		pipelineName := testAccResourceName()
+		slugName := strings.ToLower(testAccResourceName())
 
 		resource.ParallelTest(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },
@@ -886,9 +885,9 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 
 	t.Run("remove user defined slug from existing pipeline", func(t *testing.T) {
 		var pipeline getPipelinePipeline
-		pipelineId := acctest.RandString(12)
-		pipelineName := fmt.Sprintf("TesT --- PipeLine - %s", pipelineId)
-		slugName := strings.ToLower(acctest.RandString(12))
+		pipelineId := testAccResourceName()
+		pipelineName := fmt.Sprintf("%s - TesT --- PipeLine", pipelineId)
+		slugName := strings.ToLower(testAccResourceName())
 
 		resource.ParallelTest(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },
@@ -933,7 +932,7 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 							return nil
 						},
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "name", pipelineName),
-						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "slug", fmt.Sprintf("test-pipeline-%s", strings.ToLower(pipelineId))),
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "slug", fmt.Sprintf("%s-test-pipeline", strings.ToLower(pipelineId))),
 						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "steps", defaultSteps),
 					),
 				},
@@ -943,11 +942,11 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 
 	t.Run("create pipeline with a pipeline template", func(t *testing.T) {
 		var pipeline getPipelinePipeline
-		pipelineName := acctest.RandString(12)
-		templateName := acctest.RandString(12)
+		pipelineName := testAccResourceName()
+		templateName := testAccResourceName()
 		config := fmt.Sprintf(`
 			resource "buildkite_pipeline_template" "template_foo" {
-				name = "Template %s"
+				name = "%s-template"
 				configuration = "steps:\n  - label: \":pipeline:\"\n    command: \"buildkite-agent pipeline upload .buildkite/dev.yaml\""
 				available = true
 			}
@@ -1014,7 +1013,7 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 
 	t.Run("create pipeline with empty attributes", func(t *testing.T) {
 		var pipeline *getPipelinePipeline
-		pipelineName := acctest.RandString(12)
+		pipelineName := testAccResourceName()
 		config := fmt.Sprintf(`
 			resource "buildkite_pipeline" "pipeline" {
 				name = "%s"
@@ -1064,8 +1063,8 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 	})
 
 	t.Run("manages github webhooks", func(t *testing.T) {
-		pipelineName := acctest.RandString(12)
-		clusterName := acctest.RandString(12)
+		pipelineName := testAccResourceName()
+		clusterName := testAccResourceName()
 		config := func(enabled bool) string {
 			return fmt.Sprintf(`
 				resource "buildkite_cluster" "cluster" {
@@ -1133,8 +1132,8 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 	})
 
 	t.Run("create pipeline setting all attributes", func(t *testing.T) {
-		pipelineName := acctest.RandString(12)
-		clusterName := acctest.RandString(12)
+		pipelineName := testAccResourceName()
+		clusterName := testAccResourceName()
 		config := fmt.Sprintf(`
 			resource "buildkite_cluster" "cluster" {
 				name = "%s"
@@ -1307,8 +1306,8 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 	})
 
 	t.Run("provider_settings left out of the configuration keep the API defaults", func(t *testing.T) {
-		pipelineName := acctest.RandString(12)
-		clusterName := acctest.RandString(12)
+		pipelineName := testAccResourceName()
+		clusterName := testAccResourceName()
 		config := func(extra string) string {
 			return fmt.Sprintf(`
 				resource "buildkite_cluster" "cluster" {
@@ -1354,8 +1353,8 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 	})
 
 	t.Run("provider_settings without comment match modes settles after apply", func(t *testing.T) {
-		pipelineName := acctest.RandString(12)
-		clusterName := acctest.RandString(12)
+		pipelineName := testAccResourceName()
+		clusterName := testAccResourceName()
 
 		resource.ParallelTest(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },
@@ -1393,8 +1392,8 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 
 	t.Run("update pipeline setting all attributes", func(t *testing.T) {
 		var pipeline getPipelinePipeline
-		pipelineName := acctest.RandString(12)
-		clusterName := acctest.RandString(12)
+		pipelineName := testAccResourceName()
+		clusterName := testAccResourceName()
 
 		resource.ParallelTest(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },
@@ -1534,9 +1533,9 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 	})
 
 	t.Run("changing cluster_id updates cluster_name without inconsistency error", func(t *testing.T) {
-		pipelineName := acctest.RandString(12)
-		clusterNameA := acctest.RandString(12)
-		clusterNameB := acctest.RandString(12)
+		pipelineName := testAccResourceName()
+		clusterNameA := testAccResourceName()
+		clusterNameB := testAccResourceName()
 
 		resource.ParallelTest(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },
@@ -1583,7 +1582,7 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 	})
 
 	t.Run("pipeline is recreated if removed", func(t *testing.T) {
-		pipelineName := acctest.RandString(12)
+		pipelineName := testAccResourceName()
 		config := fmt.Sprintf(`
 			resource "buildkite_pipeline" "pipeline" {
 				name = "%s"
@@ -1617,7 +1616,7 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 	})
 
 	t.Run("pipeline can be deleted", func(t *testing.T) {
-		pipelineName := acctest.RandString(12)
+		pipelineName := testAccResourceName()
 
 		resource.ParallelTest(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },
@@ -1637,8 +1636,8 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 	})
 
 	t.Run("pipeline with cluster can be deleted", func(t *testing.T) {
-		pipelineName := acctest.RandString(12)
-		clusterName := acctest.RandString(12)
+		pipelineName := testAccResourceName()
+		clusterName := testAccResourceName()
 
 		resource.ParallelTest(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },
@@ -1662,7 +1661,7 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 	})
 
 	t.Run("empty provider_settings updated from v0 to v1", func(t *testing.T) {
-		pipelineName := acctest.RandString(12)
+		pipelineName := testAccResourceName()
 
 		config := fmt.Sprintf(`
 			resource "buildkite_pipeline" "pipeline" {
@@ -1716,7 +1715,7 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 	})
 
 	t.Run("filled provider_settings updated from v0 to v1", func(t *testing.T) {
-		pipelineName := acctest.RandString(12)
+		pipelineName := testAccResourceName()
 
 		config := fmt.Sprintf(`
 			resource "buildkite_pipeline" "pipeline" {
@@ -1827,8 +1826,8 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 	})
 
 	t.Run("provider_settings attributes can be removed without state change", func(t *testing.T) {
-		pipelineName := acctest.RandString(12)
-		clusterName := acctest.RandString(12)
+		pipelineName := testAccResourceName()
+		clusterName := testAccResourceName()
 
 		resource.ParallelTest(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },
@@ -1878,7 +1877,7 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 	})
 
 	t.Run("provider_settings produces empty plan on re-apply", func(t *testing.T) {
-		pipelineName := acctest.RandString(12)
+		pipelineName := testAccResourceName()
 		config := fmt.Sprintf(`
 			resource "buildkite_pipeline" "pipeline" {
 				name = "%s"
@@ -1908,8 +1907,8 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 	})
 
 	t.Run("create in template mode and change template configuration afterwards", func(t *testing.T) {
-		templateName := acctest.RandString(12)
-		pipelineName := acctest.RandString(12)
+		templateName := testAccResourceName()
+		pipelineName := testAccResourceName()
 
 		resource.ParallelTest(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },
@@ -1960,8 +1959,8 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 	})
 
 	t.Run("create in template mode and change to explicit steps mode", func(t *testing.T) {
-		templateName := acctest.RandString(12)
-		pipelineName := acctest.RandString(12)
+		templateName := testAccResourceName()
+		pipelineName := testAccResourceName()
 
 		resource.ParallelTest(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },
@@ -2006,8 +2005,8 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 	})
 
 	t.Run("create in template mode and change to implicit steps mode", func(t *testing.T) {
-		templateName := acctest.RandString(12)
-		pipelineName := acctest.RandString(12)
+		templateName := testAccResourceName()
+		pipelineName := testAccResourceName()
 
 		resource.ParallelTest(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },
@@ -2051,8 +2050,8 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 	})
 
 	t.Run("create in implicit steps mode and change to template mode", func(t *testing.T) {
-		templateName := acctest.RandString(12)
-		pipelineName := acctest.RandString(12)
+		templateName := testAccResourceName()
+		pipelineName := testAccResourceName()
 
 		resource.ParallelTest(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },
@@ -2094,8 +2093,8 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 	})
 
 	t.Run("create in explicit steps mode and change to template mode", func(t *testing.T) {
-		templateName := acctest.RandString(12)
-		pipelineName := acctest.RandString(12)
+		templateName := testAccResourceName()
+		pipelineName := testAccResourceName()
 
 		resource.ParallelTest(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },
@@ -2138,7 +2137,7 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 	})
 
 	t.Run("reject conditional expressions in branch filter fields", func(t *testing.T) {
-		pipelineName := acctest.RandString(12)
+		pipelineName := testAccResourceName()
 
 		resource.ParallelTest(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },
@@ -2223,7 +2222,7 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 	})
 
 	t.Run("validate regex patterns in filter_condition", func(t *testing.T) {
-		pipelineName := acctest.RandString(12)
+		pipelineName := testAccResourceName()
 
 		resource.ParallelTest(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },
@@ -2284,7 +2283,7 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 	})
 
 	t.Run("creates pipeline with PUBLIC visibility", func(t *testing.T) {
-		pipelineName := acctest.RandString(12)
+		pipelineName := testAccResourceName()
 		config := fmt.Sprintf(`
 			resource "buildkite_pipeline" "pipeline" {
 				name = "%s"
@@ -2320,7 +2319,7 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 	})
 
 	t.Run("creates pipeline with PRIVATE visibility", func(t *testing.T) {
-		pipelineName := acctest.RandString(12)
+		pipelineName := testAccResourceName()
 		config := fmt.Sprintf(`
 			resource "buildkite_pipeline" "pipeline" {
 				name = "%s"
@@ -2356,7 +2355,7 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 	})
 
 	t.Run("creates pipeline with default visibility when not specified", func(t *testing.T) {
-		pipelineName := acctest.RandString(12)
+		pipelineName := testAccResourceName()
 		config := fmt.Sprintf(`
 			resource "buildkite_pipeline" "pipeline" {
 				name = "%s"
@@ -2391,7 +2390,7 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 	})
 
 	t.Run("updates pipeline visibility from PRIVATE to PUBLIC", func(t *testing.T) {
-		pipelineName := acctest.RandString(12)
+		pipelineName := testAccResourceName()
 		configPrivate := fmt.Sprintf(`
 			resource "buildkite_pipeline" "pipeline" {
 				name = "%s"
@@ -2445,7 +2444,7 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 	})
 
 	t.Run("rejects invalid visibility values", func(t *testing.T) {
-		pipelineName := acctest.RandString(12)
+		pipelineName := testAccResourceName()
 		config := fmt.Sprintf(`
 			resource "buildkite_pipeline" "pipeline" {
 				name = "%s"
@@ -2467,7 +2466,7 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 	})
 
 	t.Run("creates pipeline with archived = true", func(t *testing.T) {
-		pipelineName := acctest.RandString(12)
+		pipelineName := testAccResourceName()
 		config := fmt.Sprintf(`
 			resource "buildkite_pipeline" "pipeline" {
 				name = "%s"
@@ -2503,7 +2502,7 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 	})
 
 	t.Run("updates pipeline archived state", func(t *testing.T) {
-		pipelineName := acctest.RandString(12)
+		pipelineName := testAccResourceName()
 		configUnarchived := fmt.Sprintf(`
 			resource "buildkite_pipeline" "pipeline" {
 				name = "%s"
@@ -2582,7 +2581,7 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 		// Regression test: archiving must happen after the provider_settings REST
 		// PATCH, otherwise the API rejects it with "Cannot update an archived
 		// pipeline".
-		pipelineName := acctest.RandString(12)
+		pipelineName := testAccResourceName()
 		configFor := func(archived bool) string {
 			return fmt.Sprintf(`
 				resource "buildkite_pipeline" "pipeline" {
@@ -2636,7 +2635,7 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 	})
 
 	t.Run("creates archived pipeline with provider_settings", func(t *testing.T) {
-		pipelineName := acctest.RandString(12)
+		pipelineName := testAccResourceName()
 		config := fmt.Sprintf(`
 			resource "buildkite_pipeline" "pipeline" {
 				name = "%s"

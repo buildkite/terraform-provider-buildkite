@@ -19,7 +19,6 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/hashicorp/terraform-plugin-go/tftypes"
 
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
@@ -324,7 +323,7 @@ func TestTestSuiteStateManagementRejectedUpdate(t *testing.T) {
 
 func TestAccNonAdminTestSuite(t *testing.T) {
 	const address = "buildkite_test_suite.temporary"
-	name := "nonadmin-suite-" + acctest.RandString(12)
+	name := testAccResourceName() + "-nonadmin-suite"
 	baseConfig := fmt.Sprintf(`
 		data "buildkite_team" "owner" {
 			slug = %q
@@ -455,13 +454,13 @@ func TestAccBuildkiteTestSuiteResource(t *testing.T) {
 		}
 
 		resource "buildkite_team" "team" {
-			name = "test suite team %s"
+			name = "%s-suite-team"
 			default_team = false
 			privacy = "VISIBLE"
 			default_member_role = "MAINTAINER"
 		}
 		resource "buildkite_test_suite" "suite" {
-			name = "test suite %s"
+			name = "%s-suite"
 			default_branch = "main"
 			team_owner_id = resource.buildkite_team.team.id
 		}
@@ -480,13 +479,13 @@ func TestAccBuildkiteTestSuiteResource(t *testing.T) {
 		}
 
 		resource "buildkite_team" "team" {
-			name = "test suite team %s"
+			name = "%s-suite-team"
 			default_team = false
 			privacy = "VISIBLE"
 			default_member_role = "MAINTAINER"
 		}
 		resource "buildkite_test_suite" "suite" {
-			name = "test suite %s"
+			name = "%s-suite"
 			default_branch = "main"
 			emoji = ":buildkite:"
 			team_owner_id = resource.buildkite_team.team.id
@@ -506,13 +505,13 @@ func TestAccBuildkiteTestSuiteResource(t *testing.T) {
 		}
 
 		resource "buildkite_team" "team" {
-			name = "test suite team %s"
+			name = "%s-suite-team"
 			default_team = false
 			privacy = "VISIBLE"
 			default_member_role = "MAINTAINER"
 		}
 		resource "buildkite_test_suite" "suite" {
-			name = "test suite %s"
+			name = "%s-suite"
 			default_branch = "main"
 			emoji = ":buildkite:"
 			application_name = "%s"
@@ -535,19 +534,19 @@ func TestAccBuildkiteTestSuiteResource(t *testing.T) {
 		}
 
 		resource "buildkite_team" "ateam" {
-			name = "a team %s-a"
+			name = "%s-team-a"
 			default_team = false
 			privacy = "VISIBLE"
 			default_member_role = "MAINTAINER"
 		}
 		resource "buildkite_team" "bteam" {
-			name = "b team %s-b"
+			name = "%s-team-b"
 			default_team = false
 			privacy = "VISIBLE"
 			default_member_role = "MAINTAINER"
 		}
 		resource "buildkite_test_suite" "suite" {
-			name = "test suite update %s"
+			name = "%s-suite-update"
 			default_branch = "main"
 			team_owner_id = resource.buildkite_team.bteam.id
 		}
@@ -566,19 +565,19 @@ func TestAccBuildkiteTestSuiteResource(t *testing.T) {
 		}
 
 		resource "buildkite_team" "ateam" {
-			name = "a team %s-a"
+			name = "%s-team-a"
 			default_team = false
 			privacy = "VISIBLE"
 			default_member_role = "MAINTAINER"
 		}
 		resource "buildkite_team" "bteam" {
-			name = "b team %s-b"
+			name = "%s-team-b"
 			default_team = false
 			privacy = "VISIBLE"
 			default_member_role = "MAINTAINER"
 		}
 		resource "buildkite_test_suite" "suite" {
-			name = "test suite update %s"
+			name = "%s-suite-update"
 			default_branch = "main"
 			team_owner_id = resource.buildkite_team.bteam.id
 		}
@@ -592,17 +591,17 @@ func TestAccBuildkiteTestSuiteResource(t *testing.T) {
 
 	t.Run("creates a test suite with an emoji set", func(t *testing.T) {
 		var suite getTestSuiteSuite
-		randName := acctest.RandString(10)
+		randName := testAccResourceName()
 
 		check := resource.ComposeAggregateTestCheckFunc(
 			checkTestSuiteExists("buildkite_test_suite.suite", &suite),
-			checkTestSuiteRemoteValue(&suite, "Name", fmt.Sprintf("test suite %s", randName)),
+			checkTestSuiteRemoteValue(&suite, "Name", fmt.Sprintf("%s-suite", randName)),
 			checkTestSuiteRemoteValue(&suite, "DefaultBranch", "main"),
 			resource.TestCheckResourceAttrSet("buildkite_test_suite.suite", "id"),
 			resource.TestCheckResourceAttrSet("buildkite_test_suite.suite", "api_token"),
 			resource.TestCheckResourceAttr("buildkite_test_suite.suite", "default_branch", "main"),
 			resource.TestCheckResourceAttr("buildkite_test_suite.suite", "emoji", ":buildkite:"),
-			resource.TestCheckResourceAttr("buildkite_test_suite.suite", "name", fmt.Sprintf("test suite %s", randName)),
+			resource.TestCheckResourceAttr("buildkite_test_suite.suite", "name", fmt.Sprintf("%s-suite", randName)),
 			resource.TestCheckResourceAttrSet("buildkite_test_suite.suite", "team_owner_id"),
 		)
 
@@ -621,7 +620,7 @@ func TestAccBuildkiteTestSuiteResource(t *testing.T) {
 
 	t.Run("creates and updates a test suite with all attributes set", func(t *testing.T) {
 		var suite getTestSuiteSuite
-		randName := acctest.RandString(10)
+		randName := testAccResourceName()
 
 		oidcPolicy := "- iss: https://agent.buildkite.com\n  claims:\n    organization_slug: my-org\n    pipeline_slug: my-pipeline\n  scopes:\n    - write_uploads\n"
 		updatedOidcPolicy := "- iss: https://agent.buildkite.com\n  claims:\n    organization_slug: my-org\n    pipeline_slug: another-pipeline\n  scopes:\n    - read_suites\n    - write_uploads\n"
@@ -629,7 +628,7 @@ func TestAccBuildkiteTestSuiteResource(t *testing.T) {
 		check := func(applicationName, color, oidcPolicy string) resource.TestCheckFunc {
 			return resource.ComposeAggregateTestCheckFunc(
 				checkTestSuiteExists("buildkite_test_suite.suite", &suite),
-				checkTestSuiteRemoteValue(&suite, "Name", fmt.Sprintf("test suite %s", randName)),
+				checkTestSuiteRemoteValue(&suite, "Name", fmt.Sprintf("%s-suite", randName)),
 				checkTestSuiteRemoteValue(&suite, "DefaultBranch", "main"),
 				resource.TestCheckResourceAttrSet("buildkite_test_suite.suite", "id"),
 				resource.TestCheckResourceAttrSet("buildkite_test_suite.suite", "api_token"),
@@ -638,7 +637,7 @@ func TestAccBuildkiteTestSuiteResource(t *testing.T) {
 				resource.TestCheckResourceAttr("buildkite_test_suite.suite", "application_name", applicationName),
 				resource.TestCheckResourceAttr("buildkite_test_suite.suite", "color", color),
 				resource.TestCheckResourceAttr("buildkite_test_suite.suite", "oidc_policy", oidcPolicy),
-				resource.TestCheckResourceAttr("buildkite_test_suite.suite", "name", fmt.Sprintf("test suite %s", randName)),
+				resource.TestCheckResourceAttr("buildkite_test_suite.suite", "name", fmt.Sprintf("%s-suite", randName)),
 				resource.TestCheckResourceAttrSet("buildkite_test_suite.suite", "team_owner_id"),
 			)
 		}
@@ -683,16 +682,16 @@ func TestAccBuildkiteTestSuiteResource(t *testing.T) {
 
 	t.Run("updates a test suite", func(t *testing.T) {
 		var suite getTestSuiteSuite
-		randName := acctest.RandString(10)
+		randName := testAccResourceName()
 
 		check := resource.ComposeAggregateTestCheckFunc(
 			resource.TestCheckResourceAttrSet("buildkite_test_suite.suite", "id"),
 			resource.TestCheckResourceAttrSet("buildkite_test_suite.suite", "api_token"),
 			resource.TestCheckResourceAttr("buildkite_test_suite.suite", "default_branch", "main"),
-			resource.TestCheckResourceAttr("buildkite_test_suite.suite", "name", fmt.Sprintf("test suite %s", randName)),
+			resource.TestCheckResourceAttr("buildkite_test_suite.suite", "name", fmt.Sprintf("%s-suite", randName)),
 			resource.TestCheckResourceAttrSet("buildkite_test_suite.suite", "team_owner_id"),
 			checkTestSuiteExists("buildkite_test_suite.suite", &suite),
-			checkTestSuiteRemoteValue(&suite, "Name", fmt.Sprintf("test suite %s", randName)),
+			checkTestSuiteRemoteValue(&suite, "Name", fmt.Sprintf("%s-suite", randName)),
 			checkTestSuiteRemoteValue(&suite, "DefaultBranch", "main"),
 		)
 
@@ -716,17 +715,17 @@ func TestAccBuildkiteTestSuiteResource(t *testing.T) {
 
 	t.Run("creates and handles test suite team owner resolution", func(t *testing.T) {
 		var suite getTestSuiteSuite
-		randName := acctest.RandString(10)
+		randName := testAccResourceName()
 
 		check := resource.ComposeAggregateTestCheckFunc(
 			resource.TestCheckResourceAttrSet("buildkite_test_suite.suite", "id"),
 			resource.TestCheckResourceAttrSet("buildkite_test_suite.suite", "api_token"),
 			resource.TestCheckResourceAttr("buildkite_test_suite.suite", "default_branch", "main"),
-			resource.TestCheckResourceAttr("buildkite_test_suite.suite", "name", fmt.Sprintf("test suite update %s", randName)),
+			resource.TestCheckResourceAttr("buildkite_test_suite.suite", "name", fmt.Sprintf("%s-suite-update", randName)),
 			resource.TestCheckResourceAttrSet("buildkite_test_suite.suite", "team_owner_id"),
 			resource.TestCheckResourceAttrPair("buildkite_test_suite.suite", "team_owner_id", "buildkite_team.bteam", "id"),
 			checkTestSuiteExists("buildkite_test_suite.suite", &suite),
-			checkTestSuiteRemoteValue(&suite, "Name", fmt.Sprintf("test suite update %s", randName)),
+			checkTestSuiteRemoteValue(&suite, "Name", fmt.Sprintf("%s-suite-update", randName)),
 			checkTestSuiteRemoteValue(&suite, "DefaultBranch", "main"),
 		)
 

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
@@ -24,7 +23,7 @@ func TestAccBuildkiteAgentToken(t *testing.T) {
 		}
 
 		resource "buildkite_agent_token" "foobar" {
-			description = "Acceptance Test %s"
+			description = "%s-token"
 		}
 		`, name)
 	}
@@ -32,15 +31,15 @@ func TestAccBuildkiteAgentToken(t *testing.T) {
 	// Confirm that we can create a new agent token, and then delete it without error
 	t.Run("adds an agent token", func(t *testing.T) {
 		var resourceToken AgentTokenNode
-		randName := acctest.RandString(10)
+		randName := testAccResourceName()
 
 		check := resource.ComposeAggregateTestCheckFunc(
 			// Confirm the token exists in the buildkite API
 			testAccCheckAgentTokenExists("buildkite_agent_token.foobar", &resourceToken),
 			// Confirm the token has the correct values in Buildkite's system
-			testAccCheckAgentTokenRemoteValues(&resourceToken, fmt.Sprintf("Acceptance Test %s", randName)),
+			testAccCheckAgentTokenRemoteValues(&resourceToken, fmt.Sprintf("%s-token", randName)),
 			// Confirm the token has the correct values in terraform state
-			resource.TestCheckResourceAttr("buildkite_agent_token.foobar", "description", fmt.Sprintf("Acceptance Test %s", randName)),
+			resource.TestCheckResourceAttr("buildkite_agent_token.foobar", "description", fmt.Sprintf("%s-token", randName)),
 			resource.TestCheckResourceAttrSet("buildkite_agent_token.foobar", "id"),
 			resource.TestCheckResourceAttrSet("buildkite_agent_token.foobar", "token"),
 			resource.TestCheckResourceAttrSet("buildkite_agent_token.foobar", "uuid"),
@@ -75,23 +74,23 @@ func TestAccBuildkiteAgentToken(t *testing.T) {
 	// Technically tokens can't be updated, so this will actuall do a delete+create
 	t.Run("updates an agent token", func(t *testing.T) {
 		var resourceToken AgentTokenNode
-		randName := acctest.RandString(10)
-		randNameUpdated := acctest.RandString(10)
+		randName := testAccResourceName()
+		randNameUpdated := testAccResourceName()
 
 		check := resource.ComposeAggregateTestCheckFunc(
 			// Confirm the token exists in the buildkite API
 			testAccCheckAgentTokenExists("buildkite_agent_token.foobar", &resourceToken),
 			// Quick check to confirm the local state is correct before we update it
-			resource.TestCheckResourceAttr("buildkite_agent_token.foobar", "description", fmt.Sprintf("Acceptance Test %s", randName)),
+			resource.TestCheckResourceAttr("buildkite_agent_token.foobar", "description", fmt.Sprintf("%s-token", randName)),
 		)
 
 		checkUpdated := resource.ComposeAggregateTestCheckFunc(
 			// Confirm the token exists in the buildkite API
 			testAccCheckAgentTokenExists("buildkite_agent_token.foobar", &resourceToken),
 			// Confirm the token has the updated values in Buildkite's system
-			testAccCheckAgentTokenRemoteValues(&resourceToken, fmt.Sprintf("Acceptance Test %s", randNameUpdated)),
+			testAccCheckAgentTokenRemoteValues(&resourceToken, fmt.Sprintf("%s-token", randNameUpdated)),
 			// Confirm the token has the updated values in terraform state
-			resource.TestCheckResourceAttr("buildkite_agent_token.foobar", "description", fmt.Sprintf("Acceptance Test %s", randNameUpdated)),
+			resource.TestCheckResourceAttr("buildkite_agent_token.foobar", "description", fmt.Sprintf("%s-token", randNameUpdated)),
 		)
 
 		resource.ParallelTest(t, resource.TestCase{

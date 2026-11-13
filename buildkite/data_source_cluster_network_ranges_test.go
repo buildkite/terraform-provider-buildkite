@@ -9,7 +9,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -22,7 +21,7 @@ func TestAccBuildkiteClusterNetworkRangesDatasource(t *testing.T) {
 	// collection. The attribute still has to be a known empty set for configurations that
 	// iterate over it.
 	t.Run("returns an empty set for a cluster without hosted agents", func(t *testing.T) {
-		clusterName := acctest.RandString(12)
+		clusterName := testAccResourceName()
 
 		resource.ParallelTest(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },

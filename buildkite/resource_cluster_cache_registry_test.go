@@ -20,7 +20,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	testingresource "github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/vektah/gqlparser/v2/gqlerror"
@@ -546,8 +545,8 @@ resource "buildkite_cluster_cache_registry" "test" {
 
 func TestAccBuildkiteClusterCacheRegistryResource(t *testing.T) {
 	config := testAccCacheRegistryConfig
-	clusterName := "tf-cache-" + acctest.RandString(8)
-	registryName := "Cache " + acctest.RandString(8)
+	clusterName := testAccResourceName() + "-cache-cluster"
+	registryName := testAccResourceName() + "-cache"
 	renamedRegistry := registryName + " renamed"
 	resourceName := "buildkite_cluster_cache_registry.test"
 	var defaultPolicy string
@@ -681,7 +680,7 @@ func testAccCheckClusterCacheRegistryDestroy(state *terraform.State) error {
 }
 
 func TestAccBuildkiteClusterCacheRegistryParentDeletion(t *testing.T) {
-	config := testAccCacheRegistryConfig("tf-cache-parent-"+acctest.RandString(8), "Disposable cache", "Parent deletion acceptance", `{ rules = [{ name = null, when = null, effect = "allow", action = "save" }] }`)
+	config := testAccCacheRegistryConfig(testAccResourceName()+"-cache-parent", testAccResourceName()+"-disposable-cache", "Parent deletion acceptance", `{ rules = [{ name = null, when = null, effect = "allow", action = "save" }] }`)
 	var oldClusterID, oldRegistryID string
 	testingresource.Test(t, testingresource.TestCase{
 		PreCheck:                 func() { testAccCacheRegistryPreCheck(t) },

@@ -14,7 +14,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
@@ -884,7 +883,7 @@ func TestNotificationServiceAllowsComputedScopeUUID(t *testing.T) {
 }
 
 func TestAccBuildkiteNotificationService(t *testing.T) {
-	random := acctest.RandString(10)
+	random := testAccResourceName()
 	config := func(description string, enabled bool) string {
 		return fmt.Sprintf(`
 			resource "buildkite_notification_service" "test" {
@@ -906,7 +905,7 @@ func TestAccBuildkiteNotificationService(t *testing.T) {
 		CheckDestroy:             testAccCheckNotificationServiceDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: config("Terraform acceptance test "+random, false),
+				Config: config(random+"-notification", false),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("buildkite_notification_service.test", "provider_type", notificationServiceProviderWebhook),
 					resource.TestCheckResourceAttr("buildkite_notification_service.test", "enabled", "false"),
@@ -914,9 +913,9 @@ func TestAccBuildkiteNotificationService(t *testing.T) {
 				),
 			},
 			{
-				Config: config("Updated Terraform acceptance test "+random, true),
+				Config: config(random+"-notification-updated", true),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("buildkite_notification_service.test", "description", "Updated Terraform acceptance test "+random),
+					resource.TestCheckResourceAttr("buildkite_notification_service.test", "description", random+"-notification-updated"),
 					resource.TestCheckResourceAttr("buildkite_notification_service.test", "enabled", "true"),
 				),
 			},
