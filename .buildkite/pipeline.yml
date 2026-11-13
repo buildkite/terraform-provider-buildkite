@@ -45,6 +45,7 @@ steps:
       queue: "oss-deploy"
     concurrency: 1
     concurrency_group: terraform-provider-acceptance-tests
+    soft_fail: true
     command: make sweep
     plugins:
       - aws-assume-role-with-web-identity#v1.8.2:
@@ -63,6 +64,7 @@ steps:
   - label: acceptance tests
     key: testacc
     depends_on: sweepers
+    allow_dependency_failure: true
     concurrency: 1
     concurrency_group: terraform-provider-acceptance-tests
     command: .buildkite/steps/annotate.sh
@@ -98,6 +100,7 @@ steps:
   - label: acceptance tests - non-admin
     key: testacc-nonadmin
     depends_on: sweepers
+    allow_dependency_failure: true
     concurrency: 1
     concurrency_group: terraform-provider-acceptance-tests
     command: .buildkite/steps/annotate.sh testacc-nonadmin

@@ -87,7 +87,9 @@ marked temporary parents; tokens and notification services use marked descriptio
 The CI `sweepers` step runs on the `oss-deploy` queue before both acceptance jobs,
 using the existing IAM role's source-IP restrictions. All three steps share the
 `terraform-provider-acceptance-tests` concurrency group.
-A failed sweep blocks acceptance tests rather than silently accumulating leaks.
+Sweep failures are reported as soft failures and do not fail the build. Both
+acceptance jobs wait for the sweep to finish but allow dependency failures, so a
+cleanup failure does not prevent acceptance testing.
 
 To invoke the [HashiCorp sweeper](https://developer.hashicorp.com/terraform/plugin/testing/acceptance-tests/sweepers)
 manually, export `BUILDKITE_API_TOKEN` for a test organization, then run:
