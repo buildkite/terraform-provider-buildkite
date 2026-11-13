@@ -1,6 +1,7 @@
 package buildkite
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
@@ -8,9 +9,9 @@ import (
 
 func TestAccBuildkiteTeamsDatasource(t *testing.T) {
 	t.Run("teams data source reads permissions correctly", func(t *testing.T) {
-		config := `
+		config := fmt.Sprintf(`
 		resource "buildkite_team" "test_team_perms" {
-			name = "test-team-permissions"
+			name = %q
 			description = "team for testing permissions"
 			privacy = "VISIBLE"
 			default_team = false
@@ -25,7 +26,7 @@ func TestAccBuildkiteTeamsDatasource(t *testing.T) {
 		data "buildkite_teams" "teams" {
 			depends_on = [buildkite_team.test_team_perms]
 		}
-		`
+		`, testAccResourceName())
 
 		resource.ParallelTest(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },

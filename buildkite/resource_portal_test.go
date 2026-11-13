@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
@@ -26,20 +25,20 @@ func TestAccBuildkitePortal(t *testing.T) {
 
 		resource "buildkite_portal" "test" {
 			slug = %q
-			name = "Test Portal %s"
+			name = "%s-portal"
 			description = "Test portal description"
 			query = "{ viewer { user { name } } }"
 			user_invokable = false
 		}
-		`, fmt.Sprintf("test-portal-%s", name), name)
+		`, fmt.Sprintf("%s-portal", name), name)
 	}
 
 	t.Run("creates a portal", func(t *testing.T) {
-		randName := acctest.RandString(10)
+		randName := testAccResourceName()
 
 		check := resource.ComposeAggregateTestCheckFunc(
 			testAccCheckPortalExists("buildkite_portal.test"),
-			resource.TestCheckResourceAttr("buildkite_portal.test", "name", fmt.Sprintf("Test Portal %s", randName)),
+			resource.TestCheckResourceAttr("buildkite_portal.test", "name", fmt.Sprintf("%s-portal", randName)),
 			resource.TestCheckResourceAttr("buildkite_portal.test", "description", "Test portal description"),
 			resource.TestCheckResourceAttr("buildkite_portal.test", "user_invokable", "false"),
 			resource.TestCheckResourceAttrSet("buildkite_portal.test", "uuid"),
@@ -74,7 +73,7 @@ func TestAccBuildkitePortal(t *testing.T) {
 	})
 
 	t.Run("updates a portal", func(t *testing.T) {
-		randName := acctest.RandString(10)
+		randName := testAccResourceName()
 		updated := func(name string) string {
 			return fmt.Sprintf(`
 			provider "buildkite" {
@@ -88,22 +87,22 @@ func TestAccBuildkitePortal(t *testing.T) {
 
 			resource "buildkite_portal" "test" {
 				slug = %q
-				name = "Updated Portal %s"
+				name = "%s-portal-updated"
 				description = "Updated description"
 				query = "{ viewer { user { email } } }"
 				user_invokable = true
 			}
-			`, fmt.Sprintf("test-portal-%s", name), name)
+			`, fmt.Sprintf("%s-portal", name), name)
 		}
 
 		check := resource.ComposeAggregateTestCheckFunc(
 			testAccCheckPortalExists("buildkite_portal.test"),
-			resource.TestCheckResourceAttr("buildkite_portal.test", "name", fmt.Sprintf("Test Portal %s", randName)),
+			resource.TestCheckResourceAttr("buildkite_portal.test", "name", fmt.Sprintf("%s-portal", randName)),
 		)
 
 		checkUpdated := resource.ComposeAggregateTestCheckFunc(
 			testAccCheckPortalExists("buildkite_portal.test"),
-			resource.TestCheckResourceAttr("buildkite_portal.test", "name", fmt.Sprintf("Updated Portal %s", randName)),
+			resource.TestCheckResourceAttr("buildkite_portal.test", "name", fmt.Sprintf("%s-portal-updated", randName)),
 			resource.TestCheckResourceAttr("buildkite_portal.test", "description", "Updated description"),
 			resource.TestCheckResourceAttr("buildkite_portal.test", "user_invokable", "true"),
 		)

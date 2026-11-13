@@ -7,7 +7,6 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
@@ -17,8 +16,8 @@ func TestAccBuildkitePipelineTeam(t *testing.T) {
 	t.Parallel()
 	t.Run("pipeline team can be updated", func(t *testing.T) {
 		var tp pipelineTeamResourceModel
-		teamName := acctest.RandString(12)
-		teamNameNew := acctest.RandString(12)
+		teamName := testAccResourceName()
+		teamNameNew := testAccResourceName()
 
 		resource.ParallelTest(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },
@@ -68,7 +67,7 @@ func TestAccBuildkitePipelineTeam(t *testing.T) {
 	})
 
 	t.Run("duplicate pipeline team returns helpful error", func(t *testing.T) {
-		teamName := acctest.RandString(12)
+		teamName := testAccResourceName()
 
 		resource.ParallelTest(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },
@@ -83,7 +82,7 @@ func TestAccBuildkitePipelineTeam(t *testing.T) {
 	})
 
 	t.Run("pipeline team is recreated if removed", func(t *testing.T) {
-		teamName := acctest.RandString(12)
+		teamName := testAccResourceName()
 
 		resource.ParallelTest(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },
@@ -111,7 +110,7 @@ func TestAccBuildkitePipelineTeam(t *testing.T) {
 }
 
 func TestAccNonAdminPipelineTeam(t *testing.T) {
-	pipelineName := "nonadmin-team-" + acctest.RandString(12)
+	pipelineName := testAccResourceName() + "-nonadmin-team"
 	teamSlug := testAccFixturePipelineTeamSlug
 	baseConfig := testAccPipelineConfigWithTeam(pipelineName, "Pipeline team acceptance test") + fmt.Sprintf(`
 		data "buildkite_team" "secondary" {
@@ -240,14 +239,14 @@ func TestAccNonAdminPipelineTeam(t *testing.T) {
 func testAccPipelineTeamConfigBasic(teamName string, accessLevel string) string {
 	config := `
 	resource "buildkite_pipeline" "acc_test_pipeline" {
-	    name = "acctest pipeline %s"
+	    name = "%s-pipeline"
 	    repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
 	    steps = "steps:\n- label: ':pipeline: Pipeline Upload'\n  command: buildkite-agent pipeline upload"
 		provider_settings = {}
 	}
 
 	resource "buildkite_team" "acc_test_team" {
-		name = "acctest team %s"
+		name = "%s-team"
 		privacy = "VISIBLE"
 		default_team = false
 		default_member_role = "MEMBER"
@@ -266,14 +265,14 @@ func testAccPipelineTeamConfigBasic(teamName string, accessLevel string) string 
 func testAccPipelineTeamConfigDuplicate(teamName string) string {
 	config := `
 	resource "buildkite_pipeline" "acc_test_pipeline" {
-	    name = "acctest pipeline %s"
+	    name = "%s-pipeline"
 	    repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
 	    steps = "steps:\n- label: ':pipeline: Pipeline Upload'\n  command: buildkite-agent pipeline upload"
 		provider_settings = {}
 	}
 
 	resource "buildkite_team" "acc_test_team" {
-		name = "acctest team %s"
+		name = "%s-team"
 		privacy = "VISIBLE"
 		default_team = false
 		default_member_role = "MEMBER"

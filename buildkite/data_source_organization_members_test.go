@@ -4,13 +4,12 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
 func TestAccBuildkiteOrganizationMembersDatasource(t *testing.T) {
 	t.Run("organization members data source can be filtered by team and role", func(t *testing.T) {
-		name := acctest.RandString(12)
+		name := testAccResourceName()
 
 		resource.ParallelTest(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },

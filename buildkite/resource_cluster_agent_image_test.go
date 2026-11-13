@@ -12,7 +12,6 @@ import (
 
 	fwresource "github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
@@ -409,8 +408,8 @@ func TestUnitBuildkiteClusterAgentImageRetainsAnImageInUse(t *testing.T) {
 }
 
 func TestAccBuildkiteClusterAgentImage(t *testing.T) {
-	clusterName := acctest.RandString(12)
-	imageName := acctest.RandString(12)
+	clusterName := testAccResourceName()
+	imageName := testAccResourceName()
 
 	config := fmt.Sprintf(`
 	resource "buildkite_cluster" "hosted" {
@@ -420,7 +419,7 @@ func TestAccBuildkiteClusterAgentImage(t *testing.T) {
 	# a cluster can hold images once it has a hosted queue
 	resource "buildkite_cluster_queue" "default" {
 		cluster_id = buildkite_cluster.hosted.id
-		key        = "default"
+		key        = "${buildkite_cluster.hosted.name}-default"
 		hosted_agents = {
 			instance_shape = "LINUX_AMD64_2X4"
 		}
@@ -445,7 +444,7 @@ func TestAccBuildkiteClusterAgentImage(t *testing.T) {
 
 	resource "buildkite_cluster_queue" "custom" {
 		cluster_id = buildkite_cluster.hosted.id
-		key        = "custom"
+		key        = "${buildkite_cluster.hosted.name}-custom"
 		hosted_agents = {
 			instance_shape = "LINUX_AMD64_2X4"
 			linux = {

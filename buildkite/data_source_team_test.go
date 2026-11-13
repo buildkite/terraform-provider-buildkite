@@ -5,7 +5,6 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -91,7 +90,7 @@ func testDatasourceTeamConfigWithAllPermissions(name string) string {
 func TestAccDataTeam_ReadUsingSlug(t *testing.T) {
 	t.Parallel()
 	var tr teamResourceModel
-	teamName := acctest.RandString(12)
+	teamName := testAccResourceName()
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
@@ -117,7 +116,7 @@ func TestAccDataTeam_ReadUsingSlug(t *testing.T) {
 func TestAccDataTeam_ReadUsingID(t *testing.T) {
 	t.Parallel()
 	var tr teamResourceModel
-	teamName := acctest.RandString(12)
+	teamName := testAccResourceName()
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
@@ -146,7 +145,7 @@ func TestAccDataTeam_ReadUsingIDAndSlug(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: protoV6ProviderFactories(),
-				Config:                   testDatasourceTeamConfigIDSlug(acctest.RandString(12)),
+				Config:                   testDatasourceTeamConfigIDSlug(testAccResourceName()),
 				ExpectError:              regexp.MustCompile("Invalid Attribute Combination"),
 			},
 		},
@@ -156,7 +155,7 @@ func TestAccDataTeam_ReadUsingIDAndSlug(t *testing.T) {
 func TestAccDataTeam_ReadWithAllPermissions(t *testing.T) {
 	t.Parallel()
 	var tr teamResourceModel
-	teamName := acctest.RandString(12)
+	teamName := testAccResourceName()
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },

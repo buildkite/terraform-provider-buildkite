@@ -9,7 +9,6 @@ import (
 	frameworkresource "github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
@@ -73,7 +72,7 @@ func TestPipelineScheduleDeleteSurfacesParentPipelineNotFound(t *testing.T) {
 }
 
 func TestAccNonAdminPipelineSchedule(t *testing.T) {
-	pipelineName := "nonadmin-schedule-" + acctest.RandString(12)
+	pipelineName := testAccResourceName() + "-nonadmin-schedule"
 	config := func(label, cronline string) string {
 		return testAccPipelineConfigWithTeam(pipelineName, "Non-admin schedule lifecycle") + fmt.Sprintf(`
 			resource "buildkite_pipeline_schedule" "schedule" {
@@ -201,8 +200,8 @@ func TestAccBuildkitePipelineSchedule(t *testing.T) {
 	t.Run("pipeline schedule can be created", func(t *testing.T) {
 		var pipeline getPipelinePipeline
 		var schedule PipelineScheduleValues
-		pipelineName := acctest.RandString(12)
-		label := acctest.RandString(12)
+		pipelineName := testAccResourceName()
+		label := testAccResourceName()
 		cronline := "0 * * * *"
 
 		resource.ParallelTest(t, resource.TestCase{
@@ -259,8 +258,8 @@ func TestAccBuildkitePipelineSchedule(t *testing.T) {
 	t.Run("pipeline schedule can be updated", func(t *testing.T) {
 		var pipeline getPipelinePipeline
 		var schedule PipelineScheduleValues
-		pipelineName := acctest.RandString(12)
-		label := acctest.RandString(12)
+		pipelineName := testAccResourceName()
+		label := testAccResourceName()
 
 		resource.ParallelTest(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },
@@ -326,8 +325,8 @@ func TestAccBuildkitePipelineSchedule(t *testing.T) {
 	})
 
 	t.Run("pipeline schedule env transitions between empty and populated", func(t *testing.T) {
-		pipelineName := acctest.RandString(12)
-		label := acctest.RandString(12)
+		pipelineName := testAccResourceName()
+		label := testAccResourceName()
 
 		resource.ParallelTest(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },
@@ -360,8 +359,8 @@ func TestAccBuildkitePipelineSchedule(t *testing.T) {
 	})
 
 	t.Run("pipeline schedule is recreated if removed", func(t *testing.T) {
-		pipelineName := acctest.RandString(12)
-		label := acctest.RandString(12)
+		pipelineName := testAccResourceName()
+		label := testAccResourceName()
 
 		resource.ParallelTest(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },

@@ -752,9 +752,21 @@ func getAllPages[T any](ctx context.Context, client *Client, path string) ([]T, 
 	var all []T
 	next := path + "?per_page=100"
 	for next != "" {
-		var page []T
-		header, err := client.doRequest(ctx, http.MethodGet, next, nil, &page)
+		var body json.RawMessage
+		header, err := client.doRequest(ctx, http.MethodGet, next, nil, &body)
 		if err != nil {
+			return nil, err
+		}
+		// Offset lists return arrays; cursor lists wrap the same items in an envelope.
+		if bytes.HasPrefix(bytes.TrimSpace(body), []byte("{")) {
+			var envelope struct{ Items json.RawMessage }
+			if err := json.Unmarshal(body, &envelope); err != nil {
+				return nil, err
+			}
+			body = envelope.Items
+		}
+		var page []T
+		if err := json.Unmarshal(body, &page); err != nil {
 			return nil, err
 		}
 		all = append(all, page...)

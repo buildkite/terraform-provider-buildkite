@@ -11,7 +11,6 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
@@ -97,7 +96,7 @@ func TestAccBuildkiteRegistryPermissions(t *testing.T) {
 	}
 
 	t.Run("member_create", func(t *testing.T) {
-		name := "nonadmincreate" + acctest.RandString(12)
+		name := testAccResourceName() + "-nonadmincreate"
 		const description = "Temporary member-created registry"
 		registryConfig := config(name, description, ":snake:", "#3776AB")
 		if err := testAccCheckRegistryDeleted(admin, name); err != nil {
@@ -176,7 +175,7 @@ func TestAccBuildkiteRegistryPermissions(t *testing.T) {
 	})
 
 	t.Run("delegated_lifecycle", func(t *testing.T) {
-		name := "delegatedregistry" + acctest.RandString(12)
+		name := testAccResourceName() + "-delegatedregistry"
 		initial := config(name, "Initial registry description", ":snake:", "#3776AB") + registryDataSource
 		adminUpdated := config(name, "Admin registry update", ":package:", "#123456")
 		memberUpdated := config(name, "Member registry update", ":buildkite:", "#00FF00") + registryDataSource
@@ -404,7 +403,7 @@ func TestAccResourceRegistry(t *testing.T) {
 	}
 
 	t.Run("create and destroy", func(t *testing.T) {
-		randName := acctest.RandString(5)
+		randName := testAccResourceName()
 		ecosystem := "java"
 
 		resource.ParallelTest(t, resource.TestCase{
@@ -429,7 +428,7 @@ func TestAccResourceRegistry(t *testing.T) {
 	})
 
 	t.Run("update", func(t *testing.T) {
-		randName := acctest.RandString(5)
+		randName := testAccResourceName()
 		ecosystem := "java"
 
 		resource.ParallelTest(t, resource.TestCase{
@@ -456,7 +455,7 @@ func TestAccResourceRegistry(t *testing.T) {
 	})
 
 	t.Run("update description and color", func(t *testing.T) {
-		randName := acctest.RandString(5)
+		randName := testAccResourceName()
 
 		resource.ParallelTest(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },
@@ -482,7 +481,7 @@ func TestAccResourceRegistry(t *testing.T) {
 	})
 
 	t.Run("reject ecosystem change", func(t *testing.T) {
-		randName := acctest.RandString(5)
+		randName := testAccResourceName()
 
 		resource.ParallelTest(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },
@@ -501,7 +500,7 @@ func TestAccResourceRegistry(t *testing.T) {
 	})
 
 	t.Run("reject team_ids change", func(t *testing.T) {
-		randName := acctest.RandString(5)
+		randName := testAccResourceName()
 
 		configWithTeams := func(name, teamID string) string {
 			return fmt.Sprintf(`
@@ -531,20 +530,20 @@ func TestAccResourceRegistry(t *testing.T) {
 	})
 
 	t.Run("keeps team_ids when another team is granted access", func(t *testing.T) {
-		randName := acctest.RandString(5)
+		randName := testAccResourceName()
 
 		config := fmt.Sprintf(`
 			provider "buildkite" {}
 
 			resource "buildkite_team" "owner" {
-				name = "registry owner %s"
+				name = "%s-registry-owner"
 				privacy = "VISIBLE"
 				default_team = false
 				default_member_role = "MEMBER"
 			}
 
 			resource "buildkite_team" "other" {
-				name = "registry other %s"
+				name = "%s-registry-other"
 				privacy = "VISIBLE"
 				default_team = false
 				default_member_role = "MEMBER"
@@ -602,7 +601,7 @@ func TestAccResourceRegistry(t *testing.T) {
 	})
 
 	t.Run("create with oidc policy", func(t *testing.T) {
-		randName := acctest.RandString(5)
+		randName := testAccResourceName()
 
 		resource.ParallelTest(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },
@@ -636,7 +635,7 @@ func TestAccResourceRegistry(t *testing.T) {
 
 	t.Run("import", func(t *testing.T) {
 		var r registryResourceModel
-		randName := acctest.RandString(5)
+		randName := testAccResourceName()
 		ecosystem := "java"
 
 		resource.ParallelTest(t, resource.TestCase{

@@ -6,7 +6,6 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
@@ -53,7 +52,7 @@ func TestAccBuildkiteClusterResource(t *testing.T) {
 
 	t.Run("Creates a Cluster with basic settings", func(t *testing.T) {
 		var c clusterResourceModel
-		randName := acctest.RandString(5)
+		randName := testAccResourceName()
 		check := resource.ComposeAggregateTestCheckFunc(
 			testAccCheckClusterExists("buildkite_cluster.foo", &c),
 			testAccCheckClusterRemoteValues(&c, fmt.Sprintf("%s_test_cluster", randName)),
@@ -77,7 +76,7 @@ func TestAccBuildkiteClusterResource(t *testing.T) {
 
 	t.Run("Creates a Cluster with complex settings", func(t *testing.T) {
 		var c clusterResourceModel
-		randName := acctest.RandString(5)
+		randName := testAccResourceName()
 		check := resource.ComposeAggregateTestCheckFunc(
 			testAccCheckClusterExists("buildkite_cluster.foo", &c),
 			testAccCheckClusterRemoteValues(&c, fmt.Sprintf("%s_test_cluster", randName)),
@@ -101,8 +100,8 @@ func TestAccBuildkiteClusterResource(t *testing.T) {
 
 	t.Run("Updates a Cluster using complex settings", func(t *testing.T) {
 		var c clusterResourceModel
-		randName := acctest.RandString(5)
-		randNameUpdated := acctest.RandString(5)
+		randName := testAccResourceName()
+		randNameUpdated := testAccResourceName()
 		resource.ParallelTest(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },
 			ProtoV6ProviderFactories: protoV6ProviderFactories(),
@@ -139,7 +138,7 @@ func TestAccBuildkiteClusterResource(t *testing.T) {
 
 	t.Run("Imports a Cluster", func(t *testing.T) {
 		var c clusterResourceModel
-		randName := acctest.RandString(5)
+		randName := testAccResourceName()
 		check := resource.ComposeAggregateTestCheckFunc(
 			testAccCheckClusterExists("buildkite_cluster.foo", &c),
 			resource.TestCheckResourceAttr("buildkite_cluster.foo", "name", fmt.Sprintf("%s_test_cluster", randName)),
@@ -167,7 +166,7 @@ func TestAccBuildkiteClusterResource(t *testing.T) {
 // TestAccBuildkiteClusterAgentTracingService needs an organization with agent tracing enabled. It makes
 // its own eligible service: an enabled OpenTelemetry tracing service covering all pipelines and branches.
 func TestAccBuildkiteClusterAgentTracingService(t *testing.T) {
-	randName := acctest.RandString(10)
+	randName := testAccResourceName()
 	config := func(attribute string) string {
 		return fmt.Sprintf(`
 		provider "buildkite" {
@@ -181,7 +180,7 @@ func TestAccBuildkiteClusterAgentTracingService(t *testing.T) {
 
 		resource "buildkite_notification_service" "otel" {
 			provider_type = "open_telemetry_tracing"
-			description   = "Terraform acceptance test %[1]s"
+			description   = "%[1]s-agent-tracing"
 
 			open_telemetry_tracing = {
 				endpoint = "https://otel.example.com/%[1]s"
@@ -260,7 +259,7 @@ func TestAccBuildkiteClusterAgentTracingService(t *testing.T) {
 // TestAccBuildkiteClusterHostedCacheSettings needs an organization with hosted agents, since the API only
 // changes the settings on a cluster with a hosted queue
 func TestAccBuildkiteClusterHostedCacheSettings(t *testing.T) {
-	randName := acctest.RandString(10)
+	randName := testAccResourceName()
 	config := func(queue, attributes string) string {
 		return fmt.Sprintf(`
 		provider "buildkite" {
@@ -285,7 +284,7 @@ func TestAccBuildkiteClusterHostedCacheSettings(t *testing.T) {
 	hostedQueue := `
 		resource "buildkite_cluster_queue" "hosted" {
 			cluster_id = buildkite_cluster.foo.id
-			key        = "hosted"
+			key        = "${buildkite_cluster.foo.name}-hosted"
 
 			hosted_agents = {
 				linux = {

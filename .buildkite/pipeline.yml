@@ -39,8 +39,30 @@ steps:
       docker-compose#v5.16.0:
         run: go
 
+  - label: sweepers
+    key: sweepers
+    agents:
+      queue: "hosted"
+    concurrency: 1
+    concurrency_group: terraform-provider-acceptance-tests
+    command: make sweep
+    plugins:
+      - aws-assume-role-with-web-identity#v1.8.2:
+          role-arn: arn:aws:iam::445615400570:role/pipeline-buildkite-terraform-provider-buildkite-main
+          session-tags:
+            - organization_slug
+            - organization_id
+            - pipeline_slug
+      - aws-ssm#v1.1.0:
+          parameters:
+            BUILDKITE_ORGANIZATION_SLUG: /pipelines/buildkite/terraform-provider-buildkite-main/buildkite_organization
+            BUILDKITE_API_TOKEN: /pipelines/buildkite/terraform-provider-buildkite-main/buildkite_api_token
+      - docker-compose#v5.16.0:
+          run: acceptance
+
   - label: acceptance tests
     key: testacc
+    depends_on: sweepers
     concurrency: 1
     concurrency_group: terraform-provider-acceptance-tests
     command: .buildkite/steps/annotate.sh
@@ -75,6 +97,7 @@ steps:
 
   - label: acceptance tests - non-admin
     key: testacc-nonadmin
+    depends_on: sweepers
     concurrency: 1
     concurrency_group: terraform-provider-acceptance-tests
     command: .buildkite/steps/annotate.sh testacc-nonadmin

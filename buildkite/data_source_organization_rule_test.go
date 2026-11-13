@@ -14,7 +14,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
@@ -259,23 +258,23 @@ func TestAccBuildkiteOrganizationRuleDatasource(t *testing.T) {
 		}
 
 		resource "buildkite_cluster" "cluster_one" {
-			name        = "Cluster %s"
+			name        = "%s-cluster"
 			description = "A test cluster containing a source pipeline."
 		}
 
 		resource "buildkite_cluster" "cluster_two" {
-			name        = "Cluster %s"
+			name        = "%s-cluster"
 			description = "A test cluster containing a target pipeline for triggering builds."
 		}
 
 		resource "buildkite_pipeline" "pipeline_source" {
-			name                 = "Pipeline %s"
+			name                 = "%s-pipeline"
 			repository           = "https://github.com/buildkite/terraform-provider-buildkite.git"
 			cluster_id			 = buildkite_cluster.cluster_one.id
 		}
 
 		resource "buildkite_pipeline" "pipeline_target" {
-			name                 = "Pipeline %s"
+			name                 = "%s-pipeline"
 			repository           = "https://github.com/buildkite/terraform-provider-buildkite.git"
 			cluster_id           = buildkite_cluster.cluster_two.id
 		}	
@@ -308,23 +307,23 @@ func TestAccBuildkiteOrganizationRuleDatasource(t *testing.T) {
 		}
 
 		resource "buildkite_cluster" "cluster_one" {
-			name        = "Cluster %s"
+			name        = "%s-cluster"
 			description = "A test cluster containing a source pipeline."
 		}
 
 		resource "buildkite_cluster" "cluster_two" {
-			name        = "Cluster %s"
+			name        = "%s-cluster"
 			description = "A test cluster containing a target pipeline for triggering builds."
 		}
 
 		resource "buildkite_pipeline" "pipeline_source" {
-			name                 = "Pipeline %s"
+			name                 = "%s-pipeline"
 			repository           = "https://github.com/buildkite/terraform-provider-buildkite.git"
 			cluster_id			 = buildkite_cluster.cluster_one.id
 		}
 
 		resource "buildkite_pipeline" "pipeline_target" {
-			name                 = "Pipeline %s"
+			name                 = "%s-pipeline"
 			repository           = "https://github.com/buildkite/terraform-provider-buildkite.git"
 			cluster_id           = buildkite_cluster.cluster_two.id
 		}	
@@ -357,23 +356,23 @@ func TestAccBuildkiteOrganizationRuleDatasource(t *testing.T) {
 		}
 
 		resource "buildkite_cluster" "cluster_one" {
-			name        = "Cluster %s"
+			name        = "%s-cluster"
 			description = "A test cluster containing a source pipeline."
 		}
 
 		resource "buildkite_cluster" "cluster_two" {
-			name        = "Cluster %s"
+			name        = "%s-cluster"
 			description = "A test cluster containing a target pipeline for triggering builds."
 		}
 
 		resource "buildkite_pipeline" "pipeline_source" {
-			name                 = "Pipeline %s"
+			name                 = "%s-pipeline"
 			repository           = "https://github.com/buildkite/terraform-provider-buildkite.git"
 			cluster_id			 = buildkite_cluster.cluster_one.id
 		}
 
 		resource "buildkite_pipeline" "pipeline_target" {
-			name                 = "Pipeline %s"
+			name                 = "%s-pipeline"
 			repository           = "https://github.com/buildkite/terraform-provider-buildkite.git"
 			cluster_id           = buildkite_cluster.cluster_two.id
 		}	
@@ -411,23 +410,23 @@ func TestAccBuildkiteOrganizationRuleDatasource(t *testing.T) {
 		}
 
 		resource "buildkite_cluster" "cluster_one" {
-			name        = "Cluster %s"
+			name        = "%s-cluster"
 			description = "A test cluster containing a source pipeline."
 		}
 
 		resource "buildkite_cluster" "cluster_two" {
-			name        = "Cluster %s"
+			name        = "%s-cluster"
 			description = "A test cluster containing a target pipeline for triggering builds."
 		}
 
 		resource "buildkite_pipeline" "pipeline_source" {
-			name                 = "Pipeline %s"
+			name                 = "%s-pipeline"
 			repository           = "https://github.com/buildkite/terraform-provider-buildkite.git"
 			cluster_id			 = buildkite_cluster.cluster_one.id
 		}
 
 		resource "buildkite_pipeline" "pipeline_target" {
-			name                 = "Pipeline %s"
+			name                 = "%s-pipeline"
 			repository           = "https://github.com/buildkite/terraform-provider-buildkite.git"
 			cluster_id           = buildkite_cluster.cluster_two.id
 		}	
@@ -455,8 +454,8 @@ func TestAccBuildkiteOrganizationRuleDatasource(t *testing.T) {
 
 	for _, action := range ruleActions {
 		t.Run(fmt.Sprintf("loads a pipeline.%s.pipeline organization rule with required attributes by id", action), func(t *testing.T) {
-			randdNameOne := acctest.RandString(12)
-			randNameTwo := acctest.RandString(12)
+			randdNameOne := testAccResourceName()
+			randNameTwo := testAccResourceName()
 			var orr organizationRuleResourceModel
 
 			check := resource.ComposeAggregateTestCheckFunc(
@@ -485,8 +484,8 @@ func TestAccBuildkiteOrganizationRuleDatasource(t *testing.T) {
 		})
 
 		t.Run(fmt.Sprintf("loads a pipeline.%s.pipeline organization rule with all attributes by id", action), func(t *testing.T) {
-			randdNameOne := acctest.RandString(12)
-			randNameTwo := acctest.RandString(12)
+			randdNameOne := testAccResourceName()
+			randNameTwo := testAccResourceName()
 			var orr organizationRuleResourceModel
 
 			check := resource.ComposeAggregateTestCheckFunc(
@@ -516,8 +515,8 @@ func TestAccBuildkiteOrganizationRuleDatasource(t *testing.T) {
 		})
 
 		t.Run(fmt.Sprintf("loads a pipeline.%s.pipeline organization rule with required attributes by uuid", action), func(t *testing.T) {
-			randdNameOne := acctest.RandString(12)
-			randNameTwo := acctest.RandString(12)
+			randdNameOne := testAccResourceName()
+			randNameTwo := testAccResourceName()
 			var orr organizationRuleResourceModel
 
 			check := resource.ComposeAggregateTestCheckFunc(
@@ -546,8 +545,8 @@ func TestAccBuildkiteOrganizationRuleDatasource(t *testing.T) {
 		})
 
 		t.Run(fmt.Sprintf("loads a pipeline.%s.pipeline organization rule with all attributes by uuid", action), func(t *testing.T) {
-			randdNameOne := acctest.RandString(12)
-			randNameTwo := acctest.RandString(12)
+			randdNameOne := testAccResourceName()
+			randNameTwo := testAccResourceName()
 			var orr organizationRuleResourceModel
 
 			check := resource.ComposeAggregateTestCheckFunc(
