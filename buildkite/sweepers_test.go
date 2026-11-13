@@ -208,7 +208,9 @@ func TestSweepAcceptanceResources(t *testing.T) {
 						{"uuid": testAccFixtureTemplateUUID, "name": marked, "created_at": old},
 					},
 					"/v2/analytics/organizations/test-org/suites": {{"slug": "old-suite", "name": marked}},
-					base + "/services": {{"id": "old-service", "description": marked, "created_at": old}},
+					base + "/services": {
+						{"id": "old-service", "description": marked, "created_at": old},
+					},
 					base + "/teams": {
 						{"id": "old-team", "slug": "not-the-id", "name": marked, "created_at": old},
 						{"id": "fixture-team", "slug": testAccFixturePipelineTeamSlug, "name": marked, "created_at": old},
