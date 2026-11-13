@@ -42,7 +42,7 @@ steps:
   - label: sweepers
     key: sweepers
     agents:
-      queue: "hosted"
+      queue: "oss-deploy"
     concurrency: 1
     concurrency_group: terraform-provider-acceptance-tests
     command: make sweep

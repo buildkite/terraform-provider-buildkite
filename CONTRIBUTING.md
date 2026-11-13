@@ -84,8 +84,9 @@ use uppercase letters and underscores instead of hyphens. Keep random secret
 values separate from resource identities. Resources without names belong to
 marked temporary parents; tokens and notification services use marked descriptions.
 
-The CI `sweepers` step runs on the hosted queue before both acceptance jobs. All
-three steps share the `terraform-provider-acceptance-tests` concurrency group.
+The CI `sweepers` step runs on the `oss-deploy` queue before both acceptance jobs,
+using the existing IAM role's source-IP restrictions. All three steps share the
+`terraform-provider-acceptance-tests` concurrency group.
 A failed sweep blocks acceptance tests rather than silently accumulating leaks.
 
 To invoke the [HashiCorp sweeper](https://developer.hashicorp.com/terraform/plugin/testing/acceptance-tests/sweepers)
