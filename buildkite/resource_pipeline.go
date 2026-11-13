@@ -1117,15 +1117,18 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 					"issue_comment_command_word": schema.StringAttribute{
 						Computed:            true,
 						Optional:            true,
-						MarkdownDescription: "The command word used to trigger builds from issue comments (e.g. \"/bk\"). Only comments starting with or containing this word will trigger builds. Defaults to \"/bk\".",
+						MarkdownDescription: "The command word used to trigger builds from pull request comments. Must be a single non-empty word with no whitespace, for example, \"/bk\". Multi-word commands such as \"/bk review\" are not supported. Matching follows `issue_comment_match_mode`. Defaults to \"/bk\".",
 						PlanModifiers: []planmodifier.String{
 							stringplanmodifier.UseNonNullStateForUnknown(),
+						},
+						Validators: []validator.String{
+							stringvalidator.RegexMatches(regexp.MustCompile(`^[^\s\v\p{Z}\x{0085}\x00]+$`), "must be a single word with no whitespace or NUL characters and must not be empty"),
 						},
 					},
 					"issue_comment_match_mode": schema.StringAttribute{
 						Computed:            true,
 						Optional:            true,
-						MarkdownDescription: "The match mode for the issue comment command word. Valid values are \"exact\" and \"contains\". Defaults to \"exact\".",
+						MarkdownDescription: "How the issue comment command word is matched against the comment body. \"exact\" requires the entire whitespace-trimmed comment to equal the command word; \"contains\" matches if the command word appears anywhere in the comment. Both modes are case-insensitive. Defaults to \"exact\".",
 						PlanModifiers: []planmodifier.String{
 							// state written before "" was read as null must not be planned as ""
 							custom_modifier.UseNonEmptyStateForUnknown(),
@@ -1145,15 +1148,18 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 					"review_comment_command_word": schema.StringAttribute{
 						Computed:            true,
 						Optional:            true,
-						MarkdownDescription: "The command word used to trigger builds from inline pull request review comments (e.g. \"/bk\"). Only review comments starting with or containing this word will trigger builds.",
+						MarkdownDescription: "The command word used to trigger builds from inline pull request review comments. Must be a single non-empty word with no whitespace, for example, \"/bk\". Multi-word commands such as \"/bk review\" are not supported. Matching follows `review_comment_match_mode`. Defaults to \"/bk\".",
 						PlanModifiers: []planmodifier.String{
 							stringplanmodifier.UseNonNullStateForUnknown(),
+						},
+						Validators: []validator.String{
+							stringvalidator.RegexMatches(regexp.MustCompile(`^[^\s\v\p{Z}\x{0085}\x00]+$`), "must be a single word with no whitespace or NUL characters and must not be empty"),
 						},
 					},
 					"review_comment_match_mode": schema.StringAttribute{
 						Computed:            true,
 						Optional:            true,
-						MarkdownDescription: "The match mode for the review comment command word. Valid values are \"exact\" and \"contains\".",
+						MarkdownDescription: "How the review comment command word is matched against the comment body. \"exact\" requires the entire whitespace-trimmed comment to equal the command word; \"contains\" matches if the command word appears anywhere in the comment. Both modes are case-insensitive. Defaults to \"exact\".",
 						PlanModifiers: []planmodifier.String{
 							custom_modifier.UseNonEmptyStateForUnknown(),
 						},
