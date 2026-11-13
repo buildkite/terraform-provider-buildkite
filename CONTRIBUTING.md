@@ -114,8 +114,12 @@ them. Rules without descriptions can be identified through marked pipeline
 endpoints. Pipelines and their clusters are retained until dependent Rules are
 old enough to sweep, preserving that ownership evidence. Cluster deletion also cleans up
 its remaining queues, tokens, cache registries, and hosted tenant, including agent
-images. Marked queues, tokens, secrets, and non-default cache registries can be
-removed from persistent clusters without deleting those clusters.
+images. Clusters are retained while any discovered child has not reached the age
+cutoff or has no creation timestamp. They are also retained while any secret is
+preserved, including unmarked secrets, because cluster deletion does not remove
+secrets and their API requires a surviving cluster. Marked queues, tokens, secrets,
+and non-default cache registries can be removed from persistent clusters without
+deleting those clusters.
 
 Persistent non-admin fixtures are preserved. Unmarked legacy leftovers, including
 resources created before this naming convention, require manual review and cleanup.

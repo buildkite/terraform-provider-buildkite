@@ -192,7 +192,7 @@ func sweepAcceptanceResources(ctx context.Context, client *Client, cutoff time.T
 		{base + "/portals", "slug"},
 		{base + "/pipeline-templates", "uuid"},
 	} {
-		selected, err := acceptanceSweepPaths(ctx, client, endpoint.path, endpoint.id, cutoff)
+		selected, _, err := acceptanceSweepPaths(ctx, client, endpoint.path, endpoint.id, cutoff)
 		if err != nil {
 			return err
 		}
@@ -215,11 +215,21 @@ func sweepAcceptanceResources(ctx context.Context, client *Client, cutoff time.T
 		for _, child := range []struct{ path, id string }{
 			{"/queues", "id"}, {"/tokens", "id"}, {"/secrets", "id"}, {"/cache-registries", "uuid"},
 		} {
-			selected, err := acceptanceSweepPaths(ctx, client, clusterPath+child.path, child.id, cutoff)
+			selected, retained, err := acceptanceSweepPaths(ctx, client, clusterPath+child.path, child.id, cutoff)
 			if err != nil {
 				return err
 			}
 			paths = append(paths, selected...)
+			for _, item := range retained {
+				old, err := item.old(cutoff)
+				if err != nil {
+					return err
+				}
+				// Secrets do not cascade; other children must not be cascaded before the cutoff.
+				if child.path == "/secrets" || !old {
+					retainedClusters[cluster.ID] = true
+				}
+			}
 		}
 		if !cluster.marked() || cluster.ID == testAccFixtureClusterUUID || retainedClusters[cluster.ID] {
 			continue
@@ -238,7 +248,7 @@ func sweepAcceptanceResources(ctx context.Context, client *Client, cutoff time.T
 	for _, endpoint := range []struct{ path, id string }{
 		{base + "/services", "id"}, {base + "/teams", "id"},
 	} {
-		selected, err := acceptanceSweepPaths(ctx, client, endpoint.path, endpoint.id, cutoff)
+		selected, _, err := acceptanceSweepPaths(ctx, client, endpoint.path, endpoint.id, cutoff)
 		if err != nil {
 			return err
 		}
@@ -384,27 +394,31 @@ func acceptanceGraphQLSweepPaths(ctx context.Context, client *Client, field, pat
 	return paths, nil
 }
 
-func acceptanceSweepPaths(ctx context.Context, client *Client, path, idField string, cutoff time.Time) ([]acceptanceSweepDeletion, error) {
+func acceptanceSweepPaths(ctx context.Context, client *Client, path, idField string, cutoff time.Time) ([]acceptanceSweepDeletion, []acceptanceSweepResource, error) {
 	items, err := getAllPages[acceptanceSweepResource](ctx, client, path)
 	if err != nil {
-		return nil, fmt.Errorf("list %s: %w", path, err)
+		return nil, nil, fmt.Errorf("list %s: %w", path, err)
 	}
 	var paths []acceptanceSweepDeletion
+	var retained []acceptanceSweepResource
 	for _, item := range items {
 		if !item.marked() || item.Slug == testAccFixturePipelineTeamSlug || item.UUID == testAccFixtureTemplateUUID {
+			retained = append(retained, item)
 			continue
 		}
 		// The API forbids deleting a cluster's default cache registry. Temporary
 		// clusters remove it during cluster deletion; persistent defaults stay intact.
 		if item.Default && strings.HasSuffix(path, "/cache-registries") {
 			log.Printf("Preserving default cache registry %s in %s", item.UUID, path)
+			retained = append(retained, item)
 			continue
 		}
 		old, err := item.old(cutoff)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		if !old {
+			retained = append(retained, item)
 			continue
 		}
 		id := item.ID
@@ -415,9 +429,9 @@ func acceptanceSweepPaths(ctx context.Context, client *Client, path, idField str
 			id = item.UUID
 		}
 		if id == "" {
-			return nil, fmt.Errorf("missing %s on marked resource from %s", idField, path)
+			return nil, nil, fmt.Errorf("missing %s on marked resource from %s", idField, path)
 		}
 		paths = append(paths, item.deletion(path+"/"+url.PathEscape(id)))
 	}
-	return paths, nil
+	return paths, retained, nil
 }

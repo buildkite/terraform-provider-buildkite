@@ -123,8 +123,17 @@ func TestSweepAcceptanceResources(t *testing.T) {
 						}
 						return
 					}
+					preserved := []any{
+						map[string]any{"node": map[string]any{"slug": "unmarked", "name": "persistent", "createdAt": old}},
+						map[string]any{"node": map[string]any{"slug": "boundary", "name": marked, "createdAt": boundary}},
+						map[string]any{"node": map[string]any{"slug": "fresh", "name": marked, "createdAt": fresh}},
+						map[string]any{"node": map[string]any{"slug": "unknown-age", "name": marked}},
+					}
 					if strings.Contains(request.Query, "suites(") {
-						_, _ = fmt.Fprintf(w, `{"data":{"organization":{"resources":{"pageInfo":{"hasNextPage":false,"endCursor":""},"edges":[{"node":{"id":"suite-id","slug":"old-suite","name":%q,"createdAt":%q}}]}}}}`, marked, old)
+						edges := append(preserved, map[string]any{"node": map[string]any{"id": "suite-id", "slug": "old-suite", "name": marked, "createdAt": old}})
+						_ = json.NewEncoder(w).Encode(map[string]any{"data": map[string]any{"organization": map[string]any{"resources": map[string]any{
+							"pageInfo": map[string]any{"hasNextPage": false}, "edges": edges,
+						}}}})
 						return
 					}
 					if strings.Contains(request.Query, "registries(") {
@@ -138,7 +147,7 @@ func TestSweepAcceptanceResources(t *testing.T) {
 						}
 						_ = json.NewEncoder(w).Encode(map[string]any{"data": map[string]any{"organization": map[string]any{"resources": map[string]any{
 							"pageInfo": map[string]any{"hasNextPage": nextPage, "endCursor": "registry-page-2"},
-							"edges":    []any{map[string]any{"node": map[string]any{"slug": slug, "name": marked, "createdAt": old}}},
+							"edges":    append(preserved, map[string]any{"node": map[string]any{"slug": slug, "name": marked, "createdAt": old}}),
 						}}}})
 						return
 					}
@@ -432,5 +441,129 @@ func TestSweepPreservesYoungRuleOwnership(t *testing.T) {
 	sort.Strings(want)
 	if !reflect.DeepEqual(deleted, want) {
 		t.Fatalf("later sweep deleted %v, want complete Rule and parent cleanup %v", deleted, want)
+	}
+}
+
+func TestSweepPreservesClusterChildren(t *testing.T) {
+	cutoff := time.Date(2026, 11, 12, 10, 0, 0, 0, time.UTC)
+	base := "/v2/organizations/test-org"
+	clusterPath := base + "/clusters/cluster"
+	for _, child := range []struct {
+		path, idField, nameField string
+		defaultRegistry          bool
+	}{
+		{"queues", "id", "key", false},
+		{"tokens", "id", "description", false},
+		{"secrets", "id", "key", false},
+		{"cache-registries", "uuid", "name", false},
+		{"cache-registries", "uuid", "name", true},
+	} {
+		for _, marked := range []bool{true, false} {
+			for _, age := range []string{"old", "boundary", "fresh", "unknown"} {
+				t.Run(fmt.Sprintf("%s/default=%t/marked=%t/%s", child.path, child.defaultRegistry, marked, age), func(t *testing.T) {
+					created := ""
+					switch age {
+					case "old":
+						created = cutoff.Add(-time.Second).Format(time.RFC3339)
+					case "boundary":
+						created = cutoff.Format(time.RFC3339)
+					case "fresh":
+						created = cutoff.Add(time.Second).Format(time.RFC3339)
+					}
+					childPath := clusterPath + "/" + child.path + "/child"
+					clusterDeleted, childDeleted := false, false
+					var deleted []string
+					server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+						w.Header().Set("Content-Type", "application/json")
+						if r.Method == http.MethodDelete {
+							if r.URL.Path == clusterPath {
+								clusterDeleted = true
+								// The server cascades these children, but not secrets.
+								if child.path != "secrets" {
+									childDeleted = true
+								}
+							} else if r.URL.Path == childPath && !clusterDeleted {
+								childDeleted = true
+							} else {
+								t.Errorf("unexpected or unreachable deletion: %s", r.URL.Path)
+							}
+							deleted = append(deleted, r.URL.Path)
+							w.WriteHeader(http.StatusNoContent)
+							return
+						}
+						switch r.URL.Path {
+						case base + "/clusters":
+							rows := []map[string]any{}
+							if !clusterDeleted {
+								rows = append(rows, map[string]any{"id": "cluster", "name": "tfacc-cluster", "created_at": cutoff.Add(-time.Minute).Format(time.RFC3339)})
+							}
+							_ = json.NewEncoder(w).Encode(rows)
+						case clusterPath + "/" + child.path:
+							rows := []map[string]any{}
+							if !childDeleted {
+								name := "tfacc-child"
+								if !marked {
+									name = "persistent-child"
+								}
+								if child.path == "secrets" {
+									name = strings.ToUpper(strings.ReplaceAll(name, "-", "_"))
+								}
+								rows = append(rows, map[string]any{child.idField: "child", child.nameField: name, "created_at": created, "default": child.defaultRegistry})
+							}
+							if child.path == "cache-registries" {
+								_ = json.NewEncoder(w).Encode(map[string]any{"items": rows, "links": map[string]string{}})
+							} else {
+								_ = json.NewEncoder(w).Encode(rows)
+							}
+						case "/graphql":
+							var request struct{ Query string }
+							if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+								t.Error(err)
+								return
+							}
+							if strings.Contains(request.Query, "agentTokens") {
+								fmt.Fprint(w, `{"data":{"organization":{"agentTokens":{"count":0,"edges":[]}}}}`)
+							} else {
+								fmt.Fprint(w, `{"data":{"organization":{"resources":{"pageInfo":{"hasNextPage":false},"edges":[]}}}}`)
+							}
+						default:
+							if strings.HasSuffix(r.URL.Path, "/cache-registries") || r.URL.Path == base+"/services" {
+								fmt.Fprint(w, `{"items":[],"links":{}}`)
+							} else {
+								fmt.Fprint(w, `[]`)
+							}
+						}
+					}))
+					defer server.Close()
+					t.Setenv("BUILDKITE_REST_URL", server.URL)
+					t.Setenv("BUILDKITE_GRAPHQL_URL", server.URL+"/graphql")
+					t.Setenv("BUILDKITE_ORGANIZATION_SLUG", "test-org")
+					client := getTestClientWithToken("test-token")
+					if err := sweepAcceptanceResources(context.Background(), client, cutoff); err != nil {
+						t.Fatal(err)
+					}
+					preserved := age == "unknown" || (!marked && child.path == "secrets")
+					if (age != "old" || preserved) && (clusterDeleted || childDeleted) {
+						t.Fatalf("age-ineligible child or its cluster was deleted: %v", deleted)
+					}
+					if err := sweepAcceptanceResources(context.Background(), client, cutoff.Add(2*time.Second)); err != nil {
+						t.Fatal(err)
+					}
+					if preserved {
+						if len(deleted) != 0 {
+							t.Fatalf("preserved child or its cluster was deleted: %v", deleted)
+						}
+						return
+					}
+					want := []string{childPath, clusterPath}
+					if child.defaultRegistry || !marked {
+						want = []string{clusterPath} // These old children are removed only by the cluster cascade.
+					}
+					if !reflect.DeepEqual(deleted, want) || !clusterDeleted || !childDeleted {
+						t.Fatalf("deletions = %v, want complete child-before-parent cleanup %v", deleted, want)
+					}
+				})
+			}
+		}
 	}
 }
