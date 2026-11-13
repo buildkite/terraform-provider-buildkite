@@ -316,7 +316,7 @@ func acceptanceGraphQLSweepPaths(ctx context.Context, client *Client, field, pat
 			}
 		}`, field)
 		if err := client.genqlient.MakeRequest(ctx, &genqlient.Request{
-			Query: query, Variables: map[string]any{"slug": client.organization, "cursor": cursor},
+			OpName: "SweepMetadata", Query: query, Variables: map[string]any{"slug": client.organization, "cursor": cursor},
 		}, &genqlient.Response{Data: &result}); err != nil {
 			return nil, err
 		}

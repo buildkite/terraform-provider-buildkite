@@ -67,11 +67,16 @@ func TestSweepAcceptanceResources(t *testing.T) {
 				}
 				if r.URL.Path == "/graphql" {
 					var request struct {
-						Query     string         `json:"query"`
-						Variables map[string]any `json:"variables"`
+						Query         string         `json:"query"`
+						OperationName string         `json:"operationName"`
+						Variables     map[string]any `json:"variables"`
 					}
 					if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 						t.Error(err)
+						return
+					}
+					if strings.Contains(request.Query, "query SweepMetadata") && request.OperationName != "SweepMetadata" {
+						fmt.Fprint(w, `{"errors":[{"message":"No operation named"}]}`)
 						return
 					}
 					if strings.Contains(request.Query, "first:1000") || strings.Contains(request.Query, "first: 1000") {
