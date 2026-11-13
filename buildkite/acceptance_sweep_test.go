@@ -67,15 +67,36 @@ type acceptanceSweepResource struct {
 	Default     bool   `json:"default"`
 }
 
+func (r acceptanceSweepResource) displayName() string {
+	if r.Name != "" {
+		return r.Name
+	}
+	if r.Key != "" {
+		return r.Key
+	}
+	return r.Description
+}
+
 func (r acceptanceSweepResource) marked() bool {
-	name := r.Name
-	if name == "" {
-		name = r.Key
-	}
-	if name == "" {
-		name = r.Description
-	}
+	name := r.displayName()
 	return strings.HasPrefix(name, "tfacc-") || strings.HasPrefix(name, "TFACC_")
+}
+
+type acceptanceSweepDeletion struct {
+	path string
+	name string
+	id   string
+}
+
+func (r acceptanceSweepResource) deletion(path string) acceptanceSweepDeletion {
+	id := r.ID
+	if id == "" {
+		id = r.UUID
+	}
+	if id == "" {
+		id = r.Slug
+	}
+	return acceptanceSweepDeletion{path: path, name: r.displayName(), id: id}
 }
 
 func (r acceptanceSweepResource) old(cutoff time.Time) (bool, error) {
@@ -103,7 +124,7 @@ func sweepAcceptanceResources(ctx context.Context, client *Client, cutoff time.T
 		return err
 	}
 
-	var paths []string
+	var paths []acceptanceSweepDeletion
 	markedPipelineIDs := make(map[string]bool)
 	pipelineIDs := make(map[string]bool)
 	for _, p := range pipelines {
@@ -141,12 +162,12 @@ func sweepAcceptanceResources(ctx context.Context, client *Client, cutoff time.T
 		// Some lifecycle tests deliberately clear the description. Their temporary
 		// pipelines still identify the Rule as test-owned.
 		if rule.marked() || markedPipelineIDs[rule.SourceUUID] || markedPipelineIDs[rule.TargetUUID] {
-			paths = append(paths, base+"/rules/"+url.PathEscape(rule.UUID))
+			paths = append(paths, rule.deletion(base+"/rules/"+url.PathEscape(rule.UUID)))
 		}
 	}
 
 	retainedClusters := make(map[string]bool)
-	webhooks := make(map[string]*webhookInfo)
+	webhooks := make(map[acceptanceSweepResource]*webhookInfo)
 	for _, p := range pipelines {
 		if pipelineIDs[p.ID] {
 			response, err := getPipelineWebhook(ctx, client.genqlient, p.GraphQLID)
@@ -159,9 +180,9 @@ func sweepAcceptanceResources(ctx context.Context, client *Client, cutoff time.T
 				return err
 			}
 			if info != nil {
-				webhooks[p.GraphQLID] = info
+				webhooks[p] = info
 			}
-			paths = append(paths, base+"/pipelines/"+url.PathEscape(p.Slug))
+			paths = append(paths, p.deletion(base+"/pipelines/"+url.PathEscape(p.Slug)))
 		} else {
 			retainedClusters[p.ClusterID] = true
 		}
@@ -210,7 +231,7 @@ func sweepAcceptanceResources(ctx context.Context, client *Client, cutoff time.T
 		if old {
 			// Cluster deletion removes queues, tokens, cache registries, and the hosted
 			// tenant (including images, whose API does not expose creation timestamps).
-			paths = append(paths, clusterPath)
+			paths = append(paths, cluster.deletion(clusterPath))
 		}
 	}
 
@@ -246,7 +267,7 @@ func sweepAcceptanceResources(ctx context.Context, client *Client, cutoff time.T
 	if tokens.Count != len(tokens.Edges) {
 		return fmt.Errorf("agent token list is truncated: got %d of %d", len(tokens.Edges), tokens.Count)
 	}
-	var tokenIDs []string
+	var selectedTokens []acceptanceSweepResource
 	for _, edge := range tokens.Edges {
 		token := acceptanceSweepResource{ID: edge.Node.ID, Description: edge.Node.Description, CreatedAt: edge.Node.CreatedAt}
 		if !token.marked() {
@@ -257,37 +278,54 @@ func sweepAcceptanceResources(ctx context.Context, client *Client, cutoff time.T
 			return err
 		}
 		if old {
-			tokenIDs = append(tokenIDs, token.ID)
+			selectedTokens = append(selectedTokens, token)
 		}
 	}
 
+	deleted, deletedWebhooks, revokedTokens := 0, 0, 0
 	// Repository hooks live outside Buildkite and are not cascaded by pipeline deletion.
-	for id, info := range webhooks {
-		log.Printf("Sweeping repository webhook for pipeline %s", id)
-		if _, err := deletePipelineWebhook(ctx, client.genqlient, id, &info.Repository); err != nil && !gqlErrorContains(err, "No Buildkite webhook found for this repository") {
-			return fmt.Errorf("sweep pipeline webhook %s: %w", id, err)
+	for pipeline, info := range webhooks {
+		if _, err := deletePipelineWebhook(ctx, client.genqlient, pipeline.GraphQLID, &info.Repository); err != nil {
+			if !gqlErrorContains(err, "No Buildkite webhook found for this repository") {
+				return fmt.Errorf("sweep pipeline webhook %s: %w", pipeline.GraphQLID, err)
+			}
+			log.Printf("Repository webhook already absent pipeline_name=%q pipeline_id=%q id=%q", pipeline.Name, pipeline.ID, info.ExternalId)
+			continue
 		}
+		deletedWebhooks++
+		log.Printf("Deleted repository webhook pipeline_name=%q pipeline_id=%q id=%q", pipeline.Name, pipeline.ID, info.ExternalId)
 	}
-	for _, path := range paths {
-		log.Printf("Sweeping %s", path)
-		if err := client.makeRequest(ctx, http.MethodDelete, path, nil, nil); err != nil && !isResourceNotFoundError(err) {
-			return fmt.Errorf("sweep %s: %w", path, err)
+	for _, target := range paths {
+		if err := client.makeRequest(ctx, http.MethodDelete, target.path, nil, nil); err != nil {
+			if !isResourceNotFoundError(err) {
+				return fmt.Errorf("sweep %s: %w", target.path, err)
+			}
+			log.Printf("Resource already absent name=%q id=%q path=%q", target.name, target.id, target.path)
+			continue
 		}
+		deleted++
+		log.Printf("Deleted resource name=%q id=%q path=%q", target.name, target.id, target.path)
 	}
-	for _, id := range tokenIDs {
-		log.Printf("Revoking acceptance agent token %s", id)
-		if _, err := revokeAgentToken(ctx, client.genqlient, id, "Revoked by acceptance test sweeper"); err != nil && !gqlErrorContains(err, "This agent registration token was already revoked") {
-			return err
+	for _, token := range selectedTokens {
+		if _, err := revokeAgentToken(ctx, client.genqlient, token.ID, "Revoked by acceptance test sweeper"); err != nil {
+			if !gqlErrorContains(err, "This agent registration token was already revoked") {
+				return err
+			}
+			log.Printf("Agent token already revoked name=%q id=%q", token.displayName(), token.ID)
+			continue
 		}
+		revokedTokens++
+		log.Printf("Revoked agent token name=%q id=%q", token.displayName(), token.ID)
 	}
+	log.Printf("Sweep complete: deleted %d resources, deleted %d repository webhooks, revoked %d agent tokens", deleted, deletedWebhooks, revokedTokens)
 	return nil
 }
 
 // Suite and registry REST responses omit created_at. Both GraphQL connections
 // expose creation times and use the same cursor-based metadata discovery.
-func acceptanceGraphQLSweepPaths(ctx context.Context, client *Client, field, path string, cutoff time.Time) ([]string, error) {
+func acceptanceGraphQLSweepPaths(ctx context.Context, client *Client, field, path string, cutoff time.Time) ([]acceptanceSweepDeletion, error) {
 	var cursor *string
-	var paths []string
+	var paths []acceptanceSweepDeletion
 	for {
 		var result struct {
 			Organization struct {
@@ -298,6 +336,7 @@ func acceptanceGraphQLSweepPaths(ctx context.Context, client *Client, field, pat
 					}
 					Edges []struct {
 						Node struct {
+							ID        string
 							Name      string
 							Slug      string
 							CreatedAt string
@@ -311,7 +350,7 @@ func acceptanceGraphQLSweepPaths(ctx context.Context, client *Client, field, pat
 			organization(slug: $slug) {
 				resources: %s(first: 100, after: $cursor) {
 					pageInfo { hasNextPage endCursor }
-					edges { node { name slug createdAt } }
+					edges { node { id name slug createdAt } }
 				}
 			}
 		}`, field)
@@ -321,7 +360,7 @@ func acceptanceGraphQLSweepPaths(ctx context.Context, client *Client, field, pat
 			return nil, err
 		}
 		for _, edge := range result.Organization.Resources.Edges {
-			item := acceptanceSweepResource{Name: edge.Node.Name, Slug: edge.Node.Slug, CreatedAt: edge.Node.CreatedAt}
+			item := acceptanceSweepResource{ID: edge.Node.ID, Name: edge.Node.Name, Slug: edge.Node.Slug, CreatedAt: edge.Node.CreatedAt}
 			if !item.marked() {
 				continue
 			}
@@ -330,7 +369,7 @@ func acceptanceGraphQLSweepPaths(ctx context.Context, client *Client, field, pat
 				return nil, err
 			}
 			if old {
-				paths = append(paths, path+"/"+url.PathEscape(item.Slug))
+				paths = append(paths, item.deletion(path+"/"+url.PathEscape(item.Slug)))
 			}
 		}
 		page := result.Organization.Resources.PageInfo
@@ -345,12 +384,12 @@ func acceptanceGraphQLSweepPaths(ctx context.Context, client *Client, field, pat
 	return paths, nil
 }
 
-func acceptanceSweepPaths(ctx context.Context, client *Client, path, idField string, cutoff time.Time) ([]string, error) {
+func acceptanceSweepPaths(ctx context.Context, client *Client, path, idField string, cutoff time.Time) ([]acceptanceSweepDeletion, error) {
 	items, err := getAllPages[acceptanceSweepResource](ctx, client, path)
 	if err != nil {
 		return nil, fmt.Errorf("list %s: %w", path, err)
 	}
-	var paths []string
+	var paths []acceptanceSweepDeletion
 	for _, item := range items {
 		if !item.marked() || item.Slug == testAccFixturePipelineTeamSlug || item.UUID == testAccFixtureTemplateUUID {
 			continue
@@ -378,7 +417,7 @@ func acceptanceSweepPaths(ctx context.Context, client *Client, path, idField str
 		if id == "" {
 			return nil, fmt.Errorf("missing %s on marked resource from %s", idField, path)
 		}
-		paths = append(paths, path+"/"+url.PathEscape(id))
+		paths = append(paths, item.deletion(path+"/"+url.PathEscape(id)))
 	}
 	return paths, nil
 }

@@ -1,9 +1,11 @@
 package buildkite
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
@@ -40,6 +42,10 @@ func TestSweepAcceptanceResources(t *testing.T) {
 	marked := "tfacc-5319-80c886d-abcdefghijkl"
 	for _, failure := range []string{"", "list", "delete", "partial-delete", "timestamp", "truncated-tokens", "webhook-delete", "webhook-absent", "revoked-token"} {
 		t.Run("failure="+failure, func(t *testing.T) {
+			var logs bytes.Buffer
+			previousOutput := log.Writer()
+			log.SetOutput(&logs)
+			t.Cleanup(func() { log.SetOutput(previousOutput) })
 			var deleted []string
 			removed := make(map[string]bool)
 			deleteFailed := false
@@ -118,7 +124,7 @@ func TestSweepAcceptanceResources(t *testing.T) {
 						return
 					}
 					if strings.Contains(request.Query, "suites(") {
-						_, _ = fmt.Fprintf(w, `{"data":{"organization":{"resources":{"pageInfo":{"hasNextPage":false,"endCursor":""},"edges":[{"node":{"slug":"old-suite","name":%q,"createdAt":%q}}]}}}}`, marked, old)
+						_, _ = fmt.Fprintf(w, `{"data":{"organization":{"resources":{"pageInfo":{"hasNextPage":false,"endCursor":""},"edges":[{"node":{"id":"suite-id","slug":"old-suite","name":%q,"createdAt":%q}}]}}}}`, marked, old)
 						return
 					}
 					if strings.Contains(request.Query, "registries(") {
@@ -280,6 +286,9 @@ func TestSweepAcceptanceResources(t *testing.T) {
 				if len(deleted) != 0 {
 					t.Fatalf("sweep mutated resources despite failed discovery or first deletion: %v", deleted)
 				}
+				if strings.Contains(logs.String(), "Deleted resource") {
+					t.Fatalf("failed deletion logged as successful: %s", logs.String())
+				}
 				return
 			}
 			if err != nil {
@@ -287,6 +296,56 @@ func TestSweepAcceptanceResources(t *testing.T) {
 			}
 			if !webhookRemoved {
 				t.Fatal("pipeline repository webhook was orphaned")
+			}
+			for _, resource := range []struct{ name, id, path string }{
+				{marked, "old", base + "/pipelines/old"},
+				{marked, "suite-id", "/v2/analytics/organizations/test-org/suites/old-suite"},
+				{"TFACC_5319_80C886D_ABCDEFGHIJKL", "old-secret", base + "/clusters/" + testAccFixtureClusterUUID + "/secrets/old-secret"},
+				{marked, "old-service", base + "/services/old-service"},
+			} {
+				want := fmt.Sprintf("Deleted resource name=%q id=%q path=%q", resource.name, resource.id, resource.path)
+				if !strings.Contains(logs.String(), want) {
+					t.Fatalf("missing deletion identity %s in logs: %s", want, logs.String())
+				}
+			}
+			webhookMessage := "Deleted repository webhook"
+			if failure == "webhook-absent" {
+				webhookMessage = "Repository webhook already absent"
+				if strings.Contains(logs.String(), "Deleted repository webhook") {
+					t.Fatalf("absent webhook logged as deleted: %s", logs.String())
+				}
+			}
+			if want := fmt.Sprintf("%s pipeline_name=%q pipeline_id=%q id=%q", webhookMessage, marked, "old", "hook"); !strings.Contains(logs.String(), want) {
+				t.Fatalf("missing webhook outcome %s in logs: %s", want, logs.String())
+			}
+			tokenMessage := "Revoked agent token"
+			if failure == "revoked-token" {
+				tokenMessage = "Agent token already revoked"
+				if strings.Contains(logs.String(), "Revoked agent token") {
+					t.Fatalf("already-revoked token logged as newly revoked: %s", logs.String())
+				}
+			}
+			if want := fmt.Sprintf("%s name=%q id=%q", tokenMessage, marked, "old-token"); !strings.Contains(logs.String(), want) {
+				t.Fatalf("missing token outcome %s in logs: %s", want, logs.String())
+			}
+			if failure == "partial-delete" {
+				want := fmt.Sprintf("Deleted resource name=%q id=%q path=%q", "", "old-rule", base+"/rules/old-rule")
+				if strings.Count(logs.String(), want) != 1 || !strings.Contains(logs.String(), "Resource already absent") {
+					t.Fatalf("retried deletion not distinguished from already absent: %s", logs.String())
+				}
+			}
+			resources, webhooks, tokens := 16, 1, 1
+			switch failure {
+			case "webhook-absent":
+				webhooks = 0
+			case "revoked-token":
+				tokens = 0
+			case "partial-delete":
+				resources, webhooks = 15, 0 // The first attempt already deleted one Rule and the webhook.
+			}
+			summary := fmt.Sprintf("Sweep complete: deleted %d resources, deleted %d repository webhooks, revoked %d agent tokens", resources, webhooks, tokens)
+			if !strings.Contains(logs.String(), summary) {
+				t.Fatalf("missing cleanup summary %s in logs: %s", summary, logs.String())
 			}
 			want := []string{
 				base + "/rules/old-rule", base + "/rules/marked-rule",
