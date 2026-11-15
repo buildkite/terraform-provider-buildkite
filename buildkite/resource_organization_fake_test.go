@@ -463,8 +463,9 @@ func TestUnitBuildkiteOrganizationKeepsEntriesAfterRefusedUpdateAndUnreadableRef
 		Steps: []resource.TestStep{
 			{Config: initial},
 			{
+				// The refusal's body is deliberately not in the error, so the status is what identifies it.
 				PreConfig: func() { api.refusePatch(http.StatusUnprocessableEntity, `{"message":"refused"}`) },
-				Config:    changed, ExpectError: regexp.MustCompile("refused"),
+				Config:    changed, ExpectError: regexp.MustCompile(`(?s)status:\s+422`),
 			},
 			{
 				PreConfig: func() { api.refuseRead(http.StatusForbidden, `{"message":"Forbidden"}`) },
@@ -510,7 +511,7 @@ func TestUnitBuildkiteOrganizationReportsAPlanGatedAllowlist(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config:      fakeOrganizationConfig(server, `allowed_api_ip_addresses = ["1.1.1.1/32"]`),
-				ExpectError: regexp.MustCompile(`(?s)Your plan does not include the API IP allow list feature.*The allowed API IP addresses feature is not available on this organization's plan`),
+				ExpectError: regexp.MustCompile(`(?s)status:\s+403.*The\s+allowed\s+API\s+IP\s+addresses\s+feature\s+is\s+not\s+available\s+on\s+this\s+organization's\s+plan`),
 			},
 		},
 	})
@@ -529,7 +530,7 @@ func TestUnitBuildkiteOrganizationRefusesToWriteUnreadableSettings(t *testing.T)
 		Steps: []resource.TestStep{
 			{
 				Config:      fakeOrganizationConfig(server, `allowed_api_ip_addresses = []`),
-				ExpectError: regexp.MustCompile(`(?s)Unable to read organization API settings.*The API token needs the read_organization_settings scope, and its user must be an organization administrator`),
+				ExpectError: regexp.MustCompile(`(?s)Unable\s+to\s+read\s+organization\s+API\s+settings.*The\s+API\s+token\s+needs\s+the\s+read_organization_settings\s+scope,\s+and\s+its\s+user\s+must\s+be\s+an\s+organization\s+administrator`),
 			},
 		},
 	})
@@ -548,7 +549,7 @@ func TestUnitBuildkiteOrganizationNeedsReadableSettingsFor2FAAlone(t *testing.T)
 		Steps: []resource.TestStep{
 			{
 				Config:      fakeOrganizationConfig(server, `enforce_2fa = true`),
-				ExpectError: regexp.MustCompile(`(?s)Unable to read organization API settings.*The API token needs the read_organization_settings scope, and its user must be an organization administrator`),
+				ExpectError: regexp.MustCompile(`(?s)Unable\s+to\s+read\s+organization\s+API\s+settings.*The\s+API\s+token\s+needs\s+the\s+read_organization_settings\s+scope,\s+and\s+its\s+user\s+must\s+be\s+an\s+organization\s+administrator`),
 			},
 		},
 	})
@@ -581,7 +582,7 @@ func TestUnitBuildkiteOrganizationRefusesToDestroyWithUnreadableSettings(t *test
 				},
 				Config:      fakeOrganizationConfig(server, ``),
 				Destroy:     true,
-				ExpectError: regexp.MustCompile(`(?s)Unable to read organization API settings.*The API token needs the read_organization_settings scope, and its user must be an organization administrator.*terraform state rm`),
+				ExpectError: regexp.MustCompile(`(?s)Unable\s+to\s+read\s+organization\s+API\s+settings.*The\s+API\s+token\s+needs\s+the\s+read_organization_settings\s+scope,\s+and\s+its\s+user\s+must\s+be\s+an\s+organization\s+administrator.*terraform\s+state\s+rm`),
 			},
 			{
 				// with the settings readable the allowlist state never saw is still cleared
@@ -641,7 +642,7 @@ func TestUnitBuildkiteOrganizationKeeps2FAWhenTheAllowlistIsRefused(t *testing.T
 		Steps: []resource.TestStep{
 			{
 				Config:      fakeOrganizationConfig(server, `allowed_api_ip_addresses = ["1.1.1.1/32"]`),
-				ExpectError: regexp.MustCompile(`The allowed API IP addresses feature is not available on this organization's plan`),
+				ExpectError: regexp.MustCompile(`The\s+allowed\s+API\s+IP\s+addresses\s+feature\s+is\s+not\s+available\s+on\s+this\s+organization's\s+plan`),
 			},
 		},
 	})

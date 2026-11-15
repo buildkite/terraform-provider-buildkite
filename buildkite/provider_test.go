@@ -248,8 +248,11 @@ func TestMaintainerExistenceCheckPreservesHTTPFailure(t *testing.T) {
 				},
 			}}}
 			err := testAccCheckClusterMaintainerExists("buildkite_cluster_maintainer.test")(s)
-			if !isAPIStatus(err, status) || !strings.Contains(err.Error(), "request 404-abc refused") {
+			if !isAPIStatus(err, status) {
 				t.Fatalf("maintainer existence check = %v, want original HTTP %d error", err, status)
+			}
+			if strings.Contains(err.Error(), "request 404-abc refused") {
+				t.Fatalf("maintainer existence check = %v, want the response body not exposed", err)
 			}
 			if status == http.StatusForbidden && strings.Contains(err.Error(), "not found in API") {
 				t.Fatalf("HTTP 403 was misclassified as not found: %v", err)
