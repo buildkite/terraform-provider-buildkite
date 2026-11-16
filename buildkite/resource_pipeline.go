@@ -479,7 +479,13 @@ func (p *pipelineResource) Read(ctx context.Context, req resource.ReadRequest, r
 			return
 		}
 
+		previousWebhookURL := state.WebhookUrl
 		setPipelineModel(&state, pipelineNode)
+		// Buildkite hides webhook URLs from read-only tokens. A restricted read
+		// must not clear the URL previously returned by a write-authorized request.
+		if pipelineNode.GetWebhookURL() == "" && previousWebhookURL.ValueString() != "" {
+			state.WebhookUrl = previousWebhookURL
+		}
 
 		// Refresh provider_settings only when the user configured it, via a dedicated GraphQL query
 		// (kept out of the shared PipelineFields fragment so unrelated reads aren't coupled to the

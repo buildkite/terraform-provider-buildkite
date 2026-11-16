@@ -3802,6 +3802,9 @@ resource "buildkite_pipeline" "test" {
   repository = "https://github.com/example/test.git"
   description = %q
 }
+resource "terraform_data" "webhook" {
+  input = buildkite_pipeline.test.webhook_url
+}
 `, server.URL, server.URL, description)
 			}
 			resource.UnitTest(t, resource.TestCase{
