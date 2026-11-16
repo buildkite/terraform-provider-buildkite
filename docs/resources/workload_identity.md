@@ -127,7 +127,7 @@ Required:
 
 Optional:
 
-- `ids` (Set of String) The UUIDs of the resources to grant. Required when `access` is `selected`, and not allowed otherwise. Up to 20 pipelines can be selected.
+- `ids` (Set of String) The UUIDs of the resources to grant. Required when `access` is `selected`, and not allowed otherwise. Up to 10 can be selected.
 
 ## Import
 

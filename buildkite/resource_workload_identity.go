@@ -244,8 +244,8 @@ func (r *workloadIdentityResource) Schema(ctx context.Context, req resource.Sche
 						"ids": schema.SetAttribute{
 							Optional:            true,
 							ElementType:         types.StringType,
-							MarkdownDescription: "The UUIDs of the resources to grant. Required when `access` is `selected`, and not allowed otherwise. Up to 20 pipelines can be selected.",
-							Validators:          []validator.Set{setvalidator.SizeAtLeast(1)},
+							MarkdownDescription: "The UUIDs of the resources to grant. Required when `access` is `selected`, and not allowed otherwise. Up to 10 can be selected.",
+							Validators:          []validator.Set{setvalidator.SizeBetween(1, 10)},
 						},
 					},
 				},
