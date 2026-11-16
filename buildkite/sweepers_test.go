@@ -10,6 +10,7 @@ import (
 	"net/http/httptest"
 	"reflect"
 	"regexp"
+	"slices"
 	"sort"
 	"strings"
 	"testing"
@@ -40,7 +41,7 @@ func TestSweepAcceptanceResources(t *testing.T) {
 	fresh := cutoff.Add(time.Second).Format(time.RFC3339)
 	base := "/v2/organizations/test-org"
 	marked := "tfacc-5319-80c886d-abcdefghijkl"
-	for _, failure := range []string{"", "list", "delete", "partial-delete", "timestamp", "truncated-tokens", "webhook-delete", "webhook-absent", "revoked-token", "cursor-link"} {
+	for _, failure := range []string{"", "list", "delete", "partial-delete", "timestamp", "truncated-tokens", "webhook-delete", "webhook-absent", "pipeline-absent", "cluster-absent", "cluster-list-forbidden", "revoked-token", "cursor-link"} {
 		t.Run("failure="+failure, func(t *testing.T) {
 			var logs bytes.Buffer
 			previousOutput := log.Writer()
@@ -104,6 +105,11 @@ func TestSweepAcceptanceResources(t *testing.T) {
 						return
 					}
 					if strings.Contains(request.Query, "pipelineDeleteWebhook") {
+						if failure == "pipeline-absent" {
+							// Another sweep removed the hook and pipeline after discovery.
+							webhookRemoved = true
+							removed[base+"/pipelines/old"] = true
+						}
 						if removed[base+"/pipelines/old"] {
 							fmt.Fprint(w, `{"errors":[{"message":"No pipeline found"}]}`)
 							return
@@ -182,6 +188,16 @@ func TestSweepAcceptanceResources(t *testing.T) {
 				}
 				if r.Method != http.MethodGet {
 					t.Errorf("unexpected %s %s", r.Method, r.URL)
+				}
+				if failure == "cluster-absent" && strings.HasPrefix(r.URL.Path, base+"/clusters/old-cluster/") {
+					// Another sweep removed this old cluster after it was listed.
+					removed[base+"/clusters/old-cluster"] = true
+					http.Error(w, `{"message":"Not found"}`, http.StatusNotFound)
+					return
+				}
+				if failure == "cluster-list-forbidden" && strings.HasPrefix(r.URL.Path, base+"/clusters/old-cluster/") {
+					http.Error(w, `{"message":"cluster list forbidden"}`, http.StatusForbidden)
+					return
 				}
 				if r.URL.Path == base+"/pipelines" {
 					if failure == "list" {
@@ -289,7 +305,7 @@ func TestSweepAcceptanceResources(t *testing.T) {
 				}
 				err = sweepAcceptanceResources(context.Background(), client, cutoff)
 			}
-			wantError := map[string]string{"list": "list forbidden", "delete": "delete forbidden", "timestamp": "not-a-date", "truncated-tokens": "truncated", "webhook-delete": "Repository not found", "cursor-link": "invalid pagination link"}[failure]
+			wantError := map[string]string{"list": "list forbidden", "delete": "delete forbidden", "timestamp": "not-a-date", "truncated-tokens": "truncated", "webhook-delete": "Repository not found", "cluster-list-forbidden": "cluster list forbidden", "cursor-link": "invalid pagination link"}[failure]
 			if wantError != "" {
 				if err == nil || !strings.Contains(err.Error(), wantError) {
 					t.Fatalf("sweep error = %v, expected %s failure", err, failure)
@@ -314,13 +330,17 @@ func TestSweepAcceptanceResources(t *testing.T) {
 				{"TFACC_5319_80C886D_ABCDEFGHIJKL", "old-secret", base + "/clusters/" + testAccFixtureClusterUUID + "/secrets/old-secret"},
 				{marked, "old-service", base + "/services/old-service"},
 			} {
-				want := fmt.Sprintf("Deleted resource name=%q id=%q path=%q", resource.name, resource.id, resource.path)
+				outcome := "Deleted resource"
+				if failure == "pipeline-absent" && resource.id == "old" {
+					outcome = "Resource already absent"
+				}
+				want := fmt.Sprintf("%s name=%q id=%q path=%q", outcome, resource.name, resource.id, resource.path)
 				if !strings.Contains(logs.String(), want) {
 					t.Fatalf("missing deletion identity %s in logs: %s", want, logs.String())
 				}
 			}
 			webhookMessage := "Deleted repository webhook"
-			if failure == "webhook-absent" {
+			if failure == "webhook-absent" || failure == "pipeline-absent" {
 				webhookMessage = "Repository webhook already absent"
 				if strings.Contains(logs.String(), "Deleted repository webhook") {
 					t.Fatalf("absent webhook logged as deleted: %s", logs.String())
@@ -353,6 +373,10 @@ func TestSweepAcceptanceResources(t *testing.T) {
 				tokens = 0
 			case "partial-delete":
 				resources, webhooks = 15, 0 // The first attempt already deleted one Rule and the webhook.
+			case "pipeline-absent":
+				resources, webhooks = 15, 0
+			case "cluster-absent":
+				resources = 15
 			}
 			summary := fmt.Sprintf("Sweep complete: deleted %d resources, deleted %d repository webhooks, revoked %d agent tokens", resources, webhooks, tokens)
 			if !strings.Contains(logs.String(), summary) {
@@ -371,6 +395,10 @@ func TestSweepAcceptanceResources(t *testing.T) {
 				base + "/clusters/" + testAccFixtureClusterUUID + "/cache-registries/old-cache",
 				base + "/clusters/old-cluster", base + "/services/old-service", base + "/teams/old-team", "token:old-token",
 			}
+			want = slices.DeleteFunc(want, func(path string) bool {
+				return (failure == "pipeline-absent" && path == base+"/pipelines/old") ||
+					(failure == "cluster-absent" && path == base+"/clusters/old-cluster")
+			})
 			sort.Strings(deleted)
 			sort.Strings(want)
 			if !reflect.DeepEqual(deleted, want) {

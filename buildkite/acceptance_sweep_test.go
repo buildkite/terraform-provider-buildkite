@@ -217,6 +217,10 @@ func sweepAcceptanceResources(ctx context.Context, client *Client, cutoff time.T
 		} {
 			selected, retained, err := acceptanceSweepPaths(ctx, client, clusterPath+child.path, child.id, cutoff)
 			if err != nil {
+				// Another build's sweep may have deleted this cluster after discovery.
+				if isAPIStatus(err, http.StatusNotFound) {
+					continue
+				}
 				return err
 			}
 			paths = append(paths, selected...)
@@ -296,7 +300,7 @@ func sweepAcceptanceResources(ctx context.Context, client *Client, cutoff time.T
 	// Repository hooks live outside Buildkite and are not cascaded by pipeline deletion.
 	for pipeline, info := range webhooks {
 		if _, err := deletePipelineWebhook(ctx, client.genqlient, pipeline.GraphQLID, &info.Repository); err != nil {
-			if !gqlErrorContains(err, "No Buildkite webhook found for this repository") {
+			if !gqlErrorContains(err, "No Buildkite webhook found for this repository") && !gqlErrorContains(err, "No pipeline found") {
 				return fmt.Errorf("sweep pipeline webhook %s: %w", pipeline.GraphQLID, err)
 			}
 			log.Printf("Repository webhook already absent pipeline_name=%q pipeline_id=%q id=%q", pipeline.Name, pipeline.ID, info.ExternalId)

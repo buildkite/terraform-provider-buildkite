@@ -84,12 +84,35 @@ use uppercase letters and underscores instead of hyphens. Keep random secret
 values separate from resource identities. Resources without names belong to
 marked temporary parents; tokens and notification services use marked descriptions.
 
-The CI `sweepers` step runs on the `oss-deploy` queue before both acceptance jobs,
-using the existing IAM role's source-IP restrictions. All three steps share the
-`terraform-provider-acceptance-tests` concurrency group.
-Sweep failures are reported as soft failures and do not fail the build. Both
-acceptance jobs wait for the sweep to finish but allow dependency failures, so a
-cleanup failure does not prevent acceptance testing.
+The CI `sweepers` step runs on the `oss-deploy` queue before acceptance testing,
+using the existing IAM role's source-IP restrictions. Sweep failures are reported
+as soft failures and do not fail the build. All three acceptance jobs wait for the
+sweep to finish but allow dependency failures, so a cleanup failure does not
+prevent acceptance testing. Sweepers can overlap across builds; they retain the
+24-hour cutoff and tolerate resources another sweep has already removed.
+
+After sweeping, three acceptance jobs run independently in the same test organization:
+
+- `make testacc-shared` runs organization-setting tests, the two PUBLIC-pipeline
+  scenarios that depend on those settings, and permission tests that use the
+  persistent Rule fixture's trigger slot. Only this job uses the
+  `terraform-provider-acceptance-tests` concurrency group, with a limit of one
+  across builds. Its admin and member-token selections run sequentially, with
+  separate reports; the member selection still runs if the admin selection fails.
+- `make testacc-isolated` runs the remaining tests with the admin token.
+- `make testacc-nonadmin-isolated` runs the remaining member-token tests.
+
+The isolated jobs have no cross-build concurrency limit and retain Go parallelism
+of 12. Their resources use unique names, and they must not depend on settings or
+persistent fixture slots modified by the shared tests. Keep new writers and their
+dependent readers in the `TESTACC_SHARED` selection in the Makefile. Shared tests
+run with Go parallelism of one, including tests using `resource.ParallelTest`.
+
+For local use, `make testacc` and `make testacc-nonadmin` still run their full
+selections. `make testacc-shared` requires the admin token in `BUILDKITE_API_TOKEN`
+and the member token in `BUILDKITE_NONADMIN_API_TOKEN`. Do not overlap a local full
+suite or shared selection with CI's shared job against the same organization;
+local commands do not acquire the Buildkite concurrency lock.
 
 To invoke the [HashiCorp sweeper](https://developer.hashicorp.com/terraform/plugin/testing/acceptance-tests/sweepers)
 manually, export `BUILDKITE_API_TOKEN` for a test organization, then run:
