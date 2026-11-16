@@ -52,7 +52,7 @@ func TestUnitClusterAgentImageDatasource(t *testing.T) {
 			selector:   `id = "ruby-id"`,
 			body:       `{"message":"No agent image found with the given ID."}`,
 			statusCode: http.StatusNotFound,
-			wantError:  "No agent image found with the given ID",
+			wantError:  `status:\s+404`,
 		},
 		{
 			name:      "missing name",
@@ -71,7 +71,7 @@ func TestUnitClusterAgentImageDatasource(t *testing.T) {
 			selector:   `name = "ruby"`,
 			body:       `{"message":"permission to manage this cluster is required"}`,
 			statusCode: http.StatusForbidden,
-			wantError:  "permission to manage this cluster is required",
+			wantError:  `status:\s+403`,
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {

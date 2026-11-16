@@ -93,7 +93,7 @@ func TestRefreshReadsPreserveGraphQLFailureAtDeadline(t *testing.T) {
 					diags := runRead(t.Context(), t, newResource(client), map[string]tftypes.Value{
 						"id": tftypes.NewValue(tftypes.String, "resource-id"),
 					})
-					for _, want := range []string{fmt.Sprintf("status: %d", status), "upstream temporarily unavailable", "context deadline exceeded"} {
+					for _, want := range []string{fmt.Sprintf("status: %d", status), "context deadline exceeded"} {
 						if !diagnosticsContain(diags, want) {
 							t.Errorf("Read diagnostics = %v, want %q", diags, want)
 						}
@@ -1072,16 +1072,17 @@ func TestGraphQLRequestReportsTheResponseItRetried(t *testing.T) {
 					t.Errorf("transport requests = %d, reported attempts = %d, want both %d", requests, apiErr.Attempts, testCase.wantAttempts)
 				}
 				if testCase.stallAfterFirst {
-					if apiErr.Body != "" || apiErr.earlierStatus != http.StatusServiceUnavailable || apiErr.earlierBody != unavailableBody {
-						t.Errorf("Expected the earlier 503 body only as context, got %+v", apiErr)
+					if apiErr.earlierStatus != http.StatusServiceUnavailable {
+						t.Errorf("Expected the earlier 503 only as context, got %+v", apiErr)
 					}
-				} else if apiErr.Body != unavailableBody || apiErr.earlierStatus != 0 || apiErr.earlierBody != "" {
-					t.Errorf("Expected the last 503 body as the response, got %+v", apiErr)
+				} else if apiErr.earlierStatus != 0 {
+					t.Errorf("Expected the last 503 as the response, got %+v", apiErr)
 				}
-				for _, want := range []string{"Service Unavailable", testCase.wantPhrase} {
-					if !strings.Contains(err.Error(), want) {
-						t.Errorf("getOrganization() = %q, want it to mention %q", err, want)
-					}
+				if strings.Contains(err.Error(), "Service Unavailable") {
+					t.Errorf("getOrganization() = %q, want response body not to be exposed", err)
+				}
+				if !strings.Contains(err.Error(), testCase.wantPhrase) {
+					t.Errorf("getOrganization() = %q, want it to mention %q", err, testCase.wantPhrase)
 				}
 				if got := errors.Is(err, context.DeadlineExceeded); got != testCase.deadline {
 					t.Errorf("errors.Is(err, context.DeadlineExceeded) = %v, want %v", got, testCase.deadline)

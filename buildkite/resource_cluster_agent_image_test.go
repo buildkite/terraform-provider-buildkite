@@ -396,7 +396,7 @@ func TestUnitBuildkiteClusterAgentImageRetainsAnImageInUse(t *testing.T) {
 				PreConfig:   func() { api.setInUse(true) },
 				Config:      config,
 				Destroy:     true,
-				ExpectError: regexp.MustCompile(`reassign those queues before deleting it`),
+				ExpectError: regexp.MustCompile(`status:\s+409`),
 			},
 			{
 				PreConfig: func() { api.setInUse(false) },
