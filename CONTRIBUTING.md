@@ -84,14 +84,15 @@ use uppercase letters and underscores instead of hyphens. Keep random secret
 values separate from resource identities. Resources without names belong to
 marked temporary parents; tokens and notification services use marked descriptions.
 
-The CI `sweepers` step runs on the `oss-deploy` queue before acceptance testing,
-using the existing IAM role's source-IP restrictions. Sweep failures are reported
-as soft failures and do not fail the build. All three acceptance jobs wait for the
-sweep to finish but allow dependency failures, so a cleanup failure does not
-prevent acceptance testing. Sweepers can overlap across builds; they retain the
-24-hour cutoff and tolerate resources another sweep has already removed.
+The CI `sweepers` step runs on the `oss-deploy` queue after all three acceptance
+jobs finish, using the existing IAM role's source-IP restrictions. It allows
+dependency failures, so cleanup still runs after failed acceptance tests. The
+acceptance jobs do not wait for sweeping, and the packaging/build step can run
+alongside it. Sweep failures are reported as soft failures and do not fail the
+build. Sweepers can overlap across builds; they retain the 24-hour cutoff and
+tolerate resources another sweep has already removed.
 
-After sweeping, three acceptance jobs run independently in the same test organization:
+Three acceptance jobs run independently in the same test organization:
 
 - `make testacc-shared` runs organization-setting tests, the two PUBLIC-pipeline
   scenarios that depend on those settings, and permission tests that use the
@@ -389,9 +390,11 @@ and consolidate equivalent admin scenarios rather than keeping duplicate tests.
 The dedicated target checks the token owner's organization role and fails if its
 test selector matches nothing. CI loads the non-admin token from
 `/pipelines/buildkite/terraform-provider-buildkite-main/buildkite_api_token_nonadmin`
-into `BUILDKITE_API_TOKEN` in a separate acceptance step. The admin and non-admin
-steps share a concurrency group, produce per-job JUnit and JSON reports, and use
-separate annotation contexts.
+into `BUILDKITE_API_TOKEN` in the isolated non-admin step. The shared step also
+loads it as `BUILDKITE_NONADMIN_API_TOKEN` for its member-token selection. Only the
+shared step uses the cross-build concurrency group; the isolated admin and
+non-admin steps run independently. All three steps produce per-job JUnit and JSON
+reports and use separate annotation contexts.
 
 #### Cache Registry acceptance tests
 
