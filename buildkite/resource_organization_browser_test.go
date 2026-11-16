@@ -300,7 +300,7 @@ func TestUnitBuildkiteOrganizationBrowserEditingUnavailable(t *testing.T) {
 				// Prove refresh still reports drift after editing availability is lost.
 				api.browserSettings.AllowedIpEntries[0].Description = "Changed remotely"
 			}, Config: initial, PlanOnly: true, ExpectNonEmptyPlan: true},
-			{Config: fakeOrganizationConfig(server, `allowed_browser_ip_entries = []`), ExpectError: regexp.MustCompile("enrollment and entitlement")},
+			{Config: fakeOrganizationConfig(server, `allowed_browser_ip_entries = []`), ExpectError: regexp.MustCompile(`status: 403`)},
 			{Config: initial, PlanOnly: true, ExpectNonEmptyPlan: true,
 				Check: resource.TestCheckResourceAttr("buildkite_organization.settings", "allowed_browser_ip_entries.0.description", "Changed remotely")},
 			{PreConfig: func() {

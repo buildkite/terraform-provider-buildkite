@@ -5,8 +5,14 @@
 ### Features
 
 * FODA-2268: Add independent `allowed_browser_ip_entries` management to `buildkite_organization`, including tuple descriptions, import and explicit clearing. Requires the Browser IP Allowlist feature to be enabled for the organization.
+* Add the `buildkite_cluster_agent_image` resource.
+* SUP-2651: Add the `buildkite_cluster_agent_image` data source to look up custom hosted agent images by ID or name within a cluster.
 
 ### Fixed
+
+* SUP-8858: Validate that pipeline comment commands are single non-empty words without whitespace, rejecting values such as `/bk review` before apply instead of producing an inconsistent result after apply.
+
+* Return every portal from the `buildkite_portals` data source. It read only the first page of the paginated list endpoint, so organizations with more than 30 portals got the first 30. Pages are now followed through the `Link` header, 100 at a time.
 
 * Clear `description` and `allowed_ip_addresses` on `buildkite_portal` when they are removed from configuration, instead of failing the apply with an inconsistent result while the portal keeps the old values.
 

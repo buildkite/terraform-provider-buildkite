@@ -120,6 +120,7 @@ func userAgent(providerName, providerVersion, tfVersion string) string {
 
 func (*terraformProvider) DataSources(context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
+		newClusterAgentImageDatasource,
 		newClusterDatasource,
 		newClusterNetworkRangesDatasource,
 		newClustersDatasource,
@@ -149,6 +150,7 @@ func (tf *terraformProvider) Metadata(ctx context.Context, req provider.Metadata
 func (tf *terraformProvider) Resources(context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
 		newAgentTokenResource,
+		newClusterAgentImageResource,
 		newClusterAgentTokenResource,
 		newClusterCacheRegistryResource,
 		newClusterMaintainerResource,
@@ -191,7 +193,7 @@ func (*terraformProvider) Schema(ctx context.Context, req provider.SchemaRequest
 			},
 			SchemaKeyAPIToken: schema.StringAttribute{
 				Optional:            true,
-				MarkdownDescription: "API token with GraphQL access and `write_pipelines`, `read_pipelines`, `write_suites`, `read_notification_services`, `write_notification_services`, `read_organization_settings`, and `write_organization_settings` REST API scopes. The `buildkite_organization` resource and data source both read the organization API settings endpoint, so both need `read_organization_settings`; only the resource needs `write_organization_settings`. You can generate a token from [your settings page](https://buildkite.com/user/api-access-tokens/new?description=terraform&scopes[]=write_pipelines&scopes[]=write_suites&scopes[]=read_pipelines&scopes[]=read_notification_services&scopes[]=write_notification_services&scopes[]=read_organization_settings&scopes[]=write_organization_settings&scopes[]=graphql). If not provided, the value is taken from the `BUILDKITE_API_TOKEN` environment variable.",
+				MarkdownDescription: "API token with GraphQL access and `write_pipelines`, `read_pipelines`, `write_suites`, `read_notification_services`, `write_notification_services`, `read_organization_settings`, `write_organization_settings`, `read_clusters`, and `write_clusters` REST API scopes. The `buildkite_organization` resource and data source both read the organization API settings endpoint, so both need `read_organization_settings`; only the resource needs `write_organization_settings`. The `buildkite_cluster_agent_image` resource needs both `read_clusters` and `write_clusters`; its data source needs only `read_clusters`. Both require permission to manage the cluster. You can generate a token from [your settings page](https://buildkite.com/user/api-access-tokens/new?description=terraform&scopes[]=write_pipelines&scopes[]=write_suites&scopes[]=read_pipelines&scopes[]=read_notification_services&scopes[]=write_notification_services&scopes[]=read_organization_settings&scopes[]=write_organization_settings&scopes[]=read_clusters&scopes[]=write_clusters&scopes[]=graphql). If not provided, the value is taken from the `BUILDKITE_API_TOKEN` environment variable.",
 				Sensitive:           true,
 			},
 			SchemaKeyGraphqlURL: schema.StringAttribute{

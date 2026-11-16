@@ -18,6 +18,7 @@ import (
 
 	fwresource "github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
+	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 	"github.com/hashicorp/terraform-plugin-go/tftypes"
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
@@ -70,6 +71,77 @@ func testAccCheckPipelineDestroy(s *terraform.State) error {
 	}
 
 	return nil
+}
+
+func TestPipelineCommentCommandWordValidation(t *testing.T) {
+	ctx := context.Background()
+	s := resourceSchema(ctx, t, &pipelineResource{})
+	server, err := protoV6ProviderFactories()["buildkite"]()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, field := range []string{"issue_comment_command_word", "review_comment_command_word"} {
+		for _, mode := range []string{"exact", "contains"} {
+			for _, test := range []struct {
+				name    string
+				value   any
+				invalid bool
+			}{
+				{name: "default command", value: "/bk"},
+				{name: "custom command", value: "/build"},
+				{name: "hyphenated command", value: "/bot-review"},
+				{name: "omitted", value: nil},
+				{name: "unknown", value: tftypes.UnknownValue},
+				{name: "multiple words", value: "/bk review", invalid: true},
+				{name: "leading space", value: " /bk", invalid: true},
+				{name: "trailing space", value: "/bk ", invalid: true},
+				{name: "tab", value: "/bk\treview", invalid: true},
+				{name: "newline", value: "/bk\nreview", invalid: true},
+				{name: "vertical tab", value: "/bk\vreview", invalid: true},
+				{name: "leading NUL", value: "\x00/bk", invalid: true},
+				{name: "trailing NUL", value: "/bk\x00", invalid: true},
+				{name: "nonbreaking space only", value: "\u00a0", invalid: true},
+				{name: "nonbreaking space separator", value: "/bk\u00a0review", invalid: true},
+				{name: "empty", value: "", invalid: true},
+				{name: "whitespace only", value: " \t\n", invalid: true},
+			} {
+				t.Run(field+"/"+mode+"/"+test.name, func(t *testing.T) {
+					settings := nullObjectWith(ctx, t, s.Attributes["provider_settings"].GetType(), map[string]tftypes.Value{
+						field: tftypes.NewValue(tftypes.String, test.value),
+						strings.Replace(field, "command_word", "match_mode", 1): tftypes.NewValue(tftypes.String, mode),
+					})
+					raw := nullObjectWith(ctx, t, s.Type(), map[string]tftypes.Value{
+						"name":              tftypes.NewValue(tftypes.String, "test"),
+						"repository":        tftypes.NewValue(tftypes.String, "https://github.com/acme/test.git"),
+						"provider_settings": settings,
+					})
+					config, err := tfprotov6.NewDynamicValue(raw.Type(), raw)
+					if err != nil {
+						t.Fatal(err)
+					}
+					response, err := server.ValidateResourceConfig(ctx, &tfprotov6.ValidateResourceConfigRequest{
+						TypeName: "buildkite_pipeline", Config: &config,
+					})
+					if err != nil {
+						t.Fatal(err)
+					}
+					var hasError bool
+					for _, diagnostic := range response.Diagnostics {
+						if diagnostic.Severity == tfprotov6.DiagnosticSeverityError {
+							hasError = true
+							if !strings.Contains(diagnostic.Detail, "single word") {
+								t.Errorf("unexpected diagnostic: %s", diagnostic.Detail)
+							}
+						}
+					}
+					if hasError != test.invalid {
+						t.Fatalf("invalid = %t, want %t; diagnostics: %v", hasError, test.invalid, response.Diagnostics)
+					}
+				})
+			}
+		}
+	}
 }
 
 func TestPipelineExtraSettingsUseStepKeyAsCommitStatusJSON(t *testing.T) {
@@ -2755,6 +2827,103 @@ func TestPipelineUpdateRemovesTheDefaultTeamByThePostRenameSlug(t *testing.T) {
 		if !strings.Contains(lookup, "test-org/"+chosenSlug) {
 			t.Errorf("getPipelineTeams asked for the wrong pipeline: %s\nwant the post-rename slug %q", lookup, chosenSlug)
 		}
+	}
+}
+
+// Regression test: the initial pipeline read only fetches the first 5 teams (PipelineFields'
+// teams(first: 5)). When the configured default_team_id isn't among those first 5 and the
+// pipeline has more teams, Read pages forward with getPipelineTeams - which previously queried
+// using the bare pipeline slug instead of "org-slug/pipeline-slug", a shape the API rejects.
+func TestPipelineReadFindsTheDefaultTeamPastTheFirstPage(t *testing.T) {
+	t.Parallel()
+
+	const (
+		pipelineSlug  = "demo-deploy"
+		defaultTeamID = "team-6"
+		cursor        = "cursor-1"
+	)
+
+	var firstPageEdges []string
+	for i := 1; i <= 5; i++ {
+		id := fmt.Sprintf("team-%d", i)
+		firstPageEdges = append(firstPageEdges, fmt.Sprintf(
+			`{"cursor":%q,"node":{"id":"tp-%s","accessLevel":"MANAGE_BUILD_AND_READ","team":{"id":%q}}}`,
+			id, id, id,
+		))
+	}
+
+	server, requests, bodies := newRecordingRetryStub(t,
+		// getNode(pipeline), returning the first page of 5 teams, none of which is the default,
+		// plus a next page to follow.
+		stubResponse{status: http.StatusOK, body: fmt.Sprintf(`{"data":{"node":{
+			"__typename": "Pipeline", "id": "pipeline-id", "pipelineUuid": "pipeline-uuid",
+			"name": "demo_deploy", "slug": %q, "defaultBranch": "main", "description": "",
+			"archived": false, "repository": {"url": "git@github.com:org/repo.git"},
+			"steps": {"yaml": "steps: []"}, "tags": [],
+			"teams": {"edges": [%s], "pageInfo": {"hasNextPage": true, "endCursor": %q}}
+		}}}`, pipelineSlug, strings.Join(firstPageEdges, ","), cursor)},
+		// getNode(team), confirming the configured default team exists globally.
+		stubResponse{status: http.StatusOK, body: fmt.Sprintf(`{"data":{"node":{
+			"__typename": "Team", "id": %q, "uuid": "team-uuid", "name": "Deploy team"
+		}}}`, defaultTeamID)},
+		// getPipelineTeams, the second page - the request this test is about.
+		stubResponse{status: http.StatusOK, body: fmt.Sprintf(`{"data":{"pipeline":{"teams":{
+			"edges": [{"cursor":"c6","node":{"id":"tp-6","accessLevel":"MANAGE_BUILD_AND_READ","team":{"id":%q}}}],
+			"pageInfo": {"hasNextPage": false, "endCursor": ""}
+		}}}}`, defaultTeamID)},
+		// The recursive retry re-runs the whole candidate check, including a second
+		// getNode(team) existence check.
+		stubResponse{status: http.StatusOK, body: fmt.Sprintf(`{"data":{"node":{
+			"__typename": "Team", "id": %q, "uuid": "team-uuid", "name": "Deploy team"
+		}}}`, defaultTeamID)},
+	)
+	defer server.Close()
+
+	p := &pipelineResource{client: newRetryTestClient(t, server.URL, 0, time.Millisecond)}
+
+	ctx := t.Context()
+	schema := resourceSchema(ctx, t, p)
+
+	state := tfsdk.State{Schema: schema, Raw: nullObjectWith(ctx, t, schema.Type(), map[string]tftypes.Value{
+		"id":              tftypes.NewValue(tftypes.String, "pipeline-id"),
+		"slug":            tftypes.NewValue(tftypes.String, pipelineSlug),
+		"default_team_id": tftypes.NewValue(tftypes.String, defaultTeamID),
+		"archived":        tftypes.NewValue(tftypes.Bool, false),
+	})}
+
+	resp := fwresource.ReadResponse{State: state}
+	p.Read(ctx, fwresource.ReadRequest{State: state}, &resp)
+
+	if got := requests.Load(); got < 4 {
+		t.Fatalf("Made %d requests, want the pipeline read, the team check and the paged team lookup to all have run", got)
+	}
+
+	var teamLookups []string
+	for _, body := range bodies() {
+		if strings.Contains(body, "getPipelineTeams") {
+			teamLookups = append(teamLookups, body)
+		}
+	}
+	if len(teamLookups) == 0 {
+		t.Fatalf("No getPipelineTeams request was made; bodies were %v", bodies())
+	}
+	for _, lookup := range teamLookups {
+		if !strings.Contains(lookup, "test-org/"+pipelineSlug) {
+			t.Errorf("getPipelineTeams asked for the wrong pipeline: %s\nwant the qualified slug %q", lookup, "test-org/"+pipelineSlug)
+		}
+	}
+
+	if resp.Diagnostics.HasError() {
+		t.Fatalf("Read() diagnostics = %v", resp.Diagnostics)
+	}
+
+	var out pipelineResourceModel
+	resp.Diagnostics.Append(resp.State.Get(ctx, &out)...)
+	if resp.Diagnostics.HasError() {
+		t.Fatalf("State.Get() diagnostics = %v", resp.Diagnostics)
+	}
+	if out.DefaultTeamId.ValueString() != defaultTeamID {
+		t.Errorf("default_team_id = %q, want %q", out.DefaultTeamId.ValueString(), defaultTeamID)
 	}
 }
 
