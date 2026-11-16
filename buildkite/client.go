@@ -744,7 +744,7 @@ func (client *Client) doRequest(ctx context.Context, method string, path string,
 	return resp.Header, nil
 }
 
-// getAllPages follows the Link header of a paginated REST list endpoint and returns every item.
+// getAllPages follows cursor-envelope links.next or the Link header and returns every item.
 // Each page is requested with per_page=100, the API's maximum. Links are only followed on the
 // same path of the configured REST host. Pass a context with the deadline for the whole read, or
 // each page gets its own read timeout.
@@ -757,13 +757,20 @@ func getAllPages[T any](ctx context.Context, client *Client, path string) ([]T, 
 		if err != nil {
 			return nil, err
 		}
+		link := nextPageLink(header.Get("Link"))
 		// Offset lists return arrays; cursor lists wrap the same items in an envelope.
 		if bytes.HasPrefix(bytes.TrimSpace(body), []byte("{")) {
-			var envelope struct{ Items json.RawMessage }
+			var envelope struct {
+				Items json.RawMessage
+				Links struct{ Next string }
+			}
 			if err := json.Unmarshal(body, &envelope); err != nil {
 				return nil, err
 			}
 			body = envelope.Items
+			if envelope.Links.Next != "" {
+				link = envelope.Links.Next
+			}
 		}
 		var page []T
 		if err := json.Unmarshal(body, &page); err != nil {
@@ -771,7 +778,6 @@ func getAllPages[T any](ctx context.Context, client *Client, path string) ([]T, 
 		}
 		all = append(all, page...)
 
-		link := nextPageLink(header.Get("Link"))
 		if link == "" {
 			break
 		}

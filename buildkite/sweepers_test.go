@@ -40,7 +40,7 @@ func TestSweepAcceptanceResources(t *testing.T) {
 	fresh := cutoff.Add(time.Second).Format(time.RFC3339)
 	base := "/v2/organizations/test-org"
 	marked := "tfacc-5319-80c886d-abcdefghijkl"
-	for _, failure := range []string{"", "list", "delete", "partial-delete", "timestamp", "truncated-tokens", "webhook-delete", "webhook-absent", "revoked-token"} {
+	for _, failure := range []string{"", "list", "delete", "partial-delete", "timestamp", "truncated-tokens", "webhook-delete", "webhook-absent", "revoked-token", "cursor-link"} {
 		t.Run("failure="+failure, func(t *testing.T) {
 			var logs bytes.Buffer
 			previousOutput := log.Writer()
@@ -263,7 +263,9 @@ func TestSweepAcceptanceResources(t *testing.T) {
 						} else {
 							items = append(items, map[string]any{"uuid": "default-cache", "name": marked, "default": true, "created_at": old})
 							links["next"] = r.URL.Path + "?after=cache-page-2&per_page=100"
-							w.Header().Set("Link", "<"+links["next"]+">; rel=\"next\"")
+							if failure == "cursor-link" {
+								links["next"] = base + "/unexpected?after=cache-page-2"
+							}
 						}
 					}
 					_ = json.NewEncoder(w).Encode(map[string]any{"items": items, "links": links})
@@ -287,7 +289,7 @@ func TestSweepAcceptanceResources(t *testing.T) {
 				}
 				err = sweepAcceptanceResources(context.Background(), client, cutoff)
 			}
-			wantError := map[string]string{"list": "list forbidden", "delete": "delete forbidden", "timestamp": "not-a-date", "truncated-tokens": "truncated", "webhook-delete": "Repository not found"}[failure]
+			wantError := map[string]string{"list": "list forbidden", "delete": "delete forbidden", "timestamp": "not-a-date", "truncated-tokens": "truncated", "webhook-delete": "Repository not found", "cursor-link": "invalid pagination link"}[failure]
 			if wantError != "" {
 				if err == nil || !strings.Contains(err.Error(), wantError) {
 					t.Fatalf("sweep error = %v, expected %s failure", err, failure)
@@ -499,6 +501,13 @@ func TestSweepPreservesClusterChildren(t *testing.T) {
 							}
 							_ = json.NewEncoder(w).Encode(rows)
 						case clusterPath + "/" + child.path:
+							if child.path == "cache-registries" && r.URL.Query().Get("after") == "" {
+								_ = json.NewEncoder(w).Encode(map[string]any{
+									"items": []map[string]any{{"uuid": "existing-cache", "name": "persistent-cache", "created_at": cutoff.Add(-time.Minute).Format(time.RFC3339)}},
+									"links": map[string]string{"next": "http://" + r.Host + r.URL.Path + "?after=child-page-2&per_page=100"},
+								})
+								return
+							}
 							rows := []map[string]any{}
 							if !childDeleted {
 								name := "tfacc-child"
