@@ -9,6 +9,8 @@
 
 ### Fixed
 
+* SUP-8858: Validate that pipeline comment commands are single non-empty words without whitespace, rejecting values such as `/bk review` before apply instead of producing an inconsistent result after apply.
+
 * Return every portal from the `buildkite_portals` data source. It read only the first page of the paginated list endpoint, so organizations with more than 30 portals got the first 30. Pages are now followed through the `Link` header, 100 at a time.
 
 * Clear `description` and `allowed_ip_addresses` on `buildkite_portal` when they are removed from configuration, instead of failing the apply with an inconsistent result while the portal keeps the old values.
