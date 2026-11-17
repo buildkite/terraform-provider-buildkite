@@ -22,6 +22,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-go/tftypes"
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/knownvalue"
 	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/hashicorp/terraform-plugin-testing/tfjsonpath"
@@ -3797,15 +3798,18 @@ func TestUnitPipelineWebhookURLUpdates(t *testing.T) {
 	for _, hideOnRead := range []bool{true, false} {
 		t.Run(fmt.Sprintf("hideOnRead=%t", hideOnRead), func(t *testing.T) {
 			const address = "buildkite_pipeline.test"
-			const originalURL = "https://webhook.buildkite.com/deliver/original"
-			const updatedURL = "https://webhook.buildkite.com/deliver/updated"
+			const githubRepository = "https://github.com/example/test.git"
+			const gitlabRepository = "https://gitlab.com/example/test.git"
+			const githubURL = "https://webhook.buildkite.com/deliver/github"
+			const gitlabURL = "https://webhook.buildkite.com/deliver/gitlab"
+			// Updates keep the URL unless the repository moves the pipeline to a provider with a different one.
+			webhookURLs := map[string]string{githubRepository: githubURL, gitlabRepository: gitlabURL}
 			var mu sync.Mutex
 			var exists bool
 			pipeline := map[string]any{
 				"__typename": "Pipeline", "id": "pipeline-id", "pipelineUuid": "pipeline-uuid",
 				"slug": "test", "badgeURL": "https://badge.buildkite.com/test.svg",
 				"visibility": "PRIVATE", "archived": false, "teams": map[string]any{"edges": []any{}},
-				"webhookURL": originalURL,
 			}
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				mu.Lock()
@@ -3827,10 +3831,16 @@ func TestUnitPipelineWebhookURLUpdates(t *testing.T) {
 				case "createPipeline", "updatePipeline":
 					maps.Copy(pipeline, request.Variables.Input)
 					exists = true
+					repository, _ := request.Variables.Input["repository"].(map[string]any)
+					repositoryURL, _ := repository["url"].(string)
+					webhookURL, ok := webhookURLs[repositoryURL]
+					if !ok {
+						t.Errorf("unexpected repository: %q", repositoryURL)
+					}
+					pipeline["webhookURL"] = webhookURL
 					field := "pipelineCreate"
 					if request.OperationName == "updatePipeline" {
 						field = "pipelineUpdate"
-						pipeline["webhookURL"] = updatedURL
 					}
 					data = map[string]any{field: map[string]any{"pipeline": pipeline}}
 				case "getNode":
@@ -3861,7 +3871,7 @@ func TestUnitPipelineWebhookURLUpdates(t *testing.T) {
 			}))
 			defer server.Close()
 
-			config := func(description string) string {
+			config := func(repository, description string) string {
 				return fmt.Sprintf(`
 provider "buildkite" {
   organization = "test-org"
@@ -3871,33 +3881,51 @@ provider "buildkite" {
 }
 resource "buildkite_pipeline" "test" {
   name = "test"
-  repository = "https://github.com/example/test.git"
+  repository = %q
   description = %q
 }
-`, server.URL, server.URL, description)
+`, server.URL, server.URL, repository, description)
+			}
+			// A URL the refresh could see is kept from state, so the update plan does not print it as changing.
+			// One it could not see is stored as "" and stays unknown, so the URL the apply returns is accepted.
+			sameRepositoryCheck := plancheck.ExpectKnownValue(address, tfjsonpath.New("webhook_url"), knownvalue.StringExact(githubURL))
+			if hideOnRead {
+				sameRepositoryCheck = plancheck.ExpectUnknownValue(address, tfjsonpath.New("webhook_url"))
 			}
 			resource.UnitTest(t, resource.TestCase{
 				ProtoV6ProviderFactories: protoV6ProviderFactories(),
 				Steps: []resource.TestStep{
 					{
-						Config: config("original"),
-						Check:  resource.TestCheckResourceAttr(address, "webhook_url", originalURL),
+						Config: config(githubRepository, "original"),
+						Check:  resource.TestCheckResourceAttr(address, "webhook_url", githubURL),
 					},
-					// Removing the modifier must not itself cause an update on every plan.
-					{Config: config("original"), PlanOnly: true},
+					{Config: config(githubRepository, "original"), PlanOnly: true},
 					{
-						Config: config("updated"),
+						Config: config(githubRepository, "updated"),
 						ConfigPlanChecks: resource.ConfigPlanChecks{
 							PreApply: []plancheck.PlanCheck{
-								plancheck.ExpectUnknownValue(address, tfjsonpath.New("webhook_url")),
+								plancheck.ExpectResourceAction(address, plancheck.ResourceActionUpdate),
+								sameRepositoryCheck,
 							},
 						},
 						Check: resource.ComposeAggregateTestCheckFunc(
 							resource.TestCheckResourceAttr(address, "description", "updated"),
-							resource.TestCheckResourceAttr(address, "webhook_url", updatedURL),
+							resource.TestCheckResourceAttr(address, "webhook_url", githubURL),
 						),
 					},
-					{Config: config("updated"), PlanOnly: true},
+					{Config: config(githubRepository, "updated"), PlanOnly: true},
+					{
+						// A repository change can move the pipeline to a provider with a different URL.
+						Config: config(gitlabRepository, "updated"),
+						ConfigPlanChecks: resource.ConfigPlanChecks{
+							PreApply: []plancheck.PlanCheck{
+								plancheck.ExpectResourceAction(address, plancheck.ResourceActionUpdate),
+								plancheck.ExpectUnknownValue(address, tfjsonpath.New("webhook_url")),
+							},
+						},
+						Check: resource.TestCheckResourceAttr(address, "webhook_url", gitlabURL),
+					},
+					{Config: config(gitlabRepository, "updated"), PlanOnly: true},
 				},
 			})
 			mu.Lock()
