@@ -18,6 +18,7 @@ import (
 
 	fwresource "github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
+	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 	"github.com/hashicorp/terraform-plugin-go/tftypes"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/plancheck"
@@ -69,6 +70,77 @@ func testAccCheckPipelineDestroy(s *terraform.State) error {
 	}
 
 	return nil
+}
+
+func TestPipelineCommentCommandWordValidation(t *testing.T) {
+	ctx := context.Background()
+	s := resourceSchema(ctx, t, &pipelineResource{})
+	server, err := protoV6ProviderFactories()["buildkite"]()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, field := range []string{"issue_comment_command_word", "review_comment_command_word"} {
+		for _, mode := range []string{"exact", "contains"} {
+			for _, test := range []struct {
+				name    string
+				value   any
+				invalid bool
+			}{
+				{name: "default command", value: "/bk"},
+				{name: "custom command", value: "/build"},
+				{name: "hyphenated command", value: "/bot-review"},
+				{name: "omitted", value: nil},
+				{name: "unknown", value: tftypes.UnknownValue},
+				{name: "multiple words", value: "/bk review", invalid: true},
+				{name: "leading space", value: " /bk", invalid: true},
+				{name: "trailing space", value: "/bk ", invalid: true},
+				{name: "tab", value: "/bk\treview", invalid: true},
+				{name: "newline", value: "/bk\nreview", invalid: true},
+				{name: "vertical tab", value: "/bk\vreview", invalid: true},
+				{name: "leading NUL", value: "\x00/bk", invalid: true},
+				{name: "trailing NUL", value: "/bk\x00", invalid: true},
+				{name: "nonbreaking space only", value: "\u00a0", invalid: true},
+				{name: "nonbreaking space separator", value: "/bk\u00a0review", invalid: true},
+				{name: "empty", value: "", invalid: true},
+				{name: "whitespace only", value: " \t\n", invalid: true},
+			} {
+				t.Run(field+"/"+mode+"/"+test.name, func(t *testing.T) {
+					settings := nullObjectWith(ctx, t, s.Attributes["provider_settings"].GetType(), map[string]tftypes.Value{
+						field: tftypes.NewValue(tftypes.String, test.value),
+						strings.Replace(field, "command_word", "match_mode", 1): tftypes.NewValue(tftypes.String, mode),
+					})
+					raw := nullObjectWith(ctx, t, s.Type(), map[string]tftypes.Value{
+						"name":              tftypes.NewValue(tftypes.String, "test"),
+						"repository":        tftypes.NewValue(tftypes.String, "https://github.com/acme/test.git"),
+						"provider_settings": settings,
+					})
+					config, err := tfprotov6.NewDynamicValue(raw.Type(), raw)
+					if err != nil {
+						t.Fatal(err)
+					}
+					response, err := server.ValidateResourceConfig(ctx, &tfprotov6.ValidateResourceConfigRequest{
+						TypeName: "buildkite_pipeline", Config: &config,
+					})
+					if err != nil {
+						t.Fatal(err)
+					}
+					var hasError bool
+					for _, diagnostic := range response.Diagnostics {
+						if diagnostic.Severity == tfprotov6.DiagnosticSeverityError {
+							hasError = true
+							if !strings.Contains(diagnostic.Detail, "single word") {
+								t.Errorf("unexpected diagnostic: %s", diagnostic.Detail)
+							}
+						}
+					}
+					if hasError != test.invalid {
+						t.Fatalf("invalid = %t, want %t; diagnostics: %v", hasError, test.invalid, response.Diagnostics)
+					}
+				})
+			}
+		}
+	}
 }
 
 func TestPipelineExtraSettingsUseStepKeyAsCommitStatusJSON(t *testing.T) {

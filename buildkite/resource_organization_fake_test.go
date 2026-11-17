@@ -27,9 +27,14 @@ import (
 // exercised without an organization to change. Its GraphQL side answers with identifiers only: the
 // allowlist is api-settings' to report, and nothing here offers a second copy of it.
 type fakeOrganizationAPI struct {
-	t        *testing.T
-	mu       sync.Mutex
-	settings organizationAPISettings
+	t                       *testing.T
+	mu                      sync.Mutex
+	settings                organizationAPISettings
+	browserSettings         organizationBrowserSettings
+	browserReadStatus       int
+	browserPatchStatus      int
+	browserApplyBeforeError bool
+	browserWrites           [][]organizationIPEntry
 	// readStatus, once readsBeforeRefusal successful reads have gone through, fails every read after
 	readStatus         int
 	readBody           string
@@ -162,6 +167,8 @@ func (a *fakeOrganizationAPI) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 		a.graphql(w, r)
 	case "/v2/organizations/acme/api-settings":
 		a.apiSettings(w, r)
+	case "/v2/organizations/acme/browser-settings":
+		a.browserAPISettings(w, r)
 	default:
 		a.t.Errorf("unexpected request: %s %s", r.Method, r.URL.Path)
 		http.Error(w, `{"message":"Not Found"}`, http.StatusNotFound)
@@ -463,8 +470,9 @@ func TestUnitBuildkiteOrganizationKeepsEntriesAfterRefusedUpdateAndUnreadableRef
 		Steps: []resource.TestStep{
 			{Config: initial},
 			{
+				// The refusal's body is deliberately not in the error, so the status is what identifies it.
 				PreConfig: func() { api.refusePatch(http.StatusUnprocessableEntity, `{"message":"refused"}`) },
-				Config:    changed, ExpectError: regexp.MustCompile("refused"),
+				Config:    changed, ExpectError: regexp.MustCompile(`(?s)status:\s+422`),
 			},
 			{
 				PreConfig: func() { api.refuseRead(http.StatusForbidden, `{"message":"Forbidden"}`) },
@@ -510,7 +518,7 @@ func TestUnitBuildkiteOrganizationReportsAPlanGatedAllowlist(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config:      fakeOrganizationConfig(server, `allowed_api_ip_addresses = ["1.1.1.1/32"]`),
-				ExpectError: regexp.MustCompile(`(?s)Your plan does not include the API IP allow list feature.*The allowed API IP addresses feature is not available on this organization's plan`),
+				ExpectError: regexp.MustCompile(`(?s)status:\s+403.*The\s+allowed\s+API\s+IP\s+addresses\s+feature\s+is\s+not\s+available\s+on\s+this\s+organization's\s+plan`),
 			},
 		},
 	})
@@ -529,7 +537,7 @@ func TestUnitBuildkiteOrganizationRefusesToWriteUnreadableSettings(t *testing.T)
 		Steps: []resource.TestStep{
 			{
 				Config:      fakeOrganizationConfig(server, `allowed_api_ip_addresses = []`),
-				ExpectError: regexp.MustCompile(`(?s)Unable to read organization API settings.*The API token needs the read_organization_settings scope, and its user must be an organization administrator`),
+				ExpectError: regexp.MustCompile(`(?s)Unable\s+to\s+read\s+organization\s+API\s+settings.*The\s+API\s+token\s+needs\s+the\s+read_organization_settings\s+scope,\s+and\s+its\s+user\s+must\s+be\s+an\s+organization\s+administrator`),
 			},
 		},
 	})
@@ -548,7 +556,7 @@ func TestUnitBuildkiteOrganizationNeedsReadableSettingsFor2FAAlone(t *testing.T)
 		Steps: []resource.TestStep{
 			{
 				Config:      fakeOrganizationConfig(server, `enforce_2fa = true`),
-				ExpectError: regexp.MustCompile(`(?s)Unable to read organization API settings.*The API token needs the read_organization_settings scope, and its user must be an organization administrator`),
+				ExpectError: regexp.MustCompile(`(?s)Unable\s+to\s+read\s+organization\s+API\s+settings.*The\s+API\s+token\s+needs\s+the\s+read_organization_settings\s+scope,\s+and\s+its\s+user\s+must\s+be\s+an\s+organization\s+administrator`),
 			},
 		},
 	})
@@ -581,7 +589,7 @@ func TestUnitBuildkiteOrganizationRefusesToDestroyWithUnreadableSettings(t *test
 				},
 				Config:      fakeOrganizationConfig(server, ``),
 				Destroy:     true,
-				ExpectError: regexp.MustCompile(`(?s)Unable to read organization API settings.*The API token needs the read_organization_settings scope, and its user must be an organization administrator.*terraform state rm`),
+				ExpectError: regexp.MustCompile(`(?s)Unable\s+to\s+read\s+organization\s+API\s+settings.*The\s+API\s+token\s+needs\s+the\s+read_organization_settings\s+scope,\s+and\s+its\s+user\s+must\s+be\s+an\s+organization\s+administrator.*terraform\s+state\s+rm`),
 			},
 			{
 				// with the settings readable the allowlist state never saw is still cleared
@@ -641,7 +649,7 @@ func TestUnitBuildkiteOrganizationKeeps2FAWhenTheAllowlistIsRefused(t *testing.T
 		Steps: []resource.TestStep{
 			{
 				Config:      fakeOrganizationConfig(server, `allowed_api_ip_addresses = ["1.1.1.1/32"]`),
-				ExpectError: regexp.MustCompile(`The allowed API IP addresses feature is not available on this organization's plan`),
+				ExpectError: regexp.MustCompile(`The\s+allowed\s+API\s+IP\s+addresses\s+feature\s+is\s+not\s+available\s+on\s+this\s+organization's\s+plan`),
 			},
 		},
 	})
@@ -658,6 +666,7 @@ func TestUnitBuildkiteOrganizationKeeps2FAWhenTheAllowlistIsRefused(t *testing.T
 func TestUnitBuildkiteOrganizationKeepsWrittenSettingsWhenSetting2FAFails(t *testing.T) {
 	server, api := newFakeOrganizationAPI(t)
 	api.settings.Features.ApiIpAllowList = true
+	api.browserSettings.Features.BrowserIpAllowList = true
 	api.enforceTwoFactor(true)
 	api.refuseTwoFactorChange("Unable to enforce two-factor authentication")
 
@@ -665,7 +674,8 @@ func TestUnitBuildkiteOrganizationKeepsWrittenSettingsWhenSetting2FAFails(t *tes
 		ProtoV6ProviderFactories: protoV6ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
-				Config:      fakeOrganizationConfig(server, `allowed_api_ip_addresses = ["1.1.1.1/32"]`),
+				Config: fakeOrganizationConfig(server, `allowed_api_ip_addresses = ["1.1.1.1/32"]
+					allowed_browser_ip_entries = [{ ip_address = "192.0.2.1", description = "Browser office" }]`),
 				ExpectError: regexp.MustCompile(`Unable to set 2FA`),
 			},
 		},
@@ -678,6 +688,9 @@ func TestUnitBuildkiteOrganizationKeepsWrittenSettingsWhenSetting2FAFails(t *tes
 	}
 	if got := api.allowedIpAddresses(); got != "1.1.1.1/32" {
 		t.Errorf("remote allowed_ip_addresses = %q, want %q", got, "1.1.1.1/32")
+	}
+	if want := []organizationIPEntry{{"192.0.2.1", "Browser office"}}; !slices.Equal(api.browserSettings.AllowedIpEntries, want) {
+		t.Errorf("browser policy was lost after failed create: %v", api.browserSettings.AllowedIpEntries)
 	}
 }
 

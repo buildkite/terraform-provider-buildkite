@@ -51,7 +51,7 @@ func TestClusterSecretReadPreservesRateLimitErrorAtDeadline(t *testing.T) {
 		"cluster_id": tftypes.NewValue(tftypes.String, "cluster-123"),
 		"value":      tftypes.NewValue(tftypes.String, "state-only-secret"),
 	})
-	for _, want := range []string{"429", "Organization API rate limit exceeded", "context deadline exceeded"} {
+	for _, want := range []string{"429", "context deadline exceeded"} {
 		if !diagnosticsContain(diags, want) {
 			t.Errorf("Read diagnostics = %v, want %q", diags, want)
 		}
