@@ -38,15 +38,15 @@ func (mod useNonEmptyStateIfUnchangedModifier) PlanModifyString(ctx context.Cont
 		return
 	}
 
-	var stateValue, planValue types.String
-	resp.Diagnostics.Append(req.State.GetAttribute(ctx, path.Root(mod.attr), &stateValue)...)
-	resp.Diagnostics.Append(req.Plan.GetAttribute(ctx, path.Root(mod.attr), &planValue)...)
+	var dependentState, dependentPlan types.String
+	resp.Diagnostics.Append(req.State.GetAttribute(ctx, path.Root(mod.attr), &dependentState)...)
+	resp.Diagnostics.Append(req.Plan.GetAttribute(ctx, path.Root(mod.attr), &dependentPlan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
 	// a change to the dependent attribute, including one that is not known until apply, can change this value too
-	if !planValue.Equal(stateValue) {
+	if !dependentPlan.Equal(dependentState) {
 		return
 	}
 

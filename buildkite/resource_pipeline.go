@@ -843,7 +843,7 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 				PlanModifiers: []planmodifier.String{
 					// Keep the URL from state so an in-place update does not print it in the plan as changing.
 					// It stays unknown when state holds "" (the refreshing token could not see it) or when the
-					// repository changes (another provider may have a different URL, or none).
+					// repository changes: a Code Storage repository, for one, has no per-pipeline webhook URL.
 					custom_modifier.UseNonEmptyStateIfUnchanged("repository"),
 				},
 			},

@@ -110,7 +110,7 @@ func TestUseNonEmptyStateIfUnchangedModifier(t *testing.T) {
 			// a value already planned by an earlier modifier is left alone
 			request: planmodifier.StringRequest{
 				State:       state("https://github.com/example/repo.git"),
-				Plan:        plan("https://gitlab.com/example/repo.git"),
+				Plan:        plan("https://github.com/example/repo.git"),
 				StateValue:  types.StringValue(url),
 				PlanValue:   types.StringValue("planned"),
 				ConfigValue: types.StringNull(),
