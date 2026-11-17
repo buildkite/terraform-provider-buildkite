@@ -3802,11 +3802,11 @@ func TestUnitPipelineWebhookURLUpdates(t *testing.T) {
 		t.Run(fmt.Sprintf("hideOnRead=%t", hideOnRead), func(t *testing.T) {
 			const address = "buildkite_pipeline.test"
 			const githubRepository = "https://github.com/example/test.git"
-			const gitlabRepository = "https://gitlab.com/example/test.git"
 			const githubURL = "https://webhook.buildkite.com/deliver/github"
-			const gitlabURL = "https://webhook.buildkite.com/deliver/gitlab"
-			// Updates keep the URL unless the repository moves the pipeline to a provider with a different one.
-			webhookURLs := map[string]string{githubRepository: githubURL, gitlabRepository: gitlabURL}
+			// Stands in for a repository with no per-pipeline webhook URL, such as Code Storage.
+			const noWebhookRepository = "https://git.example.com/example/test.git"
+			// Updates keep the URL; a repository without a per-pipeline webhook URL returns null.
+			webhookURLs := map[string]any{githubRepository: githubURL, noWebhookRepository: nil}
 			var mu sync.Mutex
 			var exists bool
 			pipeline := map[string]any{
@@ -3918,17 +3918,29 @@ resource "buildkite_pipeline" "test" {
 					},
 					{Config: config(githubRepository, "updated"), PlanOnly: true},
 					{
-						// A repository change can move the pipeline to a provider with a different URL.
-						Config: config(gitlabRepository, "updated"),
+						// A repository change can leave the pipeline without a per-pipeline webhook URL.
+						Config: config(noWebhookRepository, "updated"),
 						ConfigPlanChecks: resource.ConfigPlanChecks{
 							PreApply: []plancheck.PlanCheck{
 								plancheck.ExpectResourceAction(address, plancheck.ResourceActionUpdate),
 								plancheck.ExpectUnknownValue(address, tfjsonpath.New("webhook_url")),
 							},
 						},
-						Check: resource.TestCheckResourceAttr(address, "webhook_url", gitlabURL),
+						Check: resource.TestCheckResourceAttr(address, "webhook_url", ""),
 					},
-					{Config: config(gitlabRepository, "updated"), PlanOnly: true},
+					{Config: config(noWebhookRepository, "updated"), PlanOnly: true},
+					{
+						// With "" in state, the URL a move back returns is accepted.
+						Config: config(githubRepository, "updated"),
+						ConfigPlanChecks: resource.ConfigPlanChecks{
+							PreApply: []plancheck.PlanCheck{
+								plancheck.ExpectResourceAction(address, plancheck.ResourceActionUpdate),
+								plancheck.ExpectUnknownValue(address, tfjsonpath.New("webhook_url")),
+							},
+						},
+						Check: resource.TestCheckResourceAttr(address, "webhook_url", githubURL),
+					},
+					{Config: config(githubRepository, "updated"), PlanOnly: true},
 				},
 			})
 			mu.Lock()
