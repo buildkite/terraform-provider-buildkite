@@ -330,6 +330,18 @@ The tests create disposable clusters and registries, exercise their lifecycle, a
 
 CI must opt in with `BUILDKITE_CACHE_REGISTRIES_ACCEPTANCE=1` only after its test organization has Cache Registries enabled and its token has organization membership and cluster management access. `TF_ACC=1` is still required (`make testacc` sets it). The Docker Compose test service forwards the opt-in and custom GraphQL/REST URLs when set.
 
+#### Workload identities acceptance test
+
+The workload identity lifecycle uses the same Terraform steps against an offline fake API (`make test`) and the live API. Live testing is opt-in because workload identities must be enabled for the organization:
+
+```bash
+TF_ACC=1 BUILDKITE_WORKLOAD_IDENTITIES_ACCEPTANCE=1 \
+BUILDKITE_ORGANIZATION_SLUG=<org-slug> BUILDKITE_API_TOKEN=<token> \
+go test ./buildkite -run '^TestAccBuildkiteWorkloadIdentity$' -count=1 -v
+```
+
+The token's user must be an organization administrator, and the token needs the `read_workload_identities`, `write_workload_identities`, and `delete_workload_identities` scopes. The test creates a disposable identity for `https://issuer.example.com`, imports it, clears its optional settings, and deletes it. It never exchanges a token. Without the opt-in, it skips; the offline test is not evidence that the live API accepts the requests.
+
 #### Organization allowlist entries acceptance test
 
 The tuple allowlist lifecycle uses the same Terraform steps against the offline organization test server (`make test`) and the live API. Live tuple testing is opt-in until the tuple REST endpoint is deployed:
