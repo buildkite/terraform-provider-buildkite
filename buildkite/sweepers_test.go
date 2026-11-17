@@ -284,14 +284,19 @@ func TestSweepAcceptanceResources(t *testing.T) {
 			}
 			err := sweepAcceptanceResources(context.Background(), client, cutoff)
 			if failure == "partial-delete" {
-				if err == nil || !strings.Contains(err.Error(), "delete forbidden") || len(deleted) != 1 {
-					t.Fatalf("expected one deletion before failure, got deletions %v and error %v", deleted, err)
+				if !isAPIStatus(err, http.StatusForbidden) || len(deleted) != 1 {
+					t.Fatalf("expected one deletion before HTTP 403, got deletions %v and error %v", deleted, err)
 				}
 				err = sweepAcceptanceResources(context.Background(), client, cutoff)
 			}
-			wantError := map[string]string{"list": "list forbidden", "delete": "delete forbidden", "timestamp": "not-a-date", "truncated-tokens": "truncated", "webhook-delete": "Repository not found", "cursor-link": "invalid pagination link"}[failure]
-			if wantError != "" {
-				if err == nil || !strings.Contains(err.Error(), wantError) {
+			wantError := map[string]string{"timestamp": "not-a-date", "truncated-tokens": "truncated", "webhook-delete": "Repository not found", "cursor-link": "invalid pagination link"}[failure]
+			restFailure := failure == "list" || failure == "delete"
+			if restFailure || wantError != "" {
+				if restFailure {
+					if !isAPIStatus(err, http.StatusForbidden) {
+						t.Fatalf("sweep error = %v, expected HTTP 403 for %s failure", err, failure)
+					}
+				} else if err == nil || !strings.Contains(err.Error(), wantError) {
 					t.Fatalf("sweep error = %v, expected %s failure", err, failure)
 				}
 				if len(deleted) != 0 {
