@@ -4,6 +4,7 @@
 
 ### Features
 
+* FODA-2268: Add independent `allowed_browser_ip_entries` management to `buildkite_organization`, including tuple descriptions, import and explicit clearing. Requires the Browser IP Allowlist feature to be enabled for the organization.
 * Add the `buildkite_cluster_agent_image` resource.
 * SUP-2651: Add the `buildkite_cluster_agent_image` data source to look up custom hosted agent images by ID or name within a cluster.
 

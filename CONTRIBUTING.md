@@ -344,6 +344,29 @@ Set `BUILDKITE_REST_URL` and `BUILDKITE_GRAPHQL_URL` to target a development Bui
 
 Use a disposable organization with the allowlist feature and an administrator token with organization settings read/write scopes. The test replaces the entire allowlist, switches representations, imports, clears on attribute removal, and destroys. It includes `0.0.0.0/0` to retain API access. Without the opt-in, it explicitly skips; offline tests are not evidence that the live backend is deployed or accepted.
 
+#### Browser allowlist acceptance test
+
+Browser tuples use the same Terraform lifecycle steps offline (`make test`) and live:
+
+```bash
+TF_ACC=1 BUILDKITE_BROWSER_IP_ENTRIES_ACCEPTANCE=1 \
+BUILDKITE_ORGANIZATION_SLUG=<disposable-org> BUILDKITE_API_TOKEN=<token> \
+go test ./buildkite -run '^TestAccBuildkiteOrganizationBrowserEntries$' -count=1 -v
+```
+
+Use a disposable organization with the Browser IP Allowlist feature enabled,
+the API allowlist feature, and an API token belonging to an organization administrator
+with the `read_organization_settings` and `write_organization_settings` scopes.
+The test replaces API and browser policies, imports browser tuples, preserves ordered duplicates,
+updates descriptions, clears with `[]` and attribute removal, and clears on destroy. The API fixture
+uses `0.0.0.0/0` to retain automation access; the browser policy need not contain the caller's IP.
+These tests replace existing allowlists; run them only against a disposable test organization.
+
+Set `BUILDKITE_REST_URL` and `BUILDKITE_GRAPHQL_URL` to use a development Buildkite instance
+supporting browser settings and API allowlist tuples. Without the opt-in the live test explicitly
+skips; once opted in, unavailable endpoints, permissions or features fail rather than skip.
+Offline tests do not establish live backend acceptance.
+
 ### Code Quality
 
 Before committing, ensure your code passes these checks:
