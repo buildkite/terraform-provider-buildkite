@@ -9,6 +9,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"reflect"
+	"regexp"
 	"slices"
 	"strings"
 	"sync"
@@ -348,6 +349,25 @@ func TestUnitBuildkiteWorkloadIdentityLifecycle(t *testing.T) {
 		ProtoV6ProviderFactories: protoV6ProviderFactories(),
 		CheckDestroy:             api.checkDestroyed,
 		Steps:                    workloadIdentityLifecycleSteps(fakeWorkloadIdentityProvider(server), api.checkStored),
+	})
+}
+
+func TestUnitBuildkiteWorkloadIdentityValidationMessages(t *testing.T) {
+	server, api := newFakeWorkloadIdentityAPI(t)
+	provider := fakeWorkloadIdentityProvider(server)
+	valid := workloadIdentityConfig(provider, "")
+	invalid := workloadIdentityConfig(provider, `oidc_claims = "[]"`)
+	validationError := regexp.MustCompile(`oidc_claims must be an object`)
+
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		CheckDestroy:             api.checkDestroyed,
+		Steps: []resource.TestStep{
+			{Config: invalid, ExpectError: validationError},
+			{Config: valid},
+			{Config: invalid, ExpectError: validationError},
+			{Config: valid, PlanOnly: true},
+		},
 	})
 }
 

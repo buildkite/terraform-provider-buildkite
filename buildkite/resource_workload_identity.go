@@ -135,7 +135,7 @@ func (r *workloadIdentityResource) Schema(ctx context.Context, req resource.Sche
 
 			Buildkite only mints the access token when the OIDC token matches the workload identity's issuer, audience,
 			subject, claims, and claim conditions. The access token's scopes are limited to ` + "`grantable_token_scopes`" + `,
-			and the pipelines it can reach to ` + "`resource_grants`" + `. Changes to these only apply to access tokens minted afterwards.
+			and the resources it can access to ` + "`resource_grants`" + `. Changes to these only apply to access tokens minted afterwards.
 			Learn more in [Workload identity federation](https://buildkite.com/docs/apis/workload-identity-federation).
 
 			The API token's user must be an organization administrator, and the token needs the
@@ -229,12 +229,12 @@ func (r *workloadIdentityResource) Schema(ctx context.Context, req resource.Sche
 					}},
 					[]attr.Value{},
 				)),
-				MarkdownDescription: "The resources that access tokens from this identity can access, with at most one grant for each type. Defaults to none, so access tokens can't access any pipeline.",
+				MarkdownDescription: "The resources that access tokens from this identity can access, with at most one grant for each type. Defaults to no resource access.",
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
 						"type": schema.StringAttribute{
 							Required:            true,
-							MarkdownDescription: "The type of resource to grant. Only `pipeline` is supported.",
+							MarkdownDescription: "The type of resource to grant: `pipeline`, `team`, or `cluster`.",
 						},
 						"access": schema.StringAttribute{
 							Required:            true,

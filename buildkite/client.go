@@ -564,6 +564,8 @@ type apiError struct {
 	StatusCode int
 	Attempts   int
 	Body       string
+	// Only workload identity 422 responses expose their parsed validation message.
+	validationMessage string
 	// earlierStatus and earlierBody carry what a previous attempt saw when a later one died in
 	// flight. They are context rather than the cause, so they stay out of StatusCode.
 	earlierStatus int
@@ -578,6 +580,9 @@ func (e *apiError) Error() string {
 		message = fmt.Sprintf("failed to send request: %s %s: %s", e.Method, e.URL, e.Err)
 	} else {
 		message = fmt.Sprintf("%s %s %s (status: %d)", apiRequestFailedPrefix, e.Method, e.URL, e.StatusCode)
+	}
+	if e.validationMessage != "" {
+		message += ": " + e.validationMessage
 	}
 
 	if e.Attempts > 1 {
@@ -696,12 +701,23 @@ func (client *Client) doRequest(ctx context.Context, method string, path string,
 			}
 		}()
 
-		return nil, &apiError{
+		apiErr := &apiError{
 			Method:     method,
 			URL:        requestURL,
 			StatusCode: resp.StatusCode,
 			Attempts:   lastResponse.attempts,
 		}
+		workloadPath := client.workloadIdentityPath("")
+		if resp.StatusCode == http.StatusUnprocessableEntity && (path == workloadPath || strings.HasPrefix(path, workloadPath+"/")) {
+			var validation struct {
+				Message string `json:"message"`
+			}
+			body, readErr := io.ReadAll(io.LimitReader(resp.Body, maxCapturedBodyBytes))
+			if readErr == nil && json.Unmarshal(body, &validation) == nil {
+				apiErr.validationMessage = validation.Message
+			}
+		}
+		return nil, apiErr
 	} else if resp.StatusCode == 204 {
 		if closeErr := resp.Body.Close(); closeErr != nil {
 			tflog.Warn(ctx, "Failed to close response body", map[string]interface{}{"error": closeErr.Error()})
