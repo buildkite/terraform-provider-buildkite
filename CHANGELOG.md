@@ -7,9 +7,13 @@
 * FODA-2268: Add independent `allowed_browser_ip_entries` management to `buildkite_organization`, including tuple descriptions, import and explicit clearing. Requires the Browser IP Allowlist feature to be enabled for the organization.
 * Add the `buildkite_cluster_agent_image` resource.
 * SUP-2651: Add the `buildkite_cluster_agent_image` data source to look up custom hosted agent images by ID or name within a cluster.
-* FODA-2185: Add the `buildkite_workload_identity` resource to manage workload identities, which exchange OIDC tokens from trusted issuers for Buildkite API access tokens, including their claims, claim conditions, token scopes, and pipeline resource grants.
+* FODA-2185: Add the `buildkite_workload_identity` resource to manage workload identities, which exchange OIDC tokens from trusted issuers for Buildkite API access tokens, including their claims, claim conditions, token scopes, and resource grants.
 
 ### Fixed
+
+* Show the API's validation message for workload identity requests that return HTTP 422.
+
+* Update resource grant documentation to include `cluster` and `team`.
 
 * SUP-8858: Validate that pipeline comment commands are single non-empty words without whitespace, rejecting values such as `/bk review` before apply instead of producing an inconsistent result after apply.
 

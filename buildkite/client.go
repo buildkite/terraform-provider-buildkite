@@ -696,12 +696,17 @@ func (client *Client) doRequest(ctx context.Context, method string, path string,
 			}
 		}()
 
-		return nil, &apiError{
+		apiErr := &apiError{
 			Method:     method,
 			URL:        requestURL,
 			StatusCode: resp.StatusCode,
 			Attempts:   lastResponse.attempts,
 		}
+		body, readErr := io.ReadAll(io.LimitReader(resp.Body, maxCapturedBodyBytes))
+		if readErr == nil {
+			apiErr.Body = string(body)
+		}
+		return nil, apiErr
 	} else if resp.StatusCode == 204 {
 		if closeErr := resp.Body.Close(); closeErr != nil {
 			tflog.Warn(ctx, "Failed to close response body", map[string]interface{}{"error": closeErr.Error()})
