@@ -702,15 +702,9 @@ func (client *Client) doRequest(ctx context.Context, method string, path string,
 			StatusCode: resp.StatusCode,
 			Attempts:   lastResponse.attempts,
 		}
-		workloadPath := client.workloadIdentityPath("")
-		if resp.StatusCode == http.StatusUnprocessableEntity && (path == workloadPath || strings.HasPrefix(path, workloadPath+"/")) {
-			var validation struct {
-				Message string `json:"message"`
-			}
-			body, readErr := io.ReadAll(io.LimitReader(resp.Body, maxCapturedBodyBytes))
-			if readErr == nil && json.Unmarshal(body, &validation) == nil && validation.Message != "" {
-				return nil, fmt.Errorf("%w: %s", apiErr, validation.Message)
-			}
+		body, readErr := io.ReadAll(io.LimitReader(resp.Body, maxCapturedBodyBytes))
+		if readErr == nil {
+			apiErr.Body = string(body)
 		}
 		return nil, apiErr
 	} else if resp.StatusCode == 204 {

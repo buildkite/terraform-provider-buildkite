@@ -371,6 +371,44 @@ func TestUnitBuildkiteWorkloadIdentityValidationMessages(t *testing.T) {
 	})
 }
 
+func TestWorkloadIdentityValidationResponseIsolation(t *testing.T) {
+	t.Parallel()
+	for _, tc := range []struct {
+		name        string
+		status      int
+		body        string
+		wantMessage bool
+	}{
+		{"validation", 422, `{"message":"Claim is invalid","token":"hidden-response-field"}`, true},
+		{"forbidden", 403, `{"message":"hidden-response-field"}`, false},
+		{"unavailable", 503, `{"message":"hidden-response-field"}`, false},
+		{"HTML", 422, "<html>hidden-response-field</html>", false},
+		{"malformed JSON", 422, `{"message":"hidden-response-field"`, false},
+		{"missing message", 422, `{"token":"hidden-response-field"}`, false},
+		{"oversized response", 422, `{"message":"` + strings.Repeat("hidden-response-field", 200) + `"}`, false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(tc.status)
+				_, _ = fmt.Fprint(w, tc.body)
+			}))
+			defer server.Close()
+			r := &workloadIdentityResource{client: &Client{http: server.Client(), restURL: server.URL, organization: "acme"}}
+			diags := runCreate(t.Context(), t, r, nil)
+			if !diagnosticsContain(diags, fmt.Sprintf("status: %d", tc.status)) {
+				t.Fatalf("Create() diagnostics = %v, want status %d", diags, tc.status)
+			}
+			if got := diagnosticsContain(diags, "Claim is invalid"); got != tc.wantMessage {
+				t.Errorf("Create() diagnostics = %v, want validation message exposed: %t", diags, tc.wantMessage)
+			}
+			if diagnosticsContain(diags, "hidden-response-field") {
+				t.Errorf("Create() diagnostics exposed response content outside the validation message: %v", diags)
+			}
+		})
+	}
+}
+
 func TestUnitBuildkiteWorkloadIdentitySelectedPipelines(t *testing.T) {
 	server, api := newFakeWorkloadIdentityAPI(t)
 	provider := fakeWorkloadIdentityProvider(server)

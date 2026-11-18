@@ -19,29 +19,19 @@ import (
 	"github.com/shurcooL/graphql"
 )
 
-func TestMakeRequestWorkloadIdentityValidationMessage(t *testing.T) {
+func TestMakeRequestRetainsResponseBodyWithoutRenderingIt(t *testing.T) {
 	t.Parallel()
-	const (
-		base = "/v2/organizations/acme/workload-identities"
-		body = `{"message":"Oidc claims must be a JSON object","token":"hidden-response-field"}`
-	)
+	const body = `{"message":"hidden-message","token":"hidden-response-field"}`
 	for _, tc := range []struct {
-		name        string
-		path        string
-		status      int
-		body        string
-		wantMessage bool
+		name     string
+		status   int
+		body     string
+		wantBody string
 	}{
-		{"create", base, 422, body, true},
-		{"update", base + "/identity-uuid", 422, body, true},
-		{"other resource", "/v2/organizations/acme/pipelines", 422, body, false},
-		{"similar path", base + "-other", 422, body, false},
-		{"other organization", "/v2/organizations/other/workload-identities", 422, body, false},
-		{"forbidden", base, 403, body, false},
-		{"HTML", base, 422, "<html>hidden-response-field</html>", false},
-		{"malformed JSON", base, 422, `{"message":"hidden-response-field"`, false},
-		{"missing message", base, 422, `{"token":"hidden-response-field"}`, false},
-		{"oversized response", base, 422, `{"message":"` + strings.Repeat("hidden-response-field", 200) + `"}`, false},
+		{"validation", 422, body, body},
+		{"forbidden", 403, body, body},
+		{"unavailable", 503, body, body},
+		{"bounded body", 422, strings.Repeat("x", 3000), strings.Repeat("x", 2048)},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
@@ -51,15 +41,17 @@ func TestMakeRequestWorkloadIdentityValidationMessage(t *testing.T) {
 			}))
 			defer server.Close()
 			client := &Client{http: server.Client(), restURL: server.URL, organization: "acme"}
-			err := client.makeRequest(t.Context(), http.MethodPost, tc.path, nil, nil)
-			if !isAPIStatus(err, tc.status) {
+			err := client.makeRequest(t.Context(), http.MethodPost, "/v2/test", nil, nil)
+			var apiErr *apiError
+			if !errors.As(err, &apiErr) || apiErr.StatusCode != tc.status {
 				t.Fatalf("makeRequest() = %v, want status %d", err, tc.status)
 			}
-			if got := strings.Contains(err.Error(), "Oidc claims must be a JSON object"); got != tc.wantMessage {
-				t.Errorf("makeRequest() = %v, want validation message exposed: %t", err, tc.wantMessage)
+			if apiErr.Body != tc.wantBody {
+				t.Errorf("Body = %q, want %q", apiErr.Body, tc.wantBody)
 			}
-			if strings.Contains(err.Error(), "hidden-response-field") {
-				t.Errorf("makeRequest() exposed response content outside the validation message: %v", err)
+			want := fmt.Sprintf("the Buildkite API request failed: POST %s/v2/test (status: %d)", server.URL, tc.status)
+			if err.Error() != want {
+				t.Errorf("Error() = %q, want only request and status: %q", err, want)
 			}
 		})
 	}
