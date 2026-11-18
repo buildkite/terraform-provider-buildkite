@@ -561,10 +561,9 @@ type apiError struct {
 	URL    string
 	// StatusCode is the status of the response that ended the request, or 0 when a transport or
 	// context error ended it instead.
-	StatusCode int
-	Attempts   int
-	Body       string
-	// Only workload identity 422 responses expose their parsed validation message.
+	StatusCode        int
+	Attempts          int
+	Body              string
 	validationMessage string
 	// earlierStatus and earlierBody carry what a previous attempt saw when a later one died in
 	// flight. They are context rather than the cause, so they stay out of StatusCode.

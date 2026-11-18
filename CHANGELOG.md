@@ -11,9 +11,9 @@
 
 ### Fixed
 
-* Show the API's validation message for workload identity requests that return HTTP 422. Other response fields and errors from other endpoints remain hidden.
+* Show the API's validation message for workload identity requests that return HTTP 422.
 
-* Correct the `buildkite_workload_identity` resource grants documentation to include `team` and `cluster` alongside `pipeline`.
+* Update resource grant documentation to include `cluster` and `team`.
 
 * SUP-8858: Validate that pipeline comment commands are single non-empty words without whitespace, rejecting values such as `/bk review` before apply instead of producing an inconsistent result after apply.
 
