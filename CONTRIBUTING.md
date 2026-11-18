@@ -330,6 +330,29 @@ The tests create disposable clusters and registries, exercise their lifecycle, a
 
 CI must opt in with `BUILDKITE_CACHE_REGISTRIES_ACCEPTANCE=1` only after its test organization has Cache Registries enabled and its token has organization membership and cluster management access. `TF_ACC=1` is still required (`make testacc` sets it). The Docker Compose test service forwards the opt-in and custom GraphQL/REST URLs when set.
 
+#### Releases registration acceptance test
+
+The Releases lifecycle runs offline with `make test` and against an opted-in REST API:
+
+```bash
+TF_ACC=1 BUILDKITE_RELEASES_ACCEPTANCE=1 \
+BUILDKITE_ORGANIZATION_SLUG=<disposable-org> BUILDKITE_API_TOKEN=<token> \
+go test ./buildkite -run '^TestAccReleasesRegistrationLifecycle$' -count=1 -v
+```
+
+Use a disposable organization with Releases enabled and the by-ID rename PATCH endpoints available.
+The token needs `read_deployment_artifacts` and `write_deployment_artifacts` scopes;
+non-OIDC callers also need permission to manage organization rules. Set `BUILDKITE_REST_URL`
+to the API origin (without `/v2`) to test a development API. These resources do not use GraphQL.
+
+The test creates an Artifact, Target, catalog Component and two Instances, verifies UUID imports,
+renames all four types in place, replaces and clears labels, archives on destroy, rejects reserved
+names by default, and explicitly restores matching registrations with their original UUIDs.
+Cleanup archives registrations rather than deleting their history; their names remain reserved.
+It does not publish versions or send observations. Without the opt-in, the live test skips.
+Fake-server tests cover conflicts, mismatched restore bindings, immutable-binding replacement,
+non-cascading Target restore and ordinary read/archive errors; they do not establish API deployment.
+
 #### Workload identities acceptance test
 
 The workload identity lifecycle uses the same Terraform steps against an offline fake API (`make test`) and the live API. Live testing is opt-in because workload identities must be enabled for the organization:
