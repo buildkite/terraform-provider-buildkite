@@ -74,6 +74,64 @@ BUILDKITE_ORGANIZATION_SLUG=<org-slug> BUILDKITE_API_TOKEN=<token> make testacc
 - Code reviewers will run the acceptance tests manually
 - Please run the acceptance tests locally to confirm they pass before requesting a review
 
+#### Cleaning up acceptance resources
+
+Acceptance tests use names such as `tfacc-5319-80c886d-abcdefghijkl`: the `tfacc-`
+marker, Buildkite build number, first seven commit characters, and a random suffix.
+Local runs use `tfacc-local-<random>`. Use `testAccResourceName()` for temporary
+names, including updated names, and `testAccResourceKey()` for secret keys, which
+use uppercase letters and underscores instead of hyphens. Keep random secret
+values separate from resource identities. Resources without names belong to
+marked temporary parents; tokens and notification services use marked descriptions.
+
+The CI `sweepers` step runs on the `oss-deploy` queue before both acceptance jobs,
+using the existing IAM role's source-IP restrictions. All three steps share the
+`terraform-provider-acceptance-tests` concurrency group.
+Sweep failures are reported as soft failures and do not fail the build. Both
+acceptance jobs wait for the sweep to finish but allow dependency failures, so a
+cleanup failure does not prevent acceptance testing.
+
+To invoke the [HashiCorp sweeper](https://developer.hashicorp.com/terraform/plugin/testing/acceptance-tests/sweepers)
+manually, export `BUILDKITE_API_TOKEN` for a test organization, then run:
+
+```bash
+BUILDKITE_ORGANIZATION_SLUG=<test-org> make sweep
+```
+
+This command deletes real resources. Run it only in a dedicated test organization,
+with an admin token that has `graphql` and the REST read/write scopes for pipelines,
+clusters, teams, Rules, portals, pipeline templates, notification services, suites, secret
+details, and secrets, plus `delete_registries`. GraphQL supplies suite and package
+registry creation timestamps because their REST responses omit them. The sweeper
+reads secret metadata only, never secret values.
+
+The sweep selects marked resources strictly older than 24 hours using API creation
+timestamps. It removes Rules, pipelines, portals, templates, suites, package
+registries, temporary cluster children, clusters, notification services, teams,
+and organization-wide agent tokens. Supported repository webhooks are removed before
+their pipelines; the organization's GitHub App needs permission to read and delete
+them. Rules without descriptions can be identified through marked pipeline
+endpoints. Pipelines and their clusters are retained until dependent Rules are
+old enough to sweep, preserving that ownership evidence. Cluster deletion also cleans up
+its remaining queues, tokens, cache registries, and hosted tenant, including agent
+images. Clusters are retained while any discovered child has not reached the age
+cutoff or has no creation timestamp. They are also retained while any secret is
+preserved, including unmarked secrets, because cluster deletion does not remove
+secrets and their API requires a surviving cluster. Marked queues, tokens, secrets,
+and non-default cache registries can be removed from persistent clusters without
+deleting those clusters.
+
+Persistent non-admin fixtures are preserved. Unmarked legacy leftovers, including
+resources created before this naming convention, require manual review and cleanup.
+Webhook discovery uses the pipeline's current repository; hooks left in a previous
+repository after a repository/provider change need manual cleanup.
+Objects without creation timestamps are not individually swept. In particular,
+organization banners and changes to organization settings need manual recovery;
+agent images are cleaned up through their temporary parent cluster. Default cache
+registries in persistent clusters are preserved because the API prohibits deleting
+them. Organization-wide token discovery fails explicitly if its non-paginated
+GraphQL list is truncated.
+
 #### Non-admin acceptance tests
 
 Run the shared pipeline, pipeline schedule, pipeline-team, queue, cluster agent-token,

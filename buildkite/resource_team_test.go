@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
@@ -143,7 +142,7 @@ func TestAccBuildkiteTeam(t *testing.T) {
 	}
 
 	t.Run("creates a team", func(t *testing.T) {
-		resName := acctest.RandString(12)
+		resName := testAccResourceName()
 		var tr teamResourceModel
 
 		check := resource.ComposeAggregateTestCheckFunc(
@@ -176,8 +175,8 @@ func TestAccBuildkiteTeam(t *testing.T) {
 	})
 
 	t.Run("updates a team", func(t *testing.T) {
-		resName := acctest.RandString(12)
-		resNameNew := acctest.RandString(12)
+		resName := testAccResourceName()
+		resNameNew := testAccResourceName()
 		var tr teamResourceModel
 
 		check := resource.ComposeAggregateTestCheckFunc(
@@ -221,7 +220,7 @@ func TestAccBuildkiteTeam(t *testing.T) {
 	})
 
 	t.Run("imports a team", func(t *testing.T) {
-		resName := acctest.RandString(12)
+		resName := testAccResourceName()
 		var tr teamResourceModel
 
 		check := resource.ComposeAggregateTestCheckFunc(
@@ -255,7 +254,7 @@ func TestAccBuildkiteTeam(t *testing.T) {
 	})
 
 	t.Run("team is recreated if removed", func(t *testing.T) {
-		resName := acctest.RandString(12)
+		resName := testAccResourceName()
 
 		check := func(s *terraform.State) error {
 			team := s.RootModule().Resources["buildkite_team.acc_tests"]
@@ -283,7 +282,7 @@ func TestAccBuildkiteTeam(t *testing.T) {
 	})
 
 	t.Run("creates a team with all permissions enabled", func(t *testing.T) {
-		resName := acctest.RandString(12)
+		resName := testAccResourceName()
 		var tr teamResourceModel
 
 		check := resource.ComposeAggregateTestCheckFunc(
@@ -310,7 +309,7 @@ func TestAccBuildkiteTeam(t *testing.T) {
 	})
 
 	t.Run("creates a team with no permissions", func(t *testing.T) {
-		resName := acctest.RandString(12)
+		resName := testAccResourceName()
 		var tr teamResourceModel
 
 		check := resource.ComposeAggregateTestCheckFunc(
@@ -337,7 +336,7 @@ func TestAccBuildkiteTeam(t *testing.T) {
 	})
 
 	t.Run("updates team permissions", func(t *testing.T) {
-		resName := acctest.RandString(12)
+		resName := testAccResourceName()
 		var tr teamResourceModel
 
 		checkNoPermissions := resource.ComposeAggregateTestCheckFunc(
@@ -396,7 +395,7 @@ func TestAccBuildkiteTeam(t *testing.T) {
 	})
 
 	t.Run("creates a team with default permissions when not specified", func(t *testing.T) {
-		resName := acctest.RandString(12)
+		resName := testAccResourceName()
 		var tr teamResourceModel
 
 		check := resource.ComposeAggregateTestCheckFunc(

@@ -12,7 +12,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-go/tftypes"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
@@ -68,7 +67,7 @@ func TestAccBuildkiteClusterDatasource(t *testing.T) {
 	t.Parallel()
 
 	t.Run("can find a cluster", func(t *testing.T) {
-		clusterName := acctest.RandString(12)
+		clusterName := testAccResourceName()
 		resource.ParallelTest(t, resource.TestCase{
 			ProtoV6ProviderFactories: protoV6ProviderFactories(),
 			Steps: []resource.TestStep{

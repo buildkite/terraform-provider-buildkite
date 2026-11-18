@@ -4,13 +4,12 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
 func TestAccBuildkitePortalsDataSource(t *testing.T) {
-	randName1 := acctest.RandString(10)
-	randName2 := acctest.RandString(10)
+	randName1 := testAccResourceName()
+	randName2 := testAccResourceName()
 
 	config := func(name1, name2 string) string {
 		return fmt.Sprintf(`
@@ -25,7 +24,7 @@ func TestAccBuildkitePortalsDataSource(t *testing.T) {
 
 		resource "buildkite_portal" "test1" {
 			slug = %q
-			name = "Test Portal %s"
+			name = "%s-portal"
 			description = "First test portal"
 			query = "{ viewer { user { name } } }"
 			user_invokable = false
@@ -33,7 +32,7 @@ func TestAccBuildkitePortalsDataSource(t *testing.T) {
 
 		resource "buildkite_portal" "test2" {
 			slug = %q
-			name = "Test Portal %s"
+			name = "%s-portal"
 			description = "Second test portal"
 			query = "{ viewer { user { email } } }"
 			user_invokable = true
@@ -45,7 +44,7 @@ func TestAccBuildkitePortalsDataSource(t *testing.T) {
 				buildkite_portal.test2
 			]
 		}
-		`, fmt.Sprintf("test-portal-1-%s", name1), name1, fmt.Sprintf("test-portal-2-%s", name2), name2)
+		`, fmt.Sprintf("%s-portal-1", name1), name1, fmt.Sprintf("%s-portal-2", name2), name2)
 	}
 
 	resource.ParallelTest(t, resource.TestCase{

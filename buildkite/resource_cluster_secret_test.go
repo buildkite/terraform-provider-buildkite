@@ -174,7 +174,7 @@ func TestClusterSecretReadFailureHandling(t *testing.T) {
 
 func TestAccNonAdminClusterSecret(t *testing.T) {
 	const address = "buildkite_cluster_secret.temporary"
-	key := "TF_ACCEPTANCE_" + acctest.RandString(12)
+	key := testAccResourceKey()
 	initialValue, rotatedValue := acctest.RandString(24), acctest.RandString(32)
 	initialPolicy := "- pipeline_slug: terraform-provider-secret-fixture\n  build_branch: main"
 	updatedPolicy := "- pipeline_slug: terraform-provider-secret-fixture\n  build_branch: develop"
@@ -290,10 +290,10 @@ func TestAccNonAdminClusterSecret(t *testing.T) {
 }
 
 func TestAccBuildkiteClusterSecret_writeOnlyValue(t *testing.T) {
-	secretKey := fmt.Sprintf("TEST_SECRET_%s", acctest.RandString(10))
+	secretKey := testAccResourceKey()
 	secretValue1 := acctest.RandString(20)
 	secretValue2 := acctest.RandString(20)
-	clusterName := acctest.RandString(10)
+	clusterName := testAccResourceName()
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
@@ -325,10 +325,10 @@ func TestAccBuildkiteClusterSecret_writeOnlyValue(t *testing.T) {
 }
 
 func TestAccBuildkiteClusterSecret_migrateValueToWriteOnlyValue(t *testing.T) {
-	secretKey := fmt.Sprintf("TEST_SECRET_%s", acctest.RandString(10))
+	secretKey := testAccResourceKey()
 	secretValue1 := acctest.RandString(20)
 	secretValue2 := acctest.RandString(20)
-	clusterName := acctest.RandString(10)
+	clusterName := testAccResourceName()
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
@@ -387,9 +387,9 @@ func TestBuildkiteClusterSecret_valueValidation(t *testing.T) {
 }
 
 func TestAccBuildkiteClusterSecret_withPolicy(t *testing.T) {
-	secretKey := fmt.Sprintf("TEST_SECRET_%s", acctest.RandString(10))
+	secretKey := testAccResourceKey()
 	secretValue := acctest.RandString(20)
-	clusterName := acctest.RandString(10)
+	clusterName := testAccResourceName()
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
@@ -453,7 +453,7 @@ provider "buildkite" {
 }
 
 resource "buildkite_cluster" "test" {
-    name        = "Test Cluster %s"
+    name        = "%s-cluster"
     description = "Test cluster for secrets"
 }
 
@@ -474,7 +474,7 @@ provider "buildkite" {
 }
 
 resource "buildkite_cluster" "test" {
-    name        = "Test Cluster %s"
+    name        = "%s-cluster"
     description = "Test cluster for secrets"
 }
 
@@ -618,7 +618,7 @@ provider "buildkite" {
 }
 
 resource "buildkite_cluster" "test" {
-    name        = "Test Cluster %s"
+    name        = "%s-cluster"
     description = "Test cluster for secrets"
 }
 

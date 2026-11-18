@@ -10,7 +10,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/shurcooL/graphql"
@@ -89,7 +88,7 @@ func TestAccNonAdminOrganizationRuleCreate(t *testing.T) {
 		}
 	})
 
-	marker := acctest.RandString(12)
+	marker := testAccResourceName()
 	config := fmt.Sprintf(`
 		provider "buildkite" {
 			timeouts = { create = "30s", read = "30s", delete = "30s" }
@@ -101,7 +100,7 @@ func TestAccNonAdminOrganizationRuleCreate(t *testing.T) {
 		Config: config + fmt.Sprintf(`
 			resource "buildkite_organization_rule" "temporary" {
 				type = "pipeline.trigger_build.pipeline"
-				description = "Terraform acceptance Rule create %s"
+				description = "%s-rule-create"
 				value = jsonencode({
 					source_pipeline = data.buildkite_organization_rule.fixture.source_uuid
 					target_pipeline = data.buildkite_organization_rule.fixture.target_uuid
@@ -116,7 +115,7 @@ func TestAccNonAdminOrganizationRuleCreate(t *testing.T) {
 			resource.TestCheckResourceAttrSet("buildkite_organization_rule.temporary", "id"),
 			resource.TestCheckResourceAttrSet("buildkite_organization_rule.temporary", "uuid"),
 			resource.TestCheckResourceAttr("buildkite_organization_rule.temporary", "type", "pipeline.trigger_build.pipeline"),
-			resource.TestCheckResourceAttr("buildkite_organization_rule.temporary", "description", "Terraform acceptance Rule create "+marker),
+			resource.TestCheckResourceAttr("buildkite_organization_rule.temporary", "description", marker+"-rule-create"),
 			resource.TestCheckResourceAttr("buildkite_organization_rule.temporary", "source_uuid", source.Uuid),
 			resource.TestCheckResourceAttr("buildkite_organization_rule.temporary", "target_uuid", target.Uuid),
 		)
@@ -147,7 +146,7 @@ func TestAccBuildkiteOrganizationRuleMutationPermissions(t *testing.T) {
 	// Keep this test serial: it temporarily occupies the same trigger slot as
 	// TestAccNonAdminOrganizationRuleCreate. No credentials are changed globally.
 	t.Setenv("TF_VAR_rule_member_token", memberToken)
-	marker := "terraform-provider-rule-mutations-" + acctest.RandString(12)
+	marker := testAccResourceName() + "-rule-mutations"
 	fixtureConfig := fmt.Sprintf(`
 		provider "buildkite" {
 			timeouts = { create = "30s", read = "30s", update = "30s", delete = "30s" }
@@ -272,25 +271,25 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 		}
 
 		resource "buildkite_cluster" "cluster_source" {
-			name        = "Cluster %s"
+			name        = "%s-cluster"
 			description = "A test cluster containing a source pipeline."
 		}
 
 		resource "buildkite_cluster" "cluster_target" {
-			name        = "Cluster %s"
+			name        = "%s-cluster"
 			description = "A test cluster containing a target pipeline for triggering builds."
 		}
 
 		resource "buildkite_pipeline" "pipeline_source" {
 			depends_on 			 = [buildkite_cluster.cluster_source]
-			name                 = "Pipeline %s"
+			name                 = "%s-pipeline"
 			repository           = "https://github.com/buildkite/terraform-provider-buildkite.git"
 			cluster_id			 = buildkite_cluster.cluster_source.id
 		}
 
 		resource "buildkite_pipeline" "pipeline_target" {
 			depends_on 			 = [buildkite_cluster.cluster_target]
-			name                 = "Pipeline %s"
+			name                 = "%s-pipeline"
 			repository           = "https://github.com/buildkite/terraform-provider-buildkite.git"
 			cluster_id           = buildkite_cluster.cluster_target.id
 		}	
@@ -322,25 +321,25 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 		}
 
 		resource "buildkite_cluster" "cluster_source" {
-			name        = "Cluster %s"
+			name        = "%s-cluster"
 			description = "A test cluster containing a source pipeline."
 		}
 
 		resource "buildkite_cluster" "cluster_target" {
-			name        = "Cluster %s"
+			name        = "%s-cluster"
 			description = "A test cluster containing a target pipeline for triggering builds."
 		}
 
 		resource "buildkite_pipeline" "pipeline_source" {
 			depends_on 			 = [buildkite_cluster.cluster_source]
-			name                 = "Pipeline %s"
+			name                 = "%s-pipeline"
 			repository           = "https://github.com/buildkite/terraform-provider-buildkite.git"
 			cluster_id			 = buildkite_cluster.cluster_source.id
 		}
 
 		resource "buildkite_pipeline" "pipeline_target" {
 			depends_on 			 = [buildkite_cluster.cluster_target]
-			name                 = "Pipeline %s"
+			name                 = "%s-pipeline"
 			repository           = "https://github.com/buildkite/terraform-provider-buildkite.git"
 			cluster_id           = buildkite_cluster.cluster_target.id
 		}	
@@ -377,25 +376,25 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 		}
 
 		resource "buildkite_cluster" "cluster_source" {
-			name        = "Cluster %s"
+			name        = "%s-cluster"
 			description = "A test cluster containing a source pipeline."
 		}
 
 		resource "buildkite_cluster" "cluster_target" {
-			name        = "Cluster %s"
+			name        = "%s-cluster"
 			description = "A test cluster containing a target pipeline for triggering builds."
 		}
 
 		resource "buildkite_pipeline" "pipeline_source" {
 			depends_on 			 = [buildkite_cluster.cluster_source]
-			name                 = "Pipeline %s"
+			name                 = "%s-pipeline"
 			repository           = "https://github.com/buildkite/terraform-provider-buildkite.git"
 			cluster_id			 = buildkite_cluster.cluster_source.id
 		}
 
 		resource "buildkite_pipeline" "pipeline_target" {
 			depends_on 			 = [buildkite_cluster.cluster_target]
-			name                 = "Pipeline %s"
+			name                 = "%s-pipeline"
 			repository           = "https://github.com/buildkite/terraform-provider-buildkite.git"
 			cluster_id           = buildkite_cluster.cluster_target.id
 		}	
@@ -432,25 +431,25 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 		}
 
 		resource "buildkite_cluster" "cluster_source" {
-			name        = "Cluster %s"
+			name        = "%s-cluster"
 			description = "A test cluster containing a source pipeline."
 		}
 
 		resource "buildkite_cluster" "cluster_target" {
-			name        = "Cluster %s"
+			name        = "%s-cluster"
 			description = "A test cluster containing a target pipeline for triggering builds."
 		}
 
 		resource "buildkite_pipeline" "pipeline_source" {
 			depends_on 			 = [buildkite_cluster.cluster_source]
-			name                 = "Pipeline %s"
+			name                 = "%s-pipeline"
 			repository           = "https://github.com/buildkite/terraform-provider-buildkite.git"
 			cluster_id			 = buildkite_cluster.cluster_source.id
 		}
 
 		resource "buildkite_pipeline" "pipeline_target" {
 			depends_on 			 = [buildkite_cluster.cluster_target]
-			name                 = "Pipeline %s"
+			name                 = "%s-pipeline"
 			repository           = "https://github.com/buildkite/terraform-provider-buildkite.git"
 			cluster_id           = buildkite_cluster.cluster_target.id
 		}	
@@ -486,25 +485,25 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 		}
 
 		resource "buildkite_cluster" "cluster_source" {
-			name        = "Cluster %s"
+			name        = "%s-cluster"
 			description = "A test cluster containing a source pipeline."
 		}
 
 		resource "buildkite_cluster" "cluster_target" {
-			name        = "Cluster %s"
+			name        = "%s-cluster"
 			description = "A test cluster containing a target pipeline for triggering builds."
 		}
 
 		resource "buildkite_pipeline" "pipeline_source" {
 			depends_on 			 = [buildkite_cluster.cluster_source]
-			name                 = "Pipeline %s"
+			name                 = "%s-pipeline"
 			repository           = "https://github.com/buildkite/terraform-provider-buildkite.git"
 			cluster_id			 = buildkite_cluster.cluster_source.id
 		}
 
 		resource "buildkite_pipeline" "pipeline_target" {
 			depends_on 			 = [buildkite_cluster.cluster_target]
-			name                 = "Pipeline %s"
+			name                 = "%s-pipeline"
 			repository           = "https://github.com/buildkite/terraform-provider-buildkite.git"
 			cluster_id           = buildkite_cluster.cluster_target.id
 		}	
@@ -538,25 +537,25 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 		}
 
 		resource "buildkite_cluster" "cluster_source" {
-			name        = "Cluster %s"
+			name        = "%s-cluster"
 			description = "A test cluster containing a source pipeline."
 		}
 
 		resource "buildkite_cluster" "cluster_target" {
-			name        = "Cluster %s"
+			name        = "%s-cluster"
 			description = "A test cluster containing a target pipeline for triggering builds."
 		}
 
 		resource "buildkite_pipeline" "pipeline_source" {
 			depends_on 			 = [buildkite_cluster.cluster_source]
-			name                 = "Pipeline %s"
+			name                 = "%s-pipeline"
 			repository           = "https://github.com/buildkite/terraform-provider-buildkite.git"
 			cluster_id			 = buildkite_cluster.cluster_source.id
 		}
 
 		resource "buildkite_pipeline" "pipeline_target" {
 			depends_on 			 = [buildkite_cluster.cluster_target]
-			name                 = "Pipeline %s"
+			name                 = "%s-pipeline"
 			repository           = "https://github.com/buildkite/terraform-provider-buildkite.git"
 			cluster_id           = buildkite_cluster.cluster_target.id
 		}	
@@ -588,32 +587,32 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 		}
 
 		resource "buildkite_cluster" "cluster_source" {
-			name        = "Cluster %s"
+			name        = "%s-cluster"
 			description = "A test cluster containing a source pipeline."
 		}
 
 		resource "buildkite_cluster" "cluster_target" {
-			name        = "Cluster %s"
+			name        = "%s-cluster"
 			description = "A test cluster containing a target pipeline for triggering builds."
 		}
 
 		resource "buildkite_pipeline" "pipeline_source" {
 			depends_on 			 = [buildkite_cluster.cluster_source]
-			name                 = "Pipeline %s"
+			name                 = "%s-pipeline"
 			repository           = "https://github.com/buildkite/terraform-provider-buildkite.git"
 			cluster_id			 = buildkite_cluster.cluster_source.id
 		}
 
 		resource "buildkite_pipeline" "pipeline_new_source" {
 			depends_on 			 = [buildkite_cluster.cluster_source]
-			name                 = "Pipeline %s"
+			name                 = "%s-pipeline"
 			repository           = "https://github.com/buildkite/terraform-provider-buildkite.git"
 			cluster_id			 = buildkite_cluster.cluster_source.id
 		}
 
 		resource "buildkite_pipeline" "pipeline_target" {
 			depends_on 			 = [buildkite_cluster.cluster_target]
-			name                 = "Pipeline %s"
+			name                 = "%s-pipeline"
 			repository           = "https://github.com/buildkite/terraform-provider-buildkite.git"
 			cluster_id           = buildkite_cluster.cluster_target.id
 		}	
@@ -645,32 +644,32 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 		}
 
 		resource "buildkite_cluster" "cluster_source" {
-			name        = "Cluster %s"
+			name        = "%s-cluster"
 			description = "A test cluster containing a source pipeline."
 		}
 
 		resource "buildkite_cluster" "cluster_target" {
-			name        = "Cluster %s"
+			name        = "%s-cluster"
 			description = "A test cluster containing a target pipeline for triggering builds."
 		}
 
 		resource "buildkite_pipeline" "pipeline_source" {
 			depends_on 			 = [buildkite_cluster.cluster_source]
-			name                 = "Pipeline %s"
+			name                 = "%s-pipeline"
 			repository           = "https://github.com/buildkite/terraform-provider-buildkite.git"
 			cluster_id			 = buildkite_cluster.cluster_source.id
 		}
 
 		resource "buildkite_pipeline" "pipeline_target" {
 			depends_on 			 = [buildkite_cluster.cluster_target]
-			name                 = "Pipeline %s"
+			name                 = "%s-pipeline"
 			repository           = "https://github.com/buildkite/terraform-provider-buildkite.git"
 			cluster_id           = buildkite_cluster.cluster_target.id
 		}
 
 		resource "buildkite_pipeline" "pipeline_new_target" {
 			depends_on 			 = [buildkite_cluster.cluster_target]
-			name                 = "Pipeline %s"
+			name                 = "%s-pipeline"
 			repository           = "https://github.com/buildkite/terraform-provider-buildkite.git"
 			cluster_id			 = buildkite_cluster.cluster_source.id
 		}	
@@ -702,25 +701,25 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 		}
 
 		resource "buildkite_cluster" "cluster_source" {
-			name        = "Cluster %s"
+			name        = "%s-cluster"
 			description = "A test cluster containing a source pipeline."
 		}
 
 		resource "buildkite_cluster" "cluster_target" {
-			name        = "Cluster %s"
+			name        = "%s-cluster"
 			description = "A test cluster containing a target pipeline for triggering builds."
 		}
 
 		resource "buildkite_pipeline" "pipeline_source" {
 			depends_on 			 = [buildkite_cluster.cluster_source]
-			name                 = "Pipeline %s"
+			name                 = "%s-pipeline"
 			repository           = "https://github.com/buildkite/terraform-provider-buildkite.git"
 			cluster_id			 = buildkite_cluster.cluster_source.id
 		}
 
 		resource "buildkite_pipeline" "pipeline_target" {
 			depends_on 			 = [buildkite_cluster.cluster_target]
-			name                 = "Pipeline %s"
+			name                 = "%s-pipeline"
 			repository           = "https://github.com/buildkite/terraform-provider-buildkite.git"
 			cluster_id           = buildkite_cluster.cluster_target.id
 		}
@@ -752,12 +751,12 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 		}
 
 		resource "buildkite_pipeline" "pipeline_source" {
-			name                 = "Pipeline %s"
+			name                 = "%s-pipeline"
 			repository           = "https://github.com/buildkite/terraform-provider-buildkite.git"
 		}
 
 		resource "buildkite_pipeline" "pipeline_target" {
-			name                 = "Pipeline %s"
+			name                 = "%s-pipeline"
 			repository           = "https://github.com/buildkite/terraform-provider-buildkite.git"
 		}	
 
@@ -788,12 +787,12 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 		}
 
 		resource "buildkite_pipeline" "pipeline_source" {
-			name                 = "Pipeline %s"
+			name                 = "%s-pipeline"
 			repository           = "https://github.com/buildkite/terraform-provider-buildkite.git"
 		}
 
 		resource "buildkite_pipeline" "pipeline_target" {
-			name                 = "Pipeline %s"
+			name                 = "%s-pipeline"
 			repository           = "https://github.com/buildkite/terraform-provider-buildkite.git"
 		}	
 
@@ -827,7 +826,7 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 		}
 
 		resource "buildkite_pipeline" "pipeline_target" {
-			name                 = "Pipeline %s"
+			name                 = "%s-pipeline"
 			repository           = "https://github.com/buildkite/terraform-provider-buildkite.git"
 		}	
 
@@ -854,7 +853,7 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 		}
 
 		resource "buildkite_pipeline" "pipeline_source" {
-			name                 = "Pipeline %s"
+			name                 = "%s-pipeline"
 			repository           = "https://github.com/buildkite/terraform-provider-buildkite.git"
 		}
 
@@ -881,7 +880,7 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 		}
 
 		resource "buildkite_pipeline" "pipeline_target" {
-			name                 = "Pipeline %s"
+			name                 = "%s-pipeline"
 			repository           = "https://github.com/buildkite/terraform-provider-buildkite.git"
 		}	
 
@@ -909,7 +908,7 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 		}
 
 		resource "buildkite_pipeline" "pipeline_source" {
-			name                 = "Pipeline %s"
+			name                 = "%s-pipeline"
 			repository           = "https://github.com/buildkite/terraform-provider-buildkite.git"
 		}	
 
@@ -937,25 +936,25 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 		}
 
 		resource "buildkite_cluster" "cluster_source" {
-			name        = "Cluster %s"
+			name        = "%s-cluster"
 			description = "A test cluster containing a source pipeline."
 		}
 
 		resource "buildkite_cluster" "cluster_target" {
-			name        = "Cluster %s"
+			name        = "%s-cluster"
 			description = "A test cluster containing a target pipeline for triggering builds."
 		}
 
 		resource "buildkite_pipeline" "pipeline_source" {
 			depends_on 			 = [buildkite_cluster.cluster_source]
-			name                 = "Pipeline %s"
+			name                 = "%s-pipeline"
 			repository           = "https://github.com/buildkite/terraform-provider-buildkite.git"
 			cluster_id			 = buildkite_cluster.cluster_source.id
 		}
 
 		resource "buildkite_pipeline" "pipeline_target" {
 			depends_on 			 = [buildkite_cluster.cluster_target]
-			name                 = "Pipeline %s"
+			name                 = "%s-pipeline"
 			repository           = "https://github.com/buildkite/terraform-provider-buildkite.git"
 			cluster_id           = buildkite_cluster.cluster_target.id
 		}	
@@ -992,25 +991,25 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 		}
 
 		resource "buildkite_cluster" "cluster_source" {
-			name        = "Cluster %s"
+			name        = "%s-cluster"
 			description = "A test cluster containing a source pipeline."
 		}
 
 		resource "buildkite_cluster" "cluster_target" {
-			name        = "Cluster %s"
+			name        = "%s-cluster"
 			description = "A test cluster containing a target pipeline for triggering builds."
 		}
 
 		resource "buildkite_pipeline" "pipeline_source" {
 			depends_on 			 = [buildkite_cluster.cluster_source]
-			name                 = "Pipeline %s"
+			name                 = "%s-pipeline"
 			repository           = "https://github.com/buildkite/terraform-provider-buildkite.git"
 			cluster_id			 = buildkite_cluster.cluster_source.id
 		}
 
 		resource "buildkite_pipeline" "pipeline_target" {
 			depends_on 			 = [buildkite_cluster.cluster_target]
-			name                 = "Pipeline %s"
+			name                 = "%s-pipeline"
 			repository           = "https://github.com/buildkite/terraform-provider-buildkite.git"
 			cluster_id           = buildkite_cluster.cluster_target.id
 		}	
@@ -1047,25 +1046,25 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 		}
 
 		resource "buildkite_cluster" "cluster_source" {
-			name        = "Cluster %s"
+			name        = "%s-cluster"
 			description = "A test cluster containing a source pipeline."
 		}
 
 		resource "buildkite_cluster" "cluster_target" {
-			name        = "Cluster %s"
+			name        = "%s-cluster"
 			description = "A test cluster containing a target pipeline for triggering builds."
 		}
 
 		resource "buildkite_pipeline" "pipeline_source" {
 			depends_on 			 = [buildkite_cluster.cluster_source]
-			name                 = "Pipeline %s"
+			name                 = "%s-pipeline"
 			repository           = "https://github.com/buildkite/terraform-provider-buildkite.git"
 			cluster_id			 = buildkite_cluster.cluster_source.id
 		}
 
 		resource "buildkite_pipeline" "pipeline_target" {
 			depends_on 			 = [buildkite_cluster.cluster_target]
-			name                 = "Pipeline %s"
+			name                 = "%s-pipeline"
 			repository           = "https://github.com/buildkite/terraform-provider-buildkite.git"
 			cluster_id           = buildkite_cluster.cluster_target.id
 		}	
@@ -1101,25 +1100,25 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 		}
 
 		resource "buildkite_cluster" "cluster_source" {
-			name        = "Cluster %s"
+			name        = "%s-cluster"
 			description = "A test cluster containing a source pipeline."
 		}
 
 		resource "buildkite_cluster" "cluster_target" {
-			name        = "Cluster %s"
+			name        = "%s-cluster"
 			description = "A test cluster containing a target pipeline for triggering builds."
 		}
 
 		resource "buildkite_pipeline" "pipeline_source" {
 			depends_on 			 = [buildkite_cluster.cluster_source]
-			name                 = "Pipeline %s"
+			name                 = "%s-pipeline"
 			repository           = "https://github.com/buildkite/terraform-provider-buildkite.git"
 			cluster_id			 = buildkite_cluster.cluster_source.id
 		}
 
 		resource "buildkite_pipeline" "pipeline_target" {
 			depends_on 			 = [buildkite_cluster.cluster_target]
-			name                 = "Pipeline %s"
+			name                 = "%s-pipeline"
 			repository           = "https://github.com/buildkite/terraform-provider-buildkite.git"
 			cluster_id           = buildkite_cluster.cluster_target.id
 		}	
@@ -1155,25 +1154,25 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 		}
 
 		resource "buildkite_cluster" "cluster_source" {
-			name        = "Cluster %s"
+			name        = "%s-cluster"
 			description = "A test cluster containing a source pipeline."
 		}
 
 		resource "buildkite_cluster" "cluster_target" {
-			name        = "Cluster %s"
+			name        = "%s-cluster"
 			description = "A test cluster containing a target pipeline for triggering builds."
 		}
 
 		resource "buildkite_pipeline" "pipeline_source" {
 			depends_on 			 = [buildkite_cluster.cluster_source]
-			name                 = "Pipeline %s"
+			name                 = "%s-pipeline"
 			repository           = "https://github.com/buildkite/terraform-provider-buildkite.git"
 			cluster_id			 = buildkite_cluster.cluster_source.id
 		}
 
 		resource "buildkite_pipeline" "pipeline_target" {
 			depends_on 			 = [buildkite_cluster.cluster_target]
-			name                 = "Pipeline %s"
+			name                 = "%s-pipeline"
 			repository           = "https://github.com/buildkite/terraform-provider-buildkite.git"
 			cluster_id           = buildkite_cluster.cluster_target.id
 		}	
@@ -1210,25 +1209,25 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 		}
 
 		resource "buildkite_cluster" "cluster_source" {
-			name        = "Cluster %s"
+			name        = "%s-cluster"
 			description = "A test cluster containing a source pipeline."
 		}
 
 		resource "buildkite_cluster" "cluster_target" {
-			name        = "Cluster %s"
+			name        = "%s-cluster"
 			description = "A test cluster containing a target pipeline for triggering builds."
 		}
 
 		resource "buildkite_pipeline" "pipeline_source" {
 			depends_on 			 = [buildkite_cluster.cluster_source]
-			name                 = "Pipeline %s"
+			name                 = "%s-pipeline"
 			repository           = "https://github.com/buildkite/terraform-provider-buildkite.git"
 			cluster_id			 = buildkite_cluster.cluster_source.id
 		}
 
 		resource "buildkite_pipeline" "pipeline_target" {
 			depends_on 			 = [buildkite_cluster.cluster_target]
-			name                 = "Pipeline %s"
+			name                 = "%s-pipeline"
 			repository           = "https://github.com/buildkite/terraform-provider-buildkite.git"
 			cluster_id           = buildkite_cluster.cluster_target.id
 		}	
@@ -1258,8 +1257,8 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 		resourceName := fmt.Sprintf("buildkite_organization_rule.%s_rule", action)
 
 		t.Run(fmt.Sprintf("creates a pipeline.%s.pipeline organization rule with required attributes", action), func(t *testing.T) {
-			randNameOne := acctest.RandString(12)
-			randNameTwo := acctest.RandString(12)
+			randNameOne := testAccResourceName()
+			randNameTwo := testAccResourceName()
 			var orr organizationRuleResourceModel
 
 			check := resource.ComposeAggregateTestCheckFunc(
@@ -1296,8 +1295,8 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 		})
 
 		t.Run(fmt.Sprintf("creates a pipeline.%s.pipeline organization rule with all attributes", action), func(t *testing.T) {
-			randNameOne := acctest.RandString(12)
-			randNameTwo := acctest.RandString(12)
+			randNameOne := testAccResourceName()
+			randNameTwo := testAccResourceName()
 			var orr organizationRuleResourceModel
 
 			check := resource.ComposeAggregateTestCheckFunc(
@@ -1336,9 +1335,9 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 		})
 
 		t.Run(fmt.Sprintf("updates a pipeline.%s.pipeline organization rule by adding a description", action), func(t *testing.T) {
-			randNameOne := acctest.RandString(12)
-			randNameTwo := acctest.RandString(12)
-			description := acctest.RandString(12)
+			randNameOne := testAccResourceName()
+			randNameTwo := testAccResourceName()
+			description := testAccResourceName()
 			var orr organizationRuleResourceModel
 
 			check := resource.ComposeAggregateTestCheckFunc(
@@ -1390,10 +1389,10 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 		})
 
 		t.Run(fmt.Sprintf("updates a pipeline.%s.pipeline organization rule by editing its current description", action), func(t *testing.T) {
-			randNameOne := acctest.RandString(12)
-			randNameTwo := acctest.RandString(12)
-			description := acctest.RandString(12)
-			updatedDescription := acctest.RandString(12)
+			randNameOne := testAccResourceName()
+			randNameTwo := testAccResourceName()
+			description := testAccResourceName()
+			updatedDescription := testAccResourceName()
 			var orr organizationRuleResourceModel
 
 			check := resource.ComposeAggregateTestCheckFunc(
@@ -1444,9 +1443,9 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 		})
 
 		t.Run(fmt.Sprintf("updates a pipeline.%s.pipeline organization rule by removing its description", action), func(t *testing.T) {
-			randNameOne := acctest.RandString(12)
-			randNameTwo := acctest.RandString(12)
-			description := acctest.RandString(12)
+			randNameOne := testAccResourceName()
+			randNameTwo := testAccResourceName()
+			description := testAccResourceName()
 			var orr organizationRuleResourceModel
 
 			check := resource.ComposeAggregateTestCheckFunc(
@@ -1496,9 +1495,9 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 		})
 
 		t.Run(fmt.Sprintf("updates a pipeline.%s.pipeline organization rule by changing its source_pipeline", action), func(t *testing.T) {
-			randNameOne := acctest.RandString(12)
-			randNameTwo := acctest.RandString(12)
-			randNameThree := acctest.RandString(12)
+			randNameOne := testAccResourceName()
+			randNameTwo := testAccResourceName()
+			randNameThree := testAccResourceName()
 			var orr organizationRuleResourceModel
 
 			check := resource.ComposeAggregateTestCheckFunc(
@@ -1546,9 +1545,9 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 		})
 
 		t.Run(fmt.Sprintf("updates a pipeline.%s.pipeline organization rule by changing its target_pipeline", action), func(t *testing.T) {
-			randNameOne := acctest.RandString(12)
-			randNameTwo := acctest.RandString(12)
-			randNameThree := acctest.RandString(12)
+			randNameOne := testAccResourceName()
+			randNameTwo := testAccResourceName()
+			randNameThree := testAccResourceName()
 			var orr organizationRuleResourceModel
 
 			check := resource.ComposeAggregateTestCheckFunc(
@@ -1596,8 +1595,8 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 		})
 
 		t.Run(fmt.Sprintf("updates a pipeline.%s.pipeline organization rule by changing both source_pipeline and target_pipeline", action), func(t *testing.T) {
-			randNameOne := acctest.RandString(12)
-			randNameTwo := acctest.RandString(12)
+			randNameOne := testAccResourceName()
+			randNameTwo := testAccResourceName()
 			var orr organizationRuleResourceModel
 
 			check := resource.ComposeAggregateTestCheckFunc(
@@ -1647,8 +1646,8 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 		})
 
 		t.Run(fmt.Sprintf("updates a pipeline.%s.pipeline organization rule by adding conditions", action), func(t *testing.T) {
-			randNameOne := acctest.RandString(12)
-			randNameTwo := acctest.RandString(12)
+			randNameOne := testAccResourceName()
+			randNameTwo := testAccResourceName()
 			var orr organizationRuleResourceModel
 
 			conditions := `
@@ -1700,8 +1699,8 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 		})
 
 		t.Run(fmt.Sprintf("updates a pipeline.%s.pipeline organization rule by inserting additional conditions", action), func(t *testing.T) {
-			randNameOne := acctest.RandString(12)
-			randNameTwo := acctest.RandString(12)
+			randNameOne := testAccResourceName()
+			randNameTwo := testAccResourceName()
 			var orr organizationRuleResourceModel
 
 			initConditions := `
@@ -1759,8 +1758,8 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 		})
 
 		t.Run(fmt.Sprintf("updates a pipeline.%s.pipeline organization rule by removing some conditions", action), func(t *testing.T) {
-			randNameOne := acctest.RandString(12)
-			randNameTwo := acctest.RandString(12)
+			randNameOne := testAccResourceName()
+			randNameTwo := testAccResourceName()
 			var orr organizationRuleResourceModel
 
 			initConditions := `
@@ -1818,8 +1817,8 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 		})
 
 		t.Run(fmt.Sprintf("updates a pipeline.%s.pipeline organization rule by removing all conditions", action), func(t *testing.T) {
-			randNameOne := acctest.RandString(12)
-			randNameTwo := acctest.RandString(12)
+			randNameOne := testAccResourceName()
+			randNameTwo := testAccResourceName()
 			var orr organizationRuleResourceModel
 
 			existingConditions := `
@@ -1872,8 +1871,8 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 		})
 
 		t.Run(fmt.Sprintf("updates a pipeline.%s.pipeline organization rule by editing its current conditions", action), func(t *testing.T) {
-			randNameOne := acctest.RandString(12)
-			randNameTwo := acctest.RandString(12)
+			randNameOne := testAccResourceName()
+			randNameTwo := testAccResourceName()
 			var orr organizationRuleResourceModel
 
 			initConditions := `
@@ -1932,8 +1931,8 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 		})
 
 		t.Run(fmt.Sprintf("imports a pipeline.%s.pipeline organization rule with required attributes", action), func(t *testing.T) {
-			randNameOne := acctest.RandString(12)
-			randNameTwo := acctest.RandString(12)
+			randNameOne := testAccResourceName()
+			randNameTwo := testAccResourceName()
 			var orr organizationRuleResourceModel
 
 			check := resource.ComposeAggregateTestCheckFunc(
@@ -1971,8 +1970,8 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 		})
 
 		t.Run(fmt.Sprintf("imports a pipeline.%s.pipeline organization rule with all attributes", action), func(t *testing.T) {
-			randNameOne := acctest.RandString(12)
-			randNameTwo := acctest.RandString(12)
+			randNameOne := testAccResourceName()
+			randNameTwo := testAccResourceName()
 			var orr organizationRuleResourceModel
 
 			check := resource.ComposeAggregateTestCheckFunc(
@@ -2012,8 +2011,8 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 	}
 
 	t.Run("replaces an orgnanization rule when updating its type", func(t *testing.T) {
-		randNameOne := acctest.RandString(12)
-		randNameTwo := acctest.RandString(12)
+		randNameOne := testAccResourceName()
+		randNameTwo := testAccResourceName()
 		var orr organizationRuleResourceModel
 
 		check := resource.ComposeAggregateTestCheckFunc(
@@ -2070,8 +2069,8 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 	})
 
 	t.Run("errors when an organization rule is created with an unknown action", func(t *testing.T) {
-		randNameOne := acctest.RandString(12)
-		randNameTwo := acctest.RandString(12)
+		randNameOne := testAccResourceName()
+		randNameTwo := testAccResourceName()
 		resource.ParallelTest(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },
 			ProtoV6ProviderFactories: protoV6ProviderFactories(),
@@ -2086,8 +2085,8 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 	})
 
 	t.Run("errors when an organization rule is created with an invalid conditional", func(t *testing.T) {
-		randNameOne := acctest.RandString(12)
-		randNameTwo := acctest.RandString(12)
+		randNameOne := testAccResourceName()
+		randNameTwo := testAccResourceName()
 		resource.ParallelTest(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },
 			ProtoV6ProviderFactories: protoV6ProviderFactories(),
@@ -2102,7 +2101,7 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 	})
 
 	t.Run("errors when an organization rule is created with a missing source_pipeline in its value", func(t *testing.T) {
-		randName := acctest.RandString(12)
+		randName := testAccResourceName()
 		resource.ParallelTest(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },
 			ProtoV6ProviderFactories: protoV6ProviderFactories(),
@@ -2117,7 +2116,7 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 	})
 
 	t.Run("errors when an organization rule is created with a missing target_pipeline in its value", func(t *testing.T) {
-		randName := acctest.RandString(12)
+		randName := testAccResourceName()
 		resource.ParallelTest(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },
 			ProtoV6ProviderFactories: protoV6ProviderFactories(),
@@ -2132,7 +2131,7 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 	})
 
 	t.Run("errors when an organization rule is created with an invalid source_pipeline slug", func(t *testing.T) {
-		randName := acctest.RandString(12)
+		randName := testAccResourceName()
 		resource.ParallelTest(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },
 			ProtoV6ProviderFactories: protoV6ProviderFactories(),
@@ -2147,7 +2146,7 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 	})
 
 	t.Run("errors when an organization rule is created with an invalid target_pipeline slug", func(t *testing.T) {
-		randName := acctest.RandString(12)
+		randName := testAccResourceName()
 		resource.ParallelTest(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },
 			ProtoV6ProviderFactories: protoV6ProviderFactories(),
@@ -2162,8 +2161,8 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 	})
 
 	t.Run("errors when an organization rule is updated with a malformed source_pipeline key", func(t *testing.T) {
-		randNameOne := acctest.RandString(12)
-		randNameTwo := acctest.RandString(12)
+		randNameOne := testAccResourceName()
+		randNameTwo := testAccResourceName()
 		var orr organizationRuleResourceModel
 
 		check := resource.ComposeAggregateTestCheckFunc(
@@ -2200,8 +2199,8 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 	})
 
 	t.Run("errors when an organization rule is updated with a malformed target_pipeline key", func(t *testing.T) {
-		randNameOne := acctest.RandString(12)
-		randNameTwo := acctest.RandString(12)
+		randNameOne := testAccResourceName()
+		randNameTwo := testAccResourceName()
 		var orr organizationRuleResourceModel
 
 		check := resource.ComposeAggregateTestCheckFunc(
@@ -2238,8 +2237,8 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 	})
 
 	t.Run("errors when an organization rule is updated with an invalid source_pipeline UUID", func(t *testing.T) {
-		randNameOne := acctest.RandString(12)
-		randNameTwo := acctest.RandString(12)
+		randNameOne := testAccResourceName()
+		randNameTwo := testAccResourceName()
 		var orr organizationRuleResourceModel
 
 		check := resource.ComposeAggregateTestCheckFunc(
@@ -2276,8 +2275,8 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 	})
 
 	t.Run("errors when an organization rule is updated with an invalid target_pipeline UUID", func(t *testing.T) {
-		randNameOne := acctest.RandString(12)
-		randNameTwo := acctest.RandString(12)
+		randNameOne := testAccResourceName()
+		randNameTwo := testAccResourceName()
 		var orr organizationRuleResourceModel
 
 		check := resource.ComposeAggregateTestCheckFunc(
@@ -2315,8 +2314,8 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 
 	t.Run("errors when an organization rule is updated with no source_pipeline UUID", func(t *testing.T) {
 		ruleType := "trigger_build"
-		randNameOne := acctest.RandString(12)
-		randNameTwo := acctest.RandString(12)
+		randNameOne := testAccResourceName()
+		randNameTwo := testAccResourceName()
 		var orr organizationRuleResourceModel
 
 		check := resource.ComposeAggregateTestCheckFunc(
@@ -2353,8 +2352,8 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 	})
 
 	t.Run("errors when an organization rule is updated with no target_pipeline UUID", func(t *testing.T) {
-		randNameOne := acctest.RandString(12)
-		randNameTwo := acctest.RandString(12)
+		randNameOne := testAccResourceName()
+		randNameTwo := testAccResourceName()
 		var orr organizationRuleResourceModel
 
 		check := resource.ComposeAggregateTestCheckFunc(
@@ -2391,8 +2390,8 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 	})
 
 	t.Run("errors when an organization rule is updated with invalid conditions", func(t *testing.T) {
-		randNameOne := acctest.RandString(12)
-		randNameTwo := acctest.RandString(12)
+		randNameOne := testAccResourceName()
+		randNameTwo := testAccResourceName()
 		var orr organizationRuleResourceModel
 
 		initConditions := `
@@ -2451,25 +2450,25 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 		}
 
 		resource "buildkite_cluster" "cluster_source" {
-			name        = "Cluster %s"
+			name        = "%s-cluster"
 			description = "A test cluster containing a source pipeline."
 		}
 
 		resource "buildkite_cluster" "cluster_target" {
-			name        = "Cluster %s"
+			name        = "%s-cluster"
 			description = "A test cluster containing a target pipeline for triggering builds."
 		}
 
 		resource "buildkite_pipeline" "pipeline_source" {
 			depends_on 			 = [buildkite_cluster.cluster_source]
-			name                 = "Pipeline %s"
+			name                 = "%s-pipeline"
 			repository           = "https://github.com/buildkite/terraform-provider-buildkite.git"
 			cluster_id			 = buildkite_cluster.cluster_source.id
 		}
 
 		resource "buildkite_pipeline" "pipeline_target" {
 			depends_on 			 = [buildkite_cluster.cluster_target]
-			name                 = "Pipeline %s"
+			name                 = "%s-pipeline"
 			repository           = "https://github.com/buildkite/terraform-provider-buildkite.git"
 			cluster_id           = buildkite_cluster.cluster_target.id
 		}
@@ -2494,8 +2493,8 @@ func TestAccBuildkiteOrganizationRuleResource(t *testing.T) {
 		resourceName := fmt.Sprintf("buildkite_organization_rule.%s_rule", action)
 
 		t.Run(fmt.Sprintf("creates a pipeline.%s.pipeline organization rule using pipeline slugs", action), func(t *testing.T) {
-			randNameOne := acctest.RandString(12)
-			randNameTwo := acctest.RandString(12)
+			randNameOne := testAccResourceName()
+			randNameTwo := testAccResourceName()
 			var orr organizationRuleResourceModel
 
 			check := resource.ComposeAggregateTestCheckFunc(

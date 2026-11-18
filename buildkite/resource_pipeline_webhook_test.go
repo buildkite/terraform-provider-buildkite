@@ -8,7 +8,6 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
@@ -72,7 +71,7 @@ func TestAccBuildkitePipelineWebhook(t *testing.T) {
 	}
 
 	t.Run("pipeline webhook can be created and imported", func(t *testing.T) {
-		pipelineName := acctest.RandString(12)
+		pipelineName := testAccResourceName()
 
 		resource.ParallelTest(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },
@@ -103,7 +102,7 @@ func TestAccBuildkitePipelineWebhook(t *testing.T) {
 	})
 
 	t.Run("pipeline webhook is recreated if removed externally", func(t *testing.T) {
-		pipelineName := acctest.RandString(12)
+		pipelineName := testAccResourceName()
 
 		resource.ParallelTest(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },
@@ -132,7 +131,7 @@ func TestAccBuildkitePipelineWebhook(t *testing.T) {
 	})
 
 	t.Run("pipeline webhook is deleted when resource is removed", func(t *testing.T) {
-		pipelineName := acctest.RandString(12)
+		pipelineName := testAccResourceName()
 
 		resource.ParallelTest(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },
@@ -225,7 +224,7 @@ func TestAccBuildkitePipelineWebhook_ImportWithNoWebhook(t *testing.T) {
 	}
 
 	t.Run("import fails when pipeline has no webhook configured", func(t *testing.T) {
-		pipelineName := acctest.RandString(12)
+		pipelineName := testAccResourceName()
 
 		resource.ParallelTest(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },
@@ -279,7 +278,7 @@ func TestAccBuildkitePipelineWebhook_UnsupportedProvider(t *testing.T) {
 	}
 
 	t.Run("pipeline webhook fails for unsupported provider", func(t *testing.T) {
-		pipelineName := acctest.RandString(12)
+		pipelineName := testAccResourceName()
 
 		resource.ParallelTest(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },
@@ -450,7 +449,7 @@ func TestAccBuildkitePipelineWebhook_RepositoryUrlMismatch(t *testing.T) {
 	}
 
 	t.Run("pipeline webhook fails when repository does not match pipeline repository", func(t *testing.T) {
-		pipelineName := acctest.RandString(12)
+		pipelineName := testAccResourceName()
 
 		resource.ParallelTest(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },
@@ -523,7 +522,7 @@ func TestAccBuildkitePipelineWebhook_ProviderChange(t *testing.T) {
 	}
 
 	t.Run("webhook is removed from state when provider changes to unsupported type", func(t *testing.T) {
-		pipelineName := acctest.RandString(12)
+		pipelineName := testAccResourceName()
 
 		resource.ParallelTest(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },
@@ -588,7 +587,7 @@ func TestAccBuildkitePipelineWebhook_RepositoryChange(t *testing.T) {
 	}
 
 	t.Run("webhook is replaced when pipeline repository changes", func(t *testing.T) {
-		pipelineName := acctest.RandString(12)
+		pipelineName := testAccResourceName()
 
 		resource.ParallelTest(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },

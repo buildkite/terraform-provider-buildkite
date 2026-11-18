@@ -17,7 +17,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-go/tftypes"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
@@ -27,7 +26,7 @@ func TestAccNonAdminClusterQueue(t *testing.T) {
 	name := testAccFixtureClusterName
 	uuid := testAccFixtureClusterUUID
 	clusterID := base64.StdEncoding.EncodeToString([]byte("Cluster---" + uuid))
-	key := "nonadmin-queue-" + acctest.RandString(12)
+	key := testAccResourceName() + "-nonadmin-queue"
 	baseConfig := fmt.Sprintf(`
 		data "buildkite_cluster" "fixture" {
 			name = %q
@@ -194,14 +193,14 @@ func TestAccBuildkiteClusterQueueResource(t *testing.T) {
 		}
 
 		resource "buildkite_cluster" "cluster_test" {
-			name = "Test cluster %s"
+			name = "%s-cluster"
 			description = "Acceptance testing cluster"
 		}
 
 		resource "buildkite_cluster_queue" "foobar" {
 			cluster_id = buildkite_cluster.cluster_test.id
-			key = "queue-%s"
-			description = "Acceptance test %s"
+			key = "%s-queue"
+			description = "%s-queue-description"
 		}
 		`, fields[0], fields[1], fields[2])
 	}
@@ -217,13 +216,13 @@ func TestAccBuildkiteClusterQueueResource(t *testing.T) {
 			}
 		}
 		resource "buildkite_cluster" "cluster_test" {
-			name = "Test cluster %s"
+			name = "%s-cluster"
 			description = "Acceptance testing cluster"
 		}
 		resource "buildkite_cluster_queue" "foobar" {
 			cluster_id = buildkite_cluster.cluster_test.id
-			key = "queue-%s"
-			description = "Acceptance test %s"
+			key = "%s-queue"
+			description = "%s-queue-description"
 			retry_agent_affinity = "%s"
 		}
 		`, fields[0], fields[1], fields[2], fields[3])
@@ -240,13 +239,13 @@ func TestAccBuildkiteClusterQueueResource(t *testing.T) {
 			}
 		}
 		resource "buildkite_cluster" "cluster_test" {
-			name = "Test cluster %s"
+			name = "%s-cluster"
 			description = "Acceptance testing cluster"
 		}
 		resource "buildkite_cluster_queue" "foobar" {
 			cluster_id = buildkite_cluster.cluster_test.id
-			key = "queue-%s"
-			description = "Acceptance test %s"
+			key = "%s-queue"
+			description = "%s-queue-description"
 			use_github_app_token = %s
 		}
 		`, fields[0], fields[1], fields[2], fields[3])
@@ -264,14 +263,14 @@ func TestAccBuildkiteClusterQueueResource(t *testing.T) {
     }
 
     resource "buildkite_cluster" "cluster_test" {
-        name = "Test cluster %s"
+        name = "%s-cluster"
         description = "Acceptance testing cluster"
     }
 
     resource "buildkite_cluster_queue" "foobar" {
         cluster_id = buildkite_cluster.cluster_test.id
-        key = "queue-%s"
-        description = "Acceptance test %s"
+        key = "%s-queue"
+        description = "%s-queue-description"
 
         hosted_agents = {
             mac = {
@@ -295,14 +294,14 @@ func TestAccBuildkiteClusterQueueResource(t *testing.T) {
     }
 
     resource "buildkite_cluster" "cluster_test" {
-        name = "Test cluster %s"
+        name = "%s-cluster"
         description = "Acceptance testing cluster"
     }
 
     resource "buildkite_cluster_queue" "foobar" {
         cluster_id = buildkite_cluster.cluster_test.id
-        key = "queue-%s"
-        description = "Acceptance test %s"
+        key = "%s-queue"
+        description = "%s-queue-description"
 
         hosted_agents = {
             linux = {
@@ -326,14 +325,14 @@ func TestAccBuildkiteClusterQueueResource(t *testing.T) {
     }
 
     resource "buildkite_cluster" "cluster_test" {
-        name = "Test cluster %s"
+        name = "%s-cluster"
         description = "Acceptance testing cluster"
     }
 
     resource "buildkite_cluster_queue" "foobar" {
         cluster_id = buildkite_cluster.cluster_test.id
-        key = "queue-%s"
-        description = "Acceptance test %s"
+        key = "%s-queue"
+        description = "%s-queue-description"
 
         hosted_agents = {
             mac = {
@@ -357,14 +356,14 @@ func TestAccBuildkiteClusterQueueResource(t *testing.T) {
     }
 
     resource "buildkite_cluster" "cluster_test" {
-        name = "Test cluster %s"
+        name = "%s-cluster"
         description = "Acceptance testing cluster"
     }
 
     resource "buildkite_cluster_queue" "foobar" {
         cluster_id = buildkite_cluster.cluster_test.id
-        key = "queue-%s"
-        description = "Acceptance test %s"
+        key = "%s-queue"
+        description = "%s-queue-description"
 
         hosted_agents = {
             linux = {
@@ -388,14 +387,14 @@ func TestAccBuildkiteClusterQueueResource(t *testing.T) {
     }
 
     resource "buildkite_cluster" "cluster_test" {
-        name = "Test cluster %s"
+        name = "%s-cluster"
         description = "Acceptance testing cluster"
     }
 
     resource "buildkite_cluster_queue" "foobar" {
         cluster_id = buildkite_cluster.cluster_test.id
-        key = "queue-%s"
-        description = "Acceptance test %s"
+        key = "%s-queue"
+        description = "%s-queue-description"
 
         hosted_agents = {
             mac = {
@@ -412,10 +411,10 @@ func TestAccBuildkiteClusterQueueResource(t *testing.T) {
 
 	t.Run("preserves the API-selected macOS version during unrelated updates", func(t *testing.T) {
 		var cq clusterQueueResourceModel
-		clusterName := acctest.RandString(10)
-		queueKey := acctest.RandString(10)
-		queueDesc := acctest.RandString(10)
-		updatedQueueDesc := acctest.RandString(10)
+		clusterName := testAccResourceName()
+		queueKey := testAccResourceName()
+		queueDesc := testAccResourceName()
+		updatedQueueDesc := testAccResourceName()
 		var macosVersion string
 
 		checkCreated := resource.ComposeAggregateTestCheckFunc(
@@ -430,7 +429,7 @@ func TestAccBuildkiteClusterQueueResource(t *testing.T) {
 
 		checkUpdated := resource.ComposeAggregateTestCheckFunc(
 			testAccCheckClusterQueueExists("buildkite_cluster_queue.foobar", &cq),
-			resource.TestCheckResourceAttr("buildkite_cluster_queue.foobar", "description", fmt.Sprintf("Acceptance test %s", updatedQueueDesc)),
+			resource.TestCheckResourceAttr("buildkite_cluster_queue.foobar", "description", fmt.Sprintf("%s-queue-description", updatedQueueDesc)),
 			resource.TestCheckResourceAttrWith("buildkite_cluster_queue.foobar", "hosted_agents.mac.macos_version", func(value string) error {
 				if value != macosVersion {
 					return fmt.Errorf("macOS version changed from %q to %q after an unrelated update", macosVersion, value)
@@ -459,9 +458,9 @@ func TestAccBuildkiteClusterQueueResource(t *testing.T) {
 
 	t.Run("creates a hosted linux queue", func(t *testing.T) {
 		var cq clusterQueueResourceModel
-		clusterName := acctest.RandString(10)
-		queueKey := acctest.RandString(10)
-		queueDesc := acctest.RandString(10)
+		clusterName := testAccResourceName()
+		queueKey := testAccResourceName()
+		queueDesc := testAccResourceName()
 
 		check := resource.ComposeAggregateTestCheckFunc(
 			testAccCheckClusterQueueExists("buildkite_cluster_queue.foobar", &cq),
@@ -483,9 +482,9 @@ func TestAccBuildkiteClusterQueueResource(t *testing.T) {
 	})
 
 	t.Run("fails with invalid mac instance shape", func(t *testing.T) {
-		clusterName := acctest.RandString(10)
-		queueKey := acctest.RandString(10)
-		queueDesc := acctest.RandString(10)
+		clusterName := testAccResourceName()
+		queueKey := testAccResourceName()
+		queueDesc := testAccResourceName()
 
 		resource.ParallelTest(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },
@@ -501,9 +500,9 @@ func TestAccBuildkiteClusterQueueResource(t *testing.T) {
 	})
 
 	t.Run("fails with invalid linux instance shape", func(t *testing.T) {
-		clusterName := acctest.RandString(10)
-		queueKey := acctest.RandString(10)
-		queueDesc := acctest.RandString(10)
+		clusterName := testAccResourceName()
+		queueKey := testAccResourceName()
+		queueDesc := testAccResourceName()
 
 		resource.ParallelTest(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },
@@ -519,9 +518,9 @@ func TestAccBuildkiteClusterQueueResource(t *testing.T) {
 	})
 
 	t.Run("fails with both platforms specified", func(t *testing.T) {
-		clusterName := acctest.RandString(10)
-		queueKey := acctest.RandString(10)
-		queueDesc := acctest.RandString(10)
+		clusterName := testAccResourceName()
+		queueKey := testAccResourceName()
+		queueDesc := testAccResourceName()
 
 		resource.ParallelTest(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },
@@ -538,9 +537,9 @@ func TestAccBuildkiteClusterQueueResource(t *testing.T) {
 
 	t.Run("creates a cluster queue with retry_agent_affinity", func(t *testing.T) {
 		var cq clusterQueueResourceModel
-		clusterName := acctest.RandString(10)
-		queueKey := acctest.RandString(10)
-		queueDesc := acctest.RandString(10)
+		clusterName := testAccResourceName()
+		queueKey := testAccResourceName()
+		queueDesc := testAccResourceName()
 
 		resource.ParallelTest(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },
@@ -560,9 +559,9 @@ func TestAccBuildkiteClusterQueueResource(t *testing.T) {
 
 	t.Run("defaults retry_agent_affinity to prefer-warmest when omitted", func(t *testing.T) {
 		var cq clusterQueueResourceModel
-		clusterName := acctest.RandString(10)
-		queueKey := acctest.RandString(10)
-		queueDesc := acctest.RandString(10)
+		clusterName := testAccResourceName()
+		queueKey := testAccResourceName()
+		queueDesc := testAccResourceName()
 
 		resource.ParallelTest(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },
@@ -582,9 +581,9 @@ func TestAccBuildkiteClusterQueueResource(t *testing.T) {
 
 	t.Run("updates retry_agent_affinity value", func(t *testing.T) {
 		var cq clusterQueueResourceModel
-		clusterName := acctest.RandString(10)
-		queueKey := acctest.RandString(10)
-		queueDesc := acctest.RandString(10)
+		clusterName := testAccResourceName()
+		queueKey := testAccResourceName()
+		queueDesc := testAccResourceName()
 
 		resource.ParallelTest(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },
@@ -610,9 +609,9 @@ func TestAccBuildkiteClusterQueueResource(t *testing.T) {
 	})
 
 	t.Run("toggles use_github_app_token on a self-hosted queue", func(t *testing.T) {
-		clusterName := acctest.RandString(10)
-		queueKey := acctest.RandString(10)
-		queueDesc := acctest.RandString(10)
+		clusterName := testAccResourceName()
+		queueKey := testAccResourceName()
+		queueDesc := testAccResourceName()
 
 		resource.ParallelTest(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },

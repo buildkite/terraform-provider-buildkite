@@ -40,6 +40,14 @@ testacc-nonadmin:
 		printf '%s\n' "$$tests" | grep -q '^TestAccNonAdmin' || { echo 'No non-admin acceptance tests found' >&2; exit 1; }
 	TF_ACC=1 BUILDKITE_ACCEPTANCE_NONADMIN=1 $(GOTESTSUM) --format testname --junitfile "junit-${BUILDKITE_JOB_ID}.xml" --jsonfile "test-events-${BUILDKITE_JOB_ID}.jsonl" -- -count=1 -parallel=12 -run '^TestAccNonAdmin' ./buildkite
 
+# Destructive: remove marked acceptance resources strictly older than 24 hours.
+# The organization is passed as the sweeper's region; ordinary tests do not run.
+.PHONY: sweep
+sweep:
+	@test -n "$(BUILDKITE_ORGANIZATION_SLUG)" || { echo 'BUILDKITE_ORGANIZATION_SLUG is required' >&2; exit 1; }
+	@test -n "$$BUILDKITE_API_TOKEN" || { echo 'BUILDKITE_API_TOKEN is required' >&2; exit 1; }
+	TF_ACC= go test ./buildkite -v -count=1 -run '^$$' -timeout=30m -sweep="$(BUILDKITE_ORGANIZATION_SLUG)"
+
 # Generate the Buildkite GraphQL schema file
 schema:
 	go tool gqlfetch -endpoint "$${BUILDKITE_GRAPHQL_URL:-https://graphql.buildkite.com/v1}" -header "Authorization=Bearer $${BUILDKITE_API_TOKEN:-$$BUILDKITE_GRAPHQL_TOKEN}" > schema.graphql

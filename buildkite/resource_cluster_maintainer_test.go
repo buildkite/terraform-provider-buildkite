@@ -7,7 +7,6 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
@@ -37,7 +36,7 @@ func TestAccBuildkiteClusterMaintainerResource(t *testing.T) {
 			`, clusterName, userID)
 		}
 
-		clusterName := acctest.RandString(12)
+		clusterName := testAccResourceName()
 		userID := "8db2920e-3c60-48a7-a3f8-2584be374bac" // Real user UUID from test environment (decoded from GraphQL ID)
 
 		check := resource.ComposeAggregateTestCheckFunc(
@@ -94,7 +93,7 @@ func TestAccBuildkiteClusterMaintainerResource(t *testing.T) {
 			`, clusterName, clusterName)
 		}
 
-		clusterName := acctest.RandString(12)
+		clusterName := testAccResourceName()
 
 		check := resource.ComposeAggregateTestCheckFunc(
 			testAccCheckClusterMaintainerExists("buildkite_cluster_maintainer.test_team"),
@@ -141,7 +140,7 @@ func TestAccBuildkiteClusterMaintainerResource(t *testing.T) {
 			`, clusterName, userID)
 		}
 
-		clusterName := acctest.RandString(12)
+		clusterName := testAccResourceName()
 		userID := "8db2920e-3c60-48a7-a3f8-2584be374bac" // Real user UUID from test environment (decoded from GraphQL ID)
 		resourceName := "buildkite_cluster_maintainer.test_user"
 
@@ -213,7 +212,7 @@ func TestAccBuildkiteClusterMaintainerResource(t *testing.T) {
 			`, clusterName)
 		}
 
-		clusterName := acctest.RandString(12)
+		clusterName := testAccResourceName()
 
 		resource.ParallelTest(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },
@@ -236,7 +235,7 @@ func TestAccBuildkiteClusterMaintainerResource(t *testing.T) {
 		// This ensures existing resources with cluster_id, user_id, team_id, and actor_id
 		// are automatically migrated to cluster_uuid, user_uuid, team_uuid, and actor_uuid
 
-		clusterName := acctest.RandString(12)
+		clusterName := testAccResourceName()
 		userID := "8db2920e-3c60-48a7-a3f8-2584be374bac" // Real user UUID from test environment
 
 		// Config for old provider version (uses old attribute names)

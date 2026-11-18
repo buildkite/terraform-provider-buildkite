@@ -7,7 +7,6 @@ import (
 	"os"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
@@ -39,7 +38,7 @@ func TestAccBuildkiteTeamRegistryPermissions(t *testing.T) {
 		data "buildkite_team" "owner" { slug = %q }
 		data "buildkite_team" "secondary" { slug = %q }
 	`, testAccFixturePipelineTeamSlug, secondarySlug)
-	name := "nonadminregistryteam" + acctest.RandString(12)
+	name := testAccResourceName() + "-nonadminregistryteam"
 	baseConfig := fixtures + fmt.Sprintf(`
 		resource "buildkite_registry" "temporary" {
 			name = %q
@@ -272,21 +271,21 @@ func TestAccBuildkiteTeamRegistryResource(t *testing.T) {
 		}
 
 		resource "buildkite_team" "ownerteam" {
-			name = "Registry Owner Team %s"
+			name = "%s-owner-team"
 			default_team = false
 			privacy = "VISIBLE"
 			default_member_role = "MAINTAINER"
 		}
 
 		resource "buildkite_team" "newteam" {
-			name = "Registry New Team %s"
+			name = "%s-new-team"
 			default_team = false
 			privacy = "VISIBLE"
 			default_member_role = "MAINTAINER"
 		}
 
 		resource "buildkite_registry" "registry" {
-			name = "registry-%s"
+			name = "%s-registry"
 			ecosystem = "java"
 			team_ids = [buildkite_team.ownerteam.uuid]
 		}
@@ -300,7 +299,7 @@ func TestAccBuildkiteTeamRegistryResource(t *testing.T) {
 	}
 
 	t.Run("team registry is recreated if removed", func(t *testing.T) {
-		name := acctest.RandString(12)
+		name := testAccResourceName()
 
 		resource.ParallelTest(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },

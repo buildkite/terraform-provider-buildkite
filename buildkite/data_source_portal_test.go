@@ -4,12 +4,11 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
 func TestAccBuildkitePortalDataSource(t *testing.T) {
-	randName := acctest.RandString(10)
+	randName := testAccResourceName()
 
 	config := func(name string) string {
 		return fmt.Sprintf(`
@@ -24,7 +23,7 @@ func TestAccBuildkitePortalDataSource(t *testing.T) {
 
 		resource "buildkite_portal" "test" {
 			slug = %q
-			name = "Test Portal %s"
+			name = "%s-portal"
 			description = "Test portal description"
 			query = "{ viewer { user { name } } }"
 			user_invokable = false
@@ -33,11 +32,11 @@ func TestAccBuildkitePortalDataSource(t *testing.T) {
 		data "buildkite_portal" "test" {
 			slug = buildkite_portal.test.slug
 		}
-		`, fmt.Sprintf("test-portal-%s", name), name)
+		`, fmt.Sprintf("%s-portal", name), name)
 	}
 
 	check := resource.ComposeAggregateTestCheckFunc(
-		resource.TestCheckResourceAttr("data.buildkite_portal.test", "name", fmt.Sprintf("Test Portal %s", randName)),
+		resource.TestCheckResourceAttr("data.buildkite_portal.test", "name", fmt.Sprintf("%s-portal", randName)),
 		resource.TestCheckResourceAttr("data.buildkite_portal.test", "description", "Test portal description"),
 		resource.TestCheckResourceAttr("data.buildkite_portal.test", "user_invokable", "false"),
 		resource.TestCheckResourceAttrSet("data.buildkite_portal.test", "uuid"),

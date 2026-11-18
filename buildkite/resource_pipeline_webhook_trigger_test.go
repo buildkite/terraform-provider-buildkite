@@ -12,7 +12,6 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	frameworkresource "github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
@@ -393,7 +392,7 @@ func TestPipelineWebhookTriggerInvalidImportID(t *testing.T) {
 func TestAccBuildkitePipelineWebhookTrigger(t *testing.T) {
 	t.Parallel()
 
-	name := "terraform-trigger-" + acctest.RandString(12)
+	name := testAccResourceName() + "-trigger"
 	config := func(enabled bool, branch string) string {
 		return fmt.Sprintf(`
    resource "buildkite_pipeline" "receiver" {
