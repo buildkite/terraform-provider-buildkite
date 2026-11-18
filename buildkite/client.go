@@ -561,10 +561,9 @@ type apiError struct {
 	URL    string
 	// StatusCode is the status of the response that ended the request, or 0 when a transport or
 	// context error ended it instead.
-	StatusCode        int
-	Attempts          int
-	Body              string
-	validationMessage string
+	StatusCode int
+	Attempts   int
+	Body       string
 	// earlierStatus and earlierBody carry what a previous attempt saw when a later one died in
 	// flight. They are context rather than the cause, so they stay out of StatusCode.
 	earlierStatus int
@@ -579,9 +578,6 @@ func (e *apiError) Error() string {
 		message = fmt.Sprintf("failed to send request: %s %s: %s", e.Method, e.URL, e.Err)
 	} else {
 		message = fmt.Sprintf("%s %s %s (status: %d)", apiRequestFailedPrefix, e.Method, e.URL, e.StatusCode)
-	}
-	if e.validationMessage != "" {
-		message += ": " + e.validationMessage
 	}
 
 	if e.Attempts > 1 {
@@ -712,8 +708,8 @@ func (client *Client) doRequest(ctx context.Context, method string, path string,
 				Message string `json:"message"`
 			}
 			body, readErr := io.ReadAll(io.LimitReader(resp.Body, maxCapturedBodyBytes))
-			if readErr == nil && json.Unmarshal(body, &validation) == nil {
-				apiErr.validationMessage = validation.Message
+			if readErr == nil && json.Unmarshal(body, &validation) == nil && validation.Message != "" {
+				return nil, fmt.Errorf("%w: %s", apiErr, validation.Message)
 			}
 		}
 		return nil, apiErr
