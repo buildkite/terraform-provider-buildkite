@@ -2354,42 +2354,6 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 		})
 	})
 
-	t.Run("creates pipeline with PUBLIC visibility", func(t *testing.T) {
-		pipelineName := testAccResourceName()
-		config := fmt.Sprintf(`
-			resource "buildkite_pipeline" "pipeline" {
-				name = "%s"
-				repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
-				visibility = "PUBLIC"
-			}
-		`, pipelineName)
-
-		resource.ParallelTest(t, resource.TestCase{
-			PreCheck:                 func() { testAccPreCheck(t) },
-			ProtoV6ProviderFactories: protoV6ProviderFactories(),
-			CheckDestroy:             testAccCheckPipelineDestroyFunc,
-			Steps: []resource.TestStep{
-				{
-					Config: config,
-					Check: resource.ComposeAggregateTestCheckFunc(
-						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "visibility", "PUBLIC"),
-						func(s *terraform.State) error {
-							slug := fmt.Sprintf("%s/%s", getenv("BUILDKITE_ORGANIZATION_SLUG"), pipelineName)
-							resp, err := getPipeline(context.Background(), genqlientGraphql, slug)
-							if err != nil {
-								return err
-							}
-							if string(resp.Pipeline.GetVisibility()) != "PUBLIC" {
-								return fmt.Errorf("expected visibility PUBLIC, got %s", resp.Pipeline.GetVisibility())
-							}
-							return nil
-						},
-					),
-				},
-			},
-		})
-	})
-
 	t.Run("creates pipeline with PRIVATE visibility", func(t *testing.T) {
 		pipelineName := testAccResourceName()
 		config := fmt.Sprintf(`
@@ -2452,60 +2416,6 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 							}
 							if string(resp.Pipeline.Visibility) != "PRIVATE" {
 								return fmt.Errorf("expected default visibility PRIVATE, got %s", resp.Pipeline.Visibility)
-							}
-							return nil
-						},
-					),
-				},
-			},
-		})
-	})
-
-	t.Run("updates pipeline visibility from PRIVATE to PUBLIC", func(t *testing.T) {
-		pipelineName := testAccResourceName()
-		configPrivate := fmt.Sprintf(`
-			resource "buildkite_pipeline" "pipeline" {
-				name = "%s"
-				repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
-				visibility = "PRIVATE"
-			}
-		`, pipelineName)
-		configPublic := fmt.Sprintf(`
-			resource "buildkite_pipeline" "pipeline" {
-				name = "%s"
-				repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
-				visibility = "PUBLIC"
-			}
-		`, pipelineName)
-
-		resource.ParallelTest(t, resource.TestCase{
-			PreCheck:                 func() { testAccPreCheck(t) },
-			ProtoV6ProviderFactories: protoV6ProviderFactories(),
-			CheckDestroy:             testAccCheckPipelineDestroyFunc,
-			Steps: []resource.TestStep{
-				{
-					Config: configPrivate,
-					Check: resource.ComposeAggregateTestCheckFunc(
-						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "visibility", "PRIVATE"),
-					),
-				},
-				{
-					Config: configPublic,
-					ConfigPlanChecks: resource.ConfigPlanChecks{
-						PreApply: []plancheck.PlanCheck{
-							plancheck.ExpectResourceAction("buildkite_pipeline.pipeline", plancheck.ResourceActionUpdate),
-						},
-					},
-					Check: resource.ComposeAggregateTestCheckFunc(
-						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "visibility", "PUBLIC"),
-						func(s *terraform.State) error {
-							slug := fmt.Sprintf("%s/%s", getenv("BUILDKITE_ORGANIZATION_SLUG"), pipelineName)
-							resp, err := getPipeline(context.Background(), genqlientGraphql, slug)
-							if err != nil {
-								return err
-							}
-							if string(resp.Pipeline.Visibility) != "PUBLIC" {
-								return fmt.Errorf("expected visibility PUBLIC after update, got %s", resp.Pipeline.Visibility)
 							}
 							return nil
 						},
@@ -2737,6 +2647,100 @@ func TestAccBuildkitePipelineResource(t *testing.T) {
 							}
 							if !resp.Pipeline.Archived {
 								return fmt.Errorf("expected pipeline to be archived, got archived = false")
+							}
+							return nil
+						},
+					),
+				},
+			},
+		})
+	})
+}
+
+// These scenarios depend on the organization's public-pipeline setting, so CI runs
+// them with the organization-setting writers rather than with resource-owned tests.
+func TestAccBuildkitePipelinePublicVisibility(t *testing.T) {
+	t.Run("creates pipeline with PUBLIC visibility", func(t *testing.T) {
+		pipelineName := testAccResourceName()
+		config := fmt.Sprintf(`
+			resource "buildkite_pipeline" "pipeline" {
+				name = "%s"
+				repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
+				visibility = "PUBLIC"
+			}
+		`, pipelineName)
+
+		resource.Test(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			CheckDestroy:             testAccCheckPipelineDestroyFunc,
+			Steps: []resource.TestStep{
+				{
+					Config: config,
+					Check: resource.ComposeAggregateTestCheckFunc(
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "visibility", "PUBLIC"),
+						func(s *terraform.State) error {
+							slug := fmt.Sprintf("%s/%s", getenv("BUILDKITE_ORGANIZATION_SLUG"), pipelineName)
+							resp, err := getPipeline(context.Background(), genqlientGraphql, slug)
+							if err != nil {
+								return err
+							}
+							if string(resp.Pipeline.GetVisibility()) != "PUBLIC" {
+								return fmt.Errorf("expected visibility PUBLIC, got %s", resp.Pipeline.GetVisibility())
+							}
+							return nil
+						},
+					),
+				},
+			},
+		})
+	})
+
+	t.Run("updates pipeline visibility from PRIVATE to PUBLIC", func(t *testing.T) {
+		pipelineName := testAccResourceName()
+		configPrivate := fmt.Sprintf(`
+			resource "buildkite_pipeline" "pipeline" {
+				name = "%s"
+				repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
+				visibility = "PRIVATE"
+			}
+		`, pipelineName)
+		configPublic := fmt.Sprintf(`
+			resource "buildkite_pipeline" "pipeline" {
+				name = "%s"
+				repository = "https://github.com/buildkite/terraform-provider-buildkite.git"
+				visibility = "PUBLIC"
+			}
+		`, pipelineName)
+
+		resource.Test(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			CheckDestroy:             testAccCheckPipelineDestroyFunc,
+			Steps: []resource.TestStep{
+				{
+					Config: configPrivate,
+					Check: resource.ComposeAggregateTestCheckFunc(
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "visibility", "PRIVATE"),
+					),
+				},
+				{
+					Config: configPublic,
+					ConfigPlanChecks: resource.ConfigPlanChecks{
+						PreApply: []plancheck.PlanCheck{
+							plancheck.ExpectResourceAction("buildkite_pipeline.pipeline", plancheck.ResourceActionUpdate),
+						},
+					},
+					Check: resource.ComposeAggregateTestCheckFunc(
+						resource.TestCheckResourceAttr("buildkite_pipeline.pipeline", "visibility", "PUBLIC"),
+						func(s *terraform.State) error {
+							slug := fmt.Sprintf("%s/%s", getenv("BUILDKITE_ORGANIZATION_SLUG"), pipelineName)
+							resp, err := getPipeline(context.Background(), genqlientGraphql, slug)
+							if err != nil {
+								return err
+							}
+							if string(resp.Pipeline.Visibility) != "PUBLIC" {
+								return fmt.Errorf("expected visibility PUBLIC after update, got %s", resp.Pipeline.Visibility)
 							}
 							return nil
 						},

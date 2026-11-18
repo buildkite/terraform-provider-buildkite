@@ -39,14 +39,14 @@ steps:
       docker-compose#v5.16.0:
         run: go
 
-  - label: sweepers
-    key: sweepers
-    agents:
-      queue: "oss-deploy"
+  - label: acceptance tests - shared
+    key: testacc-shared
     concurrency: 1
     concurrency_group: terraform-provider-acceptance-tests
-    soft_fail: true
-    command: make sweep
+    command: .buildkite/steps/annotate.sh testacc-shared
+    artifact_paths:
+      - "test-events-*.jsonl"
+      - "junit-*.xml"
     plugins:
       - aws-assume-role-with-web-identity#v1.8.2:
           role-arn: arn:aws:iam::445615400570:role/pipeline-buildkite-terraform-provider-buildkite-main
@@ -58,16 +58,22 @@ steps:
           parameters:
             BUILDKITE_ORGANIZATION_SLUG: /pipelines/buildkite/terraform-provider-buildkite-main/buildkite_organization
             BUILDKITE_API_TOKEN: /pipelines/buildkite/terraform-provider-buildkite-main/buildkite_api_token
+            BUILDKITE_NONADMIN_API_TOKEN: /pipelines/buildkite/terraform-provider-buildkite-main/buildkite_api_token_nonadmin
+            BUILDKITE_ANALYTICS_TOKEN: /pipelines/buildkite/terraform-provider-buildkite-main/buildkite_analytics_token
       - docker-compose#v5.16.0:
           run: acceptance
+          mount-buildkite-agent: "true"
+      - test-collector#v1.12.0:
+          files: junit-*.xml
+          format: junit
+    retry:
+      automatic:
+        - exit_status: -1
+          limit: 2
 
   - label: acceptance tests
     key: testacc
-    depends_on: sweepers
-    allow_dependency_failure: true
-    concurrency: 1
-    concurrency_group: terraform-provider-acceptance-tests
-    command: .buildkite/steps/annotate.sh
+    command: .buildkite/steps/annotate.sh testacc-isolated
     artifact_paths:
       - "test-events-*.jsonl"
       - "junit-*.xml"
@@ -99,11 +105,7 @@ steps:
 
   - label: acceptance tests - non-admin
     key: testacc-nonadmin
-    depends_on: sweepers
-    allow_dependency_failure: true
-    concurrency: 1
-    concurrency_group: terraform-provider-acceptance-tests
-    command: .buildkite/steps/annotate.sh testacc-nonadmin
+    command: .buildkite/steps/annotate.sh testacc-nonadmin-isolated
     artifact_paths:
       - "test-events-*.jsonl"
       - "junit-*.xml"
@@ -152,7 +154,33 @@ steps:
     depends_on:
       - lint
       - test
+      - testacc-shared
       - testacc
       - testacc-nonadmin
       - vet
       - docs
+
+  - label: sweepers
+    key: sweepers
+    depends_on:
+      - testacc-shared
+      - testacc
+      - testacc-nonadmin
+    allow_dependency_failure: true
+    agents:
+      queue: "oss-deploy"
+    soft_fail: true
+    command: make sweep
+    plugins:
+      - aws-assume-role-with-web-identity#v1.8.2:
+          role-arn: arn:aws:iam::445615400570:role/pipeline-buildkite-terraform-provider-buildkite-main
+          session-tags:
+            - organization_slug
+            - organization_id
+            - pipeline_slug
+      - aws-ssm#v1.1.0:
+          parameters:
+            BUILDKITE_ORGANIZATION_SLUG: /pipelines/buildkite/terraform-provider-buildkite-main/buildkite_organization
+            BUILDKITE_API_TOKEN: /pipelines/buildkite/terraform-provider-buildkite-main/buildkite_api_token
+      - docker-compose#v5.16.0:
+          run: acceptance

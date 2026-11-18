@@ -232,6 +232,10 @@ func updateClustersDatasourceState(ctx context.Context, client *Client, resp *da
 	// Fetch maintainers for this cluster
 	maintainers, err := client.listClusterMaintainers(ctx, client.organization, data.Node.Uuid)
 	if err != nil {
+		// The cluster may have been deleted since the organization was listed.
+		if isAPIStatus(err, http.StatusNotFound) {
+			return
+		}
 		// A refusal is an answer: the caller may not see the maintainers, and reporting none is a
 		// fair reading of that. Any other failure means the API never answered, and an empty list
 		// would be consumed as though it had.

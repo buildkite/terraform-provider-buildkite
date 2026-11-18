@@ -30,8 +30,8 @@ func TestAccBuildkiteClustersDatasource(t *testing.T) {
 }
 
 // A failed maintainers call used to be reported as a cluster with no maintainers, which whatever
-// depends on the list then consumes as fact. A refusal is a fair reading of "none you may see"; any
-// other failure means the API never answered, and an empty list asserts something it did not say.
+// depends on the list then consumes as fact. A refusal is a fair reading of "none you may see";
+// unexpected failures must not be reported as an empty maintainers list.
 func TestUpdateClustersDatasourceStateClassifiesAFailedMaintainerRead(t *testing.T) {
 	t.Parallel()
 
@@ -52,13 +52,6 @@ func TestUpdateClustersDatasourceStateClassifiesAFailedMaintainerRead(t *testing
 			// maintainers is more useful than failing the whole data source.
 			name:        "the maintainers call is refused",
 			maintainers: stubResponse{status: http.StatusForbidden, body: `{"message":"Forbidden"}`},
-		},
-		{
-			// The cluster went away between the page read and this call. The list is not empty, it
-			// is moot, and there is no cluster left to report it against.
-			name:        "the cluster is gone by the time its maintainers are read",
-			maintainers: stubResponse{status: http.StatusNotFound, body: `{"message":"Not Found"}`},
-			wantError:   "Unable to fetch cluster maintainers",
 		},
 		{
 			name:        "the maintainers call fails for any other reason",
@@ -117,40 +110,58 @@ func TestUpdateClustersDatasourceStateClassifiesAFailedMaintainerRead(t *testing
 	}
 }
 
-// One unreadable cluster is enough to fail the data source, so the sweep stops there rather than
-// asking about every remaining cluster to collect the same failure again.
-func TestClustersDatasourceReadStopsAtTheFirstFailure(t *testing.T) {
+func TestClustersDatasourceReadHandlesFailedMaintainerRead(t *testing.T) {
 	t.Parallel()
 
-	server, requests := newRetryStub(t,
-		// Two clusters in one page.
-		stubResponse{status: http.StatusOK, body: `{"data":{"organization":{"clusters":{
-			"pageInfo": {"endCursor": "", "hasNextPage": false},
-			"edges": [
-				{"node": {"id": "cluster-1-id", "uuid": "cluster-1-uuid", "name": "first", "description": null, "emoji": null, "color": null}},
-				{"node": {"id": "cluster-2-id", "uuid": "cluster-2-uuid", "name": "second", "description": null, "emoji": null, "color": null}}
-			]
-		}}}}`},
-		// The first cluster's maintainers are unreadable for a reason that is not a refusal.
-		stubResponse{status: http.StatusInternalServerError, body: `{"message":"boom"}`},
-	)
-	defer server.Close()
+	for _, status := range []int{http.StatusNotFound, http.StatusInternalServerError} {
+		t.Run(http.StatusText(status), func(t *testing.T) {
+			t.Parallel()
 
-	c := &clustersDatasource{client: newRetryTestClient(t, server.URL, 0, time.Millisecond)}
+			server, requests := newRetryStub(t,
+				stubResponse{status: http.StatusOK, body: `{"data":{"organization":{"clusters":{
+					"pageInfo": {"endCursor": "", "hasNextPage": false},
+					"edges": [
+						{"node": {"id": "cluster-1-id", "uuid": "cluster-1-uuid", "name": "first", "description": null, "emoji": null, "color": null}},
+						{"node": {"id": "cluster-2-id", "uuid": "cluster-2-uuid", "name": "second", "description": null, "emoji": null, "color": null}}
+					]
+				}}}}`},
+				stubResponse{status: status, body: `{"message":"maintainer read failed"}`},
+				stubResponse{status: http.StatusOK, body: `[{"id":"second-permission","actor":{"id":"team-id","type":"team","name":"a-team"}}]`},
+			)
+			defer server.Close()
 
-	ctx := t.Context()
-	sch := datasourceSchema(ctx, t, c)
-	config := nullObjectWith(ctx, t, sch.Type(), nil)
+			c := &clustersDatasource{client: newRetryTestClient(t, server.URL, 0, time.Millisecond)}
+			ctx := t.Context()
+			sch := datasourceSchema(ctx, t, c)
+			config := nullObjectWith(ctx, t, sch.Type(), nil)
+			req := datasource.ReadRequest{Config: tfsdk.Config{Schema: sch, Raw: config}}
+			resp := datasource.ReadResponse{State: tfsdk.State{Schema: sch, Raw: config}}
 
-	req := datasource.ReadRequest{Config: tfsdk.Config{Schema: sch, Raw: config}}
-	resp := datasource.ReadResponse{State: tfsdk.State{Schema: sch, Raw: config}}
+			c.Read(ctx, req, &resp)
 
-	c.Read(ctx, req, &resp)
+			if status == http.StatusInternalServerError {
+				if !diagnosticsContain(resp.Diagnostics, "Unable to fetch cluster maintainers") {
+					t.Fatalf("Read() diagnostics = %v, want the maintainer failure reported", resp.Diagnostics)
+				}
+				if got := requests.Load(); got != 2 {
+					t.Errorf("Made %d requests, want 2: stop after the first failed maintainer read", got)
+				}
+				return
+			}
 
-	if !diagnosticsContain(resp.Diagnostics, "Unable to fetch cluster maintainers") {
-		t.Fatalf("Read() diagnostics = %v, want the maintainer failure reported", resp.Diagnostics)
-	}
-	if got := requests.Load(); got != 2 {
-		t.Errorf("Made %d requests, want 2: the cluster page and one maintainers call, with the second cluster never asked about", got)
+			if resp.Diagnostics.HasError() {
+				t.Fatalf("Read() diagnostics = %v, want the deleted cluster omitted", resp.Diagnostics)
+			}
+			var state clustersDatasourceModel
+			if diags := resp.State.Get(ctx, &state); diags.HasError() {
+				t.Fatalf("Read() state diagnostics = %v", diags)
+			}
+			if len(state.Clusters) != 1 || state.Clusters[0].UUID.ValueString() != "cluster-2-uuid" {
+				t.Fatalf("Read() clusters = %v, want only the surviving second cluster", state.Clusters)
+			}
+			if maintainers := state.Clusters[0].Maintainers; len(maintainers) != 1 || maintainers[0].PermissionUUID.ValueString() != "second-permission" {
+				t.Errorf("Read() maintainers = %v, want second-permission", maintainers)
+			}
+		})
 	}
 }
