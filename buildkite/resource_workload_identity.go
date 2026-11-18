@@ -3,6 +3,7 @@ package buildkite
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -135,7 +136,7 @@ func (r *workloadIdentityResource) Schema(ctx context.Context, req resource.Sche
 
 			Buildkite only mints the access token when the OIDC token matches the workload identity's issuer, audience,
 			subject, claims, and claim conditions. The access token's scopes are limited to ` + "`grantable_token_scopes`" + `,
-			and the pipelines it can reach to ` + "`resource_grants`" + `. Changes to these only apply to access tokens minted afterwards.
+			and the resources it can access to ` + "`resource_grants`" + `. Changes to these only apply to access tokens minted afterwards.
 			Learn more in [Workload identity federation](https://buildkite.com/docs/apis/workload-identity-federation).
 
 			The API token's user must be an organization administrator, and the token needs the
@@ -229,12 +230,12 @@ func (r *workloadIdentityResource) Schema(ctx context.Context, req resource.Sche
 					}},
 					[]attr.Value{},
 				)),
-				MarkdownDescription: "The resources that access tokens from this identity can access, with at most one grant for each type. Defaults to none, so access tokens can't access any pipeline.",
+				MarkdownDescription: "The resources that access tokens from this identity can access, with at most one grant for each type. Defaults to no resource access.",
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
 						"type": schema.StringAttribute{
 							Required:            true,
-							MarkdownDescription: "The type of resource to grant. Only `pipeline` is supported.",
+							MarkdownDescription: "The type of resource to grant: `pipeline`, `team`, or `cluster`.",
 						},
 						"access": schema.StringAttribute{
 							Required:            true,
@@ -274,7 +275,7 @@ func (r *workloadIdentityResource) Create(ctx context.Context, req resource.Crea
 	var identity workloadIdentity
 	err := r.client.makeRequest(requestCtx, http.MethodPost, r.client.workloadIdentityPath(""), workloadIdentityRequest(&plan), &identity)
 	if err != nil {
-		resp.Diagnostics.AddError("Unable to create workload identity", fmt.Sprintf("Unable to create workload identity: %s", err))
+		resp.Diagnostics.AddError("Unable to create workload identity", fmt.Sprintf("Unable to create workload identity: %s", workloadIdentityErrorDetail(err)))
 		return
 	}
 
@@ -304,7 +305,7 @@ func (r *workloadIdentityResource) Read(ctx context.Context, req resource.ReadRe
 			resp.State.RemoveResource(ctx)
 			return
 		}
-		resp.Diagnostics.AddError("Unable to read workload identity", fmt.Sprintf("Unable to read workload identity: %s", err))
+		resp.Diagnostics.AddError("Unable to read workload identity", fmt.Sprintf("Unable to read workload identity: %s", workloadIdentityErrorDetail(err)))
 		return
 	}
 
@@ -330,7 +331,7 @@ func (r *workloadIdentityResource) Update(ctx context.Context, req resource.Upda
 	var identity workloadIdentity
 	err := r.client.makeRequest(requestCtx, http.MethodPatch, r.client.workloadIdentityPath(plan.UUID.ValueString()), workloadIdentityRequest(&plan), &identity)
 	if err != nil {
-		resp.Diagnostics.AddError("Unable to update workload identity", fmt.Sprintf("Unable to update workload identity: %s", err))
+		resp.Diagnostics.AddError("Unable to update workload identity", fmt.Sprintf("Unable to update workload identity: %s", workloadIdentityErrorDetail(err)))
 		return
 	}
 
@@ -355,8 +356,20 @@ func (r *workloadIdentityResource) Delete(ctx context.Context, req resource.Dele
 
 	err := r.client.makeRequest(requestCtx, http.MethodDelete, r.client.workloadIdentityPath(state.UUID.ValueString()), nil, nil)
 	if err != nil && !isAPIStatus(err, http.StatusNotFound) {
-		resp.Diagnostics.AddError("Unable to delete workload identity", fmt.Sprintf("Unable to delete workload identity: %s", err))
+		resp.Diagnostics.AddError("Unable to delete workload identity", fmt.Sprintf("Unable to delete workload identity: %s", workloadIdentityErrorDetail(err)))
 	}
+}
+
+func workloadIdentityErrorDetail(err error) string {
+	var apiErr *apiError
+	var validation struct {
+		Message string `json:"message"`
+	}
+	if errors.As(err, &apiErr) && apiErr.StatusCode == http.StatusUnprocessableEntity &&
+		json.Unmarshal([]byte(apiErr.Body), &validation) == nil && validation.Message != "" {
+		return fmt.Sprintf("%s: %s", err, validation.Message)
+	}
+	return err.Error()
 }
 
 func (r *workloadIdentityResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
