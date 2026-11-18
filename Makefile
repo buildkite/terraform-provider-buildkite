@@ -22,7 +22,7 @@ GOTESTSUM ?= go run gotest.tools/gotestsum@v1.13.0
 
 # Organization-setting writers, their public-pipeline readers, and tests using
 # the persistent Rule fixture's trigger slot must share one exclusive CI step.
-TESTACC_SHARED = ^(TestAccBuildkiteOrganizationResource|TestAccBuildkiteOrganizationIPEntries|TestAccBuildkiteOrganizationPipelineSettingsResource|TestAccBuildkiteOrganizationBannerResource|TestAccBuildkitePipelinePublicVisibility|TestAccNonAdminOrganizationRuleCreate|TestAccBuildkiteOrganizationRuleMutationPermissions)$$
+TESTACC_SHARED = ^(TestAccBuildkiteOrganizationResource|TestAccBuildkiteOrganizationIPEntries|TestAccBuildkiteOrganizationBrowserEntries|TestAccBuildkiteOrganizationPipelineSettingsResource|TestAccBuildkiteOrganizationBannerResource|TestAccBuildkitePipelinePublicVisibility|TestAccNonAdminOrganizationRuleCreate|TestAccBuildkiteOrganizationRuleMutationPermissions)$$
 TESTACC_SKIP = ^$$
 
 .PHONY: test testacc testacc-isolated testacc-nonadmin testacc-nonadmin-isolated testacc-shared

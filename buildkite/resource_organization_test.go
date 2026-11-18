@@ -51,7 +51,7 @@ func TestOrganizationLegacySavedState(t *testing.T) {
 	if diags := (tfsdk.State{Schema: sch, Raw: raw}).Get(ctx, &state); diags.HasError() {
 		t.Fatal(diags)
 	}
-	if got := allowedApiIpAddressesValue(state.AllowedApiIpAddresses); got != "192.0.2.1/32 198.51.100.0/24" || !state.AllowedApiIpEntries.IsNull() {
+	if got := allowedApiIpAddressesValue(state.AllowedApiIpAddresses); got != "192.0.2.1/32 198.51.100.0/24" || !state.AllowedApiIpEntries.IsNull() || !state.AllowedBrowserIpEntries.IsNull() {
 		t.Fatalf("legacy state changed representation: %+v", state)
 	}
 }
