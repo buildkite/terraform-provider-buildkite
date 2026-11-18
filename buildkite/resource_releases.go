@@ -19,6 +19,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
+	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -82,15 +83,18 @@ func (r *releasesResource) Configure(ctx context.Context, req resource.Configure
 func (r *releasesResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	attrs := map[string]schema.Attribute{
 		"id": schema.StringAttribute{
-			Computed: true, MarkdownDescription: "The GraphQL ID of the registration.",
-			PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
+			Computed:            true,
+			MarkdownDescription: "The GraphQL ID of the registration.",
+			PlanModifiers:       []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
 		},
 		"uuid": schema.StringAttribute{
-			Computed: true, MarkdownDescription: "The UUID of the registration, used by the REST API and for import.",
-			PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
+			Computed:            true,
+			MarkdownDescription: "The UUID of the registration, used by the REST API and for import.",
+			PlanModifiers:       []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
 		},
 		"name": schema.StringAttribute{
-			Required: true, MarkdownDescription: "The registration name. Unique within the organization, including archived registrations. Renamed in place.",
+			Required:            true,
+			MarkdownDescription: "The registration name. Unique within the organization, including archived registrations. Renamed in place.",
 			Validators: []validator.String{
 				stringvalidator.LengthBetween(1, 253),
 				stringvalidator.RegexMatches(regexp.MustCompile(`^[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?$`), "must contain lowercase letters, digits, dots or hyphens and start and end with a letter or digit"),
@@ -98,14 +102,19 @@ func (r *releasesResource) Schema(ctx context.Context, req resource.SchemaReques
 			},
 		},
 		"allow_unarchive_on_create": schema.BoolAttribute{
-			Optional: true, Computed: true, Default: booldefault.StaticBool(false),
+			Optional:            true,
+			Computed:            true,
+			Default:             booldefault.StaticBool(false),
 			MarkdownDescription: "Allow create to restore an archived registration with the same name and matching immutable bindings, retaining its UUID and history. Defaults to `false`. Never adopts an active registration. This flag has no effect on updates or refresh.",
 		},
 	}
 	immutableUUID := func(description string) schema.StringAttribute {
 		return schema.StringAttribute{
-			Required: true, MarkdownDescription: description,
-			Validators:    []validator.String{stringvalidator.RegexMatches(regexp.MustCompile(`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$`), "must be a UUID, not a GraphQL ID")},
+			Required:            true,
+			MarkdownDescription: description,
+			Validators: []validator.String{
+				stringvalidator.RegexMatches(regexp.MustCompile(`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$`), "must be a UUID, not a GraphQL ID"),
+			},
 			PlanModifiers: []planmodifier.String{stringplanmodifier.RequiresReplace()},
 		}
 	}
@@ -116,7 +125,9 @@ func (r *releasesResource) Schema(ctx context.Context, req resource.SchemaReques
 	case "target":
 		description = "Manages a Releases Target registration. Archiving a Target also archives its active Instances; restoring the Target does not restore those Instances. Manage each Instance separately."
 		attrs["labels"] = schema.MapAttribute{
-			Optional: true, Computed: true, ElementType: types.StringType,
+			Optional:            true,
+			Computed:            true,
+			ElementType:         types.StringType,
 			Default:             mapdefault.StaticValue(types.MapValueMust(types.StringType, map[string]attr.Value{})),
 			MarkdownDescription: "The Target's complete label map. Omitted labels default to `{}`. Updates replace the entire map; removing a key removes it remotely. At most 100 entries, with keys up to 64 UTF-8 bytes and values up to 256 UTF-8 bytes.",
 		}
@@ -128,7 +139,9 @@ func (r *releasesResource) Schema(ctx context.Context, req resource.SchemaReques
 		attrs["target_uuid"] = immutableUUID("The UUID of the Target. Changing this binding requires replacement.")
 		attrs["component_uuid"] = immutableUUID("The UUID of the catalog Component. Changing this binding requires replacement.")
 		name := attrs["name"].(schema.StringAttribute)
-		name.Required, name.Optional, name.Computed = false, true, true
+		name.Required = false
+		name.Optional = true
+		name.Computed = true
 		name.MarkdownDescription = "The Instance name, unique within its Target including archived Instances. Defaults to the Component's current name on create. Renamed in place; omitting it later retains the assigned name."
 		name.PlanModifiers = []planmodifier.String{stringplanmodifier.UseStateForUnknown()}
 		attrs["name"] = name
@@ -155,14 +168,19 @@ type releasesAttributeReader interface {
 func (r *releasesResource) data(ctx context.Context, reader releasesAttributeReader) (releasesResourceData, diag.Diagnostics) {
 	var data releasesResourceData
 	var diags diag.Diagnostics
-	fields := map[string]interface{}{"uuid": &data.UUID, "name": &data.Name, "allow_unarchive_on_create": &data.AllowRestore}
+	fields := map[string]interface{}{
+		"uuid":                      &data.UUID,
+		"name":                      &data.Name,
+		"allow_unarchive_on_create": &data.AllowRestore,
+	}
 	switch r.kind {
 	case "target":
 		fields["labels"] = &data.Labels
 	case "component":
 		fields["artifact_uuid"] = &data.ArtifactUUID
 	case "component_instance":
-		fields["target_uuid"], fields["component_uuid"] = &data.TargetUUID, &data.ComponentUUID
+		fields["target_uuid"] = &data.TargetUUID
+		fields["component_uuid"] = &data.ComponentUUID
 	}
 	for name, value := range fields {
 		diags.Append(reader.GetAttribute(ctx, path.Root(name), value)...)
@@ -170,14 +188,12 @@ func (r *releasesResource) data(ctx context.Context, reader releasesAttributeRea
 	return data, diags
 }
 
-type releasesAttributeWriter interface {
-	SetAttribute(context.Context, path.Path, interface{}) diag.Diagnostics
-}
-
-func (r *releasesResource) setState(ctx context.Context, state releasesAttributeWriter, data releasesResourceData, remote releasesRegistration) diag.Diagnostics {
+func (r *releasesResource) setState(ctx context.Context, state *tfsdk.State, data releasesResourceData, remote releasesRegistration) diag.Diagnostics {
 	var diags diag.Diagnostics
 	fields := map[string]interface{}{
-		"id": remote.ID, "uuid": remote.UUID, "name": remote.Name,
+		"id":                        remote.ID,
+		"uuid":                      remote.UUID,
+		"name":                      remote.Name,
 		"allow_unarchive_on_create": data.AllowRestore.ValueBool(),
 	}
 	switch r.kind {
@@ -236,7 +252,8 @@ func (r *releasesResource) Create(ctx context.Context, req resource.CreateReques
 			resp.Diagnostics.AddError("Unable to read Component", err.Error())
 			return
 		}
-		body["component_name"], body["target_id"] = component.Name, data.TargetUUID.ValueString()
+		body["component_name"] = component.Name
+		body["target_id"] = data.TargetUUID.ValueString()
 		if data.Name.IsNull() || data.Name.IsUnknown() {
 			body["name"] = component.Name
 		}
