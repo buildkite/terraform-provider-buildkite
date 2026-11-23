@@ -30,4 +30,4 @@ RUN set -eu; \
 
 # Preserve the default image's snapshot/release tooling for existing callers.
 FROM base AS release
-COPY --from=goreleaser/goreleaser:v2.20.2@sha256:5d30bb36091b1a6d275ef450be05ee9c0d8c8b22955efe53dfe0974dd583cdc2 /usr/bin/goreleaser /usr/local/bin/goreleaser
+COPY --from=goreleaser/goreleaser:v2.20.3@sha256:3019e0e61c99808e42ce60c9cf77f7882685ffd2bd09d18ef6da8f9c9810e71c /usr/bin/goreleaser /usr/local/bin/goreleaser
