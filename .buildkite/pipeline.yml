@@ -17,7 +17,7 @@ steps:
     agents:
       queue: "hosted"
     plugins:
-      docker-compose#v5.16.0:
+      docker-compose#v5.17.0:
         run: go
 
   - label: docs
@@ -26,7 +26,7 @@ steps:
     agents:
       queue: "hosted"
     plugins:
-      docker-compose#v5.16.0:
+      docker-compose#v5.17.0:
         run: go
         mount-buildkite-agent: true
 
@@ -36,7 +36,7 @@ steps:
     agents:
       queue: "hosted"
     plugins:
-      docker-compose#v5.16.0:
+      docker-compose#v5.17.0:
         run: go
 
   - label: acceptance tests - shared
@@ -60,7 +60,7 @@ steps:
             BUILDKITE_API_TOKEN: /pipelines/buildkite/terraform-provider-buildkite-main/buildkite_api_token
             BUILDKITE_NONADMIN_API_TOKEN: /pipelines/buildkite/terraform-provider-buildkite-main/buildkite_api_token_nonadmin
             BUILDKITE_ANALYTICS_TOKEN: /pipelines/buildkite/terraform-provider-buildkite-main/buildkite_analytics_token
-      - docker-compose#v5.16.0:
+      - docker-compose#v5.17.0:
           run: acceptance
           mount-buildkite-agent: "true"
       - test-collector#v1.12.0:
@@ -92,7 +92,7 @@ steps:
             BUILDKITE_ANALYTICS_TOKEN: /pipelines/buildkite/terraform-provider-buildkite-main/buildkite_analytics_token
             GITHUB_TEST_REPO: /pipelines/buildkite/terraform-provider-buildkite-main/github_test_repo
             GITHUB_TEST_REPO_ALT: /pipelines/buildkite/terraform-provider-buildkite-main/github_test_repo_alt
-      - docker-compose#v5.16.0:
+      - docker-compose#v5.17.0:
           run: acceptance
           mount-buildkite-agent: "true"
       - test-collector#v1.12.0:
@@ -121,7 +121,7 @@ steps:
             BUILDKITE_ORGANIZATION_SLUG: /pipelines/buildkite/terraform-provider-buildkite-main/buildkite_organization
             BUILDKITE_API_TOKEN: /pipelines/buildkite/terraform-provider-buildkite-main/buildkite_api_token_nonadmin
             BUILDKITE_ANALYTICS_TOKEN: /pipelines/buildkite/terraform-provider-buildkite-main/buildkite_analytics_token
-      - docker-compose#v5.16.0:
+      - docker-compose#v5.17.0:
           run: acceptance
           mount-buildkite-agent: "true"
       - test-collector#v1.12.0:
@@ -137,7 +137,7 @@ steps:
     secrets:
       GITHUB_TOKEN: SCORECARD_TOKEN
     plugins:
-      - ossf-scorecard#v1.1.0:
+      - ossf-scorecard#v1.2.0:
           github_token: $$GITHUB_TOKEN
     retry:
       automatic:
@@ -149,7 +149,7 @@ steps:
     agents:
       queue: "hosted"
     plugins:
-      docker-compose#v5.16.0:
+      docker-compose#v5.17.0:
         run: go
     depends_on:
       - lint
@@ -182,5 +182,5 @@ steps:
           parameters:
             BUILDKITE_ORGANIZATION_SLUG: /pipelines/buildkite/terraform-provider-buildkite-main/buildkite_organization
             BUILDKITE_API_TOKEN: /pipelines/buildkite/terraform-provider-buildkite-main/buildkite_api_token
-      - docker-compose#v5.16.0:
+      - docker-compose#v5.17.0:
           run: acceptance
