@@ -341,8 +341,8 @@ go test ./buildkite -run '^TestAccReleasesRegistrationLifecycle$' -count=1 -v
 ```
 
 Use a disposable organization with Releases enabled and the by-ID rename PATCH endpoints available.
-The token needs `read_deployment_artifacts` and `write_deployment_artifacts` scopes;
-non-OIDC callers also need permission to manage organization rules. Set `BUILDKITE_REST_URL`
+The token needs `read_releases` and `write_releases` scopes; for user-backed tokens,
+the user must have permission to read and manage Releases in the organization. Set `BUILDKITE_REST_URL`
 to the API origin (without `/v2`) to test a development API. These resources do not use GraphQL.
 
 The test creates an Artifact, Target, catalog Component and two Instances, verifies UUID imports,

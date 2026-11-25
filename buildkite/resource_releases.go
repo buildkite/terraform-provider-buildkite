@@ -153,7 +153,7 @@ func (r *releasesResource) Schema(ctx context.Context, req resource.SchemaReques
 			"Refresh treats an archived registration as absent; it never unarchives during read. " +
 			"Immutable binding changes require replacement, which can conflict with the reserved name; choose a different name or explicitly manage recovery. " +
 			"The provider never renames an old registration to force replacement.\n\n" +
-			"Requires Releases enabled, `read_deployment_artifacts` and `write_deployment_artifacts` token scopes, and permission to manage organization rules for non-OIDC callers. " +
+			"Requires Releases enabled and `read_releases` and `write_releases` token scopes. For user-backed tokens, the user must have permission to read and manage Releases in the organization. " +
 			"In-place renaming requires the Releases by-ID PATCH API.",
 		Attributes: attrs,
 	}

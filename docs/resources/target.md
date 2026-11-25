@@ -5,7 +5,7 @@ subcategory: ""
 description: |-
   Manages a Releases Target registration. Archiving a Target also archives its active Instances; restoring the Target does not restore those Instances. Manage each Instance separately.
   Destroy archives the registration, preserving history and reserving its name. Create rejects existing active or archived names by default. For manual recovery, unarchive through the API, then import the UUID. Alternatively, explicitly set allow_unarchive_on_create = true to restore a matching archived registration. Refresh treats an archived registration as absent; it never unarchives during read. Immutable binding changes require replacement, which can conflict with the reserved name; choose a different name or explicitly manage recovery. The provider never renames an old registration to force replacement.
-  Requires Releases enabled, read_deployment_artifacts and write_deployment_artifacts token scopes, and permission to manage organization rules for non-OIDC callers. In-place renaming requires the Releases by-ID PATCH API.
+  Requires Releases enabled and read_releases and write_releases token scopes. For user-backed tokens, the user must have permission to read and manage Releases in the organization. In-place renaming requires the Releases by-ID PATCH API.
 ---
 
 # buildkite_target (Resource)
@@ -14,7 +14,7 @@ Manages a Releases Target registration. Archiving a Target also archives its act
 
 Destroy archives the registration, preserving history and reserving its name. Create rejects existing active or archived names by default. For manual recovery, unarchive through the API, then import the UUID. Alternatively, explicitly set `allow_unarchive_on_create = true` to restore a matching archived registration. Refresh treats an archived registration as absent; it never unarchives during read. Immutable binding changes require replacement, which can conflict with the reserved name; choose a different name or explicitly manage recovery. The provider never renames an old registration to force replacement.
 
-Requires Releases enabled, `read_deployment_artifacts` and `write_deployment_artifacts` token scopes, and permission to manage organization rules for non-OIDC callers. In-place renaming requires the Releases by-ID PATCH API.
+Requires Releases enabled and `read_releases` and `write_releases` token scopes. For user-backed tokens, the user must have permission to read and manage Releases in the organization. In-place renaming requires the Releases by-ID PATCH API.
 
 ## Example Usage
 
