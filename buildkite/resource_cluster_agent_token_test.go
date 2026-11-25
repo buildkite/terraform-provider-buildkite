@@ -10,7 +10,6 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
@@ -98,7 +97,7 @@ func TestExpiresAtFromAPI(t *testing.T) {
 func TestAccNonAdminClusterAgentToken(t *testing.T) {
 	const address = "buildkite_cluster_agent_token.temporary"
 	expiry := time.Now().UTC().Add(24 * time.Hour).Truncate(time.Second)
-	description := "Token acceptance test " + acctest.RandString(12)
+	description := testAccResourceName() + "-token"
 	baseConfig := fmt.Sprintf(`
 		data "buildkite_cluster" "fixture" {
 			name = %q
@@ -215,27 +214,27 @@ func TestAccBuildkiteClusterAgentTokenResource(t *testing.T) {
 		}
 
 		resource "buildkite_cluster" "cluster_test" {
-			name = "Test cluster %s"
+			name = "%s-cluster"
 			description = "Acceptance testing cluster"
 		}
 
 		resource "buildkite_cluster_agent_token" "foobar" {
 			cluster_id = buildkite_cluster.cluster_test.id
-			description = "Acceptance Test %s"
+			description = "%s-token"
 		}
 
 		`, fields[0], fields[1])
 	}
 
 	t.Run("creates a cluster agent token with an expiry", func(t *testing.T) {
-		clusterName := acctest.RandString(10)
-		tokenDesc := acctest.RandString(10)
+		clusterName := testAccResourceName()
+		tokenDesc := testAccResourceName()
 		expiry := time.Now().UTC().AddDate(0, 0, 30).Truncate(time.Second)
 		config := func(expiresAt time.Time) string {
 			return configBasic(clusterName, tokenDesc) + fmt.Sprintf(`
 			resource "buildkite_cluster_agent_token" "expiring" {
 				cluster_id = buildkite_cluster.cluster_test.id
-				description = "Acceptance Test expiring %s"
+				description = "%s-token-expiring"
 				expires_at = "%s"
 			}
 			`, tokenDesc, expiresAt.Format(time.RFC3339Nano))

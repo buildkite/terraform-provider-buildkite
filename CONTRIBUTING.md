@@ -74,6 +74,88 @@ BUILDKITE_ORGANIZATION_SLUG=<org-slug> BUILDKITE_API_TOKEN=<token> make testacc
 - Code reviewers will run the acceptance tests manually
 - Please run the acceptance tests locally to confirm they pass before requesting a review
 
+#### Cleaning up acceptance resources
+
+Acceptance tests use names such as `tfacc-5319-80c886d-abcdefghijkl`: the `tfacc-`
+marker, Buildkite build number, first seven commit characters, and a random suffix.
+Local runs use `tfacc-local-<random>`. Use `testAccResourceName()` for temporary
+names, including updated names, and `testAccResourceKey()` for secret keys, which
+use uppercase letters and underscores instead of hyphens. Keep random secret
+values separate from resource identities. Resources without names belong to
+marked temporary parents; tokens and notification services use marked descriptions.
+
+The CI `sweepers` step runs on the `oss-deploy` queue after all three acceptance
+jobs finish, using the existing IAM role's source-IP restrictions. It allows
+dependency failures, so cleanup still runs after failed acceptance tests. The
+acceptance jobs do not wait for sweeping, and the packaging/build step can run
+alongside it. Sweep failures are reported as soft failures and do not fail the
+build. Sweepers can overlap across builds; they retain the 24-hour cutoff and
+tolerate resources another sweep has already removed.
+
+Three acceptance jobs run independently in the same test organization:
+
+- `make testacc-shared` runs organization-setting tests, the two PUBLIC-pipeline
+  scenarios that depend on those settings, and permission tests that use the
+  persistent Rule fixture's trigger slot. Only this job uses the
+  `terraform-provider-acceptance-tests` concurrency group, with a limit of one
+  across builds. Its admin and member-token selections run sequentially, with
+  separate reports; the member selection still runs if the admin selection fails.
+- `make testacc-isolated` runs the remaining tests with the admin token.
+- `make testacc-nonadmin-isolated` runs the remaining member-token tests.
+
+The isolated jobs have no cross-build concurrency limit and retain Go parallelism
+of 12. Their resources use unique names, and they must not depend on settings or
+persistent fixture slots modified by the shared tests. Keep new writers and their
+dependent readers in the `TESTACC_SHARED` selection in the Makefile. Shared tests
+run with Go parallelism of one, including tests using `resource.ParallelTest`.
+
+For local use, `make testacc` and `make testacc-nonadmin` still run their full
+selections. `make testacc-shared` requires the admin token in `BUILDKITE_API_TOKEN`
+and the member token in `BUILDKITE_NONADMIN_API_TOKEN`. Do not overlap a local full
+suite or shared selection with CI's shared job against the same organization;
+local commands do not acquire the Buildkite concurrency lock.
+
+To invoke the [HashiCorp sweeper](https://developer.hashicorp.com/terraform/plugin/testing/acceptance-tests/sweepers)
+manually, export `BUILDKITE_API_TOKEN` for a test organization, then run:
+
+```bash
+BUILDKITE_ORGANIZATION_SLUG=<test-org> make sweep
+```
+
+This command deletes real resources. Run it only in a dedicated test organization,
+with an admin token that has `graphql` and the REST read/write scopes for pipelines,
+clusters, teams, Rules, portals, pipeline templates, notification services, suites, secret
+details, and secrets, plus `delete_registries`. GraphQL supplies suite and package
+registry creation timestamps because their REST responses omit them. The sweeper
+reads secret metadata only, never secret values.
+
+The sweep selects marked resources strictly older than 24 hours using API creation
+timestamps. It removes Rules, pipelines, portals, templates, suites, package
+registries, temporary cluster children, clusters, notification services, teams,
+and organization-wide agent tokens. Supported repository webhooks are removed before
+their pipelines; the organization's GitHub App needs permission to read and delete
+them. Rules without descriptions can be identified through marked pipeline
+endpoints. Pipelines and their clusters are retained until dependent Rules are
+old enough to sweep, preserving that ownership evidence. Cluster deletion also cleans up
+its remaining queues, tokens, cache registries, and hosted tenant, including agent
+images. Clusters are retained while any discovered child has not reached the age
+cutoff or has no creation timestamp. They are also retained while any secret is
+preserved, including unmarked secrets, because cluster deletion does not remove
+secrets and their API requires a surviving cluster. Marked queues, tokens, secrets,
+and non-default cache registries can be removed from persistent clusters without
+deleting those clusters.
+
+Persistent non-admin fixtures are preserved. Unmarked legacy leftovers, including
+resources created before this naming convention, require manual review and cleanup.
+Webhook discovery uses the pipeline's current repository; hooks left in a previous
+repository after a repository/provider change need manual cleanup.
+Objects without creation timestamps are not individually swept. In particular,
+organization banners and changes to organization settings need manual recovery;
+agent images are cleaned up through their temporary parent cluster. Default cache
+registries in persistent clusters are preserved because the API prohibits deleting
+them. Organization-wide token discovery fails explicitly if its non-paginated
+GraphQL list is truncated.
+
 #### Non-admin acceptance tests
 
 Run the shared pipeline, pipeline schedule, pipeline-team, queue, cluster agent-token,
@@ -308,9 +390,11 @@ and consolidate equivalent admin scenarios rather than keeping duplicate tests.
 The dedicated target checks the token owner's organization role and fails if its
 test selector matches nothing. CI loads the non-admin token from
 `/pipelines/buildkite/terraform-provider-buildkite-main/buildkite_api_token_nonadmin`
-into `BUILDKITE_API_TOKEN` in a separate acceptance step. The admin and non-admin
-steps share a concurrency group, produce per-job JUnit and JSON reports, and use
-separate annotation contexts.
+into `BUILDKITE_API_TOKEN` in the isolated non-admin step. The shared step also
+loads it as `BUILDKITE_NONADMIN_API_TOKEN` for its member-token selection. Only the
+shared step uses the cross-build concurrency group; the isolated admin and
+non-admin steps run independently. All three steps produce per-job JUnit and JSON
+reports and use separate annotation contexts.
 
 #### Cache Registry acceptance tests
 

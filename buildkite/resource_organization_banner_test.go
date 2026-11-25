@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
@@ -23,20 +22,20 @@ func TestAccBuildkiteOrganizationBannerResource(t *testing.T) {
 		}
 
 		resource "buildkite_organization_banner" "banner_foo" {
-			message = ":buildkite: Test %s organization banner! :buildkite:"
+			message = "%s :buildkite: Test organization banner! :buildkite:"
 		}
 		`, name)
 	}
 
 	t.Run("creates an organization banner", func(t *testing.T) {
-		message := acctest.RandString(12)
+		message := testAccResourceName()
 		var obr organizationBannerResourceModel
 
 		check := resource.ComposeAggregateTestCheckFunc(
 			// Confirm the organization banner exists in the buildkite API
 			testAccCheckOrganizationBannerExists(&obr, "buildkite_organization_banner.banner_foo"),
 			// Confirm the organization banner has the correct values in Buildkite's system
-			testAccCheckOrganizationBannerRemoteValues(&obr, fmt.Sprintf(":buildkite: Test %s organization banner! :buildkite:", message)),
+			testAccCheckOrganizationBannerRemoteValues(&obr, fmt.Sprintf("%s :buildkite: Test organization banner! :buildkite:", message)),
 			// Check all organization banner resource attributes are set in state (required attributes)
 			resource.TestCheckResourceAttrSet("buildkite_organization_banner.banner_foo", "id"),
 			resource.TestCheckResourceAttrSet("buildkite_organization_banner.banner_foo", "uuid"),
@@ -57,15 +56,15 @@ func TestAccBuildkiteOrganizationBannerResource(t *testing.T) {
 	})
 
 	t.Run("updates an organization banner", func(t *testing.T) {
-		message := acctest.RandString(12)
-		updatedMessage := acctest.RandString(12)
+		message := testAccResourceName()
+		updatedMessage := testAccResourceName()
 		var obr organizationBannerResourceModel
 
 		check := resource.ComposeAggregateTestCheckFunc(
 			// Confirm the organization banner exists in the buildkite API
 			testAccCheckOrganizationBannerExists(&obr, "buildkite_organization_banner.banner_foo"),
 			// Confirm the organization banner has the correct values in Buildkite's system
-			testAccCheckOrganizationBannerRemoteValues(&obr, fmt.Sprintf(":buildkite: Test %s organization banner! :buildkite:", message)),
+			testAccCheckOrganizationBannerRemoteValues(&obr, fmt.Sprintf("%s :buildkite: Test organization banner! :buildkite:", message)),
 			// Check all organization banner resource attributes are set in state (required attributes)
 			resource.TestCheckResourceAttrSet("buildkite_organization_banner.banner_foo", "id"),
 			resource.TestCheckResourceAttrSet("buildkite_organization_banner.banner_foo", "uuid"),
@@ -76,7 +75,7 @@ func TestAccBuildkiteOrganizationBannerResource(t *testing.T) {
 			// Confirm the organization banner exists in the buildkite API
 			testAccCheckOrganizationBannerExists(&obr, "buildkite_organization_banner.banner_foo"),
 			// Confirm the organization banner has the correct values in Buildkite's system
-			testAccCheckOrganizationBannerRemoteValues(&obr, fmt.Sprintf(":buildkite: Test %s organization banner! :buildkite:", updatedMessage)),
+			testAccCheckOrganizationBannerRemoteValues(&obr, fmt.Sprintf("%s :buildkite: Test organization banner! :buildkite:", updatedMessage)),
 			// Check all organization banner resource attributes are set in state (required attributes)
 			resource.TestCheckResourceAttrSet("buildkite_organization_banner.banner_foo", "message"),
 		)
@@ -99,14 +98,14 @@ func TestAccBuildkiteOrganizationBannerResource(t *testing.T) {
 	})
 
 	t.Run("imports an organization banner", func(t *testing.T) {
-		message := acctest.RandString(12)
+		message := testAccResourceName()
 		var obr organizationBannerResourceModel
 
 		check := resource.ComposeAggregateTestCheckFunc(
 			// Confirm the organization banner exists in the buildkite API
 			testAccCheckOrganizationBannerExists(&obr, "buildkite_organization_banner.banner_foo"),
 			// Confirm the organization banner has the correct values in Buildkite's system
-			testAccCheckOrganizationBannerRemoteValues(&obr, fmt.Sprintf(":buildkite: Test %s organization banner! :buildkite:", message)),
+			testAccCheckOrganizationBannerRemoteValues(&obr, fmt.Sprintf("%s :buildkite: Test organization banner! :buildkite:", message)),
 			// Check all organization banner resource attributes are set in state (required attributes)
 			resource.TestCheckResourceAttrSet("buildkite_organization_banner.banner_foo", "id"),
 			resource.TestCheckResourceAttrSet("buildkite_organization_banner.banner_foo", "uuid"),

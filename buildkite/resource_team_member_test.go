@@ -6,7 +6,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
@@ -27,7 +26,7 @@ func TestAccBuildkiteTeamMember(t *testing.T) {
 		}
 
 		resource "buildkite_team" "test" {
-			name = "acceptance testing %s"
+			name = "%s-team"
 			description = "a cool team for testing"
 			privacy = "VISIBLE"
 			default_team = false
@@ -45,7 +44,7 @@ func TestAccBuildkiteTeamMember(t *testing.T) {
 
 	t.Run("adds a team member", func(t *testing.T) {
 		var tm teamMemberResourceModel
-		randName := acctest.RandString(10)
+		randName := testAccResourceName()
 
 		check := resource.ComposeAggregateTestCheckFunc(
 			// Confirm the team member exists in the buildkite API
@@ -71,7 +70,7 @@ func TestAccBuildkiteTeamMember(t *testing.T) {
 
 	t.Run("adds a team member as a maintainer", func(t *testing.T) {
 		var tm teamMemberResourceModel
-		randName := acctest.RandString(10)
+		randName := testAccResourceName()
 
 		check := resource.ComposeAggregateTestCheckFunc(
 			// Confirm the team member exists in the buildkite API
@@ -97,7 +96,7 @@ func TestAccBuildkiteTeamMember(t *testing.T) {
 
 	t.Run("updates a team member from member to maintainer", func(t *testing.T) {
 		var tm teamMemberResourceModel
-		randName := acctest.RandString(10)
+		randName := testAccResourceName()
 
 		checkMember := resource.ComposeAggregateTestCheckFunc(
 			// Confirm the team member exists in the buildkite API
@@ -132,10 +131,10 @@ func TestAccBuildkiteTeamMember(t *testing.T) {
 
 	t.Run("moves a team member to another team by replacing it", func(t *testing.T) {
 		var tm teamMemberResourceModel
-		randName := acctest.RandString(10)
+		randName := testAccResourceName()
 		otherTeam := fmt.Sprintf(`
 		resource "buildkite_team" "other" {
-			name = "acceptance testing other %s"
+			name = "%s-other-team"
 			privacy = "VISIBLE"
 			default_team = false
 			default_member_role = "MEMBER"
@@ -170,7 +169,7 @@ func TestAccBuildkiteTeamMember(t *testing.T) {
 
 	t.Run("imports a team member", func(t *testing.T) {
 		var tm teamMemberResourceModel
-		randName := acctest.RandString(10)
+		randName := testAccResourceName()
 
 		check := resource.ComposeAggregateTestCheckFunc(
 			// Confirm the team member exists in the buildkite API
@@ -209,7 +208,7 @@ func TestAccBuildkiteTeamMember(t *testing.T) {
 	})
 
 	t.Run("team member is recreated if removed", func(t *testing.T) {
-		resName := acctest.RandString(12)
+		resName := testAccResourceName()
 
 		check := func(s *terraform.State) error {
 			teamMember := s.RootModule().Resources["buildkite_team_member.test"]

@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -17,6 +18,44 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/shurcooL/graphql"
 )
+
+func TestMakeRequestRetainsResponseBodyWithoutRenderingIt(t *testing.T) {
+	t.Parallel()
+	const body = `{"message":"hidden-message","token":"hidden-response-field"}`
+	for _, tc := range []struct {
+		name     string
+		status   int
+		body     string
+		wantBody string
+	}{
+		{"validation", 422, body, body},
+		{"forbidden", 403, body, body},
+		{"unavailable", 503, body, body},
+		{"bounded body", 422, strings.Repeat("x", 3000), strings.Repeat("x", 2048)},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(tc.status)
+				_, _ = io.WriteString(w, tc.body)
+			}))
+			defer server.Close()
+			client := &Client{http: server.Client(), restURL: server.URL, organization: "acme"}
+			err := client.makeRequest(t.Context(), http.MethodPost, "/v2/test", nil, nil)
+			var apiErr *apiError
+			if !errors.As(err, &apiErr) || apiErr.StatusCode != tc.status {
+				t.Fatalf("makeRequest() = %v, want status %d", err, tc.status)
+			}
+			if apiErr.Body != tc.wantBody {
+				t.Errorf("Body = %q, want %q", apiErr.Body, tc.wantBody)
+			}
+			want := fmt.Sprintf("the Buildkite API request failed: POST %s/v2/test (status: %d)", server.URL, tc.status)
+			if err.Error() != want {
+				t.Errorf("Error() = %q, want only request and status: %q", err, want)
+			}
+		})
+	}
+}
 
 // Provider settings that are unknown (left out on create) or null must not be sent, or the PATCH
 // overwrites Buildkite's defaults; configured values, including false, must be.

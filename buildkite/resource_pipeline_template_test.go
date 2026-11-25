@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
@@ -24,7 +23,7 @@ func TestAccBuildkitePipelineTemplateResource(t *testing.T) {
 		}
 
 		resource "buildkite_pipeline_template" "template_foo" {
-			name = "Template %s"
+			name = "%s-template"
 			configuration = "steps:\n  - label: \":pipeline:\"\n    command: \"buildkite-agent pipeline upload\""
 		}
 		`, name)
@@ -42,7 +41,7 @@ func TestAccBuildkitePipelineTemplateResource(t *testing.T) {
 		}
 
 		resource "buildkite_pipeline_template" "template_bar" {
-			name = "Template %s"
+			name = "%s-template"
 			configuration = "steps:\n  - label: \":pipeline:\"\n    command: \"buildkite-agent pipeline upload\""
 			description = "Pipeline upload template"
 			available = %v
@@ -51,14 +50,14 @@ func TestAccBuildkitePipelineTemplateResource(t *testing.T) {
 	}
 
 	t.Run("creates a pipeline template with required attributes", func(t *testing.T) {
-		randName := acctest.RandString(12)
+		randName := testAccResourceName()
 		var ptr pipelineTemplateResourceModel
 
 		check := resource.ComposeAggregateTestCheckFunc(
 			// Confirm the pipeline template exists in the buildkite API
 			testAccCheckPipelineTemplateExists(&ptr, "buildkite_pipeline_template.template_foo"),
 			// Confirm the pipeline template has the correct values in Buildkite's system
-			testAccCheckPipelineTemplateRemoteValues(&ptr, fmt.Sprintf("Template %s", randName), false),
+			testAccCheckPipelineTemplateRemoteValues(&ptr, fmt.Sprintf("%s-template", randName), false),
 			// Check all pipeline template resource attributes are set in state (required attributes)
 			resource.TestCheckResourceAttrSet("buildkite_pipeline_template.template_foo", "id"),
 			resource.TestCheckResourceAttrSet("buildkite_pipeline_template.template_foo", "uuid"),
@@ -80,14 +79,14 @@ func TestAccBuildkitePipelineTemplateResource(t *testing.T) {
 	})
 
 	t.Run("creates a pipeline template with all attributes", func(t *testing.T) {
-		randName := acctest.RandString(12)
+		randName := testAccResourceName()
 		var ptr pipelineTemplateResourceModel
 
 		check := resource.ComposeAggregateTestCheckFunc(
 			// Confirm the pipeline template exists in the buildkite API
 			testAccCheckPipelineTemplateExists(&ptr, "buildkite_pipeline_template.template_bar"),
 			// Confirm the pipeline template has the correct values in Buildkite's system
-			testAccCheckPipelineTemplateRemoteValues(&ptr, fmt.Sprintf("Template %s", randName), true),
+			testAccCheckPipelineTemplateRemoteValues(&ptr, fmt.Sprintf("%s-template", randName), true),
 			// Check all pipeline template resource attributes are set in state (all attributes)
 			resource.TestCheckResourceAttrSet("buildkite_pipeline_template.template_bar", "id"),
 			resource.TestCheckResourceAttrSet("buildkite_pipeline_template.template_bar", "uuid"),
@@ -111,14 +110,14 @@ func TestAccBuildkitePipelineTemplateResource(t *testing.T) {
 	})
 
 	t.Run("updates a pipeline template", func(t *testing.T) {
-		randName := acctest.RandString(12)
+		randName := testAccResourceName()
 		var ptr pipelineTemplateResourceModel
 
 		check := resource.ComposeAggregateTestCheckFunc(
 			// Confirm the pipeline template exists in the buildkite API
 			testAccCheckPipelineTemplateExists(&ptr, "buildkite_pipeline_template.template_bar"),
 			// Confirm the pipeline template has the correct values in Buildkite's system
-			testAccCheckPipelineTemplateRemoteValues(&ptr, fmt.Sprintf("Template %s", randName), false),
+			testAccCheckPipelineTemplateRemoteValues(&ptr, fmt.Sprintf("%s-template", randName), false),
 			// Check all pipeline template resource attributes are set in state (all attributes)
 			resource.TestCheckResourceAttrSet("buildkite_pipeline_template.template_bar", "id"),
 			resource.TestCheckResourceAttrSet("buildkite_pipeline_template.template_bar", "uuid"),
@@ -132,7 +131,7 @@ func TestAccBuildkitePipelineTemplateResource(t *testing.T) {
 			// Confirm the pipeline template exists in the buildkite API (available changed)
 			testAccCheckPipelineTemplateExists(&ptr, "buildkite_pipeline_template.template_bar"),
 			// Confirm the pipeline template has the correct values in Buildkite's system
-			testAccCheckPipelineTemplateRemoteValues(&ptr, fmt.Sprintf("Template %s", randName), true),
+			testAccCheckPipelineTemplateRemoteValues(&ptr, fmt.Sprintf("%s-template", randName), true),
 			// Check all pipeline template resource attributes are set in state (all attributes)
 			resource.TestCheckResourceAttrSet("buildkite_pipeline_template.template_bar", "available"),
 		)
@@ -155,14 +154,14 @@ func TestAccBuildkitePipelineTemplateResource(t *testing.T) {
 	})
 
 	t.Run("imports a pipeline template", func(t *testing.T) {
-		randName := acctest.RandString(12)
+		randName := testAccResourceName()
 		var ptr pipelineTemplateResourceModel
 
 		check := resource.ComposeAggregateTestCheckFunc(
 			// Confirm the pipeline template exists in the buildkite API
 			testAccCheckPipelineTemplateExists(&ptr, "buildkite_pipeline_template.template_bar"),
 			// Confirm the pipeline template has the correct values in Buildkite's system
-			testAccCheckPipelineTemplateRemoteValues(&ptr, fmt.Sprintf("Template %s", randName), false),
+			testAccCheckPipelineTemplateRemoteValues(&ptr, fmt.Sprintf("%s-template", randName), false),
 			// Check all pipeline template resource attributes are set in state (all attributes)
 			resource.TestCheckResourceAttrSet("buildkite_pipeline_template.template_bar", "id"),
 			resource.TestCheckResourceAttrSet("buildkite_pipeline_template.template_bar", "uuid"),

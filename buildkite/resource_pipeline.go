@@ -840,6 +840,12 @@ func (*pipelineResource) Schema(ctx context.Context, req resource.SchemaRequest,
 			"webhook_url": schema.StringAttribute{
 				Computed:            true,
 				MarkdownDescription: "The webhook URL used to trigger builds from VCS providers.",
+				PlanModifiers: []planmodifier.String{
+					// Keep the URL from state so an in-place update does not print it in the plan as changing.
+					// It stays unknown when state holds "" (the refreshing token could not see it) or when the
+					// repository changes: a Code Storage repository, for one, has no per-pipeline webhook URL.
+					custom_modifier.UseNonEmptyStateIfUnchanged("repository"),
+				},
 			},
 			"visibility": schema.StringAttribute{
 				Computed:            true,

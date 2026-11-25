@@ -8,7 +8,7 @@ description: |-
   short-lived API access token, using the workload identity's client_id.
   Buildkite only mints the access token when the OIDC token matches the workload identity's issuer, audience,
   subject, claims, and claim conditions. The access token's scopes are limited to grantable_token_scopes,
-  and the pipelines it can reach to resource_grants. Changes to these only apply to access tokens minted afterwards.
+  and the resources it can access to resource_grants. Changes to these only apply to access tokens minted afterwards.
   Learn more in Workload identity federation https://buildkite.com/docs/apis/workload-identity-federation.
   The API token's user must be an organization administrator, and the token needs the
   read_workload_identities, write_workload_identities, and delete_workload_identities scopes.
@@ -22,7 +22,7 @@ short-lived API access token, using the workload identity's `client_id`.
 
 Buildkite only mints the access token when the OIDC token matches the workload identity's issuer, audience,
 subject, claims, and claim conditions. The access token's scopes are limited to `grantable_token_scopes`,
-and the pipelines it can reach to `resource_grants`. Changes to these only apply to access tokens minted afterwards.
+and the resources it can access to `resource_grants`. Changes to these only apply to access tokens minted afterwards.
 Learn more in [Workload identity federation](https://buildkite.com/docs/apis/workload-identity-federation).
 
 The API token's user must be an organization administrator, and the token needs the
@@ -110,7 +110,7 @@ resource "buildkite_workload_identity" "release_reports" {
 - `max_token_ttl_seconds` (Number) The longest lifetime, in seconds, of access tokens from this identity. An access token never outlives the OIDC token it was exchanged for. Defaults to `3600`.
 - `oidc_claim_conditions` (String) A [CEL](https://cel.dev) expression that OIDC tokens must also satisfy. Use it for more complex checks, such as a list of allowed values or a branch prefix. For example, `claims.build_branch == "main" || claims.build_branch.startsWith("release/")`. Learn more in [Write claim conditions](https://buildkite.com/docs/apis/workload-identity-federation#write-claim-conditions).
 - `oidc_claims` (String) Top-level claims that OIDC tokens must have, as a JSON object of each claim and its exact value. For example, `jsonencode({ organization_id = "<organization UUID>" })`. Values must match their JSON type too, so `"42"` doesn't match `42`. For tokens from Buildkite jobs, include an `organization_id` or `organization_slug` claim. Up to 10 claims are allowed.
-- `resource_grants` (Attributes List) The resources that access tokens from this identity can access, with at most one grant for each type. Defaults to none, so access tokens can't access any pipeline. (see [below for nested schema](#nestedatt--resource_grants))
+- `resource_grants` (Attributes List) The resources that access tokens from this identity can access, with at most one grant for each type. Defaults to no resource access. (see [below for nested schema](#nestedatt--resource_grants))
 
 ### Read-Only
 
@@ -123,7 +123,7 @@ resource "buildkite_workload_identity" "release_reports" {
 Required:
 
 - `access` (String) Which resources to grant: `all`, including those created later; `selected`, the resources in `ids`; or `none`.
-- `type` (String) The type of resource to grant. Only `pipeline` is supported.
+- `type` (String) The type of resource to grant: `pipeline`, `team`, or `cluster`.
 
 Optional:
 

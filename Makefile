@@ -20,7 +20,12 @@ vet:
 
 GOTESTSUM ?= go run gotest.tools/gotestsum@v1.13.0
 
-.PHONY: test testacc testacc-nonadmin
+# Organization-setting writers, their public-pipeline readers, and tests using
+# the persistent Rule fixture's trigger slot must share one exclusive CI step.
+TESTACC_SHARED = ^(TestAccBuildkiteOrganizationResource|TestAccBuildkiteOrganizationIPEntries|TestAccBuildkiteOrganizationBrowserEntries|TestAccBuildkiteOrganizationPipelineSettingsResource|TestAccBuildkiteOrganizationBannerResource|TestAccBuildkitePipelinePublicVisibility|TestAccNonAdminOrganizationRuleCreate|TestAccBuildkiteOrganizationRuleMutationPermissions)$$
+TESTACC_SKIP = ^$$
+
+.PHONY: test testacc testacc-isolated testacc-nonadmin testacc-nonadmin-isolated testacc-shared
 
 # Keep live TestAcc tests out of the unit job, even if TF_ACC was inherited.
 test:
@@ -28,17 +33,37 @@ test:
 
 # Acceptance tests. This will create, manage and delete real resources in a real
 # Buildkite organization!
-testacc:
-	TF_ACC=1 $(GOTESTSUM) --format testname --junitfile "junit-${BUILDKITE_JOB_ID}.xml" --jsonfile "test-events-${BUILDKITE_JOB_ID}.jsonl" -- -count=1 -parallel=12 -run '^TestAcc' ./...
+# The original targets retain full coverage for local use; CI skips shared tests.
+testacc-isolated: TESTACC_SKIP = $(TESTACC_SHARED)
+testacc testacc-isolated:
+	TF_ACC=1 $(GOTESTSUM) --format testname --junitfile "junit-${BUILDKITE_JOB_ID}.xml" --jsonfile "test-events-${BUILDKITE_JOB_ID}.jsonl" -- -count=1 -parallel=12 -run '^TestAcc' -skip '$(TESTACC_SKIP)' ./...
 
 # Shared lifecycles and lookups using a team maintainer's token with graphql,
 # write_pipelines, read_clusters, read_suites, write_suites, read_secrets_details,
 # and write_secrets scopes.
 # Fail rather than silently succeed if the selected tests have been removed.
-testacc-nonadmin:
+testacc-nonadmin-isolated: TESTACC_SKIP = $(TESTACC_SHARED)
+testacc-nonadmin testacc-nonadmin-isolated:
 	@tests="$$(TF_ACC= go test ./buildkite -list '^TestAccNonAdmin')" || exit $$?; \
-		printf '%s\n' "$$tests" | grep -q '^TestAccNonAdmin' || { echo 'No non-admin acceptance tests found' >&2; exit 1; }
-	TF_ACC=1 BUILDKITE_ACCEPTANCE_NONADMIN=1 $(GOTESTSUM) --format testname --junitfile "junit-${BUILDKITE_JOB_ID}.xml" --jsonfile "test-events-${BUILDKITE_JOB_ID}.jsonl" -- -count=1 -parallel=12 -run '^TestAccNonAdmin' ./buildkite
+		printf '%s\n' "$$tests" | grep '^TestAccNonAdmin' | grep -Ev '$(TESTACC_SKIP)' >/dev/null || { echo 'No non-admin acceptance tests found' >&2; exit 1; }
+	TF_ACC=1 BUILDKITE_ACCEPTANCE_NONADMIN=1 $(GOTESTSUM) --format testname --junitfile "junit-${BUILDKITE_JOB_ID}.xml" --jsonfile "test-events-${BUILDKITE_JOB_ID}.jsonl" -- -count=1 -parallel=12 -run '^TestAccNonAdmin' -skip '$(TESTACC_SKIP)' ./buildkite
+
+# Run both credential selections even if one fails, without overwriting reports.
+# Go's parallel limit also serializes shared tests that use resource.ParallelTest.
+testacc-shared:
+	@test -n "$$BUILDKITE_NONADMIN_API_TOKEN" || { echo 'BUILDKITE_NONADMIN_API_TOKEN is required' >&2; exit 1; }
+	@status=0; \
+		TF_ACC=1 $(GOTESTSUM) --format testname --junitfile "junit-${BUILDKITE_JOB_ID}-shared-admin.xml" --jsonfile "test-events-${BUILDKITE_JOB_ID}-shared-admin.jsonl" -- -count=1 -parallel=1 -run '$(TESTACC_SHARED)' ./buildkite || status=$$?; \
+		TF_ACC=1 BUILDKITE_API_TOKEN="$$BUILDKITE_NONADMIN_API_TOKEN" BUILDKITE_ACCEPTANCE_NONADMIN=1 $(GOTESTSUM) --format testname --junitfile "junit-${BUILDKITE_JOB_ID}-shared-nonadmin.xml" --jsonfile "test-events-${BUILDKITE_JOB_ID}-shared-nonadmin.jsonl" -- -count=1 -parallel=1 -run '^TestAccNonAdminOrganizationRuleCreate$$' ./buildkite || status=$$?; \
+		exit $$status
+
+# Destructive: remove marked acceptance resources strictly older than 24 hours.
+# The organization is passed as the sweeper's region; ordinary tests do not run.
+.PHONY: sweep
+sweep:
+	@test -n "$(BUILDKITE_ORGANIZATION_SLUG)" || { echo 'BUILDKITE_ORGANIZATION_SLUG is required' >&2; exit 1; }
+	@test -n "$$BUILDKITE_API_TOKEN" || { echo 'BUILDKITE_API_TOKEN is required' >&2; exit 1; }
+	TF_ACC= go test ./buildkite -v -count=1 -run '^$$' -timeout=30m -sweep="$(BUILDKITE_ORGANIZATION_SLUG)"
 
 # Generate the Buildkite GraphQL schema file
 schema:

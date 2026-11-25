@@ -567,8 +567,10 @@ func TestAccBuildkiteOrganizationResource(t *testing.T) {
 			CheckDestroy:             testCheckOrganizationResourceRemoved,
 			Steps: []resource.TestStep{
 				{
-					// unmanaged: the current values are only read into state
-					Config: configAPISettings(``),
+					Config: configAPISettings(`
+						restrict_user_api_token_creation = false
+						revoke_inactive_tokens_after = "NEVER"
+					`),
 					Check: resource.ComposeAggregateTestCheckFunc(
 						resource.TestCheckResourceAttr("buildkite_organization.let_them_in", "restrict_user_api_token_creation", "false"),
 						resource.TestCheckResourceAttr("buildkite_organization.let_them_in", "revoke_inactive_tokens_after", "NEVER"),
@@ -626,6 +628,17 @@ func TestAccBuildkiteOrganizationResource(t *testing.T) {
 			ProtoV6ProviderFactories: protoV6ProviderFactories(),
 			CheckDestroy:             testCheckOrganizationResourceRemoved,
 			Steps: []resource.TestStep{
+				{
+					Config: configAPISettings(`
+						restrict_user_api_token_creation = false
+						revoke_inactive_tokens_after = "NEVER"
+					`),
+					Check: resource.ComposeAggregateTestCheckFunc(
+						resource.TestCheckResourceAttr("buildkite_organization.let_them_in", "restrict_user_api_token_creation", "false"),
+						resource.TestCheckResourceAttr("buildkite_organization.let_them_in", "revoke_inactive_tokens_after", "NEVER"),
+						testAccCheckOrganizationAPISettingsRemoteValues("NEVER", false),
+					),
+				},
 				{
 					Config: configAPISettings(`revoke_inactive_tokens_after = "DAYS_30"`),
 					Check: resource.ComposeAggregateTestCheckFunc(

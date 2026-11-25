@@ -11,7 +11,6 @@ import (
 	frameworkresource "github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
@@ -71,7 +70,7 @@ func TestAccBuildkitePipelineCloneMirrorURL(t *testing.T) {
 		t.Skip("BUILDKITE_TEST_CLONE_MIRROR_URL must be set for clone mirror acceptance tests")
 	}
 
-	pipelineName := acctest.RandString(12)
+	pipelineName := testAccResourceName()
 	config := func(includeCloneMirror bool) string {
 		cloneMirror := ""
 		if includeCloneMirror {

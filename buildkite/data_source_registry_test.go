@@ -4,12 +4,11 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
 func TestAccDataSourceRegistry_Basic(t *testing.T) {
-	randName := acctest.RandString(10)
+	randName := testAccResourceName()
 	resourceName := "buildkite_registry.test_reg"
 	dataSourceName := "data.buildkite_registry.data_test_reg"
 
