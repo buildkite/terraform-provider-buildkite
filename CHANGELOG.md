@@ -4,7 +4,7 @@
 
 ### Features
 
-* Add Releases registration resources: `buildkite_deployment_artifact`, `buildkite_target`, `buildkite_component`, and `buildkite_component_instance`, with UUID import, in-place renaming, archive-on-destroy, and explicit opt-in restoration of matching archived registrations. Requires Releases enabled; renaming requires the Releases by-ID PATCH API.
+* Add preview Releases registration resources: `buildkite_deployment_artifact`, `buildkite_target`, `buildkite_component`, and `buildkite_component_instance`, with UUID import, in-place renaming, archive-on-destroy, and explicit opt-in restoration of matching archived registrations. Buildkite Releases is a preview feature and is not yet generally available.
 * FODA-2268: Add independent `allowed_browser_ip_entries` management to `buildkite_organization`, including tuple descriptions, import and explicit clearing. Requires the Browser IP Allowlist feature to be enabled for the organization.
 * Add the `buildkite_cluster_agent_image` resource.
 * SUP-2651: Add the `buildkite_cluster_agent_image` data source to look up custom hosted agent images by ID or name within a cluster.

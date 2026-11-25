@@ -3,18 +3,18 @@
 page_title: "buildkite_component Resource - terraform-provider-buildkite"
 subcategory: ""
 description: |-
+  ~> Preview: Buildkite Releases is a preview feature and is not yet generally available.
   Manages an organization-wide Releases catalog Component with an immutable Deployment Artifact binding. Components are not children of Targets.
-  Destroy archives the registration, preserving history and reserving its name. Create rejects existing active or archived names by default. For manual recovery, unarchive through the API, then import the UUID. Alternatively, explicitly set allow_unarchive_on_create = true to restore a matching archived registration. Refresh treats an archived registration as absent; it never unarchives during read. Immutable binding changes require replacement, which can conflict with the reserved name; choose a different name or explicitly manage recovery. The provider never renames an old registration to force replacement.
-  Requires Releases enabled and read_releases and write_releases token scopes. For user-backed tokens, the user must have permission to read and manage Releases in the organization. In-place renaming requires the Releases by-ID PATCH API.
+  Destroy archives the registration, preserving history and reserving its name. Create rejects existing active or archived names by default. For manual recovery, unarchive the registration and import its UUID, or set allow_unarchive_on_create = true to restore a matching archived registration. Refresh treats an archived registration as absent; it never unarchives during read. Immutable binding changes require replacement, which can conflict with the reserved name; choose a different name or manage recovery explicitly. The provider never renames an existing registration to force replacement.
 ---
 
 # buildkite_component (Resource)
 
+~> **Preview:** Buildkite Releases is a preview feature and is not yet generally available.
+
 Manages an organization-wide Releases catalog Component with an immutable Deployment Artifact binding. Components are not children of Targets.
 
-Destroy archives the registration, preserving history and reserving its name. Create rejects existing active or archived names by default. For manual recovery, unarchive through the API, then import the UUID. Alternatively, explicitly set `allow_unarchive_on_create = true` to restore a matching archived registration. Refresh treats an archived registration as absent; it never unarchives during read. Immutable binding changes require replacement, which can conflict with the reserved name; choose a different name or explicitly manage recovery. The provider never renames an old registration to force replacement.
-
-Requires Releases enabled and `read_releases` and `write_releases` token scopes. For user-backed tokens, the user must have permission to read and manage Releases in the organization. In-place renaming requires the Releases by-ID PATCH API.
+Destroy archives the registration, preserving history and reserving its name. Create rejects existing active or archived names by default. For manual recovery, unarchive the registration and import its UUID, or set `allow_unarchive_on_create = true` to restore a matching archived registration. Refresh treats an archived registration as absent; it never unarchives during read. Immutable binding changes require replacement, which can conflict with the reserved name; choose a different name or manage recovery explicitly. The provider never renames an existing registration to force replacement.
 
 ## Example Usage
 
@@ -48,13 +48,13 @@ resource "buildkite_component" "api" {
 ### Read-Only
 
 - `id` (String) The GraphQL ID of the registration.
-- `uuid` (String) The UUID of the registration, used by the REST API and for import.
+- `uuid` (String) The UUID of the registration, used for import.
 
 ## Import
 
 Using `terraform import`, import resources using the `id`. For example:
 ```shell
-# Unarchive through the API first if archived, then import the REST UUID (not the GraphQL ID).
+# Unarchive the registration first if archived, then import its UUID (not the GraphQL ID).
 terraform import buildkite_component.api 01a1b2c3-4d5e-7f60-8a1b-2c3d4e5f6a7b
 ```
 

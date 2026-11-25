@@ -89,7 +89,7 @@ func (r *releasesResource) Schema(ctx context.Context, req resource.SchemaReques
 		},
 		"uuid": schema.StringAttribute{
 			Computed:            true,
-			MarkdownDescription: "The UUID of the registration, used by the REST API and for import.",
+			MarkdownDescription: "The UUID of the registration, used for import.",
 			PlanModifiers:       []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
 		},
 		"name": schema.StringAttribute{
@@ -105,7 +105,7 @@ func (r *releasesResource) Schema(ctx context.Context, req resource.SchemaReques
 			Optional:            true,
 			Computed:            true,
 			Default:             booldefault.StaticBool(false),
-			MarkdownDescription: "Allow create to restore an archived registration with the same name and matching immutable bindings, retaining its UUID and history. Defaults to `false`. Never adopts an active registration. This flag has no effect on updates or refresh.",
+			MarkdownDescription: "Allow create to restore an archived registration with the same name, retaining its UUID and history. Defaults to `false`. Never adopts an active registration. This flag has no effect on updates or refresh.",
 		},
 	}
 	immutableUUID := func(description string) schema.StringAttribute {
@@ -119,6 +119,7 @@ func (r *releasesResource) Schema(ctx context.Context, req resource.SchemaReques
 		}
 	}
 	description := ""
+	hasImmutableBindings := false
 	switch r.kind {
 	case "deployment_artifact":
 		description = "Manages a Deployment Artifact registration, not build job artifacts or artifact publications."
@@ -132,9 +133,11 @@ func (r *releasesResource) Schema(ctx context.Context, req resource.SchemaReques
 			MarkdownDescription: "The Target's complete label map. Omitted labels default to `{}`. Updates replace the entire map; removing a key removes it remotely. At most 100 entries, with keys up to 64 UTF-8 bytes and values up to 256 UTF-8 bytes.",
 		}
 	case "component":
+		hasImmutableBindings = true
 		description = "Manages an organization-wide Releases catalog Component with an immutable Deployment Artifact binding. Components are not children of Targets."
 		attrs["artifact_uuid"] = immutableUUID("The UUID of the Deployment Artifact. Changing this binding requires replacement.")
 	case "component_instance":
+		hasImmutableBindings = true
 		description = "Registers a catalog Component on a Target. The Target and Component bindings are immutable. No deployment or observed version state is managed."
 		attrs["target_uuid"] = immutableUUID("The UUID of the Target. Changing this binding requires replacement.")
 		attrs["component_uuid"] = immutableUUID("The UUID of the catalog Component. Changing this binding requires replacement.")
@@ -146,15 +149,19 @@ func (r *releasesResource) Schema(ctx context.Context, req resource.SchemaReques
 		name.PlanModifiers = []planmodifier.String{stringplanmodifier.UseStateForUnknown()}
 		attrs["name"] = name
 	}
+	lifecycle := "Destroy archives the registration, preserving history and reserving its name. Create rejects existing active or archived names by default. " +
+		"For manual recovery, unarchive the registration and import its UUID, or set `allow_unarchive_on_create = true` to restore a matching archived registration. " +
+		"Refresh treats an archived registration as absent; it never unarchives during read."
+	if hasImmutableBindings {
+		restore := attrs["allow_unarchive_on_create"].(schema.BoolAttribute)
+		restore.MarkdownDescription = "Allow create to restore an archived registration with the same name and matching immutable bindings, retaining its UUID and history. Defaults to `false`. Never adopts an active registration. This flag has no effect on updates or refresh."
+		attrs["allow_unarchive_on_create"] = restore
+		lifecycle += " Immutable binding changes require replacement, which can conflict with the reserved name; choose a different name or manage recovery explicitly. " +
+			"The provider never renames an existing registration to force replacement."
+	}
 	resp.Schema = schema.Schema{
-		MarkdownDescription: description + "\n\n" +
-			"Destroy archives the registration, preserving history and reserving its name. Create rejects existing active or archived names by default. " +
-			"For manual recovery, unarchive through the API, then import the UUID. Alternatively, explicitly set `allow_unarchive_on_create = true` to restore a matching archived registration. " +
-			"Refresh treats an archived registration as absent; it never unarchives during read. " +
-			"Immutable binding changes require replacement, which can conflict with the reserved name; choose a different name or explicitly manage recovery. " +
-			"The provider never renames an old registration to force replacement.\n\n" +
-			"Requires Releases enabled and `read_releases` and `write_releases` token scopes. For user-backed tokens, the user must have permission to read and manage Releases in the organization. " +
-			"In-place renaming requires the Releases by-ID PATCH API.",
+		MarkdownDescription: "~> **Preview:** Buildkite Releases is a preview feature and is not yet generally available.\n\n" +
+			description + "\n\n" + lifecycle,
 		Attributes: attrs,
 	}
 }

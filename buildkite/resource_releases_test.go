@@ -343,7 +343,7 @@ func TestReleasesRegistrationLifecycle(t *testing.T) {
 
 func TestAccReleasesRegistrationLifecycle(t *testing.T) {
 	if os.Getenv("BUILDKITE_RELEASES_ACCEPTANCE") != "1" {
-		t.Skip("Releases live API untested; set BUILDKITE_RELEASES_ACCEPTANCE=1 for a disposable Releases-enabled organization with by-ID PATCH support")
+		t.Skip("Releases live API untested; set BUILDKITE_RELEASES_ACCEPTANCE=1 for a disposable Releases-enabled organization")
 	}
 	testAccPreCheck(t)
 	resource.Test(t, releasesLifecycle(t, "", getTestClient()))

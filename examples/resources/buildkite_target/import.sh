@@ -1,2 +1,2 @@
-# Unarchive through the API first if archived, then import the REST UUID (not the GraphQL ID).
+# Unarchive the registration first if archived, then import its UUID (not the GraphQL ID).
 terraform import buildkite_target.production 01a1b2c3-4d5e-7f60-8a1b-2c3d4e5f6a7b

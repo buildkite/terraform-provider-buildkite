@@ -416,7 +416,8 @@ CI must opt in with `BUILDKITE_CACHE_REGISTRIES_ACCEPTANCE=1` only after its tes
 
 #### Releases registration acceptance test
 
-The Releases lifecycle runs offline with `make test` and against an opted-in REST API:
+Buildkite Releases is a preview feature and is not yet generally available.
+The Releases registration lifecycle runs offline with `make test` and against an opted-in API:
 
 ```bash
 TF_ACC=1 BUILDKITE_RELEASES_ACCEPTANCE=1 \
@@ -424,10 +425,9 @@ BUILDKITE_ORGANIZATION_SLUG=<disposable-org> BUILDKITE_API_TOKEN=<token> \
 go test ./buildkite -run '^TestAccReleasesRegistrationLifecycle$' -count=1 -v
 ```
 
-Use a disposable organization with Releases enabled and the by-ID rename PATCH endpoints available.
-The token needs `read_releases` and `write_releases` scopes; for user-backed tokens,
-the user must have permission to read and manage Releases in the organization. Set `BUILDKITE_REST_URL`
-to the API origin (without `/v2`) to test a development API. These resources do not use GraphQL.
+Use a disposable organization with Releases enabled and a token authorized to manage Releases.
+Set `BUILDKITE_REST_URL` to the API origin (without `/v2`) to test a development API.
+These resources do not use GraphQL.
 
 The test creates an Artifact, Target, catalog Component and two Instances, verifies UUID imports,
 renames all four types in place, replaces and clears labels, archives on destroy, rejects reserved
@@ -435,7 +435,7 @@ names by default, and explicitly restores matching registrations with their orig
 Cleanup archives registrations rather than deleting their history; their names remain reserved.
 It does not publish versions or send observations. Without the opt-in, the live test skips.
 Fake-server tests cover conflicts, mismatched restore bindings, immutable-binding replacement,
-non-cascading Target restore and ordinary read/archive errors; they do not establish API deployment.
+non-cascading Target restore and ordinary read/archive errors.
 
 #### Workload identities acceptance test
 
