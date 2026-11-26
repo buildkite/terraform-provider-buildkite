@@ -158,7 +158,10 @@ type ClusterAgentTokenValues struct {
 	ExpiresAt *time.Time `json:"expiresAt"`
 	Id        string     `json:"id"`
 	// The public UUID for this cluster token
-	Uuid string `json:"uuid"`
+	Uuid            string   `json:"uuid"`
+	Permissions     []string `json:"permissions"`
+	AllowAllQueues  *bool    `json:"allowAllQueues"`
+	AllowedQueueIds []string `json:"allowedQueueIds"`
 }
 
 // GetAllowedIpAddresses returns ClusterAgentTokenValues.AllowedIpAddresses, and is useful for accessing the field via an interface.
@@ -178,6 +181,15 @@ func (v *ClusterAgentTokenValues) GetId() string { return v.Id }
 
 // GetUuid returns ClusterAgentTokenValues.Uuid, and is useful for accessing the field via an interface.
 func (v *ClusterAgentTokenValues) GetUuid() string { return v.Uuid }
+
+// GetPermissions returns ClusterAgentTokenValues.Permissions, and is useful for accessing the field via an interface.
+func (v *ClusterAgentTokenValues) GetPermissions() []string { return v.Permissions }
+
+// GetAllowAllQueues returns ClusterAgentTokenValues.AllowAllQueues, and is useful for accessing the field via an interface.
+func (v *ClusterAgentTokenValues) GetAllowAllQueues() *bool { return v.AllowAllQueues }
+
+// GetAllowedQueueIds returns ClusterAgentTokenValues.AllowedQueueIds, and is useful for accessing the field via an interface.
+func (v *ClusterAgentTokenValues) GetAllowedQueueIds() []string { return v.AllowedQueueIds }
 
 // ClusterAgentTokenValuesCluster includes the requested fields of the GraphQL type Cluster.
 type ClusterAgentTokenValuesCluster struct {
@@ -5137,6 +5149,9 @@ type __createClusterAgentTokenInput struct {
 	Description        string     `json:"description"`
 	AllowedIpAddresses string     `json:"allowedIpAddresses"`
 	ExpiresAt          *time.Time `json:"expiresAt,omitempty"`
+	Permissions        *[]string  `json:"permissions,omitempty"`
+	AllowAllQueues     *bool      `json:"allowAllQueues,omitempty"`
+	AllowedQueueIds    *[]string  `json:"allowedQueueIds,omitempty"`
 }
 
 // GetOrganizationId returns __createClusterAgentTokenInput.OrganizationId, and is useful for accessing the field via an interface.
@@ -5153,6 +5168,15 @@ func (v *__createClusterAgentTokenInput) GetAllowedIpAddresses() string { return
 
 // GetExpiresAt returns __createClusterAgentTokenInput.ExpiresAt, and is useful for accessing the field via an interface.
 func (v *__createClusterAgentTokenInput) GetExpiresAt() *time.Time { return v.ExpiresAt }
+
+// GetPermissions returns __createClusterAgentTokenInput.Permissions, and is useful for accessing the field via an interface.
+func (v *__createClusterAgentTokenInput) GetPermissions() *[]string { return v.Permissions }
+
+// GetAllowAllQueues returns __createClusterAgentTokenInput.AllowAllQueues, and is useful for accessing the field via an interface.
+func (v *__createClusterAgentTokenInput) GetAllowAllQueues() *bool { return v.AllowAllQueues }
+
+// GetAllowedQueueIds returns __createClusterAgentTokenInput.AllowedQueueIds, and is useful for accessing the field via an interface.
+func (v *__createClusterAgentTokenInput) GetAllowedQueueIds() *[]string { return v.AllowedQueueIds }
 
 // __createClusterInput is used internally by genqlient
 type __createClusterInput struct {
@@ -5539,6 +5563,14 @@ type __getCacheRegistryOrganizationInput struct {
 
 // GetOrgSlug returns __getCacheRegistryOrganizationInput.OrgSlug, and is useful for accessing the field via an interface.
 func (v *__getCacheRegistryOrganizationInput) GetOrgSlug() string { return v.OrgSlug }
+
+// __getClusterAgentTokenInput is used internally by genqlient
+type __getClusterAgentTokenInput struct {
+	Id string `json:"id"`
+}
+
+// GetId returns __getClusterAgentTokenInput.Id, and is useful for accessing the field via an interface.
+func (v *__getClusterAgentTokenInput) GetId() string { return v.Id }
 
 // __getClusterAgentTokensInput is used internally by genqlient
 type __getClusterAgentTokensInput struct {
@@ -5994,10 +6026,13 @@ func (v *__updateCacheRegistryInput) GetPolicy() *string { return v.Policy }
 
 // __updateClusterAgentTokenInput is used internally by genqlient
 type __updateClusterAgentTokenInput struct {
-	OrganizationId     string `json:"organizationId"`
-	Id                 string `json:"id"`
-	Description        string `json:"description"`
-	AllowedIpAddresses string `json:"allowedIpAddresses"`
+	OrganizationId     string    `json:"organizationId"`
+	Id                 string    `json:"id"`
+	Description        string    `json:"description"`
+	AllowedIpAddresses string    `json:"allowedIpAddresses"`
+	Permissions        *[]string `json:"permissions,omitempty"`
+	AllowAllQueues     *bool     `json:"allowAllQueues,omitempty"`
+	AllowedQueueIds    *[]string `json:"allowedQueueIds,omitempty"`
 }
 
 // GetOrganizationId returns __updateClusterAgentTokenInput.OrganizationId, and is useful for accessing the field via an interface.
@@ -6011,6 +6046,15 @@ func (v *__updateClusterAgentTokenInput) GetDescription() string { return v.Desc
 
 // GetAllowedIpAddresses returns __updateClusterAgentTokenInput.AllowedIpAddresses, and is useful for accessing the field via an interface.
 func (v *__updateClusterAgentTokenInput) GetAllowedIpAddresses() string { return v.AllowedIpAddresses }
+
+// GetPermissions returns __updateClusterAgentTokenInput.Permissions, and is useful for accessing the field via an interface.
+func (v *__updateClusterAgentTokenInput) GetPermissions() *[]string { return v.Permissions }
+
+// GetAllowAllQueues returns __updateClusterAgentTokenInput.AllowAllQueues, and is useful for accessing the field via an interface.
+func (v *__updateClusterAgentTokenInput) GetAllowAllQueues() *bool { return v.AllowAllQueues }
+
+// GetAllowedQueueIds returns __updateClusterAgentTokenInput.AllowedQueueIds, and is useful for accessing the field via an interface.
+func (v *__updateClusterAgentTokenInput) GetAllowedQueueIds() *[]string { return v.AllowedQueueIds }
 
 // __updateClusterClearingAgentTracingServiceInput is used internally by genqlient
 type __updateClusterClearingAgentTracingServiceInput struct {
@@ -6538,6 +6582,21 @@ func (v *createClusterAgentTokenClusterAgentTokenCreateClusterAgentTokenCreatePa
 	return v.ClusterAgentTokenValues.Uuid
 }
 
+// GetPermissions returns createClusterAgentTokenClusterAgentTokenCreateClusterAgentTokenCreatePayloadClusterAgentTokenClusterToken.Permissions, and is useful for accessing the field via an interface.
+func (v *createClusterAgentTokenClusterAgentTokenCreateClusterAgentTokenCreatePayloadClusterAgentTokenClusterToken) GetPermissions() []string {
+	return v.ClusterAgentTokenValues.Permissions
+}
+
+// GetAllowAllQueues returns createClusterAgentTokenClusterAgentTokenCreateClusterAgentTokenCreatePayloadClusterAgentTokenClusterToken.AllowAllQueues, and is useful for accessing the field via an interface.
+func (v *createClusterAgentTokenClusterAgentTokenCreateClusterAgentTokenCreatePayloadClusterAgentTokenClusterToken) GetAllowAllQueues() *bool {
+	return v.ClusterAgentTokenValues.AllowAllQueues
+}
+
+// GetAllowedQueueIds returns createClusterAgentTokenClusterAgentTokenCreateClusterAgentTokenCreatePayloadClusterAgentTokenClusterToken.AllowedQueueIds, and is useful for accessing the field via an interface.
+func (v *createClusterAgentTokenClusterAgentTokenCreateClusterAgentTokenCreatePayloadClusterAgentTokenClusterToken) GetAllowedQueueIds() []string {
+	return v.ClusterAgentTokenValues.AllowedQueueIds
+}
+
 func (v *createClusterAgentTokenClusterAgentTokenCreateClusterAgentTokenCreatePayloadClusterAgentTokenClusterToken) UnmarshalJSON(b []byte) error {
 
 	if string(b) == "null" {
@@ -6575,6 +6634,12 @@ type __premarshalcreateClusterAgentTokenClusterAgentTokenCreateClusterAgentToken
 	Id string `json:"id"`
 
 	Uuid string `json:"uuid"`
+
+	Permissions []string `json:"permissions"`
+
+	AllowAllQueues *bool `json:"allowAllQueues"`
+
+	AllowedQueueIds []string `json:"allowedQueueIds"`
 }
 
 func (v *createClusterAgentTokenClusterAgentTokenCreateClusterAgentTokenCreatePayloadClusterAgentTokenClusterToken) MarshalJSON() ([]byte, error) {
@@ -6594,6 +6659,9 @@ func (v *createClusterAgentTokenClusterAgentTokenCreateClusterAgentTokenCreatePa
 	retval.ExpiresAt = v.ClusterAgentTokenValues.ExpiresAt
 	retval.Id = v.ClusterAgentTokenValues.Id
 	retval.Uuid = v.ClusterAgentTokenValues.Uuid
+	retval.Permissions = v.ClusterAgentTokenValues.Permissions
+	retval.AllowAllQueues = v.ClusterAgentTokenValues.AllowAllQueues
+	retval.AllowedQueueIds = v.ClusterAgentTokenValues.AllowedQueueIds
 	return &retval, nil
 }
 
@@ -11128,6 +11196,1925 @@ func (v *getCacheRegistryOrganizationResponse) GetOrganization() *getCacheRegist
 	return v.Organization
 }
 
+// getClusterAgentTokenNode includes the requested fields of the GraphQL interface Node.
+//
+// getClusterAgentTokenNode is implemented by the following types:
+// getClusterAgentTokenNodeAPIAccessToken
+// getClusterAgentTokenNodeAPIAccessTokenCode
+// getClusterAgentTokenNodeAPIApplication
+// getClusterAgentTokenNodeAgent
+// getClusterAgentTokenNodeAgentToken
+// getClusterAgentTokenNodeAnnotation
+// getClusterAgentTokenNodeArtifact
+// getClusterAgentTokenNodeAuditEvent
+// getClusterAgentTokenNodeAuthorizationBitbucket
+// getClusterAgentTokenNodeAuthorizationGitHub
+// getClusterAgentTokenNodeAuthorizationGitHubApp
+// getClusterAgentTokenNodeAuthorizationGitHubEnterprise
+// getClusterAgentTokenNodeAuthorizationGoogle
+// getClusterAgentTokenNodeAuthorizationSAML
+// getClusterAgentTokenNodeBuild
+// getClusterAgentTokenNodeCacheRegistry
+// getClusterAgentTokenNodeCluster
+// getClusterAgentTokenNodeClusterQueue
+// getClusterAgentTokenNodeClusterQueueToken
+// getClusterAgentTokenNodeClusterToken
+// getClusterAgentTokenNodeCompositeRegistryUpstream
+// getClusterAgentTokenNodeEmail
+// getClusterAgentTokenNodeJobEventAssigned
+// getClusterAgentTokenNodeJobEventBuildStepUploadCreated
+// getClusterAgentTokenNodeJobEventCanceled
+// getClusterAgentTokenNodeJobEventChanged
+// getClusterAgentTokenNodeJobEventFinished
+// getClusterAgentTokenNodeJobEventGeneric
+// getClusterAgentTokenNodeJobEventPromisedExitStatus
+// getClusterAgentTokenNodeJobEventReprioritized
+// getClusterAgentTokenNodeJobEventRetried
+// getClusterAgentTokenNodeJobEventRetryFailed
+// getClusterAgentTokenNodeJobEventStackError
+// getClusterAgentTokenNodeJobEventStackFinished
+// getClusterAgentTokenNodeJobEventStackNotification
+// getClusterAgentTokenNodeJobEventTimedOut
+// getClusterAgentTokenNodeJobTypeBlock
+// getClusterAgentTokenNodeJobTypeCommand
+// getClusterAgentTokenNodeJobTypeTrigger
+// getClusterAgentTokenNodeJobTypeWait
+// getClusterAgentTokenNodeNotificationServiceSlack
+// getClusterAgentTokenNodeOrganization
+// getClusterAgentTokenNodeOrganizationBanner
+// getClusterAgentTokenNodeOrganizationInvitation
+// getClusterAgentTokenNodeOrganizationMember
+// getClusterAgentTokenNodeOrganizationRepositoryProviderCursorOrigin
+// getClusterAgentTokenNodeOrganizationRepositoryProviderGitHub
+// getClusterAgentTokenNodeOrganizationRepositoryProviderGitHubEnterpriseServer
+// getClusterAgentTokenNodePipeline
+// getClusterAgentTokenNodePipelineMetric
+// getClusterAgentTokenNodePipelineSchedule
+// getClusterAgentTokenNodePipelineTemplate
+// getClusterAgentTokenNodeRegistry
+// getClusterAgentTokenNodeRegistryToken
+// getClusterAgentTokenNodeRule
+// getClusterAgentTokenNodeSSOProviderGitHubApp
+// getClusterAgentTokenNodeSSOProviderGoogleGSuite
+// getClusterAgentTokenNodeSSOProviderSAML
+// getClusterAgentTokenNodeSecret
+// getClusterAgentTokenNodeSuite
+// getClusterAgentTokenNodeTeam
+// getClusterAgentTokenNodeTeamMember
+// getClusterAgentTokenNodeTeamPipeline
+// getClusterAgentTokenNodeTeamRegistry
+// getClusterAgentTokenNodeTeamSuite
+// getClusterAgentTokenNodeUser
+// getClusterAgentTokenNodeViewer
+// The GraphQL type's documentation follows.
+//
+// An object with an ID.
+type getClusterAgentTokenNode interface {
+	implementsGraphQLInterfacegetClusterAgentTokenNode()
+	// GetTypename returns the receiver's concrete GraphQL type-name (see interface doc for possible values).
+	GetTypename() string
+}
+
+func (v *getClusterAgentTokenNodeAPIAccessToken) implementsGraphQLInterfacegetClusterAgentTokenNode() {
+}
+func (v *getClusterAgentTokenNodeAPIAccessTokenCode) implementsGraphQLInterfacegetClusterAgentTokenNode() {
+}
+func (v *getClusterAgentTokenNodeAPIApplication) implementsGraphQLInterfacegetClusterAgentTokenNode() {
+}
+func (v *getClusterAgentTokenNodeAgent) implementsGraphQLInterfacegetClusterAgentTokenNode()      {}
+func (v *getClusterAgentTokenNodeAgentToken) implementsGraphQLInterfacegetClusterAgentTokenNode() {}
+func (v *getClusterAgentTokenNodeAnnotation) implementsGraphQLInterfacegetClusterAgentTokenNode() {}
+func (v *getClusterAgentTokenNodeArtifact) implementsGraphQLInterfacegetClusterAgentTokenNode()   {}
+func (v *getClusterAgentTokenNodeAuditEvent) implementsGraphQLInterfacegetClusterAgentTokenNode() {}
+func (v *getClusterAgentTokenNodeAuthorizationBitbucket) implementsGraphQLInterfacegetClusterAgentTokenNode() {
+}
+func (v *getClusterAgentTokenNodeAuthorizationGitHub) implementsGraphQLInterfacegetClusterAgentTokenNode() {
+}
+func (v *getClusterAgentTokenNodeAuthorizationGitHubApp) implementsGraphQLInterfacegetClusterAgentTokenNode() {
+}
+func (v *getClusterAgentTokenNodeAuthorizationGitHubEnterprise) implementsGraphQLInterfacegetClusterAgentTokenNode() {
+}
+func (v *getClusterAgentTokenNodeAuthorizationGoogle) implementsGraphQLInterfacegetClusterAgentTokenNode() {
+}
+func (v *getClusterAgentTokenNodeAuthorizationSAML) implementsGraphQLInterfacegetClusterAgentTokenNode() {
+}
+func (v *getClusterAgentTokenNodeBuild) implementsGraphQLInterfacegetClusterAgentTokenNode() {}
+func (v *getClusterAgentTokenNodeCacheRegistry) implementsGraphQLInterfacegetClusterAgentTokenNode() {
+}
+func (v *getClusterAgentTokenNodeCluster) implementsGraphQLInterfacegetClusterAgentTokenNode()      {}
+func (v *getClusterAgentTokenNodeClusterQueue) implementsGraphQLInterfacegetClusterAgentTokenNode() {}
+func (v *getClusterAgentTokenNodeClusterQueueToken) implementsGraphQLInterfacegetClusterAgentTokenNode() {
+}
+func (v *getClusterAgentTokenNodeClusterToken) implementsGraphQLInterfacegetClusterAgentTokenNode() {}
+func (v *getClusterAgentTokenNodeCompositeRegistryUpstream) implementsGraphQLInterfacegetClusterAgentTokenNode() {
+}
+func (v *getClusterAgentTokenNodeEmail) implementsGraphQLInterfacegetClusterAgentTokenNode() {}
+func (v *getClusterAgentTokenNodeJobEventAssigned) implementsGraphQLInterfacegetClusterAgentTokenNode() {
+}
+func (v *getClusterAgentTokenNodeJobEventBuildStepUploadCreated) implementsGraphQLInterfacegetClusterAgentTokenNode() {
+}
+func (v *getClusterAgentTokenNodeJobEventCanceled) implementsGraphQLInterfacegetClusterAgentTokenNode() {
+}
+func (v *getClusterAgentTokenNodeJobEventChanged) implementsGraphQLInterfacegetClusterAgentTokenNode() {
+}
+func (v *getClusterAgentTokenNodeJobEventFinished) implementsGraphQLInterfacegetClusterAgentTokenNode() {
+}
+func (v *getClusterAgentTokenNodeJobEventGeneric) implementsGraphQLInterfacegetClusterAgentTokenNode() {
+}
+func (v *getClusterAgentTokenNodeJobEventPromisedExitStatus) implementsGraphQLInterfacegetClusterAgentTokenNode() {
+}
+func (v *getClusterAgentTokenNodeJobEventReprioritized) implementsGraphQLInterfacegetClusterAgentTokenNode() {
+}
+func (v *getClusterAgentTokenNodeJobEventRetried) implementsGraphQLInterfacegetClusterAgentTokenNode() {
+}
+func (v *getClusterAgentTokenNodeJobEventRetryFailed) implementsGraphQLInterfacegetClusterAgentTokenNode() {
+}
+func (v *getClusterAgentTokenNodeJobEventStackError) implementsGraphQLInterfacegetClusterAgentTokenNode() {
+}
+func (v *getClusterAgentTokenNodeJobEventStackFinished) implementsGraphQLInterfacegetClusterAgentTokenNode() {
+}
+func (v *getClusterAgentTokenNodeJobEventStackNotification) implementsGraphQLInterfacegetClusterAgentTokenNode() {
+}
+func (v *getClusterAgentTokenNodeJobEventTimedOut) implementsGraphQLInterfacegetClusterAgentTokenNode() {
+}
+func (v *getClusterAgentTokenNodeJobTypeBlock) implementsGraphQLInterfacegetClusterAgentTokenNode() {}
+func (v *getClusterAgentTokenNodeJobTypeCommand) implementsGraphQLInterfacegetClusterAgentTokenNode() {
+}
+func (v *getClusterAgentTokenNodeJobTypeTrigger) implementsGraphQLInterfacegetClusterAgentTokenNode() {
+}
+func (v *getClusterAgentTokenNodeJobTypeWait) implementsGraphQLInterfacegetClusterAgentTokenNode() {}
+func (v *getClusterAgentTokenNodeNotificationServiceSlack) implementsGraphQLInterfacegetClusterAgentTokenNode() {
+}
+func (v *getClusterAgentTokenNodeOrganization) implementsGraphQLInterfacegetClusterAgentTokenNode() {}
+func (v *getClusterAgentTokenNodeOrganizationBanner) implementsGraphQLInterfacegetClusterAgentTokenNode() {
+}
+func (v *getClusterAgentTokenNodeOrganizationInvitation) implementsGraphQLInterfacegetClusterAgentTokenNode() {
+}
+func (v *getClusterAgentTokenNodeOrganizationMember) implementsGraphQLInterfacegetClusterAgentTokenNode() {
+}
+func (v *getClusterAgentTokenNodeOrganizationRepositoryProviderCursorOrigin) implementsGraphQLInterfacegetClusterAgentTokenNode() {
+}
+func (v *getClusterAgentTokenNodeOrganizationRepositoryProviderGitHub) implementsGraphQLInterfacegetClusterAgentTokenNode() {
+}
+func (v *getClusterAgentTokenNodeOrganizationRepositoryProviderGitHubEnterpriseServer) implementsGraphQLInterfacegetClusterAgentTokenNode() {
+}
+func (v *getClusterAgentTokenNodePipeline) implementsGraphQLInterfacegetClusterAgentTokenNode() {}
+func (v *getClusterAgentTokenNodePipelineMetric) implementsGraphQLInterfacegetClusterAgentTokenNode() {
+}
+func (v *getClusterAgentTokenNodePipelineSchedule) implementsGraphQLInterfacegetClusterAgentTokenNode() {
+}
+func (v *getClusterAgentTokenNodePipelineTemplate) implementsGraphQLInterfacegetClusterAgentTokenNode() {
+}
+func (v *getClusterAgentTokenNodeRegistry) implementsGraphQLInterfacegetClusterAgentTokenNode() {}
+func (v *getClusterAgentTokenNodeRegistryToken) implementsGraphQLInterfacegetClusterAgentTokenNode() {
+}
+func (v *getClusterAgentTokenNodeRule) implementsGraphQLInterfacegetClusterAgentTokenNode() {}
+func (v *getClusterAgentTokenNodeSSOProviderGitHubApp) implementsGraphQLInterfacegetClusterAgentTokenNode() {
+}
+func (v *getClusterAgentTokenNodeSSOProviderGoogleGSuite) implementsGraphQLInterfacegetClusterAgentTokenNode() {
+}
+func (v *getClusterAgentTokenNodeSSOProviderSAML) implementsGraphQLInterfacegetClusterAgentTokenNode() {
+}
+func (v *getClusterAgentTokenNodeSecret) implementsGraphQLInterfacegetClusterAgentTokenNode()       {}
+func (v *getClusterAgentTokenNodeSuite) implementsGraphQLInterfacegetClusterAgentTokenNode()        {}
+func (v *getClusterAgentTokenNodeTeam) implementsGraphQLInterfacegetClusterAgentTokenNode()         {}
+func (v *getClusterAgentTokenNodeTeamMember) implementsGraphQLInterfacegetClusterAgentTokenNode()   {}
+func (v *getClusterAgentTokenNodeTeamPipeline) implementsGraphQLInterfacegetClusterAgentTokenNode() {}
+func (v *getClusterAgentTokenNodeTeamRegistry) implementsGraphQLInterfacegetClusterAgentTokenNode() {}
+func (v *getClusterAgentTokenNodeTeamSuite) implementsGraphQLInterfacegetClusterAgentTokenNode()    {}
+func (v *getClusterAgentTokenNodeUser) implementsGraphQLInterfacegetClusterAgentTokenNode()         {}
+func (v *getClusterAgentTokenNodeViewer) implementsGraphQLInterfacegetClusterAgentTokenNode()       {}
+
+func __unmarshalgetClusterAgentTokenNode(b []byte, v *getClusterAgentTokenNode) error {
+	if string(b) == "null" {
+		return nil
+	}
+
+	var tn struct {
+		TypeName string `json:"__typename"`
+	}
+	err := json.Unmarshal(b, &tn)
+	if err != nil {
+		return err
+	}
+
+	switch tn.TypeName {
+	case "APIAccessToken":
+		*v = new(getClusterAgentTokenNodeAPIAccessToken)
+		return json.Unmarshal(b, *v)
+	case "APIAccessTokenCode":
+		*v = new(getClusterAgentTokenNodeAPIAccessTokenCode)
+		return json.Unmarshal(b, *v)
+	case "APIApplication":
+		*v = new(getClusterAgentTokenNodeAPIApplication)
+		return json.Unmarshal(b, *v)
+	case "Agent":
+		*v = new(getClusterAgentTokenNodeAgent)
+		return json.Unmarshal(b, *v)
+	case "AgentToken":
+		*v = new(getClusterAgentTokenNodeAgentToken)
+		return json.Unmarshal(b, *v)
+	case "Annotation":
+		*v = new(getClusterAgentTokenNodeAnnotation)
+		return json.Unmarshal(b, *v)
+	case "Artifact":
+		*v = new(getClusterAgentTokenNodeArtifact)
+		return json.Unmarshal(b, *v)
+	case "AuditEvent":
+		*v = new(getClusterAgentTokenNodeAuditEvent)
+		return json.Unmarshal(b, *v)
+	case "AuthorizationBitbucket":
+		*v = new(getClusterAgentTokenNodeAuthorizationBitbucket)
+		return json.Unmarshal(b, *v)
+	case "AuthorizationGitHub":
+		*v = new(getClusterAgentTokenNodeAuthorizationGitHub)
+		return json.Unmarshal(b, *v)
+	case "AuthorizationGitHubApp":
+		*v = new(getClusterAgentTokenNodeAuthorizationGitHubApp)
+		return json.Unmarshal(b, *v)
+	case "AuthorizationGitHubEnterprise":
+		*v = new(getClusterAgentTokenNodeAuthorizationGitHubEnterprise)
+		return json.Unmarshal(b, *v)
+	case "AuthorizationGoogle":
+		*v = new(getClusterAgentTokenNodeAuthorizationGoogle)
+		return json.Unmarshal(b, *v)
+	case "AuthorizationSAML":
+		*v = new(getClusterAgentTokenNodeAuthorizationSAML)
+		return json.Unmarshal(b, *v)
+	case "Build":
+		*v = new(getClusterAgentTokenNodeBuild)
+		return json.Unmarshal(b, *v)
+	case "CacheRegistry":
+		*v = new(getClusterAgentTokenNodeCacheRegistry)
+		return json.Unmarshal(b, *v)
+	case "Cluster":
+		*v = new(getClusterAgentTokenNodeCluster)
+		return json.Unmarshal(b, *v)
+	case "ClusterQueue":
+		*v = new(getClusterAgentTokenNodeClusterQueue)
+		return json.Unmarshal(b, *v)
+	case "ClusterQueueToken":
+		*v = new(getClusterAgentTokenNodeClusterQueueToken)
+		return json.Unmarshal(b, *v)
+	case "ClusterToken":
+		*v = new(getClusterAgentTokenNodeClusterToken)
+		return json.Unmarshal(b, *v)
+	case "CompositeRegistryUpstream":
+		*v = new(getClusterAgentTokenNodeCompositeRegistryUpstream)
+		return json.Unmarshal(b, *v)
+	case "Email":
+		*v = new(getClusterAgentTokenNodeEmail)
+		return json.Unmarshal(b, *v)
+	case "JobEventAssigned":
+		*v = new(getClusterAgentTokenNodeJobEventAssigned)
+		return json.Unmarshal(b, *v)
+	case "JobEventBuildStepUploadCreated":
+		*v = new(getClusterAgentTokenNodeJobEventBuildStepUploadCreated)
+		return json.Unmarshal(b, *v)
+	case "JobEventCanceled":
+		*v = new(getClusterAgentTokenNodeJobEventCanceled)
+		return json.Unmarshal(b, *v)
+	case "JobEventChanged":
+		*v = new(getClusterAgentTokenNodeJobEventChanged)
+		return json.Unmarshal(b, *v)
+	case "JobEventFinished":
+		*v = new(getClusterAgentTokenNodeJobEventFinished)
+		return json.Unmarshal(b, *v)
+	case "JobEventGeneric":
+		*v = new(getClusterAgentTokenNodeJobEventGeneric)
+		return json.Unmarshal(b, *v)
+	case "JobEventPromisedExitStatus":
+		*v = new(getClusterAgentTokenNodeJobEventPromisedExitStatus)
+		return json.Unmarshal(b, *v)
+	case "JobEventReprioritized":
+		*v = new(getClusterAgentTokenNodeJobEventReprioritized)
+		return json.Unmarshal(b, *v)
+	case "JobEventRetried":
+		*v = new(getClusterAgentTokenNodeJobEventRetried)
+		return json.Unmarshal(b, *v)
+	case "JobEventRetryFailed":
+		*v = new(getClusterAgentTokenNodeJobEventRetryFailed)
+		return json.Unmarshal(b, *v)
+	case "JobEventStackError":
+		*v = new(getClusterAgentTokenNodeJobEventStackError)
+		return json.Unmarshal(b, *v)
+	case "JobEventStackFinished":
+		*v = new(getClusterAgentTokenNodeJobEventStackFinished)
+		return json.Unmarshal(b, *v)
+	case "JobEventStackNotification":
+		*v = new(getClusterAgentTokenNodeJobEventStackNotification)
+		return json.Unmarshal(b, *v)
+	case "JobEventTimedOut":
+		*v = new(getClusterAgentTokenNodeJobEventTimedOut)
+		return json.Unmarshal(b, *v)
+	case "JobTypeBlock":
+		*v = new(getClusterAgentTokenNodeJobTypeBlock)
+		return json.Unmarshal(b, *v)
+	case "JobTypeCommand":
+		*v = new(getClusterAgentTokenNodeJobTypeCommand)
+		return json.Unmarshal(b, *v)
+	case "JobTypeTrigger":
+		*v = new(getClusterAgentTokenNodeJobTypeTrigger)
+		return json.Unmarshal(b, *v)
+	case "JobTypeWait":
+		*v = new(getClusterAgentTokenNodeJobTypeWait)
+		return json.Unmarshal(b, *v)
+	case "NotificationServiceSlack":
+		*v = new(getClusterAgentTokenNodeNotificationServiceSlack)
+		return json.Unmarshal(b, *v)
+	case "Organization":
+		*v = new(getClusterAgentTokenNodeOrganization)
+		return json.Unmarshal(b, *v)
+	case "OrganizationBanner":
+		*v = new(getClusterAgentTokenNodeOrganizationBanner)
+		return json.Unmarshal(b, *v)
+	case "OrganizationInvitation":
+		*v = new(getClusterAgentTokenNodeOrganizationInvitation)
+		return json.Unmarshal(b, *v)
+	case "OrganizationMember":
+		*v = new(getClusterAgentTokenNodeOrganizationMember)
+		return json.Unmarshal(b, *v)
+	case "OrganizationRepositoryProviderCursorOrigin":
+		*v = new(getClusterAgentTokenNodeOrganizationRepositoryProviderCursorOrigin)
+		return json.Unmarshal(b, *v)
+	case "OrganizationRepositoryProviderGitHub":
+		*v = new(getClusterAgentTokenNodeOrganizationRepositoryProviderGitHub)
+		return json.Unmarshal(b, *v)
+	case "OrganizationRepositoryProviderGitHubEnterpriseServer":
+		*v = new(getClusterAgentTokenNodeOrganizationRepositoryProviderGitHubEnterpriseServer)
+		return json.Unmarshal(b, *v)
+	case "Pipeline":
+		*v = new(getClusterAgentTokenNodePipeline)
+		return json.Unmarshal(b, *v)
+	case "PipelineMetric":
+		*v = new(getClusterAgentTokenNodePipelineMetric)
+		return json.Unmarshal(b, *v)
+	case "PipelineSchedule":
+		*v = new(getClusterAgentTokenNodePipelineSchedule)
+		return json.Unmarshal(b, *v)
+	case "PipelineTemplate":
+		*v = new(getClusterAgentTokenNodePipelineTemplate)
+		return json.Unmarshal(b, *v)
+	case "Registry":
+		*v = new(getClusterAgentTokenNodeRegistry)
+		return json.Unmarshal(b, *v)
+	case "RegistryToken":
+		*v = new(getClusterAgentTokenNodeRegistryToken)
+		return json.Unmarshal(b, *v)
+	case "Rule":
+		*v = new(getClusterAgentTokenNodeRule)
+		return json.Unmarshal(b, *v)
+	case "SSOProviderGitHubApp":
+		*v = new(getClusterAgentTokenNodeSSOProviderGitHubApp)
+		return json.Unmarshal(b, *v)
+	case "SSOProviderGoogleGSuite":
+		*v = new(getClusterAgentTokenNodeSSOProviderGoogleGSuite)
+		return json.Unmarshal(b, *v)
+	case "SSOProviderSAML":
+		*v = new(getClusterAgentTokenNodeSSOProviderSAML)
+		return json.Unmarshal(b, *v)
+	case "Secret":
+		*v = new(getClusterAgentTokenNodeSecret)
+		return json.Unmarshal(b, *v)
+	case "Suite":
+		*v = new(getClusterAgentTokenNodeSuite)
+		return json.Unmarshal(b, *v)
+	case "Team":
+		*v = new(getClusterAgentTokenNodeTeam)
+		return json.Unmarshal(b, *v)
+	case "TeamMember":
+		*v = new(getClusterAgentTokenNodeTeamMember)
+		return json.Unmarshal(b, *v)
+	case "TeamPipeline":
+		*v = new(getClusterAgentTokenNodeTeamPipeline)
+		return json.Unmarshal(b, *v)
+	case "TeamRegistry":
+		*v = new(getClusterAgentTokenNodeTeamRegistry)
+		return json.Unmarshal(b, *v)
+	case "TeamSuite":
+		*v = new(getClusterAgentTokenNodeTeamSuite)
+		return json.Unmarshal(b, *v)
+	case "User":
+		*v = new(getClusterAgentTokenNodeUser)
+		return json.Unmarshal(b, *v)
+	case "Viewer":
+		*v = new(getClusterAgentTokenNodeViewer)
+		return json.Unmarshal(b, *v)
+	case "":
+		return fmt.Errorf(
+			"response was missing Node.__typename")
+	default:
+		return fmt.Errorf(
+			`unexpected concrete type for getClusterAgentTokenNode: "%v"`, tn.TypeName)
+	}
+}
+
+func __marshalgetClusterAgentTokenNode(v *getClusterAgentTokenNode) ([]byte, error) {
+
+	var typename string
+	switch v := (*v).(type) {
+	case *getClusterAgentTokenNodeAPIAccessToken:
+		typename = "APIAccessToken"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterAgentTokenNodeAPIAccessToken
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterAgentTokenNodeAPIAccessTokenCode:
+		typename = "APIAccessTokenCode"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterAgentTokenNodeAPIAccessTokenCode
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterAgentTokenNodeAPIApplication:
+		typename = "APIApplication"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterAgentTokenNodeAPIApplication
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterAgentTokenNodeAgent:
+		typename = "Agent"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterAgentTokenNodeAgent
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterAgentTokenNodeAgentToken:
+		typename = "AgentToken"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterAgentTokenNodeAgentToken
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterAgentTokenNodeAnnotation:
+		typename = "Annotation"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterAgentTokenNodeAnnotation
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterAgentTokenNodeArtifact:
+		typename = "Artifact"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterAgentTokenNodeArtifact
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterAgentTokenNodeAuditEvent:
+		typename = "AuditEvent"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterAgentTokenNodeAuditEvent
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterAgentTokenNodeAuthorizationBitbucket:
+		typename = "AuthorizationBitbucket"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterAgentTokenNodeAuthorizationBitbucket
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterAgentTokenNodeAuthorizationGitHub:
+		typename = "AuthorizationGitHub"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterAgentTokenNodeAuthorizationGitHub
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterAgentTokenNodeAuthorizationGitHubApp:
+		typename = "AuthorizationGitHubApp"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterAgentTokenNodeAuthorizationGitHubApp
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterAgentTokenNodeAuthorizationGitHubEnterprise:
+		typename = "AuthorizationGitHubEnterprise"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterAgentTokenNodeAuthorizationGitHubEnterprise
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterAgentTokenNodeAuthorizationGoogle:
+		typename = "AuthorizationGoogle"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterAgentTokenNodeAuthorizationGoogle
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterAgentTokenNodeAuthorizationSAML:
+		typename = "AuthorizationSAML"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterAgentTokenNodeAuthorizationSAML
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterAgentTokenNodeBuild:
+		typename = "Build"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterAgentTokenNodeBuild
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterAgentTokenNodeCacheRegistry:
+		typename = "CacheRegistry"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterAgentTokenNodeCacheRegistry
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterAgentTokenNodeCluster:
+		typename = "Cluster"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterAgentTokenNodeCluster
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterAgentTokenNodeClusterQueue:
+		typename = "ClusterQueue"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterAgentTokenNodeClusterQueue
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterAgentTokenNodeClusterQueueToken:
+		typename = "ClusterQueueToken"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterAgentTokenNodeClusterQueueToken
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterAgentTokenNodeClusterToken:
+		typename = "ClusterToken"
+
+		premarshaled, err := v.__premarshalJSON()
+		if err != nil {
+			return nil, err
+		}
+		result := struct {
+			TypeName string `json:"__typename"`
+			*__premarshalgetClusterAgentTokenNodeClusterToken
+		}{typename, premarshaled}
+		return json.Marshal(result)
+	case *getClusterAgentTokenNodeCompositeRegistryUpstream:
+		typename = "CompositeRegistryUpstream"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterAgentTokenNodeCompositeRegistryUpstream
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterAgentTokenNodeEmail:
+		typename = "Email"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterAgentTokenNodeEmail
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterAgentTokenNodeJobEventAssigned:
+		typename = "JobEventAssigned"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterAgentTokenNodeJobEventAssigned
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterAgentTokenNodeJobEventBuildStepUploadCreated:
+		typename = "JobEventBuildStepUploadCreated"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterAgentTokenNodeJobEventBuildStepUploadCreated
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterAgentTokenNodeJobEventCanceled:
+		typename = "JobEventCanceled"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterAgentTokenNodeJobEventCanceled
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterAgentTokenNodeJobEventChanged:
+		typename = "JobEventChanged"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterAgentTokenNodeJobEventChanged
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterAgentTokenNodeJobEventFinished:
+		typename = "JobEventFinished"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterAgentTokenNodeJobEventFinished
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterAgentTokenNodeJobEventGeneric:
+		typename = "JobEventGeneric"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterAgentTokenNodeJobEventGeneric
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterAgentTokenNodeJobEventPromisedExitStatus:
+		typename = "JobEventPromisedExitStatus"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterAgentTokenNodeJobEventPromisedExitStatus
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterAgentTokenNodeJobEventReprioritized:
+		typename = "JobEventReprioritized"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterAgentTokenNodeJobEventReprioritized
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterAgentTokenNodeJobEventRetried:
+		typename = "JobEventRetried"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterAgentTokenNodeJobEventRetried
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterAgentTokenNodeJobEventRetryFailed:
+		typename = "JobEventRetryFailed"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterAgentTokenNodeJobEventRetryFailed
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterAgentTokenNodeJobEventStackError:
+		typename = "JobEventStackError"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterAgentTokenNodeJobEventStackError
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterAgentTokenNodeJobEventStackFinished:
+		typename = "JobEventStackFinished"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterAgentTokenNodeJobEventStackFinished
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterAgentTokenNodeJobEventStackNotification:
+		typename = "JobEventStackNotification"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterAgentTokenNodeJobEventStackNotification
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterAgentTokenNodeJobEventTimedOut:
+		typename = "JobEventTimedOut"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterAgentTokenNodeJobEventTimedOut
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterAgentTokenNodeJobTypeBlock:
+		typename = "JobTypeBlock"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterAgentTokenNodeJobTypeBlock
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterAgentTokenNodeJobTypeCommand:
+		typename = "JobTypeCommand"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterAgentTokenNodeJobTypeCommand
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterAgentTokenNodeJobTypeTrigger:
+		typename = "JobTypeTrigger"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterAgentTokenNodeJobTypeTrigger
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterAgentTokenNodeJobTypeWait:
+		typename = "JobTypeWait"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterAgentTokenNodeJobTypeWait
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterAgentTokenNodeNotificationServiceSlack:
+		typename = "NotificationServiceSlack"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterAgentTokenNodeNotificationServiceSlack
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterAgentTokenNodeOrganization:
+		typename = "Organization"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterAgentTokenNodeOrganization
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterAgentTokenNodeOrganizationBanner:
+		typename = "OrganizationBanner"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterAgentTokenNodeOrganizationBanner
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterAgentTokenNodeOrganizationInvitation:
+		typename = "OrganizationInvitation"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterAgentTokenNodeOrganizationInvitation
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterAgentTokenNodeOrganizationMember:
+		typename = "OrganizationMember"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterAgentTokenNodeOrganizationMember
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterAgentTokenNodeOrganizationRepositoryProviderCursorOrigin:
+		typename = "OrganizationRepositoryProviderCursorOrigin"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterAgentTokenNodeOrganizationRepositoryProviderCursorOrigin
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterAgentTokenNodeOrganizationRepositoryProviderGitHub:
+		typename = "OrganizationRepositoryProviderGitHub"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterAgentTokenNodeOrganizationRepositoryProviderGitHub
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterAgentTokenNodeOrganizationRepositoryProviderGitHubEnterpriseServer:
+		typename = "OrganizationRepositoryProviderGitHubEnterpriseServer"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterAgentTokenNodeOrganizationRepositoryProviderGitHubEnterpriseServer
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterAgentTokenNodePipeline:
+		typename = "Pipeline"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterAgentTokenNodePipeline
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterAgentTokenNodePipelineMetric:
+		typename = "PipelineMetric"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterAgentTokenNodePipelineMetric
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterAgentTokenNodePipelineSchedule:
+		typename = "PipelineSchedule"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterAgentTokenNodePipelineSchedule
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterAgentTokenNodePipelineTemplate:
+		typename = "PipelineTemplate"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterAgentTokenNodePipelineTemplate
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterAgentTokenNodeRegistry:
+		typename = "Registry"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterAgentTokenNodeRegistry
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterAgentTokenNodeRegistryToken:
+		typename = "RegistryToken"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterAgentTokenNodeRegistryToken
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterAgentTokenNodeRule:
+		typename = "Rule"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterAgentTokenNodeRule
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterAgentTokenNodeSSOProviderGitHubApp:
+		typename = "SSOProviderGitHubApp"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterAgentTokenNodeSSOProviderGitHubApp
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterAgentTokenNodeSSOProviderGoogleGSuite:
+		typename = "SSOProviderGoogleGSuite"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterAgentTokenNodeSSOProviderGoogleGSuite
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterAgentTokenNodeSSOProviderSAML:
+		typename = "SSOProviderSAML"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterAgentTokenNodeSSOProviderSAML
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterAgentTokenNodeSecret:
+		typename = "Secret"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterAgentTokenNodeSecret
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterAgentTokenNodeSuite:
+		typename = "Suite"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterAgentTokenNodeSuite
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterAgentTokenNodeTeam:
+		typename = "Team"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterAgentTokenNodeTeam
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterAgentTokenNodeTeamMember:
+		typename = "TeamMember"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterAgentTokenNodeTeamMember
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterAgentTokenNodeTeamPipeline:
+		typename = "TeamPipeline"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterAgentTokenNodeTeamPipeline
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterAgentTokenNodeTeamRegistry:
+		typename = "TeamRegistry"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterAgentTokenNodeTeamRegistry
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterAgentTokenNodeTeamSuite:
+		typename = "TeamSuite"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterAgentTokenNodeTeamSuite
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterAgentTokenNodeUser:
+		typename = "User"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterAgentTokenNodeUser
+		}{typename, v}
+		return json.Marshal(result)
+	case *getClusterAgentTokenNodeViewer:
+		typename = "Viewer"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getClusterAgentTokenNodeViewer
+		}{typename, v}
+		return json.Marshal(result)
+	case nil:
+		return []byte("null"), nil
+	default:
+		return nil, fmt.Errorf(
+			`unexpected concrete type for getClusterAgentTokenNode: "%T"`, v)
+	}
+}
+
+// getClusterAgentTokenNodeAPIAccessToken includes the requested fields of the GraphQL type APIAccessToken.
+// The GraphQL type's documentation follows.
+//
+// API access tokens for authentication with the Buildkite API
+type getClusterAgentTokenNodeAPIAccessToken struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterAgentTokenNodeAPIAccessToken.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterAgentTokenNodeAPIAccessToken) GetTypename() string { return v.Typename }
+
+// getClusterAgentTokenNodeAPIAccessTokenCode includes the requested fields of the GraphQL type APIAccessTokenCode.
+// The GraphQL type's documentation follows.
+//
+// A code that is used by an API Application to request an API Access Token
+type getClusterAgentTokenNodeAPIAccessTokenCode struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterAgentTokenNodeAPIAccessTokenCode.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterAgentTokenNodeAPIAccessTokenCode) GetTypename() string { return v.Typename }
+
+// getClusterAgentTokenNodeAPIApplication includes the requested fields of the GraphQL type APIApplication.
+// The GraphQL type's documentation follows.
+//
+// An API Application
+type getClusterAgentTokenNodeAPIApplication struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterAgentTokenNodeAPIApplication.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterAgentTokenNodeAPIApplication) GetTypename() string { return v.Typename }
+
+// getClusterAgentTokenNodeAgent includes the requested fields of the GraphQL type Agent.
+// The GraphQL type's documentation follows.
+//
+// An agent
+type getClusterAgentTokenNodeAgent struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterAgentTokenNodeAgent.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterAgentTokenNodeAgent) GetTypename() string { return v.Typename }
+
+// getClusterAgentTokenNodeAgentToken includes the requested fields of the GraphQL type AgentToken.
+// The GraphQL type's documentation follows.
+//
+// A token used to connect an agent to Buildkite
+type getClusterAgentTokenNodeAgentToken struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterAgentTokenNodeAgentToken.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterAgentTokenNodeAgentToken) GetTypename() string { return v.Typename }
+
+// getClusterAgentTokenNodeAnnotation includes the requested fields of the GraphQL type Annotation.
+// The GraphQL type's documentation follows.
+//
+// An annotation allows you to add arbitrary content to the top of a build page in the Buildkite UI
+type getClusterAgentTokenNodeAnnotation struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterAgentTokenNodeAnnotation.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterAgentTokenNodeAnnotation) GetTypename() string { return v.Typename }
+
+// getClusterAgentTokenNodeArtifact includes the requested fields of the GraphQL type Artifact.
+// The GraphQL type's documentation follows.
+//
+// A file uploaded from the agent whilst running a job
+type getClusterAgentTokenNodeArtifact struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterAgentTokenNodeArtifact.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterAgentTokenNodeArtifact) GetTypename() string { return v.Typename }
+
+// getClusterAgentTokenNodeAuditEvent includes the requested fields of the GraphQL type AuditEvent.
+// The GraphQL type's documentation follows.
+//
+// Audit record of an event which occurred in the system
+type getClusterAgentTokenNodeAuditEvent struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterAgentTokenNodeAuditEvent.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterAgentTokenNodeAuditEvent) GetTypename() string { return v.Typename }
+
+// getClusterAgentTokenNodeAuthorizationBitbucket includes the requested fields of the GraphQL type AuthorizationBitbucket.
+// The GraphQL type's documentation follows.
+//
+// A Bitbucket account authorized with a Buildkite account
+type getClusterAgentTokenNodeAuthorizationBitbucket struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterAgentTokenNodeAuthorizationBitbucket.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterAgentTokenNodeAuthorizationBitbucket) GetTypename() string { return v.Typename }
+
+// getClusterAgentTokenNodeAuthorizationGitHub includes the requested fields of the GraphQL type AuthorizationGitHub.
+// The GraphQL type's documentation follows.
+//
+// A GitHub account authorized with a Buildkite account
+type getClusterAgentTokenNodeAuthorizationGitHub struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterAgentTokenNodeAuthorizationGitHub.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterAgentTokenNodeAuthorizationGitHub) GetTypename() string { return v.Typename }
+
+// getClusterAgentTokenNodeAuthorizationGitHubApp includes the requested fields of the GraphQL type AuthorizationGitHubApp.
+// The GraphQL type's documentation follows.
+//
+// A GitHub app authorized with a Buildkite account
+type getClusterAgentTokenNodeAuthorizationGitHubApp struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterAgentTokenNodeAuthorizationGitHubApp.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterAgentTokenNodeAuthorizationGitHubApp) GetTypename() string { return v.Typename }
+
+// getClusterAgentTokenNodeAuthorizationGitHubEnterprise includes the requested fields of the GraphQL type AuthorizationGitHubEnterprise.
+// The GraphQL type's documentation follows.
+//
+// A GitHub Enterprise account authorized with a Buildkite account
+type getClusterAgentTokenNodeAuthorizationGitHubEnterprise struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterAgentTokenNodeAuthorizationGitHubEnterprise.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterAgentTokenNodeAuthorizationGitHubEnterprise) GetTypename() string {
+	return v.Typename
+}
+
+// getClusterAgentTokenNodeAuthorizationGoogle includes the requested fields of the GraphQL type AuthorizationGoogle.
+// The GraphQL type's documentation follows.
+//
+// A Google account authorized with a Buildkite account
+type getClusterAgentTokenNodeAuthorizationGoogle struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterAgentTokenNodeAuthorizationGoogle.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterAgentTokenNodeAuthorizationGoogle) GetTypename() string { return v.Typename }
+
+// getClusterAgentTokenNodeAuthorizationSAML includes the requested fields of the GraphQL type AuthorizationSAML.
+// The GraphQL type's documentation follows.
+//
+// A SAML account authorized with a Buildkite account
+type getClusterAgentTokenNodeAuthorizationSAML struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterAgentTokenNodeAuthorizationSAML.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterAgentTokenNodeAuthorizationSAML) GetTypename() string { return v.Typename }
+
+// getClusterAgentTokenNodeBuild includes the requested fields of the GraphQL type Build.
+// The GraphQL type's documentation follows.
+//
+// A build from a pipeline
+type getClusterAgentTokenNodeBuild struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterAgentTokenNodeBuild.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterAgentTokenNodeBuild) GetTypename() string { return v.Typename }
+
+// getClusterAgentTokenNodeCacheRegistry includes the requested fields of the GraphQL type CacheRegistry.
+type getClusterAgentTokenNodeCacheRegistry struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterAgentTokenNodeCacheRegistry.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterAgentTokenNodeCacheRegistry) GetTypename() string { return v.Typename }
+
+// getClusterAgentTokenNodeCluster includes the requested fields of the GraphQL type Cluster.
+type getClusterAgentTokenNodeCluster struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterAgentTokenNodeCluster.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterAgentTokenNodeCluster) GetTypename() string { return v.Typename }
+
+// getClusterAgentTokenNodeClusterQueue includes the requested fields of the GraphQL type ClusterQueue.
+type getClusterAgentTokenNodeClusterQueue struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterAgentTokenNodeClusterQueue.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterAgentTokenNodeClusterQueue) GetTypename() string { return v.Typename }
+
+// getClusterAgentTokenNodeClusterQueueToken includes the requested fields of the GraphQL type ClusterQueueToken.
+// The GraphQL type's documentation follows.
+//
+// A token used to register an agent with a Buildkite cluster queue
+type getClusterAgentTokenNodeClusterQueueToken struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterAgentTokenNodeClusterQueueToken.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterAgentTokenNodeClusterQueueToken) GetTypename() string { return v.Typename }
+
+// getClusterAgentTokenNodeClusterToken includes the requested fields of the GraphQL type ClusterToken.
+// The GraphQL type's documentation follows.
+//
+// A token used to connect an agent in cluster to Buildkite
+type getClusterAgentTokenNodeClusterToken struct {
+	Typename                string `json:"__typename"`
+	ClusterAgentTokenValues `json:"-"`
+	Cluster                 getClusterAgentTokenNodeClusterTokenCluster `json:"cluster"`
+}
+
+// GetTypename returns getClusterAgentTokenNodeClusterToken.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterAgentTokenNodeClusterToken) GetTypename() string { return v.Typename }
+
+// GetCluster returns getClusterAgentTokenNodeClusterToken.Cluster, and is useful for accessing the field via an interface.
+func (v *getClusterAgentTokenNodeClusterToken) GetCluster() getClusterAgentTokenNodeClusterTokenCluster {
+	return v.Cluster
+}
+
+// GetAllowedIpAddresses returns getClusterAgentTokenNodeClusterToken.AllowedIpAddresses, and is useful for accessing the field via an interface.
+func (v *getClusterAgentTokenNodeClusterToken) GetAllowedIpAddresses() string {
+	return v.ClusterAgentTokenValues.AllowedIpAddresses
+}
+
+// GetDescription returns getClusterAgentTokenNodeClusterToken.Description, and is useful for accessing the field via an interface.
+func (v *getClusterAgentTokenNodeClusterToken) GetDescription() string {
+	return v.ClusterAgentTokenValues.Description
+}
+
+// GetExpiresAt returns getClusterAgentTokenNodeClusterToken.ExpiresAt, and is useful for accessing the field via an interface.
+func (v *getClusterAgentTokenNodeClusterToken) GetExpiresAt() *time.Time {
+	return v.ClusterAgentTokenValues.ExpiresAt
+}
+
+// GetId returns getClusterAgentTokenNodeClusterToken.Id, and is useful for accessing the field via an interface.
+func (v *getClusterAgentTokenNodeClusterToken) GetId() string { return v.ClusterAgentTokenValues.Id }
+
+// GetUuid returns getClusterAgentTokenNodeClusterToken.Uuid, and is useful for accessing the field via an interface.
+func (v *getClusterAgentTokenNodeClusterToken) GetUuid() string {
+	return v.ClusterAgentTokenValues.Uuid
+}
+
+// GetPermissions returns getClusterAgentTokenNodeClusterToken.Permissions, and is useful for accessing the field via an interface.
+func (v *getClusterAgentTokenNodeClusterToken) GetPermissions() []string {
+	return v.ClusterAgentTokenValues.Permissions
+}
+
+// GetAllowAllQueues returns getClusterAgentTokenNodeClusterToken.AllowAllQueues, and is useful for accessing the field via an interface.
+func (v *getClusterAgentTokenNodeClusterToken) GetAllowAllQueues() *bool {
+	return v.ClusterAgentTokenValues.AllowAllQueues
+}
+
+// GetAllowedQueueIds returns getClusterAgentTokenNodeClusterToken.AllowedQueueIds, and is useful for accessing the field via an interface.
+func (v *getClusterAgentTokenNodeClusterToken) GetAllowedQueueIds() []string {
+	return v.ClusterAgentTokenValues.AllowedQueueIds
+}
+
+func (v *getClusterAgentTokenNodeClusterToken) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*getClusterAgentTokenNodeClusterToken
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.getClusterAgentTokenNodeClusterToken = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	err = json.Unmarshal(
+		b, &v.ClusterAgentTokenValues)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+type __premarshalgetClusterAgentTokenNodeClusterToken struct {
+	Typename string `json:"__typename"`
+
+	Cluster getClusterAgentTokenNodeClusterTokenCluster `json:"cluster"`
+
+	AllowedIpAddresses string `json:"allowedIpAddresses"`
+
+	Description string `json:"description"`
+
+	ExpiresAt *time.Time `json:"expiresAt"`
+
+	Id string `json:"id"`
+
+	Uuid string `json:"uuid"`
+
+	Permissions []string `json:"permissions"`
+
+	AllowAllQueues *bool `json:"allowAllQueues"`
+
+	AllowedQueueIds []string `json:"allowedQueueIds"`
+}
+
+func (v *getClusterAgentTokenNodeClusterToken) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *getClusterAgentTokenNodeClusterToken) __premarshalJSON() (*__premarshalgetClusterAgentTokenNodeClusterToken, error) {
+	var retval __premarshalgetClusterAgentTokenNodeClusterToken
+
+	retval.Typename = v.Typename
+	retval.Cluster = v.Cluster
+	retval.AllowedIpAddresses = v.ClusterAgentTokenValues.AllowedIpAddresses
+	retval.Description = v.ClusterAgentTokenValues.Description
+	retval.ExpiresAt = v.ClusterAgentTokenValues.ExpiresAt
+	retval.Id = v.ClusterAgentTokenValues.Id
+	retval.Uuid = v.ClusterAgentTokenValues.Uuid
+	retval.Permissions = v.ClusterAgentTokenValues.Permissions
+	retval.AllowAllQueues = v.ClusterAgentTokenValues.AllowAllQueues
+	retval.AllowedQueueIds = v.ClusterAgentTokenValues.AllowedQueueIds
+	return &retval, nil
+}
+
+// getClusterAgentTokenNodeClusterTokenCluster includes the requested fields of the GraphQL type Cluster.
+type getClusterAgentTokenNodeClusterTokenCluster struct {
+	Id string `json:"id"`
+	// The public UUID for this cluster
+	Uuid         string                                                  `json:"uuid"`
+	Organization getClusterAgentTokenNodeClusterTokenClusterOrganization `json:"organization"`
+}
+
+// GetId returns getClusterAgentTokenNodeClusterTokenCluster.Id, and is useful for accessing the field via an interface.
+func (v *getClusterAgentTokenNodeClusterTokenCluster) GetId() string { return v.Id }
+
+// GetUuid returns getClusterAgentTokenNodeClusterTokenCluster.Uuid, and is useful for accessing the field via an interface.
+func (v *getClusterAgentTokenNodeClusterTokenCluster) GetUuid() string { return v.Uuid }
+
+// GetOrganization returns getClusterAgentTokenNodeClusterTokenCluster.Organization, and is useful for accessing the field via an interface.
+func (v *getClusterAgentTokenNodeClusterTokenCluster) GetOrganization() getClusterAgentTokenNodeClusterTokenClusterOrganization {
+	return v.Organization
+}
+
+// getClusterAgentTokenNodeClusterTokenClusterOrganization includes the requested fields of the GraphQL type Organization.
+// The GraphQL type's documentation follows.
+//
+// An organization
+type getClusterAgentTokenNodeClusterTokenClusterOrganization struct {
+	// The slug used to represent the organization in URLs
+	Slug string `json:"slug"`
+}
+
+// GetSlug returns getClusterAgentTokenNodeClusterTokenClusterOrganization.Slug, and is useful for accessing the field via an interface.
+func (v *getClusterAgentTokenNodeClusterTokenClusterOrganization) GetSlug() string { return v.Slug }
+
+// getClusterAgentTokenNodeCompositeRegistryUpstream includes the requested fields of the GraphQL type CompositeRegistryUpstream.
+// The GraphQL type's documentation follows.
+//
+// A composite registry's upstream
+type getClusterAgentTokenNodeCompositeRegistryUpstream struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterAgentTokenNodeCompositeRegistryUpstream.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterAgentTokenNodeCompositeRegistryUpstream) GetTypename() string { return v.Typename }
+
+// getClusterAgentTokenNodeEmail includes the requested fields of the GraphQL type Email.
+// The GraphQL type's documentation follows.
+//
+// An email address
+type getClusterAgentTokenNodeEmail struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterAgentTokenNodeEmail.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterAgentTokenNodeEmail) GetTypename() string { return v.Typename }
+
+// getClusterAgentTokenNodeJobEventAssigned includes the requested fields of the GraphQL type JobEventAssigned.
+// The GraphQL type's documentation follows.
+//
+// An event created when the dispatcher assigns the job to an agent
+type getClusterAgentTokenNodeJobEventAssigned struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterAgentTokenNodeJobEventAssigned.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterAgentTokenNodeJobEventAssigned) GetTypename() string { return v.Typename }
+
+// getClusterAgentTokenNodeJobEventBuildStepUploadCreated includes the requested fields of the GraphQL type JobEventBuildStepUploadCreated.
+// The GraphQL type's documentation follows.
+//
+// An event created when the job creates new build steps via pipeline upload
+type getClusterAgentTokenNodeJobEventBuildStepUploadCreated struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterAgentTokenNodeJobEventBuildStepUploadCreated.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterAgentTokenNodeJobEventBuildStepUploadCreated) GetTypename() string {
+	return v.Typename
+}
+
+// getClusterAgentTokenNodeJobEventCanceled includes the requested fields of the GraphQL type JobEventCanceled.
+// The GraphQL type's documentation follows.
+//
+// An event created when the job is canceled
+type getClusterAgentTokenNodeJobEventCanceled struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterAgentTokenNodeJobEventCanceled.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterAgentTokenNodeJobEventCanceled) GetTypename() string { return v.Typename }
+
+// getClusterAgentTokenNodeJobEventChanged includes the requested fields of the GraphQL type JobEventChanged.
+// The GraphQL type's documentation follows.
+//
+// A job event for when a job's attributes have been updated
+type getClusterAgentTokenNodeJobEventChanged struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterAgentTokenNodeJobEventChanged.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterAgentTokenNodeJobEventChanged) GetTypename() string { return v.Typename }
+
+// getClusterAgentTokenNodeJobEventFinished includes the requested fields of the GraphQL type JobEventFinished.
+// The GraphQL type's documentation follows.
+//
+// An event created when the job is finished
+type getClusterAgentTokenNodeJobEventFinished struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterAgentTokenNodeJobEventFinished.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterAgentTokenNodeJobEventFinished) GetTypename() string { return v.Typename }
+
+// getClusterAgentTokenNodeJobEventGeneric includes the requested fields of the GraphQL type JobEventGeneric.
+// The GraphQL type's documentation follows.
+//
+// A generic event type that doesn't have any additional meta-information associated with the event
+type getClusterAgentTokenNodeJobEventGeneric struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterAgentTokenNodeJobEventGeneric.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterAgentTokenNodeJobEventGeneric) GetTypename() string { return v.Typename }
+
+// getClusterAgentTokenNodeJobEventPromisedExitStatus includes the requested fields of the GraphQL type JobEventPromisedExitStatus.
+// The GraphQL type's documentation follows.
+//
+// A job event for when a running job has declared an early failure with a promised exit status
+type getClusterAgentTokenNodeJobEventPromisedExitStatus struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterAgentTokenNodeJobEventPromisedExitStatus.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterAgentTokenNodeJobEventPromisedExitStatus) GetTypename() string { return v.Typename }
+
+// getClusterAgentTokenNodeJobEventReprioritized includes the requested fields of the GraphQL type JobEventReprioritized.
+// The GraphQL type's documentation follows.
+//
+// A job event for when a job's priority has been changed
+type getClusterAgentTokenNodeJobEventReprioritized struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterAgentTokenNodeJobEventReprioritized.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterAgentTokenNodeJobEventReprioritized) GetTypename() string { return v.Typename }
+
+// getClusterAgentTokenNodeJobEventRetried includes the requested fields of the GraphQL type JobEventRetried.
+// The GraphQL type's documentation follows.
+//
+// An event created when the job is retried
+type getClusterAgentTokenNodeJobEventRetried struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterAgentTokenNodeJobEventRetried.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterAgentTokenNodeJobEventRetried) GetTypename() string { return v.Typename }
+
+// getClusterAgentTokenNodeJobEventRetryFailed includes the requested fields of the GraphQL type JobEventRetryFailed.
+// The GraphQL type's documentation follows.
+//
+// An event created when job fails to retry
+type getClusterAgentTokenNodeJobEventRetryFailed struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterAgentTokenNodeJobEventRetryFailed.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterAgentTokenNodeJobEventRetryFailed) GetTypename() string { return v.Typename }
+
+// getClusterAgentTokenNodeJobEventStackError includes the requested fields of the GraphQL type JobEventStackError.
+// The GraphQL type's documentation follows.
+//
+// An event created when a stack error is reported
+type getClusterAgentTokenNodeJobEventStackError struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterAgentTokenNodeJobEventStackError.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterAgentTokenNodeJobEventStackError) GetTypename() string { return v.Typename }
+
+// getClusterAgentTokenNodeJobEventStackFinished includes the requested fields of the GraphQL type JobEventStackFinished.
+// The GraphQL type's documentation follows.
+//
+// An event created when a stack finishes a job and marks it as success
+type getClusterAgentTokenNodeJobEventStackFinished struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterAgentTokenNodeJobEventStackFinished.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterAgentTokenNodeJobEventStackFinished) GetTypename() string { return v.Typename }
+
+// getClusterAgentTokenNodeJobEventStackNotification includes the requested fields of the GraphQL type JobEventStackNotification.
+// The GraphQL type's documentation follows.
+//
+// An event created when a stack notification is triggered
+type getClusterAgentTokenNodeJobEventStackNotification struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterAgentTokenNodeJobEventStackNotification.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterAgentTokenNodeJobEventStackNotification) GetTypename() string { return v.Typename }
+
+// getClusterAgentTokenNodeJobEventTimedOut includes the requested fields of the GraphQL type JobEventTimedOut.
+// The GraphQL type's documentation follows.
+//
+// An event created when the job is timed out
+type getClusterAgentTokenNodeJobEventTimedOut struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterAgentTokenNodeJobEventTimedOut.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterAgentTokenNodeJobEventTimedOut) GetTypename() string { return v.Typename }
+
+// getClusterAgentTokenNodeJobTypeBlock includes the requested fields of the GraphQL type JobTypeBlock.
+// The GraphQL type's documentation follows.
+//
+// A type of job that requires a user to unblock it before proceeding in a build pipeline
+type getClusterAgentTokenNodeJobTypeBlock struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterAgentTokenNodeJobTypeBlock.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterAgentTokenNodeJobTypeBlock) GetTypename() string { return v.Typename }
+
+// getClusterAgentTokenNodeJobTypeCommand includes the requested fields of the GraphQL type JobTypeCommand.
+// The GraphQL type's documentation follows.
+//
+// A type of job that runs a command on an agent
+type getClusterAgentTokenNodeJobTypeCommand struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterAgentTokenNodeJobTypeCommand.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterAgentTokenNodeJobTypeCommand) GetTypename() string { return v.Typename }
+
+// getClusterAgentTokenNodeJobTypeTrigger includes the requested fields of the GraphQL type JobTypeTrigger.
+// The GraphQL type's documentation follows.
+//
+// A type of job that triggers another build on a pipeline
+type getClusterAgentTokenNodeJobTypeTrigger struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterAgentTokenNodeJobTypeTrigger.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterAgentTokenNodeJobTypeTrigger) GetTypename() string { return v.Typename }
+
+// getClusterAgentTokenNodeJobTypeWait includes the requested fields of the GraphQL type JobTypeWait.
+// The GraphQL type's documentation follows.
+//
+// A type of job that waits for all previous jobs to pass before proceeding the build pipeline
+type getClusterAgentTokenNodeJobTypeWait struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterAgentTokenNodeJobTypeWait.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterAgentTokenNodeJobTypeWait) GetTypename() string { return v.Typename }
+
+// getClusterAgentTokenNodeNotificationServiceSlack includes the requested fields of the GraphQL type NotificationServiceSlack.
+// The GraphQL type's documentation follows.
+//
+// Deliver notifications to Slack
+type getClusterAgentTokenNodeNotificationServiceSlack struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterAgentTokenNodeNotificationServiceSlack.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterAgentTokenNodeNotificationServiceSlack) GetTypename() string { return v.Typename }
+
+// getClusterAgentTokenNodeOrganization includes the requested fields of the GraphQL type Organization.
+// The GraphQL type's documentation follows.
+//
+// An organization
+type getClusterAgentTokenNodeOrganization struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterAgentTokenNodeOrganization.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterAgentTokenNodeOrganization) GetTypename() string { return v.Typename }
+
+// getClusterAgentTokenNodeOrganizationBanner includes the requested fields of the GraphQL type OrganizationBanner.
+// The GraphQL type's documentation follows.
+//
+// System banner of an organization
+type getClusterAgentTokenNodeOrganizationBanner struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterAgentTokenNodeOrganizationBanner.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterAgentTokenNodeOrganizationBanner) GetTypename() string { return v.Typename }
+
+// getClusterAgentTokenNodeOrganizationInvitation includes the requested fields of the GraphQL type OrganizationInvitation.
+// The GraphQL type's documentation follows.
+//
+// A pending invitation to a user to join this organization
+type getClusterAgentTokenNodeOrganizationInvitation struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterAgentTokenNodeOrganizationInvitation.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterAgentTokenNodeOrganizationInvitation) GetTypename() string { return v.Typename }
+
+// getClusterAgentTokenNodeOrganizationMember includes the requested fields of the GraphQL type OrganizationMember.
+// The GraphQL type's documentation follows.
+//
+// A member of an organization
+type getClusterAgentTokenNodeOrganizationMember struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterAgentTokenNodeOrganizationMember.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterAgentTokenNodeOrganizationMember) GetTypename() string { return v.Typename }
+
+// getClusterAgentTokenNodeOrganizationRepositoryProviderCursorOrigin includes the requested fields of the GraphQL type OrganizationRepositoryProviderCursorOrigin.
+// The GraphQL type's documentation follows.
+//
+// Origin installation associated with this organization
+type getClusterAgentTokenNodeOrganizationRepositoryProviderCursorOrigin struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterAgentTokenNodeOrganizationRepositoryProviderCursorOrigin.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterAgentTokenNodeOrganizationRepositoryProviderCursorOrigin) GetTypename() string {
+	return v.Typename
+}
+
+// getClusterAgentTokenNodeOrganizationRepositoryProviderGitHub includes the requested fields of the GraphQL type OrganizationRepositoryProviderGitHub.
+// The GraphQL type's documentation follows.
+//
+// GitHub installation associated with this organization
+type getClusterAgentTokenNodeOrganizationRepositoryProviderGitHub struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterAgentTokenNodeOrganizationRepositoryProviderGitHub.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterAgentTokenNodeOrganizationRepositoryProviderGitHub) GetTypename() string {
+	return v.Typename
+}
+
+// getClusterAgentTokenNodeOrganizationRepositoryProviderGitHubEnterpriseServer includes the requested fields of the GraphQL type OrganizationRepositoryProviderGitHubEnterpriseServer.
+// The GraphQL type's documentation follows.
+//
+// GitHub Enterprise Server associated with this organization
+type getClusterAgentTokenNodeOrganizationRepositoryProviderGitHubEnterpriseServer struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterAgentTokenNodeOrganizationRepositoryProviderGitHubEnterpriseServer.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterAgentTokenNodeOrganizationRepositoryProviderGitHubEnterpriseServer) GetTypename() string {
+	return v.Typename
+}
+
+// getClusterAgentTokenNodePipeline includes the requested fields of the GraphQL type Pipeline.
+// The GraphQL type's documentation follows.
+//
+// A pipeline
+type getClusterAgentTokenNodePipeline struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterAgentTokenNodePipeline.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterAgentTokenNodePipeline) GetTypename() string { return v.Typename }
+
+// getClusterAgentTokenNodePipelineMetric includes the requested fields of the GraphQL type PipelineMetric.
+// The GraphQL type's documentation follows.
+//
+// A metric for a pipeline
+type getClusterAgentTokenNodePipelineMetric struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterAgentTokenNodePipelineMetric.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterAgentTokenNodePipelineMetric) GetTypename() string { return v.Typename }
+
+// getClusterAgentTokenNodePipelineSchedule includes the requested fields of the GraphQL type PipelineSchedule.
+// The GraphQL type's documentation follows.
+//
+// A schedule of when a build should automatically triggered for a Pipeline
+type getClusterAgentTokenNodePipelineSchedule struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterAgentTokenNodePipelineSchedule.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterAgentTokenNodePipelineSchedule) GetTypename() string { return v.Typename }
+
+// getClusterAgentTokenNodePipelineTemplate includes the requested fields of the GraphQL type PipelineTemplate.
+// The GraphQL type's documentation follows.
+//
+// A template defining a fixed step configuration for a pipeline
+type getClusterAgentTokenNodePipelineTemplate struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterAgentTokenNodePipelineTemplate.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterAgentTokenNodePipelineTemplate) GetTypename() string { return v.Typename }
+
+// getClusterAgentTokenNodeRegistry includes the requested fields of the GraphQL type Registry.
+// The GraphQL type's documentation follows.
+//
+// A registry
+type getClusterAgentTokenNodeRegistry struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterAgentTokenNodeRegistry.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterAgentTokenNodeRegistry) GetTypename() string { return v.Typename }
+
+// getClusterAgentTokenNodeRegistryToken includes the requested fields of the GraphQL type RegistryToken.
+// The GraphQL type's documentation follows.
+//
+// A registry token
+type getClusterAgentTokenNodeRegistryToken struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterAgentTokenNodeRegistryToken.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterAgentTokenNodeRegistryToken) GetTypename() string { return v.Typename }
+
+// getClusterAgentTokenNodeRule includes the requested fields of the GraphQL type Rule.
+type getClusterAgentTokenNodeRule struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterAgentTokenNodeRule.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterAgentTokenNodeRule) GetTypename() string { return v.Typename }
+
+// getClusterAgentTokenNodeSSOProviderGitHubApp includes the requested fields of the GraphQL type SSOProviderGitHubApp.
+// The GraphQL type's documentation follows.
+//
+// Single sign-on provided by GitHub
+type getClusterAgentTokenNodeSSOProviderGitHubApp struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterAgentTokenNodeSSOProviderGitHubApp.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterAgentTokenNodeSSOProviderGitHubApp) GetTypename() string { return v.Typename }
+
+// getClusterAgentTokenNodeSSOProviderGoogleGSuite includes the requested fields of the GraphQL type SSOProviderGoogleGSuite.
+// The GraphQL type's documentation follows.
+//
+// Single sign-on provided by Google
+type getClusterAgentTokenNodeSSOProviderGoogleGSuite struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterAgentTokenNodeSSOProviderGoogleGSuite.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterAgentTokenNodeSSOProviderGoogleGSuite) GetTypename() string { return v.Typename }
+
+// getClusterAgentTokenNodeSSOProviderSAML includes the requested fields of the GraphQL type SSOProviderSAML.
+// The GraphQL type's documentation follows.
+//
+// Single sign-on provided via SAML
+type getClusterAgentTokenNodeSSOProviderSAML struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterAgentTokenNodeSSOProviderSAML.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterAgentTokenNodeSSOProviderSAML) GetTypename() string { return v.Typename }
+
+// getClusterAgentTokenNodeSecret includes the requested fields of the GraphQL type Secret.
+// The GraphQL type's documentation follows.
+//
+// A secret hosted by Buildkite. This does not contain the secret value or encrypted material.
+type getClusterAgentTokenNodeSecret struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterAgentTokenNodeSecret.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterAgentTokenNodeSecret) GetTypename() string { return v.Typename }
+
+// getClusterAgentTokenNodeSuite includes the requested fields of the GraphQL type Suite.
+// The GraphQL type's documentation follows.
+//
+// A suite
+type getClusterAgentTokenNodeSuite struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterAgentTokenNodeSuite.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterAgentTokenNodeSuite) GetTypename() string { return v.Typename }
+
+// getClusterAgentTokenNodeTeam includes the requested fields of the GraphQL type Team.
+// The GraphQL type's documentation follows.
+//
+// An organization team
+type getClusterAgentTokenNodeTeam struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterAgentTokenNodeTeam.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterAgentTokenNodeTeam) GetTypename() string { return v.Typename }
+
+// getClusterAgentTokenNodeTeamMember includes the requested fields of the GraphQL type TeamMember.
+// The GraphQL type's documentation follows.
+//
+// An member of a team
+type getClusterAgentTokenNodeTeamMember struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterAgentTokenNodeTeamMember.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterAgentTokenNodeTeamMember) GetTypename() string { return v.Typename }
+
+// getClusterAgentTokenNodeTeamPipeline includes the requested fields of the GraphQL type TeamPipeline.
+// The GraphQL type's documentation follows.
+//
+// An pipeline that's been assigned to a team
+type getClusterAgentTokenNodeTeamPipeline struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterAgentTokenNodeTeamPipeline.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterAgentTokenNodeTeamPipeline) GetTypename() string { return v.Typename }
+
+// getClusterAgentTokenNodeTeamRegistry includes the requested fields of the GraphQL type TeamRegistry.
+// The GraphQL type's documentation follows.
+//
+// A registry that's been assigned to a team
+type getClusterAgentTokenNodeTeamRegistry struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterAgentTokenNodeTeamRegistry.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterAgentTokenNodeTeamRegistry) GetTypename() string { return v.Typename }
+
+// getClusterAgentTokenNodeTeamSuite includes the requested fields of the GraphQL type TeamSuite.
+// The GraphQL type's documentation follows.
+//
+// A suite that's been assigned to a team
+type getClusterAgentTokenNodeTeamSuite struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterAgentTokenNodeTeamSuite.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterAgentTokenNodeTeamSuite) GetTypename() string { return v.Typename }
+
+// getClusterAgentTokenNodeUser includes the requested fields of the GraphQL type User.
+// The GraphQL type's documentation follows.
+//
+// A user
+type getClusterAgentTokenNodeUser struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterAgentTokenNodeUser.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterAgentTokenNodeUser) GetTypename() string { return v.Typename }
+
+// getClusterAgentTokenNodeViewer includes the requested fields of the GraphQL type Viewer.
+// The GraphQL type's documentation follows.
+//
+// Represents the current user session
+type getClusterAgentTokenNodeViewer struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns getClusterAgentTokenNodeViewer.Typename, and is useful for accessing the field via an interface.
+func (v *getClusterAgentTokenNodeViewer) GetTypename() string { return v.Typename }
+
+// getClusterAgentTokenResponse is returned by getClusterAgentToken on success.
+type getClusterAgentTokenResponse struct {
+	// Fetches an object given its ID.
+	Node getClusterAgentTokenNode `json:"-"`
+}
+
+// GetNode returns getClusterAgentTokenResponse.Node, and is useful for accessing the field via an interface.
+func (v *getClusterAgentTokenResponse) GetNode() getClusterAgentTokenNode { return v.Node }
+
+func (v *getClusterAgentTokenResponse) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*getClusterAgentTokenResponse
+		Node json.RawMessage `json:"node"`
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.getClusterAgentTokenResponse = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	{
+		dst := &v.Node
+		src := firstPass.Node
+		if len(src) != 0 && string(src) != "null" {
+			err = __unmarshalgetClusterAgentTokenNode(
+				src, dst)
+			if err != nil {
+				return fmt.Errorf(
+					"unable to unmarshal getClusterAgentTokenResponse.Node: %w", err)
+			}
+		}
+	}
+	return nil
+}
+
+type __premarshalgetClusterAgentTokenResponse struct {
+	Node json.RawMessage `json:"node"`
+}
+
+func (v *getClusterAgentTokenResponse) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *getClusterAgentTokenResponse) __premarshalJSON() (*__premarshalgetClusterAgentTokenResponse, error) {
+	var retval __premarshalgetClusterAgentTokenResponse
+
+	{
+
+		dst := &retval.Node
+		src := v.Node
+		var err error
+		*dst, err = __marshalgetClusterAgentTokenNode(
+			&src)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"unable to marshal getClusterAgentTokenResponse.Node: %w", err)
+		}
+	}
+	return &retval, nil
+}
+
 // getClusterAgentTokensOrganization includes the requested fields of the GraphQL type Organization.
 // The GraphQL type's documentation follows.
 //
@@ -11211,6 +13198,21 @@ func (v *getClusterAgentTokensOrganizationClusterAgentTokensClusterAgentTokenCon
 	return v.ClusterAgentTokenValues.Uuid
 }
 
+// GetPermissions returns getClusterAgentTokensOrganizationClusterAgentTokensClusterAgentTokenConnectionEdgesClusterAgentTokenEdgeNodeClusterToken.Permissions, and is useful for accessing the field via an interface.
+func (v *getClusterAgentTokensOrganizationClusterAgentTokensClusterAgentTokenConnectionEdgesClusterAgentTokenEdgeNodeClusterToken) GetPermissions() []string {
+	return v.ClusterAgentTokenValues.Permissions
+}
+
+// GetAllowAllQueues returns getClusterAgentTokensOrganizationClusterAgentTokensClusterAgentTokenConnectionEdgesClusterAgentTokenEdgeNodeClusterToken.AllowAllQueues, and is useful for accessing the field via an interface.
+func (v *getClusterAgentTokensOrganizationClusterAgentTokensClusterAgentTokenConnectionEdgesClusterAgentTokenEdgeNodeClusterToken) GetAllowAllQueues() *bool {
+	return v.ClusterAgentTokenValues.AllowAllQueues
+}
+
+// GetAllowedQueueIds returns getClusterAgentTokensOrganizationClusterAgentTokensClusterAgentTokenConnectionEdgesClusterAgentTokenEdgeNodeClusterToken.AllowedQueueIds, and is useful for accessing the field via an interface.
+func (v *getClusterAgentTokensOrganizationClusterAgentTokensClusterAgentTokenConnectionEdgesClusterAgentTokenEdgeNodeClusterToken) GetAllowedQueueIds() []string {
+	return v.ClusterAgentTokenValues.AllowedQueueIds
+}
+
 func (v *getClusterAgentTokensOrganizationClusterAgentTokensClusterAgentTokenConnectionEdgesClusterAgentTokenEdgeNodeClusterToken) UnmarshalJSON(b []byte) error {
 
 	if string(b) == "null" {
@@ -11248,6 +13250,12 @@ type __premarshalgetClusterAgentTokensOrganizationClusterAgentTokensClusterAgent
 	Id string `json:"id"`
 
 	Uuid string `json:"uuid"`
+
+	Permissions []string `json:"permissions"`
+
+	AllowAllQueues *bool `json:"allowAllQueues"`
+
+	AllowedQueueIds []string `json:"allowedQueueIds"`
 }
 
 func (v *getClusterAgentTokensOrganizationClusterAgentTokensClusterAgentTokenConnectionEdgesClusterAgentTokenEdgeNodeClusterToken) MarshalJSON() ([]byte, error) {
@@ -11267,6 +13275,9 @@ func (v *getClusterAgentTokensOrganizationClusterAgentTokensClusterAgentTokenCon
 	retval.ExpiresAt = v.ClusterAgentTokenValues.ExpiresAt
 	retval.Id = v.ClusterAgentTokenValues.Id
 	retval.Uuid = v.ClusterAgentTokenValues.Uuid
+	retval.Permissions = v.ClusterAgentTokenValues.Permissions
+	retval.AllowAllQueues = v.ClusterAgentTokenValues.AllowAllQueues
+	retval.AllowedQueueIds = v.ClusterAgentTokenValues.AllowedQueueIds
 	return &retval, nil
 }
 
@@ -28577,6 +30588,21 @@ func (v *updateClusterAgentTokenClusterAgentTokenUpdateClusterAgentTokenUpdatePa
 	return v.ClusterAgentTokenValues.Uuid
 }
 
+// GetPermissions returns updateClusterAgentTokenClusterAgentTokenUpdateClusterAgentTokenUpdatePayloadClusterAgentTokenClusterToken.Permissions, and is useful for accessing the field via an interface.
+func (v *updateClusterAgentTokenClusterAgentTokenUpdateClusterAgentTokenUpdatePayloadClusterAgentTokenClusterToken) GetPermissions() []string {
+	return v.ClusterAgentTokenValues.Permissions
+}
+
+// GetAllowAllQueues returns updateClusterAgentTokenClusterAgentTokenUpdateClusterAgentTokenUpdatePayloadClusterAgentTokenClusterToken.AllowAllQueues, and is useful for accessing the field via an interface.
+func (v *updateClusterAgentTokenClusterAgentTokenUpdateClusterAgentTokenUpdatePayloadClusterAgentTokenClusterToken) GetAllowAllQueues() *bool {
+	return v.ClusterAgentTokenValues.AllowAllQueues
+}
+
+// GetAllowedQueueIds returns updateClusterAgentTokenClusterAgentTokenUpdateClusterAgentTokenUpdatePayloadClusterAgentTokenClusterToken.AllowedQueueIds, and is useful for accessing the field via an interface.
+func (v *updateClusterAgentTokenClusterAgentTokenUpdateClusterAgentTokenUpdatePayloadClusterAgentTokenClusterToken) GetAllowedQueueIds() []string {
+	return v.ClusterAgentTokenValues.AllowedQueueIds
+}
+
 func (v *updateClusterAgentTokenClusterAgentTokenUpdateClusterAgentTokenUpdatePayloadClusterAgentTokenClusterToken) UnmarshalJSON(b []byte) error {
 
 	if string(b) == "null" {
@@ -28614,6 +30640,12 @@ type __premarshalupdateClusterAgentTokenClusterAgentTokenUpdateClusterAgentToken
 	Id string `json:"id"`
 
 	Uuid string `json:"uuid"`
+
+	Permissions []string `json:"permissions"`
+
+	AllowAllQueues *bool `json:"allowAllQueues"`
+
+	AllowedQueueIds []string `json:"allowedQueueIds"`
 }
 
 func (v *updateClusterAgentTokenClusterAgentTokenUpdateClusterAgentTokenUpdatePayloadClusterAgentTokenClusterToken) MarshalJSON() ([]byte, error) {
@@ -28633,6 +30665,9 @@ func (v *updateClusterAgentTokenClusterAgentTokenUpdateClusterAgentTokenUpdatePa
 	retval.ExpiresAt = v.ClusterAgentTokenValues.ExpiresAt
 	retval.Id = v.ClusterAgentTokenValues.Id
 	retval.Uuid = v.ClusterAgentTokenValues.Uuid
+	retval.Permissions = v.ClusterAgentTokenValues.Permissions
+	retval.AllowAllQueues = v.ClusterAgentTokenValues.AllowAllQueues
+	retval.AllowedQueueIds = v.ClusterAgentTokenValues.AllowedQueueIds
 	return &retval, nil
 }
 
@@ -30934,8 +32969,8 @@ func createCluster(
 
 // The mutation executed by createClusterAgentToken.
 const createClusterAgentToken_Operation = `
-mutation createClusterAgentToken ($organizationId: ID!, $clusterId: ID!, $description: String!, $allowedIpAddresses: String, $expiresAt: DateTime) {
-	clusterAgentTokenCreate(input: {organizationId:$organizationId,clusterId:$clusterId,description:$description,allowedIpAddresses:$allowedIpAddresses,expiresAt:$expiresAt}) {
+mutation createClusterAgentToken ($organizationId: ID!, $clusterId: ID!, $description: String!, $allowedIpAddresses: String, $expiresAt: DateTime, $permissions: [String!], $allowAllQueues: Boolean, $allowedQueueIds: [ID!]) {
+	clusterAgentTokenCreate(input: {organizationId:$organizationId,clusterId:$clusterId,description:$description,allowedIpAddresses:$allowedIpAddresses,expiresAt:$expiresAt,permissions:$permissions,allowAllQueues:$allowAllQueues,allowedQueueIds:$allowedQueueIds}) {
 		clusterAgentToken {
 			... ClusterAgentTokenValues
 		}
@@ -30952,6 +32987,9 @@ fragment ClusterAgentTokenValues on ClusterToken {
 	expiresAt
 	id
 	uuid
+	permissions
+	allowAllQueues
+	allowedQueueIds
 }
 `
 
@@ -30963,6 +33001,9 @@ func createClusterAgentToken(
 	description string,
 	allowedIpAddresses string,
 	expiresAt *time.Time,
+	permissions *[]string,
+	allowAllQueues *bool,
+	allowedQueueIds *[]string,
 ) (data_ *createClusterAgentTokenResponse, err_ error) {
 	req_ := &graphql.Request{
 		OpName: "createClusterAgentToken",
@@ -30973,6 +33014,9 @@ func createClusterAgentToken(
 			Description:        description,
 			AllowedIpAddresses: allowedIpAddresses,
 			ExpiresAt:          expiresAt,
+			Permissions:        permissions,
+			AllowAllQueues:     allowAllQueues,
+			AllowedQueueIds:    allowedQueueIds,
 		},
 	}
 
@@ -32268,6 +34312,64 @@ func getCacheRegistryOrganization(
 	return data_, err_
 }
 
+// The query executed by getClusterAgentToken.
+const getClusterAgentToken_Operation = `
+query getClusterAgentToken ($id: ID!) {
+	node(id: $id) {
+		__typename
+		... on ClusterToken {
+			... ClusterAgentTokenValues
+			cluster {
+				id
+				uuid
+				organization {
+					slug
+				}
+			}
+		}
+	}
+}
+fragment ClusterAgentTokenValues on ClusterToken {
+	allowedIpAddresses
+	cluster {
+		id
+		uuid
+	}
+	description
+	expiresAt
+	id
+	uuid
+	permissions
+	allowAllQueues
+	allowedQueueIds
+}
+`
+
+func getClusterAgentToken(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	id string,
+) (data_ *getClusterAgentTokenResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "getClusterAgentToken",
+		Query:  getClusterAgentToken_Operation,
+		Variables: &__getClusterAgentTokenInput{
+			Id: id,
+		},
+	}
+
+	data_ = &getClusterAgentTokenResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
 // The query executed by getClusterAgentTokens.
 const getClusterAgentTokens_Operation = `
 query getClusterAgentTokens ($orgSlug: ID!, $id: ID!) {
@@ -32293,6 +34395,9 @@ fragment ClusterAgentTokenValues on ClusterToken {
 	expiresAt
 	id
 	uuid
+	permissions
+	allowAllQueues
+	allowedQueueIds
 }
 `
 
@@ -34420,8 +36525,8 @@ func updateCluster(
 
 // The mutation executed by updateClusterAgentToken.
 const updateClusterAgentToken_Operation = `
-mutation updateClusterAgentToken ($organizationId: ID!, $id: ID!, $description: String!, $allowedIpAddresses: String) {
-	clusterAgentTokenUpdate(input: {organizationId:$organizationId,id:$id,description:$description,allowedIpAddresses:$allowedIpAddresses}) {
+mutation updateClusterAgentToken ($organizationId: ID!, $id: ID!, $description: String!, $allowedIpAddresses: String, $permissions: [String!], $allowAllQueues: Boolean, $allowedQueueIds: [ID!]) {
+	clusterAgentTokenUpdate(input: {organizationId:$organizationId,id:$id,description:$description,allowedIpAddresses:$allowedIpAddresses,permissions:$permissions,allowAllQueues:$allowAllQueues,allowedQueueIds:$allowedQueueIds}) {
 		clusterAgentToken {
 			... ClusterAgentTokenValues
 		}
@@ -34437,6 +36542,9 @@ fragment ClusterAgentTokenValues on ClusterToken {
 	expiresAt
 	id
 	uuid
+	permissions
+	allowAllQueues
+	allowedQueueIds
 }
 `
 
@@ -34447,6 +36555,9 @@ func updateClusterAgentToken(
 	id string,
 	description string,
 	allowedIpAddresses string,
+	permissions *[]string,
+	allowAllQueues *bool,
+	allowedQueueIds *[]string,
 ) (data_ *updateClusterAgentTokenResponse, err_ error) {
 	req_ := &graphql.Request{
 		OpName: "updateClusterAgentToken",
@@ -34456,6 +36567,9 @@ func updateClusterAgentToken(
 			Id:                 id,
 			Description:        description,
 			AllowedIpAddresses: allowedIpAddresses,
+			Permissions:        permissions,
+			AllowAllQueues:     allowAllQueues,
+			AllowedQueueIds:    allowedQueueIds,
 		},
 	}
 
